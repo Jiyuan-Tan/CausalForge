@@ -1,0 +1,339 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_mte\_multi\_iv, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_mte\_multi\_iv} / \texttt{v1}%
+  \\ \large\textit{Bounded partial-monotonicity violations and kinked PRTE sensitivity in multi-IV Bernstein MTE bounds}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a PartialID proposal with locked tuple
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},\text{bounding functional})
+\]
+defined as follows.  The qid is \texttt{pid\_mte\_multi\_iv}; the specialization is \texttt{v1}.  The observable distribution \(P\) is the law of \(W=(Y,D,Z)\), where \(D\in\{0,1\}\), \(Z=(Z_1,\ldots,Z_m)\in\{0,1\}^m\) with \(m\ge2\), and all statements are conditional on fixed covariates \(X=x\) with \(x\) suppressed.  The parameter is the policy-relevant treatment effect
+\[
+\theta(q)=\int_0^1 q(u)\,\operatorname{MTE}(u)\,du=a(q)^\transpose\beta,
+\]
+where \(q\) is a known policy weight and \(\operatorname{MTE}(u)=B_K(u)^\transpose\beta\) lies in the degree-\(K\) Bernstein span \(B_K=(B_{0K},\ldots,B_{KK})\).  The identifying restrictions are instrument exogeneity, overlap, bounded outcomes \(Y(d)\in[\underline y,\bar y]\), the MTW-style partial-monotonicity response lattice with mutual-consistency equalities, shape restrictions \(H\beta\le h\), and a violation budget \(\eta\in[0,\bar\eta]\) bounding the \(P\)-mass of instrument-specific response cells with \(D(1,z_{-j})<D(0,z_{-j})\).  The bounding functional is the finite-dimensional identified interval
+\[
+\Theta_I(P,q,\eta)=\{\ a(q)^\transpose\beta:\ (\beta,\pi,\xi)\in\mathcal F(P,\eta)\ \},
+\]
+where \(\mathcal F(P,\eta)\) is the primal LP in Section 6 below; its lower and upper endpoints are \(L(P,q,\eta)\) and \(U(P,q,\eta)\).
+
+\begin{abstract}
+Multiple-instrument MTE methods now have sharp partial-identification machinery under exact partial monotonicity, but empirical diagnostics can reject partial monotonicity without saying how policy bounds should change.  This proposal asks for the sharp PRTE identified set when a controlled share \(\eta\) of instrument-specific response cells may violate partial monotonicity.  The proposed kernel is a conjectured sharp open-regime sensitivity theorem: for small positive \(\eta\), the exact identified set is generated by a compact one-unit MTW response-cell perturbation set, and its kinked endpoint derivatives are support functions of that perturbation set evaluated at exact-PM equality-dual certificates.  The claim is not generic LP sensitivity; it is the econometric identification of the correct perturbation set and the first cells that widen a policy-relevant Bernstein MTE interval.  If resolved, this would turn Jiang--Sun partial-monotonicity tests and MTW multi-IV MTE bounds into a single sensitivity analysis for policy conclusions.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+The modern MTE program lets researchers ask policy questions that ordinary IV estimands often miss, but the multi-instrument version depends on partial monotonicity: each instrument must shift treatment choices in the same direction while the other instruments are held fixed.  \citet{MogstadTorgovitskyWalters2021} show why global Imbens--Angrist monotonicity is too strong with multiple instruments, and \citet{MogstadTorgovitskyWalters2024} replace it with a weaker partial-monotonicity framework.  The unresolved methodological question is what to report when partial monotonicity is empirically questionable but not abandoned wholesale.
+
+\paragraph{The main finding (proposed).}
+The headline proposal is Conjecture \ref{conj:kink}: for a Bernstein MTE class and a bounded mass \(\eta\) of instrument-specific partial-monotonicity violations, the sharp PRTE endpoints are generated locally by the MTW violating-cell perturbation set, are directionally differentiable at \(\eta=0\), and have one-sided derivatives given by explicit support functions of that compact set.  The derivative is kinked because it changes when the exact-PM LP has tied equality-dual certificates or when newly allowed defier cells hit outcome and shape bounds.
+
+\paragraph{What is new.}
+\citet{MogstadTorgovitskyWalters2024} aggregate multiple instruments by imposing exact partial monotonicity and mutual consistency, while \citet{JiangSun2023} test partial monotonicity as a maintained diagnostic and \citet{MourifieWan2025} study MTE/PRTE policy analysis under imperfect IV assumptions.  The precise novelty kernel here is the missing bridge between those objects: a sharp bounded-violation MTW response-cell model, with nonnegative defier masses and bounded outcome-moment envelopes, and an explicit formula for which PRTE endpoint moves first and by how much.  Standard parametric LP sensitivity enters only after that sharp perturbation set is derived.
+
+\paragraph{How it positions in the literature.}
+The proposal is in the partial-identification cluster: it combines the Manski--Pepper monotone-IV tradition, the MST Bernstein LP approach to MTE bounds, and recent multi-IV partial-monotonicity work.  It is not a panel result and not a do-calculus or SCM-semantics proposal; the graph/latent-index language is only used to define the IV restrictions that carve out an identified set.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the empirical workflow in \citet{MogstadTorgovitskyWalters2021} and the testing workflow in \citet{JiangSun2023}: after a partial-monotonicity diagnostic, researchers could report how large a response-type violation budget must be before the MTW policy conclusion changes, rather than switching from exact PM to a completely different imperfect-IV analysis.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers using multiple binary instruments should report the active-cell PRTE sensitivity curve in \(\eta\) alongside exact-PM bounds, because the first kink identifies which monotonicity violations actually threaten the policy conclusion.
+
+\section{Related work}
+\citet{HeckmanVytlacil2005} provide the MTE policy-evaluation framework in which IV variation identifies margins of treatment choice rather than necessarily the policy margin of interest.  \citet{ManskiPepper2000} anchor the monotone-IV partial-identification tradition, where credible direction restrictions shrink identified sets without point identifying treatment effects.  \citet{MogstadSantosTorgovitsky2018} give the closest computational ancestor: Bernstein-polynomial shape restrictions turn MTE and PRTE bounds into finite linear programs under a single-instrument latent-index model.  \citet{MogstadTorgovitskyWalters2021} show that standard monotonicity with multiple IVs is too restrictive unless choice behavior is effectively homogeneous, motivating partial monotonicity as the relevant multi-IV replacement.  \citet{MogstadTorgovitskyWalters2024} is the closest published identification paper: it develops multi-IV MTE partial identification under exact partial monotonicity and mutual consistency, but it does not characterize sharp bounds under a bounded mass of partial-monotonicity violations.  \citet{JiangSun2023} provides a nonparametric test of partial instrument monotonicity; the present proposal asks how a rejection or sensitivity radius changes PRTE bounds.  \citet{SunWuthrich2025} studies pairwise valid instruments and VSIV estimation when only some instrument-value pairs satisfy LATE validity, including pairwise monotonicity; it does not impose a response-cell violation budget or derive PRTE endpoint support-function derivatives for Bernstein MTE bounds.  \citet{MourifieWan2025} derives sharp MTE/PRTE bounds under imperfect IV assumptions; the distinction here is that instrument validity is retained while the response-type monotonicity lattice is locally relaxed.  \citet{Goff2024} studies vector monotonicity and point identification of LATE-type multi-IV parameters, which is adjacent because it clarifies what multiple binary instruments identify under alternative monotonicity notions but does not supply PRTE sensitivity to PM violations.
+
+In-catalogue prior art does not appear to contain this kernel.  The Stage -1.1 prior-proposal map reports no promoted \texttt{pid\_mte\_multi\_iv} proposal and no banked theorem stating a bounded partial-monotonicity sensitivity formula.  The accepted \texttt{pid\_dose\_response\_iv/v1} and \texttt{pid\_ordinal\_late\_partial\_defiers/v1} artifacts are adjacent IV partial-identification entries, but they are not multi-binary-IV Bernstein MTE proposals and do not analyze MTW response-cell violations.  The downgraded \texttt{pid\_iv\_bounded\_defier\_envelope/v1} and \texttt{pid\_dynamic\_iv\_compliance/v1} artifacts warn that generic finite-type LP duality is not enough; this proposal therefore makes the active MTW response-cell sensitivity map, not LP existence, the novelty claim.
+
+\section{Formal setup}
+Observe \(W=(Y,D,Z)\), where \(D\in\{0,1\}\), \(Z\in\{0,1\}^m\), \(m\ge2\), and covariates are fixed throughout.  Potential outcomes are \(Y(0),Y(1)\), potential treatments are \(D(z)\) for every \(z\in\{0,1\}^m\), and observed variables satisfy \(D=D(Z)\) and \(Y=DY(1)+(1-D)Y(0)\).  Let
+\[
+\Delta_{j,z_{-j}}=D(1,z_{-j})-D(0,z_{-j})
+\]
+be the instrument-\(j\) response sign holding the other instruments fixed.  Exact partial monotonicity requires \(\Delta_{j,z_{-j}}\ge0\) almost surely for every \((j,z_{-j})\); the relaxed model allows
+\[
+\sum_{j=1}^m\sum_{z_{-j}}\Pr(\Delta_{j,z_{-j}}=-1)\le \eta.
+\]
+
+The MTE curve is represented by \(B_K(u)^\transpose\beta\), where \(B_{\ell K}(u)=\binom K\ell u^\ell(1-u)^{K-\ell}\).  Shape restrictions are linear inequalities \(H\beta\le h\), including bounded outcomes through \(\underline y\le B_K(u)^\transpose\beta\le \bar y\) on the Bernstein coefficient envelope.  The PRTE weight \(q\) induces \(a(q)_\ell=\int_0^1 q(u)B_{\ell K}(u)\,du\), so \(\theta(q)=a(q)^\transpose\beta\).
+
+Let \(\pi\) denote the latent response-type distribution over all treatment response maps \(d:\{0,1\}^m\to\{0,1\}\).  Let \(\omega\ge0\) denote the vector of violating response-cell masses, indexed by \((j,z_{-j},d)\) with \(d(1,z_{-j})<d(0,z_{-j})\), and let \(\nu\) denote the associated bounded outcome/moment coordinates.  Write \(\xi=(\omega,\nu)\).  The violation budget is \(c^\transpose\xi=\mathbf 1^\transpose\omega\), and \(\mathcal V(P,\pi)\) contains the no-cancellation constraints
+\[
+0\le \omega\le C_\pi\pi,\qquad \underline y\,\omega_r\le \nu_r\le \bar y\,\omega_r\quad\text{for every violating cell }r,
+\]
+together with the cell-specific treatment-response equations.  Thus \(\eta=0\) forces \(\omega=0\) and then \(\nu=0\).  The observable treatment and outcome moments, the MTW mutual-consistency restrictions, and the Bernstein shape restrictions are summarized by the finite LP
+\[
+\mathcal F(P,\eta)=\left\{(\beta,\pi,\xi):
+\begin{array}{l}
+A(P)\beta+R(P)\pi+G(P)\xi=b(P),\\
+M(P)\beta+N(P)\pi=0,\quad H\beta\le h,\\
+\pi\in\Delta_{\mathcal D},\quad \xi=(\omega,\nu)\in\mathcal V(P,\pi),\\
+c^\transpose \xi\le \eta
+\end{array}\right\}.
+\]
+Here \(A(P)\beta=b(P)\) are the Bernstein-projected IV-like MTE moment equations, \(R(P)\pi\) records response-type mass restrictions, \(G(P)\xi\) is the column contribution of monotonicity-violating response cells to those equality moments, \(M(P)\beta+N(P)\pi=0\) are mutual-consistency equations, \(\Delta_{\mathcal D}\) is the response-type simplex, and \(c^\transpose\xi=\mathbf 1^\transpose\omega\) is total violating mass.  The identified set is \(\Theta_I(P,q,\eta)=\{a(q)^\transpose\beta:(\beta,\pi,\xi)\in\mathcal F(P,\eta)\}\).
+
+For endpoint \(e\in\{L,U\}\), let \(\Lambda_e(P,q,0)\) be the set of equality-dual components of dual optimizers for the exact-PM LP at \(\eta=0\), normalized so that \(\lambda^\transpose(A(P)\beta+R(P)\pi-b(P))\) is the equality part of the upper-endpoint Lagrangian and the sign is reversed for the lower endpoint.  Define the compact one-unit perturbation set
+\[
+\mathcal K_{\mathrm{viol}}(P)=
+\{\,G(P)s:\ s=(\omega,\nu)\in\mathcal V_0(P),\ \mathbf 1^\transpose\omega\le1\,\},
+\]
+where \(\mathcal V_0(P)\) is the homogeneous violating-cell envelope obtained from \(\mathcal V(P,\pi)\) after removing the baseline nonviolating response masses.  For a subset \(\mathcal S\) of violating cells, \(\mathcal K_{\mathcal S}(P)\) is the same set with support restricted to \(\mathcal S\).  For any compact set \(K\), write \(\sigma_K(v)=\sup_{g\in K}v^\transpose g\), and write \(\operatorname{width}\{\Theta_I(P,q,\eta)\}=U(P,q,\eta)-L(P,q,\eta)\).
+
+\begin{verbatim}
+Locked tuple:
+(qid, specialization, P, theta, identifying restrictions, bounding functional)
+= (pid_mte_multi_iv, v1, law(Y,D,Z), theta(q)=a(q)' beta,
+   exogeneity + overlap + bounded outcomes + MTW mutual consistency
+   + Bernstein shape restrictions + violation budget eta,
+   Theta_I(P,q,eta)=[L(P,q,eta),U(P,q,eta)] from F(P,eta)).
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Instrument exogeneity and consistency]\label{ass:exog}
+\((Y(0),Y(1),\{D(z):z\in\{0,1\}^m\})\perp Z\) conditional on the fixed covariate cell, and \(D=D(Z)\), \(Y=DY(1)+(1-D)Y(0)\).
+\end{assumption}
+
+\begin{assumption}[Overlap and nondegenerate instrument chords]\label{ass:overlap}
+\(\Pr(Z=z)>0\) for every instrument cell used in \(A(P)\), and every included binary chord \((j,z_{-j})\) has distinct propensity scores \(p_{1,j,z_{-j}}\ne p_{0,j,z_{-j}}\) with both propensities in \((0,1)\).
+\end{assumption}
+
+\begin{assumption}[Bernstein MTE and bounded outcomes]\label{ass:bernstein}
+\(\operatorname{MTE}(u)=B_K(u)^\transpose\beta\) for a fixed \(K\ge1\), and \(Y(d)\in[\underline y,\bar y]\).  The admissible coefficient set is the polytope \(H\beta\le h\), which includes the implied Bernstein coefficient envelope.
+\end{assumption}
+
+\begin{assumption}[MTW mutual consistency]\label{ass:mutual}
+At \(\eta=0\), the instrument-specific threshold models implied by partial monotonicity share the same observed treatment variable and satisfy the finite mutual-consistency equations \(M(P)\beta+N(P)\pi=0\).
+\end{assumption}
+
+\begin{assumption}[Bounded partial-monotonicity violation budget]\label{ass:eta}
+For \(\eta\in[0,\bar\eta]\), the total \(P\)-mass of instrument-specific response cells with \(D(1,z_{-j})<D(0,z_{-j})\) is at most \(\eta\), represented in the LP by \(c^\transpose\xi=\mathbf 1^\transpose\omega\le\eta\), \(\omega\ge0\), and \(\xi=(\omega,\nu)\in\mathcal V(P,\pi)\).  The constraints in \(\mathcal V(P,\pi)\) are no-cancellation constraints: if \(\omega=0\), all violating-cell outcome/moment coordinates \(\nu\) are also zero.  At \(\eta=0\), \(\xi=0\) and exact partial monotonicity holds.
+\end{assumption}
+
+\begin{assumption}[Saturated response grid and sharp cell envelopes]\label{ass:cellsharp}
+The response-type grid contains all binary treatment response maps \(d:\{0,1\}^m\to\{0,1\}\), and \(\mathcal V(P,\pi)\) imposes the sharp bounded-outcome envelopes for every violating response cell represented by \(\xi=(\omega,\nu)\).
+\end{assumption}
+
+\begin{assumption}[Feasible-set compatibility and endpoint attainment]\label{ass:compat}
+The exact-PM feasible set \(\mathcal F(P,0)\) is nonempty.  For every \(\eta\in[0,\bar\eta]\), \(\mathcal F(P,\eta)\) is a closed bounded polytope; in particular \(\mathcal F(P,0)\subseteq\mathcal F(P,\eta)\), so the relaxed feasible set is nonempty, and the linear endpoint programs defining \(L(P,q,\eta)\) and \(U(P,q,\eta)\) attain finite values.
+\end{assumption}
+
+\begin{assumption}[Regular active face]\label{ass:regular}
+Under Assumption \ref{ass:compat}, for each endpoint \(e\in\{L,U\}\), the set of exact-PM dual optimizers is nonempty, and \(\Lambda_e(P,q,0)\) denotes the corresponding equality-dual components with the sign convention in Section 6.  The active equality/inequality system satisfies the standard LP no-recession condition on the face exposed by \(a(q)\), and \(\mathcal K_{\mathrm{viol}}(P)\) is compact.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: relaxed response-cell LP is sharp conditional on the cell budget]\label{thm:lp}
+Under Assumptions \ref{ass:exog}--\ref{ass:cellsharp} and \ref{ass:compat}, the bounded-violation identified set for \(\theta(q)\) is the attained finite interval
+\[
+\Theta_I(P,q,\eta)=[L(P,q,\eta),U(P,q,\eta)]
+\]
+with
+\[
+L(P,q,\eta)=\min_{(\beta,\pi,\xi)\in\mathcal F(P,\eta)}a(q)^\transpose\beta,\qquad
+U(P,q,\eta)=\max_{(\beta,\pi,\xi)\in\mathcal F(P,\eta)}a(q)^\transpose\beta,
+\]
+for every \(\eta\in[0,\bar\eta]\).
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This theorem is a setup result, not the flagship contribution: \citet{MogstadSantosTorgovitsky2018}, \citet{MogstadTorgovitskyWalters2024}, and \citet{HanYang2024} already make MTE bounds finite-dimensional LP objects under their maintained restrictions.  The epsilon-gap is the sharp nonnegative response-cell budget \(\eta\) with no-cancellation outcome envelopes, which is absent from those exact-PM or binary-IV bounds.  (b) The concrete consumer is \citet{JiangSun2023}: their partial-monotonicity test gains an identified-set object to report under local violations rather than only a reject/fail-to-reject diagnostic.
+
+\begin{conjecture}[Conjecture 1: kinked active-cell sensitivity at exact partial monotonicity (NOT YET PROVED)]\label{conj:kink}
+Under Assumptions \ref{ass:exog}--\ref{ass:regular}, there is an \(\eta_0>0\) such that for every \(\eta\in[0,\eta_0]\) the LP in Theorem \ref{thm:lp} remains sharp and every first-order perturbation of the exact-PM identified set is generated by \(\eta\mathcal K_{\mathrm{viol}}(P)\).  Consequently, the endpoint maps \(\eta\mapsto U(P,q,\eta)\) and \(\eta\mapsto L(P,q,\eta)\) are right-directionally differentiable at \(\eta=0\).  Moreover,
+\[
+\left.\frac{d^+}{d\eta}U(P,q,\eta)\right|_{\eta=0}
+=\max_{\lambda\in\Lambda_U(P,q,0)}\sigma_{\mathcal K_{\mathrm{viol}}(P)}(\lambda),
+\]
+and
+\[
+\left.\frac{d^+}{d\eta}L(P,q,\eta)\right|_{\eta=0}
+=-\max_{\lambda\in\Lambda_L(P,q,0)}\sigma_{\mathcal K_{\mathrm{viol}}(P)}(-\lambda),
+\]
+where \(\lambda^\transpose G(P)\xi\) is the dual pairing between an exact-PM equality-dual certificate and a feasible violating-cell column contribution, \(\mathcal K_{\mathrm{viol}}(P)\) is the compact one-unit perturbation set, and \(\sigma_K(v)=\sup_{g\in K}v^\transpose g\) is its finite support function.  Thus the local PRTE width expansion is
+\[
+\operatorname{width}\{\Theta_I(P,q,\eta)\}
+=\operatorname{width}\{\Theta_I(P,q,0)\}
++
+\eta\left[
+\max_{\lambda\in\Lambda_U}\sigma_{\mathcal K_{\mathrm{viol}}}(\lambda)
++
+\max_{\lambda\in\Lambda_L}\sigma_{\mathcal K_{\mathrm{viol}}}(-\lambda)
+\right]+o(\eta),
+\]
+where \(\Lambda_U=\Lambda_U(P,q,0)\) and \(\Lambda_L=\Lambda_L(P,q,0)\).  The kinks occur exactly at ties among active exact-PM dual certificates or ties among first-relaxed violation cells.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest published result is \citet{MogstadTorgovitskyWalters2024}, which aggregates multiple instruments under exact partial monotonicity; the epsilon-gap is the sharp open-regime model in which exact-PM is locally relaxed by nonnegative MTW response-cell masses, plus a formula that converts the resulting perturbation set into endpoint-specific PRTE widening.  This is not merely \citet{BonnansShapiro2000} parametric optimization sensitivity: their theorem would apply only after the econometric work has identified the correct compact perturbation set \(\mathcal K_{\mathrm{viol}}(P)\) and proved that it is sharp for the partially monotone MTE model.  \citet{MourifieWan2025} relaxes IV validity through imperfect-IV layers, while this conjecture keeps IV validity and relaxes only the MTW partial-monotonicity response cells.  (b) The concrete consumer is the MTW returns-to-college multiple-IV design: a researcher could identify whether the policy conclusion is sensitive to distance-instrument defiers, tuition-instrument defiers, or only to joint response types that are inactive at the exact-PM endpoint.
+
+\begin{conjecture}[Conjecture 2: zero-sensitivity diagnostic for irrelevant PM violations (NOT YET PROVED)]\label{conj:zero}
+Under Assumptions \ref{ass:exog}--\ref{ass:regular}, a subset \(\mathcal S\) of allowed violating response cells has no first-order effect on the PRTE interval at \(\eta=0\) if and only if
+\[
+\sigma_{\mathcal K_{\mathcal S}(P)}(\lambda)=
+\sigma_{\mathcal K_{\mathcal S}(P)}(-\mu)=0
+\]
+for every \(\lambda\in\Lambda_U(P,q,0)\) and every \(\mu\in\Lambda_L(P,q,0)\).  Equivalently, partial-monotonicity violations in \(\mathcal S\) are first-order policy-irrelevant exactly when all exact-PM endpoint equality-dual certificates assign zero support price to the compact one-unit perturbations generated by \(\mathcal S\).
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{JiangSun2023} tests whether partial monotonicity holds, but does not separate violations that matter for a named PRTE endpoint from violations that are diagnostic but policy-irrelevant.  \citet{SunWuthrich2025} is a closer invalid-pair comparator: it estimates LATEs using instrument-value pairs that pass validity restrictions and explicitly allows some pairwise monotonicity failures, but it does not parameterize the mass of violating MTW response cells or deliver an endpoint-specific PRTE support-price formula.  The epsilon-gap is the active-dual equivalence between zero support price on the compact MTW perturbation set and zero first-order widening.  Because the set is normalized by one unit of nonnegative violation mass, the support function is finite and is not the unbounded cone support familiar from generic convex analysis.  (b) The concrete consumer is the multi-IV partial-monotonicity testing workflow: it would tell applied users which rejected pairwise monotonicity inequalities require policy-bound sensitivity reporting and which do not affect the target PRTE at first order.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Exact-PM limit]\label{cor:eta0}
+Under Assumptions \ref{ass:exog}--\ref{ass:cellsharp} and \ref{ass:compat}, setting \(\eta=0\) forces \(\xi=0\), so Theorem \ref{thm:lp} reduces to the exact partial-monotonicity Bernstein LP with MTW mutual-consistency rows.
+\end{corollary}
+The reduction is immediate because \(c^\transpose\xi=\mathbf 1^\transpose\omega\le0\), \(\omega\ge0\), and the no-cancellation envelopes in \(\mathcal V(P,\pi)\) imply \(\omega=0\) and \(\nu=0\), leaving only \(A(P)\beta+R(P)\pi=b(P)\), \(M(P)\beta+N(P)\pi=0\), and \(H\beta\le h\).
+
+\begin{corollary}[Single-instrument MST corner]\label{cor:single}
+Under Assumptions \ref{ass:exog}--\ref{ass:cellsharp} and \ref{ass:compat}, if \(m=1\), \(\eta=0\), and the mutual-consistency block is vacuous, the LP in Theorem \ref{thm:lp} reduces to the single-instrument Bernstein MTE bound of \citet{MogstadSantosTorgovitsky2018}.
+\end{corollary}
+The reduction drops the multi-IV response lattice and leaves the single IV-like moment equation plus the same Bernstein coefficient polytope \(H\beta\le h\).
+
+\begin{corollary}[Inactive-cell zero derivative]\label{cor:inactive}
+Under Assumption \ref{ass:regular}, if a proposed violating-cell subset \(\mathcal S\) has \(g=0\) for every normalized moment contribution \(g\in\mathcal K_{\mathcal S}(P)\), then Conjecture \ref{conj:zero} predicts no first-order PRTE widening from \(\mathcal S\).
+\end{corollary}
+The reduction is algebraic: \(\lambda^\transpose g=0\) for every endpoint equality-dual certificate and every \(g\in\mathcal K_{\mathcal S}(P)\), so the support functions in Conjecture \ref{conj:zero} vanish.
+
+\section{Proof-sketch route}
+The mathematical route is finite-dimensional convex analysis plus response-type enumeration.  First derive the MTW exact-PM moment and mutual-consistency rows, then add the negative-response cells as explicit nonnegative mass generators \(\omega\) with bounded outcome/moment envelopes \(\nu\) and total mass \(\mathbf 1^\transpose\omega\le\eta\).  Sharpness of Theorem \ref{thm:lp} should follow by the usual latent response-type construction: any feasible \((\beta,\pi,\xi)\) builds a joint distribution over potential treatments and bounded potential outcomes, and any admissible joint distribution maps back to the LP.  For Conjecture \ref{conj:kink}, first prove the econometric perturbation result that local violations are exactly \(\eta\mathcal K_{\mathrm{viol}}(P)\), then apply parametric LP value-function sensitivity at a compact polytope and express the right derivative as maximization over exact-PM equality-dual optimizers.  Boundary cases needing explicit algebra are \(m=2\), \(K=1\) and \(K=2\), with one active mutual-consistency face and then with tied upper-endpoint dual optimizers; these cases should reveal the first kink and rule out a mistaken smooth-derivative statement.
+
+\section{Honest scope flags}
+Theorem \ref{thm:lp} is labelled as a theorem because it is the expected sharp finite response-type LP once the violation-cell grid and bounded-outcome envelopes are fully enumerated, but its exact row construction still needs to be written carefully by Stage 0.  Conjectures \ref{conj:kink} and \ref{conj:zero} are the novel kernel and are not yet proved.  The proposal deliberately avoids the burned angle-0 claim that joint-IV tightening over the best single-IV MST bound equals a projected moment-cone width, and it avoids the angle-1 support-cone quotient definition that collapsed because chord rows were already in the normal space.  The most delicate maintained assumption is that the cell-budget relaxation \(\mathcal V(P,\pi)\) is sharp rather than merely conservative; if that fails, the theorem should be downgraded to an outer-bound proposal while the kinked dual formula remains meaningful for that outer bound.  The v2--v3 revisions narrow the dual claim to equality-dual pairings with compact one-unit perturbation sets and add explicit endpoint-attainment compatibility; no unnormalized cone support function or infeasible endpoint program is being claimed.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for angle 2, replacing the rejected support-cone kernel with bounded partial-monotonicity violation sensitivity for MTW multi-IV Bernstein PRTE bounds; prior verdict: none.
+\item v2 (revise) -- patched the bibliography metadata, made violation masses nonnegative with no-cancellation envelopes, replaced the ambiguous \(\lambda_G\) and unnormalized cone notation by equality-dual pairings over compact one-unit perturbation sets, and sharpened Conjecture 1 as the sharp MTW perturbation-set claim rather than generic LP sensitivity; prior verdict: REVISE.
+\item v3 (revise) -- added the feasible-set compatibility assumption and cited it in Theorem 1, and added \citet{SunWuthrich2025} as the closest pairwise-valid-instruments comparator for Conjecture 2; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Heckman and Vytlacil(2005)]{HeckmanVytlacil2005}
+Heckman, J. J. and E. Vytlacil (2005).
+Structural equations, treatment effects, and econometric policy evaluation.
+\emph{Econometrica} 73(3), 669--738.
+
+\bibitem[Manski and Pepper(2000)]{ManskiPepper2000}
+Manski, C. F. and J. V. Pepper (2000).
+Monotone instrumental variables: With an application to the returns to schooling.
+\emph{Econometrica} 68(4), 997--1010.
+
+\bibitem[Mogstad, Santos, and Torgovitsky(2018)]{MogstadSantosTorgovitsky2018}
+Mogstad, M., A. Santos, and A. Torgovitsky (2018).
+Using instrumental variables for inference about policy relevant treatment parameters.
+\emph{Econometrica} 86(5), 1589--1619.
+
+\bibitem[Mogstad, Torgovitsky, and Walters(2021)]{MogstadTorgovitskyWalters2021}
+Mogstad, M., A. Torgovitsky, and C. R. Walters (2021).
+The causal interpretation of two-stage least squares with multiple instrumental variables.
+\emph{American Economic Review} 111(11), 3663--3698.
+
+\bibitem[Mogstad, Torgovitsky, and Walters(2024)]{MogstadTorgovitskyWalters2024}
+Mogstad, M., A. Torgovitsky, and C. R. Walters (2024).
+Policy evaluation with multiple instrumental variables.
+\emph{Journal of Econometrics} 243(1--2), 105718.
+doi:10.1016/j.jeconom.2024.105718.
+
+\bibitem[Jiang and Sun(2023)]{JiangSun2023}
+Jiang, H. and Z. Sun (2023).
+Testing partial instrument monotonicity.
+\emph{Economics Letters} 233, 111400.
+doi:10.1016/j.econlet.2023.111400.
+
+\bibitem[Sun and Wuthrich(2025)]{SunWuthrich2025}
+Sun, Z. and K. Wuthrich (2025).
+Pairwise valid instruments.
+\emph{Journal of Econometrics} 250, 106009.
+doi:10.1016/j.jeconom.2025.106009.
+
+\bibitem[Mourifie and Wan(2025)]{MourifieWan2025}
+Mourifie, I. and Y. Wan (2025).
+Layered policy analysis in program evaluation using the marginal treatment effect.
+\emph{Journal of Econometrics} 251, 106060.
+doi:10.1016/j.jeconom.2025.106060.
+
+\bibitem[Goff(2024)]{Goff2024}
+Goff, L. (2024).
+A vector monotonicity assumption for multiple instruments.
+\emph{Journal of Econometrics} 241(1), 105735.
+doi:10.1016/j.jeconom.2024.105735.
+
+\bibitem[Han and Yang(2024)]{HanYang2024}
+Han, S. and S. Yang (2024).
+Sharp bounds for policy-relevant weighted averages of marginal treatment effects with binary instruments.
+\emph{Journal of Econometrics} 240(1), 105680.
+doi:10.1016/j.jeconom.2024.105680.
+
+\bibitem[Bonnans and Shapiro(2000)]{BonnansShapiro2000}
+Bonnans, J. F. and A. Shapiro (2000).
+\emph{Perturbation Analysis of Optimization Problems}.
+New York: Springer.
+\end{thebibliography}
+
+\end{document}

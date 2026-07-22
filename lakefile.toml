@@ -1,0 +1,64 @@
+name = "Causalean"
+version = "0.1.0"
+keywords = ["math"]
+defaultTargets = ["Causalean"]
+
+[leanOptions]
+pp.unicode.fun = true # pretty-prints `fun a ↦ b`
+relaxedAutoImplicit = false
+weak.linter.mathlibStandardSet = true
+maxSynthPendingDepth = 3
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "bf8875c7dc7162b23cdb881f33cc97caab1c688a"
+
+# Upstream CLT formalisation (RemyDegenne/CLT).  Pinned to a specific commit
+# known to build against the Mathlib pin above (reproducible; not a moving
+# branch); consumed in `Causalean/Stat/CLT/AsymptoticLinearity.lean` (the
+# `IIDSample.clt_normalized_sum` contact-point lemma).
+[[require]]
+name = "clt"
+git = "https://github.com/RemyDegenne/CLT.git"
+rev = "50990c17040e099e3f6891bf332c28277046351d"
+
+# Vendored FoML (Foundations of ML, lean-rademacher) — Rademacher complexity,
+# McDiarmid, symmetrization, separable-sup. Consumed across
+# `Causalean/Stat/Concentration/`, `Causalean/Estimation/`, `Causalean/ML/`.
+# Adapted, MIT-licensed copy of github.com/auto-res/lean-rademacher, carried
+# in-tree so a fresh clone builds without a sibling checkout — see
+# `third_party/lean-rademacher/UPSTREAM.md`.
+[[require]]
+name = "FoML"
+path = "third_party/lean-rademacher"
+
+# Vendored optlib (OptSuite) — first-order KKT necessary conditions under LICQ /
+# affine CQ (`first_order_neccessary_LICQ` / `_LinearCQ`) + Farkas' lemma engine.
+# Only the KKT dependency closure is carried (not the optimizer suite). Adapted,
+# Apache-2.0 copy of github.com/optsuite/optlib bumped to AutoID's Mathlib pin —
+# see `third_party/optlib/UPSTREAM.md`.
+[[require]]
+name = "optlib"
+path = "third_party/optlib"
+
+[[lean_lib]]
+name = "Causalean"
+
+# The `panelquestion_export` lake executable (formerly rooted at
+# `Causalean.Panel.Prompt.Export`) moved to the sibling CausalSmith package
+# (`CausalSmith/lakefile.toml`) together with the `CausalSmith.Panel.Prompt`
+# registry it serializes. The registry was pure CausalSmith infrastructure —
+# Causalean never consumed it.
+
+# Library-explorer extractor core (shared with CausalSmith's paper_index exe):
+# DeclEntry records + the runIndex driver.
+[[lean_lib]]
+name = "LibraryIndexCore"
+
+# Library-explorer extractor: walks the elaborated environment and emits
+# doc/library_index.json (see CausalSmith/doc/presentation/2026-06-10-library-explorer-design.md).
+[[lean_exe]]
+name = "library_index"
+root = "LibraryIndex"
+supportInterpreter = true

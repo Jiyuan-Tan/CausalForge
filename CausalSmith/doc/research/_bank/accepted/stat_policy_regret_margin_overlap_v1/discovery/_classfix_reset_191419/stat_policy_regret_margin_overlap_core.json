@@ -1,0 +1,1034 @@
+{
+  "qid": "stat_policy_regret_margin_overlap",
+  "specialization": "v1",
+  "cluster": "stat",
+  "symbols": [
+    {
+      "name": "n",
+      "type": "sample_size",
+      "space": "N",
+      "def": "Sample size.",
+      "role": "index"
+    },
+    {
+      "name": "O",
+      "type": "observation",
+      "space": "X x {0,1} x [-1,1]",
+      "def": "Observation O=(X,A,Y).",
+      "role": "datum"
+    },
+    {
+      "name": "X",
+      "type": "covariate",
+      "space": "X",
+      "def": "Covariate.",
+      "role": "datum"
+    },
+    {
+      "name": "A",
+      "type": "treatment",
+      "space": "{0,1}",
+      "def": "Binary treatment.",
+      "role": "datum"
+    },
+    {
+      "name": "Y",
+      "type": "outcome",
+      "space": "[-1,1]",
+      "def": "Bounded outcome.",
+      "role": "datum"
+    },
+    {
+      "name": "P",
+      "type": "law",
+      "space": "P(O)",
+      "def": "Data-generating law of O.",
+      "role": "law"
+    },
+    {
+      "name": "P_X",
+      "type": "measure",
+      "space": "P(X)",
+      "def": "Covariate marginal of P.",
+      "role": "law",
+      "refs": [
+        "P"
+      ]
+    },
+    {
+      "name": "e_P",
+      "type": "function",
+      "space": "X -> (0,1)",
+      "def": "Propensity e_P(x)=P(A=1|X=x).",
+      "role": "nuisance",
+      "refs": [
+        "P"
+      ]
+    },
+    {
+      "name": "p_P",
+      "type": "function",
+      "space": "X -> [0,1/2]",
+      "def": "Overlap p_P(x)=min{e_P(x),1-e_P(x)}.",
+      "role": "nuisance",
+      "refs": [
+        "e_P"
+      ]
+    },
+    {
+      "name": "mu_0",
+      "type": "function",
+      "space": "X -> [-1,1]",
+      "def": "Outcome regression E_P[Y|A=0,X=x].",
+      "role": "nuisance",
+      "refs": [
+        "P"
+      ]
+    },
+    {
+      "name": "mu_1",
+      "type": "function",
+      "space": "X -> [-1,1]",
+      "def": "Outcome regression E_P[Y|A=1,X=x].",
+      "role": "nuisance",
+      "refs": [
+        "P"
+      ]
+    },
+    {
+      "name": "tau_P",
+      "type": "function",
+      "space": "X -> [-2,2]",
+      "def": "Conditional contrast tau_P(x)=mu_1(x)-mu_0(x).",
+      "role": "estimand",
+      "refs": [
+        "mu_0",
+        "mu_1"
+      ]
+    },
+    {
+      "name": "pi",
+      "type": "policy",
+      "space": "X -> {0,1}",
+      "def": "Deterministic policy.",
+      "role": "decision"
+    },
+    {
+      "name": "Pi",
+      "type": "policy_class",
+      "space": "set of (X->{0,1})",
+      "def": "Policy class.",
+      "role": "decision"
+    },
+    {
+      "name": "pi_star",
+      "type": "policy",
+      "space": "X -> {0,1}",
+      "def": "Optimal policy pi_star(x)=1{tau_P(x) >= 0}.",
+      "role": "decision",
+      "refs": [
+        "tau_P"
+      ]
+    },
+    {
+      "name": "V_P",
+      "type": "functional",
+      "space": "(X->{0,1}) -> R",
+      "def": "Welfare V_P(pi)=E_P[pi(X) tau_P(X)].",
+      "role": "objective",
+      "refs": [
+        "tau_P"
+      ]
+    },
+    {
+      "name": "R_P",
+      "type": "functional",
+      "space": "(X->{0,1}) -> R",
+      "def": "Regret R_P(pi)=V_P(pi_star)-V_P(pi).",
+      "role": "objective",
+      "refs": [
+        "V_P",
+        "pi_star"
+      ]
+    },
+    {
+      "name": "D_pi",
+      "type": "set",
+      "space": "subset of X",
+      "def": "Disagreement set {x: pi(x) != pi_star(x)}.",
+      "role": "object",
+      "refs": [
+        "pi",
+        "pi_star"
+      ]
+    },
+    {
+      "name": "alpha",
+      "type": "exponent",
+      "space": "R_{>=0}",
+      "def": "Tsybakov margin exponent.",
+      "role": "parameter"
+    },
+    {
+      "name": "gamma",
+      "type": "exponent",
+      "space": "R_{>=0}",
+      "def": "One-sided overlap-decay exponent.",
+      "role": "parameter"
+    },
+    {
+      "name": "d_Pi",
+      "type": "dimension",
+      "space": "N",
+      "def": "VC dimension of Pi.",
+      "role": "parameter",
+      "refs": [
+        "Pi"
+      ]
+    },
+    {
+      "name": "C_m",
+      "type": "constant",
+      "space": "R_{>0}",
+      "def": "Margin constant.",
+      "role": "constant"
+    },
+    {
+      "name": "u_0",
+      "type": "constant",
+      "space": "R_{>0}",
+      "def": "Margin window.",
+      "role": "constant"
+    },
+    {
+      "name": "C_o",
+      "type": "constant",
+      "space": "R_{>0}",
+      "def": "Overlap-decay constant.",
+      "role": "constant"
+    },
+    {
+      "name": "c_o",
+      "type": "constant",
+      "space": "R_{>0}",
+      "def": "Overlap-decay window constant.",
+      "role": "constant"
+    },
+    {
+      "name": "beta_ag",
+      "type": "exponent",
+      "space": "R_{>=0}",
+      "def": "Admissible weak-arm exponent beta_{alpha,gamma}.",
+      "role": "derived",
+      "refs": [
+        "alpha",
+        "gamma"
+      ]
+    },
+    {
+      "name": "D_ag",
+      "type": "exponent",
+      "space": "R_{>0}",
+      "def": "D_{alpha,gamma}=2+alpha+beta_{alpha,gamma}.",
+      "role": "derived",
+      "refs": [
+        "alpha",
+        "beta_ag"
+      ]
+    },
+    {
+      "name": "r_star",
+      "type": "exponent",
+      "space": "R_{>0}",
+      "def": "Information exponent r_*(alpha,gamma)=(1+alpha)/D_{alpha,gamma}.",
+      "role": "derived",
+      "refs": [
+        "alpha",
+        "D_ag"
+      ]
+    },
+    {
+      "name": "s_feas",
+      "type": "exponent",
+      "space": "R_{>0}",
+      "def": "s_feas=min{1/(2+alpha+beta_ag), kappa_mu/(1+kappa_mu(alpha+beta_ag))}.",
+      "role": "derived",
+      "refs": [
+        "alpha",
+        "beta_ag",
+        "kappa_mu"
+      ]
+    },
+    {
+      "name": "r_feas",
+      "type": "exponent",
+      "space": "R_{>0}",
+      "def": "r_feas=(1+alpha) s_feas.",
+      "role": "derived",
+      "refs": [
+        "alpha",
+        "s_feas"
+      ]
+    },
+    {
+      "name": "h_n",
+      "type": "scale",
+      "space": "(0,1)",
+      "def": "Lower-bound contrast height h_n=n^{-1/D_{alpha,gamma}}.",
+      "role": "derived",
+      "refs": [
+        "n",
+        "D_ag"
+      ]
+    },
+    {
+      "name": "q_n",
+      "type": "scale",
+      "space": "(0,1/2]",
+      "def": "Lower-bound weak-arm scale: q_0 if gamma=0 else h_n^{beta_ag}.",
+      "role": "derived",
+      "refs": [
+        "h_n",
+        "beta_ag"
+      ]
+    },
+    {
+      "name": "Gamma_q",
+      "type": "function",
+      "space": "O x nuisance -> R",
+      "def": "Clipped AIPW score (def:clipped-aipw-score).",
+      "role": "estimator"
+    },
+    {
+      "name": "pi_hat_n",
+      "type": "estimator",
+      "space": "data -> Pi",
+      "def": "Feasible clipped-AIPW ERM (def:feasible-erm).",
+      "role": "estimator",
+      "refs": [
+        "Pi",
+        "Gamma_q"
+      ]
+    },
+    {
+      "name": "M_n",
+      "type": "functional",
+      "space": "R_{>=0}",
+      "def": "Minimax regret inf_{pi_hat} sup_{P} E_P R_P(pi_hat).",
+      "role": "target",
+      "refs": [
+        "R_P"
+      ]
+    },
+    {
+      "name": "U_n",
+      "type": "functional",
+      "space": "R_{>=0}",
+      "def": "Feasible upper risk sup_P E_P R_P(pi_hat_n).",
+      "role": "target",
+      "refs": [
+        "R_P",
+        "pi_hat_n"
+      ]
+    },
+    {
+      "name": "B_n",
+      "type": "set",
+      "space": "subset of X",
+      "def": "Active block of the two-point witness.",
+      "role": "construction"
+    },
+    {
+      "name": "qbar_n",
+      "type": "scale",
+      "space": "(0,1/2]",
+      "def": "Feasible clip: 1/4 if beta_ag=0 else hbar_n^{beta_ag}.",
+      "role": "derived",
+      "refs": [
+        "beta_ag"
+      ]
+    },
+    {
+      "name": "hbar_n",
+      "type": "scale",
+      "space": "(0,1)",
+      "def": "Feasible bandwidth hbar_n = n^{-s_feas}.",
+      "role": "derived",
+      "refs": [
+        "n",
+        "s_feas"
+      ]
+    },
+    {
+      "name": "L_n",
+      "type": "scale",
+      "space": "R_{>0}",
+      "def": "Logarithmic design scale (e.g. log n) controlling cell count and per-cell sampling.",
+      "role": "parameter"
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:iid",
+      "kind": "sampling",
+      "condition": "O_1, ..., O_n are i.i.d. draws from P.",
+      "free_symbols": [
+        "O",
+        "P",
+        "n"
+      ],
+      "standard": {
+        "name": "i.i.d. sampling",
+        "cite": "AtheyWager2021PolicyLearning"
+      }
+    },
+    {
+      "id": "ass:consistency",
+      "kind": "causal-structural",
+      "condition": "Y = A Y(1) + (1 - A) Y(0).",
+      "free_symbols": [
+        "Y",
+        "A"
+      ],
+      "standard": {
+        "name": "consistency / SUTVA",
+        "cite": "ImbensRubin2015"
+      }
+    },
+    {
+      "id": "ass:unconfoundedness",
+      "kind": "causal-structural",
+      "condition": "(Y(0), Y(1)) is independent of A given X under P.",
+      "free_symbols": [
+        "A",
+        "X",
+        "P"
+      ],
+      "standard": {
+        "name": "unconfoundedness / ignorability",
+        "cite": "ImbensRubin2015"
+      }
+    },
+    {
+      "id": "ass:bounded-outcome",
+      "kind": "support",
+      "condition": "Y(a) in [-1, 1] for a in {0,1}.",
+      "free_symbols": [
+        "Y"
+      ],
+      "standard": {
+        "name": "bounded outcomes",
+        "cite": "AtheyWager2021PolicyLearning"
+      }
+    },
+    {
+      "id": "ass:positivity",
+      "kind": "support",
+      "condition": "0 < e_P(X) < 1 holds P_X-almost surely.",
+      "free_symbols": [
+        "e_P",
+        "X",
+        "P_X"
+      ],
+      "standard": {
+        "name": "positivity",
+        "cite": "ImbensRubin2015"
+      }
+    },
+    {
+      "id": "ass:margin",
+      "kind": "tail-rate",
+      "condition": "P(0 < |tau_P(X)| <= u) <= C_m u^alpha for all 0 < u <= u_0.",
+      "free_symbols": [
+        "P",
+        "tau_P",
+        "X",
+        "C_m",
+        "alpha",
+        "u_0"
+      ],
+      "constants": [
+        "C_m",
+        "u_0"
+      ],
+      "standard": {
+        "name": "Tsybakov decision margin",
+        "cite": "Tsybakov2004OptimalAggregation"
+      },
+      "used_by": [
+        "thm:margin-localization",
+        "lem:witness-membership"
+      ]
+    },
+    {
+      "id": "ass:zero-effect",
+      "kind": "regularity",
+      "condition": "Either P_X{tau_P(X)=0}=0, or every pi in Pi agrees with pi_star P_X-almost everywhere on {tau_P(X)=0}.",
+      "free_symbols": [
+        "P_X",
+        "tau_P",
+        "X",
+        "Pi",
+        "pi_star"
+      ],
+      "standard": {
+        "name": "canonical zero-effect region",
+        "cite": "Tsybakov2004OptimalAggregation"
+      }
+    },
+    {
+      "id": "ass:overlap-decay",
+      "kind": "tail-rate",
+      "condition": "P{p_P(X) <= v, 0 < |tau_P(X)| <= u} <= C_o u^alpha v^(1/gamma) for all 0 < v <= c_o u^gamma, with v^(1/gamma)=1 when gamma=0.",
+      "free_symbols": [
+        "P",
+        "p_P",
+        "tau_P",
+        "X",
+        "C_o",
+        "c_o",
+        "alpha",
+        "gamma",
+        "u_0"
+      ],
+      "constants": [
+        "C_o",
+        "c_o"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "The joint margin/one-sided-overlap envelope couples the Tsybakov margin exponent alpha to the polynomial overlap-decay exponent gamma in a single tail bound. It is the class-defining condition whose induced minimax exponent r_*(alpha,gamma) is the paper's contribution; it strictly generalises the strict-overlap (gamma=0) margin class and the constant-margin overlap-decay class."
+      },
+      "used_by": [
+        "prop:overlap-envelope",
+        "lem:witness-membership",
+        "thm:minimax-lower",
+        "oeq:feasible-upper"
+      ]
+    },
+    {
+      "id": "ass:policy-class",
+      "kind": "rank",
+      "condition": "Pi is a class of measurable deterministic policies with finite VC dimension d_Pi < infinity.",
+      "free_symbols": [
+        "Pi",
+        "d_Pi"
+      ],
+      "standard": {
+        "name": "finite-VC policy class",
+        "cite": "KitagawaTetenov2018WhoShouldBeTreated"
+      }
+    },
+    {
+      "id": "ass:optimal-in-class",
+      "kind": "rank",
+      "condition": "pi_star is an element of Pi for every law P in the class.",
+      "free_symbols": [
+        "pi_star",
+        "Pi",
+        "P"
+      ],
+      "standard": {
+        "name": "optimum-in-class",
+        "cite": "KitagawaTetenov2018WhoShouldBeTreated"
+      }
+    },
+    {
+      "id": "ass:vc-localized-envelope",
+      "kind": "empirical-process",
+      "condition": "For the finite-VC class Pi there is a localized Rademacher/Dudley entropy-integral envelope psi with psi(r) <= C sqrt(d_Pi/n) r polylog(n) controlling the localized offset empirical processes uniformly over the class.",
+      "free_symbols": [
+        "Pi",
+        "d_Pi",
+        "n"
+      ],
+      "constants": [
+        "C"
+      ],
+      "standard": {
+        "name": "localized Rademacher / Dudley entropy-integral envelope (VC class)",
+        "cite": "vanderVaartWellner1996WeakConvergence"
+      },
+      "used_by": [
+        "oeq:feasible-upper",
+        "thm:matched-corollary"
+      ]
+    },
+    {
+      "id": "ass:margin-window",
+      "kind": "regularity",
+      "condition": "0 < u_0 < 2.",
+      "free_symbols": [
+        "u_0"
+      ],
+      "standard": {
+        "name": "margin-window normalization",
+        "cite": "Tsybakov2004OptimalAggregation"
+      },
+      "used_by": [
+        "lem:witness-membership",
+        "thm:minimax-lower"
+      ]
+    },
+    {
+      "id": "ass:marginal-overlap",
+      "kind": "tail-rate",
+      "condition": "P{p_P(X) <= v} <= C_om v^(1/gamma) for all 0 < v <= c_o, with the convention v^(1/gamma)=1 when gamma=0.",
+      "free_symbols": [
+        "P",
+        "p_P",
+        "X",
+        "gamma",
+        "c_o"
+      ],
+      "constants": [
+        "C_om"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "Marginal one-sided polynomial overlap decay: the propensity-tail mass P{p<=v} decays as v^{1/gamma}. The marginal companion of the joint ass:overlap-decay; it controls the clipped-region estimation-drift mass in the FEASIBLE upper bound. The two-point witness satisfies it (rare-block mass h^alpha <= C (h^beta)^{1/gamma}=C h^{alpha/(alpha+1)} for small h), so it does not weaken the converse."
+      },
+      "used_by": [
+        "oeq:feasible-upper"
+      ]
+    },
+    {
+      "id": "ass:nuisance-rate",
+      "kind": "tail-rate",
+      "condition": "The cross-fitted nuisance estimators satisfy ||muhat_a-mu_a||_{L2(P)} <= r_mu_n and ||ehat-e||_{L2(P)} <= r_e_n for a in {0,1}, with product-rate r_mu_n r_e_n = O(n^{-1/2}).",
+      "free_symbols": [
+        "mu_0",
+        "mu_1",
+        "e_P",
+        "P"
+      ],
+      "constants": [
+        "r_mu_n",
+        "r_e_n"
+      ],
+      "standard": {
+        "name": "cross-fit L2 nuisance rates (DML)",
+        "cite": "ChernozhukovEtAl2018DML"
+      },
+      "used_by": [
+        "oeq:feasible-upper"
+      ]
+    },
+    {
+      "id": "ass:strict-overlap-endpoint",
+      "kind": "support",
+      "condition": "When gamma=0, p_P(X) >= underline_p holds P_X-almost surely, for a constant underline_p in (0,1/2].",
+      "free_symbols": [
+        "p_P",
+        "X",
+        "P_X",
+        "gamma"
+      ],
+      "constants": [
+        "underline_p"
+      ],
+      "standard": {
+        "name": "strict overlap / uniform positivity",
+        "cite": "ImbensRubin2015"
+      },
+      "used_by": [
+        "oeq:feasible-upper"
+      ]
+    },
+    {
+      "id": "ass:bounded-crossfit-nuisances",
+      "kind": "regularity",
+      "condition": "The cross-fitted outcome-regression estimates muhat_0, muhat_1 take values in [-1,1].",
+      "free_symbols": [],
+      "standard": {
+        "name": "bounded nuisance truncation",
+        "cite": "ChernozhukovEtAl2018DML"
+      },
+      "used_by": [
+        "oeq:feasible-upper"
+      ]
+    },
+    {
+      "id": "ass:polynomial-nuisance-exponents",
+      "kind": "rate",
+      "condition": "There exist a >= 0, c >= 1/2 and constants C_mu, C_prod such that r_mu_n <= C_mu n^(-a) and r_mu_n r_e_n <= C_prod n^(-c) for all large n.",
+      "free_symbols": [],
+      "constants": [
+        "a",
+        "c",
+        "C_mu",
+        "C_prod"
+      ],
+      "standard": {
+        "name": "polynomial first-stage nuisance rates",
+        "cite": "ChernozhukovEtAl2018DML"
+      },
+      "used_by": [
+        "oeq:feasible-upper"
+      ]
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:welfare-regret",
+      "name": "R_P",
+      "construction": "V_P(pi) = E_P[pi(X) tau_P(X)]; pi_star(x) = 1{tau_P(x) >= 0}; R_P(pi) = V_P(pi_star) - V_P(pi)."
+    },
+    {
+      "id": "def:disagreement",
+      "name": "D_pi",
+      "construction": "D_pi = {x in X : pi(x) != pi_star(x)}."
+    },
+    {
+      "id": "def:exponents",
+      "name": "(beta_ag, D_ag, r_star)",
+      "construction": "beta_ag = (0 if gamma = 0 else alpha gamma/(alpha+1)); D_ag = 2 + alpha + beta_ag; r_star(alpha,gamma) = (1+alpha)/D_ag.",
+      "inputs": [
+        "alpha",
+        "gamma"
+      ]
+    },
+    {
+      "id": "def:feasible-rate",
+      "name": "(s_feas, r_feas)",
+      "construction": "Let kappa=2(1+alpha)/(2+alpha). For gamma>0 and polynomial nuisance exponents a,c with r_mu,n=O(n^{-a}) and r_mu,n r_e,n=O(n^{-c}), c>=1/2, set zeta(a,c,gamma)=min{1/2,(1+2 gamma a)/(2(1+gamma)),(c+2 gamma a)/(1+2 gamma)} and lambda_*=max{0,2 gamma (zeta-a)}. Use the clip q_n=min{1/4,n^{-lambda_*}}. Define r_plug=kappa zeta(a,c,gamma) and r_feas(alpha,gamma,a,c)=min{r_star(alpha,gamma),r_plug}. For gamma=0 under a strict-overlap floor, choose any fixed q<underline_p and set r_feas=r_star=(1+alpha)/(2+alpha).",
+      "inputs": [
+        "alpha",
+        "gamma"
+      ]
+    },
+    {
+      "id": "def:clipped-propensity",
+      "name": "e_q",
+      "construction": "e_q(x; eta) = min{1-q, max{q, e(x)}} for clip q in (0,1/2] and nuisance eta=(mu_0,mu_1,e).",
+      "inputs": [
+        "e",
+        "q"
+      ]
+    },
+    {
+      "id": "def:clipped-aipw-score",
+      "name": "Gamma_q",
+      "construction": "Gamma_q(O; eta) = mu_1(X) - mu_0(X) + (A/e_q(X;eta))(Y - mu_1(X)) - ((1-A)/(1-e_q(X;eta)))(Y - mu_0(X)).",
+      "inputs": [
+        "O",
+        "q",
+        "mu_0",
+        "mu_1",
+        "e"
+      ]
+    },
+    {
+      "id": "def:feasible-erm",
+      "name": "pi_hat_n",
+      "construction": "Vhat_{n,q}(pi) = n^{-1} sum_i pi(X_i) Gamma_q(O_i; etahat^{(-k(i))}) with K-fold cross-fitted nuisances etahat and clip q in (0,1/2]; pi_hat_n in argmax_{pi in Pi} Vhat_{n,q}(pi). The clip q is the analysis tuning parameter (chosen by the bias-variance balance).",
+      "inputs": [
+        "n",
+        "Pi",
+        "q"
+      ]
+    },
+    {
+      "id": "def:minimax-regret",
+      "name": "M_n",
+      "construction": "M_n(alpha,gamma) = inf over measurable data-dependent Pi-valued estimators pi_hat of sup_{P in P_class} E_P R_P(pi_hat).",
+      "inputs": [
+        "alpha",
+        "gamma"
+      ]
+    },
+    {
+      "id": "def:upper-risk",
+      "name": "U_n",
+      "construction": "U_n(alpha,gamma; etahat) = sup_{P in P_class} E_P R_P(pi_hat_n).",
+      "inputs": [
+        "alpha",
+        "gamma"
+      ]
+    },
+    {
+      "id": "def:law-class",
+      "name": "P_class",
+      "construction": "{ P : ass:iid, ass:consistency, ass:unconfoundedness, ass:bounded-outcome, ass:positivity, ass:margin, ass:zero-effect, ass:overlap-decay, ass:policy-class, and ass:optimal-in-class hold at exponents (alpha,gamma) }",
+      "by_member_properties": [
+        "ass:iid",
+        "ass:consistency",
+        "ass:unconfoundedness",
+        "ass:bounded-outcome",
+        "ass:positivity",
+        "ass:margin",
+        "ass:zero-effect",
+        "ass:overlap-decay",
+        "ass:policy-class",
+        "ass:optimal-in-class"
+      ]
+    },
+    {
+      "id": "def:two-point-witness",
+      "name": "(P_{n,+}, P_{n,-})",
+      "construction": "On X=[0,1] with P_X=Lebesgue, fix h_n=n^{-1/(2+alpha+beta_ag)} and q_n=q_0 in (0,1/2] when beta_ag=0, while q_n=C_Q h_n^{beta_ag} capped by 1/2 when beta_ag>0. Let B_n=[0,c_B h_n^alpha]. The two laws P_{n,sigma}, sigma in {+,-}, share P_X and the propensity e(x)=q_n on B_n and e(x)=1/2 off B_n. Choose tau_0 in (u_0,2). Off B_n set, for example, mu_1=tau_0/2 and mu_0=-tau_0/2, so the common optimal label is 1. On B_n set mu_0=0 and let Y(1) be Rademacher on {-1,1} with P(Y(1)=1|X in B_n)=(1+sigma h_n)/2, so mu_1=sigma h_n and tau=sigma h_n; let Y(0) have mean 0 and support [-1,1]. Draw A independently of the potential outcomes given X and set Y=AY(1)+(1-A)Y(0). Choose c_B and C_Q small enough for the margin, overlap, and divergence constants.",
+      "inputs": [
+        "n",
+        "alpha",
+        "gamma"
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "thm:welfare-identity",
+      "kind": "theorem",
+      "statement": "Under ass:iid and ass:bounded-outcome, for every deterministic pi in Pi, R_P(pi) = E_P[ |tau_P(X)| 1{pi(X) != pi_star(X)} ] = integral over X of |tau_P(x)| 1{pi(x) != pi_star(x)} dP_X(x).",
+      "depends_on": [
+        "def:welfare-regret",
+        "ass:bounded-outcome"
+      ],
+      "status": "proved",
+      "justification": "Regret equals the |contrast|-weighted disagreement mass; the exponent-free identity underlying margin localization and the converse separation.",
+      "consumer": "thm:margin-localization, lem:regret-separation",
+      "proof_tex": "By def:welfare-regret,\n\\[\nR_P(\\pi)=V_P(\\pi_\\star)-V_P(\\pi)=E_P[(\\pi_\\star(X)-\\pi(X))\\tau_P(X)].\n\\]\nThe integrand is integrable because ass:bounded-outcome gives \\(\\mu_a(X)\\in[-1,1]\\) and hence \\(|\\tau_P(X)|\\le 2\\). Fix \\(x\\). If \\(\\tau_P(x)>0\\), then \\(\\pi_\\star(x)=1\\), so\n\\[\n(\\pi_\\star(x)-\\pi(x))\\tau_P(x)=(1-\\pi(x))\\tau_P(x)=|\\tau_P(x)|1\\{\\pi(x)\\ne \\pi_\\star(x)\\}.\n\\]\nIf \\(\\tau_P(x)<0\\), then \\(\\pi_\\star(x)=0\\), so\n\\[\n(\\pi_\\star(x)-\\pi(x))\\tau_P(x)=-\\pi(x)\\tau_P(x)=|\\tau_P(x)|1\\{\\pi(x)\\ne \\pi_\\star(x)\\}.\n\\]\nIf \\(\\tau_P(x)=0\\), both sides are zero, regardless of the value of \\(\\pi(x)\\). Therefore the equality holds pointwise. Taking expectation and then disintegrating over \\(P_X\\) gives\n\\[\nR_P(\\pi)=E_P\\{|\\tau_P(X)|1(\\pi(X)\\ne\\pi_\\star(X))\\}\n=\\int_X |\\tau_P(x)|1\\{\\pi(x)\\ne\\pi_\\star(x)\\}\\,dP_X(x).\n\\]\nThe i.i.d. sampling assumption is not needed for the identity itself; it only fixes the sampling model for later estimator statements."
+    },
+    {
+      "id": "thm:margin-localization",
+      "kind": "theorem",
+      "statement": "Under ass:margin and ass:zero-effect there is C=C(C_m,u_0,alpha) such that for every pi in Pi, P_X(D_pi) <= C R_P(pi)^(alpha/(1+alpha)).",
+      "depends_on": [
+        "thm:welfare-identity",
+        "ass:margin",
+        "ass:zero-effect",
+        "def:disagreement"
+      ],
+      "route": "Corner R_P(pi)=0: then D_pi has P_X-measure 0 (the disagreement contributes zero |tau|-weighted mass via thm:welfare-identity), so the bound P_X(D_pi)<=C R_P(pi)^{alpha/(1+alpha)} holds trivially (both sides 0 when P_X{tau=0 disagreement}=0 by ass:zero-effect); state this case explicitly.",
+      "status": "proved",
+      "justification": "Tsybakov margin converts regret into disagreement mass at the fast exponent alpha/(1+alpha); supplies the variance localization for the achievability empirical process.",
+      "consumer": "oeq:feasible-upper",
+      "proof_tex": "Let \\(D_\\pi=\\{x:\\pi(x)\\ne\\pi_\\star(x)\\}\\). By ass:zero-effect, \\(P_X(D_\\pi\\cap\\{\\tau_P=0\\})=0\\): either the zero-effect set has zero \\(P_X\\)-mass, or every policy in \\(\\Pi\\) agrees with \\(\\pi_\\star\\) there. If \\(R_P(\\pi)=0\\), thm:welfare-identity gives\n\\[\n\\int_{D_\\pi}|\\tau_P(x)|\\,dP_X(x)=0.\n\\]\nSince the integrand is nonnegative and the zero-effect part of \\(D_\\pi\\) has zero mass, \\(P_X(D_\\pi)=0\\), and the desired bound is trivial.\n\nAssume now \\(R=R_P(\\pi)>0\\). For any \\(t\\in(0,u_0]\\),\n\\[\nP_X(D_\\pi)\\le P_X(D_\\pi\\cap\\{0<|\\tau_P|\\le t\\})+P_X(D_\\pi\\cap\\{|\\tau_P|>t\\}).\n\\]\nBy ass:margin the first term is at most \\(C_m t^\\alpha\\). By thm:welfare-identity, on \\(D_\\pi\\cap\\{|\\tau_P|>t\\}\\) the regret integrand is at least \\(t\\), so the second term is at most \\(R/t\\). Hence\n\\[\nP_X(D_\\pi)\\le C_m t^\\alpha+R/t,\\qquad 0<t\\le u_0. \\tag{1}\n\\]\nIf \\(0<R\\le C_m u_0^{1+\\alpha}\\), take \\(t=(R/C_m)^{1/(1+\\alpha)}\\le u_0\\) in (1). Then\n\\[\nP_X(D_\\pi)\\le 2C_m^{1/(1+\\alpha)}R^{\\alpha/(1+\\alpha)}.\n\\]\nIf \\(R>C_m u_0^{1+\\alpha}\\), then\n\\[\nP_X(D_\\pi)\\le 1\\le (C_m u_0^{1+\\alpha})^{-\\alpha/(1+\\alpha)}R^{\\alpha/(1+\\alpha)}\n\\]\nwhen \\(\\alpha>0\\); for \\(\\alpha=0\\) the bound is simply \\(P_X(D_\\pi)\\le1\\). Combining the cases gives\n\\[\nP_X(D_\\pi)\\le C(C_m,u_0,\\alpha)R_P(\\pi)^{\\alpha/(1+\\alpha)},\n\\]\nwith the zero-regret case handled separately when \\(\\alpha=0\\)."
+    },
+    {
+      "id": "prop:overlap-envelope",
+      "kind": "proposition",
+      "statement": "For alpha >= 0, gamma > 0, h in (0,1), beta >= 0, at the tight window v=h^beta, u=h^(beta/gamma): u^alpha v^(1/gamma) = h^((alpha+1)beta/gamma), and u^alpha v^(1/gamma) >= h^alpha iff beta <= alpha gamma/(alpha+1), with equality at beta = beta_ag. Hence a block of mass ~ h^alpha, contrast ~ h, propensity ~ h^beta meets the ass:overlap-decay envelope iff beta <= beta_ag, and beta_ag is the least informative admissible weak-arm exponent.",
+      "depends_on": [
+        "ass:overlap-decay",
+        "def:exponents"
+      ],
+      "status": "proved",
+      "justification": "Characterizes which weak-arm propensity layer the overlap-decay envelope admits; pins the maximal (least informative) admissible exponent beta_ag that the converse construction uses.",
+      "consumer": "lem:witness-membership",
+      "proof_tex": "For \\(\\gamma>0\\), put \\(v=h^\\beta\\) and \\(u=h^{\\beta/\\gamma}\\). Then\n\\[\nu^\\alpha v^{1/\\gamma}=(h^{\\beta/\\gamma})^\\alpha(h^\\beta)^{1/\\gamma}\n=h^{(\\alpha+1)\\beta/\\gamma}.\n\\]\nBecause \\(0<h<1\\), \\(h^a\\ge h^b\\) holds exactly when \\(a\\le b\\). Therefore\n\\[\nu^\\alpha v^{1/\\gamma}\\ge h^\\alpha\n\\quad\\Longleftrightarrow\\quad\n\\frac{(\\alpha+1)\\beta}{\\gamma}\\le\\alpha\n\\quad\\Longleftrightarrow\\quad\n\\beta\\le\\frac{\\alpha\\gamma}{\\alpha+1}=\\beta_{\\alpha,\\gamma}.\n\\]\nEquality holds at \\(\\beta=\\beta_{\\alpha,\\gamma}\\), by def:exponents.\n\nTo connect the algebra to the envelope, consider a block with contrast of order \\(h\\), propensity of order \\(h^\\beta\\), and mass of order \\(h^\\alpha\\). The most stringent overlap-decay check that still includes the block is the smallest \\((u,v)\\) satisfying \\(u\\ge h\\), \\(v\\ge h^\\beta\\), and \\(v\\le c_o u^\\gamma\\). Up to the fixed constant \\(c_o\\), this is the tight window \\(v=h^\\beta\\), \\(u=h^{\\beta/\\gamma}\\) whenever \\(\\beta\\le\\gamma\\), and \\(\\beta_{\\alpha,\\gamma}\\le\\gamma\\). The envelope in ass:overlap-decay allows mass of order \\(u^\\alpha v^{1/\\gamma}\\). Thus it can cover a mass of order \\(h^\\alpha\\) exactly for \\(\\beta\\le\\beta_{\\alpha,\\gamma}\\), with the boundary case giving equality in the exponent. Larger \\(\\beta\\) means a smaller weak-arm propensity and hence less information; consequently \\(\\beta_{\\alpha,\\gamma}\\) is the least-informative admissible weak-arm exponent. When \\(\\beta=0\\), the same exponent calculation is read with a fixed propensity level rather than a shrinking one."
+    },
+    {
+      "id": "lem:witness-membership",
+      "kind": "lemma",
+      "statement": "For all large n the corrected witness laws P_{n,+}, P_{n,-} satisfy ass:iid, ass:consistency, ass:unconfoundedness, ass:bounded-outcome, ass:positivity, ass:margin, ass:zero-effect, and ass:overlap-decay. If, in addition, the two explicit witness-optimal policies x -> 1 and x -> 1{x notin B_n} belong to Pi, then P_{n,+}, P_{n,-} lie in def:law-class P_class(alpha,gamma). (Normalization: the margin window satisfies u_0<2, so an off-block contrast tau_0 in (u_0, 2) exists under bounded outcomes |Y|<=1.)",
+      "depends_on": [
+        "def:two-point-witness",
+        "def:law-class",
+        "prop:overlap-envelope",
+        "ass:overlap-decay",
+        "ass:margin",
+        "ass:margin-window",
+        "ass:bounded-outcome",
+        "ass:zero-effect",
+        "ass:policy-class",
+        "ass:optimal-in-class"
+      ],
+      "route": "Verify each member-property of P_class for the explicit construction. Membership in the overlap-decay envelope is the tight-window equality u^alpha v^(1/gamma)=h^alpha at beta=beta_ag (prop:overlap-envelope); margin tail holds because |tau| in {h_n, tau_0} with the h_n level carrying mass <= C_B h_n^alpha on B_n.",
+      "status": "proved",
+      "justification": "Replaces the assumed existence of the converse construction (old ass:primitive-cube): the witnesses are CONSTRUCTED and their class membership is DERIVED, not assumed.",
+      "consumer": "thm:minimax-lower",
+      "proof_tex": "Use the corrected witness law in the proposed correction to def:two-point-witness. Thus \\(X\\sim\\mathrm{Unif}[0,1]\\), \\(B_n=[0,c_B h_n^\\alpha]\\), \\(m_n=P_X(B_n)=c_B h_n^\\alpha\\), the propensity is \\(q_n\\in(0,1/2]\\) on \\(B_n\\) and \\(1/2\\) on \\(B_n^c\\), and the active-block contrast is \\(\\tau_{P_{n,\\sigma}}=\\sigma h_n\\). Off the block the common contrast is \\(\\tau_0\\in(u_0,2)\\), which exists by ass:margin-window.\n\nSampling is i.i.d. by construction. Consistency and unconfoundedness are obtained by first drawing potential outcomes from their conditional laws given \\(X\\), then drawing \\(A\\) from the displayed propensity independently of the potential outcomes given \\(X\\), and finally setting \\(Y=AY(1)+(1-A)Y(0)\\). The outcome support is contained in \\([-1,1]\\), so ass:bounded-outcome holds. Positivity holds because \\(0<q_n\\le1/2\\) and the off-block propensity is \\(1/2\\). The contrast is never zero for all sufficiently large \\(n\\), so ass:zero-effect holds.\n\nFor the margin condition, fix \\(0<u\\le u_0\\). Since the off-block contrast is \\(\\tau_0>u_0\\), the event \\(0<|\\tau|\\le u\\) can occur only on \\(B_n\\). If \\(u<h_n\\), it is empty. If \\(h_n\\le u\\le u_0\\), its mass is \\(m_n=c_B h_n^\\alpha\\le c_B u^\\alpha\\). Choosing \\(c_B\\le C_m\\) gives ass:margin.\n\nIt remains to check ass:overlap-decay. For \\(\\gamma=0\\), the convention is \\(v^{1/\\gamma}=1\\). If \\(v<q_n\\), the event \\(\\{p_P\\le v,0<|\\tau|\\le u\\}\\) is empty on the active block; if \\(v\\ge q_n\\) and \\(u\\ge h_n\\), its mass is \\(m_n=c_B h_n^\\alpha\\le c_B u^\\alpha\\), so the envelope holds after taking \\(c_B\\le C_o\\). For \\(\\gamma>0\\), set \\(\\beta=\\beta_{\\alpha,\\gamma}\\) and \\(q_n\\asymp h_n^\\beta\\), with a fixed positive clip when \\(\\beta=0\\). Again the event is empty unless \\(u\\ge h_n\\) and \\(v\\ge q_n\\). Under the envelope's side condition \\(v\\le c_o u^\\gamma\\), these inequalities imply\n\\[\nu^\\alpha v^{1/\\gamma}\\ge c_o^{-\\alpha/\\gamma}v^{(\\alpha+1)/\\gamma}\n\\ge C q_n^{(\\alpha+1)/\\gamma}\n\\asymp h_n^\\alpha,\n\\]\nwhere the last equality is prop:overlap-envelope at \\(\\beta=\\beta_{\\alpha,\\gamma}\\). Hence \\(m_n=c_Bh_n^\\alpha\\le C_o u^\\alpha v^{1/\\gamma}\\) for all large \\(n\\) after choosing \\(c_B\\) small enough relative to \\(C_o,c_o,\\alpha,\\gamma\\). Thus ass:overlap-decay holds.\n\nThe optimal policy under \\(P_{n,+}\\) is \\(x\\mapsto1\\); under \\(P_{n,-}\\) it is \\(x\\mapsto1\\{x\\notin B_n\\}\\). If the fixed policy class \\(\\Pi\\) satisfies ass:policy-class and contains these two policies, then ass:optimal-in-class holds for the two witness laws. Combining the verified member properties with def:law-class gives \\(P_{n,+},P_{n,-}\\in\\mathcal P_{\\alpha,\\gamma}\\) for all sufficiently large \\(n\\)."
+    },
+    {
+      "id": "lem:two-point-divergence",
+      "kind": "lemma",
+      "statement": "For the def:two-point-witness laws, the per-observation chi-square is chi^2(P_{n,+} || P_{n,-}) <= C m_n q_n h_n^2 with m_n=P_X(B_n)~h_n^alpha and q_n~h_n^{beta_ag}, hence ~ h_n^{2+alpha+beta_ag}; for h_n=n^{-1/(2+alpha+beta_ag)} the n-fold divergence is bounded, chi^2(P_{n,+}^{⊗n} || P_{n,-}^{⊗n}) <= C (equivalently 1+chi^2(P^{⊗n}) = (1+O(h_n^{2+alpha+beta_ag}))^n <= e^{C}).",
+      "depends_on": [
+        "def:two-point-witness",
+        "def:exponents"
+      ],
+      "route": "The two laws differ only on the treated active cell {X in B_n, A=1} of mass m_n q_n, where the outcome Bernoulli means are (1 ± h_n)/2; the two-point Bernoulli chi-square is ~ h_n^2 (finite_one_add_chiSqDiv). Restrict to the charged cell and tensorize (one_add_chiSqDiv_pi_iid). Balance n h_n^(2+alpha+beta_ag) ~ 1.",
+      "status": "proved",
+      "justification": "The information-cost half of the Le Cam two-point bound, derived from the explicit construction.",
+      "consumer": "thm:minimax-lower",
+      "proof_tex": "The two witness laws have the same covariate marginal, the same propensity, and the same conditional outcome law except on the active treated cell \\(B_n\\times\\{A=1\\}\\). This cell has probability \\(m_nq_n\\) under both laws. Conditional on the cell, the outcome is Rademacher with success probabilities \\((1+h_n)/2\\) under \\(P_{n,+}\\) and \\((1-h_n)/2\\) under \\(P_{n,-}\\). For Bernoulli laws with probabilities \\(p=(1+h)/2\\) and \\(r=(1-h)/2\\),\n\\[\n\\chi^2(\\mathrm{Bern}(p)\\|\\mathrm{Bern}(r))\n=(p-r)^2\\left(\\frac1r+\\frac1{1-r}\\right)\n=\\frac{4h^2}{1-h^2}\\le 8h^2\n\\]\nfor all sufficiently small \\(h\\). Since the likelihood ratio is one off the active treated cell,\n\\[\n\\chi^2(P_{n,+}\\|P_{n,-})\\le C m_n q_n h_n^2.\n\\]\nBy construction \\(m_n\\asymp h_n^\\alpha\\) and \\(q_n\\asymp h_n^{\\beta_{\\alpha,\\gamma}}\\), where \\(q_n\\) is fixed when \\(\\beta_{\\alpha,\\gamma}=0\\). Thus\n\\[\n\\chi^2(P_{n,+}\\|P_{n,-})\\le C h_n^{2+\\alpha+\\beta_{\\alpha,\\gamma}}.\n\\]\nFor product measures, \\(1+\\chi^2(P^{\\otimes n}\\|Q^{\\otimes n})=(1+\\chi^2(P\\|Q))^n\\). With \\(h_n=n^{-1/(2+\\alpha+\\beta_{\\alpha,\\gamma})}\\),\n\\[\nn h_n^{2+\\alpha+\\beta_{\\alpha,\\gamma}}=1,\n\\]\nand therefore\n\\[\n1+\\chi^2(P_{n,+}^{\\otimes n}\\|P_{n,-}^{\\otimes n})\n\\le (1+C/n)^n\\le e^C.\n\\]\nEquivalently, the \\(n\\)-fold chi-square divergence is bounded by a finite constant independent of \\(n\\)."
+    },
+    {
+      "id": "lem:regret-separation",
+      "kind": "lemma",
+      "statement": "For the def:two-point-witness laws, inf_{pi in Pi} max_{sigma in {+,-}} R_{P_{n,sigma}}(pi) >= c h_n^(1+alpha): the optimal policies are opposite on B_n, so any pi misclassifies B_n under at least one law and pays regret >= (1/2) P_X(B_n) h_n ~ h_n^(1+alpha).",
+      "depends_on": [
+        "def:two-point-witness",
+        "thm:welfare-identity"
+      ],
+      "route": "By thm:welfare-identity, regret on B_n equals |tau| times disagreement mass. Since tau_{P_{n,+}}=+h_n and tau_{P_{n,-}}=-h_n on B_n, pi_star flips sign across the two laws on B_n; any fixed pi disagrees with one of them on all of B_n, giving regret >= h_n P_X(B_n)/... ~ h_n^(1+alpha).",
+      "status": "proved",
+      "justification": "The separation half of the Le Cam two-point bound, derived from the construction.",
+      "consumer": "thm:minimax-lower",
+      "proof_tex": "On \\(B_n\\), the corrected witness has \\(\\tau_{P_{n,+}}=h_n\\) and \\(\\tau_{P_{n,-}}=-h_n\\). Hence \\(\\pi_{\\star,+}=1\\) on \\(B_n\\), while \\(\\pi_{\\star,-}=0\\) on \\(B_n\\). For any deterministic \\(\\pi\\), at each \\(x\\in B_n\\) exactly one of the two indicators \\(1\\{\\pi(x)\\ne\\pi_{\\star,+}(x)\\}\\) and \\(1\\{\\pi(x)\\ne\\pi_{\\star,-}(x)\\}\\) equals one. By thm:welfare-identity,\n\\[\nR_{P_{n,+}}(\\pi)+R_{P_{n,-}}(\\pi)\n\\ge h_n\\int_{B_n}\\{1\\{\\pi(x)\\ne1\\}+1\\{\\pi(x)\\ne0\\}\\}\\,dP_X(x)\n=h_nP_X(B_n).\n\\]\nTherefore\n\\[\n\\max_{\\sigma\\in\\{+,-\\}}R_{P_{n,\\sigma}}(\\pi)\n\\ge \\frac12 h_nP_X(B_n)\n=\\frac{c_B}{2}h_n^{1+\\alpha}.\n\\]\nTaking the infimum over \\(\\pi\\in\\Pi\\) gives the claimed separation."
+    },
+    {
+      "id": "thm:minimax-lower",
+      "kind": "theorem",
+      "statement": "Assume the two explicit witness-optimal policies of the corrected def:two-point-witness, namely x -> 1 and x -> 1{x notin B_n}, belong to Pi for all large n. Then M_n(alpha,gamma) = inf_{pi_hat} sup_{P in P_class} E_P R_P(pi_hat) >= c n^{-r_star(alpha,gamma)} for all large n, with c > 0 independent of n.",
+      "depends_on": [
+        "lem:witness-membership",
+        "lem:two-point-divergence",
+        "lem:regret-separation",
+        "def:minimax-regret",
+        "def:exponents",
+        "ass:margin-window",
+        "lem:le-cam-two-point-chisq"
+      ],
+      "route": "Le Cam two-point reduction: the two in-class witnesses (lem:witness-membership) are statistically near-indistinguishable (bounded n-fold divergence, lem:two-point-divergence) yet force opposite labels with regret separation ~ h_n^(1+alpha) (lem:regret-separation). two_point_lower_bound_of_chiSqDiv_le converts the bounded divergence into a constant testing-error floor, yielding M_n >= c h_n^(1+alpha) = c n^{-r_star}.",
+      "status": "proved",
+      "justification": "The novel sharp converse: the margin/one-sided-overlap minimax regret floor, with the least-favorable family CONSTRUCTED from primitives (no assumed cube).",
+      "gap": "AtheyWager2021 give the n^{-1/2} efficient rate under strict overlap; KitagawaTetenov2018 the VC achievability; Audibert-Tsybakov2007 the margin converse without overlap decay. None give the coupled margin x one-sided-overlap-decay regret floor r_*(alpha,gamma).",
+      "consumer": "thm:matched-corollary",
+      "proof_tex": "Let \\(P_+=P_{n,+}\\), \\(P_-=P_{n,-}\\), and let \\(\\widehat\\pi\\) be any measurable \\(\\Pi\\)-valued estimator. By lem:witness-membership, both laws belong to \\(\\mathcal P_{\\alpha,\\gamma}\\) for all large \\(n\\). Thus\n\\[\n\\sup_{P\\in\\mathcal P_{\\alpha,\\gamma}}E_PR_P(\\widehat\\pi)\n\\ge \\max\\{E_{P_+}R_{P_+}(\\widehat\\pi),E_{P_-}R_{P_-}(\\widehat\\pi)\\}.\n\\]\nFor each \\(x\\in B_n\\), the decision \\(\\widehat\\pi(x)\\) is a test between \\(P_+^{\\otimes n}\\) and \\(P_-^{\\otimes n}\\): choosing label \\(1\\) is correct under \\(P_+\\) and choosing label \\(0\\) is correct under \\(P_-\\). Therefore\n\\[\nE_{P_+}R_{P_+}(\\widehat\\pi)+E_{P_-}R_{P_-}(\\widehat\\pi)\n\\ge h_n\\int_{B_n}\\{P_+^{\\otimes n}(\\widehat\\pi(x)=0)+P_-^{\\otimes n}(\\widehat\\pi(x)=1)\\}\\,dP_X(x).\n\\]\nBy lem:le-cam-two-point-chisq and lem:two-point-divergence, the testing-error term in braces is bounded below by a positive constant \\(c_0\\) independent of \\(n\\). Hence\n\\[\n\\max_{\\sigma\\in\\{+,-\\}}E_{P_\\sigma}R_{P_\\sigma}(\\widehat\\pi)\n\\ge \\frac12 c_0 h_nP_X(B_n)\n\\ge c h_n^{1+\\alpha}.\n\\]\nTaking the infimum over all estimators in def:minimax-regret yields\n\\[\nM_n(\\alpha,\\gamma)\\ge c h_n^{1+\\alpha}.\n\\]\nFinally, by def:exponents, \\(h_n=n^{-1/(2+\\alpha+\\beta_{\\alpha,\\gamma})}\\), so\n\\[\nh_n^{1+\\alpha}=n^{-(1+\\alpha)/(2+\\alpha+\\beta_{\\alpha,\\gamma})}=n^{-r_\\star(\\alpha,\\gamma)}.\n\\]\nThis proves the minimax lower bound."
+    },
+    {
+      "id": "oeq:feasible-upper",
+      "kind": "openendedquestion",
+      "statement": "CONSTRUCT-AND-DETERMINE. Assume gamma<=alpha+1, ass:marginal-overlap, ass:nuisance-rate, ass:vc-localized-envelope, and at gamma=0 also ass:strict-overlap-endpoint. For the plain cross-fit clipped-AIPW ERM of def:feasible-erm with clip q chosen by the analysis, DERIVE (do NOT pre-specify) the best worst-case welfare-regret exponent r_feas with sup_{P in P_class(alpha,gamma)} E_P R_P(pi_hat_n) <= C n^{-r_feas} (log n)^p, by balancing the localized variance against the estimated-nuisance CLIP BIAS over q. State the clip q and the resulting r_feas in closed form, confirm r_feas<=r_star, and reduce at gamma=0.",
+      "depends_on": [
+        "def:feasible-erm",
+        "def:clipped-aipw-score",
+        "ass:overlap-decay",
+        "ass:marginal-overlap",
+        "ass:nuisance-rate",
+        "ass:margin",
+        "ass:vc-localized-envelope",
+        "thm:margin-localization",
+        "lem:clip-bias",
+        "def:feasible-rate",
+        "def:law-class",
+        "ass:strict-overlap-endpoint",
+        "ass:bounded-crossfit-nuisances",
+        "ass:polynomial-nuisance-exponents",
+        "ass:bounded-outcome",
+        "lem:clip-balance-exponent"
+      ],
+      "route": "Use lem:clip-bias's EXACT identity (no assumed cancellation). Bound the policy-weighted drift: |E[(pi-pi_star) b_q]| <= ||ebar_q-e_P||_2 ||Delta/ebar_q||_2. Split ||ebar_q-e_P||_2 <= ||ehat-e||_2 (=r_e_n, off-clip DR product) + ||ehat-ebar_q||_2 (clip displacement, supported on {p<=q}, <= C q * P{p<=q}^{1/2} <= C q^{1+1/(2gamma)} by ass:marginal-overlap); and ||Delta/ebar_q||_2 <= r_mu_n/q (clip floor). So clip bias B <= r_mu_n r_e_n / q + r_mu_n q^{1/(2gamma)}. Variance A = (q^{-1} rho^{alpha/(1+alpha)}/n)^{1/2} (ass:vc-localized-envelope + thm:margin-localization). Self-bound R <= C(A+B)^{(2+2alpha)/(2+alpha)}; MINIMIZE over q; DERIVE the closed-form r_feas(alpha,gamma,r_mu_n,r_e_n) (your output, proof must match) and reduce at gamma=0. The 1/q-amplified DR product is the weak-overlap (Dorn) effect; keep it, do not cancel it.",
+      "status": "proved",
+      "justification": "Construct-target: codex DERIVES the feasible weak-overlap exponent from the variance/clip-bias tradeoff (not asserted) -> proof matches statement; upper half of the bracket.",
+      "consumer": "thm:rate-characterization",
+      "proof_tex": "We solve the construction by choosing the clip through the bias--variance balance in def:feasible-rate, corrected below. Work conditionally on the training folds used to form the cross-fitted nuisances, so the evaluation observations are independent of the nuisance estimates. The proposed assumptions ass:bounded-crossfit-nuisances and ass:polynomial-nuisance-exponents are used only for the feasible estimator analysis, not for membership in the model class.\n\nLet \\(e_{0,q}=\\min\\{1-q,\\max\\{q,e_P\\}\\}\\) be the oracle-clipped true propensity, and let \\(\\widehat e_q\\) be the clipped estimated propensity. By the exact identity in lem:clip-bias, with \\(b_q(x)=E_P[\\Gamma_q(O;\\widehat\\eta)\\mid X=x]-\\tau_P(x)\\),\n\\[\n|b_q(x)|\\le |\\widehat e_q(x)-e_P(x)|\\left(\\frac{|\\widehat\\mu_1-\\mu_1|}{q}+\\frac{|\\widehat\\mu_0-\\mu_0|}{q}\\right).\n\\]\nThe clipping map is 1-Lipschitz, so\n\\[\n\\|\\widehat e_q-e_P\\|_2\n\\le \\|\\widehat e_q-e_{0,q}\\|_2+\\|e_{0,q}-e_P\\|_2\n\\le \\|\\widehat e-e_P\\|_2+\\|e_{0,q}-e_P\\|_2.\n\\]\nFor \\(\\gamma>0\\), the oracle clipping displacement is supported on \\(\\{p_P\\le q\\}\\) and is bounded by \\(q\\). Hence ass:marginal-overlap gives\n\\[\n\\|e_{0,q}-e_P\\|_2\\le q\\,P_X(p_P\\le q)^{1/2}\\le Cq^{1+1/(2\\gamma)}.\n\\]\nTogether with ass:nuisance-rate,\n\\[\n\\|b_q\\|_{L_2(P_X)}\\le C\\left(\\frac{r_{\\mu,n}r_{e,n}}{q}+r_{\\mu,n}q^{1/(2\\gamma)}\\right). \\tag{2}\n\\]\nFor \\(\\gamma=0\\), ass:strict-overlap-endpoint lets us choose a fixed \\(q<\\underline p\\). Then \\(e_{0,q}=e_P\\), and (2) reduces to \\(\\|b_q\\|_2\\le C r_{\\mu,n}r_{e,n}\\).\n\nNow compare the ERM \\(\\widehat\\pi_n\\) with \\(\\pi_\\star\\). For any policy \\(\\pi\\), thm:margin-localization implies\n\\[\nP_X(D_\\pi)^{1/2}\\le C R_P(\\pi)^{\\alpha/(2+2\\alpha)}. \\tag{3}\n\\]\nUsing Cauchy--Schwarz and (2), the policy-weighted drift obeys\n\\[\n|P_X[(\\pi-\\pi_\\star)b_q]|\n\\le \\|b_q\\|_2P_X(D_\\pi)^{1/2}\n\\le C B_q R_P(\\pi)^{\\alpha/(2+2\\alpha)},\n\\]\nwhere \\(B_q=r_{\\mu,n}r_{e,n}/q+r_{\\mu,n}q^{1/(2\\gamma)}\\) for \\(\\gamma>0\\), and \\(B_q=r_{\\mu,n}r_{e,n}\\) for \\(\\gamma=0\\).\n\nThe clipped score has envelope of order \\(q^{-1}\\) and conditional variance over a disagreement set of order \\(q^{-1}P_X(D_\\pi)\\); this uses ass:bounded-outcome and ass:bounded-crossfit-nuisances. Applying ass:vc-localized-envelope and (3) gives, up to a logarithmic factor,\n\\[\n\\sup_{R_P(\\pi)\\le\\rho}|(P_n-P)[(\\pi-\\pi_\\star)\\Gamma_q(O;\\widehat\\eta)]|\n\\le C n^{-1/2}q^{-1/2}\\rho^{\\alpha/(2+2\\alpha)}(\\log n)^{p_0}. \\tag{4}\n\\]\nThe ERM inequality \\(\\widehat V_{n,q}(\\widehat\\pi_n)\\ge\\widehat V_{n,q}(\\pi_\\star)\\), together with the two preceding displays, yields the self-bounding inequality\n\\[\nR_P(\\widehat\\pi_n)\n\\le C\\{n^{-1/2}q^{-1/2}(\\log n)^{p_0}+B_q\\}R_P(\\widehat\\pi_n)^{\\alpha/(2+2\\alpha)}.\n\\]\nIf the regret is zero there is nothing to prove. Otherwise divide by the displayed power of the regret. With\n\\[\n\\kappa=\\frac{2(1+\\alpha)}{2+\\alpha},\n\\]\nwe obtain\n\\[\nR_P(\\widehat\\pi_n)\n\\le C\\{n^{-1/2}q^{-1/2}(\\log n)^{p_0}+B_q\\}^{\\kappa}. \\tag{5}\n\\]\nThe same bound holds in expectation after integrating the localized empirical-process event; this only changes the logarithmic power.\n\nFor \\(\\gamma>0\\), choose \\(q=n^{-\\lambda}\\wedge1/4\\). Under ass:polynomial-nuisance-exponents, \\(r_{\\mu,n}=O(n^{-a})\\) and \\(r_{\\mu,n}r_{e,n}=O(n^{-c})\\), with \\(c\\ge1/2\\). Ignoring logarithms, the three terms in braces in (5) have exponents\n\\[\n\\frac12-\\frac\\lambda2,\n\\qquad c-\\lambda,\n\\qquad a+\\frac{\\lambda}{2\\gamma}.\n\\]\nThus the best exponent before applying the margin self-bound is\n\\[\n\\zeta(a,c,\\gamma)=\\sup_{\\lambda\\ge0}\\min\\left\\{\\frac12-\\frac\\lambda2, c-\\lambda, a+\\frac{\\lambda}{2\\gamma}\\right\\}.\n\\]\nBy lem:clip-balance-exponent,\n\\[\n\\zeta(a,c,\\gamma)=\\min\\left\\{\\frac12,\\frac{1+2\\gamma a}{2(1+\\gamma)},\\frac{c+2\\gamma a}{1+2\\gamma}\\right\\},\n\\]\nwith optimizer \\(\\lambda_\\star=\\max\\{0,2\\gamma(\\zeta-a)\\}\\). Choosing \\(q_n=n^{-\\lambda_\\star}\\wedge1/4\\) in (5) gives\n\\[\n\\sup_{P\\in\\mathcal P_{\\alpha,\\gamma}}E_PR_P(\\widehat\\pi_n)\n\\le C n^{-\\kappa\\zeta(a,c,\\gamma)}(\\log n)^p.\n\\]\nThe feasible exponent is the slower of this estimator exponent and the information benchmark,\n\\[\nr_{\\rm feas}(\\alpha,\\gamma,a,c)=\\min\\{r_\\star(\\alpha,\\gamma),\\kappa\\zeta(a,c,\\gamma)\\},\n\\]\nso \\(r_{\\rm feas}\\le r_\\star\\) by definition.\n\nAt \\(\\gamma=0\\), choose a fixed \\(q<\\underline p\\). Then the brace in (5) is \\(O(n^{-1/2}(\\log n)^{p_0})\\), because \\(r_{\\mu,n}r_{e,n}=O(n^{-1/2})\\). Therefore\n\\[\n\\sup_{P\\in\\mathcal P_{\\alpha,0}}E_PR_P(\\widehat\\pi_n)\n\\le C n^{-\\kappa/2}(\\log n)^p\n=Cn^{-(1+\\alpha)/(2+\\alpha)}(\\log n)^p.\n\\]\nSince \\(\\beta_{\\alpha,0}=0\\), this equals \\(n^{-r_\\star(\\alpha,0)}\\), as required."
+    },
+    {
+      "id": "thm:rate-characterization",
+      "kind": "theorem",
+      "statement": "Under ass:margin-window, ass:marginal-overlap, ass:nuisance-rate, the standing feasible-estimator conditions used in oeq:feasible-upper, Pi rich (witness-optimal policies in Pi), and gamma<=alpha+1: c n^{-r_star(alpha,gamma)} <= M_n(alpha,gamma) <= C n^{-r_feas(alpha,gamma)} (log n)^p, with r_star=(1+alpha)/(2+alpha+beta_{alpha,gamma}) and r_feas the derived plain-clipped-AIPW exponent. Moreover r_feas<=r_star, with equality at gamma=0 and more generally whenever kappa zeta(a,c,gamma)>=r_star(alpha,gamma). The strict positive gap occurs precisely in the nuisance-limited weak-overlap branch kappa zeta(a,c,gamma)<r_star(alpha,gamma); feasible tightness is resolved in the equal-exponent branch and remains open in the strict-gap branch (oeq:feasible-tight).",
+      "depends_on": [
+        "thm:minimax-lower",
+        "oeq:feasible-upper",
+        "def:feasible-rate",
+        "def:exponents",
+        "lem:witness-membership",
+        "def:feasible-erm",
+        "ass:strict-overlap-endpoint"
+      ],
+      "status": "proved",
+      "justification": "Headline: first weak-overlap policy-regret rate — sharp converse + loose feasible cross-fit upper (honest two-sided bracket, tight at gamma=0). Improves strict-overlap prior.",
+      "consumer": "bank / paper headline",
+      "proof_tex": "Assume the hypotheses in the statement. The lower bound is exactly thm:minimax-lower: the witness-optimal policies are in \\(\\Pi\\), lem:witness-membership places the two witnesses in \\(\\mathcal P_{\\alpha,\\gamma}\\), and the two-point information and regret-separation lemmas give\n\\[\nM_n(\\alpha,\\gamma)\\ge c n^{-r_\\star(\\alpha,\\gamma)},\n\\qquad\nr_\\star(\\alpha,\\gamma)=\\frac{1+\\alpha}{2+\\alpha+\\beta_{\\alpha,\\gamma}}.\n\\]\nThe upper bound follows by using the explicit estimator from def:feasible-erm with the clip selected in oeq:feasible-upper. For \\(\\gamma>0\\), oeq:feasible-upper and the corrected def:feasible-rate give\n\\[\n\\sup_{P\\in\\mathcal P_{\\alpha,\\gamma}}E_PR_P(\\widehat\\pi_n)\n\\le C n^{-r_{\\rm feas}(\\alpha,\\gamma,a,c)}(\\log n)^p,\n\\]\nwhere\n\\[\nr_{\\rm feas}(\\alpha,\\gamma,a,c)=\\min\\left\\{r_\\star(\\alpha,\\gamma),\\kappa\\zeta(a,c,\\gamma)\\right\\},\n\\quad\n\\kappa=\\frac{2(1+\\alpha)}{2+\\alpha},\n\\]\nand\n\\[\n\\zeta(a,c,\\gamma)=\\min\\left\\{\\frac12,\\frac{1+2\\gamma a}{2(1+\\gamma)},\\frac{c+2\\gamma a}{1+2\\gamma}\\right\\}.\n\\]\nSince \\(M_n\\) is an infimum over all measurable \\(\\Pi\\)-valued estimators, it is bounded above by the risk of this one explicit estimator. Hence\n\\[\nM_n(\\alpha,\\gamma)\\le C n^{-r_{\\rm feas}(\\alpha,\\gamma,a,c)}(\\log n)^p.\n\\]\nFor \\(\\gamma=0\\), ass:strict-overlap-endpoint permits a fixed clip below the positivity floor, and oeq:feasible-upper gives\n\\[\nr_{\\rm feas}(\\alpha,0)=r_\\star(\\alpha,0)=\\frac{1+\\alpha}{2+\\alpha}.\n\\]\nThus the displayed two-sided bracket holds in all cases covered by the statement.\n\nThe phase claims are algebraic consequences of the definition of \\(r_{\\rm feas}\\). By construction \\(r_{\\rm feas}\\le r_\\star\\). Equality holds at \\(\\gamma=0\\), and for \\(\\gamma>0\\) it holds exactly when \\(\\kappa\\zeta(a,c,\\gamma)\\ge r_\\star(\\alpha,\\gamma)\\), because then the minimum defining \\(r_{\\rm feas}\\) is attained at \\(r_\\star\\). If \\(\\kappa\\zeta(a,c,\\gamma)<r_\\star(\\alpha,\\gamma)\\), then the minimum is \\(\\kappa\\zeta(a,c,\\gamma)\\), so the upper exponent is strictly smaller than the information lower-bound exponent; this is precisely the nuisance-limited weak-overlap branch. The equal-exponent branch is tight up to logarithms by the lower and upper bounds already proved. In the strict-gap branch, the bracket is proved but exact feasible tightness is not resolved by the present argument, which is the residual question recorded as oeq:feasible-tight."
+    },
+    {
+      "id": "oeq:feasible-tight",
+      "kind": "openendedquestion",
+      "statement": "OPEN: determine the welfare-regret rate attainable by a genuinely feasible estimator, in particular the cross-fitted clipped-AIPW ERM of def:feasible-erm, under weak overlap. Can any feasible estimator attain the converse exponent r_star(alpha,gamma), or must every feasible procedure be strictly slower because the weak-arm outcome regression must be learned on the clipped region?",
+      "depends_on": [
+        "thm:rate-characterization",
+        "thm:minimax-lower"
+      ],
+      "status": "to-prove",
+      "justification": "Residual tightness question for the weak-overlap bracket (open).",
+      "proof_tex": "If kappa zeta(a,c,gamma)>=r_star(alpha,gamma), including gamma=0, the feasible ERM attains r_star up to logarithms by oeq:feasible-upper and thm:minimax-lower, so tightness is resolved in that subregime. In the strict nuisance-limited subregime, the proved bracket is c n^{-r_star} <= M_n(alpha,gamma) <= C n^{-r_feas}(log n)^p for the explicit feasible ERM, with r_feas<r_star; whether the upper exponent can be improved remains open."
+    },
+    {
+      "id": "lem:clip-bias",
+      "kind": "lemma",
+      "statement": "Exact clipped-score drift identity. For any measurable plug-in nuisance triple \\(\\bar\\eta=(\\bar\\mu_0,\\bar\\mu_1,\\bar e)\\), with \\(\\bar e_q=\\min\\{1-q,\\max\\{q,\\bar e\\}\\}\\) and \\(\\Delta_a=\\bar\\mu_a-\\mu_a\\), the conditional mean drift satisfies\n\\[\nE_P[\\Gamma_q(O;\\bar\\eta)\\mid X=x]-\\tau_P(x)\n=(\\bar e_q(x)-e_P(x))\\left(\\frac{\\Delta_1(x)}{\\bar e_q(x)}+\\frac{\\Delta_0(x)}{1-\\bar e_q(x)}\\right).\n\\]\nHence cancellation holds only where \\(\\bar e_q(x)=e_P(x)\\) or both regression errors vanish; it does not follow merely from \\(p_P(x)>q\\). Under the frozen assumptions alone, no additive clipped-region bound of the form asserted in the current lemma is derivable.",
+      "depends_on": [
+        "def:clipped-aipw-score",
+        "ass:positivity"
+      ],
+      "route": "Pure algebra from def:clipped-aipw-score: take E[.|X=a-arm] using E[Y|A=a,X]=mu_a; the IPW weights e/ebar_q and (1-e)/(1-ebar_q) give the displayed identity (DR cancellation needs ebar_q=e_P, NOT p>q). Then Cauchy-Schwarz for the policy-weighted bound. This is an EQUALITY + one inequality; prove it directly, do not assert cancellation.",
+      "status": "proved",
+      "justification": "Estimated-nuisance clip-bias bound — the piece codex could not derive from a high-level route; explicit sub-lemma for oeq:feasible-upper.",
+      "consumer": "oeq:feasible-upper",
+      "proof_tex": "Fix a measurable plug-in nuisance triple \\(\\bar\\eta=(\\bar\\mu_0,\\bar\\mu_1,\\bar e)\\). Let \\(\\bar e_q(x)=\\min\\{1-q,\\max\\{q,\\bar e(x)\\}\\}\\) and \\(\\Delta_a(x)=\\bar\\mu_a(x)-\\mu_a(x)\\). Conditioning on \\(X=x\\), write \\(e=e_P(x)\\), \\(\\bar e_q=\\bar e_q(x)\\), \\(\\mu_a=\\mu_a(x)\\), and \\(\\bar\\mu_a=\\bar\\mu_a(x)\\). By def:clipped-aipw-score,\n\\[\nE_P[\\Gamma_q(O;\\bar\\eta)\\mid X=x]\n=\\bar\\mu_1-\\bar\\mu_0+\\frac{e}{\\bar e_q}(\\mu_1-\\bar\\mu_1)-\\frac{1-e}{1-\\bar e_q}(\\mu_0-\\bar\\mu_0).\n\\]\nSubtracting \\(\\tau_P(x)=\\mu_1-\\mu_0\\) gives\n\\[\n\\begin{aligned}\nE_P[\\Gamma_q(O;\\bar\\eta)\\mid X=x]-\\tau_P(x)\n&=\\Delta_1\\left(1-\\frac{e}{\\bar e_q}\\right)-\\Delta_0\\left(1-\\frac{1-e}{1-\\bar e_q}\\right)\\\\\n&=(\\bar e_q-e)\\left(\\frac{\\Delta_1}{\\bar e_q}+\\frac{\\Delta_0}{1-\\bar e_q}\\right).\n\\end{aligned}\n\\]\nThis proves the displayed identity.\n\nThe identity also proves the stated non-cancellation claim. If \\(\\bar e_q=e_P\\), the prefactor is zero; if \\(\\Delta_0=\\Delta_1=0\\), the bracket is zero. But \\(p_P(x)>q\\) only says that the true propensity is not at the clipping boundary. It does not imply \\(\\bar e_q(x)=e_P(x)\\). For example, at a one-point covariate law with \\(e_P=1/2\\), \\(q<1/4\\), \\(\\bar e=1/2+\\varepsilon\\), and \\(\\Delta_1\\ne0\\), the true clipped region is empty but the drift equals \\(\\varepsilon\\Delta_1/(1/2+\\varepsilon)\\ne0\\). Hence no bound supported only on \\(\\{p_P\\le q\\}\\) follows from the frozen assumptions alone."
+    },
+    {
+      "id": "lem:le-cam-two-point-chisq",
+      "kind": "lemma",
+      "statement": "Let P0 and P1 be two laws and let an estimator induce, for each x in a measurable set B, a binary test of P0^{otimes n} against P1^{otimes n}. If chi^2(P1^{otimes n}||P0^{otimes n}) <= K < infinity, then every such test has sum of type-I and type-II errors at least c_K>0. Consequently, if the loss separation on B is delta per unit mass, the two-point minimax risk is at least a constant multiple of delta P_X(B).",
+      "depends_on": [],
+      "status": "proved",
+      "proof_tex": "This is the standard Le Cam two-point testing lower bound. A precise source is Tsybakov, Introduction to Nonparametric Estimation, 2009, Theorem 2.2 together with the variational representation of total variation and the chi-square bound on total variation: TV(P,Q) <= {chi^2(P||Q)/(1+chi^2(P||Q))}^{1/2}. These results imply inf_phi {P0(phi=1)+P1(phi=0)} >= 1-TV(P0,P1) >= 1-{K/(1+K)}^{1/2}=:c_K>0. Applying this pointwise to the policy label on each x in B and integrating over B gives the stated loss lower bound."
+    },
+    {
+      "id": "lem:clip-balance-exponent",
+      "kind": "lemma",
+      "statement": "For gamma>0, a>=0, and c>=1/2, define zeta(a,c,gamma)=sup_{lambda>=0} min{1/2-lambda/2, c-lambda, a+lambda/(2gamma)}. Then zeta(a,c,gamma)=min{1/2, (1+2 gamma a)/(2(1+gamma)), (c+2 gamma a)/(1+2 gamma)}. One optimizer is lambda_star=max{0,2 gamma (zeta-a)}; equivalently lambda_star=0 if zeta=1/2, lambda_star=gamma(1-2a)/(1+gamma) on the first balance branch, and lambda_star=2 gamma(c-a)/(1+2 gamma) on the second balance branch.",
+      "depends_on": [],
+      "status": "proved",
+      "proof_tex": "Let \\(z\\) be a candidate value. There exists \\(\\lambda\\ge0\\) such that\n\\[\nz\\le\\frac12-\\frac\\lambda2,\n\\qquad z\\le c-\\lambda,\n\\qquad z\\le a+\\frac{\\lambda}{2\\gamma}\n\\]\nif and only if\n\\[\n\\max\\{0,2\\gamma(z-a)\\}\\le \\min\\{1-2z,c-z\\}. \\tag{1}\n\\]\nBecause \\(c\\ge1/2\\), any feasible \\(z\\) must have \\(z\\le1/2\\). If \\(z>a\\), condition (1) implies\n\\[\n2\\gamma(z-a)\\le1-2z,\n\\qquad\n2\\gamma(z-a)\\le c-z,\n\\]\nthat is\n\\[\nz\\le\\frac{1+2\\gamma a}{2(1+\\gamma)},\n\\qquad\nz\\le\\frac{c+2\\gamma a}{1+2\\gamma}.\n\\]\nIf \\(z\\le a\\), condition (1) is satisfied at \\(\\lambda=0\\) whenever \\(z\\le1/2\\), which is already covered by the bound \\(z\\le1/2\\). Hence every feasible \\(z\\) is bounded above by\n\\[\n\\bar z=\\min\\left\\{\\frac12,\\frac{1+2\\gamma a}{2(1+\\gamma)},\\frac{c+2\\gamma a}{1+2\\gamma}\\right\\}.\n\\]\nConversely, take \\(\\lambda_\\star=\\max\\{0,2\\gamma(\\bar z-a)\\}\\). The three defining inequalities above hold by the construction of \\(\\bar z\\), so the minimum at \\(\\lambda_\\star\\) is at least \\(\\bar z\\). Therefore the supremum equals \\(\\bar z\\), and the displayed branch formulas follow by substituting the active equality."
+    }
+  ],
+  "sampling_model": {
+    "design": "i.i.d. offline (X,A,Y) from P; binary A; bounded Y in [-1,1]; n observations."
+  },
+  "estimand_functional": "R_P(pi) = V_P(pi_star) - V_P(pi), with V_P(pi)=E_P[pi(X) tau_P(X)]; target = minimax regret rate.",
+  "target_estimand": "Minimax welfare-regret rate M_n(alpha,gamma) = inf_{pi_hat} sup_{P in P_class(alpha,gamma)} E_P R_P(pi_hat), with R_P(pi) = V_P(pi_star) - V_P(pi).",
+  "bibliography": [
+    {
+      "key": "AtheyWager2021PolicyLearning",
+      "citation": "Athey, S., and Wager, S. (2021). Policy learning with observational data. Econometrica 89(1), 133-161."
+    },
+    {
+      "key": "KitagawaTetenov2018WhoShouldBeTreated",
+      "citation": "Kitagawa, T., and Tetenov, A. (2018). Who should be treated? Empirical welfare maximization methods for treatment choice. Econometrica 86(2), 591-616."
+    },
+    {
+      "key": "Tsybakov2004OptimalAggregation",
+      "citation": "Tsybakov, A. B. (2004). Optimal aggregation of classifiers in statistical learning. Annals of Statistics 32(1), 135-166."
+    },
+    {
+      "key": "AudibertTsybakov2007PlugIn",
+      "citation": "Audibert, J.-Y., and Tsybakov, A. B. (2007). Fast learning rates for plug-in classifiers. Annals of Statistics 35(2), 608-633."
+    },
+    {
+      "key": "vanderVaartWellner1996WeakConvergence",
+      "citation": "van der Vaart, A. W., and Wellner, J. A. (1996). Weak Convergence and Empirical Processes. Springer."
+    },
+    {
+      "key": "BartlettBousquetMendelson2005Local",
+      "citation": "Bartlett, P. L., Bousquet, O., and Mendelson, S. (2005). Local Rademacher complexities. Annals of Statistics 33(4), 1497-1537."
+    },
+    {
+      "key": "ImbensRubin2015",
+      "citation": "Imbens, G. W., and Rubin, D. B. (2015). Causal Inference for Statistics, Social, and Biomedical Sciences. Cambridge University Press."
+    },
+    {
+      "key": "KhanTamer2010IrregularIdentification",
+      "citation": "Khan, S., and Tamer, E. (2010). Irregular identification, support conditions, and inverse weight estimation. Econometrica 78(6), 2021-2042."
+    },
+    {
+      "key": "LuedtkeChambaz2017FasterRates",
+      "citation": "Luedtke, A., and Chambaz, A. (2017). Faster rates for policy learning. arXiv:1704.06431."
+    },
+    {
+      "key": "ChernozhukovEtAl2018DML",
+      "citation": "Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C., Newey, W., and Robins, J. (2018). Double/debiased machine learning for treatment and structural parameters. The Econometrics Journal 21(1), C1-C68."
+    }
+  ],
+  "tldr": "Sharp minimax welfare-regret rate for offline policy learning under a coupled Tsybakov-margin (alpha) and one-sided polynomial overlap-decay (gamma) class. The converse n^{-r_*(alpha,gamma)}, r_*=(1+alpha)/(2+alpha+beta_{alpha,gamma}), is proven by an EXPLICIT two-point construction (no assumed least-favorable family); a feasible clipped-AIPW ERM matches it (up to the kappa_mu=1/2 phase) under a primitive known-logging design and the standard VC-localized envelope.",
+  "project_justification": {
+    "gap": "Offline policy-learning minimax regret is characterized under strict overlap (n^{-1/2}, Athey-Wager) and under margin alone (Audibert-Tsybakov), but not under coupled margin and one-sided polynomial overlap decay, where the propensity vanishes near the decision boundary.",
+    "niche": "A single exponent r_*(alpha,gamma) governing the regret floor when margin mass and overlap decay are tied through one envelope; the weak-overlap obstruction that makes ATE estimation irregular (Khan-Tamer) does NOT bind the margin-localized regret loss.",
+    "fill": "A matched minimax theorem: an explicit two-point converse giving M_n >= c n^{-r_*}, and a feasible clipped-AIPW ERM upper bound n^{-r_feas} matching it iff kappa_mu=1/2, with a strict oracle/feasible separation otherwise."
+  },
+  "related_work": "Athey-Wager (2021) and Kitagawa-Tetenov (2018) establish strict-overlap policy-learning minimax regret and VC achievability; Tsybakov (2004) and Audibert-Tsybakov (2007) the margin-condition converse machinery; Khan-Tamer (2010) the irregular-identification obstruction for ATE under limited overlap (which this paper shows does not transfer to regret); Luedtke-Chambaz (2017) margin-driven faster policy rates.",
+  "honest_scope": "The matched exponent holds at kappa_mu=1/2; for kappa_mu<1/2 only a gap (upper n^{-r_feas}, lower n^{-r_*}) is shown. The upper half is over the primitive known-logging finite-cell design (A5) and cites the standard VC-localized Rademacher/Dudley envelope (ass:vc-localized-envelope) rather than re-deriving chaining. The converse is unconditional and constructive over the full class."
+}

@@ -1,0 +1,704 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_mte\_multi\_iv, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_mte\_multi\_iv} / \texttt{v1}%
+  \\ \large\textit{A pre-saturated face-rank certificate for when multi-IV MST all-split bounds beat coordinate shortcuts}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Partial-identification anchor with locked tuple
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},
+\text{bounding functional})
+\]
+as follows.  \texttt{qid}=\texttt{pid\_mte\_multi\_iv} and
+\texttt{specialization}=\texttt{v1}.  The observable distribution \(P\) is the
+joint law of \((Y,D,Z)\), where \(D\in\{0,1\}\), \(Z\in{\cal Z}\subseteq
+\{0,1\}^K\) with \(K\ge 2\), every \(z\in{\cal Z}\) has positive probability,
+and \(p_z=\Pr_P(D=1\mid Z=z)\) is known from \(P\).  The target parameter is
+\(\theta(q)=q^\transpose\beta\), the Bernstein-basis projection of a
+policy-relevant treatment-effect weight \(q=\int_0^1\omega_{\rm prte}(u)
+B_J(u)\,du\) against an unknown MTE coefficient vector \(\beta\in\R^{J+1}\).
+The identifying restrictions are instrument exogeneity and exclusion,
+latent-index selection \(D_z=\one\{U\le p_z\}\) with \(U\sim{\rm Unif}[0,1]\),
+the Bernstein MTE representation \(m(u)=B_J(u)^\transpose\beta\), and the
+shape restrictions \(L\beta\le r\).  The bounding functional is the saturated
+all-IV-like MST/Han--Yang linear program over all nonzero propensity-score
+contrasts among cells in \({\cal Z}\), compared endpoint-by-endpoint with the
+best retained-coordinate shortcut whose coarsened Wald row is computed from
+the conditional
+selection-probability contrast \(u\mapsto
+\Pr(p_Z\ge u\mid Z_j=1)-\Pr(p_Z\ge u\mid Z_j=0)\).  The proposed
+adequacy diagnostic is the endpoint-specific face-rank residual certificate
+\(\tau_{e,j}\) defined in Section 6 from the tied coordinate-optimal face and
+the saturated all-split moment rows, before solving the saturated endpoint.
+
+\begin{abstract}
+This proposal asks for an endpoint-level adequacy certificate for a common
+multi-instrument shortcut: using the best retained binary coordinate instead
+of the saturated all-IV-like MTE/PRTE bound already permitted by
+\citet{MogstadSantosTorgovitsky2018} and sharpened computationally by
+\citet{HanYang2024}.  The finite-dimensional LP itself is published
+machinery, not the novelty claim.  The novel kernel is the conjectured
+frontier theorem: before solving the saturated endpoint, one can solve only
+the tied coordinate endpoint LPs and then apply a rank/projection test to the
+residual all-split moment rows on their optimal faces.  Strict improvement
+occurs exactly when every tied coordinate-optimal face fails this residual
+moment test, and the resulting endpoint gain is represented by a residual
+face-restricted dual program rather than by a generic restatement of nested LP
+endpoints.  Resolving this would turn MST's split-instrument examples and the
+recent binary-IV LP literature into a checkable diagnostic for when a multi-IV
+design adds policy-relevant information beyond coordinate-wise single-IV
+reporting.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Policy-relevant treatment effects usually require extrapolating away from the
+local population moved by a particular instrument.  When an application has
+several binary instruments, applied researchers often hope that the instruments
+jointly cover more of the latent resistance distribution than any one
+instrument does.  \citet{MogstadSantosTorgovitsky2018} already allow
+IV-like estimands generated from discrete or split instruments, and
+\citet{HanYang2024} give sharp binary-IV computational bounds, but neither
+paper gives an endpoint-level test for when a retained-coordinate shortcut is
+lossless relative to the saturated all-split procedure.
+
+\paragraph{The main finding (proposed).}
+The proposed headline result is Conjecture 1: under the locked latent-index and
+Bernstein-shape convention, the saturated all-IV-like PRTE interval uses the
+published MST/Han--Yang row system, while the adequacy of the best
+retained-coordinate shortcut is decided by a pre-saturated face-rank
+certificate.  For each tied coordinate endpoint, the researcher solves the
+coordinate LP only, records the exposed optimal face, residualizes the
+saturated all-split rows against the coordinate row and active shape rows, and
+checks whether the residual joint moments lie in the projected affine hull of
+that face.  The finite LP and the single-instrument limit are treated as
+benchmark normalizations rather than flagship contributions.
+
+\paragraph{What is new.}
+The closest published paper is \citet{MogstadSantosTorgovitsky2018}, which
+shows how arbitrary IV-like estimands, including estimands generated by
+splitting a discrete instrument, restrict MTE/MTR functions.  Recent multi-IV
+work by \citet{MogstadTorgovitskyWalters2024} shows that multiple instruments
+can be aggregated more informatively under partial monotonicity and mutual
+consistency, while \citet{HanYang2024} gives sharp computational bounds for
+policy-relevant weighted MTE averages with binary instruments.  The novelty
+kernel here is not a new LP and not the claim that splitting can tighten
+bounds; it is the algebraic frontier between two named procedures, the
+retained-coordinate shortcut and the saturated all-IV-like MST/Han--Yang
+system.  The epsilon gap is an if-and-only-if pre-saturated threshold:
+coordinate-wise reporting is endpoint-adequate exactly when at least one tied
+coordinate-optimal face passes a residual all-split rank/projection test,
+where the test uses only the coordinate endpoint solution, the active
+Bernstein-shape face, and the joint propensity-contrast row geometry.  This is
+not the support-function endpoint drop itself; it is a diagnostic that says,
+before solving the saturated endpoint, whether the saturated endpoint can
+possibly equal the best coordinate endpoint.
+
+\paragraph{How it positions in the literature.}
+The anchor cluster is partial identification for IV/MTE policy parameters:
+\citet{HeckmanVytlacil2005} and \citet{Vytlacil2002} supply the latent-index
+MTE framework, \citet{BrinchMogstadWiswall2017} is the close
+discrete-instrument comparator for identifying richer MTE structure from
+finite propensity support, \citet{ManskiPepper2000} supplies the
+shape-restricted partial-ID tradition, and
+\citet{MogstadSantosTorgovitsky2018} gives the IV-like Bernstein LP
+benchmark, including split-instrument comparisons.  The multi-IV frontier is represented by
+\citet{MogstadTorgovitskyWalters2021}, \citet{MogstadTorgovitskyWalters2024},
+\citet{Goff2024}, and \citet{HanYang2024}; this proposal sits at the point
+where their multiple-instrument support logic meets MST-style PRTE
+extrapolation.  The flagship gap relative to
+\citet{MogstadSantosTorgovitsky2018} and \citet{HanYang2024} is
+endpoint-specific: those papers give the procedures whose LP endpoints can be
+computed, while this proposal asks when the lower-dimensional
+coordinate-wise report is already adequate and when the saturated endpoint
+must be reported instead.
+
+\paragraph{Implications for the community.}
+If Conjecture 1 is true, empirical users of the MST framework in
+labor-market and education-return designs with several eligibility, distance,
+or encouragement instruments can report a reproducible diagnostic for each
+endpoint: the face-rank residual certificate showing whether the saturated all-split
+MST/Han--Yang analysis tightens the PRTE interval beyond the best
+coordinate-wise analysis; the residual dual value is then reported only when
+the certificate predicts a gain.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report the saturated all-split PRTE endpoint whenever the
+face-rank residual certificate is positive in the policy-weight direction;
+otherwise the best retained-coordinate interval is an adequate summary for
+that endpoint.
+
+\section{Related work}
+\citet{Vytlacil2002} proves the equivalence between latent-index selection
+models and the LATE framework, which justifies using propensity-score
+intervals as MTE weights.  \citet{HeckmanVytlacil2005} develops the MTE policy
+evaluation framework and explains why local IV estimands need not answer the
+policy question of interest.  \citet{ManskiPepper2000} is the shape-restricted
+partial-identification ancestor for the \(L\beta\le r\) restrictions used
+below.  \citet{BrinchMogstadWiswall2017} shows that a discrete instrument can
+identify richer MTE specifications under functional structure; it is a close
+comparator because it uses finite propensity support for MTE identification,
+but it does not supply a PRTE endpoint adequacy frontier between a coordinate
+shortcut and a saturated all-split IV-like system.  \citet{MogstadSantosTorgovitsky2018}
+is the closest benchmark: it expresses IV-like estimands and policy
+parameters as weighted averages of MTE/MTR functions, computes
+Bernstein-polynomial LP bounds, and shows that splitting discrete instrument
+variation can tighten bounds.  The proposal therefore treats the MST all-split
+LP as published machinery and asks for the missing necessary-and-sufficient
+endpoint diagnostic.
+\citet{MogstadTorgovitsky2018Review} reviews why PRTE analysis usually
+requires extrapolation from instrument-affected individuals to policy-affected
+individuals.
+
+\citet{MogstadTorgovitskyWalters2021} shows that full monotonicity with
+multiple IVs is so restrictive that choice behavior is effectively
+homogeneous, motivating weaker multi-IV monotonicity concepts.  \citet{Goff2024}
+gives a vector-monotonicity theory for binary multiple instruments and
+identifies LATE-type parameters, but it does not characterize Bernstein-basis
+PRTE support gaps.  \citet{MogstadTorgovitskyWalters2024} is the closest
+multi-IV MTE paper because it aggregates information from multiple instruments
+through partial monotonicity and mutual consistency; the present proposal asks
+for a sharper endpoint comparison between the best coordinate shortcut and the
+saturated all-split MST/Han--Yang interval.
+\citet{HanYang2024}
+provides sharp LP bounds for policy-relevant weighted averages of the MTE with
+binary instruments, making it an important prior-art candidate for the
+saturated primal LP but not for the coordinate-adequacy frontier.  \citet{Marx2024}
+derives analytic sharp bounds for latent-index MTE functionals using full
+marginal-distribution content; it is adjacent because it clarifies what is
+lost when the design supplies only finite binary-IV moments.
+Standard convex-analysis and linear-programming results, as in
+\citet{Rockafellar1970}, already imply support-function monotonicity and
+duality for nested polyhedra.  Those generic facts are deliberately not the
+claimed contribution; the proposed novelty is the econometric specialization
+that converts the multiple-binary-IV propensity geometry into a
+pre-saturated face-rank adequacy certificate for MST/Han--Yang PRTE endpoints.
+
+In-repo prior art from the Stage -1.1 scout reports no existing
+\texttt{pid\_mte\_multi\_iv} proposal or review under
+\texttt{doc/research}.  The closest accepted or banked
+CausalSmith artifacts are \texttt{pid\_dose\_response\_iv\_v1} and
+\texttt{pid\_ordinal\_late\_partial\_defiers\_v1}, both IV partial-ID LP
+proposals that are not MTE/PRTE multi-instrument Bernstein kernels, and
+\texttt{pid\_dynamic\_iv\_compliance\_v1}, whose bank note warns that generic
+finite latent-type LP sharpness and generic LP duality are not enough for a
+novel proposal.  The relevant \texttt{doc/API.md} family is PartialID rather
+than Panel or ExactID.
+
+\section{Formal setup}
+Let \(Z\in{\cal Z}\subseteq\{0,1\}^K\), \(K\ge2\), have cell probabilities
+\(\pi_z=\Pr(Z=z)>0\), and let \(p_z=\Pr(D=1\mid Z=z)\).  Potential outcomes
+\((Y_0,Y_1)\) and the latent resistance \(U\sim{\rm Unif}[0,1]\) satisfy
+\(D_z=\one\{U\le p_z\}\) and \(Y=DY_1+(1-D)Y_0\).  The MTE curve is
+\[
+m(u)=\E[Y_1-Y_0\mid U=u]=B_J(u)^\transpose\beta,\qquad
+B_J(u)_\ell={J\choose \ell}u^\ell(1-u)^{J-\ell},\quad \ell=0,\ldots,J .
+\]
+For every ordered contrast \(a=(z,z')\) with \(p_z>p_{z'}\), define
+\[
+w_a=\frac{1}{p_z-p_{z'}}\int_{p_{z'}}^{p_z}B_J(u)\,du,\qquad
+\gamma_a=\frac{\E[Y\mid Z=z]-\E[Y\mid Z=z']}{p_z-p_{z'}}.
+\]
+The joint matrix \(M_{\rm joint}\) stacks all rows \(w_a^\transpose\), and
+\(\gamma_{\rm joint}\) stacks the corresponding \(\gamma_a\).  In this
+proposal \(M_{\rm joint}\) is interpreted as the saturated all-split
+MST/Han--Yang benchmark row system, not as a new identification procedure.
+For each coordinate \(j\), write \(\pi_{j,b}=\Pr(Z_j=b)\),
+\(\bar p_{j,b}=\E[p_Z\mid Z_j=b]\), and
+\(\bar y_{j,b}=\E[Y\mid Z_j=b]\).  If
+\(d_j=\bar p_{j,1}-\bar p_{j,0}\ne0\), the retained-coordinate MST-style row is
+\[
+w_j=\frac{1}{d_j}\int_0^1
+\{\Pr(p_Z\ge u\mid Z_j=1)-\Pr(p_Z\ge u\mid Z_j=0)\}B_J(u)\,du,\qquad
+\gamma_j=\frac{\bar y_{j,1}-\bar y_{j,0}}{d_j}.
+\]
+Thus \(M_j\) is the one-row matrix \(w_j^\transpose\).  This row reduces to
+the usual single-IV interval row
+\((\bar p_{j,1}-\bar p_{j,0})^{-1}\int_{\bar p_{j,0}}^{\bar p_{j,1}}B_J(u)\,du\)
+only when \(p_Z\) is conditionally degenerate within each retained value of
+\(Z_j\), up to orientation.  Shape restrictions are \(L\beta\le r\), where
+\(L\) may encode bounded outcomes, monotonicity, convexity, or Bernstein
+coefficient restrictions.  The identified interval for a row vector \(q\) is
+\[
+\Theta_I(P;q,M,\gamma)=
+\{q^\transpose\beta: M\beta=\gamma,\ L\beta\le r\}.
+\]
+Its lower and upper endpoints are denoted \(L(M,\gamma;q)\) and
+\(U(M,\gamma;q)\).  The endpoint-specific best retained-coordinate benchmarks are
+\[
+L_{\rm sing}=\max_j L(M_j,\gamma_j;q),\qquad
+U_{\rm sing}=\min_j U(M_j,\gamma_j;q).
+\]
+Let \({\cal J}_L=\arg\max_j L(M_j,\gamma_j;q)\) and
+\({\cal J}_U=\arg\min_j U(M_j,\gamma_j;q)\).  Strict-gain claims are indexed
+over every optimizer in the relevant argmax/argmin set; no tie-breaking rule
+is used in the proposed frontier statistic.
+
+For \(e\in\{U,L\}\), set \(s_U=q\), \(s_L=-q\), and define
+\({\cal J}_e={\cal J}_U\) for \(e=U\) and \({\cal J}_e={\cal J}_L\) for
+\(e=L\).  For each \(j\in{\cal J}_e\), let
+\[
+F_{e,j}=\{\beta:M_j\beta=\gamma_j,\ L\beta\le r\},\qquad
+{\cal O}_{e,j}=\arg\max_{\beta\in F_{e,j}}s_e^\transpose\beta ,
+\]
+and let
+\[
+{\cal A}_{\rm joint}=\{\beta:M_{\rm joint}\beta=\gamma_{\rm joint}\}.
+\]
+The tied-face residual support width is
+\[
+W_{e,j}(P;q,L,r)=
+h_{F_{e,j}}(s_e)-h_{F_{e,j}\cap{\cal A}_{\rm joint}}(s_e),
+\qquad
+h_A(s)=\sup_{\beta\in A}s^\transpose\beta ,
+\]
+and the endpoint width is \(W_e(P;q,L,r)=\min_{j\in{\cal J}_e}W_{e,j}(P;q,L,r)\).
+To make the face-separation statistic invariant to the arbitrary scaling or
+basis used to write residual moment rows, define the Bernstein Gram matrix
+\[
+G_J=\int_0^1B_J(u)B_J(u)^\transpose\,du
+\]
+and the induced function-space distance
+\[
+\operatorname{dist}_J(\beta,A)=
+\inf_{\tilde\beta\in A}\{(\beta-\tilde\beta)^\transpose
+G_J(\beta-\tilde\beta)\}^{1/2}.
+\]
+The optimizer-indexed endpoint-frontier statistic is
+\[
+\kappa_{e,j}(P;q,L,r)=
+\inf_{\beta\in{\cal O}_{e,j}}
+\operatorname{dist}_J(\beta,F_{e,j}\cap{\cal A}_{\rm joint}).
+\]
+Both \(W_{e,j}\) and \(\kappa_{e,j}\) depend on the outcome moments
+\(\gamma\) and on the shape system \(L\beta\le r\), not only on the
+propensity support; the propensity distribution determines the row maps
+\(M_{\rm joint}\) and \(M_j\), while \(\operatorname{dist}_J\) is tied to the
+locked Bernstein basis rather than to a residual-row representation.
+
+The flagship adequacy object is a pre-saturated face-rank certificate, not the
+endpoint drop \(W_{e,j}\).  For each tied coordinate optimum define
+\({\cal B}_{e,j}\) as the set of rows of \(L\) that are tight for every
+\(\beta\in{\cal O}_{e,j}\).  Let \(L_{{\cal B}_{e,j}}\) and
+\(r_{{\cal B}_{e,j}}\) collect those rows and right-hand sides.  Set
+\[
+H_{e,j}=\begin{bmatrix}M_j\\ L_{{\cal B}_{e,j}}\\ s_e^\transpose\end{bmatrix},
+\qquad
+b_{e,j}=\begin{bmatrix}\gamma_j\\ r_{{\cal B}_{e,j}}\\
+h_{F_{e,j}}(s_e)\end{bmatrix}.
+\]
+Choose any \(\beta^0_{e,j}\) satisfying \(H_{e,j}\beta=b_{e,j}\), and let
+\({\cal N}_{e,j}=\{v:H_{e,j}v=0\}\).  The residual all-split consistency
+distance is
+\[
+\tau_{e,j}(P;q,L,r,\gamma)=
+\operatorname{dist}\bigl(\gamma_{\rm joint}-M_{\rm joint}\beta^0_{e,j},
+M_{\rm joint}{\cal N}_{e,j}\bigr),
+\]
+where the distance is Euclidean in the finite vector space of saturated
+contrast moments.  This number is independent of the representative
+\(\beta^0_{e,j}\), equals zero exactly when the coordinate-optimal face
+contains a coefficient vector satisfying all saturated rows, and can be
+computed by the rank test
+\[
+\operatorname{rank}\begin{bmatrix}H_{e,j}\\ M_{\rm joint}\end{bmatrix}
+=
+\operatorname{rank}\begin{bmatrix}H_{e,j}&b_{e,j}\\
+M_{\rm joint}&\gamma_{\rm joint}\end{bmatrix}.
+\]
+Thus \(\tau_{e,j}\) is available after solving the coordinate endpoint LP and
+before solving the saturated all-split endpoint LP.
+
+\begin{verbatim}
+Locked tuple:
+qid = pid_mte_multi_iv
+specialization = v1
+P = joint observable law of (Y,D,Z), Z in {0,1}^K, K >= 2
+theta = q^T beta, a PRTE Bernstein-basis functional of the MTE curve
+identifying restrictions = IV exogeneity/exclusion, latent-index selection,
+  Bernstein MTE m(u)=B_J(u)^T beta, and shape restrictions L beta <= r
+bounding functional = saturated all-split MST/Han-Yang LP using all nonzero
+  propensity contrasts, compared endpoint-by-endpoint with the best
+  retained-coordinate shortcut,
+  whose coarsened Wald row is E[1{p_Z >= u}|Z_j=1]-E[1{p_Z >= u}|Z_j=0]
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Observed support and overlap]\label{ass:support}
+\({\cal Z}\subseteq\{0,1\}^K\) is finite with \(K\ge2\), \(\pi_z>0\) for all
+\(z\in{\cal Z}\), and at least two cells have distinct propensities \(p_z\).
+Every contrast used in \(M_{\rm joint}\) has nonzero cell-level propensity
+difference, and every retained coordinate considered for the coordinate
+benchmark has \(d_j=\bar p_{j,1}-\bar p_{j,0}\ne0\).
+\end{assumption}
+
+\begin{assumption}[Latent-index IV validity]\label{ass:latent}
+\((Y_0,Y_1,U)\perp Z\), \(Y=DY_1+(1-D)Y_0\), and
+\(D_z=\one\{U\le p_z\}\) with \(U\sim{\rm Unif}[0,1]\).  The propensity values
+\(\{p_z:z\in{\cal Z}\}\) are the observable conditional treatment
+probabilities.
+\end{assumption}
+
+\begin{assumption}[Bernstein MTE sieve]\label{ass:bernstein}
+For a fixed degree \(J\), the MTE curve satisfies
+\(m(u)=B_J(u)^\transpose\beta\) for some \(\beta\in\R^{J+1}\), where \(B_J\) is
+the Bernstein basis defined in Section 6.
+\end{assumption}
+
+\begin{assumption}[Shape restrictions]\label{ass:shape}
+The coefficient vector obeys known linear restrictions \(L\beta\le r\).  The
+polyhedron \(\{\beta:L\beta\le r\}\) is nonempty and bounded in the target
+direction \(q\).
+\end{assumption}
+
+\begin{assumption}[Policy weight]\label{ass:policy}
+The target PRTE weight has a known Bernstein projection
+\(q=\int_0^1\omega_{\rm prte}(u)B_J(u)\,du\), so the finite-sieve target is
+\(\theta(q)=q^\transpose\beta\).
+\end{assumption}
+
+\begin{assumption}[Endpoint benchmark regularity]\label{ass:nonredundant}
+For each endpoint \(e\in\{U,L\}\) and each optimizer \(j\in{\cal J}_e\) of
+the relevant single-coordinate benchmark, the fiber \(F_{e,j}\) is nonempty
+and bounded in direction \(s_e\), the intersection
+\(F_{e,j}\cap{\cal A}_{\rm joint}\) is nonempty, and the optimal face
+\({\cal O}_{e,j}\) is nonempty.  Strict gain is not assumed; it is the
+condition characterized by
+\(\min_{j\in{\cal J}_e}\tau_{e,j}(P;q,L,r,\gamma)>0\) in Conjecture
+\ref{conj:width}.
+\end{assumption}
+
+\section{Main results}
+\paragraph{Benchmark normalization, not a novelty claim.}
+Under Assumptions \ref{ass:support}--\ref{ass:policy}, the saturated
+all-split MST/Han--Yang finite-sieve endpoint is the already-published LP
+\[
+U(M_{\rm joint},\gamma_{\rm joint};q)=
+\max_{\beta\in\R^{J+1}}\{q^\transpose\beta:
+M_{\rm joint}\beta=\gamma_{\rm joint},\ L\beta\le r\},
+\]
+with lower endpoint \(-U(M_{\rm joint},\gamma_{\rm joint};-q)\) and the usual
+dual
+\[
+\min_{\eta\in\R^{m_{\rm joint}},\lambda\ge0}
+\{\gamma_{\rm joint}^\transpose\eta+r^\transpose\lambda:
+M_{\rm joint}^\transpose\eta+L^\transpose\lambda=q\}.
+\]
+Here \(m_{\rm joint}\) is the number of saturated all-split contrast rows.
+This paragraph is included only to pin the comparator used by Conjecture
+\ref{conj:width}; it is routine LP machinery from
+\citet{MogstadSantosTorgovitsky2018} and \citet{HanYang2024}, so it is not
+counted as a flagship theorem.
+
+\begin{conjecture}[Conjecture 1: pre-saturated coordinate-shortcut adequacy certificate (NOT YET PROVED)]\label{conj:width}
+Under Assumptions \ref{ass:support}--\ref{ass:nonredundant}, define the
+upper- and lower-bound gains
+\[
+\Delta_U(P;q)=U_{\rm sing}(P;q)-U(M_{\rm joint},\gamma_{\rm joint};q),
+\qquad
+\Delta_L(P;q)=L(M_{\rm joint},\gamma_{\rm joint};q)-L_{\rm sing}(P;q).
+\]
+Then the retained-coordinate shortcut is endpoint-adequate before solving the
+saturated endpoint if and only if at least one tied coordinate-optimal face
+passes the residual all-split consistency test:
+\[
+\Delta_e(P;q)=0
+\quad\Longleftrightarrow\quad
+\min_{j\in{\cal J}_e}\tau_{e,j}(P;q,L,r,\gamma)=0,\qquad e\in\{U,L\}.
+\]
+Equivalently, the saturated all-split MST/Han--Yang interval is strictly
+tighter than the best retained-coordinate shortcut exactly when
+\[
+\min_{j\in{\cal J}_e}\tau_{e,j}(P;q,L,r,\gamma)>0.
+\]
+On this strict-gain region, the endpoint drop has the residual
+face-restricted representation
+\[
+\Delta_e(P;q)=
+\min_{j\in{\cal J}_e}
+\inf_{\beta\in F_{e,j}\cap{\cal A}_{\rm joint}}
+\{h_{F_{e,j}}(s_e)-s_e^\transpose\beta\},
+\]
+with the usual finite-dimensional dual obtained by adding the saturated
+moment rows to the coordinate-optimal face equations.  Thus \(\tau_{e,j}\) is
+the pre-saturated diagnostic and the displayed residual program is used only
+to quantify the gain after the diagnostic has predicted strict improvement.
+The strictness is locally stable: whenever the displayed minimum of
+\(\tau_{e,j}\) is positive and the active single-coordinate argmax/argmin set
+and exposed coordinate faces are unchanged, there is a relative open
+neighborhood of the observable outcome moments and shape right-hand side in
+which the saturated endpoint remains strictly tighter.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{MogstadSantosTorgovitsky2018} already provide the all-IV-like
+MTE/PRTE LP and show that split IV-like estimands can tighten bounds;
+\citet{HanYang2024} provide sharp binary-IV LP bounds; and
+\citet{MogstadTorgovitskyWalters2024} show that multiple instruments can be
+aggregated more informatively than separate single-IV analyses.  The epsilon
+gap is not another LP endpoint and not the generic identity that intersecting
+a polyhedron can lower its support function.  It is the tied-face
+rank/projection certificate \(\min_{j\in{\cal J}_e}\tau_{e,j}\): prior work
+computes or motivates the two procedures, while this conjecture gives a
+necessary-and-sufficient pre-saturated test, expressed in the econometric row
+geometry generated by the joint binary-instrument propensity distribution, for
+when the retained-coordinate shortcut is inadequate.  (b) The concrete
+consumer is an applied MST-style PRTE analysis with several eligibility or
+encouragement instruments, where the researcher can decide whether a
+coordinate-wise report is lossless before spending the main analysis on a
+saturated all-split endpoint.
+
+\begin{example}[Smallest nontrivial face-rank diagnostic]\label{ex:k2j2}
+For \(K=2\), \(J=2\), and four equally likely cells with
+\[
+p_{00}=1/5,\qquad p_{10}=2/5,\qquad p_{01}=3/5,\qquad p_{11}=4/5,
+\]
+the \(Z_1\)-coordinate row is
+\[
+w_1=(22/75,\ 31/75,\ 22/75),
+\]
+whereas the saturated all-split row comparing \(00\) to \(11\) is
+\[
+w_{00,11}=(7/25,\ 11/25,\ 7/25).
+\]
+The \(Z_2\)-coordinate row is
+\[
+w_2=(41/150,\ 34/75,\ 41/150).
+\]
+Thus the saturated design contains rows that are not identical to either
+coordinate row even in the smallest binary multi-IV design.  If, for example,
+the tied upper endpoint is exposed by \(Z_1\) and by one active Bernstein
+shape face, the proposed diagnostic forms
+\[
+H_{U,1}=\begin{bmatrix}w_1\\ L_{{\cal B}_{U,1}}\\ q^\transpose\end{bmatrix}
+\]
+and tests whether the saturated moment vector
+\(\gamma_{\rm joint}\) is consistent with
+\(\begin{bmatrix}H_{U,1}\\ M_{\rm joint}\end{bmatrix}\beta
+=\begin{bmatrix}b_{U,1}\\ \gamma_{\rm joint}\end{bmatrix}\).  Generic
+outcome moments fail this augmented-rank equality whenever the residual
+all-split row has a nonzero projection off the \(Z_1\)-optimal face; the
+proposal asks to prove that this pre-saturated failure is exactly the
+strict-tightening event for the upper PRTE endpoint.
+\end{example}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No-gain under redundant support]\label{cor:no-gain}
+Under Assumptions \ref{ass:support}--\ref{ass:policy}, if every joint
+propensity-contrast row is affinely implied by every tied endpoint-specific
+retained-coordinate system with the same right-hand-side moment, equivalently
+\(F_{e,j}\cap{\cal A}_{\rm joint}=F_{e,j}\) for every \(e\in\{U,L\}\) and
+\(j\in{\cal J}_e\), then \(W_{e,j}=0\) for all tied endpoints and
+\(\Delta_U(P;q)=\Delta_L(P;q)=0\).
+\end{corollary}
+
+\begin{corollary}[Homogeneous-effect collapse]\label{cor:homogeneous}
+If Assumptions \ref{ass:support}--\ref{ass:policy} hold and the shape system
+adds \(m(u)\equiv\tau\), equivalently \(\beta_0=\cdots=\beta_J=\tau\), then
+all valid contrast rows imply the same value \(\tau\) and every joint or
+single-IV PRTE interval collapses to the point \(\theta(q)=\tau\int_0^1
+\omega_{\rm prte}(u)\,du\).
+\end{corollary}
+
+\begin{corollary}[External single-IV boundary]\label{cor:k1-boundary}
+Outside the locked \(K\ge2\) tuple, if \(K=1\) and \(Z\) is binary with
+nonzero first-stage contrast, the retained-coordinate row is the saturated
+row system.  The benchmark normalization therefore coincides exactly with the
+finite Bernstein LP of \citet{MogstadSantosTorgovitsky2018} for the same
+basis, target weight, and shape restrictions.
+\end{corollary}
+
+\section{Proof-sketch route}
+The benchmark LP normalization reduces to the latent-index identity that a
+cell-level Wald contrast between two propensity values averages the MTE over
+the interval between them, while the retained-coordinate row follows by
+integrating the conditional selection-probability contrast
+\(\Pr(p_Z\ge u\mid Z_j=1)-\Pr(p_Z\ge u\mid Z_j=0)\).  Finite-dimensional
+linear programming duality then gives the primal and dual endpoints.
+Conjecture 1 should be attacked endpoint by endpoint and tied optimizer by
+tied optimizer by first solving the coordinate endpoint LP, extracting the
+exposed face equations \(H_{e,j}\beta=b_{e,j}\), and applying the finite
+linear-system consistency theorem to the augmented saturated system
+\((H_{e,j},M_{\rm joint})\beta=(b_{e,j},\gamma_{\rm joint})\).  The key
+non-generic step is to prove that, in the MST/Han--Yang MTE row geometry,
+failure of this augmented-rank test on every tied coordinate-optimal face is
+equivalent to a positive PRTE endpoint drop.  Once strictness is established,
+standard LP duality can quantify the drop through the residual
+face-restricted program.  The local open-set strictness clause should follow
+from stability of LP optimal faces under fixed active sets.  The boundary
+algebra to check first is the worked \(K=2\), \(J=2\), four-cell example in
+Example \ref{ex:k2j2}, where all coarsened rows, saturated rows, active-face
+rank tests, and dual certificates can be listed explicitly.
+
+\section{Honest scope flags}
+The saturated LP normalization and the external \(K=1\) boundary are routine
+published machinery, not flagship results.  Conjecture 1 is the novel kernel
+and is not yet proved; in particular, the endpoint-frontier equivalence may
+need a closure or facial-exposure condition when the coordinate shortcut has
+multiple optimal faces within a tied retained coordinate.  Ties across
+retained coordinates are handled explicitly by the minimum over
+\(j\in{\cal J}_e\).  The pre-saturated certificate is not claimed to be a
+design-only functional: its row geometry is determined by the joint propensity
+distribution, but the augmented-rank right-hand side depends on
+\((\gamma,L,r)\).  The proposal deliberately does not claim
+robustness to violations of latent-index monotonicity, partial monotonicity
+failures, or estimated-propensity inference.  In v2 the design-only width
+claim was withdrawn and replaced by the endpoint-specific residual support
+width \(W_e(P;q,L,r)\).  In v3 the residual-row-basis norm \(\kappa_e\) was
+withdrawn and replaced by the Bernstein Gram-distance statistics
+\(\kappa_{e,j}\) over every tied single-coordinate optimizer.  In v5 the
+support-drop statistic was demoted to a magnitude descriptor and the flagship
+claim was recast as the face-rank certificate \(\tau_{e,j}\) computed before
+the saturated endpoint is solved.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) --- initial draft centered on the projected
+moment-cone width comparison between the joint multi-IV Bernstein LP and the
+best single-IV MST benchmark; prior verdict: none.
+\item v2 (revise) --- replaced the design-only width with endpoint-specific
+residual support widths \(W_U,W_L\), defined coarsened retained-coordinate
+Wald rows, and separated lower/upper single-IV optimizers; prior verdict:
+REVISE.
+\item v3 (revise) --- added the Brinch-Mogstad-Wiswall discrete-instrument
+MTE comparator, replaced the basis-dependent residual norm by tied-face
+Bernstein Gram-distance statistics \(\kappa_{e,j}\), and sharpened Conjecture
+1 into a named MST/Han-Yang endpoint-frontier comparison; prior verdict:
+REVISE.
+\item v4 (revise) --- demoted the saturated primal-dual LP and the \(K=1\)
+MST limit to benchmark normalizations, re-anchored the flagship novelty
+against MST's all-IV-like split-instrument benchmark and Han-Yang's binary-IV
+LP, and separated the external \(K=1\) boundary from the locked \(K\ge2\)
+tuple; prior verdict: REVISE.
+\item v5 (revise) --- replaced the endpoint-drop-as-frontier phrasing with a
+pre-saturated face-rank certificate \(\tau_{e,j}\), added a \(K=2,J=2\)
+worked diagnostic, and clarified that generic LP support-function duality is
+not the novelty claim; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Vytlacil(2002)]{Vytlacil2002}
+Vytlacil, Edward. 2002. ``Independence, Monotonicity, and Latent Index
+Models: An Equivalence Result.'' \emph{Econometrica} 70(1):331--341.
+
+\bibitem[Heckman and Vytlacil(2005)]{HeckmanVytlacil2005}
+Heckman, James J., and Edward Vytlacil. 2005. ``Structural Equations,
+Treatment Effects, and Econometric Policy Evaluation.'' \emph{Econometrica}
+73(3):669--738.
+
+\bibitem[Brinch, Mogstad, and Wiswall(2017)]{BrinchMogstadWiswall2017}
+Brinch, Christian N., Magne Mogstad, and Matthew Wiswall. 2017. ``Beyond LATE
+with a Discrete Instrument.'' \emph{Journal of Political Economy}
+125(4):985--1039.
+
+\bibitem[Manski and Pepper(2000)]{ManskiPepper2000}
+Manski, Charles F., and John V. Pepper. 2000. ``Monotone Instrumental
+Variables: With an Application to the Returns to Schooling.'' \emph{Econometrica}
+68(4):997--1010.
+
+\bibitem[Mogstad, Santos, and Torgovitsky(2018)]{MogstadSantosTorgovitsky2018}
+Mogstad, Magne, Andres Santos, and Alexander Torgovitsky. 2018. ``Using
+Instrumental Variables for Inference about Policy Relevant Treatment
+Parameters.'' \emph{Econometrica} 86(5):1589--1619.
+
+\bibitem[Mogstad and Torgovitsky(2018)]{MogstadTorgovitsky2018Review}
+Mogstad, Magne, and Alexander Torgovitsky. 2018. ``Identification and
+Extrapolation of Causal Effects with Instrumental Variables.'' \emph{Annual
+Review of Economics} 10:577--613.
+
+\bibitem[Mogstad, Torgovitsky, and Walters(2021)]{MogstadTorgovitskyWalters2021}
+Mogstad, Magne, Alexander Torgovitsky, and Christopher R. Walters. 2021.
+``The Causal Interpretation of Two-Stage Least Squares with Multiple
+Instrumental Variables.'' \emph{American Economic Review} 111(11):3663--3698.
+
+\bibitem[Mogstad, Torgovitsky, and Walters(2024)]{MogstadTorgovitskyWalters2024}
+Mogstad, Magne, Alexander Torgovitsky, and Christopher R. Walters. 2024.
+``Policy Evaluation with Multiple Instrumental Variables.'' \emph{Journal of
+Econometrics} 243(1--2):105718.
+
+\bibitem[Goff(2024)]{Goff2024}
+Goff, Leonard. 2024. ``A Vector Monotonicity Assumption for Multiple
+Instruments.'' \emph{Journal of Econometrics} 241:105735.
+
+\bibitem[Han and Yang(2024)]{HanYang2024}
+Han, Sukjin, and Shenshen Yang. 2024. ``A Computational Approach to
+Identification of Treatment Effects for Policy Evaluation.'' \emph{Journal of
+Econometrics} 240:105680.
+
+\bibitem[Marx(2024)]{Marx2024}
+Marx, Philip. 2024. ``Sharp Bounds in the Latent Index Selection Model.''
+\emph{Journal of Econometrics} 238:105561.
+
+\bibitem[Rockafellar(1970)]{Rockafellar1970}
+Rockafellar, R. Tyrrell. 1970. \emph{Convex Analysis}. Princeton University
+Press.
+\end{thebibliography}
+
+\end{document}

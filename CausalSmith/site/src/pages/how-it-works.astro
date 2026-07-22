@@ -1,0 +1,640 @@
+---
+import { SERIES_NAME, SERIES_TAGLINE } from "../lib/config.js";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { declArea, libraryRoot, loadLibrary } from "../lib/library.js";
+import "../styles/intro.css";
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const lib = loadLibrary(libraryRoot());
+const sourceFiles = Object.keys(lib.modules).map((module) =>
+  join(libraryRoot(), `${module.replaceAll(".", "/")}.lean`),
+);
+const totalDecls = lib.entries.length;
+const totalLines = sourceFiles.reduce(
+  (total, file) => total + (readFileSync(file, "utf8").match(/\n/g)?.length ?? 0),
+  0,
+);
+const totalClusters = new Set(lib.entries.map(declArea)).size;
+const totalSorried = lib.entries.filter((entry) => entry.usesSorry).length;
+const fmt = (n: number) => n.toLocaleString("en-US");
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How it works · {SERIES_NAME}</title>
+    <meta
+      name="description"
+      content="How CausalForge discovers, formalizes, proves, and presents a causal-inference result — every statement machine-checked in Lean 4 and audited to mean what it claims."
+    />
+  </head>
+  <body>
+    <div class="series-wrap intro">
+      <header class="masthead">
+        <div class="series-kicker">{SERIES_NAME} · {SERIES_TAGLINE}</div>
+        <nav class="masthead-nav">
+          <a href={`${base}/`}>CausalSmith Working Papers</a>
+          <a href={`${base}/library/`}>Causalean Library</a>
+          <span class="masthead-nav-current">How it works</span>
+        </nav>
+        <h1>CausalForge: a formally grounded, self-improving research pipeline</h1>
+        <p class="lede">
+          <strong>CausalForge</strong> is an autonomous system that discovers a
+          causal-inference result, formalizes it, proves it in <strong>Lean&nbsp;4</strong>,
+          and writes it up as a paper — with <em>every</em> formal statement machine-checked
+          by the proof kernel and audited to mean what it says. This page walks through the
+          pipeline end to end, mostly in pictures.
+        </p>
+      </header>
+
+      <!-- ── The problem ─────────────────────────────────────────────── -->
+      <section>
+        <div class="sec-kicker">The problem</div>
+        <h2>Machines write research faster than we can check it</h2>
+        <p class="lead-in">
+          Language models now generate conjectures, proofs, and whole papers far quicker than
+          anyone can evaluate them. In theory work an incorrect theorem can look exactly like a
+          correct one until it is verified — and the popular fix, letting one model review
+          another, is not a reliable correctness oracle.
+        </p>
+        <div class="stat-callout">
+          <span class="num">82%</span>
+          <span class="txt">
+            A calibrated board of LLM reviewers accepted deliberately <b>fabricated papers</b> up
+            to 82% of the time, detecting the fabrication no better than chance. An LLM judge of
+            "is this good research?" can be fooled.
+            <span class="stat-cite">Jiang et al., <a href="https://arxiv.org/abs/2510.18003">BadScientist: Can a Research Agent Write Convincing but Unsound Papers that Fool LLM Reviewers?</a>, arXiv:2510.18003 (2025).</span>
+          </span>
+        </div>
+        <p>
+          Formal verification offers a different footing. When a proof is accepted by Lean's
+          kernel, it is valid relative to a small trusted core — a guarantee no LLM reviewer can
+          give. CausalForge is built around making that guarantee cheap, and around the one thing
+          the kernel still cannot check.
+        </p>
+      </section>
+
+      <!-- ── Three layers of trust ──────────────────────────────────── -->
+      <section>
+        <div class="sec-kicker">The idea</div>
+        <h2>Separate three questions we usually blur together</h2>
+        <p>
+          "Is this good research?" bundles three very different questions. CausalForge pulls them
+          apart, and handles each where it can actually be handled.
+        </p>
+        <div class="trust-grid">
+          <div class="trust-card soundness">
+            <div class="trust-layer">Soundness</div>
+            <h3>Is the proof valid?</h3>
+            <p>Eliminated by construction: the Lean kernel mechanically checks every step against its trusted core.</p>
+            <div class="trust-who">settled by the <b>Lean kernel</b></div>
+          </div>
+          <div class="trust-card faithfulness">
+            <div class="trust-layer">Faithfulness</div>
+            <h3>Does the statement mean the intended claim?</h3>
+            <p>The kernel does <em>not</em> give you this. It is audited node by node — a small, local, re-checkable comparison, not a certificate.</p>
+            <div class="trust-who">audited by the <b>logic-graph audit</b> (model + human)</div>
+          </div>
+          <div class="trust-card significance">
+            <div class="trust-layer">Significance</div>
+            <h3>Is a correct, faithful theorem interesting?</h3>
+            <p>Not guaranteed by either of the above. It stays an explicit human judgment — the pipeline never pretends otherwise.</p>
+            <div class="trust-who">judged by a <b>human</b></div>
+          </div>
+        </div>
+        <p>
+          The whole design shrinks the residual judgment from the open-ended
+          <em>"is this valuable research?"</em> to the bounded
+          <em>"does this Lean statement match this English claim?"</em>
+        </p>
+      </section>
+
+      <!-- ── The pipeline (hero) ─────────────────────────────────────── -->
+      <section class="wide">
+        <div class="sec-kicker">The pipeline</div>
+        <h2>Discover → Formalize → Prove → Present</h2>
+        <p>
+          A result moves left to right through four stages, clearing a <strong>gate</strong>
+          between each. Two feedback loops make the system improve itself: it <em>reuses</em> a
+          verified library and grows it, and it <em>records</em> every run so the next proposal
+          starts from what has already been tried.
+        </p>
+
+        <div class="figure">
+          <svg class="svg-fig" viewBox="0 0 780 300" role="img"
+               aria-label="The CausalSmith pipeline: Discover, Formalize, Prove, Present, with an amber gate on each transition, the Causalean library feeding reuse and study-mode loops, and a run bank feeding reconnaissance and record loops.">
+            <defs>
+              <marker id="plGray" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 Z" fill="#5c5853" />
+              </marker>
+              <marker id="plGreen" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 Z" fill="#2f6b46" />
+              </marker>
+              <marker id="plAmber" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 Z" fill="#b45309" />
+              </marker>
+            </defs>
+
+            <!-- flow arrows between stages -->
+            <line x1="140" y1="77" x2="227" y2="77" stroke="#5c5853" stroke-width="1.4" marker-end="url(#plGray)" />
+            <line x1="345" y1="77" x2="432" y2="77" stroke="#5c5853" stroke-width="1.4" marker-end="url(#plGray)" />
+            <line x1="550" y1="77" x2="637" y2="77" stroke="#5c5853" stroke-width="1.4" marker-end="url(#plGray)" />
+
+            <!-- gates: amber diamond on each arrow, label above -->
+            <g>
+              <rect class="box-amber" x="178.5" y="71.5" width="12" height="12" rx="2" transform="rotate(45 184.5 77.5)" />
+              <text x="184.5" y="52" text-anchor="middle" class="gt f-amber">novelty +</text>
+              <text x="184.5" y="65" text-anchor="middle" class="gt f-amber">soundness</text>
+            </g>
+            <g>
+              <rect class="box-amber" x="383.5" y="71.5" width="12" height="12" rx="2" transform="rotate(45 389.5 77.5)" />
+              <text x="389.5" y="52" text-anchor="middle" class="gt f-amber">statement</text>
+              <text x="389.5" y="65" text-anchor="middle" class="gt f-amber">faithfulness</text>
+            </g>
+            <g>
+              <rect class="box-amber" x="588.5" y="71.5" width="12" height="12" rx="2" transform="rotate(45 594.5 77.5)" />
+              <text x="594.5" y="52" text-anchor="middle" class="gt f-amber">convergence</text>
+              <text x="594.5" y="65" text-anchor="middle" class="gt f-amber">review</text>
+            </g>
+
+            <!-- stages -->
+            <g class="stage-g">
+              <rect class="box-lean" x="24" y="40" width="116" height="74" rx="7" stroke-width="1.4" />
+              <text x="82" y="72" text-anchor="middle" class="t-title">Discover</text>
+              <text x="82" y="93" text-anchor="middle" class="t-sub f-soft">propose → solve</text>
+            </g>
+            <g class="stage-g">
+              <rect class="box-lean" x="229" y="40" width="116" height="74" rx="7" stroke-width="1.4" />
+              <text x="287" y="72" text-anchor="middle" class="t-title">Formalize</text>
+              <text x="287" y="93" text-anchor="middle" class="t-sub f-soft">plan → scaffold</text>
+            </g>
+            <g class="stage-g">
+              <rect class="box-lean" x="434" y="40" width="116" height="74" rx="7" stroke-width="1.4" />
+              <text x="492" y="68" text-anchor="middle" class="t-title">Prove</text>
+              <text x="492" y="88" text-anchor="middle" class="t-sub f-soft">fill → review</text>
+              <text x="492" y="105" text-anchor="middle" class="f-green" font-size="10.5" font-style="italic">kernel-checked</text>
+            </g>
+            <g class="stage-g">
+              <rect class="box-lean" x="639" y="40" width="116" height="74" rx="7" stroke-width="1.4" />
+              <text x="697" y="72" text-anchor="middle" class="t-title">Present</text>
+              <text x="697" y="93" text-anchor="middle" class="t-sub f-soft">assemble &amp; link</text>
+            </g>
+
+            <!-- Causalean library -->
+            <rect class="box-verified" x="285" y="150" width="210" height="48" rx="7" stroke-width="1.4" />
+            <text x="390" y="171" text-anchor="middle" class="t-title f-green">Causalean</text>
+            <text x="390" y="189" text-anchor="middle" class="t-sub f-soft">verified · 6,583 reusable lemmas</text>
+
+            <!-- reuse (library → Formalize) and study mode (Prove → library) -->
+            <path d="M330,150 C312,134 300,124 287,115" fill="none" stroke="#2f6b46" stroke-width="1.3" stroke-dasharray="5 3" marker-end="url(#plGreen)" />
+            <text x="300" y="138" text-anchor="end" class="t-sub f-green">reuse</text>
+            <path d="M492,115 C480,126 468,138 450,149" fill="none" stroke="#2f6b46" stroke-width="1.3" stroke-dasharray="5 3" marker-end="url(#plGreen)" />
+            <text x="486" y="138" text-anchor="start" class="t-sub f-green">study mode</text>
+
+            <!-- run bank -->
+            <rect class="box-amber" x="24" y="236" width="732" height="44" rx="7" stroke-width="1.4" />
+            <text x="390" y="257" text-anchor="middle" class="t-title f-amber">Run bank</text>
+            <text x="390" y="273" text-anchor="middle" class="t-sub f-soft">every proposal &amp; outcome — accepted, downgraded, or failed</text>
+
+            <!-- recon (bank → Discover) and record (Present → bank), framing the sides -->
+            <path d="M82,236 C64,196 64,150 82,116" fill="none" stroke="#b45309" stroke-width="1.3" stroke-dasharray="5 3" marker-end="url(#plAmber)" />
+            <text x="60" y="180" text-anchor="end" class="t-sub f-amber">recon</text>
+            <path d="M697,116 C715,150 715,196 697,236" fill="none" stroke="#b45309" stroke-width="1.3" stroke-dasharray="5 3" marker-end="url(#plAmber)" />
+            <text x="719" y="180" text-anchor="start" class="t-sub f-amber">record</text>
+          </svg>
+
+          <p class="fig-cap">
+            The pipeline. Amber pills are the gates a result must clear; the green library below
+            feeds <em>reuse</em> into Formalize and receives proven lemmas back through
+            <em>study mode</em>; the run bank records every run and feeds
+            <em>reconnaissance</em> before the next proposal.
+          </p>
+        </div>
+
+        <dl class="stage-notes">
+          <div>
+            <dt>Discover</dt>
+            <dd>A proposer drafts a claim; a novelty gate checks it against the literature; a solver derives a formalizable core. It may narrow an over-strong claim, never weaken one to make a proof easy.</dd>
+          </div>
+          <div>
+            <dt>Formalize</dt>
+            <dd>The plan becomes a Lean scaffold of proof obligations. A review-and-fill loop resolves them, reusing library results; a lint flags any hypothesis the proof never uses.</dd>
+          </div>
+          <div>
+            <dt>Prove</dt>
+            <dd>Obligations are discharged against the live compiler. The kernel establishes soundness here — nothing with an open goal, <code>sorry</code>, or a smuggled axiom gets through.</dd>
+          </div>
+          <div>
+            <dt>Present</dt>
+            <dd>An accepted, audited result becomes a working paper in which every theorem, definition, and assumption links to its verified Lean source.</dd>
+          </div>
+        </dl>
+      </section>
+
+      <!-- ── The full stage flow (detailed) ─────────────────────────── -->
+      <section class="wide">
+        <div class="sec-kicker">Under the hood</div>
+        <h2>The full pipeline, stage by stage</h2>
+        <p>
+          Those four stages expand into a deterministic state machine. Each stage either
+          advances or, through a <strong>gate</strong> (amber), returns work to the stage
+          before it; four <strong>checkpoints</strong> (red) halt the run for an external
+          decision. The inset zooms into the <strong>F2–F4</strong> proof-and-faithfulness
+          loop: a scaffold mismatch returns to F2, while a blocking lint or failed convergence
+          review re-enters at F2.5; a genuinely false claim from F2.5 or F3 escalates out to the
+          mathematics rather than being quietly rewritten to pass.
+        </p>
+
+        <div class="figure">
+          <div class="fig-scroll">
+            <svg class="svg-fig" viewBox="0 0 900 474" role="img"
+                 aria-label="The operational stage flow of a CausalSmith theorem run: a Discovery row (D-1.1 through D0.5) hands a frozen core through the D/F checkpoint to a Formalization row (F1 through banking), with an inset zoom into the F2–F4 proof-and-faithfulness loop, where F3.5 and F4 failures re-enter at F2.5.">
+              <defs>
+                <marker id="dG" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5c5853" /></marker>
+                <marker id="dA" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#b45309" /></marker>
+                <marker id="dGr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2f6b46" /></marker>
+              </defs>
+
+              <text x="44" y="34" class="bl">Discovery</text>
+              <text x="44" y="176" class="bl">Formalization</text>
+
+              <!-- Row 1 forward arrows -->
+              <line x1="150" y1="70" x2="176" y2="70" stroke="#5c5853" stroke-width="1.2" marker-end="url(#dG)" />
+              <line x1="287" y1="70" x2="313" y2="70" stroke="#5c5853" stroke-width="1.2" marker-end="url(#dG)" />
+              <line x1="424" y1="70" x2="450" y2="70" stroke="#5c5853" stroke-width="1.2" marker-end="url(#dG)" />
+              <line x1="561" y1="70" x2="596" y2="70" stroke="#5c5853" stroke-width="1.2" marker-end="url(#dG)" />
+              <line x1="690" y1="70" x2="724" y2="70" stroke="#5c5853" stroke-width="1.2" marker-end="url(#dG)" />
+
+              <!-- Row 1 escalation arcs -->
+              <path d="M369,47 C369,22 232,22 232,45" fill="none" stroke="#b45309" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#dA)" />
+              <text x="300" y="17" text-anchor="middle" class="el">reject / revise</text>
+              <path d="M643,47 C643,22 506,22 506,45" fill="none" stroke="#b45309" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#dA)" />
+              <text x="574" y="17" text-anchor="middle" class="el">sharpen: re-solve</text>
+
+              <!-- Row 1 nodes -->
+              <rect class="box-lean" x="40" y="47" width="110" height="46" rx="6" stroke-width="1.2" />
+              <text x="95" y="66" text-anchor="middle" class="dt">D–1.1</text><text x="95" y="80" text-anchor="middle" class="ds f-soft">recon</text>
+              <rect class="box-lean" x="177" y="47" width="110" height="46" rx="6" stroke-width="1.2" />
+              <text x="232" y="66" text-anchor="middle" class="dt">D–1.2</text><text x="232" y="80" text-anchor="middle" class="ds f-soft">proposal + core</text>
+              <rect class="box-amber" x="314" y="47" width="110" height="46" rx="6" stroke-width="1.2" />
+              <text x="369" y="66" text-anchor="middle" class="dt">D–0.5</text><text x="369" y="80" text-anchor="middle" class="ds f-soft">proposal gate</text>
+              <rect class="box-lean" x="451" y="47" width="110" height="46" rx="6" stroke-width="1.2" />
+              <text x="506" y="66" text-anchor="middle" class="dt">D0</text><text x="506" y="80" text-anchor="middle" class="ds f-soft">derivation + note</text>
+              <polygon class="box-sorry" points="643,46 689,70 643,94 597,70" stroke-width="1.2" />
+              <text x="643" y="67" text-anchor="middle" class="dt">D0-max</text><text x="643" y="80" text-anchor="middle" class="ds f-soft">sharpen?</text>
+              <rect class="box-amber" x="725" y="47" width="110" height="46" rx="6" stroke-width="1.2" />
+              <text x="780" y="66" text-anchor="middle" class="dt">D0.5</text><text x="780" y="80" text-anchor="middle" class="ds f-soft">derivation gate</text>
+
+              <!-- D → F handoff via ckpt D/F -->
+              <path d="M780,93 C780,135 560,150 485,150" fill="none" stroke="#5c5853" stroke-width="1.2" marker-end="url(#dG)" />
+              <text x="640" y="123" text-anchor="middle" class="ds f-soft">frozen core</text>
+              <polygon class="box-sorry" points="437,126 485,150 437,174 389,150" stroke-width="1.2" />
+              <text x="437" y="147" text-anchor="middle" class="dt">ckpt D/F</text><text x="437" y="160" text-anchor="middle" class="ds f-soft">commit to F?</text>
+              <path d="M389,150 C300,150 150,158 95,187" fill="none" stroke="#5c5853" stroke-width="1.2" marker-end="url(#dG)" />
+
+              <!-- Row 2 forward arrows -->
+              <line x1="150" y1="212" x2="176" y2="212" stroke="#5c5853" stroke-width="1.2" marker-end="url(#dG)" />
+              <line x1="287" y1="212" x2="322" y2="212" stroke="#5c5853" stroke-width="1.2" marker-end="url(#dG)" />
+              <line x1="416" y1="212" x2="450" y2="212" stroke="#5c5853" stroke-width="1.2" marker-end="url(#dG)" />
+              <line x1="561" y1="212" x2="587" y2="212" stroke="#5c5853" stroke-width="1.2" marker-end="url(#dG)" />
+              <line x1="698" y1="212" x2="724" y2="212" stroke="#5c5853" stroke-width="1.2" marker-end="url(#dG)" />
+
+              <!-- Row 2 nodes -->
+              <rect class="box-lean" x="40" y="189" width="110" height="46" rx="6" stroke-width="1.2" />
+              <text x="95" y="208" text-anchor="middle" class="dt">F1</text><text x="95" y="222" text-anchor="middle" class="ds f-soft">plan + graph</text>
+              <rect class="box-amber" x="177" y="189" width="110" height="46" rx="6" stroke-width="1.2" />
+              <text x="232" y="208" text-anchor="middle" class="dt">F1.5</text><text x="232" y="222" text-anchor="middle" class="ds f-soft">plan + reuse gate</text>
+              <polygon class="box-sorry" points="369,188 415,212 369,236 323,212" stroke-width="1.2" />
+              <text x="369" y="209" text-anchor="middle" class="dt">ckpt 1</text><text x="369" y="222" text-anchor="middle" class="ds f-soft">audit</text>
+              <rect class="box-lean" x="451" y="189" width="110" height="46" rx="6" stroke-width="1.6" />
+              <text x="506" y="208" text-anchor="middle" class="dt">F2–F4</text><text x="506" y="222" text-anchor="middle" class="ds f-soft">proof + audit loop</text>
+              <rect class="box-lean" x="588" y="189" width="110" height="46" rx="6" stroke-width="1.2" />
+              <text x="643" y="208" text-anchor="middle" class="dt">F5</text><text x="643" y="222" text-anchor="middle" class="ds f-soft">banking prep</text>
+              <polygon class="box-sorry" points="780,188 826,212 780,236 734,212" stroke-width="1.2" />
+              <text x="780" y="209" text-anchor="middle" class="dt">ckpt 2</text><text x="780" y="222" text-anchor="middle" class="ds f-soft">bank</text>
+
+              <!-- lens lines to zoom -->
+              <line x1="451" y1="235" x2="88" y2="296" stroke="#2f6b46" stroke-width="0.7" stroke-dasharray="3 3" opacity="0.6" />
+              <line x1="561" y1="235" x2="892" y2="296" stroke="#2f6b46" stroke-width="0.7" stroke-dasharray="3 3" opacity="0.6" />
+
+              <!-- zoom band -->
+              <rect class="dband" x="80" y="286" width="812" height="140" rx="8" stroke-width="0.8" />
+              <text x="92" y="313" class="bl">F2–F4 zoom</text>
+
+              <!-- zoom loop back-arcs -->
+              <path d="M320,332 C320,320 150,320 150,332" fill="none" stroke="#2f6b46" stroke-width="1.1" stroke-dasharray="4 3" marker-end="url(#dGr)" />
+              <path d="M660,332 C660,318 320,318 320,332" fill="none" stroke="#2f6b46" stroke-width="1.1" stroke-dasharray="4 3" marker-end="url(#dGr)" />
+              <path d="M830,332 C830,280 320,280 320,330" fill="none" stroke="#2f6b46" stroke-width="1.1" stroke-dasharray="4 3" marker-end="url(#dGr)" />
+              <text x="235" y="301" text-anchor="middle" class="ll">mismatch → F2</text>
+              <text x="490" y="315" text-anchor="middle" class="ll">lint block → F2.5</text>
+              <text x="630" y="286" text-anchor="middle" class="ll">F4 fail → F2.5</text>
+
+              <!-- zoom forward arrows -->
+              <line x1="210" y1="354" x2="248" y2="354" stroke="#5c5853" stroke-width="1.2" marker-end="url(#dG)" />
+              <line x1="380" y1="354" x2="418" y2="354" stroke="#5c5853" stroke-width="1.2" marker-end="url(#dG)" />
+              <line x1="550" y1="354" x2="588" y2="354" stroke="#5c5853" stroke-width="1.2" marker-end="url(#dG)" />
+              <line x1="720" y1="354" x2="758" y2="354" stroke="#5c5853" stroke-width="1.2" marker-end="url(#dG)" />
+              <text x="739" y="347" text-anchor="middle" class="ll">pass</text>
+
+              <!-- zoom nodes -->
+              <rect class="box-lean" x="90" y="332" width="120" height="44" rx="6" stroke-width="1.2" />
+              <text x="150" y="351" text-anchor="middle" class="dt">F2</text><text x="150" y="365" text-anchor="middle" class="ds f-soft">Lean scaffold</text>
+              <rect class="box-lean" x="260" y="332" width="120" height="44" rx="6" stroke-width="1.2" />
+              <text x="320" y="351" text-anchor="middle" class="dt">F2.5</text><text x="320" y="365" text-anchor="middle" class="ds f-soft">scaffold vs. spec</text>
+              <rect class="box-lean" x="430" y="332" width="120" height="44" rx="6" stroke-width="1.2" />
+              <text x="490" y="351" text-anchor="middle" class="dt">F3</text><text x="490" y="365" text-anchor="middle" class="ds f-soft">proof-review loop</text>
+              <rect class="box-lean" x="600" y="332" width="120" height="44" rx="6" stroke-width="1.2" />
+              <text x="660" y="351" text-anchor="middle" class="dt">F3.5</text><text x="660" y="365" text-anchor="middle" class="ds f-soft">lint + cheat scan</text>
+              <rect class="box-verified" x="770" y="332" width="120" height="44" rx="6" stroke-width="1.3" />
+              <text x="830" y="351" text-anchor="middle" class="dt">F4</text><text x="830" y="365" text-anchor="middle" class="ds f-soft">convergence review</text>
+
+              <!-- amber claim escalations out of the loop -->
+              <path d="M320,376 C320,392 360,394 380,398" fill="none" stroke="#b45309" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#dA)" />
+              <path d="M490,376 C490,384 500,388 510,390" fill="none" stroke="#b45309" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#dA)" />
+              <rect class="box-amber" x="382" y="390" width="184" height="22" rx="4" stroke-width="1" />
+              <text x="474" y="405" text-anchor="middle" class="ds f-soft">false claim → D0 (via ckpt 1)</text>
+
+              <!-- legend -->
+              <rect class="box-lean" x="90" y="446" width="20" height="13" rx="2" stroke-width="1" /><text x="116" y="456" class="ds f-soft">work</text>
+              <rect class="box-amber" x="162" y="446" width="20" height="13" rx="2" stroke-width="1" /><text x="188" y="456" class="ds f-soft">gate</text>
+              <rect class="box-verified" x="232" y="446" width="20" height="13" rx="2" stroke-width="1" /><text x="258" y="456" class="ds f-soft">audit</text>
+              <polygon class="box-sorry" points="312,445 326,452 312,459 298,452" stroke-width="1" /><text x="332" y="456" class="ds f-soft">checkpoint</text>
+              <line x1="410" y1="452" x2="440" y2="452" stroke="#b45309" stroke-width="1.1" stroke-dasharray="4 3" /><text x="446" y="456" class="ds f-soft">escalate / revise</text>
+              <line x1="566" y1="452" x2="596" y2="452" stroke="#2f6b46" stroke-width="1.1" stroke-dasharray="4 3" /><text x="602" y="456" class="ds f-soft">bounded proof loop</text>
+            </svg>
+          </div>
+          <p class="fig-cap">
+            The operational stage flow of one theorem run. Discovery (top) produces a proposal
+            and typed core, frozen at D0.5 and handed through the D/F checkpoint to Formalization;
+            amber gates return work to the preceding stage and red checkpoints mark run halts for
+            external judgment. The green band details the bounded F2–F4 loop the kernel-checked
+            proof runs inside.
+          </p>
+        </div>
+      </section>
+
+      <!-- ── The logic graph ────────────────────────────────────────── -->
+      <section>
+        <div class="sec-kicker">The unit of audit</div>
+        <h2>Every result is a graph of statements</h2>
+        <p>
+          A result is stored as a <strong>logic graph</strong>: nodes are statements — a setup, a
+          definition, an assumption, a lemma, the headline theorem — and edges record
+          dependencies. This turns the global question "is this proved and faithful?" into a
+          per-node one, so a change re-opens only the nodes it touches instead of the whole paper.
+        </p>
+
+        <div class="figure">
+          <svg class="svg-fig" viewBox="0 0 480 290" role="img"
+               aria-label="A schematic logic graph: setup, definition, and cited nodes at the bottom; an assumption and two lemmas in the middle; the headline theorem at the top. Node color encodes review status and a green underlay marks the critical path.">
+            <defs>
+              <marker id="lgArrow" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 Z" fill="#6b655d" />
+              </marker>
+            </defs>
+
+            <!-- critical path underlay: setup → gated A1 → theorem T -->
+            <polyline points="80,250 80,155 240,60" fill="none" stroke="#2f6b46" stroke-opacity="0.24" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+
+            <!-- edges: solid = statement-uses, dashed = proof-uses -->
+            <line x1="80" y1="235" x2="80" y2="171" stroke="#6b655d" stroke-width="1" marker-end="url(#lgArrow)" />
+            <line x1="240" y1="235" x2="240" y2="171" stroke="#6b655d" stroke-width="1" marker-end="url(#lgArrow)" />
+            <line x1="215" y1="235" x2="106" y2="169" stroke="#6b655d" stroke-width="1" marker-end="url(#lgArrow)" />
+            <line x1="240" y1="140" x2="240" y2="76" stroke="#6b655d" stroke-width="1" marker-end="url(#lgArrow)" />
+            <line x1="400" y1="235" x2="400" y2="171" stroke="#6b655d" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#lgArrow)" />
+            <line x1="106" y1="141" x2="215" y2="76" stroke="#6b655d" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#lgArrow)" />
+            <line x1="374" y1="141" x2="266" y2="76" stroke="#6b655d" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#lgArrow)" />
+
+            <!-- bottom row -->
+            <g>
+              <rect class="box-verified" x="41" y="235" width="78" height="30" rx="5" stroke-width="1.1" />
+              <text x="80" y="254" text-anchor="middle" class="t-sub">setup</text>
+            </g>
+            <g>
+              <rect class="box-verified" x="201" y="235" width="78" height="30" rx="5" stroke-width="1.1" />
+              <text x="240" y="254" text-anchor="middle" class="t-sub">def D₁</text>
+            </g>
+            <g>
+              <rect class="box-lean" x="361" y="235" width="78" height="30" rx="5" stroke-width="1.1" stroke-dasharray="4 3" />
+              <text x="400" y="254" text-anchor="middle" class="t-sub">cited A₂</text>
+            </g>
+
+            <!-- middle row -->
+            <g>
+              <rect class="box-verified" x="41" y="140" width="78" height="30" rx="5" stroke-width="1.1" />
+              <text x="80" y="159" text-anchor="middle" class="t-sub">gated A₁</text>
+            </g>
+            <g>
+              <rect class="box-sorry" x="201" y="140" width="78" height="30" rx="5" stroke-width="1.1" />
+              <text x="240" y="159" text-anchor="middle" class="t-sub">lemma L₁</text>
+            </g>
+            <g>
+              <rect class="box-gray" x="361" y="140" width="78" height="30" rx="5" stroke-width="1.1" />
+              <text x="400" y="159" text-anchor="middle" class="t-sub">lemma L₂</text>
+            </g>
+
+            <!-- top: headline theorem -->
+            <g>
+              <rect class="box-verified" x="192" y="45" width="96" height="30" rx="5" stroke-width="1.3" />
+              <text x="240" y="64" text-anchor="middle" class="t-sub" font-weight="600">theorem T</text>
+            </g>
+          </svg>
+
+          <div class="glegend" aria-hidden="false">
+            <span><i class="sw matched"></i> matched</span>
+            <span><i class="sw drift"></i> drift</span>
+            <span><i class="sw unrev"></i> unreviewed</span>
+            <span><i class="sw cited"></i> cited (borrowed)</span>
+            <span><i class="ln crit"></i> critical path</span>
+            <span><i class="ln"></i> statement-uses</span>
+            <span><i class="ln dashed"></i> proof-uses</span>
+          </div>
+          <p class="fig-cap">
+            A logic graph (schematic). Fill encodes review status; a dashed blue border marks a
+            borrowed <em>cited</em> node off the critical path. The green underlay traces the
+            critical path of <em>gated</em> nodes the audit must clear before the result is banked.
+          </p>
+        </div>
+      </section>
+
+      <!-- ── Faithfulness audit ─────────────────────────────────────── -->
+      <section>
+        <div class="sec-kicker">What the kernel can't see</div>
+        <h2>Four ways a proof can pass yet mislead</h2>
+        <p>
+          A development can be free of <code>sorry</code> and still be uninformative. The audit
+          targets four families of failure — every one type-checks, so the kernel accepts them all.
+        </p>
+        <div class="tax-grid">
+          <div class="tax-card">
+            <span class="tax-tag">Semantic-only</span>
+            <p>Type-checks but states the wrong proposition. <span class="catch">Caught by a per-node statement ↔ claim match.</span></p>
+          </div>
+          <div class="tax-card">
+            <span class="tax-tag">Vacuity</span>
+            <p>A concept defined as <code>True</code>, an unsatisfiable hypothesis, or a witness with no real obstruction — the theorem holds emptily. <span class="catch">Caught by witness normalization and a hypothesis-satisfiability check.</span></p>
+          </div>
+          <div class="tax-card">
+            <span class="tax-tag">Laundering</span>
+            <p>An unproven step slipped in as an <code>axiom</code>, <code>sorry</code>, or <code>native_decide</code>; or a load-bearing node mis-tagged as merely cited. <span class="catch">Caught by a mechanical cheat-token scan and gated-vs-cited attestation.</span></p>
+          </div>
+          <div class="tax-card">
+            <span class="tax-tag">Generality drift</span>
+            <p>A dropped hypothesis or a hardcoded constant leaves the theorem narrower than claimed. <span class="catch">Caught by a statement gate and an unused-hypothesis lint.</span></p>
+          </div>
+        </div>
+        <p class="tax-note">
+          Mechanical scans, an independent reviewer with fresh context, and a human adjudicator at
+          load-bearing checkpoints keep the auditor from sharing the blind spots of whatever produced
+          the statement.
+        </p>
+      </section>
+
+      <!-- ── The library ────────────────────────────────────────────── -->
+      <section class="wide">
+        <div class="sec-kicker">The substrate</div>
+        <h2>Causalean: a verified library agents build on</h2>
+        <p>
+          Formalizing from first principles is slow, so the pipeline composes a foundational Lean
+          library of causal inference rather than re-deriving results. It layers from graphical and
+          measure-theoretic foundations up to the estimation and design methods on top, with a
+          retrieval index spanning the whole stack — the interface agents query to reuse a result
+          instead of reinventing it.
+        </p>
+
+        <div class="figure">
+          <svg class="svg-fig" viewBox="0 0 720 260" role="img"
+               aria-label="The Causalean library in four layers — Foundations, Models, Identification, Methods — with a Retrieval index box spanning the full stack on the right.">
+            <defs>
+              <marker id="libUp" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 Z" fill="#5c5853" />
+              </marker>
+              <marker id="libAmberS" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 Z" fill="#b45309" />
+              </marker>
+              <marker id="libAmberE" markerWidth="7" markerHeight="7" refX="0.5" refY="3" orient="auto">
+                <path d="M6,0 L0,3 L6,6 Z" fill="#b45309" />
+              </marker>
+            </defs>
+
+            <!-- between-layer up arrows -->
+            <line x1="245" y1="204" x2="245" y2="190" stroke="#5c5853" stroke-width="1" marker-end="url(#libUp)" />
+            <line x1="245" y1="148" x2="245" y2="134" stroke="#5c5853" stroke-width="1" marker-end="url(#libUp)" />
+            <line x1="245" y1="92" x2="245" y2="78" stroke="#5c5853" stroke-width="1" marker-end="url(#libUp)" />
+
+            <!-- layers (bottom → top) -->
+            <g>
+              <rect class="box-gray" x="20" y="204" width="450" height="40" rx="6" stroke-width="1.1" />
+              <text x="36" y="221" class="t-title">Foundations</text>
+              <text x="36" y="236" class="t-sub f-soft">Graph (DAG, d-separation, SWIG) · local Mathlib</text>
+            </g>
+            <g>
+              <rect class="box-lean" x="20" y="148" width="450" height="40" rx="6" stroke-width="1.1" />
+              <text x="36" y="165" class="t-title">Models</text>
+              <text x="36" y="180" class="t-sub f-soft">SCM &amp; do-calculus · potential outcomes · asymptotic statistics</text>
+            </g>
+            <g>
+              <rect class="box-verified" x="20" y="92" width="450" height="40" rx="6" stroke-width="1.1" />
+              <text x="36" y="109" class="t-title">Identification</text>
+              <text x="36" y="124" class="t-sub f-soft">exact (ATE / DiD / LATE) · partial (Manski, Balke–Pearl)</text>
+            </g>
+            <g>
+              <rect class="box-verified" x="20" y="36" width="450" height="40" rx="6" stroke-width="1.1" />
+              <text x="36" y="53" class="t-title">Methods</text>
+              <text x="36" y="68" class="t-sub f-soft">estimation (DML, minimax) · panel · experimentation · discovery</text>
+            </g>
+
+            <!-- retrieval index spanning the stack -->
+            <line x1="470" y1="140" x2="508" y2="140" stroke="#b45309" stroke-width="1.1" stroke-dasharray="4 3" marker-start="url(#libAmberE)" marker-end="url(#libAmberS)" />
+            <rect class="box-amber" x="510" y="36" width="190" height="208" rx="6" stroke-width="1.2" />
+            <text x="605" y="118" text-anchor="middle" class="t-title f-amber">Retrieval</text>
+            <text x="605" y="142" text-anchor="middle" class="t-sub f-soft">{fmt(totalDecls)} declarations</text>
+            <text x="605" y="160" text-anchor="middle" class="t-sub f-soft">concept · type</text>
+            <text x="605" y="178" text-anchor="middle" class="t-sub f-soft">goal · semantic</text>
+          </svg>
+          <p class="fig-cap">
+            Causalean in layers: foundations support the model languages, which support
+            identification, which supports the methods on top. One retrieval index over all
+            declarations spans the stack and is what the pipeline queries.
+          </p>
+        </div>
+
+        <dl class="lib-stats">
+          <div><dt>Machine-checked declarations</dt><dd>{fmt(totalDecls)}</dd></div>
+          <div><dt>Files</dt><dd>{fmt(sourceFiles.length)}</dd></div>
+          <div><dt>Lines of Lean</dt><dd>~{Math.round(totalLines / 1_000)}<span class="unit">k</span></dd></div>
+          <div><dt>Clusters</dt><dd>{fmt(totalClusters)}</dd></div>
+          <div><dt>Relying on <code>sorry</code></dt><dd>{fmt(totalSorried)}</dd></div>
+        </dl>
+        <p>
+          Nothing in the library relies on <code>sorry</code> and it contains no hand-written
+          <code>axiom</code>. A few flagship results give a sense of its depth:
+        </p>
+        <div class="thm-chips">
+          <code>backdoor_identifiable_ae</code>
+          <code>frontdoor_identifiable_ae</code>
+          <code>id_sound_discrete</code>
+          <code>late_wald</code>
+          <code>att_csdid</code>
+          <code>balkePearl_sharp</code>
+          <code>dml_ATE_attains_hahn_bound</code>
+          <code>uStatisticOrder_clt</code>
+          <code>localDependenceCLT_of_stein</code>
+        </div>
+      </section>
+
+      <!-- ── Self-improvement ───────────────────────────────────────── -->
+      <section>
+        <div class="sec-kicker">The flywheel</div>
+        <h2>The system grows what it knows and what it can reuse</h2>
+        <p>
+          Two feedback channels compound over time, so each run leaves the pipeline better
+          equipped for the next.
+        </p>
+        <div class="flywheel">
+          <div class="loop">
+            <div class="badge-flow">record → recon</div>
+            <h3>The run bank</h3>
+            <p>
+              Every run is stored — its proposal, typed core, verdicts, and disposition — whether
+              accepted, downgraded, or rejected. A documented dead end stops a later run repeating
+              it; reconnaissance mines the bank before the next proposal is drafted.
+            </p>
+          </div>
+          <div class="loop">
+            <div class="badge-flow">reuse → study mode</div>
+            <h3>The library</h3>
+            <p>
+              When a run needs a load-bearing lemma the library lacks, study mode proves it,
+              checks it is generic and <code>sorry</code>-free, and promotes it back into Causalean
+              under verify-or-rollback — where the next run can simply reuse it.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Closing ────────────────────────────────────────────────── -->
+      <section class="closing wide">
+        <p class="thesis">
+          Autonomous research systems usually close their loop with an LLM judge over the
+          open-ended question <em>"is this good research?"</em> — and that judge can be fooled.
+          CausalForge instead makes the proof correct <b>by construction</b> and confines the
+          remaining judgment to a small, local, re-checkable question: does this Lean statement
+          mean the intended claim? Formal verification is the correctness evaluator automated
+          theoretical research was missing.
+        </p>
+        <div class="closing-links">
+          <a href={`${base}/`}>Browse the working papers →</a>
+          <a href={`${base}/library/`}>Explore the Causalean library →</a>
+        </div>
+      </section>
+
+      <footer class="site-footer">
+        Every formal statement on this site is rendered from a verified Lean artifact at a pinned
+        commit, hash-checked at build time.
+      </footer>
+    </div>
+  </body>
+</html>

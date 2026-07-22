@@ -1,0 +1,1096 @@
+{
+  "qid": "pid_cascade_escalation_rd",
+  "specialization": "postselect_honest",
+  "cluster": "partialid",
+  "symbols": [
+    {
+      "name": "n",
+      "type": "sample_size",
+      "space": "N",
+      "def": "Sample size."
+    },
+    {
+      "name": "O",
+      "type": "audit_tuple",
+      "space": "{(X,U,Y_s,Y_l): X in X, U in [0,1], Y_s in [0,1], Y_l in [0,1]}",
+      "def": "Observed audit tuple O = (X, U, Y_s, Y_l).",
+      "role": "sampling_unit"
+    },
+    {
+      "name": "O_1, ..., O_n",
+      "type": "sample",
+      "space": "({(X,U,Y_s,Y_l): X in X, U in [0,1], Y_s in [0,1], Y_l in [0,1]})^n",
+      "def": "Observed audit sample of size n.",
+      "role": "data",
+      "refs": [
+        "O",
+        "n"
+      ]
+    },
+    {
+      "name": "X",
+      "type": "query_features",
+      "space": "X",
+      "def": "Prompt or query features."
+    },
+    {
+      "name": "U",
+      "type": "raw_small_model_uncertainty",
+      "space": "[0,1]",
+      "def": "Raw small-model uncertainty score before calibration."
+    },
+    {
+      "name": "Y_s",
+      "type": "small_model_quality",
+      "space": "[0,1]",
+      "def": "Quality metric obtained by the small model on the audit query."
+    },
+    {
+      "name": "Y_l",
+      "type": "large_model_quality",
+      "space": "[0,1]",
+      "def": "Quality metric obtained by the large model on the audit query."
+    },
+    {
+      "name": "P",
+      "type": "law",
+      "space": "laws of O",
+      "def": "Observed-data law of O.",
+      "role": "model",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "P_X",
+      "type": "marginal_law",
+      "space": "laws of X",
+      "def": "Marginal law of X induced by P.",
+      "refs": [
+        "P",
+        "X"
+      ]
+    },
+    {
+      "name": "c_P",
+      "type": "population_calibration_map",
+      "sig": "[0,1] -> [0,1]",
+      "def": "Population monotone calibration map that sends the raw uncertainty U to the calibrated score C = c_P(U).",
+      "role": "nuisance",
+      "refs": [
+        "U",
+        "P"
+      ]
+    },
+    {
+      "name": "C",
+      "type": "calibrated_score",
+      "space": "[0,1]",
+      "def": "C = c_P(U).",
+      "role": "running_variable",
+      "refs": [
+        "c_P",
+        "U"
+      ]
+    },
+    {
+      "name": "S_P",
+      "type": "score_support",
+      "space": "subsets of [0,1]",
+      "def": "S_P = supp_P(C), the support of the calibrated score.",
+      "refs": [
+        "P",
+        "C"
+      ]
+    },
+    {
+      "name": "A_P",
+      "type": "positive_mass_score_atoms",
+      "space": "subsets of [0,1]",
+      "def": "A_P = {s in S_P : P(C = s) > 0}, the score support points with positive probability mass.",
+      "refs": [
+        "S_P",
+        "P",
+        "C"
+      ]
+    },
+    {
+      "name": "kappa",
+      "type": "incremental_escalation_cost",
+      "space": "[0,1]",
+      "def": "Known per-query cost penalty for escalating from the small model to the large model."
+    },
+    {
+      "name": "Delta",
+      "type": "net_escalation_gain",
+      "space": "[-2,1]",
+      "def": "Delta = Y_l - Y_s - kappa.",
+      "role": "boundary_value_outcome",
+      "refs": [
+        "Y_l",
+        "Y_s",
+        "kappa"
+      ]
+    },
+    {
+      "name": "qbar",
+      "type": "quality_target",
+      "space": "[0,1]",
+      "def": "Required population quality level for the cascade."
+    },
+    {
+      "name": "K_P",
+      "type": "population_cost_function",
+      "sig": "[0,1] -> R",
+      "def": "K_P(tau) is the expected incremental deployment cost of escalating iff C >= tau.",
+      "refs": [
+        "P",
+        "C",
+        "kappa"
+      ]
+    },
+    {
+      "name": "Q_P",
+      "type": "population_quality_function",
+      "sig": "[0,1] -> R",
+      "def": "Q_P(tau) is the expected quality of escalating iff C >= tau.",
+      "refs": [
+        "P",
+        "C",
+        "Y_s",
+        "Y_l"
+      ]
+    },
+    {
+      "name": "m_P",
+      "type": "atomic_score_regression",
+      "sig": "A_P -> R",
+      "def": "m_P(s) = E_P[Delta | C = s] for score atoms s in A_P.",
+      "refs": [
+        "P",
+        "Delta",
+        "C",
+        "A_P"
+      ]
+    },
+    {
+      "name": "g_P",
+      "type": "dense_score_regression",
+      "sig": "[0,1] -> R",
+      "def": "g_P(c) = E_P[Delta | C = c] on neighborhoods where the score admits a density and the conditional mean is defined.",
+      "refs": [
+        "P",
+        "Delta",
+        "C"
+      ]
+    },
+    {
+      "name": "mu_P",
+      "type": "local_regression_representative",
+      "sig": "[0,1] -> R",
+      "def": "A twice continuously differentiable local regression representative; any mu_P in H_*(P,M) interpolates m_P on score atoms and, in the locally dense regime, coincides with g_P on the selected window.",
+      "role": "local_regression_curve",
+      "refs": [
+        "m_P",
+        "g_P"
+      ]
+    },
+    {
+      "name": "h_0",
+      "type": "local_window_radius",
+      "space": "(0,1]",
+      "def": "Fixed population window radius around the selected cutoff used for the local extension class."
+    },
+    {
+      "name": "M",
+      "type": "curvature_budget",
+      "space": "[0,infinity)",
+      "def": "Upper bound on the absolute second derivative of admissible local regression representatives."
+    },
+    {
+      "name": "T_*(P)",
+      "type": "selected_threshold_set",
+      "space": "subsets of [0,1]",
+      "def": "Set of population cost-minimizing thresholds satisfying the quality constraint.",
+      "role": "selected_target_set",
+      "refs": [
+        "P",
+        "K_P",
+        "Q_P",
+        "qbar"
+      ]
+    },
+    {
+      "name": "tau_*(P)",
+      "type": "selected_threshold",
+      "space": "[0,1]",
+      "def": "Deterministic representative of the selected threshold set defined by tau_*(P) = inf T_*(P).",
+      "role": "selected_target",
+      "refs": [
+        "T_*(P)"
+      ]
+    },
+    {
+      "name": "H_*(P,M)",
+      "type": "local_extension_class",
+      "space": "subsets of C^2([tau_*(P)-h_0, tau_*(P)+h_0])",
+      "def": "Class of admissible range-respecting smooth representatives consistent with the observed atomic score regression near tau_*(P) and the curvature bound M.",
+      "refs": [
+        "P",
+        "M",
+        "tau_*(P)",
+        "h_0",
+        "m_P",
+        "A_P"
+      ]
+    },
+    {
+      "name": "L_*(P,M)",
+      "type": "lower_selected_endpoint",
+      "sig": "[0,infinity) -> R",
+      "def": "L_*(P,M) = inf_{mu in H_*(P,M)} mu(tau_*(P)).",
+      "role": "identified_lower_bound",
+      "refs": [
+        "H_*(P,M)",
+        "tau_*(P)"
+      ]
+    },
+    {
+      "name": "U_*(P,M)",
+      "type": "upper_selected_endpoint",
+      "sig": "[0,infinity) -> R",
+      "def": "U_*(P,M) = sup_{mu in H_*(P,M)} mu(tau_*(P)).",
+      "role": "identified_upper_bound",
+      "refs": [
+        "H_*(P,M)",
+        "tau_*(P)"
+      ]
+    },
+    {
+      "name": "V_cont(P)",
+      "type": "dense_selected_boundary_value",
+      "space": "R",
+      "def": "V_cont(P) = g_P(tau_*(P)), the selected local net escalation value in the locally dense regime where the observed-score conditional mean is point-identified.",
+      "role": "dense_regime_target",
+      "refs": [
+        "g_P",
+        "tau_*(P)"
+      ]
+    },
+    {
+      "name": "M_*(P)",
+      "type": "critical_curvature",
+      "space": "[0,infinity]",
+      "def": "M_*(P) = inf{M >= 0 : 0 in [L_*(P,M), U_*(P,M)]}.",
+      "role": "decision_threshold",
+      "refs": [
+        "L_*(P,M)",
+        "U_*(P,M)"
+      ]
+    },
+    {
+      "name": "f_{C,P}",
+      "type": "local_score_density",
+      "sig": "[0,1] -> R_+",
+      "def": "Density of C on neighborhoods where the score distribution is locally absolutely continuous.",
+      "refs": [
+        "C",
+        "P"
+      ]
+    },
+    {
+      "name": "v_P",
+      "type": "conditional_variance_curve",
+      "sig": "[0,1] -> R_+",
+      "def": "v_P(c) = Var_P(Delta | C = c) on neighborhoods where the score admits a density.",
+      "refs": [
+        "P",
+        "Delta",
+        "C"
+      ]
+    },
+    {
+      "name": "N_{P,-}(h)",
+      "type": "left_local_effective_sample",
+      "sig": "(0,1] -> R_+",
+      "def": "N_{P,-}(h) = n P(tau_*(P) - h <= C < tau_*(P)).",
+      "refs": [
+        "n",
+        "P",
+        "C",
+        "tau_*(P)"
+      ]
+    },
+    {
+      "name": "N_{P,+}(h)",
+      "type": "right_local_effective_sample",
+      "sig": "(0,1] -> R_+",
+      "def": "N_{P,+}(h) = n P(tau_*(P) < C <= tau_*(P) + h).",
+      "refs": [
+        "n",
+        "P",
+        "C",
+        "tau_*(P)"
+      ]
+    },
+    {
+      "name": "alpha",
+      "type": "coverage_error_level",
+      "space": "(0,1)",
+      "def": "Nominal noncoverage probability for the honest confidence interval."
+    },
+    {
+      "name": "r_sel",
+      "type": "selection_locality_radius",
+      "space": "(0,1]",
+      "def": "Radius governing the neighborhood in which the feasible-threshold objective is compared to its value at tau_*(P).",
+      "role": "regularity_constant",
+      "refs": [
+        "P",
+        "tau_*(P)",
+        "K_P",
+        "Q_P"
+      ]
+    },
+    {
+      "name": "lambda_sel",
+      "type": "selection_curvature_constant",
+      "space": "(0,infinity)",
+      "def": "Positive quadratic-growth constant for the feasible-threshold objective around tau_*(P).",
+      "role": "regularity_constant",
+      "refs": [
+        "P",
+        "tau_*(P)",
+        "K_P",
+        "Q_P"
+      ]
+    },
+    {
+      "name": "h_n",
+      "type": "bandwidth_sequence",
+      "space": "(0,infinity)^N",
+      "def": "Local-linear bandwidth sequence in the post-selection honest-CI construction.",
+      "role": "tuning_parameter",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "K",
+      "type": "kernel_function",
+      "sig": "R -> R_+",
+      "def": "Local-linear kernel used in the feasible endpoint estimator."
+    },
+    {
+      "name": "hat C_i",
+      "type": "estimated_score",
+      "space": "[0,1]",
+      "def": "Out-of-fold estimate of C_i = c_P(U_i) used in the feasible routing score.",
+      "role": "generated_regressor",
+      "refs": [
+        "c_P",
+        "U",
+        "O_1, ..., O_n"
+      ]
+    },
+    {
+      "name": "hat K_n",
+      "type": "empirical_cost_function",
+      "sig": "[0,1] -> R",
+      "def": "Empirical analog of K_P built from the audit sample and the feasible score hat C_i.",
+      "refs": [
+        "hat C_i",
+        "O_1, ..., O_n",
+        "kappa"
+      ]
+    },
+    {
+      "name": "hat Q_n",
+      "type": "empirical_quality_function",
+      "sig": "[0,1] -> R",
+      "def": "Empirical analog of Q_P built from the audit sample and the feasible score hat C_i.",
+      "refs": [
+        "hat C_i",
+        "O_1, ..., O_n"
+      ]
+    },
+    {
+      "name": "hat tau",
+      "type": "selected_sample_threshold",
+      "space": "[0,1]",
+      "def": "Empirical analog of tau_*(P), defined as the smallest feasible empirical cost minimizer.",
+      "role": "selected_estimator",
+      "refs": [
+        "hat K_n",
+        "hat Q_n"
+      ]
+    },
+    {
+      "name": "hat V_ll(M)",
+      "type": "bias_aware_local_linear_estimator",
+      "space": "R",
+      "def": "Bias-aware local-linear estimator of V_cont(P) = g_P(tau_*(P)) in the locally dense regime, evaluated at the selected sample threshold hat tau with bandwidth h_n.",
+      "role": "estimator",
+      "refs": [
+        "hat tau",
+        "hat C_i",
+        "h_n",
+        "M",
+        "V_cont(P)"
+      ]
+    },
+    {
+      "name": "hat sigma_n",
+      "type": "local_linear_standard_error",
+      "space": "[0,infinity)",
+      "def": "Standard-error term for hat V_ll(M) in the locally dense score regime.",
+      "refs": [
+        "hat V_ll(M)"
+      ]
+    },
+    {
+      "name": "hat B_n(M)",
+      "type": "curvature_bias_bound",
+      "space": "[0,infinity)",
+      "def": "Worst-case curvature bias bound for hat V_ll(M) under budget M.",
+      "refs": [
+        "hat V_ll(M)",
+        "M",
+        "h_n"
+      ]
+    },
+    {
+      "name": "hat G_n",
+      "type": "generated_score_correction",
+      "space": "[0,infinity)",
+      "def": "Generated-score drift envelope or correction term induced by replacing the population score C with the cross-fitted score estimate hat C_i in the selected endpoint estimator.",
+      "refs": [
+        "hat C_i",
+        "hat tau",
+        "h_n"
+      ]
+    },
+    {
+      "name": "cv_{1-alpha}^{sel}",
+      "type": "simultaneous_critical_value",
+      "space": "[0,infinity)",
+      "def": "Critical value adjusted for selected-threshold reporting over the feasible threshold search.",
+      "refs": [
+        "alpha"
+      ]
+    },
+    {
+      "name": "C_n(M)",
+      "type": "confidence_interval",
+      "space": "closed intervals in R",
+      "def": "Dense-regime selected-cutoff honest confidence interval for V_cont(P) centered at hat V_ll(M) with stochastic spread cv_{1-alpha}^{sel} hat sigma_n and additive bias cushions hat B_n(M) and hat G_n.",
+      "role": "inference_object",
+      "refs": [
+        "hat V_ll(M)",
+        "hat sigma_n",
+        "hat B_n(M)",
+        "hat G_n",
+        "cv_{1-alpha}^{sel}",
+        "V_cont(P)"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:iid-audit",
+      "kind": "sampling",
+      "condition": "O_1, ..., O_n are i.i.d. draws from P.",
+      "free_symbols": [
+        "O_1, ..., O_n",
+        "P"
+      ],
+      "standard": {
+        "name": "i.i.d. sampling",
+        "cite": "KolesarRothe2018DiscreteRD"
+      },
+      "used_by": [
+        "conj:postselect-honest-ci"
+      ]
+    },
+    {
+      "id": "ass:bounded-quality",
+      "kind": "support",
+      "condition": "Y_s in [0,1] and Y_l in [0,1] P-a.s.",
+      "free_symbols": [
+        "Y_s",
+        "Y_l",
+        "P"
+      ],
+      "standard": {
+        "name": "bounded outcomes",
+        "cite": "KhanSaveskiUgander2023OPEBeyondOverlap"
+      },
+      "used_by": [
+        "thm:selected-sharp-set",
+        "prop:critical-curvature",
+        "conj:postselect-honest-ci"
+      ]
+    },
+    {
+      "id": "ass:population-feasible-threshold",
+      "kind": "selection",
+      "condition": "{tau in [0,1] : Q_P(tau) >= qbar} is nonempty.",
+      "free_symbols": [
+        "Q_P",
+        "qbar",
+        "P"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "A calibrated cascade can only have a population selected cutoff if the deployment quality target is attainable by at least one threshold rule. This is realistic in audit settings that tune qbar to a service-level target below the always-escalate quality level and above the never-escalate quality level, which guarantees a nonempty feasible threshold set."
+      },
+      "used_by": [
+        "thm:selected-sharp-set",
+        "prop:critical-curvature",
+        "conj:postselect-honest-ci"
+      ]
+    },
+    {
+      "id": "ass:local-two-sided-atom-support",
+      "kind": "support",
+      "condition": "There exist s_minus, s_plus in A_P such that tau_*(P) - h_0 <= s_minus < tau_*(P) < s_plus <= tau_*(P) + h_0.",
+      "free_symbols": [
+        "A_P",
+        "tau_*(P)",
+        "h_0"
+      ],
+      "constants": [
+        "h_0"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "Isotonic calibration commonly produces score plateaus with positive mass on both sides of an operational cutoff because nearby uncertainty bins are pooled into step levels. The assumption isolates the empirically relevant case where the selected threshold is bracketed by adjacent calibrated score atoms, so local interpolation between observed score cells is the right object."
+      },
+      "used_by": [
+        "thm:selected-sharp-set",
+        "prop:critical-curvature",
+        "conj:active-set-geometry"
+      ]
+    },
+    {
+      "id": "ass:score-cef-extension",
+      "kind": "smoothness",
+      "condition": "There exists mu_P in C^2([tau_*(P) - h_0, tau_*(P) + h_0]) such that mu_P(s) = m_P(s) for every s in A_P intersect [tau_*(P) - h_0, tau_*(P) + h_0].",
+      "free_symbols": [
+        "mu_P",
+        "m_P",
+        "A_P",
+        "tau_*(P)",
+        "h_0"
+      ],
+      "constants": [
+        "h_0"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "Calibrated cascade performance should vary smoothly across latent difficulty even when isotonic fitting coarsens the observed score into atoms. The assumption encodes that local smooth latent relation directly by requiring a twice-differentiable representative through the observed atomic conditional means near the selected cutoff."
+      },
+      "used_by": [
+        "thm:selected-sharp-set",
+        "prop:critical-curvature",
+        "conj:active-set-geometry"
+      ]
+    },
+    {
+      "id": "ass:curvature-budget",
+      "kind": "smoothness",
+      "condition": "sup_{c in [tau_*(P) - h_0, tau_*(P) + h_0]} |mu_P''(c)| <= M.",
+      "free_symbols": [
+        "mu_P",
+        "tau_*(P)",
+        "h_0",
+        "M"
+      ],
+      "constants": [
+        "h_0",
+        "M"
+      ],
+      "standard": {
+        "name": "second-derivative bound",
+        "cite": "ArmstrongKolesar2020SimpleHonest"
+      },
+      "used_by": [
+        "thm:selected-sharp-set",
+        "prop:critical-curvature",
+        "conj:active-set-geometry",
+        "conj:postselect-honest-ci"
+      ]
+    },
+    {
+      "id": "ass:quadratic-selection-growth",
+      "kind": "selection",
+      "condition": "K_P(tau) - K_P(tau_*(P)) >= lambda_sel min{(tau - tau_*(P))^2, r_sel^2} for every tau in [0,1] with Q_P(tau) >= qbar.",
+      "free_symbols": [
+        "K_P",
+        "tau_*(P)",
+        "lambda_sel",
+        "r_sel",
+        "Q_P",
+        "qbar"
+      ],
+      "constants": [
+        "lambda_sel",
+        "r_sel"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "When the constrained deployment frontier is smooth and the selected cutoff is an isolated optimum with positive second derivative along the feasible frontier, nearby feasible threshold perturbations raise cost only quadratically while thresholds outside the local neighborhood remain uniformly worse."
+      },
+      "used_by": [
+        "conj:postselect-honest-ci"
+      ]
+    },
+    {
+      "id": "ass:continuous-local-score-density",
+      "kind": "support",
+      "condition": "C admits a density f_{C,P} on [tau_*(P) - h_0, tau_*(P) + h_0], f_{C,P} is continuous at tau_*(P), and f_{C,P}(tau_*(P)) > 0.",
+      "free_symbols": [
+        "C",
+        "f_{C,P}",
+        "tau_*(P)",
+        "h_0",
+        "P"
+      ],
+      "constants": [
+        "h_0"
+      ],
+      "standard": {
+        "name": "positive local score density",
+        "cite": "CalonicoCattaneoTitiunik2014RDRobustCI"
+      },
+      "used_by": [
+        "conj:postselect-honest-ci"
+      ]
+    },
+    {
+      "id": "ass:continuous-local-regression",
+      "kind": "smoothness",
+      "condition": "The conditional mean g_P(c) = E_P[Delta | C = c] exists for c in [tau_*(P) - h_0, tau_*(P) + h_0] and equals mu_P(c) on that interval.",
+      "free_symbols": [
+        "g_P",
+        "Delta",
+        "C",
+        "mu_P",
+        "tau_*(P)",
+        "h_0",
+        "P"
+      ],
+      "constants": [
+        "h_0"
+      ],
+      "standard": {
+        "name": "observed-score conditional mean representation",
+        "cite": "DongKolesar2021RunningVariableMeasurementError"
+      },
+      "used_by": [
+        "conj:postselect-honest-ci"
+      ]
+    },
+    {
+      "id": "ass:local-variance-continuity",
+      "kind": "variance",
+      "condition": "v_P(c) = Var_P(Delta | C = c) is continuous at tau_*(P) and 0 < v_P(tau_*(P)) < infinity.",
+      "free_symbols": [
+        "v_P",
+        "Delta",
+        "C",
+        "tau_*(P)",
+        "P"
+      ],
+      "standard": {
+        "name": "continuous positive conditional variance",
+        "cite": "CalonicoCattaneoTitiunik2014RDRobustCI"
+      },
+      "used_by": [
+        "conj:postselect-honest-ci"
+      ]
+    },
+    {
+      "id": "ass:bandwidth-shrinking",
+      "kind": "asymptotic",
+      "condition": "h_n -> 0.",
+      "free_symbols": [
+        "h_n"
+      ],
+      "standard": {
+        "name": "shrinking RD bandwidth",
+        "cite": "CalonicoCattaneoFarrell2018OptimalBandwidthRBC"
+      },
+      "used_by": [
+        "conj:postselect-honest-ci"
+      ]
+    },
+    {
+      "id": "ass:local-effective-sample",
+      "kind": "asymptotic",
+      "condition": "min{N_{P,-}(h_n), N_{P,+}(h_n)} -> infinity.",
+      "free_symbols": [
+        "N_{P,-}(h)",
+        "N_{P,+}(h)",
+        "h_n",
+        "P"
+      ],
+      "standard": {
+        "name": "diverging local effective sample size",
+        "cite": "CalonicoCattaneoFarrell2018OptimalBandwidthRBC"
+      },
+      "used_by": [
+        "conj:postselect-honest-ci"
+      ]
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:law-class-atomic",
+      "name": "P_atom(M)",
+      "construction": "{P : ass:bounded-quality, ass:population-feasible-threshold, ass:local-two-sided-atom-support, ass:score-cef-extension, ass:curvature-budget hold under P}",
+      "by_member_properties": [
+        "ass:bounded-quality",
+        "ass:population-feasible-threshold",
+        "ass:local-two-sided-atom-support",
+        "ass:score-cef-extension",
+        "ass:curvature-budget"
+      ]
+    },
+    {
+      "id": "def:law-class-continuous",
+      "name": "P_cont(M)",
+      "construction": "{P : ass:bounded-quality, ass:population-feasible-threshold, ass:continuous-local-score-density, ass:continuous-local-regression, ass:curvature-budget, ass:local-variance-continuity hold under P}",
+      "by_member_properties": [
+        "ass:bounded-quality",
+        "ass:population-feasible-threshold",
+        "ass:continuous-local-score-density",
+        "ass:continuous-local-regression",
+        "ass:curvature-budget",
+        "ass:local-variance-continuity"
+      ]
+    },
+    {
+      "id": "def:population-frontiers",
+      "name": "K_P and Q_P",
+      "construction": "K_P(tau) = E_P[kappa * 1{C >= tau}] and Q_P(tau) = E_P[Y_s + 1{C >= tau}(Y_l - Y_s)]"
+    },
+    {
+      "id": "def:selected-threshold-set",
+      "name": "T_*(P)",
+      "construction": "T_*(P) = argmin_{tau in [0,1]} K_P(tau) subject to Q_P(tau) >= qbar",
+      "inputs": [
+        "P",
+        "K_P",
+        "Q_P",
+        "qbar"
+      ]
+    },
+    {
+      "id": "def:selected-threshold",
+      "name": "tau_*(P)",
+      "construction": "tau_*(P) = inf T_*(P)",
+      "inputs": [
+        "T_*(P)"
+      ]
+    },
+    {
+      "id": "def:local-extension-class",
+      "name": "H_*(P,M)",
+      "construction": "H_*(P,M) = {mu in W^{2,\\infty}([tau_*(P)-h_0, tau_*(P)+h_0]) : mu(s) = m_P(s) for each s in A_P intersect [tau_*(P)-h_0, tau_*(P)+h_0], ess sup_{c in [tau_*(P)-h_0, tau_*(P)+h_0]} |mu''(c)| <= M, and mu(c) in [-2,1] for every c in [tau_*(P)-h_0, tau_*(P)+h_0]}",
+      "inputs": [
+        "P",
+        "M",
+        "tau_*(P)",
+        "h_0",
+        "m_P",
+        "A_P"
+      ]
+    },
+    {
+      "id": "def:selected-endpoints",
+      "name": "L_*(P,M) and U_*(P,M)",
+      "construction": "L_*(P,M) = inf_{mu in H_*(P,M)} mu(tau_*(P)) and U_*(P,M) = sup_{mu in H_*(P,M)} mu(tau_*(P))",
+      "inputs": [
+        "H_*(P,M)",
+        "tau_*(P)"
+      ]
+    },
+    {
+      "id": "def:critical-curvature",
+      "name": "M_*(P)",
+      "construction": "M_*(P) = inf{M >= 0 : 0 in [L_*(P,M), U_*(P,M)]}",
+      "inputs": [
+        "L_*(P,M)",
+        "U_*(P,M)"
+      ]
+    },
+    {
+      "id": "def:dense-selected-value",
+      "name": "V_cont(P)",
+      "construction": "V_cont(P) = g_P(tau_*(P))",
+      "inputs": [
+        "g_P",
+        "tau_*(P)"
+      ]
+    },
+    {
+      "id": "def:generated-score-construction",
+      "name": "hat C_i",
+      "construction": "hat C_i is any out-of-fold monotone calibration score obtained by fitting a calibration map on a subsample that excludes observation i and evaluating that map at U_i",
+      "inputs": [
+        "O_1, ..., O_n",
+        "U",
+        "c_P"
+      ]
+    },
+    {
+      "id": "def:selected-ll-estimator",
+      "name": "hat V_ll(M)",
+      "construction": "hat V_ll(M) is the intercept from the local-linear weighted least-squares regression of Y_{l,i} - Y_{s,i} - kappa on 1 and hat C_i - hat tau using kernel weights K((hat C_i - hat tau)/h_n) over observations with |hat C_i - hat tau| <= h_n, where K is a bounded symmetric kernel with compact support, integral 1, positive mass on a neighborhood of 0, and nondegenerate second moment 0 < integral u^2 K(u) du < infinity",
+      "inputs": [
+        "hat C_i",
+        "hat tau",
+        "h_n",
+        "K",
+        "kappa"
+      ]
+    },
+    {
+      "id": "def:generated-score-drift-handle",
+      "name": "hat G_n",
+      "construction": "Construct hat G_n additively as hat G_n = hat g_{gen,n} + hat g_{shift,n} + hat g_{rem,n}, where hat g_{gen,n} is a data-only envelope for the orthogonalized first-order generated-score perturbation created by replacing the population score C with the generated score hat C in the local-linear score, hat g_{shift,n} is a data-only envelope for the selected-threshold target shift |g_P(hat tau)-g_P(tau_*(P))| induced by evaluating at the random selected cutoff hat tau rather than the population cutoff tau_*(P), and hat g_{rem,n} is a data-only envelope for the residual second-order generated-score and score-discretization remainder.",
+      "inputs": [
+        "hat C_i",
+        "hat tau",
+        "h_n",
+        "K",
+        "c_P"
+      ]
+    },
+    {
+      "id": "def:selected-honest-ci",
+      "name": "C_n(M)",
+      "construction": "C_n(M) = [hat V_ll(M) - cv_{1-alpha}^{sel} hat sigma_n - hat B_n(M) - hat G_n, hat V_ll(M) + cv_{1-alpha}^{sel} hat sigma_n + hat B_n(M) + hat G_n]",
+      "inputs": [
+        "hat V_ll(M)",
+        "hat sigma_n",
+        "hat B_n(M)",
+        "hat G_n",
+        "cv_{1-alpha}^{sel}"
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "thm:selected-sharp-set",
+      "kind": "theorem",
+      "statement": "Fix an observed-data law P in P_atom(M) and suppose H_*(P,M) is nonempty. Within the local extension class H_*(P,M), the set of selected local net escalation values compatible with P is exactly [L_*(P,M), U_*(P,M)]; equivalently, {mu(tau_*(P)) : mu in H_*(P,M)} = [L_*(P,M), U_*(P,M)]. Moreover each point of [L_*(P,M), U_*(P,M)] is attained by some mu in H_*(P,M).",
+      "depends_on": [
+        "ass:bounded-quality",
+        "ass:population-feasible-threshold",
+        "ass:local-two-sided-atom-support",
+        "ass:score-cef-extension",
+        "ass:curvature-budget",
+        "def:law-class-atomic",
+        "def:selected-threshold-set",
+        "def:selected-threshold",
+        "def:local-extension-class",
+        "def:selected-endpoints"
+      ],
+      "status": "to-prove",
+      "justification": "This is the kernel identification claim: once the population cutoff is selected and the local atomic score regression is fixed, the primitive observed-law target is the full sensitivity interval generated by admissible smooth representatives.",
+      "gap": "ArmstrongKolesar2018OptimalInference studies linear functionals such as a regression value at a point over convex smoothness classes, and KolesarRothe2018DiscreteRD applies honest endpoint logic to fixed-cutoff discrete running variables. When tau_*(P) is externally fixed, this theorem reduces to that fixed-target honest endpoint problem. The new step is that the evaluation point itself is the population cost-quality selected cascade cutoff.",
+      "consumer": "An offline cascade audit can report the exact sensitivity envelope for net escalation at the deployed cutoff rather than a point estimate that ignores same-sample cutoff choice and score discreteness."
+    },
+    {
+      "id": "prop:critical-curvature",
+      "kind": "proposition",
+      "statement": "Under the narrowed assumptions of thm:selected-sharp-set for every curvature budget and, in particular, assuming H_*(P,0) is nonempty, M -> L_*(P,M) is weakly decreasing and M -> U_*(P,M) is weakly increasing, so M_*(P) is well defined. If 0 notin [L_*(P,0), U_*(P,0)], then M_*(P) is the sign-certification frontier: for every M < M_*(P), the interval [L_*(P,M), U_*(P,M)] has the same strict sign as [L_*(P,0), U_*(P,0)], while 0 in [L_*(P,M), U_*(P,M)] for every M > M_*(P). If in addition L_*(P,M) < U_*(P,M) for some M, then there exist mu_L, mu_U in H_*(P,M) such that mu_L(s) = mu_U(s) = m_P(s) for every s in A_P intersect [tau_*(P)-h_0, tau_*(P)+h_0], mu_L(tau_*(P)) = L_*(P,M), and mu_U(tau_*(P)) = U_*(P,M); hence the same observed law P, the same frontier objects K_P and Q_P, and the same selected cutoff tau_*(P) are compatible with distinct selected local boundary values. In the fixed-cutoff special case with support points arbitrarily close to that cutoff from both sides, [L_*(P,M), U_*(P,M)] collapses to the fixed-cutoff point value.",
+      "depends_on": [
+        "thm:selected-sharp-set",
+        "def:population-frontiers",
+        "def:local-extension-class",
+        "def:critical-curvature"
+      ],
+      "status": "to-prove",
+      "justification": "The decision-facing object is the smallest curvature budget at which sign certification fails, and the same-law ambiguity clause isolates exactly why cost and quality frontiers alone do not represent the selected boundary value once the endpoint set is non-singleton.",
+      "gap": "Kotte2026UCCI selects a calibrated threshold by constrained cost minimization, and Bouchard2026EscalationWorthIt characterizes deterministic threshold-cascade frontiers through piecewise concavity and pairwise-envelope geometry. This proposition is a strict tightening against that frontier literature: even after the observed law P fixes K_P, Q_P, and tau_*(P), non-singletonity of [L_*(P,M), U_*(P,M)] implies frontier non-representability of the selected local causal value. ZhangBenMichaelImai2022SafePolicyRD remains an informed-by policy-learning comparator rather than a reduction target because it studies robust cutoff choice under multiple-cutoff extrapolation, not selected-cutoff local identification at a fixed frontier point.",
+      "consumer": "A deployment team can separate two questions that frontier and policy-learning papers do not separate: which threshold is cost-optimal and whether escalation is causally worthwhile exactly at that threshold."
+    },
+    {
+      "id": "conj:active-set-geometry",
+      "kind": "conjecture",
+      "statement": "Suppose the window [tau_*(P)-h_0, tau_*(P)+h_0] contains finitely many score atoms, H_*(P,M) is nonempty for every M in [0,M_*(P)], 0 notin [L_*(P,0), U_*(P,0)], and M_*(P) in (0,infinity). Then there exists a finite family of candidate endpoint-attaining perfect-spline combinatorial types on [0,M_*(P)]. Consequently M -> L_*(P,M) is continuous, convex, and weakly decreasing on [0,M_*(P)], M -> U_*(P,M) is continuous, concave, and weakly increasing on [0,M_*(P)], and zero first enters [L_*(P,M), U_*(P,M)] at M=M_*(P). The stronger claim that both endpoint maps are affine on a finite partition of [0,M_*(P)] is left open.",
+      "depends_on": [
+        "thm:selected-sharp-set",
+        "prop:critical-curvature"
+      ],
+      "status": "to-prove",
+      "justification": "The nonroutine geometry claim is only meaningful in the regime where sign certification is initially strict and then fails at a positive finite curvature budget, and the switching object has to be a genuine inequality in the extension class.",
+      "gap": "ArmstrongKolesar2020SimpleHonest gives smoothness-indexed honest intervals, but not a finite-atom active-set characterization of when zero first enters a selected endpoint set. The closest in-repo analogue is pid_rdd_manipulation_bounded, where endpoint kinks arise when binding constraints switch; the present conjecture asks for that geometry at a selected cascade cutoff.",
+      "consumer": "If true, the sensitivity analysis becomes auditable because one can identify which neighboring score cells make sign certification fail."
+    },
+    {
+      "id": "conj:postselect-honest-ci",
+      "kind": "conjecture",
+      "statement": "Assume ass:iid-audit, ass:quadratic-selection-growth, and P in P_cont(M). Let h_n -> 0 and min{N_{P,-}(h_n), N_{P,+}(h_n)} -> infinity. Construct hat C_i as in def:generated-score-construction, let hat tau = inf argmin_{tau in [0,1]} hat K_n(tau) subject to hat Q_n(tau) >= qbar, and construct hat G_n from the handle in def:generated-score-drift-handle. Assume additionally the following high-level gates uniformly over P in P_cont(M) satisfying ass:quadratic-selection-growth: (i) selected-threshold localization: there exists a deterministic sequence rho_n downarrow 0 such that P(|hat tau - tau_*(P)| <= rho_n h_n) -> 1; (ii) generated-score orthogonal expansion: the cross-fitted orthogonalized selected-score estimator admits a first-order expansion around the oracle score process with first-stage rate r_n satisfying r_n = o(h_n) and sqrt(n h_n) r_n^2 -> 0, and its residual remainder is absorbed by the remainder component of hat G_n; and (iii) selected-neighborhood oracle honest coverage: there exists a selected-threshold critical value cv_{1-alpha}^{sel} such that liminf_{n -> infinity} inf_P P(sup_{|tau-tau_*(P)| <= rho_n h_n} |\\tilde V_n(tau)-g_P(tau)| <= cv_{1-alpha}^{sel} hat sigma_n + hat B_n(M)) >= 1-alpha. Then the confidence interval C_n(M) has asymptotic coverage at least 1-alpha for V_cont(P) uniformly over P in P_cont(M) satisfying ass:quadratic-selection-growth.",
+      "depends_on": [
+        "ass:iid-audit",
+        "ass:bounded-quality",
+        "ass:population-feasible-threshold",
+        "ass:curvature-budget",
+        "ass:quadratic-selection-growth",
+        "ass:continuous-local-score-density",
+        "ass:continuous-local-regression",
+        "ass:local-variance-continuity",
+        "ass:bandwidth-shrinking",
+        "ass:local-effective-sample",
+        "def:law-class-continuous",
+        "def:dense-selected-value",
+        "def:generated-score-construction",
+        "def:selected-threshold",
+        "def:selected-ll-estimator",
+        "def:generated-score-drift-handle",
+        "def:selected-honest-ci"
+      ],
+      "status": "to-prove",
+      "justification": "The estimator rung remains worth stating only if it is explicit that the point target is separate from the atomic identified set and only lives in the narrower dense-score regime.",
+      "gap": "CalonicoCattaneoTitiunik2014RDRobustCI and CalonicoCattaneoFarrell2018OptimalBandwidthRBC handle fixed-cutoff RD inference, ArmstrongKolesar2018BandwidthSnooping handles selection over fixed-target tuning parameters, and DongKolesar2021RunningVariableMeasurementError and Pernot2023IsotonicStratification explain why generated or step-valued scores alter the endpoint problem. The open content here is the data-only correction for selected-cutoff generated-score drift, not a finished theorem under an assumed oracle local sup-norm rate.",
+      "consumer": "This handle defines the reporting problem for cascade audits when the selected cutoff lies in a locally dense part of the calibrated score distribution and the dense-regime target V_cont(P) is point-identified."
+    }
+  ],
+  "target_estimand": "[L_*(P,M), U_*(P,M)]",
+  "estimand_functional": "[L_*(P,M), U_*(P,M)] with L_*(P,M) = inf_{mu in H_*(P,M)} mu(tau_*(P)) and U_*(P,M) = sup_{mu in H_*(P,M)} mu(tau_*(P))",
+  "sampling_model": {
+    "design": "i.i.d. offline audit sample with paired small-model and large-model quality measurements; the same sample may be used to estimate the calibrated score and select the routing threshold in the inference conjecture.",
+    "units": "Queries or prompts x with raw uncertainty U, small-model quality Y_s, and large-model quality Y_l.",
+    "treatment": "Deterministic escalation rule D(tau) = 1{C >= tau}; the selected rule uses tau = tau_*(P) in population and tau = hat tau in sample.",
+    "overlap": "Global positivity for switching from the small to the large model fails under deterministic threshold routing; the proposal therefore targets the selected local boundary identified set [L_*(P,M), U_*(P,M)] in the atomic regime and the point value V_cont(P) only in the narrower locally dense regime.",
+    "nuisance_estimation": "The identification kernel works with atomic calibrated-score support and smooth local extensions. The inference rung is narrower and remains open-ended: it assumes a locally dense selected-threshold regime, positive score density, continuous conditional variance, and cross-fitted monotone score construction, then asks for a data-only generated-score drift envelope and simultaneous selected-cutoff critical value for V_cont(P) rather than assuming an oracle local calibration rate."
+  },
+  "bibliography": [
+    {
+      "key": "Kotte2026UCCI",
+      "citation": "Kotte, V. (2026). UCCI: Calibrated Uncertainty for Cost-Optimal LLM Cascade Routing. arXiv:2605.18796."
+    },
+    {
+      "key": "ArmstrongKolesar2018OptimalInference",
+      "citation": "Armstrong, T. B., and Kolesar, M. (2018). Optimal Inference in a Class of Regression Models. Econometrica 86(2): 655-683."
+    },
+    {
+      "key": "ArmstrongKolesar2018BandwidthSnooping",
+      "citation": "Armstrong, T. B., and Kolesar, M. (2018). A Simple Adjustment for Bandwidth Snooping. Review of Economic Studies 85(2): 732-765."
+    },
+    {
+      "key": "ArmstrongKolesar2020SimpleHonest",
+      "citation": "Armstrong, T. B., and Kolesar, M. (2020). Simple and Honest Confidence Intervals in Nonparametric Regression. Quantitative Economics 11(1): 1-39."
+    },
+    {
+      "key": "KolesarRothe2018DiscreteRD",
+      "citation": "Kolesar, M., and Rothe, C. (2018). Inference in Regression Discontinuity Designs with a Discrete Running Variable. American Economic Review 108(8): 2277-2304."
+    },
+    {
+      "key": "BachocPreinerstorferSteinberger2016PostSelection",
+      "citation": "Bachoc, F., Preinerstorfer, D., and Steinberger, L. (2016). Uniformly Valid Confidence Intervals Post-Model-Selection. arXiv:1611.01043."
+    },
+    {
+      "key": "CalonicoCattaneoTitiunik2014RDRobustCI",
+      "citation": "Calonico, S., Cattaneo, M. D., and Titiunik, R. (2014). Robust Nonparametric Confidence Intervals for Regression-Discontinuity Designs. Econometrica 82(6): 2295-2326."
+    },
+    {
+      "key": "CalonicoCattaneoFarrell2018OptimalBandwidthRBC",
+      "citation": "Calonico, S., Cattaneo, M. D., and Farrell, M. H. (2018). Optimal Bandwidth Choice for Robust Bias Corrected Inference in Regression Discontinuity Designs. Econometrics Journal 23(2): 192-210."
+    },
+    {
+      "key": "ChernozhukovChetverikovDemirerDufloHansenNeweyRobins2018DML",
+      "citation": "Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C., Newey, W., and Robins, J. (2018). Double/Debiased Machine Learning for Treatment and Structural Parameters. Econometrics Journal 21(1): C1-C68."
+    },
+    {
+      "key": "FrauenEtAl2026CausalLLM",
+      "citation": "Frauen, D., Brockschmidt, M., Hess, K., Ma, H., Ma, Y., Maarouf, A., Schroder, M., Schweisthal, J., Wang, Y., Deviyani, A., Parbhoo, S., Krishnan, R. G., and Feuerriegel, S. (2026). Causal Methods for LLM Development and Evaluation. arXiv:2605.25998."
+    },
+    {
+      "key": "KhanSaveskiUgander2023OPEBeyondOverlap",
+      "citation": "Khan, S., Saveski, M., and Ugander, J. (2023). Off-Policy Evaluation Beyond Overlap: Partial Identification Through Smoothness. arXiv:2305.11812."
+    },
+    {
+      "key": "Bouchard2026EscalationWorthIt",
+      "citation": "Bouchard, D. (2026). Is Escalation Worth It? A Decision-Theoretic Characterization of LLM Cascades. arXiv:2605.06350."
+    },
+    {
+      "key": "DongKolesar2021RunningVariableMeasurementError",
+      "citation": "Dong, Y., and Kolesar, M. (2021). On Causal Interpretation of Regression Discontinuity Designs with Measurement Error in the Running Variable. arXiv:2111.07388."
+    },
+    {
+      "key": "Pernot2023IsotonicStratification",
+      "citation": "Pernot, P. (2023). Calibration Properties of Isotonic Regression and Stratified Reliability Diagrams. arXiv:2306.05180."
+    },
+    {
+      "key": "FengHuYangLiZhou2024RDAuxiliaryATE",
+      "citation": "Feng, Y., Hu, Y., Yang, S., Li, K., and Zhou, X. (2024). On the Identification of Average Treatment Effects in Regression Discontinuity Designs. arXiv:2412.20840."
+    },
+    {
+      "key": "ZhangBenMichaelImai2022SafePolicyRD",
+      "citation": "Zhang, Y., Ben-Michael, E., and Imai, K. (2022). Safe Policy Learning under Regression Discontinuity Designs with Multiple Cutoffs. arXiv:2208.13323."
+    },
+    {
+      "key": "MicchelliRivlin1977OptimalRecovery"
+    },
+    {
+      "key": "MammenRotheSchienle2012GeneratedCovariates"
+    }
+  ],
+  "tldr": "The proposal treats the selected LLM-cascade cutoff as a population-selected boundary problem whose primitive object is the honest identified set [L_*(P,M), U_*(P,M)], not a uniquely observed-law point target in the atomic isotonic-score regime. The main theorem states that, once the population cutoff tau_*(P) is defined by the cost-quality frontier and the local atomic score regression is fixed, the sharp selected local net-escalation set is exactly the extremal boundary value over range-respecting C^2 representatives obeying curvature budget M. The companion proposition turns that set into a decision object M_*(P), the smallest curvature budget at which sign certification fails, and sharpens the comparison to frontier papers into a same-law non-representability statement: K_P, Q_P, and tau_*(P) can be fixed while admissible local representatives still disagree on the boundary value whenever the endpoint set is non-singleton. The estimation rung remains open and is stated only for a narrower locally dense regime, where V_cont(P) = g_P(tau_*(P)) is point-identified and the unresolved task is a post-selection-honest generated-score correction for selected-cutoff local-linear inference.",
+  "project_justification": {
+    "gap": "Current cascade papers optimize or analyze threshold frontiers but treat the chosen cutoff as a descriptive operating point, not as a selected local causal target with an honest identified set. Honest RD papers derive fixed-cutoff endpoint intervals, and post-selection CI papers define selected targets in parametric families, but no cited work derives the sharp selected-target bound [L_*(P,M), U_*(P,M)] for a population routing cutoff chosen by the same cost-quality frontier that the paper studies.",
+    "niche": "The open niche is a selected-target sensitivity theory for deterministic LLM routing that is local, comparator-aware, and compatible with isotonic score atoms.",
+    "fill": "The project fills that niche by defining tau_*(P) at the population level, deriving the M-indexed selected honest identified set for the boundary value at that cutoff, reducing to the fixed-cutoff honest endpoint problem when the cutoff is exogenous, proving through a same-law representative ambiguity statement that full cost and quality frontiers still do not identify the selected local value when the endpoint set is non-singleton, translating sign certification into the critical curvature M_*(P), and isolating a narrower dense-regime generated-score correction problem for point-identified inference on V_cont(P)."
+  },
+  "related_work": "Kotte2026UCCI is the application anchor because Section 4.3 selects the escalation threshold by constrained empirical cost minimization after isotonic calibration of token-margin uncertainty. The present proposal is informed by that selection problem rather than an extension of its optimality theorem: Proposition 1 instead asks whether the same population cost-quality frontier can still leave the selected local causal value set non-singleton. Bouchard2026EscalationWorthIt is the closest deterministic-cascade comparator because it characterizes the cost-quality frontier through piecewise concavity and pairwise-envelope geometry. Proposition 1 is a strict non-representability result against that frontier literature: even with the same observed law P, the same K_P, the same Q_P, and the same selected cutoff tau_*(P), admissible local representatives can imply different selected boundary values. ArmstrongKolesar2018OptimalInference supplies the fixed-target honest endpoint logic for linear functionals over convex smoothness classes, and Theorem 1 reduces to that fixed-evaluation-point problem when tau_*(P) is exogenous. KolesarRothe2018DiscreteRD is the closest discrete-support fixed-cutoff analogue because its guaranteed-coverage endpoint logic under running-variable mass points is exactly the special case recovered once the cutoff is externally fixed. ZhangBenMichaelImai2022SafePolicyRD is downgraded to an informed-by policy-learning comparator: it decomposes utility into identifiable and unidentifiable parts and learns improved cutoffs under smooth cross-cutoff extrapolation, whereas the present proposal fixes one selected threshold and studies whether the local boundary value set at that frontier point is singleton. ArmstrongKolesar2018BandwidthSnooping and BachocPreinerstorferSteinberger2016PostSelection are likewise informed-by templates for the open inference rung rather than theorem-level reductions, because they study selection-adjusted inference for bandwidths or parametric model-specific targets rather than smooth selected RD endpoints. DongKolesar2021RunningVariableMeasurementError and Pernot2023IsotonicStratification guide the generated-score side because they explain when an observed score proxy can carry causal meaning and why isotonic calibration creates score plateaus and mass points. FrauenEtAl2026CausalLLM motivates routing as a causal design problem and leaves open the formal local estimand under deterministic thresholding. KhanSaveskiUgander2023OPEBeyondOverlap supplies the partial-identification template when global overlap fails. CalonicoCattaneoTitiunik2014RDRobustCI and CalonicoCattaneoFarrell2018OptimalBandwidthRBC provide the fixed-cutoff local-linear machinery that the open inference handle adapts only in the locally dense score regime.",
+  "comparator_promise_table": [
+    {
+      "comparator_bibkey": "Kotte2026UCCI",
+      "comparator_claim": "UCCI selects an isotonic calibrated escalation threshold by constrained cost minimization after calibration.",
+      "matched_by": "prop:critical-curvature",
+      "match_kind": "non_representability"
+    },
+    {
+      "comparator_bibkey": "Bouchard2026EscalationWorthIt",
+      "comparator_claim": "Deterministic cascade frontier geometry summarizes cost-quality tradeoffs for threshold rules.",
+      "matched_by": "prop:critical-curvature",
+      "match_kind": "non_representability"
+    },
+    {
+      "comparator_bibkey": "ArmstrongKolesar2018OptimalInference",
+      "comparator_claim": "Fixed-target honest endpoint inference is solved for convex smoothness classes when the evaluation point is exogenous.",
+      "matched_by": "thm:selected-sharp-set",
+      "match_kind": "equivalence"
+    },
+    {
+      "comparator_bibkey": "KolesarRothe2018DiscreteRD",
+      "comparator_claim": "Guaranteed-coverage discrete-RD endpoint logic treats a fixed running-variable cutoff with mass points.",
+      "matched_by": "thm:selected-sharp-set",
+      "match_kind": "equivalence"
+    },
+    {
+      "comparator_bibkey": "ZhangBenMichaelImai2022SafePolicyRD",
+      "comparator_claim": "Safe RD policy learning studies cutoff choice with worst-case utility under cross-cutoff extrapolation.",
+      "matched_by": "prop:critical-curvature",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "ArmstrongKolesar2018BandwidthSnooping",
+      "comparator_claim": "Selection among bandwidths requires simultaneous critical values to retain uniform coverage after data-dependent reporting.",
+      "matched_by": "conj:postselect-honest-ci",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "BachocPreinerstorferSteinberger2016PostSelection",
+      "comparator_claim": "Uniformly valid post-selection confidence intervals can be built for selected parametric model-specific targets.",
+      "matched_by": "conj:postselect-honest-ci",
+      "match_kind": "downgraded_to_informed_by"
+    }
+  ],
+  "honest_scope": "The selected-target bound [L_*(P,M), U_*(P,M)] and the critical-curvature object M_*(P) are the main identification kernel. When tau_*(P) is externally fixed, the atomic theorem reduces to the fixed-cutoff honest endpoint problem studied by Armstrong-Kolesar and Kolesar-Rothe; the new content is the selected-target bookkeeping and the same-law separation between frontier objects and the local boundary value when the endpoint set is non-singleton. The endpoint geometry remains open in the sign-certification regime 0 notin [L_*(P,0), U_*(P,0)] with finite positive M_*(P), where the relevant switches come from curvature or range inequalities for endpoint-attaining extremizers rather than from the always-binding interpolation equalities. The post-selection honest-CI rung is a separate dense-regime handle: it asks for a generated-score drift correction and simultaneous selected-cutoff critical value for V_cont(P), and it does not claim honest post-selection inference for the genuinely atomic isotonic-score regime."
+}

@@ -1,0 +1,43 @@
+=== PARENT-AWARE NOVELTY DIRECTIVE (orchestrator-injected; the drafter handoff has upgrade_mode: true) ===
+
+This proposal targets a strictly higher novelty tier than a banked parent. Adjust the N (novelty) axis as follows; the rest of the base review prompt remains in force.
+
+(PN1) **Similarity-to-parent is EXPECTED.** Do NOT flag `N-repo` or `N-pub` solely because the kernel resembles the parent's kernel; that is the point of upgrade mode. The parent's kernel is identified by `parent_qid` + `parent_spec` in the drafter handoff. Repo-axis N still applies to every OTHER in-catalogue entry; published-axis N still applies normally.
+
+(PN2) **Per-axis delta rubric (load-bearing).** The drafter declares `upgrade_axis ∈ {computation, estimation, generalization, mechanism}` and a `delta_summary`. Run the rubric for the declared axis:
+
+  - `computation`: the proposal MUST add a quantitative bound, closed-form expression, sharp rate, or explicit boundary case that the parent stated only qualitatively or left implicit. A pure restatement or re-derivation of the parent's bound FAILS this rubric.
+  - `estimation`: the proposal MUST add a named estimator with at least one asymptotic property (consistency, asymptotic-normality, convergence rate, double-robustness) tied to a sharp population target the parent established. A bare "one could estimate this" FAILS.
+  - `generalization`: the proposal MUST strictly widen the parent's assumption class OR weaken one named premise, AND the parent kernel must reduce to a corner case under §9. A relabelling, a CATE/ATT restatement of an ATE result, or a T=2→general-T extension FAILS unless paired with a phenomenon (sign-flip, regime change) absent from the parent.
+  - `mechanism`: the proposal MUST decompose or isolate an effect that the parent bundled — separating a direct from an indirect channel, factoring a bound into structural + sampling components, etc. A label change without a new identifying restriction FAILS.
+
+(PN3) **Emit `upgrade_delta_verdict ∈ {delivered, partial, absent}`** and a one-line `upgrade_delta_one_line` explaining the call. If the rubric fails, fire `N-upgrade-thin` (see flag code below).
+
+(PN4) **Corner-case reduction is mandatory.** §9 must contain a sanity corollary "reduces to parent under <named §7 assumption>". If absent or hand-waved, fire `C-sanity` against §9 — this is a stronger requirement than the standard sanity check.
+
+(PN5) **Cluster lock.** Verify the proposal anchors in the parent's cluster (panel / exactid / partialid / stat / experimentation / scm as recorded by the orchestrator). A cross-cluster pivot is NOT an upgrade — fire `N-upgrade-thin` with a one-line explanation pointing the orchestrator at a regular cold-start at the requested tier instead.
+
+=== NEW NOVELTY FLAG CODE ===
+
+`N-upgrade-thin` — Upgrade-mode only. The declared `upgrade_axis` was not delivered per its rubric (PN2 above), OR the proposal pivoted to a structurally-different angle disguised as an upgrade (PN5), OR §9 is missing the parent-reduction corollary (PN4 — paired with C-sanity). Cite the rubric clause and the drafter's `delta_summary`.
+
+=== OUTPUT JSON ADDITIONS ===
+
+Add the following object to your output JSON (in addition to the standard schema):
+
+  "upgrade_review": {
+    "upgrade_mode":           true,
+    "upgrade_axis":           "computation|estimation|generalization|mechanism",
+    "upgrade_delta_verdict":  "delivered|partial|absent",
+    "upgrade_delta_one_line": "<one-line call>"
+  }
+
+In the `novelty_flags` array, you may use `N-upgrade-thin` in addition to the standard novelty codes.
+
+=== VERDICT ROUTING ADDITIONS ===
+
+In addition to the base prompt's REJECT / REVISE / ACCEPT triggers:
+  - REJECT (upgrade-mode): `upgrade_delta_verdict = absent` (the declared upgrade axis was not delivered at all).
+  - REVISE (upgrade-mode): `upgrade_delta_verdict = partial` (the axis is partially delivered; the drafter can sharpen).
+
+=== END PARENT-AWARE NOVELTY DIRECTIVE ===

@@ -1,0 +1,683 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_dml\_orthogonality\_frontier, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section originally contained a stage-1 placeholder. Replace each
+%    placeholder with the content described in
+%    `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_dml\_orthogonality\_frontier} / \texttt{v1}%
+  \\ \large\textit{Riesz-localization critical radius for shrinking HTE DML reports}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a free-form ExactID proposal.  The locked tuple is
+\[
+(\texttt{qid},\texttt{specialization},\text{graph/SWIG},\text{treatment},
+\text{target estimand},\text{identifying assumptions}).
+\]
+Here \(\texttt{qid}=\texttt{eid\_dml\_orthogonality\_frontier}\) and
+\(\texttt{specialization}=\texttt{v1}\).  The graph/SWIG has observed
+\((X,D,Y)\), binary treatment \(D\in\{0,1\}\), potential outcomes
+\((Y(1),Y(0))\), and observed outcome \(Y=DY(1)+(1-D)Y(0)\).  The treatment is
+the binary intervention \(D\leftarrow d\).  Write \(X=(Z,W)\), where \(Z\in
+\R^{d_z}\) is the localization coordinate and \(W\) contains the remaining
+covariates.  For a center \(z_0\), bandwidth \(r_n>0\), kernel \(K\), and
+report modifier \(h\in\calH_n\), the target estimand is the shrinking local
+HTE report
+\[
+\theta_{r_n,h}(P)=
+\frac{\E_P[K((Z-z_0)/r_n)h(W)\tau_0(X)]}
+{\E_P[K((Z-z_0)/r_n)h(W)]},\qquad
+\tau_0(x)=\E_P[Y(1)-Y(0)\mid X=x].
+\]
+The identifying assumptions are consistency, conditional unconfoundedness
+\((Y(1),Y(0))\perp D\mid X\), overlap
+\(\varepsilon\le e_0(X)\le 1-\varepsilon\), and finite fourth moments.  The
+proposed estimator is the cross-fitted first-order AIPW/DML report process
+based on nuisances \(\eta=(m_1,m_0,e)\), where
+\(m_d(x)=\E[Y\mid D=d,X=x]\) and \(e(x)=\Pr(D=1\mid X=x)\).
+
+\begin{abstract}
+Debiased ML with learned Riesz representers handles many global and local
+linear functionals, but the literature has not isolated a sharp primitive
+transition from root-\(n\) regularity to slower local Gaussian inference and
+then to nonregularity for shrinking HTE reports.  This proposal introduces the
+\emph{Riesz-localization critical radius}
+\(\mathfrak C_n(P)=\max\{A_n/\sqrt n,\sqrt n\,\Delta_{m,n}\Delta_{e,n}/A_n,
+J_nA_n/\sqrt n\}\), where \(A_n\) is the local AIPW Riesz norm, the
+\(\Delta\)'s are local nuisance radii, and \(J_n\) is the report-class entropy
+integral.  The Stage~0.5 rewind is handled by splitting the kernel: a
+conditional theorem records what follows if the upper empirical-process and
+lower minimax channels are assumed active, while the flagship Conjecture asks
+for primitive Holder/entropy arguments that prove those channels instead of
+assuming them.  If resolved, the conjecture would classify when local HTE DML
+is root-\(n\), when it is only slower-rate Gaussian, and when first-order
+orthogonality is insufficient.  A resolution would give users of AutoDML and
+local CATE reports a concrete diagnostic for when shrinking subgroup inference
+is a regular DML problem and when it is not.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Empirical HTE papers routinely move from global ATE or CATE summaries to local
+subgroups: treatment effects for a neighborhood of an age, income, risk score,
+geography, or learned policy margin.  In these problems the Riesz representer
+for the target grows as the subgroup mass shrinks.  Orthogonality still removes
+first-order nuisance bias, but it does not by itself say whether the localized
+parameter is root-\(n\) regular, slower-rate Gaussian, or nonregular.
+
+\paragraph{The main finding (proposed).}
+The proposed headline is Conjecture~\ref{conj:primitive-critical-radius}: over
+Holder nuisance classes with entropy-indexed report modifiers, primitive
+maximal-inequality and local-minimax arguments should make the named scalar
+\(\mathfrak C_n(P)\) the sharp uniform frontier for first-order DML inference
+on shrinking local HTE reports.  Theorem~\ref{thm:conditional-frontier} is
+kept as a conditional split theorem only: it records the deterministic
+classification if the frontier-active empirical-process and lower-bound
+channels are granted as assumptions.  The novelty claim is not that
+Theorem~\ref{thm:conditional-frontier} is hard; it is that
+Conjecture~\ref{conj:primitive-critical-radius} should replace those
+high-level frontier assumptions with primitive Holder smoothness, metric
+entropy, overlap, and tangent-cone calculations.
+
+\paragraph{What is new.}
+The new focal object is the Riesz-localization critical radius
+\[
+\mathfrak C_n(P)=
+\max\left\{\frac{A_n(P)}{\sqrt n},
+\frac{\sqrt n\,\Delta_{m,n}(P)\Delta_{e,n}(P)}{A_n(P)},
+\frac{J_nA_n(P)}{\sqrt n}\right\}.
+\]
+It is not defined as the value at which inference succeeds.  Its three terms
+come from independent primitives: effective local sample size, orthogonal
+second-order nuisance drift after local standardization, and entropy of the
+localized report process.  The closest published comparators are
+\citet[Section~2]{ChernozhukovNeweySingh2022Riesz}, which defines global,
+local, and perfectly localized linear functionals and orthogonal
+representations, and \citet[Sections~2--3]{ChernozhukovNeweySingh2022AutoDML},
+which gives the AutoDML Riesz-normal-equation route to bias correction.  The
+epsilon-gap is that those papers give regularized Riesz inference conditions,
+not a primitive necessary-and-sufficient frontier in which each channel of
+\(\mathfrak C_n\) is also shown necessary by an open Holder witness class.
+The Holder witness also connects to
+\citet[Theorem~1, Section~3.3, and Theorem~2]{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}
+and \citet[abstract and Sections~2--3]{ArmstrongKolesar2021FiniteSampleATE}:
+their smoothness and necessity messages motivate, but do not deliver, the
+local bandwidth exponent frontier or the growing-report-class entropy channel in
+Conjecture~\ref{conj:holder-exponent}.
+
+\paragraph{How it positions in the literature.}
+This is an ExactID / causal-ML proposal.  Identification is the standard
+unconfoundedness AIPW identity for a weighted CATE functional.  The research
+frontier is semiparametric inference with learned nuisance functions and Riesz
+representers: \citet{ChernozhukovEtAl2018DML} gives first-order orthogonal DML
+conditions, \citet{ChernozhukovNeweySingh2022AutoDML} automates the Riesz
+correction, \citet{ChernozhukovNeweySingh2022Riesz} treats local functionals
+whose Riesz norms can diverge, \citet{SemenovaChernozhukov2021DMLCATE}
+motivates simultaneous HTE reports, and
+\citet{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE} shows that CATE
+smoothness elbows can force nonstandard rates.  The proposal narrows the
+frontier to a first-order DML question where the localization-induced Riesz
+norm is the central mathematical object.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is AutoDML analysis of local linear
+functionals in \citet{ChernozhukovNeweySingh2022AutoDML}: a resolved
+primitive frontier would tell analysts when their learned Riesz correction
+licenses root-\(n\) inference, when it only licenses slower local Gaussian
+inference, and when a higher-order or minimax-local method is required.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report the Riesz norm and \(\mathfrak C_n\) channels for
+shrinking subgroup HTE analysis rather than treating all orthogonal local
+reports as ordinary root-\(n\) DML targets.
+
+\section{Related work}
+\citet{ChernozhukovEtAl2018DML} is the baseline DML reference: it introduces
+orthogonal scores and cross-fitting and gives sufficient product-rate
+conditions for asymptotically linear treatment-effect estimators.  The present
+proposal keeps the same first-order orthogonal logic but asks where localized
+Riesz norms destroy ordinary root-\(n\) inference.
+
+\citet{SemenovaChernozhukov2021DMLCATE} gives DML estimation and simultaneous
+inference for CATE summaries such as best linear predictors and group average
+effects.  This proposal targets a different object, shrinking local reports,
+where subgroup mass is allowed to vanish and the Riesz norm can diverge.
+
+\citet[Sections~2--3]{ChernozhukovNeweySingh2022AutoDML} develops automatic
+debiasing through learned Riesz representers and supplies primitive inference
+conditions for causal and structural effects.  The proposed gap is a sharp
+primitive transition theorem for the local Riesz norm rather than another
+sufficient AutoDML condition.
+
+\citet[Section~2]{ChernozhukovNeweySingh2022Riesz} studies debiased ML for
+global, local, and perfectly localized linear functionals using regularized
+Riesz representers, including nonregular local objects.  This is the closest
+comparator: it motivates diverging Riesz norms but does not isolate the
+three-channel critical radius \(\mathfrak C_n\) for shrinking HTE DML, nor a
+matching lower-bound witness for each failure channel.
+
+\citet[Theorem~1 and Section~3.3]{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}
+derives the CATE minimax lower-bound rate and explains the nuisance-smoothness
+elbow where the oracle nonparametric regression rate becomes unattainable;
+\citet[Theorem~2 and Section~4.1]{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}
+then gives a local-polynomial R-learner upper bound matching that rate.  It is
+relevant because it proves a Holder elbow for pointwise CATE estimation, but
+it does not characterize shrinking-neighborhood Riesz norms, first-order DML
+Gaussian reports, or a growing report-class entropy obstruction.
+
+\citet[abstract and Sections~2--3]{ArmstrongKolesar2021FiniteSampleATE} shows
+that honest treatment-effect inference can depend sharply on smoothness,
+shape, and overlap restrictions, including cases where ordinary
+\(\sqrt n\)-inference is not available.  That necessity perspective motivates
+the lower-bound side of the proposed frontier; the present proposal is informed
+by it rather than claiming to extend its finite-sample optimality theorem.
+
+\citet{FosterSyrgkanis2023OSL} proves orthogonal statistical learning
+excess-risk guarantees under entropy conditions.  It supplies the entropy
+language for \(J_n\), while this proposal asks for Gaussian inference rather
+than prediction-risk control.
+
+\citet{KallusMaoUehara2024LDML} develops localized debiased machine learning
+for low-dimensional parameters such as local quantile treatment effects whose
+nuisances depend on the target value.  It is adjacent in terminology, but the
+present proposal concerns shrinking covariate-neighborhood HTE reports and a
+Riesz-norm regular-to-nonregular frontier.
+
+The in-repo prior-art slice is thin for this topic.  The Stage -1.1 prior
+proposal map reports no accepted CausalSmith theorem for Holder-smoothness or
+metric-entropy DML nuisance frontiers.  The closest banked artifact is the
+failed \texttt{eid\_dml\_orth\_uniform/v2} proposal, whose reviewer asked for
+explicit DML/LRO/ADML report summands and primitive frontier arguments; this
+proposal deliberately pivots away from studentization reports to a narrower
+local Riesz-norm trichotomy.  \texttt{doc/API.md} records active Panel and
+PartialID catalogue entries, but no accepted ExactID proposal duplicating a
+Riesz-localization critical radius for HTE DML.
+
+\section{Formal setup}
+Let \(O=(Y,D,X)\), \(X=(Z,W)\), \(D\in\{0,1\}\), and let
+\((Y(1),Y(0))\) be potential outcomes.  The CATE is
+\(\tau_0(x)=m_1(x)-m_0(x)\), with \(m_d(x)=\E[Y\mid D=d,X=x]\), and the
+propensity score is \(e_0(x)=\Pr(D=1\mid X=x)\).  For a bounded nonnegative
+kernel \(K\) supported on the unit ball and a bandwidth \(r_n\), write
+\[
+q_{r_n,h}(x)=K((z-z_0)/r_n)h(w),\qquad
+\mu_{r_n,h}(P)=\E_P[q_{r_n,h}(X)].
+\]
+The target is
+\[
+\theta_{r_n,h}(P)=\E_P[q_{r_n,h}(X)\tau_0(X)]/\mu_{r_n,h}(P).
+\]
+The AIPW score is
+\[
+\psi_{r_n,h}(O;\eta,\theta)=
+\frac{q_{r_n,h}(X)}{\mu_{r_n,h}}
+\left[
+m_1(X)-m_0(X)
++\,
+\frac{D(Y-m_1(X))}{e(X)}
+-\frac{(1-D)(Y-m_0(X))}{1-e(X)}
+-\theta
+\right].
+\]
+The local AIPW Riesz representer for the weighted CATE functional is
+\[
+\alpha_{r_n,h}(O;P)=
+\frac{q_{r_n,h}(X)}{\mu_{r_n,h}(P)}
+\left(\frac{D}{e_0(X)}-\frac{1-D}{1-e_0(X)}\right),
+\]
+and the Riesz norm envelope is
+\[
+A_n(P)=\sup_{h\in\calH_n}\|\alpha_{r_n,h}(\cdot;P)\|_{L_2(P)}.
+\]
+Equivalently,
+\[
+\|\alpha_{r_n,h}\|_2^2=
+\E_P\left[
+\frac{q_{r_n,h}(X)^2}{\mu_{r_n,h}(P)^2}
+\left\{\frac{1}{e_0(X)}+\frac{1}{1-e_0(X)}\right\}
+\right].
+\]
+Let \(J_n\) denote a fixed entropy integral for the standardized report class
+\(\{\alpha_{r_n,h}/\|\alpha_{r_n,h}\|_2:h\in\calH_n\}\), and let
+\(\Delta_{m,n}(P)\), \(\Delta_{e,n}(P)\) be local \(L_2(P)\) nuisance error
+radii for cross-fitted estimates of \(m=(m_1,m_0)\) and \(e\).  The focal
+critical radius is
+\[
+\mathfrak C_n(P)=
+\max\left\{
+\frac{A_n(P)}{\sqrt n},\,
+\frac{\sqrt n\,\Delta_{m,n}(P)\Delta_{e,n}(P)}{A_n(P)},\,
+\frac{J_nA_n(P)}{\sqrt n}
+\right\}.
+\]
+For the Holder witness, let \(d_x=\dim(X)\) and define the local-polynomial
+nuisance exponent
+\[
+\beta_H(s_m,s_e,d_x)=\frac{s_m}{2s_m+d_x}+\frac{s_e}{2s_e+d_x},
+\]
+the product exponent delivered by standard local nonparametric regression
+rates when both nuisance functions are learned on the local effective sample.
+
+\begin{quote}
+\begin{verbatim}
+Locked parameters:
+qid = eid_dml_orthogonality_frontier
+specialization = v1
+graph/SWIG = observed (X,D,Y), potential outcomes (Y(1),Y(0)),
+  Y = D Y(1) + (1-D)Y(0), X=(Z,W)
+treatment = binary intervention D <- d
+target estimand = theta_{r_n,h}(P) for shrinking local HTE reports
+identifying assumptions = consistency, conditional unconfoundedness,
+  overlap, finite fourth moments, and local Holder/entropy regularity
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[ExactID causal model]\label{ass:exactid}
+Consistency holds, \((Y(1),Y(0))\perp D\mid X\), and
+\(\varepsilon\le e_0(X)\le 1-\varepsilon\) almost surely for some fixed
+\(\varepsilon>0\).  The fourth moments of \(Y(d)\) are uniformly bounded over
+the DGP class.
+\end{assumption}
+
+\begin{assumption}[Local Holder geometry]\label{ass:holder}
+The density of \(Z\) given \(W\) is bounded above and below in a neighborhood
+of \(z_0\), and \(m_0,m_1,e_0\) belong to Holder balls with smoothness
+\((s_m,s_e)\) and radii bounded by constants independent of \(n\).  The kernel
+\(K\) is bounded, compactly supported, and has positive integral.
+\end{assumption}
+
+\begin{assumption}[Report entropy]\label{ass:entropy}
+The modifier class \(\calH_n\) is uniformly bounded, nonnegative, and has
+standardized entropy integral \(J_n<\infty\) for the local Riesz class
+\(\{\alpha_{r_n,h}/\|\alpha_{r_n,h}\|_2:h\in\calH_n\}\).  The denominator
+\(\mu_{r_n,h}(P)\) is positive for every \(h\in\calH_n\).  There are constants
+\(0<c_h<C_h<\infty\) such that, uniformly in \(h\) and \(P\),
+\[
+c_h\mu_{r_n,h}(P)\le \E_P[q_{r_n,h}(X)^2]\le C_h\mu_{r_n,h}(P).
+\]
+This comparability condition is the report-modifier regularity needed to turn
+the exact \(L_2\) Riesz identity into the simpler local-mass envelope.
+\end{assumption}
+
+\begin{assumption}[Cross-fitted nuisance radii]\label{ass:nuisance}
+Cross-fitted nuisance estimates satisfy local \(L_2(P)\) bounds
+\(\|\widehat m-m_0\|_{r_n}\le \Delta_{m,n}(P)\) and
+\(\|\widehat e-e_0\|_{r_n}\le \Delta_{e,n}(P)\) with probability tending to
+one, where the local norm is weighted by \(q_{r_n,h}/\mu_{r_n,h}\) uniformly
+over \(h\in\calH_n\).  The product
+\(\Delta_{m,n}(P)\Delta_{e,n}(P)\) is bounded above by the named structural
+quantity \(A_n(P)^2/\sqrt n\), so the second channel of \(\mathfrak C_n\) is
+not a free epsilon parameter.
+\end{assumption}
+
+\begin{assumption}[Holder-rate nuisance learners]\label{ass:holder-learners}
+For the bandwidth witness, the nuisance learners are local-polynomial or
+series estimators over the local effective sample \(nr_n^{d_z}\) and satisfy
+\[
+\Delta_{m,n}\Delta_{e,n}\asymp
+(nr_n^{d_z})^{-\beta_H(s_m,s_e,d_x)}
+\]
+with \(\beta_H(s_m,s_e,d_x)\) defined in Section~6.
+\end{assumption}
+
+\begin{assumption}[Open witness class]\label{ass:witness}
+The DGP class contains an open Holder neighborhood of the concrete witness in
+Section~\ref{sec:witness}: \(Z\) has a density bounded away from zero near
+\(z_0\), \(e_0\in[\varepsilon,1-\varepsilon]\), the conditional outcome
+variance is positive, and local perturbations of \(m\) and \(e\) can attain
+the nuisance product direction at the order
+\(\Delta_{m,n}(P)\Delta_{e,n}(P)\).
+\end{assumption}
+
+\begin{assumption}[Frontier-active conditional split]\label{ass:frontier-active}
+There exist cross-fitted nuisance estimators and a tangent-cone collection
+such that the following three high-level channels are active at the scale
+\(\mathfrak C_n(P)\): (i) the localized empirical-process remainder of the
+AIPW score is bounded above by \(J_nA_n(P)/\sqrt n\) up to logarithmic
+factors, (ii) the oracle Gaussian and multiplier approximations hold whenever
+\(\mathfrak C_n(P)\to0\), and (iii) for each nonvanishing term of
+\(\mathfrak C_n(P)\), there are local alternatives in the witness class with
+constants \(c_R,c_{\mathrm{ep}}>0\) that realize the corresponding lower-bound
+failure.  This assumption is used only in
+Theorem~\ref{thm:conditional-frontier}; the flagship conjecture is precisely
+to replace it with primitive Holder/entropy/minimax arguments.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: exact local AIPW representation and Riesz norm identity]\label{thm:id}
+Under Assumption~\ref{ass:exactid}, for every \(r_n\) and
+\(h\in\calH_n\) with \(\mu_{r_n,h}(P)>0\), the local HTE report
+\(\theta_{r_n,h}(P)\) is identified by the AIPW moment
+\(\E_P[\psi_{r_n,h}(O;\eta_0,\theta_{r_n,h})]=0\).  Its first-order
+representer is \(\alpha_{r_n,h}\), with exact norm
+\[
+\|\alpha_{r_n,h}\|_2^2=
+\E_P\left[
+\frac{q_{r_n,h}(X)^2}{\mu_{r_n,h}(P)^2}
+\left\{\frac{1}{e_0(X)}+\frac{1}{1-e_0(X)}\right\}
+\right].
+\]
+Under Assumptions~\ref{ass:holder} and \ref{ass:entropy}, the report-modifier
+comparability condition implies the envelope simplification
+\[
+A_n(P)^2\asymp
+\sup_{h\in\calH_n}\mu_{r_n,h}(P)^{-1}.
+\]
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This theorem is not the novelty claim; it is the ExactID bookkeeping
+needed to keep the proposal anchored in the standard AIPW functional of
+\citet{ChernozhukovEtAl2018DML}.  The only local addition is the explicit
+Riesz norm envelope \(A_n\) for shrinking weighted reports, with the
+comparability condition made explicit rather than hidden.  (b) The consumer
+is Conjecture~\ref{conj:primitive-critical-radius}: without this
+representation, the critical-radius channels would not be tied to a causal
+estimand.
+
+\begin{theorem}[Theorem 2: conditional frontier under active channels]\label{thm:conditional-frontier}
+Under Assumptions~\ref{ass:exactid}--\ref{ass:frontier-active}, the following
+conditional trichotomy holds for the cross-fitted first-order DML process
+indexed by \(h\in\calH_n\).
+\begin{enumerate}[label=(\roman*)]
+\item If \(A_n(P)\) is bounded and \(\mathfrak C_n(P)\to0\), then the reports
+are uniformly root-\(n\) regular and admit centered Gaussian and multiplier
+bootstrap approximation at the usual \(\sqrt n\) scale.
+\item If \(A_n(P)\to\infty\), \(A_n(P)/\sqrt n\to0\), and
+\(\mathfrak C_n(P)\to0\), then the reports are not root-\(n\) regular but are
+uniformly Gaussian after local standardization at rate \(\sqrt n/A_n(P)\).
+\item If any term in \(\mathfrak C_n(P)\) has a positive limsup, then no
+centered first-order DML Gaussian approximation is uniformly valid over the
+open witness class: the failure is respectively local-sample nonregularity,
+second-order nuisance drift, or report-entropy leakage.
+\end{enumerate}
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This theorem is deliberately conditional and is not the flagship novelty
+claim.  It is included to obey the Stage~0.5 split directive: the high-level
+frontier-active content is quarantined in Assumption~\ref{ass:frontier-active}
+rather than advertised as a proved primitive theorem.  (b) The consumer is the
+AutoDML local-functional analysis of
+\citet{ChernozhukovNeweySingh2022AutoDML}: it can use the conditional
+classification as a diagnostic while keeping the primitive empirical-process
+and lower-bound steps visibly open in
+Conjecture~\ref{conj:primitive-critical-radius}.
+
+\begin{conjecture}[Conjecture 1: primitive Riesz-localization frontier (NOT YET PROVED)]\label{conj:primitive-critical-radius}
+Under Assumptions~\ref{ass:exactid}, \ref{ass:holder}, \ref{ass:entropy},
+\ref{ass:nuisance}, and \ref{ass:witness}, but without
+Assumption~\ref{ass:frontier-active}, primitive Holder smoothness, overlap,
+metric-entropy, and local tangent-cone arguments imply the same trichotomy as
+Theorem~\ref{thm:conditional-frontier}.  Equivalently, the three independent
+terms of \(\mathfrak C_n(P)\) are both sufficient and necessary for uniform
+centered Gaussian first-order DML inference for shrinking local HTE reports:
+local-sample size controls the oracle term, the standardized product
+\(\sqrt n\,\Delta_{m,n}\Delta_{e,n}/A_n\) controls orthogonal drift, and
+\(J_nA_n/\sqrt n\) controls report-process approximation.  This is a strict
+extension of the local-functional Riesz condition in
+\citet[Section~2]{ChernozhukovNeweySingh2022Riesz}: instead of taking a
+diverging local Riesz norm as a sufficient-rate input, it asserts an iff
+frontier in which \(A_n/\sqrt n\), the localized DML product remainder, and
+the report entropy integral are each necessary on an open Holder witness
+class.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest comparator is
+\citet[Section~2]{ChernozhukovNeweySingh2022Riesz}, whose local and perfectly
+localized functionals expose slower-than-\(n^{-1/2}\) rates through diverging
+Riesz norms, and
+\citet[Sections~2--3]{ChernozhukovNeweySingh2022AutoDML}, whose Riesz normal
+equations deliver debiasing under sufficient conditions.  The epsilon-gap is
+the primitive necessity frontier: those papers do not prove that each channel
+of the independently defined \(\mathfrak C_n\) is a necessary obstruction over
+an open Holder witness class for shrinking HTE reports, including the
+non-corner report-packing witness of Example~\ref{ex:report-packing}.  (b)
+Resolving this directly benefits AutoDML local-functional practice in
+\citet{ChernozhukovNeweySingh2022AutoDML}, because it turns a diverging learned
+Riesz norm from a caveat into a diagnostic regime classifier.
+
+\begin{conjecture}[Conjecture 2: Holder bandwidth exponent witness (NOT YET PROVED)]\label{conj:holder-exponent}
+Under Assumptions~\ref{ass:exactid}, \ref{ass:holder}, \ref{ass:entropy},
+\ref{ass:nuisance}, \ref{ass:holder-learners}, and \ref{ass:witness},
+specialize to the concrete witness class of Example~\ref{ex:witness} with
+\(r_n=n^{-a}\), \(Z\in\R^{d_z}\), and bounded report entropy \(J_n=O(1)\), so
+that
+\[
+\Delta_{m,n}\Delta_{e,n}
+\asymp (nr_n^{d_z})^{-\beta_H(s_m,s_e,d_x)}.
+\]
+Then \(A_n(P)\asymp r_n^{-d_z/2}\), and first-order local HTE DML is uniformly
+locally Gaussian if and only if
+\[
+0<a d_z<1
+\quad\text{and}\quad
+\beta_H(s_m,s_e,d_x)>1/2.
+\]
+If \(a d_z=0\) the regime collapses to root-\(n\) DML, if
+\(0<a d_z<1\) it is slower Gaussian at rate \(n^{(1-a d_z)/2}\), and if
+\(a d_z\ge1\) it is nonregular for first-order DML.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet[Theorem~1, Section~3.3, and Theorem~2]{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}
+gives the lower-bound and matching upper-bound Holder CATE elbow, and
+\citet[abstract and Sections~2--3]{ArmstrongKolesar2021FiniteSampleATE}
+emphasizes smoothness and overlap necessity, but neither converts a shrinking
+local Riesz norm into this DML bandwidth exponent trichotomy.  The gap is the
+explicit boundary \(a d_z=1\) paired with the first-order orthogonal product
+smoothness condition \(\beta_H(s_m,s_e,d_x)>1/2\), rather than a free
+rate exponent.  (b) The concrete consumer is local subgroup CATE reporting in
+\citet{SemenovaChernozhukov2021DMLCATE}: it would specify when a shrinking
+group average can be accompanied by Gaussian bands and when it should be
+reported as nonregular.
+
+\section{Sanity-check corollaries}
+\label{sec:witness}
+\begin{corollary}[Fixed subgroup reduction]\label{cor:fixed}
+Under Assumptions~\ref{ass:exactid}--\ref{ass:nuisance}, if \(r_n\equiv r_0>0\)
+and \(\inf_h\mu_{r_0,h}(P)>0\), then \(A_n(P)=O(1)\) and
+Conjecture~\ref{conj:primitive-critical-radius} reduces to the usual
+first-order DML product-rate requirement
+\(\sqrt n\,\Delta_{m,n}\Delta_{e,n}\to0\), plus the standard report-entropy
+condition \(J_n/\sqrt n\to0\).  Under
+Assumption~\ref{ass:frontier-active}, Theorem~\ref{thm:conditional-frontier}
+has the same fixed-subgroup reduction by direct substitution into
+\(\mathfrak C_n\).
+\end{corollary}
+
+\begin{example}[Concrete non-corner witness]\label{ex:witness}
+Let \(Z\sim\mathrm{Unif}([0,1]^{d_z})\), \(W=(U,V)\) with
+\(U,V\sim\mathrm{Unif}([0,1])\) independent of \(Z\), \(e_0(X)=1/2\),
+\(Y(d)=d\,\tau_0(Z,W)+\varepsilon\), \(\varepsilon\sim N(0,1)\), and
+\(\tau_0(z,u,v)=1+z_1+u+v\).  Take \(z_0\) in the
+interior, \(K(u)=\one\{\|u\|\le1\}\), \(h\equiv1\), and \(r_n=n^{-a}\).  Then
+\(\mu_{r_n,1}(P)\asymp r_n^{d_z}\), \(A_n(P)\asymp r_n^{-d_z/2}\), and the
+proof route for Conjecture~\ref{conj:holder-exponent} reduces to checking the
+three terms in \(\mathfrak C_n\) explicitly.  This is not the fixed-\(r\)
+corner and is stable under small Holder perturbations of \(e_0,m_0,m_1\).
+\end{example}
+
+\begin{example}[Concrete report-packing entropy witness]\label{ex:report-packing}
+Keep the distributional primitives of Example~\ref{ex:witness}, set
+\(r_n=n^{-a}\) with \(0<a d_z<1\), and write \(W=(U,V)\) where
+\(U,V\sim\mathrm{Unif}([0,1])\) are independent of \(Z\).  Fix
+\(0<\rho<1/4\) and \(0<\zeta<(1-a d_z)/2\).  For
+\(M_n=\lceil\exp(n^{2\zeta})\rceil\), let
+\[
+h_j(U,V)=1+\rho\,\mathrm{sign}\{\sin(2^j\pi U)\},\qquad
+j=1,\ldots,M_n,
+\]
+and \(\calH_n=\{h_1,\ldots,h_{M_n}\}\).  The modifiers are bounded between
+\(1-\rho\) and \(1+\rho\), so
+\(\mu_{r_n,h_j}(P)\asymp r_n^{d_z}\) and
+\(A_n(P)\asymp r_n^{-d_z/2}\) uniformly in \(j\).  The standardized Riesz
+class contains \(M_n\) pairwise separated localized reports, giving the
+finite-class entropy integral \(J_n\asymp\sqrt{\log M_n}\asymp n^\zeta\).
+Therefore
+\[
+\frac{J_nA_n(P)}{\sqrt n}\asymp n^{\zeta-(1-a d_z)/2}.
+\]
+This witness is non-corner: \(r_n\to0\), the report class grows, and the
+entropy channel can be made critical by taking
+\(\zeta\uparrow(1-a d_z)/2\), while the same construction remains inside the
+open Holder causal model because the oscillation is only in the report
+modifier, not in \(m_0,m_1,e_0\).
+\end{example}
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:id} follows by the standard AIPW identity under
+unconfoundedness and by computing the \(L_2(P)\) norm of the localized Riesz
+representer; the simplification \(A_n^2\asymp\sup_h\mu_{r_n,h}^{-1}\) uses
+the explicit \(L_2/L_1\) report-modifier comparability in
+Assumption~\ref{ass:entropy}.  Theorem~\ref{thm:conditional-frontier} is the
+formal theorem-split: expand the three clauses of
+Assumption~\ref{ass:frontier-active} and map each to the corresponding term of
+\(\mathfrak C_n\).  The sufficiency side of
+Conjecture~\ref{conj:primitive-critical-radius} should replace that assumption
+with cross-fitting, a second-order von Mises expansion, maximal inequalities
+for the standardized localized report class, and high-dimensional Gaussian
+approximation for the resulting empirical process.  The necessity side should
+build three separate local alternatives inside Assumption~\ref{ass:witness}:
+one with \(n/A_n^2\) bounded, one with a nuisance product perturbation
+producing standardized drift \(\sqrt n\,\Delta_m\Delta_e/A_n\), and one with a
+report packing like Example~\ref{ex:report-packing}, where
+\(\log|\calH_n|\asymp n^{2\zeta}\) and
+\(J_nA_n/\sqrt n\asymp n^{\zeta-(1-a d_z)/2}\), whose entropy term prevents a
+uniform multiplier approximation at the boundary.
+Conjecture~\ref{conj:holder-exponent} then becomes an exponent calculation
+using \(\mu_{r_n}\asymp r_n^{d_z}\), \(A_n\asymp r_n^{-d_z/2}\), and the
+Holder local-polynomial product exponent \(\beta_H(s_m,s_e,d_x)\).
+Boundary cases needing explicit algebra are \(a d_z=1\), vanishing conditional
+variance, kernels with boundary bias, and report classes whose entropy grows
+at the same order as \(n/A_n^2\).
+
+\section{Honest scope flags}
+Theorem~\ref{thm:id} is a routine identification and norm calculation, now
+stated with the exact \(L_2\) expression needed for well-posedness.
+Theorem~\ref{thm:conditional-frontier} is only a conditional theorem under
+Assumption~\ref{ass:frontier-active}; it is not the flagship novelty claim.
+Conjectures~\ref{conj:primitive-critical-radius} and
+\ref{conj:holder-exponent} are not proved.  The main open work is replacing
+Assumption~\ref{ass:frontier-active} with a primitive lower-bound construction
+for the three failure channels and an empirical-process upper bound for
+localized report classes; Example~\ref{ex:report-packing} is a concrete target
+for the entropy-channel part of that construction, not a completed proof.  The
+proposal does not claim that
+\citet{ChernozhukovNeweySingh2022Riesz} or
+\citet{ChernozhukovNeweySingh2022AutoDML} are wrong; it claims that their
+local Riesz discussion leaves a sharper regime classifier open.  The exact
+form of \(J_nA_n/\sqrt n\) may need a logarithmic or anti-concentration factor
+after a full Gaussian-approximation proof, but the focal object should remain
+an independently defined entropy-localization channel.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for angle 4, replacing the rejected
+orthogonal excess-risk bridge with a Riesz-localization critical-radius
+trichotomy; prior verdict: none.
+\item v2 (revise) -- added location-level anchors, repaired the Riesz norm
+comparability condition, and split the frontier into a conditional theorem
+plus a primitive flagship conjecture after the Stage~0.5 rewind; prior
+verdict: REVISE / Stage~0.5 reject.
+\item v3 (revise) -- added a growing-\(\calH_n\) report-packing witness for
+the entropy channel, replaced the Kennedy comparison with theorem/section
+anchors, and stated Conjecture~1 as a strict local-Riesz extension; prior
+verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Chernozhukov et~al.(2018)]{ChernozhukovEtAl2018DML}
+Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C.,
+Newey, W., and Robins, J. (2018).
+Double/debiased machine learning for treatment and structural parameters.
+\emph{The Econometrics Journal}, 21(1), C1--C68.
+
+\bibitem[Semenova and Chernozhukov(2021)]{SemenovaChernozhukov2021DMLCATE}
+Semenova, V. and Chernozhukov, V. (2021).
+Debiased machine learning of conditional average treatment effects and other
+causal functions.
+\emph{The Econometrics Journal}, 24(2), 264--289.
+
+\bibitem[Chernozhukov, Newey, and Singh(2022a)]{ChernozhukovNeweySingh2022AutoDML}
+Chernozhukov, V., Newey, W., and Singh, R. (2022).
+Automatic debiased machine learning of causal and structural effects.
+\emph{Econometrica}, 90(3), 967--1027.
+
+\bibitem[Chernozhukov, Newey, and Singh(2022b)]{ChernozhukovNeweySingh2022Riesz}
+Chernozhukov, V., Newey, W., and Singh, R. (2022).
+Debiased machine learning of global and local parameters using regularized
+Riesz representers.
+\emph{The Econometrics Journal}, 25(3), 576--601.
+
+\bibitem[Kennedy et~al.(2024)]{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}
+Kennedy, E. H., Balakrishnan, S., Robins, J. M., and Wasserman, L. (2024).
+Minimax rates for heterogeneous treatment effect estimation.
+\emph{The Annals of Statistics}, 52(2), 793--816.
+
+\bibitem[Armstrong and Kolesar(2021)]{ArmstrongKolesar2021FiniteSampleATE}
+Armstrong, T. B. and Kolesar, M. (2021).
+Finite-sample optimal estimation and inference on average treatment effects
+under unconfoundedness.
+\emph{Econometrica}, 89(3), 1141--1177.
+
+\bibitem[Foster and Syrgkanis(2023)]{FosterSyrgkanis2023OSL}
+Foster, D. J. and Syrgkanis, V. (2023).
+Orthogonal statistical learning.
+\emph{The Annals of Statistics}, 51(3), 879--908.
+
+\bibitem[Kallus, Mao, and Uehara(2024)]{KallusMaoUehara2024LDML}
+Kallus, N., Mao, X., and Uehara, M. (2024).
+Localized debiased machine learning: efficient inference on quantile treatment
+effects and beyond.
+\emph{Journal of Machine Learning Research}, 25(16), 1--59.
+\end{thebibliography}
+
+\end{document}

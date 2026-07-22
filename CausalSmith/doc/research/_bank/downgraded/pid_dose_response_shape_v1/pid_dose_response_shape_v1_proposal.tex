@@ -1,0 +1,391 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_dose\_response\_shape, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to a Q1..Q6 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    If it is a free-form `(qid, specialization)`, define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_dose\_response\_shape} / \texttt{v1}%
+  \\ \large\textit{Shape-closed sensitivity bounds for monotone-concave continuous dose response}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a partial-identification anchor.  The locked tuple is
+\[
+(\texttt{pid\_dose\_response\_shape},\texttt{v1},
+P,\theta,\mathcal R_{\Gamma,\mathrm{mc}},B_{\Gamma,\mathrm{mc}}).
+\]
+Here \(P\) is the observable law of \((Y,A,X)\), with \(Y\in[0,1]\), a continuous dose \(A\in[0,1]\), and observed covariates \(X\).  The parameter is the finite-grid dose-response vector
+\(\theta=(\mu_0,\ldots,\mu_K)\), where \(0=a_0<\cdots<a_K=1\) are fixed design doses and \(\mu_j=\E\{Y(a_j)\}\).  The identifying restrictions \(\mathcal R_{\Gamma,\mathrm{mc}}\) are consistency, positivity at the design doses, the continuous-treatment marginal sensitivity model of \citet{JessonDouglasManshausenSolalMeinshausenStierGalShalit2022} specialized to the grid, pointwise sharp no-shape intervals \(I_j(P,\Gamma)=[L_j(P,\Gamma),U_j(P,\Gamma)]\) for each \(\mu_j\), and the shape restriction that \(\theta\) is nondecreasing and discretely concave in the ordered doses.  The bounding functional is
+\[
+B_{\Gamma,\mathrm{mc}}(P,k)=
+\left[
+\inf_{\vartheta\in\Theta_{\Gamma,\mathrm{mc}}(P)}\vartheta_k,\,
+\sup_{\vartheta\in\Theta_{\Gamma,\mathrm{mc}}(P)}\vartheta_k
+\right],
+\]
+where
+\[
+\Theta_{\Gamma,\mathrm{mc}}(P)=
+\{\vartheta\in\mathbb R^{K+1}: L_j(P,\Gamma)\le \vartheta_j\le U_j(P,\Gamma)\ \forall j,\ 
+\vartheta_0\le\cdots\le\vartheta_K,\ 
+(\vartheta_{j+1}-\vartheta_j)/(a_{j+1}-a_j)\le
+(\vartheta_j-\vartheta_{j-1})/(a_j-a_{j-1})\ \forall 1\le j<K\}.
+\]
+
+\begin{abstract}
+Continuous-dose analyses often report a pointwise sensitivity band for the dose-response curve, while substantive dose-response science often assumes monotonicity and diminishing returns.  This proposal asks for the sharp partial-identification envelope obtained when the continuous-treatment marginal sensitivity model of \citet{JessonDouglasManshausenSolalMeinshausenStierGalShalit2022} is intersected with monotone-concave response restrictions, without using an instrument.  The routine finite-grid outer bound is the coordinate projection of a single concave sequence constrained by the pointwise sensitivity intervals.  The flagship conjecture is sharper: the published continuous marginal sensitivity model admits a finite-grid normalization-pasting theorem, so every shape-compatible vector in that polytope can be generated by one full-data law rather than by dose-specific adversaries.  If resolved, the result would turn modern continuous-treatment sensitivity bands into auditable minimum-effective-dose and saturation certificates under transparent shape restrictions.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Dose-response decisions are rarely binary: a policy maker chooses a subsidy amount, a physician chooses a dose, and an environmental regulator chooses an exposure threshold.  Recent continuous-treatment sensitivity analyses quantify how much unmeasured confounding can move a dose-response curve, but they usually deliver a family of pointwise bands.  In many applications the scientific prior is also shape-based: response should be nondecreasing and have diminishing marginal returns.  The methodological question is whether those two pieces of information can be combined sharply, rather than by plotting a pointwise band and then informally smoothing it.
+
+\paragraph{The main finding (proposed).}
+Theorem~\ref{thm:finite-polytope} states the routine finite-dimensional part: once the continuous marginal sensitivity model supplies sharp pointwise intervals, the monotone-concave grid envelope is the projection of an explicitly described linear-inequality polytope.  Conjecture~\ref{conj:joint-sharpness} is the proposed kernel: the finite-grid tilts allowed by the published continuous marginal sensitivity model can be normalized and pasted into a single hidden-confounding law whenever their implied means form a monotone-concave vector.  Conjecture~\ref{conj:phase-transition} isolates the smallest nontrivial phenomenon: with three ordered doses, a high-dose lower sensitivity endpoint can force a strictly larger lower bound at an intermediate dose through concavity, even when monotonicity alone gives no such improvement.
+
+\paragraph{What is new.}
+The closest published comparison is \citet{JessonDouglasManshausenSolalMeinshausenStierGalShalit2022}, which formulates continuous-valued intervention sensitivity bounds, \citet{MarmarelisHaddadJessonJahanshadGalstyanVerSteeg2023}, which develops partial identification for continuous dose responses under hidden confounding, and \citet{BaitairianSebastienJreichKatsahianGuilloux2025}, which gives sharp APO bounds under a continuous sensitivity model.  These papers provide pointwise continuous-dose sensitivity comparators, but they do not prove that independently sharp grid-dose adversaries can be represented by one latent treatment-density perturbation after a monotone-concave shape restriction is imposed.  \citet{Manski1997} and \citet{OkumuraUsui2014} give sharp concave-monotone treatment-response bounds, but they do not impose a modern bounded hidden-confounding sensitivity model for continuous exposures.  The novelty kernel is the compatibility claim: a pointwise sharp sensitivity band is not automatically a jointly sharp curve band, because one latent selection mechanism must rationalize all doses; the proposal asks whether the Jesson--Shalit continuous marginal sensitivity model has exactly this finite-grid pasting property.
+
+\paragraph{How it positions in the literature.}
+This is a partial-identification proposal in the Manski / shape-restriction / sensitivity-analysis cluster.  It does not use an IV, a panel design, or a graphical identification algorithm.  It consumes generalized-propensity and continuous-treatment sensitivity results as sources of pointwise intervals, then asks a finite convex-analytic sharpness question about the identified dose-response set under monotone-concave response.
+
+\section{Related work}
+\citet{Manski1990} supplies the bounded-outcome partial-identification logic behind replacing unobserved potential outcomes by endpoint-compatible completions.  \citet{Manski1997} is the foundational shape-restricted treatment-response paper: it studies monotone, semi-monotone, and concave-monotone response functions without assuming random treatment selection.  \citet{ManskiPepper2000} shows how monotone treatment selection and monotone instrumental-variable restrictions sharpen treatment-response bounds; the present proposal keeps the monotone selection intuition but replaces the instrument-style restriction with an explicit hidden-confounding sensitivity envelope.  \citet{OkumuraUsui2014} is the closest shape-restricted sharp-bound comparator because it combines concave-MTR and monotone treatment selection to bound mean treatment response.
+
+\citet{Imbens2000} and \citet{HiranoImbens2004} provide the generalized-propensity foundation for dose-response estimation under observed-confounder adjustment.  \citet{KennedyMaMcHughSmall2017} develops doubly robust nonparametric estimation of continuous treatment effects under unconfoundedness, giving a point-identification benchmark to which the proposed bounds collapse when \(\Gamma=1\).  \citet{WestlingGilbertCarone2020} develops causal isotonic regression for monotone dose-response curves under point identification; the present proposal asks for identified sets rather than an estimator of a point-identified monotone curve.
+
+\citet{Tan2006} introduced a marginal sensitivity model for hidden confounding that underlies much of the later bounded-confounding literature.  \citet{YadlowskyNamkoongBasuDuchiTian2022} give sharp CATE and ATE bounds under bounded unobserved confounding for binary treatment; their quantile-based extremal logic motivates the pointwise interval primitive used here.  \citet{DornGuo2023} gives sharp sensitivity analysis for inverse-propensity weighting and shows that nonsharp sensitivity procedures can be asymptotically too wide.  \citet{BonviniKennedyVenturaWasserman2022} extends sensitivity analysis to marginal structural models with discrete, continuous, static, and time-varying treatments, but it targets model parameters rather than a monotone-concave curve envelope.
+
+\citet{JessonDouglasManshausenSolalMeinshausenStierGalShalit2022} proposes a continuous-treatment marginal sensitivity model and derives scalable bounds for continuous-valued interventions.  \citet{MarmarelisHaddadJessonJahanshadGalstyanVerSteeg2023} is the closest continuous-dose partial-identification paper, deriving hidden-confounding dose-response bounds for average and conditional average effects.  \citet{BaitairianSebastienJreichKatsahianGuilloux2025} is the closest pointwise sharpness comparator: it proves sharp bounds for the average potential outcome under a continuous sensitivity model and compares directly with Jesson et al.; the present proposal differs by asking whether several grid-dose APO bounds can be pasted through one latent law after monotone-concave shape is imposed.  \citet{DalalTchetgenTchetgen2025} extends Rosenbaum and marginal sensitivity ideas to endogenous continuous treatments with exposure-varying sensitivity functions and pseudo-outcome regression bounds; the present proposal is complementary because it studies shape closure and finite sharpness rather than estimation of the raw pointwise envelope.
+
+The ThmSmith catalogue has no mature partial-ID entry for continuous-dose shape restrictions: `doc/API.md' records ExactID / PartialID as a seed catalogue for future \(pid_\ast\) qids, and the existing documented theorem stacks are panel Q1 families.  The closest in-catalogue proposals are q1\_partial\_did\_unobserved\_trends (aggregate-pretrend partial identification under missing cohort prehistories) and pid\_dynamic\_iv\_compliance\_v2 (response-contribution memory bounds for a two-stage one-sided IV design).  Both are partial-identification flavored, but neither concerns continuous treatment, hidden-confounding sensitivity without an instrument, or monotone-concave dose-response shape closure.
+
+\section{Formal setup}\label{sec:setup}
+Let \(P\) be the observable law of \(O=(Y,A,X)\), where \(Y\in[0,1]\), \(A\in[0,1]\), and \(X\in\mathcal X\).  For each dose \(a\in[0,1]\), let \(Y(a)\) denote the potential outcome and let \(\mu(a)=\E\{Y(a)\}\).  Fix a finite grid \(0=a_0<\cdots<a_K=1\) and write \(\mu_j=\mu(a_j)\), \(\theta=(\mu_0,\ldots,\mu_K)\), and \(h_j=a_j-a_{j-1}\).
+
+The bounded-confounding primitive is the continuous-treatment marginal sensitivity model of \citet{JessonDouglasManshausenSolalMeinshausenStierGalShalit2022}, specialized to the finite grid.  Let \(e(a\mid x)=f_{A\mid X}(a\mid x)\) denote the observed generalized propensity density, and for a full-data law let \(e^\dagger_j(a_j\mid x,y)=f_{A\mid X,Y(a_j)}(a_j\mid x,y)\) denote the complete propensity density at the same grid dose after conditioning on the potential outcome \(Y(a_j)=y\).  We use the complete-over-nominal ratio convention
+\[
+R_j(x,y)=\frac{e^\dagger_j(a_j\mid x,y)}{e(a_j\mid x)},\qquad
+\Gamma^{-1}\le R_j(x,y)\le \Gamma,
+\]
+with both densities evaluated at \(A=a_j\) and with the conditioning object \(Y(a_j)\), not \(Y(a_\ell)\) for \(\ell\ne j\).  The inverse observed tilt is
+\[
+w_j(y,x)=R_j(x,y)^{-1}=\frac{e(a_j\mid x)}{e^\dagger_j(a_j\mid x,y)}.
+\]
+Write \(\mathcal W_{\Gamma,j}(P)\) for the set of measurable tilting functions \(w_j(Y,X)\) over the regular conditional law of \((Y,X)\) given \(A=a_j\) such that \(\Gamma^{-1}\le w_j\le\Gamma\) and \(\E\{w_j(Y,X)\mid A=a_j,X=x\}=1\) for \(P_X\)-almost every \(x\).  The no-shape pointwise interval is
+\[
+I_j(P,\Gamma)=[L_j(P,\Gamma),U_j(P,\Gamma)]
+\]
+where
+\[
+L_j(P,\Gamma)=\inf_{w_j\in\mathcal W_{\Gamma,j}(P)}
+\int \E\{Yw_j(Y,X)\mid A=a_j,X=x\}\,dP_X(x)
+\]
+and \(U_j(P,\Gamma)\) is the corresponding supremum.  These endpoints are assumed sharp before imposing shape across doses.  The nontrivial open issue is whether a tuple \((w_0,\ldots,w_K)\) of pointwise tilts whose means satisfy the shape inequalities can be pasted into one full-data law with a single latent \(U\) and one conditional treatment density \(f(a\mid X,U)\) such that, for every grid dose, the induced complete-over-nominal ratios \(f(a_j\mid X,U)/e(a_j\mid X)\) obey the same \(\Gamma\)-bound and induce the displayed \(Y(a_j)\)-conditioned ratio after marginalizing \(U\).
+
+The shape-restricted identified set on the grid is
+\[
+\Theta_{\Gamma,\mathrm{mc}}(P)=
+\left\{\vartheta\in\mathbb R^{K+1}:
+\begin{array}{l}
+L_j(P,\Gamma)\le \vartheta_j\le U_j(P,\Gamma)\quad\forall j,\\
+\vartheta_{j-1}\le\vartheta_j\quad\forall 1\le j\le K,\\
+(\vartheta_j-\vartheta_{j-1})/h_j\ge
+(\vartheta_{j+1}-\vartheta_j)/h_{j+1}\quad\forall 1\le j<K
+\end{array}
+\right\}.
+\]
+For a target grid index \(k\), the proposed bounding functional is the coordinate projection
+\[
+B_{\Gamma,\mathrm{mc}}(P,k)=
+\left[\underline\mu_k^{\mathrm{mc}}(P,\Gamma),
+\overline\mu_k^{\mathrm{mc}}(P,\Gamma)\right]
+=
+\left[
+\inf_{\vartheta\in\Theta_{\Gamma,\mathrm{mc}}(P)}\vartheta_k,\,
+\sup_{\vartheta\in\Theta_{\Gamma,\mathrm{mc}}(P)}\vartheta_k
+\right].
+\]
+
+\begin{verbatim}
+locked tuple:
+(pid_dose_response_shape, v1,
+ P, theta, R_{Gamma,mc}, B_{Gamma,mc})
+P: observable law of (Y,A,X), with Y in [0,1] and A in [0,1].
+theta: finite-grid dose-response vector (mu_0,...,mu_K),
+       mu_j = E[Y(a_j)] at fixed doses 0=a_0<...<a_K=1.
+R_{Gamma,mc}: consistency, positivity at grid doses, the
+       Jesson-Shalit continuous marginal sensitivity model specialized
+       to the grid, sharp pointwise no-shape intervals
+       I_j(P,Gamma)=[L_j(P,Gamma),U_j(P,Gamma)], and nondecreasing
+       discrete concavity of theta in the ordered doses.
+B_{Gamma,mc}: coordinatewise sharp lower and upper projections of
+       Theta_{Gamma,mc}(P) onto the requested dose index k.
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Observed support and bounded outcomes]\label{ass:support}
+The observable law \(P\) is a probability law for \((Y,A,X)\) with \(Y\in[0,1]\), \(A\in[0,1]\), and fixed grid \(0=a_0<\cdots<a_K=1\) with \(K\ge2\).
+\end{assumption}
+
+\begin{assumption}[Consistency]\label{ass:consistency}
+If \(A=a_j\), then the observed outcome equals the corresponding potential outcome at that dose, \(Y=Y(a_j)\), for each grid dose \(a_j\).
+\end{assumption}
+
+\begin{assumption}[Grid positivity]\label{ass:positivity}
+The observed generalized propensity at every grid dose is positive on the relevant covariate support, so the selected continuous-treatment sensitivity model defines finite pointwise bounds \(L_j(P,\Gamma)\) and \(U_j(P,\Gamma)\).
+\end{assumption}
+
+\begin{assumption}[Continuous marginal sensitivity model]\label{ass:cmsm}
+For a fixed \(\Gamma\ge1\), the hidden-confounding restriction is the continuous-treatment marginal sensitivity model of \citet{JessonDouglasManshausenSolalMeinshausenStierGalShalit2022} on the grid \(a_0,\ldots,a_K\), using the ratio orientation in Section~\ref{sec:setup}.  At dose \(a_j\), the complete-over-nominal propensity-density ratio is \(R_j(X,Y(a_j))=e^\dagger_j(a_j\mid X,Y(a_j))/e(a_j\mid X)\) and must lie in \([\Gamma^{-1},\Gamma]\).  The induced inverse tilt \(w_j=R_j^{-1}\) belongs to \(\mathcal W_{\Gamma,j}(P)\), is normalized conditionally on \(X\) among units with \(A=a_j\), and computes the APO at \(a_j\) by integrating over \(P_X\).  A joint full-data law in the model must use one latent variable \(U\) and one conditional treatment density \(f(a\mid X,U)\) whose grid-dose complete-over-nominal ratios all satisfy the common \(\Gamma\)-bound.
+\end{assumption}
+
+\begin{assumption}[Pointwise sharp bounded-confounding envelope]\label{ass:pointwise}
+For a fixed \(\Gamma\ge1\), Assumption~\ref{ass:cmsm} implies, before imposing shape across doses, the sharp pointwise statement
+\[
+\mu_j\in I_j(P,\Gamma)=[L_j(P,\Gamma),U_j(P,\Gamma)]
+\]
+for each grid dose \(a_j\), and every value in \(I_j(P,\Gamma)\) is attainable by some full-data law satisfying the same pointwise sensitivity restriction at dose \(a_j\).
+\end{assumption}
+
+\begin{assumption}[Monotone-concave dose response]\label{ass:mc}
+The grid dose-response vector \(\theta=(\mu_0,\ldots,\mu_K)\) is nondecreasing and discretely concave:
+\[
+\mu_{j-1}\le\mu_j\quad(1\le j\le K),\qquad
+\frac{\mu_j-\mu_{j-1}}{a_j-a_{j-1}}\ge
+\frac{\mu_{j+1}-\mu_j}{a_{j+1}-a_j}\quad(1\le j<K).
+\]
+\end{assumption}
+
+\begin{assumption}[Nonempty shape-compatible envelope]\label{ass:nonempty}
+The polytope \(\Theta_{\Gamma,\mathrm{mc}}(P)\) defined in Section~\ref{sec:setup} is nonempty.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: finite-grid shape-closed outer bound]\label{thm:finite-polytope}
+Under Assumptions~\ref{ass:support}--\ref{ass:nonempty}, every feasible dose-response vector under the continuous marginal sensitivity pointwise intervals and monotone-concave shape restriction belongs to \(\Theta_{\Gamma,\mathrm{mc}}(P)\).  Hence, for each target dose index \(k\),
+\[
+\mu_k\in
+\left[
+\inf_{\vartheta\in\Theta_{\Gamma,\mathrm{mc}}(P)}\vartheta_k,\,
+\sup_{\vartheta\in\Theta_{\Gamma,\mathrm{mc}}(P)}\vartheta_k
+\right],
+\]
+and the two endpoints are attained by vertices of the finite linear-inequality polytope \(\Theta_{\Gamma,\mathrm{mc}}(P)\).
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+The closest published papers split the ingredients: \citet{MarmarelisHaddadJessonJahanshadGalstyanVerSteeg2023}, \citet{JessonDouglasManshausenSolalMeinshausenStierGalShalit2022}, and \citet{DalalTchetgenTchetgen2025} give continuous-treatment sensitivity bands, while \citet{Manski1997} and \citet{OkumuraUsui2014} give shape-restricted treatment-response bounds.  This theorem is not the field-level novelty claim; it records the named finite LP certificate that the pasting conjecture must make sharp.  Its value is diagnostic: it tells a reviewer exactly which coordinate projection would be solved, where shape restrictions tighten a reported sensitivity band, and where nonemptiness fails.
+
+\begin{conjecture}[Conjecture 1: finite-grid CMSM normalization-pasting sharpness (NOT YET PROVED)]\label{conj:joint-sharpness}
+Under Assumptions~\ref{ass:support}--\ref{ass:nonempty}, the continuous marginal sensitivity model in Assumption~\ref{ass:cmsm} has the following normalization-pasting property.  For every \(\vartheta\in\Theta_{\Gamma,\mathrm{mc}}(P)\), there exist grid-dose tilts \(w_j\in\mathcal W_{\Gamma,j}(P)\) with
+\[
+\int \E\{Yw_j(Y,X)\mid A=a_j,X=x\}\,dP_X(x)=\vartheta_j
+\]
+that are induced by one full-data law with a single latent variable \(U\), one conditional treatment density \(f(a\mid X,U)\), the observed law \(P\), and the common complete-over-nominal \(\Gamma\)-bound at all grid doses.  Consequently, \(\Theta_{\Gamma,\mathrm{mc}}(P)\) is the sharp finite-grid identified set for \(\theta\), and \(B_{\Gamma,\mathrm{mc}}(P,k)\) is the sharp partial-identification interval for each \(\mu_k\).
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+This is the exact gap left by the closest continuous-dose sensitivity papers: pointwise sharpness in \citet{JessonDouglasManshausenSolalMeinshausenStierGalShalit2022}, \citet{MarmarelisHaddadJessonJahanshadGalstyanVerSteeg2023}, and \citet{BaitairianSebastienJreichKatsahianGuilloux2025} does not automatically imply joint curve sharpness, because a single latent confounding law must rationalize all grid doses at once.  Baitairian et al. are especially close on the published axis because their APO bounds are sharp under a continuous sensitivity model, but their statement is pointwise in the dose and does not add a monotone-concave finite-grid pasting theorem.  If the conjecture is true, existing continuous-treatment sensitivity methods can be upgraded into sharp shape-restricted curve bounds by solving only a finite convex projection; if it is false, the counterexample would identify a previously hidden cross-dose compatibility restriction in the published continuous marginal sensitivity model.
+
+\begin{conjecture}[Conjecture 2: three-dose concavity phase transition (NOT YET PROVED)]\label{conj:phase-transition}
+Suppose \(K=2\), \(a_0<a_1<a_2\), Assumptions~\ref{ass:support}--\ref{ass:nonempty} hold, and Conjecture~\ref{conj:joint-sharpness} holds for the same \(P\) and \(\Gamma\).  There are observable laws \(P\) and sensitivity levels \(\Gamma>1\), with \(L_0(P,\Gamma)\le L_1(P,\Gamma)\), such that monotonicity alone leaves the lower bound at \(a_1\) equal to \(L_1(P,\Gamma)\), while monotone concavity raises it to
+\[
+\underline\mu^{\mathrm{mc}}_1(P,\Gamma)
+=
+\max\left\{
+L_1(P,\Gamma),
+\frac{a_2-a_1}{a_2-a_0}L_0(P,\Gamma)
++\frac{a_1-a_0}{a_2-a_0}L_2(P,\Gamma)
+\right\}
+>L_1(P,\Gamma).
+\]
+The strict inequality is feasible whenever the chord through the endpoint lower sensitivity bounds lies above the pointwise middle-dose lower bound and below the corresponding upper feasibility region.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+\citet{WestlingGilbertCarone2020} shows how monotonicity can stabilize estimation when the curve is point identified, and \citet{Manski1997} shows that concavity can sharpen response bounds without modeling selection.  This conjecture isolates a smaller and testable phenomenon for hidden-confounding sensitivity: a high-dose lower guarantee can propagate backward to an intermediate dose through diminishing returns.  That gives practitioners a finite certificate for minimum-effective-dose claims that cannot be read from pointwise sensitivity bands.
+
+\begin{theorem}[Theorem 2: no-hidden-confounding collapse]\label{thm:gamma-one}
+Under Assumptions~\ref{ass:support}--\ref{ass:pointwise}, if \(\Gamma=1\) and the continuous marginal sensitivity model reduces to observed-confounder identification at every grid dose, so \(L_j(P,1)=U_j(P,1)=\mu_j^{0}(P)\), then \(\Theta_{1,\mathrm{mc}}(P)=\{\mu^0(P)\}\) when the identified dose-response vector is monotone-concave and \(\Theta_{1,\mathrm{mc}}(P)=\varnothing\) when that vector violates the imposed shape restriction.  In the nonempty branch of Assumption~\ref{ass:nonempty}, only the singleton case can occur.
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+The closest point-identification benchmark is \citet{Imbens2000} together with the continuous-treatment estimation literature such as \citet{KennedyMaMcHughSmall2017}.  This theorem is a sanity theorem rather than the novelty kernel: it verifies that the proposed partial-ID object collapses to the usual generalized-propensity dose-response curve when the hidden-confounding radius is zero and that shape is treated as a falsifiable restriction, not as a smoothing convention.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Reduction to coordinatewise interval-plus-concavity projection]\label{cor:interval-projection}
+Under Assumptions~\ref{ass:support}, \ref{ass:mc}, and \ref{ass:nonempty}, if the sensitivity model is used only through externally supplied coordinate intervals \(I_j=[L_j,U_j]\), then \(B_{\Gamma,\mathrm{mc}}\) is exactly the finite-dimensional projection of the interval box \(\prod_{j=0}^K[L_j,U_j]\) intersected with the monotone-concave cone.  This is the grid-level convex-analytic analogue of the shape-restricted envelope studied by \citet{Manski1997}, without claiming to encode Manski's individual realized-dose response-function information.
+\end{corollary}
+
+Under the named assumptions, the statement collapses to interval projection because the only remaining restrictions on \(\theta\) are membership in the coordinate box and the two linear shape systems.
+
+\begin{example}[Three-dose tightening certificate]\label{ex:three-dose}
+Let \(K=2\), \(a_0=0\), \(a_1=1/2\), \(a_2=1\), and take pointwise lower endpoints \(L_0=0.20\), \(L_1=0.20\), \(L_2=0.80\) with upper endpoints \(U_0=0.40\), \(U_1=0.90\), and \(U_2=0.95\).  Monotonicity alone permits \(\mu_1=0.20\), but monotone concavity forces \(\mu_1\ge(\mu_0+\mu_2)/2\ge0.50\), and the vector \((0.20,0.50,0.80)\) is feasible.
+\end{example}
+
+Under Assumptions~\ref{ass:support}, \ref{ass:mc}, and \ref{ass:nonempty}, the example collapses to one line of algebra: for equally spaced doses, discrete concavity is \(2\mu_1\ge\mu_0+\mu_2\), so endpoint lower bounds \(L_0\) and \(L_2\) impose the chord lower bound at the middle dose.
+
+\begin{corollary}[Reduction to the unconfounded dose-response curve]\label{cor:unconfounded}
+Under Assumptions~\ref{ass:support}--\ref{ass:nonempty}, if \(\Gamma=1\), \(L_j(P,1)=U_j(P,1)=\mu^0_j(P)\), and \(\mu^0(P)\) is monotone-concave, then \(B_{1,\mathrm{mc}}(P,k)=\{\mu^0_k(P)\}\) for every grid index \(k\).
+\end{corollary}
+
+Under the named assumptions, the statement collapses to the generalized-propensity point-identification result because each coordinate interval is a singleton and the shape inequalities are already satisfied.
+
+\section{Proof-sketch route}
+The mathematical route is finite convex analysis plus one named sensitivity-model realization theorem.  Theorem~\ref{thm:finite-polytope} follows by writing the pointwise interval, monotonicity, and discrete-concavity restrictions as finitely many linear inequalities and applying the elementary fact that a nonempty compact polytope has coordinate extrema at vertices.  For Conjecture~\ref{conj:joint-sharpness}, fix the complete-over-nominal CMSM ratio \(R_j=e^\dagger_j/e\) from Section~\ref{sec:setup}; the required theorem is a finite-grid normalization-pasting result showing that any tuple of conditionally normalized inverse tilts \(w_j=R_j^{-1}\in\mathcal W_{\Gamma,j}(P)\) with monotone-concave APO means can be represented by one latent \(U\) and one conditional density \(f(a\mid X,U)\), while preserving the observed conditional treatment density after integrating out \(U\).  The \(K=2\) construction should first split each conditional law \((Y,X)\mid A=a_j\) into at most two latent strata that attain the desired inverse-tilt mean, then check whether the three dose-specific strata can be coupled through a common latent partition without changing \(P_X\) or the observed generalized propensity.  The boundary algebra is a three-dose calculation: for equal spacing, \(2\mu_1\ge\mu_0+\mu_2\), so the middle lower endpoint is the maximum of the monotone lower endpoint and the endpoint chord; unequal spacing replaces the arithmetic mean by the affine chord in Conjecture~\ref{conj:phase-transition}.  The cases to enumerate explicitly are empty intersections, upper endpoints that block the chord witness, and whether the tilting functions that attain the three coordinate means can be chosen from a common latent partition.
+
+\section{Honest scope flags}
+The finite-polytope outer-bound statement is routine algebra once the pointwise sensitivity intervals are accepted as inputs.  The joint-sharpness statement is deliberately labelled as a conjecture because pointwise sharp sensitivity bounds may fail to paste across doses under the continuous marginal sensitivity model.  The three-dose phase-transition formula is mathematically plausible at the interval-polytope level, but its full causal sharpness depends on Conjecture~\ref{conj:joint-sharpness}.  This v3 draft fixes the sensitivity ratio orientation to the complete-over-nominal CMSM convention and adds \citet{BaitairianSebastienJreichKatsahianGuilloux2025} as the closest pointwise-sharp continuous sensitivity comparator.  The dose-varying formulation of \citet{DalalTchetgenTchetgen2025} and the marginal structural model sensitivity class of \citet{BonviniKennedyVenturaWasserman2022} are related work rather than theorem substrate.  The v1 Manski sanity corollary has been withdrawn and replaced by the safer coordinatewise interval-plus-concavity reduction.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=2em]
+\item v1 (cold-start) --- initial draft of a partial-ID proposal for monotone-concave shape closure of continuous-treatment sensitivity intervals; prior verdict: none.
+\item v2 (revise) --- instantiated the Jesson--Shalit continuous marginal sensitivity model, made normalization-pasting the conjecture rather than an assumption, repaired the \(\Gamma=1\) empty-set branch, and replaced the Manski sanity reduction; prior verdict: REVISE.
+\item v3 (revise) --- pinned the CMSM density-ratio orientation and conditioning objects, added Baitairian et al. as the pointwise-sharp continuous-sensitivity comparator, and sketched the \(K=2\) latent-partition pasting route; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Baitairian et~al.(2025)]{BaitairianSebastienJreichKatsahianGuilloux2025}
+Baitairian, J.-B., B. Sebastien, R. Jreich, S. Katsahian, and A. Guilloux (2025).
+\newblock Sharp bounds for continuous-valued treatment effects with unobserved confounders.
+\newblock \emph{Biometrical Journal} 67(5), e70084.
+
+\bibitem[Bonvini et~al.(2022)]{BonviniKennedyVenturaWasserman2022}
+Bonvini, M., E. H. Kennedy, V. Ventura, and L. Wasserman (2022).
+\newblock Sensitivity analysis for marginal structural models.
+\newblock arXiv:2210.04681.
+
+\bibitem[Dalal and Tchetgen Tchetgen(2025)]{DalalTchetgenTchetgen2025}
+Dalal, A. and E. J. Tchetgen Tchetgen (2025).
+\newblock Partial identification of causal effects for endogenous continuous treatments.
+\newblock arXiv:2508.13946.
+
+\bibitem[Dorn and Guo(2023)]{DornGuo2023}
+Dorn, J. and K. Guo (2023).
+\newblock Sharp sensitivity analysis for inverse propensity weighting via quantile balancing.
+\newblock \emph{Journal of the American Statistical Association} 118(544), 2645--2657.
+
+\bibitem[Hirano and Imbens(2004)]{HiranoImbens2004}
+Hirano, K. and G. W. Imbens (2004).
+\newblock The propensity score with continuous treatments.
+\newblock In A. Gelman and X.-L. Meng (eds.), \emph{Applied Bayesian Modeling and Causal Inference from Incomplete-Data Perspectives}, 73--84.
+
+\bibitem[Imbens(2000)]{Imbens2000}
+Imbens, G. W. (2000).
+\newblock The role of the propensity score in estimating dose-response functions.
+\newblock \emph{Biometrika} 87(3), 706--710.
+
+\bibitem[Jesson et~al.(2022)]{JessonDouglasManshausenSolalMeinshausenStierGalShalit2022}
+Jesson, A., A. R. Douglas, P. Manshausen, M. Solal, N. Meinshausen, P. Stier, Y. Gal, and U. Shalit (2022).
+\newblock Scalable sensitivity and uncertainty analyses for causal-effect estimates of continuous-valued interventions.
+\newblock \emph{Advances in Neural Information Processing Systems}.
+
+\bibitem[Kennedy et~al.(2017)]{KennedyMaMcHughSmall2017}
+Kennedy, E. H., Z. Ma, M. D. McHugh, and D. S. Small (2017).
+\newblock Non-parametric methods for doubly robust estimation of continuous treatment effects.
+\newblock \emph{Journal of the Royal Statistical Society: Series B} 79(4), 1229--1245.
+
+\bibitem[Manski(1990)]{Manski1990}
+Manski, C. F. (1990).
+\newblock Nonparametric bounds on treatment effects.
+\newblock \emph{American Economic Review} 80(2), 319--323.
+
+\bibitem[Manski(1997)]{Manski1997}
+Manski, C. F. (1997).
+\newblock Monotone treatment response.
+\newblock \emph{Econometrica} 65(6), 1311--1334.
+
+\bibitem[Manski and Pepper(2000)]{ManskiPepper2000}
+Manski, C. F. and J. V. Pepper (2000).
+\newblock Monotone instrumental variables: With an application to the returns to schooling.
+\newblock \emph{Econometrica} 68(4), 997--1010.
+
+\bibitem[Marmarelis et~al.(2023)]{MarmarelisHaddadJessonJahanshadGalstyanVerSteeg2023}
+Marmarelis, M. G., E. Haddad, A. Jesson, N. Jahanshad, A. Galstyan, and G. Ver Steeg (2023).
+\newblock Partial identification of dose responses with hidden confounders.
+\newblock In \emph{Proceedings of the Thirty-Ninth Conference on Uncertainty in Artificial Intelligence}, PMLR 216, 1368--1379.
+
+\bibitem[Okumura and Usui(2014)]{OkumuraUsui2014}
+Okumura, T. and E. Usui (2014).
+\newblock Concave-monotone treatment response and monotone treatment selection: With an application to the returns to schooling.
+\newblock \emph{Quantitative Economics} 5(1), 175--194.
+
+\bibitem[Tan(2006)]{Tan2006}
+Tan, Z. (2006).
+\newblock A distributional approach for causal inference using propensity scores.
+\newblock \emph{Journal of the American Statistical Association} 101(476), 1619--1637.
+
+\bibitem[Westling et~al.(2020)]{WestlingGilbertCarone2020}
+Westling, T., P. Gilbert, and M. Carone (2020).
+\newblock Causal isotonic regression.
+\newblock \emph{Journal of the Royal Statistical Society: Series B} 82(3), 719--747.
+
+\bibitem[Yadlowsky et~al.(2022)]{YadlowskyNamkoongBasuDuchiTian2022}
+Yadlowsky, S., H. Namkoong, S. Basu, J. Duchi, and L. Tian (2022).
+\newblock Bounds on the conditional and average treatment effect with unobserved confounding factors.
+\newblock \emph{Annals of Statistics} 50(5), 2587--2615.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,440 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_proximal\_did\_bridge\_frontier, specialization=v2
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_proximal\_did\_bridge\_frontier} / \texttt{v2}%
+  \\ \large\textit{A finite negative-control DiD diagnostic certificate separating pretrends from proxy-bridge identification}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Free-form exact-identification anchor. The locked tuple is
+\[
+(\texttt{qid},\texttt{specialization},\text{graph/SWIG},\text{treatment},
+\text{target estimand},\text{identifying assumptions})
+\]
+with \texttt{qid}=\texttt{eid\_proximal\_did\_bridge\_frontier} and
+\texttt{specialization}=\texttt{v2}. The graph/SWIG has group
+$G\in\{0,1\}$, periods $t\in\{0,1,2\}$, treatment $D_t=G\one\{t=2\}$,
+latent type $U\in\{0,1\}$, negative-control exposure $Z\in\{0,1\}$, negative-control
+outcome $W\in\{0,1\}$, untreated potential outcomes $Y_t(0)$, and treated
+post outcome $Y_2(1)$. The treatment is the switch-on intervention at $t=2$.
+The target estimand is
+\[
+\theta_{\mathrm{ATT}}=\E[Y_2(1)-Y_2(0)\mid G=1].
+\]
+The identifying assumptions are consistency, no anticipation for $Y_0,Y_1$,
+negative-control exclusion for $(W,Z)$, preperiod proxy stability of the
+binary proxy measurement slopes, and the finite bridge-stability equations
+defined in Section 6. Ordinary parallel trends and the finite proxy bridge
+condition are not assumed jointly; they are competing restrictions compared
+by the diagnostic certificate.
+
+\begin{abstract}
+Difference-in-differences papers use pretrends and placebo outcomes to diagnose
+parallel-trends violations, while proximal negative-control papers identify
+effects through bridge equations. This proposal asks when the two diagnostics
+give different identification verdicts for the same two-group panel. The
+central conjecture is that a finite observable certificate built from
+preperiod outcome, negative-control outcome, and negative-control exposure
+moments sharply separates pretrend passing, proxy-bridge identification, and
+nonidentification. The proposal includes a rational-valued
+$2\times3\times2\times2$ witness where the ordinary pretrend diagnostic is
+zero, parallel trends fails at the post period, and the proxy bridge recovers
+the ATT. Resolving the conjecture would give negative-control DiD a theorem-level
+diagnostic frontier rather than another placebo or sensitivity calibration.
+\end{abstract}
+
+\section{Introduction}
+Can a two-group DiD design fail ordinary parallel trends and still be point
+identified from negative controls using only finite preperiod proxy moments?
+The main claim is that a three-component certificate
+$\Xi(P)=(L_{\mathrm{pre}}(P),\det K(P),Q_{\mathrm{br}}(P))$ gives a sharp
+diagnostic frontier: pretrend tests, proximal bridge rank, and ATT
+identification are logically distinct.
+
+\citet[p.~1045, Theorem 1]{MiaoGengTchetgen2018} identify causal effects with
+two proxies under completeness, and \citet[Section 2]{RambachanRoth2023}
+use pretrend information for sensitivity to parallel-trends violations. Neither
+paper gives an observable finite DiD certificate showing that a zero pretrend
+can coexist with bridge identification and post-period nonparallel trends. The
+kernel is an exact-identification statement for a finite panel SWIG with
+negative-control exposure and outcome proxies.
+
+The immediate consumer is negative-control DiD in electronic health-record
+studies such as \citet{ZhangZhangWangEtAl2025}, where placebo and pretrend
+diagnostics are used to calibrate bias from parallel-trends violations. A reader
+would replace the single pretrend pass/fail report by a proxy-bridge rank
+calculation with an explicit nonidentification verdict when the bridge equation
+does not close.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: the rational witness in Exhibit 9.1 has zero pretrend, biased ordinary DiD, nonsingular proxy bridge matrix, and bridge-corrected ATT equal to the true ATT. Gap: \citet{RambachanRoth2023} studies sensitivity around pretrends and \citet{MiaoGengTchetgen2018} studies generic proxy identification, but neither computes this common finite law. Consumer: \citet{ZhangZhangWangEtAl2025}.
+\item Conjecture 1: in the binary-proxy $2\times3$ class, $\Xi(P)$ is a necessary and sufficient diagnostic certificate for the three-way split between pretrend pass, proxy-bridge identification, and neither-identification. Gap: \citet{MiaoShiLiTchetgen2024} supplies bridge functions and \citet{SoferRichardsonColicinoSchwartzTchetgen2016} links DiD to negative outcome controls, but neither proves the finite diagnostic non-equivalence frontier. Consumer: negative-control DiD designs in pharmacoepidemiology.
+\end{itemize}
+
+\section{Related work}
+\citet{MiaoGengTchetgen2018} is the main proxy-rank ancestor: it gives
+identification with treatment- and outcome-inducing proxies under rank and
+completeness conditions. \citet{MiaoShiLiTchetgen2024} formulates double
+negative-control bridge functions, but not a finite DiD diagnostic frontier.
+\citet{CuiPuShiMiaoTchetgen2024} develops semiparametric proximal inference
+around bridge equations and supplies the inference background rather than the
+finite identification split studied here. \citet{SoferRichardsonColicinoSchwartzTchetgen2016}
+frames DiD as a negative-outcome-control method and makes the scale dependence
+of bias-equivalence restrictions explicit. \citet{RichardsonYeTchetgen2023}
+and \citet{TchetgenParkRichardson2024} generalize DiD through alternative
+equi-confounding restrictions, but they do not introduce a double-proxy bridge
+rank diagnostic. \citet{ZhangZhangWangEtAl2025} is the closest applied
+negative-control DiD comparator because it uses multiple negative-control
+outcomes to detect and calibrate violations of parallel trends. \citet{RambachanRoth2023}
+is the main pretrend-sensitivity comparator: it treats pretrend information as
+a robustness input, not as a proxy-rank identification condition. \citet{CallawaySantAnna2021}
+and \citet{SunAbraham2021} set the modern multi-period DiD comparison class.
+The CausalSmith catalogue records panel Q1 minimal-basis and sign-flip results
+in \texttt{doc/API.md}, Section 1; those are regression-weight theorems, not
+negative-control exact-identification theorems. The direct banked prior
+\texttt{eid\_proximal\_did\_bridge\_frontier\_v1} named a bridge frontier, but
+the reviewer found that its witness used moment rows rather than a full finite
+law and that its frontier partly unfolded an assumed bridge condition.
+
+\section{Formal setup}
+\begin{definition}[Finite negative-control DiD law]
+A law $P$ consists of $G\in\{0,1\}$, periods $t=0,1,2$, treatment
+$D_t=G\one\{t=2\}$, latent type $U\in\{0,1\}$, proxies $Z,W\in\{0,1\}$,
+and potential outcomes $Y_t(0),Y_2(1)$. The observed outcomes are
+$Y_t=Y_t(0)$ for $t=0,1$ and
+$Y_2=D_2Y_2(1)+(1-D_2)Y_2(0)$.
+\end{definition}
+
+\begin{definition}[Target and ordinary DiD]
+The target is $\theta_{\mathrm{ATT}}=\E[Y_2(1)-Y_2(0)\mid G=1]$. The ordinary
+two-period post-pre DiD estimand is
+\[
+\theta_{\mathrm{did}}(P)=\{\E[Y_2-Y_1\mid G=1]\}-\{\E[Y_2-Y_1\mid G=0]\}.
+\]
+The pretrend diagnostic is
+$L_{\mathrm{pre}}(P)=\{\E[Y_1-Y_0\mid G=1]\}-\{\E[Y_1-Y_0\mid G=0]\}$.
+\end{definition}
+
+\begin{definition}[Binary proxy bridge certificate]
+Let
+\[
+K(P)=
+\begin{pmatrix}
+1 & \E[Z\mid G=1]\\
+\E[W\mid G=1] & \E[WZ\mid G=1]
+\end{pmatrix},
+\qquad
+\Delta_Z(P)=\E[Z\mid G=1]-\E[Z\mid G=0].
+\]
+Let $s_Z(P)=\E[Z\mid U=1]-\E[Z\mid U=0]$ and
+$\lambda_{21}(P)$ denote the post-minus-pre untreated latent loading. When
+$s_Z(P)\ne0$, define
+\[
+Q_{\mathrm{br}}(P)=\lambda_{21}(P)\Delta_Z(P)/s_Z(P),\qquad
+\theta_{\mathrm{br}}(P)=\theta_{\mathrm{did}}(P)-Q_{\mathrm{br}}(P).
+\]
+The observable proxy-rank diagnostic is
+$C_{\mathrm{rank}}(P)=\det K(P)$, and the proposed certificate is
+$\Xi(P)=(L_{\mathrm{pre}}(P),C_{\mathrm{rank}}(P),Q_{\mathrm{br}}(P))$.
+\end{definition}
+
+\begin{quote}\small
+Locked parameters reproduced: free-form exact-identification anchor;
+\texttt{qid}=\texttt{eid\_proximal\_did\_bridge\_frontier};
+\texttt{specialization}=\texttt{v2}; graph/SWIG has
+$G,t,D_t,U,Z,W,Y_t(0),Y_2(1)$ as above; treatment is $D_2=G$; target is
+$\theta_{\mathrm{ATT}}$; identifying assumptions are consistency, no
+anticipation, negative-control exclusion, preperiod proxy stability, and
+finite bridge stability.
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Consistency and no anticipation]\label{ass:consistency}
+For $t=0,1$, $Y_t=Y_t(0)$ for both groups. At $t=2$,
+$Y_2=D_2Y_2(1)+(1-D_2)Y_2(0)$.
+\end{assumption}
+
+\begin{assumption}[Negative-control exclusion]\label{ass:nc-exclusion}
+Conditional on $U$, the proxies $(W,Z)$ are not affected by the post-period
+treatment and have the same measurement law in the treated and control groups.
+\end{assumption}
+
+\begin{assumption}[Binary proxy relevance]\label{ass:proxy-relevance}
+$s_Z(P)=\E[Z\mid U=1]-\E[Z\mid U=0]\ne0$, and the analogous slope
+$s_W(P)=\E[W\mid U=1]-\E[W\mid U=0]$ is nonzero.
+\end{assumption}
+
+\begin{assumption}[Finite bridge stability]\label{ass:bridge-stability}
+There is a scalar $\lambda_{21}(P)$ such that
+$\E[Y_2(0)-Y_1(0)\mid G,U]=a_{21}(P)+\lambda_{21}(P)U$ for both groups, and
+the proxy measurement slopes in Assumption \ref{ass:proxy-relevance} are stable
+over the two preperiods.
+\end{assumption}
+
+\begin{assumption}[Positive cells]\label{ass:positive-cells}
+Every cell used in the witness tables for $(G,U,W,Z)$ has strictly positive
+probability.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Witness arithmetic]\label{thm:witness-arithmetic}
+Under Assumptions \ref{ass:consistency}--\ref{ass:positive-cells}, the law in
+Exhibit 9.1 satisfies
+\[
+L_{\mathrm{pre}}(P)=0,\qquad C_{\mathrm{rank}}(P)=3/64,\qquad
+\theta_{\mathrm{did}}(P)=5/4,\qquad
+\theta_{\mathrm{ATT}}=\theta_{\mathrm{br}}(P)=1 .
+\]
+Proof sketch. Substitute the raw cell probabilities and outcome equations in
+Exhibit 9.1 into the definitions in Section 6. The displayed equalities follow
+from two binary-slope identities:
+$\Delta_U=\Delta_Z/s_Z=1/4$ and
+$Q_{\mathrm{br}}=\lambda_{21}\Delta_U=1/4$.
+\end{theorem}
+
+\begin{conjecture}[Diagnostic disagreement frontier, NOT YET PROVED]\label{conj:diagnostic-frontier}
+In the binary-proxy $2\times3$ class satisfying Assumptions
+\ref{ass:consistency}--\ref{ass:bridge-stability}, the certificate
+$\Xi(P)=(L_{\mathrm{pre}}(P),C_{\mathrm{rank}}(P),Q_{\mathrm{br}}(P))$
+generates three nonempty open regimes:
+\[
+\mathcal R_{\mathrm{pre}}=\{L_{\mathrm{pre}}=0,\theta_{\mathrm{did}}=\theta_{\mathrm{ATT}}\},
+\quad
+\mathcal R_{\mathrm{br}}=\{C_{\mathrm{rank}}\ne0,\theta_{\mathrm{br}}=\theta_{\mathrm{ATT}}\},
+\quad
+\mathcal R_{\emptyset}=\{\theta_{\mathrm{did}}\ne\theta_{\mathrm{ATT}},\theta_{\mathrm{br}}\ne\theta_{\mathrm{ATT}}\}.
+\]
+Moreover $\mathcal R_{\mathrm{pre}}\setminus\mathcal R_{\mathrm{br}}$ and
+$\mathcal R_{\mathrm{br}}\setminus\mathcal R_{\mathrm{pre}}$ are both nonempty,
+so ordinary pretrend diagnostics and finite proximal bridge identification are
+neither nested nor equivalent.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Zero latent-loading reduction]\label{cor:zero-loading}
+Under Assumptions \ref{ass:consistency}--\ref{ass:bridge-stability}, if
+$\lambda_{21}(P)=0$, then $Q_{\mathrm{br}}(P)=0$ and
+$\theta_{\mathrm{br}}(P)=\theta_{\mathrm{did}}(P)$. This collapses to ordinary
+DiD because the post-minus-pre untreated trend has no latent-type loading.
+\end{corollary}
+
+\begin{example}[Exhibit 9.1: finite proxy diagnostic witness]\label{ex:witness}
+Let $\Pr(G=1)=\Pr(G=0)=1/2$,
+$\Pr(U=1\mid G=0)=1/2$, and $\Pr(U=1\mid G=1)=3/4$. Conditional on $U$,
+$W$ and $Z$ are independent and
+\[
+\Pr(W=1\mid U=0)=\Pr(Z=1\mid U=0)=1/4,\qquad
+\Pr(W=1\mid U=1)=\Pr(Z=1\mid U=1)=3/4 .
+\]
+Let $Y_0(0)=U$, $Y_1(0)=1+U$, $Y_2(0)=2+2U$, and
+$Y_2(1)=Y_2(0)+1$. Then $\theta_{\mathrm{ATT}}=1$.
+
+\medskip
+\noindent\textbf{Focal object:} $\Xi(P)=(L_{\mathrm{pre}},C_{\mathrm{rank}},Q_{\mathrm{br}})$.
+
+\noindent\textbf{Defining equation copied from Section 6:}
+\[
+L_{\mathrm{pre}}=\{\E[Y_1-Y_0\mid G=1]\}-\{\E[Y_1-Y_0\mid G=0]\},
+\quad
+C_{\mathrm{rank}}=\det\begin{pmatrix}1&\E[Z\mid G=1]\\ \E[W\mid G=1]&\E[WZ\mid G=1]\end{pmatrix},
+\quad
+Q_{\mathrm{br}}=\lambda_{21}\Delta_Z/s_Z .
+\]
+
+\noindent\textbf{RHS symbol provenance:}
+\begin{itemize}[leftmargin=*]
+\item $\Pr(U=1\mid G=0)=1/2$; source: Section 6 primitive latent-type mass.
+\item $\Pr(U=1\mid G=1)=3/4$; source: Section 6 primitive latent-type mass.
+\item $\Pr(Z=1\mid U=0)=1/4$, $\Pr(Z=1\mid U=1)=3/4$; source: Section 6 primitive proxy cells.
+\item $\Pr(W=1\mid U=0)=1/4$, $\Pr(W=1\mid U=1)=3/4$; source: Section 6 primitive proxy cells.
+\item $Y_0(0)=U$, $Y_1(0)=1+U$, $Y_2(0)=2+2U$, $Y_2(1)=Y_2(0)+1$; source: Section 6 primitive potential-outcome table.
+\item $\E[Z\mid G=1]=5/8$ and $\E[W\mid G=1]=5/8$; derived from the latent-type and proxy cells.
+\item $\E[WZ\mid G=1]=7/16$; derived from conditional independence of $W,Z$ given $U$ and the primitive proxy cells.
+\item $\Delta_Z=1/8$, $s_Z=1/2$, $\lambda_{21}=1$; derived from the primitive proxy and outcome cells.
+\end{itemize}
+
+\noindent\textbf{Substituted equation:}
+\[
+L_{\mathrm{pre}}=(1)-(1)=0,\quad
+C_{\mathrm{rank}}=1\cdot 7/16-(5/8)(5/8)=3/64,\quad
+Q_{\mathrm{br}}=1\cdot(1/8)/(1/2)=1/4 .
+\]
+\[
+\theta_{\mathrm{did}}=(\E[Y_2-Y_1\mid G=1])-(\E[Y_2-Y_1\mid G=0])
+=(2+\E[U\mid G=1])-(1+\E[U\mid G=0])=5/4 .
+\]
+
+\noindent\textbf{Computed value:}
+$\Xi(P)=(0,3/64,1/4)$,
+$\theta_{\mathrm{br}}=5/4-1/4=1$, and
+$\theta_{\mathrm{did}}-\theta_{\mathrm{ATT}}=1/4$.
+
+\noindent\textbf{Invariant check 1: probabilities sum to one.}
+For each $g$, $\Pr(U=0\mid G=g)+\Pr(U=1\mid G=g)=1$; result = OK.
+
+\noindent\textbf{Invariant check 2: positive cells and nonzero denominator.}
+All primitive proxy probabilities are in $(0,1)$ and
+$s_Z=1/2\ne0$; result = OK.
+
+\noindent\textbf{Invariant check 3: non-equivalence is not normalization.}
+$\theta_{\mathrm{did}}=5/4$ and $\theta_{\mathrm{br}}=1$ use the same
+post-minus-pre outcome scale, so the difference $1/4$ is not a rescaling
+artifact; result = OK.
+
+\noindent\textbf{Assumption-substitution screen.}
+No load-bearing RHS symbol above is sourced from Section 7 assumptions. The
+equalities use only Section 6 primitive latent masses, proxy cells, and
+potential-outcome values; the assumptions name the class in which the witness
+is interpreted.
+\end{example}
+
+\section{Proof-sketch route}
+For Conjecture \ref{conj:diagnostic-frontier}, the route is:
+headline $\leftarrow$ unfold Section 6 definitions of
+$L_{\mathrm{pre}}$, $K$, $Q_{\mathrm{br}}$, and $\theta_{\mathrm{br}}$
+$\leftarrow$ substitute Assumptions \ref{ass:consistency}--\ref{ass:bridge-stability}.
+Step 1 (substantive): parameterize the binary proxy model by
+$(p_0,p_1,s_Z,s_W,\lambda_{10},\lambda_{21},\tau)$ and prove that the map from
+primitive parameters to $(L_{\mathrm{pre}},C_{\mathrm{rank}},Q_{\mathrm{br}})$
+has full row rank on an open set. Step 2 (substantive): use the binary
+two-proxy inversion identity to express the latent type shift as
+$\Delta_U=\Delta_Z/s_Z$ and show that this is independent of the ordinary
+pretrend equation. Step 3 (substantive): construct tangent perturbations that
+hold $L_{\mathrm{pre}}=0$ while changing $\lambda_{21}\Delta_U$, and separate
+them from perturbations that keep $C_{\mathrm{rank}}\ne0$ while breaking bridge
+stability. Step 4 (substantive): apply the constant-rank theorem to lift the
+Exhibit 9.1 point into nonempty open regimes. The route closes against
+finite-dimensional rank and inverse-function arguments, not against a generic
+proximal completeness theorem.
+
+\section{Honest scope flags}
+Theorem \ref{thm:witness-arithmetic} is finite arithmetic and should be
+provable by direct substitution. Conjecture \ref{conj:diagnostic-frontier} is
+the novel kernel and is not yet proved. The proposal does not claim an
+asymptotic estimator or efficiency bound. The main uncertainty is whether the
+open-regime part of the conjecture can be stated without adding smooth
+positivity conditions beyond the binary positive-cell restriction.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) --- initial diagnostic-disagreement draft choosing surviving seed index 3; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Callaway and Sant'Anna(2021)]{CallawaySantAnna2021}
+Callaway, B. and P. H. C. Sant'Anna (2021).
+Difference-in-differences with multiple time periods.
+\emph{Journal of Econometrics} 225(2), 200--230.
+
+\bibitem[Cui et al.(2024)]{CuiPuShiMiaoTchetgen2024}
+Cui, Y., H. Pu, X. Shi, W. Miao, and E. J. Tchetgen Tchetgen (2024).
+Semiparametric proximal causal inference.
+\emph{Journal of the American Statistical Association}.
+
+\bibitem[Miao et al.(2018)]{MiaoGengTchetgen2018}
+Miao, W., Z. Geng, and E. J. Tchetgen Tchetgen (2018).
+Identifying causal effects with proxy variables of an unmeasured confounder.
+\emph{Biometrika} 105(4), 987--993.
+
+\bibitem[Miao et al.(2024)]{MiaoShiLiTchetgen2024}
+Miao, W., X. Shi, Y. Li, and E. J. Tchetgen Tchetgen (2024).
+Double negative control inference in test-negative design studies of vaccine effectiveness.
+\emph{Statistical Theory and Related Fields}.
+
+\bibitem[Rambachan and Roth(2023)]{RambachanRoth2023}
+Rambachan, A. and J. Roth (2023).
+A more credible approach to parallel trends.
+\emph{Review of Economic Studies} 90(5), 2555--2591.
+
+\bibitem[Richardson et al.(2023)]{RichardsonYeTchetgen2023}
+Richardson, D. B., T. Ye, and E. J. Tchetgen Tchetgen (2023).
+Generalized difference-in-differences.
+\emph{Epidemiology}.
+
+\bibitem[Sofer et al.(2016)]{SoferRichardsonColicinoSchwartzTchetgen2016}
+Sofer, T., D. B. Richardson, E. Colicino, J. Schwartz, and E. J. Tchetgen Tchetgen (2016).
+On negative outcome control of unobserved confounding as a generalization of difference-in-differences.
+\emph{Statistical Science} 31(3), 348--361.
+
+\bibitem[Sun and Abraham(2021)]{SunAbraham2021}
+Sun, L. and S. Abraham (2021).
+Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\emph{Journal of Econometrics} 225(2), 175--199.
+
+\bibitem[Tchetgen Tchetgen et al.(2024)]{TchetgenParkRichardson2024}
+Tchetgen Tchetgen, E. J., C. Park, and D. B. Richardson (2024).
+Universal difference-in-differences.
+\emph{Epidemiology}.
+
+\bibitem[Zhang et al.(2025)]{ZhangZhangWangEtAl2025}
+Zhang, D., B. Zhang, H. Wang, Y. Lu, C. J. Wolock, W. Hu, L. Wang, G. Hripcsak, and Y. Chen (2025).
+Negative control difference-in-differences.
+\emph{npj Digital Medicine}.
+\end{thebibliography}
+
+\end{document}

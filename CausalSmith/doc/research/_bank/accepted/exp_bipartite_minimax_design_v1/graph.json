@@ -1,0 +1,5910 @@
+{
+  "qid": "exp_bipartite_minimax_design",
+  "specialization": "v1",
+  "nodes": [
+    {
+      "id": "S1",
+      "obj_id": "S-1",
+      "kind": "setup",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Finite-population Bernoulli randomization design (assignment world): probability comes from the experimenter's independent heterogeneous Bernoulli coin flips over the finite assignment space Ω = (I_n → Bool); the design variable p and its feasible class are the decision objects. — Reuse the finite-sum design layer FiniteDesign (E/Var/Cov as Finset algebra) and the product Bernoulli design bernoulliDesign p (per-unit coin flips, cross-unit independence STRUCTURAL via prodDesign). This directly realizes ass:independent-heterogeneous-bernoulli. bernoulliDesign_E_treat/_E_ctrl give the marginal treatment/control expectations feeding pi_i^1/pi_i^0. The positivity floor epsilon and budget B_n restrict p but do not change the world. Verified signatures: bernoulliDesign (Bernoulli.lean:60), FiniteDesign (Design.lean).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "Causalean.Experimentation.UnknownInterference.bernoulliDesign",
+        "file": null
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      },
+      "setup": {
+        "required_modules": [
+          "Causalean.Experimentation.DesignBased.Design",
+          "Causalean.Experimentation.UnknownInterference.Bernoulli"
+        ]
+      }
+    },
+    {
+      "id": "S2",
+      "obj_id": "S-2",
+      "kind": "setup",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Bipartite interference graph + fixed finite-population potential-outcome schedule: known bipartite graph G_n over I_n × O_n, outcome neighborhoods N_i(G_n), fixed bounded potential outcomes Y_i(z_{N_i}), Hajek exposure estimator and its graph-only conservative variance objects. — Search trace: grepped '## Experimentation' in ../doc/API.md + scanned Causalean/Experimentation/{DesignBased,UnknownInterference}; no BipartiteDesign / bipartite-graph structure exists (all interference substrate is one-mode: ExposureMappingInterference, UnknownInterference.Interferes/InterfDep). So the bipartite graph layer (I_n, O_n, G_n, N_i, M_k, degrees, shared sets S_ij) is new local scaffolding. It nonetheless SITS INSIDE the S1 FiniteDesign world: fixed potential outcomes Y_i as functions of the treatment subvector on N_i mirror UnknownInterference.y / y_eq_of_agree_on_interferers (analogue F3 should follow for the interference-restriction algebra), and the all-treated/all-control exposure indicators T_i/C_i are products over N_i (compare Exposure.expoInd). Define a local BipartiteExperiment structure bundling G_n and the neighborhood accessors.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": null,
+        "file": null
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      },
+      "setup": {
+        "required_modules": [
+          "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Basic"
+        ]
+      }
+    },
+    {
+      "id": "ass:bipartite-interference",
+      "obj_id": "A-1",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For every i in O_n and every z,z' in {0,1}^{m_n}, z_{N_i(G_n)} = z'_{N_i(G_n)} implies Y_i(z_{N_i}) = Y_i(z'_{N_i}).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.BipartiteInterference",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "c54b54e0bc2624d4ae5ac787b844a0ad6ad3700f",
+        "note": "Quantification over Bool-valued assignment vectors exactly represents z,z' in {0,1}^{m_n}, and equality on every k in N_i implies equality of Yfun, precisely encoding neighborhood SUTVA."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "bipartite interference / neighborhood SUTVA",
+        "cite": "LuShiFangZhangDing2025BipartiteDesign",
+        "citation": "Lu, S., Shi, L., Fang, Y., Zhang, W., and Ding, P. (2025). Design-based causal inference in bipartite experiments. arXiv:2501.09844."
+      }
+    },
+    {
+      "id": "ass:independent-heterogeneous-bernoulli",
+      "obj_id": "A-2",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For every k in I_n, Z_k is Bernoulli(p_k), and the collection {Z_k : k in I_n} is mutually independent.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.IndepHeteroBernoulli",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "6ebead803a4719b706d750efbb1c516538d19712",
+        "note": "Equality of D with the heterogeneous Bernoulli product design is equivalent to every coordinate having Bernoulli(p_k) law and the coordinate collection being mutually independent; hp0 and hp1 only establish the intrinsic probability domain."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "independent non-identical Bernoulli randomization",
+        "cite": "Leung2019ApproxNeighborhoodInterference",
+        "citation": "Leung, M. P. (2021). Causal inference under approximate neighborhood interference. arXiv:1911.07085."
+      }
+    },
+    {
+      "id": "ass:positivity-floor",
+      "obj_id": "A-3",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For every k in I_n, epsilon <= p_k <= 1-epsilon.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.PositivityFloor",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "db89ba7a79acd746b46e85292b914b5ccdc8b67f",
+        "note": "Unfolding gives exactly the coordinatewise conjunction epsilon <= p_k and p_k <= 1-epsilon for every intervention unit k."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "uniform overlap for heterogeneous Bernoulli exposure probabilities",
+        "cite": "Leung2019ApproxNeighborhoodInterference",
+        "citation": "Leung, M. P. (2021). Causal inference under approximate neighborhood interference. arXiv:1911.07085."
+      }
+    },
+    {
+      "id": "ass:budget-balance",
+      "obj_id": "A-4",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "sum_{k in I_n} p_k = B_n.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.BudgetBalance",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "16f29734b728c947400a840524f132d4bfcdb5f4",
+        "note": "The finite Fintype sum over all intervention units is exactly the stated budget identity sum_k p_k = B_n."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "ass:bounded-outcomes",
+      "obj_id": "A-5",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For every i in O_n, |Y_i^1| <= 1 and |Y_i^0| <= 1.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.BoundedOutcomes",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "2965157e5c28af7c9a977290fcf3727a60986335",
+        "note": "Y1 and Y0 unfold to the all-treated and all-control potential outcomes, and the definition imposes exactly both absolute-value bounds for every outcome unit."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "bounded finite-population potential outcomes",
+        "cite": "LuShiFangZhangDing2025BipartiteDesign",
+        "citation": "Lu, S., Shi, L., Fang, Y., Zhang, W., and Ding, P. (2025). Design-based causal inference in bipartite experiments. arXiv:2501.09844."
+      }
+    },
+    {
+      "id": "ass:bounded-outcome-degree",
+      "obj_id": "A-6",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "max_{i in O_n} d_i <= dbar.",
+        "tex_anchor": "",
+        "frozen": true,
+        "frozen_body": "\\[\n0 < \\bar d\n\\quad\\text{and}\\quad\n\\max_{i\\in O_n} d_i \\leq \\bar d.\n\\]",
+        "frozen_title": "Bounded outcome degree"
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.BoundedOutcomeDegree",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "0c34b63eb4cc963a570037604cfcd37204fbf412",
+        "note": "The universal bound |N_i|≤dbar is equivalent to max_i d_i≤dbar, while 0<dbar enforces the core symbol's declared intrinsic domain dbar ∈ (0,∞)."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "bounded outcome-side degree in sparse bipartite graphs",
+        "cite": "LuShiFangZhangDing2025BipartiteDesign",
+        "citation": "Lu, S., Shi, L., Fang, Y., Zhang, W., and Ding, P. (2025). Design-based causal inference in bipartite experiments. arXiv:2501.09844."
+      }
+    },
+    {
+      "id": "ass:bounded-overlap-dependency",
+      "obj_id": "A-7",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Delta_n <= Dbar.",
+        "tex_anchor": "",
+        "frozen": true,
+        "frozen_body": "\\[\n0 < \\bar D \\quad\\text{and}\\quad \\Delta_n \\le \\bar D.\n\\]",
+        "frozen_title": "Bounded overlap dependency"
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.BoundedOverlapDependency",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "19acb17c5426bd8863ee0a00202ec2392707a130",
+        "note": "The universal bound |overlapNbrs(i)|≤Dbar is exactly Δ_n≤Dbar when Δ_n is the maximum overlap-dependency degree, and 0<Dbar enforces its declared intrinsic domain."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "bounded dependency-graph degree",
+        "cite": "AronowSamii2017GeneralInterference",
+        "citation": "Aronow, P. M. and Samii, C. (2017). Estimating average causal effects under general interference, with application to a social network experiment. Annals of Applied Statistics, 11(4), 1912-1947."
+      }
+    },
+    {
+      "id": "ass:variance-nondegenerate",
+      "obj_id": "A-8",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "liminf_{n -> infty} sigma_{G_n,p_n^*(G_n)}^2(Y) > 0.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.VarianceNondegenerate",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "ebe6847ec2020345d3372388946a573351fb8451",
+        "note": "For a real sequence, liminf_n σ²_n>0 is equivalent to the existence of c>0 such that σ²_n≥c eventually."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "nondegenerate asymptotic design variance",
+        "cite": "LuShiFangZhangDing2025BipartiteDesign",
+        "citation": "Lu, S., Shi, L., Fang, Y., Zhang, W., and Ding, P. (2025). Design-based causal inference in bipartite experiments. arXiv:2501.09844."
+      }
+    },
+    {
+      "id": "def:feasible-designs",
+      "obj_id": "P-1",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "P_{n,B_n,epsilon} = {p in [0,1]^{m_n} : epsilon <= p_k <= 1-epsilon for every k in I_n, and sum_{k in I_n} p_k = B_n}",
+        "tex_anchor": "",
+        "frozen": true,
+        "frozen_body": "Under Assumptions~\\ref{obj:ass:positivity-floor} and~\\ref{obj:ass:budget-balance}, with \\(0<\\epsilon<1/2\\), define\n\\[\n\\mathcal P_{n,B_n,\\epsilon}\n=\n\\left\\{\np\\in[0,1]^{m_n}:\n\\epsilon\\le p_k\\le 1-\\epsilon\\ \\text{for every } k\\in I_n,\n\\quad\n\\sum_{k\\in I_n}p_k=B_n\n\\right\\}.\n\\]",
+        "frozen_title": "Feasible design class $\\mathcal P_{n,B_n,\\epsilon}$"
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.FeasibleDesign",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "0b0dd5e916138e74229606d74303c838345c4690",
+        "note": "Unfolding the fields gives exactly p_k ∈ [0,1], ε ≤ p_k ≤ 1−ε for every k, and ∑_k p_k = B; EpsilonAdmissible merely enforces the globally declared domain ε ∈ (0,1/2)."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:hajek-denominators",
+      "obj_id": "P-2",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "D_1(p,Z) = sum_{i in O_n} T_i(Z) / pi_i^1(p), D_0(p,Z) = sum_{i in O_n} C_i(Z) / pi_i^0(p)",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.BipartiteExperiment.hajekDenominators",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "3f5a339bde98679db71ee8dfe1fc12047b4817cf",
+        "note": "After unfolding expT, expC, piT, and piC, the two product components are exactly D₁(p,Z)=∑_i T_i(Z)/π_i¹(p) and D₀(p,Z)=∑_i C_i(Z)/π_i⁰(p)."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:hetero-hajek-estimator",
+      "obj_id": "P-3",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "hat_tau_H(p) = 1{D_1(p,Z) > 0}{sum_{i in O_n} T_i(Z) Y_i^obs / pi_i^1(p)} / D_1(p,Z) - 1{D_0(p,Z) > 0}{sum_{i in O_n} C_i(Z) Y_i^obs / pi_i^0(p)} / D_0(p,Z)",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.BipartiteExperiment.hajekEstimator",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "c9a8f611af95ba8a3402ee41fd4c0fdda2088ba0",
+        "note": "After unfolding the denominators, exposures, exposure probabilities, and observed outcome Yfun i z, each if-branch is exactly the corresponding indicator-weighted Hájek ratio with the stated zero-denominator convention."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:first-order-linearization",
+      "obj_id": "P-4",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "eta_i(p,Z) = (T_i(Z)/pi_i^1(p) - 1)(Y_i^1-mu_1) - (C_i(Z)/pi_i^0(p) - 1)(Y_i^0-mu_0)",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.BipartiteExperiment.linScore",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "73e992976eca2b6d40a6a470bc5840eb8823f188",
+        "note": "Unfolding expT, expC, piT, piC, Y1, Y0, mu1, and mu0 yields exactly the paper's two centered inverse-exposure terms with the same subtraction and signs."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:variance-scale",
+      "obj_id": "P-5",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "sigma_{G_n,p}^2(Y) = n Var_p(n^(-1) sum_{i in O_n} eta_i(p,Z)) = n^(-1) sum_{i,j in O_n} E_p[eta_i(p,Z) eta_j(p,Z)]",
+        "tex_anchor": "",
+        "frozen": true,
+        "frozen_body": "For a working finite design $D$, define\n\\[\n\\sigma^2_{G_n,D,p}(Y)\n=\nn\\,\\operatorname{Var}_D\\!\\left(\n\\frac{1}{n}\\sum_{i\\in O_n}\\eta_i(p,Z)\n\\right).\n\\]\nWhen $D$ is the heterogeneous Bernoulli design indexed by $p$, abbreviate this quantity as $\\sigma^2_{G_n,p}(Y)$.",
+        "frozen_title": "Variance scale $\\sigma^2_{G_n,p}(Y)$"
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.BipartiteExperiment.varScale",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "8479d39b910eb30f5bfd62c34de5a1e7f713b14a",
+        "note": "The Lean definition is exactly n Var_D(n⁻¹∑η_i) for an arbitrary working finite design D. Under the heterogeneous Bernoulli specialization D = bernoulliDesign p, the paper abbreviates this as σ²_{G_n,p}(Y). The raw n⁻¹∑_{i,j} E_p[η_iη_j] expansion additionally uses centering and belongs to the later variance theorem, not this definition."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:graph-envelope",
+      "obj_id": "P-6",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "V_env(G_n,p) = 4 n^(-1) sum_{i,j in O_n} {r_{ij}^1(G_n,p) + r_{ij}^0(G_n,p) + 2 r_{ij}^{10}(G_n)}",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.BipartiteExperiment.varEnvelope",
+        "file": "Envelope.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "f3ee4eac51f3187f30b027bb92d61f0e20a1b15c",
+        "note": "After unfolding r1, r0, and r10, Lean has exactly 4 n⁻¹ times the ordered double sum of r_ij^1+r_ij^0+2r_ij^10."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:optimal-design",
+      "obj_id": "P-7",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "p_n^*(G_n) in argmin_{p in P_{n,B_n,epsilon}} V_env(G_n,p), whenever the argmin set is nonempty",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.optimalDesign",
+        "file": "Envelope.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "c0f12854dbf2b598bfcc6d6f420809dbfb334007",
+        "note": "When the argmin is nonempty, h.choose selects exactly a feasible global minimizer of varEnvelope; the fallback only totalizes the selector in the case where the paper imposes no requirement."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:kkt-gradient",
+      "obj_id": "P-8",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "g_k(G_n,p) = partial_{p_k}(V_env(G_n,p)/4) = n^(-1) sum_{i,j in O_n : k in S_{ij}(G_n)} {-(product_{ell in S_{ij}(G_n)} p_ell^(-1)) p_k^(-1) + (product_{ell in S_{ij}(G_n)} (1-p_ell)^(-1)) (1-p_k)^(-1)}",
+        "tex_anchor": "",
+        "frozen": true,
+        "frozen_body": "Define\n\\[\ng_k(G_n,p)\n=\n\\frac{1}{n}\n\\sum_{\\substack{i,j\\in O_n:\\ k\\in S_{ij}(G_n)}}\n\\left\\{\n-\n\\left(\\prod_{\\ell\\in S_{ij}(G_n)}p_\\ell^{-1}\\right)p_k^{-1}\n+\n\\left(\\prod_{\\ell\\in S_{ij}(G_n)}(1-p_\\ell)^{-1}\\right)(1-p_k)^{-1}\n\\right\\}.\n\\]",
+        "frozen_title": "Envelope gradient score $g_k(G_n,p)$"
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.BipartiteExperiment.envelopeGrad",
+        "file": "Envelope.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "1585d553a04e2c0a7b4ff2793505417e7c8201ba",
+        "note": "Unfolding shared = N_i ∩ N_j, the if-filtered double sum is exactly the restricted sum over ordered pairs with k ∈ S_ij, and its two terms are the coordinate derivative of V_env/4."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:conservative-variance-estimator",
+      "obj_id": "P-9",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "hat_V_cons(G_n,p) = V_env(G_n,p)",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.BipartiteExperiment.varEstCons",
+        "file": "Envelope.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "133c73a09309c446817c6a6bcd59cadf717ca3c5",
+        "note": "The definition unfolds directly to hat_V_cons(G_n,p) = V_env(G_n,p)."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:surrogate-design",
+      "obj_id": "P-10",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "p_n^{deg}(G_n) in argmin_{p in P_{n,B_n,epsilon}} sum_{k in I_n} h_k(G_n){p_k^(-1) + (1-p_k)^(-1)}, whenever the argmin set is nonempty",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.surrogateDesign",
+        "file": "Envelope.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "b4593bf3113b6340bb87276505024b86ce6b1e4b",
+        "note": "When the feasible surrogate argmin is nonempty, h.choose selects a feasible point minimizing the unfolded objective ∑_k h_k(G_n)(p_k⁻¹ + (1-p_k)⁻¹); the fallback only totalizes the paper's unspecified empty-argmin branch."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:approximation-ratio",
+      "obj_id": "P-11",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "alpha_cert(G_n) = V_env(G_n,p_n^{deg}(G_n)) / min_{p in P_{n,B_n,epsilon}} V_env(G_n,p) when min_{p in P_{n,B_n,epsilon}} V_env(G_n,p) > 0, and alpha_cert(G_n) = 1 when min_{p in P_{n,B_n,epsilon}} V_env(G_n,p) = 0 (no-loss convention: a zero envelope minimum forces V_env(G_n,p_n^{deg}(G_n))=0 as well, since V_env is a nonnegative sum over shared-neighborhood pairs that vanishes for every feasible design precisely when there are no such pairs, so there is no relative loss). Thus alpha_cert(G_n) is a total, [1,infty)-valued observable on the admitted bounded-degree graph class.",
+        "tex_anchor": "",
+        "frozen": true,
+        "frozen_body": "Define\n\\[\n\\alpha_{\\mathrm{cert}}(G_n)=\n\\begin{cases}\n\\dfrac{V_{\\mathrm{env}}\\!\\left(G_n,p_n^{\\deg}(G_n)\\right)}\n{V_{\\mathrm{env}}\\!\\left(G_n,p_n^*(G_n)\\right)},\n& \\text{if }0<V_{\\mathrm{env}}\\!\\left(G_n,p_n^*(G_n)\\right),\\\\[1.2em]\n1,\n& \\text{otherwise}.\n\\end{cases}\n\\]\nHere, each design selector equals its respective feasible minimizer when one exists, and equals the homogeneous budget vector otherwise.",
+        "frozen_title": "Approximation ratio $\\alpha_{\\mathrm{cert}}(G_n)$"
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.approxRatio",
+        "file": "Envelope.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "58169752ff8ec079ab4a6b175b1c1ad55f445cd0",
+        "note": "On the admitted nonempty feasible class envMin is the nonnegative envelope minimum, so the Lean positive branch is exactly the stated ratio and its else branch is exactly the zero-minimum no-loss convention."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "prop:homogeneous-reduction",
+      "obj_id": "T-1",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Under ass:independent-heterogeneous-bernoulli, if p_k = p for every k in I_n for a common scalar p in (0,1), then r_{ij}^1(G_n,p) = 1{S_{ij}(G_n) != emptyset}(p^(-|S_{ij}(G_n)|) - 1), r_{ij}^0(G_n,p) = 1{S_{ij}(G_n) != emptyset}((1-p)^(-|S_{ij}(G_n)|) - 1), r_{ij}^{10}(G_n) = 1{S_{ij}(G_n) != emptyset}, and sigma_{G_n,p}^2(Y) = n^(-1) sum_{i,j in O_n} [r_{ij}^1(G_n,p)(Y_i^1-mu_1)(Y_j^1-mu_1) + r_{ij}^0(G_n,p)(Y_i^0-mu_0)(Y_j^0-mu_0) + 2 r_{ij}^{10}(G_n)(Y_i^1-mu_1)(Y_j^0-mu_0)], which is the homogeneous Bernoulli Hajek overlap formula of Lu, Shi, Fang, Zhang, and Ding (2025).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.homogeneous_reduction",
+        "file": "THomogeneousReduction.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "b766159692138a05997e280fa68600d736543213",
+        "note": "After unfolding shared, r1, r0, r10, IndepHeteroBernoulli, and varScale, the Lean statement is mathematically equivalent to the paper: nonempty shared neighborhoods are exactly positive-cardinality ones, inverse natural powers equal the stated negative powers under 0 < pc, and the omitted syntactic r10 conjunct holds definitionally as the shared-neighborhood indicator."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "thm:hetero-envelope",
+      "obj_id": "T-2",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Under ass:independent-heterogeneous-bernoulli and ass:bounded-outcomes, for every p in (0,1)^{m_n}, E_p[eta_i(p,Z) eta_j(p,Z)] = r_{ij}^1(G_n,p)(Y_i^1-mu_1)(Y_j^1-mu_1) + r_{ij}^0(G_n,p)(Y_i^0-mu_0)(Y_j^0-mu_0) + r_{ij}^{10}(G_n){(Y_i^1-mu_1)(Y_j^0-mu_0) + (Y_i^0-mu_0)(Y_j^1-mu_1)} for every i,j in O_n. Consequently sigma_{G_n,p}^2(Y) = n^(-1) sum_{i,j in O_n} [r_{ij}^1(G_n,p)(Y_i^1-mu_1)(Y_j^1-mu_1) + r_{ij}^0(G_n,p)(Y_i^0-mu_0)(Y_j^0-mu_0) + r_{ij}^{10}(G_n){(Y_i^1-mu_1)(Y_j^0-mu_0) + (Y_i^0-mu_0)(Y_j^1-mu_1)}] <= V_env(G_n,p).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.hetero_envelope",
+        "file": "THeteroEnvelope.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "59ac3953f3ed92258c9ff9eee0c1fc64a81e115d",
+        "note": "After unfolding linScore, r1/r0/r10, varScale, varEnvelope, IndepHeteroBernoulli, and BoundedOutcomes, the pairwise identity and envelope bound match exactly; the paper’s displayed intermediate variance equality follows from the pairwise identity because the Bernoulli hypothesis makes every linScore mean zero, while hp0/hp1 are redundant consequences of hpos/hlt."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "thm:convex-design",
+      "obj_id": "T-3",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "The feasible set P_{n,B_n,epsilon} is a nonempty compact convex subset of [0,1]^{m_n}, the map p -> V_env(G_n,p) is convex on P_{n,B_n,epsilon}, and therefore the argmin set in def:optimal-design is nonempty. For every minimizer p_n^*(G_n) there exist lambda_n in R and box multipliers nu_{k,n}^+ >= 0, nu_{k,n}^- >= 0 (k in I_n) such that the observable KKT system g_k(G_n,p_n^*(G_n)) = lambda_n - nu_{k,n}^+ + nu_{k,n}^- holds for each k in I_n, together with nu_{k,n}^+((p_n^*(G_n))_k-(1-epsilon)) = 0 and nu_{k,n}^-(epsilon-(p_n^*(G_n))_k) = 0.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.convex_design",
+        "file": "TConvexDesign.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "4b888a4e606a0745cbff391c41d786a4d2b3a68a",
+        "note": "After unfolding feasibleSet/FeasibleDesign, varEnvelope, and envelopeGrad, Lean states the same nonempty compact convex feasible class, convex envelope, argmin existence, and universal KKT certificate; the explicit ε and budget-domain hypotheses are intrinsic setup conditions, and the lower-face complementary-slackness sign is exactly the paper's equivalent zero identity."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:denominator-positivity",
+      "obj_id": "L-1",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Under ass:independent-heterogeneous-bernoulli, ass:bounded-outcome-degree, and ass:bounded-overlap-dependency, sup_{p in P_{n,B_n,epsilon}} P_p(D_1(p,Z) = 0 or D_0(p,Z) = 0) = O(n^{-1}).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.denominator_positivity",
+        "file": "Helpers/Denominator.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "05b9a43abf5310100df640714951d5aeba44bd49",
+        "note": "After unfolding the feasible-design class, Hájek denominators, degree predicates, and Bernoulli design, the eventual uniform bound over every feasible q is equivalent to the stated supremum being O(n^{-1}); admissible ε/B and card(O_n)=n are standing domain bookkeeping."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "thm:hetero-clt",
+      "obj_id": "T-4",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Under ass:bipartite-interference, ass:independent-heterogeneous-bernoulli, ass:bounded-outcomes, ass:bounded-outcome-degree, ass:bounded-overlap-dependency, and ass:variance-nondegenerate, sqrt(n){hat_tau_H(p_n^*(G_n)) - tau_n} = n^(-1/2) sum_{i in O_n} eta_i(p_n^*(G_n),Z) + o_p(1), and sqrt(n){hat_tau_H(p_n^*(G_n)) - tau_n} / sqrt(sigma_{G_n,p_n^*(G_n)}^2(Y)) ->d N(0,1).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.hetero_clt",
+        "file": "THeteroClt.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "77a8f96ece7d513d2ea1ef8b6a68dd23b43d9c89",
+        "note": "Unfolded every def reached from the statement: `HeteroLinearization` = ∀δ>0, Pr(|√(card Ox)·(τ̂_H(p)−τ) − (√(card Ox))⁻¹·∑ᵢ linScore| ≥ δ) → 0, i.e. exactly the paper's `√n{τ̂_H(p*)−τ_n} = n^{-1/2}∑ᵢη_i(p*,Z) + o_p(1)` once `hcardEq : ∀ᶠ n, card (Ox n) = n` identifies the paper's stage index with |O_n| (O_n = {1..n} in the core symbol table, so this is the paper's own setup, and it is the weaker `∀ᶠ` form, so it does not strengthen the hypothesis); `linScore` = (T_i/π_i¹−1)(Y_i¹−μ₁) − (C_i/π_i⁰−1)(Y_i⁰−μ₀) = η_i verbatim; `hajekEstimator` = the two-arm ratio with the paper's explicit zero-denominator convention; `tau` = μ₁−μ₀; `varScale D p` = card O · Var(card O⁻¹ ∑ η) = σ²_{G_n,p}(Y) verbatim (def:variance-scale). Second conjunct is pointwise CDF convergence to `stdNormalCdf` at every s, which for the (everywhere-continuous) N(0,1) CDF is logically equivalent to →d N(0,1) — matched in both directions, not a weaker witness form. Hypotheses map 1-1 onto the note's list: hBI=ass:bipartite-interference, hBern=ass:independent-heterogeneous-bernoulli (D = bernoulliDesign p), hbdd=ass:bounded-outcomes, hdeg=ass:bounded-outcome-degree, hdep=ass:bounded-overlap-dependency, hnd=VarianceNondegenerate = ∃c>0, ∀ᶠ n, c ≤ σ²_n, which is exactly liminf σ² > 0. The extra premises are all standing-setup/regularity bookkeeping, not crux laundering: hfeas/hε realize ass:positivity-floor + ass:budget-balance (the paper's design class P_{n,B_n,ε}, which p_n^*(G_n) belongs to by definition of the argmin), hp0/hp1 are the [0,1] box implied by feasibility, hstar : p n = optimalDesign pins the design to the paper's p_n^*(G_n), and hεfloor (a uniform positive floor on the ε-sequence) is vacuously satisfied by the paper's fixed constant ε ∈ (0,1/2) — it only generalizes ε to an array. The former denominator-tightness and linear-score-CLT gate hypotheses are gone: both are derived in-proof (`heteroDenominatorTightness_discharged`, `hetero_linscore_clt_of_depgraph`), so no rate/bound the paper derives is assumed. Hypotheses are jointly satisfiable (the junk-fallback branch of `optimalDesign` is itself feasible under BudgetAdmissible), so the claim is not vacuous. Proof completeness is out of scope."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "thm:postdesign-wald",
+      "obj_id": "T-5",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Under the assumptions of thm:hetero-clt, hat_V_cons(G_n,p_n^*(G_n)) = V_env(G_n,p_n^*(G_n)) is conservative for sigma_{G_n,p_n^*(G_n)}^2(Y), and for every sequence of potential-outcome schedules satisfying those assumptions, liminf_{n -> infty} P_{p_n^*(G_n)}(tau_n in [hat_tau_H(p_n^*(G_n)) - z_{1-alpha_cov/2} sqrt{hat_V_cons(G_n,p_n^*(G_n)) / n}, hat_tau_H(p_n^*(G_n)) + z_{1-alpha_cov/2} sqrt{hat_V_cons(G_n,p_n^*(G_n)) / n}]) >= 1-alpha_cov.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.postdesign_wald",
+        "file": "TPostdesignWald.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "bab5432e368b8cefeb35d64cf2574c7381d8a1dd",
+        "note": "After unfolding varEstCons, varScale, hajekEstimator, optimalDesign, FeasibleDesign, and the CLT assumptions, Lean states the same variance domination and Wald liminf coverage; the absolute-value event is equivalent to interval membership, and eventual card(Ox n)=n makes the card-based normalization asymptotically identical to the paper's n."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "thm:dispersion-certificate-unbounded",
+      "obj_id": "T-6",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For every epsilon in (0,1/2), every c_disp > 0, and every C_disp >= 1, there is a sequence of finite bipartite graphs satisfying the stated positive-energy, degree-dispersion, and h-weight-ratio bounds for which alpha_cert(G_n) tends to infinity. Thus those first-order dispersion summaries do not uniformly bound the surrogate approximation ratio.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionCertificateUnbounded",
+        "file": "TDispersionCertificate.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "1edbf373669434e6e3a5971e4b5f27733352085c",
+        "note": "After unfolding EpsilonAdmissible, BudgetAdmissible, sdeg, hWeight, and approxRatio, the Lean guards are equivalent to positive degree energy, the normalized maximum-degree bound, and the positive-h-weight max/min ratio bound; Tendsto atTop atTop is divergence to infinity, and the eventual guards are equivalent here because the existential sequence may be reindexed past the finite exceptional prefix."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "thm:heterogeneity-separation",
+      "obj_id": "T-7",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Set rho = B_n / m_n and let p^hom denote the homogeneous feasible design with (p^hom)_k = rho for every k in I_n; assume rho in (epsilon, 1-epsilon) and rho != 1/2. If the homogeneous-point envelope-gradient scores {g_k(G_n, p^hom) : k in I_n} of def:kkt-gradient are not all equal, then p^hom is not a minimizer of p -> V_env(G_n,p) over P_{n,B_n,epsilon}; consequently every envelope-optimal design p_n^*(G_n) of def:optimal-design is non-homogeneous and satisfies the strict inequality V_env(G_n, p_n^*(G_n)) < V_env(G_n, p^hom), and the gap admits the explicit observable lower bound V_env(G_n,p^hom) - V_env(G_n,p_n^*(G_n)) >= 2 Delta_g min{eta_box, Delta_g / L_ab}, where Delta_g = max_{k in I_n} g_k(G_n,p^hom) - min_{k in I_n} g_k(G_n,p^hom) > 0 is the gradient-score spread, eta_box = min{rho - epsilon, 1 - epsilon - rho} > 0, a in argmax_{k in I_n} g_k(G_n,p^hom), b in argmin_{k in I_n} g_k(G_n,p^hom), and L_ab = sup_{q in P_{n,B_n,epsilon}} (e_b - e_a)^T Hess(V_env(G_n,cdot)/4)(q) (e_b - e_a) is the directional second-order modulus of the graph-only envelope along the budget-feasible direction e_b - e_a (all four quantities being observable functions of G_n, epsilon, and B_n), with the bound read as 2 Delta_g eta_box when L_ab = 0. In particular, for singleton-exposure graphs, in which each outcome unit's neighborhood is a single intervention unit so that every nonempty S_{ij}(G_n) is a singleton, the gradient scores reduce to observable per-unit degree summaries, and the hypothesis (hence the strict improvement of the optimal heterogeneous design over the homogeneous design) holds whenever those summaries are not all equal.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.heterogeneity_separation",
+        "file": "THeterogeneitySeparation.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "0e93848e6c332358fa492ce80405e1e456e59bc1",
+        "note": "Unfolding SeparationConclusion, feasibleSet, envelopeGrad, varEnvelope, sdeg, and dirModulus gives the same non-minimizer claim, universal strict improvement and explicit gap for every feasible envelope minimizer, directional Hessian modulus with the L_ab=0 convention, and singleton formula n⁻¹s_k²((1−ρ)⁻²−ρ⁻²); the standalone unequal-degree trigger is exactly the paper’s singleton consequence."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "thm:surrogate-certificate",
+      "obj_id": "T-8",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Under ass:bounded-outcome-degree, which forces max_{i,j in O_n} |S_{ij}(G_n)| <= dbar, with the explicit constant C(epsilon, dbar) = max{1, epsilon^{-(dbar-1)}} depending only on epsilon and dbar, the observable approximation ratio of def:approximation-ratio satisfies alpha_cert(G_n) <= C(epsilon, dbar). The bound follows from a uniform sandwich, valid for every feasible p in P_{n,B_n,epsilon}, between the graph-only envelope V_env(G_n,p) of def:graph-envelope and the additive degree-surrogate objective sum_{k in I_n} h_k(G_n){p_k^{-1} + (1-p_k)^{-1}} minimized in def:surrogate-design, in which the per-pair product loads over the shared-neighborhood sets S_{ij}(G_n) are comparable to their additive per-coordinate counterparts up to a multiplicative factor controlled by the bounded shared-neighborhood size dbar and the positivity floor epsilon. This is the positive counterpart, in the paper's own sparse bounded-degree regime, of the negative first-order-summary answer proved in oeq:dispersion-certificate.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.surrogate_certificate",
+        "file": "TSurrogateCertificate.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "f791fdba171ff1ca8b96190c410b14ad77c55d2d",
+        "note": "After unfolding all referenced definitions, Lean states exactly the paper's uniform A(p) ≤ V_env(p)/4 ≤ C(ε,dbar)A(p) sandwich and α_cert ≤ C(ε,dbar), with C = max{1, ε^{-(dbar-1)}}; ε admissibility, positive dbar, and BudgetAdmissible are intrinsic-domain and standing setup conditions."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:bounded-degree-dependency-clt",
+      "obj_id": "L-2",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Let {X_{n,i}:1<=i<=n} be centered real random variables with a dependency graph of maximum degree at most D, |X_{n,i}|<=M for fixed finite D and M, and Var(sum_i X_{n,i})=v_n with v_n>=c n for some c>0 eventually. Then (sum_i X_{n,i})/sqrt(v_n) converges in distribution to N(0,1).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.bounded_degree_dependency_clt",
+        "file": "Helpers/DependencyCLT.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "41ad414f72d9a9b4e3adfb530127f375c465b12f",
+        "note": "DepGraph supplies measurability and the dependency factorization, depSum is the row sum, centering makes the stated second moment v_n equal its variance, and CDF convergence for arbitrary s is equivalent to weak convergence to the continuous N(0,1) law."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "treatDenominator_zero_prob_le",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.treatDenominator_zero_prob_le)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.treatDenominator_zero_prob_le",
+        "file": "Helpers/Denominator.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "ctrlDenominator_zero_prob_le",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.ctrlDenominator_zero_prob_le)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.ctrlDenominator_zero_prob_le",
+        "file": "Helpers/Denominator.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "ctrlDenominator_var_le",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.ctrlDenominator_var_le)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.ctrlDenominator_var_le",
+        "file": "Helpers/DenominatorControl.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "denominatorKernelBound",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.denominatorKernelBound)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.denominatorKernelBound",
+        "file": "Helpers/DenominatorMoment.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "denominatorKernelBound_nonneg",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.denominatorKernelBound_nonneg)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.denominatorKernelBound_nonneg",
+        "file": "Helpers/DenominatorMoment.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "denominatorKernelBound_le_of_floor",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.denominatorKernelBound_le_of_floor)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.denominatorKernelBound_le_of_floor",
+        "file": "Helpers/DenominatorMoment.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "r1_le_denominatorKernelBound",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.r1_le_denominatorKernelBound)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.r1_le_denominatorKernelBound",
+        "file": "Helpers/DenominatorMoment.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "r0_le_denominatorKernelBound",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.r0_le_denominatorKernelBound)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.r0_le_denominatorKernelBound",
+        "file": "Helpers/DenominatorMoment.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "treatDenominator_mean",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.treatDenominator_mean)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.treatDenominator_mean",
+        "file": "Helpers/DenominatorMoment.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "ctrlDenominator_mean",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.ctrlDenominator_mean)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.ctrlDenominator_mean",
+        "file": "Helpers/DenominatorMoment.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "treatDenominator_var_le",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.treatDenominator_var_le)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.treatDenominator_var_le",
+        "file": "Helpers/DenominatorMoment.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "denominatorKernelBound_div_card_tendsto_zero",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.denominatorKernelBound_div_card_tendsto_zero)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.denominatorKernelBound_div_card_tendsto_zero",
+        "file": "Helpers/DenominatorRate.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "prod_union_div_prod_prod_eq_prod_inter_inv",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.prod_union_div_prod_prod_eq_prod_inter_inv)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.prod_union_div_prod_prod_eq_prod_inter_inv",
+        "file": "Helpers/Kernel.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "centered_treat_treat_moment",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.centered_treat_treat_moment)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.centered_treat_treat_moment",
+        "file": "Helpers/Kernel.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "centered_ctrl_ctrl_moment",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.centered_ctrl_ctrl_moment)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.centered_ctrl_ctrl_moment",
+        "file": "Helpers/Kernel.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "centered_treat_ctrl_moment",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.centered_treat_ctrl_moment)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.centered_treat_ctrl_moment",
+        "file": "Helpers/Kernel.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "mu1_abs_le_one",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.mu1_abs_le_one)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.mu1_abs_le_one",
+        "file": "Helpers/LinScoreBounds.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "mu0_abs_le_one",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.mu0_abs_le_one)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.mu0_abs_le_one",
+        "file": "Helpers/LinScoreBounds.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "piT_inv_le_denominatorKernelBound_add_one",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.piT_inv_le_denominatorKernelBound_add_one)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.piT_inv_le_denominatorKernelBound_add_one",
+        "file": "Helpers/LinScoreBounds.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "piC_inv_le_denominatorKernelBound_add_one",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.piC_inv_le_denominatorKernelBound_add_one)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.piC_inv_le_denominatorKernelBound_add_one",
+        "file": "Helpers/LinScoreBounds.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "linScore_abs_le_uniform",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.linScore_abs_le_uniform)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.linScore_abs_le_uniform",
+        "file": "Helpers/LinScoreBounds.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "linScore-abs-le-uniform-floor",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.linScore_abs_le_uniform_floor)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.linScore_abs_le_uniform_floor",
+        "file": "Helpers/LinScoreBounds.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "linScore-outcome-block",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.linScoreOutcomeBlock)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.linScoreOutcomeBlock",
+        "file": "Helpers/LinScoreCLT.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "linScore-expT-depends-on-neighborhood",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.expT_depends_on_neighborhood)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.expT_depends_on_neighborhood",
+        "file": "Helpers/LinScoreCLT.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "linScore-expC-depends-on-neighborhood",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.expC_depends_on_neighborhood)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.expC_depends_on_neighborhood",
+        "file": "Helpers/LinScoreCLT.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "linScore-depends-on-neighborhood",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.linScore_depends_on_neighborhood)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.linScore_depends_on_neighborhood",
+        "file": "Helpers/LinScoreCLT.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "linScore-block-disjoint",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.disjoint_linScoreOutcomeBlock_of_no_overlap)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.disjoint_linScoreOutcomeBlock_of_no_overlap",
+        "file": "Helpers/LinScoreCLT.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "linScore-depgraph",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.linScoreDepGraph)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.linScoreDepGraph",
+        "file": "Helpers/LinScoreCLT.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "linScore-depgraph-degree",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.linScoreDepGraph_degree_le)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.linScoreDepGraph_degree_le",
+        "file": "Helpers/LinScoreCLT.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "linScore_mean_zero",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.linScore_mean_zero)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.linScore_mean_zero",
+        "file": "Helpers/Linearization.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "r10_comm",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.r10_comm)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.r10_comm",
+        "file": "Helpers/Linearization.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "cross_sum_symm_r10",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.cross_sum_symm_r10)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.cross_sum_symm_r10",
+        "file": "Helpers/Linearization.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "linScore_pair_moment",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.linScore_pair_moment)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.linScore_pair_moment",
+        "file": "Helpers/Linearization.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "varScale_pair_moments",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.varScale_pair_moments)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.varScale_pair_moments",
+        "file": "Helpers/Linearization.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "sum_pair_moment_cross_combined",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.sum_pair_moment_cross_combined)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.sum_pair_moment_cross_combined",
+        "file": "Helpers/Linearization.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "varScale_homogeneous_formula",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.varScale_homogeneous_formula)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.varScale_homogeneous_formula",
+        "file": "Helpers/Linearization.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "prod_ite_disjoint",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.prod_ite_disjoint)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.prod_ite_disjoint",
+        "file": "Helpers/Moments.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "treat_prod_mul_eq_union",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.treat_prod_mul_eq_union)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.treat_prod_mul_eq_union",
+        "file": "Helpers/Moments.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "ctrl_prod_mul_eq_union",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.ctrl_prod_mul_eq_union)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.ctrl_prod_mul_eq_union",
+        "file": "Helpers/Moments.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "treat_ctrl_prod_eq_zero_of_inter_nonempty",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.treat_ctrl_prod_eq_zero_of_inter_nonempty)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.treat_ctrl_prod_eq_zero_of_inter_nonempty",
+        "file": "Helpers/Moments.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "treat_ctrl_prod_eq_mixed_of_disjoint",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.treat_ctrl_prod_eq_mixed_of_disjoint)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.treat_ctrl_prod_eq_mixed_of_disjoint",
+        "file": "Helpers/Moments.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "bernoulli_E_treat_prod",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.bernoulli_E_treat_prod)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.bernoulli_E_treat_prod",
+        "file": "Helpers/Moments.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "bernoulli_E_ctrl_prod",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.bernoulli_E_ctrl_prod)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.bernoulli_E_ctrl_prod",
+        "file": "Helpers/Moments.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "bernoulli_E_treat_mul_treat",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.bernoulli_E_treat_mul_treat)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.bernoulli_E_treat_mul_treat",
+        "file": "Helpers/Moments.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "bernoulli_E_ctrl_mul_ctrl",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.bernoulli_E_ctrl_mul_ctrl)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.bernoulli_E_ctrl_mul_ctrl",
+        "file": "Helpers/Moments.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "average_le_prod_of_one_le",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.average_le_prod_of_one_le)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.average_le_prod_of_one_le",
+        "file": "Helpers/Surrogate.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "prod_le_const_mul_average",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.prod_le_const_mul_average)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.prod_le_const_mul_average",
+        "file": "Helpers/Surrogate.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "prod_sdiff_le_inv_pow_card_sub_one",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.prod_sdiff_le_inv_pow_card_sub_one)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.prod_sdiff_le_inv_pow_card_sub_one",
+        "file": "Helpers/Surrogate.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "inv_pow_card_sub_one_le_certificate",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.inv_pow_card_sub_one_le_certificate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.inv_pow_card_sub_one_le_certificate",
+        "file": "Helpers/Surrogate.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "surrogateObjective_eq_pairAverage",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.surrogateObjective_eq_pairAverage)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.surrogateObjective_eq_pairAverage",
+        "file": "Helpers/Surrogate.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "varEnvelope_div_four_eq_pairSum",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.varEnvelope_div_four_eq_pairSum)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.varEnvelope_div_four_eq_pairSum",
+        "file": "Helpers/Surrogate.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "pairAverage_le_envelopeKernel",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.pairAverage_le_envelopeKernel)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.pairAverage_le_envelopeKernel",
+        "file": "Helpers/Surrogate.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "envelopeKernel_le_certificate_pairAverage",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.envelopeKernel_le_certificate_pairAverage)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.envelopeKernel_le_certificate_pairAverage",
+        "file": "Helpers/Surrogate.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lemma:envelopeGrad-eq-gradient-varEnvelopeExt",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.envelopeGrad_eq_gradient_varEnvelopeExt)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.envelopeGrad_eq_gradient_varEnvelopeExt",
+        "file": "TConvexDesign.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:hetero-linearization-remainder",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.heteroLinearizationRemainder)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.heteroLinearizationRemainder",
+        "file": "THeteroClt.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "conclusion:hetero-clt-linearization",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.HeteroLinearization)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.HeteroLinearization",
+        "file": "THeteroClt.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "input:hetero-clt-denominator-tightness",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.HeteroDenominatorTightnessInput)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.HeteroDenominatorTightnessInput",
+        "file": "THeteroClt.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:hetero-linearization-from-denominator-tightness",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.hetero_linearization_of_denominator_tightness)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.hetero_linearization_of_denominator_tightness",
+        "file": "THeteroClt.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "input:hetero-clt-linscore-depgraph-clt",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.HeteroLinScoreCLTInput)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.HeteroLinScoreCLTInput",
+        "file": "THeteroClt.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:linscore-sum-square-integral-varScale",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.linScore_sum_square_integral_eq_card_mul_varScale)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.linScore_sum_square_integral_eq_card_mul_varScale",
+        "file": "THeteroClt.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:hetero-linscore-clt-from-depgraph",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.hetero_linscore_clt_of_depgraph)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.hetero_linscore_clt_of_depgraph",
+        "file": "THeteroClt.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:hetero-clt-slutsky-transfer",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.hetero_studentized_slutsky)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.hetero_studentized_slutsky",
+        "file": "THeteroClt.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:remainder-tendsto-zero",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.remainder_tendstoInProb_zero)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.remainder_tendstoInProb_zero",
+        "file": "THeteroClt.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:hetero-denominator-tightness-discharged",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.heteroDenominatorTightness_discharged)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.heteroDenominatorTightness_discharged",
+        "file": "THeteroClt.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "abs_scaled_univ_sum_le_one",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.abs_scaled_univ_sum_le_one)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.abs_scaled_univ_sum_le_one",
+        "file": "THeteroEnvelope.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "mu1_abs_le_one_of_bounded",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.mu1_abs_le_one_of_bounded)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.mu1_abs_le_one_of_bounded",
+        "file": "THeteroEnvelope.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "mu0_abs_le_one_of_bounded",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.mu0_abs_le_one_of_bounded)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.mu0_abs_le_one_of_bounded",
+        "file": "THeteroEnvelope.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "centeredY1_abs_le_two",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.centeredY1_abs_le_two)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.centeredY1_abs_le_two",
+        "file": "THeteroEnvelope.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "centeredY0_abs_le_two",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.centeredY0_abs_le_two)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.centeredY0_abs_le_two",
+        "file": "THeteroEnvelope.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "r1_nonneg",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.r1_nonneg)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.r1_nonneg",
+        "file": "THeteroEnvelope.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "r0_nonneg",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.r0_nonneg)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.r0_nonneg",
+        "file": "THeteroEnvelope.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "r10_nonneg",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.r10_nonneg)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.r10_nonneg",
+        "file": "THeteroEnvelope.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "mul_centered_pair_le_four_mul_of_nonneg",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.mul_centered_pair_le_four_mul_of_nonneg)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.mul_centered_pair_le_four_mul_of_nonneg",
+        "file": "THeteroEnvelope.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "pair_kernel_le_envelope_kernel",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.pair_kernel_le_envelope_kernel)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.pair_kernel_le_envelope_kernel",
+        "file": "THeteroEnvelope.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "shared_card_eq_one_of_singleton",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.shared_card_eq_one_of_singleton)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.shared_card_eq_one_of_singleton",
+        "file": "THeterogeneitySeparation.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "sum_indicator_shared_eq_sdeg_sq_mul",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.sum_indicator_shared_eq_sdeg_sq_mul)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.sum_indicator_shared_eq_sdeg_sq_mul",
+        "file": "THeterogeneitySeparation.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "singleton_envelopeGrad_eq_sdeg_sq",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.singleton_envelopeGrad_eq_sdeg_sq)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.singleton_envelopeGrad_eq_sdeg_sq",
+        "file": "THeterogeneitySeparation.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "envelope_segment_descent_gate",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.EnvelopeLineC2Data)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.EnvelopeLineC2Data",
+        "file": "THeterogeneitySeparation.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "homogeneous_feasible",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.homogeneous_feasible)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.homogeneous_feasible",
+        "file": "THeterogeneitySeparation.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "homogeneous_not_minimizer_of_gradient_spread",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.homogeneous_not_minimizer_of_gradient_spread)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.homogeneous_not_minimizer_of_gradient_spread",
+        "file": "THeterogeneitySeparation.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "singleton_degree_spread_to_gradient_spread",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.singleton_degree_spread_to_gradient_spread)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.singleton_degree_spread_to_gradient_spread",
+        "file": "THeterogeneitySeparation.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "envelope_segment_descent_gap",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.envelope_segment_descent_gap)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.envelope_segment_descent_gap",
+        "file": "THeterogeneitySeparation.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "surrogateObjective_continuousOn_feasible",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.surrogateObjective_continuousOn_feasible)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.surrogateObjective_continuousOn_feasible",
+        "file": "TSurrogateCertificate.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "optimalDesign_feasible_minimizes",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.optimalDesign_feasible_minimizes)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.optimalDesign_feasible_minimizes",
+        "file": "TSurrogateCertificate.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "surrogateDesign_feasible_minimizes",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.surrogateDesign_feasible_minimizes)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.surrogateDesign_feasible_minimizes",
+        "file": "TSurrogateCertificate.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionD_tendsto_atTop",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionD_tendsto_atTop)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionD_tendsto_atTop",
+        "file": "Helpers/DispersionAsymptotics.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersion_geometric_lower_bound",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersion_geometric_lower_bound)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersion_geometric_lower_bound",
+        "file": "Helpers/DispersionAsymptotics.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionApproxRatio_tendsto_atTop",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionApproxRatio_tendsto_atTop)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionApproxRatio_tendsto_atTop",
+        "file": "Helpers/DispersionAsymptotics.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionT",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionT)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionT",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionD",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionD)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionD",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "DispersionIntervention",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced abbrev CausalSmith.Experimentation.BipartiteMinimaxDesign.DispersionIntervention)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.DispersionIntervention",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "DispersionOutcome",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced abbrev CausalSmith.Experimentation.BipartiteMinimaxDesign.DispersionOutcome)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.DispersionOutcome",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionExperiment",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionExperiment_N_core",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_N_core)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_N_core",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionExperiment_N_filler",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_N_filler)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_N_filler",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionExperiment_sdeg_core",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_sdeg_core)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_sdeg_core",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionExperiment_sdeg_filler",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_sdeg_filler)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_sdeg_filler",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionExperiment_shared_core",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_shared_core)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_shared_core",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionExperiment_shared_filler",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_shared_filler)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_shared_filler",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionExperiment_shared_core_filler",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_shared_core_filler)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_shared_core_filler",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionExperiment_shared_filler_core",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_shared_filler_core)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_shared_filler_core",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionExperiment_hWeight_core",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_hWeight_core)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_hWeight_core",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionExperiment_hWeight_filler",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_hWeight_filler)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_hWeight_filler",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionD_pos",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionD_pos)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionD_pos",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionExperiment_degree_energy",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_degree_energy)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_degree_energy",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionExperiment_degree_energy_pos",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_degree_energy_pos)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_degree_energy_pos",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionExperiment_hWeight_eq",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_hWeight_eq)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_hWeight_eq",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionExperiment_hWeight_pos",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_hWeight_pos)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_hWeight_pos",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionExperiment_boundedOutcomeDegree",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_boundedOutcomeDegree)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_boundedOutcomeDegree",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionRho",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionRho)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionRho",
+        "file": "Helpers/DispersionDesign.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionFillerRho",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionFillerRho)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionFillerRho",
+        "file": "Helpers/DispersionDesign.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionBudget",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionBudget)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionBudget",
+        "file": "Helpers/DispersionDesign.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionHomogeneousDesign",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionHomogeneousDesign)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionHomogeneousDesign",
+        "file": "Helpers/DispersionDesign.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionComparisonDesign",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionComparisonDesign)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionComparisonDesign",
+        "file": "Helpers/DispersionDesign.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionRho_bounds",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionRho_bounds)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionRho_bounds",
+        "file": "Helpers/DispersionDesign.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionFillerRho_bounds",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionFillerRho_bounds)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionFillerRho_bounds",
+        "file": "Helpers/DispersionDesign.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionBudget_admissible",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionBudget_admissible)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionBudget_admissible",
+        "file": "Helpers/DispersionDesign.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionHomogeneousDesign_feasible",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionHomogeneousDesign_feasible)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionHomogeneousDesign_feasible",
+        "file": "Helpers/DispersionDesign.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionComparisonDesign_feasible",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionComparisonDesign_feasible)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionComparisonDesign_feasible",
+        "file": "Helpers/DispersionDesign.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersion_surrogateObjective_eq_weighted_sum",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersion_surrogateObjective_eq_weighted_sum)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersion_surrogateObjective_eq_weighted_sum",
+        "file": "Helpers/DispersionDesign.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersion_surrogateDesign_eq_homogeneous",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersion_surrogateDesign_eq_homogeneous)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersion_surrogateDesign_eq_homogeneous",
+        "file": "Helpers/DispersionDesign.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionHomogeneous_envelope",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionHomogeneous_envelope)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionHomogeneous_envelope",
+        "file": "Helpers/DispersionEnvelope.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionComparison_envelope",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionComparison_envelope)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionComparison_envelope",
+        "file": "Helpers/DispersionEnvelope.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "reciprocalBarrier_pos",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.reciprocalBarrier_pos)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.reciprocalBarrier_pos",
+        "file": "Helpers/DispersionEnvelope.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersion_envMin_pos",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersion_envMin_pos)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersion_envMin_pos",
+        "file": "Helpers/DispersionEnvelope.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersion_approxRatio_ge_envelopeRatio",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersion_approxRatio_ge_envelopeRatio)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersion_approxRatio_ge_envelopeRatio",
+        "file": "Helpers/DispersionEnvelope.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersion_approxRatio_lower_bound",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersion_approxRatio_lower_bound)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersion_approxRatio_lower_bound",
+        "file": "Helpers/DispersionEnvelope.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "reciprocalBarrier",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.reciprocalBarrier)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.reciprocalBarrier",
+        "file": "Helpers/DispersionOptimization.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "reciprocalBarrierSlope",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.reciprocalBarrierSlope)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.reciprocalBarrierSlope",
+        "file": "Helpers/DispersionOptimization.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "reciprocalBarrier_tangent_gap",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.reciprocalBarrier_tangent_gap)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.reciprocalBarrier_tangent_gap",
+        "file": "Helpers/DispersionOptimization.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "reciprocalBarrier_tangent_eq_iff",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.reciprocalBarrier_tangent_eq_iff)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.reciprocalBarrier_tangent_eq_iff",
+        "file": "Helpers/DispersionOptimization.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "reciprocalBarrier_sum_minimized_at_mean",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.reciprocalBarrier_sum_minimized_at_mean)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.reciprocalBarrier_sum_minimized_at_mean",
+        "file": "Helpers/DispersionOptimization.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "reciprocalBarrier_sum_unique_minimizer",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.reciprocalBarrier_sum_unique_minimizer)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.reciprocalBarrier_sum_unique_minimizer",
+        "file": "Helpers/DispersionOptimization.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionCore",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionCore)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionCore",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "mem_dispersionCore_inl",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.mem_dispersionCore_inl)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.mem_dispersionCore_inl",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "mem_dispersionCore_inr",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.mem_dispersionCore_inr)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.mem_dispersionCore_inr",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dispersionCore_card",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionCore_card)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionCore_card",
+        "file": "Helpers/DispersionConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "kind": "proof-uses",
+      "from": "prop:homogeneous-reduction",
+      "to": "ass:independent-heterogeneous-bernoulli",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:homogeneous-reduction",
+      "to": "def:first-order-linearization",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:homogeneous-reduction",
+      "to": "def:variance-scale",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-envelope",
+      "to": "ass:independent-heterogeneous-bernoulli",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-envelope",
+      "to": "ass:bounded-outcomes",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-envelope",
+      "to": "def:first-order-linearization",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-envelope",
+      "to": "def:variance-scale",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-envelope",
+      "to": "def:graph-envelope",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:convex-design",
+      "to": "def:feasible-designs",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:convex-design",
+      "to": "def:graph-envelope",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:convex-design",
+      "to": "def:optimal-design",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:convex-design",
+      "to": "def:kkt-gradient",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:denominator-positivity",
+      "to": "ass:independent-heterogeneous-bernoulli",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:denominator-positivity",
+      "to": "ass:bounded-outcome-degree",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:denominator-positivity",
+      "to": "ass:bounded-overlap-dependency",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:denominator-positivity",
+      "to": "def:feasible-designs",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:denominator-positivity",
+      "to": "def:hajek-denominators",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-clt",
+      "to": "ass:bipartite-interference",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-clt",
+      "to": "ass:independent-heterogeneous-bernoulli",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-clt",
+      "to": "ass:bounded-outcomes",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-clt",
+      "to": "ass:bounded-outcome-degree",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-clt",
+      "to": "ass:bounded-overlap-dependency",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-clt",
+      "to": "ass:variance-nondegenerate",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-clt",
+      "to": "def:hajek-denominators",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-clt",
+      "to": "def:hetero-hajek-estimator",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-clt",
+      "to": "def:first-order-linearization",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-clt",
+      "to": "def:variance-scale",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-clt",
+      "to": "thm:convex-design",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-clt",
+      "to": "lem:denominator-positivity",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-clt",
+      "to": "def:feasible-designs",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:hetero-clt",
+      "to": "lem:bounded-degree-dependency-clt",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:postdesign-wald",
+      "to": "thm:hetero-envelope",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:postdesign-wald",
+      "to": "lem:denominator-positivity",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:postdesign-wald",
+      "to": "thm:hetero-clt",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:postdesign-wald",
+      "to": "def:conservative-variance-estimator",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:postdesign-wald",
+      "to": "def:optimal-design",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:postdesign-wald",
+      "to": "ass:variance-nondegenerate",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:postdesign-wald",
+      "to": "def:hetero-hajek-estimator",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:dispersion-certificate-unbounded",
+      "to": "def:feasible-designs",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:dispersion-certificate-unbounded",
+      "to": "def:graph-envelope",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:dispersion-certificate-unbounded",
+      "to": "def:surrogate-design",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:dispersion-certificate-unbounded",
+      "to": "def:approximation-ratio",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:heterogeneity-separation",
+      "to": "def:feasible-designs",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:heterogeneity-separation",
+      "to": "def:graph-envelope",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:heterogeneity-separation",
+      "to": "def:optimal-design",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:heterogeneity-separation",
+      "to": "def:kkt-gradient",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:heterogeneity-separation",
+      "to": "thm:convex-design",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:surrogate-certificate",
+      "to": "ass:bounded-outcome-degree",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:surrogate-certificate",
+      "to": "def:feasible-designs",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:surrogate-certificate",
+      "to": "def:graph-envelope",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:surrogate-certificate",
+      "to": "def:surrogate-design",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:surrogate-certificate",
+      "to": "def:approximation-ratio",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "prop:homogeneous-reduction",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "prop:homogeneous-reduction",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:hetero-envelope",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:hetero-envelope",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:convex-design",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:convex-design",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:hetero-clt",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:hetero-clt",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:postdesign-wald",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:postdesign-wald",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:dispersion-certificate-unbounded",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:dispersion-certificate-unbounded",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:heterogeneity-separation",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:heterogeneity-separation",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:surrogate-certificate",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:surrogate-certificate",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:feasible-designs",
+      "to": "ass:positivity-floor",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:feasible-designs",
+      "to": "ass:budget-balance",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "treatDenominator_zero_prob_le",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "treatDenominator_zero_prob_le",
+      "to": "ass:bounded-overlap-dependency",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "treatDenominator_zero_prob_le",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "treatDenominator_zero_prob_le",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "treatDenominator_zero_prob_le",
+      "to": "denominatorKernelBound",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "ctrlDenominator_zero_prob_le",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "ctrlDenominator_zero_prob_le",
+      "to": "ass:bounded-overlap-dependency",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "ctrlDenominator_zero_prob_le",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "ctrlDenominator_zero_prob_le",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "ctrlDenominator_zero_prob_le",
+      "to": "denominatorKernelBound",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:denominator-positivity",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:denominator-positivity",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:denominator-positivity",
+      "to": "ass:bounded-overlap-dependency",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:denominator-positivity",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:denominator-positivity",
+      "to": "def:hajek-denominators",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "ctrlDenominator_var_le",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "ctrlDenominator_var_le",
+      "to": "ass:bounded-overlap-dependency",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "ctrlDenominator_var_le",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "ctrlDenominator_var_le",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "ctrlDenominator_var_le",
+      "to": "denominatorKernelBound",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "denominatorKernelBound_nonneg",
+      "to": "denominatorKernelBound",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "denominatorKernelBound_le_of_floor",
+      "to": "denominatorKernelBound",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "r1_le_denominatorKernelBound",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "r1_le_denominatorKernelBound",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "r1_le_denominatorKernelBound",
+      "to": "denominatorKernelBound",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "r0_le_denominatorKernelBound",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "r0_le_denominatorKernelBound",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "r0_le_denominatorKernelBound",
+      "to": "denominatorKernelBound",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "treatDenominator_mean",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "ctrlDenominator_mean",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "treatDenominator_var_le",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "treatDenominator_var_le",
+      "to": "ass:bounded-overlap-dependency",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "treatDenominator_var_le",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "treatDenominator_var_le",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "treatDenominator_var_le",
+      "to": "denominatorKernelBound",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "denominatorKernelBound_div_card_tendsto_zero",
+      "to": "denominatorKernelBound",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionD_tendsto_atTop",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_geometric_lower_bound",
+      "to": "dispersionRho",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_geometric_lower_bound",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_geometric_lower_bound",
+      "to": "reciprocalBarrier",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_geometric_lower_bound",
+      "to": "dispersionFillerRho",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionApproxRatio_tendsto_atTop",
+      "to": "def:approximation-ratio",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionApproxRatio_tendsto_atTop",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionApproxRatio_tendsto_atTop",
+      "to": "dispersionBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionCore",
+      "to": "DispersionIntervention",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "mem_dispersionCore_inl",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "mem_dispersionCore_inl",
+      "to": "dispersionCore",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "mem_dispersionCore_inr",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "mem_dispersionCore_inr",
+      "to": "dispersionCore",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionCore_card",
+      "to": "dispersionCore",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionCore_card",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment",
+      "to": "DispersionIntervention",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment",
+      "to": "DispersionOutcome",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_N_core",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_N_core",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_N_core",
+      "to": "dispersionCore",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_N_filler",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_N_filler",
+      "to": "dispersionT",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_N_filler",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_sdeg_core",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_sdeg_core",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_sdeg_filler",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_sdeg_filler",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_sdeg_filler",
+      "to": "dispersionT",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_shared_core",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_shared_core",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_shared_core",
+      "to": "dispersionCore",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_shared_filler",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_shared_filler",
+      "to": "dispersionT",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_shared_filler",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_shared_core_filler",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_shared_core_filler",
+      "to": "dispersionT",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_shared_core_filler",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_shared_filler_core",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_shared_filler_core",
+      "to": "dispersionT",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_shared_filler_core",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_hWeight_core",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_hWeight_core",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_hWeight_core",
+      "to": "DispersionOutcome",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_hWeight_filler",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_hWeight_filler",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_hWeight_filler",
+      "to": "DispersionOutcome",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionD_pos",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_degree_energy",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_degree_energy",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_degree_energy",
+      "to": "dispersionT",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_degree_energy_pos",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_hWeight_eq",
+      "to": "DispersionIntervention",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_hWeight_eq",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_hWeight_pos",
+      "to": "DispersionIntervention",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_hWeight_pos",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_boundedOutcomeDegree",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_boundedOutcomeDegree",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionExperiment_boundedOutcomeDegree",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionHomogeneousDesign",
+      "to": "DispersionIntervention",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionComparisonDesign",
+      "to": "DispersionIntervention",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionComparisonDesign",
+      "to": "dispersionFillerRho",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionRho_bounds",
+      "to": "dispersionRho",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionFillerRho_bounds",
+      "to": "dispersionFillerRho",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionBudget_admissible",
+      "to": "DispersionIntervention",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionBudget_admissible",
+      "to": "dispersionBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionHomogeneousDesign_feasible",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionHomogeneousDesign_feasible",
+      "to": "dispersionBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionHomogeneousDesign_feasible",
+      "to": "dispersionHomogeneousDesign",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionComparisonDesign_feasible",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionComparisonDesign_feasible",
+      "to": "dispersionBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionComparisonDesign_feasible",
+      "to": "dispersionComparisonDesign",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_surrogateObjective_eq_weighted_sum",
+      "to": "DispersionIntervention",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_surrogateObjective_eq_weighted_sum",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_surrogateObjective_eq_weighted_sum",
+      "to": "DispersionOutcome",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_surrogateObjective_eq_weighted_sum",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_surrogateObjective_eq_weighted_sum",
+      "to": "reciprocalBarrier",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_surrogateDesign_eq_homogeneous",
+      "to": "def:surrogate-design",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_surrogateDesign_eq_homogeneous",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_surrogateDesign_eq_homogeneous",
+      "to": "dispersionBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_surrogateDesign_eq_homogeneous",
+      "to": "dispersionHomogeneousDesign",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionHomogeneous_envelope",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionHomogeneous_envelope",
+      "to": "def:graph-envelope",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionHomogeneous_envelope",
+      "to": "dispersionHomogeneousDesign",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionHomogeneous_envelope",
+      "to": "DispersionOutcome",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionHomogeneous_envelope",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionHomogeneous_envelope",
+      "to": "dispersionRho",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionHomogeneous_envelope",
+      "to": "dispersionT",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionHomogeneous_envelope",
+      "to": "reciprocalBarrier",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionComparison_envelope",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionComparison_envelope",
+      "to": "def:graph-envelope",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionComparison_envelope",
+      "to": "dispersionComparisonDesign",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionComparison_envelope",
+      "to": "DispersionOutcome",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionComparison_envelope",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionComparison_envelope",
+      "to": "dispersionT",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionComparison_envelope",
+      "to": "reciprocalBarrier",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersionComparison_envelope",
+      "to": "dispersionFillerRho",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "reciprocalBarrier_pos",
+      "to": "reciprocalBarrier",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_envMin_pos",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_envMin_pos",
+      "to": "dispersionBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_approxRatio_ge_envelopeRatio",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_approxRatio_ge_envelopeRatio",
+      "to": "def:graph-envelope",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_approxRatio_ge_envelopeRatio",
+      "to": "dispersionHomogeneousDesign",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_approxRatio_ge_envelopeRatio",
+      "to": "dispersionComparisonDesign",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_approxRatio_ge_envelopeRatio",
+      "to": "def:approximation-ratio",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_approxRatio_ge_envelopeRatio",
+      "to": "dispersionBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_approxRatio_lower_bound",
+      "to": "dispersionRho",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_approxRatio_lower_bound",
+      "to": "dispersionD",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_approxRatio_lower_bound",
+      "to": "reciprocalBarrier",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_approxRatio_lower_bound",
+      "to": "dispersionFillerRho",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_approxRatio_lower_bound",
+      "to": "def:approximation-ratio",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_approxRatio_lower_bound",
+      "to": "dispersionExperiment",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dispersion_approxRatio_lower_bound",
+      "to": "dispersionBudget",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "reciprocalBarrier_tangent_gap",
+      "to": "reciprocalBarrier",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "reciprocalBarrier_tangent_gap",
+      "to": "reciprocalBarrierSlope",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "reciprocalBarrier_tangent_eq_iff",
+      "to": "reciprocalBarrier",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "reciprocalBarrier_tangent_eq_iff",
+      "to": "reciprocalBarrierSlope",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "reciprocalBarrier_sum_minimized_at_mean",
+      "to": "reciprocalBarrier",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "reciprocalBarrier_sum_unique_minimizer",
+      "to": "reciprocalBarrier",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "centered_treat_treat_moment",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "centered_ctrl_ctrl_moment",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "centered_treat_ctrl_moment",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "mu1_abs_le_one",
+      "to": "ass:bounded-outcomes",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "mu0_abs_le_one",
+      "to": "ass:bounded-outcomes",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "piT_inv_le_denominatorKernelBound_add_one",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "piT_inv_le_denominatorKernelBound_add_one",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "piT_inv_le_denominatorKernelBound_add_one",
+      "to": "denominatorKernelBound",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "piC_inv_le_denominatorKernelBound_add_one",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "piC_inv_le_denominatorKernelBound_add_one",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "piC_inv_le_denominatorKernelBound_add_one",
+      "to": "denominatorKernelBound",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "linScore_abs_le_uniform",
+      "to": "ass:bounded-outcomes",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "linScore_abs_le_uniform",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "linScore_abs_le_uniform",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "linScore_abs_le_uniform",
+      "to": "denominatorKernelBound",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "linScore-abs-le-uniform-floor",
+      "to": "ass:bounded-outcomes",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "linScore-abs-le-uniform-floor",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "linScore-abs-le-uniform-floor",
+      "to": "ass:positivity-floor",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "linScore-abs-le-uniform-floor",
+      "to": "denominatorKernelBound",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "linScore-block-disjoint",
+      "to": "linScore-outcome-block",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "linScore-depgraph",
+      "to": "ass:independent-heterogeneous-bernoulli",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "linScore-depgraph-degree",
+      "to": "ass:independent-heterogeneous-bernoulli",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "linScore-depgraph-degree",
+      "to": "ass:bounded-overlap-dependency",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "linScore-depgraph-degree",
+      "to": "linScore-depgraph",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "linScore_mean_zero",
+      "to": "ass:independent-heterogeneous-bernoulli",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "linScore_pair_moment",
+      "to": "ass:independent-heterogeneous-bernoulli",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "varScale_pair_moments",
+      "to": "ass:independent-heterogeneous-bernoulli",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "varScale_homogeneous_formula",
+      "to": "ass:independent-heterogeneous-bernoulli",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "bernoulli_E_treat_prod",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "bernoulli_E_ctrl_prod",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "bernoulli_E_treat_mul_treat",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "bernoulli_E_ctrl_mul_ctrl",
+      "to": "S1",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "pairAverage_le_envelopeKernel",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "envelopeKernel_le_certificate_pairAverage",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "envelopeKernel_le_certificate_pairAverage",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:dispersion-certificate-unbounded",
+      "to": "def:approximation-ratio",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-linearization-from-denominator-tightness",
+      "to": "denominatorKernelBound",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-linearization-from-denominator-tightness",
+      "to": "input:hetero-clt-denominator-tightness",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-linearization-from-denominator-tightness",
+      "to": "conclusion:hetero-clt-linearization",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:linscore-sum-square-integral-varScale",
+      "to": "ass:independent-heterogeneous-bernoulli",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-linscore-clt-from-depgraph",
+      "to": "ass:independent-heterogeneous-bernoulli",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-linscore-clt-from-depgraph",
+      "to": "ass:bounded-outcomes",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-linscore-clt-from-depgraph",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-linscore-clt-from-depgraph",
+      "to": "ass:bounded-overlap-dependency",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-linscore-clt-from-depgraph",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-linscore-clt-from-depgraph",
+      "to": "ass:variance-nondegenerate",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-linscore-clt-from-depgraph",
+      "to": "def:variance-scale",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-linscore-clt-from-depgraph",
+      "to": "input:hetero-clt-linscore-depgraph-clt",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-clt-slutsky-transfer",
+      "to": "conclusion:hetero-clt-linearization",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-clt-slutsky-transfer",
+      "to": "input:hetero-clt-linscore-depgraph-clt",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-clt-slutsky-transfer",
+      "to": "ass:variance-nondegenerate",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-clt-slutsky-transfer",
+      "to": "def:variance-scale",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-clt-slutsky-transfer",
+      "to": "def:hetero-hajek-estimator",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:remainder-tendsto-zero",
+      "to": "ass:independent-heterogeneous-bernoulli",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:remainder-tendsto-zero",
+      "to": "ass:bipartite-interference",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:remainder-tendsto-zero",
+      "to": "ass:bounded-outcomes",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:remainder-tendsto-zero",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:remainder-tendsto-zero",
+      "to": "ass:bounded-overlap-dependency",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:remainder-tendsto-zero",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:remainder-tendsto-zero",
+      "to": "denominatorKernelBound",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:remainder-tendsto-zero",
+      "to": "def:hetero-linearization-remainder",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-denominator-tightness-discharged",
+      "to": "ass:independent-heterogeneous-bernoulli",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-denominator-tightness-discharged",
+      "to": "ass:bipartite-interference",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-denominator-tightness-discharged",
+      "to": "ass:bounded-outcomes",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-denominator-tightness-discharged",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-denominator-tightness-discharged",
+      "to": "ass:bounded-overlap-dependency",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-denominator-tightness-discharged",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:hetero-denominator-tightness-discharged",
+      "to": "input:hetero-clt-denominator-tightness",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:hetero-clt",
+      "to": "ass:independent-heterogeneous-bernoulli",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:hetero-clt",
+      "to": "ass:bipartite-interference",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:hetero-clt",
+      "to": "ass:bounded-outcomes",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:hetero-clt",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:hetero-clt",
+      "to": "ass:bounded-overlap-dependency",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:hetero-clt",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:hetero-clt",
+      "to": "def:optimal-design",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:hetero-clt",
+      "to": "ass:variance-nondegenerate",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:hetero-clt",
+      "to": "def:variance-scale",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:hetero-clt",
+      "to": "conclusion:hetero-clt-linearization",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:hetero-clt",
+      "to": "def:hetero-hajek-estimator",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "mu1_abs_le_one_of_bounded",
+      "to": "ass:bounded-outcomes",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "mu0_abs_le_one_of_bounded",
+      "to": "ass:bounded-outcomes",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "centeredY1_abs_le_two",
+      "to": "ass:bounded-outcomes",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "centeredY0_abs_le_two",
+      "to": "ass:bounded-outcomes",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "pair_kernel_le_envelope_kernel",
+      "to": "ass:bounded-outcomes",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:hetero-envelope",
+      "to": "ass:independent-heterogeneous-bernoulli",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:hetero-envelope",
+      "to": "ass:bounded-outcomes",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:homogeneous-reduction",
+      "to": "ass:independent-heterogeneous-bernoulli",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:postdesign-wald",
+      "to": "ass:independent-heterogeneous-bernoulli",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:postdesign-wald",
+      "to": "ass:bipartite-interference",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:postdesign-wald",
+      "to": "ass:bounded-outcomes",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:postdesign-wald",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:postdesign-wald",
+      "to": "ass:bounded-overlap-dependency",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:postdesign-wald",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:postdesign-wald",
+      "to": "def:optimal-design",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:postdesign-wald",
+      "to": "ass:variance-nondegenerate",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:postdesign-wald",
+      "to": "def:variance-scale",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:postdesign-wald",
+      "to": "def:conservative-variance-estimator",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:postdesign-wald",
+      "to": "def:hetero-hajek-estimator",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "optimalDesign_feasible_minimizes",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "optimalDesign_feasible_minimizes",
+      "to": "def:optimal-design",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "surrogateDesign_feasible_minimizes",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "surrogateDesign_feasible_minimizes",
+      "to": "def:surrogate-design",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:surrogate-certificate",
+      "to": "ass:bounded-outcome-degree",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:surrogate-certificate",
+      "to": "def:feasible-designs",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:surrogate-certificate",
+      "to": "def:approximation-ratio",
+      "source": "extracted"
+    }
+  ],
+  "symbolReview": {
+    "sym:Z_k": {
+      "verdict": "matched",
+      "hash": "5000a9ec71ab74e93d7695af8b55c090a3dd207d"
+    },
+    "sym:Z": {
+      "verdict": "matched",
+      "hash": "7b6d9edbbb409fcd030972b4cdde8e1335f89616"
+    },
+    "sym:p": {
+      "verdict": "matched",
+      "hash": "51b49489bf664f02fda0f23a2f8fe6d915d83904"
+    },
+    "sym:epsilon": {
+      "verdict": "matched",
+      "hash": "bd0389e1bf9e93e54b95ac85dea6c3a60ac70327"
+    },
+    "sym:B_n": {
+      "verdict": "matched",
+      "hash": "c70c13bfdb034f34da6bc2803c2c1dc97e24953a"
+    },
+    "sym:Y": {
+      "verdict": "matched",
+      "hash": "4e779a99daacadf16db7720b667a4a11d83bb3e4"
+    },
+    "sym:T_i(Z)": {
+      "verdict": "matched",
+      "hash": "40066ff653701375cd704e4ae3b3c3a7abd5a380"
+    },
+    "sym:C_i(Z)": {
+      "verdict": "matched",
+      "hash": "16fb42c837565ed82f5cbb800e3ad26968958e57"
+    },
+    "sym:pi_i^1(p)": {
+      "verdict": "matched",
+      "hash": "8633bcc5198f7236728d68b889984b3af104d99a"
+    },
+    "sym:pi_i^0(p)": {
+      "verdict": "matched",
+      "hash": "e02b72fb85d6d503e87965ad9b4d2a1b92f11c5f"
+    },
+    "sym:D_1(p,Z)": {
+      "verdict": "matched",
+      "hash": "8977d184c379e8af519d744941b7a80988bfb59c"
+    },
+    "sym:D_0(p,Z)": {
+      "verdict": "matched",
+      "hash": "1eb285b13de23056532be2df9a98f266502d4e79"
+    },
+    "sym:r_{ij}^1(G_n,p)": {
+      "verdict": "matched",
+      "hash": "61afacfdab8eca5afc38ea03a9af9562ead80068"
+    },
+    "sym:r_{ij}^0(G_n,p)": {
+      "verdict": "matched",
+      "hash": "aaf67dc30a2b338e8057941e6fc66e8cbb19284f"
+    },
+    "sym:r_{ij}^{10}(G_n)": {
+      "verdict": "matched",
+      "hash": "a20f4f1e89d4e21acf51f3f3b9010d2f13304689"
+    },
+    "sym:sigma_{G_n,p}^2(Y)": {
+      "verdict": "matched",
+      "hash": "111184abc35a5a6cc6f51edaca7517027aa7f583"
+    },
+    "sym:V_env(G_n,p)": {
+      "verdict": "matched",
+      "hash": "37be8e61a54fff2c2d2b32d2a1e51ceb1f01ce45"
+    },
+    "sym:P_{n,B_n,epsilon}": {
+      "verdict": "matched",
+      "hash": "22cee68b6d65732149e4cabb250ad186733cb6f6"
+    },
+    "sym:nu_{k,n}^+": {
+      "verdict": "matched",
+      "hash": "31590e617e0ee8185b3ac755d75ab856005772d9"
+    },
+    "sym:nu_{k,n}^-": {
+      "verdict": "matched",
+      "hash": "3e63422efe37ee3b3884fbb63c34dedfdb2338b0"
+    },
+    "sym:hat_V_cons(G_n,p)": {
+      "verdict": "matched",
+      "hash": "e20017148cf2081af18101d918d2f2cb549a747d"
+    },
+    "sym:alpha_cov": {
+      "verdict": "matched",
+      "hash": "65d48d437b6bc074634b355f94ec2ed033398972"
+    },
+    "sym:h_k(G_n)": {
+      "verdict": "matched",
+      "hash": "a1dcbab0bc034af931b20ce7956c964c5805e1eb"
+    },
+    "sym:alpha_cert(G_n)": {
+      "verdict": "matched",
+      "hash": "b81cffc10d34ae0f75e7b9f56077246996ac57d5"
+    },
+    "sym:dbar": {
+      "verdict": "matched",
+      "hash": "19c5b5b543d92e8641e87e0d4bd4cba15f06c1d4"
+    },
+    "sym:Dbar": {
+      "verdict": "matched",
+      "hash": "09f57fe3371fbdd9ca2c87782e4ae0bd2f6c8271"
+    },
+    "sym:c_disp": {
+      "verdict": "matched",
+      "hash": "311d55fc7e8ea5191f6d46433aeeb39e22f85d7c"
+    },
+    "sym:C_disp": {
+      "verdict": "matched",
+      "hash": "8edb4f1c0610f555158233d7bd708363083c8843"
+    }
+  }
+}

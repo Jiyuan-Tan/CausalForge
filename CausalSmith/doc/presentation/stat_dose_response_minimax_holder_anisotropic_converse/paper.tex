@@ -1,0 +1,1056 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1.1in]{geometry}
+
+\usepackage{amssymb,mathtools,natbib}
+
+\input{paper_macros.tex}
+
+\title{A Minimax Lower Bound for Interior Dose-Response Estimation}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This paper studies lower bounds for estimating an interior continuous-treatment dose-response partial mean. The target is
+\[
+\theta_P(t_0)=\int \mu_P(t_0,x)p_{X,P}(x)\,dx,
+\]
+interpretable as a causal dose-response mean under consistency, no unmeasured confounding, and local positivity. Over the same Hölder dose class \(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0)\), under iid sampling, bounded outcomes, an interior evaluation dose, the stated anisotropic Hölder restrictions, and a strict-slack baseline condition, we prove the same-class minimax lower bound
+\[
+R_n\{\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0\}
+\ge
+c\,n^{-2\alpha/(2\alpha+1)}
+\]
+for all sufficiently large \(n\). The lower-bound exponent is the one-dimensional treatment-regression exponent and holds for every fixed \(\beta>0\), although the constant and slack-baseline feasibility may depend on \(\beta\). We compare this lower floor with the published higher-order influence-function benchmark
+\[
+\rho_n=
+n^{-2\alpha/(2\alpha+1)}
+\vee
+n^{-2/(1+d/(4s)+1/\alpha)}.
+\]
+When \(d\le 4s\), the lower-bound exponent equals the exponent of this published comparator, whose upper theorem concerns a distinct localized-regularity class. When \(4s<d\), the benchmark is governed by the covariate-smoothness term and has a strictly smaller exponent than the same-class lower-floor exponent. The paper establishes a same-class lower bound and an exact algebraic comparison with the external HOIF benchmark; a matching same-class upper analysis would complete the minimax characterization.
+\end{abstract}
+
+\section{Introduction}
+
+Continuous treatments are central in many econometric and causal-inference problems: doses, prices, policy intensities, exposure levels, and other interventions are often better represented by a continuum than by a binary indicator. In the potential-outcome framework of \citet{rubin1974} and \citet{robins1986}, the object of interest is commonly a dose-specific mean \(E\{Y(t)\}\). Under consistency, conditional ignorability, and positivity, this causal object is identified by an observed-data partial mean, averaging the conditional regression of \(Y\) on \((A,X)\) at dose \(t\) over the marginal distribution of covariates. This paper studies the difficulty of estimating that fixed-dose partial mean at an interior dose.
+
+The formal target is \cref{obj:def:theta-functional},
+\[
+\theta_P(t_0)=\int_{[0,1]^d}\mu_P(t_0,x)p_{X,P}(x)\,dx,
+\]
+where \(A\in[0,1]\), \(X\in[0,1]^d\), and \(\mu_P(a,x)=E_P[Y\mid A=a,X=x]\). The model class in \cref{obj:def:holder-dose-class} imposes iid sampling, bounded outcomes, an interior evaluation dose, local positivity, Hölder smoothness of the outcome regression and treatment density in the treatment coordinate, and Hölder smoothness of the relevant covariate functions. The causal assumptions supply the interpretation of the same observed-data functional as a dose-response mean; the lower bound itself is a statement about the observed-data experiment and the minimax risk in \cref{obj:def:minimax-risk}.
+
+The continuous-treatment literature provides both the identification background and the estimator benchmarks for this problem. Early formulations include the generalized propensity-score and propensity-function approaches of \citet{imbens2000}, \citet{hirano2004}, and \citet{imai2004}, with comparisons developed by \citet{zhao2013}. Semiparametric efficiency and influence-function methods provide the language for regular estimation and orthogonalization \citep{bickel1993,vanderVaart1998,vanderLaan2003,chernozhukov2018}. For nonparametric dose-response curves, \citet{kennedy2017}, \citet{lee2018}, and \citet{colangelo2020} are direct antecedents. The closest upper-side benchmark for this paper is \citet{bonvini2022}, which builds on higher-order influence-function methods \citep{robins2008,robins2015} and reports the rate recorded here as \cref{obj:def:published-hoif-rate}.
+
+The main result is a same-class lower bound. Under the hypotheses of \cref{obj:thm:sharp-pointwise-lower-bound}, including positive smoothness \(\alpha,\beta,s\), the stated interior and boundedness constants, and the strict-slack baseline condition in \cref{obj:ass:baseline-submodel-slack}, there is a constant \(c>0\) such that, for all sufficiently large \(n\),
+\[
+c\,n^{-2\alpha/(2\alpha+1)}
+\le
+R_n\!\left(
+\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),
+t_0
+\right).
+\]
+This theorem establishes the lower half of the minimax analysis for the original Hölder dose class and fixes the treatment-regression obstruction at exponent \(2\alpha/(2\alpha+1)\).
+
+The comparison sequence is
+\[
+\rho_n=
+n^{-2\alpha/(2\alpha+1)}
+\vee
+n^{-2/(1+d/(4s)+1/\alpha)}.
+\]
+In the smooth-covariate regime \(d\le 4s\), \cref{obj:prop:oracle-regime-reduction} and \cref{obj:thm:sharp-minimax-smooth-covariate} show that the lower-bound exponent equals the exponent of \(\rho_n\), giving an exact exponent comparison with the published benchmark. In the deficient-covariate regime \(4s<d\), \cref{obj:thm:frontier-bracket-deficient} shows that \(\rho_n\) is governed by the covariate-smoothness expression and has a strictly smaller exponent than the certified same-class lower floor. This ordering isolates the same-class upper behavior as the remaining question in that regime.
+
+The lower-bound construction can be viewed as embedding the classical one-dimensional pointwise nonparametric regression obstruction inside the continuous-treatment partial-mean experiment. The embedding must preserve the observed-data restrictions of \cref{obj:def:holder-dose-class}: bounded outcomes, local positivity around \(t_0\), smooth covariate density, treatment-density smoothness, and the causal dose-response interpretation. The strict-slack baseline condition in \cref{obj:ass:baseline-submodel-slack} is used to keep the least favorable alternatives inside the class while perturbing only the treatment regression. This is why the resulting lower exponent is insensitive to the fixed treatment-density smoothness index \(\beta\) at the exponent level, while constants and feasibility may still depend on \(\beta\).
+
+The scope is deliberately narrower than neighboring continuous-exposure problems. Recent work studies modified treatment policies, weak-overlap or alternative identification regimes, nonparametric inference for dose-response curves, and incremental continuous-exposure interventions \citep{hejazi2022,doss2022,hudson2023,shi2024,zhang2024,schindl2024,bonvini2024}. Those estimands or positivity structures can change the role of the treatment density and the smoothing built into the target. The present paper concerns the fixed interior partial mean in \cref{obj:def:theta-functional} under the same-class Hölder restrictions in \cref{obj:def:holder-dose-class}.
+
+The formal statements used in the paper are accompanied by Lean~4 verification artifacts; the precise verification scope is summarized in the verification appendix. The mathematical contribution is the same-class lower bound, the two algebraic comparisons with the published HOIF benchmark, and the explicit separation between those lower-bound statements and upper results proved for other localized-regularity classes.
+
+\section{Setup and observed-data class}
+
+We begin with the \leanref{S-1}{observed-data experiment}. One observation is the observed unit \leanref{sym:O}{\ensuremath{O=(Y,A,X)}}, where the outcome \leanref{sym:Y}{\ensuremath{Y}} is real-valued, the treatment dose \leanref{sym:A}{\ensuremath{A}} lies in \([0,1]\), and the covariate vector \leanref{sym:X}{\ensuremath{X}} lies in \([0,1]^d\). The single-observation law is denoted by \ensuremath{P}; its covariate marginal is \leanref{sym:P_X}{\ensuremath{P_X}}, with density \(p_{X,P}\) on \([0,1]^d\). For \(a\in[0,1]\) and \(x\in[0,1]^d\), let the conditional mean and treatment density be
+\[
+\mu_P(a,x)=E_P[Y\mid A=a,X=x],
+\qquad
+\pi_P(a\mid x)=\text{density of }A\mid X=x .
+\]
+The outcome regression \leanref{sym:mu_P}{\ensuremath{\mu_P}} is the nuisance function whose value at the evaluation dose enters the target, while the conditional treatment density \ensuremath{\pi_P} governs the local amount of information available near that dose.
+
+The sample consists of \leanref{sym:O_1}{\ensuremath{O_1}}, \leanref{sym:...}{\ensuremath{\ldots}}, \leanref{sym:O_n}{\ensuremath{O_n}}, generated from the product law \(P^n\) under the following sampling condition.
+
+\begin{assumptionv}{ass:iid-sampling}[Iid sampling]
+The observations \(O_1,\ldots,O_n\) are iid draws from \(P\).
+\end{assumptionv}
+
+\cref{obj:ass:iid-sampling} is the standard iid sampling condition for the nonparametric experiment and fixes \(P^n\) as the sampling law used in the risk calculations \citep{tsybakov2009}.
+
+Fix positive smoothness orders \leanref{sym:alpha}{\ensuremath{\alpha}}, \leanref{sym:beta}{\ensuremath{\beta}}, and \leanref{sym:s}{\ensuremath{s}}, a common envelope and Hölder radius \leanref{sym:M}{\ensuremath{M}}, a local positivity constant \leanref{sym:c_0}{\ensuremath{c_0}}, an interior evaluation dose \leanref{sym:t_0}{\ensuremath{t_0}}, and an interior half-width \leanref{sym:epsilon_0}{\ensuremath{\varepsilon_0}}. Throughout, \(\mathcal H^\gamma(M;\mathcal D)\) denotes the Hölder ball of order \(\gamma\) and radius \(M\) on the domain \(\mathcal D\). The analysis is local in the treatment coordinate, over the \leanref{sym:evaluation window}{\ensuremath{[t_0-\varepsilon_0,t_0+\varepsilon_0]}}.
+
+We impose the basic observed-data restrictions before introducing the causal interpretation.
+
+\begin{assumptionv}{ass:bounded-outcome}[Bounded outcome]
+Under \(P\),
+\[
+|Y|\le M
+\]
+almost surely.
+\end{assumptionv}
+
+\cref{obj:ass:bounded-outcome} is the standard uniform bounded outcome condition; it keeps the loss and testing reductions within a common envelope over the model class \citep{bonvini2022}.
+
+\begin{assumptionv}{ass:interior-dose}[Interior dose]
+The exposure neighborhood around \(t_0\) is contained in the interior of the exposure support:
+\[
+[t_0-\varepsilon_0,t_0+\varepsilon_0]\subset(0,1).
+\]
+\end{assumptionv}
+
+\cref{obj:ass:interior-dose} is the standard interior evaluation point condition, excluding boundary effects in the continuous-treatment coordinate \citep{colangelo2020}.
+
+\begin{assumptionv}{ass:local-positivity}[Local positivity]
+For every \(a\in[t_0-\varepsilon_0,t_0+\varepsilon_0]\) and every \(x\in[0,1]^d\),
+\[
+\pi_P(a\mid x)\ge c_0.
+\]
+\end{assumptionv}
+
+\cref{obj:ass:local-positivity} is the standard local positivity condition; it requires enough treatment density in the neighborhood of \(t_0\) for the interior dose-response target to be statistically meaningful \citep{bonvini2022}.
+
+The smoothness restrictions separate regularity in the treatment coordinate from regularity in the covariate coordinate. This separation is useful because the lower bound varies with \(\alpha\), \(\beta\), \(s\), and \(d\) through distinct approximation and testing constraints.
+
+\begin{assumptionv}{ass:mu-treatment-holder}[Treatment-regression dose smoothness]
+For every \(x\in[0,1]^d\), the map
+\[
+a\longmapsto \mu_P(a,x)
+\]
+belongs to the Hölder ball \(\mathcal H^\alpha(M;[t_0-\varepsilon_0,t_0+\varepsilon_0])\).
+\end{assumptionv}
+
+\cref{obj:ass:mu-treatment-holder} is the standard Hölder smoothness in the treatment coordinate for the regression function near the target dose \citep{tsybakov2009}.
+
+\begin{assumptionv}{ass:pi-treatment-holder}[Treatment-density dose smoothness]
+For every \(x\in[0,1]^d\), the map
+\[
+a\longmapsto \pi_P(a\mid x)
+\]
+belongs to the Hölder ball \(\mathcal H^\beta(M;[t_0-\varepsilon_0,t_0+\varepsilon_0])\).
+\end{assumptionv}
+
+\cref{obj:ass:pi-treatment-holder} is the standard Hölder smoothness condition for the conditional treatment density in the treatment coordinate \citep{bonvini2022}.
+
+\begin{assumptionv}{ass:mu-covariate-holder}[Treatment-regression covariate smoothness]
+The map
+\[
+x\longmapsto \mu_P(t_0,x)
+\]
+belongs to the Hölder ball \(\mathcal H^s(M;[0,1]^d)\).
+\end{assumptionv}
+
+\cref{obj:ass:mu-covariate-holder} is the standard Hölder smoothness condition in the covariate coordinate for the target-dose regression surface \citep{tsybakov2009}.
+
+\begin{assumptionv}{ass:pi-covariate-holder}[Treatment-density covariate smoothness]
+The map
+\[
+x\longmapsto \pi_P(t_0\mid x)
+\]
+belongs to the Hölder ball \(\mathcal H^s(M;[0,1]^d)\).
+\end{assumptionv}
+
+\cref{obj:ass:pi-covariate-holder} imposes the standard covariate smoothness condition on the marginal covariate density \citep{bonvini2022}.
+
+\begin{assumptionv}{ass:px-holder}[Covariate-density smoothness]
+The marginal covariate density \(p_{X,P}\) belongs to the Hölder ball
+\[
+\mathcal H^s(M;[0,1]^d)
+\]
+and satisfies
+\[
+0 \le p_{X,P}(x) \le M
+\]
+for every \(x\in[0,1]^d\).
+\end{assumptionv}
+
+\cref{obj:ass:px-holder} is the standard Hölder-smooth covariate density condition, together with a uniform upper bound on the marginal density \citep{bonvini2022}.
+
+The statistical target is the partial mean of the target-dose regression surface over the covariate distribution.
+
+\begin{definitionv}{def:theta-functional}[Dose-response partial mean $\theta_P(t_0)$]
+The dose-response partial mean at the evaluation dose $t_0$ is
+\[
+\theta_P(t_0)
+=
+\int_{[0,1]^d} \mu_P(t_0,x)\,p_{X,P}(x)\,dx .
+\]
+\end{definitionv}
+
+\cref{obj:def:theta-functional} is an observed-data functional: it depends only on the conditional mean of \(Y\) given \((A,X)\) and on the marginal law of \(X\). The next subsection overlays the causal interpretation under which this same functional is the dose-response mean.
+
+The \leanref{S-2}{causal overlay} introduces potential outcomes \(Y(a)\), indexed by \(a\in[0,1]\), on the same probability space as the observed data. The following two assumptions are the identification conditions used to interpret \cref{obj:def:theta-functional} causally.
+
+\begin{assumptionv}{ass:consistency}[Consistency]
+Under \(P\),
+\[
+Y=Y(A)
+\]
+almost surely.
+\end{assumptionv}
+
+\cref{obj:ass:consistency} is the standard consistency condition, linking the observed outcome to the potential outcome at the realized dose \citep{kennedy2017}.
+
+\begin{assumptionv}{ass:no-unmeasured-confounding}[No unmeasured confounding]
+For every \(a\in[0,1]\), the potential outcome \(Y(a)\) is independent of \(A\) conditional on \(X\) under \(P\).
+\end{assumptionv}
+
+\cref{obj:ass:no-unmeasured-confounding} is the standard conditional ignorability condition for continuous treatments \citep{kennedy2017}. Together with local positivity in \cref{obj:ass:local-positivity}, it identifies the causal dose-response mean at the interior dose \(t_0\) with the observed-data partial mean in \cref{obj:def:theta-functional}.
+
+Combining these restrictions gives the observed-data class used for the lower-bound analysis. The minimax risk and the published benchmark rate referenced in the definition are introduced formally in \cref{obj:def:minimax-risk} and~\cref{obj:def:published-hoif-rate}.
+
+\begin{definitionv}{def:holder-dose-class}[Hölder Dose Class \(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0)\)]
+With the minimax risk \(R_n(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0)\) and the published HOIF benchmark \(\rho_n\) as in \cref{obj:def:minimax-risk,obj:def:published-hoif-rate}, define
+\[
+\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0)
+\]
+to be the collection of observed-data laws \(P\) satisfying all of the following conditions:
+\begin{itemize}
+\item \textbf{(Sampling.)} The observations satisfy \cref{obj:ass:iid-sampling}.
+\item \textbf{(Causal identification.)} Consistency and no unmeasured confounding hold as in \cref{obj:ass:consistency,obj:ass:no-unmeasured-confounding}.
+\item \textbf{(Outcome boundedness.)} The bounded-outcome condition holds as in \cref{obj:ass:bounded-outcome}.
+\item \textbf{(Interior dose.)} The evaluation dose \(t_0\) and local radius \(\varepsilon_0\) satisfy \cref{obj:ass:interior-dose}.
+\item \textbf{(Local positivity.)} The treatment density obeys the local positivity condition with constant \(c_0\) as in \cref{obj:ass:local-positivity}.
+\item \textbf{(Treatment-direction smoothness.)} The maps \(a\mapsto \mu_P(a,x)\) and \(a\mapsto \pi_P(a\mid x)\) satisfy the treatment-direction Hölder conditions in \cref{obj:ass:mu-treatment-holder,obj:ass:pi-treatment-holder}.
+\item \textbf{(Covariate-direction smoothness and density range.)} The maps \(x\mapsto\mu_P(t_0,x)\) and \(x\mapsto\pi_P(t_0\mid x)\) satisfy the covariate-direction Hölder conditions in \cref{obj:ass:mu-covariate-holder,obj:ass:pi-covariate-holder}, and \(p_{X,P}\) satisfies the Hölder, nonnegativity, and upper-envelope condition in \cref{obj:ass:px-holder}.
+\item \textbf{(Semantic ties to the observed-data law.)} The regression, covariate-density, and treatment-density symbols are tied to \(P\): \(\mu_P(A,X)\) equals the conditional mean of \(Y\) given \((A,X)\) \(P\)-almost surely; \(p_{X,P}\) is the density of the \(X\)-marginal on \([0,1]^d\); and \(\pi_P\) is nonnegative on \([0,1]\times[0,1]^d\) with the \((A,X)\)-law density \((a,x)\mapsto \pi_P(a\mid x)p_{X,P}(x)\) relative to Lebesgue measure on \([0,1]\times[0,1]^d\).
+\end{itemize}
+\end{definitionv}
+
+\cref{obj:def:holder-dose-class} is a statistical model for observed laws equipped with the stated causal interpretation. The lower-bound alternatives are constructed as observed-data laws in this class; the potential-outcome overlay supplies the causal reading of the same target while preserving the statistical experiment.
+
+For the least favorable submodels used later, we also require a baseline law at a positive distance from the model boundary.
+
+\begin{assumptionv}{ass:baseline-submodel-slack}[Baseline submodel slack]
+There exist a covariate density \(p_0\) on \([0,1]^d\), a conditional treatment density \(q_0\) on \([0,1]\), a constant \(\eta_0>0\), and a constant \(B_0\) with \(0<B_0<M\), such that \(p_0(x)\ge 0\) for all \(x\in[0,1]^d\), \(q_0(a)\ge 0\) for all \(a\in\mathbb R\),
+\[
+\int_{[0,1]^d} p_0(x)\,dx=1
+\qquad\text{and}\qquad
+\int_0^1 q_0(a)\,da=1,
+\]
+\[
+\|p_0\|_{\mathcal H^s([0,1]^d)}\le M-\eta_0,
+\]
+\(q_0\) has Hölder norm at most \(M-\eta_0\) of order \(\beta\) on \([t_0-\varepsilon_0,t_0+\varepsilon_0]\),
+\[
+q_0(a)\ge c_0+\eta_0
+\qquad\text{for all }a\in[t_0-\varepsilon_0,t_0+\varepsilon_0],
+\]
+and
+\[
+p_0(x)\le M-\eta_0
+\qquad\text{for all }x\in[0,1]^d.
+\]
+\end{assumptionv}
+
+\cref{obj:ass:baseline-submodel-slack} is specific to this analysis. It provides an interior baseline density \(p_0\), an interior baseline treatment density \(q_0\), and a positive margin \(\eta_0\), so that the perturbations used in the lower-bound construction can remain inside \cref{obj:def:holder-dose-class}.
+
+\section{Main results}
+
+The target in \cref{obj:def:theta-functional} is evaluated under squared loss over the observed-data class in \cref{obj:def:holder-dose-class}. We first fix the risk criterion. The estimator is allowed to be any measurable function of the iid sample, with range restricted to the outcome envelope; this normalization is immaterial for the rate comparisons below because the target itself lies in the same bounded range.
+
+\begin{definitionv}{def:minimax-risk}[Minimax risk $R_n(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0)$]
+The minimax risk over the model class
+\(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0)\) at the evaluation dose \(t_0\) is
+\[
+R_n\!\left(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0\right)
+=
+\inf_{\substack{\hat\theta_n\ \mathrm{measurable}\\
+\hat\theta_n(O_1,\ldots,O_n)\in[-M,M]\ \mathrm{for\ every\ sample}}}
+\sup_{P\in \mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0)}
+E_{P^{\otimes n}}\!\left[
+\left\{\hat\theta_n(O_1,\ldots,O_n)-\theta_P(t_0)\right\}^2
+\right],
+\]
+where \(P^{\otimes n}\) is the product law of the iid sample \(O_1,\ldots,O_n\).
+\end{definitionv}
+
+The benchmark used for comparison is the rate reported for higher-order influence-function methods in the continuous-exposure literature. We use \(x\vee y\) to denote \(\max\{x,y\}\).
+
+\begin{definitionv}{def:published-hoif-rate}[Published HOIF benchmark $\rho_n$]
+The published higher-order influence-function benchmark rate is
+\[
+\rho_n
+=
+n^{-2\alpha/(2\alpha+1)}
+\vee
+n^{-2/(1+d/(4s)+1/\alpha)} .
+\]
+\end{definitionv}
+
+\cref{obj:def:published-hoif-rate} records the comparison sequence from the published localized-regularity upper result. The first term is the one-dimensional nonparametric regression scale in the treatment coordinate, while the second is the higher-order influence-function benchmark involving the covariate dimension and covariate smoothness \citep{robins2008,robins2015,kennedy2017,bonvini2022}. The lower bound below is the paper's same-class result.
+
+\begin{theoremv}{thm:sharp-pointwise-lower-bound}[Sharp Pointwise Lower Bound]
+For every covariate dimension $d$ and every real constants
+$\alpha,\beta,s,M,c_0,\varepsilon_0,t_0$, suppose that
+\begin{itemize}
+\item \textbf{(Positive smoothness.)} $\alpha>0$, $\beta>0$, and $s>0$.
+\item \textbf{(Regime constants.)} $M>0$, $c_0>0$, $t_0\in(0,1)$, $\varepsilon_0\in(0,1/2)$, and the local window determined by $(t_0,\varepsilon_0)$ is contained in $(0,1)$.
+\item \textbf{(Strict-slack baseline.)} \cref{obj:ass:baseline-submodel-slack} holds for $(d,\beta,s,M,c_0,\varepsilon_0,t_0)$.
+\end{itemize}
+Then there exists a constant $c>0$ such that, for all sufficiently large sample sizes $n$,
+\[
+  c\, n^{-2\alpha/(2\alpha+1)}
+  \le
+  R_n\!\left(
+    \mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),
+    t_0
+  \right),
+\]
+where $\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0)$ is the model class of \cref{obj:def:holder-dose-class} and $R_n$ is the minimax risk of \cref{obj:def:minimax-risk}.
+\end{theoremv}
+
+\cref{obj:thm:sharp-pointwise-lower-bound} gives a lower floor for the original Hölder dose class, uniformly over every positive value of the treatment-density smoothness parameter \(\beta\). Its construction varies the treatment regression while keeping the density components within the slack allowed by \cref{obj:ass:baseline-submodel-slack}. The result fixes the same-class treatment-regression obstruction and supplies the lower half of the minimax analysis.
+
+The next statements reduce the comparison with \(\rho_n\) to algebraic regimes. When the covariate smoothness is high enough relative to dimension, the maximum in \cref{obj:def:published-hoif-rate} is attained by the treatment-regression term.
+
+\begin{propositionv}{prop:oracle-regime-reduction}[Oracle Regime Reduction]
+Let \(d\) be the covariate dimension, and let \(\alpha,\beta,s,M,c_0,\varepsilon_0,t_0\) be constants. Suppose that
+\begin{itemize}
+\item \textbf{(Well-formed constants.)} \(\alpha>0\), \(\beta>0\), \(s>0\), \(M>0\), \(c_0>0\), \(t_0\in(0,1)\), \(\varepsilon_0\in(0,1/2)\), and the window \([t_0-\varepsilon_0,t_0+\varepsilon_0]\) is contained in \((0,1)\).
+\item \textbf{(Oracle regime.)} \(d\le 4s\).
+\item \textbf{(Baseline slack.)} \cref{obj:ass:baseline-submodel-slack} holds for \(d,\beta,s,M,c_0,\varepsilon_0,t_0\).
+\end{itemize}
+Then there exists a constant \(c>0\) such that, for all sufficiently large sample sizes \(n\),
+\[
+\rho_n
+=
+n^{-2\alpha/(2\alpha+1)}
+\]
+for the published HOIF benchmark rate \(\rho_n\) of \cref{obj:def:published-hoif-rate}, and
+\[
+c\,\rho_n
+\le
+R_n\!\left(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0\right),
+\]
+where the model class is \cref{obj:def:holder-dose-class} and the minimax risk is \cref{obj:def:minimax-risk}.
+\end{propositionv}
+
+\cref{obj:prop:oracle-regime-reduction} gives the exact comparison statement for \(d\le 4s\): the certified lower-bound exponent agrees with the exponent of the published benchmark sequence. Construction of an estimator over the same Hölder class is the corresponding upper-analysis question.
+
+\begin{theoremv}{thm:sharp-minimax-smooth-covariate}[Smooth Covariate Minimax Floor]
+Let \(d\in\mathbb N\) and let \(\alpha,\beta,s,M,c_0,\varepsilon_0,t_0\in\mathbb R\). Suppose that:
+\begin{itemize}
+\item \textbf{(Smoothness.)} \(\alpha>0\), \(\beta>0\), and \(s>0\).
+\item \textbf{(Regime constants.)} \(M>0\), \(c_0>0\), \(t_0\in(0,1)\), \(\varepsilon_0\in(0,1/2)\), and the window \([t_0-\varepsilon_0,t_0+\varepsilon_0]\) is contained in \((0,1)\).
+\item \textbf{(Smooth-covariate regime.)} \(d\le 4s\).
+\item \textbf{(Strict-slack baseline.)} \cref{obj:ass:baseline-submodel-slack} holds for \((d,\beta,s,M,c_0,\varepsilon_0,t_0)\).
+\end{itemize}
+Then there exists a constant \(c>0\) such that, for all sufficiently large \(n\),
+\[
+c\,n^{-2\alpha/(2\alpha+1)}
+\le
+R_n\!\left(
+\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0
+\right),
+\]
+where \(R_n\) is the minimax risk of \cref{obj:def:minimax-risk} over the same-class model of \cref{obj:def:holder-dose-class}. Moreover,
+\[
+n^{-2\alpha/(2\alpha+1)}
+=
+\rho_n,
+\]
+with \(\rho_n\) as in \cref{obj:def:published-hoif-rate}.
+\end{theoremv}
+
+\cref{obj:thm:sharp-minimax-smooth-covariate} packages the same conclusion in the smooth-covariate regime: it establishes a lower bound for \cref{obj:def:holder-dose-class} and an exact exponent comparison with \(\rho_n\).
+
+When \(4s<d\), the published benchmark is governed by the covariate-smoothness term. The lower bound remains on the treatment-regression scale, and the benchmark exponent is strictly smaller.
+
+\begin{theoremv}{thm:frontier-bracket-deficient}[Deficient Frontier Bracket]
+Fix a covariate dimension $d\in\mathbb N$ and constants
+$\alpha,\beta,s,M,c_0,\varepsilon_0,t_0\in\mathbb R$.  Assume:
+\begin{itemize}
+\item \textbf{(Regime constants.)}  $\alpha>0$, $\beta>0$, $s>0$, $M>0$, $c_0>0$, $t_0\in(0,1)$, $\varepsilon_0\in(0,1/2)$, and the window $[t_0-\varepsilon_0,t_0+\varepsilon_0]$ lies in $(0,1)$.
+\item \textbf{(Deficient covariate smoothness.)}  $4s<d$.
+\item \textbf{(Strict-slack baseline.)}  \cref{obj:ass:baseline-submodel-slack} holds for $(d,\beta,s,M,c_0,\varepsilon_0,t_0)$.
+\end{itemize}
+Then there exists a constant $c>0$ such that, for all sufficiently large sample sizes $n$,
+\[
+c\,n^{-2\alpha/(2\alpha+1)}
+\le
+R_n\!\left(
+\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0
+\right),
+\]
+where the minimax risk is as in \cref{obj:def:minimax-risk} and the class is \cref{obj:def:holder-dose-class}.  Moreover, for the published HOIF benchmark of \cref{obj:def:published-hoif-rate},
+\[
+\rho_n
+=
+n^{-\,2/(1+d/(4s)+1/\alpha)}
+\]
+and its exponent is strictly smaller than the certified lower-bound exponent:
+\[
+\frac{2}{1+d/(4s)+1/\alpha}
+<
+\frac{2\alpha}{2\alpha+1}.
+\]
+\end{theoremv}
+
+Thus, in the low-covariate-smoothness regime, \cref{obj:thm:frontier-bracket-deficient} determines the strict ordering between the same-class lower floor and the exponent in the published benchmark sequence. The same-class upper frontier remains open among the benchmark rate, an intermediate rate, and a rate depending more directly on \(\beta\).
+
+For orientation, we record the external higher-order influence-function result used as a literature comparator. The cited bound from \citet{bonvini2022} is stated over an explicitly defined, more regular subclass of the Hölder dose class in \cref{obj:def:holder-dose-class} and supplies the corresponding upper-side benchmark.
+
+\begin{citedv}{lem:published-upper-bound-cited}[Published HOIF Comparator]
+For covariate dimension \(d\) and parameters \(\alpha,\beta,s,\gamma_1,\gamma_2\), consider any Bonvini--Kennedy HOIF estimator specification \(E\) consisting of an observed-data law \(P\), evaluation dose \(t_0\), nuisance estimators \(\hat\mu_n,\hat\pi_n,\hat p_n\), kernel \(K\), bandwidths \(h_n\), projection dimensions \(k_n\), and true and estimated projection kernels \(\Pi_n\) and \(\widehat\Pi_n\). Suppose the following conditions of \citet[Theorem~3.1 and \S3.4]{bonvini2022} hold for these same inputs: \(P\) is a probability law; \(\mu_P\), \(p_{X,P}\), and \(\pi_P\) are respectively the outcome regression, covariate density, and conditional treatment density of \(P\); there exist \(0<\ell\le u\) such that, for every \(n,a,x\), \(\ell\le\pi_P(a\mid x)\le u\) and \(\ell\le\hat\pi_n(a\mid x)\le u\); there exists \(B>0\) such that \(|Y|\le B\) and \(|A|\le B\) \(P\)-almost surely and \(|\hat\mu_n(a,x)|\le B\) for every \(n,a,x\); and, for every \(n\) and \(x\), the maps \(a\mapsto\mu_P(a,x)\) and \(a\mapsto\hat\mu_n(a,x)\) lie in the one-dimensional Hölder ball of order \(\alpha\) and radius \(1\) on \(\mathbb R\), while \(a\mapsto\pi_P(a\mid x)\) and \(a\mapsto\hat\pi_n(a\mid x)\) lie in the corresponding ball of order \(\beta\). Writing \(K_{h_n,t_0}(a)=h_n^{-1}K((a-t_0)/h_n)\), assume also that there exist \(K_{\max}>0\) and \(0<g_{\ell}\le g_u\) such that \(|K(u)|\le K_{\max}\), \(\operatorname{supp}(K)\subseteq[-1,1]\), \(\int K(u)\,du=1\), \(\int u^jK(u)\,du=0\) for \(1\le j\le\lceil\alpha\rceil-1\), \(h_n>0\), \(\int K_{h_n,t_0}(a)\,da=1\), and, for every \(n,x\), \(g_{\ell}\le\int K_{h_n,t_0}(a)\pi_P(a\mid x)p_{X,P}(x)\,da\le g_u\); that there exists \(C_\Pi>0\) with \(\Pi_n(x,x)\le C_\Pi k_n\) and \(\widehat\Pi_n(x,x)\le C_\Pi k_n\) for every \(n,x\); and that there exist \(0<r_{\ell}\le r_u\) such that, for every \(n,x\),
+\[
+r_{\ell}\le
+\frac{\int K_{h_n,t_0}(a)\pi_P(a\mid x)p_{X,P}(x)\,da}
+{\int K_{h_n,t_0}(a)\hat p_n(a,x)\,da}
+\le r_u .
+\]
+Assume further that \(d>0\), \(\alpha>0\), \(\beta>0\), \(s>0\), \(\alpha\le\beta\), \(\gamma_1=\gamma_2=s\), and that there exists \(B_X>0\) such that, for every \(a\) and \(n\), the maps \(x\mapsto\mu_P(a,x)\), \(x\mapsto\hat\mu_n(a,x)\), \(x\mapsto\pi_P(a\mid x)\), and \(x\mapsto\hat\pi_n(a\mid x)\) lie in the \(s\)-Hölder ball of radius \(B_X\) on \([0,1]^d\). Let \(v_n(x)=\hat\mu_n(t_0,x)-\mu_P(t_0,x)\) and \(q_n(x)=\hat\pi_n(t_0\mid x)^{-1}-\pi_P(t_0\mid x)^{-1}\). The rate specialization requires
+\[
+\|v_n-\Pi_n v_n\|_{L^2([0,1]^d)}
+\|q_n-\Pi_n q_n\|_{L^2([0,1]^d)}
+\lesssim k_n^{-(\gamma_1+\gamma_2)/d}
+\]
+eventually, \(\|v_n\|_{L^2([0,1]^d)}\asymp\|q_n\|_{L^2([0,1]^d)}\) eventually, and
+\[
+\bigl(\|v_n\|_{L^2([0,1]^d)}
+\|q_n\|_{L^2([0,1]^d)}
+\|\hat p_n(t_0,\cdot)-\pi_P(t_0\mid\cdot)p_{X,P}(\cdot)\|_{\infty,[0,1]^d}\bigr)^2
+\lesssim \rho_n
+\]
+eventually. The tuning satisfies, when \(d\le 4s\), \(h_n\asymp n^{-1/(2\alpha+1)}\) and \(k_n\asymp nh_n\) eventually, and, when \(4s<d\), \(h_n\asymp n^{-4s/(\alpha(4s+d)+4s)}\) and \(k_n\asymp(nh_n)^{2d/(d+4s)}\) eventually. Then the specified Bonvini--Kennedy HOIF estimator \(\hat\theta_n\), with its nuisance-training outputs held fixed, attains the published benchmark conditional mean-squared-error rate of \cref{obj:def:published-hoif-rate}: there exists \(C>0\) such that, for all sufficiently large \(n\),
+\[
+\int (\hat\theta_n(O_1,\ldots,O_n)-\theta_P(t_0))^2\,dP^n
+\le C\rho_n,\qquad
+\rho_n=
+\max\left\{n^{-2\alpha/(2\alpha+1)},
+n^{-2/(1+d/(4s)+1/\alpha)}\right\}.
+\]
+\end{citedv}
+
+The notation inside the cited display belongs to the imported comparator. In the present paper, it motivates the sequence \(\rho_n\) and provides an upper-side benchmark from a strictly smaller, more regular class; \cref{obj:def:minimax-risk} reserves \(R_n(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0)\) for the same-class risk.
+
+The final two remarks summarize the established rate comparison and identify the remaining same-class upper frontier.
+
+\begin{remarkv}{def:beta-frontier-handle}[Beta frontier handle $\mathfrak B_{\alpha,\beta,s}$]
+The beta comparison handle \(\mathfrak B_{\alpha,\beta,s}\) denotes the following frontier statement. For every \(\beta>0\), there is a constant \(c>0\) such that, for all sufficiently large \(n\),
+\[
+c\,n^{-2\alpha/(2\alpha+1)}
+\le
+R_n\!\left(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0\right).
+\]
+For every \(n\ge 1\), when \(d\le 4s\), the published benchmark satisfies
+\[
+\rho_n
+=
+n^{-2\alpha/(2\alpha+1)}.
+\]
+For every \(n\ge 1\), when \(0<s\) and \(4s<d\), the published benchmark satisfies
+\[
+\rho_n
+=
+n^{-2/(1+d/(4s)+1/\alpha)}
+\]
+and its exponent obeys
+\[
+\frac{2}{1+d/(4s)+1/\alpha}
+<
+\frac{2\alpha}{2\alpha+1}.
+\]
+The upper-frontier alternatives are recorded as the following disjunction: either there is a constant \(C>0\) such that, for all sufficiently large \(n\),
+\[
+R_n\!\left(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0\right)
+\le
+C\rho_n,
+\]
+or there are \(\kappa\) and \(C>0\) with
+\[
+\frac{2}{1+d/(4s)+1/\alpha}<\kappa<\frac{2\alpha}{2\alpha+1}
+\]
+such that, for all sufficiently large \(n\),
+\[
+R_n\!\left(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0\right)
+\le
+C n^{-\kappa},
+\]
+or there are \(\beta'>0\), \(\beta'\ne\beta\), exponents \(\kappa,\kappa'\) with \(\kappa'\ne\kappa\), and positive constants \(c,C,c',C'\) such that, for all sufficiently large \(n\),
+\[
+c n^{-\kappa}
+\le
+R_n\!\left(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0\right)
+\le
+C n^{-\kappa}
+\]
+and
+\[
+c' n^{-\kappa'}
+\le
+R_n\!\left(\mathcal P_{\alpha,\beta',s}(M,c_0,\varepsilon_0,t_0),t_0\right)
+\le
+C' n^{-\kappa'}.
+\]
+\end{remarkv}
+
+\cref{obj:def:beta-frontier-handle} is an interpretive shorthand for the preceding lower-bound and comparison statements. The word ``frontier'' denotes this exponent-level comparison and highlights the benchmark-aligned smooth-covariate regime.
+
+\section{Discussion, limitations, and extensions}
+
+The lower-bound analysis isolates one obstruction that is already present in the standard interior partial mean problem. The target in \cref{obj:def:theta-functional} is an observed-data partial mean at a fixed interior dose, and the risk in \cref{obj:def:minimax-risk} is taken over the same Hölder dose class of \cref{obj:def:holder-dose-class}. Within that class, \cref{obj:thm:sharp-pointwise-lower-bound} gives a treatment-regression lower floor. The comparison statements in \cref{obj:thm:sharp-minimax-smooth-covariate} and~\cref{obj:thm:frontier-bracket-deficient} relate this floor to the published benchmark sequence \(\rho_n\) from \cref{obj:def:published-hoif-rate}, while \cref{obj:lem:published-upper-bound-cited} supplies the external Bonvini--Kennedy comparator on its localized-regularity class.
+
+For each fixed \(\beta>0\), under the corresponding slack-baseline condition in \cref{obj:ass:baseline-submodel-slack}, the certified exponent of the same-class lower bound is invariant to the treatment-density smoothness index. The constant in the lower bound, and the feasibility of the slack baseline itself, may depend on \(\beta\) and on the other fixed model constants. Thus the conclusion is exponent-level insensitivity to \(\beta\), with constants calibrated separately for each fixed smoothness value.
+
+This distinction matters most when \(4s<d\). In that regime, \cref{obj:thm:frontier-bracket-deficient} shows that the published benchmark sequence has a smaller exponent than the same-class treatment-regression lower floor. The unresolved same-class question is whether the upper behavior in low covariate smoothness follows the published benchmark, an intermediate exponent, or a rate that depends more directly on the smoothness of the treatment density.
+
+The scope is tied to the interior positivity regime. \Cref{obj:ass:local-positivity} imposes a fixed lower bound on the treatment density in a neighborhood of \(t_0\), and \cref{obj:ass:interior-dose} selects an interior evaluation window. These restrictions match the usual interior continuous-exposure formulation. Weak-overlap, design-adaptive, and trimmed targets lead to a different statistical experiment in which the amount of information near \(t_0\) enters the rate calculation directly. Recent work on continuous exposures and overlap-sensitive causal estimands emphasizes these complementary regimes \citep{hejazi2022,doss2022,hudson2023,shi2024,zhang2024,schindl2024,bonvini2024}.
+
+Neighboring estimands raise a similar qualification. The partial mean studied here evaluates the regression surface at a single interior dose and averages over the marginal law of \(X\). Other continuous-exposure targets average over dose neighborhoods, consider stochastic interventions, or target modified exposure policies. Their definitions can smooth the treatment coordinate or alter the role of the conditional treatment density. The present lower bound is consequently a benchmark for the fixed-dose interior partial mean, while those neighboring functionals invite estimand-specific minimax analyses.
+
+Finally, the comparison with higher-order influence-function methods is a comparison across stated model classes. The imported result in \cref{obj:lem:published-upper-bound-cited} supplies an upper-side benchmark under additional localized regularity, while the lower bound here is proved over the Hölder class in \cref{obj:def:holder-dose-class}. Two routes can bridge the statements: a same-class upper bound under \cref{obj:def:holder-dose-class}, or an inclusion argument covering the present Hölder class by the localized-regularity class with the needed constants.
+
+\appendix
+
+\section*{Appendices}
+
+\section{auxiliary lemmas and proofs}
+
+This appendix collects the auxiliary mathematical statements used to support the lower-bound and rate-comparison results in \cref{obj:thm:sharp-pointwise-lower-bound}--\cref{obj:thm:frontier-bracket-deficient}. The statements are organized according to their role: first the two-point testing ingredients, then the algebra for the benchmark sequence \(\rho_n\), and finally the combined lower-bound comparison used to package the main conclusions. Throughout this appendix, \(\mathrm{KL}(Q_0,Q_1)\) denotes the Kullback--Leibler divergence from \(Q_0\) to \(Q_1\).
+
+The testing reduction begins with a bounded binary outcome channel. It is convenient because the least favorable alternatives only need to separate conditional means while keeping outcomes inside the common envelope. The following elementary inequality controls the information distance between two such channels by the squared separation of their means.
+
+\begin{lemmav}{lem:bernoulli-mean-channel-kl}[Bernoulli mean-channel KL bound]
+Fix \(B>0\). Let \(Q_u\) and \(Q_v\) be distributions on \(\{-B,B\}\) with means \(u\) and \(v\), respectively, so that
+\[
+Q_u(B)=\frac{1+u/B}{2},
+\qquad
+Q_v(B)=\frac{1+v/B}{2}.
+\]
+If \(|u|\le B/2\) and \(|v|\le B/2\), then
+\[
+\mathrm{KL}(Q_u,Q_v)
+\le
+\frac{2(u-v)^2}{B^2}.
+\]
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:bernoulli-mean-channel-kl}]
+Set
+\[
+p=\frac{1+u/B}{2},\qquad q=\frac{1+v/B}{2}.
+\]
+Since \(B>0\), the assumptions \(|u|\le B/2\) and \(|v|\le B/2\) imply
+\[
+\frac14\le p\le \frac34,\qquad \frac14\le q\le \frac34 .
+\]
+% lean: bernoulli_mean_channel_kl
+The two-point law on \(\{-B,B\}\) with mean \(u\) is the image of the Bernoulli law with success probability \(p\) under the affine map \(x\mapsto 2Bx-B\), and similarly the law with mean \(v\) is the corresponding image of the Bernoulli law with success probability \(q\). Kullback--Leibler divergence is unchanged by applying this same measurable bijection to both laws. % lean: twoPointMean_eq_map_bernoulli
+% lean: klDiv_map_measurableEquiv
+Thus
+\[
+\mathrm{KL}(Q_u,Q_v)
+=
+\mathrm{KL}(\mathrm{Bern}(p),\mathrm{Bern}(q)).
+\]
+On the middle half of the unit interval, the Bernoulli KL bound gives
+\[
+\mathrm{KL}(\mathrm{Bern}(p),\mathrm{Bern}(q))
+\le 4(p-q)^2 .
+\]
+% lean: bernoulliLaw_klDiv_le_four_sq_sub
+Finally,
+\[
+4(p-q)^2
+=
+4\left(\frac{u-v}{2B}\right)^2
+=
+\frac{(u-v)^2}{B^2}
+\le
+\frac{2(u-v)^2}{B^2},
+\]
+which proves the claim. % lean: bernoulli_mean_channel_kl
+\end{proof}
+
+\cref{obj:lem:bernoulli-mean-channel-kl} supplies the local information calculation for the outcome part of the two-point experiment. The boundedness condition \(|u|,|v|\le B/2\) keeps both Bernoulli probabilities uniformly away from zero and one, so the quadratic control of the divergence is uniform over the perturbations used in the construction.
+
+The next ingredient is the standard two-point minimax testing bound. It translates a separation in the parameter into a lower bound on mean-squared error whenever the two induced sample laws remain close in information distance; this is the usual Le Cam device for nonparametric lower bounds \citep{tsybakov2009}.
+
+\begin{lemmav}{lem:le-cam-two-point-mse-source}[Le Cam Two-Point Bound]
+Let \(Q_0\) and \(Q_1\) be two laws for the \(n\)-sample experiment, and let \(\theta_0\) and \(\theta_1\) be the corresponding values of a real parameter. Set
+\[
+\Delta = |\theta_1-\theta_0|.
+\]
+If
+\[
+\mathrm{KL}(Q_0,Q_1)\le K<\infty,
+\]
+then there exists a constant \(c_K>0\), depending only on \(K\), such that every estimator \(T\) satisfies
+\[
+\max_{i=0,1} E_{Q_i}\!\left[(T-\theta_i)^2\right]\ge c_K \Delta^2 .
+\]
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:le-cam-two-point-mse-source}]
+Let \(K_+=\max\{K,0\}\) and set
+\[
+c_K=\frac{\exp(-K_+)}{32}>0 .
+\]
+Fix any measurable estimator \(T\) for which the two squared losses below are integrable, and put
+\(r=|\theta_1-\theta_0|/2\). Since \(2r\le |\theta_0-\theta_1|\), the two-point testing reduction gives
+\[
+\frac{1-\mathrm{TV}(Q_0,Q_1)}{2}
+\le
+\max\Bigl\{
+Q_0(|T-\theta_0|\ge r),
+Q_1(|T-\theta_1|\ge r)
+\Bigr\}.
+\]
+% lean: Causalean.Stat.half_one_sub_tvDist_le_max_error
+The KL-budget assumption is an inequality against the finite extended-real number corresponding to \(K\). Hence the divergence is finite, the absolute-continuity side condition for Bretagnolle--Huber follows, and the real value of the divergence is at most \(K_+\). Bretagnolle--Huber gives
+\[
+\frac12\exp\{-\mathrm{KL}(Q_0,Q_1)\}
+\le 1-\mathrm{TV}(Q_0,Q_1).
+\]
+Together with \(\mathrm{KL}(Q_0,Q_1)\le K_+\), this yields
+\[
+\frac{\exp(-K_+)}{4}
+\le
+\max\Bigl\{
+Q_0(|T-\theta_0|\ge r),
+Q_1(|T-\theta_1|\ge r)
+\Bigr\}.
+\]
+% lean: Causalean.Stat.bretagnolle_huber_affinity
+For \(i=0,1\), on the event \(|T-\theta_i|\ge r\) one has
+\(r^2\le (T-\theta_i)^2\). Since the squared loss is nonnegative,
+\[
+r^2 Q_i(|T-\theta_i|\ge r)
+\le
+E_{Q_i}\{(T-\theta_i)^2\}.
+\]
+Write
+\[
+p_i=Q_i(|T-\theta_i|\ge r),
+\qquad
+m_i=E_{Q_i}\{(T-\theta_i)^2\}.
+\]
+To pass from the two separate event bounds to the maximum, distinguish which error probability is larger. If \(p_0\le p_1\), then
+\(r^2\max\{p_0,p_1\}=r^2p_1\le m_1\le\max\{m_0,m_1\}\). If \(p_1\le p_0\), the same argument with the indices reversed gives
+\(r^2\max\{p_0,p_1\}\le\max\{m_0,m_1\}\). Therefore
+\[
+r^2\max\Bigl\{
+Q_0(|T-\theta_0|\ge r),
+Q_1(|T-\theta_1|\ge r)
+\Bigr\}
+\le
+\max_{i=0,1}E_{Q_i}\{(T-\theta_i)^2\}.
+\]
+Combining this maximum bound with the preceding testing lower bound gives
+\[
+\max_{i=0,1}E_{Q_i}\{(T-\theta_i)^2\}
+\ge
+r^2\,\frac{\exp(-K_+)}{4}.
+\]
+Finally, \(r^2=(\theta_1-\theta_0)^2/4=\Delta^2/4\), so the last display implies the weaker bound
+\[
+\max_{i=0,1}E_{Q_i}\{(T-\theta_i)^2\}
+\ge
+\frac{\exp(-K_+)}{32}\,\Delta^2
+=
+c_K\Delta^2 .
+\]
+% lean: Causalean.Stat.Minimax.le_cam_two_point_mse
+\end{proof}
+
+\cref{obj:lem:le-cam-two-point-mse-source} is used only at the level stated here. In the lower-bound construction, the alternatives are chosen so that their target values differ by \(\Delta\) of the desired order, while the product-law divergence is bounded by a fixed constant \(K\). The resulting mean-squared error lower bound is therefore proportional to \(\Delta^2\).
+
+We next record the algebraic reductions for the comparison sequence \(\rho_n\) from \cref{obj:def:published-hoif-rate}. These statements identify exactly which exponent appears in the published benchmark under the two covariate-smoothness regimes.
+
+\begin{lemmav}{lem:rho-oracle-regime-algebra}[Smooth-Covariate Rate Collapse]
+Let $\rho_n$ be the published HOIF benchmark of \cref{obj:def:published-hoif-rate}, evaluated at $(n,\alpha,s,d)$. Suppose that
+\begin{itemize}
+\item \textbf{(Positive treatment smoothness.)} $\alpha>0$.
+\item \textbf{(Positive covariate smoothness.)} $s>0$.
+\item \textbf{(Smooth-covariate regime.)} $d\le 4s$.
+\item \textbf{(Sample size.)} $n\ge 1$.
+\end{itemize}
+Then
+\[
+\rho_n
+=
+n^{-2\alpha/(2\alpha+1)} .
+\]
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:rho-oracle-regime-algebra}]
+If \(n=1\), both terms in \cref{obj:def:published-hoif-rate} are equal to \(1\), so the asserted identity is immediate. % lean: rho_oracle_regime_algebra
+Assume now that \(n>1\). Since \(s>0\) and \(d\le 4s\),
+\[
+\frac{d}{4s}\le 1.
+\]
+Therefore
+\[
+1+\frac d{4s}+\frac1\alpha
+\le
+2+\frac1\alpha,
+\]
+and both denominators are positive. Hence
+\[
+\frac{2}{2+1/\alpha}
+\le
+\frac{2}{1+d/(4s)+1/\alpha}.
+\]
+% lean: rho_oracle_regime_algebra
+The elementary identity
+\[
+\frac{2}{2+1/\alpha}
+=
+\frac{2\alpha}{2\alpha+1}
+\]
+then gives
+\[
+\frac{2\alpha}{2\alpha+1}
+\le
+\frac{2}{1+d/(4s)+1/\alpha}.
+\]
+Since \(n>1\), the map \(x\mapsto n^x\) is increasing, so after negating the exponents,
+\[
+n^{-2/(1+d/(4s)+1/\alpha)}
+\le
+n^{-2\alpha/(2\alpha+1)}.
+\]
+Thus the maximum in \cref{obj:def:published-hoif-rate} is attained by the oracle term, proving
+\[
+\rho_n=n^{-2\alpha/(2\alpha+1)} .
+\]
+% lean: rho_oracle_regime_algebra
+\end{proof}
+
+\cref{obj:lem:rho-oracle-regime-algebra} states that, when \(d\le 4s\), the maximum defining \(\rho_n\) is attained by the treatment-regression term. This is the algebra behind the smooth-covariate comparison in \cref{obj:prop:oracle-regime-reduction} and \cref{obj:thm:sharp-minimax-smooth-covariate}.
+
+\begin{lemmav}{lem:rho-deficient-regime-algebra}[Deficient Regime Algebra]
+For any sample size $n$, treatment smoothness $\alpha$, covariate smoothness $s$, and covariate dimension $d$, suppose that
+\begin{itemize}
+\item \textbf{(Positive treatment smoothness.)} $\alpha>0$;
+\item \textbf{(Positive covariate smoothness.)} $s>0$;
+\item \textbf{(Deficient-covariate regime.)} $4s<d$;
+\item \textbf{(Nonzero sample size.)} $n\ge 1$.
+\end{itemize}
+Then the published HOIF benchmark $\rho_n$ from \cref{obj:def:published-hoif-rate} satisfies
+\[
+\rho_n
+=
+n^{-2/(1+d/(4s)+1/\alpha)},
+\]
+and the deficient-regime exponent is strictly smaller than the oracle exponent:
+\[
+\frac{2}{1+d/(4s)+1/\alpha}
+<
+\frac{2\alpha}{2\alpha+1}.
+\]
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:rho-deficient-regime-algebra}]
+Because \(s>0\) and \(4s<d\),
+\[
+1<\frac d{4s}.
+\]
+Thus
+\[
+2+\frac1\alpha
+<
+1+\frac d{4s}+\frac1\alpha,
+\]
+with positive denominators, and so
+\[
+\frac{2}{1+d/(4s)+1/\alpha}
+<
+\frac{2}{2+1/\alpha}.
+\]
+Using
+\[
+\frac{2}{2+1/\alpha}
+=
+\frac{2\alpha}{2\alpha+1},
+\]
+we obtain the strict exponent comparison
+\[
+\frac{2}{1+d/(4s)+1/\alpha}
+<
+\frac{2\alpha}{2\alpha+1}.
+\]
+% lean: rho_deficient_regime_algebra
+It remains to identify the maximum in \cref{obj:def:published-hoif-rate}. If \(n=1\), both rate terms are \(1\). If \(n>1\), the strict exponent inequality above implies, after negating exponents and using monotonicity of \(x\mapsto n^x\),
+\[
+n^{-2\alpha/(2\alpha+1)}
+\le
+n^{-2/(1+d/(4s)+1/\alpha)}.
+\]
+Hence the maximum is the deficient-covariate term, namely
+\[
+\rho_n
+=
+n^{-2/(1+d/(4s)+1/\alpha)}.
+\]
+Together with the strict comparison already proved, this is the desired conclusion. % lean: rho_deficient_regime_algebra
+\end{proof}
+
+\cref{obj:lem:rho-deficient-regime-algebra} gives the complementary algebra for \(4s<d\). In that regime the published benchmark is governed by the covariate-smoothness expression, and its exponent is smaller than the exponent appearing in the same-class lower floor. The lemma thereby supplies the deficient-regime exponent comparison.
+
+The lower-bound input for the main results is the oracle floor obtained by perturbing the treatment regression while keeping the density components within the slack baseline introduced in \cref{obj:ass:baseline-submodel-slack}. The construction is the usual local nonparametric testing argument in the treatment coordinate \citep{stone1982,tsybakov2009,goldenshluger2020}, specialized to the interior partial-mean functional.
+
+\begin{lemmav}{lem:oracle-dose-regression-lower-all-beta}[All-Beta Oracle Floor]
+Fix a covariate dimension $d\in\mathbb N$ and constants
+$\alpha,\beta,s,M,c_0,\varepsilon_0,t_0\in\mathbb R$. Suppose that:
+\begin{itemize}
+\item \textbf{(Positive smoothness.)} $\alpha>0$, $\beta>0$, and $s>0$.
+\item \textbf{(Regime constants.)} $M>0$, $c_0>0$, $t_0\in(0,1)$, $\varepsilon_0\in(0,1/2)$, and the window of radius $\varepsilon_0$ around $t_0$ lies in the interior dose region.
+\item \textbf{(Slack baseline.)} The strict-slack baseline condition of \cref{obj:ass:baseline-submodel-slack} holds for $(d,\beta,s,M,c_0,\varepsilon_0,t_0)$.
+\end{itemize}
+Then there exists a constant $c_{\mathrm{or}}>0$ such that, for all sufficiently large $n\in\mathbb N$,
+\[
+R_n\!\left(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0\right)
+\ge
+c_{\mathrm{or}}\, n^{-2\alpha/(2\alpha+1)} .
+\]
+Here $\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0)$ is the model class of \cref{obj:def:holder-dose-class}, and $R_n$ is the minimax risk of \cref{obj:def:minimax-risk}.
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:oracle-dose-regression-lower-all-beta}]
+By the strict-slack baseline assumption, choose the baseline covariate density \(p_0\), treatment density \(q_0\), and slack \(\eta_0>0\). Set \(B=M/2\). The bump Hölder gate gives an amplitude \(\lambda>0\), with \(\lambda\le M/4=B/2\), such that every signed bump
+\[
+a\mapsto \zeta\,\lambda h^\alpha \psi\!\left(\frac{a-t_0}{h}\right),
+\qquad \zeta\in\{-1,1\},\quad 0<h\le 1,
+\]
+lies in the required treatment-direction Hölder ball. % lean: doseBump_holder_gate
+Let
+\[
+K=\frac{16\lambda^2(M-\eta_0)}{B^2},
+\]
+and let \(c_K>0\) be the Le Cam constant for this KL budget. Define
+\[
+c_{\mathrm{or}}=4c_K\lambda^2>0.
+\]
+% lean: le_cam_two_point_mse
+For all sufficiently large \(n\), put
+\[
+h=n^{-1/(2\alpha+1)}.
+\]
+Then \(0<h\le 1\), \(h\le \varepsilon_0\), and \(n h^{2\alpha+1}=1\). % lean: oracle_dose_regression_lower_all_beta
+Construct two laws \(P_0\) and \(P_1\) with the same \(p_0\) and \(q_0\), and with conditional outcome channel on \(\{-B,B\}\) having means
+\[
+\mu_\zeta(a,x)
+=
+\zeta\,\lambda h^\alpha
+\psi\!\left(\frac{a-t_0}{h}\right),
+\qquad \zeta=-1,1.
+\]
+The amplitude bound \(\lambda\le B/2\), the bump bound \(|\psi|\le 1\), and \(h\le 1\) give \(|\mu_\zeta(a,x)|\le B/2\). Together with the slack baseline and the bump Hölder gate, this proves that both \(P_0\) and \(P_1\) belong to \(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0)\). % lean: doseWitness_mem_class
+For the KL budget, condition on \((A,X)=(a,x)\). The two conditional outcome laws are the two-point mean channels with means \(\mu_{-1}(a,x)\) and \(\mu_1(a,x)\), so \cref{obj:lem:bernoulli-mean-channel-kl} gives the fibrewise quadratic bound. Integrating over the common \((A,X)\)-law and using that \(\psi((a-t_0)/h)\) is supported in \((t_0-h,t_0+h)\), where \(q_0\le M-\eta_0\), yields the one-observation estimate
+\[
+\mathrm{KL}(P_0,P_1)
+\le
+\frac{16\lambda^2(M-\eta_0)}{B^2}\,h^{2\alpha+1}.
+\]
+% lean: doseWitness_kl_single_le
+Product tensorization therefore gives
+\[
+\mathrm{KL}(P_0^{\otimes n},P_1^{\otimes n})
+\le
+n\,\frac{16\lambda^2(M-\eta_0)}{B^2}\,h^{2\alpha+1}
+=
+K.
+\]
+% lean: doseWitness_kl_nfold_le
+The functional separation is
+\[
+\theta_{P_1}(t_0)-\theta_{P_0}(t_0)
+=
+2\lambda h^\alpha,
+\]
+because \(\psi(0)=1\) and \(\int p_0=1\). % lean: doseWitness_theta_sep
+Applying the two-point minimax reduction to the two \(n\)-sample laws, and then restricting the supremum in the minimax risk to the two class members \(P_0,P_1\), gives
+\[
+R_n\!\left(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0\right)
+\ge
+c_K(2\lambda h^\alpha)^2.
+\]
+% lean: minimaxRisk_two_point_lower
+Finally,
+\[
+c_K(2\lambda h^\alpha)^2
+=
+4c_K\lambda^2 h^{2\alpha}
+=
+c_{\mathrm{or}}\,n^{-2\alpha/(2\alpha+1)}.
+\]
+Thus the asserted lower bound holds for all sufficiently large \(n\). % lean: oracle_dose_regression_lower_all_beta
+\end{proof}
+
+\cref{obj:lem:oracle-dose-regression-lower-all-beta} is the same-class lower-bound engine. Its conclusion is uniform in the sense relevant for the paper's exponent comparison: for each fixed admissible \(\beta>0\), the lower exponent is \(2\alpha/(2\alpha+1)\). The constant \(c_{\mathrm{or}}\) may depend on the fixed model parameters and on the slack available in \cref{obj:ass:baseline-submodel-slack}; the stated uniformity concerns each fixed \(\beta\).
+
+The final auxiliary statement combines the treatment-regression lower floor with the two algebraic regimes for \(\rho_n\). It is useful as a compact reference for the proofs of the main displayed results, but it should be read with the same limitation as the statements in \cref{obj:thm:frontier-bracket-deficient}: it gives a lower bound for the original Hölder class and a comparison with an external benchmark sequence.
+
+\begin{lemmav}{lem:certified-beta-frontier-bracket}[Certified Beta Frontier Bracket]
+Let \(d\in\mathbb N\), and let \(\alpha,\beta,s,M,c_0,\varepsilon_0,t_0\in\mathbb R\). Assume:
+\begin{itemize}
+\item \textbf{(Regime constants.)} \(\alpha>0\), \(\beta>0\), \(s>0\), \(M>0\), \(c_0>0\), \(t_0\in(0,1)\), \(\varepsilon_0\in(0,1/2)\), and the window \([t_0-\varepsilon_0,t_0+\varepsilon_0]\) lies in \((0,1)\).
+\item \textbf{(Strict-slack baseline.)} \cref{obj:ass:baseline-submodel-slack} holds for \(d,\beta,s,M,c_0,\varepsilon_0,t_0\).
+\end{itemize}
+Then there exists a constant \(c>0\) such that, for all sufficiently large \(n\),
+\[
+c\,n^{-2\alpha/(2\alpha+1)}
+\le
+R_n\!\left(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0\right),
+\]
+where the minimax risk and the same-class Hölder dose-response model are those of \cref{obj:def:minimax-risk} and~\cref{obj:def:holder-dose-class}. Moreover, for every \(n\ge 1\), the benchmark \(\rho_n\) of \cref{obj:def:published-hoif-rate} satisfies
+\[
+d\le 4s
+\quad\Longrightarrow\quad
+\rho_n=n^{-2\alpha/(2\alpha+1)},
+\]
+and
+\[
+4s<d
+\quad\Longrightarrow\quad
+\rho_n=n^{-2/(1+d/(4s)+1/\alpha)}
+\quad\text{and}\quad
+\frac{2}{1+d/(4s)+1/\alpha}
+<
+\frac{2\alpha}{2\alpha+1}.
+\]
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:certified-beta-frontier-bracket}]
+The assumed positivity, regime constants, and strict-slack baseline are precisely the hypotheses of \cref{obj:thm:sharp-pointwise-lower-bound}. Hence there is a constant \(c>0\) such that, for all sufficiently large \(n\),
+\[
+c\,n^{-2\alpha/(2\alpha+1)}
+\le
+R_n\!\left(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0\right).
+\]
+% lean: sharp_pointwise_lower_bound
+It remains only to record the two algebraic alternatives for \(\rho_n\), and these are pointwise in \(n\). Fix \(n\ge 1\). If \(d\le 4s\), \cref{obj:lem:rho-oracle-regime-algebra}, applied with the already assumed \(\alpha>0\) and \(s>0\), gives
+\[
+\rho_n=n^{-2\alpha/(2\alpha+1)} .
+\]
+% lean: rho_oracle_regime_algebra
+If \(4s<d\), \cref{obj:lem:rho-deficient-regime-algebra}, again using \(\alpha>0\), \(s>0\), and \(n\ge1\), gives both
+\[
+\rho_n=n^{-2/(1+d/(4s)+1/\alpha)}
+\]
+and
+\[
+\frac{2}{1+d/(4s)+1/\alpha}
+<
+\frac{2\alpha}{2\alpha+1}.
+\]
+% lean: rho_deficient_regime_algebra
+Combining this constant \(c\), the eventual lower bound, and the two conditional rate identities proves the stated bracket.
+% lean: certified_beta_frontier_bracket
+\end{proof}
+
+\cref{obj:lem:certified-beta-frontier-bracket} is the appendix counterpart of the main comparison narrative. In the smooth-covariate regime, it identifies equality of the certified lower-bound exponent and the exponent in the benchmark sequence \(\rho_n\). In the deficient-covariate regime, it records that the published benchmark exponent is smaller. Together, the clauses supply the common lower floor and benchmark algebra needed for a future same-class upper analysis.
+
+\section{verification note}
+
+This appendix records the verification scope for the formal statements used in the paper. The observed-data experiment, causal overlay, Hölder dose class, target functional, minimax risk, published benchmark sequence, auxiliary testing statements, algebraic rate comparisons, and lower-bound consequences are represented by the numbered assumptions, definitions, lemmas, propositions, theorems, and remarks displayed in the paper. The corresponding theorem statements and their derivations are machine-checked in Lean~4.
+
+The machine-checked part covers the consequences of the stated assumptions and auxiliary lemmas as they are formulated here. In particular, \cref{obj:ass:iid-sampling}--\cref{obj:ass:baseline-submodel-slack} define the statistical and causal restrictions used by the displayed results; \cref{obj:def:theta-functional}, \cref{obj:def:holder-dose-class}, \cref{obj:def:minimax-risk}, and~\cref{obj:def:published-hoif-rate} fix the target, model class, risk, and comparison sequence; and the auxiliary appendix lemmas supply the testing and algebraic inputs used to derive \cref{obj:thm:sharp-pointwise-lower-bound}, \cref{obj:thm:sharp-minimax-smooth-covariate}, and~\cref{obj:thm:frontier-bracket-deficient} together with \cref{obj:prop:oracle-regime-reduction}. The verification establishes the same-class lower-bound and rate-comparison statements, with the upper frontier identified as a separate research question.
+
+Several ingredients enter as mathematical assumptions or cited comparators. The causal identification primitives in \cref{obj:ass:consistency} and~\cref{obj:ass:no-unmeasured-confounding} are imposed conditions on the observed-data law with its potential-outcome interpretation. The formal argument uses the classical Le Cam minimax reduction at the level of the auxiliary testing lemma stated in the appendix and verifies its consequences for the present model and rates. The Bonvini--Kennedy result in \cref{obj:lem:published-upper-bound-cited}, imported from \citet{bonvini2022}, motivates the benchmark sequence \(\rho_n\) on its localized-regularity class; \cref{obj:def:holder-dose-class} specifies the distinct same-class lower-bound model studied here.
+
+The Lean-oriented labels are therefore confined to cross-references and this reproducibility note. In the main text they serve only to identify the precise assumptions and statements being invoked. The econometric content of the paper is the lower bound over \cref{obj:def:holder-dose-class}, the algebraic comparison with \cref{obj:def:published-hoif-rate}, and the explicit separation between those same-class lower results and the external higher-order influence-function comparator.
+
+\section{Proofs of the main results}\label{sec:deferred-proofs}
+
+\begin{proof}[Proof of \cref{obj:thm:sharp-pointwise-lower-bound}]
+\begin{enumerate}
+\item The hypotheses of \cref{obj:lem:oracle-dose-regression-lower-all-beta} are exactly the hypotheses assumed here: the three smoothness parameters are positive, the regime constants satisfy the stated interior and boundedness conditions, and the strict-slack baseline condition holds for the same tuple \((d,\beta,s,M,c_0,\varepsilon_0,t_0)\). Applying that lemma gives a constant \(c_{\mathrm{or}}>0\) such that, for all sufficiently large \(n\),
+\[
+R_n\!\left(
+    \mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),
+    t_0
+  \right)
+\ge
+c_{\mathrm{or}}\,n^{-2\alpha/(2\alpha+1)} .
+\]
+Taking \(c=c_{\mathrm{or}}\) gives the asserted positive constant and the desired eventual lower bound. % lean: sharp_pointwise_lower_bound
+\end{enumerate}
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:thm:sharp-minimax-smooth-covariate}]
+\begin{enumerate}
+\item By \cref{obj:thm:sharp-pointwise-lower-bound}, applied with the stated positivity, regime-constant, and strict-slack hypotheses, there is a constant \(c>0\) such that, for all sufficiently large \(n\),
+\[
+c\,n^{-2\alpha/(2\alpha+1)}
+\le
+R_n\!\left(
+\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0
+\right).
+\]
+Fix this \(c\). % lean: sharp_pointwise_lower_bound
+
+\item Intersect this eventual lower-bound statement with the eventual condition \(n\ge 1\). Thus, for all sufficiently large \(n\), both the displayed lower bound above holds and \(n\ge 1\). % lean: Filter.eventually_ge_atTop
+
+\item For every such \(n\), the assumptions \(\alpha>0\), \(s>0\), \(d\le 4s\), and \(n\ge 1\) allow us to apply \cref{obj:lem:rho-oracle-regime-algebra}. Hence
+\[
+\rho_n
+=
+n^{-2\alpha/(2\alpha+1)}.
+\]
+Equivalently,
+\[
+n^{-2\alpha/(2\alpha+1)}=\rho_n.
+\]
+Combining this identity with the lower bound from Step 2 gives the desired eventual conjunction for the same constant \(c>0\). % lean: rho_oracle_regime_algebra
+\end{enumerate}
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:thm:frontier-bracket-deficient}]
+\begin{enumerate}
+\item By \cref{obj:lem:oracle-dose-regression-lower-all-beta}, applied with the stated positivity, regime, and strict-slack baseline hypotheses, there is a constant \(c>0\) such that, for all sufficiently large \(n\),
+\[
+R_n\!\left(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0\right)
+\ge
+c\,n^{-2\alpha/(2\alpha+1)} .
+\]
+Fix this \(c\). % lean: oracle_dose_regression_lower_all_beta
+
+\item Now restrict \(n\) to a sufficiently large tail on which the preceding lower bound holds and also \(n\ge 1\). This is only the usual intersection of two eventual conditions: the eventual lower-bound tail and the eventual tail \(\{n:n\ge 1\}\). % lean: Filter.eventually_ge_atTop
+
+\item For such an \(n\), apply \cref{obj:lem:rho-deficient-regime-algebra} with \(\alpha>0\), \(s>0\), \(4s<d\), and \(n\ge 1\). It gives
+\[
+\rho_n
+=
+n^{-\,2/(1+d/(4s)+1/\alpha)}
+\]
+and
+\[
+\frac{2}{1+d/(4s)+1/\alpha}
+<
+\frac{2\alpha}{2\alpha+1}.
+\]
+% lean: rho_deficient_regime_algebra
+
+\item Combining the lower bound from Step 1 with the two conclusions from Step 3 yields, on the same sufficiently large tail of sample sizes,
+\[
+c\,n^{-2\alpha/(2\alpha+1)}
+\le
+R_n\!\left(
+\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0),t_0
+\right),
+\]
+together with the stated deficient-regime formula for \(\rho_n\) and the strict comparison of exponents. % lean: frontier_bracket_deficient
+\end{enumerate}
+\end{proof}
+
+\bibliographystyle{plainnat}
+
+\bibliography{references}
+
+\end{document}

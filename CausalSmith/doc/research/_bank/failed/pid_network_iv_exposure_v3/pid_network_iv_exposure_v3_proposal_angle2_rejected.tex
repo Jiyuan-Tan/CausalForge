@@ -1,0 +1,768 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\calK}{\mathcal{K}}
+\newcommand{\calG}{\mathcal{G}}
+\newcommand{\calA}{\mathcal{A}}
+\newcommand{\PsiObs}{\Psi}
+\newcommand{\R}{\mathbb{R}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_network\_iv\_exposure} / \texttt{v3}%
+  \\ \large\textit{Sharp finite-network complier bounds under dual exposure-map misspecification}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\paragraph{Locked parameters.}
+This is a partial-identification anchor, not a panel pool-mode. The locked tuple is
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},
+\text{bounding functional}) \\
+=
+(\texttt{pid\_network\_iv\_exposure},\texttt{v3},
+\PsiObs(P),\ \theta_{\mathrm{C}}(s,t),\
+\mathcal{R}_{\mathrm{shared\ completion+monotone\ takeup+dual\ maps}},\
+[\underline{\theta}^{\,\mathrm{joint}}_{\mathrm{C}}(\PsiObs),
+\overline{\theta}^{\,\mathrm{joint}}_{\mathrm{C}}(\PsiObs)]) .
+\end{gathered}
+\]
+Here \(\PsiObs(P)\) is the observable unit-level summary
+\[
+\PsiObs(P)=
+\{p_{i,z,d,s,t},m_{i,z,d,s,t}: p_{i,z,d,s,t}>0,\ i\le n,\ z,d,s,t\},
+\]
+where \(p_{i,z,d,s,t}=\Pr(I=i,Z_i=z,D_i=d,S_i=s,T_i=t)\) and
+\(m_{i,z,d,s,t}=\E(Y\mid I=i,Z_i=z,D_i=d,S_i=s,T_i=t)\). The observed
+instrument is \(Z\), the observed take-up is \(D\), the observed treatment
+exposure is \(S_i=s_i(D,\mathcal L)\), and the observed instrumental exposure
+is \(T_i=t_i(Z,\mathcal L)\). The target
+\(\theta_{\mathrm{C}}(s,t)\) is the complier direct effect at treatment
+exposure \(s\) and instrumental exposure \(t\), averaging over hidden
+treatment-side exposure \(R_i^D(G,D)\), hidden instrument-side exposure
+\(R_i^Z(G,Z)\), and monotone take-up types induced by one shared graph
+completion \(G\). The identifying restrictions are finite support, bounded
+outcomes, shared graph completion, exclusion of instrument-side hidden exposure
+from outcomes conditional on treatment-side exposure, monotone own take-up with
+respect to the own instrument given total instrument exposure, and exact
+matching of \(\PsiObs(P)\). The bounding functional is the sharp finite LP
+projection over shared completion variables, monotone response-type masses, and
+latent mean outcomes. It is not the product of independently chosen unitwise
+dual-exposure kernels.
+
+\begin{abstract}
+This draft upgrades the banked parent \texttt{pid\_network\_exposure/v1} from
+one misspecified treatment exposure map to IV noncompliance with misspecified
+treatment and instrumental exposure maps. The routine part is a sharpness
+theorem for the summary \(\PsiObs(P)\): the complier direct-effect identified
+set is a finite union of linear-fractional LP projections, one for each shared
+graph completion, over monotone take-up types and bounded latent mean outcomes. The open
+kernel is whether the corresponding product relaxation that chooses each unit's
+dual exposure errors in isolation is strictly nonsharp once one graph must
+jointly govern both take-up spillovers and outcome spillovers. A positive
+answer would bridge the exposure-mapping robustness literature
+\citep{Savje2024,SchroderOprescuFeuerriegelKallus2026} with the network-IV
+noncompliance literature \citep{HoshinoYanagi2024,ImaiJiangMalani2021}. It
+would also produce a computable finite-network bound and a worked witness that
+pin down exactly where cellwise robustness loses sharpness.
+\end{abstract}
+
+\section{Introduction}
+The question is whether complier direct and spillover effects remain sharply
+partially identified when both the treatment exposure map used in outcomes and
+the instrumental exposure map used in take-up may be wrong. The headline claim
+is that, after fixing a finite hidden-edge completion class, the correct object
+is a finite union of shared-completion LPs for a coarsened observable summary
+\(\PsiObs(P)\), not an independent product of unitwise misspecification
+neighborhoods.
+
+Relative to the parent proposal \texttt{pid\_network\_exposure/v1}, the upgrade
+axis is a strict generalization: the parent handled one misspecified treatment
+exposure map for an ADE, while the present draft adds IV noncompliance, a
+second misspecified exposure map on the instrument side, and a complier target.
+The closest published comparators are \citet[§3.2.2]{HoshinoYanagi2024}, who
+identify local average direct effects with instrumental exposure mappings, and
+\citet[Abstract]{SchroderOprescuFeuerriegelKallus2026}, who derive sharp bounds
+under misspecified treatment exposure mappings without compliance types. The
+gap is the absence of a sharp finite-network bound that lets both maps be
+wrong while forcing one completion to govern both hidden channels. The kernel
+lives in partial identification, with a bridge to network IV.
+
+The downstream consumer is the policy-relevant IV-with-interference frontier.
+\citet[Abstract]{NibberingOosterveen2025} partially identify policy-relevant IV
+effects with interference, and \citet[Abstract]{VazquezBare2023} show that
+ordinary IV contrasts aggregate multiple direct and spillover effects once
+compliance types interact with spillovers. A sharp finite-network complier
+interval gives a benchmark object before policy aggregation. A reader would use
+this result differently by reporting a bound generated by one feasible network
+completion rather than a cellwise interval that ignores shared hidden edges.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: the identified set for \(\theta_{\mathrm{C}}(s,t)\) is the
+finite union of shared-completion LP projections indexed by \(\PsiObs(P)\). Gap:
+\texttt{pid\_network\_exposure/v1} had no IV noncompliance, while
+\citet{HoshinoYanagi2024} and \citet{SchroderOprescuFeuerriegelKallus2026} do
+not combine dual misspecification with finite-network sharpness. Consumer:
+\citet{NibberingOosterveen2025}.
+\item Conjecture 1: the product comparator
+\(\Theta_{\mathrm{C}}^{\mathrm{prod}}(\PsiObs)\) is strictly nonsharp on an
+open class. Gap:
+\citet{SchroderOprescuFeuerriegelKallus2026} allow independent exposure errors,
+whereas one hidden edge here constrains take-up and outcome channels together.
+Consumer: \citet{Savje2024}.
+\item Conjecture 2: a four-unit hub-cap witness and its separating inequality
+compute a positive compatibility gap from primitives. Gap:
+\citet{ImaiJiangMalani2021} identify under stratified interference and
+\citet{AcerenzaMartinezIriarteSanchezBecerraSpini2025} bound two-person
+encouragement designs, but neither produces a finite-network dual-map witness.
+Consumer: \citet{NibberingOosterveen2025}, where policy-relevant IV bounds need
+an admissibility screen for finite-network encouragement paths.
+\end{itemize}
+
+\section{Related work}
+\citet[reused from parent]{Manski1990} supplies the bounded-outcome
+partial-identification logic: the present object is a finite identified set and
+its endpoint interval, not a point-identified estimand. \citet[reused from
+parent]{HudgensHalloran2008} and \citet[reused from parent]{AronowSamii2017}
+fix the direct/spillover terminology and the exposure-mapping benchmark under a
+known mapping. \citet[reused from parent]{Savje2024} is the key
+misspecification anchor. Its relevance is the distinction between exposure
+mappings as estimand definitions and as structural assumptions, which creates
+room for explicit robustness objects rather than all-or-nothing correctness.
+
+\citet{HoshinoYanagi2024} is the closest IV comparator. The paper introduces
+instrumental exposure mappings and studies identification and IPW estimation of
+complier direct and spillover parameters under unknown interference, including
+possible exposure-map misspecification, but it does not derive sharp finite
+bounds from one shared hidden completion. \citet{ImaiJiangMalani2021} identify
+complier direct and spillover effects in two-stage randomized experiments under
+stratified interference and noncompliance, which is the point-identified corner
+against which the present draft measures the finite-network loss from
+misspecification.
+
+\citet{SchroderOprescuFeuerriegelKallus2026} is the closest partial-ID
+comparator on the misspecified-exposure axis. Their contribution is sharp
+treatment and spillover bounds under misspecified treatment exposure mappings,
+plus orthogonal estimation, but the network is taken as known and there is no
+latent compliance geometry. \citet{WeinsteinNevo2026} is the closest
+network-misspecification comparator. The paper separates network
+misspecification from exposure-map misspecification and develops robust
+estimation across candidate networks, but it does not compute sharp complier
+bounds over a local completion class.
+
+\citet{VazquezBare2023} clarifies why the upgrade is nontrivial: standard IV
+rescaling can aggregate direct and spillover effects across compliance types
+once spillovers enter both treatment take-up and outcomes. \citet{AcerenzaMartinezIriarteSanchezBecerraSpini2025}
+show that sharp bounds are attainable in a two-person encouragement design with
+interference, which motivates but does not solve the many-peer finite-network
+case. \citet{NibberingOosterveen2025} is the new frontier anchor for this
+revision. It studies policy-relevant IV effects with interference under mild
+assumptions, so the present draft supplies a sharper finite-network benchmark
+before one moves to policy aggregation.
+
+In-repository prior art is limited and distinct. The relevant catalogue summary
+in \texttt{CausalSmith/doc/API.md} records PartialID as a live cluster for IV,
+sensitivity, and bounds statements, but not a network-IV theorem matching this
+kernel. The closest catalogue artifact is the banked parent
+\texttt{pid\_network\_exposure/v1}, which derives sharp ADE bounds under one
+misspecified treatment exposure map using shared completion logic. The present
+draft reuses that shared-completion geometry and adds dual exposure maps,
+monotone take-up types, and a complier target. No other catalogue entry
+coincides with that upgrade.
+
+\section{Formal setup}
+There are \(n<\infty\) units indexed by \(i\in N=\{1,\ldots,n\}\). The
+instrument assignment vector is \(Z\in\{0,1\}^n\), drawn from a known design
+\(\pi_Z\) with finite support. The observed take-up vector is
+\(D\in\{0,1\}^n\). The analyst observes a local undirected graph
+\(\mathcal L\), a finite hidden-edge candidate set
+\(\mathcal C\subseteq\{\{i,j\}:i<j\}\) disjoint from \(\mathcal L\), and degree
+caps \(K_i\). A feasible completion \(G\in\calG(\mathcal L,\mathcal C,K)\)
+contains all edges in \(\mathcal L\), selects binary hidden-edge variables
+\(x_e\in\{0,1\}\) for \(e\in\mathcal C\), and satisfies
+\[
+\sum_{e\in\mathcal C} B_{ie}x_e\le K_i,\qquad
+B_{ie}=\one\{i\in e\}.
+\]
+
+The observed treatment exposure and observed instrumental exposure are
+\[
+S_i=s_i(D,\mathcal L)\in\mathcal S,\qquad
+T_i=t_i(Z,\mathcal L)\in\mathcal T.
+\]
+For a completion \(G\), the hidden treatment-side exposure and hidden
+instrument-side exposure are
+\[
+R_i^D(G,D)=
+\one\{\exists j:\{i,j\}\in G\setminus\mathcal L,\ D_j=1\},
+\qquad
+R_i^Z(G,Z)=
+\one\{\exists j:\{i,j\}\in G\setminus\mathcal L,\ Z_j=1\}.
+\]
+The total instrument exposure argument entering own take-up is
+\(U_i(G,Z)=T_i\vee R_i^Z(G,Z)\in\{0,1\}\).
+
+Let \(\Gamma^{\mathrm{mon}}\) be the finite class of isotone response rules
+\(\gamma:\{0,1\}^2\to\{0,1\}\) satisfying
+\(\gamma(1,u)\ge \gamma(0,u)\) for each \(u\in\{0,1\}\). Unit \(i\) has latent
+type \(\gamma_i\in\Gamma^{\mathrm{mon}}\) with masses
+\(\lambda_{i\gamma}\ge0\), \(\sum_{\gamma}\lambda_{i\gamma}=1\), and take-up
+equation
+\[
+D_i=\gamma_i(Z_i,U_i(G,Z)).
+\]
+Throughout, the latent-type law is the product law induced by the unit-specific
+marginals \(\lambda_i=(\lambda_{i\gamma})_{\gamma\in\Gamma^{\mathrm{mon}}}\):
+conditional on \((G,Z)\), the vector \((\gamma_1,\ldots,\gamma_n)\) is drawn
+independently with probabilities \(\Pr(\gamma_i=\gamma)=\lambda_{i\gamma}\).
+All probabilities below involving \((D,R^D,R^Z,\gamma_i)\) are therefore
+computed under the joint law \(\Pr^{G,\lambda}_{\pi_Z}=\pi_Z\otimes
+\bigotimes_i\lambda_i\).
+For a fixed \(u\in\{0,1\}\), define the complier subset
+\[
+\Gamma_{\mathrm{C}}(u)=
+\{\gamma\in\Gamma^{\mathrm{mon}}:\gamma(1,u)-\gamma(0,u)=1\}.
+\]
+
+Outcomes satisfy exclusion of instrument-side hidden exposure after treatment
+exposure is fixed. The latent mean surface is
+\[
+\mu_i(d,s,r_D)\in[0,1],\qquad
+Y_i(d,s,r_D)=\mu_i(d,s,r_D),
+\]
+so \(R_i^Z\) affects outcomes only through its effect on \(D\) and hence on the
+treatment-side state \((d,s,r_D)\).
+
+For a unit \(i\) and an observed cell \((z,d,s,t)\), define the design- and
+type-induced latent table
+\[
+\omega^G_{i,z,d,s,t,r_D,r_Z,\gamma}(\lambda)
+ =
+\Pr_{\pi_Z,\lambda}\!\left(
+\begin{array}{l}
+Z_i=z,\ D_i=d,\ S_i=s,\ T_i=t,\\
+R_i^D(G,D)=r_D,\ R_i^Z(G,Z)=r_Z,\ \gamma_i=\gamma
+\end{array}
+\Bigm|\, I=i\right).
+\]
+The observable summary used throughout this proposal is
+\[
+\PsiObs(P)=\{p_{i,z,d,s,t},m_{i,z,d,s,t}\},
+\]
+with
+\[
+p_{i,z,d,s,t}=\Pr(I=i,Z_i=z,D_i=d,S_i=s,T_i=t),
+\qquad
+m_{i,z,d,s,t}=\E(Y\mid I=i,Z_i=z,D_i=d,S_i=s,T_i=t).
+\]
+The matching equations are
+\[
+p_{i,z,d,s,t}
+=
+\sum_{r_D,r_Z,\gamma}
+\omega^G_{i,z,d,s,t,r_D,r_Z,\gamma}(\lambda),
+\]
+and
+\[
+p_{i,z,d,s,t}m_{i,z,d,s,t}
+=
+\sum_{r_D,r_Z,\gamma}
+\omega^G_{i,z,d,s,t,r_D,r_Z,\gamma}(\lambda)\,
+\mu_i(d,s,r_D).
+\]
+
+For a target cell \((s,t)\), define the control-arm reference weights
+\[
+q^G_{i,s,t,r_D,r_Z,\gamma}(\lambda)
+=
+\Pr^{G,\lambda}_{\pi_Z}
+\bigl(
+R_i^D(G,D)=r_D,\ R_i^Z(G,Z)=r_Z,\ \gamma_i=\gamma
+\mid I=i,Z_i=0,S_i=s,T_i=t
+\bigr),
+\]
+the complier numerator
+\[
+N_{\mathrm{C}}(s,t;G,\lambda,\mu)
+=
+\sum_i\sum_{r_D,r_Z}\sum_{\gamma\in\Gamma_{\mathrm{C}}(t\vee r_Z)}
+q^G_{i,s,t,r_D,r_Z,\gamma}(\lambda)
+\{\mu_i(1,s,r_D)-\mu_i(0,s,r_D)\},
+\]
+the complier denominator
+\[
+W_{\mathrm{C}}(s,t;G,\lambda)
+=
+\sum_i\sum_{r_D,r_Z}\sum_{\gamma\in\Gamma_{\mathrm{C}}(t\vee r_Z)}
+q^G_{i,s,t,r_D,r_Z,\gamma}(\lambda),
+\]
+and the complier direct effect
+\[
+\theta_{\mathrm{C}}(s,t;G,\lambda,\mu)
+=
+\frac{N_{\mathrm{C}}(s,t;G,\lambda,\mu)}
+{W_{\mathrm{C}}(s,t;G,\lambda)}.
+\]
+The identified set
+\(\Theta_{\mathrm{C}}^{\mathrm{joint}}(\PsiObs)\) is the set of all such values
+over feasible \((G,\lambda,\mu)\) satisfying the matching equations above.
+
+The product comparator is explicit. For each unit \(i\), let \(\calA_i\) be the
+finite set of isolated-unit atoms generated by feasible star completions around
+\(i\) that respect \(K_i\) but ignore cross-unit sharing of hidden edges. Each
+atom \(a\in\calA_i\) carries finite tables
+\[
+Q^{Z,a}_{i}(r_Z\mid z,t),\qquad
+Q^{D,a}_{i}(d\mid z,t,r_Z),\qquad
+\Lambda^{a}_{i}(\gamma),\qquad
+Q^{R,a}_{i}(r_D\mid d,s).
+\]
+The comparator chooses weights \(\eta_{ia}\ge0\), \(\sum_a\eta_{ia}=1\), and
+aggregates
+\[
+Q^Z_i=\sum_a\eta_{ia}Q^{Z,a}_{i},\quad
+Q^D_i=\sum_a\eta_{ia}Q^{D,a}_{i},\quad
+\Lambda_i=\sum_a\eta_{ia}\Lambda^{a}_{i},\quad
+Q^R_i=\sum_a\eta_{ia}Q^{R,a}_{i}.
+\]
+Its observable matching constraints are
+\[
+p_{i,z,d,s,t}
+=
+\sum_{r_D,r_Z,\gamma}
+\bar{\omega}_{i,z,d,s,t,r_D,r_Z,\gamma},
+\]
+\[
+p_{i,z,d,s,t}m_{i,z,d,s,t}
+=
+\sum_{r_D,r_Z,\gamma}
+\bar{\omega}_{i,z,d,s,t,r_D,r_Z,\gamma}\,
+\mu_i(d,s,r_D),
+\]
+with factorization
+\[
+\bar{\omega}_{i,z,d,s,t,r_D,r_Z,\gamma}
+=
+p_{i,z,s,t}\,
+Q^Z_i(r_Z\mid z,t)\,
+Q^D_i(d\mid z,t,r_Z)\,
+Q^R_i(r_D\mid d,s)\,
+\Lambda_i(\gamma).
+\]
+The product identified set \(\Theta_{\mathrm{C}}^{\mathrm{prod}}(\PsiObs)\) is
+the projection of this finite system onto the same target functional
+\(\theta_{\mathrm{C}}(s,t)\).
+
+\begin{quote}\small
+This is a partial-identification anchor, not a panel pool-mode. The locked
+tuple is
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},
+\text{bounding functional}) \\
+=
+(\texttt{pid\_network\_iv\_exposure},\texttt{v3},
+\PsiObs(P),\ \theta_{\mathrm{C}}(s,t),\
+\mathcal{R}_{\mathrm{shared\ completion+monotone\ takeup+dual\ maps}},\
+[\underline{\theta}^{\,\mathrm{joint}}_{\mathrm{C}}(\PsiObs),
+\overline{\theta}^{\,\mathrm{joint}}_{\mathrm{C}}(\PsiObs)]) .
+\end{gathered}
+\]
+Here \(\PsiObs(P)\) is the observable unit-level summary
+\[
+\PsiObs(P)=
+\{p_{i,z,d,s,t},m_{i,z,d,s,t}: p_{i,z,d,s,t}>0,\ i\le n,\ z,d,s,t\},
+\]
+where \(p_{i,z,d,s,t}=\Pr(I=i,Z_i=z,D_i=d,S_i=s,T_i=t)\) and
+\(m_{i,z,d,s,t}=\E(Y\mid I=i,Z_i=z,D_i=d,S_i=s,T_i=t)\). The observed
+instrument is \(Z\), the observed take-up is \(D\), the observed treatment
+exposure is \(S_i=s_i(D,\mathcal L)\), and the observed instrumental exposure
+is \(T_i=t_i(Z,\mathcal L)\). The target
+\(\theta_{\mathrm{C}}(s,t)\) is the complier direct effect at treatment
+exposure \(s\) and instrumental exposure \(t\), averaging over hidden
+treatment-side exposure \(R_i^D(G,D)\), hidden instrument-side exposure
+\(R_i^Z(G,Z)\), and monotone take-up types induced by one shared graph
+completion \(G\). The identifying restrictions are finite support, bounded
+outcomes, shared graph completion, exclusion of instrument-side hidden exposure
+from outcomes conditional on treatment-side exposure, monotone own take-up with
+respect to the own instrument given total instrument exposure, and exact
+matching of \(\PsiObs(P)\). The bounding functional is the sharp finite LP
+projection over shared completion variables, monotone response-type masses, and
+latent mean outcomes. It is not the product of independently chosen unitwise
+dual-exposure kernels.
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite randomized network-IV experiment]\label{ass:finite}
+The population is finite, \(Z\) is assigned by a known design \(\pi_Z\), the
+observed local graph \(\mathcal L\), candidate hidden-edge set \(\mathcal C\),
+degree caps \(K_i\), and exposure maps \(s_i,t_i\) are finite and known, and
+all conditioning cells used in \(\PsiObs(P)\) have positive probability.
+\end{assumption}
+
+\begin{assumption}[Shared completion]\label{ass:shared}
+There exists one graph completion \(G\in\calG(\mathcal L,\mathcal C,K)\) that
+determines \(R_i^D(G,D)\) and \(R_i^Z(G,Z)\) for all units and all instrument
+assignments. Hidden edges are not unit-specific nuisance variables.
+\end{assumption}
+
+\begin{assumption}[Monotone take-up types]\label{ass:mono}
+For each unit \(i\), own take-up is generated by a latent type
+\(\gamma_i\in\Gamma^{\mathrm{mon}}\) through
+\(D_i=\gamma_i(Z_i,U_i(G,Z))\), with type masses
+\(\lambda_{i\gamma}\ge0\) summing to one.
+\end{assumption}
+
+\begin{assumption}[Product latent-type law]\label{ass:product-law}
+Conditional on \((G,Z)\), the latent type vector
+\((\gamma_1,\ldots,\gamma_n)\) is independent across units with marginals
+\(\lambda_i\). Equivalently, every probability defining \(\omega^G\),
+\(q^G\), \(N_{\mathrm{C}}\), and \(W_{\mathrm{C}}\) is computed under
+\(\Pr^{G,\lambda}_{\pi_Z}=\pi_Z\otimes\bigotimes_i\lambda_i\).
+\end{assumption}
+
+\begin{assumption}[Outcome exclusion and boundedness]\label{ass:outcome}
+For every unit \(i\), treatment state \(d\), observed treatment exposure \(s\),
+and hidden treatment-side exposure \(r_D\), the mean outcome
+\(\mu_i(d,s,r_D)\) lies in \([0,1]\). Conditional on \((d,s,r_D)\), the hidden
+instrument-side exposure \(r_Z\) has no direct effect on the outcome.
+\end{assumption}
+
+\begin{assumption}[Observable-summary matching]\label{ass:matching}
+A feasible joint model \((G,\lambda,\mu)\) matches the observed summary
+\(\PsiObs(P)\) through the probability and mean equations in Section 6. The
+proposal is sharp for \(\PsiObs(P)\), not for an unmodeled richer law.
+\end{assumption}
+
+\begin{assumption}[Target positivity]\label{ass:positivity}
+For the target cell \((s,t)\), the denominator of
+\(\theta_{\mathrm{C}}(s,t;G,\lambda,\mu)\) is strictly positive for every
+feasible joint model considered in Section 8.
+\end{assumption}
+
+\begin{assumption}[Explicit product comparator]\label{ass:prod}
+For each unit \(i\), the product comparator chooses weights
+\(\eta_{ia}\) on the finite isolated-unit atom set \(\calA_i\) and uses the
+aggregated kernels \(Q_i^Z,Q_i^D,Q_i^R,\Lambda_i\) defined in Section 6. The
+factorized latent cell array \(\bar{\omega}\) must satisfy the displayed
+probability and mean equations. No shared graph completion links unit \(i\) to
+unit \(j\) inside \(\Theta_{\mathrm{C}}^{\mathrm{prod}}(\PsiObs)\).
+\end{assumption}
+
+\begin{assumption}[Parent corner]\label{ass:parent-corner}
+The parent reduction imposes \(D=Z\) almost surely,
+\(T_i=t_i(Z,\mathcal L)=s_i(Z,\mathcal L)\),
+\(R_i^Z(G,Z)=R_i^D(G,Z)\), and a degenerate type distribution supported on the
+identity rule \(\gamma(z,u)=z\). This assumption is used only in
+Corollary~\ref{cor:parent}.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: finite shared-completion sharpness for \(\PsiObs\)]\label{thm:sharp}
+Under Assumptions~\ref{ass:finite}--\ref{ass:positivity}, fix a completion
+\(G\in\calG(\mathcal L,\mathcal C,K)\). For that fixed \(G\), the feasible set
+of tuples
+\[
+\{\lambda_{i\gamma}\}_{i,\gamma\in\Gamma^{\mathrm{mon}}},\qquad
+\{\mu_i(d,s,r_D)\}_{i,d,s,r_D},\qquad
+\{\omega^G_{i,z,d,s,t,r_D,r_Z,\gamma}\},\qquad
+N_{\mathrm{C}},W_{\mathrm{C}}
+\]
+is a polytope cut out by linear constraints: the completion constraints
+\(G\in\calG(\mathcal L,\mathcal C,K)\) are already resolved by fixing the
+completion, so the remaining simplex constraints on \(\lambda\), box
+constraints \(0\le \mu_i(d,s,r_D)\le 1\), exact matching equations for
+\(\PsiObs(P)\), and linear definitions of \(N_{\mathrm{C}}\) and
+\(W_{\mathrm{C}}\) from Section 6 define a polytope. Hence, for fixed \(G\), the set of feasible
+ratios \(N_{\mathrm{C}}/W_{\mathrm{C}}\) is the image of a linear-fractional LP
+projection, and its endpoint problems reduce by a Charnes--Cooper transform to
+ordinary linear programs because Assumption~\ref{ass:positivity} imposes
+\(W_{\mathrm{C}}>0\).
+
+Consequently, the full identified set is the finite union
+\[
+\Theta_{\mathrm{C}}^{\mathrm{joint}}(\PsiObs)
+=
+\bigcup_{G\in\calG(\mathcal L,\mathcal C,K)}
+\left\{
+\frac{N_{\mathrm{C}}}{W_{\mathrm{C}}}:
+(G,\lambda,\mu,\omega^G,N_{\mathrm{C}},W_{\mathrm{C}})
+\text{ satisfies the fixed-}G\text{ constraints}
+\right\},
+\]
+and therefore
+\[
+\underline{\theta}^{\,\mathrm{joint}}_{\mathrm{C}}(\PsiObs)
+=
+\inf \Theta_{\mathrm{C}}^{\mathrm{joint}}(\PsiObs),\qquad
+\overline{\theta}^{\,\mathrm{joint}}_{\mathrm{C}}(\PsiObs)
+=
+\sup \Theta_{\mathrm{C}}^{\mathrm{joint}}(\PsiObs)
+\]
+are obtained by a finite collection of LPs, one for each completion \(G\).
+\end{theorem}
+The proof route is routine finite-dimensional sharpness. One conditions on a
+completion, writes the observable-summary constraints as linear equalities
+under the product latent-type law, linearizes the ratio by Charnes--Cooper, and
+then takes the finite union over completions.
+
+\begin{conjecture}[Conjecture 1: strict product nonsharpness under dual-map sharing]\label{conj:gap}
+(NOT YET PROVED.) Under Assumptions~\ref{ass:finite}--\ref{ass:prod}, there is
+an open class of finite experiments for which
+\[
+\Theta_{\mathrm{C}}^{\mathrm{joint}}(\PsiObs)
+\subsetneq
+\Theta_{\mathrm{C}}^{\mathrm{prod}}(\PsiObs).
+\]
+The strictness comes from a shared hidden edge entering both \(R_i^Z\) in the
+take-up equation and \(R_i^D\) in the outcome equation, so a unitwise feasible
+choice of dual kernels need not be jointly realizable by one completion. In
+the worked family of Conjecture~\ref{conj:witness}, the upper-endpoint gap
+\[
+\Delta_{\mathrm{C}}(\PsiObs)
+=
+\overline{\theta}^{\,\mathrm{prod}}_{\mathrm{C}}(\PsiObs)
+-
+\overline{\theta}^{\,\mathrm{joint}}_{\mathrm{C}}(\PsiObs)
+\]
+is strictly positive.
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: four-unit hub-cap witness and certificate]\label{conj:witness}
+(NOT YET PROVED.) Under Assumptions~\ref{ass:finite}--\ref{ass:prod}, there is
+a four-unit finite witness family with hidden candidates
+\(\{1,4\},\{2,4\},\{3,4\}\), hub cap \(K_4=1\), and target cell
+\((s^\star,t^\star)\) such that the product upper endpoint requires all three
+focal units \(1,2,3\) to load on the same hub through both
+\(R^Z\) and \(R^D\), while every shared completion can satisfy at most one of
+those demands. In that family, a valid inequality of the projected
+capacitated-incidence polytope separates the product endpoint demand vector
+from the shared-completion feasible set, and the resulting separation computes a
+strictly positive lower bound on \(\Delta_{\mathrm{C}}(\PsiObs)\).
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Parent reduction]\label{cor:parent}
+Under Assumptions~\ref{ass:finite}--\ref{ass:positivity} and the parent-corner
+Assumption~\ref{ass:parent-corner}, Theorem~\ref{thm:sharp} reduces to the
+banked parent \texttt{pid\_network\_exposure/v1}. In particular,
+\[
+\theta_{\mathrm{C}}(s,t;G,\lambda,\mu)
+=
+\theta_{\mathrm{ADE}}(s;G,\mu),
+\]
+and the parent control-arm weights are recovered as
+\[
+q_{i,s,r}(G)
+=
+\sum_{r_Z\in\{0,1\}}
+q^G_{i,s,s,r,r_Z,\gamma^{\mathrm{id}}}(\lambda),
+\]
+where \(\gamma^{\mathrm{id}}(z,u)=z\) is the unique type with positive mass.
+\end{corollary}
+Under Assumption~\ref{ass:parent-corner}, there is no compliance uncertainty,
+the two exposure maps coincide, and the hidden instrument channel is merely a
+copy of the hidden treatment channel. The denominator in
+\(\theta_{\mathrm{C}}(s,t)\) becomes the parent target set, so the upgrade
+collapses to the parent theorem.
+
+\begin{corollary}[Known-exposure collapse]\label{cor:known}
+If \(\mathcal C=\emptyset\) or \(K_i=0\) for all \(i\), then
+\(R_i^D(G,D)=R_i^Z(G,Z)=0\) for every \(i\) and every completion. The
+identified set in Theorem~\ref{thm:sharp} collapses to the standard finite
+network-IV complier effect with known exposure maps.
+\end{corollary}
+The collapse is immediate because the hidden-state coordinates disappear from
+the matching equations and from the target weights.
+
+\paragraph{Exhibit 9.1 (worked hub-cap witness).}
+Take \(n=4\), \(\mathcal L=\emptyset\),
+\(\mathcal C=\{\{1,4\},\{2,4\},\{3,4\}\}\), and degree caps
+\((K_1,K_2,K_3,K_4)=(1,1,1,1)\). Let \(\pi_Z\) put mass \(1/2\) on
+\(Z_4=0\) and \(1/2\) on \(Z_4=1\), independently of
+\(Z_1=Z_2=Z_3=0\). The observed maps are \(s_i=t_i\equiv 0\). For each focal
+unit \(i\in\{1,2,3\}\), use the monotone gate type
+\(\gamma^{g}(0,0)=\gamma^{g}(1,0)=\gamma^{g}(0,1)=0\),
+\(\gamma^{g}(1,1)=1\), and the never-taker \(\gamma^{n}\equiv 0\), with
+product-comparator masses
+\(\Lambda_i(\gamma^{g})=\Lambda_i(\gamma^{n})=1/2\). Let unit \(4\) satisfy
+\(D_4=Z_4\). Set focal latent means
+\[
+\mu_i(1,0,1)=1,\qquad
+\mu_i(0,0,1)=0,\qquad
+\mu_i(1,0,0)=\mu_i(0,0,0)=0,
+\qquad i=1,2,3.
+\]
+Then the unit-level observable summary generated by one isolated star
+completion at focal unit \(i\) is
+\[
+p_{i,0,0,0,0}=1,\qquad m_{i,0,0,0,0}=0,
+\]
+and, at the target cell \((s^\star,t^\star)=(0,0)\),
+\[
+q_{i,0,0,1,1,\gamma^{g}}^{\mathrm{prod}}=1/2,\qquad
+q_{i,0,0,r_D,r_Z,\gamma}^{\mathrm{prod}}=0
+\text{ otherwise on }\Gamma_{\mathrm C}(1).
+\]
+Hence each focal unit contributes numerator \(1/2\) and denominator \(1/2\),
+so the product endpoint is
+\[
+\overline{\theta}^{\,\mathrm{prod}}_{\mathrm C}(\PsiObs)=
+\frac{3\cdot (1/2)}{3\cdot (1/2)}=1.
+\]
+Under a shared completion, at most one hub edge can be active because
+\[
+x_{14}+x_{24}+x_{34}\le K_4=1.
+\]
+Therefore at most one focal unit can have
+\((R_i^Z,R_i^D)=(1,1)\), so every shared-completion feasible point satisfies
+\[
+N_{\mathrm C}\le 1/2,\qquad W_{\mathrm C}=3/2,
+\qquad
+\overline{\theta}^{\,\mathrm{joint}}_{\mathrm C}(\PsiObs)\le \frac{1}{3}.
+\]
+The induced compatibility gap is therefore
+\[
+\Delta_{\mathrm C}(\PsiObs)\ge 1-\frac13=\frac23.
+\]
+The separating inequality is exactly the hub-cap inequality
+\(x_{14}+x_{24}+x_{34}\le 1\): the product endpoint demand vector
+\((1,1,1)\) violates it, while every shared completion satisfies it. This
+exhibits the focal object promised in Conjecture~\ref{conj:witness}; what
+remains open is to upgrade this worked family into a full sharpness proof for
+an open observable neighborhood.
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:sharp} reduces through four substantive steps. First, fix a
+completion \(G\) and use Assumption~\ref{ass:product-law} to compute the latent
+cell array \(\omega^G\) under the product law
+\(\Pr^{G,\lambda}_{\pi_Z}\). Second, rewrite the observable summary
+\(\PsiObs(P)\) and the numerator-denominator pair
+\((N_{\mathrm C},W_{\mathrm C})\) as linear equations in
+\((\lambda,\mu,\omega^G)\). Third, apply a Charnes--Cooper transform to convert
+the endpoint problems for \(N_{\mathrm C}/W_{\mathrm C}\) into ordinary LPs for
+each fixed completion. Fourth, take the finite union over the completion class
+\(\calG(\mathcal L,\mathcal C,K)\). Conjecture~\ref{conj:gap} then asks for a
+strict comparison between that shared-completion projection and the factorized
+comparator in Assumption~\ref{ass:prod}. Conjecture~\ref{conj:witness} should
+be attacked by upgrading Exhibit 9.1 from a worked demand calculation to a full
+observable-neighborhood sharpness argument and then separating the infeasible
+demand vector by a valid inequality of the projected capacitated-incidence
+polytope.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:sharp} is labelled a theorem because it is a routine finite
+union-of-LPs sharpness statement once \(\PsiObs(P)\), the product latent law,
+and the latent tables are fixed. The
+novel upgrade delta is conjectural and lives in
+Conjectures~\ref{conj:gap}--\ref{conj:witness}. The draft does not claim
+statistical inference, orthogonal estimation, or policy aggregation. It also
+does not claim the smallest possible witness network. What changed in this
+revision is the observable convention and the product comparator: the proposal
+is now explicitly sharp for \(\PsiObs(P)\), the latent law used to define
+\(\omega^G\) is pinned down, and Exhibit 9.1 computes the candidate gap from
+Section 6 primitives rather than leaving the witness verbal.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft upgrading the shared-completion network-exposure result to IV noncompliance with dual exposure maps; prior verdict: none.
+\item v2 (revise) -- added stronger published comparators and clarified the dual-map complier target; prior verdict: REVISE.
+\item v3 (revise) -- added the shared-completion versus product-relaxation comparison and a parent-corner reduction; prior verdict: REVISE.
+\item v4 (revise) -- relocked the observable object to \(\PsiObs(P)\), replaced the informal product relaxation with an explicit finite comparator polytope, and made the parent-weight reduction formula explicit; prior verdict: REVISE.
+\item v5 (revise) -- pinned down the product latent-type law, rewrote Theorem~\ref{thm:sharp} as a finite union of LPs with linear-fractional endpoint reduction, removed the false containment-to-endpoint equivalence, and replaced Exhibit 9.1 with a numeric hub-cap witness tied to \citet{NibberingOosterveen2025}; prior verdict: REVISE.
+\end{itemize}
+
+\section{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Acerenza et al.(2025)]{AcerenzaMartinezIriarteSanchezBecerraSpini2025}
+Acerenza, S., Martinez-Iriarte, M., Sanchez-Becerra, J., and Spini, N. (2025).
+Sharp bounds on direct and spillover effects in two-person encouragement
+designs with strategic interaction.
+arXiv:2503.14314.
+
+\bibitem[Aronow and Samii(2017)]{AronowSamii2017}
+Aronow, P. M. and Samii, C. (2017).
+Estimating average causal effects under general interference, with application
+to a social network experiment.
+\emph{The Annals of Applied Statistics} 11(4), 1912--1947.
+
+\bibitem[Hoshino and Yanagi(2024)]{HoshinoYanagi2024}
+Hoshino, T. and Yanagi, T. (2024).
+Causal inference with noncompliance and unknown interference.
+\emph{Journal of the American Statistical Association} 119(548), 2869--2880.
+
+\bibitem[Hudgens and Halloran(2008)]{HudgensHalloran2008}
+Hudgens, M. G. and Halloran, M. E. (2008).
+Toward causal inference with interference.
+\emph{Journal of the American Statistical Association} 103(482), 832--842.
+
+\bibitem[Imai, Jiang, and Malani(2021)]{ImaiJiangMalani2021}
+Imai, K., Jiang, Z., and Malani, A. (2021).
+Causal inference with interference and noncompliance in two-stage randomized
+experiments.
+\emph{Journal of the American Statistical Association} 116(534), 632--644.
+
+\bibitem[Manski(1990)]{Manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review} 80(2), 319--323.
+
+\bibitem[Nibbering and Oosterveen(2025)]{NibberingOosterveen2025}
+Nibbering, D. and Oosterveen, M. (2025).
+Policy-relevant causal effect estimation using instrumental variables with
+interference.
+arXiv:2509.12538.
+
+\bibitem[S\"avje(2024)]{Savje2024}
+S\"avje, F. (2024).
+Causal inference with misspecified exposure mappings: separating definitions and
+assumptions.
+\emph{Biometrika} 111(1), 1--15.
+
+\bibitem[Schr\"oder et al.(2026)]{SchroderOprescuFeuerriegelKallus2026}
+Schr\"oder, M., Oprescu, M., Feuerriegel, S., and Kallus, N. (2026).
+Causal inference on networks under misspecified exposure mappings: a partial
+identification framework.
+arXiv:2602.03459.
+
+\bibitem[Vazquez-Bare(2023)]{VazquezBare2023}
+Vazquez-Bare, G. (2023).
+Identification and estimation of spillover effects in randomized experiments
+with noncompliance.
+\emph{Journal of the American Statistical Association} 118(543), 1508--1520.
+
+\bibitem[Weinstein and Nevo(2026)]{WeinsteinNevo2026}
+Weinstein, B. and Nevo, D. (2026).
+Causal inference with misspecified network interference structure.
+\emph{Biometrics} 82(1), ujag023.
+\end{thebibliography}
+
+\end{document}

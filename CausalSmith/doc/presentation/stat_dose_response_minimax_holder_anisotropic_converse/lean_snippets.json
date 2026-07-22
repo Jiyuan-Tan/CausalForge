@@ -1,0 +1,827 @@
+{
+  "commit": "6e3ba5a09e998cb7c7b15f45d6a11634157a62aa",
+  "snippets": {
+    "ass:iid-sampling": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.IidSampling",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- `O_1, …, O_n` are i.i.d. draws from `P`. Carries the full i.i.d. content by\nreusing `Causalean.Stat.IIDSample` (mutually independent, identically distributed\nmeasurable maps with law `P.dataMeasure`), together with\n`IsProbabilityMeasure P.dataMeasure` certifying that the per-draw law — hence the\n`n`-fold product `Measure.pi (fun _ : Fin n => P.dataMeasure)` formed in\n`minimaxRisk` — is a probability measure. Also pins the observed-unit support\n`O = (Y,A,X)` to the sampling space `{(Y,A,X): Y∈ℝ, A∈[0,1], X∈[0,1]^d}`: under `P`\nthe treatment `A ∈ [0,1]` and the covariate vector `X ∈ [0,1]^d` almost surely.\n@realizes O(the `IidSampling` conjunction pins the observed-unit law a.s. to {(Y,A,X): Y∈ℝ, A∈[0,1], X∈[0,1]^d} through its A-support and X-support conjuncts) -/\ndef IidSampling {d : ℕ} (P : DoseLaw d) : Prop :=\n  IsProbabilityMeasure P.dataMeasure ∧\n    (∀ᵐ O ∂P.dataMeasure, O.A ∈ Set.Icc (0 : ℝ) 1) ∧\n      -- @realizes A(a.s. treatment-coordinate support A ∈ [0,1] under P, enforcing the declared treatment range [0,1])\n    (∀ᵐ O ∂P.dataMeasure, O.X ∈ cube d) ∧\n      -- @realizes X(a.s. covariate-coordinate support X ∈ [0,1]^d under P, enforcing the declared covariate range [0,1]^d)\n    -- @realizes O_1, ..., O_n(i.i.d. n-sample: mutually independent, identically `P.dataMeasure`-distributed measurable draws via `Causalean.Stat.IIDSample` — THIS `IidSampling` i.i.d. realizer is one of the two load-bearing realizers of the sample symbol `O_1,…,O_n` (the other is the `minimaxRisk` `Measure.pi` product law). It is NOT realized by the FOLLOWING `Consistency` declaration; the tag is placed BEFORE the existential so it attaches to `IidSampling`, not to the next decl. Each draw is a.s. in `{A∈[0,1], X∈[0,1]^d}`, and the n-fold product `Measure.pi (fun _ : Fin n => P.dataMeasure)` formed in `minimaxRisk` is their joint law.)\n    ∃ (Ω : Type) (_mΩ : MeasurableSpace Ω) (μ : @MeasureTheory.Measure Ω _mΩ),\n      Nonempty (@Causalean.Stat.IIDSample Ω (DoseObs d) _mΩ\n        instMeasurableSpaceDoseObs μ P.dataMeasure)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:bounded-outcome": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.BoundedOutcome",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Bounded outcome `|Y| ≤ M` almost surely under `P`. -/\ndef BoundedOutcome {d : ℕ} (P : DoseLaw d) (M : ℝ) : Prop :=\n  ∀ᵐ O ∂P.dataMeasure, |O.Y| ≤ M",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:interior-dose": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.InteriorDose",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Interior evaluation point: `[t_0 - ε_0, t_0 + ε_0] ⊆ (0,1)`. -/\ndef InteriorDose (t0 eps0 : ℝ) : Prop :=\n  doseWindow t0 eps0 ⊆ Set.Ioo (0 : ℝ) 1",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:local-positivity": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.LocalPositivity",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Local positivity: `π_P(a∣x) ≥ c_0` for every `a` in the `ε_0`-window and every\n`x ∈ [0,1]^d`. -/\ndef LocalPositivity {d : ℕ} (P : DoseLaw d) (c0 t0 eps0 : ℝ) : Prop :=\n  ∀ a ∈ doseWindow t0 eps0, ∀ x ∈ cube d, c0 ≤ P.pi a x",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:mu-treatment-holder": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.MuTreatmentHolder",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Treatment-direction smoothness: for every `x ∈ [0,1]^d`, the slice\n`a ↦ μ_P(a,x)` lies in a Hölder ball of order `α`, radius `M`, on the window. -/\ndef MuTreatmentHolder {d : ℕ} (P : DoseLaw d) (alpha M t0 eps0 : ℝ) : Prop :=\n  ∀ x ∈ cube d, HolderBall1D (fun a => P.mu a x) alpha M (doseWindow t0 eps0)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:pi-treatment-holder": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.PiTreatmentHolder",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Treatment-direction smoothness of the conditional treatment density: for every\n`x ∈ [0,1]^d`, `a ↦ π_P(a∣x)` lies in a Hölder ball of order `β`, radius `M`, on\nthe window. -/\ndef PiTreatmentHolder {d : ℕ} (P : DoseLaw d) (beta M t0 eps0 : ℝ) : Prop :=\n  ∀ x ∈ cube d, HolderBall1D (fun a => P.pi a x) beta M (doseWindow t0 eps0)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:mu-covariate-holder": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.MuCovariateHolder",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Covariate-direction smoothness: `x ↦ μ_P(t_0,x)` lies in a Hölder ball of\norder `s`, radius `M`, on `[0,1]^d`. -/\ndef MuCovariateHolder {d : ℕ} (P : DoseLaw d) (s M t0 : ℝ) : Prop :=\n  HolderBallND (fun x => P.mu t0 x) s M (cube d)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:pi-covariate-holder": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.PiCovariateHolder",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Covariate-direction smoothness of the conditional treatment density:\n`x ↦ π_P(t_0∣x)` lies in a Hölder ball of order `s`, radius `M`, on `[0,1]^d`. -/\ndef PiCovariateHolder {d : ℕ} (P : DoseLaw d) (s M t0 : ℝ) : Prop :=\n  HolderBallND (fun x => P.pi t0 x) s M (cube d)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:px-holder": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.PxHolder",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Covariate-density smoothness and range: `p_{X,P}` lies in a Hölder ball of order\n`s`, radius `M`, on `[0,1]^d`, is NONNEGATIVE (`0 ≤ p_{X,P}` on the cube — the declared\ndensity range `[0,∞)`), and is bounded above by `M`. The nonnegativity conjunct makes\n`p_{X,P}` a genuine density object: with it `ENNReal.ofReal (P.px x) = P.px x` on the\ncube, so the `PxIsXDensity` tie realizes the ACTUAL `p_{X,P}` density rather than only\nits `ofReal` positive part. -/\ndef PxHolder {d : ℕ} (P : DoseLaw d) (s M : ℝ) : Prop :=\n  HolderBallND P.px s M (cube d) ∧\n    (∀ x ∈ cube d, 0 ≤ P.px x) ∧     -- @realizes p_{X,P}(0 ≤ p_{X,P} on cube; enforces the declared density range [0,∞), so the `ofReal` `PxIsXDensity` tie realizes the actual nonnegative density object)\n    (∀ x ∈ cube d, P.px x ≤ M)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:theta-functional": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.thetaFunctional",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Identifying partial-mean (backdoor-adjustment) functional\n`θ_P(t_0) = ∫_{[0,1]^d} μ_P(t_0,x) p_{X,P}(x) dx` (Lebesgue). Under consistency and\nignorability this equals the causal dose-response value `E_P[Y(t_0)]`. -/\nnoncomputable def thetaFunctional {d : ℕ} (P : DoseLaw d) (t0 : ℝ) : ℝ :=\n  ∫ x in cube d, P.mu t0 x * P.px x",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:consistency": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.Consistency",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Consistency `Y = Y(A)` almost surely under `P`: the realized outcome equals the\npotential outcome at the realized treatment level. -/\ndef Consistency {d : ℕ} (P : DoseLaw d) : Prop :=\n  ∀ᵐ O ∂P.dataMeasure, O.Y = P.pot O.A O",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:no-unmeasured-confounding": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.NoUnmeasuredConfounding",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Conditional ignorability for the continuous treatment: for every level\n`a ∈ [0,1]`, the potential outcome `Y(a)` is independent of `A` given `X` under `P`\n(the note restricts the dose to the treatment range `[0,1]`). Encoded in\nthe faithful tested form `E[f(Y(a)) ∣ A, X] = E[f(Y(a)) ∣ X]` for every bounded\nmeasurable test `f` of the potential outcome (the standard conditional-independence\ncharacterization, no `StandardBorelSpace` requirement). -/\ndef NoUnmeasuredConfounding {d : ℕ} (P : DoseLaw d) : Prop :=\n  ∀ a ∈ Set.Icc (0 : ℝ) 1,\n    Measurable (P.pot a) ∧\n    ∀ (f : ℝ → ℝ), Measurable f → (∃ Mf : ℝ, ∀ y, |f y| ≤ Mf) →\n      Integrable (fun O => f (P.pot a O)) P.dataMeasure ∧\n      P.dataMeasure[(fun O => f (P.pot a O)) |\n          MeasurableSpace.comap (fun O : DoseObs d => (O.A, O.X)) inferInstance]\n        =ᵐ[P.dataMeasure]\n      P.dataMeasure[(fun O => f (P.pot a O)) |\n          MeasurableSpace.comap (fun O : DoseObs d => O.X) inferInstance]",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:holder-dose-class": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.HolderDoseClass",
+          "statement": "/-- The anisotropic Hölder dose-response model class\n`P_{α,β,s}(M,c_0,ε_0,t_0)`: the bundle of the member-atom properties, including the three\nSEMANTIC TIES (`μ_P` is the data regression, `p_{X,P}` is the X-marginal density, and\n`π_P` is the law's conditional treatment density) that make it a genuine CAUSAL class and\npin it to EXACTLY the paper class (so `minimaxRisk` over it is the true causal minimax\nrisk and `thetaFunctional` is `E_P[Y(t_0)]`, not a free-field artifact, and the class is\nnot strictly broader than `P_{α,β,s}` through a free `π` field).\n(`ass:baseline-submodel-slack` is NOT a member; it is a separate theorem hypothesis.)\nThe two regime theorems take `(hP : HolderDoseClass … P)`. -/\nstructure HolderDoseClass (d : ℕ) (alpha beta s M c0 eps0 t0 : ℝ)\n    (P : DoseLaw d) : Prop where\n  iid : IidSampling P\n  consistency : Consistency P\n  ignorability : NoUnmeasuredConfounding P\n  bdd : BoundedOutcome P M\n  interior : InteriorDose t0 eps0\n  positivity : LocalPositivity P c0 t0 eps0\n  muT : MuTreatmentHolder P alpha M t0 eps0\n  piT : PiTreatmentHolder P beta M t0 eps0\n  muX : MuCovariateHolder P s M t0\n  piX : PiCovariateHolder P s M t0\n  pxH : PxHolder P s M\n  muReg : MuIsRegression P\n  pxDens : PxIsXDensity P\n  piCond : PiIsCondTreatmentDensity P"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.IidSampling",
+          "statement": "/-- `O_1, …, O_n` are i.i.d. draws from `P`. Carries the full i.i.d. content by\nreusing `Causalean.Stat.IIDSample` (mutually independent, identically distributed\nmeasurable maps with law `P.dataMeasure`), together with\n`IsProbabilityMeasure P.dataMeasure` certifying that the per-draw law — hence the\n`n`-fold product `Measure.pi (fun _ : Fin n => P.dataMeasure)` formed in\n`minimaxRisk` — is a probability measure. Also pins the observed-unit support\n`O = (Y,A,X)` to the sampling space `{(Y,A,X): Y∈ℝ, A∈[0,1], X∈[0,1]^d}`: under `P`\nthe treatment `A ∈ [0,1]` and the covariate vector `X ∈ [0,1]^d` almost surely.\n@realizes O(the `IidSampling` conjunction pins the observed-unit law a.s. to {(Y,A,X): Y∈ℝ, A∈[0,1], X∈[0,1]^d} through its A-support and X-support conjuncts) -/\ndef IidSampling {d : ℕ} (P : DoseLaw d) : Prop :=\n  IsProbabilityMeasure P.dataMeasure ∧\n    (∀ᵐ O ∂P.dataMeasure, O.A ∈ Set.Icc (0 : ℝ) 1) ∧\n      -- @realizes A(a.s. treatment-coordinate support A ∈ [0,1] under P, enforcing the declared treatment range [0,1])\n    (∀ᵐ O ∂P.dataMeasure, O.X ∈ cube d) ∧\n      -- @realizes X(a.s. covariate-coordinate support X ∈ [0,1]^d under P, enforcing the declared covariate range [0,1]^d)\n    -- @realizes O_1, ..., O_n(i.i.d. n-sample: mutually independent, identically `P.dataMeasure`-distributed measurable draws via `Causalean.Stat.IIDSample` — THIS `IidSampling` i.i.d. realizer is one of the two load-bearing realizers of the sample symbol `O_1,…,O_n` (the other is the `minimaxRisk` `Measure.pi` product law). It is NOT realized by the FOLLOWING `Consistency` declaration; the tag is placed BEFORE the existential so it attaches to `IidSampling`, not to the next decl. Each draw is a.s. in `{A∈[0,1], X∈[0,1]^d}`, and the n-fold product `Measure.pi (fun _ : Fin n => P.dataMeasure)` formed in `minimaxRisk` is their joint law.)\n    ∃ (Ω : Type) (_mΩ : MeasurableSpace Ω) (μ : @MeasureTheory.Measure Ω _mΩ),\n      Nonempty (@Causalean.Stat.IIDSample Ω (DoseObs d) _mΩ\n        instMeasurableSpaceDoseObs μ P.dataMeasure)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.Consistency",
+          "statement": "/-- Consistency `Y = Y(A)` almost surely under `P`: the realized outcome equals the\npotential outcome at the realized treatment level. -/\ndef Consistency {d : ℕ} (P : DoseLaw d) : Prop :=\n  ∀ᵐ O ∂P.dataMeasure, O.Y = P.pot O.A O"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.NoUnmeasuredConfounding",
+          "statement": "/-- Conditional ignorability for the continuous treatment: for every level\n`a ∈ [0,1]`, the potential outcome `Y(a)` is independent of `A` given `X` under `P`\n(the note restricts the dose to the treatment range `[0,1]`). Encoded in\nthe faithful tested form `E[f(Y(a)) ∣ A, X] = E[f(Y(a)) ∣ X]` for every bounded\nmeasurable test `f` of the potential outcome (the standard conditional-independence\ncharacterization, no `StandardBorelSpace` requirement). -/\ndef NoUnmeasuredConfounding {d : ℕ} (P : DoseLaw d) : Prop :=\n  ∀ a ∈ Set.Icc (0 : ℝ) 1,\n    Measurable (P.pot a) ∧\n    ∀ (f : ℝ → ℝ), Measurable f → (∃ Mf : ℝ, ∀ y, |f y| ≤ Mf) →\n      Integrable (fun O => f (P.pot a O)) P.dataMeasure ∧\n      P.dataMeasure[(fun O => f (P.pot a O)) |\n          MeasurableSpace.comap (fun O : DoseObs d => (O.A, O.X)) inferInstance]\n        =ᵐ[P.dataMeasure]\n      P.dataMeasure[(fun O => f (P.pot a O)) |\n          MeasurableSpace.comap (fun O : DoseObs d => O.X) inferInstance]"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.BoundedOutcome",
+          "statement": "/-- Bounded outcome `|Y| ≤ M` almost surely under `P`. -/\ndef BoundedOutcome {d : ℕ} (P : DoseLaw d) (M : ℝ) : Prop :=\n  ∀ᵐ O ∂P.dataMeasure, |O.Y| ≤ M"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.InteriorDose",
+          "statement": "/-- Interior evaluation point: `[t_0 - ε_0, t_0 + ε_0] ⊆ (0,1)`. -/\ndef InteriorDose (t0 eps0 : ℝ) : Prop :=\n  doseWindow t0 eps0 ⊆ Set.Ioo (0 : ℝ) 1"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.LocalPositivity",
+          "statement": "/-- Local positivity: `π_P(a∣x) ≥ c_0` for every `a` in the `ε_0`-window and every\n`x ∈ [0,1]^d`. -/\ndef LocalPositivity {d : ℕ} (P : DoseLaw d) (c0 t0 eps0 : ℝ) : Prop :=\n  ∀ a ∈ doseWindow t0 eps0, ∀ x ∈ cube d, c0 ≤ P.pi a x"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.MuTreatmentHolder",
+          "statement": "/-- Treatment-direction smoothness: for every `x ∈ [0,1]^d`, the slice\n`a ↦ μ_P(a,x)` lies in a Hölder ball of order `α`, radius `M`, on the window. -/\ndef MuTreatmentHolder {d : ℕ} (P : DoseLaw d) (alpha M t0 eps0 : ℝ) : Prop :=\n  ∀ x ∈ cube d, HolderBall1D (fun a => P.mu a x) alpha M (doseWindow t0 eps0)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.PiTreatmentHolder",
+          "statement": "/-- Treatment-direction smoothness of the conditional treatment density: for every\n`x ∈ [0,1]^d`, `a ↦ π_P(a∣x)` lies in a Hölder ball of order `β`, radius `M`, on\nthe window. -/\ndef PiTreatmentHolder {d : ℕ} (P : DoseLaw d) (beta M t0 eps0 : ℝ) : Prop :=\n  ∀ x ∈ cube d, HolderBall1D (fun a => P.pi a x) beta M (doseWindow t0 eps0)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.MuCovariateHolder",
+          "statement": "/-- Covariate-direction smoothness: `x ↦ μ_P(t_0,x)` lies in a Hölder ball of\norder `s`, radius `M`, on `[0,1]^d`. -/\ndef MuCovariateHolder {d : ℕ} (P : DoseLaw d) (s M t0 : ℝ) : Prop :=\n  HolderBallND (fun x => P.mu t0 x) s M (cube d)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.PiCovariateHolder",
+          "statement": "/-- Covariate-direction smoothness of the conditional treatment density:\n`x ↦ π_P(t_0∣x)` lies in a Hölder ball of order `s`, radius `M`, on `[0,1]^d`. -/\ndef PiCovariateHolder {d : ℕ} (P : DoseLaw d) (s M t0 : ℝ) : Prop :=\n  HolderBallND (fun x => P.pi t0 x) s M (cube d)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.PxHolder",
+          "statement": "/-- Covariate-density smoothness and range: `p_{X,P}` lies in a Hölder ball of order\n`s`, radius `M`, on `[0,1]^d`, is NONNEGATIVE (`0 ≤ p_{X,P}` on the cube — the declared\ndensity range `[0,∞)`), and is bounded above by `M`. The nonnegativity conjunct makes\n`p_{X,P}` a genuine density object: with it `ENNReal.ofReal (P.px x) = P.px x` on the\ncube, so the `PxIsXDensity` tie realizes the ACTUAL `p_{X,P}` density rather than only\nits `ofReal` positive part. -/\ndef PxHolder {d : ℕ} (P : DoseLaw d) (s M : ℝ) : Prop :=\n  HolderBallND P.px s M (cube d) ∧\n    (∀ x ∈ cube d, 0 ≤ P.px x) ∧     -- @realizes p_{X,P}(0 ≤ p_{X,P} on cube; enforces the declared density range [0,∞), so the `ofReal` `PxIsXDensity` tie realizes the actual nonnegative density object)\n    (∀ x ∈ cube d, P.px x ≤ M)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.minimaxRisk",
+          "statement": "/-- Pointwise minimax mean-squared risk\n`R_n(C, t_0) = inf_{θ̂_n} sup_{P ∈ C} E_P[(θ̂_n - θ_P(t_0))^2]`.\nThe infimum ranges over MEASURABLE estimators truncated to `[-M,M]` (the\nbounded-estimand range: truncating to the interval containing every `θ_P(t_0)`\nnever increases MSE and yields the SAME minimax value, while keeping the inner\nsquared loss bounded by `(2M)^2` under each `n`-fold probability law — so the\n`⨆`/`⨅` are well-posed, with no junk-`0` inflation of the converse). -/\nnoncomputable def minimaxRisk {d : ℕ} (M : ℝ) (n : ℕ)\n    (C : DoseLaw d → Prop) (t0 : ℝ) : ℝ :=\n  ⨅ est : {est : (Fin n → DoseObs d) → ℝ //\n      Measurable est ∧ ∀ s, est s ∈ Set.Icc (-M) M},\n      -- @realizes O_1, ..., O_n(estimator domain is the size-`n` sample `Fin n → DoseObs d`)\n    ⨆ P : {P : DoseLaw d // C P},\n      -- @realizes O_1, ..., O_n(the i.i.d. `n`-sample as the `n`-fold PRODUCT LAW `Measure.pi (fun _ : Fin n => P.dataMeasure)` over `Fin n → DoseObs d` — THIS `minimaxRisk` product law is the second of the two load-bearing realizers of the sample symbol (the first is the `IidSampling` i.i.d. realizer); its factors are mutually independent and identically `P.dataMeasure`-distributed exactly by the `Causalean.Stat.IIDSample` conjunct of `IidSampling`. It is NOT realized by the FOLLOWING `publishedHoifRate` declaration; the tag is placed BEFORE the integral so it attaches to `minimaxRisk`, not to the next decl.)\n      ∫ s, (est.1 s - thetaFunctional P.1 t0) ^ 2\n        ∂(Measure.pi fun _ : Fin n => (P.1).dataMeasure)"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.publishedHoifRate",
+          "statement": "/-- Published Bonvini–Kennedy benchmark rate\n`ρ_n = n^{-2α/(2α+1)} ∨ n^{-2/(1 + d/(4s) + 1/α)}`.\n@realizes rho_n -/\nnoncomputable def publishedHoifRate (n : ℕ) (alpha s : ℝ) (d : ℕ) : ℝ :=\n  max ((n : ℝ) ^ (-(2 * alpha / (2 * alpha + 1))))\n      ((n : ℝ) ^ (-(2 / (1 + (d : ℝ) / (4 * s) + 1 / alpha))))"
+        }
+      ]
+    },
+    "ass:baseline-submodel-slack": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.BaselineSubmodelSlack",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Nonempty-interior-of-model (strict-slack baseline) existence hypothesis: there\nexist a covariate density `p_0` on `[0,1]^d`, a conditional treatment density `q_0`\non `[0,1]`, a slack `η_0 > 0`, and an outcome scale `B_0 ∈ (0,M)`, such that `p_0`\nand `q_0` have Hölder norms at most `M - η_0` in the classes required of `p_{X,P}`\nand `π_P`, `q_0(a) ≥ c_0 + η_0` on the `ε_0`-window, `p_0 ≤ M - η_0`, and the\nconstant-zero outcome regression admits a symmetric two-point channel on\n`{-B_0, B_0} ⊆ [-M,M]`. Provisional D0.R refinement (`user_approved = false`). -/\ndef BaselineSubmodelSlack (d : ℕ) (beta s M c0 eps0 t0 : ℝ) : Prop :=\n  ∃ (p0 : (Fin d → ℝ) → ℝ) (q0 : ℝ → ℝ) (eta0 B0 : ℝ),\n    0 < eta0 ∧ 0 < B0 ∧ B0 < M ∧\n    (∀ x ∈ cube d, 0 ≤ p0 x) ∧ (∀ a, 0 ≤ q0 a) ∧\n    (∫ x in cube d, p0 x) = 1 ∧ (∫ a in Set.Icc (0 : ℝ) 1, q0 a) = 1 ∧\n    HolderBallND p0 s (M - eta0) (cube d) ∧ (∀ x ∈ cube d, p0 x ≤ M - eta0) ∧\n    HolderBall1D q0 beta (M - eta0) (doseWindow t0 eps0) ∧\n    (∀ a ∈ doseWindow t0 eps0, c0 + eta0 ≤ q0 a)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:minimax-risk": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.minimaxRisk",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Pointwise minimax mean-squared risk\n`R_n(C, t_0) = inf_{θ̂_n} sup_{P ∈ C} E_P[(θ̂_n - θ_P(t_0))^2]`.\nThe infimum ranges over MEASURABLE estimators truncated to `[-M,M]` (the\nbounded-estimand range: truncating to the interval containing every `θ_P(t_0)`\nnever increases MSE and yields the SAME minimax value, while keeping the inner\nsquared loss bounded by `(2M)^2` under each `n`-fold probability law — so the\n`⨆`/`⨅` are well-posed, with no junk-`0` inflation of the converse). -/\nnoncomputable def minimaxRisk {d : ℕ} (M : ℝ) (n : ℕ)\n    (C : DoseLaw d → Prop) (t0 : ℝ) : ℝ :=\n  ⨅ est : {est : (Fin n → DoseObs d) → ℝ //\n      Measurable est ∧ ∀ s, est s ∈ Set.Icc (-M) M},\n      -- @realizes O_1, ..., O_n(estimator domain is the size-`n` sample `Fin n → DoseObs d`)\n    ⨆ P : {P : DoseLaw d // C P},\n      -- @realizes O_1, ..., O_n(the i.i.d. `n`-sample as the `n`-fold PRODUCT LAW `Measure.pi (fun _ : Fin n => P.dataMeasure)` over `Fin n → DoseObs d` — THIS `minimaxRisk` product law is the second of the two load-bearing realizers of the sample symbol (the first is the `IidSampling` i.i.d. realizer); its factors are mutually independent and identically `P.dataMeasure`-distributed exactly by the `Causalean.Stat.IIDSample` conjunct of `IidSampling`. It is NOT realized by the FOLLOWING `publishedHoifRate` declaration; the tag is placed BEFORE the integral so it attaches to `minimaxRisk`, not to the next decl.)\n      ∫ s, (est.1 s - thetaFunctional P.1 t0) ^ 2\n        ∂(Measure.pi fun _ : Fin n => (P.1).dataMeasure)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:published-hoif-rate": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.publishedHoifRate",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Published Bonvini–Kennedy benchmark rate\n`ρ_n = n^{-2α/(2α+1)} ∨ n^{-2/(1 + d/(4s) + 1/α)}`.\n@realizes rho_n -/\nnoncomputable def publishedHoifRate (n : ℕ) (alpha s : ℝ) (d : ℕ) : ℝ :=\n  max ((n : ℝ) ^ (-(2 * alpha / (2 * alpha + 1))))\n      ((n : ℝ) ^ (-(2 / (1 + (d : ℝ) / (4 * s) + 1 / alpha))))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "thm:sharp-pointwise-lower-bound": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.sharp_pointwise_lower_bound",
+      "file": "T_SharpPointwiseLowerBound.lean",
+      "line": 0,
+      "statement": "/-- Certified kernel converse. Assume the strict-slack baseline. For every `β > 0`\nthere is `c > 0`, depending only on the fixed model radii and the slack baseline,\nsuch that for all sufficiently large `n`,\n`R_n(P_{α,β,s}(M,c_0,ε_0,t_0), t_0) ≥ c n^{-2α/(2α+1)}` — the classical interior\ntreatment-regression pointwise rate, uniformly over every `β > 0`. -/\ntheorem sharp_pointwise_lower_bound {d : ℕ}\n    (alpha beta s M c0 eps0 t0 : ℝ)\n    (halpha : 0 < alpha) (hbeta : 0 < beta) (hs : 0 < s)\n    (hreg : RegimeConstants alpha beta s M c0 eps0 t0)\n    (hslack : BaselineSubmodelSlack d beta s M c0 eps0 t0) :\n    ∃ c : ℝ, 0 < c ∧ ∀ᶠ n : ℕ in Filter.atTop,\n      c * (n : ℝ) ^ (-(2 * alpha / (2 * alpha + 1)))\n        ≤ minimaxRisk M n (HolderDoseClass d alpha beta s M c0 eps0 t0) t0",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "prop:oracle-regime-reduction": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.oracle_regime_reduction",
+      "file": "T_OracleRegimeReduction.lean",
+      "line": 0,
+      "statement": "/-- Oracle regime reduction. Under the assumptions of\n`sharp_pointwise_lower_bound`, if `s ≥ d/4` (`d ≤ 4s`) then `ρ_n = n^{-2α/(2α+1)}`\nand hence `R_n ≥ c n^{-2α/(2α+1)} = c ρ_n` for some `c > 0`. The certified lower\nfloor reduces to the classical interior pointwise nonparametric regression\nbarrier. -/\ntheorem oracle_regime_reduction {d : ℕ}\n    (alpha beta s M c0 eps0 t0 : ℝ)\n    (halpha : 0 < alpha) (hbeta : 0 < beta) (hs : 0 < s)\n    (hreg : RegimeConstants alpha beta s M c0 eps0 t0)\n    (hsd : (d : ℝ) ≤ 4 * s)\n    (hslack : BaselineSubmodelSlack d beta s M c0 eps0 t0) :\n    ∃ c : ℝ, 0 < c ∧ ∀ᶠ n : ℕ in Filter.atTop,\n      publishedHoifRate n alpha s d = (n : ℝ) ^ (-(2 * alpha / (2 * alpha + 1)))\n        ∧ c * publishedHoifRate n alpha s d\n            ≤ minimaxRisk M n (HolderDoseClass d alpha beta s M c0 eps0 t0) t0",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "thm:sharp-minimax-smooth-covariate": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.sharp_minimax_smooth_covariate",
+      "file": "T_SharpMinimaxSmoothCovariate.lean",
+      "line": 0,
+      "statement": "/-- Certified smooth-covariate regime theorem. Assume the strict-slack baseline.\nFor every `β > 0` and every `s ≥ d/4` (`d ≤ 4s`) there is `c > 0` such that, for\nall sufficiently large `n`, `R_n ≥ c n^{-2α/(2α+1)} = c ρ_n`. The certified lower\nfloor lands on the same exponent as `ρ_n`; NO same-class upper bound is claimed. -/\ntheorem sharp_minimax_smooth_covariate {d : ℕ}\n    (alpha beta s M c0 eps0 t0 : ℝ)\n    (halpha : 0 < alpha) (hbeta : 0 < beta) (hs : 0 < s)\n    (hreg : RegimeConstants alpha beta s M c0 eps0 t0)\n    (hsd : (d : ℝ) ≤ 4 * s)\n    (hslack : BaselineSubmodelSlack d beta s M c0 eps0 t0) :\n    ∃ c : ℝ, 0 < c ∧ ∀ᶠ n : ℕ in Filter.atTop,\n      c * (n : ℝ) ^ (-(2 * alpha / (2 * alpha + 1)))\n          ≤ minimaxRisk M n (HolderDoseClass d alpha beta s M c0 eps0 t0) t0\n        ∧ (n : ℝ) ^ (-(2 * alpha / (2 * alpha + 1))) = publishedHoifRate n alpha s d",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "thm:frontier-bracket-deficient": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.frontier_bracket_deficient",
+      "file": "T_FrontierBracketDeficient.lean",
+      "line": 0,
+      "statement": "/-- Certified deficient-covariate regime theorem. Assume the strict-slack baseline.\nFor every `β > 0` and every `0 < s < d/4` (`4s < d`) there is `c > 0` such that,\nfor all sufficiently large `n`, `R_n ≥ c n^{-2α/(2α+1)}`, while\n`ρ_n = n^{-2/(1+d/(4s)+1/α)}` has a strictly smaller exponent. The same-class upper\nendpoint `C ρ_n` is NOT discharged. -/\ntheorem frontier_bracket_deficient {d : ℕ}\n    (alpha beta s M c0 eps0 t0 : ℝ)\n    (halpha : 0 < alpha) (hbeta : 0 < beta) (hs : 0 < s)\n    (hreg : RegimeConstants alpha beta s M c0 eps0 t0)\n    (hsd : 4 * s < (d : ℝ))\n    (hslack : BaselineSubmodelSlack d beta s M c0 eps0 t0) :\n    ∃ c : ℝ, 0 < c ∧ ∀ᶠ n : ℕ in Filter.atTop,\n      c * (n : ℝ) ^ (-(2 * alpha / (2 * alpha + 1)))\n          ≤ minimaxRisk M n (HolderDoseClass d alpha beta s M c0 eps0 t0) t0\n        ∧ publishedHoifRate n alpha s d\n            = (n : ℝ) ^ (-(2 / (1 + (d : ℝ) / (4 * s) + 1 / alpha)))\n        ∧ 2 / (1 + (d : ℝ) / (4 * s) + 1 / alpha) < 2 * alpha / (2 * alpha + 1)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:published-upper-bound-cited": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.publishedUpperBoundCited",
+      "file": "Helpers/UpperBoundCited.lean",
+      "line": 0,
+      "statement": "/-- **Cited conditional comparator** (Bonvini–Kennedy 2022, Theorem 1/3.1 and\nrate discussion; arXiv:2207.11825v1, Section 3.4 and Remarks 7–8/Figure 1).\nFor the source's specified HOIF construction, the theorem conditions and explicit\nrate specialization imply the eventual bound on its actual conditional MSE.\n\nThis is estimator-specific, not a minimax statement: `minimaxRisk` and\n`HolderDoseClass` do not occur. -/\ndef publishedUpperBoundCited (d : ℕ) (alpha beta s gamma₁ gamma₂ : ℝ) : Prop :=\n  ∀ E : BKHOIFEstimatorSpec d,\n    BKTheorem31Conditions alpha beta E →\n    BKRateSpecialization alpha beta s gamma₁ gamma₂ E →\n    EventuallyAtMostConstant (bkConditionalMSE E)\n      (fun n => publishedHoifRate n alpha s d)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:beta-frontier-handle": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.betaFrontierHandle",
+      "file": "Frontier.lean",
+      "line": 0,
+      "statement": "/-- Headline frontier handle. For EVERY `β > 0`, records the DELIVERED all-β oracle\nlower floor `R_n ≥ c n^{-2α/(2α+1)}` on the corresponding original class, together with the\nregime-by-regime `ρ_n` comparison for every `n ≥ 1`. The deficient comparison is\nrestricted to the note's regime `0 < s < d/4`. The final disjunction records, without\nselecting or certifying an upper endpoint, the unresolved upper-frontier alternatives:\nattainability of `ρ_n`, an intermediate exponent, or genuinely `β`-sensitive rates. -/\ndef betaFrontierHandle {d : ℕ} (alpha s M c0 eps0 t0 : ℝ) : Prop :=\n  ∀ beta : ℝ, 0 < beta →\n    (∃ c : ℝ, 0 < c ∧ ∀ᶠ n : ℕ in Filter.atTop,\n        c * (n : ℝ) ^ (-(2 * alpha / (2 * alpha + 1)))\n          ≤ minimaxRisk M n (HolderDoseClass d alpha beta s M c0 eps0 t0) t0)\n      ∧ (∀ n : ℕ, 1 ≤ n → (d : ℝ) ≤ 4 * s →\n          publishedHoifRate n alpha s d = (n : ℝ) ^ (-(2 * alpha / (2 * alpha + 1))))\n      ∧ (∀ n : ℕ, 1 ≤ n → 0 < s ∧ 4 * s < (d : ℝ) →\n          publishedHoifRate n alpha s d\n              = (n : ℝ) ^ (-(2 / (1 + (d : ℝ) / (4 * s) + 1 / alpha))) ∧\n            2 / (1 + (d : ℝ) / (4 * s) + 1 / alpha)\n              < 2 * alpha / (2 * alpha + 1))\n      ∧ ((∃ C : ℝ, 0 < C ∧ ∀ᶠ n : ℕ in Filter.atTop,\n            minimaxRisk M n (HolderDoseClass d alpha beta s M c0 eps0 t0) t0\n              ≤ C * publishedHoifRate n alpha s d)\n        ∨ (∃ kappa C : ℝ,\n            2 / (1 + (d : ℝ) / (4 * s) + 1 / alpha) < kappa ∧\n            kappa < 2 * alpha / (2 * alpha + 1) ∧ 0 < C ∧\n            ∀ᶠ n : ℕ in Filter.atTop,\n              minimaxRisk M n (HolderDoseClass d alpha beta s M c0 eps0 t0) t0\n                ≤ C * (n : ℝ) ^ (-kappa))\n        ∨ (∃ beta' kappa kappa' c C c' C' : ℝ,\n            0 < beta' ∧ beta' ≠ beta ∧ kappa' ≠ kappa ∧\n            0 < c ∧ 0 < C ∧ 0 < c' ∧ 0 < C' ∧\n            (∀ᶠ n : ℕ in Filter.atTop,\n              c * (n : ℝ) ^ (-kappa) ≤\n                  minimaxRisk M n (HolderDoseClass d alpha beta s M c0 eps0 t0) t0 ∧\n              minimaxRisk M n (HolderDoseClass d alpha beta s M c0 eps0 t0) t0\n                ≤ C * (n : ℝ) ^ (-kappa)) ∧\n            (∀ᶠ n : ℕ in Filter.atTop,\n              c' * (n : ℝ) ^ (-kappa') ≤\n                  minimaxRisk M n (HolderDoseClass d alpha beta' s M c0 eps0 t0) t0 ∧\n              minimaxRisk M n (HolderDoseClass d alpha beta' s M c0 eps0 t0) t0\n                ≤ C' * (n : ℝ) ^ (-kappa'))))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:bernoulli-mean-channel-kl": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.bernoulli_mean_channel_kl_source",
+      "file": "Helpers/Divergence.lean",
+      "line": 0,
+      "statement": "/-- The signed two-point mean channel has quadratic KL divergence on the central\nhalf of its mean range. This local wrapper links the paper lemma to the reusable\nCausalean implementation. -/\nlemma bernoulli_mean_channel_kl_source (B u v : ℝ) (hB : 0 < B)\n    (hu : |u| ≤ B / 2) (hv : |v| ≤ B / 2) :\n    InformationTheory.klDiv (twoPointMean B u) (twoPointMean B v)\n      ≤ ENNReal.ofReal (2 * (u - v) ^ 2 / B ^ 2)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:le-cam-two-point-mse-source": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.le_cam_two_point_mse_source",
+      "file": "Helpers/Divergence.lean",
+      "line": 0,
+      "statement": "/-- Le Cam's two-point reduction: a finite KL budget gives a positive,\nbudget-dependent constant multiplying the squared parameter separation. -/\nlemma le_cam_two_point_mse_source (K : ℝ) :\n    ∃ cK : ℝ, 0 < cK ∧\n      ∀ {S : Type*} [MeasurableSpace S]\n        (Q0 Q1 : Measure S) [IsProbabilityMeasure Q0] [IsProbabilityMeasure Q1]\n        (theta0 theta1 : ℝ),\n        InformationTheory.klDiv Q0 Q1 ≤ ENNReal.ofReal K →\n        ∀ T : S → ℝ, Measurable T →\n          Integrable (fun s => (T s - theta0) ^ 2) Q0 →\n          Integrable (fun s => (T s - theta1) ^ 2) Q1 →\n          cK * (theta1 - theta0) ^ 2\n            ≤ max (∫ s, (T s - theta0) ^ 2 ∂Q0) (∫ s, (T s - theta1) ^ 2 ∂Q1)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:rho-oracle-regime-algebra": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.rho_oracle_regime_algebra",
+      "file": "Helpers/RateAlgebra.lean",
+      "line": 0,
+      "statement": "/-- Smooth-covariate collapse: if `0 < α`, `0 < s`, and `d ≤ 4 s` (i.e. `s ≥ d/4`),\nthen `ρ_n = n^{-2α/(2α+1)}` for every `n ≥ 1`. -/\nlemma rho_oracle_regime_algebra (n : ℕ) (alpha s : ℝ) (d : ℕ)\n    (halpha : 0 < alpha) (hs : 0 < s) (hsd : (d : ℝ) ≤ 4 * s) (hn : 1 ≤ n) :\n    publishedHoifRate n alpha s d = (n : ℝ) ^ (-(2 * alpha / (2 * alpha + 1)))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:rho-deficient-regime-algebra": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.rho_deficient_regime_algebra",
+      "file": "Helpers/RateAlgebra.lean",
+      "line": 0,
+      "statement": "/-- Deficient-covariate collapse: if `0 < α`, `0 < s`, and `4 s < d` (i.e.\n`0 < s < d/4`), then `ρ_n = n^{-2/(1 + d/(4s) + 1/α)}` for every `n ≥ 1`, and the\ndeficient exponent is strictly smaller than the oracle exponent. -/\nlemma rho_deficient_regime_algebra (n : ℕ) (alpha s : ℝ) (d : ℕ)\n    (halpha : 0 < alpha) (hs : 0 < s) (hsd : 4 * s < (d : ℝ)) (hn : 1 ≤ n) :\n    publishedHoifRate n alpha s d\n        = (n : ℝ) ^ (-(2 / (1 + (d : ℝ) / (4 * s) + 1 / alpha)))\n      ∧ 2 / (1 + (d : ℝ) / (4 * s) + 1 / alpha) < 2 * alpha / (2 * alpha + 1) := by\n  have hs4 : 0 < 4 * s := by positivity\n  have hone_lt : 1 < (d : ℝ) / (4 * s) := by\n    rw [one_lt_div hs4]\n    simpa using hsd\n  have hden_pos : 0 < 2 + 1 / alpha := by positivity\n  have hden_lt : 2 + 1 / alpha < 1 + (d : ℝ) / (4 * s) + 1 / alpha := by\n    linarith\n  have hfrac :\n      2 / (1 + (d : ℝ) / (4 * s) + 1 / alpha) < 2 / (2 + 1 / alpha) := by\n    exact div_lt_div_of_pos_left (by norm_num : (0 : ℝ) < 2) hden_pos hden_lt\n  have hid : 2 / (2 + 1 / alpha) = 2 * alpha / (2 * alpha + 1) := by\n    field_simp [halpha.ne']\n  have hexp : 2 / (1 + (d : ℝ) / (4 * s) + 1 / alpha)\n      < 2 * alpha / (2 * alpha + 1) := by\n    rwa [hid] at hfrac\n  constructor\n  · by_cases hn1 : n = 1\n    · subst n\n      simp [publishedHoifRate]\n    · have hnat : 1 < n := by omega\n      have hbase : (1 : ℝ) < (n : ℝ) := by exact_mod_cast hnat\n      have hpow : (n : ℝ) ^ (-(2 * alpha / (2 * alpha + 1)))\n          ≤ (n : ℝ) ^ (-(2 / (1 + (d : ℝ) / (4 * s) + 1 / alpha))) := by\n        rw [Real.rpow_le_rpow_left_iff hbase]\n        linarith\n      rw [publishedHoifRate]\n      exact max_eq_right hpow\n  · exact hexp\n\nend CausalSmith.Stat.DoseResponseMinimax",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:oracle-dose-regression-lower-all-beta": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.oracle_dose_regression_lower_all_beta",
+      "file": "Helpers/TwoPointConstruction.lean",
+      "line": 0,
+      "statement": "/-- The all-β oracle lower floor. Assume the strict-slack baseline. For every\n`β > 0` there is `c_or > 0`, depending only on the fixed model radii and the slack\nbaseline (not on `n`), such that for all sufficiently large `n`,\n`R_n(P_{α,β,s}(M,c_0,ε_0,t_0), t_0) ≥ c_or n^{-2α/(2α+1)}`. The construction\nperturbs only the treatment regression and leaves the treatment density fixed, so\nthe bound is independent of whether `β ≥ α`. -/\nlemma oracle_dose_regression_lower_all_beta {d : ℕ}\n    (alpha beta s M c0 eps0 t0 : ℝ)\n    (halpha : 0 < alpha) (hbeta : 0 < beta) (hs : 0 < s)\n    (hreg : RegimeConstants alpha beta s M c0 eps0 t0)\n    (hslack : BaselineSubmodelSlack d beta s M c0 eps0 t0) :\n    ∃ cor : ℝ, 0 < cor ∧ ∀ᶠ n : ℕ in Filter.atTop,\n      cor * (n : ℝ) ^ (-(2 * alpha / (2 * alpha + 1)))\n        ≤ minimaxRisk M n (HolderDoseClass d alpha beta s M c0 eps0 t0) t0",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:certified-beta-frontier-bracket": {
+      "decl": "CausalSmith.Stat.DoseResponseMinimax.certified_beta_frontier_bracket",
+      "file": "Helpers/FrontierBracket.lean",
+      "line": 0,
+      "statement": "/-- Certified β-frontier bracket. Assume the strict-slack baseline. For every\n`β > 0` there is `c > 0` with `R_n ≥ c n^{-2α/(2α+1)}` eventually; and — for EVERY\n`n ≥ 1`, not merely eventually, matching the note's unconditional `ρ_n` algebra —\nin the smooth-covariate regime `s ≥ d/4` (`d ≤ 4s`) the benchmark `ρ_n` collapses\nto that oracle exponent, while in the deficient regime `0 < s < d/4` (`4s < d`)\n`ρ_n` has a strictly smaller exponent. The regime identities are stated outside the\n`∀ᶠ n` (eventually) clause so they are NOT weakened to large `n` only. No same-class\nupper endpoint is packaged. -/\nlemma certified_beta_frontier_bracket {d : ℕ}\n    (alpha beta s M c0 eps0 t0 : ℝ)\n    (halpha : 0 < alpha) (hbeta : 0 < beta) (hs : 0 < s)\n    (hreg : RegimeConstants alpha beta s M c0 eps0 t0)\n    (hslack : BaselineSubmodelSlack d beta s M c0 eps0 t0) :\n    ∃ c : ℝ, 0 < c ∧\n      (∀ᶠ n : ℕ in Filter.atTop,\n        c * (n : ℝ) ^ (-(2 * alpha / (2 * alpha + 1)))\n          ≤ minimaxRisk M n (HolderDoseClass d alpha beta s M c0 eps0 t0) t0)\n      ∧ (∀ n : ℕ, 1 ≤ n →\n          ((d : ℝ) ≤ 4 * s →\n              publishedHoifRate n alpha s d = (n : ℝ) ^ (-(2 * alpha / (2 * alpha + 1))))\n          ∧ (4 * s < (d : ℝ) →\n              publishedHoifRate n alpha s d\n                  = (n : ℝ) ^ (-(2 / (1 + (d : ℝ) / (4 * s) + 1 / alpha)))\n                ∧ 2 / (1 + (d : ℝ) / (4 * s) + 1 / alpha) < 2 * alpha / (2 * alpha + 1)))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "sym:O": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 55,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "DoseObs",
+          "statement": "-- @env: S1\n/-- Observed unit `O = (Y, A, X)` with outcome `Y ∈ ℝ`, continuous treatment\n`A ∈ [0,1]`, and covariate vector `X ∈ [0,1]^d`. The carrier fields are typed over\n`ℝ` / `Fin d → ℝ` (the witness measure constructions require `ℝ`-valued ranges),\nand the declared treatment range `[0,1]` and covariate cube `[0,1]^d` are pinned as\na STANDING a.s. support clause on the law by the two `IidSampling` support conjuncts\n(`A ∈ [0,1]` and `X ∈ [0,1]^d` almost surely under `P`), which every law in\n`HolderDoseClass` carries via `HolderDoseClass.iid`. `Y` is unconstrained (`ℝ`).\n@realizes O -/\nstructure DoseObs (d : ℕ) where\n  Y : ℝ -- @realizes Y(carrier ℝ)\n  A : ℝ -- @realizes A(carrier ℝ; range [0,1] pinned a.s. by the IidSampling A-support conjunct)\n  X : Fin d → ℝ -- @realizes X(carrier Fin d→ℝ; range [0,1]^d pinned a.s. by the IidSampling X-support conjunct)\n\n/-- The observed-data type is made measurable by identifying each observation with\nits outcome, treatment, and covariate tuple. -/\ninstance instMeasurableSpaceDoseObs {d : ℕ} : MeasurableSpace (DoseObs d) :=\n  MeasurableSpace.comap (fun O : DoseObs d => (O.Y, O.A, O.X)) inferInstance"
+        },
+        {
+          "label": "IidSampling — the `IidSampling` conjunction pins the observed-unit law a.s. to {(Y,A,X): Y∈ℝ, A∈[0,1], X∈[0,1]^d} through its A-support and X-support conjuncts",
+          "statement": "/-- `O_1, …, O_n` are i.i.d. draws from `P`. Carries the full i.i.d. content by\nreusing `Causalean.Stat.IIDSample` (mutually independent, identically distributed\nmeasurable maps with law `P.dataMeasure`), together with\n`IsProbabilityMeasure P.dataMeasure` certifying that the per-draw law — hence the\n`n`-fold product `Measure.pi (fun _ : Fin n => P.dataMeasure)` formed in\n`minimaxRisk` — is a probability measure. Also pins the observed-unit support\n`O = (Y,A,X)` to the sampling space `{(Y,A,X): Y∈ℝ, A∈[0,1], X∈[0,1]^d}`: under `P`\nthe treatment `A ∈ [0,1]` and the covariate vector `X ∈ [0,1]^d` almost surely.\n@realizes O(the `IidSampling` conjunction pins the observed-unit law a.s. to {(Y,A,X): Y∈ℝ, A∈[0,1], X∈[0,1]^d} through its A-support and X-support conjuncts) -/\ndef IidSampling {d : ℕ} (P : DoseLaw d) : Prop :=\n  IsProbabilityMeasure P.dataMeasure ∧\n    (∀ᵐ O ∂P.dataMeasure, O.A ∈ Set.Icc (0 : ℝ) 1) ∧\n      -- @realizes A(a.s. treatment-coordinate support A ∈ [0,1] under P, enforcing the declared treatment range [0,1])\n    (∀ᵐ O ∂P.dataMeasure, O.X ∈ cube d) ∧\n      -- @realizes X(a.s. covariate-coordinate support X ∈ [0,1]^d under P, enforcing the declared covariate range [0,1]^d)\n    -- @realizes O_1, ..., O_n(i.i.d. n-sample: mutually independent, identically `P.dataMeasure`-distributed measurable draws via `Causalean.Stat.IIDSample` — THIS `IidSampling` i.i.d. realizer is one of the two load-bearing realizers of the sample symbol `O_1,…,O_n` (the other is the `minimaxRisk` `Measure.pi` product law). It is NOT realized by the FOLLOWING `Consistency` declaration; the tag is placed BEFORE the existential so it attaches to `IidSampling`, not to the next decl. Each draw is a.s. in `{A∈[0,1], X∈[0,1]^d}`, and the n-fold product `Measure.pi (fun _ : Fin n => P.dataMeasure)` formed in `minimaxRisk` is their joint law.)\n    ∃ (Ω : Type) (_mΩ : MeasurableSpace Ω) (μ : @MeasureTheory.Measure Ω _mΩ),\n      Nonempty (@Causalean.Stat.IIDSample Ω (DoseObs d) _mΩ\n        instMeasurableSpaceDoseObs μ P.dataMeasure)"
+        }
+      ]
+    },
+    "sym:Y": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 57,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "DoseObs — carrier ℝ",
+          "statement": "-- @env: S1\n/-- Observed unit `O = (Y, A, X)` with outcome `Y ∈ ℝ`, continuous treatment\n`A ∈ [0,1]`, and covariate vector `X ∈ [0,1]^d`. The carrier fields are typed over\n`ℝ` / `Fin d → ℝ` (the witness measure constructions require `ℝ`-valued ranges),\nand the declared treatment range `[0,1]` and covariate cube `[0,1]^d` are pinned as\na STANDING a.s. support clause on the law by the two `IidSampling` support conjuncts\n(`A ∈ [0,1]` and `X ∈ [0,1]^d` almost surely under `P`), which every law in\n`HolderDoseClass` carries via `HolderDoseClass.iid`. `Y` is unconstrained (`ℝ`).\n@realizes O -/\nstructure DoseObs (d : ℕ) where\n  Y : ℝ -- @realizes Y(carrier ℝ)\n  A : ℝ -- @realizes A(carrier ℝ; range [0,1] pinned a.s. by the IidSampling A-support conjunct)\n  X : Fin d → ℝ -- @realizes X(carrier Fin d→ℝ; range [0,1]^d pinned a.s. by the IidSampling X-support conjunct)\n\n/-- The observed-data type is made measurable by identifying each observation with\nits outcome, treatment, and covariate tuple. -/\ninstance instMeasurableSpaceDoseObs {d : ℕ} : MeasurableSpace (DoseObs d) :=\n  MeasurableSpace.comap (fun O : DoseObs d => (O.Y, O.A, O.X)) inferInstance"
+        }
+      ]
+    },
+    "sym:A": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 58,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "DoseObs — carrier ℝ; range [0,1] pinned a.s. by the IidSampling A-support conjunct",
+          "statement": "-- @env: S1\n/-- Observed unit `O = (Y, A, X)` with outcome `Y ∈ ℝ`, continuous treatment\n`A ∈ [0,1]`, and covariate vector `X ∈ [0,1]^d`. The carrier fields are typed over\n`ℝ` / `Fin d → ℝ` (the witness measure constructions require `ℝ`-valued ranges),\nand the declared treatment range `[0,1]` and covariate cube `[0,1]^d` are pinned as\na STANDING a.s. support clause on the law by the two `IidSampling` support conjuncts\n(`A ∈ [0,1]` and `X ∈ [0,1]^d` almost surely under `P`), which every law in\n`HolderDoseClass` carries via `HolderDoseClass.iid`. `Y` is unconstrained (`ℝ`).\n@realizes O -/\nstructure DoseObs (d : ℕ) where\n  Y : ℝ -- @realizes Y(carrier ℝ)\n  A : ℝ -- @realizes A(carrier ℝ; range [0,1] pinned a.s. by the IidSampling A-support conjunct)\n  X : Fin d → ℝ -- @realizes X(carrier Fin d→ℝ; range [0,1]^d pinned a.s. by the IidSampling X-support conjunct)\n\n/-- The observed-data type is made measurable by identifying each observation with\nits outcome, treatment, and covariate tuple. -/\ninstance instMeasurableSpaceDoseObs {d : ℕ} : MeasurableSpace (DoseObs d) :=\n  MeasurableSpace.comap (fun O : DoseObs d => (O.Y, O.A, O.X)) inferInstance"
+        },
+        {
+          "label": "IidSampling — a.s. treatment-coordinate support A ∈ [0,1] under P, enforcing the declared treatment range [0,1]",
+          "statement": "/-- `O_1, …, O_n` are i.i.d. draws from `P`. Carries the full i.i.d. content by\nreusing `Causalean.Stat.IIDSample` (mutually independent, identically distributed\nmeasurable maps with law `P.dataMeasure`), together with\n`IsProbabilityMeasure P.dataMeasure` certifying that the per-draw law — hence the\n`n`-fold product `Measure.pi (fun _ : Fin n => P.dataMeasure)` formed in\n`minimaxRisk` — is a probability measure. Also pins the observed-unit support\n`O = (Y,A,X)` to the sampling space `{(Y,A,X): Y∈ℝ, A∈[0,1], X∈[0,1]^d}`: under `P`\nthe treatment `A ∈ [0,1]` and the covariate vector `X ∈ [0,1]^d` almost surely.\n@realizes O(the `IidSampling` conjunction pins the observed-unit law a.s. to {(Y,A,X): Y∈ℝ, A∈[0,1], X∈[0,1]^d} through its A-support and X-support conjuncts) -/\ndef IidSampling {d : ℕ} (P : DoseLaw d) : Prop :=\n  IsProbabilityMeasure P.dataMeasure ∧\n    (∀ᵐ O ∂P.dataMeasure, O.A ∈ Set.Icc (0 : ℝ) 1) ∧\n      -- @realizes A(a.s. treatment-coordinate support A ∈ [0,1] under P, enforcing the declared treatment range [0,1])\n    (∀ᵐ O ∂P.dataMeasure, O.X ∈ cube d) ∧\n      -- @realizes X(a.s. covariate-coordinate support X ∈ [0,1]^d under P, enforcing the declared covariate range [0,1]^d)\n    -- @realizes O_1, ..., O_n(i.i.d. n-sample: mutually independent, identically `P.dataMeasure`-distributed measurable draws via `Causalean.Stat.IIDSample` — THIS `IidSampling` i.i.d. realizer is one of the two load-bearing realizers of the sample symbol `O_1,…,O_n` (the other is the `minimaxRisk` `Measure.pi` product law). It is NOT realized by the FOLLOWING `Consistency` declaration; the tag is placed BEFORE the existential so it attaches to `IidSampling`, not to the next decl. Each draw is a.s. in `{A∈[0,1], X∈[0,1]^d}`, and the n-fold product `Measure.pi (fun _ : Fin n => P.dataMeasure)` formed in `minimaxRisk` is their joint law.)\n    ∃ (Ω : Type) (_mΩ : MeasurableSpace Ω) (μ : @MeasureTheory.Measure Ω _mΩ),\n      Nonempty (@Causalean.Stat.IIDSample Ω (DoseObs d) _mΩ\n        instMeasurableSpaceDoseObs μ P.dataMeasure)"
+        }
+      ]
+    },
+    "sym:X": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 59,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "DoseObs — carrier Fin d→ℝ; range [0,1]^d pinned a.s. by the IidSampling X-support conjunct",
+          "statement": "-- @env: S1\n/-- Observed unit `O = (Y, A, X)` with outcome `Y ∈ ℝ`, continuous treatment\n`A ∈ [0,1]`, and covariate vector `X ∈ [0,1]^d`. The carrier fields are typed over\n`ℝ` / `Fin d → ℝ` (the witness measure constructions require `ℝ`-valued ranges),\nand the declared treatment range `[0,1]` and covariate cube `[0,1]^d` are pinned as\na STANDING a.s. support clause on the law by the two `IidSampling` support conjuncts\n(`A ∈ [0,1]` and `X ∈ [0,1]^d` almost surely under `P`), which every law in\n`HolderDoseClass` carries via `HolderDoseClass.iid`. `Y` is unconstrained (`ℝ`).\n@realizes O -/\nstructure DoseObs (d : ℕ) where\n  Y : ℝ -- @realizes Y(carrier ℝ)\n  A : ℝ -- @realizes A(carrier ℝ; range [0,1] pinned a.s. by the IidSampling A-support conjunct)\n  X : Fin d → ℝ -- @realizes X(carrier Fin d→ℝ; range [0,1]^d pinned a.s. by the IidSampling X-support conjunct)\n\n/-- The observed-data type is made measurable by identifying each observation with\nits outcome, treatment, and covariate tuple. -/\ninstance instMeasurableSpaceDoseObs {d : ℕ} : MeasurableSpace (DoseObs d) :=\n  MeasurableSpace.comap (fun O : DoseObs d => (O.Y, O.A, O.X)) inferInstance"
+        },
+        {
+          "label": "IidSampling — a.s. covariate-coordinate support X ∈ [0,1]^d under P, enforcing the declared covariate range [0,1]^d",
+          "statement": "/-- `O_1, …, O_n` are i.i.d. draws from `P`. Carries the full i.i.d. content by\nreusing `Causalean.Stat.IIDSample` (mutually independent, identically distributed\nmeasurable maps with law `P.dataMeasure`), together with\n`IsProbabilityMeasure P.dataMeasure` certifying that the per-draw law — hence the\n`n`-fold product `Measure.pi (fun _ : Fin n => P.dataMeasure)` formed in\n`minimaxRisk` — is a probability measure. Also pins the observed-unit support\n`O = (Y,A,X)` to the sampling space `{(Y,A,X): Y∈ℝ, A∈[0,1], X∈[0,1]^d}`: under `P`\nthe treatment `A ∈ [0,1]` and the covariate vector `X ∈ [0,1]^d` almost surely.\n@realizes O(the `IidSampling` conjunction pins the observed-unit law a.s. to {(Y,A,X): Y∈ℝ, A∈[0,1], X∈[0,1]^d} through its A-support and X-support conjuncts) -/\ndef IidSampling {d : ℕ} (P : DoseLaw d) : Prop :=\n  IsProbabilityMeasure P.dataMeasure ∧\n    (∀ᵐ O ∂P.dataMeasure, O.A ∈ Set.Icc (0 : ℝ) 1) ∧\n      -- @realizes A(a.s. treatment-coordinate support A ∈ [0,1] under P, enforcing the declared treatment range [0,1])\n    (∀ᵐ O ∂P.dataMeasure, O.X ∈ cube d) ∧\n      -- @realizes X(a.s. covariate-coordinate support X ∈ [0,1]^d under P, enforcing the declared covariate range [0,1]^d)\n    -- @realizes O_1, ..., O_n(i.i.d. n-sample: mutually independent, identically `P.dataMeasure`-distributed measurable draws via `Causalean.Stat.IIDSample` — THIS `IidSampling` i.i.d. realizer is one of the two load-bearing realizers of the sample symbol `O_1,…,O_n` (the other is the `minimaxRisk` `Measure.pi` product law). It is NOT realized by the FOLLOWING `Consistency` declaration; the tag is placed BEFORE the existential so it attaches to `IidSampling`, not to the next decl. Each draw is a.s. in `{A∈[0,1], X∈[0,1]^d}`, and the n-fold product `Measure.pi (fun _ : Fin n => P.dataMeasure)` formed in `minimaxRisk` is their joint law.)\n    ∃ (Ω : Type) (_mΩ : MeasurableSpace Ω) (μ : @MeasureTheory.Measure Ω _mΩ),\n      Nonempty (@Causalean.Stat.IIDSample Ω (DoseObs d) _mΩ\n        instMeasurableSpaceDoseObs μ P.dataMeasure)"
+        }
+      ]
+    },
+    "sym:P(the single-observation data law of the unit O = (Y,A,X); the i.i.d. n-sample O_1,…,O_n is NOT realized here — it is the n-fold product of this law, carried by IidSampling + minimaxRisk, see their": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 101,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "DoseLaw",
+          "statement": "/-- Build-inline observed-law object: the per-draw observation law, the covariate\nmarginal, the law-side nuisances `μ_P, π_P, p_{X,P}`, and the potential-outcome\nprocess `Y(·)` (the causal overlay S2). -/\nstructure DoseLaw (d : ℕ) where\n  dataMeasure : Measure (DoseObs d) -- @realizes P(the single-observation data law of the unit O = (Y,A,X); the i.i.d. n-sample O_1,…,O_n is NOT realized here — it is the n-fold product of this law, carried by IidSampling + minimaxRisk, see their @realizes tags)\n  PX : Measure (Fin d → ℝ) -- @realizes P_X(marginal law of X)\n  mu : ℝ → (Fin d → ℝ) → ℝ -- @realizes mu_P(carrier [0,1]×[0,1]^d→ℝ; =E[Y∣A=a,X=x])\n  pi : ℝ → (Fin d → ℝ) → ℝ -- @realizes pi_P(carrier [0,1]×[0,1]^d→ℝ; the conditional density A∣X, its declared range [0,∞) enforced by the `0 ≤ π_P` conjunct of `PiIsCondTreatmentDensity` and pinned to the law by that tie's joint factorization)\n  px : (Fin d → ℝ) → ℝ -- @realizes p_{X,P}(carrier [0,1]^d→ℝ; density of P_X, its declared range [0,∞) enforced by the `0 ≤ p_{X,P}` conjunct of `PxHolder` and pinned to the law by the `PxIsXDensity` tie)\n  pot : ℝ → DoseObs d → ℝ -- @realizes Y(a)(potential outcome process a ↦ Y(a) on the obs space)"
+        }
+      ]
+    },
+    "sym:tags)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 101,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "DoseLaw",
+          "statement": "/-- Build-inline observed-law object: the per-draw observation law, the covariate\nmarginal, the law-side nuisances `μ_P, π_P, p_{X,P}`, and the potential-outcome\nprocess `Y(·)` (the causal overlay S2). -/\nstructure DoseLaw (d : ℕ) where\n  dataMeasure : Measure (DoseObs d) -- @realizes P(the single-observation data law of the unit O = (Y,A,X); the i.i.d. n-sample O_1,…,O_n is NOT realized here — it is the n-fold product of this law, carried by IidSampling + minimaxRisk, see their @realizes tags)\n  PX : Measure (Fin d → ℝ) -- @realizes P_X(marginal law of X)\n  mu : ℝ → (Fin d → ℝ) → ℝ -- @realizes mu_P(carrier [0,1]×[0,1]^d→ℝ; =E[Y∣A=a,X=x])\n  pi : ℝ → (Fin d → ℝ) → ℝ -- @realizes pi_P(carrier [0,1]×[0,1]^d→ℝ; the conditional density A∣X, its declared range [0,∞) enforced by the `0 ≤ π_P` conjunct of `PiIsCondTreatmentDensity` and pinned to the law by that tie's joint factorization)\n  px : (Fin d → ℝ) → ℝ -- @realizes p_{X,P}(carrier [0,1]^d→ℝ; density of P_X, its declared range [0,∞) enforced by the `0 ≤ p_{X,P}` conjunct of `PxHolder` and pinned to the law by the `PxIsXDensity` tie)\n  pot : ℝ → DoseObs d → ℝ -- @realizes Y(a)(potential outcome process a ↦ Y(a) on the obs space)"
+        }
+      ]
+    },
+    "sym:P_X": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 102,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "DoseLaw — marginal law of X",
+          "statement": "/-- Build-inline observed-law object: the per-draw observation law, the covariate\nmarginal, the law-side nuisances `μ_P, π_P, p_{X,P}`, and the potential-outcome\nprocess `Y(·)` (the causal overlay S2). -/\nstructure DoseLaw (d : ℕ) where\n  dataMeasure : Measure (DoseObs d) -- @realizes P(the single-observation data law of the unit O = (Y,A,X); the i.i.d. n-sample O_1,…,O_n is NOT realized here — it is the n-fold product of this law, carried by IidSampling + minimaxRisk, see their @realizes tags)\n  PX : Measure (Fin d → ℝ) -- @realizes P_X(marginal law of X)\n  mu : ℝ → (Fin d → ℝ) → ℝ -- @realizes mu_P(carrier [0,1]×[0,1]^d→ℝ; =E[Y∣A=a,X=x])\n  pi : ℝ → (Fin d → ℝ) → ℝ -- @realizes pi_P(carrier [0,1]×[0,1]^d→ℝ; the conditional density A∣X, its declared range [0,∞) enforced by the `0 ≤ π_P` conjunct of `PiIsCondTreatmentDensity` and pinned to the law by that tie's joint factorization)\n  px : (Fin d → ℝ) → ℝ -- @realizes p_{X,P}(carrier [0,1]^d→ℝ; density of P_X, its declared range [0,∞) enforced by the `0 ≤ p_{X,P}` conjunct of `PxHolder` and pinned to the law by the `PxIsXDensity` tie)\n  pot : ℝ → DoseObs d → ℝ -- @realizes Y(a)(potential outcome process a ↦ Y(a) on the obs space)"
+        }
+      ]
+    },
+    "sym:mu_P": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 103,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "DoseLaw — carrier [0,1]×[0,1]^d→ℝ; =E[Y∣A=a,X=x]",
+          "statement": "/-- Build-inline observed-law object: the per-draw observation law, the covariate\nmarginal, the law-side nuisances `μ_P, π_P, p_{X,P}`, and the potential-outcome\nprocess `Y(·)` (the causal overlay S2). -/\nstructure DoseLaw (d : ℕ) where\n  dataMeasure : Measure (DoseObs d) -- @realizes P(the single-observation data law of the unit O = (Y,A,X); the i.i.d. n-sample O_1,…,O_n is NOT realized here — it is the n-fold product of this law, carried by IidSampling + minimaxRisk, see their @realizes tags)\n  PX : Measure (Fin d → ℝ) -- @realizes P_X(marginal law of X)\n  mu : ℝ → (Fin d → ℝ) → ℝ -- @realizes mu_P(carrier [0,1]×[0,1]^d→ℝ; =E[Y∣A=a,X=x])\n  pi : ℝ → (Fin d → ℝ) → ℝ -- @realizes pi_P(carrier [0,1]×[0,1]^d→ℝ; the conditional density A∣X, its declared range [0,∞) enforced by the `0 ≤ π_P` conjunct of `PiIsCondTreatmentDensity` and pinned to the law by that tie's joint factorization)\n  px : (Fin d → ℝ) → ℝ -- @realizes p_{X,P}(carrier [0,1]^d→ℝ; density of P_X, its declared range [0,∞) enforced by the `0 ≤ p_{X,P}` conjunct of `PxHolder` and pinned to the law by the `PxIsXDensity` tie)\n  pot : ℝ → DoseObs d → ℝ -- @realizes Y(a)(potential outcome process a ↦ Y(a) on the obs space)"
+        }
+      ]
+    },
+    "sym:pi_P(carrier [0,1]×[0,1]^d→ℝ; the conditional density A∣X, its declared range [0,∞) enforced by the `0 ≤ π_P` conjunct of `PiIsCondTreatmentDensity` and pinned to the law by that tie's joint factorization)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 104,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "DoseLaw",
+          "statement": "/-- Build-inline observed-law object: the per-draw observation law, the covariate\nmarginal, the law-side nuisances `μ_P, π_P, p_{X,P}`, and the potential-outcome\nprocess `Y(·)` (the causal overlay S2). -/\nstructure DoseLaw (d : ℕ) where\n  dataMeasure : Measure (DoseObs d) -- @realizes P(the single-observation data law of the unit O = (Y,A,X); the i.i.d. n-sample O_1,…,O_n is NOT realized here — it is the n-fold product of this law, carried by IidSampling + minimaxRisk, see their @realizes tags)\n  PX : Measure (Fin d → ℝ) -- @realizes P_X(marginal law of X)\n  mu : ℝ → (Fin d → ℝ) → ℝ -- @realizes mu_P(carrier [0,1]×[0,1]^d→ℝ; =E[Y∣A=a,X=x])\n  pi : ℝ → (Fin d → ℝ) → ℝ -- @realizes pi_P(carrier [0,1]×[0,1]^d→ℝ; the conditional density A∣X, its declared range [0,∞) enforced by the `0 ≤ π_P` conjunct of `PiIsCondTreatmentDensity` and pinned to the law by that tie's joint factorization)\n  px : (Fin d → ℝ) → ℝ -- @realizes p_{X,P}(carrier [0,1]^d→ℝ; density of P_X, its declared range [0,∞) enforced by the `0 ≤ p_{X,P}` conjunct of `PxHolder` and pinned to the law by the `PxIsXDensity` tie)\n  pot : ℝ → DoseObs d → ℝ -- @realizes Y(a)(potential outcome process a ↦ Y(a) on the obs space)"
+        }
+      ]
+    },
+    "sym:p_{X,P}(carrier [0,1]^d→ℝ; density of P_X, its declared range [0,∞) enforced by the `0 ≤ p_{X,P}` conjunct of `PxHolder` and pinned to the law by the `PxIsXDensity` tie)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 105,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "DoseLaw",
+          "statement": "/-- Build-inline observed-law object: the per-draw observation law, the covariate\nmarginal, the law-side nuisances `μ_P, π_P, p_{X,P}`, and the potential-outcome\nprocess `Y(·)` (the causal overlay S2). -/\nstructure DoseLaw (d : ℕ) where\n  dataMeasure : Measure (DoseObs d) -- @realizes P(the single-observation data law of the unit O = (Y,A,X); the i.i.d. n-sample O_1,…,O_n is NOT realized here — it is the n-fold product of this law, carried by IidSampling + minimaxRisk, see their @realizes tags)\n  PX : Measure (Fin d → ℝ) -- @realizes P_X(marginal law of X)\n  mu : ℝ → (Fin d → ℝ) → ℝ -- @realizes mu_P(carrier [0,1]×[0,1]^d→ℝ; =E[Y∣A=a,X=x])\n  pi : ℝ → (Fin d → ℝ) → ℝ -- @realizes pi_P(carrier [0,1]×[0,1]^d→ℝ; the conditional density A∣X, its declared range [0,∞) enforced by the `0 ≤ π_P` conjunct of `PiIsCondTreatmentDensity` and pinned to the law by that tie's joint factorization)\n  px : (Fin d → ℝ) → ℝ -- @realizes p_{X,P}(carrier [0,1]^d→ℝ; density of P_X, its declared range [0,∞) enforced by the `0 ≤ p_{X,P}` conjunct of `PxHolder` and pinned to the law by the `PxIsXDensity` tie)\n  pot : ℝ → DoseObs d → ℝ -- @realizes Y(a)(potential outcome process a ↦ Y(a) on the obs space)"
+        }
+      ]
+    },
+    "sym:Y(a)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 106,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "DoseLaw — potential outcome process a ↦ Y(a) on the obs space",
+          "statement": "/-- Build-inline observed-law object: the per-draw observation law, the covariate\nmarginal, the law-side nuisances `μ_P, π_P, p_{X,P}`, and the potential-outcome\nprocess `Y(·)` (the causal overlay S2). -/\nstructure DoseLaw (d : ℕ) where\n  dataMeasure : Measure (DoseObs d) -- @realizes P(the single-observation data law of the unit O = (Y,A,X); the i.i.d. n-sample O_1,…,O_n is NOT realized here — it is the n-fold product of this law, carried by IidSampling + minimaxRisk, see their @realizes tags)\n  PX : Measure (Fin d → ℝ) -- @realizes P_X(marginal law of X)\n  mu : ℝ → (Fin d → ℝ) → ℝ -- @realizes mu_P(carrier [0,1]×[0,1]^d→ℝ; =E[Y∣A=a,X=x])\n  pi : ℝ → (Fin d → ℝ) → ℝ -- @realizes pi_P(carrier [0,1]×[0,1]^d→ℝ; the conditional density A∣X, its declared range [0,∞) enforced by the `0 ≤ π_P` conjunct of `PiIsCondTreatmentDensity` and pinned to the law by that tie's joint factorization)\n  px : (Fin d → ℝ) → ℝ -- @realizes p_{X,P}(carrier [0,1]^d→ℝ; density of P_X, its declared range [0,∞) enforced by the `0 ≤ p_{X,P}` conjunct of `PxHolder` and pinned to the law by the `PxIsXDensity` tie)\n  pot : ℝ → DoseObs d → ℝ -- @realizes Y(a)(potential outcome process a ↦ Y(a) on the obs space)"
+        }
+      ]
+    },
+    "sym:O_1": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 126,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "IidSampling",
+          "statement": "/-- `O_1, …, O_n` are i.i.d. draws from `P`. Carries the full i.i.d. content by\nreusing `Causalean.Stat.IIDSample` (mutually independent, identically distributed\nmeasurable maps with law `P.dataMeasure`), together with\n`IsProbabilityMeasure P.dataMeasure` certifying that the per-draw law — hence the\n`n`-fold product `Measure.pi (fun _ : Fin n => P.dataMeasure)` formed in\n`minimaxRisk` — is a probability measure. Also pins the observed-unit support\n`O = (Y,A,X)` to the sampling space `{(Y,A,X): Y∈ℝ, A∈[0,1], X∈[0,1]^d}`: under `P`\nthe treatment `A ∈ [0,1]` and the covariate vector `X ∈ [0,1]^d` almost surely.\n@realizes O(the `IidSampling` conjunction pins the observed-unit law a.s. to {(Y,A,X): Y∈ℝ, A∈[0,1], X∈[0,1]^d} through its A-support and X-support conjuncts) -/\ndef IidSampling {d : ℕ} (P : DoseLaw d) : Prop :=\n  IsProbabilityMeasure P.dataMeasure ∧\n    (∀ᵐ O ∂P.dataMeasure, O.A ∈ Set.Icc (0 : ℝ) 1) ∧\n      -- @realizes A(a.s. treatment-coordinate support A ∈ [0,1] under P, enforcing the declared treatment range [0,1])\n    (∀ᵐ O ∂P.dataMeasure, O.X ∈ cube d) ∧\n      -- @realizes X(a.s. covariate-coordinate support X ∈ [0,1]^d under P, enforcing the declared covariate range [0,1]^d)\n    -- @realizes O_1, ..., O_n(i.i.d. n-sample: mutually independent, identically `P.dataMeasure`-distributed measurable draws via `Causalean.Stat.IIDSample` — THIS `IidSampling` i.i.d. realizer is one of the two load-bearing realizers of the sample symbol `O_1,…,O_n` (the other is the `minimaxRisk` `Measure.pi` product law). It is NOT realized by the FOLLOWING `Consistency` declaration; the tag is placed BEFORE the existential so it attaches to `IidSampling`, not to the next decl. Each draw is a.s. in `{A∈[0,1], X∈[0,1]^d}`, and the n-fold product `Measure.pi (fun _ : Fin n => P.dataMeasure)` formed in `minimaxRisk` is their joint law.)\n    ∃ (Ω : Type) (_mΩ : MeasurableSpace Ω) (μ : @MeasureTheory.Measure Ω _mΩ),\n      Nonempty (@Causalean.Stat.IIDSample Ω (DoseObs d) _mΩ\n        instMeasurableSpaceDoseObs μ P.dataMeasure)"
+        },
+        {
+          "label": "minimaxRisk",
+          "statement": "/-- Pointwise minimax mean-squared risk\n`R_n(C, t_0) = inf_{θ̂_n} sup_{P ∈ C} E_P[(θ̂_n - θ_P(t_0))^2]`.\nThe infimum ranges over MEASURABLE estimators truncated to `[-M,M]` (the\nbounded-estimand range: truncating to the interval containing every `θ_P(t_0)`\nnever increases MSE and yields the SAME minimax value, while keeping the inner\nsquared loss bounded by `(2M)^2` under each `n`-fold probability law — so the\n`⨆`/`⨅` are well-posed, with no junk-`0` inflation of the converse). -/\nnoncomputable def minimaxRisk {d : ℕ} (M : ℝ) (n : ℕ)\n    (C : DoseLaw d → Prop) (t0 : ℝ) : ℝ :=\n  ⨅ est : {est : (Fin n → DoseObs d) → ℝ //\n      Measurable est ∧ ∀ s, est s ∈ Set.Icc (-M) M},\n      -- @realizes O_1, ..., O_n(estimator domain is the size-`n` sample `Fin n → DoseObs d`)\n    ⨆ P : {P : DoseLaw d // C P},\n      -- @realizes O_1, ..., O_n(the i.i.d. `n`-sample as the `n`-fold PRODUCT LAW `Measure.pi (fun _ : Fin n => P.dataMeasure)` over `Fin n → DoseObs d` — THIS `minimaxRisk` product law is the second of the two load-bearing realizers of the sample symbol (the first is the `IidSampling` i.i.d. realizer); its factors are mutually independent and identically `P.dataMeasure`-distributed exactly by the `Causalean.Stat.IIDSample` conjunct of `IidSampling`. It is NOT realized by the FOLLOWING `publishedHoifRate` declaration; the tag is placed BEFORE the integral so it attaches to `minimaxRisk`, not to the next decl.)\n      ∫ s, (est.1 s - thetaFunctional P.1 t0) ^ 2\n        ∂(Measure.pi fun _ : Fin n => (P.1).dataMeasure)"
+        }
+      ]
+    },
+    "sym:...": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 126,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "IidSampling",
+          "statement": "/-- `O_1, …, O_n` are i.i.d. draws from `P`. Carries the full i.i.d. content by\nreusing `Causalean.Stat.IIDSample` (mutually independent, identically distributed\nmeasurable maps with law `P.dataMeasure`), together with\n`IsProbabilityMeasure P.dataMeasure` certifying that the per-draw law — hence the\n`n`-fold product `Measure.pi (fun _ : Fin n => P.dataMeasure)` formed in\n`minimaxRisk` — is a probability measure. Also pins the observed-unit support\n`O = (Y,A,X)` to the sampling space `{(Y,A,X): Y∈ℝ, A∈[0,1], X∈[0,1]^d}`: under `P`\nthe treatment `A ∈ [0,1]` and the covariate vector `X ∈ [0,1]^d` almost surely.\n@realizes O(the `IidSampling` conjunction pins the observed-unit law a.s. to {(Y,A,X): Y∈ℝ, A∈[0,1], X∈[0,1]^d} through its A-support and X-support conjuncts) -/\ndef IidSampling {d : ℕ} (P : DoseLaw d) : Prop :=\n  IsProbabilityMeasure P.dataMeasure ∧\n    (∀ᵐ O ∂P.dataMeasure, O.A ∈ Set.Icc (0 : ℝ) 1) ∧\n      -- @realizes A(a.s. treatment-coordinate support A ∈ [0,1] under P, enforcing the declared treatment range [0,1])\n    (∀ᵐ O ∂P.dataMeasure, O.X ∈ cube d) ∧\n      -- @realizes X(a.s. covariate-coordinate support X ∈ [0,1]^d under P, enforcing the declared covariate range [0,1]^d)\n    -- @realizes O_1, ..., O_n(i.i.d. n-sample: mutually independent, identically `P.dataMeasure`-distributed measurable draws via `Causalean.Stat.IIDSample` — THIS `IidSampling` i.i.d. realizer is one of the two load-bearing realizers of the sample symbol `O_1,…,O_n` (the other is the `minimaxRisk` `Measure.pi` product law). It is NOT realized by the FOLLOWING `Consistency` declaration; the tag is placed BEFORE the existential so it attaches to `IidSampling`, not to the next decl. Each draw is a.s. in `{A∈[0,1], X∈[0,1]^d}`, and the n-fold product `Measure.pi (fun _ : Fin n => P.dataMeasure)` formed in `minimaxRisk` is their joint law.)\n    ∃ (Ω : Type) (_mΩ : MeasurableSpace Ω) (μ : @MeasureTheory.Measure Ω _mΩ),\n      Nonempty (@Causalean.Stat.IIDSample Ω (DoseObs d) _mΩ\n        instMeasurableSpaceDoseObs μ P.dataMeasure)"
+        },
+        {
+          "label": "minimaxRisk",
+          "statement": "/-- Pointwise minimax mean-squared risk\n`R_n(C, t_0) = inf_{θ̂_n} sup_{P ∈ C} E_P[(θ̂_n - θ_P(t_0))^2]`.\nThe infimum ranges over MEASURABLE estimators truncated to `[-M,M]` (the\nbounded-estimand range: truncating to the interval containing every `θ_P(t_0)`\nnever increases MSE and yields the SAME minimax value, while keeping the inner\nsquared loss bounded by `(2M)^2` under each `n`-fold probability law — so the\n`⨆`/`⨅` are well-posed, with no junk-`0` inflation of the converse). -/\nnoncomputable def minimaxRisk {d : ℕ} (M : ℝ) (n : ℕ)\n    (C : DoseLaw d → Prop) (t0 : ℝ) : ℝ :=\n  ⨅ est : {est : (Fin n → DoseObs d) → ℝ //\n      Measurable est ∧ ∀ s, est s ∈ Set.Icc (-M) M},\n      -- @realizes O_1, ..., O_n(estimator domain is the size-`n` sample `Fin n → DoseObs d`)\n    ⨆ P : {P : DoseLaw d // C P},\n      -- @realizes O_1, ..., O_n(the i.i.d. `n`-sample as the `n`-fold PRODUCT LAW `Measure.pi (fun _ : Fin n => P.dataMeasure)` over `Fin n → DoseObs d` — THIS `minimaxRisk` product law is the second of the two load-bearing realizers of the sample symbol (the first is the `IidSampling` i.i.d. realizer); its factors are mutually independent and identically `P.dataMeasure`-distributed exactly by the `Causalean.Stat.IIDSample` conjunct of `IidSampling`. It is NOT realized by the FOLLOWING `publishedHoifRate` declaration; the tag is placed BEFORE the integral so it attaches to `minimaxRisk`, not to the next decl.)\n      ∫ s, (est.1 s - thetaFunctional P.1 t0) ^ 2\n        ∂(Measure.pi fun _ : Fin n => (P.1).dataMeasure)"
+        }
+      ]
+    },
+    "sym:O_n": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 126,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "IidSampling — i.i.d. n-sample: mutually independent, identically `P.dataMeasure`-distributed measurable draws via `Causalean.Stat.IIDSample` — THIS `IidSampling` i.i.d. realizer is one of the two load-bearing realizers of the sample symbol `O_1,…,O_n` (the other is the `minimaxRisk` `Measure.pi` product law). It is NOT realized by the FOLLOWING `Consistency` declaration; the tag is placed BEFORE the existential so it attaches to `IidSampling`, not to the next decl. Each draw is a.s. in `{A∈[0,1], X∈[0,1]^d}`, and the n-fold product `Measure.pi (fun _ : Fin n => P.dataMeasure)` formed in `minimaxRisk` is their joint law.",
+          "statement": "/-- `O_1, …, O_n` are i.i.d. draws from `P`. Carries the full i.i.d. content by\nreusing `Causalean.Stat.IIDSample` (mutually independent, identically distributed\nmeasurable maps with law `P.dataMeasure`), together with\n`IsProbabilityMeasure P.dataMeasure` certifying that the per-draw law — hence the\n`n`-fold product `Measure.pi (fun _ : Fin n => P.dataMeasure)` formed in\n`minimaxRisk` — is a probability measure. Also pins the observed-unit support\n`O = (Y,A,X)` to the sampling space `{(Y,A,X): Y∈ℝ, A∈[0,1], X∈[0,1]^d}`: under `P`\nthe treatment `A ∈ [0,1]` and the covariate vector `X ∈ [0,1]^d` almost surely.\n@realizes O(the `IidSampling` conjunction pins the observed-unit law a.s. to {(Y,A,X): Y∈ℝ, A∈[0,1], X∈[0,1]^d} through its A-support and X-support conjuncts) -/\ndef IidSampling {d : ℕ} (P : DoseLaw d) : Prop :=\n  IsProbabilityMeasure P.dataMeasure ∧\n    (∀ᵐ O ∂P.dataMeasure, O.A ∈ Set.Icc (0 : ℝ) 1) ∧\n      -- @realizes A(a.s. treatment-coordinate support A ∈ [0,1] under P, enforcing the declared treatment range [0,1])\n    (∀ᵐ O ∂P.dataMeasure, O.X ∈ cube d) ∧\n      -- @realizes X(a.s. covariate-coordinate support X ∈ [0,1]^d under P, enforcing the declared covariate range [0,1]^d)\n    -- @realizes O_1, ..., O_n(i.i.d. n-sample: mutually independent, identically `P.dataMeasure`-distributed measurable draws via `Causalean.Stat.IIDSample` — THIS `IidSampling` i.i.d. realizer is one of the two load-bearing realizers of the sample symbol `O_1,…,O_n` (the other is the `minimaxRisk` `Measure.pi` product law). It is NOT realized by the FOLLOWING `Consistency` declaration; the tag is placed BEFORE the existential so it attaches to `IidSampling`, not to the next decl. Each draw is a.s. in `{A∈[0,1], X∈[0,1]^d}`, and the n-fold product `Measure.pi (fun _ : Fin n => P.dataMeasure)` formed in `minimaxRisk` is their joint law.)\n    ∃ (Ω : Type) (_mΩ : MeasurableSpace Ω) (μ : @MeasureTheory.Measure Ω _mΩ),\n      Nonempty (@Causalean.Stat.IIDSample Ω (DoseObs d) _mΩ\n        instMeasurableSpaceDoseObs μ P.dataMeasure)"
+        },
+        {
+          "label": "minimaxRisk — estimator domain is the size-`n` sample `Fin n → DoseObs d`; the i.i.d. `n`-sample as the `n`-fold PRODUCT LAW `Measure.pi (fun _ : Fin n => P.dataMeasure)` over `Fin n → DoseObs d` — THIS `minimaxRisk` product law is the second of the two load-bearing realizers of the sample symbol (the first is the `IidSampling` i.i.d. realizer); its factors are mutually independent and identically `P.dataMeasure`-distributed exactly by the `Causalean.Stat.IIDSample` conjunct of `IidSampling`. It is NOT realized by the FOLLOWING `publishedHoifRate` declaration; the tag is placed BEFORE the integral so it attaches to `minimaxRisk`, not to the next decl.",
+          "statement": "/-- Pointwise minimax mean-squared risk\n`R_n(C, t_0) = inf_{θ̂_n} sup_{P ∈ C} E_P[(θ̂_n - θ_P(t_0))^2]`.\nThe infimum ranges over MEASURABLE estimators truncated to `[-M,M]` (the\nbounded-estimand range: truncating to the interval containing every `θ_P(t_0)`\nnever increases MSE and yields the SAME minimax value, while keeping the inner\nsquared loss bounded by `(2M)^2` under each `n`-fold probability law — so the\n`⨆`/`⨅` are well-posed, with no junk-`0` inflation of the converse). -/\nnoncomputable def minimaxRisk {d : ℕ} (M : ℝ) (n : ℕ)\n    (C : DoseLaw d → Prop) (t0 : ℝ) : ℝ :=\n  ⨅ est : {est : (Fin n → DoseObs d) → ℝ //\n      Measurable est ∧ ∀ s, est s ∈ Set.Icc (-M) M},\n      -- @realizes O_1, ..., O_n(estimator domain is the size-`n` sample `Fin n → DoseObs d`)\n    ⨆ P : {P : DoseLaw d // C P},\n      -- @realizes O_1, ..., O_n(the i.i.d. `n`-sample as the `n`-fold PRODUCT LAW `Measure.pi (fun _ : Fin n => P.dataMeasure)` over `Fin n → DoseObs d` — THIS `minimaxRisk` product law is the second of the two load-bearing realizers of the sample symbol (the first is the `IidSampling` i.i.d. realizer); its factors are mutually independent and identically `P.dataMeasure`-distributed exactly by the `Causalean.Stat.IIDSample` conjunct of `IidSampling`. It is NOT realized by the FOLLOWING `publishedHoifRate` declaration; the tag is placed BEFORE the integral so it attaches to `minimaxRisk`, not to the next decl.)\n      ∫ s, (est.1 s - thetaFunctional P.1 t0) ^ 2\n        ∂(Measure.pi fun _ : Fin n => (P.1).dataMeasure)"
+        }
+      ]
+    },
+    "sym:p_{X,P}(0 ≤ p_{X,P} on cube; enforces the declared density range [0,∞), so the `ofReal` `PxIsXDensity` tie realizes the actual nonnegative density object)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 205,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "PxHolder",
+          "statement": "/-- Covariate-density smoothness and range: `p_{X,P}` lies in a Hölder ball of order\n`s`, radius `M`, on `[0,1]^d`, is NONNEGATIVE (`0 ≤ p_{X,P}` on the cube — the declared\ndensity range `[0,∞)`), and is bounded above by `M`. The nonnegativity conjunct makes\n`p_{X,P}` a genuine density object: with it `ENNReal.ofReal (P.px x) = P.px x` on the\ncube, so the `PxIsXDensity` tie realizes the ACTUAL `p_{X,P}` density rather than only\nits `ofReal` positive part. -/\ndef PxHolder {d : ℕ} (P : DoseLaw d) (s M : ℝ) : Prop :=\n  HolderBallND P.px s M (cube d) ∧\n    (∀ x ∈ cube d, 0 ≤ P.px x) ∧     -- @realizes p_{X,P}(0 ≤ p_{X,P} on cube; enforces the declared density range [0,∞), so the `ofReal` `PxIsXDensity` tie realizes the actual nonnegative density object)\n    (∀ x ∈ cube d, P.px x ≤ M)"
+        }
+      ]
+    },
+    "sym:pi_P(`0 ≤ π_P` on `[0,1]×cube` enforcing the declared range `[0,∞)`, AND `P.dataMeasure.map (A,X) = (Leb↾[0,1] ⊗ Leb↾[0,1]^d).withDensity (π_P·p_{X,P})`; together the range-clause + joint-factorization tie pin `pi` to the law's genuine nonnegative conditional treatment density)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 263,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "PiIsCondTreatmentDensity",
+          "statement": "/-- **Semantic tie / range-normalization (`π_P` is the conditional treatment density).**\nThe pushforward of the data law under `(A,X)` equals the measure with joint density\n`(a,x) ↦ π_P(a∣x)·p_{X,P}(x)` w.r.t. Lebesgue on `[0,1]×[0,1]^d`. Together with\n`PxIsXDensity` (the `X`-marginal is `p_{X,P}·Leb`) this pins `π_P(·∣x)` to be the GENUINE\nconditional density of `A` given `X = x` under `P` — it is normalized\n(`∫_{[0,1]} π_P(a∣x) da = 1` for `P_X`-a.e. `x`, forced by consistency of the joint with\nits `X`-marginal) and tied to `dataMeasure`. Without it the `pi` field is disconnected\nfrom `dataMeasure`, so the class `P_{α,β,s}` would be strictly BROADER than the paper\nclass (an arbitrary `π` field satisfying only the Hölder/positivity atoms, never required\nto be the law's actual treatment density). The core symbol `pi_P(a∣x)` is *defined* as the\nconditional density of `A` given `X = x` under `P`, so this tie is exactly the note's\nstated meaning of `π_P`, not an added restriction. The leading conjunct ENFORCES the\ndeclared density range `0 ≤ π_P` on `[0,1]×[0,1]^d`: with it `ENNReal.ofReal (π_P·p_{X,P})`\ngenuinely equals `π_P·p_{X,P}` (both factors nonnegative, using `PxHolder`'s `0 ≤ p_{X,P}`),\nso the tie realizes the ACTUAL nonnegative conditional treatment density object, not only\nits `ofReal` positive part.\n@realizes pi_P(`0 ≤ π_P` on `[0,1]×cube` enforcing the declared range `[0,∞)`, AND `P.dataMeasure.map (A,X) = (Leb↾[0,1] ⊗ Leb↾[0,1]^d).withDensity (π_P·p_{X,P})`; together the range-clause + joint-factorization tie pin `pi` to the law's genuine nonnegative conditional treatment density) -/\ndef PiIsCondTreatmentDensity {d : ℕ} (P : DoseLaw d) : Prop :=\n  (∀ a ∈ Set.Icc (0 : ℝ) 1, ∀ x ∈ cube d, 0 ≤ P.pi a x) ∧   -- @realizes pi_P(0 ≤ pi_P on [0,1]×cube; enforces the declared density range [0,∞), so the `ofReal` joint-density tie realizes the actual nonnegative conditional treatment density)\n    P.dataMeasure.map (fun O => (O.A, O.X))\n      = ((volume.restrict (Set.Icc (0 : ℝ) 1)).prod (volume.restrict (cube d))).withDensity\n          (fun p => ENNReal.ofReal (P.pi p.1 p.2 * P.px p.2))"
+        }
+      ]
+    },
+    "sym:pi_P(0 ≤ pi_P on [0,1]×cube; enforces the declared density range [0,∞), so the `ofReal` joint-density tie realizes the actual nonnegative conditional treatment density)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 265,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "PiIsCondTreatmentDensity",
+          "statement": "/-- **Semantic tie / range-normalization (`π_P` is the conditional treatment density).**\nThe pushforward of the data law under `(A,X)` equals the measure with joint density\n`(a,x) ↦ π_P(a∣x)·p_{X,P}(x)` w.r.t. Lebesgue on `[0,1]×[0,1]^d`. Together with\n`PxIsXDensity` (the `X`-marginal is `p_{X,P}·Leb`) this pins `π_P(·∣x)` to be the GENUINE\nconditional density of `A` given `X = x` under `P` — it is normalized\n(`∫_{[0,1]} π_P(a∣x) da = 1` for `P_X`-a.e. `x`, forced by consistency of the joint with\nits `X`-marginal) and tied to `dataMeasure`. Without it the `pi` field is disconnected\nfrom `dataMeasure`, so the class `P_{α,β,s}` would be strictly BROADER than the paper\nclass (an arbitrary `π` field satisfying only the Hölder/positivity atoms, never required\nto be the law's actual treatment density). The core symbol `pi_P(a∣x)` is *defined* as the\nconditional density of `A` given `X = x` under `P`, so this tie is exactly the note's\nstated meaning of `π_P`, not an added restriction. The leading conjunct ENFORCES the\ndeclared density range `0 ≤ π_P` on `[0,1]×[0,1]^d`: with it `ENNReal.ofReal (π_P·p_{X,P})`\ngenuinely equals `π_P·p_{X,P}` (both factors nonnegative, using `PxHolder`'s `0 ≤ p_{X,P}`),\nso the tie realizes the ACTUAL nonnegative conditional treatment density object, not only\nits `ofReal` positive part.\n@realizes pi_P(`0 ≤ π_P` on `[0,1]×cube` enforcing the declared range `[0,∞)`, AND `P.dataMeasure.map (A,X) = (Leb↾[0,1] ⊗ Leb↾[0,1]^d).withDensity (π_P·p_{X,P})`; together the range-clause + joint-factorization tie pin `pi` to the law's genuine nonnegative conditional treatment density) -/\ndef PiIsCondTreatmentDensity {d : ℕ} (P : DoseLaw d) : Prop :=\n  (∀ a ∈ Set.Icc (0 : ℝ) 1, ∀ x ∈ cube d, 0 ≤ P.pi a x) ∧   -- @realizes pi_P(0 ≤ pi_P on [0,1]×cube; enforces the declared density range [0,∞), so the `ofReal` joint-density tie realizes the actual nonnegative conditional treatment density)\n    P.dataMeasure.map (fun O => (O.A, O.X))\n      = ((volume.restrict (Set.Icc (0 : ℝ) 1)).prod (volume.restrict (cube d))).withDensity\n          (fun p => ENNReal.ofReal (P.pi p.1 p.2 * P.px p.2))"
+        }
+      ]
+    },
+    "sym:alpha": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 309,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "HolderDoseClass — regime constant `alpha : ℝ`, declared space `(0,∞)`; treatment-direction Hölder order",
+          "statement": "/-- The anisotropic Hölder dose-response model class\n`P_{α,β,s}(M,c_0,ε_0,t_0)`: the bundle of the member-atom properties, including the three\nSEMANTIC TIES (`μ_P` is the data regression, `p_{X,P}` is the X-marginal density, and\n`π_P` is the law's conditional treatment density) that make it a genuine CAUSAL class and\npin it to EXACTLY the paper class (so `minimaxRisk` over it is the true causal minimax\nrisk and `thetaFunctional` is `E_P[Y(t_0)]`, not a free-field artifact, and the class is\nnot strictly broader than `P_{α,β,s}` through a free `π` field).\n(`ass:baseline-submodel-slack` is NOT a member; it is a separate theorem hypothesis.)\nThe two regime theorems take `(hP : HolderDoseClass … P)`. -/\nstructure HolderDoseClass (d : ℕ) (alpha beta s M c0 eps0 t0 : ℝ)\n    (P : DoseLaw d) : Prop where\n  iid : IidSampling P\n  consistency : Consistency P\n  ignorability : NoUnmeasuredConfounding P\n  bdd : BoundedOutcome P M\n  interior : InteriorDose t0 eps0\n  positivity : LocalPositivity P c0 t0 eps0\n  muT : MuTreatmentHolder P alpha M t0 eps0\n  piT : PiTreatmentHolder P beta M t0 eps0\n  muX : MuCovariateHolder P s M t0\n  piX : PiCovariateHolder P s M t0\n  pxH : PxHolder P s M\n  muReg : MuIsRegression P\n  pxDens : PxIsXDensity P\n  piCond : PiIsCondTreatmentDensity P"
+        },
+        {
+          "label": "RegimeConstants — 0 < alpha; declared space (0,∞), treatment-direction Hölder order",
+          "statement": "/-- Standing well-formedness of the S3 regime constants: each lies in its declared\nspace — `α, β, s, M, c_0 ∈ (0,∞)`, `t_0 ∈ (0,1)`, `ε_0 ∈ (0,1/2)`. This is the\nENFORCING realization cluster for those setup symbols; it is threaded as a\nhypothesis into every regime lemma/theorem so the constants are never used outside\ntheir declared spaces. -/\ndef RegimeConstants (alpha beta s M c0 eps0 t0 : ℝ) : Prop :=\n  0 < alpha ∧       -- @realizes alpha(0 < alpha; declared space (0,∞), treatment-direction Hölder order)\n    0 < beta ∧      -- @realizes beta(0 < beta; declared space (0,∞), treatment-density Hölder order)\n    0 < s ∧         -- @realizes s(0 < s; declared space (0,∞), covariate-direction Hölder order)\n    0 < M ∧         -- @realizes M(0 < M; declared space (0,∞), common Hölder radius / outcome bound)\n    0 < c0 ∧        -- @realizes c_0(0 < c0; declared space (0,∞), local-positivity floor)\n    t0 ∈ Set.Ioo (0 : ℝ) 1 ∧            -- @realizes t_0(t0 ∈ (0,1); declared interior evaluation-point space)\n    eps0 ∈ Set.Ioo (0 : ℝ) (1 / 2) ∧    -- @realizes epsilon_0(eps0 ∈ (0,1/2); declared interior-radius half-width space)\n    InteriorDose t0 eps0                -- @realizes evaluation window(`[t_0-ε_0,t_0+ε_0] ⊆ (0,1)`)"
+        }
+      ]
+    },
+    "sym:beta": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 310,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "HolderDoseClass — regime constant `beta : ℝ`, declared space `(0,∞)`; treatment-density Hölder order",
+          "statement": "/-- The anisotropic Hölder dose-response model class\n`P_{α,β,s}(M,c_0,ε_0,t_0)`: the bundle of the member-atom properties, including the three\nSEMANTIC TIES (`μ_P` is the data regression, `p_{X,P}` is the X-marginal density, and\n`π_P` is the law's conditional treatment density) that make it a genuine CAUSAL class and\npin it to EXACTLY the paper class (so `minimaxRisk` over it is the true causal minimax\nrisk and `thetaFunctional` is `E_P[Y(t_0)]`, not a free-field artifact, and the class is\nnot strictly broader than `P_{α,β,s}` through a free `π` field).\n(`ass:baseline-submodel-slack` is NOT a member; it is a separate theorem hypothesis.)\nThe two regime theorems take `(hP : HolderDoseClass … P)`. -/\nstructure HolderDoseClass (d : ℕ) (alpha beta s M c0 eps0 t0 : ℝ)\n    (P : DoseLaw d) : Prop where\n  iid : IidSampling P\n  consistency : Consistency P\n  ignorability : NoUnmeasuredConfounding P\n  bdd : BoundedOutcome P M\n  interior : InteriorDose t0 eps0\n  positivity : LocalPositivity P c0 t0 eps0\n  muT : MuTreatmentHolder P alpha M t0 eps0\n  piT : PiTreatmentHolder P beta M t0 eps0\n  muX : MuCovariateHolder P s M t0\n  piX : PiCovariateHolder P s M t0\n  pxH : PxHolder P s M\n  muReg : MuIsRegression P\n  pxDens : PxIsXDensity P\n  piCond : PiIsCondTreatmentDensity P"
+        },
+        {
+          "label": "RegimeConstants — 0 < beta; declared space (0,∞), treatment-density Hölder order",
+          "statement": "/-- Standing well-formedness of the S3 regime constants: each lies in its declared\nspace — `α, β, s, M, c_0 ∈ (0,∞)`, `t_0 ∈ (0,1)`, `ε_0 ∈ (0,1/2)`. This is the\nENFORCING realization cluster for those setup symbols; it is threaded as a\nhypothesis into every regime lemma/theorem so the constants are never used outside\ntheir declared spaces. -/\ndef RegimeConstants (alpha beta s M c0 eps0 t0 : ℝ) : Prop :=\n  0 < alpha ∧       -- @realizes alpha(0 < alpha; declared space (0,∞), treatment-direction Hölder order)\n    0 < beta ∧      -- @realizes beta(0 < beta; declared space (0,∞), treatment-density Hölder order)\n    0 < s ∧         -- @realizes s(0 < s; declared space (0,∞), covariate-direction Hölder order)\n    0 < M ∧         -- @realizes M(0 < M; declared space (0,∞), common Hölder radius / outcome bound)\n    0 < c0 ∧        -- @realizes c_0(0 < c0; declared space (0,∞), local-positivity floor)\n    t0 ∈ Set.Ioo (0 : ℝ) 1 ∧            -- @realizes t_0(t0 ∈ (0,1); declared interior evaluation-point space)\n    eps0 ∈ Set.Ioo (0 : ℝ) (1 / 2) ∧    -- @realizes epsilon_0(eps0 ∈ (0,1/2); declared interior-radius half-width space)\n    InteriorDose t0 eps0                -- @realizes evaluation window(`[t_0-ε_0,t_0+ε_0] ⊆ (0,1)`)"
+        }
+      ]
+    },
+    "sym:s": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 311,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "HolderDoseClass — regime constant `s : ℝ`, declared space `(0,∞)`; covariate-direction Hölder order",
+          "statement": "/-- The anisotropic Hölder dose-response model class\n`P_{α,β,s}(M,c_0,ε_0,t_0)`: the bundle of the member-atom properties, including the three\nSEMANTIC TIES (`μ_P` is the data regression, `p_{X,P}` is the X-marginal density, and\n`π_P` is the law's conditional treatment density) that make it a genuine CAUSAL class and\npin it to EXACTLY the paper class (so `minimaxRisk` over it is the true causal minimax\nrisk and `thetaFunctional` is `E_P[Y(t_0)]`, not a free-field artifact, and the class is\nnot strictly broader than `P_{α,β,s}` through a free `π` field).\n(`ass:baseline-submodel-slack` is NOT a member; it is a separate theorem hypothesis.)\nThe two regime theorems take `(hP : HolderDoseClass … P)`. -/\nstructure HolderDoseClass (d : ℕ) (alpha beta s M c0 eps0 t0 : ℝ)\n    (P : DoseLaw d) : Prop where\n  iid : IidSampling P\n  consistency : Consistency P\n  ignorability : NoUnmeasuredConfounding P\n  bdd : BoundedOutcome P M\n  interior : InteriorDose t0 eps0\n  positivity : LocalPositivity P c0 t0 eps0\n  muT : MuTreatmentHolder P alpha M t0 eps0\n  piT : PiTreatmentHolder P beta M t0 eps0\n  muX : MuCovariateHolder P s M t0\n  piX : PiCovariateHolder P s M t0\n  pxH : PxHolder P s M\n  muReg : MuIsRegression P\n  pxDens : PxIsXDensity P\n  piCond : PiIsCondTreatmentDensity P"
+        },
+        {
+          "label": "RegimeConstants — 0 < s; declared space (0,∞), covariate-direction Hölder order",
+          "statement": "/-- Standing well-formedness of the S3 regime constants: each lies in its declared\nspace — `α, β, s, M, c_0 ∈ (0,∞)`, `t_0 ∈ (0,1)`, `ε_0 ∈ (0,1/2)`. This is the\nENFORCING realization cluster for those setup symbols; it is threaded as a\nhypothesis into every regime lemma/theorem so the constants are never used outside\ntheir declared spaces. -/\ndef RegimeConstants (alpha beta s M c0 eps0 t0 : ℝ) : Prop :=\n  0 < alpha ∧       -- @realizes alpha(0 < alpha; declared space (0,∞), treatment-direction Hölder order)\n    0 < beta ∧      -- @realizes beta(0 < beta; declared space (0,∞), treatment-density Hölder order)\n    0 < s ∧         -- @realizes s(0 < s; declared space (0,∞), covariate-direction Hölder order)\n    0 < M ∧         -- @realizes M(0 < M; declared space (0,∞), common Hölder radius / outcome bound)\n    0 < c0 ∧        -- @realizes c_0(0 < c0; declared space (0,∞), local-positivity floor)\n    t0 ∈ Set.Ioo (0 : ℝ) 1 ∧            -- @realizes t_0(t0 ∈ (0,1); declared interior evaluation-point space)\n    eps0 ∈ Set.Ioo (0 : ℝ) (1 / 2) ∧    -- @realizes epsilon_0(eps0 ∈ (0,1/2); declared interior-radius half-width space)\n    InteriorDose t0 eps0                -- @realizes evaluation window(`[t_0-ε_0,t_0+ε_0] ⊆ (0,1)`)"
+        }
+      ]
+    },
+    "sym:M": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 312,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "HolderDoseClass — regime constant `M : ℝ`, declared space `(0,∞)`; common Hölder radius and outcome bound",
+          "statement": "/-- The anisotropic Hölder dose-response model class\n`P_{α,β,s}(M,c_0,ε_0,t_0)`: the bundle of the member-atom properties, including the three\nSEMANTIC TIES (`μ_P` is the data regression, `p_{X,P}` is the X-marginal density, and\n`π_P` is the law's conditional treatment density) that make it a genuine CAUSAL class and\npin it to EXACTLY the paper class (so `minimaxRisk` over it is the true causal minimax\nrisk and `thetaFunctional` is `E_P[Y(t_0)]`, not a free-field artifact, and the class is\nnot strictly broader than `P_{α,β,s}` through a free `π` field).\n(`ass:baseline-submodel-slack` is NOT a member; it is a separate theorem hypothesis.)\nThe two regime theorems take `(hP : HolderDoseClass … P)`. -/\nstructure HolderDoseClass (d : ℕ) (alpha beta s M c0 eps0 t0 : ℝ)\n    (P : DoseLaw d) : Prop where\n  iid : IidSampling P\n  consistency : Consistency P\n  ignorability : NoUnmeasuredConfounding P\n  bdd : BoundedOutcome P M\n  interior : InteriorDose t0 eps0\n  positivity : LocalPositivity P c0 t0 eps0\n  muT : MuTreatmentHolder P alpha M t0 eps0\n  piT : PiTreatmentHolder P beta M t0 eps0\n  muX : MuCovariateHolder P s M t0\n  piX : PiCovariateHolder P s M t0\n  pxH : PxHolder P s M\n  muReg : MuIsRegression P\n  pxDens : PxIsXDensity P\n  piCond : PiIsCondTreatmentDensity P"
+        },
+        {
+          "label": "RegimeConstants — 0 < M; declared space (0,∞), common Hölder radius / outcome bound",
+          "statement": "/-- Standing well-formedness of the S3 regime constants: each lies in its declared\nspace — `α, β, s, M, c_0 ∈ (0,∞)`, `t_0 ∈ (0,1)`, `ε_0 ∈ (0,1/2)`. This is the\nENFORCING realization cluster for those setup symbols; it is threaded as a\nhypothesis into every regime lemma/theorem so the constants are never used outside\ntheir declared spaces. -/\ndef RegimeConstants (alpha beta s M c0 eps0 t0 : ℝ) : Prop :=\n  0 < alpha ∧       -- @realizes alpha(0 < alpha; declared space (0,∞), treatment-direction Hölder order)\n    0 < beta ∧      -- @realizes beta(0 < beta; declared space (0,∞), treatment-density Hölder order)\n    0 < s ∧         -- @realizes s(0 < s; declared space (0,∞), covariate-direction Hölder order)\n    0 < M ∧         -- @realizes M(0 < M; declared space (0,∞), common Hölder radius / outcome bound)\n    0 < c0 ∧        -- @realizes c_0(0 < c0; declared space (0,∞), local-positivity floor)\n    t0 ∈ Set.Ioo (0 : ℝ) 1 ∧            -- @realizes t_0(t0 ∈ (0,1); declared interior evaluation-point space)\n    eps0 ∈ Set.Ioo (0 : ℝ) (1 / 2) ∧    -- @realizes epsilon_0(eps0 ∈ (0,1/2); declared interior-radius half-width space)\n    InteriorDose t0 eps0                -- @realizes evaluation window(`[t_0-ε_0,t_0+ε_0] ⊆ (0,1)`)"
+        }
+      ]
+    },
+    "sym:c_0": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 313,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "HolderDoseClass — regime constant `c0 : ℝ`, declared space `(0,∞)`; local-positivity floor",
+          "statement": "/-- The anisotropic Hölder dose-response model class\n`P_{α,β,s}(M,c_0,ε_0,t_0)`: the bundle of the member-atom properties, including the three\nSEMANTIC TIES (`μ_P` is the data regression, `p_{X,P}` is the X-marginal density, and\n`π_P` is the law's conditional treatment density) that make it a genuine CAUSAL class and\npin it to EXACTLY the paper class (so `minimaxRisk` over it is the true causal minimax\nrisk and `thetaFunctional` is `E_P[Y(t_0)]`, not a free-field artifact, and the class is\nnot strictly broader than `P_{α,β,s}` through a free `π` field).\n(`ass:baseline-submodel-slack` is NOT a member; it is a separate theorem hypothesis.)\nThe two regime theorems take `(hP : HolderDoseClass … P)`. -/\nstructure HolderDoseClass (d : ℕ) (alpha beta s M c0 eps0 t0 : ℝ)\n    (P : DoseLaw d) : Prop where\n  iid : IidSampling P\n  consistency : Consistency P\n  ignorability : NoUnmeasuredConfounding P\n  bdd : BoundedOutcome P M\n  interior : InteriorDose t0 eps0\n  positivity : LocalPositivity P c0 t0 eps0\n  muT : MuTreatmentHolder P alpha M t0 eps0\n  piT : PiTreatmentHolder P beta M t0 eps0\n  muX : MuCovariateHolder P s M t0\n  piX : PiCovariateHolder P s M t0\n  pxH : PxHolder P s M\n  muReg : MuIsRegression P\n  pxDens : PxIsXDensity P\n  piCond : PiIsCondTreatmentDensity P"
+        },
+        {
+          "label": "RegimeConstants — 0 < c0; declared space (0,∞), local-positivity floor",
+          "statement": "/-- Standing well-formedness of the S3 regime constants: each lies in its declared\nspace — `α, β, s, M, c_0 ∈ (0,∞)`, `t_0 ∈ (0,1)`, `ε_0 ∈ (0,1/2)`. This is the\nENFORCING realization cluster for those setup symbols; it is threaded as a\nhypothesis into every regime lemma/theorem so the constants are never used outside\ntheir declared spaces. -/\ndef RegimeConstants (alpha beta s M c0 eps0 t0 : ℝ) : Prop :=\n  0 < alpha ∧       -- @realizes alpha(0 < alpha; declared space (0,∞), treatment-direction Hölder order)\n    0 < beta ∧      -- @realizes beta(0 < beta; declared space (0,∞), treatment-density Hölder order)\n    0 < s ∧         -- @realizes s(0 < s; declared space (0,∞), covariate-direction Hölder order)\n    0 < M ∧         -- @realizes M(0 < M; declared space (0,∞), common Hölder radius / outcome bound)\n    0 < c0 ∧        -- @realizes c_0(0 < c0; declared space (0,∞), local-positivity floor)\n    t0 ∈ Set.Ioo (0 : ℝ) 1 ∧            -- @realizes t_0(t0 ∈ (0,1); declared interior evaluation-point space)\n    eps0 ∈ Set.Ioo (0 : ℝ) (1 / 2) ∧    -- @realizes epsilon_0(eps0 ∈ (0,1/2); declared interior-radius half-width space)\n    InteriorDose t0 eps0                -- @realizes evaluation window(`[t_0-ε_0,t_0+ε_0] ⊆ (0,1)`)"
+        }
+      ]
+    },
+    "sym:t_0": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 314,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "HolderDoseClass — regime constant `t0 : ℝ`, declared space `(0,1)`; interior evaluation dose",
+          "statement": "/-- The anisotropic Hölder dose-response model class\n`P_{α,β,s}(M,c_0,ε_0,t_0)`: the bundle of the member-atom properties, including the three\nSEMANTIC TIES (`μ_P` is the data regression, `p_{X,P}` is the X-marginal density, and\n`π_P` is the law's conditional treatment density) that make it a genuine CAUSAL class and\npin it to EXACTLY the paper class (so `minimaxRisk` over it is the true causal minimax\nrisk and `thetaFunctional` is `E_P[Y(t_0)]`, not a free-field artifact, and the class is\nnot strictly broader than `P_{α,β,s}` through a free `π` field).\n(`ass:baseline-submodel-slack` is NOT a member; it is a separate theorem hypothesis.)\nThe two regime theorems take `(hP : HolderDoseClass … P)`. -/\nstructure HolderDoseClass (d : ℕ) (alpha beta s M c0 eps0 t0 : ℝ)\n    (P : DoseLaw d) : Prop where\n  iid : IidSampling P\n  consistency : Consistency P\n  ignorability : NoUnmeasuredConfounding P\n  bdd : BoundedOutcome P M\n  interior : InteriorDose t0 eps0\n  positivity : LocalPositivity P c0 t0 eps0\n  muT : MuTreatmentHolder P alpha M t0 eps0\n  piT : PiTreatmentHolder P beta M t0 eps0\n  muX : MuCovariateHolder P s M t0\n  piX : PiCovariateHolder P s M t0\n  pxH : PxHolder P s M\n  muReg : MuIsRegression P\n  pxDens : PxIsXDensity P\n  piCond : PiIsCondTreatmentDensity P"
+        },
+        {
+          "label": "RegimeConstants — t0 ∈ (0,1); declared interior evaluation-point space",
+          "statement": "/-- Standing well-formedness of the S3 regime constants: each lies in its declared\nspace — `α, β, s, M, c_0 ∈ (0,∞)`, `t_0 ∈ (0,1)`, `ε_0 ∈ (0,1/2)`. This is the\nENFORCING realization cluster for those setup symbols; it is threaded as a\nhypothesis into every regime lemma/theorem so the constants are never used outside\ntheir declared spaces. -/\ndef RegimeConstants (alpha beta s M c0 eps0 t0 : ℝ) : Prop :=\n  0 < alpha ∧       -- @realizes alpha(0 < alpha; declared space (0,∞), treatment-direction Hölder order)\n    0 < beta ∧      -- @realizes beta(0 < beta; declared space (0,∞), treatment-density Hölder order)\n    0 < s ∧         -- @realizes s(0 < s; declared space (0,∞), covariate-direction Hölder order)\n    0 < M ∧         -- @realizes M(0 < M; declared space (0,∞), common Hölder radius / outcome bound)\n    0 < c0 ∧        -- @realizes c_0(0 < c0; declared space (0,∞), local-positivity floor)\n    t0 ∈ Set.Ioo (0 : ℝ) 1 ∧            -- @realizes t_0(t0 ∈ (0,1); declared interior evaluation-point space)\n    eps0 ∈ Set.Ioo (0 : ℝ) (1 / 2) ∧    -- @realizes epsilon_0(eps0 ∈ (0,1/2); declared interior-radius half-width space)\n    InteriorDose t0 eps0                -- @realizes evaluation window(`[t_0-ε_0,t_0+ε_0] ⊆ (0,1)`)"
+        }
+      ]
+    },
+    "sym:epsilon_0": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 315,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "HolderDoseClass — regime constant `eps0 : ℝ`, declared space `(0,1/2)`; half-width of the evaluation window",
+          "statement": "/-- The anisotropic Hölder dose-response model class\n`P_{α,β,s}(M,c_0,ε_0,t_0)`: the bundle of the member-atom properties, including the three\nSEMANTIC TIES (`μ_P` is the data regression, `p_{X,P}` is the X-marginal density, and\n`π_P` is the law's conditional treatment density) that make it a genuine CAUSAL class and\npin it to EXACTLY the paper class (so `minimaxRisk` over it is the true causal minimax\nrisk and `thetaFunctional` is `E_P[Y(t_0)]`, not a free-field artifact, and the class is\nnot strictly broader than `P_{α,β,s}` through a free `π` field).\n(`ass:baseline-submodel-slack` is NOT a member; it is a separate theorem hypothesis.)\nThe two regime theorems take `(hP : HolderDoseClass … P)`. -/\nstructure HolderDoseClass (d : ℕ) (alpha beta s M c0 eps0 t0 : ℝ)\n    (P : DoseLaw d) : Prop where\n  iid : IidSampling P\n  consistency : Consistency P\n  ignorability : NoUnmeasuredConfounding P\n  bdd : BoundedOutcome P M\n  interior : InteriorDose t0 eps0\n  positivity : LocalPositivity P c0 t0 eps0\n  muT : MuTreatmentHolder P alpha M t0 eps0\n  piT : PiTreatmentHolder P beta M t0 eps0\n  muX : MuCovariateHolder P s M t0\n  piX : PiCovariateHolder P s M t0\n  pxH : PxHolder P s M\n  muReg : MuIsRegression P\n  pxDens : PxIsXDensity P\n  piCond : PiIsCondTreatmentDensity P"
+        },
+        {
+          "label": "RegimeConstants — eps0 ∈ (0,1/2); declared interior-radius half-width space",
+          "statement": "/-- Standing well-formedness of the S3 regime constants: each lies in its declared\nspace — `α, β, s, M, c_0 ∈ (0,∞)`, `t_0 ∈ (0,1)`, `ε_0 ∈ (0,1/2)`. This is the\nENFORCING realization cluster for those setup symbols; it is threaded as a\nhypothesis into every regime lemma/theorem so the constants are never used outside\ntheir declared spaces. -/\ndef RegimeConstants (alpha beta s M c0 eps0 t0 : ℝ) : Prop :=\n  0 < alpha ∧       -- @realizes alpha(0 < alpha; declared space (0,∞), treatment-direction Hölder order)\n    0 < beta ∧      -- @realizes beta(0 < beta; declared space (0,∞), treatment-density Hölder order)\n    0 < s ∧         -- @realizes s(0 < s; declared space (0,∞), covariate-direction Hölder order)\n    0 < M ∧         -- @realizes M(0 < M; declared space (0,∞), common Hölder radius / outcome bound)\n    0 < c0 ∧        -- @realizes c_0(0 < c0; declared space (0,∞), local-positivity floor)\n    t0 ∈ Set.Ioo (0 : ℝ) 1 ∧            -- @realizes t_0(t0 ∈ (0,1); declared interior evaluation-point space)\n    eps0 ∈ Set.Ioo (0 : ℝ) (1 / 2) ∧    -- @realizes epsilon_0(eps0 ∈ (0,1/2); declared interior-radius half-width space)\n    InteriorDose t0 eps0                -- @realizes evaluation window(`[t_0-ε_0,t_0+ε_0] ⊆ (0,1)`)"
+        }
+      ]
+    },
+    "sym:R_n(frontier sequence `n ↦ minimaxRisk M n C t0 : ℝ`, declared space `[0,∞)^ℕ`; pointwise minimax MSE, `def:minimax-risk`)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 317,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "HolderDoseClass",
+          "statement": "/-- The anisotropic Hölder dose-response model class\n`P_{α,β,s}(M,c_0,ε_0,t_0)`: the bundle of the member-atom properties, including the three\nSEMANTIC TIES (`μ_P` is the data regression, `p_{X,P}` is the X-marginal density, and\n`π_P` is the law's conditional treatment density) that make it a genuine CAUSAL class and\npin it to EXACTLY the paper class (so `minimaxRisk` over it is the true causal minimax\nrisk and `thetaFunctional` is `E_P[Y(t_0)]`, not a free-field artifact, and the class is\nnot strictly broader than `P_{α,β,s}` through a free `π` field).\n(`ass:baseline-submodel-slack` is NOT a member; it is a separate theorem hypothesis.)\nThe two regime theorems take `(hP : HolderDoseClass … P)`. -/\nstructure HolderDoseClass (d : ℕ) (alpha beta s M c0 eps0 t0 : ℝ)\n    (P : DoseLaw d) : Prop where\n  iid : IidSampling P\n  consistency : Consistency P\n  ignorability : NoUnmeasuredConfounding P\n  bdd : BoundedOutcome P M\n  interior : InteriorDose t0 eps0\n  positivity : LocalPositivity P c0 t0 eps0\n  muT : MuTreatmentHolder P alpha M t0 eps0\n  piT : PiTreatmentHolder P beta M t0 eps0\n  muX : MuCovariateHolder P s M t0\n  piX : PiCovariateHolder P s M t0\n  pxH : PxHolder P s M\n  muReg : MuIsRegression P\n  pxDens : PxIsXDensity P\n  piCond : PiIsCondTreatmentDensity P"
+        }
+      ]
+    },
+    "sym:evaluation window": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 343,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "RegimeConstants — `[t_0-ε_0,t_0+ε_0] ⊆ (0,1)`",
+          "statement": "/-- Standing well-formedness of the S3 regime constants: each lies in its declared\nspace — `α, β, s, M, c_0 ∈ (0,∞)`, `t_0 ∈ (0,1)`, `ε_0 ∈ (0,1/2)`. This is the\nENFORCING realization cluster for those setup symbols; it is threaded as a\nhypothesis into every regime lemma/theorem so the constants are never used outside\ntheir declared spaces. -/\ndef RegimeConstants (alpha beta s M c0 eps0 t0 : ℝ) : Prop :=\n  0 < alpha ∧       -- @realizes alpha(0 < alpha; declared space (0,∞), treatment-direction Hölder order)\n    0 < beta ∧      -- @realizes beta(0 < beta; declared space (0,∞), treatment-density Hölder order)\n    0 < s ∧         -- @realizes s(0 < s; declared space (0,∞), covariate-direction Hölder order)\n    0 < M ∧         -- @realizes M(0 < M; declared space (0,∞), common Hölder radius / outcome bound)\n    0 < c0 ∧        -- @realizes c_0(0 < c0; declared space (0,∞), local-positivity floor)\n    t0 ∈ Set.Ioo (0 : ℝ) 1 ∧            -- @realizes t_0(t0 ∈ (0,1); declared interior evaluation-point space)\n    eps0 ∈ Set.Ioo (0 : ℝ) (1 / 2) ∧    -- @realizes epsilon_0(eps0 ∈ (0,1/2); declared interior-radius half-width space)\n    InteriorDose t0 eps0                -- @realizes evaluation window(`[t_0-ε_0,t_0+ε_0] ⊆ (0,1)`)"
+        }
+      ]
+    },
+    "sym:rho_n": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 375,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "publishedHoifRate",
+          "statement": "/-- Published Bonvini–Kennedy benchmark rate\n`ρ_n = n^{-2α/(2α+1)} ∨ n^{-2/(1 + d/(4s) + 1/α)}`.\n@realizes rho_n -/\nnoncomputable def publishedHoifRate (n : ℕ) (alpha s : ℝ) (d : ℕ) : ℝ :=\n  max ((n : ℝ) ^ (-(2 * alpha / (2 * alpha + 1))))\n      ((n : ℝ) ^ (-(2 / (1 + (d : ℝ) / (4 * s) + 1 / alpha))))"
+        },
+        {
+          "label": "publishedHoifRate_nonneg",
+          "statement": "/-- The published-rate frontier sequence is nonnegative, enforcing the declared range\n`ρ_n ∈ [0,∞)` of the setup symbol `rho_n`: each branch `(n:ℝ)^(·)` is an `rpow` of the\nnonnegative base `(n:ℝ) ≥ 0`, hence `≥ 0`, and the `max` preserves it.\n@realizes rho_n -/\ntheorem publishedHoifRate_nonneg (n : ℕ) (alpha s : ℝ) (d : ℕ) :\n    0 ≤ publishedHoifRate n alpha s d"
+        }
+      ]
+    },
+    "minimaxRisk-two-point-lower": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.HolderDoseClass",
+          "statement": "/-- The anisotropic Hölder dose-response model class\n`P_{α,β,s}(M,c_0,ε_0,t_0)`: the bundle of the member-atom properties, including the three\nSEMANTIC TIES (`μ_P` is the data regression, `p_{X,P}` is the X-marginal density, and\n`π_P` is the law's conditional treatment density) that make it a genuine CAUSAL class and\npin it to EXACTLY the paper class (so `minimaxRisk` over it is the true causal minimax\nrisk and `thetaFunctional` is `E_P[Y(t_0)]`, not a free-field artifact, and the class is\nnot strictly broader than `P_{α,β,s}` through a free `π` field).\n(`ass:baseline-submodel-slack` is NOT a member; it is a separate theorem hypothesis.)\nThe two regime theorems take `(hP : HolderDoseClass … P)`. -/\nstructure HolderDoseClass (d : ℕ) (alpha beta s M c0 eps0 t0 : ℝ)\n    (P : DoseLaw d) : Prop where\n  iid : IidSampling P\n  consistency : Consistency P\n  ignorability : NoUnmeasuredConfounding P\n  bdd : BoundedOutcome P M\n  interior : InteriorDose t0 eps0\n  positivity : LocalPositivity P c0 t0 eps0\n  muT : MuTreatmentHolder P alpha M t0 eps0\n  piT : PiTreatmentHolder P beta M t0 eps0\n  muX : MuCovariateHolder P s M t0\n  piX : PiCovariateHolder P s M t0\n  pxH : PxHolder P s M\n  muReg : MuIsRegression P\n  pxDens : PxIsXDensity P\n  piCond : PiIsCondTreatmentDensity P"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.thetaFunctional",
+          "statement": "/-- Identifying partial-mean (backdoor-adjustment) functional\n`θ_P(t_0) = ∫_{[0,1]^d} μ_P(t_0,x) p_{X,P}(x) dx` (Lebesgue). Under consistency and\nignorability this equals the causal dose-response value `E_P[Y(t_0)]`. -/\nnoncomputable def thetaFunctional {d : ℕ} (P : DoseLaw d) (t0 : ℝ) : ℝ :=\n  ∫ x in cube d, P.mu t0 x * P.px x"
+        },
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.minimaxRisk",
+          "statement": "/-- Pointwise minimax mean-squared risk\n`R_n(C, t_0) = inf_{θ̂_n} sup_{P ∈ C} E_P[(θ̂_n - θ_P(t_0))^2]`.\nThe infimum ranges over MEASURABLE estimators truncated to `[-M,M]` (the\nbounded-estimand range: truncating to the interval containing every `θ_P(t_0)`\nnever increases MSE and yields the SAME minimax value, while keeping the inner\nsquared loss bounded by `(2M)^2` under each `n`-fold probability law — so the\n`⨆`/`⨅` are well-posed, with no junk-`0` inflation of the converse). -/\nnoncomputable def minimaxRisk {d : ℕ} (M : ℝ) (n : ℕ)\n    (C : DoseLaw d → Prop) (t0 : ℝ) : ℝ :=\n  ⨅ est : {est : (Fin n → DoseObs d) → ℝ //\n      Measurable est ∧ ∀ s, est s ∈ Set.Icc (-M) M},\n      -- @realizes O_1, ..., O_n(estimator domain is the size-`n` sample `Fin n → DoseObs d`)\n    ⨆ P : {P : DoseLaw d // C P},\n      -- @realizes O_1, ..., O_n(the i.i.d. `n`-sample as the `n`-fold PRODUCT LAW `Measure.pi (fun _ : Fin n => P.dataMeasure)` over `Fin n → DoseObs d` — THIS `minimaxRisk` product law is the second of the two load-bearing realizers of the sample symbol (the first is the `IidSampling` i.i.d. realizer); its factors are mutually independent and identically `P.dataMeasure`-distributed exactly by the `Causalean.Stat.IIDSample` conjunct of `IidSampling`. It is NOT realized by the FOLLOWING `publishedHoifRate` declaration; the tag is placed BEFORE the integral so it attaches to `minimaxRisk`, not to the next decl.)\n      ∫ s, (est.1 s - thetaFunctional P.1 t0) ^ 2\n        ∂(Measure.pi fun _ : Fin n => (P.1).dataMeasure)"
+        }
+      ]
+    },
+    "dose-witness-consistency": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.Consistency",
+          "statement": "/-- Consistency `Y = Y(A)` almost surely under `P`: the realized outcome equals the\npotential outcome at the realized treatment level. -/\ndef Consistency {d : ℕ} (P : DoseLaw d) : Prop :=\n  ∀ᵐ O ∂P.dataMeasure, O.Y = P.pot O.A O"
+        }
+      ]
+    },
+    "dose-witness-bounded-outcome": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.BoundedOutcome",
+          "statement": "/-- Bounded outcome `|Y| ≤ M` almost surely under `P`. -/\ndef BoundedOutcome {d : ℕ} (P : DoseLaw d) (M : ℝ) : Prop :=\n  ∀ᵐ O ∂P.dataMeasure, |O.Y| ≤ M"
+        }
+      ]
+    },
+    "dose-witness-membership": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.HolderDoseClass",
+          "statement": "/-- The anisotropic Hölder dose-response model class\n`P_{α,β,s}(M,c_0,ε_0,t_0)`: the bundle of the member-atom properties, including the three\nSEMANTIC TIES (`μ_P` is the data regression, `p_{X,P}` is the X-marginal density, and\n`π_P` is the law's conditional treatment density) that make it a genuine CAUSAL class and\npin it to EXACTLY the paper class (so `minimaxRisk` over it is the true causal minimax\nrisk and `thetaFunctional` is `E_P[Y(t_0)]`, not a free-field artifact, and the class is\nnot strictly broader than `P_{α,β,s}` through a free `π` field).\n(`ass:baseline-submodel-slack` is NOT a member; it is a separate theorem hypothesis.)\nThe two regime theorems take `(hP : HolderDoseClass … P)`. -/\nstructure HolderDoseClass (d : ℕ) (alpha beta s M c0 eps0 t0 : ℝ)\n    (P : DoseLaw d) : Prop where\n  iid : IidSampling P\n  consistency : Consistency P\n  ignorability : NoUnmeasuredConfounding P\n  bdd : BoundedOutcome P M\n  interior : InteriorDose t0 eps0\n  positivity : LocalPositivity P c0 t0 eps0\n  muT : MuTreatmentHolder P alpha M t0 eps0\n  piT : PiTreatmentHolder P beta M t0 eps0\n  muX : MuCovariateHolder P s M t0\n  piX : PiCovariateHolder P s M t0\n  pxH : PxHolder P s M\n  muReg : MuIsRegression P\n  pxDens : PxIsXDensity P\n  piCond : PiIsCondTreatmentDensity P"
+        }
+      ]
+    },
+    "dose-witness-ignorability": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.NoUnmeasuredConfounding",
+          "statement": "/-- Conditional ignorability for the continuous treatment: for every level\n`a ∈ [0,1]`, the potential outcome `Y(a)` is independent of `A` given `X` under `P`\n(the note restricts the dose to the treatment range `[0,1]`). Encoded in\nthe faithful tested form `E[f(Y(a)) ∣ A, X] = E[f(Y(a)) ∣ X]` for every bounded\nmeasurable test `f` of the potential outcome (the standard conditional-independence\ncharacterization, no `StandardBorelSpace` requirement). -/\ndef NoUnmeasuredConfounding {d : ℕ} (P : DoseLaw d) : Prop :=\n  ∀ a ∈ Set.Icc (0 : ℝ) 1,\n    Measurable (P.pot a) ∧\n    ∀ (f : ℝ → ℝ), Measurable f → (∃ Mf : ℝ, ∀ y, |f y| ≤ Mf) →\n      Integrable (fun O => f (P.pot a O)) P.dataMeasure ∧\n      P.dataMeasure[(fun O => f (P.pot a O)) |\n          MeasurableSpace.comap (fun O : DoseObs d => (O.A, O.X)) inferInstance]\n        =ᵐ[P.dataMeasure]\n      P.dataMeasure[(fun O => f (P.pot a O)) |\n          MeasurableSpace.comap (fun O : DoseObs d => O.X) inferInstance]"
+        }
+      ]
+    },
+    "dose-witness-theta": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.thetaFunctional",
+          "statement": "/-- Identifying partial-mean (backdoor-adjustment) functional\n`θ_P(t_0) = ∫_{[0,1]^d} μ_P(t_0,x) p_{X,P}(x) dx` (Lebesgue). Under consistency and\nignorability this equals the causal dose-response value `E_P[Y(t_0)]`. -/\nnoncomputable def thetaFunctional {d : ℕ} (P : DoseLaw d) (t0 : ℝ) : ℝ :=\n  ∫ x in cube d, P.mu t0 x * P.px x"
+        }
+      ]
+    },
+    "dose-witness-theta-sep": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.DoseResponseMinimax.thetaFunctional",
+          "statement": "/-- Identifying partial-mean (backdoor-adjustment) functional\n`θ_P(t_0) = ∫_{[0,1]^d} μ_P(t_0,x) p_{X,P}(x) dx` (Lebesgue). Under consistency and\nignorability this equals the causal dose-response value `E_P[Y(t_0)]`. -/\nnoncomputable def thetaFunctional {d : ℕ} (P : DoseLaw d) (t0 : ℝ) : ℝ :=\n  ∫ x in cube d, P.mu t0 x * P.px x"
+        }
+      ]
+    }
+  }
+}

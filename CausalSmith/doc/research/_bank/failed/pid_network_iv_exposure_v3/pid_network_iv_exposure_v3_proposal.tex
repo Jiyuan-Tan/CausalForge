@@ -1,0 +1,388 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calP}{\mathcal{P}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_network\_iv\_exposure} / \texttt{v3}\\ \large\textit{Sharp complier direct and spillover bounds from a shared completion-principal-strata polytope under dual exposure-map misspecification}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\paragraph{Locked parameters.}
+This is a partial-identification anchor. The locked tuple is
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},
+\text{bounding functional})\\
+=
+(\texttt{pid\_network\_iv\_exposure},\texttt{v3},
+P_{I,Z,D,S^D,S^Z,Y;\,\pi,\mathcal L},
+\ (\theta_{\mathrm{CDE}}(s_D,s_Z),\theta_{\mathrm{CSE}}(d,s_D,s_Z)),\\
+\mathcal{R}_{\mathrm{shared\ completion+dual\ misspecification+monotone\ compliance}},
+\ [\underline\theta(P),\overline\theta(P)]) .
+\end{gathered}
+\]
+Here \(I\) indexes a uniformly sampled unit from a finite population; \(Z\in\{0,1\}^n\) is a randomized encouragement vector drawn from a known design \(\pi\); \(D\in\{0,1\}^n\) is treatment take-up; \(\mathcal L\) is the observed local graph; \(S_i^D=s_i^D(D,\mathcal L)\) and \(S_i^Z=s_i^Z(Z,\mathcal L)\) are researcher-specified treatment- and instrument-exposure mappings; and \(Y_i\in[0,1]\) is the observed outcome. The target pair consists of a complier direct effect \(\theta_{\mathrm{CDE}}(s_D,s_Z)\) and a complier spillover effect \(\theta_{\mathrm{CSE}}(d,s_D,s_Z)\), each indexed by observed exposure cells and averaged over latent hidden exposure states induced by one shared graph completion. The restrictions in \(\mathcal{R}_{\mathrm{shared\ completion+dual\ misspecification+monotone\ compliance}}\) are finite support, bounded outcomes, known randomization, local positivity, one shared completion class \(\mathfrak G(\mathcal L,\mathcal C,K)\), exposure sufficiency through joint hidden treatment and instrument exposures, a finite latent take-up table \(D_i(z_i,s_Z,r_Z)\), and local monotonicity \(D_i(1,s_Z,r_Z)\ge D_i(0,s_Z,r_Z)\) for every instrument-exposure state. The bounding functional is the projection of one shared completion-principal-strata polytope; it is not the product of independent treatment-exposure, instrument-exposure, and compliance kernels.
+
+\begin{abstract}
+The parent proposal \texttt{pid\_network\_exposure/v1} gives sharp average direct effect bounds when the treatment exposure mapping may be misspecified but treatment equals assignment. This draft widens the model to randomized encouragement with noncompliance and a second misspecified instrumental exposure mapping. The central object is a shared completion-principal-strata polytope that combines hidden-edge feasibility, latent compliance types, and bounded potential outcomes in one finite program. The routine theorem states that sharp complier direct and spillover identified sets are the projections of that polytope. The flagship conjecture is that the product relaxation over treatment-exposure kernels, instrumental-exposure kernels, and compliance kernels is strictly nonsharp on an open class of finite networks, with a computable gap witnessed on a four-unit design. Resolving that conjecture would connect exposure-robust sensitivity analysis to IV interpretation in settings where hidden edges affect both take-up and outcomes.
+\end{abstract}
+
+\section{Introduction}
+The question is whether local average direct and spillover effects remain sharply tractable when network IV analyses face two misspecification layers at once: the treatment exposure mapping used for outcomes and the instrumental exposure mapping used for take-up. The headline claim is that they do, but only after replacing the parent proposal's shared hidden-edge LP by a larger shared completion-principal-strata polytope that carries both hidden exposure states and latent compliance tables.
+
+What is new relative to the parent is the upgrade axis. The parent \texttt{pid\_network\_exposure/v1} studies average direct effects under hidden treatment-exposure completion alone; this draft adds monotone noncompliance and a misspecified instrumental exposure map, while preserving the same finite shared-completion geometry as a corner case. Relative to the published frontier, \citet[Abstract]{hoshino_yanagi_2024_noncompliance_unknown_interference} identifies complier effects with unknown interference and misspecified instrumental exposure mappings, and \citet[Abstract]{schroder_oprescu_feuerriegel_kallus_2026_networks_partialid} derive sharp bounds under misspecified treatment exposure mappings, but neither paper gives a finite sharp bound for their joint misspecification problem. The kernel lives in partial identification, with an IV-interference bridge rather than a panel or exact-identification statement.
+
+The consumer is the open gap left by the network IV literature itself. \citet{hoshino_yanagi_2024_noncompliance_unknown_interference} and \citet{vazquez_bare_2023_iv_spillovers} show why ordinary IV contrasts mix several latent effects once spillovers and noncompliance coexist, while \citet{nibbering_oosterveen_2025_iv_interference_policy} ask for policy-relevant effects under interference. A sharp finite-network complier envelope would let a reader diagnose whether a wide IV sensitivity interval comes from bounded outcomes, from exposure-map ambiguity, or from an infeasible joint completion-compliance assignment.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: For fixed observed exposure cells \((s_D,s_Z)\), the sharp identified set for \((\theta_{\mathrm{CDE}},\theta_{\mathrm{CSE}})\) is the projection of one finite shared completion-principal-strata polytope. Gap: parent \texttt{pid\_network\_exposure/v1} has no noncompliance layer; \citet{hoshino_yanagi_2024_noncompliance_unknown_interference} does not give a finite sharp polytope under dual misspecification. Consumer: \citet{imai_jiang_malani_2021_interference_noncompliance}.
+\item Conjecture 1: The product relaxation over treatment-exposure kernels, instrumental-exposure kernels, and compliance kernels strictly contains the joint identified set on an open class of finite encouraged networks. Gap: \citet{schroder_oprescu_feuerriegel_kallus_2026_networks_partialid} allow treatment-map misspecification only, while \citet{hoshino_yanagi_2024_noncompliance_unknown_interference} do not study joint finite-network sharpness losses from forgetting shared hidden edges. Consumer: \citet{savje_2024_misspecified_exposure_mappings}.
+\item Conjecture 2: A four-unit capacity witness generates a positive compatibility-deficit scalar \(\Delta_{\mathrm{IVX}}(P)\), and every positive deficit is separated by a valid inequality of the projected completion-principal-strata polytope. Gap: the parent witness has no IV or compliance layer, and no published comparator computes this dual-map deficit. Consumer: \citet{acerenza_martinez_iriarte_sanchez_becerra_spini_2025_household_bounds}.
+\end{itemize}
+
+\section{Related work}
+\citet{manski1990} is the bounded-outcome anchor for partial identification. \citet{hudgens_halloran_2008} defines direct and spillover effects under interference, and \citet{aronow_samii_2017} shows how exposure mappings can identify exposure-specific means under correct specification. These are reused from the parent as the background layer for any network partial-identification problem.
+
+\citet{savje_2024_misspecified_exposure_mappings} [reused from parent] separates exposure mappings as estimand definitions from exposure mappings as identifying assumptions. That distinction is load-bearing here because the proposal allows both the treatment exposure map and the instrumental exposure map to be misspecified while keeping the causal targets fixed. \citet{schroder_oprescu_feuerriegel_kallus_2026_networks_partialid} [reused from parent] is the closest misspecified-exposure comparator: it derives sharp bounds and orthogonal estimators for direct and spillover effects under treatment-map misspecification, but it works without latent IV compliance types or a second exposure map for take-up.
+
+\citet{weinstein_nevo_2026_misspecified_network} [reused from parent] studies misspecified network interference structure and robust estimation across candidate networks. Its relevance is conceptual: both the network and the exposure map may be wrong. The present draft differs by imposing one local completion class and asking for a sharp finite identified set rather than a robust estimator across candidate observed networks.
+
+\citet{imai_jiang_malani_2021_interference_noncompliance} identify complier direct and spillover effects in two-stage randomized experiments with interference and noncompliance. Their result is the closest point-identification benchmark, but it assumes a two-stage design and does not convert hidden-edge ambiguity into a finite sharp bound. \citet{hoshino_yanagi_2024_noncompliance_unknown_interference} introduces instrumental exposure mappings for network IV with noncompliance and explicitly allows misspecification of that map, but it develops identification and IPW estimation rather than a finite sharp identified set under dual map misspecification. \citet{vazquez_bare_2023_iv_spillovers} shows that standard IV spillover contrasts generally aggregate several latent effects and recover clean objects under stronger compliance restrictions; that paper is the warning that motivates a complier-specific bound.
+
+\citet{acerenza_martinez_iriarte_sanchez_becerra_spini_2025_household_bounds} provides sharp bounds for direct and spillover effects in two-person encouragement designs with strategic interaction. The present draft takes the same finite-polytope sharpness ambition to general finite networks with many peers and misspecified exposure labels. \citet{nibbering_oosterveen_2025_iv_interference_policy} defines policy-relevant IV effects under interference, which gives the downstream use case for any sharp complier envelope. \citet{gao_harshaw_savje_wang_2026_impossibility_testing} [reused from parent] shows that broad exposure-map specification testing is impossible without stronger restrictions; this proposal supplies one such explicit restriction set.
+
+In the project catalogue, \texttt{pid\_network\_exposure/v1} is the parent theorem-level prior art: sharp joint-completion LP bounds for network-exposure ADEs with a shared hidden-edge nonsharpness phenomenon. The adjacent banked proposal \texttt{pid\_dynamic\_iv\_compliance/v2} studies dynamic IV mixture splitting but has no network exposure layer. The failed \texttt{pid\_network\_random\_set/v1} track is relevant only as a reminder that the witness must be concrete and finite. The relevant project index is the PartialID area of \texttt{doc/API.md}; no existing catalogue entry combines hidden-edge completion, dual exposure-map misspecification, and IV compliance types in one kernel.
+
+\section{Formal setup}
+There are \(n<\infty\) units. The encouragement vector \(Z\in\{0,1\}^n\) is drawn from a known randomized design \(\pi(z)>0\) on its support. The observed local graph is an undirected graph \(\mathcal L\), the candidate hidden-edge set is \(\mathcal C\), and a feasible true graph completion is \(G\in\mathfrak G(\mathcal L,\mathcal C,K)\), exactly as in the parent proposal:
+\[
+G=\mathcal L\cup\{e\in\mathcal C:x_e=1\},\qquad x_e\in\{0,1\},\qquad
+\sum_{e\in\mathcal C}B_{ie}x_e\le K_i.
+\]
+
+Observed treatment take-up is \(D_i=D_i(Z_i,H_i^Z(G,Z))\in\{0,1\}\), where the instrument-exposure state is
+\[
+H_i^Z(G,Z)=(S_i^Z,R_i^Z(G,Z)),
+\qquad
+S_i^Z=s_i^Z(Z,\mathcal L),
+\qquad
+R_i^Z(G,Z)=\one\{\exists j:\{i,j\}\in G\setminus\mathcal L,\ Z_j=1\}.
+\]
+The treatment-exposure state entering outcomes is
+\[
+H_i^D(G,D)=(S_i^D,R_i^D(G,D)),
+\qquad
+S_i^D=s_i^D(D,\mathcal L),
+\qquad
+R_i^D(G,D)=\one\{\exists j:\{i,j\}\in G\setminus\mathcal L,\ D_j=1\}.
+\]
+Potential outcomes are \(Y_i(d,s_D,r_D)\in[0,1]\), and consistency imposes
+\[
+Y_i=Y_i(D_i,S_i^D,R_i^D(G,D)).
+\]
+
+For each unit \(i\) and instrument-exposure state \(\eta=(s_Z,r_Z)\), define the latent compliance indicator
+\[
+C_i(\eta)=D_i(1,\eta)-D_i(0,\eta)\in\{0,1\},
+\]
+where monotonicity rules out \(-1\). For a fixed observed pair \((s_D,s_Z)\), let
+\[
+T_{s_D,s_Z}
+=
+\{i:\Pr_\pi(Z_i=0,S_i^Z=s_Z,S_i^D=s_D)>0 \text{ and } \Pr_\pi(Z_i=1,S_i^Z=s_Z,S_i^D=s_D)>0\}.
+\]
+The control-arm hidden-state weights are
+\[
+q_{i,s_D,s_Z,r_D,r_Z}(G)
+=
+\Pr_\pi\!\big(R_i^D(G,D)=r_D,\ R_i^Z(G,Z)=r_Z \mid Z_i=0,S_i^D=s_D,S_i^Z=s_Z\big).
+\]
+
+The complier direct effect at \((s_D,s_Z)\) is
+\[
+\theta_{\mathrm{CDE}}(s_D,s_Z;G)
+=
+\frac{1}{N_c(s_Z;G)}
+\sum_{i\in T_{s_D,s_Z}}
+\sum_{r_D,r_Z\in\{0,1\}}
+q_{i,s_D,s_Z,r_D,r_Z}(G)\,
+C_i(s_Z,r_Z)\,
+\{Y_i(1,s_D,r_D)-Y_i(0,s_D,r_D)\},
+\]
+where
+\[
+N_c(s_Z;G)=
+\sum_{i\in T_{s_D,s_Z}}
+\sum_{r_Z\in\{0,1\}}
+\Pr_\pi(R_i^Z(G,Z)=r_Z\mid Z_i=0,S_i^Z=s_Z)\,C_i(s_Z,r_Z).
+\]
+For a fixed own-treatment level \(d\), define the complier spillover effect
+\[
+\theta_{\mathrm{CSE}}(d,s_D,s_Z;G)
+=
+\frac{1}{N_c(s_Z;G)}
+\sum_{i\in T_{s_D,s_Z}}
+\sum_{r_Z\in\{0,1\}}
+\bar q_{i,s_D,s_Z,r_Z}(G)\,
+C_i(s_Z,r_Z)\,
+\{Y_i(d,s_D,1)-Y_i(d,s_D,0)\},
+\]
+where \(\bar q_{i,s_D,s_Z,r_Z}(G)=\Pr_\pi(R_i^Z(G,Z)=r_Z\mid Z_i=0,S_i^D=s_D,S_i^Z=s_Z)\).
+
+The observable law is
+\[
+P=P_{I,Z,D,S^D,S^Z,Y;\,\pi,\mathcal L},
+\]
+and the finite sharpness program uses the observed conditional means
+\[
+m_{i,z,d,s_D,s_Z}(P)=
+\E_P(Y_I\mid I=i,Z_i=z,D_i=d,S_i^D=s_D,S_i^Z=s_Z)
+\]
+for cells with positive design probability. A feasible latent structure consists of one graph completion \(G\), a bounded potential-outcome surface \(Y_i(d,s_D,r_D)\), and a monotone take-up table \(D_i(z,s_Z,r_Z)\) that reproduce every observed conditional mean through the implied mixture equations.
+The identified set \(\Theta_I(P)\subset\R^3\) is the set of all vectors
+\[
+\theta(s_D,s_Z)=\big(\theta_{\mathrm{CDE}}(s_D,s_Z),\theta_{\mathrm{CSE}}(0,s_D,s_Z),\theta_{\mathrm{CSE}}(1,s_D,s_Z)\big)
+\]
+generated by feasible latent structures. For any direction \(u\in\R^3\), define the support-function endpoints
+\[
+\underline\theta_u(P)=\inf_{\vartheta\in\Theta_I(P)}u^\transpose\vartheta,
+\qquad
+\overline\theta_u(P)=\sup_{\vartheta\in\Theta_I(P)}u^\transpose\vartheta,
+\]
+and define \(\underline\theta^{\mathrm{prod}}_u(P),\overline\theta^{\mathrm{prod}}_u(P)\) analogously over the product relaxation \(\Theta_{\mathrm{prod}}(P)\).
+
+\begin{quote}\small
+This is a partial-identification anchor. The locked tuple is
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},
+\text{bounding functional})\\
+=
+(\texttt{pid\_network\_iv\_exposure},\texttt{v3},
+P_{I,Z,D,S^D,S^Z,Y;\,\pi,\mathcal L},
+\ (\theta_{\mathrm{CDE}}(s_D,s_Z),\theta_{\mathrm{CSE}}(d,s_D,s_Z)),\\
+\mathcal{R}_{\mathrm{shared\ completion+dual\ misspecification+monotone\ compliance}},
+\ [\underline\theta(P),\overline\theta(P)]) .
+\end{gathered}
+\]
+Here \(I\) indexes a uniformly sampled unit from a finite population; \(Z\in\{0,1\}^n\) is a randomized encouragement vector drawn from a known design \(\pi\); \(D\in\{0,1\}^n\) is treatment take-up; \(\mathcal L\) is the observed local graph; \(S_i^D=s_i^D(D,\mathcal L)\) and \(S_i^Z=s_i^Z(Z,\mathcal L)\) are researcher-specified treatment- and instrument-exposure mappings; and \(Y_i\in[0,1]\) is the observed outcome. The target pair consists of a complier direct effect \(\theta_{\mathrm{CDE}}(s_D,s_Z)\) and a complier spillover effect \(\theta_{\mathrm{CSE}}(d,s_D,s_Z)\), each indexed by observed exposure cells and averaged over latent hidden exposure states induced by one shared graph completion. The restrictions in \(\mathcal{R}_{\mathrm{shared\ completion+dual\ misspecification+monotone\ compliance}}\) are finite support, bounded outcomes, known randomization, local positivity, one shared completion class \(\mathfrak G(\mathcal L,\mathcal C,K)\), exposure sufficiency through joint hidden treatment and instrument exposures, a finite latent take-up table \(D_i(z_i,s_Z,r_Z)\), and local monotonicity \(D_i(1,s_Z,r_Z)\ge D_i(0,s_Z,r_Z)\) for every instrument-exposure state. The bounding functional is the projection of one shared completion-principal-strata polytope; it is not the product of independent treatment-exposure, instrument-exposure, and compliance kernels.
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite randomized encouraged network experiment]\label{ass:finite}
+The population is finite, the encouragement design \(\pi\) is known, the observed local graph \(\mathcal L\), candidate hidden-edge set \(\mathcal C\), degree caps \(K_i\), and exposure maps \(s_i^D,s_i^Z\) are known, and all conditioning events used below have positive probability.
+\end{assumption}
+
+\begin{assumption}[Bounded outcome surface]\label{ass:bounded}
+For every unit \(i\), own treatment \(d\in\{0,1\}\), observed treatment exposure \(s_D\), and hidden treatment exposure \(r_D\in\{0,1\}\), \(0\le Y_i(d,s_D,r_D)\le 1\).
+\end{assumption}
+
+\begin{assumption}[Shared graph completion]\label{ass:shared}
+There exists one graph completion \(G\in\mathfrak G(\mathcal L,\mathcal C,K)\) that jointly determines \(R_i^Z(G,Z)\) for take-up and \(R_i^D(G,D)\) for outcomes for all units and all assignments.
+\end{assumption}
+
+\begin{assumption}[Exposure sufficiency and consistency]\label{ass:consistency}
+Potential outcomes depend on other units only through \((S_i^D,R_i^D(G,D))\), and take-up depends on own encouragement and other units only through \((Z_i,S_i^Z,R_i^Z(G,Z))\). The observed pair \((D_i,Y_i)\) equals the realized values generated by these two reduced-form tables under the true completion \(G\).
+\end{assumption}
+
+\begin{assumption}[Local monotonicity by instrument exposure state]\label{ass:monotonicity}
+For every unit \(i\) and every instrument-exposure state \((s_Z,r_Z)\), \(D_i(1,s_Z,r_Z)\ge D_i(0,s_Z,r_Z)\). Hence \(C_i(s_Z,r_Z)\in\{0,1\}\).
+\end{assumption}
+
+\begin{assumption}[Observed-cell positivity]\label{ass:positivity}
+For every unit and observed cell entering \(m_{i,z,d,s_D,s_Z}(P)\), the conditioning event has positive probability under \(\pi\). For the target cell \((s_D,s_Z)\), the set \(T_{s_D,s_Z}\) is nonempty and \(N_c(s_Z;G)>0\) for every feasible latent structure considered in the target identified set.
+\end{assumption}
+
+\begin{assumption}[Observed conditional-mean matching]\label{ass:matching}
+A feasible latent structure \((G,D(\cdot),Y(\cdot))\) must reproduce the observed conditional means \(m_{i,z,d,s_D,s_Z}(P)\) for every positive-probability cell. Equivalently, the mixture equations induced by the latent take-up table, the shared completion, and the bounded outcome surface equal the observed conditional means.
+\end{assumption}
+
+\begin{assumption}[Product relaxation comparator]\label{ass:product}
+The comparator set \(\Theta_{\mathrm{prod}}(P)\) keeps Assumptions~\ref{ass:finite}, \ref{ass:bounded}, and \ref{ass:positivity} but replaces the shared completion \(G\) and the common latent take-up table by three independent kernel families: treatment hidden-exposure kernels \(Q_i^D\), instrument hidden-exposure kernels \(Q_i^Z\), and compliance kernels \(Q_i^C\). Each kernel must be individually attainable from some feasible completion when the corresponding unit is considered in isolation, and the same observed conditional-mean equations are imposed through bounded latent mixtures. No single graph completion or common principal-strata table is required inside \(\Theta_{\mathrm{prod}}(P)\).
+\end{assumption}
+
+\begin{assumption}[Parent-corner restriction]\label{ass:parent-corner}
+For every unit \(i\) and instrument-exposure state \((s_Z,r_Z)\), \(D_i(z,s_Z,r_Z)=z\), and the instrumental exposure map is degenerate so that \(S_i^Z\) and \(R_i^Z\) drop out of both take-up and target indexing. This assumption is used only in Corollary~\ref{cor:parent}.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: finite shared completion-principal-strata sharpness]\label{thm:polytope}
+Under Assumptions~\ref{ass:finite}--\ref{ass:matching}, the sharp identified set for
+\[
+\theta(s_D,s_Z)=\big(\theta_{\mathrm{CDE}}(s_D,s_Z),\theta_{\mathrm{CSE}}(0,s_D,s_Z),\theta_{\mathrm{CSE}}(1,s_D,s_Z)\big)
+\]
+is the projection of the finite feasible set
+\[
+\calP_{\mathrm{IVX}}(P)
+=
+\left\{
+(G,D(\cdot),Y(\cdot)):
+G\in\mathfrak G(\mathcal L,\mathcal C,K),\
+D_i(1,s_Z,r_Z)\ge D_i(0,s_Z,r_Z),\
+0\le Y_i(d,s_D,r_D)\le1,\
+\text{Assumption~\ref{ass:matching} holds}
+\right\}.
+\]
+Consequently, every linear functional of \(\theta(s_D,s_Z)\) has sharp endpoints obtained by a finite mixed-integer linear program over \(\calP_{\mathrm{IVX}}(P)\).
+\end{theorem}
+The proof is a finite projection argument: once \(G\) and the monotone take-up table are fixed, the observed conditional means are linear in bounded latent variables. The parent LP is recovered after deleting the take-up table and the instrumental exposure state.
+
+\begin{conjecture}[Conjecture 1: dual-map product relaxation is strictly nonsharp]\label{conj:strict}
+(NOT YET PROVED.) Under Assumptions~\ref{ass:finite}--\ref{ass:matching}, and with \(\Theta_{\mathrm{prod}}(P)\) defined by Assumption~\ref{ass:product}, there exists an open class of finite encouraged networks such that
+\[
+\Theta_I(P)\subsetneq \Theta_{\mathrm{prod}}(P).
+\]
+Equivalently, the compatibility-deficit scalar
+\[
+\Delta_{\mathrm{IVX},u}(P)
+=
+\overline\theta^{\mathrm{prod}}_u(P)-\overline\theta_u(P)
+\]
+is strictly positive on that class for at least one nonzero direction \(u\in\R^3\). The strict gap persists even when each of the three kernel families \(Q_i^D,Q_i^Z,Q_i^C\) is individually generated by some feasible completion in isolation.
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: finite witness and certificate for \(\Delta_{\mathrm{IVX},u}(P)\)]\label{conj:witness}
+(NOT YET PROVED.) Under Assumptions~\ref{ass:finite}--\ref{ass:matching}, every positive value of \(\Delta_{\mathrm{IVX}}(P)\) is witnessed by a violated valid inequality of the projected completion-principal-strata polytope, and a four-unit design with one capacity-constrained hub already yields \(\Delta_{\mathrm{IVX}}(P)>0\). In that witness, one hidden edge simultaneously controls instrumental exposure, treatment take-up, and treatment exposure for two leaves, so the product relaxation can assign mutually incompatible complier and exposure states that no shared completion can realize.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Reduction to the parent proposal]\label{cor:parent}
+Under Assumptions~\ref{ass:finite}--\ref{ass:matching} and Assumption~\ref{ass:parent-corner}, Theorem~\ref{thm:polytope} reduces to the parent \texttt{pid\_network\_exposure/v1} sharp joint-completion LP for \(\theta_{\mathrm{ADE}}(s_D)\).
+\end{corollary}
+Under Assumption~\ref{ass:parent-corner}, \(D=Z\), the instrumental exposure state is irrelevant, \(C_i(s_Z,r_Z)=1\) for every cell, and the target weights collapse to the parent's hidden treatment-exposure weights.
+
+\begin{corollary}[Known-network identified benchmark]\label{cor:known}
+Under Assumptions~\ref{ass:finite}--\ref{ass:matching}, if \(\mathcal C=\emptyset\) or \(K_i=0\) for all \(i\), then \(R_i^D=R_i^Z=0\) and Theorem~\ref{thm:polytope} collapses to a finite principal-strata identification problem on the observed graph.
+\end{corollary}
+With no hidden edges, the only remaining latent variables are the monotone take-up table entries, so the graph-completion uncertainty disappears and the proposal reduces to the known-network network-IV benchmark.
+
+\begin{example}[Exhibit 9.1: four-unit hub witness for \(\Delta_{\mathrm{IVX},u}(P)\)]\label{ex:hub}
+Take units \(\{1,2,3,4\}\), empty observed local graph, candidate hidden edges
+\[
+\mathcal C=\{\{1,4\},\{2,4\}\},
+\qquad
+K_1=K_2=K_3=K_4=1.
+\]
+Let the encouragement design put probability \(1/3\) on each vector with exactly one encouraged leaf among units \(1,2,3\), and set \(Z_4=0\). Let \(S_i^D=S_i^Z\equiv 0\), so all observed exposure variation comes from the hidden states \(R_i^D,R_i^Z\). Let the latent take-up table satisfy
+\[
+D_1(1,0,1)=D_2(1,0,1)=1,\qquad D_1(0,0,1)=D_2(0,0,1)=0,
+\]
+with all other take-up entries fixed at \(0\). Let the potential outcomes satisfy
+\[
+Y_1(1,0,1)-Y_1(0,0,1)=Y_2(1,0,1)-Y_2(0,0,1)=1,
+\qquad
+Y_i(d,0,0)=0\ \text{otherwise}.
+\]
+For direction \(u=(1,0,0)\), the product relaxation can assign both leaves the hidden state \(r_Z=r_D=1\), yielding \(\overline\theta^{\mathrm{prod}}_u(P)=1\). Under one shared completion, \(K_4=1\) allows at most one of the two hidden edges, so at most one leaf can be a complier with hidden exposure \(1\), yielding \(\overline\theta_u(P)=1/2\) and
+\[
+\Delta_{\mathrm{IVX},u}(P)=1/2>0.
+\]
+The consistency check is immediate: the edge set has two candidate edges, the cap permits exactly one realized hidden edge at the hub, and no denominator is zero because the design assigns positive probability to each required encouragement cell.
+\end{example}
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:polytope} should reduce through four substantive steps beyond definitions. First, fix a graph completion \(G\) and enumerate the finite monotone take-up table \(D_i(z,s_Z,r_Z)\). Second, write the observed conditional means as linear equalities in bounded latent outcome values and latent take-up indicators conditional on \(G\). Third, project the resulting finite feasible polytope onto the target vector \(\theta(s_D,s_Z)\). Fourth, optimize linear functionals of that target over the finite union across graph completions. Conjecture~\ref{conj:strict} then becomes a separation problem between the projected shared polytope and the product relaxation, while Conjecture~\ref{conj:witness} should be attacked by explicit enumeration on the four-unit witness followed by a Farkas-type separating inequality for the projected demand system.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:polytope} is routine conditional on the finite latent-state setup, but it has not been derived in this file. Conjectures~\ref{conj:strict} and \ref{conj:witness} are the flagship claims and remain open. The proposal does not claim inference, efficiency, or policy-transport formulas. The strongest modelling choice is local monotonicity indexed by instrument-exposure state; if that restriction is weakened to bounded defiers, the proposal becomes a different partial-identification problem and should be drafted separately.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for a new upgrade angle built around a shared completion-principal-strata polytope and a four-unit dual-map witness; prior verdict: none.
+\end{itemize}
+
+\section{Bibliography}
+\begin{thebibliography}{99}
+
+\bibitem[Acerenza et al.(2025)]{acerenza_martinez_iriarte_sanchez_becerra_spini_2025_household_bounds}
+Acerenza, S., Martinez-Iriarte, E., Sanchez-Becerra, X., and Spini, P. (2025).
+Sharp bounds on direct and spillover effects in household encouragement designs with strategic interaction.
+arXiv:2503.14314.
+
+\bibitem[Aronow and Samii(2017)]{aronow_samii_2017}
+Aronow, P. M. and Samii, C. (2017).
+Estimating average causal effects under general interference, with application to a social network experiment.
+\emph{The Annals of Applied Statistics} 11(4), 1912--1947.
+
+\bibitem[Gao et al.(2026)]{gao_harshaw_savje_wang_2026_impossibility_testing}
+Gao, C., Harshaw, C., Savje, F., and Wang, Y. (2026).
+On the impossibility of specification testing of interference models based on exposure mappings.
+arXiv:2605.09726.
+
+\bibitem[Hoshino and Yanagi(2024)]{hoshino_yanagi_2024_noncompliance_unknown_interference}
+Hoshino, T. and Yanagi, T. (2024).
+Causal inference with noncompliance and unknown interference.
+\emph{Journal of the American Statistical Association} 119(548), 3020--3035.
+
+\bibitem[Hudgens and Halloran(2008)]{hudgens_halloran_2008}
+Hudgens, M. G. and Halloran, M. E. (2008).
+Toward causal inference with interference.
+\emph{Journal of the American Statistical Association} 103(482), 832--842.
+
+\bibitem[Imai, Jiang, and Malani(2021)]{imai_jiang_malani_2021_interference_noncompliance}
+Imai, K., Jiang, Z., and Malani, A. (2021).
+Causal inference with interference and noncompliance in two-stage randomized experiments.
+\emph{Journal of the American Statistical Association} 116(534), 632--644.
+
+\bibitem[Manski(1990)]{manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review} 80(2), 319--323.
+
+\bibitem[Nibbering and Oosterveen(2025)]{nibbering_oosterveen_2025_iv_interference_policy}
+Nibbering, D. and Oosterveen, M. (2025).
+Policy-relevant causal effect estimation using instrumental variables with interference.
+arXiv:2509.12538.
+
+\bibitem[Savje(2024)]{savje_2024_misspecified_exposure_mappings}
+Savje, F. (2024).
+Causal inference with misspecified exposure mappings: separating definitions and assumptions.
+\emph{Biometrika} 111(1), 1--15.
+
+\bibitem[Schroder et al.(2026)]{schroder_oprescu_feuerriegel_kallus_2026_networks_partialid}
+Schroder, M., Oprescu, M., Feuerriegel, S., and Kallus, N. (2026).
+Causal inference on networks under misspecified exposure mappings: A partial identification framework.
+arXiv:2602.03459.
+
+\bibitem[Vazquez-Bare(2023)]{vazquez_bare_2023_iv_spillovers}
+Vazquez-Bare, G. (2023).
+Identification of local average treatment effects with spillovers.
+\emph{Journal of the American Statistical Association} 118(544), 2642--2659.
+
+\bibitem[Weinstein and Nevo(2026)]{weinstein_nevo_2026_misspecified_network}
+Weinstein, B. and Nevo, D. (2026).
+Causal inference with misspecified network interference structure.
+\emph{Biometrics} 82(1), ujag023.
+
+\end{thebibliography}
+
+\end{document}

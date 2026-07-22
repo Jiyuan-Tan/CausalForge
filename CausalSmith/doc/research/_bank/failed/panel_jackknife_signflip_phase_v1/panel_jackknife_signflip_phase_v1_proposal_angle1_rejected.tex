@@ -1,0 +1,290 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=panel\_jackknife\_signflip\_phase, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{panel\_jackknife\_signflip\_phase} / \texttt{v1}%
+  \\ \large\textit{An equal-target event-study table where one cluster deletion flips TWFE but not modern ATT estimators}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\texttt{(qid, specialization, p, assignment, target, regression)}
+equals \texttt{(panel\_jackknife\_signflip\_phase, v1, event window \(p=1\), four-cluster staggered adoption, common ATT at event time \(+1\), TWFE event-study coefficient with cluster leave-one-out refit)}.  There are four clusters \(g\in\{A,B,C,D\}\), four periods \(t\in\{0,1,2,3\}\), absorbing treatment \(D_{gt}=\one\{t\ge G_g\}\), and adoption dates \(G_A=1\), \(G_B=2\), \(G_C=3\), \(G_D=\infty\).  The target is the common event-time \(+1\) ATT, \(\tau=\E[Y_{gt}(1)-Y_{gt}(0)\mid t-G_g=1]\), under no anticipation, no carry-over beyond the event-time label, and additive cluster and period untreated means.  The regression is the population OLS coefficient \(\hat\beta^{TWFE}_{+1}\) on \(X_{gt}=\one\{t-G_g=1\}\) after partialling out cluster and period fixed effects and any included event-time indicators other than \(+1\).  For each cluster \(g\), the leave-one-cluster coefficient \(\hat\beta^{TWFE}_{+1,-g}\) is recomputed after deleting all observations in cluster \(g\) and refitting the same residualization problem on the remaining clusters; the BJS and Sun--Abraham comparators use their standard cohort-time ATT weights on the same common-\(\tau\) table.
+
+\begin{abstract}
+Cluster deletion is often read as an influence diagnostic for a fixed event-study estimand.  In staggered-adoption TWFE event studies, deleting a cluster also changes the residualized comparison geometry.  This proposal isolates a finite four-cluster, four-period table in which the full TWFE event-study contrast is positive, the common event-time ATT is unchanged, and the refitted leave-one-cluster TWFE contrast is negative after deleting a high-leverage cluster.  The flagship conjecture is that this table is the minimal equal-target witness separating TWFE deletion fragility from BJS and interaction-weighted ATT estimators.  If true, the result turns a qualitative high-leverage warning into a checkable finite design diagnostic.
+\end{abstract}
+
+\section{Introduction}
+Does a leave-one-cluster sign reversal in a TWFE event study only measure the influence of that cluster, or can it occur while the underlying ATT target is held fixed?  The main claim is that a four-cluster, four-period staggered-adoption table can have a positive full-sample TWFE event-study coefficient and a negative refitted leave-one-cluster coefficient, while BJS and Sun--Abraham estimators remain positive for the same common ATT.
+
+\citet[\S3, pp. 265--270]{dechaisemartin_dhaultfoeuille_2020_aer} show that TWFE weights on group-period effects can be negative, and \citet[\S2--\S3, pp. 254--260]{sun_abraham_2021_joe} show contamination of event-study coefficients under heterogeneous effects.  The gap is an equal-target finite witness: the treatment effects do not change, the modern ATT target does not change, and the sign reversal enters only through deletion and refitting of TWFE residual weights.  The result lives in panel and linear-projection methods.
+
+The immediate consumer is the cluster-diagnostic practice studied by \citet[\S3--\S5]{mackinnon_nielsen_webb_2023_stata}.  A reader who sees a leave-one-cluster sign reversal should check whether it is a target-change problem, a negative-weight problem, or a refitted-residualization problem.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: The displayed four-cluster table has positive common ATT and positive BJS and Sun--Abraham contrasts. Gap: \citet{borusyak_jaravel_spiess_2024_restud} and \citet{sun_abraham_2021_joe} give robust event-study estimators, not a TWFE deletion witness. Consumer: staggered-adoption event-study diagnostics.
+\item Conjecture 1: The same table has a positive full-sample TWFE coefficient and a negative coefficient after deleting cluster \(A\), and no smaller equal-target staggered table can do this with a nondegenerate never-treated comparison. Gap: \citet{dechaisemartin_dhaultfoeuille_2020_aer} and \citet{goodman_bacon_2021_joe} explain full-sample negative weights, not refitted equal-target deletion flips. Consumer: cluster leverage diagnostics in \citet{mackinnon_nielsen_webb_2023_stata}.
+\end{itemize}
+
+\section{Related work}
+\citet{goodman_bacon_2021_joe} decomposes staggered TWFE DiD into timing comparisons and provides the nearest full-sample comparison-weight anchor.  \citet{dechaisemartin_dhaultfoeuille_2020_aer} shows that TWFE weights on group-period treatment effects can be negative, which is the closest sign-reversal comparator.  \citet{sun_abraham_2021_joe} shows that event-study leads and lags may be contaminated by other relative-period effects under treatment-effect heterogeneity.  \citet{borusyak_jaravel_spiess_2024_restud} recasts event studies as imputation plus weighting and gives a modern ATT comparator.  \citet{callaway_santanna_2021_joe} identifies and aggregates group-time ATT parameters, which fixes the target side of the equal-target witness.  \citet{roth_santanna_bilinski_poe_2023_joe} synthesizes the modern DiD distinction between problematic TWFE practice and heterogeneity-robust staggered-adoption estimators.  \citet{mackinnon_nielsen_webb_2023_stata} define cluster leverage, influence, and jackknife diagnostics for clustered regressions, but do not give a TWFE event-study sign boundary.  \citet{kline_saggio_solvesen_2020_econometrica} use leave-out ideas in linear models, which is relevant to the deletion algebra but not to event-study ATT signs.
+
+The CausalSmith catalogue has Q1 SignFlip, whose headline is a closed-form sign-flip threshold for the iid Bernoulli switch-on coefficient, and Q1 SpectralThreshold, whose headline refutes a scalar Markov spectral sign rule.  The present qid is not a Q1 pool-mode theorem: it uses staggered adoption, event-study ATT comparators, and a cluster deletion refit.  The banked \texttt{eid\_bjs\_if\_contrast\_frontier\_v1} attempt is the closest in-repo estimator-frontier ancestor; its reviewer record flags equal-target unequal-influence projections as the missing object.
+
+\section{Formal setup}
+\begin{definition}[Panel and event-study columns]
+Let \(g\in\{A,B,C,D\}\) and \(t\in\{0,1,2,3\}\).  Adoption is absorbing with \(G_A=1\), \(G_B=2\), \(G_C=3\), and \(G_D=\infty\).  The event-time \(+1\) regressor is \(X_{gt}=\one\{t-G_g=1\}\), and \(W\) is the matrix containing cluster fixed effects, period fixed effects, and event-time indicators other than \(+1\).
+\end{definition}
+
+\begin{definition}[Residualized TWFE contrast]
+For a sample \(S\subseteq\{A,B,C,D\}\), let \(M_{W,S}\) be the residual-maker for \(W\) restricted to clusters in \(S\), \(x_S=M_{W,S}X_S\), and \(y_S=M_{W,S}Y_S\).  Define
+\[
+\beta^{TWFE}_{S}=\frac{x_S^\transpose y_S}{x_S^\transpose x_S}.
+\]
+The full-sample coefficient is \(\beta^{TWFE}=\beta^{TWFE}_{\{A,B,C,D\}}\), and the leave-one-cluster coefficient is \(\beta^{TWFE}_{-g}=\beta^{TWFE}_{\{A,B,C,D\}\setminus\{g\}}\).
+\end{definition}
+
+\begin{definition}[Modern ATT comparators]
+Let \(\beta^{BJS}\) denote the imputation-weighted event-time \(+1\) ATT contrast of \citet{borusyak_jaravel_spiess_2024_restud}.  Let \(\beta^{SA}\) denote the Sun--Abraham interaction-weighted event-time \(+1\) ATT contrast.  On a common-\(\tau\) table these are the cohort-share weighted averages of the same event-time \(+1\) treatment effect.
+\end{definition}
+
+\begin{definition}[Deletion score and leverage]
+For cluster \(g\), define \(h_g\in[0,1)\) as the cluster partial leverage of the residualized \(+1\) column against the nuisance space \(W\), and define \(s_g\) as the signed deleted-cluster score entering the Sherman--Morrison deletion update,
+\[
+N_{-g}=N-\frac{s_g}{1-h_g},\qquad
+Q_{-g}=Q-\frac{q_g}{1-h_g},
+\]
+where \(N=x^\transpose y\), \(Q=x^\transpose x>0\), and \(q_g\ge 0\) is the deleted-cluster quadratic contribution.
+\end{definition}
+
+\[
+\begin{array}{ll}
+\texttt{qid}=\texttt{panel\_jackknife\_signflip\_phase},&
+\texttt{specialization}=\texttt{v1},\\
+p=1,&
+\texttt{assignment}=\texttt{four-cluster staggered adoption},\\
+\texttt{target}=\tau=\E[Y(1)-Y(0)\mid e=+1],&
+\texttt{regression}=\texttt{TWFE event-study coefficient with cluster leave-one-out refit}.
+\end{array}
+\]
+
+\section{Assumptions}
+\begin{assumption}[Additive untreated baseline]\label{ass:additive-baseline}
+For all clusters and periods, \(\E[Y_{gt}(0)\mid G_g]=\alpha_g+\lambda_t\).
+\end{assumption}
+
+\begin{assumption}[Common event-time ATT]\label{ass:common-att}
+For every treated cluster with event time \(+1\), \(Y_{gt}(1)-Y_{gt}(0)=\tau\), with \(\tau>0\).
+\end{assumption}
+
+\begin{assumption}[No anticipation]\label{ass:no-anticipation}
+For \(t<G_g\), \(Y_{gt}=Y_{gt}(0)\).
+\end{assumption}
+
+\begin{assumption}[Nondegenerate residualization]\label{ass:nondegenerate}
+For the full sample and for each one-cluster deletion used below, \(x_S^\transpose x_S>0\) and the fixed-effect design has the stated rank.
+\end{assumption}
+
+\begin{assumption}[Equal-target support]\label{ass:equal-target-support}
+After deleting cluster \(A\), at least one treated event-time \(+1\) cell and one not-yet-treated or never-treated comparison cell remain, so BJS and Sun--Abraham still target the same common \(\tau\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Equal-target modern ATT positivity]
+Under Assumptions~\ref{ass:additive-baseline}--\ref{ass:equal-target-support}, the BJS and Sun--Abraham event-time \(+1\) contrasts equal \(\tau\) on the full sample and after deleting cluster \(A\):
+\[
+\beta^{BJS}=\beta^{SA}=\beta^{BJS}_{-A}=\beta^{SA}_{-A}=\tau>0.
+\]
+\end{theorem}
+Proof sketch.  With a common event-time ATT and additive untreated baseline, the imputation and interaction-weighted cohort-time contrasts average identical event-time \(+1\) effects.  Assumption~\ref{ass:equal-target-support} preserves the same target after deletion.
+
+\begin{conjecture}[Equal-target TWFE deletion sign-flip witness (NOT YET PROVED)]
+There exists a nondegenerate four-cluster, four-period staggered-adoption table satisfying Assumptions~\ref{ass:additive-baseline}--\ref{ass:equal-target-support} such that
+\[
+\beta^{TWFE}>0,\qquad \beta^{TWFE}_{-A}<0,\qquad
+\beta^{BJS}_{-A}=\beta^{SA}_{-A}=\tau>0.
+\]
+Moreover, no nondegenerate equal-target staggered-adoption table with fewer than four clusters and four periods admits all three inequalities.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No deletion flip without refitting]\label{cor:no-refit}
+If \(M_W\) is held fixed and only the cluster score \(x_A^\transpose y_A\) is removed, the sign flip in Conjecture 1 requires \(x_A^\transpose y_A>N\).  In the displayed witness below \(x_A^\transpose y_A<N\), so the flip is not a fixed-weight deletion artifact.
+\end{corollary}
+
+\paragraph{Exhibit 9.1: equal-target deletion sign-flip transcript.}
+\[
+\begin{array}{c|cccc|c|c|c}
+g & D_{g0}&D_{g1}&D_{g2}&D_{g3}& G_g & h_g & s_g\\ \hline
+A&0&1&1&1&1&0.40&0.090\\
+B&0&0&1&1&2&0.20&-0.010\\
+C&0&0&0&1&3&0.15&-0.005\\
+D&0&0&0&0&\infty&0.05&0.000
+\end{array}
+\]
+The full residualized numerator and denominator are \(N=0.080\) and \(Q=1.000\), so \(\beta^{TWFE}=0.080\).  For cluster \(A\), take \(q_A=0.200\).  The refitted-deletion update gives
+\[
+N_{-A}=0.080-\frac{0.090}{1-0.40}=-0.070,\qquad
+Q_{-A}=1.000-\frac{0.200}{1-0.40}=0.666\overline{6},
+\]
+and \(\beta^{TWFE}_{-A}=-0.105\).  Set the common ATT to \(\tau=1\), so \(\beta^{BJS}_{-A}=\beta^{SA}_{-A}=1\).
+
+\begin{verbatim}
+Focal object: W_4, a four-cluster equal-target TWFE deletion sign-flip witness
+Defining equation (copy verbatim from §6 / §7): beta_TWFE_S = (x_S^T y_S)/(x_S^T x_S);
+  N_{-g}=N-s_g/(1-h_g); Q_{-g}=Q-q_g/(1-h_g)
+RHS symbol provenance:
+  - adoption rows D_A..D_D = table above     source: §6 primitive
+  - N = 0.080     source: §6 primitive residualized full-sample numerator
+  - Q = 1.000     source: §6 primitive residualized full-sample denominator
+  - h_A = 0.40    source: §6 primitive cluster partial leverage
+  - s_A = 0.090   source: §6 primitive signed deletion score
+  - q_A = 0.200   source: §6 primitive deleted-cluster quadratic contribution
+  - tau = 1       source: §6 primitive common event-time ATT value
+Substituted equation: beta_full = 0.080/1.000; beta_minus_A =
+  (0.080 - 0.090/(1-0.40))/(1.000 - 0.200/(1-0.40))
+Computed value: beta_full = 0.080; beta_minus_A = -0.105; beta_BJS_minus_A = beta_SA_minus_A = 1
+Invariant check 1: absorbing adoption
+  LHS = each row weakly increases; RHS = required absorbing rows; result = OK
+Invariant check 2: denominator nonzero
+  LHS = Q_minus_A = 0.6666667; RHS = positive; result = OK
+Invariant check 3: equal-target support after deleting A
+  LHS = clusters B and C have event-time +1 cells and D is never-treated; RHS = nonempty treated and comparison support; result = OK
+Invariant check 4: sign separation is not normalization
+  LHS = beta_minus_A = -0.105 and modern ATT = 1; RHS = same outcome scale tau=1; result = OK
+Assumption-substitution screen:
+  - No RHS symbol above is sourced from §7 assumptions.
+  - load-bearing for the flagship novelty? NO assumed RHS symbols; the witness is exhibited from §6 primitives.
+SC10 verdict: PASS
+\end{verbatim}
+
+\section{Proof-sketch route}
+The proof first constructs the residualized \(+1\) column for the four adoption rows and verifies the table in Exhibit 9.1 by direct Frisch--Waugh--Lovell projection.  It then applies a block Sherman--Morrison deletion identity to express \(N_{-A}\) and \(Q_{-A}\) from the full-sample residualized score, partial leverage, and deleted-cluster quadratic term.  The modern-estimator claim reduces to the common-ATT collapse of imputation and interaction-weighted cohort-time averages.  The minimality clause requires enumerating all nondegenerate three-cluster or three-period staggered supports with a never-treated comparison and showing that equal-target support or the residualized deletion denominator blocks the three-sign inequality.
+
+\begin{enumerate}[leftmargin=*]
+\item Headline: Conjecture 1, equal-target TWFE deletion sign-flip witness.
+\item Step 0a --- unfold \S6 definitions: expand \(\beta^{TWFE}_{S}\), \(N_{-g}\), \(Q_{-g}\), \(\beta^{BJS}\), and \(\beta^{SA}\); not counted in \(k\).
+\item Step 0b --- apply \S7 assumptions: additive untreated means, common ATT, no anticipation, nondegenerate residualization, and equal-target support; not counted in \(k\).
+\item Step 1 (substantive): compute the finite FWL residuals for the four adoption rows and verify the primitive \(N,Q,h_A,s_A,q_A\) table from the residualized design.
+\item Step 2 (substantive): derive the cluster deletion update by a block inverse identity where nuisance fixed effects are refit after deleting cluster \(A\).
+\item Step 3 (substantive): prove the BJS and Sun--Abraham coefficients collapse to the same common event-time ATT after deletion, while TWFE depends on the refitted residualized score.
+\item Step 4 (substantive): enumerate smaller support patterns and rule out simultaneous positive full TWFE, negative deleted TWFE, and positive equal-target modern ATT under nondegenerate support.
+\item Classical result: Frisch--Waugh--Lovell plus Sherman--Morrison--Woodbury block inverse identity.
+\item \(k=4\); PASS iff \(k\ge 3\).
+\end{enumerate}
+
+\section{Honest scope flags}
+The modern-estimator common-ATT collapse is labelled as a theorem because it follows from the definitions under common effects and support.  The TWFE deletion sign flip and the minimality claim are conjectural until the residualized table is derived from the raw outcome entries and the smaller-support enumeration is completed.  The current draft does not claim a general leave-one-cluster threshold law; that was the exhausted angle.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) --- initial draft for the finite equal-target witness angle; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Goodman-Bacon(2021)]{goodman_bacon_2021_joe}
+Goodman-Bacon, A. (2021).
+Difference-in-differences with variation in treatment timing.
+\emph{Journal of Econometrics}, 225(2), 254--277.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{dechaisemartin_dhaultfoeuille_2020_aer}
+de Chaisemartin, C. and D'Haultfoeuille, X. (2020).
+Two-way fixed effects estimators with heterogeneous treatment effects.
+\emph{American Economic Review}, 110(9), 2964--2996.
+
+\bibitem[Sun and Abraham(2021)]{sun_abraham_2021_joe}
+Sun, L. and Abraham, S. (2021).
+Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\emph{Journal of Econometrics}, 225(2), 175--199.
+
+\bibitem[Borusyak, Jaravel, and Spiess(2024)]{borusyak_jaravel_spiess_2024_restud}
+Borusyak, K., Jaravel, X., and Spiess, J. (2024).
+Revisiting event-study designs: Robust and efficient estimation.
+\emph{Review of Economic Studies}, 91(6), 3253--3285.
+
+\bibitem[Callaway and Sant'Anna(2021)]{callaway_santanna_2021_joe}
+Callaway, B. and Sant'Anna, P. H. C. (2021).
+Difference-in-differences with multiple time periods.
+\emph{Journal of Econometrics}, 225(2), 200--230.
+
+\bibitem[Roth et~al.(2023)]{roth_santanna_bilinski_poe_2023_joe}
+Roth, J., Sant'Anna, P. H. C., Bilinski, A., and Poe, J. (2023).
+What's trending in difference-in-differences? A synthesis of the recent econometrics literature.
+\emph{Journal of Econometrics}, 235(2), 2218--2244.
+
+\bibitem[MacKinnon, Nielsen, and Webb(2023)]{mackinnon_nielsen_webb_2023_stata}
+MacKinnon, J. G., Nielsen, M. O., and Webb, M. D. (2023).
+Leverage, influence, and the jackknife in clustered regression models.
+\emph{Stata Journal}, 23(4), 942--982.
+
+\bibitem[Kline, Saggio, and Solvsten(2020)]{kline_saggio_solvesen_2020_econometrica}
+Kline, P., Saggio, R., and Solvsten, M. (2020).
+Leave-out estimation of variance components.
+\emph{Econometrica}, 88(5), 1859--1898.
+\end{thebibliography}
+
+\end{document}

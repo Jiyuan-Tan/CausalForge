@@ -1,0 +1,253 @@
+\section{Setup and Assumptions}
+
+Consider a finite-\(N\) panel with units \(i=1,\ldots,N\) observed over calendar periods \(t=1,\ldots,T\). Each unit belongs to an adoption cohort \(G_i\) in the finite support \(\mathcal C\); the never-treated cohort is denoted by \(\infty\). Treatment is absorbing: \(D_{gt}\) indicates whether cohort \(g\) is treated in period \(t\), and \(D_{it}=D_{G_i t}\). Let \(I_{gN}=\{i:G_i=g\}\) and \(n_{gN}=|I_{gN}|\). Expectations under the triangular-array population law are written \(E_{\mathcal P_N}\).
+
+The first restrictions keep the large-array design stable and impose the multiplicative untreated mean structure. Potential outcomes are \(Y_{it}(0)\) and \(Y_{it}(1)\). The untreated mean has a positive unit baseline \(b_{iN}\) and a calendar component \(\gamma_{t0}\); \(\bar b_{gN}\) is the within-cohort average baseline and \(\bar b_g\) its limit.
+
+\begin{center}
+\begin{tabular}{ll}
+\hline
+Notation & Economic object\\
+\hline
+\(D_{gt}\) & treatment status of cohort \(g\) in period \(t\)\\
+\(B_{gt}=\bar b_g\exp(\gamma_{t0})\) & untreated cohort-time mean\\
+\(\delta_{gt}\) & treated-cell log proportional effect\\
+\(m_{gt}(\delta)=B_{gt}\exp(D_{gt}\delta_{gt})\) & observed cohort-time mean\\
+\(\beta_N^\star(\delta)\) & finite-array population PPML treatment coordinate\\
+\(\beta^\star(\delta)\) & limiting collapsed population PPML treatment coordinate\\
+\(\widetilde W_{gt}(\delta)\) & fitted-mean-weighted residualized treatment\\
+\(\Phi(\delta)\) & primitive index with the sign of \(\beta^\star(\delta)\)\\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{assumptionv}{ass:cohort-share-limit}[Cohort share limits]
+For every \(N\ge |\mathcal C|\) and every \(g\in\mathcal C\),
+\[
+n_{gN}>0
+\quad\text{and}\quad
+\frac{n_{gN}}{N}\to \pi_g\in(0,1).
+\]
+\end{assumptionv}
+
+\cref{obj:ass:cohort-share-limit} is the positive limiting cohort shares condition: every cohort remains represented asymptotically and contributes positive mass to the collapsed comparison \citep{deChaisemartinDHaultfoeuille2020TWFE}. The limit share is denoted \(\pi_g\).
+
+\begin{assumptionv}{ass:unit-untreated-exponential-mean}[Untreated exponential mean]
+For every unit \(i=1,\ldots,N\) and period \(t=1,\ldots,T\),
+\[
+E_{\mathcal P_N}\!\left[Y_{it}(0)\right]
+=
+b_{iN}\exp(\gamma_{t0}),
+\]
+with the normalization \(\gamma_{10}=0\).
+\end{assumptionv}
+
+\cref{obj:ass:unit-untreated-exponential-mean} is a unit-fixed-effect multiplicative parallel-trends restriction in an exponential mean model \citep{Wooldridge2023NonlinearDiD}. The normalization fixes the location of the time effects and has no substantive content.
+
+\begin{assumptionv}{ass:within-cohort-baseline-limit}[Within-cohort baseline limits]
+For every \(g\in\mathcal C\), the deterministic triangular-array average
+\[
+\bar b_{gN}
+=
+n_{gN}^{-1}\sum_{i\in I_{gN}} b_{iN}
+\]
+satisfies
+\[
+\bar b_{gN}\to \bar b_g\in(0,\infty).
+\]
+\end{assumptionv}
+
+\cref{obj:ass:within-cohort-baseline-limit} is specific to this analysis. It is the condition that makes the cohort-time collapse deterministic: after averaging within a cohort, the only limiting untreated heterogeneity that remains is the cohort baseline \(\bar b_g\).
+
+\begin{assumptionv}{ass:proportional-effects}[Proportional treatment effects]
+For every unit \(i=1,\ldots,N\) and period \(t=1,\ldots,T\) with \(D_{it}=1\),
+\[
+E_{\mathcal P_N}\!\left[Y_{it}(1)\right]
+=
+E_{\mathcal P_N}\!\left[Y_{it}(0)\right]\exp(\delta_{G_i t}).
+\]
+\end{assumptionv}
+
+\cref{obj:ass:proportional-effects} is the cohort-time proportional treatment effects condition \citep{MoreauKastler2025PTT}. The log multiplier \(\delta_{G_i t}\) may vary across treated cohorts and calendar periods, so the pooled coefficient below is not imposed to equal a common structural effect.
+
+These assumptions induce a collapsed cohort-by-time representation. Define the untreated cohort-time mean \(B_{gt}=\bar b_g\exp(\gamma_{t0})\), the collapsed cell mass \(q_{gt}=\pi_g/T\), and the observed collapsed mean \(m_{gt}(\delta)=B_{gt}\exp(D_{gt}\delta_{gt})\), where \(\delta_{gt}\) denotes the cohort-time log multiplier on treated cells. Let \(r_{gt}\) collect the collapsed fixed-effect regressors and the treatment indicator, and let \(X_{gt}\) be the same vector with the treatment coordinate removed.
+
+\begin{assumptionv}{ass:collapsed-design-rank}[Collapsed design rank]
+The collapsed second-moment matrix
+\[
+\sum_{g\in\mathcal C}\sum_{t=1}^T q_{gt} r_{gt} r_{gt}'
+\]
+is positive definite.
+\end{assumptionv}
+
+\cref{obj:ass:collapsed-design-rank} is the full-rank Poisson fixed-effect design condition \citep{White1982MisspecifiedML}. It rules out exact collinearity in the collapsed regressors, so the population projection has a well-defined treatment coordinate rather than an unidentified linear combination of fixed effects and treatment.
+
+The population object is a Poisson pseudo-likelihood projection defined through the conditional-mean criterion. For a finite array, let \(v_{itN}\) be the unit-time regressor vector containing unit effects, time effects, and treatment; let \(\theta_N\) be the corresponding coefficient vector; and let \(m_{itN}(\delta)\) be the observed unit-time mean generated by the untreated mean and proportional effects.
+
+\begin{definitionv}{def:unit-fe-population-projection}[Unit-FE Projection \(\beta_N^\star(\delta)\)]
+Define \(\beta_N^\star(\delta)\) as the last coordinate of a maximizer over \(\theta_N\in\mathbb R^{N+T}\) of
+\[
+L_N(\theta_N;\delta)
+=
+(NT)^{-1}\sum_{i=1}^N\sum_{t=1}^T
+\left\{
+m_{itN}(\delta)\,v_{itN}'\theta_N-\exp(v_{itN}'\theta_N)
+\right\}.
+\]
+\end{definitionv}
+
+\cref{obj:def:unit-fe-population-projection} is the finite-array population analogue of the unit fixed-effect PPML regression. The criterion \(L_N(\theta_N;\delta)\) is evaluated at means rather than realized outcomes, and \(\beta_N^\star(\delta)\) is the treatment coordinate of that population projection.
+
+\begin{definitionv}{def:sample-unit-fe-ppml}[Sample PPML Coefficient \(\hat\beta_N\)]
+Let \(A_N\) be the set of admissible extended maximizers of
+\[
+\sum_{i=1}^N\sum_{t=1}^T
+\left\{
+Y_{it}\,v_{itN}'\theta_N-\exp(v_{itN}'\theta_N)
+\right\}
+\]
+over unit-effect coordinates in \(\mathbb R\cup\{-\infty\}\), time-effect coordinates in \(\mathbb R\) satisfying the period-1 normalization, and \(\beta\in\mathbb R\), with the convention \(\exp(-\infty)=0\). Admissibility means that the period-1 time effect is normalized to zero and that a unit-effect coordinate may equal \(-\infty\) only for a unit whose whole observed outcome path satisfies \(Y_{it}=0\) for every \(t\); for such a unit the extended objective contribution is defined to be zero. If \(A_N\) contains an element whose squared Euclidean norm over the finite time-effect and \(\beta\) coordinates is no larger than that of every element of \(A_N\), then \(\hat\beta_N\) is the \(\beta\)-coordinate of such a selected element. If no such minimum-finite-coordinate-norm admissible extended maximizer exists, set \(\hat\beta_N=0\).
+\end{definitionv}
+
+The limiting projection works directly with the collapsed cohort-time cells. With \(\theta\) denoting the collapsed coefficient vector, write the limiting collapsed Poisson criterion as \(L(\theta;\delta)\). The finite collapsed analogue, used only to connect the array to this limit, is denoted \(L_{Nc}(\theta;\delta)\).
+
+\begin{definitionv}{def:collapsed-population-projection}[Collapsed Projection \(\theta^\star(\delta)\)]
+Define
+\[
+\theta^\star(\delta)\in
+\arg\max_{\theta\in\mathbb R^{|\mathcal C|+T}} L(\theta;\delta),
+\]
+where
+\[
+L(\theta;\delta)
+=
+\sum_{g\in\mathcal C}\sum_{t=1}^T
+q_{gt}
+\left\{
+m_{gt}(\delta)\,r_{gt}'\theta-\exp(r_{gt}'\theta)
+\right\}.
+\]
+The coefficient \(\beta^\star(\delta)\) is the last coordinate of \(\theta^\star(\delta)\), and the fitted collapsed mean is
+\[
+\mu^\star_{gt}(\delta)=\exp\{r_{gt}'\theta^\star(\delta)\}.
+\]
+\end{definitionv}
+
+\cref{obj:def:collapsed-population-projection} gives the main object studied in the paper. The maximizer \(\theta^\star(\delta)\), its treatment coordinate \(\beta^\star(\delta)\), and the fitted mean \(\mu^\star_{gt}(\delta)\) are pseudo-true quantities in the sense of misspecified likelihood theory \citep{White1982MisspecifiedML,GourierouxMonfortTrognon1984Theory,GourierouxMonfortTrognon1984Poisson}. The target is therefore a deterministic population projection defined by the Poisson mean criterion.
+
+The analysis centers on this deterministic population projection. A sample fixed-effect PPML regression replaces the means by observed outcomes and may also confront separation \citep{SantosSilvaTenreyro2006,SantosSilvaTenreyro2011,CorreiaGuimaraesZylkin2020}; its sampling theory is a distinct extension. Accordingly, references below to a ``pooled coefficient'' mean the population coordinate \(\beta^\star(\delta)\), unless explicitly stated otherwise.
+
+The sign analysis uses the residualized treatment after partialling out the collapsed fixed effects with weights given by the fitted PPML mean. Let \(\rho^\star(\delta)\) be the weighted least-squares coefficient from that auxiliary projection.
+
+\begin{definitionv}{def:weighted-fwl-residual}[Weighted Residual \(\widetilde W_{gt}(\delta)\)]
+Define
+\[
+\rho^\star(\delta)
+\in
+\arg\min_{\rho\in\mathbb R^{|\mathcal C|+T-1}}
+\sum_{g\in\mathcal C}\sum_{t=1}^T
+q_{gt}\,\mu^\star_{gt}(\delta)\{D_{gt}-X_{gt}'\rho\}^2.
+\]
+The weighted Frisch--Waugh--Lovell residualized treatment is
+\[
+\widetilde W_{gt}(\delta)=D_{gt}-X_{gt}'\rho^\star(\delta).
+\]
+\end{definitionv}
+
+\cref{obj:def:weighted-fwl-residual} gives the comparison weights that enter the local sign formula in the next section. The residual \(\widetilde W_{gt}(\delta)\) is the fixed-effect projection residual of treatment under the curvature weights of the Poisson criterion and serves as a projection comparison weight.
+
+The sign-reversal result is stated on designs with at least the four adoption statuses needed for the explicit construction. The next two assumptions isolate that scope and the positive-effect case of interest.
+
+\begin{assumptionv}{ass:multicohort-frontier-scope}[Multicohort frontier scope]
+The cohort set satisfies
+\[
+\{2,3,4,\infty\}\subseteq \mathcal C.
+\]
+\end{assumptionv}
+
+\cref{obj:ass:multicohort-frontier-scope} is specific to this analysis. It ensures that the design contains early, middle, late, and never-treated cohorts, the minimal structure used by the four-cohort construction.
+
+\begin{assumptionv}{ass:strict-positive-effects}[Strict Positive Effects]
+For every cohort-period cell \((g,t)\) with \(D_{gt}=1\),
+\[
+\delta_{gt}>0.
+\]
+\end{assumptionv}
+
+\cref{obj:ass:strict-positive-effects} is also specific to this analysis. It deliberately restricts attention to the strongest sign benchmark: every treated cell has a positive proportional effect, so any negative pooled coefficient is a property of the projection rather than a mixture of positive and negative underlying effects.
+
+The global parameter region collects the maintained restrictions under which the limiting PPML treatment coordinate is negative despite those positive cell-level effects.
+
+\begin{definitionv}{def:global-sign-reversal-region}[Sign-Reversal Region \(\mathcal R_T\)]
+Define \(\mathcal R_T\) as the set of all triples
+\[
+\left((\pi_g)_{g\in\mathcal C},(B_{gt})_{g\in\mathcal C,\ 1\le t\le T},(\delta_{gt})_{(g,t):D_{gt}=1}\right)
+\]
+with \(T\ge 4\), indexed by a cohort support \(\mathcal C\) that contains \(\{2,3,4,\infty\}\) and contains no first-period finite cohort, such that
+\[
+0<\pi_g<1\quad(g\in\mathcal C),\qquad \sum_{g\in\mathcal C}\pi_g=1,
+\]
+there exist \(\bar b_g>0\) for \(g\in\mathcal C\) with \(B_{gt}=\bar b_g\exp(\gamma_{t0})\) for every supported cell \((g,t)\), \(\delta_{gt}>0\) for every treated supported cell \((g,t)\) with \(D_{gt}=1\), the collapsed design has full weighted rank in the sense that
+\[
+\forall a\ne 0,\qquad
+0<\sum_{g\in\mathcal C}\sum_{t=1}^T \frac{\pi_g}{T}\,(r_{gt}'a)^2,
+\]
+and
+\[
+\beta^\star(\delta)<0.
+\]
+\end{definitionv}
+
+\cref{obj:def:global-sign-reversal-region} names the population configurations in which the pooled limiting coefficient has the opposite sign from every granular proportional treatment effect. The notation \(\mathcal R_T\) is only a shorthand for this primitive set of shares, untreated means, and treated-cell multipliers.
+
+The paper uses one explicit triangular array to show that this region is nonempty. Its role is evidentiary rather than calibrational: all baselines and untreated time effects are set to one, and the only large treated multiplier is placed in the period-4 cell of the cohort first treated in period 2.
+
+\begin{definitionv}{def:four-cohort-witness}[Four-cohort witness $W_4$]
+Let $W_4$ be the cofinal triangular subsequence indexed by $N=4m$, $m=1,2,\ldots$, with $T=4$ and
+\[
+\mathcal C=\{2,3,4,\infty\}.
+\]
+For each such $N$,
+\[
+n_{2N}=n_{3N}=n_{4N}=n_{\infty N}=m,
+\]
+$b_{iN}=1$ for every $i$, and $\gamma_{t0}=0$ for every $t$. The treatment effects satisfy
+\[
+\delta_{gt}=\log(101/100)
+\]
+for every treated cell $(g,t)\ne(2,4)$, while
+\[
+\delta_{2,4}=\log(4).
+\]
+\end{definitionv}
+
+\cref{obj:def:four-cohort-witness} defines the witness \(W_4\). Equal cohort shares and flat untreated means remove scale and composition as explanations for the sign reversal; the later result depends only on the staggered treatment pattern and the heterogeneous positive proportional effects encoded here.
+
+Finally, the primitive sign characterization uses an algebraic index based on observed mean components. Let \(H\) denote the set of treated cohort-time cells when that notation is needed later.
+
+\begin{definitionv}{def:frontier-elimination-handle}[Frontier-elimination polynomial $\Phi(\delta)$]
+Define
+\[
+\Phi(\delta)
+=
+M A
+-
+\sum_{g,t} D_{gt} R_g C_t,
+\]
+where
+\[
+h_{gt}
+=
+\pi_g B_{gt}\exp(D_{gt}\delta_{gt}),\qquad
+R_g=\sum_t h_{gt},\qquad
+C_t=\sum_g h_{gt},
+\]
+and
+\[
+M=\sum_g R_g,\qquad
+A=\sum_{g,t}D_{gt}h_{gt}.
+\]
+The relation between $\Phi(\delta)$ and $\beta^\star(\delta)$ is stated separately.
+\end{definitionv}
+
+\cref{obj:def:frontier-elimination-handle} introduces the scalar \(\Phi(\delta)\) used by the primitive sign result. The component \(h_{gt}\) is the cohort-share-weighted observed collapsed mean, equivalently \(Tq_{gt}m_{gt}(\delta)\), while \(R_g\), \(C_t\), \(M\), and \(A\) are its cohort sums, period sums, grand sum, and treated-cell sum. The main theorem in the next section supplies the sign relation for this scalar.

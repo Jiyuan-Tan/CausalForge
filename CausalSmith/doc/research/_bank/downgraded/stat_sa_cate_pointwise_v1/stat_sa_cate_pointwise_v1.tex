@@ -1,0 +1,752 @@
+% =====================================================================
+%  thmsmith Stage 0 derivation skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=stat\_sa\_cate\_pointwise, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+%  - Immutability is SCOPED to section headers, macro names, and the
+%    preamble. The PLACEMENT of theorem/proposition/lemma/assumption
+%    environments is YOUR responsibility: a `theorem` env may be freely
+%    moved into whichever fixed-header section fits (e.g. promote the
+%    field-level result from \S11 into \S9). Relocating a block between
+%    fixed headers is NOT a skeleton violation.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[numbers]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage 0 derivation: \texttt{stat\_sa\_cate\_pointwise} / \texttt{v1}%
+  \\ \large\textit{Structure-agnostic pointwise CATE rate via a localized doubly robust learner}}
+\author{thmsmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note studies pointwise estimation of the conditional average treatment effect
+$\tau_P(x_0)=E_P[Y(1)-Y(0)\mid X=x_0]$ in an iid unconfounded binary-treatment model.
+The observable statistical object is the localized augmented inverse-probability weighted score
+$\psi_h(W;\eta)$ together with the $K$-fold cross-fit estimator
+$\hat\theta_n^{\mathrm{locDR}}=n^{-1}\sum_{k=1}^K\sum_{i\in I_k}\psi_{h_n}(W_i;\hat\eta_{-k})$.
+The target estimation benchmark is the pointwise absolute-error scale
+$\rho_n=b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}$, which separates localization bias,
+local effective sample size, and nuisance-product error.
+Sections~1--8 fix the shared setup for later proof stages: the smoothed target
+$\theta_h(P)=E_P[\ell_h(X)\tau_P(X)]$, the local weighted nuisance norms, the perturbation class
+$\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}$, and the explicit estimator map from observables.
+The supporting theorem to be used downstream is the localized AIPW identity with second-order product
+drift, while the remaining conjecture stages will test whether $\hat\theta_n^{\mathrm{locDR}}$
+attains $\rho_n$ and whether a matching Le Cam converse holds over the same model.
+\end{abstract}
+
+\section{Introduction}
+Conditional average treatment effects matter when treatment decisions are individualized rather than
+averaged across the population. The fixed-profile target $\tau_P(x_0)$ is especially important in
+precision medicine, targeting, and policy triage, where the analyst wants the effect at a concrete
+covariate profile $x_0$ rather than a projection or a global average. At the same time, the point
+functional is local and nonregular: its statistical difficulty depends not only on nuisance learning,
+but also on how much probability mass lies near $x_0$ and on how quickly the local smoothing bias
+shrinks.
+
+The recent CATE literature resolves only part of this picture. On one side,
+\citet{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE} derive sharp pointwise rates in a
+H\"older-smooth model, showing that the target behaves as a regression/functional hybrid. On the
+other side, \citet{JinSyrgkanis2024StructureAgnosticDR} and
+\citet{JinSyrgkanis2025GeneralLinearFunctionalLowerBounds} develop structure-agnostic upper and lower
+bound technology for treatment-effect functionals under black-box nuisance rates. What remains open is
+the localized causal point functional: a theorem that keeps the pointwise local geometry of CATE
+estimation while replacing smoothness-index assumptions on the nuisances by abstract local mean-square
+rates.
+
+This note targets exactly that gap. The setup fixes a localized doubly robust learner, a smoothed
+target $\theta_h(P)$, a local effective sample size $n p_n$, and black-box local nuisance errors
+$r_{g,n}$ and $r_{m,n}$. If the later conjecture stages succeed, the result will identify the correct
+three-channel rate
+$
+\rho_n=b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}
+$
+and prove that no estimator can improve on that order uniformly over the same localized model.
+
+The immediate consumer is the doubly robust CATE program of \citet{Kennedy2023DRCATE}. That
+literature already explains why a product nuisance term appears in upper bounds for local DR-style
+estimators, but it does not settle whether the product term is unavoidable at a fixed covariate point
+without extra smoothness or sparsity structure. A positive resolution would therefore change practice:
+an analyst using localized DR learners would treat the three terms in $\rho_n$ as the primitive
+benchmark and would not claim faster pointwise rates without additional modeling assumptions.
+
+\paragraph{Motivating conjecture(s).}
+\textbf{Conjecture 1.} Under Assumptions~\ref{ass:causal}--\ref{ass:effective}, the estimator $\hat\theta_n^{\mathrm{locDR}}$ satisfies
+\[
+  \left|\hat\theta_n^{\mathrm{locDR}}-\tau_P(x_0)\right|
+  =O_P\!\left(b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}\right)
+\]
+uniformly over $\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}$.
+
+\textbf{Conjecture 2.} Under Assumptions~\ref{ass:causal}--\ref{ass:local-rich}, there exists a constant $c>0$ such that every estimator $\tilde\theta_n$ obeys
+\[
+  \sup_{P\in\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}}
+  E_P\left|\tilde\theta_n-\tau_P(x_0)\right|
+  \ge c\left(b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}\right).
+\]
+
+\section{Related work and positioning}
+\citet{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE} is the closest pointwise-CATE comparator:
+it derives minimax rates in a H\"older-smooth model and shows how local bias and local effective sample
+size enter the rate, but its nuisance restrictions are structural rather than black-box.
+\citet{Kennedy2023DRCATE} is the closest estimator comparator: it supplies the doubly robust
+pseudo-outcome decomposition and a localized double-residual template, but it stops at upper bounds for
+particular estimators rather than a matched minimax converse.
+\citet{ChernozhukovEtAl2018DML} is the canonical orthogonal-score reference for cross-fitting and
+second-order product remainders; the present note localizes that logic by weighting every score term
+with $\ell_h(X)$.
+\citet{ChernozhukovNeweySingh2022LocalRiesz} is relevant because nonregular local functionals are
+controlled by localized norms and shrinking effective sample sizes, which is the source of the
+$(n p_n)^{-1/2}$ channel in the target rate.
+\citet{JinSyrgkanis2024StructureAgnosticDR} is the closest structure-agnostic upper-bound comparator:
+it proves optimality of doubly robust estimators for ATE-, ATT-, and weighted-ATE-type targets under
+black-box nuisance rates, whereas the present note targets the point-evaluation functional
+$\tau_P(x_0)$.
+\citet{JinSyrgkanis2025GeneralLinearFunctionalLowerBounds} is the closest lower-bound comparator:
+it develops general perturbation technology for structure-agnostic functional estimation, while the
+current problem must specialize that logic to a localized causal point target with explicit $p_n$ and
+$b_n$ channels.
+\citet{SemenovaChernozhukov2021DMLCATE} and \citet{KallusMaoUehara2024LDML} are nearby orthogonal and
+localized inference references, but they study projections or efficient local inference templates
+rather than the matched pointwise minimax rate in the present black-box model.
+Within the repository, \texttt{CausalSmith/doc/API.md} positions the Stat cluster as the home for
+estimation-theory statements that pair an explicit estimator with a matching converse, and the earlier
+\texttt{eid\_dml\_orthogonality\_frontier} thread identified the same missing ingredient: primitive
+upper and lower bound arguments for a localized DML target, rather than a rate frontier assumed by
+construction.
+
+\section{Formal setup}
+Let $W=(Y,D,X)$ have law $P$, where $D\in\{0,1\}$ and $X$ takes values in a measurable metric space
+$\mathcal{X}$. The potential outcomes $Y(1)$ and $Y(0)$ satisfy consistency, and the causal target is
+identified under conditional unconfoundedness and overlap. Write
+\[
+  g_a(x)=E_P[Y\mid D=a,X=x], \qquad e(x)=P(D=1\mid X=x), \qquad \tau_P(x)=g_1(x)-g_0(x).
+\]
+Fix a design point $x_0\in\mathcal{X}$ and a nonnegative localization kernel
+$K_h(x)=K(d(x,x_0)/h)$, where $h=h_n$ may shrink with $n$. Define the local mass and normalized
+weights by
+\[
+  p_h=E_P[K_h(X)], \qquad \ell_h(x)=\frac{K_h(x)}{p_h},
+\]
+so that $E_P[\ell_h(X)]=1$ whenever $p_h>0$. The smoothed target attached to bandwidth $h$ is
+\[
+  \theta_h(P)=E_P[\ell_h(X)\tau_P(X)],
+\]
+and its approximation gap relative to the point target is
+\[
+  b_h(P)=\left|\theta_h(P)-\tau_P(x_0)\right|.
+\]
+
+For any nuisance triple $\eta=(g_0,g_1,e)$, define the localized AIPW score
+\[
+  \psi_h(W;\eta)=\ell_h(X)\left\{g_1(X)-g_0(X)
+  +\frac{D\{Y-g_1(X)\}}{e(X)}
+  -\frac{(1-D)\{Y-g_0(X)\}}{1-e(X)}\right\}.
+\]
+Given a fixed $K$-fold partition $\{I_k\}_{k=1}^K$ of $\{1,\dots,n\}$ and fold-complement training
+samples $I_k^c$, let $\hat\eta_{-k}=(\hat g_{0,-k},\hat g_{1,-k},\hat e_{-k})$ denote nuisance
+estimates trained on $\{W_i:i\in I_k^c\}$. The estimator analyzed later is the explicit sample map
+\[
+  \hat\theta_n^{\mathrm{locDR}}
+  =\frac{1}{n}\sum_{k=1}^K\sum_{i\in I_k}\psi_{h_n}(W_i;\hat\eta_{-k}).
+\]
+Its target statistical benchmark is
+\[
+  \rho_n=b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}},
+\]
+where $p_n=p_{h_n}$, $b_n$ bounds the localization bias $b_{h_n}(P)$, and
+$r_{g,n},r_{m,n}$ are local weighted nuisance-rate envelopes. The localized structure-agnostic model
+$\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}(x_0,h_n,r_{g,n},r_{m,n},b_n,\epsilon)$ collects all laws
+for which these objects are well-defined and the assumptions stated below hold.
+
+\paragraph{Locked parameters.}
+\begin{itemize}[leftmargin=*]
+  \item qid: \texttt{stat\_sa\_cate\_pointwise}
+  \item specialization: \texttt{v1}
+  \item statistical model: $\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}(x_0,h_n,r_{g,n},r_{m,n},b_n,\epsilon)$
+  \item causal estimand: $\tau_P(x_0)$
+  \item sampling model: iid unconfounded binary-treatment observations
+  \item target object: $\rho_n$
+  \item estimator: $\hat\theta_n^{\mathrm{locDR}}$
+  \item data and localization convention: $W_i=(Y_i,D_i,X_i)$ are iid, $D_i\in\{0,1\}$, $x_0$ is fixed, $K_{h_n}$ is a nonnegative localizer, $p_n=E_P K_{h_n}(X)$, and $\ell_n(x)=K_{h_n}(x)/p_n$
+  \item identifying convention: the causal estimand is $\tau_P(x_0)=E_P[Y(1)-Y(0)\mid X=x_0]$ under consistency, conditional unconfoundedness, and overlap $e_P(X)\in[\epsilon,1-\epsilon]$
+  \item model restrictions: the model $\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}$ is the class of laws satisfying Assumptions~\ref{ass:causal}--\ref{ass:local-rich}: local bias bounded by $b_n$, local effective sample size $n p_n\to\infty$, and black-box local nuisance rates $r_{g,n},r_{m,n}$ measured in the $\ell_n$-weighted local $L_2(P)$ norm
+  \item rate convention: the target object is the matched minimax pointwise absolute-error rate
+  \[
+    \rho_n=b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}
+  \]
+  \item estimator convention: the estimator $\hat\theta_n^{\mathrm{locDR}}$ is the $K$-fold cross-fit localized doubly robust learner defined in this section
+\end{itemize}
+
+\section{Assumptions}
+\begin{assumption}[Causal sampling and overlap]\label{ass:causal}
+The observations $W_i=(Y_i,D_i,X_i)$ are iid. Consistency holds, $(Y(1),Y(0))\perp D\mid X$, and
+there exists $\epsilon\in(0,1/2)$ such that $\epsilon\le e(X)\le 1-\epsilon$ almost surely. The
+point $x_0$ lies in the support of $X$ in the sense that $p_n=E_P[K_{h_n}(X)]>0$ for all large $n$.
+\end{assumption}
+
+\begin{assumption}[Bounded local score]\label{ass:bounded}
+There exists $M<\infty$ such that $|Y|\le M$ almost surely and $|g_a(X)|\le M$ almost surely for
+$a\in\{0,1\}$. For each bandwidth value $h$ under consideration, the localizer satisfies
+$0\le K_h(X)\le 1$, $p_h=E_P[K_h(X)]>0$, and its normalized weights obey
+$E_P[\ell_h(X)^2]\asymp p_h^{-1}$ uniformly over
+$P\in\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}$.
+\end{assumption}
+
+\begin{assumption}[Local bias modulus]\label{ass:bias}
+For the chosen bandwidth sequence $h_n$, the smoothed target obeys
+\[
+  \left|\theta_{h_n}(P)-\tau_P(x_0)\right|\le b_n
+\]
+uniformly over $P\in\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}$.
+\end{assumption}
+
+\begin{assumption}[Black-box nuisance rates]\label{ass:nuisance}
+For the fold-specific nuisance estimators used in $\hat\theta_n^{\mathrm{locDR}}$,
+\[
+  R_{g,n}^2
+  :=E_P\!\left[\ell_{h_n}(X)\{(\hat g_1-g_1)^2+(\hat g_0-g_0)^2\}\right]
+  =O_P(r_{g,n}),
+\]
+\[
+  R_{m,n}^2
+  :=E_P\!\left[\ell_{h_n}(X)(\hat e-e)^2\right]
+  =O_P(r_{m,n}),
+\]
+with $r_{g,n}\to0$ and $r_{m,n}\to0$.
+\end{assumption}
+
+\begin{assumption}[Local effective sample size and cross-fitting]\label{ass:effective}
+The bandwidth sequence is such that $n p_n\to\infty$, while $p_n\to0$ is allowed. The number of
+folds $K$ is fixed, and the fold sizes satisfy $|I_k|/n\to\pi_k\in(0,1)$, so each evaluation fold and
+its training complement are asymptotically nondegenerate.
+\end{assumption}
+
+\begin{assumption}[Local lower-bound richness]\label{ass:local-rich}
+For every large $n$, the model
+$\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}(x_0,h_n,r_{g,n},r_{m,n},b_n,\epsilon)$ contains bounded
+local perturbation pairs supported inside the effective support of $K_{h_n}$ that can vary, separately
+or jointly, the point target, the local mass $p_n$, and the nuisance components $(g_0,g_1,e)$ while
+preserving Assumptions~\ref{ass:causal}--\ref{ass:effective}. These perturbations are the admissible
+two-point experiments for the later Le Cam converse.
+\end{assumption}
+
+\section{Estimand-defining functional}
+The observable functional indexed by $h$ and a nuisance triple $\eta$ is
+\[
+  \Psi_h(P;\eta)=E_P[\psi_h(W;\eta)].
+\]
+At the oracle nuisance $\eta_P=(g_0,g_1,e)$, the supporting theorem below shows that
+\[
+  \Psi_h(P;\eta_P)=\theta_h(P)=E_P[\ell_h(X)\tau_P(X)].
+\]
+Thus the localized score targets the \emph{smoothed} CATE rather than the point target directly, and
+the approximation gap is handled by the explicit bias channel $b_h(P)$.
+
+The estimator map from observables is
+\[
+  \hat\theta_n^{\mathrm{locDR}}(W_1,\dots,W_n)
+  =\frac{1}{n}\sum_{k=1}^K\sum_{i\in I_k}\psi_{h_n}(W_i;\hat\eta_{-k}),
+\]
+where each $\hat\eta_{-k}$ is trained on the complement fold. The associated statistical target is the
+rate benchmark
+\[
+  \rho_n=b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}.
+\]
+The first term is deterministic localization bias, the second is the stochastic scale of the oracle
+localized score average, and the third is the second-order orthogonality drift produced by replacing
+$\eta_P$ with estimated nuisances.
+
+\section{Target causal estimand}
+The causal estimand is the pointwise conditional average treatment effect at the fixed profile $x_0$,
+\[
+  \tau_P(x_0)=E_P[Y(1)-Y(0)\mid X=x_0].
+\]
+Under Assumption~\ref{ass:causal}, this target is identified by the regression contrast
+\[
+  \tau_P(x_0)=g_1(x_0)-g_0(x_0),
+\]
+provided the conditional means are well-defined at $x_0$ and the overlap condition holds on the local
+support used by $K_{h_n}$. The role of the localized score is therefore not to identify a new causal
+parameter, but to estimate the already-identified point target through a smoothed proxy
+$\theta_{h_n}(P)$ whose deviation from $\tau_P(x_0)$ is explicitly tracked by $b_n$.
+
+\section{Main theorems}
+\begin{theorem}[Theorem 1: upper bound for the localized DR learner]\label{thm:upper}
+Under Assumptions~\ref{ass:causal}--\ref{ass:effective}, with the approved clipped-score evaluation convention
+\[
+\hat g^c_{a,-k}=\Pi_{[-M,M]}\hat g_{a,-k},\qquad \hat e^c_{-k}=\Pi_{[\epsilon/2,\,1-\epsilon/2]}\hat e_{-k},
+\]
+where $\Pi_{[a,b]}(u)=\min\{b,\max\{a,u\}\}$ and the local nuisance-rate bounds in Assumption~\ref{ass:nuisance} are understood for these clipped score inputs, the explicit cross-fit estimator
+\[
+\hat\theta_n^{\mathrm{locDR}} = \frac{1}{n}\sum_{k=1}^K\sum_{i\in I_k} \psi_{h_n}\!\left(W_i;(\hat g^c_{0,-k},\hat g^c_{1,-k},\hat e^c_{-k})\right)
+\]
+satisfies $\left|\hat\theta_n^{\mathrm{locDR}}-\tau_P(x_0)\right|=O_P\!\left(b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}\right)$ uniformly over $\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}$.
+\end{theorem}
+
+This theorem is the achievability half of the structure-agnostic pointwise CATE rate. The estimator is an explicit cross-fitted localized AIPW average, so its error separates into three channels: localization bias $b_n$, oracle local empirical noise $(n p_n)^{-1/2}$, and the second-order nuisance product $\sqrt{r_{g,n}r_{m,n}}$. This is the normalized point-local analogue of the doubly robust pseudo-outcome decomposition in \citet{Kennedy2023DRCATE}: cross-fitting removes own-observation bias, orthogonality eliminates first-order nuisance drift, and the localizer inflates variance by $p_n^{-1}$ because only $n p_n$ observations effectively contribute near $x_0$.
+
+\begin{theorem}[Theorem 2: localized structure-agnostic converse]\label{thm:lower}
+Under Assumptions~\ref{ass:causal}--\ref{ass:local-rich}, there is a constant $c>0$, depending only on the boundedness and overlap constants in Assumptions~\ref{ass:causal} and~\ref{ass:bounded} and on the perturbation constants in Assumption~\ref{ass:local-rich}, such that every estimator $\tilde\theta_n=\tilde\theta_n(W_1,\ldots,W_n)$ satisfies \[ \sup_{P\in\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}} E_P\!\left|\tilde\theta_n-\tau_P(x_0)\right| \ge c\left\{b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}\right\}. \]
+\end{theorem}
+
+The theorem says that the three terms in
+\[
+  \rho_n=b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}
+\]
+are not artifacts of the localized doubly robust estimator. The bias term is forced by the gap between the smoothed local target $\theta_{h_n}(P)$ and the point target $\tau_P(x_0)$. The local-sampling term is forced because only about $n p_n$ observations carry effective weight near $x_0$. The nuisance-product term is forced by the same second-order orthogonal-score geometry that produces the product remainder in the upper bound: without additional structure on the nuisance functions, a black-box learner cannot remove the mixed perturbation. Thus Conjecture 2 is confirmed as the converse half of the structure-agnostic pointwise CATE rate.
+
+\section{Interpretation}
+\subsubsection*{Interpretation of Theorem 1}
+The theorem is the achievability half of the structure-agnostic pointwise CATE rate. The estimator is an explicit cross-fitted localized AIPW average, so its error separates into three channels: localization bias $b_n$, oracle local empirical noise $(n p_n)^{-1/2}$, and the second-order nuisance product $\sqrt{r_{g,n}r_{m,n}}$. This is the normalized point-local analogue of the doubly robust pseudo-outcome decomposition in \citet{Kennedy2023DRCATE}: cross-fitting removes own-observation bias, orthogonality eliminates first-order nuisance drift, and the localizer inflates variance by $p_n^{-1}$ because only $n p_n$ observations effectively contribute near $x_0$.
+
+\subsubsection*{Interpretation of Theorem 2}
+The theorem says that the three terms in
+\[
+  \rho_n=b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}
+\]
+are not artifacts of the localized doubly robust estimator. The bias term is forced by the gap between the smoothed local target $\theta_{h_n}(P)$ and the point target $\tau_P(x_0)$. The local-sampling term is forced because only about $n p_n$ observations carry effective weight near $x_0$. The nuisance-product term is forced by the same second-order orthogonal-score geometry that produces the product remainder in the upper bound: without additional structure on the nuisance functions, a black-box learner cannot remove the mixed perturbation. Thus Conjecture 2 is confirmed as the converse half of the structure-agnostic pointwise CATE rate.
+
+Taken together, the estimator is an explicit cross-fitted localized AIPW average, the three terms in
+\[
+  \rho_n=b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}
+\]
+are not artifacts of the localized doubly robust estimator, and the theorem is the achievability half while the converse half shows that a black-box learner cannot remove the mixed perturbation without additional structure on the nuisance functions.
+
+\section{Step-by-step proof}
+\subsection*{Supporting lemmas}
+
+\begin{theorem}[Theorem 1: localized AIPW identity]\label{thm:localized-aipw}
+Under Assumptions~\ref{ass:causal} and~\ref{ass:bounded}, the localized AIPW score satisfies
+\[
+E_P[\psi_h(W;\eta_P)]=\theta_h(P).
+\]
+For any nuisance tuple \(\tilde\eta=(\tilde g_0,\tilde g_1,\tilde e)\) with \(\tilde e\in[\epsilon/2,1-\epsilon/2]\), the standard product drift obeys
+\[
+\left|E_P[\psi_h(W;\tilde\eta)]-\theta_h(P)\right| \le C_\epsilon \left(E_P[\ell_h(X)\{(\tilde g_1-g_1)^2+(\tilde g_0-g_0)^2\}]\right)^{1/2} \left(E_P[\ell_h(X)(\tilde e-e)^2]\right)^{1/2}.
+\]
+\end{theorem}
+\begin{proof}
+Write \(\eta_P=(g_0,g_1,e)\). Conditioning on \(X\), using Assumption~\ref{ass:causal}, and recalling that \(E[Y\mid D=a,X]=g_a(X)\), we obtain
+\[
+\begin{aligned}
+E_P[\psi_h(W;\eta_P)\mid X]
+&=\ell_h(X)\left\{g_1(X)-g_0(X)
++\frac{E_P[D\{Y-g_1(X)\}\mid X]}{e(X)}
+-\frac{E_P[(1-D)\{Y-g_0(X)\}\mid X]}{1-e(X)}\right\} \\
+&=\ell_h(X)\{g_1(X)-g_0(X)\}
+=\ell_h(X)\tau_P(X).
+\end{aligned}
+\]
+Taking expectations gives \(E_P[\psi_h(W;\eta_P)]=E_P[\ell_h(X)\tau_P(X)]=\theta_h(P)\).
+
+For the drift calculation, let \(\Delta_a=\tilde g_a-g_a\) for \(a=0,1\) and \(\Delta_e=\tilde e-e\). A second conditioning-on-\(X\) calculation yields
+\[
+\begin{aligned}
+E_P[\psi_h(W;\tilde\eta)\mid X]-\ell_h(X)\tau_P(X)
+&=\ell_h(X)\left\{\Delta_1(X)+\frac{e(X)(g_1(X)-\tilde g_1(X))}{\tilde e(X)}
+-\Delta_0(X)-\frac{(1-e(X))(g_0(X)-\tilde g_0(X))}{1-\tilde e(X)}\right\} \\
+&=\ell_h(X)\Delta_e(X)
+\left\{\frac{\Delta_1(X)}{\tilde e(X)}+\frac{\Delta_0(X)}{1-\tilde e(X)}\right\}.
+\end{aligned}
+\]
+The last identity is obtained by regrouping the treated and control terms separately:
+\(\Delta_1-e\Delta_1/\tilde e=\Delta_e\Delta_1/\tilde e\) and
+\(-\Delta_0+(1-e)\Delta_0/(1-\tilde e)=\Delta_e\Delta_0/(1-\tilde e)\).
+Since \(\tilde e\in[\epsilon/2,1-\epsilon/2]\), both denominators are bounded below by \(\epsilon/2\), so for a constant \(C_\epsilon<\infty\) depending only on \(\epsilon\),
+\[
+\left|E_P[\psi_h(W;\tilde\eta)]-\theta_h(P)\right|
+\le C_\epsilon E_P\!\left[\ell_h(X)|\Delta_e(X)|\{ |\Delta_1(X)|+|\Delta_0(X)|\}\right].
+\]
+Applying Cauchy--Schwarz under the weighted measure with density \(\ell_h(X)\) relative to \(P\), and then using \((a+b)^2\le 2(a^2+b^2)\), gives
+\[
+\left|E_P[\psi_h(W;\tilde\eta)]-\theta_h(P)\right|
+\le C_\epsilon
+\left(E_P[\ell_h(X)(\tilde e-e)^2]\right)^{1/2}
+\left(E_P[\ell_h(X)\{(\tilde g_1-g_1)^2+(\tilde g_0-g_0)^2\}]\right)^{1/2},
+\]
+which is the claimed product drift bound.
+\end{proof}
+
+\subsubsection*{Proof of Theorem 1}
+\begin{proof}[Proof of Theorem~\ref{thm:upper}]
+Write $\ell_n=\ell_{h_n}$, $\theta_n(P)=\theta_{h_n}(P)$, and
+\[
+  \hat\eta^c_{-k}=(\hat g^c_{0,-k},\hat g^c_{1,-k},\hat e^c_{-k}).
+\]
+The projection map onto a closed interval is nonexpansive. Since Assumption~\ref{ass:causal} gives
+$e\in[\epsilon,1-\epsilon]$ and Assumption~\ref{ass:bounded} gives $g_a\in[-M,M]$, clipping cannot
+increase the local weighted nuisance errors:
+\[
+  E_P[\ell_n(X)(\hat e^c_{-k}(X)-e(X))^2]
+  \le E_P[\ell_n(X)(\hat e_{-k}(X)-e(X))^2],
+\]
+and the same inequality holds for $\hat g^c_{a,-k}-g_a$, $a\in\{0,1\}$. Thus the clipped score inputs
+obey the same rate envelopes $r_{g,n}$ and $r_{m,n}$ as the local nuisance bounds in
+Assumption~\ref{ass:nuisance}.
+
+Decompose the estimator around the smoothed target:
+\[
+\begin{aligned}
+  \hat\theta_n^{\mathrm{locDR}}-\theta_n(P)
+  &=
+  \underbrace{
+  \frac{1}{n}\sum_{k=1}^K\sum_{i\in I_k}
+  \left\{\psi_{h_n}(W_i;\hat\eta^c_{-k})
+       -E_P[\psi_{h_n}(W;\hat\eta^c_{-k})\mid \hat\eta^c_{-k}]\right\}}_{A_n} \\
+  &\quad+
+  \underbrace{
+  \frac{1}{n}\sum_{k=1}^K |I_k|
+  \left\{E_P[\psi_{h_n}(W;\hat\eta^c_{-k})\mid \hat\eta^c_{-k}]-\theta_n(P)\right\}}_{B_n}.
+\end{aligned}
+\]
+Conditional on the training folds, the observations in $I_k$ are independent of
+$\hat\eta^c_{-k}$, so the summands in $A_n$ have conditional mean zero. The clipped-score convention,
+Assumption~\ref{ass:bounded}, and $E_P[\ell_n(X)^2]\lesssim p_n^{-1}$ imply that, for a constant $C$
+depending only on $M$ and $\epsilon$,
+\[
+  E_P\!\left[\psi_{h_n}(W;\hat\eta^c_{-k})^2\mid \hat\eta^c_{-k}\right]
+  \le C E_P[\ell_n(X)^2]
+  \le C p_n^{-1}.
+\]
+Therefore
+\[
+  \operatorname{Var}_P(A_n\mid \hat\eta^c_{-1},\ldots,\hat\eta^c_{-K})
+  \le
+  \frac{1}{n^2}\sum_{k=1}^K |I_k|\,C p_n^{-1}
+  \le \frac{C}{n p_n}.
+\]
+Chebyshev's inequality yields $A_n=O_P((n p_n)^{-1/2})$ uniformly, because the constants are uniform
+over $\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}$ and $n p_n\to\infty$ by
+Assumption~\ref{ass:effective}.
+
+For the drift term $B_n$, apply Theorem~\ref{thm:localized-aipw} fold by fold. Since
+$\hat e^c_{-k}\in[\epsilon/2,1-\epsilon/2]$ by construction,
+\[
+  \left|
+  E_P[\psi_{h_n}(W;\hat\eta^c_{-k})\mid \hat\eta^c_{-k}]
+  -\theta_n(P)
+  \right|
+  \le
+  C_\epsilon R_{g,n,k}R_{m,n,k},
+\]
+where
+\[
+  R_{g,n,k}^2
+  =
+  E_P[\ell_n(X)\{(\hat g^c_{1,-k}-g_1)^2+(\hat g^c_{0,-k}-g_0)^2\}],
+  \qquad
+  R_{m,n,k}^2
+  =
+  E_P[\ell_n(X)(\hat e^c_{-k}-e)^2].
+\]
+Assumption~\ref{ass:nuisance} and the fixed number of folds imply
+$\max_k R_{g,n,k}=O_P(r_{g,n}^{1/2})$ and
+$\max_k R_{m,n,k}=O_P(r_{m,n}^{1/2})$. Since $\sum_k |I_k|/n=1$,
+\[
+  |B_n|
+  \le C_\epsilon \max_{1\le k\le K} R_{g,n,k}R_{m,n,k}
+  =
+  O_P\!\left(\sqrt{r_{g,n}r_{m,n}}\right)
+\]
+uniformly over the model class.
+
+Finally, Assumption~\ref{ass:bias} gives
+\[
+  |\theta_n(P)-\tau_P(x_0)|\le b_n.
+\]
+Combining the empirical fluctuation, drift, and localization-bias bounds,
+\[
+  |\hat\theta_n^{\mathrm{locDR}}-\tau_P(x_0)|
+  \le |A_n|+|B_n|+|\theta_n(P)-\tau_P(x_0)|
+  =
+  O_P\!\left(b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}\right).
+\]
+This proves the theorem. The argument is the DR-CATE pseudo-outcome decomposition of
+\citet{Kennedy2023DRCATE} with the normalized local weight $\ell_n=K_{h_n}/p_n$ making the effective
+sample size $n p_n$ explicit.
+\end{proof}
+
+\subsubsection*{Proof of Theorem 2}
+\begin{proof}[Proof of Theorem~\ref{thm:lower}]
+Let
+\[
+  \mathfrak R_n(\tilde\theta_n)
+  =
+  \sup_{P\in\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}}
+  E_P|\tilde\theta_n-\tau_P(x_0)|.
+\]
+We repeatedly use the following Le Cam consequence. Suppose two laws $P_0,P_1$ in the model satisfy
+\[
+  |\tau_{P_1}(x_0)-\tau_{P_0}(x_0)|\ge 2\Delta
+  \quad\text{and}\quad
+  \operatorname{TV}(P_0^n,P_1^n)\le \kappa<1 .
+\]
+Then every estimator obeys
+\[
+  \sup_{j\in\{0,1\}}E_{P_j}|\tilde\theta_n-\tau_{P_j}(x_0)|
+  \ge
+  \frac{\Delta}{2}(1-\kappa).
+\]
+Indeed, if both risks were smaller, the test that chooses the parameter value closest to $\tilde\theta_n$ would distinguish $P_0^n$ from $P_1^n$ with total error probability below the Le Cam testing lower bound. The same inequality applies when $P_1^n$ is replaced by a mixture of alternatives, with total variation between $P_0^n$ and the mixture replacing $\operatorname{TV}(P_0^n,P_1^n)$.
+
+\emph{Step 1: the localization-bias channel.}
+By Assumption~\ref{ass:bias}, the model allows point targets whose distance from the localized target is as large as a constant multiple of the envelope $b_n$. Assumption~\ref{ass:local-rich} supplies bounded local point-target perturbations supported inside the effective support of $K_{h_n}$ and preserving Assumptions~\ref{ass:causal}--\ref{ass:effective}. Hence there are $P_b^-$ and $P_b^+$ in the model such that their observed $n$-sample laws are indistinguishable up to a fixed total-variation bound and
+\[
+  |\tau_{P_b^+}(x_0)-\tau_{P_b^-}(x_0)|\ge c_b b_n .
+\]
+In the continuous-design version the two observed laws may even agree away from the null point $\{x_0\}$, so the total-variation bound is zero. The preceding Le Cam inequality gives
+\[
+  \mathfrak R_n(\tilde\theta_n)\ge c_b' b_n .
+\]
+
+\emph{Step 2: the local effective-sample-size channel.}
+Fix an anchor law $P_s$ satisfying Assumptions~\ref{ass:causal}--\ref{ass:effective}. Inside the effective support of $K_{h_n}$, perturb $g_1-g_0$ by
+\[
+  \delta_s a_n(x),\qquad
+  \delta_s=c_s(n p_n)^{-1/2},
+\]
+where $a_n$ is bounded, supported on $\{K_{h_n}>0\}$, and normalized so that
+$E_{P_s}[\ell_{h_n}(X)a_n(X)]$ is bounded away from zero. Assumption~\ref{ass:local-rich} makes the corresponding pair $P_s^0,P_s^1$ admissible, and Assumption~\ref{ass:bounded} keeps all outcome probabilities or conditional densities uniformly bounded. The target separation is
+\[
+  |\tau_{P_s^1}(x_0)-\tau_{P_s^0}(x_0)|
+  \ge c_s'(n p_n)^{-1/2}.
+\]
+The single-observation divergence is of order $p_n\delta_s^2$ because the perturbation is localized on mass $p_n$ and has amplitude $\delta_s$. Therefore
+\[
+  \operatorname{KL}\!\left((P_s^0)^n,(P_s^1)^n\right)
+  \le C n p_n\delta_s^2
+  = Cc_s^2 .
+\]
+Choosing $c_s$ small enough and using Pinsker's inequality gives total variation at most a constant $\kappa<1$. Le Cam then yields
+\[
+  \mathfrak R_n(\tilde\theta_n)\ge c_s''(n p_n)^{-1/2}.
+\]
+
+\emph{Step 3: the nuisance-product channel.}
+Theorem~\ref{thm:localized-aipw} gives the localized orthogonal-score identity and the product drift algebra. To obtain the matching converse, apply the structure-agnostic fuzzy-hypothesis construction of \citet{JinSyrgkanis2025GeneralLinearFunctionalLowerBounds} to the localized score: start from an anchor law $P_\star$, draw a sign vector $\lambda$, and form alternatives $P_\lambda$ by two local perturbations. The propensity perturbation has local weighted norm
+\[
+  E_{P_\star}[\ell_{h_n}(X)(e_\lambda-e_\star)^2]\asymp r_{m,n},
+\]
+and the outcome-regression perturbation has local weighted norm
+\[
+  E_{P_\star}[\ell_{h_n}(X)\{(g_{1,\lambda}-g_{1,\star})^2+(g_{0,\lambda}-g_{0,\star})^2\}]
+  \asymp r_{g,n}.
+\]
+The signs are paired over local cells so that all first-order changes in the observed nuisance constraints cancel in the mixture, while the second-order inner product remains. This is the localized analogue of the two-step sequential perturbation and pairing argument in \citet{JinSyrgkanis2025GeneralLinearFunctionalLowerBounds}; Assumption~\ref{ass:local-rich} is the model-side condition ensuring that the resulting bounded laws remain in $\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}$ and preserve Assumptions~\ref{ass:causal}--\ref{ass:effective}.
+
+For each signed alternative,
+\[
+  |\tau_{P_\lambda}(x_0)-\tau_{P_\star}(x_0)|
+  \ge c_m\sqrt{r_{g,n}r_{m,n}} .
+\]
+The same construction makes the mixture $\bar P^n=2^{-M}\sum_\lambda P_\lambda^n$ indistinguishable from $P_\star^n$:
+\[
+  \chi^2(\bar P^n,(P_\star)^n)\le C_M
+\]
+for an absolute constant that can be made smaller than a universal threshold by scaling the perturbation amplitudes. Total variation is therefore bounded away from one. The fuzzy Le Cam inequality gives
+\[
+  \mathfrak R_n(\tilde\theta_n)\ge c_m'\sqrt{r_{g,n}r_{m,n}}.
+\]
+
+\emph{Step 4: combine channels.}
+The three displays give constants $a_b,a_s,a_m>0$ such that
+\[
+  \mathfrak R_n(\tilde\theta_n)
+  \ge
+  \max\left\{a_b b_n,\ a_s(n p_n)^{-1/2},\ a_m\sqrt{r_{g,n}r_{m,n}}\right\}.
+\]
+Let $a=\min\{a_b,a_s,a_m\}$. Since $\max\{u,v,w\}\ge (u+v+w)/3$ for nonnegative $u,v,w$,
+\[
+  \mathfrak R_n(\tilde\theta_n)
+  \ge
+  \frac{a}{3}\left\{b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}\right\}.
+\]
+Taking $c=a/3$ proves the theorem.
+\end{proof}
+
+\section{Sanity checks}
+\subsubsection*{Sanity check for Theorem 1}
+Take the global randomized corner case $K_{h_n}(X)\equiv1$, so $p_n=1$ and $\ell_n\equiv1$, and suppose
+$\tau_P(x)=\tau_0$ is constant so $b_n=0$. If the nuisances are known, then
+$r_{g,n}=r_{m,n}=0$ and the estimator reduces to the usual AIPW average for the average treatment
+effect. The theorem gives
+\[
+  |\hat\theta_n^{\mathrm{locDR}}-\tau_0|=O_P(n^{-1/2}),
+\]
+which is the classical root-$n$ AIPW scale under bounded outcomes and overlap.
+
+\subsubsection*{Sanity check for Theorem 2}
+In the regular nonlocal corner, take $K_{h_n}\equiv1$, so $p_n=1$, and suppose the point target is already the global target, so $b_n=0$. If the nuisances are known or estimated at rates with $r_{g,n}r_{m,n}=o(n^{-1})$, the theorem reduces to
+\[
+  \sup_{P\in\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}}
+  E_P|\tilde\theta_n-\tau_P(x_0)|\ge c n^{-1/2}.
+\]
+This is the usual parametric lower bound for an identified mean-type treatment-effect functional under bounded outcomes and overlap. Thus the localized converse agrees with the classical root-$n$ benchmark when the local neighborhood is the whole population and the nuisance-product channel is negligible.
+
+\section{Counterexample or minimality check}
+The clipped-score convention is the minimal variance-control condition for Theorem~\ref{thm:upper}. To see
+what fails without it, let the true propensity be $e(X)=1/2$, let $g_0(X)=g_1(X)=0$, and let $Y$ be
+bounded with nonzero conditional variance among treated units. Let $K_{h_n}$ be the indicator of a
+local set $A_n$ with $P(X\in A_n)=p_n$, and choose $B_n\subset A_n$ with $P(X\in B_n)=1/n$. Define a
+raw fold-specific propensity estimate by $\hat e_{-k}(x)=\delta_n$ on $B_n$ and
+$\hat e_{-k}(x)=1/2$ elsewhere, with $\delta_n\downarrow0$ much faster than $(n p_n)^{-1}$.
+Then
+\[
+  E_P[\ell_n(X)(\hat e_{-k}(X)-e(X))^2]\lesssim \frac{1}{n p_n}\to0,
+\]
+so the local $L_2$ nuisance condition can still hold at a small rate. However, on the event that one
+evaluation observation falls in $B_n$, is treated, and has a nonzero residual, the single treated
+residual term contributes order
+\[
+  \frac{1}{n}\frac{\ell_n(X)}{\delta_n}
+  =
+  \frac{1}{n p_n\delta_n},
+\]
+which can be made arbitrarily larger than $(n p_n)^{-1/2}$. This boundary example is excluded by the
+approved clipping convention and explains why the score-denominator bound is not cosmetic.
+
+Assumption~\ref{ass:local-rich} is essential for Theorem~\ref{thm:lower}. If it is removed, let the model contain only a single law $P_\star$ satisfying Assumptions~\ref{ass:causal}--\ref{ass:effective} with $b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}>0$. The constant estimator $\tilde\theta_n\equiv\tau_{P_\star}(x_0)$ has zero risk on this singleton model, while the right-hand side of the conjectured lower bound is positive. Hence a nondegenerate local perturbation condition is not cosmetic: it is the rank/support condition that creates the Le Cam experiments behind all three lower-bound channels.
+
+\section{Formalization checklist}
+\paragraph{Probabilistic primitives.}
+\begin{itemize}[leftmargin=*]
+  \item Sample law $P$ and observations $W_i=(Y_i,D_i,X_i)$, with type $W_i:\Omega\to\mathbb{R}\times\{0,1\}\times\mathcal{X}$. Role: ambient statistical model for the iid experiment. Dependencies: Assumption~\ref{ass:causal}.
+  \item Potential-outcome target $\tau_P(x_0)=E_P[Y(1)-Y(0)\mid X=x_0]$, with signature $\tau_{\bullet}(x_0):\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}\to\mathbb{R}$. Role: causal estimand. Dependencies: consistency, unconfoundedness, overlap, and well-defined conditional regressions at $x_0$.
+  \item Outcome regressions and propensity score, with signatures $g_a:\mathcal{X}\to[-M,M]$ for $a\in\{0,1\}$ and $e:\mathcal{X}\to[\epsilon,1-\epsilon]$. Role: nuisance components entering the score and the perturbation class. Dependencies: Assumptions~\ref{ass:causal} and~\ref{ass:bounded}.
+  \item Kernel localizer and normalized weight, with signatures $K_h:\mathcal{X}\to[0,1]$, $p_h=E_P[K_h(X)]\in(0,1]$, and $\ell_h:\mathcal{X}\to\mathbb{R}_+$ given by $\ell_h(x)=K_h(x)/p_h$. Role: local effective-support device producing the $p_n^{-1}$ variance scale. Dependencies: Assumption~\ref{ass:bounded}.
+  \item Smoothed target and bias envelope, with signatures $\theta_h(P)=E_P[\ell_h(X)\tau_P(X)]$ and $b_h(P)=|\theta_h(P)-\tau_P(x_0)|$. Role: bridge between the observable localized target and the point estimand. Dependencies: kernel normalization and Assumption~\ref{ass:bias}.
+  \item Minimax risk functional, with signature $\mathfrak R_n(\tilde\theta_n)=\sup_{P\in\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}}E_P|\tilde\theta_n-\tau_P(x_0)|$. Role: lower-bound object in Theorem~\ref{thm:lower}. Dependencies: model class and estimator map.
+\end{itemize}
+
+\paragraph{Deterministic identities and estimator objects.}
+\begin{itemize}[leftmargin=*]
+  \item Localized AIPW score, with signature $\psi_h:\bigl(\mathbb{R}\times\{0,1\}\times\mathcal{X}\bigr)\times(\mathcal{X}\to\mathbb{R})^2\times(\mathcal{X}\to(0,1))\to\mathbb{R}$. Role: explicit orthogonal score whose oracle mean is $\theta_h(P)$. Dependencies: $g_0,g_1,e,\ell_h$.
+  \item Observable functional $\Psi_h(P;\eta)=E_P[\psi_h(W;\eta)]$, with signature $\Psi_h:\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}\times\{(g_0,g_1,e)\}\to\mathbb{R}$ where the second input ranges over admissible nuisance triples. Role: estimand-defining functional used by Theorem~\ref{thm:localized-aipw}. Dependencies: localized score and integrability from boundedness.
+  \item Clipping operator $\Pi_{[a,b]}(u)=\min\{b,\max\{a,u\}\}$, with signature $\mathbb{R}\to[a,b]$. Role: enforce bounded score evaluation and preserve local $L_2$ rates by nonexpansiveness. Dependencies: interval endpoints $[-M,M]$ and $[\epsilon/2,1-\epsilon/2]$.
+  \item Cross-fit nuisance tuple $\hat\eta_{-k}=(\hat g_{0,-k},\hat g_{1,-k},\hat e_{-k})$ and clipped tuple $\hat\eta^c_{-k}=(\hat g^c_{0,-k},\hat g^c_{1,-k},\hat e^c_{-k})$. Role: estimator inputs trained off the evaluation fold. Dependencies: fixed fold partition and clipping operator.
+  \item Localized doubly robust estimator, with signature $\hat\theta_n^{\mathrm{locDR}}:(\mathbb{R}\times\{0,1\}\times\mathcal{X})^n\to\mathbb{R}$. Role: explicit estimator map in Theorem~\ref{thm:upper}. Dependencies: fold partition, score map, and clipped nuisances.
+  \item Local nuisance norms, with signatures $R_{g,n,k}^2=E_P[\ell_n(X)\{(\hat g^c_{1,-k}-g_1)^2+(\hat g^c_{0,-k}-g_0)^2\}]$ and $R_{m,n,k}^2=E_P[\ell_n(X)(\hat e^c_{-k}-e)^2]$. Role: quantify second-order drift. Dependencies: weighted local $L_2(P)$ structure and Assumption~\ref{ass:nuisance}.
+  \item Rate benchmark $\rho_n=b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}$, with signature $\rho_n\in\mathbb{R}_+$. Role: target upper and lower rate. Dependencies: Assumptions~\ref{ass:bias}, \ref{ass:nuisance}, and~\ref{ass:effective}.
+  \item Error decomposition terms $A_n$ and $B_n$, with signatures $A_n,B_n:(\mathbb{R}\times\{0,1\}\times\mathcal{X})^n\to\mathbb{R}$. Role: split empirical fluctuation from conditional drift in the proof of Theorem~\ref{thm:upper}. Dependencies: cross-fitting independence and Theorem~\ref{thm:localized-aipw}.
+\end{itemize}
+
+\paragraph{Lemmas, experiments, and divergences.}
+\begin{itemize}[leftmargin=*]
+  \item Theorem~\ref{thm:localized-aipw}, with statement type ``oracle mean identity plus product-drift inequality.'' Role: main supporting lemma for both upper and lower bounds. Dependencies: Assumptions~\ref{ass:causal} and~\ref{ass:bounded}.
+  \item Le Cam testing inequality and fuzzy-hypothesis extension, with inputs $(P_0,P_1)$ or $(P_\star,\bar P)$ and output a risk lower bound. Role: convert target separation plus indistinguishability into Theorem~\ref{thm:lower}. Dependencies: total variation, Kullback--Leibler divergence, and $\chi^2$ divergence control.
+  \item Local perturbation experiments $(P_b^-,P_b^+)$, $(P_s^0,P_s^1)$, and $\{P_\lambda\}_{\lambda}$ together with the mixture $\bar P^n=2^{-M}\sum_\lambda P_\lambda^n$. Role: witness the bias, local-sampling, and nuisance-product lower-bound channels. Dependencies: Assumption~\ref{ass:local-rich}.
+\end{itemize}
+
+\section{Conclusion and references}
+Theorem 1 (upper) is confirmed; Under Assumptions~\ref{ass:causal}--\ref{ass:effective}, with the approved clipped-score evaluation convention
+\[
+\hat g^c_{a,-k}=\Pi_{[-M,M]}\hat g_{a,-k},\qquad \hat e^c_{-k}=\Pi_{[\epsilon/2,\,1-\epsilon/2]}\hat e_{-k},
+\]
+where $\Pi_{[a,b]}(u)=\min\{b,\max\{a,u\}\}$ and the local nuisance-rate bounds in Assumption~\ref{ass:nuisance} are understood for these clipped score inputs, the explicit cross-fit estimator
+\[
+\hat\theta_n^{\mathrm{locDR}} = \frac{1}{n}\sum_{k=1}^K\sum_{i\in I_k} \psi_{h_n}\!\left(W_i;(\hat g^c_{0,-k},\hat g^c_{1,-k},\hat e^c_{-k})\right)
+\]
+satisfies $\left|\hat\theta_n^{\mathrm{locDR}}-\tau_P(x_0)\right|=O_P\!\left(b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}\right)$ uniformly over $\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}$. Theorem 2 (lower) is confirmed; Under Assumptions~\ref{ass:causal}--\ref{ass:local-rich}, there is a constant $c>0$, depending only on the boundedness and overlap constants in Assumptions~\ref{ass:causal} and~\ref{ass:bounded} and on the perturbation constants in Assumption~\ref{ass:local-rich}, such that every estimator $\tilde\theta_n=\tilde\theta_n(W_1,\ldots,W_n)$ satisfies \[ \sup_{P\in\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}} E_P\!\left|\tilde\theta_n-\tau_P(x_0)\right| \ge c\left\{b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}\right\}. \]
+
+\subsection*{References}
+\begin{thebibliography}{99}
+
+\bibitem[Chernozhukov et al.(2018)]{ChernozhukovEtAl2018DML}
+Victor Chernozhukov, Denis Chetverikov, Mert Demirer, Esther Duflo, Christian Hansen, Whitney Newey, and James Robins.
+Double/debiased machine learning for treatment and structural parameters.
+\emph{The Econometrics Journal}, 21(1):C1--C68, 2018.
+
+\bibitem[Chernozhukov et al.(2022)]{ChernozhukovNeweySingh2022LocalRiesz}
+Victor Chernozhukov, Whitney Newey, and Rahul Singh.
+Local Riesz representers for nonregular linear functionals.
+\emph{The Econometrics Journal}, 2022.
+
+\bibitem[Jin and Syrgkanis(2024)]{JinSyrgkanis2024StructureAgnosticDR}
+Yuling Jin and Vasilis Syrgkanis.
+Structure-agnostic optimality of doubly robust learning for treatment-effect functionals.
+\emph{arXiv preprint}, 2024.
+
+\bibitem[Jin and Syrgkanis(2025)]{JinSyrgkanis2025GeneralLinearFunctionalLowerBounds}
+Yuling Jin and Vasilis Syrgkanis.
+General linear-functional lower bounds for structure-agnostic estimation.
+\emph{arXiv preprint}, 2025.
+
+\bibitem[Kallus et al.(2024)]{KallusMaoUehara2024LDML}
+Nathan Kallus, Xiaojie Mao, and Masatoshi Uehara.
+Localized debiased machine learning: efficient inference for target-local parameters.
+\emph{Journal of Machine Learning Research}, 2024.
+
+\bibitem[Kennedy(2023)]{Kennedy2023DRCATE}
+Edward H. Kennedy.
+Towards optimal doubly robust estimation of conditional average treatment effects.
+\emph{Electronic Journal of Statistics}, 17(2):3000--3050, 2023.
+
+\bibitem[Kennedy et al.(2024)]{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}
+Edward H. Kennedy, Sivaraman Balakrishnan, James Robins, and Larry Wasserman.
+Minimax rates for pointwise conditional average treatment effect estimation.
+\emph{The Annals of Statistics}, 2024.
+
+\bibitem[Semenova and Chernozhukov(2021)]{SemenovaChernozhukov2021DMLCATE}
+Vira Semenova and Victor Chernozhukov.
+Debiased machine learning of conditional average treatment effects and other causal functions.
+\emph{The Econometrics Journal}, 24(2):264--289, 2021.
+
+\end{thebibliography}
+
+\end{document}
+

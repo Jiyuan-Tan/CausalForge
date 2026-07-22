@@ -1,0 +1,318 @@
+{
+  "round": 9,
+  "solved": {
+    "lem:dp-output-tv-contraction": {
+      "proof_tex": "Put b_n=exp(epsilon_n)-1+delta_n and write K_D for the conditional output law of M_n on a fixed dataset D. Applying ass:central-dp in both orientations to adjacent D,D' gives, for every B, K_D(B)-K_{D'}(B)<=b_n and K_{D'}(B)-K_D(B)<=b_n; hence TV(K_D,K_{D'})<=b_n. Let t=TV(P,Q). On the standard Borel observation space, write the common part as P wedge Q and normalize it to construct a coupling (Z,Z') with marginals P,Q and Pr(Z!=Z')=t. For j=0,...,n, let H_j be the output law when the first j records have law Q and the remaining records have law P. Couple the inputs for H_{j-1} and H_j identically except at coordinate j, where they use (Z,Z'). Conditional on Z=Z' the output laws agree; conditional on Z!=Z' the two datasets are adjacent, so convexity of total variation gives TV(H_{j-1},H_j)<=t b_n. The triangle inequality over the n hybrids yields TV(H_0,H_n)<=n t b_n, which is the asserted inequality.",
+      "snapshot": {
+        "stmt": "For any two one-observation laws P,Q and any central-(epsilon_n,delta_n)-DP mechanism M_n, TV(L_{P^n}(M_n),L_{Q^n}(M_n)) <= n TV(P,Q){exp(epsilon_n)-1+delta_n}.",
+        "defs": {},
+        "assumptions": {
+          "ass:iid": "(O_i)_{i=1}^n ~ P^n.",
+          "ass:central-dp": "Pr{M_n(D) in B} <= exp(epsilon_n) Pr{M_n(D') in B}+delta_n for all D,D',B."
+        }
+      },
+      "node": {
+        "id": "lem:dp-output-tv-contraction",
+        "kind": "lemma",
+        "statement": "For any two one-observation laws P,Q and any central-(epsilon_n,delta_n)-DP mechanism M_n, TV(L_{P^n}(M_n),L_{Q^n}(M_n)) <= n TV(P,Q){exp(epsilon_n)-1+delta_n}.",
+        "depends_on": [
+          "ass:iid",
+          "ass:central-dp"
+        ],
+        "proof_tex": "Put b_n=exp(epsilon_n)-1+delta_n and write K_D for the conditional output law of M_n on a fixed dataset D. Applying ass:central-dp in both orientations to adjacent D,D' gives, for every B, K_D(B)-K_{D'}(B)<=b_n and K_{D'}(B)-K_D(B)<=b_n; hence TV(K_D,K_{D'})<=b_n. Let t=TV(P,Q). On the standard Borel observation space, write the common part as P wedge Q and normalize it to construct a coupling (Z,Z') with marginals P,Q and Pr(Z!=Z')=t. For j=0,...,n, let H_j be the output law when the first j records have law Q and the remaining records have law P. Couple the inputs for H_{j-1} and H_j identically except at coordinate j, where they use (Z,Z'). Conditional on Z=Z' the output laws agree; conditional on Z!=Z' the two datasets are adjacent, so convexity of total variation gives TV(H_{j-1},H_j)<=t b_n. The triangle inequality over the n hybrids yields TV(H_0,H_n)<=n t b_n, which is the asserted inequality.",
+        "status": "proved"
+      },
+      "owner": "oeq:causal-dp-frontier"
+    },
+    "lem:private-local-polynomial-upper-bound": {
+      "proof_tex": "Let m=ceil(beta)-1 and let v(u) be the finite vector of monomials u^r with |r|<=m. Fix a bounded nonnegative kernel K supported on the unit infinity-norm cube and bounded below on a smaller cube. For a bandwidth h lying inside the regularity neighborhood, put v_i=v((X_i-x_0)/h) and, for a=0,1, define G_a=n^{-1} sum_i 1(A_i=a)h^{-d}K((X_i-x_0)/h)v_i v_i^T and g_a=n^{-1} sum_i 1(A_i=a)h^{-d}K((X_i-x_0)/h)v_iY_i. Regard the distinct coordinates of (G_0,G_1,g_0,g_1) as one vector query q_h(D). Since |Y|<=1 and K,v are bounded on the kernel support, replacing one record changes its l_1 norm by at most Delta_h=C/(n h^d), where C depends only on d,beta,K. Release q_h(D)+W, with independent Laplace coordinates of scale Delta_h/epsilon_n. Indeed, for adjacent D,D', the ratio of the two joint noise densities at every output z is at most exp(epsilon_n ||q_h(D)-q_h(D')||_1/Delta_h)<=exp(epsilon_n). Thus the joint release is pure epsilon_n-DP and hence satisfies ass:central-dp.\n\nBy ass:overlap and ass:local-density, there are uniform constants 0<c_*<C_* such that c_*I<=E_P G_a<=C_*I. For the lower inequality, change variables x=x_0+hu and bound the treatment probability and density below by e_0 and f_0; the remaining polynomial Gram integral on the inner kernel cube is positive definite. Project each noisy symmetric Gram matrix in Frobenius norm onto the convex spectral set {G:c_*I/2<=G<=2C_*I}; call it G_a^priv, call the noisy vector g_a^priv, and set theta_a^priv=(G_a^priv)^{-1}g_a^priv. Finally release M_{n,h}, the difference of the two intercept coordinates, projected onto [-2,2]. This is post-processing of one pure-DP release.\n\nFor each mu_{a,P} in H^beta, the defining Holder Taylor bound supplies a degree-m polynomial T_a with sup_{||x-x_0||_infinity<=h}|mu_{a,P}(x)-T_a(x)|<=C h^beta. If theta_a^pop=(E G_a)^{-1}E g_a, substitution of T_a into the population normal equations gives |theta_{a,0}^pop-mu_{a,P}(x_0)|<=C h^beta. Because E G_a belongs to the projection set, the variational inequality for Euclidean projection gives ||G_a^priv-EG_a||_F no larger than the norm of the unprojected noisy error. The inverse identity U^{-1}-V^{-1}=U^{-1}(V-U)V^{-1}, together with the spectral lower bounds, yields |theta_{a,0}^priv-theta_{a,0}^pop|<=C{||G_a-EG_a||_F+||g_a-Eg_a||+||W||}. Each empirical coordinate has variance at most C/(n h^d), since the square of a weighted summand integrates over a set of volume O(h^d). The number of coordinates is fixed, so Cauchy-Schwarz bounds the expected empirical part by C(nh^d)^{-1/2}. The expected Laplace part is C/(n epsilon_n h^d). Projection of the final scalar onto [-2,2] cannot increase its distance from tau_P(x_0), which lies in that interval. Consequently sup_P E_P|M_{n,h}-tau_P(x_0)|<=C{h^beta+(nh^d)^{-1/2}+1/(n epsilon_n h^d)}.\n\nChoose h, up to a fixed-radius truncation, proportional to max{n^{-1/(2beta+d)},(n epsilon_n)^{-1/(beta+d)}}. When truncation is inactive, every term is at most C times n^{-beta/(2beta+d)} vee (n epsilon_n)^{-beta/(beta+d)}. If truncation is active, n epsilon_n is bounded by a fixed constant, so the displayed rate is bounded below by a fixed positive constant while scalar clipping bounds the risk. Enlarging C covers this case. Since M_{n,h} is one data-driven admissible mechanism in def:dp-minimax-risk, the minimax upper bound follows.",
+      "snapshot": {
+        "stmt": "An explicit armwise privatized local-polynomial estimator satisfies R_n^DP <= C{n^{-beta/(2 beta+d)} vee (n epsilon_n)^{-beta/(beta+d)}} uniformly over the frozen law class.",
+        "defs": {
+          "def:holder-cate-class": "{P : P satisfies ass:consistency, ass:exchangeability, ass:overlap, ass:pi-holder, ass:mu-holder, ass:tau-holder, ass:smoothness-order, and ass:local-density}",
+          "def:dp-minimax-risk": "inf_{M_n: M_n satisfies ass:central-dp} sup_{P in P_{alpha,beta,gamma}(L,e_0,f_0,f_1,r_0,x_0)} E_P[|M_n(O_1,...,O_n)-tau_P(x_0)|]"
+        },
+        "assumptions": {
+          "ass:iid": "(O_i)_{i=1}^n ~ P^n.",
+          "ass:overlap": "e_0 <= pi_P(x) <= 1-e_0 for all x in [0,1]^d.",
+          "ass:mu-holder": "mu_{0,P},mu_{1,P} in H^beta([0,1]^d,L).",
+          "ass:local-density": "f_0 <= p_P(x) <= f_1 for all x in {u in [0,1]^d: ||u-x_0||_infinity<=r_0}.",
+          "ass:central-dp": "Pr{M_n(D) in B} <= exp(epsilon_n) Pr{M_n(D') in B}+delta_n for all D,D',B.",
+          "ass:consistency": "Y=Y(A) a.s.",
+          "ass:exchangeability": "(Y(0),Y(1)) independent of A conditional on X.",
+          "ass:pi-holder": "pi_P in H^alpha([0,1]^d,L).",
+          "ass:tau-holder": "tau_P in H^gamma([0,1]^d,L).",
+          "ass:smoothness-order": "0<beta<=gamma."
+        }
+      },
+      "node": {
+        "id": "lem:private-local-polynomial-upper-bound",
+        "kind": "lemma",
+        "statement": "An explicit armwise privatized local-polynomial estimator satisfies R_n^DP <= C{n^{-beta/(2 beta+d)} vee (n epsilon_n)^{-beta/(beta+d)}} uniformly over the frozen law class.",
+        "depends_on": [
+          "ass:iid",
+          "ass:overlap",
+          "ass:mu-holder",
+          "ass:local-density",
+          "ass:central-dp",
+          "def:holder-cate-class",
+          "def:dp-minimax-risk"
+        ],
+        "proof_tex": "Let m=ceil(beta)-1 and let v(u) be the finite vector of monomials u^r with |r|<=m. Fix a bounded nonnegative kernel K supported on the unit infinity-norm cube and bounded below on a smaller cube. For a bandwidth h lying inside the regularity neighborhood, put v_i=v((X_i-x_0)/h) and, for a=0,1, define G_a=n^{-1} sum_i 1(A_i=a)h^{-d}K((X_i-x_0)/h)v_i v_i^T and g_a=n^{-1} sum_i 1(A_i=a)h^{-d}K((X_i-x_0)/h)v_iY_i. Regard the distinct coordinates of (G_0,G_1,g_0,g_1) as one vector query q_h(D). Since |Y|<=1 and K,v are bounded on the kernel support, replacing one record changes its l_1 norm by at most Delta_h=C/(n h^d), where C depends only on d,beta,K. Release q_h(D)+W, with independent Laplace coordinates of scale Delta_h/epsilon_n. Indeed, for adjacent D,D', the ratio of the two joint noise densities at every output z is at most exp(epsilon_n ||q_h(D)-q_h(D')||_1/Delta_h)<=exp(epsilon_n). Thus the joint release is pure epsilon_n-DP and hence satisfies ass:central-dp.\n\nBy ass:overlap and ass:local-density, there are uniform constants 0<c_*<C_* such that c_*I<=E_P G_a<=C_*I. For the lower inequality, change variables x=x_0+hu and bound the treatment probability and density below by e_0 and f_0; the remaining polynomial Gram integral on the inner kernel cube is positive definite. Project each noisy symmetric Gram matrix in Frobenius norm onto the convex spectral set {G:c_*I/2<=G<=2C_*I}; call it G_a^priv, call the noisy vector g_a^priv, and set theta_a^priv=(G_a^priv)^{-1}g_a^priv. Finally release M_{n,h}, the difference of the two intercept coordinates, projected onto [-2,2]. This is post-processing of one pure-DP release.\n\nFor each mu_{a,P} in H^beta, the defining Holder Taylor bound supplies a degree-m polynomial T_a with sup_{||x-x_0||_infinity<=h}|mu_{a,P}(x)-T_a(x)|<=C h^beta. If theta_a^pop=(E G_a)^{-1}E g_a, substitution of T_a into the population normal equations gives |theta_{a,0}^pop-mu_{a,P}(x_0)|<=C h^beta. Because E G_a belongs to the projection set, the variational inequality for Euclidean projection gives ||G_a^priv-EG_a||_F no larger than the norm of the unprojected noisy error. The inverse identity U^{-1}-V^{-1}=U^{-1}(V-U)V^{-1}, together with the spectral lower bounds, yields |theta_{a,0}^priv-theta_{a,0}^pop|<=C{||G_a-EG_a||_F+||g_a-Eg_a||+||W||}. Each empirical coordinate has variance at most C/(n h^d), since the square of a weighted summand integrates over a set of volume O(h^d). The number of coordinates is fixed, so Cauchy-Schwarz bounds the expected empirical part by C(nh^d)^{-1/2}. The expected Laplace part is C/(n epsilon_n h^d). Projection of the final scalar onto [-2,2] cannot increase its distance from tau_P(x_0), which lies in that interval. Consequently sup_P E_P|M_{n,h}-tau_P(x_0)|<=C{h^beta+(nh^d)^{-1/2}+1/(n epsilon_n h^d)}.\n\nChoose h, up to a fixed-radius truncation, proportional to max{n^{-1/(2beta+d)},(n epsilon_n)^{-1/(beta+d)}}. When truncation is inactive, every term is at most C times n^{-beta/(2beta+d)} vee (n epsilon_n)^{-beta/(beta+d)}. If truncation is active, n epsilon_n is bounded by a fixed constant, so the displayed rate is bounded below by a fixed positive constant while scalar clipping bounds the risk. Enlarging C covers this case. Since M_{n,h} is one data-driven admissible mechanism in def:dp-minimax-risk, the minimax upper bound follows.",
+        "status": "proved"
+      },
+      "owner": "oeq:causal-dp-frontier"
+    },
+    "lem:private-regression-calibration-algebra": {
+      "proof_tex": "Let h_0=n^{-1/(2gamma+d)} and h_p=(n epsilon_n)^{-1/(gamma+d)}. If h>=h_0 then h^gamma>=n^{-gamma/(2gamma+d)}, while if h<h_0 then (nh^d)^{-1/2}>n^{-gamma/(2gamma+d)}. Hence h^gamma+(nh^d)^{-1/2} is bounded below by a constant times the first rate. Similarly, splitting at h_p shows h^gamma+1/(n epsilon_n h^d) is bounded below by a constant times the second rate. This proves the lower comparison. Conversely choose h proportional to max(h_0,h_p), truncated at a fixed number no larger than r_0. Without truncation, h^gamma and both decreasing stochastic terms are bounded by constants times the maximum of the two rates. If truncation is active, n epsilon_n is bounded by a fixed constant, so that maximum is itself bounded below by a fixed positive constant and the objective at the fixed bandwidth is bounded above by another fixed constant. This proves the asserted order equivalence.",
+      "snapshot": {
+        "stmt": "The frozen regression calibration satisfies r_n^regDP asymp n^{-gamma/(2 gamma+d)} vee (n epsilon_n)^{-gamma/(gamma+d)}, with constants depending only on the fixed regularity parameters.",
+        "defs": {
+          "def:private-regression-calibration": "inf_{0<h<=r_0}{h^gamma+(n h^d)^(-1/2)+1/(n epsilon_n h^d)}"
+        },
+        "assumptions": {}
+      },
+      "node": {
+        "id": "lem:private-regression-calibration-algebra",
+        "kind": "lemma",
+        "statement": "The frozen regression calibration satisfies r_n^regDP asymp n^{-gamma/(2 gamma+d)} vee (n epsilon_n)^{-gamma/(gamma+d)}, with constants depending only on the fixed regularity parameters.",
+        "depends_on": [
+          "def:private-regression-calibration"
+        ],
+        "proof_tex": "Let h_0=n^{-1/(2gamma+d)} and h_p=(n epsilon_n)^{-1/(gamma+d)}. If h>=h_0 then h^gamma>=n^{-gamma/(2gamma+d)}, while if h<h_0 then (nh^d)^{-1/2}>n^{-gamma/(2gamma+d)}. Hence h^gamma+(nh^d)^{-1/2} is bounded below by a constant times the first rate. Similarly, splitting at h_p shows h^gamma+1/(n epsilon_n h^d) is bounded below by a constant times the second rate. This proves the lower comparison. Conversely choose h proportional to max(h_0,h_p), truncated at a fixed number no larger than r_0. Without truncation, h^gamma and both decreasing stochastic terms are bounded by constants times the maximum of the two rates. If truncation is active, n epsilon_n is bounded by a fixed constant, so that maximum is itself bounded below by a fixed positive constant and the objective at the fixed bandwidth is bounded above by another fixed constant. This proves the asserted order equivalence.",
+        "status": "proved"
+      },
+      "owner": "oeq:causal-dp-frontier"
+    },
+    "lem:holder-point-l1-interpolation": {
+      "proof_tex": "Both CATE functions are in H^gamma(L), so g has Holder norm at most 2L. Put m=ceil(gamma)-1. Choose a bounded product kernel K supported on [-1,1]^d, with integral one and moments integral u^nu K(u)du=0 for every multi-index with 1<=|nu|<=m. Such a kernel is obtained by solving the finite nonsingular polynomial moment system in one dimension and tensorizing. Taylor expansion of g at x_0, followed by these moment cancellations, gives for every 0<h<=r_* the inequality |g(x_0)-integral h^{-d}K((x-x_0)/h)g(x)dx|<=C_{gamma,d}L h^gamma. For integer gamma, use the degree gamma-1 Taylor polynomial and the Lipschitz remainder in the integer-order Holder definition.\n\nEach CATE lies in [-2,2], hence Delta<=4. For Delta>0 choose h=c_* Delta^{1/gamma}, where c_*=min{r_*/4^{1/gamma},(4C_{gamma,d}L)^{-1/gamma}}. Then h<=r_* and the Taylor remainder is at most Delta/4. It follows that 3Delta/4 <= |integral h^{-d}K((x-x_0)/h)g(x)dx| <= ||K||_infinity h^{-d} integral_{C_*}|g(x)|dx. Rearranging and substituting h gives integral_{C_*}|g(x)|dx>=c_H Delta h^d=c_H Delta^{1+d/gamma}. The case Delta=0 is immediate.",
+      "snapshot": {
+        "stmt": "Let P,Q lie in the frozen class, g=tau_P-tau_Q, Delta=|g(x_0)|, r_*=(1/2)min{r_0,x_{0,1},1-x_{0,1},...,x_{0,d},1-x_{0,d}}, and C_*={x:||x-x_0||_infinity<=r_*}. There is c_H>0 such that integral_{C_*}|g(x)|dx >= c_H Delta^{1+d/gamma}.",
+        "defs": {
+          "def:holder-cate-class": "{P : P satisfies ass:consistency, ass:exchangeability, ass:overlap, ass:pi-holder, ass:mu-holder, ass:tau-holder, ass:smoothness-order, and ass:local-density}"
+        },
+        "assumptions": {
+          "ass:tau-holder": "tau_P in H^gamma([0,1]^d,L).",
+          "ass:consistency": "Y=Y(A) a.s.",
+          "ass:exchangeability": "(Y(0),Y(1)) independent of A conditional on X.",
+          "ass:overlap": "e_0 <= pi_P(x) <= 1-e_0 for all x in [0,1]^d.",
+          "ass:pi-holder": "pi_P in H^alpha([0,1]^d,L).",
+          "ass:mu-holder": "mu_{0,P},mu_{1,P} in H^beta([0,1]^d,L).",
+          "ass:smoothness-order": "0<beta<=gamma.",
+          "ass:local-density": "f_0 <= p_P(x) <= f_1 for all x in {u in [0,1]^d: ||u-x_0||_infinity<=r_0}."
+        }
+      },
+      "node": {
+        "id": "lem:holder-point-l1-interpolation",
+        "kind": "lemma",
+        "statement": "Let P,Q lie in the frozen class, g=tau_P-tau_Q, Delta=|g(x_0)|, r_*=(1/2)min{r_0,x_{0,1},1-x_{0,1},...,x_{0,d},1-x_{0,d}}, and C_*={x:||x-x_0||_infinity<=r_*}. There is c_H>0 such that integral_{C_*}|g(x)|dx >= c_H Delta^{1+d/gamma}.",
+        "depends_on": [
+          "ass:tau-holder",
+          "def:holder-cate-class"
+        ],
+        "proof_tex": "Both CATE functions are in H^gamma(L), so g has Holder norm at most 2L. Put m=ceil(gamma)-1. Choose a bounded product kernel K supported on [-1,1]^d, with integral one and moments integral u^nu K(u)du=0 for every multi-index with 1<=|nu|<=m. Such a kernel is obtained by solving the finite nonsingular polynomial moment system in one dimension and tensorizing. Taylor expansion of g at x_0, followed by these moment cancellations, gives for every 0<h<=r_* the inequality |g(x_0)-integral h^{-d}K((x-x_0)/h)g(x)dx|<=C_{gamma,d}L h^gamma. For integer gamma, use the degree gamma-1 Taylor polynomial and the Lipschitz remainder in the integer-order Holder definition.\n\nEach CATE lies in [-2,2], hence Delta<=4. For Delta>0 choose h=c_* Delta^{1/gamma}, where c_*=min{r_*/4^{1/gamma},(4C_{gamma,d}L)^{-1/gamma}}. Then h<=r_* and the Taylor remainder is at most Delta/4. It follows that 3Delta/4 <= |integral h^{-d}K((x-x_0)/h)g(x)dx| <= ||K||_infinity h^{-d} integral_{C_*}|g(x)|dx. Rearranging and substituting h gives integral_{C_*}|g(x)|dx>=c_H Delta h^d=c_H Delta^{1+d/gamma}. The case Delta=0 is immediate.",
+        "status": "proved"
+      },
+      "owner": "oeq:causal-dp-frontier"
+    },
+    "lem:certified-private-cate-bracket": {
+      "proof_tex": "The lower endpoint is lem:causal-oracle-private-lower-bound. The upper endpoint is lem:private-local-polynomial-upper-bound. Both results concern the same frozen positive-density law class, the same absolute-error loss, and the same central privacy budgets. Combining their inequalities gives the display with constants independent of n, epsilon_n, and delta_n. The lower family is explicitly causal: potential outcomes are generated first, treatment is conditionally independent of them given X, consistency is imposed by Y=Y(A), and only mu_1 is locally perturbed.",
+      "snapshot": {
+        "stmt": "For constants 0<c<C and all sufficiently large n, c{n^{-gamma/(2 gamma+d)} vee (n epsilon_n)^{-gamma/(gamma+d)}} <= R_n^DP <= C{n^{-beta/(2 beta+d)} vee (n epsilon_n)^{-beta/(beta+d)}}.",
+        "defs": {
+          "def:dp-minimax-risk": "inf_{M_n: M_n satisfies ass:central-dp} sup_{P in P_{alpha,beta,gamma}(L,e_0,f_0,f_1,r_0,x_0)} E_P[|M_n(O_1,...,O_n)-tau_P(x_0)|]"
+        },
+        "assumptions": {}
+      },
+      "node": {
+        "id": "lem:certified-private-cate-bracket",
+        "kind": "lemma",
+        "statement": "For constants 0<c<C and all sufficiently large n, c{n^{-gamma/(2 gamma+d)} vee (n epsilon_n)^{-gamma/(gamma+d)}} <= R_n^DP <= C{n^{-beta/(2 beta+d)} vee (n epsilon_n)^{-beta/(beta+d)}}.",
+        "depends_on": [
+          "def:dp-minimax-risk",
+          "lem:causal-oracle-private-lower-bound",
+          "lem:private-local-polynomial-upper-bound"
+        ],
+        "proof_tex": "The lower endpoint is lem:causal-oracle-private-lower-bound. The upper endpoint is lem:private-local-polynomial-upper-bound. Both results concern the same frozen positive-density law class, the same absolute-error loss, and the same central privacy budgets. Combining their inequalities gives the display with constants independent of n, epsilon_n, and delta_n. The lower family is explicitly causal: potential outcomes are generated first, treatment is conditionally independent of them given X, consistency is imposed by Y=Y(A), and only mu_1 is locally perturbed.",
+        "status": "proved"
+      },
+      "owner": "oeq:causal-dp-frontier"
+    },
+    "lem:equal-smoothness-sharp-private-rate": {
+      "proof_tex": "Assume beta=gamma. The lower and upper endpoints in lem:certified-private-cate-bracket are then identical up to constants, so\n\n R_n^DP asymp n^{-gamma/(2gamma+d)} vee (n epsilon_n)^{-gamma/(gamma+d)}.\n\nLem:private-regression-calibration-algebra identifies the right-hand side with r_n^regDP. It remains to simplify r_n^CATE. Under beta=gamma, the two denominators defining kappa are D_1=2+d/gamma and D_2=1+d/(2gamma)+d/(2(alpha+gamma)). Since\n\n D_1-D_2=1+d/(2gamma)-d/(2(alpha+gamma))>0,\n\nwe have 1/D_1<1/D_2. Hence kappa=1/D_1=gamma/(2gamma+d), and def:nonprivate-cate-rate gives r_n^CATE=n^{-gamma/(2gamma+d)}. Finally, equality of the nonprivate and privacy powers is\n\n n^{-gamma/(2gamma+d)}=(n epsilon_n)^{-gamma/(gamma+d)},\n\nwhich is equivalent to epsilon_n=n^{-gamma/(2gamma+d)}. Above this order the nonprivate term is leading; below it the private term is leading.",
+      "snapshot": {
+        "stmt": "If beta=gamma, then over the full frozen class R_n^DP asymp n^{-gamma/(2 gamma+d)} vee (n epsilon_n)^{-gamma/(gamma+d)} asymp r_n^regDP, with r_n^CATE=n^{-gamma/(2 gamma+d)} and proved boundary epsilon_n asymp n^{-gamma/(2 gamma+d)}.",
+        "defs": {
+          "def:nonprivate-cate-rate": "n^(-min{1/(2+d/gamma),1/(1+d/(2 gamma)+d/(2(alpha+beta)))})",
+          "def:private-regression-calibration": "inf_{0<h<=r_0}{h^gamma+(n h^d)^(-1/2)+1/(n epsilon_n h^d)}"
+        },
+        "assumptions": {}
+      },
+      "node": {
+        "id": "lem:equal-smoothness-sharp-private-rate",
+        "kind": "lemma",
+        "statement": "If beta=gamma, then over the full frozen class R_n^DP asymp n^{-gamma/(2 gamma+d)} vee (n epsilon_n)^{-gamma/(gamma+d)} asymp r_n^regDP, with r_n^CATE=n^{-gamma/(2 gamma+d)} and proved boundary epsilon_n asymp n^{-gamma/(2 gamma+d)}.",
+        "depends_on": [
+          "def:nonprivate-cate-rate",
+          "def:private-regression-calibration",
+          "lem:certified-private-cate-bracket",
+          "lem:private-regression-calibration-algebra"
+        ],
+        "proof_tex": "Assume beta=gamma. The lower and upper endpoints in lem:certified-private-cate-bracket are then identical up to constants, so\n\n R_n^DP asymp n^{-gamma/(2gamma+d)} vee (n epsilon_n)^{-gamma/(gamma+d)}.\n\nLem:private-regression-calibration-algebra identifies the right-hand side with r_n^regDP. It remains to simplify r_n^CATE. Under beta=gamma, the two denominators defining kappa are D_1=2+d/gamma and D_2=1+d/(2gamma)+d/(2(alpha+gamma)). Since\n\n D_1-D_2=1+d/(2gamma)-d/(2(alpha+gamma))>0,\n\nwe have 1/D_1<1/D_2. Hence kappa=1/D_1=gamma/(2gamma+d), and def:nonprivate-cate-rate gives r_n^CATE=n^{-gamma/(2gamma+d)}. Finally, equality of the nonprivate and privacy powers is\n\n n^{-gamma/(2gamma+d)}=(n epsilon_n)^{-gamma/(gamma+d)},\n\nwhich is equivalent to epsilon_n=n^{-gamma/(2gamma+d)}. Above this order the nonprivate term is leading; below it the private term is leading.",
+        "status": "proved"
+      },
+      "owner": "oeq:causal-dp-frontier"
+    },
+    "lem:causal-oracle-private-lower-bound": {
+      "proof_tex": "Set a_0=gamma/(2gamma+d) and a_priv=gamma/(gamma+d). By ass:model-nonempty, select the covariate density p of one member of the frozen class and retain this p in both hypotheses. Choose the constant propensity pi_*=e_0; it is admissible because ass:overlap is the closed interval e_0<=pi<=1-e_0, a constant propensity has zero Holder seminorm hence lies in H^alpha, and ass:model-nonempty guarantees e_0<=L under the sup-norm Holder-ball convention. Let B be a nonnegative C-infinity bump supported on the unit infinity-norm cube, with B(0)=1. For h no larger than a fixed constant below r_0 and the distance of x_0 from the boundary, define b_h(x)=c_B h^gamma B((x-x_0)/h), where c_B>0 is sufficiently small and fixed. Under P_0 put mu_0=mu_1=0. Under P_{1,h} put mu_0=0 and mu_1=b_h. Conditional on X, generate Y(0),Y(1) independently in {-1,1} with these conditional means; independently generate A as Bernoulli(pi_*), and set Y=Y(A). Thus ass:consistency and ass:exchangeability hold by construction. The constant propensity satisfies ass:overlap and ass:pi-holder. Scaling the bump gives ||b_h||_{H^gamma}<=C c_B and ||b_h||_{H^beta}<=C c_B h^{gamma-beta}<=C c_B by ass:smoothness-order. Choosing c_B small verifies ass:mu-holder and ass:tau-holder. The inherited p verifies ass:local-density, so P_0,P_{1,h} belong to def:holder-cate-class. Their target separation is Delta_h=c_B h^gamma.\n\nThe laws have the same (X,A) marginal and differ only in Y conditional on A=1. Two {-1,1}-valued laws with means 0 and z have total variation |z|/2. Since the bump is supported inside the local-density cube, ass:local-density gives TV(P_0,P_{1,h})<=C integral |b_h(x)|dx<=C h^{gamma+d}. For squared Hellinger distance, the elementary inequality 2-sqrt(1+z)-sqrt(1-z)<=Cz^2 for |z|<=1/2 gives H^2(P_0,P_{1,h})<=C integral b_h(x)^2dx<=C h^{2gamma+d}. Hellinger affinity tensorizes, so H^2(P_0^n,P_{1,h}^n)<=nH^2(P_0,P_{1,h}); and Cauchy-Schwarz gives TV<=H. Taking h=c n^{-1/(2gamma+d)} with c small makes TV(P_0^n,P_{1,h}^n)<=1/2. For any release M_n, the event T={M_n>=Delta_h/2} satisfies\n\n max_j E_{P_j}|M_n-tau_{P_j}(x_0)| >= (Delta_h/4){P_0(T)+P_{1,h}(T^c)} >= (Delta_h/4){1-TV(L_{P_0^n}(M_n),L_{P_{1,h}^n}(M_n))}.\n\nPost-processing cannot increase total variation, so the last display is at least c n^{-a_0}.\n\nFor the private branch, lem:dp-output-tv-contraction and epsilon_n<=1 yield output total variation at most C n h^{gamma+d}(epsilon_n+delta_n). Since delta_n<=n^{-2}<=epsilon_n, choose h=c(n epsilon_n)^{-1/(gamma+d)}, with c fixed small enough that h remains in the permitted cube and the output total variation is at most 1/2. The same testing inequality gives risk at least c(n epsilon_n)^{-a_priv}. Both choices use explicit potential-outcome laws in the same frozen class. Taking the larger lower bound and then the infimum over mechanisms in def:dp-minimax-risk proves the result.",
+      "snapshot": {
+        "stmt": "There is c>0 such that, for all sufficiently large n, R_n^DP >= c{n^{-gamma/(2 gamma+d)} vee (n epsilon_n)^{-gamma/(gamma+d)}}; both branches are witnessed by explicit localized causal two-point families in the frozen Holder class.",
+        "defs": {
+          "def:holder-cate-class": "{P : P satisfies ass:consistency, ass:exchangeability, ass:overlap, ass:pi-holder, ass:mu-holder, ass:tau-holder, ass:smoothness-order, and ass:local-density}",
+          "def:dp-minimax-risk": "inf_{M_n: M_n satisfies ass:central-dp} sup_{P in P_{alpha,beta,gamma}(L,e_0,f_0,f_1,r_0,x_0)} E_P[|M_n(O_1,...,O_n)-tau_P(x_0)|]"
+        },
+        "assumptions": {
+          "ass:iid": "(O_i)_{i=1}^n ~ P^n.",
+          "ass:consistency": "Y=Y(A) a.s.",
+          "ass:exchangeability": "(Y(0),Y(1)) independent of A conditional on X.",
+          "ass:overlap": "e_0 <= pi_P(x) <= 1-e_0 for all x in [0,1]^d.",
+          "ass:pi-holder": "pi_P in H^alpha([0,1]^d,L).",
+          "ass:mu-holder": "mu_{0,P},mu_{1,P} in H^beta([0,1]^d,L).",
+          "ass:tau-holder": "tau_P in H^gamma([0,1]^d,L).",
+          "ass:smoothness-order": "0<beta<=gamma.",
+          "ass:local-density": "f_0 <= p_P(x) <= f_1 for all x in {u in [0,1]^d: ||u-x_0||_infinity<=r_0}.",
+          "ass:model-nonempty": "P_{alpha,beta,gamma}(L,e_0,f_0,f_1,r_0,x_0) is nonempty."
+        }
+      },
+      "node": {
+        "id": "lem:causal-oracle-private-lower-bound",
+        "kind": "lemma",
+        "statement": "There is c>0 such that, for all sufficiently large n, R_n^DP >= c{n^{-gamma/(2 gamma+d)} vee (n epsilon_n)^{-gamma/(gamma+d)}}; both branches are witnessed by explicit localized causal two-point families in the frozen Holder class.",
+        "depends_on": [
+          "ass:iid",
+          "ass:consistency",
+          "ass:exchangeability",
+          "ass:overlap",
+          "ass:pi-holder",
+          "ass:mu-holder",
+          "ass:tau-holder",
+          "ass:smoothness-order",
+          "ass:local-density",
+          "ass:model-nonempty",
+          "def:holder-cate-class",
+          "def:dp-minimax-risk",
+          "lem:dp-output-tv-contraction"
+        ],
+        "proof_tex": "Set a_0=gamma/(2gamma+d) and a_priv=gamma/(gamma+d). By ass:model-nonempty, select the covariate density p of one member of the frozen class and retain this p in both hypotheses. Choose the constant propensity pi_*=e_0; it is admissible because ass:overlap is the closed interval e_0<=pi<=1-e_0, a constant propensity has zero Holder seminorm hence lies in H^alpha, and ass:model-nonempty guarantees e_0<=L under the sup-norm Holder-ball convention. Let B be a nonnegative C-infinity bump supported on the unit infinity-norm cube, with B(0)=1. For h no larger than a fixed constant below r_0 and the distance of x_0 from the boundary, define b_h(x)=c_B h^gamma B((x-x_0)/h), where c_B>0 is sufficiently small and fixed. Under P_0 put mu_0=mu_1=0. Under P_{1,h} put mu_0=0 and mu_1=b_h. Conditional on X, generate Y(0),Y(1) independently in {-1,1} with these conditional means; independently generate A as Bernoulli(pi_*), and set Y=Y(A). Thus ass:consistency and ass:exchangeability hold by construction. The constant propensity satisfies ass:overlap and ass:pi-holder. Scaling the bump gives ||b_h||_{H^gamma}<=C c_B and ||b_h||_{H^beta}<=C c_B h^{gamma-beta}<=C c_B by ass:smoothness-order. Choosing c_B small verifies ass:mu-holder and ass:tau-holder. The inherited p verifies ass:local-density, so P_0,P_{1,h} belong to def:holder-cate-class. Their target separation is Delta_h=c_B h^gamma.\n\nThe laws have the same (X,A) marginal and differ only in Y conditional on A=1. Two {-1,1}-valued laws with means 0 and z have total variation |z|/2. Since the bump is supported inside the local-density cube, ass:local-density gives TV(P_0,P_{1,h})<=C integral |b_h(x)|dx<=C h^{gamma+d}. For squared Hellinger distance, the elementary inequality 2-sqrt(1+z)-sqrt(1-z)<=Cz^2 for |z|<=1/2 gives H^2(P_0,P_{1,h})<=C integral b_h(x)^2dx<=C h^{2gamma+d}. Hellinger affinity tensorizes, so H^2(P_0^n,P_{1,h}^n)<=nH^2(P_0,P_{1,h}); and Cauchy-Schwarz gives TV<=H. Taking h=c n^{-1/(2gamma+d)} with c small makes TV(P_0^n,P_{1,h}^n)<=1/2. For any release M_n, the event T={M_n>=Delta_h/2} satisfies\n\n max_j E_{P_j}|M_n-tau_{P_j}(x_0)| >= (Delta_h/4){P_0(T)+P_{1,h}(T^c)} >= (Delta_h/4){1-TV(L_{P_0^n}(M_n),L_{P_{1,h}^n}(M_n))}.\n\nPost-processing cannot increase total variation, so the last display is at least c n^{-a_0}.\n\nFor the private branch, lem:dp-output-tv-contraction and epsilon_n<=1 yield output total variation at most C n h^{gamma+d}(epsilon_n+delta_n). Since delta_n<=n^{-2}<=epsilon_n, choose h=c(n epsilon_n)^{-1/(gamma+d)}, with c fixed small enough that h remains in the permitted cube and the output total variation is at most 1/2. The same testing inequality gives risk at least c(n epsilon_n)^{-a_priv}. Both choices use explicit potential-outcome laws in the same frozen class. Taking the larger lower bound and then the infimum over mechanisms in def:dp-minimax-risk proves the result.",
+        "status": "proved"
+      },
+      "owner": "oeq:causal-dp-frontier"
+    },
+    "thm:causal-dp-two-point-barrier": {
+      "proof_tex": "Put C_*={x:||x-x_0||_infinity<=r_*}. For a in {0,1}, define pi_{1,P}=pi_P, pi_{0,P}=1-pi_P and w_{a,P}(x)=p_P(x)pi_{a,P}(x); define pi_{a,Q} and w_{a,Q} analogously. Let K^P_{a,x} and K^Q_{a,x} be regular conditional laws of Y given (A=a,X=x), and write d_a(x)=mu_{a,P}(x)-mu_{a,Q}(x). By ass:overlap and ass:local-density, for every x in C_* and both arms, w_{a,P}(x),w_{a,Q}(x)>=c_0:=e_0f_0.\n\nWe first prove a finite-measure inequality. Let K,L be probability laws on [-1,1] with means m_K,m_L, let s,t>=c_0, and put nu=sK-tL. Since the total mass of nu is s-t and |y|<=1,\n\n s|m_K-m_L| <= |integral y dnu|+|s-t||m_L| <= 2||nu||_{TV,var},\n\nwhere ||.||_{TV,var} denotes the total-variation norm of a finite signed measure. Therefore ||sK-tL||_{TV,var}>=(c_0/2)|m_K-m_L|. Apply this inequality pointwise with (s,t,K,L)=(w_{a,P}(x),w_{a,Q}(x),K^P_{a,x},K^Q_{a,x}). Disintegrating P and Q over the two disjoint treatment arms gives\n\n TV(P,Q)=(1/2)||P-Q||_{TV,var}\n >=(c_0/4) integral_{C_*}(|d_0(x)|+|d_1(x)|)dx\n >=(c_0/4) integral_{C_*}|tau_P(x)-tau_Q(x)|dx.\n\nThe last inequality is the triangle inequality because tau_P-tau_Q=d_1-d_0. By lem:holder-point-l1-interpolation, the last integral is at least c_H Delta^{1+d/gamma}. Thus TV(P,Q)>=c_TV Delta^{1+d/gamma}, where c_TV=c_0c_H/4. Notice that no equality of the two design densities or propensities was used.\n\nNow put b_n=exp(epsilon_n)-1+delta_n. By lem:dp-output-tv-contraction, every central-DP mechanism satisfies TV(L_{P^n}(M_n),L_{Q^n}(M_n))<=n b_n TV(P,Q). If the stated two-point route certifies n b_n TV(P,Q)<=eta, the preceding lower bound implies\n\n Delta <= (eta/c_TV)^{gamma/(gamma+d)}(n b_n)^{-gamma/(gamma+d)}.\n\nThe frozen privacy ranges give delta_n<=n^{-2}<=epsilon_n and 0<epsilon_n<=1. Hence epsilon_n<=b_n<=(e-1)epsilon_n+delta_n<=e epsilon_n, and consequently Delta<=C_eta(n epsilon_n)^{-gamma/(gamma+d)}. Finally, q<gamma implies q/(q+d)<gamma/(gamma+d). Since n epsilon_n>=1, (n epsilon_n)^{-q/(q+d)} is strictly larger than the gamma power when n epsilon_n>1 and equal to it when n epsilon_n=1. Therefore a converse of the formal q-private order cannot be obtained by this ordinary two-point/TV-contraction certificate. The conclusion concerns that proof method only; it is not an impossibility theorem for fuzzy mixtures, hypercubes, or other private comparison inequalities.",
+      "snapshot": {
+        "stmt": "Let r_*=(1/2)min{r_0,x_{0,1},1-x_{0,1},...,x_{0,d},1-x_{0,d}}. There is c_TV>0 such that for every P,Q in the frozen observational Holder CATE class, with Delta=|tau_P(x_0)-tau_Q(x_0)|, TV(P,Q)>=c_TV Delta^{1+d/gamma}. Hence, for every eta in (0,1), any central-(epsilon_n,delta_n)-DP causal two-point lower-bound argument that certifies output indistinguishability through n{exp(epsilon_n)-1+delta_n}TV(P,Q)<=eta must have Delta<=C_eta(n epsilon_n)^{-gamma/(gamma+d)}. In particular, if q=alpha+beta<gamma and n epsilon_n>1, the ordinary two-point/TV-contraction method cannot establish a lower bound of the larger formal order (n epsilon_n)^{-q/(q+d)}; at n epsilon_n=1 the two powers coincide.",
+        "defs": {
+          "def:holder-cate-class": "{P : P satisfies ass:consistency, ass:exchangeability, ass:overlap, ass:pi-holder, ass:mu-holder, ass:tau-holder, ass:smoothness-order, and ass:local-density}"
+        },
+        "assumptions": {
+          "ass:iid": "(O_i)_{i=1}^n ~ P^n.",
+          "ass:overlap": "e_0 <= pi_P(x) <= 1-e_0 for all x in [0,1]^d.",
+          "ass:tau-holder": "tau_P in H^gamma([0,1]^d,L).",
+          "ass:local-density": "f_0 <= p_P(x) <= f_1 for all x in {u in [0,1]^d: ||u-x_0||_infinity<=r_0}.",
+          "ass:central-dp": "Pr{M_n(D) in B} <= exp(epsilon_n) Pr{M_n(D') in B}+delta_n for all D,D',B.",
+          "ass:consistency": "Y=Y(A) a.s.",
+          "ass:exchangeability": "(Y(0),Y(1)) independent of A conditional on X.",
+          "ass:pi-holder": "pi_P in H^alpha([0,1]^d,L).",
+          "ass:mu-holder": "mu_{0,P},mu_{1,P} in H^beta([0,1]^d,L).",
+          "ass:smoothness-order": "0<beta<=gamma."
+        }
+      },
+      "node": {
+        "id": "thm:causal-dp-two-point-barrier",
+        "kind": "theorem",
+        "statement": "Let r_*=(1/2)min{r_0,x_{0,1},1-x_{0,1},...,x_{0,d},1-x_{0,d}}. There is c_TV>0 such that for every P,Q in the frozen observational Holder CATE class, with Delta=|tau_P(x_0)-tau_Q(x_0)|, TV(P,Q)>=c_TV Delta^{1+d/gamma}. Hence, for every eta in (0,1), any central-(epsilon_n,delta_n)-DP causal two-point lower-bound argument that certifies output indistinguishability through n{exp(epsilon_n)-1+delta_n}TV(P,Q)<=eta must have Delta<=C_eta(n epsilon_n)^{-gamma/(gamma+d)}. In particular, if q=alpha+beta<gamma and n epsilon_n>1, the ordinary two-point/TV-contraction method cannot establish a lower bound of the larger formal order (n epsilon_n)^{-q/(q+d)}; at n epsilon_n=1 the two powers coincide.",
+        "depends_on": [
+          "ass:iid",
+          "ass:overlap",
+          "ass:tau-holder",
+          "ass:local-density",
+          "ass:central-dp",
+          "def:holder-cate-class",
+          "lem:holder-point-l1-interpolation",
+          "lem:dp-output-tv-contraction"
+        ],
+        "proof_tex": "Put C_*={x:||x-x_0||_infinity<=r_*}. For a in {0,1}, define pi_{1,P}=pi_P, pi_{0,P}=1-pi_P and w_{a,P}(x)=p_P(x)pi_{a,P}(x); define pi_{a,Q} and w_{a,Q} analogously. Let K^P_{a,x} and K^Q_{a,x} be regular conditional laws of Y given (A=a,X=x), and write d_a(x)=mu_{a,P}(x)-mu_{a,Q}(x). By ass:overlap and ass:local-density, for every x in C_* and both arms, w_{a,P}(x),w_{a,Q}(x)>=c_0:=e_0f_0.\n\nWe first prove a finite-measure inequality. Let K,L be probability laws on [-1,1] with means m_K,m_L, let s,t>=c_0, and put nu=sK-tL. Since the total mass of nu is s-t and |y|<=1,\n\n s|m_K-m_L| <= |integral y dnu|+|s-t||m_L| <= 2||nu||_{TV,var},\n\nwhere ||.||_{TV,var} denotes the total-variation norm of a finite signed measure. Therefore ||sK-tL||_{TV,var}>=(c_0/2)|m_K-m_L|. Apply this inequality pointwise with (s,t,K,L)=(w_{a,P}(x),w_{a,Q}(x),K^P_{a,x},K^Q_{a,x}). Disintegrating P and Q over the two disjoint treatment arms gives\n\n TV(P,Q)=(1/2)||P-Q||_{TV,var}\n >=(c_0/4) integral_{C_*}(|d_0(x)|+|d_1(x)|)dx\n >=(c_0/4) integral_{C_*}|tau_P(x)-tau_Q(x)|dx.\n\nThe last inequality is the triangle inequality because tau_P-tau_Q=d_1-d_0. By lem:holder-point-l1-interpolation, the last integral is at least c_H Delta^{1+d/gamma}. Thus TV(P,Q)>=c_TV Delta^{1+d/gamma}, where c_TV=c_0c_H/4. Notice that no equality of the two design densities or propensities was used.\n\nNow put b_n=exp(epsilon_n)-1+delta_n. By lem:dp-output-tv-contraction, every central-DP mechanism satisfies TV(L_{P^n}(M_n),L_{Q^n}(M_n))<=n b_n TV(P,Q). If the stated two-point route certifies n b_n TV(P,Q)<=eta, the preceding lower bound implies\n\n Delta <= (eta/c_TV)^{gamma/(gamma+d)}(n b_n)^{-gamma/(gamma+d)}.\n\nThe frozen privacy ranges give delta_n<=n^{-2}<=epsilon_n and 0<epsilon_n<=1. Hence epsilon_n<=b_n<=(e-1)epsilon_n+delta_n<=e epsilon_n, and consequently Delta<=C_eta(n epsilon_n)^{-gamma/(gamma+d)}. Finally, q<gamma implies q/(q+d)<gamma/(gamma+d). Since n epsilon_n>=1, (n epsilon_n)^{-q/(q+d)} is strictly larger than the gamma power when n epsilon_n>1 and equal to it when n epsilon_n=1. Therefore a converse of the formal q-private order cannot be obtained by this ordinary two-point/TV-contraction certificate. The conclusion concerns that proof method only; it is not an impossibility theorem for fuzzy mixtures, hypercubes, or other private comparison inequalities.",
+        "status": "proved",
+        "justification": "This is the primary causal-privacy hardness result: it delimits the full ordinary two-point proof route over arbitrary admissible causal-law pairs.",
+        "gap": "Private pointwise-regression lower bounds do not provide this arbitrary-pair obstruction for an observational CATE class with two outcome arms, varying propensity, and varying design density.",
+        "consumer": "A converse for a nuisance-privacy branch with alpha+beta<gamma must use a comparison method beyond the displayed two-point TV contraction, such as a genuinely multi-hypothesis or fuzzy construction."
+      },
+      "owner": "oeq:causal-dp-frontier"
+    },
+    "lem:equal-smoothness-regression-inheritance": {
+      "proof_tex": "The achievability proof in lem:private-local-polynomial-upper-bound forms, for each a in {0,1}, a privatized local polynomial estimate of mu_{a,P}(x_0) from the arm-a weighted moments and releases the clipped difference of the two intercept estimates. Its uniform error is the sum of two fixed-constant copies of\n\n h^beta+(nh^d)^{-1/2}+1/(n epsilon_n h^d).\n\nWhen beta=gamma, optimizing this expression gives n^{-gamma/(2gamma+d)} vee (n epsilon_n)^{-gamma/(gamma+d)}. Thus the upper exponent is exactly the one-server private pointwise-regression exponent; differencing two arms changes only the multiplicative constant.\n\nFor the converse, the explicit family in lem:causal-oracle-private-lower-bound holds the covariate density fixed, takes the constant propensity pi=e_0, sets mu_0=0 under both hypotheses, and changes only mu_1 by a localized gamma-Holder bump. It is an admissible causal family because potential outcomes are generated before treatment, treatment is conditionally independent of them given X, and Y=Y(A). On this subfamily tau_P(x_0)=mu_{1,P}(x_0), so estimating the CATE contains the single pointwise-regression problem as a subproblem. The constant treatment probability thins informative observations only by the fixed factor e_0, and replacement adjacency of the full observational sample remains replacement adjacency on this embedded subproblem; these facts change constants but not either exponent. Lem:equal-smoothness-sharp-private-rate combines the matching bounds. Hence the beta=gamma sharp rate is regression-inherited at the rate level, notwithstanding that the lower family is written as a valid observational causal law.",
+      "snapshot": {
+        "stmt": "When beta=gamma, the sharp full-class central-DP CATE rate in lem:equal-smoothness-sharp-private-rate is inherited, at the level of rates, from one-server private pointwise regression: the upper mechanism is the clipped difference of two armwise private local-polynomial regressions, while the causal lower family fixes mu_0=0 and a constant overlapping propensity and embeds a single pointwise-regression subproblem in mu_1. Overlap and the two-arm structure affect only constants.",
+        "defs": {
+          "def:holder-cate-class": "{P : P satisfies ass:consistency, ass:exchangeability, ass:overlap, ass:pi-holder, ass:mu-holder, ass:tau-holder, ass:smoothness-order, and ass:local-density}",
+          "def:dp-minimax-risk": "inf_{M_n: M_n satisfies ass:central-dp} sup_{P in P_{alpha,beta,gamma}(L,e_0,f_0,f_1,r_0,x_0)} E_P[|M_n(O_1,...,O_n)-tau_P(x_0)|]"
+        },
+        "assumptions": {
+          "ass:overlap": "e_0 <= pi_P(x) <= 1-e_0 for all x in [0,1]^d.",
+          "ass:consistency": "Y=Y(A) a.s.",
+          "ass:exchangeability": "(Y(0),Y(1)) independent of A conditional on X.",
+          "ass:pi-holder": "pi_P in H^alpha([0,1]^d,L).",
+          "ass:mu-holder": "mu_{0,P},mu_{1,P} in H^beta([0,1]^d,L).",
+          "ass:tau-holder": "tau_P in H^gamma([0,1]^d,L).",
+          "ass:smoothness-order": "0<beta<=gamma.",
+          "ass:local-density": "f_0 <= p_P(x) <= f_1 for all x in {u in [0,1]^d: ||u-x_0||_infinity<=r_0}."
+        }
+      },
+      "node": {
+        "id": "lem:equal-smoothness-regression-inheritance",
+        "kind": "lemma",
+        "statement": "When beta=gamma, the sharp full-class central-DP CATE rate in lem:equal-smoothness-sharp-private-rate is inherited, at the level of rates, from one-server private pointwise regression: the upper mechanism is the clipped difference of two armwise private local-polynomial regressions, while the causal lower family fixes mu_0=0 and a constant overlapping propensity and embeds a single pointwise-regression subproblem in mu_1. Overlap and the two-arm structure affect only constants.",
+        "depends_on": [
+          "ass:overlap",
+          "def:holder-cate-class",
+          "def:dp-minimax-risk",
+          "lem:private-local-polynomial-upper-bound",
+          "lem:causal-oracle-private-lower-bound",
+          "lem:equal-smoothness-sharp-private-rate"
+        ],
+        "proof_tex": "The achievability proof in lem:private-local-polynomial-upper-bound forms, for each a in {0,1}, a privatized local polynomial estimate of mu_{a,P}(x_0) from the arm-a weighted moments and releases the clipped difference of the two intercept estimates. Its uniform error is the sum of two fixed-constant copies of\n\n h^beta+(nh^d)^{-1/2}+1/(n epsilon_n h^d).\n\nWhen beta=gamma, optimizing this expression gives n^{-gamma/(2gamma+d)} vee (n epsilon_n)^{-gamma/(gamma+d)}. Thus the upper exponent is exactly the one-server private pointwise-regression exponent; differencing two arms changes only the multiplicative constant.\n\nFor the converse, the explicit family in lem:causal-oracle-private-lower-bound holds the covariate density fixed, takes the constant propensity pi=e_0, sets mu_0=0 under both hypotheses, and changes only mu_1 by a localized gamma-Holder bump. It is an admissible causal family because potential outcomes are generated before treatment, treatment is conditionally independent of them given X, and Y=Y(A). On this subfamily tau_P(x_0)=mu_{1,P}(x_0), so estimating the CATE contains the single pointwise-regression problem as a subproblem. The constant treatment probability thins informative observations only by the fixed factor e_0, and replacement adjacency of the full observational sample remains replacement adjacency on this embedded subproblem; these facts change constants but not either exponent. Lem:equal-smoothness-sharp-private-rate combines the matching bounds. Hence the beta=gamma sharp rate is regression-inherited at the rate level, notwithstanding that the lower family is written as a valid observational causal law.",
+        "status": "proved",
+        "justification": "This comparison states exactly which sharp calibration is inherited from private regression and prevents presenting the beta=gamma rate as a causally distinct rate result.",
+        "gap": "The causal content at beta=gamma is the valid embedding and full-class calibration, not a new exponent beyond private pointwise regression.",
+        "consumer": "Readers can separate the inherited sharp calibration from the genuinely causal two-point obstruction and the unresolved nuisance-privacy frontier."
+      },
+      "owner": "oeq:causal-dp-frontier"
+    },
+    "oeq:causal-dp-frontier": {
+      "proof_tex": "The primary established result is thm:causal-dp-two-point-barrier: for arbitrary P,Q in the frozen causal class, TV(P,Q)>=c|tau_P(x_0)-tau_Q(x_0)|^{1+d/gamma}, so no two-point argument using the displayed DP TV-contraction certificate can establish more than the gamma privacy separation (n epsilon_n)^{-gamma/(gamma+d)}. This is a proof-method hardness theorem, not a claim against fuzzy or multi-hypothesis methods. As secondary calibration, lem:certified-private-cate-bracket proves c{n^{-gamma/(2gamma+d)} vee (n epsilon_n)^{-gamma/(gamma+d)}} <= R_n^DP <= C{n^{-beta/(2beta+d)} vee (n epsilon_n)^{-beta/(beta+d)}}. The bracket is sharp when beta=gamma and when 1<=n epsilon_n<=C_0. Lem:equal-smoothness-regression-inheritance records that the beta=gamma exponent is inherited from one-server private pointwise regression: the upper bound differences two armwise private regressions and the causal lower family embeds one regression subproblem, with overlap affecting only constants. The formal optimized value n^{-kappa} vee (n epsilon_n)^{-min(gamma,alpha+beta)/(min(gamma,alpha+beta)+d)} remains algebraic only. The full beta<gamma frontier, including achievability and converse for any nuisance-privacy branch and the privacy-free full-positive-density limit, remains open.",
+      "snapshot": {
+        "stmt": "For deterministic sequences epsilon_n in [n^(-1),1] and 0<delta_n<=n^(-2), determine the sharp central-(epsilon_n,delta_n)-DP pointwise CATE risk R_n^DP(P_{alpha,beta,gamma},epsilon_n,delta_n,x_0) over P_{alpha,beta,gamma}(L,e_0,f_0,f_1,r_0,x_0). Establish a two-sided rate and phase diagram; determine whether the privacy-free limit over this full positive-density class reduces to r_n^CATE (open here; the Kennedy--Balakrishnan--Robins--Wasserman match uses a density/Gram-stable submodel), and decide whether the pointwise-regression calibration r_n^regDP and private estimation of pi_P, mu_{0,P}, and mu_{1,P} generate one or more additional leading regimes. Prove any lower bound using a causal localized family rather than a regression stand-in.",
+        "defs": {
+          "def:holder-cate-class": "{P : P satisfies ass:consistency, ass:exchangeability, ass:overlap, ass:pi-holder, ass:mu-holder, ass:tau-holder, ass:smoothness-order, and ass:local-density}",
+          "def:dp-minimax-risk": "inf_{M_n: M_n satisfies ass:central-dp} sup_{P in P_{alpha,beta,gamma}(L,e_0,f_0,f_1,r_0,x_0)} E_P[|M_n(O_1,...,O_n)-tau_P(x_0)|]",
+          "def:nonprivate-cate-rate": "n^(-min{1/(2+d/gamma),1/(1+d/(2 gamma)+d/(2(alpha+beta)))})",
+          "def:private-regression-calibration": "inf_{0<h<=r_0}{h^gamma+(n h^d)^(-1/2)+1/(n epsilon_n h^d)}",
+          "def:causal-private-frontier-handle": "Let q=alpha+beta and define the formal algebraic objective E_n^alg(h,k)=h^gamma+(h/k^{1/d})^q+(n h^d)^(-1/2)+sqrt(k)/(n h^d)+k/(n epsilon_n h^d), over 0<h<=r_0 and 1<=k<=n h^d. Its exactly optimized value is rho_n^alg=r_n^CATE vee (n epsilon_n)^(-gamma/(gamma+d)) vee (n epsilon_n)^(-q/(q+d)); with s=min(gamma,q), this is n^(-kappa) vee (n epsilon_n)^(-s/(s+d)), and epsilon_n^alg=n^(-1+kappa(s+d)/s) is only its algebraic crossing. Neither E_n^alg nor rho_n^alg is a proved risk envelope, attainable rate, minimax frontier, or minimax elbow. The only certified full-class statement is lem:certified-private-cate-bracket, with sharp corollaries lem:equal-smoothness-sharp-private-rate and lem:bounded-effective-private-sample-risk. A private-HOIF upper program must separately privatize or globally stabilize nuisance-pilot, Gram, first-order-score, and second-order folds and retain the KBRW Gram/density third-order remainder. For q<gamma, a positive-density fuzzy family plus an approximate-DP hypercube inequality is one possible converse program, but lem:general-two-point-barrier proves only that a two-point argument certifying indistinguishability through n{exp(epsilon_n)-1+delta_n}TV(P,Q)<=eta<1 cannot exceed the gamma privacy branch; it does not show that every route to the q branch must use fuzzy cancellation. When n epsilon_n=1 the formal q and gamma privacy powers coincide; the q power is strictly larger only when n epsilon_n>1. The KBRW nonprivate expression is not asserted as the established frontier of the full positive-density class: its published lower construction and upper attainability conditions concern different density scopes, with matching on a density/Gram-stable submodel."
+        },
+        "assumptions": {
+          "ass:iid": "(O_i)_{i=1}^n ~ P^n.",
+          "ass:smoothness-order": "0<beta<=gamma.",
+          "ass:consistency": "Y=Y(A) a.s.",
+          "ass:exchangeability": "(Y(0),Y(1)) independent of A conditional on X.",
+          "ass:overlap": "e_0 <= pi_P(x) <= 1-e_0 for all x in [0,1]^d.",
+          "ass:pi-holder": "pi_P in H^alpha([0,1]^d,L).",
+          "ass:mu-holder": "mu_{0,P},mu_{1,P} in H^beta([0,1]^d,L).",
+          "ass:tau-holder": "tau_P in H^gamma([0,1]^d,L).",
+          "ass:local-density": "f_0 <= p_P(x) <= f_1 for all x in {u in [0,1]^d: ||u-x_0||_infinity<=r_0}."
+        }
+      },
+      "partial": true
+    }
+  }
+}

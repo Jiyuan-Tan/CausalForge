@@ -1,0 +1,1185 @@
+% =====================================================================
+%  thmsmith Stage 0 derivation skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=eid\_dml\_orthogonality\_frontier, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage 0 derivation: \texttt{eid\_dml\_orthogonality\_frontier} / \texttt{v1}%
+  \\ \large\textit{Two-channel orthogonality frontier for first-order HTE DML}}
+\author{thmsmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note fixes the shared setup for an ExactID heterogeneous-treatment-effect
+DML frontier.  The identifying functional is the observable AIPW map
+\(\Psi_P(\ell)=\E_P[\ell(X)\Gamma(W;\eta_0)]\), where
+\(\Gamma(W;\eta_0)\) uses the conditional outcome regressions
+\((g_{1,0},g_{0,0})\) and propensity \(p_0\).  The target causal estimand is the
+weighted potential-outcome report
+\(\theta_0(\ell)=\E[\ell(X)\{Y(1)-Y(0)\}]\) for
+\(\ell\in\mathcal{L}_n\).  The per-conjecture stages will verify whether the
+two-channel frontier
+\(\mathfrak{F}_n(P)=\max\{\sqrt n\,\delta_{g,n}(P)\delta_{p,n}(P),
+(\delta_{g,n}(P)+\delta_{p,n}(P))\mathcal{E}_n\}\) is the exact boundary for
+uniform first-order Gaussian HTE-DML inference, and whether its Holder-rate
+specialization is the stated exponent pair.
+\end{abstract}
+
+\section{Introduction}
+First-order Neyman-orthogonal DML is a standard tool for estimating treatment
+effects with flexible nuisance learners.  For a single average treatment effect,
+the familiar product-rate message is clear: the nuisance estimation errors must
+be small enough that the second-order remainder is asymptotically negligible.
+For heterogeneous-treatment-effect reports indexed by a growing class
+\(\mathcal{L}_n\), a second channel matters.  The bounded population drift is a
+bilinear product of outcome-regression and propensity errors, while the nuisance
+empirical process can be amplified by the entropy of the report class.
+
+The exact-identification part of the problem is classical.  Under consistency,
+conditional unconfoundedness, and overlap, the weighted CATE report
+\(\E[\ell(X)\{Y(1)-Y(0)\}]\) is identified by an AIPW signal.  What remains is
+not another adjustment formula, but a sharp inference frontier for the
+cross-fitted plug-in process over Holder nuisance classes and entropy-indexed
+report weights.
+
+This note sets up the common notation, assumptions, and computable identifying
+functional for two later conjecture-specific derivations.  If Conjecture 1 is
+confirmed, the scalar \(\mathfrak{F}_n(P)\) separates the region where
+first-order orthogonality supports uniform Gaussian inference from the region
+where either deterministic drift or nuisance empirical-process leakage remains
+visible at first order.  If Conjecture 2 is confirmed, this abstract frontier
+reduces in the canonical Holder case to two transparent exponent inequalities.
+
+\paragraph{Motivating conjecture(s).}
+\begin{quote}
+\phantomsection\label{conj:frontier}
+\textbf{Conjecture 1.}
+Under Assumptions \ref{ass:unconfounded}--\ref{ass:curvature}, first-order
+orthogonal DML is uniformly asymptotically linear and Gaussian for the
+\(\mathcal{L}_n\)-indexed HTE report process if and only if
+\[
+\sup_{P\in\mathcal{P}_n}\mathfrak{F}_n(P)
+=\sup_{P\in\mathcal{P}_n}\max\{\sqrt n\,\delta_{g,n}(P)\delta_{p,n}(P),
+\{\delta_{g,n}(P)+\delta_{p,n}(P)\}\mathcal{E}_n\}
+\longrightarrow0 .
+\]
+The necessity half is interpreted in the minimax/adversarial first-order
+experiment of Assumption \ref{ass:curvature}: if
+\(\limsup_n\sup_{P\in\mathcal{P}_n}\mathfrak{F}_n(P)>0\) and either the active
+curvature constant \(c_R\) or the empirical leakage constant \(c_{\mathrm{ep}}\)
+is bounded below, then there exist an active sequence \(P_n\), an open subset
+of the locked Holder nuisance class, and cross-fit nuisance estimates attaining
+the active tangent directions for which
+\[
+\sup_{\ell\in\mathcal{L}_n}
+\left|\sqrt n\{\hat\theta_n(\ell)-\theta_0(\ell)\}-\mathbb{G}_n(\ell)\right|
+\]
+has a liminf bounded away from zero in probability.  Thus the usual
+oracle-centered first-order Gaussian studentization is not uniformly valid in
+the minimax first-order experiment.  If \(\mathfrak{D}_n\) is the active
+channel the failure is a deterministic translation by \(R_P\); if
+\(\mathfrak{S}_n\) is the active channel the failure is non-negligible nuisance
+empirical-process leakage.  Faster oracle learners outside the active error
+class are not claimed to fail.
+
+\phantomsection\label{conj:holder}
+\textbf{Conjecture 2.}
+In the canonical Holder-rate specialization of Assumption \ref{ass:holder} with
+\(\mathcal{E}_n\asymp n^\zeta\), the frontier in Conjecture
+\ref{conj:frontier} is equivalent, up to logarithmic factors, to
+\[
+\frac{\alpha_g}{2\alpha_g+d}+\frac{\alpha_p}{2\alpha_p+d}
+>\frac12,\qquad
+\min\left\{\frac{\alpha_g}{2\alpha_g+d},\frac{\alpha_p}{2\alpha_p+d}\right\}
+>\zeta.
+\]
+Below this boundary, first-order DML cannot be uniformly Gaussian over the
+locked Holder/entropy class; above it, first-order DML is uniformly Gaussian
+provided the oracle Gaussian approximation in Assumption \ref{ass:crossfit}
+holds.
+\end{quote}
+
+\section{Related work and positioning}
+\cite{ChernozhukovEtAl2018DML} is the canonical DML reference: it introduces
+orthogonal scores and cross-fitting with sufficient product-rate conditions,
+but it does not state a necessary-and-sufficient Holder/entropy breakdown
+frontier.  \cite{SemenovaChernozhukov2021DMLCATE} develops orthogonal signals
+for CATE and structural-function summaries with simultaneous inference under
+high-level nuisance conditions; the present setup targets the boundary at
+which that type of report process ceases to be first-order Gaussian.
+\cite{FosterSyrgkanis2023OSL} gives entropy-aware orthogonal statistical
+learning risk bounds, which motivate the empirical-process channel but do not
+by themselves imply Gaussian inference for DML reports.
+\cite{ChernozhukovChetverikovKato2014Gaussian} supplies the Gaussian
+approximation technology for suprema of empirical processes, used here only as
+an oracle-process route.  \cite{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}
+derives minimax CATE smoothness elbows using higher-order ideas, while
+\cite{ArmstrongKolesar2021FiniteSampleATE} and
+\cite{MackeySyrgkanisZadik2018OML} are closest limitations comparators for
+root-\(n\) inference and first-order orthogonality.  The local proposal record
+for this qid reports no banked ExactID theorem for a Holder/entropy DML
+frontier; the closest failed predecessor targeted a different
+studentization-report equivalence rather than the two-channel object
+\(\mathfrak{F}_n(P)\).
+
+\section{Formal setup}
+Let \(W=(Y,D,X)\sim P\), with binary treatment \(D\in\{0,1\}\), covariates
+ \(X\in[0,1]^d\), and bounded outcome \(|Y|\le M\).  The causal graph is
+ \(X\to D\to Y\) and \(X\to Y\); latent variables are allowed only insofar as
+ they do not violate the conditional exchangeability assumption below.
+ Potential outcomes are \(Y(1)\) and \(Y(0)\), and consistency identifies the
+ observed outcome with \(DY(1)+(1-D)Y(0)\).
+
+Write
+\[
+g_{d,0}(x)=\E[Y\mid D=d,X=x],\qquad
+p_0(x)=\Pr(D=1\mid X=x),\qquad
+\tau_0(x)=g_{1,0}(x)-g_{0,0}(x).
+\]
+The report class \(\mathcal{L}_n\) is deterministic, uniformly bounded, and
+measurable.  For \(\ell\in\mathcal{L}_n\), the target report is
+\(\theta_0(\ell)=\E[\ell(X)\tau_0(X)]\).  The AIPW signal is
+\[
+\Gamma(W;\eta_0)=g_{1,0}(X)-g_{0,0}(X)
++\frac{D}{p_0(X)}\{Y-g_{1,0}(X)\}
+-\frac{1-D}{1-p_0(X)}\{Y-g_{0,0}(X)\},
+\]
+where \(\eta_0=(g_{1,0},g_{0,0},p_0)\).  Cross-fitted nuisance estimates are
+written \(\hat\eta_{-k(i)}=(\hat g_{1,-k(i)},\hat g_{0,-k(i)},\hat p_{-k(i)})\)
+for the fold excluding observation \(i\), and
+\[
+\hat\theta_n(\ell)=\mathbb{P}_n[\ell(X)\Gamma(W;\hat\eta_{-k(i)})].
+\]
+
+The nuisance radii are deterministic envelopes
+\[
+\delta_{g,n}(P)=\|\hat g_1-g_{1,0}\|_{2,P}+\|\hat g_0-g_{0,0}\|_{2,P},\qquad
+\delta_{p,n}(P)=\|\hat p-p_0\|_{2,P}.
+\]
+The report-class entropy integral is
+\[
+\mathcal{E}_n
+=1+\int_0^1
+\sqrt{\log N(\varepsilon\|\mathcal{L}_n\|_{2,P},\mathcal{L}_n,L^2(P))}
+\,d\varepsilon,
+\]
+uniformly over \(P\in\mathcal{P}_n\).  The two frontier channels are
+\[
+\mathfrak{D}_n(P)=\sqrt n\,\delta_{g,n}(P)\delta_{p,n}(P),\qquad
+\mathfrak{S}_n(P)=\{\delta_{g,n}(P)+\delta_{p,n}(P)\}\mathcal{E}_n,
+\]
+and \(\mathfrak{F}_n(P)=\max\{\mathfrak{D}_n(P),\mathfrak{S}_n(P)\}\).
+
+\paragraph{Locked parameters.}
+This proposal uses the ExactID/free-form convention
+\[
+(\texttt{qid},\texttt{specialization},\text{SWIG/DAG},\text{treatment},
+\text{target estimand},\text{identifying assumptions}).
+\]
+\begin{itemize}
+\item \texttt{qid}: \texttt{eid\_dml\_orthogonality\_frontier}
+\item \texttt{specialization}: \texttt{v1}
+\item SWIG/DAG: \(X\to D\to Y,\; X\to Y\)
+\item treatment: \(D\in\{0,1\}\)
+\item target estimand: \(\theta_0(\ell)=\E[\ell(X)\{Y(1)-Y(0)\}]\)
+for \(\ell\in\mathcal{L}_n\)
+\item identifying assumptions: consistency, conditional unconfoundedness
+\((Y(1),Y(0))\perp D\mid X\), overlap
+\(\underline e\le p_0(X)\le 1-\underline e\), the Holder--entropy nuisance
+classes, and the two-channel orthogonality experiment in Assumptions
+\ref{ass:unconfounded}--\ref{ass:curvature}
+\end{itemize}
+Here \(p_0(x)=\Pr(D=1\mid X=x)\), \(g_{d,0}(x)=\E[Y\mid D=d,X=x]\), and
+\(\mathcal{L}_n\) is a deterministic class of HTE report weights with entropy
+integral \(\mathcal{E}_n\).  The focal mathematical object is
+\[
+\mathfrak{F}_n(P)=
+\max\{\mathfrak{D}_n(P),\mathfrak{S}_n(P)\},\qquad
+\mathfrak{D}_n(P)=\sqrt n\,\delta_{g,n}(P)\delta_{p,n}(P),\quad
+\mathfrak{S}_n(P)=\{\delta_{g,n}(P)+\delta_{p,n}(P)\}\mathcal{E}_n.
+\]
+
+\section{Assumptions}
+\begin{assumption}[Unconfounded exact-ID model]\label{ass:unconfounded}
+For every \(P\in\mathcal{P}_n\), \(Y=DY(1)+(1-D)Y(0)\),
+\((Y(1),Y(0))\perp D\mid X\), \(X\in[0,1]^d\), \(|Y|\le M\), and
+\(\underline e\le p_0(X)\le1-\underline e\) almost surely for a fixed
+\(\underline e>0\).
+\end{assumption}
+
+\begin{assumption}[Holder nuisance and learner radii]\label{ass:holder}
+The outcome regressions \(g_{1,0},g_{0,0}\) belong to a Holder ball
+\(\mathcal{H}(\alpha_g,L_g,d)\), the propensity \(p_0\) belongs to
+\(\mathcal{H}(\alpha_p,L_p,d)\), and the cross-fitted learners have uniform
+\(L^2(P)\) envelopes \(\delta_{g,n}(P)\) and \(\delta_{p,n}(P)\).  In the
+canonical Holder-rate specialization,
+\(\delta_{g,n}\asymp n^{-\alpha_g/(2\alpha_g+d)}\) and
+\(\delta_{p,n}\asymp n^{-\alpha_p/(2\alpha_p+d)}\).
+\end{assumption}
+
+\begin{assumption}[Report-class entropy]\label{ass:entropy}
+The deterministic HTE report class \(\mathcal{L}_n\) is uniformly bounded by
+\(L_\ell\), centered when required by the covariance normalization, and has
+finite entropy integral \(\mathcal{E}_n\).  The centered oracle-process
+convention used in Theorem \ref{thm:score-remainder} is
+\[
+\sup_{\ell\in\mathcal{L}_n}
+\sqrt n\,|\theta_0(\ell)(\mathbb{P}_n-P)\ell(X)|=o_P(1),
+\]
+or equivalently the oracle summand may be read as
+\(\ell(X)\Gamma(W;\eta_0)-\theta_0(\ell)\) under an unnormalized report
+convention.  Polynomial entropy classes with
+\(\log N(\varepsilon,\mathcal{L}_n,L^2(P))\lesssim a_n\varepsilon^{-v_\ell}\)
+are allowed; \(\mathcal{E}_n\) records the resulting growth.
+\end{assumption}
+
+\begin{assumption}[Cross-fitting and empirical-process regularity]\label{ass:crossfit}
+The sample is split into a fixed number of folds, nuisance estimates used for
+observation \(i\) are trained off fold \(k(i)\), and the oracle process
+\[
+\mathbb{G}_n(\ell)=
+\sqrt n\,(\mathbb{P}_n-P)[\ell(X)\{\Gamma(W;\eta_0)-\theta_0(\ell)\}]
+\]
+admits a tight Gaussian multiplier approximation uniformly on
+\(\mathcal{L}_n\) whenever \(\mathfrak{F}_n(P)\to0\).  The nuisance
+empirical-process remainder
+\[
+\Delta^{\mathrm{ep}}_n(\ell)=
+(\mathbb{P}_n-P)[
+\ell(X)\{\Gamma(W;\hat\eta_{-k(i)})-\Gamma(W;\eta_0)\}]
+\]
+obeys the sharp maximal scale
+\[
+\sqrt n\sup_{\ell\in\mathcal{L}_n}
+|\Delta^{\mathrm{ep}}_n(\ell)|=O_P(\mathfrak{S}_n(P)),
+\]
+and is therefore \(o_P(1)\) on the upper-bound side when
+\(\sup_{P\in\mathcal{P}_n}\mathfrak{S}_n(P)\to0\).
+\end{assumption}
+
+\begin{assumption}[Estimated-denominator residual]\label{ass:denominator}
+The estimated propensity obeys the same fixed overlap bound as \(p_0\) with
+probability approaching one, and the denominator-substitution residual is
+negligible on the upper-bound side:
+\[
+\sqrt n\sup_{\ell\in\mathcal{L}_n}
+\left|Q_P(\ell;\hat g-g_0,\hat p-p_0,\hat p)\right|=o_P(1).
+\]
+A sufficient primitive envelope is
+\(\sqrt n\,\delta_{g,n}(P)\delta_{p,n}(P)^2=o(1)\), together with bounded
+report weights and fixed overlap.
+\end{assumption}
+
+\begin{assumption}[Active remainder curvature]\label{ass:curvature}
+There is a nondegenerate active Holder tangent cone
+\(\mathcal{T}_{g,n}\times\mathcal{T}_{p,n}\) and a constant \(c_R(P)>0\) such
+that
+\[
+\sup_{\ell\in\mathcal{L}_n,\; \|u\|_{2,P}\le\delta_{g,n},\; \|v\|_{2,P}\le\delta_{p,n}}
+|R_P(\ell;u,v)|
+\ge c_R(P)\delta_{g,n}(P)\delta_{p,n}(P).
+\]
+For the empirical-process channel, there is a constant
+\(c_{\mathrm{ep}}(P)>0\) such that along active report-class sequences the
+learner-error class contains cross-fit nuisance estimates with errors
+\(u_n\in\mathcal{T}_{g,n}\) and \(v_n\in\mathcal{T}_{p,n}\) whose \(L^2(P_n)\)
+norms are comparable to \(\delta_{g,n}(P_n)\) and \(\delta_{p,n}(P_n)\) and for
+which
+\[
+\sqrt n\sup_{\ell\in\mathcal{L}_n}
+|\Delta^{\mathrm{ep}}_n(\ell)|
+\ge c_{\mathrm{ep}}(P)\{\delta_{g,n}(P)+\delta_{p,n}(P)\}\mathcal{E}_n
+\]
+with probability bounded away from zero.  The lower-bound statement assumes
+\(\inf_{P\in\mathcal{P}_n}\max\{c_R(P),c_{\mathrm{ep}}(P)\}\ge c_0>0\) on the
+active channel under consideration.
+\end{assumption}
+
+\section{Estimand-defining functional}
+For every \(P\) satisfying Assumption \ref{ass:unconfounded}, define the
+observable nuisance functions
+\[
+g_{d,P}(x)=\E_P[Y\mid D=d,X=x],\qquad p_P(x)=P(D=1\mid X=x),
+\]
+and set \(\eta_P=(g_{1,P},g_{0,P},p_P)\).  The computable identifying
+functional is the map
+\[
+\Psi_P(\ell)
+=\E_P[\ell(X)\Gamma(W;\eta_P)]
+\]
+with
+\[
+\Gamma(W;\eta_P)=g_{1,P}(X)-g_{0,P}(X)
++\frac{D}{p_P(X)}\{Y-g_{1,P}(X)\}
+-\frac{1-D}{1-p_P(X)}\{Y-g_{0,P}(X)\}.
+\]
+Equivalently, because the residual terms have conditional mean zero,
+\[
+\Psi_P(\ell)=
+\int \ell(x)\{g_{1,P}(x)-g_{0,P}(x)\}\,dP_X(x).
+\]
+This is evaluable from the observed population law by computing the two
+conditional outcome means, the propensity, and the \(P_X\)-integral over the
+known report weight \(\ell\).  The associated plug-in drift maps, used by the
+frontier theorem, are
+\[
+\widetilde R_P(\ell;u,v,\bar p)=
+\E_P\!\left[
+\ell(X)v(X)
+\left\{\frac{u_1(X)}{\bar p(X)}+\frac{u_0(X)}{1-\bar p(X)}\right\}
+\right],
+\]
+\[
+R_P(\ell;u,v)=
+\E_P\!\left[
+\ell(X)v(X)
+\left\{\frac{u_1(X)}{p_0(X)}+\frac{u_0(X)}{1-p_0(X)}\right\}
+\right],
+\qquad
+Q_P(\ell;u,v,\bar p)=\widetilde R_P(\ell;u,v,\bar p)-R_P(\ell;u,v).
+\]
+The map \(R_P\) is a bounded bilinear functional under fixed overlap and
+bounded report weights:
+\[
+|R_P(\ell;u,v)|
+\le L_\ell \underline e^{-1}
+\{\|u_1\|_{2,P}+\|u_0\|_{2,P}\}\|v\|_{2,P}.
+\]
+
+\section{Target causal estimand}
+The causal target is the weighted heterogeneous-treatment-effect report
+\[
+\theta_0(\ell)=\E[\ell(X)\{Y(1)-Y(0)\}],\qquad \ell\in\mathcal{L}_n.
+\]
+For \(\ell\equiv1\), this is the average treatment effect
+\(\E[Y(1)-Y(0)]\).  For subgroup or contrast weights, it is the corresponding
+linear CATE report, not a sampling estimator and not the Gaussian process used
+for inference.  Under Assumption \ref{ass:unconfounded}, the target equals the
+observable functional \(\Psi_P(\ell)\); the later theorem sections decide when
+the cross-fitted first-order DML estimator of \(\Psi_P(\ell)\) has a uniform
+oracle-centered Gaussian approximation over \(\mathcal{L}_n\).
+
+\section{Main theorems}
+\begin{theorem}[Conjecture 1 frontier]\label{thm:frontier}
+Equivalently, under Assumptions \ref{ass:unconfounded}--\ref{ass:curvature}, first-order orthogonal DML is uniformly asymptotically linear and Gaussian for the \(\mathcal{L}_n\)-indexed HTE report process if and only if \(\sup_{P\in\mathcal{P}_n}\mathfrak{F}_n(P)\to0\), with necessity interpreted in the minimax/adversarial first-order experiment of Assumption \ref{ass:curvature}.
+\end{theorem}
+
+The theorem says that exact identification by the AIPW signal is not the
+limiting step.  Under consistency, conditional unconfoundedness, and fixed
+overlap, \(\Psi_P(\ell)=\theta_0(\ell)\) is computable from the observed law.
+Compared with the standard DML product-rate statement, the new content is the
+second channel
+\(\mathfrak{S}_n(P)=\{\delta_{g,n}(P)+\delta_{p,n}(P)\}\mathcal{E}_n\), which
+records nuisance empirical-process leakage for a growing
+\(\mathcal{L}_n\)-indexed report process.
+
+\begin{theorem}[Conjecture 2: Holder-rate frontier]\label{thm:holder-frontier}
+Conjecture~\ref{conj:holder} is confirmed: in the canonical Holder-rate specialization with \(r_g=\alpha_g/(2\alpha_g+d)\), \(r_p=\alpha_p/(2\alpha_p+d)\), and \(\mathcal{E}_n\asymp n^\zeta\), the two-channel frontier satisfies
+\[
+\mathfrak F_n(P)\asymp
+\max\{n^{1/2-r_g-r_p},\,n^{\zeta-\min(r_g,r_p)}\}
+\]
+up to logarithmic factors, so \(\mathfrak F_n(P)\to0\) if and only if \(r_g+r_p>1/2\) and \(\min(r_g,r_p)>\zeta\); above this boundary the oracle-centered first-order DML report process is uniformly Gaussian under Assumption~\ref{ass:crossfit}, while below it uniform Gaussianity fails in the active-channel experiment of Assumption~\ref{ass:curvature}.
+\end{theorem}
+
+The theorem says that the abstract frontier has two independent rate
+requirements in the canonical Holder specialization.  The deterministic
+orthogonal-score drift disappears exactly when \(r_g+r_p>1/2\), while the
+growing HTE report class creates a separate nuisance empirical-process channel
+that disappears exactly when \(\min(r_g,r_p)>\zeta\).  This is the Holder-rate
+form of the two-channel frontier in Theorem \ref{thm:frontier}.
+
+\section{Interpretation}
+\paragraph{Conjecture 1.}
+The theorem says that exact identification by the AIPW signal is not the
+limiting step.  Under consistency, conditional unconfoundedness, and fixed
+overlap, \(\Psi_P(\ell)=\theta_0(\ell)\) is computable from the observed law.
+The frontier is the extra first-order inference requirement for a whole
+\(\mathcal{L}_n\)-indexed report process.  The term
+\(\mathfrak{D}_n(P)=\sqrt n\,\delta_{g,n}(P)\delta_{p,n}(P)\) is the usual
+orthogonal second-order drift, uniformly over report weights.  The term
+\(\mathfrak{S}_n(P)=\{\delta_{g,n}(P)+\delta_{p,n}(P)\}\mathcal{E}_n\) is the
+price of estimating nuisances inside a growing empirical process.  Both must
+vanish for oracle-centered first-order Gaussian studentization to be uniformly
+valid.  If either active channel remains visible in the minimax first-order
+experiment of Assumption \ref{ass:curvature}, the failure is structural rather
+than a proof artifact.
+
+\paragraph{Conjecture 2.}
+The theorem says that the abstract frontier has two independent rate
+requirements in the canonical Holder specialization.  The deterministic
+orthogonal-score drift is controlled by the product of the outcome-regression
+and propensity rates, so it disappears at first order exactly when
+\(\sqrt n\,n^{-r_g}n^{-r_p}\to0\), or \(r_g+r_p>1/2\).  The growing HTE report
+class creates a separate nuisance empirical-process channel.  Since
+\(\delta_{g,n}+\delta_{p,n}\) is governed by the slower of the two nuisance
+rates, that channel disappears exactly when
+\(n^{-\min(r_g,r_p)}n^\zeta\to0\), or \(\min(r_g,r_p)>\zeta\).
+
+This connects the motivating frontier to the usual DML product-rate message.
+When \(\mathcal L_n\) is effectively fixed, \(\zeta=0\), the entropy channel
+does not bind for positive Holder smoothness and the product-rate condition is
+the familiar one.  As the report class grows, the entropy inequality becomes a
+second and genuinely distinct requirement: even if the product remainder is
+small, first-order Gaussian inference can fail because nuisance error leaks
+through the indexed empirical process.
+
+\paragraph{Synthesis.}
+Together these interpretations connect the motivating conjectures back to the
+same two channels named in the Introduction: the usual orthogonal
+second-order drift and the price of estimating nuisances inside a growing
+empirical process.  Exact identification by the AIPW signal is not the
+limiting step; the limiting step is whether both channels vanish for the
+\(\mathcal{L}_n\)-indexed report process.
+
+\section{Step-by-step proof}
+\subsection*{Supporting lemmas}
+\begin{theorem}[Theorem 1: exact-ID score and exact plug-in remainder]\label{thm:score-remainder}
+Under Assumptions \ref{ass:unconfounded}--\ref{ass:denominator}, for every
+\(\ell\in\mathcal{L}_n\),
+\(\theta_0(\ell)=\E[\ell(X)\Gamma(W;\eta_0)]\), and the cross-fit plug-in
+expansion satisfies
+\[
+\hat\theta_n(\ell)-\theta_0(\ell)
+=(\mathbb{P}_n-P)\ell(X)\{\Gamma(W;\eta_0)-\theta_0(\ell)\}
++\widetilde R_P(\ell;\hat g-g_0,\hat p-p_0,\hat p)
++\Delta^{\mathrm{ep}}_n(\ell)+o_P(n^{-1/2})
+\]
+uniformly in \(\ell\in\mathcal{L}_n\).  Assumption \ref{ass:crossfit} bounds
+\(\sup_{\ell\in\mathcal{L}_n}\sqrt n|\Delta^{\mathrm{ep}}_n(\ell)|\) at the
+scale \(\mathfrak{S}_n(P)\), so the displayed empirical-process summand can be
+dropped only under the explicit condition \(\mathfrak{S}_n(P)\to0\).  Moreover,
+under Assumption \ref{ass:denominator},
+\[
+\sup_{\ell\in\mathcal{L}_n}
+\left|
+\sqrt n\{\widetilde R_P(\ell;\hat g-g_0,\hat p-p_0,\hat p)
+-R_P(\ell;\hat g-g_0,\hat p-p_0)\}
+\right|=o_P(1),
+\]
+so the ideal-denominator bilinear map \(R_P\) is the valid frontier object.
+\end{theorem}
+\begin{proof}
+First, by consistency and conditional unconfoundedness in Assumption \ref{ass:unconfounded},
+\(g_{d,0}(X)=\E[Y(d)\mid X]\) for \(d=0,1\).  The residual terms in the AIPW signal have conditional mean zero:
+\[
+\E\left[\frac{D}{p_0(X)}\{Y-g_{1,0}(X)\}\mid X\right]=0,
+\qquad
+\E\left[\frac{1-D}{1-p_0(X)}\{Y-g_{0,0}(X)\}\mid X\right]=0,
+\]
+where fixed overlap justifies the divisions.  Therefore
+\(\E[\Gamma(W;\eta_0)\mid X]=g_{1,0}(X)-g_{0,0}(X)=\E[Y(1)-Y(0)\mid X]\), and multiplying by the measurable bounded weight \(\ell(X)\) gives
+\(\theta_0(\ell)=\E[\ell(X)\Gamma(W;\eta_0)]\).
+
+Let \(u_d=\hat g_d-g_{d,0}\), \(v=\hat p-p_0\), and \(\bar p=\hat p\).  Conditional on the training folds, cross-fitting makes \(\hat\eta_{-k(i)}\) fixed for the empirical average over the held-out fold.  Add and subtract \(\mathbb{P}_n\ell(X)\Gamma(W;\eta_0)\) and then add and subtract the population mean of the plug-in difference:
+\[
+\hat\theta_n(\ell)-\theta_0(\ell)
+=(\mathbb{P}_n-P)\ell(X)\Gamma(W;\eta_0)
++P\ell(X)\{\Gamma(W;\hat\eta)-\Gamma(W;\eta_0)\}
++\Delta^{\mathrm{ep}}_n(\ell)+o_P(n^{-1/2}),
+\]
+where the final uniform \(o_P(n^{-1/2})\) is the fold-stitching term covered by Assumption \ref{ass:crossfit}.  The centered-oracle convention in Assumption \ref{ass:entropy} replaces the first empirical term by
+\((\mathbb{P}_n-P)\ell(X)\{\Gamma(W;\eta_0)-\theta_0(\ell)\}\) uniformly up to \(o_P(n^{-1/2})\).
+
+It remains to compute the population plug-in drift.  Conditional on \(X\),
+\[
+\E[\Gamma(W;\hat\eta)-\Gamma(W;\eta_0)\mid X]
+=u_1(X)\left\{1-\frac{p_0(X)}{\bar p(X)}\right\}
++u_0(X)\left\{-1+\frac{1-p_0(X)}{1-\bar p(X)}\right\}.
+\]
+Since \(v=\bar p-p_0\), the two braces equal \(v/\bar p\) and \(v/(1-\bar p)\), respectively.  Thus
+\[
+P\ell(X)\{\Gamma(W;\hat\eta)-\Gamma(W;\eta_0)\}
+=\widetilde R_P(\ell;u,v,\bar p).
+\]
+This proves the displayed expansion.  Assumption \ref{ass:crossfit} gives
+\(\sqrt n\sup_\ell|\Delta^{\mathrm{ep}}_n(\ell)|=O_P(\mathfrak{S}_n(P))\), hence that term is negligible only if \(\mathfrak{S}_n(P)\to0\).  Finally,
+\(\widetilde R_P-R_P=Q_P\), so Assumption \ref{ass:denominator} gives
+\(\sqrt n\sup_\ell|\widetilde R_P(\ell;u,v,\hat p)-R_P(\ell;u,v)|=o_P(1)\).  Therefore the ideal-denominator bilinear map \(R_P\), not the estimated-denominator residual, is the frontier object.
+\end{proof}
+
+\subsubsection*{Proof of Conjecture 1}
+\begin{proof}[Proof of Theorem~\ref{thm:frontier}]
+All statements below are uniform over \(\ell\in\mathcal{L}_n\) and
+\(P\in\mathcal{P}_n\).  Let \(u=\hat g-g_0\) denote the pair
+\((\hat g_1-g_{1,0},\hat g_0-g_{0,0})\) and \(v=\hat p-p_0\).  The exact-ID
+identity and plug-in expansion are supplied by Theorem
+\ref{thm:score-remainder}.  After multiplying that expansion by \(\sqrt n\)
+and using the denominator replacement in Assumption \ref{ass:denominator}, we
+obtain
+\[
+\sqrt n\{\hat\theta_n(\ell)-\theta_0(\ell)\}-\mathbb{G}_n(\ell)
+=\sqrt n\,R_P(\ell;u,v)
++\sqrt n\,\Delta^{\mathrm{ep}}_n(\ell)+r_n(\ell),
+\]
+where \(\sup_{\ell\in\mathcal{L}_n}|r_n(\ell)|=o_P(1)\).  The divisions in
+\(R_P\) and in \(\Gamma(W;\eta_0)\) are justified by the fixed overlap part of
+Assumption \ref{ass:unconfounded} and the estimated-denominator event in
+Assumption \ref{ass:denominator}.
+
+First prove sufficiency.  The bilinear functional defined in Section 7 obeys,
+by Cauchy--Schwarz, bounded reports, and fixed overlap,
+\[
+\sup_{\ell\in\mathcal{L}_n}|R_P(\ell;u,v)|
+\le L_\ell\underline e^{-1}
+\{\|u_1\|_{2,P}+\|u_0\|_{2,P}\}\|v\|_{2,P}
+\le C\,\delta_{g,n}(P)\delta_{p,n}(P),
+\]
+for a constant \(C\) independent of \(n\), \(P\), and \(\ell\).  Therefore
+\[
+\sqrt n\sup_{\ell\in\mathcal{L}_n}|R_P(\ell;u,v)|
+\le C\,\mathfrak{D}_n(P).
+\]
+Assumption \ref{ass:crossfit} gives
+\[
+\sqrt n\sup_{\ell\in\mathcal{L}_n}
+|\Delta^{\mathrm{ep}}_n(\ell)|=O_P(\mathfrak{S}_n(P)).
+\]
+If \(\sup_{P\in\mathcal{P}_n}\mathfrak{F}_n(P)\to0\), then both
+\(\sup_P\mathfrak{D}_n(P)\to0\) and \(\sup_P\mathfrak{S}_n(P)\to0\).  The last
+three displays imply
+\[
+\sup_{\ell\in\mathcal{L}_n}
+\left|\sqrt n\{\hat\theta_n(\ell)-\theta_0(\ell)\}
+-\mathbb{G}_n(\ell)\right|=o_P(1)
+\]
+uniformly in \(P\).  This is the uniform asymptotic linear representation.  By
+the oracle Gaussian approximation clause of Assumption \ref{ass:crossfit},
+\(\mathbb{G}_n\) has a tight Gaussian multiplier approximation on
+\(\mathcal{L}_n\) whenever \(\mathfrak{F}_n(P)\to0\).  The preceding
+\(\ell^\infty(\mathcal{L}_n)\) remainder bound and Slutsky's theorem for
+bounded stochastic processes transfer that Gaussian approximation from the
+oracle process to the cross-fitted DML report process.  This proves the
+upper-bound half.
+
+Now prove the minimax/adversarial necessity statement in the precise sense
+specified by Assumption \ref{ass:curvature}.  Suppose
+\[
+\limsup_{n\to\infty}\sup_{P\in\mathcal{P}_n}\mathfrak{F}_n(P)>0.
+\]
+Then for some \(\varepsilon>0\), a subsequence \(n_j\), and laws
+\(P_j\in\mathcal{P}_{n_j}\), either
+\(\mathfrak{D}_{n_j}(P_j)\ge\varepsilon\) along a further subsequence or
+\(\mathfrak{S}_{n_j}(P_j)\ge\varepsilon\) along a further subsequence.
+
+If the active channel is \(\mathfrak{D}_n\), Assumption
+\ref{ass:curvature} supplies tangent errors \(u_j\in\mathcal{T}_{g,n_j}\) and
+\(v_j\in\mathcal{T}_{p,n_j}\), with norms bounded by the locked learner radii,
+and report weights \(\ell_j\in\mathcal{L}_{n_j}\) such that
+\[
+|R_{P_j}(\ell_j;u_j,v_j)|
+\ge c_R(P_j)\delta_{g,n_j}(P_j)\delta_{p,n_j}(P_j).
+\]
+On the active subsequence \(c_R(P_j)\ge c_0>0\), hence
+\[
+\sqrt{n_j}|R_{P_j}(\ell_j;u_j,v_j)|
+\ge c_0\,\mathfrak{D}_{n_j}(P_j)
+\ge c_0\varepsilon .
+\]
+Choosing cross-fit learners in the open Holder neighborhood that attain these
+tangent directions gives, by Theorem \ref{thm:score-remainder}, an
+oracle-centered process with a deterministic first-order translation of size at
+least \(c_0\varepsilon+o(1)\) in the active direction.  Such a translated
+process cannot be uniformly centered Gaussian under the usual
+oracle-centered studentization.
+
+If the active channel is \(\mathfrak{S}_n\), Assumption
+\ref{ass:curvature} instead supplies cross-fit nuisance estimates in the
+active tangent class for which
+\[
+\sqrt{n_j}\sup_{\ell\in\mathcal{L}_{n_j}}
+|\Delta^{\mathrm{ep}}_{n_j}(\ell)|
+\ge c_{\mathrm{ep}}(P_j)
+\{\delta_{g,n_j}(P_j)+\delta_{p,n_j}(P_j)\}\mathcal{E}_{n_j}
+\]
+with probability bounded away from zero.  On the active subsequence
+\(c_{\mathrm{ep}}(P_j)\ge c_0>0\), so the right side is at least
+\(c_0\varepsilon\) with probability bounded away from zero.  The expansion from
+Theorem \ref{thm:score-remainder} then leaves a non-negligible nuisance
+empirical-process component in
+\[
+\sup_{\ell\in\mathcal{L}_{n_j}}
+\left|\sqrt{n_j}\{\hat\theta_{n_j}(\ell)-\theta_{0,j}(\ell)\}
+-\mathbb{G}_{n_j}(\ell)\right|.
+\]
+Consequently the oracle-centered first-order Gaussian approximation is not
+uniformly valid in the minimax first-order experiment.  The theorem makes no
+claim about faster oracle learners outside this active error class, so this is
+exactly the promised necessity statement.
+\end{proof}
+
+\subsubsection*{Proof of Conjecture 2}
+\begin{proof}[Proof of Theorem~\ref{thm:holder-frontier}]
+Set
+\[
+r_g=\frac{\alpha_g}{2\alpha_g+d},
+\qquad
+r_p=\frac{\alpha_p}{2\alpha_p+d}.
+\]
+In the canonical Holder-rate specialization of Assumption \ref{ass:holder},
+the uniform nuisance envelopes satisfy
+\[
+\delta_{g,n}(P)\asymp n^{-r_g},
+\qquad
+\delta_{p,n}(P)\asymp n^{-r_p},
+\]
+up to the logarithmic factors suppressed in the statement.  Assumption
+\ref{ass:entropy} and the conjecture's specialization give
+\(\mathcal{E}_n\asymp n^\zeta\), again up to logarithmic factors.  Therefore
+the deterministic drift channel is
+\[
+\mathfrak D_n(P)
+=\sqrt n\,\delta_{g,n}(P)\delta_{p,n}(P)
+\asymp
+n^{1/2-r_g-r_p}.
+\]
+Similarly,
+\[
+\mathfrak S_n(P)
+=\{\delta_{g,n}(P)+\delta_{p,n}(P)\}\mathcal{E}_n
+\asymp
+\{n^{-r_g}+n^{-r_p}\}n^\zeta
+\asymp
+n^{\zeta-\min(r_g,r_p)}.
+\]
+The last equivalence is the elementary identity that the larger of
+\(n^{-r_g}\) and \(n^{-r_p}\) is \(n^{-\min(r_g,r_p)}\).  Since
+\(\mathfrak F_n(P)=\max\{\mathfrak D_n(P),\mathfrak S_n(P)\}\), this proves
+\[
+\mathfrak F_n(P)\asymp
+\max\{n^{1/2-r_g-r_p},\,n^{\zeta-\min(r_g,r_p)}\}
+\]
+with the same logarithmic convention.
+
+A power \(n^a\) tends to zero if and only if \(a<0\).  Hence
+\(\mathfrak D_n(P)\to0\) if and only if
+\[
+1/2-r_g-r_p<0,
+\quad\hbox{that is}\quad
+r_g+r_p>1/2,
+\]
+and \(\mathfrak S_n(P)\to0\) if and only if
+\[
+\zeta-\min(r_g,r_p)<0,
+\quad\hbox{that is}\quad
+\min(r_g,r_p)>\zeta.
+\]
+Because the maximum of two nonnegative sequences tends to zero exactly when
+both sequences tend to zero, the two displayed inequalities are equivalent to
+\(\mathfrak F_n(P)\to0\).  Substituting the definitions of \(r_g\) and \(r_p\)
+gives the two inequalities displayed in the motivating claim.
+
+Now suppose the two inequalities hold uniformly over the locked
+Holder/entropy class.  Theorem \ref{thm:score-remainder} gives the uniform
+expansion
+\[
+\sqrt n\{\hat\theta_n(\ell)-\theta_0(\ell)\}
+=\mathbb G_n(\ell)
++\sqrt n\,\widetilde R_P(\ell;\hat g-g_0,\hat p-p_0,\hat p)
++\sqrt n\,\Delta_n^{\mathrm{ep}}(\ell)+o_P(1)
+\]
+uniformly in \(\ell\in\mathcal L_n\).  Assumption \ref{ass:denominator} lets
+us replace \(\widetilde R_P\) by \(R_P\) at \(o_P(1)\) first-order scale.  The
+boundedness and fixed-overlap calculation in the setup gives
+\[
+\sqrt n\sup_{\ell\in\mathcal L_n}|R_P(\ell;\hat g-g_0,\hat p-p_0)|
+\lesssim
+\sqrt n\,\delta_{g,n}(P)\delta_{p,n}(P)
+=\mathfrak D_n(P)=o(1).
+\]
+Assumption \ref{ass:crossfit} gives
+\[
+\sqrt n\sup_{\ell\in\mathcal L_n}|\Delta_n^{\mathrm{ep}}(\ell)|
+=O_P(\mathfrak S_n(P))=o_P(1).
+\]
+Thus
+\[
+\sup_{\ell\in\mathcal L_n}
+\left|
+\sqrt n\{\hat\theta_n(\ell)-\theta_0(\ell)\}-\mathbb G_n(\ell)
+\right|
+\to_P0.
+\]
+The oracle process \(\mathbb G_n\) admits the tight Gaussian multiplier
+approximation by Assumption \ref{ass:crossfit} whenever
+\(\mathfrak F_n(P)\to0\).  Combining this approximation with the displayed
+uniform \(o_P(1)\) difference proves the upper-bound claim: first-order DML is
+uniformly Gaussian above the Holder boundary.
+
+Conversely, suppose the product inequality fails, so \(r_g+r_p\le1/2\).  Then
+\(\mathfrak D_n(P)\) does not tend to zero.  In the active drift channel,
+Assumption \ref{ass:curvature} supplies a nondegenerate Holder tangent cone
+and a constant bounded away from zero along an admissible sequence such that
+\[
+\sup_{\ell\in\mathcal L_n}|R_P(\ell;u_n,v_n)|
+\ge c_R(P)\delta_{g,n}(P)\delta_{p,n}(P).
+\]
+Multiplying by \(\sqrt n\) gives a first-order deterministic translation whose
+liminf is bounded away from zero along the active sequence.  The oracle-centered
+process therefore cannot be uniformly approximated by \(\mathbb G_n\) over the
+locked first-order experiment.
+
+If instead the entropy inequality fails, so \(\min(r_g,r_p)\le\zeta\), then
+\(\mathfrak S_n(P)\) does not tend to zero.  In the active empirical-process
+channel, Assumption \ref{ass:curvature} supplies cross-fit nuisance errors for
+which
+\[
+\sqrt n\sup_{\ell\in\mathcal L_n}|\Delta_n^{\mathrm{ep}}(\ell)|
+\ge
+c_{\mathrm{ep}}(P)\{\delta_{g,n}(P)+\delta_{p,n}(P)\}\mathcal{E}_n
+\]
+with probability bounded away from zero.  Thus the nuisance empirical-process
+leakage remains visible at first order, again preventing a uniform
+oracle-centered Gaussian approximation.  These two cases cover the complement
+of the strict Holder boundary and prove the claimed failure below it in the
+active-channel experiment of Assumption \ref{ass:curvature}.
+\end{proof}
+
+\section{Sanity checks}
+\paragraph{Conjecture 1.}
+Take the randomized special case \(X=\emptyset\), \(\mathcal{L}_n=\{1\}\), and
+\(p_0=\Pr(D=1)\in[\underline e,1-\underline e]\).  The target is the ATE
+\(\theta_0= \E[Y(1)-Y(0)]\), and the AIPW functional collapses to
+\[
+\Psi_P(1)=g_{1,0}-g_{0,0}
++\E\!\left[\frac{D}{p_0}(Y-g_{1,0})\right]
+-\E\!\left[\frac{1-D}{1-p_0}(Y-g_{0,0})\right]
+=g_{1,0}-g_{0,0}.
+\]
+Because treatment is randomized, \(g_{d,0}=\E[Y(d)]\), so
+\(\Psi_P(1)=\theta_0\).  The report entropy is constant, so
+\(\mathcal{E}_n\asymp1\), and the theorem reduces to the familiar scalar DML
+condition
+\(\sqrt n\,\delta_{g,n}\delta_{p,n}\to0\) together with
+\(\delta_{g,n}+\delta_{p,n}\to0\) for the nuisance empirical-process term.
+With oracle nuisances both channels are zero and the estimator is the usual
+centered empirical mean of the efficient ATE signal.
+
+\paragraph{Conjecture 2.}
+Take the fixed-report corner \(\mathcal{E}_n\asymp1\), so \(\zeta=0\).  Because
+\(\alpha_g,\alpha_p>0\), both \(r_g\) and \(r_p\) are positive, and the entropy
+condition
+\[
+\min(r_g,r_p)>\zeta
+\]
+is automatic.  The theorem reduces to the familiar first-order DML
+product-rate condition
+\[
+r_g+r_p>1/2.
+\]
+For a symmetric nuisance class with \(\alpha_g=\alpha_p=\alpha\), this becomes
+\[
+2\frac{\alpha}{2\alpha+d}>\frac12,
+\]
+or equivalently \(\alpha>d/2\).  Thus the fixed-report special case recovers
+the usual product-rate elbow: each nuisance may be slower than \(n^{-1/4}\)
+only if the other is faster enough that the product remains \(o(n^{-1/2})\),
+and in the symmetric case both must beat the \(n^{-1/4}\) rate.
+
+\section{Counterexample or minimality check}
+\paragraph{Conjecture 1.}
+The required ExactID refutation primitive was the smallest finite SWIG/DAG
+witness \(X\to D\to Y\) and \(X\to Y\).  I searched the two-point case
+\(X\in\{0,1\}\) with \(0<\Pr(X=1)<1\), overlap
+\(\underline e\le p_0(x)\le1-\underline e\), bounded potential outcomes
+\(Y(d)\), and report classes containing either \(\ell\equiv1\) or the two cell
+indicators.  This search cannot falsify the causal exact-ID part: by
+Assumption \ref{ass:unconfounded}, for every admissible finite law,
+\[
+\E[\ell(X)\Gamma(W;\eta_0)\mid X]
+=\ell(X)\{g_{1,0}(X)-g_{0,0}(X)\}
+=\ell(X)\E[Y(1)-Y(0)\mid X],
+\]
+so the observable AIPW functional equals the target report cell by cell.  I
+also checked the one-cell randomized subcase \(X=\emptyset\), \(p_0\in
+[\underline e,1-\underline e]\).  With oracle nuisances, \(\delta_{g,n}=
+\delta_{p,n}=0\), hence \(\mathfrak{F}_n(P)=0\) and Theorem
+\ref{thm:score-remainder} reduces the estimator to the oracle empirical
+process, exactly as the conjecture predicts.  With adversarial nonzero nuisance
+errors \(u=\hat g-g_0\) and \(v=\hat p-p_0\), the same one-cell law gives the
+deterministic drift
+\[
+R_P(1;u,v)
+=v\left\{\frac{u_1}{p_0}+\frac{u_0}{1-p_0}\right\},
+\]
+so if \(\sqrt n|uv|\) is bounded away from zero, the oracle-centered estimator
+has a first-order translation rather than a counterexample to the theorem.  The
+finite-support overlap-violation candidate with \(p_0(x)=0\) in one stratum is
+outside Assumption \ref{ass:unconfounded}.  Thus the primitive search found no
+admissible witness against the conjecture; it instead reproduces the two
+channels named in the statement.
+
+Fixed overlap is a genuine support condition.  In the two-stratum finite law
+with \(X\in\{0,1\}\), \(\Pr(X=x)>0\), and \(p_0(1)=0\), the target contribution
+\(\Pr(X=1)\ell(1)\E[Y(1)-Y(0)\mid X=1]\) is part of
+\(\theta_0(\ell)\), but the treated conditional mean \(g_{1,0}(1)=\E[Y\mid
+D=1,X=1]\) is not identified from the observed law.  The AIPW signal also
+contains the undefined factor \(D/p_0(1)\).  Thus dropping positivity on a
+stratum used by \(\ell\) breaks the computable identifying functional before
+any DML frontier question arises.  Separately, keeping overlap but dropping
+the active-curvature lower bound removes the minimax necessity conclusion:
+there may be no admissible nuisance tangent direction that realizes a
+first-order \(R_P\) translation or empirical-process leakage even when a
+high-level error envelope is numerically large.
+
+\paragraph{Conjecture 2.}
+The required refutation-first check was run inside the exact-identification
+regime locked by the setup: \(X\to D\to Y\), \(X\to Y\), binary \(D\),
+consistency, conditional unconfoundedness, fixed overlap, Holder nuisance
+classes, and the two-channel first-order experiment in Assumptions
+\ref{ass:unconfounded}--\ref{ass:curvature}.
+
+First, consider the three-node SWIG/back-door primitive with a finite law on
+\((X,D,Y)\).  For any candidate satisfying
+\((Y(1),Y(0))\perp D\mid X\), consistency, and
+\(\underline e\le p_0(X)\le1-\underline e\), Theorem
+\ref{thm:score-remainder} gives the exact observable identity
+\[
+\theta_0(\ell)=\E[\ell(X)\Gamma(W;\eta_0)]
+\]
+for every report weight \(\ell\).  Thus no three-node exact-ID witness can
+make the target report differ from the AIPW functional.  Such a witness would
+have to break the rate frontier, not the identifying formula.
+
+Second, try the finite-support overlap-violation primitive.  On a two-point
+support, setting \(p_0(x_0)=0\) or \(p_0(x_0)=1\) would indeed obstruct the
+terms \(D\{Y-g_{1,0}(X)\}/p_0(X)\) or
+\((1-D)\{Y-g_{0,0}(X)\}/\{1-p_0(X)\}\).  This is not an admissible
+counterexample, because Assumption \ref{ass:unconfounded} imposes the fixed
+overlap bound on every stratum actually used by \(\ell\).  Keeping fixed
+overlap leaves the AIPW map well defined and does not change the two exponents
+\(\sqrt n\,\delta_{g,n}\delta_{p,n}\) and
+\((\delta_{g,n}+\delta_{p,n})\mathcal{E}_n\).
+
+Third, trace the do-calculus/adjustment step.  The only conditional
+independence required for the exact-ID part is the back-door independence
+\((Y(1),Y(0))\perp D\mid X\), already named in Assumption
+\ref{ass:unconfounded}.  Once that adjustment is in place, the conjecture
+reduces to the deterministic exponent comparison
+\[
+\sqrt n\,\delta_{g,n}\delta_{p,n}
+\quad\hbox{and}\quad
+(\delta_{g,n}+\delta_{p,n})\mathcal{E}_n.
+\]
+The boundary cases do not refute the conjecture: if \(r_g+r_p=1/2\), the
+drift channel is order one, and if \(\min(r_g,r_p)=\zeta\), the
+empirical-process leakage channel is order one.  Assumption
+\ref{ass:curvature} supplies active tangent directions for those channels, so
+these boundary candidates support the strict inequalities rather than
+contradicting them.  The bounded search therefore finds no admissible witness,
+and the proof verifies the claim.
+
+The strict inequalities are minimal.  At the deterministic-drift boundary,
+choose an active Holder sequence from Assumption \ref{ass:curvature} with
+\(r_g+r_p=1/2\) and \(\min(r_g,r_p)>\zeta\).  Then
+\[
+\mathfrak D_n(P)\asymp n^{1/2-r_g-r_p}\asymp1,
+\qquad
+\mathfrak S_n(P)=o(1).
+\]
+Theorem \ref{thm:score-remainder} and the active \(R_P\) lower bound imply
+that
+\[
+\sup_{\ell\in\mathcal L_n}
+\left|
+\sqrt n\{\hat\theta_n(\ell)-\theta_0(\ell)\}-\mathbb G_n(\ell)
+\right|
+\]
+has a deterministic translation bounded away from zero along the active
+sequence.  Replacing \(r_g+r_p>1/2\) by \(r_g+r_p\ge1/2\) would therefore be
+false.
+
+At the entropy boundary, choose an active report-class sequence from
+Assumption \ref{ass:curvature} with \(\min(r_g,r_p)=\zeta\) and
+\(r_g+r_p>1/2\).  Then
+\[
+\mathfrak D_n(P)=o(1),
+\qquad
+\mathfrak S_n(P)\asymp1.
+\]
+The empirical-process lower bound in Assumption \ref{ass:curvature} gives
+non-negligible \(\sqrt n\,\Delta_n^{\mathrm{ep}}\) with probability bounded
+away from zero.  Replacing \(\min(r_g,r_p)>\zeta\) by
+\(\min(r_g,r_p)\ge\zeta\) would therefore also be false.  Fixed overlap in
+Assumption \ref{ass:unconfounded}, the denominator condition in Assumption
+\ref{ass:denominator}, and the active-channel lower bounds in Assumption
+\ref{ass:curvature} are the support and rank conditions that make these
+minimality witnesses valid.
+
+\section{Formalization checklist}
+\paragraph{Substrate audit record.}
+\texttt{bypass-justified}: the theorem is a semiparametric
+Holder/entropy DML frontier over high-level stochastic-process assumptions.
+Declaration-name searches for \texttt{Identifiable}, \texttt{Backdoor},
+\texttt{Frontdoor}, and \texttt{ATE} did not surface a reusable
+project-level declaration matching the two-channel rate boundary or active
+first-order experiment; the formalization plan should therefore start from
+the mathematical objects listed below.
+
+\begin{description}[leftmargin=2.8cm,style=nextline]
+\item[Observed law.]
+Typed signature: a probability law \(P\) on \(W=(Y,D,X)\), with
+\(D\in\{0,1\}\), \(X\in[0,1]^d\), and \(|Y|\le M\).
+Role: source of all observable conditional means, propensities, expectations,
+and \(L^2(P)\) norms.
+Dependencies: measurability, bounded outcomes, binary treatment, covariate
+support.
+
+\item[Potential outcomes.]
+Typed signature: random variables \(Y(1)\) and \(Y(0)\) on the same probability
+space as \(W\).
+Role: define the causal target
+\(\theta_0(\ell)=\E[\ell(X)\{Y(1)-Y(0)\}]\).
+Dependencies: consistency and conditional unconfoundedness.
+
+\item[Unconfoundedness and overlap.]
+Typed signature: assumptions \(Y=DY(1)+(1-D)Y(0)\),
+\((Y(1),Y(0))\perp D\mid X\), and
+\(\underline e\le p_0(X)\le 1-\underline e\) almost surely.
+Role: identify the target by the observable AIPW functional and justify all
+divisions by \(p_0\) and \(1-p_0\).
+Dependencies: observed law and potential outcomes.
+
+\item[Outcome regressions and propensity.]
+Typed signature:
+\[
+g_{d,0}:x\mapsto \E[Y\mid D=d,X=x],\qquad
+p_0:x\mapsto \Pr(D=1\mid X=x).
+\]
+Role: define \(\tau_0(x)=g_{1,0}(x)-g_{0,0}(x)\), the AIPW signal, and the
+drift maps.
+Dependencies: observed law and overlap.
+
+\item[Report class.]
+Typed signature: deterministic bounded measurable class
+\(\mathcal L_n\subset\{[0,1]^d\to\mathbb R\}\) with envelope \(L_\ell\) and
+entropy integral \(\mathcal E_n\).
+Role: index the HTE report process and scale the nuisance empirical-process
+channel.
+Dependencies: measurability, boundedness, entropy condition.
+
+\item[AIPW signal.]
+Typed signature:
+\[
+\Gamma(W;\eta)=g_1(X)-g_0(X)
++\frac{D}{p(X)}\{Y-g_1(X)\}
+-\frac{1-D}{1-p(X)}\{Y-g_0(X)\}.
+\]
+Role: computable exact-ID signal satisfying
+\(\E[\Gamma(W;\eta_0)\mid X]=\E[Y(1)-Y(0)\mid X]\).
+Dependencies: outcome regressions, propensity, overlap.
+
+\item[Identifying functional.]
+Typed signature:
+\[
+\Psi_P:\mathcal L_n\to\mathbb R,\qquad
+\Psi_P(\ell)=\E_P[\ell(X)\Gamma(W;\eta_P)].
+\]
+Role: observed-population map equal to \(\theta_0(\ell)\) under the
+identifying assumptions.
+Dependencies: AIPW signal, report class, unconfoundedness, overlap.
+
+\item[Cross-fitted estimator.]
+Typed signature:
+\[
+\hat\theta_n(\ell)=\mathbb P_n[\ell(X)\Gamma(W;\hat\eta_{-k(i)})].
+\]
+Role: estimator whose oracle-centered first-order expansion is analyzed.
+Dependencies: fold split, nuisance estimates, AIPW signal.
+
+\item[Nuisance error radii.]
+Typed signature:
+\[
+\delta_{g,n}(P)=\|\hat g_1-g_{1,0}\|_{2,P}+\|\hat g_0-g_{0,0}\|_{2,P},
+\qquad
+\delta_{p,n}(P)=\|\hat p-p_0\|_{2,P}.
+\]
+Role: determine the deterministic drift and empirical-process channel sizes.
+Dependencies: \(L^2(P)\) norm and cross-fitted nuisance estimates.
+
+\item[Drift maps.]
+Typed signature:
+\[
+\widetilde R_P(\ell;u,v,\bar p)=
+\E_P\!\left[\ell(X)v(X)
+\left\{\frac{u_1(X)}{\bar p(X)}+\frac{u_0(X)}{1-\bar p(X)}\right\}\right],
+\]
+\[
+R_P(\ell;u,v)=
+\E_P\!\left[\ell(X)v(X)
+\left\{\frac{u_1(X)}{p_0(X)}+\frac{u_0(X)}{1-p_0(X)}\right\}\right].
+\]
+Role: exact plug-in drift and ideal-denominator frontier object.
+Dependencies: nuisance errors, report weight, overlap, denominator condition.
+
+\item[Bilinear bound.]
+Typed signature:
+\[
+|R_P(\ell;u,v)|
+\le L_\ell \underline e^{-1}
+\{\|u_1\|_{2,P}+\|u_0\|_{2,P}\}\|v\|_{2,P}.
+\]
+Role: sufficiency step controlling deterministic drift by
+\(\mathfrak D_n(P)\).
+Dependencies: Cauchy--Schwarz, bounded reports, fixed overlap.
+
+\item[Oracle empirical process.]
+Typed signature:
+\[
+\mathbb G_n(\ell)=
+\sqrt n(\mathbb P_n-P)[\ell(X)\{\Gamma(W;\eta_0)-\theta_0(\ell)\}].
+\]
+Role: Gaussian reference process for first-order asymptotic linearity.
+Dependencies: oracle signal, report class, cross-fitting regularity.
+
+\item[Nuisance empirical-process remainder.]
+Typed signature:
+\[
+\Delta_n^{\mathrm{ep}}(\ell)=
+(\mathbb P_n-P)[\ell(X)\{\Gamma(W;\hat\eta_{-k(i)})-\Gamma(W;\eta_0)\}].
+\]
+Role: second channel in the frontier, bounded at scale
+\(\mathfrak S_n(P)\).
+Dependencies: cross-fitting, report entropy, nuisance errors.
+
+\item[Frontier channels.]
+Typed signature:
+\[
+\mathfrak D_n(P)=\sqrt n\,\delta_{g,n}(P)\delta_{p,n}(P),\quad
+\mathfrak S_n(P)=\{\delta_{g,n}(P)+\delta_{p,n}(P)\}\mathcal E_n,\quad
+\mathfrak F_n(P)=\max\{\mathfrak D_n(P),\mathfrak S_n(P)\}.
+\]
+Role: necessary-and-sufficient boundary for first-order Gaussianity in the
+active experiment.
+Dependencies: nuisance radii, entropy integral, sample size.
+
+\item[Holder-rate specialization.]
+Typed signature:
+\[
+r_g=\frac{\alpha_g}{2\alpha_g+d},\qquad
+r_p=\frac{\alpha_p}{2\alpha_p+d},\qquad
+\delta_{g,n}\asymp n^{-r_g},\quad \delta_{p,n}\asymp n^{-r_p},\quad
+\mathcal E_n\asymp n^\zeta.
+\]
+Role: converts the abstract frontier into the exponent boundary
+\(r_g+r_p>1/2\) and \(\min(r_g,r_p)>\zeta\).
+Dependencies: Holder nuisance assumption and entropy specialization.
+
+\item[Active curvature experiment.]
+Typed signature: tangent cones
+\(\mathcal T_{g,n}\times\mathcal T_{p,n}\) and lower-bound constants
+\(c_R(P)\), \(c_{\mathrm{ep}}(P)\) realizing either the drift or leakage
+channel.
+Role: gives the minimax/adversarial necessity half and the boundary
+minimality witnesses.
+Dependencies: Assumption \ref{ass:curvature}, nuisance radii, report class.
+\end{description}
+
+\section{Conclusion and references}
+Conjecture 1 (frontier) is confirmed; Equivalently, under Assumptions \ref{ass:unconfounded}--\ref{ass:curvature}, first-order orthogonal DML is uniformly asymptotically linear and Gaussian for the \(\mathcal{L}_n\)-indexed HTE report process if and only if \(\sup_{P\in\mathcal{P}_n}\mathfrak{F}_n(P)\to0\), with necessity interpreted in the minimax/adversarial first-order experiment of Assumption \ref{ass:curvature}.
+
+Conjecture 2 (holder) is confirmed; Conjecture~\ref{conj:holder} is confirmed: in the canonical Holder-rate specialization with \(r_g=\alpha_g/(2\alpha_g+d)\), \(r_p=\alpha_p/(2\alpha_p+d)\), and \(\mathcal{E}_n\asymp n^\zeta\), the two-channel frontier satisfies
+\[
+\mathfrak F_n(P)\asymp
+\max\{n^{1/2-r_g-r_p},\,n^{\zeta-\min(r_g,r_p)}\}
+\]
+up to logarithmic factors, so \(\mathfrak F_n(P)\to0\) if and only if \(r_g+r_p>1/2\) and \(\min(r_g,r_p)>\zeta\); above this boundary the oracle-centered first-order DML report process is uniformly Gaussian under Assumption~\ref{ass:crossfit}, while below it uniform Gaussianity fails in the active-channel experiment of Assumption~\ref{ass:curvature}.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem{ChernozhukovEtAl2018DML}
+Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E.,
+Hansen, C., Newey, W., and Robins, J. (2018).
+Double/debiased machine learning for treatment and structural parameters.
+\emph{The Econometrics Journal} 21(1), C1--C68.
+
+\bibitem{SemenovaChernozhukov2021DMLCATE}
+Semenova, V. and Chernozhukov, V. (2021).
+Debiased machine learning of conditional average treatment effects and other
+causal functions.
+\emph{The Econometrics Journal} 24(2), 264--289.
+
+\bibitem{FosterSyrgkanis2023OSL}
+Foster, D. J. and Syrgkanis, V. (2023).
+Orthogonal statistical learning.
+\emph{The Annals of Statistics} 51(3), 879--908.
+
+\bibitem{ChernozhukovChetverikovKato2014Gaussian}
+Chernozhukov, V., Chetverikov, D., and Kato, K. (2014).
+Gaussian approximation of suprema of empirical processes.
+\emph{The Annals of Statistics} 42(4), 1564--1597.
+
+\bibitem{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}
+Kennedy, E. H., Balakrishnan, S., Robins, J. M., and Wasserman, L. (2024).
+Minimax rates for heterogeneous treatment effect estimation.
+\emph{Annals of Statistics}.
+
+\bibitem{ArmstrongKolesar2021FiniteSampleATE}
+Armstrong, T. B. and Kolesar, M. (2021).
+Finite-sample optimal estimation and inference on average treatment effects
+under unconfoundedness.
+\emph{Econometrica}.
+
+\bibitem{MackeySyrgkanisZadik2018OML}
+Mackey, L., Syrgkanis, V., and Zadik, I. (2018).
+Orthogonal machine learning: power and limitations.
+\emph{Proceedings of the 35th International Conference on Machine Learning}.
+\end{thebibliography}
+
+\end{document}

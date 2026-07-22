@@ -1,0 +1,42 @@
+## Failure classifier (Stage 7)
+
+A theorem dispatched to causalsmith failed to formalize. Classify the failure
+into exactly one of five classes so the orchestrator can decide what to do
+next (reroute Pass B with feedback, surface a substrate gap, halt for human
+review, or leave it alone).
+
+Failure-Note body (verbatim):
+{{failure_note_body}}
+
+Last lines of causalsmith stderr:
+{{stderr_tail}}
+
+Pre-formalization forecast emitted by Pass B (may be empty):
+{{forecast_json}}
+
+Classes (pick exactly one):
+
+- `substrate_missing` — proof referenced a prerequisite (lemma, definition,
+  algebraic structure) that is not present in Causalean/Mathlib. Stderr or note
+  body typically shows `unknown identifier`, `failed to synthesize`, or
+  cites a named result by hand.
+- `proof_sketch_bug` — the proof_sketch has a logical or step-ordering
+  flaw. Translation got far enough that the bug is locatable inside the
+  sketch (wrong invocation, missing case split, incorrect coercion, etc.).
+- `setup_incomplete` — the proof would have worked but the `setup` did not
+  introduce some object/symbol the proof_sketch references. Typically
+  surfaces as "unknown identifier" on a name that the sketch uses.
+- `statement_wrong` — the theorem statement itself is malformed or
+  contradicts the Insight summary; formalization fails because no valid
+  Lean translation exists. The orchestrator HALTS on this class.
+- `lean_translation_issue` — causalsmith's own translation step (Stage 2 /
+  Stage 3 / Stage 4) failed for reasons unrelated to the study pipeline's choices
+  (e.g., Lean syntax noise, causalsmith stage timeout, tactic-engine bug).
+  No study-pipeline action.
+
+Output: a single JSON object on stdout (no prose, no fenced block):
+
+    {
+      "class": "<one of: substrate_missing | proof_sketch_bug | setup_incomplete | statement_wrong | lean_translation_issue>",
+      "rationale": "<one or two sentences citing the specific stderr line or sketch step that led to your decision>"
+    }

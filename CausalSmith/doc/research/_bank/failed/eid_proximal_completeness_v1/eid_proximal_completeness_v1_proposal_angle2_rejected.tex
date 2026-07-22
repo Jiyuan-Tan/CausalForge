@@ -1,0 +1,311 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_proximal\_completeness, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_proximal\_completeness} / \texttt{v1}%
+  \\ \large\textit{Finite native-selector commutator frontier for proximal residual-GMM and minimax bridge estimators}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Free-form exact-identification anchor. The locked tuple is
+\[
+(\texttt{qid},\texttt{specialization},\text{graph/SWIG},\text{treatment},\text{target estimand},\text{identifying assumptions})
+\]
+with \texttt{qid}=\texttt{eid\_proximal\_completeness} and \texttt{specialization}=\texttt{v1}. The graph/SWIG contains a binary treatment \(A\in\{0,1\}\), observed baseline covariates \(X\), treatment-inducing negative-control proxy \(Z\), outcome-inducing negative-control proxy \(W\), a terminal long-term outcome \(Y\), and an unobserved confounder \(U\) such that \(Z\) has no direct effect on \(Y(a)\) given \((U,X)\) and \(W\) is not affected by \(A\) conditional on \((U,X)\). The treatment is \(A\). The target estimand is the long-term average treatment effect \(\psi=\E\{Y(1)-Y(0)\}\), represented through outcome-bridge functions \(h_a(W,X)\). The identifying assumptions are finite support and positivity, negative-control consistency and exclusions, existence of at least one exact outcome bridge for each \(a\), and the selector-metric regularity assumptions stated below; full completeness and unique bridge solutions are deliberately not assumed.
+
+\begin{abstract}
+Proximal identification of long-term treatment effects often depends on outcome bridges that are nonunique or weakly determined when proxy completeness is near failure. This proposal asks when a newly specified proximal residual-GMM bridge selector and a published minimax negative-control bridge selector nevertheless induce the same long-term ATE functional at that boundary. The proposed focal object is the shifted KKT row-commutator \(\mathfrak C(P)\), an observable finite-dimensional algebraic object built from the two population selector criteria, the residual cross-moment load \(b^R\), and the native \(W\)-loading for the ATE. The flagship conjecture is that the zero set of \(\mathfrak C(P)\) and its explicit tangent Jacobian is the sharp frontier for native functional and influence-function equivalence of the two selector families; if the row-commutator is nonzero, an open set of proximal laws has selector-dependent ATEs. Resolving this would tell users of minimax proximal learning and proximal double-robust inference when their estimators are interchangeable near non-completeness, and when selector choice is a substantive sensitivity parameter.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Long-term ATE estimation with negative-control proxies is attractive precisely when the unmeasured confounding path is persistent and ordinary adjustment is not credible. The practical difficulty is that bridge equations become inverse problems: full completeness gives a clean sufficient condition, but near the boundary the bridge can be nonunique while some target functionals may still be stable. In that regime, applied conclusions can depend on which population bridge selector is implicitly chosen by the estimator.
+
+\paragraph{The main finding (proposed).}
+The proposed result is a finite, observable frontier for when the residual-GMM bridge selector and the minimax negative-control selector are native-equivalent. The key conjecture states that the explicit shifted KKT row-commutator \(\mathfrak C(P)\) and its tangent Jacobian vanish exactly on the set where the two selector families deliver the same ATE value and first-order object at a bridge-compatible law with nonunique bridges.
+
+\paragraph{What is new.}
+\citet[Sections 3--4]{KallusMaoUehara2021} develop minimax bridge learning, while \citet[Section 3, Theorems 3.1--3.2]{CuiPuShiMiaoTchetgen2024} develop proximal double robustness and efficiency. \citet{MastouriZhuGultchinEtAl2021} supplies the inverse-problem language that informs the finite operator notation here, \citet{BennettKallusMaoNeweySyrgkanisUehara2023COLT} studies strongly identified functionals of weakly identified nuisances, and \citet{BennettKallusMaoNeweySyrgkanisUehara2023MinimaxIV} proves convergence of penalized minimax IV estimators to a fixed solution without uniqueness or closedness. The comparator promise is sharper than any one of those papers: it asks for the exact finite frontier where a residual-GMM selector induced by an orthogonal bridge moment and the Kallus--Mao--Uehara/Bennett--Kallus--Mao--Newey--Syrgkanis--Uehara minimax selector have the same native value and first-order object. The novelty here is not another sufficient completeness condition; it is the shifted row-commutator object \(\mathfrak C(P)\), computed from the two selector criteria, the residual load \(b^R\), and the native ATE loading, that separates harmless nonuniqueness from selector-sensitive nonidentification.
+
+\paragraph{How it positions in the literature.}
+This is an exact-identification proposal for proximal causal inference, with a sensitivity boundary that touches partial identification. It uses the outcome-bridge setup of \citet{MiaoGengTchetgen2018}, the nonunique-bridge distinction in \citet[Sections 2--3]{ZhangLiMiaoTchetgen2023}, and the estimator frontier opened by \citet{KallusMaoUehara2021}, \citet{CuiPuShiMiaoTchetgen2024}, \citet{BennettKallusMaoNeweySyrgkanisUehara2023COLT}, and \citet{BennettKallusMaoNeweySyrgkanisUehara2023MinimaxIV}. It deliberately avoids Pearl-school do-calculus extensions: the graph supplies the usual negative-control interpretation, while the theorem kernel is a finite linear-algebra criterion for bridge-selector equivalence.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the proximal learning workflow of \citet{KallusMaoUehara2021} and the penalized-minimax IV workflow of \citet{BennettKallusMaoNeweySyrgkanisUehara2023MinimaxIV}, compared with analysts using orthogonal proximal moments in the spirit of \citet{CuiPuShiMiaoTchetgen2024}: the result would say when these choices can be reported as estimating the same long-term ATE object near non-completeness, and when a selector-sensitivity interval must be reported instead.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report the shifted KKT row-commutator \(\mathfrak C(P)\) or its sample analogue before treating minimax and residual-GMM proximal bridge estimates as interchangeable.
+
+\section{Related work}
+\citet{MiaoGengTchetgen2018} give a Biometrika negative-control identification framework based on proxy rank and completeness conditions; this proposal studies the boundary where those conditions cease to give a unique bridge. \citet[Sections 3--4]{KallusMaoUehara2021} propose minimax learning of treatment effects with proxies and relaxed bridge uniqueness, making their penalized minimax population criterion the first selector comparator. \citet{MastouriZhuGultchinEtAl2021} formulate proximal causal learning as a Fredholm inverse problem with kernel methods; their inverse-problem view motivates the finite KKT projection maps used here. \citet[Section 3, especially equation (9) and Theorem 3.2]{CuiPuShiMiaoTchetgen2024} develop proximal double robustness and semiparametric efficiency; this proposal uses their orthogonal-moment motivation but defines its own finite residual-GMM selector rather than attributing a residual-squared selector objective to them. \citet[abstract and Sections 2--3]{ZhangLiMiaoTchetgen2023} show that counterfactual means can remain identified without unique bridge functions, which is the target-functional distinction this proposal sharpens for competing selectors. \citet[abstract and Sections 3--4]{GhassamiShpitserTchetgen2023} study partial-identification bounds when completeness fails; their work is the neighboring fallback when \(\mathfrak C(P)\) shows selector sensitivity. \citet[abstract and Section 2]{BennettKallusMaoNeweySyrgkanisUehara2023COLT} analyze root-\(n\) inference for strongly identified linear functionals of weakly identified nuisances using penalized minimax nuisance estimators; they do not compare finite residual-GMM and minimax selector rows. \citet[abstract and Theorem 4]{BennettKallusMaoNeweySyrgkanisUehara2023MinimaxIV} prove that a penalized minimax IV estimator can converge to a fixed solution without uniqueness or closedness; this is the closest selector-stability comparator, but it does not give an observable proximal row-commutator frontier. \citet{CanaySantosShaikh2013} show that completeness-type assumptions may be empirically untestable, motivating an observable sensitivity report rather than pretesting completeness. \citet{CarrascoFlorensRenault2007} survey econometric inverse problems and regularization, which supplies the operator language behind weak bridge equations.
+
+The in-repo prior proposal \texttt{eid\_proximal\_phase} asked for a sharp phase transition and was downgraded because the surviving content was a finite diagnostic taxonomy rather than a generic selector theorem. Its reviewer record specifically noted that the finite residual/OR--DR-versus-minimax native-equivalence threshold was novel but unproved, and also warned that a value-discrepancy threshold alone is too tautological. The failed \texttt{pid\_long\_term\_surrogate} proposal is adjacent on long-term ATE proxy richness, but it did not compare population bridge selectors at the proximal completeness boundary.
+
+\section{Formal setup}
+The observed law \(P\) is over \(O=(Y,A,X,Z,W)\), where \(A\in\{0,1\}\), \(Y\) is the terminal long-term outcome, \(X\) is finite baseline information, \(Z\) is a treatment-inducing negative-control proxy, and \(W\) is an outcome-inducing negative-control proxy. For each \(a,x\), let \(J_W(x)\) and \(J_Z(x)\) be the support sizes of \(W\) and \(Z\). Define the bridge operator and outcome regression vector
+\[
+T_{a,x}(P)_{z,w}=\Pr(W=w\mid A=a,Z=z,X=x),\qquad
+m_{a,x}(P)_z=\E(Y\mid A=a,Z=z,X=x).
+\]
+The exact outcome-bridge fiber is
+\[
+\calH_{a,x}(P)=\{h\in\R^{J_W(x)}:T_{a,x}(P)h=m_{a,x}(P)\}.
+\]
+The native ATE loading is \(\ell_x(P)_w=\Pr(W=w\mid X=x)\), and for a bridge array \(h=(h_{a,x})\) the native bridge functional is
+\[
+\Psi_P(h)=\sum_x \Pr(X=x)\{\ell_x(P)^\transpose h_{1,x}-\ell_x(P)^\transpose h_{0,x}\}.
+\]
+For a positive definite metric \(G\) and linear residual load \(b\), define the shifted finite KKT selector
+\[
+K_{G,b}(T,m)=G^{-1}b+G^{-1}T^\transpose(TG^{-1}T^\transpose)^+\{m-TG^{-1}b\},
+\]
+where \(+\) denotes the Moore--Penrose inverse. When \(b=0\), write \(K_G(T,m)=K_{G,0}(T,m)\). The residual-GMM selector is the exact-bridge limit of the population quadratic criterion
+\[
+Q^R_{a,x}(h)=\E\{(Y-h(W,x))^2\mid A=a,X=x\},
+\]
+so \(G^R_{a,x}(P)=\operatorname{diag}\{\Pr(W=w\mid A=a,X=x)\}\) up to irrelevant common scale and
+\[
+b^R_{a,x}(P)_w=\E\{Y\one(W=w)\mid A=a,X=x\}.
+\]
+This residual-GMM selector is defined in this proposal; it is motivated by orthogonal proximal moments but is not claimed to be a selector objective published in \citet{CuiPuShiMiaoTchetgen2024}. The minimax negative-control selector is the exact-bridge limit of the penalized population saddle criterion
+\[
+Q^M_{a,x}(h)=\sup_{q\in\R^{J_Z(x)}}\left[q^\transpose\{m_{a,x}-T_{a,x}h\}
+-\frac{1}{2}q^\transpose\Omega^M_{a,x}(P)q\right]
++\frac{1}{2}h^\transpose\Lambda^M_{a,x}(P)h,
+\]
+where \(\Omega^M_{a,x}(P)\) is the adversarial-test penalty and \(\Lambda^M_{a,x}(P)\) is the bridge-norm penalty in the finite negative-control function class. On the exact bridge fiber, the saddle term is zero and the native selector is governed by \(G^M_{a,x}(P)=\Lambda^M_{a,x}(P)\) with zero linear load; off the exact fiber, the Hessian is \(T^\transpose(\Omega^M)^{-1}T+\Lambda^M\). The selected bridge arrays are \(h^R_{a,x}=K_{G^R_{a,x},b^R_{a,x}}(T_{a,x},m_{a,x})\) and \(h^M_{a,x}=K_{G^M_{a,x},0}(T_{a,x},m_{a,x})\).
+
+The focal object is the KKT row-commutator. For each \((a,x)\), define
+\[
+\mathfrak B_{a,x}(P)=\ell_x(P)^\transpose\left[
+(G^R_{a,x})^{-1}T_{a,x}^\transpose\{T_{a,x}(G^R_{a,x})^{-1}T_{a,x}^\transpose\}^+
+-(G^M_{a,x})^{-1}T_{a,x}^\transpose\{T_{a,x}(G^M_{a,x})^{-1}T_{a,x}^\transpose\}^+
+\right].
+\]
+The residual-load correction is
+\[
+\mathfrak d_{a,x}(P)=\ell_x(P)^\transpose
+\left[I-(G^R_{a,x})^{-1}T_{a,x}^\transpose\{T_{a,x}(G^R_{a,x})^{-1}T_{a,x}^\transpose\}^+T_{a,x}\right]
+(G^R_{a,x})^{-1}b^R_{a,x}.
+\]
+The scalar row-commutator for the ATE is
+\[
+\mathfrak C_0(P)=\sum_x\Pr(X=x)\{\mathfrak B_{1,x}(P)m_{1,x}(P)+\mathfrak d_{1,x}(P)-\mathfrak B_{0,x}(P)m_{0,x}(P)-\mathfrak d_{0,x}(P)\}.
+\]
+For first-order equivalence, let \(\mathfrak C_1(P)\) be the finite-dimensional Jacobian of this displayed KKT row expression with respect to the observed law coordinates, restricted to the tangent set \(\mathcal{T}_{\mathrm{obs}}(P)\). The older selected-value discrepancy notation is retained only as a derived diagnostic,
+\[
+\Gamma_{\mathrm{nat}}(P)=\sum_x \Pr(X=x)\left[\ell_x^\transpose\{h^R_{1,x}-h^M_{1,x}\}-\ell_x^\transpose\{h^R_{0,x}-h^M_{0,x}\}\right].
+\]
+Write \(\mathfrak C(P)=(\mathfrak C_0(P),\mathfrak C_1(P))\). By algebra \(\Gamma_{\mathrm{nat}}(P)=\mathfrak C_0(P)\), but the proposed frontier is stated in terms of the independently computed shifted KKT row \((\mathfrak B,\mathfrak d)\) and Jacobian \(\mathfrak C_1\), not by defining a threshold as the selected ATE discrepancy. The two selectors are called native-equivalent through first order when their selected native ATE values agree and their Gateaux derivatives along every score in \(\mathcal{T}_{\mathrm{obs}}(P)\) agree.
+
+\begin{verbatim}
+Locked parameters:
+qid = eid_proximal_completeness
+specialization = v1
+graph/SWIG = binary A, baseline X, negative-control proxies Z and W,
+             terminal Y, latent U with standard proximal exclusions
+treatment = A
+target estimand = psi = E[Y(1)-Y(0)]
+identifying assumptions = finite support/positivity, consistency,
+                           negative-control exclusions, bridge existence,
+                           selector-metric regularity; no full completeness
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite support and overlap]\label{ass:finite-overlap}
+The supports of \(X,Z,W\) are finite. For every \(a,x,z,w\) used in the displayed operators, the relevant conditional probabilities are well-defined, and \(\Pr(A=a,Z=z,X=x)>0\) and \(\Pr(X=x)>0\).
+\end{assumption}
+
+\begin{assumption}[Negative-control consistency and exclusions]\label{ass:negative-control}
+The observed law admits the standard proximal negative-control interpretation: \(Y=Y(A)\), \(Z\) has no direct effect on \(Y(a)\) conditional on \((U,X)\), \(W\) is not affected by \(A\) conditional on \((U,X)\), and the usual proximal conditional-independence restrictions connect the bridge equation to the long-term ATE.
+\end{assumption}
+
+\begin{assumption}[Exact bridge compatibility]\label{ass:bridge-compatible}
+For each \(a,x\), the affine bridge fiber \(\calH_{a,x}(P)\) is nonempty. Equivalently, \(m_{a,x}(P)\in\operatorname{range}\{T_{a,x}(P)\}\).
+\end{assumption}
+
+\begin{assumption}[Selector objective regularity]\label{ass:selector-metrics}
+For each \(a,x\), \(G^R_{a,x}(P)=\operatorname{diag}\{\Pr(W=w\mid A=a,X=x)\}\) is positive definite, \(\Omega^M_{a,x}(P)\) and \(\Lambda^M_{a,x}(P)\) are observable symmetric positive definite matrices, and all three matrices are continuously differentiable functions of the finite observed law in a neighborhood of \(P\). The minimax selector metric on the exact bridge fiber is \(G^M_{a,x}(P)=\Lambda^M_{a,x}(P)\).
+\end{assumption}
+
+\begin{assumption}[Nondegenerate boundary]\label{ass:boundary}
+For at least one \((a,x)\), \(\ker T_{a,x}(P)\neq\{0\}\), and all nonzero singular values of \(T_{a,x}(P)\) are separated from zero by a constant \(\sigma_{\min}^+(P)>0\). Local perturbations considered in \(\mathcal{T}_{\mathrm{obs}}(P)\) preserve bridge compatibility and finite support.
+\end{assumption}
+
+\begin{assumption}[Tangent regularity]\label{ass:tangent}
+The observed-law tangent set \(\mathcal{T}_{\mathrm{obs}}(P)\) consists of mean-zero finite-support scores that preserve the constraints in Assumptions~\ref{ass:finite-overlap}--\ref{ass:bridge-compatible} to first order.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: finite KKT form of the two bridge selectors]\label{thm:kkt}
+Under Assumptions~\ref{ass:finite-overlap}, \ref{ass:bridge-compatible}, and \ref{ass:selector-metrics}, the residual-GMM selector and minimax selector over each exact bridge fiber are the unique quadratic-program solutions \(h^R_{a,x}=K_{G^R_{a,x},b^R_{a,x}}(T_{a,x},m_{a,x})\) and \(h^M_{a,x}=K_{G^M_{a,x},0}(T_{a,x},m_{a,x})\). Consequently their native ATE discrepancy is the derived scalar \(\Gamma_{\mathrm{nat}}(P)=\mathfrak C_0(P)\), where \(\mathfrak C_0\) includes the residual-load correction \(\mathfrak d\).
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) This is routine finite convex duality, but it packages the selector comparison left implicit by \citet{KallusMaoUehara2021}, \citet{MastouriZhuGultchinEtAl2021}, \citet{CuiPuShiMiaoTchetgen2024}, and \citet{BennettKallusMaoNeweySyrgkanisUehara2023MinimaxIV} into one observable matrix expression. (b) It gives the algebraic object needed by users comparing a residual-GMM proximal moment selector with the Kallus--Mao--Uehara and Bennett--Kallus--Mao--Newey--Syrgkanis--Uehara minimax estimators.
+
+\begin{conjecture}[Conjecture 1: shifted KKT row-commutator frontier (NOT YET PROVED)]\label{conj:frontier}
+Under Assumptions~\ref{ass:finite-overlap}--\ref{ass:tangent}, the residual-GMM bridge selector and the minimax negative-control bridge selector are native-equivalent through first order at \(P\) exactly on the zero set of the finite shifted KKT row-commutator:
+\[
+\mathfrak C_0(P)=0\qquad\text{and}\qquad \mathfrak C_1(P)=0.
+\]
+If either independently computed KKT row quantity is nonzero, then there is an open neighborhood of bridge-compatible observed laws on which the two selector families induce different long-term ATE functionals or different first-order influence objects.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) The closest published papers are \citet[Sections 3--4]{KallusMaoUehara2021}, which studies minimax bridge learning without a residual-GMM equivalence frontier, \citet[Section 3, equation (9) and Theorem 3.2]{CuiPuShiMiaoTchetgen2024}, which studies proximal DR and efficiency without a finite residual selector comparison at weak completeness, \citet[abstract and Section 2]{BennettKallusMaoNeweySyrgkanisUehara2023COLT}, which studies weakly identified nuisances but not selector-row equivalence, and \citet[abstract and Theorem 4]{BennettKallusMaoNeweySyrgkanisUehara2023MinimaxIV}, which proves penalized-minimax convergence to a fixed solution without closedness but does not characterize when that fixed solution matches a residual-GMM proximal bridge selector. The epsilon-gap is the missing shifted row-commutator frontier: none of these papers characterizes the zero set of \((\mathfrak C_0,\mathfrak C_1)\), including the residual load \(b^R\), nor proves open-set separation when it is nonzero. (b) Resolving this gives an operational warning for the proximal learning workflow of \citet{KallusMaoUehara2021}: a nonzero commutator means the analyst should report selector sensitivity rather than a single proximal ATE estimate.
+
+\begin{conjecture}[Conjecture 2: selector-sensitive open witness class (NOT YET PROVED)]\label{conj:witness}
+Under Assumptions~\ref{ass:finite-overlap}--\ref{ass:boundary}, suppose there is an \((a,x)\) such that \(\ell_x\) has nonzero projection on \(\ker T_{a,x}\) and the shifted residual-GMM solution \(K_{G^R,b^R}(T,m)\) differs in native loading from the zero-load minimax solution \(K_{G^M,0}(T,m)\). Then \(P\) belongs to a relatively open class of finite proximal laws with \(|\mathfrak C_0(P)|>0\).
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet[abstract and Sections 2--3]{ZhangLiMiaoTchetgen2023} show that nonunique bridges need not destroy target identification, while \citet[abstract and Sections 3--4]{GhassamiShpitserTchetgen2023} study bounds after completeness failure; neither gives a generic open-class criterion showing when two bridge selectors separate before one moves to full partial identification. (b) The consumer is the partial-identification fallback of \citet{GhassamiShpitserTchetgen2023}: this result would identify the finite laws where selector sensitivity is real enough to justify reporting a bridge-envelope or bound.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Completeness corner]\label{cor:complete}
+If \(T_{a,x}(P)\) has full column rank for every \(a,x\), then \(\calH_{a,x}(P)\) is a singleton, \(h^R_{a,x}=h^M_{a,x}\), and \(\mathfrak C_0(P)=\mathfrak C_1(P)=0\). This reduces to the usual complete-bridge point-identification case in \citet{MiaoGengTchetgen2018}.
+\end{corollary}
+
+\begin{corollary}[Target-invariant nonunique corner]\label{cor:target-invariant}
+If \(\ell_x(P)\in\operatorname{row}\{T_{a,x}(P)\}\) for every \(a,x\), then every two exact bridges in \(\calH_{a,x}(P)\) have the same native loading and \(\mathfrak C_0(P)=0\) for any selector metrics. This is the finite row-space version of the nonunique-bridge target-identification phenomenon in \citet{ZhangLiMiaoTchetgen2023}.
+\end{corollary}
+
+\begin{example}[Concrete non-corner witness]\label{ex:witness}
+Let \(X\) be degenerate, \(\Pr(A=0)=\Pr(A=1)=1/2\), and \(Z,W\in\{0,1\}\). For arm \(a=1\), set \(\Pr(W=0\mid A=1,Z=z,X)=\Pr(W=1\mid A=1,Z=z,X)=1/2\) for both \(z\), so
+\[
+T=\begin{pmatrix}1/2&1/2\\1/2&1/2\end{pmatrix},\qquad m=(1/2,1/2)^\transpose,\qquad \calH=\{(t,1-t):t\in\R\}.
+\]
+Let \(\E(Y\mid W=0,A=1,X)=1\) and \(\E(Y\mid W=1,A=1,X)=0\), giving \(b^R=(1/2,0)^\transpose\), and take the native loading \(\ell=(1,0)^\transpose\), \(G^R=\operatorname{diag}(1/2,1/2)\), and \(G^M=\operatorname{diag}(4,1)\). Then \(h^R=K_{G^R,b^R}(T,m)=(1,0)^\transpose\), \(h^M=K_{G^M,0}(T,m)=(1/5,4/5)^\transpose\), and the arm-specific native selector gap is \(4/5\). Set the arm \(a=0\) bridge fiber to a singleton or to matching selectors, so the ATE row-commutator remains \(4/5\). Small stochastic perturbations of the rank-one matrix \(T\), the regression \(m\), the residual load \(b^R\), the loading \(\ell\), and the two selector metrics preserve a nonzero gap on the constant-rank stratum, giving the explicit finite-support witness route for Conjecture~\ref{conj:witness}.
+\end{example}
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:kkt} reduces to the KKT equations for minimizing a strictly convex quadratic form with linear load \(b\) over an affine linear bridge fiber, yielding the displayed Moore--Penrose expression after eliminating the Lagrange multiplier. Conjecture~\ref{conj:frontier} should follow by differentiating the explicit shifted KKT row map \((\mathfrak B_{a,x},\mathfrak d_{a,x})\) on constant-rank strata, then showing that the zero set of \((\mathfrak C_0,\mathfrak C_1)\) is exactly the set where the two selector-induced ATE maps share both value and first-order influence representation. The hard boundary cases are rank changes and laws where \(TG^{-1}T^\transpose\) changes rank; these should be handled by restricting the flagship theorem to the nondegenerate boundary in Assumption~\ref{ass:boundary} and proving a separate lower-dimensional counterexample if the rank stratum is crossed. Conjecture~\ref{conj:witness} reduces to a finite-dimensional transversality argument: once the native loading sees a shifted residual-GMM/minimax selector difference on \(\ker T\), continuity of the KKT row map on the rank stratum gives an open neighborhood with nonzero commutator. The concrete rank-one witness in Example~\ref{ex:witness} is the base case for that transversality argument.
+
+\section{Honest scope flags}
+The finite KKT representation is intended as a support theorem because it is convex algebra and not itself the novelty claim. The row-commutator frontier and open witness class are conjectures; the main open work is proving the tangent equivalence and guarding rank-change boundary cases. The proposal does not claim that selector agreement implies full proximal point identification of the true ATE unless the standard negative-control bridge interpretation and target-invariance conditions also hold. The finite objectives \(Q^R\) and \(Q^M\) are the locked population selector conventions for this proposal; if Stage 0 finds that a published implementation uses a materially different population criterion, the comparator promise should be narrowed rather than silently changing the theorem.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for angle 2, replacing the exhausted target-active-null and common-kernel long-term proxy angles with a finite OR/DR-versus-minimax selector-equivalence frontier; prior verdict: none.
+\item v2 (revise) -- pinned the published population selector objectives, replaced the tautological discrepancy iff by a KKT row-commutator frontier, added closer weak-nuisance anchors, repaired the row-stochastic witness, and corrected the Zhang et al. bibliography entry; prior verdict: REVISE.
+\item v3 (revise) -- corrected the residual selector's shifted KKT formula with the \(b^R\) linear load, reframed the OR/DR side as a new residual-GMM selector rather than a published Cui et al. objective, added the Bennett et al. minimax-IV comparator, and made the frontier algebraic rather than tautological; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Bennett et~al.(2023)]{BennettKallusMaoNeweySyrgkanisUehara2023COLT}
+Bennett, A., Kallus, N., Mao, X., Newey, W., Syrgkanis, V., and Uehara, M. (2023).
+Inference on strongly identified functionals of weakly identified functions.
+\emph{Proceedings of the 36th Annual Conference on Learning Theory}.
+
+\bibitem[Bennett et~al.(2023)]{BennettKallusMaoNeweySyrgkanisUehara2023MinimaxIV}
+Bennett, A., Kallus, N., Mao, X., Newey, W., Syrgkanis, V., and Uehara, M. (2023).
+Minimax instrumental variable regression and \(L_2\) convergence guarantees without identification or closedness.
+\emph{Proceedings of the 36th Annual Conference on Learning Theory}, 2291--2318.
+
+\bibitem[Canay, Santos, and Shaikh(2013)]{CanaySantosShaikh2013}
+Canay, I. A., Santos, A., and Shaikh, A. M. (2013).
+On the testability of identification in some nonparametric models with endogeneity.
+\emph{Econometrica}, 81(6), 2535--2559.
+
+\bibitem[Carrasco, Florens, and Renault(2007)]{CarrascoFlorensRenault2007}
+Carrasco, M., Florens, J.-P., and Renault, E. (2007).
+Linear inverse problems in structural econometrics estimation based on spectral decomposition and regularization.
+\emph{Handbook of Econometrics}, Volume 6B.
+
+\bibitem[Cui et~al.(2024)]{CuiPuShiMiaoTchetgen2024}
+Cui, Y., Pu, H., Shi, X., Miao, W., and Tchetgen Tchetgen, E. (2024).
+Semiparametric proximal causal inference.
+\emph{Journal of the American Statistical Association}.
+
+\bibitem[Ghassami, Shpitser, and Tchetgen Tchetgen(2023)]{GhassamiShpitserTchetgen2023}
+Ghassami, A., Shpitser, I., and Tchetgen Tchetgen, E. (2023).
+Partial identification with proxy variables.
+\emph{arXiv preprint arXiv:2304.04374}.
+
+\bibitem[Kallus, Mao, and Uehara(2021)]{KallusMaoUehara2021}
+Kallus, N., Mao, X., and Uehara, M. (2021).
+Causal inference under unmeasured confounding with negative controls: A minimax learning approach.
+\emph{arXiv preprint arXiv:2103.14029}.
+
+\bibitem[Mastouri et~al.(2021)]{MastouriZhuGultchinEtAl2021}
+Mastouri, A., Zhu, Y., Gultchin, L., Korba, A., Silva, R., Kusner, M. J., Gretton, A., and Muandet, K. (2021).
+Proximal causal learning with kernels: Two-stage estimation and moment restriction.
+\emph{Proceedings of the 38th International Conference on Machine Learning}.
+
+\bibitem[Miao, Geng, and Tchetgen Tchetgen(2018)]{MiaoGengTchetgen2018}
+Miao, W., Geng, Z., and Tchetgen Tchetgen, E. J. (2018).
+Identifying causal effects with proxy variables of an unmeasured confounder.
+\emph{Biometrika}, 105(4), 987--993.
+
+\bibitem[Zhang et~al.(2023)]{ZhangLiMiaoTchetgen2023}
+Zhang, J., Li, W., Miao, W., and Tchetgen Tchetgen, E. J. (2023).
+Proximal causal inference without uniqueness of bridge functions.
+\emph{Statistics and Probability Letters}, 198, 109836.
+\end{thebibliography}
+
+\end{document}

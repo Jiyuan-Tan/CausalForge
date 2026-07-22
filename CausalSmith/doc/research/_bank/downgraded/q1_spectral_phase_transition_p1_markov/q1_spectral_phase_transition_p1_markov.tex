@@ -1,0 +1,567 @@
+% =====================================================================
+%  thmsmith Stage 0 derivation skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=q1\_spectral\_phase\_transition, specialization=p1\_markov
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage 0 derivation: \texttt{q1\_spectral\_phase\_transition} / \texttt{p1\_markov}%
+  \\ \large\textit{Markov switch scarcity and regular row-space visibility for Q1 event windows}}
+\author{thmsmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This setup note fixes the panel functional for a TWFE/FWL event-window regression with unit fixed effects, calendar-time fixed effects, switch-on relative-time columns \(E_k\), and the Q1 clean-history nuisance columns \(C_{10}\) and \(C_{11}\).
+The observable-population functional is the threshold-retained row-space map \(m_K\mapsto z_T^{\mathrm{reg}}=A_T^{\mathrm{reg}}(K)m_K\), together with the regular projection \(\Pi_T^{\mathrm{reg}}(K)\) and the bounded affine fiber \(\mathcal F_T^{\mathrm{reg}}(z_T^{\mathrm{reg}};L,U)\).
+The causal target is the finite switch-on event profile \(\theta_k\) over \(K_{\mathrm{ATT}}=\{0,\ldots,K_+\}\), with \(\theta_0\) the switch-on ATT and \(\theta_k\) for \(k>0\) the survivor-window contrast.
+The per-conjecture stages will verify whether the effective clean-window count \(\Lambda_T(K)\) governs the singular-value visibility of these target rows, and whether the minimal nuisance basis changes at the boundary.
+This Stage 0.0 artifact supplies only the shared setup, assumptions, target definitions, and the routine supporting row-space theorem for downstream use.
+\end{abstract}
+
+\section{Introduction}
+Event-study DiD is often interpreted as a dynamic causal profile, so loss of a single relative-time coordinate changes the estimand rather than merely adding noise.
+The usual contamination problem is that a regression coefficient loads on the wrong treatment-effect rows when treatment effects are heterogeneous.
+In a recurrent Markov treatment panel there is a more primitive support issue: clean switch-on windows may be so rare that the residualized event-window design fails to retain the target row at the regularity threshold.
+
+The setup in this note keeps the Q1 first-order finite-history target and the Q1 clean nuisance basis, but changes the question from static decontamination to thresholded row-space visibility.
+For an event window \(K=\{-K_-,\ldots,K_+\}\), the key scalar is the effective clean-window count
+\[
+\Lambda_T(K)=n_T(K)\frac{a_Tb_T}{a_T+b_T}(1-a_T)^{(K_- -1)_+}(1-b_T)^{K_+}.
+\]
+If the conjectured phase transition is correct, \(\Lambda_T(K)\) is a directly reportable diagnostic for which causal event-window rows are point visible, only bounded through an affine fiber, or nonregular.
+If the minimal-basis conjecture is correct, the same diagnostic determines which nuisance history directions remain part of the regular comparison.
+
+\paragraph{Motivating conjecture(s).}
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Conjecture 1 (label=markov-event-rank).}
+Under Assumptions~\ref{ass:finite-memory}--\ref{ass:clean-window}, \ref{ass:regular-row}, \ref{ass:boundary-limits}, \ref{ass:bounded-response}, and \ref{ass:nondegenerate-target}, suppose \(K=K_T\) is deterministic and \(p_T(K)>0\).
+There are constants \(0<c_K<C_K<\infty\), depending only on the event-window template and the omitted pre-period convention, such that the nonzero singular values of the event-window FWL Gram block generated by \(E_k,C_{10},C_{11}\) satisfy
+\[
+c_K\Lambda_T(K)\le \sigma_j(G_T(K))\le C_K\Lambda_T(K)
+\]
+for every event-window direction whose clean switch-on row is represented, while every direction orthogonal to \(R_T(K)\) has singular value \(o(\Lambda_T(K))\).
+Consequently, if \(\Lambda_T(K)/\kappa_T\to\infty\), then \(\ell_K\in\mathcal V_T^{\mathrm{reg}}(K)\) for every causal switch-on ATT loading \(\ell_K\) supported on \(K_{\mathrm{ATT}}\); if \(\Lambda_T(K)/\kappa_T\to\lambda\in(0,\infty)\), then the retained limiting row space is exactly the span of the clean-window directions indexed by \(J^{\mathrm{bdry}}(K,\lambda)=\{j:s_j(K)\lambda\ge1\}\), so partial identification occurs precisely when this set is a nonempty proper subset of the clean-window directions; and if \(\Lambda_T(K)/\kappa_T\to0\), no nonzero causal switch-on event-window loading is regularly identified.
+
+\item \textbf{Conjecture 2 (label=minimal-basis-change).}
+Under Assumptions~\ref{ass:finite-memory}--\ref{ass:clean-window}, \ref{ass:regular-row}, \ref{ass:boundary-limits}, \ref{ass:minimal-class}, \ref{ass:bounded-response}, and \ref{ass:nondegenerate-target}, the Q1 nuisance basis \(\{C_{10},C_{11}\}\) is minimal in \(\mathfrak B(K)\) for regular point identification of all causal finite-window switch-on event contrasts when \(\Lambda_T(K)/\kappa_T\to\infty\).
+On the boundary \(\Lambda_T(K)/\kappa_T\to\lambda\in(0,\infty)\), the minimal regular nuisance basis is any basis of the active subspace \(N_T^{\mathrm{act}}(K,\lambda)\); nuisance contrasts in \(\operatorname{span}\{C_{10},C_{11}\}\cap N_T^{\mathrm{act}}(K,\lambda)^\perp\) are nonregular and are omitted from the regular comparison.
+Below the boundary, no finite augmentation by relative-time columns alone restores regular identification of the full causal event-window profile unless it adds an external shape restriction on \(m_K\).
+\end{enumerate}
+
+\section{Related work and positioning}
+\cite{sunabraham2021eventstudy} show that event-study leads and lags can be contaminated by other treatment-effect rows under heterogeneous effects; the present setup asks when the relevant Markov switch-on rows are not regular directions of the residualized design at all.
+\cite{dechaisemartin2020twfe} and \cite{goodmanbacon2021timing} decompose TWFE coefficients into weighted comparisons; here the comparison weights are secondary to the rank and singular-value visibility of the event-window row space.
+\cite{callaway2021multiple} identify group-time ATT components before aggregation; this note uses an analogous component-level target, but the components are recurrent switch-on histories rather than absorbing-adoption groups.
+\cite{borusyak2024eventstudy} provide an imputation view in which target cells must be spanned by untreated information; the retained row-space \(\mathcal V_T^{\mathrm{reg}}(K)\) is the FWL analogue of that support requirement.
+\cite{dechaisemartin2024intertemporal} and \cite{schmidheiny2023event} study nonabsorbing and distributed-lag/event-study specifications; the difference here is the explicit Markov clean-window threshold \(\Lambda_T(K)\).
+\cite{bojinov2021panel} and \cite{bojinov2023switchback} treat dynamic potential outcomes and switchback designs as first-order objects, while \cite{hu2022switchback} shows that Markov mixing can change rates; this note converts that rate intuition into a row-space phase-transition question.
+\cite{manski2003partial} and \cite{tamer2010partial} give the partial-identification logic behind bounded affine fibers; in the present panel setting those fibers appear only after the regular FWL row space has been thresholded.
+Within the repository's non-formal Q1 prompt material, the closest comparison is the first-order minimal decontaminating basis question: it fixes \(p=1\), the switch-on target, and the Q1 nuisance histories, but does not introduce Markov singular-value thresholds.
+
+\section{Formal setup}
+We observe a balanced panel with units \(i=1,\ldots,N\) and periods \(t=1,\ldots,T\).
+Treatment is binary, \(D_{it}\in\{0,1\}\), and the synthetic boundary value \(D_{i0}=0\) is used only to classify the first lagged history.
+The first-order history is
+\[
+H_{it}=(D_{i,t-1},D_{it})\in\mathcal H_1=\{00,01,10,11\}.
+\]
+Potential outcomes satisfy finite memory and no anticipation, so \(Y_{it}=Y_{it}(H_{it})\).
+Write \(m_t(h)=\E[Y_{it}(h)]\) and \(\tau_t(h)=m_t(h)-m_t(00)\).
+The untreated baseline history is \(00\).
+
+For an event window \(K=\{-K_-,\ldots,K_+\}\), define valid origins
+\[
+\mathcal S_T(K)=\{s:1+K_-\le s\le T-K_+\},
+\qquad
+n_T(K)=|\mathcal S_T(K)|=\max\{T-K_- -K_+,0\}.
+\]
+The clean switch-on indicator is \(W_{is}^K=1\) when \(s\in\mathcal S_T(K)\), \(H_{is}=01\), \(D_{i,s-r}=0\) for \(1\le r\le K_-\), and \(D_{i,s+r}=1\) for \(1\le r\le K_+\); otherwise \(W_{is}^K=0\).
+Thus the window contains an isolated switch-on origin, no extra switch-on in the pre-window, and no off-switch in the post-window.
+Negative relative-time positions \(k<0\) are diagnostic rows, and one pre-period is omitted from the event-window regression.
+
+The assignment law is a stationary two-state first-order Markov chain with transition matrix
+\[
+M_T=\begin{pmatrix}1-a_T&a_T\\ b_T&1-b_T\end{pmatrix},
+\qquad
+0<a_T<1,\quad 0<b_T<1,
+\]
+spectral gap \(\gamma_T=a_T+b_T\), second eigenvalue \(\rho_T=1-\gamma_T\), and stationary switch-on flow
+\[
+\phi_T=\Pr(D_{t-1}=0,D_t=1)=\frac{a_Tb_T}{a_T+b_T}.
+\]
+Let \(e_-(K)=(K_- -1)_+\).  Under stationarity the clean-window probability and effective clean-window count are
+\[
+p_T(K)=\phi_T(1-a_T)^{e_-(K)}(1-b_T)^{K_+},
+\qquad
+\Lambda_T(K)=n_T(K)p_T(K).
+\]
+
+The event-window regression contains unit fixed effects, calendar-time fixed effects, switch-on relative-time columns \(E_k\) for \(k\in K\) except one omitted pre-period, and the Q1 clean-history nuisance columns
+\[
+C_{10,it}=\one\{H_{it}=10\},\qquad C_{11,it}=\one\{H_{it}=11\}.
+\]
+Let \(F\) be the unit-and-time fixed-effect design and \(M_F\) its residual-maker.
+Let \(X_T(K)=M_F[E_k,C_{10},C_{11}]\) be the residualized event-window and nuisance design, and let \(\Phi_T(K)\) be the residualized local response-surface cell basis for the histories and offsets appearing in \(K\).
+The population FWL Gram and response-surface moment maps are
+\[
+G_T(K)=\E[X_T(K)^\transpose X_T(K)],\qquad
+A_T(K)=\E[X_T(K)^\transpose \Phi_T(K)].
+\]
+The vector \(m_K\) collects the local coordinates \(m_{s+k}(h)\), and a row \(\ell_K\) defines \(\theta_{\ell,K}=\ell_K^\transpose m_K\).
+
+\paragraph{Locked parameters.}
+\begin{itemize}
+  \item qid: q1\_spectral\_phase\_transition
+  \item specialization: p1\_markov
+  \item p: 1
+  \item assignment: stationary two-state first-order Markov treatment path with transition probabilities \(a_T=\Pr(D_t=1\mid D_{t-1}=0)\) and \(b_T=\Pr(D_t=0\mid D_{t-1}=1)\). The spectral gap is \(\gamma_T=a_T+b_T\), the second eigenvalue is \(\rho_T=1-\gamma_T\), and the stationary switch-on flow is \(\phi_T=a_T*b_T/(a_T+b_T)\). \(D_{i0}=0\) is a synthetic lag used only to classify the first history.
+  \item untreated baseline: \(\E[Y_{it}(00)\mid D_i]=\alpha_i+\lambda_t\)
+  \item target: causal switch-on event profile \(\theta_k\), \(k\) in \(K_{\mathrm{ATT}}=\{0,\ldots,K_+\}\), where a valid event origin \(s\) lies in \(\{1+K_-,\ldots,T-K_+\}\) and satisfies \(H_{is}=(0,1)\), \(\theta_0\) is the switch-on ATT \(m_s(01)-m_s(00)\), and \(\theta_k\) for \(k>0\) is the survivor-window contrast \(m_{s+k}(11)-m_{s+k}(00)\) conditional on no off-switch between \(s\) and \(s+k\). Negative relative-time rows \(k<0\) are diagnostic pre-period rows in the regression, not causal target coordinates.
+  \item regression: TWFE/FWL event-window regression with unit and calendar-time fixed effects, switch-on-origin relative-time columns \(E_k\), \(k\) in \(K\) (one omitted pre-period), and the Q1 clean history nuisance columns \(1\{H=(1,0)\}\) and \(1\{H=(1,1)\}\). Regimes with singular values below the deterministic threshold \(\kappa_T\) are interpreted through the regular row-space and bounded-response affine-fiber convention in Assumption 5.
+\end{itemize}
+
+\section{Assumptions}
+\begin{assumption}[Finite memory and consistency]\label{ass:finite-memory}
+For every unit and period, the observed outcome is \(Y_{it}=Y_{it}(H_{it})\), where \(H_{it}=(D_{i,t-1},D_{it})\), and future treatments do not enter \(Y_{it}(H_{it})\).
+\end{assumption}
+
+\begin{assumption}[Untreated TWFE baseline]\label{ass:untreated-twfe}
+For the untreated history, \(\E[Y_{it}(00)\mid D_i]=\alpha_i+\lambda_t\) for some unit and calendar-time functions \(\alpha_i\) and \(\lambda_t\).
+\end{assumption}
+
+\begin{assumption}[Stationary Markov assignment]\label{ass:stationary-markov}
+For each \(T\), \(D_{i1},\ldots,D_{iT}\) are drawn independently across units from the stationary two-state Markov law with \(0<a_T<1\) and \(0<b_T<1\).
+\end{assumption}
+
+\begin{assumption}[Clean switch-on event window]\label{ass:clean-window}
+The event-window columns \(E_k\) are generated only from origins satisfying \(W_{is}^K=1\), with one pre-period omitted and with \(K_-,K_+\) fixed or growing deterministically with \(T\).
+The valid-origin set is \(\mathcal S_T(K)\), so negative relative-time rows are only diagnostic rows and the causal target coordinates are restricted to \(K_{\mathrm{ATT}}=\{0,\ldots,K_+\}\).
+\end{assumption}
+
+\begin{assumption}[Regular row-space convention]\label{ass:regular-row}
+A deterministic threshold \(\kappa_T>0\) is fixed before observing outcomes. Linear functionals in \(\mathcal V_T^{\mathrm{reg}}(K)\) are called regularly identified; coordinates outside that row space are interpreted through the retained affine fiber \(\mathcal F_T^{\mathrm{reg}}(z_T^{\mathrm{reg}};L,U)\) when finite constants \(L<U\) are imposed.
+\end{assumption}
+
+\begin{assumption}[Boundary singular-value limits]\label{ass:boundary-limits}
+In boundary statements with \(\Lambda_T(K)/\kappa_T\to\lambda\in(0,\infty)\), each clean-window singular direction has a normalized limit \(s_j(K)=\lim_T \sigma_j(G_T(K))/\Lambda_T(K)\) along the sequence under consideration, and the retained limiting index set is \(J^{\mathrm{bdry}}(K,\lambda)=\{j:s_j(K)\lambda\ge1\}\).
+\end{assumption}
+
+\begin{assumption}[Minimal-basis comparison class]\label{ass:minimal-class}
+For Conjecture 2, the admissible basis class \(\mathfrak B(K)\) consists of subcollections and finite linear recombinations of the two Q1 nuisance columns \(\{C_{10},C_{11}\}\) and the non-omitted relative-time columns \(E_k\), with no external shape restriction on \(m_K\).
+\end{assumption}
+
+\begin{assumption}[Bounded response surface]\label{ass:bounded-response}
+For partial-identification statements, every local response coordinate in \(m_K\) lies in the known interval \([L,U]\), where \(L<U\).
+\end{assumption}
+
+\begin{assumption}[Nondegenerate target row]\label{ass:nondegenerate-target}
+The target row \(\ell_K\) is nonzero and has support only on the causal switch-on and survivor-window contrasts indexed by \(K_{\mathrm{ATT}}\).
+\end{assumption}
+
+\section{Estimand-defining functional}
+Let \(B_T(K)=[E_k:k\in K\setminus\{k_{\mathrm{omit}}\},\, C_{10},\, C_{11}]\), where \(k_{\mathrm{omit}}<0\) is the omitted pre-period.
+The population TWFE/FWL coefficient vector is the computable projection functional
+\[
+\beta_T(K)
+=\left(B_T(K)^\transpose M_F B_T(K)\right)^+
+  B_T(K)^\transpose M_F Y,
+\]
+with Moore--Penrose inverse used whenever the residualized Gram matrix is singular.
+If \(B_T(K)^\transpose M_F B_T(K)\) is full column rank, this reduces to the ordinary inverse.
+The observable inputs are the joint law of \((Y,D)\), the fixed-effect design \(F\), the deterministic event-window template \(K\), and the deterministic threshold \(\kappa_T\).
+
+For regular-identification statements, diagonalize the population Gram \(G_T(K)\) and retain the singular directions with \(\sigma_j(G_T(K))\ge\kappa_T\).
+The retained moment map is the finite-dimensional, directly evaluable linear map
+\[
+A_T^{\mathrm{reg}}(K)m
+=\bigl(v_j^\transpose A_T(K)m\bigr)_{j:\sigma_j(G_T(K))\ge\kappa_T},
+\qquad
+z_T^{\mathrm{reg}}=A_T^{\mathrm{reg}}(K)m_K.
+\]
+The regular row space is
+\[
+\mathcal V_T^{\mathrm{reg}}(K)=
+\operatorname{row}\bigl(A_T^{\mathrm{reg}}(K)\bigr)
+=\operatorname{span}\{v_j^\transpose A_T(K):\sigma_j(G_T(K))\ge\kappa_T\}.
+\]
+Let \(\Pi_T^{\mathrm{reg}}(K)\) be the Euclidean projector onto this row space.
+Under bounded responses, the computable sharp fiber for a target row \(\ell_K\) is the finite box-constrained affine set
+\[
+\mathcal F_T^{\mathrm{reg}}(z_T^{\mathrm{reg}};L,U)
+=\{m':A_T^{\mathrm{reg}}(K)m'=z_T^{\mathrm{reg}},\ L\le m'_j\le U\ \text{for all }j\}.
+\]
+The corresponding endpoint functionals are the two finite linear programs
+\[
+\theta_L(P)=\min_{m'\in\mathcal F_T^{\mathrm{reg}}(z_T^{\mathrm{reg}};L,U)}\ell_K^\transpose m',
+\qquad
+\theta_U(P)=\max_{m'\in\mathcal F_T^{\mathrm{reg}}(z_T^{\mathrm{reg}};L,U)}\ell_K^\transpose m',
+\]
+with decision variables equal to the coordinates of \(m'\), equality constraints \(A_T^{\mathrm{reg}}(K)m'=z_T^{\mathrm{reg}}\), and box constraints \(L\le m'_j\le U\).
+
+\section{Target causal estimand}
+For a valid clean switch-on origin \(s\) with \(W_{is}^K=1\), the causal event-window coordinates are
+\[
+\theta_0(s)=m_s(01)-m_s(00),
+\qquad
+\theta_k(s)=m_{s+k}(11)-m_{s+k}(00)\quad(1\le k\le K_+).
+\]
+The target profile averages these coordinates over valid clean origins:
+\[
+\theta_k(K)=
+\frac{\sum_{s\in\mathcal S_T(K)}\Pr(W_{is}^K=1)\theta_k(s)}
+{\sum_{s\in\mathcal S_T(K)}\Pr(W_{is}^K=1)}
+\quad\text{for }k\in K_{\mathrm{ATT}}=\{0,\ldots,K_+\},
+\]
+whenever the denominator is positive.
+Equivalently, any scalar causal target considered by the conjectures is \(\theta_{\ell,K}=\ell_K^\transpose m_K\), where \(\ell_K\) is supported only on the switch-on coordinate \(k=0\) and survivor-window coordinates \(1,\ldots,K_+\), and has zero loading on diagnostic pre-period rows.
+The regression functional in Section 7 is an identifying or bounding functional for this target; it is not the definition of the causal effect.
+
+\section{Main theorems}
+\paragraph{Refutation note (Conjecture 1).}
+Refuted: for \(K=\{-1,0\}\) and \(a_T=b_T=T^{-1/2}\), the block direction \(E_0+C_{11}\) has two-way residualized Gram scale at least \(T/64\), while \(\Lambda_T(K)\asymp T^{1/2}\).
+The counterexample is constructed in Section 13.
+
+\paragraph{Refutation note (Conjecture 2).}
+The finite-T rank/support witness \(T=2\), \(K=\{-1,0\}\), \(a=b=1/2\), and \(B^\star=\{C_{10}+C_{11}\}\) refutes Conjecture 2's claim that \(\{C_{10},C_{11}\}\) is minimal in \(\mathfrak B(K)\).
+The finite rank/support witness is constructed in Section 13.
+
+\section{Interpretation}
+For Conjecture 1, the Markov clean-window count \(\Lambda_T(K)\) does not upper-bound every nonzero singular value of the full event-window and Q1 nuisance block.
+The obstruction is that the design span contains \(q=E_0+C_{11}\), equal to \(D_t\) outside the boundary period, so a persistent treatment-state direction can be much larger than the rare clean switch-on count.
+
+For Conjecture 2, the proposal's admissible basis class allows finite linear recombinations of the Q1 nuisance columns.
+At \(T=2\), \(K=\{-1,0\}\), and \(a=b=1/2\), the one-column nuisance basis \(B^\star=\{C_{10}+C_{11}\}\) regularly identifies the only causal target \(\theta_0\), so the literal two-column basis \(\{C_{10},C_{11}\}\) is not minimal in that class.
+
+Together these interpretations connect back to the motivating conjectures only negatively: the first witness breaks the claimed \(\Lambda_T(K)\)-scale singular-value envelope, and the second witness breaks the claimed minimality of the Q1 nuisance basis under the stated recombination rule.
+
+\section{Step-by-step proof}
+\subsection*{Supporting lemmas}
+\begin{theorem}[Theorem 1: regular row-space trichotomy]\label{thm:regular-row-trichotomy}
+Assume Assumptions~\ref{ass:finite-memory}, \ref{ass:untreated-twfe}, \ref{ass:regular-row}, \ref{ass:bounded-response}, and \ref{ass:nondegenerate-target}.
+Fix \(T\), \(K\), retained observed moments \(z_T^{\mathrm{reg}}=A_T^{\mathrm{reg}}(K)m_K\), and target row \(\ell_K\).
+If \(\ell_K\in\mathcal V_T^{\mathrm{reg}}(K)\), then \(\theta_{\ell,K}=\ell_K^\transpose m_K\) is regularly point identified from \(z_T^{\mathrm{reg}}\).
+If \(0\ne\Pi_T^{\mathrm{reg}}(K)\ell_K\ne\ell_K\), then the projected target \((\Pi_T^{\mathrm{reg}}(K)\ell_K)^\transpose m_K\) is regularly point identified and the full target has the sharp bounded identified interval
+\[
+\left[
+\inf_{m'\in\mathcal F_T^{\mathrm{reg}}(z_T^{\mathrm{reg}};L,U)} \ell_K^\transpose m',
+\sup_{m'\in\mathcal F_T^{\mathrm{reg}}(z_T^{\mathrm{reg}};L,U)} \ell_K^\transpose m'
+\right].
+\]
+If \(\Pi_T^{\mathrm{reg}}(K)\ell_K=0\), then no nonzero component of \(\theta_{\ell,K}\) is regularly identified; without Assumption~\ref{ass:bounded-response}, the target is not point identified whenever the retained affine fiber contains a direction \(v\) with \(A_T^{\mathrm{reg}}(K)v=0\) and \(\ell_K^\transpose v\ne0\).
+\end{theorem}
+\begin{proof}
+By Assumptions~\ref{ass:finite-memory} and \ref{ass:untreated-twfe}, the retained FWL moment \(z_T^{\mathrm{reg}}\) is a deterministic linear function of the local response vector \(m_K\), namely \(z_T^{\mathrm{reg}}=A_T^{\mathrm{reg}}(K)m_K\). Assumption~\ref{ass:regular-row} defines \(\mathcal V_T^{\mathrm{reg}}(K)\) as the row space of \(A_T^{\mathrm{reg}}(K)\). If \(\ell_K\in\mathcal V_T^{\mathrm{reg}}(K)\), there exists a finite row vector \(c\) such that \(\ell_K^\transpose=c^\transpose A_T^{\mathrm{reg}}(K)\). Hence
+\[
+\theta_{\ell,K}=\ell_K^\transpose m_K=c^\transpose A_T^{\mathrm{reg}}(K)m_K=c^\transpose z_T^{\mathrm{reg}},
+\]
+which is a computable function of the retained moments and is therefore regularly point identified.
+
+For the second claim, \(\Pi_T^{\mathrm{reg}}(K)\ell_K\) belongs to \(\mathcal V_T^{\mathrm{reg}}(K)\) by the definition of an orthogonal projection. Applying the first paragraph with \(\Pi_T^{\mathrm{reg}}(K)\ell_K\) in place of \(\ell_K\) gives regular point identification of \((\Pi_T^{\mathrm{reg}}(K)\ell_K)^\transpose m_K\). The maintained information about the full response vector is exactly the equality \(A_T^{\mathrm{reg}}(K)m'=z_T^{\mathrm{reg}}\) plus the coordinate bounds \(L\le m'_j\le U\) from Assumption~\ref{ass:bounded-response}. Thus every feasible \(m'\in\mathcal F_T^{\mathrm{reg}}(z_T^{\mathrm{reg}};L,U)\) is observationally equivalent at the retained regular moments, and the true \(m_K\) is one such feasible point. The sharp lower and upper values of \(\ell_K^\transpose m'\) over this finite-dimensional box-intersected affine set are therefore exactly the stated endpoints. The feasible set is closed and bounded, so the extrema exist; computationally they are obtained by two finite linear programs with the coordinates of \(m'\) as decision variables.
+
+For the third claim, if \(\Pi_T^{\mathrm{reg}}(K)\ell_K=0\), then \(\ell_K\) is orthogonal to \(\mathcal V_T^{\mathrm{reg}}(K)\). Any nonzero regular component of \(\ell_K\) would have to lie both in \(\operatorname{span}\{\ell_K\}\) and in \(\mathcal V_T^{\mathrm{reg}}(K)\), which would give a nonzero projection of \(\ell_K\), a contradiction. Finally, without bounded responses, suppose there is a direction \(v\) satisfying \(A_T^{\mathrm{reg}}(K)v=0\) and \(\ell_K^\transpose v\ne0\). For every scalar \(r\), the vector \(m_K+rv\) has the same retained moment because
+\[
+A_T^{\mathrm{reg}}(K)(m_K+rv)=z_T^{\mathrm{reg}}+rA_T^{\mathrm{reg}}(K)v=z_T^{\mathrm{reg}},
+\]
+but its target value is \(\ell_K^\transpose m_K+r\ell_K^\transpose v\), which changes with \(r\). Hence the full target cannot be point identified from the retained moments alone.
+\end{proof}
+
+\subsubsection*{Refutation of Conjecture 1}
+See Section 13 for the refutation.
+
+\subsubsection*{Refutation of Conjecture 2}
+See Section 13 for the refutation.
+
+\section{Sanity checks}
+No positive theorem-level sanity checks are emitted because both motivating conjectures are refuted.
+The relevant checks are embedded in the witnesses in Section 13: Conjecture 1 is checked by comparing \(\sigma_{\max}(G_T(K))\) with \(\Lambda_T(K)\), and Conjecture 2 is checked by an explicit finite row-space identity for \(\theta_0\).
+
+\section{Counterexample or minimality check}
+\subsubsection*{Counterexample for Conjecture 1}
+\paragraph{Primitive 1: finite-\(T\) grid.}
+I first use the finite-grid primitive with \(T\in\{2,3,4\}\), binary treatment paths, and the event-window template \(K=\{-1,0\}\) with the single pre-period row omitted.
+For every Markov law with \(0<a_T,b_T<1\), every binary path has positive probability on this grid.
+The clean event row is the switch-on indicator \(E_{0,it}=\one\{t\ge2,D_{i,t-1}=0,D_{it}=1\}\); the nuisance rows are \(C_{10,it}=\one\{D_{i,t-1}=1,D_{it}=0\}\) and \(C_{11,it}=\one\{D_{i,t-1}=1,D_{it}=1\}\).
+This bounded grid does not by itself refute the asymptotic phase-transition statement, because a fixed finite grid can always be covered by constants that depend on the template.
+It does, however, expose the candidate obstruction:
+\[
+E_{0,it}+C_{11,it}
+=D_{it}\qquad\text{for every }t\ge2.
+\]
+Thus the FWL block generated by \(E_0,C_{10},C_{11}\) contains, up to the single boundary period \(t=1\), the treatment-state column \(D_{it}\), which is not a rare switch-on count.
+
+\paragraph{Primitive 2: first-order Markov assignment.}
+Now take the stationary symmetric Markov sequence
+\[
+a_T=b_T=\delta_T=T^{-1/2},\qquad
+\rho_T=1-2\delta_T,\qquad
+\Pr(D_{it}=1)=\Pr(D_{it}=0)=\frac12,
+\]
+and keep \(K=\{-1,0\}\).
+All locked support conditions used by the conjecture hold: \(0<a_T,b_T<1\) for large \(T\), \(p_T(K)=\phi_T=\delta_T/2>0\), and
+\[
+\Lambda_T(K)=n_T(K)p_T(K)=(T-1)\frac{\delta_T}{2}\asymp T^{1/2}.
+\]
+The response surface can be any bounded response vector with a nonzero switch-on target row, because the contradiction is entirely in the assignment-design Gram block.
+
+Let \(d_{it}=D_{it}\), and let \(M_F\) denote residualization on unit and calendar-time fixed effects.
+Since the Markov law is stationary and symmetric, the population calendar-time mean of \(d_{it}\) is \(1/2\) at every \(t\).
+Therefore the two-way residual of the treatment-state column is \(d_{it}-\bar d_i\), where \(\bar d_i=T^{-1}\sum_{t=1}^T d_{it}\), and
+\[
+\E\sum_{t=1}^T (M_F d_{it})^2
+=
+\E\sum_{t=1}^T (d_{it}-\bar d_i)^2
+=
+\frac{T}{4}-\frac{\operatorname{Var}\!\left(\sum_{t=1}^T d_{it}\right)}{T}.
+\]
+For the stationary two-state Markov chain,
+\[
+\operatorname{Cov}(d_{it},d_{i,t+h})=\frac14\rho_T^h.
+\]
+Hence
+\[
+\frac{\operatorname{Var}\!\left(\sum_{t=1}^T d_{it}\right)}{T}
+=
+\frac14+\frac{1}{2T}\sum_{h=1}^{T-1}(T-h)\rho_T^h
+\le
+\frac14+\frac12\sum_{h=1}^{\infty}\rho_T^h
+\le
+\frac{1}{4\delta_T}.
+\]
+With \(\delta_T=T^{-1/2}\), this gives
+\[
+\E\sum_{t=1}^T (M_F d_{it})^2
+\ge
+\frac{T}{4}-\frac{\sqrt T}{4}
+\ge
+\frac{T}{8}
+\qquad (T\ge4).
+\]
+
+The actual design direction in the conjectured Gram block is \(q_{it}=E_{0,it}+C_{11,it}\).
+It equals \(d_{it}\) for every non-boundary period \(t\ge2\), and differs from \(d_{it}\) only at \(t=1\).
+Residualization is a contraction, so
+\[
+\|M_F q\|_2
+\ge
+\|M_F d\|_2-\|M_F(d-q)\|_2
+\ge
+\sqrt{T/8}-1.
+\]
+For all sufficiently large \(T\), \(\|M_F q\|_2^2\ge T/32\).
+Let \(u=(1,0,1)^\transpose\), corresponding to the block direction \(E_0+C_{11}\).
+For the FWL Gram block \(G_T(K)\),
+\[
+u^\transpose G_T(K)u=\|M_F q\|_2^2\ge \frac{T}{32},
+\qquad
+\|u\|_2^2=2,
+\]
+so the largest nonzero singular value obeys
+\[
+\sigma_{\max}(G_T(K))\ge \frac{u^\transpose G_T(K)u}{\|u\|_2^2}\ge \frac{T}{64}.
+\]
+But \(\Lambda_T(K)\asymp T^{1/2}\).
+Thus
+\[
+\frac{\sigma_{\max}(G_T(K))}{\Lambda_T(K)}
+\ge c\sqrt T\to\infty
+\]
+for a numerical constant \(c>0\).
+No constant \(C_K\) depending only on the event-window template and the omitted pre-period convention can satisfy \(\sigma_j(G_T(K))\le C_K\Lambda_T(K)\) for all nonzero singular values of the block generated by \(E_k,C_{10},C_{11}\).
+This contradicts the first singular-value assertion of Conjecture 1; the advertised point/partial/nonregular consequences therefore do not follow from the stated assumptions.
+
+\subsubsection*{Counterexample for Conjecture 2}
+I used the prescribed finite-\(T\) grid and rank/support primitive.
+The candidate grid point is \(T=2\), \(K_- =1\), \(K_+=0\), \(K=\{-1,0\}\), and the stationary Markov assignment with \(a_T=b_T=1/2\).
+Then the valid-origin set is \(\mathcal S_2(K)=\{2\}\), the only non-omitted relative-time column is \(E_0\), and the only causal target coordinate is
+\[
+\theta_0=m_2(01)-m_2(00).
+\]
+The clean-window probability is \(p_2(K)=\phi_2=1/4\), so \(\Lambda_2(K)=1/4\).
+Choosing any deterministic threshold \(\kappa_2<0.044\) retains both positive residualized Gram directions for the two-column design \((E_0,L)\), where
+\[
+L=C_{10}+C_{11}=D_{i,t-1}.
+\]
+This \(L\) is an admissible nuisance basis element under Assumption~\ref{ass:minimal-class}, because it is a finite linear recombination of \(C_{10}\) and \(C_{11}\).
+
+Write the local effect-coordinate vector as
+\[
+m_K=
+\bigl(
+\tau_1(01),\tau_1(10),\tau_1(11),
+\tau_2(01),\tau_2(10),\tau_2(11)
+\bigr)^\transpose,
+\qquad
+\tau_t(h)=m_t(h)-m_t(00).
+\]
+After residualizing against the path fixed effects and calendar-time fixed effects, the retained FWL moment map for \(X=(E_0,L)\) is
+\[
+A_{B^\star}=
+\begin{pmatrix}
+1/16 & 0 & 0 & 3/32 & -1/32 & -1/32\\
+-1/8 & 0 & 0 & -1/16 & 1/16 & 1/16
+\end{pmatrix}.
+\]
+The two positive eigenvalues of the residualized Gram matrix \(X^\transpose M_FX\) are approximately \(0.04495\) and \(0.17380\), so both rows are regular under the displayed threshold.
+The target row for \(\theta_0\) is
+\[
+\ell=(0,0,0,1,0,0).
+\]
+It is in the row space of the one-nuisance-column design, because
+\[
+16(1/16,0,0,3/32,-1/32,-1/32)
++8(-1/8,0,0,-1/16,1/16,1/16)
+=(0,0,0,1,0,0).
+\]
+Therefore
+\[
+\theta_0=\ell^\transpose m_K
+=16 z_{E_0}+8 z_L,
+\qquad
+z=A_{B^\star}m_K,
+\]
+which is a computable regular identifying functional of the retained observed moments.
+No shape restriction on \(m_K\) is used; the identity holds for every value of the six local response coordinates.
+
+This contradicts the first sentence of Conjecture~2.
+For this admissible finite-window target, the one-column nuisance basis \(B^\star=\{C_{10}+C_{11}\}\) regularly point identifies all causal switch-on event contrasts, because there is only the \(k=0\) contrast.
+Thus the two-column basis \(\{C_{10},C_{11}\}\) is not minimal in \(\mathfrak B(K)\).
+As a check on the primitive, dropping to the literal one-column bases \(\{C_{10}\}\) or \(\{C_{11}\}\) leaves target-row residual norm \(1/\sqrt{3}\) in the same finite row-space calculation; the failure of the conjecture is specifically caused by the proposal's admission of finite linear recombinations, not by an omitted-variable-free literal subcollection.
+
+\section{Formalization checklist}
+\paragraph{Substrate survey record.}
+bypass-justified: the Stage 0.M output is a finite-dimensional algebraic refutation note over Markov path probabilities, residualized design columns, row spaces, and explicit matrices; the local substrate search did not expose exact reusable primitives for \(E_k\), \(C_{10}\), \(C_{11}\), \(A_T^{\mathrm{reg}}\), \(G_T\), or \(\Pi_T^{\mathrm{reg}}\) at this abstraction level, so the formalization plan should scaffold these objects as algebraic definitions rather than citing implementation files.
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Two-state Markov path law.} Signature: \(T\in\mathbb N\), \(0<a_T,b_T<1\), \(D_t\in\{0,1\}\), transition matrix \(M_T\), stationary distribution. Role: supplies \(p_T(K)\), \(\Lambda_T(K)\), stationarity, and the covariance identity \(\operatorname{Cov}(D_t,D_{t+h})=\frac14\rho_T^h\) in the symmetric witness. Dependencies: Assumption~\ref{ass:stationary-markov}.
+\item \textbf{Clean-window count.} Signature: \(K=\{-K_-,\ldots,K_+\}\mapsto n_T(K)\), \(p_T(K)\), and \(\Lambda_T(K)=n_T(K)p_T(K)\). Role: the scale claimed by Conjecture 1 and computed as \((T-1)/(2\sqrt T)\) in the witness. Dependencies: Assumption~\ref{ass:clean-window}.
+\item \textbf{Residual-maker.} Signature: fixed-effect design \(F\mapsto M_F=I-F(F^\transpose F)^+F^\transpose\). Role: defines two-way residualized norms and the FWL Gram. Dependencies: balanced panel and Section 7's projection convention.
+\item \textbf{Event and nuisance columns.} Signature: \(E_0=\one\{t\ge2,D_{t-1}=0,D_t=1\}\), \(C_{10}=\one\{D_{t-1}=1,D_t=0\}\), \(C_{11}=\one\{D_{t-1}=1,D_t=1\}\). Role: provides the identity \(E_0+C_{11}=D_t\) for \(t\ge2\) in Conjecture 1 and the recombination \(L=C_{10}+C_{11}=D_{t-1}\) in Conjecture 2. Dependencies: first-order history definitions.
+\item \textbf{FWL Gram block.} Signature: \(G_T(K)=\E[X_T(K)^\transpose X_T(K)]\) for residualized \(X_T(K)\). Role: Conjecture 1 lower-bounds \(\sigma_{\max}(G_T(K))\) through the Rayleigh quotient of \(u=(1,0,1)^\transpose\). Dependencies: residual-maker and design columns.
+\item \textbf{Variance of a stationary symmetric Markov sum.} Signature: \(\operatorname{Var}(\sum_{t=1}^T D_t)=T/4+(1/2)\sum_{h=1}^{T-1}(T-h)\rho_T^h\). Role: gives \(\E\sum_t(M_FD_t)^2\ge T/8\) when \(a_T=b_T=T^{-1/2}\). Dependencies: stationarity and covariance identity.
+\item \textbf{Finite row-space identity for \(T=2\).} Signature: \(A_{B^\star}\in\mathbb R^{2\times 6}\), \(\ell\in\mathbb R^6\), and \(\ell=16A_{B^\star,1\cdot}+8A_{B^\star,2\cdot}\). Role: proves regular point identification of \(\theta_0\) under the one-column recombined nuisance basis. Dependencies: explicit finite-grid residualization and Assumption~\ref{ass:minimal-class}.
+\item \textbf{Regular row-space trichotomy.} Signature: \(A_T^{\mathrm{reg}}\), \(z_T^{\mathrm{reg}}\), \(\mathcal V_T^{\mathrm{reg}}\), \(\Pi_T^{\mathrm{reg}}\), \(\mathcal F_T^{\mathrm{reg}}\), and row \(\ell_K\). Role: supporting theorem that connects row membership, projected targets, and bounded affine-fiber endpoints. Dependencies: Assumptions~\ref{ass:finite-memory}, \ref{ass:untreated-twfe}, \ref{ass:regular-row}, \ref{ass:bounded-response}, and \ref{ass:nondegenerate-target}.
+\end{itemize}
+
+\section{Conclusion and references}
+Conjecture 1 (markov-event-rank) is refuted; Refuted: for \(K=\{-1,0\}\) and \(a_T=b_T=T^{-1/2}\), the block direction \(E_0+C_{11}\) has two-way residualized Gram scale at least \(T/64\), while \(\Lambda_T(K)\asymp T^{1/2}\).
+Conjecture 2 (minimal-basis-change) is refuted; The finite-T rank/support witness \(T=2\), \(K=\{-1,0\}\), \(a=b=1/2\), and \(B^\star=\{C_{10}+C_{11}\}\) refutes Conjecture 2's claim that \(\{C_{10},C_{11}\}\) is minimal in \(\mathfrak B(K)\).
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem{bojinov2021panel}
+Bojinov, I., Rambachan, A., and Shephard, N. (2021).
+Panel experiments and dynamic causal effects: A finite population perspective.
+\emph{Quantitative Economics}, 12(4), 1171--1196.
+
+\bibitem{bojinov2023switchback}
+Bojinov, I., Simchi-Levi, D., and Zhao, J. (2023).
+Design and analysis of switchback experiments.
+\emph{Management Science}, 69(7), 3759--3777.
+
+\bibitem{borusyak2024eventstudy}
+Borusyak, K., Jaravel, X., and Spiess, J. (2024).
+Revisiting event-study designs: Robust and efficient estimation.
+\emph{Review of Economic Studies}, 91(6), 3253--3285.
+
+\bibitem{callaway2021multiple}
+Callaway, B. and Sant'Anna, P. H. C. (2021).
+Difference-in-differences with multiple time periods.
+\emph{Journal of Econometrics}, 225(2), 200--230.
+
+\bibitem{dechaisemartin2020twfe}
+de Chaisemartin, C. and D'Haultfoeuille, X. (2020).
+Two-way fixed effects estimators with heterogeneous treatment effects.
+\emph{American Economic Review}, 110(9), 2964--2996.
+
+\bibitem{dechaisemartin2024intertemporal}
+de Chaisemartin, C. and D'Haultfoeuille, X. (2024).
+Difference-in-differences estimators of intertemporal treatment effects.
+\emph{Review of Economics and Statistics}, 106(2), 529--540.
+
+\bibitem{goodmanbacon2021timing}
+Goodman-Bacon, A. (2021).
+Difference-in-differences with variation in treatment timing.
+\emph{Journal of Econometrics}, 225(2), 254--277.
+
+\bibitem{hu2022switchback}
+Hu, Y., Simchi-Levi, D., and Wang, H. (2022).
+Experimenting on Markov decision processes with local treatment effects.
+\emph{Operations Research}, 70(1), 521--544.
+
+\bibitem{manski2003partial}
+Manski, C. F. (2003).
+\emph{Partial Identification of Probability Distributions}.
+Springer.
+
+\bibitem{schmidheiny2023event}
+Schmidheiny, K. and Siegloch, S. (2023).
+On event studies and distributed-lags in two-way fixed effects models: Identification, equivalence, and generalization.
+\emph{Journal of Applied Econometrics}, 38(5), 695--713.
+
+\bibitem{sunabraham2021eventstudy}
+Sun, L. and Abraham, S. (2021).
+Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\emph{Journal of Econometrics}, 225(2), 175--199.
+
+\bibitem{tamer2010partial}
+Tamer, E. (2010).
+Partial identification in econometrics.
+\emph{Annual Review of Economics}, 2, 167--195.
+\end{thebibliography}
+
+\end{document}

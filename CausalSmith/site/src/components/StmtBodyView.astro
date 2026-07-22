@@ -1,0 +1,53 @@
+---
+// Renders one binder's type (or the theorem's conclusion): either a plain
+// stack of already-re-indented lines, or — for a hypothesis shaped
+// `∀ …, P → Q → R` — the premises above a rule and the conclusion below it,
+// natural-deduction style. Used both for a row's own body and, recursively in
+// shape only (never in nesting: a chain's premises/conclusion are always
+// plain lines, never another chain), inside a chain block.
+import { isChain, type StmtBody, type StmtLine } from "../lib/leanStatement.js";
+
+interface Props {
+  body: StmtBody;
+}
+const { body } = Astro.props as Props;
+
+const lineHtml = (l: StmtLine) => l.html ?? l.text;
+const lineStyle = (l: StmtLine) =>
+  l.indent > 0 ? `margin-left:${Math.round(l.indent * 1.1 * 100) / 100}rem` : undefined;
+---
+
+{
+  isChain(body) ? (
+    <div class="stmt-body">
+      {body.header?.map((l) => <div class="stmt-line" style={lineStyle(l)} set:html={lineHtml(l)} />)}
+      <div class="chain">
+        {body.premises.map((prem, i) => (
+          <div class="chain-line">
+            <span class="chain-tag">{i === 0 ? "if" : "and"}</span>
+            <div class="chain-lines">
+              {prem.map((l) => (
+                <div class="stmt-line" style={lineStyle(l)} set:html={lineHtml(l)} />
+              ))}
+            </div>
+          </div>
+        ))}
+        <div class="chain-rule" />
+        <div class="chain-line">
+          <span class="chain-tag">then</span>
+          <div class="chain-lines">
+            {body.conclusion.map((l) => (
+              <div class="stmt-line" style={lineStyle(l)} set:html={lineHtml(l)} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div class="stmt-body">
+      {body.map((l) => (
+        <div class="stmt-line" style={lineStyle(l)} set:html={lineHtml(l)} />
+      ))}
+    </div>
+  )
+}

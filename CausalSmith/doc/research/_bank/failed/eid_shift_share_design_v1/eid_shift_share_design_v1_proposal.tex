@@ -1,0 +1,360 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_shift\_share\_design, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{eid\_shift\_share\_design} / \texttt{v1}%
+  \\ \large\textit{A leakage-null frontier for canonical, recentered, and design-based shift-share IV moments}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{quote}\small
+\begin{verbatim}
+(qid, specialization) = (eid_shift_share_design, v1)
+anchor cluster = ExactID / design-based formula-IV
+graph / SWIG =
+  finite-population formula-IV experiment with units i=1,...,N,
+  predetermined exposure shares s_i in R^K, shock vector G in R^K,
+  formula instrument z_i(q)=s_i' (G-q), exposure-induced treatment X_i(G),
+  potential outcomes Y_i(x), and observed Y_i=Y_i(X_i(G))
+treatment =
+  scalar exposure-induced treatment X_i(G), with first-stage variation
+  generated additively by the same shock vector G through the exposure shares
+target estimand =
+  beta_exp in the linear structural equation Y_i = beta_exp X_i + U_i,
+  equivalently the exposure coefficient solving the valid design moment
+  E_N E_D[ z_i(m_D) (Y_i-beta X_i) ] = 0
+identifying assumptions =
+  consistency, exclusion through X_i(G), exposure additivity, predetermined
+  shares and unit residuals measurable with respect to the design information,
+  shock independence after the rich design sigma-field D, nonzero first stage,
+  and known counterfactual shock means m_R=E_R[G] and m_D=E_D[G]
+estimator comparison =
+  canonical Bartik/SSIV q=0, Borusyak-Hull recentered IV q=m_R, and
+  design-based formula IV q=m_D
+frontier object =
+  the leakage vector epsilon=m_D-m_R and exposure covariance Pi=E_N[s_i s_i']
+  determine when the three population moments identify the same beta_exp;
+  strict separation is measured by the projection of epsilon and m_D onto
+  the Pi-loaded residual-exposure direction ell=E_N[s_i U_i]
+\end{verbatim}
+\end{quote}
+
+\begin{abstract}
+This proposal asks when three named shift-share/formula-IV moments identify the same structural exposure coefficient: canonical Bartik SSIV, Borusyak--Hull recentered IV, and design-based formula IV.  The kernel is a leakage-null frontier: recentering and full design conditioning are equivalent exactly when the unmodeled covariate-conditional shock mean \(\epsilon=m_D-m_R\) is invisible to the exposure-share residual direction, while canonical SSIV additionally requires the entire design mean \(m_D\) to be invisible.  The routine population decomposition is a theorem, but the flagship conjecture is the sharp uniform version: over an open class of finite-support formula-IV designs, any positive \(\Pi\)-loaded leakage mass produces a strict recentered-versus-design limit-functional gap, not merely a different variance formula.  This positions recentering as a projection operation with an auditable null space rather than as a blanket cure for nonrandom exposure.  If resolved, the result would give empirical shift-share users a finite-support matrix diagnostic for whether a recentered formula instrument and a richer design-based instrument can be interpreted as the same IV design.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Shift-share and formula-IV estimators are now used through several identification logics.  \citet{BorusyakHullJaravel2022REStud} justify canonical SSIV by moving the orthogonality condition to the shock level, \citet{BorusyakHull2023Econometrica} recenter formula treatments or instruments to handle nonrandom exposure, and \citet{BorusyakHullJaravel2025ECTJ} organize a broader design-based formula-IV framework.  Applied researchers can easily face a design in which all three moments are available, but the literature does not tell them which covariate-conditional shock-mean misspecifications are harmless relabelings and which change the population estimand.
+
+\paragraph{The main finding (proposed).}
+Theorem~\ref{thm:moment-decomp} gives the population identity: at the true exposure coefficient, the canonical, recentered, and design-based moments differ only through the inner products \(\ell^\transpose m_D\) and \(\ell^\transpose\epsilon\), where \(\ell=E_N[s_iU_i]\) is the exposure-share residual load.  Conjecture~\ref{conj:uniform-frontier} is the flagship claim.  It says that equality of the three identifying moments over an open residual class is equivalent to a sharp \(\Pi\)-null condition, \(\Pi^{1/2}m_D=0\) and \(\Pi^{1/2}\epsilon=0\), and that any violation produces a strict open-set separation with a bias lower bound proportional to the \(\Pi\)-loaded leakage norm.
+
+\paragraph{What is new.}
+The novelty kernel is not another sufficient shock-exogeneity condition and not an inference correction for share-induced correlation.  The closest papers give estimator-specific recipes: \citet{BorusyakHullJaravel2022REStud} give shock-level SSIV orthogonality, \citet{BorusyakHull2023Econometrica} subtract the counterfactual average instrument under a specified shock assignment process, and \citet{BorusyakHullJaravel2025ECTJ} review design-based conditioning and optimal formula instruments.  The epsilon-gap is a necessary-and-sufficient leakage geometry comparing the three named population moments under one DGP, with the leakage vector classified by the exposure covariance \(\Pi\) and residual load \(\ell\), rather than a new sufficient condition for one estimator.
+
+\paragraph{How it positions in the literature.}
+The anchor cluster is exact identification for IV and formula instruments.  The proposal consumes the shift-share shock-level equivalence of \citet{BorusyakHullJaravel2022REStud}, the recentered-instrument construction of \citet{BorusyakHull2023Econometrica}, and the design-based formula-IV synthesis of \citet{BorusyakHullJaravel2025ECTJ}.  It is also informed by the exposure-share route of \citet{GoldsmithPinkhamSorkinSwift2020AER} and the inference-versus-identification warning in \citet{AdaoKolesarMorales2019QJE}: share geometry can matter even when the object is not a standard-error formula.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the practical checklist program of \citet{BorusyakHullJaravel2025JEP}.  A leakage-null theorem would add a reportable diagnostic to that workflow: compute whether the specified counterfactual-shock recentering mean leaves \(\Pi\)-loaded leakage that a richer design conditioning would remove.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report the \(\Pi\)-loaded leakage diagnostic before interpreting canonical SSIV, recentered IV, and design-based formula IV as interchangeable estimates of the same exposure coefficient.
+
+\section{Related work}
+\citet{BorusyakHullJaravel2022REStud} is the canonical shock-level SSIV anchor: it shows that orthogonality of the shift-share instrument with the residual can be represented as shock-level orthogonality, allowing endogenous exposure shares under quasi-random shocks.  \citet{BorusyakHull2023Econometrica} is the recentering anchor: it handles nonrandom exposure to exogenous shocks by subtracting the average treatment or instrument across specified counterfactual shock realizations.  \citet{BorusyakHullJaravel2025ECTJ} is the design-based formula-IV anchor: it reviews formula instruments that condition on observed formula inputs and the shock assignment process, including recentering, falsification tests, heterogeneous effects, and optimal instrument construction.  \citet{BorusyakHullJaravel2025JEP} is the applied-guidance consumer because it presents shift-share practice as a checklist across the many-shock and exogenous-share routes.
+
+\citet{GoldsmithPinkhamSorkinSwift2020AER} give the leading exposure-share interpretation of Bartik instruments and Rotemberg weights, which matters here because the same exposure covariance \(\Pi\) determines which leakage directions survive aggregation.  \citet{AdaoKolesarMorales2019QJE} show that exposure shares induce residual correlation and require specialized inference, providing the caution that share geometry is not a nuisance detail.  \citet{JaegerRuistStuhler2018NBER} show that stable exposure shares can confound short-run and long-run immigration responses, motivating leakage directions that are invisible to a simple recentering mean but visible to a richer design.  \citet{AutorDornHanson2013AER} is the canonical empirical shift-share application behind much of this literature, so a diagnostic that changes interpretation of canonical versus recentered SSIV would affect a large applied template.
+
+The in-catalogue ThmSmith prior art is adjacent rather than duplicate.  The `doc/API.md' ExactID catalogue is seed-time empty for \texttt{eid\_*} entries, so there is no recorded shift-share or formula-IV theorem.  The downgraded \texttt{eid\_lp\_svar\_nonequiv} proposal is relevant as a warning that named-estimator non-equivalence must be expressed as a primitive quantitative boundary, not as an assumed positive margin.  The downgraded \texttt{eid\_dml\_orth\_uniform} proposal is relevant because its reviewer trail requested an observable finite-support matrix diagnostic; this proposal supplies that style of diagnostic for formula-IV leakage rather than for DML studentization.
+
+\section{Formal setup}
+There are \(N\) units and \(K\) shocks.  Unit \(i\) has predetermined exposure vector \(s_i\in\R^K\), and \(S\) denotes the \(N\times K\) exposure matrix.  The shock vector is \(G\in\R^K\).  For any recentering vector \(q\in\R^K\), the formula instrument is
+\[
+  z_i(q)=s_i^\transpose(G-q).
+\]
+The three named moments use \(q_B=0\) for canonical Bartik/SSIV, \(q_R=m_R\) for Borusyak--Hull recentering, and \(q_D=m_D\) for full design-based formula IV.  Here \(m_R=E_R[G]\) is the counterfactual mean under the recentering assignment rule and \(m_D=E_D[G]\) is the richer design-conditional mean.  The leakage vector is
+\[
+  \epsilon=m_D-m_R.
+\]
+
+The structural equation is
+\[
+  Y_i=\beta_{\exp}X_i+U_i,
+\]
+where \(X_i=X_i(G)\) is the exposure-induced treatment and \(U_i\) is the structural residual.  The target estimand is \(\beta_{\exp}\).  For \(q\in\{q_B,q_R,q_D\}\), define the population formula-IV moment and first stage
+\[
+  M_q(\beta)=E_N E_D[z_i(q)(Y_i-\beta X_i)],\qquad
+  F_q=E_N E_D[z_i(q)X_i],
+\]
+where \(E_N\) averages over units and \(E_D\) averages over the shock design.  When \(F_q\ne0\), the population limit functional is
+\[
+  \beta(q)=\beta_{\exp}+M_q(\beta_{\exp})/F_q.
+\]
+Let the exposure covariance and residual-exposure load be
+\[
+  \Pi=E_N[s_i s_i^\transpose],\qquad
+  \ell=E_N[s_iU_i]\in\R^K.
+\]
+If \(\ell\in\operatorname{Range}(\Pi)\), write \(\ell=\Pi\gamma_U\) for the minimum-norm exposure-linear residual coefficient \(\gamma_U=\Pi^\dagger\ell\).  The \(\Pi\)-loaded leakage norm is
+\[
+  \|\epsilon\|_{\Pi}=(\epsilon^\transpose\Pi\epsilon)^{1/2},
+\]
+with the same definition for \(m_D\).  The exact-id question is whether \(\beta(q_B)=\beta(q_R)=\beta(q_D)=\beta_{\exp}\), and the strict-extension question is whether a richer design mean \(m_D\) removes leakage that \(m_R\) leaves in the population IV moment.
+
+\paragraph{Locked parameters reproduced.}
+\begin{quote}\small
+\begin{verbatim}
+(qid, specialization) = (eid_shift_share_design, v1)
+anchor cluster = ExactID / design-based formula-IV
+graph / SWIG =
+  finite-population formula-IV experiment with units i=1,...,N,
+  predetermined exposure shares s_i in R^K, shock vector G in R^K,
+  formula instrument z_i(q)=s_i' (G-q), exposure-induced treatment X_i(G),
+  potential outcomes Y_i(x), and observed Y_i=Y_i(X_i(G))
+treatment =
+  scalar exposure-induced treatment X_i(G), with first-stage variation
+  generated additively by the same shock vector G through the exposure shares
+target estimand =
+  beta_exp in the linear structural equation Y_i = beta_exp X_i + U_i,
+  equivalently the exposure coefficient solving the valid design moment
+  E_N E_D[ z_i(m_D) (Y_i-beta X_i) ] = 0
+identifying assumptions =
+  consistency, exclusion through X_i(G), exposure additivity, predetermined
+  shares and unit residuals measurable with respect to the design information,
+  shock independence after the rich design sigma-field D, nonzero first stage,
+  and known counterfactual shock means m_R=E_R[G] and m_D=E_D[G]
+estimator comparison =
+  canonical Bartik/SSIV q=0, Borusyak-Hull recentered IV q=m_R, and
+  design-based formula IV q=m_D
+frontier object =
+  the leakage vector epsilon=m_D-m_R and exposure covariance Pi=E_N[s_i s_i']
+  determine when the three population moments identify the same beta_exp;
+  strict separation is measured by the projection of epsilon and m_D onto
+  the Pi-loaded residual-exposure direction ell=E_N[s_i U_i]
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite formula-IV population]\label{ass:finite-formula}
+The population contains finitely many units and finitely many shocks.  The exposure matrix \(S\), shock vector \(G\), counterfactual means \(m_R\) and \(m_D\), treatment \(X_i(G)\), outcome \(Y_i\), and residual \(U_i=Y_i-\beta_{\exp}X_i\) are square-integrable under the shock design.
+\end{assumption}
+
+\begin{assumption}[Consistency, exclusion, and exposure additivity]\label{ass:structural-exposure}
+Observed outcomes satisfy \(Y_i=Y_i(X_i(G))\) and \(Y_i=\beta_{\exp}X_i(G)+U_i\).  All direct shock effects on \(Y_i\) operate through \(X_i(G)\).  The first-stage component of \(X_i(G)\) generated by shocks is additive in the shares, so the population first stages \(F_B,F_R,F_D\) are well-defined formula-IV first stages.
+\end{assumption}
+
+\begin{assumption}[Predetermined shares and residuals]\label{ass:predetermined}
+The exposure vectors \(s_i\) and residuals \(U_i\) are measurable with respect to the information set used to define the rich design mean \(m_D=E_D[G]\).  Thus \(E_D[G-m_D]\) is orthogonal to every \(s_iU_i\).
+\end{assumption}
+
+\begin{assumption}[Design-valid formula IV]\label{ass:design-valid}
+The design-based instrument \(z_i(m_D)\) is valid at \(\beta_{\exp}\):
+\[
+  M_{m_D}(\beta_{\exp})=E_NE_D[z_i(m_D)U_i]=0.
+\]
+The design first stage \(F_D\) is nonzero.
+\end{assumption}
+
+\begin{assumption}[Nonzero first stages for compared moments]\label{ass:first-stage}
+The canonical and recentered first stages \(F_B\) and \(F_R\) are nonzero whenever \(\beta(q_B)\) or \(\beta(q_R)\) is compared with \(\beta(q_D)\).  The ratios \(F_D/F_B\) and \(F_D/F_R\) are bounded away from zero and infinity on the open classes in Conjectures~\ref{conj:uniform-frontier} and \ref{conj:two-shock-witness}.
+\end{assumption}
+
+\begin{assumption}[Exposure covariance and residual load]\label{ass:pi-load}
+The exposure covariance \(\Pi=E_N[s_i s_i^\transpose]\) is positive semidefinite, \(\ell=E_N[s_iU_i]\) belongs to \(\operatorname{Range}(\Pi)\), and \(\gamma_U=\Pi^\dagger\ell\) is the minimum-norm exposure-linear residual coefficient.  The \(\Pi\)-loaded norms \(\|m_D\|_\Pi\) and \(\|\epsilon\|_\Pi\) are finite.
+\end{assumption}
+
+\begin{assumption}[Open residual class]\label{ass:open-residual}
+For the uniform frontier, the residual load \(\ell\) ranges over a nonempty open subset of \(\operatorname{Range}(\Pi)\) while Assumptions~\ref{ass:finite-formula}--\ref{ass:first-stage} remain true.  This excludes knife-edge residual classes that impose \(\ell^\transpose m_D=\ell^\transpose\epsilon=0\) by construction.
+\end{assumption}
+
+\begin{assumption}[Two-shock finite witness]\label{ass:two-shock}
+For the finite witness, \(K=2\), \(\Pi\) is positive definite, \(m_D=(a,0)^\transpose\), \(\epsilon=(b,0)^\transpose\), \(a\) and \(b\) are nonzero when the corresponding canonical or recentered separation is tested, and the residual load has \(\ell=(c,d)^\transpose\) with \(c\ne0\).  The compared first stages are nonzero and stable under sufficiently small perturbations of \((a,b,c,d,\Pi)\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: exact moment decomposition]\label{thm:moment-decomp}
+Under Assumptions~\ref{ass:finite-formula}--\ref{ass:design-valid}, at the structural coefficient \(\beta_{\exp}\),
+\[
+  M_{q_D}(\beta_{\exp})=0,\qquad
+  M_{q_R}(\beta_{\exp})=\ell^\transpose\epsilon,\qquad
+  M_{q_B}(\beta_{\exp})=\ell^\transpose m_D.
+\]
+Consequently, under Assumption~\ref{ass:first-stage},
+\[
+  \beta(q_D)=\beta_{\exp},\qquad
+  \beta(q_R)-\beta_{\exp}=\frac{\ell^\transpose\epsilon}{F_R},\qquad
+  \beta(q_B)-\beta_{\exp}=\frac{\ell^\transpose m_D}{F_B}.
+\]
+For a fixed residual load \(\ell\), recentered IV and design-based formula IV identify the same \(\beta_{\exp}\) if and only if \(\ell^\transpose\epsilon=0\), while all three moments identify the same \(\beta_{\exp}\) if and only if \(\ell^\transpose\epsilon=0\) and \(\ell^\transpose m_D=0\).
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) The closest published papers are \citet{BorusyakHullJaravel2022REStud} and \citet{BorusyakHull2023Econometrica}.  The epsilon-gap is not the algebra that subtracting a mean changes a moment, but the side-by-side decomposition of the canonical, recentered, and richer design-based population functionals under the same finite formula-IV DGP.  (b) The concrete consumer is \citet{BorusyakHullJaravel2025JEP}: the theorem turns checklist language about recentering and design conditioning into the objects a user must diagnose, \(\ell^\transpose m_D\) and \(\ell^\transpose\epsilon\).
+
+\begin{conjecture}[Conjecture 1: sharp \(\Pi\)-loaded leakage frontier (NOT YET PROVED)]\label{conj:uniform-frontier}
+Under Assumptions~\ref{ass:finite-formula}--\ref{ass:open-residual}, the following uniform equivalences hold over the open residual class.
+\begin{enumerate}[label=(\roman*),leftmargin=*]
+\item Recentered IV and design-based formula IV identify the same \(\beta_{\exp}\) for every residual load in the class if and only if \(\|\epsilon\|_\Pi=0\).
+\item Canonical SSIV, recentered IV, and design-based formula IV identify the same \(\beta_{\exp}\) for every residual load in the class if and only if \(\|m_D\|_\Pi=0\) and \(\|\epsilon\|_\Pi=0\).
+\item If \(\|\epsilon\|_\Pi>0\), then there is a nonempty open subset of residual loads and first stages on which
+\[
+  |\beta(q_R)-\beta(q_D)|
+  \ge
+  c_R\,\|\epsilon\|_\Pi
+\]
+for some local constant \(c_R>0\).  If \(\|m_D\|_\Pi>0\), there is likewise an open subset on which
+\[
+  |\beta(q_B)-\beta(q_D)|
+  \ge
+  c_B\,\|m_D\|_\Pi
+\]
+for some local constant \(c_B>0\).
+\end{enumerate}
+Thus the sharp boundary is not whether shocks are described as exogenous in the abstract; it is whether the recentering and canonical means have zero projection onto the exposure covariance directions that can carry residual imbalance.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest published papers are \citet{BorusyakHull2023Econometrica} and \citet{BorusyakHullJaravel2025ECTJ}.  They define recentered and design-based formula instruments and discuss efficient construction, but they do not state an if-and-only-if \(\Pi\)-loaded leakage frontier comparing recentered IV with a richer design mean under the same DGP.  The epsilon-gap is the uniform null-space characterization \(\|\epsilon\|_\Pi=0\) plus the open-set strict separation when \(\|\epsilon\|_\Pi>0\).  (b) Resolving the conjecture would give the \citet{BorusyakHullJaravel2025JEP} practical checklist a concrete matrix diagnostic for deciding whether recentering has fully absorbed nonrandom exposure.
+
+\begin{conjecture}[Conjecture 2: two-shock open witness for strict separation (NOT YET PROVED)]\label{conj:two-shock-witness}
+Under Assumptions~\ref{ass:finite-formula}--\ref{ass:pi-load} and \ref{ass:two-shock}, there is a nonempty open neighborhood of the displayed two-shock design such that \(M_{q_D}(\beta_{\exp})=0\) but
+\[
+  M_{q_R}(\beta_{\exp})=bc+o(1),\qquad
+  M_{q_B}(\beta_{\exp})=ac+o(1),
+\]
+where the \(o(1)\) terms vanish at the displayed witness and remain smaller than one half of the leading term throughout a sufficiently small neighborhood.  Hence, when \(b c\ne0\), recentered IV and design IV have strictly different limit functionals on an open nondegenerate observable class; when \(a c\ne0\), canonical SSIV and design IV have strictly different limit functionals on an open nondegenerate observable class.  The witness is not degenerate: both shocks have positive exposure variance, the residual load is not hand-tuned to be orthogonal to the first exposure direction, and all compared first stages remain nonzero.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest published comparators are \citet{GoldsmithPinkhamSorkinSwift2020AER}, which diagnose exposure-share leverage through Rotemberg weights, and \citet{AdaoKolesarMorales2019QJE}, which show share-induced correlation matters for inference.  Neither gives a finite-support recentered-versus-design identification witness.  The epsilon-gap is a nondegenerate open witness for strict moment movement, not a collapsed \(Y\equiv0\) or zero-first-stage example.  (b) The concrete consumer is \citet{JaegerRuistStuhler2018NBER}: dynamic or persistent share-driven leakage can be tested against the finite matrix witness to decide whether a richer design is needed rather than only a different standard error.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Correct recentering collapses recentered and design IV]\label{cor:correct-recentering}
+Under Assumptions~\ref{ass:finite-formula}--\ref{ass:first-stage}, if \(m_R=m_D\), then \(\epsilon=0\), \(M_{q_R}(\beta_{\exp})=M_{q_D}(\beta_{\exp})=0\), and \(\beta(q_R)=\beta(q_D)=\beta_{\exp}\).  This recovers the \citet{BorusyakHull2023Econometrica} recentering corner in which the specified counterfactual shock rule matches the rich design mean.
+\end{corollary}
+
+\begin{corollary}[Zero design mean collapses canonical, recentered, and design IV]\label{cor:zero-mean}
+Under Assumptions~\ref{ass:finite-formula}--\ref{ass:first-stage}, if \(m_D=0\) and \(m_R=0\), then \(\epsilon=0\) and all three population moments vanish at \(\beta_{\exp}\).  This recovers the classical uncentered many-shock SSIV validity corner of \citet{BorusyakHullJaravel2022REStud}.
+\end{corollary}
+
+\begin{corollary}[Pi-null leakage is harmless]\label{cor:pi-null}
+Under Assumptions~\ref{ass:finite-formula}--\ref{ass:pi-load}, if \(\|\epsilon\|_\Pi=0\), then \(s_i^\transpose\epsilon=0\) for \(E_N\)-almost every exposure row and therefore \(\ell^\transpose\epsilon=0\).  Recentered IV and design IV have the same population moment at \(\beta_{\exp}\) for every residual load satisfying Assumption~\ref{ass:pi-load}.
+\end{corollary}
+
+\section{Proof-sketch route}
+The proof route is finite-dimensional linear algebra.  First expand \(M_q(\beta_{\exp})=E_NE_D[s_i^\transpose(G-q)U_i]\), use \(E_D[G-m_D]\) orthogonal to \(s_iU_i\), and obtain Theorem~\ref{thm:moment-decomp} by substituting \(q=0,m_R,m_D\).  Second, prove the uniform frontier by duality for the positive semidefinite quadratic form induced by \(\Pi\): \(\ell^\transpose v=0\) for every \(\ell\) in an open subset of \(\operatorname{Range}(\Pi)\) if and only if \(\Pi^{1/2}v=0\), and if \(\Pi^{1/2}v\ne0\), choose residual loads in an open cone aligned with \(\Pi v\) to get a lower bound after controlling first stages.  Third, verify the two-shock witness by writing \(\Pi\), \(m_D\), \(\epsilon\), and \(\ell\) as \(2\times2\) and two-vector objects and checking that the strict inequalities are stable under small perturbations.  The boundary cases needing explicit algebra are \(m_R=m_D\), \(m_D=0\), singular \(\Pi\), zero or exploding first stages, and residual classes that impose orthogonality by design.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:moment-decomp} and the corollaries are routine population algebra once the finite formula-IV setup is fixed.  Conjectures~\ref{conj:uniform-frontier} and \ref{conj:two-shock-witness} are the novel kernel and are not yet proved.  The main open risk is whether the uniform residual class in Assumption~\ref{ass:open-residual} is too strong for some formula-IV applications where the residual load is constrained by the same economic structure that determines \(m_R\) and \(m_D\).  The second risk is that a reviewer may prefer to call the \(\Pi\)-loaded frontier a diagnostic theorem rather than a new estimator; the proposal therefore states the contribution as an exact identification boundary among named published moments.  This v1 pivot deliberately drops the exhausted spectral threshold language from earlier angles and focuses on leakage directions that recentering can and cannot absorb.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for angle 2: replaced the exhausted global spectral non-equivalence angles with a Borusyak--Hull recentering versus design-conditioning leakage-null frontier; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Adao, Kolesar, and Morales(2019)]{AdaoKolesarMorales2019QJE}
+Adao, R., M. Kolesar, and E. Morales (2019).
+Shift-share designs: Theory and inference.
+\emph{Quarterly Journal of Economics} 134(4), 1949--2010.
+
+\bibitem[Autor, Dorn, and Hanson(2013)]{AutorDornHanson2013AER}
+Autor, D. H., D. Dorn, and G. H. Hanson (2013).
+The China syndrome: Local labor market effects of import competition in the United States.
+\emph{American Economic Review} 103(6), 2121--2168.
+
+\bibitem[Borusyak and Hull(2023)]{BorusyakHull2023Econometrica}
+Borusyak, K. and P. Hull (2023).
+Nonrandom exposure to exogenous shocks.
+\emph{Econometrica} 91(6), 2155--2185.
+
+\bibitem[Borusyak, Hull, and Jaravel(2022)]{BorusyakHullJaravel2022REStud}
+Borusyak, K., P. Hull, and X. Jaravel (2022).
+Quasi-experimental shift-share research designs.
+\emph{Review of Economic Studies} 89(1), 181--213.
+
+\bibitem[Borusyak, Hull, and Jaravel(2025a)]{BorusyakHullJaravel2025ECTJ}
+Borusyak, K., P. Hull, and X. Jaravel (2025a).
+Design-based identification with formula instruments: A review.
+\emph{Econometrics Journal} 28(1), 83--108.
+
+\bibitem[Borusyak, Hull, and Jaravel(2025b)]{BorusyakHullJaravel2025JEP}
+Borusyak, K., P. Hull, and X. Jaravel (2025b).
+A practical guide to shift-share instruments.
+\emph{Journal of Economic Perspectives} 39(1), 181--204.
+
+\bibitem[Goldsmith-Pinkham, Sorkin, and Swift(2020)]{GoldsmithPinkhamSorkinSwift2020AER}
+Goldsmith-Pinkham, P., I. Sorkin, and H. Swift (2020).
+Bartik instruments: What, when, why, and how.
+\emph{American Economic Review} 110(8), 2586--2624.
+
+\bibitem[Jaeger, Ruist, and Stuhler(2018)]{JaegerRuistStuhler2018NBER}
+Jaeger, D. A., J. Ruist, and J. Stuhler (2018).
+Shift-share instruments and the impact of immigration.
+NBER Working Paper No. 24285.
+\end{thebibliography}
+
+\end{document}

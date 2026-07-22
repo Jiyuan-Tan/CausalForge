@@ -1,0 +1,310 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_interval\_censored\_adoption, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_interval\_censored\_adoption} / \texttt{v1}%
+  \\ \large\textit{Endpoint certificates for interval-censored staggered-adoption event-time effects}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+(qid, specialization, observable distribution P, parameter theta,
+ identifying restrictions, bounding functional)
+= (pid_interval_censored_adoption, v1,
+   P = law(Y_0,...,Y_T,C) on a finite bounded support, where C is an observed
+       adoption-time interval and the exact first-adoption date G is latent
+       with G in I_C subset {1,...,T,infty},
+   theta = the finite event-time ATT path theta_e for e in E, written as the
+       average of the cell score psi_e(Y,G,C) over finite latent cohorts for
+       which G+e is observed,
+   identifying restrictions = consistency, no anticipation before G, an
+       observed untreated-reference baseline increment m^0_{c,t}, bounded
+       outcomes, support restriction G in I_C, and optional known within-bin
+       endpoint shares r_{c,g},
+   bounding functional = Gamma_lambda(P), the pair of sharp contrast endpoints
+       obtained by optimizing lambda' theta(kappa), with theta(kappa) using
+       its own event-time denominators, over the closed admissible face of
+       latent timing-refinement kernels kappa(g | Y,C) satisfying support,
+       share, and uniform denominator lower-bound restrictions).
+\end{verbatim}
+
+\begin{abstract}
+Staggered-adoption DiD methods index group-time effects by the exact first treatment date. In many administrative panels the adoption date is observed only as an interval, so the same outcome path can be assigned to different event-time cells. This proposal studies the sharp identified set for dynamic event-time ATT paths over all latent refinements of the coarsened cohort labels. The central conjecture is that each signed contrast has an endpoint certificate: a finite transportation-polytope extreme point that attains the sharp lower or upper endpoint of the true contrast, including its refinement-dependent denominators. The object would separate timing nonidentification from parallel-trend sensitivity and would give applied work a diagnostic for when coarsened adoption can reverse an event-study conclusion.
+\end{abstract}
+
+\section{Introduction}
+Event-study DiD asks for treatment effects by exposure length. The claim here is that interval-censored adoption creates a second partial-identification problem: the observed panel may be compatible with different latent event-time allocations and hence with different dynamic ATT paths.
+
+\citet{CallawaySantAnna2021} identify group-time average treatment effects when group is defined by treatment timing; their abstract states that the setting has ``variation in treatment timing.'' \citet{SunAbraham2021} target cohort-specific event-study effects; their abstract begins from ``dynamic effects of an absorbing treatment.'' The present object lives in partial identification: exact timing is not observed, and the estimand is the image of all latent timing-refinement kernels that reproduce the same coarsened panel.
+
+The immediate consumer is empirical staggered-adoption work in which policy implementation is recorded by quarter, fiscal year, approval window, or reporting interval rather than exact date. The conclusion changes practice by forcing a reported event-study sign to pass a refinement-invariance certificate before it is treated as a dynamic causal sign.
+
+\begin{itemize}[leftmargin=*]
+\item Conjecture 1: The event-time ATT path has a sharp endpoint certificate over latent timing refinements. Gap: \citet{CallawaySantAnna2021} and \citet{SunAbraham2021} condition on exact cohorts; the certificate ranges over unobserved refinements inside coarsened bins and keeps event-time denominators inside the optimization. Consumer: coarsened administrative adoption panels.
+\item Theorem 1: If each interval is a singleton and the optional shares are consistent with that singleton, the endpoint certificate collapses to the known-cohort group-time ATT functional. Gap: this is the sanity reduction to \citet{CallawaySantAnna2021}. Consumer: users deciding whether coarsening is harmless.
+\item Theorem 2: A signed event-time contrast has invariant sign exactly when the sharp contrast interval excludes zero. Gap: this is a decision corollary of Conjecture 1 rather than a separate novelty claim. Consumer: event-study sign diagnostics in staggered DiD.
+\item Conjecture 2: There exist two-cohort coarsened panels with identical observed laws and identical coarsened-bin mean changes but opposite exact-event-time contrast signs. Gap: \citet{GoodmanBacon2021} and \citet{DeChaisemartinDHaultfoeuille2020} diagnose wrong signs with observed timing; here the sign reversal comes solely from unobserved timing refinement. Consumer: event-study sign diagnostics in staggered DiD.
+\end{itemize}
+
+\section{Related work}
+\citet{CallawaySantAnna2021} provide the known-cohort group-time ATT benchmark for staggered DiD with multiple periods. \citet{SunAbraham2021} show how dynamic event-study coefficients should be formed from cohort-specific effects when treatment timing is observed. \citet{GoodmanBacon2021} decomposes staggered TWFE into two-by-two comparisons and shows why heterogeneous effects can distort signs. \citet{DeChaisemartinDHaultfoeuille2020} show that TWFE weights may be non-convex and wrong-signed under heterogeneous effects. \citet{RambachanRoth2023} partially identify event-study parameters under restrictions on violations of parallel trends, but the event-study target and aggregation map are fixed. \citet{ManskiPepper2018} bound DiD conclusions under restrictions on trend variation and provide the closest bounded-trend partial-ID comparator. \citet{ManskiTamer2002} is the interval-data anchor: an interval-measured latent variable generally produces an identified region rather than a point estimate. \citet[pp.~185--186]{FanManzanares2017} study DiD when posttreatment treatment status is unknown for the pretreatment sample and use copula, instrumental-variable, or matched-subsample restrictions; their missing status is a binary treatment-status object rather than a latent first-adoption date that allocates outcomes to exposure durations. \citet{BotosaruGutierrez2018} use proxy and stationarity restrictions to point-identify DiD effects when treatment is observed in only one period. \citet[Sec.~2]{AugustinGutknechtLiu2025} study misclassified treatment histories and anticipation in staggered-adoption DiD; their target is bias and correction for observed switching estimators, not the support of exact-event-time ATT paths over all refinements inside an observed interval.
+
+The closest CausalSmith prior art is \texttt{pid\_did\_anticipation\_bounded\_v1}, whose headline uses an observed adoption cohort with bounded anticipation. The present qid removes exact cohort observability and replaces anticipation boxes by latent timing-refinement certificates. The failed \texttt{panel\_honest\_did\_phase\_v1} proposal is relevant because it represents event-study targets as \(y=A\delta\) with fixed \(A\); here the refinement-induced map \(A\) is itself unidentified. The failed \texttt{pid\_tv\_pretrend\_atet\_v1} reviewer note asked for lambda-targeted signed distortions, and this proposal makes the signed contrast depend on feasible timing refinements rather than on a fixed aggregation map. The \texttt{doc/API.md} PartialID catalogue is the relevant in-repository family; ExactID graph rules and panel FWL entries are only infrastructure or adjacent methodology.
+
+\section{Formal setup}
+Let \(t=0,\ldots,T\). A unit has observed outcome path \(Y=(Y_0,\ldots,Y_T)\in\mathcal Y^{T+1}\), observed coarsened adoption label \(C\in\mathcal C\), and latent exact first-adoption date \(G\in I_C\subset\{1,\ldots,T,\infty\}\). The observable law is \(P=\mathcal L(Y,C)\) on finite bounded support. A timing refinement is a Markov kernel \(\kappa(g\mid y,c)\) with support in \(I_c\), and it is feasible for \(P\) when it satisfies any known endpoint shares \(\sum_y P(y,c)\kappa(g\mid y,c)=r_{c,g}P(C=c)\) for all listed \((c,g)\).
+
+Let \(\mathcal K(P)\) be the set of feasible timing-refinement kernels satisfying these support and share restrictions. For an event time \(e\in\mathcal E\), define \(v_e(g)=\one\{g<\infty,\ 0\le g-1\le T,\ 0\le g+e\le T\}\) and the cell score by the piecewise rule
+\[
+\psi_e(y,g,c)=
+\begin{cases}
+(y_{g+e}-y_{g-1})-(m^0_{c,g+e}-m^0_{c,g-1}), & v_e(g)=1,\\
+0, & v_e(g)=0.
+\end{cases}
+\]
+Here \(m^0_{c,t}\) is the observed untreated-reference mean for bin \(c\) at time \(t\), and off-domain or never-treated cells contribute zero to the numerator. For \(\kappa\in\mathcal K(P)\), define \(D_e(\kappa)=\sum_{c,y,g}P(y,c)\kappa(g\mid y,c)v_e(g)\). The identified set for the path is
+When Assumption \ref{ass:denom} supplies lower bounds \(d_e>0\), let
+\[
+\mathcal K_d(P)=\{\kappa\in\mathcal K(P):D_e(\kappa)\ge d_e\ \text{for all }e\in\mathcal E\}.
+\]
+The identified set for the path is
+\[
+\Theta_I(P)=\left\{\theta(\kappa):\theta_e(\kappa)=
+\frac{\sum_{c,y,g}P(y,c)\kappa(g\mid y,c)\psi_e(y,g,c)}
+{D_e(\kappa)} ,\ \kappa\in\mathcal K_d(P)\right\}.
+\]
+The endpoint certificate for contrast \(\lambda\in\R^{|\mathcal E|}\) is
+\[
+\Gamma_\lambda(P)=\left[\inf_{\theta\in\Theta_I(P)}\lambda^\transpose\theta,\ 
+\sup_{\theta\in\Theta_I(P)}\lambda^\transpose\theta\right].
+\]
+
+\begin{verbatim}
+(qid, specialization, observable distribution P, parameter theta,
+ identifying restrictions, bounding functional)
+= (pid_interval_censored_adoption, v1,
+   P = law(Y_0,...,Y_T,C) on a finite bounded support, where C is an observed
+       adoption-time interval and the exact first-adoption date G is latent
+       with G in I_C subset {1,...,T,infty},
+   theta = the finite event-time ATT path theta_e for e in E, written as the
+       average of the cell score psi_e(Y,G,C) over finite latent cohorts for
+       which G+e is observed,
+   identifying restrictions = consistency, no anticipation before G, an
+       observed untreated-reference baseline increment m^0_{c,t}, bounded
+       outcomes, support restriction G in I_C, and optional known within-bin
+       endpoint shares r_{c,g},
+   bounding functional = Gamma_lambda(P), the pair of sharp contrast endpoints
+       obtained by optimizing lambda' theta(kappa), with theta(kappa) using
+       its own event-time denominators, over the closed admissible face of
+       latent timing-refinement kernels kappa(g | Y,C) satisfying support,
+       share, and uniform denominator lower-bound restrictions).
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite bounded support]\label{ass:finite}
+\(\mathcal Y\), \(\mathcal C\), and each \(I_c\) are finite, and \(|Y_t|\le M<\infty\) for all \(t\).
+\end{assumption}
+
+\begin{assumption}[Interval support]\label{ass:interval}
+The latent first-adoption date satisfies \(G\in I_C\) almost surely, where \(I_C\) is known from the coarsening protocol.
+\end{assumption}
+
+\begin{assumption}[Observed baseline increments]\label{ass:baseline}
+For each \(c\) and \(t\), the untreated-reference mean \(m^0_{c,t}\) is known from never-treated, not-yet-treated, or external reference cells and is held fixed when refinements vary.
+\end{assumption}
+
+\begin{assumption}[Consistency and no anticipation]\label{ass:consistency}
+Observed outcomes equal the potential-outcome path indexed by the latent \(G\), and periods \(t<G\) are untreated potential-outcome periods.
+\end{assumption}
+
+\begin{assumption}[Known share restrictions]\label{ass:shares}
+The analyst specifies a set \(\mathcal R\) of known within-bin shares \(r_{c,g}\). If no validation information is available, \(\mathcal R\) is empty.
+\end{assumption}
+
+\begin{assumption}[Closed admissible exposure face]\label{ass:denom}
+For each \(e\in\mathcal E\), the analyst fixes a known constant \(d_e>0\), and the admissible refinement set is the closed face \(\mathcal K_d(P)=\{\kappa\in\mathcal K(P):D_e(\kappa)\ge d_e\ \text{for all }e\in\mathcal E\}\). This face is nonempty. Endpoints in \(\Gamma_\lambda(P)\) are taken over \(\Theta_I(P)=\{\theta(\kappa):\kappa\in\mathcal K_d(P)\}\), so zero-denominator boundary refinements are not limiting points of the optimization domain.
+\end{assumption}
+
+\section{Main results}
+\begin{conjecture}[Endpoint certificate for latent timing refinements]\label{conj:endpoint}
+(NOT YET PROVED.) Under Assumptions \ref{ass:finite}--\ref{ass:denom}, for every \(\lambda\in\R^{|\mathcal E|}\), \(\Gamma_\lambda(P)\) is the sharp identified interval for the contrast \(\lambda^\transpose\theta\). Each endpoint is attained at an extreme point of the finite transportation polytope over masses \(q_{y,c,g}=P(y,c)\kappa(g\mid y,c)\). For a single event-time coordinate, or for contrasts whose nonzero coordinates share a common denominator on the active face, the endpoint problem is linear-fractional and Charnes--Cooper reducible; for general multi-event contrasts it is a finite rational optimization over the same transportation extreme-point candidate set.
+\end{conjecture}
+
+\begin{theorem}[Singleton-bin reduction]\label{thm:singleton}
+Under Assumptions \ref{ass:finite}--\ref{ass:denom}, suppose \(I_c=\{g(c)\}\) for every observed bin \(c\), the share restrictions are singleton-consistent in the sense that every listed \(r_{c,g(c)}=1\) and every listed \(r_{c,g}=0\) for \(g\ne g(c)\), and \(\E_P[v_e(g(C))]\ge d_e\) for all \(e\in\mathcal E\). Then \(\Theta_I(P)\) is a singleton and \(\theta_e=\E_P[\psi_e(Y,g(C),C)]/\E_P[v_e(g(C))]\).
+\end{theorem}
+The proof is the substitution \(\kappa(g(c)\mid y,c)=1\) in the definition of \(\Theta_I(P)\). Singleton-consistent shares make this kernel feasible, and the lower bounds \(d_e\) place it in the closed admissible face.
+
+\begin{theorem}[Sign decision from sharp contrast interval]\label{thm:sign}
+Assume Conjecture \ref{conj:endpoint}. Under Assumptions \ref{ass:finite}--\ref{ass:denom}, a signed event-time contrast \(\lambda^\transpose\theta\) has identified positive sign if and only if the lower endpoint of \(\Gamma_\lambda(P)\) is strictly positive, and it has identified negative sign if and only if the upper endpoint is strictly negative.
+\end{theorem}
+The proof is the definition of a sharp support interval for the scalar contrast: all feasible contrast values lie in \(\Gamma_\lambda(P)\), and both endpoints are attainable.
+
+\begin{conjecture}[Two-cohort sign reversal under coarsened timing]\label{conj:reversal}
+(NOT YET PROVED.) Under Assumptions \ref{ass:finite}--\ref{ass:denom}, there is an open class of two-bin, two-date coarsened panels for which two feasible refinements \(\kappa_-\) and \(\kappa_+\) induce the same law \(P(Y,C)\), the same observed coarsened-bin mean changes, and opposite signs of a named exact-event-time contrast \(\lambda^\transpose\theta\). The class includes nonzero endpoint shares for every latent date in each bin and nonconstant outcome paths in each observed bin.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No-coarsening check]\label{cor:nocoarsening}
+Under Assumptions \ref{ass:finite}--\ref{ass:denom}, singleton bins, singleton-consistent share restrictions, and \(\E_P[v_e(g(C))]\ge d_e\) for all \(e\in\mathcal E\), Corollary \ref{cor:nocoarsening} collapses to Theorem \ref{thm:singleton} because the feasible refinement set contains one admissible kernel.
+\end{corollary}
+
+\paragraph{Exhibit 9.1: endpoint certificate on a two-date interval.}
+Let \(T=3\), \(\mathcal E=\{0\}\), one observed bin \(c\), \(I_c=\{1,2\}\), no share restrictions, and \(m^0_{c,t}=0\) for all \(t\). Let \(P(Y=a,C=c)=P(Y=b,C=c)=1/2\), with \(a=(0,1,1,1)\) and \(b=(0,-1,-1,-1)\). The score table for \(e=0\) is
+\[
+\begin{array}{c|cc}
+&g=1&g=2\\ \hline
+a&1&0\\
+b&-1&0
+\end{array}
+\]
+so the lower endpoint is \(-1/2\), attained by assigning \(b\) to \(g=1\) and \(a\) to \(g=2\), and the upper endpoint is \(1/2\), attained by assigning \(a\) to \(g=1\) and \(b\) to \(g=2\). Both refinements generate the same \(P(Y,C)\), the denominator for \(\theta_0\) is one, and the contrast signs are opposite.
+
+\paragraph{Exhibit 9.2: endpoint certificate with known shares.}
+In Exhibit 9.1 add \(r_{c,1}=r_{c,2}=1/2\). The same two deterministic assignments satisfy the share restrictions, so the contrast endpoints remain \([-1/2,1/2]\). The share constraints are neither inconsistent nor over-determined because there are exactly two support atoms and two latent dates with positive mass.
+
+\paragraph{Exhibit 9.3: three-date transportation certificate.}
+Let \(T=4\), \(\mathcal E=\{0\}\), one observed bin \(c\), \(I_c=\{1,2,3\}\), and \(P(Y=a_j,C=c)=1/3\) for \(j=1,2,3\). Set \(m^0_{c,t}=0\), \(a_1=(0,3,3,3,3)\), \(a_2=(0,-1,-1,-1,-1)\), and \(a_3=(0,0,0,2,2)\). Impose \(r_{c,1}=r_{c,2}=r_{c,3}=1/3\). The feasible variables \(q_{j,g}=P(Y=a_j,C=c)\kappa(g\mid a_j,c)\) form the \(3\times3\) transportation polytope with row sums and column sums \(1/3\). For \(e=0\), the score matrix is
+\[
+\begin{array}{c|ccc}
+&g=1&g=2&g=3\\ \hline
+a_1&3&0&0\\
+a_2&-1&0&0\\
+a_3&0&0&2
+\end{array}
+\]
+and \(D_0(\kappa)=1\) for every feasible refinement. The upper endpoint is \(5/3\), attained by the permutation \(a_1\mapsto1,a_2\mapsto2,a_3\mapsto3\); the lower endpoint is \(-1/3\), attained by \(a_2\mapsto1,a_3\mapsto2,a_1\mapsto3\). The exhibit uses three positive endpoint shares, so the certificate is a transportation extreme point rather than an ``at most two dates'' assignment rule.
+
+\paragraph{Exhibit 9.4: two-bin opposite-sign refinement.}
+Let \(T=3\), \(\mathcal E=\{0\}\), \(C\in\{A,B\}\), \(I_A=\{1,2\}\), \(I_B=\{2,3\}\), and \(P(C=A)=P(C=B)=1/2\). Within each bin place two atoms of conditional probability \(1/2\): \(A_+=(0,2,2,2)\), \(A_-=(0,-1,-1,-1)\), \(B_+=(0,0,2,2)\), and \(B_-=(0,0,-1,-1)\). Set \(m^0_{c,t}=0\) and \(r_{A,1}=r_{A,2}=r_{B,2}=r_{B,3}=1/2\). The refinement \(\kappa_+\) assigns \(A_+\mapsto1,A_-\mapsto2,B_+\mapsto2,B_-\mapsto3\), while \(\kappa_-\) assigns \(A_-\mapsto1,A_+\mapsto2,B_-\mapsto2,B_+\mapsto3\). Both refinements satisfy the shares and induce the same \(P(Y,C)\) and the same observed mean path in each coarsened bin, but \(\theta_0(\kappa_+)=1\) and \(\theta_0(\kappa_-)=-1/2\). The sign difference is not a normalization artifact because \(D_0(\kappa_+)=D_0(\kappa_-)=1\), so both values use the same positive denominator.
+
+\section{Proof-sketch route}
+For Conjecture \ref{conj:endpoint}, the route is: headline \(\leftarrow\) unfold \S6 definitions \(\leftarrow\) substitute Assumptions \ref{ass:finite}--\ref{ass:shares} \(\leftarrow\) prove the latent-refinement set factors by observed bin after conditioning on \(P(Y,C)\) \(\leftarrow\) convert each contrast endpoint to a finite transportation problem with optional marginal shares \(\leftarrow\) prove a rearrangement lemma that sorted score assignments attain the extrema within each bin \(\leftarrow\) paste the binwise extremizers and verify sharpness by constructing a joint law for \((Y,C,G)\). This gives \(k=4\) substantive steps beyond definitions and assumptions. For Theorem \ref{thm:sign}, the route is: sign headline \(\leftarrow\) assume endpoint sharpness from Conjecture \ref{conj:endpoint} \(\leftarrow\) use order-completeness of the scalar support interval \(\leftarrow\) apply endpoint-attaining kernels. The boundary algebra to check first is the \(T=3\) two-date witness in Exhibit 9.1 and the case with one nontrivial known share restriction in Exhibit 9.2.
+
+\section{Honest scope flags}
+The singleton-bin reduction is a theorem. The sign-decision result is a theorem conditional on Conjecture \ref{conj:endpoint}; it is not an independent source of novelty. The endpoint and open-class sign-reversal statements are conjectures because the rearrangement and sharpness-pasting arguments must still be verified for ratios on the closed denominator face and for simultaneous multi-event paths. The proposal does not claim an Honest-DiD sensitivity result; trend-violation sensitivity enters only as adjacent prior art. No statement is made for continuous outcome support, continuously distributed adoption windows, or refinements with arbitrarily small event-time denominators. The baseline increment \(m^0_{c,t}\) is treated as observed from a reference design; weakening that condition would be a separate proposal.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft of the endpoint-certificate and sign-invariance proposal; prior verdict: none.
+\item v2 (revise) -- corrected the Fan--Manzanares comparison, made \(\psi_e\) piecewise on valid event cells, fixed Exhibit 9.4 arithmetic, and aligned the sign-decision theorem with the proof route and scope flags; prior verdict: REVISE.
+\item v3 (revise) -- replaced the strict positive-denominator domain by a closed uniformly positive admissible face and added singleton-bin share consistency to Theorem \ref{thm:singleton}; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Augustin, Gutknecht, and Liu(2025)]{AugustinGutknechtLiu2025}
+Augustin, N., D. Gutknecht, and L. Liu (2025).
+Staggered-adoption difference-in-differences with misclassification and anticipation.
+arXiv preprint.
+
+\bibitem[Botosaru and Gutierrez(2018)]{BotosaruGutierrez2018}
+Botosaru, I. and F. Gutierrez (2018).
+Difference-in-differences when the treatment status is observed in only one period.
+\emph{Journal of Applied Econometrics}.
+
+\bibitem[Callaway and Sant'Anna(2021)]{CallawaySantAnna2021}
+Callaway, B. and P. H. C. Sant'Anna (2021).
+Difference-in-differences with multiple time periods.
+\emph{Journal of Econometrics} 225(2), 200--230.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{DeChaisemartinDHaultfoeuille2020}
+de Chaisemartin, C. and X. D'Haultfoeuille (2020).
+Two-way fixed effects estimators with heterogeneous treatment effects.
+\emph{American Economic Review} 110(9), 2964--2996.
+
+\bibitem[Fan and Manzanares(2017)]{FanManzanares2017}
+Fan, Y. and C. A. Manzanares (2017).
+Partial identification of average treatment effects on the treated by difference-in-differences.
+\emph{Econometric Reviews}.
+
+\bibitem[Goodman-Bacon(2021)]{GoodmanBacon2021}
+Goodman-Bacon, A. (2021).
+Difference-in-differences with variation in treatment timing.
+\emph{Journal of Econometrics} 225(2), 254--277.
+
+\bibitem[Manski and Pepper(2018)]{ManskiPepper2018}
+Manski, C. F. and J. V. Pepper (2018).
+How do right-to-carry laws affect crime rates? Coping with ambiguity using bounded-variation assumptions.
+\emph{Review of Economics and Statistics} 100(2), 232--244.
+
+\bibitem[Manski and Tamer(2002)]{ManskiTamer2002}
+Manski, C. F. and E. Tamer (2002).
+Inference on regressions with interval data on a regressor or outcome.
+\emph{Econometrica} 70(2), 519--546.
+
+\bibitem[Rambachan and Roth(2023)]{RambachanRoth2023}
+Rambachan, A. and J. Roth (2023).
+A more credible approach to parallel trends.
+\emph{Review of Economic Studies} 90(5), 2555--2591.
+
+\bibitem[Sun and Abraham(2021)]{SunAbraham2021}
+Sun, L. and S. Abraham (2021).
+Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\emph{Journal of Econometrics} 225(2), 175--199.
+\end{thebibliography}
+
+\end{document}

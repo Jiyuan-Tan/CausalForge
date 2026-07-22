@@ -1,0 +1,545 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\calA}{\mathcal{A}}
+\newcommand{\calM}{\mathcal{M}}
+\newcommand{\calV}{\mathcal{V}}
+\newcommand{\calE}{\mathcal{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_rdd\_flow\_manipulation} / \texttt{v1}%
+  \\ \large\textit{Laminar min-cost-flow certificates for many-neighborhood RD manipulation bounds}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a free-form PartialID proposal.
+The locked tuple is
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},\text{bounding functional}).
+\]
+Here \(\texttt{qid}=\texttt{pid\_rdd\_flow\_manipulation}\) and
+\(\texttt{specialization}=\texttt{v1}\). The observable distribution
+\(P=\{P_{j,-},P_{j,+}\}_{j=1}^J\) consists of left and right cutoff-side limits for
+\((Y,D,W)\) across a finite laminar family of right-neighborhoods
+\(\mathcal N_1\subset\cdots\subset\mathcal N_J\), with
+\(Y\in[\underline y,\overline y]\), \(D\in\{0,1\}\), and
+\(W\in\{1,\ldots,K\}\). The parameter \(\theta_j\) is the nonmanipulator local Wald
+effect in neighborhood \(j\),
+\[
+\theta_j=
+\frac{\sum_w \pi_{j,-}(w)\{\mu^Y_{j,+,0}(w)-\mu^Y_{j,-}(w)\}}
+     {\sum_w \pi_{j,-}(w)\{\mu^D_{j,+,0}(w)-\mu^D_{j,-}(w)\}},
+\]
+with \(\pi_{j,-}(w)=P_{j,-}(W=w)\). The identifying restrictions are one-sided upward
+manipulation, local continuity of the nonmanipulator law conditional on \(W\) in each
+neighborhood, global manipulation envelopes \(\bar\rho_j\), cell caps \(\bar s_{jw}\),
+extendability across the laminar neighborhood chain, bounded outcomes, and positive
+first stages. The bounding functional is the many-neighborhood support function obtained
+from the family of feasible retained plans \(a=\{a_{j\alpha}\}\) or, on each fixed slice
+\(m=(m_1,\ldots,m_J)\), from the equivalent min-cost-flow program
+\[
+B_U(P,\bar\rho,\bar s)=\sup_{m\in\calM_{\mathrm{ext}}(P,\bar\rho,\bar s)}\sup_{a\in\calA(m)}\Theta(a),
+\qquad
+B_L(P,\bar\rho,\bar s)=\inf_{m\in\calM_{\mathrm{ext}}(P,\bar\rho,\bar s)}\inf_{a\in\calA(m)}\Theta(a),
+\]
+where \(\calM_{\mathrm{ext}}(P,\bar\rho,\bar s)\) is the extendable retained-mass set
+defined in Section~6 and \(\Theta(a)\) is the neighborhood-indexed Wald ratio vector.
+
+\begin{abstract}
+The banked parent result \texttt{pid\_rdd\_manipulation\_bounded}/\texttt{v1} gives a
+sharp one-cutoff partial-identification interval through a retained-mass linear-fractional
+program. This proposal asks whether the same bounded-manipulation logic across many nested
+cutoff neighborhoods admits a computable network certificate rather than a separate ratio
+search at each neighborhood. The main claim is that every fixed retained-mass slice of the
+many-neighborhood problem is a laminar transportation program with a totally unimodular
+constraint matrix and an explicit node-potential dual. The flagship conjecture is that the
+global sharp bound is obtained by optimizing over the extendable slice set and that the
+one-neighborhood dual collapses exactly to the parent interval program. If true, the result
+would turn many-neighborhood manipulation bounds into an auditable combinatorial object
+rather than a collection of uncoupled linear-fractional searches.
+\end{abstract}
+
+\section{Introduction}
+The question is whether bounded-manipulation regression-discontinuity bounds across many
+nested cutoff neighborhoods can be computed by a single combinatorial certificate rather
+than by repeating the parent one-cutoff linear-fractional program neighborhood by
+neighborhood. The headline claim is that, once the retained masses are fixed, the sharp
+upper and lower slice values are min-cost flows on a laminar network whose capacities,
+balances, and costs are all observable functions of the RD primitives.
+
+Relative to the parent banked proposal \texttt{pid\_rdd\_manipulation\_bounded}/\texttt{v1},
+the upgrade axis is computation: the parent gives a retained-plan characterization but not a
+strongly polynomial graph algorithm or dual certificate. Relative to
+\citet{gerard_rokkanen_rothe_2020_rdbounds} and
+\citet{rosenman_rajkumar_gauriot_slonim_2019_discrete_manipulation}, the gap is a
+many-neighborhood, covariate-conditional, manipulation-robust RD program with an explicit
+laminar flow representation and a one-cutoff collapse back to the parent object. The kernel
+lives in partial identification, with a computational bridge to min-cost-flow duality
+\citep{orlin_1993_mincostflow}.
+
+The immediate consumer is empirical RD work that reports multiple bandwidth or neighborhood
+diagnostics around one cutoff or many nearby cutoffs, as in
+\citet{cattaneo_keele_titiunik_vazquezbare_2021_multicutoff} and
+\citet{bertanha_2020_many_thresholds}. A reader who accepts the conjecture would compute a
+simultaneous manipulation-robust envelope with a primal retained plan and a dual potential
+certificate, instead of reporting a list of separate one-neighborhood sensitivity intervals.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: each fixed retained-mass slice is exactly a laminar min-cost-flow problem with a totally unimodular incidence matrix. Gap: parent \texttt{pid\_rdd\_manipulation\_bounded}/\texttt{v1} and \citet{rosenman_rajkumar_gauriot_slonim_2019_discrete_manipulation} solve slice problems as generic LPs or sequential convex programs, not as an exhibited TU network. Consumer: computational certification of many-neighborhood RD bounds.
+\item Conjecture 1: the sharp many-neighborhood identified set equals the union of the slice flow values over the extendable retained-mass set \(\calM_{\mathrm{ext}}\). Gap: \citet{gerard_rokkanen_rothe_2020_rdbounds} is one-cutoff; \citet{bertanha_2020_many_thresholds} and \citet{cattaneo_keele_titiunik_vazquezbare_2021_multicutoff} are multi-cutoff point-identification results, not manipulation partial-ID flow bounds. Consumer: simultaneous manipulation-robust bandwidth reporting.
+\item Conjecture 2: the slice dual admits an explicit node-potential certificate whose one-neighborhood specialization reproduces the parent interval program. Gap: the parent proves a one-cutoff retained-plan interval but does not expose a dual graph certificate; generic flow papers such as \citet{orlin_1993_mincostflow} do not identify the RD causal object. Consumer: auditable optimality certificates for software and reviewer replication.
+\item Theorem 2: a worked \(J=2\), \(K=2\) instance has a complete primal flow and dual certificate computed from the Section~6 primitives. Gap: the parent has no many-neighborhood certificate exhibit. Consumer: Exhibit-based validation of the computational upgrade before a general proof.
+\end{itemize}
+
+\section{Related work}
+\citet{gerard_rokkanen_rothe_2020_rdbounds} [reused from parent] is the closest causal
+anchor. They derive sharp RD bounds under manipulation of the running variable and use
+density information to discipline the manipulators' share. The present proposal reuses
+their one-cutoff manipulation-bounds thread but changes the computational object: the many
+neighborhood problem is organized as a laminar flow over simultaneous neighborhood-cell
+requirements rather than as a separate one-cutoff retained-plan search.
+
+\citet{rosenman_rajkumar_gauriot_slonim_2019_discrete_manipulation} [reused from parent]
+study discrete manipulated RD and compute partial-identification bounds numerically. Their
+relevance is computational contrast: the proposal claims an explicit globally certifiable
+network representation where they use sequential convex programming.
+
+\citet{bertanha_2020_many_thresholds} [reused from parent] and
+\citet{cattaneo_keele_titiunik_vazquezbare_2021_multicutoff} [reused from parent] are the
+many-threshold and multi-cutoff comparators. They show how multiple cutoffs or thresholds
+generate point-identified extrapolation objects, but they do not study manipulation-driven
+partial identification or a simultaneous trimming geometry.
+
+\citet{mccrary_2008_density_test} [reused from parent] and
+\citet{cattaneo_jansson_ma_2020_density} [reused from parent] justify the envelope
+parameters \(\bar\rho_j\) as diagnostic inputs. Their role here is not identification but
+calibration of the neighborhood-specific manipulation budgets.
+
+\citet{lee_2009_selection_bounds} [reused from parent] and
+\citet{horowitz_manski_1995_contaminated} [reused from parent] supply the trimming and
+contaminated-distribution ancestry. The flow upgrade preserves that partial-identification
+content while replacing the parent's one-cutoff closed-form envelope with an explicit
+laminar transport problem.
+
+\citet{orlin_1993_mincostflow} is the new frontier anchor for the upgrade axis. It gives a
+strongly polynomial min-cost-flow algorithm for capacitated networks. The proposal uses
+this not as prior art on causal identification, but as the algorithmic benchmark once the
+RD slice problem is shown to be a genuine network-flow instance.
+
+\citet{schrijver_1986_theory_linear_integer} is the new total-unimodularity anchor. Its
+relevance is structural: the constraint matrix in the fixed-slice problem is an incidence
+matrix of a directed laminar network, so vertex optimality and integral certificates follow
+from standard network TU facts once the graph has been exhibited.
+
+In the repository, \texttt{CausalSmith/doc/API.md} contains no distinct catalogue theorem
+beyond the banked parent with this kernel. The duplicate-check question is therefore
+whether the upgrade adds a new computational object, not whether bounded-manipulation RD
+partial identification already exists in the catalogue.
+
+\section{Formal setup}
+Fix neighborhoods \(\mathcal N_1\subset\cdots\subset\mathcal N_J\) around a common cutoff,
+ordered from narrow to wide. In each neighborhood \(j\), the left and right cutoff-side
+limits of \((Y,D,W)\) are \(P_{j,-}\) and \(P_{j,+}\), and
+\(\pi_{j,-}(w)=P_{j,-}(W=w)\). For exposition, discretize the right-side law in each
+neighborhood into atoms \(\alpha\in\mathcal I_j\) with observed mass \(p_{j\alpha}>0\),
+outcome \(y_{j\alpha}\), treatment \(d_{j\alpha}\), and covariate cell \(w_{j\alpha}\).
+
+Let \(m_j\in(0,1]\) be retained mass in neighborhood \(j\). The extendable retained-mass
+set \(\calM_{\mathrm{ext}}(P,\bar\rho,\bar s)\) contains vectors \(m=(m_1,\ldots,m_J)\)
+satisfying
+\[
+1-m_j\le \bar\rho_j,\qquad
+m_j\pi_{j,-}(w)\ge (1-\bar s_{jw})P_{j,+}(W=w),
+\]
+for every \(j,w\), together with the laminar increment inequalities
+\[
+\Delta_{1w}(m)=m_1\pi_{1,-}(w)\ge 0,\qquad
+\Delta_{jw}(m)=m_j\pi_{j,-}(w)-m_{j-1}\pi_{j-1,-}(w)\ge 0
+\]
+for \(j\ge2\). These increments are the additional retained cell masses required when one
+moves from neighborhood \(j-1\) to \(j\).
+
+For a candidate Wald multiplier \(\lambda\), define the slice score
+\[
+c_{j\alpha}(\lambda)=-(y_{j\alpha}-\lambda d_{j\alpha}).
+\]
+The fixed-slice upper-endpoint problem is the linear program
+\[
+V_U(\lambda,m)=\min_{x\ge0}\sum_{j=1}^J\sum_{\alpha\in\mathcal I_j} c_{j\alpha}(\lambda)x_{j\alpha}
+\]
+subject to the capacity constraints
+\[
+0\le x_{j\alpha}\le p_{j\alpha},
+\]
+and the neighborhood-cell balance constraints
+\[
+\sum_{\alpha\in\mathcal I_1:w_{1\alpha}=w}x_{1\alpha}=\Delta_{1w}(m),
+\]
+\[
+\sum_{\alpha\in\mathcal I_j:w_{j\alpha}=w}x_{j\alpha}
++z_{j-1,w}-z_{j,w}
+=\Delta_{jw}(m),\qquad j=2,\ldots,J,
+\]
+where \(z_{j,w}\ge0\) is carry flow that pushes retained mass in cell \(w\) from
+neighborhood \(j\) into neighborhood \(j+1\). The lower slice is identical with the sign
+of \(y_{j\alpha}\) reversed.
+
+The graph \(G_{\lambda,m}=(\calV,\calE)\) attached to the slice has node set
+\[
+\calV=\{s,t\}\cup\{u_{j\alpha}\}\cup\{v_{jw}\},
+\]
+where \(u_{j\alpha}\) is an atom node and \(v_{jw}\) is a neighborhood-cell demand node.
+Its arc set is
+\[
+\calE=
+\{(s,u_{j\alpha})\}\cup\{(u_{j\alpha},v_{jw_{j\alpha}})\}
+\cup\{(v_{jw},v_{j+1,w}):j<J\}\cup\{(v_{Jw},t)\}.
+\]
+Capacities are \(u(s,u_{j\alpha})=p_{j\alpha}\), \(u(u_{j\alpha},v_{jw_{j\alpha}})=p_{j\alpha}\),
+and \(u(v_{jw},v_{j+1,w})=+\infty\). Balances are
+\[
+b(s)=\sum_{j,w}\Delta_{jw}(m),\qquad b(v_{jw})=-\Delta_{jw}(m),\qquad b(t)=0,
+\]
+with zero balance at every atom node. Costs are \(c(s,u_{j\alpha})=0\),
+\(c(u_{j\alpha},v_{jw_{j\alpha}})=c_{j\alpha}(\lambda)\), and zero on carry arcs.
+
+\begin{verbatim}
+Locked parameters.
+qid = pid_rdd_flow_manipulation
+specialization = v1
+observable distribution P = {P_{j,-},P_{j,+}}_{j=1}^J over a finite laminar family of
+  nested cutoff neighborhoods with finite covariate cells
+parameter theta = vector of nonmanipulator local Wald effects theta_j across neighborhoods
+identifying restrictions = one-sided upward manipulation; conditional nonmanipulator
+  continuity within each neighborhood and cell; neighborhood-specific global envelopes
+  rho_bar_j; cell caps s_bar_jw; extendable retained-mass constraints across the laminar
+  chain; bounded outcomes; positive first stages
+bounding functional = sharp many-neighborhood lower/upper support values obtained by
+  optimizing the retained-plan Wald ratio over the extendable mass set M_ext, and, on
+  each fixed mass slice, by the equivalent laminar min-cost-flow program V_U(lambda,m)
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite laminar neighborhood system]\label{ass:laminar}
+The right neighborhoods satisfy
+\(\mathcal N_1\subset\cdots\subset\mathcal N_J\), with finite \(J\), and each right-side
+law \(P_{j,+}\) has finite atomic support over
+\([\underline y,\overline y]\times\{0,1\}\times\{1,\ldots,K\}\).
+\end{assumption}
+
+\begin{assumption}[One-sided upward manipulation]\label{ass:one-sided}
+In every neighborhood, manipulation adds mass only to the right side of the cutoff.
+\end{assumption}
+
+\begin{assumption}[Conditional nonmanipulator continuity]\label{ass:continuity}
+For each neighborhood \(j\), after removing manipulators, the retained right-side
+covariate law equals \(\pi_{j,-}\), and the retained right-side means identify the
+nonmanipulator right-limit means entering \(\theta_j\).
+\end{assumption}
+
+\begin{assumption}[Neighborhood envelopes and cell caps]\label{ass:budgets}
+For each neighborhood \(j\), the retained mass satisfies \(1-m_j\le\bar\rho_j\), and the
+retained mass in cell \(w\) satisfies
+\(m_j\pi_{j,-}(w)\ge(1-\bar s_{jw})P_{j,+}(W=w)\).
+\end{assumption}
+
+\begin{assumption}[Extendability]\label{ass:extendability}
+The increment vector \(\Delta_{jw}(m)\) defined in Section~6 is nonnegative for every
+\(j,w\). Hence each wider neighborhood requires weakly more retained mass in every cell
+than the previous neighborhood.
+\end{assumption}
+
+\begin{assumption}[Positive first stage]\label{ass:first-stage}
+For every feasible retained plan, each neighborhood \(j\) has local Wald denominator at
+least \(\kappa_j>0\).
+\end{assumption}
+
+\begin{assumption}[Slice feasibility]\label{ass:slice-feasible}
+For every \(m\in\calM_{\mathrm{ext}}(P,\bar\rho,\bar s)\), the fixed-slice network
+\(G_{\lambda,m}\) is feasible for every \(\lambda\) considered in the endpoint search.
+\end{assumption}
+
+\begin{assumption}[Worked two-neighborhood witness]\label{ass:witness}
+For Theorem~2 and Exhibit~9.1, let \(J=2\), \(K=2\), \(\lambda=0\), and
+\[
+\pi_{1,-}(A)=\pi_{1,-}(B)=\frac12,\qquad
+\pi_{2,-}(A)=\pi_{2,-}(B)=\frac12,
+\]
+\[
+m_1=\frac12,\qquad m_2=\frac35,
+\]
+with right-side atoms
+\[
+(j,\alpha,w,y,p)=
+(1,1,A,1,\tfrac14),\ (1,2,B,0,\tfrac14),\
+(2,1,A,1,\tfrac1{20}),\ (2,2,A,0,\tfrac3{20}),\ (2,3,B,0,\tfrac15).
+\]
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: fixed-slice laminar min-cost flow]\label{thm:slice-flow}
+Under Assumptions~\ref{ass:laminar}--\ref{ass:slice-feasible}, for every fixed
+\((\lambda,m)\) with \(m\in\calM_{\mathrm{ext}}(P,\bar\rho,\bar s)\), the slice program
+\(V_U(\lambda,m)\) is exactly the min-cost-flow problem on \(G_{\lambda,m}\). Its
+constraint matrix is the node-arc incidence matrix of a directed network after upper-bound
+splitting, hence totally unimodular. In particular, every rational slice instance admits an
+optimal basic solution supported on a network basis.
+\end{theorem}
+
+The proof is the graph rewrite in Section~6: atom capacities become source-to-atom arcs,
+cell-neighborhood requirements become node balances, and laminar compatibility becomes the
+carry chain. Total unimodularity is then the standard network-incidence fact.
+
+\begin{conjecture}[Conjecture 1: sharp many-neighborhood flow envelope]\label{conj:sharp-envelope}
+(NOT YET PROVED.) Under Assumptions~\ref{ass:laminar}--\ref{ass:slice-feasible}, the sharp
+identified set for the vector \((\theta_1,\ldots,\theta_J)\) equals the union of the slice
+flow values over the extendable retained-mass set:
+\[
+\Theta_I(P,\bar\rho,\bar s)
+=
+\bigcup_{m\in\calM_{\mathrm{ext}}(P,\bar\rho,\bar s)}
+\{\Theta(a):a\in\calA(m)\}.
+\]
+Equivalently, the support function of the sharp set is obtained by optimizing the flow
+value \(V_U(\lambda,m)\) and its lower-endpoint analogue over
+\(\calM_{\mathrm{ext}}(P,\bar\rho,\bar s)\).
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: explicit dual certificate and parent collapse]\label{conj:dual}
+(NOT YET PROVED.) Under Assumptions~\ref{ass:laminar}--\ref{ass:slice-feasible}, each
+optimal slice flow admits node potentials
+\(\varphi=\{\varphi_s,\varphi_{j\alpha},\varphi_{jw},\varphi_t\}\) and nonnegative
+reduced-cost slacks \(\sigma_e\) such that, for every arc \(e=(u,v)\in\calE\),
+\[
+\varphi_u-\varphi_v-\sigma_e\le c_e,
+\qquad
+f_e<u_e\Rightarrow \sigma_e=0,
+\qquad
+\sigma_e>0\Rightarrow f_e=u_e.
+\]
+When \(J=1\), these inequalities collapse to the parent one-cutoff retained-plan interval:
+the atom potentials encode the parent ratio-indexed ordering, and the unique demand-node
+potential is the parent retained-mass multiplier.
+\end{conjecture}
+
+\begin{theorem}[Theorem 2: explicit \(J=2\) certificate]\label{thm:witness}
+Under Assumption~\ref{ass:witness}, the slice network has node balances
+\[
+\Delta_{1A}=\Delta_{1B}=\frac14,\qquad
+\Delta_{2A}=\Delta_{2B}=\frac1{20}.
+\]
+An optimal primal flow is
+\[
+f(s,u_{11})=\frac14,\quad f(u_{11},v_{1A})=\frac14,\quad
+f(s,u_{12})=\frac14,\quad f(u_{12},v_{1B})=\frac14,
+\]
+\[
+f(s,u_{21})=\frac1{20},\quad f(u_{21},v_{2A})=\frac1{20},\quad
+f(s,u_{23})=\frac1{20},\quad f(u_{23},v_{2B})=\frac1{20},
+\]
+with all carry arcs equal to zero and all remaining atom arcs unused. One optimal dual
+certificate is
+\[
+\varphi_s=0,\quad
+\varphi_{11}=0,\ \varphi_{12}=0,\ \varphi_{21}=0,\ \varphi_{22}=1,\ \varphi_{23}=0,
+\]
+\[
+\varphi_{1A}=1,\ \varphi_{1B}=0,\ \varphi_{2A}=1,\ \varphi_{2B}=0,\ \varphi_t=0,
+\]
+with reduced-cost slacks
+\[
+\sigma_{(u_{22},v_{2A})}=0,\qquad
+\sigma_{(s,u_{22})}=1,
+\]
+and \(\sigma_e=0\) on every other used or unused finite-capacity arc. The primal cost is
+\(-3/10\), the dual value is \(-3/10\), and complementary slackness holds arc by arc.
+\end{theorem}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Parent reduction]\label{cor:parent}
+Under Assumptions~\ref{ass:laminar}--\ref{ass:slice-feasible}, if \(J=1\), then
+\(\Delta_{1w}(m)=m_1\pi_{1,-}(w)\), the carry arcs disappear, and
+Theorem~\ref{thm:slice-flow} reduces to the parent one-cutoff retained-plan program. The
+reduction is immediate because the laminar network has one demand layer, so the only dual
+multiplier beyond the Wald ratio index is the parent retained-mass multiplier.
+\end{corollary}
+
+\begin{corollary}[Sharp RD one-cell face]\label{cor:onecell}
+If \(J=1\), \(K=1\), and the design is sharp RD, then the slice flow in
+Theorem~\ref{thm:slice-flow} reduces to ordinary one-dimensional outcome-tail trimming.
+The reduction holds because there is one demand node and one covariate cell, so the network
+orders atoms only by the score \(y-\lambda d\).
+\end{corollary}
+
+\paragraph{Exhibit 9.1.}
+Under Assumption~\ref{ass:witness}, the node set is
+\[
+\{s,t,u_{11},u_{12},u_{21},u_{22},u_{23},v_{1A},v_{1B},v_{2A},v_{2B}\}.
+\]
+The finite-capacity arcs are
+\[
+(s,u_{11}),\ (s,u_{12}),\ (s,u_{21}),\ (s,u_{22}),\ (s,u_{23}),
+\]
+\[
+(u_{11},v_{1A}),\ (u_{12},v_{1B}),\ (u_{21},v_{2A}),\ (u_{22},v_{2A}),\ (u_{23},v_{2B}),
+\]
+with capacities \(1/4,1/4,1/20,3/20,1/5\) in that order. The carry arcs are
+\((v_{1A},v_{2A})\), \((v_{1B},v_{2B})\), \((v_{2A},t)\), and \((v_{2B},t)\), all with
+zero cost and slack capacity. The balances are
+\[
+b(v_{1A})=-\frac14,\quad b(v_{1B})=-\frac14,\quad
+b(v_{2A})=-\frac1{20},\quad b(v_{2B})=-\frac1{20},\quad
+b(s)=\frac35.
+\]
+At \(\lambda=0\), the atom-to-demand costs are \(-1,0,-1,0,0\). The primal flow in
+Theorem~\ref{thm:witness} exactly meets each balance from the Section~6 primitives and
+uses no carry, so the internal-consistency checks are immediate: demanded mass is \(3/5\),
+available mass is \(9/10\), and no arc exceeds its capacity.
+
+\paragraph{Exhibit 9.2.}
+For the same witness, the nonzero reduced-cost calculation is only on the unused atom
+\(u_{22}\) with cost \(0\). The dual inequality on \((u_{22},v_{2A})\) is
+\[
+\varphi_{22}-\varphi_{2A}-\sigma_{(u_{22},v_{2A})}\le 0,
+\]
+which binds at \(1-1-0=0\). The source arc \((s,u_{22})\) has zero cost and satisfies
+\[
+\varphi_s-\varphi_{22}-\sigma_{(s,u_{22})}\le 0,
+\]
+which binds at \(0-1+1=0\); since \(f(s,u_{22})=0<u(s,u_{22})\), the positive slack sits
+on the source-capacity side and certifies that the low-outcome atom is not purchased. Every
+used atom-to-demand arc has \(\sigma_e=0\) and equality of dual difference and primal cost:
+\[
+0-1=-1,\quad 0-0=0,\quad 0-1=-1,\quad 0-0=0.
+\]
+Thus complementary slackness is checked arc by arc from the explicit potentials, not only
+at the objective level.
+
+\section{Proof-sketch route}
+The verification route is a chain of four substantive steps. First, rewrite each fixed-slice
+retained-plan LP as a transportation problem whose demands are the incremental retained
+cell masses \(\Delta_{jw}(m)\). Second, encode laminar extendability by carry arcs between
+successive neighborhood-cell nodes and identify the resulting matrix as a network incidence
+matrix. Third, use linear-fractional reduction in \(\lambda\) together with network duality
+to connect primal retained plans to node-potential certificates. Fourth, prove the parent
+collapse by deleting the carry layer at \(J=1\) and matching the surviving potentials to
+the parent retained-mass multiplier. The open step is the global optimization over
+\(\calM_{\mathrm{ext}}\), not the fixed-slice network equivalence.
+
+\section{Honest scope flags}
+The proved part of the proposal is the fixed-slice graph rewrite and the worked witness.
+The flagship content remains open: Conjecture~\ref{conj:sharp-envelope} still needs a full
+sharpness argument over the extendable retained-mass set, and
+Conjecture~\ref{conj:dual} still needs the general parent-collapse proof beyond the worked
+instance. The proposal is intentionally finite-dimensional and laminar; arbitrary
+non-nested neighborhoods or continuous covariates are outside scope. The prior parent
+headline about one-cutoff bounded-manipulation RD is not repeated as a standalone result
+here; it appears only as Corollary~\ref{cor:parent}.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) --- initial upgrade draft from the banked parent; prior verdict: none.
+\item v2 (revise) --- sharpened the computation delta against the parent and separated slice theorems from the open global search; prior verdict: REVISE.
+\item v3 (revise) --- narrowed the flagship claim to many-neighborhood laminar slices and added the parent-collapse comparator chain; prior verdict: REVISE.
+\item v4 (revise) --- added the worked two-neighborhood witness and explicit many-threshold literature anchors; prior verdict: REVISE.
+\item v5 (revise) --- exhibited the full graph primitives, numeric primal flow, numeric dual potentials, and complementary-slackness audit for the \(J=2\) witness; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+
+\bibitem[Bertanha(2020)]{bertanha_2020_many_thresholds}
+Bertanha, Marinho.
+2020.
+Regression discontinuity design with many thresholds.
+\emph{Journal of Econometrics} 218(1): 216--241.
+
+\bibitem[Cattaneo, Jansson, and Ma(2020)]{cattaneo_jansson_ma_2020_density}
+Cattaneo, Matias D., Michael Jansson, and Xinwei Ma.
+2020.
+Simple local polynomial density estimators.
+\emph{Journal of the American Statistical Association} 115(531): 1449--1455.
+
+\bibitem[Cattaneo et~al.(2021)]{cattaneo_keele_titiunik_vazquezbare_2021_multicutoff}
+Cattaneo, Matias D., Luke Keele, Rocio Titiunik, and Gonzalo Vazquez-Bare.
+2021.
+Extrapolating treatment effects in multi-cutoff regression discontinuity designs.
+\emph{Journal of the American Statistical Association} 116(536): 1941--1952.
+
+\bibitem[Gerard, Rokkanen, and Rothe(2020)]{gerard_rokkanen_rothe_2020_rdbounds}
+Gerard, Francois, Miikka Rokkanen, and Christoph Rothe.
+2020.
+Bounds on treatment effects in regression discontinuity designs with a manipulated running variable.
+\emph{Quantitative Economics} 11(3): 839--870.
+
+\bibitem[Horowitz and Manski(1995)]{horowitz_manski_1995_contaminated}
+Horowitz, Joel L., and Charles F. Manski.
+1995.
+Identification and robustness with contaminated and corrupted data.
+\emph{Econometrica} 63(2): 281--302.
+
+\bibitem[Lee(2009)]{lee_2009_selection_bounds}
+Lee, David S.
+2009.
+Training, wages, and sample selection: Estimating sharp bounds on treatment effects.
+\emph{Review of Economic Studies} 76(3): 1071--1102.
+
+\bibitem[McCrary(2008)]{mccrary_2008_density_test}
+McCrary, Justin.
+2008.
+Manipulation of the running variable in the regression discontinuity design: A density test.
+\emph{Journal of Econometrics} 142(2): 698--714.
+
+\bibitem[Orlin(1993)]{orlin_1993_mincostflow}
+Orlin, James B.
+1993.
+A faster strongly polynomial minimum cost flow algorithm.
+\emph{Operations Research} 41(2): 338--350.
+
+\bibitem[Rosenman et~al.(2019)]{rosenman_rajkumar_gauriot_slonim_2019_discrete_manipulation}
+Rosenman, Evan, Karthik Rajkumar, Romain Gauriot, and Robert Slonim.
+2019.
+Optimized partial identification bounds for regression discontinuity designs with manipulation.
+arXiv:1910.02170.
+
+\bibitem[Schrijver(1986)]{schrijver_1986_theory_linear_integer}
+Schrijver, Alexander.
+1986.
+\emph{Theory of Linear and Integer Programming}.
+Wiley.
+
+\end{thebibliography}
+\end{document}

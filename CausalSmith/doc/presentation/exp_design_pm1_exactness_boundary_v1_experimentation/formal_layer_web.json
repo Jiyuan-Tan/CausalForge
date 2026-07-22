@@ -1,0 +1,1218 @@
+{
+  "commit": "6e3ba5a09e998cb7c7b15f45d6a11634157a62aa",
+  "groups": [
+    {
+      "kind": "setup",
+      "items": [
+        {
+          "obj_id": "S1",
+          "kind": "setup",
+          "label": "Setup S-1",
+          "nl": "design-based finite-population potential-outcome system on n=2m units: the only randomness is a sign assignment law P (a PMF on the finite space {-1,1}^n); potential outcomes Y_i(z) and the GATE estimand tau are fixed finite-population objects — FiniteDesign Ω is exactly a PMF (p, p_nonneg, p_sum) over a finite assignment space with finite-sum E/Var/Cov; instantiate Ω := (Fin n -> Sign) i.e. {-1,1}^n so P : FiniteDesign Ω. Sign-symmetry / block-exchangeability (P_m^bal, P_m^sym) are predicates ON such a design (built by BalancedDesignClass / blockExchangeableDesignClass nodes). Y_i(z):(Ω)->Fin n->R and tau=n^{-1} sum (Y_i(1_n)-Y_i(-1_n)) are plain ambient functions (no dedicated Causalean PO structure; lean_local_search PotentialOutcome -> none, only Panel.Exposure exists) and are motivational: no proved statement references them, so they are trivial Mathlib functions carried in this world.",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "S2",
+          "kind": "setup",
+          "label": "Setup S-2",
+          "nl": "real n x n symmetric-matrix / Euclidean objective-geometry world (Mathlib): traces, PSD cone, Frobenius (Schatten-2) norm, the balanced two-block spectral decomposition, and the two-parameter block-symmetric slice X(u,v) with its reduced triangle T_m — Built over Mathlib matrices: Matrix.trace, Matrix.PosSemidef, the Frobenius norm, EuclideanSpace/inner products and the spectral theorem for symmetric matrices supply every primitive. L_m^dagger (Moore-Penrose pseudoinverse) is only ever consumed through its eigenvalues (1/(a+b),1/(2b),0) via lem:block-spectral-coordinates, so it is realized by its spectral action, not a general pseudoinverse theory. bypass-justified: the Causalean analogue for the ambient probability layer (FiniteDesign, S1) is at the design-law abstraction, whereas E_m^blk/F/Delta are purely algebraic over R^{n x n}; lean_local_search {elliptope, assignmentCovariance, Laplacian, Frobenius} returned none, so this world is a Mathlib-matrix bypass. The derived scalar frontiers (kappa_cut, r_cut, kappa_iid, r_gap^{+-}, r_star) are R-valued closed forms living in this world; r_star has no statement node (honest open scope) and is bound here only as a symbol.",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        }
+      ]
+    },
+    {
+      "kind": "definition",
+      "items": [
+        {
+          "obj_id": "def:two-block-graph",
+          "kind": "definition",
+          "label": "Definition P-1",
+          "nl": "Vertex set A_m union B_m with |A_m|=|B_m|=m; for i != j in the same block set W_ij = a/m, for i and j in opposite blocks set W_ij = b/m, and set W_ii = 0.",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "twoBlockGraph",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:block-elliptope",
+          "kind": "definition",
+          "label": "Definition P-2",
+          "nl": "{ X(u,v) : 1-u >= 0, 1 + (m-1)u - m v >= 0, 1 + (m-1)u + m v >= 0 }",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "BlockElliptopeMem",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:balanced-design-class",
+          "kind": "definition",
+          "label": "Definition P-3",
+          "nl": "{ P on {-1,1}^n : P(Z=z)=P(Z=-z) for every z }",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "BalancedDesignClass",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:block-exchangeable-design-class",
+          "kind": "definition",
+          "label": "Definition P-4",
+          "nl": "{ P in P_m^bal : P is invariant under permutations within A_m, within B_m, and under swapping the two equal communities }",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "blockExchangeableDesignClass",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:implementable-covariance-class",
+          "kind": "definition",
+          "label": "Definition P-5",
+          "nl": "{ X(P) : P in P_m^sym }",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "implementableCovarianceClass",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:design-objective",
+          "kind": "definition",
+          "label": "Definition P-6",
+          "nl": "Tr(L_m X) + r Tr(L_m^dagger X) + kappa ||X||_{S_2} + Tr(J_n X)",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "designObjective",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:implementability-gap",
+          "kind": "definition",
+          "label": "Definition P-7",
+          "nl": "inf_{P in P_m^sym} F_{r,kappa}(X(P)) - inf_{X in E_m^blk} F_{r,kappa}(X)",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "implementabilityGap",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:block-sum-handle",
+          "kind": "definition",
+          "label": "Definition P-8",
+          "nl": "Law of (sum_{i in A_m} Z_i, sum_{i in B_m} Z_i) under P.",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "blockSumHandle",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "assumption",
+      "items": [
+        {
+          "obj_id": "ass:two-block-homophily",
+          "kind": "assumption",
+          "label": "Assumption A-1",
+          "nl": "m >= 2 and a > b > 0.",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "TwoBlockHomophily",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "ass:balanced-sign-design",
+          "kind": "assumption",
+          "label": "Assumption A-2",
+          "nl": "P(Z = z) = P(Z = -z) for all z in {-1,1}^n.",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "BalancedSignDesign",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "ass:low-scale-two-block",
+          "kind": "assumption",
+          "label": "Assumption A-3",
+          "nl": "a+3b<2m.",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "LowScaleTwoBlock",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "ass:odd-community-size",
+          "kind": "assumption",
+          "label": "Assumption A-4",
+          "nl": "m is odd.",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "OddCommunitySize",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "lemma",
+      "items": [
+        {
+          "obj_id": "prop:symmetry-reduction",
+          "kind": "lemma",
+          "label": "Lemma L-1",
+          "nl": "Assume ass:two-block-homophily, with r in [0,infty) and kappa in [0,infty) by their definitional domains. Orbit-averaging over the full two-block automorphism group generated by permutations within A_m, permutations within B_m, and the swap of the two equal communities maps each elliptope point X with diag(X)=1 to a point in E_m^blk with weakly smaller F_{r,kappa}. The same averaging maps each law P in P_m^bal to a block-exchangeable law with the same zero one-point margins and weakly smaller F_{r,kappa}(X(P)). Consequently inf_{X : X is positive semidefinite and diag(X)=1} F_{r,kappa}(X) = inf_{X in E_m^blk} F_{r,kappa}(X) and inf_{P in P_m^bal} F_{r,kappa}(X(P)) = inf_{P in P_m^sym} F_{r,kappa}(X(P)).",
+          "lean": {
+            "file": "Helpers/SymmetryReduction.lean",
+            "decl": "symmetry_reduction",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lem:block-spectral-coordinates",
+          "kind": "lemma",
+          "label": "Lemma L-2",
+          "nl": "Let q=2(m-1). For X(u,v), define x=1-u, y=1+(m-1)u-mv, and z=1+(m-1)u+mv. Then X(u,v) belongs to E_m^blk if and only if x,y,z>=0 and qx+y+z=2m. In these coordinates X_cut=(0,2m,0), I_n=(1,1,1), and F_{r,kappa}(X(u,v))=c_x x+c_y y+c_z z+kappa sqrt(qx^2+y^2+z^2), where c_x=q((a+b)+r/(a+b)), c_y=2b+r/(2b), and c_z=2m.",
+          "lean": {
+            "file": "Helpers/SpectralCoordinates.lean",
+            "decl": "block_spectral_coordinates",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lem:cut-vertex-certificate",
+          "kind": "lemma",
+          "label": "Lemma L-3",
+          "nl": "On T_m={x,y,z>=0: qx+y+z=2m}, if c_x/q>c_y+kappa and c_z>c_y+kappa, then (0,2m,0) is the unique minimizer of c_x x+c_y y+c_z z+kappa sqrt(qx^2+y^2+z^2).",
+          "lean": {
+            "file": "Helpers/VertexCertificates.lean",
+            "decl": "cut_vertex_certificate",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lem:spread-vertex-certificate",
+          "kind": "lemma",
+          "label": "Lemma L-4",
+          "nl": "On T_m={x,y,z>=0: qx+y+z=2m}, if c_y>c_x/q+kappa/sqrt(q) and c_z>c_x/q+kappa/sqrt(q), then (2m/q,0,0) is the unique minimizer of c_x x+c_y y+c_z z+kappa sqrt(qx^2+y^2+z^2).",
+          "lean": {
+            "file": "Helpers/VertexCertificates.lean",
+            "decl": "spread_vertex_certificate",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lem:frobenius-center-certificate",
+          "kind": "lemma",
+          "label": "Lemma L-5",
+          "nl": "On T_m, the point (1,1,1) is the unique minimizer of sqrt(qx^2+y^2+z^2). It is a minimizer of c_x x+c_y y+c_z z+kappa sqrt(qx^2+y^2+z^2) for finite kappa only if c_x/q=c_y=c_z; under this equality and kappa>0 it is the unique minimizer.",
+          "lean": {
+            "file": "Helpers/FrobeniusCenter.lean",
+            "decl": "frobenius_center_certificate",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lem:pm-reduced-slice-characterization",
+          "kind": "lemma",
+          "label": "Lemma L-6",
+          "nl": "After full two-block symmetrization, the plus-minus-one covariance image in spectral coordinates is T_m when m is even and is T_m intersect {y+z>=2/m} when m is odd. In particular, for odd m the spread vertex (m/(m-1),0,0) is not implementable, while for even m every point of E_m^blk is implementable.",
+          "lean": {
+            "file": "Helpers/ParitySlice.lean",
+            "decl": "pm_reduced_slice_characterization",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lem:weighted-simplex-active-set",
+          "kind": "lemma",
+          "label": "Lemma L-7",
+          "nl": "Let I={x,y,z}, M=2m, beta_x=1/q, beta_y=beta_z=1, and alpha=(alpha_x,alpha_y,alpha_z). On Delta_M={t_i>=0: sum_i t_i=M}, minimize Phi(t)=sum_i alpha_i t_i+kappa sqrt(sum_i beta_i t_i^2). If kappa>0, the minimizer is unique and is obtained by the following active-set formula. For each nonempty S subset I set A_S=sum_{i in S} beta_i^{-1}, mu_S=A_S^{-1} sum_{i in S} alpha_i beta_i^{-1}, and V_S=sum_{i in S}(alpha_i-mu_S)^2 beta_i^{-1}. If lambda_S=mu_S+sqrt((kappa^2-V_S)/A_S) is real, lambda_S>max_{i in S} alpha_i, and alpha_j>=lambda_S for every j notin S, then t_i=M((lambda_S-alpha_i)/beta_i)/sum_{h in S}((lambda_S-alpha_h)/beta_h) for i in S and t_j=0 for j notin S. Exactly one S satisfies these conditions, and the displayed point is the unique minimizer with value M lambda_S. Singleton S gives a vertex, two-point S gives an edge minimizer, and S=I gives the interior minimizer. If kappa=0, the minimizer set is the exposed face conv{M e_i: alpha_i=min_j alpha_j}; a closed-form selector may be chosen from that face without changing the value.",
+          "lean": {
+            "file": "Helpers/SimplexActiveSet.lean",
+            "decl": "weighted_simplex_active_set",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lem:weighted-simplex-truncation",
+          "kind": "lemma",
+          "label": "Lemma L-8",
+          "nl": "In the notation of lem:weighted-simplex-active-set, let K_d={t in Delta_M: t_y+t_z>=d} with 0<=d<=M. Use the kappa=0 tie convention that the relaxed selector is chosen in K_d when the relaxed argmin face meets K_d. If the selected relaxed minimizer t_rel belongs to K_d, it is also a minimizer over K_d. If t_rel is not in K_d, then every constrained optimum may be chosen on the segment H_d={t_x=M-d, t_y=s, t_z=d-s, 0<=s<=d}. On H_d the objective is g_d(s)=alpha_x(M-d)+alpha_z d+(alpha_y-alpha_z)s+kappa sqrt((M-d)^2/q+s^2+(d-s)^2). For kappa>0, writing A_d=(M-d)^2/q and delta=alpha_y-alpha_z, the minimizer is s=0 if delta>=kappa d/sqrt(A_d+d^2), s=d if delta<=-kappa d/sqrt(A_d+d^2), and otherwise s=(d-delta sqrt((A_d+d^2/2)/(kappa^2-delta^2/2)))/2. For kappa=0, any endpoint minimizing the linear function is selected: s=0 if delta>=0 and s=d if delta<=0.",
+          "lean": {
+            "file": "Helpers/SimplexTruncation.lean",
+            "decl": "weighted_simplex_truncation",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lem:rounding-gap-reduction",
+          "kind": "lemma",
+          "label": "Lemma L-9",
+          "nl": "Let q=2(m-1), T_m={x,y,z>=0: qx+y+z=2m}, phi_{r,kappa}(x,y,z)=c_x x+c_y y+c_z z+kappa sqrt(qx^2+y^2+z^2), and d_m=0 if m is even and d_m=2/m if m is odd. Then Delta_m^pm(r,kappa)=min_{(x,y,z) in T_m, y+z>=d_m} phi_{r,kappa}(x,y,z)-min_{(x,y,z) in T_m} phi_{r,kappa}(x,y,z).",
+          "lean": {
+            "file": "Helpers/GapReduction.lean",
+            "decl": "rounding_gap_reduction",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "theorem",
+      "items": [
+        {
+          "obj_id": "thm:cut-corner-exactness",
+          "kind": "theorem",
+          "label": "Theorem T-1",
+          "nl": "Assume ass:two-block-homophily. Set r_cut(m,a,b,kappa)=min{2b(a+b)(1-kappa/(a-b)), 2b(2m-2b-kappa)}. If 0<=r<r_cut(m,a,b,kappa), then X_cut is the unique minimizer of F_{r,kappa} over E_m^blk. Hence Delta_m^pm(r,kappa)=0, X_cut is the unique minimizer over C_m^pm, and P_cut attains that implementable optimum. (The range 0<=r<r_cut(m,a,b,kappa) is nonempty exactly when 0<=kappa<min{a-b,2(m-b)}, which in particular requires b<m; this is a non-vacuity remark, not a hypothesis.) At the boundary r=r_cut uniqueness can fail already when kappa=0, so the theorem uses the strict inequality r<r_cut.",
+          "lean": {
+            "file": "Tcut.lean",
+            "decl": "cut_corner_exactness",
+            "decl_kind": "theorem",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "thm:robust-corner-exactness",
+          "kind": "theorem",
+          "label": "Theorem T-2",
+          "nl": "Assume ass:two-block-homophily. Finite-kappa iid exactness holds only on the affine-balanced locus. More precisely, I_n is a minimizer of F_{r,kappa} over E_m^blk for some finite kappa if and only if a+3b=2m and r=2b(a+b), equivalently r=4b(m-b). On this locus, for every kappa>0, I_n is the unique relaxed minimizer and the implementable optimum is attained by P_iid, with P_iid in P_m^sym by def:block-exchangeable-design-class and X(P_iid)=I_n. Off this locus, I_n is not a minimizer for any finite kappa, although minimizers converge to I_n as kappa tends to infinity.",
+          "lean": {
+            "file": "Trobust.lean",
+            "decl": "robust_corner_exactness",
+            "decl_kind": "theorem",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "thm:gap-window",
+          "kind": "theorem",
+          "label": "Theorem T-3",
+          "nl": "Assume ass:two-block-homophily, ass:low-scale-two-block, and ass:odd-community-size. With q=2(m-1), define kappa_gap(m,a,b):=((2m-a-3b)(a-b)sqrt(q))/(a+b) and r_cut_gap(m,a,b,kappa):=2b(a+b)(1-kappa/(a-b)). Define R_x^-(m,a,b,kappa)=2b(a+b)(1+kappa/((a-b)sqrt(q))) and R_x^+(m,a,b,kappa)=(a+b)(2m-a-b-kappa/sqrt(q)). Define r_gap^-(m,a,b,kappa)=(R_x^-(m,a,b,kappa)+R_x^+(m,a,b,kappa))/2 and r_gap^+(m,a,b,kappa)=R_x^+(m,a,b,kappa). Then for every 0 <= kappa < kappa_gap(m,a,b), r_cut_gap(m,a,b,kappa) < r_gap^-(m,a,b,kappa) < r_gap^+(m,a,b,kappa), and for every r in (r_gap^-,r_gap^+) the spread vertex X_spread in E_m^blk with spectral coordinates (m/(m-1),0,0) is the unique relaxed minimizer but is not plus-minus-one implementable. Consequently Delta_m^pm(r,kappa)>0 throughout that interval. The oddness restriction is necessary: if m is even, the whole block elliptope slice is implementable and the claimed positive gap is false.",
+          "lean": {
+            "file": "Tgap.lean",
+            "decl": "gap_window",
+            "decl_kind": "theorem",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "thm:sharp-rho-star",
+          "kind": "theorem",
+          "label": "Theorem T-4",
+          "nl": "Under ass:two-block-homophily, with r,kappa in [0,infty), the theorem asserts EXACTLY the following conjunction (mirroring the Lean statement): (i) rho_star(m,a,b,r,kappa) = Delta_m^pm(r,kappa); (ii) 0 <= rho_star and 0 <= Delta_m^pm (definitional domain [0,infty)); (iii) rho_star=0 iff there is a relaxed minimizer over T_m (a point of T_m minimizing the reduced objective) with y+z >= d_m; (iv) for kappa>0 the relaxed minimizer over T_m is UNIQUE, and rho_star=0 iff that unique minimizer satisfies y+z >= d_m; (v) for kappa=0 a point of T_m is a relaxed minimizer iff it lies on the exposed face of the alpha=(c_x/q,c_y,c_z)-minimizing coordinates; (vi) for even m (d_m=0) rho_star=0 throughout; (vii) ACTIVE-SET COMPUTATION (lem:weighted-simplex-active-set): for kappa>0 the unique relaxed minimizer is the active-set point of an admissible support/multiplier (S,lambda) under the change of variables t=(qx,y,z) (alpha=sharpAlpha, beta=sharpBeta), and the relaxed value equals 2m*lambda; (viii) TRUNCATION CORRECTION (lem:weighted-simplex-truncation): when the relaxed argmin set is disjoint from {y+z >= d_m}, the implementable value is attained on the truncation segment {y+z=d_m} at the endpoint/interior selector truncSelector. No r_star frontier/boundary is asserted (honest open scope).",
+          "lean": {
+            "file": "Tsharp.lean",
+            "decl": "sharp_rho_star",
+            "decl_kind": "theorem",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "auxiliary",
+      "items": [
+        {
+          "obj_id": "sym:r_star",
+          "kind": "definition",
+          "label": "Definition IsSharpExactnessBoundary",
+          "nl": "",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "a_cut_vertex_kappa_nonneg",
+          "kind": "assumption",
+          "label": "Assumption cut_vertex_certificate",
+          "nl": "",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "a_spread_vertex_kappa_nonneg",
+          "kind": "assumption",
+          "label": "Assumption spread_vertex_certificate",
+          "nl": "",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "spreadObjectiveDiff_mul_sqrt",
+          "kind": "lemma",
+          "label": "Lemma spreadObjectiveDiff_mul_sqrt",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "frobeniusCenterTangentXY_deriv",
+          "kind": "lemma",
+          "label": "Lemma frobeniusCenterTangentXY_deriv",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "frobeniusCenterTangentYZ_deriv",
+          "kind": "lemma",
+          "label": "Lemma frobeniusCenterTangentYZ_deriv",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:kappa_iid",
+          "kind": "definition",
+          "label": "Definition IsIidExactnessFrontier",
+          "nl": "",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "cutDesign_eq_cutVDesign",
+          "kind": "lemma",
+          "label": "Lemma cutDesign_eq_cutVDesign",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sInf_image_eq_of_minimizer",
+          "kind": "lemma",
+          "label": "Lemma sInf_image_eq_of_minimizer",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sum_if_eq_else_self_real",
+          "kind": "lemma",
+          "label": "Lemma sum_if_eq_else_self_real",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "block_pair_sum",
+          "kind": "lemma",
+          "label": "Lemma block_pair_sum",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "block_signed_pair_sum",
+          "kind": "lemma",
+          "label": "Lemma block_signed_pair_sum",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "blockSymMatrix_mem_blockElliptope_iff_reducedTriangle",
+          "kind": "lemma",
+          "label": "Lemma blockSymMatrix_mem_blockElliptope_iff_reducedTriangle",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "roundingLossCertificate_nonneg",
+          "kind": "lemma",
+          "label": "Lemma roundingLossCertificate_nonneg",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "implementabilityGap_nonneg",
+          "kind": "lemma",
+          "label": "Lemma implementabilityGap_nonneg",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "reducedTriangle_to_simplex",
+          "kind": "lemma",
+          "label": "Lemma reducedTriangle_to_simplex",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "simplex_to_reducedTriangle",
+          "kind": "lemma",
+          "label": "Lemma simplex_to_reducedTriangle",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "reducedObjective_eq_wsObj",
+          "kind": "lemma",
+          "label": "Lemma reducedObjective_eq_wsObj",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "wsObj_eq_reducedObjective",
+          "kind": "lemma",
+          "label": "Lemma wsObj_eq_reducedObjective",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "spread_certificate_relaxed_minimizer_and_gap",
+          "kind": "lemma",
+          "label": "Lemma spread_certificate_relaxed_minimizer_and_gap",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sharp_reduced_active_set_and_unique",
+          "kind": "lemma",
+          "label": "Lemma sharp_reduced_active_set_and_unique",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sharp_truncation_value_of_no_reduced_argmin_in_slice",
+          "kind": "lemma",
+          "label": "Lemma sharp_truncation_value_of_no_reduced_argmin_in_slice",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sharp_roundingLoss_zero_of_even",
+          "kind": "lemma",
+          "label": "Lemma sharp_roundingLoss_zero_of_even",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sharp_roundingLoss_zero_iff_argmin_meets_slice",
+          "kind": "lemma",
+          "label": "Lemma sharp_roundingLoss_zero_iff_argmin_meets_slice",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sharp_roundingLoss_zero_iff_unique_argmin_subset_slice",
+          "kind": "lemma",
+          "label": "Lemma sharp_roundingLoss_zero_iff_unique_argmin_subset_slice",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sharp_kappa_zero_reduced_min_iff",
+          "kind": "lemma",
+          "label": "Lemma sharp_kappa_zero_reduced_min_iff",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "reduced_norm_sq_block_coords",
+          "kind": "lemma",
+          "label": "Lemma reduced_norm_sq_block_coords",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "robust_minimizers_tendsto_identity_entries",
+          "kind": "lemma",
+          "label": "Lemma robust_minimizers_tendsto_identity_entries",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "iidDesign_sign_pair_sum_zero",
+          "kind": "lemma",
+          "label": "Lemma iidDesign_sign_pair_sum_zero",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "iidDesign_secondMoment",
+          "kind": "lemma",
+          "label": "Lemma iidDesign_secondMoment",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "identity_mem_blockElliptope",
+          "kind": "lemma",
+          "label": "Lemma identity_mem_blockElliptope",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "robust_coeff_r_eq_of_center",
+          "kind": "lemma",
+          "label": "Lemma robust_coeff_r_eq_of_center",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "robust_locus_of_center_coeffs",
+          "kind": "lemma",
+          "label": "Lemma robust_locus_of_center_coeffs",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "robust_center_coeffs_of_locus",
+          "kind": "lemma",
+          "label": "Lemma robust_center_coeffs_of_locus",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "reduced_coord_inverse",
+          "kind": "lemma",
+          "label": "Lemma reduced_coord_inverse",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "identity_objective_eq_reduced_center",
+          "kind": "lemma",
+          "label": "Lemma identity_objective_eq_reduced_center",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "center_coeffs_of_identity_relaxed_min",
+          "kind": "lemma",
+          "label": "Lemma center_coeffs_of_identity_relaxed_min",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "identity_strict_relaxed_min_of_locus",
+          "kind": "lemma",
+          "label": "Lemma identity_strict_relaxed_min_of_locus",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "symbol",
+      "items": [
+        {
+          "obj_id": "sym:X(u,v)",
+          "kind": "symbol",
+          "label": "X(u,v)",
+          "nl": "realized by InReducedTriangle, blockSymMatrix",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:F_{r,kappa}(X)",
+          "kind": "symbol",
+          "label": "F_{r,kappa}(X)",
+          "nl": "realized by reducedObjective, cX, cY, cZ, frobeniusNorm, designObjective",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:kappa(carrier ℝ; robustness weight on the Frobenius term κ√(q x²+y²+z²); range",
+          "kind": "symbol",
+          "label": "kappa(carrier ℝ; robustness weight on the Frobenius term κ√(q x²+y²+z²); range",
+          "nl": "realized by reducedObjective",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:r",
+          "kind": "symbol",
+          "label": "r",
+          "nl": "realized by cX, cY, designObjective",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:a",
+          "kind": "symbol",
+          "label": "a",
+          "nl": "realized by cX, twoBlockGraph, TwoBlockHomophily",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:b",
+          "kind": "symbol",
+          "label": "b",
+          "nl": "realized by cX, cY, twoBlockGraph, TwoBlockHomophily",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:J_n",
+          "kind": "symbol",
+          "label": "J_n",
+          "nl": "realized by allOnesMatrix",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:s_m",
+          "kind": "symbol",
+          "label": "s_m",
+          "nl": "realized by signVec",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:G_m(a,b)",
+          "kind": "symbol",
+          "label": "G_m(a,b)",
+          "nl": "realized by twoBlockGraph",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:A_m",
+          "kind": "symbol",
+          "label": "A_m",
+          "nl": "realized by twoBlockGraph, blockSumA, blockSumB",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:B_m",
+          "kind": "symbol",
+          "label": "B_m",
+          "nl": "realized by twoBlockGraph, blockSumA, blockSumB",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:L_m",
+          "kind": "symbol",
+          "label": "L_m",
+          "nl": "realized by twoBlockLaplacian",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:L_m^dagger",
+          "kind": "symbol",
+          "label": "L_m^dagger",
+          "nl": "realized by twoBlockLaplacianPinv",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:X_cut",
+          "kind": "symbol",
+          "label": "X_cut",
+          "nl": "realized by cutCovariance",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:kappa(carrier ℝ; robustness weight on the Schatten-2 penalty `κ‖X‖_{S_2}`; range",
+          "kind": "symbol",
+          "label": "kappa(carrier ℝ; robustness weight on the Schatten-2 penalty `κ‖X‖_{S_2}`; range",
+          "nl": "realized by designObjective",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:E_m^blk",
+          "kind": "symbol",
+          "label": "E_m^blk",
+          "nl": "realized by blockElliptope",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:P(AUTHORITATIVE CARRIER: `FiniteDesign (Fin (2*m) → Bool)`; the space",
+          "kind": "symbol",
+          "label": "P(AUTHORITATIVE CARRIER: `FiniteDesign (Fin (2*m) → Bool)`; the space",
+          "nl": "realized by blockElliptope",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:P` tags pinning the same law argument.)",
+          "kind": "symbol",
+          "label": "P` tags pinning the same law argument.)",
+          "nl": "realized by blockElliptope",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Z",
+          "kind": "symbol",
+          "label": "Z",
+          "nl": "realized by signOf",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:X(P)",
+          "kind": "symbol",
+          "label": "X(P)",
+          "nl": "realized by assignmentSecondMoment",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:P(design-law argument `D : FiniteDesign (Fin (2*m) → Bool)`, the law over which",
+          "kind": "symbol",
+          "label": "P(design-law argument `D : FiniteDesign (Fin (2*m) → Bool)`, the law over which",
+          "nl": "realized by assignmentSecondMoment",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:P_cut",
+          "kind": "symbol",
+          "label": "P_cut",
+          "nl": "realized by cutDesign",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:P(cluster member — CONCRETE CARRIER+CONSTRAINTS instance: a `FiniteDesign",
+          "kind": "symbol",
+          "label": "P(cluster member — CONCRETE CARRIER+CONSTRAINTS instance: a `FiniteDesign",
+          "nl": "realized by cutDesign, iidDesign",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:P",
+          "kind": "symbol",
+          "label": "P",
+          "nl": "realized by cutDesign, iidDesign",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:P_iid",
+          "kind": "symbol",
+          "label": "P_iid",
+          "nl": "realized by iidDesign",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:P(design-law argument `D : FiniteDesign (Fin (2*m) → Bool)`, the probability",
+          "kind": "symbol",
+          "label": "P(design-law argument `D : FiniteDesign (Fin (2*m) → Bool)`, the probability",
+          "nl": "realized by BalancedSignDesign",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:P_m^bal",
+          "kind": "symbol",
+          "label": "P_m^bal",
+          "nl": "realized by BalancedDesignClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:P(cluster member: the bundled law `D : FiniteDesign (Fin (2*m) → Bool)`, a",
+          "kind": "symbol",
+          "label": "P(cluster member: the bundled law `D : FiniteDesign (Fin (2*m) → Bool)`, a",
+          "nl": "realized by BalancedDesignClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:P_m^sym",
+          "kind": "symbol",
+          "label": "P_m^sym",
+          "nl": "realized by blockExchangeableDesignClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:P(cluster member: this `Set (FiniteDesign (Fin (2*m) → Bool))` is the class of",
+          "kind": "symbol",
+          "label": "P(cluster member: this `Set (FiniteDesign (Fin (2*m) → Bool))` is the class of",
+          "nl": "realized by blockExchangeableDesignClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:C_m^pm",
+          "kind": "symbol",
+          "label": "C_m^pm",
+          "nl": "realized by implementableCovarianceClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:P(cluster member: the bound design law `D ∈ blockExchangeableDesignClass m`",
+          "kind": "symbol",
+          "label": "P(cluster member: the bound design law `D ∈ blockExchangeableDesignClass m`",
+          "nl": "realized by implementableCovarianceClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:B(P)",
+          "kind": "symbol",
+          "label": "B(P)",
+          "nl": "realized by blockSumHandle",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Delta_m^pm(r,kappa)",
+          "kind": "symbol",
+          "label": "Delta_m^pm(r,kappa)",
+          "nl": "realized by implementabilityGap, implementabilityGap_nonneg, sharp_rho_star",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:P(cluster member — AUTHORITATIVE link into the `sharp_rho_star` target block:",
+          "kind": "symbol",
+          "label": "P(cluster member — AUTHORITATIVE link into the `sharp_rho_star` target block:",
+          "nl": "realized by implementabilityGap",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:kappa(carrier ℝ; robustness argument of the gap; range [0,∞) pinned by the",
+          "kind": "symbol",
+          "label": "kappa(carrier ℝ; robustness argument of the gap; range [0,∞) pinned by the",
+          "nl": "realized by implementabilityGap",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:rho_star(m,a,b,r,kappa)",
+          "kind": "symbol",
+          "label": "rho_star(m,a,b,r,kappa)",
+          "nl": "realized by roundingLossCertificate, roundingLossCertificate_nonneg, sharp_rho_star",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:r_star(m,a,b,kappa)",
+          "kind": "symbol",
+          "label": "r_star(m,a,b,kappa)",
+          "nl": "realized by IsSharpExactnessBoundary",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:r_star(range 0 ≤ r_⋆ pins the boundary object into its [0,∞) space)",
+          "kind": "symbol",
+          "label": "r_star(range 0 ≤ r_⋆ pins the boundary object into its [0,∞) space)",
+          "nl": "realized by IsSharpExactnessBoundary",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:r_star",
+          "kind": "symbol",
+          "label": "r_star",
+          "nl": "realized by IsSharpExactnessBoundary",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:kappa_iid(m,a,b,r)",
+          "kind": "symbol",
+          "label": "kappa_iid(m,a,b,r)",
+          "nl": "realized by IsIidExactnessFrontier, robust_corner_exactness",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:kappa_iid(range 0 ≤ κ_iid pins the frontier into its [0,∞) space)",
+          "kind": "symbol",
+          "label": "kappa_iid(range 0 ≤ κ_iid pins the frontier into its [0,∞) space)",
+          "nl": "realized by IsIidExactnessFrontier",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:kappa_iid",
+          "kind": "symbol",
+          "label": "kappa_iid",
+          "nl": "realized by IsIidExactnessFrontier",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:r_cut(m,a,b,kappa)",
+          "kind": "symbol",
+          "label": "r_cut(m,a,b,kappa)",
+          "nl": "realized by rCut, cut_corner_exactness, rCutGap, gap_window",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:kappa(carrier ℝ argument `kappa`; robustness weight entering both branches of the",
+          "kind": "symbol",
+          "label": "kappa(carrier ℝ argument `kappa`; robustness weight entering both branches of the",
+          "nl": "realized by rCut",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:kappa_cut(m,a,b)",
+          "kind": "symbol",
+          "label": "kappa_cut(m,a,b)",
+          "nl": "realized by kappaCut",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:r(range 0 ≤ r pins r ∈ [0,∞))",
+          "kind": "symbol",
+          "label": "r(range 0 ≤ r pins r ∈ [0,∞))",
+          "nl": "realized by cut_corner_exactness, robust_corner_exactness, sharp_rho_star",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:kappa(range 0 ≤ κ pins κ ∈ [0,∞), its definitional domain)",
+          "kind": "symbol",
+          "label": "kappa(range 0 ≤ κ pins κ ∈ [0,∞), its definitional domain)",
+          "nl": "realized by cut_corner_exactness, sharp_rho_star",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:r_gap^-(m,a,b,kappa)",
+          "kind": "symbol",
+          "label": "r_gap^-(m,a,b,kappa)",
+          "nl": "realized by rGapMinus, rGapPlus, rGapFrontiers_nonneg",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:r_gap^+(m,a,b,kappa)",
+          "kind": "symbol",
+          "label": "r_gap^+(m,a,b,kappa)",
+          "nl": "realized by rGapMinus, rGapPlus, rGapFrontiers_nonneg",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:r(bound within the gap window rGapMinus < r < rGapPlus ⊂ [0,∞))",
+          "kind": "symbol",
+          "label": "r(bound within the gap window rGapMinus < r < rGapPlus ⊂ [0,∞))",
+          "nl": "realized by gap_window",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:P`-tagged).",
+          "kind": "symbol",
+          "label": "P`-tagged).",
+          "nl": "realized by sharp_rho_star",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    }
+  ]
+}

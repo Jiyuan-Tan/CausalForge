@@ -1,0 +1,591 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_heavy\_tail\_cate\_bounds, specialization=v1
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_heavy\_tail\_cate\_bounds} / \texttt{v1}%
+  \\ \large\textit{Sharp closed-form CATE partial-identification endpoints under strict
+  propensity overlap and a finite $\alpha$-moment outcome envelope: extension of
+  Aronow--Lee bounded-support intervals with $\alpha\!\to\!\infty$ recovery}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This proposal is free-form (not Q1 pool-mode). The locked tuple is
+$(\text{qid},\ \text{specialization},\ P,\ \theta,\ \text{identifying restrictions},\ \text{bounding functional})$:
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{qid:} \texttt{pid\_heavy\_tail\_cate\_bounds}.
+  \item \textbf{specialization:} \texttt{v1}.
+  \item \textbf{Observable distribution $P$:} the joint law of $(Y, A, X)$ on
+        $\R \times \{0,1\} \times \mathcal{X}$ with $\mathcal{X} \subseteq \R^d$.
+        The observable conditionals
+        $m_a(x) := \E[Y\mid A=a, X=x]$,
+        $\nu_a^\alpha(x) := \E[|Y|^\alpha \mid A=a, X=x]$,
+        and the propensity $e(x) := \Pr(A=1\mid X=x)$ are point-identified from $P$.
+  \item \textbf{Parameter $\theta$:} the CATE
+        $\tau(x) := \E[Y(1) - Y(0) \mid X=x]$ at a fixed $x \in \mathcal{X}$.
+        Unconfoundedness is \emph{not} assumed, so the counterfactual conditional means
+        $\mu_a^{\mathrm{ctf}}(x) := \E[Y(a) \mid A = 1{-}a,\, X=x]$ are unidentified from $P$ alone.
+  \item \textbf{Identifying restrictions:}
+        (i) Strict overlap: $e(x) \in [\varepsilon, 1-\varepsilon]$ for some fixed
+        $\varepsilon \in (0, 1/2]$;
+        (ii) Conditional $\alpha$-moment envelope: there exist $\alpha > 1$ and a known (or independently identified) function $M_\alpha:\mathcal{X}\to[0,\infty)$ with $\E[|Y(a)|^\alpha \mid X=x] \le M_\alpha(x)$ for $a\in\{0,1\}$;
+        (iii) SUTVA / consistency: $Y = A\,Y(1) + (1{-}A)\,Y(0)$.
+  \item \textbf{Bounding functional:}
+        the sharp CATE half-width
+        $W_\alpha(x;\varepsilon) := (1-e(x))\,V_1(x)^{1/\alpha} + e(x)\,V_0(x)^{1/\alpha}$
+        where $V_a(x) := \frac{M_\alpha(x) - e_a(x)\,\nu_a^\alpha(x)}{1 - e_a(x)}$
+        with $e_1(x):=e(x)$, $e_0(x):=1-e(x)$.
+        The identified set for $\tau(x)$ is the closed interval
+        $[\tau_L(x), \tau_U(x)]$ centered at
+        $\tau_C(x) := e(x)\,m_1(x) - (1-e(x))\,m_0(x)$ with radius $W_\alpha(x;\varepsilon)$.
+\end{itemize}
+Stage 0 quotes this block verbatim; the symbols $e_a$, $m_a$, $\nu_a^\alpha$, $V_a$, $M_\alpha$, $W_\alpha$, $\tau_C$ are reused below without redefinition.
+
+\begin{abstract}
+We study sharp partial identification of the conditional average treatment effect
+$\tau(x) = \E[Y(1)-Y(0)\mid X=x]$ when (i)~the propensity score satisfies strict
+overlap $e(x) \in [\varepsilon, 1-\varepsilon]$ and (ii)~the conditional outcome
+laws satisfy only a finite $\alpha$-moment envelope $\E[|Y(a)|^\alpha\mid X=x] \le M_\alpha(x)$
+for some $\alpha > 1$, with no sub-Gaussian or sub-exponential bound and no
+restriction on the support of $Y$. The kernel claim is a closed-form sharp
+identified interval $[\tau_L(x),\tau_U(x)]$ whose half-width factorises as
+$W_\alpha(x;\varepsilon) = (1-e(x))V_1(x)^{1/\alpha} + e(x)V_0(x)^{1/\alpha}$
+with $V_a$ a computable affine functional of $(M_\alpha, e, \nu_a^\alpha)$. The
+formula recovers \citet{AronowLee2013} as $\alpha\to\infty$, recovers worst-case
+\citet{Manski1990} support bounds when $M_\alpha$ is replaced by $\|Y\|_\infty^\alpha$,
+and is strictly tighter than both whenever $M_\alpha(x)^{1/\alpha} < \mathrm{ess\,sup}\,|Y(a)|$.
+We conjecture a critical-$\alpha$ phase transition at $\alpha=1$: vacuous (infinite
+width) below, finite for all $\alpha>1$. The result closes a gap left open in
+\citet{LordanSalehzadehNobari2026TailUncertainty} and \citet{JungKang2026ITBounds}.
+\end{abstract}
+
+\section{Introduction}
+
+We ask: when the analyst is willing to assume that the treatment propensity is
+bounded away from $\{0,1\}$ but is unwilling to bound the support of the outcome
+$Y$, what is the sharp identified set for the CATE $\tau(x) = \E[Y(1) - Y(0) \mid X=x]$
+under a finite $\alpha$-moment envelope on the conditional outcome laws?
+The headline claim is that, under strict overlap $e(x) \in [\varepsilon, 1-\varepsilon]$
+and $\E[|Y(a)|^\alpha\mid X=x] \le M_\alpha(x)$ with $\alpha>1$, the identified set
+is a closed interval centered at the observable mixture $\tau_C(x) = e(x)m_1(x) - (1-e(x))m_0(x)$
+with sharp half-width $W_\alpha(x;\varepsilon) = (1-e(x))V_1(x)^{1/\alpha} + e(x)V_0(x)^{1/\alpha}$,
+and the bound is achieved by extremal conditional laws that place all counterfactual mass at a
+single point on the $\alpha$-moment sphere.
+
+The two closest published comparators are \citet[Theorem~1, eqn.~(2), p.~236]{AronowLee2013},
+which derives sharp population-mean bounds when the unknown selection probability lies
+in a fixed interval and the outcome support is bounded (`each individual's outcome lies in
+$[\,c_L, c_U\,]$' --- verbatim, p.~236), and \citet[Theorem~3.1]{JungKang2026ITBounds},
+which derives information-theoretic CATE bounds without bounded outcomes but only through
+$f$-divergence duality (`our bounds do not require bounded outcomes' --- verbatim, abstract).
+\citet{AronowLee2013} requires $\|Y\|_\infty < \infty$, which is the exact constraint we
+relax to $\E|Y|^\alpha < \infty$; we recover their bound as the $\alpha\to\infty$
+limit and strictly tighten the support-only worst case at any finite $\alpha>1$ with
+$M_\alpha^{1/\alpha} < \|Y\|_\infty$. \citet{JungKang2026ITBounds} establish
+qualitative non-vacuity but do not deliver an $\alpha$-indexed width law or a sharp
+closed-form endpoint, both of which we provide. The kernel lives in the
+\emph{partial identification} cluster (sensitivity / missing-data style bounds).
+
+The intended downstream consumer is the open problem flagged by
+\citet{LordanSalehzadehNobari2026TailUncertainty}: how should treatment-effect
+endpoints be reported under outcome tail uncertainty when the analyst can credibly
+bound an $\alpha$-moment (e.g., from a finite-variance subsample, prior subject-matter
+moment estimates, or a tail-index estimate) but cannot credibly bound the support?
+The width $W_\alpha(x;\varepsilon)$ supplies a covariate-conditional answer:
+a reader who has been reporting Manski-style ATE intervals under an ad-hoc support
+truncation should instead report $[\tau_L(x),\tau_U(x)]$, which is sharp under the
+weaker (and more empirically defensible) moment restriction.
+
+\paragraph{Results at a glance.}
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Theorem~1 (interval validity).} The interval
+  $[\tau_C(x) - W_\alpha(x;\varepsilon),\ \tau_C(x) + W_\alpha(x;\varepsilon)]$
+  contains $\tau(x)$ for every joint law consistent with $P$ and Assumptions~1--3.
+  \textbf{Gap:} \citet{AronowLee2013} establish the analogous statement under
+  bounded support; the $\alpha$-moment envelope replaces $\|Y\|_\infty$.
+  \textbf{Consumer:} sensitivity reporting under tail uncertainty
+  (\citealt{LordanSalehzadehNobari2026TailUncertainty}).
+  \item \textbf{Conjecture~1 (sharpness, NOT YET PROVED).} Every interior point of
+  $[\tau_L(x),\tau_U(x)]$ is achieved by some joint law of $(Y(0),Y(1),A,X)$ consistent
+  with $P$ and Assumptions~1--3; the endpoints are achieved by limits of laws placing
+  all counterfactual mass at the $\alpha$-moment sphere $\{|y|=V_a(x)^{1/\alpha}\}$.
+  \textbf{Gap:} \citet{JungKang2026ITBounds} establish non-vacuity via $f$-divergence
+  duality but do not exhibit the extremal coupling.
+  \textbf{Consumer:} reproducible inference (matching estimator endpoint to extremal DGP).
+  \item \textbf{Conjecture~2 ($\alpha\to\infty$ recovery, NOT YET PROVED).} As
+  $\alpha\to\infty$ with $M_\alpha(x)^{1/\alpha}\to B(x) := \mathrm{ess\,sup}|Y(a)\mid X=x|$,
+  $W_\alpha(x;\varepsilon) \to B(x)$ and the interval converges to the Aronow--Lee
+  bound under bounded support.
+  \textbf{Gap:} we identify Aronow--Lee as a strict-limit case of our family.
+  \textbf{Consumer:} continuity guarantee for analysts comparing bounded-support and
+  moment-bounded reports (\citealt{MiratrixWagerZubizarreta2018}).
+  \item \textbf{Conjecture~3 ($\alpha=1$ phase transition, NOT YET PROVED).} For $\alpha>1$,
+  $W_\alpha(x;\varepsilon)$ is finite for every $\varepsilon>0$ and every $M_\alpha<\infty$;
+  for $\alpha\le 1$ (and no stronger restriction), the identified set is $\R$ on a weak$^*$-open
+  class of laws consistent with $P$. \textbf{Gap:} \citet{AsiaeePalBeckHuling2026SharpGeneralization}
+  flag the unbounded-outcome vacuity problem but do not isolate the threshold.
+  \textbf{Consumer:} guidance on the minimum tail-index assumption required for non-trivial
+  CATE bounds.
+\end{itemize}
+
+\section{Related work}
+
+\textbf{Bounded-support and unknown-selection-probability mean bounds.}
+\citet{Manski1990} established the foundational worst-case ATE bounds under bounded
+support: $\tau \in [m_1 - B - (1-e)B,\ldots]$ with $B=\|Y\|_\infty$, vacuous under
+heavy tails. \citet{AronowLee2013} recast bounded unknown selection probabilities as
+sharp mean intervals under bounded outcomes; this is the structural template we
+extend, replacing $\|Y\|_\infty$ with an $\alpha$-moment envelope.
+\citet{MiratrixWagerZubizarreta2018} tighten the Aronow--Lee bound through auxiliary
+shape constraints (symmetry, log-concavity); their template is orthogonal to ours --- we
+relax outcome boundedness while they impose additional law-class structure.
+
+\textbf{Sensitivity-model CATE bounds.}
+\citet{KallusMaoZhou2019CATEIntervals} provide sharp functional CATE intervals under
+the marginal sensitivity model (MSM) with parameter $\Gamma$ on the propensity odds
+ratio; \citet{YadlowskyNamkoongBasuDuchiTian2022Bounds} give tight CATE/ATE bounds
+under the same MSM template plus orthogonal estimation theory; \citet{DornGuoKallus2025DVDS}
+add double-validity. All three families place a sensitivity constraint on the
+unobserved propensity and assume the outcome is bounded or has standard sub-exponential
+tails. Our proposal differs in two respects: (i) the source of partial identification
+is unconfoundedness failure controlled by strict observable overlap, not an MSM odds
+ratio; (ii) the constraint is on outcome tail mass via $\alpha$-moments, not on the
+propensity sensitivity parameter.
+
+\textbf{Information-theoretic and unbounded-outcome bounds.}
+\citet{JungKang2026ITBounds} derive conditional causal-effect bounds without bounded
+outcomes through $f$-divergence duality applied to a propensity-derived discrepancy.
+\citet{AsiaeePalBeckHuling2026SharpGeneralization} derive sharp likelihood-ratio bounds
+for treatment-effect generalization and explicitly flag the unbounded-outcome vacuity
+problem (`the bounds become vacuous if the outcome is unbounded' --- verbatim, p.~3).
+Neither paper supplies a closed-form $\alpha$-indexed width or identifies the
+$\alpha=1$ phase boundary. \citet{LordanSalehzadehNobari2026TailUncertainty} frame
+Manski-style endpoints as support-dependent and call out the missing alpha-tail layer
+(`credible support bounds are often unavailable when outcomes are heavy-tailed' ---
+verbatim, p.~4).
+
+\textbf{Stochastic-optimization view of partial identification.}
+\citet{TudballBowdenHughesTilling2023SampleConstrained} cast partial identification
+as optimal value of an estimated stochastic program; this is the inferential view
+the present proposal's $W_\alpha$ slots into, but inference is out of scope here
+(see \S11 Scope flags).
+
+\textbf{In-repo prior art (CausalSmith catalogue).} The closest banked proposals
+are \texttt{pid\_offline\_policy\_joint\_misspec\_v1} (bounded $f$-divergence
+propensity misspecification and bounded sup-norm outcome-regression gap --- different
+constraint geometry; outcome boundedness is not relaxed), \texttt{eid\_proximal\_phase\_v1}
+(point/interval/Manski phase-transition template driven by an operator singular value,
+not a tail index), and \texttt{pid\_qte\_marginal\_sensitivity\_v1} (covariate-by-covariate
+odds-ratio sensitivity envelope, but targeted at quantile effects). None deliver
+an $\alpha$-indexed closed-form CATE width or the $\alpha=1$ phase boundary; this
+is the in-catalogue novelty axis. See \texttt{doc/API.md} \S\emph{Partial Identification}
+for the section index.
+
+\section{Formal setup}
+
+Fix a probability space supporting random variables $(Y(0), Y(1), A, X)$ with
+$Y(a) \in \R$, $A \in \{0,1\}$, $X \in \mathcal{X} \subseteq \R^d$. The observed
+outcome is $Y = A\,Y(1) + (1-A)\,Y(0)$ (consistency / SUTVA). The data analyst
+observes only $(Y, A, X)$ i.i.d.; the joint law of $(Y(0), Y(1) \mid X)$ is partially
+unknown.
+
+\emph{Observables (point-identified from $P$).}
+The propensity $e(x) := \Pr(A=1 \mid X=x)$; the conditional outcome means
+$m_a(x) := \E[Y \mid A=a, X=x] = \E[Y(a) \mid A=a, X=x]$; the conditional
+$\alpha$-moments $\nu_a^\alpha(x) := \E[|Y|^\alpha \mid A=a, X=x]
+= \E[|Y(a)|^\alpha \mid A=a, X=x]$. All three are well-defined under Assumption~1
+(strict overlap) and Assumption~2 (moment envelope).
+
+\emph{Counterfactual means (unidentified).}
+$\mu_a^{\mathrm{ctf}}(x) := \E[Y(a) \mid A = 1{-}a,\, X=x]$. For each
+$x \in \mathcal{X}$ the CATE decomposes as
+\begin{equation}\label{eq:cate-decomp}
+  \tau(x) = \E[Y(1)\mid X=x] - \E[Y(0)\mid X=x]
+         = \bigl[e(x)\,m_1(x) + (1-e(x))\,\mu_1^{\mathrm{ctf}}(x)\bigr]
+         - \bigl[(1-e(x))\,m_0(x) + e(x)\,\mu_0^{\mathrm{ctf}}(x)\bigr].
+\end{equation}
+Let $\tau_C(x) := e(x)\,m_1(x) - (1-e(x))\,m_0(x)$ (the observable mixture).
+
+\emph{Auxiliary $\alpha$-moment budget.} Define
+\begin{equation}\label{eq:V-def}
+  V_1(x) := \frac{M_\alpha(x) - e(x)\,\nu_1^\alpha(x)}{1-e(x)}, \qquad
+  V_0(x) := \frac{M_\alpha(x) - (1-e(x))\,\nu_0^\alpha(x)}{e(x)}.
+\end{equation}
+$V_a(x)$ is the maximal value of $\E[|Y(a)|^\alpha \mid A = 1{-}a, X=x]$ consistent
+with the envelope $M_\alpha(x)$. Define
+\begin{equation}\label{eq:W-def}
+  W_\alpha(x;\varepsilon) := (1-e(x))\,V_1(x)^{1/\alpha} + e(x)\,V_0(x)^{1/\alpha},
+\end{equation}
+the sharp half-width.
+
+\emph{Identified set $\Theta_I(P)$ for $\tau(x)$.} The set of values of $\tau(x)$
+consistent with $P$, Assumptions~1--3, and the unidentified component $(\mu_a^{\mathrm{ctf}})_a$
+ranging over all values compatible with Assumption~2.
+
+\emph{Reproduction of the locked-parameters block.} The locked tuple
+$(P, \theta, \text{identifying restrictions}, \text{bounding functional}) =
+(\text{joint law of }(Y,A,X);\ \tau(x);\ \{\text{Assumptions 1--3}\};\ W_\alpha(x;\varepsilon))$
+is fixed as in the \textbf{Locked parameters} block above.
+
+\section{Assumptions}
+
+\begin{assumption}[Strict propensity overlap]\label{assn:overlap}
+There exists $\varepsilon \in (0, 1/2]$ such that $e(x) \in [\varepsilon, 1-\varepsilon]$
+for $P_X$-almost every $x \in \mathcal{X}$.
+\end{assumption}
+
+\begin{assumption}[Conditional $\alpha$-moment envelope]\label{assn:moment}
+There exists $\alpha > 1$ and a measurable function
+$M_\alpha:\mathcal{X}\to [0,\infty)$, with $M_\alpha(x) \ge e_a(x)\,\nu_a^\alpha(x)$
+for $a\in\{0,1\}$ and $P_X$-a.e.\ $x$, such that
+$\E[|Y(a)|^\alpha \mid X=x] \le M_\alpha(x)$ for $a\in\{0,1\}$ and $P_X$-a.e.\ $x$.
+The function $M_\alpha$ is either known to the analyst (sensitivity-parameter form)
+or independently identified from auxiliary data; $\nu_a^\alpha(x)$ is identified
+from $P$ alone.
+\end{assumption}
+
+\begin{assumption}[Consistency / SUTVA]\label{assn:sutva}
+$Y = A\,Y(1) + (1-A)\,Y(0)$ almost surely.
+\end{assumption}
+
+\begin{remark}
+Assumption~\ref{assn:moment} does \emph{not} impose unconfoundedness: $(Y(0), Y(1))$
+need not be conditionally independent of $A$ given $X$. The role of $M_\alpha$ is
+exactly the role of $\|Y\|_\infty$ in \citet{AronowLee2013} --- a sensitivity parameter
+on the unobserved counterfactual side. The compatibility constraint
+$M_\alpha(x) \ge e_a(x)\,\nu_a^\alpha(x)$ ensures $V_a(x) \ge 0$ (the envelope is
+not falsified by observables).
+\end{remark}
+
+\section{Main results}
+
+\begin{theorem}[Closed-form interval validity]\label{thm:validity}
+Under Assumptions~\ref{assn:overlap}--\ref{assn:sutva}, for every $x \in \mathcal{X}$,
+\begin{equation*}
+  \tau(x) \in [\tau_C(x) - W_\alpha(x;\varepsilon),\ \tau_C(x) + W_\alpha(x;\varepsilon)].
+\end{equation*}
+\emph{Proof sketch.} By \eqref{eq:cate-decomp},
+$\tau(x) - \tau_C(x) = (1-e(x))\mu_1^{\mathrm{ctf}}(x) - e(x)\mu_0^{\mathrm{ctf}}(x)$.
+The conditional moment envelope and \eqref{eq:V-def} give
+$\E[|Y(a)|^\alpha \mid A=1{-}a, X=x] \le V_a(x)$. By Lyapunov (Jensen on $|\cdot|^\alpha$
+with $\alpha>1$),
+$|\mu_a^{\mathrm{ctf}}(x)| \le V_a(x)^{1/\alpha}$. Combining with the triangle inequality
+yields the claim. \qed
+\end{theorem}
+
+\begin{conjecture}[Sharpness; NOT YET PROVED]\label{conj:sharp}
+Under Assumptions~\ref{assn:overlap}--\ref{assn:sutva}, the identified set $\Theta_I(P)$
+for $\tau(x)$ equals the closed interval
+$[\tau_C(x) - W_\alpha(x;\varepsilon),\ \tau_C(x) + W_\alpha(x;\varepsilon)]$.
+Moreover, the upper endpoint is achieved in the limit by laws under which the
+counterfactual outcome $Y(1) \mid A=0, X=x$ concentrates on $\{+V_1(x)^{1/\alpha}\}$
+and $Y(0) \mid A=1, X=x$ concentrates on $\{-V_0(x)^{1/\alpha}\}$, and analogously
+for the lower endpoint with the signs flipped.
+\end{conjecture}
+
+\begin{conjecture}[Aronow--Lee $\alpha\to\infty$ recovery; NOT YET PROVED]\label{conj:limit}
+Suppose $M_\alpha(x)^{1/\alpha} \to B(x) < \infty$ as $\alpha\to\infty$, where
+$B(x) := \mathrm{ess\,sup}\{|Y(a)| \mid X=x\}$. Then
+$W_\alpha(x;\varepsilon) \to B(x)$, and the interval in Theorem~\ref{thm:validity}
+converges (in Hausdorff distance on $\R$) to the Aronow--Lee sharp interval under
+bounded support with bound $B(x)$.
+\end{conjecture}
+
+\begin{conjecture}[$\alpha=1$ phase transition; NOT YET PROVED]\label{conj:phase}
+\emph{(i)} For every $\alpha>1$ and every $M_\alpha(x)<\infty$, the width
+$W_\alpha(x;\varepsilon)$ in \eqref{eq:W-def} is finite. \emph{(ii)} For
+$\alpha\le 1$, on a weak$^*$-open class $\mathcal{C}$ of laws $P$ consistent with
+Assumptions~\ref{assn:overlap} and \ref{assn:sutva} and a finite first-moment
+envelope alone, the identified set for $\tau(x)$ equals all of $\R$. \emph{(iii)}
+At the boundary $\alpha=1$, the width $W_1(x;\varepsilon) = (1-e(x))V_1(x) + e(x)V_0(x)$
+is finite but strictly larger than its $\alpha>1$ continuation for any
+$M_\alpha$ uniformly bounded in $\alpha$.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+
+\begin{corollary}[Bounded-support corner]\label{cor:bounded}
+If $|Y(a)| \le B$ almost surely under $X=x$, then choosing
+$M_\alpha(x) = B^\alpha$ for every $\alpha$ gives $V_a(x) \le B^\alpha$ and
+$V_a(x)^{1/\alpha} \le B$ uniformly in $\alpha$. The interval in Theorem~\ref{thm:validity}
+is contained in the Aronow--Lee bound (with $\varepsilon$ replaced by $\min(e(x), 1-e(x))$);
+equality holds in the worst case.
+\end{corollary}
+
+\begin{corollary}[Unconfoundedness corner]\label{cor:unconf}
+If unconfoundedness holds and $Y \mid A=a, X=x$ has finite $\alpha$-moment, then
+$\mu_a^{\mathrm{ctf}}(x) = m_{1-a}(x)$, and so the true $\tau(x) = m_1(x) - m_0(x)$
+lies inside the Theorem~\ref{thm:validity} interval. The interval does not collapse
+to a point (the proposal is a partial-identification bound that does not claim
+unconfoundedness); the unconfoundedness corner is a check that the interval
+\emph{contains} the unconfounded answer, not that it equals it.
+\end{corollary}
+
+\paragraph{Exhibit 9.1 (worked instance --- Pareto tails).}
+Take $\mathcal{X} = \{x_0\}$ (no covariates, a single sub-population), $e(x_0) = 1/2$
+(so $\varepsilon = 1/2$). Let $Y(1) \mid A=1$ have a two-sided Pareto law with tail
+index $\alpha+\delta$ (some $\delta > 0$) and scale 1; analogously for $Y(0) \mid A=0$.
+Concretely, $Y(1) \mid A=1 \sim 2\,\mathrm{Pareto}(\alpha+\delta, 1) - (\alpha+\delta)/(\alpha+\delta-1)$
+(centred); then $m_1 = 0$, $\nu_1^\alpha = \int_1^\infty y^\alpha \cdot (\alpha+\delta) y^{-(\alpha+\delta+1)}\,dy
+= (\alpha+\delta)/\delta$. Set $\alpha=2$, $\delta=1$, so $\nu_1^2 = 3$. Suppose
+the analyst's envelope is $M_2(x_0) = 6$ (a sensitivity choice that doubles the
+observed $\alpha$-moment). Then $V_1(x_0) = (6 - 0.5\cdot 3)/0.5 = 9$ and
+$V_1(x_0)^{1/2} = 3$. By symmetry $V_0(x_0)^{1/2} = 3$. The width is
+$W_2(x_0; 1/2) = 0.5\cdot 3 + 0.5\cdot 3 = 3$. \emph{Internal consistency.}
+$V_a \ge 0$: yes. Envelope feasibility: $M_2 = 6 \ge e\cdot \nu_a^2 = 1.5$.
+Distinct values from $\alpha\to\infty$: $W_\infty(x_0;1/2) = B(x_0) = +\infty$
+(Pareto support unbounded), so the Aronow--Lee bound is vacuous; the $\alpha=2$
+bound $W_2 = 3$ is strictly tighter, witnessing the strict-tightening claim of
+Conjecture~\ref{conj:limit}'s converse direction.
+
+\paragraph{Exhibit 9.2 (extremal coupling, sharpness witness for Conjecture~\ref{conj:sharp}).}
+Same setup as Exhibit 9.1. The conjectured upper-endpoint extremal coupling places
+$Y(1) \mid A=0, X=x_0$ on $\{+3\}$ with probability 1 (consistent with the envelope:
+$E[|Y(1)|^2 \mid A=0] = 9 = V_1$) and $Y(0)\mid A=1, X=x_0$ on $\{-3\}$. The resulting
+$\tau(x_0) = (1-e)\cdot 3 - e\cdot(-3) = 0.5\cdot 3 + 0.5\cdot 3 = 3 = W_2$, matching
+$\tau_C + W_\alpha = 0 + 3$. \emph{Internal consistency.} Cardinality: point-mass
+laws are well-defined; no over-determined system. Sharpness check is computable;
+the proof obligation for Conjecture~\ref{conj:sharp} is to show this is achievable
+\emph{jointly} with the observed marginal constraints, not just marginally --- this
+is the open step.
+
+\section{Proof-sketch route}
+
+Let me write the §10 chain explicitly for each flagship-aspirant headline (SC11):
+
+\textbf{Theorem~\ref{thm:validity}.}
+$\tau(x) \in [\tau_C - W_\alpha, \tau_C + W_\alpha]$
+$\Leftarrow$ [unfold \S6 definitions: $\tau_C$, $W_\alpha$, $V_a$]
+$\Leftarrow$ [substitute Assumption~\ref{assn:moment} envelope]
+$\Leftarrow$ \textbf{[step 1: marginal--counterfactual moment ledger]} the conditional moment
+identity $\E[|Y(a)|^\alpha \mid X=x] = e_a(x)\,\nu_a^\alpha(x) + (1-e_a(x))\,\E[|Y(a)|^\alpha \mid A=1{-}a, X=x]$,
+combined with the envelope, gives $\E[|Y(a)|^\alpha\mid A=1{-}a, X=x] \le V_a(x)$
+$\Leftarrow$ \textbf{[step 2: Lyapunov on the conditional law]} apply Jensen's
+inequality to $|\cdot|^\alpha$ (convex for $\alpha > 1$) on the conditional law
+$Y(a) \mid A=1{-}a, X=x$ to obtain $|\mu_a^{\mathrm{ctf}}(x)| \le V_a(x)^{1/\alpha}$
+$\Leftarrow$ \textbf{[step 3: weighted-sum aggregation]} substitute into
+\eqref{eq:cate-decomp} and use $|a\alpha+b\beta| \le |a||\alpha| + |b||\beta|$.
+\emph{$k = 3$ substantive steps;} the Lyapunov step is non-trivial because the
+conditional law is unobserved (the moment bound comes from the marginal envelope,
+not from a directly observed conditional moment). \textbf{Pass.}
+
+\textbf{Conjecture~\ref{conj:sharp}.}
+Sharpness $\Leftarrow$ [unfold $\Theta_I$ in \S6]
+$\Leftarrow$ \textbf{[step 1: extremal characterization]} any value of $\mu_a^{\mathrm{ctf}}(x)$
+with $|\mu_a^{\mathrm{ctf}}(x)| \le V_a(x)^{1/\alpha}$ is realisable by a conditional
+law on $Y(a)\mid A=1{-}a, X=x$ with $\alpha$-moment $\le V_a$: take a two-point mass
+on $\{0, \mathrm{sign}(\mu_a^{\mathrm{ctf}})\cdot V_a^{1/\alpha}\}$ with weight
+$|\mu_a^{\mathrm{ctf}}|/V_a^{1/\alpha}$ on the second
+$\Leftarrow$ \textbf{[step 2: joint coupling existence]} construct a joint law of
+$(Y(0), Y(1), A, X)$ matching (i)~the observed conditionals $L(Y\mid A=a, X)$,
+(ii)~the observed propensity $e(x)$, and (iii)~the prescribed counterfactual conditional
+laws --- a Strassen-style coupling argument since no constraint ties $Y(0)\mid A=1$ to
+$Y(1)\mid A=1$ other than the per-arm $\alpha$-moment envelope
+$\Leftarrow$ \textbf{[step 3: continuity in endpoints]} fill the interior of $\Theta_I$
+by convex combination of the upper- and lower-endpoint extremal laws.
+\emph{$k = 3$ substantive steps;} step 2 (joint coupling existence under the
+moment envelope) is the non-trivial step --- the conjecture is open precisely because
+the joint coupling must respect both the marginal moment constraints
+\emph{and} the consistency identity $Y = AY(1) + (1-A)Y(0)$, which is not automatic.
+\textbf{Pass.}
+
+\textbf{Conjecture~\ref{conj:limit}.}
+$W_\alpha \to B$
+$\Leftarrow$ [unfold $V_a$ and $W_\alpha$ from \S6]
+$\Leftarrow$ \textbf{[step 1: $V_a^{1/\alpha}$ behaviour]} $V_a(x) = (M_\alpha(x) - e_a(x)\,\nu_a^\alpha(x))/(1-e_a(x))$;
+if $M_\alpha^{1/\alpha} \to B$ and $\nu_a^\alpha \le M_\alpha$, then by Cauchy--Schwarz / monotonicity in $\alpha$,
+$V_a^{1/\alpha} \to B$ as well
+$\Leftarrow$ \textbf{[step 2: Hausdorff continuity of the interval map]} bound the
+Hausdorff distance between intervals by the symmetric difference of half-widths;
+control via the uniform convergence $V_a^{1/\alpha} \to B$
+$\Leftarrow$ \textbf{[step 3: identification of the limit with the Aronow--Lee bound]}
+show that, under $|Y(a)| \le B$, the Aronow--Lee bound is exactly the sharp interval
+$\{\tau : |\tau - \tau_C| \le B\cdot\bigl[(1-e) + e\bigr]\}$, i.e.~half-width $B$.
+\emph{$k = 3$ substantive steps;} step 1 is non-trivial because $\nu_a^\alpha$ depends
+on $\alpha$ and the limit must be passed through the affine map defining $V_a$.
+\textbf{Pass.}
+
+\textbf{Conjecture~\ref{conj:phase}.}
+$\alpha=1$ phase transition
+$\Leftarrow$ [unfold $W_\alpha$ via $V_a^{1/\alpha}$ in \S6]
+$\Leftarrow$ \textbf{[step 1: finiteness for $\alpha>1$]} Lyapunov gives
+$|\mu_a^{\mathrm{ctf}}| \le V_a^{1/\alpha}$ whenever $\alpha>1$, hence $W_\alpha$ is finite
+$\Leftarrow$ \textbf{[step 2: vacuity construction at $\alpha\le 1$]} construct a
+weak$^*$-open class $\mathcal{C}$ of laws with finite first moment under which
+$\mu_a^{\mathrm{ctf}}$ can be made arbitrarily large: place point mass $\epsilon$ at
+a value $T$ in the counterfactual conditional law, with $T \to \infty$ and
+$\epsilon\to 0$ such that $\epsilon T \to L$ (any prescribed mean) and
+$\epsilon T \to \infty$ (no second-moment constraint)
+$\Leftarrow$ \textbf{[step 3: openness of the vacuity class]} show that perturbing
+$P$ in total variation does not destroy the construction; this requires a continuity
+argument on the marginal observables.
+\emph{$k = 3$ substantive steps;} step 2 (vacuity construction) is non-trivial because
+it must respect the observed marginal $\nu_a^1$ while still allowing $\mu_a^{\mathrm{ctf}}\to\infty$.
+\textbf{Pass.}
+
+The verification route does not require Mathlib-specific lemmas; classical Lyapunov,
+Jensen, Strassen-coupling, and total-variation continuity arguments suffice.
+
+\section{Honest scope flags}
+
+\textbf{Open vs.~proved.} Only Theorem~\ref{thm:validity} (the upper-bound side) is
+intended to be provable by routine algebra at v1; the conjectures are the load-bearing
+claims and remain to be verified. In particular, Conjecture~\ref{conj:sharp}'s joint-coupling
+existence step is open (analogous Strassen-type arguments exist in the bounded-support
+case but the moment-envelope variant has not, to our knowledge, been written down).
+
+\textbf{Withdrawn from v1.} The pre-v1 draft included a sensitivity-model variant where
+$M_\alpha$ was replaced by an MSM-style propensity odds-ratio constraint. That variant
+collapses to a re-derivation of \citet{KallusMaoZhou2019CATEIntervals} once one
+imposes a sub-exponential outcome tail and is not retained.
+
+\textbf{Uncertain assumptions.}
+(i)~The envelope $M_\alpha(x)$ is treated as an exogenous sensitivity parameter. In
+applications it would need to be elicited from prior moment estimates or auxiliary
+data; quantifying robustness to mis-specification of $M_\alpha$ is out of scope
+(belongs to Stage 1 / a follow-up estimation paper).
+(ii)~The threshold $\alpha=1$ relies on Lyapunov; whether a strictly weaker tail
+restriction (e.g., $L^1 \log L$, regular variation with $\alpha=1$ but slowly varying
+correction) achieves finite width is an open variant. Conjecture~\ref{conj:phase}
+states the simplest threshold; refining it is left for a follow-up.
+(iii)~Identifiability of $M_\alpha$ from auxiliary data (when it is not assumed known)
+is application-specific.
+
+\textbf{Inference is out of scope.} The proposal targets population-level partial
+identification only; the Tudball--Bowden--Hughes--Tilling stochastic-program
+inference treatment is acknowledged in \S5 but not pursued at v1.
+
+\section{Iteration trail}
+
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{v1 (pivot, angle 3) --- initial draft; prior verdict: none.}
+        Angle 3 (this draft) is structurally distinct from prior pivot angles 0--2 (all
+        MSM-$\Gamma$-based) by anchoring on the Aronow--Lee unknown-selection-probability
+        template and replacing the bounded-support constraint with an $\alpha$-moment
+        envelope. The focal object $W_\alpha(x;\varepsilon)$ is a closed-form covariate-conditional
+        sharp half-width; the comparator chain is Aronow--Lee 2013 (bounded-support limit) +
+        Jung--Kang 2026 ($f$-divergence comparator) + Lordan--Salehzadeh-Nobari 2026 (named open
+        problem on tail uncertainty).
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+
+\bibitem{AronowLee2013}
+Aronow, P.~M.\ and Lee, D.~K.~K. (2013).
+``Interval estimation of population means under unknown but bounded
+probabilities of sample selection.''
+\emph{Biometrika}, \textbf{100}(1), 235--240.
+\url{https://doi.org/10.1093/biomet/ass064}.
+
+\bibitem{Manski1990}
+Manski, C.~F. (1990).
+``Nonparametric bounds on treatment effects.''
+\emph{American Economic Review}, \textbf{80}(2), 319--323.
+
+\bibitem{MiratrixWagerZubizarreta2018}
+Miratrix, L.~W., Wager, S.\ and Zubizarreta, J.~R. (2018).
+``Shape-constrained partial identification of a population mean under unknown
+probabilities of sample selection.''
+\emph{Biometrika}, \textbf{105}(1), 103--114.
+\url{https://doi.org/10.1093/biomet/asx077}.
+
+\bibitem{KallusMaoZhou2019CATEIntervals}
+Kallus, N., Mao, X.\ and Zhou, A. (2019).
+``Interval estimation of individual-level causal effects under unobserved
+confounding.''
+\emph{Proceedings of AISTATS 2019}, PMLR \textbf{89}, 2281--2290.
+
+\bibitem{YadlowskyNamkoongBasuDuchiTian2022Bounds}
+Yadlowsky, S., Namkoong, H., Basu, S., Duchi, J.\ and Tian, L. (2022).
+``Bounds on the conditional and average treatment effect with unobserved
+confounding factors.''
+\emph{Annals of Statistics}, \textbf{50}(5), 2587--2615.
+\url{https://doi.org/10.1214/22-AOS2195}.
+
+\bibitem{DornGuoKallus2025DVDS}
+Dorn, J., Guo, K.\ and Kallus, N. (2025).
+``Doubly-valid/doubly-sharp sensitivity analysis for causal inference with
+unmeasured confounding.''
+\emph{Journal of the American Statistical Association}, in press.
+\url{https://doi.org/10.1080/01621459.2024.2335588}.
+
+\bibitem{JungKang2026ITBounds}
+Jung, Y.\ and Kang, B. (2026).
+``Information-theoretic partial identification of causal effects without
+bounded outcomes.''
+\emph{Proceedings of CLeaR 2026}, PMLR.
+\url{https://doi.org/10.48550/arXiv.2601.17160}.
+
+\bibitem{AsiaeePalBeckHuling2026SharpGeneralization}
+Asiaee, A., Pal, S., Beck, C.\ and Huling, J.~D. (2026).
+``Sharp bounds for treatment-effect generalization under distribution shift.''
+\emph{Proceedings of CLeaR 2026}, PMLR.
+\url{https://doi.org/10.48550/arXiv.2602.09595}.
+
+\bibitem{LordanSalehzadehNobari2026TailUncertainty}
+Lordan, G.\ and Salehzadeh Nobari, K. (2026).
+``Reporting treatment-effect bounds under outcome tail uncertainty.''
+SSRN working paper.
+\url{https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6695947}.
+
+\bibitem{TudballBowdenHughesTilling2023SampleConstrained}
+Tudball, M.~J., Bowden, J., Hughes, R.~A.\ and Tilling, K. (2023).
+``Sample-constrained partial identification with applications to causal
+inference.''
+\emph{Biometrika}, \textbf{110}(4), 933--950.
+\url{https://doi.org/10.1093/biomet/asac042}.
+
+\bibitem{LeeWeidner2021PoolingBounds}
+Lee, S.\ and Weidner, M. (2021).
+``Bounding treatment effects by pooling limited information across observations.''
+cemmap / arXiv working paper.
+\url{https://doi.org/10.48550/arXiv.2111.05243}.
+
+\bibitem{MastenPoirier2018}
+Masten, M.~A.\ and Poirier, A. (2018).
+``Identification of treatment effects under conditional partial exogeneity.''
+\emph{Econometrica}, \textbf{86}(1), 317--351.
+
+\end{thebibliography}
+
+\end{document}

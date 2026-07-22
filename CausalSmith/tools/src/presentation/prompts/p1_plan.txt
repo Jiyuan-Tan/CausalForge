@@ -1,0 +1,57 @@
+You are planning the structure of an econometrics working paper. The formal content is fixed (machine-verified); do not write prose yet.
+
+Research note (the verified mathematical content, with P-/L-/T- object ids):
+{{note_md}}
+
+Related-work brief:
+{{related_work_brief}}
+
+Frozen formal layer (the exact theorem/assumption/definition/lemma environments the paper must contain; each carries its obj_id):
+{{frozen_layer_tex}}
+
+Verified citation pool — these are the ONLY bib keys that exist; `bib:` lines must use them verbatim (never invent or rename keys):
+{{pool_keys}}
+
+Referee revision brief (structural findings to address on this re-draft; a no-op sentinel on a first draft — act ONLY on what is listed, change nothing else, and never alter a frozen statement):
+{{revision_brief}}
+
+Prior outline (when revising, REPRODUCE this structure — same section names, in the same order, with each object in the same section — and apply ONLY the changes the revision brief requires; do NOT rename sections, re-partition objects, or move an object between sections unless a listed finding demands it. Moving an object between sections forces a costly re-draft of both, so keep edits local):
+{{prior_outline}}
+
+Produce `outline.md` with exactly these sections:
+
+# Title
+On the line directly under this heading, put the proposed title as the bold span and nothing else before it: `**<the full title>**` (no "Title." label, no surrounding italics, no leading text). Put the one-sentence contribution statement on a later line (e.g. `**Contribution statement.** ...`). Econometrics journal register — the field's standard vocabulary, no imported CS/ML jargon ("frontier", non-statistical "kernel").
+
+# Notation
+A DEFINITION PLAN, not just a rendering map. One row per named symbol used in the frozen layer — every symbol must appear — with four fields:
+  `<note symbol>` | `<paper notation>` | `<defining property in one phrase>` | `<home>`
+- `<paper notation>`: the mathematical notation (never a Lean identifier).
+- `<defining property>`: what the object IS (e.g. for a Hölder ball, "functions on $[0,t_0]$ with $s_\beta$ derivatives bounded by the radius and $\alpha_\beta$-Hölder top derivative"). One CONSISTENT parameter convention per symbol — pick the radius/argument names once and use them everywhere (never `\mathcal H^\beta(L;\cdot)` in one place and `\mathcal H^\beta(C_\beta;\cdot)` in another).
+- `<home>`: WHERE a reader resolves it — the `obj_id` of the anchored Definition environment that introduces it (so statements can `\cref` it). Every named operator/class/law/rule used in a frozen statement must have a resolvable anchored environment home; if none exists in the frozen layer, list it on a top-level `notation_gaps: <symbol>=<why>, …` line so synthesis/review can add one (do not invent its mathematical content).
+Standard ambient symbols a reader needs no definition for (ℝ, 𝔼, Pr, the covariate space 𝒳, Greek parameters) may be omitted.
+
+The frozen layer is the sole notation inventory. Never copy a symbol from the research note,
+revision brief, or prior outline unless that symbol literally occurs in a frozen environment body.
+Delete stale prior rows and gaps for unused implementation/internal symbols; do not infer hidden
+construction notation from a prose phrase in the frozen layer.
+For every row, copy the symbol's full frozen-layer form exactly, including all order indices,
+superscripts, arguments, bars, and domains. Do not shorten an indexed symbol into an alias (for
+example, never turn `\operatorname{FeasFiber}^{b}_{m,2m+2}(t)` into
+`\operatorname{FeasFiber}^{b}_{m}(t)`) unless a frozen definition explicitly introduces that alias.
+
+# Sections
+For each paper section, in order: a `## section: <name>` header, a one-paragraph brief of what it covers, a `objs:` line listing the obj_ids whose environments appear in that section (every obj_id in the frozen layer must be placed exactly once; L- lemmas normally go to the appendix), and a `bib:` line listing the bib keys that section may cite (subset of the pool).
+
+Rules:
+- Standard working-paper shape: introduction; setup and assumptions; main results; discussion/extensions; appendix with proofs and auxiliary lemmas. The appendix ends with a brief verification note consolidating the Lean machine-checking scope (which results are verified, which inputs are only assumed). The introduction must NOT carry a formalized-vs-assumed inventory — only a single factual sentence pointing to that note; the formalization is not a listed contribution.
+- Abstract and introduction are written LAST in a later stage; still include their planned briefs.
+- Do not modify, restate, or paraphrase the frozen environments here.
+- REFUTED / DEAD OBJECTS. The note may discuss conjectures its own verdict marks as false/refuted, and quantities no frozen-layer theorem or assumption uses. Do NOT build a section, contribution claim, or interpretive narrative around either. A refuted conjecture and the objects exclusive to it may appear ONLY when explicitly labelled as a refuted/disproved conjecture — never as a property of the results; an object absent from the frozen layer (used by no proved theorem/assumption) gets no airtime as a feature of the paper's results. The contribution and every section brief must rest only on what the frozen layer actually proves.
+- CITED DEPENDENCIES: published results used by a theorem are intentionally absent from the frozen environment inventory. Do not invent an assumption/result environment for them. Their consumers carry generated theorem-local verification-scope footnotes, and the proof prose may cite the source. Treat those footnotes as trust-boundary metadata, not as contributions or model assumptions.
+- UNDELIVERED REMARKS: place a pre-existing `remarkv` object with status `undelivered` exactly once in a clearly labelled limitations/future-work discussion or appendix note. Frame it affirmatively as an open question or future direction, never as a delivered theorem, assumption, formalized conclusion, or contribution.
+- KIND CHECK: an "assumption" that merely constructs or names a quantity (a tuning rule, a threshold sequence, an estimator, a derived object) is mathematically a definition — a human would write "let λ_n be …". For each such object add it to a single top-level line `env_overrides: <obj_id>=definitionv, …` (also usable in the reverse direction). Genuine restrictions on the data-generating process stay assumptions. The allowed override targets are: `definitionv`, `assumptionv`, `propositionv` (a proved result tiered as a Proposition — use to fix a result mis-presented under another head), and `remarkv` (NON-load-bearing interpretive or open-question content — e.g. an `oeq:` open question, or a "definition" that is really a theorem-like/open-problem remark). NEVER demote a load-bearing object to `remarkv`: if any theorem or lemma depends on it, it is not a remark. Omit the line if no override is needed.
+- REVISION: when the revision brief lists structural findings, apply them here — re-kind an environment via `env_overrides`, reword an overclaiming title, or tighten the contribution statement and section placement accordingly. Make ONLY the listed structural changes; preserve every frozen statement verbatim.
+- SYNTHESIZED DEFINITIONS: an environment whose obj_id is `synth_<k>` is a definition that introduces a named class/operator the later statements use. Place each one in the setup/assumptions section, BEFORE the statements that reference it (so a reader meets the notation first). It still counts as one of the obj_ids that must be placed exactly once.
+
+REQUIRED OUTPUT FORMAT: your stdout must be the raw markdown content of outline.md and nothing else — it starts with the line `# Title`. Do NOT wrap it in code fences, do NOT emit a JSON object or receipt, do NOT attempt to write any file.

@@ -1,0 +1,1174 @@
+% =====================================================================
+%  thmsmith Stage 0 derivation skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_leaky\_frontdoor\_shared\_u, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+%  - Immutability is SCOPED to section headers, macro names, and the
+%    preamble. The PLACEMENT of theorem/proposition/lemma/assumption
+%    environments is YOUR responsibility: a `theorem` env may be freely
+%    moved into whichever fixed-header section fits (e.g. promote the
+%    field-level result from \S11 into \S9). Relocating a block between
+%    fixed headers is NOT a skeleton violation.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage 0 derivation: \texttt{pid\_leaky\_frontdoor\_shared\_u} / \texttt{v1}%
+  \\ \large\textit{Leaky front-door bounds under a shared-\(U\) direct-leak budget}}
+\author{thmsmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\providecommand{\citet}[1]{\cite{#1}}
+
+\begin{abstract}
+Let \(P\) denote the observable law of \((X,M,Y)\), with \(X,M\in\{0,1\}\) and
+\(Y\in[0,1]\), and let \(I(\lambda)=\Theta_I(P;\lambda)\) be the set of average causal
+effects compatible with a finite-support shared confounder \(U\), the clean-mediator
+restriction \(U\perp M\mid X\), and the leak budget
+\(|\varphi(m,1,u)-\varphi(m,0,u)|\le \lambda\). The estimand-defining functional of
+this note is the endpoint pair \((L(\lambda;P),U(\lambda;P))\), written as a
+finite-dimensional bilinear optimization problem over the latent laws
+\((\pi,w_0,w_1)\) and the structural outcome means \(\varphi\). The target causal
+estimand is the total effect
+\(\theta=\E[Y(\mathrm{do}\,X=1)]-\E[Y(\mathrm{do}\,X=0)]\), represented under any
+feasible completion by the corresponding front-door-with-leak latent functional.
+This setup note records the observable compatibility equations, the comparison outer
+intervals \(B_{\mathrm{box}}(\lambda)\) and \(B_{\mathrm{sens}}(\lambda)\), and the
+lifted active-set representation used later for endpoint geometry. The supporting
+theorem contract fixes two routine facts needed by the later sub-stages: at
+\(\lambda=0\) the set collapses to Pearl's front-door functional, and for
+\(\lambda\ge 0\) the feasible image is a nested compact family with well-defined
+endpoints. The per-conjecture follow-up stages then test strict non-decomposition,
+finite-vertex endpoint formulas, and regime-specific inference.
+\end{abstract}
+
+\section{Introduction}
+Pearl's front-door criterion turns a difficult causal problem into an observed-law
+formula by routing the treatment effect through a mediator and excluding a direct
+\(X\to Y\) path. That point-identification conclusion is attractive precisely because
+it is explicit, but it is also fragile: in many applications the investigator doubts
+the complete exclusion of a residual direct channel while still finding the mediator
+stage substantively credible. The econometric question here is therefore not whether
+front-door identification survives unchanged, but what \emph{sharp partial
+identification} remains when the mediator stays clean and the direct path is allowed
+to leak by a bounded amount.
+
+The closest baseline is Pearl's \(\lambda=0\) front-door functional, which this note
+must recover exactly at the exclusion corner. A second benchmark is the generalized
+front-door literature, which allows a direct path but re-targets the estimand to an
+indirect-effect object rather than reporting a leak-indexed interval for the total
+effect. A third comparator is mediation sensitivity analysis under unmeasured
+mediator-outcome confounding. That literature starts from a familiar mediation target,
+names one violated identification ingredient, and replaces point claims by sharp
+bounds. The present note follows the same architectural move, but in a different
+causal model: the mediator is kept clean, while the unmeasured direct structural
+contrast \(\varphi(m,1,u)-\varphi(m,0,u)\) is bounded by a scalar \(\lambda\).
+
+The contribution targeted by this note is the shared setup for a leak-indexed
+identified set \(I(\lambda)\) whose geometry is driven by one latent law
+\((\pi,w_0,w_1)\) appearing simultaneously in the four clean-mediator compatibility
+equations and in the causal effect functional. If the strict-inclusion conjecture is
+confirmed, the result is a genuine non-rectangular partial-identification object rather
+than a Pearl point estimate plus an independent direct-path band. If the vertex
+question is resolved positively, the endpoints become explicit finite-dimensional maps
+of \(P\) and \(\lambda\). If the inference question is resolved, empirical front-door
+studies gain a reportable confidence procedure indexed by the tolerated leak size.
+
+\paragraph{Motivating conjecture(s).}
+The symbols \(I(\lambda)\), \(B_{\mathrm{box}}(\lambda)\), \(B_{\mathrm{sens}}(\lambda)\),
+\(\kappa(P)\), and the lifted polytope of Section~\ref{sec:setup} are defined below.
+The three solve targets are reproduced here so the note is self-contained.
+
+\newcounter{stagezeroconjecture}
+\newcounter{stagezerooeq}
+\setcounter{stagezeroconjecture}{0}
+\setcounter{stagezerooeq}{1}
+
+\refstepcounter{stagezeroconjecture}\label{conj:nondecomp}
+\noindent\textbf{Conjecture \arabic{stagezeroconjecture} (non-decomposition / strict inclusion).}
+\textnormal{(NOT YET PROVED)} Let $\kappa(P)$ be the observable signature \eqref{eq:kappa}.
+\begin{enumerate}[label=(\alph*),leftmargin=2em,itemsep=1pt]
+  \item For all $\lambda\ge0$, $[L(\lambda),U(\lambda)]\subseteq B_{\mathrm{box}}(\lambda)\cap B_{\mathrm{sens}}(\lambda)$.
+  \item On the relatively open observable set $\{P:\kappa(P)\neq0\}$, there is $\lambda_0(P)>0$ such that
+        for $0<\lambda<\lambda_0(P)$ the inclusion in (a) is \emph{strict} in both factors.
+  \item At the exclusion corner the per-mediator box closes:
+        $B_{\mathrm{box}}(0)=I(0)=\{\theta_{\mathrm{FD}}\}$, so the strict inclusion in (b) against
+        $B_{\mathrm{box}}$ is necessarily a strictly-positive-$\lambda$ phenomenon. The compatibility-free
+        interval is loose already at the corner, $I(0)\subsetneq B_{\mathrm{sens}}(0)$, because
+        $B_{\mathrm{sens}}$ discards \eqref{eq:compat}.
+\end{enumerate}
+
+\refstepcounter{stagezerooeq}\label{oeq:vertex}
+\noindent\textbf{Open-ended Question \arabic{stagezerooeq} (finite-vertex endpoints with a kink).}
+Is there a finite family of rational functions $\{v_j(\lambda)\}_{j\in J}$ of $(p_x,q_{m\mid x},r_{x,m},\lambda)$,
+indexed by active-set cells of the lifted polytope of \S\ref{sec:setup}, with
+\[
+  L(\lambda)=\min_{j\in J}v_j(\lambda),\qquad U(\lambda)=\max_{j\in J}v_j(\lambda),
+\]
+and a closed-form threshold $\lambda^\star=\lambda^\star(P)>0$ at which the maximizing (resp.\ minimizing)
+cell changes, so that $U(\cdot)$ (resp.\ $L(\cdot)$) is piecewise-rational with a kink at $\lambda^\star$?
+
+\smallskip\noindent\textbf{No-kink convention.} Set
+$\lambda^\star(P):=\inf\{\lambda>0:\text{the maximizing cell at }\lambda\text{ differs from the cell active at }0^+\}$,
+with $\lambda^\star(P):=+\infty$ when no such switch occurs---a single cell is maximizing throughout, as on the
+degenerate support $|\mathcal U|=1$ (Corollary~\ref{cor:degenerate}) or wherever one branch dominates for all
+$\lambda$. The kink claim is scoped to the generic regime $\{P:0<\lambda^\star(P)<\infty\}$; on its complement
+$U(\cdot)$ is a single rational branch with no interior kink and the construction returns that branch. The
+symmetric convention defines the minimizing-cell threshold for $L(\cdot)$.
+
+\smallskip\noindent\textbf{Handle:} lift the bilinear program with $g_{m,x,u}=\varphi(m,x,u)w_x(u)$ so the
+compatibility equations \eqref{eq:compat} become linear; for fixed $(w_0,w_1)$ on the latent simplices,
+enumerate the active-set cells of \S\ref{sec:setup} (which box bounds $g_{m,x,u}\in\{0,w_x(u)\}$ and which
+leak bounds $|d(m,u)|\le\lambda$ bind), read each cell's vertex value of \eqref{eq:ace} as a rational
+function $v_j$ of the data and $(w_0,w_1)$, optimize over $(w_0,w_1)$, and locate $\lambda^\star$ as the
+smallest $\lambda$ solving the boundary equality $v_{j}(\lambda)=v_{j'}(\lambda)$ between the two adjacent
+maximizing cells. Start from $|\mathcal U|=2$, the smallest support allowing $w_0\neq w_1$.
+\textbf{Why it matters:} a closed-form vertex formula lets front-door software report the leak interval and
+its kink directly from $(p_x,q_{m\mid x},r_{x,m})$ without solving a nonconvex program at every $\lambda$.
+
+\refstepcounter{stagezerooeq}\label{oeq:inference}
+\noindent\textbf{Open-ended Question \arabic{stagezerooeq} (cross-fitted endpoint inference).}
+Is there an estimator of $\bigl(L(\lambda),U(\lambda)\bigr)$ that is $\sqrt n$-consistent and asymptotically
+Gaussian for fixed $\lambda$ in the interior of an active regime, and whose limit at the kink $\lambda^\star$
+is the (non-Gaussian) directional law? Here $\lambda^\star=\lambda^\star(P)$ is the threshold of Open-ended
+Question~\ref{oeq:vertex} under its no-kink convention; on $\{P:\lambda^\star(P)=+\infty\}$ the kink regime is
+empty and only the interior Gaussian limit is in force.
+
+\smallskip\noindent\textbf{Handle:} cross-fit the nuisances $(\hat p_x,\hat q_{m\mid x},\hat r_{x,m})$ on
+held-out folds and plug them into the Open-ended Question~\ref{oeq:vertex} vertex map
+$v_j(\cdot)$, then apply the directional delta method of \citet{FangSantos2019DirectionallyDifferentiable} to
+the $\min/\max$ envelope; the active-set indicator at $\lambda^\star$ supplies the directional derivative
+along the binding face.
+\textbf{Case-split fallback:} if no single procedure is valid across regimes, deliver one per regime---(a)
+interior active set: regular $\sqrt n$ Gaussian inference on the selected vertex; (b) kink
+$\lambda=\lambda^\star$: a directional limit with a rescaled-bootstrap or numerical-derivative correction; (c)
+collapse $\lambda=0$: the degenerate point limit at $\theta_{\mathrm{FD}}$, coordinated with set-level
+coverage in the sense of \citet{ChernozhukovHongTamer2007ParameterSets}.
+\textbf{Why it matters:} it turns the leak-indexed interval into a reportable confidence band over
+$\lambda$ for empirical mediation studies, the inference object \citet{ChernozhukovHongTamer2007ParameterSets}
+calls for in set-identified models.
+
+\section{Related work and positioning}
+Pearl (1995) is the anchor because the exclusion corner \(\lambda=0\) must collapse
+exactly to the front-door functional and not merely to an observationally equivalent
+re-expression. Fulcher, Shpitser, Marealle, and Tchetgen Tchetgen (2017) are relevant
+because they relax the direct-path exclusion in a front-door graph, but they identify a
+different estimand, so they do not supply a leak-indexed total-effect interval.
+
+Ding and VanderWeele (2016) are the closest writing and sensitivity-analysis comparator:
+they sharpen causal conclusions after one named mediation assumption fails, but their
+violation is unmeasured mediator-outcome confounding rather than a clean mediator plus a
+bounded shared-\(U\) direct path. Balke and Pearl (1997) matter because they provide the
+canonical finite latent-type sharp-bound template; the present note differs because the
+clean-mediator equations make the endpoint problem bilinear rather than an ordinary LP.
+Finkelstein, Adams, Saria, and Shpitser (2020) are relevant for the same reason: they
+show how discrete latent restrictions and conditional-independence constraints can be
+encoded as finite optimization constraints, which is the right computational language for
+the lifted problem here.
+
+Chernozhukov, Hong, and Tamer (2007) are the set-inference benchmark once
+\(\lambda\mapsto[L(\lambda),U(\lambda)]\) is available as an interval-valued target.
+Fang and Santos (2019) are the correct asymptotic reference for the conjectured kink
+regime because the endpoint map is expected to be only directionally differentiable when
+the active cell changes. Within this repository, the closest prior proposal is
+\texttt{eid\_frontdoor\_multi\_mediator}, which already flagged that shared latent
+coordinates can make rectangular decompositions nonsharp; the present note studies the
+minimal single-mediator shared-\(U\) version of that obstruction. The repository's
+\texttt{pid\_proximal\_l2\_bridge} line is relevant only as a methodological neighbor:
+it highlights endpoint-geometry, collapse, and nonsmooth-inference issues, but it is a
+proxy/bridge problem rather than a clean-mediator front-door problem.
+
+\section{Formal setup}
+\label{sec:setup}
+Let \(X\in\{0,1\}\) be the treatment, \(M\in\{0,1\}\) the observed mediator,
+\(Y\in[0,1]\) the outcome, and \(U\) a latent confounder with finite support
+\(\mathcal U\). The causal graph has arrows \(U\to X\), \(U\to Y\), \(X\to M\),
+\(M\to Y\), and \(X\to Y\); the last arrow is the direct leak whose magnitude is
+bounded but not set to zero. Write
+\[
+  p_x=\Pr(X=x),\qquad q_{m\mid x}=\Pr(M=m\mid X=x),\qquad
+  r_{x,m}=\E[Y\mid X=x,M=m].
+\]
+These observable moments determine the law \(P\) of \((X,M,Y)\) relevant for this
+note.
+
+For each \(u\in\mathcal U\), let
+\[
+  \varphi(m,x,u)=\E[Y\mid M=m,X=x,U=u]\in[0,1],\qquad
+  d(m,u)=\varphi(m,1,u)-\varphi(m,0,u),
+\]
+and let \(\pi(u)=\Pr(U=u)\) and \(w_x(u)=\Pr(U=u\mid X=x)\). The clean-mediator
+restriction \(U\perp M\mid X\) implies the four outcome-compatibility equations
+\begin{equation}\label{eq:compat}
+  r_{x,m}=\sum_{u\in\mathcal U}\varphi(m,x,u)\,w_x(u),
+  \qquad (x,m)\in\{0,1\}^2,
+\end{equation}
+while Bayes consistency requires
+\[
+  \pi(u)=p_0 w_0(u)+p_1 w_1(u),\qquad u\in\mathcal U.
+\]
+
+Under an intervention \(\mathrm{do}(X=x)\), the edge \(U\to X\) is cut, the mediator
+distribution stays \(q_{m\mid x}\), and the causal total effect becomes
+\begin{equation}\label{eq:ace}
+  \theta=\mathrm{ACE}
+  =\sum_{m\in\{0,1\}}\sum_{u\in\mathcal U}
+   \bigl[q_{m\mid1}\varphi(m,1,u)-q_{m\mid0}\varphi(m,0,u)\bigr]\pi(u).
+\end{equation}
+The identified set under leak radius \(\lambda\ge 0\) is therefore
+\[
+  \Theta_I(P;\lambda)=I(\lambda)
+  =\Bigl\{\theta \text{ as in \eqref{eq:ace}}:\;
+    (\pi,w_0,w_1,\varphi)\text{ satisfy \eqref{eq:compat}, }
+    \pi=p_0w_0+p_1w_1,\ 0\le \varphi\le 1,\ |d(m,u)|\le \lambda
+  \Bigr\}.
+\]
+This is the partial-identification object of interest: the data fix \(P\), the model
+and leak budget restrict feasible latent completions, and the target scalar \(\theta\)
+varies across those completions.
+
+The observable signature used later to detect nontrivial confounding is
+\begin{equation}\label{eq:kappa}
+  \kappa(P)
+  :=\Bigl(\E[Y\mid X=1]-\E[Y\mid X=0]\Bigr)-\theta_{\mathrm{FD}}(P)
+  =\sum_m\bigl(q_{m\mid1}r_{1,m}-q_{m\mid0}r_{0,m}\bigr)
+   -\sum_m\bigl(q_{m\mid1}-q_{m\mid0}\bigr)\bigl(p_1r_{1,m}+p_0r_{0,m}\bigr),
+\end{equation}
+where \(\theta_{\mathrm{FD}}(P)\) denotes Pearl's front-door functional. When
+\(\kappa(P)\neq 0\), the observed treatment contrast and the front-door corner disagree,
+which is exactly the regime where shared-latent compatibility can matter.
+
+For the endpoint-geometry question, introduce the lifted variables
+\[
+  g_{m,x,u}:=\varphi(m,x,u)\,w_x(u)\ge 0.
+\]
+Then \eqref{eq:compat} becomes linear, \(r_{x,m}=\sum_u g_{m,x,u}\), while the box
+\(0\le \varphi\le 1\) becomes \(0\le g_{m,x,u}\le w_x(u)\). For fixed \((w_0,w_1)\),
+an active-set cell records which box bounds are binding and which leak inequalities
+\(|d(m,u)|\le \lambda\) bind. Within any such cell the feasible lifted region is a
+polytope and the objective \eqref{eq:ace} is linear, so the cellwise endpoint is
+attained at a vertex.
+
+\paragraph{Locked parameters.}
+\begin{itemize}
+  \item qid: \texttt{pid\_leaky\_frontdoor\_shared\_u}
+  \item specialization: \texttt{v1}
+  \item observable distribution: \(P\) over \((X,M,Y)\) with \(X\in\{0,1\}\),
+        \(M\in\{0,1\}\), \(Y\in[0,1]\), summarized by the sufficient statistics
+        \(p_x=\Pr(X=x)\), \(q_{m\mid x}=\Pr(M=m\mid X=x)\),
+        \(r_{x,m}=\E[Y\mid X=x,M=m]\).
+  \item parameter \(\theta\): \(\theta=\mathrm{ACE}=\E[Y(\mathrm{do}\,X=1)]-\E[Y(\mathrm{do}\,X=0)]\)
+        in the graph \(\mathcal G\) with edges \(U\to X\), \(U\to Y\), \(X\to M\),
+        \(M\to Y\), \(X\to Y\).
+  \item identifying restrictions: \(U\) has finite support with
+        \(|\mathcal U|\le K:=|X|\,|M|+1=5\) (Carath\'eodory reduction); the mediator is
+        \emph{clean}, \(U\perp M\mid X\); the outcome structural mean
+        \(\varphi(m,x,u)=\E[Y\mid M=m,X=x,U=u]\in[0,1]\); the latent controlled direct
+        effect \(d(m,u)=\varphi(m,1,u)-\varphi(m,0,u)\) obeys the single scalar
+        \emph{leak bound} \(|d(m,u)|\le\lambda\), with \(\lambda=0\) the Pearl exclusion restriction.
+  \item bounding functional: the sharp identified set
+        \(I(\lambda)=\{\,\mathrm{ACE}\;:\;\exists\,(\pi,w_0,w_1,\varphi)\text{ feasible}\,\}\)
+        with endpoint map \(\lambda\mapsto[L(\lambda),U(\lambda)]\), where
+        \(\pi=\Pr(U=\cdot)\), \(w_x=\Pr(U=\cdot\mid X=x)\), feasibility is the four
+        clean-mediator compatibility equations
+        \(r_{x,m}=\sum_u\varphi(m,x,u)\,w_x(u)\), the Bayes consistency
+        \(\pi=\sum_x p_x w_x\), the box \(\varphi\in[0,1]\), and \(|d|\le\lambda\).
+\end{itemize}
+
+\section{Assumptions}
+\begin{assumption}[Finite-support latent confounder]\label{ass:finite}
+The latent confounder \(U\) has finite support \(\mathcal U\) with
+\(|\mathcal U|\le K:=|X|\,|M|+1=5\). All optimization and feasibility statements are
+taken over this finite latent support.
+\end{assumption}
+
+\begin{assumption}[Clean mediator]\label{ass:clean}
+The mediator is clean in the front-door sense: \(U\perp M\mid X\). Equivalently,
+\(\Pr(U\in\cdot\mid X,M)=\Pr(U\in\cdot\mid X)\), so the four compatibility equations
+\eqref{eq:compat} hold.
+\end{assumption}
+
+\begin{assumption}[Bounded outcome support]\label{ass:bounded}
+The observed outcome satisfies \(Y\in[0,1]\). Therefore every structural mean obeys
+\(0\le \varphi(m,x,u)\le 1\) for all \((m,x,u)\).
+\end{assumption}
+
+\begin{assumption}[Bounded structural leak]\label{ass:leak}
+There is a known sensitivity radius \(\lambda\ge 0\) such that
+\[
+  |\varphi(m,1,u)-\varphi(m,0,u)|\le \lambda
+  \qquad\text{for every }(m,u)\in\{0,1\}\times\mathcal U.
+\]
+The corner \(\lambda=0\) is the exclusion restriction with no direct \(X\to Y\) path.
+\end{assumption}
+
+\begin{assumption}[Observed support and overlap]\label{ass:overlap}
+Both treatment arms occur with positive probability, \(p_x>0\) for \(x\in\{0,1\}\),
+and both mediator states occur within each treatment arm,
+\(q_{m\mid x}>0\) for every \((x,m)\in\{0,1\}^2\). Hence each conditional mean
+\(r_{x,m}\) is well defined on observed support.
+\end{assumption}
+
+\section{Estimand-defining functional}
+Fix the latent support \(\mathcal U=\{1,\dots,K\}\) with \(K=5\). The primary
+bounding functional is the endpoint pair
+\[
+  \theta_L(P;\lambda):=L(\lambda;P),\qquad \theta_U(P;\lambda):=U(\lambda;P),
+\]
+defined by the finite-dimensional bilinear programs
+\[
+  L(\lambda;P)=\min_{(\pi,w_0,w_1,\varphi)\in\mathcal F(P,\lambda)} \theta(\pi,w_0,w_1,\varphi),
+  \qquad
+  U(\lambda;P)=\max_{(\pi,w_0,w_1,\varphi)\in\mathcal F(P,\lambda)} \theta(\pi,w_0,w_1,\varphi),
+\]
+where
+\[
+  \theta(\pi,w_0,w_1,\varphi)
+  :=\sum_{m\in\{0,1\}}\sum_{u\in\mathcal U}
+    \bigl[q_{m\mid1}\varphi(m,1,u)-q_{m\mid0}\varphi(m,0,u)\bigr]\pi(u),
+\]
+and \(\mathcal F(P,\lambda)\) is the set of all \((\pi,w_0,w_1,\varphi)\) satisfying
+\eqref{eq:compat}, \(\pi=p_0w_0+p_1w_1\), \(w_0,w_1,\pi\in\Delta(\mathcal U)\),
+\(0\le \varphi\le 1\), and \(|\varphi(m,1,u)-\varphi(m,0,u)|\le \lambda\) for every
+\((m,u)\). This is the computable map from observables to the sharp completion-based
+endpoint problem. After the lift \(g_{m,x,u}=\varphi(m,x,u)w_x(u)\), each fixed
+active-set cell is a finite polytope and the cellwise optimization is linear.
+
+Two explicit outer comparison functionals are used later. The first is the
+per-mediator box \(B_{\mathrm{box}}(\lambda;P)\), obtained by replacing the common
+arm-specific latent laws \((w_0,w_1)\) with mediator-specific pairs
+\((w_0^{(m)},w_1^{(m)})\) and mediator-specific Bayes marginals
+\(\pi^{(m)}=p_0w_0^{(m)}+p_1w_1^{(m)}\), while keeping the same objective and the same
+box and leak constraints. The second is the compatibility-free sensitivity interval
+\(B_{\mathrm{sens}}(\lambda;P)\), obtained by keeping one shared
+\((\pi,w_0,w_1)\) and the same objective, but deleting the four equations
+\eqref{eq:compat}. Both are finite-dimensional optimization problems over at most five
+latent states, and both are outer bounds because they are formed by dropping
+constraints present in \(\mathcal F(P,\lambda)\).
+
+\section{Target causal estimand}
+The target causal estimand is the average total effect
+\[
+  \theta=\mathrm{ACE}=\E[Y(\mathrm{do}\,X=1)]-\E[Y(\mathrm{do}\,X=0)].
+\]
+In the present graph, under any feasible latent completion, this target is represented
+by the structural formula \eqref{eq:ace}. The partial-identification problem is not to
+redefine \(\theta\), but to determine which values of that same causal scalar remain
+compatible with the observed law \(P\) once the clean mediator restriction is
+maintained and the direct path is allowed to vary within the leak budget \(\lambda\).
+Accordingly,
+\[
+  \Theta_I(P;\lambda)=\{\theta:\theta \text{ arises from some }
+  (\pi,w_0,w_1,\varphi)\in\mathcal F(P,\lambda)\}
+\]
+is the causal identified set, while the functional
+\((\theta_L(P;\lambda),\theta_U(P;\lambda))=(L(\lambda;P),U(\lambda;P))\) is the
+observable endpoint map that brackets it.
+
+\section{Main theorems}
+\paragraph{Refutation note (Conjecture 1).}
+Refuted: the allowed observable law with \(p_0=p_1=1/2\), \(q_{1\mid0}=1/4\), \(q_{1\mid1}=3/4\), \(r_{0,0}=2/5\), \(r_{1,0}=3/5\), \(r_{0,1}=3/10\), and \(r_{1,1}=7/10\) satisfies \(\kappa(P)=3/10\neq0\) and \(q_{\cdot\mid1}\neq q_{\cdot\mid0}\), but for every \(0\le\lambda\le3/10\) the shared-\(U\) interval and the per-mediator box coincide, \(I(\lambda)=B_{\mathrm{box}}(\lambda)=[-\lambda,\lambda]\); hence no positive \(\lambda_0\) can make the inclusion strict against \(B_{\mathrm{box}}\). See Section~\ref{sec:counterexample} for the counterexample.
+
+\begin{theorem}[Theorem 2: Finite response-type basis]\label{thm:vertex}
+Yes, with the no-kink convention applied to reduced value branches rather than to duplicate LP bases. For $\bar\lambda=\min\{\lambda,1\}$, the leak endpoint pair is computed by the finite response-type LP \eqref{eq:vlp}; its feasible-basis values are rational functions $v_B^U(P,\lambda)=c_B(P,\lambda)^\mathsf{T}A_B(\lambda)^{-1}b(P)$ and $v_B^L(P,\lambda)$, with $U(\lambda;P)=\max_B v_B^U(P,\lambda)$ and $L(\lambda;P)=\min_B v_B^L(P,\lambda)$. Quotient feasible bases whose value functions agree identically on each connected common-feasibility cell, order the remaining branches lexicographically, and define the maximizing branch at each $\lambda$ to be the first branch attaining the envelope. Then the first maximizing-cell threshold is the smallest positive point at which this canonical maximizing branch differs from the canonical branch active at $0^+$; it is found from the finite list of nonzero cleared-denominator branch equalities and feasibility-boundary equalities, and is $+\infty$ if that list produces no positive canonical switch. The minimizing threshold is defined analogously. Every feasible LP value is realized by a shared-$U$ completion with at most two latent atoms, obtained from the arm averages $\bar a^t=p_t^{-1}\sum_a\rho_{t,a}a$, so sharpness respects the locked support restriction $|\mathcal U|\le5$.
+\end{theorem}
+
+The result replaces the informal instruction ``optimize over $(w_0,w_1)$'' by an evaluable Balke--Pearl-style finite program. A response type records the four structural means \((\varphi(0,0,u),\varphi(0,1,u),\varphi(1,0,u),\varphi(1,1,u))\). Because the outcome box and the leak budget are polyhedral, only finitely many response types matter. The treatment propensity inside a latent type does not add a new nonlinear cell: a type with propensity \(e\) is the convex mixture of the same response type used only in arm \(0\) and only in arm \(1\). Consequently the shared-\(U\) endpoint is computed by a finite LP whose bases are the active cells. The kink is not imposed by hand; after duplicate value branches are quotiented and ties are broken deterministically, it is exactly the first parameter value at which a different feasible reduced branch overtakes the branch active just to the right of the exclusion corner. If all apparent switches are only duplicate-basis ties, the no-kink convention returns \(+\infty\).
+
+\begin{theorem}[Theorem 3: Active-branch endpoint inference]\label{thm:inference-active-branch}
+Inference construction under Assumption~\ref{ass:inference-regularity}. Let \(O_i=(X_i,M_i,Y_i)\) be i.i.d., define \(\widehat\rho_{xm}=n^{-1}\sum_i\one\{X_i=x,M_i=m\}\), \(\widehat\mu_{xm}=n^{-1}\sum_iY_i\one\{X_i=x,M_i=m\}\), \(\widehat p_x=\sum_m\widehat\rho_{xm}\), \(\widehat q_{m\mid x}=\widehat\rho_{xm}/\widehat p_x\), \(\widehat r_{x,m}=\widehat\mu_{xm}/\widehat\rho_{xm}\), and \(\widehat\eta_n=(\widehat\rho,\widehat\mu)\). For any fixed \(\lambda\), set \(\widehat L_n(\lambda)=\min_{j\in J_L}v^L_j(\widehat\eta_n,\lambda)\) and \(\widehat U_n(\lambda)=\max_{j\in J_U}v^U_j(\widehat\eta_n,\lambda)\), where the finite \(C^1\) branch maps \(v^L_j,v^U_j\) are the active-branch representation of \(L,U\). If \(\lambda\) is in an interior active regime with unique active indices \(j_L,j_U\), then \(\sqrt n((\widehat L_n,\widehat U_n)-(L,U))\Rightarrow \mathcal N(0,D_\lambda\Sigma_\eta D_\lambda^\transpose)\), where \(D_\lambda\) has rows \(\nabla_\eta v^L_{j_L}(\eta,\lambda)^\transpose\) and \(\nabla_\eta v^U_{j_U}(\eta,\lambda)^\transpose\). If \(\lambda=\lambda^\star(P)\) is a finite kink selected by the no-kink/tie convention, then \(\sqrt n((\widehat L_n,\widehat U_n)-(L,U))\Rightarrow(\min_{j\in A_L^\star}\nabla_\eta v^L_j(\eta,\lambda^\star)^\transpose Z_\eta,\max_{j\in A_U^\star}\nabla_\eta v^U_j(\eta,\lambda^\star)^\transpose Z_\eta)\), with \(Z_\eta\sim\mathcal N(0,\Sigma_\eta)\); the displayed directional law is genuinely non-Gaussian only when the relevant finite min/max envelope is not almost surely equal to a single linear form of \(Z_\eta\), and in a two-branch binding face it is non-Gaussian when the active gradients \(a,b\) for the same endpoint satisfy \((a-b)^\transpose\Sigma_\eta(a-b)>0\). For multiplier draws \(\xi_i\) that are i.i.d., independent of the sample, satisfy \(E[\xi_i]=0\), \(E[\xi_i^2]=1\), and \(E|\xi_i|^{2+\delta}<\infty\) for some \(\delta>0\), define \(\widehat Z_{\eta,n}^b=n^{-1/2}\sum_i\xi_i(\widehat\psi_{\eta,i}-\overline{\widehat\psi}_\eta)\). If \(t_n\downarrow0\) and \(\sqrt n\,t_n\to\infty\), the numerical-derivative bootstrap \(\widehat\Phi'_{\lambda,n}(h)=t_n^{-1}\{\Phi_\lambda(\widehat\eta_n+t_nh)-\Phi_\lambda(\widehat\eta_n)\}\), \(\widehat Z_n^b=\widehat\Phi'_{\lambda,n}(\widehat Z_{\eta,n}^b)\), consistently estimates the interior Gaussian law and the kink directional law. Thus \(C_{n,\alpha}(\lambda)=[\widehat L_n(\lambda)-\widehat c_{1-\alpha}/\sqrt n,\widehat U_n(\lambda)+\widehat c_{1-\alpha}/\sqrt n]\), with \(\widehat c_{1-\alpha}\) the conditional \((1-\alpha)\)-quantile of \(\max\{\widehat Z_{n,L}^b,-\widehat Z_{n,U}^b\}\), has asymptotic set coverage for \([L(\lambda),U(\lambda)]\) at continuity points of the limiting quantile. At \(\lambda=0\), use \(\widehat L_n(0)=\widehat U_n(0)=\widehat\theta_{\mathrm{FD}}\), where \(\widehat\theta_{\mathrm{FD}}=\sum_m(\widehat q_{m\mid1}-\widehat q_{m\mid0})(\widehat p_1\widehat r_{1,m}+\widehat p_0\widehat r_{0,m})\); the endpoint pair has the diagonal Gaussian limit for \(\theta_{\mathrm{FD}}\) and the estimated width is identically zero.
+\end{theorem}
+
+The construction is an inference layer on top of the leak-indexed partial-ID endpoint map. The causal object remains the identified interval \([L(\lambda),U(\lambda)]\) for the total effect in \eqref{eq:ace}; the estimator first estimates only the observable cell vector \(\eta(P)\), then evaluates the branch envelope supplied by the finite-vertex representation. Cross-fitting is harmless in this finite-cell problem: replacing \(\widehat\eta_n\) by the fixed-fold average of held-out-fold estimators has the same influence function, because each fold estimator is a smooth cell-frequency and cell-mean functional under overlap.
+
+The interior active-regime case is regular. Once the same branch remains active in a neighborhood of \(P\), an endpoint is a differentiable scalar function of the eight observable moments \((\rho,\mu)\). At a kink, the active set does not select a single gradient; the endpoint is a min or max over several branchwise linearizations. That is the precise setting of the directional delta method of \citet{FangSantos2019DirectionallyDifferentiable}. The confidence interval \(C_{n,\alpha}(\lambda)\) is a set-level interval in the sense of \citet{ChernozhukovHongTamer2007ParameterSets}: it covers the whole population identified interval, not merely one selected endpoint.
+
+\section{Interpretation}
+\subsubsection*{Theorem 2}
+The result replaces the informal instruction ``optimize over \((w_0,w_1)\)'' by an evaluable Balke--Pearl-style finite program. A response type records the four structural means \((\varphi(0,0,u),\varphi(0,1,u),\varphi(1,0,u),\varphi(1,1,u))\). Because the outcome box and the leak budget are polyhedral, only finitely many response types matter. The treatment propensity inside a latent type does not add a new nonlinear cell: a type with propensity \(e\) is the convex mixture of the same response type used only in arm \(0\) and only in arm \(1\). Consequently the shared-\(U\) endpoint is computed by a finite LP whose bases are the active cells. The kink is not imposed by hand; after duplicate value branches are quotiented and ties are broken deterministically, it is exactly the first parameter value at which a different feasible reduced branch overtakes the branch active just to the right of the exclusion corner. If all apparent switches are only duplicate-basis ties, the no-kink convention returns \(+\infty\).
+
+\subsubsection*{Theorem 3}
+The construction is an inference layer on top of the leak-indexed partial-ID endpoint map. The causal object remains the identified interval \([L(\lambda),U(\lambda)]\) for the total effect in \eqref{eq:ace}; the estimator first estimates only the observable cell vector \(\eta(P)\), then evaluates the branch envelope supplied by the finite-vertex representation. Cross-fitting is harmless in this finite-cell problem: replacing \(\widehat\eta_n\) by the fixed-fold average of held-out-fold estimators has the same influence function, because each fold estimator is a smooth cell-frequency and cell-mean functional under overlap.
+
+The interior active-regime case is regular. Once the same branch remains active in a neighborhood of \(P\), an endpoint is a differentiable scalar function of the eight observable moments \((\rho,\mu)\). At a kink, the active set does not select a single gradient; the endpoint is a min or max over several branchwise linearizations. That is the precise setting of the directional delta method of \citet{FangSantos2019DirectionallyDifferentiable}. The confidence interval \(C_{n,\alpha}(\lambda)\) is a set-level interval in the sense of \citet{ChernozhukovHongTamer2007ParameterSets}: it covers the whole population identified interval, not merely one selected endpoint.
+
+The obstruction is not the mediator-stationary face excluded by the approved assumption; it is the two-strata disjoint-support face on which a common leak increment saturates both the shared-\(U\) problem and the per-mediator relaxation. The result replaces the informal instruction ``optimize over \((w_0,w_1)\)'' by an evaluable Balke--Pearl-style finite program. The construction is an inference layer on top of the leak-indexed partial-ID endpoint map. The confidence interval \(C_{n,\alpha}(\lambda)\) is a set-level interval in the sense of \citet{ChernozhukovHongTamer2007ParameterSets}: it covers the whole population identified interval, not merely one selected endpoint.
+
+\section{Step-by-step proof}
+\subsection*{Supporting lemmas}
+\begin{theorem}[Supporting theorem S1: exclusion collapse]\label{thm:collapse}
+At \(\lambda=0\) the set \(I(0)\) is the singleton
+\[
+  \theta_{\mathrm{FD}}=\sum_{m}\bigl(q_{m\mid1}-q_{m\mid0}\bigr)\bigl(p_1 r_{1,m}+p_0 r_{0,m}\bigr),
+\]
+Pearl's front-door functional.
+\end{theorem}
+\begin{proof}
+Fix any feasible completion at \(\lambda=0\). The leak restriction gives \(\varphi(m,1,u)=\varphi(m,0,u)=: \varphi(m,u)\) for every \((m,u)\). Substituting into the causal functional yields
+\[
+  \theta=\sum_m\bigl(q_{m\mid1}-q_{m\mid0}\bigr)\sum_u \varphi(m,u)\pi(u).
+\]
+By Bayes consistency, \(\pi(u)=p_0 w_0(u)+p_1 w_1(u)\), so for each mediator value \(m\),
+\[
+  \sum_u \varphi(m,u)\pi(u)=p_0\sum_u \varphi(m,u)w_0(u)+p_1\sum_u \varphi(m,u)w_1(u).
+\]
+Because \(\lambda=0\) removes the treatment index from \(\varphi\), the compatibility equations become
+\(r_{x,m}=\sum_u \varphi(m,u)w_x(u)\). Hence
+\[
+  \sum_u \varphi(m,u)\pi(u)=p_0 r_{0,m}+p_1 r_{1,m}.
+\]
+Substituting back gives
+\[
+  \theta=\sum_m\bigl(q_{m\mid1}-q_{m\mid0}\bigr)\bigl(p_1 r_{1,m}+p_0 r_{0,m}\bigr)=\theta_{\mathrm{FD}}.
+\]
+Thus every feasible completion at \(\lambda=0\) produces the same causal value. It remains to show that the feasible set is nonempty. Take a two-point latent support \(\mathcal U=\{u_1,u_2\}\), embedded in the allowed five-point support by assigning zero mass to the remaining points. Define \(w_1(u_1)=1\), \(w_0(u_2)=1\), \(\pi(u_1)=p_1\), \(\pi(u_2)=p_0\), and for each mediator value \(m\), set
+\[
+  \varphi(m,0,u_1)=\varphi(m,1,u_1)=r_{1,m},\qquad\varphi(m,0,u_2)=\varphi(m,1,u_2)=r_{0,m}.
+\]
+These choices satisfy \(0\le \varphi\le 1\), the leak restriction with \(\lambda=0\), Bayes consistency, and the four compatibility equations. Therefore \(I(0)\) is nonempty and every element equals \(\theta_{\mathrm{FD}}\), so \(I(0)=\{\theta_{\mathrm{FD}}\}\).
+\end{proof}
+
+\begin{theorem}[Supporting theorem S2: compact monotone endpoint family]\label{thm:interval}
+For every \(\lambda\ge0\), \(I(\lambda)\) is nonempty and compact; writing \(L(\lambda)=\min I(\lambda)\) and \(U(\lambda)=\max I(\lambda)\), the map \(\lambda\mapsto L(\lambda)\) is nonincreasing, \(\lambda\mapsto U(\lambda)\) is nondecreasing, and \(I(\lambda)\subseteq I(\lambda')\) whenever \(\lambda\le\lambda'\) in the sense \([L(\lambda),U(\lambda)]\subseteq[L(\lambda'),U(\lambda')]\). Moreover \(L(0)=U(0)=\theta_{\mathrm{FD}}\).
+\end{theorem}
+\begin{proof}
+Fix \(\lambda\ge0\) and work on the canonical support \(\mathcal U=\{1,\dots,5\}\). Let \(\mathcal F(P,\lambda)\) be the set of tuples \((\pi,w_0,w_1,\varphi)\) satisfying the simplex constraints \(\pi,w_0,w_1\in\Delta(\mathcal U)\), the box constraints \(0\le \varphi(m,x,u)\le 1\), the Bayes equalities \(\pi=p_0w_0+p_1w_1\), the four compatibility equations \eqref{eq:compat}, and the leak inequalities \(|\varphi(m,1,u)-\varphi(m,0,u)|\le \lambda\). This feasible set is contained in the compact product space \(\Delta(\mathcal U)^3\times[0,1]^{20}\). Every defining equality or inequality is continuous in the coordinates, so \(\mathcal F(P,\lambda)\) is closed. Hence \(\mathcal F(P,\lambda)\) is compact.
+
+The set is nonempty. The explicit construction used in Theorem~\ref{thm:collapse} is feasible at \(\lambda=0\), and the same tuple is feasible for every larger \(\lambda\) because the leak restriction is then weaker. Therefore \(\mathcal F(P,\lambda)\neq\varnothing\) for all \(\lambda\ge0\).
+
+The causal objective \(\theta(\pi,w_0,w_1,\varphi)\) from \eqref{eq:ace} is continuous in the coordinates. Consequently \(I(\lambda)=\theta\bigl(\mathcal F(P,\lambda)\bigr)\) is the continuous image of a compact set, hence compact. In particular the extrema \(L(\lambda)=\min I(\lambda)\) and \(U(\lambda)=\max I(\lambda)\) exist.
+
+Now let \(0\le \lambda\le \lambda'\). Every tuple feasible at level \(\lambda\) also satisfies the weaker inequalities \(|\varphi(m,1,u)-\varphi(m,0,u)|\le \lambda'\), so \(\mathcal F(P,\lambda)\subseteq \mathcal F(P,\lambda')\). Applying the continuous objective gives \(I(\lambda)\subseteq I(\lambda')\). Therefore the minimum over the larger set cannot exceed the minimum over the smaller set, and the maximum over the larger set cannot be below the maximum over the smaller set: \(L(\lambda')\le L(\lambda)\) and \(U(\lambda)\le U(\lambda')\). Equivalently, \(\lambda\mapsto L(\lambda)\) is nonincreasing, \(\lambda\mapsto U(\lambda)\) is nondecreasing, and \([L(\lambda),U(\lambda)]\subseteq [L(\lambda'),U(\lambda')]\).
+
+Finally, Theorem~\ref{thm:collapse} shows that \(I(0)=\{\theta_{\mathrm{FD}}\}\). Hence \(L(0)=U(0)=\theta_{\mathrm{FD}}\).
+\end{proof}
+
+\subsection*{Additional assumptions for later conjectures}
+\begin{assumption}[Active mediator channel]\label{ass:mediator-shift}
+Active mediator channel (front-door non-degeneracy): the treatment shifts the mediator law, i.e. \(q_{\cdot\mid1}\neq q_{\cdot\mid0}\) (equivalently \(\exists m\) with \(q_{m\mid1}\neq q_{m\mid0}\)). All strict-inclusion / non-decomposition claims are made on the sub-regime \(\{P:\kappa(P)\neq 0 \text{ and } q_{\cdot\mid1}\neq q_{\cdot\mid0}\}\); the \(\subseteq\) inclusion claim is unconditional.
+\end{assumption}
+
+\begin{assumption}[Sampling and active-branch regularity]\label{ass:inference-regularity}
+Inference regularity for the inference theorem, restricted to the observed cells and the fixed \(\lambda\)-regime used in the proof. First, \(O_i=(X_i,M_i,Y_i)\) are i.i.d. with overlap, so \(\eta(P)=(\rho_{xm},\mu_{xm})\) lies in the relative interior of the four-cell probability simplex and \(r_{x,m}=\mu_{xm}/\rho_{xm}\) is well defined. Second, the sharp endpoints admit a finite locally-\(C^1\) active-branch representation by vertex maps \(v_j^L,v_j^U\) as in Open-ended Question~\ref{oeq:vertex}, with well-defined active indices on interior regimes and a finite kink set. This is the modular dependency of the inference result on the endpoint geometry plus standard sampling, and it does not alter the identification theorems.
+\end{assumption}
+
+\subsubsection*{Refutation of Conjecture 1}
+See Section~\ref{sec:counterexample} for the refutation.
+
+\subsubsection*{Proof of Theorem 2}
+\paragraph{Refutation-first attempt.}
+The requested impossibility check was carried out in the smallest nontrivial latent class. Candidate A was the degenerate one-state support. It produces \(w_0=w_1\), hence a single response-type branch; the no-kink convention returns \(\lambda^\star=+\infty\), so it is not a witness against the claim. Candidate B was the two-strata response-type search with one stratum selected only in arm \(X=0\) and one stratum selected only in arm \(X=1\), and with each mediator pair placed on a box or leak face of \(H_{\bar\lambda}=\{(a,b)\in[0,1]^2:|b-a|\le\bar\lambda\}\). The Fréchet face check gives exactly the six vertices listed in Theorem~\ref{thm:vertex}; every saturated leak face has coordinates affine in \(\bar\lambda\). Candidate C allowed an intermediate treatment propensity \(e\in(0,1)\) on a two-strata support. For a fixed structural vector \(a\), its moment row splits as
+\[
+  (1,e,(1-e)a_{0,0},(1-e)a_{1,0},ea_{0,1},ea_{1,1},\ell_a)
+  = (1-e)R_{0,a}+eR_{1,a},
+\]
+where \(R_{0,a}\) and \(R_{1,a}\) are the corresponding rows with deterministic propensities \(0\) and \(1\). Thus an intermediate-propensity candidate is a convex combination of endpoint-propensity candidates and cannot create a curved branch outside the finite basis envelope. Candidate D allowed duplicate LP bases and tied active values over an interval. Such ties do not contradict the endpoint formula, but they make an unquotiented ``first basis switch'' ambiguous. The reduced-branch and lexicographic convention in Theorem~\ref{thm:vertex} removes this degeneracy: value-identical bases are the same branch, and a tied interval with no canonical branch change is classified by the no-kink convention. The primitive therefore produces no counterexample to the reduced-branch claim: the two-strata search collapses to the finite response-type LP \eqref{eq:vlp}.
+
+\begin{proof}
+The proof uses the finite latent-type enumeration technique of \citet{BalkePearl1997Bounds}, adapted from a binary IV response-type LP to the present clean-mediator leak program. The secondary finite-constraint encoding viewpoint is the same one used by \citet{FinkelsteinAdamsSariaShpitser2020MeasurementError} for discrete latent and conditional-independence restrictions.
+
+First fix \(\lambda\). Since \(Y\in[0,1]\) by Assumption~\ref{ass:bounded}, and \(|\varphi(m,1,u)-\varphi(m,0,u)|\le\lambda\) by Assumption~\ref{ass:leak}, each mediator-specific pair \((\varphi(m,0,u),\varphi(m,1,u))\) lies in the polygon \(H_{\bar\lambda}\), where \(\bar\lambda=\min\{\lambda,1\}\). For \(0\le\bar\lambda\le1\), the only possible active intersections of the box faces \(a=0,a=1,b=0,b=1\) and the leak faces \(b-a=\pm\bar\lambda\) are
+\[
+  (0,0),\ (1,1),\ (0,\bar\lambda),\ (\bar\lambda,0),\ (1-\bar\lambda,1),\ (1,1-\bar\lambda),
+\]
+with duplicates removed at \(\bar\lambda=0\) or \(\bar\lambda=1\). Therefore the product over the two mediator values has the finite vertex set \(\mathcal A_\lambda\).
+
+Now take any feasible completion
+\((\pi,w_0,w_1,\varphi)\in\mathcal F(P,\lambda)\). Define the latent treatment propensity
+\[
+  e_u:=\Pr(X=1\mid U=u)=\frac{p_1w_1(u)}{\pi(u)}
+\]
+when \(\pi(u)>0\), with arbitrary value when \(\pi(u)=0\). Bayes consistency gives
+\(\pi(u)e_u=p_1w_1(u)\) and \(\pi(u)(1-e_u)=p_0w_0(u)\). Decompose the structural vector
+\[
+  a_u=((\varphi(0,0,u),\varphi(0,1,u)),(\varphi(1,0,u),\varphi(1,1,u)))
+\]
+as a convex combination of vertices of \(\mathcal A_\lambda\), say
+\(a_u=\sum_{a\in\mathcal A_\lambda}\eta_{u,a}a\). This is possible because
+\(\mathcal A_\lambda\) is the vertex set of the product polytope. Set
+\[
+  \rho_{0,a}:=\sum_u\pi(u)(1-e_u)\eta_{u,a},\qquad
+  \rho_{1,a}:=\sum_u\pi(u)e_u\eta_{u,a}.
+\]
+The mass constraints in \eqref{eq:vlp} follow from
+\(\sum_u\pi(u)(1-e_u)=p_0\) and \(\sum_u\pi(u)e_u=p_1\). The moment constraints follow from
+Assumption~\ref{ass:clean} and the compatibility equations \eqref{eq:compat}:
+\[
+  \sum_a\rho_{0,a}a_{m,0}
+  =\sum_u p_0w_0(u)\varphi(m,0,u)=p_0r_{0,m},
+  \qquad
+  \sum_a\rho_{1,a}a_{m,1}
+  =\sum_u p_1w_1(u)\varphi(m,1,u)=p_1r_{1,m}.
+\]
+Finally, using the causal functional \eqref{eq:ace} and Bayes consistency,
+\[
+\begin{aligned}
+  \theta
+  &=\sum_u\pi(u)\sum_m\{q_{m\mid1}\varphi(m,1,u)-q_{m\mid0}\varphi(m,0,u)\}\\
+  =\sum_{t\in\{0,1\}}\sum_{a\in\mathcal A_\lambda}\rho_{t,a}\ell_a(P).
+\end{aligned}
+\]
+Thus every feasible causal value is represented in the finite LP.
+
+Conversely, let \(\rho\) satisfy the constraints of \eqref{eq:vlp}. Define the two arm-averaged structural
+vectors
+\[
+  \bar a^0:=\frac{1}{p_0}\sum_{a\in\mathcal A_\lambda}\rho_{0,a}a,
+  \qquad
+  \bar a^1:=\frac{1}{p_1}\sum_{a\in\mathcal A_\lambda}\rho_{1,a}a.
+\]
+The divisions are valid by Assumption~\ref{ass:overlap}. Since \(\mathcal A_\lambda\) is the vertex set of the
+product polytope \(H_{\bar\lambda}\times H_{\bar\lambda}\), both \(\bar a^0\) and \(\bar a^1\) lie in that
+product polytope. Create two latent states \(u_0,u_1\) with marginal masses
+\(\pi(u_0)=p_0\), \(\pi(u_1)=p_1\), deterministic treatment propensities
+\(e_{u_0}=0\), \(e_{u_1}=1\), and hence conditional latent laws
+\[
+  w_0(u_0)=1,\quad w_0(u_1)=0,\qquad
+  w_1(u_0)=0,\quad w_1(u_1)=1.
+\]
+Set \(\varphi(m,x,u_t):=\bar a^t_{m,x}\) for \(t\in\{0,1\}\). This two-atom construction satisfies
+Assumption~\ref{ass:finite} because \(2\le5\), and it satisfies Assumptions~\ref{ass:bounded} and
+\ref{ass:leak} because each \(\bar a^t\) lies in the product leak polytope. It satisfies the clean-mediator
+restriction because \(w_x\) is a function of \(x\) only. The compatibility equations are
+\[
+  \sum_u p_0w_0(u)\varphi(m,0,u)
+  =p_0\bar a^0_{m,0}
+  =\sum_a\rho_{0,a}a_{m,0}
+  =p_0r_{0,m},
+\]
+and similarly
+\[
+  \sum_u p_1w_1(u)\varphi(m,1,u)
+  =p_1\bar a^1_{m,1}
+  =\sum_a\rho_{1,a}a_{m,1}
+  =p_1r_{1,m}.
+\]
+Finally, by linearity of \(\ell_a(P)\) in the structural vector,
+\[
+\begin{aligned}
+  \theta
+  &=p_0\ell_{\bar a^0}(P)+p_1\ell_{\bar a^1}(P)\\
+  &=\sum_{a\in\mathcal A_\lambda}\rho_{0,a}\ell_a(P)
+    +\sum_{a\in\mathcal A_\lambda}\rho_{1,a}\ell_a(P).
+\end{aligned}
+\]
+Thus every feasible LP value is attained inside the locked shared-\(U\) support class. Hence \eqref{eq:vlp}
+gives the sharp endpoint pair \(L(\lambda;P),U(\lambda;P)\).
+
+It remains to justify the rational active-cell representation. The vector \(b(P)\) on the right side of
+\eqref{eq:vlp} is
+\[
+  b(P)=(p_0,p_1,p_0r_{0,0},p_0r_{0,1},p_1r_{1,0},p_1r_{1,1})^\mathsf{T}.
+\]
+For \(0\le\lambda\le1\), every entry of the LP matrix \(A(\lambda)\) is either constant or affine in
+\(\lambda\), and every entry of the objective vector \(c(P,\lambda)\) is affine in
+\((q_{m\mid x},\lambda)\). For \(\lambda\ge1\), the leak constraint is inactive because both structural means
+are already in \([0,1]\), so the coefficient matrix is constant after replacing \(\lambda\) by \(1\). Fix any
+nonsingular basis \(B\). On the cell where \(A_B(\lambda)^{-1}b(P)\ge0\) and the usual reduced-cost
+inequalities select \(B\), the basis value is
+\[
+  c_B(P,\lambda)^\mathsf{T}A_B(\lambda)^{-1}b(P),
+\]
+which is a rational function of the observable inputs and \(\lambda\). There are only finitely many bases, so
+the upper endpoint is the maximum of finitely many such rational functions and the lower endpoint is the
+minimum of finitely many such rational functions.
+
+For the threshold, first remove duplicate branch records. Namely, on each connected common-feasibility cell,
+declare two basis records equivalent when the cleared numerator of
+\(v_B^U(P,\lambda)-v_{B'}^U(P,\lambda)\) is the zero polynomial; these records give the same endpoint value
+throughout that cell and cannot be a genuine kink. The remaining reduced list is finite. Refine
+\((0,\infty)\) by all real roots of denominators, all feasibility-boundary polynomials, and all nonzero cleared
+equality polynomials between reduced branches. On every open interval in this finite partition, the feasibility
+status and strict ordering of all nonidentical reduced branches are constant. With the fixed lexicographic
+tie-break, the canonical maximizer \(\beta_U(\lambda;P)\) is therefore constant on each such interval. The first
+positive boundary at which \(\beta_U\) changes is precisely
+\(\lambda_U^\star(P)\); if no boundary changes the canonical maximizer, the no-kink convention gives
+\(\lambda_U^\star(P)=+\infty\). The same argument with minimization branches gives
+\(\lambda_L^\star(P)\). On the generic locus where the relevant branch is unique on both sides of the selected
+root and the crossing is transversal, the endpoint changes rational branch there, so the claimed kink follows.
+\end{proof}
+
+\begin{corollary}[Degenerate-support no-kink case]\label{cor:degenerate}
+If \(|\mathcal U|=1\), then the maximizing and minimizing branches do not switch, and the no-kink convention gives \(\lambda_U^\star(P)=\lambda_L^\star(P)=+\infty\).
+\end{corollary}
+\begin{proof}
+If \(|\mathcal U|=1\), then Bayes consistency forces \(w_0=w_1=\pi\), so the endpoint problem has only one latent response type in each arm. Theorem~\ref{thm:vertex} therefore leaves only a single feasible basis for each endpoint across all \(\lambda\), and no competing basis can overtake it. Hence both thresholds are \(+\infty\).
+\end{proof}
+
+\subsubsection*{Proof of Theorem 3}
+Work under Assumptions~\ref{ass:finite}--\ref{ass:overlap} and
+Assumption~\ref{ass:inference-regularity}.  Let
+\[
+  \eta=\eta(P)=\bigl(\rho_{00},\rho_{01},\rho_{10},\rho_{11},
+                    \mu_{00},\mu_{01},\mu_{10},\mu_{11}\bigr)^\transpose .
+\]
+The estimator in Theorem~\ref{thm:inference-active-branch} is the sample mean
+of the bounded vector
+\[
+  S(O)=\bigl(\one\{X=0,M=0\},\ldots,\one\{X=1,M=1\},
+             Y\one\{X=0,M=0\},\ldots,Y\one\{X=1,M=1\}\bigr)^\transpose .
+\]
+Thus
+\[
+  \widehat\eta_n-\eta=n^{-1}\sum_{i=1}^n\psi_\eta(O_i),
+  \qquad
+  \psi_\eta(O)=S(O)-\eta .
+\]
+Because \(Y\in[0,1]\) by Assumption~\ref{ass:bounded}, all coordinates of
+\(\psi_\eta\) are bounded.  The finite-dimensional central limit theorem gives
+\[
+  \sqrt n(\widehat\eta_n-\eta)\Rightarrow Z_\eta,
+  \qquad
+  Z_\eta\sim\mathcal N(0,\Sigma_\eta),
+  \qquad
+  \Sigma_\eta=E[\psi_\eta(O)\psi_\eta(O)^\transpose].
+\]
+Assumption~\ref{ass:overlap} gives \(\rho_{xm}>0\), so the maps
+\[
+  p_x=\sum_m\rho_{xm},\qquad
+  q_{m\mid x}={\rho_{xm}\over\sum_{m'}\rho_{xm'}},\qquad
+  r_{x,m}={\mu_{xm}\over\rho_{xm}}
+\]
+are continuously differentiable in a neighborhood of \(\eta(P)\).  Every division in
+the estimator is therefore justified on an event whose probability tends to one.
+
+For a fixed \(\lambda\), Assumption~\ref{ass:inference-regularity} supplies finite
+branch families
+\[
+  L(\lambda;\eta)=\min_{j\in J_L}v^L_j(\eta,\lambda),
+  \qquad
+  U(\lambda;\eta)=\max_{j\in J_U}v^U_j(\eta,\lambda),
+\]
+where each branch is \(C^1\) on a neighborhood of \(\eta(P)\).  Define
+\[
+  \Phi_\lambda(\eta)
+  =
+  \bigl(\min_{j\in J_L}v^L_j(\eta,\lambda),
+        \max_{j\in J_U}v^U_j(\eta,\lambda)\bigr).
+\]
+The endpoint estimator is exactly
+\[
+  (\widehat L_n(\lambda),\widehat U_n(\lambda))
+  =\Phi_\lambda(\widehat\eta_n).
+\]
+
+The map \(\Phi_\lambda\) is Hadamard directionally differentiable because it is a
+finite minimum and maximum of continuously differentiable real maps.  Its directional
+derivative at \(\eta\) in direction \(h\) is
+\[
+  \Phi'_{\lambda,\eta}(h)
+  =
+  \left(
+    \min_{j\in A_L(\eta,\lambda)}
+      \nabla_\eta v^L_j(\eta,\lambda)^\transpose h,\quad
+    \max_{j\in A_U(\eta,\lambda)}
+      \nabla_\eta v^U_j(\eta,\lambda)^\transpose h
+  \right),
+\]
+where
+\[
+  A_L(\eta,\lambda)=\arg\min_{j\in J_L}v^L_j(\eta,\lambda),
+  \qquad
+  A_U(\eta,\lambda)=\arg\max_{j\in J_U}v^U_j(\eta,\lambda).
+\]
+This derivative formula is just the elementary first-order expansion of each active
+branch plus the algebraic identities for finite min and max envelopes.
+
+If \(\lambda\) lies in an interior active regime, the active sets are singletons
+\(A_L=\{j_L\}\) and \(A_U=\{j_U\}\).  The displayed derivative is then linear:
+\[
+  \Phi'_{\lambda,\eta}(h)
+  =
+  D_\lambda h,\qquad
+  D_\lambda=
+  \begin{pmatrix}
+    \nabla_\eta v^L_{j_L}(\eta,\lambda)^\transpose\\
+    \nabla_\eta v^U_{j_U}(\eta,\lambda)^\transpose
+  \end{pmatrix}.
+\]
+Combining the central limit theorem for \(\widehat\eta_n\) with the ordinary delta
+method yields
+\[
+  \sqrt n\{(\widehat L_n,\widehat U_n)-(L,U)\}
+  \Rightarrow
+  D_\lambda Z_\eta
+  \sim
+  \mathcal N(0,D_\lambda\Sigma_\eta D_\lambda^\transpose).
+\]
+This proves the claimed regular Gaussian limit.
+
+If \(\lambda=\lambda^\star(P)\) is finite and the no-kink/tie convention selects a
+binding face, Assumption~\ref{ass:inference-regularity} states that the corresponding active
+sets \(A_L^\star\) and \(A_U^\star\) are finite and locally exhaustive.  Applying the
+directional delta method of \citet{FangSantos2019DirectionallyDifferentiable} to the
+same endpoint map gives
+\[
+  \sqrt n\{(\widehat L_n(\lambda^\star),\widehat U_n(\lambda^\star))
+          -(L(\lambda^\star),U(\lambda^\star))\}
+  \Rightarrow
+  \Phi'_{\lambda^\star,\eta}(Z_\eta),
+\]
+namely
+\[
+  \left(
+    \min_{j\in A_L^\star}
+      \nabla_\eta v^L_j(\eta,\lambda^\star)^\transpose Z_\eta,\quad
+    \max_{j\in A_U^\star}
+      \nabla_\eta v^U_j(\eta,\lambda^\star)^\transpose Z_\eta
+  \right).
+\]
+This formula is the kink directional law.  It is genuinely non-Gaussian only when the
+finite envelope is not almost surely equal to one linear form of \(Z_\eta\).  In
+particular, for a two-branch upper-face tie with gradients \(a\) and \(b\),
+\[
+  \max\{a^\transpose Z_\eta,b^\transpose Z_\eta\}
+  =
+  { (a+b)^\transpose Z_\eta \over 2}
+  +
+  { |(a-b)^\transpose Z_\eta| \over 2},
+\]
+so the folded-normal term is nondegenerate, and the limit is not Gaussian, whenever
+\((a-b)^\transpose\Sigma_\eta(a-b)>0\).  The same argument applies to a two-branch
+lower-face tie with \(\min\) in place of \(\max\).  If distinct ambient gradients
+differ only in a \(\Sigma_\eta\)-null direction, then their induced linear forms are
+equal almost surely and the displayed directional law reduces to the corresponding
+Gaussian linear form.  On the event
+\(\lambda^\star(P)=+\infty\), the kink clause is empty by the no-kink convention, so
+only the preceding interior branch law is asserted.
+
+It remains to justify the bootstrap and the set-level interval.  Let
+\(\xi_1,\ldots,\xi_n\) be independent multiplier draws with mean zero, variance one,
+and finite \(2+\delta\) moment, independent of the sample.  Let
+\[
+  \widehat\psi_{\eta,i}=S(O_i)-\widehat\eta_n,\qquad
+  \widehat Z_{\eta,n}^b
+  =
+  n^{-1/2}\sum_{i=1}^n\xi_i
+  \bigl(\widehat\psi_{\eta,i}-n^{-1}\sum_{\ell=1}^n\widehat\psi_{\eta,\ell}\bigr).
+\]
+Since \(S(O)\) is bounded and finite-dimensional, the multiplier central limit theorem
+gives conditional convergence of \(\widehat Z_{\eta,n}^b\) to \(Z_\eta\).  For any
+sequence \(t_n\downarrow0\) with \(\sqrt n\,t_n\to\infty\), define
+\[
+  \widehat\Phi'_{\lambda,n}(h)
+  =
+  { \Phi_\lambda(\widehat\eta_n+t_nh)-\Phi_\lambda(\widehat\eta_n)\over t_n}.
+\]
+The branch maps are \(C^1\) and the envelope is a finite min/max, so
+\(\widehat\Phi'_{\lambda,n}(h)\) converges to
+\(\Phi'_{\lambda,\eta}(h)\) uniformly over compact subsets of the tangent space.  The
+condition \(\sqrt n\,t_n\to\infty\) makes the centering error
+\(\widehat\eta_n-\eta\) negligible relative to the numerical derivative step.  The
+Fang--Santos numerical-derivative bootstrap therefore yields
+\[
+  \widehat Z_n^b
+  =
+  \widehat\Phi'_{\lambda,n}(\widehat Z_{\eta,n}^b)
+  \rightsquigarrow_{\Pr}
+  \Phi'_{\lambda,\eta}(Z_\eta)
+\]
+conditionally on the sample, both at interior points and at kink points.
+
+Let
+\[
+  T_\lambda
+  =
+  \max\{Z_L,-Z_U\},
+  \qquad
+  \widehat T_\lambda^b
+  =
+  \max\{\widehat Z_{n,L}^b,-\widehat Z_{n,U}^b\}.
+\]
+At continuity points of the distribution of \(T_\lambda\), the conditional
+\((1-\alpha)\)-quantile \(\widehat c_{1-\alpha}\) of
+\(\widehat T_\lambda^b\) consistently estimates the corresponding population
+quantile.  The event
+\[
+  [L(\lambda),U(\lambda)]
+  \subseteq
+  [\widehat L_n(\lambda)-\widehat c_{1-\alpha}/\sqrt n,
+   \widehat U_n(\lambda)+\widehat c_{1-\alpha}/\sqrt n]
+\]
+is equivalent to
+\[
+  \max\{\sqrt n(\widehat L_n-L),\sqrt n(U-\widehat U_n)\}
+  \le \widehat c_{1-\alpha}.
+\]
+The previous bootstrap convergence and quantile continuity therefore give asymptotic
+coverage \(1-\alpha\) for the identified interval.  This is the endpoint version of
+the set-coverage inversion principle in
+\citet{ChernozhukovHongTamer2007ParameterSets}.
+
+Finally take \(\lambda=0\).  Theorem~\ref{thm:collapse} gives
+\[
+  L(0)=U(0)=\theta_{\mathrm{FD}}
+  =
+  \sum_m(q_{m\mid1}-q_{m\mid0})(p_1r_{1,m}+p_0r_{0,m}).
+\]
+The plug-in estimator
+\[
+  \widehat\theta_{\mathrm{FD}}
+  =
+  \sum_m(\widehat q_{m\mid1}-\widehat q_{m\mid0})
+        (\widehat p_1\widehat r_{1,m}+\widehat p_0\widehat r_{0,m})
+\]
+is a continuously differentiable function of \(\widehat\eta_n\) under overlap, so the
+ordinary delta method gives a one-dimensional Gaussian limit for
+\(\sqrt n(\widehat\theta_{\mathrm{FD}}-\theta_{\mathrm{FD}})\).  Setting
+\(\widehat L_n(0)=\widehat U_n(0)=\widehat\theta_{\mathrm{FD}}\) places the endpoint
+pair on the diagonal and makes the estimated width exactly zero, matching the collapse
+of the identified set.
+
+\section{Sanity checks}
+\subsubsection*{Theorem 2}
+At \(\lambda=0\), \(H_0=\{(a,a):0\le a\le1\}\), whose vertices are \((0,0)\) and \((1,1)\). Hence every
+response type has \(a_{m,0}=a_{m,1}\). The LP objective becomes
+\[
+  \sum_{t,a}\rho_{t,a}\sum_m(q_{m\mid1}-q_{m\mid0})a_m
+  =\sum_m(q_{m\mid1}-q_{m\mid0})
+    \left\{\sum_a\rho_{0,a}a_m+\sum_a\rho_{1,a}a_m\right\}.
+\]
+The constraints give
+\(\sum_a\rho_{0,a}a_m=p_0r_{0,m}\) and
+\(\sum_a\rho_{1,a}a_m=p_1r_{1,m}\), so
+\[
+  U(0;P)=L(0;P)
+  =\sum_m(q_{m\mid1}-q_{m\mid0})(p_0r_{0,m}+p_1r_{1,m})
+  =\theta_{\mathrm{FD}},
+\]
+matching Theorem~\ref{thm:collapse}. On the one-state degenerate support, all feasible bases reduce to the
+same value branch for all \(\lambda\), so the threshold rule returns \(+\infty\), exactly as required by the
+no-kink convention.
+
+\subsubsection*{Theorem 3}
+At the no-leak corner, the result reduces to the classical front-door plug-in
+estimator.  Theorem~\ref{thm:collapse} states that
+\([L(0),U(0)]=\{\theta_{\mathrm{FD}}\}\).  The estimator in the theorem gives
+\[
+  [\widehat L_n(0),\widehat U_n(0)]
+  =
+  \left[
+    \sum_m(\widehat q_{m\mid1}-\widehat q_{m\mid0})
+          (\widehat p_1\widehat r_{1,m}+\widehat p_0\widehat r_{0,m}),
+    \sum_m(\widehat q_{m\mid1}-\widehat q_{m\mid0})
+          (\widehat p_1\widehat r_{1,m}+\widehat p_0\widehat r_{0,m})
+  \right],
+\]
+so the estimated interval is a singleton.  Its first-order law is the ordinary
+finite-cell delta-method law for Pearl's front-door functional, while the width process
+\(\sqrt n\{(\widehat U_n(0)-\widehat L_n(0))-(U(0)-L(0))\}\) is identically zero.
+
+If the vertex threshold obeys \(\lambda^\star(P)=+\infty\), then by the no-kink/tie
+convention there is no finite isolated switching threshold under consideration after
+identical branches and persistent tie intervals have been quotiented.  On interior
+regimes the active sets are singletons, and the formula in
+Theorem~\ref{thm:inference-active-branch} reduces to the regular Gaussian branch
+law.  If a non-quotiented tie remains at a fixed \(\lambda\), it is handled by the
+directional formula rather than by the interior line.  Thus the finite-kink clause is
+empty exactly in the convention-defined no-kink regime, as required by the motivating
+question.
+
+\section{Counterexample or minimality check}
+\label{sec:counterexample}
+\subsubsection*{Refutation of Conjecture 1}
+\textbf{Primitive executed.} I used the two-strata response-type search requested for
+partial-identification refutations. The search space has
+\(\mathcal U=\{a,b\}\), binary \(X\), binary \(M\), and bounded outcome means.
+The active candidate is the smallest shared-\(U\) completion in which the two
+treatment arms load on different latent strata, the mediator distribution shifts
+with treatment, and all four observed conditional means stay away from the box
+boundary. This is the two-vertex face on which Pearl's front-door corner
+\cite{Pearl1995CausalDiagrams}, already recovered in Theorem~\ref{thm:collapse},
+can be perturbed by a common direct-leak increment without violating the clean
+mediator equations.
+
+\textbf{Witness law.} Let
+\[
+  p_0=p_1=\frac12,\qquad
+  q_{1\mid0}=\frac14,\quad q_{0\mid0}=\frac34,\qquad
+  q_{1\mid1}=\frac34,\quad q_{0\mid1}=\frac14,
+\]
+and set
+\[
+  r_{0,0}=\frac25,\qquad r_{1,0}=\frac35,\qquad
+  r_{0,1}=\frac3{10},\qquad r_{1,1}=\frac7{10}.
+\]
+The observed support and overlap assumption holds because all treatment and
+mediator probabilities are positive. The outcome means lie in \([0,1]\), and
+indeed the distance from every displayed \(r_{x,m}\) to the nearest outcome
+boundary is at least \(3/10\). The mediator-shift assumption holds because
+\(q_{\cdot\mid1}\neq q_{\cdot\mid0}\).
+
+At the exclusion corner, use the two-point support \(\mathcal U=\{a,b\}\) with
+\[
+  w_0(a)=1,\qquad w_1(b)=1,\qquad \pi(a)=\pi(b)=\frac12.
+\]
+For each mediator value \(m\), set
+\[
+  \varphi(m,0,a)=\varphi(m,1,a)=r_{0,m},\qquad
+  \varphi(m,0,b)=\varphi(m,1,b)=r_{1,m}.
+\]
+Then Assumption~\ref{ass:clean} gives the compatibility equations
+\[
+  \sum_u\varphi(m,0,u)w_0(u)=r_{0,m},\qquad
+  \sum_u\varphi(m,1,u)w_1(u)=r_{1,m},
+\]
+and the direct leak is zero. The finite support, bounded outcome, clean mediator,
+leak, and overlap assumptions are therefore all satisfied.
+
+\textbf{Observable signature.} The front-door functional is
+\[
+  \theta_{\mathrm{FD}}
+  =\sum_m(q_{m\mid1}-q_{m\mid0})(p_1r_{1,m}+p_0r_{0,m})
+  =-\frac12\cdot\frac12+\frac12\cdot\frac12=0.
+\]
+The observed treatment contrast is
+\[
+  \E[Y\mid X=1]-\E[Y\mid X=0]
+  =\left(\frac14\cdot\frac35+\frac34\cdot\frac7{10}\right)
+   -\left(\frac34\cdot\frac25+\frac14\cdot\frac3{10}\right)
+  =\frac3{10}.
+\]
+Hence \(\kappa(P)=3/10\neq0\). This witness lies exactly in the current
+correction-round strictness regime:
+\[
+  \kappa(P)\neq0,\qquad q_{\cdot\mid1}\neq q_{\cdot\mid0}.
+\]
+
+\textbf{Evaluation of the two-strata vertices.} Fix \(0\le\lambda\le3/10\). For
+any feasible shared-\(U\) completion, write
+\[
+  s_m(u)=\varphi(m,0,u),\qquad d_m(u)=\varphi(m,1,u)-\varphi(m,0,u).
+\]
+Using Bayes consistency \(\pi=p_0w_0+p_1w_1\), the compatibility equations
+\eqref{eq:compat}, and the algebraic identity
+\(\varphi(m,1,u)=s_m(u)+d_m(u)\), the causal objective satisfies
+\[
+\begin{aligned}
+  \theta-\theta_{\mathrm{FD}}
+  &=\sum_m\left\{q_{m\mid1}\sum_u d_m(u)\pi(u)
+       -p_1\bigl(q_{m\mid1}-q_{m\mid0}\bigr)\sum_u d_m(u)w_1(u)\right\} \\
+  &=\sum_m\left\{
+       p_0q_{m\mid1}\sum_u d_m(u)w_0(u)
+       +p_1q_{m\mid0}\sum_u d_m(u)w_1(u)\right\}.
+\end{aligned}
+\]
+The leak restriction gives \(|d_m(u)|\le\lambda\), and the nonnegative weights
+\(\{p_0q_{m\mid1},p_1q_{m\mid0}\}_{m\in\{0,1\}}\) sum to one. Therefore every
+shared-\(U\) feasible value satisfies
+\[
+  -\lambda\le\theta-\theta_{\mathrm{FD}}\le\lambda.
+\]
+Since \(\theta_{\mathrm{FD}}=0\), this proves \(I(\lambda)\subseteq[-\lambda,\lambda]\).
+
+Conversely, every \(t\in[-\lambda,\lambda]\) is attained by a shared-\(U\)
+completion. Keep the same \(w_0,w_1,\pi\) as above and define, for both mediator
+values,
+\[
+  \varphi(m,0,a)=r_{0,m},\qquad
+  \varphi(m,1,a)=r_{0,m}+t,\qquad
+  \varphi(m,1,b)=r_{1,m},\qquad
+  \varphi(m,0,b)=r_{1,m}-t.
+\]
+Because \(|t|\le\lambda\le3/10\), all four structural means stay in \([0,1]\).
+The compatibility equations are unchanged: \(w_0\) observes only stratum \(a\)
+and \(w_1\) observes only stratum \(b\). The direct leak equals \(t\) at both
+latent states and both mediator values, so \(|d_m(u)|\le\lambda\). Substituting
+the displayed completion into \eqref{eq:ace} gives
+\[
+  \theta=t.
+\]
+Thus
+\[
+  I(\lambda)=[-\lambda,\lambda]\qquad(0\le\lambda\le3/10).
+\]
+
+The same calculation applies to the per-mediator box. In
+\(B_{\mathrm{box}}(\lambda)\) the shared pair \((w_0,w_1)\) is relaxed to
+mediator-specific pairs \((w_0^{(m)},w_1^{(m)})\), but for each mediator value
+the identity above remains valid with \(w_x\) replaced by \(w_x^{(m)}\). Hence
+\[
+  \theta-\theta_{\mathrm{FD}}
+  =\sum_m\left\{
+       p_0q_{m\mid1}\sum_u d_m(u)w_0^{(m)}(u)
+       +p_1q_{m\mid0}\sum_u d_m(u)w_1^{(m)}(u)\right\},
+\]
+so the leak bound again implies \(B_{\mathrm{box}}(\lambda)\subseteq[-\lambda,\lambda]\).
+Because the shared-\(U\) completions just constructed are also admissible for the
+relaxed per-mediator problem, the reverse inclusion follows from
+\(I(\lambda)\subseteq B_{\mathrm{box}}(\lambda)\). Therefore
+\[
+  B_{\mathrm{box}}(\lambda)=[-\lambda,\lambda]=I(\lambda)
+  \qquad(0\le\lambda\le3/10).
+\]
+
+This equality refutes part (b) of Conjecture~\ref{conj:nondecomp} as corrected in
+this round. The witness satisfies Assumption~\ref{ass:mediator-shift}, has
+\(\kappa(P)\neq0\), and has \(q_{\cdot\mid1}\neq q_{\cdot\mid0}\), but for every
+candidate \(\lambda_0(P)>0\) one can choose
+\[
+  0<\lambda<\min\{\lambda_0(P),3/10\}
+\]
+and obtain equality rather than strict inclusion against \(B_{\mathrm{box}}(\lambda)\).
+The conjecture requires strict inclusion in both factors, so failure in the
+per-mediator box factor is enough to refute the stated claim. The obstruction is
+not the mediator-stationary face excluded by the approved assumption; it is the
+two-strata disjoint-support face on which a common leak increment saturates both
+the shared-\(U\) problem and the per-mediator relaxation.
+
+\subsubsection*{Minimality check for Theorem 2}
+The finite rational conclusion is a consequence of the polyhedral restriction
+\((\varphi(m,0,u),\varphi(m,1,u))\in H_{\bar\lambda}\). If the leak condition were replaced by a smooth
+nonpolyhedral sensitivity set, for example
+\[
+  (\varphi(m,1,u)-\varphi(m,0,u))^2\le \lambda^2
+\]
+without the equivalent linear absolute-value faces used in Assumption~\ref{ass:leak}, the response-type set
+would have a curved boundary rather than the six listed vertices. The active-cell enumeration would then no
+longer reduce to finitely many LP bases, and the endpoint support function could contain square-root boundary
+terms instead of rational basis values. Thus the minimality condition for this fragment is not merely finite
+latent support; it is the combination of bounded outcome support and the linear absolute-value leak budget.
+
+\subsubsection*{Minimality check for Theorem 3}
+The active-branch and directional-bootstrap conditions are minimal for the proof above.
+Drop the kink treatment and consider the local two-branch endpoint
+\[
+  U(\eta)=\max\{\eta_1,\eta_2\},\qquad \eta(P)=(0,0),
+\]
+with \(\sqrt n\,\widehat\eta_n\Rightarrow (Z_1,Z_2)\), where
+\((Z_1,Z_2)\) is a centered Gaussian vector satisfying
+\(\Var(Z_1-Z_2)>0\).  Then
+\[
+  \sqrt n\{U(\widehat\eta_n)-U(\eta)\}
+  \Rightarrow
+  \max\{Z_1,Z_2\},
+\]
+which is not Gaussian because it contains the nondegenerate folded-normal term
+\(|Z_1-Z_2|/2\).  A
+procedure that reports the interior Gaussian law at this tie has the wrong limiting
+distribution.  This is the finite-vertex witness that forces the
+Fang--Santos directional derivative or numerical-derivative bootstrap at
+\(\lambda^\star\).
+
+The tie convention in Open-ended Question~\ref{oeq:vertex} is also load-bearing.  If
+two basis value functions are identical over a positive \(\lambda\)-interval, the
+unquotiented equation \(v_B^U(P,\lambda)=v_{B'}^U(P,\lambda)\) is identically zero and
+has no smallest positive root.  The inference theorem therefore treats
+\(\lambda^\star\) as the threshold supplied by the no-kink/tie convention, with
+identical branches quotiented and persistent ties classified before the limit law is
+applied.
+
+Overlap is also not cosmetic.  If \(\rho_{x,m}=0\) for one observed cell, then
+\(r_{x,m}=\mu_{xm}/\rho_{xm}\) and the plug-in branch maps involving that conditional
+mean are not evaluable from \(P\).  No root-\(n\) estimator of the stated cell mean
+exists without changing the target or imposing an extrapolation model.  This explains
+why Assumption~\ref{ass:overlap} is used at the first division step in \S11.
+
+The active-branch premise is not cosmetic.  Without a finite locally \(C^1\)
+active-branch representation of the leaky front-door endpoints, the notation \(v_j\),
+the active sets \(A_L,A_U\), and the kink threshold \(\lambda^\star\) are not
+mathematical inputs for the delta-method argument.  Assumption~\ref{ass:inference-regularity}
+is exactly the regularity condition that supplies those objects for this inference
+layer.
+
+\section{Formalization checklist}
+% file-plan: reuse-pattern for existing finite-support Manski-style endpoint structures; bypass-justified for the leaky front-door shared-U endpoint geometry and active-branch inference theorem because no ready-made reusable scaffold surfaced at that abstraction.
+\begin{itemize}
+  \item \textbf{Observable law \(P\).} Signature: \(P\in\Delta(\{0,1\}^2\times[0,1])\) for \((X,M,Y)\) with \(X,M\in\{0,1\}\), \(Y\in[0,1]\). Role: ambient observed population law from which all endpoint functionals and witness constructions are evaluated. Dependencies: Sections~5--8 and Assumptions~\ref{ass:bounded}--\ref{ass:overlap}.
+  \item \textbf{Observable cell moments and sample analogues.} Signature: \(p_x=\Pr(X=x)\), \(q_{m\mid x}=\Pr(M=m\mid X=x)\), \(r_{x,m}=\E[Y\mid X=x,M=m]\), \(\rho_{xm}=P(X=x,M=m)\), \(\mu_{xm}=E[Y\one\{X=x,M=m\}]\), and \(\widehat\eta_n=(\widehat\rho,\widehat\mu)\). Role: evaluable observed inputs for the front-door corner, the response-type LP, the counterexample, and the inference layer. Dependencies: Sections~5--8, Theorem~\ref{thm:vertex}, and Theorem~\ref{thm:inference-active-branch}.
+  \item \textbf{Latent completion tuple and leak coordinates.} Signature: \(\pi,w_0,w_1\in\Delta(\mathcal U)\) on finite \(\mathcal U\) with \(|\mathcal U|\le5\), \(\varphi:\{0,1\}^2\times\mathcal U\to[0,1]\), \(s_m(u)=\varphi(m,0,u)\), and \(d_m(u)=\varphi(m,1,u)-\varphi(m,0,u)\). Role: completion variables for the sharp identified set and the explicit refutation witness. Dependencies: Assumption~\ref{ass:finite}, Bayes consistency, \eqref{eq:compat}, and \S13.
+  \item \textbf{Target effect and front-door corner.} Signature: scalar \(\theta=\sum_{m,u}[q_{m\mid1}\varphi(m,1,u)-q_{m\mid0}\varphi(m,0,u)]\pi(u)\) and \(\theta_{\mathrm{FD}}(P)=\sum_m(q_{m\mid1}-q_{m\mid0})(p_1r_{1,m}+p_0r_{0,m})\). Role: causal total effect under a feasible completion and its \(\lambda=0\) collapse value. Dependencies: equation \eqref{eq:ace} and Theorem~\ref{thm:collapse}.
+  \item \textbf{Identified set and comparison intervals.} Signature: \(I(\lambda)=\Theta_I(P;\lambda)\subset\mathbb R\), \(L(\lambda;P)=\min I(\lambda)\), \(U(\lambda;P)=\max I(\lambda)\), \(B_{\mathrm{box}}(\lambda;P)\subset\mathbb R\), and \(B_{\mathrm{sens}}(\lambda;P)\subset\mathbb R\). Role: primary partial-identification object and the outer intervals used in the non-decomposition conjecture and refutation. Dependencies: Sections~6--8, Theorem~\ref{thm:interval}, and \S13.
+  \item \textbf{Observable signature and witness law.} Signature: \(\kappa(P)\) from \eqref{eq:kappa}, together with the explicit witness law \((p_x,q_{m\mid x},r_{x,m})\) in the refutation. Role: regime marker for strictness and the concrete counterexample certifying failure of strict inclusion against \(B_{\mathrm{box}}(\lambda)\). Dependencies: equation \eqref{eq:kappa} and \S13.
+  \item \textbf{Leak polytope and response types.} Signature: \(H_{\bar\lambda}=\{(a,b)\in[0,1]^2:|b-a|\le\bar\lambda\}\), \(V_{\bar\lambda}\subset H_{\bar\lambda}\), and \(\mathcal A_\lambda=V_{\bar\lambda}\times V_{\bar\lambda}\). Role: finite response-type reduction for the endpoint LP and the basis-wise rational representation. Dependencies: Assumptions~\ref{ass:bounded}, \ref{ass:leak}, and Theorem~\ref{thm:vertex}.
+  \item \textbf{Response-type LP objects.} Signature: masses \(\rho_{t,a}\ge0\) for \(t\in\{0,1\}\), \(a\in\mathcal A_\lambda\), arm averages \(\bar a^t=p_t^{-1}\sum_a\rho_{t,a}a\), and score \(\ell_a(P)=\sum_m(q_{m\mid1}a_{m,1}-q_{m\mid0}a_{m,0})\). Role: computable endpoint program and the sharp two-atom reconstruction. Dependencies: equation \eqref{eq:vlp} and Theorem~\ref{thm:vertex}.
+  \item \textbf{Basis, reduced-branch, and threshold objects.} Signature: LP basis matrices \(A_B(\lambda)\), right-hand side \(b(P)\), objectives \(c_B(P,\lambda)\), basis values \(v_B^U(P,\lambda)\), \(v_B^L(P,\lambda)\), canonical reduced branches \(\beta_U(\lambda;P)\), \(\beta_L(\lambda;P)\), and thresholds \(\lambda_U^\star(P),\lambda_L^\star(P)\in[0,+\infty]\). Role: explicit evaluable branch formulas and the no-kink/tie switch rule. Dependencies: equation \eqref{eq:vlp} and Theorem~\ref{thm:vertex}.
+  \item \textbf{Active-branch envelope for inference.} Signature: branch maps \(v_j^L,v_j^U\), envelope \(\Phi_\lambda(\eta)=(\min_j v_j^L(\eta,\lambda),\max_j v_j^U(\eta,\lambda))\), active sets \(A_L,A_U\), and kink threshold \(\lambda^\star(P)\). Role: directional derivative, interior Gaussian law, and kink directional law for the endpoint estimator. Dependencies: Assumption~\ref{ass:inference-regularity} and Theorem~\ref{thm:inference-active-branch}.
+  \item \textbf{Influence, covariance, and bootstrap objects.} Signature: \(\psi_\eta(O)=S(O)-\eta\in\mathbb R^8\), \(\Sigma_\eta=E[\psi_\eta(O)\psi_\eta(O)^\transpose]\), multiplier process \(\widehat Z_{\eta,n}^b=n^{-1/2}\sum_i\xi_i(\widehat\psi_{\eta,i}-\overline{\widehat\psi}_\eta)\), and numerical derivative \(\widehat\Phi'_{\lambda,n}\). Role: central-limit input and consistent approximation to the interior and kink limit laws. Dependencies: Theorem~\ref{thm:inference-active-branch}.
+  \item \textbf{Confidence-set object.} Signature: \(C_{n,\alpha}(\lambda)=[\widehat L_n(\lambda)-\widehat c_{1-\alpha}/\sqrt n,\widehat U_n(\lambda)+\widehat c_{1-\alpha}/\sqrt n]\). Role: asymptotic set-coverage procedure for the population interval \([L(\lambda),U(\lambda)]\). Dependencies: Theorem~\ref{thm:inference-active-branch}.
+\end{itemize}
+
+\section{Conclusion and references}
+Conjecture 1 (nondecomp) is refuted; Refuted: the allowed observable law with \(p_0=p_1=1/2\), \(q_{1\mid0}=1/4\), \(q_{1\mid1}=3/4\), \(r_{0,0}=2/5\), \(r_{1,0}=3/5\), \(r_{0,1}=3/10\), and \(r_{1,1}=7/10\) satisfies \(\kappa(P)=3/10\neq0\) and \(q_{\cdot\mid1}\neq q_{\cdot\mid0}\), but for every \(0\le\lambda\le3/10\) the shared-\(U\) interval and the per-mediator box coincide, \(I(\lambda)=B_{\mathrm{box}}(\lambda)=[-\lambda,\lambda]\); hence no positive \(\lambda_0\) can make the inclusion strict against \(B_{\mathrm{box}}\).
+
+Theorem 2 (vertex) is confirmed; Yes, with the no-kink convention applied to reduced value branches rather than to duplicate LP bases. For $\bar\lambda=\min\{\lambda,1\}$, the leak endpoint pair is computed by the finite response-type LP \eqref{eq:vlp}; its feasible-basis values are rational functions $v_B^U(P,\lambda)=c_B(P,\lambda)^\mathsf{T}A_B(\lambda)^{-1}b(P)$ and $v_B^L(P,\lambda)$, with $U(\lambda;P)=\max_B v_B^U(P,\lambda)$ and $L(\lambda;P)=\min_B v_B^L(P,\lambda)$. Quotient feasible bases whose value functions agree identically on each connected common-feasibility cell, order the remaining branches lexicographically, and define the maximizing branch at each $\lambda$ to be the first branch attaining the envelope. Then the first maximizing-cell threshold is the smallest positive point at which this canonical maximizing branch differs from the canonical branch active at $0^+$; it is found from the finite list of nonzero cleared-denominator branch equalities and feasibility-boundary equalities, and is $+\infty$ if that list produces no positive canonical switch. The minimizing threshold is defined analogously. Every feasible LP value is realized by a shared-$U$ completion with at most two latent atoms, obtained from the arm averages $\bar a^t=p_t^{-1}\sum_a\rho_{t,a}a$, so sharpness respects the locked support restriction $|\mathcal U|\le5$.
+
+Theorem 3 (inference) is confirmed; Inference construction under Assumption~\ref{ass:inference-regularity}. Let \(O_i=(X_i,M_i,Y_i)\) be i.i.d., define \(\widehat\rho_{xm}=n^{-1}\sum_i\one\{X_i=x,M_i=m\}\), \(\widehat\mu_{xm}=n^{-1}\sum_iY_i\one\{X_i=x,M_i=m\}\), \(\widehat p_x=\sum_m\widehat\rho_{xm}\), \(\widehat q_{m\mid x}=\widehat\rho_{xm}/\widehat p_x\), \(\widehat r_{x,m}=\widehat\mu_{xm}/\widehat\rho_{xm}\), and \(\widehat\eta_n=(\widehat\rho,\widehat\mu)\). For any fixed \(\lambda\), set \(\widehat L_n(\lambda)=\min_{j\in J_L}v^L_j(\widehat\eta_n,\lambda)\) and \(\widehat U_n(\lambda)=\max_{j\in J_U}v^U_j(\widehat\eta_n,\lambda)\), where the finite \(C^1\) branch maps \(v^L_j,v^U_j\) are the active-branch representation of \(L,U\). If \(\lambda\) is in an interior active regime with unique active indices \(j_L,j_U\), then \(\sqrt n((\widehat L_n,\widehat U_n)-(L,U))\Rightarrow \mathcal N(0,D_\lambda\Sigma_\eta D_\lambda^\transpose)\), where \(D_\lambda\) has rows \(\nabla_\eta v^L_{j_L}(\eta,\lambda)^\transpose\) and \(\nabla_\eta v^U_{j_U}(\eta,\lambda)^\transpose\). If \(\lambda=\lambda^\star(P)\) is a finite kink selected by the no-kink/tie convention, then \(\sqrt n((\widehat L_n,\widehat U_n)-(L,U))\Rightarrow(\min_{j\in A_L^\star}\nabla_\eta v^L_j(\eta,\lambda^\star)^\transpose Z_\eta,\max_{j\in A_U^\star}\nabla_\eta v^U_j(\eta,\lambda^\star)^\transpose Z_\eta)\), with \(Z_\eta\sim\mathcal N(0,\Sigma_\eta)\); the displayed directional law is genuinely non-Gaussian only when the relevant finite min/max envelope is not almost surely equal to a single linear form of \(Z_\eta\), and in a two-branch binding face it is non-Gaussian when the active gradients \(a,b\) for the same endpoint satisfy \((a-b)^\transpose\Sigma_\eta(a-b)>0\). For multiplier draws \(\xi_i\) that are i.i.d., independent of the sample, satisfy \(E[\xi_i]=0\), \(E[\xi_i^2]=1\), and \(E|\xi_i|^{2+\delta}<\infty\) for some \(\delta>0\), define \(\widehat Z_{\eta,n}^b=n^{-1/2}\sum_i\xi_i(\widehat\psi_{\eta,i}-\overline{\widehat\psi}_\eta)\). If \(t_n\downarrow0\) and \(\sqrt n\,t_n\to\infty\), the numerical-derivative bootstrap \(\widehat\Phi'_{\lambda,n}(h)=t_n^{-1}\{\Phi_\lambda(\widehat\eta_n+t_nh)-\Phi_\lambda(\widehat\eta_n)\}\), \(\widehat Z_n^b=\widehat\Phi'_{\lambda,n}(\widehat Z_{\eta,n}^b)\), consistently estimates the interior Gaussian law and the kink directional law. Thus \(C_{n,\alpha}(\lambda)=[\widehat L_n(\lambda)-\widehat c_{1-\alpha}/\sqrt n,\widehat U_n(\lambda)+\widehat c_{1-\alpha}/\sqrt n]\), with \(\widehat c_{1-\alpha}\) the conditional \((1-\alpha)\)-quantile of \(\max\{\widehat Z_{n,L}^b,-\widehat Z_{n,U}^b\}\), has asymptotic set coverage for \([L(\lambda),U(\lambda)]\) at continuity points of the limiting quantile. At \(\lambda=0\), use \(\widehat L_n(0)=\widehat U_n(0)=\widehat\theta_{\mathrm{FD}}\), where \(\widehat\theta_{\mathrm{FD}}=\sum_m(\widehat q_{m\mid1}-\widehat q_{m\mid0})(\widehat p_1\widehat r_{1,m}+\widehat p_0\widehat r_{0,m})\); the endpoint pair has the diagonal Gaussian limit for \(\theta_{\mathrm{FD}}\) and the estimated width is identically zero.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem{Pearl1995CausalDiagrams} Pearl, J. (1995). Causal diagrams for empirical research.
+  \textit{Biometrika} 82(4), 669--688. DOI 10.1093/biomet/82.4.669.
+\bibitem{FulcherShpitserMarealleTchetgen2017GeneralizedFrontDoor} Fulcher, I., Shpitser, I., Marealle, S.,
+  and Tchetgen Tchetgen, E. (2017). Robust inference on indirect causal effects: a generalized front-door
+  criterion. arXiv:1711.03611.
+\bibitem{DingVanderWeele2016SharpMediationSensitivity} Ding, P., and VanderWeele, T.~J. (2016). Sharp
+  sensitivity bounds for mediation under unmeasured mediator--outcome confounding. \textit{Biometrika}
+  103(2), 483--490. arXiv:1601.05155.
+\bibitem{BalkePearl1997Bounds} Balke, A., and Pearl, J. (1997). Bounds on treatment effects from studies
+  with imperfect compliance. \textit{Journal of the American Statistical Association} 92(439), 1171--1176.
+  DOI 10.1080/01621459.1997.10474074.
+\bibitem{FinkelsteinAdamsSariaShpitser2020MeasurementError} Finkelstein, N., Adams, R., Saria, S., and
+  Shpitser, I. (2020). Partial identifiability in discrete data with measurement error. arXiv:2012.12449.
+\bibitem{ChernozhukovHongTamer2007ParameterSets} Chernozhukov, V., Hong, H., and Tamer, E. (2007).
+  Estimation and confidence regions for parameter sets in econometric models. \textit{Econometrica} 75(5),
+  1243--1284. DOI 10.1111/j.1468-0262.2007.00773.x.
+\bibitem{FangSantos2019DirectionallyDifferentiable} Fang, Z., and Santos, A. (2019). Inference on
+  directionally differentiable functions. \textit{Review of Economic Studies} 86(1), 377--412.
+  arXiv:1404.3763.
+\end{thebibliography}
+
+\end{document}

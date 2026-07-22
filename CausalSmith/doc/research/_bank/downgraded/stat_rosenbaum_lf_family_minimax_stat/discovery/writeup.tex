@@ -1,0 +1,888 @@
+\documentclass{article}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{mathrsfs,bm,bbm}
+\usepackage{graphicx,booktabs,array,multirow,tabularx,longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{algorithm,algpseudocode}
+\usepackage{subcaption,tikz}
+\usepackage{siunitx,cancel,accents}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{cleveref}
+\setlength{\emergencystretch}{2em}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{openendedquestion}{Open-ended Question}
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\coreref}[1]{\ref{#1}}
+
+\begin{document}
+
+\sloppy
+
+\section*{stat\_\allowbreak{}rosenbaum\_\allowbreak{}lf\_\allowbreak{}family\_\allowbreak{}minimax}
+
+\noindent\textit{Specialization:} stat\par
+
+\paragraph{TL;DR.} Conditioning on the observed records turns the Rosenbaum sharp-null problem into an exact finite all-tests linear program. The Rosenbaum-specific finite contribution is the product-vertex program, the indexed-support criterion \(D_{\mathcal B}=D_{\mathcal V}\), the exact classical-validity topology, and auditable support-switch certificates. In the three-position example, \(\mathcal A_1=(0,2/3]\); at level \(7/10\), the optimal rule is \((1/10,7/10,1)\), its power is \(197/260\), and the least-favorable weights are \(16/21\) and \(5/21\). A separate \(84\)-vertex diagnostic proves that coordinatewise monotonicity can cost exactly \(1/720\). In the fixed-record, fixed-score replicated oracle experiment, with positions \(1\) and \(m\) labeling the score minimum and maximum, the all-randomized-tests design-sensitivity boundary is \(\widetilde\Gamma_{\mathrm{all}}^\star(Q)=Q(m)/Q(1)\). Below it, the explicit endpoint score \(s_\Gamma(j)=\mathbf1\{j=m\}-\Gamma\mathbf1\{j=1\}\) yields uniform null size and alternative-error bounds \(e^{-c_0n}\), where \(c_0=\Delta^2/[2(\Gamma+1)^2]\); at and above it, the frontier equals \(\alpha\) for every \(n\). For \(m=2\), the boundary is \(Q(2)/Q(1)=q_2/(1-q_2)\), the sign/McNemar success odds.
+
+\section{Project justification}
+
+\paragraph{Gap.} Generic finite minimax theory does not expose the Rosenbaum product vertices, decide when a prescribed indexed terminal-block support is sufficient, identify the levels where the classical tilt is minimax sharp, or provide exact support-switch certificates. Existing asymptotic sensitivity results study selected procedures or sensitivity-value estimators rather than the maximal common-\(\Gamma\) detectability boundary over every randomized test.
+
+\paragraph{Niche.} The note joins two sharply delimited objects: an exact conditional finite all-tests linear program for heterogeneous matched sets and an oracle repeated-design benchmark with fixed \(m\), fixed record, fixed endpoint-extremal \(Q\), common \(\Gamma\), and independent replicas. The causal target remains the Fisher sharp null; the finite frontier and replicated design-sensitivity boundary are testing functionals, not alternative definitions of the causal null.
+
+\paragraph{Fill.} Vertex reduction makes composite-null validity finitely auditable. Linear-program duality and complementary slackness give the least-favorable mixture, assignment-dependent likelihood-ratio ties, the support equality \(D_{\mathcal B}=D_{\mathcal V}\), the tie-block representation of \(\mathcal A_n\), and the affine support-switch envelope. In the replicated design, the explicit endpoint score \(s_\Gamma(j)=\mathbf1\{j=m\}-\Gamma\mathbf1\{j=1\}\) has null supremum zero and alternative mean \(\Delta=[Q(m)-\Gamma Q(1)]/\sum_kQ(k)\). Hoeffding's inequality then gives both errors at most \(e^{-c_0n}\), while \(q\in\mathcal P_m(\Gamma)\) at and above the boundary gives the exact all-tests converse.
+
+\section{Related work}
+
+Rosenbaum's multiple-control analysis gives sharp sensitivity calculations for a selected generalized signed-rank family \cite{Rosenbaum1988SensitivityMultipleControls}. Gastwirth--Krieger--Rosenbaum establish asymptotic separability for specified rank procedures with multiple controls \cite{GastwirthKriegerRosenbaum2000Separability}; their result concerns selected procedures, whereas the replicated theorem here is an oracle detectability boundary over all randomized tests. Zhao derives asymptotic normality for the pair-matched sensitivity value \cite{Zhao2019SensitivityValue}; by contrast, \(q_2/(1-q_2)\) here is a population all-tests boundary, not an estimator or a sampling distribution. Cohen--Olson--Fogarty study coherent combinations of prespecified outcome statistics \cite{CohenOlsonFogarty2020AdversarialGame}; the present benchmark ranges over all randomized tests but is oracle and is not a practical coherent-statistic construction. Fogarty studies limiting laws and design sensitivity for tilted candidate statistics \cite{Fogarty2025Tilted}; the present result instead identifies the maximal common-\(\Gamma\) all-tests boundary and makes no operational-domination claim. Fogarty--Small share hidden-assignment probabilities across multiple outcomes \cite{FogartySmall2016MultipleComparisons}, a different optimization from the present single-outcome conditional frontier. Huber--Strassen provide generic robust-testing background, but their representative-pair conclusion uses a capacity structure not established for this Rosenbaum product-law envelope \cite{HuberStrassen1973Minimax}. The contribution here is the Rosenbaum-specific finite program and certificates together with the explicit endpoint-score repeated-design boundary, its uniform Hoeffding achievability, and its exact all-tests converse.
+
+\section{Setup}
+
+Target (estimand / structural parameter): \texttt{H\_\allowbreak{}\{F,\allowbreak{}n\}\allowbreak{}:\allowbreak{}Y\_\allowbreak{}\{ij\}\allowbreak{}(1)=\allowbreak{}Y\_\allowbreak{}\{ij\}\allowbreak{}(0)\textbackslash{}\allowbreak{} \textbackslash{}\allowbreak{}forall(i,\allowbreak{}j)}.
+Identifying functional / recovery map: \texttt{\textbackslash{}\allowbreak{}beta\_\allowbreak{}n\textasciicircum{}\textbackslash{}\allowbreak{}star(\textbackslash{}\allowbreak{}alpha;\allowbreak{}Q,\allowbreak{}\textbackslash{}\allowbreak{}Gamma,\allowbreak{}r)=\allowbreak{}\textbackslash{}\allowbreak{}sup\_\allowbreak{}\{\textbackslash{}\allowbreak{}phi:\allowbreak{}\textbackslash{}\allowbreak{}sup\_\allowbreak{}\{P\textbackslash{}\allowbreak{}in\textbackslash{}\allowbreak{}mathcal M\_\allowbreak{}\{0,\allowbreak{}n\}\allowbreak{}(\textbackslash{}\allowbreak{}Gamma;\allowbreak{}r)\}\allowbreak{}E\_\allowbreak{}P\textbackslash{}\allowbreak{}phi\textbackslash{}\allowbreak{}le\textbackslash{}\allowbreak{}alpha\}\allowbreak{}E\_\allowbreak{}\{P\_\allowbreak{}\{1,\allowbreak{}n\}\allowbreak{}\textasciicircum{}\{Q\}\allowbreak{}(\textbackslash{}\allowbreak{}cdot\textbackslash{}\allowbreak{}mid r)\}\allowbreak{}\textbackslash{}\allowbreak{}phi}.
+\begin{itemize}
+  \item \texttt{n} --- \texttt{positive integer}; \texttt{\textbackslash{}\allowbreak{}mathbb N}; \texttt{array index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{number of matched sets}
+  \item \texttt{i} --- \texttt{index}; \texttt{\textbackslash{}\allowbreak{}\{1,\allowbreak{}\textbackslash{}\allowbreak{}ldots,\allowbreak{}n\textbackslash{}\allowbreak{}\}\allowbreak{}}; \texttt{index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{matched-\allowbreak{}set index}
+  \item \texttt{m\_\allowbreak{}i} --- \texttt{integer}; \texttt{\textbackslash{}\allowbreak{}\{2,\allowbreak{}3,\allowbreak{}\textbackslash{}\allowbreak{}ldots\textbackslash{}\allowbreak{}\}\allowbreak{}}; \texttt{set size}
+  \par\smallskip\noindent\emph{Definition.} number of positions in matched set \(i\)
+  \item \texttt{j} --- \texttt{index}; \texttt{\textbackslash{}\allowbreak{}\{1,\allowbreak{}\textbackslash{}\allowbreak{}ldots,\allowbreak{}m\_\allowbreak{}i\textbackslash{}\allowbreak{}\}\allowbreak{}}; \texttt{index}
+  \par\smallskip\noindent\emph{Definition.} position index in matched set \(i\)
+  \item \texttt{a} --- \texttt{treatment label}; \texttt{\textbackslash{}\allowbreak{}\{0,\allowbreak{}1\textbackslash{}\allowbreak{}\}\allowbreak{}}; \texttt{causal index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{potential-\allowbreak{}treatment label}
+  \item \texttt{Y\_\allowbreak{}\{ij\}\allowbreak{}(a)} --- \texttt{random potential outcome}; \texttt{\textbackslash{}\allowbreak{}mathbb R}; \texttt{causal primitive}
+  \par\smallskip\noindent\emph{Definition.} potential outcome for position \(j\) in set \(i\) under treatment \(a\)
+  \item \texttt{H\_\allowbreak{}\{F,\allowbreak{}n\}\allowbreak{}} --- \texttt{causal hypothesis}; \texttt{\textbackslash{}\allowbreak{}\{0,\allowbreak{}1\textbackslash{}\allowbreak{}\}\allowbreak{}}; \texttt{causal target}
+  \par\smallskip\noindent\emph{Definition.} Fisher sharp null \(Y_{ij}(1)=Y_{ij}(0)\) for every \(i,j\)
+  \item \texttt{\textbackslash{}\allowbreak{}Gamma\_\allowbreak{}i} --- \texttt{scalar}; \texttt{[1,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{sensitivity parameter}
+  \par\smallskip\noindent\emph{Definition.} Rosenbaum hidden-bias bound for set \(i\)
+  \item \texttt{\textbackslash{}\allowbreak{}alpha} --- \texttt{scalar}; \texttt{(0,\allowbreak{}1)}; \texttt{level parameter}
+  \par\smallskip\noindent\emph{Definition.} \texttt{conditional test level}
+  \item \texttt{\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n} --- \texttt{finite set}; \texttt{\textbackslash{}\allowbreak{}prod\_\allowbreak{}\{i=\allowbreak{}1\}\allowbreak{}\textasciicircum{}n\textbackslash{}\allowbreak{}\{1,\allowbreak{}\textbackslash{}\allowbreak{}ldots,\allowbreak{}m\_\allowbreak{}i\textbackslash{}\allowbreak{}\}\allowbreak{}}; \texttt{assignment sample space}
+  \par\smallskip\noindent\emph{Definition.} \texttt{assignment vectors with one treated position per set}
+  \item \texttt{Z\_\allowbreak{}i} --- \texttt{random variable}; \texttt{\textbackslash{}\allowbreak{}\{1,\allowbreak{}\textbackslash{}\allowbreak{}ldots,\allowbreak{}m\_\allowbreak{}i\textbackslash{}\allowbreak{}\}\allowbreak{}}; \texttt{assignment}
+  \par\smallskip\noindent\emph{Definition.} treated position in matched set \(i\)
+  \item \texttt{Z} --- \texttt{random vector}; \texttt{\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n}; \texttt{assignment vector}
+  \par\smallskip\noindent\emph{Definition.} \texttt{vector of treated positions}
+  \item \texttt{z} --- \texttt{assignment realization}; \texttt{\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n}; \texttt{assignment value}
+  \par\smallskip\noindent\emph{Definition.} \texttt{realized vector of treated positions}
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal R\_\allowbreak{}i} --- \texttt{measurable space}; \texttt{outcome-\allowbreak{}record space}
+  \par\smallskip\noindent\emph{Definition.} sample space for the observed outcome record in matched set \(i\)
+  \item \texttt{R\_\allowbreak{}i} --- \texttt{outcome record}; \texttt{\textbackslash{}\allowbreak{}mathcal R\_\allowbreak{}i}; \texttt{observed causal data}
+  \par\smallskip\noindent\emph{Definition.} observed outcome record for matched set \(i\)
+  \item \texttt{r\_\allowbreak{}i} --- \texttt{outcome-\allowbreak{}record realization}; \texttt{\textbackslash{}\allowbreak{}mathcal R\_\allowbreak{}i}; \texttt{conditioning value}
+  \par\smallskip\noindent\emph{Definition.} realized observed outcome record in matched set \(i\)
+  \item \texttt{r} --- \texttt{outcome-\allowbreak{}record realization}; \texttt{\textbackslash{}\allowbreak{}mathcal R\_\allowbreak{}1\textbackslash{}\allowbreak{}times\textbackslash{}\allowbreak{}cdots\textbackslash{}\allowbreak{}times\textbackslash{}\allowbreak{}mathcal R\_\allowbreak{}n}; \texttt{conditioning value}
+  \par\smallskip\noindent\emph{Definition.} full observed outcome record \(r=(r_1,\ldots,r_n)\)
+  \item \texttt{F\_\allowbreak{}\{0i\}\allowbreak{}} --- \texttt{probability law}; \texttt{\textbackslash{}\allowbreak{}mathcal P(\textbackslash{}\allowbreak{}mathcal R\_\allowbreak{}i)}; \texttt{sharp-\allowbreak{}null outcome law}
+  \par\smallskip\noindent\emph{Definition.} law of \(R_i\) under \(H_{F,n}\), which does not depend on the treated position
+  \item \texttt{F\_\allowbreak{}\{1ij\}\allowbreak{}} --- \texttt{probability law}; \texttt{\textbackslash{}\allowbreak{}mathcal P(\textbackslash{}\allowbreak{}mathcal R\_\allowbreak{}i)}; \texttt{causal alternative law}
+  \par\smallskip\noindent\emph{Definition.} law of \(R_i\) under a specified causal potential-outcome alternative when position \(j\) is treated
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal R\_\allowbreak{}i\textasciicircum{}Q} --- \texttt{measurable set}; \texttt{\textbackslash{}\allowbreak{}mathcal R\_\allowbreak{}i}; \texttt{likelihood-\allowbreak{}ratio support}
+  \par\smallskip\noindent\emph{Definition.} \texttt{common record set on which every selected alternative likelihood ratio is finite and positive}
+  \item \texttt{Q\_\allowbreak{}i(j;\allowbreak{}r\_\allowbreak{}i)} --- \texttt{positive scalar}; \texttt{(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{conditional alternative likelihood score}
+  \par\smallskip\noindent\emph{Definition.} selected Bayes-factor density \(dF_{1ij}/dF_{0i}(r_i)\) on \(\mathcal R_i^Q\)
+  \item \texttt{Q} --- \texttt{score array}; \texttt{\textbackslash{}\allowbreak{}prod\_\allowbreak{}\{i=\allowbreak{}1\}\allowbreak{}\textasciicircum{}n(0,\allowbreak{}\textbackslash{}\allowbreak{}infty)\textasciicircum{}\{m\_\allowbreak{}i\}\allowbreak{}}; \texttt{alternative input}
+  \par\smallskip\noindent\emph{Definition.} collection of conditional causal Bayes-factor scores at \(r\)
+  \item \texttt{\textbackslash{}\allowbreak{}pi\_\allowbreak{}i} --- \texttt{probability vector}; \texttt{\textbackslash{}\allowbreak{}Delta(\textbackslash{}\allowbreak{}\{1,\allowbreak{}\textbackslash{}\allowbreak{}ldots,\allowbreak{}m\_\allowbreak{}i\textbackslash{}\allowbreak{}\}\allowbreak{})}; \texttt{alternative assignment prior}
+  \par\smallskip\noindent\emph{Definition.} specified uniform alternative assignment baseline in set \(i\)
+  \item \texttt{P\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{alt\}\allowbreak{},\allowbreak{}n\}\allowbreak{}} --- \texttt{probability law}; \texttt{\textbackslash{}\allowbreak{}mathcal P(\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n\textbackslash{}\allowbreak{}times\textbackslash{}\allowbreak{}mathcal R\_\allowbreak{}1\textbackslash{}\allowbreak{}times\textbackslash{}\allowbreak{}cdots\textbackslash{}\allowbreak{}times\textbackslash{}\allowbreak{}mathcal R\_\allowbreak{}n)}; \texttt{alternative data-\allowbreak{}generating law}
+  \par\smallskip\noindent\emph{Definition.} \texttt{joint law of assignment and outcome record under the specified causal alternative}
+  \item \texttt{P} --- \texttt{probability law}; \texttt{\textbackslash{}\allowbreak{}mathcal P(\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n)}; \texttt{null-\allowbreak{}law candidate}
+  \par\smallskip\noindent\emph{Definition.} conditional assignment law given \(r\) under the sharp null
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal M\_\allowbreak{}\{0,\allowbreak{}n\}\allowbreak{}(\textbackslash{}\allowbreak{}Gamma;\allowbreak{}r)} --- \texttt{class of laws}; \texttt{\textbackslash{}\allowbreak{}mathcal P(\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n)}; \texttt{composite null}
+  \par\smallskip\noindent\emph{Definition.} \texttt{conditional Rosenbaum null assignment-\allowbreak{}law class}
+  \item \texttt{P\_\allowbreak{}\{1,\allowbreak{}n\}\allowbreak{}\textasciicircum{}\{Q\}\allowbreak{}(\textbackslash{}\allowbreak{}cdot\textbackslash{}\allowbreak{}mid r)} --- \texttt{probability law}; \texttt{\textbackslash{}\allowbreak{}mathcal P(\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n)}; \texttt{conditional power alternative}
+  \par\smallskip\noindent\emph{Definition.} posterior conditional assignment law under \(P_{\mathrm{alt},n}\) after conditioning on \(R=r\)
+  \item \texttt{\textbackslash{}\allowbreak{}phi} --- \texttt{conditional test}; \texttt{[0,\allowbreak{}1]\textasciicircum{}\{\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n\}\allowbreak{}}; \texttt{decision rule}
+  \par\smallskip\noindent\emph{Definition.} possibly randomized rejection rule after conditioning on \(r\)
+  \item \texttt{\textbackslash{}\allowbreak{}beta\_\allowbreak{}n\textasciicircum{}\textbackslash{}\allowbreak{}star(\textbackslash{}\allowbreak{}alpha;\allowbreak{}Q,\allowbreak{}\textbackslash{}\allowbreak{}Gamma,\allowbreak{}r)} --- \texttt{scalar}; \texttt{[0,\allowbreak{}1]}; \texttt{power functional}
+  \par\smallskip\noindent\emph{Definition.} \texttt{conditional all-\allowbreak{}tests power frontier against the causal alternative}
+  \item \texttt{S\_\allowbreak{}i} --- \texttt{set}; \texttt{2\textasciicircum{}\{\textbackslash{}\allowbreak{}\{1,\allowbreak{}\textbackslash{}\allowbreak{}ldots,\allowbreak{}m\_\allowbreak{}i\textbackslash{}\allowbreak{}\}\allowbreak{}\}\allowbreak{}}; \texttt{vertex index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{high-\allowbreak{}probability positions of a local Rosenbaum-\allowbreak{}polytope vertex}
+  \item \texttt{v\_\allowbreak{}\{i,\allowbreak{}S\_\allowbreak{}i\}\allowbreak{}} --- \texttt{probability vector}; \texttt{\textbackslash{}\allowbreak{}Delta(\textbackslash{}\allowbreak{}\{1,\allowbreak{}\textbackslash{}\allowbreak{}ldots,\allowbreak{}m\_\allowbreak{}i\textbackslash{}\allowbreak{}\}\allowbreak{})}; \texttt{local vertex}
+  \par\smallskip\noindent\emph{Definition.} local extreme-tilt assignment vector indexed by \(S_i\)
+  \item \texttt{P\_\allowbreak{}v} --- \texttt{probability law}; \texttt{\textbackslash{}\allowbreak{}mathcal P(\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n)}; \texttt{global null vertex}
+  \par\smallskip\noindent\emph{Definition.} \texttt{global product law generated by local extreme tilts}
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal V\_\allowbreak{}n} --- \texttt{finite set of laws}; \texttt{\textbackslash{}\allowbreak{}mathcal P(\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n)}; \texttt{finite null reduction}
+  \par\smallskip\noindent\emph{Definition.} \texttt{product extreme laws of the conditional Rosenbaum null polytope}
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal V\_\allowbreak{}n\textasciicircum{}Q(r)} --- \texttt{finite set of laws}; \texttt{\textbackslash{}\allowbreak{}mathcal V\_\allowbreak{}n}; \texttt{indexed support candidate}
+  \par\smallskip\noindent\emph{Definition.} \texttt{indexed terminal-\allowbreak{}block candidate vertices;\allowbreak{} under the additional strict score-\allowbreak{}ordering assumption,\allowbreak{} these terminal blocks are upper sets of the conditional Bayes-\allowbreak{}factor ordering}
+  \item \texttt{p\_\allowbreak{}i\textasciicircum{}+\allowbreak{}} --- \texttt{probability vector}; \texttt{\textbackslash{}\allowbreak{}Delta(\textbackslash{}\allowbreak{}\{1,\allowbreak{}\textbackslash{}\allowbreak{}ldots,\allowbreak{}m\_\allowbreak{}i\textbackslash{}\allowbreak{}\}\allowbreak{})}; \texttt{classical local null}
+  \par\smallskip\noindent\emph{Definition.} local classical tilt placing high probability on position \(m_i\)
+  \item \texttt{P\_\allowbreak{}n\textasciicircum{}+\allowbreak{}} --- \texttt{probability law}; \texttt{\textbackslash{}\allowbreak{}mathcal P(\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n)}; \texttt{candidate representative null}
+  \par\smallskip\noindent\emph{Definition.} \texttt{product of the local classical extreme tilts}
+  \item \texttt{P\_\allowbreak{}0} --- \texttt{probability law}; \texttt{\textbackslash{}\allowbreak{}mathcal P(\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n)}; \texttt{testing input}
+  \par\smallskip\noindent\emph{Definition.} \texttt{candidate simple null law in a Neyman-\allowbreak{}-\allowbreak{}Pearson rule}
+  \item \texttt{c} --- \texttt{scalar}; \texttt{[0,\allowbreak{}\textbackslash{}\allowbreak{}infty)}; \texttt{test cutoff}
+  \par\smallskip\noindent\emph{Definition.} \texttt{likelihood-\allowbreak{}ratio cutoff}
+  \item \texttt{\textbackslash{}\allowbreak{}rho} --- \texttt{boundary randomization function}; \texttt{[0,\allowbreak{}1]\textasciicircum{}\{\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n\}\allowbreak{}}; \texttt{test randomization}
+  \par\smallskip\noindent\emph{Definition.} \texttt{assignment-\allowbreak{}dependent rejection probability on a likelihood-\allowbreak{}ratio tie set}
+  \item \texttt{\textbackslash{}\allowbreak{}lambda} --- \texttt{probability vector}; \texttt{\textbackslash{}\allowbreak{}Delta(\textbackslash{}\allowbreak{}mathcal V\_\allowbreak{}n)}; \texttt{least-\allowbreak{}favorable convexification parameter}
+  \par\smallskip\noindent\emph{Definition.} mixing weights over global Rosenbaum vertices; support may optionally be restricted to \(\mathcal V_n^Q(r)\)
+  \item \texttt{P\_\allowbreak{}\textbackslash{}\allowbreak{}lambda} --- \texttt{probability law}; \texttt{\textbackslash{}\allowbreak{}operatorname\{conv\}\allowbreak{}(\textbackslash{}\allowbreak{}mathcal V\_\allowbreak{}n)\textbackslash{}\allowbreak{}subseteq\textbackslash{}\allowbreak{}mathcal P(\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n)}; \texttt{convexified least-\allowbreak{}favorable adversary}
+  \par\smallskip\noindent\emph{Definition.} convex mixture of global vertex laws; unless degenerate, it need not be conditionally independent or belong to \(\mathcal M_{0,n}(\Gamma;r)\)
+  \item \texttt{\textbackslash{}\allowbreak{}mathcal A\_\allowbreak{}n(Q,\allowbreak{}\textbackslash{}\allowbreak{}Gamma;\allowbreak{}r)} --- \texttt{set}; \texttt{(0,\allowbreak{}1)}; \texttt{Rosenbaum validity region}
+  \par\smallskip\noindent\emph{Definition.} \texttt{levels at which at least one generalized Neyman-\allowbreak{}-\allowbreak{}Pearson rule calibrated under the classical tilt is valid for the full conditional Rosenbaum null}
+\end{itemize}
+
+\section{Assumptions}
+
+\begin{assumption}[ass:sharp-null]\label{ass:sharp-null}
+The Fisher sharp null holds: \(Y_{ij}(1)=Y_{ij}(0)\) for every \(i\) and \(j\).
+\par\smallskip\noindent\emph{Standard} (Fisher sharp null, \cite{Rosenbaum1987SensitivityPermutation}).
+\end{assumption}
+
+\begin{assumption}[ass:conditional-independence]\label{ass:conditional-independence}
+Conditional on \(r\) under the sharp null, \(Z_1,\ldots,Z_n\) are independent.
+\par\smallskip\noindent\emph{Standard} (independent matched-set assignments, \cite{Rosenbaum1987SensitivityPermutation}).
+\end{assumption}
+
+\begin{assumption}[ass:rosenbaum-odds]\label{ass:rosenbaum-odds}
+For every \(i\) and \(j,k\in\{1,\ldots,m_i\}\), \(\Pr_P(Z_i=j\mid r)/\Pr_P(Z_i=k\mid r)\in[\Gamma_i^{-1},\Gamma_i]\).
+\par\smallskip\noindent\emph{Standard} (Rosenbaum bounded-odds sensitivity model, \cite{Rosenbaum1987SensitivityPermutation}).
+\end{assumption}
+
+\begin{assumption}[ass:alternative-prior-factorization]\label{ass:alternative-prior-factorization}
+Under \(P_{\mathrm{alt},n}\), \(\Pr(Z=z)=\prod_{i=1}^n\pi_i(z_i)\) for every \(z\in\Omega_n\).
+\par\smallskip\noindent\emph{Novel.} This is an explicit alternative-model premise, not a consequence of the Rosenbaum null. It describes a prospectively randomized causal alternative in which treatment is assigned uniformly within independently randomized matched sets before the hidden-bias sensitivity model is imposed for the null comparison.
+\end{assumption}
+
+\begin{assumption}[ass:alternative-record-factorization]\label{ass:alternative-record-factorization}
+Under \(P_{\mathrm{alt},n}\), \(\Pr(R\in dr\mid Z=z)=\prod_{i=1}^nF_{1i z_i}(dr_i)\) for every \(z\in\Omega_n\).
+\par\smallskip\noindent\emph{Novel.} This is an explicit alternative-model premise, not a property of pair-matched sensitivity-value theory. It is realistic for independently recruited matched sets with no cross-set interference or shared post-match shocks; for example, separately sampled matched strata with unit-level outcomes generated after one within-set treatment assignment.
+\end{assumption}
+
+\begin{assumption}[ass:likelihood-common-support]\label{ass:likelihood-common-support}
+For every \(i,j\), \(F_{1ij}\) and \(F_{0i}\) are equivalent measures, and \(dF_{1ij}/dF_{0i}\) has a finite strictly positive \(F_{0i}\)-almost-everywhere measurable version.
+\par\smallskip\noindent\emph{Standard} (common support for likelihood-ratio testing, \cite{HuberStrassen1973Minimax}).
+\end{assumption}
+
+\begin{assumption}[ass:conditioning-support]\label{ass:conditioning-support}
+For every \(i\), the conditioning record satisfies \(r_i\in\mathcal R_i^Q\).
+\par\smallskip\noindent\emph{Standard} (common-support conditioning, \cite{HuberStrassen1973Minimax}).
+\end{assumption}
+
+\begin{assumption}[ass:causal-likelihood-order]\label{ass:causal-likelihood-order}
+For every \(i\), the causal Bayes factors obey \(0<Q_i(1;r_i)<\cdots<Q_i(m_i;r_i)\).
+\par\smallskip\noindent\emph{Novel.} The condition holds when a prespecified ordered causal mechanism makes the observed outcome record progressively more likely as the treated position moves up an ordered within-set response contrast. For example, it is satisfied by monotone exponential-family outcome alternatives with a strictly ordered sufficient-statistic contrast.
+\end{assumption}
+
+\begin{assumption}[ass:causal-likelihood-separation]\label{ass:causal-likelihood-separation}
+For every \(i\), \(Q_i(m_i;r_i)/Q_i(1;r_i)>\Gamma_i\).
+\par\smallskip\noindent\emph{Novel.} This is a finite conditional signal-strength condition: the causal outcome evidence distinguishing the two extreme treated positions exceeds the allowed hidden-assignment odds. It is met in ordered binary or exponential-family alternatives once the treatment-induced log-likelihood contrast is larger than \(\log\Gamma_i\).
+\end{assumption}
+
+\begin{assumption}[ass:test-level]\label{ass:test-level}
+The conditional level satisfies \(0<\alpha<1\).
+\par\smallskip\noindent\emph{Standard} (nondegenerate test level, \cite{HuberStrassen1973Minimax}).
+\end{assumption}
+
+\begin{assumption}[ass:replicated-conditional-design]\label{ass:replicated-conditional-design}
+Fix an integer \(m\geq2\), a conditioning record \(r_0\), a common \(\Gamma\geq1\), and a score vector \(Q=(Q(1),\ldots,Q(m))\in(0,\infty)^m\) whose endpoint labels are extremal, \(Q(1)=\min_jQ(j)<\max_jQ(j)=Q(m)\), and require for every \(n\) that the matched sets are conditionally independent replicas with \(m_i=m\), \(r_i=r_0\), \(\Gamma_i=\Gamma\), conditional alternative \(q^{\otimes n}\), where \(q_j=Q(j)/\sum_{k=1}^mQ(k)\), and conditional sharp-null class exactly \(\{\bigotimes_{i=1}^np_i:p_i\in\mathcal P_m(\Gamma)\text{ for every }i\}\).
+\par\smallskip\noindent\emph{Novel.} novel: this is an explicit fixed-record, fixed-score conditional oracle experiment used to define the repeated-design benchmark; it is not the theorem's conclusion.
+\end{assumption}
+
+\section{Definitions}
+
+\begin{definition}[def:null-outcome-law]\label{def:null-outcome-law}
+\par\smallskip\noindent\emph{Defined object.} \texttt{sharp-\allowbreak{}null outcome law}
+\par\smallskip\noindent\emph{Construction.} \texttt{F\_\allowbreak{}\{0i\}\allowbreak{}=\allowbreak{}\textbackslash{}\allowbreak{}mathcal L(R\_\allowbreak{}i\textbackslash{}\allowbreak{}mid H\_\allowbreak{}\{F,\allowbreak{}n\}\allowbreak{})}
+\par\smallskip\noindent\emph{Inputs.} \texttt{R\_\allowbreak{}i}; \texttt{H\_\allowbreak{}\{F,\allowbreak{}n\}\allowbreak{}}; \texttt{i}.
+\end{definition}
+
+\begin{definition}[def:alternative-prior]\label{def:alternative-prior}
+\par\smallskip\noindent\emph{Defined object.} \texttt{uniform alternative assignment baseline}
+\par\smallskip\noindent\emph{Construction.} \texttt{\textbackslash{}\allowbreak{}pi\_\allowbreak{}i(j)=\allowbreak{}m\_\allowbreak{}i\textasciicircum{}\{-\allowbreak{}1\}\allowbreak{}\textbackslash{}\allowbreak{}quad\textbackslash{}\allowbreak{}text\{for \}\allowbreak{}j\textbackslash{}\allowbreak{}in\textbackslash{}\allowbreak{}\{1,\allowbreak{}\textbackslash{}\allowbreak{}ldots,\allowbreak{}m\_\allowbreak{}i\textbackslash{}\allowbreak{}\}\allowbreak{}}
+\par\smallskip\noindent\emph{Inputs.} \texttt{\textbackslash{}\allowbreak{}pi\_\allowbreak{}i}; \texttt{j}; \texttt{m\_\allowbreak{}i}.
+\end{definition}
+
+\begin{definition}[def:common-record-support]\label{def:common-record-support}
+\par\smallskip\noindent\emph{Defined object.} \texttt{common likelihood-\allowbreak{}ratio record set}
+\par\smallskip\noindent\emph{Construction.} \texttt{\textbackslash{}\allowbreak{}mathcal R\_\allowbreak{}i\textasciicircum{}Q=\allowbreak{}\textbackslash{}\allowbreak{}\{s\textbackslash{}\allowbreak{}in\textbackslash{}\allowbreak{}mathcal R\_\allowbreak{}i:\allowbreak{}0<dF\_\allowbreak{}\{1ij\}\allowbreak{}/\allowbreak{}dF\_\allowbreak{}\{0i\}\allowbreak{}(s)<\textbackslash{}\allowbreak{}infty\textbackslash{}\allowbreak{}text\{ for every \}\allowbreak{}j\textbackslash{}\allowbreak{}in\textbackslash{}\allowbreak{}\{1,\allowbreak{}\textbackslash{}\allowbreak{}ldots,\allowbreak{}m\_\allowbreak{}i\textbackslash{}\allowbreak{}\}\allowbreak{}\textbackslash{}\allowbreak{}\}\allowbreak{}}
+\par\smallskip\noindent\emph{Inputs.} \texttt{F\_\allowbreak{}\{1ij\}\allowbreak{}}; \texttt{F\_\allowbreak{}\{0i\}\allowbreak{}}; \texttt{\textbackslash{}\allowbreak{}mathcal R\_\allowbreak{}i}; \texttt{i}; \texttt{j}; \texttt{m\_\allowbreak{}i}.
+\end{definition}
+
+\begin{definition}[def:causal-bayes-factor]\label{def:causal-bayes-factor}
+\par\smallskip\noindent\emph{Defined object.} \texttt{causal conditional Bayes factor}
+\par\smallskip\noindent\emph{Construction.} \texttt{Q\_\allowbreak{}i(j;\allowbreak{}s)=\allowbreak{}dF\_\allowbreak{}\{1ij\}\allowbreak{}/\allowbreak{}dF\_\allowbreak{}\{0i\}\allowbreak{}(s)\textbackslash{}\allowbreak{}quad\textbackslash{}\allowbreak{}text\{for \}\allowbreak{}s\textbackslash{}\allowbreak{}in\textbackslash{}\allowbreak{}mathcal R\_\allowbreak{}i\textasciicircum{}Q}
+\par\smallskip\noindent\emph{Inputs.} \texttt{F\_\allowbreak{}\{1ij\}\allowbreak{}}; \texttt{F\_\allowbreak{}\{0i\}\allowbreak{}}; \texttt{\textbackslash{}\allowbreak{}mathcal R\_\allowbreak{}i\textasciicircum{}Q}; \texttt{i}; \texttt{j}.
+\end{definition}
+
+\begin{definition}[def:gamma-null]\label{def:gamma-null}
+\par\smallskip\noindent\emph{Defined object.} \texttt{conditional Rosenbaum null class}
+\par\smallskip\noindent\emph{Construction.} \texttt{\textbackslash{}\allowbreak{}mathcal M\_\allowbreak{}\{0,\allowbreak{}n\}\allowbreak{}(\textbackslash{}\allowbreak{}Gamma;\allowbreak{}r)=\allowbreak{}\textbackslash{}\allowbreak{}\{P\textbackslash{}\allowbreak{}in\textbackslash{}\allowbreak{}mathcal P(\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n):\allowbreak{}P\textbackslash{}\allowbreak{}text\{ satisfies \}\allowbreak{}\textbackslash{}\allowbreak{}mathrm\{ass:\allowbreak{}conditional-\allowbreak{}independence\}\allowbreak{}\textbackslash{}\allowbreak{}text\{ and \}\allowbreak{}\textbackslash{}\allowbreak{}mathrm\{ass:\allowbreak{}rosenbaum-\allowbreak{}odds\}\allowbreak{}\textbackslash{}\allowbreak{}\}\allowbreak{}}
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}conditional-\allowbreak{}independence}; \texttt{ass:\allowbreak{}rosenbaum-\allowbreak{}odds}.
+\end{definition}
+
+\begin{definition}[def:alternative-law]\label{def:alternative-law}
+\par\smallskip\noindent\emph{Defined object.} \texttt{conditional causal alternative law}
+\par\smallskip\noindent\emph{Construction.} \texttt{P\_\allowbreak{}\{1,\allowbreak{}n\}\allowbreak{}\textasciicircum{}\{Q\}\allowbreak{}(z\textbackslash{}\allowbreak{}mid r)=\allowbreak{}\textbackslash{}\allowbreak{}Pr\_\allowbreak{}\{P\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{alt\}\allowbreak{},\allowbreak{}n\}\allowbreak{}\}\allowbreak{}(Z=\allowbreak{}z\textbackslash{}\allowbreak{}mid R=\allowbreak{}r)=\allowbreak{}\textbackslash{}\allowbreak{}prod\_\allowbreak{}\{i=\allowbreak{}1\}\allowbreak{}\textasciicircum{}n\textbackslash{}\allowbreak{}frac\{\textbackslash{}\allowbreak{}pi\_\allowbreak{}i(z\_\allowbreak{}i)Q\_\allowbreak{}i(z\_\allowbreak{}i;\allowbreak{}r\_\allowbreak{}i)\}\allowbreak{}\{\textbackslash{}\allowbreak{}sum\_\allowbreak{}\{k=\allowbreak{}1\}\allowbreak{}\textasciicircum{}\{m\_\allowbreak{}i\}\allowbreak{}\textbackslash{}\allowbreak{}pi\_\allowbreak{}i(k)Q\_\allowbreak{}i(k;\allowbreak{}r\_\allowbreak{}i)\}\allowbreak{}=\allowbreak{}\textbackslash{}\allowbreak{}prod\_\allowbreak{}\{i=\allowbreak{}1\}\allowbreak{}\textasciicircum{}n\textbackslash{}\allowbreak{}frac\{Q\_\allowbreak{}i(z\_\allowbreak{}i;\allowbreak{}r\_\allowbreak{}i)\}\allowbreak{}\{\textbackslash{}\allowbreak{}sum\_\allowbreak{}\{k=\allowbreak{}1\}\allowbreak{}\textasciicircum{}\{m\_\allowbreak{}i\}\allowbreak{}Q\_\allowbreak{}i(k;\allowbreak{}r\_\allowbreak{}i)\}\allowbreak{}\textbackslash{}\allowbreak{}quad\textbackslash{}\allowbreak{}text\{for \}\allowbreak{}z\textbackslash{}\allowbreak{}in\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n}
+\par\smallskip\noindent\emph{Inputs.} \texttt{P\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{alt\}\allowbreak{},\allowbreak{}n\}\allowbreak{}}; \texttt{\textbackslash{}\allowbreak{}pi\_\allowbreak{}i}; \texttt{Q\_\allowbreak{}i(j;\allowbreak{}r\_\allowbreak{}i)}; \texttt{r}; \texttt{n}; \texttt{m\_\allowbreak{}i}; \texttt{Z}; \texttt{ass:\allowbreak{}alternative-\allowbreak{}prior-\allowbreak{}factorization}; \texttt{ass:\allowbreak{}alternative-\allowbreak{}record-\allowbreak{}factorization}; \texttt{def:\allowbreak{}alternative-\allowbreak{}prior}.
+\end{definition}
+
+\begin{definition}[def:frontier]\label{def:frontier}
+\par\smallskip\noindent\emph{Defined object.} \texttt{conditional all-\allowbreak{}tests causal power frontier}
+\par\smallskip\noindent\emph{Construction.} \texttt{\textbackslash{}\allowbreak{}beta\_\allowbreak{}n\textasciicircum{}\textbackslash{}\allowbreak{}star(\textbackslash{}\allowbreak{}alpha;\allowbreak{}Q,\allowbreak{}\textbackslash{}\allowbreak{}Gamma,\allowbreak{}r)=\allowbreak{}\textbackslash{}\allowbreak{}sup\_\allowbreak{}\{\textbackslash{}\allowbreak{}phi\textbackslash{}\allowbreak{}in[0,\allowbreak{}1]\textasciicircum{}\{\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n\}\allowbreak{}\}\allowbreak{}\textbackslash{}\allowbreak{}\{\textbackslash{}\allowbreak{}mathbb E\_\allowbreak{}\{P\_\allowbreak{}\{1,\allowbreak{}n\}\allowbreak{}\textasciicircum{}\{Q\}\allowbreak{}(\textbackslash{}\allowbreak{}cdot\textbackslash{}\allowbreak{}mid r)\}\allowbreak{}[\textbackslash{}\allowbreak{}phi(Z)]:\allowbreak{}\textbackslash{}\allowbreak{}sup\_\allowbreak{}\{P\textbackslash{}\allowbreak{}in\textbackslash{}\allowbreak{}mathcal M\_\allowbreak{}\{0,\allowbreak{}n\}\allowbreak{}(\textbackslash{}\allowbreak{}Gamma;\allowbreak{}r)\}\allowbreak{}\textbackslash{}\allowbreak{}mathbb E\_\allowbreak{}P[\textbackslash{}\allowbreak{}phi(Z)]\textbackslash{}\allowbreak{}le\textbackslash{}\allowbreak{}alpha\textbackslash{}\allowbreak{}\}\allowbreak{}}
+\par\smallskip\noindent\emph{Inputs.} \texttt{\textbackslash{}\allowbreak{}phi}; \texttt{P\_\allowbreak{}\{1,\allowbreak{}n\}\allowbreak{}\textasciicircum{}\{Q\}\allowbreak{}(\textbackslash{}\allowbreak{}cdot\textbackslash{}\allowbreak{}mid r)}; \texttt{\textbackslash{}\allowbreak{}mathcal M\_\allowbreak{}\{0,\allowbreak{}n\}\allowbreak{}(\textbackslash{}\allowbreak{}Gamma;\allowbreak{}r)}; \texttt{\textbackslash{}\allowbreak{}alpha}.
+\end{definition}
+
+\begin{definition}[def:extreme-laws]\label{def:extreme-laws}
+\par\smallskip\noindent\emph{Defined object.} \texttt{global conditional Rosenbaum extreme laws}
+\par\smallskip\noindent\emph{Construction.} \texttt{v\_\allowbreak{}\{i,\allowbreak{}S\}\allowbreak{}(j)=\allowbreak{}\textbackslash{}\allowbreak{}Gamma\_\allowbreak{}i/\allowbreak{}(|S|\textbackslash{}\allowbreak{}Gamma\_\allowbreak{}i+\allowbreak{}m\_\allowbreak{}i-\allowbreak{}|S|)\textbackslash{}\allowbreak{}text\{ if \}\allowbreak{}j\textbackslash{}\allowbreak{}in S\textbackslash{}\allowbreak{}text\{ and \}\allowbreak{}v\_\allowbreak{}\{i,\allowbreak{}S\}\allowbreak{}(j)=\allowbreak{}1/\allowbreak{}(|S|\textbackslash{}\allowbreak{}Gamma\_\allowbreak{}i+\allowbreak{}m\_\allowbreak{}i-\allowbreak{}|S|)\textbackslash{}\allowbreak{}text\{ if \}\allowbreak{}j\textbackslash{}\allowbreak{}notin S;\allowbreak{}\textbackslash{}\allowbreak{}quad\textbackslash{}\allowbreak{}mathcal V\_\allowbreak{}n=\allowbreak{}\textbackslash{}\allowbreak{}\{P\_\allowbreak{}v:\allowbreak{}P\_\allowbreak{}v(z)=\allowbreak{}\textbackslash{}\allowbreak{}prod\_\allowbreak{}\{i=\allowbreak{}1\}\allowbreak{}\textasciicircum{}nv\_\allowbreak{}\{i,\allowbreak{}S\_\allowbreak{}i\}\allowbreak{}(z\_\allowbreak{}i),\allowbreak{}\textbackslash{}\allowbreak{} \textbackslash{}\allowbreak{}varnothing\textbackslash{}\allowbreak{}subsetneq S\_\allowbreak{}i\textbackslash{}\allowbreak{}subsetneq\textbackslash{}\allowbreak{}\{1,\allowbreak{}\textbackslash{}\allowbreak{}ldots,\allowbreak{}m\_\allowbreak{}i\textbackslash{}\allowbreak{}\}\allowbreak{}\textbackslash{}\allowbreak{}text\{ for every \}\allowbreak{}i\textbackslash{}\allowbreak{}\}\allowbreak{}}
+\par\smallskip\noindent\emph{Inputs.} \texttt{\textbackslash{}\allowbreak{}Gamma\_\allowbreak{}i}; \texttt{m\_\allowbreak{}i}; \texttt{n}; \texttt{Z}.
+\end{definition}
+
+\begin{definition}[def:monotone-vertices]\label{def:monotone-vertices}
+\par\smallskip\noindent\emph{Defined object.} \texttt{conditional indexed upper-\allowbreak{}set-\allowbreak{}candidate extreme laws}
+\par\smallskip\noindent\emph{Construction.} \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal V_n^Q(r)=\{P_v\in\mathcal V_n:S_i=\{m_i-k_i+1,\ldots,m_i\}\text{ for some }k_i\in\{1,\ldots,m_i-1\}\text{ for every }i\}\)}}\par\noindent
+\par\smallskip\noindent\emph{Inputs.} \texttt{\textbackslash{}\allowbreak{}mathcal V\_\allowbreak{}n}; \texttt{Q\_\allowbreak{}i(j;\allowbreak{}r\_\allowbreak{}i)}; \texttt{m\_\allowbreak{}i}; \texttt{n}; \texttt{r}.
+\end{definition}
+
+\begin{definition}[def:classical-tilt]\label{def:classical-tilt}
+\par\smallskip\noindent\emph{Defined object.} \texttt{classical conditional extreme-\allowbreak{}tilt law}
+\par\smallskip\noindent\emph{Construction.} \texttt{P\_\allowbreak{}n\textasciicircum{}+\allowbreak{}(z)=\allowbreak{}\textbackslash{}\allowbreak{}prod\_\allowbreak{}\{i=\allowbreak{}1\}\allowbreak{}\textasciicircum{}np\_\allowbreak{}i\textasciicircum{}+\allowbreak{}(z\_\allowbreak{}i),\allowbreak{}\textbackslash{}\allowbreak{}quad p\_\allowbreak{}i\textasciicircum{}+\allowbreak{}(m\_\allowbreak{}i)=\allowbreak{}\textbackslash{}\allowbreak{}Gamma\_\allowbreak{}i/\allowbreak{}(\textbackslash{}\allowbreak{}Gamma\_\allowbreak{}i+\allowbreak{}m\_\allowbreak{}i-\allowbreak{}1),\allowbreak{}\textbackslash{}\allowbreak{}quad p\_\allowbreak{}i\textasciicircum{}+\allowbreak{}(j)=\allowbreak{}1/\allowbreak{}(\textbackslash{}\allowbreak{}Gamma\_\allowbreak{}i+\allowbreak{}m\_\allowbreak{}i-\allowbreak{}1)\textbackslash{}\allowbreak{}text\{ for \}\allowbreak{}j<m\_\allowbreak{}i}
+\par\smallskip\noindent\emph{Inputs.} \texttt{\textbackslash{}\allowbreak{}Gamma\_\allowbreak{}i}; \texttt{m\_\allowbreak{}i}; \texttt{n}; \texttt{Z}.
+\end{definition}
+
+\begin{definition}[def:np-rule]\label{def:np-rule}
+\par\smallskip\noindent\emph{Defined object.} \texttt{generalized conditional Neyman-\allowbreak{}-\allowbreak{}Pearson rule}
+\par\smallskip\noindent\emph{Construction.} \texttt{\textbackslash{}\allowbreak{}phi\_\allowbreak{}\{\textbackslash{}\allowbreak{}alpha,\allowbreak{}P\_\allowbreak{}0\}\allowbreak{}\textasciicircum{}\{\textbackslash{}\allowbreak{}mathrm\{NP\}\allowbreak{}\}\allowbreak{}(z;\allowbreak{}r)=\allowbreak{}\textbackslash{}\allowbreak{}mathbf 1\textbackslash{}\allowbreak{}\{P\_\allowbreak{}\{1,\allowbreak{}n\}\allowbreak{}\textasciicircum{}Q(z\textbackslash{}\allowbreak{}mid r)>cP\_\allowbreak{}0(z)\textbackslash{}\allowbreak{}\}\allowbreak{}+\allowbreak{}\textbackslash{}\allowbreak{}rho(z)\textbackslash{}\allowbreak{}mathbf 1\textbackslash{}\allowbreak{}\{P\_\allowbreak{}\{1,\allowbreak{}n\}\allowbreak{}\textasciicircum{}Q(z\textbackslash{}\allowbreak{}mid r)=\allowbreak{}cP\_\allowbreak{}0(z)\textbackslash{}\allowbreak{}\}\allowbreak{},\allowbreak{}\textbackslash{}\allowbreak{}quad c\textbackslash{}\allowbreak{}geq0,\allowbreak{}\textbackslash{}\allowbreak{}quad\textbackslash{}\allowbreak{}rho\textbackslash{}\allowbreak{}in[0,\allowbreak{}1]\textasciicircum{}\{\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n\}\allowbreak{},\allowbreak{}\textbackslash{}\allowbreak{}quad\textbackslash{}\allowbreak{}mathbb E\_\allowbreak{}\{P\_\allowbreak{}0\}\allowbreak{}[\textbackslash{}\allowbreak{}phi\_\allowbreak{}\{\textbackslash{}\allowbreak{}alpha,\allowbreak{}P\_\allowbreak{}0\}\allowbreak{}\textasciicircum{}\{\textbackslash{}\allowbreak{}mathrm\{NP\}\allowbreak{}\}\allowbreak{}(Z;\allowbreak{}r)]=\allowbreak{}\textbackslash{}\allowbreak{}alpha;\allowbreak{}\textbackslash{}\allowbreak{}text\{ the vector \}\allowbreak{}\textbackslash{}\allowbreak{}rho\textbackslash{}\allowbreak{}text\{ is assignment-\allowbreak{}dependent on the tie set and is selected jointly with \}\allowbreak{}c\textbackslash{}\allowbreak{}text\{ to meet every additional composite-\allowbreak{}null feasibility and complementary-\allowbreak{}slackness condition imposed by the testing problem\}\allowbreak{}}
+\par\smallskip\noindent\emph{Inputs.} \texttt{P\_\allowbreak{}\{1,\allowbreak{}n\}\allowbreak{}\textasciicircum{}\{Q\}\allowbreak{}(\textbackslash{}\allowbreak{}cdot\textbackslash{}\allowbreak{}mid r)}; \texttt{P\_\allowbreak{}0}; \texttt{\textbackslash{}\allowbreak{}alpha}; \texttt{c}; \texttt{\textbackslash{}\allowbreak{}rho}; \texttt{Z}; \texttt{r}.
+\end{definition}
+
+\begin{definition}[def:mixture-law]\label{def:mixture-law}
+\par\smallskip\noindent\emph{Defined object.} \texttt{convexified conditional adversary law}
+\par\smallskip\noindent\emph{Construction.} \texttt{P\_\allowbreak{}\textbackslash{}\allowbreak{}lambda=\allowbreak{}\textbackslash{}\allowbreak{}sum\_\allowbreak{}\{P\_\allowbreak{}v\textbackslash{}\allowbreak{}in\textbackslash{}\allowbreak{}mathcal V\_\allowbreak{}n\}\allowbreak{}\textbackslash{}\allowbreak{}lambda(P\_\allowbreak{}v)P\_\allowbreak{}v,\allowbreak{}\textbackslash{}\allowbreak{}quad\textbackslash{}\allowbreak{}lambda\textbackslash{}\allowbreak{}in\textbackslash{}\allowbreak{}Delta(\textbackslash{}\allowbreak{}mathcal V\_\allowbreak{}n)}
+\par\smallskip\noindent\emph{Inputs.} \texttt{\textbackslash{}\allowbreak{}lambda}; \texttt{\textbackslash{}\allowbreak{}mathcal V\_\allowbreak{}n}; \texttt{P\_\allowbreak{}v}.
+\end{definition}
+
+\begin{definition}[def:lf-mixture-handle]\label{def:lf-mixture-handle}
+\par\smallskip\noindent\emph{Defined object.} \texttt{least-\allowbreak{}favorable-\allowbreak{}mixture finite dual}
+\par\smallskip\noindent\emph{Construction.} \texttt{\textbackslash{}\allowbreak{}min\_\allowbreak{}\{c\textbackslash{}\allowbreak{}geq0,\allowbreak{}\textbackslash{}\allowbreak{},\allowbreak{}\textbackslash{}\allowbreak{}lambda\textbackslash{}\allowbreak{}in\textbackslash{}\allowbreak{}Delta(\textbackslash{}\allowbreak{}mathcal V\_\allowbreak{}n)\}\allowbreak{}\textbackslash{}\allowbreak{}left\textbackslash{}\allowbreak{}\{c\textbackslash{}\allowbreak{}alpha+\allowbreak{}\textbackslash{}\allowbreak{}sum\_\allowbreak{}\{z\textbackslash{}\allowbreak{}in\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n\}\allowbreak{}[P\_\allowbreak{}\{1,\allowbreak{}n\}\allowbreak{}\textasciicircum{}\{Q\}\allowbreak{}(z\textbackslash{}\allowbreak{}mid r)-\allowbreak{}cP\_\allowbreak{}\textbackslash{}\allowbreak{}lambda(z)]\_\allowbreak{}+\allowbreak{}\textbackslash{}\allowbreak{}right\textbackslash{}\allowbreak{}\}\allowbreak{};\allowbreak{}\textbackslash{}\allowbreak{}quad \textbackslash{}\allowbreak{}phi(z)=\allowbreak{}\textbackslash{}\allowbreak{}mathbf1\textbackslash{}\allowbreak{}\{P\_\allowbreak{}\{1,\allowbreak{}n\}\allowbreak{}\textasciicircum{}\{Q\}\allowbreak{}(z\textbackslash{}\allowbreak{}mid r)>cP\_\allowbreak{}\textbackslash{}\allowbreak{}lambda(z)\textbackslash{}\allowbreak{}\}\allowbreak{}+\allowbreak{}\textbackslash{}\allowbreak{}rho(z)\textbackslash{}\allowbreak{}mathbf1\textbackslash{}\allowbreak{}\{P\_\allowbreak{}\{1,\allowbreak{}n\}\allowbreak{}\textasciicircum{}\{Q\}\allowbreak{}(z\textbackslash{}\allowbreak{}mid r)=\allowbreak{}cP\_\allowbreak{}\textbackslash{}\allowbreak{}lambda(z)\textbackslash{}\allowbreak{}\}\allowbreak{},\allowbreak{}\textbackslash{}\allowbreak{}text\{ where the assignment-\allowbreak{}dependent tie vector is selected so that \}\allowbreak{}\textbackslash{}\allowbreak{}mathbb E\_\allowbreak{}\{P\_\allowbreak{}\textbackslash{}\allowbreak{}lambda\}\allowbreak{}\textbackslash{}\allowbreak{}phi=\allowbreak{}\textbackslash{}\allowbreak{}alpha,\allowbreak{}\textbackslash{}\allowbreak{} \textbackslash{}\allowbreak{}mathbb E\_\allowbreak{}\{P\_\allowbreak{}v\}\allowbreak{}\textbackslash{}\allowbreak{}phi\textbackslash{}\allowbreak{}leq\textbackslash{}\allowbreak{}alpha\textbackslash{}\allowbreak{} (P\_\allowbreak{}v\textbackslash{}\allowbreak{}in\textbackslash{}\allowbreak{}mathcal V\_\allowbreak{}n),\allowbreak{}\textbackslash{}\allowbreak{}text\{ and \}\allowbreak{}\textbackslash{}\allowbreak{}lambda(P\_\allowbreak{}v)(\textbackslash{}\allowbreak{}alpha-\allowbreak{}\textbackslash{}\allowbreak{}mathbb E\_\allowbreak{}\{P\_\allowbreak{}v\}\allowbreak{}\textbackslash{}\allowbreak{}phi)=\allowbreak{}0\textbackslash{}\allowbreak{} (P\_\allowbreak{}v\textbackslash{}\allowbreak{}in\textbackslash{}\allowbreak{}mathcal V\_\allowbreak{}n)\textbackslash{}\allowbreak{}text\{ together with the coordinatewise complementary-\allowbreak{}slackness equations\}\allowbreak{}}
+\par\smallskip\noindent\emph{Inputs.} \texttt{P\_\allowbreak{}\textbackslash{}\allowbreak{}lambda}; \texttt{\textbackslash{}\allowbreak{}lambda}; \texttt{\textbackslash{}\allowbreak{}mathcal V\_\allowbreak{}n}; \texttt{P\_\allowbreak{}v}; \texttt{\textbackslash{}\allowbreak{}alpha}; \texttt{P\_\allowbreak{}\{1,\allowbreak{}n\}\allowbreak{}\textasciicircum{}\{Q\}\allowbreak{}(\textbackslash{}\allowbreak{}cdot\textbackslash{}\allowbreak{}mid r)}; \texttt{c}; \texttt{\textbackslash{}\allowbreak{}rho}; \texttt{\textbackslash{}\allowbreak{}phi}.
+\end{definition}
+
+\begin{definition}[def:validity-region]\label{def:validity-region}
+\par\smallskip\noindent\emph{Defined object.} \texttt{conditional Rosenbaum validity region}
+\par\smallskip\noindent\emph{Construction.} \texttt{\textbackslash{}\allowbreak{}mathcal A\_\allowbreak{}n(Q,\allowbreak{}\textbackslash{}\allowbreak{}Gamma;\allowbreak{}r)=\allowbreak{}\textbackslash{}\allowbreak{}\{\textbackslash{}\allowbreak{}alpha\textbackslash{}\allowbreak{}in(0,\allowbreak{}1):\allowbreak{}\textbackslash{}\allowbreak{}text\{there exist \}\allowbreak{}c\textbackslash{}\allowbreak{}geq0\textbackslash{}\allowbreak{}text\{ and assignment-\allowbreak{}dependent \}\allowbreak{}\textbackslash{}\allowbreak{}rho\textbackslash{}\allowbreak{}in[0,\allowbreak{}1]\textasciicircum{}\{\textbackslash{}\allowbreak{}Omega\_\allowbreak{}n\}\allowbreak{}\textbackslash{}\allowbreak{}text\{ such that \}\allowbreak{}\textbackslash{}\allowbreak{}mathbb E\_\allowbreak{}\{P\_\allowbreak{}n\textasciicircum{}+\allowbreak{}\}\allowbreak{}[\textbackslash{}\allowbreak{}phi\_\allowbreak{}\{\textbackslash{}\allowbreak{}alpha,\allowbreak{}P\_\allowbreak{}n\textasciicircum{}+\allowbreak{}\}\allowbreak{}\textasciicircum{}\{\textbackslash{}\allowbreak{}mathrm\{NP\}\allowbreak{}\}\allowbreak{}(Z;\allowbreak{}r)]=\allowbreak{}\textbackslash{}\allowbreak{}alpha\textbackslash{}\allowbreak{}text\{ and \}\allowbreak{}\textbackslash{}\allowbreak{}max\_\allowbreak{}\{P\_\allowbreak{}v\textbackslash{}\allowbreak{}in\textbackslash{}\allowbreak{}mathcal V\_\allowbreak{}n\}\allowbreak{}\textbackslash{}\allowbreak{}mathbb E\_\allowbreak{}\{P\_\allowbreak{}v\}\allowbreak{}[\textbackslash{}\allowbreak{}phi\_\allowbreak{}\{\textbackslash{}\allowbreak{}alpha,\allowbreak{}P\_\allowbreak{}n\textasciicircum{}+\allowbreak{}\}\allowbreak{}\textasciicircum{}\{\textbackslash{}\allowbreak{}mathrm\{NP\}\allowbreak{}\}\allowbreak{}(Z;\allowbreak{}r)]\textbackslash{}\allowbreak{}leq\textbackslash{}\allowbreak{}alpha\textbackslash{}\allowbreak{}\}\allowbreak{}}
+\par\smallskip\noindent\emph{Inputs.} \texttt{\textbackslash{}\allowbreak{}mathcal V\_\allowbreak{}n}; \texttt{P\_\allowbreak{}v}; \texttt{P\_\allowbreak{}n\textasciicircum{}+\allowbreak{}}; \texttt{\textbackslash{}\allowbreak{}alpha}; \texttt{\textbackslash{}\allowbreak{}phi\_\allowbreak{}\{\textbackslash{}\allowbreak{}alpha,\allowbreak{}P\_\allowbreak{}n\textasciicircum{}+\allowbreak{}\}\allowbreak{}\textasciicircum{}\{\textbackslash{}\allowbreak{}mathrm\{NP\}\allowbreak{}\}\allowbreak{}}; \texttt{c}; \texttt{\textbackslash{}\allowbreak{}rho}; \texttt{r}.
+\end{definition}
+
+\begin{definition}[def:local-rosenbaum-polytope]\label{def:local-rosenbaum-polytope}
+\par\smallskip\noindent\emph{Defined object.} \texttt{local Rosenbaum probability polytope}
+\par\smallskip\noindent\emph{Construction.} \texttt{\textbackslash{}\allowbreak{}mathcal P\_\allowbreak{}m(\textbackslash{}\allowbreak{}Gamma)=\allowbreak{}\textbackslash{}\allowbreak{}left\textbackslash{}\allowbreak{}\{p\textbackslash{}\allowbreak{}in[0,\allowbreak{}1]\textasciicircum{}m:\allowbreak{}\textbackslash{}\allowbreak{}sum\_\allowbreak{}\{j=\allowbreak{}1\}\allowbreak{}\textasciicircum{}mp\_\allowbreak{}j=\allowbreak{}1\textbackslash{}\allowbreak{}text\{ and \}\allowbreak{}p\_\allowbreak{}j\textbackslash{}\allowbreak{}leq\textbackslash{}\allowbreak{}Gamma p\_\allowbreak{}k\textbackslash{}\allowbreak{}text\{ for every \}\allowbreak{}j,\allowbreak{}k\textbackslash{}\allowbreak{}in\textbackslash{}\allowbreak{}\{1,\allowbreak{}\textbackslash{}\allowbreak{}ldots,\allowbreak{}m\textbackslash{}\allowbreak{}\}\allowbreak{}\textbackslash{}\allowbreak{}right\textbackslash{}\allowbreak{}\}\allowbreak{}}
+\par\smallskip\noindent\emph{Inputs.} \texttt{\textbackslash{}\allowbreak{}Gamma\_\allowbreak{}i}; \texttt{m\_\allowbreak{}i}.
+\end{definition}
+
+\begin{definition}[def:replicated-frontier]\label{def:replicated-frontier}
+\par\smallskip\noindent\emph{Defined object.} \texttt{replicated conditional all-\allowbreak{}tests frontier}
+\par\smallskip\noindent\emph{Construction.} \texttt{\textbackslash{}\allowbreak{}beta\_\allowbreak{}\{n,\allowbreak{}\textbackslash{}\allowbreak{}mathrm\{rep\}\allowbreak{}\}\allowbreak{}\textasciicircum{}\textbackslash{}\allowbreak{}star(\textbackslash{}\allowbreak{}alpha;\allowbreak{}Q,\allowbreak{}\textbackslash{}\allowbreak{}Gamma)=\allowbreak{}\textbackslash{}\allowbreak{}sup\_\allowbreak{}\{\textbackslash{}\allowbreak{}phi:\allowbreak{}\textbackslash{}\allowbreak{}\{1,\allowbreak{}\textbackslash{}\allowbreak{}ldots,\allowbreak{}m\textbackslash{}\allowbreak{}\}\allowbreak{}\textasciicircum{}n\textbackslash{}\allowbreak{}to[0,\allowbreak{}1]\}\allowbreak{}\textbackslash{}\allowbreak{}left\textbackslash{}\allowbreak{}\{\textbackslash{}\allowbreak{}mathbb E\_\allowbreak{}\{q\textasciicircum{}\{\textbackslash{}\allowbreak{}otimes n\}\allowbreak{}\}\allowbreak{}[\textbackslash{}\allowbreak{}phi(Z)]:\allowbreak{}\textbackslash{}\allowbreak{}sup\_\allowbreak{}\{p\_\allowbreak{}1,\allowbreak{}\textbackslash{}\allowbreak{}ldots,\allowbreak{}p\_\allowbreak{}n\textbackslash{}\allowbreak{}in\textbackslash{}\allowbreak{}mathcal P\_\allowbreak{}m(\textbackslash{}\allowbreak{}Gamma)\}\allowbreak{}\textbackslash{}\allowbreak{}mathbb E\_\allowbreak{}\{\textbackslash{}\allowbreak{}otimes\_\allowbreak{}\{i=\allowbreak{}1\}\allowbreak{}\textasciicircum{}np\_\allowbreak{}i\}\allowbreak{}[\textbackslash{}\allowbreak{}phi(Z)]\textbackslash{}\allowbreak{}leq\textbackslash{}\allowbreak{}alpha\textbackslash{}\allowbreak{}right\textbackslash{}\allowbreak{}\}\allowbreak{};\allowbreak{}\textbackslash{}\allowbreak{}text\{ this is the specialization of \}\allowbreak{}\{\textbackslash{}\allowbreak{}rm def:\allowbreak{}frontier\}\allowbreak{}\textbackslash{}\allowbreak{}text\{ at \}\allowbreak{}r\textasciicircum{}\{(n)\}\allowbreak{}=\allowbreak{}(r\_\allowbreak{}0,\allowbreak{}\textbackslash{}\allowbreak{}ldots,\allowbreak{}r\_\allowbreak{}0)\textbackslash{}\allowbreak{}text\{ under \}\allowbreak{}\{\textbackslash{}\allowbreak{}rm ass:\allowbreak{}replicated-\allowbreak{}conditional-\allowbreak{}design\}\allowbreak{},\allowbreak{}\textbackslash{}\allowbreak{}text\{ not a competing estimand\}\allowbreak{}}
+\par\smallskip\noindent\emph{Inputs.} \texttt{n}; \texttt{\textbackslash{}\allowbreak{}alpha}; \texttt{Q}; \texttt{\textbackslash{}\allowbreak{}Gamma\_\allowbreak{}i}; \texttt{\textbackslash{}\allowbreak{}phi}; \texttt{Z}; \texttt{ass:\allowbreak{}replicated-\allowbreak{}conditional-\allowbreak{}design}; \texttt{def:\allowbreak{}local-\allowbreak{}rosenbaum-\allowbreak{}polytope}; \texttt{def:\allowbreak{}frontier}.
+\end{definition}
+
+\begin{definition}[def:all-tests-design-sensitivity]\label{def:all-tests-design-sensitivity}
+\par\smallskip\noindent\emph{Defined object.} \texttt{all-\allowbreak{}tests replicated design-\allowbreak{}sensitivity boundary}
+\par\smallskip\noindent\emph{Construction.} \texttt{\textbackslash{}\allowbreak{}widetilde\textbackslash{}\allowbreak{}Gamma\_\allowbreak{}\{\textbackslash{}\allowbreak{}mathrm\{all\}\allowbreak{}\}\allowbreak{}\textasciicircum{}\textbackslash{}\allowbreak{}star(Q)=\allowbreak{}\textbackslash{}\allowbreak{}sup\textbackslash{}\allowbreak{}left\textbackslash{}\allowbreak{}\{\textbackslash{}\allowbreak{}Gamma\textbackslash{}\allowbreak{}geq1:\allowbreak{}\textbackslash{}\allowbreak{}lim\_\allowbreak{}\{n\textbackslash{}\allowbreak{}to\textbackslash{}\allowbreak{}infty\}\allowbreak{}\textbackslash{}\allowbreak{}beta\_\allowbreak{}\{n,\allowbreak{}\textbackslash{}\allowbreak{}mathrm\{rep\}\allowbreak{}\}\allowbreak{}\textasciicircum{}\textbackslash{}\allowbreak{}star(\textbackslash{}\allowbreak{}alpha;\allowbreak{}Q,\allowbreak{}\textbackslash{}\allowbreak{}Gamma)=\allowbreak{}1\textbackslash{}\allowbreak{}right\textbackslash{}\allowbreak{}\}\allowbreak{}}
+\par\smallskip\noindent\emph{Inputs.} \texttt{n}; \texttt{\textbackslash{}\allowbreak{}alpha}; \texttt{Q}; \texttt{\textbackslash{}\allowbreak{}Gamma\_\allowbreak{}i}; \texttt{ass:\allowbreak{}replicated-\allowbreak{}conditional-\allowbreak{}design}; \texttt{ass:\allowbreak{}test-\allowbreak{}level}; \texttt{def:\allowbreak{}replicated-\allowbreak{}frontier}.
+\end{definition}
+
+\section{Main results}
+
+\begin{lemma}[lem:vertex-reduction]\label{lem:vertex-reduction}
+Under \({\rm ass:conditional-independence}\) and \({\rm ass:rosenbaum-odds}\), every conditional test \(\phi\) satisfies \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \sup_{P\in\mathcal M_{0,n}(\Gamma;r)}\mathbb E_P[\phi(Z)]=\max_{P_v\in\mathcal V_n}\mathbb E_{P_v}[\phi(Z)]\)}}\par\noindent.
+\end{lemma}
+\begin{proof}
+For each matched set \(i\), let \(\mathcal P_i\) be the local polytope of vectors \(p=(p_1,\ldots,p_{m_i})\) satisfying \(p_j\geq0\), \(\sum_jp_j=1\), and \(p_j\leq\Gamma_i p_k\) for every \(j,k\). The ratio condition in \({\rm ass:rosenbaum-odds}\) places the conditional law of \(Z_i\) in \(\mathcal P_i\). Conversely, every member of \(\mathcal P_i\) is strictly positive: if \(p_k=0\), then \(p_j\leq\Gamma_i p_k=0\) for every \(j\), contradicting normalization. It therefore satisfies the ratio condition.
+
+We first determine the extreme points of \(\mathcal P_i\). If \(\Gamma_i=1\), all coordinates are equal, so \(\mathcal P_i\) is the singleton uniform law; this is the value of every vector \(v_{i,S}\) in \({\rm def:extreme-laws}\). Suppose \(\Gamma_i>1\), let \(p\) be extreme, and put \(a=\min_jp_j\) and \(b=\max_jp_j\). If \(b<\Gamma_i a\), every ratio inequality is strict. Since \(m_i\geq2\), for distinct \(j,k\) and all sufficiently small \(\varepsilon>0\), both \(p+\varepsilon(e_j-e_k)\) and \(p-\varepsilon(e_j-e_k)\) remain in \(\mathcal P_i\), contradicting extremality. Hence \(b=\Gamma_i a\).
+
+Let \(A=\{j:p_j=a\}\), \(B=\{j:p_j=b\}\), and \(C=\{1,\ldots,m_i\}\setminus(A\cup B)\). The active ratio equalities are precisely \(p_j=\Gamma_i p_k\) with \(j\in B\) and \(k\in A\). If \(C\neq\varnothing\), fix \(c_0\in C\) and define a nonzero vector \(d\) by \(d_j=t\) on \(A\), \(d_j=\Gamma_i t\) on \(B\), \(d_{c_0}=-(|A|+\Gamma_i|B|)t\), and \(d_j=0\) on \(C\setminus\{c_0\}\), where \(t\neq0\). Then \(\sum_jd_j=0\), and \(d\) preserves every active equality. Finiteness of the inactive strict inequalities and positivity of \(p\) imply that, for sufficiently small \(\varepsilon>0\), both \(p+\varepsilon d\) and \(p-\varepsilon d\) belong to \(\mathcal P_i\), again contradicting extremality. Thus \(C=\varnothing\). Since \(\Gamma_i>1\), both \(A\) and \(B\) are nonempty, and normalization gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle p_j=\frac{\Gamma_i}{|B|\Gamma_i+m_i-|B|}\quad(j\in B),\qquad p_j=\frac{1}{|B|\Gamma_i+m_i-|B|}\quad(j\notin B).\)}}\par\noindent}}
+\]
+Therefore \(p=v_{i,B}\). Conversely, at \(v_{i,S}\), the active equalities \(p_j=\Gamma_i p_k\) for \(j\in S\) and \(k\notin S\), together with \(\sum_jp_j=1\), define a singleton face. Hence \(v_{i,S}\) is extreme. The local extreme points are exactly the two-level tilts in \({\rm def:extreme-laws}\), with harmless duplication when \(\Gamma_i=1\).
+
+By \({\rm ass:conditional-independence}\) and \({\rm def:gamma-null}\), each \(P\in\mathcal M_{0,n}(\Gamma;r)\) has the product form \(P(z)=\prod_{i=1}^np_i(z_i)\) with \(p_i\in\mathcal P_i\). For fixed \(\phi\),
+\[
+ \mathbb E_P[\phi(Z)]=\sum_{z\in\Omega_n}\phi(z)\prod_{i=1}^np_i(z_i)
+\]
+is linear in each \(p_i\) with the other factors fixed. A linear functional on a compact finite-dimensional polytope attains its maximum at an extreme point: if a maximizer is not extreme, one of the endpoints in a nontrivial convex decomposition is also a maximizer, and iteration over the finite face dimension reaches an extreme point. Replacing \(p_1,\ldots,p_n\) successively by extreme-point maximizers never decreases the expectation. The resulting product law lies in \(\mathcal V_n\), so
+\[
+ \mathbb E_P[\phi(Z)]\leq\max_{P_v\in\mathcal V_n}\mathbb E_{P_v}[\phi(Z)].
+\]
+Every \(P_v\in\mathcal V_n\) is a product law satisfying all bounded-odds inequalities, and hence belongs to \(\mathcal M_{0,n}(\Gamma;r)\). Taking the supremum over the null class gives the reverse inequality and proves the asserted equality.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This lemma converts the bounded-odds product null into the exact finite product-vertex constraints used by every finite primal, dual, validity, and numerical certificate. \textit{Gap.} Without the reduction, the all-tests frontier retains an infinite composite-null supremum and exact size certificates are not finitely auditable. \textit{Consumer.} Conditional sensitivity software can report a maximizing product vertex together with the rejection rule as an exact size certificate.
+
+\begin{theorem}[thm:pair-lf-frontier]\label{thm:pair-lf-frontier}
+If \(m_i=2\) for every \(i\), then, under \({\rm ass:sharp-null}\), \({\rm ass:alternative-prior-factorization}\), \({\rm ass:alternative-record-factorization}\), \({\rm ass:likelihood-common-support}\), \({\rm ass:conditioning-support}\), and \({\rm ass:causal-likelihood-separation}\), \(P_n^+\in\mathcal M_{0,n}(\Gamma;r)\), \(\phi_{\alpha,P_n^+}^{\mathrm{NP}}(\cdot;r)\) is level \(\alpha\) for \(\mathcal M_{0,n}(\Gamma;r)\), and \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \beta_n^\star(\alpha;Q,\Gamma,r)=\mathbb E_{P_{1,n}^{Q}(\cdot\mid r)}[\phi_{\alpha,P_n^+}^{\mathrm{NP}}(Z;r)]\)}}\par\noindent for every \(\alpha\in(0,1)\).
+\end{theorem}
+\begin{proof}
+Set \(q_i(j)=Q_i(j;r_i)/(Q_i(1;r_i)+Q_i(2;r_i))\). The likelihood common-support and conditioning assumptions, together with \({\rm def:null-outcome-law}\), \({\rm def:common-record-support}\), and \({\rm def:causal-bayes-factor}\), make these probabilities finite and strictly positive. By the two alternative factorization assumptions, the uniform baseline \({\rm def:alternative-prior}\), and Bayes' formula \({\rm def:alternative-law}\),
+\[
+ q(z):=P_{1,n}^{Q}(z\mid r)=\prod_{i=1}^nq_i(z_i).
+\]
+Put \(\vartheta_i^+=\Gamma_i/(1+\Gamma_i)\). The law \(P_n^+\) in \({\rm def:classical-tilt}\) is the product law with
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle P_n^+(Z_i=1)=1-\vartheta_i^+=\frac1{1+\Gamma_i},\qquad P_n^+(Z_i=2)=\vartheta_i^+=\frac{\Gamma_i}{1+\Gamma_i}.\)}}\par\noindent}}
+\]
+Its local probability ratios are \(\Gamma_i\) and \(\Gamma_i^{-1}\). It therefore satisfies \({\rm ass:conditional-independence}\) and \({\rm ass:rosenbaum-odds}\), whence \(P_n^+\in\mathcal M_{0,n}(\Gamma;r)\) by \({\rm def:gamma-null}\).
+
+Write \(p^+(z)=P_n^+(z)\). The simple likelihood ratio is
+\[
+ L(z)=\frac{q(z)}{p^+(z)}=\prod_{i=1}^n\frac{q_i(z_i)}{p_i^+(z_i)}.
+\]
+Changing coordinate \(i\) from position \(1\) to position \(2\) multiplies \(L\) by
+\[
+ \frac{q_i(2)/p_i^+(2)}{q_i(1)/p_i^+(1)}=\frac{Q_i(2;r_i)}{\Gamma_iQ_i(1;r_i)}>1,
+\]
+where the strict inequality is \({\rm ass:causal-likelihood-separation}\). Thus \(L\) is strictly increasing in the coordinatewise order that codes position \(1\) as zero and position \(2\) as one.
+
+Fix \(\alpha\in(0,1)\), as in \({\rm ass:test-level}\). Finiteness of \(\Omega_n\) and positivity of \(p^+\) give a likelihood-ratio value \(c>0\) such that
+\[
+ P_n^+\{L>c\}\leq\alpha\leq P_n^+\{L\geq c\}.
+\]
+Let
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \gamma=\frac{\alpha-P_n^+\{L>c\}}{P_n^+\{L=c\}}\in[0,1],\qquad
+ \phi^*(z)=\mathbf1\{L(z)>c\}+\gamma\mathbf1\{L(z)=c\}.\)}}
+\]
+The denominator is positive because \(c\) is a value of \(L\). Then \(\mathbb E_{P_n^+}\phi^*=\alpha\), and \(\phi^*\) is an instance of \(\phi_{\alpha,P_n^+}^{\mathrm{NP}}\) in \({\rm def:np-rule}\), with constant boundary randomization. Strict coordinatewise increase of \(L\) also makes \(\phi^*\) coordinatewise nondecreasing, including across its tie set.
+
+For any \(P\in\mathcal M_{0,n}(\Gamma;r)\), put \(\vartheta_i=P(Z_i=2\mid r)\). The bounded-odds inequality implies
+\[
+ \frac{\vartheta_i}{1-\vartheta_i}\leq\Gamma_i,
+ \qquad \vartheta_i\leq\vartheta_i^+.
+\]
+Conditional independence makes \(P\) the product of these Bernoulli-coordinate laws. Couple it to \(P_n^+\) using independent \(U_i\sim{\rm Unif}(0,1)\) and the indicators \(X_i=\mathbf1\{U_i\leq\vartheta_i\}\) and \(X_i^+=\mathbf1\{U_i\leq\vartheta_i^+\}\). Then \(X_i\leq X_i^+\) almost surely for all \(i\). Coordinatewise monotonicity gives
+\[
+ \mathbb E_P\phi^*\leq\mathbb E_{P_n^+}\phi^*=\alpha.
+\]
+Thus \(\phi^*\) is level \(\alpha\) for the full null class.
+
+Finally, let \(\psi:\Omega_n\to[0,1]\) have \(\mathbb E_{P_n^+}\psi\leq\alpha\). By the cutoff definition,
+\[
+ (\psi(z)-\phi^*(z))(q(z)-cp^+(z))\leq0
+\]
+for every \(z\). Therefore
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \begin{aligned}
+ \mathbb E_q(\psi-\phi^*)
+ &=\sum_{z\in\Omega_n}(\psi(z)-\phi^*(z))(q(z)-cp^+(z))+c\mathbb E_{P_n^+}(\psi-\phi^*)\\
+ &\leq0.
+ \end{aligned}\)}}
+\]
+Every test feasible in \({\rm def:frontier}\) obeys the simple-null size premise because \(P_n^+\) is itself in the composite null, whereas \(\phi^*\) is feasible by the coupling argument. Hence
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \beta_n^\star(\alpha;Q,\Gamma,r)=\mathbb E_{P_{1,n}^{Q}(\cdot\mid r)}[\phi^*(Z)]=\mathbb E_{P_{1,n}^{Q}(\cdot\mid r)}[\phi_{\alpha,P_n^+}^{\mathrm{NP}}(Z;r)].\)}}\par\noindent}}
+\]
+Under \({\rm ass:sharp-null}\), this conditional assignment calculation is a test of the Fisher sharp causal null at the fixed record \(r\).
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} For pairs, endpoint separation and positivity imply the strict score order needed by the likelihood-ratio argument, so a separate likelihood-order premise is redundant. The classical tilt then dominates every product null for the coordinatewise increasing Neyman--Pearson rule. \textit{Gap.} This is the pair specialization of the conditional all-tests frontier. It does not assert a generic Huber--Strassen representative-pair theorem beyond the directly proved Rosenbaum product argument. \textit{Consumer.} Pair-matched analyses with a prespecified causal alternative may compute the exact conditional likelihood-ratio sensitivity test at every level.
+
+\begin{proposition}[prop:pair-reduction]\label{prop:pair-reduction}
+Suppose \(m_i=2\) for every \(i\), and suppose \({\rm ass:sharp-null}\), \({\rm ass:conditional-independence}\), \({\rm ass:rosenbaum-odds}\), \({\rm ass:alternative-prior-factorization}\), \({\rm ass:alternative-record-factorization}\), \({\rm ass:likelihood-common-support}\), \({\rm ass:conditioning-support}\), and \({\rm ass:causal-likelihood-separation}\) hold. Then \(\mathcal V_n^Q(r)=\{P_n^+\}\) and \(\mathcal A_n(Q,\Gamma;r)=(0,1)\).
+\end{proposition}
+\begin{proof}
+If \(m_i=2\), the integer \(k_i\in\{1,\ldots,m_i-1\}\) in \({\rm def:monotone-vertices}\) must equal \(1\). Thus the only terminal block is \(S_i=\{2\}\), whose local probabilities are
+\[
+ v_{i,\{2\}}(1)=\frac1{1+\Gamma_i},\qquad v_{i,\{2\}}(2)=\frac{\Gamma_i}{1+\Gamma_i}.
+\]
+These are precisely the probabilities in \({\rm def:classical-tilt}\), so taking products yields
+\[
+ \mathcal V_n^Q(r)=\{P_n^+\}.
+\]
+
+Fix \(\alpha\in(0,1)\). The assumptions of the proposition permit application of \({\rm thm:pair-lf-frontier}\), which supplies a generalized Neyman--Pearson rule satisfying
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathbb E_{P_n^+}[\phi_{\alpha,P_n^+}^{\mathrm{NP}}(Z;r)]=\alpha,
+ \qquad
+ \sup_{P\in\mathcal M_{0,n}(\Gamma;r)}\mathbb E_P[\phi_{\alpha,P_n^+}^{\mathrm{NP}}(Z;r)]\leq\alpha.\)}}
+\]
+Every \(P_v\in\mathcal V_n\) is a product law and, within each pair, has a local probability ratio in \(\{1,\Gamma_i,\Gamma_i^{-1}\}\). Hence \(P_v\in\mathcal M_{0,n}(\Gamma;r)\), and
+\[
+ \max_{P_v\in\mathcal V_n}\mathbb E_{P_v}[\phi_{\alpha,P_n^+}^{\mathrm{NP}}(Z;r)]\leq\alpha.
+\]
+The cutoff and randomization from the theorem consequently satisfy \({\rm def:validity-region}\). This proves \((0,1)\subseteq\mathcal A_n(Q,\Gamma;r)\), while the reverse inclusion holds by definition. Therefore
+\[
+ \mathcal A_n(Q,\Gamma;r)=(0,1).
+\]
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The pair specialization collapses the indexed terminal-block family to the single classical tilt and makes that tilt minimax sharp at every nondegenerate level. \textit{Gap.} The dependency list records the full causal and conditional testing setup. A separate score-order premise is unnecessary for pairs because positivity and endpoint separation imply \(Q_i(2;r_i)>Q_i(1;r_i)\). \textit{Consumer.} The proposition connects the general all-tests formulation to classical pair-matched sign and McNemar sensitivity calibration without introducing a second pair-specific frontier.
+
+\begin{theorem}[thm:set-mixture-lp-characterization]\label{thm:set-mixture-lp-characterization}
+Under \({\rm ass:sharp-null}\), \({\rm ass:conditional-independence}\), \({\rm ass:rosenbaum-odds}\), \({\rm ass:alternative-prior-factorization}\), \({\rm ass:alternative-record-factorization}\), \({\rm ass:likelihood-common-support}\), \({\rm ass:conditioning-support}\), and \({\rm ass:test-level}\), for \(z\in\Omega_n\) and \(P_v\in\mathcal V_n\), write
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle q_z=P_{1,n}^{Q}(z\mid r),\qquad p_{vz}=P_v(z),\qquad \mathcal V=\mathcal V_n,\qquad \mathcal B=\mathcal V_n^Q(r).\)}}\par\noindent}}
+\]
+The family \(\mathcal B\) is the indexed terminal-block candidate family; if the scores are additionally strictly increasing as in \({\rm ass:causal-likelihood-order}\), its local terminal blocks are upper sets of the \(Q\)-ordering. For every nonempty \(\mathcal C\subseteq\mathcal V\), define the computable finite dual value
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \begin{aligned}
+ D_{\mathcal C}(\alpha)=\min_{\substack{y\in[0,\infty)^{\mathcal C},\ u\in[0,\infty)^{\Omega_n}}}\Biggl\{&\alpha\sum_{P_v\in\mathcal C}y_v+\sum_{z\in\Omega_n}u_z:\\
+ &\sum_{P_v\in\mathcal C}y_vp_{vz}+u_z\geq q_z\quad(z\in\Omega_n)\Biggr\}.
+ \end{aligned}\)}}
+\]
+Then
+\[
+ \beta_n^\star(\alpha;Q,\Gamma,r)=D_{\mathcal V}(\alpha),
+\]
+and an unrestricted least-favorable convexified mixture over \(\mathcal V\) exists for every \(\alpha\in(0,1)\). A least-favorable mixture supported on \(\mathcal B\), with a generalized Neyman--Pearson rule valid for the full Rosenbaum null and attaining \(\beta_n^\star\), exists if and only if
+\[
+ D_{\mathcal B}(\alpha)=D_{\mathcal V}(\alpha).\tag{1}
+\]
+Equivalently, (1) holds if and only if there are \(y\in[0,\infty)^{\mathcal B}\setminus\{0\}\) and \(\rho\in[0,1]^{\Omega_n}\) such that, with
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle d_y(z)=\sum_{P_v\in\mathcal B}y_vp_{vz},\qquad \phi_{y,\rho}(z)=\mathbf1\{q_z>d_y(z)\}+\rho(z)\mathbf1\{q_z=d_y(z)\},\)}}\par\noindent}}
+\]
+one has the necessary-and-sufficient inequalities and complementary-slackness equalities
+\[
+ \sum_zp_{vz}\phi_{y,\rho}(z)\leq\alpha\quad(P_v\in\mathcal V),\qquad y_v\left(\alpha-\sum_zp_{vz}\phi_{y,\rho}(z)\right)=0\quad(P_v\in\mathcal B).\tag{2}
+\]
+When (2) holds, \(c=\sum_vy_v>0\), \(\lambda(P_v)=y_v/c\), and \(d_y=cP_\lambda\). The mixture is a dual convexification and need not itself belong to the product null class.
+
+Moreover, \(P_n^+\in\mathcal V\), and the exact classical Rosenbaum validity region is
+\[
+ \mathcal A_n(Q,\Gamma;r)=\{\alpha\in(0,1):D_{\{P_n^+\}}(\alpha)=D_{\mathcal V}(\alpha)\}.\tag{3}
+\]
+For an explicit interval representation, let
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \mathcal T_+=\left\{\frac{q_z}{P_n^+(z)}:z\in\Omega_n\right\},\quad H_t=\left\{z:\frac{q_z}{P_n^+(z)}>t\right\},\quad E_t=\left\{z:\frac{q_z}{P_n^+(z)}=t\right\},\)}}\par\noindent}}
+\]
+put \(h_v(t)=\sum_{z\in H_t}p_{vz}\) and \(h_+(t)=\sum_{z\in H_t}P_n^+(z)\), and define
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle K_t=\left\{\rho\in[0,1]^{E_t}:h_v(t)+\sum_{z\in E_t}p_{vz}\rho(z)\leq h_+(t)+\sum_{z\in E_t}P_n^+(z)\rho(z)\ \text{for every }P_v\in\mathcal V\right\}.\)}}\par\noindent}}
+\]
+For nonempty \(K_t\), let \(a_t\) and \(b_t\) be the minimum and maximum over \(\rho\in K_t\) of \(h_+(t)+\sum_{z\in E_t}P_n^+(z)\rho(z)\). Then
+\[
+ \mathcal A_n(Q,\Gamma;r)=(0,1)\cap\bigcup_{\substack{t\in\mathcal T_+\\K_t\neq\varnothing}}[a_t,b_t].\tag{4}
+\]
+Thus \(\mathcal A_n\) is a finite union of tie-block intervals, and every endpoint is obtained by a finite linear program.
+
+The level-dependent supports are determined by another finite lower envelope. Let \(\mathcal D_{\mathcal C}\) be the polyhedron feasible in the definition of \(D_{\mathcal C}\). For an extreme point \(x=(y^x,u^x)\) of \(\mathcal D_{\mathcal C}\), put \(s_x=\sum_vy_v^x\) and \(b_x=\sum_zu_z^x\). Then
+\[
+ D_{\mathcal C}(\alpha)=\min_{x\in\operatorname{ext}(\mathcal D_{\mathcal C})}\{b_x+\alpha s_x\}.\tag{5}
+\]
+An extreme point \(x\in\operatorname{ext}(\mathcal D_{\mathcal B})\) supplies a full least-favorable indexed support exactly when
+\[
+ b_x+\alpha s_x\leq b_{x'}+\alpha s_{x'}\quad\text{for every }x'\in\operatorname{ext}(\mathcal D_{\mathcal V}).\tag{6}
+\]
+Candidate switch levels are the intersections on the finite lower envelope (5). Between consecutive switch levels the minimizing face is constant; at a switch it is the convex hull of the tied minimizers, and the possible mixture supports are exactly the nonzero \(y\)-coordinate supports of points on that face. If
+\[
+ \mathcal I_{\mathcal B}=\{\alpha\in(0,1):D_{\mathcal B}(\alpha)=D_{\mathcal V}(\alpha)\},
+\]
+then every \(\mathcal B\)-supported least-favorable representation at a level in \(\mathcal I_{\mathcal B}\setminus\mathcal A_n(Q,\Gamma;r)\) uses a vertex other than \(P_n^+\), while outside \(\mathcal I_{\mathcal B}\) no least-favorable mixture supported only on indexed terminal-block candidate vertices exists.
+
+The switch is nonvacuous. For \(n=1\), \(m_1=3\), \(\Gamma_1=2\), and
+\[
+ (Q_1(1;r_1),Q_1(2;r_1),Q_1(3;r_1))=(1,6/5,3),
+\]
+one has
+\[
+ \mathcal A_1(Q,2;r)=(0,2/3].\tag{7}
+\]
+At \(\alpha=7/10\), the calibrated classical rule \(\phi^+=(0,4/5,1)\) has size \(18/25>7/10\) at \(v_{\{2,3\}}=(1/5,2/5,2/5)\). The all-tests optimum and one least-favorable indexed mixture are
+\[
+ \phi^\star=(1/10,7/10,1),\qquad \beta_1^\star(7/10;Q,2,r)=197/260,\qquad \lambda=\frac{16}{21}\delta_{v_{\{3\}}}+\frac{5}{21}\delta_{v_{\{2,3\}}},\tag{8}
+\]
+where \(v_{\{3\}}=(1/4,1/4,1/2)\) is the classical tilt. Equations (1)--(8) give a finite exact algorithm for the frontier, the validity region, and every level-dependent support switch, while also detecting when the proposed indexed support restriction is invalid.
+\end{theorem}
+\begin{proof}
+By \({\rm ass:likelihood-common-support}\), \({\rm ass:conditioning-support}\), and \({\rm def:alternative-law}\), \(q_z>0\) for every \(z\in\Omega_n\), and \(\sum_zq_z=1\). By \({\rm lem:vertex-reduction}\), the frontier is the finite primal program
+\[
+ B(\alpha)=\max_{0\leq\phi\leq1}\left\{\sum_zq_z\phi(z):\sum_zp_{vz}\phi(z)\leq\alpha\ \text{for every }P_v\in\mathcal V\right\}.\tag{9}
+\]
+Applying \({\rm lem:finite-lp-strong-duality}\), with the vertices as rows and assignments as columns, gives the attained dual \(B(\alpha)=D_{\mathcal V}(\alpha)\). This proves the frontier formula and supplies an optimum on each side.
+
+For any nonempty \(\mathcal C\subseteq\mathcal V\), extending a \(D_{\mathcal C}\)-feasible vector by zero on \(\mathcal V\setminus\mathcal C\) makes it feasible for \(D_{\mathcal V}\). Hence
+\[
+ D_{\mathcal C}(\alpha)\geq D_{\mathcal V}(\alpha).\tag{10}
+\]
+For a primal-feasible \(\phi\) and dual-feasible \((y,u)\), direct expansion gives the nonnegative gap
+\[
+ \begin{aligned}
+ &\alpha\sum_vy_v+\sum_zu_z-\sum_zq_z\phi(z)\\
+ &\quad=\sum_vy_v\left(\alpha-\sum_zp_{vz}\phi(z)\right)+\sum_zu_z(1-\phi(z))\\
+ &\qquad+\sum_z\phi(z)\left(\sum_vy_vp_{vz}+u_z-q_z\right).
+ \end{aligned}\tag{11}
+\]
+Equality holds exactly when every displayed nonnegative product vanishes. Given \(y\geq0\), the smallest coordinatewise slack is \(u_z=[q_z-d_y(z)]_+\). The last two complementary-slackness families in (11) then force \(\phi(z)=1\) when \(q_z>d_y(z)\), force \(\phi(z)=0\) when \(q_z<d_y(z)\), and permit an arbitrary value in \([0,1]\) when equality holds. The first family is precisely the second condition in (2), while primal feasibility is its first condition. Thus a \(\mathcal B\)-supported dual certificate attains the full dual value if and only if (1), equivalently (2), holds.
+
+The optimum in (9) is strictly below one. Indeed, since every \(q_z>0\), power one would force \(\phi(z)=1\) for every \(z\), violating every null constraint because \(\alpha<1\). A dual-feasible point with \(y=0\) must have \(u_z\geq q_z\), hence objective at least one. Therefore each optimal certificate has \(c=\sum_vy_v>0\). Put \(\lambda(P_v)=y_v/c\). Then \(d_y=cP_\lambda\), and the rule in (2) is the generalized Neyman--Pearson rule against \(P_\lambda\). Complementary slackness gives
+\[
+ \mathbb E_{P_\lambda}[\phi]=\sum_v\lambda(P_v)\mathbb E_{P_v}[\phi]=\sum_{v:y_v>0}\lambda(P_v)\alpha=\alpha.\tag{12}
+\]
+It is calibrated under the convexified mixture, valid at every vertex, valid for the full product null by \({\rm lem:vertex-reduction}\), and optimal in (9). The mixture is a dual adversary and need not itself be a product member of \(\mathcal M_{0,n}(\Gamma;r)\). Conversely, suppose a generalized Neyman--Pearson rule against a \(\mathcal B\)-supported mixture is calibrated under that mixture, valid at every vertex, and optimal in (9). Each support vertex binds, because each expectation is at most \(\alpha\) and their mixture average is \(\alpha\). Its cutoff \(c\) is positive: cutoff zero would reject at every assignment because \(q_z>0\), contradicting calibration at \(\alpha<1\). Taking \(y_v=c\lambda(P_v)\) and \(u_z=[q_z-cP_\lambda(z)]_+\) makes every term in (11) vanish. Hence it is a \(D_{\mathcal B}\)-certificate of value \(D_{\mathcal V}\), proving (1). Taking \(\mathcal B=\mathcal V\) proves unrestricted least-favorable-mixture existence at every level.
+
+Choosing \(S_i=\{m_i\}\) in every set shows from \({\rm def:extreme-laws}\) and \({\rm def:classical-tilt}\) that \(P_n^+\in\mathcal V\). Applying the support equivalence with \(\mathcal C=\{P_n^+\}\) gives (3). To verify that this agrees exactly with \({\rm def:validity-region}\), let \(\phi\) be an NP rule calibrated under \(P_n^+\) and feasible for the composite null, and let \(\psi\) be any other composite-null-feasible rule. Since \(P_n^+\in\mathcal V\),
+\[
+ \mathbb E_{P_n^+}[\psi]\leq\alpha=\mathbb E_{P_n^+}[\phi].
+\]
+With likelihood-ratio cutoff \(t\), the NP sign inequality and the preceding size inequality give
+\[
+ \sum_z(q_z-tP_n^+(z))(\psi(z)-\phi(z))\leq0,\qquad t\sum_zP_n^+(z)(\psi(z)-\phi(z))\leq0.
+\]
+Adding them yields \(\mathbb E_q[\psi]\leq\mathbb E_q[\phi]\). Thus validity of the calibrated classical rule is sufficient for full optimality, and the converse follows from the singleton dual certificate.
+
+Every generalized NP rule against \(P_n^+\) consists of the strict likelihood-ratio upper set \(H_t\), a tie vector \(\rho\) on \(E_t\), and zero rejection below the cutoff. A cutoff strictly between consecutive distinct likelihood-ratio values gives the same rule after moving it to the lower value and assigning zero on the added tie coordinates. Since \(0<\alpha<1\), it suffices to enumerate \(t\in\mathcal T_+\). Calibration gives
+\[
+ \alpha=h_+(t)+\sum_{z\in E_t}P_n^+(z)\rho(z).\tag{13}
+\]
+Validity at every vertex is exactly the system defining \(K_t\). This polytope is compact and convex, so its image under the scalar affine map in (13) is the closed interval \([a_t,b_t]\). The finite union over cutoffs proves (4), including every boundary point.
+
+The feasible region \(\mathcal D_{\mathcal C}\) is a pointed polyhedron. Its intersection with an objective sublevel set is bounded because all variables are nonnegative and the objective coefficients \(\alpha\) and \(1\) are strictly positive. Hence an optimum is attained at an extreme point. A polyhedron defined by finitely many inequalities has finitely many extreme points, because each is determined by a full-rank selection of active constraints. Evaluating the objective at these points proves (5). A finite lower envelope of affine functions can change its minimizing set only at intersections of lines with distinct slope--intercept pairs. Off those finitely many levels the minimizing face is constant; at a switch the optimal face is the convex hull of the tied minimizers. Extending a point of \(\mathcal D_{\mathcal B}\) by zero outside \(\mathcal B\) proves (6). Normalizing its nonzero \(y\)-coordinates yields the asserted mixture support. Equation (3) then proves the claim on \(\mathcal I_{\mathcal B}\setminus\mathcal A_n\), and (1) proves nonexistence of a \(\mathcal B\)-supported optimum outside \(\mathcal I_{\mathcal B}\).
+
+It remains to verify that a switch actually occurs. The example is compatible with the common-support likelihood assumptions. Take record space \(\{r_1,s_1\}\), put \(F_{01}(r_1)=1/4\) and \(F_{01}(s_1)=3/4\), prescribe the likelihood ratios at \(r_1\) as \(1,6/5,3\), and prescribe them at \(s_1\) as
+\[
+ \frac{1-(1/4)Q_1(j;r_1)}{3/4},\qquad j=1,2,3.
+\]
+The latter values are \(1,14/15,1/3\); all ratios are finite, strictly positive, and integrate to one. Under the uniform prior,
+\[
+ q=(5/26,6/26,15/26),\qquad v_{\{3\}}=(1/4,1/4,1/2),\qquad v_{\{2,3\}}=(1/5,2/5,2/5).\tag{14}
+\]
+The likelihood ratios under \(v_{\{3\}}\) have order \(3>2>1\). For \(0<\alpha\leq1/2\), the calibrated classical rule is \((0,0,2\alpha)\), and it is valid because every local null assigns at most \(1/2\) to position three. For \(1/2<\alpha\leq3/4\), it is \((0,4\alpha-2,1)\). At the vertices indexed by \(\{1\},\{2\},\{3\},\{1,2\},\{1,3\},\{2,3\}\), respectively, its rejection probabilities are
+\[
+ \alpha-\frac14,\quad2\alpha-\frac34,\quad\alpha,\quad\frac{8\alpha}{5}-\frac35,\quad\frac{4\alpha}{5},\quad\frac{8\alpha-2}{5}.\tag{15}
+\]
+They are all at most \(\alpha\) exactly through \(\alpha=2/3\). For \(3/4<\alpha<1\), the classical rule is \((4\alpha-3,1,1)\), whose expectation under \(v_{\{2,3\}}\) is \(4\alpha/5+1/5>\alpha\). Hence (7) holds, and at \(\alpha=7/10\) the classical size at \(v_{\{2,3\}}\) is \(18/25\).
+
+At that level, take
+\[
+ \phi^\star=(1/10,7/10,1),\qquad y_{v_{\{3\}}}=8/13,\qquad y_{v_{\{2,3\}}}=5/26,\qquad u=(0,0,5/26).\tag{16}
+\]
+The six vertex expectations are
+\[
+ 19/40,\quad5/8,\quad7/10,\quad13/25,\quad29/50,\quad7/10.\tag{17}
+\]
+Thus \(\phi^\star\) is primal feasible and both positively weighted vertices bind. Moreover,
+\[
+ d_y=(5/26,6/26,10/26),
+\]
+so the dual inequalities and every complementary-slackness equation hold. The common primal and dual value is
+\[
+ q^\top\phi^\star=197/260=\frac{7}{10}\frac{21}{26}+\frac{5}{26}.\tag{18}
+\]
+Both vertices are indexed terminal-block vertices, and normalizing \(y\) gives weights \(16/21\) and \(5/21\). This proves the strict classical-tilt failure and the asserted least-favorable support switch.
+\end{proof}
+
+\begin{lemma}[lem:finite-lp-strong-duality]\label{lem:finite-lp-strong-duality}
+Let \(M,N\geq1\), let \(A\) be a nonnegative \(M\)-by-\(N\) matrix whose rows are probability vectors, let \(q\) be a strictly positive probability vector in \(\mathbb R^N\), and let \(0<\alpha<1\). Then
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \max_{0\leq\phi\leq1}\{q^\top\phi:A\phi\leq\alpha\mathbf1\}=\min_{y,u\geq0}\{\alpha\mathbf1^\top y+\mathbf1^\top u:A^\top y+u\geq q\},\)}}\par\noindent}}
+\]
+and both optima are attained.
+\end{lemma}
+\begin{proof}
+The primal feasible set is nonempty and compact, so it has a finite attained optimum \(\beta\). If \(\phi\) is primal feasible and \((y,u)\) is dual feasible, then
+\[
+ q^\top\phi\leq(A^\top y+u)^\top\phi\leq y^\top(\alpha\mathbf1)+u^\top\mathbf1.\tag{1}
+\]
+This proves weak duality.
+
+For the reverse inequality, define
+\[
+ D=\{(s,t)\in\mathbb R^M\times\mathbb R:s=A\phi+h,\ t=q^\top\phi-k,\ 0\leq\phi\leq1,\ h\geq0,\ k\geq0\}.
+\]
+This is the sum of a compact convex set and a closed orthant, hence is closed and convex. For \(\varepsilon>0\), the point \(x_\varepsilon=(\alpha\mathbf1,\beta+\varepsilon)\) is not in \(D\): membership would give some \(\phi\) with \(A\phi\leq\alpha\mathbf1\) and \(q^\top\phi\geq\beta+\varepsilon\), contrary to the definition of \(\beta\). Let \(d_\varepsilon\) minimize Euclidean distance from \(x_\varepsilon\) to \(D\). Existence follows from closedness after intersecting with a sufficiently large closed ball. Differentiating squared distance at zero along the segment from \(d_\varepsilon\) toward any \(d\in D\) gives
+\[
+ (x_\varepsilon-d_\varepsilon)^\top(d-d_\varepsilon)\leq0\qquad(d\in D).\tag{2}
+\]
+Because \(D\) is upward closed in its first coordinate and downward closed in its last coordinate, (2) implies that \(x_\varepsilon-d_\varepsilon=(-\widetilde y_\varepsilon,\mu_\varepsilon)\) with \(\widetilde y_\varepsilon\geq0\) and \(\mu_\varepsilon\geq0\). In fact \(\mu_\varepsilon>0\). Otherwise strict separation of \(x_\varepsilon\) from \(D\), evaluated at \((0,0)\in D\), would imply \(-\alpha\mathbf1^\top\widetilde y_\varepsilon>0\), which is impossible. Normalize by \(\mu_\varepsilon\), writing \(y_\varepsilon=\widetilde y_\varepsilon/\mu_\varepsilon\). Strict separation then yields
+\[
+ \beta+\varepsilon>\alpha\mathbf1^\top y_\varepsilon+\max_{0\leq\phi\leq1}(q-A^\top y_\varepsilon)^\top\phi=\alpha\mathbf1^\top y_\varepsilon+\sum_{z=1}^N[q_z-(A^\top y_\varepsilon)_z]_+.\tag{3}
+\]
+Set \(u_{\varepsilon,z}=[q_z-(A^\top y_\varepsilon)_z]_+\). Then \((y_\varepsilon,u_\varepsilon)\) is dual feasible and has objective below \(\beta+\varepsilon\). For \(0<\varepsilon\leq1\), (3), nonnegativity, and \(\alpha>0\) bound \(y_\varepsilon\) and \(u_\varepsilon\) uniformly. Along a sequence \(\varepsilon\downarrow0\), take a convergent subsequence. Its limit is dual feasible and, by continuity, has objective at most \(\beta\). Weak duality (1) gives the reverse inequality, so equality holds and the dual optimum is attained.
+\end{proof}
+
+\begin{proposition}[prop:coordinatewise-monotonicity-loss]\label{prop:coordinatewise-monotonicity-loss}
+Consider \(n=2\), \((m_1,m_2)=(4,3)\), \(\Gamma_1=\Gamma_2=2\), \(\alpha=1/2\), \(Q_1=(1,2,3,4)\), and \(Q_2=(1,2,3)\), so that the conditional alternative mass is \(q_{ab}=ab/60\). Call a test coordinatewise monotone when \(\phi_{ab}\leq\phi_{a+1,b}\) for \(a<4\) and \(\phi_{ab}\leq\phi_{a,b+1}\) for \(b<3\). The unrestricted all-tests optimum is attained by
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \phi^{\mathrm{all}}=\begin{pmatrix}0&0&0\\0&0&1\\0&1/2&3/4\\0&1&1\end{pmatrix},
+ \qquad \beta_{\mathrm{all}}=\frac{143}{240}.\)}}
+\]
+The optimum over coordinatewise-monotone tests is attained by
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \phi^{\mathrm{mon}}=\begin{pmatrix}0&0&0\\0&1/3&5/6\\0&5/12&5/6\\0&11/12&1\end{pmatrix},
+ \qquad \beta_{\mathrm{mon}}=\frac{107}{180}.\)}}
+\]
+Consequently, restricting the all-tests Rosenbaum frontier to coordinatewise-monotone tests loses the strict amount \(\beta_{\mathrm{all}}-\beta_{\mathrm{mon}}=1/720\).
+\end{proposition}
+\begin{proof}
+By the conditional alternative formula,
+\[
+ q_{ab}=\frac{Q_1(a)}{\sum_{c=1}^4Q_1(c)}
+ \frac{Q_2(b)}{\sum_{d=1}^3Q_2(d)}
+ =\frac{a}{10}\frac{b}{6}=\frac{ab}{60}. \tag{1}
+\]
+The numerical scores satisfy strict likelihood ordering and endpoint separation because \(4>2\) and \(3>2\). They are also compatible with the common-support likelihood assumptions: for each \(i\), take a two-point record space \(\{r_i,s_i\}\), put \(F_{0i}(r_i)=1/8\), prescribe \(dF_{1ij}/dF_{0i}(r_i)=Q_i(j)\), and put \(dF_{1ij}/dF_{0i}(s_i)=(8-Q_i(j))/7\). Every displayed density is finite and strictly positive and integrates to one. Product assignment and record laws then realize the stipulated conditional instance.
+
+Let \(\mathcal S_4\) and \(\mathcal S_3\) be the nonempty proper subsets of \(\{1,2,3,4\}\) and \(\{1,2,3\}\), respectively. By the extreme-law definition and the vertex-reduction lemma, all \(14\cdot6=84\) null vertices are, without omission,
+\[
+ P_{S,T}(a,b)=
+ \frac{2^{\mathbf1\{a\in S\}}}{4+|S|}
+ \frac{2^{\mathbf1\{b\in T\}}}{3+|T|},
+ \qquad (S,T)\in\mathcal S_4\times\mathcal S_3. \tag{2}
+\]
+For a matrix \(\phi=(\phi_{ab})\), write \(P_{S,T}\phi=\sum_{a=1}^4\sum_{b=1}^3P_{S,T}(a,b)\phi_{ab}\). Direct substitution of the two proposed rules into all vertices in (2) gives the following exact row maxima over the six choices of \(T\). In the row order
+\[
+ S=(1),(2),(12),(3),(13),(23),(123),(4),(14),(24),(124),(34),(134),(234), \tag{3}
+\]
+the values for \(\phi^{\mathrm{all}}\) are
+\[
+ \left(\frac7{20},\frac9{20},\frac38,\frac9{20},\frac38,
+ \frac{11}{24},\frac{11}{28},\frac12,\frac5{12},\frac12,
+ \frac37,\frac12,\frac37,\frac12\right), \tag{4}
+\]
+and those for \(\phi^{\mathrm{mon}}\) are
+\[
+ \left(\frac7{20},\frac9{20},\frac38,\frac{109}{240},
+ \frac{109}{288},\frac{133}{288},\frac{19}{48},\frac12,
+ \frac5{12},\frac{143}{288},\frac{143}{336},\frac12,
+ \frac37,\frac12\right). \tag{5}
+\]
+Every entry in (4) and (5) is at most \(1/2\), so both rules satisfy all \(84\) null inequalities. Their entries lie in \([0,1]\), and the second matrix visibly satisfies every horizontal and vertical order inequality. Equation (1) gives their powers
+\[
+ \sum_{a,b}q_{ab}\phi^{\mathrm{all}}_{ab}=\frac{143}{240},
+ \qquad
+ \sum_{a,b}q_{ab}\phi^{\mathrm{mon}}_{ab}=\frac{107}{180}. \tag{6}
+\]
+
+It remains to certify that neither feasible value can be improved. Let \(A\) be the \(84\)-by-\(12\) matrix with rows \(P_{S,T}\), and consider first the unrestricted primal. Its dual has nonnegative variables \(y_{S,T}\) for the null constraints, \(u_{ab}\) for \(\phi_{ab}\leq1\), and \(\ell_{ab}\) for \(-\phi_{ab}\leq0\), with stationarity and objective
+\[
+ A^\top y+u-\ell=q,
+ \qquad \frac12\sum_{S,T}y_{S,T}+\sum_{a,b}u_{ab}. \tag{7}
+\]
+Set
+\[
+ y_{4,3}=\frac13,\qquad y_{4,23}=\frac5{24},\qquad
+ y_{34,3}=\frac25,\qquad y_{34,23}=\frac14, \tag{8}
+\]
+with all other \(y\)'s and every \(u\) equal to zero, and set
+\[
+ \ell=\begin{pmatrix}
+ 1/30&1/30&1/20\\
+ 1/60&0&0\\
+ 1/40&0&0\\
+ 1/30&0&0
+ \end{pmatrix}. \tag{9}
+\]
+Multiplication using (2) gives \(A^\top y-\ell=q\), so (7) holds coordinate by coordinate and all dual variables are nonnegative. The four constraints indexed by \((4,3),(4,23),(34,3),(34,23)\) each have expectation \(1/2\) under \(\phi^{\mathrm{all}}\). Every positive entry of \(\ell\) corresponds to a zero entry of \(\phi^{\mathrm{all}}\), while \(u=0\). Thus all complementary-slackness products vanish. The dual value is
+\[
+ \frac12\left(\frac13+\frac5{24}+\frac25+\frac14\right)
+ =\frac{143}{240}. \tag{10}
+\]
+Weak duality, or equivalently the finite strong-duality lemma, and (6) prove the unrestricted optimum.
+
+For the monotone primal, orient each covering order inequality from a lower cell \(l\) to an adjacent higher cell \(h\) as \(\phi_l-\phi_h\leq0\), and give it multiplier \(w_{l\to h}\geq0\). The stationarity equation becomes
+\[
+ \sum_{S,T}y_{S,T}P_{S,T}(a,b)+u_{ab}
+ +\sum_{h:(a,b)\to h}w_{(a,b)\to h}
+ -\sum_{l:l\to(a,b)}w_{l\to(a,b)}-\ell_{ab}=q_{ab}. \tag{11}
+\]
+Take the only nonzero variables, apart from \(\ell\), to be
+\[
+ y_{4,23}=\frac5{12},\qquad y_{34,3}=\frac23,\qquad
+ y_{34,23}=\frac1{12},\qquad
+ w_{(2,3)\to(3,3)}=\frac1{180},\qquad
+ u_{4,3}=\frac1{90}, \tag{12}
+\]
+and set
+\[
+ \ell=\begin{pmatrix}
+ 11/360&1/30&2/45\\
+ 1/72&0&0\\
+ 1/36&0&0\\
+ 1/36&0&0
+ \end{pmatrix}. \tag{13}
+\]
+Substitution of (2) into (11) gives equality to the matrix \(q=(ab/60)\) in every coordinate; equivalently, the residual before subtracting \(\ell\) is exactly \(q+\ell\). The three positively weighted null constraints \((4,23),(34,3),(34,23)\) bind at \(1/2\). The weighted order constraint binds because \(\phi^{\mathrm{mon}}_{2,3}=\phi^{\mathrm{mon}}_{3,3}=5/6\); the weighted upper-box constraint binds because \(\phi^{\mathrm{mon}}_{4,3}=1\); and every positive lower-box multiplier in (13) is paired with a zero entry of \(\phi^{\mathrm{mon}}\). Hence primal feasibility, dual feasibility, and every complementary-slackness equation hold. The monotone dual objective is
+\[
+ \frac12\left(\frac5{12}+\frac23+\frac1{12}\right)+\frac1{90}
+ =\frac{107}{180}. \tag{14}
+\]
+This equals the monotone primal value in (6), proving optimality. Finally,
+\[
+ \frac{143}{240}-\frac{107}{180}
+ =\frac{429-428}{720}=\frac1{720}>0,
+\]
+which proves the strict loss.
+\end{proof}
+
+\begin{lemma}[lem:bounded-independent-hoeffding]\label{lem:bounded-independent-hoeffding}
+Let \(X_1,\ldots,X_n\) be independent real random variables satisfying \(a_i\leq X_i\leq b_i\) almost surely, where \(a_i<b_i\). Then, for every \(t>0\),
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \Pr\!\left(\sum_{i=1}^n(X_i-\mathbb E X_i)\geq t\right)\leq\exp\!\left\{-\frac{2t^2}{\sum_{i=1}^n(b_i-a_i)^2}\right\},\)}}\par\noindent}}
+\]
+and
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \Pr\!\left(\sum_{i=1}^n(X_i-\mathbb E X_i)\leq-t\right)\leq\exp\!\left\{-\frac{2t^2}{\sum_{i=1}^n(b_i-a_i)^2}\right\}.\)}}\par\noindent}}
+\]
+\end{lemma}
+\begin{proof}
+Put \(V=\sum_{i=1}^n(b_i-a_i)^2\). We first prove the bounded moment-generating-function inequality. Let \(X\in[a,b]\) almost surely, let \(\mu=\mathbb E X\), put \(p=(\mu-a)/(b-a)\in[0,1]\), and let \(h=\lambda(b-a)\). Convexity of \(x\mapsto e^{\lambda x}\) gives
+\[
+ \mathbb E e^{\lambda(X-\mu)}\leq (1-p)e^{-ph}+pe^{(1-p)h}.\tag{1}
+\]
+For \(g(h)=\log(1-p+pe^h)-ph\), direct differentiation yields \(g(0)=g'(0)=0\) and
+\[
+ g''(h)=\frac{p(1-p)e^h}{(1-p+pe^h)^2}=w_h(1-w_h)\leq\frac14,\qquad w_h=\frac{pe^h}{1-p+pe^h}.\tag{2}
+\]
+Integrating (2) twice from zero to \(h\), with the integration direction reversed when \(h<0\), gives \(g(h)\leq h^2/8\). Thus (1) implies
+\[
+ \mathbb E e^{\lambda(X-\mu)}\leq\exp\left\{\frac{\lambda^2(b-a)^2}{8}\right\}\qquad(\lambda\in\mathbb R).\tag{3}
+\]
+By independence and (3), for every \(\lambda>0\),
+\[
+ \mathbb E\exp\left\{\lambda\sum_{i=1}^n(X_i-\mathbb E X_i)\right\}\leq\exp\left\{\frac{\lambda^2V}{8}\right\}.\tag{4}
+\]
+Markov's inequality therefore gives
+\[
+ \Pr\!\left(\sum_{i=1}^n(X_i-\mathbb E X_i)\geq t\right)\leq\exp\left\{-\lambda t+\frac{\lambda^2V}{8}\right\}.\tag{5}
+\]
+The choice \(\lambda=4t/V\) turns the exponent in (5) into \(-2t^2/V\), proving the upper-tail inequality. Applying that result to \(-X_1,\ldots,-X_n\), whose range lengths remain \(b_i-a_i\), proves the lower-tail inequality.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The lemma provides the uniform concentration step for independent but potentially non-identical null factors in the replicated experiment. \textit{Gap.} The null factors may vary by set, so the repeated-design proof needs a bound uniform over the entire product class rather than an iid-only tail calculation. \textit{Consumer.} The replicated theorem applies both tails with score range length \(\Gamma+1\).
+
+\begin{lemma}[lem:explicit-rosenbaum-endpoint-separator]\label{lem:explicit-rosenbaum-endpoint-separator}
+Under \({\rm ass:replicated-conditional-design}\) and \({\rm def:local-rosenbaum-polytope}\), fix \(1\leq\Gamma<Q(m)/Q(1)\) and define
+\[
+ s_\Gamma(j)=\mathbf 1\{j=m\}-\Gamma\mathbf 1\{j=1\}.
+\]
+Then
+\[
+ \sup_{p\in\mathcal P_m(\Gamma)}p^\top s_\Gamma=0,
+\]
+with equality at the local vertex whose unnormalized weights are \(\Gamma\) at position \(m\) and \(1\) at every other position. For \(q_j=Q(j)/\sum_{k=1}^mQ(k)\),
+\[
+ \Delta(Q,\Gamma):=q^\top s_\Gamma=\frac{Q(m)-\Gamma Q(1)}{\sum_{k=1}^mQ(k)}>0.
+\]
+\end{lemma}
+\begin{proof}
+For any \(p\in\mathcal P_m(\Gamma)\), the division-free Rosenbaum inequality in \({\rm def:local-rosenbaum-polytope}\), applied with \(j=m\) and \(k=1\), gives \(p_m\leq\Gamma p_1\). Hence
+\[
+ p^\top s_\Gamma=p_m-\Gamma p_1\leq0.\tag{1}
+\]
+Let \(p^+\) have normalized weights \(\Gamma\) at position \(m\) and \(1\) at every other position, so
+\[
+ p_m^+=\frac{\Gamma}{\Gamma+m-1},\qquad p_j^+=\frac1{\Gamma+m-1}\quad(j\neq m).\tag{2}
+\]
+All coordinates in (2) are positive, sum to one, and the ratio of any two is at most \(\Gamma\); thus \(p^+\in\mathcal P_m(\Gamma)\). Moreover, \(p_m^+-\Gamma p_1^+=0\). Together with (1), this proves both the supremum formula and its attainment.
+
+Under \({\rm ass:replicated-conditional-design}\), \(q_j=Q(j)/\sum_{k=1}^mQ(k)\). Therefore
+\[
+ q^\top s_\Gamma=q_m-\Gamma q_1=\frac{Q(m)-\Gamma Q(1)}{\sum_{k=1}^mQ(k)}.\tag{3}
+\]
+The denominator is strictly positive because \(Q\in(0,\infty)^m\), and the numerator is strictly positive because \(\Gamma<Q(m)/Q(1)\). Equation (3) is the asserted positive margin.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The explicit endpoint score supplies the concrete separating hyperplane required for the repeated-design achievability proof. \textit{Gap.} An abstract existence witness would not provide the oracle test or the exact achievable exponential constant used downstream. \textit{Consumer.} The repeated-design theorem uses its zero null support value and positive alternative margin directly.
+
+\begin{theorem}[thm:replicated-all-tests-design-sensitivity]\label{thm:replicated-all-tests-design-sensitivity}
+Under \({\rm ass:replicated-conditional-design}\) and \({\rm ass:test-level}\),
+\[
+ \widetilde\Gamma_{\mathrm{all}}^\star(Q)=\frac{Q(m)}{Q(1)}.
+\]
+More precisely, if \(1\leq\Gamma<Q(m)/Q(1)\), let \(s_\Gamma\) and \(\Delta(Q,\Gamma)\) be as in \({\rm lem:explicit-rosenbaum-endpoint-separator}\), and define
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle c_0(Q,\Gamma)=\frac{\Delta(Q,\Gamma)^2}{2(\Gamma+1)^2},\qquad \phi_n(z)=\mathbf 1\!\left\{\frac1n\sum_{i=1}^ns_\Gamma(z_i)>\frac{\Delta(Q,\Gamma)}2\right\}.\)}}\par\noindent}}
+\]
+Then
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \sup_{p_1,\ldots,p_n\in\mathcal P_m(\Gamma)}\mathbb E_{\otimes_{i=1}^np_i}[\phi_n(Z)]\leq e^{-c_0(Q,\Gamma)n},\qquad \mathbb E_{q^{\otimes n}}[1-\phi_n(Z)]\leq e^{-c_0(Q,\Gamma)n}.\)}}\par\noindent}}
+\]
+With
+\[
+ N_0(\alpha,Q,\Gamma)=\left\lceil\frac{\log(1/\alpha)}{c_0(Q,\Gamma)}\right\rceil,
+\]
+every \(n\geq N_0(\alpha,Q,\Gamma)\) satisfies
+\[
+ \beta_{n,\mathrm{rep}}^\star(\alpha;Q,\Gamma)\geq1-e^{-c_0(Q,\Gamma)n}.
+\]
+If \(\Gamma\geq Q(m)/Q(1)\), then \(\beta_{n,\mathrm{rep}}^\star(\alpha;Q,\Gamma)=\alpha\) for every \(n\). When \(m=2\), the boundary obeys
+\[
+ \frac{Q(2)}{Q(1)}=\frac{q_2}{1-q_2},
+\]
+the sign/McNemar success odds.
+\end{theorem}
+\begin{proof}
+Fix \(1\leq\Gamma<Q(m)/Q(1)\). By \({\rm lem:explicit-rosenbaum-endpoint-separator}\), every \(p_i\in\mathcal P_m(\Gamma)\) satisfies
+\[
+ \mathbb E_{p_i}[s_\Gamma(Z_i)]\leq0,\qquad \mathbb E_q[s_\Gamma(Z_i)]=\Delta(Q,\Gamma)>0.\tag{1}
+\]
+The score takes only the values \(-\Gamma,0,1\), so its range length is \(\Gamma+1\). Under an arbitrary null product \(\bigotimes_{i=1}^np_i\), the variables \(X_i=s_\Gamma(Z_i)\) are independent, possibly non-identically distributed, and the rejection event implies
+\[
+ \sum_{i=1}^n(X_i-\mathbb E_{p_i}X_i)>\frac{n\Delta(Q,\Gamma)}2,\tag{2}
+\]
+because \(\sum_i\mathbb E_{p_i}X_i\leq0\). Applying the upper-tail inequality in \({\rm lem:bounded-independent-hoeffding}\) with \(t=n\Delta(Q,\Gamma)/2\) and \(b_i-a_i=\Gamma+1\) gives
+\[
+ \mathbb E_{\otimes_{i=1}^np_i}[\phi_n(Z)]\leq\exp\left\{-\frac{2(n\Delta/2)^2}{n(\Gamma+1)^2}\right\}=e^{-c_0(Q,\Gamma)n}.\tag{3}
+\]
+Since the right side is independent of the factors, taking their supremum proves the first asserted bound.
+
+Under the alternative \(q^{\otimes n}\), the \(X_i\) are independent with common mean \(\Delta(Q,\Gamma)\). The event \(1-\phi_n=1\) implies
+\[
+ \sum_{i=1}^n(X_i-\Delta(Q,\Gamma))\leq-\frac{n\Delta(Q,\Gamma)}2.\tag{4}
+\]
+The lower-tail inequality in \({\rm lem:bounded-independent-hoeffding}\) yields the second bound \(e^{-c_0(Q,\Gamma)n}\). If \(n\geq N_0(\alpha,Q,\Gamma)\), then \(e^{-c_0n}\leq\alpha\). Thus \(\phi_n\) is feasible in \({\rm def:replicated-frontier}\), and (4) gives
+\[
+ \beta_{n,\mathrm{rep}}^\star(\alpha;Q,\Gamma)\geq\mathbb E_{q^{\otimes n}}\phi_n\geq1-e^{-c_0(Q,\Gamma)n}.\tag{5}
+\]
+In particular, the frontier tends to one for every \(\Gamma<Q(m)/Q(1)\).
+
+Now suppose \(\Gamma\geq Q(m)/Q(1)\). The endpoint-extremality condition in \({\rm ass:replicated-conditional-design}\) implies, for every \(j,k\),
+\[
+ \frac{q_j}{q_k}=\frac{Q(j)}{Q(k)}\leq\frac{Q(m)}{Q(1)}\leq\Gamma.\tag{6}
+\]
+Thus \(q\in\mathcal P_m(\Gamma)\), and \(q^{\otimes n}\) is one of the null product laws in \({\rm def:replicated-frontier}\). Every feasible test consequently has alternative power at most \(\alpha\). The constant randomized test \(\phi(z)=\alpha\) has expectation exactly \(\alpha\) under every law, so it is feasible and attains that upper bound. Therefore
+\[
+ \beta_{n,\mathrm{rep}}^\star(\alpha;Q,\Gamma)=\alpha\qquad(n\geq1).\tag{7}
+\]
+Because \(Q(m)>Q(1)\) and \(0<\alpha<1\), (5)--(7) show that the set in \({\rm def:all-tests-design-sensitivity}\) contains every \(\Gamma\in[1,Q(m)/Q(1))\) and no \(\Gamma\geq Q(m)/Q(1)\). Its supremum is therefore \(Q(m)/Q(1)\). Finally, if \(m=2\), then
+\[
+ q_2=\frac{Q(2)}{Q(1)+Q(2)},\qquad 1-q_2=\frac{Q(1)}{Q(1)+Q(2)},
+\]
+so \(Q(2)/Q(1)=q_2/(1-q_2)\), the success odds in the sign/McNemar reduction. No optimal exponential-rate claim is used or implied.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This theorem identifies the maximal common hidden-bias level below which an explicit randomized conditional test has power tending to one, supplies finite-\(n\) exponential error bounds, and proves the exact all-tests converse at and above the boundary. \textit{Gap.} Published design-sensitivity calculations generally fix a statistic; they do not establish this all-tests oracle ceiling together with an explicit endpoint witness and exact converse. \textit{Consumer.} For pairs it recovers the sign/McNemar odds boundary, while for larger fixed sets it benchmarks what any practical statistic could possibly achieve when \(Q\) is known.
+
+\section{Interpretation}
+
+The causal target is the Fisher sharp null, whereas \(\beta_n^\star(\alpha;Q,\Gamma,r)\) is the conditional all-tests power frontier after fixing the record. Positive causal Bayes factors determine the conditional alternative assignment law, while bounded Rosenbaum odds determine the composite product-law null. A least-favorable mixture is a convexified dual certificate and generally is not itself an independent assignment law in \(\mathcal M_{0,n}(\Gamma;r)\). The indexed terminal-block family requires no likelihood-order assumption; it becomes a \(Q\)-upper-set family only when strict score ordering is separately imposed. In the replicated benchmark the separating score is explicit: \(s_\Gamma(j)=\mathbf1\{j=m\}-\Gamma\mathbf1\{j=1\}\). It is an oracle, \(Q\)-known endpoint score, not the classical tilt, a selected practical rank statistic, a coherent combination, or an estimator when \(Q\) is unknown.
+
+\section*{Technical internal limitation (diagnostic only)}
+
+The finite characterization is exact, but the product-vertex count can grow exponentially. Indexed terminal-block support is certified by \(D_{\mathcal B}=D_{\mathcal V}\), not guaranteed. The \(n=2\), sizes \((4,3)\), common-\(\Gamma=2\) diagnostic checks all \(84\) vertices and exact unrestricted and monotone duals, proving optima \(143/240\) and \(107/180\) and gap \(1/720\); it is an obstruction to an unsafe monotonicity restriction, not a separate field-level novelty claim. Endpoint-touching components such as \((0,2/3]\) are intersections of ambiently closed projections with \((0,1)\) and need not be closed in \(\mathbb R\). The replicated theorem uses the explicit endpoint score and gives the achievable constant \(c_0=\Delta^2/[2(\Gamma+1)^2]\); it does not claim the optimal Chernoff exponent.
+
+\section{Honest scope}
+
+The finite results are conditional on the sharp-null sensitivity model, the factorized uniform-prior causal alternative, common likelihood support, and the fixed observed record. They deliver the exact all-tests envelope, product-vertex validity certificates, indexed-support criterion, validity-region topology, affine support diagnostics, the three-position switch, and the exact monotonicity-loss diagnostic. The asymptotic result is only for fixed \(m\), fixed record, fixed endpoint-extremal \(Q\), common \(\Gamma\), and independent conditional replicas whose null factors may vary across sets. It does not optimize the exponent, handle heterogeneous or growing sets, estimate \(Q\), prove unconditional validity, construct a selected rank statistic or coherent combination, establish the proposed two-sided \(0.158\) claim, prove Bonferroni equivalence, or identify a statistic-choice optimum.
+
+\begin{thebibliography}{99}
+
+  \bibitem{Rosenbaum1987SensitivityPermutation} Rosenbaum, P. R. (1987). Sensitivity analysis for certain permutation inferences in matched observational studies. \emph{Biometrika}, 74(1), 13--26.
+
+  \bibitem{Rosenbaum1988SensitivityMultipleControls} Rosenbaum, P. R. (1988). Sensitivity analysis for matching with multiple controls. \emph{Biometrika}, 75(3), 577--581. doi:10.1093/biomet/75.3.577.
+
+  \bibitem{HuberStrassen1973Minimax} Huber, P. J. and Strassen, V. (1973). Minimax tests and the Neyman--Pearson lemma for capacities. \emph{The Annals of Statistics}, 1(2), 251--263. doi:10.1214/aos/1176342363.
+
+  \bibitem{GastwirthKriegerRosenbaum2000Separability} Gastwirth, J. L., Krieger, A. M., and Rosenbaum, P. R. (2000). Asymptotic separability in sensitivity analysis. \emph{Journal of the Royal Statistical Society: Series B}, 62(3), 545--555.
+
+  \bibitem{Zhao2019SensitivityValue} Zhao, Q. (2019). On sensitivity value of pair-matched observational studies. \emph{Journal of the American Statistical Association}, 114(526), 713--722.
+
+  \bibitem{CohenOlsonFogarty2020AdversarialGame} Cohen, P. L., Olson, M. A., and Fogarty, C. B. (2020). Multivariate one-sided testing in matched observational studies as an adversarial game. \emph{Biometrika}, 107(4), 809--825. doi:10.1093/biomet/asaa024.
+
+  \bibitem{FogartySmall2016MultipleComparisons} Fogarty, C. B. and Small, D. S. (2016). Sensitivity analysis for multiple comparisons in matched observational studies through quadratically constrained linear programming. \emph{Journal of the American Statistical Association}, 111(516), 1820--1830. doi:10.1080/01621459.2015.1120675.
+
+  \bibitem{Fogarty2025Tilted} Fogarty, C. B. (2025). Tilted sensitivity analysis in matched observational studies. \emph{arXiv:2503.09736}.
+
+\end{thebibliography}
+
+\end{document}

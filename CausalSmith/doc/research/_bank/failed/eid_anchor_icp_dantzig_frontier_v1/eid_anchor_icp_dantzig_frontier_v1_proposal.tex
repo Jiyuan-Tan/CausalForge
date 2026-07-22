@@ -1,0 +1,275 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_anchor\_icp\_dantzig\_frontier, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_anchor\_icp\_dantzig\_frontier} / \texttt{v1}%
+  \\ \large\textit{A covariance-pencil frontier for ICP, anchor regression, and Causal Dantzig}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\texttt{qid} is \texttt{eid\_anchor\_icp\_dantzig\_frontier}. \texttt{specialization} is \texttt{v1}. The graph/SWIG is a linear Gaussian SEM with centered anchors $A\in\R^q$, covariates $X\in\R^p$, outcome $Y\in\R$, and exogenous Gaussian noise independent of anchor shocks after conditioning on the SEM parents named in Assumption~\ref{ass:sem}. The treatment is the coordinate vector $X$ as a candidate direct-cause set for $Y$. The target estimand is the covariance-level agreement frontier among three population procedures: ICP accepted sets $\mathcal I_{\mathrm{ICP}}$, the $\gamma=\infty$ anchor-regression solution set $\mathcal B_{\mathrm{AR}}^\infty$, and the Causal-Dantzig solution set $\mathcal B_{\mathrm{CD}}$. Identifying assumptions are linear Gaussianity, finite nonsingular covariance for $(A,X,Y)$, additive anchor shifts, and the moment/conditional-law invariance definitions in Section~\ref{sec:setup}. The decision functional is the primitive covariance pencil $K(\Sigma_{AXY};S,\beta)$ in Definition~\ref{def:pencil}, together with its rank and kernel zero sets.
+
+\begin{abstract}
+Invariant causal prediction, anchor regression, and Causal Dantzig use different invariance equations on the same environment-indexed linear SEM. The question is whether their population outputs can be compared by a primitive covariance object rather than by solving the three procedures and checking equality afterward. The central conjecture is an if-and-only-if rank and kernel frontier for a covariance pencil $K(\Sigma_{AXY};S,\beta)$ whose blocks are derived from the conditional-law, anchor normal-equation, and residual-moment equations. A second conjecture gives two $q=p=2$ Gaussian SEM witness families separating conditional-distribution invariance from residual-moment invariance in both directions. If resolved, the result would turn a verbal distinction among three invariance methods into a finite certificate for when the methods agree, strictly include one another, or conflict.
+\end{abstract}
+
+\section{Introduction}
+Invariant methods differ in the object they keep stable across environments. The main claim is that, in linear Gaussian SEMs with anchors, three named procedures have an exact covariance-level agreement frontier described by a single pencil $K(\Sigma_{AXY};S,\beta)$ and not by a post hoc equality test between their fitted coefficients.
+
+The closest comparators are \citet[Section~2, equations (2.3)--(2.6)]{RothenhauslerMeinshausenBuhlmannPeters2021Anchor}, who derive the anchor path and its $\gamma\to\infty$ endpoint, and \citet[Section~2.1, equations (1)--(2)]{PetersBuhlmannMeinshausen2016ICP}, who define ICP through equality of conditional distributions. The gap is that neither paper, nor \citet[Sections~1--2]{RothenhauslerBuhlmannMeinshausen2019CausalDantzig}, gives a sharp finite covariance certificate comparing conditional-law invariance, anchor normal equations, and Causal-Dantzig residual moments on the same SEM. The kernel lives in exact identification for linear Gaussian SEMs with multiple environments.
+
+The direct consumer is the robustness and invariance literature that extends anchor regression beyond mean-squared residual stability, including \citet{KookSickBuhlmann2022DistributionalAnchor} and recent invariant probabilistic prediction. A reader who takes the conclusion away would check rank and kernel conditions on covariance blocks before treating ICP acceptance, anchor stability, and Causal-Dantzig feasibility as interchangeable evidence.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: the three population procedures can be written as three explicit zero equations in covariance blocks. Gap: \citet{PetersBuhlmannMeinshausen2016ICP}, \citet{RothenhauslerMeinshausenBuhlmannPeters2021Anchor}, and \citet{RothenhauslerBuhlmannMeinshausen2019CausalDantzig} state separate equations but do not assemble a common certificate. Consumer: distributional anchor diagnostics in \citet{KookSickBuhlmann2022DistributionalAnchor}.
+\item Conjecture 1: the affine operator $\mathfrak K_S=(M_S,h_S)$ has $h_S$ in the common image and kernel $N_S$ exactly when ICP acceptance, the anchor $\gamma=\infty$ coefficient, and Causal-Dantzig feasibility agree at $(S,\beta)$. Gap: anchor regression gives interpolation and robustness, while Causal Dantzig gives residual invariance, but neither gives the three-way iff frontier. Consumer: the distributional-anchor diagnostic of \citet{KookSickBuhlmann2022DistributionalAnchor} and the environment-IV workflow of \citet{LongZhuDoHa2023IVEnvironments}.
+\item Conjecture 2: two $2$-anchor by $2$-covariate Gaussian SEM strata separate residual-moment invariance from ICP conditional-law invariance in both directions. Gap: \citet[Section~2]{RothenhauslerBuhlmannMeinshausen2019CausalDantzig} motivates inner-product invariance as different from ICP, and \citet[Section~3]{KookSickBuhlmann2022DistributionalAnchor} separates score and distributional stability, but neither classifies the smallest covariance witnesses. Consumer: ICP screening in \citet{HeinzeDemlPetersMeinshausen2018NonlinearICP} when residual diagnostics are used as a computational proxy.
+\end{itemize}
+
+\section{Related work}
+\citet{PetersBuhlmannMeinshausen2016ICP} introduce invariant causal prediction and base acceptance on equality of the conditional distribution of $Y$ given a selected covariate set across environments. \citet{HeinzeDemlPetersMeinshausen2018NonlinearICP} show that accepted-set behavior depends on model structure and power, which makes support comparisons across methods nonautomatic. \citet{RothenhauslerBuhlmannMeinshausen2019CausalDantzig} introduce Causal Dantzig for linear SEMs with hidden variables and additive interventions, replacing conditional-law invariance by residual inner-product invariance. \citet{RothenhauslerMeinshausenBuhlmannPeters2021Anchor} define anchor regression and show that its population path interpolates between partialling out, OLS, and IV-like limits with robustness to anchor-span perturbations. \citet{KookSickBuhlmann2022DistributionalAnchor} separates residual mean or score invariance from distributional residual invariance, which is the closest published warning that first-moment stability and full conditional stability need not coincide. \citet{LongZhuDoHa2023IVEnvironments} relate environment-based restrictions to instrumental variables and hidden confounding, but do not provide a three-estimator equality frontier. \citet{HenziShenLawBuhlmann2025IPP} and \citet{ShenBuhlmannTaeb2026Robustness} broaden anchor-style robustness beyond the original shift span, making the exact conflict set among invariance procedures more salient. In the CausalSmith catalogue, \texttt{doc/API.md} reports no existing ExactID entry for anchor regression, ICP, or Causal Dantzig; the nearest in-repo prior signals are the downgraded \texttt{eid\_dml\_orth\_uniform} triple-frontier attempt and \texttt{eid\_lp\_svar\_nonequiv} low-dimensional non-equivalence attempt described in the Stage -1.1 gaps payload.
+
+\section{Formal setup}\label{sec:setup}
+Let $Z=(A\transpose,X\transpose,Y)\transpose$ be centered jointly Gaussian with covariance $\Sigma$. Write $\Sigma_{UV}=\E[UV\transpose]$ for subvectors $U,V$ and assume $\Sigma_{AA}\succ0$ and $\Sigma_{XX}\succ0$. For $S\subseteq\{1,\ldots,p\}$, let $X_S$ be the selected covariates and $\beta_S^{\mathrm{ols}}=\Sigma_{X_SX_S}^{-1}\Sigma_{X_SY}$. The ICP population acceptance equation for $S$ is the Gaussian conditional-law equation
+\[
+  k_{\mathrm{ICP}}(S)=\Sigma_{AY}-\Sigma_{AX_S}\beta_S^{\mathrm{ols}}=0,
+\]
+which is equivalent to zero coefficient on $A$ in the population regression of $Y$ on $(X_S,A)$ when the conditional residual variance is environment-stable. The anchor $\gamma=\infty$ solution set is
+\[
+  \mathcal B_{\mathrm{AR}}^\infty=\arg\min_{b\in\R^p}\E\{[\E(Y-X\transpose b\mid A)]^2\},
+\]
+with normal equation $G_A b=g_A$, where $G_A=\Sigma_{XA}\Sigma_{AA}^{-1}\Sigma_{AX}$ and $g_A=\Sigma_{XA}\Sigma_{AA}^{-1}\Sigma_{AY}$. The Causal-Dantzig population feasibility set is written as
+\[
+  \mathcal B_{\mathrm{CD}}=\{b\in\R^p: C_A b=d_A\},\qquad C_A=\Sigma_{AX},\quad d_A=\Sigma_{AY},
+\]
+so that residuals are orthogonal to the additive anchor shifts. For a selected set $S$ and a full coefficient vector $b$ supported on $S$, define the covariance pencil
+\begin{definition}[Covariance conflict pencil]\label{def:pencil}
+Let $R_{S^c}$ select the coordinates outside $S$ and let $\iota_S:\R^{|S|}\to\R^p$ insert zeros outside $S$. Define the affine operator
+\[
+  \mathfrak K_S(\Sigma)=(M_S(\Sigma),h_S(\Sigma)),\qquad
+  K(\Sigma;S,b)=M_S(\Sigma)b-h_S(\Sigma),
+\]
+where
+\[
+M_S=
+\begin{bmatrix}
+0_{q\times p}\\
+G_A\\
+C_A\\
+R_{S^c}\Sigma_{XX}
+\end{bmatrix},\qquad
+h_S=
+\begin{bmatrix}
+-k_{\mathrm{ICP}}(S)\\
+g_A\\
+d_A\\
+R_{S^c}\Sigma_{XY}
+\end{bmatrix}.
+\]
+The first block is a primitive conditional-law obstruction independent of the chosen coefficient; the remaining blocks are the anchor endpoint, Causal-Dantzig, and omitted-coordinate affine equations. Let
+\[
+  r_S=\operatorname{rank}M_S,\qquad
+  N_S=\ker M_S\cap\operatorname{range}(\iota_S),\qquad
+  I_S=\operatorname{im}M_S .
+\]
+The frontier object is the triple $(r_S,N_S,I_S)$ together with the membership predicate $h_S\in I_S$.
+\end{definition}
+The locked parameters are reproduced verbatim: \texttt{qid=eid\_anchor\_icp\_dantzig\_frontier; specialization=v1; graph/SWIG=linear Gaussian SEM with centered anchors A, covariates X, outcome Y; treatment=X; target=agreement frontier among ICP accepted sets, anchor gamma-infinity coefficients, and Causal-Dantzig coefficients; assumptions=linear Gaussianity, nonsingular covariance, additive anchor shifts, and the Section 6 invariance equations; decision functional=K(Sigma;S,b) with rank/kernel zero sets}.
+
+\section{Assumptions}
+\begin{assumption}[Linear Gaussian anchor SEM]\label{ass:sem}
+$(A,X,Y)$ is generated by an acyclic linear SEM with jointly Gaussian exogenous noise, centered variables, finite second moments, and additive anchor shifts that enter through $A$ and its descendants.
+\end{assumption}
+
+\begin{assumption}[Nonsingular covariance blocks]\label{ass:nonsing}
+$\Sigma_{AA}\succ0$, $\Sigma_{XX}\succ0$, and $\Sigma_{X_SX_S}\succ0$ for every selected set $S$ used in a result.
+\end{assumption}
+
+\begin{assumption}[Gaussian ICP acceptance]\label{ass:icp}
+For a selected set $S$, population ICP accepts $S$ exactly when the Gaussian conditional law of $Y$ given $X_S$ is invariant across anchors, equivalently $k_{\mathrm{ICP}}(S)=0$ together with invariant conditional residual variance.
+\end{assumption}
+
+\begin{assumption}[Anchor and Dantzig population equations]\label{ass:arcd}
+The $\gamma=\infty$ anchor coefficient set and Causal-Dantzig coefficient set are the population solution sets defined in Section~\ref{sec:setup}; nonunique solutions are allowed.
+\end{assumption}
+
+\begin{assumption}[Frontier regularity]\label{ass:frontier}
+The rank of $G_A$ and $C_A$ is locally constant on the covariance stratum under consideration, unless the result explicitly names a rank-change boundary.
+\end{assumption}
+
+\begin{assumption}[Coefficient support convention]\label{ass:support}
+A coefficient $b$ agrees with support $S$ when $b\in\operatorname{range}(\iota_S)$ and the omitted-coordinate block $R_{S^c}(\Sigma_{XX}b-\Sigma_{XY})$ is evaluated against the full covariance matrix, not against the restricted regression alone.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Population equations for the three invariance procedures]\label{thm:equations}
+Under Assumptions~\ref{ass:sem}--\ref{ass:arcd}, ICP acceptance, the anchor $\gamma=\infty$ endpoint, and Causal-Dantzig feasibility are respectively equivalent to $k_{\mathrm{ICP}}(S)=0$, $G_A b=g_A$, and $C_A b=d_A$ with the objects defined in Section~\ref{sec:setup}.
+\end{theorem}
+The proof is a direct population calculation: Gaussian conditional-law invariance is zero anchor coefficient in the regression on $(X_S,A)$, anchor $\gamma=\infty$ is the normal equation for the projected residual loss, and Causal Dantzig is residual orthogonality to additive anchor shifts.
+
+\begin{conjecture}[Three-way covariance-pencil frontier (NOT YET PROVED)]\label{conj:frontier}
+Under Assumptions~\ref{ass:sem}--\ref{ass:support}, for any support $S$, the following are equivalent: (i) $S\in\mathcal I_{\mathrm{ICP}}$ and there exists $b\in\operatorname{range}(\iota_S)$ such that $b\in\mathcal B_{\mathrm{AR}}^\infty\cap\mathcal B_{\mathrm{CD}}$ with no omitted-coordinate normal-equation conflict; (ii) $k_{\mathrm{ICP}}(S)=0$, $h_S\in I_S$, and the affine fiber $\{b:M_Sb=h_S\}$ intersects $\operatorname{range}(\iota_S)$ in the coset $b_0+N_S$ for some $b_0$ whose restricted coordinates equal $\beta_S^{\mathrm{ols}}$. On rank-change boundaries, the same equivalence holds after replacing $N_S$ by the upper semicontinuous limit of $\ker M_S\cap\operatorname{range}(\iota_S)$ along the covariance stratum.
+\end{conjecture}
+
+\begin{conjecture}[Minimal two-by-two non-equivalence witnesses (NOT YET PROVED)]\label{conj:witness}
+Under Assumptions~\ref{ass:sem}--\ref{ass:arcd}, there are two non-corner $q=p=2$ Gaussian SEM covariance strata with positive conditional noise variances. On the first, $C_A b=d_A$ and $G_A b=g_A$ hold for a supported coefficient $b$ while $k_{\mathrm{ICP}}(S)\ne0$. On the second, $k_{\mathrm{ICP}}(S)=0$ but $\mathcal B_{\mathrm{AR}}^\infty\cap\mathcal B_{\mathrm{CD}}$ contains coefficients with a different support from the ICP regression coefficient. The separating strata are semi-algebraic and can be written by nonvanishing determinants and one rank-one anchor-covariate minor in Definition~\ref{def:pencil}.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No-anchor collapse]
+If $\Sigma_{AX}=0$ and $\Sigma_{AY}=0$, then $k_{\mathrm{ICP}}(S)=0$, $G_A=0$, $g_A=0$, $C_A=0$, and $d_A=0$ for every $S$. The pencil reduces to the ordinary omitted-coordinate normal-equation block, so the frontier does not create spurious conflict when environments carry no covariance information.
+\end{corollary}
+
+\begin{corollary}[Full-rank valid-anchor collapse]
+If $C_A=\Sigma_{AX}$ has full column rank and $\Sigma_{AY}=\Sigma_{AX}\beta^0$, then $\mathcal B_{\mathrm{CD}}=\{\beta^0\}$ and $\mathcal B_{\mathrm{AR}}^\infty=\{\beta^0\}$. If additionally $\Sigma_{AY}-\Sigma_{AX_S}\beta_S^{\mathrm{ols}}=0$ for $S=\operatorname{supp}(\beta^0)$, then $K(\Sigma;S,\beta^0)=0$.
+\end{corollary}
+
+\paragraph{Exhibit 9.1: hand-derived pencil on a $2$-anchor by $2$-covariate covariance.}
+First let $A_1,A_2,U_1,U_2,V$ be independent standard Gaussians, set $X_1=A_1+U_1$, $X_2=A_2+U_2$, and $Y=X_1+U_1+V$. Then
+\[
+\Sigma_{AA}=I_2,\quad
+\Sigma_{AX}=\begin{psmallmatrix}1&0\\0&1\end{psmallmatrix},\quad
+\Sigma_{XX}=\begin{psmallmatrix}2&0\\0&2\end{psmallmatrix},\quad
+\Sigma_{AY}=\binom{1}{0},\quad
+\Sigma_{XY}=\binom{3}{0}.
+\]
+For $S=\{1\}$, $b=(1,0)\transpose$, and $\beta_1^{\mathrm{ols}}=3/2$, the affine operator in Definition~\ref{def:pencil} is
+\[
+M_S=
+\begin{bmatrix}
+0&0\\0&0\\
+1&0\\0&1\\
+1&0\\0&1\\
+0&2
+\end{bmatrix},\qquad
+h_S=
+\begin{bmatrix}
+1/2\\0\\
+1\\0\\
+1\\0\\
+0
+\end{bmatrix},\qquad
+K(\Sigma;S,b)=
+\begin{bmatrix}
+-1/2\\0\\
+0\\0\\
+0\\0\\
+0
+\end{bmatrix}.
+\]
+Thus $\operatorname{rank}M_S=2$, $N_S=\{0\}$, $h_S\notin I_S$ because of the first ICP row, and the residual-moment and anchor rows are exactly satisfied. The covariance is positive definite because it is generated by the displayed SEM with independent positive-variance noises.
+
+\paragraph{Exhibit 9.2: ICP acceptance with residual-moment nonuniqueness.}
+Let $A_1,A_2,U_1,U_2,V$ be independent standard Gaussians, set $X_1=A_1+A_2+U_1$, $X_2=A_1+A_2+U_2$, and $Y=X_1+V$. Then
+\[
+\Sigma_{AA}=I_2,\quad
+\Sigma_{AX}=\begin{psmallmatrix}1&1\\1&1\end{psmallmatrix},\quad
+\Sigma_{XX}=\begin{psmallmatrix}3&2\\2&3\end{psmallmatrix},\quad
+\Sigma_{AY}=\binom{1}{1},\quad
+\Sigma_{XY}=\binom{3}{2}.
+\]
+For $S=\{1\}$, $\beta_1^{\mathrm{ols}}=1$ and $k_{\mathrm{ICP}}(S)=0$. The anchor and Dantzig equations are both $b_1+b_2=1$, so $(1,0)\transpose$ and $(0,1)\transpose$ are feasible; hence the residual-moment criteria contain a coefficient with support $\{2\}$ although ICP accepts the restricted coefficient on $X_1$. Here $\operatorname{rank}M_S=2$, $N_S=\{0\}$ after support restriction, and the unrestricted residual fiber has direction $(1,-1)\transpose$, which is the named rank-one boundary in Conjecture~\ref{conj:witness}.
+
+\section{Proof-sketch route}
+For Conjecture~\ref{conj:frontier}, the reduction chain is: headline $\leftarrow$ unfold Definition~\ref{def:pencil} $\leftarrow$ substitute Assumptions~\ref{ass:icp}, \ref{ass:arcd}, and \ref{ass:support} $\leftarrow$ prove a Schur-complement lemma identifying Gaussian conditional-law invariance with the zero first block while keeping it independent of $b$ $\leftarrow$ prove an affine-image lemma for $h_S\in I_S$ that separates existence of a common coefficient from equality of any pre-solved estimators $\leftarrow$ prove a kernel-fiber lemma showing that $N_S$ is the exact nonuniqueness direction on a fixed support $\leftarrow$ prove a support-pasting lemma showing that $R_{S^c}(\Sigma_{XX}b-\Sigma_{XY})$ rules out false support equality $\leftarrow$ apply rank-nullity and upper-semicontinuity of kernels on rank strata. Thus $k=4$ substantive steps: the Schur-complement lemma, the affine-image lemma, the kernel-fiber lemma, and the support-pasting lemma. For Conjecture~\ref{conj:witness}, solve the two displayed $q=p=2$ systems, then perturb within the stated covariance stratum and verify the determinant signs and positive conditional variances away from the rank-one boundary.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:equations} is a routine population translation of the three published definitions. Conjectures~\ref{conj:frontier} and \ref{conj:witness} are not yet proved; the main risk is that the support-pasting block is too strong for some accepted-set comparisons or too weak on rank-change boundaries. The v1 open-set wording for the second witness was withdrawn; v2 states non-corner covariance strata because one separation necessarily uses a nonunique residual-moment fiber.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) --- initial draft of a covariance-pencil frontier and two-by-two witness programme; prior verdict: none.
+\item v2 (revise) --- made the pencil an affine operator with rank, image, and kernel objects; repaired the two witness exhibits; fixed named consumers and bibliography metadata; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Long, Zhu, Do, and Ha(2023)]{LongZhuDoHa2023IVEnvironments}
+Long, Q., Y. Zhu, K. A. Do, and W. Ha (2023). Estimating causal effects with hidden confounding using instrumental variables and environments. Methodological article.
+
+\bibitem[Heinze-Deml, Peters, and Meinshausen(2018)]{HeinzeDemlPetersMeinshausen2018NonlinearICP}
+Heinze-Deml, C., J. Peters, and N. Meinshausen (2018). Invariant causal prediction for nonlinear models. \emph{Journal of Causal Inference} 6(2).
+
+\bibitem[Henzi, Shen, Law, and Buhlmann(2025)]{HenziShenLawBuhlmann2025IPP}
+Henzi, A., X. Shen, M. Law, and P. Buhlmann (2025). Invariant probabilistic prediction. \emph{Biometrika}.
+
+\bibitem[Kook, Sick, and Buhlmann(2022)]{KookSickBuhlmann2022DistributionalAnchor}
+Kook, L., B. Sick, and P. Buhlmann (2022). Distributional anchor regression. \emph{Statistics and Computing} 32, 39.
+
+\bibitem[Peters, Buhlmann, and Meinshausen(2016)]{PetersBuhlmannMeinshausen2016ICP}
+Peters, J., P. Buhlmann, and N. Meinshausen (2016). Causal inference using invariant prediction: identification and confidence intervals. \emph{Journal of the Royal Statistical Society: Series B} 78(5), 947--1012.
+
+\bibitem[Rothenhausler, Buhlmann, and Meinshausen(2019)]{RothenhauslerBuhlmannMeinshausen2019CausalDantzig}
+Rothenhausler, D., P. Buhlmann, and N. Meinshausen (2019). Causal Dantzig: fast inference in linear structural equation models with hidden variables under additive interventions. \emph{Annals of Statistics} 47(3), 1688--1722.
+
+\bibitem[Rothenhausler, Meinshausen, Buhlmann, and Peters(2021)]{RothenhauslerMeinshausenBuhlmannPeters2021Anchor}
+Rothenhausler, D., N. Meinshausen, P. Buhlmann, and J. Peters (2021). Anchor regression: heterogeneous data meet causality. \emph{Journal of the Royal Statistical Society: Series B} 83(2), 215--246.
+
+\bibitem[Shen, Buhlmann, and Taeb(2026)]{ShenBuhlmannTaeb2026Robustness}
+Shen, X., P. Buhlmann, and A. Taeb (2026). Causality-oriented robustness: exploiting general noise interventions. \emph{Journal of the American Statistical Association}.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,408 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=q1\_spectral\_phase\_transition, specialization=p1\_markov
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `tools/thmsmith/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to a Q1..Q6 pool-mode,
+%    reproduce that block VERBATIM from
+%    `doc/ThmSmith/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    If it is a free-form `(qid, specialization)`, define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{q1\_spectral\_phase\_transition} / \texttt{p1\_markov}%
+  \\ \large\textit{A Bojinov--Rambachan--Shephard interpretability frontier for Markov distributed-lag TWFE}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+qid = q1_spectral_phase_transition
+specialization = p1_markov
+p = 1
+assignment = stationary two-state first-order Markov treatment path with
+  transition probabilities a_T = Pr(D_t=1 | D_{t-1}=0) and
+  b_T = Pr(D_t=0 | D_{t-1}=1), independently across units.
+  The spectral gap is gamma_T = a_T+b_T, the second eigenvalue is
+  rho_T = 1-gamma_T, and pi_T(1)=a_T/(a_T+b_T).
+target = dynamic Q1 ATT profile theta=(theta_on, theta_surv), where
+  theta_on = m(01)-m(00) is the switch-on effect and
+  theta_surv = m(11)-m(00) is the one-period treated-survivor effect.
+  Linear functionals ell' theta are interpreted as causal dynamic ATT
+  directions only when ell is visible in the retained FWL row space.
+regression = TWFE/FWL distributed-lag regression with unit and calendar
+  fixed effects, current and lagged treatment columns (D_t, D_{t-1}),
+  and the Q1 clean-history nuisance columns 1{H=(1,0)} and 1{H=(1,1)}
+  when they are retained by the deterministic threshold kappa_T.  The
+  spectral innovation mass is
+  Xi_T = n_T*pi_T(0)*pi_T(1)*(1-rho_T^2), with n_T=T-1.
+  Singular directions with Gram singular value below kappa_T are not
+  treated as regular identifying moments; bounded-response affine fibers
+  define the partial-identification fallback.
+\end{verbatim}
+
+\begin{abstract}
+\citet{bojinov2021panel} show that serially correlated assignments can make common fixed-effect estimators fail to recover a causally interpretable dynamic effect.
+This proposal asks for the sharp spectral version of that warning in the Q1 Markov panel: which dynamic ATT directions are point identified, partially identified, or nonidentified by a TWFE/FWL distributed-lag specification?
+The proposed kernel is a phase transition in the spectral innovation mass \(\Xi_T=n_T\pi_T(0)\pi_T(1)(1-\rho_T^2)\), where \(\rho_T=1-a_T-b_T\).
+Above the threshold, the current/lag distributed-lag basis and the clean Q1 history basis are regularly equivalent and the two-dimensional dynamic ATT profile is interpretable.
+At the boundary only the threshold-retained eigen-directions are interpretable, and below it Bojinov--Rambachan--Shephard's qualitative non-interpretability becomes a row-space nonidentification statement.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Dynamic panel experiments and switchback designs are increasingly used when treatment can turn on and off over time.
+The applied question is rarely just whether a scalar TWFE coefficient is biased; researchers want to know whether a reported current effect and a reported carryover effect correspond to any causal dynamic ATT coordinates.
+\citet{bojinov2021panel} establish that serial correlation can destroy the causal interpretation of common fixed-effect estimators, but their warning is not an identification frontier telling a researcher which dynamic directions remain visible as the assignment chain becomes persistent or nearly alternating.
+
+\paragraph{The main finding (proposed).}
+The flagship conjecture is Conjecture~\ref{conj:brs-frontier}: for a stationary two-state Markov assignment, the retained row space of the TWFE/FWL distributed-lag moment system changes at the threshold
+\[
+\Xi_T/\kappa_T
+= n_T\pi_T(0)\pi_T(1)(1-\rho_T^2)/\kappa_T .
+\]
+If this ratio diverges, the dynamic Q1 profile \((\theta_{\mathrm{on}},\theta_{\mathrm{surv}})\) is regularly point identified.
+If the ratio converges to a finite positive constant, only eigen-directions whose limiting Gram constants exceed the threshold are regular and the orthogonal dynamic ATT directions are bounded through an affine fiber.
+If the ratio vanishes, no nonzero contrast separating switch-on from treated-survivor effects is regularly identified without additional shape restrictions.
+
+\paragraph{What is new.}
+The closest published result is \citet{bojinov2021panel}, whose Proposition 4.1 characterizes a fixed-effect probability limit under dynamic causal effects and serially correlated assignment.
+The epsilon-gap is that Bojinov--Rambachan--Shephard diagnose non-interpretability of a conventional estimator, while this proposal conjectures an if-and-only-if spectral row-space frontier for the augmented distributed-lag and clean-history specifications themselves.
+The proposed theorem is not merely ``iid to Markov'': it predicts two structurally different failures, near persistence \(\rho_T\to1\) and near alternation \(\rho_T\to-1\), both governed by the same innovation eigenvalue \(1-\rho_T^2\).
+
+\paragraph{How it positions in the literature.}
+The proposal sits in the panel and linear-projection cluster, with a partial-identification fallback when the regular row space loses directions.
+\citet{bojinov2021panel}, \citet{bojinov2023switchback}, and \citet{hu2022switchback} make serial dependence and carryover first-order design features.
+\citet{sunabraham2021eventstudy}, \citet{dechaisemartin2020twfe}, and \citet{goodmanbacon2021timing} explain why TWFE/event-study coefficients can mix the wrong causal objects under heterogeneous effects.
+The present proposal contributes a different object: a spectral support threshold for whether the dynamic ATT coordinates are in the FWL row space at all.
+
+\paragraph{Implications for the community.}
+The immediate consumer is the panel-experiment workflow in \citet{bojinov2021panel}: before reporting fixed-effect or distributed-lag causal summaries under serially correlated assignment, the analyst would report \(\Xi_T\) and the retained eigen-directions, not just the coefficient vector.
+\paragraph{How research benefits from the conclusion.}
+Researchers should treat a dynamic TWFE profile under Markov assignment as a spectral row-space object and report which current/carryover directions are point identified, bounded, or not identified.
+
+\section{Related work}
+\citet{bojinov2021panel} provide the primary anchor: they develop finite-population panel-experiment estimands and show that fixed-effect estimators need not recover causally interpretable dynamic effects under serially correlated assignment.
+\citet{bojinov2023switchback} derive design and inference results for switchback experiments with carryover, motivating why treatment-path dependence is a design primitive rather than a nuisance detail.
+\citet{hu2022switchback} show that geometric mixing changes switchback estimation rates; this is the closest spectral-rate precedent, but it does not state a TWFE/FWL dynamic-ATT row-space frontier.
+\citet{sunabraham2021eventstudy} show that event-study coefficients can be contaminated by effects from other relative periods; the present proposal studies row-space visibility rather than contamination conditional on fixed support.
+\citet{dechaisemartin2020twfe} show that TWFE estimators are weighted averages with potentially negative weights; here the issue is whether the current/carryover basis has enough spectral innovation to be invertible at all.
+\citet{goodmanbacon2021timing} decomposes staggered TWFE into two-by-two comparisons; the proposed Markov frontier is not a comparison decomposition, because recurrent treatment makes the relevant object a lag covariance operator.
+\citet{callaway2021multiple} identify group-time ATT components before aggregation in staggered designs; this proposal asks for the analogous visibility check for Markov history-time ATT directions.
+\citet{schmidheiny2023event} establish identification and equivalence results for event-study and distributed-lag TWFE specifications; the new question is when the distributed-lag Gram itself loses regular rank as \(|\rho_T|\to1\).
+\citet{dechaisemartin2024intertemporal} study nonabsorbing and lagged treatment effects in DiD; the present proposal is narrower but sharper about the Markov spectral boundary separating full, partial, and no regular interpretation.
+\citet{manski2003partial} and \citet{tamer2010partial} provide the partial-identification language used for bounded affine fibers after row-space loss.
+The in-repository panel catalogue in \texttt{doc/API.md} records \texttt{Q1\_MinimalBasis} for iid Bernoulli clean-history identification, \texttt{Q1\_StaggeredMinimalBasis} for absorbing staggered adoption, \texttt{Q1\_SignFlip} for sign-of-bias thresholds, and \texttt{Q1\_SpectralThreshold} for a refuted Markov sign-lock conjecture.
+The closest repository entry is \texttt{Q1\_SpectralThreshold}, but it studies signs of saturated-clean FWL weights; it does not classify interpretability of the dynamic ATT vector through the singular row space of the distributed-lag and clean-history designs.
+
+\section{Formal setup}
+Let \(i=1,\ldots,N\), \(t=1,\ldots,T\), and \(D_{it}\in\{0,1\}\).
+Set \(H_{it}=(D_{i,t-1},D_{it})\in\{00,01,10,11\}\), with \(t=2,\ldots,T\) used for the Q1 interior panel and \(n_T=T-1\).
+Potential outcomes have memory \(p=1\), so \(Y_{it}=Y_{it}(H_{it})\).
+Write \(m(h)=\E[Y_{it}(h)]\) for the time-homogeneous response surface after the untreated baseline has been absorbed by fixed effects.
+The dynamic Q1 ATT profile is
+\[
+\theta =
+\begin{pmatrix}
+\theta_{\mathrm{on}}\\
+\theta_{\mathrm{surv}}
+\end{pmatrix}
+=
+\begin{pmatrix}
+m(01)-m(00)\\
+m(11)-m(00)
+\end{pmatrix}.
+\]
+The treatment path is stationary Markov with transition matrix
+\[
+M_T=
+\begin{pmatrix}
+1-a_T & a_T\\
+b_T & 1-b_T
+\end{pmatrix},
+\qquad
+\rho_T=1-a_T-b_T,\qquad
+\pi_T(1)=\frac{a_T}{a_T+b_T}.
+\]
+Let \(\pi_T(0)=1-\pi_T(1)=b_T/(a_T+b_T)\) and define the spectral innovation mass
+\[
+\Xi_T=n_T\pi_T(0)\pi_T(1)(1-\rho_T^2).
+\]
+The distributed-lag TWFE design contains unit fixed effects, calendar fixed effects, and \(X_t=(D_{it},D_{i,t-1})\).
+The clean-history design augments the target switch-on column \(C_{01}=\one\{H=01\}\) with \(C_{10}=\one\{H=10\}\) and \(C_{11}=\one\{H=11\}\).
+After FWL residualization against unit and calendar fixed effects, write \(Z_T\) for the retained design matrix, \(G_T=\E[Z_T^\transpose Z_T]\) for its population Gram, and \(A_T=\E[Z_T^\transpose \Phi]\) for the moment map from the local history response vector \(m=(m(00),m(01),m(10),m(11))\).
+Let \(G_T=U_T\Sigma_TU_T^\transpose\) be an orthonormal singular decomposition.
+Given a deterministic threshold \(\kappa_T>0\), define
+\[
+J_T^{\mathrm{reg}}=\{j:\Sigma_{T,jj}\ge \kappa_T\},
+\qquad
+\mathcal V_T^{\mathrm{reg}}=\operatorname{span}\{u_{T,j}^\transpose A_T:j\in J_T^{\mathrm{reg}}\}.
+\]
+For any target loading \(\ell\in\R^2\), let \(\bar \ell\in\R^4\) be its induced row on \(m\):
+\[
+\bar\ell^\transpose m
+=
+\ell_1(m(01)-m(00))+\ell_2(m(11)-m(00)).
+\]
+The retained affine fiber under bounds \(L<U\) is
+\[
+\calF_T^{\mathrm{reg}}(z;L,U)=
+\{m'\in[L,U]^4: (u_{T,j}^\transpose A_Tm')_{j\in J_T^{\mathrm{reg}}}=z\}.
+\]
+Let \(\Pi_T^{\mathrm{reg}}\) denote Euclidean projection of response rows onto \(\mathcal V_T^{\mathrm{reg}}\).
+At a boundary sequence with \(\Xi_T/\kappa_T\to\lambda\in(0,\infty)\), let \(s_j=\lim_T \Sigma_{T,jj}/\Xi_T\) when the limit exists and \(J^{\mathrm{bdry}}(\lambda)=\{j:s_j\lambda\ge1\}\).
+
+Locked parameters for Stage 0:
+\begin{verbatim}
+qid = q1_spectral_phase_transition
+specialization = p1_markov
+p = 1
+assignment = stationary two-state first-order Markov treatment path with
+  transition probabilities a_T = Pr(D_t=1 | D_{t-1}=0) and
+  b_T = Pr(D_t=0 | D_{t-1}=1), independently across units.
+  The spectral gap is gamma_T = a_T+b_T, the second eigenvalue is
+  rho_T = 1-gamma_T, and pi_T(1)=a_T/(a_T+b_T).
+target = dynamic Q1 ATT profile theta=(theta_on, theta_surv), where
+  theta_on = m(01)-m(00) is the switch-on effect and
+  theta_surv = m(11)-m(00) is the one-period treated-survivor effect.
+  Linear functionals ell' theta are interpreted as causal dynamic ATT
+  directions only when ell is visible in the retained FWL row space.
+regression = TWFE/FWL distributed-lag regression with unit and calendar
+  fixed effects, current and lagged treatment columns (D_t, D_{t-1}),
+  and the Q1 clean-history nuisance columns 1{H=(1,0)} and 1{H=(1,1)}
+  when they are retained by the deterministic threshold kappa_T.  The
+  spectral innovation mass is
+  Xi_T = n_T*pi_T(0)*pi_T(1)*(1-rho_T^2), with n_T=T-1.
+  Singular directions with Gram singular value below kappa_T are not
+  treated as regular identifying moments; bounded-response affine fibers
+  define the partial-identification fallback.
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite memory and consistency]\label{ass:finite-memory}
+For every unit and interior period, \(Y_{it}=Y_{it}(H_{it})\), where \(H_{it}=(D_{i,t-1},D_{it})\).
+\end{assumption}
+
+\begin{assumption}[Untreated TWFE baseline]\label{ass:untreated-twfe}
+\(\E[Y_{it}(00)\mid D_i]=\alpha_i+\lambda_t\), so unit and calendar fixed effects absorb the untreated response.
+\end{assumption}
+
+\begin{assumption}[Stationary Markov assignment]\label{ass:stationary-markov}
+For each \(T\), \(D_{i1},\ldots,D_{iT}\) are independent across units and follow the stationary two-state Markov law with \(0<a_T<1\), \(0<b_T<1\), transition matrix \(M_T\), stationary probabilities \(\pi_T(0),\pi_T(1)\), and second eigenvalue \(\rho_T=1-a_T-b_T\).
+\end{assumption}
+
+\begin{assumption}[Regular row-space threshold]\label{ass:regular-threshold}
+A deterministic threshold \(\kappa_T>0\) is fixed before outcomes are observed.
+Only Gram singular directions at least \(\kappa_T\) are interpreted as regular identifying moments.
+\end{assumption}
+
+\begin{assumption}[Boundary singular-value limits]\label{ass:boundary-limits}
+For boundary statements with \(\Xi_T/\kappa_T\to\lambda\in(0,\infty)\), every normalized singular value \(\Sigma_{T,jj}/\Xi_T\) along the nonzero distributed-lag and clean-history block has a finite limit \(s_j\).
+\end{assumption}
+
+\begin{assumption}[Bounded response surface]\label{ass:bounded-response}
+For partial-identification statements, \(m(h)\in[L,U]\) for every \(h\in\{00,01,10,11\}\), where \(L<U\) are known finite constants.
+\end{assumption}
+
+\begin{assumption}[Nondegenerate dynamic target loading]\label{ass:nondegenerate-loading}
+The target loading \(\ell\in\R^2\) is nonzero and its induced row \(\bar\ell\) is supported only on \((m(00),m(01),m(11))\) as defined in the formal setup.
+\end{assumption}
+
+\begin{assumption}[Admissible basis comparison class]\label{ass:basis-class}
+The admissible basis class consists of subcollections and nonsingular finite linear recombinations of the distributed-lag columns \((D_t,D_{t-1})\) and clean-history columns \((C_{01},C_{10},C_{11})\), with no external shape restriction on \(m\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: retained row-space identification trichotomy]\label{thm:row-space-trichotomy}
+Assume Assumptions~\ref{ass:regular-threshold}, \ref{ass:bounded-response}, and \ref{ass:nondegenerate-loading}.
+Fix \(T\), retained moments \(z\), and target loading \(\ell\).
+If \(\bar\ell\in\mathcal V_T^{\mathrm{reg}}\), then \(\ell^\transpose\theta\) is regularly point identified from \(z\).
+If \(0\ne\Pi_T^{\mathrm{reg}}\bar\ell\ne\bar\ell\), then \((\Pi_T^{\mathrm{reg}}\bar\ell)^\transpose m\) is regularly point identified and the sharp bounded interval for \(\ell^\transpose\theta\) is
+\[
+\left[
+\inf_{m'\in\calF_T^{\mathrm{reg}}(z;L,U)}\bar\ell^\transpose m',
+\sup_{m'\in\calF_T^{\mathrm{reg}}(z;L,U)}\bar\ell^\transpose m'
+\right].
+\]
+If \(\Pi_T^{\mathrm{reg}}\bar\ell=0\), then no nonzero component of \(\ell^\transpose\theta\) is regularly identified; without Assumption~\ref{ass:bounded-response}, the target is not point identified whenever the retained affine fiber contains a direction \(v\) with \(A_T^{\mathrm{reg}}v=0\) and \(\bar\ell^\transpose v\ne0\).
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This is a deterministic row-space theorem, not the flagship novelty; its closest published analogues are the row-span support logic behind \citet{borusyak2024eventstudy} and the partial-identification logic of \citet{manski2003partial}, but it is phrased for Bojinov-style dynamic panel fixed-effect moments.
+(b) It is worth isolating because Conjecture~\ref{conj:brs-frontier} would feed this theorem directly into \citet{bojinov2021panel}'s applied panel-experiment workflow.
+
+\begin{conjecture}[Conjecture 1: Bojinov--Rambachan--Shephard spectral interpretability frontier (NOT YET PROVED)]\label{conj:brs-frontier}
+Under Assumptions~\ref{ass:finite-memory}--\ref{ass:boundary-limits}, \ref{ass:bounded-response}, and \ref{ass:nondegenerate-loading}, the nonzero singular values of the residualized distributed-lag/clean-history Gram block that separate \(\theta_{\mathrm{on}}\) from \(\theta_{\mathrm{surv}}\) are all of order \(\Xi_T\):
+there exist constants \(0<c<C<\infty\), independent of \(T\), such that each such singular value lies between \(c\Xi_T\) and \(C\Xi_T\), while all rows orthogonal to the Markov innovation span have singular value \(o(\Xi_T)\).
+Consequently, if \(\Xi_T/\kappa_T\to\infty\), then every \(\ell^\transpose\theta\) is regularly point identified.
+If \(\Xi_T/\kappa_T\to\lambda\in(0,\infty)\), then \(\ell^\transpose\theta\) is regularly point identified if and only if \(\bar\ell\) lies in the span of the boundary-retained directions \(J^{\mathrm{bdry}}(\lambda)\), and otherwise it is sharply partially identified by Theorem~\ref{thm:row-space-trichotomy}.
+If \(\Xi_T/\kappa_T\to0\), then no nonzero contrast separating \(\theta_{\mathrm{on}}\) from \(\theta_{\mathrm{surv}}\) is regularly identified.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{bojinov2021panel} show that serial correlation and dynamic effects can make fixed-effect estimators noncausal; the epsilon-gap is the proposed if-and-only-if spectral frontier for the entire dynamic ATT row space.
+\citet{hu2022switchback} give a geometric-mixing rate result, but not a TWFE/FWL row-space trichotomy for current and carryover ATT directions.
+(b) Resolving the conjecture would give users of the panel-experiment methods in \citet{bojinov2021panel} a concrete diagnostic: report \(\Xi_T\) and the retained eigenvectors before claiming that a dynamic fixed-effect coefficient is interpretable.
+
+\begin{conjecture}[Conjecture 2: minimal-basis structural change across the spectral boundary (NOT YET PROVED)]\label{conj:minimal-basis-change}
+Under Assumptions~\ref{ass:finite-memory}--\ref{ass:basis-class}, the clean Q1 history basis \((C_{01},C_{10},C_{11})\) and the distributed-lag basis \((D_t,D_{t-1})\) are regularly equivalent for identifying \(\theta\) when \(\Xi_T/\kappa_T\to\infty\).
+On a boundary sequence, the minimal regular basis is any basis of the boundary-retained innovation subspace \(\operatorname{span}\{u_j^\transpose A_T:j\in J^{\mathrm{bdry}}(\lambda)\}\).
+When \(\Xi_T/\kappa_T\to0\), no admissible recombination of \((D_t,D_{t-1},C_{01},C_{10},C_{11})\) restores regular identification of both \(\theta_{\mathrm{on}}\) and \(\theta_{\mathrm{surv}}\) without an external shape restriction on \(m\).
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The repository's \texttt{Q1\_MinimalBasis} proves a static iid clean-basis result, and \texttt{Q1\_SpectralThreshold} refutes a Markov sign-lock conjecture; neither says that the minimal basis changes with the Markov innovation eigenvalue.
+\citet{schmidheiny2023event} compare event-study and distributed-lag parametrizations, but do not classify basis minimality after Markov spectral row loss.
+(b) This would give the \citet{schmidheiny2023event} distributed-lag practice a sharp warning: near \(|\rho_T|=1\), formula equivalence does not imply regular causal-equivalence of the dynamic ATT coordinates.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[IID fixed-gap reduction]\label{cor:iid-fixed-gap}
+If \(a_T=a\), \(b_T=b\), \(0<a,b<1\), and \(|1-a-b|<1\) is bounded away from \(1\), then \(\Xi_T\asymp T\).
+For any \(\kappa_T=o(T)\), Conjecture~\ref{conj:brs-frontier} reduces to regular point identification of the two-dimensional Q1 dynamic ATT profile.
+\end{corollary}
+Under Assumptions~\ref{ass:stationary-markov} and \ref{ass:regular-threshold}, the reduction is immediate because \(\pi_T(0)\pi_T(1)(1-\rho_T^2)\) is a fixed positive constant; this matches the existing Q1 iid clean-basis result in the catalogue.
+
+\begin{corollary}[Persistent rare-switch collapse]\label{cor:persistent-collapse}
+If \(a_T=\alpha/T^2\), \(b_T=b\in(0,1)\), then \(\rho_T\to1\) and \(\Xi_T\to0\).
+Conjecture~\ref{conj:brs-frontier} predicts that the switch-on and treated-survivor contrast cannot be regularly separated.
+\end{corollary}
+Under Assumption~\ref{ass:stationary-markov}, \(\pi_T(1)\sim a_T/b\) and \(1-\rho_T^2\sim2b\), so \(n_T\pi_T(0)\pi_T(1)(1-\rho_T^2)\asymp T\cdot T^{-2}\to0\).
+
+\begin{corollary}[Near-alternation collapse]\label{cor:alternating-collapse}
+If \(a_T=1-\alpha/T^2\) and \(b_T=1-\beta/T^2\), then \(\rho_T\to-1\) and \(\Xi_T\to0\).
+Conjecture~\ref{conj:brs-frontier} predicts the same nonregular separation of dynamic ATT directions, despite frequent treatment changes.
+\end{corollary}
+The algebra differs from Corollary~\ref{cor:persistent-collapse}: here \(\pi_T(0)\pi_T(1)\to1/4\), but \(1-\rho_T^2\sim2(\alpha+\beta)/T^2\), so the lag design is nearly deterministic alternating and the innovation mass still vanishes.
+
+\section{Why feasible}
+The mathematical route is finite-dimensional.
+First, compute the two-by-two Markov lag covariance matrix after fixed-effect residualization; before residualization the lag block has Toeplitz entries proportional to \(\pi_T(0)\pi_T(1)\rho_T^{|j-k|}\), whose determinant is proportional to \(\pi_T(0)^2\pi_T(1)^2(1-\rho_T^2)\).
+Second, show that unit and calendar FWL residualization changes this block only by lower-order boundary terms under the stationary interior convention.
+Third, transport the distributed-lag block to the Q1 clean-history response map and identify which singular directions load on \((m(01)-m(00),m(11)-m(00))\).
+The boundary cases needing explicit algebra are \(\rho_T\to1\), \(\rho_T\to-1\), balanced versus unbalanced stationary shares, and the exact two-direction projection on the \(\Xi_T/\kappa_T\to\lambda\) frontier.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:row-space-trichotomy} is labelled as a theorem because it is routine finite-dimensional linear algebra with box bounds.
+Conjectures~\ref{conj:brs-frontier} and \ref{conj:minimal-basis-change} are not yet proved.
+The proposal does not claim that finite-\(T\) algebraic point identification fails when \(0<a_T,b_T<1\); the point/partial/nonidentified trichotomy is a regular-identification convention after imposing the deterministic threshold \(\kappa_T\).
+The hardest open issue is whether the FWL residualization and clean-history transformation preserve the exact \(\Xi_T\) singular-value order uniformly when the stationary share \(\pi_T(1)\) also approaches zero or one.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for angle 2, replacing the exhausted event-window rank-collapse angle with a Bojinov--Rambachan--Shephard distributed-lag interpretability frontier; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Bojinov, Rambachan, and Shephard(2021)]{bojinov2021panel}
+Iavor Bojinov, Ashesh Rambachan, and Neil Shephard.
+\newblock Panel experiments and dynamic causal effects: A finite population perspective.
+\newblock \emph{Quantitative Economics}, 12(4):1171--1196, 2021.
+
+\bibitem[Bojinov, Simchi-Levi, and Zhao(2023)]{bojinov2023switchback}
+Iavor Bojinov, David Simchi-Levi, and Jinglong Zhao.
+\newblock Design and analysis of switchback experiments.
+\newblock \emph{Management Science}, 69(7):3759--3777, 2023.
+
+\bibitem[Borusyak, Jaravel, and Spiess(2024)]{borusyak2024eventstudy}
+Kirill Borusyak, Xavier Jaravel, and Jann Spiess.
+\newblock Revisiting event-study designs: Robust and efficient estimation.
+\newblock \emph{Review of Economic Studies}, 91(6):3253--3285, 2024.
+
+\bibitem[Callaway and Sant'Anna(2021)]{callaway2021multiple}
+Brantly Callaway and Pedro H. C. Sant'Anna.
+\newblock Difference-in-differences with multiple time periods.
+\newblock \emph{Journal of Econometrics}, 225(2):200--230, 2021.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{dechaisemartin2020twfe}
+Clement de Chaisemartin and Xavier D'Haultfoeuille.
+\newblock Two-way fixed effects estimators with heterogeneous treatment effects.
+\newblock \emph{American Economic Review}, 110(9):2964--2996, 2020.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2024)]{dechaisemartin2024intertemporal}
+Clement de Chaisemartin and Xavier D'Haultfoeuille.
+\newblock Difference-in-differences estimators of intertemporal treatment effects.
+\newblock \emph{Review of Economics and Statistics}, 2024.
+
+\bibitem[Goodman-Bacon(2021)]{goodmanbacon2021timing}
+Andrew Goodman-Bacon.
+\newblock Difference-in-differences with variation in treatment timing.
+\newblock \emph{Journal of Econometrics}, 225(2):254--277, 2021.
+
+\bibitem[Hu and Wager(2022)]{hu2022switchback}
+Yuchen Hu and Stefan Wager.
+\newblock Switchback experiments under geometric mixing.
+\newblock arXiv:2209.00197, 2022.
+
+\bibitem[Manski(2003)]{manski2003partial}
+Charles F. Manski.
+\newblock \emph{Partial Identification of Probability Distributions}.
+\newblock Springer, 2003.
+
+\bibitem[Schmidheiny and Siegloch(2023)]{schmidheiny2023event}
+Kurt Schmidheiny and Sebastian Siegloch.
+\newblock On event studies and distributed-lags in two-way fixed effects models: Identification, equivalence, and generalization.
+\newblock \emph{Journal of Applied Econometrics}, 38(5):695--713, 2023.
+
+\bibitem[Sun and Abraham(2021)]{sunabraham2021eventstudy}
+Liyang Sun and Sarah Abraham.
+\newblock Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\newblock \emph{Journal of Econometrics}, 225(2):175--199, 2021.
+
+\bibitem[Tamer(2010)]{tamer2010partial}
+Elie Tamer.
+\newblock Partial identification in econometrics.
+\newblock \emph{Annual Review of Economics}, 2:167--195, 2010.
+\end{thebibliography}
+
+\end{document}

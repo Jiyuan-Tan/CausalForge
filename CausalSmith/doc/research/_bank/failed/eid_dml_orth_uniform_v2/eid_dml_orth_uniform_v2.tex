@@ -1,0 +1,365 @@
+% =====================================================================
+%  thmsmith Stage 0 derivation skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=eid\_dml\_orth\_uniform, specialization=v2
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage 0 derivation: \texttt{eid\_dml\_orth\_uniform} / \texttt{v2}%
+  \\ \large\textit{Setup for a sharp pseudo-truth partition of DML, LRO, and ADML ATE reports}}
+\author{thmsmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note fixes the finite-support exact-identification setup for comparing three observable reports for the unconfounded binary-treatment average treatment effect.  The identifying functional is the back-door ATE map
+\[
+\Psi(P)=\sum_{x\in\mathcal X}\{\E_P[Y\mid D=1,X=x]-\E_P[Y\mid D=0,X=x]\}P(X=x),
+\]
+and the target causal estimand is \(\theta_0=\E[Y(1)-Y(0)]\).  Within this identified model, the report-level objects are the DML AIPW moment with propensity-induced Riesz term, the CEINR locally robust GMM correction, and the ADML automatic Riesz moment.  The later per-conjecture stages will verify or refute whether the locked finite-dimensional drift and variance-report objects give a sharp non-rectangular validity partition and whether a \(J\le4\) finite-support witness exists.
+\end{abstract}
+
+\section{Introduction}
+Applied double/debiased machine learning analyses often report an average treatment effect using one of several algebraically related orthogonal constructions.  When the outcome regression and Riesz or propensity nuisance functions are both close enough to their targets, the familiar product-rate theory makes the DML, locally robust GMM, and automatic Riesz reports share the same efficient first-order law.  The unsettled question in this note is what remains true outside that settled product-rate neighborhood, while the causal target itself remains the standard back-door identified ATE.
+
+The exact-identification part is deliberately conventional: consistency, conditional exchangeability, and overlap identify \(\theta_0=\E[Y(1)-Y(0)]\) by the adjustment functional in Section~7.  The new issue is report geometry, not a new causal graph.  The conjectures ask whether finite-support local pseudo-truth directions can be partitioned sharply by explicit numerator-drift and variance-report functionals, and whether this partition is genuinely non-rectangular in the outcome, propensity-induced Riesz, and automatic-Riesz components.
+
+If confirmed, Conjecture 1 would give necessary-and-sufficient validity cells for the locked DML, LRO, and ADML reports under the same ATE model.  If confirmed, Conjecture 2 would give a small finite-support witness showing that marginal nuisance rates and marginal norms do not determine the first-order Wald behavior.  Both conjectures are therefore useful as formula-design tests: they say what an empirical report must compute about joint nuisance compatibility, rather than only what marginal rates it must quote.
+
+\paragraph{Motivating conjecture(s).}
+\paragraph{Conjecture 1 (label=partition).}
+Under Assumptions~\ref{ass:ate-id}--\ref{ass:expansion-domain}, there exist explicit finite-dimensional objects
+\[
+\{\ell_{g,m},\ell_{a,m},T_m,s_{g,m},s_{a,m},U_m\}_{m\in\{\mathrm{DML},\mathrm{LRO},\mathrm{ADML}\}}
+\quad\text{and}\quad \mathcal C(P_0)
+\]
+computable from the locked published report formulas and the observable finite-support law such that, for every rate tuple \((r_g,r^p_a,r^A_a)\) and compatible direction \((h_g,h^p_a,h^A_a)\), report \(m\) has the locked first-order studentized Wald law if and only if both
+\[
+n^{1/2-r_g}\ell_{g,m}(h_g)+n^{1/2-r_{a,m}}\ell_{a,m}(h_{a,m})
++n^{1/2-r_g-r_{a,m}}\langle T_mh_g,h_{a,m}\rangle_\nu \to 0
+\]
+and
+\[
+n^{-r_g}s_{g,m}(h_g)+n^{-r_{a,m}}s_{a,m}(h_{a,m})
++n^{-r_g-r_{a,m}}\langle U_mh_g,h_{a,m}\rangle_\nu \to 0 .
+\]
+The first display is the numerator-drift condition, and the second is the variance-report ratio condition for the named report.  The common-valid, estimator-specific-valid, first-order-separated, variance-report-separated, and jointly invalid regions are exactly the cells of these two conditions after intersecting with \(\mathcal C(P_0)\).  For an open set of finite-support laws, \(\mathcal C(P_0)\) is not a Cartesian product of outcome, propensity-induced Riesz, and automatic-Riesz direction sets, and the ADML-valid cell strictly contains a DML-valid cell along at least one one-good-nuisance face because \(h^A_a\) is constrained by the automatic Riesz normal equations while \(h^p_a\) is constrained by the propensity-logit pseudo-truth.  On another open set, DML and LRO have the same numerator-drift cell but different variance-report cells through \(S_{\mathrm{DML}}\ne S_{\mathrm{LRO}}\).
+
+\paragraph{Conjecture 2 (label=witness).}
+There is a nondegenerate finite-support law with \(J\le4\), positive overlap, and positive residual variance on all treatment cells such that the compatibility cone \(\mathcal C(P_0)\) contains two directions \((h_g,h^p_a,h^A_a)\) and \((\tilde h_g,\tilde h^p_a,\tilde h^A_a)\) with identical marginal norms and rate exponents but different products \(\langle T_mh_g,h_{a,m}\rangle_\nu\) or \(\langle U_mh_g,h_{a,m}\rangle_\nu\).  Along these two directions, at least one named report switches between numerator validity, variance-report validity, and first-order separation while the marginal rate tuple is unchanged.
+
+\section{Related work and positioning}
+\cite{Pearl1995} gives the back-door adjustment logic used here to identify the ATE from the observed law.  \cite{RobinsRotnitzkyZhao1994JASA} supplies the augmented inverse-probability lineage behind the AIPW moment.  \cite{Newey1994Econometrica} gives the semiparametric variance framework used to interpret a common influence function as a guardrail.  \cite{ChernozhukovEtAl2018ECTJ} is the baseline DML source for cross-fitted Neyman-orthogonal ATE scores and sufficient product-rate conditions.  \cite{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO} gives the locally robust semiparametric GMM construction specialized here to the scalar ATE report.  \cite{ChernozhukovNeweySingh2022ADML} gives the automatic Riesz construction whose finite-support normal equations define the ADML branch.
+
+\cite{ChernozhukovNeweySingh2022RR} studies regularized Riesz representers and weak double-sparsity robustness, which is close to the instability issues in the ADML component but not a three-report partition.  \cite{BrunsSmithDukesFellerOgburn2024ABW} and \cite{BrunsSmith2026RieszApproaches} compare balancing-weight and direct-Riesz formulations; those equivalences motivate checking whether the present report differences are real rather than notation.  \cite{BonviniKennedyDukesBalakrishnan2024} and \cite{DukesVansteelandtWhitney2024JMLR} are the nearest one-good-nuisance comparators and warnings: they address doubly robust inference beyond standard product rates but do not provide the locked DML/LRO/ADML finite-support cell decomposition.  \cite{VanDerLaanLuedtkeCarone2024CDML} motivates calibrated DML as a potential consumer of the partition rather than as a fourth report studied in this setup.  \cite{AtheyImbensWager2018JRSSB} motivates finite-support balancing and overlap diagnostics, which are natural sources of small witnesses for non-rectangularity.
+
+\section{Formal setup}
+Let \(P_0\) be the baseline observed law of \(O=(Y,D,X)\).  The treatment \(D\) is binary, \(X\) has fixed finite support \(\mathcal X_J=\{x_1,\ldots,x_J\}\), and the potential outcomes are \(Y(1)\) and \(Y(0)\).  The exact-identification substrate is the binary-treatment unconfoundedness SWIG: intervention \(do(D=d)\) fixes \(D=d\), the counterfactual outcome is \(Y(d)\), and there is no interference.  All conditional probabilities and expectations below are with respect to the observed law unless explicitly marked otherwise.
+
+Write
+\[
+p_0(x)=\Pr(D=1\mid X=x),\qquad \mu_{d0}(x)=\E[Y\mid D=d,X=x],
+\]
+and let \(\pi_x=\Pr(X=x)\).  The binary ATE Riesz representer at the truth is
+\[
+\alpha_0(D,X)=\frac{D}{p_0(X)}-\frac{1-D}{1-p_0(X)}.
+\]
+The canonical ATE influence function is
+\[
+\phi_0(O)=\mu_{10}(X)-\mu_{00}(X)+\alpha_0(D,X)\{Y-\mu_{D0}(X)\}-\theta_0,
+\qquad V_0=\E[\phi_0(O)^2].
+\]
+
+Fix a finite feature vector \(B(X)\in\R^K\).  For pseudo-truth coefficients \(\eta=(\beta_1,\beta_0,\gamma)\), define
+\[
+\bar\mu_d(x)=B(x)^\transpose\beta_d,\qquad
+\bar p(x)=\Lambda(B(x)^\transpose\gamma),\qquad
+\bar\alpha^p(D,X)=\frac{D}{\bar p(X)}-\frac{1-D}{1-\bar p(X)},
+\]
+where \(\Lambda(t)=1/(1+\exp(-t))\).  The common AIPW summand is
+\[
+\psi_{\mathrm{AIPW}}(O;\theta,\eta)
+=\bar\mu_1(X)-\bar\mu_0(X)+\bar\alpha^p(D,X)\{Y-\bar\mu_D(X)\}-\theta.
+\]
+The DML pseudo-target is
+\[
+\theta_{\mathrm{DML}}(\eta)=
+\E[\bar\mu_1(X)-\bar\mu_0(X)+\bar\alpha^p(D,X)\{Y-\bar\mu_D(X)\}].
+\]
+
+The LRO report uses
+\[
+b_{\mathrm{LRO}}(O;\eta)=
+\begin{pmatrix}
+D B(X)\{Y-\bar\mu_1(X)\}\\
+(1-D)B(X)\{Y-\bar\mu_0(X)\}\\
+B(X)\{D-\bar p(X)\}
+\end{pmatrix},
+\]
+\[
+\dot A_{\mathrm{LRO}}(\theta,\eta)=\E[\partial_\eta\psi_{\mathrm{AIPW}}(O;\theta,\eta)]
+\quad\text{with \(\theta\) held fixed,}
+\]
+\[
+A_{\mathrm{LRO}}(\eta)=\dot A_{\mathrm{LRO}}(\theta_{\mathrm{DML}}(\eta),\eta),\qquad
+M_{\mathrm{LRO}}(\eta)=\E[\partial_\eta b_{\mathrm{LRO}}(O;\eta)],
+\]
+and
+\[
+\psi_{\mathrm{LRO}}(O;\theta,\eta)=
+\psi_{\mathrm{AIPW}}(O;\theta,\eta)
+-A_{\mathrm{LRO}}(\eta)M_{\mathrm{LRO}}(\eta)^{-1}b_{\mathrm{LRO}}(O;\eta).
+\]
+Its pseudo-target \(\theta_{\mathrm{LRO}}(\eta)\) solves \(\E[\psi_{\mathrm{LRO}}(O;\theta,\eta)]=0\), and the locked Jacobian normalization is \(J_{\mathrm{LRO}}=1\).
+
+For ADML, let
+\[
+C(D,X)=\begin{pmatrix}D B(X)\\ (1-D)B(X)\end{pmatrix},
+\qquad c_A=\begin{pmatrix}\E[B(X)]\\ -\E[B(X)]\end{pmatrix}.
+\]
+The automatic Riesz coefficient \(\bar\zeta\) solves
+\[
+\E[C(D,X)C(D,X)^\transpose]\bar\zeta=c_A,
+\]
+and the learned representer is \(\bar\alpha^A(D,X)=C(D,X)^\transpose\bar\zeta\).  The ADML moment is
+\[
+\psi_{\mathrm{ADML}}(O;\theta,\beta,\zeta)=
+\bar\mu_1(X)-\bar\mu_0(X)+\bar\alpha^A(D,X)\{Y-\bar\mu_D(X)\}-\theta,
+\]
+with pseudo-target \(\theta_{\mathrm{ADML}}(\beta,\zeta)\) solving the corresponding population moment.  The feature-span convention imposes \(C(D,X)^\transpose\zeta_0=\alpha_0(D,X)\) at \(P_0\).
+
+For local pseudo-truth sequences, write
+\[
+g_n=(u_{1n},u_{0n}),\qquad u_{dn}(x)=\bar\mu_{dn}(x)-\mu_{d0}(x),
+\]
+\[
+a^p_n(D,X)=\bar\alpha^p_n(D,X)-\alpha_0(D,X),\qquad
+a^A_n(D,X)=\bar\alpha^A_n(D,X)-\alpha_0(D,X).
+\]
+For report \(m\), set \(a_{m,n}=a^p_n\) for \(m\in\{\mathrm{DML},\mathrm{LRO}\}\) and \(a_{m,n}=a^A_n\) for \(m=\mathrm{ADML}\).  The residual-variance inner product is
+\[
+\langle f,h\rangle_\nu=\E[f(D,X)h(D,X)\sigma_D^2(X)],
+\qquad \sigma_d^2(x)=\operatorname{Var}(Y\mid D=d,X=x),
+\]
+with \(\|f\|_\nu^2=\langle f,f\rangle_\nu\).  The finite-dimensional cell-function space is denoted \(\mathcal H_J\).
+
+\paragraph{Locked parameters.}
+\begin{itemize}
+\item qid: eid\_dml\_orth\_uniform
+\item specialization: v2
+\item graph / SWIG: binary-treatment unconfoundedness SWIG with observed \(O=(Y,D,X)\), \(D\in\{0,1\}\), finite-support \(X\), potential outcomes \(Y(1),Y(0)\), and no interference.
+\item treatment: the binary intervention \(do(D=d)\), \(d\in\{0,1\}\).
+\item target estimand: \(\theta_0=\E[Y(1)-Y(0)]\).
+\item identifying assumptions: consistency \(Y=DY(1)+(1-D)Y(0)\), unconfoundedness \((Y(1),Y(0))\) independent of \(D\) conditional on \(X\), fixed-overlap \(\epsilon \le p_0(X)\le 1-\epsilon\), finite fourth moments, and finite-support triangular-array local pseudo-truth sequences for the outcome regression and propensity/Riesz nuisance functions.
+\item estimator reports compared: the DML cross-fit AIPW report of ChernozhukovEtAl2018ECTJ with a propensity-induced Riesz term; the CEINR locally-robust GMM ATE report whose scalar moment is \(\psi_{\mathrm{AIPW}}-A_{\mathrm{LRO}}M_{\mathrm{LRO}}^{-1}b_{\mathrm{LRO}}\), where \(A_{\mathrm{LRO}}\) is the partial \(\eta\) derivative with \(\theta\) held fixed before the solved pseudo-target is plugged in, with Jacobian one and sandwich variance \(\E[(\psi_{\mathrm{AIPW}}-A_{\mathrm{LRO}}M_{\mathrm{LRO}}^{-1}b_{\mathrm{LRO}})^2]\); and the ChernozhukovNeweySingh2022ADML automatic Riesz report whose Riesz pseudo-truth solves its own finite-support normal equations rather than being forced to equal the propensity-logit inverse-weight map.
+\item feature-span convention: \(B\) is fixed within the finite-support experiment and its treatment-specific span \(C(D,X)\) contains the baseline ATE Riesz representer \(\alpha_0\), so \(\alpha_0(D,X)=C(D,X)'\zeta_0\) for a unique baseline coefficient \(\zeta_0\) solving the ADML normal equations at \(P_0\).
+\item equivalence notion: uniform root-\(n\) asymptotic linearity around the same ATE and equality of the first-order studentized Wald law under the named variance report, meaning both numerator drift cancellation and report variance-ratio convergence to one, uniformly over the locked finite-support local experiment.
+\end{itemize}
+
+\section{Assumptions}
+\begin{assumption}[ATE identification]\label{ass:ate-id}
+Consistency \(Y=DY(1)+(1-D)Y(0)\), conditional unconfoundedness \((Y(1),Y(0))\perp D\mid X\), and fixed overlap \(0<\epsilon\le p_0(X)\le 1-\epsilon<1\) hold on the finite support \(\mathcal X_J\).
+\end{assumption}
+
+\begin{assumption}[Finite-support regularity]\label{ass:finite-regular}
+The support size \(J\) is fixed within each local experiment, every support cell has probability at least \(\epsilon_J>0\), \(\E[Y^4\mid D=d,X=x]\) is uniformly bounded, and \(\sigma_d^2(x)\) is finite for all \(d,x\).
+\end{assumption}
+
+\begin{assumption}[Named report maps]\label{ass:report-maps}
+The DML, LRO, and ADML reports are the locked published reports as specialized in Section~5: DML uses the cross-fit AIPW score of \cite{ChernozhukovEtAl2018ECTJ} with propensity-induced \(\bar\alpha^p\) and pseudo-target \(\theta_{\mathrm{DML}}\); LRO uses the scalar CEINR moment \(\psi_{\mathrm{AIPW}}-A_{\mathrm{LRO}}M_{\mathrm{LRO}}^{-1}b_{\mathrm{LRO}}\), where \(A_{\mathrm{LRO}}\) is the partial \(\eta\)-derivative with \(\theta\) held fixed before \(\theta_{\mathrm{DML}}(\eta)\) is plugged in, Jacobian \(J_{\mathrm{LRO}}=1\), pseudo-target \(\theta_{\mathrm{LRO}}\), and sandwich variance \(V_{\mathrm{LRO}}\); ADML uses the automatic Riesz score and robust variance of \cite{ChernozhukovNeweySingh2022ADML} with pseudo-target \(\theta_{\mathrm{ADML}}\) and \(\bar\alpha^A=C^\transpose\bar\zeta\) solving \(\E[CC^\transpose]\bar\zeta=c_A\).  The matrix \(M_{\mathrm{LRO}}(\eta_0)\) is nonsingular, the ADML Riesz Gram matrix \(\E[CC^\transpose]\) is nonsingular on the selected feature span, \(C^\transpose\zeta_0=\alpha_0\) at the baseline law, and the three report variances at the truth are positive.
+\end{assumption}
+
+\begin{assumption}[Local pseudo-truth rates]\label{ass:pseudotruth-rates}
+There are deterministic finite-support directions \(h_g\in\mathcal H_J^2\), \(h^p_a,h^A_a\in\mathcal H_J\), exponents \(r_g,r^p_a,r^A_a\ge0\), and bounded remainders such that \(g_n=n^{-r_g}h_g+o(n^{-r_g})\), \(a^p_n=n^{-r^p_a}h^p_a+o(n^{-r^p_a})\), and \(a^A_n=n^{-r^A_a}h^A_a+o(n^{-r^A_a})\) in \(\|\cdot\|_\nu\).  For report \(m\), write \((h_{a,m},r_{a,m})=(h^p_a,r^p_a)\) for DML and LRO and \((h_{a,m},r_{a,m})=(h^A_a,r^A_a)\) for ADML.
+\end{assumption}
+
+\begin{assumption}[Compatibility cone]\label{ass:compatibility}
+The tuple \((h_g,h^p_a,h^A_a)\) belongs to the observable compatibility cone \(\mathcal C(P_0)\subseteq\mathcal H_J^2\times\mathcal H_J\times\mathcal H_J\) if and only if there exists a mean-zero local law score \(s(O)\) and coefficient differentials \((\delta\beta_1,\delta\beta_0,\delta\gamma,\delta\zeta)\) satisfying the linearized pseudo-truth equations
+\[
+\E[D B(X)\{Y-\mu_{10}(X)\}s(O)]-\E[D B(X)B(X)^\transpose]\delta\beta_1=0,
+\]
+\[
+\E[(1-D) B(X)\{Y-\mu_{00}(X)\}s(O)]-\E[(1-D) B(X)B(X)^\transpose]\delta\beta_0=0,
+\]
+\[
+\E[B(X)\{D-p_0(X)\}s(O)]-\E[B(X)B(X)^\transpose p_0(X)\{1-p_0(X)\}]\delta\gamma=0,
+\]
+with \(h_g=(B^\transpose\delta\beta_1,B^\transpose\delta\beta_0)\) and
+\[
+h^p_a(D,X)=
+-\left\{\frac{D\{1-p_0(X)\}}{p_0(X)}+\frac{(1-D)p_0(X)}{1-p_0(X)}\right\}
+B(X)^\transpose\delta\gamma .
+\]
+Equivalently, the propensity perturbation is \(q(x)=p_0(x)\{1-p_0(x)\}B(x)^\transpose\delta\gamma\), and the display is the derivative of \(D/\bar p-(1-D)/(1-\bar p)\) in the logit direction.  The ADML Riesz component is determined by the separate linearized normal equation
+\[
+\E[C(D,X)C(D,X)^\transpose]\delta\zeta
++\E[C(D,X)C(D,X)^\transpose s(O)]\zeta_0-\E[C(1,X)-C(0,X)]s(O)=0,
+\]
+with \(h^A_a(D,X)=C(D,X)^\transpose\delta\zeta\).  The same \(s(O)\) must solve the regression, propensity, and Riesz equations, so \(\mathcal C(P_0)\) is generally not the Cartesian product of the marginal outcome, propensity-induced Riesz, and automatic-Riesz direction sets.
+\end{assumption}
+
+\begin{assumption}[First-order expansion domain]\label{ass:expansion-domain}
+For every \(m\in\{\mathrm{DML},\mathrm{LRO},\mathrm{ADML}\}\), the numerator report is centered at its report-specific pseudo-target \(\theta_m\) from Section~5 and has an expansion with canonical leading term \(n^{-1/2}\sum_i\phi_0(O_i)\) plus the deterministic drift \(R_m(g_n,a_{m,n})\) and an \(o_{\Pr}(n^{-1/2})\) empirical-process remainder uniformly over the local experiment.  Its named variance report, evaluated at the same solved report moment, satisfies the variance-ratio expansion \(V_m(g_n,a_{m,n})/V_0=1+S_m(g_n,a_{m,n})+o_{\Pr}(1)\) uniformly over the same experiment.
+\end{assumption}
+
+\section{Estimand-defining functional}
+For any observed law \(P\) on \((Y,D,X)\) with finite \(X\)-support \(\mathcal X(P)\), positive treatment-cell probabilities, and finite conditional first moments, define the back-door identifying functional
+\[
+\Psi(P)=\sum_{x\in\mathcal X(P)}
+\left\{\mu_{1,P}(x)-\mu_{0,P}(x)\right\}\pi_P(x),
+\]
+where
+\[
+\mu_{d,P}(x)=\E_P[Y\mid D=d,X=x],\qquad
+\pi_P(x)=P(X=x).
+\]
+This is a computable map from the observed population law: enumerate the finite support points \(x\), compute the two treatment-cell conditional means from \(P\), take their difference, and average with weights \(\pi_P(x)\).  The map is defined only on laws satisfying the support condition \(P(D=d,X=x)>0\) for every \(d\in\{0,1\}\) and every \(x\) with \(\pi_P(x)>0\); this is the positivity needed for the divisions implicit in the conditional means.
+
+The report-level drift functionals used by the later conjectures are also finite-dimensional maps.  For each \(m\in\{\mathrm{DML},\mathrm{LRO},\mathrm{ADML}\}\), the numerator drift is represented on the local cell-function space by
+\[
+R_m(g,a)=\ell_{g,m}(g)+\ell_{a,m}(a)+\langle T_m g,a\rangle_\nu,
+\]
+and the named variance-report distortion by
+\[
+\frac{V_m(g,a)}{V_0}=1+S_m(g,a)+o(\|g\|_\nu+\|a\|_\nu+\|g\|_\nu\|a\|_\nu),
+\qquad
+S_m(g,a)=s_{g,m}(g)+s_{a,m}(a)+\langle U_mg,a\rangle_\nu.
+\]
+The operators \(\ell_{g,m},\ell_{a,m},T_m,s_{g,m},s_{a,m},U_m\) are obtained by differentiating the displayed finite-support report formulas in Section~5.  Thus their evaluation is a finite matrix calculation once \(P_0\), \(B\), \(C\), and the locked report equations are fixed.
+
+\section{Target causal estimand}
+The causal target is the average treatment effect under the binary intervention,
+\[
+\theta_0=\E[Y(1)-Y(0)].
+\]
+Equivalently, \(\theta_0=\E[Y(1)]-\E[Y(0)]\), where \(Y(d)\) is the potential outcome under \(do(D=d)\).  Under Assumption~\ref{ass:ate-id}, the target is identified by the functional in Section~7 because, for each \(d\in\{0,1\}\),
+\[
+\E[Y(d)]
+=\sum_{x\in\mathcal X_J}\E[Y(d)\mid X=x]\Pr(X=x)
+=\sum_{x\in\mathcal X_J}\E[Y(d)\mid D=d,X=x]\Pr(X=x)
+=\sum_{x\in\mathcal X_J}\E[Y\mid D=d,X=x]\Pr(X=x).
+\]
+The first equality is the law of total expectation on the finite support, the second uses conditional unconfoundedness, and the third uses consistency plus positivity for the conditioning events.  Subtracting the \(d=0\) expression from the \(d=1\) expression gives \(\theta_0=\Psi(P_0)\).
+
+\section{Main theorems}
+% TODO(stage0 \S9 Main theorems):
+%   - Each main theorem = one contribution. Incremental results go in `proposition`, not `theorem`.
+%   - Immediately after each theorem: what is new, why important, comparison to closest prior result.
+
+\section{Interpretation}
+% TODO(stage0 \S10 Interpretation): cluster-appropriate:
+%   - Panel: when the coefficient is clean and when it is contaminated; which terms drive the contamination.
+%   - ExactID: which assumption(s) carry the identification, which strata require positivity, what kind of
+%     mis-specification breaks the identification.
+%   - PartialID: when the bound collapses to point identification, when it widens to the natural Manski
+%     no-restriction bound, and which restriction is doing the tightening work.
+%   - Universal: what each theorem means in words; connect back to Introduction and Related-work positioning.
+
+\section{Step-by-step proof}
+% TODO(stage0 \S11 Proof): cluster-appropriate technique:
+%   - Panel: FWL, finite-memory potential outcomes, residualization / rank / support steps.
+%   - ExactID: do-calculus rules (1/2/3), SWIG counterfactual independence, g-formula / sequential
+%     adjustment, mediation factorization. Cite the rule at each application.
+%   - PartialID: extreme-point / LP arguments, Manski worst-case completion, MTR / MTS algebra,
+%     Balke--Pearl LP, sensitivity-model duality. State the technique used at each step.
+%   - Universal: each equality (or each \subseteq / \le in the partial-ID case) must be traceable to
+%     a named assumption or algebraic identity. Each theorem proof must explicitly cite the assumptions
+%     and lemmas it uses.
+
+\section{Sanity checks}
+% TODO(stage0 \S12 Sanity checks --- REQUIRED, Stage 0.5 verifies these): cluster-appropriate corner cases:
+%   - Panel: homogeneous effects; no carry-over; contamination terms vanishing; T=2 reduces to canonical DID.
+%   - ExactID: X = \emptyset (unconditional ignorability); random treatment (E[Y(a)] = E[Y | A=a]); null
+%     effect E[Y(1)] = E[Y(0)]; named special case (e.g. backdoor with binary treatment under randomization
+%     reduces to E[Y | A=1] - E[Y | A=0]).
+%   - PartialID: vacuous bounds under no restriction (natural Manski [E[Y_L], E[Y_U]] bound); zero-width
+%     bounds under point-identification; MTR specialization; named special case (e.g. Balke--Pearl with
+%     binary IV recovers the Wald bound).
+
+\section{Counterexample or minimality check}
+% TODO(stage0 \S13 Counterexample / minimality): cluster-appropriate:
+%   - Positive result: small counterexample showing why weakening the result fails, when one is available.
+%     * Panel: weaker basis / shorter memory / reduced support.
+%     * ExactID: dropping one identifying assumption (ignorability, positivity, exclusion, monotonicity, etc.).
+%     * PartialID: dropping one shape / IV / sensitivity restriction; non-sharp completion.
+%   - Negative result: nearest formula / assumption / restriction that fixes the problem if possible.
+%   - If no useful counterexample applies, say so explicitly and name the condition playing the minimality role:
+%     * Panel: rank / support / basis-completeness condition.
+%     * ExactID: positivity / overlap on the strata actually used; identifying-assumption tightness.
+%     * PartialID: shape / IV / sensitivity restriction whose removal makes the bound vacuous or non-sharp.
+
+\section{Formalization checklist}
+% TODO(stage0 \S14 Math-objects checklist --- REQUIRED, read by Stage 1 to derive the formalization plan;
+%   section header stays "Formalization checklist" by skeleton invariant):
+%   - Objects, definitions, lemmas, and identities the proof relies on as *mathematical* objects
+%     (typed signatures, dependencies, role in the proof).
+%   - Separate probabilistic assumptions from deterministic identities.
+%   - Do NOT cite `*.lean` files or Mathlib lemmas --- Stage 1 owns the Lean-substrate mapping
+%     and the feasibility gate.
+
+\section{Conclusion and references}
+% TODO(stage0 \S15 Conclusion): restate the theorem-level contribution and the key cluster-appropriate condition:
+%   - Panel: clean-coefficient condition and main contamination source.
+%   - ExactID: which identifying assumption carries the result and what breaks identification.
+%   - PartialID: which restriction tightens the bound and when the bound becomes vacuous / point-identifying.
+
+\subsection*{References}
+% TODO(stage0 \S15 References): bibliography entries for every cited published work.
+%   Use `\begin{thebibliography}{99} \bibitem{key} ... \end{thebibliography}` or a self-contained list.
+%   No separate bibliographic note --- all substantive positioning belongs in \S4 Related work.
+
+\end{document}

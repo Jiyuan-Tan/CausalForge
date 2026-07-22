@@ -1,0 +1,453 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_overlap\_tail\_phase, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_overlap\_tail\_phase} / \texttt{v1}%
+  \\ \large\textit{Two-tail overlap profiles and endpoint certificates for sharp partial-ID width}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\texttt{(qid, specialization, observable distribution P, parameter theta, identifying restrictions, bounding functional)}
+is locked as follows. The qid is \texttt{pid\_overlap\_tail\_phase} and the specialization is
+\texttt{v1}. The observable law \(P\) is the joint law of \(O=(Y,D,X)\), where
+\(D\in\{0,1\}\), \(X\in[0,1]\), \(e(x)=P(D=1\mid X=x)\), and \(Y=D Y(1)+(1-D)Y(0)\).
+The parameter is the weak-overlap full-population contribution
+\[
+\theta_\varepsilon(P)=E[(Y(1)-Y(0))\mathbf 1\{X\in T_\varepsilon\}],\qquad
+T_\varepsilon=\{x:e(x)\leq \varepsilon\}\cup\{x:1-e(x)\leq \varepsilon\},
+\]
+with CATT and ATT obtained by replacing \(P_X\) by the treated covariate law and using
+the one-sided untreated tail \(T_\varepsilon^1\). The identifying restrictions are consistency, conditional
+unconfoundedness on overlap cells, bounded potential outcomes \(Y(d)\in[-B,B]\), and no
+restriction on the missing potential-outcome regression on cells whose treatment arm is
+absent at the \(\varepsilon\)-profile. The bounding functional is the sharp interval
+\(\Theta_\varepsilon(P)\) induced by all full-data laws compatible with \(P\) and these
+restrictions, its width \(W_\varepsilon(P)=\operatorname{diam}\Theta_\varepsilon(P)\), and
+the normalized overlap-tail amplification
+\[
+A_\varepsilon(P)=W_\varepsilon(P)/\varepsilon .
+\]
+The focal object is the two-tail exponent profile
+\(\alpha(P)=(\alpha_0(P),\alpha_1(P))\), where
+\(P\{e(X)\leq t\}\asymp t^{\alpha_0(P)}\) and
+\(P\{1-e(X)\leq t\}\asymp t^{\alpha_1(P)}\) as \(t\downarrow0\).
+
+\begin{abstract}
+Limited overlap is usually handled by changing the estimand, trimming the sample, or
+reporting worst-case bounds on non-overlap cells. This note asks whether two laws with the
+same nominal overlap support and the same coarse non-overlap input can have different
+sharp partial-identification profiles because their propensity-score tails have different
+polynomial exponents. The central conjecture states that the normalized sharp width
+\(A_\varepsilon(P)\) admits an exact exponent frontier and that this frontier is not
+recoverable from the mass-only inputs used by non-overlap bounds. The witness is a
+two-tail family with bounded outcomes whose endpoint-attaining completions produce
+finite, polynomial, and vacuous first-order regimes. If correct, the result separates
+tail-profile partial identification from estimator-rate limited-overlap theory and from
+partial-ID bounds that depend only on a reported non-overlap mass.
+\end{abstract}
+
+\section{Introduction}
+Overlap failure can occur without a visible support gap: the propensity score can be
+positive on the same support while one arm vanishes polynomially fast in a tail. The main
+claim is that the sharp width of the weak-overlap contribution is governed by a tail
+exponent, not only by the presence or absence of common support.
+
+\citet[p.~2021]{KhanTamer2010IrregularIdentification} connect inverse-weight estimability
+to tail conditions, and \citet[Abstract, pp.~1--2]{LeeWeidner2026LimitedPoolingBounds}
+give ATE/ATT bounds under violated overlap by limiting pooling. \citet[Sec.~2]{SusmannMcCleanDiaz2025NonOverlapATEBounds}
+write bounded-outcome non-overlap bounds as an overlap estimand plus worst-case
+non-overlap mass. The gap here is an exponent-indexed sharp-width frontier that separates
+laws with the same comparator-level support and mass summaries. The theorem lives in
+partial identification with bounded outcomes.
+
+The direct consumers are bounded-outcome non-overlap ATE reporting in
+\citet{SusmannMcCleanDiaz2025NonOverlapATEBounds} and limited-pooling sensitivity
+analysis in \citet{LeeWeidner2026LimitedPoolingBounds}. A reader would report the
+overlap-tail exponent together with the mass bound, because the mass bound alone can hide
+different first-order identification costs as the reporting threshold changes.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: the sharp weak-overlap contribution width is \(2B\{P(T_\varepsilon^0)+P(T_\varepsilon^1)\}\), with the intersection counted twice. Gap: \citet{Manski1990NonparametricBounds} gives the no-assumption benchmark but not the propensity-tail profile. Consumer: \citet{SusmannMcCleanDiaz2025NonOverlapATEBounds}.
+\item Conjecture 1: the overlap-tail profile \(\alpha(P)\) is a strict comparator frontier: two laws can share nominal support and a coarse non-overlap mass report while \(A_\varepsilon(P)\) lies in different finite, polynomial, and vacuous regimes. Gap: \citet{LeeWeidner2026LimitedPoolingBounds} and \citet{SusmannMcCleanDiaz2025NonOverlapATEBounds} use pooling or mass summaries, not an exponent certificate. Consumer: non-overlap ATE reporting in \citet{SusmannMcCleanDiaz2025NonOverlapATEBounds}.
+\item Conjecture 2: CATT/ATT use only the untreated treated-population tail, while ATE uses the sum of the two full-population tails. Gap: \citet{HongLeungLi2020FinitePopulationLimitedOverlap} and \citet{Rothe2017LimitedOverlapCI} tie overlap to effective sample size and inference, not one-sided sharp widths. Consumer: limited-overlap ATT sensitivity in \citet{LeeWeidner2026LimitedPoolingBounds}.
+\end{itemize}
+
+\section{Related work}
+\citet[pp.~319--320]{Manski1990NonparametricBounds} is the bounded-outcome benchmark:
+missing potential outcomes contribute worst-case intervals when no identifying restriction
+links the missing cell to observed outcomes. \citet{ImbensManski2004ConfidenceIntervals} gives inference for
+interval-identified parameters and fixes the interpretation of an identified interval as
+the target object. \citet[p.~2021 and Sec.~2]{KhanTamer2010IrregularIdentification} is the closest tail
+anchor because arbitrarily large inverse weights make point-identified parameters
+irregular and tail-dependent. \citet[Sec.~2]{Rothe2017LimitedOverlapCI} develops robust
+confidence intervals when overlap is limited; the present object is the identified set,
+not sampling uncertainty around a point estimand. \citet[Sec.~2]{HongLeungLi2020FinitePopulationLimitedOverlap}
+formalize degenerating finite-population overlap through propensity scores approaching
+zero or one; the profile here is superpopulation partial identification. \citet[Sec.~3]{HeilerKazak2021ExtremePropensity}
+derive non-Gaussian limits for IPW and doubly robust estimators with many extreme
+propensity scores; the present conjecture separates those estimator limits from the
+sharp-width exponent. \citet{CrumpHotzImbensMitnik2009Trimming} and
+\citet{LiMorganZaslavsky2018OverlapWeights} are the main estimand-change responses to
+limited overlap, which this note treats as comparators rather than solutions.
+\citet[Abstract and Sec.~2]{LeeWeidner2026LimitedPoolingBounds} construct ATE/ATT bounds by limiting pooling
+across observations under overlap violation; the proposed certificate varies tail
+exponents while keeping nominal support fixed. \citet[Sec.~2]{SusmannMcCleanDiaz2025NonOverlapATEBounds}
+give bounded-outcome ATE bounds whose width is driven by non-overlap mass; the proposed
+profile distinguishes laws with the same support description but different polynomial tail
+mass. In the CausalSmith catalogue, `doc/API.md` Section 3.1
+`ManskiNonparametricBounds_Study` records bounded-outcome Manski-style treatment-effect
+bounds; it has no overlap-tail exponent, endpoint sequence, or one-sided CATT/ATT phase
+statement. The prior CausalSmith bank entry `pid_critical_overlap_exponent/v1` failed
+before mathematical review and left no theorem or witness; the rejected
+`pid_heavy_tail_cate_bounds/v1` warns that endpoint claims must exhibit a concrete
+non-corner law and must not confuse finite truncation with an infinite endpoint.
+
+\section{Formal setup}
+Let \(O=(Y,D,X)\sim P\), with \(D\in\{0,1\}\), \(X\in[0,1]\), and
+\(Y=D Y(1)+(1-D)Y(0)\). Write \(e(x)=P(D=1\mid X=x)\),
+\(m_d(x)=E[Y\mid D=d,X=x]\) on cells where \(P(D=d\mid X=x)>0\), and
+\(q_\varepsilon^0=P\{X\in T_\varepsilon^0\}\),
+\(q_\varepsilon^1=P\{X\in T_\varepsilon^1\}\), where
+\[
+T_\varepsilon^0=\{x:e(x)\leq\varepsilon\},\qquad
+T_\varepsilon^1=\{x:1-e(x)\leq\varepsilon\},\qquad
+T_\varepsilon=T_\varepsilon^0\cup T_\varepsilon^1 .
+\]
+The full-data completion class \(\mathcal F_\varepsilon(P)\) contains all laws of
+\((Y(0),Y(1),D,X)\) that reproduce \(P\), satisfy the assumptions in Section 7, and allow
+the counterfactual regression for arm \(d\) to vary freely on \(T_\varepsilon^d\) within
+\([-B,B]\). The weak-overlap profile identified set is
+\[
+\Theta_\varepsilon(P)=\{\theta_\varepsilon(F):F\in\mathcal F_\varepsilon(P)\},
+\quad
+W_\varepsilon(P)=\sup\Theta_\varepsilon(P)-\inf\Theta_\varepsilon(P),
+\quad
+A_\varepsilon(P)=W_\varepsilon(P)/\varepsilon .
+\]
+The coarse comparator report is
+\[
+C_{\varepsilon_0}(P)=\bigl(\operatorname{supp}(X),P(T_{\varepsilon_0}^0),
+P(T_{\varepsilon_0}^1),B\bigr)
+\]
+at a fixed reporting threshold \(\varepsilon_0\in(0,1/2)\). It records the support and
+the two weak-overlap masses at the reporting threshold but not how these masses change
+as the threshold moves toward zero.
+For CATT/ATT, replace \(P_X\) in all tail masses by \(P_{X\mid D=1}\) and use the
+one-sided target \(E[(Y(1)-Y(0))\mathbf 1\{X\in T_\varepsilon^1\}\mid D=1]\). For ATE,
+use both tails under \(P_X\).
+
+\begin{quote}\small
+\texttt{(qid, specialization, observable distribution P, parameter theta, identifying restrictions, bounding functional)}
+is locked as follows. The qid is \texttt{pid\_overlap\_tail\_phase} and the specialization is
+\texttt{v1}. The observable law \(P\) is the joint law of \(O=(Y,D,X)\), where
+\(D\in\{0,1\}\), \(X\in[0,1]\), \(e(x)=P(D=1\mid X=x)\), and \(Y=D Y(1)+(1-D)Y(0)\).
+The parameter is the weak-overlap full-population contribution
+\[
+\theta_\varepsilon(P)=E[(Y(1)-Y(0))\mathbf 1\{X\in T_\varepsilon\}],\qquad
+T_\varepsilon=\{x:e(x)\leq \varepsilon\}\cup\{x:1-e(x)\leq \varepsilon\},
+\]
+with CATT and ATT obtained by replacing \(P_X\) by the treated covariate law and using
+the one-sided untreated tail \(T_\varepsilon^1\). The identifying restrictions are consistency, conditional
+unconfoundedness on overlap cells, bounded potential outcomes \(Y(d)\in[-B,B]\), and no
+restriction on the missing potential-outcome regression on cells whose treatment arm is
+absent at the \(\varepsilon\)-profile. The bounding functional is the sharp interval
+\(\Theta_\varepsilon(P)\) induced by all full-data laws compatible with \(P\) and these
+restrictions, its width \(W_\varepsilon(P)=\operatorname{diam}\Theta_\varepsilon(P)\), and
+the normalized overlap-tail amplification
+\[
+A_\varepsilon(P)=W_\varepsilon(P)/\varepsilon .
+\]
+The focal object is the two-tail exponent profile
+\(\alpha(P)=(\alpha_0(P),\alpha_1(P))\), where
+\(P\{e(X)\leq t\}\asymp t^{\alpha_0(P)}\) and
+\(P\{1-e(X)\leq t\}\asymp t^{\alpha_1(P)}\) as \(t\downarrow0\).
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Consistency]\label{ass:consistency}
+\(Y=D Y(1)+(1-D)Y(0)\) almost surely.
+\end{assumption}
+
+\begin{assumption}[Overlap-cell unconfoundedness]\label{ass:unconf}
+For every \(x\) with \(0<e(x)<1\), \((Y(0),Y(1))\perp D\mid X=x\).
+\end{assumption}
+
+\begin{assumption}[Bounded outcomes]\label{ass:bounded}
+There is a known \(B<\infty\) such that \(Y(0),Y(1)\in[-B,B]\) almost surely.
+\end{assumption}
+
+\begin{assumption}[Profile completion]\label{ass:completion}
+For each \(\varepsilon>0\), the unobserved arm-\(d\) regression on
+\(T_\varepsilon^d\) is restricted only by Assumption \ref{ass:bounded}; outside
+\(T_\varepsilon^d\), it agrees with the observed overlap-cell regression \(m_d(x)\).
+\end{assumption}
+
+\begin{assumption}[Regular two-tail variation]\label{ass:regularvariation}
+There are constants \(c_0,c_1\in(0,\infty)\) and exponents
+\(\alpha_0,\alpha_1\in(0,\infty]\) such that, as \(t\downarrow0\),
+\[
+P\{e(X)\leq t\}=c_0 t^{\alpha_0}+o(t^{\alpha_0}),\qquad
+P\{1-e(X)\leq t\}=c_1 t^{\alpha_1}+o(t^{\alpha_1}),
+\]
+with the convention \(t^\infty=0\) for a tail that is eventually empty.
+\end{assumption}
+
+\begin{assumption}[Non-corner witness admissibility]\label{ass:witness}
+The witness family has \(P(0<e(X)<1)=1\), positive mass in both treatment arms for
+every open subinterval of \((0,1)\), and \(B>0\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: profile sharp-width formula]\label{thm:profile-width}
+Under Assumptions \ref{ass:consistency}--\ref{ass:completion}, the ATE contribution width is
+\[
+W_\varepsilon^{ATE}(P)=2B\{P(T_\varepsilon^0)+P(T_\varepsilon^1)\}
+  =2B\,P(T_\varepsilon^0\triangle T_\varepsilon^1)
+    +4B\,P(T_\varepsilon^0\cap T_\varepsilon^1).
+\]
+For the CATT/ATT contribution,
+\[
+W_\varepsilon^{ATT}(P)=2B\,P(X\in T_\varepsilon^1\mid D=1).
+\]
+\end{theorem}
+The proof is the standard bounded-outcome completion argument: set each missing arm mean
+equal to \(B\) for the upper endpoint and \(-B\) for the lower endpoint on its profile
+cell, then integrate the endpoint gap. On \(T_\varepsilon^0\cap T_\varepsilon^1\), both
+potential-outcome regressions are free, so the treatment-effect range has width \(4B\).
+
+\begin{conjecture}[Conjecture 1: strict overlap-tail frontier (NOT YET PROVED)]\label{conj:two-tail-phase}
+Under Assumptions \ref{ass:consistency}--\ref{ass:witness}, let
+\(\bar\alpha(P)=\min\{\alpha_0(P),\alpha_1(P)\}\). For each
+\(\varepsilon_0\in(0,1/2)\) and each pair
+\((a,b)\neq(a',b')\) with \(\min(a,b)\neq\min(a',b')\), there are endpoint-attaining
+two-tail laws \(P_{a,b}\) and \(P_{a',b'}\) with
+\[
+C_{\varepsilon_0}(P_{a,b})=C_{\varepsilon_0}(P_{a',b'})
+\quad\text{and}\quad
+P_{a,b}\{0<e(X)<1\}=P_{a',b'}\{0<e(X)<1\}=1,
+\]
+but
+\[
+A_\varepsilon^{ATE}(P)\asymp \varepsilon^{\bar\alpha(P)-1}.
+\]
+Thus \(A_\varepsilon^{ATE}(P)\to0\) when \(\bar\alpha(P)>1\), remains finite and nonzero
+when \(\bar\alpha(P)=1\), and diverges polynomially when \(\bar\alpha(P)<1\). The
+endpoint sequence with missing-arm means \(\pm B\) attains the sharp lower and upper
+limits in each regime, so \(\alpha(P)\) is not recoverable from the mass-only comparator
+report \(C_{\varepsilon_0}(P)\).
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: one-tail CATT/ATT separation (NOT YET PROVED)]\label{conj:one-tail-separation}
+Under Assumptions \ref{ass:consistency}--\ref{ass:witness}, the treated-population
+weak-overlap contribution satisfies
+\[
+W_\varepsilon^{ATT}(P)\asymp \varepsilon^{\alpha_1(P)}
+\quad\text{and}\quad
+W_\varepsilon^{ATT}(P)/\varepsilon\asymp
+\varepsilon^{\alpha_1(P)-1}.
+\]
+The untreated tail exponent \(\alpha_0(P)\) affects the ATE profile but not this CATT/ATT
+contribution except through normalization by the treated population. Hence a one-tail
+ATT report can be finite while the two-tail ATE profile is polynomially divergent.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Manski corner]\label{cor:manski-corner}
+Under Assumptions \ref{ass:consistency}--\ref{ass:completion}, if
+\(T_\varepsilon^0=T_\varepsilon^1=[0,1]\), then the ATE contribution interval has width \(4B\). This collapses
+to the bounded-outcome no-information benchmark because every counterfactual regression
+can be moved independently over \([-B,B]\), so \(Y(1)-Y(0)\in[-2B,2B]\).
+\end{corollary}
+
+\begin{corollary}[Disjoint-tail corner]\label{cor:disjoint-tail}
+Under Assumptions \ref{ass:consistency}--\ref{ass:completion}, if
+\(\varepsilon<1/2\), then \(T_\varepsilon^0\cap T_\varepsilon^1=\varnothing\) and
+\(W_\varepsilon^{ATE}(P)=2B\,P(T_\varepsilon^0\cup T_\varepsilon^1)\). This is the
+formula used by mass-only non-overlap summaries when the two missing arms cannot occur
+in the same covariate cell.
+\end{corollary}
+
+\paragraph{Exhibit 9.1: two-tail exponent witness.}
+Fix \(\varepsilon_0\in(0,1/2)\), \(r_0,s_0\in(0,1/4)\), let
+\(X\sim \mathrm{Unif}(0,1)\), \(B=1\), and for \(a,b>0\) define
+\[
+e_{a,b}(x)=
+\begin{cases}
+\varepsilon_0(x/r_0)^{1/a}, & 0\leq x\leq r_0,\\
+1/2, & r_0<x<1-s_0,\\
+1-\varepsilon_0((1-x)/s_0)^{1/b}, & 1-s_0\leq x\leq 1.
+\end{cases}
+\]
+Then \(P\{e_{a,b}(X)\leq t\}=r_0(t/\varepsilon_0)^a\) and
+\(P\{1-e_{a,b}(X)\leq t\}=s_0(t/\varepsilon_0)^b\) for
+\(0<t\leq\varepsilon_0\), while \(P\{e_{a,b}(X)\leq\varepsilon_0\}=r_0\),
+\(P\{1-e_{a,b}(X)\leq\varepsilon_0\}=s_0\), and \(0<e_{a,b}(X)<1\) almost surely for
+every \(a,b\). Thus all pairs \((a,b)\) share the same comparator report
+\(C_{\varepsilon_0}(P)=( [0,1],r_0,s_0,1)\). The endpoint completion sets the
+missing \(Y(1)\) mean on \(T_\varepsilon^0\) to \(1\) or \(-1\), and the missing \(Y(0)\)
+mean on \(T_\varepsilon^1\) to \(-1\) or \(1\); the two endpoints differ by
+\[
+W_\varepsilon^{ATE}(P_{a,b})
+=2\{r_0(\varepsilon/\varepsilon_0)^a+s_0(\varepsilon/\varepsilon_0)^b\}
+\]
+for the full-population tail contribution when \(0<\varepsilon\leq\varepsilon_0\). Hence
+\(W_\varepsilon^{ATE}(P_{a,b})/\varepsilon
+\asymp \varepsilon^{\min(a,b)-1}\). The system is not over-determined: the two missing
+arm regressions are distinct functions, both remain in \([-1,1]\), and all denominators
+are positive for \(\varepsilon>0\).
+
+\section{Proof-sketch route}
+The proof route for Conjecture 1 is:
+headline \(\leftarrow\) unfold Section 6 definitions \(\leftarrow\) substitute
+Assumptions \ref{ass:bounded}--\ref{ass:regularvariation} \(\leftarrow\)
+derive the sharp missing-arm support function over \(T_\varepsilon^0\) and
+\(T_\varepsilon^1\) \(\leftarrow\) prove that the two-tail completion is endpoint
+attaining and not only endpoint approaching \(\leftarrow\) construct the rescaled
+two-tail family that fixes \(C_{\varepsilon_0}(P)\) while varying \((a,b)\)
+\(\leftarrow\) compute the two endpoint support functions on that family
+\(\leftarrow\) compare two distinct pairs \((a,b)\) and \((a',b')\) with the same
+comparator report \(\leftarrow\) derive the finite, polynomial, and vacuous regimes from
+the strict ordering of \(\min(a,b)\). The substantive step count is \(k=5\):
+two-arm support-function sharpness, endpoint compatibility, comparator-preserving
+rescaling, pairwise non-representability by \(C_{\varepsilon_0}\), and phase
+classification. The proof route for Conjecture 2 changes the base measure to
+\(P_{X\mid D=1}\), computes
+\(P(X\in T_\varepsilon^1\mid D=1)=E[e(X)\mathbf 1\{1-e(X)\leq\varepsilon\}]/P(D=1)\),
+uses the same endpoint support function only on the missing \(Y(0)\) arm, and then
+constructs a pair of laws with equal \(C_{\varepsilon_0}\) but different treated-tail
+exponents; this has \(k=4\).
+
+\section{Honest scope flags}
+Theorem 1 is a bounded-outcome sharpness calculation and should be treated as routine.
+Conjectures 1 and 2 are the novel claims and are not yet proved. The proposal deliberately
+uses the full-population contribution \(W_\varepsilon\) for the phase statement; the
+conditional tail target has bounded width \(2B\), so claiming polynomial blow-up for that
+unnormalized conditional width would be false. The endpoint certificate may need to
+be weakened from endpoint-attaining to endpoint-approaching if the profile completion
+class is later required to impose continuity of the full-data regression at the tail
+boundary.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for the two-tail endpoint-certificate angle; prior verdict: none.
+\item v2 (revise) -- corrected the ATE intersection width and Manski corner, added location-level literature anchors, and reframed Conjecture 1 as a strict comparator-frontier witness with fixed \(C_{\varepsilon_0}\); prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Crump et~al.(2009)]{CrumpHotzImbensMitnik2009Trimming}
+Crump, R.~K., Hotz, V.~J., Imbens, G.~W., and Mitnik, O.~A. (2009).
+Dealing with limited overlap in estimation of average treatment effects.
+\emph{Biometrika}, 96(1), 187--199.
+
+\bibitem[Heiler and Kazak(2021)]{HeilerKazak2021ExtremePropensity}
+Heiler, P. and Kazak, E. (2021).
+Valid inference for treatment effect parameters under irregular identification and many
+extreme propensity scores.
+\emph{Journal of Econometrics}, 222(2), 1083--1108.
+
+\bibitem[Hong et~al.(2020)]{HongLeungLi2020FinitePopulationLimitedOverlap}
+Hong, H., Leung, M.~P., and Li, J. (2020).
+Inference on finite-population treatment effects under limited overlap.
+\emph{The Econometrics Journal}, 23(1), 32--47.
+
+\bibitem[Imbens and Manski(2004)]{ImbensManski2004ConfidenceIntervals}
+Imbens, G.~W. and Manski, C.~F. (2004).
+Confidence intervals for partially identified parameters.
+\emph{Econometrica}, 72(6), 1845--1857.
+
+\bibitem[Khan and Tamer(2010)]{KhanTamer2010IrregularIdentification}
+Khan, S. and Tamer, E. (2010).
+Irregular identification, support conditions, and inverse weight estimation.
+\emph{Econometrica}, 78(6), 2021--2042.
+
+\bibitem[Lee and Weidner(2026)]{LeeWeidner2026LimitedPoolingBounds}
+Lee, S. and Weidner, M. (2026).
+Bounding treatment effects by pooling limited information across observations.
+\emph{Journal of Econometrics}, 106254.
+
+\bibitem[Li et~al.(2018)]{LiMorganZaslavsky2018OverlapWeights}
+Li, F., Morgan, K.~L., and Zaslavsky, A.~M. (2018).
+Balancing covariates via propensity score weighting.
+\emph{Journal of the American Statistical Association}, 113(521), 390--400.
+
+\bibitem[Manski(1990)]{Manski1990NonparametricBounds}
+Manski, C.~F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review}, 80(2), 319--323.
+
+\bibitem[Rothe(2017)]{Rothe2017LimitedOverlapCI}
+Rothe, C. (2017).
+Robust confidence intervals for average treatment effects under limited overlap.
+\emph{Econometrica}, 85(2), 645--660.
+
+\bibitem[Susmann et~al.(2025)]{SusmannMcCleanDiaz2025NonOverlapATEBounds}
+Susmann, H., McClean, A., and Diaz, I. (2025).
+Non-overlap average treatment effect bounds.
+\emph{arXiv:2509.20206}.
+\end{thebibliography}
+
+\end{document}

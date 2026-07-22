@@ -1,0 +1,290 @@
+\paragraph{Solve target restated.}
+Is there a finite family of rational functions $\{v_j(\lambda)\}_{j\in J}$ of $(p_x,q_{m\mid x},r_{x,m},\lambda)$,
+indexed by active-set cells of the lifted polytope of \S\ref{sec:setup}, with
+\[
+  L(\lambda)=\min_{j\in J}v_j(\lambda),\qquad U(\lambda)=\max_{j\in J}v_j(\lambda),
+\]
+and a closed-form threshold $\lambda^\star=\lambda^\star(P)>0$ at which the maximizing (resp.\ minimizing)
+cell changes, so that $U(\cdot)$ (resp.\ $L(\cdot)$) is piecewise-rational with a kink at $\lambda^\star$?
+
+\smallskip\noindent\textbf{No-kink convention.} Set
+$\lambda^\star(P):=\inf\{\lambda>0:\text{the maximizing cell at }\lambda\text{ differs from the cell active at }0^+\}$,
+with $\lambda^\star(P):=+\infty$ when no such switch occurs---a single cell is maximizing throughout, as on the
+degenerate support $|\mathcal U|=1$ (Corollary~\ref{cor:degenerate}) or wherever one branch dominates for all
+$\lambda$. The kink claim is scoped to the generic regime $\{P:0<\lambda^\star(P)<\infty\}$; on its complement
+$U(\cdot)$ is a single rational branch with no interior kink and the construction returns that branch. The
+symmetric convention defines the minimizing-cell threshold for $L(\cdot)$.
+
+\smallskip\noindent\textbf{Handle:} lift the bilinear program with $g_{m,x,u}=\varphi(m,x,u)w_x(u)$ so the
+compatibility equations \eqref{eq:compat} become linear; for fixed $(w_0,w_1)$ on the latent simplices,
+enumerate the active-set cells of \S\ref{sec:setup} (which box bounds $g_{m,x,u}\in\{0,w_x(u)\}$ and which
+leak bounds $|d(m,u)|\le\lambda$ bind), read each cell's vertex value of \eqref{eq:ace} as a rational
+function $v_j$ of the data and $(w_0,w_1)$, optimize over $(w_0,w_1)$, and locate $\lambda^\star$ as the
+smallest $\lambda$ solving the boundary equality $v_{j}(\lambda)=v_{j'}(\lambda)$ between the two adjacent
+maximizing cells. Start from $|\mathcal U|=2$, the smallest support allowing $w_0\neq w_1$.
+\textbf{Why it matters:} a closed-form vertex formula lets front-door software report the leak interval and
+its kink directly from $(p_x,q_{m\mid x},r_{x,m})$ without solving a nonconvex program at every $\lambda$.
+
+\begin{theorem}[Finite response-type basis for the leak endpoints]\label{thm:vertex}
+Yes, with the no-kink convention applied to reduced value branches rather than to duplicate LP bases. For $\bar\lambda=\min\{\lambda,1\}$, the leak endpoint pair is computed by the finite response-type LP \eqref{eq:vlp}; its feasible-basis values are rational functions $v_B^U(P,\lambda)=c_B(P,\lambda)^\mathsf{T}A_B(\lambda)^{-1}b(P)$ and $v_B^L(P,\lambda)$, with $U(\lambda;P)=\max_B v_B^U(P,\lambda)$ and $L(\lambda;P)=\min_B v_B^L(P,\lambda)$. Quotient feasible bases whose value functions agree identically on each connected common-feasibility cell, order the remaining branches lexicographically, and define the maximizing branch at each $\lambda$ to be the first branch attaining the envelope. Then the first maximizing-cell threshold is the smallest positive point at which this canonical maximizing branch differs from the canonical branch active at $0^+$; it is found from the finite list of nonzero cleared-denominator branch equalities and feasibility-boundary equalities, and is $+\infty$ if that list produces no positive canonical switch. The minimizing threshold is defined analogously. Every feasible LP value is realized by a shared-$U$ completion with at most two latent atoms, obtained from the arm averages $\bar a^t=p_t^{-1}\sum_a\rho_{t,a}a$, so sharpness respects the locked support restriction $|\mathcal U|\le5$.
+
+For $\bar\lambda=\min\{\lambda,1\}$, let
+\[
+  H_{\bar\lambda}
+  :=\{(a,b)\in[0,1]^2: |b-a|\le \bar\lambda\}
+\]
+and let $V_{\bar\lambda}$ be the finite vertex set
+\[
+  \{(0,0),(1,1),(0,\bar\lambda),(\bar\lambda,0),(1-\bar\lambda,1),(1,1-\bar\lambda)\},
+\]
+with duplicate vertices removed. Let $\mathcal A_{\lambda}=V_{\bar\lambda}\times V_{\bar\lambda}$ index one
+leak-feasible response type $a=((a_{0,0},a_{0,1}),(a_{1,0},a_{1,1}))$ for each mediator value. Define
+\[
+  \ell_a(P):=\sum_{m\in\{0,1\}}\{q_{m\mid1}a_{m,1}-q_{m\mid0}a_{m,0}\}.
+\]
+The endpoint pair is obtained by the finite linear programs
+\begin{equation}
+\begin{aligned}
+  U(\lambda;P)
+  &=\max_{\{\rho_{t,a}\ge0\}}\sum_{a\in\mathcal A_\lambda}
+      (\rho_{0,a}+\rho_{1,a})\ell_a(P),\\
+  L(\lambda;P)
+  &=\min_{\{\rho_{t,a}\ge0\}}\sum_{a\in\mathcal A_\lambda}
+      (\rho_{0,a}+\rho_{1,a})\ell_a(P),\\
+  \text{subject to}\qquad
+  &\sum_a\rho_{0,a}=p_0,\qquad
+    \sum_a\rho_{1,a}=p_1,\\
+  &\sum_a\rho_{0,a}a_{m,0}=p_0r_{0,m},\qquad
+    \sum_a\rho_{1,a}a_{m,1}=p_1r_{1,m}\quad(m=0,1).
+\end{aligned}
+\tag{VLP}\label{eq:vlp}
+\end{equation}
+Equivalently, if $B$ ranges over the finitely many nonsingular bases of \eqref{eq:vlp}, and
+\[
+  v_B^U(P,\lambda)=c_B(P,\lambda)^\mathsf{T}A_B(\lambda)^{-1}b(P)
+\]
+when the basis is primal feasible (and is ignored otherwise), then
+\[
+  U(\lambda;P)=\max_{B}v_B^U(P,\lambda),\qquad
+  L(\lambda;P)=\min_B v_B^L(P,\lambda),
+\]
+where $v_B^L$ is the analogous basis value for the minimization problem. Each retained $v_B^U$ and $v_B^L$ is
+a rational function of $(p_x,q_{m\mid x},r_{x,m},\lambda)$ on each of the two regimes $0\le\lambda\le1$ and
+$\lambda\ge1$. For the threshold construction, replace the basis list by the reduced branch list: two basis
+records are identified when their feasibility cells have a connected overlap and their rational value functions
+agree identically there after clearing denominators. Fix a deterministic lexicographic order of the reduced
+branches, and let $\beta_U(\lambda;P)$ be the first feasible reduced branch attaining the upper envelope at
+$\lambda$. After refining the positive line by all feasibility-boundary roots and all nonzero branch-crossing
+roots, there is an $\varepsilon>0$ on which $\beta_U(\lambda;P)$ is constant; call that branch
+$\beta_U(0^+;P)$. Define
+\[
+  \lambda_U^\star(P)
+  :=\inf\{\lambda>0:\beta_U(\lambda;P)\ne\beta_U(0^+;P)\},
+\]
+with value $+\infty$ when the set is empty. Equivalently, $\lambda_U^\star(P)$ is the smallest positive
+candidate root or feasibility-boundary point at which the canonical branch changes; identically zero equality
+polynomials have already been removed by quotienting duplicate branches and hence do not create fake switches.
+The minimizing threshold $\lambda_L^\star(P)$ is defined by the same construction with $v_B^L$. On the generic
+regime where the active branch is unique on both sides of the first root and the crossing is transversal, the
+corresponding endpoint is piecewise-rational and has the claimed active-cell kink.
+\end{theorem}
+
+\paragraph{Refutation-first attempt.}
+The requested impossibility check was carried out in the smallest nontrivial latent class. Candidate A was the
+degenerate one-state support. It produces $w_0=w_1$, hence a single response-type branch; the no-kink
+convention returns $\lambda^\star=+\infty$, so it is not a witness against the claim. Candidate B was the
+two-strata response-type search with one stratum selected only in arm $X=0$ and one stratum selected only in
+arm $X=1$, and with each mediator pair placed on a box or leak face of
+$H_{\bar\lambda}=\{(a,b)\in[0,1]^2:|b-a|\le\bar\lambda\}$. The Fréchet face check gives exactly the six
+vertices listed in Theorem~\ref{thm:vertex}; every saturated leak face has coordinates affine in
+$\bar\lambda$. Candidate C allowed an intermediate treatment propensity $e\in(0,1)$ on a two-strata support.
+For a fixed structural vector $a$, its moment row splits as
+\[
+  (1,e,(1-e)a_{0,0},(1-e)a_{1,0},ea_{0,1},ea_{1,1},\ell_a)
+  = (1-e)R_{0,a}+eR_{1,a},
+\]
+where $R_{0,a}$ and $R_{1,a}$ are the corresponding rows with deterministic propensities $0$ and $1$. Thus an
+intermediate-propensity candidate is a convex combination of endpoint-propensity candidates and cannot create a
+curved branch outside the finite basis envelope. Candidate D allowed duplicate LP bases and tied active values
+over an interval. Such ties do not contradict the endpoint formula, but they make an unquotiented "first basis
+switch" ambiguous. The reduced-branch and lexicographic convention in Theorem~\ref{thm:vertex} removes this
+degeneracy: value-identical bases are the same branch, and a tied interval with no canonical branch change is
+classified by the no-kink convention. The primitive therefore produces no counterexample to the reduced-branch
+claim: the two-strata search collapses to the finite response-type LP \eqref{eq:vlp}.
+
+\paragraph{Interpretation.}
+The result replaces the informal instruction "optimize over $(w_0,w_1)$" by an evaluable Balke--Pearl-style
+finite program. A response type records the four structural means
+\((\varphi(0,0,u),\varphi(0,1,u),\varphi(1,0,u),\varphi(1,1,u))\). Because the outcome box and the leak budget
+are polyhedral, only finitely many response types matter. The treatment propensity inside a latent type does
+not add a new nonlinear cell: a type with propensity \(e\) is the convex mixture of the same response type used
+only in arm \(0\) and only in arm \(1\). Consequently the shared-\(U\) endpoint is computed by a finite LP whose
+bases are the active cells. The kink is not imposed by hand; after duplicate value branches are quotiented and
+ties are broken deterministically, it is exactly the first parameter value at which a different feasible reduced
+branch overtakes the branch active just to the right of the exclusion corner. If all apparent switches are only
+duplicate-basis ties, the no-kink convention returns \(+\infty\).
+
+\begin{proof}
+The proof uses the finite latent-type enumeration technique of \citet{BalkePearl1997Bounds}, adapted from a
+binary IV response-type LP to the present clean-mediator leak program. The secondary finite-constraint encoding
+viewpoint is the same one used by \citet{FinkelsteinAdamsSariaShpitser2020MeasurementError} for discrete latent
+and conditional-independence restrictions.
+
+First fix \(\lambda\). Since \(Y\in[0,1]\) by Assumption~\ref{ass:bounded}, and
+\(|\varphi(m,1,u)-\varphi(m,0,u)|\le\lambda\) by Assumption~\ref{ass:leak}, each mediator-specific pair
+\((\varphi(m,0,u),\varphi(m,1,u))\) lies in the polygon \(H_{\bar\lambda}\), where
+\(\bar\lambda=\min\{\lambda,1\}\). For \(0\le\bar\lambda\le1\), the only possible active intersections of the
+box faces \(a=0,a=1,b=0,b=1\) and the leak faces \(b-a=\pm\bar\lambda\) are
+\[
+  (0,0),\ (1,1),\ (0,\bar\lambda),\ (\bar\lambda,0),\ (1-\bar\lambda,1),\ (1,1-\bar\lambda),
+\]
+with duplicates removed at \(\bar\lambda=0\) or \(\bar\lambda=1\). Therefore the product over the two mediator
+values has the finite vertex set \(\mathcal A_\lambda\).
+
+Now take any feasible completion
+\((\pi,w_0,w_1,\varphi)\in\mathcal F(P,\lambda)\). Define the latent treatment propensity
+\[
+  e_u:=\Pr(X=1\mid U=u)=\frac{p_1w_1(u)}{\pi(u)}
+\]
+when \(\pi(u)>0\), with arbitrary value when \(\pi(u)=0\). Bayes consistency gives
+\(\pi(u)e_u=p_1w_1(u)\) and \(\pi(u)(1-e_u)=p_0w_0(u)\). Decompose the structural vector
+\[
+  a_u=((\varphi(0,0,u),\varphi(0,1,u)),(\varphi(1,0,u),\varphi(1,1,u)))
+\]
+as a convex combination of vertices of \(\mathcal A_\lambda\), say
+\(a_u=\sum_{a\in\mathcal A_\lambda}\eta_{u,a}a\). This is possible because
+\(\mathcal A_\lambda\) is the vertex set of the product polytope. Set
+\[
+  \rho_{0,a}:=\sum_u\pi(u)(1-e_u)\eta_{u,a},\qquad
+  \rho_{1,a}:=\sum_u\pi(u)e_u\eta_{u,a}.
+\]
+The mass constraints in \eqref{eq:vlp} follow from
+\(\sum_u\pi(u)(1-e_u)=p_0\) and \(\sum_u\pi(u)e_u=p_1\). The moment constraints follow from
+Assumption~\ref{ass:clean} and the compatibility equations \eqref{eq:compat}:
+\[
+  \sum_a\rho_{0,a}a_{m,0}
+  =\sum_u p_0w_0(u)\varphi(m,0,u)=p_0r_{0,m},
+  \qquad
+  \sum_a\rho_{1,a}a_{m,1}
+  =\sum_u p_1w_1(u)\varphi(m,1,u)=p_1r_{1,m}.
+\]
+Finally, using the causal functional \eqref{eq:ace} and Bayes consistency,
+\[
+\begin{aligned}
+  \theta
+  &=\sum_u\pi(u)\sum_m\{q_{m\mid1}\varphi(m,1,u)-q_{m\mid0}\varphi(m,0,u)\}\\
+  =\sum_{t\in\{0,1\}}\sum_{a\in\mathcal A_\lambda}\rho_{t,a}\ell_a(P).
+\end{aligned}
+\]
+Thus every feasible causal value is represented in the finite LP.
+
+Conversely, let \(\rho\) satisfy the constraints of \eqref{eq:vlp}. Define the two arm-averaged structural
+vectors
+\[
+  \bar a^0:=\frac{1}{p_0}\sum_{a\in\mathcal A_\lambda}\rho_{0,a}a,
+  \qquad
+  \bar a^1:=\frac{1}{p_1}\sum_{a\in\mathcal A_\lambda}\rho_{1,a}a.
+\]
+The divisions are valid by Assumption~\ref{ass:overlap}. Since \(\mathcal A_\lambda\) is the vertex set of the
+product polytope \(H_{\bar\lambda}\times H_{\bar\lambda}\), both \(\bar a^0\) and \(\bar a^1\) lie in that
+product polytope. Create two latent states \(u_0,u_1\) with marginal masses
+\(\pi(u_0)=p_0\), \(\pi(u_1)=p_1\), deterministic treatment propensities
+\(e_{u_0}=0\), \(e_{u_1}=1\), and hence conditional latent laws
+\[
+  w_0(u_0)=1,\quad w_0(u_1)=0,\qquad
+  w_1(u_0)=0,\quad w_1(u_1)=1.
+\]
+Set \(\varphi(m,x,u_t):=\bar a^t_{m,x}\) for \(t\in\{0,1\}\). This two-atom construction satisfies
+Assumption~\ref{ass:finite} because \(2\le5\), and it satisfies Assumptions~\ref{ass:bounded} and
+\ref{ass:leak} because each \(\bar a^t\) lies in the product leak polytope. It satisfies the clean-mediator
+restriction because \(w_x\) is a function of \(x\) only. The compatibility equations are
+\[
+  \sum_u p_0w_0(u)\varphi(m,0,u)
+  =p_0\bar a^0_{m,0}
+  =\sum_a\rho_{0,a}a_{m,0}
+  =p_0r_{0,m},
+\]
+and similarly
+\[
+  \sum_u p_1w_1(u)\varphi(m,1,u)
+  =p_1\bar a^1_{m,1}
+  =\sum_a\rho_{1,a}a_{m,1}
+  =p_1r_{1,m}.
+\]
+Finally, by linearity of \(\ell_a(P)\) in the structural vector,
+\[
+\begin{aligned}
+  \theta
+  &=p_0\ell_{\bar a^0}(P)+p_1\ell_{\bar a^1}(P)\\
+  &=\sum_{a\in\mathcal A_\lambda}\rho_{0,a}\ell_a(P)
+    +\sum_{a\in\mathcal A_\lambda}\rho_{1,a}\ell_a(P).
+\end{aligned}
+\]
+Thus every feasible LP value is attained inside the locked shared-\(U\) support class. Hence \eqref{eq:vlp}
+gives the sharp endpoint pair \(L(\lambda;P),U(\lambda;P)\).
+
+It remains to justify the rational active-cell representation. The vector \(b(P)\) on the right side of
+\eqref{eq:vlp} is
+\[
+  b(P)=(p_0,p_1,p_0r_{0,0},p_0r_{0,1},p_1r_{1,0},p_1r_{1,1})^\mathsf{T}.
+\]
+For \(0\le\lambda\le1\), every entry of the LP matrix \(A(\lambda)\) is either constant or affine in
+\(\lambda\), and every entry of the objective vector \(c(P,\lambda)\) is affine in
+\((q_{m\mid x},\lambda)\). For \(\lambda\ge1\), the leak constraint is inactive because both structural means
+are already in \([0,1]\), so the coefficient matrix is constant after replacing \(\lambda\) by \(1\). Fix any
+nonsingular basis \(B\). On the cell where \(A_B(\lambda)^{-1}b(P)\ge0\) and the usual reduced-cost
+inequalities select \(B\), the basis value is
+\[
+  c_B(P,\lambda)^\mathsf{T}A_B(\lambda)^{-1}b(P),
+\]
+which is a rational function of the observable inputs and \(\lambda\). There are only finitely many bases, so
+the upper endpoint is the maximum of finitely many such rational functions and the lower endpoint is the
+minimum of finitely many such rational functions.
+
+For the threshold, first remove duplicate branch records. Namely, on each connected common-feasibility cell,
+declare two basis records equivalent when the cleared numerator of
+\(v_B^U(P,\lambda)-v_{B'}^U(P,\lambda)\) is the zero polynomial; these records give the same endpoint value
+throughout that cell and cannot be a genuine kink. The remaining reduced list is finite. Refine
+\((0,\infty)\) by all real roots of denominators, all feasibility-boundary polynomials, and all nonzero cleared
+equality polynomials between reduced branches. On every open interval in this finite partition, the feasibility
+status and strict ordering of all nonidentical reduced branches are constant. With the fixed lexicographic
+tie-break, the canonical maximizer \(\beta_U(\lambda;P)\) is therefore constant on each such interval. The first
+positive boundary at which \(\beta_U\) changes is precisely
+\(\lambda_U^\star(P)\); if no boundary changes the canonical maximizer, the no-kink convention gives
+\(\lambda_U^\star(P)=+\infty\). The same argument with minimization branches gives
+\(\lambda_L^\star(P)\). On the generic locus where the relevant branch is unique on both sides of the selected
+root and the crossing is transversal, the endpoint changes rational branch there, so the claimed kink follows.
+\end{proof}
+
+\paragraph{Sanity check.}
+At \(\lambda=0\), \(H_0=\{(a,a):0\le a\le1\}\), whose vertices are \((0,0)\) and \((1,1)\). Hence every
+response type has \(a_{m,0}=a_{m,1}\). The LP objective becomes
+\[
+  \sum_{t,a}\rho_{t,a}\sum_m(q_{m\mid1}-q_{m\mid0})a_m
+  =\sum_m(q_{m\mid1}-q_{m\mid0})
+    \left\{\sum_a\rho_{0,a}a_m+\sum_a\rho_{1,a}a_m\right\}.
+\]
+The constraints give
+\(\sum_a\rho_{0,a}a_m=p_0r_{0,m}\) and
+\(\sum_a\rho_{1,a}a_m=p_1r_{1,m}\), so
+\[
+  U(0;P)=L(0;P)
+  =\sum_m(q_{m\mid1}-q_{m\mid0})(p_0r_{0,m}+p_1r_{1,m})
+  =\theta_{\mathrm{FD}},
+\]
+matching Theorem~\ref{thm:collapse}. On the one-state degenerate support, all feasible bases reduce to the
+same value branch for all \(\lambda\), so the threshold rule returns \(+\infty\), exactly as required by the
+no-kink convention.
+
+\paragraph{Counterexample or minimality check.}
+The finite rational conclusion is a consequence of the polyhedral restriction
+\((\varphi(m,0,u),\varphi(m,1,u))\in H_{\bar\lambda}\). If the leak condition were replaced by a smooth
+nonpolyhedral sensitivity set, for example
+\[
+  (\varphi(m,1,u)-\varphi(m,0,u))^2\le \lambda^2
+\]
+without the equivalent linear absolute-value faces used in Assumption~\ref{ass:leak}, the response-type set
+would have a curved boundary rather than the six listed vertices. The active-cell enumeration would then no
+longer reduce to finitely many LP bases, and the endpoint support function could contain square-root boundary
+terms instead of rational basis values. Thus the minimality condition for this fragment is not merely finite
+latent support; it is the combination of bounded outcome support and the linear absolute-value leak budget.

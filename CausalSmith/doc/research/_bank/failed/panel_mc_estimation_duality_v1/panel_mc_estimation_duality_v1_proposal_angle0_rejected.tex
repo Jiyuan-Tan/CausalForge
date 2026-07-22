@@ -1,0 +1,640 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=panel\_mc\_estimation\_duality, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{panel\_mc\_estimation\_duality} / \texttt{v1}%
+  \\ \large\textit{Observed spectral recovery margin for staggered low-rank panels and the MC--SDiD estimator-duality phase transition}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\textbf{Tuple:} $(qid,\ specialization,\ p,\ assignment,\ target,\ regression)$.
+Here $qid=\texttt{panel\_mc\_estimation\_duality}$ and
+$specialization=\texttt{v1}$. The memory length is $p=0$: untreated potential
+outcomes are entries of a single no-treatment mean matrix $M^0$ and treatment
+does not change future untreated potential outcomes. The assignment is
+absorbing staggered adoption: each unit has adoption date $G_i\in
+\{2,\ldots,T,\infty\}$, treatment is $D_{it}=\one\{t\ge G_i\}$, and
+$\Omega_0(D)=\{(i,t):D_{it}=0\}$ is the observed untreated mask. The target is
+the cohort-time ATT family
+$\tau_{g,t}=\E[Y_{it}(1)-Y_{it}(0)\mid G_i=g]$ for $t\ge g$, equivalently the
+counterfactual untreated cells $M^0_{it}$ on
+$\Omega_1(D)=\{(i,t):D_{it}=1,G_i<\infty\}$. The regression convention is a
+rank-$r$ interactive fixed-effect untreated surface
+$M^0=\alpha\one^\transpose+\one\lambda^\transpose+L F^\transpose$ with
+$L\in\R^{N\times r}$, $F\in\R^{T\times r}$, centered factor part of exact rank
+$r$, and estimators defined as population nuclear-norm matrix completion,
+rank-$r$ spectral imputation, synthetic DiD, and ridge ASCM functionals on the
+same observed untreated mask.
+
+\begin{abstract}
+Staggered-adoption panel papers now use low-rank matrix completion, synthetic
+DiD, and augmented synthetic-control estimators for the same missing
+counterfactual cells, but the literature lacks a theorem-level boundary saying
+when these estimators are solving the same identification problem. This
+proposal introduces the \emph{staggered spectral recovery margin}, a finite
+observable singular-value/design-constant certificate computed from untreated
+blocks and the treatment mask. The kernel conjecture is a phase transition:
+above the margin threshold, rank-$r$ completion point-identifies all
+cohort-time untreated counterfactual cells and nuclear-norm MC, spectral MC,
+SDiD, and ridge ASCM have the same first-order ATT law; below it, an open class
+of rank-$r$ panels has observationally equivalent completions with separated
+ATT functionals. Resolving the conjecture would turn the current practice of
+reporting several panel estimators into a diagnostic check based on an
+observable recovery margin. The proposal is deliberately labelled as a
+proposal: the finite observable iff and first-order equivalence are
+Conjectures, while only the nesting and boundary reductions are routine
+Theorems.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Low-rank causal-panel estimators are used precisely where staggered treatment
+removes the entries needed for counterfactual validation. \citet{AtheyBayatiDoudchenkoImbensKhosravi2021}
+justify nuclear-norm matrix completion for causal panels, while
+\citet{ArkhangelskyAtheyHirshbergImbensWager2021} and
+\citet{BenMichaelFellerRothstein2022} justify balancing estimators under
+latent-factor structure and staggered adoption. The open methodological
+question is whether disagreement between matrix completion, SDiD, and ASCM is
+finite-sample tuning noise or a genuine failure of identification induced by
+the staggered missingness pattern.
+
+\paragraph{The main finding (proposed).}
+The proposed flagship kernel is Conjecture~\ref{conj:phase}: the scale-free
+observed staggered spectral recovery margin $\bar\Gamma_r(P,D)$ crosses a computable
+threshold if and only if three things hold jointly: the rank-$r$ untreated
+matrix is the unique rank-$r$ completion, all cohort-time ATT cells are
+identified, and the MC/SDiD/ASCM plug-in estimators share the same first-order
+linear law. Theorem~\ref{thm:nesting} records the routine direction that the
+margin's positive components imply the classical tangent-space injectivity and
+overlap requirements. Conjecture~\ref{conj:separation} is the negative side:
+when the threshold fails, there is a relative-open set of rank-$r$ untreated
+surfaces with the same observed untreated cells and different ATT vectors, so
+no estimator can recover the advertised joint target without extra structure.
+
+\paragraph{What is new.}
+The closest published matrix-completion results split into two comparator
+families. \citet[Section~1 and Theorems~1--3]{CandesTao2010} and
+\citet[Section~II]{KeshavanMontanariOh2010} give random-mask phase transitions
+for incoherent low-rank recovery. \citet[Sections~2--4]{SingerCucuringu2010}
+and \citet[Theorem~1.3]{Chatterjee2020} are closer on deterministic masks:
+they test local/global uniqueness through completion-matrix rigidity or
+asymptotic graph-limit solvability. The epsilon-gap is the causal staggered
+mask plus estimator duality: the proposed $\bar\Gamma_r(P,D)$ is a named focal
+mathematical object that uses observed singular gaps, cohort-overlap constants,
+and mask leverage to decide not only low-rank uniqueness but also equality of
+the MC, SDiD, and ASCM first-order ATT laws. The closest in-repo failed
+proposal asked for a ``sharp estimator-level spectral equality frontier'' but
+left the active nuclear-norm face and observable computation ill-posed; this
+proposal replaces that with a scale-free SVD/design margin and labels the iff
+as open.
+
+\paragraph{How it positions in the literature.}
+The proposal belongs to the panel and linear-projection methods cluster, with
+motifs from spectral matrix factorization and estimation--identification
+duality. It builds on synthetic DiD and low-rank causal-panel work rather than
+on the Q1 FWL basis grammar: \citet{ArkhangelskyAtheyHirshbergImbensWager2021}
+and \citet{BenMichaelFellerRothstein2022} supply the balancing side,
+\citet{AtheyBayatiDoudchenkoImbensKhosravi2021}, \citet{BaiNg2021}, and
+\citet{MoonWeidner2015} supply the factor/matrix-completion side, and
+\citet{ChoiYuan2024}, \citet{YanWainwright2024}, and
+\citet{ChoiKwonLiao2024} show why an eigen-gap-based inference constant is
+now a live frontier.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the staggered-adoption matrix-completion
+inference program of \citet{YanWainwright2024}: if the recovery margin
+conjecture is resolved, their entrywise confidence intervals can be attached
+to a cohort-time ATT target only on the side of the threshold where the
+counterfactual cells are identified. The same diagnostic would tell applied
+users of \citet{ArkhangelskyAtheyHirshbergImbensWager2021} SDiD when an SDiD
+estimate is first-order equivalent to low-rank imputation rather than a
+different balancing estimand.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report an observed recovery-margin certificate before
+treating staggered matrix-completion, SDiD, and ASCM estimates as robustness
+checks for the same ATT.
+
+\section{Related work}
+\citet{AtheyBayatiDoudchenkoImbensKhosravi2021} propose nuclear-norm matrix
+completion for causal panel counterfactuals; they are the closest causal-panel
+anchor, but they do not give an iff deterministic staggered-mask recovery
+threshold or an estimator-equality phase transition.
+\citet{ArkhangelskyAtheyHirshbergImbensWager2021} introduce synthetic DiD and
+prove consistency and asymptotic normality under latent-factor restrictions;
+their weighting functional is one comparator in the proposed first-order
+equivalence statement.
+\citet{BenMichaelFellerRothstein2022} extend synthetic controls to staggered
+adoption and show that pooled and individual imbalance both matter; their
+cohort-overlap quantities motivate the design constants in $\bar\Gamma_r(P,D)$.
+\citet{BaiNg2021} study factor-imputation counterfactuals with tall and wide
+blocks; their strong-factor regime is the main econometric comparator for the
+observed singular-gap part of the certificate.
+\citet{MoonWeidner2015} show that inference in interactive fixed-effect panel
+regressions can sometimes avoid consistent factor-number estimation; this
+motivates separating rank estimation from recovery-margin positivity.
+\citet{CandesTao2010} and \citet{KeshavanMontanariOh2010} give classical
+matrix-completion recovery thresholds under random observation masks; the
+proposal uses them only for the random-mask sanity reduction, not as the
+closest deterministic comparator.
+\citet{SingerCucuringu2010} introduce the completion matrix and give
+randomized tests for necessary and sufficient local uniqueness conditions and
+sufficient global uniqueness conditions for deterministic low-rank completion;
+the proposal differs by imposing a staggered causal mask, an observed
+scale-free margin, and equality of MC/SDiD/ASCM ATT functionals.
+\citet{Chatterjee2020} gives a necessary-and-sufficient graph-limit condition
+for asymptotic solvability of arbitrary deterministic missing patterns; the
+proposal differs by targeting finite staggered panels, cohort-time ATT cells,
+and estimator first-order laws rather than asymptotic matrix recovery alone.
+\citet{ChoiKwonLiao2024} develop inference for low-rank completion and apply
+it to ATE estimation; their inference program needs a causal-mask
+identification certificate when treated cells form a staggered missing block.
+\citet{ChoiYuan2024} study matrix completion when missingness is not at
+random and apply nuclear-norm subproblems to causal panel data; their
+structured-missingness setting is close to staggered adoption, but it does not
+give an observed MC--SDiD--ASCM equality threshold or a below-threshold ATT
+nonidentification witness.
+\citet{YanWainwright2024} give entrywise inference for staggered-adoption
+missing panels; their coverage constants are the closest recent target for
+the proposed eigen-gap and treatment-design constants.
+\citet{Heiniger2024} studies data-driven model selection for causal-panel
+matrix completion and permutation inference; this is adjacent to the tuning
+stability part of the estimator-duality conjecture.
+
+In-repo prior art does not contain this kernel. The API panel catalogue covers
+Q1 residualized regression bases, staggered minimal-basis algebra, and Markov
+spectral sign-threshold refutations; those are FWL coefficient questions, not
+low-rank matrix-completion recovery thresholds. The failed banked
+\texttt{panel\_sdid\_mc\_id} proposal is the closest internal signal: it asked
+for a strict SCM/ASCM/SDiD/MC lattice and a spectral equality frontier, but the
+reviewer required an explicit finite-dimensional observable computation. The
+present proposal accepts that requirement as the main object.
+
+\section{Formal setup}
+\label{sec:setup}
+Let units $i=1,\ldots,N$ and periods $t=1,\ldots,T$ be fixed for the
+population algebra. Adoption dates $G_i$ induce untreated and treated masks
+$\Omega_0(D)$ and $\Omega_1(D)$. The observed population matrix is
+$Y_{it}=M^0_{it}$ on $\Omega_0(D)$ and $Y_{it}=M^0_{it}+\tau_{G_i,t}$ on
+$\Omega_1(D)$. The centered untreated matrix is
+$\widetilde M^0=M^0-\alpha\one^\transpose-\one\lambda^\transpose$ and has
+rank $r$ with singular values
+$\sigma_1\ge\cdots\ge\sigma_r>\sigma_{r+1}=0$.
+
+For any candidate rank-$r$ completion $M$, let $U_r(M)$ and $V_r(M)$ be the
+left and right singular subspaces of its centered factor part, and let
+$T_r(M)=\{U_r A^\transpose+B V_r^\transpose:A\in\R^{T\times r},
+B\in\R^{N\times r}\}$ be the tangent space to the rank-$r$ manifold. Let
+$P_{\Omega_0}$ project a matrix onto observed untreated cells. Define the
+tangent injectivity constant
+\[
+\iota_r(M,D)=\inf\{\|P_{\Omega_0}H\|_F:\ H\in T_r(M),\ \|H\|_F=1\}.
+\]
+The constants $c_{\iota}(D)$ and $C_{\iota}(D)$ denote positive finite
+constants determined only by the row/column-normalized incidence graph linking
+anchor blocks to target cells.
+The observed design constants are computed from the untreated blocks only:
+$\ell(D)\in[1,\infty)$ is the maximum row/column leverage of the mask
+restricted to cohort-pre and later-treated donor blocks, $b(D)\in[0,1]$ is the
+smallest normalized cohort-overlap count connecting every treated cell to an
+untreated rank-$r$ anchor block, and $s_r(P,D)$ is the smallest $r$th singular
+value among those anchor blocks. Let
+$S(P,D)=\max\{\|P_{\Omega_0}(Y)\|_{\infty},s_1(P,D),1\}$ be the observed
+outcome-scale normalizer and define the dimensionless observed singular gap
+$\kappa_r(P,D)=s_r(P,D)/S(P,D)$. The proposed focal object is the
+\emph{scale-free staggered spectral recovery margin}
+\[
+\bar\Gamma_r(P,D)=\kappa_r(P,D)-\lambda_r(D),
+\qquad
+\lambda_r(D)=\frac{4\ell(D)\sqrt r}{b(D)\sqrt{m_r(D)}},
+\]
+where $m_r(D)$ is the smallest number of observed entries in any rank-$r$
+anchor block used for a treated cell. If a treated cell has no untreated
+rank-$r$ anchor block, set $b(D)=0$, $\lambda_r(D)=+\infty$,
+$\bar\gamma_r(D)=+\infty$, and $\bar\Gamma_r(P,D)=-\infty$ by convention.
+The phase-transition threshold is
+$\bar\gamma_r(D)=2\ell(D)^2r/(b(D)^2m_r(D))$. Both
+$\bar\Gamma_r(P,D)$ and $\bar\gamma_r(D)$ are invariant to multiplying every
+outcome by a nonzero scalar. This definition is independent of the target
+equality event: it is an SVD/design computation on observed untreated cells.
+
+The rank-$r$ spectral MC estimator fills treated cells by the Schur/SVD
+completion map on the anchor blocks. The nuclear-norm MC estimator solves the
+population convex program minimizing $\|M\|_*$ subject to
+$P_{\Omega_0}M=P_{\Omega_0}Y$. Write
+$\bar Y_{g,s}=|\{i:G_i=g\}|^{-1}\sum_{i:G_i=g}Y_{is}$ for cohort-period
+means, and let $\eta_u,\eta_t,\rho\ge0$ denote the SDiD and ASCM quadratic
+penalties. For a target cohort-time cell $(g,t)$, the population SDiD weights
+are the solution
+$(\omega^{sdid}_{g,t},\lambda^{sdid}_{g,t})$ of
+\[
+\min_{\omega,\lambda}\ 
+\sum_{(i,s)\in\Omega_0(D)}\!
+\bigl(Y_{is}-\alpha-\omega_i-\lambda_s\bigr)^2+
+\eta_u\|\omega\|_2^2+\eta_t\|\lambda\|_2^2
+\]
+subject to the usual SDiD simplex normalizations
+$\sum_{i:G_i>t}\omega_i=1$, $\sum_{s<g}\lambda_s=1$ and exact balancing of
+the target cohort's pre-treatment mean and the donor post-period mean whenever
+the constraints are feasible. The ridge ASCM weights
+$\omega^{ascm}_{g,t}$ solve
+\[
+\min_{\omega:\sum_{i:G_i>t}\omega_i=1}
+\sum_{s<g}\Bigl(\bar Y_{g,s}-\sum_{i:G_i>t}\omega_iY_{is}\Bigr)^2+
+\rho\|\omega\|_2^2,
+\]
+and then add the corresponding ridge outcome-regression augmentation on
+pre-treatment residuals. The tuning-path convention in
+Conjecture~\ref{conj:tuning} is $\eta_u,\eta_t,\rho\downarrow0$ after the
+population objective is formed, while the nuclear-norm penalty remains inside
+the active-face stability interval defined by the subgradient certificate.
+Their first-order laws are represented by linear functionals
+$a_{\mathrm{spec}},a_{\mathrm{nuc}},a_{\mathrm{sdid}},a_{\mathrm{ascm}}$ from
+perturbations $\Delta_{\Omega_0}\in\R^{|\Omega_0(D)|}$ of
+$P_{\Omega_0}Y$ to the cohort-time ATT vector in Euclidean norm.
+
+\begin{quote}
+\textbf{Locked parameters reproduced.}
+$qid=\texttt{panel\_mc\_estimation\_duality}$,
+$specialization=\texttt{v1}$, $p=0$, absorbing staggered assignment
+$D_{it}=\one\{t\ge G_i\}$, target $\{\tau_{g,t}:t\ge g\}$ and the
+counterfactual cells $M^0_{\Omega_1(D)}$, regression convention
+$M^0=\alpha\one^\transpose+\one\lambda^\transpose+L F^\transpose$ with rank
+$r$ factor part and MC/SDiD/ASCM population estimators on $\Omega_0(D)$.
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Absorbing staggered design]\label{ass:staggered}
+Adoption dates are fixed, treatment is $D_{it}=\one\{t\ge G_i\}$, and the
+target set is the finite collection of treated cells
+$\Omega_1(D)=\{(i,t):D_{it}=1,G_i<\infty\}$. Positive anchor support is not
+assumed here; it is imposed only by Assumption~\ref{ass:anchor}.
+\end{assumption}
+
+\begin{assumption}[Rank-$r$ untreated surface]\label{ass:rank}
+After additive unit and time effects are removed, the untreated mean matrix
+$\widetilde M^0$ has exact rank $r$ and singular gap
+$\sigma_r(\widetilde M^0)>0=\sigma_{r+1}(\widetilde M^0)$.
+\end{assumption}
+
+\begin{assumption}[Observed anchor regularity]\label{ass:anchor}
+The observed constants $S(P,D)$, $\kappa_r(P,D)$, $b(D)$, $\ell(D)$,
+$m_r(D)$, $\lambda_r(D)$, and $\bar\gamma_r(D)$ defined in
+Section~\ref{sec:setup} are finite, $b(D)>0$, $m_r(D)\ge r(N+T-r)$ on every
+active anchor block, and the anchor-block SVDs have a simple $r$th singular
+value separated from the $(r+1)$st by at least $2\bar\gamma_r(D)$ after
+normalization by $S(P,D)$.
+\end{assumption}
+
+\begin{assumption}[Estimator regularity]\label{ass:estimator}
+The population SDiD and ridge ASCM objectives have unique solutions; the
+nuclear-norm program has a unique active face whenever tangent injectivity
+holds; and perturbations of $P_{\Omega_0}Y$ are mean-zero with finite
+second moments. The first-order laws
+$a_{\mathrm{spec}},a_{\mathrm{nuc}},a_{\mathrm{sdid}},a_{\mathrm{ascm}}$ are
+Frechet derivatives on the normed perturbation space just defined in
+Section~\ref{sec:setup}.
+\end{assumption}
+
+\begin{assumption}[Margin regime]\label{ass:margin}
+The margin is either strictly above threshold,
+$\bar\Gamma_r(P,D)>\bar\gamma_r(D)$, or strictly below threshold,
+$\bar\Gamma_r(P,D)<0$. Boundary equality is excluded from the flagship
+statements and left as a scope flag.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: margin positivity implies tangent injectivity]
+\label{thm:nesting}
+Under Assumptions~\ref{ass:staggered}, \ref{ass:rank}, and
+\ref{ass:anchor}, if $\bar\Gamma_r(P,D)>\bar\gamma_r(D)$, then
+$\iota_r(M^0,D)\ge c_{\iota}(D)\{\bar\Gamma_r(P,D)-\bar\gamma_r(D)\}>0$
+for a positive design constant $c_{\iota}(D)$ depending only on the anchor
+incidence graph. Consequently every tangent perturbation
+$H\in T_r(M^0)$ satisfies
+\[
+\|P_{\Omega_1}H\|_F\le
+C_{\iota}(D)\{\bar\Gamma_r(P,D)-\bar\gamma_r(D)\}^{-1}
+\|P_{\Omega_0}H\|_F,
+\]
+so no nonzero first-order rank-$r$ perturbation is invisible on the observed
+untreated mask while changing target cells.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This is the routine, one-directional bridge from the named margin to
+tangent injectivity. \citet[Sections~2--4]{SingerCucuringu2010} tests the same
+kind of local uniqueness with a completion matrix, and
+\citet[Theorem~1.3]{Chatterjee2020} gives an asymptotic deterministic
+solvability criterion; the gap is that neither supplies a finite
+staggered-causal, scale-free margin tied to ATT cells. (b) It advances the
+\citet{YanWainwright2024} inference program by identifying the deterministic
+design quantity that should enter coverage constants before the full iff is
+proved.
+
+\begin{conjecture}[Conjecture 1: observed recovery-margin phase transition (NOT YET PROVED)]
+\label{conj:phase}
+Under Assumptions~\ref{ass:staggered}--\ref{ass:margin},
+$\bar\Gamma_r(P,D)>\bar\gamma_r(D)$ if and only if the rank-$r$ completion of
+$M^0$ from $\Omega_0(D)$ is locally unique, all cohort-time untreated
+counterfactual cells in $\Omega_1(D)$ are point-identified, and
+\[
+a_{\mathrm{spec}}=a_{\mathrm{nuc}}=a_{\mathrm{sdid}}=a_{\mathrm{ascm}}
+\]
+as first-order linear functionals for the cohort-time ATT vector.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest causal-panel paper,
+\citet[Sections~2--3]{AtheyBayatiDoudchenkoImbensKhosravi2021}, defines the
+nuclear-norm MC target and estimator but does not provide a necessary and
+sufficient deterministic staggered-mask threshold. \citet[Sections~2--3]{ArkhangelskyAtheyHirshbergImbensWager2021}
+defines SDiD weights and asymptotics but does not identify equality with
+low-rank MC influence laws. \citet[Sections~2--4]{SingerCucuringu2010} and
+\citet[Theorem~1.3]{Chatterjee2020} are closer for deterministic completion,
+but they stop at matrix recovery rather than MC--SDiD--ASCM ATT-law equality.
+(b) Resolving this conjecture would give users of SDiD and matrix completion a
+single reported diagnostic explaining when the estimators target the same ATT
+family.
+
+\begin{conjecture}[Conjecture 2: open-class nonidentification below threshold (NOT YET PROVED)]
+\label{conj:separation}
+Under Assumptions~\ref{ass:staggered}, \ref{ass:rank}, \ref{ass:estimator},
+and the below-threshold clause $\bar\Gamma_r(P,D)<0$ in
+Assumption~\ref{ass:margin}, there is a relative-open neighborhood of
+rank-$r$ untreated surfaces containing $M^0$ and two matrices $M_a,M_b$ in
+that neighborhood such that $P_{\Omega_0}M_a=P_{\Omega_0}M_b$ but
+$P_{\Omega_1}M_a\ne P_{\Omega_1}M_b$. Moreover, at least one pair among
+$a_{\mathrm{spec}},a_{\mathrm{nuc}},a_{\mathrm{sdid}},a_{\mathrm{ascm}}$
+differs on a perturbation direction in this neighborhood.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) This promotes the usual single-instance matrix-completion failure witness
+to an open deterministic staggered-mask nonidentification class, which is not
+contained in \citet[Sections~2--4]{SingerCucuringu2010},
+\citet[Theorem~1.3]{Chatterjee2020}, or
+\citet[Sections~3--4]{BenMichaelFellerRothstein2022}. (b) It would give applied staggered
+adoption studies a warning: below threshold, reporting MC/SDiD/ASCM
+differences is evidence of target nonidentification rather than merely
+estimator instability.
+
+\begin{conjecture}[Conjecture 3: tuning-path stability above threshold (NOT YET PROVED)]
+\label{conj:tuning}
+Under Assumptions~\ref{ass:staggered}--\ref{ass:estimator} and
+$\bar\Gamma_r(P,D)>2\bar\gamma_r(D)$, ridge ASCM penalties converging to zero,
+SDiD quadratic penalties converging to zero, and nuclear-norm penalties in the
+active-face stability interval all produce the same first-order law
+$a_{\mathrm{spec}}$ for the cohort-time ATT vector.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet[Sections~2--3]{Heiniger2024} studies data-driven causal-panel
+matrix-completion selection and permutation inference, and
+\citet[Sections~2--4]{BaiNg2021} studies strong-factor imputation with
+tall/wide blocks, but neither states a common tuning-neutrality interval in
+terms of a staggered-mask eigen-gap. (b) This would make the recovery-margin diagnostic directly useful
+for empirical workflows that vary ridge, SDiD, and nuclear-norm tuning
+parameters.
+
+\section{Sanity-check corollaries}
+\begin{remark}[Random-mask calibration check]\label{cor:random}
+If $\Omega_0(D)$ is replaced by an independent Bernoulli observation mask with
+incoherence parameter $\mu$ and sampling rate
+$p_{\Omega}\gtrsim \mu r\log^2(\max\{N,T\})/\min\{N,T\}$ as in
+\citet[Theorems~1--3]{CandesTao2010}, the staggered constants should not be
+read as a literal random-mask rate formula. With the definitions in
+Section~\ref{sec:setup}, $m_r(D)\asymp p_{\Omega}NT$,
+$b(D)\asymp p_{\Omega}$, and $\ell(D)=O(\mu)$ would make
+$\lambda_r(D)$ scale as
+$O(\mu\sqrt r/(p_{\Omega}^{3/2}\sqrt{NT}))$, which is not the
+Cand\`es--Tao threshold. The valid reduction is therefore only qualitative:
+when the mask is randomized, the proposed margin must be recalibrated to the
+classical effective-sample normalization before claiming exact-recovery rates.
+\end{remark}
+
+\begin{corollary}[Single-shock never-treated reduction]\label{cor:single}
+With one treated cohort, at least $r$ never-treated donors, and all pre-periods
+observed, $\bar\Gamma_r(P,D)>\bar\gamma_r(D)$ collapses to full rank of the
+donor-pre anchor block plus visibility of the treated pre-vector in its row
+span; Conjecture~\ref{conj:phase} then reduces to the familiar Schur-complement
+completion $\mu=x_0^\transpose X^+ y_1$.
+\end{corollary}
+
+\begin{corollary}[Concrete positive-margin staggered witness]\label{cor:witness}
+For $r=1$, twelve units and twelve periods with adoption dates
+$(7,9,\infty,\ldots,\infty)$, set the centered untreated matrix to
+$u v^\transpose$ with $u=(1,\ldots,12)^\transpose$ and
+$v=(1,\ldots,12)^\transpose$. Use the ten never-treated rows and all
+pre-adoption entries of the two treated rows as anchor blocks. For the
+row/column-normalized complete-never-treated anchor graph, direct calculation
+gives $m_1(D)\ge 120$, $b(D)=1$, $\ell(D)=1$, and
+$\kappa_1(P,D)=1$ because the complete never-treated block is the smallest
+active singular anchor and also sets the normalizer $S(P,D)$. Hence
+$\lambda_1(D)<0.37$ and $\bar\gamma_1(D)<0.02$, so
+$\bar\Gamma_1(P,D)>\bar\gamma_1(D)$ on an open neighborhood of this rank-one
+surface. This is a non-corner staggered witness for the positive side of
+Conjecture~\ref{conj:phase}; it is not a random-mask or single-treated-cohort
+reduction.
+\end{corollary}
+
+\begin{corollary}[Concrete below-threshold staggered witness]\label{cor:belowwitness}
+Let $N=T=4$, $r=1$, and adoption dates be $G=(4,3,3,3)$. The observed
+untreated mask contains row 1 in periods $1,2,3$ and rows $2,3,4$ in periods
+$1,2$, but contains no untreated entry in period 4. For every $c$ near $4$,
+define
+\[
+M(c)=
+\begin{pmatrix}
+1\\2\\3\\4
+\end{pmatrix}
+\begin{pmatrix}
+1&2&3&c
+\end{pmatrix}.
+\]
+Then $M(c)$ is rank one, $P_{\Omega_0}M(c)=P_{\Omega_0}M(4)$, and
+$P_{\Omega_1}M(c)\ne P_{\Omega_1}M(4)$ whenever $c\ne4$ because every
+period-4 treated counterfactual changes. This is a nonconstant,
+non-random-mask staggered witness for the below-threshold side of
+Conjecture~\ref{conj:separation}: the design has $b(D)=0$ and hence
+$\bar\Gamma_1(P,D)=-\infty$ by the convention in Section~\ref{sec:setup}.
+\end{corollary}
+
+\section{Proof-sketch route}
+The mathematical route is to combine deterministic low-rank completion
+geometry with population estimator linearization. First, prove that the
+anchor-block SVD and cohort-overlap constants lower-bound the tangent
+injectivity constant $\iota_r(M,D)$ by a Davis--Kahan/Wedin perturbation
+argument plus a block Schur complement calculation. Second, prove necessity by
+constructing a nonzero tangent direction in the kernel of $P_{\Omega_0}$ when
+the margin is below zero, then integrate that tangent direction to two nearby
+rank-$r$ matrices with different target cells, using the completion-matrix
+kernel when it exists and translating it into the staggered ATT coordinates.
+Third, write the population systems explicitly: the SDiD weights solve
+pre-period and donor balancing normal equations with sum-to-one constraints,
+ridge ASCM solves the ridge-augmented version of those equations, spectral MC
+solves the Schur/SVD completion equations on anchor blocks, and nuclear-norm
+MC satisfies primal feasibility plus a dual certificate in the active
+subgradient face. On the positive-margin event, show that these four KKT or
+normal-equation systems have the same Riesz representer for the ATT vector.
+The boundary cases requiring explicit algebra are the $r=1$, twelve-unit,
+twelve-period positive-margin witness in Corollary~\ref{cor:witness}, the
+four-by-four below-threshold witness in Corollary~\ref{cor:belowwitness}, and
+the single-shock Schur-complement reduction in Corollary~\ref{cor:single}.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:nesting} is proposed as routine algebra from deterministic
+matrix perturbation and tangent-space injectivity; it is not the flagship
+novelty. Conjectures~\ref{conj:phase}--\ref{conj:tuning} are not yet proved:
+the necessity direction, open-class promotion, and equality of the four
+first-order laws are the hard parts. The constants in $\bar\Gamma_r(P,D)$ may
+need adjustment; the proposal's novelty is the finite observable
+scale-free SVD/design-margin object and phase-transition statement, not the
+numerical constant $4$. Boundary cases with
+$\bar\Gamma_r(P,D)\in[0,2\bar\gamma_r(D)]$ are explicitly excluded.
+The former random-mask ``reduction'' has been downgraded to a calibration
+check because the current staggered constants do not reproduce the
+Cand\`es--Tao rate without a separate random-mask normalization.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft around the observed staggered spectral
+recovery margin and MC--SDiD estimator-duality phase transition; prior
+verdict: none.
+\item v2 (revise) -- added deterministic completion comparators, replaced the
+outcome-scale margin with a scale-free margin, made Theorem~\ref{thm:nesting}
+norm-precise, repaired the random-mask reduction, specified estimator KKT
+systems, and added a non-corner positive-margin staggered witness; prior
+verdict: REVISE.
+\item v3 (revise) -- added Choi--Yuan 2024, inserted location-level anchors
+for the tuning and below-threshold claims, pinned population SDiD/ridge-ASCM
+objective normalizations, downgraded the random-mask reduction to a
+calibration check, and added a concrete four-by-four below-threshold witness;
+prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Arkhangelsky et~al.(2021)]{ArkhangelskyAtheyHirshbergImbensWager2021}
+Arkhangelsky, D., Athey, S., Hirshberg, D.~A., Imbens, G.~W., and Wager, S.
+(2021). Synthetic difference-in-differences. \emph{American Economic Review},
+111(12), 4088--4118.
+
+\bibitem[Athey et~al.(2021)]{AtheyBayatiDoudchenkoImbensKhosravi2021}
+Athey, S., Bayati, M., Doudchenko, N., Imbens, G., and Khosravi, K. (2021).
+Matrix completion methods for causal panel data models. \emph{Journal of the
+American Statistical Association}, 116(536), 1716--1730.
+
+\bibitem[Bai and Ng(2021)]{BaiNg2021}
+Bai, J. and Ng, S. (2021). Matrix completion, counterfactuals, and factor
+analysis of missing data. \emph{Journal of the American Statistical
+Association}, 116(536), 1746--1763.
+
+\bibitem[Ben-Michael et~al.(2022)]{BenMichaelFellerRothstein2022}
+Ben-Michael, E., Feller, A., and Rothstein, J. (2022). Synthetic controls with
+staggered adoption. \emph{Journal of the Royal Statistical Society: Series B},
+84(2), 351--381.
+
+\bibitem[Candes and Tao(2010)]{CandesTao2010}
+Candes, E.~J. and Tao, T. (2010). The power of convex relaxation: Near-optimal
+matrix completion. \emph{IEEE Transactions on Information Theory}, 56(5),
+2053--2080.
+
+\bibitem[Choi et~al.(2024)]{ChoiKwonLiao2024}
+Choi, J., Kwon, S., and Liao, Z. (2024). Inference for low-rank completion
+without sample splitting with application to treatment effect estimation.
+\emph{Journal of Econometrics}, 240(2), 105682.
+
+\bibitem[Choi and Yuan(2024)]{ChoiYuan2024}
+Choi, J. and Yuan, M. (2024). Matrix completion when missing is not at random
+and its applications in causal panel data models. \emph{Journal of the
+American Statistical Association}.
+
+\bibitem[Chatterjee(2020)]{Chatterjee2020}
+Chatterjee, S. (2020). A deterministic theory of low rank matrix completion.
+\emph{IEEE Transactions on Information Theory}, 66(12), 8046--8055.
+
+\bibitem[Heiniger(2024)]{Heiniger2024}
+Heiniger, S. (2024). Causal panel data with model selection. \emph{arXiv
+preprint} arXiv:2402.01069.
+
+\bibitem[Keshavan et~al.(2010)]{KeshavanMontanariOh2010}
+Keshavan, R.~H., Montanari, A., and Oh, S. (2010). Matrix completion from a
+few entries. \emph{IEEE Transactions on Information Theory}, 56(6), 2980--2998.
+
+\bibitem[Moon and Weidner(2015)]{MoonWeidner2015}
+Moon, H.~R. and Weidner, M. (2015). Linear regression for panel with unknown
+number of factors as interactive fixed effects. \emph{Econometrica}, 83(4),
+1543--1579.
+
+\bibitem[Singer and Cucuringu(2010)]{SingerCucuringu2010}
+Singer, A. and Cucuringu, M. (2010). Uniqueness of low-rank matrix completion
+by rigidity theory. \emph{SIAM Journal on Matrix Analysis and Applications},
+31(4), 1621--1641.
+
+\bibitem[Yan and Wainwright(2024)]{YanWainwright2024}
+Yan, Y. and Wainwright, M.~J. (2024). Entrywise inference for missing panel
+data: A simple and instance-optimal approach. \emph{arXiv preprint}
+arXiv:2401.13665.
+\end{thebibliography}
+
+\end{document}

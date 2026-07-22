@@ -1,0 +1,612 @@
+% =====================================================================
+%  thmsmith Stage 0 derivation skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_bunching\_heaping\_phase, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage 0 derivation: \texttt{pid\_bunching\_heaping\_phase} / \texttt{v1}%
+  \\ \large\textit{A heap-grid phase frontier for partial identification of bunching mass}}
+\author{thmsmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note studies partial identification of latent bunching mass when the running variable is observed only through a known deterministic heaping map.  The observable input is the heap histogram \(P^H\), while the estimand-defining functional is the finite-dimensional bound
+\[
+B_{G,W,E,L}(P^H)=\left[\inf_{q\in\mathcal{F}(P^H)}\theta_B(q),\ \sup_{q\in\mathcal{F}(P^H)}\theta_B(q)\right],
+\]
+where \(\mathcal{F}(P^H)\) collects latent densities consistent with the observed heap totals and the order-\(L\) continuation restriction.  The target causal estimand is the latent excess-mass scalar \(\theta_B(q)\), defined as actual latent mass inside the excluded bunching window minus the continuation-implied counterfactual mass.  The conjecture-specific sub-stages will verify whether these endpoints admit a sharp support-function representation through feasible within-fiber contrasts and whether, on equal grids, a feasible-loading rank screen exactly characterizes point-informativeness on the observed feasible face.  At the setup stage, the contribution is therefore to fix the observable law, the latent object, and the computable bounding map without yet committing to the conjectured sharpness claims.
+\end{abstract}
+
+\section{Introduction}
+Standard bunching designs interpret excess mass near a kink or notch as evidence of behavioral response relative to a smooth counterfactual density.  That interpretation becomes fragile when the econometrician does not observe the latent running variable itself but only a deterministically rounded or heaped version.  The resulting empirical question is not merely whether heaping causes bias in a particular estimator, but whether the observed rounded histogram contains enough information to recover any latent excess-mass functional at all.
+
+Existing bunching work, including \cite{Saez2010Bunching}, \cite{ChettyFriedmanOlsenPistaferri2011Adjustment}, and \cite{KlevenWaseem2013Notches}, studies excess or missing mass under smoothness restrictions on an effectively observed running-variable density.  More recent identification work such as \cite{BertanhaMcCallumSeegert2021BetterBunching} and \cite{Song2024GeneralBunching} emphasizes how strongly bunching conclusions depend on assumptions about the latent counterfactual distribution.  On the measurement-error side, \cite{BarrecaLindoWaddell2016HeapingRD}, \cite{Dong2015RoundingRD}, and \cite{DaveziesLeBarbanchon2017RDMeasurementError} show that rounding or heaping can destroy standard regression-discontinuity arguments, but they do not characterize the sharp identified set for a bunching excess-mass functional under deterministic coarsening.
+
+The contribution targeted here is narrower and more structural.  The note fixes a finite latent grid, a known heap map, an excluded bunching window, and an order-\(L\) continuation operator, then asks for the exact relationship between observed heap counts and latent bunching mass.  If Conjecture 1 is correct, the identified set is the image of a feasible within-fiber contrast polytope under an explicit loading row, so nonidentification is witnessed by a finite signed-nullspace certificate rather than by an unspecified worst-case argument.  If Conjecture 2 is correct, equal-grid designs admit a computable phase screen that says when the observed feasible face is point-informative and when aliasing survives.
+
+These claims matter for empirical bunching practice because they separate estimator tuning from genuine identification.  A researcher choosing the excluded window or the heap grid would know whether the design itself rules out latent reallocations that preserve all observed rounded counts.  They also matter for downstream theory because the relevant object is a computable finite-dimensional map from \(P^H\), not a generic existence statement about unidentified latent densities.
+
+\paragraph{Motivating conjecture(s).}
+\textbf{Conjecture 1 (frontier).} Under Assumptions~\ref{ass:heap}, \ref{ass:fiber}, and \ref{ass:linear-cont},
+\[
+B_{G,W,E,L}(P^H)=
+\ell_{G,W,L}^{\transpose}q^0+
+\left[
+\min_{\alpha\in\mathcal{A}_G(q^0)} r_{G,W,L}^{\transpose}\alpha,
+\max_{\alpha\in\mathcal{A}_G(q^0)} r_{G,W,L}^{\transpose}\alpha
+\right],
+\]
+and \(\theta_B\) is point identified if and only if
+\[
+r_{G,W,L}^{\transpose}\alpha=0
+\quad\text{for every }\alpha\in\mathcal{A}_G(q^0)-\mathcal{A}_G(q^0).
+\]
+If the condition fails, an extreme point of the normalized contrast polytope gives a finite signed-nullspace certificate \(Z_G\alpha\) and two feasible latent densities \(q^-,q^+\) with \(A_Gq^-=A_Gq^+=P^H\) and \(\theta_B(q^-)\neq\theta_B(q^+)\).
+
+\textbf{Conjecture 2 (phase).} Under Assumptions~\ref{ass:heap}--\ref{ass:equal-grid}, the integer
+\[
+\tau^\star(G,W,L;q^0)=\operatorname{rank}(R^{\mathrm{feas}}_{G,W,L}(q^0))
+\]
+is well typed and computable from \(A_G\), \(S_W\), \(C_{G,W,L}\), \(\ell_{G,W,L}\), and the face \(\mathcal{D}_G(q^0)\).  The equal-grid design is point-informative for the bunching mass on the observed feasible face exactly when \(\tau^\star(G,W,L;q^0)=0\).  When \(\tau^\star(G,W,L;q^0)=1\), the row \(r_{G,W,L}^{\transpose}\) has one independent loading on feasible heap contrasts, and an aliasing certificate \(Z_G\alpha\) exists for some \(\alpha\in\mathcal{A}_G(q^0)-\mathcal{A}_G(q^0)\) with \(\ell_{G,W,L}^{\transpose}Z_G\alpha\neq0\).  If Assumption~\ref{ass:face} also holds, this criterion equals the full-nullspace screen \(\operatorname{rank}(R^{\mathrm{full}}_{G,W,L})=0\).
+
+\section{Related work and positioning}
+The closest substantive benchmark is the bunching literature that treats excess mass as informative once a counterfactual density is pinned down.  \cite{Saez2010Bunching} and \cite{ChettyFriedmanOlsenPistaferri2011Adjustment} anchor the modern kink-bunching design, while \cite{KlevenWaseem2013Notches} show how notches and missing mass add identifying structure.  \cite{BertanhaMcCallumSeegert2021BetterBunching} and \cite{BertanhaMcCallumPayneSeegert2022Stata} are directly relevant because they stress that bunching conclusions depend on restrictions on an unobserved distribution.  \cite{Song2024GeneralBunching} is the nearest published identification comparator, but its point-identification route relies on analyticity rather than on deterministic heap-fiber geometry.
+
+The second benchmark is the running-variable coarsening and heaping literature.  \cite{BarrecaLindoWaddell2016HeapingRD} show that heaping can bias regression-discontinuity designs in ways ordinary diagnostics miss; \cite{Dong2015RoundingRD} proves that rounding alone can break standard RD estimation; and \cite{DaveziesLeBarbanchon2017RDMeasurementError} study how measurement error smooths discontinuities.  These papers motivate the present problem but do not supply a sharp identified set for latent bunching mass when only heap totals are observed.  \cite{BoschDekkerStrohmaier2020Window} is important on the empirical side because it shows how window choice affects bunching estimates, which is exactly the design choice that the conjectured phase screen would discipline.
+
+The third benchmark is general partial-identification machinery for coarsened or interval data.  \cite{ManskiTamer2002IntervalData} give interval-data bounds without structure inside the intervals, and \cite{BeresteanuMolchanovMolinari2011ConvexMoment} characterize sharp regions through support functions of convex random sets.  The present note borrows that sharp-set viewpoint, but the targeted object is more specialized: the latent estimand is a local bunching-mass stencil, the coarsening is a known deterministic heap map, and the key witness is a signed within-fiber nullspace direction.  Relative to prior in-repository partial-identification attempts on manipulation, interval censoring, and multivariate interval regression, the distinctive claim here is the explicit heap-specific aliasing certificate and the feasible-face rank screen, not generic LP duality or endpoint substitution.
+
+\section{Formal setup}
+Let \(\mathcal{X}=\{x_1,\ldots,x_J\}\subset\mathbb{R}\) be a finite latent support for the running variable \(X\), ordered on the real line around a policy point \(c\).  A latent density is a vector \(q=(q_1,\ldots,q_J)\in\Delta(\mathcal{X})\), where \(\Delta(\mathcal{X})=\{q\in\mathbb{R}^J_+: \sum_{j=1}^J q_j=1\}\).  The econometrician does not observe \(X\) directly.  Instead a known deterministic heaping map \(h_G:\mathcal{X}\to\mathcal{H}\) sends each latent support point to a heap cell of width \(G\), and the observable law is the heap histogram \(P^H=(p_h)_{h\in\mathcal{H}}\) with
+\[
+p_h=\Pr(H=h)=\sum_{x\in F_h} q_x,
+\qquad
+F_h=\{x\in\mathcal{X}:h_G(x)=h\}.
+\]
+Write \(A_G\in\{0,1\}^{|\mathcal{H}|\times J}\) for the heap-incidence matrix, so \(A_G q=P^H\) is the system of observed heap equations.
+
+Fix an excluded bunching window \(W=[c-a,c+b]\cap\mathcal{X}\) and let \(E=\{h\in\mathcal{H}:F_h\cap W\neq\varnothing\}\) be the heap cells whose fibers intersect that window.  The usable cells are \(\mathcal{U}=\mathcal{H}\setminus E\).  Let \(S_W\in\{0,1\}^{|W|\times J}\) denote the selector matrix whose rows pick the latent support points in \(W\).  For a fixed polynomial order \(L\ge 0\), the maintained continuation rule says that the counterfactual mass inside \(W\) is obtained by an order-\(L\) polynomial continuation fitted on \(\mathcal{U}\) and represented by a known linear operator \(C_{G,W,L}\).  Consequently the latent excess-mass scalar is a linear functional
+\[
+\theta_B(q)=\sum_{x\in W} q_x-\sum_{x\in W} m_L(x;q)=\ell_{G,W,L}^{\transpose}q,
+\qquad
+\ell_{G,W,L}^{\transpose}=\one^{\transpose}S_W-\one^{\transpose}C_{G,W,L}.
+\]
+
+The maintained restriction set is
+\[
+\mathcal{R}_{G,W,E,L}(P^H)
+=
+\{q\in\Delta(\mathcal{X}):A_Gq=P^H,\ q\in\mathcal{Q}_{G,W,L}\},
+\]
+where \(\mathcal{Q}_{G,W,L}\) denotes existence and uniqueness of the order-\(L\) continuation on the usable cells.  The identified set for the scalar target is therefore
+\[
+\Theta_I(P^H)=\{\theta_B(q): q\in\mathcal{R}_{G,W,E,L}(P^H)\}.
+\]
+Because \(\mathcal{X}\) is finite and all restrictions are algebraic in \(q\), \(\Theta_I(P^H)\) is generated by a finite-dimensional feasibility problem.
+
+To parameterize observationally equivalent latent densities, let \(Z_G\in\mathbb{R}^{J\times d_G}\) collect a normalized basis of \(\operatorname{Null}(A_G)\), with columns scaled to have entries in \(\{-1,0,1\}\), \(\ell_1\)-norm equal to two, and first nonzero entry equal to one.  Fixing a feasible reference point \(q^0\in\mathcal{R}_{G,W,E,L}(P^H)\), define the feasible contrast polytope
+\[
+\mathcal{A}_G(q^0)=\{\alpha\in\mathbb{R}^{d_G}: q^0+Z_G\alpha\in\mathcal{R}_{G,W,E,L}(P^H)\}
+\]
+and its direction span
+\[
+\mathcal{D}_G(q^0)=\operatorname{span}\{\alpha-\alpha':\alpha,\alpha'\in\mathcal{A}_G(q^0)\}.
+\]
+The row \(r_{G,W,L}^{\transpose}=\ell_{G,W,L}^{\transpose}Z_G\) records how each within-fiber contrast changes latent bunching mass while preserving the observed heap histogram.
+
+\paragraph{Locked parameters.}
+\begin{itemize}[leftmargin=*]
+  \item qid: \texttt{pid\_bunching\_heaping\_phase}
+  \item specialization: \texttt{v1}
+  \item observable distribution: \(P=P^H\).  The latent running variable \(X\) lies on a finite grid \(\mathcal{X}=\{x_1,\ldots,x_J\}\subset\mathbb{R}\), with policy point \(c\).  The econometrician observes only the deterministic heap \(H=h_G(X)\in\mathcal{H}\), where \(h_G\) maps each \(x\) to a known heap cell of width \(G\).  The observable distribution \(P=P^H\) is the vector of heap probabilities \(p_h=\Pr(H=h)\).  The excluded bunching window is \(W=[c-a,c+b]\cap\mathcal{X}\), and \(E\subset\mathcal{H}\) is the set of heap cells whose latent fibers intersect \(W\).
+  \item parameter \(\theta\): \(\theta=\theta_B\), the latent excess-mass scalar
+  \[
+  \theta_B(q)=\sum_{x\in W} q_x-\sum_{x\in W} m_L(x;q),
+  \]
+  where \(q\in\Delta(\mathcal{X})\) is a latent density and \(m_L(\cdot;q)\) is the order-\(L\) counterfactual polynomial continuation fitted on the usable cells \(\mathcal{U}=\mathcal{H}\setminus E\).
+  \item identifying restrictions: \(\mathcal{R}_{G,W,E,L}\) are nonnegativity and summability of \(q\), the heap equations \(\sum_{x:h_G(x)=h}q_x=p_h\), and existence and uniqueness of the order-\(L\) continuation from \(\mathcal{U}\).
+  \item bounding functional: \(B_{G,W,E,L}(P^H)\) is
+  \[
+  \left[
+  \inf_{q\in\mathcal{R}_{G,W,E,L}(P^H)}\theta_B(q),
+  \sup_{q\in\mathcal{R}_{G,W,E,L}(P^H)}\theta_B(q)
+  \right].
+  \]
+  At the setup stage this is the computable outer-bound map; Conjecture 1 is the sharpness claim to be verified downstream.
+\end{itemize}
+
+\section{Assumptions}
+\begin{assumption}[Known deterministic heap map]\label{ass:heap}
+The map \(h_G:\mathcal{X}\to\mathcal{H}\), the support \(\mathcal{X}\), the heap width \(G\), and the incidence matrix \(A_G\) are known.
+\end{assumption}
+
+\begin{assumption}[Finite feasible fiber]\label{ass:fiber}
+The feasible set
+\[
+\mathcal{F}(P^H)=\{q\in\Delta(\mathcal{X}):A_Gq=P^H,\ q\in\mathcal{Q}_{G,W,L}\}
+\]
+is nonempty and compact, and a reference point \(q^0\in\mathcal{F}(P^H)\) is fixed when the contrast polytope is used.
+\end{assumption}
+
+\begin{assumption}[Linear continuation]\label{ass:linear-cont}
+For fixed \(G,W,E,L\), the counterfactual continuation over \(W\) is a known linear functional of \(q\).  Hence \(\theta_B(q)=\ell_{G,W,L}^{\transpose}q\) for a known vector \(\ell_{G,W,L}\).
+\end{assumption}
+
+\begin{assumption}[Equal-grid phase class]\label{ass:equal-grid}
+For Conjecture 2, \(\mathcal{X}\) is equally spaced, all heap cells have common width \(G\), \(W\) is an interval of consecutive latent support points around \(c\), and \(E\) is the set of heap cells intersecting \(W\).
+\end{assumption}
+
+\begin{assumption}[Interior perturbation]\label{ass:interior}
+For witness statements, there is a feasible \(q^0\in\mathcal{F}(P^H)\) and \(\epsilon>0\) such that \(q^0\pm\epsilon v\in\mathcal{F}(P^H)\) for the signed direction \(v\) under consideration.
+\end{assumption}
+
+\begin{assumption}[Interior feasible face]\label{ass:face}
+For the design-uniform rank screen, the feasible contrast polytope has full affine span, \(\mathcal{D}_G(q^0)=\mathbb{R}^{d_G}\).  Without this condition, phase statements use \(R^{\mathrm{feas}}_{G,W,L}(q^0)\) rather than \(R^{\mathrm{full}}_{G,W,L}\).
+\end{assumption}
+
+\section{Estimand-defining functional}
+For each observable histogram \(P^H\), define the feasible latent set
+\[
+\mathcal{F}(P^H)=\{q\in\Delta(\mathcal{X}):A_Gq=P^H,\ q\in\mathcal{Q}_{G,W,L}\}.
+\]
+Because \(\mathcal{X}\) is finite, \(A_G\) is known, and the continuation restriction is encoded by the known linear operator \(C_{G,W,L}\), this set is a compact finite-dimensional polytope (or a finite intersection of a polytope with the continuation-existence constraints).  The lower and upper endpoint functionals are
+\[
+\theta_L(P^H)=\inf_{q\in\mathcal{F}(P^H)} \ell_{G,W,L}^{\transpose}q,
+\qquad
+\theta_U(P^H)=\sup_{q\in\mathcal{F}(P^H)} \ell_{G,W,L}^{\transpose}q,
+\]
+and the estimand-defining bound is
+\[
+B_{G,W,E,L}(P^H)=\bigl[\theta_L(P^H),\theta_U(P^H)\bigr].
+\]
+This is the setup-stage outer bound: every admissible latent law consistent with the observed heap histogram and the maintained continuation rule produces a value of \(\theta_B(q)\) inside this interval.
+
+The map is computable from observed-population inputs.  One may evaluate \(\theta_L(P^H)\) and \(\theta_U(P^H)\) by finite-dimensional linear optimization over \(q\), since both the objective \(\ell_{G,W,L}^{\transpose}q\) and the heap constraints \(A_Gq=P^H\) are explicit.  Equivalently, after fixing \(q^0\in\mathcal{F}(P^H)\) and a basis \(Z_G\) of \(\operatorname{Null}(A_G)\), one may reparameterize feasible latent densities as \(q=q^0+Z_G\alpha\) with \(\alpha\in\mathcal{A}_G(q^0)\), turning the endpoint problem into minimization and maximization of the contrast loading \(r_{G,W,L}^{\transpose}\alpha\) over a feasible contrast set.  Conjecture 1 is precisely the claim that this contrast representation is not merely an outer representation but the sharp identified-set formula.
+
+\section{Target causal estimand}
+The target parameter is the scalar latent excess bunching mass
+\[
+\theta=\theta_B(q)=\sum_{x\in W} q_x-\sum_{x\in W} m_L(x;q)=\ell_{G,W,L}^{\transpose}q.
+\]
+The first term is the actual latent probability mass in the excluded bunching window \(W\).  The second term is the counterfactual mass that would be assigned to the same window by the order-\(L\) continuation fitted on the usable cells \(\mathcal{U}=\mathcal{H}\setminus E\).  Thus \(\theta_B(q)\) measures the amount of latent mass attributed to bunching relative to the maintained smooth counterfactual rule, not the observed heaped mass itself.
+
+This distinction matters because the observable law is \(P^H\), not \(q\).  Different latent densities can generate the same rounded histogram while implying different values of \(\theta_B(q)\).  The mathematical task in later sections is therefore to characterize the identified set
+\[
+\Theta_I(P^H)=\{\theta_B(q):q\in\mathcal{F}(P^H)\}
+\]
+and to determine when the bounding functional from \S7 collapses to a singleton.  At the setup stage, \(\theta_B\) is the causal target and \(B_{G,W,E,L}(P^H)\) is the observable-population bracket attached to that target.
+
+\section{Main theorems}
+\begin{theorem}[Conjecture 1: sharp aliasing frontier]\label{thm:frontier}
+Equivalently, the endpoint map is the linear image of the feasible contrast polytope, and point identification holds exactly when \(r_{G,W,L}^{\transpose}\) vanishes on \(\mathcal{A}_G(q^0)-\mathcal{A}_G(q^0)\).
+\end{theorem}
+
+\paragraph{Interpretation.}
+The theorem says that heaping creates aliasing only through within-fiber movements of latent probability mass.  The observable histogram \(P^H\) fixes the heap totals \(A_Gq=P^H\), but it does not generally fix how mass is distributed across latent support points inside a heap fiber.  The basis \(Z_G\) lists exactly those heap-preserving redistributions, and the row \(r_{G,W,L}^{\transpose}=\ell_{G,W,L}^{\transpose}Z_G\) measures how each such redistribution changes the latent excess mass after the order-\(L\) continuation rule is applied.  The causal target is the latent scalar \(\theta_B(q)\), not the observed heap histogram itself.  The computable identifying functional is the interval obtained by optimizing the explicit linear map \(r_{G,W,L}^{\transpose}\alpha\) over the finite contrast polytope \(\mathcal{A}_G(q^0)\).  This differs from ordinary extrapolation uncertainty in bunching designs.  The continuation rule is held fixed and linear; the theorem isolates the additional loss from deterministic rounding or heaping.
+
+\begin{theorem}[Conjecture 2: equal-grid phase screen]\label{thm:phase}
+Under Assumptions~\ref{ass:heap}--\ref{ass:equal-grid}, the feasible-loading rank \[
+\tau^\star(G,W,L;q^0)=\operatorname{rank}(R^{\mathrm{feas}}_{G,W,L}(q^0))
+\] is a computable integer in \(\{0,1\}\), and the equal-grid design is point-informative for \(\theta_B\) on the observed feasible face if and only if \(\tau^\star(G,W,L;q^0)=0\). If \(\tau^\star(G,W,L;q^0)=1\), there are two feasible contrast points whose difference \(\alpha\in\mathcal{A}_G(q^0)-\mathcal{A}_G(q^0)\) gives a signed heap-null aliasing certificate \(Z_G\alpha\) with \(\ell_{G,W,L}^{\transpose}Z_G\alpha\neq0\). Under Assumption~\ref{ass:face}, this feasible-face criterion is equivalent to the full-nullspace screen \(\operatorname{rank}(R^{\mathrm{full}}_{G,W,L})=0\).
+\end{theorem}
+
+\paragraph{Interpretation.}
+The theorem says that heaping creates a precise linear-algebraic phase frontier.  The observed heap histogram fixes totals within heap cells, but it does not generally fix how mass is allocated within a cell.  The matrix \(Z_G\) lists exactly those within-fiber reallocations that preserve the observed histogram, while \(r_{G,W,L}^{\transpose}=\ell_{G,W,L}^{\transpose}Z_G\) measures how each such reallocation changes latent excess bunching mass.  The feasible face \(\mathcal{D}_G(q^0)\) removes directions blocked by nonnegativity, summability, or continuation feasibility at the observed law.  Therefore \(\tau^\star=0\) means every feasible observational alias leaves \(\theta_B\) unchanged, so the bound collapses to a point on that face.  The value \(\tau^\star=1\) means that one scalar degree of observable aliasing remains for the scalar bunching target, so the observed heap histogram cannot distinguish two latent densities with different excess mass.  Equal-grid geometry matters because it makes \(S_W\), \(C_{G,W,L}\), and hence \(\ell_{G,W,L}\), a known finite-dimensional map of the design rather than an unspecified smoothness extrapolation.
+
+\section{Interpretation}
+\paragraph{Conjecture 1.}
+The theorem says that heaping creates aliasing only through within-fiber movements of latent probability mass.  The observable histogram \(P^H\) fixes the heap totals \(A_Gq=P^H\), but it does not generally fix how mass is distributed across latent support points inside a heap fiber.  The basis \(Z_G\) lists exactly those heap-preserving redistributions, and the row
+\[
+r_{G,W,L}^{\transpose}=\ell_{G,W,L}^{\transpose}Z_G
+\]
+measures how each such redistribution changes the latent excess mass after the order-\(L\) continuation rule is applied.
+
+The causal target is the latent scalar \(\theta_B(q)\), not the observed heap histogram itself.  The computable identifying functional is the interval obtained by optimizing the explicit linear map \(r_{G,W,L}^{\transpose}\alpha\) over the finite contrast polytope \(\mathcal{A}_G(q^0)\).  Hence the result gives a sharp partial-identification statement:
+\[
+\Theta_I(P^H)=B_{G,W,E,L}(P^H).
+\]
+Point identification occurs precisely when every feasible within-fiber contrast has zero loading under \(r_{G,W,L}^{\transpose}\).  If any feasible contrast has nonzero loading, the observed heap histogram admits two latent density completions with different bunching mass, and the obstruction is the signed-nullspace certificate \(Z_G(\alpha-\alpha')\).
+
+This differs from ordinary extrapolation uncertainty in bunching designs.  The continuation rule is held fixed and linear; the theorem isolates the additional loss from deterministic rounding or heaping.  The endpoint calculation is evaluable from \(P^H\), \(A_G\), \(Z_G\), \(q^0\), and \(\ell_{G,W,L}\) by a finite linear program with \(d_G\) decision variables, constraints \(q^0+Z_G\alpha\in\Delta(\mathcal{X})\), \(A_G(q^0+Z_G\alpha)=P^H\), and the continuation-feasibility constraints in \(\mathcal{Q}_{G,W,L}\).
+
+\paragraph{Conjecture 2.}
+The theorem says that heaping creates a precise linear-algebraic phase frontier.  The observed heap histogram fixes totals within heap cells, but it does not generally fix how mass is allocated within a cell.  The matrix \(Z_G\) lists exactly those within-fiber reallocations that preserve the observed histogram, while \(r_{G,W,L}^{\transpose}=\ell_{G,W,L}^{\transpose}Z_G\) measures how each such reallocation changes latent excess bunching mass.  The feasible face \(\mathcal{D}_G(q^0)\) removes directions blocked by nonnegativity, summability, or continuation feasibility at the observed law.  Therefore \(\tau^\star=0\) means every feasible observational alias leaves \(\theta_B\) unchanged, so the bound collapses to a point on that face.  The value \(\tau^\star=1\) means that one scalar degree of observable aliasing remains for the scalar bunching target, so the observed heap histogram cannot distinguish two latent densities with different excess mass.  Equal-grid geometry matters because it makes \(S_W\), \(C_{G,W,L}\), and hence \(\ell_{G,W,L}\), a known finite-dimensional map of the design rather than an unspecified smoothness extrapolation.
+
+\paragraph{Synthesis.}
+The observable histogram \(P^H\) fixes the heap totals, but it does not generally fix how mass is distributed across latent support points inside a heap fiber.  The basis \(Z_G\) lists exactly those heap-preserving redistributions, the feasible face \(\mathcal{D}_G(q^0)\) removes directions blocked by nonnegativity, summability, or continuation feasibility at the observed law, and the row \(r_{G,W,L}^{\transpose}\) measures how each such redistribution changes the latent excess mass after the order-\(L\) continuation rule is applied.  Therefore \(\tau^\star=0\) means every feasible observational alias leaves \(\theta_B\) unchanged, so the bound collapses to a point on that face, while any feasible contrast with nonzero loading yields two latent density completions with different bunching mass.
+
+\section{Step-by-step proof}
+\subsubsection*{Proof of Conjecture 1}
+\begin{proof}
+Write \(\ell=\ell_{G,W,L}\), \(r=r_{G,W,L}\), \(A=A_G\), \(Z=Z_G\), and \(\mathcal{A}=\mathcal{A}_G(q^0)\) for readability.
+
+First, establish the exact reparameterization of the feasible fiber.  Let \(q\in\mathcal{F}(P^H)\).  Since \(q^0\in\mathcal{F}(P^H)\) by Assumption~\ref{ass:fiber}, both \(q\) and \(q^0\) satisfy the observed heap equations.  Assumption~\ref{ass:heap} therefore gives
+\[
+A(q-q^0)=Aq-Aq^0=P^H-P^H=0.
+\]
+Thus \(q-q^0\in\operatorname{Null}(A)\).  By the definition of the nullspace basis \(Z\), there is \(\alpha\in\mathbb{R}^{d_G}\) such that
+\[
+q-q^0=Z\alpha.
+\]
+Because \(q\in\mathcal{F}(P^H)\), this \(\alpha\) satisfies \(q^0+Z\alpha\in\mathcal{F}(P^H)\), hence \(\alpha\in\mathcal{A}\).  Conversely, if \(\alpha\in\mathcal{A}\), then \(q^0+Z\alpha\in\mathcal{F}(P^H)\) by the definition of \(\mathcal{A}\).  Therefore
+\[
+\mathcal{F}(P^H)=\{q^0+Z\alpha:\alpha\in\mathcal{A}\}.
+\]
+
+Second, translate the target functional through this parameterization.  Assumption~\ref{ass:linear-cont} gives \(\theta_B(q)=\ell^{\transpose}q\) on the feasible fiber.  Hence, for every \(\alpha\in\mathcal{A}\),
+\[
+\theta_B(q^0+Z\alpha)
+=\ell^{\transpose}(q^0+Z\alpha)
+=\ell^{\transpose}q^0+\ell^{\transpose}Z\alpha
+=\ell^{\transpose}q^0+r^{\transpose}\alpha,
+\]
+where the last equality is the definition \(r^{\transpose}=\ell^{\transpose}Z\).
+
+Third, compute the identified set.  By definition,
+\[
+\Theta_I(P^H)=\{\theta_B(q):q\in\mathcal{F}(P^H)\}.
+\]
+Combining the previous two displays yields
+\[
+\Theta_I(P^H)
+=
+\left\{\ell^{\transpose}q^0+r^{\transpose}\alpha:
+\alpha\in\mathcal{A}\right\}.
+\]
+Assumption~\ref{ass:fiber} gives compactness and nonemptiness of \(\mathcal{F}(P^H)\).  Since the map \(\alpha\mapsto q^0+Z\alpha\) is continuous and \(\mathcal{A}\) is the inverse image of \(\mathcal{F}(P^H)\) under this affine map restricted to the finite-dimensional contrast coordinates, the relevant feasible contrast image is compact and nonempty.  A continuous linear functional attains its minimum and maximum on this compact set, so
+\[
+\Theta_I(P^H)=
+\ell^{\transpose}q^0+
+\left[
+\min_{\alpha\in\mathcal{A}}r^{\transpose}\alpha,
+\max_{\alpha\in\mathcal{A}}r^{\transpose}\alpha
+\right].
+\]
+This is the claimed formula for \(B_{G,W,E,L}(P^H)\), and it is sharp because every value in the interval is attained by a convex mixture of endpoint contrasts whenever \(\mathcal{A}\) is convex, and by the displayed image set in the general compact finite-dimensional formulation.  In the maintained algebraic heaping setup, \(\mathcal{A}\) is a polytope because it is cut out by the simplex constraints, the affine heap equations, and the linear continuation rule, so its linear image is exactly the closed interval between the two endpoint values.
+
+Fourth, prove the point-identification criterion.  The target is point identified from \(P^H\) exactly when \(\Theta_I(P^H)\) is a singleton.  By the formula above, this is equivalent to
+\[
+\min_{\alpha\in\mathcal{A}}r^{\transpose}\alpha
+=
+\max_{\alpha\in\mathcal{A}}r^{\transpose}\alpha,
+\]
+that is, \(r^{\transpose}\alpha\) is constant on \(\mathcal{A}\).  A linear functional is constant on \(\mathcal{A}\) if and only if it vanishes on all pairwise differences:
+\[
+r^{\transpose}(\alpha-\alpha')=0
+\quad\text{for all }\alpha,\alpha'\in\mathcal{A}.
+\]
+This is exactly
+\[
+r_{G,W,L}^{\transpose}\beta=0
+\quad\text{for every }\beta\in\mathcal{A}_G(q^0)-\mathcal{A}_G(q^0).
+\]
+
+Finally, suppose the condition fails.  Then there are \(\alpha^+,\alpha^-\in\mathcal{A}\) with
+\[
+r^{\transpose}(\alpha^+-\alpha^-)\ne 0.
+\]
+Set
+\[
+q^+=q^0+Z\alpha^+,\qquad q^-=q^0+Z\alpha^-.
+\]
+By the definition of \(\mathcal{A}\), both \(q^+\) and \(q^-\) lie in \(\mathcal{F}(P^H)\), and since \(AZ=0\),
+\[
+Aq^+=Aq^-=Aq^0=P^H.
+\]
+Their bunching masses differ because
+\[
+\theta_B(q^+)-\theta_B(q^-)
+=\ell^{\transpose}Z(\alpha^+-\alpha^-)
+=r^{\transpose}(\alpha^+-\alpha^-)
+\ne0.
+\]
+Equivalently, maximizing \(|r^{\transpose}\beta|\) over the compact normalized difference polytope
+\[
+\mathcal{C}_G(q^0)=\mathcal{A}_G(q^0)-\mathcal{A}_G(q^0)
+\]
+attains a nonzero value at an extreme point \(\beta^\star\).  The signed vector \(Z_G\beta^\star\) is a finite nullspace certificate: \(A_GZ_G\beta^\star=0\), but \(\ell_{G,W,L}^{\transpose}Z_G\beta^\star\ne0\).  Choosing any representation \(\beta^\star=\alpha^+-\alpha^-\) with \(\alpha^\pm\in\mathcal{A}_G(q^0)\) gives the displayed feasible densities \(q^\pm\).  This proves the conjecture.
+\end{proof}
+
+\subsubsection*{Proof of Conjecture 2}
+\begin{proof}
+We use finite-dimensional linear algebra and the standard extreme-point logic for linear optimization over a compact polytope.  Assumption~\ref{ass:heap} gives the known incidence matrix \(A_G\).  Choose a column basis \(Z_G\in\mathbb{R}^{J\times d_G}\) for \(\operatorname{Null}(A_G)\), so
+\[
+A_GZ_G=0
+\quad\text{and}\quad
+\operatorname{range}(Z_G)=\operatorname{Null}(A_G).
+\]
+Assumption~\ref{ass:fiber} supplies a nonempty compact feasible set and a reference point \(q^0\in\mathcal{F}(P^H)\).  Hence every feasible \(q\in\mathcal{F}(P^H)\) with the same observed histogram satisfies
+\[
+A_G(q-q^0)=P^H-P^H=0,
+\]
+so \(q-q^0=Z_G\alpha\) for a unique coordinate vector \(\alpha\in\mathbb{R}^{d_G}\).  By definition of the contrast set, this vector belongs to \(\mathcal{A}_G(q^0)\) exactly when \(q^0+Z_G\alpha\in\mathcal{F}(P^H)\).
+
+Assumption~\ref{ass:linear-cont} gives the known scalar loading \(\ell_{G,W,L}\), and Assumption~\ref{ass:equal-grid} makes \(S_W\) and \(C_{G,W,L}\) known design matrices with
+\[
+\ell_{G,W,L}^{\transpose}=\one^{\transpose}S_W-\one^{\transpose}C_{G,W,L}.
+\]
+Define
+\[
+r_{G,W,L}^{\transpose}=\ell_{G,W,L}^{\transpose}Z_G .
+\]
+For any two feasible contrast coordinates \(\alpha,\alpha'\in\mathcal{A}_G(q^0)\), the corresponding target difference is
+\[
+\theta_B(q^0+Z_G\alpha)-\theta_B(q^0+Z_G\alpha')
+=\ell_{G,W,L}^{\transpose}Z_G(\alpha-\alpha')
+=r_{G,W,L}^{\transpose}(\alpha-\alpha').
+\]
+The first equality uses the linear target representation in Assumption~\ref{ass:linear-cont}; the second is the definition of \(r_{G,W,L}\).
+
+Now let \(B_G(q^0)\in\mathbb{R}^{d_G\times k}\) be any matrix whose columns form a basis for the feasible direction span
+\[
+\mathcal{D}_G(q^0)=\operatorname{span}\{\alpha-\alpha':\alpha,\alpha'\in\mathcal{A}_G(q^0)\}.
+\]
+This basis is computable from the supplied face \(\mathcal{D}_G(q^0)\) by row reduction; if the face is represented by vertices of \(\mathcal{A}_G(q^0)\), it is obtained by row-reducing all vertex differences.  Define the feasible-loading matrix
+\[
+R^{\mathrm{feas}}_{G,W,L}(q^0)=r_{G,W,L}^{\transpose}B_G(q^0).
+\]
+This is a \(1\times k\) matrix, with \(k=\dim\mathcal{D}_G(q^0)\), so its rank is well typed and belongs to \(\{0,1\}\).  Each ingredient is computable from \(A_G\), \(S_W\), \(C_{G,W,L}\), \(\ell_{G,W,L}\), and \(\mathcal{D}_G(q^0)\): compute \(Z_G\) from \(A_G\), compute \(r_{G,W,L}^{\transpose}\) from \(\ell_{G,W,L}^{\transpose}Z_G\), compute \(B_G(q^0)\) from the face, and compute the row rank of \(r_{G,W,L}^{\transpose}B_G(q^0)\) by Gaussian elimination.
+
+We next prove the point-informativeness criterion.  The design is point-informative for \(\theta_B\) on the observed feasible face exactly when the value of \(\theta_B(q^0+Z_G\alpha)\) is the same for all \(\alpha\in\mathcal{A}_G(q^0)\).  By the displayed target-difference identity, this is equivalent to
+\[
+r_{G,W,L}^{\transpose}(\alpha-\alpha')=0
+\quad\text{for all }\alpha,\alpha'\in\mathcal{A}_G(q^0).
+\]
+Because \(\mathcal{D}_G(q^0)\) is the linear span of these feasible differences, the preceding condition is equivalent to
+\[
+r_{G,W,L}^{\transpose}d=0
+\quad\text{for all }d\in\mathcal{D}_G(q^0).
+\]
+Writing \(d=B_G(q^0)t\), this is equivalent to
+\[
+r_{G,W,L}^{\transpose}B_G(q^0)t=0
+\quad\text{for all }t\in\mathbb{R}^k,
+\]
+which is equivalent to \(R^{\mathrm{feas}}_{G,W,L}(q^0)=0\), and hence to
+\[
+\operatorname{rank}(R^{\mathrm{feas}}_{G,W,L}(q^0))=0.
+\]
+This proves that point-informativeness on the observed feasible face holds exactly when \(\tau^\star(G,W,L;q^0)=0\).
+
+If instead \(\tau^\star(G,W,L;q^0)=1\), then the row \(r_{G,W,L}^{\transpose}\) does not annihilate \(\mathcal{D}_G(q^0)\).  Therefore there is some \(d\in\mathcal{D}_G(q^0)\) with \(r_{G,W,L}^{\transpose}d\ne0\).  Since \(\mathcal{D}_G(q^0)\) is the span of feasible differences, at least one feasible difference \(\alpha-\alpha'\in\mathcal{A}_G(q^0)-\mathcal{A}_G(q^0)\) must satisfy
+\[
+r_{G,W,L}^{\transpose}(\alpha-\alpha')\ne0;
+\]
+otherwise every linear combination of feasible differences would have zero loading, contradicting the choice of \(d\).  Set \(\bar\alpha=\alpha-\alpha'\).  Then
+\[
+A_GZ_G\bar\alpha=0
+\]
+and
+\[
+\ell_{G,W,L}^{\transpose}Z_G\bar\alpha
+=r_{G,W,L}^{\transpose}\bar\alpha\ne0.
+\]
+Thus \(Z_G\bar\alpha\) is a signed heap-null aliasing certificate that changes latent excess bunching mass while preserving the observed heap equations.  This proves the certificate claim.
+
+Finally impose Assumption~\ref{ass:face}.  Then \(\mathcal{D}_G(q^0)=\mathbb{R}^{d_G}\).  We may choose \(B_G(q^0)\) to be any invertible \(d_G\times d_G\) basis matrix, and the full-nullspace loading is
+\[
+R^{\mathrm{full}}_{G,W,L}=r_{G,W,L}^{\transpose}.
+\]
+Because right multiplication by an invertible basis matrix does not change whether a row is zero,
+\[
+\operatorname{rank}(R^{\mathrm{feas}}_{G,W,L}(q^0))=0
+\quad\Longleftrightarrow\quad
+r_{G,W,L}^{\transpose}=0
+\quad\Longleftrightarrow\quad
+\operatorname{rank}(R^{\mathrm{full}}_{G,W,L})=0.
+\]
+Therefore, on the full affine face, the feasible-face point-informativeness criterion and the full-nullspace screen coincide.
+\end{proof}
+
+\section{Sanity checks}
+\paragraph{Conjecture 1 sanity check.}
+Consider the no-heaping corner case in which every heap fiber is a singleton.  Then \(A_G\) is a permutation of the identity matrix, \(\operatorname{Null}(A_G)=\{0\}\), and \(d_G=0\).  The contrast polytope is \(\mathcal{A}_G(q^0)=\{0\}\), so
+\[
+r_{G,W,L}^{\transpose}\alpha=0
+\quad\text{for every }\alpha\in\mathcal{A}_G(q^0)-\mathcal{A}_G(q^0)=\{0\}.
+\]
+The theorem reduces to
+\[
+B_{G,W,E,L}(P^H)=\left[\ell_{G,W,L}^{\transpose}q^0,\ell_{G,W,L}^{\transpose}q^0\right],
+\]
+which is exactly the ordinary fully observed finite-grid bunching functional under the fixed continuation rule.  Thus deterministic heaping is the only source of the aliasing interval in this corner case.
+
+\paragraph{Conjecture 2 sanity check.}
+Consider the corner case in which every heap cell is a singleton, so \(h_G\) is one-to-one and \(A_G\) is a permutation of the identity matrix.  Then \(\operatorname{Null}(A_G)=\{0\}\), hence \(d_G=0\), \(Z_G\) is the empty \(J\times0\) basis, and \(r_{G,W,L}^{\transpose}\) is the empty row.  The feasible direction span is \(\mathcal{D}_G(q^0)=\{0\}\), so \(R^{\mathrm{feas}}_{G,W,L}(q^0)\) is a \(1\times0\) zero matrix and
+\[
+\tau^\star(G,W,L;q^0)=0.
+\]
+The heap histogram now directly reveals the latent density \(q\), so \(\theta_B(q)=\ell_{G,W,L}^{\transpose}q\) is point-informative.  This is exactly the zero-aliasing special case predicted by the theorem.
+
+\section{Counterexample or minimality check}
+\paragraph{Conjecture 1 minimality check.}
+The known-heap-map and linear-continuation assumptions are both essential.  If Assumption~\ref{ass:heap} is dropped, then \(A_G\) and its nullspace are not observed-population inputs, so the contrast set \(\mathcal{A}_G(q^0)\) is not an evaluable map from \(P^H\).  The same observed histogram could be generated by two different heap maps with different nullspaces, producing different rows \(r_{G,W,L}^{\transpose}\).
+
+If Assumption~\ref{ass:linear-cont} is dropped, the equality
+\[
+\theta_B(q^0+Z_G\alpha)
+=\ell_{G,W,L}^{\transpose}q^0+r_{G,W,L}^{\transpose}\alpha
+\]
+need not hold.  Then a heap-preserving direction \(Z_G\alpha\) may have a nonlinear or undefined effect on the counterfactual continuation term, and optimizing the linear row \(r_{G,W,L}^{\transpose}\alpha\) is only a relaxation.  Thus the sharp frontier is not a generic Manski bound over latent histograms; it is the exact linear image of the observed feasible face under the maintained continuation operator.
+
+\paragraph{Conjecture 2 counterexample or minimality check.}
+The restriction to the observed feasible face is essential.  Take three equally spaced latent support points in a single heap cell, so \(A_G=(1\ \ 1\ \ 1)\), and let the continuation-feasibility part of \(\mathcal{Q}_{G,W,L}\) restrict the observed feasible face to
+\[
+\mathcal{F}(P^H)=\{(t,1-t,0)^{\transpose}:0\le t\le1\}.
+\]
+This satisfies nonemptiness and compactness in Assumption~\ref{ass:fiber}.  Choose \(q^0=(1/2,1/2,0)^{\transpose}\) and \(\ell_{G,W,L}=(0,0,1)^{\transpose}\).  Then \(\theta_B(q)=0\) for every \(q\in\mathcal{F}(P^H)\), so the feasible-face screen has rank zero and the target is point-informative on the observed feasible face.  However, the full heap nullspace of \(A_G\) contains directions such as \((1,0,-1)^{\transpose}\), and
+\[
+\ell_{G,W,L}^{\transpose}(1,0,-1)^{\transpose}=-1\ne0.
+\]
+The full-nullspace screen therefore has nonzero rank even though no feasible contrast on the observed face changes \(\theta_B\).  Thus replacing \(R^{\mathrm{feas}}\) by the full-nullspace screen without Assumption~\ref{ass:face} gives a false negative for point-informativeness.  Assumption~\ref{ass:face} is precisely the support condition that makes the two screens equivalent.
+
+\section{Formalization checklist}
+\subsection*{Deterministic objects}
+\begin{itemize}[leftmargin=*]
+  \item \(\mathcal{X}=\{x_1,\ldots,x_J\}\subset\mathbb{R}\).  Signature: finite ordered latent support.  Role: domain for latent densities and the bunching window.  Dependencies: none.
+  \item \(q\in\Delta(\mathcal{X})\subset\mathbb{R}^J\).  Signature: latent probability vector with nonnegative coordinates summing to one.  Role: unknown latent law entering the target and all constraints.  Dependencies: \(\mathcal{X}\).
+  \item \(h_G:\mathcal{X}\to\mathcal{H}\) and \(A_G\in\{0,1\}^{|\mathcal{H}|\times J}\).  Signature: deterministic heap map and its incidence matrix.  Role: encode the observable histogram equations \(A_Gq=P^H\).  Dependencies: \(\mathcal{X}\), heap width \(G\).
+  \item \(P^H\in\Delta(\mathcal{H})\).  Signature: observed heap histogram.  Role: observed-population input that defines the feasible fiber.  Dependencies: \(A_G\), \(q\).
+  \item \(W\subset\mathcal{X}\), \(E\subset\mathcal{H}\), \(S_W\in\{0,1\}^{|W|\times J}\).  Signature: excluded bunching window, intersecting heap cells, and selector matrix.  Role: localize the excess-mass calculation.  Dependencies: \(\mathcal{X}\), \(c\), \(G\).
+  \item \(C_{G,W,L}\).  Signature: known linear continuation operator from usable cells to the excluded window.  Role: encode the maintained order-\(L\) counterfactual continuation.  Dependencies: \(G\), \(W\), \(E\), \(L\).
+  \item \(\ell_{G,W,L}^{\transpose}=\one^{\transpose}S_W-\one^{\transpose}C_{G,W,L}\in\mathbb{R}^{1\times J}\).  Signature: row loading on latent densities.  Role: evaluable representation of the target \(\theta_B(q)=\ell_{G,W,L}^{\transpose}q\).  Dependencies: \(S_W\), \(C_{G,W,L}\).
+  \item \(\mathcal{F}(P^H)=\{q\in\Delta(\mathcal{X}):A_Gq=P^H,\ q\in\mathcal{Q}_{G,W,L}\}\).  Signature: compact feasible subset of \(\mathbb{R}^J\).  Role: latent laws observationally consistent with the observed heap histogram and the continuation rule.  Dependencies: \(A_G\), \(P^H\), \(\mathcal{Q}_{G,W,L}\).
+  \item \(q^0\in\mathcal{F}(P^H)\).  Signature: fixed feasible reference point.  Role: base point for the nullspace reparameterization.  Dependencies: \(\mathcal{F}(P^H)\).
+  \item \(Z_G\in\mathbb{R}^{J\times d_G}\).  Signature: column basis of \(\operatorname{Null}(A_G)\).  Role: parameterize heap-preserving redistributions of latent mass.  Dependencies: \(A_G\).
+  \item \(\mathcal{A}_G(q^0)=\{\alpha\in\mathbb{R}^{d_G}:q^0+Z_G\alpha\in\mathcal{F}(P^H)\}\).  Signature: feasible contrast polytope in nullspace coordinates.  Role: optimization domain for sharp endpoints.  Dependencies: \(q^0\), \(Z_G\), \(\mathcal{F}(P^H)\).
+  \item \(\mathcal{D}_G(q^0)=\operatorname{span}\{\alpha-\alpha':\alpha,\alpha'\in\mathcal{A}_G(q^0)\}\).  Signature: linear subspace of \(\mathbb{R}^{d_G}\).  Role: feasible direction span used by the phase screen.  Dependencies: \(\mathcal{A}_G(q^0)\).
+  \item \(r_{G,W,L}^{\transpose}=\ell_{G,W,L}^{\transpose}Z_G\in\mathbb{R}^{1\times d_G}\).  Signature: contrast loading row.  Role: measure the effect of a heap-preserving contrast on latent bunching mass.  Dependencies: \(\ell_{G,W,L}\), \(Z_G\).
+  \item \(B_G(q^0)\in\mathbb{R}^{d_G\times k}\).  Signature: basis matrix for \(\mathcal{D}_G(q^0)\).  Role: convert the feasible direction span into coordinates for rank testing.  Dependencies: \(\mathcal{D}_G(q^0)\).
+  \item \(R^{\mathrm{feas}}_{G,W,L}(q^0)=r_{G,W,L}^{\transpose}B_G(q^0)\) and \(R^{\mathrm{full}}_{G,W,L}=r_{G,W,L}^{\transpose}\).  Signature: \(1\times k\) and \(1\times d_G\) loading matrices.  Role: computable screens for point-informativeness on the feasible face and on the full nullspace.  Dependencies: \(r_{G,W,L}\), \(B_G(q^0)\).
+  \item \(\Theta_I(P^H)=\{\theta_B(q):q\in\mathcal{F}(P^H)\}\) and \(B_{G,W,E,L}(P^H)=[\theta_L(P^H),\theta_U(P^H)]\).  Signature: identified set and endpoint map in \(\mathbb{R}\).  Role: theorem conclusions for sharp partial identification.  Dependencies: \(\theta_B\), \(\mathcal{F}(P^H)\).
+\end{itemize}
+
+\subsection*{Assumptions used in the proofs}
+\begin{itemize}[leftmargin=*]
+  \item Assumption~\ref{ass:heap}.  Role: fixes \(A_G\), \(h_G\), and the observed-population map; used to derive \(A_G(q-q^0)=0\) and \(A_GZ_G=0\).
+  \item Assumption~\ref{ass:fiber}.  Role: supplies nonemptiness and compactness of \(\mathcal{F}(P^H)\) and a reference point \(q^0\); used for endpoint attainment and the feasible contrast parameterization.
+  \item Assumption~\ref{ass:linear-cont}.  Role: identifies \(\theta_B(q)\) with the linear row \(\ell_{G,W,L}^{\transpose}q\); used in every translation from latent-density contrasts to target differences.
+  \item Assumption~\ref{ass:equal-grid}.  Role: makes \(S_W\), \(C_{G,W,L}\), and \(\ell_{G,W,L}\) explicit design matrices in the equal-grid phase theorem.
+  \item Assumption~\ref{ass:face}.  Role: identifies the feasible direction span with the full nullspace coordinate space; used only for the equivalence between \(R^{\mathrm{feas}}_{G,W,L}(q^0)\) and \(R^{\mathrm{full}}_{G,W,L}\).
+\end{itemize}
+
+\subsection*{Derived identities and proof obligations}
+\begin{itemize}[leftmargin=*]
+  \item Feasible-fiber reparameterization: \(q\in\mathcal{F}(P^H)\) if and only if \(q=q^0+Z_G\alpha\) for some \(\alpha\in\mathcal{A}_G(q^0)\).  Role: converts feasibility over latent densities into feasibility over nullspace coordinates.  Dependencies: Assumptions~\ref{ass:heap} and \ref{ass:fiber}, definition of \(Z_G\).
+  \item Target translation identity: \(\theta_B(q^0+Z_G\alpha)=\ell_{G,W,L}^{\transpose}q^0+r_{G,W,L}^{\transpose}\alpha\).  Role: reduces endpoint optimization to a linear objective on \(\mathcal{A}_G(q^0)\).  Dependencies: Assumption~\ref{ass:linear-cont}, definition of \(r_{G,W,L}\).
+  \item Sharp endpoint formula: \(\Theta_I(P^H)=\ell_{G,W,L}^{\transpose}q^0+[\min_{\alpha\in\mathcal{A}_G(q^0)}r_{G,W,L}^{\transpose}\alpha,\max_{\alpha\in\mathcal{A}_G(q^0)}r_{G,W,L}^{\transpose}\alpha]\).  Role: main identified-set theorem for Conjecture 1.  Dependencies: compactness of \(\mathcal{A}_G(q^0)\), target translation identity.
+  \item Point-identification criterion: \(r_{G,W,L}^{\transpose}\beta=0\) for every \(\beta\in\mathcal{A}_G(q^0)-\mathcal{A}_G(q^0)\) if and only if \(\Theta_I(P^H)\) is a singleton.  Role: exact characterization of when the sharp bound collapses.  Dependencies: sharp endpoint formula, linearity of \(r_{G,W,L}^{\transpose}\).
+  \item Aliasing certificate: if \(r_{G,W,L}^{\transpose}\bar\alpha\neq0\) for some feasible difference \(\bar\alpha\), then \(Z_G\bar\alpha\) preserves the heap equations but changes \(\theta_B\).  Role: witness for nonidentification.  Dependencies: \(A_GZ_G=0\), target translation identity.
+  \item Rank screen: \(\tau^\star(G,W,L;q^0)=\operatorname{rank}(R^{\mathrm{feas}}_{G,W,L}(q^0))\in\{0,1\}\), and \(\tau^\star=0\) if and only if \(r_{G,W,L}^{\transpose}\) annihilates \(\mathcal{D}_G(q^0)\).  Role: computable phase criterion for point-informativeness on the observed feasible face.  Dependencies: \(B_G(q^0)\), linear algebra over \(\mathcal{D}_G(q^0)\).
+  \item Full-face equivalence: under Assumption~\ref{ass:face}, \(\operatorname{rank}(R^{\mathrm{feas}}_{G,W,L}(q^0))=0\) if and only if \(\operatorname{rank}(R^{\mathrm{full}}_{G,W,L})=0\).  Role: converts the feasible-face criterion into a design-uniform nullspace screen.  Dependencies: Assumption~\ref{ass:face}, invariance of row-zeroness under multiplication by an invertible basis matrix.
+\end{itemize}
+
+\section{Conclusion and references}
+Conjecture 1 (frontier) is confirmed; Equivalently, the endpoint map is the linear image of the feasible contrast polytope, and point identification holds exactly when \(r_{G,W,L}^{\transpose}\) vanishes on \(\mathcal{A}_G(q^0)-\mathcal{A}_G(q^0)\).
+
+Conjecture 2 (phase) is confirmed; Under Assumptions~\ref{ass:heap}--\ref{ass:equal-grid}, the feasible-loading rank
+\[
+\tau^\star(G,W,L;q^0)=\operatorname{rank}(R^{\mathrm{feas}}_{G,W,L}(q^0))
+\]
+is a computable integer in \(\{0,1\}\), and the equal-grid design is point-informative for \(\theta_B\) on the observed feasible face if and only if \(\tau^\star(G,W,L;q^0)=0\). If \(\tau^\star(G,W,L;q^0)=1\), there are two feasible contrast points whose difference \(\alpha\in\mathcal{A}_G(q^0)-\mathcal{A}_G(q^0)\) gives a signed heap-null aliasing certificate \(Z_G\alpha\) with \(\ell_{G,W,L}^{\transpose}Z_G\alpha\neq0\). Under Assumption~\ref{ass:face}, this feasible-face criterion is equivalent to the full-nullspace screen \(\operatorname{rank}(R^{\mathrm{full}}_{G,W,L})=0\).
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem[Barreca, Lindo, and Waddell(2016)]{BarrecaLindoWaddell2016HeapingRD}
+Barreca, A. I., J. M. Lindo, and G. R. Waddell (2016).
+Heaping-induced bias in regression-discontinuity designs.
+\emph{Economic Inquiry} 54(1), 268--293.
+
+\bibitem[Beresteanu, Molchanov, and Molinari(2011)]{BeresteanuMolchanovMolinari2011ConvexMoment}
+Beresteanu, A., I. Molchanov, and F. Molinari (2011).
+Sharp identification regions in models with convex moment predictions.
+\emph{Econometrica} 79(6), 1785--1821.
+
+\bibitem[Bertanha, McCallum, and Seegert(2021)]{BertanhaMcCallumSeegert2021BetterBunching}
+Bertanha, M., A. H. McCallum, and N. Seegert (2021).
+Better bunching, nicer notching.
+Finance and Economics Discussion Series 2021-002.
+
+\bibitem[Bertanha et al.(2022)]{BertanhaMcCallumPayneSeegert2022Stata}
+Bertanha, M., A. H. McCallum, A. Payne, and N. Seegert (2022).
+Bunching estimation of elasticities using Stata.
+\emph{Stata Journal} 22(3), 597--624.
+
+\bibitem[Bosch, Dekker, and Strohmaier(2020)]{BoschDekkerStrohmaier2020Window}
+Bosch, N., V. Dekker, and K. Strohmaier (2020).
+A data-driven procedure to determine the bunching window: An application to the Netherlands.
+\emph{International Tax and Public Finance} 27, 951--979.
+
+\bibitem[Chetty et al.(2011)]{ChettyFriedmanOlsenPistaferri2011Adjustment}
+Chetty, R., J. N. Friedman, T. Olsen, and L. Pistaferri (2011).
+Adjustment costs, firm responses, and micro vs. macro labor supply elasticities: Evidence from Danish tax records.
+\emph{Quarterly Journal of Economics} 126(2), 749--804.
+
+\bibitem[Davezies and Le Barbanchon(2017)]{DaveziesLeBarbanchon2017RDMeasurementError}
+Davezies, L. and T. Le Barbanchon (2017).
+Regression discontinuity design with continuous measurement error in the running variable.
+\emph{Journal of Econometrics} 200(2), 260--281.
+
+\bibitem[Dong(2015)]{Dong2015RoundingRD}
+Dong, Y. (2015).
+Regression discontinuity applications with rounding errors in the running variable.
+\emph{Journal of Applied Econometrics} 30(3), 422--446.
+
+\bibitem[Kleven and Waseem(2013)]{KlevenWaseem2013Notches}
+Kleven, H. J. and M. Waseem (2013).
+Using notches to uncover optimization frictions and structural elasticities: Theory and evidence from Pakistan.
+\emph{Quarterly Journal of Economics} 128(2), 669--723.
+
+\bibitem[Manski and Tamer(2002)]{ManskiTamer2002IntervalData}
+Manski, C. F. and E. Tamer (2002).
+Inference on regressions with interval data on a regressor or outcome.
+\emph{Econometrica} 70(2), 519--546.
+
+\bibitem[Saez(2010)]{Saez2010Bunching}
+Saez, E. (2010).
+Do taxpayers bunch at kink points?
+\emph{American Economic Journal: Economic Policy} 2(3), 180--212.
+
+\bibitem[Song(2024)]{Song2024GeneralBunching}
+Song, M. (2024).
+General identification and inference in bunching designs.
+arXiv:2411.03625.
+\end{thebibliography}
+
+\end{document}

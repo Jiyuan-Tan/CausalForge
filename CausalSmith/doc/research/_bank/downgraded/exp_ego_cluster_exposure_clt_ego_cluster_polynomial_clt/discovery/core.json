@@ -1,0 +1,885 @@
+{
+  "qid": "exp_ego_cluster_exposure_clt",
+  "specialization": "ego_cluster_polynomial_clt",
+  "cluster": "experimentation",
+  "symbols": [
+    {
+      "name": "n",
+      "type": "sample_size",
+      "space": "N",
+      "def": "Number of units in the finite population.",
+      "role": "design_size"
+    },
+    {
+      "name": "m_n",
+      "type": "number_of_ego_clusters",
+      "space": "N",
+      "def": "Number of ego-clusters randomized at stage n.",
+      "role": "design_size",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "U_n",
+      "type": "finite_population",
+      "space": "subsets of N",
+      "def": "Unit index set U_n = {1, ..., n}.",
+      "role": "population_index",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "W_n",
+      "type": "cluster_assignment_vector",
+      "space": "{0,1}^{m_n}",
+      "def": "Ego-cluster treatment vector W_n = (W_cn)_{c=1}^{m_n}.",
+      "role": "randomization",
+      "refs": [
+        "m_n"
+      ]
+    },
+    {
+      "name": "p_n",
+      "type": "cluster_treatment_rate",
+      "space": "(0,1)",
+      "def": "Bernoulli treatment probability for each ego-cluster.",
+      "role": "design_parameter"
+    },
+    {
+      "name": "H_n",
+      "type": "exposure_label_set",
+      "space": "finite set",
+      "def": "Finite set of analyst-specified exposure labels.",
+      "role": "exposure_codomain",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "h_n^+",
+      "type": "target_exposure_label",
+      "space": "H_n",
+      "def": "Treated exposure label in the target contrast.",
+      "role": "target_label",
+      "refs": [
+        "H_n"
+      ]
+    },
+    {
+      "name": "h_n^-",
+      "type": "target_exposure_label",
+      "space": "H_n",
+      "def": "Reference exposure label in the target contrast.",
+      "role": "target_label",
+      "refs": [
+        "H_n"
+      ]
+    },
+    {
+      "name": "Y_in(h)",
+      "type": "potential_outcome",
+      "space": "R",
+      "def": "Potential outcome for unit i in stage n under exposure label h.",
+      "role": "causal_primitive",
+      "refs": [
+        "U_n",
+        "H_n"
+      ]
+    },
+    {
+      "name": "Y_in^obs",
+      "type": "observed_outcome",
+      "space": "R",
+      "def": "Observed outcome for unit i in stage n under the realized exposure label.",
+      "role": "observed_outcome",
+      "refs": [
+        "Y_in(h)"
+      ]
+    },
+    {
+      "name": "M_ihn",
+      "type": "signed_monomial_family",
+      "space": "finite subsets of P({1,...,m_n} x {-1,1})",
+      "def": "Family of signed cluster-index monomials defining exposure h for unit i at stage n.",
+      "role": "exposure_primitive",
+      "refs": [
+        "m_n",
+        "U_n",
+        "H_n"
+      ]
+    },
+    {
+      "name": "P_ihn(W_n)",
+      "type": "incidence_polynomial",
+      "space": "{0,1,...,|M_ihn|}",
+      "def": "Incidence polynomial whose positivity defines exposure label h for unit i.",
+      "role": "exposure_map",
+      "refs": [
+        "M_ihn",
+        "W_n"
+      ]
+    },
+    {
+      "name": "E_ihn",
+      "type": "exposure_event_indicator",
+      "space": "{0,1}",
+      "def": "Indicator that W_n places unit i in exposure label h.",
+      "role": "exposure_event",
+      "refs": [
+        "P_ihn(W_n)"
+      ]
+    },
+    {
+      "name": "pi_ihn",
+      "type": "first_exposure_probability",
+      "space": "(0,1]",
+      "def": "pi_ihn = Pr_pi(E_ihn = 1).",
+      "role": "known_design_probability",
+      "refs": [
+        "E_ihn"
+      ]
+    },
+    {
+      "name": "pi_ij(h,h',n)",
+      "type": "joint_exposure_probability",
+      "space": "[0,1]",
+      "def": "pi_ij(h,h',n) = Pr_pi(E_ihn = 1, E_jh'n = 1).",
+      "role": "known_design_probability",
+      "refs": [
+        "E_ihn"
+      ]
+    },
+    {
+      "name": "B_ihn",
+      "type": "cluster_support",
+      "space": "subsets of {1,...,m_n}",
+      "def": "Set of ego-cluster indices appearing in at least one monomial in M_ihn.",
+      "role": "dependency_support",
+      "refs": [
+        "M_ihn",
+        "m_n"
+      ]
+    },
+    {
+      "name": "B_in",
+      "type": "contrast_support",
+      "space": "subsets of {1,...,m_n}",
+      "def": "Contrast support B_in = B_ih_n^+n union B_ih_n^-n.",
+      "role": "dependency_support",
+      "refs": [
+        "B_ihn",
+        "h_n^+",
+        "h_n^-"
+      ]
+    },
+    {
+      "name": "chi(A)",
+      "type": "literal_consistency_indicator",
+      "sig": "finite collections of signed monomials -> {0,1}",
+      "def": "chi(A) equals one when the union of signed literals in A contains no cluster index with both signs.",
+      "role": "probability_algebra"
+    },
+    {
+      "name": "u(A)",
+      "type": "treated_literal_count",
+      "sig": "finite collections of signed monomials -> N",
+      "def": "Number of distinct cluster indices that appear with sign +1 in the consistent union of A.",
+      "role": "probability_algebra",
+      "refs": [
+        "chi(A)"
+      ]
+    },
+    {
+      "name": "v(A)",
+      "type": "control_literal_count",
+      "sig": "finite collections of signed monomials -> N",
+      "def": "Number of distinct cluster indices that appear with sign -1 in the consistent union of A.",
+      "role": "probability_algebra",
+      "refs": [
+        "chi(A)"
+      ]
+    },
+    {
+      "name": "q_n",
+      "type": "max_monomial_degree",
+      "space": "N",
+      "def": "Maximum cardinality of any signed monomial in any M_ihn used by the target contrast.",
+      "role": "complexity_index",
+      "refs": [
+        "M_ihn"
+      ]
+    },
+    {
+      "name": "kappa_n",
+      "type": "max_monomial_count",
+      "space": "N",
+      "def": "Maximum number of signed monomials in any M_ihn used by the target contrast.",
+      "role": "complexity_index",
+      "refs": [
+        "M_ihn"
+      ]
+    },
+    {
+      "name": "omega_n",
+      "type": "max_ego_overlap",
+      "space": "N",
+      "def": "omega_n = max_c |{ i in U_n : c in B_in }|, the largest number of target-contrast units whose exposure supports involve the same ego-cluster c.",
+      "role": "overlap_index",
+      "refs": [
+        "U_n",
+        "B_in"
+      ]
+    },
+    {
+      "name": "b_n",
+      "type": "max_support_size",
+      "space": "N",
+      "def": "b_n = max_i |B_in|.",
+      "role": "support_index",
+      "refs": [
+        "B_in",
+        "U_n"
+      ]
+    },
+    {
+      "name": "M_Y",
+      "type": "outcome_bound",
+      "space": "R_+",
+      "def": "Uniform bound on absolute potential outcomes.",
+      "role": "regularity_constant"
+    },
+    {
+      "name": "pi_min",
+      "type": "positivity_constant",
+      "space": "(0,1)",
+      "def": "Lower bound on target exposure probabilities pi_ih_n^+n and pi_ih_n^-n.",
+      "role": "regularity_constant"
+    },
+    {
+      "name": "c_sigma",
+      "type": "variance_constant",
+      "space": "R_+",
+      "def": "Positive constant lower bounding n sigma_n^2.",
+      "role": "regularity_constant"
+    },
+    {
+      "name": "tau_n",
+      "type": "finite_population_exposure_contrast",
+      "space": "R",
+      "def": "tau_n = n^(-1) sum_{i=1}^n { Y_in(h_n^+) - Y_in(h_n^-) }.",
+      "role": "target_estimand",
+      "refs": [
+        "n",
+        "Y_in(h)",
+        "h_n^+",
+        "h_n^-"
+      ]
+    },
+    {
+      "name": "hat_tau_HT_n",
+      "type": "Horvitz_Thompson_exposure_contrast",
+      "space": "R",
+      "def": "Horvitz-Thompson estimator for tau_n using the two target exposure labels and their known design probabilities.",
+      "role": "design_based_estimator",
+      "refs": [
+        "Y_in^obs",
+        "E_ihn",
+        "pi_ihn",
+        "h_n^+",
+        "h_n^-",
+        "n"
+      ]
+    },
+    {
+      "name": "psi_in",
+      "type": "raw_HT_summand",
+      "space": "R",
+      "def": "psi_in = 1{E_ih_n^+n = 1} Y_in^obs / pi_ih_n^+n - 1{E_ih_n^-n = 1} Y_in^obs / pi_ih_n^-n.",
+      "role": "dependency_graph_node",
+      "refs": [
+        "E_ihn",
+        "Y_in^obs",
+        "pi_ihn",
+        "h_n^+",
+        "h_n^-"
+      ]
+    },
+    {
+      "name": "G_n^dep",
+      "type": "dependency_graph",
+      "space": "graphs on U_n",
+      "def": "Graph whose vertices are units and whose edges connect i and j whenever B_in and B_jn intersect.",
+      "role": "dependence_object",
+      "refs": [
+        "U_n",
+        "B_in"
+      ]
+    },
+    {
+      "name": "Delta_n",
+      "type": "max_dependency_degree",
+      "space": "N",
+      "def": "Maximum degree of G_n^dep.",
+      "role": "dependence_index",
+      "refs": [
+        "G_n^dep"
+      ]
+    },
+    {
+      "name": "sigma_n^2",
+      "type": "design_variance",
+      "space": "R_+",
+      "def": "sigma_n^2 = Var_pi(hat_tau_HT_n).",
+      "role": "normalization",
+      "refs": [
+        "hat_tau_HT_n"
+      ]
+    },
+    {
+      "name": "alpha",
+      "type": "coverage_level",
+      "space": "(0,1)",
+      "def": "Nominal miscoverage level for Wald intervals.",
+      "role": "inference_parameter"
+    },
+    {
+      "name": "CI_n^orc(1-alpha)",
+      "type": "oracle_Wald_interval",
+      "space": "intervals in R",
+      "def": "CI_n^orc(1-alpha) = [hat_tau_HT_n - z_(1-alpha/2) sigma_n, hat_tau_HT_n + z_(1-alpha/2) sigma_n].",
+      "role": "inference_object",
+      "refs": [
+        "hat_tau_HT_n",
+        "sigma_n^2",
+        "alpha"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:bernoulli-ego-design",
+      "kind": "design",
+      "condition": "The ego-cluster assignments W_1n, ..., W_m_nn are mutually independent Bernoulli(p_n) random variables.",
+      "free_symbols": [
+        "W_n",
+        "m_n",
+        "p_n"
+      ],
+      "standard": {
+        "name": "Bernoulli treatment assignment specialized to ego-clusters",
+        "cite": "AronowSamii2017"
+      },
+      "used_by": [
+        "prop:incidence-probabilities",
+        "thm:ego-overlap-clt",
+        "lem:singleton-reduction",
+        "thm:feasible-conservative-wald"
+      ]
+    },
+    {
+      "id": "ass:exposure-consistency",
+      "kind": "causal",
+      "condition": "For every i in U_n, the observed outcome satisfies Y_in^obs = sum_{h in H_n} 1{E_ihn = 1} Y_in(h), and at most one label h has E_ihn = 1.",
+      "free_symbols": [
+        "U_n",
+        "Y_in^obs",
+        "E_ihn",
+        "Y_in(h)",
+        "H_n"
+      ],
+      "standard": {
+        "name": "Exposure-mapping consistency",
+        "cite": "AronowSamii2017"
+      },
+      "used_by": [
+        "thm:ego-overlap-clt",
+        "thm:feasible-conservative-wald"
+      ]
+    },
+    {
+      "id": "ass:bounded-outcomes",
+      "kind": "regularity",
+      "condition": "max_{i in U_n, h in H_n} |Y_in(h)| <= M_Y.",
+      "free_symbols": [
+        "U_n",
+        "H_n",
+        "Y_in(h)",
+        "M_Y"
+      ],
+      "standard": {
+        "name": "Uniformly bounded potential outcomes",
+        "cite": "AronowSamii2017"
+      },
+      "used_by": [
+        "thm:ego-overlap-clt",
+        "thm:feasible-conservative-wald",
+        "lem:singleton-reduction"
+      ]
+    },
+    {
+      "id": "ass:positivity",
+      "kind": "design",
+      "condition": "min_{i in U_n} { pi_ih_n^+n, pi_ih_n^-n } >= pi_min.",
+      "free_symbols": [
+        "U_n",
+        "pi_ihn",
+        "h_n^+",
+        "h_n^-",
+        "pi_min"
+      ],
+      "standard": {
+        "name": "Exposure positivity",
+        "cite": "AronowSamii2017"
+      },
+      "used_by": [
+        "thm:ego-overlap-clt",
+        "thm:feasible-conservative-wald",
+        "lem:singleton-reduction"
+      ]
+    },
+    {
+      "id": "ass:variance-nondegenerate",
+      "kind": "regularity",
+      "condition": "n sigma_n^2 >= c_sigma.",
+      "free_symbols": [
+        "sigma_n^2",
+        "c_sigma",
+        "n"
+      ],
+      "standard": {
+        "name": "Nondegenerate design variance",
+        "cite": "Chin2018"
+      },
+      "used_by": [
+        "thm:ego-overlap-clt",
+        "lem:singleton-reduction",
+        "thm:feasible-conservative-wald"
+      ]
+    },
+    {
+      "id": "ass:primitive-degree-rate",
+      "kind": "asymptotic",
+      "condition": "Delta_n / n^(1/4) -> 0 as n -> infinity (equivalently Delta_n = o(n^(1/4))).",
+      "free_symbols": [
+        "n",
+        "Delta_n"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "The CLT needs the induced ego-overlap dependency degree to satisfy Delta_n=o(n^(1/4)); prop:dependency-degree gives the primitive sufficient screen Delta_n <= b_n(omega_n-1) <= 2 q_n kappa_n(omega_n-1), so analysts may verify the stronger support-level bound when convenient."
+      },
+      "used_by": [
+        "thm:ego-overlap-clt",
+        "thm:feasible-conservative-wald"
+      ]
+    },
+    {
+      "id": "ass:uniform-primitive-degree-rate",
+      "condition": "For any subclass C of def:clt-qualified-ego-incidence-array-class over which uniform coverage is claimed, rho_n^Delta(C):=sup_{array in C} Delta_n(array) / n^(1/4) -> 0 as n -> infinity.",
+      "free_symbols": [
+        "Delta_n",
+        "n"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "standard: uniform version of a pointwise asymptotic sparsity condition used to convert a pointwise Berry-Stein bound into a uniform CLT. A sufficient support-level screen is sup_{array in C} b_n(array)(omega_n(array)-1)/n^(1/4) -> 0, via the prop:dependency-degree chain."
+      }
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:ego-incidence-array-class",
+      "name": "Positive-probability ego-incidence Bernoulli arrays",
+      "construction": "{ ((Y_in(h))_{i in U_n, h in H_n}, (W_n)_{n>=1}, (M_ihn)_{i in U_n, h in {h_n^+, h_n^-}}) : ass:bernoulli-ego-design and ass:exposure-consistency and ass:bounded-outcomes and ass:positivity }",
+      "by_member_properties": [
+        "ass:bernoulli-ego-design",
+        "ass:exposure-consistency",
+        "ass:bounded-outcomes",
+        "ass:positivity"
+      ]
+    },
+    {
+      "id": "def:clt-qualified-ego-incidence-array-class",
+      "name": "Variance-regular CLT-qualified positive-probability ego-incidence Bernoulli arrays",
+      "construction": "{ ((Y_in(h))_{i in U_n, h in H_n}, (W_n)_{n>=1}, (M_ihn)_{i in U_n, h in {h_n^+, h_n^-}}) : ass:bernoulli-ego-design and ass:exposure-consistency and ass:bounded-outcomes and ass:positivity and ass:variance-nondegenerate and ass:primitive-degree-rate }",
+      "by_member_properties": [
+        "ass:bernoulli-ego-design",
+        "ass:exposure-consistency",
+        "ass:bounded-outcomes",
+        "ass:positivity",
+        "ass:variance-nondegenerate",
+        "ass:primitive-degree-rate"
+      ]
+    },
+    {
+      "id": "def:literal-map",
+      "name": "Signed cluster literal",
+      "construction": "For each cluster index c and sign sigma in {-1,1}, L_csigma_n(W_n) = W_cn if sigma = 1 and L_csigma_n(W_n) = 1 - W_cn if sigma = -1.",
+      "inputs": [
+        "W_n"
+      ]
+    },
+    {
+      "id": "def:incidence-polynomial",
+      "name": "Signed incidence polynomial",
+      "construction": "P_ihn(W_n) = sum_{A in M_ihn} prod_{(c,sigma) in A} L_csigma_n(W_n).",
+      "inputs": [
+        "M_ihn",
+        "W_n"
+      ]
+    },
+    {
+      "id": "def:exposure-event",
+      "name": "Exposure event",
+      "construction": "E_ihn = 1{ P_ihn(W_n) >= 1 }.",
+      "inputs": [
+        "P_ihn(W_n)"
+      ]
+    },
+    {
+      "id": "def:consistency-indicator",
+      "name": "Literal consistency indicator",
+      "construction": "chi(A) = 1 if no cluster index c appears with both signs +1 and -1 in the union of the signed monomials in A, and chi(A) = 0 otherwise.",
+      "inputs": [
+        "M_ihn"
+      ]
+    },
+    {
+      "id": "def:treated-literal-count",
+      "name": "Treated literal count",
+      "construction": "u(A) = |{ c : (c,1) appears in the union of A and (c,-1) does not appear in the union of A }|.",
+      "inputs": [
+        "chi(A)"
+      ]
+    },
+    {
+      "id": "def:control-literal-count",
+      "name": "Control literal count",
+      "construction": "v(A) = |{ c : (c,-1) appears in the union of A and (c,1) does not appear in the union of A }|.",
+      "inputs": [
+        "chi(A)"
+      ]
+    },
+    {
+      "id": "def:ht-contrast",
+      "name": "Horvitz-Thompson exposure contrast",
+      "construction": "hat_tau_HT_n = n^(-1) sum_{i=1}^n [ 1{E_ih_n^+n = 1} Y_in^obs / pi_ih_n^+n - 1{E_ih_n^-n = 1} Y_in^obs / pi_ih_n^-n ].",
+      "inputs": [
+        "n",
+        "E_ihn",
+        "Y_in^obs",
+        "pi_ihn",
+        "h_n^+",
+        "h_n^-"
+      ]
+    },
+    {
+      "id": "def:dependency-graph",
+      "name": "Ego-overlap dependency graph",
+      "construction": "G_n^dep has vertex set U_n and edge set { {i,j} : i != j and B_in intersect B_jn is nonempty }.",
+      "inputs": [
+        "U_n",
+        "B_in"
+      ]
+    },
+    {
+      "id": "def:oracle-ci",
+      "name": "Oracle Wald interval",
+      "construction": "CI_n^orc(1-alpha) = [hat_tau_HT_n - z_(1-alpha/2) sigma_n, hat_tau_HT_n + z_(1-alpha/2) sigma_n].",
+      "inputs": [
+        "hat_tau_HT_n",
+        "sigma_n^2",
+        "alpha"
+      ]
+    },
+    {
+      "id": "def:variance-envelope-handle",
+      "name": "Dual upper-envelope variance handle",
+      "construction": "Let R={+,-}, h_+=h_n^+, h_-=h_n^-, s_+=1, s_-=-1, pi_{ir}=pi_{i h_r n}, and E_{ir}=E_{i h_r n}. For i!=j set pi_{ij}^{rs}=pi_ij(h_r,h_s,n); for i=j set pi_{ii}^{rr}=pi_{ir} and pi_{ii}^{rs}=Pr_pi(E_{ir}=1,E_{is}=1), equal to 0 for distinct labels under exposure consistency and to pi_{ir} if the two labels coincide. Define Gamma_{ij}^{rs}=pi_{ij}^{rs}/(pi_{ir}pi_{js})-1 and Q_n(y)=n^{-2} sum_{i,j} sum_{r,s in R} s_r s_s Gamma_{ij}^{rs} y_{ir} y_{js}. Given realized exposure indicators and outcomes, let F_n^{obs}={y in [-M_Y,M_Y]^{2n}: E_{ir}=1 implies y_{ir}=Y_in^obs for every i,r}. Set Vbar_n=max_{y in F_n^{obs}} Q_n(y).",
+      "inputs": [
+        "pi_ihn",
+        "pi_ij(h,h',n)",
+        "Y_in(h)",
+        "M_Y"
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "prop:incidence-probabilities",
+      "kind": "proposition",
+      "statement": "Under ass:bernoulli-ego-design, for every unit i in U_n and target exposure label h in {h_n^+, h_n^-}, pi_ihn = sum_{emptyset != A subseteq M_ihn} (-1)^(|A|+1) chi(A) p_n^(u(A)) (1-p_n)^(v(A)). For every pair i != j and labels h, h' in {h_n^+, h_n^-}, pi_ij(h,h',n) = sum_{emptyset != A subseteq M_ihn} sum_{emptyset != B subseteq M_jh'n} (-1)^(|A|+|B|) chi(A union B) p_n^(u(A union B)) (1-p_n)^(v(A union B)).",
+      "depends_on": [
+        "ass:bernoulli-ego-design",
+        "def:literal-map",
+        "def:incidence-polynomial",
+        "def:exposure-event",
+        "def:consistency-indicator",
+        "def:treated-literal-count",
+        "def:control-literal-count",
+        "lem:literal-conjunction-probability"
+      ],
+      "proof_tex": "Fix n, a unit i, and a target label h. For a monomial a in M_ihn, let C_a be the event that every signed literal in a is satisfied by W_n. By def:literal-map, def:incidence-polynomial, and def:exposure-event, E_ihn=1 exactly when at least one C_a with a in M_ihn occurs, because P_ihn(W_n) is the sum of the literal products and each product is a 0-1 indicator. Hence pi_ihn=Pr_pi(union_{a in M_ihn} C_a). Since M_ihn is finite, the ordinary inclusion-exclusion identity gives pi_ihn=sum_{emptyset != A subseteq M_ihn} (-1)^(|A|+1) Pr_pi(intersection_{a in A} C_a). The event intersection_{a in A} C_a is the event that every literal appearing in the union of the monomials in A is satisfied. By lem:literal-conjunction-probability, its probability is chi(A) p_n^(u(A)) (1-p_n)^(v(A)). Substitution gives the displayed first-exposure formula. For the joint formula, fix i != j and labels h,h'. Write C_a for monomials a in M_ihn and D_b for monomials b in M_jh'n. The event {E_ihn=1,E_jh'n=1} is (union_a C_a) intersect (union_b D_b). Expanding both union indicators by inclusion-exclusion and multiplying gives the coefficient (-1)^(|A|+1)(-1)^(|B|+1)=(-1)^(|A|+|B|) for each nonempty A subseteq M_ihn and nonempty B subseteq M_jh'n. The intersection event requires all literals in A union B. Applying lem:literal-conjunction-probability to A union B gives chi(A union B) p_n^(u(A union B)) (1-p_n)^(v(A union B)). Summing over A and B proves the joint formula.",
+      "status": "proved",
+      "justification": "Exact HT weighting and any design-based variance calculation require first and joint exposure probabilities, and the gap is algebraic rather than conceptual.",
+      "gap": "UganderKarrerBackstromKleinberg2013 gives exact probabilities for selected neighborhood-exposure conditions under graph-cluster randomization, but not a closed signed-incidence polynomial formula for ego-cluster exposure labels with both treated and control literals.",
+      "consumer": "This proposition turns analyst-chosen ego exposure rules into computable HT weights and computable joint probability inputs for the downstream CLT and variance question."
+    },
+    {
+      "id": "prop:dependency-degree",
+      "kind": "proposition",
+      "statement": "Under ass:bernoulli-ego-design and ass:exposure-consistency, let G_n^dep be as in def:dependency-graph. Then the centered raw summands psi_in - E_pi[psi_in] admit G_n^dep as a dependency graph, and Delta_n <= b_n (omega_n - 1) <= 2 q_n kappa_n (omega_n - 1).",
+      "depends_on": [
+        "def:dependency-graph",
+        "ass:exposure-consistency",
+        "def:incidence-polynomial",
+        "def:exposure-event",
+        "ass:bernoulli-ego-design"
+      ],
+      "proof_tex": "Let X_in=psi_in-E_pi[psi_in]. By ass:exposure-consistency, on the event E_ihn=1 the observed outcome equals Y_in(h), so the two target terms in psi_in can be written as E_ih_n^+n Y_in(h_n^+)/pi_ih_n^+n and E_ih_n^-n Y_in(h_n^-)/pi_ih_n^-n. The potential outcomes and probabilities are fixed finite-population constants. By def:incidence-polynomial and def:exposure-event, E_ihn is a measurable function only of the cluster assignments W_cn with c in B_ihn. Therefore X_in is measurable with respect to the sigma-field generated by {W_cn: c in B_in}. If two disjoint vertex sets A and C in U_n have no edge between them in G_n^dep, then B_in intersect B_jn is empty for every i in A and j in C, so the two unions of cluster supports are disjoint. Under ass:bernoulli-ego-design the assignment variables on disjoint cluster sets are independent, hence {X_in: i in A} and {X_jn: j in C} are independent. This is exactly the dependency-graph property for G_n^dep. For the degree bound, fix i. Every neighbor j of i shares at least one cluster c in B_in. For a fixed c, at most omega_n target-contrast units have c in their contrast support, so at most omega_n-1 of them are neighbors of i through c. A union bound over c in B_in gives deg(i) <= |B_in|(omega_n-1) <= b_n(omega_n-1). Taking the maximum over i gives Delta_n <= b_n(omega_n-1). Finally, for each target label h, B_ihn is the union of the cluster indices appearing in at most kappa_n monomials, each of cardinality at most q_n, so |B_ihn| <= q_n kappa_n. Since B_in = B_ih_n^+n union B_ih_n^-n, |B_in| <= 2 q_n kappa_n, hence b_n <= 2 q_n kappa_n and Delta_n <= b_n(omega_n-1) <= 2 q_n kappa_n(omega_n-1). This is the concrete ego-support-to-dependency-graph reduction consumed downstream: once the support geometry is known, the abstract dependency degree entering Chin's Stein bound is directly screenable from b_n, omega_n, q_n, and kappa_n.",
+      "status": "proved",
+      "justification": "This is the load-bearing bridge from signed ego-cluster exposure primitives to an abstract dependency-graph CLT: it constructs the graph from support overlap and gives the computable screens Delta_n <= b_n(omega_n-1) <= 2 q_n kappa_n(omega_n-1).",
+      "gap": "Chin2018 takes a dependency graph and its maximal degree as abstract inputs. This proposition derives both from the signed ego-support geometry B_in, with the extra factor two coming from the union of the treated-label and reference-label supports inside each contrast support.",
+      "consumer": "It is the exact handoff that lets analysts verify Chin's o(n^(1/4)) degree condition using the primitive overlap screens b_n(omega_n-1) or 2 q_n kappa_n(omega_n-1)."
+    },
+    {
+      "id": "thm:ego-overlap-clt",
+      "kind": "theorem",
+      "statement": "Under ass:bernoulli-ego-design, ass:exposure-consistency, ass:bounded-outcomes, ass:positivity, ass:variance-nondegenerate, and ass:primitive-degree-rate, (hat_tau_HT_n - tau_n) / sigma_n converges in distribution to N(0,1). Consequently, for every fixed alpha in (0,1), Pr_pi{ tau_n in CI_n^orc(1-alpha) } -> 1 - alpha.",
+      "depends_on": [
+        "prop:dependency-degree",
+        "def:ht-contrast",
+        "def:oracle-ci",
+        "ass:bernoulli-ego-design",
+        "ass:exposure-consistency",
+        "ass:bounded-outcomes",
+        "ass:positivity",
+        "ass:variance-nondegenerate",
+        "ass:primitive-degree-rate",
+        "lem:ht-unbiased-bounded",
+        "lem:dependency-graph-normal-bound"
+      ],
+      "proof_tex": "Let X_in=n^(-1)(psi_in-E_pi[psi_in]) and S_n=sum_{i=1}^n X_in. By lem:ht-unbiased-bounded and def:ht-contrast, S_n=hat_tau_HT_n-tau_n and Var_pi(S_n)=sigma_n^2. The same lemma gives |psi_in-E_pi[psi_in]| <= C_Y with C_Y=4 M_Y/pi_min, hence |X_in| <= C_Y/n, sum_i E_pi[X_in^4] <= C_Y^4 n^(-3), and sum_i E_pi[|X_in|^3] <= C_Y^3 n^(-2). By prop:dependency-degree, the X_in have dependency graph G_n^dep with maximum degree Delta_n, so the ego-cluster problem has been reduced to the abstract dependency-graph setup of lem:dependency-graph-normal-bound. Apply that cited normal-approximation bound with d=Delta_n, S=S_n, and sigma^2=sigma_n^2. Since ass:variance-nondegenerate gives n sigma_n^2 >= c_sigma, the first Stein term is at most K_1 Delta_n^(3/2) n^(-1/2), and the second is at most K_2 Delta_n^2 n^(-1/2), where K_1,K_2 depend only on M_Y, pi_min, c_sigma, and the universal constants in lem:dependency-graph-normal-bound. By ass:primitive-degree-rate, Delta_n=o(n^(1/4)); therefore Delta_n^(3/2)n^(-1/2)=o(n^(-1/8)) and Delta_n^2 n^(-1/2)=o(1). Thus d_W((hat_tau_HT_n-tau_n)/sigma_n,Z) -> 0 for Z standard normal. A standard Lipschitz smoothing of half-lines yields convergence in distribution to N(0,1): for any continuity point t of the normal cdf and any epsilon>0, approximate 1{x<=t} from above and below by 1/epsilon-Lipschitz functions that differ only on [t-epsilon,t+epsilon], use the Wasserstein bound, and then let epsilon down to zero. This proves (hat_tau_HT_n-tau_n)/sigma_n => N(0,1). For coverage, set z=z_(1-alpha/2). By def:oracle-ci, the event {tau_n in CI_n^orc(1-alpha)} is {|(hat_tau_HT_n-tau_n)/sigma_n| <= z}. Since z is a continuity point of the standard normal law, the just-proved convergence gives Pr_pi{|(hat_tau_HT_n-tau_n)/sigma_n| <= z} -> Phi(z)-Phi(-z)=1-alpha. This proves oracle Wald coverage.",
+      "status": "proved",
+      "justification": "This is an application theorem on a variance-regular subclass: prop:dependency-degree supplies the dependency graph and computable degree bound from ego-support overlap, prop:incidence-probabilities supplies the design probabilities, and Chin's dependency-graph Stein bound then yields the standardized HT CLT under Delta_n=o(n^(1/4)).",
+      "gap": "Chin2018 already provides the generic Horvitz-Thompson dependency-graph CLT under maximal degree o(n^(1/4)). The contribution here is to show that the ego-cluster HT contrast fits that substrate: signed-incidence exposure supports induce the dependency graph G_n^dep, the computable bound Delta_n <= b_n(omega_n-1) <= 2 q_n kappa_n(omega_n-1), and the exact exposure-probability inputs, on the explicitly assumed variance-regular regime ass:variance-nondegenerate. Relative to Aronow-Samii, the gain is this concrete ego-support reduction rather than a new abstract CLT.",
+      "consumer": "Once an ego design passes the overlap screens and the sequence is variance-regular, the theorem certifies that the standardized HT contrast inherits Chin's Gaussian limit and oracle Wald coverage."
+    },
+    {
+      "id": "lem:variance-envelope-dominates",
+      "kind": "lemma",
+      "statement": "For every realized assignment and observed target-exposure dataset generated by an admissible finite-population array, the dual upper-envelope handle of def:variance-envelope-handle satisfies Vbar_n >= sigma_n^2 (pathwise).",
+      "depends_on": [
+        "def:variance-envelope-handle",
+        "prop:incidence-probabilities",
+        "ass:exposure-consistency",
+        "ass:bounded-outcomes",
+        "ass:positivity",
+        "ass:bernoulli-ego-design",
+        "lem:variance-quadratic-exact"
+      ],
+      "proof_tex": "Let y^0_{i+}=Y_in(h_n^+) and y^0_{i-}=Y_in(h_n^-). By ass:bounded-outcomes, y^0 lies in [-M_Y,M_Y]^(2n). By ass:exposure-consistency, whenever E_{ir}=1 for r in {+,-}, the observed outcome equals the corresponding target potential outcome, so y^0 satisfies all equality constraints defining F_n^obs. Hence y^0 in F_n^obs for every realized assignment and observed target-exposure dataset generated by the array. By lem:variance-quadratic-exact, Q_n(y^0)=sigma_n^2. Since Vbar_n is the maximum of Q_n over F_n^obs in def:variance-envelope-handle, Vbar_n >= Q_n(y^0)=sigma_n^2 pathwise.",
+      "status": "proved",
+      "justification": "The realized bounded target-potential completion is feasible for F_n^obs, so the envelope maximum dominates the realized design variance.",
+      "gap": "This records the pathwise completion argument needed by the feasible Wald theorem instead of leaving it implicit in proof prose.",
+      "consumer": "supporting lemma for thm:feasible-conservative-wald"
+    },
+    {
+      "id": "lem:variance-envelope-computable-attained",
+      "kind": "lemma",
+      "statement": "Given the realized exposure indicators and outcomes, F_n^obs is a finite-dimensional box with equality constraints and Vbar_n = max_{y in F_n^obs} Q_n(y) is an observed-data functional whose maximum is attained and computable from observed-population inputs.",
+      "depends_on": [
+        "def:variance-envelope-handle",
+        "prop:incidence-probabilities",
+        "ass:exposure-consistency",
+        "ass:bounded-outcomes"
+      ],
+      "proof_tex": "Conditional on the realized exposure indicators and outcomes, F_n^obs is the subset of R^(2n) defined by the coordinate bounds -M_Y <= y_{ir} <= M_Y and the linear equalities y_{ir}=Y_in^obs for coordinates with E_{ir}=1. Thus it is a closed bounded finite-dimensional box with equality constraints; in particular it is compact, and it is nonempty for generated datasets because the true bounded target-potential vector is feasible by ass:exposure-consistency and ass:bounded-outcomes. The objective Q_n(y) in def:variance-envelope-handle is a finite quadratic polynomial in y whose coefficients are the design probabilities pi_{ir}, pi_{ij}^{rs} and signs s_r. The probabilities entering those coefficients are computable from the signed incidence families and p_n by prop:incidence-probabilities, with the diagonal convention stated in def:variance-envelope-handle. Hence Vbar_n is an explicit observed-data quadratic optimization problem with 2n variables, box constraints, and equality constraints. Continuity of Q_n on the compact feasible set gives attainment by Weierstrass' theorem, and the displayed finite-dimensional optimization is the claimed computable observed-data functional.",
+      "status": "proved",
+      "justification": "The feasible set is a closed bounded finite-dimensional polytope and Q_n uses only observed outcomes and design probabilities.",
+      "gap": "This makes the existence and computability of the variance-envelope optimizer explicit for the solver.",
+      "consumer": "supporting lemma for thm:feasible-conservative-wald"
+    },
+    {
+      "id": "lem:variance-envelope-sharp",
+      "kind": "lemma",
+      "statement": "Vbar_n is the pointwise smallest observed-data upper envelope for sigma_n^2 over all bounded target-potential completions consistent with the realized target-exposure data.",
+      "depends_on": [
+        "def:variance-envelope-handle",
+        "lem:variance-quadratic-exact"
+      ],
+      "proof_tex": "Fix a realized observed target-exposure dataset and consider the bounded completion class F_n^obs from def:variance-envelope-handle. For each completion y in F_n^obs, lem:variance-quadratic-exact identifies Q_n(y) as the design variance that the HT contrast would have if y were the vector of target potential outcomes. By definition Vbar_n=max_{y in F_n^obs} Q_n(y). Therefore Vbar_n itself dominates the variance for every bounded completion. Conversely, let U be any observed-data upper envelope that dominates sigma_n^2 for every bounded target-potential completion consistent with the same observed data. Applying this domination property to each y in F_n^obs gives U >= Q_n(y) for all y in F_n^obs, hence U >= sup_{y in F_n^obs} Q_n(y)=Vbar_n. Thus no smaller observed-data upper envelope can dominate all completions, and Vbar_n is pointwise smallest.",
+      "status": "proved",
+      "justification": "Since Vbar_n is the supremum of Q_n over the completion class, any observed-data upper envelope over that class must be at least Vbar_n.",
+      "gap": "This isolates the theorem's sharpness claim within the observed-data variance-envelope family.",
+      "consumer": "supporting lemma for thm:feasible-conservative-wald"
+    },
+    {
+      "id": "lem:uniform-oracle-wald-coverage",
+      "kind": "lemma",
+      "statement": "Under ass:bernoulli-ego-design, ass:exposure-consistency, ass:bounded-outcomes, ass:positivity, ass:variance-nondegenerate, and ass:uniform-primitive-degree-rate, for any subclass C of def:clt-qualified-ego-incidence-array-class over which uniform coverage is claimed, liminf_n inf_{A in C} Pr_{pi,A}{ |hat_tau_HT_n - tau_n| <= z_(1-alpha/2) sigma_n(A) } >= 1 - alpha (uniform oracle Wald coverage).",
+      "depends_on": [
+        "def:oracle-ci",
+        "def:clt-qualified-ego-incidence-array-class",
+        "prop:dependency-degree",
+        "def:ht-contrast",
+        "ass:bernoulli-ego-design",
+        "ass:exposure-consistency",
+        "ass:bounded-outcomes",
+        "ass:positivity",
+        "ass:variance-nondegenerate",
+        "ass:uniform-primitive-degree-rate",
+        "thm:ego-overlap-clt",
+        "lem:ht-unbiased-bounded",
+        "lem:dependency-graph-normal-bound"
+      ],
+      "proof_tex": "For an array A in the subclass C, set X_i(A)=n^(-1)(psi_i(A)-E_{pi,A} psi_i(A)) and S_A=sum_i X_i(A). The proof of thm:ego-overlap-clt, using lem:ht-unbiased-bounded, prop:dependency-degree, ass:variance-nondegenerate, and lem:dependency-graph-normal-bound, gives constants K_1,K_2 independent of A such that d_W(S_A/sigma_n(A),Z) <= K_1 Delta_n(A)^(3/2)n^(-1/2)+K_2 Delta_n(A)^2 n^(-1/2). Let rho_n^Delta(C)=sup_{A in C} Delta_n(A)/n^(1/4). Taking suprema over A in C yields sup_A d_W(S_A/sigma_n(A),Z) <= K_1 (rho_n^Delta(C))^(3/2)n^(-1/8)+K_2 (rho_n^Delta(C))^2, which tends to zero by ass:uniform-primitive-degree-rate. Let z=z_(1-alpha/2). For epsilon in (0,z), choose a Lipschitz function f_epsilon with 0 <= f_epsilon <= 1{|x|<=z}, f_epsilon(x)=1 for |x|<=z-epsilon, and Lipschitz constant at most 1/epsilon. Then uniformly in A, Pr_{pi,A}{|S_A| <= z sigma_n(A)} >= E f_epsilon(S_A/sigma_n(A)) >= E f_epsilon(Z)-epsilon^(-1) sup_A d_W(S_A/sigma_n(A),Z) >= Pr{|Z|<=z-epsilon}-epsilon^(-1) sup_A d_W(S_A/sigma_n(A),Z). Taking infimum over A, then liminf_n, gives at least Pr{|Z|<=z-epsilon}. Finally let epsilon down to zero and use continuity of the normal cdf to obtain liminf_n inf_{A in C} Pr_{pi,A}{|hat_tau_HT_n-tau_n| <= z sigma_n(A)} >= Pr{|Z|<=z}=1-alpha. The identity S_A=hat_tau_HT_n-tau_n follows from def:ht-contrast and lem:ht-unbiased-bounded.",
+      "status": "proved",
+      "justification": "The same dependency-graph Stein bound used pointwise becomes uniform after taking the degree-rate supremum over a variance-regular subclass.",
+      "gap": "This separates uniform oracle Wald coverage from thm:ego-overlap-clt so the feasible theorem has an explicit uniform coverage input.",
+      "consumer": "supporting lemma for thm:feasible-conservative-wald"
+    },
+    {
+      "id": "thm:feasible-conservative-wald",
+      "kind": "theorem",
+      "statement": "Under ass:bernoulli-ego-design, ass:exposure-consistency, ass:bounded-outcomes, ass:positivity, ass:variance-nondegenerate, and ass:primitive-degree-rate, with Vbar_n the computable functional of def:variance-envelope-handle, for every fixed alpha in (0,1), liminf_n Pr_pi{ tau_n in [hat_tau_HT_n - z_(1-alpha/2) sqrt(Vbar_n), hat_tau_HT_n + z_(1-alpha/2) sqrt(Vbar_n)] } >= 1 - alpha for each sequence in def:clt-qualified-ego-incidence-array-class, and uniformly over any subclass satisfying ass:uniform-primitive-degree-rate. Moreover Vbar_n is the pointwise smallest observed-data upper envelope for sigma_n^2 over bounded target-potential completions consistent with the realized target-exposure data, so this feasible Wald interval is the sharp conservative one in that class.",
+      "depends_on": [
+        "prop:incidence-probabilities",
+        "thm:ego-overlap-clt",
+        "def:clt-qualified-ego-incidence-array-class",
+        "def:variance-envelope-handle",
+        "ass:exposure-consistency",
+        "ass:bounded-outcomes",
+        "ass:positivity",
+        "ass:variance-nondegenerate",
+        "ass:primitive-degree-rate",
+        "lem:variance-envelope-dominates",
+        "lem:variance-envelope-computable-attained",
+        "lem:variance-envelope-sharp",
+        "lem:uniform-oracle-wald-coverage",
+        "ass:uniform-primitive-degree-rate"
+      ],
+      "proof_tex": "First fix a single sequence in def:clt-qualified-ego-incidence-array-class and write z=z_(1-alpha/2). By lem:variance-envelope-computable-attained, Vbar_n is an observed-data computable maximum. By lem:variance-envelope-dominates, Vbar_n >= sigma_n^2 pathwise for every realized assignment, so sqrt(Vbar_n) >= sigma_n. Therefore the oracle event {|hat_tau_HT_n-tau_n| <= z sigma_n} is pathwise contained in the feasible event {|hat_tau_HT_n-tau_n| <= z sqrt(Vbar_n)}. Taking probabilities and then liminf gives liminf_n Pr_pi{|hat_tau_HT_n-tau_n| <= z sqrt(Vbar_n)} >= liminf_n Pr_pi{|hat_tau_HT_n-tau_n| <= z sigma_n}. The right side equals 1-alpha by thm:ego-overlap-clt. This proves pointwise conservative coverage. For a subclass C satisfying ass:uniform-primitive-degree-rate, the same pathwise containment holds for every array A in C, hence inf_A Pr_A(feasible event) >= inf_A Pr_A(oracle event). Taking liminf and applying lem:uniform-oracle-wald-coverage gives the uniform lower bound 1-alpha. Finally, lem:variance-envelope-sharp states that Vbar_n is the pointwise smallest observed-data upper envelope for sigma_n^2 over bounded target-potential completions consistent with the realized target-exposure data. Since the Wald half-length z sqrt(V) is increasing in any nonnegative variance envelope V, Vbar_n gives the pointwise shortest conservative Wald interval within the observed-data variance-envelope Wald family for this fixed HT contrast. This is the asserted sharp conservative interpretation, and it is distinct from any claim of global minimality over all variance procedures.",
+      "status": "proved",
+      "justification": "The feasible conservative variance is a sharp complementary add-on to the variance-regular CLT kernel: because Vbar_n >= sigma_n^2 pathwise for the fixed HT contrast, the oracle confidence interval is contained in the feasible one, so coverage transfers from thm:ego-overlap-clt by monotonicity with no extra assumption; sharpness is only within the observed-data variance-envelope Wald family.",
+      "gap": "Harshaw-Middleton-Savje (2112.01709) optimize over the class of quadratic-form variance estimators to obtain the minimally-conservative estimable upper bound of the unknown design variance. The feasible-Wald envelope here is a different optimization: for the fixed Horvitz-Thompson contrast variance, Vbar_n = max_{y in F_n^obs} Q_n(y) is the sharp upper envelope over the unknown bounded target-potential completions consistent with the realized exposure data. The two optimize over different domains (estimator class vs completion class), so the completion-sharp envelope is complementary to, not a special case of, the HMS estimator-optimization program. The theorem does not claim global minimal conservativeness over all variance procedures or all conservative intervals; it claims pointwise shortest Wald half-length only within the observed-data variance-envelope Wald family for the fixed HT contrast.",
+      "consumer": "The theorem turns the oracle CLT on the variance-regular overlap-screened class into an operational confidence interval for platform ego experiments, as a completion-sharp add-on to the signed-incidence dependency-graph kernel and without importing model-based regression assumptions."
+    },
+    {
+      "id": "lem:literal-conjunction-probability",
+      "kind": "lemma",
+      "statement": "Under ass:bernoulli-ego-design, for any finite nonempty collection C of signed monomials, the probability that every literal appearing in the union of C is satisfied equals chi(C) p_n^(u(C)) (1-p_n)^(v(C)).",
+      "depends_on": [
+        "ass:bernoulli-ego-design",
+        "def:literal-map",
+        "def:consistency-indicator",
+        "def:treated-literal-count",
+        "def:control-literal-count"
+      ],
+      "proof_tex": "If the union of literals in C contains both (c,+1) and (c,-1) for some cluster c, then the event requires W_cn=1 and W_cn=0 simultaneously, so its probability is zero. In this case chi(C)=0, and the displayed expression is zero. If the union is consistent, it requires W_cn=1 for exactly u(C) distinct clusters and W_cn=0 for exactly v(C) distinct clusters, with no other restrictions. By ass:bernoulli-ego-design the W_cn are mutually independent Bernoulli(p_n), so the probability is p_n^(u(C))(1-p_n)^(v(C)). Since chi(C)=1 in the consistent case, this is chi(C) p_n^(u(C))(1-p_n)^(v(C)).",
+      "status": "proved"
+    },
+    {
+      "id": "lem:ht-unbiased-bounded",
+      "kind": "lemma",
+      "statement": "Under ass:exposure-consistency, ass:bounded-outcomes, and ass:positivity, E_pi[psi_in] = Y_in(h_n^+) - Y_in(h_n^-) for every i, hat_tau_HT_n is unbiased for tau_n, and |psi_in - E_pi[psi_in]| <= 4 M_Y / pi_min.",
+      "depends_on": [
+        "ass:exposure-consistency",
+        "ass:bounded-outcomes",
+        "ass:positivity",
+        "def:ht-contrast"
+      ],
+      "proof_tex": "On the event E_ihn=1, ass:exposure-consistency gives Y_in^obs=Y_in(h), because at most one exposure label is realized. Therefore E_pi[1{E_ihn=1}Y_in^obs/pi_ihn]=Y_in(h) Pr_pi(E_ihn=1)/pi_ihn=Y_in(h). Applying this identity to h_n^+ and h_n^- gives E_pi[psi_in]=Y_in(h_n^+)-Y_in(h_n^-). Averaging over i and using def:ht-contrast gives E_pi[hat_tau_HT_n]=tau_n. For boundedness, ass:bounded-outcomes and ass:positivity imply |psi_in| <= 2 M_Y/pi_min, while |E_pi psi_in| <= |Y_in(h_n^+)|+|Y_in(h_n^-)| <= 2 M_Y. Since pi_min <= 1, |psi_in-E_pi psi_in| <= 2 M_Y/pi_min+2 M_Y <= 4 M_Y/pi_min.",
+      "status": "proved"
+    },
+    {
+      "id": "lem:dependency-graph-normal-bound",
+      "kind": "lemma",
+      "statement": "Let X_1,...,X_N be centered random variables with dependency graph of maximum degree d, let S=sum_i X_i, and let sigma^2=Var(S)>0. There are universal constants C_1,C_2 such that, for Z standard normal, d_W(S/sigma,Z) <= C_1 d^(3/2) sigma^(-2) (sum_i E[X_i^4])^(1/2) + C_2 d^2 sigma^(-3) sum_i E[|X_i|^3].",
+      "depends_on": [],
+      "proof_tex": "Let X_1,...,X_N be centered random variables with dependency graph of maximum degree d, let S=sum_i X_i, and let sigma^2=Var(S)>0. There are universal constants C_1,C_2 such that, for Z standard normal, d_W(S/sigma,Z) <= C_1 d^(3/2) sigma^(-2) (sum_i E[X_i^4])^(1/2) + C_2 d^2 sigma^(-3) sum_i E[|X_i|^3].",
+      "status": "cited",
+      "source": {
+        "cite": "Chin2018",
+        "locator": "Lemma 1, dependency-graph Stein bound; also recorded in the project graph as the Ross 2011 Theorem 3.6 / Chin 2018 Lemma 1 substrate"
+      }
+    },
+    {
+      "id": "lem:variance-quadratic-exact",
+      "kind": "lemma",
+      "statement": "For the notation in def:variance-envelope-handle, define T_n(y)=n^(-1) sum_i sum_{r in {+,-}} s_r E_{ir} y_{ir}/pi_{ir}. For every fixed y in R^(2n), Var_pi(T_n(y))=Q_n(y). For the true target vector y^0_{i+}=Y_in(h_n^+) and y^0_{i-}=Y_in(h_n^-), T_n(y^0)=hat_tau_HT_n and Q_n(y^0)=sigma_n^2.",
+      "depends_on": [
+        "def:variance-envelope-handle",
+        "def:ht-contrast",
+        "ass:exposure-consistency"
+      ],
+      "proof_tex": "For fixed y, expand the variance of T_n(y). The covariance between E_{ir}y_{ir}/pi_{ir} and E_{js}y_{js}/pi_{js} is y_{ir}y_{js}[E_pi(E_{ir}E_{js})/(pi_{ir}pi_{js})-1]. By the definition of pi_{ij}^{rs}, including the diagonal convention for i=j in def:variance-envelope-handle, E_pi(E_{ir}E_{js})=pi_{ij}^{rs}. Multiplying by n^(-2)s_r s_s and summing over i,j,r,s gives exactly Q_n(y). For the true vector y^0, ass:exposure-consistency gives E_{ir}Y_in^obs=E_{ir}y^0_{ir}, so T_n(y^0) is the Horvitz-Thompson contrast in def:ht-contrast. Therefore Q_n(y^0)=Var_pi(T_n(y^0))=Var_pi(hat_tau_HT_n)=sigma_n^2.",
+      "status": "proved"
+    }
+  ],
+  "sampling_model": {
+    "design": "Finite-population ego-cluster Bernoulli randomization: cluster indicators W_1n, ..., W_m_nn are independent Bernoulli(p_n).",
+    "units": "Potential outcomes {Y_in(h): i in U_n, h in H_n} are fixed; randomness comes only from W_n.",
+    "treatment": "Analyst-chosen exposure labels h are induced by signed incidence polynomials P_ihn(W_n) over ego-cluster treatment indicators.",
+    "overlap": "Dependence is summarized by support sets B_in, maximal support size b_n, and maximal ego-overlap multiplicity omega_n.",
+    "nuisance_estimation": "None; pi_ihn and pi_ij(h,h',n) are design probabilities derived from prop:incidence-probabilities rather than estimated nonparametrically."
+  },
+  "estimand_functional": "hat_tau_HT_n = n^(-1) sum_{i=1}^n [ 1{E_ih_n^+n = 1} Y_in^obs / pi_ih_n^+n - 1{E_ih_n^-n = 1} Y_in^obs / pi_ih_n^-n ]",
+  "target_estimand": "tau_n = n^(-1) sum_{i=1}^n { Y_in(h_n^+) - Y_in(h_n^-) }",
+  "bibliography": [
+    {
+      "key": "AronowSamii2017",
+      "citation": "Aronow, Peter M., and Cyrus Samii (2017). \"Estimating Average Causal Effects Under General Interference, with Application to a Social Network Experiment.\" Annals of Applied Statistics 11(4): 1912-1947."
+    },
+    {
+      "key": "UganderKarrerBackstromKleinberg2013",
+      "citation": "Ugander, Johan, Brian Karrer, Lars Backstrom, and Jon Kleinberg (2013). \"Graph Cluster Randomization: Network Exposure to Multiple Universes.\" Proceedings of KDD 2013."
+    },
+    {
+      "key": "Chin2018",
+      "citation": "Chin, Alex (2018). \"Central Limit Theorems via Stein's Method for Randomized Experiments under Interference.\" arXiv:1804.03105."
+    },
+    {
+      "key": "Leung2019ANI",
+      "citation": "Leung, Michael P. (2019). \"Causal Inference Under Approximate Neighborhood Interference.\" arXiv:1911.07085."
+    },
+    {
+      "key": "GaoDing2023",
+      "citation": "Gao, Mengsi, and Peng Ding (2023). \"Causal Inference in Network Experiments: Regression-Based Analysis and Design-Based Properties.\" arXiv:2309.07476."
+    },
+    {
+      "key": "ChattopadhyayImaiZubizarreta2023",
+      "citation": "Chattopadhyay, Ambarish, Kosuke Imai, and Jose R. Zubizarreta (2023). \"Design-Based Inference for Generalized Network Experiments with Stochastic Interventions.\" arXiv:2312.03268."
+    },
+    {
+      "key": "KungSussman2022",
+      "citation": "Kung, Kelly, and Daniel L. Sussman (2022). \"Unbiased Estimation for Additive Exposure Models.\" arXiv:2209.01053."
+    },
+    {
+      "key": "HarshawMiddletonSavje2026",
+      "citation": "Harshaw, Christopher, Joel A. Middleton, and Fredrik Sävje (2026). \"Optimized Variance Estimation under Interference and Complex Experimental Designs.\" Journal of the American Statistical Association. arXiv:2112.01709."
+    },
+    {
+      "key": "SavjeAronowHudgens2021",
+      "citation": "Sävje, Fredrik, Peter M. Aronow, and Michael G. Hudgens (2021). \"Average Treatment Effects in the Presence of Unknown Interference.\" Annals of Statistics 49(2): 673-701."
+    },
+    {
+      "key": "AronowEcklesSamiiZonszein2021",
+      "citation": "Aronow, Peter M., Dean Eckles, Cyrus Samii, and Stephanie Zonszein (2021). \"Spillover Effects in Experimental Data.\" In Handbook of Research Methods in Health Social Sciences."
+    },
+    {
+      "key": "LiuHuZhang2026",
+      "citation": "Liu, Xiao, Feifang Hu, and Jingfei Zhang (2026). \"Estimating Treatment and Spillover Effects with the Ego-Cluster Experimental Design.\" arXiv:2605.00534."
+    }
+  ],
+  "tldr": "The proposal studies finite-population Horvitz-Thompson exposure contrasts in ego-cluster experiments when analyst-defined exposure labels are encoded by signed incidence polynomials over cluster treatment indicators. The main technical contribution is not a new generic dependency-graph CLT, but an explicit reduction from signed ego-cluster exposure supports to a computable dependency graph and overlap screen Delta_n <= b_n(omega_n-1) <= 2 q_n kappa_n(omega_n-1), together with exact inclusion-exclusion formulas for the first and joint target-exposure probabilities. On the explicitly assumed variance-regular regime ass:variance-nondegenerate and the induced rate Delta_n=o(n^(1/4)), Chin's Stein bound then yields the design-based Horvitz-Thompson CLT and oracle Wald coverage. The feasible conservative Wald interval is a sharp complementary add-on built on that kernel: for the fixed HT contrast, Vbar_n = max_{y in F_n^obs} Q_n(y) is completion-sharp and pointwise shortest within the observed-data variance-envelope Wald family. Harshaw-Middleton-Savje (2112.01709) instead optimize over the class of quadratic-form variance estimators to obtain the minimally-conservative estimable upper bound of the unknown design variance, so the two optimizations are complementary rather than nested.",
+  "project_justification": {
+    "gap": "The literature has either the exposure-mapping HT architecture without ego-cluster probability algebra, generic dependency-graph CLTs that do not show how ego-cluster supports generate the required graph and degree inputs, model-based ego-cluster asymptotics without fixed-potential-outcome HT contrasts, or estimator-class conservative-variance programs that optimize a different object. The missing kernel is an explicit reduction from signed-incidence ego-cluster exposure supports to an overlap-derived dependency graph with an exact inclusion-exclusion algebra for the first and joint target-exposure probabilities, so that a variance-regular ego-cluster HT contrast can be checked against an existing dependency-graph CLT.",
+    "niche": "This opens a design-based inference niche for platform-style ego experiments where the analyst wants exact exposure contrasts under user-defined local rules rather than regression coefficients under a working model.",
+    "fill": "The project fills the gap by deriving exact first and joint exposure probabilities for signed incidence-polynomial labels, translating the same exposure supports into an explicit overlap-derived dependency graph with screen Delta_n <= b_n(omega_n-1) <= 2 q_n kappa_n(omega_n-1), applying Chin's dependency-graph CLT on the explicitly assumed variance-regular regime ass:variance-nondegenerate, and adding a computable completion-sharp variance envelope as a sharp complementary observed-data Wald add-on."
+  },
+  "related_work": "Aronow and Samii (2017) provide the exposure-mapping Horvitz-Thompson architecture, randomization-based variance decomposition, and local-dependence asymptotics that this proposal keeps, but they leave the exposure probabilities and the dependence neighborhood abstract; the present contribution is to make both concrete for signed-incidence ego-cluster exposure rules by deriving exact first and joint target-exposure probabilities and the overlap-based dependency graph screen Delta_n <= b_n(omega_n-1) <= 2 q_n kappa_n(omega_n-1). Ugander, Karrer, Backstrom, and Kleinberg (2013) compute exact probabilities for several graph-cluster exposure conditions and show that suitable clustering can sharply improve variance, but they do not give a signed incidence-polynomial algebra for ego-cluster exposure labels. Chin (2018) already proves Stein-method Horvitz-Thompson CLTs for dependency-graph sequences with maximal degree o(n^(1/4)); the present note does not strengthen that abstract CLT, but verifies its hypotheses for the ego-cluster HT contrast by deriving G_n^dep and the computable overlap screen from the contrast support geometry B_in and the overlap index omega_n, on the explicitly assumed variance-regular regime ass:variance-nondegenerate. Leung (2019) moves to approximate neighborhood interference and network HAC inference in a superpopulation framework, which is complementary but not a fixed finite-population HT Wald result for analyst-specified exposure labels. Chattopadhyay, Imai, and Zubizarreta (2023) develop design-based unbiased estimation and conservative variance estimators for stochastic-intervention estimands in generalized network experiments, but their estimand class differs from fixed exposure-label HT contrasts and does not supply the ego-incidence probability algebra or the same observed-data variance-envelope Wald family. Kung and Sussman (2022) characterize linear unbiased estimators under additive exposure models and identify optimal affine-basis estimators, but the additive restriction changes the estimand class and does not answer the nonadditive conservative-envelope question for Horvitz-Thompson exposure contrasts. Harshaw-Middleton-Savje (2112.01709) optimize over the class of quadratic-form variance estimators to obtain the minimally-conservative estimable upper bound of the unknown design variance. The feasible-Wald envelope here is a different optimization: for the fixed Horvitz-Thompson contrast variance, Vbar_n = max_{y in F_n^obs} Q_n(y) is the sharp upper envelope over the unknown bounded target-potential completions consistent with the realized exposure data. The two optimize over different domains (estimator class vs completion class), so the completion-sharp envelope is complementary to, not a special case of, the HMS estimator-optimization program. Gao and Ding (2023) show that regression-based network-robust covariances can be anti-conservative, which is why the proposal keeps the CLT and the conservative variance scope separate. Liu, Hu, and Zhang (2026) are the closest ego-cluster comparator, but their estimators and asymptotics are model-based and do not deliver exact exposure-weighted design-based inference.",
+  "honest_scope": "Settled target: exact first and joint exposure probabilities for the signed incidence-polynomial class, an overlap-derived dependency graph with growing-degree condition Delta_n=o(n^(1/4)) and sufficient screens b_n(omega_n-1)=o(n^(1/4)) or 2 q_n kappa_n(omega_n-1)=o(n^(1/4)), together with the explicit variance-regular regime assumption ass:variance-nondegenerate under which Chin's dependency-graph Horvitz-Thompson CLT yields oracle Wald coverage. The feasible conservative Wald interval is a sharp complementary add-on: for the fixed HT contrast, Vbar_n = max_{y in F_n^obs} Q_n(y) is a computable completion-sharp variance envelope delivering at-least-nominal coverage only within the observed-data variance-envelope Wald family. Harshaw-Middleton-Savje (2112.01709) optimize over quadratic-form variance estimators rather than bounded target-potential completions, so this proposal is complementary to their estimator-optimization program. The proposal deliberately does not claim to derive ass:variance-nondegenerate from the primitive overlap conditions, to improve Chin's generic o(n^(1/4)) CLT, to be a first design-based inference object, to be a new general conservative-variance framework, to be globally minimally conservative over all intervals, to be optimal for HT relative to alternative linear estimators, or to solve a general design problem over all clusterings."
+}

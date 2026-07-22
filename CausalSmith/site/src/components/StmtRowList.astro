@@ -1,0 +1,39 @@
+---
+// Renders one list of rows (a theorem's hypotheses, a structure's parameter
+// telescope, or a structure's fields) — factored out of LeanStatement.astro
+// so it can render both the "parameters" and "fields" sections of a
+// structure/class identically.
+import { isBinderRow, type StatementItem } from "../lib/leanStatement.js";
+import StmtBodyView from "./StmtBodyView.astro";
+
+interface Props {
+  items: StatementItem[];
+}
+const { items } = Astro.props as Props;
+---
+
+<div class="stmt-rows">
+  {
+    items.map((row) =>
+      isBinderRow(row) ? (
+        <div class={`stmt-row ${row.chip}`}>
+          {row.names ? (
+            <>
+              <div class="stmt-row-label">
+                <span class="stmt-row-name">{row.names}</span>
+                <span class="stmt-row-colon">:</span>
+              </div>
+              <StmtBodyView body={row.body} />
+            </>
+          ) : (
+            <div class="stmt-body-span">
+              <StmtBodyView body={row.body} />
+            </div>
+          )}
+        </div>
+      ) : (
+        <div class="stmt-comment">{row.text}</div>
+      ),
+    )
+  }
+</div>

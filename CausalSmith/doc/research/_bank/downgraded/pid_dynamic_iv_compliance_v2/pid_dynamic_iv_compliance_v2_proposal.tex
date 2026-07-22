@@ -1,0 +1,409 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=flagship\_explore, specialization=f2
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to a Q1..Q6 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    If it is a free-form `(qid, specialization)`, define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{flagship\_explore} / \texttt{f2}%
+  \\ \large\textit{Assignment-memory mixture splitting for dynamic IV bounds under imperfect compliance}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a partial-identification anchor, not a panel pool-mode.  The locked tuple is
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},
+  \text{bounding functional})\\
+=
+(\texttt{flagship\_explore},\texttt{f2},
+  P_{Y,D_1,D_2,Z_1,Z_2,X},\ \theta_{C,0}^{(2)},\
+  \mathcal{R}_{\mathrm{2stageIV+memory+1sided}},\
+  [\underline\theta_{\mathrm{mem}}(P,e),\overline\theta_{\mathrm{mem}}(P,e)]) .
+\end{gathered}
+\]
+Here \(X\) has finite support, \(Z_t,D_t\in\{0,1\}\), and \(Y\in[0,1]\).  The first-stage encouragement \(Z_1\) is randomized within \(X\); the second-stage encouragement follows the known adaptive law
+\[
+e_2(z\mid x,z_1,d_1)=\Pr(Z_2=z\mid X=x,Z_1=z_1,D_1=d_1),
+\]
+which is allowed to depend on the retained assignment-memory label \(Z_1\) even after conditioning on \((X,D_1)\).  The target is the first-stage-complier, first-stage-untreated second-period effect
+\[
+\theta_{C,0}^{(2)}
+=\E\!\left[Y(0,1)-Y(0,0)\mid D_1(1)=1,\ D_1(0)=0\right].
+\]
+The restrictions \(\mathcal{R}_{\mathrm{2stageIV+memory+1sided}}\) are consistency, exclusion of \(Z_1,Z_2\) except through \(D_1,D_2\), randomized \(Z_1\) within \(X\), sequential randomization of \(Z_2\) given \((X,Z_1,D_1)\), positivity of all reachable encouragement cells, one-sided first-stage compliance \(D_1(0)=0\le D_1(1)\), one-sided second-stage compliance within each retained history, and a no-direct-memory restriction equating \(Y(0,d_2)\) and second-stage response laws across \((Z_1,D_1)=(0,0)\) and \((1,0)\) within the same first-stage principal stratum.  The bounding functional is the sharp interval obtained by a finite latent-response linear program that retains \(Z_1\) as an assignment-memory splitter inside the \(D_1=0\) state.
+
+\begin{abstract}
+Covariate-adaptive and sequentially randomized experiments with imperfect compliance are usually analyzed either as static IV bounds within baseline strata or as dynamic point-identification problems under strong cross-period conditions.  This proposal asks whether a previous randomized encouragement can tighten partial-identification bounds after it has ceased to be a treatment-relevant state variable.  The kernel conjecture is that, in a two-stage binary design, retaining \(Z_1\) inside the \(D_1=0\) branch yields a strict mixture-splitting gain for the second-period effect among first-stage compliers.  The gain comes from a compliance-revealing pure never-taker cell, not from adding another baseline covariate or from a Bellman recursion.  If resolved, the result would give a small, auditable partial-identification theorem explaining when adaptive assignment memory has identifying content under imperfect compliance.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Sequential experiments often adapt later encouragements to earlier assignment and treatment history.  When subjects do not perfectly comply, the earlier randomized encouragement is more than an administrative label: under one-sided first-stage compliance, \(Z_1=1,D_1=0\) reveals a never-taker stratum, while \(Z_1=0,D_1=0\) is a mixture of never-takers and latent first-stage compliers.  The methodological question is whether this randomized label should be retained when bounding later dynamic treatment effects.
+
+\paragraph{The main finding (proposed).}
+Theorem~\ref{thm:memory-refinement} records the routine but important information-ordering result: the sharp memory-retaining identified set is contained in the identified set obtained after coarsening away \(Z_1\) inside the \(D_1=0\) state.  Conjecture~\ref{conj:mixture-envelope} is the flagship statement: for the first-stage-complier second-period effect \(\theta_{C,0}^{(2)}\), the full-memory joint projection equals a covariate-cell mixture-subtraction envelope that combines the mixed \(Z_1=0,D_1=0\) branch with the pure-never-taker \(Z_1=1,D_1=0\) branch.  Conjecture~\ref{conj:strict-gain} states that this envelope is strictly narrower than the coarsened/static envelope whenever the pure-never-taker second-stage IV problem is informative and the first-stage complier share is nondegenerate.
+
+\paragraph{What is new.}
+The closest published paper is \citet{BugniGaoObradovicVelez2024}, which characterizes ATE and ATT identified sets under covariate-adaptive randomization and imperfect compliance.  Their assignment strata are pre-treatment covariates; the proposed gap is that a post-baseline randomized encouragement can become a principal-stratum splitter after conditioning on treatment receipt.  The closest generic sharp-bounds competitor is \citet{DuarteFinkelsteinKnoxMummoloShpitser2024}, whose Autobounds framework automates polynomial-programming bounds with dual relaxations and branch-and-bound but does not isolate the proposed closed-form memory-splitting face or its strict-gain diagnostic.  The closest dynamic partial-identification comparator is \citet{ChenZhang2023}, whose Bellman-style time-varying-IV regime analysis targets IV-optimal dynamic treatment regimes rather than the pure-never-taker memory-gain diagnostic for a fixed second-period principal-stratum contrast.  The closest dynamic point-identification paper is \citet{SojitraSyrgkanis2024}, which identifies dynamic LATEs under one-sided noncompliance plus extra cross-period conditions; the proposed gap is what remains partially identified when those extra conditions are not imposed.  Unlike the burned \texttt{flagship\_explore}/\texttt{f1} angle, this proposal does not claim a Bellman-versus-full-history separation for a sustained regime effect; it isolates a two-stage mixture-subtraction face created by one pure compliance stratum.
+
+\paragraph{How it positions in the literature.}
+The proposal lives in the partial-identification cluster, specifically IV bounds with dynamic treatment timing and imperfect compliance.  It uses Balke--Pearl finite response-type logic for the second-period IV subproblems, the covariate-adaptive randomization motivation of recent imperfect-compliance work, and the principal-stratum language of SMART analyses.  The intended contribution is a theorem-level diagnostic for when assignment memory sharpens a dynamic partial-ID interval, not a new graphical identification rule or a panel regression fact.
+
+\section{Related work}
+\citet{BalkePearl1997} derive tight nonparametric IV bounds for static binary randomized encouragement with imperfect compliance; the present proposal uses the same finite latent-response philosophy inside each second-stage history.  \citet{SwansonHernanMillerRobinsRichardson2018} review binary-IV partial identification and organize the static assumptions that the proposed dynamic cell problem reduces to when the first-stage memory label is removed.  \citet{ManskiPepper2000} show how monotone instrumental-variable and response restrictions can sharpen static bounds; this proposal is orthogonal because the sharpening comes from randomized mixture splitting rather than an outcome shape restriction.
+
+\citet{BugniGaoObradovicVelez2024} characterize ATE and ATT identified sets under covariate-adaptive randomization and imperfect compliance; this proposal asks whether an adaptive post-baseline assignment label has additional identifying content after conditioning on earlier receipt.  \citet{DuarteFinkelsteinKnoxMummoloShpitser2024} give an automated polynomial-programming approach to sharp causal bounds in discrete settings, using dual relaxations and branch-and-bound; it is the main published generic-computation competitor, while this proposal seeks the analytic mixture splitter and strict diagnostic that the automated formulation does not state.  \citet{BugniCanayShaikh2018} study inference under covariate-adaptive randomization without making dynamic compliance states the estimand, providing the randomization-design background.  \citet{SojitraSyrgkanis2024} identify dynamic LATEs under one-sided noncompliance and additional cross-period effect-compliance independence; the current proposal weakens the target to bounds and studies the mixture information left by \(Z_1\).  \citet{MichaelCuiLorchTchetgen2024} identify marginal structural mean model parameters with time-varying IVs under compliance-type restrictions; this proposal instead stays nonparametric and records a finite sharp set.  \citet{ChenZhang2023} develop IV-optimal dynamic treatment regimes through Bellman-style partial identification; their Bellman objects do not subsume the proposed strict-gain statement because the present target is a fixed \(\theta_{C,0}^{(2)}\) contrast whose endpoint moves when the pure-never-taker memory cell is separated from the mixed untreated branch, not an optimal-regime value recursion.  \citet{ArtmanBhattacharyaErtefaieLynchMcKayJohnson2024} model partial compliance in SMARTs using principal-strata marginal structural models and Bayesian semiparametrics; the proposed theorem asks what a nonparametric bounds analysis can recover before imposing that model.  \citet{Murphy2005} supplies the SMART and dynamic-regime design context in which retained assignment history is operationally natural.
+
+In-catalogue prior art is sparse for this anchor.  The \texttt{doc/API.md} ExactID/PartialID catalogue reports that ThmSmith partial-identification entries are empty at seed time, with promoted partial-ID work organized around static Manski-family and Balke--Pearl-family bounds.  The closest banked proposal, \texttt{pid\_late\_bounded\_defiers}: ``Sharp complier-LATE bounds from a collapsed Balke--Pearl principal-stratum envelope,'' is one-period and does not use a post-baseline randomized memory label.  The burned \texttt{flagship\_explore}/\texttt{f1}: ``Full-history IV bounds for dynamic treatment effects under adaptive noncompliance'' targeted sustained-regime full-history LP separation; the present proposal changes the kernel to a two-stage compliance-revealing mixture split for \(\theta_{C,0}^{(2)}\).
+
+\section{Formal setup}
+Let \(X\) have finite support and let \(Z_t,D_t\in\{0,1\}\) for \(t=1,2\).  The observed law is \(P=P_{Y,D_1,D_2,Z_1,Z_2,X}\), with \(Y\in[0,1]\).  First-stage potential treatment is \(D_1(z_1)\), and the first-stage principal stratum is
+\[
+S=C\ \text{if }D_1(1)=1,D_1(0)=0,\qquad
+S=N\ \text{if }D_1(1)=0,D_1(0)=0.
+\]
+For \(x\), write \(q_C(x)=\Pr(S=C\mid X=x)\) and \(q_N(x)=1-q_C(x)\).  Under one-sided first-stage compliance and randomized \(Z_1\), \(q_C(x)=\Pr(D_1=1\mid Z_1=1,X=x)\), while \(Z_1=1,D_1=0\) is a pure \(N\) cell and \(Z_1=0,D_1=0\) is a \(q_C(x)\)-by-\(q_N(x)\) mixture.
+
+Second-stage potential treatment is \(D_2^{s,d_1}(z_2)\) for first-stage stratum \(s\in\{C,N\}\) and first-stage treatment \(d_1\in\{0,1\}\).  Second-stage potential outcomes are \(Y(d_1,d_2)\).  Define the cell-level target
+\[
+\theta_{C,0}^{(2)}(x)
+=\E\!\left[Y(0,1)-Y(0,0)\mid S=C,X=x\right],
+\]
+and the aggregate target
+\[
+\theta_{C,0}^{(2)}
+=\sum_x w_C(x)\theta_{C,0}^{(2)}(x),\qquad
+w_C(x)=\frac{\Pr(X=x)q_C(x)}{\sum_{x'}\Pr(X=x')q_C(x')}.
+\]
+
+For each \(x\) and \(s\in\{C,N\}\), let
+\[
+\mathcal{B}_{s,0,x}(d_2)\subseteq[0,1]
+\]
+denote the sharp second-stage IV identified set for \(\mu_{s,d_2}(x)=\E[Y(0,d_2)\mid S=s,X=x]\), using the relevant observed history and the second-stage one-sided IV restrictions.  For \(s=N\), this set is informed by the pure cell \((Z_1,D_1)=(1,0)\).  Let \(\mathcal{M}_{0,x}(d_2)\) denote the sharp second-stage IV identified set for the mixed branch mean
+\[
+m_{0,d_2}(x)=q_C(x)\mu_{C,d_2}(x)+q_N(x)\mu_{N,d_2}(x)
+\]
+inside \((Z_1,D_1)=(0,0)\).  Let
+\(\mathcal{J}_{N,0,x}\subseteq[0,1]^2\) be the sharp joint identified set for
+\((\mu_{N,0}(x),\mu_{N,1}(x))\), and let
+\(\mathcal{J}_{M,0,x}\subseteq[0,1]^2\) be the sharp joint identified set for
+\((m_{0,0}(x),m_{0,1}(x))\).  Their coordinate projections are
+\(\mathcal{B}_{N,0,x}(d_2)\) and \(\mathcal{M}_{0,x}(d_2)\), respectively, but the
+joint sets retain cross-coordinate compatibility needed for contrasts.  Let
+\(\mathcal{J}_{C,x}^{\mathrm{mem}}\subseteq[0,1]^2\) denote the sharp full-memory
+joint projection for \((\mu_{C,0}(x),\mu_{C,1}(x))\).
+
+Let \(\mathcal{L}_{\mathrm{mem}}(P,e)\) denote the finite latent-response
+polytope of first-stage strata, second-stage response types, and bounded
+potential-outcome coordinates that satisfies the assumptions and reproduces
+the full observed law \(P\).  The full-memory identified set
+\(\Theta_{\mathrm{mem}}(P,e)\) is the projection of
+\(\mathcal{L}_{\mathrm{mem}}(P,e)\) onto \(\theta_{C,0}^{(2)}\), with endpoints
+\[
+\underline\theta_{\mathrm{mem}}(P,e)=\inf_{\ell\in\mathcal{L}_{\mathrm{mem}}(P,e)}
+\theta_{C,0}^{(2)}(\ell),\qquad
+\overline\theta_{\mathrm{mem}}(P,e)=\sup_{\ell\in\mathcal{L}_{\mathrm{mem}}(P,e)}
+\theta_{C,0}^{(2)}(\ell).
+\]
+The coarsened polytope \(\mathcal{L}_{\mathrm{coarse}}(A P,e)\) and set
+\(\Theta_{\mathrm{coarse}}(A P,e)\) use the same latent variables and target but
+replace \(P\) by the law \(A P\) that sums over \(Z_1\) within the \(D_1=0\)
+branch after conditioning on \(X\); its endpoints are defined by the analogous
+infimum and supremum over \(\mathcal{L}_{\mathrm{coarse}}(A P,e)\).
+
+\begin{verbatim}
+qid=flagship_explore
+specialization=f2
+P=P_{Y,D1,D2,Z1,Z2,X}, a finite-support observed law with Y in [0,1]
+theta=theta_C0^(2)=E[Y(0,1)-Y(0,0) | D1(1)=1,D1(0)=0]
+identifying restrictions=R_2stageIV+memory+1sided: consistency,
+  exclusion, randomized Z1 within X, sequentially randomized Z2 given
+  (X,Z1,D1), positivity, one-sided first- and second-stage compliance, and
+  no direct assignment-memory effect within the D1=0 state
+bounding functional=[theta_mem_lower(P,e), theta_mem_upper(P,e)], the sharp
+  interval over the finite latent first-stage stratum, second-stage response,
+  and bounded outcome table retaining Z1 as a mixture-splitting label
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite support and bounded outcomes]\label{ass:finite-bounded}
+\(X\) has finite support; \(Z_1,Z_2,D_1,D_2\in\{0,1\}\); and \(0\le Y(d_1,d_2)\le1\) almost surely for all \(d_1,d_2\in\{0,1\}\).
+\end{assumption}
+
+\begin{assumption}[First-stage random encouragement]\label{ass:first-rand}
+For every \(x\) used in the target, \(0<\Pr(Z_1=1\mid X=x)<1\), and \(Z_1\) is independent of \((D_1(0),D_1(1),D_2^{s,d_1}(0),D_2^{s,d_1}(1),Y(d_1,d_2))\) conditional on \(X=x\).
+\end{assumption}
+
+\begin{assumption}[Sequential second-stage random encouragement]\label{ass:second-rand}
+For every reachable \((x,z_1,d_1)\), the known assignment probability \(e_2(z\mid x,z_1,d_1)\) lies strictly between zero and one, and \(Z_2\) is independent of the latent first-stage stratum, second-stage response type, and potential outcomes conditional on \((X,Z_1,D_1)=(x,z_1,d_1)\).
+\end{assumption}
+
+\begin{assumption}[Consistency and exclusion]\label{ass:consistency}
+The realized treatments satisfy \(D_1=D_1(Z_1)\) and \(D_2=D_2^{S,D_1}(Z_2)\).  The realized outcome is \(Y=Y(D_1,D_2)\), and \(Z_1,Z_2\) affect \(Y\) only through \(D_1,D_2\).
+\end{assumption}
+
+\begin{assumption}[One-sided compliance]\label{ass:one-sided}
+First-stage compliance is one-sided: \(D_1(0)=0\le D_1(1)\) almost surely.  For each \(s,d_1\), second-stage compliance is one-sided: \(D_2^{s,d_1}(0)=0\le D_2^{s,d_1}(1)\) almost surely.
+\end{assumption}
+
+\begin{assumption}[Nondegenerate first-stage mixture]\label{ass:nondegenerate}
+For every \(x\) used in the strict-gain claim, \(0<q_C(x)<1\).  Boundary cells with \(q_C(x)=0\) are excluded from \(\theta_{C,0}^{(2)}\), and cells with \(q_N(x)=0\) are treated by the sanity reduction in Corollary~\ref{cor:no-mixture}.
+\end{assumption}
+
+\begin{assumption}[No direct assignment-memory effect in the untreated first-stage state]\label{ass:no-memory-direct}
+Within \(X=x\), first-stage stratum \(s\), and first-stage treatment \(D_1=0\), the second-stage response law \(D_2^{s,0}(z_2)\) and the potential outcomes \(Y(0,d_2)\) do not depend directly on whether the retained label was \(Z_1=0\) or \(Z_1=1\).
+\end{assumption}
+
+\begin{assumption}[Observational compatibility]\label{ass:compatible}
+The observed law \(P\) and adaptive assignment law \(e\) are in the maintained
+model: the full-memory latent-response polytope
+\(\mathcal{L}_{\mathrm{mem}}(P,e)\) is nonempty.  Consequently the endpoint
+functionals in the main results are optimizations over a nonempty feasible set.
+\end{assumption}
+
+\begin{assumption}[Informative pure never-taker branch]\label{ass:informative-never}
+For at least one \(x\), the pure-never-taker second-stage IV set \(\mathcal{B}_{N,0,x}(d_2)\) is a proper subset of \([0,1]\) for \(d_2=0\) or \(d_2=1\), and the joint mixed-branch and pure-never-taker sets \(\mathcal{J}_{M,0,x}\) and \(\mathcal{J}_{N,0,x}\) are compatible with a nonempty subtraction projection for \((\mu_{C,0}(x),\mu_{C,1}(x))\).
+\end{assumption}
+
+\begin{assumption}[Cellwise covariate separability]\label{ass:cellwise}
+The latent-response restrictions are imposed separately within each \(X=x\)
+cell, and no cross-\(x\) shape, rank, or monotonicity restriction is added.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Memory refinement is never weaker]\label{thm:memory-refinement}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:compatible},
+\[
+\Theta_{\mathrm{mem}}(P,e)\subseteq \Theta_{\mathrm{coarse}}(A P,e).
+\]
+Equivalently,
+\[
+\underline\theta_{\mathrm{coarse}}(A P,e)\le
+\underline\theta_{\mathrm{mem}}(P,e)\le
+\overline\theta_{\mathrm{mem}}(P,e)\le
+\overline\theta_{\mathrm{coarse}}(A P,e).
+\]
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+This theorem is mathematically routine, but it fixes the ordering for the new object.  \citet{BugniGaoObradovicVelez2024} compare identified sets under covariate-adaptive randomization for static ATE/ATT targets; here the refinement is a post-baseline assignment-memory refinement for a principal-stratum dynamic effect, so the theorem identifies the right null benchmark for the conjectures.
+
+\begin{conjecture}[Joint mixture-subtraction envelope]\label{conj:mixture-envelope}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:compatible}, fix \(x\) with \(0<q_C(x)<1\).  The sharp full-memory joint identified set for
+\((\mu_{C,0}(x),\mu_{C,1}(x))\) is
+\[
+\mathcal{J}_{C,x}^{\mathrm{mem}}
+=
+\left\{
+\left(
+\frac{m_0-q_N(x)n_0}{q_C(x)},
+\frac{m_1-q_N(x)n_1}{q_C(x)}
+\right):
+(m_0,m_1)\in\mathcal{J}_{M,0,x},\
+(n_0,n_1)\in\mathcal{J}_{N,0,x},\
+0\le \frac{m_d-q_N(x)n_d}{q_C(x)}\le1\ \text{for }d=0,1
+\right\}.
+\]
+The sharp full-memory cell identified set for the contrast
+\(\theta_{C,0}^{(2)}(x)\) is therefore the joint projection
+\[
+\left[
+\inf_{(u_0,u_1)\in\mathcal{J}_{C,x}^{\mathrm{mem}}}(u_1-u_0),\
+\sup_{(u_0,u_1)\in\mathcal{J}_{C,x}^{\mathrm{mem}}}(u_1-u_0)
+\right],
+\]
+not the difference of two separately optimized marginal intervals unless the
+joint set is separable.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+The closest static result is \citet{BalkePearl1997}; the closest CAR result is \citet{BugniGaoObradovicVelez2024}; the closest generic sharp-bounds engine is \citet{DuarteFinkelsteinKnoxMummoloShpitser2024}.  These works either solve static IV bounds or provide automated polynomial-programming machinery for discrete causal bounds, but they do not isolate the algebraic face where a randomized prior assignment reveals one component of a later imperfect-compliance mixture.  Resolving this conjecture would convert a generic two-period latent-response optimization into a closed-form diagnostic while preserving the joint compatibility needed for treatment-effect contrasts.
+
+\begin{conjecture}[Strict assignment-memory gain]\label{conj:strict-gain}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:informative-never}, there exists an open set of observed laws \(P\) and adaptive laws \(e_2\) with
+\[
+e_2(1\mid x,0,0)\ne e_2(1\mid x,1,0)
+\]
+for which the containment in Theorem~\ref{thm:memory-refinement} is strict.  In those laws, the strictness is witnessed by at least one endpoint of
+\[
+\left[
+\inf_{(u_0,u_1)\in\mathcal{J}_{C,x}^{\mathrm{mem}}}(u_1-u_0),\
+\sup_{(u_0,u_1)\in\mathcal{J}_{C,x}^{\mathrm{mem}}}(u_1-u_0)
+\right]
+\]
+being pulled inward by the proper pure-never-taker set \(\mathcal{B}_{N,0,x}(d_2)\) through the joint subtraction in Conjecture~\ref{conj:mixture-envelope}.  If \(q_N(x)=0\), or if \(\mathcal{B}_{N,0,x}(0)=\mathcal{B}_{N,0,x}(1)=[0,1]\) for every \(x\), this particular mixture-splitting mechanism cannot yield strict improvement.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+\citet{ChenZhang2023} give the closest dynamic partial-identification comparator through Bellman-style IV-optimal regime objects, while \citet{SojitraSyrgkanis2024} obtain point identification by adding cross-period independence-style conditions and \citet{MichaelCuiLorchTchetgen2024} identify model parameters under compliance-type restrictions.  This conjecture proposes a different phenomenon: even without point identification or an optimal-regime recursion, a remembered randomization label can strictly sharpen a fixed nonparametric bounds problem by separating a pure never-taker cell from a mixed untreated branch.
+
+\begin{conjecture}[Covariate aggregation by complier weights]\label{conj:aggregation}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:compatible} and Assumption~\ref{ass:cellwise}, the sharp aggregate set for \(\theta_{C,0}^{(2)}\) is the weighted Minkowski sum
+\[
+\Theta_{\mathrm{mem}}(P,e)
+=
+\sum_x w_C(x)
+\left[
+\inf_{(u_0,u_1)\in\mathcal{J}_{C,x}^{\mathrm{mem}}}(u_1-u_0),\
+\sup_{(u_0,u_1)\in\mathcal{J}_{C,x}^{\mathrm{mem}}}(u_1-u_0)
+\right].
+\]
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+\citet{SwansonHernanMillerRobinsRichardson2018} emphasize the value of putting IV bounds in common notation for static problems.  A proved aggregation statement would make the proposed memory-split theorem usable in stratified SMART or covariate-adaptive designs without hiding cross-cell assumptions.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No mixture, no memory gain]\label{cor:no-mixture}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:compatible}, if \(q_N(x)=0\) for every target cell, then \((Z_1,D_1)=(0,0)\) contains only first-stage compliers and the mixture-subtraction envelope collapses to the ordinary second-stage one-sided IV bound for that group.
+\end{corollary}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:compatible}, the statement collapses because \(m_{0,d_2}(x)=\mu_{C,d_2}(x)\) when \(q_N(x)=0\), so subtracting the pure-never-taker component removes a zero-mass term.
+
+\begin{corollary}[Perfect second-stage compliance reduces to principal-stratum subtraction]\label{cor:perfect-stage2}
+Add to Assumptions~\ref{ass:finite-bounded}--\ref{ass:compatible} the restriction \(D_2^{s,0}(z_2)=z_2\) for \(s\in\{C,N\}\).  Then \(\mathcal{J}_{N,0,x}\) and \(\mathcal{J}_{M,0,x}\) are observed conditional-mean singletons, and Conjecture~\ref{conj:mixture-envelope} reduces to the standard two-component mixture identity
+\[
+\mu_{C,d_2}(x)=\frac{m_{0,d_2}(x)-q_N(x)\mu_{N,d_2}(x)}{q_C(x)}.
+\]
+\end{corollary}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:compatible} plus perfect second-stage compliance, the result is a direct algebraic reduction: the second-stage IV subproblem has no hidden compliance type, so the only remaining hidden object is the first-stage \(C/N\) mixture.
+
+\section{Proof-sketch route}
+The proof route is finite-dimensional convex analysis.  Encode each \(X=x\) cell by a latent table containing \(S\in\{C,N\}\), the second-stage one-sided response types under \(D_1=0\), and bounded potential-outcome coordinates \(Y(0,0),Y(0,1)\).  Theorem~\ref{thm:memory-refinement} follows by applying the linear coarsening map \(A\) to the full observed-cell equations, using Assumption~\ref{ass:compatible} to ensure the endpoint optimizations are over a nonempty polytope.  For Conjecture~\ref{conj:mixture-envelope}, eliminate the pure-never-taker variables using the \((Z_1,D_1)=(1,0)\) equations, then eliminate the mixed-branch mean equations in \((Z_1,D_1)=(0,0)\); the expected output is a projection of a small polytope onto \((\mu_{C,0},\mu_{C,1})\), and the contrast bounds are then the minimum and maximum of \(u_1-u_0\) over that joint projection.  The strict-gain claim should be checked first on a binary-outcome, single-\(x\), \(q_C=q_N=1/2\) witness by enumerating the second-stage response types and comparing the two LP endpoint systems with and without the \(Z_1\) label.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:memory-refinement} is expected to be routine once the two feasible sets are defined.  Conjectures~\ref{conj:mixture-envelope}, \ref{conj:strict-gain}, and \ref{conj:aggregation} are not yet proved; the main risk is that second-stage imperfect compliance may introduce cross-history compatibility constraints that make the displayed joint subtraction set too large or too small.  The v1 marginal interval-difference wording has been withdrawn in favor of the joint-projection formulation above.  The no-direct-memory assumption is strong and should be treated as part of the estimand convention, not as a harmless technicality.  This pivot deliberately withdraws the burned \texttt{f1} claims about Bellman non-sharpness, sustained-regime full-history separation, and minimality in \(T\).
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for a structurally different angle: assignment-memory mixture splitting for \(\theta_{C,0}^{(2)}\); prior verdict: none.
+\item v2 (revise) -- added observational compatibility, replaced the marginal contrast step by a joint projection, and added Duarte et al. as the generic computation comparator; prior verdict: REVISE.
+\item v3 (revise) -- corrected the Duarte et al. comparison to Autobounds polynomial-programming language and added Chen--Zhang as the Bellman comparator for the strict-gain conjecture; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Artman et~al.(2024)]{ArtmanBhattacharyaErtefaieLynchMcKayJohnson2024}
+William J. Artman, Indrabati Bhattacharya, Ashkan Ertefaie, Kevin G. Lynch, James R. McKay, and Brent A. Johnson.
+\newblock A marginal structural model for partial compliance in SMARTs.
+\newblock \emph{Annals of Applied Statistics}, 18(2):905--921, 2024.
+\newblock \url{https://doi.org/10.1214/21-AOAS1586}.
+
+\bibitem[Balke and Pearl(1997)]{BalkePearl1997}
+Alexander Balke and Judea Pearl.
+\newblock Bounds on treatment effects from studies with imperfect compliance.
+\newblock \emph{Journal of the American Statistical Association}, 92(439):1171--1176, 1997.
+\newblock \url{https://doi.org/10.1080/01621459.1997.10474074}.
+
+\bibitem[Bugni, Canay, and Shaikh(2018)]{BugniCanayShaikh2018}
+Federico A. Bugni, Ivan A. Canay, and Azeem M. Shaikh.
+\newblock Inference under covariate-adaptive randomization.
+\newblock \emph{Journal of the American Statistical Association}, 113(524):1784--1796, 2018.
+\newblock \url{https://doi.org/10.1080/01621459.2017.1375934}.
+
+\bibitem[Bugni et~al.(2024)]{BugniGaoObradovicVelez2024}
+Federico A. Bugni, Mengsi Gao, Filip Obradovic, and Amilcar Velez.
+\newblock Identification and inference on treatment effects under covariate-adaptive randomization and imperfect compliance.
+\newblock \emph{arXiv:2406.08419}, 2024.
+\newblock \url{https://arxiv.org/abs/2406.08419}.
+
+\bibitem[Chen and Zhang(2023)]{ChenZhang2023}
+Shuxiao Chen and Bo Zhang.
+\newblock Estimating and improving dynamic treatment regimes with a time-varying instrumental variable.
+\newblock \emph{arXiv:2104.07822}, 2023.
+\newblock \url{https://arxiv.org/abs/2104.07822}.
+
+\bibitem[Duarte et~al.(2024)]{DuarteFinkelsteinKnoxMummoloShpitser2024}
+Guilherme Duarte, Noam Finkelstein, Dean Knox, Jonathan Mummolo, and Ilya Shpitser.
+\newblock An automated approach to causal inference in discrete settings.
+\newblock \emph{Journal of the American Statistical Association}, 119(547):1778--1793, 2024.
+\newblock \url{https://doi.org/10.1080/01621459.2023.2216909}.
+
+\bibitem[Manski and Pepper(2000)]{ManskiPepper2000}
+Charles F. Manski and John V. Pepper.
+\newblock Monotone instrumental variables: With an application to the returns to schooling.
+\newblock \emph{Econometrica}, 68(4):997--1010, 2000.
+\newblock \url{https://doi.org/10.1111/1468-0262.00144}.
+
+\bibitem[Michael et~al.(2024)]{MichaelCuiLorchTchetgen2024}
+Haben Michael, Yifan Cui, Scott A. Lorch, and Eric J. Tchetgen Tchetgen.
+\newblock Instrumental variable estimation of marginal structural mean models for time-varying treatment.
+\newblock \emph{Journal of the American Statistical Association}, 119(546):1240--1251, 2024.
+\newblock \url{https://doi.org/10.1080/01621459.2023.2183131}.
+
+\bibitem[Murphy(2005)]{Murphy2005}
+Susan A. Murphy.
+\newblock An experimental design for the development of adaptive treatment strategies.
+\newblock \emph{Statistics in Medicine}, 24(10):1455--1481, 2005.
+\newblock \url{https://doi.org/10.1002/sim.2022}.
+
+\bibitem[Sojitra and Syrgkanis(2024)]{SojitraSyrgkanis2024}
+Ravi B. Sojitra and Vasilis Syrgkanis.
+\newblock Dynamic local average treatment effects.
+\newblock \emph{arXiv:2405.01463}, 2024.
+\newblock \url{https://arxiv.org/abs/2405.01463}.
+
+\bibitem[Swanson et~al.(2018)]{SwansonHernanMillerRobinsRichardson2018}
+Sonja A. Swanson, Miguel A. Hernan, Matthew Miller, James M. Robins, and Thomas S. Richardson.
+\newblock Partial identification of the average treatment effect using instrumental variables: Review of methods for binary instruments, treatments, and outcomes.
+\newblock \emph{Journal of the American Statistical Association}, 113(522):933--947, 2018.
+\newblock \url{https://doi.org/10.1080/01621459.2018.1434530}.
+\end{thebibliography}
+
+\end{document}

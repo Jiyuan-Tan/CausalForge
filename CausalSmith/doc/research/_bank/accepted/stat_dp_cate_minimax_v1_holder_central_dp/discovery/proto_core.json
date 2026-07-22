@@ -1,0 +1,784 @@
+{
+  "qid": "stat_dp_cate_minimax_v1",
+  "specialization": "holder_central_dp",
+  "cluster": "stat",
+  "symbols": [
+    {
+      "name": "n",
+      "type": "sample_size",
+      "space": "N",
+      "def": "Number of observed units.",
+      "role": "index"
+    },
+    {
+      "name": "d",
+      "type": "dimension",
+      "space": "N",
+      "def": "Dimension of the covariate vector.",
+      "role": "regime_parameter"
+    },
+    {
+      "name": "a",
+      "type": "treatment_level",
+      "space": "{0,1}",
+      "def": "Treatment level indexing a potential outcome or outcome regression.",
+      "role": "index"
+    },
+    {
+      "name": "O",
+      "type": "observed_data_unit",
+      "space": "[-1,1] x {0,1} x [0,1]^d",
+      "def": "Observed data unit O=(Y,A,X).",
+      "role": "data_unit"
+    },
+    {
+      "name": "Y",
+      "type": "outcome",
+      "space": "[-1,1]",
+      "def": "Observed outcome.",
+      "role": "data_component",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "A",
+      "type": "treatment",
+      "space": "{0,1}",
+      "def": "Observed binary treatment.",
+      "role": "data_component",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "X",
+      "type": "covariate",
+      "space": "[0,1]^d",
+      "def": "Observed covariate vector.",
+      "role": "data_component",
+      "refs": [
+        "O",
+        "d"
+      ]
+    },
+    {
+      "name": "O_1,...,O_n",
+      "type": "sample",
+      "space": "([-1,1] x {0,1} x [0,1]^d)^n",
+      "def": "Observed sample of n units.",
+      "role": "data",
+      "refs": [
+        "O",
+        "n"
+      ]
+    },
+    {
+      "name": "P",
+      "type": "law",
+      "space": "laws of O",
+      "def": "Observed-data law.",
+      "role": "model",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "P_X",
+      "type": "marginal_law",
+      "space": "laws on [0,1]^d",
+      "def": "Marginal law of X induced by P.",
+      "role": "nuisance_law",
+      "refs": [
+        "P"
+      ]
+    },
+    {
+      "name": "p_P",
+      "type": "density",
+      "sig": "[0,1]^d -> [0,infinity)",
+      "def": "Lebesgue density of P_X.",
+      "role": "nuisance",
+      "refs": [
+        "P_X",
+        "d"
+      ]
+    },
+    {
+      "name": "Y(a)",
+      "type": "potential_outcome",
+      "space": "[-1,1] for a in {0,1}",
+      "def": "Potential outcome under treatment level a.",
+      "role": "causal_primitive",
+      "refs": [
+        "a"
+      ]
+    },
+    {
+      "name": "x_0",
+      "type": "evaluation_point",
+      "space": "(0,1)^d",
+      "def": "Fixed interior covariate point.",
+      "role": "target_index",
+      "refs": [
+        "d"
+      ]
+    },
+    {
+      "name": "r_0",
+      "type": "localization_radius",
+      "space": "(0,1/2)",
+      "def": "Radius of the design-regularity neighborhood of x_0.",
+      "role": "regularity_constant",
+      "refs": [
+        "x_0"
+      ]
+    },
+    {
+      "name": "alpha",
+      "type": "smoothness_index",
+      "space": "(0,infinity)",
+      "def": "Holder order of the propensity score.",
+      "role": "regime_parameter"
+    },
+    {
+      "name": "beta",
+      "type": "smoothness_index",
+      "space": "(0,infinity)",
+      "def": "Holder order of each outcome regression.",
+      "role": "regime_parameter"
+    },
+    {
+      "name": "gamma",
+      "type": "smoothness_index",
+      "space": "(0,infinity)",
+      "def": "Holder order of the CATE function.",
+      "role": "regime_parameter"
+    },
+    {
+      "name": "L",
+      "type": "holder_radius",
+      "space": "(0,infinity)",
+      "def": "Common Holder-ball radius.",
+      "role": "regularity_constant"
+    },
+    {
+      "name": "H^s([0,1]^d,L)",
+      "type": "function_class",
+      "space": "sets of real functions on [0,1]^d",
+      "def": "Holder ball of order s and radius L.",
+      "role": "regularity_class",
+      "refs": [
+        "d",
+        "L"
+      ]
+    },
+    {
+      "name": "e_0",
+      "type": "overlap_constant",
+      "space": "(0,1/2)",
+      "def": "Uniform propensity-score lower bound.",
+      "role": "regularity_constant"
+    },
+    {
+      "name": "f_0",
+      "type": "density_lower_bound",
+      "space": "(0,infinity)",
+      "def": "Lower local design-density bound.",
+      "role": "regularity_constant"
+    },
+    {
+      "name": "f_1",
+      "type": "density_upper_bound",
+      "space": "[f_0,infinity)",
+      "def": "Upper local design-density bound.",
+      "role": "regularity_constant",
+      "refs": [
+        "f_0"
+      ]
+    },
+    {
+      "name": "pi_P",
+      "type": "propensity_score",
+      "sig": "[0,1]^d -> [0,1]",
+      "def": "pi_P(x)=P(A=1|X=x).",
+      "role": "nuisance",
+      "refs": [
+        "P",
+        "A",
+        "X"
+      ]
+    },
+    {
+      "name": "mu_{0,P}",
+      "type": "outcome_regression",
+      "sig": "[0,1]^d -> [-1,1]",
+      "def": "mu_{0,P}(x)=E_P[Y|A=0,X=x].",
+      "role": "nuisance",
+      "refs": [
+        "P",
+        "Y",
+        "A",
+        "X"
+      ]
+    },
+    {
+      "name": "mu_{1,P}",
+      "type": "outcome_regression",
+      "sig": "[0,1]^d -> [-1,1]",
+      "def": "mu_{1,P}(x)=E_P[Y|A=1,X=x].",
+      "role": "nuisance",
+      "refs": [
+        "P",
+        "Y",
+        "A",
+        "X"
+      ]
+    },
+    {
+      "name": "tau_P",
+      "type": "cate_function",
+      "sig": "[0,1]^d -> R",
+      "def": "tau_P(x)=mu_{1,P}(x)-mu_{0,P}(x).",
+      "role": "causal_target",
+      "refs": [
+        "mu_{0,P}",
+        "mu_{1,P}"
+      ]
+    },
+    {
+      "name": "epsilon_n",
+      "type": "privacy_budget_sequence",
+      "space": "[n^(-1),1]",
+      "def": "Deterministic central privacy budget at sample size n.",
+      "role": "regime_parameter",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "delta_n",
+      "type": "privacy_failure_probability_sequence",
+      "space": "(0,n^(-2)]",
+      "def": "Deterministic approximate-privacy failure probability at sample size n.",
+      "role": "regime_parameter",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "M_n",
+      "type": "randomized_mechanism",
+      "sig": "([-1,1] x {0,1} x [0,1]^d)^n -> R",
+      "def": "Possibly randomized release based on the observed sample.",
+      "role": "estimator",
+      "refs": [
+        "O_1,...,O_n",
+        "n"
+      ]
+    },
+    {
+      "name": "D,D'",
+      "type": "neighboring_datasets",
+      "space": "pairs of samples in ([-1,1] x {0,1} x [0,1]^d)^n",
+      "def": "Datasets differing in exactly one record.",
+      "role": "privacy_primitive",
+      "refs": [
+        "O",
+        "n"
+      ]
+    },
+    {
+      "name": "B",
+      "type": "measurable_event",
+      "space": "Borel subsets of R",
+      "def": "Measurable output event of M_n.",
+      "role": "privacy_primitive",
+      "refs": [
+        "M_n"
+      ]
+    },
+    {
+      "name": "R_n^DP",
+      "type": "minimax_absolute_risk",
+      "sig": "(class,epsilon_n,delta_n,x_0) -> [0,infinity)",
+      "def": "Central-DP minimax expected absolute error for tau_P(x_0).",
+      "role": "frontier_object",
+      "refs": [
+        "n",
+        "epsilon_n",
+        "delta_n",
+        "tau_P",
+        "x_0"
+      ]
+    },
+    {
+      "name": "kappa",
+      "type": "nonprivate_rate_exponent",
+      "space": "(0,1/2]",
+      "def": "kappa=min{1/(2+d/gamma),1/(1+d/(2 gamma)+d/(2(alpha+beta)))}.",
+      "role": "derived_quantity",
+      "refs": [
+        "alpha",
+        "beta",
+        "gamma",
+        "d"
+      ]
+    },
+    {
+      "name": "r_n^CATE",
+      "type": "rate",
+      "space": "(0,infinity)",
+      "def": "Kennedy--Balakrishnan--Robins--Wasserman's non-private pointwise benchmark n^(-kappa) in the regime 0<beta<=gamma.",
+      "role": "benchmark",
+      "refs": [
+        "n",
+        "kappa",
+        "beta",
+        "gamma"
+      ]
+    },
+    {
+      "name": "r_n^regDP",
+      "type": "rate",
+      "space": "(0,infinity)",
+      "def": "Central-DP pointwise-regression calibration inf_{0<h<=r_0}{h^gamma+(n h^d)^(-1/2)+1/(n epsilon_n h^d)}.",
+      "role": "benchmark",
+      "refs": [
+        "n",
+        "r_0",
+        "gamma",
+        "d",
+        "epsilon_n"
+      ]
+    },
+    {
+      "name": "P_{alpha,beta,gamma}(L,e_0,f_0,f_1,r_0,x_0)",
+      "type": "law_class",
+      "space": "sets of laws P",
+      "def": "Observational Holder CATE class defined in def:holder-cate-class.",
+      "role": "model_class",
+      "refs": [
+        "P",
+        "alpha",
+        "beta",
+        "gamma",
+        "L",
+        "e_0",
+        "f_0",
+        "f_1",
+        "r_0",
+        "x_0"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:iid",
+      "kind": "sampling",
+      "condition": "(O_i)_{i=1}^n ~ P^n.",
+      "free_symbols": [
+        "O_1,...,O_n",
+        "P",
+        "n"
+      ],
+      "standard": {
+        "name": "iid observational sampling",
+        "cite": "KennedyBalakrishnanRobinsWasserman2024MinimaxCATE"
+      },
+      "used_by": [
+        "def:dp-minimax-risk"
+      ]
+    },
+    {
+      "id": "ass:consistency",
+      "kind": "causal",
+      "condition": "Y=Y(A) a.s.",
+      "free_symbols": [
+        "Y",
+        "Y(a)",
+        "A"
+      ],
+      "standard": {
+        "name": "consistency",
+        "cite": "ImbensRubin2015CausalInference"
+      },
+      "used_by": [
+        "def:holder-cate-class"
+      ]
+    },
+    {
+      "id": "ass:exchangeability",
+      "kind": "causal",
+      "condition": "(Y(0),Y(1)) independent of A conditional on X.",
+      "free_symbols": [
+        "Y(a)",
+        "A",
+        "X"
+      ],
+      "standard": {
+        "name": "conditional exchangeability",
+        "cite": "ImbensRubin2015CausalInference"
+      },
+      "used_by": [
+        "def:holder-cate-class"
+      ]
+    },
+    {
+      "id": "ass:overlap",
+      "kind": "overlap",
+      "condition": "e_0 <= pi_P(x) <= 1-e_0 for all x in [0,1]^d.",
+      "free_symbols": [
+        "e_0",
+        "pi_P",
+        "d"
+      ],
+      "standard": {
+        "name": "strong overlap",
+        "cite": "KennedyBalakrishnanRobinsWasserman2024MinimaxCATE"
+      },
+      "used_by": [
+        "def:holder-cate-class"
+      ]
+    },
+    {
+      "id": "ass:pi-holder",
+      "kind": "smoothness",
+      "condition": "pi_P in H^alpha([0,1]^d,L).",
+      "free_symbols": [
+        "pi_P",
+        "alpha",
+        "d",
+        "L",
+        "H^s([0,1]^d,L)"
+      ],
+      "standard": {
+        "name": "Holder propensity smoothness",
+        "cite": "KennedyBalakrishnanRobinsWasserman2024MinimaxCATE"
+      },
+      "used_by": [
+        "def:holder-cate-class"
+      ]
+    },
+    {
+      "id": "ass:mu-holder",
+      "kind": "smoothness",
+      "condition": "mu_{0,P},mu_{1,P} in H^beta([0,1]^d,L).",
+      "free_symbols": [
+        "mu_{0,P}",
+        "mu_{1,P}",
+        "beta",
+        "d",
+        "L",
+        "H^s([0,1]^d,L)"
+      ],
+      "standard": {
+        "name": "Holder outcome-regression smoothness",
+        "cite": "KennedyBalakrishnanRobinsWasserman2024MinimaxCATE"
+      },
+      "used_by": [
+        "def:holder-cate-class"
+      ]
+    },
+    {
+      "id": "ass:tau-holder",
+      "kind": "smoothness",
+      "condition": "tau_P in H^gamma([0,1]^d,L).",
+      "free_symbols": [
+        "tau_P",
+        "gamma",
+        "d",
+        "L",
+        "H^s([0,1]^d,L)"
+      ],
+      "standard": {
+        "name": "Holder CATE smoothness",
+        "cite": "KennedyBalakrishnanRobinsWasserman2024MinimaxCATE"
+      },
+      "used_by": [
+        "def:holder-cate-class"
+      ]
+    },
+    {
+      "id": "ass:smoothness-order",
+      "kind": "regime",
+      "condition": "0<beta<=gamma.",
+      "free_symbols": [
+        "beta",
+        "gamma"
+      ],
+      "standard": {
+        "name": "CATE-at-least-outcome smoothness regime",
+        "cite": "KennedyBalakrishnanRobinsWasserman2024MinimaxCATE"
+      },
+      "used_by": [
+        "def:holder-cate-class",
+        "oeq:causal-dp-frontier"
+      ]
+    },
+    {
+      "id": "ass:local-density",
+      "kind": "design_regularity",
+      "condition": "f_0 <= p_P(x) <= f_1 for all x in {u in [0,1]^d: ||u-x_0||_infinity<=r_0}.",
+      "free_symbols": [
+        "f_0",
+        "f_1",
+        "p_P",
+        "x_0",
+        "r_0",
+        "d"
+      ],
+      "standard": {
+        "name": "local design-density boundedness",
+        "cite": "KennedyBalakrishnanRobinsWasserman2024MinimaxCATE"
+      },
+      "used_by": [
+        "def:holder-cate-class"
+      ]
+    },
+    {
+      "id": "ass:central-dp",
+      "kind": "privacy",
+      "condition": "Pr{M_n(D) in B} <= exp(epsilon_n) Pr{M_n(D') in B}+delta_n for all D,D',B.",
+      "free_symbols": [
+        "M_n",
+        "D,D'",
+        "B",
+        "epsilon_n",
+        "delta_n",
+        "n"
+      ],
+      "standard": {
+        "name": "central approximate differential privacy",
+        "cite": "DworkRoth2014DP"
+      },
+      "used_by": [
+        "def:dp-minimax-risk"
+      ]
+    },
+    {
+      "id": "ass:model-nonempty",
+      "condition": "P_{alpha,beta,gamma}(L,e_0,f_0,f_1,r_0,x_0) is nonempty.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: nonempty minimax model condition"
+      }
+    },
+    {
+      "id": "ass:holder-interiority",
+      "condition": "L>e_0, so the propensity Holder ball contains an overlap-preserving interior constant and sufficiently small compactly supported alpha-smooth perturbations around it.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: interior-radius condition for Holder minimax lower bounds"
+      }
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:holder-cate-class",
+      "name": "P_{alpha,beta,gamma}(L,e_0,f_0,f_1,r_0,x_0)",
+      "construction": "{P : P satisfies ass:consistency, ass:exchangeability, ass:overlap, ass:pi-holder, ass:mu-holder, ass:tau-holder, ass:smoothness-order, and ass:local-density}",
+      "by_member_properties": [
+        "ass:consistency",
+        "ass:exchangeability",
+        "ass:overlap",
+        "ass:pi-holder",
+        "ass:mu-holder",
+        "ass:tau-holder",
+        "ass:smoothness-order",
+        "ass:local-density"
+      ]
+    },
+    {
+      "id": "def:dp-minimax-risk",
+      "name": "R_n^DP(P_{alpha,beta,gamma},epsilon_n,delta_n,x_0)",
+      "construction": "inf_{M_n: M_n satisfies ass:central-dp} sup_{P in P_{alpha,beta,gamma}(L,e_0,f_0,f_1,r_0,x_0)} E_P[|M_n(O_1,...,O_n)-tau_P(x_0)|]",
+      "inputs": [
+        "M_n",
+        "n",
+        "epsilon_n",
+        "delta_n",
+        "tau_P",
+        "x_0",
+        "P_{alpha,beta,gamma}"
+      ]
+    },
+    {
+      "id": "def:nonprivate-cate-rate",
+      "name": "r_n^CATE",
+      "construction": "n^(-min{1/(2+d/gamma),1/(1+d/(2 gamma)+d/(2(alpha+beta)))})",
+      "inputs": [
+        "n",
+        "alpha",
+        "beta",
+        "gamma",
+        "d"
+      ]
+    },
+    {
+      "id": "def:private-regression-calibration",
+      "name": "r_n^regDP",
+      "construction": "inf_{0<h<=r_0}{h^gamma+(n h^d)^(-1/2)+1/(n epsilon_n h^d)}",
+      "inputs": [
+        "n",
+        "r_0",
+        "gamma",
+        "d",
+        "epsilon_n"
+      ]
+    },
+    {
+      "id": "def:causal-private-frontier-handle",
+      "name": "causal private frontier handle",
+      "construction": "Let q=alpha+beta and define the formal algebraic objective E_n^alg(h,k)=h^gamma+(h/k^{1/d})^q+(n h^d)^(-1/2)+sqrt(k)/(n h^d)+k/(n epsilon_n h^d), over 0<h<=r_0 and 1<=k<=n h^d. Its exactly optimized value is rho_n^alg=r_n^CATE vee (n epsilon_n)^(-gamma/(gamma+d)) vee (n epsilon_n)^(-q/(q+d)); with s=min(gamma,q), this is n^(-kappa) vee (n epsilon_n)^(-s/(s+d)), and epsilon_n^alg=n^(-1+kappa(s+d)/s) is only its algebraic crossing. Neither E_n^alg nor rho_n^alg is a proved risk envelope, attainable rate, minimax frontier, or minimax elbow. The only certified full-class statement is lem:certified-private-cate-bracket, with sharp corollaries lem:equal-smoothness-sharp-private-rate and lem:bounded-effective-private-sample-risk. A private-HOIF upper program must separately privatize or globally stabilize nuisance-pilot, Gram, first-order-score, and second-order folds and retain the KBRW Gram/density third-order remainder. For q<gamma, a positive-density fuzzy family plus an approximate-DP hypercube inequality is one possible converse program, but lem:general-two-point-barrier proves only that a two-point argument certifying indistinguishability through n{exp(epsilon_n)-1+delta_n}TV(P,Q)<=eta<1 cannot exceed the gamma privacy branch; it does not show that every route to the q branch must use fuzzy cancellation. When n epsilon_n=1 the formal q and gamma privacy powers coincide; the q power is strictly larger only when n epsilon_n>1. The KBRW nonprivate expression is not asserted as the established frontier of the full positive-density class: its published lower construction and upper attainability conditions concern different density scopes, with matching on a density/Gram-stable submodel.",
+      "inputs": [
+        "O_1,...,O_n",
+        "pi_P",
+        "mu_{0,P}",
+        "mu_{1,P}",
+        "tau_P",
+        "epsilon_n",
+        "delta_n",
+        "x_0",
+        "alpha",
+        "beta",
+        "gamma",
+        "d"
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "oeq:causal-dp-frontier",
+      "kind": "openendedquestion",
+      "statement": "For deterministic sequences epsilon_n in [n^(-1),1] and 0<delta_n<=n^(-2), determine the sharp central-(epsilon_n,delta_n)-DP pointwise CATE risk R_n^DP(P_{alpha,beta,gamma},epsilon_n,delta_n,x_0) over P_{alpha,beta,gamma}(L,e_0,f_0,f_1,r_0,x_0). Establish a two-sided rate and phase diagram; determine whether the privacy-free limit over this full positive-density class reduces to r_n^CATE (open here; the Kennedy--Balakrishnan--Robins--Wasserman match uses a density/Gram-stable submodel), and decide whether the pointwise-regression calibration r_n^regDP and private estimation of pi_P, mu_{0,P}, and mu_{1,P} generate one or more additional leading regimes. Prove any lower bound using a causal localized family rather than a regression stand-in.",
+      "depends_on": [
+        "ass:iid",
+        "ass:smoothness-order",
+        "def:holder-cate-class",
+        "def:dp-minimax-risk",
+        "def:nonprivate-cate-rate",
+        "def:private-regression-calibration",
+        "def:causal-private-frontier-handle"
+      ],
+      "status": "to-prove",
+      "justification": "Central privacy changes both local-score sensitivity and nuisance learning, neither of which is resolved by the non-private causal rate or a private regression calibration alone.",
+      "gap": "KennedyBalakrishnanRobinsWasserman2024MinimaxCATE, Theorem 1 and Remark 2 (p. 4), gives the non-private pointwise rate in the regime gamma>=beta and separates its bounded-density lower model from its stable-density attainability submodel. CaiChakrabortyVuursteen2024OptimalFederated, Theorems 3.4 and 4.4 (pp. 14, 17), gives pointwise private regression bounds, including a one-server central-DP specialization, but no causal nuisance geometry. SchroderMelnychukFeuerriegel2025DPCATE and NiuNoriQuistorffEtAl2022DPHeterogeneous give private CATE procedures without this pointwise causal minimax frontier.",
+      "consumer": "The frontier supplies a rate-optimal privacy-budget and localization rule for releasing an observational treatment effect at a fixed covariate profile and a minimax benchmark for private CATE learners."
+    }
+  ],
+  "target_estimand": "tau_P(x_0)=mu_{1,P}(x_0)-mu_{0,P}(x_0)",
+  "estimand_functional": "tau_P(x_0)=E_P[Y|A=1,X=x_0]-E_P[Y|A=0,X=x_0]",
+  "sampling_model": {
+    "design": "iid observational sampling under central curator privacy",
+    "units": "O_i=(Y_i,A_i,X_i), i=1,...,n",
+    "treatment": "A_i in {0,1}",
+    "overlap": "e_0 <= pi_P(X_i) <= 1-e_0",
+    "nuisance_estimation": "The model imposes only law-level Holder regularity. The handle studies cross-fitted private estimation of pi_P, mu_{0,P}, and mu_{1,P}, with privacy composition across nuisance and local-score releases."
+  },
+  "tldr": "The project asks for the sharp central approximate-differential-privacy minimax risk of a Holder-smooth pointwise observational CATE in the Kennedy--Balakrishnan--Robins--Wasserman regime 0<beta<=gamma. The established non-private causal benchmark and the known central-private pointwise-regression calibration are treated as barriers, not as new results. The unresolved question is whether privately learning causal nuisances creates a further leading regime; its resolution requires a private higher-order local R-score upper bound and a lower bound that preserves joint CATE, propensity, and outcome-regression perturbations.",
+  "project_justification": {
+    "gap": "No published result characterizes the central-(epsilon_n,delta_n)-DP pointwise minimax risk of an observational Holder CATE while retaining the causal nuisance geometry of the non-private problem.",
+    "niche": "The missing object is a smoothness--dimension--privacy phase frontier for a local causal functional, where privacy affects both localization and nuisance adjustment.",
+    "fill": "The project poses the exact observational frontier, with a concrete private higher-order local-score and causal-DP-tracing handle for its matching upper and lower bounds."
+  },
+  "related_work": "Kennedy, Balakrishnan, Robins, and Wasserman (2024), Theorem 1 and Remark 2 (p. 4), derive the non-private Holder pointwise CATE rate in the regime gamma>=beta and distinguish the bounded-density lower model from the density-qualified upper-bound model; this is the exact privacy-free reduction required here. Cai, Chakraborty, and Vuursteen (2024), Theorems 3.4 and 4.4 (pp. 14, 17), provide pointwise private nonparametric-regression rates in a federated architecture whose one-server specialization calibrates the central-DP regression barrier, but it does not contain causal nuisance functions or a causal lower-bound family. Niu et al. (2022), Section 3 and Theorem 6 (pp. 3--6), provide privacy accounting for sample-split CATE meta-learners without nonparametric pointwise minimax theory. Schroder, Melnychuk, and Feuerriegel (2025), Theorems 1--3 (pp. 5--7), provide Neyman-orthogonal DP CATE releases, not a Holder pointwise causal upper/lower frontier. Dwork and Roth (2014) provide the central approximate-DP experiment used in the risk definition.",
+  "honest_scope": "The central-DP pointwise-regression calibration is published comparison material, not a claimed causal theorem. The open content is the full observational frontier: whether private propensity and outcome-regression learning changes the leading rate beyond the non-private causal and regression-privacy barriers, and a causal-DP converse that resolves that question.",
+  "bibliography": [
+    {
+      "key": "KennedyBalakrishnanRobinsWasserman2024MinimaxCATE",
+      "citation": "Kennedy, E. H., Balakrishnan, S., Robins, J. M., and Wasserman, L. (2024). Minimax rates for heterogeneous causal effect estimation. Annals of Statistics 52(2), 793--816. arXiv:2203.00837."
+    },
+    {
+      "key": "CaiChakrabortyVuursteen2024OptimalFederated",
+      "citation": "Cai, T. T., Chakraborty, A., and Vuursteen, L. (2024). Optimal federated learning for nonparametric regression with heterogeneous distributed differential privacy constraints. arXiv:2406.06755."
+    },
+    {
+      "key": "SchroderMelnychukFeuerriegel2025DPCATE",
+      "citation": "Schroder, M., Melnychuk, V., and Feuerriegel, S. (2025). Differentially private learners for heterogeneous treatment effects. ICLR. arXiv:2503.03486."
+    },
+    {
+      "key": "NiuNoriQuistorffEtAl2022DPHeterogeneous",
+      "citation": "Niu, F., Nori, H., Quistorff, B., Caruana, R., Ngwe, D., and Kannan, A. (2022). Differentially private estimation of heterogeneous causal effects. CLeaR, PMLR 177, 618--633. arXiv:2202.11043."
+    },
+    {
+      "key": "DworkRoth2014DP",
+      "citation": "Dwork, C., and Roth, A. (2014). The Algorithmic Foundations of Differential Privacy. Foundations and Trends in Theoretical Computer Science 9(3--4), 211--407."
+    },
+    {
+      "key": "ImbensRubin2015CausalInference",
+      "citation": "Imbens, G. W., and Rubin, D. B. (2015). Causal Inference for Statistics, Social, and Biomedical Sciences. Cambridge University Press."
+    }
+  ],
+  "comparator_promise_table": [
+    {
+      "comparator_bibkey": "KennedyBalakrishnanRobinsWasserman2024MinimaxCATE",
+      "comparator_claim": "Derives the non-private Holder pointwise CATE minimax rate in the gamma>=beta regime and attains it on a density-qualified submodel.",
+      "matched_by": "Open-ended Question 1",
+      "match_kind": "iff_frontier"
+    },
+    {
+      "comparator_bibkey": "CaiChakrabortyVuursteen2024OptimalFederated",
+      "comparator_claim": "Obtains pointwise private nonparametric-regression bounds up to logarithms under heterogeneous federated privacy constraints, with a one-server central-DP specialization.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "SchroderMelnychukFeuerriegel2025DPCATE",
+      "comparator_claim": "Provides a Neyman-orthogonal DP CATE framework and private finite- and functional-query releases without a pointwise causal minimax theorem.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "NiuNoriQuistorffEtAl2022DPHeterogeneous",
+      "comparator_claim": "Provides DP CATE meta-algorithms with sample splitting and parallel composition.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    }
+  ],
+  "novelty_justification": "The proposal no longer claims a randomized-treatment privacy theorem, because the central-DP regression calibration is covered by Cai, Chakraborty, and Vuursteen's one-server specialization. Its sole research claim is the unresolved observational CATE frontier. Relative to Kennedy et al., it adds central privacy while retaining their gamma>=beta causal point-functional regime; relative to Cai et al., it requires causal nuisance adjustment and a causal indistinguishability construction; relative to existing DP CATE work, it asks for matching pointwise minimax upper and lower bounds.",
+  "literature_checklist": [
+    {
+      "author": "Kennedy, Balakrishnan, Robins, and Wasserman",
+      "year": 2024,
+      "venue": "Annals of Statistics",
+      "bibkey": "KennedyBalakrishnanRobinsWasserman2024MinimaxCATE",
+      "one_line": "Theorem 1 and Remark 2 (p. 4), Section 4, and Appendix B.8 establish the non-private pointwise benchmark and density-qualified attainability scope in the gamma>=beta regime.",
+      "relevant_to": "oeq:causal-dp-frontier"
+    },
+    {
+      "author": "Cai, Chakraborty, and Vuursteen",
+      "year": 2024,
+      "venue": "arXiv",
+      "bibkey": "CaiChakrabortyVuursteen2024OptimalFederated",
+      "one_line": "Theorems 3.4 and 4.4 (pp. 14, 17) give private pointwise regression rates and supply the one-server central-DP calibration, not a causal CATE result.",
+      "relevant_to": "oeq:causal-dp-frontier"
+    },
+    {
+      "author": "Schroder, Melnychuk, and Feuerriegel",
+      "year": 2025,
+      "venue": "ICLR",
+      "bibkey": "SchroderMelnychukFeuerriegel2025DPCATE",
+      "one_line": "Theorems 1--3 (pp. 5--7) provide private CATE mechanisms without a Holder pointwise minimax frontier.",
+      "relevant_to": "oeq:causal-dp-frontier"
+    },
+    {
+      "author": "Niu, Nori, Quistorff, Caruana, Ngwe, and Kannan",
+      "year": 2022,
+      "venue": "CLeaR/PMLR",
+      "bibkey": "NiuNoriQuistorffEtAl2022DPHeterogeneous",
+      "one_line": "Section 3 and Theorem 6 (pp. 3--6) establish privacy composition for CATE meta-learners rather than pointwise minimax theory.",
+      "relevant_to": "oeq:causal-dp-frontier"
+    },
+    {
+      "author": "Dwork and Roth",
+      "year": 2014,
+      "venue": "Foundations and Trends in Theoretical Computer Science",
+      "bibkey": "DworkRoth2014DP",
+      "one_line": "Defines the central approximate-DP neighboring-database experiment used in the minimax risk.",
+      "relevant_to": "oeq:causal-dp-frontier"
+    }
+  ]
+}

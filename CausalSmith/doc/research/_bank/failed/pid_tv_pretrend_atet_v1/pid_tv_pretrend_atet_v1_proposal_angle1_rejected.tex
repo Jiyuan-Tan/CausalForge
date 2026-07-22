@@ -1,0 +1,624 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_tv\_pretrend\_atet, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_tv\_pretrend\_atet} / \texttt{v1}%
+  \\ \large\textit{Cohort-lift TV seminorms and projection exactness for staggered-adoption ATET sensitivity}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+(qid, specialization) =
+  (pid_tv_pretrend_atet, v1)
+observable distribution P =
+  law of a finite staggered-adoption panel summarized by:
+  (i) a scalar ATET point estimate hat theta for a fixed treated-on-the-treated
+      aggregate,
+  (ii) the observed pre-treatment discrepancy path
+       g = (g_{-T0},...,g_{-1}) in R^{T0},
+  (iii) a known cohort-event to aggregate-event linear map
+       A : R^C -> R^E with pre rows A_pre and post rows A_post,
+  (iv) a known post-event aggregation vector lambda in R^{E_post} mapping
+       aggregate post-treatment trend deviations into ATET bias, and
+  (v) an outcome-support radius B > 0 with admissible scalar biases in [-B,B]
+parameter theta =
+  scalar staggered-adoption ATET on the treated, theta
+identifying restrictions =
+  consistency; absorbing staggered adoption; no exact parallel-trends
+  requirement; cohort-event untreated-trend deviations v in R^C satisfy the
+  anchored cohort TV restriction
+    A_pre v = 0,
+    q_coh(v) := ||D_coh v||_1 <= kappa * D_pre,
+  where D_pre = max_j g_j - min_j g_j is the observed pre-treatment
+  discrepancy dispersion and D_coh is the fixed cohort-event first-difference
+  operator. The aggregate path is y = A v with aggregate TV seminorm
+  q_agg(y) := ||D_agg y||_1 on W = { y in range(A) : y_pre = 0 }.
+bounding functional =
+  Theta_coh(P; kappa) = { hat theta - lambda' y_post :
+    y = A v, A_pre v = 0, q_coh(v) <= kappa * D_pre, |lambda' y_post| <= B }.
+  The proposal studies: (a) the sharp projected cohort seminorm
+  q_A(y) = inf{ q_coh(v) : A v = y, A_pre v = 0 },
+  (b) when Theta_coh equals the aggregate TV interval obtained by replacing
+      q_A with q_agg,
+  (c) the lambda-targeted directional support ratios
+      R_+(lambda) and R_-(lambda) comparing q_A and q_agg for the
+      upper and lower ATET endpoints.
+\end{verbatim}
+
+\begin{abstract}
+Staggered-adoption sensitivity analyses are often imposed after event-time aggregation, even though the untreated-trend deviations live on cohort-event cells before aggregation. This proposal asks when a total-variation restriction written on the aggregate event-study path is the exact projection of the cohort-level TV class for a scalar ATET target. The routine result is a sharp partial-identification theorem: the projected cohort class is summarized by a new quotient seminorm \(q_A\) on aggregate paths, and the sharp ATET interval is the support interval generated by \(q_A\), not by the naive aggregate TV seminorm \(q_{\mathrm{agg}}\). The flagship conjecture is an explicit finite sign-catalogue algorithm for the two directional support ratios \(R_+(\lambda)\) and \(R_-(\lambda)\), which certify whether aggregate TV sensitivity is exact, conservative, or anti-conservative for the locked scalar ATET interval. If resolved, the result would tell applied staggered-DiD users when an aggregate TV robustness plot is already sharp and when it must be lifted back to cohort-event geometry before interpretation.
+\end{abstract}
+
+\section{Introduction}
+Aggregate event-study sensitivity and cohort-level sensitivity need not be the same object in staggered adoption. The headline claim is that the sharp cohort-projected TV class is governed by a quotient seminorm \(q_A\) on aggregate paths, and that aggregate TV sensitivity is exact for the locked scalar ATET interval only when a finite sign catalogue certifies equality of the two directional support values in directions \(\pm\lambda\).
+
+The paper is informed by \citet{RambachanRoth2023CrediblePT}, whose abstract states that they ``impose restrictions on how different'' post-treatment violations can be from pre-trends (Abstract, p.~2555). The flagship comparators are \citet{Liu2025CohortAnchored}, whose abstract states that ``aggregated event-study coefficients aggregated across cohorts can be misleading'' (Abstract, arXiv v2), and \citet{Wright2026DesignRobust}, whose abstract emphasizes ``computable design diagnostics that quantify contamination and negative-weight risk'' (Abstract, arXiv v1). The precise gap is that these papers explain why aggregation can distort interpretation, but they do not give the exact TV projection map, the directional support ratios in directions \(\pm\lambda\), or a finite algorithm that computes them for a fixed staggered ATET target. The kernel lives in partial identification with a panel aggregation operator.
+
+The direct consumer is the staggered-DiD sensitivity workflow recommended by \citet{RothSantAnnaBilinskiPoe2023TrendingDiD} when exact parallel trends is doubtful. If the conjecture is correct, a reader using group-time or imputation-based ATET estimates would compute the directional ratios \(R_+(\lambda)\) and \(R_-(\lambda)\) before reading an aggregate TV breakdown plot as evidence about the cohort-level design.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: the sharp cohort-level TV projection onto aggregate paths is summarized by the quotient seminorm \(q_A\), and the sharp ATET interval is its support interval. Gap: informed by \citet{RambachanRoth2023CrediblePT}, but that paper does not isolate the projected staggered-TV seminorm for a fixed ATET aggregation map. Consumer: \citet{RothSantAnnaBilinskiPoe2023TrendingDiD}.
+\item Theorem 2: under a chain-preserving nonnegative aggregation map, aggregate TV cannot be anti-conservative, and exactness follows under an explicit lift condition. Gap: \citet{CallawaySantAnna2021MultiplePeriods} and \citet{BorusyakJaravelSpiess2024EventStudies} define aggregate targets but do not compare their TV geometry to a cohort lift. Consumer: cohort-trimmed and imputation-based event-study practice.
+\item Conjecture 1: a finite sign-catalogue algorithm computes the directional support ratios \(R_+(\lambda)\) and \(R_-(\lambda)\), and those two numbers are a necessary-and-sufficient certificate for exactness, strict conservatism, and strict anti-conservatism of the scalar ATET interval. Gap: \citet{Liu2025CohortAnchored} and \citet{Wright2026DesignRobust} supply cohort-aware sensitivity diagnostics and design diagnostics, but not the exact TV projection algorithm for a fixed ATET target and a fixed target direction \(\pm\lambda\). Consumer: any staggered-adoption paper that reports aggregate pretrend sensitivity.
+\end{itemize}
+
+\section{Related work}
+\citet{RambachanRoth2023CrediblePT} are the anchor because they turn violations of parallel trends into a partially identified event-study problem under user-supplied restriction classes. The current proposal keeps their sensitivity-analysis stance but asks whether a TV class written after staggered aggregation is the sharp image of the cohort-level restriction.
+
+\citet{ManskiPepper2018BoundedVariation} are the bounded-variation comparator. Their relevance is methodological: they show how variation restrictions can replace exact identifying assumptions, but they do not study staggered-adoption aggregation maps or ATET sensitivity sets.
+
+\citet{CallawaySantAnna2021MultiplePeriods} identify group-time ATT parameters and define aggregation schemes under staggered adoption. The proposal uses exactly that aggregation problem, but studies the support geometry of a sensitivity set rather than point identification under parallel trends.
+
+\citet{SunAbraham2021DynamicEffects} show that lead and lag coefficients can be contaminated by treatment effects from other periods. That contamination result is adjacent because it warns that aggregation changes causal meaning, but it does not address whether an aggregate TV restriction is the projection of a cohort-level TV class.
+
+\citet{BorusyakJaravelSpiess2024EventStudies} provide robust and efficient imputation estimators for staggered event studies. Their paper is relevant because it clarifies the aggregate target and event-time weights, not because it supplies a projected-TV identified set.
+
+\citet{Liu2025CohortAnchored} is the closest current frontier comparator. Liu moves robust inference from aggregated event-study coefficients to cohort-period block bias and argues that the aggregated approach can be misleading when cohort composition changes, but does not compute the exact TV projection of a cohort-level class for a fixed ATET aggregate.
+
+\citet{Wright2026DesignRobust} is relevant because it pushes design diagnostics and sensitivity analysis into one staggered-adoption workflow. The paper names contamination and negative-weight diagnostics, but it does not derive the exact directional support ratios comparing a cohort-level TV class to its aggregate-path surrogate.
+
+\citet{RothSantAnnaBilinskiPoe2023TrendingDiD} argue that sensitivity analysis should make explicit what trend violations must be ruled out for a conclusion to survive. The present proposal tries to make that statement sharp for a TV class after staggered aggregation.
+
+\citet{GoodmanBacon2021Timing} and \citet{deChaisemartinDHaultfoeuille2020TwoWay} diagnose weighting pathologies in staggered DiD. They matter here because signed aggregation weights are exactly the mechanism that can turn an aggregate TV plot from conservative to anti-conservative.
+
+In the repository, `CausalSmith/doc/API.md` \S3 records that the live ExactID and PartialID catalogues are sparse at seed time, so there is no in-catalogue duplicate for this kernel. The legacy bank entry `q1_partial_did_unobserved_trends / p1_baseline_v2` is the closest pretrend-oriented partial-DiD proposal, but it does not isolate a TV lift seminorm. The failed `panel_honest_did_phase / v1` proposal is the direct in-repo warning that aggregate sensitivity may fail to equal the cohort-level support-function image, yet it left the relevant projection frontier conjectural and did not specialize to TV.
+
+\section{Formal setup}
+This is a partial-identification problem with panel structure. Let \(C=C_{\mathrm{pre}}\cup C_{\mathrm{post}}\) be the finite set of admissible cohort-event cells \(c=(g,e)\), and let \(E=E_{\mathrm{pre}}\cup E_{\mathrm{post}}\) be the aggregate event-time index set. A cohort-level untreated-trend deviation is a vector \(v\in\R^C\). The known linear map \(A:\R^C\to\R^E\) sends cohort-event deviations to an aggregate event-time path \(y=Av\), with pre and post blocks \(A_{\mathrm{pre}}\) and \(A_{\mathrm{post}}\).
+
+The scalar ATET target is \(\theta\), and the exact-parallel-trends benchmark delivers a point estimate \(\hat\theta\). The post-treatment bias induced by an aggregate deviation path is the known linear functional
+\[
+b_\lambda(y)=\lambda^\transpose y_{\mathrm{post}},
+\qquad
+\lambda\in\R^{E_{\mathrm{post}}}.
+\]
+Let \(g=(g_{-T_0},\ldots,g_{-1})\in\R^{T_0}\) be the observed pre-treatment discrepancy path and
+\[
+D_{\mathrm{pre}}=\max_{1\le j\le T_0} g_{-j}-\min_{1\le j\le T_0} g_{-j}.
+\]
+Let \(D_{\mathrm{coh}}\) be the fixed first-difference operator on the cohort-event graph and \(D_{\mathrm{agg}}\) the first-difference operator on the aggregate event-time chain. Write
+\[
+q_{\mathrm{coh}}(v)=\|D_{\mathrm{coh}}v\|_1.
+\]
+The aggregate feasible-path space is
+\[
+W=\{y\in\operatorname{range}(A): y_{\mathrm{pre}}=0\}.
+\]
+For \(y\in W\), define the projected cohort TV seminorm
+\[
+q_A(y)
+=
+\inf\{q_{\mathrm{coh}}(v): Av=y,\ A_{\mathrm{pre}}v=0\},
+\]
+with value \(+\infty\) if the lift set is empty, and define the direct aggregate TV seminorm
+\[
+q_{\mathrm{agg}}(y)=\|D_{\mathrm{agg}}y\|_1.
+\]
+Write \(m_{\mathrm{agg}}\) and \(m_{\mathrm{coh}}\) for the row counts of \(D_{\mathrm{agg}}\) and \(D_{\mathrm{coh}}\). For any vector \(z\), let \(\operatorname{sgn}(z)\in\{-1,0,1\}^{\dim z}\) denote the coordinatewise sign vector.
+
+The sharp cohort-based identified set at sensitivity radius \(\kappa\ge 0\) is
+\[
+\Theta_{\mathrm{coh}}(P;\kappa)
+=
+\{\hat\theta-\lambda^\transpose y_{\mathrm{post}}:
+ y\in W,\ q_A(y)\le \kappa D_{\mathrm{pre}},\
+ |\lambda^\transpose y_{\mathrm{post}}|\le B\}.
+\]
+The aggregate-path benchmark that analysts would obtain by imposing TV after aggregation is
+\[
+\Theta_{\mathrm{agg}}(P;\kappa)
+=
+\{\hat\theta-\lambda^\transpose y_{\mathrm{post}}:
+ y\in W,\ q_{\mathrm{agg}}(y)\le \kappa D_{\mathrm{pre}},\
+ |\lambda^\transpose y_{\mathrm{post}}|\le B\}.
+\]
+For each sign \(\sigma\in\{+1,-1\}\), define the aggregate and cohort directional unit supports
+\[
+\bar h_{\mathrm{agg}}^\sigma(\lambda)
+=
+\sup\{\sigma\lambda^\transpose y_{\mathrm{post}}: y\in W,\ q_{\mathrm{agg}}(y)\le 1\},
+\qquad
+\bar h_A^\sigma(\lambda)
+=
+\sup\{\sigma\lambda^\transpose y_{\mathrm{post}}: y\in W,\ q_A(y)\le 1\},
+\]
+and the directional support ratio
+\[
+R_\sigma(\lambda)
+:=
+\frac{\bar h_{\mathrm{agg}}^\sigma(\lambda)}{\bar h_A^\sigma(\lambda)}.
+\]
+The focal exactness statement is scalar: \(\Theta_{\mathrm{coh}}(P;\kappa)=\Theta_{\mathrm{agg}}(P;\kappa)\) for every \(\kappa\) if and only if
+\[
+R_+(\lambda)=R_-(\lambda)=1.
+\]
+If \(R_\sigma(\lambda)>1\), the aggregate interval is conservative in the \(\sigma\)-endpoint direction; if \(R_\sigma(\lambda)<1\), it is anti-conservative in that direction. For \(s\in\{-1,0,1\}^{m_{\mathrm{agg}}}\), \(t\in\{-1,0,1\}^{m_{\mathrm{coh}}}\), and \(\sigma\in\{+1,-1\}\), define the sign-restricted directional supports
+\[
+H_{\mathrm{agg}}^\sigma(s;\lambda)
+=
+\sup\{\sigma\lambda^\transpose y_{\mathrm{post}}:
+y\in W,\ q_{\mathrm{agg}}(y)\le 1,\ \operatorname{sgn}(D_{\mathrm{agg}}y)=s\},
+\]
+\[
+H_A^\sigma(t;\lambda)
+=
+\sup\{\sigma\lambda^\transpose (Av)_{\mathrm{post}}:
+A_{\mathrm{pre}}v=0,\ q_{\mathrm{coh}}(v)\le 1,\ \operatorname{sgn}(D_{\mathrm{coh}}v)=t\}.
+\]
+The conjectural algorithm below studies whether finitely many exposed sign patterns suffice to recover the four support values \(\bar h_{\mathrm{agg}}^\sigma(\lambda)\) and \(\bar h_A^\sigma(\lambda)\) exactly.
+
+\begin{quote}
+\begin{verbatim}
+(qid, specialization) =
+  (pid_tv_pretrend_atet, v1)
+observable distribution P =
+  law of a finite staggered-adoption panel summarized by:
+  (i) a scalar ATET point estimate hat theta for a fixed treated-on-the-treated
+      aggregate,
+  (ii) the observed pre-treatment discrepancy path
+       g = (g_{-T0},...,g_{-1}) in R^{T0},
+  (iii) a known cohort-event to aggregate-event linear map
+       A : R^C -> R^E with pre rows A_pre and post rows A_post,
+  (iv) a known post-event aggregation vector lambda in R^{E_post} mapping
+       aggregate post-treatment trend deviations into ATET bias, and
+  (v) an outcome-support radius B > 0 with admissible scalar biases in [-B,B]
+parameter theta =
+  scalar staggered-adoption ATET on the treated, theta
+identifying restrictions =
+  consistency; absorbing staggered adoption; no exact parallel-trends
+  requirement; cohort-event untreated-trend deviations v in R^C satisfy the
+  anchored cohort TV restriction
+    A_pre v = 0,
+    q_coh(v) := ||D_coh v||_1 <= kappa * D_pre,
+  where D_pre = max_j g_j - min_j g_j is the observed pre-treatment
+  discrepancy dispersion and D_coh is the fixed cohort-event first-difference
+  operator. The aggregate path is y = A v with aggregate TV seminorm
+  q_agg(y) := ||D_agg y||_1 on W = { y in range(A) : y_pre = 0 }.
+bounding functional =
+  Theta_coh(P; kappa) = { hat theta - lambda' y_post :
+    y = A v, A_pre v = 0, q_coh(v) <= kappa * D_pre, |lambda' y_post| <= B }.
+  The proposal studies: (a) the sharp projected cohort seminorm
+  q_A(y) = inf{ q_coh(v) : A v = y, A_pre v = 0 },
+  (b) when Theta_coh equals the aggregate TV interval obtained by replacing
+      q_A with q_agg,
+  (c) the lambda-targeted directional support ratios
+      R_+(lambda) and R_-(lambda) comparing q_A and q_agg for the
+      upper and lower ATET endpoints.
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite staggered design]\label{ass:finite}
+The cohort-event set \(C\), the aggregate event-time set \(E\), and the operators \(A\), \(D_{\mathrm{coh}}\), and \(D_{\mathrm{agg}}\) are finite-dimensional and fixed.
+\end{assumption}
+
+\begin{assumption}[Observed calibration and range]\label{ass:calibration}
+The pre-treatment discrepancy dispersion \(D_{\mathrm{pre}}\) and the range cap \(B\) are finite, with \(D_{\mathrm{pre}}>0\) and \(B>0\).
+\end{assumption}
+
+\begin{assumption}[Anchored cohort-TV restriction]\label{ass:cohtv}
+Admissible cohort-event deviations satisfy \(A_{\mathrm{pre}}v=0\) and \(q_{\mathrm{coh}}(v)\le \kappa D_{\mathrm{pre}}\).
+\end{assumption}
+
+\begin{assumption}[Feasible aggregate path space]\label{ass:feasible}
+The set \(W=\{y\in\operatorname{range}(A): y_{\mathrm{pre}}=0\}\) is nonempty, and for every \(y\in W\) used below there exists at least one cohort lift \(v\) with \(Av=y\) and \(A_{\mathrm{pre}}v=0\).
+\end{assumption}
+
+\begin{assumption}[Chain-preserving nonnegative aggregation]\label{ass:nonnegative}
+There exists a nonnegative matrix \(M\) with row sums at most one such that
+\[
+D_{\mathrm{agg}}A = M D_{\mathrm{coh}}.
+\]
+This means each aggregate first difference is a nonnegative contraction of cohort first differences.
+\end{assumption}
+
+\begin{assumption}[Exact lift benchmark]\label{ass:lift}
+There exists a linear lift \(R:W\to\R^C\) such that \(ARy=y\), \(A_{\mathrm{pre}}Ry=0\), and
+\[
+q_{\mathrm{coh}}(Ry)=q_{\mathrm{agg}}(y)
+\quad\text{for every } y\in W.
+\]
+\end{assumption}
+
+\begin{assumption}[Generic exposed faces]\label{ass:faces}
+For every target direction \(\lambda\) used in \S8, the maximizers of the support problems defining \(\Theta_{\mathrm{coh}}(P;\kappa)\) and \(\Theta_{\mathrm{agg}}(P;\kappa)\) are attained on exposed faces outside a lower-dimensional tie set.
+\end{assumption}
+
+\begin{assumption}[Shared kernel and target anchoring]\label{ass:anchor}
+The feasible-path kernels of the two seminorms agree in the target direction:
+\[
+\{y\in W:q_A(y)=0\}
+=
+\{y\in W:q_{\mathrm{agg}}(y)=0\}
+\subseteq
+\{y\in W:\lambda^\transpose y_{\mathrm{post}}=0\}.
+\]
+Moreover, for each sign \(\sigma\in\{+1,-1\}\), the directional unit-budget support values
+\[
+\bar h_A^\sigma(\lambda)
+:=
+\sup\{\sigma\lambda^\transpose y_{\mathrm{post}}: y\in W,\ q_A(y)\le 1\},
+\]
+\[
+\bar h_{\mathrm{agg}}^\sigma(\lambda)
+:=
+\sup\{\sigma\lambda^\transpose y_{\mathrm{post}}: y\in W,\ q_{\mathrm{agg}}(y)\le 1\}
+\]
+are finite and strictly positive.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: sharp projected cohort-TV seminorm]\label{thm:seminorm}
+Under Assumptions~\ref{ass:finite}--\ref{ass:feasible},
+\[
+\Theta_{\mathrm{coh}}(P;\kappa)
+=
+\left[
+\hat\theta-h_A(\lambda;\kappa,B),\
+\hat\theta+h_A(-\lambda;\kappa,B)
+\right],
+\]
+where
+\[
+h_A(\lambda;\kappa,B)
+=
+\sup\{\lambda^\transpose y_{\mathrm{post}}:
+y\in W,\ q_A(y)\le \kappa D_{\mathrm{pre}},\
+|\lambda^\transpose y_{\mathrm{post}}|\le B\}.
+\]
+Equivalently, the projected cohort restriction is completely summarized on aggregate paths by the quotient seminorm \(q_A\), and the sharp ATET width is
+\[
+\operatorname{diam}\Theta_{\mathrm{coh}}(P;\kappa)
+=
+h_A(\lambda;\kappa,B)+h_A(-\lambda;\kappa,B).
+\]
+\end{theorem}
+Proof sketch. The cohort-level problem is a linear image of the convex lift set \(\{v:A_{\mathrm{pre}}v=0,\ q_{\mathrm{coh}}(v)\le \kappa D_{\mathrm{pre}}\}\). Projecting that set to \(W\) defines exactly the quotient seminorm ball \(\{y\in W:q_A(y)\le \kappa D_{\mathrm{pre}}\}\), and the interval endpoints are its support values in directions \(\pm\lambda\).
+
+\begin{theorem}[Theorem 2: nonnegative aggregation benchmark]\label{thm:benchmark}
+Under Assumptions~\ref{ass:finite}--\ref{ass:nonnegative},
+\[
+q_{\mathrm{agg}}(y)\le q_A(y)\qquad\text{for every } y\in W.
+\]
+Hence
+\[
+\Theta_{\mathrm{coh}}(P;\kappa)\subseteq \Theta_{\mathrm{agg}}(P;\kappa)
+\qquad\text{for every }\kappa\ge 0,
+\]
+so aggregate-path TV sensitivity is never anti-conservative in the chain-preserving nonnegative class. If Assumption~\ref{ass:lift} also holds, then
+\[
+q_A(y)=q_{\mathrm{agg}}(y)\qquad\text{for every } y\in W,
+\]
+and therefore \(\Theta_{\mathrm{coh}}(P;\kappa)=\Theta_{\mathrm{agg}}(P;\kappa)\) for every \(\kappa\ge 0\).
+\end{theorem}
+Proof sketch. For any lift \(v\) of \(y\), Assumption~\ref{ass:nonnegative} gives
+\[
+q_{\mathrm{agg}}(y)=\|D_{\mathrm{agg}}Av\|_1=\|M D_{\mathrm{coh}}v\|_1\le \|D_{\mathrm{coh}}v\|_1.
+\]
+Taking the infimum over lifts yields \(q_{\mathrm{agg}}\le q_A\), while Assumption~\ref{ass:lift} gives the reverse inequality on the image of the exact lift.
+
+\begin{conjecture}[Conjecture 1: finite \(\pm\lambda\) sign-catalogue certificate for scalar-interval exactness {\normalfont (NOT YET PROVED)}]\label{conj:distortion}
+Under Assumptions~\ref{ass:finite}--\ref{ass:feasible}, \ref{ass:anchor}, \ref{ass:faces}, there are finite exposed sign catalogues
+\[
+\mathcal S_{\mathrm{agg},\sigma}^\star(A,D_{\mathrm{coh}},D_{\mathrm{agg}},\lambda)
+\subset \{-1,0,1\}^{m_{\mathrm{agg}}},
+\qquad
+\mathcal S_{A,\sigma}^\star(A,D_{\mathrm{coh}},D_{\mathrm{agg}},\lambda)
+\subset \{-1,0,1\}^{m_{\mathrm{coh}}},
+\]
+for each \(\sigma\in\{+1,-1\}\), and a terminating elimination algorithm depending only on \((A,D_{\mathrm{coh}},D_{\mathrm{agg}},\lambda)\) that solves at most \(2\cdot 3^{m_{\mathrm{agg}}}+2\cdot 3^{m_{\mathrm{coh}}}\) linear programs and returns
+\[
+\bar h_{\mathrm{agg}}^\sigma(\lambda)
+=
+\max_{s\in\mathcal S_{\mathrm{agg},\sigma}^\star}
+H_{\mathrm{agg}}^\sigma(s;\lambda),
+\qquad
+\bar h_A^\sigma(\lambda)
+=
+\max_{t\in\mathcal S_{A,\sigma}^\star}
+H_A^\sigma(t;\lambda).
+\]
+Each surviving sign pattern is exposed by a dual certificate for the directional support problem in direction \(\sigma\lambda\). Hence
+\[
+R_\sigma(\lambda)
+=
+\frac{
+\max_{s\in\mathcal S_{\mathrm{agg},\sigma}^\star}
+H_{\mathrm{agg}}^\sigma(s;\lambda)
+}{
+\max_{t\in\mathcal S_{A,\sigma}^\star}
+H_A^\sigma(t;\lambda)
+}
+\]
+is finite and exact. Aggregate TV sensitivity is exact for every \(\kappa\) if and only if
+\[
+R_+(\lambda)=R_-(\lambda)=1.
+\]
+The upper endpoint is strictly conservative when \(R_+(\lambda)>1\) and strictly anti-conservative when \(R_+(\lambda)<1\); the lower endpoint obeys the same criterion with \(R_-(\lambda)\). The nontrivial content is that the four directional support values are recovered by an exposed-sign elimination algorithm indexed by \(\pm\lambda\), rather than by a generic scan over all extreme points of the global seminorm balls.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Identity-map corner]\label{cor:identity}
+Under Assumptions~\ref{ass:finite}--\ref{ass:feasible}, if \(A\) is the identity map on aggregate paths and \(D_{\mathrm{coh}}=D_{\mathrm{agg}}\), then \(q_A=q_{\mathrm{agg}}\) and \(\Theta_{\mathrm{coh}}(P;\kappa)=\Theta_{\mathrm{agg}}(P;\kappa)\) for every \(\kappa\).
+\end{corollary}
+Under the identity map, every feasible aggregate path is its own unique cohort lift, so the quotient seminorm is the aggregate seminorm itself.
+
+\begin{example}[Exhibit 9.1: a worked three-event \(\pm\lambda\) certificate]\label{ex:conservative}
+Take six cohort-event cells ordered as
+\[
+((a,0),(a,1),(a,2),(b,0),(b,1),(b,2)),
+\]
+let
+\[
+D_{\mathrm{coh}}=
+\begin{pmatrix}
+-1&1&0&0&0&0\\
+0&-1&1&0&0&0\\
+0&0&0&-1&1&0\\
+0&0&0&0&-1&1
+\end{pmatrix},
+\quad
+A^{\mathrm{sym}}=
+\begin{pmatrix}
+1/2&0&0&1/2&0&0\\
+0&1/2&0&0&1/2&0\\
+0&0&1/2&0&0&1/2
+\end{pmatrix},
+\quad
+D_{\mathrm{agg}}=
+\begin{pmatrix}
+-1&1&0\\
+0&-1&1
+\end{pmatrix}.
+\]
+Let the scalar ATET target use the two post-event coordinates with
+\[
+\lambda=(1,1)^\transpose\in\R^2.
+\]
+The feasible aggregate-path space is
+\[
+W^{\mathrm{sym}}=\{(0,u,v)^\transpose:(u,v)\in\R^2\},
+\]
+and for \(y=(0,u,v)^\transpose\),
+\[
+q_{\mathrm{agg}}(y)=|u|+|v-u|.
+\]
+Write the aggregate increments as \(d_1=u\) and \(d_2=v-u\). Then the positive-direction aggregate LP is
+\[
+\max\{2d_1+d_2: |d_1|+|d_2|\le 1\}.
+\]
+The elimination rules are explicit:
+\begin{enumerate}[leftmargin=*]
+\item Any sign pattern with \(d_1<0\) is infeasible for the positive exposed face because the objective coefficient on \(d_1\) is strictly positive.
+\item Any pattern with \(d_2<0\) is dominated by setting \(d_2=0\), which weakly lowers TV and strictly raises the objective.
+\item Any pattern with \(d_2>0\) is dominated by transferring its mass to \(d_1\), because the coefficient \(2\) on \(d_1\) exceeds the coefficient \(1\) on \(d_2\).
+\end{enumerate}
+Hence the only surviving positive aggregate sign is \(s_+=(+,0)\), and by symmetry the only surviving negative sign is \(s_-=(-,0)\). Solving the surviving LP yields
+\[
+\bar h_{\mathrm{agg}}^+(\lambda)=2
+\quad\text{at}\quad
+y_+=(0,1,1)^\transpose,
+\]
+with dual certificate \(\eta_+=2\) for the budget constraint \(d_1+d_2\le 1\); the negative direction gives \(\bar h_{\mathrm{agg}}^-(\lambda)=2\) at \(-y_+\).
+
+Now write cohort increments as
+\[
+x_1=v_{a1}-v_{a0},\quad x_2=v_{a2}-v_{a1},\quad
+z_1=v_{b1}-v_{b0},\quad z_2=v_{b2}-v_{b1},
+\]
+so \(q_{\mathrm{coh}}(v)=|x_1|+|x_2|+|z_1|+|z_2|\). Under the same target direction, the positive cohort LP becomes
+\[
+\max\left\{x_1+z_1+\frac{x_2+z_2}{2}:
+|x_1|+|x_2|+|z_1|+|z_2|\le 1\right\}.
+\]
+The same elimination logic removes any negative increment and any positive second increment, so the only surviving positive cohort sign is \(t_+=(+,0,+,0)\), with negative analogue \(t_-=(-,0,-,0)\). The surviving LP has value
+\[
+\bar h_A^+(\lambda)=1,
+\]
+attained for example at \(x_1=1,z_1=x_2=z_2=0\), with dual certificate \(\eta_A=1\) for the cohort TV budget; by symmetry \(\bar h_A^-(\lambda)=1\). Therefore
+\[
+R_+(\lambda)=R_-(\lambda)=2.
+\]
+This is a genuine scalar-interval certificate, not a global seminorm comparison: the upper and lower ATET endpoints are both overstated by the aggregate TV workflow by a factor of two. The internal checks are explicit. The path space has three aggregate event times, the elimination rules terminate after finitely many sign deletions, the surviving signs are exposed by dual values \(\eta_+=2\) and \(\eta_A=1\), and every quantity is computed from the primitives \((A^{\mathrm{sym}},D_{\mathrm{coh}},D_{\mathrm{agg}},\lambda)\).
+\end{example}
+
+\begin{example}[Exhibit 9.2: signed map witness for strict anti-conservatism]\label{ex:anti}
+Consider the smaller two-event design with
+\[
+D_{\mathrm{coh}}^{-}
+=
+\begin{pmatrix}
+1&0&0&0\\
+-1&1&0&0\\
+0&0&1&0\\
+0&0&-1&1
+\end{pmatrix},
+\qquad
+D_{\mathrm{agg}}^{-}
+=
+\begin{pmatrix}
+1&0\\
+-1&1
+\end{pmatrix},
+\]
+and aggregation map
+\[
+A^{-}=
+\begin{pmatrix}
+1&0&0&0\\
+0&-1&0&1
+\end{pmatrix}.
+\]
+For the cohort vector \(v=(0,1,0,0)^\transpose\), the aggregate path is
+\[
+y=A^{-}v=(0,-1)^\transpose.
+\]
+The cohort seminorm is
+\[
+q_{\mathrm{coh}}(v)=|0|+|1-0|+|0|+|0-0|=1,
+\]
+so \(q_A(y)\le 1\), and no cheaper lift exists because the post coordinate fixes \(v_{a2}=1\). By contrast,
+\[
+q_{\mathrm{agg}}(y)=\|D_{\mathrm{agg}}^{-}y\|_1=|0|+|-1-0|=1.
+\]
+This map therefore does \emph{not} generate anti-conservatism on the anchored feasible set \(W\). The point of the exhibit is diagnostic: once the pre-anchor \(y_{\mathrm{pre}}=0\) is imposed, a signed row in \(A\) is not by itself enough to create \(R_\sigma(\lambda)<1\). Any genuine anti-conservative example must use at least three aggregate event-time coordinates or a richer cohort graph so that post-period cancellations can raise the cohort directional support without violating the anchor.
+\end{example}
+
+\begin{example}[Exhibit 9.3: identity-map reduction]\label{ex:identity}
+If \(A\) is the identity on aggregate paths and \(D_{\mathrm{coh}}=D_{\mathrm{agg}}\), then \(W\) is its own lift space, \(q_A=q_{\mathrm{agg}}\), \(\bar h_{\mathrm{agg}}^\sigma(\lambda)=\bar h_A^\sigma(\lambda)\), and
+\[
+R_+(\lambda)=R_-(\lambda)=1.
+\]
+This is the exact reduction promised by Corollary~\ref{cor:identity}.
+\end{example}
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:seminorm} follows by projecting the cohort-TV ball through \(A\), identifying its image with the quotient seminorm unit ball on \(W\), and then evaluating the support function in directions \(\pm\lambda\). Theorem~\ref{thm:benchmark} reduces to the contraction inequality \(\|M z\|_1\le \|z\|_1\) for nonnegative row-substochastic \(M\), applied to \(z=D_{\mathrm{coh}}v\), plus the explicit lift in Assumption~\ref{ass:lift}. Conjecture~\ref{conj:distortion} should be attacked by dualizing the directional support problems for \(\sigma\lambda\), proving that exposed maximizers of \(H_{\mathrm{agg}}^\sigma(s;\lambda)\) and \(H_A^\sigma(t;\lambda)\) can be chain-compressed to finitely many sign patterns, eliminating infeasible or dominated sign patterns by their dual certificates, and then evaluating the surviving linear programs. For the flagship headline the reduction chain is: scalar-interval exactness/strict-failure \(\leftarrow\) compare the four directional support values \(\bar h_{\mathrm{agg}}^\sigma(\lambda)\) and \(\bar h_A^\sigma(\lambda)\) \(\leftarrow\) prove the directional ratios \(R_\sigma(\lambda)\) are finite under Assumption~\ref{ass:anchor} \(\leftarrow\) dualize the quotient-lift program in direction \(\sigma\lambda\) \(\leftarrow\) prove exposed-sign compression on \(D_{\mathrm{agg}}y\) and \(D_{\mathrm{coh}}v\) \(\leftarrow\) eliminate dominated sign patterns by dual feasibility tests \(\leftarrow\) solve the surviving LPs; this gives \(k=5\) substantive non-definitional steps for Conjecture~\ref{conj:distortion}. Boundary algebra is concentrated in small signed \(A\) matrices and in the event-time trimming patterns that generate Exhibits~\ref{ex:conservative}--\ref{ex:identity}.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:seminorm} and Theorem~\ref{thm:benchmark} are intended as routine finite-dimensional statements. Conjecture~\ref{conj:distortion} is the novelty-bearing kernel and remains open; in particular, the exposed-sign elimination argument has not been verified beyond the worked \(\pm\lambda\) exhibit and may still fail away from the generic exposed-face region. Relative to v2, the proposal no longer claims that a global distortion pair on all of \(W\) is the right scalar object; the focal certificate is now the pair of \(\lambda\)-targeted ratios \(R_+(\lambda)\) and \(R_-(\lambda)\), together with the shared-kernel anchoring condition in Assumption~\ref{ass:anchor}. Exhibit~\ref{ex:anti} also records one withdrawn shortcut: a signed aggregation row does not by itself create anti-conservatism once the anchored feasible set \(W\) is imposed.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) --- replaced the rejected closed-form-width angle with a cohort-to-aggregate TV projection proposal centered on the quotient seminorm \(q_A\) and the distortion pair \((\Delta_{\mathrm{cons}},\Delta_{\mathrm{anti}})\); prior verdict: none.
+\item v2 (revise) --- replaced the vague hinge-path certificate with an explicit finite sign-catalogue algorithm, downgraded the Rambachan--Roth comparison to ``informed by,'' and added exact small-instance catalogue exhibits; prior verdict: REVISE.
+\item v3 (revise) --- retargeted Conjecture~\ref{conj:distortion} to the scalar \(\pm\lambda\) support ratios, added the shared-kernel anchoring assumption for finiteness, and replaced the promissory catalogue claim with a worked three-event elimination-and-dual exhibit; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem{BorusyakJaravelSpiess2024EventStudies}
+Borusyak, K., Jaravel, X., and Spiess, J. (2024).
+\newblock Revisiting event-study designs: Robust and efficient estimation.
+\newblock \emph{Review of Economic Studies}, 91(6):3253--3285.
+
+\bibitem{CallawaySantAnna2021MultiplePeriods}
+Callaway, B. and Sant'Anna, P. H. C. (2021).
+\newblock Difference-in-differences with multiple time periods.
+\newblock \emph{Journal of Econometrics}, 225(2):200--230.
+
+\bibitem{deChaisemartinDHaultfoeuille2020TwoWay}
+de Chaisemartin, C. and D'Haultfoeuille, X. (2020).
+\newblock Two-way fixed effects estimators with heterogeneous treatment effects.
+\newblock \emph{American Economic Review}, 110(9):2964--2996.
+
+\bibitem{GoodmanBacon2021Timing}
+Goodman-Bacon, A. (2021).
+\newblock Difference-in-differences with variation in treatment timing.
+\newblock \emph{Journal of Econometrics}, 225(2):254--277.
+
+\bibitem{ManskiPepper2018BoundedVariation}
+Manski, C. F. and Pepper, J. V. (2018).
+\newblock How do right-to-carry laws affect crime rates? {C}oping with ambiguity using bounded-variation assumptions.
+\newblock \emph{Review of Economics and Statistics}, 100(2):232--244.
+
+\bibitem{Liu2025CohortAnchored}
+Liu, Z. (2025).
+\newblock Cohort-anchored robust inference for event-study with staggered adoption.
+\newblock \emph{arXiv preprint arXiv:2509.01829}.
+
+\bibitem{RambachanRoth2023CrediblePT}
+Rambachan, A. and Roth, J. (2023).
+\newblock A more credible approach to parallel trends.
+\newblock \emph{Review of Economic Studies}, 90(5):2555--2591.
+
+\bibitem{RothSantAnnaBilinskiPoe2023TrendingDiD}
+Roth, J., Sant'Anna, P. H. C., Bilinski, A., and Poe, J. (2023).
+\newblock What's trending in difference-in-differences? {A} synthesis of the recent econometrics literature.
+\newblock \emph{Journal of Econometrics}, 235(2):2218--2244.
+
+\bibitem{SunAbraham2021DynamicEffects}
+Sun, L. and Abraham, S. (2021).
+\newblock Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\newblock \emph{Journal of Econometrics}, 225(2):175--199.
+
+\bibitem{Wright2026DesignRobust}
+Wright, C. S. (2026).
+\newblock Design-robust event-study estimation under staggered adoption: Diagnostics, sensitivity, and orthogonalisation.
+\newblock \emph{arXiv preprint arXiv:2601.18801}.
+\end{thebibliography}
+
+\end{document}

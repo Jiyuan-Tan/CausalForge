@@ -1,0 +1,829 @@
+% =====================================================================
+%  ThmSmith Stage 0 derivation skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_dynamic\_iv\_compliance, specialization=v3
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage 0 derivation: \texttt{pid\_dynamic\_iv\_compliance} / \texttt{v3}%
+  \\ \large\textit{Sharp bounded-defier dynamic IV bounds and failure of the simple prism formula}}
+\author{ThmSmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note studies the partial-identification functional
+\([\underline\theta_{\mathrm{bd}}(P,e,\kappa),\overline\theta_{\mathrm{bd}}(P,e,\kappa)]\), defined by an explicit finite latent-atom linear program retaining the first-stage assignment-memory label \(Z_1\) while allowing first-stage defiers up to the known budget \(\kappa(x)\).
+The causal target is the second-period treatment effect in the first-stage-complier, first-stage-untreated principal stratum,
+\[
+\theta_{C,0}^{(2)}
+=\E\!\left[Y(0,1)-Y(0,0)\mid D_1(1)=1,\ D_1(0)=0\right].
+\]
+The main positive result is that the actual-law identified set equals the interval returned by this computable LP, is monotone in the defier budget, and reduces at \(\kappa=0\) to the parent one-sided first-stage memory bound.
+The main negative result is that the proposed defier-trimmed response-contribution prism is only an outer relaxation: it omits observed nonresponder outcome moments under \(Z_2=1\), and those moments can move an endpoint.
+The proposed phase-transition threshold is therefore only partially valid without additional endpoint-face nondegeneracy assumptions, and the negative calculation is positioned as a correction to this note's candidate formula rather than as a refutation of a published estimator.
+\end{abstract}
+
+\section{Introduction}
+Sequential encouragement designs often use an initial randomized offer, reminder, or eligibility signal followed by later adaptive encouragement.
+The usual dynamic IV interpretation is fragile because first-stage monotonicity can fail: a small group may take treatment when not encouraged but decline when encouraged.
+The econometric question is whether the retained first-stage assignment label \(Z_1\) still tightens dynamic IV bounds when the branch that was pure under one-sided compliance becomes a bounded mixture of never-takers and defiers.
+
+The parent one-sided result treats \((Z_1,D_1)=(1,0)\) as a pure never-taker branch and subtracts its contribution from the mixed \((Z_1,D_1)=(0,0)\) branch.
+With defiers, the same branch has the form \(H=q_N a_N+q_F a_F\), so a simple subtraction is no longer justified unless the defier component is modeled or bounded.
+This note keeps the locked target and restrictions from the proposal and asks exactly what the retained-memory finite response-type program proves.
+
+The new conclusion has two parts.
+First, the sharp object is the retained-memory bounded-defier LP written below with explicit atom variables and observed-cell constraints: it is a finite Balke--Pearl/Manski-style projection, it nests in \(\kappa\), and the \(\kappa=0\) face is the parent one-sided memory bound.
+Second, the proposed analytic prism that uses only \((M_0,M_\rho,M_\gamma)\) and \((H_0,H_\rho,H_\gamma)\) is not sharp in general.
+The missing coordinates are the observed nonresponder outcome contributions under \(Z_2=1\); once they are included, the nearest correct formula is a smaller projected polytope.
+This is useful for formula design because a sensitivity curve in \(\kappa\) should be computed from the full retained-memory LP, not from the simpler prism unless extra redundancy conditions make the omitted moments irrelevant.
+The prism calculation is an internal correction to the Stage -1 conjecture and not a claimed negative result against a named published workflow.
+
+\paragraph{Motivating conjecture(s).}
+\paragraph{Conjecture 1 (Defier-trimmed response-contribution prism).}\label{conj:intro-defier-prism}
+\begin{quote}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:cellwise}, fix a target cell \(x\).  Let \(\mathcal{F}_x(P,\kappa)\) be the observable interval of feasible defier shares \(f=q_F(x)\) satisfying
+\[
+0\le f\le\kappa(x),\quad q_C(f)=\Delta_D(x)+f>0,\quad
+q_N(f)=\Pr(D_1=0\mid Z_1=1,X=x)-f\ge0,\quad
+q_A(f)=\Pr(D_1=1\mid Z_1=0,X=x)-f\ge0.
+\]
+For each \(f\in\mathcal{F}_x(P,\kappa)\), define the defier-trimmed prism
+\[
+\mathcal{P}_x(f)=
+\left\{(c_0,c_\rho,c_\gamma):
+\begin{array}{l}
+M=q_C(f)(c_0,c_\rho,c_\gamma)+q_N(f)n,\\
+H=q_N(f)n+f\,d,\\
+n,d\in[0,1]^3,\ 0\le n_\gamma\le n_\rho\le1,\ 0\le d_\gamma\le d_\rho\le1,\\
+0\le c_\gamma\le c_\rho\le1,\ 0\le c_0\le1
+\end{array}
+\right\}.
+\]
+Then the sharp cellwise retained-memory identified set for
+\(\theta_{C,0}^{(2)}(x)\) is
+\[
+\bigcup_{f\in\mathcal{F}_x(P,\kappa)}
+\left\{
+c_\gamma+\delta-c_0:
+(c_0,c_\rho,c_\gamma)\in\mathcal{P}_x(f),\
+0\le \delta\le1-c_\rho
+\right\}.
+\]
+Under Assumption~\ref{ass:cellwise}, the aggregate sharp set is obtained by optimizing the complier-weighted sum over the product of these cellwise prism projections, with weights \(w_C(x)\) evaluated at the same feasible defier shares.
+\end{quote}
+
+\paragraph{Conjecture 2 (Generic defier-budget threshold for strict memory gain).}\label{conj:intro-phase-transition}
+\begin{quote}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:interior-memory}, fix an endpoint \(b\in\{\inf,\sup\}\) and a finite retained-memory system whose active branch equations include the two-stage \((M,H)\) system above as a submodel.  There is an observable threshold \(\kappa^\dagger_b(P,e,x)>0\), equal to the smallest defier share for which the \(b\)-endpoint solution of the coarsened summed-equation relaxation can be lifted to a retained-memory feasible table satisfying \(H=q_Nn+fd\), the nonnegativity constraints for \(q_C,q_N,q_A,q_F\), and \(0\le d_\gamma\le d_\rho\le1\).  On a relatively open set of laws this threshold has the following property.  If \(\kappa(x)<\kappa^\dagger_b(P,e,x)\), then
+\[
+\Theta_{\mathrm{bd}}(P,e,\kappa)\subsetneq
+\Theta_{\mathrm{bd,coarse}}(A P,e,\kappa)
+\]
+because the \(b\)-endpoint of the prism projection is pulled inward by the retained \(H\)-branch restriction.  If \(\kappa(x)\ge\kappa^\dagger_b(P,e,x)\), then the defier component can absorb that retained-branch restriction for endpoint \(b\), and the corresponding memory endpoint equals the coarsened endpoint.  In the two-stage submodel at \(\kappa=0\), this generic threshold statement reduces to the parent v2 strict memory-gain proposition.
+\end{quote}
+
+\section{Related work and positioning}
+\cite{AngristImbensRubin1996} introduce the principal-strata IV framework and the monotonicity condition excluding defiers; the present note keeps the principal-strata target but treats monotonicity as a bounded sensitivity restriction.
+\cite{Manski1990} gives the bounded-outcome worst-case-completion logic behind natural partial-identification intervals; here the same logic appears inside retained dynamic histories.
+\cite{BalkePearl1997} derive sharp binary-IV bounds by finite response-type linear programming; the retained-memory program below is a dynamic, assignment-history version of that finite projection.
+\cite{SwansonHernanMillerRobinsRichardson2018} review binary-IV partial-identification methods and supply the static benchmark for imperfect compliance.
+
+The closest static defier-sensitivity result is \cite{Noack2021}, which indexes sharp LATE sensitivity bounds by defier share and outcome restrictions; the present theorem differs because \(Z_1\) remains as an observed memory label in a second-stage branch equation.
+\cite{DeChaisemartin2017} and \cite{DahlHuberMellace2023} give static interpretations of IV estimands when defiers are allowed under weaker monotonicity-like conditions; the object here is instead a sharp bound for a dynamic principal-stratum contrast.
+\cite{Kitagawa2015} and \cite{MourifieWan2017} study testable implications of IV validity and monotonicity, motivating a sensitivity parameter \(\kappa\) rather than an all-or-nothing monotonicity premise.
+
+For dynamic settings, \cite{SojitraSyrgkanis2024} identify dynamic LATEs under one-sided noncompliance and additional structure, while \cite{ArtmanBhattacharyaErtefaieLynchMcKayJohnson2024} model partial compliance in SMARTs.
+The present result is nonparametric and partial-identifying: it asks what survives when one-sided first-stage compliance is replaced by a bounded defier budget.
+\cite{BugniGaoObradovicVelez2024} show how covariate-adaptive randomization and imperfect compliance affect treatment-effect identified sets, but their strata are not retained post-baseline assignment-memory branches.
+\cite{DuarteFinkelsteinKnoxMummoloShpitser2024} provide generic automated bounds for discrete causal models; this note uses the same finite-program philosophy but isolates the extra nonresponder moment that invalidates the proposed simple prism.
+
+Within the project catalogue, the closest prior result is the parent \texttt{pid\_dynamic\_iv\_compliance}/\texttt{v2} memory-retaining bound under one-sided first-stage compliance.
+The current \texttt{v3} theorem keeps that parent as the \(\kappa=0\) face and explains why the bounded-defier extension must retain all observed \(Z_2=1\) outcome moments, not only the responder contribution.
+
+\section{Formal setup}
+Let \(O=(Y,D_1,D_2,Z_1,Z_2,X)\) have observed law \(P=P_{Y,D_1,D_2,Z_1,Z_2,X}\).
+The covariate \(X\) has finite support \(\mathcal X\), \(Z_t,D_t\in\{0,1\}\), and the observed support of \(Y\) is a finite set \(\mathcal Y_P\subset[0,1]\).
+For the latent-atom LP let
+\[
+\bar{\mathcal Y}=\mathcal Y_P\cup\{0,1\},\qquad
+\mathcal R=\{0,1\}^2,
+\]
+where \(r=(r_0,r_1)\in\mathcal R\) records the one-sided second-stage response \(D_2^{s,d_1}(1)=r_{d_1}\) after first-stage treatment \(d_1\), with \(D_2^{s,d_1}(0)=0\).
+Write
+\[
+p_1(z\mid x)=\Pr(Z_1=z\mid X=x),\qquad
+e_2(z\mid x,z_1,d_1)=\Pr(Z_2=z\mid X=x,Z_1=z_1,D_1=d_1),
+\]
+where \(e_2\) is known from the adaptive assignment law.
+
+First-stage principal strata are
+\[
+C=(D_1(1),D_1(0))=(1,0),\quad
+N=(0,0),\quad
+A=(1,1),\quad
+F=(0,1),
+\]
+with \(q_s(x)=\Pr(S=s\mid X=x)\).
+Write the first-stage response map as
+\[
+\tau_C(1)=1,\ \tau_C(0)=0,\qquad
+\tau_N(1)=\tau_N(0)=0,\qquad
+\tau_A(1)=\tau_A(0)=1,\qquad
+\tau_F(1)=0,\ \tau_F(0)=1.
+\]
+The observable first-stage contrast is
+\[
+\Delta_D(x)=\Pr(D_1=1\mid Z_1=1,X=x)-\Pr(D_1=1\mid Z_1=0,X=x)=q_C(x)-q_F(x).
+\]
+For a feasible defier share \(f=q_F(x)\),
+\[
+q_C(f)=\Delta_D(x)+f,\quad
+q_N(f)=\Pr(D_1=0\mid Z_1=1,X=x)-f,\quad
+q_A(f)=\Pr(D_1=1\mid Z_1=0,X=x)-f.
+\]
+The support restrictions require \(0\le f\le\kappa(x)\), \(q_C(f)>0\) for target cells, and \(q_N(f),q_A(f)\ge0\).
+
+In the \(D_1=0\) branch define \(R_s=D_2^{s,0}(1)\in\{0,1\}\) under the one-sided convention \(D_2^{s,0}(0)=0\).
+For each \(s\in\{C,N,A,F\}\) and \(x\), write
+\[
+\mu_s=\E[Y(0,0)\mid S=s,X=x],\quad
+\rho_s=\E[R_s\mid S=s,X=x],
+\]
+\[
+\gamma_s=\E[Y(0,1)R_s\mid S=s,X=x],\quad
+\eta_s=\E[Y(0,0)(1-R_s)\mid S=s,X=x],
+\]
+and
+\[
+\delta_s=\E[Y(0,1)(1-R_s)\mid S=s,X=x].
+\]
+Bounded outcomes imply
+\[
+0\le\gamma_s\le\rho_s\le1,\qquad
+\max\{0,\mu_s-\rho_s\}\le\eta_s\le\min\{\mu_s,1-\rho_s\},\qquad
+0\le\delta_s\le1-\rho_s.
+\]
+The cellwise target is
+\[
+\theta_{C,0}^{(2)}(x)=\gamma_C(x)+\delta_C(x)-\mu_C(x).
+\]
+The aggregate target is the complier-weighted mean
+\[
+\theta_{C,0}^{(2)}
+=\frac{\sum_x \Pr(X=x)q_C(x)\theta_{C,0}^{(2)}(x)}
+{\sum_x \Pr(X=x)q_C(x)},
+\]
+with a strictly positive denominator by the target-cell support condition.
+
+For each \(x\), the retained \(D_1=0\) branch summaries observed from \(P\) are
+\[
+M_0=\Pr(D_1=0\mid Z_1=0,X=x)\E[Y\mid Z_1=0,D_1=0,Z_2=0,X=x],
+\]
+\[
+M_\rho=\Pr(D_1=0\mid Z_1=0,X=x)\Pr(D_2=1\mid Z_1=0,D_1=0,Z_2=1,X=x),
+\]
+\[
+M_\gamma=\Pr(D_1=0\mid Z_1=0,X=x)
+\E[Y\one\{D_2=1\}\mid Z_1=0,D_1=0,Z_2=1,X=x],
+\]
+\[
+M_\eta=\Pr(D_1=0\mid Z_1=0,X=x)
+\E[Y\one\{D_2=0\}\mid Z_1=0,D_1=0,Z_2=1,X=x],
+\]
+and \(H_0,H_\rho,H_\gamma,H_\eta\) are defined analogously for \((Z_1,D_1)=(1,0)\).
+The retained-memory equations are
+\[
+M_j=q_C a_{Cj}+q_N a_{Nj},\qquad
+H_j=q_N a_{Nj}+q_F a_{Fj},\qquad
+j\in\{0,\rho,\gamma,\eta\},
+\]
+where \(a_{s0}=\mu_s\), \(a_{s\rho}=\rho_s\), \(a_{s\gamma}=\gamma_s\), and \(a_{s\eta}=\eta_s\).
+
+Let \(\mathfrak C_{\mathrm{bd}}(P,e,\kappa)\) be the class of actual causal laws on \((X,S,\{D_2^{s,d_1}(z_2)\},\{Y(d_1,d_2)\},Z_1,Z_2)\) that obey the substantive restrictions in Assumptions~\ref{ass:finite-bounded}--\ref{ass:no-memory-direct}, use the known assignment kernels \(p_1,e_2\), have first-stage defier shares bounded by \(\kappa\), and generate the full observed law \(P\).
+The actual-law identified set is
+\[
+\Theta_I(P;e,\kappa)=
+\{\theta_{C,0}^{(2)}(\mathbb Q):\mathbb Q\in\mathfrak C_{\mathrm{bd}}(P,e,\kappa)\}.
+\]
+This definition is deliberately separate from the LP in Section~\ref{sec:estimand-functional}; Theorem~\ref{thm:sharp-bd} proves that the two generate the same target interval.
+
+\paragraph{Locked parameters.}
+This is a partial-identification anchor, not a panel pool-mode.  The locked tuple is
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},
+  \text{bounding functional})\\
+=
+(\texttt{pid\_dynamic\_iv\_compliance},\texttt{v3},
+  P_{Y,D_1,D_2,Z_1,Z_2,X},\ \theta_{C,0}^{(2)},\
+  \mathcal{R}_{\mathrm{2stageIV+memory+bd}},\
+  [\underline\theta_{\mathrm{bd}}(P,e,\kappa),\overline\theta_{\mathrm{bd}}(P,e,\kappa)]) .
+\end{gathered}
+\]
+Here \(X\) has finite support, \(Z_t,D_t\in\{0,1\}\), and \(Y\in[0,1]\).  The first-stage encouragement \(Z_1\) is randomized within \(X\); the second-stage encouragement follows the known adaptive law
+\[
+e_2(z\mid x,z_1,d_1)=\Pr(Z_2=z\mid X=x,Z_1=z_1,D_1=d_1),
+\]
+which may depend on the retained assignment-memory label \(Z_1\) after conditioning on \((X,D_1)\).  The target remains the first-stage-complier, first-stage-untreated second-period effect
+\[
+\theta_{C,0}^{(2)}
+=\E\!\left[Y(0,1)-Y(0,0)\mid D_1(1)=1,\ D_1(0)=0\right].
+\]
+The restrictions \(\mathcal{R}_{\mathrm{2stageIV+memory+bd}}\) are consistency, exclusion of \(Z_1,Z_2\) except through \(D_1,D_2\), randomized \(Z_1\) within \(X\), sequential randomization of \(Z_2\) given \((X,Z_1,D_1)\), positivity of all reachable encouragement cells, one-sided second-stage compliance within each retained history, no direct assignment-memory effect within the \(D_1=0\) state, and a bounded first-stage defier restriction
+\[
+0\le q_F(x)=\Pr(D_1(1)=0,D_1(0)=1\mid X=x)\le\kappa(x),
+\]
+with all induced first-stage stratum shares nonnegative, including \(q_A(x)=\Pr(D_1=1\mid Z_1=0,X=x)-q_F(x)\ge0\).  The analyst specifies \(\kappa(x)\), and \(\kappa(x)=0\) reproduces the parent \texttt{pid\_dynamic\_iv\_compliance}/\texttt{v2} one-sided first-stage model.  The bounding functional is the sharp interval obtained by the finite latent-response linear program retaining \(Z_1\) as an assignment-memory label while allowing first-stage strata \(C,N,A,F\).
+
+\section{Assumptions}\label{sec:assumptions}
+\begin{assumption}[Finite support and bounded outcomes]\label{ass:finite-bounded}
+\(X\) and the observed support of \(Y\) under \(P\) are finite; \(Z_1,Z_2,D_1,D_2\in\{0,1\}\); and \(0\le Y(d_1,d_2)\le1\) almost surely for all \(d_1,d_2\in\{0,1\}\).
+\end{assumption}
+
+\begin{assumption}[First-stage random encouragement]\label{ass:first-rand}
+For every \(x\) used in the target, \(0<p_1(1\mid x)<1\), and \(Z_1\) is independent of first-stage stratum, second-stage response types, and potential outcomes conditional on \(X=x\).
+\end{assumption}
+
+\begin{assumption}[Sequential second-stage random encouragement]\label{ass:second-rand}
+For every reachable \((x,z_1,d_1)\), \(0<e_2(1\mid x,z_1,d_1)<1\), and \(Z_2\) is independent of the latent first-stage stratum, second-stage response type, and potential outcomes conditional on \((X,Z_1,D_1)=(x,z_1,d_1)\).
+\end{assumption}
+
+\begin{assumption}[Consistency and exclusion]\label{ass:consistency}
+The realized treatments satisfy \(D_1=D_1(Z_1)\) and \(D_2=D_2^{S,D_1}(Z_2)\).  The realized outcome is \(Y=Y(D_1,D_2)\), and \(Z_1,Z_2\) affect \(Y\) only through \(D_1,D_2\).
+\end{assumption}
+
+\begin{assumption}[Second-stage one-sided compliance]\label{ass:stage2-one-sided}
+For each first-stage stratum \(s\) and first-stage treatment \(d_1\), second-stage compliance is one-sided within the retained history:
+\[
+D_2^{s,d_1}(0)=0\le D_2^{s,d_1}(1)
+\]
+almost surely.  No one-sided restriction is imposed on first-stage compliance beyond Assumption~\ref{ass:bounded-defiers}.
+\end{assumption}
+
+\begin{assumption}[Bounded first-stage defiers]\label{ass:bounded-defiers}
+For every target cell \(x\), the first-stage defier share \(q_F(x)=\Pr(S=F\mid X=x)\) satisfies \(0\le q_F(x)\le\kappa(x)\), where \(\kappa(x)\) is known and \(0\le\kappa(x)<1\).  The feasible defier-share set also satisfies \(q_C(x)=\Delta_D(x)+q_F(x)>0\), \(q_N(x)=\Pr(D_1=0\mid Z_1=1,X=x)-q_F(x)\ge0\), and \(q_A(x)=\Pr(D_1=1\mid Z_1=0,X=x)-q_F(x)\ge0\).
+\end{assumption}
+
+\begin{assumption}[No direct assignment-memory effect in the untreated first-stage state]\label{ass:no-memory-direct}
+Within \(X=x\), first-stage stratum \(s\), and first-stage treatment \(D_1=0\), the second-stage response law \(D_2^{s,0}(z_2)\) and potential outcomes \(Y(0,d_2)\) do not depend directly on whether the retained label was \(Z_1=0\) or \(Z_1=1\).
+\end{assumption}
+
+\begin{assumption}[Observational compatibility]\label{ass:compatible}
+The observed law \(P\), adaptive assignment law \(e\), and defier budget \(\kappa\) are in the maintained model: \(\mathfrak C_{\mathrm{bd}}(P,e,\kappa)\) is nonempty and the aggregate first-stage complier mass is positive.  Consequently the endpoint LP in Section~\ref{sec:estimand-functional} has a nonempty normalized feasible region.
+\end{assumption}
+
+\begin{assumption}[Cellwise covariate separability]\label{ass:cellwise}
+The latent-response restrictions and bounded-defier budgets are imposed separately within each \(X=x\) cell, with no cross-\(x\) monotonicity, smoothness, rank, or shape restriction.
+\end{assumption}
+
+\begin{assumption}[Interior memory contrast]\label{ass:interior-memory}
+For the strict-gain claim, at least one \(x\) has \(q_C(x)>0\), positive feasible never-taker mass \(q_N(x)>0\) for some feasible \(q_F(x)\), and distinct second-stage assignment probabilities \(e_2(1\mid x,0,0)\ne e_2(1\mid x,1,0)\).  The retained-memory and coarsened endpoint problems have finite optimal solutions in the relative interior of the maintained support face.
+\end{assumption}
+
+\section{Estimand-defining functional}\label{sec:estimand-functional}
+The bounding functional is the value of the following explicit finite LP.
+For each atom
+\[
+\omega=(x,s,r,\mathbf y)\in
+\Omega=\mathcal X\times\{C,N,A,F\}\times\mathcal R\times\bar{\mathcal Y}^{4},
+\]
+write \(\mathbf y=(y_{00},y_{01},y_{10},y_{11})\), where \(y_{d_1d_2}\) is the potential outcome \(Y(d_1,d_2)\), and let \(m_\omega\) denote the joint latent mass of that atom before assignment.
+The unnormalized retained-memory atom polytope \(\mathcal P_{\mathrm{atom}}(P,e,\kappa)\) is the set of \(m\in\mathbb R_+^{|\Omega|}\) satisfying the following constraints.
+For \(y\in\bar{\mathcal Y}\setminus\mathcal Y_P\), read
+\[
+P(Y=y,D_1=d_1,D_2=d_2,Z_1=z_1,Z_2=z_2,X=x)=0;
+\]
+this prevents endpoint values used for never-observed potential outcomes from appearing in any observed cell.
+\begin{equation}
+\sum_{s,r,\mathbf y}m_{x,s,r,\mathbf y}=P(X=x)\qquad\text{for every }x,
+\tag{LP-1}
+\end{equation}
+\begin{equation}
+p_1(z_1\mid x)e_2(z_2\mid x,z_1,d_1)
+\sum_{\substack{s,r,\mathbf y:\\
+\tau_s(z_1)=d_1,\ z_2 r_{d_1}=d_2,\ y_{d_1d_2}=y}}
+m_{x,s,r,\mathbf y}
+=P(Y=y,D_1=d_1,D_2=d_2,Z_1=z_1,Z_2=z_2,X=x)
+\tag{LP-2}
+\end{equation}
+for every \(x,z_1,z_2,d_1,d_2\) and every \(y\in\bar{\mathcal Y}\), and
+\begin{equation}
+\sum_{r,\mathbf y}m_{x,F,r,\mathbf y}
+\le \kappa(x)P(X=x)\qquad\text{for every }x.
+\tag{LP-3}
+\end{equation}
+Constraint (LP-2) is the full observed-law constraint; it includes both \(D_1=0\) retained branches and the \(D_1=1\) branches, and it sets the probability of observed endpoint values outside \(\mathcal Y_P\) to zero.
+The number of latent mass variables is
+\[
+|\Omega|=|\mathcal X|\cdot4\cdot4\cdot|\bar{\mathcal Y}|^4.
+\]
+The displayed system has \( |\mathcal X|\) marginal equalities, \( |\mathcal X|\cdot2^4\cdot|\bar{\mathcal Y}|\) observed-cell equalities, and \( |\mathcal X|\) defier-budget inequalities, in addition to nonnegativity.
+
+Define the complier mass and complier numerator by
+\[
+Q_C(m)=\sum_{x,r,\mathbf y}m_{x,C,r,\mathbf y},\qquad
+N_C(m)=\sum_{x,r,\mathbf y}m_{x,C,r,\mathbf y}(y_{01}-y_{00}).
+\]
+Because \(Q_C(m)>0\) on the target support, optimizing \(N_C(m)/Q_C(m)\) over \(\mathcal P_{\mathrm{atom}}(P,e,\kappa)\) is equivalent to the Charnes--Cooper LP with variables \(v_\omega\ge0\) and \(t\ge0\):
+\begin{equation}
+\sum_{s,r,\mathbf y}v_{x,s,r,\mathbf y}=tP(X=x),
+\tag{NLP-1}
+\end{equation}
+\begin{equation}
+p_1(z_1\mid x)e_2(z_2\mid x,z_1,d_1)
+\sum_{\substack{s,r,\mathbf y:\\
+\tau_s(z_1)=d_1,\ z_2 r_{d_1}=d_2,\ y_{d_1d_2}=y}}
+v_{x,s,r,\mathbf y}
+=tP(Y=y,D_1=d_1,D_2=d_2,Z_1=z_1,Z_2=z_2,X=x),
+\tag{NLP-2}
+\end{equation}
+for the same \(x,z_1,z_2,d_1,d_2,y\) index range as (LP-2),
+\begin{equation}
+\sum_{r,\mathbf y}v_{x,F,r,\mathbf y}
+\le t\kappa(x)P(X=x),
+\tag{NLP-3}
+\end{equation}
+and the normalization
+\begin{equation}
+\sum_{x,r,\mathbf y}v_{x,C,r,\mathbf y}=1.
+\tag{NLP-4}
+\end{equation}
+The lower and upper retained-memory bounded-defier functionals are
+\[
+\underline\theta_{\mathrm{bd}}(P,e,\kappa)=
+\min_{(v,t)\text{ satisfying (NLP-1)--(NLP-4)}}\
+\sum_{x,r,\mathbf y}v_{x,C,r,\mathbf y}(y_{01}-y_{00}),
+\]
+\[
+\overline\theta_{\mathrm{bd}}(P,e,\kappa)=
+\max_{(v,t)\text{ satisfying (NLP-1)--(NLP-4)}}\
+\sum_{x,r,\mathbf y}v_{x,C,r,\mathbf y}(y_{01}-y_{00}).
+\]
+Thus the endpoint map is computable from the observed inputs \((P,e,\kappa)\) by solving two ordinary finite LPs with \( |\Omega|+1\) variables.
+
+For comparison, the proposal's prism functional deletes the \(\eta\)-coordinates and optimizes over only
+\[
+M_j=q_C a_{Cj}+q_N a_{Nj},\qquad
+H_j=q_N a_{Nj}+q_F a_{Fj},\qquad
+j\in\{0,\rho,\gamma\}.
+\]
+That prism is an outer bounding functional:
+every full retained-memory feasible table projects into it, but the projection need not respect the observed \(M_\eta,H_\eta\) equations or the full atom constraints (LP-2).
+
+\section{Target causal estimand}
+The target is not the bounding functional itself.
+It is the scalar principal-stratum causal contrast
+\[
+\theta_{C,0}^{(2)}
+=\E\!\left[Y(0,1)-Y(0,0)\mid S=C\right],
+\qquad
+S=C\iff D_1(1)=1,\ D_1(0)=0.
+\]
+Equivalently, under finite \(X\),
+\[
+\theta_{C,0}^{(2)}
+=\frac{\sum_x \Pr(X=x)q_C(x)
+\E[Y(0,1)-Y(0,0)\mid S=C,X=x]}
+{\sum_x\Pr(X=x)q_C(x)}.
+\]
+In a \(D_1=0\) target cell,
+\[
+\E[Y(0,1)-Y(0,0)\mid S=C,X=x]
+=\gamma_C(x)+\delta_C(x)-\mu_C(x),
+\]
+where \(\gamma_C\) is the treated-outcome contribution among second-stage responders, \(\delta_C\) is the unobserved treated-outcome contribution among second-stage nonresponders, and \(\mu_C\) is the baseline untreated mean.
+The result below brackets this causal scalar; it does not define it by the bracket.
+
+\section{Main theorems}
+\begin{theorem}[Sharp retained-memory bounded-defier interval]\label{thm:sharp-bd}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:compatible},
+\[
+\Theta_I(P;e,\kappa)=
+[\underline\theta_{\mathrm{bd}}(P,e,\kappa),
+\overline\theta_{\mathrm{bd}}(P,e,\kappa)].
+\]
+The endpoints on the right are the two normalized LP values in Section~\ref{sec:estimand-functional}; their variables are the atom masses \(v_{x,s,r,\mathbf y}\) and scale \(t\), and their constraints are exactly (NLP-1)--(NLP-4).
+If \(0\le\kappa_1(x)\le\kappa_2(x)\) for every \(x\), then
+\[
+\Theta_I(P;e,\kappa_1)\subseteq \Theta_I(P;e,\kappa_2).
+\]
+If \(\kappa(x)=0\) for every \(x\), then the feasible set is the parent one-sided first-stage memory polytope after deleting the zero-mass defier stratum, and the interval equals the parent \(\texttt{v2}\) memory-retaining bound.
+\end{theorem}
+
+This theorem confirms the robust part of the proposal: bounded defiers give a genuine sensitivity extension of the parent bound, and the extension is a usable PartialID bound because the endpoint map is a named finite LP with observed coefficients.
+Its closest published analogue is the finite response-type sharpness of \cite{BalkePearl1997}; the new feature is the dynamic retained-memory branch and the variable first-stage defier budget.
+
+\begin{proposition}[Augmented-LP witness and verdicts on the motivating conjectures]\label{prop:verdicts}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:cellwise}, Conjecture~1 is refuted as a sharp formula.
+The displayed prism is an outer relaxation, but it can be strictly larger than the retained-memory identified set because it omits the observed \(M_\eta,H_\eta\) nonresponder outcome equations.
+For the one-cell observed law displayed in Section~\ref{sec:counterexample}, the three-coordinate prism admits the value \(-3/5\), while the full retained-memory LP (NLP-1)--(NLP-4), equivalently its one-cell augmented projection in \((\mu,\rho,\gamma,\eta,\delta)\), has lower endpoint \(-7/40\).
+Conjecture~2 is partial: the proposed lift threshold can be defined as an observable finite-program value for a fixed coarsened endpoint face, but the claimed strict phase transition for the whole endpoint requires additional nondegeneracy conditions not present in Assumptions~\ref{ass:finite-bounded}--\ref{ass:interior-memory}.
+\end{proposition}
+
+The proposition is a correction to this note's own motivating formula, not a negative theorem against a named published estimator or workflow.
+It says that the nearest correct analytic object is not the three-coordinate prism, but the projection of the augmented polytope in coordinates \((\mu,\rho,\gamma,\eta,\delta)\).
+This distinction matters exactly when outcome means among second-stage nonresponders are informative about how much of a contaminated branch can be assigned to defiers.
+
+\section{Interpretation}
+The full retained-memory bound tightens the natural Manski interval because it uses four sources of structure: randomized \(Z_1\), sequentially randomized \(Z_2\), exclusion/consistency, and the retained \(Z_1\) branch equations inside \(D_1=0\).
+The bounded-defier restriction controls how much of the contaminated \((Z_1,D_1)=(1,0)\) branch can be assigned to first-stage defiers.
+When \(\kappa=0\), the branch is pure never-taker and the parent subtraction is recovered.
+
+The bound can collapse to point identification in a cell only when the retained equations determine the complier baseline contribution, the complier responder contribution, and the nonresponder treated-outcome contribution; a sufficient special case is full second-stage take-up for compliers in the target branch together with a pure retained never-taker subtraction.
+It widens toward the natural bounded-outcome interval when \(\kappa\) is large enough that the defier component can absorb the retained \(H\)-branch restrictions and when the second-stage responder/nonresponder outcome moments leave \(\delta_C\) unrestricted.
+
+The tightening work is not done by first-stage monotonicity alone.
+It is done by the combination of a bounded \(q_F(x)\), retained assignment-memory equations, and the observed nonresponder outcome coordinate \(M_\eta,H_\eta\).
+Dropping the \(\eta\) coordinate is harmless only under an additional redundancy condition, for example when the omitted equations are affine consequences of the kept coordinates on the relevant endpoint face.
+
+\section{Step-by-step proof}
+\begin{lemma}[Branch equations]\label{lem:branch-equations}
+Under Assumptions~\ref{ass:first-rand}--\ref{ass:no-memory-direct}, every maintained latent law satisfies, in each \(x\) cell,
+\[
+M_j=q_C a_{Cj}+q_N a_{Nj},\qquad
+H_j=q_N a_{Nj}+q_F a_{Fj},\qquad
+j\in\{0,\rho,\gamma,\eta\}.
+\]
+\end{lemma}
+
+\begin{proof}
+Condition on \(X=x\).
+By Assumption~\ref{ass:first-rand}, the distribution of \(S\), response types, and potential outcomes does not depend on \(Z_1\).
+The event \((Z_1,D_1)=(0,0)\) contains exactly strata \(C\) and \(N\), because \(D_1(0)=0\) for those strata and \(D_1(0)=1\) for \(A,F\).
+The event \((Z_1,D_1)=(1,0)\) contains exactly strata \(N\) and \(F\).
+By Assumptions~\ref{ass:second-rand}, \ref{ass:consistency}, and \ref{ass:stage2-one-sided}, conditioning further on \(Z_2=0\) reveals \(Y(0,0)\), while conditioning on \(Z_2=1\) reveals \(R_s\), \(Y(0,1)R_s\), and \(Y(0,0)(1-R_s)\).
+Assumption~\ref{ass:no-memory-direct} lets the same stratum-specific \(a_{sj}\) appear under both retained \(Z_1\) labels.
+Multiplying the conditional means by the observed branch masses gives the four displayed mixture equations.
+\end{proof}
+
+\begin{lemma}[Finite atom completion]\label{lem:completion}
+Every \(m\in\mathcal P_{\mathrm{atom}}(P,e,\kappa)\) is generated by a finite latent distribution obeying Assumptions~\ref{ass:finite-bounded}--\ref{ass:no-memory-direct} and matching the full observed law \(P\).
+Conversely, every actual law in \(\mathfrak C_{\mathrm{bd}}(P,e,\kappa)\) has a finite atom representation in \(\mathcal P_{\mathrm{atom}}(P,e,\kappa)\) with the same observed law, the same complier denominator \(Q_C\), and the same complier numerator \(N_C\).
+\end{lemma}
+
+\begin{proof}
+Take \(m\in\mathcal P_{\mathrm{atom}}(P,e,\kappa)\).
+Construct a latent unit by first drawing an atom \(\omega=(x,s,r,\mathbf y)\) with probability \(m_\omega\).
+Set \(X=x\), \(S=s\), \(D_1(z_1)=\tau_s(z_1)\), \(D_2^{s,d_1}(0)=0\), \(D_2^{s,d_1}(1)=r_{d_1}\), and \(Y(d_1,d_2)=y_{d_1d_2}\) for all \(d_1,d_2\).
+Then draw \(Z_1\) from \(p_1(\cdot\mid x)\) independently of the atom conditional on \(X=x\), set \(D_1=\tau_s(Z_1)\), draw \(Z_2\) from \(e_2(\cdot\mid x,Z_1,D_1)\) independently of the atom conditional on \((X,Z_1,D_1)\), set \(D_2=Z_2r_{D_1}\), and set \(Y=y_{D_1D_2}\).
+This construction satisfies consistency, exclusion, first-stage randomization, sequential second-stage randomization, second-stage one-sided compliance, and no direct assignment-memory effect in the \(D_1=0\) state by definition.
+Constraint (LP-3) gives \(q_F(x)\le\kappa(x)\), and nonnegativity of the other stratum shares is automatic.
+For any observed cell \((y,d_1,d_2,z_1,z_2,x)\) with \(y\in\bar{\mathcal Y}\), the construction assigns probability
+\[
+p_1(z_1\mid x)e_2(z_2\mid x,z_1,d_1)
+\sum_{\substack{s,r,\mathbf y:\\
+\tau_s(z_1)=d_1,\ z_2r_{d_1}=d_2,\ y_{d_1d_2}=y}}
+m_{x,s,r,\mathbf y},
+\]
+which equals the observed probability by (LP-2).
+For \(y\notin\bar{\mathcal Y}\), both the constructed law and \(P\) assign zero probability because all atom coordinates lie in \(\bar{\mathcal Y}\) and \(\mathcal Y_P\subseteq\bar{\mathcal Y}\).
+Thus all \(D_1=0\) and \(D_1=1\) branches and the full joint law of \((Y,D_1,D_2,Z_1,Z_2,X)\) are matched.
+
+For the converse, start from any actual law \(\mathbb Q\in\mathfrak C_{\mathrm{bd}}(P,e,\kappa)\).
+Fix \(x,s,r\), and let
+\[
+\mathcal O(s,r)=
+\{(\tau_s(z_1),z_2r_{\tau_s(z_1)}): z_1,z_2\in\{0,1\}
+\}
+\]
+be the set of potential-outcome coordinates that can be revealed for this first-stage stratum and second-stage response type under the positive assignment probabilities.
+If \((d_1,d_2)\in\mathcal O(s,r)\), then \(Y(d_1,d_2)\in\mathcal Y_P\) \(\mathbb Q\)-almost surely on \((X,S,R)=(x,s,r)\).
+Otherwise a positive-probability assignment cell would reveal a value outside the observed support \(\mathcal Y_P\), contradicting that \(\mathbb Q\) generates \(P\).
+Thus every ever-observed potential-outcome coordinate already takes values in the finite set \(\mathcal Y_P\).
+
+Now replace the never-observed coordinates without changing any observed cell.
+Coordinates outside \(\mathcal O(s,r)\) that do not enter \(N_C\) are set to \(0\).
+The only coordinate that can be both never observed and enter \(N_C\) is \(Y(0,1)\) for compliers with \(r_0=0\): for these units, \(Z_1=0,Z_2=1\) still yields \(D_2=0\), so \(Y(0,1)\) is not revealed, while the target contains it.
+Conditional on all finite data \((X,S,R)\) and on all ever-observed potential-outcome coordinates, split a unit with value \(u=Y(0,1)\in[0,1]\) into two subatoms with \(Y(0,1)=1\) and \(Y(0,1)=0\), with conditional weights \(u\) and \(1-u\).
+This Bernoulli splitting preserves the conditional mean contribution of \(Y(0,1)\) to \(N_C\), preserves \(Y(0,0)\) exactly because \(Y(0,0)\) is revealed for compliers under \(Z_1=0,Z_2=0\), and preserves the complier mass \(Q_C\).
+
+After this replacement, every potential-outcome coordinate lies in \(\bar{\mathcal Y}=\mathcal Y_P\cup\{0,1\}\), and there are only finitely many possible tuples \((x,s,r,\mathbf y)\).
+Let \(m_{x,s,r,\mathbf y}\) be the resulting mass of each tuple.
+The first-stage stratum shares and the defier shares are unchanged, so (LP-1) and (LP-3) hold.
+For (LP-2), if \(y\in\mathcal Y_P\), the revealed coordinates were preserved and the assignment kernels are the known \(p_1,e_2\), so the observed probability equals the left-hand side.
+If \(y\in\bar{\mathcal Y}\setminus\mathcal Y_P\), the construction ensures that no revealed coordinate equals \(y\), so the left-hand side is zero, matching the convention after (LP-2).
+Therefore \(m\in\mathcal P_{\mathrm{atom}}(P,e,\kappa)\), and by construction it has the same \(N_C\) and \(Q_C\) as \(\mathbb Q\).
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:sharp-bd}]
+First take any maintained causal law consistent with \(P,e,\kappa\).
+By Lemmas~\ref{lem:branch-equations} and \ref{lem:completion}, its target numerator and denominator are represented by a feasible atom table \(m\in\mathcal P_{\mathrm{atom}}(P,e,\kappa)\).
+Setting \(t=1/Q_C(m)\) and \(v=t m\) gives a feasible point of the normalized LP (NLP-1)--(NLP-4) with objective value equal to the law's target value.
+Therefore every actual-law target value lies between the two LP endpoints, proving
+\[
+\Theta_I(P;e,\kappa)\subseteq
+[\underline\theta_{\mathrm{bd}}(P,e,\kappa),
+\overline\theta_{\mathrm{bd}}(P,e,\kappa)].
+\]
+Conversely, take any feasible normalized LP point \((v,t)\).
+The normalization \(Q_C(v)=1\) and compatibility imply \(t>0\), so \(m=v/t\) satisfies (LP-1)--(LP-3).
+Lemma~\ref{lem:completion} turns \(m\) into an actual maintained causal law matching \(P\), and the target value of that law is the normalized LP objective.
+The normalized endpoint problems are finite linear programs over a closed polyhedron, and their objectives are bounded between \(-1\) and \(1\) because (NLP-4) normalizes the complier mass and \(y_{01}-y_{00}\in[-1,1]\).
+Hence the lower and upper optima are attained by feasible normalized LP points, and the preceding construction maps those optimizers to actual laws.
+If two feasible laws attain values \(\theta_0<\theta_1\), any mixture of their latent laws conditional on the same observed \(P\) still matches \(P\) and satisfies the convex defier-budget inequalities; its target value is
+\[
+\frac{\lambda Q_0\theta_0+(1-\lambda)Q_1\theta_1}
+{\lambda Q_0+(1-\lambda)Q_1},
+\qquad 0\le\lambda\le1,
+\]
+which ranges continuously over \([\theta_0,\theta_1]\).
+Thus every point between the endpoint optima is attainable and the interval is sharp.
+
+If \(\kappa_1\le\kappa_2\) pointwise, every table satisfying \(q_F(x)\le\kappa_1(x)\) also satisfies \(q_F(x)\le\kappa_2(x)\).
+Thus the atom feasible region for \(\kappa_1\) is included in the atom feasible region for \(\kappa_2\), which gives the set inclusion.
+If \(\kappa=0\), Assumption~\ref{ass:bounded-defiers} forces \(q_F(x)=0\) in every \(x\) cell.
+The \(F\)-stratum has zero mass and can be deleted from the branch equations, leaving \(H_j=q_N a_{Nj}\) and the parent one-sided first-stage memory polytope.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:verdicts}]
+Every full retained-memory feasible table satisfies the three equations used by Conjecture~1 after dropping the \(\eta\) coordinate, so the prism contains the projection of the sharp set.
+However, the converse would require the omitted equations
+\[
+M_\eta=q_C\eta_C+q_N\eta_N,\qquad
+H_\eta=q_N\eta_N+q_F\eta_F
+\]
+to be redundant.
+They are not redundant in general because \(\eta_s\) is linked to \((\mu_s,\rho_s)\) by
+\[
+\max\{0,\mu_s-\rho_s\}\le\eta_s\le\min\{\mu_s,1-\rho_s\}.
+\]
+The numerical construction in Section~\ref{sec:counterexample} gives a compatible observed law, liftable to the atom LP by Lemma~\ref{lem:completion}, for which the prism lower endpoint is \(-3/5\) but the full retained-memory LP lower endpoint is \(-7/40\).
+Thus Conjecture~1 is false as a sharp formula.
+
+For Conjecture~2, fix a coarsened endpoint optimizer and define \(\kappa_b^\dagger\) as the optimum of the finite feasibility problem that minimizes \(q_F(x)\) subject to the retained \(H\)-branch equations and all stratum-share and contribution inequalities.
+This is observable because all coefficients are functions of \(P\) and \(e\).
+If \(\kappa(x)\) is below that value, that particular coarsened optimizer cannot be lifted.
+The conclusion that the whole retained endpoint is strictly inside the coarsened endpoint also requires that no alternative coarsened optimizer with the same endpoint value has a smaller lift and that the endpoint face is exposed without degeneracy.
+Those requirements are not among Assumptions~\ref{ass:finite-bounded}--\ref{ass:interior-memory}, so the conjecture is only a partial diagnostic under the locked assumptions.
+\end{proof}
+
+\section{Sanity checks}
+\paragraph{Natural no-restriction bound.}
+If the retained branch equations, exclusion, and compliance restrictions are dropped while only \(Y(d_1,d_2)\in[0,1]\) is kept, then the target contrast lies in the Manski interval \([-1,1]\).
+The retained-memory program can only shrink this interval because it adds linear equality and inequality restrictions.
+
+\paragraph{Zero-defier specialization.}
+At \(\kappa=0\), \(q_F=0\), so \(H_j=q_Na_{Nj}\).
+When \(q_N>0\), \(a_N=H/q_N\) is pinned down and the complier contribution in the mixed branch is \(a_C=(M-H)/q_C\), which is the parent memory subtraction.
+
+\paragraph{Point-identifying corner.}
+If in addition the target-branch complier response rate satisfies \(\rho_C=1\), then \(\delta_C=0\) and
+\(\theta_{C,0}^{(2)}(x)=\gamma_C-\mu_C\).
+If the retained equations also determine \(\gamma_C\) and \(\mu_C\), the cellwise bound has zero width.
+
+\paragraph{Large defier budget.}
+When \(\kappa(x)\) is large enough to allow the \(F\)-stratum to absorb all retained \(H\)-branch discrepancies while maintaining \(q_A,q_N\ge0\), the memory gain over the coarsened relaxation can disappear for that endpoint.
+This is the valid part of the phase-transition intuition, but it is endpoint-face dependent.
+
+\paragraph{Static binary-IV reduction.}
+If the second period is removed and the retained assignment label is ignored, the feasible set reduces to the usual finite response-type IV program with imperfect compliance, matching the Balke--Pearl sharp-bounds substrate.
+
+\section{Counterexample or minimality check}\label{sec:counterexample}
+This section gives the promised counterexample to Conjecture~1.
+It is not used to prove sharpness of Theorem~\ref{thm:sharp-bd}; sharpness follows from the actual-law/atom-LP equivalence in Lemma~\ref{lem:completion}.
+Take a single \(X\) cell with
+\[
+q_C=q_N=\frac25,\qquad q_F=\frac1{10},\qquad q_A=\frac1{10}.
+\]
+Let the actual latent contribution triples be
+\[
+(\mu_C,\rho_C,\gamma_C,\eta_C)=\left(\frac35,\frac12,\frac9{20},\frac1{10}\right),
+\]
+\[
+(\mu_N,\rho_N,\gamma_N,\eta_N)=\left(\frac45,0,0,\frac45\right),
+\]
+\[
+(\mu_F,\rho_F,\gamma_F,\eta_F)=\left(\frac1{10},1,\frac9{10},0\right).
+\]
+All bounded-outcome inequalities hold: for example, \(\eta_C=\mu_C-\rho_C\), \(\eta_N=\mu_N\), and \(\eta_F=0\).
+The observed retained summaries are
+\[
+M=(M_0,M_\rho,M_\gamma)=\left(\frac{14}{25},\frac15,\frac9{50}\right),
+\quad
+H=(H_0,H_\rho,H_\gamma)=\left(\frac{33}{100},\frac1{10},\frac9{100}\right),
+\]
+and the omitted nonresponder summaries are
+\[
+M_\eta=\frac9{25},\qquad H_\eta=\frac8{25}.
+\]
+
+The three-coordinate prism in Conjecture~1 admits
+\[
+(c_0,c_\rho,c_\gamma)=\left(\frac{33}{40},\frac14,\frac9{40}\right),\quad
+(n_0,n_\rho,n_\gamma)=\left(\frac{23}{40},\frac14,\frac9{40}\right),\quad
+(d_0,d_\rho,d_\gamma)=(1,0,0),
+\]
+which satisfies the displayed \(M,H\) equations after omitting \(\eta\).
+With \(\delta=0\), the conjectured target value is
+\[
+c_\gamma+\delta-c_0=\frac9{40}-\frac{33}{40}=-\frac35.
+\]
+But the omitted equations make this table impossible.
+Indeed, \(H_\eta=(2/5)\eta_N+(1/10)\eta_F=8/25\) and \(\eta_F=1\) for \((d_0,d_\rho)=(1,0)\) force \(\eta_N=11/20\).
+Then \(M_\eta=(2/5)\eta_C+(2/5)\eta_N=9/25\) forces \(\eta_C=7/20\).
+The complier contribution above has \(c_0-c_\rho=33/40-1/4=23/40\), so bounded outcomes require \(\eta_C\ge23/40\), a contradiction.
+
+Direct elimination of the full one-cell LP gives the lower endpoint \(-7/40\).
+The \(M_0,H_0,M_\gamma,H_\gamma\) equations imply
+\[
+c_0=\frac{23+10d_0}{40},\qquad
+c_\gamma=\frac{9+10d_\gamma}{40},
+\]
+so every feasible value with \(\delta=0\) satisfies
+\[
+c_\gamma-c_0=-\frac7{20}+\frac{d_\gamma-d_0}{4}.
+\]
+The \(M_\eta,H_\eta\) equations and the lower bounds on \(\eta_C,\eta_N\) force those lower bounds to bind; the upper bounds \(\eta_F\le d_0\) and \(\eta_F\le1-d_\rho\) then imply \(d_0\le1/10\) and \(d_\rho\ge9/10\).
+Because \(n_\gamma\le n_\rho\) gives \(d_\gamma\ge d_\rho-1/10\), we have \(d_\gamma-d_0\ge7/10\), and hence \(c_\gamma-c_0\ge-7/40\).
+The bound is attained for
+\[
+(c_0,c_\rho,c_\gamma,\eta_C)=
+\left(\frac35,\frac{19}{40},\frac{17}{40},\frac18\right).
+\]
+One compatible completion uses
+\[
+(n_0,n_\rho,n_\gamma,\eta_N)=
+\left(\frac45,\frac1{40},\frac1{40},\frac{31}{40}\right),
+\qquad
+(d_0,d_\rho,d_\gamma,\eta_F)=
+\left(\frac1{10},\frac9{10},\frac45,\frac1{10}\right).
+\]
+Thus the nearest correct statement is:
+\[
+\Theta_I(P;e,\kappa)
+=\operatorname{proj}_{\theta}
+\left\{
+(\mu,\rho,\gamma,\eta,\delta):
+\begin{array}{l}
+M_j=q_Ca_{Cj}+q_Na_{Nj},\ H_j=q_Na_{Nj}+q_Fa_{Fj},\ j\in\{0,\rho,\gamma,\eta\},\\
+0\le\gamma_s\le\rho_s\le1,
+\max\{0,\mu_s-\rho_s\}\le\eta_s\le\min\{\mu_s,1-\rho_s\},\\
+0\le\delta_C\le1-\rho_C,\quad
+\theta=\gamma_C+\delta_C-\mu_C
+\end{array}
+\right\},
+\]
+with aggregation over \(x\) by the complier weights.
+The minimality lesson is that the nonresponder outcome coordinate is not optional whenever \(P\) contains the joint law of \((Y,D_2)\) under \(Z_2=1\).
+
+\section{Formalization checklist}
+\paragraph{Probabilistic objects.}
+\begin{itemize}[leftmargin=*]
+\item Observable law \(P\) on \(O=(Y,D_1,D_2,Z_1,Z_2,X)\), with finite \(X\), finite observed support \(\mathcal Y_P\), binary \(Z_t,D_t\), and \(Y\in[0,1]\).
+\item Known assignment kernels \(p_1(z\mid x)\) and \(e_2(z\mid x,z_1,d_1)\), with positivity on reachable cells.
+\item First-stage stratum \(S\in\{C,N,A,F\}\) and shares \(q_s(x)\), with \(q_C=\Delta_D+q_F\), \(q_N=\Pr(D_1=0\mid Z_1=1,X=x)-q_F\), and \(q_A=\Pr(D_1=1\mid Z_1=0,X=x)-q_F\).
+\item Potential outcomes \(Y(d_1,d_2)\), second-stage response type \(r=(r_0,r_1)\), and actual-law class \(\mathfrak C_{\mathrm{bd}}(P,e,\kappa)\) separated from the LP feasible region.
+\end{itemize}
+
+\paragraph{Deterministic variables and constraints.}
+\begin{itemize}[leftmargin=*]
+\item Atom set \(\Omega=\mathcal X\times\{C,N,A,F\}\times\{0,1\}^2\times\bar{\mathcal Y}^{4}\) and first-stage response map \(\tau_s(z_1)\).
+\item Unnormalized atom variables \(m_{x,s,r,\mathbf y}\ge0\) satisfying marginal constraints (LP-1), full observed joint-law constraints (LP-2) for every \((y,d_1,d_2,z_1,z_2,x)\), and defier-budget constraints (LP-3).
+\item Charnes--Cooper variables \(v_{x,s,r,\mathbf y}\ge0,t\ge0\), normalization \(Q_C(v)=1\), and endpoint objectives \(N_C(v)\) for the two computable LPs.
+\item Contribution variables \((\mu_s,\rho_s,\gamma_s,\eta_s,\delta_s)\) with bounds \(0\le\gamma_s\le\rho_s\le1\), \(\max(0,\mu_s-\rho_s)\le\eta_s\le\min(\mu_s,1-\rho_s)\), and \(0\le\delta_s\le1-\rho_s\).
+\item Observed branch summaries \(M_0,M_\rho,M_\gamma,M_\eta,H_0,H_\rho,H_\gamma,H_\eta\) as functions of \(P\).
+\item Mixture identities \(M_j=q_Ca_{Cj}+q_Na_{Nj}\) and \(H_j=q_Na_{Nj}+q_Fa_{Fj}\), \(j\in\{0,\rho,\gamma,\eta\}\).
+\item Target identity \(\theta_x=\gamma_C+\delta_C-\mu_C\) and aggregate ratio over \(x\) weighted by \(\Pr(X=x)q_C(x)\).
+\end{itemize}
+
+\paragraph{Lemmas and proof roles.}
+\begin{itemize}[leftmargin=*]
+\item Branch-equation lemma: derives retained mixture equations from randomization, consistency, exclusion, one-sided second-stage compliance, and no direct memory effect.
+\item Finite atom completion lemma: realizes every feasible atom table by a finite latent distribution; conversely, maps any actual law to a finite table by preserving every ever-revealed \(Y\) coordinate in \(\mathcal Y_P\) and endpoint-splitting only never-revealed target coordinates.
+\item Actual-law/LP equivalence: maps actual laws to normalized LP points and normalized LP points back to actual laws before taking endpoint intervals.
+\item Feasible-set monotonicity: if \(\kappa_1\le\kappa_2\), the smaller-budget feasible set is included in the larger-budget feasible set.
+\item Zero-defier face identity: setting \(q_F=0\) deletes the defier stratum and recovers \(H=q_Na_N\).
+\item Prism-refutation calculation: the three-coordinate projection is an outer relaxation; the missing \(\eta\) equations move the one-cell endpoint from the claimed \(-3/5\) to the full-LP endpoint \(-7/40\).
+\end{itemize}
+
+\section{Conclusion and references}
+The theorem-level contribution is a sharp retained-memory bounded-defier interval for the dynamic IV target \(\theta_{C,0}^{(2)}\), exposed as two finite atom LPs with explicit observed-cell constraints.
+The key tightening restriction is the joint use of bounded first-stage defier mass and retained \(Z_1\)-specific branch equations, including the observed nonresponder outcome moments under \(Z_2=1\).
+The bound becomes the parent one-sided formula at \(\kappa=0\), can approach the natural bounded-outcome interval when \(\kappa\) is large and the retained equations are absorbable, and can collapse to point identification only when the complier baseline, responder contribution, and nonresponder treated contribution are all pinned down.
+The simple defier-trimmed prism is therefore not the final formula; the correct bounded-defier sensitivity object is the augmented retained-memory LP, whose one-cell projection includes the \(\eta\) nonresponder coordinate.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem{AngristImbensRubin1996}
+Joshua D. Angrist, Guido W. Imbens, and Donald B. Rubin.
+\newblock Identification of causal effects using instrumental variables.
+\newblock \emph{Journal of the American Statistical Association}, 91(434):444--455, 1996.
+
+\bibitem{ArtmanBhattacharyaErtefaieLynchMcKayJohnson2024}
+William J. Artman, Indrabati Bhattacharya, Ashkan Ertefaie, Kevin G. Lynch, James R. McKay, and Brent A. Johnson.
+\newblock A marginal structural model for partial compliance in SMARTs.
+\newblock \emph{Annals of Applied Statistics}, 18(2):905--921, 2024.
+
+\bibitem{BalkePearl1997}
+Alexander Balke and Judea Pearl.
+\newblock Bounds on treatment effects from studies with imperfect compliance.
+\newblock \emph{Journal of the American Statistical Association}, 92(439):1171--1176, 1997.
+
+\bibitem{BugniGaoObradovicVelez2024}
+Federico A. Bugni, Mengsi Gao, Filip Obradovic, and Amilcar Velez.
+\newblock Identification and inference on treatment effects under covariate-adaptive randomization and imperfect compliance.
+\newblock \emph{arXiv:2406.08419}, 2024.
+
+\bibitem{DahlHuberMellace2023}
+Christian M. Dahl, Martin Huber, and Giovanni Mellace.
+\newblock It is never too LATE: A new look at local average treatment effects with or without defiers.
+\newblock \emph{The Econometrics Journal}, 26(3):378--404, 2023.
+
+\bibitem{DeChaisemartin2017}
+Clement de Chaisemartin.
+\newblock Tolerating defiance? Local average treatment effects without monotonicity.
+\newblock \emph{Quantitative Economics}, 8(2):367--396, 2017.
+
+\bibitem{DuarteFinkelsteinKnoxMummoloShpitser2024}
+Guilherme Duarte, Noam Finkelstein, Dean Knox, Jonathan Mummolo, and Ilya Shpitser.
+\newblock An automated approach to causal inference in discrete settings.
+\newblock \emph{Journal of the American Statistical Association}, 119(547):1778--1793, 2024.
+
+\bibitem{Kitagawa2015}
+Toru Kitagawa.
+\newblock A test for instrument validity.
+\newblock \emph{Econometrica}, 83(5):2043--2063, 2015.
+
+\bibitem{Manski1990}
+Charles F. Manski.
+\newblock Nonparametric bounds on treatment effects.
+\newblock \emph{The American Economic Review}, 80(2):319--323, 1990.
+
+\bibitem{MourifieWan2017}
+Ismael Mourifie and Yuanyuan Wan.
+\newblock Testing local average treatment effect assumptions.
+\newblock \emph{Review of Economics and Statistics}, 99(2):305--313, 2017.
+
+\bibitem{Noack2021}
+Claudia Noack.
+\newblock Sensitivity of LATE estimates to violations of the monotonicity assumption.
+\newblock \emph{arXiv:2106.06421}, 2021.
+
+\bibitem{SojitraSyrgkanis2024}
+Ravi B. Sojitra and Vasilis Syrgkanis.
+\newblock Dynamic local average treatment effects.
+\newblock \emph{arXiv:2405.01463}, 2024.
+
+\bibitem{SwansonHernanMillerRobinsRichardson2018}
+Sonja A. Swanson, Miguel A. Hernan, Matthew Miller, James M. Robins, and Thomas S. Richardson.
+\newblock Partial identification of the average treatment effect using instrumental variables: Review of methods for binary instruments, treatments, and outcomes.
+\newblock \emph{Journal of the American Statistical Association}, 113(522):933--947, 2018.
+\end{thebibliography}
+
+\end{document}

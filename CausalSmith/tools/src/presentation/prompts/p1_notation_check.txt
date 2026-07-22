@@ -1,0 +1,60 @@
+You are auditing the NOTATION-RESOLVABILITY of a paper's frozen formal layer — the
+one check the equivalence gate cannot do (it verifies statements MATCH the Lean,
+never that a reader can resolve their symbols). A self-contained paper must let a
+reader resolve every named object a statement uses back to exactly one defining
+statement. Once an anchored setup or definition introduces a symbol, later uses
+need not repeat a `\cref`; ordinary mathematical prose relies on definition order.
+(A deterministic lint already
+catches the simplest case — a parameterized `\mathcal{...}` class with no defining
+environment — so spend your effort on the cases it CANNOT see: named operators in
+`\mathrm{...}`, wrong cross-references, parameter mismatches, and symbols defined
+only in passing.)
+
+Frozen formal environments (each is `\begin{KINDv}{obj-id}[title] … \end{KINDv}`;
+the obj-id is the anchor that `\cref{obj:…}` resolves to):
+{{frozen_layer}}
+
+Notation table the author planned:
+{{notation_table}}
+
+Symbols carrying an authoritative Lean realization (`@realizes` in the machine-verified
+source). The paper resolves these against their Lean declaration rather than a paper-side
+environment, so they ARE resolvable: never report them as `undefined` or `no-anchor`, even
+when no environment defines them. A paper-side duplicate would compete with the Lean
+declaration for authority.
+{{lean_realized_symbols}}
+
+TASK. Find every NAMED operator, predicate, function class, law family, or rule
+symbol that a STATEMENT body (theorem / lemma / assumption / definition) USES but a
+reader CANNOT resolve. A symbol is resolvable iff some environment DEFINES it (its
+title names it, or its body says "we say … when", "the class … is", "denote … by",
+"$X := …$"). The defining environment must occur before later uses. Do not flag
+a later use merely because it omits a cross-reference.
+
+FLAG, per symbol, the worst applicable case:
+- `undefined` — used in a statement but NO environment defines it (it is introduced
+  only in passing, or its definition is deferred to section prose that has no
+  anchor a `\cref` can target). E.g. a class `\mathcal H^\beta(…)` or an operator
+  `\mathrm{overlapDen}` used in assumptions/lemmas with no defining environment.
+- `wrong-ref` — the use carries a `\cref{obj:X}` but env X does NOT define the symbol
+  (e.g. referencing the boundary-extrapolator definition for the Hölder class).
+- `mismatch` — the defining statement and the use disagree on the symbol's
+  parameters/arguments (defined as `\mathcal H^\beta(L;[0,t_0])` but used as
+  `\mathcal H^\beta(C_\beta;[0,t_0])` with no statement that the constants coincide).
+- `no-anchor` — defined only in an environment-less location so no `\cref` can reach
+  it (a named class/operator should be its own `definitionv`, or an anchored,
+  labelled definition, not a floating prose sentence).
+
+EXCLUDE standard mathematics no reader needs defined: `\mathbb R`, `\mathbb E`,
+`\Pr`, `\mathbb 1`, `\vee`/`\wedge`/`\le`/`\to`, Greek parameters (κ, β, λ, …),
+ordinary functions (e, μ, g), and the ambient covariate space `\mathcal X` IF the
+setup/observable-law definition introduces it. Flag only genuinely NAMED objects a
+reader of this paper could not resolve.
+
+OUTPUT — return ONLY this JSON on stdout, nothing else:
+{"clean": true|false,
+ "problems": [{"symbol": "<as it appears, e.g. \\mathcal H^\\beta>",
+               "used_in": ["<obj-id>", …],
+               "case": "undefined|wrong-ref|mismatch|no-anchor",
+               "fix": "<one concrete instruction, e.g. 'add a definitionv for the higher-order Hölder ball and \\cref it from P-11/P-12/P-13'>"}]}
+"clean": true with an empty problems list iff every named symbol is resolvable.

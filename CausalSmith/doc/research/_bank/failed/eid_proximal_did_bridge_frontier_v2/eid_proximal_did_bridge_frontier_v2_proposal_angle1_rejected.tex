@@ -1,0 +1,364 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_proximal\_did\_bridge\_frontier, specialization=v2
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_proximal\_did\_bridge\_frontier} / \texttt{v2}%
+  \\ \large\textit{A finite proximal-DiD regime atlas with negative controls}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+(qid, specialization, graph / SWIG, treatment, target estimand, identifying assumptions)
+qid = eid_proximal_did_bridge_frontier.
+specialization = v2.
+graph / SWIG = finite two-group, three-period panel with latent U, negative-control
+  outcome W, negative-control exposure Z, observed outcome Y_t, group G, and treatment
+  D_t = 1{G=1,t=2}. W and Z are not affected by D_2.
+treatment = switch-on treatment in period 2 for group G=1.
+target estimand = ATT tau = E[Y_2(1)-Y_2(0) | G=1].
+identifying assumptions = consistency; positivity of observed proxy cells; no treatment
+  effect on W or Z; ordinary additive pretrend diagnostics use only the
+  (G,W,Y_0,Y_1) margin; the proximal bridge uses the additional negative-control
+  exposure Z through the preperiod bridge matrix B(P), bridge loading
+  m(P)=E[h(P)_W | G=1], and the regime signature
+  Omega(P)=(delta_pt(P),delta_br(P)).
+\end{verbatim}
+
+\begin{abstract}
+Negative-control DiD uses preperiod and placebo information to diagnose violations of parallel trends. Proximal DiD asks whether an exposure proxy supplies a bridge for the treated untreated trend. This proposal studies the finite regime atlas \(\mathcal A_4\), a rational \(2\times3\) binary-proxy construction that realizes four open regimes: both parallel trends and the proximal bridge identify ATT, parallel trends alone identifies ATT, the proximal bridge alone identifies ATT, and neither identifies ATT. The central conjecture is that \(\mathcal A_4\) can be completed to positive observed/latent laws with common support and stable negative-control exclusions. The focal object is the observable regime signature \(\Omega(P)=(\delta_{\mathrm{pt}}(P),\delta_{\mathrm{br}}(P))\), computed from raw preperiod proxy cells, raw preperiod outcome increments, and one treated untreated-trend mean.
+\end{abstract}
+
+\section{Introduction}
+Difference-in-differences can be read as a pretrend design and as a negative-control-outcome design. The question is whether ordinary parallel trends and a double-proxy bridge are nested restrictions once the negative-control exposure is observed. Conjecture 1 states that they are not: one finite atlas realizes all four logical regimes on a common \(2\times3\) binary-proxy support.
+
+The closest comparators are \citet[Sec.~2, Eq.~(1)]{SoferRichardsonColicinoSchwartzTchetgen2016}, which states the negative-outcome-control interpretation of DiD, and \citet[Sec.~3, bridge equations]{MiaoShiLiTchetgen2024}, which gives double negative-control bridge functions outside a DiD pretrend frontier. The gap is finite and operational: neither paper constructs a pair of nonsingular finite laws that are indistinguishable to the ordinary NCO pretrend record but separated by a nonzero proximal bridge residual. The kernel is an exact-identification statement for a finite panel law with negative controls.
+
+The concrete consumer is negative-control DiD in health-record and policy applications, represented by \citet{ZhangZhangWangEtAl2025}. Their calibration logic can say that controls are useful for bias correction; this frontier says when the same observed proxy moments are enough for ATT identification and when they are not.
+
+\begin{itemize}[leftmargin=*]
+\item Conjecture 1: a four-law finite regime atlas \(\mathcal A_4=\{P^{00},P^{10},P^{01},P^{11}\}\) exists with common support and \(\Omega(P^{00})=(0,0)\), \(\Omega(P^{10})=(0,1/2)\), \(\Omega(P^{01})=(-1/2,0)\), and \(\Omega(P^{11})=(-1/2,1)\). Gap: \citet{SoferRichardsonColicinoSchwartzTchetgen2016}, \citet{MiaoShiLiTchetgen2024}, and \citet{ZhangZhangWangEtAl2025} do not give a common finite witness proving strict non-nesting of additive DiD and double-proxy proximal DiD. Consumer: negative-control DiD calibration in \citet{ZhangZhangWangEtAl2025}.
+\item Theorem 1: if a law has \(\delta_{\mathrm{pt}}(P)=0\) or \(\delta_{\mathrm{br}}(P)=0\), then \(\tau_{\mathrm{did}}(P)\) or \(\tau_{\mathrm{br}}(P)\) equals ATT, respectively; the atlas values imply strict non-inclusion of the two identifying restrictions. Gap: \citet{RichardsonYeTchetgen2023} and \citet{TchetgenParkRichardson2024} change the equi-confounding restriction, while this result compares additive DiD with a double-proxy bridge on the same finite support. Consumer: applied designs that must decide whether a proxy bridge adds identification content.
+\item Conjecture 2: the sign pattern of \(\Omega(P)\) is locally stable around the four atlas laws, so no pretrend-only, placebo-only, or NCO-only diagnostic can classify the proximal bridge regime on that open class. Gap: \citet[Sec.~3]{RambachanRoth2023} uses pretrend restrictions for sensitivity analysis, while this result concerns logical non-representability of a double-proxy bridge frontier. Consumer: empirical event-study diagnostics with negative controls.
+\end{itemize}
+
+\section{Related work}
+\citet{MiaoGengTchetgen2018} is the rank/completeness ancestor for proximal identification with two independent proxies. \citet{MiaoShiLiTchetgen2024} states double negative-control bridge equations and is the closest published bridge comparator. \citet{CuiPuShiMiaoTchetgen2024} develops semiparametric proximal inference around bridge functions; it motivates but does not settle a finite DiD bridge frontier. \citet{SoferRichardsonColicinoSchwartzTchetgen2016} interprets DiD as a negative-outcome-control method and emphasizes that bias-equivalence restrictions are scale-dependent. \citet{RichardsonYeTchetgen2023} generalizes DiD by changing equi-confounding restrictions rather than adding an exposure proxy. \citet{TchetgenParkRichardson2024} gives universal DiD through odds-ratio equi-confounding, which is a comparator for generalized DiD but not for double-proxy rank. \citet{ZhangZhangWangEtAl2025} is the closest NC-DiD application paper because it uses negative-control outcomes to detect and calibrate parallel-trends violations. \citet{RambachanRoth2023} supplies the modern pretrend sensitivity comparator. \citet{CallawaySantAnna2021} and \citet{SunAbraham2021} define the modern multi-period DiD comparison class, but neither includes negative-control exposure bridges.
+
+In-repository prior art is thinner on this exact object. The CausalSmith catalogue records active panel theorem families under \texttt{doc/API.md} Section 1, especially Q1 minimal-basis and sign-flip results, but those are linear-projection panel theorems rather than exact-identification bridge results. \texttt{doc/API.md} Section 3 says the CausalSmith ExactID catalogue is empty at seed time, so this proposal is not a relabelling of an existing ExactID qid. The failed \texttt{eid\_proximal\_did\_bridge\_frontier\_v1} run is direct in-repo prior art; its reviewer rejected moment-row witnesses because they did not provide a full finite observed/latent law computing all objects from primitives.
+
+\section{Formal setup}
+\begin{verbatim}
+(qid, specialization, graph / SWIG, treatment, target estimand, identifying assumptions)
+qid = eid_proximal_did_bridge_frontier.
+specialization = v2.
+graph / SWIG = finite two-group, three-period panel with latent U, negative-control
+  outcome W, negative-control exposure Z, observed outcome Y_t, group G, and treatment
+  D_t = 1{G=1,t=2}. W and Z are not affected by D_2.
+treatment = switch-on treatment in period 2 for group G=1.
+target estimand = ATT tau = E[Y_2(1)-Y_2(0) | G=1].
+identifying assumptions = consistency; positivity of observed proxy cells; no treatment
+  effect on W or Z; ordinary additive pretrend diagnostics use only the
+  (G,W,Y_0,Y_1) margin; the proximal bridge uses the additional negative-control
+  exposure Z through the preperiod bridge matrix B(P), bridge loading
+  m(P)=E[h(P)_W | G=1], and residual rho(P).
+\end{verbatim}
+
+Let \(G\in\{0,1\}\), \(t\in\{0,1,2\}\), and \(D_t=\one\{G=1,t=2\}\). Let \(U,W,Z\in\{0,1\}\), where \(W\) is a negative-control outcome and \(Z\) is a negative-control exposure. The observed law \(P\) is a positive finite law over \((G,U,W,Z,Y_0,Y_1,Y_2)\) together with counterfactuals \(Y_2(0)\) and \(Y_2(1)\), with \(Y_2=Y_2(D_2)\). The target is
+\[
+  \tau(P)=\E\{Y_2(1)-Y_2(0)\mid G=1\}.
+\]
+
+Write \(\Delta_g(P)=\E(Y_2-Y_1\mid G=g)\), \(\Delta^0_1(P)=\E(Y_2(0)-Y_1\mid G=1)\), and
+\[
+  \tau_{\mathrm{did}}(P)=\Delta_1(P)-\Delta_0(P).
+\]
+For \(z,w\in\{0,1\}\), define the preperiod bridge matrix and right-hand side by
+\[
+  B(P)_{zw}=\Pr(W=w\mid Z=z,G=0),\qquad
+  r(P)_z=\E(Y_1-Y_0\mid Z=z,G=0).
+\]
+When \(B(P)\) is nonsingular, define \(h(P)=B(P)^{-1}r(P)\), a two-vector indexed by \(W\), and
+\[
+  m(P)=\E\{h(P)_W\mid G=1\},\qquad
+  \rho(P)=\E\{Y_2(0)-Y_1\mid G=1\}-m(P),\qquad
+  \tau_{\mathrm{br}}(P)=\Delta_1(P)-m(P).
+\]
+The NCO-only pretrend record is
+\[
+  S_W(P)=\Big(\Pr(W=1\mid G=g),\,\E(Y_1-Y_0\mid W=w,G=g):g,w\in\{0,1\}\Big).
+\]
+Define the two residual coordinates
+\[
+  \delta_{\mathrm{pt}}(P)=\Delta^0_1(P)-\Delta_0(P),\qquad
+  \delta_{\mathrm{br}}(P)=\Delta^0_1(P)-m(P),
+\]
+and the regime signature
+\[
+  \Omega(P)=\big(\delta_{\mathrm{pt}}(P),\delta_{\mathrm{br}}(P)\big).
+\]
+The finite atlas object is a four-tuple
+\[
+  \mathcal A_4=(P^{00},P^{10},P^{01},P^{11})
+\]
+on the common support of Section 6. Its target signature matrix is
+\[
+  \Omega(P^{00})=(0,0),\quad
+  \Omega(P^{10})=(0,1/2),\quad
+  \Omega(P^{01})=(-1/2,0),\quad
+  \Omega(P^{11})=(-1/2,1).
+\]
+The first coordinate indexes failure of additive parallel trends; the second indexes failure of the proximal bridge. The restrictions studied below are \(PT(P)\) and \(BR(P)\), defined in Assumptions \ref{ass:pt} and \ref{ass:bridge}.
+
+\section{Assumptions}
+\begin{assumption}[Finite positive support]\label{ass:support}
+All cells of \((G,W,Z)\) used in conditional means have positive probability, and all conditional means in Section 6 are finite.
+\end{assumption}
+
+\begin{assumption}[Consistency and negative-control exclusion]\label{ass:exclusion}
+\(Y_2=Y_2(D_2)\). The variables \(W\) and \(Z\) are not affected by \(D_2\), and their observed period-2 values equal their no-treatment values.
+\end{assumption}
+
+\begin{assumption}[Ordinary additive parallel trends]\label{ass:pt}
+\(PT(P)\) holds when \(\Delta^0_1(P)=\Delta_0(P)\).
+\end{assumption}
+
+\begin{assumption}[Preperiod proximal bridge]\label{ass:bridge}
+\(BR(P)\) holds when \(B(P)\) is nonsingular and
+\[
+  \rho(P)=\E\{Y_2(0)-Y_1\mid G=1\}-m(P)=0.
+\]
+\end{assumption}
+
+\begin{assumption}[Open-cell perturbation class]\label{ass:open}
+The witness laws may be perturbed inside a sufficiently small Euclidean ball of their raw cell probabilities and conditional outcome means while preserving positivity, determinant lower bounds, and the displayed strict residual inequalities.
+\end{assumption}
+
+\section{Main results}
+\begin{conjecture}[Finite proximal-DiD regime atlas, NOT YET PROVED]\label{conj:atlas}
+There exists a positive finite atlas \(\mathcal A_4=(P^{00},P^{10},P^{01},P^{11})\) on the common support of Section 6 satisfying Assumptions \ref{ass:support} and \ref{ass:exclusion}. The four laws obey
+\[
+  \Omega(P^{00})=(0,0),\qquad
+  \Omega(P^{10})=(0,1/2),\qquad
+  \Omega(P^{01})=(-1/2,0),\qquad
+  \Omega(P^{11})=(-1/2,1).
+\]
+Thus \(P^{00}\) is identified by both additive DiD and the proximal bridge, \(P^{10}\) is identified by additive DiD but not the proximal bridge, \(P^{01}\) is identified by the proximal bridge but not additive DiD, and \(P^{11}\) is identified by neither. The four signatures persist on open neighborhoods satisfying Assumption \ref{ass:open}.
+\end{conjecture}
+
+\begin{theorem}[Strict non-nesting from an atlas]\label{thm:nonnesting}
+If Conjecture \ref{conj:atlas} holds, then \(PT\) and \(BR\) are neither nested nor equivalent on the common finite support. Moreover \(\delta_{\mathrm{pt}}(P)=0\) implies \(\tau_{\mathrm{did}}(P)=\tau(P)\), and \(\delta_{\mathrm{br}}(P)=0\) implies \(\tau_{\mathrm{br}}(P)=\tau(P)\).
+\end{theorem}
+The proof uses the four realized signatures. The two identification equalities follow from \(\Delta_1(P)=\tau(P)+\Delta^0_1(P)\), the definitions of \(\tau_{\mathrm{did}}\) and \(\tau_{\mathrm{br}}\), and the zero coordinate of \(\Omega(P)\).
+
+\begin{conjecture}[Local diagnostic frontier, NOT YET PROVED]\label{conj:frontier}
+There is an open class around the atlas in Conjecture \ref{conj:atlas} on which no diagnostic that is a function only of the NCO pretrend record \(S_W(P)\) classifies \(BR(P)\). In particular, ordinary pretrend, placebo, and lead-coefficient diagnostics that discard \(Z\) are not sufficient statistics for whether the proximal bridge identifies ATT.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No-confounding reduction]\label{cor:noconfound}
+If \(Y_2(0)-Y_1\) is mean-independent of \(G\), then \(PT(P)\) holds and \(\tau_{\mathrm{did}}(P)=\tau(P)\).
+\end{corollary}
+Under Assumption \ref{ass:pt}, this collapses to the standard two-period DiD estimand because \(\Delta_1(P)=\tau(P)+\Delta^0_1(P)\) and \(\Delta^0_1(P)=\Delta_0(P)\).
+
+\begin{example}[Exhibit 9.1: nonsingular bridge-residual pair]\label{ex:bridgepair}
+Let \(P^a\) and \(P^b\) share \(\Pr(G=1)=\Pr(G=0)=1/2\), \(\Pr(W=0\mid G=1)=3/4\), \(\Pr(W=0\mid G=0)=1/2\), \(\E(Y_1-Y_0\mid W=0,G=0)=7/5\), \(\E(Y_1-Y_0\mid W=1,G=0)=13/5\), \(\E(Y_1-Y_0\mid W=0,G=1)=9/5\), and \(\E(Y_1-Y_0\mid W=1,G=1)=11/5\). In both laws set \(\Delta_1(P)=13/2\), \(\tau(P)=5\), and \(\E\{Y_2(0)-Y_1\mid G=1\}=3/2\). Let \(P^a\) have
+\[
+  B(P^a)=
+  \begin{pmatrix}
+  4/5 & 1/5\\
+  1/5 & 4/5
+  \end{pmatrix}.
+\]
+Let \(P^b\) have
+\[
+  B(P^b)=
+  \begin{pmatrix}
+  3/5 & 2/5\\
+  2/5 & 3/5
+  \end{pmatrix}.
+\]
+For \(P^a\), choose the raw conditional preperiod-change table \(x^a_{zw}=\E(Y_1-Y_0\mid Z=z,W=w,G=0)\) as
+\[
+  x^a=\begin{pmatrix}1&3\\3&5/2\end{pmatrix}.
+\]
+For \(P^b\), choose
+\[
+  x^b=\begin{pmatrix}1&2\\2&3\end{pmatrix}.
+\]
+These tables give the same \(S_W\) entries but different bridge solutions. Specifically \(h(P^a)=(1,3)^\transpose\), \(m(P^a)=3/2\), and \(\rho(P^a)=0\). Also \(h(P^b)=(-1,5)^\transpose\), \(m(P^b)=1/2\), and \(\rho(P^b)=1\). Since \(\Delta_0(P^a)=\Delta_0(P^b)=2\), ordinary parallel trends fails for both laws; since \(\det B(P^a)=3/5\) and \(\det B(P^b)=1/5\), both bridge loadings are defined.
+
+\begin{verbatim}
+Focal object: R(P^a,P^b), B(P^a), B(P^b), h(P^a), h(P^b), rho(P^a), rho(P^b)
+Defining equation (copy verbatim from Section 6 / 7):
+  B(P)_{zw}=Pr(W=w | Z=z,G=0)
+  r(P)_z=E(Y_1-Y_0 | Z=z,G=0)
+  h(P)=B(P)^{-1}r(P)
+  m(P)=E{h(P)_W | G=1}
+  rho(P)=E{Y_2(0)-Y_1 | G=1}-m(P)
+  R(P^a,P^b)=(S_W(P^a)=S_W(P^b), det B(P^a)det B(P^b)!=0,
+    rho(P^a)=0, rho(P^b)!=0)
+RHS symbol provenance:
+  Pr(W=0|G=1)=3/4 source: Section 6 raw group-proxy cell
+  Pr(W=0|G=0)=1/2 source: Section 6 raw group-proxy cell
+  E(Y1-Y0|W=0,G=0)=7/5 source: Section 6 raw conditional outcome mean
+  E(Y1-Y0|W=1,G=0)=13/5 source: Section 6 raw conditional outcome mean
+  E(Y1-Y0|W=0,G=1)=9/5 source: Section 6 raw conditional outcome mean
+  E(Y1-Y0|W=1,G=1)=11/5 source: Section 6 raw conditional outcome mean
+  B^a_00=4/5, B^a_01=1/5, B^a_10=1/5, B^a_11=4/5 source: Section 6 raw conditional proxy cells
+  B^b_00=3/5, B^b_01=2/5, B^b_10=2/5, B^b_11=3/5 source: Section 6 raw conditional proxy cells
+  x^a=(1,3;3,5/2) source: Section 6 raw conditional preperiod-change cells
+  x^b=(1,2;2,3) source: Section 6 raw conditional preperiod-change cells
+  r^a=(7/5,13/5) source: derived from B^a and x^a by row averaging over W
+  r^b=(7/5,13/5) source: derived from B^b and x^b by row averaging over W
+  E{Y_2(0)-Y_1|G=1}=3/2 source: Section 6 raw treated untreated-trend mean
+  Delta_1(P^a)=Delta_1(P^b)=13/2 source: Section 6 raw treated post change
+  tau(P^a)=tau(P^b)=5 source: Section 6 raw treated ATT mean
+Substituted equation:
+  det B(P^a)=(4/5)(4/5)-(1/5)(1/5)=3/5
+  h(P^a)=B(P^a)^{-1}r=(1,3)
+  m(P^a)=1*(3/4)+3*(1/4)=3/2
+  rho(P^a)=3/2-3/2=0
+  tau_br(P^a)=13/2-3/2=5
+  det B(P^b)=(3/5)(3/5)-(2/5)(2/5)=1/5
+  h(P^b)=B(P^b)^{-1}r=(-1,5)
+  m(P^b)=(-1)*(3/4)+5*(1/4)=1/2
+  rho(P^b)=3/2-1/2=1
+  tau_br(P^b)=13/2-1/2=6
+Computed value: R(P^a,P^b) holds with S_W equal, both determinants nonzero,
+  rho(P^a)=0, rho(P^b)=1, tau_br(P^a)=5, and tau_br(P^b)=6.
+Invariant check 1: proxy rows sum to one
+  LHS P^a row 0=4/5+1/5=1, row 1=1/5+4/5=1; RHS=1; result=OK
+  LHS P^b row 0=3/5+2/5=1, row 1=2/5+3/5=1; RHS=1; result=OK
+Invariant check 2: S_W equality
+  LHS S_W(P^a)=(3/4,1/2,7/5,13/5,9/5,11/5); RHS S_W(P^b)=same; result=OK
+Invariant check 3: both bridges are nonsingular
+  LHS det B(P^a)=3/5 and det B(P^b)=1/5; RHS nonzero; result=OK
+Invariant check 4: raw x tables reproduce the displayed W-indexed NCO means
+  LHS P^a W0 mean=4/5*1+1/5*3=7/5, W1 mean=1/5*3+4/5*5/2=13/5; RHS=(7/5,13/5); result=OK
+  LHS P^b W0 mean=3/5*1+2/5*2=7/5, W1 mean=2/5*2+3/5*3=13/5; RHS=(7/5,13/5); result=OK
+Invariant check 5: ordinary DiD fails while the bridge residual separates
+  LHS tau_did=13/2-2=9/2; RHS tau=5; result=OK
+  LHS rho(P^a)=0 and rho(P^b)=1; RHS separated residuals; result=OK
+Assumption-substitution screen:
+  No RHS symbol above is sourced from Section 7 as a load-bearing primitive.
+  The certificate is computed from Section 6 raw cells and derived algebra only.
+SC10 verdict: PASS
+\end{verbatim}
+\end{example}
+
+\section{Proof-sketch route}
+\begin{enumerate}[leftmargin=*]
+\item Headline: nonsingular bridge-residual separation in Conjecture \ref{conj:certificate}.
+\item Step 0a -- unfold Section 6 definitions: expand \(S_W(P)\), \(B(P)\), \(r(P)\), \(h(P)\), \(m(P)\), \(\rho(P)\), \(\tau_{\mathrm{did}}\), and \(\tau_{\mathrm{br}}\). This step is not counted.
+\item Step 0b -- apply Section 7 assumptions: consistency, negative-control exclusion, \(PT\), and \(BR\). This step is not counted.
+\item Step 1 (substantive): construct the paired rational laws \(P^a,P^b\) by specifying positive \((G,Z,W)\) cells and raw \((Z,W)\)-indexed preperiod-change tables with identical \(S_W\) and different nonsingular \(W\mid Z,G=0\) bridge matrices.
+\item Step 2 (substantive): solve the two binary bridge equations, compute \(h(P^a)=(1,3)\), \(h(P^b)=(-1,5)\), and derive \(m(P^a)=3/2\), \(m(P^b)=1/2\) from the common treated \(W\)-margin.
+\item Step 3 (substantive): complete both observed laws to counterfactual laws with \(W,Z\) unaffected by treatment, common \(\E\{Y_2(0)-Y_1\mid G=1\}=3/2\), \(BR(P^a)\) true, \(BR(P^b)\) false, and \(PT\) false for both.
+\item Step 4 (substantive): prove non-representability by showing every \(T(P)=\phi(S_W(P))\) takes equal values on \(P^a,P^b\), while the bridge residual \(\rho(P)\) separates them.
+\item Step 5 (substantive): prove openness by a constant-rank and strict-residual argument around both laws, keeping determinant lower bounds and \(|\rho(P^b)|>0\) inside the perturbation class.
+\item Classical result: finite-dimensional polynomial inequality stratification on an open simplex.
+\end{enumerate}
+
+\section{Honest scope flags}
+The paired-law separation is a conjecture until the latent completions are written as full positive tables and the openness argument is checked under the \(S_W\)-matching constraints. The bridge-map algebra is routine once the bridge restriction is accepted. The proposal no longer uses a singular bridge witness or compares an undefined bridge loading. It does not claim semiparametric efficiency, asymptotic normality, or uniqueness of a bridge outside the binary full-rank case.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for angle 1; finite non-nesting replaces the dead calibration-residual wedge angle; prior verdict: REJECT.
+\item v2 (kernel-replace) -- discarded singular pretrend-indistinguishable bridge certificate; new kernel: nonsingular bridge-residual certificate with \(\rho(P^a)=0\) and \(\rho(P^b)=1\); reason: N-promissory-object, C-wellposed, C-sanity, and C-definitional-unfold; prior verdict: REJECT.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Callaway and Sant'Anna(2021)]{CallawaySantAnna2021}
+Callaway, B. and P. H. C. Sant'Anna (2021).
+Difference-in-differences with multiple time periods.
+\emph{Journal of Econometrics} 225(2), 200--230.
+
+\bibitem[Cui et al.(2024)]{CuiPuShiMiaoTchetgen2024}
+Cui, Y., H. Pu, X. Shi, W. Miao, and E. J. Tchetgen Tchetgen (2024).
+Semiparametric proximal causal inference.
+\emph{Journal of the American Statistical Association}.
+
+\bibitem[Miao et al.(2018)]{MiaoGengTchetgen2018}
+Miao, W., Z. Geng, and E. J. Tchetgen Tchetgen (2018).
+Identifying causal effects with proxy variables of an unmeasured confounder.
+\emph{Biometrika} 105(4), 987--993.
+
+\bibitem[Miao et al.(2024)]{MiaoShiLiTchetgen2024}
+Miao, W., X. Shi, Y. Li, and E. J. Tchetgen Tchetgen (2024).
+Negative control methods for causal inference based on double negative control variables.
+\emph{Statistical Theory and Related Fields}.
+
+\bibitem[Rambachan and Roth(2023)]{RambachanRoth2023}
+Rambachan, A. and J. Roth (2023).
+A more credible approach to parallel trends.
+\emph{Review of Economic Studies} 90(5), 2555--2591.
+
+\bibitem[Richardson et al.(2023)]{RichardsonYeTchetgen2023}
+Richardson, D. B., T. Ye, and E. J. Tchetgen Tchetgen (2023).
+Generalized difference-in-differences.
+\emph{Epidemiology} 34(2), 167--174.
+
+\bibitem[Sofer et al.(2016)]{SoferRichardsonColicinoSchwartzTchetgen2016}
+Sofer, T., D. B. Richardson, E. Colicino, J. Schwartz, and E. J. Tchetgen Tchetgen (2016).
+On negative outcome control of unobserved confounding as a generalization of difference-in-differences.
+\emph{Statistical Science} 31(3), 348--361.
+
+\bibitem[Sun and Abraham(2021)]{SunAbraham2021}
+Sun, L. and S. Abraham (2021).
+Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\emph{Journal of Econometrics} 225(2), 175--199.
+
+\bibitem[Tchetgen Tchetgen et al.(2024)]{TchetgenParkRichardson2024}
+Tchetgen Tchetgen, E. J., C. Park, and D. B. Richardson (2024).
+Universal difference-in-differences.
+\emph{Epidemiology} 35(3), 329--337.
+
+\bibitem[Zhang et al.(2025)]{ZhangZhangWangEtAl2025}
+Zhang, D., B. Zhang, H. Wang, Y. Lu, C. J. Wolock, W. Hu, L. Wang, G. Hripcsak, and Y. Chen (2025).
+Negative control difference-in-differences for causal inference.
+\emph{npj Digital Medicine}.
+\end{thebibliography}
+
+\end{document}

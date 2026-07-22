@@ -1,0 +1,2439 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1.1in]{geometry}
+
+\usepackage{amssymb,mathtools,natbib}
+
+\input{paper_macros.tex}
+
+\title{A Lower-Bound Calibration for Joint Margin--Overlap Decay in Offline Policy Learning}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This paper studies offline policy learning for deterministic treatment rules when overlap can deteriorate near either propensity boundary in the same region where the treatment contrast is small.  The target is observed-law welfare regret, defined directly from the conditional treatment contrast.  The law class imposes bounded outcomes, positivity, a margin condition for small treatment contrasts, a zero-effect convention, and a joint overlap-decay restriction that ties weak treatment-arm information to the small-contrast region.  Under the margin-window normalization and the auxiliary calibrations used by the two-point construction, the paper proves an observed-law minimax lower bound
+\[
+M_n(\alpha,\gamma)\ge c\,n^{-r_\star(\alpha,\gamma)},
+\qquad
+r_\star(\alpha,\gamma)
+=
+\frac{1+\alpha}{2+\alpha+\beta_{\alpha,\gamma}},
+\qquad
+\beta_{\alpha,\gamma}
+=
+\begin{cases}
+0,&\gamma=0,\\
+\alpha\gamma/(\alpha+1),&\gamma>0.
+\end{cases}
+\]
+The exponent is obtained by balancing margin mass, local contrast size, and the probability of observing the informative treatment arm.  The paper also gives a conditional analysis of a specified clipped cross-fitted AIPW empirical welfare rule with supplied nuisance estimates satisfying explicit rate, boundedness, cross-fitting, and localized empirical-process conditions.  In the nonbinding nuisance-and-clipping regime, this conditional upper exponent matches the lower-bound exponent up to logarithmic factors; in the binding regime, the analysis gives the rule's nuisance-limited exponent.
+\end{abstract}
+
+\section{Introduction}
+
+Policy learning in observational and logged data asks how well a data-dependent rule can approximate the treatment assignment that maximizes welfare.  The classical treatment-choice literature formulates this as a statistical decision problem under sampling uncertainty \citep{Manski2004,Manski2009,Stoye2009}, and empirical welfare maximization makes the connection to classification over structured policy classes explicit \citep{Kitagawa2018}.  Modern causal policy-learning procedures often use inverse-propensity and doubly robust scores, combined with sample splitting and flexible first-stage estimation, to estimate welfare criteria under overlap and nuisance-regularity conditions \citep{Athey2021,Chernozhukov2018,Chernozhukov2022}.
+
+This paper focuses on how the regret lower-bound calibration changes when overlap deteriorates in the same region where the treatment contrast is small.  The experiment is an offline observed-law policy-learning problem.  One observation is \(O=(X,A,Y)\), with propensity score \(e_P(x)=P(A=1\mid X=x)\), treatment-arm regressions \(\mu_a(x)=E_P[Y\mid A=a,X=x]\), and contrast \(\tau_P(x)=\mu_1(x)-\mu_0(x)\).  A deterministic policy \(\pi\) is evaluated by the contrast-weighted welfare and regret in \cref{obj:def:welfare-regret}.  At the observed-law level this defines the welfare problem directly; the usual potential-outcome identification conditions additionally supply its causal interpretation.
+
+The distinctive feature of the law class is a joint overlap-decay condition.  Let \(p_P(x)=\min\{e_P(x),1-e_P(x)\}\).  The class \(\mathcal P_{\alpha,\gamma}\) in \cref{obj:def:law-class} combines bounded outcomes, positivity, a margin condition for small nonzero contrasts, a zero-effect convention, the overlap-decay restriction, and the strict-overlap endpoint when \(\gamma=0\).  The condition permits weak overlap broadly while controlling the probability that weak overlap and small welfare-relevant contrasts occur together.  This is the region that matters for regret, because \cref{obj:thm:welfare-identity} writes regret as a weighted classification error with weight \(|\tau_P(X)|\).
+
+The main lower-bound result is an observed-law minimax lower bound over \(\mathcal P_{\alpha,\gamma}\).  Under the margin-window normalization and the witness-law calibration used in the construction, \cref{obj:thm:minimax-lower} shows that
+\[
+M_n(\alpha,\gamma)\ge c\,n^{-r_\star(\alpha,\gamma)},
+\qquad
+r_\star(\alpha,\gamma)
+=
+\frac{1+\alpha}{2+\alpha+\beta_{\alpha,\gamma}} .
+\]
+Here \(\beta_{\alpha,\gamma}=0\) under strict overlap and \(\beta_{\alpha,\gamma}=\alpha\gamma/(\alpha+1)\) when \(\gamma>0\).  The denominator has three components: \(2\) from testing local Bernoulli means separated by the contrast scale, \(\alpha\) from the mass of the margin block, and \(\beta_{\alpha,\gamma}\) from the probability of observing the informative treatment arm under overlap decay.
+
+The lower-bound proof uses a two-point Le Cam construction.  The two laws agree outside a small active block and differ only in the sign of the local treatment contrast on that block.  The active block has mass of order \(h^\alpha\), the contrast has size \(h\), and the informative arm is sampled with probability of order \(h^{\beta_{\alpha,\gamma}}\).  The overlap-envelope calculation in \cref{obj:prop:overlap-envelope} identifies \(\beta_{\alpha,\gamma}\) as the largest admissible weak-arm exponent within the tight-window algebraic calibration used in the construction.  The chi-square divergence is bounded above at scale \(h^{2+\alpha+\beta_{\alpha,\gamma}}\), while the regret separation is bounded below at scale \(h^{1+\alpha}\).  Taking \(h=n^{-1/(2+\alpha+\beta_{\alpha,\gamma})}\) gives the displayed exponent.
+
+The paper separates the converse calculation from feasible achievability.  The lower bound ranges over all measurable policy estimators taking values in the policy class and characterizes the observed-law converse.  A complementary analysis studies a computable clipped AIPW rule under explicit side conditions, because weak overlap affects both testing difficulty and the stability of inverse-propensity and doubly robust scores.
+
+The specified procedure is a clipped cross-fitted AIPW empirical welfare maximizer with supplied nuisance estimates.  The score is defined in \cref{obj:def:clipped-aipw-score}, the measurable empirical rule in \cref{obj:def:feasible-erm}, and the conditional risk domain in \cref{obj:def:upper-risk}.  \Cref{obj:oeq:feasible-upper} gives a uniform upper bound for this particular rule over the stated side-condition domain: laws in \(\mathcal P_{\alpha,\gamma}\) with the oracle policy in class, supplied cross-fitted nuisances satisfying the displayed rate and boundedness conditions, fixed balanced folds, and primitive localized empirical-process and offset-envelope conditions.  These inputs define the theorem's conditional domain and isolate uniform nuisance construction as a separate research question.
+
+For \(\gamma>0\), the feasible exponent is obtained by balancing four terms: the clipped empirical-process envelope, the clipped product nuisance remainder, the localized weak-overlap drift, and the outcome-regression error outside the localization window.  In the notation of \cref{obj:def:feasible-rate}, this gives
+\[
+r_{\mathrm{up}}
+=
+\min\{r_\star(\alpha,\gamma),g_{\mathrm{joint}}(\alpha,\gamma,a,c)\}.
+\]
+When \(g_{\mathrm{joint}}\ge r_\star(\alpha,\gamma)\), the conditional upper bound matches the observed-law lower-bound exponent up to logarithmic factors.  When \(g_{\mathrm{joint}}<r_\star(\alpha,\gamma)\), the clipped-AIPW analysis yields the rule's slower nuisance-limited exponent.
+
+\Cref{obj:oeq:feasible-tight} delineates the strict-gap branch and records the two relevant routes for a sharp feasible minimax characterization: a stronger feasible construction under comparable side conditions or a lower bound that incorporates nuisance learning into the experiment.
+
+The analysis is related to four literatures.  First, it uses the treatment-choice and empirical-welfare framework developed by \citet{Manski2004,Manski2009,Stoye2009} and \citet{Kitagawa2018}.  Second, the feasible rule follows the semiparametric and doubly robust tradition of \citet{Robins1994,Hahn1998,Hirano2003,Newey1994,Bickel1993,VanDerLaan2011} and the cross-fitting approach of \citet{Chernozhukov2018,Chernozhukov2022}.  Third, the exponent calculation parallels margin and low-noise excess-risk theory \citep{Audibert2007,Massart2006,Tsybakov2009} and the policy-regret margin analysis of \citet{Luedtke2017}.  Fourth, the motivation is close to work on limited and weak overlap, trimming, weighting instability, and clipping-based procedures \citep{Li2016,DAmour2017,BenMichael2022,Hill2024,Susmann2025,Zhao2023,Liu2026}.  The point of departure is the coupling between weak overlap and the small-contrast region that drives welfare regret.
+
+The formal layer for the paper is implemented in Lean 4; the verification appendix records its precise scope.  The rest of the paper proceeds as follows.  Section 2 defines the observed-law policy problem, the regret target, and the law class.  Section 3 gives the minimax lower bound.  Section 4 analyzes the clipped cross-fitted AIPW rule under the stated side conditions.  Section 5 discusses the strict-gap branch and the feasible-tightness question.
+
+
+\section{Related Literature}
+
+This paper is closest to four strands of work: econometric treatment choice, semiparametric and doubly robust estimation, margin-based excess-risk theory, and empirical learning under weak or limited overlap.  The \leanref{S-1}{observed-law policy-learning experiment} studied here keeps the target at the level of welfare regret for deterministic treatment rules, while allowing the information available for learning the sign of the conditional treatment contrast to deteriorate in the same region where the contrast is small.
+
+The treatment-choice literature frames policy learning as a welfare maximization problem under sampling uncertainty.  \citet{Manski2004,Manski2009} and \citet{Stoye2009} formulate finite-sample and minimax perspectives on treatment choice, while \citet{Kitagawa2018} develop empirical welfare maximization over policy classes and connect regret to classification-type complexity.  The modern policy-learning literature extends these ideas using doubly robust and orthogonal scores, sample splitting, and high-dimensional nuisance estimation \citep{Athey2021,Chernozhukov2018,Chernozhukov2022}.  The present paper places joint margin-overlap decay directly in the lower-bound calibration and quantifies its interaction with margin complexity.
+
+The semiparametric literature provides the estimation architecture behind the feasible rule considered later.  Efficient influence-function calculations and doubly robust estimating equations originate in the general semiparametric theory of \citet{Bickel1993} and \citet{Newey1994}, and in the causal-inference developments of \citet{Robins1994}, \citet{Hahn1998}, \citet{Hirano2003}, and \citet{VanDerLaan2011}.  Cross-fitting and Neyman-orthogonal score construction make these ideas compatible with flexible first-stage estimation \citep{Chernozhukov2018,Chernozhukov2022}.  Our conditional upper bound applies this orthogonal-score logic to a clipped AIPW empirical welfare rule under explicit nuisance-rate and empirical-process side conditions.
+
+A second point of contact is individualized treatment-rule estimation.  Outcome-weighted learning and related classification reductions appear in \citet{Qian2011}, \citet{Zhao2012}, and \citet{Zhang2012}; off-policy and contextual-bandit work studies related inverse-propensity and doubly robust objectives \citep{Dudik2011,Swaminathan2015,Kallus2017}.  More recent contributions include R-learning and related robust policy learning under flexible nuisance estimation \citep{Nie2021,Athey2021}, instrumental-variable welfare analysis via marginal treatment effects \citep{Sasaki2020}, constrained empirical welfare maximization \citep{Sun2021}, and time-series policy choice by empirical welfare maximization \citep{Kitagawa2022}.  These papers emphasize feasible algorithms and statistical guarantees under their respective overlap and nuisance assumptions.  The present contribution instead separates an observed-law minimax lower bound from a conditional clipped-AIPW achievability statement, so the feasible analysis should be read as one procedure-specific upper bound under stated side conditions.
+
+The exponent calculations are also related to margin-based excess-risk theory.  The role played here by small conditional treatment contrasts is analogous to the low-noise or margin conditions in binary classification \citep{Audibert2007,Massart2006,Tsybakov2009}.  Under strict overlap, margin structure yields the familiar improvement from a square-root empirical-process rate toward faster regret rates.  With joint overlap decay, however, observations in the small-contrast region can have less informative treatment-arm sampling.  This changes the testing difficulty in the local alternatives used for the lower bound and makes the exponent depend jointly on the margin and overlap-decay parameters.
+
+Limited-overlap and weak-overlap problems have been studied extensively in causal inference and off-policy evaluation.  Diagnostics, trimming, weighting instability, and design sensitivity are discussed by \citet{Li2016}, \citet{DAmour2017}, \citet{BenMichael2022}, \citet{Hill2024}, and \citet{Susmann2025}.  Recent work also develops weak-overlap guarantees and clipping-based procedures for treatment-effect or policy-value estimation \citep{Zhao2023,Liu2026}; related adaptive-data and online policy-learning guarantees under dependent sampling, diminishing exploration, or self-normalized inequalities include \citet{Zhan2021} and \citet{Girard2025}.
+Related doubly robust off-policy and dynamic-regime guarantees appear in \citet{Chen2020,Sakaguchi2024}.  This paper couples overlap decay to the margin region for welfare regret, concentrating the difficulty where small treatment contrasts and weak treatment-arm information coincide.
+
+\Cref{tab:related-comparison} summarizes the closest comparisons at the level of target, overlap condition, and conclusion.  The table is intentionally limited to high-level rate structure; constants, logarithmic factors, and side-condition domains differ across papers.
+
+\begin{table}[t]
+\centering
+\caption{Closest comparisons in the related literature}
+\label{tab:related-comparison}
+\begin{tabular}{p{0.18\linewidth}p{0.20\linewidth}p{0.22\linewidth}p{0.28\linewidth}}
+\hline
+Reference & Target & Overlap treatment & Relation to this paper \\
+\hline
+\citet{Kitagawa2018} & Welfare regret for empirical welfare maximization & Standard overlap conditions for observational welfare learning & Establishes the empirical-welfare framework; the present paper changes the local testing calibration under joint margin-overlap decay. \\
+\citet{Luedtke2017} & Optimal treatment-rule regret under margin structure & Strict-overlap setting & Provides the strict-overlap benchmark in which the rate is driven by the margin exponent; here the lower-bound exponent also includes an overlap-decay component. \\
+\citet{Chernozhukov2018,Chernozhukov2022} & Orthogonal and cross-fitted semiparametric estimation & Overlap enters through score regularity and nuisance control & Supplies the orthogonal-score methodology used by the feasible clipped-AIPW rule; the present paper adds the joint overlap-decay minimax lower bound. \\
+\citet{Liu2026} & Clipping and weak-overlap upper bounds for policy learning or related causal targets & Allows weak-overlap behavior controlled through clipping and nuisance conditions & Closest to the feasible upper-bound side: this paper adds a separate observed-law lower-bound exponent and keeps the clipped-AIPW achievability statement conditional. \\
+\hline
+\end{tabular}
+\end{table}
+
+Finally, the lower-bound argument follows the classical testing tradition of \citet{LeCam1986} and its use in nonparametric and classification lower bounds \citep{Tsybakov2009}.  The least favorable alternatives are calibrated so that regret separation and product divergence balance after accounting for the mass of the margin region and the information loss from joint overlap decay.  The paper thereby gives a lower-bound exponent for the law class and a separate conditional upper exponent for one clipped cross-fitted AIPW rule, including its nuisance-limited regime under the stated side conditions.
+
+
+
+\section{Setup and Assumptions}
+
+We work with an observed law \(P\) for one offline observation \leanref{sym:O}{\ensuremath{O=(X,A,Y)}} on
+\[
+\Omega=\mathcal X\times\{0,1\}\times[-1,1].
+\]
+Here \(X\) is a pretreatment covariate, \leanref{sym:A}{\ensuremath{A}}\(\in\{0,1\}\) is the treatment indicator, and \leanref{sym:Y}{\ensuremath{Y}} is the observed outcome.  The sample size is \(n\), and \(O_1,\ldots,O_n\) denote the offline observations.  We write \(P_X\) for the marginal law of \(X\).  The observed-law propensity score is \leanref{sym:e_P}{\ensuremath{e_P(x)}}\(=P(A=1\mid X=x)\), and the treatment-arm outcome regressions are \leanref{sym:mu_a}{\ensuremath{\mu_a(x)}}\(=E_P[Y\mid A=a,X=x]\), \(a\in\{0,1\}\).  The treatment contrast is \leanref{sym:tau_P}{\ensuremath{\tau_P(x)}}\(=\mu_1(x)-\mu_0(x)\).  The overlap score used throughout the joint overlap condition is \leanref{sym:p_P}{\ensuremath{p_P(x)}}\(=\min\{e_P(x),1-e_P(x)\}\), the distance from the propensity score to the nearest endpoint.  Potential-outcome notation \(Y(a)\) is used for the boundedness assumption below; the regret and minimax statements themselves are stated in terms of the observed law \(P\), \(e_P\), \(\mu_a\), and \(\tau_P\).
+
+\begin{assumptionv}{ass:iid}[Independent sampling]
+The observed data units
+\[
+O_1,\ldots,O_n
+\]
+are independent and identically distributed draws from \(P\).
+\end{assumptionv}
+
+This is the standard i.i.d. sampling condition for offline policy learning, fixing the experiment in which welfare regret is evaluated \citep{Athey2021}.
+
+\begin{assumptionv}{ass:bounded-outcome}[Bounded potential outcomes]
+Under the observed law \(P\), the observed outcome is bounded almost surely,
+\[
+Y\in[-1,1]\quad P\text{-a.s.},
+\]
+and, for every covariate value \(x\),
+\[
+\mu_0(x)\in[-1,1]\quad\text{and}\quad \mu_1(x)\in[-1,1].
+\]
+\end{assumptionv}
+
+This standard bounded-outcome condition controls the scale of welfare, regret, and inverse-propensity scores; it also implies bounded observed-law conditional means in the treatment arms \citep{Athey2021}.
+
+\begin{assumptionv}{ass:positivity}[Positivity]
+The propensity score satisfies
+\[
+0<e_P(X)<1
+\]
+\(P_X\)-almost surely.
+\end{assumptionv}
+
+This is the standard positivity condition, requiring both treatment arms to occur with positive probability at almost every covariate value relevant under \(P_X\) \citep{Imbens2015}.
+
+A deterministic policy is a measurable map \leanref{sym:pi}{\ensuremath{\pi:\mathcal X\to\{0,1\}}}.  The welfare criterion uses the contrast-weighted value of a policy, so policies are compared only through how they assign treatment on covariate regions with positive or negative \(\tau_P\).
+
+\begin{definitionv}{def:welfare-regret}[Welfare \(V_P(\pi)\) and Regret \(R_P(\pi)\)]
+For a policy \(\pi\), its welfare under \(P\) is
+\[
+V_P(\pi)=\mathbb E_P\!\left[\pi(X)\tau_P(X)\right].
+\]
+The oracle policy is
+\[
+\pi^\star_P(x)=\mathbf 1\{\tau_P(x)\ge 0\}.
+\]
+The regret of \(\pi\) under \(P\) is
+\[
+R_P(\pi)=V_P(\pi^\star_P)-V_P(\pi).
+\]
+\end{definitionv}
+
+Thus \leanref{sym:V_P}{\ensuremath{V_P(\pi)}} is normalized by dropping the treatment-invariant baseline component, \leanref{sym:pi_star}{\ensuremath{\pi^\star_P}} is the threshold rule induced by the sign of the treatment contrast, and \leanref{sym:R_P}{\ensuremath{R_P(\pi)}} is the welfare loss from deviating from that rule.
+
+\begin{assumptionv}{ass:policy-class}[Finite-VC policy class]
+The policy class \(\Pi\) is a pointwise measurable class of measurable deterministic policies \(\pi:\mathcal X\to\{0,1\}\) with finite VC dimension \(d_\Pi<\infty\).  There exists a countable subclass
+\[
+\Pi_0=\{\pi_j:j\ge 1\}\subset\Pi
+\]
+such that every \(\pi\in\Pi\) is the pointwise limit of a sequence of policies from \(\Pi_0\).
+\end{assumptionv}
+
+This is the standard pointwise measurable finite-VC policy-class condition, used to make empirical welfare maximization over \leanref{sym:Pi}{\ensuremath{\Pi}} statistically and measurably well behaved \citep{Kitagawa2018}.
+
+\begin{assumptionv}{ass:optimal-in-class}[Oracle policy inclusion]
+For every law \(P\) in the law class, the oracle policy \(\pi^\star_P\) belongs to \(\Pi\).
+\end{assumptionv}
+
+This is the standard optimum-in-class condition for welfare learning over restricted policy classes, ensuring that the oracle benchmark is attainable within \(\Pi\) when an upper-bound argument requires such an in-class comparator \citep{Kitagawa2018}.  It is kept separate from the observed-law class defined below: the minimax lower-bound class is an observed-law class, whereas oracle inclusion is imposed only where the relevant statement explicitly requires comparison to an element of \(\Pi\).
+
+The next assumptions restrict the distribution of small treatment contrasts.  The margin condition is the analogue of the low-noise condition in classification: it limits how much covariate mass can lie near the decision boundary \(\tau_P(x)=0\).
+
+\begin{assumptionv}{ass:margin}[Margin condition]
+The parameters satisfy \(0\le \alpha\), \(0<C_m\), and \(0<u_0\). For every \(u\) with \(0<u\le u_0\),
+\[
+P\{0<|\tau_P(X)|\le u\}\le C_m u^\alpha .
+\]
+\end{assumptionv}
+
+This is the standard Tsybakov decision margin condition, controlling the probability of covariate values at which the welfare consequences of the treatment decision are small \citep{Tsybakov2004OptimalAggregation}.
+
+\begin{assumptionv}{ass:zero-effect}[Zero-effect agreement]
+Either
+\[
+P_X\{\tau_P(X)=0\}=0,
+\]
+or every policy \(\pi\in\Pi\) agrees with the oracle policy \(\pi^\star_P\) \(P_X\)-almost everywhere on the set \(\{\tau_P(X)=0\}\).
+\end{assumptionv}
+
+This convention removes welfare-irrelevant disagreements on covariate points where both treatment choices have the same value for the regret target.
+
+\begin{assumptionv}{ass:margin-window}[Margin window]
+The margin window satisfies
+\[
+0<u_0<2.
+\]
+\end{assumptionv}
+
+This margin-window normalization fixes the range on which the small-contrast condition is imposed.  Since the bounded-outcome condition restricts treatment-arm means to \([-1,1]\), treatment contrasts lie in \([-2,2]\), and \(u_0<2\) keeps the window inside that scale.
+
+\begin{definitionv}{def:disagreement}[Disagreement Set \(D_\pi\)]
+For a policy \(\pi\), its disagreement set is
+\[
+D_\pi=\{x\in\mathcal X:\pi(x)\ne \pi^\star_P(x)\}.
+\]
+\end{definitionv}
+
+The disagreement set records exactly where a policy makes a different treatment assignment from the oracle threshold rule.  Regret can therefore be read as a weighted classification error, with weights given by the absolute treatment contrast.
+
+\begin{theoremv}{thm:welfare-identity}[Welfare regret identity]
+Under \cref{obj:ass:bounded-outcome}, for every deterministic policy \(\pi\in\Pi\),
+\[
+R_P(\pi)
+=
+E_P\!\left[
+|\tau_P(X)|\,\mathbf 1\{\pi(X)\ne\pi^\star_P(X)\}
+\right]
+=
+\int_{\mathcal X}
+|\tau_P(x)|\,\mathbf 1\{\pi(x)\ne\pi^\star_P(x)\}\,dP_X(x).
+\]
+\end{theoremv}
+
+The identity makes the welfare-regret target explicit: mistakes on high-contrast covariate regions are costly, while mistakes near \(\tau_P(x)=0\) contribute little to regret.
+
+\begin{theoremv}{thm:margin-localization}[Margin Localization]
+Suppose that the following conditions hold:
+\begin{itemize}
+\item \textbf{Margin condition.} \cref{obj:ass:margin} holds.
+\item \textbf{Zero-effect convention.} \cref{obj:ass:zero-effect} holds.
+\item \textbf{Bounded outcomes.} \cref{obj:ass:bounded-outcome} holds.
+\item \textbf{Disagreement sets.} \(D_\pi\) is defined as in \cref{obj:def:disagreement}.
+\end{itemize}
+Then there exists a constant
+\[
+C=C(C_m,u_0,\alpha)
+\]
+such that, for every \(\pi\in\Pi\),
+\[
+P_X(D_\pi)
+\le
+C\,R_P(\pi)^{\alpha/(1+\alpha)} .
+\]
+\end{theoremv}
+
+The localization result converts small regret into a small disagreement region under the margin condition, a step that parallels the standard excess-risk localization used in margin-based classification analysis \citep{Audibert2007,Massart2006,Tsybakov2009}.
+
+The distinctive restriction in this paper governs the interaction between weak overlap and small contrasts.  For \(\gamma>0\), the law class controls the probability that weak overlap and small welfare-relevant contrasts occur together.
+
+\begin{assumptionv}{ass:overlap-decay}[Overlap decay]
+For all \(u\) and \(v\) with \(0<u\le u_0\) and \(v>0\) satisfying
+\[
+v\le c_o u^\gamma,
+\]
+the joint small-contrast and weak-overlap probability obeys
+\[
+P\{p_P(X)\le v,\ 0<|\tau_P(X)|\le u\}
+   \le C_o u^\alpha v^{1/\gamma},
+\]
+with the convention that \(v^{1/\gamma}=1\) when \(\gamma=0\).
+\end{assumptionv}
+
+This condition is specific to this analysis: it permits overlap to deteriorate near either propensity boundary, but only at a rate tied to the small-contrast region that drives welfare regret.  The lower-bound witness itself uses one boundary.
+
+\begin{assumptionv}{ass:strict-overlap-endpoint}[Strict-overlap endpoint]
+When \(\gamma=0\), there exists a constant \(\underline p\in(0,1/2]\) such that
+\[
+p_P(X)\ge \underline p
+\]
+holds \(P_X\)-almost surely.
+\end{assumptionv}
+
+This is the standard strict-overlap, or uniform-positivity, endpoint condition for the \(\gamma=0\) case \citep{Imbens2015}.
+
+\begin{definitionv}{def:exponents}[Exponents $\beta_{\alpha,\gamma}$, $D_{\alpha,\gamma}$, and $r_\star(\alpha,\gamma)$]
+The overlap calibration exponent, denominator exponent, and minimax exponent are
+\[
+\beta_{\alpha,\gamma}
+=
+\begin{cases}
+0, & \gamma=0,\\
+\dfrac{\alpha\gamma}{\alpha+1}, & \gamma>0,
+\end{cases}
+\qquad
+D_{\alpha,\gamma}=2+\alpha+\beta_{\alpha,\gamma},
+\qquad
+r_\star(\alpha,\gamma)=\frac{1+\alpha}{D_{\alpha,\gamma}}.
+\]
+\end{definitionv}
+
+The term \(\beta_{\alpha,\gamma}\) is zero under strict overlap and, for \(\alpha>0\) and \(\gamma>0\), positive when weak overlap is allowed to concentrate near small contrasts.  The denominator \(D_{\alpha,\gamma}\) is the exponent balance that will enter the two-point lower-bound construction, and \(r_\star(\alpha,\gamma)\) is the corresponding lower-bound regret exponent.
+
+\begin{definitionv}{def:law-class}[Law class \(\mathcal P_{\alpha,\gamma}\)]
+Fix the policy class \(\Pi\) and the constants \(C_m,u_0,C_o,c_o,\underline p\). The class \(\mathcal P_{\alpha,\gamma}\) consists of all well-formed observed laws \(P\) on \(\Omega=\mathcal X\times\{0,1\}\times[-1,1]\) for which the following properties hold: \(Y\in[-1,1]\) \(P\)-a.s. and \(\mu_0(x),\mu_1(x)\in[-1,1]\) for every \(x\); \(0<e_P(x)<1\) \(P_X\)-a.s.; \(0\le\alpha\), \(0<C_m\), \(0<u_0\), and \(P_X\{0<|\tau_P(X)|\le u\}\le C_m u^\alpha\) for every \(0<u\le u_0\); either \(P_X\{\tau_P(X)=0\}=0\), or every \(\pi\in\Pi\) agrees with \(\pi^\star_P\) on \(\{\tau_P=0\}\) up to \(P_X\)-null sets; for every \(0<u\le u_0\) and \(0<v\le c_o u^\gamma\), \[P_X\{p_P(X)\le v,\ 0<|\tau_P(X)|\le u\}\le C_o u^\alpha\begin{cases}1,&\gamma=0,\\ v^{1/\gamma},&\gamma\ne0;\end{cases}\] and, when \(\gamma=0\), \(0<\underline p\le1/2\) and \(p_P(x)\ge\underline p\) \(P_X\)-a.s.
+\end{definitionv}
+
+Equivalently, \(\mathcal P_{\alpha,\gamma}\) is the observed-law class satisfying bounded outcomes, positivity, the margin and zero-effect restrictions, the joint overlap-decay condition, and the strict-overlap endpoint convention when \(\gamma=0\).  The sampling condition in \cref{obj:ass:iid}, the finite-VC structure in \cref{obj:ass:policy-class}, the margin-window normalization in \cref{obj:ass:margin-window}, and the oracle-in-class condition in \cref{obj:ass:optimal-in-class} are separate structural conditions invoked by the statements that need them.
+
+
+
+\section{Minimax Lower Bound}
+
+This section gives the observed-law minimax lower bound over the class \(\mathcal P_{\alpha,\gamma}\) in \cref{obj:def:law-class}.  The argument uses a two-point testing construction in the sense of \citet{LeCam1986}: two laws agree away from a small active block, differ only in the sign of a local treatment contrast on that block, and are calibrated so that their product distributions remain statistically close.  The regret separation is then read through the welfare identity in \cref{obj:thm:welfare-identity}.  The result characterizes the observed-law converse exponent for this law class.
+
+\begin{definitionv}{def:minimax-regret}[Minimax regret $M_n(\alpha,\gamma)$]
+The minimax regret over the law class \(\mathcal P_{\alpha,\gamma}\) is
+\[
+M_n(\alpha,\gamma)
+=
+\inf_{\widehat\pi_n}
+\sup_{P\in\mathcal P_{\alpha,\gamma}}
+\mathbb E_P\!\left[
+R_P(\widehat\pi_n)
+\right],
+\]
+where the infimum ranges over all measurable data-dependent estimators \(\widehat\pi_n\) taking values in \(\Pi\).
+\end{definitionv}
+
+The risk in \cref{obj:def:minimax-regret} is evaluated under the observed law \(P\), and the supremum is taken only over laws satisfying the boundedness, positivity, margin, zero-effect, overlap-decay, and endpoint restrictions collected in \cref{obj:def:law-class}.  The estimator is required to output an element of the policy class \(\Pi\), while regret remains measured relative to the oracle rule in \cref{obj:def:welfare-regret}.
+
+The lower bound is driven by the balance between three quantities: the block mass allowed by the margin condition, the local contrast size, and the treatment-arm sampling probability on the weak-overlap cell.  The construction below fixes the contrast scale \(h_n\), makes the active block have mass of order \(h_n^\alpha\), and assigns the weak treatment arm probability of order \(h_n^{\beta_{\alpha,\gamma}}\) when overlap decay permits it.
+
+\begin{definitionv}{def:two-point-witness}[Two-point witness laws \(P_{n,\sigma}\)]
+Let \(\mathcal X=[0,1]\) and let \(P_X\) be Lebesgue measure restricted to \([0,1]\). Set
+\[
+h_n=n^{-1/(2+\alpha+\beta_{\alpha,\gamma})},
+\qquad
+q_n=
+\begin{cases}
+1/4, & \beta_{\alpha,\gamma}=0,\\
+h_n^{\beta_{\alpha,\gamma}}, & \beta_{\alpha,\gamma}>0,
+\end{cases}
+\]
+and
+\[
+B_n=\{x\in\mathbb R:0\le x\le c_Bh_n^\alpha\}.
+\]
+Set \(\tau_0=(u_0+2)/2\). For each \(\sigma\in\{1,-1\}\), the law \(P_{n,\sigma}\) has the same covariate law \(P_X\), the same logging propensity
+\[
+e(x)=
+\begin{cases}
+q_n, & x\in B_n,\\
+1/2, & x\notin B_n,
+\end{cases}
+\]
+and the same off-block outcome law supported on \(\{-1,1\}\), with
+\[
+E[Y\mid X=x,A=1]=\tau_0/2,
+\qquad
+E[Y\mid X=x,A=0]=-\tau_0/2,
+\qquad x\notin B_n .
+\]
+Thus the common off-block optimal label is \(1\), and the common off-block contrast is \(\tau_0\). On \(B_n\), set \(Y=0\) almost surely when \(A=0\). On the active treated cell \(\{X\in B_n,A=1\}\), let \(Y\) be supported on \(\{-1,1\}\) with
+\[
+P(Y=1\mid X\in B_n,A=1)=\frac{1+\sigma h_n}{2},
+\qquad
+P(Y=-1\mid X\in B_n,A=1)=\frac{1-\sigma h_n}{2}.
+\]
+Consequently,
+\[
+E[Y\mid X\in B_n,A=1]=\sigma h_n,
+\qquad
+\tau_{P_{n,\sigma}}(x)=\sigma h_n
+\quad\text{for }x\in B_n .
+\]
+The two laws agree everywhere except on the treated active cell. The constants satisfy
+\[
+8c_B<\log 5 .
+\]
+\end{definitionv}
+
+The construction in \cref{obj:def:two-point-witness} is localized in the relevant sense: the two laws differ only in the treated observations on \(B_n\), and the probability of entering that informative cell is \(P_X(B_n)q_n\).  Thus weak overlap reduces information exactly where the sign of the contrast is hardest to learn.
+
+The exponent \(\beta_{\alpha,\gamma}\) in \cref{obj:def:exponents} is the largest weak-arm exponent within the tight-window algebraic calibration used for a block of margin mass \(h^\alpha\).  The next lemma records this calibration.
+
+\begin{lemmav}{prop:overlap-envelope}[Overlap envelope calibration]
+For \(\alpha\ge0\), \(\gamma>0\), \(h\in(0,1)\), and \(\beta\ge0\), consider the tight window
+\[
+v=h^\beta,
+\qquad
+u=h^{\beta/\gamma}.
+\]
+Then
+\[
+u^\alpha v^{1/\gamma}
+=
+h^{(\alpha+1)\beta/\gamma},
+\]
+and
+\[
+u^\alpha v^{1/\gamma}\ge h^\alpha
+\quad\Longleftrightarrow\quad
+\beta\le \beta_{\alpha,\gamma}=\frac{\alpha\gamma}{\alpha+1},
+\]
+with equality in the displayed power comparison whenever \(\beta=\beta_{\alpha,\gamma}\). Moreover \(\beta_{\alpha,\gamma}\ge0\), and for every \(\beta'\ge0\), the corresponding tight window \(v=h^{\beta'}\), \(u=h^{\beta'/\gamma}\) satisfies
+\[
+u^\alpha v^{1/\gamma}\ge h^\alpha
+\quad\Longleftrightarrow\quad
+\beta'\le\beta_{\alpha,\gamma}.
+\]
+Thus, within this algebraic tight-window envelope, \(\beta_{\alpha,\gamma}\) is the largest admissible weak-arm exponent.
+\end{lemmav}
+
+The proof is deferred to \cref{sec:deferred-proofs}.
+
+\Cref{obj:prop:overlap-envelope} is the source of the denominator \(2+\alpha+\beta_{\alpha,\gamma}\).  The term \(2\) comes from distinguishing Bernoulli means separated by \(h_n\), the term \(\alpha\) from the block mass allowed by the margin condition, and the term \(\beta_{\alpha,\gamma}\) from the probability of observing the informative treatment arm.
+
+The witness laws must also satisfy the restrictions defining \(\mathcal P_{\alpha,\gamma}\).  The next statement verifies membership and records the two oracle rules induced by the sign change on \(B_n\).
+
+\begin{lemmav}{lem:witness-membership}[Witness-law membership]
+Assume \(\alpha\ge0\), \(\gamma\ge0\), the margin-window normalization \(0<u_0<2\) in \cref{obj:ass:margin-window}, \(C_m,C_o,c_o,c_B,\underline p>0\), \(c_B\le C_m\), \(c_B\le C_o\), and \(\underline p\le 1/4\). Also assume the witness constant satisfies the overlap-decay smallness conditions
+\[
+0<\gamma,\ 0<\alpha
+\quad\Longrightarrow\quad
+c_B\le C_o c_o^{-\alpha/\gamma},
+\qquad
+0<\gamma,\ \alpha=0
+\quad\Longrightarrow\quad
+c_B\le C_o 4^{-1/\gamma}.
+\]
+Then, for each witness sign \(\sigma\in\{+,-\}\), for all sufficiently large \(n\), the witness law \(P_{n,\sigma}\) of \cref{obj:def:two-point-witness} satisfies the observed-law membership conditions defining the class \(\mathcal P_{\alpha,\gamma}\) in \cref{obj:def:law-class}. Hence, for all sufficiently large \(n\),
+\[
+P_{n,+},P_{n,-}\in \mathcal P_{\alpha,\gamma}.
+\]
+Moreover, the two corresponding witness-optimal policies are
+\[
+x\mapsto 1
+\qquad\text{and}\qquad
+x\mapsto \mathbf 1\{x\notin B_n\},
+\]
+where \(B_n=\{x:0\le x\le c_B h_n^\alpha\}\). If these two policies belong to \(\Pi\), then they are available as the two policy actions in the associated two-point lower-bound reduction. The construction uses the off-block contrast \(\tau_0=(u_0+2)/2\), so \(\tau_0\in(u_0,2)\) under the normalization \(0<u_0<2\).
+\end{lemmav}
+
+The proof is deferred to \cref{sec:deferred-proofs}.
+
+\Cref{obj:lem:witness-membership} has two roles.  First, it places both local alternatives inside the same observed-law class used in the minimax risk.  Second, it identifies the two witness-optimal rules.  When those two rules lie in \(\Pi\), they are the two admissible policy actions in the associated two-action testing reduction; the regret lower bound itself is still stated for the minimax risk in \cref{obj:def:minimax-regret}, with regret evaluated relative to the oracle rule.
+
+It remains to check that the two laws are hard to distinguish at sample size \(n\).  Because the laws differ only on a set with covariate mass \(m_n\), treatment probability \(q_n\), and conditional mean separation of order \(h_n\), the one-observation divergence has order \(m_nq_nh_n^2\).
+
+\begin{lemmav}{lem:two-point-divergence}[Two-point divergence]
+For the witness laws in \cref{obj:def:two-point-witness}, under \cref{obj:ass:margin-window}, assume in addition that
+\[
+0<c_B,\qquad \alpha\ge 0,\qquad \gamma\ge 0,
+\qquad 8c_B<\log 5.
+\]
+Then there exists a constant \(C>0\) such that, for all sufficiently large \(n\),
+\[
+P_{n,+}^{\otimes n}\ll P_{n,-}^{\otimes n},
+\qquad
+\int \left(\frac{dP_{n,+}^{\otimes n}}{dP_{n,-}^{\otimes n}}-1\right)^2
+  dP_{n,-}^{\otimes n}<\infty.
+\]
+Moreover the one-observation chi-square divergence satisfies
+\[
+\chi^2(P_{n,+}\,\|\,P_{n,-})
+ \le C\,h_n^{2+\alpha+\beta_{\alpha,\gamma}},
+\qquad
+h_n=n^{-1/(2+\alpha+\beta_{\alpha,\gamma})}.
+\]
+For the same constant \(C\), the product divergence is bounded:
+\[
+\chi^2(P_{n,+}^{\otimes n}\,\|\,P_{n,-}^{\otimes n})\le C.
+\]
+\end{lemmav}
+
+The proof is deferred to \cref{sec:deferred-proofs}.
+
+The bandwidth \(h_n\) in \cref{obj:def:two-point-witness} is chosen so that \(n h_n^{2+\alpha+\beta_{\alpha,\gamma}}\) is bounded.  Hence no estimator can reliably determine which sign generated the active block merely from the observed sample.
+
+The same active block creates the welfare separation.  Under one law the oracle treats \(B_n\), and under the other law the oracle does not.  Any single policy must disagree with at least one of these two assignments on a nontrivial part of the block.
+
+\begin{lemmav}{lem:regret-separation}[Regret separation]
+For the witness laws in \cref{obj:def:two-point-witness}, suppose \cref{obj:ass:margin-window} holds, \(\alpha,\gamma\ge0\), \(c_B,C_m,C_o,c_o,\underline p>0\), \(c_B\le C_m\), \(c_B\le C_o\), \(\underline p\le 1/4\), every \(\pi\in\Pi\) is measurable, and the block-size constant satisfies
+\[
+\gamma>0,\ \alpha>0 \implies c_B\le C_o c_o^{-\alpha/\gamma},
+\qquad
+\gamma>0,\ \alpha=0 \implies c_B\le C_o 4^{-1/\gamma}.
+\]
+Then there exists a constant \(c>0\) such that, for all sufficiently large \(n\),
+\[
+\forall\pi\in\Pi,\qquad
+\max_{\sigma\in\{+,-\}}
+R_{P_{n,\sigma}}(\pi)
+\ge
+c\,h_n^{1+\alpha}.
+\]
+For such \(n\), the two optimal policies disagree on the active block. Hence every \(\pi\in\Pi\) misclassifies the active block under at least one of the two laws, and the sum of the two regrets is bounded below by the contrast scale times a covariate subblock of mass \((\min\{c_B,1\})h_n^\alpha\). Passing from the sum to the maximum gives the stated separation of order \(h_n^{1+\alpha}\).
+\end{lemmav}
+
+The proof is deferred to \cref{sec:deferred-proofs}.
+
+\Cref{obj:lem:regret-separation} converts the testing ambiguity into welfare regret.  The separation is \(h_n\) per misclassified point on a set of mass \(h_n^\alpha\), giving \(h_n^{1+\alpha}\).
+
+The testing step uses the standard chi-square form of Le Cam's two-point method \citep{LeCam1986,Tsybakov2009}.
+
+\begin{lemmav}{lem:le-cam-two-point-chisq}[Chi-square testing bound]
+If
+\[
+\chi^2(P_+^{\otimes n}\,\|\,P_-^{\otimes n})\le C_\chi,
+\]
+then every test \(\psi\) taking values in \(\{+,-\}\) satisfies
+\[
+P_+^{\otimes n}(\psi\ne +)
++
+P_-^{\otimes n}(\psi\ne -)
+\ge
+c(C_\chi)>0.
+\]
+In particular, this conclusion holds whenever the one-observation chi-square divergence is bounded by \(c_0/n\), since
+\[
+1+\chi^2(P_+^{\otimes n}\,\|\,P_-^{\otimes n})
+=
+\left(1+\chi^2(P_+\,\|\,P_-)\right)^n
+\le
+\left(1+\frac{c_0}{n}\right)^n
+\le e^{c_0}.
+\]
+\end{lemmav}
+
+The proof is deferred to \cref{sec:deferred-proofs}.
+
+Combining \cref{obj:lem:two-point-divergence}, \cref{obj:lem:regret-separation}, and \cref{obj:lem:le-cam-two-point-chisq} yields the minimax lower bound.  Since \(h_n^{1+\alpha}=n^{-(1+\alpha)/(2+\alpha+\beta_{\alpha,\gamma})}\), the lower-bound exponent is \(r_\star(\alpha,\gamma)\).
+
+\begin{theoremv}{thm:minimax-lower}[Minimax lower bound]
+Under \cref{obj:ass:margin-window}, suppose that \(\alpha,\gamma\ge0\), \(C_m,C_o,c_o,c_B,\underline p>0\), \(c_B\le C_m\), \(c_B\le C_o\), \(0<\underline p\le 1/4\), and \(8c_B<\log 5\).  In addition, when \(\gamma>0\) and \(\alpha>0\), assume \(c_B\le C_o c_o^{-\alpha/\gamma}\), and when \(\gamma>0\) and \(\alpha=0\), assume \(c_B\le C_o 4^{-1/\gamma}\).  If the policy class \(\Pi\) is nonempty and every \(\pi\in\Pi\) is measurable, then for the minimax regret \(M_n(\alpha,\gamma)\) of \cref{obj:def:minimax-regret} over the law class \(\mathcal P_{\alpha,\gamma}\) of \cref{obj:def:law-class}, there is a constant \(c>0\), independent of \(n\), such that for all sufficiently large \(n\),
+\[
+M_n(\alpha,\gamma)
+=
+\inf_{\widehat\pi}
+\sup_{P\in\mathcal P_{\alpha,\gamma}}
+\mathbb E_P R_P(\widehat\pi)
+\ge
+c\,n^{-r_\star(\alpha,\gamma)}.
+\]
+\end{theoremv}
+
+\cref{obj:thm:minimax-lower} is an observed-law lower bound stated entirely in terms of the law class in \cref{obj:def:law-class}, the regret functional in \cref{obj:def:welfare-regret}, and the minimax risk in \cref{obj:def:minimax-regret}.  \Cref{obj:oeq:feasible-upper} develops the complementary procedure-specific achievability analysis.
+
+Writing the exponent of \cref{obj:def:exponents} explicitly, \(r_\star(\alpha,\gamma)=(1+\alpha)/(2+\alpha+\beta_{\alpha,\gamma})\).  Under strict overlap, \(\beta_{\alpha,\gamma}=0\), and the lower-bound exponent reduces to the usual margin-driven benchmark.  When \(\alpha>0\) and \(\gamma>0\), the additional positive term \(\beta_{\alpha,\gamma}\) reflects the loss of treatment-arm information in the small-contrast region; at the boundary \(\alpha=0\), it is zero.  The section that follows considers a clipped cross-fitted AIPW empirical welfare rule and gives a separate conditional upper bound under explicit nuisance-rate and empirical-process side conditions.
+
+
+
+\section{Conditional Analysis of a Clipped Cross-Fitted AIPW Rule}
+
+We now turn from the observed-law lower bound to one specified empirical rule.  The rule uses a clipped augmented inverse-propensity-weighted score for the treatment contrast and maximizes the resulting empirical welfare criterion over the same pointwise measurable finite-VC policy class used above.  This section establishes a conditional rate for the clipped cross-fitted AIPW ERM with supplied nuisance estimates under the nuisance-rate, cross-fitting, boundedness, and localized empirical-process side conditions stated below.  These explicit inputs define the procedure-specific achievability domain.
+
+The AIPW score follows the semiparametric and doubly robust construction of \citet{Robins1994,Hahn1998,Hirano2003,VanDerLaan2011}, while cross-fitting is used to separate first-stage nuisance estimation from foldwise policy evaluation as in double/debiased machine learning \citep{Chernozhukov2018,Chernozhukov2022}.  Clipping is needed because the overlap-decay class permits small propensity-boundary distance in the margin region.
+
+\begin{assumptionv}{ass:vc-localized-envelope}[Localized VC envelope]
+For the pointwise measurable finite-VC policy class \(\Pi\), there exist constants \(C>0\) and \(p\ge0\) such that, for every sample size \(m\ge1\), every \(B\ge0\), every localized radius \(r\ge0\), and every policy-compatible policy-indexed increment class \(g_\pi\) satisfying \(|g_\pi(O)|\le B\) for all \(\pi\in\Pi\) and all \(O\), and
+\[
+\int g_\pi(O)^2\,dP(O) \le B^2 P_X(D_\pi),\qquad \pi\in\Pi,
+\]
+the expected fixed-radius localized centered supremum obeys
+\[
+\mathbb E\left[\sup_{\pi\in\Pi:\,R_P(\pi)\le r}\left|m^{-1}\sum_{i=1}^m g_\pi(O_i)-\int g_\pi(O)\,dP(O)\right|\right]
+\le C B m^{-1/2} r^{\alpha/(2+2\alpha)}(\log m)^p .
+\]
+\end{assumptionv}
+
+This is a primitive high-level localized empirical-process condition for the policy-compatible increment classes used below.  It is motivated by finite-VC localization results \citep{BartlettBousquetMendelson2005Local}; the displayed uniform bound enters the analysis as an explicit assumption beyond finite VC dimension.
+
+\begin{assumptionv}{ass:nuisance-rate}[Cross-fitted nuisance rates]
+The cross-fitted nuisance estimators satisfy, for each \(a\in\{0,1\}\),
+\[
+\|\widehat\mu_a-\mu_a\|_{L_2(P)}\le r_{\mu,n},
+\qquad
+\|\widehat e-e\|_{L_2(P)}\le r_{e,n},
+\]
+and their product rate satisfies
+\[
+r_{\mu,n}r_{e,n}=O(n^{-1/2}).
+\]
+\end{assumptionv}
+
+This is the standard cross-fitted \(L_2(P)\) nuisance-rate condition for orthogonal score analysis; the product requirement is the usual second-order remainder control in double machine learning \citep{Chernozhukov2018}.
+
+\begin{assumptionv}{ass:bounded-crossfit-nuisances}[Bounded Cross-Fit Nuisances]
+The cross-fitted outcome-regression estimators \(\widehat\mu_0\) and \(\widehat\mu_1\) take values in \([-1,1]\).
+\end{assumptionv}
+
+This is the standard bounded nuisance truncation condition; it matches the bounded-outcome scale and keeps the foldwise clipped scores uniformly controlled \citep{Chernozhukov2018}.
+
+\begin{assumptionv}{ass:polynomial-nuisance-exponents}[Polynomial Nuisance Rates]
+There exist exponents \(a\ge 0\) and \(c\ge 1/2\), and constants \(C_\mu\) and \(C_{\mathrm{prod}}\), such that, for all sufficiently large \(n\),
+\[
+r_{\mu,n}\le C_\mu n^{-a},
+\qquad
+r_{\mu,n}r_{e,n}\le C_{\mathrm{prod}}n^{-c}.
+\]
+\end{assumptionv}
+
+This is the standard polynomial first-stage nuisance-rate condition; the exponents \(a\) and \(c\) make explicit which nuisance terms can limit the final regret exponent \citep{Chernozhukov2018}.
+
+\begin{assumptionv}{ass:fixed-crossfit-fold-count}[Fixed Cross-Fit Fold Count]
+The number \(K\) of cross-fitting folds is a fixed finite integer independent of \(n\), and the deterministic partition \(I_1,\ldots,I_K\) of the observation indices is balanced.
+\end{assumptionv}
+
+This is the fixed-\(K\) cross-fitting convention used by the conditional upper bound.  The balanced deterministic folds are a side condition for the foldwise pooling step in the present empirical-process argument; the general use of cross-fitting follows the double/debiased machine-learning approach \citep{Chernozhukov2018}.
+
+\begin{assumptionv}{ass:vc-localized-offset-envelope}[Localized Offset Envelope]
+For the pointwise measurable finite-VC policy class \(\Pi\), there exist constants \(C>0\) and \(p\ge0\) such that, for every integer \(n\ge1\), every \(B\ge0\), and every policy-compatible increment class \(g_\pi\) (that is, \(g_\pi(O)\) factors through \(O\) and the decision \(\pi(X)\)), the centered empirical process
+\[
+z_\pi=\frac1n\sum_{i=1}^n g_\pi(O_i)-\int g_\pi(O)\,dP(O)
+=(P_n-P)g_\pi
+\]
+built from an i.i.d. sample from \(P\), with envelope \(|g_\pi(O)|\le B\) for all \(\pi\in\Pi\) and \(O\), and second moment bounded by
+\[
+\int g_\pi(O)^2\,dP(O)\le B^2 P_X(D_\pi),
+\qquad \pi\in\Pi,
+\]
+satisfies
+\[
+\mathbb E\sup_{\pi\in\Pi}
+\left\{2|z_\pi|-\frac{R_P(\pi)}{4}\right\}_+
+\le
+C\left(\frac{B^2}{n}\right)^{A_\alpha}(\log n)^p,
+\qquad A_\alpha=\frac{1+\alpha}{2+\alpha}.
+\]
+\end{assumptionv}
+
+This is a second primitive high-level condition, now for an offset empirical process.  It converts stochastic fluctuation into an expected regret contribution at the margin-dependent exponent; the exact statement enters as an explicit assumption beyond finite VC dimension \citep{BartlettBousquetMendelson2005Local}.
+
+The tuning schedule balances four terms: the clipped empirical-process envelope, the product nuisance remainder after clipping, the localized weak-overlap bias, and the outcome-regression error on the complement of the localization window.  The next definition records this balance for a fixed nuisance regime.
+
+\begin{definitionv}{def:feasible-rate}[Feasible upper exponent $r_{\mathrm{up}}=r_{\mathrm{feas}}$]
+Fix one nuisance regime \((a,c,C_\mu,C_{\mathrm{prod}})\), and set
+\[
+A_\alpha=\frac{1+\alpha}{2+\alpha}.
+\]
+
+If \(\gamma>0\), fix constants
+\[
+\bar u\in(0,u_0],
+\qquad
+q_0\in\bigl(0,\min\{1/2,c_o\bar u^\gamma\}\bigr].
+\]
+For \(0\le s\le 1/2\) and \(0\le t\le s/\gamma\), define
+\[
+\phi(s,t)
+=
+\min\left\{
+A_\alpha(1-2s),\,
+c-s,\,
+a+\frac{s}{2\gamma}+\frac{\alpha t}{2},\,
+2a-t
+\right\}.
+\]
+Let \((s_{\mathrm{feas}},t_{\mathrm{feas}})\) be any maximizer of \(\phi\) over this compact feasible set, and set
+\[
+g_{\mathrm{joint}}(\alpha,\gamma,a,c)
+=
+\phi(s_{\mathrm{feas}},t_{\mathrm{feas}}),
+\qquad
+q_n=q_0 n^{-s_{\mathrm{feas}}},
+\qquad
+u_n=\bar u n^{-t_{\mathrm{feas}}}.
+\]
+Then \(q_n\le c_o u_n^\gamma\) for all sufficiently large \(n\), and the solved conditional feasible upper exponent is
+\[
+r_{\mathrm{up}}
+=
+r_{\mathrm{feas}}
+=
+\min\left\{r_\star(\alpha,\gamma),\,g_{\mathrm{joint}}(\alpha,\gamma,a,c)\right\}.
+\]
+
+If \(\gamma=0\), take a fixed clipping sequence \(q_n=q_0\) with \(q_0\in(0,\underline p/2]\), and set
+\[
+r_{\mathrm{up}}
+=
+r_{\mathrm{feas}}
+=
+\min\{A_\alpha,c\}.
+\]
+\end{definitionv}
+
+For \(\gamma>0\), the constraint \(t\le s/\gamma\) is the exponent form of the admissibility condition \(q_n\le c_o u_n^\gamma\) in the overlap-decay region.  The exponent \(r_{\mathrm{up}}\) in \cref{obj:def:feasible-rate} is therefore the conditional exponent delivered by this balance, truncated by the lower-bound exponent \(r_\star(\alpha,\gamma)\) from \cref{obj:def:exponents}.
+
+\begin{definitionv}{def:clipped-propensity}[Clipped propensity $e_q(x;\eta)$]
+For a nuisance triple \(\eta=(\mu_0,\mu_1,e)\) and a clipping level \(q\in(0,1/2]\), the clipped propensity score is
+\[
+e_q(x;\eta)
+=
+\min\{1-q,\max\{q,e(x)\}\}.
+\]
+\end{definitionv}
+
+The nuisance triple \(\eta=(\mu_0,\mu_1,e)\) collects the two outcome regressions and the propensity score used in the plug-in score.  Clipping replaces the propensity component by a value in \([q,1-q]\), controlling inverse-propensity weights while preserving the target welfare functional in \cref{obj:def:welfare-regret}.
+
+\begin{definitionv}{def:clipped-aipw-score}[Clipped AIPW score $\Gamma_q(O;\eta)$]
+For \(O=(X,A,Y)\), nuisance triple \(\eta=(\mu_0,\mu_1,e)\), and clipping level \(q\in(0,1/2]\), the clipped augmented inverse-propensity-weighted score for the treatment contrast is
+\[
+\Gamma_q(O;\eta)
+=
+\mu_1(X)-\mu_0(X)
++
+\frac{A}{e_q(X;\eta)}\{Y-\mu_1(X)\}
+-
+\frac{1-A}{1-e_q(X;\eta)}\{Y-\mu_0(X)\}.
+\]
+\end{definitionv}
+
+When the nuisance functions are equal to the true observed-law regressions and propensity and no clipping binds, \(\Gamma_q\) is the usual AIPW score for the contrast \(\tau_P(X)\).  Under overlap decay, clipping introduces a deterministic drift that requires explicit control beyond the strict-overlap simplification.
+
+\begin{definitionv}{def:feasible-erm}[Feasible clipped-AIPW ERM $\widehat\pi_n$]
+Fix the countable pointwise dense subclass
+\[
+\Pi_0=\{\pi_j:j\ge 1\}
+\]
+of \(\Pi\), and fix a deterministic balanced \(K\)-fold partition
+\[
+I_1,\ldots,I_K
+\]
+of \(\{1,\ldots,n\}\), with each fold having size \(\lfloor n/K\rfloor\) or \(\lceil n/K\rceil\). Let \(k(i)\) denote the evaluation fold containing observation \(i\). Given foldwise cross-fitted nuisance estimators \(\widehat\eta^{(-k)}\) and a clipping level \(q\in(0,1/2]\), define the empirical welfare criterion
+\[
+\widehat V_{n,q}(\pi)
+=
+\frac1n\sum_{i=1}^n
+\pi(X_i)\,
+\Gamma_q\!\left(O_i;\widehat\eta^{(-k(i))}\right).
+\]
+Let \(j_n\) be the smallest index \(j\ge1\) such that
+\[
+\widehat V_{n,q}(\pi_j)
+\ge
+\sup_{\ell\ge1}\widehat V_{n,q}(\pi_\ell)-\frac1n,
+\]
+and set
+\[
+\widehat\pi_n=\pi_{j_n}.
+\]
+This measurable \(\Pi\)-valued \(1/n\)-empirical risk maximizer over \(\Pi_0\) is the feasible clipped-AIPW ERM. The clipping level \(q\) is the tuning parameter chosen by the bias-variance balance.
+\end{definitionv}
+
+\cref{obj:def:feasible-erm} fixes the enumeration, the balanced fold partition, and the foldwise supplied nuisance estimates.  The superscript \((-k)\) indicates that the nuisance estimate used on fold \(I_k\) is trained away from that fold; its construction is otherwise abstracted into the side conditions above.
+
+\begin{definitionv}{def:upper-risk}[Conditional upper risk \(U_n(\alpha,\gamma,a,c;\widehat\eta)\)]
+Fix a nuisance regime \((a,c,C_\mu,C_{\mathrm{prod}})\), the associated deterministic schedules \((q_n,u_n)\), and the supplied policy class, enumeration, nuisance estimators, and fold assignment. The conditional upper risk is
+\[
+U_n(\alpha,\gamma,a,c;\widehat\eta)
+=
+\sup E_P\!\left[R_P(\widehat\pi_n)\right],
+\]
+where the supremum is over all laws \(P\in\mathcal P_{\alpha,\gamma}\) for which the oracle policy belongs to \(\Pi\), the supplied cross-fitted nuisance estimators \(\widehat\eta^{(-k)}\) satisfy the stated \(L_2(P)\) nuisance-rate bounds, boundedness conditions, and polynomial nuisance-rate bounds with exponents \(a,c\) and constants \(C_\mu,C_{\mathrm{prod}}\), the supplied policy class \(\Pi\) satisfies the stated finite-VC, localized-envelope, and localized-offset-envelope conditions, the supplied cross-fitting scheme has fixed fold count \(K\), and the supplied enumeration is a countable pointwise-dense skeleton \(\Pi_0=\{\pi_j:j\ge1\}\) of \(\Pi\).
+\end{definitionv}
+
+The risk in \cref{obj:def:upper-risk} is evaluated over the stated side-condition domain: laws in \(\mathcal P_{\alpha,\gamma}\), oracle-in-class policy problems, supplied cross-fitted nuisances with the required rates and boundedness, policy classes satisfying the localized empirical-process conditions, and fixed balanced cross-fitting schemes.  The definition precisely describes the conditional risk controlled by this clipped-AIPW ERM.
+
+The basic inequality is the usual consequence of near-maximizing the empirical welfare criterion over the dense countable subclass.
+
+\begin{lemmav}{lem:feasible-erm-basic-inequality}[Feasible ERM Inequality]
+Under \cref{obj:ass:policy-class}, \cref{obj:def:feasible-erm} defines a measurable \(\Pi\)-valued estimator \(\widehat\pi_n\) satisfying
+\[
+\widehat V_{n,q}(\widehat\pi_n)
+\ge
+\sup_{\pi\in\Pi}\widehat V_{n,q}(\pi)-\frac1n .
+\]
+Hence, for every comparator \(\pi^b\in\Pi\),
+\[
+P_n\!\left[(\widehat\pi_n-\pi^b)\Gamma_q\right]\ge -\frac1n .
+\]
+Under \cref{obj:ass:optimal-in-class}, this conclusion applies with \(\pi^b=\pi^\star_P\).
+\end{lemmav}
+
+The proof is deferred to \cref{sec:deferred-proofs}.
+
+The comparator \(\pi^\star_P\) is available only when \cref{obj:ass:optimal-in-class} is imposed.  This is why the upper-bound analysis carries oracle inclusion as an explicit side condition even though the lower bound in \cref{obj:thm:minimax-lower} is stated as an observed-law result over \(\mathcal P_{\alpha,\gamma}\).
+
+\begin{lemmav}{lem:crude-clipped-score-envelope}[Clipped-Score Envelope]
+Under the bounded-outcome condition of \cref{obj:ass:bounded-outcome}, for every \(q\in(0,1/2]\) and every cross-fitted nuisance triple \(\widehat\eta^{(-k)}=(\widehat\mu_0^{(-k)},\widehat\mu_1^{(-k)},\widehat e^{(-k)})\) whose outcome-regression components satisfy \(\widehat\mu_0^{(-k)}(x),\widehat\mu_1^{(-k)}(x)\in[-1,1]\) for every \(x\), there exists a constant \(C>0\) such that the clipped AIPW score of \cref{obj:def:clipped-aipw-score} satisfies
+\[
+\left|\Gamma_q\!\left(O;\widehat\eta^{(-k)}\right)\right|\le \frac{C}{q}
+\quad\text{almost surely}.
+\]
+Consequently, with the same constant,
+\[
+\Gamma_q\!\left(O;\widehat\eta^{(-k)}\right)^2
+\le \frac{C}{q^2}
+\quad\text{almost surely}.
+\]
+\end{lemmav}
+
+The proof is deferred to \cref{sec:deferred-proofs}.
+
+\Cref{obj:lem:crude-clipped-score-envelope} identifies the stochastic price of clipping at level \(q\).  Smaller \(q\) reduces clipping bias but increases the empirical-process envelope, producing the term \((nq^2)^{-A_\alpha}\) in the master bound below.
+
+\begin{lemmav}{lem:localized-clipped-drift-bound}[Localized Clipped Drift Bound]
+Under \cref{obj:ass:nuisance-rate}, \cref{obj:ass:polynomial-nuisance-exponents}, \cref{obj:ass:overlap-decay}, \cref{obj:ass:zero-effect}, \cref{obj:ass:bounded-outcome}, and \cref{obj:ass:strict-overlap-endpoint}, and \cref{obj:lem:clipped-region-localization}, let \(P\) be a well-formed observed law, let every \(\pi\in\Pi\) be measurable, and fix a clipping level \(q\) with \(0<q\le 1/2\).  With the cross-fitted nuisance estimators fixed on the evaluation fold, write \(\widehat\eta^{(-k)}=(\widehat\mu_0^{(-k)},\widehat\mu_1^{(-k)},\widehat e^{(-k)})\), and suppose \(r_{\mu,n},r_{e,n}\ge0\),
+\[
+\int (\widehat\mu_0^{(-k)}(x)-\mu_0(x))^2\,dP_X(x)\le r_{\mu,n}^2,
+\quad
+\int (\widehat\mu_1^{(-k)}(x)-\mu_1(x))^2\,dP_X(x)\le r_{\mu,n}^2,
+\]
+\[
+\int (\widehat e^{(-k)}(x)-e_P(x))^2\,dP_X(x)\le r_{e,n}^2,
+\]
+and that these three nuisance-error functions belong to \(L_2(P_X)\).  Define
+\[
+b_q(x)
+=
+\mathbb E_P\!\left[\Gamma_q(O;\widehat\eta^{(-k)})\mid X=x\right]
+-
+\tau_P(x).
+\]
+
+If \(\gamma>0\), set \(C_0=4\{1+\sqrt{\max\{C_o,1\}}\}\).  Then, for every \(\pi\in\Pi\) and every localization window \(u\) satisfying \(0<u\le u_0\), writing \(r=R_P(\pi)\),
+\[
+\left|P\!\left[(\pi-\pi^\star_P)b_q\right]\right|
+\le
+C_0\left\{
+\frac{r_{\mu,n}r_{e,n}}{q}
++
+r_{\mu,n}u^{\alpha/2}q^{1/(2\gamma)}
++
+r_{\mu,n}\left(\frac{r}{u}\right)^{1/2}
+\right\}
+\]
+whenever \(q\le c_o u^\gamma\).
+
+If \(\gamma=0\) and \(q\le \underline p/2\), set \(C_1=\max\{1,2/q\}\).  Then, for every \(\pi\in\Pi\),
+\[
+\left|P\!\left[(\pi-\pi^\star_P)b_q\right]\right|
+\le
+C_1 r_{\mu,n}r_{e,n}.
+\]
+\end{lemmav}
+
+The proof is deferred to \cref{sec:deferred-proofs}.
+
+The drift \(b_q\) is the conditional mean bias of the clipped and estimated score relative to the true contrast.  In the weak-overlap case, \cref{obj:lem:localized-clipped-drift-bound} separates the drift into a clipped product remainder, a small-contrast weak-overlap term, and a localization-complement term; under strict overlap, only the product nuisance remainder remains.
+
+\begin{lemmav}{lem:crude-localized-master-bound}[Crude Localized Master Bound]
+Let \((q_n)\) and \((u_n)\) be deterministic clipping and contrast-window schedules, and let \(\widehat\pi_n\) be the cross-fitted clipped-AIPW \(1/n\)-ERM of \cref{obj:def:feasible-erm}, computed with clip \(q_n\) over the enumeration \(\Pi_0=\{\pi_j:j\ge1\}\).
+
+Assume:
+\begin{itemize}
+\item \textbf{(Policy class, skeleton, and oracle.)} The policy class satisfies \cref{obj:ass:policy-class}; welfare and regret are as in \cref{obj:def:welfare-regret}. The enumeration used by the ERM is the pointwise-dense skeleton of \(\Pi\): every \(\pi_j\in\Pi\), and every \(\pi\in\Pi\) is the pointwise limit of a subsequence from \(\Pi_0\). For each law \(P\) to which the bound is applied, the oracle satisfies \cref{obj:ass:optimal-in-class}.
+\item \textbf{(Sampling.)} For each law \(P\) to which the bound is applied, the observations are i.i.d. as in \cref{obj:ass:iid}.
+\item \textbf{(Nuisance rates.)} The polynomial nuisance exponent condition in \cref{obj:ass:polynomial-nuisance-exponents} holds. For each law \(P\) to which the bound is applied, each foldwise nuisance triple satisfies \cref{obj:ass:nuisance-rate}. In addition, \(r_{\mu,n}\ge0\) and \(r_{e,n}\ge0\) for all sufficiently large \(n\).
+\item \textbf{(Cross-fitting and boundedness.)} The number of folds is fixed and the fold assignment is balanced as in \cref{obj:ass:fixed-crossfit-fold-count}; for each law \(P\) to which the bound is applied, the foldwise cross-fitted outcome nuisances satisfy \cref{obj:ass:bounded-crossfit-nuisances}.
+\item \textbf{(Clipping schedule.)} For all sufficiently large \(n\), \(0<q_n\le 1/2\). If \(\gamma=0\), then there is a fixed \(q_0>0\) such that \(q_n=q_0\) for all sufficiently large \(n\).
+\item \textbf{(Measurability and \(L^2\) regularity.)} For every \(n\) and fold \(k\), the nuisance functions \(\widehat\mu_{0,n}^{(-k)}\), \(\widehat\mu_{1,n}^{(-k)}\), and \(\widehat e_n^{(-k)}\) are measurable. For all sufficiently large \(n\), every \(P\in\mathcal P_{\alpha,\gamma}\), and every fold \(k\), the errors \(\widehat\mu_{0,n}^{(-k)}-\mu_0\), \(\widehat\mu_{1,n}^{(-k)}-\mu_1\), and \(\widehat e_n^{(-k)}-e_P\) belong to \(L^2(P_X)\).
+\item \textbf{(Localized empirical processes.)} The uniform class-level localized envelope and offset envelope conditions in \cref{obj:ass:vc-localized-envelope} and~\cref{obj:ass:vc-localized-offset-envelope} hold.
+\end{itemize}
+
+Then there exist constants \(C,p\), with \(0<C\) and \(0\le p\), such that for all sufficiently large \(n\) and every observed law \(P\), if \(P\in\mathcal P_{\alpha,\gamma}\) and the law-specific oracle, i.i.d. sampling, foldwise nuisance-rate, and bounded cross-fit nuisance conditions above hold, then the following two implications hold.
+
+If \(0<\gamma\), \(0<u_n\le u_0\), and
+\[
+q_n\le c_o u_n^\gamma,
+\]
+then
+\[
+\mathbb E_P R_P(\widehat\pi_n)
+\le
+C\left\{
+n^{-r_\star}
++(nq_n^2)^{-A_\alpha}
++\frac{r_{\mu,n}r_{e,n}}{q_n}
++r_{\mu,n}u_n^{\alpha/2}q_n^{1/(2\gamma)}
++\frac{r_{\mu,n}^2}{u_n}
+\right\}(\log n)^p .
+\]
+
+If \(\gamma=0\) and \(q_n\le \underline p/2\), then
+\[
+\mathbb E_P R_P(\widehat\pi_n)
+\le
+C\left\{
+n^{-A_\alpha}+r_{\mu,n}r_{e,n}
+\right\}(\log n)^p .
+\]
+\end{lemmav}
+
+The proof is deferred to \cref{sec:deferred-proofs}.
+
+\Cref{obj:lem:crude-localized-master-bound} is the organizing inequality for the upper-bound calculation.  Its assumptions collect the policy, sampling, nuisance, cross-fitting, boundedness, empirical-process, and drift inputs needed by the clipped-AIPW rule.
+
+For reference, \cref{tab:feasible-balance} maps the \(\gamma>0\) terms in the master bound to the exponent components optimized in \cref{obj:def:feasible-rate}, after substituting \(q_n=q_0n^{-s}\), \(u_n=\bar u n^{-t}\), \(r_{\mu,n}\lesssim n^{-a}\), and \(r_{\mu,n}r_{e,n}\lesssim n^{-c}\).
+
+\begin{table}[t]
+\centering
+\caption{Terms entering the conditional feasible exponent when \(\gamma>0\)}
+\label{tab:feasible-balance}
+\begin{tabular}{p{0.34\linewidth}p{0.28\linewidth}p{0.26\linewidth}}
+\hline
+Master-bound term & Source & Exponent component \\
+\hline
+\((nq_n^2)^{-A_\alpha}\) & clipped empirical-process envelope & \(A_\alpha(1-2s)\) \\
+\(r_{\mu,n}r_{e,n}/q_n\) & clipped product nuisance remainder & \(c-s\) \\
+\(r_{\mu,n}u_n^{\alpha/2}q_n^{1/(2\gamma)}\) & localized weak-overlap drift & \(a+s/(2\gamma)+\alpha t/2\) \\
+\(r_{\mu,n}^2/u_n\) & localization-complement outcome error & \(2a-t\) \\
+\hline
+\end{tabular}
+\end{table}
+
+The balance in \cref{obj:def:feasible-rate} chooses the clipping and localization exponents to maximize the minimum of the four entries in the last column.  The next lemma records the resulting algebraic rate.
+
+\begin{lemmav}{lem:clip-balance-exponent}[Clipping Balance Exponent]
+Under the polynomial nuisance-rate exponents of \cref{obj:ass:polynomial-nuisance-exponents}, assume also that the nuisance constants satisfy \(C_\mu\ge0\) and \(C_{\mathrm{prod}}\ge0\), that \(r_{\mu,n}\ge0\) for all sufficiently large \(n\), and that \(q_0>0\).  If \(\gamma>0\), assume in addition that \(\bar u>0\) and that the deterministic schedules below are eventually admissible, \(q_n\le c_o u_n^\gamma\).  Then the deterministic clipping and localization schedules satisfy the following exponent balance.
+
+For \(\gamma>0\), let
+\[
+A_\alpha=\frac{1+\alpha}{2+\alpha},
+\qquad
+q_n=q_0 n^{-s_{\mathrm{feas}}},
+\qquad
+u_n=\bar u\, n^{-t_{\mathrm{feas}}},
+\]
+and
+\[
+g_{\mathrm{joint}}
+=
+\max_{\substack{0\le s\le 1/2\\ 0\le t\le s/\gamma}}
+\min\left\{
+A_\alpha(1-2s),\,
+c-s,\,
+a+\frac{s}{2\gamma}+\frac{\alpha t}{2},\,
+2a-t
+\right\}.
+\]
+There exist constants \(C>0\) and \(p\ge0\) such that, for all sufficiently large \(n\),
+\[
+ n^{-r_\star(\alpha,\gamma)}
+ + (nq_n^2)^{-A_\alpha}
+ + \frac{r_{\mu,n}r_{e,n}}{q_n}
+ + r_{\mu,n}u_n^{\alpha/2}q_n^{1/(2\gamma)}
+ + \frac{r_{\mu,n}^2}{u_n}
+\le
+C n^{-r_{\mathrm{feas}}}(\log n)^p,
+\]
+where
+\[
+r_{\mathrm{feas}}
+=
+\min\{r_\star(\alpha,\gamma),g_{\mathrm{joint}}\}.
+\]
+Thus the optimized upper-bound exponent in the positive-overlap-decay regime is
+\[
+r_{\mathrm{up}}=r_{\mathrm{feas}}.
+\]
+
+For \(\gamma=0\), with the fixed clipping schedule \(q_n=q_0\), the same constants may be chosen so that, for all sufficiently large \(n\),
+\[
+n^{-A_\alpha}+r_{\mu,n}r_{e,n}
+\le
+C n^{-r_{\mathrm{feas}}}(\log n)^p,
+\qquad
+r_{\mathrm{feas}}=\min\{A_\alpha,c\}.
+\]
+\end{lemmav}
+
+The proof is deferred to \cref{sec:deferred-proofs}.
+
+\Cref{obj:lem:clip-balance-exponent} shows exactly when this clipped-AIPW rule reaches the lower-bound exponent from \cref{obj:thm:minimax-lower}: this happens in the nonbinding branch for \(g_{\mathrm{joint}}(\alpha,\gamma,a,c)\).  In the binding branch, the result gives the conditional upper exponent for the specified rule.
+
+We will refer to the side-condition domain of \cref{obj:def:upper-risk} as the collection of laws, policy classes, nuisance estimates, and fold schemes satisfying the assumptions explicitly listed in that definition and in the theorem below.  This terminology abbreviates exactly those displayed hypotheses.
+
+\begin{theoremv}{oeq:feasible-upper}[Feasible Upper Exponent]
+Fix parameters with \(0\le \gamma\) and a nuisance regime \((a,c,C_\mu,C_{\mathrm{prod}})\) satisfying \cref{obj:ass:polynomial-nuisance-exponents}, with \(C_\mu\ge0\) and \(C_{\mathrm{prod}}\ge0\). Consider the law class \(\mathcal P_{\alpha,\gamma}\) of \cref{obj:def:law-class}, the feasible cross-fitted clipped-AIPW \(1/n\)-ERM \(\widehat\pi_n\) of \cref{obj:def:feasible-erm}, formed using an enumeration of a pointwise-dense skeleton of \(\Pi\), and the conditional upper risk \(U_n(\alpha,\gamma,a,c;\widehat\eta)\) of \cref{obj:def:upper-risk}. Let the feasible clipping and localization constants \(q_0,\bar u\) lie in the input domain of \cref{obj:def:feasible-rate}: if \(\gamma>0\), then
+\[
+0<\bar u\le u_0,\qquad 0<q_0\le \min\{1/2,c_o\bar u^\gamma\},
+\]
+and if \(\gamma=0\), then
+\[
+0<q_0\le \underline p/2.
+\]
+
+Assume:
+\begin{itemize}
+\item \textbf{(Policy class and skeleton.)} The policy class satisfies \cref{obj:ass:policy-class}, and the enumeration used by \(\widehat\pi_n\) is a pointwise-dense skeleton of \(\Pi\).
+\item \textbf{(Cross-fitting.)} The number of folds satisfies \cref{obj:ass:fixed-crossfit-fold-count}.
+\item \textbf{(Nuisance boundedness.)} The cross-fitted outcome nuisance estimators satisfy \cref{obj:ass:bounded-crossfit-nuisances}.
+\item \textbf{(Nuisance measurability and integrability.)} For every \(n\) and fold \(k\), \(\widehat\mu_{0,n}^{(-k)}\), \(\widehat\mu_{1,n}^{(-k)}\), and \(\widehat e_n^{(-k)}\) are measurable. The rate sequences satisfy \(r_{\mu,n}\ge0\) and \(r_{e,n}\ge0\) for all sufficiently large \(n\). For all sufficiently large \(n\), every \(P\in\mathcal P_{\alpha,\gamma}\), and every fold \(k\), the errors \(\widehat\mu_{0,n}^{(-k)}-\mu_{0,P}\), \(\widehat\mu_{1,n}^{(-k)}-\mu_{1,P}\), and \(\widehat e_n^{(-k)}-e_P\) belong to \(L^2(P_X)\).
+\item \textbf{(Localized envelopes.)} The uniform localized empirical-process and offset envelope conditions in \cref{obj:ass:vc-localized-envelope} and~\cref{obj:ass:vc-localized-offset-envelope} hold.
+\end{itemize}
+
+Then there exist constants \(C,p\) with \(0<C\) and \(0\le p\) such that, for all sufficiently large \(n\), the conditional upper risk of \(\widehat\pi_n\), uniformly over the side-condition domain in \cref{obj:def:upper-risk}, satisfies
+\[
+U_n(\alpha,\gamma,a,c;\widehat\eta)\le C n^{-r_{\mathrm{up}}}(\log n)^p,
+\]
+where \(r_{\mathrm{up}}\) is the feasible upper exponent supplied by \cref{obj:def:feasible-rate} for the above \(q_0\) and \(\bar u\).
+\end{theoremv}
+
+\cref{obj:oeq:feasible-upper} is the promised conditional achievability statement for the plain clipped cross-fitted AIPW empirical welfare rule.  Its uniformity is over the domain specified in \cref{obj:def:upper-risk} and the theorem's displayed hypotheses.  \Cref{obj:ass:vc-localized-envelope}--\cref{obj:ass:vc-localized-offset-envelope} are explicit inputs to this domain.  The discussion section compares the strict-gap branch with the observed-law converse.
+
+
+
+\section{Discussion, Limitations, and Open Question}
+
+The preceding sections separate two complementary objects.  \Cref{obj:thm:minimax-lower} gives an observed-law minimax lower bound over the class \(\mathcal P_{\alpha,\gamma}\) in \cref{obj:def:law-class}.  \Cref{obj:oeq:feasible-upper} gives a conditional upper bound for the clipped cross-fitted AIPW empirical welfare rule over the side-condition domain in \cref{obj:def:upper-risk}.  Thus the exponent \(r_\star(\alpha,\gamma)\) is a converse benchmark for the law class, whereas \(r_{\mathrm{up}}\) is the exponent delivered by one feasible procedure under explicit nuisance-rate, cross-fitting, boundedness, and localized empirical-process conditions.
+
+This distinction affects the displayed exponent in regimes where the nuisance and clipping balance binds.  In the nonbinding branch of \cref{obj:def:feasible-rate}, the optimized nuisance exponent is at least the lower-bound exponent, so the conditional upper bound has the same polynomial exponent as the observed-law lower bound, up to logarithmic factors.  In the strict-gap branch, the feasible exponent is smaller because one of the terms in the master bound of \cref{obj:lem:crude-localized-master-bound} controls the rate.  The two conclusions are consistent: the lower bound ranges over all measurable policy estimators, while the upper bound analyzes a particular clipped AIPW ERM with estimated cross-fitted nuisance functions.
+
+A statistical source represented in the bound is the weak-overlap mechanism emphasized in the limited-overlap literature \citep{Li2016,DAmour2017,BenMichael2022,Hill2024,Susmann2025}.  The lower-bound alternatives make the informative treatment arm rare precisely on the small-contrast block that determines regret.  The observed-law minimax lower bound shows that the law class has a testing difficulty encoded in \(r_\star(\alpha,\gamma)\).  A feasible clipped-score procedure must also estimate the nuisance functions and choose a clipping level that controls inverse-propensity variability.  When nuisance learning is slow in the weak arm, the product remainder and localized drift terms can dominate the purely testing-driven benchmark.  This connects to recent weak-overlap and clipping analyses of how overlap, nuisance estimation, and localization interact \citep{Zhao2023,Liu2026}.
+
+\begin{definitionv}{oeq:feasible-tight}[Feasible Tightness Question]
+In the strict-gap branch of the conditional feasible achievability bound for the regime-indexed risk \(U_n\), it is open whether a genuinely feasible estimator using estimated cross-fitted nuisance functions can attain the converse exponent \(r_\star(\alpha,\gamma)\), or whether weak-arm nuisance learning imposes the slower conditional exponent derived by the feasible upper bound.
+\end{definitionv}
+
+\cref{obj:oeq:feasible-tight} is intentionally stated as an open question.  It asks whether the gap in the strict-gap branch is an artifact of the plain clipped AIPW ERM and its analysis, or whether it reflects an intrinsic cost of learning the nuisance functions in the same weak-overlap region that drives the lower-bound construction.  Resolving this would require either a feasible procedure whose risk reaches \(r_\star(\alpha,\gamma)\) under comparable nuisance-side conditions, or a converse argument that incorporates nuisance learning into the lower-bound experiment.
+
+\Cref{obj:oeq:feasible-upper} controls \(U_n(\alpha,\gamma,a,c;\widehat\eta)\) for the specified clipped cross-fitted rule and the stated side-condition domain.  The broader feasible minimax problem also includes other estimators, adaptive clipping schemes, and procedures that exploit additional structure in the nuisance functions.  \Cref{obj:thm:minimax-lower} supplies the observed-law converse free of nuisance-estimation restrictions.  The strict-gap branch therefore poses a genuine feasible minimax question beyond the completed observed-law lower-bound calculation.
+
+
+
+\appendix
+
+\section*{Appendices}
+
+\section{Algebra, Testing, and Witness-Law Details}
+
+This appendix collects the algebraic details behind the lower-bound construction in \cref{obj:thm:minimax-lower}.  The purpose is only to connect the calibration, membership, divergence, separation, and testing ingredients used by \cref{obj:thm:minimax-lower}.  Throughout, the rate statement is a lower-bound statement over the observed-law class in \cref{obj:def:law-class}.
+
+The exponent calculation begins with the overlap envelope in \cref{obj:prop:overlap-envelope}.  For a local contrast scale \(h\), an active block of mass proportional to \(h^\alpha\), and weak-arm probability proportional to \(h^\beta\), the overlap-decay condition can be tested on the tight admissible window
+\[
+v=h^\beta,
+\qquad
+u=h^{\beta/\gamma}.
+\]
+On that window,
+\[
+u^\alpha v^{1/\gamma}
+=
+h^{\alpha\beta/\gamma}h^{\beta/\gamma}
+=
+h^{(\alpha+1)\beta/\gamma}.
+\]
+Since \(0<h<1\), the envelope \(u^\alpha v^{1/\gamma}\) is at least of order \(h^\alpha\) precisely when
+\[
+\frac{(\alpha+1)\beta}{\gamma}\le \alpha,
+\qquad\text{or equivalently}\qquad
+\beta\le \frac{\alpha\gamma}{\alpha+1}.
+\]
+This is the calibration recorded in \cref{obj:prop:overlap-envelope}.  Within the tight-window algebra used by the witness construction, it identifies the weakest admissible treatment-arm probability on the active block, and therefore explains why the denominator in \cref{obj:def:exponents} contains the additional term \(\beta_{\alpha,\gamma}\) when \(\gamma>0\).
+
+The witness laws in \cref{obj:def:two-point-witness} are designed so that this calibration is binding.  The covariate law is Lebesgue measure on \([0,1]\), the active block has mass \(P_X(B_n)=c_Bh_n^\alpha\), and the logging propensity on that block is \(q_n\), equal to \(1/4\) in the strict-overlap endpoint and to \(h_n^{\beta_{\alpha,\gamma}}\) in the weak-overlap case.  Off the block, both laws have the same strictly positive contrast \(\tau_0\).  On the block, they differ only by the sign of the treated-arm conditional mean, so that the two oracle rules are \(x\mapsto 1\) and \(x\mapsto \mathbf 1\{x\notin B_n\}\), as stated in \cref{obj:lem:witness-membership}.  The membership lemma is also where the availability of these two rules in the policy class is recorded for the two-action reduction.
+
+The chi-square calculation in \cref{obj:lem:two-point-divergence} has only one contributing cell.  The laws coincide outside \(B_n\), and they also coincide on the untreated part of \(B_n\).  Conditional on \(X\in B_n\) and \(A=1\), the two outcome distributions are Bernoulli laws on \(\{-1,1\}\) with success probabilities \((1+h_n)/2\) and \((1-h_n)/2\).  Their one-cell chi-square divergence is of order \(h_n^2\).  Multiplying by the probability of entering the cell gives
+\[
+\chi^2(P_{n,+}\,\|\,P_{n,-})
+\lesssim
+P_X(B_n)q_nh_n^2
+\asymp
+h_n^{\alpha+\beta_{\alpha,\gamma}+2}.
+\]
+With
+\[
+h_n=n^{-1/(2+\alpha+\beta_{\alpha,\gamma})},
+\]
+the product divergence remains bounded because
+\[
+n h_n^{2+\alpha+\beta_{\alpha,\gamma}}\asymp 1.
+\]
+Equivalently, the product formula
+\[
+1+\chi^2(P_{n,+}^{\otimes n}\,\|\,P_{n,-}^{\otimes n})
+=
+\left(1+\chi^2(P_{n,+}\,\|\,P_{n,-})\right)^n
+\]
+is bounded by a constant, as in \cref{obj:lem:two-point-divergence}.
+
+The regret calculation in \cref{obj:lem:regret-separation} uses the fact that the two oracle assignments disagree exactly on \(B_n\).  Any single deterministic policy must assign at least half of the block incorrectly for one of the two laws, up to the constant convention in the lemma.  On that law, the welfare identity in \cref{obj:thm:welfare-identity} gives a pointwise regret weight \(h_n\) on the misclassified part of \(B_n\).  Thus the loss is bounded below by a constant multiple of
+\[
+P_X(B_n)h_n
+\asymp
+h_n^{1+\alpha}.
+\]
+Substituting the calibrated bandwidth gives
+\[
+h_n^{1+\alpha}
+=
+n^{-(1+\alpha)/(2+\alpha+\beta_{\alpha,\gamma})}
+=
+n^{-r_\star(\alpha,\gamma)}.
+\]
+
+The final step is the two-point testing reduction.  \Cref{obj:lem:le-cam-two-point-chisq} is the chi-square version of Le Cam's method \citep{LeCam1986,Tsybakov2009}: bounded product divergence prevents every test from identifying the sign with vanishing total error.  Applying that testing bound to the two witness laws converts the regret separation into the minimax lower bound in \cref{obj:thm:minimax-lower}.  Its exponent characterizes the converse construction, while feasible policy-learning upper rates are developed through a separate achievability analysis.
+
+
+
+\section{Empirical-Process and Cross-Fitting Details}
+
+This appendix collects the empirical-process inputs used by the conditional feasible upper bound in \cref{obj:oeq:feasible-upper}.  The statements translate the localized VC envelope and localized offset-envelope side conditions in \cref{obj:ass:vc-localized-envelope} and~\cref{obj:ass:vc-localized-offset-envelope} into the fixed-radius, cross-fitted, and self-bounding forms used by \cref{obj:lem:crude-localized-master-bound}.  Fixed \(K\), balanced folds, and the displayed empirical-process envelopes thereby define the conditional feasible-analysis domain.
+
+The first auxiliary statement is the self-bounding step that converts an offset empirical-process control into an expected regret bound.  It is the margin-localized analogue of the standard offset argument in excess-risk analysis for VC classes \citep{Audibert2007,Massart2006,Tsybakov2009}.
+
+\begin{lemmav}{lem:localized-vc-self-bound}[Localized Self Bound]
+Let
+\[
+\rho_n=\left(\frac{B^2}{n}\right)^{A_\alpha}(\log n)^p,
+\qquad A_\alpha=\frac{1+\alpha}{2+\alpha},
+\qquad B\ge 1,
+\qquad p\ge 0,
+\]
+and let \(C>0\) be the constant of the cross-fit localized offset bound, so that the offset positive part of the centered \(\Pi\)-indexed process \(z_\pi\) is controlled at scale \(C\rho_n\). Assume the sample size is large enough that
+\[
+\frac1n\le C\rho_n .
+\]
+Then every \(\Pi\)-indexed estimator \(\widetilde\pi\) satisfying
+\[
+R_P(\widetilde\pi)\le 2|z_{\widetilde\pi}|+\delta_n,
+\qquad \delta_n\ge 0,
+\]
+also satisfies
+\[
+\mathbb E_P R_P(\widetilde\pi)\le \tfrac{8}{3}\,(C\rho_n+\delta_n).
+\]
+If, in addition, \(\delta_n\le 1/n\), then---using \(1/n\le C\rho_n\)---the \(\delta_n\) term is absorbed into the leading rate and
+\[
+\mathbb E_P R_P(\widetilde\pi)\le \tfrac{8}{3}\,C\,\rho_n .
+\]
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:localized-vc-self-bound}]
+Let
+\[
+\rho=C_{\mathrm{off}}\left(\frac{B^2}{n}\right)^{A_\alpha}(\log n)^p
+\]
+be the offset bound supplied to the lemma, and let
+\[
+\Omega_{\mathrm{off}}(s)=
+\sup_{\pi\in\Pi}
+\left\{2|G_{\mathrm{cf}}(s,\pi)|-\frac{R_P(\pi)}4\right\}_{+}.
+\]
+For each sample \(s\), the selected policy \(\widetilde\pi(s)\in\Pi\), so its offset term is bounded by \(\Omega_{\mathrm{off}}(s)\). % lean: localized_vc_self_bound
+Put \(R=R_P(\widetilde\pi(s))\), \(z=G_{\mathrm{cf}}(s,\widetilde\pi(s))\), and \(a=2|z|-R/4\).  From the selection inequality \(R\le2|z|+\delta_n\), Lean derives
+\[
+\frac34R\le a+\delta_n.
+\]
+If \(a\ge0\), this gives \(R\le \frac43 a+\frac43\delta_n\); if \(a<0\), it gives \(R\le \frac43\delta_n\).  In both cases,
+\[
+R_P(\widetilde\pi(s))
+\le
+\frac43\,\Omega_{\mathrm{off}}(s)+\frac43\,\delta_n .
+\]
+% lean: localized_vc_self_bound
+Integrating and using the assumed offset control gives
+\[
+\mathbb E_P R_P(\widetilde\pi)
+\le
+\frac43\rho+\frac43\delta_n
+\le
+\frac83(\rho+\delta_n),
+\]
+which is the asserted bound after absorbing numerical constants into \(C\). % lean: localized_vc_self_bound
+If \(\delta_n\le1/n\), the proof uses the supplied large-\(n\) comparison \(1/n\le\rho\) to get
+\[
+\mathbb E_P R_P(\widetilde\pi)
+\le
+\frac43\rho+\frac43\delta_n
+\le
+\frac83\rho,
+\]
+so the \(\delta_n\) term is absorbed into the localized rate. % lean: localized_vc_self_bound
+\end{proof}
+
+\cref{obj:lem:localized-vc-self-bound} is the device that absorbs the stochastic term appearing after the ERM basic inequality.  The \(1/n\) slack in \cref{obj:def:feasible-erm} is negligible relative to the localized rate \(\rho_n\), so the near-maximization error preserves the polynomial exponent.
+
+The next statement records the fixed-radius localized VC bound used before cross-fitting is introduced.  The key input is the conditional variance localization by the disagreement set \(D_\pi\), which combines with the margin localization in \cref{obj:thm:margin-localization}.
+
+\begin{lemmav}{lem:localized-vc-process-bound}[Localized VC Process]
+Under \cref{obj:ass:policy-class}, \cref{obj:ass:margin}, \cref{obj:ass:zero-effect}, \cref{obj:ass:bounded-outcome}, and~\cref{obj:ass:vc-localized-envelope}, and using the regret risk and disagreement sets in \cref{obj:def:upper-risk} and \cref{obj:def:disagreement}, let
+\[
+\kappa=\frac{\alpha}{2+2\alpha}.
+\]
+There exist constants \(C>0\) and \(p\ge0\) such that the following holds. For an i.i.d.\ sample of size \(m\ge1\), any envelope \(B\ge0\), and any policy-compatible increment family \(g_\pi\)---that is, \(g_\pi(O)\) depends on the policy \(\pi\) only through its decision \(\pi(X)\)---satisfying
+\[
+|g_\pi(O)|\le B\quad(\forall\,\pi\in\Pi,\ \forall\,O),
+\qquad
+\int g_\pi(O)^2\,dP(O)\le B^2\,P_X(D_\pi)\quad(\forall\,\pi\in\Pi),
+\]
+define
+\[
+Z_m(r)
+=
+\sup_{\pi\in\Pi:\,R_P(\pi)\le r}
+\left|(P_m-P)g_\pi\right|.
+\]
+Then, for every regret radius \(r\ge0\),
+\[
+\mathbb E_P Z_m(r)
+\le
+C B\,m^{-1/2} r^\kappa(\log m)^p .
+\]
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:localized-vc-process-bound}]
+The policy-class, margin, zero-effect, well-formedness, and bounded-outcome conditions delimit the setting of the lemma.  The displayed empirical-process inequality itself is the fixed-radius localized envelope supplied by \cref{obj:ass:vc-localized-envelope}.  That assumption gives constants \(C>0\) and \(p\ge0\) such that, for every sample size \(m\ge1\), envelope \(B\ge0\), radius \(r\ge0\), and policy-compatible increment family \(g_\pi\) satisfying
+\[
+ |g_\pi(O)|\le B\quad(\pi\in\Pi)
+ \qquad\text{and}\qquad
+ \int g_\pi(O)^2\,dP(O)\le B^2P_X(D_\pi)\quad(\pi\in\Pi),
+\]
+the expected supremum of the centered empirical process over the regret-localized class is bounded at the stated rate.  Equivalently, for
+\[
+Z_m(r)=\sup_{\pi\in\Pi:\,R_P(\pi)\le r}
+\left|m^{-1}\sum_{i=1}^m g_\pi(O_i)-\int g_\pi(O)\,dP(O)\right|,
+\]
+with \(O_1,\ldots,O_m\) drawn i.i.d. from \(P\), the assumption yields
+\[
+\mathbb E_P Z_m(r)
+\le
+C B m^{-1/2}r^{\alpha/(2+2\alpha)}(\log m)^p .
+\]
+No separate symmetrization, chaining, or derivation from the other standing hypotheses is used in this lemma.
+% lean: localized_vc_process_bound
+\end{proof}
+
+\cref{obj:lem:localized-vc-process-bound} should be read as an assumption-to-bound reduction.  It applies the localized VC envelope condition to policy-indexed increments whose variance is small when the policy differs from the oracle only on a small disagreement region.  The exponent \(\kappa=\alpha/(2+2\alpha)\) is the fixed-radius localization exponent induced by the margin condition.
+
+Cross-fitting changes the bookkeeping by allowing the nuisance estimates to be conditioned on fold by fold.  Conditional on the training folds, the observations in each evaluation fold remain i.i.d.; the fixed and balanced fold scheme in \cref{obj:ass:fixed-crossfit-fold-count} is then used as an input to \cref{obj:lem:crossfit-localized-process-reduction}.  The general sample-splitting and cross-fitting architecture follows the double/debiased machine-learning approach \citep{Chernozhukov2018}.
+
+\begin{lemmav}{lem:crossfit-localized-process-reduction}[Cross-Fit Localized Reduction]
+Let \(Z_{\mathrm{cf}}(r)\) denote the pooled cross-fit localized supremum formed from a fold-indexed family of evaluation-fold increments \(g=(g_k)_{k=1}^K\), centered by subtracting their \(P\)-means:
+\[
+Z_{\mathrm{cf}}(r)
+=
+\sup_{\pi\in\Pi:\,R_P(\pi)\le r}
+\left|
+\frac1n\sum_{i=1}^n
+\left\{g_{k(i)}(\pi,O_i)-\int g_{k(i)}(\pi,O)\,dP(O)\right\}
+\right|.
+\]
+
+Assume:
+\begin{itemize}
+\item \textbf{(Data and folds.)} The observations are i.i.d. as in \cref{obj:ass:iid}, the observed law is well formed, and the fixed positive balanced cross-fitting scheme of \cref{obj:ass:fixed-crossfit-fold-count} is used.
+\item \textbf{(Policies and localization.)} The policy class satisfies \cref{obj:ass:policy-class}, the zero-effect condition of \cref{obj:ass:zero-effect} holds, disagreements are measured by \(D_\pi\) as in \cref{obj:def:disagreement}, and the margin condition holds in the quantitative form
+\[
+\alpha\ge0,\qquad C_m>0,\qquad u_0>0,
+\qquad
+P_X\{0<|\tau_P(X)|\le u\}\le C_m u^\alpha
+\quad\text{for every }0<u\le u_0.
+\]
+\item \textbf{(Outcome and envelope.)} The bounded-outcome condition of \cref{obj:ass:bounded-outcome} holds. In addition, the localized VC envelope condition holds in the following quantitative form: there exist constants \(C_0>0\) and \(p_0\ge0\) such that, for every \(m\ge1\), every \(B'\ge0\), every \(r'\ge0\), and every policy-compatible increment class \(h\) satisfying
+\[
+ |h(\pi,O)|\le B',
+ \qquad
+ \int h(\pi,O)^2\,dP(O)
+ \le (B')^2 P_X(D_\pi)
+ \quad\text{for all }\pi\in\Pi,
+\]
+one has
+\[
+E_P\left[
+\sup_{\pi\in\Pi:\,R_P(\pi)\le r'}
+\left|
+\frac1m\sum_{i=1}^m h(\pi,O_i)-\int h(\pi,O)\,dP(O)
+\right|
+\right]
+\le
+C_0 B' m^{-1/2} (r')^{\alpha/(2+2\alpha)}(\log m)^{p_0}.
+\]
+\end{itemize}
+Then there exist constants \(C>0\) and \(p\ge0\) such that, for every \(n\ge1\), every \(B\ge0\), every \(r\ge0\), and every fold-indexed increment family \(g=(g_k)_{k=1}^K\), if:
+\begin{itemize}
+\item for each fold \(k\), the increment class \(g_k\) is policy-compatible;
+\item for every \(k\) and every \(\pi\in\Pi\), \(g_k(\pi,\cdot)\) is measurable;
+\item the pooled localized supremum and the corresponding foldwise localized sub-suprema obtained from the balanced fold assignment are integrable under the relevant product laws;
+\item for all folds \(k\), policies \(\pi\in\Pi\), and observations \(O\),
+\[
+ |g_k(\pi,O)|\le B,
+ \qquad
+ \int g_k(\pi,O)^2\,dP(O)
+ \le B^2 P_X(D_\pi),
+\]
+\end{itemize}
+then, for every fold label \(k\), the i.i.d. size-\(n\) localized supremum formed from \(g_k\) satisfies
+\[
+E_P\left[
+\sup_{\pi\in\Pi:\,R_P(\pi)\le r}
+\left|
+\frac1n\sum_{i=1}^n g_k(\pi,O_i)-\int g_k(\pi,O)\,dP(O)
+\right|
+\right]
+\le
+C B n^{-1/2} r^{\alpha/(2+2\alpha)}(\log n)^p,
+\]
+and the pooled cross-fit localized supremum satisfies
+\[
+E_P Z_{\mathrm{cf}}(r)
+\le
+C B n^{-1/2} r^{\alpha/(2+2\alpha)}(\log n)^p .
+\]
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:crossfit-localized-process-reduction}]
+The localized VC envelope gives constants \(C_0>0\) and \(p\ge0\) such that every compatible centered process with envelope \(B\) and second moment bounded by \(B^2P_X(D_\pi)\) satisfies, for each sample size \(m>0\),
+\[
+E Z_m(r)\le
+C_0 Bm^{-1/2}r^{\alpha/(2+2\alpha)}(\log m)^p .
+\]
+The fixed-fold assumption supplies \(K>0\).  Set \(C=C_0K\), so \(C>0\) and \(C_0\le C\). % lean: VCLocalizedEnvelope % lean: localized_vc_process_bound % lean: crossfit_localized_process_reduction
+
+Fix \(n>0\), \(B\ge0\), \(r\ge0\), and a fold-indexed family of increment functions satisfying the stated compatibility, measurability, envelope, and second-moment hypotheses.  Applying the preceding bound at the full sample size \(m=n\) to each frozen foldwise increment family gives, for every fold \(k\),
+\[
+E\!\left[\sup_{\pi\in\Pi:\,R_P(\pi)\le r}
+\left|(P_n-P)g_{k,\pi}\right|\right]
+\le
+C_0 B n^{-1/2}r^{\alpha/(2+2\alpha)}(\log n)^p
+\le
+C B n^{-1/2}r^{\alpha/(2+2\alpha)}(\log n)^p .
+\]
+This is the foldwise \(n\)-observation assertion; it is not the fold-size term used below in the pooled decomposition. % lean: Henv % lean: hC0_le_C
+
+For the pooled supremum, let \(m_k\) be the size of fold \(k\) and \(w_k=m_k/n\).  Pointwise in the sample, the pooled localized supremum is bounded by the weighted sum of the fold-restricted localized suprema:
+\[
+Z_{\mathrm{cf}}(r)\le \sum_{k=1}^K w_k Z_k(r).
+\]
+The stated integrability hypotheses justify integrating this inequality and exchanging the finite sum.  The coordinate projection from the full product sample onto fold \(k\) identifies the expectation of \(Z_k(r)\) with the ordinary localized-supremum expectation for \(m_k\) i.i.d. observations from \(P\).  Hence, for every nonempty fold, applying the localized VC envelope at sample size \(m=m_k\) gives
+\[
+w_k E Z_k(r)
+\le
+w_k C_0 B m_k^{-1/2}r^{\alpha/(2+2\alpha)}(\log m_k)^p .
+\]
+If \(m_k=0\), then \(w_k=0\) and the fold contributes zero.  If \(m_k>0\), the inclusion \(I_k\subset\{1,\ldots,n\}\) gives \(m_k\le n\); therefore
+\[
+w_k m_k^{-1/2}\le n^{-1/2},
+\qquad
+(\log m_k)^p\le(\log n)^p .
+\]
+Thus each fold contributes at most
+\[
+C_0 B n^{-1/2}r^{\alpha/(2+2\alpha)}(\log n)^p,
+\]
+and summing over the fixed \(K\) folds yields
+\[
+E Z_{\mathrm{cf}}(r)
+\le
+C_0K B n^{-1/2}r^{\alpha/(2+2\alpha)}(\log n)^p
+=
+C B n^{-1/2}r^{\alpha/(2+2\alpha)}(\log n)^p .
+\]
+% lean: pooledLocalizedSup_pointwise_le_sum_fold % lean: measurePreserving_foldProjection % lean: integral_foldLocalizedSup_eq_expected % lean: fold_weight_mul_inv_sqrt_le % lean: log_nat_rpow_le % lean: crossfit_localized_process_reduction
+\end{proof}
+
+\cref{obj:lem:crossfit-localized-process-reduction} isolates the independence property supplied by cross-fitting: nuisance estimates trained away from an evaluation fold may be conditioned on while the evaluation observations remain i.i.d.  \Cref{obj:def:upper-risk} supplies the required nuisance-envelope and second-moment conditions as separate inputs.
+
+The final empirical-process input is the offset version needed by the self-bound.  It is the cross-fitted counterpart of the localized offset-envelope condition in \cref{obj:ass:vc-localized-offset-envelope}.
+
+\begin{lemmav}{lem:crossfit-localized-offset-control}[Cross-Fit Offset Control]
+Let \(G_{\mathrm{cf}}(\pi)\) be the pooled cross-fit centered process formed from foldwise increments \(g_{k,\pi}(O)\), indexed by \(\pi\in\Pi\).
+
+Assume:
+\begin{itemize}
+\item \textbf{(Data and folds.)} The observations are i.i.d. as in \cref{obj:ass:iid}, the observed law is well formed, and the fixed balanced cross-fitting scheme of \cref{obj:ass:fixed-crossfit-fold-count} is used.
+\item \textbf{(Policies and localization.)} The policy class satisfies \cref{obj:ass:policy-class}, the margin and zero-effect conditions of \cref{obj:ass:margin} and~\cref{obj:ass:zero-effect} hold, and \(D_\pi\) is the disagreement set in \cref{obj:def:disagreement}.
+\item \textbf{(Localized offset envelope.)} The uniform class-level localized offset-envelope condition of \cref{obj:ass:vc-localized-offset-envelope} holds for \(\Pi\) and exponent \(\alpha\).
+\item \textbf{(Outcome.)} The bounded-outcome condition of \cref{obj:ass:bounded-outcome} holds.
+\item \textbf{(Foldwise increments.)} For every sample size \(n\ge1\), every \(B\ge0\), and every foldwise increment family \(g_{k,\pi}\), each fold map is policy-compatible, each \(g_{k,\pi}\) is measurable for \(\pi\in\Pi\), the pooled offset supremum and the corresponding foldwise offset suprema are integrable, and
+\[
+\lvert g_{k,\pi}(O)\rvert\le B,
+\qquad
+\int g_{k,\pi}(O)^2\,dP(O)
+\le B^2 P_X(D_\pi)
+\]
+for every fold \(k\), every \(\pi\in\Pi\), and every observation \(O\).
+\end{itemize}
+Then there exist constants \(C>0\) and \(p\ge0\) such that
+\[
+E_P \sup_{\pi\in\Pi}
+\left\{2\lvert G_{\mathrm{cf}}(\pi)\rvert-\frac{R_P(\pi)}{4}\right\}_{+}
+\le
+C\left(\frac{B^2}{n}\right)^{(1+\alpha)/(2+\alpha)}(\log n)^p .
+\]
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:crossfit-localized-offset-control}]
+Apply the uniform localized offset envelope of \cref{obj:ass:vc-localized-offset-envelope} with constants \(C_0,p\), and enlarge the constant to \(C=C_0K\), where \(K\) is the fixed number of folds.  The fixed-fold assumption gives \(K>0\), hence \(C>0\). % lean: crossfit_localized_offset_control
+
+Fix \(P,n,B\) and the foldwise increments.  Let \(w_k=|I_k|/n\), let the pooled offset supremum be
+\[
+\sup_{\pi\in\Pi}\left\{2|G_{\mathrm{cf}}(\pi)|-\frac{R_P(\pi)}4\right\}_+,
+\]
+and let the \(k\)-th folded supremum be the analogous offset supremum on fold \(I_k\).  Pointwise in the sample, the pooled supremum is bounded by the weighted sum of the folded suprema, because the pooled cross-fit process is the corresponding fold-size weighted average and the positive-part offset is subadditively controlled after taking the supremum. % lean: pooledOffsetSup_pointwise_le_sum_fold
+
+After integrating, monotonicity of the integral and the fold-projection identities reduce the pooled expectation to a sum of weighted fold expectations.  For a fold of size \(m=0\) the weight is zero.  For a nonempty fold, the localized offset envelope applies to that fold with sample size \(m\), envelope \(B\), and the same second-moment bound \(B^2P_X(D_\pi)\). % lean: integral_foldOffsetSup_eq_expected
+
+The remaining bookkeeping compares each weighted fold rate with the target \(n\)-rate:
+\[
+\frac{m}{n}\left(\frac{B^2}{m}\right)^{A_\alpha}
+\le
+\left(\frac{B^2}{n}\right)^{A_\alpha},
+\qquad
+(\log m)^p\le(\log n)^p,
+\]
+using \(A_\alpha=(1+\alpha)/(2+\alpha)\le1\), \(m\le n\), and \(p\ge0\). % lean: fold_weight_mul_offset_rpow_le
+Summing over the finitely many folds gives
+\[
+E_P\sup_{\pi\in\Pi}
+\left\{2|G_{\mathrm{cf}}(\pi)|-\frac{R_P(\pi)}4\right\}_+
+\le C\left(\frac{B^2}{n}\right)^{A_\alpha}(\log n)^p,
+\]
+with the enlarged constant absorbing the fold count. % lean: crossfit_localized_offset_control
+\end{proof}
+
+\cref{obj:lem:crossfit-localized-offset-control} supplies the offset positive-part bound required by \cref{obj:lem:localized-vc-self-bound}.  In the feasible clipped-AIPW analysis, the envelope \(B\) is later instantiated at the clipped-score scale from \cref{obj:lem:crude-clipped-score-envelope}; the resulting term is the empirical-process component \((nq^2)^{-A_\alpha}\) in \cref{obj:lem:crude-localized-master-bound}.  Together, \cref{obj:lem:localized-vc-self-bound}--\cref{obj:lem:crossfit-localized-offset-control} provide only the empirical-process part of the conditional upper bound; the drift and clipping bias are handled separately in Appendix~C.
+
+
+
+\section{Clipped-Score Drift and Bias Localization}
+
+This appendix records the deterministic bias calculations used by the clipped-score analysis in \cref{obj:oeq:feasible-upper}.  The key point is that clipping a doubly robust score changes its conditional mean unless the clipped plug-in propensity agrees with the observed-law propensity, or the outcome-regression errors vanish at the same covariate value.  Thus the usual orthogonality logic for AIPW scores \citep{Robins1994,Hahn1998,Hirano2003,Chernozhukov2018} must be combined with an explicit localization argument near the clipped propensity region.
+
+\begin{lemmav}{lem:clip-bias}[Clipped Score Drift]
+Under \cref{obj:ass:bounded-outcome}, \cref{obj:ass:positivity}, and~\cref{obj:ass:bounded-crossfit-nuisances}, and with the clipped propensity and clipped AIPW score of \cref{obj:def:clipped-propensity} and~\cref{obj:def:clipped-aipw-score}, let \(\bar\eta=(\bar\mu_0,\bar\mu_1,\bar e)\) be any measurable plug-in nuisance triple. Define
+\[
+\bar e_q(x)=\min\{1-q,\max\{q,\bar e(x)\}\},
+\qquad
+\Delta_a(x)=\bar\mu_a(x)-\mu_a(x),
+\qquad
+b_q(x)=(\bar e_q(x)-e_P(x))\left\{\frac{\Delta_1(x)}{\bar e_q(x)}+\frac{\Delta_0(x)}{1-\bar e_q(x)}\right\}.
+\]
+Then the clipped score reproduces the contrast up to the drift \(b_q\) in the tested (population) sense: for every bounded measurable \(\varphi\),
+\[
+\mathbb E_P[\varphi(X)\,\Gamma_q(O;\bar\eta)]-\mathbb E_P[\varphi(X)\,\tau_P(X)]
+=
+\mathbb E_P[\varphi(X)\,b_q(X)],
+\]
+equivalently \(\mathbb E_P[\Gamma_q(O;\bar\eta)\mid X=x]-\tau_P(x)=b_q(x)\) for \(P_X\)-almost every \(x\).
+In particular, the drift vanishes whenever \(\bar e_q(x)=e_P(x)\) or \(\Delta_0(x)=\Delta_1(x)=0\), since either makes a factor of \(b_q(x)\) vanish; these conditions are sufficient but not necessary, as the bracketed term \(\Delta_1(x)/\bar e_q(x)+\Delta_0(x)/(1-\bar e_q(x))\) may itself vanish. Cancellation does not, however, follow merely from \(p_P(x)>q\): there exist laws and covariate values with \(p_P(x)>q\) at which the drift is nonzero.
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:clip-bias}]
+Fix a bounded measurable covariate test function \(\phi\), and write \(\bar e_q(x)=e_q(x;\bar\eta)\).  Since \(q\in(0,1)\), the clipped denominators \(\bar e_q\) and \(1-\bar e_q\) are bounded away from zero; the bounded-outcome and bounded-nuisance assumptions make all terms below integrable.  Expanding \cref{obj:def:clipped-aipw-score} gives
+\[
+\begin{aligned}
+\int \phi(X)\Gamma_q(O;\bar\eta)\,dP
+&=\int \phi(\bar\mu_1-\bar\mu_0)\,dP_X  \\
+&\quad+\int e_P\mu_1\,\frac{\phi}{\bar e_q}\,dP_X
+      -\int e_P\bar\mu_1\,\frac{\phi}{\bar e_q}\,dP_X \\
+&\quad-\int (1-e_P)\mu_0\,\frac{\phi}{1-\bar e_q}\,dP_X
+      +\int (1-e_P)\bar\mu_0\,\frac{\phi}{1-\bar e_q}\,dP_X .
+\end{aligned}
+\]
+Here the treated and control terms have been converted to \(P_X\)-integrals using the defining conditional-mean relations for \(e_P,\mu_1,\mu_0\). % lean: clippedAIPWScore_test_expand_pointwise % lean: hscore_split % lean: hI0 % lean: hI1 % lean: hI2 % lean: hI3 % lean: hI4
+
+Collecting the integrand pointwise and using \(\tau_P=\mu_1-\mu_0\), \(\Delta_a=\bar\mu_a-\mu_a\), one obtains
+\[
+\int \phi(X)\Gamma_q(O;\bar\eta)\,dP
+-
+\int \phi(x)\tau_P(x)\,dP_X(x)
+=
+\int \phi(x)\,
+(\bar e_q(x)-e_P(x))
+\left\{
+\frac{\Delta_1(x)}{\bar e_q(x)}
++
+\frac{\Delta_0(x)}{1-\bar e_q(x)}
+\right\}\,dP_X(x).
+\]
+Since this holds for every bounded measurable \(\phi\), it is precisely the displayed conditional-mean drift identity. % lean: clipBias_integrand_collect_pointwise % lean: hpx_collect % lean: clip_bias
+
+The same formula gives the cancellation mechanisms recorded in the statement: if \(\bar e_q(x)=e_P(x)\), the leading factor is zero; if \(\Delta_0(x)=\Delta_1(x)=0\), the bracket is zero. % lean: clip_bias
+
+Finally, the assumptions alone do not allow one to replace this algebra by a cancellation claim on the region \(p_P(x)>q\).  There is a well-formed bounded positive law on \(\mathbb R\), with \(q'=1/4\), plug-ins \(m_0\equiv0\), \(m_1\equiv1\), \(e'\equiv0\), and \(x=0\), for which \(q'<p_{P'}(0)\) but the displayed drift is nonzero.  Thus no additive clipped-region bound of the asserted form follows from the frozen assumptions alone. % lean: clipBiasCounterLaw_overlap % lean: clipBiasCounterLaw_bias_ne % lean: clip_bias
+\end{proof}
+
+\cref{obj:lem:clip-bias} is the exact drift identity behind the bias term in \cref{obj:lem:localized-clipped-drift-bound}.  It separates the propensity discrepancy from the regression errors and shows that correct handling of clipping requires the full product identity.  In particular, stronger cancellation requires assumptions beyond the stated boundedness and positivity conditions.
+
+The remaining issue is to control where clipping can matter for regret.  Under the joint overlap-decay condition, the relevant clipped region becomes small after intersection with the welfare-relevant disagreement and small-contrast regions.  The next lemma gives that localization.
+
+\begin{lemmav}{lem:clipped-region-localization}[Clipped Region Localization]
+Suppose that the following conditions hold:
+\begin{itemize}
+\item \textbf{Positive weak-overlap exponent.} \(\gamma>0\).
+\item \textbf{Well-formed law.} The observed law \(P\) is well formed, with \(P_X\) a probability covariate marginal, \(\tau_P=\mu_1-\mu_0\), measurable nuisance functionals, and \(p_P(x)=\min\{e_P(x),1-e_P(x)\}\).
+\item \textbf{Overlap decay.} \cref{obj:ass:overlap-decay} holds with constants \(C_o,c_o,\alpha,\gamma,u_0\).
+\item \textbf{Zero-effect convention.} \cref{obj:ass:zero-effect} holds for the policy class \(\Pi\).
+\item \textbf{Bounded outcomes.} \cref{obj:ass:bounded-outcome} holds.
+\item \textbf{Measurable policies.} Every \(\pi\in\Pi\) is measurable.
+\item \textbf{Disagreement sets.} \(D_\pi\) is defined as in \cref{obj:def:disagreement}.
+\end{itemize}
+Then \(\max\{C_o,1\}>0\), and every policy \(\pi\in\Pi\) with regret \(r=R_P(\pi)\) satisfies
+\[
+P_X\!\left(D_\pi\cap\{x:p_P(x)\le q\}\right)
+\le
+\max\{C_o,1\} u^\alpha q^{1/\gamma}+\frac{r}{u}
+\]
+whenever \(0<u\le u_0\) and \(0<q\le c_o u^\gamma\).
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:clipped-region-localization}]
+Fix a policy \(\pi\in\Pi\), let \(D=D_\pi\), and fix \(u,q\) with
+\(0<u\le u_0\), \(q>0\), and \(q\le c_o u^\gamma\).  Put
+\[
+T=D\cap\{x:p_P(x)\le q\}.
+\]
+We cover \(T\) by the three sets
+\[
+Z=\{x:\tau_P(x)=0,\ \pi(x)\ne\pi_P^\star(x)\},
+\]
+\[
+S=\{x:p_P(x)\le q,\ 0<|\tau_P(x)|,\ |\tau_P(x)|\le u\},
+\]
+and
+\[
+B=D\cap\{x:u<|\tau_P(x)|\}.
+\]
+Indeed, if \(x\in T\) and \(\tau_P(x)=0\), then \(x\in Z\).  If
+\(\tau_P(x)\ne0\) and \(|\tau_P(x)|\le u\), then \(x\in S\).  Otherwise
+\(u<|\tau_P(x)|\), and since \(x\in D\), we have \(x\in B\). % lean: clipped_region_localization
+
+The zero-effect condition gives \(P_X(Z)=0\).  In its first alternative the whole zero-contrast set is null, so its subset \(Z\) is null.  In its second alternative, applied to the present policy \(\pi\in\Pi\), it directly gives
+\[
+P_X\{x:\tau_P(x)=0,\ \pi(x)\ne\pi_P^\star(x)\}=0.
+\]
+% lean: clipped_region_localization
+
+For the small-contrast weak-overlap piece, \cref{obj:ass:overlap-decay} applies because \(0<u\le u_0\), \(q>0\), and \(q\le c_o u^\gamma\).  Since \(\gamma>0\), this gives
+\[
+P_X(S)\le C_o u^\alpha q^{1/\gamma}
+\le \max\{C_o,1\}u^\alpha q^{1/\gamma}.
+\]
+% lean: clipped_region_localization
+
+For the large-contrast piece, the welfare regret identity controls disagreement on \(\{|\tau_P|>u\}\):
+\[
+P_X(B)\le \frac{R_P(\pi)}{u}.
+\]
+This follows because on \(B\) the integrand \(|\tau_P(x)|\mathbf 1_D(x)\) in the regret identity is at least \(u\). % lean: regret_disagreement_large_contrast_le
+
+By monotonicity and subadditivity of measure, and using \(P_X(Z)=0\),
+\[
+P_X(T)\le P_X(S)+P_X(B)
+\le \max\{C_o,1\}u^\alpha q^{1/\gamma}+\frac{R_P(\pi)}{u}.
+\]
+Since \(\max\{C_o,1\}>0\), relabeling this as the generic constant \(C\) proves the claim. % lean: clipped_region_localization
+\end{proof}
+
+\cref{obj:lem:clipped-region-localization} is the measure bound used to localize the drift from \cref{obj:lem:clip-bias}.  The first term is the overlap-decay contribution on the small-contrast window \(\{0<|\tau_P(X)|\le u\}\), while the second term is the regret-controlled contribution from disagreements outside that window.  The admissibility condition \(q\le c_o u^\gamma\) is the same one used in the feasible tuning schedule of \cref{obj:def:feasible-rate}.
+
+Together, \cref{obj:lem:clip-bias} and~\cref{obj:lem:clipped-region-localization} supply the deterministic bias inputs for \cref{obj:lem:localized-clipped-drift-bound}.  They bound the clipped-score drift by combining nuisance-rate control, overlap-decay localization, and the regret radius of the policy under consideration.
+
+
+
+\section{Verification Note}
+
+This appendix records the scope of the formal layer underlying the statements in the paper.  The object of analysis is the observed-law offline policy-learning experiment introduced in \cref{obj:ass:iid}: one observation has law \(P\) on \(\Omega=\mathcal X\times\{0,1\}\times[-1,1]\), and the regret target is the contrast-weighted welfare loss in \cref{obj:def:welfare-regret}.  The potential-outcome notation used in \cref{obj:ass:bounded-outcome} fixes the outcome scale, but the lower-bound and upper-bound statements themselves are expressed through the observed law, the propensity score, the outcome regressions, the contrast, and the induced oracle policy.
+
+The observed-law side of the analysis consists of the welfare identity in \cref{obj:thm:welfare-identity}, the disagreement notation in \cref{obj:def:disagreement}, the margin localization statement in \cref{obj:thm:margin-localization}, and the law class in \cref{obj:def:law-class}.  The exponents used in the lower bound are those in \cref{obj:def:exponents}; in particular, the denominator \(2+\alpha+\beta_{\alpha,\gamma}\) and the lower-bound exponent \(r_\star(\alpha,\gamma)\) are fixed there before the minimax statement is formed.
+
+The lower-bound argument is represented by the two-point witness construction in \cref{obj:def:two-point-witness}, the overlap-envelope calibration in \cref{obj:prop:overlap-envelope}, witness membership in \cref{obj:lem:witness-membership}, the product-divergence control in \cref{obj:lem:two-point-divergence}, the regret separation in \cref{obj:lem:regret-separation}, and the chi-square testing reduction in \cref{obj:lem:le-cam-two-point-chisq}.  These statements support the minimax lower bound in \cref{obj:thm:minimax-lower}; the conditional upper analysis is represented by the separate clipped-AIPW chain below.
+
+The feasible rule is represented separately.  The clipping schedule and feasible exponent are defined in \cref{obj:def:feasible-rate}; the clipped propensity and clipped AIPW score are defined in \cref{obj:def:clipped-propensity} and~\cref{obj:def:clipped-aipw-score}; and the cross-fitted empirical welfare rule is defined in \cref{obj:def:feasible-erm}.  The basic ERM inequality in \cref{obj:lem:feasible-erm-basic-inequality}, the clipped-score envelope in \cref{obj:lem:crude-clipped-score-envelope}, the clipped-bias identity in \cref{obj:lem:clip-bias}, the drift localization in \cref{obj:lem:localized-clipped-drift-bound}, and the master bound in \cref{obj:lem:crude-localized-master-bound} are the components used for the conditional upper bound in \cref{obj:oeq:feasible-upper}.
+
+The upper-bound result has an explicit side-condition domain in addition to the observed-law class.  This domain includes the nuisance-rate assumptions in \cref{obj:ass:nuisance-rate} and~\cref{obj:ass:polynomial-nuisance-exponents}, the bounded cross-fitted nuisance condition in \cref{obj:ass:bounded-crossfit-nuisances}, the fixed balanced fold condition in \cref{obj:ass:fixed-crossfit-fold-count}, and the localized empirical-process and offset-envelope conditions in \cref{obj:ass:vc-localized-envelope} and~\cref{obj:ass:vc-localized-offset-envelope}.  The process reductions in \cref{obj:lem:localized-vc-self-bound}, \cref{obj:lem:localized-vc-process-bound}, \cref{obj:lem:crossfit-localized-process-reduction}, and~\cref{obj:lem:crossfit-localized-offset-control} are invoked within that conditional domain.
+
+Accordingly, \cref{obj:oeq:feasible-upper} is a procedure-specific conditional achievability statement for the clipped cross-fitted AIPW ERM under \cref{obj:def:upper-risk}.  \Cref{obj:oeq:feasible-tight} records the open strict-gap question: whether another genuinely feasible estimator can attain the converse exponent \(r_\star(\alpha,\gamma)\), or whether the slower nuisance-limited exponent is intrinsic.
+
+The theorem statements and proofs described above are machine-checked in Lean 4.  The machine-checked scope covers the observed-law objects, exponent definitions, witness construction, lower-bound skeleton, clipped-score identities, ERM inequality, and conditional upper-bound dependencies.  Identification primitives, nuisance-rate conditions, fixed-fold cross-fitting, localized VC envelope bounds, and offset-envelope controls enter as stated assumptions defining the conditional domain.
+
+
+
+\section{Proofs of the main results}\label{sec:deferred-proofs}
+
+\begin{proof}[Proof of \cref{obj:thm:welfare-identity}]
+1.  From the well-formedness of the observed law, extract the measurability of
+\(\tau_P\) and the identity \(\tau_P(x)=\mu_1(x)-\mu_0(x)\).  By
+\cref{obj:ass:bounded-outcome}, \(|\mu_0(x)|\le1\) and
+\(|\mu_1(x)|\le1\) for every \(x\).  Hence, for every \(x\),
+\[
+|\tau_P(x)|
+=
+|\mu_1(x)-\mu_0(x)|
+\le |\mu_1(x)|+|\mu_0(x)|
+\le 2 .
+\]
+% lean: regret_eq_disagreement_integral
+
+2.  The set \(\{x:0\le\tau_P(x)\}\) is measurable because \(\tau_P\) is
+measurable, and the set \(\{x:\pi(x)=1\}\) is measurable because \(\pi\) is
+measurable.  Therefore the two integrands
+\[
+x\mapsto
+\begin{cases}
+\tau_P(x),&0\le \tau_P(x),\\
+0,&\text{otherwise},
+\end{cases}
+\qquad
+x\mapsto
+\begin{cases}
+\tau_P(x),&\pi(x)=1,\\
+0,&\text{otherwise},
+\end{cases}
+\]
+are measurable and, by the preceding bound \(|\tau_P|\le2\), integrable with
+respect to \(P_X\).  This is the formal integrability bookkeeping needed to
+combine the two welfare integrals into one integral of a difference.
+% lean: regret_eq_disagreement_integral
+
+3.  Expanding the definitions of \(R_P\), \(V_P\), \(\pi_P^\star\), and the
+binary policy indicator gives
+\[
+R_P(\pi)
+=
+\int
+\left[
+\mathbf 1\{0\le\tau_P(x)\}\tau_P(x)
+-
+\mathbf 1\{\pi(x)=1\}\tau_P(x)
+\right]\,dP_X(x).
+\]
+The previous integrability justifies this as the integral of the pointwise
+difference.
+% lean: regret_eq_disagreement_integral
+
+4.  It remains only to identify the pointwise difference.  Fix \(x\).  If
+\(\tau_P(x)\ge0\), then \(\pi_P^\star(x)=1\).  When \(\pi(x)=1\), both sides are
+zero; when \(\pi(x)\ne1\), the difference is \(\tau_P(x)=|\tau_P(x)|\), exactly
+the disagreement contribution.  If \(\tau_P(x)<0\), then \(\pi_P^\star(x)=0\).
+When \(\pi(x)=1\), the difference is \(-\tau_P(x)=|\tau_P(x)|\); when
+\(\pi(x)\ne1\), both sides are zero.  Thus, for every \(x\),
+\[
+\mathbf 1\{0\le\tau_P(x)\}\tau_P(x)
+-
+\mathbf 1\{\pi(x)=1\}\tau_P(x)
+=
+|\tau_P(x)|\,\mathbf 1\{\pi(x)\ne\pi_P^\star(x)\}.
+\]
+% lean: regret_eq_disagreement_integral
+
+5.  Substituting this pointwise identity into the integral yields
+\[
+R_P(\pi)
+=
+\int_{\mathcal X}
+|\tau_P(x)|\,\mathbf 1\{\pi(x)\ne\pi^\star_P(x)\}\,dP_X(x),
+\]
+the disagreement-integral representation of the regret with respect to the
+covariate law \(P_X\).
+% lean: regret_eq_disagreement_integral
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:thm:margin-localization}]
+\begin{enumerate}
+\item Fix
+\[
+C:=|C_m|+2+u_0^{-\alpha}.
+\]
+The margin assumption gives \(0\le \alpha\), \(C_m>0\), and \(u_0>0\), so \(C>0\). Moreover \(C\ge C_m+1\) and \(C\ge u_0^{-\alpha}\). It remains to prove the displayed inequality for an arbitrary \(P\) and \(\pi\in\Pi\). % lean: margin_localization
+
+\item Let \(r=R_P(\pi)\) and \(D_\pi=\{x:\pi(x)\ne \pi^\star_P(x)\}\). By the regret identity in \cref{obj:thm:welfare-identity},
+\[
+r=\int |\tau_P(x)|\,1_{D_\pi}(x)\,dP_X(x),
+\]
+so \(r\ge0\). Also \(P_X(D_\pi)\le1\), since \(P_X\) is a probability measure. % lean: regret_eq_disagreement_integral
+
+\item For every \(u\in(0,u_0]\),
+\[
+P_X(D_\pi)\le C_m u^\alpha+\frac{r}{u}.
+\]
+Indeed, write
+\[
+Z=\{x:\tau_P(x)=0,\ x\in D_\pi\},\qquad
+S_u=\{x:0<|\tau_P(x)|\le u\},
+\]
+and
+\[
+B_u=D_\pi\cap\{x:u<|\tau_P(x)|\}.
+\]
+The zero-effect assumption gives \(P_X(Z)=0\). The margin assumption gives
+\(P_X(S_u)\le C_m u^\alpha\). Finally, the regret identity gives
+\[
+uP_X(B_u)\le \int_{B_u}|\tau_P(x)|\,dP_X(x)\le r,
+\]
+hence \(P_X(B_u)\le r/u\). Since
+\[
+D_\pi\subset Z\cup S_u\cup B_u,
+\]
+the asserted decomposition follows. Measurability and finite-integral details are the standard bookkeeping supplied by the bounded-outcome and well-formed-law hypotheses. % lean: disagreement_measure_le_margin_plus_regret_over_u
+
+\item If \(\alpha=0\), then \(\alpha/(1+\alpha)=0\), and
+\[
+P_X(D_\pi)\le1\le C=C\,r^0.
+\]
+This proves the claim in the zero-margin-exponent case. % lean: margin_localization
+
+\item Assume now \(\alpha>0\). If \(r>0\), set
+\[
+u=r^{1/(1+\alpha)}.
+\]
+When \(u\le u_0\), the bound from Step 3 gives
+\[
+P_X(D_\pi)
+\le C_m u^\alpha+\frac r u
+=(C_m+1)r^{\alpha/(1+\alpha)}
+\le C r^{\alpha/(1+\alpha)}.
+\]
+% lean: margin_localization
+
+\item Still with \(\alpha>0\) and \(r>0\), suppose instead that \(u>u_0\). Then
+\[
+u_0^\alpha\le u^\alpha=r^{\alpha/(1+\alpha)}.
+\]
+Since \(C\ge u_0^{-\alpha}\),
+\[
+1=u_0^{-\alpha}u_0^\alpha
+\le C r^{\alpha/(1+\alpha)}.
+\]
+Combining this with \(P_X(D_\pi)\le1\) proves the desired bound in this subcase. % lean: margin_localization
+
+\item It remains to treat \(\alpha>0\) and \(r=0\). Let \(\varepsilon>0\), put
+\[
+a=\frac{\varepsilon}{C_m+1},
+\qquad
+u=\min\{u_0,a^{1/\alpha}\}.
+\]
+Then \(0<u\le u_0\), and Step 3 gives
+\[
+P_X(D_\pi)\le C_m u^\alpha+\frac r u
+=C_m u^\alpha
+\le C_m a
+\le \varepsilon.
+\]
+Since this holds for every \(\varepsilon>0\), \(P_X(D_\pi)=0\). Also
+\[
+r^{\alpha/(1+\alpha)}=0,
+\]
+because \(\alpha/(1+\alpha)>0\). Hence
+\[
+P_X(D_\pi)=0
+\le C r^{\alpha/(1+\alpha)}.
+\]
+% lean: margin_localization
+\end{enumerate}
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:prop:overlap-envelope}]
+For any real \(b\), the tight-window value is first rewritten by the power laws
+\[
+(h^{b/\gamma})^\alpha (h^b)^{1/\gamma}
+=h^{(b/\gamma)\alpha+b/\gamma}
+=h^{(\alpha+1)b/\gamma},
+\]
+using \(0<h\) and \(\gamma>0\). % lean: hpow
+Since \(0<h<1\), the map \(t\mapsto h^t\) is order-reversing, so
+\[
+h^{(\alpha+1)b/\gamma}\ge h^\alpha
+\quad\Longleftrightarrow\quad
+\frac{(\alpha+1)b}{\gamma}\le \alpha .
+\]
+As \(\alpha+1>0\) and \(\gamma>0\), this is equivalent to
+\[
+b\le \frac{\alpha\gamma}{\alpha+1}=\beta_{\alpha,\gamma},
+\]
+with \(\beta_{\alpha,\gamma}\) as in \cref{obj:def:exponents}. % lean: halg
+Applying this with \(b=\beta\) gives both the displayed identity and the equivalence. % lean: overlap_envelope
+If \(\beta=\beta_{\alpha,\gamma}\), the exponent calculation becomes
+\[
+\frac{(\alpha+1)}{\gamma}\frac{\alpha\gamma}{\alpha+1}=\alpha,
+\]
+and hence the envelope value is exactly \(h^\alpha\). % lean: hcalc
+Finally, \(\beta_{\alpha,\gamma}\ge0\) follows from \(\alpha\ge0\) and \(\gamma>0\), and the same equivalence just proved holds for every \(\beta'\ge0\). % lean: overlap_envelope
+Thus the largest, and therefore least informative, weak-arm exponent allowed within this tight-window overlap-envelope calibration is precisely \(\beta_{\alpha,\gamma}\). % lean: overlap_envelope
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:lem:witness-membership}]
+Write \(h=h_n\), \(q=q_n\), and \(B_n=[0,c_Bh^\alpha]\).  After discarding finitely many \(n\), the construction has \(0<h\le 1/2\), \(0<q\le 1/2\), and \(n\ge1\).  The witness law is well formed, has outcomes in \([-1,1]\), satisfies positivity, has the asserted margin tail, has no zero-effect ambiguity, and satisfies the strict-overlap endpoint condition in the \(\gamma=0\) branch. % lean: eventually_hLower_le_half % lean: eventually_qLower_pos_le_half % lean: twoPointWitness_wellFormed % lean: twoPointWitness_boundedOutcome % lean: twoPointWitness_positivity % lean: twoPointWitness_marginTail % lean: twoPointWitness_zeroEffect % lean: twoPointWitness_strictOverlapEndpoint
+
+It remains only to record the overlap-decay check.  Fix \(u,v\) with \(0<u\le u_0\), \(v>0\), and \(v\le c_o u^\gamma\), and let
+\[
+E=\{x:\ p_{P_{n,\sigma}}(x)\le v,\ 0<|\tau_{P_{n,\sigma}}(x)|\le u\}.
+\]
+Off \(B_n\), the contrast is \(\tau_0=(u_0+2)/2>u_0\), so no off-block point can lie in \(E\); hence \(E\subseteq B_n\) and
+\[
+P_X(E)\le P_X(B_n)\le c_Bh^\alpha .
+\]
+If \(h>u\), then the active-block contrast is too large and \(E=\varnothing\); if \(q>v\), then the active-block overlap is too large and again \(E=\varnothing\). % lean: hsubsetB % lean: hmass % lean: hE_empty_of_not_hle % lean: hE_empty_of_not_qle
+
+When \(\gamma=0\), the nonempty case gives \(h\le u\), so
+\[
+P_X(E)\le c_Bh^\alpha\le c_Bu^\alpha\le C_o u^\alpha,
+\]
+which is the required overlap-decay bound. % lean: witness_membership
+
+When \(\gamma>0\) and \(\alpha=0\), one has \(q=1/4\).  In the nonempty case \(q\le v\), so \(v\ge1/4\), and the chosen block-size constant gives
+\[
+P_X(E)\le c_B\le C_o v^{1/\gamma}
+      = C_o u^0 v^{1/\gamma}.
+\]
+% lean: activeBlock_overlap_bound_gzero
+
+When \(\gamma>0\) and \(\alpha>0\), \(q=h^{\beta_{\alpha,\gamma}}\).  In the nonempty case \(h\le u\) and \(h^{\beta_{\alpha,\gamma}}\le v\), and the calibration
+\[
+\beta_{\alpha,\gamma}=\frac{\alpha\gamma}{\alpha+1}
+\]
+together with \(v\le c_o u^\gamma\) and the chosen \(c_B\) yields
+\[
+P_X(E)\le c_Bh^\alpha\le C_o u^\alpha v^{1/\gamma}.
+\]
+Thus the overlap-decay condition holds in all cases. % lean: activeBlock_overlap_bound_gpos
+
+Combining these conditions gives \(P_{n,\sigma}\in\mathcal P_{\alpha,\gamma}\) for each \(\sigma\in\{+,-\}\), for all sufficiently large \(n\).  The contrast is positive everywhere under \(P_{n,+}\), so its oracle is \(x\mapsto1\); under \(P_{n,-}\), the contrast is negative exactly on \(B_n\) and positive off \(B_n\), so its oracle is \(x\mapsto\mathbf 1\{x\notin B_n\}\).  If these two maps are in \(\Pi\), they are therefore the two available actions in the two-point reduction.  Finally, \(0<u_0<2\) permits the displayed choice \(\tau_0=(u_0+2)/2\in(u_0,2)\), compatible with the bound \(|Y|\le1\). % lean: twoPointWitness_optimal_plus % lean: twoPointWitness_optimal_minus % lean: witness_membership
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:lem:two-point-divergence}]
+Fix \(n\) large enough that \(0<h_n\le1/2\), \(0<q_n\le1/2\), and \(n\ge1\).  Let \(P_+=P_{n,+}\) and \(P_-=P_{n,-}\).  The two laws agree except on the treated active cell \(\{X\in B_n,A=1\}\).  Partition the observation space into the unchanged cell, the active cell with \(Y=1\), and the active cell with \(Y=-1\).  On these cells the likelihood ratios of \(P_+\) relative to \(P_-\) are respectively
+\[
+1,\qquad \frac{1+h_n}{1-h_n},\qquad \frac{1-h_n}{1+h_n}.
+\]
+The two charged cells under \(P_-\) have masses \(A(1-h_n)/2\) and \(A(1+h_n)/2\), where \(A=P_X(B_n)q_n\le c_Bh_n^\alpha q_n\). % lean: chiSqDiv_three_cell_bound_of_restrict % lean: twoPointWitness_one_draw_chiSq_bound
+
+The finite-partition chi-square calculation, applied with the block-mass upper bound \(P_X(B_n)\le c_Bh_n^\alpha\), gives
+\[
+\chi^2(P_+\,\|\,P_-)
+ \le 8\,(c_Bh_n^\alpha)\,q_n h_n^2 .
+\]
+The clipping level satisfies \(q_n\le h_n^{\beta_{\alpha,\gamma}}\), by a case split on \(\beta_{\alpha,\gamma}\): when \(\beta_{\alpha,\gamma}=0\), \(q_n\) is the fixed level \(1/4\le1=h_n^0\); when \(\beta_{\alpha,\gamma}>0\), \(q_n=h_n^{\beta_{\alpha,\gamma}}\).  Hence
+\[
+\chi^2(P_+\,\|\,P_-)
+ \le 8c_B h_n^{2+\alpha+\beta_{\alpha,\gamma}} .
+\]
+This is the asserted one-observation bound.
+% lean: twoPointWitness_one_draw_chiSq_bound
+
+Now set \(D_{\alpha,\gamma}=2+\alpha+\beta_{\alpha,\gamma}\).  By \cref{obj:def:two-point-witness}, \(h_n=n^{-1/D_{\alpha,\gamma}}\), so \(h_n^{D_{\alpha,\gamma}}=n^{-1}\).  Hence
+\[
+n\,\chi^2(P_+\,\|\,P_-)\le 8c_B .
+\]
+For product laws, chi-square tensorizes as
+\[
+1+\chi^2(P_+^{\otimes n}\,\|\,P_-^{\otimes n})
+ =
+ \left(1+\chi^2(P_+\,\|\,P_-)\right)^n .
+\]
+Using \(1+x\le e^x\) and the construction constant \(8c_B<\log5\),
+\[
+\left(1+\chi^2(P_+\,\|\,P_-)\right)^n
+ \le \exp\{n\chi^2(P_+\,\|\,P_-)\}
+ \le e^{8c_B}
+ \le 5 .
+\]
+Therefore \(\chi^2(P_+^{\otimes n}\,\|\,P_-^{\otimes n})\le4\), after increasing the generic constant if needed. % lean: Causalean.Stat.one_add_chiSqDiv_pi_iid_general % lean: two_point_divergence
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:lem:regret-separation}]
+The proof takes
+\[
+c_{\mathrm{sep}}=\frac{\min\{c_B,1\}}{4}>0
+\]
+and works for all sufficiently large \(n\) for which the witness-membership result above is available for both signs. % lean: csep; witness_membership
+Let \(h=h_n\), and shrink the active interval to
+\[
+E=[0,\ell],
+\qquad
+\ell=\min\{c_B,1\}h^\alpha .
+\]
+Since \(h\le1\), this interval lies in \([0,1]\), and its covariate mass is exactly \(\ell\). % lean: hEreal; restricted_volume_real_Icc_zero
+Moreover \(E\subseteq B_n\). % lean: hxblock
+
+Fix any policy \(\pi\in\Pi\). Let \(D_+\) and \(D_-\) be its disagreement sets under \(P_{n,+}\) and \(P_{n,-}\), and set
+\[
+B_+=D_+\cap\{h/2<|\tau_+(X)|\},
+\qquad
+B_-=D_-\cap\{h/2<|\tau_-(X)|\}.
+\]
+The large-contrast regret bound, applied separately under the two well-formed bounded witness laws, yields
+\[
+\frac h2 P_X(B_+)\le R_{P_{n,+}}(\pi),
+\qquad
+\frac h2 P_X(B_-)\le R_{P_{n,-}}(\pi).
+\] % lean: regret_disagreement_large_contrast_le; hRplus; hRminus
+On \(E\), the plus oracle is identically \(1\), the minus oracle is identically \(0\), and both contrasts have magnitude \(h>h/2\). % lean: hoptp_true; hoptm_false; hbigp; hbigm
+Thus any binary policy must disagree with at least one of the two oracles on each point of \(E\), so
+\[
+E\subseteq B_+\cup B_- .
+\] % lean: hEsubset
+The two witness laws have the same covariate marginal, hence
+\[
+\ell\le P_X(B_+)+P_X(B_-).
+\] % lean: hmeasure
+Multiplying by \(h/2\) and using the preceding regret bounds gives
+\[
+\frac h2\,\ell
+\le R_{P_{n,+}}(\pi)+R_{P_{n,-}}(\pi).
+\] % lean: hsumR
+Since \(h^{1+\alpha}=h\,h^\alpha\), this is
+\[
+\frac{\min\{c_B,1\}}{2}h^{1+\alpha}
+\le R_{P_{n,+}}(\pi)+R_{P_{n,-}}(\pi).
+\] % lean: hpow_add; hsumR'
+Finally,
+\[
+R_{P_{n,+}}(\pi)+R_{P_{n,-}}(\pi)
+\le 2\max\{R_{P_{n,+}}(\pi),R_{P_{n,-}}(\pi)\},
+\]
+so
+\[
+\max_{\sigma\in\{+,-\}}R_{P_{n,\sigma}}(\pi)
+\ge c_{\mathrm{sep}}h_n^{1+\alpha}.
+\] % lean: hmaxsum; htarget
+Since \(\pi\in\Pi\) was arbitrary, this pointwise bound holds for every policy in \(\Pi\) for all such sufficiently large \(n\).
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:lem:le-cam-two-point-chisq}]
+Let \(A\) be the event that the test chooses \(+\).  Put
+\(P=P_+^{\otimes n}\) and \(Q=P_-^{\otimes n}\).  Under the stated absolute-continuity and square-integrability assumptions, the Radon--Nikodym density satisfies
+\[
+\int \left(\frac{dP}{dQ}\right)^2\,dQ
+=1+\chi^2(P\,\|\,Q)\le C_\chi+1 .
+\]
+Cauchy--Schwarz therefore gives
+\[
+P(A)\le \sqrt{(C_\chi+1)\,Q(A)} .
+\]
+Let \(e=P(A^c)+Q(A)\).  Since \(P(A^c)=1-P(A)\) and \(Q(A)\ge0\), the preceding display implies
+\[
+1-e=P(A)-Q(A)\le P(A)\le \sqrt{(C_\chi+1)Q(A)} .
+\]
+Suppose, to get a contradiction, that
+\(e<1/(4(C_\chi+1))\).  Then \(Q(A)\le e\), hence
+\(Q(A)<1/(4(C_\chi+1))\), and so
+\(\sqrt{(C_\chi+1)Q(A)}<1/2\).  Also \(C_\chi+1\ge1\), so
+\(e<1/4\), whence \(1/2<1-e\).  This contradicts
+\(1-e\le \sqrt{(C_\chi+1)Q(A)}<1/2\).  Thus
+\[
+P_+^{\otimes n}(\psi\ne +)+P_-^{\otimes n}(\psi\ne -)
+ =P(A^c)+Q(A)
+ \ge \frac{1}{4(C_\chi+1)} .
+\]
+% lean: rnDeriv_setIntegral_le_sqrt_chi % lean: testing_error_lower_of_chi % lean: le_cam_two_point_chisq
+
+For the one-observation sufficient condition, suppose \(c_0\ge0\), \(n>0\), and
+\(\chi^2(P_+\,\|\,P_-)\le c_0/n\), again with the stated absolute-continuity and square-integrability assumptions.  The product identity gives
+\[
+1+\chi^2(P_+^{\otimes n}\,\|\,P_-^{\otimes n})
+=
+\left(1+\chi^2(P_+\,\|\,P_-)\right)^n
+\le
+\exp\{n\chi^2(P_+\,\|\,P_-)\}
+\le e^{c_0}.
+\]
+Hence the product chi-square divergence is at most \(e^{c_0}-1\).  Applying the preceding bound to the product experiment gives the uniform testing floor
+\[
+c(c_0)=\frac{1}{4e^{c_0}}>0 .
+\]
+% lean: Causalean.Stat.one_add_chiSqDiv_pi_iid_general % lean: le_cam_two_point_chisq
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:thm:minimax-lower}]
+1. By \cref{obj:lem:regret-separation}, there are constants \(c_{\mathrm{sep}}>0\) and \(N_1\) such that, for all \(n\ge N_1\) and every \(\pi\in\Pi\),
+\[
+\max_{\sigma\in\{+,-\}} R_{P_{n,\sigma}}(\pi)
+\ge
+c_{\mathrm{sep}}\,h_n^{1+\alpha}.
+\]
+By \cref{obj:lem:two-point-divergence}, there are \(C_\chi>0\) and \(N_2\) such that, for all \(n\ge N_2\), the product laws \(P_{n,+}^{\otimes n}\) and \(P_{n,-}^{\otimes n}\) are in the chi-square comparison domain and
+\[
+\chi^2(P_{n,+}^{\otimes n}\,\|\,P_{n,-}^{\otimes n})\le C_\chi .
+\]
+Applying \cref{obj:lem:le-cam-two-point-chisq} to this fixed budget gives a constant
+\(c_{\mathrm{test}}=c_{\mathrm{test}}(C_\chi)>0\) such that every measurable event
+\(A\) in the \(n\)-sample space satisfies
+\[
+P_{n,+}^{\otimes n}(A^c)+P_{n,-}^{\otimes n}(A)\ge c_{\mathrm{test}} .
+\]
+Set \(c=c_{\mathrm{sep}}c_{\mathrm{test}}/2\). % lean: minimax_lower
+
+2. By \cref{obj:lem:witness-membership}, enlarging \(N_1,N_2\) if necessary, both
+witness laws \(P_{n,+}\) and \(P_{n,-}\) belong to
+\(\mathcal P_{\alpha,\gamma}\) for all \(n\) under consideration. The same
+eventual range also supplies the two witness-optimal policies used in
+\cref{obj:lem:regret-separation}. Finally, since
+\[
+h_n=n^{-1/(2+\alpha+\beta_{\alpha,\gamma})},
+\qquad
+r_\star(\alpha,\gamma)=\frac{1+\alpha}{2+\alpha+\beta_{\alpha,\gamma}},
+\]
+we have
+\[
+h_n^{1+\alpha}=n^{-r_\star(\alpha,\gamma)} .
+\]
+Pure measurability, nonemptiness, and bounded-regret bookkeeping ensure that the
+infimum and supremum in \cref{obj:def:minimax-regret} are taken over a nonempty
+well-defined collection and that all displayed expectations are finite. % lean: witness_membership
+
+3. Fix such an \(n\), and let \(\widehat\pi\) be any measurable \(\Pi\)-valued
+estimator. Write
+\[
+R_+
+=
+\mathbb E_{P_{n,+}^{\otimes n}} R_{P_{n,+}}(\widehat\pi),
+\qquad
+R_-
+=
+\mathbb E_{P_{n,-}^{\otimes n}} R_{P_{n,-}}(\widehat\pi),
+\]
+and put
+\[
+s_n=c_{\mathrm{sep}}h_n^{1+\alpha}.
+\]
+Let
+\[
+A=\{\,\text{samples}: s_n\le R_{P_{n,-}}(\widehat\pi)\,\}.
+\]
+The event \(A\) is measurable by the estimator measurability condition in
+\cref{obj:def:minimax-regret}. % lean: minimax_lower
+
+4. Since regret is nonnegative and bounded, the elementary integral lower bound
+over threshold events gives
+\[
+s_n\,P_{n,-}^{\otimes n}(A)\le R_- .
+\]
+Similarly,
+\[
+s_n\,P_{n,+}^{\otimes n}\{s_n\le R_{P_{n,+}}(\widehat\pi)\}\le R_+ .
+\]
+On \(A^c\), the minus-regret is \(<s_n\), so the separation bound from step 1
+forces the plus-regret to be at least \(s_n\). Hence
+\[
+A^c\subseteq \{s_n\le R_{P_{n,+}}(\widehat\pi)\},
+\]
+and therefore
+\[
+s_n\,P_{n,+}^{\otimes n}(A^c)\le R_+ .
+\]
+% lean: mul_meas_ge_le_integral_of_nonneg
+
+5. Adding the two threshold bounds and using the testing lower bound from step 1,
+\[
+s_n c_{\mathrm{test}}
+\le
+s_n\{P_{n,+}^{\otimes n}(A^c)+P_{n,-}^{\otimes n}(A)\}
+\le
+R_+ + R_- .
+\]
+Since \(R_++R_-\le 2\max\{R_+,R_-\}\), it follows that
+\[
+\max\{R_+,R_-\}
+\ge
+\frac{s_n c_{\mathrm{test}}}{2}
+=
+c\,h_n^{1+\alpha}
+=
+c\,n^{-r_\star(\alpha,\gamma)} .
+\]
+% lean: le_cam_two_point_chisq
+
+6. Because \(P_{n,+},P_{n,-}\in\mathcal P_{\alpha,\gamma}\), the preceding maximum
+is bounded above by the supremum over all laws in the class:
+\[
+\max\{R_+,R_-\}
+\le
+\sup_{P\in\mathcal P_{\alpha,\gamma}}
+\mathbb E_{P^{\otimes n}} R_P(\widehat\pi).
+\]
+Thus every admissible estimator satisfies
+\[
+\sup_{P\in\mathcal P_{\alpha,\gamma}}
+\mathbb E_{P^{\otimes n}} R_P(\widehat\pi)
+\ge
+c\,n^{-r_\star(\alpha,\gamma)} .
+\]
+Taking the infimum over all measurable \(\Pi\)-valued estimators in
+\cref{obj:def:minimax-regret} gives the claimed lower bound for all sufficiently
+large \(n\). % lean: minimax_lower
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:oeq:feasible-upper}]
+\begin{enumerate}
+\item The clipping and localization schedules are those of \cref{obj:def:feasible-rate}: for \(\gamma>0\),
+\[
+q_n=q_0n^{-s_{\mathrm{feas}}},\qquad
+u_n=\bar u\,n^{-t_{\mathrm{feas}}},
+\]
+while for \(\gamma=0\) the clipping schedule is fixed, \(q_n=q_0\).  The input restrictions in \cref{obj:def:feasible-rate} give \(q_0>0\); when \(\gamma>0\) they also give \(\bar u>0\), \(q_0\le 1/2\), and the eventual admissibility
+\[
+q_n\le c_o u_n^\gamma .
+\]
+Thus \(q_n>0\) for all sufficiently large \(n\). % lean: qSched
+
+\item We first dispose of the exceptional strict-overlap case in which \(\gamma=0\) and the law-class part of the domain is empty.  Then the set over which the conditional upper risk in \cref{obj:def:upper-risk} takes its supremum is empty, so \(U_n=0\).  Taking \(C=1\) and \(p=0\), the desired inequality holds for all sufficiently large \(n\), since the right-hand side is nonnegative. % lean: feasible_upper
+
+\item In the remaining cases the schedule is in the clipping range needed by the master bound.  If \(\gamma=0\), non-emptiness supplies a law in \(\mathcal P_{\alpha,\gamma}\); the strict-overlap endpoint condition in \cref{obj:def:law-class} gives \(\underline p\le 1/2\), and the input restriction gives
+\[
+q_n=q_0\le \underline p/2\le 1/2 .
+\]
+If \(\gamma>0\), feasibility of the selected maximizer gives \(s_{\mathrm{feas}}\ge0\), hence \(n^{-s_{\mathrm{feas}}}\le1\) for \(n\ge1\), and therefore
+\[
+q_n=q_0n^{-s_{\mathrm{feas}}}\le q_0\le 1/2 .
+\]
+For \(\gamma=0\) we also record that \(q_n\) is eventually equal to the fixed value \(q_0\). % lean: feasibleMaximizer_mem
+
+\item Apply \cref{obj:lem:crude-localized-master-bound} with these schedules.  It gives constants \(C_{\mathrm M}>0\) and \(p_{\mathrm M}\ge0\) such that, for all sufficiently large \(n\), every law \(P\) in the side-condition domain of \cref{obj:def:upper-risk} satisfies the corresponding master inequality.  Apply \cref{obj:lem:clip-balance-exponent} to the same schedules and nuisance-rate exponents.  It gives constants \(C_{\mathrm B}>0\) and \(p_{\mathrm B}\ge0\) such that the deterministic bracket in the master bound is at most
+\[
+C_{\mathrm B}n^{-r_{\mathrm{feas}}}(\log n)^{p_{\mathrm B}},
+\]
+with \(r_{\mathrm{feas}}=r_{\mathrm{up}}\) by \cref{obj:def:feasible-rate}. % lean: crude_localized_master_bound
+
+\item Suppose first that \(\gamma=0\).  For every \(P\) in the upper-risk domain and all sufficiently large \(n\), \cref{obj:lem:crude-localized-master-bound} gives
+\[
+\mathbb E_{P^{\otimes n}} R_P(\widehat\pi_n)
+\le
+C_{\mathrm M}\{n^{-A_\alpha}+r_{\mu,n}r_{e,n}\}(\log n)^{p_{\mathrm M}} .
+\]
+The \(\gamma=0\) branch of \cref{obj:lem:clip-balance-exponent} bounds the brace by
+\[
+C_{\mathrm B}n^{-r_{\mathrm{feas}}}(\log n)^{p_{\mathrm B}} .
+\]
+Since \(\log n>0\) for large \(n\), the logarithmic powers combine, and hence
+\[
+\mathbb E_{P^{\otimes n}} R_P(\widehat\pi_n)
+\le
+C_{\mathrm M}C_{\mathrm B}
+n^{-r_{\mathrm{feas}}}(\log n)^{p_{\mathrm M}+p_{\mathrm B}} .
+\]
+Taking the supremum over \(P\) in \cref{obj:def:upper-risk} preserves this bound. % lean: clip_balance_exponent
+
+\item Now suppose \(\gamma>0\).  For all sufficiently large \(n\), we have \(u_n>0\), \(u_n\le u_0\), and \(q_n\le c_o u_n^\gamma\); the bound \(u_n\le u_0\) follows from \(\bar u\le u_0\), \(t_{\mathrm{feas}}\ge0\), and \(n^{-t_{\mathrm{feas}}}\le1\).  Thus \cref{obj:lem:crude-localized-master-bound} yields, for each \(P\) in the upper-risk domain,
+\[
+\mathbb E_{P^{\otimes n}} R_P(\widehat\pi_n)
+\le
+C_{\mathrm M}
+\left\{
+n^{-r_\star}
++(nq_n^2)^{-A_\alpha}
++\frac{r_{\mu,n}r_{e,n}}{q_n}
++r_{\mu,n}u_n^{\alpha/2}q_n^{1/(2\gamma)}
++\frac{r_{\mu,n}^2}{u_n}
+\right\}
+(\log n)^{p_{\mathrm M}} .
+\]
+The positive-\(\gamma\) branch of \cref{obj:lem:clip-balance-exponent} bounds the brace by
+\[
+C_{\mathrm B}n^{-r_{\mathrm{feas}}}(\log n)^{p_{\mathrm B}} .
+\]
+Combining the two displays and then taking the supremum in \cref{obj:def:upper-risk} gives
+\[
+U_n(\alpha,\gamma,a,c;\widehat\eta)
+\le
+C_{\mathrm M}C_{\mathrm B}
+n^{-r_{\mathrm{feas}}}(\log n)^{p_{\mathrm M}+p_{\mathrm B}} .
+\]
+With \(C=C_{\mathrm M}C_{\mathrm B}\), \(p=p_{\mathrm M}+p_{\mathrm B}\), and \(r_{\mathrm{feas}}=r_{\mathrm{up}}\), this is the claimed bound. % lean: feasible_upper
+\end{enumerate}
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:lem:feasible-erm-basic-inequality}]
+The proof works with the countable dense skeleton \(\Pi_0=\{\pi_j\}\) from \cref{obj:ass:policy-class}.  For a realized sample, write \(s_j=\widehat V_{n,q}(\pi_j)\).  The set of \(1/n\)-near maximizers among the indices is nonempty: the finite-sample scores are bounded above by \(n^{-1}\sum_i|\Gamma_i|\), so an element within \(1/n\) of the supremum exists. % lean: feasibleERM_nearSet_nonempty
+The estimator chooses the least such index.  Lean proves measurability by characterizing the fiber \(\{j_n=j\}\) as the event that \(j\) is near-maximizing and no smaller index is near-maximizing; these are countable intersections of measurable score comparisons. % lean: feasible_erm_basic_inequality
+Since each enumerated policy belongs to \(\Pi\), the selected policy is \(\Pi\)-valued. % lean: feasible_erm_basic_inequality
+
+It remains to pass from near-maximality over \(\Pi_0\) to every comparator in \(\Pi\).  Given \(\pi^b\in\Pi\), density supplies a sequence \(\pi_{j_t}\) converging pointwise to \(\pi^b\).  On the finite observed covariate set \(\{X_i\}_{i=1}^n\), this convergence is eventually exact at every sample point, hence \(\widehat V_{n,q}(\pi_{j_t})=\widehat V_{n,q}(\pi^b)\) for some \(t\). % lean: feasible_erm_basic_inequality
+Applying the selected index's \(1/n\)-near-maximality to \(j_t\) gives
+\[
+\widehat V_{n,q}(\pi^b)
+\le
+\widehat V_{n,q}(\widehat\pi_n)+\frac1n .
+\]
+Equivalently,
+\[
+P_n\!\left[(\widehat\pi_n-\pi^b)\Gamma_q\right]\ge -\frac1n .
+\]
+% lean: feasible_erm_basic_inequality
+Under \cref{obj:ass:optimal-in-class}, \(\pi^\star_P\in\Pi\), so the same comparator inequality applies with \(\pi^b=\pi^\star_P\). % lean: feasible_erm_basic_inequality
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:lem:crude-clipped-score-envelope}]
+Fix \(q\in(0,1/2]\) and one foldwise nuisance triple.  Write
+\[
+e_q=e_q(X;\widehat\eta^{(-k)}).
+\]
+By clipping, \(q\le e_q\le 1-q\).  Hence \(e_q^{-1}\le q^{-1}\) and \((1-e_q)^{-1}\le q^{-1}\).  The treatment indicators \(A\) and \(1-A\) have absolute value at most one.  By \cref{obj:ass:bounded-outcome}, and by the foldwise bounded nuisance ranges used for the cross-fitted outcome regressions, \(|Y|\le1\), \(|\widehat\mu_0(X)|\le1\), and \(|\widehat\mu_1(X)|\le1\) almost surely.  Therefore
+\[
+|\widehat\mu_1(X)-\widehat\mu_0(X)|\le2,\qquad
+|Y-\widehat\mu_a(X)|\le2,\quad a=0,1 .
+\]
+% lean: crude_clipped_score_envelope
+The two inverse-propensity terms are consequently bounded by
+\[
+\left|\frac{A}{e_q}\{Y-\widehat\mu_1(X)\}\right|\le \frac{2}{q},
+\qquad
+\left|\frac{1-A}{1-e_q}\{Y-\widehat\mu_0(X)\}\right|\le \frac{2}{q}.
+\]
+The triangle inequality gives
+\[
+|\Gamma_q(O;\widehat\eta^{(-k)})|
+\le 2+\frac{2}{q}+\frac{2}{q}.
+\]
+Since \(q\le1/2\), the constant term is also bounded by \(2/q\), so the sharper envelope \(6/q\) holds almost surely; in particular it is bounded by \(36/q\).  Taking \(C=36\) gives the asserted absolute envelope. % lean: crude_clipped_score_envelope
+Squaring the sharper bound yields
+\[
+\Gamma_q(O;\widehat\eta^{(-k)})^2\le \left(\frac{6}{q}\right)^2=\frac{36}{q^2}
+\]
+almost surely.  Thus, with the same constant \(C=36\), the pointwise squared envelope
+\[
+\Gamma_q(O;\widehat\eta^{(-k)})^2\le \frac{C}{q^2}
+\]
+holds almost surely. % lean: crude_clipped_score_envelope
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:lem:clip-balance-exponent}]
+First suppose \(\gamma>0\), and write \(s=s_{\mathrm{feas}}\), \(t=t_{\mathrm{feas}}\), \(q_n=q_0n^{-s}\), and \(u_n=\bar u n^{-t}\).  By \cref{obj:def:feasible-rate},
+\[
+r_{\mathrm{feas}}=\min\{r_\star(\alpha,\gamma),g_{\mathrm{joint}}\}.
+\]
+Thus \(r_{\mathrm{feas}}\le r_\star(\alpha,\gamma)\) and \(r_{\mathrm{feas}}\le g_{\mathrm{joint}}\).  The selected pair \((s,t)\) realizes the value \(g_{\mathrm{joint}}=\phi(s,t)\), so \(g_{\mathrm{joint}}\) is no larger than each entry in the minimum defining \(\phi(s,t)\):
+\[
+g_{\mathrm{joint}}\le A_\alpha(1-2s),\quad
+g_{\mathrm{joint}}\le c-s,\quad
+g_{\mathrm{joint}}\le a+\frac{s}{2\gamma}+\frac{\alpha t}{2},\quad
+g_{\mathrm{joint}}\le 2a-t.
+\]
+% lean: feasibleMaximizer_value
+For \(n\ge1\), the elementary monotonicity rule \(r\le e\Rightarrow n^{-e}\le n^{-r}\) converts these exponent inequalities into termwise bounds. % lean: nat_rpow_neg_le_of_le
+Work on the eventual set on which the polynomial nuisance bounds hold and, separately, \(r_{\mu,n}\ge0\).  Then
+\[
+n^{-r_\star(\alpha,\gamma)}\le n^{-r_{\mathrm{feas}}},
+\]
+\[
+(nq_n^2)^{-A_\alpha}
+=(q_0^2)^{-A_\alpha}n^{-A_\alpha(1-2s)}
+\le (q_0^2)^{-A_\alpha}n^{-r_{\mathrm{feas}}},
+\]
+\[
+\frac{r_{\mu,n}r_{e,n}}{q_n}
+\le \frac{C_{\mathrm{prod}}}{q_0}n^{-(c-s)}
+\le \frac{C_{\mathrm{prod}}}{q_0}n^{-r_{\mathrm{feas}}},
+\]
+\[
+r_{\mu,n}u_n^{\alpha/2}q_n^{1/(2\gamma)}
+\le C_\mu \bar u^{\alpha/2}q_0^{1/(2\gamma)}
+n^{-\{a+s/(2\gamma)+\alpha t/2\}}
+\le C_\mu \bar u^{\alpha/2}q_0^{1/(2\gamma)}
+n^{-r_{\mathrm{feas}}}.
+\]
+For the squared nuisance term, the squaring step also uses the eventual nonnegativity \(r_{\mu,n}\ge0\) together with \(C_\mu\ge0\), so that \(r_{\mu,n}\le C_\mu n^{-a}\) implies \(r_{\mu,n}^2\le C_\mu^2 n^{-2a}\).  Hence
+\[
+\frac{r_{\mu,n}^2}{u_n}
+\le \frac{C_\mu^2}{\bar u}n^{-(2a-t)}
+\le \frac{C_\mu^2}{\bar u}n^{-r_{\mathrm{feas}}}.
+\]
+% lean: clip_balance_exponent
+Summing the five displayed inequalities gives, for a finite constant \(C\),
+\[
+n^{-r_\star(\alpha,\gamma)}+(nq_n^2)^{-A_\alpha}
++\frac{r_{\mu,n}r_{e,n}}{q_n}
++r_{\mu,n}u_n^{\alpha/2}q_n^{1/(2\gamma)}
++\frac{r_{\mu,n}^2}{u_n}
+\le C n^{-r_{\mathrm{feas}}}(\log n)^0.
+\]
+Since \(r_{\mathrm{feas}}=\min\{r_\star(\alpha,\gamma),g_{\mathrm{joint}}\}\), this is the desired positive-\(\gamma\) exponent bound with logarithmic power \(p=0\).
+
+Now suppose \(\gamma=0\).  \Cref{obj:def:feasible-rate} gives
+\[
+r_{\mathrm{feas}}=\min\{A_\alpha,c\}.
+\]
+Again \(r_{\mathrm{feas}}\le A_\alpha\) and \(r_{\mathrm{feas}}\le c\).  On the eventual set where the polynomial product bound holds, for \(n\ge1\),
+\[
+n^{-A_\alpha}\le n^{-r_{\mathrm{feas}}},
+\qquad
+r_{\mu,n}r_{e,n}\le C_{\mathrm{prod}}n^{-c}\le C_{\mathrm{prod}}n^{-r_{\mathrm{feas}}}.
+\]
+Thus the strict-overlap terms satisfy, for a finite constant \(C\),
+\[
+n^{-A_\alpha}+r_{\mu,n}r_{e,n}
+\le C n^{-r_{\mathrm{feas}}}(\log n)^0
+= C n^{-\min\{A_\alpha,c\}}(\log n)^0.
+\]
+% lean: clip_balance_exponent
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:lem:crude-localized-master-bound}]
+The localized offset-control lemma gives constants \(C_{\rm off}^0>0\) and \(p\ge0\).  Enlarge the constant to \(C_{\rm off}=C_{\rm off}^0\vee1\).  We then restrict to all sufficiently large \(n\) for which \(q_n>0\), \(q_n\le1/2\), the nuisance radii \(r_{\mu,n},r_{e,n}\) are nonnegative, the foldwise nuisance-error fields satisfy the required \(L_2(P_X)\)-membership conditions, the fixed-clip event \(q_n=q_0\) holds when \(\gamma=0\), and \((\log n)^p\ge1\).  The selected-regret and offset-supremum measurability, integrability, and bounded-above properties follow from the bounded cross-fitted nuisances and the finite-VC pointwise-dense skeleton via the countable-dense-supremum argument, so they are derived here rather than assumed.  After \(P\) is fixed, the nuisance-rate hypotheses supply the foldwise squared-error bounds used in the drift estimates. % lean: crude_localized_master_bound
+
+For such an \(n\), set \(q=q_n\), \(B=36/q\), and let \(g\) be the clipped policy increment process.  Introduce the process \(g^T\) obtained by truncating the clipped score at level \(B\).  The boundedness of the cross-fitted nuisances and \(q\le1/2\) give the crude clipped-score envelope; together with the pooled and fold truncation equalities, this identifies the original and truncated offset suprema almost surely and therefore identifies their expectations.  Applying the cross-fit localized offset-control lemma to \(g^T\) gives
+\[
+E\sup_{\pi\in\Pi}\left\{2|G_{\rm cf}(\pi)|-\frac{R_P(\pi)}4\right\}_+
+\le
+C_{\rm off}\left(\frac{B^2}{n}\right)^{A_\alpha}(\log n)^p
+\]
+for the original process \(g\).  The same large-\(n\) choice, using \(B\ge1\) and \((\log n)^p\ge1\), gives \(n^{-1}\le C_{\rm off}(B^2/n)^{A_\alpha}(\log n)^p\). % lean: expectedPooledOffsetSup_trunc_eq_original_ae_36
+
+Now take \(\gamma>0\), and assume \(u=u_n>0\), \(u\le u_0\), and \(q_n\le c_o u_n^\gamma\).  Samplewise, the feasible ERM welfare bridge, obtained from the \(1/n\)-ERM inequality and the drift identity, gives
+\[
+R_P(\widehat\pi_n)
+\le |G_{\rm cf}(\widehat\pi_n)|
++\left|\sum_k w_k\,{\rm drift}_k(\widehat\pi_n)\right|
++\frac1n .
+\]
+The localized clipped drift bound, averaged over the nonnegative fold weights \(w_k\) whose sum is one, gives
+\[
+\left|\sum_k w_k\,{\rm drift}_k(\widehat\pi_n)\right|
+\le
+C_d\left\{
+\frac{r_{\mu,n}r_{e,n}}q
++r_{\mu,n}u^{\alpha/2}q^{1/(2\gamma)}
++r_{\mu,n}\left(\frac{R_P(\widehat\pi_n)}u\right)^{1/2}
+\right\}. % lean: weighted_drift_sum_bound_pos
+\]
+Young's inequality gives
+\[
+C_d r_{\mu,n}\left(\frac{R_P(\widehat\pi_n)}u\right)^{1/2}
+\le \frac12 R_P(\widehat\pi_n)+\frac{C_d^2r_{\mu,n}^2}{2u},
+\]
+and hence
+\[
+R_P(\widehat\pi_n)\le
+2|G_{\rm cf}(\widehat\pi_n)|
++
+2\left[
+C_d\left\{\frac{r_{\mu,n}r_{e,n}}q
++r_{\mu,n}u^{\alpha/2}q^{1/(2\gamma)}\right\}
++\frac{C_d^2r_{\mu,n}^2}{2u}
++\frac1n
+\right].
+\]
+ % lean: young_sqrt_absorb
+
+Applying the localized VC self-bound to this samplewise inequality yields the expected regret bounded by the offset rate and the deterministic remainder above, up to the fixed factor supplied by that self-bound.  Since \(B=36/q\),
+\[
+\left(\frac{B^2}{n}\right)^{A_\alpha}
+=((36)^2)^{A_\alpha}(nq^2)^{-A_\alpha}.
+\]
+The algebraic collection of nonnegative terms uses \((\log n)^p\ge1\), absorbs the displayed \(1/n\) term into the offset scale, and allows the additional nonnegative term \(n^{-r_\star(\alpha,\gamma)}\), giving
+\[
+E_P R_P(\widehat\pi_n)
+\le
+C\left\{
+n^{-r_\star(\alpha,\gamma)}
++(nq^2)^{-A_\alpha}
++\frac{r_{\mu,n}r_{e,n}}q
++r_{\mu,n}u^{\alpha/2}q^{1/(2\gamma)}
++\frac{r_{\mu,n}^2}{u}
+\right\}(\log n)^p .
+\]
+This proves the positive-\(\gamma\) branch. % lean: crude_master_pos_algebra
+
+For \(\gamma=0\), work on the eventual fixed-clip event \(q_n=q_0\) and assume the branch condition \(q_n\le\underline p/2\).  The same ERM bridge applies.  The strict-overlap part of the drift bound gives, after averaging over the fold weights,
+\[
+\left|\sum_k w_k\,{\rm drift}_k(\widehat\pi_n)\right|
+\le C_q\,r_{\mu,n}r_{e,n}.
+\]
+ % lean: weighted_drift_sum_bound_zero
+Thus the samplewise inequality has remainder \(2(C_q r_{\mu,n}r_{e,n}+n^{-1})\).  The localized VC self-bound gives the corresponding offset contribution with fixed \(B=36/q_0\); this is a constant multiple of \(n^{-A_\alpha}(\log n)^p\).  The same large-\(n\) and algebraic bounds absorb the \(1/n\) term and constants, yielding
+\[
+E_P R_P(\widehat\pi_n)
+\le
+C\left\{n^{-A_\alpha}+r_{\mu,n}r_{e,n}\right\}(\log n)^p .
+\]
+ % lean: crude_master_zero_algebra
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:lem:localized-clipped-drift-bound}]
+Fix one evaluation fold, and abbreviate the foldwise nuisance estimators by \((\widehat\mu_0,\widehat\mu_1,\widehat e)\).  The formal proof first proves a pointwise clipped-drift majorization.  Using the exact drift identity in \cref{obj:lem:clip-bias}, the clipped propensity map is \(1\)-Lipschitz in \(\widehat e\), and the extra discrepancy from clipping the true propensity is bounded by \(q\mathbf 1\{p_P(x)\le q\}\).  Hence, after multiplying by \(\pi-\pi^\star_P\), the clipped-region indicator can be reduced to the disagreement set, giving an integrand bounded by two nuisance-product terms divided by \(q\), plus two outcome-regression errors restricted to \(D_\pi\cap\{p_P\le q\}\). % lean: clippedPropensity_lipschitz, clippedPropensity_error_le_error_plus_overlap_indicator, policy_overlap_indicator_mul_le_inter_indicator, policy_clipBias_abs_pointwise_le
+
+Integrating this pointwise bound, the two product terms are controlled by Cauchy--Schwarz and the nuisance \(L_2(P_X)\) rates:
+\[
+\int |\widehat e-e_P|\,|\widehat\mu_a-\mu_a|\,dP_X
+   \le r_{e,n}r_{\mu,n},\qquad a=0,1.
+\]
+The two restricted outcome-error terms are bounded by Cauchy--Schwarz on the set
+\[
+T_\pi(q)=D_\pi\cap\{x:p_P(x)\le q\},
+\]
+namely by \(r_{\mu,n}P_X(T_\pi(q))^{1/2}\).  Therefore the policy-weighted drift satisfies
+\[
+\left|P[(\pi-\pi^\star_P)b_q]\right|
+\le
+2\,\frac{r_{\mu,n}r_{e,n}}{q}
++
+2r_{\mu,n}P_X(T_\pi(q))^{1/2}.
+\]
+% lean: l2_abs_product_integral_le, l2_set_abs_integral_le, clipBias_drift_l2_mass_bound
+
+Assume first that \(\gamma>0\).  By \cref{obj:lem:clipped-region-localization}, whenever \(0<u\le u_0\) and \(q\le c_o u^\gamma\),
+\[
+P_X(T_\pi(q))
+\le
+(\max\{C_o,1\})u^\alpha q^{1/\gamma}+\frac{R_P(\pi)}{u}.
+\]
+Taking square roots and using \(\sqrt{a+b}\le \sqrt a+\sqrt b\), together with
+\[
+\sqrt{(\max\{C_o,1\})u^\alpha q^{1/\gamma}}
+=
+(\max\{C_o,1\})^{1/2}u^{\alpha/2}q^{1/(2\gamma)},
+\]
+gives
+\[
+P_X(T_\pi(q))^{1/2}
+\le
+(\max\{C_o,1\})^{1/2}u^{\alpha/2}q^{1/(2\gamma)}
++
+\left(\frac{R_P(\pi)}{u}\right)^{1/2}.
+\]
+Substitution into the preceding drift inequality and absorption of the numerical and overlap constants into one finite constant yields
+\[
+\left|P[(\pi-\pi^\star_P)b_q]\right|
+\le
+C\left\{
+\frac{r_{\mu,n}r_{e,n}}{q}
++
+r_{\mu,n}u^{\alpha/2}q^{1/(2\gamma)}
++
+r_{\mu,n}\left(\frac{r}{u}\right)^{1/2}
+\right\},
+\]
+where \(r=R_P(\pi)\). % lean: clipped_region_localization, sqrt_add_le_sqrt_add_sqrt, sqrt_margin_overlap_product, clipBias_drift_l2_localized_from_region, localized_clipped_drift_bound
+
+Now assume \(\gamma=0\) and \(q\le \underline p/2\).  The strict-overlap endpoint assumption gives \(p_P(X)\ge \underline p\) almost surely, so \(\{p_P\le q\}\) has \(P_X\)-measure zero.  Hence \(P_X(T_\pi(q))=0\), and the same basic drift bound reduces to
+\[
+\left|P[(\pi-\pi^\star_P)b_q]\right|
+\le
+2\,\frac{r_{\mu,n}r_{e,n}}{q}.
+\]
+Since \(q\) is fixed in this branch, \(2/q\) is absorbed into a finite constant, giving
+\[
+\left|P[(\pi-\pi^\star_P)b_q]\right|
+\le
+C r_{\mu,n}r_{e,n}.
+\]
+% lean: clipBias_drift_l2_mass_bound, clipBias_drift_l2_localized_from_region, localized_clipped_drift_bound
+\end{proof}
+
+\bibliographystyle{plainnat}
+
+\bibliography{references}
+
+\end{document}

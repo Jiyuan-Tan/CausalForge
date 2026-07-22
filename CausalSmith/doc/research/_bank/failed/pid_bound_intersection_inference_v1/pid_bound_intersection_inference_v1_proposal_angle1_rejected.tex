@@ -1,0 +1,260 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_bound\_intersection\_inference, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section initially contains exactly one stage-1 placeholder.
+%    Replace each placeholder with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` -- the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_bound\_intersection\_inference} / \texttt{v1}%
+  \\ \large\textit{Naive bootstrap failure for locally tied partial-identification bound intersections}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Partial-identification anchor. The tuple is
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\mathcal R,\mathcal B)
+=
+(\texttt{pid\_bound\_intersection\_inference},\texttt{v1},P,L(P),\mathcal R_{\mathrm{Manski}},\mathcal B_{\max}).
+\]
+Here \(P\) is the observable law of \(O=(Y,D,X)\) with binary treatment \(D\in\{0,1\}\), bounded outcome \(Y\in[0,1]\), and covariate \(X\in\mathcal X\). The identifying restriction \(\mathcal R_{\mathrm{Manski}}\) is bounded-outcome partial identification of a common treatment effect over a selected covariate level set: for each \(x\), the identified lower endpoint is an observable scalar \(\ell_P(x)\) obtained from the pointwise Manski lower bound for \(E[Y(1)-Y(0)\mid X=x]\). The target parameter is the lower endpoint of the common-effect intersection,
+\[
+L(P)=\sup_{x\in\mathcal X}\ell_P(x),
+\]
+with the identified set \([L(P),U(P)]\) when the upper endpoint \(U(P)=\inf_x u_P(x)\) is finite and \(L(P)\le U(P)\). The bounding functional is \(\mathcal B_{\max}:P\mapsto \sup_x \ell_P(x)\); in this specialization \(\mathcal X=\{0,1\}\) for the exhibited witness, while the notation records the rich-level-set problem that later versions may extend.
+
+\begin{abstract}
+Intersection bounds convert pointwise partial-identification statements into endpoint functionals whose active covariate levels may change with the law. This proposal isolates a two-level local experiment in which the lower endpoint \(L(P)=\max\{\ell_P(0),\ell_P(1)\}\) is directionally differentiable but not fully differentiable at a tie. Theorem 1 gives the finite-contact derivative and the local limit law. Conjecture 1 states that the centered naive bootstrap has a random conditional limit law at an \(n^{-1/2}\)-local tie and therefore cannot consistently approximate the distribution of the endpoint estimator. The witness supplies a concrete obstruction behind the broader continuum-active problem studied by intersection-bound and moment-inequality procedures.
+\end{abstract}
+
+\section{Introduction}
+Inference for a partially identified common effect often begins with covariate-level bounds and then intersects them over the admissible levels. The question here is whether the usual centered bootstrap remains valid when the lower endpoint is selected by a moving active covariate level. At a local tie between two levels, the endpoint has a max derivative, and the bootstrap conditions on a random contact gap rather than on the population gap.
+
+The closest published comparators are \citet[Sec. 2, eqs. (2.1)--(2.3)]{ChernozhukovLeeRosen2013}, which treats intersection bounds through suprema of inequality functions, and \citet[Theorem 3.1]{FangSantos2019}, which shows that the ordinary bootstrap requires full differentiability for directionally differentiable maps. The present object is narrower and more explicit: it computes the bootstrap law for the partial-identification endpoint \(L(P)=\max_x\ell_P(x)\) when the active lower-bound level is \(n^{-1/2}\)-local. The theorem lives in PartialID, not in panel algebra or do-calculus infrastructure.
+
+The downstream consumer is scalar confidence-interval construction for Manski-style common-effect intersections, including the level-set theorem recorded in the CausalSmith Manski nonparametric-bounds study. A reader should not treat a percentile or centered multiplier bootstrap for \(\max_x\widehat\ell(x)\) as a harmless implementation detail at nearly tied covariate levels.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: In the two-level model, \(L(P)=\max\{\ell_P(0),\ell_P(1)\}\) has directional derivative \(h\mapsto\max\{h_0,h_1\}\), and under a local gap \(a/\sqrt n\) the estimator limit is \(\max\{Z_0,Z_1-a\}\). Gap: \citet{ChernozhukovLeeRosen2013} gives intersection-bound inference but not this partial-ID contact-gap law; \citet{FangSantos2019} gives the general nonsmooth bootstrap principle but not the bound-intersection witness. Consumer: Manski common-effect interval inference.
+\item Conjecture 1: The centered naive bootstrap conditional law at the same local tie converges weakly along subsequences to \(\max\{Z_0^\ast,Z_1^\ast-D\}\) or \(\max\{Z_0^\ast+D,Z_1^\ast\}\), where \(D=a+Z_0-Z_1\) is random, so no fixed conditional limit exists. Gap: \citet{ImbensManski2004} treats scalar interval nonuniformity and \citet{FangSantos2019} treats generic bootstrap failure, but neither derives this random contact-gap law for a bound intersection. Consumer: bootstrap calibration for intersection-bound endpoints.
+\end{itemize}
+
+\section{Related work}
+\citet{Manski1990} supplies the baseline bounded-outcome partial-identification logic behind the pointwise lower bounds \(\ell_P(x)\). \citet{ManskiPepper2000} shows how covariate-indexed monotone restrictions sharpen such bounds, which motivates intersections over level sets. \citet{ImbensManski2004} studies confidence intervals for a scalar identified interval and identifies nonuniformity when the interval width is local to zero. \citet{ChernozhukovHongTamer2007} provides general set inference for moment inequality and equality models, but its object is the parameter set rather than the explicit endpoint contact gap. \citet{BeresteanuMolinari2008} develops random-set and support-function asymptotics for partially identified sets, which is adjacent to but finite-dimensional relative to the covariate-contact endpoint here. \citet{AndrewsShi2013} gives conditional moment inequality inference with moment selection; this proposal instead computes the endpoint law after the inequalities have collapsed to a lower-bound maximum. \citet{ChernozhukovLeeRosen2013} is the direct intersection-bound anchor because it studies suprema and infima of bound functions over covariates. \citet{Armstrong2014} shows that conditional moment inequality statistics can change rates and critical values, a warning that generic CMI calibration need not describe a scalar endpoint. \citet{LeeSongWhang2018} studies functional inequality tests with estimated contact sets; the present proposal targets confidence laws for a partial-identification endpoint. \citet{KaidoMolinariStoye2019} gives calibrated projection for moment-inequality models, which clarifies why finite-face projection arguments are not the same as a covariate-contact max law. \citet{FangSantos2019} supplies the general directional-delta and bootstrap-failure theorem that the proposed witness instantiates.
+
+The in-repo catalogue records `doc/API.md' Sec. 3.1, especially `t3_thm' in the Manski nonparametric-bounds study, as a level-set restriction theorem that intersects pointwise Manski intervals over covariate sets. The adjacent banked proposal `pid_rdd_manipulation_bounded_v1' flags that continuous covariates require additional measurability and regularization. The banked `eid_dml_orthogonality_frontier_v1' rejection includes the warning that a bootstrap band calibrated to a centered oracle quantile can lose coverage. No listed CausalSmith proposal states the random contact-gap law for a partial-identification bound intersection.
+
+\section{Formal setup}
+Let \(O_i=(Y_i,D_i,X_i)\) be i.i.d. observations from \(P_n\), with \(Y_i\in[0,1]\), \(D_i\in\{0,1\}\), and \(X_i\in\mathcal X\). For each \(x\in\mathcal X\), let \(\ell_P(x)\) denote the observable lower endpoint of the pointwise Manski bound for \(E[Y(1)-Y(0)\mid X=x]\). The common-effect lower endpoint is
+\[
+L(P)=\sup_{x\in\mathcal X}\ell_P(x).
+\]
+For the witness, \(\mathcal X=\{0,1\}\), \(L(P)=\max\{\ell_0(P),\ell_1(P)\}\), and \(\ell_j(P)=\ell_P(j)\).
+
+The estimator is \(\widehat L_n=\max\{\widehat\ell_{0n},\widehat\ell_{1n}\}\), where \(\widehat\ell_{jn}\) is an asymptotically linear estimator of \(\ell_j(P_n)\). A bootstrap draw, conditional on the data, is written \(\widehat\ell_{jn}^\ast\) and \(\widehat L_n^\ast=\max\{\widehat\ell_{0n}^\ast,\widehat\ell_{1n}^\ast\}\). The observed local contact gap is
+\[
+D_n=\sqrt n(\widehat\ell_{0n}-\widehat\ell_{1n}).
+\]
+
+\begin{verbatim}
+(qid, specialization, P, theta, identifying restrictions, bounding functional)
+= (pid_bound_intersection_inference, v1, observable law of O=(Y,D,X),
+   theta=L(P)=sup_x ell_P(x),
+   bounded-outcome Manski restrictions for pointwise conditional effects,
+   B_max(P)=sup_x ell_P(x)).
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Two-level lower-bound experiment]\label{ass:two-level}
+The witness has \(\mathcal X=\{0,1\}\), \(0<\Pr_P(X=j)<1\) for \(j=0,1\), finite conditional variances, and finite lower endpoints \(\ell_j(P)\). The identified lower endpoint is \(L(P)=\max\{\ell_0(P),\ell_1(P)\}\).
+\end{assumption}
+
+\begin{assumption}[Asymptotic linear lower-bound estimators]\label{ass:al}
+For \(j=0,1\),
+\[
+\sqrt n(\widehat\ell_{jn}-\ell_j(P_n))
+=n^{-1/2}\sum_{i=1}^n\psi_j(O_i)+o_{P_n}(1),
+\]
+where \(\E_{P_n}\psi_j=0\), the covariance matrix of \((\psi_0,\psi_1)\) converges to a positive definite matrix \(\Sigma\), and the multiplier or nonparametric bootstrap consistently estimates the joint Gaussian law of the linear part.
+\end{assumption}
+
+\begin{assumption}[Local contact gap]\label{ass:local-gap}
+Along the local experiment, \(\ell_0(P_n)-\ell_1(P_n)=a/\sqrt n+o(n^{-1/2})\) for a fixed \(a\in\R\). The normalization takes \(\ell_0(P_n)\) as the larger population endpoint when \(a\ge 0\).
+\end{assumption}
+
+\begin{assumption}[Centered naive bootstrap]\label{ass:naive-bootstrap}
+The bootstrap statistic is centered at the plug-in endpoint:
+\[
+T_n^\ast=\sqrt n(\widehat L_n^\ast-\widehat L_n).
+\]
+No contact-set enlargement, recentering by a smoothed max, or directional-derivative correction is applied.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Two-level contact derivative and local law]\label{thm:contact-derivative}
+Under Assumptions \ref{ass:two-level}--\ref{ass:local-gap}, if
+\[
+\sqrt n\{(\widehat\ell_{0n},\widehat\ell_{1n})-(\ell_0(P_n),\ell_1(P_n))\}\Rightarrow (Z_0,Z_1)\sim N(0,\Sigma),
+\]
+then
+\[
+\sqrt n\{\widehat L_n-L(P_n)\}\Rightarrow \max\{Z_0,Z_1-a\}
+\]
+when \(a\ge 0\), with the symmetric expression \(\max\{Z_0+a,Z_1\}\) when \(a<0\). At exact contact \(a=0\), the directional derivative of \(L\) at \(P\) in the lower-bound coordinates is \(h\mapsto\max\{h_0,h_1\}\).
+\end{theorem}
+
+The proof is the continuous mapping theorem applied to the locally shifted coordinate vector. The exact-contact derivative follows by evaluating the one-sided limit of \(\max\{\ell_0+th_0,\ell_1+th_1\}-\max\{\ell_0,\ell_1\}\) at \(\ell_0=\ell_1\).
+
+\begin{conjecture}[Random contact-gap bootstrap failure, NOT YET PROVED]\label{conj:bootstrap-failure}
+Under Assumptions \ref{ass:two-level}--\ref{ass:naive-bootstrap}, the conditional law of \(T_n^\ast\) does not converge in probability to the fixed law in Theorem \ref{thm:contact-derivative} when \(a\) is finite. More sharply, along subsequences on which the sign of \(D_n\) is positive, the conditional law has the random limit
+\[
+\max\{Z_0^\ast,Z_1^\ast-D\},\qquad D=a+Z_0-Z_1,
+\]
+and along subsequences on which the sign of \(D_n\) is negative, it has the random limit
+\[
+\max\{Z_0^\ast+D,Z_1^\ast\}.
+\]
+Here \((Z_0^\ast,Z_1^\ast)\sim N(0,\Sigma)\) is conditionally generated by the bootstrap and is independent of the outer Gaussian pair in the limit. Consequently, a centered percentile interval calibrated from \(T_n^\ast\) is not uniformly valid over \(n^{-1/2}\)-local contact gaps.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Unique active level]\label{cor:unique}
+Under Assumptions \ref{ass:two-level} and \ref{ass:al}, if \(\sqrt n|\ell_0(P)-\ell_1(P)|\to\infty\), then the endpoint estimator has the ordinary one-coordinate Gaussian limit for the uniquely active level.
+\end{corollary}
+
+This collapses to the usual delta method because the inactive coordinate is separated by more than \(n^{-1/2}\), so the max map is locally linear with probability tending to one.
+
+\begin{example}[Exhibit 9.1: non-corner local-tie witness]\label{ex:witness}
+Take \(\mathcal X=\{0,1\}\), \(\Pr(X=0)=\Pr(X=1)=1/2\), \(\Sigma=I_2\), and pointwise lower-bound coordinates \(\ell_0(P_n)=0.40\), \(\ell_1(P_n)=0.40-a/\sqrt n\). These values are interior to the feasible bounded-outcome interval \([-1,1]\). Then \(L(P_n)=0.40\), \(D_n=a+Z_0-Z_1+o_p(1)\), Theorem \ref{thm:contact-derivative} gives \(\max\{Z_0,Z_1-a\}\), and the centered bootstrap law uses the observed random gap \(D_n\). The construction has two nonempty covariate cells, nonzero variance in both lower-bound estimators, no zero denominator, and a strict distinction between the target law and the conditional bootstrap law whenever the distribution of \(D=a+Z_0-Z_1\) is nondegenerate.
+\end{example}
+
+\section{Proof-sketch route}
+The proof route is: headline \(\leftarrow\) unfold \(L(P)=\max_j\ell_j(P)\) \(\leftarrow\) substitute the asymptotic-linear expansion from Assumption \ref{ass:al} \(\leftarrow\) introduce the local shift \(a/\sqrt n\) from Assumption \ref{ass:local-gap} \(\leftarrow\) apply the finite-dimensional directional delta method for the max map \(\leftarrow\) compute the bootstrap statistic after centering at \(\widehat L_n\), which inserts the observed gap \(D_n\) \(\leftarrow\) show \(D_n\Rightarrow a+Z_0-Z_1\) is not degenerate \(\leftarrow\) use bounded-Lipschitz test functions to separate the resulting random conditional law from the fixed law. The non-definitional steps are the local-shift reduction, the max-map directional derivative, the bootstrap-centering algebra, and the random-law separation.
+
+\section{Honest scope flags}
+Theorem \ref{thm:contact-derivative} is a finite-contact theorem and should be provable from standard asymptotic linearity plus the continuous mapping theorem. Conjecture \ref{conj:bootstrap-failure} is the flagship statement and remains open because the conditional weak convergence and undercoverage conclusion require a precise mode of bootstrap convergence. This v1 does not solve continuum-active flat faces, smoothing bias for nonparametric \(\widehat\ell(x)\), or upper-lower simultaneous interval calibration. The proposal intentionally avoids claiming a generic moment-inequality result.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for the two-level random contact-gap bootstrap witness; prior verdict: none.
+\end{itemize}
+
+\begin{thebibliography}{99}
+
+\bibitem[Andrews and Shi(2013)]{AndrewsShi2013}
+Andrews, D. W. K. and X. Shi (2013).
+Inference based on conditional moment inequalities.
+\emph{Econometrica} 81(2), 609--666.
+
+\bibitem[Armstrong(2014)]{Armstrong2014}
+Armstrong, T. B. (2014).
+Weighted KS statistics for inference on conditional moment inequalities.
+\emph{Journal of Econometrics} 181(2), 92--116.
+
+\bibitem[Beresteanu and Molinari(2008)]{BeresteanuMolinari2008}
+Beresteanu, A. and F. Molinari (2008).
+Asymptotic properties for a class of partially identified models.
+\emph{Econometrica} 76(4), 763--814.
+
+\bibitem[Chernozhukov, Hong, and Tamer(2007)]{ChernozhukovHongTamer2007}
+Chernozhukov, V., H. Hong, and E. Tamer (2007).
+Estimation and confidence regions for parameter sets in econometric models.
+\emph{Econometrica} 75(5), 1243--1284.
+
+\bibitem[Chernozhukov, Lee, and Rosen(2013)]{ChernozhukovLeeRosen2013}
+Chernozhukov, V., S. Lee, and A. M. Rosen (2013).
+Intersection bounds: estimation and inference.
+\emph{Econometrica} 81(2), 667--737.
+
+\bibitem[Fang and Santos(2019)]{FangSantos2019}
+Fang, Z. and A. Santos (2019).
+Inference on directionally differentiable functions.
+\emph{Review of Economic Studies} 86(1), 377--412.
+
+\bibitem[Imbens and Manski(2004)]{ImbensManski2004}
+Imbens, G. W. and C. F. Manski (2004).
+Confidence intervals for partially identified parameters.
+\emph{Econometrica} 72(6), 1845--1857.
+
+\bibitem[Kaido, Molinari, and Stoye(2019)]{KaidoMolinariStoye2019}
+Kaido, H., F. Molinari, and J. Stoye (2019).
+Confidence intervals for projections of partially identified parameters.
+\emph{Econometrica} 87(4), 1397--1432.
+
+\bibitem[Lee, Song, and Whang(2018)]{LeeSongWhang2018}
+Lee, S., K. Song, and Y.-J. Whang (2018).
+Testing functional inequalities.
+\emph{Econometric Theory} 34(5), 1038--1085.
+
+\bibitem[Manski(1990)]{Manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review} 80(2), 319--323.
+
+\bibitem[Manski and Pepper(2000)]{ManskiPepper2000}
+Manski, C. F. and J. V. Pepper (2000).
+Monotone instrumental variables: with an application to the returns to schooling.
+\emph{Econometrica} 68(4), 997--1010.
+
+\end{thebibliography}
+
+\end{document}

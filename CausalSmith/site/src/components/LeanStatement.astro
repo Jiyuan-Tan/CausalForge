@@ -1,0 +1,55 @@
+---
+// One row per top-level binder instead of a single shared-scroll block: the
+// binder name sits outside the scrolling area (so it can't scroll out of
+// view), and a hypothesis shaped `∀ …, P → Q → R` gets a premises-above-a-rule
+// treatment instead of a stair-stepped indent. See StmtBodyView for the line-
+// and chain-level rendering.
+//
+// A structure/class additionally separates its PARAMETERS (what you supply
+// to construct one, `structured.rows`) from its FIELDS (what it actually
+// bundles, `structured.fields`) — `Regime (V : Type*) (X : V → Type*) where
+// target : Finset V; assign : …` reads very differently once `target`/
+// `assign` aren't sitting in the same flat list as `V`/`X`.
+import { isChain, type StructuredStatement, type StmtBody } from "../lib/leanStatement.js";
+import StmtBodyView from "./StmtBodyView.astro";
+import StmtRowList from "./StmtRowList.astro";
+
+interface Props {
+  structured: StructuredStatement;
+  /** Original authored signature (docstring/proof stripped), for the copy button. */
+  copyText: string;
+  /** Label for `structured.rows` when it's NOT a structure/class (those get
+   * "parameters" automatically) — "hypotheses" for a theorem. */
+  sectionLabel?: string;
+}
+const { structured, copyText, sectionLabel = "hypotheses" } = Astro.props as Props;
+
+const isRecord = structured.fields !== null;
+const hasParams = structured.rows.length > 0;
+
+// A structure/class has no trailing conclusion (`structureRecordSource`
+// returns `conclusion: []`) — a ChainBlock is never empty, only a plain
+// StmtLine[] can be, so this is the one case worth hiding the section for.
+const hasConclusion = (b: StmtBody) => isChain(b) || b.length > 0;
+---
+
+<div class="decl-stmt stmt-structured" data-copy-text={copyText}>
+  {hasParams && (
+    <>
+      <div class="stmt-section-label">{isRecord ? "parameters" : sectionLabel}</div>
+      <StmtRowList items={structured.rows} />
+    </>
+  )}
+  {structured.fields && structured.fields.length > 0 && (
+    <div class:list={["stmt-fields", hasParams && "bordered"]}>
+      <div class="stmt-section-label">fields</div>
+      <StmtRowList items={structured.fields} />
+    </div>
+  )}
+  {hasConclusion(structured.conclusion) && (
+    <div class="stmt-concl">
+      <div class="stmt-section-label">conclusion</div>
+      <StmtBodyView body={structured.conclusion} />
+    </div>
+  )}
+</div>

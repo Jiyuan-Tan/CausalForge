@@ -1,0 +1,292 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_dml\_fold\_spectrum\_phase, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` -- the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{Fold-mass sandwich variance for unbalanced cross-fitted DML causal estimators}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Exact-identification / causal-ML anchor. The tuple is
+\[
+(\texttt{qid},\texttt{specialization},\text{graph/SWIG},\text{treatment},\text{target estimand},\text{identifying assumptions})
+\]
+with
+\[
+\begin{aligned}
+\texttt{qid} &= \texttt{eid\_dml\_fold\_spectrum\_phase},\\
+\texttt{specialization} &= \texttt{v1},\\
+\text{graph/SWIG} &= X \to D \to Y,\quad X \to Y,\quad (Y(1),Y(0))\perp D\mid X,\\
+\text{treatment} &= D\in\{0,1\},\\
+\text{target estimand} &= \theta_0=\E[Y(1)-Y(0)],\\
+\text{identifying assumptions} &= \text{consistency, conditional exchangeability, overlap, Neyman-orthogonal AIPW score,}\\
+&\quad \text{and a deterministic or repeated cross-fitting partition with fold masses }c_{k,n}=|I_{k,n}|/n.
+\end{aligned}
+\]
+The estimator is the cross-fitted AIPW/DML2 estimator
+\[
+\hat\theta_n=\frac1n\sum_{k=1}^{K_n}\sum_{i\in I_{k,n}}
+\left\{\hat m_{1,-k}(X_i)-\hat m_{0,-k}(X_i)+
+\frac{D_i(Y_i-\hat m_{1,-k}(X_i))}{\hat e_{-k}(X_i)}
+-\frac{(1-D_i)(Y_i-\hat m_{0,-k}(X_i))}{1-\hat e_{-k}(X_i)}\right\},
+\]
+where all nuisance estimates indexed by \(-k\) are trained outside the evaluation fold \(I_{k,n}\).
+
+\begin{abstract}
+Cross-fitted DML inference is normally reported from an observation-level score variance after the sample is split into approximately equal folds. Software practice now permits custom deterministic folds and repeated cross-fitting, while adjacent theory shows that changing the sampling geometry can change standard errors. This proposal asks whether a fold-mass sandwich variance is the correct first-order object for unbalanced DML partitions. The flagship conjecture states that, under a fold-linear expansion, the valid variance contains a between-fold term indexed by the mass vector \((c_{k,n})\) and that the usual report is valid only on a balance frontier. A two-fold triangular-array witness is included to separate the conventional score report from the fold-mass sandwich without changing the ATE estimand.
+\end{abstract}
+
+\section{Introduction}
+Empirical DML implementations increasingly treat the fold variable as a user-facing design choice rather than a harmless implementation detail. The main claim is that unbalanced cross-fitting has its own variance object: a fold-mass sandwich whose between-fold component vanishes under equal fixed folds but survives under custom or repeated unbalanced folds.
+
+\citet[Algorithm 3.1(a)]{ChernozhukovEtAl2018DML} takes a \(K\)-fold partition with \(|I_k|=n=N/K\), and \citet[Sections~5.2.1--5.2.4]{AhrensHansenSchafferWiemann2024DDML} permits custom fold variables and repeated cross-fitting while reporting conventional standard errors. \citet[abstract]{ChiangKatoMaSasaki2022MultiwayDML} shows that a change in DML sampling geometry can require a new cross-fitting algorithm and a new robust standard error formula. The kernel lives in exact identification and causal-ML inference: the ATE is standard, but the inferential target is the fold geometry of the orthogonal estimating equation.
+
+The direct consumer is applied DML software with user-supplied fold variables, especially \citet{AhrensHansenSchafferWiemann2024DDML} and DoubleML-style repeated cross-fitting. A reader who accepts the conclusion would no longer certify a custom-fold DML analysis from the observation-level score variance alone; the fold-mass spectrum must be audited.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: equal fixed folds reduce the fold-mass sandwich to the usual DML score variance. Gap: \citet{ChernozhukovEtAl2018DML} proves the equal-fold law; this theorem calibrates the proposed object. Consumer: standard DML implementations in \citet{BachEtAl2024DoubleMLR}.
+\item Conjecture 1: the fold-mass sandwich is the asymptotically valid variance for deterministic or repeated unbalanced folds under a fold-linear expansion. Gap: \citet{AhrensHansenSchafferWiemann2024DDML} exposes custom folds and repeated folds, while \citet{ChiangKatoMaSasaki2022MultiwayDML} changes standard errors only for multiway dependence. Consumer: custom-fold inference in \citet{AhrensHansenSchafferWiemann2024DDML}.
+\item Conjecture 2: a two-fold triangular-array witness has the same ATE and pointwise nuisance rates as the equal-fold design but makes the conventional score-variance report inconsistent when \(c_{2,n}\to0\). Gap: \citet{Velez2024DMLGrowingK} changes \(K_n\), not the deterministic fold-mass spectrum. Consumer: repeated and custom split diagnostics in applied DML packages.
+\end{itemize}
+
+\section{Related work}
+\citet{ChernozhukovEtAl2018DML} is the central comparator because its DML algorithms use equal \(K\)-fold sample splitting and obtain root-\(n\) asymptotic normality from orthogonal scores. \citet{ChernozhukovEtAl2017DMLATE} gives the ATE-facing version of the DML argument and fixes the causal estimand used here. \citet{BachEtAl2024DoubleMLR} documents DML1/DML2 software and score extraction under standard \(K\)-fold resampling, making it a natural target for variance reporting. \citet{AhrensHansenSchafferWiemann2024DDML} is the operational anchor because it allows custom fold variables and repeated cross-fitting while retaining conventional regression-style standard errors. \citet{ChiangKatoMaSasaki2022MultiwayDML} is the closest geometry-change comparator because multiway cluster dependence requires a new cross-fitting algorithm and a cluster-robust DML standard error formula. \citet{Velez2024DMLGrowingK} is the closest asymptotic-regime comparator because growing \(K\) separates DML1 and DML2, but it does not make unequal evaluation-fold masses the variance object. \citet{ChenSyrgkanisAustern2022NoSplitDML} supplies the no-splitting endpoint, where leave-one-out stability replaces cross-fitting. \citet{NeweyRobins2018CrossFitting} and \citet{McGrathMukherjee2022NuisanceTuningSplitting} show that split construction and nuisance tuning can affect doubly robust remainders. \citet{ChernozhukovNeweySingh2023FiniteSampleDML} gives finite-sample rate conversion for sample-split debiased ML, but does not index the theorem by an unequal fold-mass array. In-repo prior art is limited to the catalogue statement in \texttt{doc/API.md}, Section~3, that ExactID entries are seeded by \texttt{eid\_*} runs, plus the downgraded \texttt{eid\_dml\_orth\_uniform} proposals; those target uniform orthogonality and studentization frontiers rather than a fold-mass variance sandwich.
+
+\section{Formal setup}
+Let \(W_i=(Y_i,D_i,X_i)\) be independent observations from \(P\). The SWIG assumptions in the locked block identify \(\theta_0=\E[Y(1)-Y(0)]\) by the AIPW score \(\psi(W;\theta,\eta)=\varphi(W;\eta)-\theta\), where \(\eta=(m_0,m_1,e)\), \(m_d(x)=\E[Y\mid D=d,X=x]\), \(e(x)=\Pr(D=1\mid X=x)\), and
+\[
+\varphi(W;\eta)=m_1(X)-m_0(X)+\frac{D(Y-m_1(X))}{e(X)}-\frac{(1-D)(Y-m_0(X))}{1-e(X)}.
+\]
+For a partition \(\mathcal I_n=\{I_{1,n},\ldots,I_{K_n,n}\}\), define \(c_{k,n}=|I_{k,n}|/n\), \(c_n^{\min}=\min_k c_{k,n}\), and \(k(i)\) by \(i\in I_{k(i),n}\). Let \(\hat\eta_{-k}\) be trained outside \(I_{k,n}\), \(\hat\psi_i=\psi(W_i;\hat\theta_n,\hat\eta_{-k(i)})\), and
+\[
+S_{k,n}=n^{-1/2}\sum_{i\in I_{k,n}}\hat\psi_i,\qquad
+\bar S_n=K_n^{-1}\sum_{k=1}^{K_n}S_{k,n}.
+\]
+The conventional observation-level report is
+\[
+\hat V_{\mathrm{obs},n}=n^{-1}\sum_{i=1}^n \hat\psi_i^2.
+\]
+The fold-mass sandwich is the constructive focal object
+\[
+\hat V_{\mathrm{fm},n}=\hat V_{\mathrm{obs},n}+
+\sum_{k=1}^{K_n} c_{k,n}\left(S_{k,n}/\sqrt{|I_{k,n}|}-\sum_{\ell=1}^{K_n}c_{\ell,n}S_{\ell,n}/\sqrt{|I_{\ell,n}|}\right)^2.
+\]
+For repeated cross-fitting with repetitions \(r=1,\ldots,R\), the same formula is applied inside each repetition and then combined with the empirical dispersion of the repetition-specific \(\hat\theta_n^{(r)}\).
+
+\[
+\begin{array}{ll}
+\texttt{qid}=\texttt{eid\_dml\_fold\_spectrum\_phase},&
+\texttt{specialization}=\texttt{v1},\\
+\text{graph/SWIG}=X\to D\to Y,\ X\to Y,&
+\text{treatment}=D\in\{0,1\},\\
+\text{target}=\theta_0=\E[Y(1)-Y(0)],&
+\text{fold masses}=c_{k,n}=|I_{k,n}|/n.
+\end{array}
+\]
+
+\section{Assumptions}
+\begin{assumption}[Identification and overlap]\label{ass:id}
+The observations are independent, consistency holds, \((Y(1),Y(0))\perp D\mid X\), and there is \(\epsilon>0\) such that \(\epsilon\le e(X)\le 1-\epsilon\) almost surely.
+\end{assumption}
+
+\begin{assumption}[Orthogonal score and nuisance rates]\label{ass:orth}
+The AIPW score is Neyman-orthogonal at \(\eta_0\), and the cross-fitted nuisance estimates satisfy the usual \(L_2(P)\) product-rate condition \(r_{m,n}r_{e,n}=o(n^{-1/2})\) on every nonvanishing evaluation fold.
+\end{assumption}
+
+\begin{assumption}[Equal-fold calibration]\label{ass:equal}
+\(K\) is fixed, \(c_{k,n}=1/K+o(1)\) for each \(k\), and the fold-linear term in Assumption~\ref{ass:foldlinear} is \(o_p(n^{-1/2})\) uniformly in \(k\).
+\end{assumption}
+
+\begin{assumption}[Fold-linear expansion]\label{ass:foldlinear}
+There exist fold-level perturbations \(B_{k,n}\) and individual oracle scores \(\phi_i=\varphi(W_i;\eta_0)-\theta_0\) such that
+\[
+\sqrt n(\hat\theta_n-\theta_0)=n^{-1/2}\sum_{i=1}^n\phi_i+\sqrt n\sum_{k=1}^{K_n}c_{k,n}B_{k,n}+o_p(1),
+\]
+with \(\E[B_{k,n}\mid \mathcal I_n]=0\), finite fourth moments, and conditional covariance matrix consistently estimable from the fold score aggregates \(S_{k,n}\).
+\end{assumption}
+
+\begin{assumption}[Unbalanced-fold frontier]\label{ass:frontier}
+The mass vector satisfies \(\max_k c_{k,n}\le \bar c<1\), and either \(c_n^{\min}\to c_{\min}>0\) or there is a unique small fold \(j_n\) with \(c_{j_n,n}\to0\) and \(n c_{j_n,n}\to\lambda\in[1,\infty]\).
+\end{assumption}
+
+\begin{assumption}[Two-fold witness]\label{ass:witness}
+For \(K_n=2\), \(c_{1,n}=1-a_n\), \(c_{2,n}=a_n\), \(a_n\downarrow0\), and \(n a_n\to\lambda\in(0,\infty)\). The nuisance training error contributes \(B_{2,n}=\xi_n/\sqrt{n a_n}\) on the small fold, where \(\xi_n\Rightarrow N(0,\tau^2)\) with \(\tau^2>0\), and \(B_{1,n}=o_p(n^{-1/2})\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: equal-fold calibration]\label{thm:equal}
+Under Assumptions~\ref{ass:id}--\ref{ass:equal},
+\[
+\sqrt n(\hat\theta_n-\theta_0)=n^{-1/2}\sum_{i=1}^n\phi_i+o_p(1),\qquad
+\hat V_{\mathrm{fm},n}-\hat V_{\mathrm{obs},n}=o_p(1).
+\]
+Thus the fold-mass sandwich and the conventional score report have the same first-order limit \(V_0=\E[\phi_i^2]\).
+\end{theorem}
+The proof expands the orthogonal score fold by fold and uses Assumption~\ref{ass:equal} to remove the fold-linear term. The displayed variance equivalence follows because \(S_{k,n}/\sqrt{|I_{k,n}|}=O_p(n^{-1/2})\) uniformly over fixed equal folds after centering.
+
+\begin{conjecture}[Conjecture 1: fold-mass sandwich variance (NOT YET PROVED)]\label{conj:sandwich}
+Under Assumptions~\ref{ass:id}, \ref{ass:orth}, \ref{ass:foldlinear}, and \ref{ass:frontier},
+\[
+\frac{\sqrt n(\hat\theta_n-\theta_0)}{\sqrt{\hat V_{\mathrm{fm},n}}}\Rightarrow N(0,1),
+\]
+whereas replacing \(\hat V_{\mathrm{fm},n}\) by \(\hat V_{\mathrm{obs},n}\) is valid if and only if
+\[
+n\sum_{k=1}^{K_n}c_{k,n}^2\operatorname{Var}(B_{k,n}\mid \mathcal I_n)\to0.
+\]
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: two-fold report-separation witness (NOT YET PROVED)]\label{conj:witness}
+There exists an open class of binary-treatment ATE laws satisfying Assumptions~\ref{ass:id}, \ref{ass:orth}, \ref{ass:frontier}, and \ref{ass:witness} for which
+\[
+\hat V_{\mathrm{obs},n}\stackrel{p}{\to}V_0,\qquad
+\hat V_{\mathrm{fm},n}\stackrel{p}{\to}V_0+\tau^2/\lambda,
+\]
+and
+\[
+\sqrt n(\hat\theta_n-\theta_0)\Rightarrow N(0,V_0+\tau^2/\lambda).
+\]
+The point estimand and the pointwise nuisance rates are unchanged from the equal-fold design.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Equal-fold reduction]\label{cor:equal}
+Under Assumptions~\ref{ass:id}--\ref{ass:equal}, Conjecture~\ref{conj:sandwich} collapses to Theorem~\ref{thm:equal} because the frontier term \(n\sum_k c_{k,n}^2\operatorname{Var}(B_{k,n}\mid\mathcal I_n)\) is \(o(1)\).
+\end{corollary}
+
+\paragraph{Exhibit 9.1: computing the fold-mass sandwich on a two-fold instance.}
+Let \(n=100\), \(|I_1|=90\), \(|I_2|=10\), and suppose the cross-fitted score sums are \(S_{1,n}=0\) and \(S_{2,n}=2\) after the observation-level score variance has been normalized to \(\hat V_{\mathrm{obs},n}=1\). Then \(c_1=.9\), \(c_2=.1\), \(S_1/\sqrt{|I_1|}=0\), \(S_2/\sqrt{|I_2|}=2/\sqrt{10}\), and the fold-mass correction equals
+\[
+.9(0-.1\cdot 2/\sqrt{10})^2+.1(2/\sqrt{10}-.1\cdot2/\sqrt{10})^2=.036.
+\]
+Thus \(\hat V_{\mathrm{fm},n}=1.036\), while the conventional report is \(1\). The computation uses only the fold sizes and score aggregates from Section~6; the denominators are nonzero and the two values are not related by a normalization change.
+
+\paragraph{Exhibit 9.2: noncorner witness family.}
+Let \(X\sim\mathrm{Bernoulli}(1/2)\), \(D\mid X\sim\mathrm{Bernoulli}(1/4+X/4)\), and \(Y=\theta_0D+X+U\) with \(U\sim N(0,1)\) independent of \((D,X)\). This law satisfies overlap with \(\epsilon=1/4\), has \(V_0>0\), and remains valid under small perturbations of the cell probabilities and the variance of \(U\).
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:equal}: headline \(\leftarrow\) unfold Section~6 estimator and score definitions \(\leftarrow\) substitute Assumptions~\ref{ass:id}--\ref{ass:equal} \(\leftarrow\) orthogonal Taylor expansion of the AIPW score \(\leftarrow\) foldwise conditional empirical-process bound \(\leftarrow\) Lindeberg CLT for the oracle score average. Conjecture~\ref{conj:sandwich}: headline \(\leftarrow\) unfold \(\hat V_{\mathrm{fm},n}\) \(\leftarrow\) substitute Assumptions~\ref{ass:id}, \ref{ass:orth}, \ref{ass:foldlinear}, and \ref{ass:frontier} \(\leftarrow\) prove a triangular-array Hajek projection that separates individual scores from fold-level perturbations \(\leftarrow\) derive the mass-weighted covariance identity for \(\sqrt n\sum_k c_{k,n}B_{k,n}\) \(\leftarrow\) show consistency of the fold-aggregate quadratic form \(\leftarrow\) prove the iff frontier by constructing local alternatives with nonvanishing \(n\sum_k c_{k,n}^2\operatorname{Var}(B_{k,n})\). Conjecture~\ref{conj:witness}: headline \(\leftarrow\) unfold the two-fold design \(\leftarrow\) substitute Assumption~\ref{ass:witness} \(\leftarrow\) compute the small-fold perturbation limit \(\xi_n/\sqrt{n a_n}\) \(\leftarrow\) verify that observation-level centering omits the fold-level covariance \(\leftarrow\) verify openness of the binary-treatment family in Exhibit~9.2.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:equal} is a calibration theorem, not the flagship claim. Conjectures~\ref{conj:sandwich} and~\ref{conj:witness} are open and may require stronger conditions for estimating the fold-level covariance when \(K_n\) is small. The iff direction in Conjecture~\ref{conj:sandwich} is the highest-risk statement; if the reviewer finds it too strong, it should be downgraded to a sufficient-and-necessary pair for the explicit fold-linear class. No v1 statement has been withdrawn.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for the fold-mass sandwich variance angle; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Chernozhukov et~al.(2017)]{ChernozhukovEtAl2017DMLATE}
+Chernozhukov, V., D. Chetverikov, M. Demirer, E. Duflo, C. Hansen, and W. Newey (2017).
+Double/debiased/neyman machine learning of treatment effects.
+\emph{American Economic Review Papers and Proceedings} 107(5), 261--265.
+
+\bibitem[Chernozhukov et~al.(2018)]{ChernozhukovEtAl2018DML}
+Chernozhukov, V., D. Chetverikov, M. Demirer, E. Duflo, C. Hansen, W. Newey, and J. Robins (2018).
+Double/debiased machine learning for treatment and structural parameters.
+\emph{The Econometrics Journal} 21(1), C1--C68.
+
+\bibitem[Bach et~al.(2024)]{BachEtAl2024DoubleMLR}
+Bach, P., V. Chernozhukov, M. S. Kurz, M. Spindler, and S. Klaassen (2024).
+DoubleML: An object-oriented implementation of double machine learning in R.
+\emph{Journal of Statistical Software} 108(3), 1--56.
+
+\bibitem[Ahrens et~al.(2024)]{AhrensHansenSchafferWiemann2024DDML}
+Ahrens, A., C. B. Hansen, M. E. Schaffer, and T. Wiemann (2024).
+ddml: Double/debiased machine learning in Stata.
+\emph{The Stata Journal} 24(1), 3--45.
+
+\bibitem[Chiang et~al.(2022)]{ChiangKatoMaSasaki2022MultiwayDML}
+Chiang, H. D., K. Kato, Y. Ma, and Y. Sasaki (2022).
+Multiway cluster robust double/debiased machine learning.
+\emph{Journal of Business and Economic Statistics} 40(3), 1046--1056.
+
+\bibitem[Velez(2024)]{Velez2024DMLGrowingK}
+Velez, A. (2024).
+On the asymptotic properties of debiased machine learning estimators.
+arXiv:2411.01864.
+
+\bibitem[Chen et~al.(2022)]{ChenSyrgkanisAustern2022NoSplitDML}
+Chen, S., V. Syrgkanis, and M. Austern (2022).
+Debiased machine learning without sample-splitting for stable estimators.
+arXiv:2206.01825.
+
+\bibitem[Newey and Robins(2018)]{NeweyRobins2018CrossFitting}
+Newey, W. K. and J. R. Robins (2018).
+Cross-fitting and fast remainder rates for semiparametric estimation.
+arXiv:1801.09138.
+
+\bibitem[McGrath and Mukherjee(2022)]{McGrathMukherjee2022NuisanceTuningSplitting}
+McGrath, S. and R. Mukherjee (2022).
+Nuisance function tuning and sample splitting for optimally estimating a doubly robust functional.
+arXiv:2212.14857.
+
+\bibitem[Chernozhukov et~al.(2023)]{ChernozhukovNeweySingh2023FiniteSampleDML}
+Chernozhukov, V., W. K. Newey, and R. Singh (2023).
+A simple and general debiased machine learning theorem with finite-sample guarantees.
+\emph{Biometrika} 110(1), 257--264.
+\end{thebibliography}
+
+\end{document}

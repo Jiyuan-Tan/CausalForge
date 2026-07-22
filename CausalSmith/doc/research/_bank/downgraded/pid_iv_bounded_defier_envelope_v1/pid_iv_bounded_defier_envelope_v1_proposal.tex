@@ -1,0 +1,503 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_iv\_bounded\_defier\_envelope, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_iv\_bounded\_defier\_envelope} / \texttt{v1}%
+  \\ \large\textit{Non-rectangular ATE sign frontier for binary IV under joint c-dependence, defier caps, and never-taker caps}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a PartialID proposal with locked tuple
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},
+\text{bounding functional})
+\]
+defined as follows.  The qid is
+\(\texttt{pid\_iv\_bounded\_defier\_envelope}\) and the specialization is
+\(\texttt{v1}\), interpreted in this pivot as the joint-sensitivity sign-frontier
+angle.  The observable distribution is
+\[
+  P=P_{Y,D,Z}\quad\text{on}\quad [\ell,u]\times\{0,1\}\times\{0,1\},
+\]
+with \(\ell<u\), \(\Pr(Z=z)>0\), and conditional cell probabilities
+\(q_{zd}:=\Pr(D=d\mid Z=z)\).  The target is the population average treatment
+effect \(\theta:=\E[Y(1)-Y(0)]\) and the sign conclusion
+\(\theta\ge 0\).  The identifying restrictions are consistency, exclusion of
+the instrument from potential outcomes, bounded outcomes, a binary principal
+strata representation \(S=(D(0),D(1))\in\{N,C,A,F\}\), Picchetti-style
+\(c\)-dependence for the instrument, a defier-share cap
+\(\Pr(S=F)\le \bar\delta\), and a never-taker-share cap
+\(\Pr(S=N)\le \bar\nu\).  The bounding functional is the sharp lower endpoint
+\[
+  L(P;c,\bar\delta,\bar\nu)
+  :=\inf\{\E_\mu[Y(1)-Y(0)]:\mu\in
+  \Theta_I(P;c,\bar\delta,\bar\nu)\},
+\]
+and the associated breakdown surface
+\(\mathcal B_0(P):=\{(c,\bar\delta,\bar\nu):L(P;c,\bar\delta,\bar\nu)=0\}\).
+
+\begin{abstract}
+This proposal asks whether binary-IV ATE sign conclusions have a genuinely
+three-dimensional sensitivity frontier when monotonicity, instrument
+independence, and the prevalence of never-takers are relaxed simultaneously.
+Picchetti's 2026 frontier varies \(c\)-dependence and defier share, while the
+bounded-never-taker idea varies a principal-stratum mass that is usually treated
+as a nuisance component of the ATE.  The flagship conjecture is that these
+relaxations are non-rectangular: on an open set of observable laws, the sharp
+ATE lower endpoint under all three restrictions is strictly larger than every
+endpoint obtained by intersecting the pairwise sensitivity analyses.  A second
+conjecture asks for an observable criterion separating redundant never-taker
+caps from caps that create a new mixed exposed face of the identified set.  If
+resolved, the result would tell IV sensitivity analysts when a never-taker cap
+is a real third sensitivity coordinate rather than cosmetic tightening of
+existing defier or independence frontiers.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Applied IV papers often report that a sign conclusion is robust to some
+monotonicity violation or some instrument-independence violation, but the
+resulting sensitivity analysis usually has only one or two coordinates.  In
+settings such as encouragement designs, access-to-treatment designs, and
+eligibility instruments, the share of never-takers is itself scientifically
+interpretable: it measures the population that cannot or will not take the
+treatment under either instrument state.  The methodological question is
+whether bounding this share contributes independent identifying power for ATE
+sign conclusions once the analyst has already allowed defiers and
+\(c\)-dependence.
+
+\paragraph{The main finding (proposed).}
+The headline result is Conjecture~\ref{conj:nonrectangular}: the lower endpoint
+\(L(P;c,\bar\delta,\bar\nu)\) is not generally the rectangular combination of
+Picchetti's \((c,\bar\delta)\) frontier and pairwise never-taker-cap frontiers.
+Instead, there should be an open, nondegenerate region of binary-IV observable
+laws on which \(c\)-dependence, the defier cap, and the never-taker cap bind in
+the same endpoint-attaining latent law, producing a strictly stronger ATE sign
+conclusion than every pairwise sensitivity analysis would report.
+
+\paragraph{What is new.}
+The novelty kernel is an equivalence/non-equivalence frontier, not another
+finite-LP envelope.  \citet{Picchetti2026} derives identified sets and a LATE
+breakdown frontier under joint monotonicity and independence relaxations but
+does not introduce an independent never-taker-share coordinate.
+\citet{BaiHuangMoonShaikhVytlacil2024} clarify when generalized monotonicity
+restrictions have no identifying power for ATE; the present proposal asks when
+principal-stratum mass caps escape that no-power logic by restricting the
+composition of counterfactual support-fill-in terms.  The flagship epsilon-gap
+is a strict non-rectangularity statement: pairwise robust-region diagnostics
+can be conservative even when each pairwise bound is sharp.
+
+\paragraph{How it positions in the literature.}
+This is a partial-identification and IV-sensitivity proposal.  It sits after
+Manski support bounds, Balke--Pearl binary-IV bounds, Imbens--Angrist LATE, and
+recent monotonicity-relaxation sensitivity analyses by Noack, Yap, and
+Picchetti.  Unlike the rejected static envelope angle for this qid, the target
+is not a catalogue of all facets of the two-cap binary-IV polytope; the target
+is the geometry of the sign breakdown surface when a third sensitivity
+coordinate is added to an active two-coordinate frontier.
+
+\paragraph{Implications for the community.}
+The immediate downstream consumer is the breakdown-frontier workflow in
+\citet{Picchetti2026}: if Conjecture~\ref{conj:nonrectangular} is true, an
+analyst studying the Angrist--Evans family-size IV application with plausible
+never-taker information should report a three-coordinate ATE frontier rather
+than overlaying Picchetti's \((c,\bar\delta)\) frontier with a separate
+never-taker cap.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should check whether their never-taker cap is pairwise redundant or
+mixed-face active before declaring an IV sign conclusion sensitive to
+monotonicity and independence alone.
+
+\section{Related work}
+\citet{Manski1990} gives the bounded-outcome support-bounds benchmark for ATEs
+when counterfactual means are unrestricted.  \citet{ImbensAngrist1994} gives
+the monotone-IV LATE point-identification corner that sensitivity frontiers
+depart from.  \citet{AngristImbensRubin1996} supplies the principal-strata
+language used here for compliers, always-takers, never-takers, and defiers.
+\citet{BalkePearl1997} derives sharp binary-IV bounds through symbolic linear
+programming; this proposal asks about a robustness frontier inside that
+finite-type universe rather than the unrestricted bound itself.
+\citet{DeChaisemartin2017} shows that IV estimands can remain valid under a
+weaker condition than no defiers, making defier-sensitive IV analysis a live
+econometric object.  \citet{Noack2021} parameterizes monotonicity violations by
+defier share and outcome-distribution differences and derives robust regions
+for LATE conclusions; it does not include a never-taker-share coordinate.
+\citet{Yap2022} uses a defier-to-complier ratio as a sensitivity parameter for
+policy-relevant treatment parameters; it does not ask whether never-taker mass
+creates non-rectangular sign frontiers.  \citet{Picchetti2026} combines
+defier-share relaxation with \(c\)-dependence and derives identified sets and
+breakdown frontiers; it is the closest published comparator, with epsilon-gap
+equal to the independent never-taker cap and the proposed strict
+non-rectangularity of pairwise analyses.  \citet{BaiHuangMoonShaikhVytlacil2024}
+show that generalized monotonicity restrictions can have no identifying power
+for ATE; the present proposal isolates when a principal-stratum mass cap has
+identifying power precisely because it restricts latent mixture shares, not
+outcome ranks.
+
+In the CausalSmith catalogue, the accepted study artifacts
+\texttt{imbens\_angrist\_late\_v1} and
+\texttt{manski\_nonparametric\_bounds\_v1} provide the LATE and support-bound
+limit anchors.  The failed
+\texttt{pid\_late\_bounded\_defiers\_one\_sided\_compliance} proposal is the
+closest in-repo warning: its review rejected a formula that omitted the
+\((Z=1,D=0)\) observed cell and requested a full four-cell principal-strata
+mixture system.  The candidate
+\texttt{pid\_dynamic\_iv\_compliance\_v2} records a pure-never-taker
+mixture-subtraction phenomenon, but its target is dynamic compliance and it
+does not characterize a static IV sign frontier under \(c\)-dependence.
+According to \texttt{doc/API.md}, the PartialID catalogue is the intended home
+for Manski-family bounds, Balke--Pearl bounds, IV sensitivity, and
+shape-restricted partial-ID entries; no active catalogue entry already states
+the three-coordinate non-rectangularity kernel proposed here.
+
+\section{Formal setup}
+Let \(Z,D\in\{0,1\}\), let \(Y\in[\ell,u]\), and let
+\(P=P_{Y,D,Z}\) be the observable law.  A latent law \(\mu\) is a probability
+measure over
+\[
+  (Y(0),Y(1),D(0),D(1),Z)
+  \in [\ell,u]^2\times\{0,1\}^2\times\{0,1\}.
+\]
+Write \(S=(D(0),D(1))\), with \(N=(0,0)\), \(C=(0,1)\),
+\(A=(1,1)\), and \(F=(1,0)\).  The latent law is observable-compatible when
+\(D=D(Z)\), \(Y=Y(D)\), the marginal law of \((Y,D,Z)\) equals \(P\), and the
+instrument has no direct effect on \((Y(0),Y(1))\) beyond the allowed
+\(c\)-dependence inequality.
+
+For \(c\in[0,1]\), \(\bar\delta\in[0,1]\), and
+\(\bar\nu\in[0,1]\), define \(\Theta_I(P;c,\bar\delta,\bar\nu)\) as the set of
+observable-compatible latent laws satisfying the assumptions in
+Section~\ref{sec:assumptions}.  The ATE identified set is
+\[
+  \mathcal I_{\mathrm{ATE}}(P;c,\bar\delta,\bar\nu)
+  :=\{\E_\mu[Y(1)-Y(0)]:\mu\in
+  \Theta_I(P;c,\bar\delta,\bar\nu)\}.
+\]
+Its lower endpoint is \(L(P;c,\bar\delta,\bar\nu)\).  The pairwise-rectangular
+lower diagnostic is
+\[
+L^\square(P;c,\bar\delta,\bar\nu)
+:=\max\{L(P;c,\bar\delta,1),\,L(P;c,1,\bar\nu),\,
+        L(P;0,\bar\delta,\bar\nu)\}.
+\]
+This is the strongest lower sign diagnostic obtained by keeping at most two of
+the three relaxations active at a time.
+
+\begin{quote}
+\texttt{qid = pid\_iv\_bounded\_defier\_envelope;}\\
+\texttt{specialization = v1;}\\
+\texttt{observable distribution P = P\_\{Y,D,Z\} on [ell,u] x \{0,1\} x \{0,1\};}\\
+\texttt{parameter theta = E[Y(1)-Y(0)] and sign conclusion theta >= 0;}\\
+\texttt{identifying restrictions = consistency, exclusion, bounded outcomes, c-dependence, Pr(S=F)<=bar_delta, Pr(S=N)<=bar_nu;}\\
+\texttt{bounding functional = L(P;c,bar\_delta,bar\_nu) and breakdown surface B0(P).}
+\end{quote}
+
+\section{Assumptions}\label{sec:assumptions}
+\begin{assumption}[Binary IV observables and bounded support]\label{ass:observables}
+The observable law \(P\) is defined on
+\([\ell,u]\times\{0,1\}\times\{0,1\}\), where \(\ell<u\), and
+\(\Pr_P(Z=z)>0\) for \(z=0,1\).
+\end{assumption}
+
+\begin{assumption}[Consistency and exclusion]\label{ass:consistency}
+There exist potential outcomes \(Y(0),Y(1)\in[\ell,u]\) and potential
+treatments \(D(0),D(1)\in\{0,1\}\) such that \(D=D(Z)\) and
+\(Y=Y(D)\).  The instrument has no direct potential-outcome argument beyond
+its effect through treatment and the allowed dependence in
+Assumption~\ref{ass:cdep}.
+\end{assumption}
+
+\begin{assumption}[\(c\)-dependence]\label{ass:cdep}
+Let \(\pi_Z:=\Pr_\mu(Z=1)\).  The latent law satisfies
+\[
+  \left|\Pr_\mu(Z=1\mid Y(0),Y(1),D(0),D(1))-\pi_Z\right|\le c
+\]
+almost surely.  The case \(c=0\) is latent instrument independence.
+\end{assumption}
+
+\begin{assumption}[Defier and never-taker caps]\label{ass:caps}
+The principal-stratum masses satisfy
+\[
+  \Pr_\mu(S=F)\le \bar\delta,\qquad
+  \Pr_\mu(S=N)\le \bar\nu,
+\]
+where \(F=(1,0)\) and \(N=(0,0)\).
+\end{assumption}
+
+\begin{assumption}[Nondegenerate frontier region]\label{ass:nondegenerate}
+For the flagship non-rectangularity claim, the observable law and sensitivity
+parameters satisfy
+\(\Theta_I(P;c,\bar\delta,\bar\nu)\ne\varnothing\), all four conditional
+\((Z,D)\) cells have positive probability, \(0<c<1\),
+\(0<\bar\delta<1\), \(0<\bar\nu<1\), and the endpoint
+\(L(P;c,\bar\delta,\bar\nu)\) is finite.
+\end{assumption}
+
+\begin{assumption}[Pairwise frontier compatibility]\label{ass:pairwise}
+The three pairwise feasible sets used in \(L^\square\),
+\(\Theta_I(P;c,\bar\delta,1)\), \(\Theta_I(P;c,1,\bar\nu)\), and
+\(\Theta_I(P;0,\bar\delta,\bar\nu)\), are nonempty.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: finite sharp sign-endpoint polytope]\label{thm:polytope}
+Under Assumptions~\ref{ass:observables}--\ref{ass:caps},
+\(\Theta_I(P;c,\bar\delta,\bar\nu)\) is a compact convex set after replacing
+the bounded outcomes by finite boundary response types at \(\ell\) and \(u\).
+Consequently \(\mathcal I_{\mathrm{ATE}}(P;c,\bar\delta,\bar\nu)\) is a
+closed interval and \(L(P;c,\bar\delta,\bar\nu)\) is attained by a boundary
+latent law.
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) This is a setup theorem rather than the flagship novelty: it specializes
+the Balke--Pearl finite response-type logic to the joint
+\((c,\bar\delta,\bar\nu)\) sensitivity model.  The gap to
+\citet{BalkePearl1997} and \citet{Picchetti2026} is the simultaneous inclusion
+of \(c\)-dependence and an independent never-taker cap.  (b) The concrete
+consumer is Conjecture~\ref{conj:nonrectangular}: compactness and boundary
+attainment are needed before the three-way mixed face can be stated and tested
+without numerical-solver ambiguity.
+
+\begin{conjecture}[Conjecture 1: non-rectangular ATE sign frontier (NOT YET PROVED)]\label{conj:nonrectangular}
+Under Assumptions~\ref{ass:observables}--\ref{ass:pairwise}, there exists an
+open set \(\mathcal U\) of observable laws \(P\) and sensitivity triples
+\((c,\bar\delta,\bar\nu)\) such that
+\[
+  L(P;c,\bar\delta,\bar\nu) >
+  L^\square(P;c,\bar\delta,\bar\nu).
+\]
+Equivalently, for \(P\in\mathcal U\), the robust ATE sign conclusion
+\(\theta\ge 0\) can hold under the full three-coordinate model even though no
+pairwise frontier among \((c,\bar\delta)\), \((c,\bar\nu)\), and
+\((\bar\delta,\bar\nu)\) certifies it.  On \(\mathcal U\), every
+relative-interior point of the optimal face for
+\(L(P;c,\bar\delta,\bar\nu)\) has the \(c\)-dependence inequality, the defier
+cap, and the never-taker cap all binding.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) The closest published result is \citet{Picchetti2026}, which builds a
+\((c,\bar\delta)\) breakdown frontier and derives ATE/LATE identified sets as
+functions of those two sensitivity parameters; it has no independent
+\(\bar\nu\) coordinate and therefore cannot distinguish a true mixed
+never-taker face from pairwise tightening.  \citet{Noack2021} and
+\citet{Yap2022} likewise vary defier-related parameters without the
+never-taker-share coordinate.  (b) The concrete consumer is Picchetti's
+breakdown-frontier reporting workflow: the conjecture says that in applications
+such as Angrist--Evans family size, a never-taker cap can certify ATE sign
+robustness that is invisible to the published two-coordinate frontier.
+
+\begin{conjecture}[Conjecture 2: observable redundancy certificate (NOT YET PROVED)]\label{conj:certificate}
+Under Assumptions~\ref{ass:observables}--\ref{ass:pairwise}, define the
+never-taker slack
+\[
+  \rho_N(P;c,\bar\delta)
+  :=\sup\{\Pr_\mu(S=N):\mu\in
+       \arg\min_{\eta\in\Theta_I(P;c,\bar\delta,1)}
+       \E_\eta[Y(1)-Y(0)]\}.
+\]
+Then the never-taker cap is lower-endpoint redundant,
+\[
+  L(P;c,\bar\delta,\bar\nu)=L(P;c,\bar\delta,1),
+\]
+if and only if \(\bar\nu\ge \rho_N(P;c,\bar\delta)\).  Moreover,
+\(\rho_N(P;c,\bar\delta)\) admits an observable closed form using only the four
+conditional cells of \(P_{Y,D\mid Z}\), \((\ell,u)\), \(c\), and
+\(\bar\delta\), with no optimization over latent response types.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) The first equivalence is the conceptual frontier missing from
+\citet{BaiHuangMoonShaikhVytlacil2024}: their no-power result concerns
+treatment-response monotonicity restrictions that do not restrict potential
+outcomes, while this conjecture asks when a principal-stratum mass cap has
+power by excluding endpoint-minimizing latent mixtures.  The observable
+closed-form part is also absent from \citet{BalkePearl1997}, which certifies
+sharpness by symbolic LP rather than a never-taker redundancy threshold.  (b)
+The concrete consumer is the CausalSmith open question
+\texttt{oq\_defiers}: it would let the pipeline decide before formalizing a
+full envelope whether the never-taker cap is mathematically active for the
+defier-relaxation problem at hand.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No never-taker cap reduces to Picchetti's frontier]\label{cor:picchetti}
+Under Assumptions~\ref{ass:observables}--\ref{ass:caps}, setting
+\(\bar\nu=1\) removes the never-taker cap, so
+\(\Theta_I(P;c,\bar\delta,1)\) is the Picchetti-style
+\((c,\bar\delta)\) latent model for ATE and \(L(P;c,\bar\delta,1)\) is the
+corresponding two-coordinate lower endpoint.
+\end{corollary}
+
+Under \(\bar\nu=1\), the statement collapses to \citet{Picchetti2026} because
+Assumption~\ref{ass:caps} leaves only the defier cap and
+Assumption~\ref{ass:cdep} leaves only \(c\)-dependence as nonclassical
+sensitivity coordinates.
+
+\begin{corollary}[Classical independence corner]\label{cor:independence}
+Under Assumptions~\ref{ass:observables}--\ref{ass:caps}, setting \(c=0\)
+turns Assumption~\ref{ass:cdep} into latent instrument independence.  If also
+\(\bar\delta=0\), the switcher-local component reduces to the
+Imbens--Angrist monotone LATE corner whenever the first stage is positive,
+while the population ATE can remain partially identified through always-taker
+and never-taker counterfactual means.
+\end{corollary}
+
+Under \(c=0\) and \(\bar\delta=0\), the observed Wald numerator cancels the
+always-taker and never-taker observed components and isolates the complier
+contrast, exactly as in \citet{ImbensAngrist1994}; the population ATE remains
+an interval unless the noncomplier counterfactual components are separately
+restricted.
+
+\section{Proof-sketch route}
+The proof route is finite convex analysis.  First discretize endpoint-relevant
+outcome completions to boundary values \(\ell\) and \(u\), then write the
+observable equations, \(c\)-dependence inequalities, and stratum-share caps as
+a finite linear system over principal-stratum/outcome-response types.  Theorem
+1 follows from compactness and linear projection.  For
+Conjecture~\ref{conj:nonrectangular}, one should construct a nondegenerate
+binary-outcome observable law for which the lower-endpoint LP has a unique
+optimal basis with the \(c\)-dependence, defier-cap, and never-taker-cap
+constraints all binding, and then verify strict inequality against the three
+pairwise LPs by direct basis substitution.  For
+Conjecture~\ref{conj:certificate}, the expected route is to solve the
+Picchetti-style lower-endpoint basis for the maximum never-taker mass among
+minimizers, then eliminate latent variables using the four observed
+\((Z,D)\) cells and the support endpoints; zero-cell and zero-first-stage
+boundaries should be handled separately from the open-cell case.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:polytope} is labelled theorem because it is routine finite-LP
+partial identification once the setup is fixed.  Conjectures
+\ref{conj:nonrectangular} and \ref{conj:certificate} are the novel kernel and
+are not yet proved.  The proposal deliberately withdraws the rejected
+facet-catalogue and active-knot framing from the previous angle: no claim is
+made here that all two-cap ATE endpoints have a flagship-level closed-form
+facet taxonomy.  The main uncertainty is whether the observable closed form
+for \(\rho_N(P;c,\bar\delta)\) can be made simple enough to count as more than
+an LP-value restatement; if not, Conjecture~\ref{conj:certificate} should be
+downgraded to an algorithmic certificate while Conjecture~\ref{conj:nonrectangular}
+remains the primary flagship target.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for angle 2, replacing the rejected static
+facet-envelope kernel with a three-coordinate non-rectangular sign-frontier
+proposal anchored to \citet{Picchetti2026}; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Angrist, Imbens, and Rubin(1996)]{AngristImbensRubin1996}
+Angrist, J. D., G. W. Imbens, and D. B. Rubin (1996).
+Identification of causal effects using instrumental variables.
+\emph{Journal of the American Statistical Association} 91(434), 444--455.
+
+\bibitem[Bai et~al.(2024)]{BaiHuangMoonShaikhVytlacil2024}
+Bai, Y., S. Huang, S. Moon, A. M. Shaikh, and E. J. Vytlacil (2024).
+On the identifying power of generalized monotonicity for average treatment
+effects.
+NBER Working Paper 32983.
+
+\bibitem[Balke and Pearl(1997)]{BalkePearl1997}
+Balke, A. and J. Pearl (1997).
+Bounds on treatment effects from studies with imperfect compliance.
+\emph{Journal of the American Statistical Association} 92(439), 1171--1176.
+
+\bibitem[de Chaisemartin(2017)]{DeChaisemartin2017}
+de Chaisemartin, C. (2017).
+Tolerating defiance? Local average treatment effects without monotonicity.
+\emph{Quantitative Economics} 8(2), 367--396.
+
+\bibitem[Imbens and Angrist(1994)]{ImbensAngrist1994}
+Imbens, G. W. and J. D. Angrist (1994).
+Identification and estimation of local average treatment effects.
+\emph{Econometrica} 62(2), 467--475.
+
+\bibitem[Manski(1990)]{Manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review} 80(2), 319--323.
+
+\bibitem[Noack(2021)]{Noack2021}
+Noack, C. (2021).
+Sensitivity of LATE estimates to violations of the monotonicity assumption.
+arXiv:2106.06421.
+
+\bibitem[Picchetti(2026)]{Picchetti2026}
+Picchetti, P. (2026).
+Sensitivity analysis for instrumental variables under joint relaxations of
+monotonicity and independence.
+arXiv:2603.25529.
+
+\bibitem[Yap(2022)]{Yap2022}
+Yap, T. Y. (2022).
+Bounds on policy-relevant treatment parameters without monotonicity.
+Princeton Industrial Relations Section Working Paper.
+\end{thebibliography}
+
+\end{document}

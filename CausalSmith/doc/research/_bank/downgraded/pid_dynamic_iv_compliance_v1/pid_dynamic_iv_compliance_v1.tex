@@ -1,0 +1,657 @@
+% =====================================================================
+%  ThmSmith Stage 0 derivation skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=flagship\_explore, specialization=f1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to a Q1..Q6
+%    pool-mode, fill it VERBATIM from the question-specific block of
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    For free-form panel / ExactID / PartialID anchors, reproduce the
+%    locked-parameter block from the Stage -1 proposal verbatim. Do not
+%    rephrase locked parameters; Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage 0 derivation: \texttt{flagship\_explore} / \texttt{f1}%
+  \\ \large\textit{Sharp full-history IV bounds with adaptive noncompliance}}
+\author{ThmSmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This is a partial-identification problem, so there is no regression formula in the usual least-squares sense; the skeleton section named ``Regression estimator'' is used below to define the full-history linear-program bounding functional.  The observable law is \(P_{Y,D^T,Z^T,H_0}\), the known adaptive assignment law is \(e_t(z\mid H_{t-1})\), and the causal target is the sustained-regime contrast \(\theta_{111,000}=\E[Y(1,1,1)-Y(0,0,0)]\).  Under consistency, exclusion, sequential randomization given the full observed history and latent response type, positivity, one-sided monotone compliance, and binary potential outcomes, the sharp identified set is exactly the interval obtained by optimizing this contrast over the finite latent response table that reproduces the full observed law.  This sharp LP is a useful model-specific specialization of standard finite response-type sharpness, not a new generic sharpness theorem.  The \(T=1\) Balke--Pearl corner and the exact-compliance inverse-probability collapse are included only as sanity checks, and the rational \(T=3\) construction is positioned as an explicit omitted-baseline coarsening witness rather than as proof of a genuinely dynamic minimality claim.
+\end{abstract}
+
+\section{Introduction}
+Sequential encouragement designs are meant to answer questions about treatment paths, but the treatment path actually received can differ from the encouraged path at every period.  The causal target in this note is therefore not an intent-to-treat contrast and not a one-period local average treatment effect; it is the population mean contrast between the sustained all-treated regime and the sustained all-untreated regime.  With adaptive randomization, the full pre-assignment history is part of the design, and dropping assignment-relevant history can change what is learned about this sustained-regime effect.
+
+The static binary-instrument literature already gives sharp finite-dimensional bounds for imperfect compliance, and generic discrete causal-bound algorithms already cover finite latent response-type models.  Dynamic treatment-regime work gives identification, estimation, or optimization results under stronger structures or different targets.  What is useful here is a precise finite latent-response object for this particular dynamic noncompliance problem and a transparent comparison between the full-history object and coarser summaries.
+
+The sharp full-history LP characterization is the technical backbone, not the flagship novelty claim.  It says that the identified set for \(\theta_{111,000}\) is exactly the image of a finite polytope whose coordinates are masses on baseline types, dynamic compliance response maps, and binary outcome response vectors.  This model-specific specialization is useful because it separates the target causal contrast from the bounding functional and makes every source of information explicit: full-history observed cells add linear equations, while Markov or stagewise summaries remove some of those equations and can only relax the feasible set.
+
+The note also resolves the Stage -1 conjectures at the level supported by the mathematics.  The full-history LP claim is confirmed and strengthened to sharpness, with the caveat that this is the standard finite latent-type argument in the present notation.  A strict coarsening gap is exhibited by a \(T=3\) rational witness, but the witness uses pooling of assignment-relevant baseline history.  That same omitted-baseline mixture mechanism gives a \(T=1\) sign-relevant relaxation, so the stated \(T\le2\) minimality conjecture is refuted unless the comparison is strengthened to retain all baseline variables that affect assignment probabilities.
+
+\section{Related work and positioning}
+\cite{Manski1990} gives the canonical no-restriction bounding logic for treatment effects with bounded outcomes; this note uses the same worst-case-completion principle, but with dynamic IV response types and observed trajectory constraints.  \cite{BalkePearl1997} derive sharp nonparametric bounds for a static binary randomized encouragement with imperfect compliance; the \(T=1\) endpoint here is their response-type program restricted to a one-sided compliance face.  \cite{ManskiPepper2000} study monotone instrumental-variable restrictions as a way to tighten bounds; the restriction used here is different, namely one-sided monotone treatment receipt with a known randomized encouragement law.
+
+\cite{SwansonHernanMillerRobinsRichardson2018} review partial identification with binary instruments, treatments, and outcomes, which positions the \(T=1\) endpoint of this note.  \cite{SwansonLabrecqueHernan2018} ask which sustained-treatment null hypotheses are testable with an instrumental variable; this note instead bounds a named sustained-regime mean contrast.  \cite{GabrielSjolanderSachs2023} derive nonparametric bounds for imperfect randomized experiments, but not for a full dynamic treatment path under adaptive assignment.
+
+\cite{DuarteFinkelsteinKnoxMummoloShpitser2024} provide a general automated approach for sharp bounds in discrete causal problems.  Their framework could encode the finite program below and would give the same kind of response-type sharpness result; the LP theorem in this note should therefore be read as a hand-indexed specialization, not as a theorem that improves on generic discrete sharp-bound algorithms.  What differs is the explicit display of the adaptive likelihood coefficients \(K_e(o,\ell)\), the causal target \(J_3\), and the precise full-history equations that are removed by a chosen coarsening.  \cite{Simpson1951} is a classical reference point for the dangers of pooling heterogeneous strata; the coarsening witness below is closer to such static omitted-baseline mixture examples than to a genuinely dynamic post-baseline separation theorem.  \cite{MichaelCuiLorchTchetgen2024}, \cite{ChenZhang2023}, and \cite{Han2024} study dynamic IV or dynamic-regime targets using modeling, Bellman, or welfare-ordering structures.  The present object differs by staying fully finite, nonparametric, and partial-identification based.
+
+The Stage -1 proposal also points to in-repository static Manski and Balke--Pearl artifacts as project comparators and to a stronger exact-identification dynamic-LATE artifact as a different substrate.  Those artifacts are relevant as positioning only: the theorem below does not invoke any code substrate, and the mathematical result is a standalone finite-LP statement for the partial-identification cluster.
+
+\section{Formal setup}
+Fix a finite horizon \(T\), with \(T=3\) for the locked target unless a result explicitly changes the horizon.  The observed trajectory is
+\[
+O=(H_0,Z_1,D_1,\ldots,Z_T,D_T,Y),
+\]
+where \(H_0\) has finite support and \(Z_t,D_t,Y\in\{0,1\}\).  The full observed pre-assignment history is
+\[
+H_{t-1}=(H_0,Z_1,D_1,\ldots,Z_{t-1},D_{t-1}).
+\]
+The design law \(e_t(z\mid h_{t-1})=\Pr(Z_t=z\mid H_{t-1}=h_{t-1})\) is known and may depend on all components of \(h_{t-1}\).
+
+A latent response type \(\ell\) consists of a baseline value \(H_{0,\ell}\), a dynamic treatment response map
+\[
+\mathcal D_\ell=\{D_{\ell,t}(z^t):t=1,\ldots,T,\ z^t\in\{0,1\}^t\},
+\]
+and an outcome response vector
+\[
+\mathcal Y_\ell=\{Y_\ell(d^T):d^T\in\{0,1\}^T\}.
+\]
+Let \(\mathcal L_{1s}\) be the finite set of types satisfying the one-sided compliance restrictions stated in Assumption~\ref{ass:s0-one-sided}.  A population is a probability vector \(\pi\in\Delta(\mathcal L_{1s})\).
+
+For a type \(\ell\) and assignment path \(z^T\), define \(d_t(\ell,z^t)=D_{\ell,t}(z^t)\), \(d^T(\ell,z^T)=(d_1,\ldots,d_T)\), and let \(h_{t-1}(\ell,z^{t-1})\) be the realized observed history induced by \(H_{0,\ell}\), the assignment prefix \(z^{t-1}\), and the earlier treatment responses.  For an observed cell \(o=(h_0,z^T,d^T,y)\), define the known design-response coefficient
+\[
+K_e(o,\ell)=
+\one\{H_{0,\ell}=h_0\}
+\one\{d^T=d^T(\ell,z^T)\}
+\one\{y=Y_\ell(d^T)\}
+\prod_{t=1}^T e_t(z_t\mid h_{t-1}(\ell,z^{t-1})).
+\]
+The full-history observational equations are
+\[
+\sum_{\ell\in\mathcal L_{1s}}\pi_\ell K_e(o,\ell)=P(o)
+\quad\text{for every observed cell }o.
+\]
+For a finite horizon \(T\), write
+\[
+J_T(\pi)=
+\sum_{\ell\in\mathcal L_{1s}}\pi_\ell
+\{Y_\ell(1^T)-Y_\ell(0^T)\},
+\]
+where \(1^T=(1,\ldots,1)\) and \(0^T=(0,\ldots,0)\).  For the locked
+\(T=3\) target, \(J_3(\pi)\) is the latent-table value of
+\(\theta_{111,000}\).
+
+Define the full-history LP feasible set and its neutral LP image by
+\[
+\Pi_{\mathrm{FH}}(P,e)=
+\{\pi\in\Delta(\mathcal L_{1s}):\sum_\ell\pi_\ell K_e(o,\ell)=P(o)\ \forall o\}
+\]
+and
+\[
+\Theta_{\mathrm{LP}}(P,e)=
+\left\{J_3(\pi):\pi\in\Pi_{\mathrm{FH}}(P,e)\right\}.
+\]
+This is a mathematical image of a finite polytope, not the definition of
+causal identification.
+
+The semantic identified set is
+\[
+\Theta_I(P,e)=
+\left\{
+\begin{array}{l}
+\E_Q[Y(1,1,1)-Y(0,0,0)]:
+Q\text{ is a data-generating process satisfying}\\
+\text{the maintained restrictions and inducing observed law }P\text{ under }e
+\end{array}
+\right\}.
+\]
+The sharpness theorem below proves that this semantic set equals
+\(\Theta_{\mathrm{LP}}(P,e)\).  When the LP feasible set is nonempty, the
+bounding functional is the lower and upper endpoint of
+\(\Theta_{\mathrm{LP}}(P,e)\).
+
+For comparison, let \(A_s\) be a deterministic coarsening of observed cells, such as replacing \(H_0\) by a coarser baseline state \(S_0=s(H_0)\).  The corresponding relaxed feasible set replaces \(P\) by \(A_sP\) and replaces the full equations by
+\[
+A_s(A_e\pi)=A_sP,
+\]
+where \(A_e\pi\) is the full observed law generated by \(\pi\).  The
+observable law for this coarsened comparison is \(P_s=A_sP\), the law of
+the pooled cells, but the admissible latent table still contains the
+baseline value \(H_{0,\ell}\) and the coefficients \(K_e(o,\ell)\) still
+use the known baseline-specific and history-specific assignment law.  Thus
+the comparison program pools what is observed while retaining the true
+latent assignment mechanism in the operator \(A_sA_e\).  It is not the
+different experiment that would first replace \(e_t(\cdot\mid H_{t-1})\)
+by a pooled assignment probability.  This coarsened program is a comparison
+object, not the causal target.
+
+\paragraph{Locked parameters.}
+This is a partial-identification anchor, not a panel pool-mode.  The locked tuple is
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},
+  \text{bounding functional})\\
+=
+(\texttt{flagship\_explore},\texttt{f1},
+  P_{Y,D^T,Z^T,H_0},\ \theta_{111,000},\
+  \mathcal{R}_{\mathrm{seqIV+fullHist+1sided}},\
+  [\underline\theta_{\mathrm{FH}}(P,e),\overline\theta_{\mathrm{FH}}(P,e)]) .
+\end{gathered}
+\]
+Here \(T=3\) unless a result explicitly states another finite horizon; \(Z_t,D_t,Y\in\{0,1\}\), and \(H_0\) has finite support.  The assignment policy is the known adaptive encouragement law
+\[
+e_t(z\mid h_{t-1})=\Pr(Z_t=z\mid H_{t-1}=h_{t-1}),
+\]
+where \(H_{t-1}\) is the full observed history \((H_0,Z_1,D_1,\ldots,Z_{t-1},D_{t-1})\); no Markov compression of \(H_{t-1}\) is imposed.  The target is the sustained-regime average effect
+\[
+\theta_{111,000}=\E[Y(1,1,1)-Y(0,0,0)].
+\]
+The restrictions \(\mathcal{R}_{\mathrm{seqIV+fullHist+1sided}}\) are consistency, exclusion of \(Z^T\) from \(Y(d^T)\) except through \(D^T\), sequential randomization of \(Z_t\) given the full observed history and latent response type, positivity \(0<e_t(z\mid h)<1\) on reachable histories, one-sided monotone compliance \(D_t(z^t)=0\) whenever \(z_t=0\) and \(D_t(z^{t-1},1)\ge D_t(z^{t-1},0)\), and \(Y(d^T)\in\{0,1\}\).  The bounding functional is the sharp finite-dimensional linear-program interval over the joint latent table of baseline type \(H_{0,\ell}\), dynamic treatment response maps \(\{D_t(z^t)\}_{t,z^t}\), and outcome response vector \(\{Y(d^T)\}_{d^T}\), constrained to reproduce the observed cell probabilities under the known non-Markov assignment policy.  A bounded-mean extension with \(Y\in[0,1]\) is outside this version and is treated as future work, not as part of the locked claim.
+
+\begin{itemize}[leftmargin=*]
+\item \(\texttt{qid}=\texttt{flagship\_explore}\) and \(\texttt{specialization}=\texttt{f1}\).
+\item Observable law: \(P=P_{Y,D^T,Z^T,H_0}\), a finite-support observed law with binary \(Y\).
+\item Parameter: \(\theta=\theta_{111,000}=\E[Y(1,1,1)-Y(0,0,0)]\).
+\item Identifying restrictions: \(\mathcal{R}_{\mathrm{seqIV+fullHist+1sided}}\), exactly as displayed above.
+\item Bounding functional: \([\underline\theta_{\mathrm{FH}}(P,e),\overline\theta_{\mathrm{FH}}(P,e)]\), the sharp LP interval over the joint latent dynamic compliance and outcome response table.
+\end{itemize}
+
+\section{Assumptions}
+\begin{assumption}[Finite binary full-history experiment]\label{ass:s0-finite}
+The horizon \(T\) is finite; \(H_0\) has finite support; \(Z_t,D_t,Y\in\{0,1\}\); and all sums below are over finite sets.  For the locked target, \(T=3\).
+\end{assumption}
+
+\begin{assumption}[Consistency and exclusion]\label{ass:s0-consistency}
+If the realized encouragement path is \(z^T\), then \(D_t=D_t(z^t)\) for every \(t\).  If the realized treatment path is \(d^T\), then \(Y=Y(d^T)\).  The encouragement path has no direct effect on \(Y(d^T)\) except through the received treatment path.
+\end{assumption}
+
+\begin{assumption}[Known sequential randomization]\label{ass:s0-randomization}
+For every reachable history \(h_{t-1}\), every \(z\in\{0,1\}\), and every latent response type \(\ell\),
+\[
+\Pr(Z_t=z\mid H_{t-1}=h_{t-1},\ell)=e_t(z\mid h_{t-1}).
+\]
+The function \(e_t\) is known and may depend on the full observed history.
+\end{assumption}
+
+\begin{assumption}[Positivity on reachable histories]\label{ass:s0-positivity}
+For every reachable \(h_{t-1}\) and each \(z\in\{0,1\}\),
+\[
+0<e_t(z\mid h_{t-1})<1.
+\]
+This is the support condition used by the cell equations and by the exact-compliance inverse-probability reduction.
+\end{assumption}
+
+\begin{assumption}[One-sided monotone dynamic compliance]\label{ass:s0-one-sided}
+For every period \(t\) and every assignment prefix \(z^{t-1}\),
+\[
+D_t(z^{t-1},0)=0,\qquad D_t(z^{t-1},1)\ge D_t(z^{t-1},0).
+\]
+No restriction is imposed on how \(D_t(z^{t-1},1)\) varies with the earlier prefix \(z^{t-1}\).
+\end{assumption}
+
+\begin{assumption}[Binary potential outcomes]\label{ass:s0-binary-y}
+For every treatment path \(d^T\), \(Y(d^T)\in\{0,1\}\).  Hence every regime mean lies in \([0,1]\) and every contrast of two regime means lies in \([-1,1]\).
+\end{assumption}
+
+\begin{assumption}[Model compatibility]\label{ass:s0-compatibility}
+The maintained partial-identification model asserts that the observed law \(P\) is generated by at least one probability vector \(\pi\in\Delta(\mathcal L_{1s})\) through the coefficients \(K_e(o,\ell)\).  Equivalently, the full-history LP feasible set is nonempty.
+\end{assumption}
+
+\begin{assumption}[Exact-compliance corner]\label{ass:s0-exact-compliance}
+For the exact-compliance sanity reduction only, \(D_t(z^t)=z_t\) for every \(t\) and every \(z^t\), almost surely.
+\end{assumption}
+
+\begin{assumption}[Coarsened comparison program]\label{ass:s0-coarsening}
+For comparison results, \(A_s\) is a deterministic coarsening of observed cells and the coarsened feasible set is
+\[
+\Pi_s(P,e)=\{\pi\in\Delta(\mathcal L_{1s}):A_s(A_e\pi)=A_sP\}.
+\]
+The full-history feasible set is
+\[
+\Pi_{\mathrm{FH}}(P,e)=\{\pi\in\Delta(\mathcal L_{1s}):A_e\pi=P\}.
+\]
+If \(A_s\) pools baseline or history variables, those variables remain
+latent coordinates of \(\ell\) in the comparison program, and \(A_e\) still
+uses the known assignment probabilities indexed by those latent histories.
+Only the observed-law equations are pooled.
+\end{assumption}
+
+\section{Regression estimator}
+The inherited section title is not literal for this partial-identification anchor.  The estimand-defining object is the full-history LP bounding functional, not a regression coefficient.
+
+\begin{definition}[Full-history LP functional]\label{def:s0-fh-lp}
+For any finite horizon \(T\), let
+\[
+J_T(\pi)=
+\sum_{\ell\in\mathcal L_{1s}}\pi_\ell
+\{Y_\ell(1^T)-Y_\ell(0^T)\}.
+\]
+For the locked \(T=3\) problem, write \(J(\pi)=J_3(\pi)\).
+Under Assumption~\ref{ass:s0-compatibility}, define
+\[
+\underline\theta_{\mathrm{FH}}(P,e)=\min_{\pi\in\Pi_{\mathrm{FH}}(P,e)}J(\pi),
+\qquad
+\overline\theta_{\mathrm{FH}}(P,e)=\max_{\pi\in\Pi_{\mathrm{FH}}(P,e)}J(\pi).
+\]
+This is the sharp bound claimed for the locked model.
+\end{definition}
+
+\begin{definition}[Coarsened outer functional]\label{def:s0-coarse-lp}
+For a coarsening \(A_s\), define
+\[
+\underline\theta_s(P,e)=\min_{\pi\in\Pi_s(P,e)}J(\pi),
+\qquad
+\overline\theta_s(P,e)=\max_{\pi\in\Pi_s(P,e)}J(\pi).
+\]
+This interval is an outer relaxation whenever \(A_s\) drops full-history equations.  It is sharp only for the explicitly coarsened experiment whose observable law is \(A_sP\) and whose admissible latent table still uses the assignment law \(e\), not for the original observed law \(P\).
+\end{definition}
+
+\section{Target causal estimand}
+The causal target is fixed before introducing any LP optimum:
+\[
+\theta_{111,000}
+=\E[Y(1,1,1)-Y(0,0,0)].
+\]
+If the true latent type distribution is \(\pi^0\), then
+\[
+\theta_{111,000}=J_3(\pi^0)=J(\pi^0)
+=
+\sum_{\ell\in\mathcal L_{1s}}\pi^0_\ell
+\{Y_\ell(1,1,1)-Y_\ell(0,0,0)\}.
+\]
+The LP functional estimates or bounds this target only through the maintained restrictions and observed-cell equations; it is not equal to the target by definition.
+
+\section{Main theorems}
+\begin{theorem}[Sharp full-history LP characterization]\label{thm:s0-sharp-lp}
+Under Assumptions~\ref{ass:s0-finite}--\ref{ass:s0-compatibility},
+\[
+\Theta_I(P,e)=\Theta_{\mathrm{LP}}(P,e)=
+[\underline\theta_{\mathrm{FH}}(P,e),\overline\theta_{\mathrm{FH}}(P,e)].
+\]
+In particular, the true sustained-regime effect satisfies
+\[
+\theta_{111,000}\in
+[\underline\theta_{\mathrm{FH}}(P,e),\overline\theta_{\mathrm{FH}}(P,e)].
+\]
+\end{theorem}
+
+This theorem confirms and strengthens the Stage -1 full-history LP necessity claim: the LP is not merely necessary, but sharp for the finite binary model.  Its proof is the standard finite latent response-type sharpness proof used in Balke--Pearl-style bounds and in generic discrete sharp-bound frameworks.  The contribution of stating it here is therefore not a new sharpness principle; it is the model-specific specialization that fixes the adaptive likelihood coefficients, the sustained-regime objective, and the exact full-history equations used by the later coarsening comparison.
+
+\begin{proposition}[Known endpoint reductions]\label{prop:s0-reductions}
+Under Assumptions~\ref{ass:s0-finite}--\ref{ass:s0-compatibility}, if \(T=1\), the horizon-indexed objective is
+\[
+J_1(\pi)=\sum_{\ell}\pi_\ell\{Y_\ell(1)-Y_\ell(0)\},
+\]
+and the full-history LP with objective \(J_1\) is the Balke--Pearl static binary-IV response-type program restricted to the one-sided face \(D(0)=0\).  Relative to the unrestricted static treatment-response table, this face removes both always-taker \((D(0),D(1))=(1,1)\) and defier \((1,0)\) coordinates.  If \(T=3\) and Assumption~\ref{ass:s0-exact-compliance} also holds, then the interval collapses to
+\[
+\underline\theta_{\mathrm{FH}}(P,e)
+=\overline\theta_{\mathrm{FH}}(P,e)
+=
+\E\left[
+\frac{\one\{Z^T=(1,1,1)\}Y}
+{\prod_{t=1}^3 e_t(1\mid H_{t-1})}
+\right]
+-
+\E\left[
+\frac{\one\{Z^T=(0,0,0)\}Y}
+{\prod_{t=1}^3 e_t(0\mid H_{t-1})}
+\right].
+\]
+\end{proposition}
+
+This proposition confirms the Stage -1 sanity-reduction claim.  It is not a novelty-bearing result; the Balke--Pearl endpoint is inherited from the static IV literature, and the exact-compliance inverse-probability collapse is the standard sequential-randomization formula when noncompliance is absent.
+
+\begin{proposition}[Full-history constraints can strictly tighten a coarsened program]\label{prop:s0-strict-witness}
+Under Assumptions~\ref{ass:s0-finite}--\ref{ass:s0-compatibility} and Assumption~\ref{ass:s0-coarsening}, \(\Pi_{\mathrm{FH}}(P,e)\subseteq\Pi_s(P,e)\), and therefore
+\[
+[\underline\theta_{\mathrm{FH}}(P,e),\overline\theta_{\mathrm{FH}}(P,e)]
+\subseteq
+[\underline\theta_s(P,e),\overline\theta_s(P,e)].
+\]
+Moreover, for the \(T=3\) rational design in Example~\ref{ex:s0-t3-witness}, the inclusion is sign-relevant:
+\[
+[\underline\theta_{\mathrm{FH}}(P,e),\overline\theta_{\mathrm{FH}}(P,e)]
+=\{4/5\},
+\qquad
+\underline\theta_s(P,e)\le -8/81<0<4/5\le\overline\theta_s(P,e).
+\]
+\end{proposition}
+
+This proposition confirms a narrower coarsening-gap claim: dropping assignment-relevant baseline history can make a coarsened IV relaxation include effects of the wrong sign even though full-history bounds are point identifying and positive.  It should not be read as a genuinely dynamic full-history-versus-stagewise novelty theorem, because the same omitted-baseline mechanism already appears in the \(T=1\) counterexample below.  Its value relative to generic automated bounds is diagnostic: the proof displays the actual equations whose removal creates the relaxation.
+
+\begin{example}[The \(T=3\) sign-relevant witness]\label{ex:s0-t3-witness}
+Let \(H_0\in\{a,b\}\) with \(\Pr(H_0=a)=9/10\).  Conditional on \(H_0=a\), set \(e_t(1\mid H_{t-1})=1/10\) for all \(t\); conditional on \(H_0=b\), set \(e_t(1\mid H_{t-1})=9/10\) for all \(t\).  Let \(D_t(z^t)=z_t\) for every type.  Let
+\[
+Y(1,1,1)=\one\{H_0=a\},\qquad
+Y(0,0,0)=\one\{H_0=b\},
+\]
+and set all other \(Y(d^T)\) to zero.  The full observed law includes \(H_0\), while the coarsening \(s\) pools \(a\) and \(b\) into one baseline state and retains the pooled trajectory law.
+For this coarsened comparison, the observable law is the law of \((Z^T,D^T,Y)\) after summing over \(H_0\).  The admissible latent table still carries a latent baseline label \(a\) or \(b\) and still uses the known assignment probabilities \(1/10\) and \(9/10\) attached to those labels.
+\end{example}
+
+\begin{remark}[Stage -1 conjecture verdicts]\label{rem:s0-verdicts}
+The full-history LP necessity conjecture is confirmed and sharpened to Theorem~\ref{thm:s0-sharp-lp}, but the sharpness proof is the standard finite response-type argument rather than independent flagship novelty.  The endpoint-reduction conjecture is confirmed by Proposition~\ref{prop:s0-reductions}; both reductions are sanity checks.  The strict full-history gain conjecture is confirmed only in the narrower sense of Proposition~\ref{prop:s0-strict-witness}: the displayed witness proves a real coarsening gap, but it is driven by baseline-history pooling and therefore does not establish a distinctively dynamic \(T=3\) full-history-versus-stagewise separation.  The stagewise certificate-pasting conjecture is partial in this note: the proof establishes the outer-relaxation logic and a nonsharp coarsened relaxation, but does not claim that every proposed local mean-valued certificate family has been classified.  The \(T\le2\) minimality conjecture is refuted by the \(T=1\) baseline-pooling counterexample in Section~\ref{sec:s0-counterexample}.
+\end{remark}
+
+\section{Interpretation}
+The sharp LP theorem says that the full observed trajectory law supplies exactly a finite list of linear equations on the latent response-type distribution.  Optimizing the sustained-regime contrast over those equations is neither a modeling approximation nor a regression projection; it is the identified set under the locked finite binary restrictions.  As a novelty claim, this is a useful specialization of known response-type sharpness, not a result that displaces generic discrete sharp-bound algorithms.
+
+The coefficient language from panel problems is not the right language here.  The analogous distinction is between a sharp full-history bound and an outer relaxation.  The full-history bound is clean when the cell equations keep every history variable that affects assignment probabilities and every history variable needed to connect observed outcomes to latent response types.  It becomes contaminated, in the partial-identification sense, when a coarsened functional drops equations that distinguish histories with different assignment likelihoods or different outcome mixtures.
+
+Example~\ref{ex:s0-t3-witness} shows the issue in the simplest possible way.  Baseline type changes the probability of seeing the all-one and all-zero encouragement paths.  When \(H_0\) is observed, inverse probability and the full cell equations recover the population-weighted sustained contrast.  When \(H_0\) is pooled, the same observed outcome numerator can be explained by a small amount of outcome mass in the high-assignment-probability baseline stratum, which changes the target's population weighting and can move the relaxed lower endpoint below zero.  This is the same kind of mixture logic that appears in static omitted-stratum examples; the note does not claim that this witness isolates a new dynamic mechanism after all assignment-relevant baseline variables are retained.
+
+This interpretation connects the result to Balke--Pearl bounds: response types are still the primitive object, but dynamic and adaptive designs make the likelihood coefficients history-dependent.  It also clarifies why a generic discrete bounds program is not enough for formula design.  The useful diagnostic is which observed history equations are being retained or discarded.
+
+\section{Step-by-step proof}
+\begin{lemma}[Observed law induced by a latent table]\label{lem:s0-induced-law}
+Under Assumptions~\ref{ass:s0-finite}--\ref{ass:s0-binary-y}, a latent distribution \(\pi\in\Delta(\mathcal L_{1s})\) induces the observed cell law
+\[
+P_\pi(o)=\sum_{\ell\in\mathcal L_{1s}}\pi_\ell K_e(o,\ell).
+\]
+\end{lemma}
+
+\begin{proof}
+Fix a type \(\ell\).  By Assumption~\ref{ass:s0-randomization}, the conditional probability of an assignment path \(z^T\) given \(\ell\) equals
+\[
+\prod_{t=1}^T e_t(z_t\mid h_{t-1}(\ell,z^{t-1})),
+\]
+because each factor conditions on the realized full history before period \(t\).  By Assumption~\ref{ass:s0-consistency}, this assignment path determines the realized treatment path \(d^T(\ell,z^T)\) and the observed outcome \(Y_\ell(d^T(\ell,z^T))\).  Multiplying the assignment probability by the indicators that the generated baseline, treatment path, and outcome equal the cell \(o\) gives \(K_e(o,\ell)\).  Averaging over the finite type distribution \(\pi\) gives the displayed equation.
+\end{proof}
+
+\begin{lemma}[Sharpness of the latent-response LP]\label{lem:s0-sharpness}
+Under Assumptions~\ref{ass:s0-finite}--\ref{ass:s0-compatibility}, every \(\pi\in\Pi_{\mathrm{FH}}(P,e)\) is the latent response distribution of a data-generating process satisfying the maintained restrictions and reproducing \(P\).  Its sustained-regime effect is \(J(\pi)\).
+\end{lemma}
+
+\begin{proof}
+Take any \(\pi\in\Pi_{\mathrm{FH}}(P,e)\).  Draw a latent type \(\ell\) with probability \(\pi_\ell\).  Assign \(H_0\), the treatment response map, and the outcome response vector according to that type.  Then generate \(Z_t\) sequentially using the known design law \(e_t(\cdot\mid H_{t-1})\), set \(D_t=D_{\ell,t}(Z^t)\), and set \(Y=Y_\ell(D^T)\).  Assumptions~\ref{ass:s0-finite}, \ref{ass:s0-consistency}, \ref{ass:s0-randomization}, \ref{ass:s0-positivity}, \ref{ass:s0-one-sided}, and \ref{ass:s0-binary-y} hold by construction and by membership of \(\ell\) in \(\mathcal L_{1s}\).  Lemma~\ref{lem:s0-induced-law} and the constraint \(A_e\pi=P\) show that the observed law is \(P\).  The regime contrast under this constructed population is exactly \(J(\pi)\), because intervention on \(D^T=d^T\) reads the corresponding coordinate \(Y_\ell(d^T)\) of the same latent type.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:s0-sharp-lp}]
+Let \(\pi^0\) be the true latent distribution.  By Assumption~\ref{ass:s0-compatibility} and Lemma~\ref{lem:s0-induced-law}, \(\pi^0\in\Pi_{\mathrm{FH}}(P,e)\), so \(\theta_{111,000}=J(\pi^0)\) lies between the minimum and maximum of \(J\) over \(\Pi_{\mathrm{FH}}(P,e)\).  Conversely, Lemma~\ref{lem:s0-sharpness} shows that every value \(J(\pi)\) attained by a feasible point is the target value in some data-generating process satisfying the same restrictions and reproducing \(P\).  Therefore the identified set is exactly the image \(J(\Pi_{\mathrm{FH}}(P,e))\).
+
+The feasible set is a nonempty compact polytope because it is the intersection of a finite-dimensional simplex with finitely many closed linear equations.  The image of a convex set under the scalar linear map \(J\) is an interval, and the extrema are attained.  Hence the identified set is precisely \([\underline\theta_{\mathrm{FH}}(P,e),\overline\theta_{\mathrm{FH}}(P,e)]\).
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:s0-reductions}]
+For \(T=1\), use the horizon-specific objective \(J_1(\pi)=\sum_\ell\pi_\ell\{Y_\ell(1)-Y_\ell(0)\}\).  An unrestricted static binary-IV response type has \((D(0),D(1))\in\{0,1\}^2\) and \((Y(0),Y(1))\in\{0,1\}^2\).  Assumption~\ref{ass:s0-one-sided} imposes \(D(0)=0\), which removes always-takers \((1,1)\) and defiers \((1,0)\), leaving never-takers \((0,0)\) and compliers \((0,1)\).  The observed equations \(\sum_\ell\pi_\ell K_e(o,\ell)=P(o)\) are exactly the Balke--Pearl static cell equations after imposing this one-sided face.
+
+Now impose Assumption~\ref{ass:s0-exact-compliance} for \(T=3\).  For any \(d^T\in\{0,1\}^3\),
+\[
+\E\left[
+\frac{\one\{Z^T=d^T\}Y}
+{\prod_{t=1}^3 e_t(d_t\mid H_{t-1})}
+\right]
+=
+\E\left[
+\frac{\one\{Z^T=d^T\}Y(d^T)}
+{\prod_{t=1}^3 e_t(d_t\mid H_{t-1})}
+\right],
+\]
+by consistency and exact compliance.  For a fixed latent type \(\ell\), let \(H_{t-1}^{d}(\ell)\) be the full realized history that would be generated before period \(t\) if the assignment path were \(d^T\).  On the event \(Z^T=d^T\), the random denominator is pathwise equal to \(\prod_{t=1}^3 e_t(d_t\mid H_{t-1}^{d}(\ell))\).  The sequential-randomization chain rule gives the probability of the same event conditional on \(\ell\) as this same product, and Assumption~\ref{ass:s0-positivity} makes each factor nonzero.  Therefore
+\[
+\E\left[
+\frac{\one\{Z^T=d^T\}}
+{\prod_{t=1}^3 e_t(d_t\mid H_{t-1})}
+\middle| \ell\right]=1.
+\]
+Thus the displayed inverse-probability functional equals \(\E[Y(d^T)]\).  Subtracting the identities for \(d^T=(1,1,1)\) and \(d^T=(0,0,0)\) proves the formula.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:s0-strict-witness}]
+The inclusion \(\Pi_{\mathrm{FH}}(P,e)\subseteq\Pi_s(P,e)\) follows from applying the linear map \(A_s\) to both sides of \(A_e\pi=P\).  Minimizing and maximizing the same linear objective over a larger feasible set can only weakly decrease the lower endpoint and weakly increase the upper endpoint.
+
+It remains to verify the witness.  In Example~\ref{ex:s0-t3-witness}, positivity holds because all assignment probabilities are \(1/10\) or \(9/10\).  One-sided compliance holds because \(D_t(z^t)=z_t\).  With full \(H_0\) observed, every \(H_0\)-specific assignment path has positive probability and exact compliance makes \(D^T=Z^T\).  Therefore the full cell equations reveal
+\[
+Y(1,1,1)=\one\{H_0=a\},\qquad
+Y(0,0,0)=\one\{H_0=b\},
+\]
+so
+\[
+\theta_{111,000}
+=\frac{9}{10}(1-0)+\frac{1}{10}(0-1)=\frac45.
+\]
+The full interval is the singleton \(\{4/5\}\).
+
+Now pool \(a\) and \(b\).  The pooled assignment-path probability for \(Z^T=(1,1,1)\) is
+\[
+\frac{9}{10}\left(\frac1{10}\right)^3+
+\frac{1}{10}\left(\frac9{10}\right)^3
+=\frac{369}{5000}.
+\]
+This equation identifies the same baseline mass \(9/10\), but it no longer reveals which baseline stratum generated the all-one outcome numerator.  The observed pooled numerator for \(Z^T=(1,1,1),Y=1\) is \(9/10000\).  A coarsened feasible table can reproduce it with conditional means
+\[
+\mu_a^{111}=0,\qquad \mu_b^{111}=\frac1{81},
+\]
+because
+\[
+\frac{9}{10}\left(\frac1{10}\right)^3\mu_a^{111}
++\frac{1}{10}\left(\frac9{10}\right)^3\mu_b^{111}
+=\frac{9}{10000}.
+\]
+The observed pooled numerator for \(Z^T=(0,0,0),Y=1\) is \(1/10000\).  It is reproduced by
+\[
+\mu_a^{000}=0,\qquad \mu_b^{000}=1,
+\]
+because
+\[
+\frac{9}{10}\left(\frac9{10}\right)^3\mu_a^{000}
++\frac{1}{10}\left(\frac1{10}\right)^3\mu_b^{000}
+=\frac{1}{10000}.
+\]
+For every other assignment path \(z^T\notin\{111,000\}\), set
+\(\mu_a^{z^T}=\mu_b^{z^T}=0\).  Let \(p_a=9/10\), \(p_b=1/10\), and let
+\(w_h(z^T)\) be the known assignment-path probability in baseline stratum
+\(h\).  The proposed coarsened table then satisfies, for every \(z^T\),
+\[
+\Pr_s(Z^T=z^T,D^T=z^T,Y=1)
+=p_aw_a(z^T)\mu_a^{z^T}+p_bw_b(z^T)\mu_b^{z^T},
+\]
+which matches the pooled observed numerator: it is \(9/10000\) at
+\(z^T=111\), \(1/10000\) at \(z^T=000\), and zero otherwise.  Exact
+compliance gives zero mass to every pooled cell with \(D^T\ne Z^T\), and
+the \(Y=0\) cell for a given \(z^T\) is the assignment-path probability
+minus the displayed \(Y=1\) numerator.  Hence every pooled
+\((Z^T,D^T,Y)\) cell is matched, not only the two cells entering the
+objective.
+
+It remains only to realize the fractional conditional means by binary
+outcome vectors.  For each baseline stratum \(h\in\{a,b\}\), split its
+latent mass into finitely many subtypes indexed by a joint vector
+\(u=(u_{z^T})_{z^T\in\{0,1\}^3}\in\{0,1\}^{8}\), and assign
+\[
+\Pr(u\mid h)=
+\prod_{z^T\in\{0,1\}^3}
+(\mu_h^{z^T})^{u_{z^T}}(1-\mu_h^{z^T})^{1-u_{z^T}},
+\]
+with the usual degenerate interpretation when a marginal mean is \(0\) or
+\(1\).
+Set \(Y(z^T)=u_{z^T}\) on the subtype and keep exact compliance
+\(D^T=Z^T\).  This finite refinement has binary joint response vectors
+and has the required marginal mean \(\mu_h^{z^T}\) for all eight
+treatment paths simultaneously.  The coarsened objective value of this
+feasible table is
+\[
+\frac{9}{10}(0-0)+\frac{1}{10}\left(\frac1{81}-1\right)
+=-\frac8{81}.
+\]
+The true full-history table is also feasible for the coarsened program and has value \(4/5\).  Hence \(\underline\theta_s(P,e)\le -8/81<0<4/5\le\overline\theta_s(P,e)\).
+\end{proof}
+
+\section{Sanity checks}
+\begin{itemize}[leftmargin=*]
+\item No-restriction Manski corner.  If the observed trajectory law imposes no restrictions on \(Y(1,1,1)\) or \(Y(0,0,0)\) beyond binary boundedness, then \(\E[Y(1,1,1)]\in[0,1]\), \(\E[Y(0,0,0)]\in[0,1]\), and the natural contrast bound is \([-1,1]\), matching the bounded-outcome logic of \cite{Manski1990}.
+\item Static IV corner.  For \(T=1\), Proposition~\ref{prop:s0-reductions} gives the Balke--Pearl binary-IV response-type program with always-taker and defier treatment-response coordinates removed.  Without one-sided compliance, the same cell equations would include always-taker, never-taker, complier, and defier treatment response types.
+\item Exact-compliance collapse.  Under Assumption~\ref{ass:s0-exact-compliance}, every treatment path is observed whenever the corresponding assignment path is observed.  Positivity then makes the inverse-probability formula in Proposition~\ref{prop:s0-reductions} well defined and the LP has zero width.
+\item Injective-history comparison.  If \(A_s\) is injective on the observed cells used by the full LP, then \(\Pi_s(P,e)=\Pi_{\mathrm{FH}}(P,e)\) and no coarsening gap is possible.  Thus the strict gap in Example~\ref{ex:s0-t3-witness} is not caused by the LP machinery; it is caused by deleting assignment-relevant history labels.
+\item One-sided compliance support.  Observed cells with \(Z_t=0,D_t=1\) have zero probability under the model.  If such a cell has positive observed mass, Assumption~\ref{ass:s0-one-sided} is falsified and the full-history feasible set is empty.
+\end{itemize}
+
+\section{Counterexample or minimality check}\label{sec:s0-counterexample}
+The Stage -1 \(T\le2\) minimality conjecture is false under the coarsening convention used in Proposition~\ref{prop:s0-strict-witness}, because the same baseline-pooling mechanism already works at \(T=1\).
+
+\begin{example}[A \(T=1\) counterexample to minimality]\label{ex:s0-t1-counter}
+Let \(H_0\in\{a,b\}\), \(\Pr(H_0=a)=9/10\), \(e_1(1\mid a)=1/10\), and \(e_1(1\mid b)=9/10\).  Let \(D_1(z)=z\), \(Y(1)=\one\{H_0=a\}\), and \(Y(0)=\one\{H_0=b\}\).  With \(H_0\) observed, exact compliance and positivity identify
+\[
+\theta_{1,0}=\frac{9}{10}(1-0)+\frac{1}{10}(0-1)=\frac45.
+\]
+If \(H_0\) is pooled, the coarsened observable law is the law of
+\((Z,D,Y)\), while the admissible latent table still carries the
+assignment-relevant baseline label and its known assignment probability.
+The observed numerator for \(Z=1,Y=1\) is \(9/100\), which can also be
+reproduced by \(\mu_a^1=0,\mu_b^1=1\).  The observed numerator for
+\(Z=0,Y=1\) is \(1/100\), reproduced by \(\mu_a^0=0,\mu_b^0=1\).  Exact
+compliance matches the \(D=Z\) cells and gives zero mass to the \(D\ne Z\)
+cells, so the full pooled \((Z,D,Y)\) law is reproduced.  The
+corresponding coarsened target value is \(0\), so the coarsened interval
+contains zero while the full-history interval is the positive singleton
+\(\{4/5\}\).
+\end{example}
+
+The nearest correct minimality statement must therefore add a condition absent from the Stage -1 conjecture: the comparison must retain all baseline variables that affect assignment probabilities, or else define duplicate histories so that assignment-relevant baseline strata cannot be merged.  Under that strengthened comparison, a \(T=3\) post-baseline history-separation claim may still be true, but it is not established by the theorem in this note.
+
+The positivity assumption is also minimal for the exact-compliance collapse.  If \(e_t(d_t\mid H_{t-1})=0\) on a reachable history for some regime path \(d^T\), then the inverse-probability denominator is undefined and the corresponding potential-outcome coordinate can vary without changing the observed law on that branch.
+
+\section{Formalization checklist}
+\paragraph{Finite objects and maps.}
+\begin{itemize}[leftmargin=*]
+\item Finite horizon \(T\), binary assignment and treatment paths \(z^T,d^T\in\{0,1\}^T\), finite baseline support \(\mathcal H_0\), and binary outcome \(y\in\{0,1\}\).
+\item Latent type space \(\mathcal L_{1s}\): tuples \((h_0,\mathcal D,\mathcal Y)\) satisfying one-sided compliance, with \(\mathcal D=\{D_t(z^t)\}\) and \(\mathcal Y=\{Y(d^T)\}\).
+\item Adaptive likelihood coefficient \(K_e(o,\ell)\): a scalar in \([0,1]\) for each observed cell \(o\) and latent type \(\ell\).
+\item Linear observation operator \(A_e:\Delta(\mathcal L_{1s})\to\Delta(\mathcal O)\), \((A_e\pi)(o)=\sum_\ell\pi_\ell K_e(o,\ell)\).
+\item Coarsening operator \(A_s:\Delta(\mathcal O)\to\Delta(\mathcal O_s)\), a deterministic cell-summing linear map.
+\item Horizon-indexed objective \(J_T:\Delta(\mathcal L_{1s})\to\mathbb R\), \(J_T(\pi)=\sum_\ell\pi_\ell\{Y_\ell(1^T)-Y_\ell(0^T)\}\); the locked problem uses \(J=J_3\).
+\item Semantic identified set \(\Theta_I(P,e)\): target values generated by all maintained-restriction data-generating processes reproducing \(P\); neutral LP image \(\Theta_{\mathrm{LP}}(P,e)=J_3(\Pi_{\mathrm{FH}}(P,e))\).
+\end{itemize}
+
+\paragraph{Probabilistic assumptions.}
+\begin{itemize}[leftmargin=*]
+\item Consistency and exclusion identify observed \(D_t\) and \(Y\) from the latent response maps under the realized assignment path.
+\item Sequential randomization gives the product likelihood \(\prod_t e_t(z_t\mid H_{t-1})\) conditional on the latent type.
+\item Positivity ensures every regime path used in the exact-compliance formula has a nonzero assignment probability on reachable histories.
+\item Model compatibility is nonemptiness of \(\Pi_{\mathrm{FH}}(P,e)\).
+\end{itemize}
+
+\paragraph{Deterministic and convex-analytic identities.}
+\begin{itemize}[leftmargin=*]
+\item Latent mixture identity: \(P(o)=\sum_\ell\pi_\ell K_e(o,\ell)\).
+\item Polytope identity: \(\Pi_{\mathrm{FH}}(P,e)=\Delta(\mathcal L_{1s})\cap\{\pi:A_e\pi=P\}\), hence compact and convex when nonempty.
+\item Linear-image identity: the image of a convex set under a scalar linear map is an interval; extrema over a compact polytope are attained.
+\item Coarsening inclusion: \(A_e\pi=P\Rightarrow A_s(A_e\pi)=A_sP\), hence \(\Pi_{\mathrm{FH}}\subseteq\Pi_s\).
+\item Exact-compliance IPW identity: conditional on a latent type, the denominator is evaluated along the same realized path \(Z^T=d^T\), giving \(\E[\one\{Z^T=d^T\}/\prod_t e_t(d_t\mid H_{t-1})\mid\ell]=1\).
+\item Rational witness arithmetic: the \(T=3\) example uses the four equations with coefficients \((9/10)(1/10)^3\), \((1/10)(9/10)^3\), \((9/10)(9/10)^3\), and \((1/10)(1/10)^3\).
+\item Binary refinement identity: any finite list of means \(\mu_h^{z^T}\in[0,1]\) can be realized by splitting baseline stratum \(h\) into joint binary response-vector subtypes with those marginals.
+\end{itemize}
+
+\section{Conclusion and references}
+The theorem-level statement is a sharp full-history LP characterization for the sustained dynamic treatment effect \(\theta_{111,000}\) under the locked sequential-IV, full-history, one-sided-compliance restrictions, but its novelty is deliberately modest: it is a transparent specialization of standard finite response-type sharpness to this adaptive dynamic IV notation.  The bound is clean when the observed-cell equations retain the full assignment-relevant history and the maintained finite response-type model is feasible.  The main source of contamination is not a regression weight but an omitted history equation: coarsening can reallocate outcome response mass across baseline or history strata with different assignment likelihoods, changing the population-weighted regime contrast while preserving the coarsened observed law.  The \(T=3\) witness confirms a sign-relevant coarsening gap for baseline pooling, while the \(T=1\) witness shows that this mechanism is not by itself a dynamic minimality phenomenon; a stronger future theorem would need to retain all assignment-relevant baseline variables and then isolate a post-baseline full-history gain.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+
+\bibitem{BalkePearl1997}
+Balke, A. and J. Pearl (1997).
+Bounds on treatment effects from studies with imperfect compliance.
+\emph{Journal of the American Statistical Association} 92(439), 1171--1176.
+
+\bibitem{ChenZhang2023}
+Chen, S. and B. Zhang (2023).
+Estimating and improving dynamic treatment regimes with a time-varying instrumental variable.
+\emph{Journal of the Royal Statistical Society: Series B} 85(2), 427--453.
+
+\bibitem{DuarteFinkelsteinKnoxMummoloShpitser2024}
+Duarte, G., N. Finkelstein, D. Knox, J. Mummolo, and I. Shpitser (2024).
+An automated approach to causal inference in discrete settings.
+\emph{Journal of the American Statistical Association} 119(547), 1778--1793.
+
+\bibitem{GabrielSjolanderSachs2023}
+Gabriel, E. E., A. Sjolander, and M. C. Sachs (2023).
+Nonparametric bounds for causal effects in imperfect randomized experiments.
+\emph{Journal of the American Statistical Association} 118(541), 684--692.
+
+\bibitem{Han2024}
+Han, S. (2024).
+Optimal dynamic treatment regimes and partial welfare ordering.
+\emph{Journal of the American Statistical Association} 119(547), 2000--2010.
+
+\bibitem{Manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review} 80(2), 319--323.
+
+\bibitem{ManskiPepper2000}
+Manski, C. F. and J. V. Pepper (2000).
+Monotone instrumental variables: With an application to the returns to schooling.
+\emph{Econometrica} 68(4), 997--1010.
+
+\bibitem{MichaelCuiLorchTchetgen2024}
+Michael, H., Y. Cui, S. A. Lorch, and E. J. Tchetgen Tchetgen (2024).
+Instrumental variable estimation of marginal structural mean models for time-varying treatment.
+\emph{Journal of the American Statistical Association} 119(546), 1240--1251.
+
+\bibitem{Simpson1951}
+Simpson, E. H. (1951).
+The interpretation of interaction in contingency tables.
+\emph{Journal of the Royal Statistical Society: Series B} 13(2), 238--241.
+
+\bibitem{SwansonHernanMillerRobinsRichardson2018}
+Swanson, S. A., M. A. Hernan, M. Miller, J. M. Robins, and T. S. Richardson (2018).
+Partial identification of the average treatment effect using instrumental variables: Review of methods for binary instruments, treatments, and outcomes.
+\emph{Journal of the American Statistical Association} 113(522), 933--947.
+
+\bibitem{SwansonLabrecqueHernan2018}
+Swanson, S. A., J. Labrecque, and M. A. Hernan (2018).
+Causal null hypotheses of sustained treatment strategies: What can be tested with an instrumental variable?
+\emph{European Journal of Epidemiology} 33(8), 723--728.
+
+\end{thebibliography}
+
+\end{document}

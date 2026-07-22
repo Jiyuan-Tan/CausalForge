@@ -1,0 +1,1926 @@
+{
+  "qid": "exp_rollout_chebyshev_minimax",
+  "specialization": "tv_envelope_rollout_design",
+  "nodes": [
+    {
+      "id": "S1",
+      "obj_id": "S-1",
+      "kind": "setup",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Finite-population monotone-Bernoulli rollout DESIGN world: the only randomness is the experimenter's rollout randomization pi over a finite assignment space; round means bar_Y_j are real random variables of the realized assignment, and E_pi/Var_pi/Cov_pi are finite-sum design moments. This is exactly the abstraction of Causalean's FiniteDesign probability layer. — FiniteDesign Ω = PMF over a finite assignment space with FiniteDesign.E/Var/Cov as finite sums (Design.lean:45-217). bar_Y_j : Ω → ℝ are round-mean random variables; Var_pi(bar_Y_j) is FiniteDesign.Var, Gamma_P(p) is the (k+1)x(k+1) FiniteDesign.Cov matrix, hat_tau_{w,p} = ∑ w_j bar_Y_j. FiniteDesign.Var_linear_comb / Var_const_mul / Cov_* supply the design-variance algebra reused by the variance-layer lemmas. The paper takes the potential-outcome / static-rollout consistency and the per-round variance ENVELOPE as threaded Prop assumptions (inherited setup + novel envelope), so Y_i(z), Z_j, U_n, m_P, a_{P,ell}, tau_P are exposed at the abstract FiniteDesign level rather than via a bespoke PO structure — the highest-leverage reuse decision, matching the paper's honest scope (novelty is the approximation-theoretic design object, not new PO machinery). Surveyed Causalean PO substrate (PotentialOutcome.lean, Exposure.lean, HT/*): those target Horvitz–Thompson measure/measurability estimation under exposure mappings and DERIVE design variance from network structure; this paper instead ASSUMES the round-variance envelope, so the HT variance derivations (var_htMean_le, EdgeVarianceBound, CompoundVariance) are a different abstraction and not a fit — recorded as bypass-justified.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "Causalean.Experimentation.DesignBased.FiniteDesign",
+        "file": null
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      },
+      "setup": {
+        "required_modules": [
+          "Causalean.Experimentation.DesignBased.Design"
+        ]
+      }
+    },
+    {
+      "id": "S2",
+      "obj_id": "S-2",
+      "kind": "setup",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Real / polynomial ℓ¹ optimal-recovery ambient: budgeted node schedules, linear-unbiased weight vectors, the ℓ¹ amplification criterion and its minimax value, and the Chebyshev / equal-spacing grids are pure real-analytic objects over ℝ, Fin (k+1) → ℝ, and Polynomial ℝ (Mathlib). No design/PMF object appears in these definitions or in the approximation-theoretic lemmas. — bypass-justified: the amplification criterion A_beta(p) = inf over W_beta(p) of (∑|w_j|)² is a pure ℓ¹/ℓ∞-dual optimal-recovery quantity over polynomial-unbiased weight vectors; the Causalean design world (FiniteDesign) is at a different abstraction (measure of a randomization) and does not fit these purely algebraic-analytic objects. Searched Causalean experimentation substrate for 'amplification / minimax schedule / Chebyshev node / budgeted design' (npm search concepts, lean_local_search FiniteDesign/Optimality/Minimax/Neyman): Optimality/Minimax.lean is Neyman-allocation design minimax, not node-placement ℓ¹ amplification — not found. Mathlib supplies Polynomial.Chebyshev.T ℝ n and the Extremal/RootsExtrema Chebyshev API used by the endpoint lemmas.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": null,
+        "file": null
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      },
+      "setup": {
+        "required_modules": [
+          "Mathlib.RingTheory.Polynomial.Chebyshev",
+          "Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Extremal",
+          "Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema"
+        ]
+      }
+    },
+    {
+      "id": "ass:static-rollout-consistency",
+      "obj_id": "A-1",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "At each rollout measurement j, the observed round mean equals bar_Y_j = n^(-1) sum_{i in U_n} Y_i(Z_j), and the potential outcomes depend on the contemporaneous assignment vector Z_j but not on earlier rollout steps.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "StaticRolloutConsistency",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "c04a43a7c9cc647f5681474129967f5f4e172526"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "Static rollout potential outcomes with no carryover",
+        "cite": "CortezRodriguezEichhornYu2024",
+        "citation": "Cortez-Rodriguez, Mayleen, Matthew Eichhorn, and Christina Lee Yu (2025). Analysis of Two-Stage Rollout Designs with Clustering for Causal Inference under Network Interference. AISTATS 2025. arXiv:2405.05119."
+      }
+    },
+    {
+      "id": "ass:beta-order-polynomial",
+      "obj_id": "A-2",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For every law P, the rollout mean curve satisfies m_P(u) = sum_{ell=0}^beta a_{P,ell} u^ell for all u in [0,1].",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "BetaOrderPolynomial",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "3e9ee965d4aecfc15f2c0b64a4a4bb8406772e3a"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "beta-order rollout polynomial identity",
+        "cite": "CortezEichhornYu2022",
+        "citation": "Cortez, Mayleen, Matthew Eichhorn, and Christina Lee Yu (2022). Staggered Rollout Designs Enable Causal Inference Under Interference Without Network Knowledge. NeurIPS 2022. arXiv:2205.14552."
+      }
+    },
+    {
+      "id": "ass:round-mean-variance-envelope",
+      "obj_id": "A-3",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For every law P, every admissible schedule p, and every rollout measurement j, Var_pi(bar_Y_j) <= sigma_0^2 / n.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "RoundMeanVarianceEnvelope",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "4e167dbb53bc01d783ae8f0014af0fd69b416081"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "ass:low-budget-cap",
+      "obj_id": "A-4",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "q <= q_max < 1.",
+        "tex_anchor": "",
+        "frozen": true,
+        "frozen_body": "The rollout budget and its cap satisfy\n\\[\n0<q_{\\max}\\quad\\text{and}\\quad q\\le q_{\\max}<1.\n\\]",
+        "frozen_title": "Low-Budget Cap"
+      },
+      "lean": {
+        "decl_name": "LowBudgetCap",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "bd50fab3ae57330e4effa299ee0b248b8acdc008"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:budgeted-schedule-class",
+      "obj_id": "P-1",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "S_{k,q} = { p in [0,1]^(k+1) : p_0 = 0 and 0 < p_1 < ... < p_k = q }",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "BudgetedSchedule",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "01c20cd3cfe6b68b38471480da5880b1c3e47e63"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:rollout-law-class",
+      "obj_id": "P-2",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "P_beta = { P : ass:static-rollout-consistency and ass:beta-order-polynomial and ass:round-mean-variance-envelope }",
+        "tex_anchor": "",
+        "frozen": true,
+        "frozen_body": "The rollout law class is\n\\[\n\\mathcal P_\\beta\n=\n\\left\\{\nP:\n\\begin{array}{l}\nP \\text{ satisfies Assumptions~\\ref{obj:ass:static-rollout-consistency}, \\ref{obj:ass:beta-order-polynomial}, and \\ref{obj:ass:round-mean-variance-envelope}},\\\\\n\\text{and } \\mathbb E_\\pi[\\bar Y_j]=m_P(p_j) \\text{ for every } j=0,\\ldots,k\n\\end{array}\n\\right\\}.\n\\]",
+        "frozen_title": "Rollout law class \\(\\mathcal P_\\beta\\)"
+      },
+      "lean": {
+        "decl_name": "RolloutLawClass",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "3d0267a437240f462321cd43eecb049e8d2a057b"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:unbiased-weight-set",
+      "obj_id": "P-3",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "W_beta(p) = { w in R^(k+1) : sum_{j=0}^k w_j p_j^0 = 0 and sum_{j=0}^k w_j p_j^ell = 1 for ell = 1, ..., beta }",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "UnbiasedWeights",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "aa5be4712f1d0e56ab1ceea11ba4d4d8e007f64c"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:chebyshev-schedule",
+      "obj_id": "P-4",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "p_j^Ch(k,q) = q { 1 - cos(pi j / k) } / 2 for j = 0, ..., k, and p^Ch(k,q) = (p_0^Ch(k,q), ..., p_k^Ch(k,q)).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "chebyshevSchedule",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "645271e14b79be4a23578e184ab005ef6a5fea47"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:amplification-criterion",
+      "obj_id": "P-5",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "A_beta(p) = inf_{w in W_beta(p)} (sum_{j=0}^k |w_j|)^2 and M_{beta,k,q} = inf_{p in S_{k,q}} A_beta(p).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "minimaxAmplification",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "90b2936801123f935a9859a41056319111c6cb85"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:exact-nested-risk",
+      "obj_id": "P-6",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "R_exact(beta,k,q) = inf_{p in S_{k,q}} inf_{w in W_beta(p)} sup_{P in P_beta} w' Gamma_P(p) w.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "exactNestedRisk",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "4e7d3d775c122b22536676ccf5f099000d0e3d2d"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "prop:rollout-polynomial-identity",
+      "obj_id": "L-1",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Under ass:static-rollout-consistency and ass:beta-order-polynomial, tau_P = m_P(1) - m_P(0) = sum_{ell=1}^beta a_{P,ell}.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "rollout_polynomial_identity",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "b316e0a0433ccec4da4ad77633e1f4baeb444fdd"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "thm:tv-envelope-design",
+      "obj_id": "T-1",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Assume beta>=1 and k>=beta. For every schedule p in S_{k,q} and every weight vector w in W_beta(p), the estimator hat_tau_{w,p} is design-unbiased for tau_P over P in P_beta, and Var_pi(hat_tau_{w,p}) <= sigma_0^2 n^(-1) (sum_{j=0}^k |w_j|)^2. Consequently, since W_beta(p) is nonempty for every p in S_{k,q}, over the sharp total-variation variance envelope the best achievable design variance for a fixed schedule p is sigma_0^2 n^(-1) A_beta(p); the dimensionless minimax amplification value over budgeted schedules is M_{beta,k,q}=inf_{p in S_{k,q}} A_beta(p); the corresponding minimax design variance over budgeted schedules is sigma_0^2 n^(-1) M_{beta,k,q}; and an optimal schedule for the variance envelope is any minimizer p^* in S_{k,q} attaining A_beta(p^*)=M_{beta,k,q}.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "tv_envelope_design",
+        "file": "T_tv_envelope_design.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "d565975da501647d148a7a6438e42aec2d1cd777"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "prop:equal-spacing-benchmark",
+      "obj_id": "L-2",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Let p^eq(beta,q) = (0, q / beta, 2 q / beta, ..., q). There exists a universal positive constant C_eq (one may take C_eq = 9) such that A_beta(p^eq(beta,q)) <= C_eq (beta / q)^(2 beta) for every integer beta >= 1 and every q in (0,1].",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "equal_spacing_benchmark",
+        "file": "Helpers/EqualSpacing.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "0a03731b76726c9431124f580917108ea6ccb556"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "prop:no-extrapolation-boundary",
+      "obj_id": "L-3",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "At the full-budget boundary q = 1, the equal-spacing schedule p^eq(beta,1) admits the endpoint rule w_0 = -1, w_beta = 1, and w_j = 0 for j = 1, ..., beta - 1; hence w belongs to W_beta(p^eq(beta,1)) and A_beta(p^eq(beta,1)) <= 4.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "no_extrapolation_boundary",
+        "file": "Helpers/NoExtrapolation.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "772c8f8446fe61104275a8c86dff767bd8cdc20b"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "thm:chebyshev-minimax",
+      "obj_id": "T-2",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix c > 1 and q_max in (0,1), and define the pointwise Chebyshev base rho(q)=(1+sqrt(1-q))^2. There exist positive constants C_-(q_max) and C_+(c,q_max) such that, for every beta>=1, every integer k >= c beta, and every q in (0,q_max], every schedule p in S_{k,q} satisfies A_beta(p) >= C_-(q_max) (rho(q)/q)^(2 beta), while the shifted Chebyshev-Lobatto schedule satisfies A_beta(p^Ch(k,q)) <= C_+(c,q_max) (rho(q)/q)^(2 beta). Hence M_{beta,k,q} has pointwise low-budget exponential base rho(q)/q; as q downarrow 0 this is 4/q, the intrinsic exponent is 2 beta, and the equal-spacing beta/q factor is not minimax in beta once the rollout uses more than beta+1 nodes.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "chebyshev_minimax",
+        "file": "T_chebyshev_minimax.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "e16d2be33800649d773630f36286db8f26b5290c"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "oeq:exact-nested-minimax",
+      "obj_id": "P-7",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Under ass:low-budget-cap, with beta>=1, k=ceil(c beta), q in (0,q_max], and the admissible Chebyshev schedule p^Ch(k,q) in S_{k,q} (lem:chebyshev-schedule-admissible), does the shifted Chebyshev-Lobatto schedule also solve the exact finite-population nested-rollout minimax problem R_exact(beta,k,q), where Gamma_P(p) is the true covariance matrix of the monotone Bernoulli rollout rather than the total-variation variance envelope? The Chebyshev schedule is rate-feasible for R_exact by thm:chebyshev-minimax (the Chebyshev-schedule amplification upper bound) together with lem:exact-risk-envelope-upper (the envelope-to-exact-risk bridge); exact optimality is open.",
+        "tex_anchor": "",
+        "frozen": true,
+        "frozen_body": "Fix a finite assignment space \\(\\Omega\\) with rollout randomization \\(\\pi\\), population size \\(n\\), and variance-envelope scale \\(\\sigma_0^2\\). Fix a budget cap \\(q_{\\max}\\) with \\(0<q_{\\max}<1\\), let \\(c>1\\), let \\(\\beta\\ge 1\\), set \\(k=\\lceil c\\beta\\rceil\\), and take \\(q\\) with \\(0<q\\le q_{\\max}\\). Under these hypotheses the shifted Chebyshev-Lobatto schedule \\(p^{\\mathrm{Ch}}(k,q)\\) is admissible, so that\n\\[\np^{\\mathrm{Ch}}(k,q)\\in S_{k,q}.\n\\]\nFor the exact finite-population nested-rollout minimax problem\n\\[\nR_{\\mathrm{exact}}(\\beta,k,q)\n=\n\\inf_{p\\in S_{k,q}}\n\\inf_{w\\in W_\\beta(p)}\n\\sup_{P\\in\\mathcal P_\\beta}\nw^\\prime \\Gamma_P(p) w,\n\\]\nwhere \\(\\Gamma_P(p)\\) is the true design covariance matrix of the monotone Bernoulli rollout and \\(\\mathcal P_\\beta\\) includes the static-rollout, \\(\\beta\\)-polynomial, variance-envelope, and mean-curve-pinning restrictions, the open question is whether the fixed Chebyshev-Lobatto exact risk attains the nested infimum:\n\\[\n\\inf_{w\\in W_\\beta(p^{\\mathrm{Ch}}(k,q))}\n\\sup_{P\\in\\mathcal P_\\beta}\nw^\\prime \\Gamma_P(p^{\\mathrm{Ch}}(k,q)) w\n=\nR_{\\mathrm{exact}}(\\beta,k,q).\n\\]\nThis statement is only the exact-optimality question for \\(p^{\\mathrm{Ch}}(k,q)\\); it does not assert the separate rate-feasibility bound.",
+        "frozen_title": "Exact nested optimality"
+      },
+      "lean": {
+        "decl_name": "exactNestedMinimaxQuestion",
+        "file": "Helpers/ExactRisk.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "1578cf59681af7cac4acd705089331ab5c1ddc9b"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:amplification-dual-norm",
+      "obj_id": "L-4",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For a schedule p with distinct nodes and with W_beta(p) nonempty, inf_{w in W_beta(p)} sum_j |w_j| equals sup{|r(1)-r(0)| : r is a real polynomial of degree at most beta and max_j |r(p_j)|<=1}. Consequently A_beta(p) is the square of this dual norm.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "amplification_dual_norm",
+        "file": "Helpers/Amplification.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "5cdfd199890f3d14c70895323a8cb2dfdce4a6a2"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:chebyshev-exterior-extremal",
+      "obj_id": "L-5",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Assume beta>=1. For every real polynomial P of degree at most beta with sup_{x in [-1,1]} |P(x)|<=1 and every x_0>1, one has |P(x_0)| <= T_beta(x_0).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "chebyshev_exterior_extremal",
+        "file": "Helpers/ChebyshevExtremal.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "47048f7a5b15d35c9a2b08048533832d7f0de9bb"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:ehlich-zeller-chebyshev-lobatto-mesh",
+      "kind": "gate",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "If R is a real polynomial of degree at most beta and 0 <= beta < k, then sup_{x in [-1,1]} |R(x)| <= sec(pi beta/(2k)) max_{0<=j<=k} |R(-cos(pi j/k))|.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "EhlichZellerMesh",
+        "file": "Helpers/EhlichZeller.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "gate": {
+        "gate_class": "gated"
+      }
+    },
+    {
+      "id": "lem:oversampled-chebyshev-lobatto-norming",
+      "obj_id": "L-6",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For each c>1 there is a finite constant K(c) such that, for every beta>=1, every integer k>=c beta, and every real polynomial R of degree at most beta, sup_{x in [-1,1]} |R(x)| <= K(c) max_{0<=j<=k} |R(-cos(pi j/k))|.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "oversampled_chebyshev_lobatto_norming",
+        "file": "Helpers/EhlichZeller.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "ebfb364b42ec4463c92e33a898aac621cb12bcf0"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:continuous-chebyshev-endpoint-bound",
+      "obj_id": "L-7",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Let q in (0,1), x_q=2/q-1, lambda(q)=x_q+sqrt(x_q^2-1), and rho(q)=q lambda(q)=(1+sqrt(1-q))^2. For every degree-beta polynomial R with sup_{x in [-1,1]}|R(x)|<=1, |R(x_q)-R(-1)| <= C(q_max) lambda(q)^beta uniformly over q in (0,q_max]; and the Chebyshev polynomial T_beta gives the matching lower order T_beta(x_q)-1 >= c(q_max) lambda(q)^beta.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "continuous_chebyshev_endpoint_bound",
+        "file": "Helpers/ChebyshevEndpoint.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "f4c6c56bc28a5895460fcdb802fe6158e5abb36d"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:chebyshev-schedule-admissible",
+      "obj_id": "L-8",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For every integer k>=1 and q in (0,1], the shifted Chebyshev-Lobatto schedule p^Ch(k,q) belongs to S_{k,q}.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "chebyshev_schedule_admissible",
+        "file": "Helpers/ChebyshevSchedule.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "cb9961c317455fe655f26a9e2e40de5d04c5fc94"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:unbiased-weight-set-nonempty",
+      "obj_id": "L-9",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Assume beta>=1 and k>=beta. For every schedule p in S_{k,q}, the unbiased linear weight set W_beta(p) is nonempty.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "unbiased_weight_set_nonempty",
+        "file": "Helpers/Amplification.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "2ac6d964ffae17707545c582e5ad93e58279b075"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:variance-envelope-sharpness",
+      "obj_id": "L-10",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "If X_0,...,X_k are square-integrable rollout-round statistics with Var_pi(X_j)<=sigma_0^2/n for every j, then Var_pi(sum_j w_j X_j) <= sigma_0^2 n^(-1) (sum_j |w_j|)^2 for every real w. Moreover this bound is sharp over covariance matrices whose diagonal entries are bounded by sigma_0^2/n.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "variance_envelope_sharpness",
+        "file": "Helpers/Variance.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "4f4cb02d525c36c658a79e8ae6510794dbd614e4"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:exact-risk-envelope-upper",
+      "obj_id": "L-11",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Assume beta>=1 and k>=beta. For every q in (0,1] and every p in S_{k,q}, inf_{w in W_beta(p)} sup_{P in P_beta} w' Gamma_P(p) w <= (sigma_0^2/n) A_beta(p). Consequently R_exact(beta,k,q) <= (sigma_0^2/n) M_{beta,k,q}.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "exact_risk_envelope_upper",
+        "file": "Helpers/Variance.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "52ae97c5ffa0d7739d1f700a8fc74981421a9f7a"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:exact-chebyshev-rate-feasible",
+      "obj_id": "L-12",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix c>1, beta>=1, k=ceil(c beta), q in (0,q_max], and rho(q)=(1+sqrt(1-q))^2. The admissible shifted Chebyshev-Lobatto schedule satisfies inf_{w in W_beta(p^Ch(k,q))} sup_{P in P_beta} w' Gamma_P(p^Ch(k,q)) w <= (sigma_0^2/n) C_+(c,q_max) (rho(q)/q)^(2 beta). Consequently R_exact(beta,k,q) <= (sigma_0^2/n) C_+(c,q_max) (rho(q)/q)^(2 beta).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "exact_chebyshev_rate_feasible",
+        "file": "Helpers/ExactRisk.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "5fd33f5f3685bcb1aedd5ec96f9eff0fe8292319"
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "ass:sigma0sq-nonnegative-exact-risk-envelope-upper",
+      "kind": "assumption",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "0 ≤ sigma0sq",
+        "tex_anchor": "doc/formalization/research/exp_rollout_chebyshev_minimax/discovery/core.json:645-651",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": null,
+        "file": null
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      },
+      "assumption": {
+        "tier": 2,
+        "classification": "regularity-bookkeeping"
+      }
+    },
+    {
+      "id": "ass:sigma0sq-nonnegative-exact-chebyshev-rate-feasible",
+      "kind": "assumption",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "0 ≤ sigma0sq",
+        "tex_anchor": "doc/formalization/research/exp_rollout_chebyshev_minimax/discovery/core.json:681",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": null,
+        "file": null
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      },
+      "assumption": {
+        "tier": 2,
+        "classification": "regularity-bookkeeping"
+      }
+    },
+    {
+      "id": "lagrange_endpoint_weights_unbiased",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma lagrange_endpoint_weights_unbiased)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "lagrange_endpoint_weights_unbiased",
+        "file": "Helpers/Amplification.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "sInf_le_mul_sInf_of_forall_exists_le",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma sInf_le_mul_sInf_of_forall_exists_le)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "sInf_le_mul_sInf_of_forall_exists_le",
+        "file": "Helpers/Variance.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "neg_one_pow_mul_le_of_abs_le_one",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma neg_one_pow_mul_le_of_abs_le_one)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "neg_one_pow_mul_le_of_abs_le_one",
+        "file": "Helpers/ChebyshevExtremal.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "chebyshev_exterior_lagrange_coeff_nonneg",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma chebyshev_exterior_lagrange_coeff_nonneg)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "chebyshev_exterior_lagrange_coeff_nonneg",
+        "file": "Helpers/ChebyshevExtremal.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "chebyshev_eval_eq_lambda_average",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma chebyshev_eval_eq_lambda_average)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "chebyshev_eval_eq_lambda_average",
+        "file": "Helpers/ChebyshevEndpoint.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "endpoint_lambda_mono",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma endpoint_lambda_mono)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "endpoint_lambda_mono",
+        "file": "Helpers/ChebyshevEndpoint.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "chebyshev_lambda_average_add_one_le",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma chebyshev_lambda_average_add_one_le)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "chebyshev_lambda_average_add_one_le",
+        "file": "Helpers/ChebyshevEndpoint.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "chebyshev_lambda_average_sub_one_ge",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma chebyshev_lambda_average_sub_one_ge)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "chebyshev_lambda_average_sub_one_ge",
+        "file": "Helpers/ChebyshevEndpoint.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "equalSchedule_injective",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma equalSchedule_injective)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "equalSchedule_injective",
+        "file": "Helpers/EqualSpacing.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "equalSchedule_lagrange_basis_eval_one_le",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma equalSchedule_lagrange_basis_eval_one_le)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "equalSchedule_lagrange_basis_eval_one_le",
+        "file": "Helpers/EqualSpacing.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "prod_Iic_erase_abs_sub_eq_factorial",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma prod_Iic_erase_abs_sub_eq_factorial)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "prod_Iic_erase_abs_sub_eq_factorial",
+        "file": "Helpers/EqualSpacingArithmetic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "two_pow_le_two_mul_factorial",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma two_pow_le_two_mul_factorial)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "two_pow_le_two_mul_factorial",
+        "file": "Helpers/EqualSpacingArithmetic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "factorial_reciprocal_sum_le_two",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma factorial_reciprocal_sum_le_two)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "factorial_reciprocal_sum_le_two",
+        "file": "Helpers/EqualSpacingArithmetic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "ehlichZellerMesh",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma ehlichZellerMesh)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "ehlichZellerMesh",
+        "file": "Helpers/EhlichZeller.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "chebyshev_lambda_eq_rho_div_q",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma chebyshev_lambda_eq_rho_div_q)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "chebyshev_lambda_eq_rho_div_q",
+        "file": "Helpers/MinimaxAssembly.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "amplification_nonneg",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma amplification_nonneg)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "amplification_nonneg",
+        "file": "Helpers/MinimaxAssembly.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "minimaxAmplification_le_of_budgeted",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma minimaxAmplification_le_of_budgeted)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "minimaxAmplification_le_of_budgeted",
+        "file": "Helpers/MinimaxAssembly.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "minimaxAmplification_lower_of_forall",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma minimaxAmplification_lower_of_forall)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "minimaxAmplification_lower_of_forall",
+        "file": "Helpers/MinimaxAssembly.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "budgetedSchedule_le_endpoint",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma budgetedSchedule_le_endpoint)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "budgetedSchedule_le_endpoint",
+        "file": "Helpers/MinimaxAssembly.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "affine_mem_Icc_neg_one_one",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma affine_mem_Icc_neg_one_one)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "affine_mem_Icc_neg_one_one",
+        "file": "Helpers/MinimaxAssembly.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "chebyshev_affine_natDegree_le",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma chebyshev_affine_natDegree_le)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "chebyshev_affine_natDegree_le",
+        "file": "Helpers/MinimaxAssembly.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "chebyshev_amplification_lower",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma chebyshev_amplification_lower)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "chebyshev_amplification_lower",
+        "file": "Helpers/MinimaxAssembly.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lobatto_affine_comp_natDegree_le",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma lobatto_affine_comp_natDegree_le)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "lobatto_affine_comp_natDegree_le",
+        "file": "Helpers/MinimaxUpper.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "chebyshev_amplification_upper",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma chebyshev_amplification_upper)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "chebyshev_amplification_upper",
+        "file": "Helpers/MinimaxUpper.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "one_le_rhoCh",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma one_le_rhoCh)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "one_le_rhoCh",
+        "file": "T_chebyshev_minimax.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "kind": "proof-uses",
+      "from": "prop:rollout-polynomial-identity",
+      "to": "ass:static-rollout-consistency",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:rollout-polynomial-identity",
+      "to": "ass:beta-order-polynomial",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:tv-envelope-design",
+      "to": "prop:rollout-polynomial-identity",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:tv-envelope-design",
+      "to": "ass:round-mean-variance-envelope",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:tv-envelope-design",
+      "to": "def:unbiased-weight-set",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:tv-envelope-design",
+      "to": "def:amplification-criterion",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:tv-envelope-design",
+      "to": "def:budgeted-schedule-class",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:tv-envelope-design",
+      "to": "def:rollout-law-class",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:tv-envelope-design",
+      "to": "ass:static-rollout-consistency",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:tv-envelope-design",
+      "to": "ass:beta-order-polynomial",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:tv-envelope-design",
+      "to": "lem:variance-envelope-sharpness",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:tv-envelope-design",
+      "to": "lem:unbiased-weight-set-nonempty",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:equal-spacing-benchmark",
+      "to": "def:amplification-criterion",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:equal-spacing-benchmark",
+      "to": "def:unbiased-weight-set",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:no-extrapolation-boundary",
+      "to": "def:unbiased-weight-set",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:no-extrapolation-boundary",
+      "to": "def:amplification-criterion",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:chebyshev-minimax",
+      "to": "ass:low-budget-cap",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:chebyshev-minimax",
+      "to": "prop:equal-spacing-benchmark",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:chebyshev-minimax",
+      "to": "def:chebyshev-schedule",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:chebyshev-minimax",
+      "to": "def:amplification-criterion",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:chebyshev-minimax",
+      "to": "def:budgeted-schedule-class",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:chebyshev-minimax",
+      "to": "def:unbiased-weight-set",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:chebyshev-minimax",
+      "to": "lem:unbiased-weight-set-nonempty",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:chebyshev-minimax",
+      "to": "lem:amplification-dual-norm",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:chebyshev-minimax",
+      "to": "lem:continuous-chebyshev-endpoint-bound",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:chebyshev-minimax",
+      "to": "lem:chebyshev-schedule-admissible",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:chebyshev-minimax",
+      "to": "lem:oversampled-chebyshev-lobatto-norming",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:chebyshev-minimax",
+      "to": "thm:tv-envelope-design",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "oeq:exact-nested-minimax",
+      "to": "ass:low-budget-cap",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "oeq:exact-nested-minimax",
+      "to": "def:exact-nested-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "oeq:exact-nested-minimax",
+      "to": "lem:chebyshev-schedule-admissible",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "oeq:exact-nested-minimax",
+      "to": "lem:exact-risk-envelope-upper",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "oeq:exact-nested-minimax",
+      "to": "thm:chebyshev-minimax",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "oeq:exact-nested-minimax",
+      "to": "lem:exact-chebyshev-rate-feasible",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:amplification-dual-norm",
+      "to": "def:unbiased-weight-set",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:amplification-dual-norm",
+      "to": "def:amplification-criterion",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:amplification-dual-norm",
+      "to": "def:budgeted-schedule-class",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:oversampled-chebyshev-lobatto-norming",
+      "to": "lem:ehlich-zeller-chebyshev-lobatto-mesh",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:continuous-chebyshev-endpoint-bound",
+      "to": "lem:chebyshev-exterior-extremal",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:chebyshev-schedule-admissible",
+      "to": "def:chebyshev-schedule",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:chebyshev-schedule-admissible",
+      "to": "def:budgeted-schedule-class",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:unbiased-weight-set-nonempty",
+      "to": "def:unbiased-weight-set",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:unbiased-weight-set-nonempty",
+      "to": "def:budgeted-schedule-class",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:variance-envelope-sharpness",
+      "to": "ass:round-mean-variance-envelope",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:exact-risk-envelope-upper",
+      "to": "ass:round-mean-variance-envelope",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:exact-risk-envelope-upper",
+      "to": "def:rollout-law-class",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:exact-risk-envelope-upper",
+      "to": "def:exact-nested-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:exact-risk-envelope-upper",
+      "to": "def:amplification-criterion",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:exact-risk-envelope-upper",
+      "to": "def:budgeted-schedule-class",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:exact-risk-envelope-upper",
+      "to": "def:unbiased-weight-set",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:exact-risk-envelope-upper",
+      "to": "lem:unbiased-weight-set-nonempty",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:exact-chebyshev-rate-feasible",
+      "to": "ass:low-budget-cap",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:exact-chebyshev-rate-feasible",
+      "to": "def:exact-nested-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:exact-chebyshev-rate-feasible",
+      "to": "lem:chebyshev-schedule-admissible",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:exact-chebyshev-rate-feasible",
+      "to": "lem:exact-risk-envelope-upper",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:exact-chebyshev-rate-feasible",
+      "to": "thm:chebyshev-minimax",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:tv-envelope-design",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:tv-envelope-design",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:chebyshev-minimax",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:chebyshev-minimax",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:exact-risk-envelope-upper",
+      "to": "ass:sigma0sq-nonnegative-exact-risk-envelope-upper",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:exact-chebyshev-rate-feasible",
+      "to": "ass:sigma0sq-nonnegative-exact-chebyshev-rate-feasible",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:rollout-law-class",
+      "to": "ass:static-rollout-consistency",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:rollout-law-class",
+      "to": "ass:beta-order-polynomial",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:rollout-law-class",
+      "to": "ass:round-mean-variance-envelope",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:rollout-polynomial-identity",
+      "to": "ass:static-rollout-consistency",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:rollout-polynomial-identity",
+      "to": "ass:beta-order-polynomial",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:amplification-dual-norm",
+      "to": "def:unbiased-weight-set",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:amplification-dual-norm",
+      "to": "def:amplification-criterion",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lagrange_endpoint_weights_unbiased",
+      "to": "def:unbiased-weight-set",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:unbiased-weight-set-nonempty",
+      "to": "def:budgeted-schedule-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:unbiased-weight-set-nonempty",
+      "to": "def:unbiased-weight-set",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:chebyshev-schedule-admissible",
+      "to": "def:budgeted-schedule-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:chebyshev-schedule-admissible",
+      "to": "def:chebyshev-schedule",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "ehlichZellerMesh",
+      "to": "lem:ehlich-zeller-chebyshev-lobatto-mesh",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:oversampled-chebyshev-lobatto-norming",
+      "to": "lem:ehlich-zeller-chebyshev-lobatto-mesh",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:equal-spacing-benchmark",
+      "to": "def:amplification-criterion",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:exact-chebyshev-rate-feasible",
+      "to": "ass:low-budget-cap",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:exact-chebyshev-rate-feasible",
+      "to": "def:unbiased-weight-set",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:exact-chebyshev-rate-feasible",
+      "to": "def:chebyshev-schedule",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:exact-chebyshev-rate-feasible",
+      "to": "def:rollout-law-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "amplification_nonneg",
+      "to": "def:amplification-criterion",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "minimaxAmplification_le_of_budgeted",
+      "to": "def:budgeted-schedule-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "minimaxAmplification_le_of_budgeted",
+      "to": "def:amplification-criterion",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "minimaxAmplification_lower_of_forall",
+      "to": "def:budgeted-schedule-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "minimaxAmplification_lower_of_forall",
+      "to": "def:amplification-criterion",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "budgetedSchedule_le_endpoint",
+      "to": "def:budgeted-schedule-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "chebyshev_amplification_lower",
+      "to": "def:budgeted-schedule-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "chebyshev_amplification_lower",
+      "to": "def:amplification-criterion",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "chebyshev_amplification_upper",
+      "to": "def:amplification-criterion",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "chebyshev_amplification_upper",
+      "to": "def:chebyshev-schedule",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:no-extrapolation-boundary",
+      "to": "def:unbiased-weight-set",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:no-extrapolation-boundary",
+      "to": "def:amplification-criterion",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:variance-envelope-sharpness",
+      "to": "ass:round-mean-variance-envelope",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:exact-risk-envelope-upper",
+      "to": "def:budgeted-schedule-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:exact-risk-envelope-upper",
+      "to": "def:unbiased-weight-set",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:exact-risk-envelope-upper",
+      "to": "def:rollout-law-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:exact-risk-envelope-upper",
+      "to": "def:amplification-criterion",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:exact-risk-envelope-upper",
+      "to": "def:exact-nested-risk",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:chebyshev-minimax",
+      "to": "ass:low-budget-cap",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:chebyshev-minimax",
+      "to": "def:budgeted-schedule-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:chebyshev-minimax",
+      "to": "def:amplification-criterion",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:chebyshev-minimax",
+      "to": "def:chebyshev-schedule",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:tv-envelope-design",
+      "to": "def:budgeted-schedule-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:tv-envelope-design",
+      "to": "def:rollout-law-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:tv-envelope-design",
+      "to": "def:unbiased-weight-set",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:tv-envelope-design",
+      "to": "def:amplification-criterion",
+      "source": "extracted"
+    }
+  ]
+}

@@ -1,0 +1,368 @@
+---
+import {
+  loadBundles,
+  type Bundle,
+  type CrosswalkEntry,
+  type Snippet,
+} from "../../../lib/bundles.js";
+import { bundleRoots, SERIES_NAME, GITHUB_REPO } from "../../../lib/config.js";
+import {
+  loadLibrary,
+  libraryRoot,
+  linkifyStatement,
+  stripLeadingDoc,
+  firstSentence,
+  publicAxioms,
+  type LibDecl,
+  type Library,
+} from "../../../lib/library.js";
+import {
+  structureAndLinkify,
+  findProofStart,
+  type StructuredStatement,
+} from "../../../lib/leanStatement.js";
+import LeanStatement from "../../../components/LeanStatement.astro";
+import { renderDoc, nlOf, renderTexLine } from "../../../lib/docmd.js";
+import "../../../styles/library.css";
+
+export async function getStaticPaths() {
+  const bundles = await loadBundles(bundleRoots());
+  return bundles
+    .filter((b) => b.paperLib)
+    .map((b) => ({ params: { id: b.id }, props: { bundle: b } }));
+}
+
+const { bundle } = Astro.props as { bundle: Bundle };
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const paperEntries = (bundle.paperLib!.entries as LibDecl[]) ?? [];
+const paperModules = bundle.paperLib!.modules ?? {};
+
+// Merged library: Causalean entries (cross-links into /library) + paper entries
+// (self-anchors on this page). Causalean review sidecars apply only to Causalean.
+const causalean = loadLibrary(libraryRoot());
+const merged: Library = {
+  commit: causalean.commit,
+  toolchain: causalean.toolchain,
+  entries: [...paperEntries, ...causalean.entries],
+  sidecars: causalean.sidecars,
+  modules: { ...causalean.modules, ...paperModules },
+};
+const selfNames = new Set(paperEntries.map((e) => e.name));
+
+const modPrefix = bundle.leanSubdir.replace(/\//g, ".");
+const changedSinceAudit = bundle.paperLib!.commit !== bundle.commit;
+
+const declsOf = (mod: string) =>
+  paperEntries.filter((d) => d.module === mod).sort((a, b) => a.line - b.line);
+const srcLink = (d: LibDecl) =>
+  GITHUB_REPO
+    ? `https://github.com/${GITHUB_REPO}/blob/${bundle.paperLib!.commit}/CausalSmith/${d.file}#L${d.line}`
+    : null;
+
+// Crosswalk matching: paper statements ↔ Lean decls (crosswalk uses short decl
+// names, the index fully-qualified ones — match by suffix). A matched decl gets
+// a "in the paper" badge and, lacking a docstring, the paper title as its NL.
+// Crosswalk decls ABSENT from the index (`private` lemmas inside the theorem
+// files, invisible to the extractor) are rendered from the bundle's audited
+// snippets so every paper-cited statement appears on this page.
+const cwByName = new Map<string, CrosswalkEntry>();
+const matchedObj = new Set<string>();
+for (const e of bundle.entries) {
+  if (!e.lean) continue;
+  const hit = paperEntries.find(
+    (d) => d.name === e.lean!.decl || d.name.endsWith(`.${e.lean!.decl}`),
+  );
+  if (hit) {
+    cwByName.set(hit.name, e);
+    matchedObj.add(e.obj_id);
+  }
+}
+const phantomsOf = (mod: string): { e: CrosswalkEntry; snip: Snippet }[] =>
+  bundle.entries
+    .filter((x) => x.lean && !matchedObj.has(x.obj_id))
+    .filter(
+      (x) => `${modPrefix}.${x.lean!.file.replace(/\.lean$/, "").replace(/\//g, ".")}` === mod,
+    )
+    .map((x) => ({ e: x, snip: bundle.snippets[x.obj_id] }))
+    .filter((p) => p.snip && !p.snip.components?.length)
+    .sort((a, b) => a.snip.line - b.snip.line);
+const paperHref = (e: CrosswalkEntry) => `${base}/papers/${bundle.id}/#${e.obj_id}`;
+// Source keyword (lemma vs theorem …) as written in the file; the crosswalk's
+// decl_kind is kernel-normalized.
+const snippetKind = (snip: Snippet, fallback: string) =>
+  /(?:^|\n)\s*(?:@\[[^\]]*\]\s*)*(?:private\s+|protected\s+|noncomputable\s+)*(theorem|lemma|def|abbrev|structure|class|inductive|instance)\b/.exec(
+    cleanSnippet(snip.statement),
+  )?.[1] ?? fallback;
+// The snippet extractor's statement cut can keep a dangling docstring tail
+// ("… -/") ahead of the decl keyword; strip it before display.
+const cleanSnippet = (s: string) => {
+  const t = stripLeadingDoc(s.trimStart());
+  const i = t.indexOf("-/");
+  if (!t.startsWith("/--") && i >= 0 && !t.slice(0, i).includes("/-")) {
+    return t.slice(i + 2).trimStart();
+  }
+  return t;
+};
+
+// A bare `.decl-stmt` sets no `white-space`, so it inherits `normal` and the
+// browser collapses every newline — an 89-line `def` renders as one run-on line.
+// The `pre`/`pre-wrap` rules live on these modifiers, so pick one per block
+// exactly as the library's ModuleNode does: short statements wrap into the card,
+// multi-line Lean keeps its indentation and scrolls.
+const stmtClass = (text: string) =>
+  `decl-stmt ${text.split("\n").length < 5 ? "decl-stmt-wrap" : "decl-stmt-scrollable"}`;
+
+// Structured statements — the same one-row-per-binder layout the Causalean
+// library pages use (see ModuleNode / LeanStatement): a theorem separates its
+// hypotheses from its conclusion, a structure/class its parameters from its
+// fields. `structureAndLinkify` returns null whenever the parser isn't
+// confident it understood the signature, and the flat block renders instead.
+// `selfNames` keeps a paper-local identifier anchored on this page.
+const structurable = (kind: string) =>
+  kind === "theorem" || kind === "lemma" || kind === "structure" || kind === "class";
+const sectionLabel = (kind: string) =>
+  kind === "theorem" || kind === "lemma" ? "hypotheses" : "fields";
+// A structure/class's source is already scoped to the declaration; a theorem's
+// carries its proof, which the signature view drops.
+const signatureOf = (source: string, kind: string) => {
+  if (kind !== "theorem" && kind !== "lemma") return source;
+  const proofStart = findProofStart(source);
+  return proofStart < 0 ? source : source.slice(0, proofStart);
+};
+const declSignature = (d: LibDecl): string | null =>
+  d.source ? signatureOf(stripLeadingDoc(d.source), d.kind) : null;
+const structuredOf = (text: string | null, kind: string): StructuredStatement | null =>
+  text && structurable(kind)
+    ? structureAndLinkify(text, merged, base, kind, selfNames)
+    : null;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Formalization · {bundle.meta.title} · {SERIES_NAME}</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css"
+    />
+  </head>
+  <body>
+    <article class="library">
+      <nav class="site-nav">
+        <span class="site-nav-kicker">{SERIES_NAME}</span>
+        <a href={`${base}/papers/${bundle.id}/`}>← paper</a>
+        <a href={`${base}/library/`}>Causalean Library</a>
+        <span class="site-nav-current">Formalization</span>
+        <span class="site-nav-commit">
+          indexed at <code>{bundle.paperLib!.commit.slice(0, 7)}</code>
+        </span>
+      </nav>
+      <h1>Formalization: {bundle.meta.title}</h1>
+      <p class="lib-intro">
+        The complete Lean development behind this paper — every definition, lemma, and
+        theorem of its module, including helpers the paper text never cites. Identifiers
+        link within this page, into the <a href={`${base}/library/`}>Causalean library</a>,
+        or out to the official Mathlib docs.
+        {changedSinceAudit && (
+          <strong>
+            {" "}Note: this index was generated at a different commit than the paper's
+            audited pin ({bundle.commit.slice(0, 7)}) — statements may have moved since
+            the audit.
+          </strong>
+        )}
+      </p>
+      <div class="lib-tools">
+        <button type="button" data-foldall="open">Expand all</button>
+        <button type="button" data-foldall="close">Collapse all</button>
+      </div>
+      {
+        [...new Set(paperEntries.map((d) => d.module))].sort().map((mod) => {
+          const decls = declsOf(mod);
+          const modDoc = paperModules[mod] ?? null;
+          return (
+            <details class="module-block depth-0">
+              <summary>
+                <span class="module-name">{mod.replace(`${modPrefix}.`, "")}</span>
+                <span class="module-counts">{decls.length} declarations</span>
+                {firstSentence(modDoc) && <span class="module-brief">{firstSentence(modDoc)}</span>}
+              </summary>
+              {modDoc && <div class="module-doc" set:html={renderDoc(modDoc)} />}
+              {decls.map((d) => {
+                const nl = nlOf(d.doc);
+                const cw = cwByName.get(d.name);
+                const realAxioms = publicAxioms(d.axioms);
+                const sig = declSignature(d);
+                const structured = structuredOf(sig, d.kind);
+                return (
+                  <div class={`decl-card kind-${d.kind}`} id={d.name}>
+                    <div class="decl-head">
+                      <span class="decl-kind">{d.kind}</span>
+                      <span class="decl-name">{d.name.split(".").pop()}</span>
+                      {d.usesSorry && <span class="badge badge-sorry">sorry</span>}
+                      {realAxioms.length > 0 && <span class="badge badge-axiom">axioms</span>}
+                      {cw && (
+                        <a class="badge badge-paper" href={paperHref(cw)}>
+                          {cw.paper_label} in the paper ↗
+                        </a>
+                      )}
+                    </div>
+                    {nl ? (
+                      <div class="decl-nl" set:html={renderDoc(nl)} />
+                    ) : cw?.title ? (
+                      <div class="decl-nl" set:html={renderTexLine(cw.title)} />
+                    ) : (
+                      <div class="decl-nl nl-missing">No natural-language translation yet.</div>
+                    )}
+                    {d.kind === "theorem" ? (
+                      <>
+                        <details>
+                          <summary>Formal statement</summary>
+                          {structured ? (
+                            <LeanStatement
+                              structured={structured}
+                              copyText={sig ?? d.statement}
+                              sectionLabel={sectionLabel(d.kind)}
+                            />
+                          ) : (
+                            <div
+                              class={stmtClass(sig ?? d.statement)}
+                              set:html={linkifyStatement(d.statement, merged, base, selfNames)}
+                            />
+                          )}
+                        </details>
+                        {d.source && (
+                          <details>
+                            <summary>Proof (Lean source)</summary>
+                            <div
+                              class={stmtClass(stripLeadingDoc(d.source))}
+                              set:html={linkifyStatement(stripLeadingDoc(d.source), merged, base, selfNames)}
+                            />
+                          </details>
+                        )}
+                      </>
+                    ) : (
+                      <details>
+                        <summary>{d.source ? "Definition (Lean source)" : "Formal statement"}</summary>
+                        {structured ? (
+                          <LeanStatement
+                            structured={structured}
+                            copyText={sig ?? d.statement}
+                            sectionLabel={sectionLabel(d.kind)}
+                          />
+                        ) : (
+                          <div
+                            class={stmtClass(d.source ? stripLeadingDoc(d.source) : d.statement)}
+                            set:html={linkifyStatement(
+                              d.source ? stripLeadingDoc(d.source) : d.statement,
+                              merged,
+                              base,
+                              selfNames,
+                            )}
+                          />
+                        )}
+                      </details>
+                    )}
+                    <div class="decl-meta">
+                      <code>{d.name}</code> ·{" "}
+                      {srcLink(d) ? (
+                        <a href={srcLink(d)}>
+                          {d.file}:{d.line}
+                        </a>
+                      ) : (
+                        <span>
+                          {d.file}:{d.line}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {phantomsOf(mod).map(({ e, snip }) => {
+                // The snippet keeps the keyword the author wrote (`lemma`), where
+                // the crosswalk's decl_kind is kernel-normalized (`theorem`) —
+                // structure from the source keyword so `lemma` still structures.
+                const kind = snippetKind(snip, e.lean!.decl_kind);
+                const sig = signatureOf(cleanSnippet(snip.statement), kind);
+                const structured = structuredOf(sig, kind);
+                return (
+                <div class={`decl-card kind-${e.lean!.decl_kind}`} id={e.lean!.decl}>
+                  <div class="decl-head">
+                    <span class="decl-kind">private {kind}</span>
+                    <span class="decl-name">{e.lean!.decl}</span>
+                    {!snip.sorry_free && <span class="badge badge-sorry">sorry</span>}
+                    <a class="badge badge-paper" href={paperHref(e)}>
+                      {e.paper_label} in the paper ↗
+                    </a>
+                  </div>
+                  {e.title ? (
+                    <div class="decl-nl" set:html={renderTexLine(e.title)} />
+                  ) : (
+                    <div class="decl-nl nl-missing">No natural-language translation yet.</div>
+                  )}
+                  <details>
+                    <summary>Formal statement</summary>
+                    {structured ? (
+                      <LeanStatement
+                        structured={structured}
+                        copyText={sig}
+                        sectionLabel={sectionLabel(kind)}
+                      />
+                    ) : (
+                      <div
+                        class={stmtClass(cleanSnippet(snip.statement))}
+                        set:html={linkifyStatement(cleanSnippet(snip.statement), merged, base, selfNames)}
+                      />
+                    )}
+                  </details>
+                  <div class="decl-meta">
+                    <code>{e.lean!.decl}</code> ·{" "}
+                    {GITHUB_REPO ? (
+                      <a
+                        href={`https://github.com/${GITHUB_REPO}/blob/${bundle.commit}/${bundle.leanSubdir}/${e.lean!.file}#L${e.lean!.line}`}
+                      >
+                        {e.lean!.file}:{e.lean!.line}
+                      </a>
+                    ) : (
+                      <span>
+                        {e.lean!.file}:{e.lean!.line}
+                      </span>
+                    )}{" "}
+                    · private to its file (shown from the paper's audited snippet)
+                  </div>
+                </div>
+                );
+              })}
+            </details>
+          );
+        })
+      }
+    </article>
+
+    <script>
+      function openHashTarget() {
+        const id = decodeURIComponent(location.hash.slice(1));
+        if (!id) return;
+        const el = document.getElementById(id);
+        if (!el) return;
+        let p: Element | null = el;
+        while (p) {
+          if (p instanceof HTMLDetailsElement) p.open = true;
+          p = p.parentElement;
+        }
+        el.scrollIntoView({ block: "center" });
+      }
+      window.addEventListener("hashchange", openHashTarget);
+      openHashTarget();
+
+      // Expand / collapse all module blocks (same control as the library pages).
+      const folds = [...document.querySelectorAll("details.module-block")];
+      for (const btn of document.querySelectorAll<HTMLButtonElement>("[data-foldall]")) {
+        btn.addEventListener("click", () => {
+          const wantOpen = btn.dataset.foldall === "open";
+          folds.forEach((d) => ((d as HTMLDetailsElement).open = wantOpen));
+        });
+      }
+    </script>
+  </body>
+</html>

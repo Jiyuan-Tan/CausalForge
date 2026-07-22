@@ -1,0 +1,606 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_contdid\_acrt\_lipschitz, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_core.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_contdid\_acrt\_lipschitz} / \texttt{v1}%
+  \\ \large\textit{Algebraic Lipschitz envelopes for continuous-treatment DiD causal responses}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Cluster: PartialID.  The locked tuple is
+\[
+  (\text{qid},\text{specialization},P,\theta,\text{identifying restrictions},
+  \text{bounding functional}).
+\]
+Here \(\text{qid}=\texttt{pid\_contdid\_acrt\_lipschitz}\) and
+\(\text{specialization}=\texttt{v1}\).  \(P\) is the observable law of a
+two-period continuous-treatment DiD array \(O=(Y_0,Y_1,D)\), with \(D\) taking
+values on a fixed ordered finite grid
+\(\mathcal D=\{d_0<d_1<\cdots<d_K\}\), where \(d_0=0\) denotes the untreated or
+baseline dose.  The latent causal array is
+\(\alpha_{j h}=\operatorname{ATT}(d_j\mid d_h)
+=\E[Y_1(d_j)-Y_1(d_0)\mid D=d_h]\).  The diagonal entries
+\(\alpha_{h h}\), the definitional baseline row \(\alpha_{0h}=0\), and the
+Callaway--Goodman-Bacon--Sant'Anna observed level-change contrasts
+\(\tau_h(P)=\E[Y_1-Y_0\mid D=d_h]-\E[Y_1-Y_0\mid D=d_0]\) are taken as the
+identified inputs under generalized parallel trends.  The target is the
+finite-grid average causal response on the
+treated at dose \(d_h\),
+\[
+  \theta_h=\operatorname{ACRT}(d_h)
+  =\sum_{j=0}^K q_{j h}\alpha_{j h},
+\]
+where \(q_{\cdot h}\) is a locked local finite-difference stencil satisfying
+\(\sum_jq_{j h}=0\) and \(\sum_jq_{j h}(d_j-d_h)=1\).  The identifying
+restrictions are consistency, no anticipation, generalized parallel trends for
+the diagonal treated-type parameters, bounded outcomes
+\(\alpha_{j h}\in[\underline y,\overline y]\), and either the row-wise
+structural Lipschitz restriction
+\(|\alpha_{j h}-\alpha_{j h'}|\le L|d_h-d_{h'}|\) for all \(j,h,h'\), or the
+row-wise isotonic restriction in the conditioning group \(d_h\).  The bounding
+functional is the algebraic finite-grid envelope
+\([L_h(L;P),U_h(L;P)]\), the image of the joint feasible nuisance polytope under
+the linear map \(\alpha\mapsto\theta_h\), together with the critical regularity
+constant \(L_h^\star(P)=\inf\{L:0\in[L_h(L;P),U_h(L;P)]\}\).
+Law sharpness of this algebraic envelope as a causal interval is the
+separate completion claim in Conjecture~\ref{conj:law-sharp}.
+
+\begin{abstract}
+Continuous-treatment DiD identifies treated-type dose effects under generalized
+parallel trends, but adjacent dose comparisons remain contaminated by
+cross-dose selection terms.  This proposal asks whether structural regularity
+of the full cross-dose array \(\operatorname{ATT}(l\mid d)\) can turn those
+unidentified terms into an algebraic finite-grid envelope for
+\(\operatorname{ACRT}(d)\).  The kernel claim is that the ACRT envelope is the
+support-function image of one joint Lipschitz or isotonic nuisance polytope,
+not a coordinatewise observed-contrast interval formed by bounding each
+selection-bias term separately.  The proposal also singles out the critical
+Lipschitz constant \(L_h^\star\) at which zero first enters the envelope and a
+small witness where joint constraints strictly sharpen marginal local bounds.
+A plug-in relaxed-LP estimator would make the algebraic envelope and the sign
+frontier usable in empirical continuous-dose DiD applications, with causal
+law sharpness left to a latent-completion conjecture.
+\end{abstract}
+
+\section{Introduction}
+Many DiD applications have treatments that vary in amount.  A dose may be a
+subsidy rate, an exposure intensity, a price change, or a policy dosage.  In
+these settings the treated-type level effect at a dose and the causal response
+to a local dose increase are different objects.  The question is how much can
+be learned about the causal response for the group actually exposed to dose
+\(d_h\) when comparisons across dose groups carry selection bias.
+
+\citet[Sections 3--4]{CallawayGoodmanBaconSantAnna2021} show that
+continuous-treatment DiD identifies treated-type parameters but that adjacent
+dose comparisons are contaminated because parallel trends does not rule out
+cross-dose selection bias.  \citet{ManskiPepper2000} show how monotone
+restrictions can shrink nonparametric treatment-effect bounds, and
+\citet{Voronin2025} shows how sharp partial-identification bounds can be
+represented and estimated as LP values.  The gap is that no published result
+turns the Callaway--Goodman-Bacon--Sant'Anna cross-dose ATT array into one
+joint Lipschitz or isotonic nuisance set and then maps that set into an
+algebraic ACRT envelope.  The kernel is a PartialID theorem: characterize
+\([L_h(L;P),U_h(L;P)]\), \(L_h^\star(P)\), and the nonseparability of the joint
+constraints, with law-level sharpness isolated as a completion question.
+
+The concrete consumer is continuous-dose DiD reporting in the Medicare payment
+application of \citet{CallawayGoodmanBaconSantAnna2021} and in no-stayer or
+switcher designs such as
+\citet{deChaisemartinDHaultfoeuillePasquierSowVazquezBare2022} and
+\citet{deChaisemartinDHaultfoeuilleVazquezBare2024}.  A reader would report
+the smallest cross-dose regularity needed to make the ACRT sign unidentified,
+rather than interpreting a TWFE sign or a local contrast as if cross-dose
+selection were absent.
+
+\begin{itemize}[leftmargin=*]
+  \item Theorem 1: the finite-grid Lipschitz or isotonic ACRT algebraic envelope is the support-function image of one joint cross-dose ATT polytope. Gap: \citet{CallawayGoodmanBaconSantAnna2021} leaves the cross-dose selection terms exposed; \citet{ManskiPepper2000} and \citet{Voronin2025} give shape and LP templates outside this ACRT array. Consumer: continuous-dose DiD applications in \citet{CallawayGoodmanBaconSantAnna2021}.
+  \item Conjecture 1: the algebraic LP envelope is law-sharp for finite bounded potential outcomes, with a latent completion for every feasible ATT array. Gap: prior in-repo \texttt{pid\_dose\_response\_shape} warned that pointwise continuous-dose bounds may fail to paste across doses. Consumer: causal interpretation of the ACRT envelope.
+  \item Conjecture 2: \(L_h^\star(P)\) is the value of an explicit parametric LP feasibility problem and is affine in \(b_{\mathrm{CGS}}(P)\) on fixed active bases. Gap: \citet{ChernozhukovLeeRosen2013} and \citet{Stoye2020} study optimized bounds and scalar interval inference, but not the inverse sign-sensitivity problem for continuous-treatment DiD. Consumer: sign-sensitivity reporting for ACRT.
+  \item Conjecture 3: relaxed plug-in LPs give valid endpoint and \(L_h^\star\) inference under active-face switching and empty sample feasibility. Gap: \citet{KaidoMolinariStoye2019}, \citet{BelloniBugniChernozhukov2018}, and \citet{Voronin2025} provide adjacent inference machinery, but not for the joint ACRT Lipschitz envelope. Consumer: empirical confidence sets for the algebraic ACRT envelope.
+\end{itemize}
+
+\section{Related work}
+\citet{CallawayGoodmanBaconSantAnna2021} is the anchor because it defines the
+continuous-treatment DiD treated-type and ACRT objects and shows why
+cross-dose comparisons require stronger assumptions than generalized parallel
+trends.  \citet{deChaisemartinDHaultfoeuille2020} is the binary and
+multi-period TWFE diagnostic benchmark; it motivates treating regression signs
+as objects to be audited rather than as causal response estimates.
+\citet{deChaisemartinDHaultfoeuillePasquierSowVazquezBare2022} gives an
+adjacent continuous-treatment DiD design based on switchers, which is a natural
+consumer for a shape-restricted ACRT algebraic envelope.
+\citet{deChaisemartinDHaultfoeuilleVazquezBare2024} studies continuous
+treatments without stayers, where replacing missing stayer information by
+structural cross-dose regularity is especially relevant.
+\citet{ManskiPepper2000} supplies the monotone instrumental-variable and
+monotone treatment-response precedent for credible shape restrictions that
+shrink nonparametric bounds.  \citet{ChernozhukovFernandezValHahnNewey2013}
+shows why nonseparability in panel response surfaces can make linear fixed
+effect estimands miss average causal effects, which is the panel-side warning
+behind the present cross-dose nuisance array.  \citet{Ishihara2017} is an
+adjacent nonseparable-model reference for using monotonicity and concavity to
+obtain partial identification when point identification fails.
+\citet{ChernozhukovLeeRosen2013} frames bounds as optimized infimum or
+supremum objects and explains the inferential problem caused by plug-in
+intersection-bound estimators.  \citet{KaidoMolinariStoye2019} gives
+calibrated projection confidence intervals for functions of partially
+identified parameters and is the closest projection-inference template for
+relaxed ACRT LPs.  \citet{BelloniBugniChernozhukov2018} supplies uniform
+many-moment-inequality subvector inference, relevant when the grid and
+regularity constraints are large.  \citet{Stoye2020} gives a never-empty
+confidence interval for scalar interval-identified parameters, directly
+relevant to empty or reversed sample analog ACRT intervals.  \citet{Voronin2025}
+is the closest LP-value estimation reference because it handles feasibility,
+solution multiplicity, and root-\(n\) pointwise LP-value estimation.
+\citet{ArmstrongKolesar2018} is adjacent because it develops optimal inference
+for linear functionals over smoothness and shape classes, the continuous
+analogue of the Lipschitz grid restriction used here.
+
+The in-repository predecessor \texttt{pid\_dose\_response\_iv\_v1} gives a
+finite LP envelope, rank-coupling sign certificate, and critical radius for a
+continuous-IV dose-response target; this proposal uses the LP and critical
+radius pattern but changes the estimand to CGS ACRT and changes the coupling
+object to cross-dose ATT regularity.  The accepted
+\texttt{pid\_did\_anticipation\_bounded\_v1} artifact gives support-function
+intervals for bounded anticipation in DiD; it is prior art for shared-coordinate
+aggregation but not for continuous-dose cross-dose selection.  The downgraded
+\texttt{pid\_dose\_response\_shape\_v1} artifact warned that pointwise
+continuous-dose sensitivity bounds may fail law-level pasting; this is why
+Conjecture 1 is stated separately.  The \texttt{q\_lpdid\_bjs\_frontier\_v1}
+proposal is prior art for DiD weight-frontier diagnostics, while this proposal
+optimizes an algebraic partial-ID causal response envelope rather than an LP-DiD weight
+equality.  The catalogue in \texttt{doc/API.md} records \texttt{CausalSmith/PartialID/}
+as the staging area for partial-ID research theorems; no current catalogue
+entry already contains a continuous-treatment DiD ACRT Lipschitz envelope.
+
+\paragraph{Exemplars.}
+The writing exemplar is \citet{CallawayGoodmanBaconSantAnna2021},
+arXiv:2107.02637; the introduction mirrors its arc from continuous doses, to
+treated-type identification, to the cross-dose ACRT selection-bias gap.
+Theorem 1 adapts \citet{ManskiPepper2000} (identification, DOI
+10.1111/1468-0262.00144) by replacing monotone response primitives with a
+cross-dose ATT shape polytope, and adapts \citet{Voronin2025} (estimation and
+LP values, arXiv:2503.14940) by writing the endpoint as an LP value.
+Conjecture 1 adapts the observational-equivalence discipline recorded in
+Molinari-style random-set sharpness and the in-repo \texttt{pid\_dose\_response\_shape}
+warning; the carried-over move is to separate algebraic feasibility from
+latent-law realization.  Conjecture 2 adapts the sensitivity-frontier grammar
+of \citet{ChernozhukovLeeRosen2013} and \citet{Stoye2020} by inverting the
+endpoint interval in \(L\).  Conjecture 3 adapts \citet{KaidoMolinariStoye2019}
+(projection inference, arXiv:1601.00934), \citet{BelloniBugniChernozhukov2018}
+(many inequalities, arXiv:1806.11466), and \citet{Voronin2025} (LP-value
+estimation) for relaxed finite-grid ACRT endpoint inference.
+
+\section{Formal setup}
+Let \(O=(Y_0,Y_1,D)\sim P\), where \(D\in\mathcal D\) and
+\(\Pr(D=d_h)>0\) for \(h=0,\ldots,K\).  The post-period potential outcome
+under dose \(d_j\) is \(Y_1(d_j)\).  The level treatment effect for treatment
+dose \(d_j\) in conditioning group \(d_h\) is
+\[
+  \alpha_{j h}=\operatorname{ATT}(d_j\mid d_h)
+  =\E\{Y_1(d_j)-Y_1(d_0)\mid D=d_h\}.
+\]
+Write the observed mean change in group \(h\) as
+\[
+  m_h(P)=\E[Y_1-Y_0\mid D=d_h],
+  \qquad
+  \tau_h(P)=m_h(P)-m_0(P).
+\]
+Under the maintained generalized parallel-trends convention of
+\citet[Sections 3--4]{CallawayGoodmanBaconSantAnna2021},
+\(\tau_h(P)=\alpha_{h h}\).  The baseline-dose identities are
+\(\alpha_{0h}=0\) for every conditioning group \(h\).  Define
+\[
+  b_{\mathrm{CGS}}(P)=
+  \bigl((0)_{h=0}^K,(\tau_h(P))_{h=0}^K\bigr),
+\]
+and let \(A_{\mathrm{CGS}}\alpha=b_{\mathrm{CGS}}(P)\) denote exactly the
+linear rows
+\[
+  \alpha_{0h}=0\quad(h=0,\ldots,K),
+  \qquad
+  \alpha_{hh}=\tau_h(P)\quad(h=0,\ldots,K).
+\]
+For a fixed target group \(h\), let \(q_h=(q_{0h},\ldots,q_{Kh})\) be a local
+finite-difference stencil with \(\sum_jq_{jh}=0\) and
+\(\sum_jq_{jh}(d_j-d_h)=1\).  The CGS observable local contrast for this
+stencil is the derived functional
+\[
+  r_h(P)=\sum_{j=0}^K q_{jh}\tau_j(P)
+       =\theta_h(\alpha)+\sum_{j=0}^K q_{jh}\{\alpha_{jj}-\alpha_{jh}\},
+\]
+which is the target response plus the cross-dose selection-bias functional.
+The finite-grid ACRT target is
+\[
+  \theta_h(\alpha)=\sum_{j=0}^Kq_{j h}\alpha_{j h}.
+\]
+For a Lipschitz constant \(L\ge0\), define the feasible nuisance set
+\[
+\mathcal A_L(P)=
+\left\{\alpha\in[\underline y,\overline y]^{(K+1)^2}:
+ A_{\mathrm{CGS}}\alpha=b_{\mathrm{CGS}}(P),\
+ |\alpha_{j h}-\alpha_{j h'}|\le L|d_h-d_{h'}|
+ \ \forall j,h,h'\right\}.
+\]
+The isotonic variant \(\mathcal A_{\mathrm{iso}}(P)\) replaces the Lipschitz
+inequalities by \(\alpha_{j0}\le\alpha_{j1}\le\cdots\le\alpha_{jK}\), or by
+the reversed order if the locked application specifies decreasing selection in
+the conditioning dose.  The algebraic envelope is
+\[
+  L_h(L;P)=\inf_{\alpha\in\mathcal A_L(P)}\theta_h(\alpha),\qquad
+  U_h(L;P)=\sup_{\alpha\in\mathcal A_L(P)}\theta_h(\alpha),
+\]
+with the analogous isotonic endpoints.  The critical Lipschitz constant is
+\[
+  L_h^\star(P)=\inf\{L\in[0,\bar L]:L_h(L;P)\le0\le U_h(L;P)\},
+\]
+with \(L_h^\star(P)=+\infty\) if zero never enters on the locked domain.
+
+\begin{quote}
+\begin{verbatim}
+Cluster: PartialID.
+qid=pid_contdid_acrt_lipschitz; specialization=v1.
+Observable law P is the law of O=(Y0,Y1,D), with D on a fixed finite
+ordered dose grid D={d0<...<dK}.  The latent array is
+alpha[j,h]=ATT(d_j | d_h).  The target is
+theta_h=sum_j q[j,h] alpha[j,h], where q[.,h] is a fixed local
+finite-difference stencil for ACRT(d_h).  Restrictions are consistency,
+no anticipation, generalized parallel trends identifying the CGS diagonal
+level-change vector, bounded outcomes, and row-wise Lipschitz or isotonic
+regularity of alpha[j,h] in the conditioning group h.  The bounding
+functional is the algebraic envelope [L_h(L;P),U_h(L;P)] from the joint
+feasible alpha-polytope, and L_h^*(P)=inf{L:0 in [L_h(L;P),U_h(L;P)]}.
+Law sharpness requires the latent-completion claim in Conjecture 1.
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite dose grid and bounded outcomes]\label{ass:grid-bounds}
+The dose grid \(\mathcal D=\{d_0<\cdots<d_K\}\) is fixed, each dose group has
+positive probability, and every level treatment effect satisfies
+\(\alpha_{j h}\in[\underline y,\overline y]\).  This is the finite-outcome
+and finite-support convention used in classical nonparametric bounds such as
+\citet{ManskiPepper2000}.
+\end{assumption}
+
+\begin{assumption}[Consistency and no anticipation]\label{ass:consistency-noanticip}
+Observed outcomes satisfy \(Y_1=Y_1(D)\), and the pre-period outcome is not
+affected by the later dose.  This is the continuous-treatment DiD convention
+used by \citet{CallawayGoodmanBaconSantAnna2021}.
+\end{assumption}
+
+\begin{assumption}[CGS generalized parallel trends inputs]\label{ass:cgs-inputs}
+The generalized parallel-trends assumptions of
+\citet{CallawayGoodmanBaconSantAnna2021} identify
+\(\tau_h(P)=\E[Y_1-Y_0\mid D=d_h]-\E[Y_1-Y_0\mid D=d_0]\) and hence the
+diagonal treated-type effects \(\alpha_{hh}=\tau_h(P)\).  Together with the
+definitional baseline rows \(\alpha_{0h}=0\), these are exactly the rows in
+\(A_{\mathrm{CGS}}\alpha=b_{\mathrm{CGS}}(P)\).  This assumption imports the
+CGS identified inputs but does not impose strong parallel trends or set
+cross-dose selection bias to zero.
+\end{assumption}
+
+\begin{assumption}[Structural cross-dose regularity]\label{ass:regularity}
+For the Lipschitz version, a finite \(L\in[0,\bar L]\) is fixed and each
+treatment row \(h\mapsto\alpha_{j h}\) obeys
+\(|\alpha_{j h}-\alpha_{j h'}|\le L|d_h-d_{h'}|\).  For the isotonic version,
+each row is monotone in the conditioning group.  These are structural
+cross-dose variants of the monotone and smoothness restrictions used in
+\citet{ManskiPepper2000} and \citet{ArmstrongKolesar2018}.
+\end{assumption}
+
+\begin{assumption}[Finite latent support]\label{ass:completion}
+The latent potential-outcome law may place mass on a finite product support
+for \((Y_1(d_0),\ldots,Y_1(d_K),D)\), with each coordinate bounded in
+\([\underline y,\overline y]\), while preserving the observed \(P\), consistency,
+no anticipation, and the CGS baseline and diagonal level-change vector.  This is the usual
+finite observational-equivalence convention for checking sharpness; it does
+not assert that every feasible mean array is realizable.
+\end{assumption}
+
+\begin{assumption}[Sampling and LP regularity]\label{ass:sampling-lp}
+The sample is iid across units; the empirical CGS input vector
+\(\widehat b_{\mathrm{CGS}}\) is asymptotically linear and root-\(n\)
+normal; the population LPs are feasible and finite; and on each regular
+active region the endpoint value has a nonempty compact dual solution set.
+This is the finite-dimensional LP setup used in \citet{Voronin2025} and the
+projection-inference setup of \citet{KaidoMolinariStoye2019}.
+\end{assumption}
+
+\begin{assumption}[Critical-frontier contact]\label{ass:frontier-contact}
+For inference on \(L_h^\star(P)\), the zero-contact set is either a singleton
+with nonzero one-sided slope in \(L\), a finite tie set with separated
+candidate slopes, or a compact flat face for which the support-function
+directional derivative exists.  This is the standard nonsmooth-contact
+taxonomy used for frontier and interval inversion.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: joint polytope support envelope]\label{thm:joint-envelope}
+Under Assumptions~\ref{ass:grid-bounds}--\ref{ass:regularity}, if
+\(\mathcal A_L(P)\) is nonempty, then the finite-grid ACRT algebraic envelope
+under the cross-dose restrictions is
+\[
+  \Theta_h^{\mathrm{alg}}(L;P)=
+  [L_h(L;P),U_h(L;P)]
+  =
+  \{\theta_h(\alpha):\alpha\in\mathcal A_L(P)\}.
+\]
+The endpoints are attained by finite linear programs.  Equivalently,
+\[
+  U_h(L;P)=\sigma_{\mathcal A_L(P)}(q_h\otimes e_h),
+  \qquad
+  L_h(L;P)=-\sigma_{\mathcal A_L(P)}(-q_h\otimes e_h),
+\]
+where \(\sigma_C(v)=\sup_{x\in C}v^\transpose x\) is the support function.
+The same statement holds for the isotonic set
+\(\mathcal A_{\mathrm{iso}}(P)\).
+\end{theorem}
+The proof is finite-dimensional convex analysis: the CGS equalities, box
+bounds, and Lipschitz or isotonic inequalities define a compact polytope, and
+\(\theta_h\) is linear.
+
+\begin{conjecture}[Conjecture 1: law-sharp ACRT envelope (NOT YET PROVED)]\label{conj:law-sharp}
+Under Assumptions~\ref{ass:grid-bounds}--\ref{ass:completion}, the algebraic
+envelope in Theorem~\ref{thm:joint-envelope} is law-sharp:
+\[
+  [L_h(L;P),U_h(L;P)]
+  =
+  \{\operatorname{ACRT}(d_h;Q):Q \text{ is a finite bounded latent law
+  preserving } P \text{ and Assumptions } \ref{ass:consistency-noanticip}
+  \text{--}\ref{ass:regularity}\}.
+\]
+In particular, no endpoint is an outer-bound artifact caused by an
+unrealizable cross-dose ATT array.
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: critical Lipschitz frontier (NOT YET PROVED)]\label{conj:critical-l}
+Under Assumptions~\ref{ass:grid-bounds}--\ref{ass:regularity}, the endpoint
+functions \(L\mapsto L_h(L;P)\) and \(L\mapsto U_h(L;P)\) are monotone
+piecewise linear on every finite grid.  The critical constant
+\[
+  L_h^\star(P)=\inf\{L\in[0,\bar L]:L_h(L;P)\le0\le U_h(L;P)\}
+\]
+is equivalently the optimum of a finite parametric LP feasibility problem in
+\((\alpha,L)\):
+\[
+ \min_{\alpha,L}\ L
+ \quad\text{subject to}\quad
+ A_{\mathrm{CGS}}\alpha=b_{\mathrm{CGS}}(P),\ 
+ \theta_h(\alpha)=0,\ 
+ \underline y\le\alpha_{jh}\le\overline y,\ 
+ |\alpha_{j h}-\alpha_{j h'}|\le L|d_h-d_{h'}|,\ 
+ 0\le L\le\bar L .
+\]
+For each nonsingular active basis of this LP, \(L_h^\star(P)\) is an affine
+function of \(b_{\mathrm{CGS}}(P)\) on the region where that basis remains
+optimal; globally it is the lower envelope of these basis-specific affine
+pieces.
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 3: relaxed-LP endpoint and threshold inference (NOT YET PROVED)]\label{conj:plugin-inference}
+Under Assumptions~\ref{ass:sampling-lp}--\ref{ass:frontier-contact}, define
+\(\widehat L_h(L)\), \(\widehat U_h(L)\), and
+\(\widehat L_h^\star\) by replacing \(b_{\mathrm{CGS}}(P)\) with an
+asymptotically linear estimate and relaxing equality and inequality
+constraints by calibrated Gaussian or bootstrap critical values.  Then the
+resulting confidence set covers the algebraic envelope endpoints
+\([L_h(L;P),U_h(L;P)]\) and the critical constant \(L_h^\star(P)\) pointwise,
+and remains nonempty with probability approaching one even when the unrelaxed
+sample LP is infeasible.  If Conjecture~\ref{conj:law-sharp} holds, the same
+endpoint confidence set covers the law-sharp ACRT interval.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Strong-parallel-trends collapse]\label{cor:spt-collapse}
+If strong parallel trends holds in the CGS sense, then
+\(\alpha_{j h}=\alpha_{j j}\) for all \(j,h\).  Hence
+\[
+  L_h(L;P)=U_h(L;P)=\sum_jq_{j h}\alpha_{j j},
+\]
+for every \(L\ge0\), and the proposal collapses to the point-identified CGS
+ACRT stencil.
+\end{corollary}
+
+\begin{corollary}[Unrestricted regularity collapse]\label{cor:unrestricted-collapse}
+If \(L\ge(\overline y-\underline y)/\min_{h\ne h'}|d_h-d_{h'}|\), the
+Lipschitz inequalities are implied by the outcome box.  The algebraic envelope in
+Theorem~\ref{thm:joint-envelope} then reduces to the CGS algebraic outer set
+with only the baseline identities, diagonal level-change equations, and
+bounded outcomes.
+\end{corollary}
+
+\begin{example}[Three-dose isotonic strict-sharpening audit]\label{ex:isotone-audit}
+Let \(\mathcal D=\{0,1,2\}\), \([\underline y,\overline y]=[-2,2]\), and
+suppose the CGS diagonal inputs are
+\(\alpha_{00}=0\), \(\alpha_{11}=0\), and \(\alpha_{22}=0\).  Consider the
+right-response target at group \(d_1\), \(\theta_1=\alpha_{21}-\alpha_{11}\).
+A coordinatewise local box with radius one allows
+\(\alpha_{21}\in[-1,1]\), so the local interval for \(\theta_1\) is
+\([-1,1]\).  If treatment rows are isotone increasing in the conditioning
+group, row \(j=2\) obeys \(\alpha_{20}\le\alpha_{21}\le\alpha_{22}=0\), so the
+joint isotonic envelope gives \(U_1=0\).  The strict positive part of the
+coordinatewise interval is therefore infeasible under the joint structural
+restriction, and the difference is not a normalization artifact because both
+calculations use the same target \(\theta_1\) and the same diagonal inputs.
+\end{example}
+
+\section{Proof-sketch route}
+The proof first imports the CGS baseline identities and diagonal level-change
+inputs and
+rewrites the ACRT stencil as a linear functional of the finite array
+\(\alpha\).  The endpoint theorem then follows from the separating hyperplane
+and support-function representation of a compact polytope; the only boundary
+algebra is checking that isotonic and Lipschitz inequalities remain closed
+under the CGS equality restrictions.  The law-sharpness conjecture requires a
+finite latent-completion construction: assign potential-outcome increments on
+a product support so that each conditioning group has the prescribed row means
+and the observed \((Y_0,Y_1,D)\) margin is preserved.  The \(L_h^\star\) result
+uses parametric LP sensitivity: add \(L\) as a scalar variable, homogenize the
+absolute-value inequalities, and derive primal feasibility and dual
+certificates for zero containment.  The inference result follows the relaxed
+projection method of \citet{KaidoMolinariStoye2019} for feasibility, the
+many-inequality Gaussian approximation of \citet{BelloniBugniChernozhukov2018}
+for large grids, and the LP-value estimator logic of \citet{Voronin2025} for
+active-face multiplicity.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:joint-envelope} is the algebraic partial-ID statement once
+the CGS baseline identities and diagonal level-change vector are fixed.  Conjecture~\ref{conj:law-sharp} is the
+sharpness risk: some feasible ATT arrays may fail to paste into one
+potential-outcome panel law.  Conjecture~\ref{conj:critical-l}
+is mathematically plausible for finite grids but still needs active-set
+bookkeeping.  Conjecture~\ref{conj:plugin-inference} is intentionally stated as
+pointwise, not uniformly over all laws; uniform coverage would require a
+separate compactness and minimum-singular-value condition.  The proposal does
+not claim that the Lipschitz-only envelope always strictly improves the
+coordinatewise local interval for a one-sided two-dose stencil; the
+nonseparability audit is stated for the isotonic variant and more complex CGS
+contrast systems.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+  \item v1 (cold-start) -- initial field-tier draft centered on the joint Lipschitz/isotonic ACRT envelope, critical \(L^\star\), nonseparability audit, and relaxed-LP inference; prior verdict: none.
+  \item v2 (revise) -- fixed the baseline-dose rows, made the CGS input matrix explicit, and restated the critical Lipschitz frontier as a basis-wise affine LP value; prior verdict: REVISE.
+  \item v3 (revise) -- restated Theorem 1 and all headline language as an algebraic envelope unless conditioned on the latent-completion conjecture; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Armstrong and Kolesar(2018)]{ArmstrongKolesar2018}
+Armstrong, T. B. and Kolesar, M. (2018).
+Optimal inference in a class of regression models.
+\textit{Econometrica}, 86, 655--683.
+
+\bibitem[Belloni, Bugni, and Chernozhukov(2018)]{BelloniBugniChernozhukov2018}
+Belloni, A., Bugni, F., and Chernozhukov, V. (2018).
+Subvector inference in partially identified models with many moment
+inequalities.
+arXiv:1806.11466.
+
+\bibitem[Callaway, Goodman-Bacon, and Sant'Anna(2021)]{CallawayGoodmanBaconSantAnna2021}
+Callaway, B., Goodman-Bacon, A., and Sant'Anna, P. H. C. (2021).
+Difference-in-differences with a continuous treatment.
+arXiv:2107.02637.
+
+\bibitem[Chernozhukov, Fernandez-Val, Hahn, and Newey(2013)]{ChernozhukovFernandezValHahnNewey2013}
+Chernozhukov, V., Fernandez-Val, I., Hahn, J., and Newey, W. (2013).
+Average and quantile effects in nonseparable panel models.
+\textit{Econometrica}, 81, 535--580.
+
+\bibitem[Chernozhukov, Lee, and Rosen(2013)]{ChernozhukovLeeRosen2013}
+Chernozhukov, V., Lee, S., and Rosen, A. M. (2013).
+Intersection bounds: estimation and inference.
+\textit{Econometrica}, 81, 667--737.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{deChaisemartinDHaultfoeuille2020}
+de Chaisemartin, C. and D'Haultfoeuille, X. (2020).
+Two-way fixed effects estimators with heterogeneous treatment effects.
+\textit{American Economic Review}, 110, 2964--2996.
+
+\bibitem[de Chaisemartin et al.(2022)]{deChaisemartinDHaultfoeuillePasquierSowVazquezBare2022}
+de Chaisemartin, C., D'Haultfoeuille, X., Pasquier, F., Sow, D., and
+Vazquez-Bare, G. (2022).
+Difference-in-differences estimators for treatments continuously distributed at
+every period.
+arXiv:2201.06898.
+
+\bibitem[de Chaisemartin, D'Haultfoeuille, and Vazquez-Bare(2024)]{deChaisemartinDHaultfoeuilleVazquezBare2024}
+de Chaisemartin, C., D'Haultfoeuille, X., and Vazquez-Bare, G. (2024).
+Two-way fixed effects and differences-in-differences with continuous
+treatments and no stayers.
+arXiv:2402.05432.
+
+\bibitem[Ishihara(2017)]{Ishihara2017}
+Ishihara, T. (2017).
+Partial identification of treatment effects in nonseparable models under
+monotonicity and concavity.
+arXiv:1707.04405.
+
+\bibitem[Kaido, Molinari, and Stoye(2019)]{KaidoMolinariStoye2019}
+Kaido, H., Molinari, F., and Stoye, J. (2019).
+Confidence intervals for projections of partially identified parameters.
+\textit{Econometrica}, 87, 1397--1432.
+
+\bibitem[Manski and Pepper(2000)]{ManskiPepper2000}
+Manski, C. F. and Pepper, J. V. (2000).
+Monotone instrumental variables: with an application to the returns to
+schooling.
+\textit{Econometrica}, 68, 997--1010.
+
+\bibitem[Stoye(2020)]{Stoye2020}
+Stoye, J. (2020).
+A simple, short, but never-empty confidence interval for partially identified
+parameters.
+arXiv:2010.10484.
+
+\bibitem[Voronin(2025)]{Voronin2025}
+Voronin, A. (2025).
+Linear programming approach to partially identified econometric models.
+arXiv:2503.14940.
+\end{thebibliography}
+
+\end{document}

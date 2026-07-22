@@ -1,0 +1,41 @@
+You are refining ONE formal statement of an econometrics working paper so that it is mathematically EQUIVALENT to its machine-verified Lean formalization (equivalence in content, not verbatim wording). Lean is ground truth.
+
+The paper's natural-language statement (mostly right, but it may have drifted from or under-specified the Lean — a missing side-condition, a measurability/integrability qualifier, a loosened constant or rate, a quantifier scope) is below, with the Lean statement it must match.
+
+Object: {{obj_id}}
+Paper environment body (LaTeX, between the \begin/\end of the environment — refine ONLY this prose, not the environment wrapper):
+{{env_body}}
+
+Lean statement (ground truth):
+{{lean_statement}}
+
+Lean source location:
+{{lean_pointer}}
+
+Source-matched cited propositions intentionally erased from the printed hypothesis list:
+{{cited_dependencies}}
+
+Definitions the Lean statement references (their ACTUAL bodies — judge against THESE, never trust a name; the exact formula you must match often lives here):
+{{referenced_defs}}
+
+What the re-audit flagged as drifting:
+{{drift_detail}}
+
+Notation table (use these symbols; do not introduce new notation):
+{{notation_table}}
+
+Rules:
+- Tighten the paper statement TOWARD the Lean: add the elided condition, restore the precise constant/rate/quantifier, narrow an over-broad claim. NEVER weaken away from the Lean (do not drop a Lean hypothesis, broaden a bound, or generalize past what is proved).
+- ADD EVERY MISSING LOAD-BEARING HYPOTHESIS IN ONE PASS. The drift detail names the conditions the Lean carries that the paper omits; add ALL of them now, plus any others you find when you read the Lean — do NOT add them one at a time across rounds. Inline each quantitative condition (e.g. `0 < q ≤ 1/2`, `0 < u ≤ u_0`, the L²/MemLp nuisance bounds, nonnegativity of rates, an eventual-in-n quantifier `for all sufficiently large n`, restriction to `π ∈ Π`/policy-compatible increments, the explicit integral/envelope condition) UNLESS it is already discharged by a `\cref` to a frozen assumption that states it. Do NOT add a binder that merely asserts exactly a proposition in the cited-dependency list: that one premise is deliberately citation-erased and disclosed by a generated footnote.
+- Never invent a `\cref` target from a Lean declaration, graph node, or note alias. You may preserve an existing `\cref` from the paper body; otherwise inline the required condition. Only rendered paper environments are valid cleveref targets, and the refinement prompt does not provide a complete list of them.
+- REMOVING AN OVER-ASSUMPTION IS ALSO REQUIRED TIGHTENING: when the paper carries a load-bearing hypothesis or scope restriction the Lean result does not require anywhere (not in the statement, the surrounding structures, section variables, or its definitions), DELETE it (or widen the class to the Lean's) so the printed statement matches the verified generality. Keep incidental explicit regularity that the Lean carries implicitly or that does not change the claim's scope.
+- TRIMMING AN OVER-CLAIM DOWN TO LEAN IS REQUIRED TIGHTENING, not forbidden weakening. When the paper claims MORE than the Lean proves — a biconditional ("…only when…") where Lean proves one direction, a stronger object (a measurable POLICY-VALUED selector vs only a measurable induced regret map), or greater generality (arbitrary objects vs a specific class) — rewrite the claim to EXACTLY what the Lean delivers (the one-way implication, the weaker object, the restricted class). The "never weaken away from the Lean" rule forbids only going BELOW Lean; matching an overclaim down to Lean is the correct direction.
+- If the body is phrased as an objective, open question, or proof recipe ("determine/find the exponent…", "the derivation is required to use…", "it remains to show…") for a PROVEN Lean theorem, REWRITE it as a declarative theorem that asserts exactly the Lean conclusion — the bound/identity/rate that holds, with its constants and quantifiers as the Lean states them. Move any proof-method prescription OUT of the statement: a theorem asserts what is true; how it is proved belongs to the proof, not the statement.
+- RESTRUCTURE THE LOGICAL FORM, not just words, when faithfulness demands it. If matching the Lean means changing the SHAPE of the claim, rewrite into that shape (using the referenced definition bodies above for the exact formula) — e.g. a biconditional / "only when" down to the one-way implication Lean actually proves; a pointwise "for every x" identity down to the tested/integrated or "for P_X-almost every x" form; a claimed object down to the weaker one Lean delivers; an exact constant or factor placement (distribute as `(8/3)(C\rho+\delta)`, not `(8/3)C(\rho+\delta)`, when that is what Lean states). Do NOT preserve a wording that is unfaithful just because it is the paper's. This is restructuring TOWARD the Lean — never the reverse (never weaken the Lean's claim to make the prose pass).
+- Otherwise change only what faithfulness requires; preserve the paper's notation, LaTeX macros, and unaffected prose. Keep it journal prose, not Lean syntax — no camelCase Lean identifiers, no field projections.
+- A `\[...\]` display contains mathematical notation only. Never put ordinary prose or nested `\(...\)`/`\[...\]` delimiters inside a display; put descriptive text outside it with adjacent inline math instead.
+- If the statement already faithfully matches the Lean (the flag was spurious), return it unchanged with changed=false.
+- Do NOT touch the environment's obj-id or title; output only the refined BODY text.
+
+REQUIRED OUTPUT: a single JSON object on stdout and nothing else:
+{"refined_body": "<the refined LaTeX body>", "changed": true|false, "note": "<one line: what was tightened, or why unchanged>"}

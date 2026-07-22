@@ -1,0 +1,806 @@
+\begin{proof}[Proof of \cref{obj:prop:homogeneous-reduction}]
+\begin{enumerate}
+\item For every \(k\in I_n\), the homogeneity condition and \(p\in(0,1)\) give
+\[
+0<p_k=p<1.
+\]
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.homogeneous_reduction
+
+\item Fix \(i,j\in O_n\).  If \(\lvert S_{ij}(G_n)\rvert>0\), substituting \(p_k=p\) into the product defining the treated overlap load yields
+\[
+r_{ij}^1(G_n,p)
+=\prod_{k\in S_{ij}(G_n)}p^{-1}-1
+=p^{-\lvert S_{ij}(G_n)\rvert}-1.
+\]
+If \(\lvert S_{ij}(G_n)\rvert=0\), that definition gives \(r_{ij}^1(G_n,p)=0\).
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.homogeneous_reduction
+
+\item The same split gives the control overlap load.  When
+\(\lvert S_{ij}(G_n)\rvert>0\),
+\[
+r_{ij}^0(G_n,p)
+=\prod_{k\in S_{ij}(G_n)}(1-p)^{-1}-1
+=(1-p)^{-\lvert S_{ij}(G_n)\rvert}-1;
+\]
+when \(\lvert S_{ij}(G_n)\rvert=0\), it equals \(0\).
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.homogeneous_reduction
+
+\item By the variance-scale covariance expansion for independent heterogeneous Bernoulli assignment, applicable by step 1,
+\[
+\sigma_{G_n,p}^2(Y)
+=
+\frac{1}{n}\sum_{i\in O_n}\sum_{j\in O_n}
+\left[
+r_{ij}^1(G_n,p)(Y_i^1-\mu_1)(Y_j^1-\mu_1)
++r_{ij}^0(G_n,p)(Y_i^0-\mu_0)(Y_j^0-\mu_0)
++2r_{ij}^{10}(G_n)(Y_i^1-\mu_1)(Y_j^0-\mu_0)
+\right].
+\]
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.varScale_homogeneous_formula
+\end{enumerate}
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:thm:hetero-envelope}]
+\begin{enumerate}
+\item Write
+\[
+a_i=Y_i^1-\mu_1,\qquad b_i=Y_i^0-\mu_0,
+\]
+and
+\[
+A_i=\frac{T_i(Z)}{\pi_i^1(p)}-1,\qquad
+B_i=\frac{C_i(Z)}{\pi_i^0(p)}-1.
+\]
+Under \cref{obj:ass:independent-heterogeneous-bernoulli},
+\[
+\mathbb E_p[A_iA_j]=r_{ij}^1(G_n,p),\quad
+\mathbb E_p[B_iB_j]=r_{ij}^0(G_n,p),
+\]
+while
+\[
+\mathbb E_p[A_iB_j]=\mathbb E_p[B_iA_j]=-r_{ij}^{10}(G_n).
+\]
+Since \(\eta_i(p,Z)=A_i a_i-B_i b_i\), expanding the product gives
+\[
+\mathbb E_p\!\left[\eta_i(p,Z)\eta_j(p,Z)\right]
+=
+r_{ij}^1(G_n,p)a_i a_j
++r_{ij}^0(G_n,p)b_i b_j
++r_{ij}^{10}(G_n)\bigl(a_i b_j+b_i a_j\bigr),
+\]
+which is the first claim.
+% lean: linScore_pair_moment
+
+\item The same calculation gives \(\mathbb E_p[\eta_i(p,Z)]=0\).  Expanding the variance scale into outcome-pair moments and using the symmetry of \(r_{ij}^{10}(G_n)\) therefore yields
+\[
+\sigma^2_{G_n,p}(Y)
+=
+\frac1n\sum_{i\in O_n}\sum_{j\in O_n}
+\left\{
+r_{ij}^1(G_n,p)a_i a_j
++r_{ij}^0(G_n,p)b_i b_j
++2r_{ij}^{10}(G_n)a_i b_j
+\right\}.
+\]
+% lean: varScale_homogeneous_formula
+
+\item \cref{obj:ass:bounded-outcomes} and the triangle inequality imply
+\[
+|\mu_1|\le 1,\qquad |\mu_0|\le 1;
+\]
+the zero-outcome case is immediate.  Hence, for every \(i\in O_n\),
+\[
+|a_i|\le2,\qquad |b_i|\le2.
+\]
+Moreover, if \(S_{ij}(G_n)=\varnothing\), all three overlap loads are zero.  Otherwise, \(0<p_k<1\) implies
+\[
+\prod_{k\in S_{ij}(G_n)}p_k^{-1}\ge1,
+\qquad
+\prod_{k\in S_{ij}(G_n)}(1-p_k)^{-1}\ge1.
+\]
+Thus
+\[
+r_{ij}^1(G_n,p)\ge0,\qquad
+r_{ij}^0(G_n,p)\ge0,\qquad
+r_{ij}^{10}(G_n)\ge0.
+\]
+% lean: pair_kernel_le_envelope_kernel
+
+\item Consequently, each of the three terms in the preceding variance representation is bounded above by four times its nonnegative load:
+\[
+\begin{aligned}
+&r_{ij}^1(G_n,p)a_i a_j
++r_{ij}^0(G_n,p)b_i b_j
++2r_{ij}^{10}(G_n)a_i b_j\\
+&\hspace{2cm}\le
+4\left\{
+r_{ij}^1(G_n,p)+r_{ij}^0(G_n,p)+2r_{ij}^{10}(G_n)
+\right\}.
+\end{aligned}
+\]
+% lean: mul_centered_pair_le_four_mul_of_nonneg
+
+\item Summing this inequality over \(i,j\in O_n\) and multiplying by \(n^{-1}\ge0\) gives
+\[
+\begin{aligned}
+\sigma^2_{G_n,p}(Y)
+&\le
+\frac1n\sum_{i\in O_n}\sum_{j\in O_n}
+4\left\{
+r_{ij}^1(G_n,p)+r_{ij}^0(G_n,p)+2r_{ij}^{10}(G_n)
+\right\}\\
+&=
+V_{\mathrm{env}}(G_n,p),
+\end{aligned}
+\]
+by \cref{obj:def:graph-envelope}.
+% lean: hetero_envelope
+\end{enumerate}
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:thm:convex-design}]
+\begin{enumerate}
+\item Put \(m_n=|I_n|\).  First suppose that \(I_n\) is nonempty and define the constant design
+\[
+p_k=\frac{B_n}{m_n}\qquad(k\in I_n).
+\]
+Since \(m_n>0\), the budget bounds give
+\[
+\epsilon\le \frac{B_n}{m_n}\le 1-\epsilon.
+\]
+Thus \(p\) satisfies the probability, positivity, and budget requirements, the last because
+\(\sum_{k\in I_n}p_k=m_n(B_n/m_n)=B_n\).  If instead \(I_n\) is empty, the two budget inequalities force \(B_n=0\), and the unique empty design is feasible.  Hence \(\mathcal P_{n,B_n,\epsilon}\) is nonempty.
+% lean: feasibleSet_nonempty
+
+\item The feasible class is closed.  Indeed, when the positivity-margin condition is admissible, it is the intersection of the coordinatewise closed probability constraints, the coordinatewise closed bounds
+\(\epsilon\le p_k\le1-\epsilon\), and the closed affine hyperplane
+\(\sum_k p_k=B_n\).  When that condition is not admissible, the feasible class is empty and hence closed.  It is contained in the finite product \([0,1]^{I_n}\), which is compact; therefore \(\mathcal P_{n,B_n,\epsilon}\) is compact.
+% lean: feasibleSet_compact
+
+\item Let \(p,q\in\mathcal P_{n,B_n,\epsilon}\), and let \(a,b\ge0\) with \(a+b=1\).  Coordinatewise,
+\[
+\epsilon=a\epsilon+b\epsilon
+ \le ap_k+bq_k
+ \le a(1-\epsilon)+b(1-\epsilon)=1-\epsilon.
+\]
+The same convex combination lies in \([0,1]\), and its budget is
+\[
+\sum_{k\in I_n}(ap_k+bq_k)
+ =aB_n+bB_n=B_n.
+\]
+Thus \(ap+bq\in\mathcal P_{n,B_n,\epsilon}\), proving convexity.
+% lean: feasibleSet_convex
+
+\item The envelope is continuous on the feasible class.  For fixed outcome indices \(i,j\), write \(S_{ij}=S_{ij}(G_n)\).  If \(S_{ij}\) is nonempty, the positivity bounds imply that both
+\[
+\prod_{k\in S_{ij}}p_k
+\quad\text{and}\quad
+\prod_{k\in S_{ij}}(1-p_k)
+\]
+are nonzero throughout the feasible class.  Their reciprocal kernels, and hence
+\(r^1_{ij}(G_n,p)\) and \(r^0_{ij}(G_n,p)\), are therefore continuous there.  If \(S_{ij}\) is empty, both kernels are identically zero.  Adding the constant cross term \(2r^{10}_{ij}(G_n)\) and taking the finite double sum shows that \(V_{\mathrm{env}}(G_n,\cdot)\) is continuous on \(\mathcal P_{n,B_n,\epsilon}\).
+% lean: varEnvelope_continuousOn_feasible
+
+\item For each \(i,j\), the maps
+\[
+p\longmapsto
+\left(\prod_{k\in S_{ij}}p_k\right)^{-1},
+\qquad
+p\longmapsto
+\left(\prod_{k\in S_{ij}}(1-p_k)\right)^{-1}
+\]
+are convex on the feasible class.  When \(S_{ij}\) is nonempty, this gives convexity of \(r^1_{ij}(G_n,\cdot)\) and \(r^0_{ij}(G_n,\cdot)\) after subtracting \(1\); when \(S_{ij}\) is empty, these kernels are constant.  Hence each summand
+\[
+r^1_{ij}(G_n,p)+r^0_{ij}(G_n,p)+2r^{10}_{ij}(G_n)
+\]
+is convex.  Finite summation preserves convexity, and multiplication by the nonnegative factor \(4/n\) preserves it as well.  Thus \(V_{\mathrm{env}}(G_n,\cdot)\) is convex on \(\mathcal P_{n,B_n,\epsilon}\).
+% lean: prod_one_sub_inv_convexOn_feasible
+
+\item By nonemptiness and compactness of the feasible class and continuity of the envelope, \(V_{\mathrm{env}}(G_n,\cdot)\) attains its minimum on \(\mathcal P_{n,B_n,\epsilon}\).  Denote one minimizer by \(p_n^*(G_n)\).  Then
+\[
+V_{\mathrm{env}}(G_n,p_n^*(G_n))
+\le V_{\mathrm{env}}(G_n,q)
+\]
+for every \(q\in\mathcal P_{n,B_n,\epsilon}\).
+% lean: IsCompact.exists_isMinOn
+
+\item It remains to establish the multiplier statement.  Introduce a globally continuously differentiable reciprocal cutoff which agrees with \(x^{-1}\) whenever \(x\ge\epsilon/2\), and replace each reciprocal factor in the treated and control kernels by this cutoff.  This yields a globally continuously differentiable extension of \(V_{\mathrm{env}}(G_n,\cdot)\) which agrees with the original envelope whenever
+\[
+p_k\ge\epsilon/2,\qquad 1-p_k\ge\epsilon/2
+\quad(k\in I_n).
+\]
+Transporting the resulting objective, divided by \(4\), to Euclidean coordinates indexed by \(\operatorname{Fin}(m_n)\) gives a differentiable objective.
+
+For a feasible \(p\), a coordinate \(k\), and a shared neighborhood \(S_{ij}\), differentiation along the \(k\)-th coordinate line gives
+\[
+\left.\frac{d}{dt}\right|_{t=0}
+ \prod_{\ell\in S_{ij}}
+ \bigl(p_\ell+\mathbf 1\{\ell=k\}t\bigr)^{-1}
+=
+\begin{cases}
+-\left(\prod_{\ell\in S_{ij}}p_\ell^{-1}\right)p_k^{-1},
+   &k\in S_{ij},\\
+0,&k\notin S_{ij},
+\end{cases}
+\]
+and
+\[
+\left.\frac{d}{dt}\right|_{t=0}
+ \prod_{\ell\in S_{ij}}
+ \bigl(1-p_\ell-\mathbf 1\{\ell=k\}t\bigr)^{-1}
+=
+\begin{cases}
+\left(\prod_{\ell\in S_{ij}}(1-p_\ell)^{-1}\right)(1-p_k)^{-1},
+   &k\in S_{ij},\\
+0,&k\notin S_{ij}.
+\end{cases}
+\]
+The same formulas hold for the corresponding overlap kernels, including the case of an empty shared neighborhood.  Summing these derivatives shows that the derivative of \(V_{\mathrm{env}}(G_n,\cdot)/4\) in coordinate \(k\) is \(g_k(G_n,p)\).  Since sufficiently small coordinate perturbations remain in the region where the smooth extension equals the original envelope, the \(k\)-th Euclidean gradient coordinate of the transported objective at \(p\) is exactly \(g_k(G_n,p)\).
+% lean: envelopeGrad_eq_gradient_varEnvelopeExt
+
+\item Fix any minimizer \(p_n^*(G_n)\).  In Euclidean coordinates, impose the equality constraint
+\[
+\sum_{a=1}^{m_n}x_a-B_n=0
+\]
+and the \(2m_n\) inequality constraints
+\[
+x_a-\epsilon\ge0,
+\qquad
+1-\epsilon-x_a\ge0
+\qquad(a=1,\ldots,m_n).
+\]
+The correspondence between these feasible Euclidean points and
+\(\mathcal P_{n,B_n,\epsilon}\) is exact.  Moreover, the transported smooth objective agrees on this feasible set with \(V_{\mathrm{env}}(G_n,\cdot)/4\), so the Euclidean image of \(p_n^*(G_n)\) is a local minimum.  The objective is differentiable, all constraints are affine, and the linear constraint qualification holds.
+
+The finite-dimensional first-order necessary condition therefore supplies a multiplier \(\lambda_n\) for the budget constraint and nonnegative multipliers for the lower and upper box constraints.  Let \(\nu^-_{k,n}\) be the lower-box multiplier for coordinate \(k\), and let \(\nu^+_{k,n}\) be the upper-box multiplier.  Coordinatewise stationarity, together with the preceding gradient identity, is
+\[
+g_k(G_n,p_n^*(G_n))
+-\lambda_n-\nu^-_{k,n}+\nu^+_{k,n}=0,
+\]
+or equivalently
+\[
+g_k(G_n,p_n^*(G_n))
+=\lambda_n-\nu^+_{k,n}+\nu^-_{k,n}.
+\]
+The multipliers satisfy \(\nu^+_{k,n}\ge0\) and \(\nu^-_{k,n}\ge0\).  Complementary slackness for the upper and lower constraints gives, respectively,
+\[
+\nu^+_{k,n}\bigl((p_n^*(G_n))_k-(1-\epsilon)\bigr)=0,
+\qquad
+\nu^-_{k,n}\bigl(\epsilon-(p_n^*(G_n))_k\bigr)=0.
+\]
+This holds for every \(k\in I_n\), as required.
+% lean: convex_design
+\end{enumerate}
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:thm:hetero-clt}]
+Write \(p_n=p_n^*(G_n)\).  The optimality condition identifies this sequence; the argument uses its stated feasibility and regularity properties.
+
+\begin{enumerate}
+\item[(1)] Outcome indexing gives \(|O_n|=n\) eventually.  Hence \(|O_n|\to\infty\), and, on this tail, \(\sqrt{|O_n|}=\sqrt n\) and \(|O_n|^{-1/2}=n^{-1/2}\).
+% lean: hetero_clt
+
+\item[(2)] Let \(K(\epsilon,\bar d)\) be the denominator-kernel bound.  Uniform positivity gives \(\epsilon_0>0\) with \(\epsilon_0\le\epsilon_n\) eventually.  Thus \(K(\epsilon_n,\bar d)\) is eventually bounded by \(K(\epsilon_0,\bar d)\), and therefore
+\[
+\frac{K(\epsilon_n,\bar d)}{|O_n|}\longrightarrow0.
+\]
+% lean: denominatorKernelBound_div_card_tendsto_zero
+
+\item[(3)] Define
+\[
+R_{1n}=|O_n|^{-1/2}\{\text{treated numerator}\},\qquad
+R_{0n}=|O_n|^{-1/2}\{\text{control numerator}\},
+\]
+and
+\[
+Q_{1n}=|O_n|^{-1}D_1(p_n,Z)-1,\qquad
+Q_{0n}=|O_n|^{-1}D_0(p_n,Z)-1.
+\]
+The local numerator bounds give boundedness in probability of \(R_{1n}\) and \(R_{0n}\).  The rate in (2), together with \cref{obj:ass:bounded-outcome-degree} and~\cref{obj:ass:bounded-overlap-dependency}, gives
+\[
+Q_{1n}\xrightarrow{\Pr}0,\qquad Q_{0n}\xrightarrow{\Pr}0.
+\]
+Consequently,
+\[
+2|R_{1n}||Q_{1n}|+2|R_{0n}||Q_{0n}|
+\xrightarrow{\Pr}0.
+\]
+
+For all sufficiently large \(n\), split according as
+\[
+D_1(p_n,Z)\ge\frac{|O_n|}{2}
+\quad\text{and}\quad
+D_0(p_n,Z)\ge\frac{|O_n|}{2}.
+\]
+When both inequalities hold, the capped Hájek remainder bound yields
+\[
+\left|
+\sqrt{|O_n|}\{\widehat\tau_H(p_n)-\tau_n\}
+-|O_n|^{-1/2}\sum_{i\in O_n}\eta_i(p_n,Z)
+\right|
+\le
+2|R_{1n}||Q_{1n}|+2|R_{0n}||Q_{0n}|.
+\]
+If either inequality fails, then respectively
+\[
+|Q_{1n}|\ge\frac12
+\quad\text{or}\quad
+|Q_{0n}|\ge\frac12.
+\]
+Thus, for every \(\delta>0\), the probability that the absolute remainder exceeds \(\delta\) is bounded by the probability of this denominator-ratio bad event plus
+\[
+\Pr_{D_n}\!\left(
+2|R_{1n}||Q_{1n}|+2|R_{0n}||Q_{0n}|\ge\delta
+\right),
+\]
+and both terms converge to zero.
+% lean: remainder_tendstoInProb_zero
+
+\item[(4)] Taking the absolute remainder itself as the dominating product tail, the preceding convergence and the rate in (2) give the denominator-tightness condition.  The resulting squeeze therefore gives
+\[
+\sqrt{|O_n|}\{\widehat\tau_H(p_n)-\tau_n\}
+-|O_n|^{-1/2}\sum_{i\in O_n}\eta_i(p_n,Z)
+\xrightarrow{\Pr}0.
+\]
+% lean: heteroDenominatorTightness_discharged
+% lean: hetero_linearization_of_denominator_tightness
+
+\item[(5)] Set \(X_{n,i}=\eta_i(p_n,Z)\) for \(i\in O_n\), and use the outcome-overlap graph as a dependency graph.  These summands have mean zero; its neighborhoods have cardinality at most \(\lceil\bar D\rceil+1\); and \cref{obj:ass:bounded-outcomes} and~\cref{obj:ass:bounded-outcome-degree}, together with the eventual positivity floor, give the eventual bound
+\[
+|X_{n,i}|\le 4\{K(\epsilon_0,\bar d)+2\}.
+\]
+Moreover, with
+\[
+v_n=\mathbb E_{D_n}\!\left[\left(\sum_{i\in O_n}X_{n,i}\right)^2\right],
+\]
+the score-moment identity gives
+\[
+v_n=|O_n|\,\sigma^2_{G_n,p_n}(Y).
+\]
+\cref{obj:ass:variance-nondegenerate} consequently supplies \(c>0\) such that \(v_n\ge c|O_n|\) eventually.  On the tail from (1), \cref{obj:lem:bounded-degree-dependency-clt} applies and yields, for every \(s\in\mathbb R\),
+\[
+\Pr_{D_n}\!\left(
+\frac{|O_n|^{-1/2}\sum_{i\in O_n}\eta_i(p_n,Z)}
+{\sqrt{\sigma^2_{G_n,p_n}(Y)}}\le s
+\right)
+\longrightarrow
+\Pr\{N(0,1)\le s\}.
+\]
+% lean: hetero_linscore_clt_of_depgraph
+
+\item[(6)] Define
+\[
+S_n=
+\frac{\sqrt{|O_n|}\{\widehat\tau_H(p_n)-\tau_n\}}
+{\sqrt{\sigma^2_{G_n,p_n}(Y)}},
+\qquad
+T_n=
+\frac{|O_n|^{-1/2}\sum_{i\in O_n}\eta_i(p_n,Z)}
+{\sqrt{\sigma^2_{G_n,p_n}(Y)}}.
+\]
+For every \(\eta>0\), the variance lower bound implies eventually
+\[
+\Pr_{D_n}(|S_n-T_n|\ge\eta)
+\le
+\Pr_{D_n}\!\left(
+\left|
+\sqrt{|O_n|}\{\widehat\tau_H(p_n)-\tau_n\}
+-|O_n|^{-1/2}\sum_{i\in O_n}\eta_i(p_n,Z)
+\right|
+\ge\eta\sqrt c
+\right),
+\]
+which tends to zero by (4).  Since \(T_n\) has the standard-normal CDF limit by (5), continuity of that CDF and the converging-together argument yield
+\[
+\Pr_{D_n}(S_n\le s)\longrightarrow\Pr\{N(0,1)\le s\}
+\]
+for every \(s\in\mathbb R\).  Replacing \(|O_n|\) by \(n\) on the eventual tail from (1) proves both conclusions.
+% lean: hetero_studentized_slutsky
+\end{enumerate}
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:thm:postdesign-wald}]
+The eventual identity \(|O_n|=n\) implies that \(|O_n|\to\infty\).
+
+\begin{enumerate}
+\item Fix \(n\).  Feasibility and \(\epsilon_n\in(0,1/2)\) give
+\[
+0<\epsilon_n\le p_{n,k}\le 1-\epsilon_n<1
+\qquad(k\in I_n).
+\]
+Thus the heterogeneous envelope bound applies.  Its variance conclusion, together with the defining identity between the conservative estimator and the graph envelope, yields
+\[
+\sigma^2_{G_n,p_n}(Y)\le \widehat V_{\mathrm{cons}}(G_n,p_n).
+\]
+Since \(n\) was arbitrary, this proves the first assertion.
+
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.hetero_envelope
+
+\item By nondegeneracy, there are \(c>0\) and an eventual tail on which
+\[
+c\le \sigma^2_{G_n,p_n}(Y).
+\]
+Hence \(\sigma^2_{G_n,p_n}(Y)>0\) eventually.  The eventual identity
+\(|O_n|=n\), together with \(n\to\infty\), also gives \(|O_n|>0\) eventually.
+Under the remaining assumptions, \cref{obj:thm:hetero-clt} gives, for every \(s\in\mathbb R\),
+\[
+\Pr_{p_n}\!\left(
+\frac{\sqrt n\,[\widehat\tau_H(p_n)-\tau_n]}
+{\sqrt{\sigma^2_{G_n,p_n}(Y)}}\le s
+\right)
+\longrightarrow \Phi(s).
+\]
+
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.hetero_clt
+
+\item Write
+\[
+W_n=
+\frac{\sqrt n\,[\widehat\tau_H(p_n)-\tau_n]}
+{\sqrt{\sigma^2_{G_n,p_n}(Y)}}.
+\]
+The preceding convergence at \(z_{1-\alpha_{\mathrm{cov}}/2}\) and at its negative, the symmetry
+\(\Phi(-z)=1-\Phi(z)\), and
+\(\Phi(z_{1-\alpha_{\mathrm{cov}}/2})=1-\alpha_{\mathrm{cov}}/2\)
+show that
+\[
+\Pr_{p_n}\!\left(
+-z_{1-\alpha_{\mathrm{cov}}/2}<W_n
+\le z_{1-\alpha_{\mathrm{cov}}/2}
+\right)
+\longrightarrow 1-\alpha_{\mathrm{cov}}.
+\]
+On the eventual tail where both \(n\) and
+\(\sigma^2_{G_n,p_n}(Y)\) are positive, this event implies
+\[
+\left|\tau_n-\widehat\tau_H(p_n)\right|
+\le
+z_{1-\alpha_{\mathrm{cov}}/2}
+\sqrt{\frac{\sigma^2_{G_n,p_n}(Y)}{n}}
+\le
+z_{1-\alpha_{\mathrm{cov}}/2}
+\sqrt{\frac{\widehat V_{\mathrm{cons}}(G_n,p_n)}{n}},
+\]
+where the last inequality uses the first assertion and
+\(z_{1-\alpha_{\mathrm{cov}}/2}\ge0\).  Taking lower limits of the corresponding probabilities gives the claimed coverage bound.
+
+% lean: Causalean.Experimentation.DesignBased.conservative_wald_liminf_of_studentized_cdf
+\end{enumerate}
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:thm:dispersion-certificate-unbounded}]
+Fix \(\epsilon\in(0,1/2)\), \(c_{\mathrm{disp}}>0\), and
+\(C_{\mathrm{disp}}\geq 1\).  Put
+\[
+t_n=n+1,\qquad d_n=t_n^2,\qquad
+\rho=\frac{\epsilon+1/2}{2},\qquad
+\varphi=\frac{3\rho-1/2}{2}.
+\]
+
+\begin{enumerate}
+\item Let \(I_n\) be the disjoint union of a core block of \(d_n\)
+interventions and a filler block of \(2d_n\) interventions.  Let \(O_n\)
+consist of \(d_n\) core outcomes together with \(t_n\) filler outcomes for
+each filler intervention.  Each core outcome is adjacent to every core
+intervention, while each filler outcome is adjacent only to its designated
+filler intervention; take all potential-outcome schedules to be zero.
+Thus, if \(k\) is a core intervention, then \(s_k=d_n\), whereas if \(k\)
+is a filler intervention, then \(s_k=t_n\).
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment
+
+\item Set \(B_n=|I_n|\rho\).  Since
+\(\epsilon<\rho<1/2\), one has
+\(\epsilon\leq\rho\leq1-\epsilon\), and hence
+\[
+|I_n|\epsilon\leq B_n\leq |I_n|(1-\epsilon).
+\]
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionBudget_admissible
+
+\item The degree energy is
+\[
+\sum_{k\in I_n}s_k^2
+=d_n\,d_n^2+2d_n\,t_n^2,
+\]
+which is strictly positive.
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_degree_energy_pos
+
+\item Since \(d_n\to\infty\) and \(c_{\mathrm{disp}}>0\), for all
+sufficiently large \(n\),
+\[
+1\leq c_{\mathrm{disp}}d_n.
+\]
+Fix such an \(n\).  If \(k\) is a core intervention, then
+\[
+s_k^2=d_n^2
+ \leq c_{\mathrm{disp}}
+ \bigl(d_n\,d_n^2+2d_n\,t_n^2\bigr).
+\]
+If \(k\) is a filler intervention, then \(s_k^2=t_n^2=d_n\), and the
+same bound follows from \(d_n\geq1\), \(1\leq c_{\mathrm{disp}}d_n\), and
+the displayed energy formula.  Thus the degree-dispersion condition holds
+eventually.
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionCertificateUnbounded
+
+\item Every intervention has the same strictly positive \(h\)-weight,
+namely
+\[
+h_k(G_n)=\frac{d_n}{|O_n|}\qquad(k\in I_n).
+\]
+Consequently, for every \(k,l\in I_n\),
+\[
+h_k(G_n)=h_l(G_n)\leq C_{\mathrm{disp}}h_l(G_n),
+\]
+so the \(h\)-weight-ratio condition in fact holds for every \(n\).
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionExperiment_hWeight_eq
+
+\item Write \(R(x)=x^{-1}+(1-x)^{-1}\).  The common positive \(h\)-weight
+makes the surrogate objective a positive multiple of
+\(\sum_{k\in I_n}R(p_k)\).  Under the budget constraint with mean
+\(\rho\), its unique minimizer is therefore the homogeneous design
+\(p_k=\rho\).
+
+For comparison, use the feasible design assigning \(1/2\) on the core
+block and \(\varphi\) on the filler block.  Direct evaluation of the two
+envelopes, together with positivity of the envelope minimum, yields
+\[
+\alpha_{\mathrm{cert}}(G_n)\geq
+\frac{\rho^{-d_n}}
+ {2^{d_n+1}+2R(\varphi)}.
+\]
+Since \(2^{d_n}\to\infty\), eventually
+\(2^{d_n}\geq2R(\varphi)\), and hence
+\[
+\alpha_{\mathrm{cert}}(G_n)\geq
+\frac13(2\rho)^{-d_n}.
+\]
+Finally, \(\rho<1/2\), so \((2\rho)^{-1}>1\); as \(d_n\to\infty\), the
+right-hand side tends to \(+\infty\).  Therefore
+\(\alpha_{\mathrm{cert}}(G_n)\to\infty\).
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.dispersionApproxRatio_tendsto_atTop
+\end{enumerate}
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:thm:heterogeneity-separation}]
+\begin{enumerate}
+\item Suppose that the homogeneous-point gradient scores are not all equal.  First, \(p^{\mathrm{hom}}\in\mathcal P_{n,B_n,\epsilon}\): each coordinate equals \(\rho\in(\epsilon,1-\epsilon)\), and
+\[
+\sum_{k\in I_n}p^{\mathrm{hom}}_k=m_n\rho=B_n.
+\]
+
+For later use, fix arbitrary \(a,b\in I_n\), write
+\[
+d=e_b-e_a,\qquad
+T=\min\{\rho-\epsilon,\,1-\epsilon-\rho\},
+\]
+and set
+\[
+\gamma(s)=\frac14V_{\mathrm{env}}(G_n,p^{\mathrm{hom}}+sd).
+\]
+The segment \(p^{\mathrm{hom}}+sd\) is feasible for \(s\in[-T,T]\).  For \(s\geq0\), this follows directly from the bounds defining \(T\); for \(s<0\), it follows by applying the same argument with \(a\) and \(b\) exchanged.  Moreover, \(|d_k|\leq1\) for every \(k\), and, on \(0\leq s\leq T\), both coordinates \(p^{\mathrm{hom}}_k+sd_k\) and their complements are at least \(\epsilon/2\).
+
+Consequently, \(\gamma\) is twice continuously differentiable on \([0,T]\), differentiable at \(0\), and
+\[
+\gamma'(0)=g_b(G_n,p^{\mathrm{hom}})-g_a(G_n,p^{\mathrm{hom}}).
+\]
+Writing \(L_{ab}\) for the directional modulus along \(d\), convexity of the envelope from \cref{obj:thm:convex-design}, together with the directional curvature representation, gives
+\[
+0\leq L_{ab},
+\qquad
+\gamma''(s)\leq L_{ab}\quad(0\leq s\leq T).
+\]
+
+We next show that \(p^{\mathrm{hom}}\) is not a minimizer.  Otherwise, \cref{obj:thm:convex-design} supplies a budget multiplier \(\lambda_n\) and nonnegative upper- and lower-box multipliers \(\nu^+_{k,n}\) and \(\nu^-_{k,n}\) satisfying
+\[
+g_k(G_n,p^{\mathrm{hom}})
+=\lambda_n-\nu^+_{k,n}+\nu^-_{k,n},
+\]
+together with the complementary-slackness identities
+\[
+\nu^+_{k,n}\bigl(p^{\mathrm{hom}}_k-(1-\epsilon)\bigr)=0,
+\qquad
+\nu^-_{k,n}\bigl(\epsilon-p^{\mathrm{hom}}_k\bigr)=0.
+\]
+Since every homogeneous coordinate is strictly interior, both factors multiplying the respective multipliers are nonzero.  Thus \(\nu^+_{k,n}=\nu^-_{k,n}=0\) for every \(k\), so all gradient scores equal \(\lambda_n\), a contradiction.
+
+Choose \(a\) attaining the maximum and \(b\) attaining the minimum of
+\(k\mapsto g_k(G_n,p^{\mathrm{hom}})\).  If these extrema were equal, all scores would be equal, contrary to hypothesis.  Hence
+\[
+\Delta_g
+=g_a(G_n,p^{\mathrm{hom}})-g_b(G_n,p^{\mathrm{hom}})
+>0.
+\]
+For the above line function associated with these extremal indices,
+\[
+\gamma'(0)=-\Delta_g.
+\]
+Define
+\[
+s_*=
+\begin{cases}
+T, & L_{ab}=0,\\
+\min\{T,\Delta_g/L_{ab}\}, & L_{ab}\ne0.
+\end{cases}
+\]
+The one-dimensional second-order descent estimate yields \(s_*\in[0,T]\) and
+\[
+\gamma(0)-\gamma(s_*)\geq \frac{\Delta_g}{2}s_*.
+\]
+The design \(q=p^{\mathrm{hom}}+s_*d\) is feasible.  Therefore, for every
+\(p_n^*(G_n)\in\operatorname{argmin}_{p\in\mathcal P_{n,B_n,\epsilon}}
+V_{\mathrm{env}}(G_n,p)\),
+\[
+V_{\mathrm{env}}(G_n,p_n^*(G_n))
+\leq V_{\mathrm{env}}(G_n,q).
+\]
+Multiplying the preceding descent inequality by \(4\) gives
+\[
+V_{\mathrm{env}}(G_n,p^{\mathrm{hom}})
+-
+V_{\mathrm{env}}(G_n,p_n^*(G_n))
+\geq 2\Delta_gs_*,
+\]
+which is the asserted bound after substituting \(T\) and \(s_*\).
+
+Finally, \(p_n^*(G_n)\neq p^{\mathrm{hom}}\), since otherwise
+\(p^{\mathrm{hom}}\) would be a minimizer.  Optimality gives the corresponding weak inequality in envelope values; equality would again make \(p^{\mathrm{hom}}\) a minimizer.  Thus
+\[
+V_{\mathrm{env}}(G_n,p_n^*(G_n))
+<
+V_{\mathrm{env}}(G_n,p^{\mathrm{hom}}).
+\]
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.envelope_segment_descent_gap
+
+\item Now suppose that \(|N_i(G_n)|=1\) for every \(i\in O_n\), and fix \(k\in I_n\).  If \(k\in S_{ij}(G_n)\), then \(S_{ij}(G_n)\) is a nonempty subset of \(N_i(G_n)\), and hence has cardinality one.  Therefore every nonzero summand in the homogeneous-point gradient formula equals
+\[
+(1-\rho)^{-2}-\rho^{-2}.
+\]
+The number of ordered pairs \((i,j)\) such that \(k\in S_{ij}(G_n)\) is \(s_k^2\).  Substitution into the gradient formula gives
+\[
+g_k(G_n,p^{\mathrm{hom}})
+=
+n^{-1}s_k^2\left((1-\rho)^{-2}-\rho^{-2}\right).
+\]
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.singleton_envelopeGrad_eq_sdeg_sq
+
+\item Retain the singleton-neighborhood condition and suppose that
+\(s_a^2\neq s_b^2\) for some \(a,b\in I_n\).  Put
+\[
+C=(1-\rho)^{-2}-\rho^{-2}.
+\]
+This scalar is nonzero.  Indeed, if \(C=0\), then
+\((1-\rho)^2=\rho^2\); thus either \(1-\rho=\rho\), contradicting
+\(\rho\neq1/2\), or \(1-\rho=-\rho\), which would imply \(1=0\).
+
+Also \(n>0\).  Otherwise \(O_n\) would be empty, every intervention-side degree quantity would vanish, and \(s_a^2\neq s_b^2\) would be impossible.  Hence \(n^{-1}C\neq0\).  The formula from the preceding step then implies
+\[
+g_a(G_n,p^{\mathrm{hom}})\neq g_b(G_n,p^{\mathrm{hom}}).
+\]
+The conclusions of the first step therefore apply.
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.singleton_degree_spread_to_gradient_spread
+\end{enumerate}
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.heterogeneity_separation
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:thm:surrogate-certificate}]
+Put
+\[
+A(q):=\sum_{k\in I_n}h_k(G_n)\{q_k^{-1}+(1-q_k)^{-1}\},
+\qquad
+C:=\max\{1,\epsilon^{-(\bar d-1)}\}.
+\]
+Then \(C\geq 1\), hence \(C\geq0\).
+
+\begin{enumerate}
+\item By \cref{obj:thm:convex-design}, the envelope-optimal design
+\(p_n^*(G_n)\) is feasible and satisfies
+\[
+V_{\mathrm{env}}(G_n,p_n^*(G_n))
+ \leq V_{\mathrm{env}}(G_n,q)
+\quad\text{for every }q\in\mathcal P_{n,B_n,\epsilon}.
+\]
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.optimalDesign_feasible_minimizes
+
+\item On \(\mathcal P_{n,B_n,\epsilon}\), every \(q_k\) and \(1-q_k\) is strictly
+positive.  Thus \(A\) is continuous there, being a finite sum of reciprocal
+coordinate functions.  Compactness from \cref{obj:thm:convex-design}
+therefore yields a feasible surrogate design \(p_n^{\deg}(G_n)\) such that
+\[
+A(p_n^{\deg}(G_n))\leq A(q)
+\quad\text{for every }q\in\mathcal P_{n,B_n,\epsilon}.
+\]
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.surrogateDesign_feasible_minimizes
+
+\item Fix \(q\in\mathcal P_{n,B_n,\epsilon}\), and write
+\[
+K_{ij}:=r_{ij}^1(G_n,q)+r_{ij}^0(G_n,q)+2r_{ij}^{10}(G_n).
+\]
+The definitions give
+\[
+A(q)=\sum_{i\in O_n}\sum_{j\in O_n}\sum_{k\in S_{ij}(G_n)}
+ n^{-1}|S_{ij}(G_n)|^{-1}
+ \{q_k^{-1}+(1-q_k)^{-1}\},
+\]
+and
+\[
+\frac{V_{\mathrm{env}}(G_n,q)}4
+=\sum_{i\in O_n}\sum_{j\in O_n}n^{-1}K_{ij}.
+\]
+For a fixed pair \((i,j)\), let \(S=S_{ij}(G_n)\).  If \(S=\varnothing\),
+both corresponding terms are zero.  Otherwise, set
+\(a_k=q_k^{-1}\) and \(b_k=(1-q_k)^{-1}\).  Since \(0<q_k<1\),
+all these factors are at least one.  Hence their averages do not exceed
+their products:
+\[
+|S|^{-1}\sum_{k\in S}a_k\leq\prod_{k\in S}a_k,
+\qquad
+|S|^{-1}\sum_{k\in S}b_k\leq\prod_{k\in S}b_k.
+\]
+For nonempty \(S\), the definition of the loads gives
+\[
+K_{ij}=\prod_{k\in S}a_k+\prod_{k\in S}b_k.
+\]
+Adding the preceding two inequalities yields
+\[
+|S|^{-1}\sum_{k\in S}(a_k+b_k)\leq K_{ij}.
+\]
+Multiplication by \(n^{-1}\geq0\) and summation over \((i,j)\) prove
+\[
+A(q)\leq \frac{V_{\mathrm{env}}(G_n,q)}4.
+\]
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.pairAverage_le_envelopeKernel
+
+\item For the reverse bound, retain \(S\neq\varnothing\).  Since
+\(S\subseteq N_i(G_n)\), \cref{obj:ass:bounded-outcome-degree}
+gives \(|S|\leq\bar d\).  Moreover,
+\[
+0\leq a_k,b_k\leq\epsilon^{-1}.
+\]
+After deleting any \(k\in S\), each of the two products is therefore bounded by
+\[
+(\epsilon^{-1})^{|S|-1}
+ \leq \epsilon^{-(\bar d-1)}
+ \leq C.
+\]
+For nonnegative factors whose product after removal of any one factor is at
+most \(C\), the full product is at most \(C\) times the factors' average.
+Applying this separately to \((a_k)\) and \((b_k)\) gives
+\[
+\prod_{k\in S}a_k
+ \leq C|S|^{-1}\sum_{k\in S}a_k,
+\qquad
+\prod_{k\in S}b_k
+ \leq C|S|^{-1}\sum_{k\in S}b_k.
+\]
+Consequently,
+\[
+K_{ij}\leq
+C|S|^{-1}\sum_{k\in S}\{q_k^{-1}+(1-q_k)^{-1}\}.
+\]
+The same inequality is immediate when \(S=\varnothing\).  Multiplying by
+\(n^{-1}\geq0\), summing over \((i,j)\), and using the two displayed
+expansions in the preceding step yields
+\[
+\frac{V_{\mathrm{env}}(G_n,q)}4\leq C A(q).
+\]
+This proves the asserted sandwich for every feasible \(q\).
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.envelopeKernel_le_certificate_pairAverage
+
+\item Let \(V_*:=V_{\mathrm{env}}(G_n,p_n^*(G_n))\).  If \(V_*>0\), the
+two sandwich bounds and the minimizing property of \(p_n^{\deg}(G_n)\) imply
+\[
+\frac{V_{\mathrm{env}}(G_n,p_n^{\deg}(G_n)}4
+ \leq C A(p_n^{\deg}(G_n))
+ \leq C A(p_n^*(G_n))
+ \leq C\frac{V_*}{4}.
+\]
+Thus
+\[
+V_{\mathrm{env}}(G_n,p_n^{\deg}(G_n))\leq C V_*,
+\]
+and division by \(V_*>0\), together with \cref{obj:def:approximation-ratio},
+gives \(\alpha_{\mathrm{cert}}(G_n)\leq C\).  If \(V_*\not>0\), that
+definition assigns \(\alpha_{\mathrm{cert}}(G_n)=1\), which is at most
+\(C\).  The claimed approximation-ratio bound follows.
+% lean: CausalSmith.Experimentation.BipartiteMinimaxDesign.surrogate_certificate
+\end{enumerate}
+\end{proof}

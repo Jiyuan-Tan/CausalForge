@@ -1,0 +1,1003 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb,amsthm}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{openendedquestion}{Open-ended Question}
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\coreref}[1]{\ref{#1}}
+
+\begin{document}
+
+\section*{stat\_conformal\_overlap\_frontier (v1)}
+
+\paragraph{TL;DR.} Within a fixed, externally supplied finite list of conditionally normalized density ratios, robust weighted conformal prediction has finite-sample candidate-wise marginal coverage, and a singleton list reduces to known-ratio weighted conformal prediction. Normalization and the heavy-tail certificate give the computable CDF bound \(\min\{1,K-1,H(C,\gamma),W/2\}\). That bound does not imply a vanishing connected-length price: the universal upper bound is one, the price is zero for an effectively singleton list, and under the formally defined divisible-intervention-support condition \(\mathsf{SR}_\infty\) the worst case over admissible support-rich fixed certificates has supremum one even with arbitrarily small CDF discrepancy. The marginal high-probability regret is zero for every \(n\) when \(\eta\ge1-\alpha\) and eventually zero for every fixed \(\eta\in(0,1)\), via a measurable closed-hull randomized repair that needs no second moment.
+
+\section{Project justification}
+
+\paragraph{Gap.} Known-ratio weighted conformal prediction, robust compatible-law coverage, doubly robust asymptotic calibration, and generic conformal-length optimization do not determine the population connected-length behavior or the marginal high-probability regret of this externally fixed finite normalized ratio-list model. The missing distinction is between a universal upper bound, which needs no support richness, and an order-one lower witness, which uses the explicitly defined divisible-intervention-support condition \(\mathsf{SR}_\infty\).
+
+\paragraph{Niche.} The analysis is conditional on a fixed externally supplied finite list satisfying exact target-ratio containment, candidate normalization, graded width, and a heavy upper-tail envelope. The order-one population lower conclusion is a worst case over admissible support-rich certificates under \(\mathsf{SR}_\infty\), not an unconditional claim for every treatment support. No procedure for learning or certifying the list is supplied.
+
+\paragraph{Fill.} Normalization yields the half-total-variation algebra and, after tail integration, the explicit CDF envelope \(\min\{1,K-1,H(C,\gamma),W/2\}\). The consolidated divisible-support witness shows separately that ordinary-cell CDF discrepancy has order \(\delta\), tail-shell discrepancy has order \(\epsilon^{\gamma-1}\), and under \(\mathsf{SR}_\infty\) a fixed two-candidate certificate can have connected-length-price supremum one despite arbitrarily small CDF discrepancy. The unconditional population conclusion remains only \(0\le\operatorname{len}(I_{\mathrm{rob}})-\operatorname{len}(I_w)\le1\). At sample level, the criterion has an \(\eta=1-\alpha\) elbow and an eventual exact zero-regret repair; \(n^{-(\gamma-1)/\gamma}\) is sufficient construction slack rather than a positive regret exponent.
+
+\section{Related work}
+
+Tibshirani et al. provide the known-ratio weighted-conformal benchmark, while Jin--Ren--Candes provide robust compatible-law conformal baselines. Yang--Kuchibhotla--Tchetgen Tchetgen study doubly robust asymptotic calibration, and Kiyani--Pappas--Hassani study generic conformal length optimization. Qiu--Dobriban--Tchetgen Tchetgen establish finite-sample uninformative-set phenomena under unknown covariate shift, an information regime different from the present externally fixed exact-list regime. The present contribution is a finite-list diagnostic: an unconditional computable CDF bound and unit length upper bound, an order-one support-rich lower obstruction under \(\mathsf{SR}_\infty\), and a degeneracy result for the stated marginal regret. It claims no global superiority over those methods and no unconditional supremum-one result on arbitrary treatment supports.
+
+\section{Setup}
+
+Target (estimand / structural parameter): \texttt{I\_rob=[m-r\_rob,m+r\_rob] intersect [0,1]}.
+Identifying functional / recovery map: \texttt{r\_rob=inf\{r in [0,1]:inf\_\{v in V\_epsilon\}E\_Pobs[v(X,A)1\{|Y-m|<=r\}]>=1-alpha\}}.
+\begin{itemize}
+  \item \texttt{n} --- \texttt{integer}; \texttt{N}; \texttt{index} $:=$ \texttt{number of calibration observations}
+  \item \texttt{i} --- \texttt{integer}; \texttt{\{1,...,n\}}; \texttt{bound index} $:=$ \texttt{calibration-observation index}
+  \item \texttt{K} --- \texttt{integer}; \texttt{N}; \texttt{certificate index} $:=$ \texttt{number of externally certified candidate ratios}
+  \item \texttt{k} --- \texttt{integer}; \texttt{\{1,...,K\}}; \texttt{bound index} $:=$ \texttt{candidate-ratio index}
+  \item \texttt{alpha} --- \texttt{scalar}; \texttt{(0,1)}; \texttt{constant} $:=$ \texttt{target miscoverage probability}
+  \item \texttt{gamma} --- \texttt{scalar}; \texttt{(1,2)}; \texttt{constant} $:=$ \texttt{upper-endpoint tail index}
+  \item \texttt{epsilon} --- \texttt{scalar}; \texttt{(0,1/2)}; \texttt{constant} $:=$ \texttt{inverse high-ratio audit threshold}
+  \item \texttt{delta} --- \texttt{scalar}; \texttt{[0,1]}; \texttt{constant} $:=$ \texttt{certified ordinary-cell ratio-width tolerance}
+  \item \texttt{C} --- \texttt{scalar}; \texttt{(0,infinity)}; \texttt{constant} $:=$ \texttt{upper-endpoint tail-envelope constant}
+  \item \texttt{c0} --- \texttt{scalar}; \texttt{(0,infinity)}; \texttt{constant} $:=$ \texttt{local score-quantile margin constant}
+  \item \texttt{eta} --- \texttt{scalar}; \texttt{(0,1)}; \texttt{constant} $:=$ \texttt{outer regret probability}
+  \item \texttt{mathcal\_X} --- \texttt{measurable space}; \texttt{primitive space} $:=$ \texttt{covariate space}
+  \item \texttt{mathcal\_A} --- \texttt{measurable space}; \texttt{primitive space} $:=$ \texttt{treatment space with a dominating measure}
+  \item \texttt{X} --- \texttt{random vector}; \texttt{mathcal\_X}; \texttt{full-data primitive} $:=$ \texttt{baseline covariate}
+  \item \texttt{x} --- \texttt{point}; \texttt{mathcal\_X}; \texttt{bound variable} $:=$ \texttt{generic covariate value}
+  \item \texttt{A} --- \texttt{random variable}; \texttt{mathcal\_A}; \texttt{full-data primitive} $:=$ \texttt{observed treatment}
+  \item \texttt{a} --- \texttt{point}; \texttt{mathcal\_A}; \texttt{bound variable} $:=$ \texttt{generic treatment value}
+  \item \texttt{B} --- \texttt{set}; \texttt{Borel([0,1])}; \texttt{bound variable} $:=$ \texttt{generic Borel outcome event}
+  \item \texttt{y} --- \texttt{scalar}; \texttt{[0,1]}; \texttt{bound variable} $:=$ \texttt{candidate outcome value}
+  \item \texttt{r} --- \texttt{scalar}; \texttt{[0,1]}; \texttt{bound variable} $:=$ \texttt{candidate score radius}
+  \item \texttt{Y(a)} --- \texttt{random variable}; \texttt{[0,1]}; \texttt{full-data primitive} $:=$ \texttt{potential outcome under treatment a}
+  \item \texttt{Y(A)} --- \texttt{random variable}; \texttt{[0,1]}; \texttt{full-data primitive} $:=$ \texttt{potential outcome at the realized treatment}
+  \item \texttt{Y} --- \texttt{random variable}; \texttt{[0,1]}; \texttt{observed-data primitive} $:=$ \texttt{observed outcome}
+  \item \texttt{Z} --- \texttt{random element}; \texttt{mathcal\_X x mathcal\_A x [0,1]\textasciicircum{}mathcal\_A}; \texttt{full-data unit} $:=$ \texttt{Z=(X,A,(Y(a))\_\{a in mathcal\_A\})}
+  \item \texttt{P\_F} --- \texttt{probability law}; \texttt{Prob(mathcal\_X x mathcal\_A x [0,1]\textasciicircum{}mathcal\_A)}; \texttt{source law} $:=$ \texttt{source full-data law of Z}
+  \item \texttt{P\_obs} --- \texttt{probability law}; \texttt{Prob(mathcal\_X x mathcal\_A x [0,1])}; \texttt{observed-data law} $:=$ \texttt{law under P\_F of the observed tuple (X,A,Y(A))}
+  \item \texttt{P\_X} --- \texttt{probability law}; \texttt{Prob(mathcal\_X)}; \texttt{covariate law} $:=$ \texttt{X-marginal of P\_F}
+  \item \texttt{pi} --- \texttt{Markov kernel}; \texttt{mathcal\_A x mathcal\_X -> [0,infinity)}; \texttt{GPS} $:=$ \texttt{pi(a|x), the P\_F-conditional treatment density of A given X=x}
+  \item \texttt{g} --- \texttt{Markov kernel}; \texttt{mathcal\_A x mathcal\_X -> [0,infinity)}; \texttt{intervention} $:=$ \texttt{g(a|x), the prespecified stochastic-intervention density}
+  \item \texttt{w} --- \texttt{measurable function}; \texttt{mathcal\_X x mathcal\_A -> [0,infinity)}; \texttt{true intervention ratio} $:=$ \texttt{w(x,a)=g(a|x)/pi(a|x) on \{pi(a|x)>0\}}
+  \item \texttt{ell} --- \texttt{measurable function}; \texttt{mathcal\_X x mathcal\_A -> [0,infinity)}; \texttt{certificate input} $:=$ \texttt{certified lower endpoint for w}
+  \item \texttt{u} --- \texttt{measurable function}; \texttt{mathcal\_X x mathcal\_A -> [0,infinity)}; \texttt{certificate input} $:=$ \texttt{certified upper endpoint for w}
+  \item \texttt{t} --- \texttt{scalar}; \texttt{[1,infinity)}; \texttt{bound variable} $:=$ \texttt{tail argument}
+  \item \texttt{m} --- \texttt{scalar}; \texttt{[0,1]}; \texttt{score input} $:=$ \texttt{score centre fitted on data independent of calibration and target draws}
+  \item \texttt{S} --- \texttt{measurable function}; \texttt{[0,1] -> [0,1]}; \texttt{nested nonconformity score} $:=$ \texttt{S(y)=|y-m|}
+  \item \texttt{O} --- \texttt{random vector}; \texttt{mathcal\_X x mathcal\_A x [0,1]}; \texttt{observed unit} $:=$ \texttt{O=(X,A,Y) under P\_obs}
+  \item \texttt{O\_i} --- \texttt{random vector}; \texttt{mathcal\_X x mathcal\_A x [0,1]}; \texttt{sample unit} $:=$ \texttt{i-th calibration draw from P\_obs}
+  \item \texttt{X\_i} --- \texttt{random vector}; \texttt{mathcal\_X}; \texttt{sample component} $:=$ \texttt{covariate component of O\_i}
+  \item \texttt{A\_i} --- \texttt{random variable}; \texttt{mathcal\_A}; \texttt{sample component} $:=$ \texttt{treatment component of O\_i}
+  \item \texttt{Y\_i} --- \texttt{random variable}; \texttt{[0,1]}; \texttt{sample component} $:=$ \texttt{outcome component of O\_i}
+  \item \texttt{D\_n} --- \texttt{random sample}; \texttt{(mathcal\_X x mathcal\_A x [0,1])\textasciicircum{}n}; \texttt{calibration sample} $:=$ \texttt{D\_n=(O\_1,...,O\_n)}
+  \item \texttt{v\textasciicircum{}k} --- \texttt{measurable function}; \texttt{mathcal\_X x mathcal\_A -> [0,infinity)}; \texttt{certificate input} $:=$ \texttt{k-th externally certified candidate ratio}
+  \item \texttt{V\_epsilon} --- \texttt{finite set of functions}; \texttt{\{v:mathcal\_X x mathcal\_A -> [0,infinity)\}}; \texttt{identified set} $:=$ \texttt{causally compatible ratio list from def:compatible-ratios}
+  \item \texttt{v} --- \texttt{measurable function}; \texttt{mathcal\_X x mathcal\_A -> [0,infinity)}; \texttt{bound variable} $:=$ \texttt{generic member of V\_epsilon}
+  \item \texttt{Q\_v} --- \texttt{probability law}; \texttt{Prob(mathcal\_X x mathcal\_A x [0,1]\textasciicircum{}mathcal\_A)}; \texttt{compatible intervention full-data law} $:=$ \texttt{law with dQ\_v/dP\_F=v(X,A)}
+  \item \texttt{T\_v} --- \texttt{random pair}; \texttt{mathcal\_X x mathcal\_A}; \texttt{target draw} $:=$ \texttt{candidate-specific target covariate-treatment pair under Q\_v}
+  \item \texttt{U} --- \texttt{random variable}; \texttt{Unif(0,1)}; \texttt{randomization} $:=$ \texttt{U is Uniform(0,1) and, for every v in V\_epsilon, is independent of the joint element consisting of D\_n, T\_v, and the Q\_v-target outcome Y(A). The formal complete-target statement is ass:uniform-tie.}
+  \item \texttt{Y\textasciicircum{}v} --- \texttt{random variable}; \texttt{[0,1]}; \texttt{compatible intervention outcome} $:=$ \texttt{Y(A) under Q\_v}
+  \item \texttt{F\_v} --- \texttt{distribution function}; \texttt{[0,1] -> [0,1]}; \texttt{compatible score CDF} $:=$ \texttt{F\_v(r)=E\_Pobs[v(X,A)1\{S(Y)<=r\}]}
+  \item \texttt{F\_w} --- \texttt{distribution function}; \texttt{[0,1] -> [0,1]}; \texttt{target score CDF} $:=$ \texttt{F\_w(r)=E\_Pobs[w(X,A)1\{S(Y)<=r\}]}
+  \item \texttt{r\_v} --- \texttt{scalar}; \texttt{[0,1]}; \texttt{compatible oracle radius} $:=$ \texttt{r\_v=inf\{r in [0,1]:F\_v(r)>=1-alpha\}}
+  \item \texttt{r\_w} --- \texttt{scalar}; \texttt{[0,1]}; \texttt{target oracle radius} $:=$ \texttt{r\_w=inf\{r in [0,1]:F\_w(r)>=1-alpha\}}
+  \item \texttt{r\_rob} --- \texttt{scalar}; \texttt{[0,1]}; \texttt{robust oracle radius} $:=$ \texttt{r\_rob=inf\{r in [0,1]:inf\_\{v in V\_epsilon\}F\_v(r)>=1-alpha\}}
+  \item \texttt{I\_w} --- \texttt{interval}; \texttt{subsets of [0,1]}; \texttt{point-ratio oracle interval} $:=$ \texttt{I\_w=[m-r\_w,m+r\_w] intersect [0,1]}
+  \item \texttt{I\_rob} --- \texttt{interval}; \texttt{subsets of [0,1]}; \texttt{robust oracle interval} $:=$ \texttt{I\_rob=[m-r\_rob,m+r\_rob] intersect [0,1]}
+  \item \texttt{p\_rob} --- \texttt{random function}; \texttt{[0,1] -> [0,1]}; \texttt{calibration functional} $:=$ \texttt{robust randomized weighted-conformal p-value from def:robust-wcp evaluated at a candidate-specific target pair T\_v}
+  \item \texttt{p\_k} --- \texttt{random function}; \texttt{[0,1] -> [0,1]}; \texttt{calibration functional} $:=$ \texttt{weighted-conformal p-value for candidate ratio v\textasciicircum{}k evaluated at a candidate-specific target pair T\_v}
+  \item \texttt{Ihat\_n} --- \texttt{random interval rule}; \texttt{D\_n x (mathcal\_X x mathcal\_A) x (0,1) -> \{intervals in [0,1]\}}; \texttt{robust conformal interval} $:=$ \texttt{Ihat\_n(D\_n,T\_v,U)=\{y in [0,1]:p\_rob(y)>alpha\}}
+  \item \texttt{h\_J} --- \texttt{measurable function}; \texttt{D\_n x (mathcal\_X x mathcal\_A) x (0,1) -> [0,1]}; \texttt{bound variable} $:=$ \texttt{radius function defining the score-centred rule J}
+  \item \texttt{J} --- \texttt{measurable rule}; \texttt{D\_n x (mathcal\_X x mathcal\_A) x (0,1) -> \{connected intervals in [0,1]\}}; \texttt{bound variable} $:=$ \texttt{J(D\_n,T\_v,U)=[m-h\_J(D\_n,T\_v,U),m+h\_J(D\_n,T\_v,U)] intersect [0,1]}
+  \item \texttt{len} --- \texttt{functional}; \texttt{interval -> [0,1]}; \texttt{length functional} $:=$ \(\operatorname{len}(I):=\lambda_1(I)\) for every interval \(I\subseteq[0,1]\), including open and half-open intervals, with \(\operatorname{len}([b,c])=c-b\).
+  \item \texttt{mathfrak\_P\_cert} --- \texttt{class of probability laws}; \texttt{subsets of Prob(mathcal\_X x mathcal\_A x [0,1]\textasciicircum{}mathcal\_A)}; \texttt{model class} $:=$ \texttt{certified-tail full-data class from def:certificate-class}
+  \item \texttt{R\_n} --- \texttt{nonnegative scalar}; \texttt{[0,infinity)}; \texttt{resolved minimax functional} $:=$ \texttt{minimax high-probability robust-oracle regret from def:minimax-regret}
+\end{itemize}
+
+\section{Assumptions}
+
+\begin{assumption}[ass:iid-source]\label{ass:iid-source}
+\texttt{(O\_1,...,O\_n) is distributed as P\_obs\textasciicircum{}n}
+\par\smallskip\noindent\emph{Standard} (i.i.d. sampling, \cite{tibshirani2019covariateshift}).
+\end{assumption}
+
+\begin{assumption}[ass:compatible-target-law]\label{ass:compatible-target-law}
+\texttt{For every v in V\_epsilon, (T\_v,Y\textasciicircum{}v) has the Q\_v-law of (X,A,Y(A)).}
+\par\smallskip\noindent\emph{Standard} (covariate-shift target sampling with candidate-specific target copies, \cite{tibshirani2019covariateshift}).
+\end{assumption}
+
+\begin{assumption}[ass:independent-target]\label{ass:independent-target}
+\texttt{For every v in V\_epsilon, (T\_v,Y\textasciicircum{}v,U) is independent of D\_n.}
+\par\smallskip\noindent\emph{Standard} (independent calibration and target samples, \cite{tibshirani2019covariateshift}).
+\end{assumption}
+
+\begin{assumption}[ass:uniform-tie]\label{ass:uniform-tie}
+\texttt{U is Uniform(0,1) and independent of the joint element (D\_n,T\_v,Y\textasciicircum{}v) for every v in V\_epsilon.}
+\par\smallskip\noindent\emph{Standard} (independent randomized conformal tie breaking, \cite{tibshirani2019covariateshift}).
+\end{assumption}
+
+\begin{assumption}[ass:consistency]\label{ass:consistency}
+\texttt{Y=Y(A) almost surely under P\_F}
+\par\smallskip\noindent\emph{Standard} (consistency, \cite{schroder2025conformal}).
+\end{assumption}
+
+\begin{assumption}[ass:exchangeability]\label{ass:exchangeability}
+\texttt{Y(a) is independent of A conditional on X under P\_F for every a in mathcal\_A}
+\par\smallskip\noindent\emph{Standard} (conditional exchangeability, \cite{schroder2025conformal}).
+\end{assumption}
+
+\begin{assumption}[ass:intervention-domination]\label{ass:intervention-domination}
+\texttt{g(a|x)>0 implies pi(a|x)>0 for P\_X-almost every x and every a in mathcal\_A}
+\par\smallskip\noindent\emph{Standard} (positivity for stochastic interventions, \cite{schroder2025conformal}).
+\end{assumption}
+
+\begin{assumption}[ass:bounded-outcome]\label{ass:bounded-outcome}
+\texttt{Y(a) belongs to [0,1] almost surely under P\_F for every a in mathcal\_A}
+\par\smallskip\noindent\emph{Standard} (bounded outcome, \cite{cauchois2020robustvalidation}).
+\end{assumption}
+
+\begin{assumption}[ass:candidate-normalization]\label{ass:candidate-normalization}
+\texttt{For every k in \{1,...,K\}, integral v\textasciicircum{}k(x,a)pi(a|x) da=1 for P\_X-almost every x.}
+\par\smallskip\noindent\emph{Novel.} This is an externally supplied conditional premise on the finite candidate list. No procedure for generating, estimating, or auditing the list or its normalization is asserted.
+\end{assumption}
+
+\begin{assumption}[ass:certificate-containment]\label{ass:certificate-containment}
+\texttt{w belongs to V\_epsilon.}
+\par\smallskip\noindent\emph{Novel.} This is an externally supplied conditional premise that the fixed finite list contains the true intervention ratio. No certification or list-learning procedure is asserted.
+\end{assumption}
+
+\begin{assumption}[ass:upper-tail]\label{ass:upper-tail}
+\texttt{P\_obs\{u(X,A)>t\}<=C t\textasciicircum{}(-gamma) for every t>=1}
+\par\smallskip\noindent\emph{Novel.} This Pareto envelope is an externally supplied conditional premise on the fixed ratio envelope u. No procedure for estimating or certifying it is asserted.
+\end{assumption}
+
+\begin{assumption}[ass:graded-certificate-width]\label{ass:graded-certificate-width}
+\texttt{0<=u(X,A)-ell(X,A)<=delta 1\{u(X,A)<=epsilon\textasciicircum{}(-1)\}+u(X,A)1\{u(X,A)>epsilon\textasciicircum{}(-1)\} almost surely under P\_obs}
+\par\smallskip\noindent\emph{Novel.} This graded-width inequality is an externally supplied conditional premise on the fixed lower and upper ratio envelopes. No procedure for producing or validating those envelopes is asserted.
+\end{assumption}
+
+\begin{assumption}[ass:quantile-margin]\label{ass:quantile-margin}
+\texttt{F\_w(r\_w+t)-F\_w(r\_w-t)>=c0 t for every t in [0,1] for which 0<=r\_w-t and r\_w+t<=1}
+\par\smallskip\noindent\emph{Novel.} This externally supplied conditional premise requires mass across each admissible symmetric neighborhood of r\_w. It permits an atom at r\_w, may be one-side-vacuous at a boundary quantile, and permits a flat interval immediately to the right of r\_w; therefore it does not guarantee stable upper-quantile inversion.
+\end{assumption}
+
+\section{Definitions}
+
+\begin{definition}[def:compatible-ratios]\label{def:compatible-ratios}
+\texttt{Finite causally compatible ratio list} $:=$ \texttt{V\_epsilon=\{v\textasciicircum{}1,...,v\textasciicircum{}K\}, ell(x,a)=min\_\{1<=k<=K\}v\textasciicircum{}k(x,a), and u(x,a)=max\_\{1<=k<=K\}v\textasciicircum{}k(x,a).} \quad (\text{inputs: } K, v\textasciicircum{}k, ell, u)
+\end{definition}
+
+\begin{definition}[def:robust-oracle]\label{def:robust-oracle}
+\texttt{Robust identified-set oracle interval} $:=$ \texttt{I\_rob=[m-r\_rob,m+r\_rob] intersect [0,1], where r\_rob=inf\{r in [0,1]:inf\_\{v in V\_epsilon\}E\_Pobs[v(X,A)1\{|Y-m|<=r\}]>=1-alpha\}} \quad (\text{inputs: } P\_obs, V\_epsilon, m, alpha)
+\end{definition}
+
+\begin{definition}[def:robust-wcp]\label{def:robust-wcp}
+\texttt{Randomized robust weighted-conformal interval} $:=$ \texttt{For a candidate v in V\_epsilon and its target pair T\_v, for y in [0,1] and k=1,...,K, set p\_k(y)=[sum\_\{i=1\}\textasciicircum{}n v\textasciicircum{}k(X\_i,A\_i)1\{S(Y\_i)>S(y)\}+U(v\textasciicircum{}k(T\_v)+sum\_\{i=1\}\textasciicircum{}n v\textasciicircum{}k(X\_i,A\_i)1\{S(Y\_i)=S(y)\})]/[v\textasciicircum{}k(T\_v)+sum\_\{i=1\}\textasciicircum{}n v\textasciicircum{}k(X\_i,A\_i)] when its denominator is positive, and set p\_k(y)=0 otherwise. Set p\_rob(y)=max\_\{1<=k<=K\}p\_k(y), and output Ihat\_n(D\_n,T\_v,U)=\{y in [0,1]:p\_rob(y)>alpha\}=union\_\{k=1\}\textasciicircum{}K\{y in [0,1]:p\_k(y)>alpha\}.} \quad (\text{inputs: } D\_n, T\_v, U, K, v\textasciicircum{}k, V\_epsilon, S, alpha)
+\end{definition}
+
+\begin{definition}[def:certificate-class]\label{def:certificate-class}
+\texttt{Certified-tail full-data class} $:=$ \texttt{mathfrak\_P\_cert(C,gamma,epsilon,delta,c0,K)=\{P\_F in Prob(mathcal\_X x mathcal\_A x [0,1]\textasciicircum{}mathcal\_A): ass:consistency, ass:exchangeability, ass:intervention-domination, ass:bounded-outcome, ass:candidate-normalization, ass:certificate-containment, ass:upper-tail, ass:graded-certificate-width, and ass:quantile-margin hold for the P\_F-induced objects\}} --- the class of all objects satisfying: ass:consistency; ass:exchangeability; ass:intervention-domination; ass:bounded-outcome; ass:candidate-normalization; ass:certificate-containment; ass:upper-tail; ass:graded-certificate-width; ass:quantile-margin.
+\end{definition}
+
+\begin{definition}[def:minimax-regret]\label{def:minimax-regret}
+\texttt{High-probability robust-oracle regret} $:=$ \texttt{R\_n(eta)=inf\_J sup\_\{P\_F in mathfrak\_P\_cert\} inf\{r>=0:sup\_\{v in V\_epsilon\}Pr\_\{D\_n,T\_v,U\}\{len(J(D\_n,T\_v,U))-len(I\_rob)>r\}<=eta\}, where J has the score-centred form declared for J and satisfies inf\_\{v in V\_epsilon\}Pr\_\{D\_n,T\_v,Y\textasciicircum{}v,U\}\{Y\textasciicircum{}v in J(D\_n,T\_v,U)\}>=1-alpha for every P\_F in mathfrak\_P\_cert, with each (T\_v,Y\textasciicircum{}v) distributed as in ass:compatible-target-law.} \quad (\text{inputs: } n, eta, mathfrak\_P\_cert, I\_rob, len, V\_epsilon, D\_n, T\_v, Y\textasciicircum{}v, U, J)
+\end{definition}
+
+\section{Main results}
+
+\begin{proposition}[prop:causal-change-of-measure]\label{prop:causal-change-of-measure}
+\texttt{For every v in V\_epsilon and every B in Borel([0,1]), Q\_v\{Y(A) in B\}=E\_Pobs[v(X,A)1\{Y in B\}]. At v=w, this equals E\_PX[integral g(a|X)Pr\_PF\{Y(a) in B|X\} da].}
+\end{proposition}
+\begin{proof}
+Fix \(v\in V_\epsilon\) and a Borel set \(B\subseteq[0,1]\). By \(\texttt{def:compatible-ratios}\), there is an index \(k\in\{1,\ldots,K\}\) such that \(v=v^k\). The conditional normalization in \(\texttt{ass:candidate-normalization}\) gives, with \(\nu\) denoting the dominating measure on \(\mathcal A\),
+\[
+\mathbb E_{P_F}[v(X,A)]
+=\int_{\mathcal X}\!\left\{\int_{\mathcal A}v(x,a)\pi(a\mid x)\,\nu(da)\right\}P_X(dx)
+=1.
+\]
+Thus the stipulated Radon--Nikodym derivative \(dQ_v/dP_F=v(X,A)\) indeed defines a probability law. Its defining change-of-measure identity yields
+\[
+Q_v\{Y(A)\in B\}
+=\mathbb E_{P_F}\!\left[v(X,A)\mathbf 1\{Y(A)\in B\}\right].
+\]
+By consistency, \(Y=Y(A)\) \(P_F\)-almost surely. Since \(P_{\mathrm{obs}}\) is the \((X,A,Y)\)-marginal induced by \(P_F\), it follows that
+\[
+Q_v\{Y(A)\in B\}
+=\mathbb E_{P_F}\!\left[v(X,A)\mathbf 1\{Y\in B\}\right]
+=\mathbb E_{P_{\mathrm{obs}}}\!\left[v(X,A)\mathbf 1\{Y\in B\}\right].
+\]
+This proves the candidate-wise identity.
+
+It remains to evaluate the functional at the true ratio. Conditional on \(X=x\) and using consistency, disintegration gives
+\[
+\mathbb E_{P_{\mathrm{obs}}}\!\left[w(X,A)\mathbf 1\{Y\in B\}\right]
+=\int_{\mathcal X}\!\int_{\{a:\,\pi(a\mid x)>0\}}\!g(a\mid x)\,\Pr_{P_F}\{Y(a)\in B\mid X=x,A=a\}\,\nu(da)P_X(dx).
+\]
+Here the factor \(\pi(a\mid x)\) from the conditional law of \(A\) cancels with \(w(x,a)=g(a\mid x)/\pi(a\mid x)\) on \(\{\pi>0\}\). Conditional exchangeability implies, for the relevant \((x,a)\),
+\[
+\Pr_{P_F}\{Y(a)\in B\mid X=x,A=a\}
+=\Pr_{P_F}\{Y(a)\in B\mid X=x\}.
+\]
+Intervention domination implies that \(g(a\mid x)=0\) outside \(\{a:\pi(a\mid x)>0\}\) for \(P_X\)-almost every \(x\), so the inner integral may be extended to all of \(\mathcal A\). Consequently,
+\[
+\mathbb E_{P_{\mathrm{obs}}}\!\left[w(X,A)\mathbf 1\{Y\in B\}\right]
+=\mathbb E_{P_X}\!\left[\int_{\mathcal A}g(a\mid X)\Pr_{P_F}\{Y(a)\in B\mid X\}\,\nu(da)\right],
+\]
+which is the asserted stochastic-intervention g-formula.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The proposition keeps each compatible causal target law distinct from its observed-law weighting functional and recovers the stochastic-intervention g-formula at w. \textit{Gap.} This is the standard causal change-of-measure substrate; no identification improvement over known stochastic-intervention formulas is claimed. \textit{Consumer.} It supports candidate-wise marginal coverage, evaluated separately under each compatible stochastic-intervention law, and does not assert a joint event across candidate laws.
+
+\begin{lemma}[lem:certificate-cdf-modulus]\label{lem:certificate-cdf-modulus}
+\texttt{For every P\_F in mathfrak\_P\_cert and every v in V\_epsilon, with all expectations under P\_obs, sup\_\{r in [0,1]\}|F\_v(r)-F\_w(r)| <= (1/2)E|v-w| <= min\{1,E(u-w),E(w-ell),(1/2)E(u-ell)\}. Let L=epsilon\textasciicircum{}(-1), H(C,gamma)=C/(gamma-1) when C<=1 and H(C,gamma)=(gamma/(gamma-1))C\textasciicircum{}(1/gamma)-1 when C>1, and W=delta+(L-delta)min\{1,CL\textasciicircum{}(-gamma)\}+integral\_L\textasciicircum{}infinity min\{1,Ct\textasciicircum{}(-gamma)\}dt. Then sup\_\{v in V\_epsilon\}sup\_\{r in [0,1]\}|F\_v(r)-F\_w(r)| <= min\{1,K-1,H(C,gamma),W/2\}. Equivalently, W=delta+C[(gamma/(gamma-1))epsilon\textasciicircum{}(gamma-1)-delta epsilon\textasciicircum{}gamma] if C epsilon\textasciicircum{}gamma<=1, and W=(gamma/(gamma-1))C\textasciicircum{}(1/gamma) if C epsilon\textasciicircum{}gamma>1.}
+\end{lemma}
+\begin{proof}
+Fix \(P_F\in\mathfrak P_{\mathrm{cert}}\) and \(v\in V_\epsilon\), let \(\nu\) be the dominating measure on \(\mathcal A\), and write \(\mathbb E\) for expectation under \(P_{\mathrm{obs}}\). By \(\texttt{ass:candidate-normalization}\), every \(v^k\) satisfies
+\[
+\mathbb E v^k(X,A)
+ =\mathbb E_{P_X}\!\left[
+   \int_{\mathcal A}v^k(X,a)\pi(a\mid X)\,\nu(da)
+ \right]=1.
+\]
+Certificate containment gives \(w=v^j\), \(P_{\mathrm{obs}}\)-almost surely, for some \(j\), so \(\mathbb Ew=1\) as well.
+
+Put \(D=v-w\). Since \(\mathbb ED=0\),
+\[
+\mathbb ED_+=\mathbb ED_-=\frac12\mathbb E|D|.
+\]
+For every measurable event \(A_0\),
+\[
+-\mathbb ED_-\le \mathbb E[D\mathbf 1_{A_0}]\le\mathbb ED_+,
+\]
+and hence
+\[
+\left|\mathbb E[D\mathbf 1_{A_0}]\right|
+ \le\frac12\mathbb E|D|.
+\]
+Applying this inequality to \(A_0=\{S(Y)\le r\}\) and taking the supremum over \(r\in[0,1]\) proves
+\[
+\sup_{r\in[0,1]}|F_v(r)-F_w(r)|
+ \le\frac12\mathbb E|v-w|.
+\]
+
+The envelope definition and containment imply
+\[
+\ell\le v,\ w\le u
+\qquad P_{\mathrm{obs}}\text{-almost surely}.
+\]
+Consequently,
+\[
+(v-w)_+\le u-w,\qquad
+(w-v)_+\le w-\ell,\qquad
+|v-w|\le u-\ell.
+\]
+Together with the equality of the positive and negative masses, these inequalities yield
+\[
+\frac12\mathbb E|v-w|
+ \le\min\!\left\{
+ \mathbb E(u-w),\mathbb E(w-\ell),
+ \frac12\mathbb E(u-\ell)\right\}.
+\]
+It is also at most one, because it is the total-variation distance between two probability densities. Moreover, after choosing \(j\) with \(w=v^j\),
+\[
+u-w\le\sum_{k\ne j}v^k,
+\]
+so normalization gives
+\[
+\mathbb E(u-w)\le K-1.
+\]
+
+We next turn the tail condition into the bound \(H(C,\gamma)\). Since \(\mathbb Ew=1\),
+\[
+\mathbb E(u-w)=\mathbb Eu-1.
+\]
+The layer-cake identity, the bound \(\Pr(u>t)\le1\), and \(\texttt{ass:upper-tail}\) give
+\[
+\mathbb Eu-1
+ \le\int_1^\infty\min\{1,Ct^{-\gamma}\}\,dt.
+\]
+If \(C\le1\), this integral is \(C/(\gamma-1)\). If \(C>1\), split it at \(C^{1/\gamma}\) to obtain
+\[
+C^{1/\gamma}-1+
+ \frac{C(C^{1/\gamma})^{1-\gamma}}{\gamma-1}
+ =\frac{\gamma}{\gamma-1}C^{1/\gamma}-1.
+\]
+Thus \(\mathbb E(u-w)\le H(C,\gamma)\).
+
+Finally let \(L=\epsilon^{-1}\). Because \(L>1\) and \(0\le\delta\le1\), the graded-width condition and layer cake imply
+\[
+\begin{aligned}
+\mathbb E(u-\ell)
+&\le\delta\Pr(u\le L)+\mathbb E[u\mathbf 1\{u>L\}]\\
+&=\delta+(L-\delta)\Pr(u>L)
+  +\int_L^\infty\Pr(u>t)\,dt\\
+&\le\delta+(L-\delta)\min\{1,CL^{-\gamma}\}
+  +\int_L^\infty\min\{1,Ct^{-\gamma}\}\,dt\\
+&=W.
+\end{aligned}
+\]
+Combining all established bounds and then taking the supremum over \(v\) proves
+\[
+\sup_{v\in V_\epsilon}\sup_{r\in[0,1]}
+ |F_v(r)-F_w(r)|
+ \le\min\{1,K-1,H(C,\gamma),W/2\}.
+\]
+
+It remains only to evaluate \(W\). If \(C\epsilon^\gamma\le1\), then \(CL^{-\gamma}\le1\) and the tail cap is inactive for every \(t\ge L\). Therefore
+\[
+\begin{aligned}
+W
+&=\delta+(L-\delta)CL^{-\gamma}
+  +\frac{C}{\gamma-1}L^{1-\gamma}\\
+&=\delta+C\left[
+ \frac{\gamma}{\gamma-1}\epsilon^{\gamma-1}
+ -\delta\epsilon^\gamma\right].
+\end{aligned}
+\]
+If \(C\epsilon^\gamma>1\), set \(t_0=C^{1/\gamma}>L\). Then
+\[
+\begin{aligned}
+W
+&=\delta+(L-\delta)+(t_0-L)
+  +\frac{C}{\gamma-1}t_0^{1-\gamma}\\
+&=\frac{\gamma}{\gamma-1}C^{1/\gamma}.
+\end{aligned}
+\]
+These are the two asserted formulas.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} Candidate normalization makes half total variation the exact algebraic scale, while \(H(C,\gamma)\) and \(W\) turn the tail and graded-width premises into a computable envelope. \textit{Gap.} This is a conditional finite-list certificate calculation; no joint sharpness of \(\min\{1,K-1,H(C,\gamma),W/2\}\) and no connected-length inversion follow from it alone. \textit{Consumer.} Compute \(H(C,\gamma)\) and \(W\), then use \(\min\{1,K-1,H(C,\gamma),W/2\}\) as a CDF discrepancy bound before checking one-sided quantile growth.
+
+\begin{proposition}[prop:robust-wcp-coverage]\label{prop:robust-wcp-coverage}
+\texttt{For every P\_F in mathfrak\_P\_cert and every v in V\_epsilon, Ihat\_n(D\_n,T\_v,U) from def:robust-wcp satisfies Pr\{Y\textasciicircum{}v in Ihat\_n(D\_n,T\_v,U)\}>=1-alpha. Moreover, Ihat\_n(D\_n,T\_v,U) is a connected interval because it is a finite union of intervals centered at m.}
+\end{proposition}
+\begin{proof}
+Fix \(P_F\in\mathfrak P_{\mathrm{cert}}\) and \(v\in V_\epsilon\), and choose \(j\) such that \(v=v^j\). Write \(O_\star=(T_v,Y^v)\), \(W_i=v^j(X_i,A_i)\), \(W_\star=v^j(T_v)\), and \(W_{\mathrm{tot}}=W_\star+\sum_{i=1}^nW_i\). By \(\texttt{ass:iid-source}\), \(\texttt{ass:compatible-target-law}\), and \(\texttt{ass:independent-target}\), the calibration tuples are independent \(P_{\mathrm{obs}}\)-draws and \(O_\star\) is an independent target draw whose observed-coordinate density relative to \(P_{\mathrm{obs}}\) is \(v^j\). By \(\texttt{ass:uniform-tie}\), \(U\) is an independent uniform random variable.
+
+Condition on the unordered pooled multiset of the \(n+1\) tuples. Relative to the exchangeable reference law \(P_{\mathrm{obs}}^{n+1}\), the density of the configuration in which pooled tuple \(\ell\) is the target is its weight \(W_\ell\). Thus the conditional probability that tuple \(\ell\) is the target is \(W_\ell/W_{\mathrm{tot}}\). The event \(W_{\mathrm{tot}}=0\) has target-experiment probability zero, since
+\[
+Q_v\{v(T_v)=0\}=\mathbb E_{P_{\mathrm{obs}}}[v\mathbf 1\{v=0\}]=0.
+\]
+
+Partition the pooled tuples into equal-score groups. For a group having total weight \(G\), let \(A_G\) be the total weight of all groups with strictly larger score. Conditional on the target belonging to this group, the randomized p-value is
+\[
+p_j(Y^v)=\frac{A_G+UG}{W_{\mathrm{tot}}}.
+\]
+The intervals \([A_G,A_G+G]\), ordered by decreasing score, partition \([0,W_{\mathrm{tot}}]\), and the target group is selected with probability \(G/W_{\mathrm{tot}}\). Uniform randomization inside the selected interval therefore makes \(p_j(Y^v)\) uniform on \([0,1]\). Hence
+\[
+\Pr\{p_j(Y^v)>\alpha\}=1-\alpha.
+\]
+Since \(p_{\mathrm{rob}}=\max_kp_k\ge p_j\),
+\[
+\Pr\{Y^v\in\widehat I_n(D_n,T_v,U)\}
+=\Pr\{p_{\mathrm{rob}}(Y^v)>\alpha\}\ge1-\alpha.
+\]
+This is candidate-wise marginal coverage under each candidate's own target law, not a simultaneous event across distinct target laws.
+
+For connectedness, condition on \((D_n,T_v,U)\) and write \(s=S(y)\). In \(p_k(y)\), a calibration score \(s_i\) contributes its full weight when \(s<s_i\), the fraction \(U\) of its weight when \(s=s_i\), and zero when \(s>s_i\); the target term is constant in \(s\). Thus every \(p_k\) is nonincreasing in \(s\). Each acceptance set \(\{y:p_k(y)>\alpha\}\) is consequently a possibly empty, open, closed, or half-open interval centered at \(m\). Such intervals are nested because they have the same center. Their finite union, which is \(\widehat I_n\) by \(\texttt{def:robust-wcp}\), is therefore a connected centered interval.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The weighted randomized-rank argument gives exact finite-sample marginal coverage under each candidate-specific target law. \textit{Gap.} Weighted and robust conformal coverage are established baselines; no coverage improvement or simultaneous multi-candidate event is claimed. \textit{Consumer.} Use the nested centered candidate sets to obtain a connected interval, allowing open or half-open endpoints.
+
+\begin{proposition}[prop:known-ratio-reduction]\label{prop:known-ratio-reduction}
+\texttt{If K=1 and v\textasciicircum{}1=w P\_obs-almost surely, then ell=w=u, r\_rob=r\_w, and def:robust-wcp equals randomized weighted conformal prediction with ratio w.}
+\end{proposition}
+\begin{proof}
+Assume \(K=1\) and \(v^1=w\) \(P_{\mathrm{obs}}\)-almost surely. By \(\textnormal{def:compatible-ratios}\), \(V_\epsilon=\{v^1\}\), \(\ell(x,a)=v^1(x,a)\), and \(u(x,a)=v^1(x,a)\). Moreover, \(\textnormal{ass:certificate-containment}\) states that \(w\in V_\epsilon\). Since \(V_\epsilon\) is the singleton \(\{v^1\}\), this gives \(w=v^1\) as members of the declared function space. Consequently, \(\ell=w=u\) (and hence, in particular, these equalities hold \(P_{\mathrm{obs}}\)-almost surely).
+
+Using \(\textnormal{def:robust-oracle}\) and the singleton identity \(V_\epsilon=\{w\}\), we obtain
+\[
+r_{\mathrm{rob}}=\inf\left\{r\in[0,1]:\inf_{v\in\{w\}}\mathbb E_{P_{\mathrm{obs}}}\!\left[v(X,A)\mathbf 1\{|Y-m|\le r\}\right]\ge 1-\alpha\right\}.
+\]
+The inner infimum has one term, namely \(F_w(r)\). Therefore
+\[
+r_{\mathrm{rob}}=\inf\{r\in[0,1]:F_w(r)\ge 1-\alpha\}=r_w.
+\]
+In particular, the robust oracle interval also reduces to \(I_{\mathrm{rob}}=I_w\).
+
+It remains to reduce the sample rule. By \(\textnormal{def:robust-wcp}\), when \(K=1\),
+\[
+p_{\mathrm{rob}}(y)=\max_{1\le k\le1}p_k(y)=p_1(y).
+\]
+Substituting \(v^1=w\) into the defining formula shows that, whenever its denominator is positive,
+\[
+p_1(y)=\frac{\sum_{i=1}^n w(X_i,A_i)\mathbf 1\{S(Y_i)>S(y)\}+U\!\left(w(T_w)+\sum_{i=1}^n w(X_i,A_i)\mathbf 1\{S(Y_i)=S(y)\}\right)}{w(T_w)+\sum_{i=1}^n w(X_i,A_i)},
+\]
+and both rules assign the value zero when this denominator vanishes. This is exactly the randomized weighted-conformal \(p\)-value with density ratio \(w\), including the same tie randomization and zero-denominator convention. Hence
+\[
+\widehat I_n(D_n,T_w,U)=\{y\in[0,1]:p_1(y)>\alpha\}
+\]
+is randomized weighted conformal prediction with ratio \(w\). This proves every asserted reduction.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The singleton certified list must recover the known-ratio benchmark. \textit{Gap.} Tibshirani et al. already establish this known-ratio weighted-conformal result; no novelty is claimed for the reduction. \textit{Consumer.} It verifies that a fully logged assignment system can use ordinary weighted conformal prediction.
+
+\begin{theorem}[thm:sample-regret-degeneracy]\label{thm:sample-regret-degeneracy}
+The frozen marginal-coverage minimax regret is degenerate. For every \(n\),
+\[
+0\le R_n(\eta)\le1,
+\]
+and if \(\eta\ge1-\alpha\), then \(R_n(\eta)=0\) for every \(n\). For arbitrary \(\eta\in(0,1)\), put \(\zeta=\eta/2\), \(A_\gamma=\gamma/(\gamma-1)\), \(D_\gamma=1+2C/(2-\gamma)\), and
+\[
+B_{n,\zeta}=\max\{1,(4Cn/\zeta)^{1/\gamma}\},\quad
+x_\zeta=\log(16K/\zeta),\quad
+T_\zeta=\max\{1,(2KA_\gamma C/\zeta)^{1/(\gamma-1)}\},
+\]
+\[
+d_{n,\zeta}
+ =A_\gamma C B_{n,\zeta}^{1-\gamma}
+ +\sqrt{\frac{2D_\gamma B_{n,\zeta}^{2-\gamma}x_\zeta}{n}}
+ +\frac{2B_{n,\zeta}x_\zeta}{3n},
+\qquad
+q_{n,\zeta}
+ =\frac{(1+\alpha)d_{n,\zeta}+T_\zeta/n}
+        {1-d_{n,\zeta}}.
+\]
+Whenever
+\[
+d_{n,\zeta}<1,\qquad q_{n,\zeta}<1-\alpha,\qquad
+\frac{q_{n,\zeta}}{\alpha+q_{n,\zeta}}\le\eta/2,
+\]
+one has the exact identity \(R_n(\eta)=0\). These conditions hold for all sufficiently large \(n\), because
+\[
+q_{n,\zeta}
+ =O_{C,\gamma,K,\eta,\alpha}
+   (n^{-(\gamma-1)/\gamma}).
+\]
+An attaining rule is a measurable closed score-centered hull of robust weighted conformal prediction run at miscoverage \(\alpha+q_{n,\zeta}\), mixed with \([0,1]\) with probability \(q_{n,\zeta}/(\alpha+q_{n,\zeta})\). It is marginally \(1-\alpha\) valid and uses no second moment. Thus \(n^{-(\gamma-1)/\gamma}\) is construction slack, not a positive regret rate.
+
+Moreover, under \(\mathsf{SR}_\infty\), for every \(\eta\in(0,1)\) there is a single fixed normalized duplicate-candidate certificate and a single fixed source treatment law satisfying the frozen tail and width restrictions such that, along a subsequence \(n_j\), admissible outcome laws with those same treatment objects satisfy
+\[
+\Pr\{\operatorname{len}(\widehat I_{n_j})
+-\operatorname{len}(I_{\mathrm{rob}})\ge\Delta\}>\eta
+\]
+for some fixed \(\Delta>0\). Hence the unmodified exact-\(\alpha\) rule need not attain the zero minimax frontier; the displayed randomized repair does attain it under the stated finite-sample conditions.
+\end{theorem}
+\begin{proof}
+The lower bound \(R_n(\eta)\ge0\) is part of the definition. The rule that always returns \([0,1]\) is score-centered, has coverage one, and has excess length at most one. Hence \(R_n(\eta)\le1\).
+
+If \(\eta\ge1-\alpha\), use \(U\) to return \([0,1]\) with probability \(1-\alpha\) and \(\{m\}\) otherwise. This rule has coverage at least \(1-\alpha\) under every candidate target law. Positive excess length can occur only on the full-interval branch, whose probability is at most \(\eta\). Thus zero is feasible in the inner regret quantile and \(R_n(\eta)=0\).
+
+Now fix arbitrary \(\eta\in(0,1)\) and put \(\zeta=\eta/2\). Split \(U\), measurably, into two independent uniforms \(U_1,U_2\) by assigning the odd binary digits of its nonterminating expansion to \(U_1\) and the even digits to \(U_2\). The dyadic ambiguity is a null event. Thus \(U_1,U_2\) remain jointly independent of the sample and target.
+
+For a fixed law define
+\[
+G(r)=\min_{1\le k\le K}F_{v^k}(r).
+\]
+Candidate normalization makes each \(F_{v^k}\) a CDF. The finite minimum \(G\) is nondecreasing and right-continuous, and \(G(1)=1\). Right continuity at the infimum defining \(r_{\mathrm{rob}}\) therefore yields
+\[
+F_{v^k}(r_{\mathrm{rob}})\ge1-\alpha
+\quad\text{for every }k.
+\]
+Equivalently,
+\[
+\mu_k:=
+\mathbb E_{P_{\mathrm{obs}}}
+[v^k(X,A)\mathbf 1\{S(Y)>r_{\mathrm{rob}}\}]
+\le\alpha.
+\]
+
+Apply \(\texttt{lem:finite-list-heavy-tail-control}\) with the \(2K\) functions
+\[
+v^k,\qquad
+v^k\mathbf 1\{S>r_{\mathrm{rob}}\},
+\quad 1\le k\le K.
+\]
+For every actual target candidate \(v\), with joint probability at least \(1-\zeta\), simultaneously in \(k\),
+\[
+\frac1n\sum_{i=1}^n v^k(X_i,A_i)\ge1-d_{n,\zeta},
+\]
+\[
+\frac1n\sum_{i=1}^n
+ v^k(X_i,A_i)\mathbf 1\{S(Y_i)>r_{\mathrm{rob}}\}
+ \le\alpha+d_{n,\zeta},
+\qquad
+v^k(T_v)\le T_\zeta.
+\]
+Call this event \(\mathcal E_v\). For any \(y\) with \(S(y)>r_{\mathrm{rob}}\), the numerator of \(p_k(y)\), computed with \(U_1\), is at most
+\[
+\sum_{i=1}^n
+v^k(X_i,A_i)\mathbf 1\{S(Y_i)>r_{\mathrm{rob}}\}
++v^k(T_v).
+\]
+On \(\mathcal E_v\),
+\[
+p_k(y)
+\le\frac{\alpha+d_{n,\zeta}+T_\zeta/n}
+         {1-d_{n,\zeta}}
+=\alpha+q_{n,\zeta}.
+\]
+
+Define the measurable radius
+\[
+\widetilde h_n=
+\sup\left(
+ \{S(y):y\in\mathbb Q\cap[0,1],\
+ p_{\mathrm{rob}}^{(U_1)}(y)>
+ \alpha+q_{n,\zeta}\}\cup\{0\}\right)
+\]
+and the closed score-centered interval
+\[
+\widetilde J_n=
+[m-\widetilde h_n,m+\widetilde h_n]\cap[0,1].
+\]
+Each rational-point p-value is measurable, so \(\widetilde h_n\) is measurable. Monotonicity of every candidate p-value in the score implies that the robust acceptance set is downward closed in \(S\). Density of the rationals then shows that \(\widetilde J_n\) is its closed centered hull, with \(\{m\}\) adjoined if it is empty. It contains the acceptance set. On \(\mathcal E_v\),
+\[
+\widetilde h_n\le r_{\mathrm{rob}},\qquad
+\widetilde J_n\subseteq I_{\mathrm{rob}},
+\]
+so its excess length is nonpositive.
+
+Apply \(\texttt{prop:robust-wcp-coverage}\) with level
+\[
+\alpha'=\alpha+q_{n,\zeta}<1
+\]
+and randomizer \(U_1\). Taking the closed hull can only increase coverage, hence
+\[
+\Pr\{Y^v\in\widetilde J_n\}
+\ge1-\alpha-q_{n,\zeta}.
+\]
+Set
+\[
+\lambda=\frac{q_{n,\zeta}}
+              {\alpha+q_{n,\zeta}}
+\]
+and define \(J_n^\star=[0,1]\) when \(U_2\le\lambda\), and \(J_n^\star=\widetilde J_n\) otherwise. Independence gives
+\[
+\begin{aligned}
+\Pr\{Y^v\in J_n^\star\}
+&\ge\lambda+(1-\lambda)
+ (1-\alpha-q_{n,\zeta})\\
+&=1-\alpha-q_{n,\zeta}
+ +\lambda(\alpha+q_{n,\zeta})
+=1-\alpha.
+\end{aligned}
+\]
+Thus \(J_n^\star\) is feasible in \(\texttt{def:minimax-regret}\). Positive excess length can occur only on the full-interval branch or on \(\mathcal E_v^c\), so, uniformly over laws and candidates,
+\[
+\Pr\{\operatorname{len}(J_n^\star)
+-\operatorname{len}(I_{\mathrm{rob}})>0\}
+\le\lambda+\zeta\le\eta.
+\]
+Therefore \(R_n(\eta)=0\).
+
+Since \(B_{n,\zeta}\asymp n^{1/\gamma}\), each of the three terms in \(d_{n,\zeta}\) is
+\[
+O_{C,\gamma,K,\eta}
+(n^{-(\gamma-1)/\gamma}),
+\]
+and \(T_\zeta/n=O(n^{-1})\). Hence the displayed finite-\(n\) conditions hold eventually. No second moment was used.
+
+Before constructing the counterexample, record the exact-level hull identity for possibly open acceptance intervals. Let \(p_{\mathrm{rob}}^\alpha\) denote the robust p-value used with the exact threshold \(\alpha\), and define
+\[
+J_0=\{y\in[0,1]:p_{\mathrm{rob}}^\alpha(y)>\alpha\}
+    =\widehat I_n.
+\]
+Define its measurable countable-rational score supremum by
+\[
+h_0=\sup\left(
+ \{S(y):y\in\mathbb Q\cap[0,1],\
+ p_{\mathrm{rob}}^\alpha(y)>\alpha\}\cup\{0\}\right)
+\]
+and its closed centered hull by
+\[
+\bar J_0=[m-h_0,m+h_0]\cap[0,1].
+\]
+Measurability of \(h_0\) follows because it is the supremum of countably many measurable threshold indicators. By the score monotonicity proved in \(\texttt{prop:robust-wcp-coverage}\), \(J_0\) is a centered interval downward closed in \(S\). If \(J_0\ne\varnothing\), density of \(\mathbb Q\) in every nondegenerate interval and continuity of \(S(y)=|y-m|\) show that \(h_0=\sup_{y\in J_0}S(y)\). The only possible difference between \(J_0\) and \(\bar J_0\) is then one or two endpoints, including the open and half-open cases. Hence they have equal one-dimensional Lebesgue measure. If \(J_0=\varnothing\), the rational set is empty, \(h_0=0\), and \(\bar J_0=\{m\}\); adjoining this singleton changes neither Lebesgue measure nor coverage adversely. In every case,
+\[
+\lambda_1(J_0)=\lambda_1(\bar J_0)
+ =\operatorname{len}(\bar J_0).
+\]
+
+It remains to prove the claim about the unmodified exact-level rule. Assume \(\mathsf{SR}_\infty\), fix \(\eta\in(0,1)\), and choose
+\[
+0<c<\min\{C/4,-\log\eta\}.
+\]
+Because \(1-\gamma/2>0\), one can choose recursively an increasing integer sequence \(n_j\) and put \(M_j=n_j^{1/\gamma}\) so that
+\[
+\sum_{\ell\ge j}M_\ell^{-\gamma}
+ \le2M_j^{-\gamma},\qquad
+n_j\sum_{\ell>j}M_\ell^{-\gamma}\longrightarrow0,
+\]
+\[
+\sum_{\ell>j}M_\ell^{1-\gamma}\longrightarrow0,\qquad
+\frac{M_{j-1}}{M_j^{\,1-\gamma/2}}\longrightarrow0.
+\]
+At each recursion step these requirements involve only finitely many earlier choices and are met by taking the next term sufficiently large.
+
+Put
+\[
+p_j=cM_j^{-\gamma}=\frac c{n_j},\qquad
+h_j=p_jM_j=cM_j^{1-\gamma}.
+\]
+Choose \(M_1\) large enough that
+\[
+P:=\sum_jp_j<1,\qquad H:=\sum_jh_j<1.
+\]
+By \(\mathsf{SR}_\infty\), partition the intervention law at \(x_0\) into a baseline cell \(E_0\) of mass \(1-H\) and shell cells \(E_j\) of masses \(h_j\). Define
+\[
+w=M_j\quad\text{on }E_j,\qquad
+w=w_0:=\frac{1-H}{1-P}\quad\text{on }E_0,
+\]
+and define \(\pi=g/w\) cellwise. The source masses are \(p_j\) on \(E_j\) and \(1-P\) on \(E_0\), so \(\pi\) is normalized. Since \(H>P\), \(0<w_0<1\). Take every candidate equal to this one fixed \(w\). Then \(\ell=u=w\), containment and normalization hold, and the certificate width is zero.
+
+For \(M_{j-1}\le t<M_j\), with \(M_0=1\),
+\[
+P_{\mathrm{obs}}\{u>t\}
+ =\sum_{\ell\ge j}p_\ell
+ \le2cM_j^{-\gamma}
+ \le Ct^{-\gamma}.
+\]
+Thus the same fixed treatment law and certificate satisfy the frozen tail envelope.
+
+Choose fixed radii
+\[
+0<2r_0<r_1<R:=\max\{m,1-m\},\qquad
+r_0<\frac{1-\alpha}{2c_0},
+\]
+and set
+\[
+\Delta=
+\operatorname{len}([m-r_1,m+r_1]\cap[0,1])
+-\operatorname{len}([m-r_0,m+r_0]\cap[0,1])>0.
+\]
+For sample size \(n_j\), define an outcome law as follows. On \(E_j\), the score is \(r_0\). Off \(E_j\), using latent randomness independent of treatment, the score is uniform on \([0,r_0]\) with probability
+\[
+\frac{1-\alpha-h_j}{1-h_j}
+\]
+and is \(r_1\) with probability
+\[
+\beta_j:=\frac{\alpha}{1-h_j}.
+\]
+For all large \(j\) these are valid probabilities. Realize the scores by moving from \(m\) toward its farther endpoint. The potential-outcome vector is generated independently of realized treatment, so consistency, exchangeability, and boundedness hold.
+
+Under the intervention law, the score distribution has mass \(1-\alpha-h_j\) uniform on \([0,r_0]\), mass \(h_j\) at \(r_0\), and mass \(\alpha\) at \(r_1\). Therefore
+\[
+r_w=r_{\mathrm{rob}}=r_0.
+\]
+For every admissible \(t\),
+\[
+F_w(r_0+t)-F_w(r_0-t)
+ =h_j+\frac{1-\alpha-h_j}{r_0}t
+ \ge c_0t
+\]
+for all sufficiently large \(j\). Hence each outcome law belongs to the same fixed-certificate class.
+
+Let \(\mathcal A_j\) be the event that neither the calibration sample nor the target pair falls in any shell \(E_\ell\) with \(\ell\ge j\). The source and target probabilities and the growth conditions give
+\[
+\Pr(\mathcal A_j)
+ =\left(1-\sum_{\ell\ge j}p_\ell\right)^{n_j}
+  \left(1-\sum_{\ell\ge j}h_\ell\right)
+ \longrightarrow e^{-c}>\eta.
+\]
+On \(\mathcal A_j\), every calibration and target weight is at most
+\[
+b_j=\max\{w_0,M_{j-1}\}.
+\]
+For any candidate score \(s\in(r_0,r_1)\), let \(B_i\) indicate that calibration score \(i\) equals \(r_1\), let \(W_i=w(X_i,A_i)\), and let \(W_T=w(T_w)\). Conditional on the treatment draws and \(\mathcal A_j\), the \(B_i\) are independent Bernoulli variables with mean \(\beta_j\), independent of the weights, and
+\[
+p_{\mathrm{rob}}(s)>\alpha
+\quad\Longleftrightarrow\quad
+\sum_{i=1}^{n_j}W_i(B_i-\alpha)
+ +(U-\alpha)W_T>0.
+\]
+The deterministic conditional drift satisfies
+\[
+(\beta_j-\alpha)\sum_{i=1}^{n_j}W_i
+ \ge\frac{\alpha h_j}{1-h_j}n_jw_0
+ =\frac{\alpha c w_0}{1-h_j}M_j.
+\]
+The centered sum has conditional variance at most \(n_jb_j^2\), while \(|(U-\alpha)W_T|\le b_j\). The recursive growth condition gives
+\[
+\frac{n_jb_j^2}{M_j^2}
+ =b_j^2M_j^{\gamma-2}\longrightarrow0,
+\qquad
+\frac{b_j}{M_j}\longrightarrow0.
+\]
+Chebyshev's inequality therefore shows, uniformly over the treatment draws in \(\mathcal A_j\), that the last displayed strict inequality holds with conditional probability tending to one.
+
+Consequently, with probability tending to at least \(e^{-c}\), the exact-\(\alpha\) acceptance set \(J_0=\widehat I_{n_j}\) contains every score in \((r_0,r_1)\). Score monotonicity makes \(J_0\) contain the centered interval of radius \(r_1\), up to endpoints of zero measure. The established identity \(\lambda_1(J_0)=\lambda_1(\bar J_0)=\operatorname{len}(\bar J_0)\) therefore transfers this lower bound unchanged to the measurable closed centered hull. Hence
+\[
+\liminf_{j\to\infty}
+\Pr\{\operatorname{len}(\widehat I_{n_j})
+-\operatorname{len}(I_{\mathrm{rob}})\ge\Delta\}
+\ge e^{-c}>\eta.
+\]
+The source treatment law and duplicate candidate list are fixed across \(j\); only the admissible outcome law varies, as permitted by the supremum in the minimax criterion. This proves that the unmodified exact-level rule is not a uniform zero-regret witness.
+\end{proof}
+
+\begin{lemma}[lem:divisible-support-witnesses]\label{lem:divisible-support-witnesses}
+Let \(\nu\) denote the dominating measure on \(\mathcal A\). Define the divisible-intervention-support condition \(\mathsf{SR}_\infty\) to mean that there exists \(x_0\in\mathcal X\) such that, for every sequence \(b_0,b_1,\ldots\ge0\) with \(\sum_{j\ge0}b_j=1\), there is a measurable partition \(E_0,E_1,\ldots\) of \(\mathcal A\) satisfying \(\int_{E_j}g(a\mid x_0)\nu(da)=b_j\). Under \(\mathsf{SR}_\infty\) and \(K\ge2\), the following two fixed-certificate witnesses exist. First, for every \(\delta\in(0,1]\), an admissible ordinary-cell certificate satisfies
+\[
+\sup_{v\in V_\epsilon}\sup_{r\in[0,1]}|F_v(r)-F_w(r)|
+\ge\frac{\delta}{2}\min\{1,C(1+\delta/2)^{-\gamma}\}.
+\]
+Second, for every \(\xi>0\), an admissible fixed two-candidate certificate has actual ordinary-cell width zero and a candidate \(v\) for which
+\[
+\mathbb E_{P_{\mathrm{obs}}}|v-w|=2h,\qquad
+\sup_{r\in[0,1]}|F_v(r)-F_w(r)|=h<\xi,
+\]
+while the supremum over outcome laws sharing that treatment law and certificate of \(\operatorname{len}(I_{\mathrm{rob}})-\operatorname{len}(I_w)\) is one. For all sufficiently small \(\epsilon\), the second witness can be chosen with
+\[
+h=\min\{C,1\}2^{-\gamma}\epsilon^{\gamma-1}(1-\epsilon/4),
+\]
+so its CDF discrepancy has the tail order \(\epsilon^{\gamma-1}\).
+\end{lemma}
+\begin{proof}
+Write
+\[
+G_0(E)=\int_Eg(a\mid x_0)\nu(da)
+\]
+and take \(P_X\) degenerate at \(x_0\).
+
+For the ordinary-cell witness, put
+\[
+d=1+\delta/2,\qquad
+p=\frac12\min\{1,Cd^{-\gamma}\}.
+\]
+By \(\mathsf{SR}_\infty\), choose three treatment cells having \(G_0\)-masses
+\[
+p(1-\delta/2),\qquad p(1+\delta/2),\qquad 1-2p.
+\]
+On these cells define
+\[
+w=(1-\delta/2,1+\delta/2,1),\qquad
+v=(1+\delta/2,1-\delta/2,1),
+\]
+and define the source density by \(\pi=g/w\) cellwise. The source cell probabilities are then \(p,p,1-2p\), so \(\pi\) integrates to one. Both \(w\) and \(v\) normalize under \(\pi\). Duplicate either candidate if \(K>2\). The envelopes are
+\[
+\ell=(1-\delta/2,1-\delta/2,1),\qquad
+u=(d,d,1).
+\]
+Because \(d\le3/2<\epsilon^{-1}\), all nonzero widths are ordinary and equal \(\delta\). For \(1\le t<d\),
+\[
+P_{\mathrm{obs}}\{u>t\}=2p
+ =\min\{1,Cd^{-\gamma}\}\le Ct^{-\gamma},
+\]
+and the probability is zero for \(t\ge d\).
+
+Let \(R=\max\{m,1-m\}\), and choose \(r_0\in(0,\min\{R,1/2\})\) sufficiently small. Give the first cell score zero and the other two cells score \(r_0\), using deterministic potential outcomes. The full potential-outcome vector is then independent of realized treatment, so consistency, exchangeability, and boundedness hold. If the \(w\)-mass at score zero is already at least \(1-\alpha\), then \(r_w=0\) and the margin condition is vacuous except at \(t=0\). Otherwise \(r_w=r_0\), and \(r_0\) can be chosen so that, for every admissible \(t>0\),
+\[
+F_w(r_0+t)-F_w(r_0-t)\ge c_0t.
+\]
+At radius zero,
+\[
+F_v(0)-F_w(0)
+ =p\delta
+ =\frac{\delta}{2}\min\{1,C(1+\delta/2)^{-\gamma}\}.
+\]
+This proves the first claim.
+
+For the shell witness, put
+\[
+q=1-\alpha,\qquad p_0=q/2,\qquad
+b=\min\{C,1\},\qquad d_\star=1/2.
+\]
+Choose \(M>\max\{2,\epsilon^{-1}\}\) so large that, with
+\[
+p=\frac b2M^{-\gamma},\qquad
+h=p(M-d_\star),
+\]
+one has
+\[
+pM<p_0,\qquad pd_\star<\alpha,\qquad h<\xi.
+\]
+Set
+\[
+c=\frac{1-p(M+d_\star)}{1-2p}.
+\]
+For sufficiently large \(M\), \(0<c<1\). Use \(\mathsf{SR}_\infty\) to choose five cells \(E_0,E_1,E_2,E_-,E_+\) having \(G_0\)-masses
+\[
+q-p_0,\quad p_0-pM,\quad \alpha-pd_\star,\quad pM,\quad pd_\star.
+\]
+Define
+\[
+w=(c,c,c,M,d_\star),\qquad
+v=(c,c,c,d_\star,M)
+\]
+on these cells and let \(\pi=g/w\) cellwise. The source masses of \(E_-\) and \(E_+\) are both \(p\), and the total source mass of the first three cells is
+\[
+\frac{1-p(M+d_\star)}c=1-2p.
+\]
+Thus \(\pi\), \(w\), and \(v\) are normalized. The envelopes equal \(c\) on the first three cells and satisfy \(\ell=d_\star\), \(u=M\) on the two shell cells. Hence the actual ordinary width is zero, while on the shell
+\[
+u-\ell=M-d_\star\le u
+\]
+and \(u>\epsilon^{-1}\). Moreover, for \(1\le t<M\),
+\[
+P_{\mathrm{obs}}\{u>t\}=2p=bM^{-\gamma}\le Ct^{-\gamma},
+\]
+and the tail is zero for \(t\ge M\).
+
+Choose \(r_0>0\) with
+\[
+2r_0<R,\qquad r_0\le p_0/c_0.
+\]
+Assign scores
+\[
+(0,r_0,R,r_0,R)
+\]
+on \((E_0,E_1,E_2,E_-,E_+)\), again using deterministic potential outcomes. Under the actual intervention ratio \(w\), the score masses at \(0,r_0,R\) are
+\[
+q-p_0,\qquad p_0,\qquad\alpha.
+\]
+Under \(v\), they are
+\[
+q-p_0,\qquad p_0-h,\qquad\alpha+h.
+\]
+Consequently,
+\[
+r_w=r_0,\qquad r_v=r_{\mathrm{rob}}=R.
+\]
+For every admissible \(t>0\), \(t\le r_0\) and
+\[
+F_w(r_0+t)-F_w(r_0-t)=p_0\ge c_0t,
+\]
+so the frozen symmetric margin holds. Between \(r_0\) and \(R\), the two CDFs differ by exactly \(h\), and elsewhere they agree. Also,
+\[
+\mathbb E|v-w|=2p(M-d_\star)=2h.
+\]
+The robust interval is \([0,1]\), whereas \(\operatorname{len}(I_w)\le2r_0\). The treatment law and certificate do not depend on \(r_0\); letting \(r_0\downarrow0\) across outcome laws sharing those objects proves that the supremum of the length price is one.
+
+Finally take \(M=2\epsilon^{-1}\). For all sufficiently small \(\epsilon\), the preceding inequalities hold and
+\[
+h=\frac b2M^{-\gamma}(M-d_\star)
+ =b2^{-\gamma}\epsilon^{\gamma-1}(1-\epsilon/4).
+\]
+This proves the tail-order assertion.
+\end{proof}
+
+\begin{lemma}[lem:finite-list-heavy-tail-control]\label{lem:finite-list-heavy-tail-control}
+Let \(M\in\mathbb N\), let \(H_1,\ldots,H_M\) be measurable nonnegative functions of an observed triple satisfying \(H_j(O)\le u(X,A)\), and write \(\mu_j=\mathbb E_{P_{\mathrm{obs}}}H_j(O)\). For \(\zeta\in(0,1)\), define \(A_\gamma=\gamma/(\gamma-1)\), \(D_\gamma=1+2C/(2-\gamma)\), \[B_{n,\zeta}=\max\{1,(4Cn/\zeta)^{1/\gamma}\},\quad x_{M,\zeta}=\log(8M/\zeta),\quad T_\zeta=\max\{1,(2KA_\gamma C/\zeta)^{1/(\gamma-1)}\},\] and \[d_{n,M,\zeta}=A_\gamma C B_{n,\zeta}^{1-\gamma}+\sqrt{\frac{2D_\gamma B_{n,\zeta}^{2-\gamma}x_{M,\zeta}}{n}}+\frac{2B_{n,\zeta}x_{M,\zeta}}{3n}.\] Then, for every actual \(v\in V_\epsilon\), under the joint law of \(D_n\) and \(T_v\), with probability at least \(1-\zeta\), \[\max_{1\le j\le M}\left|\frac1n\sum_{i=1}^nH_j(O_i)-\mu_j\right|\le d_{n,M,\zeta}\quad\text{and}\quad\max_{1\le k\le K}v^k(T_v)\le T_\zeta.\]
+\end{lemma}
+\begin{proof}
+Write \(B=B_{n,\zeta}\), \(x=x_{M,\zeta}\), and \(A_\gamma=\gamma/(\gamma-1)\). For every \(z\ge1\), the tail assumption and layer cake give
+\[
+\mathbb E_{P_{\mathrm{obs}}}[u\mathbf 1\{u>z\}]=z\Pr(u>z)+\int_z^\infty\Pr(u>t)\,dt\le A_\gamma C z^{1-\gamma}.
+\]
+Also, for \(B\ge1\),
+\[
+\mathbb E[(u\wedge B)^2]=2\int_0^B t\Pr(u>t)\,dt\le1+2C\int_1^B t^{1-\gamma}\,dt\le D_\gamma B^{2-\gamma}.
+\]
+The union bound and the definition of \(B\) show
+\[
+\Pr\left\{\max_{1\le i\le n}u(X_i,A_i)>B\right\}\le nCB^{-\gamma}\le\zeta/4.
+\]
+For each \(j\), set \(\overline H_j=H_j\mathbf 1\{u\le B\}\). Then \(0\le\overline H_j\le B\),
+\[
+0\le\mu_j-\mathbb E\overline H_j\le A_\gamma C B^{1-\gamma},\qquad \mathbb E\overline H_j^2\le D_\gamma B^{2-\gamma}.
+\]
+Apply the bounded Bernstein lemma to the centered variables \(\overline H_j(O_i)-\mathbb E\overline H_j\) and to their negatives. A union bound over the resulting \(2M\) inequalities gives, with failure probability at most \(2Me^{-x}=\zeta/4\),
+\[
+\max_j\left|\frac1n\sum_{i=1}^n\overline H_j(O_i)-\mathbb E\overline H_j\right|\le\sqrt{\frac{2D_\gamma B^{2-\gamma}x}{n}}+\frac{2Bx}{3n}.
+\]
+On the event \(\max_i u(X_i,A_i)\le B\), the empirical averages of \(H_j\) and \(\overline H_j\) coincide. Adding the truncation bias proves the first asserted inequality with total failure probability at most \(\zeta/2\).
+
+For the target term, fix the actual candidate \(v\). Since \(v\le u\) and \(v^k\le u\), the \(Q_v\) change of measure and a union bound give, for every \(T\ge1\),
+\[
+\begin{aligned}
+\Pr\left\{\max_k v^k(T_v)>T\right\}&\le\sum_{k=1}^K\mathbb E_{P_{\mathrm{obs}}}[v(X,A)\mathbf 1\{v^k(X,A)>T\}]\\
+&\le K\mathbb E_{P_{\mathrm{obs}}}[u(X,A)\mathbf 1\{u(X,A)>T\}]\le KA_\gamma CT^{1-\gamma}.
+\end{aligned}
+\]
+At \(T=T_\zeta\), this is at most \(\zeta/2\). Combining the calibration and target events proves the claim.
+\end{proof}
+
+\begin{lemma}[lem:bounded-bernstein-lower-tail]\label{lem:bounded-bernstein-lower-tail}
+Let \(b>0\), \(V\ge0\), and let \(R_1,\ldots,R_n\) be independent centered real random variables satisfying \(|R_i|\le b\) almost surely and \(\sum_{i=1}^n\mathbb E(R_i^2)\le V\). Then, for every \(t>0\), \[\Pr\left\{\sum_{i=1}^nR_i\ge t\right\}\le\exp\left\{-\frac{t^2}{2(V+bt/3)}\right\}.\] Consequently, for every \(x>0\), \(\sum_{i=1}^nR_i<\sqrt{2Vx}+2bx/3\) with probability at least \(1-e^{-x}\).
+\end{lemma}
+\begin{proof}
+If \(V=0\), every \(R_i=0\) almost surely and both claims are immediate. Suppose \(V>0\) and fix \(0<\lambda<3/b\). For every integer \(k\ge2\), \(|R_i|^k\le b^{k-2}R_i^2\). Also \(k!\ge2\cdot3^{k-2}\), by induction from \(2!=2\) and \(k+1\ge3\). Centering and the exponential series therefore give
+\[\begin{aligned}\mathbb E e^{\lambda R_i}&=1+\sum_{k=2}^\infty\frac{\lambda^k\mathbb E(R_i^k)}{k!}\\&\le1+\frac{\lambda^2\mathbb E(R_i^2)}2\sum_{j=0}^\infty\left(\frac{\lambda b}{3}\right)^j\\&=1+\frac{\lambda^2\mathbb E(R_i^2)}{2(1-\lambda b/3)}.\end{aligned}\]
+Using \(1+z\le e^z\), independence, and \(V\ge\sum_i\mathbb E(R_i^2)\), we obtain
+\[\mathbb E\exp\left(\lambda\sum_{i=1}^nR_i\right)\le\exp\left\{\frac{\lambda^2V}{2(1-\lambda b/3)}\right\}.\]
+Markov's inequality gives
+\[\Pr\left\{\sum_iR_i\ge t\right\}\le\exp\left\{-\lambda t+\frac{\lambda^2V}{2(1-\lambda b/3)}\right\}.\]
+Choose \(\lambda=t/(V+bt/3)\), which is strictly less than \(3/b\) and satisfies \(1-\lambda b/3=V/(V+bt/3)\). Substitution simplifies the exponent to \(-t^2/[2(V+bt/3)]\). Finally, put \(t_x=\sqrt{2Vx}+2bx/3\). Expanding shows \(t_x^2\ge2x(V+bt_x/3)\), so the first inequality bounds the failure probability at \(t_x\) by \(e^{-x}\).
+\end{proof}
+
+\begin{theorem}[thm:population-length-frontier-degeneracy]\label{thm:population-length-frontier-degeneracy}
+For every fixed admissible certificate,
+\[
+\sup_{v\in V_\epsilon}\sup_{r\in[0,1]}|F_v(r)-F_w(r)|
+\le\min\{1,K-1,H(C,\gamma),W/2\},
+\]
+with \(H(C,\gamma)\) and \(W\) as in \(\texttt{lem:certificate-cdf-modulus}\), and
+\[
+0\le\operatorname{len}(I_{\mathrm{rob}})
+      -\operatorname{len}(I_w)\le1.
+\]
+If \(K=1\), the length difference is identically zero. For \(K\ge2\), its supremum is not determined by \((\delta,\epsilon,\gamma,C,K)\) alone: duplicate candidate lists have zero price, while under the divisible-intervention-support condition \(\mathsf{SR}_\infty\) of \(\texttt{lem:divisible-support-witnesses}\), there are fixed two-candidate certificates for which
+\[
+\sup_{P_F\in\mathfrak P_{\mathrm{cert}}}
+\{\operatorname{len}(I_{\mathrm{rob}})
+-\operatorname{len}(I_w)\}=1.
+\]
+Thus, under \(\mathsf{SR}_\infty\), the worst case over admissible support-rich fixed certificates has sharp order one, even with zero actual ordinary-cell width and arbitrarily small CDF discrepancy. Separately, admissible certificates attain ordinary-cell CDF discrepancy of order \(\delta\) and tail-shell CDF discrepancy of order \(\epsilon^{\gamma-1}\). Merely attaining those CDF moduli is not sufficient for a connected-length rate. A one-sided upper-quantile growth condition would yield the desired inversion, but that condition is absent from the frozen assumptions.
+\end{theorem}
+\begin{proof}
+The first display is exactly \(\texttt{lem:certificate-cdf-modulus}\). Because certificate containment gives \(w\in V_\epsilon\), for every \(r\in[0,1]\),
+\[
+\inf_{v\in V_\epsilon}F_v(r)\le F_w(r).
+\]
+Therefore the first radius at which the left side reaches \(1-\alpha\) cannot be smaller than the corresponding \(w\)-radius:
+\[
+r_{\mathrm{rob}}\ge r_w.
+\]
+The map
+\[
+L_m(r)=\operatorname{len}([m-r,m+r]\cap[0,1])
+\]
+is nondecreasing and takes values in \([0,1]\). Hence
+\[
+0\le L_m(r_{\mathrm{rob}})-L_m(r_w)\le1.
+\]
+
+If \(K=1\), containment forces the sole candidate to equal \(w\), \(P_{\mathrm{obs}}\)-almost surely. The two defining CDFs and radii then coincide, so the price is zero. The same conclusion holds for any \(K\) when every listed candidate is a duplicate of \(w\). Such a zero-price certificate exists for the same numerical parameters: take \(\pi=g\), set every candidate equal to \(w=1\), and take \(Y(a)=m\) almost surely. Then \(u=\ell=1\), the strict upper tail above every \(t\ge1\) is zero, the width is zero, and \(r_w=0\), so the frozen symmetric margin is vacuous except at \(t=0\).
+
+Suppose now that \(K\ge2\) and \(\mathsf{SR}_\infty\) holds. The fixed shell certificate constructed in \(\texttt{lem:divisible-support-witnesses}\) satisfies all frozen restrictions, has actual ordinary-cell width zero, and keeps its treatment law and candidate list fixed while only the outcome law varies. For that one fixed certificate the lemma proves
+\[
+\sup_{P_F\in\mathfrak P_{\mathrm{cert}}}
+\{\operatorname{len}(I_{\mathrm{rob}})
+-\operatorname{len}(I_w)\}=1.
+\]
+The universal unit upper bound proves sharpness. Since a duplicate \(K\)-candidate certificate has price zero with the same numerical class parameters, no function of \((\delta,\epsilon,\gamma,C,K)\) alone can equal the fixed-certificate supremum.
+
+The same lemma gives an ordinary-cell construction with CDF discrepancy
+\[
+\frac{\delta}{2}
+ \min\{1,C(1+\delta/2)^{-\gamma}\},
+\]
+which is of order \(\delta\) for fixed \(C>0\), and a shell construction whose discrepancy for small \(\epsilon\) is
+\[
+\min\{C,1\}2^{-\gamma}\epsilon^{\gamma-1}(1-\epsilon/4).
+\]
+Thus both componentwise CDF exponents are genuine. Nevertheless the shell construction allows this discrepancy to be arbitrarily small while the length-price supremum remains one.
+
+The obstruction is quantile inversion. The frozen margin controls
+\[
+F_w(r_w+t)-F_w(r_w-t),
+\]
+but permits all of that increment to lie weakly to the left of \(r_w\), and at a boundary quantile it can be one-sidedly vacuous. It therefore permits a flat interval immediately to the right of \(r_w\). To see what is missing, suppose instead that for the relevant right-hand range one had
+\[
+F_w(r_w+t)-F_w(r_w)\ge c_+t.
+\]
+Write \(\Delta=\sup_{v,r}|F_v(r)-F_w(r)|\). Right continuity of \(F_w\) and the definition of \(r_w\) give \(F_w(r_w)\ge1-\alpha\). At \(t=\Delta/c_+\), provided \(r_w+t\le1\), every \(v\in V_\epsilon\) would satisfy
+\[
+F_v(r_w+t)\ge F_w(r_w+t)-\Delta\ge1-\alpha.
+\]
+Consequently, \(r_{\mathrm{rob}}-r_w\le\Delta/c_+\). Since \(L_m\) is \(2\)-Lipschitz, the length difference would be at most \(2\Delta/c_+\). That one-sided condition is not frozen. Hence shell richness that only attains the CDF modulus cannot produce the requested vanishing connected-length frontier.
+\end{proof}
+
+\section{Interpretation}
+
+Coverage is finite-sample marginal coverage evaluated separately under each candidate-specific target law, not a simultaneous event across candidates. Candidate acceptance sets are score-centered and nested, so their finite union is a connected interval that may be open or half-open. For the exact-level set \(J_0=\{y:p_{\mathrm{rob}}^\alpha(y)>\alpha\}\), the countable-rational score supremum \(h_0\) is measurable and defines \(\bar J_0=[m-h_0,m+h_0]\cap[0,1]\). Downward-closedness in score and rational density give \(\lambda_1(J_0)=\lambda_1(\bar J_0)=\operatorname{len}(\bar J_0)\); if \(J_0\) is empty, adjoining \(\{m\}\) changes neither measure nor coverage adversely. Population conclusions must be read in two layers: the unit upper bound is universal, whereas the supremum-one lower construction is conditional on \(\mathsf{SR}_\infty\), or equivalently is a worst case over admissible support-rich certificates.
+
+\section*{Technical internal limitation (diagnostic only)}
+
+For every measurable \(H\) with \(0\le H\le1\), normalization gives \(|\mathbb E[(v-w)H]|\le\min\{\mathbb E(u-w),\mathbb E(w-\ell),\mathbb E(u-\ell)/2\}\). Tail integration and graded width yield \(\min\{1,K-1,H(C,\gamma),W/2\}\), but no joint sharpness of this full minimum is claimed. The frozen symmetric quantile margin permits a flat interval immediately to the right of \(r_w\), so vanishing CDF discrepancy need not imply vanishing connected length. The order-one lower mechanism additionally requires the witness-side support divisibility \(\mathsf{SR}_\infty\); without it, only the universal unit upper bound is established. Separately, marginal validity plus an objective ignoring an \(\eta\)-probability event permits a measurable randomized repair, making \(R_n(\eta)\) eventually zero. The heavy-tail scale \(n^{-(\gamma-1)/\gamma}\) controls the repair slack and is not a minimax regret rate.
+
+\section{Honest scope}
+
+All conclusions are conditional on a fixed externally supplied finite candidate list with exact containment, conditional normalization, graded width, and the stated upper-tail envelope. The note proves no list-learning, estimation, auditing, or certification procedure. It gives candidate-wise marginal coverage rather than joint multi-candidate coverage. Universally, the population connected-length price lies in \([0,1]\), and it is zero for an effectively singleton list. For \(K\ge2\), the supremum-one lower conclusion holds only under the formally defined divisible-intervention-support condition \(\mathsf{SR}_\infty\), hence as a worst case over admissible support-rich certificates; it is not asserted for every support. The marginal regret has an all-sample-size zero branch when \(\eta\ge1-\alpha\) and is eventually zero below that elbow, so the original positive heavy-tail regret frontier is not identified by this criterion.
+
+\begin{thebibliography}{99}
+
+  \bibitem{jin2023robustconformal} Jin, Y., Ren, Z., and Candes, E. J. (2023). Sensitivity analysis of individual treatment effects: A robust conformal inference approach. Proceedings of the National Academy of Sciences 120(6), e2214889120. doi:10.1073/pnas.2214889120.
+
+  \bibitem{tibshirani2019covariateshift} Tibshirani, R. J., Barber, R. F., Candes, E. J., and Ramdas, A. (2019). Conformal prediction under covariate shift. NeurIPS 32. arXiv:1904.06019.
+
+  \bibitem{cauchois2020robustvalidation} Cauchois, M., Gupta, S., Ali, A., and Duchi, J. C. (2020). Robust validation: Confident predictions even when distributions shift. arXiv:2008.04267.
+
+  \bibitem{schroder2025conformal} Schroder, M., Frauen, D., Schweisthal, J., Hess, K., Melnychuk, V., and Feuerriegel, S. (2025). Conformal prediction for causal effects of continuous treatments. NeurIPS. arXiv:2407.03094.
+
+  \bibitem{dorn2025weakoverlap} Dorn, J. (2025). How much weak overlap can doubly robust t-statistics handle? arXiv:2504.13273.
+
+  \bibitem{yang2024drcalibration} Yang, Y., Kuchibhotla, A. K., and Tchetgen Tchetgen, E. (2024). Doubly robust calibration of prediction sets under covariate shift. Journal of the Royal Statistical Society Series B 86, 943-965. doi:10.1093/jrsssb/qkae009.
+
+  \bibitem{kiyani2024lengthoptimization} Kiyani, S., Pappas, G., and Hassani, H. (2024). Length optimization in conformal prediction. arXiv:2406.18814.
+
+  \bibitem{qiu2023unknownshift} Qiu, H., Dobriban, E., and Tchetgen Tchetgen, E. J. (2023). Prediction sets adaptive to unknown covariate shift. Journal of the Royal Statistical Society Series B, 85(5), 1680-1705. doi:10.1093/jrsssb/qkad069.
+
+\end{thebibliography}
+
+\end{document}

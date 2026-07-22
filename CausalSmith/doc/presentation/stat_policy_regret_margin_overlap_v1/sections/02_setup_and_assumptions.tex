@@ -1,0 +1,207 @@
+\section{Setup and Assumptions}
+
+We work with an observed law \(P\) for one offline observation \(\leanref{sym:O}{\ensuremath{O=(X,A,Y)}}\) on
+\[
+\Omega=\mathcal X\times\{0,1\}\times[-1,1].
+\]
+Here \(X\) is a pretreatment covariate, \(\leanref{sym:A}{\ensuremath{A}}\in\{0,1\}\) is the treatment indicator, and \(\leanref{sym:Y}{\ensuremath{Y}}\) is the observed outcome.  The sample size is \(n\), and \(O_1,\ldots,O_n\) denote the offline observations.  We write \(P_X\) for the marginal law of \(X\).  The observed-law propensity score is \(\leanref{sym:e_P}{\ensuremath{e_P(x)}}=P(A=1\mid X=x)\), and the treatment-arm outcome regressions are \(\leanref{sym:mu_a}{\ensuremath{\mu_a(x)}}=E_P[Y\mid A=a,X=x]\), \(a\in\{0,1\}\).  The treatment contrast is \(\leanref{sym:tau_P}{\ensuremath{\tau_P(x)}}=\mu_1(x)-\mu_0(x)\).  The overlap score used throughout the one-sided overlap condition is
+\[
+\leanref{sym:p_P}{\ensuremath{p_P(x)}}=\min\{e_P(x),1-e_P(x)\},
+\]
+the distance from the propensity score to the nearest endpoint.  Potential-outcome notation \(Y(a)\) is used for the boundedness assumption below; the regret and minimax statements themselves are stated in terms of the observed law \(P\), \(e_P\), \(\mu_a\), and \(\tau_P\).
+
+\begin{assumptionv}{ass:iid}[Independent sampling]
+The observed data units
+\[
+O_1,\ldots,O_n
+\]
+are independent and identically distributed draws from \(P\).
+\end{assumptionv}
+
+This is the standard i.i.d. sampling condition for offline policy learning, fixing the experiment in which welfare regret is evaluated \citep{Athey2021}.
+
+\begin{assumptionv}{ass:bounded-outcome}[Bounded potential outcomes]
+Under the observed law \(P\), the observed outcome is bounded almost surely,
+\[
+Y\in[-1,1]\quad P\text{-a.s.},
+\]
+and, for every covariate value \(x\),
+\[
+\mu_0(x)\in[-1,1]\quad\text{and}\quad \mu_1(x)\in[-1,1].
+\]
+\end{assumptionv}
+
+This standard bounded-outcome condition controls the scale of welfare, regret, and inverse-propensity scores; it also implies bounded observed-law conditional means in the treatment arms \citep{Athey2021}.
+
+\begin{assumptionv}{ass:positivity}[Positivity]
+The propensity score satisfies
+\[
+0<e_P(X)<1
+\]
+\(P_X\)-almost surely.
+\end{assumptionv}
+
+This is the standard positivity condition, requiring both treatment arms to occur with positive probability at almost every covariate value relevant under \(P_X\) \citep{Imbens2015}.
+
+A deterministic policy is a measurable map \(\leanref{sym:pi}{\ensuremath{\pi:\mathcal X\to\{0,1\}}}\).  The welfare criterion uses the contrast-weighted value of a policy, so policies are compared only through how they assign treatment on covariate regions with positive or negative \(\tau_P\).
+
+\begin{definitionv}{def:welfare-regret}[Welfare \(V_P(\pi)\) and Regret \(R_P(\pi)\)]
+For a policy \(\pi\), its welfare under \(P\) is
+\[
+V_P(\pi)=\mathbb E_P\!\left[\pi(X)\tau_P(X)\right].
+\]
+The oracle policy is
+\[
+\pi^\star_P(x)=\mathbf 1\{\tau_P(x)\ge 0\}.
+\]
+The regret of \(\pi\) under \(P\) is
+\[
+R_P(\pi)=V_P(\pi^\star_P)-V_P(\pi).
+\]
+\end{definitionv}
+
+Thus \(\leanref{sym:V_P}{\ensuremath{V_P(\pi)}}\) is normalized by dropping the treatment-invariant baseline component, \(\leanref{sym:pi_star}{\ensuremath{\pi^\star_P}}\) is the threshold rule induced by the sign of the treatment contrast, and \(\leanref{sym:R_P}{\ensuremath{R_P(\pi)}}\) is the welfare loss from deviating from that rule.
+
+\begin{assumptionv}{ass:policy-class}[Finite-VC policy class]
+The policy class \(\Pi\) is a pointwise measurable class of measurable deterministic policies \(\pi:\mathcal X\to\{0,1\}\) with finite VC dimension \(d_\Pi<\infty\).  There exists a countable subclass
+\[
+\Pi_0=\{\pi_j:j\ge 1\}\subset\Pi
+\]
+such that every \(\pi\in\Pi\) is the pointwise limit of a sequence of policies from \(\Pi_0\).
+\end{assumptionv}
+
+This is the standard pointwise measurable finite-VC policy-class condition, used to make empirical welfare maximization over \(\leanref{sym:Pi}{\ensuremath{\Pi}}\) statistically and measurably well behaved \citep{Kitagawa2018}.
+
+\begin{assumptionv}{ass:optimal-in-class}[Oracle policy inclusion]
+For every law \(P\) in the law class, the oracle policy \(\pi^\star_P\) belongs to \(\Pi\).
+\end{assumptionv}
+
+This is the standard optimum-in-class condition for welfare learning over restricted policy classes, ensuring that the oracle benchmark is attainable within \(\Pi\) when an upper-bound argument requires such an in-class comparator \citep{Kitagawa2018}.  It is kept separate from the observed-law class defined below: the minimax lower-bound class is an observed-law class, whereas oracle inclusion is imposed only where the relevant statement explicitly requires comparison to an element of \(\Pi\).
+
+The next assumptions restrict the distribution of small treatment contrasts.  The margin condition is the analogue of the low-noise condition in classification: it limits how much covariate mass can lie near the decision boundary \(\tau_P(x)=0\).
+
+\begin{assumptionv}{ass:margin}[Margin condition]
+The parameters satisfy \(0\le \alpha\), \(0<C_m\), and \(0<u_0\). For every \(u\) with \(0<u\le u_0\),
+\[
+P\{0<|\tau_P(X)|\le u\}\le C_m u^\alpha .
+\]
+\end{assumptionv}
+
+This is the standard Tsybakov decision margin condition, controlling the probability of covariate values at which the welfare consequences of the treatment decision are small \citep{Tsybakov2004OptimalAggregation}.
+
+\begin{assumptionv}{ass:zero-effect}[Zero-effect agreement]
+Either
+\[
+P_X\{\tau_P(X)=0\}=0,
+\]
+or every policy \(\pi\in\Pi\) agrees with the oracle policy \(\pi^\star_P\) \(P_X\)-almost everywhere on the set \(\{\tau_P(X)=0\}\).
+\end{assumptionv}
+
+This is the standard zero-effect region convention, ruling out irrelevant disagreements on covariate points where both treatment choices have the same welfare value \citep{Tsybakov2004OptimalAggregation}.
+
+\begin{assumptionv}{ass:margin-window}[Margin window]
+The margin window satisfies
+\[
+0<u_0<2.
+\]
+\end{assumptionv}
+
+This standard margin-window normalization fixes the range on which the small-contrast condition is imposed; the upper bound \(2\) matches the natural contrast scale under bounded outcomes \citep{Tsybakov2004OptimalAggregation}.
+
+\begin{definitionv}{def:disagreement}[Disagreement Set \(D_\pi\)]
+For a policy \(\pi\), its disagreement set is
+\[
+D_\pi=\{x\in\mathcal X:\pi(x)\ne \pi^\star_P(x)\}.
+\]
+\end{definitionv}
+
+The disagreement set records exactly where a policy makes a different treatment assignment from the oracle threshold rule.  Regret can therefore be read as a weighted classification error, with weights given by the absolute treatment contrast.
+
+\begin{theoremv}{thm:welfare-identity}[Welfare regret identity]
+Under \cref{obj:ass:bounded-outcome}, for every deterministic policy \(\pi\in\Pi\),
+\[
+R_P(\pi)
+=
+E_P\!\left[
+|\tau_P(X)|\,\mathbf 1\{\pi(X)\ne\pi^\star_P(X)\}
+\right]
+=
+\int_{\mathcal X}
+|\tau_P(x)|\,\mathbf 1\{\pi(x)\ne\pi^\star_P(x)\}\,dP_X(x).
+\]
+\end{theoremv}
+
+The identity makes the welfare-regret target explicit: mistakes on high-contrast covariate regions are costly, while mistakes near \(\tau_P(x)=0\) contribute little to regret.
+
+\begin{theoremv}{thm:margin-localization}[Margin Localization]
+Suppose that the following conditions hold:
+\begin{itemize}
+\item \textbf{Margin condition.} \cref{obj:ass:margin} holds.
+\item \textbf{Zero-effect convention.} \cref{obj:ass:zero-effect} holds.
+\item \textbf{Bounded outcomes.} \cref{obj:ass:bounded-outcome} holds.
+\item \textbf{Disagreement sets.} \(D_\pi\) is defined as in \cref{obj:def:disagreement}.
+\end{itemize}
+Then there exists a constant
+\[
+C=C(C_m,u_0,\alpha)
+\]
+such that, for every \(\pi\in\Pi\),
+\[
+P_X(D_\pi)
+\le
+C\,R_P(\pi)^{\alpha/(1+\alpha)} .
+\]
+\end{theoremv}
+
+The localization result converts small regret into a small disagreement region under the margin condition, a step that parallels the standard excess-risk localization used in margin-based classification analysis \citep{Audibert2007,Massart2006,Tsybakov2009}.
+
+The distinctive restriction in this paper governs the interaction between weak overlap and small contrasts.  For \(\gamma>0\), the law class controls the probability that weak overlap and small welfare-relevant contrasts occur together.
+
+\begin{assumptionv}{ass:overlap-decay}[Overlap decay]
+For all \(u\) and \(v\) with \(0<u\le u_0\) and \(v>0\) satisfying
+\[
+v\le c_o u^\gamma,
+\]
+the joint small-contrast and weak-overlap probability obeys
+\[
+P\{p_P(X)\le v,\ 0<|\tau_P(X)|\le u\}
+   \le C_o u^\alpha v^{1/\gamma},
+\]
+with the convention that \(v^{1/\gamma}=1\) when \(\gamma=0\).
+\end{assumptionv}
+
+This condition is specific to this analysis: it permits overlap to deteriorate near either propensity boundary, but only at a rate tied to the small-contrast region that drives welfare regret.  The lower-bound witness itself uses one boundary.
+
+\begin{assumptionv}{ass:strict-overlap-endpoint}[Strict-overlap endpoint]
+When \(\gamma=0\), there exists a constant \(\underline p\in(0,1/2]\) such that
+\[
+p_P(X)\ge \underline p
+\]
+holds \(P_X\)-almost surely.
+\end{assumptionv}
+
+This is the standard strict-overlap, or uniform-positivity, endpoint condition for the \(\gamma=0\) case \citep{Imbens2015}.
+
+\begin{definitionv}{def:exponents}[Exponents $\beta_{\alpha,\gamma}$, $D_{\alpha,\gamma}$, and $r_\star(\alpha,\gamma)$]
+The overlap calibration exponent, denominator exponent, and minimax exponent are
+\[
+\beta_{\alpha,\gamma}
+=
+\begin{cases}
+0, & \gamma=0,\\
+\dfrac{\alpha\gamma}{\alpha+1}, & \gamma>0,
+\end{cases}
+\qquad
+D_{\alpha,\gamma}=2+\alpha+\beta_{\alpha,\gamma},
+\qquad
+r_\star(\alpha,\gamma)=\frac{1+\alpha}{D_{\alpha,\gamma}}.
+\]
+\end{definitionv}
+
+The term \(\beta_{\alpha,\gamma}\) is zero under strict overlap and, for \(\alpha>0\) and \(\gamma>0\), positive when weak overlap is allowed to concentrate near small contrasts.  The denominator \(D_{\alpha,\gamma}\) is the exponent balance that will enter the two-point lower-bound construction, and \(r_\star(\alpha,\gamma)\) is the corresponding lower-bound regret exponent.
+
+\begin{definitionv}{def:law-class}[Law class \(\mathcal P_{\alpha,\gamma}\)]
+Fix the policy class \(\Pi\) and the constants \(C_m,u_0,C_o,c_o,\underline p\). The class \(\mathcal P_{\alpha,\gamma}\) consists of all well-formed observed laws \(P\) on \(\Omega=\mathcal X\times\{0,1\}\times[-1,1]\) for which the following properties hold: \(Y\in[-1,1]\) \(P\)-a.s. and \(\mu_0(x),\mu_1(x)\in[-1,1]\) for every \(x\); \(0<e_P(x)<1\) \(P_X\)-a.s.; \(0\le\alpha\), \(0<C_m\), \(0<u_0\), and \(P_X\{0<|\tau_P(X)|\le u\}\le C_m u^\alpha\) for every \(0<u\le u_0\); either \(P_X\{\tau_P(X)=0\}=0\), or every \(\pi\in\Pi\) agrees with \(\pi^\star_P\) on \(\{\tau_P=0\}\) up to \(P_X\)-null sets; for every \(0<u\le u_0\) and \(0<v\le c_o u^\gamma\), \[P_X\{p_P(X)\le v,\ 0<|\tau_P(X)|\le u\}\le C_o u^\alpha\begin{cases}1,&\gamma=0,\\ v^{1/\gamma},&\gamma\ne0;\end{cases}\] and, when \(\gamma=0\), \(0<\underline p\le1/2\) and \(p_P(x)\ge\underline p\) \(P_X\)-a.s.
+\end{definitionv}
+
+Equivalently, \(\mathcal P_{\alpha,\gamma}\) is the observed-law class satisfying bounded outcomes, positivity, the margin and zero-effect restrictions, the one-sided overlap-decay condition, and the strict-overlap endpoint convention when \(\gamma=0\).  The sampling condition in \cref{obj:ass:iid}, the finite-VC structure in \cref{obj:ass:policy-class}, the margin-window normalization in \cref{obj:ass:margin-window}, and the oracle-in-class condition in \cref{obj:ass:optimal-in-class} are separate structural conditions invoked by the statements that need them.

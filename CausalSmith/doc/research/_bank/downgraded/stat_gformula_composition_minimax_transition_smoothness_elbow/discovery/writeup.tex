@@ -1,0 +1,944 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb,amsthm}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{openendedquestion}{Open-ended Question}
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\coreref}[1]{\ref{#1}}
+
+\begin{document}
+
+\section*{stat\_\allowbreak{}gformula\_\allowbreak{}composition\_\allowbreak{}minimax (transition\_\allowbreak{}smoothness\_\allowbreak{}elbow)}
+
+\paragraph{TL;DR.} For the two-decision g-formula target \(\psi=E[Y(1,1)]\), the note proves a computable cross-fitted first-order upper bound and three converse floors. The honest bracket is
+\[
+\max\{n^{-1/2},n^{-r_1},n^{-r_2}\}\lesssim\mathfrak R_n(\mathcal M)\lesssim n^{-1/2}+n^{-(\gamma_1+\gamma_t)}+n^{-(\gamma_2+\gamma_b)},
+\]
+under the stated nonemptiness and converse-slack qualifications. The incoming lower channel pairs the first propensity with incoming-state transition smoothness; the terminal channel is the familiar single-time-type component. The auxiliary monotone-MAR comparator is now a complete statistical law, including its treated-outcome kernel, but remains distinct from the causal full-data extension. The bounds do not match in general, so neither the minimax rate nor a root-\(n\) if-and-only-if elbow is claimed.
+
+\section{Project justification}
+
+\paragraph{Gap.} Optimal non-root-\(n\) theory for time-varying treatment effects remains open. In this model, the unresolved mathematical issue is the gap between the transition-mediated converse exponent \(r_1=2(\alpha_1+t)/\{2(\alpha_1+t)+d\}\) and the first-order achievable exponent \(\gamma_1+\gamma_t\), together with the analogous terminal-channel gap.
+
+\paragraph{Niche.} The note isolates an incoming-transition channel with no nonconstant counterpart when the transition is state independent. It uses incoming \(C^t(L^1)\) regularity and permits a fixed subclass with genuinely rough outgoing-state densities. The public comparison is made on a fully specified auxiliary monotone-MAR coarsening, including an outcome drawn from the longitudinal treated-outcome regular conditional kernel.
+
+\paragraph{Fill.} The contribution is an explicit nonmatching bracket: a sample-measurable cross-fitted first-order estimator, a chained fuzzy lower construction pairing \(\pi_1\) with \(g\), the standard terminal fuzzy channel, and a parametric floor. On the fixed rough subclass, the auxiliary law draws \((L_0,L_1,Y^{\rm MAR})\) from \(p_1gK_P\), then applies monotone response indicators with probabilities \(\pi_1(L_0)\) and \(\pi_2(L_1)\). Its observed-data coarsening matches the longitudinal treated-regime coordinates without equating \(L_1\) with \(H_2(1)\).
+
+\section{Related work}
+
+Longitudinal g-formula identification is standard, and the terminal lower channel parallels single-time missing-data and treatment-effect constructions, including Robins, Li, Tchetgen Tchetgen, and van der Vaart. The incoming channel instead perturbs the first propensity and treated transition jointly because \(m_1=T_gm_2\) is not variation independent of \(g\). For the public comparator, Section 7.2.2 and Theorem 49 of Robins et al. require a positive-order H\"older joint density for \((L_0,L_1)\). The completed auxiliary monotone-MAR law has full data \((L_0,L_1,Y^{\rm MAR})\), response indicators satisfying the displayed MAR identities, and observed coarsening \( (R_0,L_0,R_0L_1,R_1,R_0R_1Y^{\rm MAR})\). For laws induced from \(\mathcal M_{\rm rough}\), its joint state density \(p_1g=g_0+r\) has a nonremovable outgoing-state jump, so those auxiliary laws are not covered by the stated condition. This is only noncoverage: no reverse inclusion, broad non-overlap, or priority claim is made. The note gives a model-specific partial answer to the open non-root-\(n\) agenda described by Cinelli et al. The Bonvini--Kennedy--Keele item remains disclosed only as unavailable work in progress; no assumptions, rates, inclusion relation, non-overlap, or priority inference is drawn from it.
+
+\section{Setup}
+
+Target (estimand / structural parameter): \(\psi=E_{\widetilde P}[Y(1,1)]\).
+Identifying functional / recovery map: \(\psi=E_{Q_2}[m_2(H_2)]=E_{Q_1}[\int m_2(h_2)g(h_2\mid H_1)\,dh_2]\).
+\begin{itemize}
+  \item \(n\) --- \texttt{sample size}; \(\mathbb N\); \texttt{index} $:=$ \texttt{Number of observed trajectories.}
+  \item \(d\) --- \texttt{state dimension}; \(\mathbb N\); \texttt{index} $:=$ \texttt{Dimension of each state.}
+  \item \(O_i\) --- \texttt{observed trajectory}; \([0,1]^d\times\{0,1\}\times[0,1]^d\times\{0,1\}\times[-1,1]\); \texttt{data} $:=$ \(O_i=(H_{1i},A_{1i},H_{2i},A_{2i},Y_i)\).
+  \item \(P\) --- \texttt{observed-data law}; \texttt{probability laws}; \texttt{model} $:=$ \texttt{Law of one observed trajectory.}
+  \item \(\widetilde P\) --- \texttt{full-data law}; \texttt{probability laws}; \texttt{model} $:=$ Full-data extension of \(P\).
+  \item \(H_1\) --- \texttt{first state}; \([0,1]^d\); \texttt{data} $:=$ \texttt{State before the first decision.}
+  \item \(H_2\) --- \texttt{second state}; \([0,1]^d\); \texttt{data} $:=$ \texttt{State before the second decision.}
+  \item \(A_1\) --- \texttt{first decision}; \(\{0,1\}\); \texttt{data} $:=$ \texttt{First binary treatment.}
+  \item \(A_2\) --- \texttt{second decision}; \(\{0,1\}\); \texttt{data} $:=$ \texttt{Second binary treatment.}
+  \item \(Y\) --- \texttt{outcome}; \([-1,1]\); \texttt{data} $:=$ \texttt{Observed terminal outcome.}
+  \item \(Y(a_1,a_2)\) --- \texttt{potential outcome}; \([-1,1]\); \texttt{causal object} $:=$ Outcome under \(a_1,a_2\in\{0,1\}\).
+  \item \(H_2(a_1)\) --- \texttt{potential state}; \([0,1]^d\); \texttt{causal object} $:=$ Second state under \(a_1\).
+  \item \(h_1\) --- \texttt{argument}; \([0,1]^d\); \texttt{argument} $:=$ Generic value of \(H_1\).
+  \item \(h_2\) --- \texttt{argument}; \([0,1]^d\); \texttt{argument} $:=$ Generic value of \(H_2\).
+  \item \(\pi_1\) --- \texttt{propensity}; \([0,1]^d\to(0,1)\); \texttt{nuisance} $:=$ \(P(A_1=1\mid H_1=h_1)\).
+  \item \(\pi_2\) --- \texttt{propensity}; \([0,1]^d\to(0,1)\); \texttt{nuisance} $:=$ \(P(A_2=1\mid H_2=h_2,A_1=1)\).
+  \item \(g\) --- \texttt{transition density}; \((h_2,h_1)\mapsto[0,\infty)\); \texttt{nuisance} $:=$ Density of \(H_2\mid(H_1=h_1,A_1=1)\).
+  \item \(m_2\) --- \texttt{terminal regression}; \([0,1]^d\to[-1,1]\); \texttt{nuisance} $:=$ \(E_P[Y\mid H_2=h_2,A_1=A_2=1]\).
+  \item \(m_1\) --- \texttt{backward regression}; \([0,1]^d\to[-1,1]\); \texttt{nuisance} $:=$ \(\int m_2(h_2)g(h_2\mid h_1)\,dh_2\).
+  \item \(Q_1\) --- \texttt{interventional law}; \texttt{probability measures}; \texttt{integration measure} $:=$ \(P_{H_1}\).
+  \item \(Q_2\) --- \texttt{interventional law}; \texttt{probability measures}; \texttt{integration measure} $:=$ \(Q_2(dh_2)=\int P_{H_1}(dh_1)g(h_2\mid h_1)\,dh_2\).
+  \item \(\psi\) --- \texttt{causal estimand}; \(\mathbb R\); \texttt{target} $:=$ \(E_{\widetilde P}[Y(1,1)]\).
+  \item \(\alpha_1\) --- \texttt{smoothness}; \((0,\infty)\); \texttt{parameter} $:=$ Hölder order of \(\pi_1\).
+  \item \(\alpha_2\) --- \texttt{smoothness}; \((0,\infty)\); \texttt{parameter} $:=$ Hölder order of \(\pi_2\).
+  \item \(\beta\) --- \texttt{smoothness}; \((0,\infty)\); \texttt{parameter} $:=$ Hölder order of \(m_2\).
+  \item \(t\) --- \texttt{smoothness}; \((0,\infty)\); \texttt{parameter} $:=$ \texttt{Incoming-state transition Hölder order.}
+  \item \(M\) --- \texttt{radius}; \((0,\infty)\); \texttt{parameter} $:=$ \texttt{Regularity-ball radius.}
+  \item \(c\) --- \texttt{overlap constant}; \((0,1/2)\); \texttt{parameter} $:=$ \texttt{Positivity constant.}
+  \item \(\underline q\) --- \texttt{density bound}; \((0,\infty)\); \texttt{parameter} $:=$ \texttt{Lower design-density bound.}
+  \item \(\overline q\) --- \texttt{density bound}; \((0,\infty)\); \texttt{parameter} $:=$ \texttt{Upper design-density bound.}
+  \item \(\mathcal H_d^s(M)\) --- \texttt{Hölder ball}; \texttt{function classes}; \texttt{class} $:=$ Class in \(def:holder-ball\).
+  \item \(\mathcal G_d^t(M)\) --- \texttt{transition class}; \texttt{density classes}; \texttt{class} $:=$ Class in \(def:transition-ball\).
+  \item \(\mathcal M(\alpha_1,\alpha_2,\beta,t;M,c)\) --- \texttt{model}; \texttt{law classes}; \texttt{class} $:=$ Class in \(def:longitudinal-model\).
+  \item \(\mathcal M\) --- \texttt{model shorthand}; \texttt{law classes}; \texttt{class} $:=$ \(\mathcal M=\mathcal M(\alpha_1,\alpha_2,\beta,t;M,c)\).
+  \item \(s_1\) --- \texttt{channel index}; \((0,\infty)\); \texttt{rate notation} $:=$ \(\alpha_1+t\).
+  \item \(s_2\) --- \texttt{channel index}; \((0,\infty)\); \texttt{rate notation} $:=$ \(\alpha_2+\beta\).
+  \item \(r_1\) --- \texttt{rate exponent}; \((0,1)\); \texttt{rate notation} $:=$ \(2s_1/(2s_1+d)\).
+  \item \(r_2\) --- \texttt{rate exponent}; \((0,1)\); \texttt{rate notation} $:=$ \(2s_2/(2s_2+d)\).
+  \item \(\widehat\psi\) --- \texttt{estimator}; \(\mathbb R\); \texttt{estimation object} $:=$ \texttt{Sample-measurable estimator in the minimax definition.}
+  \item \(\widehat\psi^{\rm SDR}\) --- \texttt{estimator}; \(\mathbb R\); \texttt{estimation object} $:=$ Direct-backward estimator in \(def:direct-backward-estimator\).
+  \item \(\widehat\psi^{\rm HOIF}\) --- \texttt{estimator}; \(\mathbb R\); \texttt{estimation object} $:=$ Corrected estimator in \(def:hoif-chains\).
+  \item \(\mathfrak R_n\) --- \texttt{minimax RMSE}; \([0,\infty)\); \texttt{frontier} $:=$ Risk in \(def:minimax-rmse\).
+  \item \(\mathcal T,\mathcal B,\mathcal G,\mathcal E\) --- \texttt{folds}; \texttt{disjoint index sets}; \texttt{fold provenance} $:=$ \texttt{Nuisance, backward, Gram, and evaluation folds.}
+  \item \(\mathcal F_T,\mathcal F_{TB},\mathcal F_{TBG}\) --- \texttt{sigma-fields}; \texttt{sigma-fields}; \texttt{fold provenance} $:=$ Sigma-fields generated respectively by \(\mathcal T\), \(\mathcal T\cup\mathcal B\), and \(\mathcal T\cup\mathcal B\cup\mathcal G\).
+  \item \(\widehat\pi_1,\widehat\pi_2,\widehat m_2\) --- \texttt{nuisance fits}; \texttt{clipped functions}; \texttt{estimation input} $:=$ Fits trained on \(\mathcal T\).
+  \item \(\widehat D_2\) --- \texttt{pseudo-outcome}; \(\mathbb R\); \texttt{sequential object} $:=$ Augmented second-stage outcome in \(def:direct-backward-estimator\).
+  \item \(\widehat m_1\) --- \texttt{backward fit}; \texttt{functions}; \texttt{estimation input} $:=$ Wavelet regression fit trained on \(\mathcal B\).
+  \item \(b_1^\dagger\) --- \texttt{conditional target}; \texttt{functions}; \texttt{sequential object} $:=$ Conditional target in \(def:direct-backward-estimator\).
+  \item \(w_1,w_2,e_2,T_g\) --- \texttt{remainder notation}; \texttt{functions and operator}; \texttt{analysis object} $:=$ Objects in \(def:remainder-notation\).
+  \item \(B_1,B_2,B_T\) --- \texttt{bias components}; \(\mathbb R\); \texttt{analysis object} $:=$ Components in \(lem:direct-bias\).
+  \item \(Z_{j,K_j},K_j,\widehat\Omega_{j,b},K_{j,b}\) --- \texttt{projection objects}; \texttt{wavelets, matrices, and kernels}; \texttt{projection object} $:=$ Objects in \(def:blocked-projection\).
+  \item \(K_1\) --- \texttt{projection kernel}; \texttt{kernels}; \texttt{projection object} $:=$ \texttt{First-state blocked projection kernel.}
+  \item \(K_2\) --- \texttt{projection kernel}; \texttt{kernels}; \texttt{projection object} $:=$ \texttt{Second-state blocked projection kernel.}
+  \item \(B_j,\kappa_j\) --- \texttt{block parameters}; \(\mathbb N\times\mathbb N\); \texttt{projection object} $:=$ \texttt{Number and maximum size of wavelet blocks.}
+  \item \(S_1,R_1,T_1,S_2,\widetilde R_2,T_2\) --- \texttt{observable residuals}; \(\mathbb R\); \texttt{HOIF factor} $:=$ Residual factors in \(def:hoif-chains\).
+  \item \(\Delta_{1,k},\Delta_{2,k},\Delta_{T,p,r}\) --- \texttt{U-statistic corrections}; \(\mathbb R\); \texttt{estimator} $:=$ Symmetrized corrections in \(def:hoif-chains\).
+  \item \(U_{\mathcal E}^q\) --- \texttt{U-statistic operator}; \texttt{symmetric kernels to reals}; \texttt{estimator} $:=$ Evaluation-fold U-statistic operator in \(def:hoif-chains\).
+  \item \(\mathcal I_T,q_1,q_2\) --- \texttt{truncation indices}; \texttt{finite index sets and integers}; \texttt{order calibration} $:=$ Orders selected in \(def:hoif-chains\).
+  \item \(a_1,a_2,b,b_1\) --- \texttt{preliminary rates}; \texttt{positive sequences}; \texttt{order calibration} $:=$ Rates in \(def:preliminary-rates\).
+  \item \(u_{j,h},v,v_{j,h},J,h,z,\lambda,\eta,\epsilon,\delta,a,b_0\) --- \texttt{fuzzy-experiment and rough-subclass objects}; \texttt{functions, indices, signs, amplitudes, likelihood channels, and a fixed model subclass}; \texttt{lower-bound construction} $:=$ In the rough construction, \(v(h_2)=\cos(4\pi h_{2,1})\), and \(p_1\equiv1\) denotes the uniform density of \(H_1\). The remaining objects belong to the two fuzzy experiments and the rough comparator construction, including \(q,a,g_0,g^{\rm rough}_{z,\lambda},\mathcal M_{\rm rough},F_j,E_j\).
+  \item \(\nu_+,\nu_-,\overline P_+,\overline P_-\) --- \texttt{mixtures}; \texttt{probability measures}; \texttt{lower-bound construction} $:=$ \texttt{Mixing and product-mixture laws in the fuzzy experiments.}
+  \item \(H^2\) --- \texttt{squared Hellinger distance}; \([0,1]\); \texttt{divergence} $:=$ \texttt{Squared Hellinger distance between two probability laws.}
+  \item \(\rho\) --- \texttt{affinity constant}; \((0,1)\); \texttt{lower-bound construction} $:=$ \texttt{Uniform positive lower bound for product-mixture affinity.}
+  \item \(\vartheta\) --- \texttt{parametric coordinate}; \([-1/4,1/4]\); \texttt{lower-bound construction} $:=$ \texttt{Coordinate of the regular parametric submodel.}
+  \item \(\mu_{a_1a_2}\) --- \texttt{potential-outcome mean}; \texttt{functions}; \texttt{lower-bound construction} $:=$ \texttt{Conditional mean used in the full-data fuzzy construction.}
+  \item \(U_{A1},U_{H2},U_{A2},U_Y^{a_1a_2}\) --- \texttt{exogenous uniforms}; \texttt{uniform random variables}; \texttt{causal construction} $:=$ \texttt{Independent randomizers for the full-data extensions.}
+  \item \(t_0,\theta_0,w,v_0,\chi,\xi,\mathcal G_{\rm AH}^{t_0}(M,\theta_0)\) --- \texttt{separation objects}; \texttt{parameters, functions, and a class}; \texttt{separation object} $:=$ Objects in \(def:analytic-outgoing-subclass\).
+\end{itemize}
+
+\section{Assumptions}
+
+\begin{assumption}[ass:iid]\label{ass:iid}
+\(O_1,\ldots,O_n\overset{\mathrm{iid}}{\sim}P\).
+\par\smallskip\noindent\emph{Standard} (independent and identically distributed sampling, \cite{Tsybakov2009}).
+\end{assumption}
+
+\begin{assumption}[ass:consistency]\label{ass:consistency}
+\(Y=Y(A_1,A_2)\quad\widetilde P\text{-a.s.}\)
+\par\smallskip\noindent\emph{Standard} (consistency, \cite{HernanRobins2020}).
+\end{assumption}
+
+\begin{assumption}[ass:exchangeability-one]\label{ass:exchangeability-one}
+\(Y(1,1)\perp_{\widetilde P}A_1\mid H_1\).
+\par\smallskip\noindent\emph{Standard} (first-period sequential exchangeability, \cite{HernanRobins2020}).
+\end{assumption}
+
+\begin{assumption}[ass:exchangeability-two]\label{ass:exchangeability-two}
+\(Y(1,1)\perp_{\widetilde P}A_2\mid(H_1,H_2,A_1=1)\).
+\par\smallskip\noindent\emph{Standard} (second-period sequential exchangeability, \cite{HernanRobins2020}).
+\end{assumption}
+
+\begin{assumption}[ass:overlap-one]\label{ass:overlap-one}
+\(c\le\pi_1(h_1)\le1-c\).
+\par\smallskip\noindent\emph{Standard} (strict positivity, \cite{HernanRobins2020}).
+\end{assumption}
+
+\begin{assumption}[ass:overlap-two]\label{ass:overlap-two}
+\(c\le\pi_2(h_2)\le1-c\).
+\par\smallskip\noindent\emph{Standard} (strict positivity, \cite{HernanRobins2020}).
+\end{assumption}
+
+\begin{assumption}[ass:outcome-state-sufficiency]\label{ass:outcome-state-sufficiency}
+\(E_P[Y\mid H_1,H_2,A_1=1,A_2=1]=m_2(H_2)\).
+\par\smallskip\noindent\emph{Novel.} This is an explicitly conditional theoretical state-sufficiency restriction. It is realistic only when the recorded second state contains the history that determines the terminal conditional mean; no empirical validation or protocol evidence is claimed here.
+\end{assumption}
+
+\begin{assumption}[ass:treatment-state-sufficiency]\label{ass:treatment-state-sufficiency}
+\(P(A_2=1\mid H_1,H_2,A_1=1)=\pi_2(H_2)\).
+\par\smallskip\noindent\emph{Novel.} This is a conditional theoretical restriction appropriate when the second decision rule uses only the recorded second state. Its applicability requires a future protocol to prespecify the state and document the retained history.
+\end{assumption}
+
+\begin{assumption}[ass:holder-pi-one]\label{ass:holder-pi-one}
+\(\pi_1\in\mathcal H_d^{\alpha_1}(M)\).
+\par\smallskip\noindent\emph{Standard} (isotropic Hölder smoothness, \cite{Tsybakov2009}).
+\end{assumption}
+
+\begin{assumption}[ass:holder-pi-two]\label{ass:holder-pi-two}
+\(\pi_2\in\mathcal H_d^{\alpha_2}(M)\).
+\par\smallskip\noindent\emph{Standard} (isotropic Hölder smoothness, \cite{Tsybakov2009}).
+\end{assumption}
+
+\begin{assumption}[ass:holder-terminal]\label{ass:holder-terminal}
+\(m_2\in\mathcal H_d^{\beta}(M)\).
+\par\smallskip\noindent\emph{Standard} (isotropic Hölder smoothness, \cite{Tsybakov2009}).
+\end{assumption}
+
+\begin{assumption}[ass:transition-holder]\label{ass:transition-holder}
+\(g\in\mathcal G_d^t(M)\).
+\par\smallskip\noindent\emph{Novel.} Conditional transition laws generated by an incoming-state smooth mixture weight with arbitrary bounded outgoing components satisfy this condition. It permits rough outgoing biomarker distributions while requiring stable variation of the full conditional law across the incoming state.
+\end{assumption}
+
+\begin{assumption}[ass:design-density]\label{ass:design-density}
+\(0<\underline q\le dQ_j/dh_j\le\overline q<\infty\quad(j=1,2)\).
+\par\smallskip\noindent\emph{Standard} (bounded random-design density, \cite{RobinsLiTchetgenVanderVaart2016}).
+\end{assumption}
+
+\section{Definitions}
+
+\begin{definition}[def:holder-ball]\label{def:holder-ball}
+\(\mathcal H_d^s(M)\) $:=$ \(\mathcal H_d^s(M)=\{f:[0,1]^d\to\mathbb R:\|f\|_{C^s([0,1]^d)}\le M\}\). --- the class of all objects satisfying: .
+\end{definition}
+
+\begin{definition}[def:transition-ball]\label{def:transition-ball}
+\(\mathcal G_d^t(M)\) $:=$ \(\mathcal G_d^t(M)=\{g:g(h_2\mid h_1)\ge0,\ \int_{[0,1]^d}g(h_2\mid h_1)\,dh_2=1,\ \|h_1\mapsto g(\cdot\mid h_1)\|_{C^t([0,1]^d;L^1(dh_2))}\le M\}\). --- the class of all objects satisfying: .
+\end{definition}
+
+\begin{definition}[def:longitudinal-model]\label{def:longitudinal-model}
+\(\mathcal M(\alpha_1,\alpha_2,\beta,t;M,c)\) $:=$ \(\mathcal M(\alpha_1,\alpha_2,\beta,t;M,c)=\{P:\exists\widetilde P\text{ extending }P\text{ satisfying ass:consistency, ass:exchangeability-one, ass:exchangeability-two, ass:overlap-one, ass:overlap-two, ass:outcome-state-sufficiency, ass:treatment-state-sufficiency, ass:holder-pi-one, ass:holder-pi-two, ass:holder-terminal, ass:transition-holder, ass:design-density}\}\). --- the class of all objects satisfying: ass:consistency; ass:exchangeability-one; ass:exchangeability-two; ass:overlap-one; ass:overlap-two; ass:outcome-state-sufficiency; ass:treatment-state-sufficiency; ass:holder-pi-one; ass:holder-pi-two; ass:holder-terminal; ass:transition-holder; ass:design-density.
+\end{definition}
+
+\begin{definition}[def:gformula-objects]\label{def:gformula-objects}
+\texttt{g-formula objects} $:=$ \(Q_1=P_{H_1},\ Q_2(dh_2)=\int P_{H_1}(dh_1)g(h_2\mid h_1)\,dh_2,\ m_1(h_1)=\int m_2(h_2)g(h_2\mid h_1)\,dh_2,\ \psi(P)=E_{Q_1}[m_1(H_1)]\). \quad (\text{inputs: } \textbackslash{}(P\textbackslash{}), \textbackslash{}(g\textbackslash{}), \textbackslash{}(m\_2\textbackslash{}))
+\end{definition}
+
+\begin{definition}[def:minimax-rmse]\label{def:minimax-rmse}
+\(\mathfrak R_n\) $:=$ \(\mathfrak R_n(\mathcal M)=\inf_{\widehat\psi}\sup_{P\in\mathcal M}E_P[(\widehat\psi-\psi(P))^2]^{1/2}\). \quad (\text{inputs: } \textbackslash{}(n\textbackslash{}), \textbackslash{}(\textbackslash{}mathcal M(\textbackslash{}alpha\_1,\textbackslash{}alpha\_2,\textbackslash{}beta,t;M,c)\textbackslash{}), \textbackslash{}(\textbackslash{}psi\textbackslash{}))
+\end{definition}
+
+\begin{definition}[def:remainder-notation]\label{def:remainder-notation}
+\texttt{sequential remainder notation} $:=$ \(w_j=\pi_j/\widehat\pi_j,\ e_2=(1-w_2)(\widehat m_2-m_2),\ T_gf(h_1)=\int f(h_2)g(h_2\mid h_1)\,dh_2\). \quad (\text{inputs: } \textbackslash{}(\textbackslash{}pi\_1\textbackslash{}), \textbackslash{}(\textbackslash{}pi\_2\textbackslash{}), \textbackslash{}(\textbackslash{}widehat\textbackslash{}pi\_1,\textbackslash{}widehat\textbackslash{}pi\_2,\textbackslash{}widehat m\_2\textbackslash{}), \textbackslash{}(m\_2\textbackslash{}), \textbackslash{}(g\textbackslash{}))
+\end{definition}
+
+\begin{definition}[def:blocked-projection]\label{def:blocked-projection}
+\texttt{blocked projection kernels} $:=$ For \(j=1,2\), take a boundary-corrected wavelet vector \(Z_{j,K_j}\) with \(K_j\asymp n^{2d/(2s_j+d)}\). Partition its coordinates into \(B_j=\lceil K_j/\kappa_j\rceil\) consecutive blocks \(Z_{j,b}\) of size at most \(\kappa_j=\lfloor|\mathcal G|/2\rfloor\). Define \(\widehat\Omega_{1,b}=\mathbb P_{\mathcal G}[Z_{1,b}Z_{1,b}^{T}]\), \(\widehat\Omega_{2,b}=\mathbb P_{\mathcal G}[A_1Z_{2,b}Z_{2,b}^{T}/\widehat\pi_1(H_1)]\), and \(K_{j,b}(x,x')=Z_{j,b}(x)^T\widehat\Omega_{j,b}^{-1}Z_{j,b}(x')\) when the inverse exists, with \(K_{j,b}(x,x')=0\) otherwise; set \(K_j=\sum_{b=1}^{B_j}K_{j,b}\). This total block construction is used whenever \(K_j>|\mathcal G|\). \quad (\text{inputs: } \textbackslash{}(\textbackslash{}mathcal G\textbackslash{}), \textbackslash{}(\textbackslash{}widehat\textbackslash{}pi\_1\textbackslash{}), \textbackslash{}(s\_1\textbackslash{}), \textbackslash{}(s\_2\textbackslash{}))
+\end{definition}
+
+\begin{definition}[def:preliminary-rates]\label{def:preliminary-rates}
+\texttt{preliminary nuisance rates} $:=$ \(a_j=n^{-\alpha_j/(2\alpha_j+d)}\ (j=1,2),\ b=n^{-\beta/(2\beta+d)},\ b_1=n^{-t/(2t+d)}+a_2b\), with \(L^2(Q_j)\) errors of orders \(a_j\), \(b\), and \(b_1\), respectively. \quad (\text{inputs: } \textbackslash{}(\textbackslash{}alpha\_1\textbackslash{}), \textbackslash{}(\textbackslash{}alpha\_2\textbackslash{}), \textbackslash{}(\textbackslash{}beta\textbackslash{}), \textbackslash{}(t\textbackslash{}), \textbackslash{}(d\textbackslash{}))
+\end{definition}
+
+\begin{definition}[def:direct-backward-estimator]\label{def:direct-backward-estimator}
+\texttt{direct-backward SDR estimator} $:=$ On \(\mathcal T\), fit clipped \(\widehat\pi_1,\widehat\pi_2,\widehat m_2\). On the independent fold \(\mathcal B\), form \(\widehat D_2=\widehat m_2(H_2)+A_2\{Y-\widehat m_2(H_2)\}/\widehat\pi_2(H_2)\) and regress \(\widehat D_2\) on \(H_1\) among \(A_1=1\) using a boundary-corrected wavelet sieve, obtaining \(\widehat m_1\). Define \(b_1^\dagger(h_1)=E_P[\widehat D_2\mid H_1=h_1,A_1=1,\mathcal F_T]\). On \(\mathcal E\), set \(\widehat\psi^{\rm SDR}=\mathbb P_{\mathcal E}[\widehat m_1(H_1)+A_1\{\widehat D_2-\widehat m_1(H_1)\}/\widehat\pi_1(H_1)]\). \quad (\text{inputs: } \textbackslash{}(O\_i\textbackslash{}), \textbackslash{}(\textbackslash{}mathcal T,\textbackslash{}mathcal B,\textbackslash{}mathcal E\textbackslash{}), \textbackslash{}(\textbackslash{}widehat\textbackslash{}pi\_1,\textbackslash{}widehat\textbackslash{}pi\_2,\textbackslash{}widehat m\_2\textbackslash{}))
+\end{definition}
+
+\begin{definition}[def:hoif-chains]\label{def:hoif-chains}
+\texttt{projected sequential corrections} $:=$ On \(\mathcal E\), let \(\omega=A_1/\widehat\pi_1(H_1)\), \(S_1=1-\omega\), \(R_1=\omega-1\), \(T_1=\omega(\widehat D_2-\widehat m_1(H_1))\), \(S_2=\omega(1-A_2/\widehat\pi_2(H_2))\), \(\widetilde R_2=\omega(A_2/\widehat\pi_2(H_2)-1)\), and \(T_2=\omega A_2\{Y-\widehat m_2(H_2)\}/\widehat\pi_2(H_2)\). With \(U_{\mathcal E}^qf=(|\mathcal E|)_q^{-1}\sum_{i_1\ne\cdots\ne i_q\in\mathcal E}f(O_{i_1},\ldots,O_{i_q})\), define \(\Delta_{1,k}=(-1)^kU_{\mathcal E}^{k+2}\operatorname{Sym}[S_1K_1(R_1K_1)^kT_1]\), \(\Delta_{2,k}=(-1)^kU_{\mathcal E}^{k+2}\operatorname{Sym}[S_2K_2(\widetilde R_2K_2)^kT_2]\), and \(\Delta_{T,p,r}=(-1)^{p+r}U_{\mathcal E}^{p+r+3}\operatorname{Sym}[S_1K_1(R_1K_1)^pS_2K_2(\widetilde R_2K_2)^rT_2]\), where adjacent kernels join the state recorded by their adjacent residual factors, \(\operatorname{Sym}\) averages all ordered role assignments, and empty powers equal one. Thus \(\Delta_{T,0,0}\) has coefficient \(+1\). Define \(q_1=\min\{q\ge0:a_1^{q+1}b_1=o(n^{-r_1})\}\), \(q_2=\min\{q\ge0:a_2^{q+1}b=o(n^{-r_2})\}\), choose a finite multi-index set \(\mathcal I_T\subset\mathbb N_0^2\) satisfying \(\sum_{(p,r)\notin\mathcal I_T}a_1^{p+1}a_2^{r+1}b=o(n^{-\min\{r_1,r_2\}})\), and set \(\widehat\psi^{\rm HOIF}=\widehat\psi^{\rm SDR}+\sum_{k=0}^{q_1}\Delta_{1,k}+\sum_{k=0}^{q_2}\Delta_{2,k}+\sum_{(p,r)\in\mathcal I_T}\Delta_{T,p,r}\). \quad (\text{inputs: } \textbackslash{}(\textbackslash{}widehat D\_2\textbackslash{}), \textbackslash{}(\textbackslash{}widehat m\_1\textbackslash{}), \textbackslash{}(\textbackslash{}widehat m\_2\textbackslash{}), \textbackslash{}(\textbackslash{}widehat\textbackslash{}pi\_1,\textbackslash{}widehat\textbackslash{}pi\_2\textbackslash{}), \textbackslash{}(K\_1\textbackslash{}), \textbackslash{}(K\_2\textbackslash{}), \textbackslash{}(a\_1,a\_2,b,b\_1\textbackslash{}), \textbackslash{}(r\_1\textbackslash{}), \textbackslash{}(r\_2\textbackslash{}))
+\end{definition}
+
+\begin{definition}[def:parametric-submodel]\label{def:parametric-submodel}
+\texttt{regular parametric submodel} $:=$ For every \(\vartheta\in[-1/4,1/4]\), let \(P_\vartheta\) be the observed-data law with \(H_1\sim\operatorname{Unif}([0,1]^d)\), \(P_\vartheta(A_1=1\mid H_1)=1/2\), \(H_2\mid(H_1,A_1)\sim\operatorname{Unif}([0,1]^d)\), and \(P_\vartheta(A_2=1\mid H_1,H_2,A_1)=1/2\). Thus \(\pi_1=\pi_2=1/2\) and \(g(h_2\mid h_1)=1\). Set \(P_\vartheta(Y=1\mid H_2,A_1=1,A_2=1)=(1+\vartheta)/2\), and set every off-regime conditional outcome law to the fixed fair Rademacher law. The full-data extension uses independent uniforms and the same potential-outcome construction as the fuzzy experiments. \quad (\text{inputs: } \textbackslash{}(H\_1\textbackslash{}), \textbackslash{}(H\_2\textbackslash{}), \textbackslash{}(A\_1\textbackslash{}), \textbackslash{}(A\_2\textbackslash{}), \textbackslash{}(Y\textbackslash{}))
+\end{definition}
+
+\begin{definition}[def:first-fuzzy-experiment]\label{def:first-fuzzy-experiment}
+\texttt{period-one paired fuzzy experiment and rough comparator subclass} $:=$ Choose a nonzero \(C^\infty\) reflection-odd bump \(u\) supported on a symmetric cube, with disjoint copies \(u_{j,h}\), \(J\asymp h^{-d}\), signs \(z,\lambda\in\{-1,1\}^J\), \(\eta=c_\eta h^{\alpha_1}\), and \(\epsilon=c_\epsilon h^t\). Put \(\pi_{1,z}=1/2+\eta\sum_jz_ju_{j,h}\), \(\pi_2=1/2\), and \(m_2=\delta v\). The flat-base family used by \(\texttt{thm:transition-mediated-converse-first-order-bracket}\) is
+\[
+g^{\rm flat}_{z,\lambda}(h_2\mid h_1)
+=1+\epsilon\sum_j\frac{\lambda_ju_{j,h}(h_1)v(h_2)}
+ {1+2\eta z_ju_{j,h}(h_1)}.
+\]
+Use transition density one and fair Rademacher outcomes off regime, and on \(A_1=A_2=1\) let \(P(Y=1\mid H_2)=\{1+\delta v(H_2)\}/2\). Generate the full-data extension from independent uniforms \(U_{A1},U_{H2},U_{A2},U_Y^{a_1a_2}\) by thresholding the treatment probabilities, inverse-transforming each conditional transition, defining the potential outcomes from the corresponding conditional means, and imposing \(H_2=H_2(A_1)\) and \(Y=Y(A_1,A_2)\). Let \(\nu_+\) mix uniformly over \(z\) with \(\lambda=z\), let \(\nu_-\) mix uniformly with \(\lambda=-z\), and define \(\overline P_\pm=\int P_{z,\pm z}^{\otimes n}d\nu_\pm(z)\).
+
+For the same-subclass comparison, fix
+\[
+q(h_2)=\mathbf1\{h_{2,1}\le1/2\}-\mathbf1\{h_{2,1}>1/2\},\quad
+a(h_1)=\cos(2\pi h_{1,1}),\quad
+v(h_2)=\cos(4\pi h_{2,1}),
+\]
+extended constantly in the remaining coordinates, and fix small \(\kappa,\delta>0\). Define
+\[
+g_0(h_2\mid h_1)=1+\kappa a(h_1)q(h_2).
+\]
+With the same fixed off-regime and independent-uniform full-data laws, define the \(n\)-independent subclass
+\[
+\mathcal M_{\rm rough}
+=\left\{P\in\mathcal M(\alpha_1,\alpha_2,\beta,t;M,c):
+\begin{array}{l}
+H_1\sim{\rm Unif}([0,1]^d),\ \pi_2=1/2,\ m_2=\delta v,\\
+g=g_0+r,\ \int r(h_2\mid h_1)\,dh_2=0,\ 
+h_2\mapsto r(h_2\mid h_1)\ {\rm is\ continuous},\\
+(1-\kappa)/2\le g(h_2\mid h_1)\le2(1+\kappa)
+\end{array}\right\}.
+\]
+The rough fuzzy transition is
+\[
+g^{\rm rough}_{z,\lambda}(h_2\mid h_1)
+=g_0(h_2\mid h_1)+
+\epsilon\sum_j\frac{\lambda_ju_{j,h}(h_1)v(h_2)}
+ {1+2\eta z_ju_{j,h}(h_1)}.
+\]
+It uses the same \(\pi_{1,z}\), \(\pi_2\), \(m_2\), full-data construction, and mixtures \(\lambda=z\) versus \(\lambda=-z\). Relative to its common law with first propensity \(1/2\) and treated transition \(g_0\), define the cell channels
+\[
+F_j=2\eta(2A_1-1)u_{j,h}(H_1),\qquad
+E_j=\epsilon\mathbf1\{A_1=1\}
+\frac{u_{j,h}(H_1)v(H_2)}{g_0(H_2\mid H_1)}.
+\]
+For each \(P\in\mathcal M_{\rm rough}\), let
+\[
+K_P(dy\mid l_0,l_1)
+=P(Y\in dy\mid H_1=l_0,H_2=l_1,A_1=A_2=1)
+\]
+be a regular conditional probability kernel. Such a kernel exists because the state and outcome spaces are standard Borel; strict overlap makes the treated-regime conditioning well-defined on the \(p_1(l_0)g(l_1\mid l_0)\)-support, and an arbitrary measurable version may be fixed off that support. Define an auxiliary two-occasion full-data law by first drawing \((L_0,L_1)\) with density \(p_1(l_0)g(l_1\mid l_0)\), then drawing \(Y^{\rm MAR}\) from \(K_P(\cdot\mid L_0,L_1)\). Conditional on \((L_0,L_1,Y^{\rm MAR})\), draw \(R_0\) as Bernoulli with success probability \(\pi_1(L_0)\). Set \(R_1=0\) whenever \(R_0=0\); conditional on \(R_0=1\), draw \(R_1\) as Bernoulli with success probability \(\pi_2(L_1)\), independently of \(Y^{\rm MAR}\) given \((L_0,L_1)\). Thus the full-data MAR identities are
+\[
+P(R_0=1\mid L_0,L_1,Y^{\rm MAR})=\pi_1(L_0),
+\qquad
+P(R_1=1\mid R_0=1,L_0,L_1,Y^{\rm MAR})=\pi_2(L_1).
+\]
+The auxiliary observed-data law satisfies
+\[
+(R_0,L_0,R_0L_1,R_1,R_0R_1Y^{\rm MAR})
+\overset{d}{=}
+(A_1,H_1,A_1H_2,A_1A_2,A_1A_2Y).
+\]
+Accordingly, the identified coordinates are \(L_0=H_1\) and \(R_0=A_1\), together with \(L_1=H_2\) and \(R_1=A_2\) only on \(A_1=1\), and the outcome kernel agrees with the longitudinal observed \(Y\)-kernel only on \(A_1=A_2=1\). The auxiliary variable \(L_1\) is not identified with the causal potential state \(H_2(1)\), and the construction imposes no additional state-consistency condition on the broad causal model. \quad (\text{inputs: } \textbackslash{}(d\textbackslash{}), \textbackslash{}(\textbackslash{}alpha\_1\textbackslash{}), \textbackslash{}(t\textbackslash{}), \textbackslash{}(M\textbackslash{}), \textbackslash{}(c\textbackslash{}))
+\end{definition}
+
+\begin{definition}[def:second-fuzzy-experiment]\label{def:second-fuzzy-experiment}
+\texttt{period-two paired fuzzy experiment} $:=$ Fix \(p_1=1\), \(\pi_1=1/2\), and every transition density at one. Choose disjoint smooth localized bumps \(v_{j,h}\) whose reference bump is sign-symmetric under a measure-preserving reflection, so \(v_{j,h}\circ\tau_j=-v_{j,h}\). Set \(J\asymp h^{-d}\), \(a=c_ah^{\alpha_2}\), \(b_0=c_bh^\beta\),
+\[
+\pi_{2,z}=1/2+a\sum_jz_jv_{j,h},
+\qquad
+m_{2,z,\lambda}=b_0\sum_j\frac{\lambda_jv_{j,h}}{1+2az_jv_{j,h}}.
+\]
+Use the factorization, off-regime laws, independent-uniform full-data extension, and product mixtures specified in \(\texttt{def:first-fuzzy-experiment}\), replacing the terminal treated mean by \(m_{2,z,\lambda}\). For \(2a\|v_{j,h}\|_\infty<1\) and \(b_0\|v_{j,h}\|_\infty/(1-2a\|v_{j,h}\|_\infty)<1\), all probabilities are valid. Reflection symmetry gives
+\[
+\int\frac{z_jv_{j,h}}{1+2az_jv_{j,h}}
+=-2a\int\frac{v_{j,h}^2}{1-4a^2v_{j,h}^2}.
+\]
+Thus, with \(h\asymp n^{-2/\{2(\alpha_2+\beta)+d\}}\), the two mixing supports have the exact sign-independent separation
+\[
+4ab_0\sum_j\int\frac{v_{j,h}^2}{1-4a^2v_{j,h}^2}\asymp ab_0=n^{-r_2},
+\]
+and the affinity scale is \(n^2a^2b_0^2/J=O(1)\). \quad (\text{inputs: } \textbackslash{}(d\textbackslash{}), \textbackslash{}(\textbackslash{}alpha\_2\textbackslash{}), \textbackslash{}(\textbackslash{}beta\textbackslash{}), \textbackslash{}(M\textbackslash{}), \textbackslash{}(c\textbackslash{}))
+\end{definition}
+
+\begin{definition}[def:analytic-outgoing-subclass]\label{def:analytic-outgoing-subclass}
+\(\mathcal G_{\rm AH}^{t_0}(M,\theta_0)\) $:=$ \(v_0(h_2)=\sqrt2\cos(2\pi h_{2,1})\) and \(\mathcal G_{\rm AH}^{t_0}(M,\theta_0)=\{1+\theta w(h_1)v_0(h_2):\|w\|_{C^{t_0}}\le M,\ |\theta|\le\theta_0\}\), where \(t_0>d/2\) is finite and \(\theta_0M\|v_0\|_\infty<1\). For noninteger \(t_0\), take \(w(h_1)=\chi(h_1)|h_{1,1}-1/2|^{t_0}\), rescaled to the ball; it is not in \(C^{t_0+\xi}\) for any specified \(\xi>0\). \quad (\text{inputs: } \textbackslash{}(t\_0\textbackslash{}), \textbackslash{}(M\textbackslash{}), \textbackslash{}(\textbackslash{}theta\_0\textbackslash{}), \textbackslash{}(w\textbackslash{}), \textbackslash{}(v\_0\textbackslash{}), \textbackslash{}(\textbackslash{}chi\textbackslash{}), \textbackslash{}(\textbackslash{}xi\textbackslash{}))
+\end{definition}
+
+\section{Main results}
+
+\begin{lemma}[lem:gformula]\label{lem:gformula}
+For every \(P\in\mathcal M(\alpha_1,\alpha_2,\beta,t;M,c)\), \(\psi(P)=E_{Q_1}[m_1(H_1)]=E_{Q_2}[m_2(H_2)]\).
+\end{lemma}
+\begin{proof}
+Fix \(P\in\mathcal M(\alpha_1,\alpha_2,\beta,t;M,c)\), and fix a full-data extension \(\widetilde P\) supplied by \(\texttt{def:longitudinal-model}\). Strict positivity makes every treated conditional expectation below well defined. First-period exchangeability and the tower property give
+\[E_{\widetilde P}[Y(1,1)]=E_{P_{H_1}}\!\left[E_{\widetilde P}\{Y(1,1)\mid H_1,A_1=1\}\right].\]
+Conditioning further on \(H_2\), using its conditional density \(g\) among units with \(A_1=1\), and applying second-period exchangeability give, for \(P_{H_1}\)-almost every \(h_1\),
+\[E_{\widetilde P}\{Y(1,1)\mid H_1=h_1,A_1=1\}=\int E_{\widetilde P}\{Y(1,1)\mid H_1=h_1,H_2=h_2,A_1=1,A_2=1\}g(h_2\mid h_1)\,dh_2.\]
+On \(\{A_1=A_2=1\}\), consistency gives \(Y=Y(1,1)\). Outcome-state sufficiency therefore identifies the conditional expectation in the integrand with \(m_2(h_2)\). Consequently,
+\[E_{\widetilde P}[Y(1,1)]=E_{Q_1}\!\left[\int m_2(h_2)g(h_2\mid H_1)\,dh_2\right]=E_{Q_1}[m_1(H_1)].\]
+Because \(|m_2|\le1\), Fubini's theorem applies. The definition of \(Q_2\) then yields
+\[E_{Q_1}[m_1(H_1)]=\int m_2(h_2)\left\{\int g(h_2\mid h_1)Q_1(dh_1)\right\}dh_2=E_{Q_2}[m_2(H_2)].\]
+This proves both asserted equalities.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This identifies the causal target with the observed longitudinal g-formula before any estimator or rate analysis. \textit{Gap.} Identification is standard and is not the statistical contribution. \textit{Consumer.} All upper- and lower-bound calculations evaluate the same observed-data functional.
+
+\begin{lemma}[lem:direct-bias]\label{lem:direct-bias}
+For \(O_1,\ldots,O_n\overset{\mathrm{iid}}{\sim}P\) with \(P\in\mathcal M(\alpha_1,\alpha_2,\beta,t;M,c)\), conditionally on \(\mathcal F_{TB}\), \(b_1^\dagger=m_1+T_g\{(1-w_2)(\widehat m_2-m_2)\}\) and \[E_P[\widehat\psi^{\rm SDR}-\psi\mid\mathcal F_{TB}]=E_{Q_1}[(1-w_1)(\widehat m_1-b_1^\dagger)]+E_{Q_2}[(1-w_2)(\widehat m_2-m_2)]\] \[=E_{Q_1}[(1-w_1)(\widehat m_1-m_1)]+E_{Q_1}[w_1T_g\{(1-w_2)(\widehat m_2-m_2)\}].\] Equivalently, the bias is \(B_1+B_2+B_T\), where \(B_1=E_{Q_1}[(1-w_1)(\widehat m_1-m_1)]\), \(B_2=E_{Q_2}[(1-w_2)(\widehat m_2-m_2)]\), and \(B_T=-E_{Q_1}[(1-w_1)T_g\{(1-w_2)(\widehat m_2-m_2)\}]\).
+\end{lemma}
+\begin{proof}
+Condition on \(\mathcal F_T\), and define \(\delta_2=(1-w_2)(\widehat m_2-m_2)\). Treatment-state sufficiency, outcome-state sufficiency, and the definition of \(\widehat D_2\) imply
+\[\begin{aligned}E_P[\widehat D_2\mid H_1=h_1,H_2=h_2,A_1=1,\mathcal F_T]&=\widehat m_2(h_2)+\frac{\pi_2(h_2)}{\widehat\pi_2(h_2)}\{m_2(h_2)-\widehat m_2(h_2)\}\\&=m_2(h_2)+\delta_2(h_2).\end{aligned}\]
+Integrating against \(g(\cdot\mid h_1)\) gives
+\[b_1^\dagger(h_1)=m_1(h_1)+T_g\delta_2(h_1).\]
+The evaluation fold is independent of \(\mathcal F_{TB}\). Therefore its empirical average has, conditionally on \(\mathcal F_{TB}\), the expectation of one fresh observation. Iterated expectation and \(E_P[A_1\mid H_1]=\pi_1(H_1)\) give
+\[\begin{aligned}E_P[\widehat\psi^{\rm SDR}\mid\mathcal F_{TB}]&=E_{Q_1}\!\left[\widehat m_1+w_1(b_1^\dagger-\widehat m_1)\right]\\&=E_{Q_1}\!\left[b_1^\dagger+(1-w_1)(\widehat m_1-b_1^\dagger)\right].\end{aligned}\]
+By the definition of \(Q_2\) and Fubini's theorem,
+\[E_{Q_1}[T_g\delta_2]=E_{Q_2}[\delta_2].\]
+Subtracting \(\psi=E_{Q_1}[m_1]\), proved in \(\texttt{lem:gformula}\), yields
+\[E_P[\widehat\psi^{\rm SDR}-\psi\mid\mathcal F_{TB}]=E_{Q_1}[(1-w_1)(\widehat m_1-b_1^\dagger)]+E_{Q_2}[(1-w_2)(\widehat m_2-m_2)].\]
+Substituting \(b_1^\dagger=m_1+T_g\delta_2\) and again using \(E_{Q_1}[T_g\delta_2]=E_{Q_2}[\delta_2]\) gives
+\[\begin{aligned}E_P[\widehat\psi^{\rm SDR}-\psi\mid\mathcal F_{TB}]&=E_{Q_1}[(1-w_1)(\widehat m_1-m_1)]+E_{Q_1}[w_1T_g\delta_2]\\&=B_1+B_2+B_T,\end{aligned}\]
+because \(B_2=E_{Q_1}[T_g\delta_2]\) and \(B_T=-E_{Q_1}[(1-w_1)T_g\delta_2]\). This proves every displayed identity.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The exact conditional identity isolates two local bilinear biases and the transported mixed term created by regressing an estimated pseudo-outcome. \textit{Gap.} It is an algebraic first-order decomposition, not a proof that the frozen higher-order corrections attain the converse. \textit{Consumer.} It drives the computable first-order risk bound and identifies the obstacle for a matched construction.
+
+\begin{proposition}[prop:finite-transition-separation]\label{prop:finite-transition-separation}
+Assume \(M>1\), \(0<\theta_0\), and \(\theta_0M\|v_0\|_\infty<1\), and let finite \(t_0>d/2\). Define
+\[
+\mathcal A_{\rm AH}^{t_0}=\mathcal G_{\rm AH}^{t_0}(M,\theta_0)\cap\mathcal G_d^{t_0}(M),
+\qquad
+\mathcal M_{\rm AH}=\{P\in\mathcal M(\alpha_1,\alpha_2,\beta,t_0;M,c):g\in\mathcal A_{\rm AH}^{t_0}\}.
+\]
+The class \(\mathcal A_{\rm AH}^{t_0}\) contains state-dependent transition densities and has infinite-dimensional affine hull. If \(t_0\) is noninteger, it contains a transition of exact incoming Holder order \(t_0\). Moreover, for every \(\alpha_1>0\), \(\alpha_1+t_0>d/2\); hence whenever \(\alpha_2+\beta\ge d/2\), both channels satisfy the necessary lower-channel elbow inequalities. Consequently, as a conditional corollary only, any future theorem establishing the conjectured matched two-channel rate on \(\mathcal M_{\rm AH}\) would imply an \(O(n^{-1/2})\) minimax upper rate there. No such upper bound is assumed in the definition of \(\mathcal M_{\rm AH}\) or proved by this proposition.
+\end{proposition}
+\begin{proof}
+Let \(V_1=\|v_0\|_{L^1([0,1]^d)}\), fix \(\theta_\star=\theta_0/2\), and choose \(\varepsilon>0\) so small that
+\[\varepsilon\le M,\qquad 1+\theta_\star V_1\varepsilon<M.\]
+For every \(w\in C^{t_0}([0,1]^d)\) with \(\|w\|_{C^{t_0}}\le\varepsilon\), put
+\[g_w(h_2\mid h_1)=1+\theta_\star w(h_1)v_0(h_2).\]
+Since \(\int v_0(h_2)\,dh_2=0\), each \(g_w(\cdot\mid h_1)\) integrates to one. Moreover,
+\[g_w(h_2\mid h_1)\ge1-\theta_0M\|v_0\|_\infty>0\]
+and
+\[\|h_1\mapsto g_w(\cdot\mid h_1)\|_{C^{t_0}(L^1)}\le1+\theta_\star V_1\|w\|_{C^{t_0}}<M.\]
+Thus every such \(g_w\) belongs to \(\mathcal A_{\rm AH}^{t_0}\). A nonconstant \(w\) gives a state-dependent transition. A neighborhood of zero in \(C^{t_0}([0,1]^d)\) contains infinitely many linearly independent functions, and the differences \(g_w-g_0=\theta_\star wv_0\) preserve their linear independence. Hence the affine hull is infinite-dimensional.
+
+Suppose \(t_0=k+\gamma\) is noninteger, with \(k\in\mathbb N_0\) and \(0<\gamma<1\). Choose the cutoff from \(\texttt{def:analytic-outgoing-subclass}\) and rescale
+\[w_\star(h_1)=\chi(h_1)|h_{1,1}-1/2|^{t_0}\]
+so that \(0<\|w_\star\|_{C^{t_0}}\le\varepsilon\). Its \(k\)-th derivative in the first coordinate has H\"older exponent exactly \(\gamma\) at \(h_{1,1}=1/2\); hence \(w_\star\in C^{t_0}\) but \(w_\star\notin C^{t_0+\xi}\) for every \(\xi>0\). The bounded linear functional \(L(f)=\int f(h_2)v_0(h_2)\,dh_2\) on \(L^1(dh_2)\) satisfies
+\[L\{g_{w_\star}(\cdot\mid h_1)-1\}=\theta_\star w_\star(h_1)\int v_0^2=\theta_\star w_\star(h_1).\]
+If \(h_1\mapsto g_{w_\star}(\cdot\mid h_1)\) belonged to \(C^{t_0+\xi}(L^1)\), applying \(L\) would force \(w_\star\in C^{t_0+\xi}\), a contradiction. This transition has exact incoming H\"older order \(t_0\).
+
+Finally, \(t_0>d/2\) and \(\alpha_1>0\) imply \(s_1=\alpha_1+t_0>d/2\). If \(\alpha_2+\beta\ge d/2\), then \(s_2\ge d/2\). Since
+\[\frac{2s}{2s+d}\ge\frac12\quad\Longleftrightarrow\quad s\ge\frac d2,\]
+a future theorem giving the conjectured upper bound \(C\{n^{-1/2}+n^{-r_1}+n^{-r_2}\}\) on \(\mathcal M_{\rm AH}\) would give at most \(3Cn^{-1/2}\). This is only the conditional implication stated in the proposition; the geometric argument supplies no statistical upper bound.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This supplies a finite-smoothness, state-dependent transition class with infinite-dimensional affine hull. \textit{Gap.} Its root-\(n\) implication remains conditional on a future matched upper theorem. \textit{Consumer.} It illustrates the structural role of incoming transition smoothness without asserting present root-\(n\) estimability.
+
+\begin{proposition}[prop:single-time-reduction]\label{prop:single-time-reduction}
+If \(g(h_2\mid h_1)=g_0(h_2)\), then \(m_1\) is constant and \(\psi=\int m_2(h_2)g_0(h_2)\,dh_2\), so the target has no nonconstant incoming-state component. This structural conclusion does not assert that the first-stage terms of the frozen finite-sample estimator vanish identically.
+\end{proposition}
+\begin{proof}
+If \(g(h_2\mid h_1)=g_0(h_2)\), then the backward-regression definition gives, for every \(h_1\),
+\[m_1(h_1)=\int m_2(h_2)g_0(h_2)\,dh_2.\]
+The right-hand side is independent of \(h_1\), so \(m_1\) is constant. Because \(Q_1\) is a probability measure, the g-formula functional reduces to
+\[\psi=E_{Q_1}[m_1(H_1)]=\int m_2(h_2)g_0(h_2)\,dh_2.\]
+This is an identity for the target functional alone. It imposes no identity on fitted propensities, fitted regressions, empirical kernels, or realized corrections, and therefore does not imply that the frozen estimator's first-stage terms vanish in a finite sample.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This verifies that a state-independent transition removes the nonconstant incoming-state component of the target. \textit{Gap.} It is a target-level reduction and does not simplify every realized estimator term. \textit{Consumer.} It separates the genuinely longitudinal incoming-transition channel from the terminal channel.
+
+\begin{theorem}[thm:scalar-correction-order-staircase]\label{thm:scalar-correction-order-staircase}
+Let \(\gamma_j=\alpha_j/(2\alpha_j+d)\), \(\gamma_b=\beta/(2\beta+d)\), and \(r_\star=\min\{r_1,r_2\}\). The scalar correction-order envelope has the inclusion-minimal finite staircase
+\[
+\mathcal I_\star=\{(p,r)\in\mathbb N_0^2:(p+1)\gamma_1+(r+1)\gamma_2+\gamma_b\le r_\star\}.
+\]
+A rectangle \(\{0,\ldots,P\}\times\{0,\ldots,R\}\) makes the scalar omitted sum \(o(n^{-r_\star})\) if and only if
+\[
+(P+2)\gamma_1+\gamma_2+\gamma_b>r_\star,\qquad \gamma_1+(R+2)\gamma_2+\gamma_b>r_\star.
+\]
+No one finite rectangle works uniformly over the full positive asymmetric smoothness orthant. These are exact statements about the deterministic monomial envelope only. The result is an internal deterministic construction diagnostic; it makes no assertion about stochastic higher-order chains, a minimax upper bound, or any published estimator.
+\end{theorem}
+\begin{proof}
+The formula for \(\mathcal I_\star\), its finiteness and inclusion-minimality, and the necessary-and-sufficient rectangle inequalities follow from \(\texttt{lem:geometric-transport-index-set}\). It remains to prove that no single finite rectangle satisfies those inequalities uniformly over the full positive asymmetric smoothness orthant.
+
+Put
+\[
+\Gamma(x)=\frac{x}{2x+d},
+\qquad
+\rho(x)=\frac{2x}{2x+d}=2\Gamma(x),
+\qquad x>0.
+\]
+Then \(\gamma_j=\Gamma(\alpha_j)\), \(\gamma_b=\Gamma(\beta)\), and, by the definitions of \(s_j\) and \(r_j\),
+\[
+r_1=\rho(\alpha_1+t),
+\qquad
+r_2=\rho(\alpha_2+\beta).
+\]
+The function \(\Gamma\) is continuous and strictly increasing on \((0,\infty)\), since
+\[
+\Gamma'(x)=\frac{d}{(2x+d)^2}>0.
+\]
+
+Fix arbitrary finite \(P,R\in\mathbb N_0\) and any \(\varepsilon>0\). To make the first rectangle inequality fail, set
+\[
+t=\varepsilon,
+\qquad
+\alpha_2=\beta=\frac{3\varepsilon}{4},
+\]
+and let \(\alpha_1\downarrow0\). For all sufficiently small positive \(\alpha_1\),
+\[
+s_1=\alpha_1+\varepsilon<\frac{3\varepsilon}{2}=s_2,
+\]
+so \(r_\star=r_1=\rho(\alpha_1+\varepsilon)\). By continuity and strict monotonicity of \(\Gamma\),
+\[
+\lim_{\alpha_1\downarrow0}
+\{(P+2)\gamma_1+\gamma_2+\gamma_b\}
+=2\Gamma(3\varepsilon/4)
+<2\Gamma(\varepsilon)
+=\lim_{\alpha_1\downarrow0}r_\star.
+\]
+The strict inequality persists for all sufficiently small positive \(\alpha_1\). Hence the first necessary rectangle inequality fails at such a point of the positive smoothness orthant.
+
+For completeness, the other rectangle inequality can independently be made to fail. Set
+\[
+\beta=\varepsilon,
+\qquad
+t=\frac{3\varepsilon}{2},
+\qquad
+\alpha_1=\alpha_2=u,
+\]
+and let \(u\downarrow0\). Then
+\[
+s_2=u+\varepsilon<u+\frac{3\varepsilon}{2}=s_1,
+\]
+so \(r_\star=r_2=\rho(u+\varepsilon)\), whereas
+\[
+\lim_{u\downarrow0}
+\{\gamma_1+(R+2)\gamma_2+\gamma_b\}
+=\Gamma(\varepsilon)
+<2\Gamma(\varepsilon)
+=\lim_{u\downarrow0}r_\star.
+\]
+Thus the second necessary rectangle inequality also fails for all sufficiently small positive \(u\). Since \(P\) and \(R\) were arbitrary, no fixed finite rectangle works uniformly over the full positive asymmetric smoothness orthant.
+
+The argument concerns only the deterministic nonnegative monomial series
+\[
+\sum_{(p,r)\notin\mathcal I}a_1^{p+1}a_2^{r+1}b.
+\]
+It does not bound random projection-kernel norms, degenerate U-statistic variances, or stochastic transport remainders. In particular, \(\texttt{lem:stage-two-empirical-gram-rank}\) shows that a stage-two block whose dimension exceeds the treated Gram-fold count is singular deterministically, and that proportional blocks exceeding the treatment fraction are singular with probability tending to one under a constant first propensity. Therefore the staircase is exactly the deterministic construction diagnostic claimed in the theorem and entails no stochastic higher-order-chain or minimax assertion.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The theorem exactly characterizes deterministic monomial correction-index bookkeeping for the frozen construction. \textit{Gap.} It is an internal deterministic diagnostic and proves no stochastic higher-order or minimax claim. \textit{Consumer.} It records constraints relevant to any future analysis of the note's own higher-order chains.
+
+\begin{lemma}[lem:bounded-design-wavelet-regression]\label{lem:bounded-design-wavelet-regression}
+Let \(\mathcal A\) be a sigma-field.  Conditionally on \(\mathcal A\), let \((X_i,S_i,W_i)_{i=1}^m\) be independent and identically distributed, with \(X_i\in[0,1]^d\), \(S_i\in\{0,1\}\), \(|W_i|\le L\), and
+\[
+E[W_i\mid X_i=x,S_i=1,\mathcal A]=f_{\mathcal A}(x).
+\]
+Let \(Q\) have a Lebesgue density bounded above and away from zero.  Suppose, almost surely, that the selected subprobability measure \(B\mapsto E[S_i\mathbf1\{X_i\in B\}\mid\mathcal A]\) has a density whose ratio to the \(Q\)-density is bounded above and away from zero by deterministic constants, and that \(f_{\mathcal A}\in\mathcal H_d^s(R)\).  Let \(\widehat f\) be the clipped, minimum-norm boundary-corrected wavelet least-squares fit among observations with \(S_i=1\), from a basis with regularity exceeding \(s\), using \(k\asymp m^{d/(2s+d)}\) basis functions and a fixed clipping interval containing the range of every \(f_{\mathcal A}\).  Then, almost surely,
+\[
+\left\{E\!\left[\|\widehat f-f_{\mathcal A}\|_{L^2(Q)}^4\mid\mathcal A\right]\right\}^{1/4}
+\le C\left\{k^{-s/d}+\sqrt{k/m}\right\}\lesssim m^{-s/(2s+d)}.
+\]
+The constant is uniform over all conditional targets and conditional laws satisfying the displayed bounds.
+\end{lemma}
+\begin{proof}
+Condition throughout on \(\mathcal A\); all constants below are deterministic because every conditional radius, density ratio, and range bound is uniform.  Let \(V_k\) be the span of the first \(k\) boundary-corrected wavelets and write \(Z_k\) for their basis vector.  Boundary-wavelet coefficient decay for \(f_{\mathcal A}\in C^s\), obtained by subtracting on each wavelet support the Taylor polynomial annihilated by the wavelet moments, gives a deterministic truncation \(f_k^0\in V_k\) satisfying
+\[
+\|f_{\mathcal A}-f_k^0\|_{L^2(Q)}\le Ck^{-s/d},\qquad
+\|f_{\mathcal A}-f_k^0\|_\infty\le Ck^{-s/d},\qquad
+\|f_k^0\|_\infty\le C.
+\]
+These inequalities hold uniformly for every realization of \(\mathcal A\).
+
+Write \(f_k^0(x)=Z_k(x)^T\theta_0\),
+\[
+G=E[SZ_k(X)Z_k(X)^T\mid\mathcal A],\qquad
+\widehat G=\frac1m\sum_{i=1}^mS_iZ_k(X_i)Z_k(X_i)^T .
+\]
+Lebesgue orthonormality and the conditional selected-density bounds put all eigenvalues of \(G\) in a fixed interval \([c_0,C_0]\).  Bounded overlap of boundary wavelets gives
+\(\sup_x\|Z_k(x)\|_2^2\le Ck\).  For
+\(X_i=S_iZ_k(X_i)Z_k(X_i)^T-G\), one has
+\[
+\|X_i\|_{\rm op}\le Ck,\qquad
+\left\|\sum_{i=1}^mE[X_i^2\mid\mathcal A]\right\|_{\rm op}\le Cmk.
+\]
+Indeed, \(\{SZZ^T\}^2=S\|Z\|_2^2ZZ^T\preceq Ck\,SZZ^T\).  The matrix exponential inequality
+\[
+e^{\theta X}\preceq I+\theta X+
+\frac{\theta^2X^2}{2(1-\theta Ck/3)},\qquad 0<\theta<3/(Ck),
+\]
+followed by the trace-Laplace iteration for the independent centered matrices and optimization over \(\theta\), yields
+\[
+P\!\left(\|\widehat G-G\|_{\rm op}>c_0/2\mid\mathcal A\right)
+\le 2k\exp(-cm/k).
+\]
+Call the complementary event \(\mathcal E_k\).  On \(\mathcal E_k\),
+\(\|\widehat G^{-1}\|_{\rm op}\le2/c_0\) and
+\(\|\widehat G\|_{\rm op}\le C\).
+
+Set
+\[
+\xi_i=S_iZ_k(X_i)\{W_i-f_{\mathcal A}(X_i)\},\qquad
+a_i=f_{\mathcal A}(X_i)-f_k^0(X_i).
+\]
+Then \(E[\xi_i\mid\mathcal A]=0\), \(\|\xi_i\|_2^2\le Ck\),
+\(E[\|\xi_i\|_2^2\mid\mathcal A]\le Ck\), and
+\(E[\|\xi_i\|_2^4\mid\mathcal A]\le Ck^2\).  Expanding the fourth power of the norm of a sum of independent centered vectors, all terms with an index appearing only once vanish, so
+\[
+E\!\left[\left\|\frac1m\sum_{i=1}^m\xi_i\right\|_2^4\middle|\mathcal A\right]
+\le \frac{C}{m^4}\left\{
+\left(\sum_iE[\|\xi_i\|_2^2\mid\mathcal A]\right)^2+
+\sum_iE[\|\xi_i\|_2^4\mid\mathcal A]\right\}
+\le C\frac{k^2}{m^2}.
+\]
+On \(\mathcal E_k\), expansion of the normal equations around the deterministic approximant gives
+\[
+\widehat\theta-\theta_0
+=\widehat G^{-1}\left\{\frac1m\sum_i\xi_i+
+\frac1m\sum_iS_iZ_k(X_i)a_i\right\}.
+\]
+For every unit vector \(u\), empirical Cauchy--Schwarz gives
+\[
+\left|u^T\frac1m\sum_iS_iZ_k(X_i)a_i\right|
+\le\{u^T\widehat Gu\}^{1/2}
+\left\{\frac1m\sum_iS_ia_i^2\right\}^{1/2}
+\le Ck^{-s/d}.
+\]
+Thus norm equivalence between coefficients in \(V_k\) and \(L^2(Q)\), the fourth-moment bound, and the approximation inequalities imply
+\[
+\left\{E\!\left[\|\widehat f-f_{\mathcal A}\|_{L^2(Q)}^4
+\mathbf1_{\mathcal E_k}\mid\mathcal A\right]\right\}^{1/4}
+\le C\{\sqrt{k/m}+k^{-s/d}\}.
+\]
+Clipping contracts pointwise distance toward \(f_{\mathcal A}\).  On \(\mathcal E_k^c\), both the clipped fit and the target are uniformly bounded, so its fourth-moment contribution is at most
+\(C\{2k\exp(-cm/k)\}^{1/4}\).  For
+\(k\asymp m^{d/(2s+d)}\), this is smaller than every polynomial in \(m^{-1}\), while
+\(k^{-s/d}\asymp\sqrt{k/m}\asymp m^{-s/(2s+d)}\).  Combining the good- and bad-event bounds proves the conditional claim.  Taking \(\mathcal A\) trivial gives the unconditional special case.
+\end{proof}
+
+\begin{lemma}[lem:treated-design-and-backward-regularity]\label{lem:treated-design-and-backward-regularity}
+For every \(P\in\mathcal M(\alpha_1,\alpha_2,\beta,t;M,c)\), the laws of \(H_1\mid A_1=1\) and \(Q_1\) have uniformly bounded density ratios, and the laws of \(H_2\mid A_1=1\), \(H_2\mid A_1=A_2=1\), and \(Q_2\) have uniformly bounded density ratios. If \(\widehat\pi_2\in[c/2,1-c/2]\) and \(\widehat m_2\in[-1,1]\), then
+\[
+b_1^\dagger(h_1)=\int\left[\widehat m_2(h_2)+\frac{\pi_2(h_2)}{\widehat\pi_2(h_2)}\{m_2(h_2)-\widehat m_2(h_2)\}\right]g(h_2\mid h_1)\,dh_2
+\]
+is bounded by \(L_c=1+4/c\) and has a \(C^t([0,1]^d)\) norm bounded by a constant depending only on \(M\) and \(c\).
+\end{lemma}
+\begin{proof}
+Let \(q_j\) be the densities of \(Q_j\). Since
+\[
+P(H_1\in dh_1\mid A_1=1)=\frac{q_1(h_1)\pi_1(h_1)}{P(A_1=1)}\,dh_1
+\]
+and both numerator multiplier and denominator lie in \([c,1-c]\), this design is uniformly equivalent to \(Q_1\). Next define
+\[
+\widetilde q_2(h_2)=\int q_1(h_1)\pi_1(h_1)g(h_2\mid h_1)\,dh_1.
+\]
+Overlap gives \(cq_2\le\widetilde q_2\le(1-c)q_2\). Normalizing by \(P(A_1=1)\) proves equivalence of \(H_2\mid A_1=1\) and \(Q_2\). Multiplication by \(\pi_2(h_2)\) and normalization prove the same for \(H_2\mid A_1=A_2=1\). Combined with the design-density bounds, every one of these densities is bounded above and away from zero.
+
+For the regularity claim, put
+\[
+F(h_2)=\widehat m_2(h_2)+\frac{\pi_2(h_2)}{\widehat\pi_2(h_2)}\{m_2(h_2)-\widehat m_2(h_2)\}.
+\]
+The clipping and overlap bounds give \(\|F\|_\infty\le1+(2/c)2=L_c\). For any derivative or H\"older difference operator \(D\) in the incoming argument of order at most \(t\), Fubini's theorem and the transition-ball condition yield
+\[
+|D b_1^\dagger(h_1)|=\left|\int F(h_2)Dg(h_2\mid h_1)\,dh_2\right|\le\|F\|_\infty\|Dg(\cdot\mid h_1)\|_{L^1}.
+\]
+Taking the supremum over all terms in the \(C^t\) norm gives \(\|b_1^\dagger\|_{C^t}\le L_cM\), as required.
+\end{proof}
+
+\begin{lemma}[lem:symmetric-cell-mixture-affinity]\label{lem:symmetric-cell-mixture-affinity}
+Let \(R_0\) be a probability law and let bounded functions \(f,g\) satisfy \(E_0f=E_0g=E_0(fg)=0\) and \(\|f\|_\infty+\|g\|_\infty\le\kappa<1\). For \(k\) observations, mix the product densities \(\prod_{i=1}^k(1+zf_i+\lambda g_i)\) uniformly over \(z\in\{-1,1\}\), with \(\lambda=z\) for \(Q_k^+\) and \(\lambda=-z\) for \(Q_k^-\). If \(A=E_0f^2\) and \(B=E_0g^2\), then
+\[
+H^2(Q_k^+,Q_k^-)\le C_\kappa\min\{kA,kB,k(k-1)AB,1\}.
+\]
+For \(J\) disjoint cells of probabilities \(p_j\), independent signs, and conditional channel norms \(A_j,B_j\), the fixed-sample product mixtures obey
+\[
+H^2(\overline P_+,\overline P_-)\le C_\kappa n(n-1)\sum_{j=1}^Jp_j^2A_jB_j.
+\]
+\end{lemma}
+\begin{proof}
+Write \(r_{z,\lambda}=1+zf+\lambda g\). Pairing \(r_{z,z}\) with \(r_{z,-z}\), convexity of squared Hellinger distance and product expansion give \(H^2(Q_k^+,Q_k^-)\le C_\kappa kB\). Reindexing the minus mixture by \(z\mapsto-z\) and pairing \(r_{z,z}\) with \(r_{-z,z}\) gives the symmetric bound \(C_\kappa kA\); the bound by one is automatic.
+
+For the product bound, give latent signs \(Z,L\) the correlation law \(P_\gamma(Z=z,L=\ell)=(1+\gamma z\ell)/4\). The observed mixture density is affine in \(\gamma\), say \(q_\gamma=q_0+\gamma q_1\), and \(|q_1|\le q_0\). Hence
+\[
+H^2(Q_k^+,Q_k^-)\le2\int q_1^2/q_0.
+\]
+Expanding two likelihood replicas, the coefficient \(ZL\) cancels every term containing only one channel, and \(E_0(fg)=0\) cancels a mixed pair on the same observation. Every surviving monomial therefore uses an \(f\)-factor and a \(g\)-factor on distinct observations. When \(kA\) and \(kB\) are bounded, Cauchy--Schwarz and the binomial expansion give \(\int q_1^2/q_0\le C_\kappa k(k-1)AB\). If \(kA\) is large, the bound \(C_\kappa kB\) is already bounded by a constant multiple of \(k(k-1)AB\); the case of large \(kB\) is symmetric.
+
+Condition on multinomial cell counts \(N_1,\ldots,N_J\). Independent signs make the conditional mixtures tensor products across cells, so the preceding bound gives
+\[
+H^2(\overline P_+,\overline P_-\mid N_1,\ldots,N_J)\le C_\kappa\sum_jN_j(N_j-1)A_jB_j.
+\]
+The count law is common to both mixtures and \(E[N_j(N_j-1)]=n(n-1)p_j^2\). Averaging proves the last display.
+\end{proof}
+
+\begin{lemma}[lem:robins-theorem-forty-nine-smooth-density-condition]\label{lem:robins-theorem-forty-nine-smooth-density-condition}
+In Section 7.2.2 of Robins, Li, Tchetgen Tchetgen, and van der Vaart \cite{RobinsLiTchetgenVanderVaart2016TR}, Theorem 49 is stated under conditions (a1)--(c2). Condition (c2) requires the marginal density of \((L_0,L_1)\) to belong to a positive-order Holder ball. Consequently, a monotone-MAR law whose joint \((L_0,L_1)\)-density has a genuine jump is not covered by the stated assumptions of Theorem 49.
+\end{lemma}
+\par\smallskip\noindent \textit{Justification.} This cited leaf records the exact public smooth-joint-density condition used by the comparator proposition. \textit{Gap.} It is cited substrate, not a theorem proved in this note. \textit{Consumer.} It supports the precise noncoverage clause for the completed auxiliary monotone-MAR laws.
+
+\begin{proposition}[prop:rough-transition-comparator-separation]\label{prop:rough-transition-comparator-separation}
+Assume \(M>1\) and \(0<\underline q<1<\overline q<\infty\). There are fixed sufficiently small constants \(\kappa,\delta,c_\eta,c_\epsilon>0\) for which the class \(\mathcal M_{\rm rough}\) in \(\texttt{def:first-fuzzy-experiment}\) is nonempty, independent of \(n\), contained in \(\mathcal M(\alpha_1,\alpha_2,\beta,t;M,c)\), and contains every sufficiently large-\(n\) member of the rough period-one fuzzy experiment. For every \(P\in\mathcal M_{\rm rough}\), the construction in \(\texttt{def:first-fuzzy-experiment}\) produces an auxiliary two-occasion monotone-MAR full-data law whose \((L_0,L_1)\)-density is \(f_{L_0,L_1}(l_0,l_1)=p_1(l_0)g(l_1\mid l_0)\), whose conditional outcome law is \(K_P(dy\mid l_0,l_1)\), and which satisfies
+\[
+P(R_0=1\mid L_0,L_1,Y^{\rm MAR})=\pi_1(L_0),
+\qquad
+P(R_1=1\mid R_0=1,L_0,L_1,Y^{\rm MAR})=\pi_2(L_1),
+\]
+with \(R_1=0\) whenever \(R_0=0\). Its observed-data law obeys
+\[
+(R_0,L_0,R_0L_1,R_1,R_0R_1Y^{\rm MAR})
+\overset{d}{=}
+(A_1,H_1,A_1H_2,A_1A_2,A_1A_2Y).
+\]
+Thus \(L_0=H_1\) and \(R_0=A_1\) in the identified coordinates, while \(L_1=H_2\) and \(R_1=A_2\) only on \(A_1=1\), and the outcome kernel agrees with the longitudinal observed outcome law only on \(A_1=A_2=1\). This construction neither identifies \(L_1\) with the causal potential state \(H_2(1)\) nor imposes a state-consistency condition on the broad causal model. Since \(p_1\equiv1\) and \(g=g_0+r\) throughout \(\mathcal M_{\rm rough}\),
+\[
+f_{L_0,L_1}=p_1g=g_0+r.
+\]
+This density is bounded and bounded away from zero but has a genuine nonremovable outgoing-state jump. Therefore the stated condition (c2) of Robins et al. does not cover the induced laws from this subclass. Nevertheless, for all sufficiently large \(n\),
+\[
+\inf_{\widehat\psi}\sup_{P\in\mathcal M_{\rm rough}}E_P[(\widehat\psi-\psi(P))^2]^{1/2}\ge C n^{-r_1},
+\]
+where \(C>0\) is independent of \(n\). This asserts only noncoverage by the stated assumptions of Theorem 49, not reverse inclusion, priority, or broad non-overlap.
+\end{proposition}
+\begin{proof}
+Put \(q(h_2)=\mathbf 1\{h_{2,1}\le 1/2\}-\mathbf 1\{h_{2,1}>1/2\}\), \(a(h_1)=\cos(2\pi h_{1,1})\), and \(v(h_2)=\cos(4\pi h_{2,1})\). Direct integration gives \(\int q=\int a=\int v=\int qv=0\). The function \(q\) has a genuine jump, whereas \(a\) and \(v\) are analytic. For \(g_0=1+\kappa aq\),
+\[
+1-\kappa\le g_0\le 1+\kappa,\qquad \|h_1\mapsto g_0(\cdot\mid h_1)\|_{C^t(L^1)}\le 1+C_t\kappa.
+\]
+Choose fixed \(\kappa>0\) within the slack \(M-1\), and then choose fixed \(\delta>0\) so that \(\delta v\in\mathcal H_d^\beta(M)\) and \(\delta\|v\|_\infty<1\). With uniform \(H_1\), fair treatments, \(g=g_0\), and \(m_2=\delta v\), the fixed off-regime laws and the independent-uniform full-data extension in \(\texttt{def:first-fuzzy-experiment}\) satisfy consistency, sequential exchangeability, both state-sufficiency restrictions, and strict overlap. Moreover,
+\[
+\frac{dQ_2}{dh_2}=\int g_0(h_2\mid h_1)\,dh_1=1+\kappa q(h_2)\int a(h_1)\,dh_1=1.
+\]
+Thus all design-density bounds hold, and \(\mathcal M_{\rm rough}\) is fixed, nonempty, and contained in \(\mathcal M(\alpha_1,\alpha_2,\beta,t;M,c)\).
+
+We next verify membership of the fuzzy alternatives in this same fixed subclass. Disjoint support, the usual rescaling of a fixed smooth bump, and denominators bounded away from zero give, uniformly in the signs,
+\[
+\left\|\sum_j z_j u_{j,h}\right\|_{C^{\alpha_1}}\le C h^{-\alpha_1},\qquad
+\left\|\sum_j\frac{\lambda_j u_{j,h}v}{1+2\eta z_j u_{j,h}}\right\|_{C^t(L^1)}\le C h^{-t}.
+\]
+Hence \(\eta=c_\eta h^{\alpha_1}\) and \(\epsilon=c_\epsilon h^t\), with fixed sufficiently small \(c_\eta,c_\epsilon>0\), preserve the propensity Holder ball, strict overlap, and the transition-ball slack. Normalization follows from \(\int q=\int v=0\), while
+\[
+g^{\rm rough}_{z,\lambda}\ge 1-\kappa-\frac{\epsilon\|u\|_\infty\|v\|_\infty}{1-2\eta\|u\|_\infty}>0
+\]
+for all sufficiently large \(n\). The perturbation of \(g_0\) is continuous in \(h_2\), integrates to zero in \(h_2\), and, after making the fixed amplitudes smaller if necessary, obeys the two pointwise bounds in the definition of \(\mathcal M_{\rm rough}\). The stated factorization and independent-uniform extension again supply all causal and state-sufficiency conditions. Reflection oddness and \(\int u_{j,h}=0\) imply
+\[
+\left|\int\frac{u_{j,h}(h_1)}{1+2\eta z_j u_{j,h}(h_1)}\,dh_1\right|\le C\eta h^d.
+\]
+Because \(Jh^d\asymp 1\), it follows that
+\[
+\left\|\frac{dQ_2}{dh_2}-1\right\|_\infty\le C\eta\epsilon.
+\]
+The strict slack \(\underline q<1<\overline q\) therefore places every sufficiently large-\(n\) fuzzy alternative in \(\mathcal M_{\rm rough}\).
+
+For any \(P\in\mathcal M_{\rm rough}\), use the regular conditional kernel \(K_P\) fixed in \(\texttt{def:first-fuzzy-experiment}\). Draw \((L_0,L_1)\) with joint density \(p_1(l_0)g(l_1\mid l_0)\), and then draw \(Y^{\rm MAR}\) from \(K_P(\cdot\mid L_0,L_1)\). Conditional on \((L_0,L_1,Y^{\rm MAR})\), draw \(R_0\) as Bernoulli with success probability \(\pi_1(L_0)\). Set \(R_1=0\) on \(\{R_0=0\}\); on \(\{R_0=1\}\), draw \(R_1\) as Bernoulli with success probability \(\pi_2(L_1)\), independently of \(Y^{\rm MAR}\) given \((L_0,L_1)\). The construction directly gives
+\[
+P(R_0=1\mid L_0,L_1,Y^{\rm MAR})=\pi_1(L_0)
+\]
+and
+\[
+P(R_1=1\mid R_0=1,L_0,L_1,Y^{\rm MAR})=\pi_2(L_1).
+\]
+To verify the coarsened-law assertion, first condition on \(R_0=1,L_0=l_0\). Then \(L_1\) has density \(g(\cdot\mid l_0)\), \(R_1\mid L_1=l_1\) has success probability \(\pi_2(l_1)\), and, on \(R_1=1\), \(Y^{\rm MAR}\) has kernel \(K_P(\cdot\mid l_0,l_1)\). These are respectively the longitudinal conditional laws of \(H_2\), \(A_2\), and \(Y\) on the observed treated regimes, by the factorization, treatment-state sufficiency, and the definition of \(K_P\). On \(R_0=0\), the coordinates \(R_0L_1\), \(R_1\), and \(R_0R_1Y^{\rm MAR}\) all equal zero, just as \(A_1H_2\), \(A_1A_2\), and \(A_1A_2Y\) do on \(A_1=0\). Since \((R_0,L_0)\) and \((A_1,H_1)\) also have the same law, it follows that
+\[
+(R_0,L_0,R_0L_1,R_1,R_0R_1Y^{\rm MAR})
+\overset{d}{=}
+(A_1,H_1,A_1H_2,A_1A_2,A_1A_2Y).
+\]
+Thus the identified coordinates equate \(L_0\) with \(H_1\) and \(R_0\) with \(A_1\), but equate \(L_1\) with \(H_2\) and \(R_1\) with \(A_2\) only on \(A_1=1\); likewise, \(K_P\) agrees with the longitudinal outcome kernel only on \(A_1=A_2=1\). In particular, this auxiliary completion neither identifies \(L_1\) with the causal potential state \(H_2(1)\) nor imposes any additional state-consistency condition on the broad causal model.
+
+The joint \((L_0,L_1)\)-density in this auxiliary law is \(p_1g=g_0+r\), because \(p_1\equiv1\). The function \(r\) is continuous in \(h_2\). Across \(h_{2,1}=1/2\), the right trace minus the left trace of \(g_0+r\) is therefore
+\[
+-2\kappa a(h_1),
+\]
+which is nonzero on open sets of \(h_1\). No null-set modification can reconcile these one-sided traces. Thus this density is bounded and bounded away from zero but has no continuous representative, and hence belongs to no positive-order Holder ball. The noncoverage conclusion for these completed auxiliary monotone-MAR laws now follows from \(\texttt{lem:robins-theorem-forty-nine-smooth-density-condition}\).
+
+It remains to prove the risk floor. Relative to the common law having fair first treatment and treated transition \(g_0\), the likelihood ratio on cell \(j\) is \(1+z_jF_j+\lambda_jE_j\), where
+\[
+F_j=2\eta(2A_1-1)u_{j,h}(H_1),\qquad E_j=\epsilon\mathbf 1\{A_1=1\}\frac{u_{j,h}(H_1)v(H_2)}{g_0(H_2\mid H_1)}.
+\]
+Indeed, on \(A_1=1\),
+\[
+\frac{\pi_{1,z}g^{\rm rough}_{z,\lambda}}{(1/2)g_0}=1+2\eta z_j u_{j,h}+\epsilon\lambda_j u_{j,h}v/g_0,
+\]
+and on \(A_1=0\) the ratio is \(1-2\eta z_ju_{j,h}\). Fair treatment, \(\int u_{j,h}=0\), and integration against \(g_0\) give
+\[
+E_0F_j=E_0E_j=E_0(F_jE_j)=0.
+\]
+The fixed lower and upper bounds on \(g_0\) make the conditional squared channel norms comparable to \(\eta^2\) and \(\epsilon^2\). Since the cell probabilities satisfy \(p_j\asymp J^{-1}\), \(\texttt{lem:symmetric-cell-mixture-affinity}\) yields
+\[
+H^2(\overline P_+,\overline P_-)\le C n^2\eta^2\epsilon^2/J.
+\]
+The target under the common base is zero because \(\iint\delta v g_0=\delta\int v+\delta\kappa(\int a)(\int qv)=0\). Writing \(I_v=\int v^2>0\), every alternative satisfies
+\[
+\psi_{z,\lambda}=\delta\epsilon I_v\sum_j\lambda_j\int\frac{u_{j,h}}{1+2\eta z_j u_{j,h}}.
+\]
+Reflection symmetry gives the exact identity
+\[
+\int\frac{z_j u_{j,h}}{1+2\eta z_j u_{j,h}}=-2\eta\int\frac{u_{j,h}^2}{1-4\eta^2u_{j,h}^2}.
+\]
+Consequently, the \(\lambda=z\) mixing support has target \(-D_h\), the \(\lambda=-z\) support has target \(D_h\), and \(D_h\asymp\eta\epsilon\), since \(J h^d\asymp1\). Choose
+\[
+h\asymp n^{-2/\{2(\alpha_1+t)+d\}}.
+\]
+Then \(n^2\eta^2\epsilon^2/J=O(1)\) and
+\[
+D_h\asymp\eta\epsilon=h^{\alpha_1+t}\asymp n^{-2(\alpha_1+t)/\{2(\alpha_1+t)+d\}}=n^{-r_1}.
+\]
+Taking the fixed amplitude constants sufficiently small makes the affinity \(\int\sqrt{d\overline P_+d\overline P_-}\) at least some \(\rho>0\), uniformly in \(n\). For any estimator \(\widehat\psi\), the test \(\phi=\mathbf 1\{\widehat\psi\ge0\}\) incurs squared error at least \(D_h^2\) on \(\{\phi=1\}\) under \(\overline P_+\) and on \(\{\phi=0\}\) under \(\overline P_-\). Hence
+\[
+\frac12E_{\overline P_+}(\widehat\psi+D_h)^2+\frac12E_{\overline P_-}(\widehat\psi-D_h)^2\ge\frac{D_h^2}{2}\{1-\operatorname{TV}(\overline P_+,\overline P_-)\}.
+\]
+Cauchy--Schwarz gives \(\operatorname{TV}(\overline P_+,\overline P_-)\le\sqrt{1-\rho^2}\). Each mixture is supported on iid laws in the fixed class \(\mathcal M_{\rm rough}\), so the left side is bounded above by the worst-case mean squared error over that class. Taking square roots and then the infimum over estimators proves
+\[
+\inf_{\widehat\psi}\sup_{P\in\mathcal M_{\rm rough}}E_P[(\widehat\psi-\psi(P))^2]^{1/2}\ge Cn^{-r_1}
+\]
+for a constant \(C>0\) independent of \(n\).
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This proves the incoming \(n^{-r_1}\) floor on a fixed incoming-smooth but outgoing-rough subclass and specifies the comparison on a complete auxiliary monotone-MAR law with outcome kernel \(K_P\). \textit{Gap.} The comparison proves only failure of the stated smooth-joint-density condition; it proves neither reverse inclusion nor a matched upper rate. \textit{Consumer.} It shows that the transition-mediated lower channel is not an artifact of globally smooth outgoing-state densities while keeping the auxiliary and causal full-data laws distinct.
+
+\begin{lemma}[lem:stage-two-empirical-gram-rank]\label{lem:stage-two-empirical-gram-rank}
+Let \(N_1=\sum_{i\in\mathcal G}A_{1i}\). For every stage-two block of dimension \(k_b\) and every choice of finite nonzero weights on treated observations,
+\[
+\operatorname{rank}(\widehat\Omega_{2,b})\le\min\{k_b,N_1\}.
+\]
+Consequently, \(k_b>N_1\) implies singularity deterministically. If \(m=|\mathcal G|\to\infty\), \(\pi_1\equiv p\), and \(k_b/m\to\lambda>p\), then \(P(\widehat\Omega_{2,b}\text{ is singular})\to1\).
+\end{lemma}
+\begin{proof}
+Let \(m=|\mathcal G|\). By \(\texttt{def:blocked-projection}\), the stage-two empirical Gram matrix is
+\[
+\widehat\Omega_{2,b}=\frac{1}{m}\sum_{i\in\mathcal G}
+\frac{A_{1i}}{\widehat\pi_1(H_{1i})}
+Z_{2,b}(H_{2i})Z_{2,b}(H_{2i})^T.
+\]
+Each summand with \(A_{1i}=1\) has rank at most one, and each summand with \(A_{1i}=0\) is zero. There are exactly \(N_1\) nonzero candidate summands. Rank subadditivity and the fact that \(\widehat\Omega_{2,b}\) is a \(k_b\times k_b\) matrix therefore give
+\[
+\operatorname{rank}(\widehat\Omega_{2,b})\le N_1,
+\qquad
+\operatorname{rank}(\widehat\Omega_{2,b})\le k_b.
+\]
+The same argument applies when the treated outer products are multiplied by arbitrary finite nonzero scalar weights, because scalar multiplication cannot increase the rank of a rank-one outer product. Hence
+\[
+\operatorname{rank}(\widehat\Omega_{2,b})
+\le\min\{k_b,N_1\}.
+\]
+If \(k_b>N_1\), this rank is strictly smaller than the matrix dimension \(k_b\), so \(\widehat\Omega_{2,b}\) is singular.
+
+For the asymptotic assertion, suppose \(\pi_1\equiv p\). By \(\texttt{ass:iid}\), the variables \((A_{1i})_{i\in\mathcal G}\) are independent Bernoulli random variables with mean \(p\). The weak law of large numbers yields \(N_1/m\to p\) in probability. If \(k_b/m\to\lambda>p\), choose \(\varepsilon=(\lambda-p)/3\). With probability tending to one,
+\[
+\frac{N_1}{m}<p+\varepsilon<\lambda-\varepsilon<\frac{k_b}{m}.
+\]
+Thus \(N_1<k_b\) with probability tending to one. The deterministic implication above then gives
+\[
+P\{\widehat\Omega_{2,b}\text{ is singular}\}\longrightarrow1.
+\]
+This proves every assertion.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The rank inequality is a correct finite-sample linear-algebra diagnostic for the displayed empirical matrix. \textit{Gap.} It says nothing by itself about a rank-stable replacement or another author's estimator. \textit{Consumer.} It is used only to audit internal block choices.
+
+\begin{lemma}[lem:geometric-transport-index-set]\label{lem:geometric-transport-index-set}
+Let \(\gamma_j=\alpha_j/(2\alpha_j+d)\), \(\gamma_b=\beta/(2\beta+d)\), \(r_\star=\min\{r_1,r_2\}\), \(a_j=n^{-\gamma_j}\), and \(b=n^{-\gamma_b}\). Then
+\[
+\mathcal I_\star=\{(p,r)\in\mathbb N_0^2:(p+1)\gamma_1+(r+1)\gamma_2+\gamma_b\le r_\star\}
+\]
+is finite and inclusion-minimal among index sets \(\mathcal I\) satisfying
+\[
+\sum_{(p,r)\notin\mathcal I}a_1^{p+1}a_2^{r+1}b=o(n^{-r_\star}).
+\]
+A rectangle \(\{0,\ldots,P\}\times\{0,\ldots,R\}\) satisfies the condition if and only if
+\[
+(P+2)\gamma_1+\gamma_2+\gamma_b>r_\star,\qquad \gamma_1+(R+2)\gamma_2+\gamma_b>r_\star.
+\]
+\end{lemma}
+\begin{proof}
+Define
+\[
+E(p,r)=\gamma_b+(p+1)\gamma_1+(r+1)\gamma_2,
+\qquad (p,r)\in\mathbb N_0^2.
+\]
+By \(\texttt{def:preliminary-rates}\), \(a_j=n^{-\gamma_j}\) and \(b=n^{-\gamma_b}\), so
+\[
+a_1^{p+1}a_2^{r+1}b=n^{-E(p,r)}.
+\]
+Because \(\alpha_1,\alpha_2,\beta,d>0\), one has \(\gamma_1,\gamma_2,\gamma_b>0\). Consequently, \(E(p,r)\le r_\star\) bounds both \(p\) and \(r\), and hence \(\mathcal I_\star\) is finite.
+
+The set \(\mathcal I_\star\) is a coordinatewise lower set, so its complement is a coordinatewise upper set. Let \(\mathcal F\) be the set of coordinatewise-minimal elements of \(\mathbb N_0^2\setminus\mathcal I_\star\). This frontier is nonempty and finite. Indeed, every frontier point \((p,r)\) satisfies either \(p=0\), \(r=0\), or both immediate predecessors belong to the finite set \(\mathcal I_\star\); there is only one minimal complement point on each axis, and the remaining frontier points are therefore bounded coordinatewise by elements of \(\mathcal I_\star\). Every point outside \(\mathcal I_\star\) dominates at least one point of \(\mathcal F\). Moreover, \(E(p,r)>r_\star\) for every \((p,r)\in\mathcal F\). Since \(\mathcal F\) is finite,
+\[
+\delta=\min_{(p,r)\in\mathcal F}
+\{E(p,r)-r_\star\}>0.
+\]
+Covering the complement by the upper-right quadrants generated by \(\mathcal F\) and summing geometric series gives
+\[
+\begin{aligned}
+\sum_{(p,r)\notin\mathcal I_\star}a_1^{p+1}a_2^{r+1}b
+&\le \sum_{(p_0,r_0)\in\mathcal F}
+\sum_{p\ge p_0,\ r\ge r_0}n^{-E(p,r)}\\
+&=\sum_{(p_0,r_0)\in\mathcal F}
+\frac{n^{-E(p_0,r_0)}}{(1-n^{-\gamma_1})(1-n^{-\gamma_2})}\\
+&\le \frac{|\mathcal F|n^{-r_\star-\delta}}
+{(1-n^{-\gamma_1})(1-n^{-\gamma_2})}
+=o(n^{-r_\star}).
+\end{aligned}
+\]
+Thus \(\mathcal I_\star\) has the required omitted-sum property. Conversely, if an index set \(\mathcal I\) omits some \((p,r)\in\mathcal I_\star\), then its nonnegative complement sum contains \(n^{-E(p,r)}\) with \(E(p,r)\le r_\star\). That monomial is not \(o(n^{-r_\star})\). Therefore every index set having the omitted-sum property contains \(\mathcal I_\star\), which proves inclusion-minimality.
+
+Now fix \(P,R\in\mathbb N_0\) and put \(\mathcal R_{P,R}=\{0,\ldots,P\}\times\{0,\ldots,R\}\). Splitting its complement into the part with \(p\ge P+1\) and the remaining part with \(r\ge R+1\), and then enlarging the latter part, yields
+\[
+\sum_{(p,r)\notin\mathcal R_{P,R}}a_1^{p+1}a_2^{r+1}b
+\le \frac{b}{(1-a_1)(1-a_2)}
+\left(a_1^{P+2}a_2+a_1a_2^{R+2}\right).
+\]
+The two monomials on the right have exponents
+\[
+\gamma_b+(P+2)\gamma_1+\gamma_2
+\quad\text{and}\quad
+\gamma_b+\gamma_1+(R+2)\gamma_2.
+\]
+If both exponents are strictly larger than \(r_\star\), the displayed upper bound is \(o(n^{-r_\star})\), proving sufficiency. For necessity, the complement contains \((P+1,0)\) and \((0,R+1)\). Their monomials have exactly the two displayed exponents. If either strict inequality fails, the corresponding nonnegative monomial is not \(o(n^{-r_\star})\), so neither is the entire omitted sum. This proves the claimed equivalence.
+\end{proof}
+
+\begin{theorem}[thm:transition-mediated-converse-first-order-bracket]\label{thm:transition-mediated-converse-first-order-bracket}
+Let \(\gamma_j=\alpha_j/(2\alpha_j+d)\) for \(j=1,2\), \(\gamma_b=\beta/(2\beta+d)\), and \(\gamma_t=t/(2t+d)\). For every nonempty \(\mathcal M=\mathcal M(\alpha_1,\alpha_2,\beta,t;M,c)\), define the following fixed-proportion cross-fitted first-order estimator. Split the sample into three folds \(F_1,F_2,F_3\) whose sizes differ by at most one and, for \(v=1,2,3\), cyclically set \(\mathcal T_v=F_v\), \(\mathcal B_v=F_{v+1}\), and \(\mathcal E_v=F_{v+2}\), with indices read modulo three. Let \(Z_k\) contain the first \(k\) boundary-corrected wavelets from a fixed orthonormal basis with regularity exceeding \(\max\{\alpha_1,\alpha_2,\beta,t\}\), and define
+\[\operatorname{LS}_{k,[a,b]}(W\mid X,S)(x)=\operatorname{clip}_{[a,b]}\!\left\{Z_k(x)^T\left(\sum_iS_iZ_k(X_i)Z_k(X_i)^T\right)^+\sum_iS_iZ_k(X_i)W_i\right\},\]
+where the sums range over the stated training fold and \((\cdot)^+\) denotes the Moore--Penrose inverse. On \(\mathcal T_v\), with
+\[k_{\pi_j}=\max\{1,\lfloor n^{d/(2\alpha_j+d)}\rfloor\},\qquad k_{m_2}=\max\{1,\lfloor n^{d/(2\beta+d)}\rfloor\},\]
+fit \(\widehat\pi_{1,v}=\operatorname{LS}_{k_{\pi_1},[c/2,1-c/2]}(A_1\mid H_1,1)\), \(\widehat\pi_{2,v}=\operatorname{LS}_{k_{\pi_2},[c/2,1-c/2]}(A_2\mid H_2,A_1)\), and \(\widehat m_{2,v}=\operatorname{LS}_{k_{m_2},[-1,1]}(Y\mid H_2,A_1A_2)\). On \(\mathcal B_v\), form
+\[\widehat D_{2,v}=\widehat m_{2,v}(H_2)+\frac{A_2}{\widehat\pi_{2,v}(H_2)}\{Y-\widehat m_{2,v}(H_2)\}\]
+and fit \(\widehat m_{1,v}=\operatorname{LS}_{k_{m_1},[-L_c,L_c]}(\widehat D_{2,v}\mid H_1,A_1)\), where \(k_{m_1}=\max\{1,\lfloor n^{d/(2t+d)}\rfloor\}\) and \(L_c=1+4/c\). Define
+\[\widehat\psi_v^{\rm FO}=\mathbb P_{\mathcal E_v}\left[\widehat m_{1,v}(H_1)+\frac{A_1}{\widehat\pi_{1,v}(H_1)}\{\widehat D_{2,v}-\widehat m_{1,v}(H_1)\}\right],\qquad \widehat\psi^{\rm FO}=\frac13\sum_{v=1}^3\widehat\psi_v^{\rm FO}.\]
+Uniformly over \(P\in\mathcal M\), this estimator satisfies
+\[\sup_{P\in\mathcal M}E_P[(\widehat\psi^{\rm FO}-\psi(P))^2]^{1/2}\lesssim n^{-1/2}+n^{-(\gamma_1+\gamma_t)}+n^{-(\gamma_2+\gamma_b)}.\]
+If, in addition, \(M>1\) and \(0<\underline q<1<\overline q<\infty\), sufficiently small fixed amplitudes put both fuzzy experiments in \(\mathcal M\), their product-mixture affinities are bounded below by a constant, and the regular submodel together with the two fuzzy experiments gives
+\[\max\{n^{-1/2},n^{-r_1},n^{-r_2}\}\lesssim\mathfrak R_n(\mathcal M)\lesssim n^{-1/2}+n^{-(\gamma_1+\gamma_t)}+n^{-(\gamma_2+\gamma_b)}.\]
+Thus, under the qualified converse, \(\alpha_1+t\ge d/2\) and \(\alpha_2+\beta\ge d/2\) are necessary for root-\(n\) minimax risk, whereas the first-order upper bound makes \(\gamma_1+\gamma_t\ge1/2\) and \(\gamma_2+\gamma_b\ge1/2\) sufficient. The \(n^{-r_1}\) term is the incoming-transition channel: it is generated by a sign-paired perturbation of \(\pi_1\) and the incoming-state \(C^t(L^1)\) transition law. The \(n^{-r_2}\) term is the standard single-time-type terminal channel, and no novelty is asserted for that component. The necessary and sufficient conditions do not coincide in general. Accordingly, this theorem establishes an explicit nonmatching model-specific bracket; it does not determine the minimax rate or a root-\(n\) if-and-only-if boundary.
+\end{theorem}
+\begin{proof}
+We prove the first-order upper bound and the qualified converse.
+
+\emph{First-order regression rates.} By \(\texttt{lem:treated-design-and-backward-regularity}\), the regression designs for \(\pi_1\), \(\pi_2\), and \(m_2\) are uniformly equivalent to \(Q_1\), \(Q_2\), and \(Q_2\), respectively. Conditional on \(\mathcal F_{T_v}\), the pseudo-outcome is bounded by \(L_c=1+4/c\), and the same lemma gives
+\[b_{1,v}^\dagger(h_1)=\int\left[\widehat m_{2,v}(h_2)+\frac{\pi_2(h_2)}{\widehat\pi_{2,v}(h_2)}\{m_2(h_2)-\widehat m_{2,v}(h_2)\}\right]g(h_2\mid h_1)\,dh_2\]
+with a uniform \(C^t\)-norm bound. Apply \(\texttt{lem:bounded-design-wavelet-regression}\), conditionally for the random target \(b_{1,v}^\dagger\), on folds of size comparable to \(n\). The declared H\"older orders and sieve dimensions yield
+\[\left\{E_P\|\widehat\pi_{j,v}-\pi_j\|_{L^2(Q_j)}^4\right\}^{1/4}\lesssim n^{-\gamma_j},\qquad \left\{E_P\|\widehat m_{2,v}-m_2\|_{L^2(Q_2)}^4\right\}^{1/4}\lesssim n^{-\gamma_b},\]
+\[\left\{E_P\|\widehat m_{1,v}-b_{1,v}^\dagger\|_{L^2(Q_1)}^4\right\}^{1/4}\lesssim n^{-\gamma_t}.\]
+Clipping contracts pointwise distance because each clipping interval contains the corresponding target range.
+
+Apply \(\texttt{lem:direct-bias}\) fold by fold. Since \(1-w_j=(\widehat\pi_j-\pi_j)/\widehat\pi_j\) and \(\widehat\pi_j\ge c/2\), conditional Cauchy--Schwarz gives
+\[\begin{aligned}|E_P[\widehat\psi_v^{\rm FO}-\psi\mid\mathcal F_{T_vB_v}]|&\le\frac2c\|\widehat\pi_{1,v}-\pi_1\|_{L^2(Q_1)}\|\widehat m_{1,v}-b_{1,v}^\dagger\|_{L^2(Q_1)}\\&\quad+\frac2c\|\widehat\pi_{2,v}-\pi_2\|_{L^2(Q_2)}\|\widehat m_{2,v}-m_2\|_{L^2(Q_2)}.\end{aligned}\]
+H\"older's inequality over the training folds bounds the \(L^2(P)\)-norm of this conditional bias by
+\[C\{n^{-(\gamma_1+\gamma_t)}+n^{-(\gamma_2+\gamma_b)}\}.\]
+Every evaluation summand is bounded by a constant depending only on \(c\). Conditional independence of the evaluation fold therefore gives
+\[E_P[\operatorname{Var}_P(\widehat\psi_v^{\rm FO}\mid\mathcal F_{T_vB_v})]\le C|\mathcal E_v|^{-1}\lesssim n^{-1}.\]
+The conditional bias--variance identity and the triangle inequality in \(L^2(P)\) prove the asserted risk for each \(v\); averaging preserves it. This is one sample-measurable estimator, independent of the unknown member \(P\), so it is a valid minimax upper-bound witness.
+
+\emph{Feasibility of the fuzzy families.} Every transition density satisfies \(\sup_{h_1}\|g(\cdot\mid h_1)\|_{L^1}=1\); hence \(\mathcal G_d^t(M)\) is empty when \(M<1\). If \(\underline q=\overline q=1\), the design condition forces \(q_2=1\). In a nontrivial first-experiment component with \(\lambda=z\), however,
+\[\int\frac{z_ju_{j,h}}{1+2\eta z_ju_{j,h}}=-2\eta\int\frac{u_{j,h}^2}{1+2\eta z_ju_{j,h}}<0,\]
+so the induced \(Q_2\)-density has a nonzero \(v(h_2)\)-coefficient. Thus unqualified membership is false.
+
+Now assume \(M>1\) and \(0<\underline q<1<\overline q\). Disjoint rescaled smooth bumps and denominators uniformly separated from zero satisfy
+\[\left\|\sum_jz_ju_{j,h}\right\|_{C^{\alpha_1}}\le Ch^{-\alpha_1},\qquad \left\|h_1\mapsto\sum_j\lambda_j\frac{u_{j,h}(h_1)}{1+2\eta z_ju_{j,h}(h_1)}v(\cdot)\right\|_{C^t(L^1)}\le Ch^{-t}.\]
+Thus \(\eta=c_\eta h^{\alpha_1}\) and \(\epsilon=c_\epsilon h^t\), with sufficiently small fixed constants, place \(\pi_{1,z}\) and \(g_{z,\lambda}\) in their declared balls; \(M>1\) provides slack around the density one. Choose also \(\delta>0\) so that \(\delta\|v\|_{C^\beta}\le M\) and \(\delta\|v\|_\infty<1\). In the second experiment, the same rescaling calculation gives
+\[\|\pi_{2,z}-1/2\|_{C^{\alpha_2}}\le Ca h^{-\alpha_2},\qquad \|m_{2,z,\lambda}\|_{C^\beta}\le Cb_0h^{-\beta}.\]
+Small amplitude constants give overlap, transition positivity, and valid binary means. The independent-uniform construction gives consistency and both sequential exchangeability conditions, while its specified conditionals give the two state-sufficiency restrictions. Furthermore, mean zero of each bump gives
+\[\left|\int\frac{u_{j,h}}{1+2\eta z_ju_{j,h}}\right|=2\eta\left|\int\frac{z_ju_{j,h}^2}{1+2\eta z_ju_{j,h}}\right|\le C\eta h^d.\]
+Since \(Jh^d\asymp1\), the first experiment has \(\|dQ_2/dh_2-1\|_\infty\le C\eta\epsilon\); both design densities are one in the second experiment. The strict density slack proves membership for all sufficiently large \(n\).
+
+\emph{The first fuzzy channel.} Relative to the fair-treatment, uniform-transition reference law, the varying part of the one-observation likelihood ratio has disjoint-cell factors
+\[f_j=2\eta(2A_1-1)u_{j,h}(H_1),\qquad k_j=\epsilon\mathbf1\{A_1=1\}u_{j,h}(H_1)v(H_2).\]
+Mean zero of \(u\) and \(v\) gives \(E_0f_j=E_0k_j=E_0(f_jk_j)=0\). The conditional squared norms within a cell are at most \(C\eta^2\) and \(C\epsilon^2\), and each cell has probability comparable to \(J^{-1}\). Hence \(\texttt{lem:symmetric-cell-mixture-affinity}\) gives
+\[H^2(\overline P_+,\overline P_-)\le Cn^2\eta^2\epsilon^2/J.\]
+Writing \(I_v=\int v^2>0\), direct evaluation of the g-formula target gives
+\[\psi_{z,\lambda}=\delta\epsilon I_v\sum_j\lambda_j\int\frac{u_{j,h}}{1+2\eta z_ju_{j,h}}.\]
+For \(\lambda=z\), the displayed mean-zero identity makes every summand negative; for \(\lambda=-z\), every summand is positive. Uniform denominator bounds and \(\sum_j\int u_{j,h}^2\asymp1\) separate the two prior supports from zero by at least \(c_0\eta\epsilon\). With
+\[h\asymp n^{-2/\{2(\alpha_1+t)+d\}},\]
+we have \(n^2\eta^2\epsilon^2/J\asymp c_\eta^2c_\epsilon^2\) and \(\eta\epsilon\asymp n^{-r_1}\). Reducing the fixed amplitude constants makes \(1-H^2(\overline P_+,\overline P_-)\ge\rho\) for some \(\rho>0\).
+
+\emph{The second fuzzy channel.} The varying likelihood factors are
+\[f_j=2a\mathbf1\{A_1=1\}(2A_2-1)v_{j,h}(H_2),\qquad k_j=b_0\mathbf1\{A_1=A_2=1\}Yv_{j,h}(H_2).\]
+The same orthogonality calculation and symmetric-cell lemma give
+\[H^2(\overline P_+,\overline P_-)\le Cn^2a^2b_0^2/J.\]
+Here
+\[\psi_{z,\lambda}=b_0\sum_j\lambda_j\int\frac{v_{j,h}}{1+2az_jv_{j,h}}.\]
+Mean zero gives opposite signs under \(\lambda=z\) and \(\lambda=-z\), with separation from zero at least \(c_1ab_0\). Taking \(h\asymp n^{-2/\{2(\alpha_2+\beta)+d\}}\) and sufficiently small amplitudes gives positive affinity and \(ab_0\asymp n^{-r_2}\).
+
+For either experiment, let the two target supports lie in \( ( -\infty,-\Delta]\) and \([\Delta,\infty)\). Threshold any estimator at zero. On a testing error its absolute estimation error is at least \(\Delta\), whence
+\[\sup_{P\in\mathcal M}E_P[(\widehat\psi-\psi(P))^2]\ge\frac{\Delta^2}{2}\{1-\operatorname{TV}(\overline P_+,\overline P_-)\}.\]
+If \(A=\int\sqrt{d\overline P_+d\overline P_-}=1-H^2(\overline P_+,\overline P_-)\), Cauchy--Schwarz gives
+\[\operatorname{TV}(\overline P_+,\overline P_-)\le\frac12\left\{\int(\sqrt p-\sqrt q)^2\int(\sqrt p+\sqrt q)^2\right\}^{1/2}=\sqrt{1-A^2}.\]
+Thus \(A\ge\rho\) makes the testing factor uniformly positive and yields the \(n^{-r_1}\) and \(n^{-r_2}\) RMSE floors.
+
+In the regular submodel take \(\vartheta_\pm=\pm\kappa n^{-1/2}\). The target equals \(\vartheta\). Only the stratum \(A_1=A_2=1\), of probability \(1/4\), varies, and the conditional Bernoulli affinity in that stratum is \(\sqrt{1-\kappa^2/n}\). Hence the one-observation affinity is
+\[A(P_{\vartheta_+},P_{\vartheta_-})=\frac34+\frac14\sqrt{1-\kappa^2/n}\ge1-\frac{\kappa^2}{4n}.\]
+Affinity multiplies under independent products, so for all sufficiently large \(n\), \(A(P_{\vartheta_+}^{\otimes n},P_{\vartheta_-}^{\otimes n})\ge e^{-\kappa^2/2}>0\). The same testing calculation and target separation \(2\kappa n^{-1/2}\) give the parametric floor. Combining the three experiments proves the lower bound. Finally, \(2s/(2s+d)\ge1/2\) exactly when \(s\ge d/2\), which gives the stated necessary elbow conditions; the first-order upper bound gives the stated sufficient conditions.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This is the main statistical result: one explicit cross-fitted estimator, two fuzzy nonparametric floors, and a parametric floor. \textit{Gap.} The lower and upper exponents differ in general, so the minimax rate and sharp root-\(n\) boundary remain open. \textit{Consumer.} It supplies an actionable model-specific bracket for the non-root-\(n\) time-varying-treatment problem.
+
+\section{Interpretation}
+
+Transition smoothness can enter the first decision's difficulty at first order. The lower experiment changes \(\pi_1\) and the incoming-state behavior of \(g\) with paired signs, producing target separation of order \(n^{-r_1}\) while keeping mixture affinity positive. If \(g(h_2\mid h_1)=g_0(h_2)\), then \(m_1\) is constant and the target has no nonconstant incoming-state component. A finite-smoothness analytic-outgoing subclass shows that the structural channel can be inactive at the necessary elbow for every \(\alpha_1>0\) when \(t_0>d/2\), but the note does not turn that necessary condition into a root-\(n\) upper theorem. The auxiliary monotone-MAR law is only a comparator representation of observed treated-regime coordinates, not a causal interpretation of \(L_1\).
+
+\section*{Technical internal limitation (diagnostic only)}
+
+The proved estimator is first order. Its upper exponents are products of ordinary nuisance-regression rates, whereas the fuzzy converses depend on sums of structural smoothness orders. The projected higher-order construction is diagnostic rather than attaining: empirical Gram rank, stochastic higher-order chains, and the transported mixed remainder are not resolved into a matching upper bound. The auxiliary comparator now has a complete outcome kernel and explicit MAR identities, but it remains a separate statistical construction from the causal full-data extension and must not be read as identifying \(L_1\) with \(H_2(1)\).
+
+\section{Honest scope}
+
+The formal results are conditional on the displayed causal, state-sufficiency, overlap, design-density, and H\"older conditions. The upper bound holds for every nonempty declared model. The fuzzy converse additionally uses \(M>1\), strict design-density slack around one, and sufficiently small fixed amplitudes. The rough-subclass proposition proves an \(n^{-r_1}\) floor on one fixed \(n\)-independent subclass and a precise noncoverage result for the fully specified auxiliary monotone-MAR laws induced from it. Equality of observed coarsenings is asserted only on the stated observed events, and no broad-model state-consistency condition is imposed. The note does not prove the conjectured matched rate, a sharp elbow, root-\(n\) estimability on the analytic-outgoing subclass, reverse comparator inclusion, broad literature separation, or priority.
+
+\begin{thebibliography}{99}
+
+  \bibitem{CinelliFellerImbensKennedyMagliacaneZubizarreta2025} Carlos Cinelli, Avi Feller, Guido Imbens, Edward H. Kennedy, Sara Magliacane, and Jose Zubizarreta (2025). Challenges in Statistics: A Dozen Challenges in Causality and Causal Inference. arXiv:2508.17099.
+
+  \bibitem{LuedtkeSofryginVanderLaanCarone2017} Alexander R. Luedtke, Oleg Sofrygin, Mark J. van der Laan, and Marco Carone (2017). Sequential Double Robustness in Right-Censored Longitudinal Models. arXiv:1705.02459.
+
+  \bibitem{RobinsLiTchetgenVanderVaart2016TR} James M. Robins, Lingling Li, Eric Tchetgen Tchetgen, and Aad van der Vaart (2016). Technical Report: Higher Order Influence Functions and Minimax Estimation of Nonlinear Functionals. arXiv:1601.05820, Section 7.2.2, Theorems 48--49.
+
+  \bibitem{RobinsLiTchetgenVanderVaart2016} James M. Robins, Lingling Li, Eric Tchetgen Tchetgen, and Aad van der Vaart (2016). Higher order influence functions and minimax estimation of nonlinear functionals. Stochastic Processes and their Applications 126, 2547--2571.
+
+  \bibitem{RobinsTchetgenLiVanderVaart2009} James M. Robins, Eric Tchetgen Tchetgen, Lingling Li, and Aad van der Vaart (2009). Semiparametric minimax rates. Electronic Journal of Statistics 3, 1305--1321.
+
+  \bibitem{BonviniKennedyKeele2025} Matteo Bonvini, Edward H. Kennedy, and Luke Keele (2025). Higher-order estimators of time-varying effects in anisotropic smoothness models. Unpublished work in progress disclosed in the EcoSta program as Abstract A0576; no public manuscript is used in this note.
+
+  \bibitem{HernanRobins2020} Miguel A. Hernán and James M. Robins (2020). Causal Inference: What If. Chapman and Hall/CRC.
+
+  \bibitem{Tsybakov2009} Alexandre B. Tsybakov (2009). Introduction to Nonparametric Estimation. Springer.
+
+\end{thebibliography}
+
+\end{document}

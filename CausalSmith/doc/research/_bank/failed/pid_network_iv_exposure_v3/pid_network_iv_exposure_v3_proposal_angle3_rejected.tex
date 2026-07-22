@@ -1,0 +1,428 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\calT}{\mathcal{T}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_network\_iv\_exposure} / \texttt{v3}%
+  \\ \large\textit{Sharp finite-network complier direct and spillover bounds under jointly misspecified treatment and instrument exposure maps}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---
+
+\paragraph{Locked parameters.}
+This is a partial-identification anchor, not a panel pool-mode. The locked tuple is
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},
+\text{bounding functional})\\
+=
+(\texttt{pid\_network\_iv\_exposure},\texttt{v3},
+P_{I,Z,D,S,T,Y;\,\pi,\mathcal L_Y,\mathcal L_Z},\
+(\theta_{\mathrm{CD}}(s,t),\theta_{\mathrm{CS}}(s,t)),\
+\mathcal R_{\mathrm{shared\ dual\ completion+IV\ compliance}},\
+\Theta_I(P)\subset\mathbb R^2).
+\end{gathered}
+\]
+Here \(I\) indexes a uniformly sampled unit from a finite population, \(Z=(Z_1,\ldots,Z_n)\in\{0,1\}^n\) is the randomized encouragement vector drawn from a known design \(\pi\), \(D=(D_1,\ldots,D_n)\in\{0,1\}^n\) is the realized take-up vector, \(\mathcal L_Y\) and \(\mathcal L_Z\) are locally observed graphs used to build the observed treatment-exposure map \(S_i=s_i^Y(D,\mathcal L_Y)\) and the observed instrumental-exposure map \(T_i=t_i^Z(Z,\mathcal L_Z)\), and \(Y_i\in[0,1]\) is the observed outcome. The restrictions \(\mathcal R_{\mathrm{shared\ dual\ completion+IV\ compliance}}\) are finite support, bounded outcomes, exclusion of \(Z\) from \(Y\) conditional on \((D_i,S_i,R_i^Y)\), exposure sufficiency for take-up through \((Z_i,T_i,R_i^Z)\), exposure sufficiency for outcomes through \((D_i,S_i,R_i^Y)\), one shared outcome-completion \(G_Y\in\mathfrak G_Y(\mathcal L_Y,\mathcal C_Y,K^Y)\), one shared instrument-completion \(G_Z\in\mathfrak G_Z(\mathcal L_Z,\mathcal C_Z,K^Z)\), and finite principal-response tables \(D_i(z,t,u)\in\{0,1\}\). The target \((\theta_{\mathrm{CD}}(s,t),\theta_{\mathrm{CS}}(s,t))\) is the pair of complier direct and hidden-spillover effects in the observed cell \((S_i,T_i)=(s,t)\), normalized by the cell-specific complier mass \(\kappa_{s,t}(G_Y,G_Z,h)\). The bounding functional is the sharp finite identified set obtained by enumerating feasible completion pairs and principal-stratum assignments and solving the resulting bounded linear programs in the latent outcome means.
+
+\begin{abstract}
+The parent banked result \texttt{pid\_network\_exposure/v1} gives sharp finite-network bounds for average direct effects when the treatment exposure map may be misspecified through one shared hidden completion. This proposal adds an IV layer: treatment may be taken up imperfectly, the instrumental exposure map may also be misspecified, and the target becomes the pair of complier direct and spillover effects in a finite network. The routine theorem is an exact finite identified-set representation obtained by enumerating shared outcome and instrument completions together with finite principal take-up tables, then optimizing bounded latent outcome means subject to the observed take-up and outcome moments. The flagship conjecture is a computable policy-transport frontier \(\mathcal T_g(P)\): a deterministic encouragement policy is transportable from cell-level complier effects if and only if its induced complier-cell share vector is constant over the feasible latent structures consistent with \(P\). A second conjecture gives a four-unit witness in which the parent bound survives as a corner case but policy transport fails once both exposure maps and compliance types are latent. Resolving these claims would connect exposure-mapping robustness to IV noncompliance without abandoning sharp finite-network partial identification.
+\end{abstract}
+
+\section{Introduction}
+The question is whether a finite-network IV analysis can remain sharp when both the treatment exposure map used for outcomes and the instrumental exposure map used for take-up are only locally observed. The headline claim is that the right object is still finite and computable, but only after one keeps a shared completion for each map and a joint principal-response assignment for take-up.
+
+Relative to the parent \texttt{pid\_network\_exposure/v1}, the delta is a strict generalization along the declared axis. The parent bound fixes treatment exposure misspecification with no IV layer; this draft adds noncompliance, a second misspecified exposure map, and a policy-transport question suggested by \citet{hoshino_yanagi_2024_noncompliance_unknown_interference} and \citet{nibbering_oosterveen_2025_iv_interference_policy}. Relative to the published literature, \citet{schroder_oprescu_feuerriegel_kallus_2026_networks_partialid} give sharp bounds without IV compliance strata, while \citet{hoshino_yanagi_2024_noncompliance_unknown_interference} identify and estimate network-IV parameters without finite sharp bounds over shared dual completions. The kernel lives in partial identification, with network interference and IV noncompliance supplying the frontier structure.
+
+One concrete consumer is policy evaluation under interference. \citet{auerbach_auerbach_tabord_meehan_2024_exposure_policy_relevance} warn that exposure effects need not answer policy questions, and \citet{nibbering_oosterveen_2025_iv_interference_policy} show how policy-relevant IV effects emerge under interference. If the transport frontier is characterized sharply, a reader can tell whether a proposed encouragement policy is already pinned down by cell-level complier effects or whether latent exposure completions still matter.
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Theorem 1:} The sharp identified set for \((\theta_{\mathrm{CD}}(s,t),\theta_{\mathrm{CS}}(s,t))\) is a finite union of LP projections indexed by shared completion pairs and principal-response assignments. Gap: \texttt{pid\_network\_exposure/v1} has one treatment-exposure completion and no IV layer; \citet{hoshino_yanagi_2024_noncompliance_unknown_interference} and \citet{schroder_oprescu_feuerriegel_kallus_2026_networks_partialid} do not combine sharp finite dual-completion bounds with latent compliance. Consumer: \citet{imbens_manski_2004_ci_partial_id}.
+\item \textbf{Conjecture 1:} For a deterministic encouragement policy \(g\), the policy-relevant complier effect is transportable from cell-level effects if and only if the feasible complier-cell share set \(\mathcal T_g(P)\) is a singleton; otherwise the policy effect is only sharply bounded. Gap: \citet{auerbach_auerbach_tabord_meehan_2024_exposure_policy_relevance} gives the warning, and \citet{nibbering_oosterveen_2025_iv_interference_policy} gives policy-relevant IV bounds, but neither isolates a computable finite-network transport frontier under dual exposure misspecification. Consumer: \citet{nibbering_oosterveen_2025_iv_interference_policy}.
+\item \textbf{Conjecture 2:} A four-unit finite witness yields the same observable law and the same parent-style cellwise complier bounds under two feasible latent structures, yet the policy share vector \(\tau_g\) differs and the policy effect does not transport. Gap: \texttt{pid\_network\_exposure/v1} has shared-completion nonsharpness without IV policy transport; \citet{vazquez_bare_2023_iv_spillovers} and \citet{imai_jiang_malani_2021_interference_noncompliance} do not provide this dual-misspecification witness. Consumer: finite design diagnostics for network encouragement studies.
+\end{itemize}
+
+\section{Related work}
+\citet{manski1990} is the bounded-outcome partial-identification anchor: once hidden exposure states and compliance types are latent, the target is an identified set rather than a point. \citet{hudgens_halloran_2008} and \citet{aronow_samii_2017} define direct and spillover effects under interference and give the known-exposure benchmark [reused from parent]. \citet{savje_2024_misspecified_exposure_mappings} separates exposure mappings as estimands from exposure mappings as identifying assumptions [reused from parent], which is the conceptual reason to let both \(S_i\) and \(T_i\) be misspecified here.
+
+\citet{schroder_oprescu_feuerriegel_kallus_2026_networks_partialid} are the closest treatment-exposure comparator [reused from parent]: they derive sharp misspecified-exposure bounds and orthogonal estimators when the network is known, but they do not introduce IV compliance strata or instrumental exposure misspecification. \citet{weinstein_nevo_2026} treat misspecified network interference structure [reused from parent], but their object is bias and robust estimation across candidate networks rather than a sharp finite-network complier identified set. \citet{gao_harshaw_savje_wang_2026} show that broad exposure-mapping specification tests are impossible [reused from parent], which strengthens the case for reporting explicit partial-ID regions rather than point claims.
+
+\citet{hoshino_yanagi_2024_noncompliance_unknown_interference} are the closest IV-network comparator. They introduce instrumental exposure mappings and identify complier-type effects under unknown interference, while allowing misspecification of the exposure mapping, but their contribution is identification and IPW estimation rather than finite sharp bounds over shared dual completions. \citet{imai_jiang_malani_2021_interference_noncompliance} identify complier direct and spillover effects in two-stage randomized experiments under stratified interference, which supplies the finite-compliance contrast but not the general local-network misspecification problem. \citet{vazquez_bare_2023_iv_spillovers} show that ordinary IV contrasts aggregate several direct and spillover effects across compliance types, which motivates keeping the principal-response layer explicit. \citet{acerenza_martinez_iriarte_sanchez_becerra_spini_2025_household_bounds} derive sharp household encouragement bounds, suggesting a finite witness strategy but not solving the many-peer network case.
+
+\citet{auerbach_auerbach_tabord_meehan_2024_exposure_policy_relevance} argue that exposure effects are not automatically policy useful. \citet{nibbering_oosterveen_2025_iv_interference_policy} define and partially identify policy-relevant IV direct and spillover effects under interference. The present proposal sits exactly between them: it asks when policy relevance is recovered from misspecified-exposure complier cells and when shared completion uncertainty blocks that transport.
+
+\citet{imbens_manski_2004_ci_partial_id} and \citet{chernozhukov_hong_tamer_2007_parameter_sets} are the natural inference anchors once the finite sharp bound exists, although inference is outside the present scope. In the repository, the closest prior art is \texttt{pid\_network\_exposure/v1}, whose headline result is sharp joint-completion ADE bounds under misspecified treatment exposures, and the PartialID sections of \texttt{doc/API.md}, which list network, IV, and sensitivity families but do not contain this dual-completion network-IV kernel.
+
+\section{Formal setup}
+There are \(n<\infty\) units. The encouragement vector is \(Z\in\{0,1\}^n\), drawn from a known randomized design \(\pi\). The realized take-up vector is \(D\in\{0,1\}^n\). The analyst observes two local graphs, \(\mathcal L_Y\) for the outcome exposure map and \(\mathcal L_Z\) for the instrumental exposure map, together with candidate hidden-edge sets \(\mathcal C_Y,\mathcal C_Z\) and degree caps \(K^Y_i,K^Z_i\). Feasible completions are
+\[
+G_Y\in\mathfrak G_Y(\mathcal L_Y,\mathcal C_Y,K^Y),\qquad
+G_Z\in\mathfrak G_Z(\mathcal L_Z,\mathcal C_Z,K^Z),
+\]
+where each class is finite.
+
+The observed exposure labels are
+\[
+S_i=s_i^Y(D,\mathcal L_Y)\in\mathcal S,\qquad
+T_i=t_i^Z(Z,\mathcal L_Z)\in\mathcal T.
+\]
+The hidden exposure indicators generated by the completions are
+\[
+R_i^Y(G_Y,D)=\one\{\exists j:\{i,j\}\in G_Y\setminus\mathcal L_Y,\ D_j=1\}\in\{0,1\},
+\]
+\[
+R_i^Z(G_Z,Z)=\one\{\exists j:\{i,j\}\in G_Z\setminus\mathcal L_Z,\ Z_j=1\}\in\{0,1\}.
+\]
+Potential take-up is \(D_i(z,t,u)\in\{0,1\}\), where \(z\) is own encouragement, \(t\) is the observed instrument exposure, and \(u\) is the hidden instrument exposure. Potential outcomes are \(Y_i(d,s,r)\in[0,1]\), where \(d\) is own treatment, \(s\) is the observed treatment exposure, and \(r\) is the hidden treatment exposure.
+
+For each unit \(i\), let \(h_i\) denote its full take-up response table
+\[
+h_i=\{D_i(z,t,u):(z,t,u)\in\{0,1\}\times\mathcal T\times\{0,1\}\}.
+\]
+Because \(\mathcal T\) is finite, the set \(\calH_i\) of possible tables is finite. A principal-response assignment is \(h=(h_1,\ldots,h_n)\in\calH=\prod_i\calH_i\). For a feasible pair \(g=(G_Y,G_Z)\) and assignment \(h\), define the cell-specific complier indicator
+\[
+C_i^{h}(t,u)=\one\{D_i(1,t,u)=1,\ D_i(0,t,u)=0\}.
+\]
+
+The observable law is
+\[
+P=P_{I,Z,D,S,T,Y;\,\pi,\mathcal L_Y,\mathcal L_Z},
+\]
+where \(I\) is uniformly sampled from \(\{1,\ldots,n\}\). The observed take-up and outcome moments used by the finite program are
+\[
+\delta_{i,z,s,t}(P)=\E_P[D_I\mid I=i,Z_i=z,S_i=s,T_i=t],
+\qquad
+m_{i,z,s,t}(P)=\E_P[Y_I\mid I=i,Z_i=z,S_i=s,T_i=t],
+\]
+for cells with positive design probability.
+
+For a feasible latent structure \((g,h)\), define the normalization
+\[
+\kappa_{s,t}(g,h)
+=\frac1n\sum_{i=1}^n
+\Pr_\pi\!\big(S_i=s,\ T_i=t,\ C_i^{h}(T_i,R_i^Z(G_Z,Z))=1\big).
+\]
+This is the cell-specific complier mass. The direct-effect weights are
+\[
+\omega^{\mathrm{CD}}_{i,s,t,r,u}(g,h)
+=\Pr_\pi\!\big(S_i=s,\ T_i=t,\ R_i^Y(G_Y,D)=r,\ R_i^Z(G_Z,Z)=u,\ C_i^{h}(T_i,u)=1\big),
+\]
+and the spillover-effect weights are
+\[
+\omega^{\mathrm{CS}}_{i,s,t,d,u}(g,h)
+=\Pr_\pi\!\big(S_i=s,\ T_i=t,\ D_i=d,\ R_i^Z(G_Z,Z)=u,\ C_i^{h}(T_i,u)=1\big).
+\]
+Whenever \(\kappa_{s,t}(g,h)>0\), define
+\[
+\theta_{\mathrm{CD}}(s,t;g,h,Y)
+=
+\frac{1}{n\,\kappa_{s,t}(g,h)}
+\sum_{i=1}^n\sum_{r,u\in\{0,1\}}
+\omega^{\mathrm{CD}}_{i,s,t,r,u}(g,h)\{Y_i(1,s,r)-Y_i(0,s,r)\},
+\]
+\[
+\theta_{\mathrm{CS}}(s,t;g,h,Y)
+=
+\frac{1}{n\,\kappa_{s,t}(g,h)}
+\sum_{i=1}^n\sum_{d,u\in\{0,1\}}
+\omega^{\mathrm{CS}}_{i,s,t,d,u}(g,h)\{Y_i(d,s,1)-Y_i(d,s,0)\}.
+\]
+The sharp identified set \(\Theta_I(P)\) is the set of all pairs \((\theta_{\mathrm{CD}},\theta_{\mathrm{CS}})\) produced by feasible triples \((g,h,Y)\) that satisfy the assumptions below and reproduce the observed moments \(\delta(P)\) and \(m(P)\).
+
+The parent-style cellwise comparator \(\Theta_I^{\mathrm{cell}}(P)\) is obtained by replacing Assumption~\ref{ass:dual-completion} with unit-specific hidden exposure kernels for \(R_i^Y\) and \(R_i^Z\) that are each feasible in isolation, while keeping the same bounded outcome arrays, principal-response tables, and observed-moment equalities. It forgets the requirement that one shared \(G_Y\) and one shared \(G_Z\) must simultaneously rationalize all units.
+
+\begin{quote}\small
+This is a partial-identification anchor, not a panel pool-mode. The locked tuple is
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},
+\text{bounding functional})\\
+=
+(\texttt{pid\_network\_iv\_exposure},\texttt{v3},
+P_{I,Z,D,S,T,Y;\,\pi,\mathcal L_Y,\mathcal L_Z},\
+(\theta_{\mathrm{CD}}(s,t),\theta_{\mathrm{CS}}(s,t)),\
+\mathcal R_{\mathrm{shared\ dual\ completion+IV\ compliance}},\
+\Theta_I(P)\subset\mathbb R^2).
+\end{gathered}
+\]
+Here \(I\) indexes a uniformly sampled unit from a finite population, \(Z=(Z_1,\ldots,Z_n)\in\{0,1\}^n\) is the randomized encouragement vector drawn from a known design \(\pi\), \(D=(D_1,\ldots,D_n)\in\{0,1\}^n\) is the realized take-up vector, \(\mathcal L_Y\) and \(\mathcal L_Z\) are locally observed graphs used to build the observed treatment-exposure map \(S_i=s_i^Y(D,\mathcal L_Y)\) and the observed instrumental-exposure map \(T_i=t_i^Z(Z,\mathcal L_Z)\), and \(Y_i\in[0,1]\) is the observed outcome. The restrictions \(\mathcal R_{\mathrm{shared\ dual\ completion+IV\ compliance}}\) are finite support, bounded outcomes, exclusion of \(Z\) from \(Y\) conditional on \((D_i,S_i,R_i^Y)\), exposure sufficiency for take-up through \((Z_i,T_i,R_i^Z)\), exposure sufficiency for outcomes through \((D_i,S_i,R_i^Y)\), one shared outcome-completion \(G_Y\in\mathfrak G_Y(\mathcal L_Y,\mathcal C_Y,K^Y)\), one shared instrument-completion \(G_Z\in\mathfrak G_Z(\mathcal L_Z,\mathcal C_Z,K^Z)\), and finite principal-response tables \(D_i(z,t,u)\in\{0,1\}\). The target \((\theta_{\mathrm{CD}}(s,t),\theta_{\mathrm{CS}}(s,t))\) is the pair of complier direct and hidden-spillover effects in the observed cell \((S_i,T_i)=(s,t)\), normalized by the cell-specific complier mass \(\kappa_{s,t}(G_Y,G_Z,h)\). The bounding functional is the sharp finite identified set obtained by enumerating feasible completion pairs and principal-stratum assignments and solving the resulting bounded linear programs in the latent outcome means.
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite randomized network-IV experiment]\label{ass:finite}
+The population, design support, exposure ranges \(\mathcal S,\mathcal T\), local graphs \(\mathcal L_Y,\mathcal L_Z\), candidate hidden-edge sets \(\mathcal C_Y,\mathcal C_Z\), and degree caps \(K^Y,K^Z\) are finite and known.
+\end{assumption}
+
+\begin{assumption}[Shared dual completions]\label{ass:dual-completion}
+There exists one \(G_Y\in\mathfrak G_Y(\mathcal L_Y,\mathcal C_Y,K^Y)\) generating \(R_i^Y(G_Y,D)\) for all units and all realized treatment vectors, and one \(G_Z\in\mathfrak G_Z(\mathcal L_Z,\mathcal C_Z,K^Z)\) generating \(R_i^Z(G_Z,Z)\) for all units and all encouragement vectors. Hidden edges are not unit-specific nuisance variables.
+\end{assumption}
+
+\begin{assumption}[Finite principal-response tables]\label{ass:principal}
+Each unit has a deterministic take-up response table \(h_i\in\calH_i\), where \(D_i=D_i(Z_i,T_i,R_i^Z(G_Z,Z))\). The assignment \(h=(h_1,\ldots,h_n)\) is fixed across all assignments in the design support.
+\end{assumption}
+
+\begin{assumption}[Outcome exposure sufficiency and exclusion]\label{ass:outcome}
+For every unit \(i\), the observed outcome satisfies
+\[
+Y_i=Y_i(D_i,S_i,R_i^Y(G_Y,D)).
+\]
+Conditional on \((D_i,S_i,R_i^Y(G_Y,D))\), the outcome does not depend directly on \(Z\) or on \(R_i^Z(G_Z,Z)\).
+\end{assumption}
+
+\begin{assumption}[Bounded outcomes]\label{ass:bounded}
+For every \(i\), \(d\in\{0,1\}\), \(s\in\mathcal S\), and \(r\in\{0,1\}\), \(0\le Y_i(d,s,r)\le 1\).
+\end{assumption}
+
+\begin{assumption}[Cell positivity]\label{ass:positivity}
+For the target cell \((s,t)\), every unit entering \(\kappa_{s,t}(g,h)\) has positive design probability of the events used in the displayed conditioning cells for \(\delta_{i,z,s,t}(P)\) and \(m_{i,z,s,t}(P)\).
+\end{assumption}
+
+\begin{assumption}[Observed moment matching]\label{ass:matching}
+A feasible triple \((g,h,Y)\) must reproduce the observed take-up and outcome moments:
+\[
+\E[D_I\mid I=i,Z_i=z,S_i=s,T_i=t]=\delta_{i,z,s,t}(P),
+\]
+\[
+\E[Y_I\mid I=i,Z_i=z,S_i=s,T_i=t]=m_{i,z,s,t}(P),
+\]
+for every observed cell with positive probability under \(\pi\).
+\end{assumption}
+
+\begin{assumption}[Perfect-compliance corner]\label{ass:parent-corner}
+For the parent reduction only, \(D_i(z,t,u)=z\) for every \(i,z,t,u\), \(G_Z=\mathcal L_Z\), and \(R_i^Z(G_Z,Z)=0\). This assumption is used only in Corollary~\ref{cor:parent}.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: finite sharp identified set by completion and principal-table enumeration]\label{thm:finite-sharp}
+Under Assumptions~\ref{ass:finite}--\ref{ass:matching}, the sharp identified set is
+\[
+\Theta_I(P)
+=
+\bigcup_{(g,h)\in\mathfrak G_Y\times\mathfrak G_Z\times\calH:\ \kappa_{s,t}(g,h)>0}
+\left\{
+\big(\theta_{\mathrm{CD}}(s,t;g,h,Y),\theta_{\mathrm{CS}}(s,t;g,h,Y)\big):
+Y\in\calF(g,h;P)
+\right\},
+\]
+where \(\calF(g,h;P)\) is the polytope of all bounded outcome arrays \(Y_i(d,s,r)\in[0,1]\) satisfying Assumptions~\ref{ass:outcome}, \ref{ass:bounded}, and \ref{ass:matching} for the fixed latent structure \((g,h)\). Equivalently, every support function of \(\Theta_I(P)\) is obtained by finite enumeration of \((g,h)\) followed by linear programming over \(Y\).
+\end{theorem}
+For fixed \((g,h)\), the observed-moment equations are linear in the bounded latent outcome array \(Y\), so \(\calF(g,h;P)\) is a compact polytope and the support function is attained. The novelty is not this theorem by itself, but that the dual-completion IV problem remains finite once the latent compliance layer is kept explicit rather than absorbed into a misspecified exposure kernel.
+
+\begin{conjecture}[Conjecture 1: computable policy-transport frontier]\label{conj:frontier}
+(NOT YET PROVED.) Fix a deterministic encouragement policy \(g^\star\) that maps public baseline information into an encouragement vector \(Z^{g^\star}\). For each feasible latent structure \((g,h)\), let
+\[
+\tau_{g^\star}(g,h)
+=
+\left(
+\frac1n\sum_{i=1}^n
+\Pr\!\big(S_i^{g^\star}=s',\ T_i^{g^\star}=t',\ C_i^{h}(T_i^{g^\star},R_i^{Z,g^\star})=1\big)
+\right)_{(s',t')\in\mathcal S\times\mathcal T},
+\]
+where \(S_i^{g^\star}=s_i^Y(D^{g^\star},\mathcal L_Y)\), \(T_i^{g^\star}=t_i^Z(Z^{g^\star},\mathcal L_Z)\), and \(R_i^{Z,g^\star}=R_i^Z(G_Z,Z^{g^\star})\). Define the policy-transport frontier
+\[
+\mathcal T_{g^\star}(P)
+=
+\{\tau_{g^\star}(g,h):(g,h,Y)\text{ satisfies Assumptions~\ref{ass:finite}--\ref{ass:matching} and matches }P\}.
+\]
+Then \(\mathcal T_{g^\star}(P)\) is a finite polytope computable by projection of the same feasible set used in Theorem~\ref{thm:finite-sharp}, and the policy-relevant complier effect under \(g^\star\) is point-transportable from the cell-level effects \(\{(\theta_{\mathrm{CD}}(s',t'),\theta_{\mathrm{CS}}(s',t'))\}_{(s',t')}\) if and only if \(\mathcal T_{g^\star}(P)\) is a singleton. There exists an open class of finite experiments for which \(\mathcal T_{g^\star}(P)\) is not a singleton even though the parent-style cellwise identified regions coincide across the feasible latent structures.
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: four-unit nontransport witness]\label{conj:witness}
+(NOT YET PROVED.) Under Assumptions~\ref{ass:finite}--\ref{ass:matching}, there exists a four-unit design with empty observed local graphs, hidden candidate edges \(\{1,4\}\) and \(\{2,4\}\) in both completion classes, and degree caps \(K^Y_4=K^Z_4=1\) such that:
+\[
+P^{A}=P^{B},\qquad
+\Theta_I^{\mathrm{cell}}(P^{A})=\Theta_I^{\mathrm{cell}}(P^{B}),
+\qquad
+\tau_{g^\star}(g^{A},h^{A})\neq \tau_{g^\star}(g^{B},h^{B}),
+\]
+for some deterministic policy \(g^\star\), where \((g^{A},h^{A})\) and \((g^{B},h^{B})\) are two feasible latent structures consistent with the same observable law. Consequently, the policy-relevant complier effect under \(g^\star\) is only partially identified even though the observed-design cellwise complier bounds coincide.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Reduction to the parent kernel]\label{cor:parent}
+Under Assumptions~\ref{ass:finite}--\ref{ass:matching} and the perfect-compliance corner Assumption~\ref{ass:parent-corner}, \(\theta_{\mathrm{CD}}(s,t)\) reduces to the parent direct-effect target \(\theta_{\mathrm{ADE}}(s)\), \(\theta_{\mathrm{CS}}(s,t)\) drops out, and Theorem~\ref{thm:finite-sharp} reduces to the sharp joint-completion bound in \texttt{pid\_network\_exposure/v1}.
+\end{corollary}
+Under Assumption~\ref{ass:parent-corner}, \(D_i=z\), \(T_i\) and \(R_i^Z\) no longer affect take-up, and the cell-specific complier mass satisfies \(\kappa_{s,t}(g,h)=\Pr_\pi(S_i=s)\). The direct-effect formula becomes the parent average direct effect because the only remaining hidden state is the treatment-exposure completion \(G_Y\).
+
+\begin{corollary}[Known-map collapse]\label{cor:known}
+If \(\mathcal C_Y=\mathcal C_Z=\emptyset\) or all hidden-edge degree caps are zero, then \(R_i^Y=R_i^Z=0\) for every unit and assignment, \(\mathcal T_{g^\star}(P)\) is a singleton for every deterministic policy \(g^\star\), and Theorem~\ref{thm:finite-sharp} reduces to a finite principal-strata partial-ID problem without exposure-map misspecification.
+\end{corollary}
+With no hidden edges, the only latent layer is the principal-response assignment \(h\). The reduction is immediate because all completion uncertainty disappears from the conditioning weights and from the policy share vector.
+
+\paragraph{Exhibit 9.1.}
+Take \(n=3\), \(\mathcal L_Y=\mathcal L_Z=\emptyset\), one candidate hidden edge \(\{1,3\}\) in both completion classes, degree caps \(K_1^Y=K_3^Y=K_1^Z=K_3^Z=1\), and design \(\pi\) uniform on assignments with exactly one encouraged unit. Let the observed exposure cells be singletons, \(\mathcal S=\mathcal T=\{0\}\), and let the observed moments be
+\[
+\delta_{1,1,0,0}(P)=\delta_{1,0,0,0}(P)=\tfrac12,\qquad
+\delta_{2,1,0,0}(P)=1,\ \delta_{2,0,0,0}(P)=1,\qquad
+\delta_{3,1,0,0}(P)=\delta_{3,0,0,0}(P)=0,
+\]
+\[
+m_{1,1,0,0}(P)=\tfrac12,\ m_{1,0,0,0}(P)=0,\qquad
+m_{2,1,0,0}(P)=m_{2,0,0,0}(P)=\tfrac14,\qquad
+m_{3,1,0,0}(P)=m_{3,0,0,0}(P)=0.
+\]
+There are two feasible instrument-completion states: the empty graph and the graph containing \(\{1,3\}\). Enumerating these states and the finite tables \(h_i\) shows that the feasible policy share vector under the deterministic policy \(g^\star\) that encourages unit \(3\) only is
+\[
+\mathcal T_{g^\star}(P)=\{(1/3),(2/3)\},
+\]
+because unit \(1\) is a complier under \(g^\star\) only when the hidden edge is absent, while unit \(2\) is always a complier. The exhibit is computed from the observed moments, the candidate hidden-edge set, the degree caps, and the enumerated response tables; it does not assume the policy share vector in advance.
+
+\paragraph{Exhibit 9.2.}
+Take \(n=4\), \(\mathcal L_Y=\mathcal L_Z=\emptyset\), candidate hidden edges \(\{1,4\}\) and \(\{2,4\}\) in both completion classes, and caps \(K_4^Y=K_4^Z=1\), all other caps at least \(1\). Let \(\pi\) be uniform on assignments with exactly one encouraged unit. Set \(\mathcal S=\mathcal T=\{0\}\) and impose the observable take-up and outcome tables
+\[
+\delta_{1,1,0,0}(P)=\delta_{2,1,0,0}(P)=\tfrac12,\qquad
+\delta_{1,0,0,0}(P)=\delta_{2,0,0,0}(P)=0,\qquad
+\delta_{3,z,0,0}(P)=\delta_{4,z,0,0}(P)=0,
+\]
+\[
+m_{1,1,0,0}(P)=m_{2,1,0,0}(P)=\tfrac12,\qquad
+m_{1,0,0,0}(P)=m_{2,0,0,0}(P)=0,\qquad
+m_{3,z,0,0}(P)=m_{4,z,0,0}(P)=0.
+\]
+Now compare two feasible latent structures. In structure \(A\), the unique hidden edge is \(\{1,4\}\), unit \(1\) is a complier only when \(R_1^Z=0\), and the outcome surface satisfies \(Y_1(1,0,0)=1,\ Y_1(1,0,1)=0\), while unit \(2\) has \(Y_2(1,0,0)=Y_2(1,0,1)=1/2\). In structure \(B\), swap the role of units \(1\) and \(2\): the unique hidden edge is \(\{2,4\}\), unit \(2\) loses compliance when \(R_2^Z=1\), and the outcome surfaces are swapped in the same way. Both structures generate the same observable moments and the same parent-style cellwise bound under the experimental design, but under the deterministic policy \(g^\star\) that encourages unit \(4\) only,
+\[
+\tau_{g^\star}(g^{A},h^{A})=\tfrac14,\qquad
+\tau_{g^\star}(g^{B},h^{B})=\tfrac12,
+\]
+because the encouraged hub activates the hidden IV edge in different complier locations. The worked table gives a concrete non-corner witness for Conjecture~\ref{conj:witness}; Stage 0 should verify the exact equalities by full completion enumeration.
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:finite-sharp} reduces by the chain
+\[
+\text{headline}
+\leftarrow
+\text{finite completion classes}
+\leftarrow
+\text{finite principal-response tables}
+\leftarrow
+\text{linear observed-moment equations for fixed }(g,h)
+\leftarrow
+\text{compact bounded-outcome polytope}
+\leftarrow
+\text{support-function attainment}.
+\]
+The substantive steps are: first, write the take-up law under a fixed \((G_Z,h)\) as a deterministic map from \(Z\) into \(D\), which makes the observed take-up moments linear restrictions on the latent response table; second, condition on the induced treatment vector \(D\) and the fixed outcome completion \(G_Y\) to obtain linear outcome-moment equations in \(Y_i(d,s,r)\); third, show that the target pair \((\theta_{\mathrm{CD}},\theta_{\mathrm{CS}})\) is linear in \(Y\) once \((g,h)\) is fixed, so every support function is an LP after finite enumeration. Conjecture~\ref{conj:frontier} then asks for a projection theorem: the same feasible set, augmented by the deterministic policy map \(g^\star\), should project onto the finite polytope \(\mathcal T_{g^\star}(P)\). Conjecture~\ref{conj:witness} asks for exact enumeration on the four-unit instance in Exhibit 9.2 and a proof that the two latent structures agree on the observable law while disagreeing on the policy share vector.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:finite-sharp} is routine only after finite principal-response tables are kept explicit; it is not claimed as a closed-form LP over observables alone. Conjecture~\ref{conj:frontier} is the flagship object, and its status is open because the projection characterization of \(\mathcal T_{g^\star}(P)\) has not been proved. Conjecture~\ref{conj:witness} supplies a concrete candidate witness, but the exact equality \(P^A=P^B\) still requires a full Stage 0 enumeration check. No inference, asymptotic efficiency, or orthogonal score claim is made here. The proposal was narrowed relative to earlier drafts by replacing the underspecified \(K_g(P)\in\R^2\) object with the explicit cell-indexed frontier \(\mathcal T_{g^\star}(P)\).
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial dual-exposure network-IV draft; prior verdict: none.
+\item v2 (revise) -- added the policy-transport angle and aligned the upgrade with the parent shared-completion kernel; prior verdict: REVISE.
+\item v3 (revise) -- replaced the undefined transport object by the explicit frontier \(\mathcal T_{g^\star}(P)\), fixed the cell normalization \(\kappa_{s,t}(g,h)\), changed the main theorem to finite enumeration plus LP, added Exhibits 9.1 and 9.2, and corrected the Vazquez-Bare metadata; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+
+\bibitem[Acerenza et al.(2025)]{acerenza_martinez_iriarte_sanchez_becerra_spini_2025_household_bounds}
+Acerenza, S., Martinez-Iriarte, M. P., Sanchez-Becerra, M., and Spini, P. (2025).
+Sharp bounds for causal effects in two-person encouragement designs with spillovers.
+\emph{arXiv preprint arXiv:2503.14314}.
+
+\bibitem[Aronow and Samii(2017)]{aronow_samii_2017}
+Aronow, P. M. and Samii, C. (2017).
+Estimating average causal effects under general interference, with application to a social network experiment.
+\emph{The Annals of Applied Statistics} 11(4), 1912--1947.
+
+\bibitem[Auerbach, Auerbach, and Tabord-Meehan(2024)]{auerbach_auerbach_tabord_meehan_2024_exposure_policy_relevance}
+Auerbach, E., Auerbach, S., and Tabord-Meehan, M. (2024).
+Exposure effects are not automatically useful for policymaking.
+\emph{arXiv preprint arXiv:2401.06264}.
+
+\bibitem[Chernozhukov, Hong, and Tamer(2007)]{chernozhukov_hong_tamer_2007_parameter_sets}
+Chernozhukov, V., Hong, H., and Tamer, E. (2007).
+Estimation and confidence regions for parameter sets in econometric models.
+\emph{Econometrica} 75(5), 1243--1284.
+
+\bibitem[Gao et al.(2026)]{gao_harshaw_savje_wang_2026}
+Gao, C., Harshaw, C., S\"{a}vje, F., and Wang, Y. (2026).
+On the impossibility of specification testing of interference models based on exposure mappings.
+\emph{arXiv preprint arXiv:2605.09726}.
+
+\bibitem[Hoshino and Yanagi(2024)]{hoshino_yanagi_2024_noncompliance_unknown_interference}
+Hoshino, T. and Yanagi, T. (2024).
+Causal inference with noncompliance and unknown interference.
+\emph{Journal of the American Statistical Association} 119(548), 2869--2880.
+
+\bibitem[Hudgens and Halloran(2008)]{hudgens_halloran_2008}
+Hudgens, M. G. and Halloran, M. E. (2008).
+Toward causal inference with interference.
+\emph{Journal of the American Statistical Association} 103(482), 832--842.
+
+\bibitem[Imai, Jiang, and Malani(2021)]{imai_jiang_malani_2021_interference_noncompliance}
+Imai, K., Jiang, Z., and Malani, A. (2021).
+Causal inference with interference and noncompliance in two-stage randomized experiments.
+\emph{Journal of the American Statistical Association} 116(534), 632--644.
+
+\bibitem[Imbens and Manski(2004)]{imbens_manski_2004_ci_partial_id}
+Imbens, G. W. and Manski, C. F. (2004).
+Confidence intervals for partially identified parameters.
+\emph{Econometrica} 72(6), 1845--1857.
+
+\bibitem[Manski(1990)]{manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review} 80(2), 319--323.
+
+\bibitem[Nibbering and Oosterveen(2025)]{nibbering_oosterveen_2025_iv_interference_policy}
+Nibbering, D. and Oosterveen, M. (2025).
+Policy-relevant direct and spillover effects under interference with instrumental variables.
+\emph{arXiv preprint arXiv:2509.12538}.
+
+\bibitem[S\"{a}vje(2024)]{savje_2024_misspecified_exposure_mappings}
+S\"{a}vje, F. (2024).
+Causal inference with misspecified exposure mappings: separating definitions and assumptions.
+\emph{Biometrika} 111(1), 1--15.
+
+\bibitem[Schr\"{o}der et al.(2026)]{schroder_oprescu_feuerriegel_kallus_2026_networks_partialid}
+Schr\"{o}der, M., Oprescu, M., Feuerriegel, S., and Kallus, N. (2026).
+Causal inference on networks under misspecified exposure mappings: A partial identification framework.
+\emph{arXiv preprint arXiv:2602.03459}.
+
+\bibitem[Vazquez-Bare(2023)]{vazquez_bare_2023_iv_spillovers}
+Vazquez-Bare, G. (2023).
+Causal spillover effects using instrumental variables.
+\emph{Journal of the American Statistical Association} 118(543), 1911--1922.
+
+\bibitem[Weinstein and Nevo(2026)]{weinstein_nevo_2026}
+Weinstein, B. and Nevo, D. (2026).
+Causal inference with misspecified network interference structure.
+\emph{Biometrics} 82(1), ujag023.
+
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,352 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_continuous\_did\_acr\_panel, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{eid\_continuous\_did\_acr\_panel} / \texttt{v1}%
+  \\ \large\textit{Support-gap sharp bounds for no-stayer continuous-treatment ACR curves}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+qid = eid_continuous_did_acr_panel
+specialization = v1
+anchor cluster = PartialID.  The eid_ filename is the orchestrator-retained
+  container from the original exact-equivalence angle; this version is routed
+  as a partial-identification support-gap proposal, not as an exact-ID theorem.
+observable distribution P = law of (Y0,Y1,D) in a two-period panel,
+  with period-0 dose normalized to 0 and period-1 dose D in [0,dbar]
+parameter theta = ACR(d0) = mu'(d0), the derivative at a target dose d0
+  of the population dose-response curve mu(d)=E[Y1(d)-Y1(0)]
+identifying restrictions = consistency; scalar common untreated trend;
+  common population dose-response curve; observed dose support S(P), whose
+  complement may include interior and boundary gaps;
+  monotone dose response 0 <= mu'; and Lipschitz derivative |mu'(d)-mu'(d')|
+  <= L |d-d'| with known constants L and B satisfying 0 <= mu' <= B
+bounding functional = [underline ACR_L(P,d0), overline ACR_L(P,d0)],
+  the sharp support-function envelope over all C^{1,1} curves mu and
+  scalar nuisance intercepts compatible with the observed DID curve on S(P)
+\end{verbatim}
+
+\begin{abstract}
+Continuous-treatment DID papers increasingly distinguish point-identification designs with stayers or quasi-untreated units from no-stayer designs where every unit receives a positive period-1 dose.  This proposal asks what is sharply identified about the ACR curve when the period-1 dose support has interior holes or begins away from zero.  The kernel claim is a partial-identification theorem: under scalar common-trend, monotonicity, and Lipschitz-slope restrictions, the identified set for \(ACR(d_0)\) is the support of a deterministic extension problem for the observed DID dose-response curve.  The novelty-bearing conjecture is that the whole support-gap problem, including boundary gaps and multiple missing intervals, reduces to a finite clipped-arc program, and that this program is strictly sharper on a nonempty \(\rho\)-open class of no-quasi/no-near-zero designs than the proposal's own shape-only derivative baseline \([0,B]\), while remaining distinct from the no-QUG unbounded-WAS result in \citet{DCDHK2026NoUntreated}.  A separate falsification conjecture removes the nonempty-feasible-class assumption and asks when the maintained DID and shape restrictions are rejected outright.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Empirical continuous-treatment DID applications often have no untreated units after the policy changes: every county receives some pollution exposure, every consumer faces a positive price change, or every location experiences a nonzero temperature shock.  Recent continuous-DID papers show how stayers, same-baseline comparisons, or quasi-untreated units can point identify local slopes, but applied researchers still need to report something when the dose support begins away from zero or has interior holes.  The scientific question is therefore not whether a preferred extrapolating estimator can be written down, but which ACR derivatives are forced by the observable DID curve and minimal shape restrictions.
+
+\paragraph{The main finding (proposed).}
+Theorem~\ref{thm:deterministic-envelope} states the reduction: for a two-period no-stayer panel, the sharp identified set for \(ACR(d_0)\) is exactly the set of derivatives \(f'(d_0)\) over all monotone \(C^{1,1}\) dose-response extensions that agree with the observed DID curve on the observed dose support, up to the scalar common untreated-trend intercept.  Conjecture~\ref{conj:closed-form-gap} is the flagship kernel: conditional on nonempty feasibility, for any finite collection of interior or boundary support gaps, the lower and upper ACR bounds are the optimum of a finite clipped-arc program whose constraints are observable endpoint traces, observed support-component values, normalization at zero, \(B\), and \(L\).  Conjecture~\ref{conj:falsification} separately claims that the same finite blocks give a necessary-and-sufficient falsification test without assuming feasibility.  Theorem~\ref{thm:point-id-corner} gives the sanity corner: when \(d_0\) lies in the interior of an observed support interval and the observed DID curve is differentiable there, the interval collapses to the usual point-identified local slope.
+
+\paragraph{What is new.}
+\citet{DCDHVB2024NoStayers} and \citet{DCDHK2026NoUntreated} explain why continuous-treatment DID without stayers or quasi-untreated units cannot be treated as the same design as the stayer case.  In the no-QUG branch, \citet{DCDHK2026NoUntreated} show that parallel trends alone leaves the WAS identification region equal to the entire real line, and then discuss additional homogeneous-effect routes; this proposal deliberately changes the target and the restriction set by asking for \(ACR(d_0)\) under monotone \(C^{1,1}\) dose-response restrictions.  The open frontier is the branch where no quasi-untreated local support is available and the researcher has not imposed a homogeneous-effect or parametric dose-response model: before using cross-gap smoothness and intercept-pasting, the derivative information at a missing target dose is only the proposal's own shape-only baseline \(ACR(d_0)\in[0,B]\).  \citet{KimKwonKwonLee2018} show that smoothness can tighten generic treatment-response bounds, but their target is an average counterfactual outcome or ATE under smooth treatment responses, not a DID-identified derivative with an unknown common-trend intercept and missing dose support.  The closest mathematical comparators, \citet{Wells1973}, \citet{LeGruyer2009}, and \citet{DaniilidisHaddouLeGruyerLey2018}, give \(C^{1,1}\) and Glaeser--Whitney extension criteria for jets, but they do not solve the econometric support problem because the observed object is a scalar DID curve known only up to a common intercept and constrained by the normalization \(\mu(0)=0\).  The flagship epsilon-gap is a regime-opening algorithmic identified set: the intercept-coupled, boundary-aware finite extension program plus an open-set strict-improvement claim for no-quasi/no-near-zero observable laws whose clipped-arc interval is a proper finite subinterval of \([0,B]\), so missing-support geometry itself becomes the theorem rather than a generic smoothness interpolation add-on.
+
+\paragraph{How it positions in the literature.}
+The proposal sits in the partial-identification cluster, with continuous-treatment DID as the application.  It uses Manski-style set identification, the smoothness-bound comparator of \citet{KimKwonKwonLee2018}, and Lipschitz-extension geometry in the spirit of \citet{Whitney1934}, \citet{Wells1973}, \citet{LeGruyer2009}, and \citet{DaniilidisHaddouLeGruyerLey2018}, while taking the continuous-DID objects from \citet{DHaultfoeuilleHoderleinSasaki2023}, \citet{DCDHPSVB2025ContinuousEveryPeriod}, \citet{DCDHVB2024NoStayers}, and \citet{DCDHK2026NoUntreated} as the target frontier.  It is not a TWFE decomposition and not a three-estimator equivalence theorem; the pivoted kernel is the sharp support-gap envelope that remains after the point-identifying controls required by the published continuous-DID estimators disappear.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the no-untreated continuous-DID workflow of \citet{DCDHK2026NoUntreated}: when quasi-untreated units are unavailable or only bracket some support components, the proposed theorem would replace the no-QUG unbounded-WAS warning for the different \(ACR(d_0)\) target with an auditable nonparametric sharp-bound branch indexed by boundary and interior support gaps and the chosen smoothness constant \(L\), before any homogeneous-effect or parametric route is invoked.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report the support-gap ACR interval at each target dose, and reserve point ACR estimates for doses where the observed support and smoothness restrictions make the interval collapse.
+
+\section{Related work}
+\citet{AtheyImbens2006} provide the nonlinear DID foundation in which counterfactual distributions, rather than additive mean trends, are identified under changes-in-changes restrictions; this is the older flagship anchor for nonlinear DID.  \citet{DHaultfoeuilleHoderleinSasaki2023} extend DID to continuous treatments in repeated cross sections using CDF crossing, stationarity of unobservables, and rank-invariant time trends; their data-defined control group motivates the support object but their theorem is an exact-identification result, not a no-control bound.  \citet{DCDHPSVB2025ContinuousEveryPeriod} identify switcher slopes by comparing switchers to stayers with the same baseline treatment; this is the closest point-identification benchmark that fails when exact stayers are absent.  \citet{DCDHVB2024NoStayers} explicitly study continuous-treatment DID with no stayers and propose estimators that avoid TWFE linearity, but the paper does not give a sharp nonparametric identified set when near-zero controls are also unavailable.  \citet{DCDHK2026NoUntreated} consider two-period panels where every unit receives a strictly positive second-period dose; their quasi-untreated branch identifies a weighted average of slopes, while their no-QUG parallel-trends result leaves the WAS identification region equal to the entire real line and therefore motivates asking whether a different ACR target plus explicit monotone/\(C^{1,1}\) restrictions has a sharp, nonparametric support-gap envelope.  \citet{CallawayGoodmanBaconSantAnna2024} show that continuous-treatment DID parameters and TWFE decompositions can be difficult to interpret even with two periods; this proposal avoids TWFE and asks for the sharp partial-ID replacement for a local ACR target.  \citet{KimKwonKwonLee2018} derive smoothness-based partial-identification bounds for average treatment responses and ATEs; this is the closest econometric smoothness comparator, and the gap is that the current problem couples smoothness to a DID intercept, derivative target, and support-gap topology.  \citet{Manski2003} supplies the general partial-identification perspective used here: observable data plus maintained assumptions produce a set of feasible parameters rather than a binary identified/unidentified label.  \citet{RambachanRoth2023} use shape-restricted deviations from parallel trends for robust DID inference; their support-function logic is adjacent, but the current proposal puts the shape restriction on the unobserved dose-response extension across dose-support gaps.  \citet{Whitney1934} and \citet{McShane1934} are classical extension comparators for functions on closed sets and Lipschitz ranges.  \citet{Wells1973} gives the closer \(C^{1,1}\) extension comparator for functions with Lipschitz derivatives, \citet{LeGruyer2009} gives minimal Lipschitz extensions of differentiable jets in Hilbert spaces, and \citet{DaniilidisHaddouLeGruyerLey2018} gives explicit \(C^{1,1}\) Glaeser--Whitney formulas; none of these papers contains the DID intercept, normalization-at-zero, observed-support value matching, or ACR derivative support functional that define the current econometric problem.
+
+In-repository prior art is adjacent rather than duplicative.  \texttt{doc/API.md} Section 3 records the ThmSmith ExactID and PartialID catalogues as seed areas, so there is no accepted in-catalogue theorem for continuous-DID support-gap ACR bounds.  The banked \texttt{pid\_dose\_response\_iv / v1} proposal gives a sharp finite LP envelope for adjacent-rank dose-response slopes under continuous IV and quantile-copula restrictions; its kernel is IV/rank-slice latent dependence, not DID support gaps.  The banked \texttt{pid\_did\_anticipation\_bounded / v1} proposal gives support-function intervals for bounded anticipation in staggered DID; it is closest in proof style, but its latent object is an anticipation distortion vector, not a smooth continuous-dose response curve.  \texttt{doc/API.md} Section 1 records Q1 panel FWL and sign-flip theorems for discrete history-cell regressions, which are useful panel analogues but do not bound a continuous ACR derivative.
+
+\section{Formal setup}
+\begin{verbatim}
+qid = eid_continuous_did_acr_panel
+specialization = v1
+anchor cluster = PartialID.  The eid_ filename is the orchestrator-retained
+  container from the original exact-equivalence angle; this version is routed
+  as a partial-identification support-gap proposal, not as an exact-ID theorem.
+observable distribution P = law of (Y0,Y1,D) in a two-period panel,
+  with period-0 dose normalized to 0 and period-1 dose D in [0,dbar]
+parameter theta = ACR(d0) = mu'(d0), the derivative at a target dose d0
+  of the population dose-response curve mu(d)=E[Y1(d)-Y1(0)]
+identifying restrictions = consistency; scalar common untreated trend;
+  common population dose-response curve; observed dose support S(P), whose
+  complement may include interior and boundary gaps;
+  monotone dose response 0 <= mu'; and Lipschitz derivative |mu'(d)-mu'(d')|
+  <= L |d-d'| with known constants L and B satisfying 0 <= mu' <= B
+bounding functional = [underline ACR_L(P,d0), overline ACR_L(P,d0)],
+  the sharp support-function envelope over all C^{1,1} curves mu and
+  scalar nuisance intercepts compatible with the observed DID curve on S(P)
+\end{verbatim}
+
+Let \(P\) be the observable law of \((Y_0,Y_1,D)\), where \(D\in[0,\bar d]\) is the period-1 continuous dose.  Let \(S(P)\subset[0,\bar d]\) be the closed support of \(D\), and write
+\[
+  m_P(d)=\E_P[Y_1-Y_0\mid D=d]
+\]
+at dose-support points where this conditional mean is well defined.  The latent population dose-response curve is \(\mu:[0,\bar d]\to\R\), normalized by \(\mu(0)=0\), and the target at an interior policy dose \(d_0\in(0,\bar d)\) is
+\[
+  \theta(d_0)=ACR(d_0)=\mu'(d_0).
+\]
+Define the feasible extension class
+\[
+\mathcal{F}(P;B,L)=
+\left\{(c,f): f(0)=0,\ 0\le f'\le B,\ |f'(u)-f'(v)|\le L|u-v|,
+  m_P(d)=c+f(d)\ \text{for all } d\in S(P)\right\},
+\]
+where \(c\) is the common untreated-trend intercept.  The identified set and bounding functionals are
+\[
+\Theta_I(P,d_0)=\{f'(d_0):(c,f)\in\mathcal{F}(P;B,L)\},\quad
+\underline{ACR}_L(P,d_0)=\inf\Theta_I(P,d_0),\quad
+\overline{ACR}_L(P,d_0)=\sup\Theta_I(P,d_0).
+\]
+If \(\mathcal{F}(P;B,L)=\varnothing\), the maintained restrictions are falsified by \(P\).  Endpoint values of \(m_P\) are trace values: if \(e\) is an endpoint of a support component, \(m_P(e)\) denotes the continuous one-sided limit from within that observed component, and \(m'_{P,+}(e)\) or \(m'_{P,-}(e)\) denotes the corresponding one-sided derivative trace when it exists.  For \(q_a,p,q_b\in[0,B]\), \(\mathsf{Area}_{\min}^{a,b,d_0}(q_a,p,q_b)\) and \(\mathsf{Area}_{\max}^{a,b,d_0}(q_a,p,q_b)\) denote the minimum and maximum possible values of \(\int_a^b g(u)\,du\) over absolutely continuous derivative paths \(g\) satisfying \(g(a)=q_a\), \(g(d_0)=p\), \(g(b)=q_b\), \(0\le g\le B\), and \(|g(u)-g(v)|\le L|u-v|\).  These are deterministic functions of the gap endpoints, \(d_0\), \(B\), \(L\), and the three pinned derivative values.  For an observed endpoint \(e\), let \(r_e(P)\) denote the one-sided derivative trace of \(m_P\) from the adjacent observed support component; if \(e\) is adjacent to two observed components, the left and right traces are denoted \(r_{e,-}(P)\) and \(r_{e,+}(P)\).  Let \(\mathcal{G}(P)\) be the finite set of connected components of \([0,\bar d]\setminus S(P)\); a component may be an interior gap \((a,b)\), a left boundary gap \([0,b)\), or a right boundary gap \((a,\bar d]\).  For observed support component \(I_j\) and reference endpoint \(e_j\in I_j\), \(v_j\) denotes the fitted dose-response level \(f(e_j)=m_P(e_j)-c\).  Observed-support feasibility means that, on every observed component \(I_j\), \(0\le m'_P(d)\le B\), \(|m'_P(u)-m'_P(v)|\le L|u-v|\), the one-sided endpoint traces equal the corresponding limits of \(m'_P\), and \(m_P(d)-m_P(e_j)=\int_{e_j}^d m'_P(u)\,du\) for all \(d\in I_j\).  The finite multi-gap program uses variables \((c,v_j)\) at observed support components, observed derivative traces \(r_e(P)\), endpoint derivative variables only at unobserved boundary endpoints \(0\) or \(\bar d\), and one derivative variable \(p\) at \(d_0\), together with the observed-support feasibility constraints and one clipped-arc area feasibility constraint for each component of \(\mathcal{G}(P)\).
+
+For the open-class sharpness clause, neighborhoods of observable laws use the metric
+\[
+  \rho(P,P')=d_H(S(P),S(P'))+\sum_j \|m_P-m_{P'}\|_{C^1(I_j\cap I'_j)}
+\]
+after matching the finitely many observed support components \(I_j\) by order, with unmatched components assigned infinite distance.  Thus an open neighborhood keeps the same finite support-gap combinatorics, perturbs support endpoints in Hausdorff distance, and perturbs the observed DID curve and its one-sided endpoint traces in componentwise \(C^1\) norm.
+
+\section{Assumptions}
+\begin{assumption}[Two-period consistency]\label{ass:consistency}
+The observed outcomes satisfy \(Y_0=Y_0(0)\) and \(Y_1=Y_1(D)\), where \(Y_1(d)\) is the period-1 potential outcome under period-1 dose \(d\).
+\end{assumption}
+
+\begin{assumption}[Common untreated trend]\label{ass:common-trend}
+There is a scalar \(c\) such that \(\E[Y_1(0)-Y_0(0)\mid D=d]=c\) for every \(d\in S(P)\).
+\end{assumption}
+
+\begin{assumption}[Common population dose-response curve]\label{ass:common-mu}
+There is a single curve \(\mu:[0,\bar d]\to\R\), \(\mu(0)=0\), such that \(\E[Y_1(d)-Y_1(0)\mid D=s]=\mu(d)\) for all \(d\in[0,\bar d]\) and all \(s\in S(P)\).
+\end{assumption}
+
+\begin{assumption}[Support and smooth DID curve]\label{ass:support}
+The observed dose support \(S(P)\) is a finite union of closed intervals with nonempty relative interiors, \(d_0\in(0,\bar d)\), and the DID curve \(m_P(d)\) is known and continuously differentiable on every interior component of \(S(P)\).  At every observed endpoint, \(m_P\) has a finite one-sided continuous value trace and a finite one-sided derivative trace from the observed side.  The complement \([0,\bar d]\setminus S(P)\) may contain finitely many interior gaps and boundary gaps.
+\end{assumption}
+
+\begin{assumption}[Monotone Lipschitz-slope response]\label{ass:shape}
+The curve \(\mu\) is continuously differentiable, \(0\le \mu'(d)\le B\) for all \(d\in[0,\bar d]\), and \(|\mu'(u)-\mu'(v)|\le L|u-v|\) for all \(u,v\in[0,\bar d]\), where \(B<\infty\) and \(L<\infty\) are fixed sensitivity constants.
+\end{assumption}
+
+\begin{assumption}[Observable-law topology for sharpness]\label{ass:topology}
+Open neighborhoods of \(P\) are measured by the componentwise support-and-curve metric \(\rho\) defined in Section~6.  In particular, an open neighborhood preserves the finite ordering of support components and measures endpoint, trace-value, and one-sided derivative perturbations by Hausdorff and \(C^1\) distances.
+\end{assumption}
+
+\begin{assumption}[Nonempty feasible class]\label{ass:nonempty}
+The feasible extension class \(\mathcal{F}(P;B,L)\) is nonempty.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: deterministic sharp-envelope reduction]\label{thm:deterministic-envelope}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:nonempty}, the sharp identified set for \(ACR(d_0)=\mu'(d_0)\) is
+\[
+  \Theta_I(P,d_0)=\{f'(d_0):(c,f)\in\mathcal{F}(P;B,L)\}.
+\]
+Equivalently, the sharp lower and upper bounds are \(\underline{ACR}_L(P,d_0)\) and \(\overline{ACR}_L(P,d_0)\) as defined in Section~6.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) The closest papers are \citet{DCDHVB2024NoStayers} and \citet{DCDHK2026NoUntreated}: they identify or estimate continuous-treatment DID effects under no-stayer designs using additional support or modeling structure, while Theorem~\ref{thm:deterministic-envelope} states the exact nonparametric identified set for a different ACR derivative target when those point-identifying repairs are not available.  \citet{KimKwonKwonLee2018} gives the closest econometric smoothness-bound comparator, but it bounds average counterfactual outcomes or ATEs, not a DID derivative target with a scalar common-trend intercept.  The classical \(C^{1,1}\) extension papers \citet{Wells1973}, \citet{LeGruyer2009}, and \citet{DaniilidisHaddouLeGruyerLey2018} supply extension machinery but no econometric sharp identified set or common-intercept pasting restriction.  (b) The concrete consumer is the no-QUG design branch of \citet{DCDHK2026NoUntreated}: the theorem specifies the ACR object an applied workflow should report before invoking homogeneous-effect or parametric restrictions.
+
+\begin{conjecture}[Conjecture 1: finite clipped-arc support-gap ACR envelope (NOT YET PROVED)]\label{conj:closed-form-gap}
+Suppose Assumptions~\ref{ass:consistency}--\ref{ass:nonempty} hold and \(d_0\) lies in a component of \([0,\bar d]\setminus S(P)\).  Then \(\underline{ACR}_L(P,d_0)\) and \(\overline{ACR}_L(P,d_0)\) are the optimum values of a finite clipped-arc feasibility program with one block for each support gap in \(\mathcal{G}(P)\), using only the endpoint trace and observable-law topology conventions of Assumptions~\ref{ass:support} and \ref{ass:topology}.  For an interior gap \((a,b)\) containing \(d_0\), where \(r_a(P)=m'_{P,-}(a)\) is the observed derivative trace from the component to the left of the gap and \(r_b(P)=m'_{P,+}(b)\) is the observed derivative trace from the component to the right, the upper-bound block is
+\[
+\begin{aligned}
+\overline{ACR}_L(P,d_0)
+&=\max p
+\quad\text{such that}\quad
+0\le p\le B,\\
+&\qquad |p-r_a(P)|\le L(d_0-a),\quad |p-r_b(P)|\le L(b-d_0),\\
+&\qquad m_P(b)-m_P(a)\in
+  \left[\mathsf{Area}_{\min}^{a,b,d_0}(r_a(P),p,r_b(P)),
+        \mathsf{Area}_{\max}^{a,b,d_0}(r_a(P),p,r_b(P))\right],
+\end{aligned}
+\]
+with the lower bound obtained by replacing \(\max p\) with \(\min p\).  For a left boundary gap \([0,b)\), the corresponding block replaces the missing value \(m_P(0)\) by the normalization \(f(0)=0\) and the unknown intercept \(c=m_P(b)-f(b)\), where \(m_P(b)\) and \(r_b(P)=m'_{P,+}(b)\) are trace objects from the observed component beginning at \(b\); feasibility is the existence of a start derivative \(q_0\in[0,B]\), \(c\in\R\), and a clipped path from \(f(0)=0\) to \(f(b)=m_P(b)-c\) whose derivative moves from \(q_0\) to \(r_b(P)\) and that also matches every other observed support component through the same \(c\).  The right boundary gap is analogous with the observed left endpoint trace \(r_a(P)=m'_{P,-}(a)\) and a terminal derivative variable \(q_{\bar d}\in[0,B]\).
+
+Moreover, there is a nonempty \(\rho\)-open class \(\mathcal{U}_{strict}\) of no-quasi/no-near-zero observable laws with either \(S(P)=[b,\bar d]\), \(b>0\), or an interior gap containing \(d_0\), such that the clipped-arc interval is finite and satisfies
+\[
+  0<\underline{ACR}_L(P,d_0)<\overline{ACR}_L(P,d_0)<B.
+\]
+Thus on \(\mathcal{U}_{strict}\) the proposed support-gap interval is a strict proper subinterval of the proposal's own shape-only derivative baseline \([0,B]\).  This is not a restatement of the no-QUG result in \citet{DCDHK2026NoUntreated}, whose parallel-trends-only WAS region is unbounded; it is a different ACR regime opened by explicit monotone \(C^{1,1}\) restrictions and common-intercept pasting.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{DCDHK2026NoUntreated} use quasi-untreated units when doses local to zero exist and show that, without QUG under parallel trends alone, the WAS identification region is the whole real line; they do not give a necessary-and-sufficient support-gap formula for \(ACR(d_0)\) under monotone \(C^{1,1}\) dose-response restrictions or an open-set theorem showing that cross-gap smoothness and common-trend traces strictly shrink the proposal's own derivative baseline \([0,B]\).  \citet{KimKwonKwonLee2018} show that smoothness can tighten treatment-response bounds, but they do not solve the DID-specific multi-gap problem where a single unobserved intercept must paste all observed support components together.  \citet{Wells1973}, \citet{LeGruyer2009}, and \citet{DaniilidisHaddouLeGruyerLey2018} give the closest extension-theoretic epsilon-gap: they decide or construct \(C^{1,1}\) extensions from jet data, whereas this conjecture must optimize an ACR derivative over partially observed DID values whose vertical level is unidentified up to one common intercept and whose support gaps include no-near-zero boundary gaps.  The flagship epsilon-gap is the common-intercept clipped-arc certificate plus \(\mathcal{U}_{strict}\): it classifies exactly which local derivatives can be pasted across interior and boundary dose gaps and proves that the resulting interval can be strictly sharper than \([0,B]\) on an open class of observable no-quasi laws.  (b) The concrete consumer is empirical continuous-DID work on price, tax, temperature, and pollution shocks using the \citet{CallawayGoodmanBaconSantAnna2024} target language: the conjecture would make support gaps a reported design diagnostic with numerical ACR bounds.
+
+\begin{conjecture}[Conjecture 2: finite falsification certificate without nonemptiness (NOT YET PROVED)]\label{conj:falsification}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:topology}, without imposing Assumption~\ref{ass:nonempty}, the maintained continuous-DID and shape restrictions are observationally feasible if and only if the global finite clipped-arc system has a common intercept \(c\), component values \(v_j\), observed endpoint traces \(r_e(P)\), boundary endpoint derivatives in \([0,B]\), the observed-support feasibility constraints \(0\le m'_P\le B\), \(|m'_P(u)-m'_P(v)|\le L|u-v|\) on each observed component, endpoint-trace compatibility with those component derivatives, and one area-feasible clipped path for every gap in \(\mathcal{G}(P)\).  Equivalently, \(\mathcal{F}(P;B,L)=\varnothing\) if and only if at least one observed-component, trace, intercept-pasting, or clipped-area constraint is infeasible.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The falsification clause is deliberately separated from Conjecture~\ref{conj:closed-form-gap}: \citet{DCDHK2026NoUntreated} and \citet{DCDHVB2024NoStayers} warn that no-stayer/no-quasi continuous-treatment DID needs additional structure, but they do not give a finite nonparametric rejection certificate for scalar common trends plus \(C^{1,1}\) dose response.  The mathematical extension papers \citet{Wells1973}, \citet{LeGruyer2009}, and \citet{DaniilidisHaddouLeGruyerLey2018} provide feasibility criteria for abstract jets, but the epsilon-gap here is the shared DID intercept and the need to test both observed support components and missing support gaps from econometric trace data rather than from a fully specified jet.  (b) The concrete consumer is the no-untreated design screen in \citet{DCDHK2026NoUntreated}: before choosing a homogeneous-effect or parametric extrapolation route, the researcher could test whether the maintained scalar-trend and smoothness restrictions are already contradicted by the observed DID dose curve.
+
+\begin{theorem}[Theorem 2: point-identification corner]\label{thm:point-id-corner}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:nonempty}, if \(d_0\) lies in the interior of a connected component of \(S(P)\) and \(m_P\) is differentiable at \(d_0\), then
+\[
+  \Theta_I(P,d_0)=\{m_P'(d_0)\}.
+\]
+Consequently the support-gap bounds collapse to the local continuous-DID slope when the target dose is locally observed.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This is not a novelty-bearing result.  It is retained only as a sanity check because the observed-support local-slope collapse is already the point-ID corner of \citet{DCDHPSVB2025ContinuousEveryPeriod} and \citet{DCDHK2026NoUntreated}.  (b) The concrete consumer is the same no-untreated diagnostic in \citet{DCDHK2026NoUntreated}: it tells the user when the proposed bound is a genuine interval and when it reduces to their ordinary local-slope benchmark.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Zero-gap and linear-response recovery]\label{cor:zero-gap-linear}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:nonempty}, if \(S(P)=[0,\bar d]\) and \(m_P(d)=c+\beta d\) with \(0\le\beta\le B\), then \(\Theta_I(P,d_0)=\{\beta\}\) for every \(d_0\in(0,\bar d)\).  Under Assumption~\ref{ass:shape}, this reduces to Theorem~\ref{thm:point-id-corner} because the observed DID derivative is \(m_P'(d_0)=\beta\).
+\end{corollary}
+
+\begin{corollary}[Support-gap width vanishes as the gap closes]\label{cor:gap-closes}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:nonempty}, consider observable laws \(P_n\) with support gaps \((a_n,b_n)\) containing \(d_{0,n}\), where \(b_n-a_n\to0\) and \(d_{0,n}\to d_0\), and where \(d_0\) is an interior point of a smooth observed support component in the limit.  The diameter of \(\Theta_I(P_n,d_{0,n})\) is at most \(2L(b_n-a_n)+o(1)\), so it collapses to the point-identified derivative as local support is restored.
+\end{corollary}
+
+\begin{corollary}[No-near-zero boundary-gap falsification]\label{cor:boundary-falsification}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:shape}, if \(S(P)=[b,\bar d]\) with \(b>0\) and there is no scalar \(c\) and no \(C^{1,1}\) curve satisfying \(f(0)=0\), \(0\le f'\le B\), \(|f'(u)-f'(v)|\le L|u-v|\) for all \(u,v\in[0,\bar d]\), and \(m_P(d)=c+f(d)\) on \([b,\bar d]\), then \(\mathcal{F}(P;B,L)=\varnothing\).  This is the boundary-gap reduction: a no-near-zero design is not merely wide-bounded; it can be falsified by the common-intercept and smoothness restrictions.
+\end{corollary}
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:deterministic-envelope} follows by writing \(Y_1-Y_0=(Y_1(D)-Y_1(0))+(Y_1(0)-Y_0(0))\), applying the scalar common-trend intercept, and observing that all remaining restrictions are restrictions on the graph of \(\mu\) over observed and unobserved dose points.  Sharpness requires a standard extension argument: any feasible \(C^{1,1}\) curve and intercept can be embedded in a potential-outcome law with the same observable conditional mean curve and the same dose distribution.  Conjecture~\ref{conj:closed-form-gap} reduces the infinite-dimensional extension problem to finitely many one-dimensional optimal-control blocks with bounded state \(f\), bounded derivative \(f'\), and bounded acceleration \(|f''|\le L\); Pontryagin-style bang-bang arguments and the Wells--Le Gruyer \(C^{1,1}\) jet conditions should show the extrema occur at clipped derivative paths that use acceleration \(\pm L\) except on flat portions at \(0\) or \(B\).  The strict-improvement open set should be obtained by choosing trace derivatives bounded away from \(0\) and \(B\), a positive boundary or interior gap, and observed endpoint values whose clipped-area inequalities leave a nonempty interval of feasible \(p\)'s with closure inside \((0,B)\); small \(\rho\)-perturbations then preserve strict containment by continuity of the area bounds.  Conjecture~\ref{conj:falsification} is the same finite reduction with Assumption~\ref{ass:nonempty} removed: first verify \(0\le m'_P\le B\), componentwise \(L\)-Lipschitz derivative constraints, endpoint-trace compatibility, and value propagation on each observed support component; then paste those observed jets to gapwise clipped arcs through the common intercept \(c\).  Infeasibility of this augmented system should be equivalent to the absence of a global \(C^{1,1}\) extension.  The boundary cases to compute explicitly are a left no-near-zero support gap where \(f(0)=0\) replaces an observed endpoint trace, an interior gap with observed one-sided derivatives on both sides, a multi-gap system sharing the same intercept \(c\), the \(\rho\)-open perturbation argument for support endpoints and \(C^1\) trace data, and the degenerate case \(L=0\), where the program must collapse to a constant-slope interval or falsification.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:deterministic-envelope} is proposed as routine algebra plus a standard sharpness construction; Theorem~\ref{thm:point-id-corner} is retained only as a sanity check because the observed-support local-slope collapse is already known in the stayer/quasi-untreated point-ID literature.  Conjecture~\ref{conj:closed-form-gap} is the open flagship kernel: the support-function formulation is clear, but the finite clipped-arc program, boundary-gap convention, \(\rho\)-open strict-improvement class, and open-neighborhood sharpness need proof.  Conjecture~\ref{conj:falsification} is separated from the envelope claim because it intentionally does not assume Assumption~\ref{ass:nonempty}; it remains open whether the augmented finite system, including observed-component derivative and trace checks, catches every possible \(C^{1,1}\) feasibility failure.  Version 5 corrects the comparison to \citet{DCDHK2026NoUntreated}: their no-QUG parallel-trends WAS region is unbounded, while this proposal studies a different \(ACR(d_0)\) target under monotone \(C^{1,1}\) restrictions and compares its clipped-arc interval to the proposal's own shape-only derivative baseline \([0,B]\).  The proposal deliberately removes covariates from the v2 locked convention to avoid the invalid marginalization of \(c(X)\); a covariate-specific extension would compute the envelope conditional on each \(x\) before aggregation.  The proposal also assumes a common population dose-response curve and known sensitivity constants \(B,L\); relaxing either condition would change the target and is outside this version.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) --- initial draft for angle 2, pivoting from triple-estimator equality frontiers to support-gap sharp bounds for no-stayer continuous-treatment ACR curves; prior verdict: none.
+\item v2 (revise) --- removed the invalid \(X\)-marginal convention, added the smoothness-bound comparator \citet{KimKwonKwonLee2018}, and strengthened Conjecture~\ref{conj:closed-form-gap} to boundary and multi-gap clipped-arc programs with falsification conditions; prior verdict: REVISE.
+\item v3 (revise) --- pinned the proposal as a PartialID anchor inside the retained orchestrator path, added Wells--Le Gruyer--Glaeser--Whitney \(C^{1,1}\) comparators, defined endpoint traces and the \(\rho\)-topology, and demoted Theorem~\ref{thm:point-id-corner} to a sanity-only point-ID corner; prior verdict: REVISE.
+\item v4 (revise) --- split the nonempty feasible-envelope conjecture from the falsification certificate, replaced circular endpoint derivative cones with observable trace variables, and added the \(\rho\)-open strict-improvement comparison that v5 later retargets to the proposal's own shape-only baseline; prior verdict: REVISE.
+\item v5 (revise) --- corrected the \citet{DCDHK2026NoUntreated} no-QUG comparison, sharpened Conjecture~\ref{conj:closed-form-gap} as an algorithmic regime-opening bound for \(ACR(d_0)\), and added observed-support derivative and endpoint-trace constraints to Conjecture~\ref{conj:falsification}; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Athey and Imbens(2006)]{AtheyImbens2006}
+Athey, Susan, and Guido W. Imbens.
+\newblock Identification and inference in nonlinear difference-in-differences models.
+\newblock \emph{Econometrica}, 74(2):431--497, 2006.
+
+\bibitem[Callaway, Goodman-Bacon, and Sant'Anna(2024)]{CallawayGoodmanBaconSantAnna2024}
+Callaway, Brantly, Andrew Goodman-Bacon, and Pedro H. C. Sant'Anna.
+\newblock Difference-in-differences with a continuous treatment.
+\newblock NBER Working Paper No. 32117, 2024.
+
+\bibitem[D'Haultfoeuille, Hoderlein, and Sasaki(2023)]{DHaultfoeuilleHoderleinSasaki2023}
+D'Haultfoeuille, Xavier, Stefan Hoderlein, and Yuya Sasaki.
+\newblock Nonparametric difference-in-differences in repeated cross-sections with continuous treatments.
+\newblock \emph{Journal of Econometrics}, 234(2):664--690, 2023.
+
+\bibitem[de Chaisemartin, D'Haultfoeuille, Pasquier, Sow, and Vazquez-Bare(2025)]{DCDHPSVB2025ContinuousEveryPeriod}
+de Chaisemartin, Clement, Xavier D'Haultfoeuille, Felix Pasquier, Doulo Sow, and Gonzalo Vazquez-Bare.
+\newblock Difference-in-differences estimators for treatments continuously distributed at every period.
+\newblock arXiv:2201.06898, version 6, 2025.
+
+\bibitem[de Chaisemartin, D'Haultfoeuille, and Vazquez-Bare(2024)]{DCDHVB2024NoStayers}
+de Chaisemartin, Clement, Xavier D'Haultfoeuille, and Gonzalo Vazquez-Bare.
+\newblock Difference-in-differences estimators with continuous treatments and no stayers.
+\newblock arXiv:2402.05432, 2024.
+
+\bibitem[de Chaisemartin, Ciccia, D'Haultfoeuille, and Knau(2026)]{DCDHK2026NoUntreated}
+de Chaisemartin, Clement, Diego Ciccia, Xavier D'Haultfoeuille, and Felix Knau.
+\newblock Difference-in-differences estimators when no unit remains untreated.
+\newblock arXiv:2405.04465, version 6, 2026.
+
+\bibitem[Daniilidis, Haddou, Le Gruyer, and Ley(2018)]{DaniilidisHaddouLeGruyerLey2018}
+Daniilidis, Aris, Mounir Haddou, Erwan Le Gruyer, and Olivier Ley.
+\newblock Explicit formulas for \(C^{1,1}\) Glaeser--Whitney extensions of 1-fields in Hilbert spaces.
+\newblock \emph{Proceedings of the American Mathematical Society}, 146(10):4487--4495, 2018.
+
+\bibitem[Kim, Kwon, Kwon, and Lee(2018)]{KimKwonKwonLee2018}
+Kim, Wooyoung, Koohyun Kwon, Soonwoo Kwon, and Sokbae Lee.
+\newblock The identification power of smoothness assumptions in models with counterfactual outcomes.
+\newblock \emph{Quantitative Economics}, 9(2):617--642, 2018.
+
+\bibitem[Le Gruyer(2009)]{LeGruyer2009}
+Le Gruyer, Erwan.
+\newblock Minimal Lipschitz extensions to differentiable functions defined on a Hilbert space.
+\newblock \emph{Geometric and Functional Analysis}, 19(4):1101--1118, 2009.
+
+\bibitem[Manski(2003)]{Manski2003}
+Manski, Charles F.
+\newblock \emph{Partial Identification of Probability Distributions}.
+\newblock Springer Series in Statistics, Springer, 2003.
+
+\bibitem[McShane(1934)]{McShane1934}
+McShane, Edward J.
+\newblock Extension of range of functions.
+\newblock \emph{Bulletin of the American Mathematical Society}, 40(12):837--842, 1934.
+
+\bibitem[Rambachan and Roth(2023)]{RambachanRoth2023}
+Rambachan, Ashesh, and Jonathan Roth.
+\newblock A more credible approach to parallel trends.
+\newblock \emph{Review of Economic Studies}, 90(5):2555--2591, 2023.
+
+\bibitem[Whitney(1934)]{Whitney1934}
+Whitney, Hassler.
+\newblock Analytic extensions of differentiable functions defined in closed sets.
+\newblock \emph{Transactions of the American Mathematical Society}, 36(1):63--89, 1934.
+
+\bibitem[Wells(1973)]{Wells1973}
+Wells, J. H.
+\newblock Differentiable functions on Banach spaces with Lipschitz derivatives.
+\newblock \emph{Journal of Differential Geometry}, 8(1):135--152, 1973.
+\end{thebibliography}
+
+\end{document}

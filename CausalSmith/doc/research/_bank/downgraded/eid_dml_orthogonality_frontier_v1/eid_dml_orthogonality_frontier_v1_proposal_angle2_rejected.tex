@@ -1,0 +1,818 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_dml\_orthogonality\_frontier, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_dml\_orthogonality\_frontier} / \texttt{v1}%
+  \\ \large\textit{CEINR-admissible LRO normalizations are DML/ADML-equivalent exactly at a primitive full-report Gram frontier}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This proposal uses the ExactID/free-form convention
+\[
+(\texttt{qid},\texttt{specialization},\text{graph/SWIG},\text{treatment},
+\text{target estimand},\text{identifying assumptions}).
+\]
+The locked tuple is
+\[
+\begin{gathered}
+\texttt{qid}=\texttt{eid\_dml\_orthogonality\_frontier},\qquad
+\texttt{specialization}=\texttt{v1},\\
+\text{graph/SWIG}=X\to D\to Y,\; X\to Y,\quad
+\text{treatment }D\in\{0,1\},\\
+\text{target estimand }\theta_0=\E[Y(1)-Y(0)],\\
+\text{identifying assumptions}=\text{consistency, conditional exchangeability }
+(Y(1),Y(0))\perp D\mid X,\\
+\text{overlap }\epsilon\le p_0(X)\le 1-\epsilon,\text{ square-integrability, and}\\
+\text{the CEINR-admissible LRO report restrictions in
+Assumptions \ref{ass:ate-model}--\ref{ass:finite-support}.}
+\end{gathered}
+\]
+The estimator reports compared are the DML AIPW report, the ADML Riesz-score
+report, and ATE-specialized locally robust semiparametric GMM reports generated
+by Chernozhukov--Escanciano--Ichimura--Newey--Robins style first-step
+influence-function dictionaries.  The focal mathematical object is the
+\emph{CEINR full-report Gram certificate}
+\[
+\Xi_J(P)=\big(U_J(P),S_J(P),T_J(P)\big),
+\]
+where \(U_J\) is the nonresidual plug-in defect, \(S_J\) is the
+residual-variance span defect of the LRO dictionary for the ATE Riesz
+representer, and \(T_J\) is the residual-variance normal-equation defect of the
+published GMM aggregation row.  Report equivalence means identical first-order
+influence function and identical first-order variance report, not only
+identical residual loading.
+
+\begin{abstract}
+Double machine learning, locally robust semiparametric GMM, and automatic DML
+can all target the unconfounded binary ATE, but this common target does not make
+every locally robust GMM normalization first-order report-equivalent to the DML
+AIPW or ADML Riesz score.  This pivot asks for a primitive characterization of
+which CEINR-admissible LRO dictionaries, Jacobians, and GMM weights reproduce
+the ATE Riesz representer before collapsing the comparison to the already-known
+canonical-gradient uniqueness theorem.  The flagship conjecture states that an
+ATE-specialized LRO report is DML/ADML-equivalent exactly when its full-report
+Gram certificate \(\Xi_J(P)=(U_J,S_J,T_J)\) vanishes: the aggregated
+nonresidual component must equal \(m_1(X)-m_0(X)-\theta_0\), the dictionary must
+span the ATE Riesz direction in \(L^2(\nu_P)\), and the published
+\((A_J^\transpose W_JA_J)^{-1}A_J^\transpose W_J\) aggregation row must select a
+Riesz coefficient vector.  A second conjecture asks for a relatively open
+CEINR-admissible overidentified finite-support class, with an explicit two-cell
+witness, where the plug-in and span checks hold but alignment fails, producing
+an auditable influence-function and variance-report separation.  Resolving the proposal
+would tell applied users when LRO, DML, and
+ADML standard errors are interchangeable and when the chosen LRO normalization
+must be reported as a different first-order object.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+The unconfounded ATE has a unique efficient influence function in the
+nonparametric model, but modern estimators arrive at that object through
+different constructions.  DML writes the AIPW score directly, ADML learns the
+Riesz representer, and LRO starts from a broad locally robust GMM moment
+dictionary and then aggregates moments through a Jacobian and weight matrix.
+Without a primitive normalization test, it is too easy to say that all three
+reports are equivalent simply because the ATE efficient influence function is
+unique, or to claim non-equivalence from arbitrary loadings that no published
+LRO construction would generate.
+
+\paragraph{The main finding (proposed).}
+Theorem \ref{thm:baseline} records the known ExactID calibration: under
+unconfoundedness the DML AIPW and ADML Riesz population reports share the
+canonical ATE influence function.  Conjecture \ref{conj:gram-frontier} is the
+flagship kernel.  It defines the dictionary Gram matrix \(G_J\), the Riesz
+cross-moment \(c_J\), and the GMM aggregation row
+\(\kappa_J=W_JA_J(A_J^\transpose W_JA_J)^{-1}\), and conjectures that a
+CEINR-admissible LRO report is first-order report-equivalent to DML/ADML if
+and only if
+\[
+U_J=0,\qquad S_J=q_0-c_J^\transpose G_J^+c_J=0,\qquad
+T_J=(G_J\kappa_J-c_J)^\transpose G_J^+(G_J\kappa_J-c_J)=0.
+\]
+Conjecture \ref{conj:witness} then promotes the two-covariate-cell witness to a
+relative-open separation class \(\mathcal O_{\mathrm{sep}}\) of
+CEINR-admissible overidentified dictionaries with cell probabilities,
+nonresidual rows, residual loadings, \(A_J\), and \(W_J\) for which the algebra
+gives \(U_J=S_J=0<T_J\) and \(\Delta_J>0\).  This shows that dictionary richness
+and correct plug-in normalization together do not force the LRO GMM report to
+select the Riesz direction.
+
+\paragraph{What is new.}
+\citet[\S2, eqs.\ (2.2)--(2.3), and \S2, eq.\ (2.8)]{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO} give a
+general locally robust semiparametric GMM construction and its variance-report
+map, while their \S2.3 equations (2.10)--(2.11) anchor the automatic
+first-step influence-function/Riesz estimation problem rather than the GMM
+report row itself.  In parallel,
+\citet[\S3]{ChernozhukovEtAl2018DML} and
+\citet[\S2--\S3]{ChernozhukovNeweySingh2022AutoDML} give DML and ADML routes to
+orthogonal ATE scores.  \citet{Newey1994Econometrica},
+\citet{Hahn1998Econometrica}, and \citet{HiranoImbensRidder2003Econometrica}
+make the canonical ATE efficient influence function a settled baseline.  The
+epsilon-gap is therefore deliberately narrow but not tautological: the proposal
+does not rediscover the ATE EIF and does not define a frontier as
+\(\alpha_J=\alpha_0\); it asks for the primitive three-part certificate
+\(\Xi_J=(U_J,S_J,T_J)\) on CEINR-admissible dictionaries, Jacobians, and weights
+that decides whether the published LRO aggregation row lands on the full
+ADML/DML influence function.  Relative to the general projection and
+influence-function comparators in \citet[\S3--\S4]{Newey1994Econometrica} and
+\citet[\S2--\S4]{IchimuraNewey2022QE}, the added object is the CEINR
+normalization frontier: it separates residual span from the row selected by
+the published GMM weight/Jacobian map and gives an empirical diagnostic target.
+This targets the exact strengthening path left by the failed
+prior CausalSmith \texttt{eid\_dml\_orth\_uniform/v2} angle: replace a residual
+\(L^2\) restatement with necessary-and-sufficient conditions on admissible
+dictionaries, Jacobians, and weights.
+
+\paragraph{How it positions in the literature.}
+The anchor cluster is ExactID.  The causal estimand is point-identified by the
+standard back-door/unconfoundedness formula; the proposal studies first-order
+inference reports after identification rather than a new adjustment criterion.
+Methodologically it sits at the intersection of DML, semiparametric efficiency,
+locally robust GMM, and automatic Riesz debiasing.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the ATE implementation workflow in
+\citet{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO}: the conjecture would
+tell users exactly which ATE-specialized LRO moment dictionaries and weights
+may share a DML/ADML standard error, and which require a distinct report.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should check \(\Xi_J(P)\), or an empirical analogue of it, before
+treating an overidentified LRO ATE report as interchangeable with DML or ADML.
+
+\section{Related work}
+\citet[\S2, eqs.\ (2.2)--(2.3), and \S2, eq.\ (2.8)]{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO} is the primary
+published anchor: it constructs locally robust semiparametric GMM moments and
+standard-error reports from first-step influence-function adjustments.  Its
+\S2.3 equations (2.10)--(2.11) are used here only for the automatic
+alpha/Riesz first-step estimation problem, not as the source of the GMM
+aggregation row; the missing classification is which ATE-specialized
+dictionaries and GMM normalizations reproduce the ATE Riesz report.
+\citet{ChernozhukovEtAl2018DML} is the DML baseline: it
+specifies orthogonal AIPW-type scores and cross-fitting for treatment effects
+under sufficient nuisance-rate conditions.  \citet{ChernozhukovNeweySingh2022AutoDML}
+is the ADML baseline: it obtains debiased machine learning scores by estimating
+Riesz representers for causal and structural functionals.  \citet{ChernozhukovNeweySingh2022Riesz}
+develops regularized Riesz regression for global and local linear functionals,
+which motivates treating the Riesz direction as the object that LRO must match.
+\citet[\S3--\S4]{Hansen1982Econometrica} supplies the overidentified GMM
+aggregation, asymptotic distribution, and over-identifying-restriction
+benchmark; this proposal asks when that aggregation selects the ATE Riesz
+coefficient vector.  \citet{BrunsSmithDukesFellerOgburn2025ABW} characterizes
+augmented balancing weights and AutoDML as linear regression when outcome and
+weighting models are linear in a basis; it is the closest Riesz/AutoDML
+equivalence comparator, but it does not study CEINR locally robust GMM
+dictionaries or the \(A_J,W_J\) aggregation row.  \citet{Newey1994Econometrica} gives the
+pathwise-differentiability and semiparametric efficiency framework that makes
+the canonical gradient a property of the model and parameter, not of an
+estimator label.  \citet{IchimuraNewey2022QE} gives a modern influence-function
+representation for semiparametric estimators with nonparametric first steps,
+which is the closest general influence-function comparator.  \citet{Hahn1998Econometrica}
+derives efficiency bounds for ATE/ATT under propensity-score selection on
+observables; this is part of the settled efficient-influence-function baseline.
+\citet{HiranoImbensRidder2003Econometrica} shows that estimating the propensity
+score can improve ATE efficiency, reinforcing why the exact first-order report
+matters.  \citet{RobinsRotnitzkyZhao1994JASA} is the augmented-IPW ancestor for
+semiparametric regression with missingness/nonresponse, and it supplies the
+historical AIPW lineage behind the binary-treatment score.
+
+In-repo prior art is nonduplicative.  The \texttt{doc/API.md} ExactID catalogue
+section records that \texttt{CausalSmith/ExactID/} is empty at seed time, so
+there is no banked ExactID theorem classifying DML/LRO/ADML ATE reports.  The
+closest prior CausalSmith signal is the failed
+\texttt{eid\_dml\_orth\_uniform/v2} angle whose Stage -0.5 reviewer requested
+``primitive necessary-and-sufficient conditions on CEINR admissible
+dictionaries, Jacobians, and weights'' rather than the residual
+\(\rho=0\) restatement.  This proposal is exactly that pivot: its focal object
+is the primitive full-report Gram certificate \(\Xi_J=(U_J,S_J,T_J)\), not a new ATE
+estimand and not an assumed DML/LRO/ADML variance ordering.
+
+\section{Formal setup}
+Let \(O=(Y,D,X)\sim P\), where \(D\in\{0,1\}\), \(Y\in\R\), and \(X\) lies in
+a measurable covariate space \(\mathcal X\).  Potential outcomes
+\((Y(1),Y(0))\) obey consistency and conditional exchangeability.  Write
+\[
+m_d(x)=\E[Y\mid D=d,X=x],\qquad p_0(x)=\Pr(D=1\mid X=x),
+\qquad \theta_0=\E[m_1(X)-m_0(X)].
+\]
+The binary-ATE Riesz representer and canonical ATE influence function are
+\[
+\alpha_0(D,X)=\frac{D}{p_0(X)}-\frac{1-D}{1-p_0(X)},
+\]
+\[
+\varphi_0(O)=m_1(X)-m_0(X)-\theta_0+\alpha_0(D,X)\{Y-m_D(X)\}.
+\]
+Write
+\[
+\mu_0(X)=m_1(X)-m_0(X)-\theta_0
+\]
+for the nonresidual plug-in component of the canonical influence function.
+Let \(e=Y-m_D(X)\), and define the residual-variance measure \(\nu_P\) on
+\((D,X)\) by
+\[
+\nu_P(B)=\E[\one\{(D,X)\in B\}e^2].
+\]
+Thus equality of residual loadings is understood in the quotient \(L^2(\nu_P)\).
+
+An ATE-specialized LRO report is indexed by
+\[
+J=(\mathcal H_J,a_J,b_J,A_J,W_J),
+\]
+where \(\mathcal H_J\) is a finite CEINR first-step influence-function moment
+dictionary, \(a_J(X)\in\R^{m_J}\) is its centered nonresidual row vector,
+\(b_J(D,X)\in\R^{m_J}\) is its residual-loading vector, \(A_J\in\R^{m_J}\) is
+the scalar-parameter Jacobian vector, and \(W_J\) is a positive-definite GMM
+weight.  The published scalar GMM aggregation column,
+whose transpose is the report row, is
+\[
+\kappa_J=W_JA_J(A_J^\transpose W_JA_J)^{-1}\in\R^{m_J},
+\]
+and the residual loading selected by the LRO report is
+\[
+\alpha_J(D,X)=b_J(D,X)^\transpose\kappa_J.
+\]
+The full first-order LRO report represented by the row is
+\[
+\varphi_J(O)=a_J(X)^\transpose\kappa_J+\alpha_J(D,X)e.
+\]
+Define the dictionary Gram matrix, Riesz cross-moment, and Riesz norm by
+\[
+G_J=\E_\nu[b_Jb_J^\transpose]=\E[b_J(D,X)b_J(D,X)^\transpose e^2],
+\]
+\[
+c_J=\E_\nu[b_J\alpha_0]=\E[b_J(D,X)\alpha_0(D,X)e^2],
+\qquad
+q_0=\E_\nu[\alpha_0^2]=\E[\alpha_0(D,X)^2e^2].
+\]
+Let \(G_J^+\) be the Moore--Penrose inverse.  The three primitive defects are
+\[
+U_J=\E\left[\{a_J(X)^\transpose\kappa_J-\mu_0(X)\}^2\right],
+\]
+\[
+S_J=q_0-c_J^\transpose G_J^+c_J,\qquad
+T_J=(G_J\kappa_J-c_J)^\transpose G_J^+(G_J\kappa_J-c_J),
+\]
+and the focal certificate is \(\Xi_J(P)=(U_J,S_J,T_J)\).  The residual Riesz
+direction is \(r_J=\alpha_0-\alpha_J\), and the report-gap scalars are
+\[
+K_J=\E[r_J(D,X)^2e^2],\qquad
+C_J=\E[\alpha_0(D,X)r_J(D,X)e^2],\qquad
+\Delta_J=|K_J-2C_J|.
+\]
+
+The non-corner finite-support witness class used in Conjecture
+\ref{conj:witness} has two covariate cells \(x_a,x_b\), four treatment cells
+with probability \(1/4\) each, propensity \(p_0(x_a)=p_0(x_b)=1/2\), and
+\(\operatorname{Var}(Y\mid D=d,X=x)=1\) on each cell.  On this class
+\(\alpha_0=2\) when \(D=1\) and \(\alpha_0=-2\) when \(D=0\).  The candidate
+overidentified tuple is
+\[
+a_{J^\dagger}(X)=
+\begin{pmatrix}
+\mu_0(X)\\0
+\end{pmatrix},\qquad
+b_{J^\dagger}(D,X)=
+\begin{pmatrix}
+\alpha_0(D,X)\\ h(X)
+\end{pmatrix},\qquad
+h(x_a)=1,\quad h(x_b)=-1,\qquad
+A_{J^\dagger}=\begin{pmatrix}1/2\\1/2\end{pmatrix},\qquad
+W_{J^\dagger}=I_2.
+\]
+For this concrete tuple,
+\[
+G_{J^\dagger}=\begin{pmatrix}4&0\\0&1\end{pmatrix},\quad
+c_{J^\dagger}=\begin{pmatrix}4\\0\end{pmatrix},\quad
+\kappa_{J^\dagger}=\begin{pmatrix}1\\1\end{pmatrix}.
+\]
+Thus \(S_{J^\dagger}=0\), \(T_{J^\dagger}=1\), \(K_{J^\dagger}=1\),
+\(C_{J^\dagger}=0\), \(U_{J^\dagger}=0\), and \(\Delta_{J^\dagger}=1\) whenever
+the two rows are CEINR-generated by primitive first-step influence-function
+equations.
+
+More generally, the relative-open separation class
+\(\mathcal O_{\mathrm{sep}}(\eta_-,\eta_+)\) consists of two-cell
+finite-support CEINR tuples satisfying, for fixed constants
+\(0<\eta_-<\eta_+<\infty\),
+\[
+a_J(X)=\begin{pmatrix}\mu_0(X)\\0\end{pmatrix},\qquad
+b_J(D,X)=\begin{pmatrix}\alpha_0(D,X)\\h(X)\end{pmatrix},\qquad
+\E_\nu[\alpha_0 h]=0,\qquad
+\eta_-\le \E_\nu[h^2]\le \eta_+,
+\]
+and whose published GMM row is
+\[
+\kappa_J=\begin{pmatrix}1\\t\end{pmatrix},\qquad |t|\ge \eta_-.
+\]
+The topology is relative to the plug-in-correct and span-correct CEINR
+manifold defined by \(a_J^\transpose\kappa_J=\mu_0\) and
+\(\alpha_0\in\operatorname{span}_{L^2(\nu_P)}(b_J)\).  On this class,
+\[
+U_J=0,\qquad S_J=0,\qquad
+T_J=t^2\E_\nu[h^2]\ge \eta_-^3,\qquad
+\Delta_J=t^2\E_\nu[h^2].
+\]
+The displayed \(J^\dagger\) is the normalized element with
+\(\eta_-<1<\eta_+\) and \(t=1\).
+
+\begin{verbatim}
+qid = eid_dml_orthogonality_frontier
+specialization = v1
+graph / SWIG = binary-treatment unconfoundedness SWIG with observed
+  O=(Y,D,X), D in {0,1}, potential outcomes (Y(1),Y(0)), consistency
+  Y=D Y(1)+(1-D)Y(0), and no hidden common cause of D and (Y(1),Y(0))
+  after conditioning on X.
+treatment = D, a binary treatment with propensity p0(X)=Pr(D=1|X).
+target estimand = theta0 = E[Y(1)-Y(0)].
+identifying assumptions = consistency, conditional exchangeability
+  (Y(1),Y(0)) independent of D given X, overlap epsilon <= p0(X) <= 1-epsilon,
+  square-integrability, and finite CEINR-admissible LRO report dictionaries.
+estimator reports compared = DML AIPW report, ADML Riesz-score report, and
+  CEINR-admissible ATE-specialized LRO GMM reports indexed by
+  (H_J,a_J,b_J,A_J,W_J).
+equivalence notion = identical first-order influence function and identical
+  first-order variance report.
+focal object = Xi_J(P)=(U_J(P),S_J(P),T_J(P)), the nonresidual plug-in, span,
+  and GMM-row alignment defects.
+separation class = O_sep(eta_-,eta_+), the relative-open class of two-cell
+  CEINR dictionaries with U_J=S_J=0 and T_J bounded below by eta_-^3.
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Unconfounded binary ATE model]\label{ass:ate-model}
+The observed law is generated by the SWIG in the locked parameters:
+consistency holds, \((Y(1),Y(0))\perp D\mid X\), \(\E[Y^2]<\infty\), and
+\(\theta_0=\E[Y(1)-Y(0)]\).
+\end{assumption}
+
+\begin{assumption}[Overlap]\label{ass:overlap}
+There exists \(\epsilon>0\) such that
+\(\epsilon\le p_0(X)\le1-\epsilon\) almost surely.
+\end{assumption}
+
+\begin{assumption}[Population report comparison]\label{ass:population-report}
+The DML, ADML, and LRO reports are compared at the population nuisances
+\((m_0,m_1,p_0)\) and at the population Riesz representer \(\alpha_0\).  Nuisance
+estimation rates are outside this pivot and are not used to create the
+equivalence frontier.
+\end{assumption}
+
+\begin{assumption}[Nondegenerate residual-variance geometry]\label{ass:nondegenerate}
+The residual-variance Riesz norm is finite and nonzero:
+\[
+0<q_0=\E[\alpha_0(D,X)^2e^2]<\infty.
+\]
+All entries of \(G_J\), \(c_J\), \(U_J\), \(S_J\), \(T_J\), \(K_J\), \(C_J\), and
+\(\Delta_J\) are finite for the LRO dictionary under consideration.
+\end{assumption}
+
+\begin{assumption}[CEINR-admissible ATE-specialized LRO dictionary]\label{ass:ceinr}
+The tuple \(J=(\mathcal H_J,a_J,b_J,A_J,W_J)\) is generated by a finite
+ATE-specialized locally robust semiparametric GMM moment dictionary through the
+following primitive equations.  For each row \(j\le m_J\) there is an
+identifying moment \(g_j(O;\gamma,\theta)\), with
+\(\gamma=(m_0,m_1,p_0)\), and an FSIF row
+\(\phi_j(O;\gamma,b_j)=b_j(D,X)\{Y-\gamma_D(X)\}\) such that the row's
+population first-order contribution decomposes as
+\[
+\zeta_j(O)=a_j(X)+b_j(D,X)e,\qquad \E[a_j(X)]=0,
+\]
+and
+\[
+\E[g_j(O;\gamma_0,\theta_0)]=0,\qquad
+A_{J,j}=-\partial_\theta \E[g_j(O;\gamma_0,\theta)]|_{\theta=\theta_0},
+\]
+and for every square-integrable perturbation
+\(\delta=(\delta_0,\delta_1)\) of the outcome-regression first step,
+\[
+\left.\frac{d}{dt}\E[g_j(O;\gamma_0+t\delta,\theta_0)]\right|_{t=0}
+=\E[b_j(D,X)\delta_D(X)].
+\]
+Consequently
+\(\psi_j(O;\gamma,\theta,b_j)=g_j(O;\gamma,\theta)+\phi_j(O;\gamma,b_j)\)
+has zero first-order derivative in the outcome-regression direction at
+\((\gamma_0,\theta_0)\).  The dictionary also satisfies
+\(a_J\in L^2(P_X)^{m_J}\), \(b_J\in L^2(\nu_P)^{m_J}\),
+\(A_J\in\R^{m_J}\), \(W_J\) symmetric positive definite, and
+\(A_J^\transpose W_JA_J>0\).
+\end{assumption}
+
+\begin{assumption}[Optimal-weight specialization]\label{ass:optimal-weight}
+When the optimal-weight LRO specialization is named,
+\[
+\Omega_J=\E[b_J(D,X)b_J(D,X)^\transpose e^2]
+\]
+is positive definite and \(W_J=\Omega_J^{-1}\).  This is a specialization of
+Assumption \ref{ass:ceinr}, not an additional route to equivalence.
+\end{assumption}
+
+\begin{assumption}[Finite-support witness class]\label{ass:finite-support}
+For the concrete witness conjecture, \(X\) has finite support,
+\(\Pr(D=d,X=x)>0\) on every listed cell, \(\operatorname{Var}(Y\mid D=d,X=x)>0\)
+on every listed cell, and the candidate overidentified dictionary has
+\(m_J\ge2\).  For the relative-open separation class
+\(\mathcal O_{\mathrm{sep}}(\eta_-,\eta_+)\), the constants
+\(0<\eta_-<\eta_+<\infty\) are fixed before the dictionary is chosen and bound
+the second-row residual norm and non-Riesz row coefficient as in Section 6.
+No nonresidual, span, alignment, \(U_J\), \(S_J\), \(T_J\), or \(\Delta_J\)
+condition is assumed outside the displayed definition of
+\(\mathcal O_{\mathrm{sep}}\); those quantities must be computed from
+\(a_J,G_J,c_J,A_J,W_J\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: common ATE report baseline]\label{thm:baseline}
+Under Assumptions \ref{ass:ate-model}--\ref{ass:population-report}, the DML AIPW
+population report and the ADML population Riesz-score report have the same
+first-order influence function \(\varphi_0\) and the same variance report
+\(\E[\varphi_0^2]\).
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This is not claimed as novel; it is the calibration supplied by
+\citet{Hahn1998Econometrica}, \citet{HiranoImbensRidder2003Econometrica},
+\citet{ChernozhukovEtAl2018DML}, and \citet{ChernozhukovNeweySingh2022AutoDML}.
+(b) The concrete consumer is Conjecture \ref{conj:gram-frontier}: it fixes the
+single canonical report that LRO normalizations must match, avoiding the
+failed prior-proposal mistake of attributing the EIF to estimator labels.
+
+\begin{conjecture}[Conjecture 1: CEINR full-report Gram frontier (NOT YET PROVED)]\label{conj:gram-frontier}
+Under Assumptions \ref{ass:ate-model}--\ref{ass:ceinr}, an
+ATE-specialized CEINR-admissible LRO report indexed by
+\(J=(\mathcal H_J,a_J,b_J,A_J,W_J)\) is first-order report-equivalent to the DML AIPW
+and ADML Riesz reports if and only if its full-report Gram certificate vanishes:
+\[
+\Xi_J(P)=(U_J(P),S_J(P),T_J(P))=(0,0,0).
+\]
+Equivalently, the LRO aggregation row must select the canonical nonresidual
+component \(a_J^\transpose\kappa_J=\mu_0\) in \(L^2(P_X)\), the LRO dictionary
+must span the ATE Riesz representer in \(L^2(\nu_P)\), and the published GMM
+aggregation row
+\(\kappa_J^\transpose=(A_J^\transpose W_JA_J)^{-1}A_J^\transpose W_J\) must
+satisfy the primitive normal equation \(G_J\kappa_J=c_J\).  Under Assumption
+\ref{ass:optimal-weight}, the same statement specializes to \(W_J=G_J^{-1}\),
+so the optimal-weight LRO report is DML/ADML-equivalent exactly when
+\[
+U_J=0,\qquad
+G_JG_J^{-1}A_J(A_J^\transpose G_J^{-1}A_J)^{-1}=c_J
+\quad\text{and}\quad S_J=0.
+\]
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest published result is
+\citet[\S2, eqs.\ (2.2)--(2.3), and \S2, eq.\ (2.8)]{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO}, which gives
+the locally robust GMM construction, FSIF cancellation, and variance-report
+aggregation map.  Its \S2.3 equations (2.10)--(2.11) supply the adjacent
+automatic alpha/Riesz first-step equations, not the report aggregation formula.
+The paper does not give the ATE-specific equivalence classification against
+the DML/ADML Riesz score.  \citet[\S3--\S4]{Newey1994Econometrica} and
+\citet[\S2--\S4]{IchimuraNewey2022QE} give the general semiparametric
+projection and influence-function maps that make coefficient-space projection
+routine, but they do not identify the ATE-specialized CEINR defect triple
+\((U_J,S_J,T_J)\) or classify when the published LRO row
+\((A_J^\transpose W_JA_J)^{-1}A_J^\transpose W_J\) selects the Riesz report.
+The closest AutoDML equivalence comparator,
+\citet[\S2--\S3]{BrunsSmithDukesFellerOgburn2025ABW}, collapses augmented
+balancing weights to linear regression under linear outcome and weighting
+models; it does not classify CEINR GMM dictionaries by the Jacobian/weight row
+\(A_J,W_J\).  The closest prior CausalSmith proposal reduced equivalence to the
+residual distance \(\|\alpha_J-\alpha_0\|_{L^2(\nu_P)}=0\); this conjecture
+replaces that tautological check with the primitive nonresidual, dictionary-span
+and GMM-row alignment defects \(U_J,S_J,T_J\), computable from
+\(a_J,G_J,c_J,A_J,W_J\) before naming \(\varphi_J=\varphi_0\).  (b) The
+concrete consumer is the LRO
+implementation class of
+\citet{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO}: resolving the
+conjecture would give an auditable normalization diagnostic for deciding when
+LRO standard errors may be reused as DML/ADML standard errors, a classification
+not stated in the CEINR construction formulas or in the general
+Newey--Ichimura influence-function representation.
+
+\begin{conjecture}[Conjecture 2: relative-open overidentified separation class (NOT YET PROVED)]\label{conj:witness}
+There exists a nonempty relative-open class
+\(\mathcal O_{\mathrm{sep}}(\eta_-,\eta_+)\) of CEINR-admissible two-cell
+finite-support ATE moment dictionaries satisfying Assumptions
+\ref{ass:ate-model}--\ref{ass:finite-support} and containing the displayed
+tuple \(J^\dagger\).  For every
+\(J\in\mathcal O_{\mathrm{sep}}(\eta_-,\eta_+)\),
+\[
+U_J(P)=0,\qquad S_J(P)=0,\qquad T_J(P)\ge \eta_-^3>0,\qquad
+\Delta_J(P)\ge \eta_-^3.
+\]
+The normalized witness \(J^\dagger\) has
+\[
+U_{J^\dagger}(P)=0,\qquad S_{J^\dagger}(P)=0,\qquad T_{J^\dagger}(P)=1,\qquad
+\Delta_{J^\dagger}(P)=1.
+\]
+Thus there is a generic CEINR-admissible region, not only a hand-tuned tuple,
+where the dictionary has the correct nonresidual ATE component and enough
+first-step influence-function information to span the ATE Riesz direction, but
+the published LRO Jacobian/weight aggregation selects a different residual
+loading and yields a strictly different first-order report.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet[\S3--\S4]{Hansen1982Econometrica} justifies overidentified GMM
+aggregation and tests of over-identifying restrictions, while
+\citet[\S2, eqs.\ (2.2)--(2.3), and \S2, eq.\ (2.8)]{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO}
+supplies the locally robust GMM moment construction and variance-report
+aggregation map, with \S2.3 equations (2.10)--(2.11) used only as the automatic
+alpha/Riesz first-step anchor.  Neither supplies a
+relative-open ATE class where plug-in correctness and Riesz span hold but
+GMM-row alignment fails.  The prior
+\texttt{eid\_dml\_orth\_uniform/v2} reviewer specifically asked for a named
+nontrivial CEINR-admissible overidentified dictionary class where fixed LRO
+weighting fails or succeeds; this is that open separation region.  (b) The concrete
+consumer is any empirical ATE analysis using overidentified LRO moments: the
+class would show that adding valid locally robust rows can change the
+first-order report unless \(\Xi_J=0\) is checked, and that the failure is stable
+to perturbations within the plug-in/span-correct CEINR manifold.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Just-identified Riesz reduction]\label{cor:riesz-reduction}
+Under Assumptions \ref{ass:ate-model}--\ref{ass:nondegenerate}, take the
+just-identified Riesz normalization \(m_J=1\),
+\(a_J(X)=\mu_0(X)\), \(b_J(D,X)=\alpha_0(D,X)\), \(A_J=1\), and \(W_J=1\).
+Then \(G_J=q_0\), \(c_J=q_0\), \(\kappa_J=1\), and hence
+\(U_J=S_J=T_J=0\).  Conjecture \ref{conj:gram-frontier} therefore reduces to
+the known DML/ADML EIF baseline in Theorem \ref{thm:baseline}.
+\end{corollary}
+
+\begin{corollary}[Span is not enough]\label{cor:span-not-enough}
+Under Assumptions \ref{ass:ate-model}--\ref{ass:finite-support}, the concrete
+two-cell tuple in Section 6 has
+\[
+G_{J^\dagger}=\begin{pmatrix}4&0\\0&1\end{pmatrix},\quad
+c_{J^\dagger}=\begin{pmatrix}4\\0\end{pmatrix},\quad
+\kappa_{J^\dagger}=\begin{pmatrix}1\\1\end{pmatrix}.
+\]
+Therefore \(S_{J^\dagger}=0\) but
+\(G_{J^\dagger}\kappa_{J^\dagger}\ne c_{J^\dagger}\), so span alone is not the
+same as the LRO aggregation row selecting the Riesz representer.  Since
+\(a_{J^\dagger}^\transpose\kappa_{J^\dagger}=\mu_0\), this is not a hidden
+nonresidual-normalization failure.  The remaining open part of Conjecture
+\ref{conj:witness} is CEINR generation, not this linear-algebra calculation.
+\end{corollary}
+
+\begin{corollary}[Relative-open separation algebra]\label{cor:open-separation}
+Under Assumptions \ref{ass:ate-model}--\ref{ass:finite-support}, any tuple in
+\(\mathcal O_{\mathrm{sep}}(\eta_-,\eta_+)\) has
+\[
+U_J=S_J=0,\qquad T_J=t^2\E_\nu[h^2]\ge \eta_-^3,\qquad
+\Delta_J=t^2\E_\nu[h^2]\ge \eta_-^3.
+\]
+Thus the open-class claim in Conjecture \ref{conj:witness} reduces to the
+CEINR-admissibility construction for \(\mathcal O_{\mathrm{sep}}\), not to an
+unverified continuity assertion.
+\end{corollary}
+
+\begin{lemma}[Singular-Gram certificate algebra]\label{lem:singular-gram}
+Under Assumptions \ref{ass:ate-model}--\ref{ass:nondegenerate} and
+\ref{ass:ceinr}, suppose \(S_J=0\).  Then \(c_J\in\operatorname{Range}(G_J)\),
+and for every published LRO row \(\kappa_J\),
+\[
+T_J=(G_J\kappa_J-c_J)^\transpose G_J^+(G_J\kappa_J-c_J)=0
+\quad\Longleftrightarrow\quad
+G_J\kappa_J=c_J,
+\]
+even when \(G_J\) is singular.  Consequently
+\[
+U_J=S_J=T_J=0
+\quad\Longleftrightarrow\quad
+\varphi_J=\varphi_0\text{ in }L^2(P)
+\]
+provided the CEINR row \(a_J^\transpose\kappa_J\) and residual loading
+\(b_J^\transpose\kappa_J\) generate the report in Section 6.
+\end{lemma}
+\paragraph{Reduction check.}
+The key algebra is independent of nonsingularity: \(G_J\) is positive
+semidefinite, \(G_J\kappa_J\in\operatorname{Range}(G_J)\), and
+\(S_J=0\) is the projection identity placing \(c_J\) in the same range.  The
+quadratic form \(v^\transpose G_J^+v\) is positive definite on
+\(\operatorname{Range}(G_J)\), so \(T_J=0\) forces
+\(v=G_J\kappa_J-c_J=0\).  Combining this row-alignment identity with
+\(U_J=0\) and \(S_J=0\) gives equality of the nonresidual part and the
+residual \(L^2(\nu_P)\) loading, hence equality of first-order reports.
+
+\section{Proof-sketch route}
+The mathematical route is finite-dimensional Hilbert-space and
+semiparametric-GMM algebra.  First, use the standard back-door/AIPW identity to
+calibrate the DML and ADML reports to \(\varphi_0\).  Second, view the residual
+part of any finite LRO dictionary as a linear map
+\(\gamma\mapsto b_J^\transpose\gamma\) from \(\R^{m_J}\) into \(L^2(\nu_P)\).
+The identity \(U_J=0\) is the nonresidual check that the same row selects
+\(\mu_0(X)\); \(S_J=0\) is the projection residual formula for whether
+\(\alpha_0\) lies in the closed span of the residual dictionary; and \(T_J=0\)
+is the normal-equation check that the published GMM row
+\(\kappa_J^\transpose\) chooses a Riesz coefficient vector; Lemma
+\ref{lem:singular-gram} is the explicit singular-Gram step showing why
+\(S_J=0\) and \(T_J=0\) imply \(G_J\kappa_J=c_J\) without assuming \(G_J\) is
+invertible.  For Conjecture
+\ref{conj:witness}, plug the four cell probabilities, \(a_{J^\dagger}\),
+\(b_{J^\dagger}\), \(A_{J^\dagger}\), and
+\(W_{J^\dagger}\) from Section 6 into the definitions to get
+\(G=\operatorname{diag}(4,1)\), \(c=(4,0)^\transpose\), \(\kappa=(1,1)^\transpose\),
+\(U=0\), \(S=0\), \(T=1\), and \(\Delta=1\).  For the relative-open class
+\(\mathcal O_{\mathrm{sep}}(\eta_-,\eta_+)\), the same computation gives
+\(U=S=0\) and \(T=\Delta=t^2\E_\nu[h^2]\ge\eta_-^3\) because the first
+dictionary row is exactly \(\alpha_0\) and the second row is \(\nu_P\)-orthogonal
+to it.  The only non-algebraic step is to construct
+identifying moments \(g_1,g_2\) whose Gateaux derivatives satisfy the primitive
+CEINR equations in Assumption \ref{ass:ceinr}; one route is to take row one as
+the usual ATE moment and row two as a centered covariate-contrast linear
+functional with \(\E[g_2(O;\gamma_0,\theta_0)]=0\),
+\(-\partial_\theta\E[g_2(O;\gamma_0,\theta)]|_{\theta_0}=1/2\), and
+Gateaux derivative
+\(\left.d\E[g_2(O;\gamma_0+t\delta,\theta_0)]/dt\right|_{0}
+=\E[h(X)\delta_D(X)]\).  Its FSIF is then \(h(X)\{Y-m_D(X)\}\), and the
+displayed derivative equality can be checked cell by cell.
+
+\section{Honest scope flags}
+Theorem \ref{thm:baseline} is a calibration theorem from standard
+semiparametric ATE theory.  Conjectures \ref{conj:gram-frontier} and
+\ref{conj:witness} are not proved.  The open technical step is the CEINR
+admissibility half: it must be shown that the dictionary/Jacobian/weight tuples
+covered by \(\Xi_J\) are exactly those generated by the primitive
+first-step influence-function equations in Assumption \ref{ass:ceinr}, including
+the nonresidual row \(a_J\), and that the displayed relative-open
+\(\mathcal O_{\mathrm{sep}}\) rows are generated by actual identifying moments
+rather than arbitrary residual loadings.
+This v5 revision corrects the LRO location-level anchors: CEINR equations
+(2.10)--(2.11) are treated as automatic alpha/Riesz first-step equations, while
+the locally robust moment construction and variance-report aggregation are
+anchored to the paper's earlier GMM equations.  It also adds Lemma
+\ref{lem:singular-gram} so the Gram-certificate implication
+\(S_J=T_J=0\Rightarrow G_J\kappa_J=c_J\) is explicit even when \(G_J\) is
+singular.
+This v4 revision strengthens the witness from one tuple to a relative-open
+plug-in/span-correct separation class and adds the Newey--Ichimura
+projection/influence-function comparator chain to make clear why \(\Xi_J\) is
+more than routine projection algebra.  No high-level Holder/entropy DML
+frontier assumptions are retained as theorem premises in this angle; the
+earlier smoothness-frontier kernel is withdrawn rather than demoted to a
+conditional theorem.
+This v3 revision patches the prior full-influence-function gap by adding the
+nonresidual defect \(U_J\); the residual Gram defects \(S_J,T_J\) alone are no
+longer claimed to decide full report equivalence.  This v2 revision withdraws the
+circular finite-support assumption \(S_J=0<T_J\) and replaces it with explicit
+cell probabilities, loadings, \(A_J\), \(W_J\), and computed
+\((S_J,T_J,\Delta_J)\).  This pivot deliberately withdraws the earlier
+DML/LRO/ADML spectral studentization frontier and the earlier residual-\(\rho=0\)
+equivalence statement as flagship kernels; those are treated as prior failed
+angles.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial angle-2 draft around the CEINR Gram-alignment
+certificate \(\Xi_J=(S_J,T_J)\) and a finite-support overidentified witness;
+prior verdict: none.
+\item v2 (revise) -- pinned CEINR admissibility to primitive FSIF derivative
+equations, added Bruns-Smith--Dukes--Feller--Ogburn as the closest
+Riesz/AutoDML equivalence comparator, corrected the AutoDML bibliography, and
+replaced the circular witness assumption with an explicit two-cell table and
+computed \(S_J,T_J,\Delta_J\); prior verdict: REVISE.
+\item v3 (revise) -- added the nonresidual defect \(U_J\) to the certificate so
+\(\Xi_J\) decides full influence-function equivalence, gave the two-cell
+witness \(U_J=0\), made the \(g_2\) CEINR route explicit, and corrected the
+Bruns-Smith--Dukes--Feller--Ogburn JRSSB metadata; prior verdict: REVISE.
+\item v4 (revise) -- added location-level Newey--Ichimura comparator
+positioning, promoted the witness to the relative-open
+\(\mathcal O_{\mathrm{sep}}(\eta_-,\eta_+)\) separation class, and recorded that
+the earlier Holder/entropy frontier was withdrawn rather than assumed; prior
+verdict: REVISE.
+\item v5 (revise) -- corrected the LRO comparator anchors by separating
+CEINR's locally robust GMM moment/report equations from its automatic
+alpha/Riesz equations, and added the singular-Gram certificate lemma; prior
+verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Bruns-Smith et~al.(2025)]{BrunsSmithDukesFellerOgburn2025ABW}
+Bruns-Smith, D., O. Dukes, A. Feller, and E. L. Ogburn (2025).
+\newblock Augmented balancing weights as linear regression.
+\newblock \emph{Journal of the Royal Statistical Society: Series B}.
+\newblock Published 24 April 2025, doi:10.1093/jrsssb/qkaf019;
+arXiv:2304.14545.
+
+\bibitem[Chernozhukov et~al.(2018)]{ChernozhukovEtAl2018DML}
+Chernozhukov, V., D. Chetverikov, M. Demirer, E. Duflo, C. Hansen,
+W. Newey, and J. Robins (2018).
+\newblock Double/debiased machine learning for treatment and structural
+parameters.
+\newblock \emph{The Econometrics Journal} 21(1), C1--C68.
+
+\bibitem[Chernozhukov et~al.(2022a)]{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO}
+Chernozhukov, V., J. C. Escanciano, H. Ichimura, W. K. Newey, and J. M. Robins
+(2022).
+\newblock Locally robust semiparametric estimation.
+\newblock \emph{Econometrica} 90(4), 1501--1535.
+
+\bibitem[Chernozhukov et~al.(2022b)]{ChernozhukovNeweySingh2022AutoDML}
+Chernozhukov, V., W. K. Newey, and R. Singh (2022).
+\newblock Automatic debiased machine learning of causal and structural effects.
+\newblock \emph{Econometrica} 90(3), 967--1027.
+
+\bibitem[Chernozhukov et~al.(2022c)]{ChernozhukovNeweySingh2022Riesz}
+Chernozhukov, V., W. K. Newey, and R. Singh (2022).
+\newblock Debiased machine learning of global and local parameters using
+regularized Riesz representers.
+\newblock \emph{The Econometrics Journal} 25(3), 576--601.
+
+\bibitem[Hahn(1998)]{Hahn1998Econometrica}
+Hahn, J. (1998).
+\newblock On the role of the propensity score in efficient semiparametric
+estimation of average treatment effects.
+\newblock \emph{Econometrica} 66(2), 315--331.
+
+\bibitem[Hansen(1982)]{Hansen1982Econometrica}
+Hansen, L. P. (1982).
+\newblock Large sample properties of generalized method of moments estimators.
+\newblock \emph{Econometrica} 50(4), 1029--1054.
+
+\bibitem[Hirano et~al.(2003)]{HiranoImbensRidder2003Econometrica}
+Hirano, K., G. W. Imbens, and G. Ridder (2003).
+\newblock Efficient estimation of average treatment effects using the estimated
+propensity score.
+\newblock \emph{Econometrica} 71(4), 1161--1189.
+
+\bibitem[Ichimura and Newey(2022)]{IchimuraNewey2022QE}
+Ichimura, H. and W. K. Newey (2022).
+\newblock The influence function of semiparametric estimators.
+\newblock \emph{Quantitative Economics} 13(1), 29--61.
+
+\bibitem[Newey(1994)]{Newey1994Econometrica}
+Newey, W. K. (1994).
+\newblock The asymptotic variance of semiparametric estimators.
+\newblock \emph{Econometrica} 62(6), 1349--1382.
+
+\bibitem[Robins et~al.(1994)]{RobinsRotnitzkyZhao1994JASA}
+Robins, J. M., A. Rotnitzky, and L. P. Zhao (1994).
+\newblock Estimation of regression coefficients when some regressors are not
+always observed.
+\newblock \emph{Journal of the American Statistical Association} 89(427),
+846--866.
+\end{thebibliography}
+
+\end{document}

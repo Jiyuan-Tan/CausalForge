@@ -1,0 +1,317 @@
+\section{Setup and assumptions}
+
+We work with a finite-alphabet observational model. A single observation is
+\(\leanref{sym:O_i}{$O_i$}=(\leanref{sym:X}{$X$},\leanref{sym:A}{$A$},\leanref{sym:Y}{$Y$})\), where \(X\in\{1,\ldots,\leanref{sym:d}{$d$}\}\) is a discrete covariate, \(A\in\{0,1\}\) is treatment, and \(Y\in\{0,1\}\) is the observed outcome. The \leanref{S-1}{finite-alphabet i.i.d. observational world} is deliberately nonparametric in the distribution of \(X\): the cell probabilities may be arbitrary subject only to normalization and the overlap restriction introduced below.
+
+\begin{definitionv}{def:finite-alphabet-probability-laws}[Finite-alphabet probability laws \(\mathsf{Prob}\)]
+We say \(P\in\mathsf{Prob}(\{1,\ldots,d\}\times\{0,1\}^2)\) when \(P\) is a probability measure on the finite observation alphabet \(\{1,\ldots,d\}\times\{0,1\}\times\{0,\ldots,1\}\), equivalently a nonnegative mass assignment to each cell \((k,a,y)\) whose total mass over all \(k\in\{1,\ldots,d\}\), \(a\in\{0,1\}\), and \(y\in\{0,1\}\) is one.
+\end{definitionv}
+
+For \(P\) as in \cref{obj:def:finite-alphabet-probability-laws}, write \leanref{sym:q_{aky}}{$q_{aky}$} for \(P(X=k,A=a,Y=y)\), \leanref{sym:p_k}{$p_k$} for \(P(X=k)\), \leanref{sym:pi_k}{$\pi_k$} for \(P(A=1\mid X=k)\) when \(p_k>0\), and \leanref{sym:mu_{ak}}{$\mu_{ak}$} for \(E_P[Y\mid A=a,X=k]\) when the conditioning event has positive probability. We also write \leanref{sym:q_k}{$q_k$} for the four-vector \((q_{k00},q_{k01},q_{k10},q_{k11})\), ordered by treatment and outcome. The sample size \leanref{sym:n}{$n$} is fixed throughout the experiment.
+
+\begin{assumptionv}{ass:iid-sampling}[Iid sampling]
+The observations \(O_1,\ldots,O_n\) are independent and identically distributed with single-observation law \(P\).
+\end{assumptionv}
+
+\cref{obj:ass:iid-sampling} is the standard independent and identically distributed sampling condition; it isolates the difficulty of unrestricted discrete confounding from dependence or sampling-design complications \citep{ZengBalakrishnanHanKennedy2024}.
+
+Treatment assignment is summarized category by category.
+
+\begin{definitionv}{def:bernoulli-law}[Bernoulli law \(\mathsf{Bernoulli}(\pi_k)\)]
+We say \(A\mid X=k\sim\mathsf{Bernoulli}(\pi_k)\) when \(A\in\{0,1\}\) and, conditional on \(X=k\), \(P(A=1\mid X=k)=\pi_k\) and \(P(A=0\mid X=k)=1-\pi_k\).
+\end{definitionv}
+
+\begin{assumptionv}{ass:overlap}[Uniform overlap]
+For every \(k\) with \(p_k>0\),
+\[
+\epsilon\le \pi_k\le 1-\epsilon .
+\]
+\end{assumptionv}
+
+\cref{obj:ass:overlap} is the standard strong overlap condition, requiring every observed covariate category to retain treatment and control observations with probability bounded away from zero \citep{ZengBalakrishnanHanKennedy2024}. The constant \leanref{sym:epsilon}{$\epsilon$} may affect constants in the fixed-interior theory, while the estimator defined below uses the same formula across overlap classes.
+
+For causal interpretation, we use the usual potential-outcome overlay only where needed.
+
+\begin{assumptionv}{ass:consistency}[Consistency]
+The observed outcome satisfies
+\[
+Y=Y(A)
+\]
+almost surely.
+\end{assumptionv}
+
+\cref{obj:ass:consistency} is the standard consistency condition, linking the realized observed outcome to the potential outcome under the assigned treatment \citep{ZengBalakrishnanHanKennedy2024}. The potential outcomes \leanref{sym:Y(a)}{$Y(a)$} are binary in the present model.
+
+\begin{assumptionv}{ass:conditional-exchangeability}[Conditional exchangeability]
+The binary potential outcomes satisfy
+\[
+(Y(0),Y(1))\perp A\mid X .
+\]
+\end{assumptionv}
+
+\cref{obj:ass:conditional-exchangeability} is the standard conditional exchangeability condition, under which comparisons within a covariate category identify the category-specific causal contrast \citep{ZengBalakrishnanHanKennedy2024}. Together with \cref{obj:ass:consistency} and~\cref{obj:ass:overlap}, it gives the observational ATE functional its causal interpretation.
+
+The statistical problem is indexed by all finite-alphabet laws obeying these restrictions.
+
+\begin{definitionv}{def:experiment-class}[Experiment class \(\mathcal E_{n,d,\epsilon}\)]
+Under \cref{obj:ass:iid-sampling} and \cref{obj:ass:overlap}, the experiment class is
+\[
+\mathcal E_{n,d,\epsilon}
+:=
+\{P^{\otimes n}: P\in\mathsf{Prob}(\{1,\ldots,d\}\times\{0,1\}^2),\ n,d\in\mathbb N,\ 0<\epsilon\le 1/2,\ P\text{ satisfies \cref{obj:ass:overlap}}\}.
+\]
+\end{definitionv}
+
+The class \leanref{sym:\mathcal E_{n,d,\epsilon}}{$\mathcal E_{n,d,\epsilon}$} in \cref{obj:def:experiment-class} allows the covariate marginal to vary freely over the \(d\) categories. Thus sparsity of categories is part of the estimation problem rather than a regularity condition imposed away.
+
+It is convenient to express each covariate category through its four observed cell masses.
+
+\begin{definitionv}{def:overlap-cone}[Overlap cone \(\mathcal C_\epsilon\)]
+The overlap-restricted cone of nonnegative four-cell vectors is
+\[
+\mathcal C_\epsilon
+:=
+\{u=(u_{00},u_{01},u_{10},u_{11})\in\mathbb R_+^4:
+\epsilon(u_{00}+u_{01}+u_{10}+u_{11})
+\le u_{10}+u_{11}
+\le (1-\epsilon)(u_{00}+u_{01}+u_{10}+u_{11})\}.
+\]
+\end{definitionv}
+
+\cref{obj:def:overlap-cone} records overlap as a constraint on a nonnegative four-cell vector \leanref{sym:\mathcal C_\epsilon}{$\mathcal C_\epsilon$}. The cone formulation keeps the category mass and the treatment split in the same object, which is useful when categories have small or vanishing probability.
+
+\begin{definitionv}{def:cell-functional}[Cell functional \(\phi(u)\)]
+For \(u=(u_{00},u_{01},u_{10},u_{11})\in\mathcal C_\epsilon\), with \(\mathcal C_\epsilon\) as in \cref{obj:def:overlap-cone}, define
+\[
+\phi(u)
+=
+(u_{00}+u_{01}+u_{10}+u_{11})
+\left\{
+\frac{u_{11}}{u_{10}+u_{11}}
+-
+\frac{u_{01}}{u_{00}+u_{01}}
+\right\}
+\]
+when \(u\neq 0\), and set \(\phi(0,0,0,0)=0\).
+\end{definitionv}
+
+The homogeneous contribution \leanref{sym:\phi}{$\phi$} in \cref{obj:def:cell-functional} is the category mass multiplied by the treated-minus-control conditional mean contrast. Its homogeneity is the source of the nonsmooth behavior at small cell masses.
+
+\begin{definitionv}{def:ate-functional}[ATE functional \(\tau(P)\)]
+The average treatment effect functional is
+\[
+\tau(P)
+=
+\sum_{k=1}^{d}p_k(\mu_{1k}-\mu_{0k})
+=
+\sum_{k=1}^{d}\phi(q_k).
+\]
+\end{definitionv}
+
+The estimand \leanref{sym:\tau(P)}{$\tau(P)$} in \cref{obj:def:ate-functional} is therefore both the usual covariate-adjusted ATE and a sum of four-cell contributions. This second representation is the one used by the estimator and by the minimax analysis.
+
+The estimator separates categories using a deterministic half-sample split.
+
+\begin{definitionv}{def:balanced-sample-split}[Balanced sample split $I_j$]
+For $j\in\{0,1\}$, the balanced deterministic half-sample index set $I_j\subseteq\{1,\ldots,n\}$ is $I_j=\{i\in\{1,\ldots,n\}: i\le \lfloor n/2\rfloor\}$ when $j=0$, and $I_j=\{i\in\{1,\ldots,n\}: \lfloor n/2\rfloor<i\le n\}$ when $j=1$.
+\end{definitionv}
+
+\begin{definitionv}{def:split-cell-counts}[Split cell counts $N^{(0)}_{aky}$ and $N^{(1)}_{aky}$]
+For $j\in\{0,1\}$, $k\in\{1,\ldots,d\}$, and $a,y\in\{0,1\}$, the split cell count $N^{(j)}_{aky}$ is the number of observations in the deterministic split $I_j$ with covariate value $k$, treatment value $a$, and outcome value $y$: \[N^{(j)}_{aky}:=\sum_{i\in I_j}\mathbf 1\{X_i=k,\ A_i=a,\ Y_i=y\}.\]
+\end{definitionv}
+
+The first split is used only to classify categories as empirically heavy or light, while the second split estimates their contributions. The count notation \leanref{sym:N^{(j)}_{aky}}{$N^{(j)}_{aky}$} in \cref{obj:def:split-cell-counts} will also be used to form factorial moments; for a nonnegative integer \(z\) and order \(r\), the falling factorial \leanref{sym:z_r}{$(z)_r$} is defined next.
+
+\begin{definitionv}{def:chebyshev-polynomial}[Chebyshev Polynomial $T_M$]
+We write $T_M$ for the degree-$M$ Chebyshev polynomial of the first kind on $\mathbb R$, characterized by $T_0(x)=1$, $T_1(x)=x$, and $T_{M+2}(x)=2xT_{M+1}(x)-T_M(x)$ for all $M\ge0$ and $x\in\mathbb R$.
+\end{definitionv}
+
+\begin{definitionv}{def:falling-factorial}[Falling factorial \((x)_r\)]
+For \(x,r\in\mathbb N_0\), we write \((x)_r\) for the falling factorial of \(x\) of order \(r\), defined by \((x)_r=\prod_{\ell=0}^{r-1}(x-\ell)\), with the empty product convention \((x)_0=1\); hence \((x)_r=0\) when \(r>x\).
+\end{definitionv}
+
+The Chebyshev polynomial in \cref{obj:def:chebyshev-polynomial} supplies the light-cell approximation, and \cref{obj:def:falling-factorial} supplies the unbiased factorial-moment representation for its polynomial terms. For the multi-index notation below, \leanref{sym:r=(r_{ay})_{a,y\in\{0,1\}}}{$r=(r_{ay})_{a,y\in\{0,1\}}$} ranges over four nonnegative integer coordinates.
+
+\begin{definitionv}{def:hybrid-estimator-handle}[Hybrid estimator \(\widehat\tau_n^{\mathrm{hyb}}\)]
+For a sample \(O_1,\ldots,O_n\) with \(O_i=(X_i,A_i,Y_i)\in\{1,\ldots,d\}\times\{0,1\}\times\{0,1\}\), set
+\[
+I_0=\{1,\ldots,\lfloor n/2\rfloor\},\qquad
+I_1=\{\lfloor n/2\rfloor+1,\ldots,n\},\qquad
+m_j=|I_j|,\qquad
+L=\log(en).
+\]
+Let \(A=6\), and set
+\[
+\lambda_0=256,\qquad
+b_0=4096,\qquad
+D_A=8\log(9A/8)=8\log(27/4),
+\]
+and
+\[
+\alpha_0
+=
+\min\left\{
+1,\frac1{32\log A},\frac1{256D_A}
+\right\}.
+\]
+For \(n\ge2\), define
+\[
+M(n)=\max\{2,\lfloor\alpha_0L\rfloor\},
+\qquad
+B(n)=b_0L/m_1.
+\]
+Let \(N_0\) be the least numerical cutoff such that, for every \(n\ge N_0\),
+\[
+\alpha_0L\ge2,\qquad
+4M(n)^2\le m_1,\qquad
+4M(n)/m_1\le 3B(n)/4.
+\]
+For \(n\ge N_0\), write \(M=M(n)\) and \(B=B(n)\), and define the pilot-certified heavy and light category sets by
+\[
+\widehat{\mathcal H}_n
+=
+\left\{
+k:\sum_{a,y}N^{(0)}_{aky}>\lambda_0L
+\right\},
+\qquad
+\widehat{\mathcal L}_n=\widehat{\mathcal H}_n^c.
+\]
+For the second split, put
+\[
+N_k^{(1)}=\sum_{a,y}N^{(1)}_{aky},
+\qquad
+N_{ak}^{(1)}=\sum_yN^{(1)}_{aky},
+\]
+and define the heavy-category ratio contribution
+\[
+\widehat h_k
+=
+\frac{N_k^{(1)}}{m_1}
+\left\{
+\frac{N^{(1)}_{1k1}}{N^{(1)}_{1k}}\mathbf1\{N^{(1)}_{1k}>0\}
+-
+\frac{N^{(1)}_{0k1}}{N^{(1)}_{0k}}\mathbf1\{N^{(1)}_{0k}>0\}
+\right\}.
+\]
+Let
+\[
+H_M(x)=\frac{1-T_M(1-2x)}{2M^2},
+\qquad
+E_M(x)=\frac{H_M(x)}{x},
+\qquad
+G_M(x)=\frac{1-E_M(x)}{x},
+\]
+where \(E_M\) and \(G_M\) are interpreted by polynomial continuation at zero. For \(u=(u_{00},u_{01},u_{10},u_{11})\), set
+\[
+s_a(u)=u_{a0}+u_{a1},\qquad
+s(u)=s_0(u)+s_1(u),\qquad
+t_1(u)=u_{11},\qquad
+t_0(u)=u_{01}.
+\]
+Define the light-cell polynomial approximation
+\[
+P_{M,B}(u)
+=
+\frac{s(u)t_1(u)}B
+G_M\!\left(\frac{s_1(u)}B\right)
+-
+\frac{s(u)t_0(u)}B
+G_M\!\left(\frac{s_0(u)}B\right).
+\]
+Expanding \(P_{M,B}(u)=\sum_{|r|\le M}c_ru^r\), set
+\[
+\widehat P_k
+=
+\sum_{|r|\le M}
+c_r
+\frac{\prod_{a,y}(N^{(1)}_{aky})_{r_{ay}}}{(m_1)_{|r|}},
+\qquad
+\widehat T_{\mathcal H}
+=
+\sum_{k\in\widehat{\mathcal H}_n}\widehat h_k,
+\qquad
+\widehat T_{\mathcal L}
+=
+\sum_{k\in\widehat{\mathcal L}_n}\widehat P_k.
+\]
+The truncated balanced ratio-polynomial hybrid estimator is
+\[
+\widehat\tau_n^{\mathrm{hyb}}
+=
+\max\{-1,\min(1,\widehat T_{\mathcal H}+\widehat T_{\mathcal L})\}.
+\]
+For \(n<N_0\), set \(\widehat{\mathcal L}_n=\varnothing\) and use the ratio branch on every category. The definition uses no overlap parameter.
+\end{definitionv}
+
+\cref{obj:def:hybrid-estimator-handle} combines a ratio estimator on pilot-certified heavy categories with a polynomial estimator on pilot-certified light categories. The sets \leanref{sym:\(\widehat{\mathcal H}_n,\widehat{\mathcal L}_n\)}{$\widehat{\mathcal H}_n,\widehat{\mathcal L}_n$} are determined from \(I_0\), while the light contribution \leanref{sym:\widehat T_{\mathcal L}}{$\widehat T_{\mathcal L}$} and the final estimator \leanref{sym:\widehat\tau_n^{\mathrm{hyb}}}{$\widehat\tau_n^{\mathrm{hyb}}$} use the second split for estimation. The truncation simply enforces the natural range of an ATE with binary outcomes.
+
+Throughout the reader-facing statistical statements, \(\mathbb N=\{1,2,\ldots\}\), so both the sample size and alphabet size are positive. For the operation-count notation set \(M(1)=2\). When \(1\le n<N_0\), the ratio-only branch is evaluated directly; the light-cell quantities \(B(n)\), polynomial coefficients, and factorial-moment terms begin at the large-sample branch. The statistical experiment stated here therefore uses positive sample and alphabet sizes, alongside Lean's total conventions at zero.
+
+For comparison near randomized treatment, we also record a centered linear estimator.
+
+\begin{definitionv}{def:centered-estimator}[Centered estimator \(\widehat\tau_{\mathrm{ctr}}\)]
+For observations \(O_i=(X_i,A_i,Y_i)\), \(i=1,\ldots,n\), with binary treatment \(A_i\) and binary outcome \(Y_i\), the centered estimator is \[\widehat\tau_{\mathrm{ctr}}=\frac{2}{n}\sum_{i=1}^n(2A_i-1)\left(Y_i-\frac12\right).\]
+\end{definitionv}
+
+\begin{definitionv}{def:selected-estimator}[Selected estimator \(\widehat\tau^{\mathrm{sel}}_{C_\epsilon,\epsilon}\)]
+For fixed \(0<\epsilon<1/2\) and fixed-interior upper-bound constant \(C_\epsilon\), define \(\widehat\tau^{\mathrm{sel}}_{C_\epsilon,\epsilon}\) to be \(\widehat\tau_n^{\mathrm{hyb}}\) when
+\[
+C_\epsilon\{1/n+d^2/(n^2\log^2 n)\}\le 1/n+4(1/2-\epsilon)^2,
+\]
+and to be \(\widehat\tau_{\mathrm{ctr}}\) otherwise. At \(n=1\), the quotient involving \(\log n\) is interpreted as zero; the asymptotic results use this selector only above their stated large-sample cutoff.
+\end{definitionv}
+
+This is an oracle-calibrated deterministic comparison rule. It combines the fixed-interior hybrid bound with the near-randomization linear bound using the fixed overlap constant and the fixed-interior upper-bound constant \(C_\epsilon\).
+
+The risk criterion is worst-case mean squared error over the overlap experiment class.
+
+\begin{definitionv}{def:minimax-risk}[Minimax risk \(\mathsf R_{n,d,\epsilon}\)]
+The minimax mean-squared-error risk is
+\[
+\mathsf R_{n,d,\epsilon}
+=
+\inf_{\widehat\tau}
+\sup_{P^{\otimes n}\in\mathcal E_{n,d,\epsilon}}
+E_P\!\left[(\widehat\tau-\tau(P))^2\right],
+\]
+where the infimum ranges over all measurable estimators \(\widehat\tau\) based on \(O_1,\ldots,O_n\).
+\end{definitionv}
+
+The quantity \leanref{sym:\(\mathsf R_{n,d,\epsilon}\)}{$\mathsf R_{n,d,\epsilon}$} in \cref{obj:def:minimax-risk} is the object characterized in the main results. The supremum is over product laws in \cref{obj:def:experiment-class}, so the risk treats the covariate distribution and all conditional outcome probabilities as unknown nuisance features.
+
+We close the setup with a two-category construction showing why covariate adjustment is essential even in the smallest nontrivial alphabet.
+
+\begin{definitionv}{def:two-category-witness}[Two-category witness law]
+For \(d=2\), set
+\[
+p_1=p_2=\frac12,\qquad
+\pi_1=\epsilon,\qquad
+\pi_2=1-\epsilon,\qquad
+\mu_{01}=\mu_{02}=0,\qquad
+\mu_{11}=1,\qquad
+\mu_{12}=0.
+\]
+Define a full-data extension by drawing
+\[
+(Y(0),Y(1))=(0,\mathbf 1\{X=1\}),
+\]
+and then drawing \(A\mid X=k\sim\mathsf{Bernoulli}(\pi_k)\).
+\end{definitionv}
+
+\begin{propositionv}{prop:two-category-confounding}[Two-Category Confounding Witness]
+For \(\epsilon\), suppose:
+\begin{itemize}
+\item \textbf{(Real parameter.)} \(\epsilon\in\mathbb R\).
+\item \textbf{(Positive contrast.)} \(0<\epsilon\).
+\item \textbf{(Overlap range.)} \(\epsilon\le 1/2\).
+\item \textbf{(Witness law.)} \(Q\) is the full-data law constructed in \cref{obj:def:two-category-witness}, and \(P\) is its observed marginal law.
+\end{itemize}
+Then \(Q\) satisfies \cref{obj:ass:consistency} and \cref{obj:ass:conditional-exchangeability}, the observed law \(P\) satisfies \cref{obj:ass:overlap} with overlap constant \(\epsilon\), and the ATE functional of \cref{obj:def:ate-functional} obeys
+\[
+\tau(P)=\frac12,
+\qquad
+E_P[Y\mid A=1]-E_P[Y\mid A=0]=\epsilon .
+\]
+\end{propositionv}
+
+\cref{obj:prop:two-category-confounding} separates the causal estimand from the unadjusted observed contrast. The construction satisfies the usual causal restrictions, but the treated and control groups place different weights on the two covariate categories. As a result, the naive contrast can be as small as the overlap constant even though the ATE equals one half.

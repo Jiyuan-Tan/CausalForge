@@ -1,0 +1,704 @@
+{
+  "qid": "pid_datafusion_exact_compatibility",
+  "specialization": "v1",
+  "cluster": "partialid",
+  "symbols": [
+    {
+      "name": "\\(n\\)",
+      "type": "integer",
+      "space": "\\(\\mathbb N\\)",
+      "def": "Sample-size index.",
+      "role": "index"
+    },
+    {
+      "name": "\\(d\\)",
+      "type": "integer",
+      "space": "\\(\\mathbb N\\)",
+      "def": "Covariate dimension.",
+      "role": "dimension"
+    },
+    {
+      "name": "\\(\\mathcal X\\)",
+      "type": "set",
+      "space": "\\(\\mathbb R^d\\)",
+      "def": "Covariate support.",
+      "role": "support",
+      "refs": [
+        "\\(d\\)"
+      ]
+    },
+    {
+      "name": "\\(\\mathcal T\\)",
+      "type": "set",
+      "space": "\\(\\{0,1\\}\\)",
+      "def": "Treatment-state set.",
+      "role": "index set"
+    },
+    {
+      "name": "\\(t,s,k\\)",
+      "type": "indices",
+      "space": "\\(t,k\\in\\mathcal T,\\ s\\in\\{0,1\\}\\)",
+      "def": "Treatment and study indices.",
+      "role": "indices",
+      "refs": [
+        "\\(\\mathcal T\\)"
+      ]
+    },
+    {
+      "name": "\\(a,b\\)",
+      "type": "constants",
+      "space": "\\(0<a<b<\\infty\\)",
+      "def": "Known outcome-support endpoints.",
+      "role": "support endpoints"
+    },
+    {
+      "name": "\\(\\theta=(\\rho,\\gamma)\\)",
+      "type": "vector",
+      "space": "\\(\\Theta=[0,1]^2\\)",
+      "def": "Sensitivity pair for unmeasured confounding and study exchangeability.",
+      "role": "index"
+    },
+    {
+      "name": "\\(\\varepsilon,\\alpha\\)",
+      "type": "constants",
+      "space": "\\(\\varepsilon\\in(0,1/2),\\ \\alpha\\in(0,1)\\)",
+      "def": "Positivity and noncoverage constants.",
+      "role": "constants"
+    },
+    {
+      "name": "\\(O_i=(X_i,S_i,A_i,Y_i)\\)",
+      "type": "random vector",
+      "space": "\\(\\mathcal X\\times\\{0,1\\}\\times\\mathcal T\\times[a,b]\\)",
+      "def": "Observed unit.",
+      "role": "observation",
+      "refs": [
+        "\\(\\mathcal X\\)",
+        "\\(\\mathcal T\\)",
+        "\\(a,b\\)"
+      ]
+    },
+    {
+      "name": "\\(P,P_X,f_X\\)",
+      "type": "probability laws and density",
+      "space": "\\(P\\in\\mathcal P(\\mathcal X\\times\\{0,1\\}\\times\\mathcal T\\times[a,b])\\)",
+      "def": "Observed law, its covariate marginal, and its Lebesgue density when it exists.",
+      "role": "observed law",
+      "refs": [
+        "\\(\\mathcal X\\)",
+        "\\(\\mathcal T\\)",
+        "\\(a,b\\)"
+      ]
+    },
+    {
+      "name": "\\(Q\\)",
+      "type": "probability law",
+      "space": "\\(\\mathcal P(\\mathcal X\\times\\{0,1\\}\\times\\mathcal T\\times[a,b]^2)\\)",
+      "def": "Latent causal law on \\(X,S,A,Y(0),Y(1)\\); the realized outcome is \\(Y(A)\\).",
+      "role": "latent law",
+      "refs": [
+        "\\(\\mathcal X\\)",
+        "\\(\\mathcal T\\)",
+        "\\(a,b\\)"
+      ]
+    },
+    {
+      "name": "\\(\\pi,e_t,\\mu_{st}\\)",
+      "type": "functions",
+      "space": "\\(\\pi:\\mathcal X\\to[0,1],\\ e_t:\\mathcal X\\times\\{0,1\\}\\to[0,1],\\ \\mu_{st}:\\mathcal X\\to[a,b]\\)",
+      "def": "Observed nuisances \\(\\pi(x)=P(S=1\\mid X=x)\\), \\(e_t(x,s)=P(A=t\\mid X=x,S=s)\\), and \\(\\mu_{st}(x)=E_P[Y\\mid X=x,S=s,A=t]\\).",
+      "role": "nuisances",
+      "refs": [
+        "\\(P,P_X,f_X\\)",
+        "\\(t,s,k\\)",
+        "\\(a,b\\)"
+      ]
+    },
+    {
+      "name": "\\(c_t,q_{t0}\\)",
+      "type": "functions",
+      "space": "\\(\\mathcal X\\to[a,b]\\)",
+      "def": "Latent means \\(c_t(x)=E_Q[Y(t)\\mid X=x,S=0,A=1-t]\\) and \\(q_{t0}(x)=E_Q[Y(t)\\mid X=x,S=0]\\).",
+      "role": "latent means",
+      "refs": [
+        "\\(Q\\)",
+        "\\(t,s,k\\)"
+      ]
+    },
+    {
+      "name": "\\(v_t^\\pm,w_t^\\pm,H_t^{\\mathrm{LRVP}},G_t^{\\mathrm{LRVP}}\\)",
+      "type": "functions",
+      "space": "\\(\\mathcal X\\times\\Theta\\to\\mathbb R\\)",
+      "def": "Published un-clipped envelopes, signed overlap, and practical proxy.",
+      "role": "comparator functionals",
+      "refs": [
+        "\\(\\theta=(\\rho,\\gamma)\\)"
+      ]
+    },
+    {
+      "name": "\\(C_t^\\pm,V_t^\\pm,W_t^\\pm\\)",
+      "type": "functions",
+      "space": "\\(\\mathcal X\\times\\Theta\\to[a,b]\\)",
+      "def": "Support-clipped missing-arm, trial, and observational-mixture envelopes.",
+      "role": "exact envelopes",
+      "refs": [
+        "\\(\\theta=(\\rho,\\gamma)\\)",
+        "\\(a,b\\)"
+      ]
+    },
+    {
+      "name": "\\(C_P,\\mathcal K(P),\\mathcal M(P,\\rho,\\gamma)\\)",
+      "type": "functional and sets",
+      "space": "\\(C_P:\\Theta\\to[0,\\infty)\\)",
+      "def": "Observed compatibility functional, its zero set, and the compatible latent-law class.",
+      "role": "identified objects",
+      "refs": [
+        "\\(P,P_X,f_X\\)",
+        "\\(Q\\)",
+        "\\(\\theta=(\\rho,\\gamma)\\)"
+      ]
+    },
+    {
+      "name": "\\(m,\\nu_m,q_t^\\star,c_t^\\star\\)",
+      "type": "scalar, law, and functions",
+      "space": "\\(m\\in[a,b],\\ \\nu_m\\in\\mathcal P([a,b])\\)",
+      "def": "Endpoint outcome kernel and measurable selector route for a latent extension.",
+      "role": "extension construction",
+      "refs": [
+        "\\(a,b\\)",
+        "\\(\\theta=(\\rho,\\gamma)\\)"
+      ]
+    },
+    {
+      "name": "\\(P^{\\mathrm{can}}\\)",
+      "type": "probability law",
+      "space": "\\(\\mathcal P(\\mathcal X\\times\\{0,1\\}\\times\\mathcal T\\times[a,b])\\)",
+      "def": "Two-stratum cancellation witness.",
+      "role": "counterexample",
+      "refs": [
+        "\\(\\mathcal X\\)",
+        "\\(a,b\\)"
+      ]
+    },
+    {
+      "name": "\\(\\beta,B,\\mathcal H_B^\\beta,\\underline f,\\bar f,\\overline{\\mathcal P}\\)",
+      "type": "regularity objects",
+      "space": "\\(\\beta>d/2,\\ B>0,\\ 0<\\underline f<\\bar f<\\infty\\)",
+      "def": "Hölder regularity, density bounds, and primitive observed-law class.",
+      "role": "inference model",
+      "refs": [
+        "\\(d\\)",
+        "\\(P,P_X,f_X\\)"
+      ]
+    },
+    {
+      "name": "\\(J,\\mathcal I_j,p_K,K_n\\)",
+      "type": "folds and basis",
+      "space": "\\(J\\ge2,\\ K=K_n\\)",
+      "def": "Cross-fitting partition and normalized tensor-product spline or wavelet basis.",
+      "role": "learner construction",
+      "refs": [
+        "\\(n\\)",
+        "\\(\\mathcal X\\)"
+      ]
+    },
+    {
+      "name": "\\(\\widehat\\eta^{(-j)},\\widehat\\pi^{(-j)},\\widehat e_t^{(-j)},\\widehat\\mu_{st}^{(-j)}\\)",
+      "type": "functions",
+      "space": "\\(\\widehat\\eta^{(-j)}=(\\widehat\\pi^{(-j)},\\widehat e^{(-j)},\\widehat\\mu^{(-j)})\\)",
+      "def": "Foldwise truncated series-logit and bounded least-squares nuisance fits.",
+      "role": "learners",
+      "refs": [
+        "\\(J,\\mathcal I_j,p_K,K_n\\)",
+        "\\(\\varepsilon,\\alpha\\)",
+        "\\(a,b\\)"
+      ]
+    },
+    {
+      "name": "\\(h,\\widehat\\eta_n,\\mathfrak F,r_{\\pi,n},r_{e,n},r_{\\mu,n},F,q,v,A_0,P_n\\)",
+      "type": "face, fitted vector, map, rates, constants, and law sequence",
+      "space": "\\(h\\in\\{V_t^-,V_t^+,W_t^-,W_t^+\\},\\ q>4,\\ P_n\\in\\overline{\\mathcal P}\\)",
+      "def": "A face functional, its cross-fitted vector, the nested functional map, error-rate labels, entropy-envelope constants, and a law sequence used only by the inference construction or question.",
+      "role": "performance notation",
+      "refs": [
+        "\\(C_t^\\pm,V_t^\\pm,W_t^\\pm\\)",
+        "\\(\\widehat\\eta^{(-j)},\\widehat\\pi^{(-j)},\\widehat e_t^{(-j)},\\widehat\\mu_{st}^{(-j)}\\)",
+        "\\(\\beta,B,\\mathcal H_B^\\beta,\\underline f,\\bar f,\\overline{\\mathcal P}\\)"
+      ]
+    },
+    {
+      "name": "\\(p_s,R^\\mu_{sk},R^e_{sk},\\psi_h,\\mathcal S_n^{\\mathrm{act}}\\)",
+      "type": "scores",
+      "space": "\\(\\mathcal S_n^{\\mathrm{act}}\\subset L_2(P)\\)",
+      "def": "Study probabilities, residual representers, face scores, and tie-retaining active-score collection.",
+      "role": "orthogonal-score construction",
+      "refs": [
+        "\\(\\pi,e_t,\\mu_{st}\\)",
+        "\\(O_i=(X_i,S_i,A_i,Y_i)\\)"
+      ]
+    },
+    {
+      "name": "\\(\\xi_i,\\mathbb G_n^\\xi,\\delta_n,\\Theta_n,h_n\\)",
+      "type": "multipliers, process, and sequences",
+      "space": "\\(E[\\xi_i]=0,\\ E[\\xi_i^2]=1,\\ \\delta_n\\downarrow0,\\ h_n\\downarrow0\\)",
+      "def": "Multiplier process, numerical-delta step, deterministic sensitivity grid, and mesh.",
+      "role": "bootstrap construction",
+      "refs": [
+        "\\(n\\)",
+        "\\(\\theta=(\\rho,\\gamma)\\)"
+      ]
+    },
+    {
+      "name": "\\(\\widehat C_n,\\widehat C_n^\\xi,\\widehat c_{1-\\alpha},\\widehat{\\mathcal K}_{n,1-\\alpha}\\)",
+      "type": "processes and random set",
+      "space": "\\(\\ell^\\infty(\\Theta)\\times\\ell^\\infty(\\Theta)\\times\\mathbb R\\times\\mathcal P(\\Theta)\\)",
+      "def": "Estimated functional, numerical-delta bootstrap process, critical value, and inverted outer confidence region.",
+      "role": "inference objects",
+      "refs": [
+        "\\(\\theta=(\\rho,\\gamma)\\)",
+        "\\(\\varepsilon,\\alpha\\)"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:iid",
+      "kind": "sampling",
+      "condition": "\\(O_1,\\ldots,O_n\\stackrel{\\mathrm{iid}}{\\sim}P\\).",
+      "free_symbols": [
+        "\\(O_i=(X_i,S_i,A_i,Y_i)\\)",
+        "\\(n\\)",
+        "\\(P,P_X,f_X\\)"
+      ],
+      "standard": {
+        "name": "independent sampling",
+        "cite": "ChernozhukovEtAl2018DML"
+      },
+      "used_by": [
+        "oeq:uniform-contact-inference"
+      ]
+    },
+    {
+      "id": "ass:standard-borel",
+      "kind": "measurability",
+      "condition": "\\(\\mathcal X\\) is a standard-Borel space.",
+      "free_symbols": [
+        "\\(\\mathcal X\\)"
+      ],
+      "standard": {
+        "name": "standard-Borel covariate space",
+        "cite": "Kallenberg2002"
+      }
+    },
+    {
+      "id": "ass:pushforward",
+      "kind": "causal",
+      "condition": "\\(\\operatorname{Law}_Q(X,S,A,Y(A))=P\\).",
+      "free_symbols": [
+        "\\(Q\\)",
+        "\\(P,P_X,f_X\\)"
+      ],
+      "standard": {
+        "name": "observed-data pushforward",
+        "cite": "Kallenberg2002"
+      },
+      "used_by": [
+        "def:latent-class",
+        "lem:observational-mixture-identity",
+        "prop:positive-violation-infeasibility"
+      ]
+    },
+    {
+      "id": "ass:trial-randomization",
+      "kind": "causal",
+      "condition": "\\((Y(0),Y(1))\\perp_Q A\\mid(X,S=1)\\).",
+      "free_symbols": [
+        "\\(Q\\)",
+        "\\(t,s,k\\)"
+      ],
+      "standard": {
+        "name": "joint conditional trial randomization",
+        "cite": "LannersRudinVolfovskyParikh2025"
+      },
+      "used_by": [
+        "def:latent-class"
+      ]
+    },
+    {
+      "id": "ass:relative-nuc",
+      "kind": "sensitivity",
+      "condition": "\\(c_t(X)\\in[C_t^-(X;\\rho),C_t^+(X;\\rho)]\\) \\(P_X\\)-almost surely for every \\(t\\in\\mathcal T\\).",
+      "free_symbols": [
+        "\\(c_t,q_{t0}\\)",
+        "\\(C_t^\\pm,V_t^\\pm,W_t^\\pm\\)",
+        "\\(P,P_X,f_X\\)",
+        "\\(t,s,k\\)",
+        "\\(\\mathcal T\\)"
+      ],
+      "standard": {
+        "name": "linear relative unmeasured-confounding sensitivity model",
+        "cite": "LannersRudinVolfovskyParikh2025"
+      },
+      "used_by": [
+        "def:latent-class",
+        "prop:positive-violation-infeasibility"
+      ]
+    },
+    {
+      "id": "ass:study-exchangeability",
+      "kind": "sensitivity",
+      "condition": "\\(q_{t0}(X)\\in[V_t^-(X;\\gamma),V_t^+(X;\\gamma)]\\) \\(P_X\\)-almost surely for every \\(t\\in\\mathcal T\\).",
+      "free_symbols": [
+        "\\(c_t,q_{t0}\\)",
+        "\\(C_t^\\pm,V_t^\\pm,W_t^\\pm\\)",
+        "\\(P,P_X,f_X\\)",
+        "\\(t,s,k\\)",
+        "\\(\\mathcal T\\)"
+      ],
+      "standard": {
+        "name": "linear study-exchangeability sensitivity model",
+        "cite": "LannersRudinVolfovskyParikh2025"
+      },
+      "used_by": [
+        "def:latent-class",
+        "prop:positive-violation-infeasibility"
+      ]
+    },
+    {
+      "id": "ass:uniform-study-positivity",
+      "kind": "overlap",
+      "condition": "\\(\\varepsilon\\le\\pi(X)\\le1-\\varepsilon\\) \\(P\\)-almost surely.",
+      "free_symbols": [
+        "\\(\\varepsilon,\\alpha\\)",
+        "\\(\\pi,e_t,\\mu_{st}\\)",
+        "\\(P,P_X,f_X\\)"
+      ],
+      "standard": {
+        "name": "uniform study positivity",
+        "cite": "LannersRudinVolfovskyParikh2025"
+      },
+      "used_by": [
+        "def:primitive-class",
+        "prop:positive-violation-infeasibility"
+      ]
+    },
+    {
+      "id": "ass:uniform-treatment-positivity",
+      "kind": "overlap",
+      "condition": "\\(\\varepsilon\\le e_t(X,s)\\le1-\\varepsilon\\) \\(P\\)-almost surely for every \\(t\\in\\mathcal T\\) and \\(s\\in\\{0,1\\}\\).",
+      "free_symbols": [
+        "\\(\\varepsilon,\\alpha\\)",
+        "\\(\\pi,e_t,\\mu_{st}\\)",
+        "\\(P,P_X,f_X\\)",
+        "\\(t,s,k\\)",
+        "\\(\\mathcal T\\)"
+      ],
+      "standard": {
+        "name": "uniform treatment positivity",
+        "cite": "LannersRudinVolfovskyParikh2025"
+      },
+      "used_by": [
+        "def:primitive-class",
+        "prop:positive-violation-infeasibility"
+      ]
+    },
+    {
+      "id": "ass:compact-support",
+      "kind": "regularity",
+      "condition": "\\(\\mathcal X\\subset\\mathbb R^d\\) is compact.",
+      "free_symbols": [
+        "\\(\\mathcal X\\)",
+        "\\(d\\)"
+      ],
+      "standard": {
+        "name": "compact covariate support",
+        "cite": "ChernozhukovEtAl2018DML"
+      },
+      "used_by": [
+        "def:primitive-class"
+      ]
+    },
+    {
+      "id": "ass:density-bounds",
+      "kind": "regularity",
+      "condition": "\\(\\underline f\\le f_X(x)\\le\\bar f\\) for Lebesgue-almost every \\(x\\in\\mathcal X\\).",
+      "free_symbols": [
+        "\\(\\beta,B,\\mathcal H_B^\\beta,\\underline f,\\bar f,\\overline{\\mathcal P}\\)",
+        "\\(P,P_X,f_X\\)",
+        "\\(\\mathcal X\\)"
+      ],
+      "standard": {
+        "name": "density bounded above and away from zero",
+        "cite": "ChernozhukovEtAl2018DML"
+      },
+      "used_by": [
+        "def:primitive-class"
+      ]
+    },
+    {
+      "id": "ass:holder-nuisances",
+      "kind": "regularity",
+      "condition": "\\(\\pi\\in\\mathcal H_B^\\beta(\\mathcal X)\\), \\(e_t(\\cdot,s)\\in\\mathcal H_B^\\beta(\\mathcal X)\\), and \\(\\mu_{st}\\in\\mathcal H_B^\\beta(\\mathcal X)\\) for every \\(t\\in\\mathcal T\\) and \\(s\\in\\{0,1\\}\\).",
+      "free_symbols": [
+        "\\(\\pi,e_t,\\mu_{st}\\)",
+        "\\(\\beta,B,\\mathcal H_B^\\beta,\\underline f,\\bar f,\\overline{\\mathcal P}\\)",
+        "\\(\\mathcal X\\)",
+        "\\(t,s,k\\)",
+        "\\(\\mathcal T\\)"
+      ],
+      "standard": {
+        "name": "uniform Hölder nuisance balls",
+        "cite": "Newey1997"
+      },
+      "used_by": [
+        "def:primitive-class"
+      ]
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:published-endpoints",
+      "name": "\\(v_t^\\pm,w_t^\\pm,H_t^{\\mathrm{LRVP}},G_t^{\\mathrm{LRVP}}\\)",
+      "construction": "\\(v_t^-(x;\\gamma)=(1-\\gamma)\\mu_{1t}(x)\\), \\(v_t^+(x;\\gamma)=(1+\\gamma)\\mu_{1t}(x)\\), \\(w_t^-(x;\\rho)=e_t(x,0)\\mu_{0t}(x)+e_{1-t}(x,0)(1-\\rho)\\mu_{0t}(x)\\), \\(w_t^+(x;\\rho)=e_t(x,0)\\mu_{0t}(x)+e_{1-t}(x,0)(1+\\rho)\\mu_{0t}(x)\\), \\(H_t^{\\mathrm{LRVP}}(x;\\theta)=\\min\\{v_t^+,w_t^+\\}-\\max\\{v_t^-,w_t^-\\}\\), and \\(G_t^{\\mathrm{LRVP}}(\\theta)=E_{P_X}[H_t^{\\mathrm{LRVP}}(X;\\theta)]\\), for \\(x\\in\\mathcal X\\) and \\(t\\in\\mathcal T\\).",
+      "inputs": [
+        "\\(\\pi,e_t,\\mu_{st}\\)",
+        "\\(P,P_X,f_X\\)",
+        "\\(\\theta=(\\rho,\\gamma)\\)",
+        "\\(t,s,k\\)"
+      ]
+    },
+    {
+      "id": "def:exact-endpoints",
+      "name": "\\(C_t^\\pm,V_t^\\pm,W_t^\\pm\\)",
+      "construction": "\\(C_t^-(x;\\rho)=\\max\\{a,(1-\\rho)\\mu_{0t}(x)\\}\\), \\(C_t^+(x;\\rho)=\\min\\{b,(1+\\rho)\\mu_{0t}(x)\\}\\), \\(V_t^-(x;\\gamma)=\\max\\{a,(1-\\gamma)\\mu_{1t}(x)\\}\\), \\(V_t^+(x;\\gamma)=\\min\\{b,(1+\\gamma)\\mu_{1t}(x)\\}\\), and \\(W_t^\\pm(x;\\rho)=e_t(x,0)\\mu_{0t}(x)+e_{1-t}(x,0)C_t^\\pm(x;\\rho)\\), for \\(x\\in\\mathcal X\\), \\(t\\in\\mathcal T\\), and \\(\\theta\\in[0,1]^2\\).",
+      "inputs": [
+        "\\(a,b\\)",
+        "\\(\\pi,e_t,\\mu_{st}\\)",
+        "\\(\\theta=(\\rho,\\gamma)\\)",
+        "\\(t,s,k\\)"
+      ]
+    },
+    {
+      "id": "def:compatibility-functional",
+      "name": "\\(C_P,\\mathcal K(P)\\)",
+      "construction": "\\(C_P(\\theta)=\\max_{t\\in\\mathcal T}E_{P_X}[(\\max\\{V_t^-(X;\\gamma),W_t^-(X;\\rho)\\}-\\min\\{V_t^+(X;\\gamma),W_t^+(X;\\rho)\\})_+]\\) and \\(\\mathcal K(P)=\\{\\theta\\in\\Theta:C_P(\\theta)=0\\}\\).",
+      "inputs": [
+        "\\(P,P_X,f_X\\)",
+        "\\(C_t^\\pm,V_t^\\pm,W_t^\\pm\\)",
+        "\\(\\mathcal T\\)",
+        "\\(\\theta=(\\rho,\\gamma)\\)"
+      ]
+    },
+    {
+      "id": "def:endpoint-kernel",
+      "name": "\\(\\nu_m\\)",
+      "construction": "\\(\\nu_m=((b-m)/(b-a))\\delta_a+((m-a)/(b-a))\\delta_b\\) for every \\(m\\in[a,b]\\).",
+      "inputs": [
+        "\\(m,\\nu_m,q_t^\\star,c_t^\\star\\)",
+        "\\(a,b\\)"
+      ]
+    },
+    {
+      "id": "def:selector-extension-handle",
+      "name": "\\(q_t^\\star,c_t^\\star\\)",
+      "construction": "For each \\(t\\in\\mathcal T\\), set \\(q_t^\\star(x;\\theta)=[\\max\\{V_t^-(x;\\gamma),W_t^-(x;\\rho)\\}+\\min\\{V_t^+(x;\\gamma),W_t^+(x;\\rho)\\}]/2\\) and \\(c_t^\\star(x;\\theta)=[q_t^\\star(x;\\theta)-e_t(x,0)\\mu_{0t}(x)]/e_{1-t}(x,0)\\). The construction route copies the observed trial arm-\\(t\\) outcome kernel to \\(Y(t)\\) under both trial assignments and, in study zero, uses \\(\\nu_{c_t^\\star(X)}\\) for each missing potential outcome, conditionally independently given \\(X,S,A\\).",
+      "inputs": [
+        "\\(C_t^\\pm,V_t^\\pm,W_t^\\pm\\)",
+        "\\(\\pi,e_t,\\mu_{st}\\)",
+        "\\(m,\\nu_m,q_t^\\star,c_t^\\star\\)",
+        "\\(\\theta=(\\rho,\\gamma)\\)",
+        "\\(t,s,k\\)"
+      ]
+    },
+    {
+      "id": "def:latent-class",
+      "name": "\\(\\mathcal M(P,\\rho,\\gamma)\\)",
+      "construction": "\\(\\mathcal M(P,\\rho,\\gamma)=\\{Q\\in\\mathcal P(\\mathcal X\\times\\{0,1\\}\\times\\mathcal T\\times[a,b]^2):\\textup{ass:pushforward}\\wedge\\textup{ass:trial-randomization}\\wedge\\textup{ass:relative-nuc}\\wedge\\textup{ass:study-exchangeability}\\}\\).",
+      "by_member_properties": [
+        "ass:pushforward",
+        "ass:trial-randomization",
+        "ass:relative-nuc",
+        "ass:study-exchangeability"
+      ]
+    },
+    {
+      "id": "def:two-stratum-witness",
+      "name": "\\(P^{\\mathrm{can}}\\)",
+      "construction": "Let \\(\\mathcal X=\\{x_1,x_2\\}\\), \\(P^{\\mathrm{can}}(X=x_1)=4/5\\), \\(P^{\\mathrm{can}}(X=x_2)=1/5\\), and \\(P^{\\mathrm{can}}(S=s,A=t\\mid X=x_j)=1/4\\). Set \\(a=1/4\\), \\(b=8\\), \\(\\theta=(1,1)\\), \\(\\mu_{00}(x_1)=\\mu_{00}(x_2)=4\\), \\(\\mu_{10}(x_1)=1/2\\), \\(\\mu_{10}(x_2)=4\\), and \\(\\mu_{01}(x_j)=\\mu_{11}(x_j)=1\\). For every \\(j\\in\\{1,2\\}\\), \\(s\\in\\{0,1\\}\\), and \\(t\\in\\mathcal T\\), let \\(Y\\mid X=x_j,S=s,A=t\\sim\\nu_{\\mu_{st}(x_j)}\\).",
+      "inputs": [
+        "\\(P^{\\mathrm{can}}\\)",
+        "\\(a,b\\)",
+        "\\(\\pi,e_t,\\mu_{st}\\)",
+        "\\(m,\\nu_m,q_t^\\star,c_t^\\star\\)",
+        "\\(\\theta=(\\rho,\\gamma)\\)"
+      ]
+    },
+    {
+      "id": "def:holder-ball",
+      "name": "\\(\\mathcal H_B^\\beta(\\mathcal X)\\)",
+      "construction": "\\(\\mathcal H_B^\\beta(\\mathcal X)=\\{g:\\mathcal X\\to\\mathbb R:\\lVert g\\rVert_{C^\\beta(\\mathcal X)}\\le B\\}\\).",
+      "inputs": [
+        "\\(\\mathcal X\\)",
+        "\\(\\beta,B,\\mathcal H_B^\\beta,\\underline f,\\bar f,\\overline{\\mathcal P}\\)"
+      ]
+    },
+    {
+      "id": "def:primitive-class",
+      "name": "\\(\\overline{\\mathcal P}\\)",
+      "construction": "\\(\\overline{\\mathcal P}=\\{P\\in\\mathcal P(\\mathcal X\\times\\{0,1\\}\\times\\mathcal T\\times[a,b]):\\textup{ass:compact-support}\\wedge\\textup{ass:density-bounds}\\wedge\\textup{ass:uniform-study-positivity}\\wedge\\textup{ass:uniform-treatment-positivity}\\wedge\\textup{ass:holder-nuisances}\\}\\).",
+      "by_member_properties": [
+        "ass:compact-support",
+        "ass:density-bounds",
+        "ass:uniform-study-positivity",
+        "ass:uniform-treatment-positivity",
+        "ass:holder-nuisances"
+      ]
+    },
+    {
+      "id": "def:inference-handle",
+      "name": "\\(\\widehat C_n,\\widehat C_n^\\xi,\\widehat c_{1-\\alpha},\\widehat{\\mathcal K}_{n,1-\\alpha}\\)",
+      "construction": "Use a normalized tensor-product spline or compactly supported wavelet basis \\(p_K(x)\\) of order at least \\(\\lceil\\beta\\rceil\\), with \\(K=K_n\\), and fixed \\(J\\)-folds. On training complements fit truncated series logits \\(\\widehat\\pi^{(-j)},\\widehat e_k^{(-j)}\\) and bounded series least squares \\(\\widehat\\mu_{sk}^{(-j)}\\). Require for this construction \\(K_n\\log n/n=o(1)\\), \\(K_n^{-\\beta/d}=o(n^{-1/4})\\), foldwise uniform errors \\(r_{\\pi,n},r_{e,n},r_{\\mu,n}\\), and \\(r_{\\mu,n}(r_{e,n}+r_{\\pi,n})=o(n^{-1/2})\\). Put \\(p_s(x)=\\pi(x)^s[1-\\pi(x)]^{1-s}\\), \\(R^\\mu_{sk}=1\\{S=s,A=k\\}[Y-\\mu_{sk}(X)]/[p_s(X)e_k(X,s)]\\), and \\(R^e_{sk}=1\\{S=s\\}[1\\{A=k\\}-e_k(X,s)]/p_s(X)\\). For any face \\(h\\in\\{V_t^-,V_t^+,W_t^-,W_t^+\\}\\), define \\(\\psi_h(O;\\theta)=h(X;\\theta)-E_Ph(X;\\theta)+\\sum_{s,k}\\partial_{\\mu_{sk}}h(X;\\theta)R^\\mu_{sk}+\\sum_{s,k}\\partial_{e_k(\\cdot,s)}h(X;\\theta)R^e_{sk}\\), with branchwise directional derivatives of the displayed clipped formula; the \\(\\pi\\)-derivative is zero. Let \\(\\mathcal S_n^{\\mathrm{act}}\\) collect centered face scores attaining a lower maximum, upper minimum, positive-part contact, or outer arm maximum at every \\(\\theta\\in\\Theta_n\\), retaining all ties. Its sufficient performance conditions are an envelope \\(F\\) with \\(\\sup_{P\\in\\overline{\\mathcal P}}E_PF^q<\\infty\\) for some \\(q>4\\), \\(\\log N(\\eta,\\mathcal S_n^{\\mathrm{act}},L_2(P))\\le v\\log(A_0/\\eta)\\) uniformly in \\(P\\) and \\(0<\\eta\\le1\\), and a fixed studentization floor for nonzero-variance scores; zero-variance scores are deterministically zero. Let \\(\\widehat C_n(\\theta)\\) be the cross-fitted empirical face vector passed through the lower-max, upper-min, positive-part, expectation, and outer-max map \\(\\mathfrak F\\). With independent mean-zero unit-variance multipliers, put \\(\\mathbb G_n^\\xi=n^{-1/2}\\sum_i\\xi_i\\widehat\\psi_i\\), choose \\(\\delta_n\\downarrow0\\) with \\(n^{-1/2}/\\delta_n\\to0\\) and \\((r_{\\pi,n}+r_{e,n}+r_{\\mu,n})/\\delta_n\\to0\\), and set \\(\\widehat C_n^\\xi=[\\mathfrak F(\\widehat\\eta_n+\\delta_n\\mathbb G_n^\\xi)-\\mathfrak F(\\widehat\\eta_n)]/\\delta_n\\). Take deterministic \\(\\Theta_n\\subset[0,1]^2\\) with mesh \\(h_n\\to0\\) and interpolation error \\(o(n^{-1/2})\\). Let \\(\\widehat c_{1-\\alpha}\\) be the conditional \\((1-\\alpha)\\)-quantile of \\(\\sup_{\\theta\\in\\Theta_n}\\widehat C_n^\\xi(\\theta)\\), and define \\(\\widehat{\\mathcal K}_{n,1-\\alpha}=\\{\\theta\\in\\Theta_n:\\sqrt n\\widehat C_n(\\theta)\\le\\widehat c_{1-\\alpha}\\}\\), enlarged by measurable closed grid cells in \\(\\Theta\\). Hong--Li supplies the finite-difference derivative, Fang--Santos the directional map, Chernozhukov--Lee--Rosen contact selection, and cross-fitting nuisance linearization.",
+      "inputs": [
+        "\\(O_i=(X_i,S_i,A_i,Y_i)\\)",
+        "\\(J,\\mathcal I_j,p_K,K_n\\)",
+        "\\(\\widehat\\eta^{(-j)},\\widehat\\pi^{(-j)},\\widehat e_t^{(-j)},\\widehat\\mu_{st}^{(-j)}\\)",
+        "\\(p_s,R^\\mu_{sk},R^e_{sk},\\psi_h,\\mathcal S_n^{\\mathrm{act}}\\)",
+        "\\(\\xi_i,\\mathbb G_n^\\xi,\\delta_n,\\Theta_n,h_n\\)",
+        "\\(\\varepsilon,\\alpha\\)"
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "lem:observational-mixture-identity",
+      "kind": "lemma",
+      "statement": "Every \\(Q\\) satisfying \\(\\textup{ass:pushforward}\\) obeys the weighted observational-mixture identity\\[(1-\\pi(X))\\bigl[q_{t0}(X)-e_t(X,0)\\mu_{0t}(X)-e_{1-t}(X,0)c_t(X)\\bigr]=0\\]\\(P_X\\)-almost surely for each \\(t\\in\\mathcal T\\). Consequently, the unweighted identity holds \\(P_X\\)-almost surely on \\(\\{x:\\pi(x)<1\\}\\).",
+      "depends_on": [
+        "ass:pushforward"
+      ],
+      "status": "to-prove",
+      "justification": "The mixture equality follows from the observed-data pushforward and conditional iterated expectation; it is not an additional causal restriction.",
+      "gap": "A law-level bridge is needed to translate the missing-arm mean restriction into an interval for the observational-study potential-outcome mean.",
+      "consumer": "The positive-violation proposition uses the bridge to map \\(c_t\\in[C_t^-,C_t^+]\\) into \\(q_{t0}\\in[W_t^-,W_t^+]\\)."
+    },
+    {
+      "id": "prop:positive-violation-infeasibility",
+      "kind": "proposition",
+      "statement": "Under \\(\\textup{ass:uniform-study-positivity}\\) and \\(\\textup{ass:uniform-treatment-positivity}\\), \\(C_P(\\theta)>0\\) implies \\(\\mathcal M(P,\\rho,\\gamma)=\\varnothing\\). Indeed, for any \\(Q\\in\\mathcal M(P,\\rho,\\gamma)\\), the weighted observational-mixture identity may be divided by \\(1-\\pi(X)\\ge\\varepsilon\\). Since \\(c_t\\in[C_t^-,C_t^+]\\), it follows that \\(q_{t0}\\in[W_t^-,W_t^+]\\), while study exchangeability gives \\(q_{t0}\\in[V_t^-,V_t^+]\\). Thus every nonnegative conditional violation is zero almost surely, contradicting \\(C_P(\\theta)>0\\).",
+      "depends_on": [
+        "ass:pushforward",
+        "ass:relative-nuc",
+        "ass:study-exchangeability",
+        "ass:uniform-study-positivity",
+        "ass:uniform-treatment-positivity",
+        "lem:observational-mixture-identity",
+        "def:exact-endpoints",
+        "def:compatibility-functional",
+        "def:latent-class"
+      ],
+      "status": "to-prove",
+      "justification": "This necessity result turns any positive no-cancellation gap into an observed-law certificate that no common latent extension exists.",
+      "gap": "It establishes infeasibility without appealing to a signed average and isolates the converse construction as a separate theorem-level task.",
+      "consumer": "It certifies the emptiness of the latent class in the two-stratum witness and supports practical rejection of incompatible sensitivity pairs."
+    },
+    {
+      "id": "prop:two-stratum-cancellation",
+      "kind": "proposition",
+      "statement": "For \\(P^{\\mathrm{can}}\\) at \\(\\theta=(1,1)\\), all means lie in \\([1/4,8]\\), \\(\\pi(x_j)=e_t(x_j,s)=1/2\\), and all observed kernels are valid. For arm \\(0\\), the published un-clipped intervals are \\([0,1]\\) and \\([2,6]\\) at \\(x_1\\), giving \\(H_0^{\\mathrm{LRVP}}(x_1)=-1\\), and \\([0,8]\\) and \\([2,6]\\) at \\(x_2\\), giving \\(H_0^{\\mathrm{LRVP}}(x_2)=4\\). Hence \\(G_0^{\\mathrm{LRVP}}=(4/5)(-1)+(1/5)4=0\\). For arm \\(1\\), the published intervals are \\([0,2]\\) and \\([1/2,3/2]\\) at both strata, so \\(H_1^{\\mathrm{LRVP}}=G_1^{\\mathrm{LRVP}}=1\\). The support-clipped arm-zero intervals are \\(V_0=[1/4,1]\\), \\(C_0=[1/4,8]\\), and \\(W_0=[17/8,6]\\) at \\(x_1\\), and \\(V_0=[1/4,8]\\), \\(C_0=[1/4,8]\\), and \\(W_0=[17/8,6]\\) at \\(x_2\\). For arm \\(1\\), they are \\(V_1=[1/4,2]\\), \\(C_1=[1/4,2]\\), and \\(W_1=[5/8,3/2]\\) at both strata. Thus the only conditional violation is \\(9/8\\) at \\(x_1\\) for arm \\(0\\), so \\(C_{P^{\\mathrm{can}}}(1,1)=9/10\\) and \\(\\mathcal M(P^{\\mathrm{can}},1,1)=\\varnothing\\) by Proposition 1.",
+      "depends_on": [
+        "def:published-endpoints",
+        "def:exact-endpoints",
+        "def:compatibility-functional",
+        "def:endpoint-kernel",
+        "def:two-stratum-witness",
+        "prop:positive-violation-infeasibility"
+      ],
+      "status": "to-prove",
+      "justification": "The completely specified observed law verifies numerically that signed covariate-stratum cancellation can mask exact incompatibility.",
+      "gap": "A concrete witness is needed to show that the distinction between the published proxy and the exact functional is substantive rather than terminological.",
+      "consumer": "Applied readers can use the witness as a diagnostic warning: \\(G_0^{\\mathrm{LRVP}}=0\\) can coexist with \\(C_P=9/10\\) and an empty compatible class."
+    },
+    {
+      "id": "oeq:uniform-contact-inference",
+      "kind": "openendedquestion",
+      "statement": "Under \\(P\\in\\overline{\\mathcal P}\\), \\(\\textup{ass:iid}\\), and the construction-performance conditions in \\(\\textup{def:inference-handle}\\), can the numerical directional-delta contact-set multiplier procedure attain \\(\\liminf_{n\\to\\infty}\\inf_{P\\in\\overline{\\mathcal P}}P(\\mathcal K(P)\\subseteq\\widehat{\\mathcal K}_{n,1-\\alpha})\\ge1-\\alpha\\) and yield uniformly level-\\(\\alpha\\) tests of \\(C_P(\\theta)=0\\), including positive-\\(P_X\\)-mass endpoint and arm ties?",
+      "depends_on": [
+        "ass:iid",
+        "def:compatibility-functional",
+        "def:primitive-class",
+        "def:inference-handle",
+        "lem:tie-subexperiment-minimax-boundary",
+        "lem:regular-constant-path-power",
+        "thm:tie-local-separation-obstruction"
+      ],
+      "status": "to-prove",
+      "justification": "After the negative local-separation resolution, the honest residual question is uniform coverage and test level for the specific tie-retaining numerical directional-delta multiplier procedure.",
+      "gap": "No current theorem in the core supplies the tie-uniform bootstrap approximation and inversion argument required for those guarantees.",
+      "consumer": "Resolving this question would determine whether the computable population frontier is accompanied by a uniformly valid confidence region and null test."
+    }
+  ],
+  "sampling_model": {
+    "design": "Independent draws from the observed two-study law \\(P\\).",
+    "units": "\\(O_i=(X_i,S_i,A_i,Y_i)\\) for \\(i=1,\\ldots,n\\).",
+    "treatment": "The latent class imposes joint conditional randomization in study one.",
+    "overlap": "Study and within-study treatment propensities are bounded by \\(\\varepsilon\\).",
+    "nuisance_estimation": "The declared cross-fitted series learners enter the explicit face-score construction."
+  },
+  "estimand_functional": "\\(\\mathcal K(P)=\\{\\theta\\in[0,1]^2:C_P(\\theta)=0\\}\\), where \\(C_P(\\theta)=\\max_{t\\in\\mathcal T}E_{P_X}[(\\max\\{V_t^-,W_t^-\\}-\\min\\{V_t^+,W_t^+\\})_+]\\).",
+  "target_estimand": "\\(\\mathcal K(P)\\)",
+  "bibliography": [
+    {
+      "key": "YuKarmakarVandeleestSchwarz2024",
+      "citation": "R. Yu, B. Karmakar, J. Vandeleest, and E. B. Schwarz. \\textquotedblleft Using a Two-Parameter Sensitivity Analysis Framework to Efficiently Combine Randomized and Non-randomized Studies.\\textquotedblright arXiv:2412.03731, 2024."
+    },
+    {
+      "key": "LannersRudinVolfovskyParikh2025",
+      "citation": "Q. Lanners, C. Rudin, A. Volfovsky, and H. Parikh. ``Data Fusion for Partial Identification of Causal Effects.'' \\emph{Advances in Neural Information Processing Systems}, 38:150638--150702, 2025. arXiv:2505.24296."
+    },
+    {
+      "key": "ParikhMorucciOrlandiRoyRudinVolfovsky2023",
+      "citation": "H. Parikh, M. Morucci, V. Orlandi, S. Roy, C. Rudin, and A. Volfovsky. ``A Double Machine Learning Approach for Combining Experimental and Observational Studies.'' arXiv:2307.01449, 2023."
+    },
+    {
+      "key": "ChernozhukovLeeRosen2013",
+      "citation": "V. Chernozhukov, S. Lee, and A. M. Rosen. ``Intersection Bounds: Estimation and Inference.'' \\emph{Econometrica}, 81(2):667--737, 2013."
+    },
+    {
+      "key": "MastenPoirier2020",
+      "citation": "M. A. Masten and A. Poirier. ``Inference on Breakdown Frontiers.'' \\emph{Quantitative Economics}, 11(1):41--111, 2020."
+    },
+    {
+      "key": "FangSantos2019",
+      "citation": "Z. Fang and A. Santos. ``Inference on Directionally Differentiable Functions.'' \\emph{Review of Economic Studies}, 86(1):377--412, 2019."
+    },
+    {
+      "key": "HongLi2018",
+      "citation": "H. Hong and J. Li. ``The Numerical Delta Method.'' \\emph{Journal of Econometrics}, 206(2):379--394, 2018."
+    },
+    {
+      "key": "ChernozhukovEtAl2018DML",
+      "citation": "V. Chernozhukov, D. Chetverikov, M. Demirer, E. Duflo, C. Hansen, W. Newey, and J. Robins. ``Double/Debiased Machine Learning for Treatment and Causal Parameters.'' \\emph{Econometrics Journal}, 21(1):C1--C68, 2018."
+    },
+    {
+      "key": "LuedtkeVanderLaan2016",
+      "citation": "A. R. Luedtke and M. J. van der Laan. ``Statistical Inference for the Mean Outcome under a Possibly Non-Unique Optimal Treatment Strategy.'' \\emph{Annals of Statistics}, 44(2):713--742, 2016."
+    },
+    {
+      "key": "Kallenberg2002",
+      "citation": "O. Kallenberg. \\emph{Foundations of Modern Probability}. Springer, 2002."
+    },
+    {
+      "key": "Newey1997",
+      "citation": "W. K. Newey. ``Convergence Rates and Asymptotic Normality for Series Estimators.'' \\emph{Journal of Econometrics}, 79(1):147--168, 1997."
+    }
+  ],
+  "tldr": "The exact observed-law compatibility region for simultaneous relative-NUC and study-exchangeability sensitivity is proved to be the computable zero set \\(\\mathcal K(P)=\\{\\theta:C_P(\\theta)=0\\}\\), equivalently the set of sensitivity pairs admitting one support-respecting common latent causal law. The Lanners-compatible linear endpoints use the factors \\(1-\\rho\\), \\(1+\\rho\\), \\(1-\\gamma\\), and \\(1+\\gamma\\), with clipping to the known support \\([a,b]\\). This exact criterion differs from the signed-average proxy: in the verified two-stratum law with weights \\(4/5\\) and \\(1/5\\), \\(G_0^{\\mathrm{LRVP}}(1,1)=0\\) but \\(C_{P^{\\mathrm{can}}}(1,1)=9/10\\), so cancellation masks incompatibility. For inference, the proved positive-mass-tie subexperiment has sharp separation rate \\(n^{-2\\beta/(4\\beta+d)}\\), whereas fixed constant paths have the regular \\(n^{-1/2}\\) Gaussian boundary. Only uniform coverage and uniform level for the proposed cross-fitted numerical directional-delta procedure remain open.",
+  "project_justification": {
+    "gap": "Lanners et al. provide pointwise linear interval restrictions and use a signed expectation as a practical compatibility proxy, with resampling that holds fitted nuisance functions fixed. Those results do not characterize when the support-clipped restrictions are jointly realizable by one latent causal law, and they do not establish tie-inclusive uniform coverage or level after nuisance learning.",
+    "niche": "The paper isolates the exact no-cancellation compatibility frontier for simultaneous relative-NUC and study-exchangeability sensitivity. It retains the Lanners-compatible linear \\((1\\pm\\rho)\\) and \\((1\\pm\\gamma)\\) forms, clips them to \\([a,b]\\), and distinguishes regular pointwise directions from the harder uniform geometry created by positive-mass ties. It does not claim to originate two-parameter sensitivity analysis or randomized--observational data fusion.",
+    "fill": "The paper proves \\(\\mathcal M(P,\\rho,\\gamma)\\ne\\varnothing\\Longleftrightarrow C_P(\\rho,\\gamma)=0\\), verifies the two-stratum cancellation witness with weights \\(4/5\\) and \\(1/5\\) and exact violation \\(9/10\\), and proves a sharp \\(n^{-2\\beta/(4\\beta+d)}\\) minimax separation boundary in a tie subexperiment together with the contrasting root-\\(n\\) Gaussian constant-path power formula. Uniform coverage and uniform level of the specified numerical directional-delta procedure are the only remaining inference questions."
+  },
+  "related_work": "Lanners, Rudin, Volfovsky, and Parikh (NeurIPS 2025), including their Project STAR analysis, derive pointwise population interval requirements for simultaneous sensitivity and use \\(G_t^{\\mathrm{LRVP}}\\), a signed expectation, as a practical proxy while holding fitted nuisances fixed in resampling. The present theorem retains their linear \\((1\\pm\\rho)\\) and \\((1\\pm\\gamma)\\) endpoint forms but enforces the known support \\([a,b]\\) by clipping and asks the different logical question of existence of one support-respecting common latent causal extension. The nonnegative functional \\(C_P\\) forbids cross-stratum cancellation: the explicit witness assigns weights \\(4/5\\) and \\(1/5\\), has signed proxy zero for arm zero, and has exact violation \\(9/10\\). Yu et al. combine randomized and non-randomized studies with triplet matching and two internal/external-bias sensitivity parameters, but do not give this support-clipped common-extension characterization. Parikh et al. study attribution between external-validity and ignorability failures rather than simultaneous latent-law feasibility. Hong--Li numerical differentiation, Fang--Santos directional inference, Chernozhukov--Lee--Rosen contact selection, and cross-fitting motivate the proposed inference construction; none is claimed here to establish its uniform tie-inclusive coverage or level. The proved minimax subexperiment instead shows why a uniform root-\\(n\\) local-power claim cannot accompany such validity over the frozen primitive class.",
+  "interpretation": "For each treatment arm, \\(C_P(\\theta)\\) averages the nonnegative amount by which the larger support-clipped lower face exceeds the smaller support-clipped upper face and then takes the maximum across arms. Thus \\(C_P(\\theta)=0\\) is equivalent to almost-sure conditional interval intersection, not merely nonnegative average signed overlap. The measurable-selector construction turns those intersections into one common latent law, so \\(\\mathcal K(P)\\) is an exact compatibility region rather than an outer bound. In the cancellation witness, the stratum weights \\(4/5\\) and \\(1/5\\) cancel the signed arm-zero overlaps but leave \\(C_{P^{\\mathrm{can}}}(1,1)=9/10\\). The inference conclusion has two scales: fixed smooth directions are regular at \\(n^{-1/2}\\), while uniformly varying positive-mass-tie directions can require \\(n^{-2\\beta/(4\\beta+d)}\\). This proved separation result does not certify the proposed bootstrap's coverage or level.",
+  "technical_internal_limitation": "The exact compatibility characterization assumes two studies, binary treatment, a known strictly positive bounded outcome support, and uniform study and treatment positivity. Its sensitivity endpoints are specifically the support-clipped Lanners-compatible linear \\((1\\pm\\rho)\\) and \\((1\\pm\\gamma)\\) forms. The minimax rate is sharp for the displayed canonical Hölder tie subexperiment; it yields an obstruction to a primitive-class-wide root-\\(n\\) power curve, not a complete minimax theory at every point of the two-parameter frontier. A proof of uniform tie-inclusive coverage and uniform level for the frozen numerical directional-delta construction is still absent.",
+  "honest_scope": "The proved results are the observational mixture identity, positive-violation infeasibility, exact common-latent compatibility characterization, the explicit two-stratum cancellation calculation with weights \\(4/5\\) and \\(1/5\\) and \\(C_{P^{\\mathrm{can}}}(1,1)=9/10\\), the sharp tie-subexperiment separation rate \\(n^{-2\\beta/(4\\beta+d)}\\), and the regular constant-path Gaussian power formula. The paper does not claim that the proposed cross-fitted numerical directional-delta confidence region has uniform coverage or that its inverted tests have uniform level; those questions remain open. It makes no general optimality claim outside the stated tie subexperiment and no claim beyond the frozen binary-treatment, two-study sensitivity model."
+}

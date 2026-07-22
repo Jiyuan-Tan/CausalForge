@@ -1,0 +1,45 @@
+Render each formal environment's statement from its machine/Lean-flavored form into journal-style mathematical English. The MEANING must be preserved EXACTLY — you are translating wording, never changing the mathematics.
+
+Notation table (use these symbols):
+{{notation_table}}
+
+You are given a list of environments, each as a `### <obj_id>` block with fields:
+- `ref_set`: the obj_ids this statement depends on. Reference EACH of them, and ONLY them, as `\cref{obj:ID}`; cleveref infers Definition/Assumption/Lemma/Theorem from the target. Never reference an obj_id outside `ref_set`.
+- `cite_key` (optional): the bib key for the external source this statement attributes. When present, attribute the source inline with `\citet{<cite_key>}` (or parenthetically `\citep{<cite_key>}`) and do NOT also print a hardcoded author-year string for it.
+- `statement`: the authoritative mathematical content (the graph statement). It may contain backtick `code`, Lean declaration names, `(Lean: …)` asides, and pipeline labels — these are SOURCE, to be rewritten, not copied.
+- `prior_body` (optional): YOUR previous rewrite of this env — you are FIXING it: keep the math identical, change only what the `defects` demand.
+- `defects` (optional): the specific readability/reference problems to fix in `prior_body`.
+- `cited_dependencies`: source-matched published propositions that are internal Lean premises but
+  are NOT ordinary paper assumptions. Their consumers receive a generated scope footnote.
+
+Environments:
+{{envs_block}}
+
+Rules (apply to every env body):
+- Replace EVERY Lean-ish identifier with proper mathematical notation per the table — backtick spans AND identifiers in math mode or `\mathrm{}`/`\text{}`. A multi-word camelCase/PascalCase name (`CrossFitNuisancesRandom`, `smoothedInverseWeightLaw`) is a Lean decl name and must NEVER appear in a displayed formula — render it as its notation or a descriptive phrase.
+- Strip ALL formalization framing: delete `(Lean: …)`, "Lean-side", pipeline labels like `(P-4)`/`(D4)`/`.tex 631–668`, decl names like `t1_thm`/`a6Bundle`, and any "after the checks have shown…" procedure narration. State the mathematics directly.
+- Preserve EVERY quantifier, constant, rate, hypothesis, side condition, and inequality direction. Do not strengthen, weaken, drop, add, or "simplify".
+- CITATION ERASURE: omit only a proposition explicitly listed in `cited_dependencies` from the printed hypothesis list. State the result conventionally; do not reproduce the borrowed proposition as an assumption or numbered result. The generated footnote carries the formal trust boundary. Never erase any other hypothesis.
+- Unfold bare names to their explicit form: never reduce a load-bearing condition to a mere name ("overlap-decay with exponent γ") — give the actual inequality a reader can resolve.
+- Reference dependencies by `\cref` over the env's `ref_set`; do not restate a dependency's full content inline and never prefix a manual kind word.
+- NEVER keep a source-note label like "A-1", "A-1–A-5", "Assumption 6", or "P-7" as bare text — those identifiers have no referent in the paper. Convert them to one cleveref list over the env's `ref_set` (e.g. `\cref{obj:a1,obj:a2,obj:a3,obj:a4,obj:a5}`).
+- STATEMENTS ONLY: the body states the mathematics (hypotheses + conclusion, or the defining property). Omit rationale, intuition, design commentary, "this is needed because…", "we do not assume…".
+- UNDELIVERED OVERRIDE (highest priority): when `delivery_status: undelivered`, render a natural `remarkv` as an open question, limitation, or direction for future work. Paraphrase the mathematical target and translate `delivery_reason` into reader-facing mathematical context; never copy internal pipeline labels. Make clear through ordinary scholarly phrasing (for example, “it remains open whether…”, “a natural next question is…”, or “future work could determine…”) that the target is unresolved, but DO NOT use boilerplate such as “this work does not establish/prove/deliver”. Never call it a theorem, result, contribution, assumption, or formalized conclusion, and never assert that its target holds. Vary the sentence structure and content-specific title across undelivered items so multiple remarks do not read from one template. This overrides every declarative-theorem rule below.
+- DECLARATIVE THEOREMS: except for the undelivered override, a theorem/lemma body (obj_id prefixed `thm:`/`lem:`/`oeq:`) must ASSERT what holds — its hypotheses and the conclusion (the bound/identity/rate, with quantifiers and constants). If the source statement is phrased as an objective, open question, or proof recipe ("determine/find the exponent …", "the derivation is required to use …", "it remains to show …"), restate it as the declarative claim it establishes and DROP the proof-method prose — how a result is proved is never part of its statement. Restate the content faithfully; do not invent a conclusion the source omits (a genuinely missing claim is left for the Lean re-audit, not fabricated here).
+- SELF-CONTAINED: read as if this is the only document. No "corrected"/"revised"/"the note"/"previous version".
+- Econometrics register: identification, estimand, bounds, sharp, efficiency, overlap.
+- When a statement carries more than two hypotheses/conditions, set them as a `\begin{itemize}` list (one `\item \textbf{(Name.)}` each) before the conclusion.
+- MATH DELIMITERS: a `\[...\]` display contains mathematical notation only. Never put ordinary prose or nested `\(...\)`/`\[...\]` delimiters inside a display; put descriptive text outside it with adjacent inline math instead.
+- NEVER write `\label{obj:...}` — the env macro defines it. NEVER emit `\begin{...}`/`\end{...}` in a body.
+
+Also give each env a SHORT title naming the object. For a DEFINITION, the title MUST include the defining symbol so the reader (and the notation checker) can resolve it — e.g. "Higher-order Hölder ball $\mathcal H^\beta(L)$", "Weak-overlap law class $\mathcal P_{\kappa,\beta}$", not just "Higher-order Hölder ball". For a theorem/lemma/assumption, a short descriptor (3–6 words).
+
+OUTPUT FORMAT — emit one block per input env, in this EXACT delimiter format and nothing else (no JSON, no code fences, no commentary). Multi-line LaTeX bodies are expected and fine:
+
+@@@ENV <obj_id>@@@
+TITLE: <short title>
+@@@BODY@@@
+<rendered LaTeX body — may span many lines, use display math \[ … \] freely>
+@@@END@@@
+
+Include one block per input env, same obj_ids. The body is raw LaTeX with NO `\begin{...}`/`\end{...}` env wrapper and NO `\label`.

@@ -1,0 +1,455 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=flagship\_explore, specialization=f1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to a Q1..Q6 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    If it is a free-form `(qid, specialization)`, define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{flagship\_explore} / \texttt{f1}%
+  \\ \large\textit{Full-history IV bounds for dynamic treatment effects under adaptive noncompliance}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a partial-identification anchor, not a panel pool-mode.  The locked tuple is
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},
+  \text{bounding functional})\\
+=
+(\texttt{flagship\_explore},\texttt{f1},
+  P_{Y,D^T,Z^T,H_0},\ \theta_{111,000},\
+  \mathcal{R}_{\mathrm{seqIV+fullHist+1sided}},\
+  [\underline\theta_{\mathrm{FH}}(P,e),\overline\theta_{\mathrm{FH}}(P,e)]) .
+\end{gathered}
+\]
+Here \(T=3\) unless a result explicitly states another finite horizon; \(Z_t,D_t,Y\in\{0,1\}\), and \(H_0\) has finite support.  The assignment policy is the known adaptive encouragement law
+\[
+e_t(z\mid h_{t-1})=\Pr(Z_t=z\mid H_{t-1}=h_{t-1}),
+\]
+where \(H_{t-1}\) is the full observed history \((H_0,Z_1,D_1,\ldots,Z_{t-1},D_{t-1})\); no Markov compression of \(H_{t-1}\) is imposed.  The target is the sustained-regime average effect
+\[
+\theta_{111,000}=\E[Y(1,1,1)-Y(0,0,0)].
+\]
+The restrictions \(\mathcal{R}_{\mathrm{seqIV+fullHist+1sided}}\) are consistency, exclusion of \(Z^T\) from \(Y(d^T)\) except through \(D^T\), sequential randomization of \(Z_t\) given the full observed history and latent response type, positivity \(0<e_t(z\mid h)<1\) on reachable histories, one-sided monotone compliance \(D_t(z^t)=0\) whenever \(z_t=0\) and \(D_t(z^{t-1},1)\ge D_t(z^{t-1},0)\), and \(Y(d^T)\in\{0,1\}\).  The bounding functional is the sharp finite-dimensional linear-program interval over the joint latent table of baseline type \(H_{0,\ell}\), dynamic treatment response maps \(\{D_t(z^t)\}_{t,z^t}\), and outcome response vector \(\{Y(d^T)\}_{d^T}\), constrained to reproduce the observed cell probabilities under the known non-Markov assignment policy.  A bounded-mean extension with \(Y\in[0,1]\) is outside this version and should be treated as future work, not as part of the locked claim.
+
+\begin{abstract}
+Sequential encouragement designs with noncompliance are increasingly used to learn dynamic treatment regimes, but existing partial-identification theory usually separates the dynamic-regime question from the sharp noncompliance-bounds question.  This proposal asks whether the full observed history used by an adaptive, non-Markov encouragement policy carries sharp identifying content that is lost by Markov or stagewise IV summaries.  The kernel conjecture is that, already at \(T=3\), two designs with the same stagewise compliance margins can have different sharp bounds for \(\theta_{111,000}\) because full-history assignment creates cross-history constraints on the same latent compliance response map.  Resolving this would give a Balke--Pearl-style finite LP for dynamic imperfect-compliance experiments and a concrete diagnostic for when Bellman-style interval recursions are non-sharp.  If true, the result would connect partial identification, dynamic treatment regimes, and adaptive experimentation in a way that current static IV bounds and Markov off-policy-evaluation results do not.
+\end{abstract}
+
+\section{Introduction}
+Dynamic treatment regimes are meant to answer questions about sequences: when to start, continue, intensify, or stop treatment.  In trials and quasi-experiments, the sequence actually received often differs from the sequence assigned or encouraged, so the estimand of interest is neither the intent-to-treat contrast nor a single-period LATE.  The methodological issue is whether adaptive encouragement histories contain information about sustained-regime effects when compliance itself is history-dependent.
+
+The main proposed finding is a full-history partial-identification theorem and a strict non-Markov-information conjecture.  Theorem~\ref{thm:fh-lp-necessity} states the routine but essential LP representation: under the locked assumptions, the true sustained-regime effect lies in a finite interval obtained by ranging over latent dynamic compliance and outcome response types that reproduce the observed law.  Conjecture~\ref{conj:strict-history-gain} is the flagship claim: there exists a \(T=3\) imperfect-compliance design in which preserving the full non-Markov assignment history strictly narrows the sharp interval for \(\theta_{111,000}\), even though a Markovized or stagewise summary preserves the usual one-period compliance margins.
+
+What is new is not another weakening of IV assumptions.  The novelty kernel is a proposed cross-history compatibility phenomenon: the same latent unit carries a whole response map \(D_t(z^t)\), so two observed histories that look interchangeable to a Markov summary may impose incompatible restrictions on that map once the actual non-Markov assignment probabilities are used.  The closest static result, \citet{BalkePearl1997}, gives sharp binary-IV bounds for one assignment, treatment, and outcome; the epsilon-gap here is the full-history coupling term generated by products of adaptive assignment probabilities across reachable histories.  The closest generic sharp-bound competitor is \citet{DuarteFinkelsteinKnoxMummoloShpitser2024}, whose automated discrete-setting machinery could numerically encode this finite model; the epsilon-gap here is an analytic history-separation theorem explaining when the generic program has strictly more information than any Markovized or stagewise program.  The closest dynamic results, \citet{MichaelCuiLorchTchetgen2024}, \citet{VanDenBergBonevMammen2020}, \citet{ChenZhang2023}, and \citet{Han2024}, identify or estimate dynamic IV targets, MSMM parameters, survival-treatment effects, IV-optimal regimes, or welfare orderings; the epsilon-gap is sharp finite-sample partial identification of a sustained-regime effect under one joint latent response table and the strict loss from replacing full histories by a Markov or stagewise summary.
+
+This proposal sits in the partial-identification cluster, with a cross-cluster connection to dynamic treatment regimes and IV methods.  It uses the same finite latent-response philosophy as Balke--Pearl bounds, the same concern with weak but credible assumptions as Manski--Pepper bounds, and the same dynamic-regime motivation as recent IV-assisted DTR work.  It deliberately does not propose a new do-calculus rule or SCM axiom; the theorem substrate is a finite partial-identification LP for dynamic IV experiments with imperfect compliance.
+
+\section{Related work}
+\citet{BalkePearl1997} establish tight nonparametric bounds for a static binary randomized encouragement design with imperfect compliance; this proposal asks for the dynamic analogue when one latent compliance map must be compatible across histories.
+
+\citet{ManskiPepper2000} introduce monotone instrumental-variable restrictions as credible weakenings of classical IV assumptions; the present setup instead keeps random encouragement but studies the identifying content of non-Markov history labels.
+
+\citet{SwansonHernanMillerRobinsRichardson2018} survey partial identification of ATEs with binary IVs, treatments, and outcomes; their scope clarifies why a sustained dynamic-regime effect is not covered by static IV formulas.
+
+\citet{SwansonLabrecqueHernan2018} study which causal null hypotheses for sustained treatment strategies can be tested with an instrumental variable; this is the closest sustained-treatment IV comparator, but it addresses null testing rather than sharp bounds for a named sustained-regime effect under adaptive noncompliance.
+
+\citet{GabrielSjolanderSachs2023} derive nonparametric bounds for imperfect randomized experiments with noncompliance and missingness; the relevance is the insistence on sharp bounds under minimal causal diagrams, but their target is not a history-dependent treatment path.
+
+\citet{DuarteFinkelsteinKnoxMummoloShpitser2024} give a general automated approach for sharp bounds in discrete causal problems via polynomial programming and branch-and-bound relaxations; this is the closest generic competitor, and the present proposal seeks an analytic non-Markov history-separation theorem inside one such discrete program rather than merely the existence of an automated bound.
+
+\citet{HeckmanHumphriesVeramendi2016} show that dynamic IV estimators need not recover policy-relevant dynamic treatment parameters unless the instruments are themselves policy variables; this proposal makes the policy-variable case partially identified rather than point identified.
+
+\citet{VanDenBergBonevMammen2020} develop nonparametric IV identification and estimation for dynamic treatment effects on hazard rates and survival probabilities under noncompliance and dynamic selection; the present proposal differs by asking for sharp finite LP bounds for a binary sustained-regime contrast when full adaptive encouragement histories are observed.
+
+\citet{PuZhang2021} define IV-optimal individualized rules under partial identification for the single-stage setting; this proposal targets a fixed sustained dynamic effect and the sharp feasible set behind such rule comparisons.
+
+\citet{CuiTchetgen2021} give point-identification conditions for optimal treatment regimes using a binary IV under endogeneity; the present proposal keeps weaker bounded-outcome and compliance restrictions and therefore expects intervals, not point identification.
+
+\citet{MichaelCuiLorchTchetgen2024} identify and estimate marginal structural mean model parameters for time-varying treatments using time-varying IVs when sequential randomization fails; this proposal instead keeps a fully nonparametric binary latent-response model and studies whether full-history cells are needed for sharp bounds rather than weighted point estimation of model parameters.
+
+\citet{ChenZhang2023} develop IV-optimal DTRs with a time-varying IV and a Bellman equation under partial identification; the proposed epsilon-gap is that even in the finite two-stage boundary case their Bellman formulation is a regime-optimization device, not a proof that local partial-ID certificates paste into one sharp full-history sustained-effect set.
+
+\citet{Han2024} characterizes optimal dynamic regimes by sharp partial welfare orderings via linear programs; this is a finite-horizon partial-ID comparator for Conjecture~\ref{conj:minimality}, but it orders policies rather than proving that \(T\le2\) cannot exhibit a strict full-history-versus-Markovized sharp-bound separation.
+
+\citet{XuZhuShiLuoSong2023} study IV off-policy evaluation in confounded Markov decision processes; the contrast is that this proposal treats finite, non-Markov adaptive assignment as identifying information rather than nuisance.
+
+\citet{ArtmanBhattacharyaErtefaieLynchMcKayJohnson2024} model partial compliance in SMARTs, demonstrating applied demand for sequential noncompliance tools; the proposed contribution is a nonparametric sharp-bounds kernel rather than a marginal structural model.
+
+\citet{MogstadTorgovitskyWalters2024} use mutual consistency across multiple IV choice models for policy evaluation; the present proposal can be read as a dynamic version of mutual consistency, where the multiple instruments are history-specific encouragement nodes tied together by one compliance map.
+
+In-catalogue prior art is thin for this anchor.  The ThmSmith API reports \texttt{ThmSmith/PartialID/} as empty at seed time, while AutoID documents static Manski bounds and Balke--Pearl binary-IV bounds under \texttt{Identification/PartialID/Manski} and \texttt{Identification/PartialID/BalkePearl}.  The closest generated proposal is \texttt{pid\_late\_bounded\_defiers}: a one-period complier-LATE envelope with bounded defiers, not a dynamic full-history assignment LP.  AutoID also contains \texttt{Identification/ExactID/DynamicLATE}, a two-period point-identification result under stronger sequential IV/LATE restrictions; it is exact-ID prior art rather than the partial-ID kernel proposed here.
+
+\section{Formal setup}
+Fix a finite horizon \(T\), with \(T=3\) for the flagship conjectures.  Let the observed data be
+\[
+O=(H_0,Z_1,D_1,Z_2,D_2,Z_3,D_3,Y),
+\]
+where \(H_0\) is finite and \(Z_t,D_t,Y\in\{0,1\}\).  The observed history before assignment \(t\) is
+\[
+H_{t-1}=(H_0,Z_1,D_1,\ldots,Z_{t-1},D_{t-1}).
+\]
+The assignment policy \(e_t(z\mid h)\) is known from the design or from an externally specified randomized encouragement rule and may depend on all of \(h\).
+
+A latent type \(\ell\) consists of a baseline component
+\[
+H_{0,\ell}\in\operatorname{supp}(H_0),
+\]
+a dynamic compliance response map
+\[
+\mathcal{D}_{\ell}=\{D_{\ell,t}(z^t):t=1,\ldots,T,\ z^t\in\{0,1\}^t\}
+\]
+and an outcome response vector
+\[
+\mathcal{Y}_{\ell}=\{Y_{\ell}(d^T):d^T\in\{0,1\}^T\}.
+\]
+Let \(\pi_\ell\ge0\) denote the population mass of type \(\ell\), with \(\sum_\ell \pi_\ell=1\).  Given \(\ell\) and an encouragement path \(z^T\), the realized treatment path is \(d_t=D_{\ell,t}(z^t)\), the realized outcome is \(Y_\ell(d^T)\), and the path probability under the adaptive policy is
+\[
+L_e(z^T,d^T,y,h_0\mid \ell)
+=\one\{H_{0,\ell}=h_0,\ d_t=D_{\ell,t}(z^t)\ \forall t,\ y=Y_\ell(d^T)\}
+  \prod_{t=1}^T e_t(z_t\mid h_{t-1}(\ell,z^{t-1})).
+\]
+Here \(h_{t-1}(\ell,z^{t-1})\) denotes the realized observed history generated from \(H_{0,\ell}\), the assignment prefix \(z^{t-1}\), and the compliance map \(\mathcal{D}_{\ell}\).
+For binary outcomes this gives an exact finite LP over observed cell probabilities.  In this version, the LP constraints are the equations
+\[
+\sum_{\ell}\pi_\ell L_e(o\mid \ell)=P(o)
+\quad\text{for every observed cell }o=(h_0,z^T,d^T,y),
+\]
+together with \(\pi_\ell\ge0\) and \(\sum_\ell\pi_\ell=1\).  The bounded-mean formulation for \(Y\in[0,1]\) would replace these outcome-cell equations by observed cell-probability equations for \((H_0,Z^T,D^T)\) plus conditional mean equations for \(Y\), but that extension is not claimed here.
+
+For a coarsening \(s\), define \(\kappa_s(o)=(s(H_0),Z_1,D_1,s(H_1),\ldots,s(H_{T-1}),Z_T,D_T,Y)\) and let \(A_sP\) be the compressed law obtained by summing \(P(o)\) over all cells with the same \(\kappa_s(o)\).  The stagewise compliance margins are the conditional cell probabilities \(\Pr(D_t=d\mid Z_t=z,S_{t-1}=\sigma)\) induced by \(A_sP\), for every reachable compressed state \(\sigma\), period \(t\), and \(d,z\in\{0,1\}\).  The Markov-compressed feasible set is
+\[
+\Theta_{\mathrm{MK}}(P,e,s)=
+\left\{\sum_\ell \pi_\ell\{Y_\ell(1,1,1)-Y_\ell(0,0,0)\}:
+\pi\in\Delta,\ A_s(A_e\pi)=A_sP,\ \ell\in\mathcal{L}_{1s}\right\},
+\]
+where \(A_e\pi\) denotes the full observed-cell law induced by \(L_e\).  Thus \(\Theta_{\mathrm{MK}}\) keeps the same latent response type space and objective as \(\Theta_{\mathrm{FH}}\), retains exactly the compressed observed-cell constraints \(A_sP\), and drops only the full-history equations that distinguish cells sharing the same \(\kappa_s\).
+
+The sharp full-history identified set is
+\[
+\Theta_{\mathrm{FH}}(P,e)=
+\left\{\sum_\ell \pi_\ell\{Y_\ell(1,1,1)-Y_\ell(0,0,0)\}:
+\pi\in\Delta,\ \pi\ \text{reproduces }P\text{ through }L_e,\ \ell\in\mathcal{L}_{1s}\right\},
+\]
+where \(\mathcal{L}_{1s}\) is the set of latent types satisfying one-sided monotone compliance.  The bounding functional is \([\underline\theta_{\mathrm{FH}}(P,e),\overline\theta_{\mathrm{FH}}(P,e)]\), the minimum and maximum of the displayed linear objective over the feasible polytope.
+
+For Conjecture~\ref{conj:no-stagewise-pasting}, the local mean-valued static subproblem is defined explicitly as follows.  For a reachable pre-assignment history \(h\in\operatorname{supp}(H_{t-1})\), let
+\[
+P_{t,h}(z,d,y)=\Pr(Z_t=z,D_t=d,Y=y\mid H_{t-1}=h)
+\]
+and let the local one-sided treatment response index be
+\[
+r=(d_0,d_1)\in\{0,1\}^2,\qquad d_0=0,\ d_1\ge d_0,
+\]
+and let \(\mathcal{R}_{1s}^{\mathrm{loc}}\) be the finite set of all such one-sided local treatment response indices.  Here \(d_z\) is the local treatment response to \(Z_t=z\) after history \(h\).  The terminal outcome after period \(t\) is not represented by a binary local response \(y_d\): the remaining continuation is stochastic, history-dependent, and may depend on the realized current encouragement.  Instead a local certificate consists of masses \(\lambda_r\) and outcome numerators \(\eta_{r,z}\), where \(\eta_{r,z}/\lambda_r\in[0,1]\), when \(\lambda_r>0\), is the continuation-averaged terminal mean for local type \(r\) after current encouragement \(z\) and subsequent continuation under the actual policy.  The history-specific mean-valued feasible polytope is
+\[
+\mathcal{B}_{t,h}(P,e)=
+\left\{(\lambda,\eta):
+\begin{array}{l}
+\lambda\in\Delta(\mathcal{R}_{1s}^{\mathrm{loc}}),\quad
+0\le \eta_{r,z}\le \lambda_r\ \forall r,z,\\[2mm]
+\sum_r\lambda_r\,\one\{d=d_z\}\,e_t(z\mid h)=\sum_y P_{t,h}(z,d,y)\ \forall z,d,\\[2mm]
+\sum_r\eta_{r,z}\,\one\{d=d_z\}\,e_t(z\mid h)=P_{t,h}(z,d,1)\ \forall z,d
+\end{array}
+\right\}.
+\]
+The compatibility map from a joint dynamic latent distribution to local tables is
+\[
+\Gamma_{t,h}(\pi)=(\lambda^\pi_{t,h},\eta^\pi_{t,h}),
+\]
+where \(D_t(h,z)\) abbreviates \(D_t(z_h^{t-1},z)\) for the assignment prefix \(z_h^{t-1}\) contained in \(h\).  The component \(\lambda^\pi_{t,h,r}\) is the conditional probability of the local treatment response \(r=(D_t(h,0),D_t(h,1))\) given \(H_{t-1}=h\), and \(\eta^\pi_{t,h,r,z}\) is the corresponding conditional numerator for the terminal outcome mean after current encouragement \(z\) and realized continuation under \(e\).  A collection \((\lambda_{t,h},\eta_{t,h})_{t,h}\) is globally pasteable if there exists a full-history feasible \(\pi\) such that \(\Gamma_{t,h}(\pi)=(\lambda_{t,h},\eta_{t,h})\) for every reachable \((t,h)\).  The product-local relaxation is the superset \(\mathcal{B}_{\mathrm{prod}}(P,e)=\prod_{t,h}\mathcal{B}_{t,h}(P,e)\), which ignores the image restriction imposed by \(\Gamma\).  A stagewise interval recursion in this proposal means any bound calculation that allows all mean-valued certificates in \(\mathcal{B}_{\mathrm{prod}}(P,e)\) as if they were globally pasteable.
+
+For Conjecture~\ref{conj:minimality}, the phrase ``up to duplicate histories'' means the following canonicalization.  For \(T\le2\), remove only assignment branches whose design probability product is identically zero; observed cells with \(P(o)=0\) remain as zero equations.  Two pre-assignment histories at the same time are duplicates, written \(h\sim_{\mathrm{can}}h'\), if they have the same compressed state \(s(h)=s(h')\), the same current and descendant assignment probabilities after relabelling \(h\) to \(h'\), the same conditional observed law for all future \((Z,D,Y)\) cells, and the same coefficients in the sustained-effect objective.  The canonical representative \(C_T(P,e,s)\) merges duplicate histories by summing their masses and orders the remaining histories lexicographically by these invariant vectors.  The \(T\le2\) search space in Conjecture~\ref{conj:minimality} is the set of these canonical representatives.
+For any assignment path \(z^T\), define the exact-compliance inverse-probability functional
+\[
+\psi(z^T)=
+\E\left[
+\frac{\one\{Z^T=z^T\}Y}
+{\prod_{t=1}^T e_t(z_t\mid H_{t-1})}
+\right].
+\]
+
+\begin{verbatim}
+qid=flagship_explore
+specialization=f1
+P=P_{Y,D^T,Z^T,H_0}, a finite-support observed law with binary Y
+theta=theta_{111,000}=E[Y(1,1,1)-Y(0,0,0)]
+identifying restrictions=R_{seqIV+fullHist+1sided}: consistency,
+  exclusion, sequential randomization of Z_t given the full observed history,
+  positivity of the known adaptive policy e_t, one-sided monotone compliance,
+  and binary potential outcomes
+bounding functional=[theta_FH_lower(P,e), theta_FH_upper(P,e)], the sharp LP
+  interval over the joint latent dynamic compliance and outcome response table
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite full-history experiment]\label{ass:finite}
+The horizon \(T\) is finite; \(H_0\), \(Z_t\), and \(D_t\) have finite support with \(Z_t,D_t\in\{0,1\}\); and \(Y\in\{0,1\}\).  All histories appearing in the results are reachable under the assignment policy and a feasible latent type.
+\end{assumption}
+
+\begin{assumption}[Known non-Markov sequential encouragement]\label{ass:seq-rand}
+For each \(t\), the design probability \(e_t(z\mid h_{t-1})\) is known, satisfies \(0<e_t(z\mid h_{t-1})<1\) on reachable histories, and obeys sequential randomization:
+\[
+\Pr(Z_t=z\mid H_{t-1}=h_{t-1},\ell)=e_t(z\mid h_{t-1})
+\]
+for every latent type \(\ell\).  The function \(e_t\) may depend on the full observed history \(h_{t-1}\).
+\end{assumption}
+
+\begin{assumption}[Consistency and exclusion]\label{ass:consistency-exclusion}
+If the realized encouragement path is \(z^T\), then \(D_t=D_t(z^t)\) for every \(t\), and if the realized treatment path is \(d^T\), then \(Y=Y(d^T)\).  The encouragement path affects \(Y\) only through the received treatment path \(D^T\).
+\end{assumption}
+
+\begin{assumption}[One-sided monotone dynamic compliance]\label{ass:one-sided}
+For every \(t\) and every prefix \(z^{t-1}\), \(D_t(z^{t-1},0)=0\) and \(D_t(z^{t-1},1)\ge D_t(z^{t-1},0)\).  No restriction is imposed on how \(D_t(z^{t-1},1)\) varies with the earlier prefix \(z^{t-1}\).
+\end{assumption}
+
+\begin{assumption}[Binary sustained-regime outcomes]\label{ass:bounded}
+For every latent type and every treatment path \(d^T\), \(Y(d^T)\in\{0,1\}\).
+\end{assumption}
+
+\begin{assumption}[Exact-compliance corner]\label{ass:exact-compliance}
+For the exact-compliance reduction only, \(D_t(z^t)=z_t\) for every \(t\) and every encouragement prefix \(z^t\), almost surely.
+\end{assumption}
+
+\begin{assumption}[Markov compression used for comparison]\label{ass:markov-compression}
+A comparison analysis replaces \(H_{t-1}\) by a coarser state \(S_{t-1}=s(H_{t-1})\) using the compression map in the formal setup.  Its feasible set \(\Theta_{\mathrm{MK}}(P,e,s)\) is the explicit LP that keeps the same latent type space, one-sided compliance restrictions, assignment law \(e\), sustained-effect objective, and stagewise compliance margins as \(\Theta_{\mathrm{FH}}\), but replaces the full observed-cell constraints \(A_e\pi=P\) by the compressed constraints \(A_s(A_e\pi)=A_sP\).  Its interval is denoted \([\underline\theta_{\mathrm{MK}},\overline\theta_{\mathrm{MK}}]\).
+\end{assumption}
+
+\begin{assumption}[History-separating \(T=3\) design]\label{ass:history-separating}
+There exist two reachable period-3 histories \(h\) and \(h'\) with the same compressed state \(s(h)=s(h')\), different earlier compliance histories, and different assignment probabilities \(e_3(1\mid h)\ne e_3(1\mid h')\).  The observed law assigns positive mass to both histories and to both period-3 encouragement values within each history.
+\end{assumption}
+
+\begin{assumption}[Local-to-global compatibility convention]\label{ass:local-compatibility}
+Whenever Conjecture~\ref{conj:no-stagewise-pasting} refers to history-specific stagewise certificates, it uses the local laws \(P_{t,h}\), mean-valued local polytopes \(\mathcal{B}_{t,h}(P,e)\), compatibility map \(\Gamma\), and product-local relaxation \(\mathcal{B}_{\mathrm{prod}}(P,e)\) defined in the formal setup.  ``Pasteable'' means membership in the image of \(\Gamma\) for a single full-history latent distribution \(\pi\).
+\end{assumption}
+
+\begin{assumption}[Canonical \(T\le2\) comparison]\label{ass:canonical-t2}
+Whenever Conjecture~\ref{conj:minimality} compares \(T\le2\) designs, the comparison is made on the canonical representatives \(C_T(P,e,s)\) defined in the formal setup.  Zero observed probabilities remain constraints, and only design-impossible assignment branches are removed.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: full-history LP necessity]\label{thm:fh-lp-necessity}
+Under Assumptions~\ref{ass:finite}--\ref{ass:bounded}, the true sustained-regime effect satisfies
+\[
+\theta_{111,000}\in
+[\underline\theta_{\mathrm{FH}}(P,e),\overline\theta_{\mathrm{FH}}(P,e)].
+\]
+Equivalently, the realized latent response distribution \(\pi\) is feasible for the full-history LP and its objective value equals \(\theta_{111,000}\).
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+The closest prior art is \citet{BalkePearl1997}, whose static LP uses one binary instrument and one treatment, and \citet{DuarteFinkelsteinKnoxMummoloShpitser2024}, whose general automated bounds framework can encode discrete causal models of this kind.  The theorem is routine algebra, but its epsilon-gap is the adaptive likelihood factor \(\prod_t e_t(z_t\mid H_{t-1})\), which turns a static latent table into a dynamic full-history table and exposes the analytic structure that a generic automated program would otherwise leave as a numerical object.  This is worth isolating because every sharper conjecture below depends on the reviewer accepting the exact object being bounded.
+
+\begin{theorem}[Theorem 2: sanity reductions, not novelty-bearing]\label{thm:reductions}
+Under Assumptions~\ref{ass:finite}--\ref{ass:bounded}, if \(T=1\), the full-history LP is the Balke--Pearl binary-IV feasible set for the ATE with one-sided compliance imposed as an additional linear restriction.  If, for \(T=3\), Assumption~\ref{ass:exact-compliance} holds, then
+\[
+\underline\theta_{\mathrm{FH}}(P,e)=\overline\theta_{\mathrm{FH}}(P,e)
+=\psi(1,1,1)-\psi(0,0,0),
+\]
+where \(\psi\) is the inverse assignment-probability functional defined in the formal setup.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+This statement is included only as a sanity theorem and is not offered as published-axis novelty.  The \(T=1\) endpoint is the known \citet{BalkePearl1997} static binary-IV bound with one-sided compliance, and the exact-compliance endpoint is standard sequential randomization/IPW logic.  Its value is to pin the proposed LP to known endpoints before studying the novel noncompliant non-Markov history phenomenon in Conjectures~\ref{conj:strict-history-gain}--\ref{conj:minimality}.
+
+\begin{conjecture}[Conjecture 1: strict full-history gain from non-Markov encouragement]\label{conj:strict-history-gain}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:finite}--\ref{ass:bounded} and Assumptions~\ref{ass:markov-compression}--\ref{ass:history-separating}, there exists a \(T=3\) observed law \(P^\star\), known assignment policy \(e^\star\), and Markov compression \(s\) such that \(A_sP^\star\) preserves all stagewise compliance margins defined in the formal setup and
+\[
+[\underline\theta_{\mathrm{FH}}(P^\star,e^\star),\overline\theta_{\mathrm{FH}}(P^\star,e^\star)]
+\subsetneq
+[\underline\theta_{\mathrm{MK}}(P^\star,e^\star,s),\overline\theta_{\mathrm{MK}}(P^\star,e^\star,s)].
+\]
+Moreover, the separation can be sign-relevant: for some such \(P^\star,e^\star,s\),
+\[
+0<\underline\theta_{\mathrm{FH}}(P^\star,e^\star)
+\quad\text{while}\quad
+\underline\theta_{\mathrm{MK}}(P^\star,e^\star,s)\le0\le
+\overline\theta_{\mathrm{MK}}(P^\star,e^\star,s).
+\]
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+The closest dynamic papers are \citet{SwansonLabrecqueHernan2018}, \citet{MichaelCuiLorchTchetgen2024}, \citet{VanDenBergBonevMammen2020}, \citet{ChenZhang2023}, \citet{Han2024}, and \citet{XuZhuShiLuoSong2023}; the closest generic sharp-bound paper is \citet{DuarteFinkelsteinKnoxMummoloShpitser2024}.  \citet{SwansonLabrecqueHernan2018} ask which sustained-treatment null hypotheses an IV can test; \citet{MichaelCuiLorchTchetgen2024} and \citet{VanDenBergBonevMammen2020} give dynamic time-varying IV identification or estimation results under stronger target-specific structures; the other dynamic papers establish IV-optimality, partial welfare ordering, or Markov OPE frameworks.  \citet{DuarteFinkelsteinKnoxMummoloShpitser2024} could supply a generic discrete sharp-bound computation, but it does not state the proposed analytic separation between full-history and Markovized feasible sets.  Resolving the conjecture would identify a flagship-level design principle: adaptive randomization can improve partial identification not only by changing instrument strength, but by separating histories that a Markov summary would pool.
+
+\begin{conjecture}[Conjecture 2: failure of stagewise mean-valued IV-certificate pasting]\label{conj:no-stagewise-pasting}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:finite}--\ref{ass:bounded}, \ref{ass:markov-compression}, \ref{ass:history-separating}, and \ref{ass:local-compatibility}, there exist \(T=3\) objects \(P^\star,e^\star,s\) and a collection
+\[
+(\lambda_{t,h},\eta_{t,h})_{t,h}\in\mathcal{B}_{\mathrm{prod}}(P^\star,e^\star)
+\]
+such that no joint dynamic latent type distribution \(\pi\) feasible for \(\Theta_{\mathrm{FH}}(P^\star,e^\star)\) satisfies \(\Gamma_{t,h}(\pi)=(\lambda_{t,h},\eta_{t,h})\) for all reachable \((t,h)\).  Therefore, any stagewise interval recursion that treats the full product \(\mathcal{B}_{\mathrm{prod}}(P^\star,e^\star)\) as pasteable can strictly contain the sharp full-history interval.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+\citet{BalkePearl1997} prove sharpness for one static binary table, while \citet{ChenZhang2023} use dynamic programming language for IV-optimal regimes under partial identification.  The epsilon-gap is global compatibility of the same unit's response map across histories after replacing the ill-defined local binary terminal response by a well-defined continuation-averaged mean certificate.  If true, this gives a concrete mathematical reason why dynamic partial-ID bounds need a joint latent table rather than a period-by-period cookbook.
+
+\begin{conjecture}[Conjecture 3: minimality of the history-separation phenomenon]\label{conj:minimality}
+(NOT YET PROVED.)  For \(T\le2\), define the analogous sustained-regime target \(\theta_{1^T,0^T}=\E[Y(1,\ldots,1)-Y(0,\ldots,0)]\).  No canonical representative \(C_T(P,e,s)\) satisfying Assumptions~\ref{ass:finite}--\ref{ass:bounded}, \ref{ass:markov-compression}, and \ref{ass:canonical-t2} admits a sign-relevant strict containment of the form in Conjecture~\ref{conj:strict-history-gain} after replacing \(\theta_{111,000}\) by \(\theta_{1^T,0^T}\).  Thus \(T=3\) is the smallest horizon at which non-Markov assignment history can create additional sharp identifying content for the sustained all-treated versus all-untreated effect.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+The closest targeted comparators are \citet{SwansonLabrecqueHernan2018}, \citet{ChenZhang2023}, \citet{Han2024}, and the in-catalogue two-period \texttt{Identification/ExactID/DynamicLATE} result.  Static IV bounds have no history; Swanson--Labrecque--Hernan study sustained-treatment IV null tests rather than sharp \(T\le2\) intervals; Chen--Zhang and Han give finite-horizon dynamic-IV or welfare LP frameworks but do not assert a no-separation theorem for canonical \(T\le2\) sustained-effect bounds; and DynamicLATE point-identifies a two-period exact-ID estimand under stronger assumptions.  A minimality result would turn the conjectured \(T=3\) example into a boundary theorem rather than an anecdote, giving future work a finite enumeration target.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[One-period Balke--Pearl corner]\label{cor:bp-corner}
+Under Assumptions~\ref{ass:finite}--\ref{ass:bounded} with \(T=1\), the full-history interval reduces to the Balke--Pearl static IV interval intersected with the one-sided monotonicity face of the latent polytope.  Under Assumption~\ref{ass:one-sided}, the defier cells have zero mass, so the reduction is obtained by deleting those latent table coordinates and retaining the same observed-cell marginal equations.
+\end{corollary}
+
+\begin{corollary}[Perfect-compliance collapse]\label{cor:perfect}
+Under Assumptions~\ref{ass:finite}--\ref{ass:bounded} plus Assumption~\ref{ass:exact-compliance}, the LP objective is point identified as \(\psi(1,1,1)-\psi(0,0,0)\).  The reduction follows because the latent compliance table is degenerate, so sequential randomization and consistency identify the two regime means by inverse-probability reweighting the observed all-one and all-zero assignment paths.
+\end{corollary}
+
+\section{Proof-sketch route}
+The mathematical route is finite-dimensional convex analysis.  First enumerate all one-sided dynamic compliance response maps and all binary outcome response vectors, then write the observed trajectory probabilities as linear functions of the latent mass vector with coefficients given by the known adaptive assignment likelihood.  Theorem~\ref{thm:fh-lp-necessity} is the direct latent-type decomposition, and Theorem~\ref{thm:reductions} follows by deleting time indices or by degenerating the compliance response map.  For Conjecture~\ref{conj:strict-history-gain}, the key verification route is a small \(T=3\) LP certificate: construct a rational observed law, solve the full-history and Markov-compressed primal/dual LPs, and exhibit dual certificates proving strict interval separation.  Conjecture~\ref{conj:no-stagewise-pasting} should reduce to a Farkas certificate showing that a point of the mean-valued product-local polytope \(\mathcal{B}_{\mathrm{prod}}(P^\star,e^\star)\) lies outside the linear image of \(\Gamma\) over the full-history feasible polytope.  Conjecture~\ref{conj:minimality} is a finite enumeration over canonical \(T\le2\) response-map representatives after replacing the target by \(\theta_{1^T,0^T}\), applying \(C_T(P,e,s)\), and checking the dynamic-IV comparators identified in the related work against the same finite boundary.
+
+\section{Honest scope flags}
+The full-history LP necessity is labelled Theorem because it is routine latent-type algebra once the finite binary-outcome setup is accepted.  Theorem~\ref{thm:reductions} is a sanity reduction to known results, not a novelty-bearing contribution.  The strict tightening, stagewise-pasting failure, and \(T=3\) minimality claims are Conjectures and are not yet proved.  The bounded-mean \(Y\in[0,1]\) global LP extension was withdrawn from v2 to remove ambiguity about whether the LP reproduces full outcome cells or only conditional means; v5 uses bounded means only inside the local stagewise-certificate diagnostic for Conjecture~\ref{conj:no-stagewise-pasting}.  The proposal intentionally uses one-sided monotone compliance to keep the first flagship example small; a two-sided noncompliance version may be more general but should not be claimed until the one-sided certificate exists.  The sign-relevant part of Conjecture~\ref{conj:strict-history-gain} is the riskiest claim and may need to be weakened to strict width reduction if the smallest LP certificate does not support sign separation.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) --- initial draft of the full-history dynamic IV bounds proposal; prior verdict: none.
+\item v2 (revise) --- specialized the LP to binary outcomes, made the Markov-compressed LP explicit, added the sustained-IV null-testing comparator, and corrected the \(T\le2\) target notation; prior verdict: REVISE.
+\item v3 (revise) --- added the baseline \(H_0\) component to latent types, required Markov compression to preserve stagewise compliance margins, and compared the flagship conjecture to dynamic time-varying IV papers by Michael--Cui--Lorch--Tchetgen Tchetgen and van den Berg--Bonev--Mammen; prior verdict: REVISE.
+\item v4 (revise) --- added Duarte--Finkelstein--Knox--Mummolo--Shpitser as the closest generic sharp-bound competitor, defined the local Balke--Pearl compatibility map for Conjecture~\ref{conj:no-stagewise-pasting}, and replaced the informal \(T\le2\) quotient language in Conjecture~\ref{conj:minimality} by a canonicalization rule; prior verdict: REVISE.
+\item v5 (revise) --- replaced the ill-defined binary local terminal response in Conjecture~\ref{conj:no-stagewise-pasting} by a mean-valued continuation certificate and strengthened the \(T\le2\) minimality comparison with Chen--Zhang, Han, Swanson--Labrecque--Hernan, and the two-period DynamicLATE catalogue boundary; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+
+\bibitem[Artman et~al.(2024)]{ArtmanBhattacharyaErtefaieLynchMcKayJohnson2024}
+Artman, W.~J., I. Bhattacharya, A. Ertefaie, K.~G. Lynch, J.~R. McKay, and B.~A. Johnson (2024).
+\newblock A marginal structural model for partial compliance in SMARTs.
+\newblock \emph{Annals of Applied Statistics} 18(2).
+
+\bibitem[Balke and Pearl(1997)]{BalkePearl1997}
+Balke, A. and J. Pearl (1997).
+\newblock Bounds on treatment effects from studies with imperfect compliance.
+\newblock \emph{Journal of the American Statistical Association} 92(439), 1171--1176.
+
+\bibitem[Chen and Zhang(2023)]{ChenZhang2023}
+Chen, S. and B. Zhang (2023).
+\newblock Estimating and improving dynamic treatment regimes with a time-varying instrumental variable.
+\newblock \emph{Journal of the Royal Statistical Society: Series B} 85(2), 427--453.
+
+\bibitem[Cui and Tchetgen Tchetgen(2021)]{CuiTchetgen2021}
+Cui, Y. and E.~J. Tchetgen Tchetgen (2021).
+\newblock A semiparametric instrumental variable approach to optimal treatment regimes under endogeneity.
+\newblock \emph{Journal of the American Statistical Association} 116(533), 162--173.
+
+\bibitem[Duarte et~al.(2024)]{DuarteFinkelsteinKnoxMummoloShpitser2024}
+Duarte, G., N. Finkelstein, D. Knox, J. Mummolo, and I. Shpitser (2024).
+\newblock An automated approach to causal inference in discrete settings.
+\newblock \emph{Journal of the American Statistical Association} 119(547), 1778--1793.
+
+\bibitem[Gabriel et~al.(2023)]{GabrielSjolanderSachs2023}
+Gabriel, E.~E., A. Sjolander, and M.~C. Sachs (2023).
+\newblock Nonparametric bounds for causal effects in imperfect randomized experiments.
+\newblock \emph{Journal of the American Statistical Association} 118(541), 684--692.
+
+\bibitem[Han(2024)]{Han2024}
+Han, S. (2024).
+\newblock Optimal dynamic treatment regimes and partial welfare ordering.
+\newblock \emph{Journal of the American Statistical Association} 119(547), 2000--2010.
+
+\bibitem[Heckman et~al.(2016)]{HeckmanHumphriesVeramendi2016}
+Heckman, J.~J., J.~E. Humphries, and G. Veramendi (2016).
+\newblock Dynamic treatment effects.
+\newblock \emph{Journal of Econometrics} 191(2), 276--292.
+
+\bibitem[Michael et~al.(2024)]{MichaelCuiLorchTchetgen2024}
+Michael, H., Y. Cui, S.~A. Lorch, and E.~J. Tchetgen Tchetgen (2024).
+\newblock Instrumental variable estimation of marginal structural mean models for time-varying treatment.
+\newblock \emph{Journal of the American Statistical Association} 119(546), 1240--1251.
+
+\bibitem[Manski and Pepper(2000)]{ManskiPepper2000}
+Manski, C.~F. and J.~V. Pepper (2000).
+\newblock Monotone instrumental variables: With an application to the returns to schooling.
+\newblock \emph{Econometrica} 68(4), 997--1010.
+
+\bibitem[Mogstad et~al.(2024)]{MogstadTorgovitskyWalters2024}
+Mogstad, M., A. Torgovitsky, and C.~R. Walters (2024).
+\newblock Policy evaluation with multiple instrumental variables.
+\newblock \emph{Journal of Econometrics}.
+
+\bibitem[Pu and Zhang(2021)]{PuZhang2021}
+Pu, H. and B. Zhang (2021).
+\newblock Estimating optimal treatment rules with an instrumental variable: A partial identification learning approach.
+\newblock \emph{Journal of the Royal Statistical Society: Series B} 83(2), 318--345.
+
+\bibitem[Swanson et~al.(2018)]{SwansonHernanMillerRobinsRichardson2018}
+Swanson, S.~A., M.~A. Hernan, M. Miller, J.~M. Robins, and T.~S. Richardson (2018).
+\newblock Partial identification of the average treatment effect using instrumental variables: Review of methods for binary instruments, treatments, and outcomes.
+\newblock \emph{Journal of the American Statistical Association} 113(522), 933--947.
+
+\bibitem[Swanson et~al.(2018)]{SwansonLabrecqueHernan2018}
+Swanson, S.~A., J. Labrecque, and M.~A. Hernan (2018).
+\newblock Causal null hypotheses of sustained treatment strategies: What can be tested with an instrumental variable?
+\newblock \emph{European Journal of Epidemiology} 33(8), 723--728.
+
+\bibitem[van den Berg et~al.(2020)]{VanDenBergBonevMammen2020}
+van den Berg, G.~J., P. Bonev, and E. Mammen (2020).
+\newblock Nonparametric instrumental variable methods for dynamic treatment evaluation.
+\newblock \emph{Review of Economics and Statistics} 102(2), 355--367.
+
+\bibitem[Xu et~al.(2023)]{XuZhuShiLuoSong2023}
+Xu, Y., J. Zhu, C. Shi, S. Luo, and R. Song (2023).
+\newblock An instrumental variable approach to confounded off-policy evaluation.
+\newblock In \emph{Proceedings of the 40th International Conference on Machine Learning}, PMLR 202, 38848--38880.
+
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,1162 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb,amsthm}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\coreref}[1]{\ref{#1}}
+
+\begin{document}
+
+\section*{stat_ate_overlap_decay (v1)}
+
+\paragraph{TL;DR.} Full-population ATE estimation is studied over one-sided weak-overlap classes where the left propensity tail satisfies P(e(X) <= lambda) of order lambda^kappa, the right tail stays regular, and the tail cap obeys 2 lambda_0 < 1 - eta_plus so the lower-bound regular cell is nonvacuous. The formal objects are an exact clipped-score upper envelope U_n(lambda), its tail-order surrogate R_n(lambda) with the kappa = 1 variance scale normalized as (1 + log(lambda_0 / lambda))^(1/2), a separate regular-overlap comparator class W_n^reg recovering the Jin-Syrgkanis and Bonvini-Kennedy-Dukes-Balakrishnan bounded-overlap benchmark, a comparator-separation proposition that formally states strict deterioration on the subclass kappa < kappa^*(a_0, a_1, a_e), and a lower-bound handle based on a clipped expit-logit propensity perturbation evaluated at a deterministic near-minimizer lambda_dagger_n. The flagship conjecture is that the minimax absolute ATE risk is equivalent to R_n^* = inf_lambda R_n(lambda), with the kappa = 1 logarithm appearing only in the root-n regime.
+
+\section{Project justification}
+
+\paragraph{Gap.} The closest regular-overlap comparators, JinSyrgkanis2024StructureAgnosticDR and BonviniKennedyDukesBalakrishnan2024StructureAgnosticATE, hold nuisance difficulty fixed but leave the overlap axis regular; ArmstrongKolesar2021FiniteSampleATE handles lack of overlap through fixed-design finite-sample optimality under explicit smoothness classes rather than a random-design structure-agnostic nuisance frontier; the closest weak-overlap comparators, Dorn2025WeakOverlapDRTStats, MaSantAnnaSasakiUra2023DRWeakOverlap, and MaWang2020RobustIPW, study thresholding, trimming, or inference rather than a matched minimax risk frontier for the original ATE; and the closest general converse comparator, JinSyrgkanis2025GeneralLinearFunctionalLowerBounds, is not specialized to a one-sided overlap-shell experiment.
+
+\paragraph{Niche.} The niche is the asymmetric regime where only e(X) -> 0 is irregular. In that regime the treated-score variance term and the treated-side nuisance-product term become tail-sensitive, while the control-side product channel remains regular-overlap-like and the regular-cell lower-bound geometry can be separated from the tail shell by 2 lambda_0 < 1 - eta_plus.
+
+\paragraph{Fill.} The project fills that niche with a comparator-tightened frontier: same full-population ATE and same structure-agnostic nuisance-rate inputs as the published bounded-overlap theory, but with a one-sided overlap-decay index kappa, an exact clipped-score upper envelope, a separate regular-overlap comparator class for the sanity reduction, and a Le Cam / Assouad lower-bound handle targeted at a deterministic near-minimizing shell so the converse speaks directly to R_n^*.
+
+\section{Related work}
+
+JinSyrgkanis2024StructureAgnosticDR is the exact bounded-overlap comparator. Its Introduction equation (1) defines ATE and ATT, equations (5)-(7) identify ATE and weighted ATE under m_0(X) in [c, 1 - c] almost surely, and equation (8) states the bounded-overlap structure-agnostic benchmark. Prop:strict-overlap-sanity uses the separate regular-overlap class W_n^reg to reduce back to that benchmark, while prop:comparator-separation is the formal statement that the one-sided shell model is a strict extension rather than a prose-level analogy. BonviniKennedyDukesBalakrishnan2024StructureAgnosticATE is the closest smoothness-aware ATE comparator because the abstract explicitly lists minimax lower bounds for the pure structure-agnostic class and for a hybrid smoothness class; the present kernel keeps the same full-population ATE and black-box nuisance language but replaces regular overlap by one-sided shell decay. ArmstrongKolesar2021FiniteSampleATE is a close lack-of-overlap comparator because its introduction studies finite-sample optimal ATE estimation and confidence intervals without overlap assumptions and derives minimum smoothness thresholds for root-n inference, but it conditions on the realized design and optimizes linear estimators over explicit smoothness classes rather than deriving a random-design structure-agnostic kappa-shell minimax frontier. Dorn2025WeakOverlapDRTStats is the nearest weak-overlap estimator comparator because its abstract gives thresholded doubly robust asymptotic normality together with nuisance-rate and outcome-smoothness costs under weak overlap; thm:clipped-upper converts that style of bookkeeping into an absolute-risk envelope rather than an inference theorem. MaSantAnnaSasakiUra2023DRWeakOverlap and MaWang2020RobustIPW remain trimming comparators because they preserve the original ATE or robustify inference under small denominators without supplying matched upper and lower absolute-risk laws. KennedyBalakrishnanRobinsWasserman2024MinimaxCATE is the closest converse template because its abstract says the lower bound is built by a localized fuzzy-hypotheses argument for pointwise CATE; conj:tail-lower-bound moves that localization from a covariate point to the propensity boundary for a global ATE. JinSyrgkanis2025GeneralLinearFunctionalLowerBounds is the closest newer converse comparator because its abstract first recovers the ATE case and then extends to general functionals in two debiasing regimes; conj:minimax-frontier asks for the one-sided overlap-shell specialization that is still absent at that paper-level scope. KhanTamer2010IrregularIdentification, HongLeungLi2020FinitePopulationLimitedOverlap, and HeilerKazak2021ExtremePropensity remain the irregularity background: they explain why inverse-weight tails alter rates or limit laws, but they do not produce the one-sided treated/control phase diagram or the strict comparator theorem encoded here. RobinsLiMukherjeeTchetgenVanDerVaart2017MinimaxHOIF remains the higher-order comparator because it leaves open whether smoothness gains survive one-sided overlap decay.
+
+\section{Setup}
+
+Target estimand: tau = E[Y(1) - Y(0)].
+Estimand-defining functional: R_n^* = inf_{lambda in Lambda_n} R_n(lambda), where R_n(lambda) is def:frontier-functional = n^(-1/2) v_kappa(lambda) + n^(-1/2)(lambda^(-1) r_1n + r_0n + lambda^(-3/2) r_en + r_en) + lambda^(kappa/2) r_1n + lambda^(-1) r_1n r_en + r_0n r_en.
+\begin{itemize}
+  \item $n$ --- sample_size; N; index $:= Sample size.$
+  \item $O$ --- random_vector; {(Y,D,X): Y in R, D in {0,1}, X in X}; data_unit $:= Observed unit O = (Y, D, X).$
+  \item $O_1, ..., O_n$ --- sample; ({(Y,D,X): Y in R, D in {0,1}, X in X})^n; data $:= Observed sample of n units.$
+  \item $Y$ --- outcome; R; data_component $:= Observed outcome component of O.$
+  \item $D$ --- treatment; {0,1}; data_component $:= Observed treatment indicator component of O.$
+  \item $X$ --- covariate; X; data_component $:= Observed covariate component of O.$
+  \item $P$ --- law; laws of O; model $:= Observed-data law of O at sample size n.$
+  \item $P_X$ --- marginal_law; laws of X; design_measure $:= Marginal law of X induced by P.$
+  \item $Y(1), Y(0)$ --- potential_outcomes; R^2; causal_primitives $:= Potential outcomes under treatment and control.$
+  \item $e$ --- propensity_score; nuisance $:= e(x) = P(D = 1 | X = x).$
+  \item $g_1$ --- outcome_regression; nuisance $:= g_1(x) = E[Y | D = 1, X = x].$
+  \item $g_0$ --- outcome_regression; nuisance $:= g_0(x) = E[Y | D = 0, X = x].$
+  \item $tau$ --- causal_parameter; R; target_estimand $:= tau = E[Y(1) - Y(0)].$
+  \item $kappa$ --- tail_exponent; (0, infinity); regime_parameter $:= One-sided overlap-decay exponent governing shell probabilities near e(X) = 0.$
+  \item $eta_plus$ --- overlap_margin; (0,1); regime_parameter $:= Right-overlap margin satisfying e(X) <= 1 - eta_plus almost surely.$
+  \item $eta_minus$ --- overlap_margin; (0,1); sanity_parameter $:= Left-overlap margin for the strict-overlap sanity reduction.$
+  \item $lambda_0$ --- tail_scale_cap; (0,1); tuning_parameter $:= Fixed upper cap for the clipping grid, chosen inside the tail region where the shell law is imposed.$
+  \item $r_1n$ --- rate_sequence; (0, infinity)^N; nuisance_rate $:= Oracle L2(P_X) estimability rate for the treated regression nuisance g_1.$
+  \item $r_0n$ --- rate_sequence; (0, infinity)^N; nuisance_rate $:= Oracle L2(P_X) estimability rate for the control regression nuisance g_0.$
+  \item $r_en$ --- rate_sequence; (0, infinity)^N; nuisance_rate $:= Oracle L2(P_X) estimability rate for the propensity nuisance e.$
+  \item $hat_g_1n$ --- estimator_sequence; nuisance_estimator $:= Cross-fitted witness estimator chosen for the upper theorem to attain the treated-regression estimability rate.$
+  \item $hat_g_0n$ --- estimator_sequence; nuisance_estimator $:= Cross-fitted witness estimator chosen for the upper theorem to attain the control-regression estimability rate.$
+  \item $hat_e_n$ --- estimator_sequence; nuisance_estimator $:= Cross-fitted witness estimator chosen for the upper theorem to attain the propensity estimability rate before clipping and right-side stabilization.$
+  \item $lambda$ --- threshold; (0,1]; tuning_parameter $:= Lower clipping threshold for the treated inverse-propensity factor.$
+  \item $lambda_dagger_n$ --- threshold_sequence; (0,1]^N; lower_bound_selection $:= Deterministic near-minimizing clipping threshold used by the converse, chosen so that R_n(lambda_dagger_n) <= 2 R_n^*.$
+  \item $tbar_n$ --- rate_sequence; [0, infinity)^N; tuning_parameter $:= Largest polynomial clipping exponent with tbar_n -> infinity.$
+  \item $a_0$ --- rate_exponent; (0, infinity); smoothness_oracle_index $:= Exponent satisfying r_0n = n^(-a_0) in the rate-specialized subclass.$
+  \item $a_1$ --- rate_exponent; (0, infinity); smoothness_oracle_index $:= Exponent satisfying r_1n = n^(-a_1) in the rate-specialized subclass.$
+  \item $a_e$ --- rate_exponent; (0, infinity); smoothness_oracle_index $:= Exponent satisfying r_en = n^(-a_e) in the rate-specialized subclass.$
+  \item $tilde_g_1$ --- reference_nuisance; sa_reference $:= Fixed reference (black-box handed value) for the treated regression; the class is the L2(P_X) ball of radius r_1n around it.$
+  \item $tilde_g_0$ --- reference_nuisance; sa_reference $:= Fixed reference for the control regression; class = L2(P_X) ball radius r_0n.$
+  \item $tilde_e$ --- reference_nuisance; sa_reference $:= Fixed reference for the propensity; class = L2(P_X) ball radius r_en.$
+\end{itemize}
+
+\section{Assumptions}
+
+\begin{assumption}[ass:iid]\label{ass:iid}
+O_1, ..., O_n are i.i.d. draws from P.
+\par\smallskip\noindent\emph{Standard} (i.i.d. sampling, \cite{ChernozhukovEtAl2018DML}).
+\end{assumption}
+
+\begin{assumption}[ass:consistency]\label{ass:consistency}
+Y = D Y(1) + (1 - D) Y(0) almost surely.
+\par\smallskip\noindent\emph{Standard} (consistency, \cite{HiranoImbensRidder2003EfficientATE}).
+\end{assumption}
+
+\begin{assumption}[ass:ignorability]\label{ass:ignorability}
+(Y(1), Y(0)) is independent of D conditional on X.
+\par\smallskip\noindent\emph{Standard} (conditional ignorability, \cite{HiranoImbensRidder2003EfficientATE}).
+\end{assumption}
+
+\begin{assumption}[ass:tail-shell]\label{ass:tail-shell}
+There exist c_shell_minus > 0, c_shell_plus > 0, and lambda_0 in (0,1) such that c_shell_minus lambda^kappa <= P(lambda / 2 < e(X) <= lambda) <= c_shell_plus lambda^kappa for every lambda in (0, lambda_0].
+\par\smallskip\noindent\emph{Novel.} This is realistic when the propensity score has a density f_e(u) comparable to u^(kappa - 1) near zero, because then each dyadic shell (lambda / 2, lambda] has mass of order lambda^kappa. That class includes Beta-type boundary behavior and monotone single-index selection rules with regularly varying latent-index density at the participation cutoff.
+\end{assumption}
+
+\begin{assumption}[ass:right-overlap]\label{ass:right-overlap}
+e(X) <= 1 - eta_plus almost surely.
+\par\smallskip\noindent\emph{Novel.} This is realistic in one-sided weak-overlap designs where treatment scarcity occurs only near e(X) = 0 while the control arm stays uniformly represented. Examples include eligibility rules with a rare-treatment tail but a control take-up rate bounded away from zero, and Beta-type propensity laws that are singular only at the left boundary.
+\end{assumption}
+
+\begin{assumption}[ass:region-compatibility]\label{ass:region-compatibility}
+2 lambda_0 < 1 - eta_plus.
+\par\smallskip\noindent\emph{Novel.} This is realistic in one-sided weak-overlap designs that separate the rare-treatment boundary region from a regular interior region. Any design with left-tail irregularity confined below lambda_0 and a control-rich interior beginning strictly above 2 lambda_0 satisfies it, including Beta-type tails spliced to an interior propensity band.
+\end{assumption}
+
+\begin{assumption}[ass:resid-treated]\label{ass:resid-treated}
+sup_{x in X} E[(Y - g_1(X))^2 | D = 1, X = x] <= sigma_1_sq for some finite sigma_1_sq.
+\par\smallskip\noindent\emph{Standard} (uniform treated residual second-moment envelope, \cite{Dorn2025WeakOverlapDRTStats}).
+\end{assumption}
+
+\begin{assumption}[ass:resid-control]\label{ass:resid-control}
+sup_{x in X} E[(Y - g_0(X))^2 | D = 0, X = x] <= sigma_0_sq for some finite sigma_0_sq.
+\par\smallskip\noindent\emph{Standard} (uniform control residual second-moment envelope, \cite{Dorn2025WeakOverlapDRTStats}).
+\end{assumption}
+
+\begin{assumption}[ass:estimable-g1]\label{ass:estimable-g1}
+|| g_1 - tilde_g_1 ||_{L2(P_X)} <= r_1n.
+\par\smallskip\noindent\emph{Standard} (structure-agnostic treated-regression estimability at rate r_1n, \cite{JinSyrgkanis2024StructureAgnosticDR}).
+\end{assumption}
+
+\begin{assumption}[ass:estimable-g0]\label{ass:estimable-g0}
+|| g_0 - tilde_g_0 ||_{L2(P_X)} <= r_0n.
+\par\smallskip\noindent\emph{Standard} (structure-agnostic control-regression estimability at rate r_0n, \cite{JinSyrgkanis2024StructureAgnosticDR}).
+\end{assumption}
+
+\begin{assumption}[ass:estimable-e]\label{ass:estimable-e}
+|| e - tilde_e ||_{L2(P_X)} <= r_en.
+\par\smallskip\noindent\emph{Standard} (structure-agnostic propensity estimability at rate r_en, \cite{BonviniKennedyDukesBalakrishnan2024StructureAgnosticATE}).
+\end{assumption}
+
+\begin{assumption}[ass:regular-cell-mass]\label{ass:regular-cell-mass}
+There exists c_reg > 0 such that P(2 lambda_0 < e(X) <= 1 - eta_plus) >= c_reg.
+\par\smallskip\noindent\emph{Novel.} This is realistic when the design is one-sidedly weak only near e(X) = 0 and retains a nonvanishing interior stratum with treatment propensity bounded away from both 0 and 1. Mixture designs with a rare-treatment tail plus a regular eligibility stratum satisfy this directly once the tail cap lambda_0 is chosen below the interior onset.
+\end{assumption}
+
+\begin{assumption}[ass:strict-left-overlap-sanity]\label{ass:strict-left-overlap-sanity}
+e(X) >= eta_minus almost surely.
+\par\smallskip\noindent\emph{Standard} (positivity away from zero, \cite{HiranoImbensRidder2003EfficientATE}).
+\end{assumption}
+
+\begin{assumption}[ass:bounded-signal]\label{ass:bounded-signal}
+There is a finite constant M with E[(g_1(X) - g_0(X))^2] <= M and E[Y^2] <= M (bounded second moments of the signal and the outcome); together with ass:resid-treated and ass:resid-control this gives the oracle clipped score the L2 control E[psi_lambda^2] <= C (1 + E[e_lambda(X)^(-1)]) for a constant C depending only on M, sigma_1_sq, sigma_0_sq.
+\par\smallskip\noindent\emph{Standard} (bounded second moments, \cite{ChernozhukovEtAl2018DML}).
+\end{assumption}
+
+\begin{assumption}[ass:class-nonempty]\label{ass:class-nonempty}
+W_n(kappa, r_0n, r_1n, r_en) is nonempty: there exists at least one law satisfying all its defining conditions (e.g. a Gaussian-outcome law with a one-sided propensity-tail of index kappa).
+\par\smallskip\noindent\emph{Standard} (class nonemptiness, \cite{JinSyrgkanis2024StructureAgnosticDR}).
+\end{assumption}
+
+\begin{assumption}[ass:nuisance-estimator-rate]\label{ass:nuisance-estimator-rate}
+There are cross-fit estimators hat_g_1n, hat_g_0n, hat_e_n with sup_{P in W_n} || hat_g_1n - g_1 ||_{L2(P_X)} = O_P(r_1n), sup_{P in W_n} || hat_g_0n - g_0 ||_{L2(P_X)} = O_P(r_0n), and sup_{P in W_n} || hat_e_n - e ||_{L2(P_X)} = O_P(r_en) (estimator rates, uniform over the class; distinct from the oracle-ball conditions ass:estimable-*).
+\par\smallskip\noindent\emph{Standard} (cross-fit nuisance estimation rates, \cite{ChernozhukovEtAl2018DML}).
+\end{assumption}
+
+\section{Definitions}
+
+\begin{definition}[def:weak-overlap-class]\label{def:weak-overlap-class}
+$W_n(kappa, r_0n, r_1n, r_en) := { P : P admits potential outcomes (Y(1), Y(0)) and satisfies ass:consistency, ass:ignorability, ass:tail-shell, ass:right-overlap, ass:region-compatibility, ass:resid-treated, ass:resid-control, ass:estimable-g1, ass:estimable-g0, ass:estimable-e, and ass:bounded-signal at sample size n }$ --- the class of all objects satisfying: ass:consistency; ass:ignorability; ass:tail-shell; ass:right-overlap; ass:region-compatibility; ass:resid-treated; ass:resid-control; ass:estimable-g1; ass:estimable-g0; ass:estimable-e.
+\end{definition}
+
+\begin{definition}[def:regular-overlap-class]\label{def:regular-overlap-class}
+$W_n^reg(r_0n, r_1n, r_en) := { P : P admits potential outcomes (Y(1), Y(0)) and satisfies ass:consistency, ass:ignorability, ass:strict-left-overlap-sanity, ass:right-overlap, ass:resid-treated, ass:resid-control, ass:estimable-g1, ass:estimable-g0, ass:estimable-e, and ass:bounded-signal at sample size n }$ --- the class of all objects satisfying: ass:consistency; ass:ignorability; ass:strict-left-overlap-sanity; ass:right-overlap; ass:resid-treated; ass:resid-control; ass:estimable-g1; ass:estimable-g0; ass:estimable-e.
+\end{definition}
+
+\begin{definition}[def:true-clipped-propensity]\label{def:true-clipped-propensity}
+$e_lambda := e_lambda(x) = max{e(x), lambda}$ \quad (\text{inputs: } e, lambda)
+\end{definition}
+
+\begin{definition}[def:estimated-clipped-propensity]\label{def:estimated-clipped-propensity}
+$hat_e_lambda := hat_e_lambda(x) = min{1 - eta_plus / 2, max{hat_e_n(x), lambda}}$ \quad (\text{inputs: } hat_e_n, lambda, eta_plus)
+\end{definition}
+
+\begin{definition}[def:oracle-clipped-score]\label{def:oracle-clipped-score}
+$psi_lambda := psi_lambda(O; g_0, g_1, e) = g_1(X) - g_0(X) + D (Y - g_1(X)) / e_lambda(X) - (1 - D) (Y - g_0(X)) / (1 - e(X))$ \quad (\text{inputs: } O, g_0, g_1, e, lambda)
+\end{definition}
+
+\begin{definition}[def:plugin-score]\label{def:plugin-score}
+$hat_psi_lambda := hat_psi_lambda(O) = hat_g_1n(X) - hat_g_0n(X) + D (Y - hat_g_1n(X)) / hat_e_lambda(X) - (1 - D) (Y - hat_g_0n(X)) / (1 - min{hat_e_n(X), 1 - eta_plus / 2})$ \quad (\text{inputs: } O, hat_g_0n, hat_g_1n, hat_e_n, eta_plus, lambda)
+\end{definition}
+
+\begin{definition}[def:crossfit-estimator]\label{def:crossfit-estimator}
+$hat_tau_lambda := hat_tau_lambda = n^(-1) sum_{i=1}^n hat_psi_lambda(O_i; hat_g_0n^(-i), hat_g_1n^(-i), hat_e_n^(-i), eta_plus, lambda)$ \quad (\text{inputs: } O_1, ..., O_n, hat_g_0n, hat_g_1n, hat_e_n, eta_plus, lambda, n)
+\end{definition}
+
+\begin{definition}[def:tail-mass-functional]\label{def:tail-mass-functional}
+$pi(lambda) := pi(lambda) = P(e(X) <= lambda)$ \quad (\text{inputs: } P, e, X, lambda)
+\end{definition}
+
+\begin{definition}[def:variance-scale]\label{def:variance-scale}
+$v_kappa(lambda) := v_kappa(lambda) = lambda^(-(1 - kappa) / 2) if 0 < kappa < 1, v_kappa(lambda) = (1 + log(lambda_0 / lambda))^(1/2) if kappa = 1, and v_kappa(lambda) = 1 if kappa > 1$ \quad (\text{inputs: } kappa, lambda, lambda_0)
+\end{definition}
+
+\begin{definition}[def:exact-frontier-functional]\label{def:exact-frontier-functional}
+$U_n(lambda) := U_n(lambda) = n^(-1/2) (E[e_lambda(X)^(-1)])^(1/2) + n^(-1/2) (lambda^(-1) r_1n + r_0n + lambda^(-3/2) r_en + r_en) + pi(lambda)^(1/2) r_1n + lambda^(-1) r_1n r_en + r_0n r_en$ \quad (\text{inputs: } n, lambda, e, r_1n, r_0n, r_en)
+\end{definition}
+
+\begin{definition}[def:frontier-functional]\label{def:frontier-functional}
+$R_n(lambda) := R_n(lambda) = n^(-1/2) v_kappa(lambda) + n^(-1/2) (lambda^(-1) r_1n + r_0n + lambda^(-3/2) r_en + r_en) + lambda^(kappa / 2) r_1n + lambda^(-1) r_1n r_en + r_0n r_en$ \quad (\text{inputs: } n, lambda, kappa, r_1n, r_0n, r_en, lambda_0)
+\end{definition}
+
+\begin{definition}[def:optimal-frontier]\label{def:optimal-frontier}
+$R_n^* := R_n^* = inf_{lambda in Lambda_n} R_n(lambda)$ \quad (\text{inputs: } Lambda_n, lambda)
+\end{definition}
+
+\begin{definition}[def:clipping-grid]\label{def:clipping-grid}
+$Lambda_n := Lambda_n = { lambda_0 n^(-t) : 0 <= t <= tbar_n }, with the base clip level chosen below the overlap ceiling, lambda_0 <= 1 - eta_plus/2, so every lambda in Lambda_n satisfies lambda <= 1 - eta_plus/2 (the clipped denominator hat_e_lambda then never saturates the upper cap).$ \quad (\text{inputs: } lambda_0, n, tbar_n)
+\end{definition}
+
+\begin{definition}[def:least-favorable-family]\label{def:least-favorable-family}
+$P_0, P_1 := Two-point parametric family (RECIPE only; properties are proof obligations of conj:tail-lower-bound). Conditional on ass:class-nonempty, fix an explicit baseline witness law P^circ in W_n with marginal P_X^circ, propensity e^circ, nuisances g_0^circ, g_1^circ. Let R = { x : 2 lambda_0 < e^circ(x) <= 1 - eta_plus }, bar_g_1 = (g_1^circ + tilde_g_1)/2, h_n = c_0 n^(-1/2), Delta_n = h_n / (2 P_X^circ(R)). Define P_0, P_1 by keeping P_X^circ, e^circ and the control arm fixed, replacing the treated regression by g_{1,-} = bar_g_1 - Delta_n 1_R and g_{1,+} = bar_g_1 + Delta_n 1_R, and assigning the treated residual a COMMON Gaussian law N(0, v_1^2) with 0 < v_1^2 <= sigma_1_sq under BOTH laws. The proof must verify: (i) both laws are in W_n (symmetric recentering keeps each treated regression in the g_1-ball; overlap-side conditions depend only on P_X^circ, e^circ); (ii) tau(P_1) - tau(P_0) = h_n; (iii) the n-fold chi-square is O(1), an elementary Gaussian mean-shift of size 2 Delta_n on R.$ \quad (\text{inputs: } X, e, lambda_0, eta_plus, h_n, sigma_1_sq, v_1)
+\end{definition}
+
+\begin{definition}[def:rate-exponent-subclass]\label{def:rate-exponent-subclass}
+$E_n(a_0, a_1, a_e, kappa) := { P in W_n(kappa, r_0n, r_1n, r_en) : r_0n = n^(-a_0), r_1n = n^(-a_1), and r_en = n^(-a_e) }$ --- the class of all objects satisfying: ass:consistency; ass:ignorability; ass:tail-shell; ass:right-overlap; ass:region-compatibility; ass:resid-treated; ass:resid-control; ass:estimable-g1; ass:estimable-g0; ass:estimable-e.
+\end{definition}
+
+\begin{definition}[def:regular-rate-exponent-subclass]\label{def:regular-rate-exponent-subclass}
+$E_n^reg(a_0, a_1, a_e) := { P in W_n^reg(r_0n, r_1n, r_en) : r_0n = n^(-a_0), r_1n = n^(-a_1), and r_en = n^(-a_e) }$ --- the class of all objects satisfying: ass:consistency; ass:ignorability; ass:strict-left-overlap-sanity; ass:right-overlap; ass:resid-treated; ass:resid-control; ass:estimable-g1; ass:estimable-g0; ass:estimable-e.
+\end{definition}
+
+\begin{definition}[def:phase-exponent]\label{def:phase-exponent}
+$nu(a_0, a_1, a_e, kappa) := nu(a_0, a_1, a_e, kappa) = sup_{t >= 0} min{ 1/2 - t (1 - kappa) / 2, a_1 + t kappa / 2, 1/2 + a_1 - t, 1/2 + a_e - 3 t / 2, a_1 + a_e - t, a_0 + a_e } if 0 < kappa < 1, and nu(a_0, a_1, a_e, kappa) = sup_{t >= 0} min{ 1/2, a_1 + t kappa / 2, 1/2 + a_1 - t, 1/2 + a_e - 3 t / 2, a_1 + a_e - t, a_0 + a_e } if kappa >= 1$ \quad (\text{inputs: } a_0, a_1, a_e, kappa)
+\end{definition}
+
+\begin{definition}[def:critical-exponent]\label{def:critical-exponent}
+$kappa^*(a_0, a_1, a_e) := kappa^*(a_0, a_1, a_e) = inf(({ kappa > 0 : nu(a_0, a_1, a_e, kappa) = B(a_0, a_1, a_e) } union {+infinity})), where B(a_0, a_1, a_e) = min{1/2, a_1 + a_e, a_0 + a_e} and nu is the corrected phase exponent from def:phase-exponent$ \quad (\text{inputs: } a_0, a_1, a_e, kappa)
+\end{definition}
+
+\section{Main results}
+
+\begin{theorem}[thm:clipped-upper]\label{thm:clipped-upper}
+Let hat_g_1n, hat_g_0n, hat_e_n be cross-fit estimators satisfying ass:nuisance-estimator-rate (uniform L2 rates r_1n, r_0n, r_en over the class). Then for every P in W_n(kappa, r_0n, r_1n, r_en) (and every P in W_n^reg(r_0n, r_1n, r_en)) and every deterministic lambda in Lambda_n: E_P[psi_lambda(O; g_0, g_1, e)] = tau, and the feasible clipped doubly-robust estimator satisfies |hat_tau_lambda - tau| = O_P(U_n(lambda)) UNIFORMLY over the class -- for each epsilon > 0 there is a constant C_epsilon depending only on the class constants with sup_{P in W_n(kappa,r_0n,r_1n,r_en)} P_P( |hat_tau_lambda - tau(P)| > C_epsilon U_n(lambda) ) <= epsilon. (The estimator-rate premise ass:nuisance-estimator-rate and the moment control ass:bounded-signal are explicit hypotheses on the estimators / class, not consequences of the per-law causal conditions alone.)
+\end{theorem}
+Fix a deterministic $\lambda\in\Lambda_n$. Write the cross-fitted estimator in fold form. Let $I_1,\dots,I_M$ be the validation folds, $n_m=|I_m|$, and let $(\hat g_{1,m},\hat g_{0,m},\hat e_m)$ be the nuisance fits trained on the complement of fold $I_m$. Define
+\[
+\hat e_{+,m}(x)=\min\{\hat e_m(x),1-\eta_+/2\},\qquad
+\hat e_{\lambda,m}(x)=\max\{\hat e_{+,m}(x),\lambda\}.
+\]
+Because Definition `def:clipping-grid` imposes $\lambda_0\le 1-\eta_+/2$, every $\lambda\in\Lambda_n$ satisfies $\lambda\le 1-\eta_+/2$, so
+\[
+\hat e_{\lambda,m}(x)=\min\{1-\eta_+/2,\max\{\hat e_m(x),\lambda\}\},
+\]
+which is exactly the foldwise version of `def:estimated-clipped-propensity`. Hence
+\[
+\hat\tau_\lambda=\sum_{m=1}^M \frac{n_m}{n} P_{n,m}\hat\psi_{\lambda,m},
+\]
+where $P_{n,m}$ is the empirical mean on fold $I_m$ and
+\[
+\hat\psi_{\lambda,m}(O)
+=\hat g_{1,m}(X)-\hat g_{0,m}(X)
++\frac{D\{Y-\hat g_{1,m}(X)\}}{\hat e_{\lambda,m}(X)}
+-\frac{(1-D)\{Y-\hat g_{0,m}(X)\}}{1-\hat e_{+,m}(X)}.
+\]
+
+We first prove unbiasedness of the oracle score. By consistency and ignorability,
+\[
+g_d(X)=E[Y\mid D=d,X]=E[Y(d)\mid X],\qquad d\in\{0,1\},
+\]
+so
+\[
+\tau=E[Y(1)-Y(0)]=E[g_1(X)-g_0(X)].
+\]
+Also $e_\lambda(X)$ is $X$-measurable, and therefore
+\[
+E\!\left[\frac{D\{Y-g_1(X)\}}{e_\lambda(X)}\Bigm|X\right]
+=\frac{1}{e_\lambda(X)}E\!\left[D\,E\{Y-g_1(X)\mid D,X\}\Bigm|X\right]=0,
+\]
+because $E[Y-g_1(X)\mid D=1,X]=0$. Likewise,
+\[
+E\!\left[\frac{(1-D)\{Y-g_0(X)\}}{1-e(X)}\Bigm|X\right]=0
+\]
+because $E[Y-g_0(X)\mid D=0,X]=0$. Hence
+\[
+E_P[\psi_\lambda(O;g_0,g_1,e)\mid X]=g_1(X)-g_0(X),
+\qquad
+E_P[\psi_\lambda(O;g_0,g_1,e)]=\tau.
+\]
+
+Now fix a fold $m$ and condition on its training sample. Then $(\hat g_{1,m},\hat g_{0,m},\hat e_m)$ are fixed functions, independent of the validation observations in $I_m$. Write
+\[
+\delta_{1,m}=\hat g_{1,m}-g_1,\qquad \delta_{0,m}=\hat g_{0,m}-g_0.
+\]
+Since the residual terms have conditional mean zero,
+\[
+P\hat\psi_{\lambda,m}-P\psi_\lambda
+=P\!\left[\delta_{1,m}(X)\Bigl(1-\frac{e(X)}{\hat e_{\lambda,m}(X)}\Bigr)\right]
+-P\!\left[\delta_{0,m}(X)\frac{e(X)-\hat e_{+,m}(X)}{1-\hat e_{+,m}(X)}\right].
+\]
+Split the treated term over $\{e\le \lambda\}$ and $\{e>\lambda\}$.
+
+On $\{e\le\lambda\}$,
+\[
+\left|1-\frac{e}{\hat e_{\lambda,m}}\right|\le 1,
+\]
+so Cauchy--Schwarz gives
+\[
+\left|P\!\left[\delta_{1,m}(X)\Bigl(1-\frac{e(X)}{\hat e_{\lambda,m}(X)}\Bigr)\mathbf 1\{e(X)\le\lambda\}\right]\right|
+\le \pi(\lambda)^{1/2}\|\delta_{1,m}\|_{L_2(P_X)}.
+\]
+On $\{e>\lambda\}$ we have $e_\lambda=e$ and $\hat e_{\lambda,m}\ge\lambda$, hence
+\[
+\left|1-\frac{e}{\hat e_{\lambda,m}}\right|
+=\frac{|\hat e_{\lambda,m}-e|}{\hat e_{\lambda,m}}
+\le \lambda^{-1}|\hat e_{\lambda,m}-e|.
+\]
+The clipping map $u\mapsto \min\{1-\eta_+/2,\max\{u,\lambda\}\}$ is $1$-Lipschitz, so $|\hat e_{\lambda,m}-e_\lambda|\le |\hat e_m-e|$ pointwise; on $\{e>\lambda\}$, $e_\lambda=e$. Therefore
+\[
+\left|P\!\left[\delta_{1,m}(X)\Bigl(1-\frac{e(X)}{\hat e_{\lambda,m}(X)}\Bigr)\mathbf 1\{e(X)>\lambda\}\right]\right|
+\le \lambda^{-1}\|\delta_{1,m}\|_{L_2(P_X)}\|\hat e_m-e\|_{L_2(P_X)}.
+\]
+
+For the control term, `ass:right-overlap` gives $e(X)\le 1-\eta_+$ almost surely, and by construction $\hat e_{+,m}(X)\le 1-\eta_+/2$, so $1-\hat e_{+,m}(X)\ge \eta_+/2$. Hence
+\[
+\left|\frac{e(X)-\hat e_{+,m}(X)}{1-\hat e_{+,m}(X)}\right|
+\le \frac{2}{\eta_+}|e(X)-\hat e_{+,m}(X)|
+\le \frac{2}{\eta_+}|\hat e_m(X)-e(X)|,
+\]
+because $u\mapsto \min\{u,1-\eta_+/2\}$ is also $1$-Lipschitz. Thus
+\[
+|P(\hat\psi_{\lambda,m}-\psi_\lambda)|
+\le \pi(\lambda)^{1/2}\|\delta_{1,m}\|_{L_2(P_X)}
++\lambda^{-1}\|\delta_{1,m}\|_{L_2(P_X)}\|\hat e_m-e\|_{L_2(P_X)}
++C_{\eta_+}\|\delta_{0,m}\|_{L_2(P_X)}\|\hat e_m-e\|_{L_2(P_X)}.
+\]
+
+We next bound the foldwise empirical fluctuation. Conditional on the training fold,
+\[
+P_{n,m}\hat\psi_{\lambda,m}-P\hat\psi_{\lambda,m}
+=(P_{n,m}-P)\psi_\lambda
++(P_{n,m}-P)A_{1,m}
+-(P_{n,m}-P)A_{0,m}
++(P_{n,m}-P)B_{1,m}
+-(P_{n,m}-P)B_{0,m},
+\]
+where
+\[
+A_{1,m}(O)=\delta_{1,m}(X)\Bigl(1-\frac{D}{\hat e_{\lambda,m}(X)}\Bigr),\qquad
+A_{0,m}(O)=\delta_{0,m}(X)\Bigl(1-\frac{1-D}{1-\hat e_{+,m}(X)}\Bigr),
+\]
+\[
+B_{1,m}(O)=D\{Y-g_1(X)\}\Bigl(\frac1{\hat e_{\lambda,m}(X)}-\frac1{e_\lambda(X)}\Bigr),
+\qquad
+B_{0,m}(O)=(1-D)\{Y-g_0(X)\}\Bigl(\frac1{1-\hat e_{+,m}(X)}-\frac1{1-e(X)}\Bigr).
+\]
+Each term is conditionally mean zero.
+
+By `ass:bounded-signal`,
+\[
+E[\psi_\lambda(O;g_0,g_1,e)^2]\le C\{1+E[e_\lambda(X)^{-1}]\}
+\]
+with $C$ depending only on the class constants in `ass:bounded-signal`, `ass:resid-treated`, and `ass:resid-control`. Since $E[e_\lambda(X)^{-1}]\ge 1$, conditional Chebyshev gives
+\[
+(P_{n,m}-P)\psi_\lambda
+=O_P\!\left(n^{-1/2}E[e_\lambda(X)^{-1}]^{1/2}\right).
+\]
+
+For $A_{1,m}$, $|1-D/\hat e_{\lambda,m}|\le 1+\lambda^{-1}\le 2\lambda^{-1}$, so
+\[
+E[A_{1,m}^2]\le 4\lambda^{-2}\|\delta_{1,m}\|_{L_2(P_X)}^2,
+\qquad
+(P_{n,m}-P)A_{1,m}
+=O_P\!\left(n^{-1/2}\lambda^{-1}\|\delta_{1,m}\|_{L_2(P_X)}\right).
+\]
+For $A_{0,m}$, $1-\hat e_{+,m}\ge \eta_+/2$, hence
+\[
+\left|1-\frac{1-D}{1-\hat e_{+,m}}\right|\le 1+\frac{2}{\eta_+},
+\]
+so
+\[
+E[A_{0,m}^2]\le C_{\eta_+}\|\delta_{0,m}\|_{L_2(P_X)}^2,
+\qquad
+(P_{n,m}-P)A_{0,m}
+=O_P\!\left(n^{-1/2}\|\delta_{0,m}\|_{L_2(P_X)}\right).
+\]
+
+For $B_{1,m}$,
+\[
+\left|\frac1{\hat e_{\lambda,m}}-\frac1{e_\lambda}\right|
+=\frac{|\hat e_{\lambda,m}-e_\lambda|}{\hat e_{\lambda,m}e_\lambda}
+\le \frac{|\hat e_m-e|}{\lambda e_\lambda},
+\]
+so `ass:resid-treated` yields
+\[
+E[B_{1,m}^2]
+\le \sigma_1^2 E\!\left[\frac{e(X)}{\lambda^2e_\lambda(X)^2}|\hat e_m(X)-e(X)|^2\right]
+\le \sigma_1^2\lambda^{-3}\|\hat e_m-e\|_{L_2(P_X)}^2,
+\]
+because $e(X)\le e_\lambda(X)$ and $e_\lambda(X)\ge \lambda$. Therefore
+\[
+(P_{n,m}-P)B_{1,m}
+=O_P\!\left(n^{-1/2}\lambda^{-3/2}\|\hat e_m-e\|_{L_2(P_X)}\right).
+\]
+For $B_{0,m}$, the map $u\mapsto (1-u)^{-1}$ is Lipschitz on $(-\infty,1-\eta_+/2]$, so
+\[
+\left|\frac1{1-\hat e_{+,m}}-\frac1{1-e}\right|
+\le C_{\eta_+}|\hat e_m-e|,
+\]
+and `ass:resid-control` gives
+\[
+E[B_{0,m}^2]\le C_{\eta_+,\sigma_0^2}\|\hat e_m-e\|_{L_2(P_X)}^2,
+\qquad
+(P_{n,m}-P)B_{0,m}
+=O_P\!\left(n^{-1/2}\|\hat e_m-e\|_{L_2(P_X)}\right).
+\]
+Summing the five centered pieces,
+\[
+P_{n,m}\hat\psi_{\lambda,m}-P\hat\psi_{\lambda,m}
+=O_P\!\Bigl(
+n^{-1/2}E[e_\lambda(X)^{-1}]^{1/2}
++n^{-1/2}\lambda^{-1}\|\delta_{1,m}\|_{L_2(P_X)}
++n^{-1/2}\|\delta_{0,m}\|_{L_2(P_X)}
++n^{-1/2}\lambda^{-3/2}\|\hat e_m-e\|_{L_2(P_X)}
++n^{-1/2}\|\hat e_m-e\|_{L_2(P_X)}
+\Bigr).
+\]
+
+By `ass:nuisance-estimator-rate`, for every $\varepsilon>0$ there is $K_\varepsilon<\infty$, depending only on the class constants, such that uniformly over $P\in W_n(\kappa,r_{0n},r_{1n},r_{en})$,
+\[
+P\!\left(
+\max_{1\le m\le M}
+\Bigl\{
+\frac{\|\delta_{1,m}\|_{L_2(P_X)}}{r_{1n}},
+\frac{\|\delta_{0,m}\|_{L_2(P_X)}}{r_{0n}},
+\frac{\|\hat e_m-e\|_{L_2(P_X)}}{r_{en}}
+\Bigr\}
+>K_\varepsilon
+\right)\le \varepsilon/4
+\]
+for all large $n$; the finite number of folds is absorbed by a union bound. On this event, the drift bound and fluctuation bound imply
+\[
+|\hat\tau_\lambda-\tau|
+\le C_\varepsilon
+\Bigl(
+n^{-1/2}E[e_\lambda(X)^{-1}]^{1/2}
++n^{-1/2}(\lambda^{-1}r_{1n}+r_{0n}+\lambda^{-3/2}r_{en}+r_{en})
++\pi(\lambda)^{1/2}r_{1n}
++\lambda^{-1}r_{1n}r_{en}
++r_{0n}r_{en}
+\Bigr)
+= C_\varepsilon U_n(\lambda)
+\]
+with probability at least $1-\varepsilon$, uniformly over the class. Since the displayed bound is exactly `def:exact-frontier-functional`, this proves
+\[
+|\hat\tau_\lambda-\tau|=O_P(U_n(\lambda))
+\]
+uniformly over $W_n(\kappa,r_{0n},r_{1n},r_{en})$ in the stated sense. The same foldwise calculation, without the supremum over $P$, gives the pointwise $O_P(U_n(\lambda))$ bound for every fixed law at which the chosen cross-fit nuisances attain the displayed $L_2(P_X)$ rates; in particular it applies to every $P\in W_n^{\mathrm{reg}}(r_{0n},r_{1n},r_{en})$ once the explicit estimator-rate premise is imposed there.
+\par\smallskip\noindent \textit{Justification.} This theorem isolates the estimator-side object that must be matched by any minimax frontier claim: an exact clipped-score absolute-risk envelope before any tail-order simplification. \textit{Gap.} Relative to Dorn2025WeakOverlapDRTStats and MaSantAnnaSasakiUra2023DRWeakOverlap, this is an estimator-side refinement rather than a new causal target: Dorn's abstract studies weak-overlap Wald inference for a thresholded doubly robust estimator, and Ma-Sant'Anna-Sasaki-Ura study bias-corrected trimming for the original ATE. This statement instead extracts the structure-agnostic absolute-risk envelope U_n(lambda) that a minimax theorem would optimize. \textit{Consumer.} This is the upper benchmark needed to compare one-sided weak-overlap difficulty directly to the regular-overlap Jin-Syrgkanis and Bonvini-Kennedy-Dukes-Balakrishnan frontiers.
+
+\begin{proposition}[prop:tail-order-reduction]\label{prop:tail-order-reduction}
+For every P in W_n(kappa, r_0n, r_1n, r_en) and every lambda in Lambda_n there exist constants 0 < c_1 <= c_2 < infinity, depending only on the class constants, such that c_1 lambda^kappa <= pi(lambda) <= c_2 lambda^kappa, c_1 v_kappa(lambda)^2 <= E[e_lambda(X)^(-1)] <= c_2 v_kappa(lambda)^2, and c_1 R_n(lambda) <= U_n(lambda) <= c_2 R_n(lambda).
+\end{proposition}
+Fix $P\in W_n(\kappa,r_{0n},r_{1n},r_{en})$ and $\lambda\in\Lambda_n$. By
+`def:clipping-grid`, $\lambda\le \lambda_0$.
+
+For $j\ge 0$, define the dyadic shells
+\[
+A_j(\lambda)=\{2^{-(j+1)}\lambda<e(X)\le 2^{-j}\lambda\}.
+\]
+These shells are disjoint and their union is $\{e(X)\le \lambda\}$. Applying
+`ass:tail-shell` with upper endpoint $2^{-j}\lambda$ gives
+\[
+c_{\mathrm{shell},-}2^{-j\kappa}\lambda^\kappa
+\le P_X(A_j(\lambda))
+\le c_{\mathrm{shell},+}2^{-j\kappa}\lambda^\kappa .
+\]
+Summing over $j$ yields
+\[
+\pi(\lambda)=\sum_{j\ge 0}P_X(A_j(\lambda)).
+\]
+The lower bound follows from the first shell:
+\[
+\pi(\lambda)\ge P_X(A_0(\lambda))\ge c_{\mathrm{shell},-}\lambda^\kappa.
+\]
+The upper bound is the geometric sum
+\[
+\pi(\lambda)\le c_{\mathrm{shell},+}\lambda^\kappa\sum_{j\ge 0}2^{-j\kappa}
+=\frac{c_{\mathrm{shell},+}}{1-2^{-\kappa}}\lambda^\kappa.
+\]
+Hence there are class-constant numbers $0<c_{\pi,1}\le c_{\pi,2}<\infty$ with
+\[
+c_{\pi,1}\lambda^\kappa\le \pi(\lambda)\le c_{\pi,2}\lambda^\kappa.
+\]
+
+Next compare $E[e_\lambda(X)^{-1}]$ with $v_\kappa(\lambda)^2$. Decompose
+\[
+E[e_\lambda(X)^{-1}]
+=\lambda^{-1}P(e(X)\le\lambda)
++E[e(X)^{-1}\mathbf 1\{\lambda<e(X)\le\lambda_0\}]
++E[e(X)^{-1}\mathbf 1\{e(X)>\lambda_0\}].
+\]
+Partition $(\lambda,\lambda_0]$ into dyadic shells
+\[
+B_j(\lambda)=\{2^j\lambda<e(X)\le 2^{j+1}\lambda\},\qquad 0\le j\le J(\lambda),
+\]
+where $J(\lambda)$ is the largest integer with $2^{J(\lambda)+1}\lambda\le \lambda_0$.
+On $B_j(\lambda)$,
+\[
+(2^{j+1}\lambda)^{-1}\le e(X)^{-1}\le (2^j\lambda)^{-1},
+\]
+while `ass:tail-shell` at upper endpoint $2^{j+1}\lambda$ gives
+\[
+c_{\mathrm{shell},-}(2^{j+1}\lambda)^\kappa
+\le P_X(B_j(\lambda))
+\le c_{\mathrm{shell},+}(2^{j+1}\lambda)^\kappa.
+\]
+Therefore
+\[
+E[e(X)^{-1}\mathbf 1_{B_j(\lambda)}]\asymp \lambda^{\kappa-1}2^{j(\kappa-1)}
+\]
+with constants depending only on the shell constants and $\kappa$.
+
+If $0<\kappa<1$, the series $\sum_{j\ge 0}2^{j(\kappa-1)}$ converges, so
+\[
+E[e_\lambda(X)^{-1}]\asymp \lambda^{\kappa-1}
+=\lambda^{-(1-\kappa)}=v_\kappa(\lambda)^2.
+\]
+If $\kappa=1$, each shell contributes constant order and the number of shells is comparable to
+$1+\log(\lambda_0/\lambda)$, hence
+\[
+E[e_\lambda(X)^{-1}]\asymp 1+\log(\lambda_0/\lambda)=v_1(\lambda)^2.
+\]
+If $\kappa>1$, the shell sum is bounded above by a class constant, while the shell
+$(\lambda_0/2,\lambda_0]$ has strictly positive mass by `ass:tail-shell`; therefore
+\[
+E[e_\lambda(X)^{-1}]\asymp 1=v_\kappa(\lambda)^2.
+\]
+Thus there are class-constant numbers $0<c_{v,1}\le c_{v,2}<\infty$ such that
+\[
+c_{v,1}v_\kappa(\lambda)^2\le E[e_\lambda(X)^{-1}]\le c_{v,2}v_\kappa(\lambda)^2.
+\]
+
+Finally compare `def:exact-frontier-functional` and `def:frontier-functional`. The terms
+\[
+n^{-1/2}(\lambda^{-1}r_{1n}+r_{0n}+\lambda^{-3/2}r_{en}+r_{en}),
+\qquad
+\lambda^{-1}r_{1n}r_{en},
+\qquad
+r_{0n}r_{en}
+\]
+are identical in $U_n(\lambda)$ and $R_n(\lambda)$. The only replacements are
+\[
+E[e_\lambda(X)^{-1}]^{1/2}\leftrightarrow v_\kappa(\lambda),
+\qquad
+\pi(\lambda)^{1/2}\leftrightarrow \lambda^{\kappa/2},
+\]
+and the two displays above show that both comparisons hold with constants depending only on
+the class constants. Because all summands are nonnegative, there are
+$0<c_1\le c_2<\infty$ depending only on the class constants such that
+\[
+c_1R_n(\lambda)\le U_n(\lambda)\le c_2R_n(\lambda).
+\]
+This proves the proposition.
+\par\smallskip\noindent \textit{Justification.} This is the algebraic bridge from primitive clipped-score quantities to the clean kappa-indexed rate functional that the phase diagram uses. \textit{Gap.} KhanTamer2010IrregularIdentification and the weak-overlap bookkeeping summarized in Dorn2025WeakOverlapDRTStats explain why inverse weights alter rate calculations, but they do not give this exact-to-order reduction for a clipped orthogonal ATE score with separate treated and control nuisance-product channels and the kappa = 1 normalization built into v_kappa(lambda). \textit{Consumer.} It makes the conjectured frontier directly comparable to published bounded-overlap rates by collapsing the primitive envelope to a single tail-order functional.
+
+\begin{proposition}[prop:strict-overlap-sanity]\label{prop:strict-overlap-sanity}
+For every P in W_n^reg(r_0n, r_1n, r_en), if lambda in Lambda_n satisfies lambda < eta_minus, then e_lambda(x) = e(x) for all x in X and pi(lambda) = 0, so U_n(lambda) = n^(-1/2) (E[e(X)^(-1)])^(1/2) + n^(-1/2)(lambda^(-1) r_1n + r_0n + lambda^(-3/2) r_en + r_en) + lambda^(-1) r_1n r_en + r_0n r_en. In particular, if lambda_0 < eta_minus then choosing the fixed grid point lambda = lambda_0 yields |hat_tau_lambda - tau| = O_P(U_n(lambda_0)). Here ass:nuisance-estimator-rate (cross-fit estimator L2 rates) is taken as an explicit HYPOTHESIS of this proposition (it is a premise on the estimators, not a class condition); together with ass:bounded-signal in W_n^reg it supplies the hypotheses of thm:clipped-upper invoked here.
+\end{proposition}
+Fix $P\in W_n^{\mathrm{reg}}(r_{0n},r_{1n},r_{en})$ and $\lambda\in\Lambda_n$ with $\lambda<\eta_-$. By `ass:strict-left-overlap-sanity`, $e(X)\ge \eta_-$ almost surely. Hence $e(X)>\lambda$ almost surely, so by `def:true-clipped-propensity`
+\[
+e_\lambda(x)=\max\{e(x),\lambda\}=e(x)\qquad\text{for all }x.
+\]
+Also
+\[
+\pi(\lambda)=P(e(X)\le \lambda)=0.
+\]
+Substituting these identities into `def:exact-frontier-functional` gives
+\[
+U_n(\lambda)
+=n^{-1/2}E[e(X)^{-1}]^{1/2}
++n^{-1/2}(\lambda^{-1}r_{1n}+r_{0n}+\lambda^{-3/2}r_{en}+r_{en})
++\lambda^{-1}r_{1n}r_{en}+r_{0n}r_{en}.
+\]
+This proves the displayed simplification.
+
+If in addition $\lambda_0<\eta_-$, then the grid point $\lambda=\lambda_0$ belongs to $\Lambda_n$ and satisfies the previous display. Theorem `thm:clipped-upper` applies once the explicit estimator-rate premise `ass:nuisance-estimator-rate` is imposed, because membership in $W_n^{\mathrm{reg}}$ already supplies the other theorem hypotheses, including `ass:bounded-signal`. Therefore
+\[
+|\hat\tau_{\lambda_0}-\tau|=O_P(U_n(\lambda_0)).
+\]
+This is exactly the claimed strict-overlap sanity reduction.
+\par\smallskip\noindent \textit{Justification.} The proposal needs a concrete reduction showing that the weak-overlap machinery collapses to the regular-overlap benchmark when the left tail is ruled out. \textit{Gap.} JinSyrgkanis2024StructureAgnosticDR sets up ATE and ATT in Introduction equation (1), identifies ATE and weighted ATE under bounded overlap in equations (5)-(7), and states the bounded-overlap structure-agnostic rate benchmark in equation (8). This proposition is the exact reduction from the present one-sided shell model back to that same bounded-overlap benchmark. \textit{Consumer.} It certifies that any deterioration in the phase diagram is genuinely driven by one-sided overlap decay rather than by a relabeling of the regular-overlap problem.
+
+\begin{proposition}[conj:tail-lower-bound]\label{conj:tail-lower-bound}
+Assume additionally that W_n(kappa, r_0n, r_1n, r_en) is nonempty (ass:class-nonempty), the baseline satisfies the interior regular-cell mass condition ass:regular-cell-mass (P_X(R) >= c_reg > 0), and that the treated-regression radius is not smaller than the parametric scale, r_1n >= c_rate n^(-1/2) for some c_rate > 0 and all large n. Then inf_{hat_tau} sup_{P in W_n(kappa, r_0n, r_1n, r_en)} P_P( |hat_tau - tau(P)| >= c n^(-1/2) ) >= c_0 > 0 (a minimax lower bound IN PROBABILITY; by Le Cam two-point the worst-case error exceeds c n^(-1/2) with probability bounded below) for a constant c > 0 depending only on the class constants, via the two-point Le Cam family def:least-favorable-family. This proves the PARAMETRIC FLOOR only; no shell-sensitive converse matching R_n^* is claimed.
+\end{proposition}
+By `ass:class-nonempty`, choose a baseline witness law
+$P^\circ\in W_n(\kappa,r_{0n},r_{1n},r_{en})$. Let
+\[
+R=\{x:2\lambda_0<e^\circ(x)\le 1-\eta_+\}.
+\]
+By `ass:regular-cell-mass`,
+\[
+P_X^\circ(R)\ge c_{\mathrm{reg}}>0.
+\]
+Let
+\[
+\bar g_1=\frac{g_1^\circ+\tilde g_1}{2},\qquad
+h_n=c_\star n^{-1/2},\qquad
+\Delta_n=\frac{h_n}{2P_X^\circ(R)},
+\]
+where $c_\star>0$ will be chosen below, depending only on the class constants. Define
+\[
+g_{1,-}=\bar g_1-\Delta_n1_R,\qquad
+g_{1,+}=\bar g_1+\Delta_n1_R.
+\]
+Choose the common treated residual variance as $v_1^2=\sigma_1^2/2$, which is admissible since
+$v_1^2\le \sigma_1^2$.
+
+Construct laws $P_0,P_1$ as follows. Draw $X\sim P_X^\circ$ and
+$D\mid X\sim\mathrm{Bernoulli}(e^\circ(X))$. Keep the control arm exactly as under $P^\circ$.
+On the treated arm, under $P_j$ use the conditional model
+\[
+Y\mid(D=1,X=x)\sim N(g_{1,j}(x),v_1^2),\qquad j\in\{0,1\},
+\]
+where $g_{1,0}=g_{1,-}$ and $g_{1,1}=g_{1,+}$. Equivalently, one may define potential
+outcomes $Y_j(1)=g_{1,j}(X)+\varepsilon_1$ with
+$\varepsilon_1\sim N(0,v_1^2)$ independent of $D$ conditional on $X$, and reuse the baseline
+control potential outcome. Then consistency and ignorability hold by construction.
+
+We verify membership in $W_n$. The overlap-side conditions depend only on $P_X^\circ$ and
+$e^\circ$, so they are inherited unchanged from $P^\circ$. The control arm is unchanged, so
+`ass:resid-control` is inherited. The treated residual under both laws is Gaussian with variance
+$v_1^2\le \sigma_1^2$, so `ass:resid-treated` holds. The second moments required by
+`ass:bounded-signal` remain finite because we changed the treated regression by a bounded
+$L_2(P_X^\circ)$ perturbation on a set of finite mass and kept Gaussian treated residuals with
+finite variance.
+
+It remains to check the treated-regression $L_2$ ball. Since
+$\|g_1^\circ-\tilde g_1\|_{L_2(P_X^\circ)}\le r_{1n}$,
+\[
+\|\bar g_1-\tilde g_1\|_{L_2(P_X^\circ)}
+=\frac12\|g_1^\circ-\tilde g_1\|_{L_2(P_X^\circ)}\le \frac{r_{1n}}2.
+\]
+Also
+\[
+\|\Delta_n1_R\|_{L_2(P_X^\circ)}
+=\Delta_n P_X^\circ(R)^{1/2}
+=\frac{h_n}{2P_X^\circ(R)^{1/2}}
+\le \frac{c_\star}{2c_{\mathrm{reg}}^{1/2}}n^{-1/2}.
+\]
+Under the lower-bound regime $r_{1n}\ge c_{\mathrm{rate}}n^{-1/2}$, choosing
+$c_\star\le c_{\mathrm{rate}}c_{\mathrm{reg}}^{1/2}$ gives
+\[
+\|\Delta_n1_R\|_{L_2(P_X^\circ)}\le \frac{r_{1n}}2.
+\]
+Therefore
+\[
+\|g_{1,\pm}-\tilde g_1\|_{L_2(P_X^\circ)}
+\le \|\bar g_1-\tilde g_1\|_{L_2(P_X^\circ)}+\|\Delta_n1_R\|_{L_2(P_X^\circ)}
+\le r_{1n}.
+\]
+So both $P_0$ and $P_1$ lie in $W_n(\kappa,r_{0n},r_{1n},r_{en})$ for all large $n$.
+
+Next compute the parameter gap. Only the treated regression changed, so
+\[
+\tau(P_1)-\tau(P_0)
+=E_{P_X^\circ}[g_{1,+}(X)-g_{1,-}(X)]
+=2\Delta_n P_X^\circ(R)=h_n=c_\star n^{-1/2}.
+\]
+
+We now bound the $n$-sample $\chi^2$ divergence. The two laws differ only on the treated arm
+over $R$, where the conditional outcome laws are Gaussian with common variance $v_1^2$ and mean
+difference $2\Delta_n$. For one observation,
+\[
+\chi^2(P_1,P_0)
+=E_{P_0}\!\left[\left(\frac{dP_1}{dP_0}-1\right)^2\right]
+\le P_0(D=1,X\in R)\left\{\exp\!\left(\frac{4\Delta_n^2}{v_1^2}\right)-1\right\}.
+\]
+Since $P_0(D=1,X\in R)\le P_X^\circ(R)\le 1$ and
+\[
+\frac{4\Delta_n^2}{v_1^2}
+=\frac{h_n^2}{v_1^2P_X^\circ(R)^2}
+\le \frac{c_\star^2}{v_1^2c_{\mathrm{reg}}^2}\frac1n,
+\]
+we get, for all large $n$,
+\[
+\chi^2(P_1,P_0)\le \frac{C_\chi^\circ}{n}
+\]
+with $C_\chi^\circ$ depending only on $(c_\star,c_{\mathrm{reg}},\sigma_1^2)$. By
+tensorization,
+\[
+1+\chi^2(P_1^{\otimes n},P_0^{\otimes n})
+=(1+\chi^2(P_1,P_0))^n
+\le \left(1+\frac{C_\chi^\circ}{n}\right)^n
+\le e^{C_\chi^\circ}.
+\]
+Thus
+\[
+\chi^2(P_1^{\otimes n},P_0^{\otimes n})\le e^{C_\chi^\circ}-1.
+\]
+By choosing $c_\star$ smaller if necessary we may ensure $e^{C_\chi^\circ}-1<4$.
+
+Apply Lemma `lem:two-point-le-cam-in-probability` with
+$\Delta=h_n=c_\star n^{-1/2}$. It yields
+\[
+\inf_{\hat\tau}\sup_{P\in W_n(\kappa,r_{0n},r_{1n},r_{en})}
+P_P\!\left(|\hat\tau-\tau(P)|\ge \frac{c_\star}{2}n^{-1/2}\right)
+\ge \frac12\left(1-\frac{\sqrt{e^{C_\chi^\circ}-1}}{2}\right)=:c_0>0.
+\]
+Renaming $c=c_\star/2$ proves the claimed parametric floor in probability. As stated in the
+proposition, this is only a root-$n$ converse; no shell-sensitive lower bound matching
+$R_n^*$ is claimed.
+\par\smallskip\noindent \textit{Justification.} A localized O(n^(-1/2)) perturbation of the treated mean moves tau by n^(-1/2) with bounded chi-square; Le Cam gives the parametric minimax floor. \textit{Gap.} Honest parametric floor (Le Cam two-point); the product-term converse was laundered and is out of scope (needs higher-order IF + smoothness classes). \textit{Consumer.} A completed converse would turn the upper envelope into a genuine equivalence frontier and would identify whether weak overlap changes the ATE difficulty class through variance, treated-regression, or nuisance-product channels.
+
+\begin{proposition}[conj:minimax-frontier]\label{conj:minimax-frontier}
+This is NOT a minimax-frontier theorem: it states (a) a SHARP matched minimax rate on a sub-regime and (b) a floor-and-achievability sandwich elsewhere with the exact rate left OPEN. Assume W_n(kappa,r_0n,r_1n,r_en) is nonempty (ass:class-nonempty), the converse-side regular-cell mass hypothesis ass:regular-cell-mass holds for the baseline used in conj:tail-lower-bound, and r_1n >= c_rate n^(-1/2) for some c_rate > 0 and all large n; all statements are in probability (rate sense), no expected-risk claim. (a) MATCHED RATE. On the regime where R_n^* is of pure order n^(-1/2) -- equivalently, by prop:phase-diagram, kappa != 1 with nu(a_0,a_1,a_e,kappa) = 1/2, or kappa = 1 with nu(a_0,a_1,a_e,1) = 1/2 and the fixed threshold t = 0 attaining the supremum in def:phase-exponent -- the minimax ATE rate equals exactly n^(-1/2): the Le Cam floor (conj:tail-lower-bound) gives inf_{hat_tau} sup_{P in W_n} P_P(|hat_tau - tau(P)| >= c n^(-1/2)) >= c_0 > 0, and the clipped estimator (thm:clipped-upper at a near-optimal clip) gives the matching upper bound: for each epsilon > 0 a class-constant C_epsilon with sup_{P in W_n} P_P(|hat_tau - tau(P)| > C_epsilon n^(-1/2)) <= epsilon. (b) SANDWICH ELSEWHERE. On the full class one has, in the same in-probability sense, a lower bound of order n^(-1/2) (conj:tail-lower-bound) and an achievable upper bound of order R_n^* (the clipped estimator: for each epsilon a class-constant C_epsilon with sup_{P in W_n} P_P(|hat_tau - tau(P)| > C_epsilon R_n^*) <= epsilon, via the class-uniform comparison U_n ~ R_n of prop:tail-order-reduction). When R_n^* has strictly larger order than n^(-1/2) (the weak-overlap regime, including the kappa = 1 log case of prop:phase-diagram), these bounds do NOT coincide and the exact minimax rate is OPEN -- closing it would require a shell-matching converse beyond the parametric floor, which is not established here.
+\end{proposition}
+We prove the two parts separately. Throughout, keep the extra converse-side hypotheses stated in the proposition itself: the class is nonempty, the baseline selected in `conj:tail-lower-bound` satisfies `ass:regular-cell-mass`, and the treated-regression radius obeys \(r_{1n}\ge c_{\mathrm{rate}}n^{-1/2}\) for all large \(n\). All probability statements below are in the uniform-in-\(P\) sense displayed in `thm:clipped-upper`.
+
+First choose a deterministic near-minimizing clip level \(\lambda_n^\dagger\in\Lambda_n\) with
+\[
+R_n(\lambda_n^\dagger)\le 2R_n^*.
+\]
+This is exactly the role of the symbol \(\lambda_n^\dagger\) in the frozen core.
+
+For the lower bound, `conj:tail-lower-bound` gives constants \(c,c_0>0\), depending only on the class constants, such that for every estimator \(\hat\tau\),
+\[
+\sup_{P\in W_n(\kappa,r_{0n},r_{1n},r_{en})}
+P_P\bigl(|\hat\tau-\tau(P)|\ge c n^{-1/2}\bigr)\ge c_0
+\]
+for all large \(n\). Equivalently,
+\[
+\inf_{\hat\tau}\sup_{P\in W_n(\kappa,r_{0n},r_{1n},r_{en})}
+P_P\bigl(|\hat\tau-\tau(P)|\ge c n^{-1/2}\bigr)\ge c_0.
+\]
+This is the common lower half in both parts of the proposition.
+
+For the upper bound, apply `thm:clipped-upper` to the single feasible cross-fitted estimator \(\hat\tau_{\lambda_n^\dagger}\), using the explicit estimator-side premise `ass:nuisance-estimator-rate`. For every \(\varepsilon>0\), there is a class-constant \(C_\varepsilon'\) such that
+\[
+\sup_{P\in W_n(\kappa,r_{0n},r_{1n},r_{en})}
+P_P\bigl(|\hat\tau_{\lambda_n^\dagger}-\tau(P)|>C_\varepsilon' U_n(\lambda_n^\dagger)\bigr)
+\le \varepsilon.
+\]
+Next invoke the class-uniform comparison in `prop:tail-order-reduction`: there is a class-constant \(c_2<\infty\) such that
+\[
+U_n(\lambda)\le c_2 R_n(\lambda)
+\qquad\text{for every }\lambda\in\Lambda_n.
+\]
+At \(\lambda=\lambda_n^\dagger\),
+\[
+U_n(\lambda_n^\dagger)
+\le c_2 R_n(\lambda_n^\dagger)
+\le 2c_2 R_n^*.
+\]
+Hence, after replacing \(C_\varepsilon'\) by \(2c_2C_\varepsilon'\), we obtain the uniform achievable bound
+\[
+\sup_{P\in W_n(\kappa,r_{0n},r_{1n},r_{en})}
+P_P\bigl(|\hat\tau_{\lambda_n^\dagger}-\tau(P)|>C_\varepsilon R_n^*\bigr)
+\le \varepsilon.
+\]
+This proves the upper half needed for part (b).
+
+We now prove part (a), the matched root-\(n\) regime. By the hypothesis of part (a), and equivalently by `prop:phase-diagram`, the clipping frontier is of pure order \(n^{-1/2}\): there exist class-constants \(0<\underline C\le \overline C<\infty\) such that
+\[
+\underline C n^{-1/2}\le R_n^*\le \overline C n^{-1/2}
+\]
+for all large \(n\). Substituting the upper bound into the preceding display yields, for every \(\varepsilon>0\), a class-constant \(\widetilde C_\varepsilon\) such that
+\[
+\sup_{P\in W_n(\kappa,r_{0n},r_{1n},r_{en})}
+P_P\bigl(|\hat\tau_{\lambda_n^\dagger}-\tau(P)|>\widetilde C_\varepsilon n^{-1/2}\bigr)
+\le \varepsilon.
+\]
+Combined with the Le Cam lower bound above, this shows that in the part-(a) regime the minimax ATE rate is exactly \(n^{-1/2}\) in probability: every estimator incurs an \(n^{-1/2}\) error with probability bounded below away from zero, while the feasible clipped estimator achieves \(n^{-1/2}\) uniformly over the class.
+
+For part (b), no additional work is needed beyond the general lower and upper bounds already proved. The lower bound remains the parametric floor from `conj:tail-lower-bound`, namely
+\[
+\inf_{\hat\tau}\sup_{P\in W_n}P_P\bigl(|\hat\tau-\tau(P)|\ge c n^{-1/2}\bigr)\ge c_0,
+\]
+while the clipped estimator satisfies, for every \(\varepsilon>0\),
+\[
+\sup_{P\in W_n}P_P\bigl(|\hat\tau_{\lambda_n^\dagger}-\tau(P)|>C_\varepsilon R_n^*\bigr)\le \varepsilon.
+\]
+Thus on the full class we have a floor-and-achievability sandwich: the minimax rate is at least root-\(n\), and the clipped estimator attains the frontier order \(R_n^*\).
+
+Finally, when \(R_n^*\) has strictly larger order than \(n^{-1/2}\), these bounds do not coincide. By `prop:phase-diagram`, this includes precisely the weak-overlap regimes where the frontier exponent is strictly below the bounded-overlap benchmark, as well as the \(\kappa=1\) boundary branch with an additional \((\log n)^{1/2}\) factor. Since the only converse available here is the parametric floor from `conj:tail-lower-bound`, the exact minimax rate is genuinely open in those regimes; proving it would require a shell-sensitive lower bound that matches the weak-overlap contribution in \(R_n^*\). This is exactly the honest scope claimed in the proposition.
+\par\smallskip\noindent \textit{Justification.} This is the flagship equivalence frontier: same full-population ATE and same structure-agnostic nuisance-rate inputs as the regular-overlap literature, but with the overlap axis made explicit through kappa. \textit{Gap.} Field-tier honest scope: a SHARP minimax rate (n^-1/2, matched converse) on the nu=1/2 regime + the clipped estimators achievable frontier and cost-of-weak-overlap phase diagram outside it; the shell-matching converse (matched rate for nu<1/2) is explicitly open (needs higher-order IF). \textit{Consumer.} It would decide exactly when one-sided overlap decay preserves the published bounded-overlap frontier and when it forces a slower full-ATE rate.
+
+\begin{proposition}[prop:phase-diagram]\label{prop:phase-diagram}
+Assume the class-uniform comparison prop:tail-order-reduction (c_1 R_n <= U_n <= c_2 R_n) and keep def:critical-exponent as stated. Then the clipping-frontier functional R_n^* over E_n(a_0, a_1, a_e, kappa) has order n^(-nu(a_0, a_1, a_e, kappa)) when kappa != 1. When kappa = 1, it has order n^(-nu(a_0, a_1, a_e, 1)) if nu(a_0, a_1, a_e, 1) < 1/2. If nu(a_0, a_1, a_e, 1) = 1/2, then R_n^* is order n^(-1/2) when the fixed-threshold choice t = 0 attains the supremum in def:phase-exponent, and order n^(-1/2) (log n)^(1/2) when every maximizer is strictly positive. Its polynomial exponent is strictly below B(a_0, a_1, a_e) exactly when 0 < kappa < kappa^*(a_0, a_1, a_e); if kappa^*(a_0, a_1, a_e) < +infinity and kappa >= kappa^*(a_0, a_1, a_e), then that polynomial exponent equals B(a_0, a_1, a_e); if kappa^*(a_0, a_1, a_e) = +infinity, then it stays strictly below B(a_0, a_1, a_e) for every finite kappa.
+\end{proposition}
+The proposition is a direct combination of the two support lemmas.
+
+Fix exponents $(a_0,a_1,a_e)$ and specialize to the subclass $E_n(a_0,a_1,a_e,\kappa)$, so that by Definition \texttt{def:rate-exponent-subclass}
+\[
+r_{0n}=n^{-a_0},\qquad r_{1n}=n^{-a_1},\qquad r_{en}=n^{-a_e}.
+\]
+The order of the clipping frontier $R_n^*$ is then exactly the content of Lemma \texttt{lem:frontier-power-rate}.
+
+If $\kappa\neq 1$, that lemma gives
+\[
+R_n^* \asymp n^{-\nu(a_0,a_1,a_e,\kappa)}.
+\]
+If $\kappa=1$ and $\nu(a_0,a_1,a_e,1)<1/2$, it gives
+\[
+R_n^* \asymp n^{-\nu(a_0,a_1,a_e,1)}.
+\]
+If $\kappa=1$ and $\nu(a_0,a_1,a_e,1)=1/2$, the same lemma isolates the boundary split: if the fixed-threshold choice $t=0$ attains the supremum in Definition \texttt{def:phase-exponent}, then
+\[
+R_n^* \asymp n^{-1/2};
+\]
+if instead every maximizer is strictly positive, then
+\[
+R_n^* \asymp n^{-1/2}(\log n)^{1/2}.
+\]
+This proves the first three sentences of the proposition.
+
+For the phase-boundary claim, let
+\[
+B(a_0,a_1,a_e)=\min\{1/2,\ a_1+a_e,\ a_0+a_e\}.
+\]
+Lemma \texttt{lem:phase-boundary-from-critical-exponent} shows that for every $\kappa>0$,
+\[
+\nu(a_0,a_1,a_e,\kappa)\le B(a_0,a_1,a_e),
+\]
+that $\kappa\mapsto \nu(a_0,a_1,a_e,\kappa)$ is continuous and nondecreasing, and that
+\[
+\nu(a_0,a_1,a_e,\kappa) < B(a_0,a_1,a_e)
+\quad\Longleftrightarrow\quad
+0<\kappa<\kappa^*(a_0,a_1,a_e).
+\]
+If $\kappa^*(a_0,a_1,a_e)<+\infty$, the equality set is exactly $[\kappa^*(a_0,a_1,a_e),\infty)$; if $\kappa^*(a_0,a_1,a_e)=+\infty$, the equality set is empty.
+
+Thus the polynomial exponent of the frontier is strictly below the bounded-overlap benchmark $B(a_0,a_1,a_e)$ exactly on the interval $0<\kappa<\kappa^*(a_0,a_1,a_e)$. Once $\kappa\ge \kappa^*(a_0,a_1,a_e)$ and $\kappa^*<+\infty$, that polynomial exponent equals $B(a_0,a_1,a_e)$. When $\kappa=1$ and the common value is $1/2$, the only remaining distinction is the logarithmic boundary effect already isolated above: the polynomial exponent is still $1/2$, but an additional $(\log n)^{1/2}$ factor appears exactly when every maximizing threshold is strictly positive.
+
+The assumption \texttt{prop:tail-order-reduction} is the bridge from this frontier statement to the corresponding clipped-estimator envelope, because it identifies $U_n(\lambda)$ and $R_n(\lambda)$ up to class-uniform constants. The proposition itself, however, is only the order calculation for $R_n^*$, and that calculation is exactly what the two lemmas deliver.
+\par\smallskip\noindent \textit{Justification.} The rate exponent map is the observable deliverable of the frontier claim: it shows where weak overlap is first-order and where it is only logarithmic or absent. \textit{Gap.} HongLeungLi2020FinitePopulationLimitedOverlap and HeilerKazak2021ExtremePropensity show that limited overlap changes rates or limit laws, but not this strict-deterioration map against the Jin-Syrgkanis / Bonvini-Kennedy-Dukes-Balakrishnan bounded-overlap benchmark with the kappa = 1 logarithm attached only when the variance channel is rate-determining. \textit{Consumer.} It gives a concrete phase diagram for deciding whether clipping or richer estimators are first-order necessary at a given nuisance smoothness profile.
+
+\begin{proposition}[prop:comparator-separation]\label{prop:comparator-separation}
+Assume the proposed upper-frontier phase statement. On E_n^reg(a_0, a_1, a_e), if lambda_0 < eta_minus then prop:strict-overlap-sanity yields an estimator whose estimation error satisfies |hat_tau_{lambda_0} - tau| = O_P(n^(-B(a_0, a_1, a_e))), where B(a_0, a_1, a_e) = min{1/2, a_1 + a_e, a_0 + a_e}. If instead 0 < kappa < kappa^*(a_0, a_1, a_e), then the weak-overlap clipping frontier satisfies the rate from the proposed phase statement with polynomial exponent nu(a_0, a_1, a_e, kappa) < B(a_0, a_1, a_e). Consequently the weak-overlap upper frontier is strictly slower than the bounded-overlap benchmark. Turning that frontier separation into a divergence statement for the actual minimax risk still requires the missing shell-specific lower bound.
+\end{proposition}
+Let
+\[
+B(a_0,a_1,a_e)=\min\{1/2,\ a_1+a_e,\ a_0+a_e\}.
+\]
+We compare the regular-overlap benchmark with the weak-overlap clipping frontier.
+
+First work on the regular-overlap subclass \(E_n^{\mathrm{reg}}(a_0,a_1,a_e)\). By `def:regular-rate-exponent-subclass`,
+\[
+r_{0n}=n^{-a_0},\qquad r_{1n}=n^{-a_1},\qquad r_{en}=n^{-a_e}.
+\]
+Assume \(\lambda_0<\eta_-\). Then `prop:strict-overlap-sanity` applies, with the explicit estimator-rate premise `ass:nuisance-estimator-rate` already listed in the dependencies of the present proposition, and gives
+\[
+|\hat\tau_{\lambda_0}-\tau|=O_P\bigl(U_n(\lambda_0)\bigr).
+\]
+The strict-overlap simplification from that proposition reads
+\[
+U_n(\lambda_0)
+= n^{-1/2}\bigl(E[e(X)^{-1}]\bigr)^{1/2}
++ n^{-1/2}(\lambda_0^{-1}r_{1n}+r_{0n}+\lambda_0^{-3/2}r_{en}+r_{en})
++ \lambda_0^{-1}r_{1n}r_{en}+r_{0n}r_{en}.
+\]
+Because \(e(X)\ge \eta_-\) almost surely on the regular-overlap class, \(E[e(X)^{-1}]\le \eta_-^{-1}\). Because \(\lambda_0\) is a fixed positive constant, substituting the rate specialization yields
+\[
+U_n(\lambda_0)
+= O\\!\\left(
+ n^{-1/2}
+ + n^{-(1/2+a_1)}
+ + n^{-(1/2+a_0)}
+ + n^{-(1/2+a_e)}
+ + n^{-(a_1+a_e)}
+ + n^{-(a_0+a_e)}
+\right).
+\]
+Now \(B(a_0,a_1,a_e)\le 1/2\), so each empirical-process exponent \(1/2+a_1\), \(1/2+a_0\), and \(1/2+a_e\) is strictly larger than \(B(a_0,a_1,a_e)\). The remaining exponents are exactly \(1/2\), \(a_1+a_e\), and \(a_0+a_e\). Therefore the whole display is of order \(n^{-B(a_0,a_1,a_e)}\), and hence
+\[
+|\hat\tau_{\lambda_0}-\tau|=O_P\bigl(n^{-B(a_0,a_1,a_e)}\bigr).
+\]
+This is the bounded-overlap benchmark branch claimed in the proposition.
+
+Now turn to the weak-overlap subclass \(E_n(a_0,a_1,a_e,\kappa)\), and assume \(0<\kappa<\kappa^*(a_0,a_1,a_e)\). By `lem:phase-boundary-from-critical-exponent`,
+\[
+\nu(a_0,a_1,a_e,\kappa)<B(a_0,a_1,a_e).
+\]
+In particular, when \(\kappa=1\) this strict inequality implies \(\nu(a_0,a_1,a_e,1)<1/2\), because \(B(a_0,a_1,a_e)\le 1/2\). Therefore the logarithmic boundary case of `prop:phase-diagram` does not arise anywhere inside the regime \(0<\kappa<\kappa^*\).
+
+Applying `prop:phase-diagram` on this regime, we obtain constants \(0<\underline C\le \overline C<\infty\) such that
+\[
+\underline C\\,n^{-\nu(a_0,a_1,a_e,\kappa)}
+\le R_n^*
+\le \overline C\\,n^{-\nu(a_0,a_1,a_e,\kappa)}.
+\]
+Since \(\nu(a_0,a_1,a_e,\kappa)<B(a_0,a_1,a_e)\), it follows that
+\[
+\frac{R_n^*}{n^{-B(a_0,a_1,a_e)}}
+\ge \underline C\\, n^{B(a_0,a_1,a_e)-\nu(a_0,a_1,a_e,\kappa)}
+\longrightarrow \infty.
+\]
+Equivalently, the weak-overlap clipping frontier is strictly slower than the bounded-overlap benchmark. This is a frontier comparison: it says that the best upper envelope presently proved for the clipped estimator deteriorates on the weak-overlap subclass before the critical threshold is reached.
+
+The final sentence is then immediate from the honest scope of `conj:minimax-frontier`. Outside the matched pure-root-\(n\) regime, that proposition supplies only a parametric floor together with the clipped-estimator achievability bound, and it explicitly records that the shell-matching converse is open. Therefore the strict separation just proved is a separation of upper frontiers, not yet a theorem about divergence of the actual minimax risk. Converting it into a minimax-risk separation would require the missing shell-specific lower bound.
+\par\smallskip\noindent \textit{Justification.} This is the formal strict-extension certificate requested by the reviewer: it separates the bounded-overlap comparator class from the weak-tail class, then pairs the benchmark-rate upper bound on the former with strict deterioration on a named weak-overlap subclass. \textit{Gap.} JinSyrgkanis2024StructureAgnosticDR and BonviniKennedyDukesBalakrishnan2024StructureAgnosticATE give bounded-overlap ATE benchmarks, but neither paper states a theorem that juxtaposes that benchmark with a one-sided overlap-decay subclass under the same full-population ATE target and black-box nuisance-rate inputs. This proposition is the explicit comparator-tightening statement. \textit{Consumer.} It supplies the referee-facing theorem that the present kernel is not a relabeling of published bounded-overlap ATE theory.
+
+\begin{lemma}[lem:frontier-power-rate]\label{lem:frontier-power-rate}
+Specialize r_0n=n^(-a_0), r_1n=n^(-a_1), r_en=n^(-a_e). If kappa != 1, then R_n^* is of order n^(-nu(a_0,a_1,a_e,kappa)). If kappa = 1 and nu(a_0,a_1,a_e,1) < 1/2, then R_n^* is of order n^(-nu(a_0,a_1,a_e,1)). If kappa = 1 and nu(a_0,a_1,a_e,1) = 1/2, then R_n^* is of order n^(-1/2) when t = 0 attains the supremum in def:phase-exponent, and of order n^(-1/2)(log n)^(1/2) when every maximizer is strictly positive.
+\end{lemma}
+Set, for $t\ge 0$,
+\[
+m_\kappa(t)=
+\begin{cases}
+\min\!\left\{\frac12-\frac{1-\kappa}{2}t,\ a_1+\frac{\kappa t}{2},\ \frac12+a_1-t,\ \frac12+a_e-\frac{3t}{2},\ a_1+a_e-t,\ a_0+a_e\right\}, & 0<\kappa<1,\\[1ex]
+\min\!\left\{\frac12,\ a_1+\frac{\kappa t}{2},\ \frac12+a_1-t,\ \frac12+a_e-\frac{3t}{2},\ a_1+a_e-t,\ a_0+a_e\right\}, & \kappa\ge 1.
+\end{cases}
+\]
+By Definition \texttt{def:phase-exponent},
+\[
+\nu(a_0,a_1,a_e,\kappa)=\sup_{t\ge 0} m_\kappa(t).
+\]
+We compute the order of $R_n^*$ directly from Definition \texttt{def:frontier-functional}.
+
+Write $\lambda=\lambda_0 n^{-t}\in\Lambda_n$. After the specialization $r_{0n}=n^{-a_0}$, $r_{1n}=n^{-a_1}$, and $r_{en}=n^{-a_e}$, the frontier becomes
+\[
+R_n(\lambda)
+= n^{-1/2} v_\kappa(\lambda)
++ n^{-1/2}(\lambda^{-1}n^{-a_1}+n^{-a_0}+\lambda^{-3/2}n^{-a_e}+n^{-a_e})
++ \lambda^{\kappa/2}n^{-a_1}
++ \lambda^{-1}n^{-(a_1+a_e)}
++ n^{-(a_0+a_e)}.
+\]
+Because $\lambda_0\in(0,1)$ is fixed, each power of $\lambda$ contributes only a fixed multiplicative constant times a power of $n$.
+
+First suppose $\kappa\neq 1$.
+
+If $0<\kappa<1$, then $v_\kappa(\lambda)=\lambda^{-(1-\kappa)/2}$, so
+\[
+R_n(\lambda_0 n^{-t})
+= c_{1,\kappa} n^{-\{1/2-(1-\kappa)t/2\}}
++ c_2 n^{-\{1/2+a_1-t\}}
++ c_3 n^{-\{1/2+a_0\}}
++ c_4 n^{-\{1/2+a_e-3t/2\}}
++ c_5 n^{-\{1/2+a_e\}}
++ c_6 n^{-\{a_1+\kappa t/2\}}
++ c_7 n^{-\{a_1+a_e-t\}}
++ c_8 n^{-\{a_0+a_e\}},
+\]
+for positive constants $c_j$ depending only on $(\kappa,\lambda_0)$.
+
+If $\kappa>1$, then $v_\kappa(\lambda)=1$, so
+\[
+R_n(\lambda_0 n^{-t})
+= c_1 n^{-1/2}
++ c_2 n^{-\{1/2+a_1-t\}}
++ c_3 n^{-\{1/2+a_0\}}
++ c_4 n^{-\{1/2+a_e-3t/2\}}
++ c_5 n^{-\{1/2+a_e\}}
++ c_6 n^{-\{a_1+\kappa t/2\}}
++ c_7 n^{-\{a_1+a_e-t\}}
++ c_8 n^{-\{a_0+a_e\}}.
+\]
+In both subcases, the two exponents $1/2+a_0$ and $1/2+a_e$ can never determine the minimum, because $a_0,a_e>0$ and the first coordinate of $m_\kappa(t)$ is at most $1/2$. Hence there are constants $0<c\le C<\infty$, depending only on $(a_0,a_1,a_e,\kappa,\lambda_0)$, such that for every admissible $t$,
+\[
+c\, n^{-m_\kappa(t)} \le R_n(\lambda_0 n^{-t}) \le C\, n^{-m_\kappa(t)}.
+\]
+Indeed, the lower bound comes from the summand whose exponent equals the displayed minimum, and the upper bound comes from summing finitely many terms whose exponents are all at least $m_\kappa(t)$.
+
+The map $t\mapsto m_\kappa(t)$ is continuous and piecewise affine. Moreover,
+\[
+m_\kappa(t) \le a_1+a_e-t \to -\infty \qquad (t\to\infty),
+\]
+so the supremum defining $\nu(a_0,a_1,a_e,\kappa)$ is attained at some finite $t_\star\ge 0$. Since $\bar t_n\to\infty$, we have $t_\star\le \bar t_n$ for all sufficiently large $n$, hence $\lambda_0 n^{-t_\star}\in\Lambda_n$ eventually. Evaluating at that $t_\star$ gives
+\[
+R_n^* \le R_n(\lambda_0 n^{-t_\star}) \le C n^{-m_\kappa(t_\star)} = C n^{-\nu(a_0,a_1,a_e,\kappa)}.
+\]
+Conversely, for every admissible $t$, $m_\kappa(t)\le \nu(a_0,a_1,a_e,\kappa)$, hence
+\[
+R_n(\lambda_0 n^{-t}) \ge c n^{-m_\kappa(t)} \ge c n^{-\nu(a_0,a_1,a_e,\kappa)}.
+\]
+Taking the infimum over $\lambda\in\Lambda_n$ yields
+\[
+c n^{-\nu(a_0,a_1,a_e,\kappa)} \le R_n^* \le C n^{-\nu(a_0,a_1,a_e,\kappa)}.
+\]
+This proves the claim when $\kappa\neq 1$.
+
+Now suppose $\kappa=1$. Then
+\[
+m_1(t)=\min\left\{\frac12,\ a_1+\frac t2,\ \frac12+a_1-t,\ \frac12+a_e-\frac{3t}{2},\ a_1+a_e-t,\ a_0+a_e\right\},
+\]
+and
+\[
+R_n(\lambda_0 n^{-t})
+= n^{-1/2}\bigl(1+t\log n\bigr)^{1/2}
++ c_2 n^{-\{1/2+a_1-t\}}
++ c_3 n^{-\{1/2+a_0\}}
++ c_4 n^{-\{1/2+a_e-3t/2\}}
++ c_5 n^{-\{1/2+a_e\}}
++ c_6 n^{-\{a_1+t/2\}}
++ c_7 n^{-\{a_1+a_e-t\}}
++ c_8 n^{-\{a_0+a_e\}}.
+\]
+
+Assume first that $\nu(a_0,a_1,a_e,1)<1/2$. Then $m_1(t)<1/2$ for every $t\ge 0$; otherwise some $t$ would satisfy $m_1(t)=1/2$, forcing the supremum to be at least $1/2$. Therefore, for each $t$, one of the polynomial summands has exponent exactly $m_1(t)$, so again there are constants $0<c\le C<\infty$ such that
+\[
+c\, n^{-m_1(t)} \le R_n(\lambda_0 n^{-t}) \le C\, n^{-m_1(t)} + n^{-1/2}(1+t\log n)^{1/2}.
+\]
+Choose a maximizer $t_\star$ of $m_1$; it is finite by the same argument as above. Since $m_1(t_\star)=\nu(a_0,a_1,a_e,1)<1/2$ and $t_\star$ is fixed,
+\[
+n^{-1/2}(1+t_\star\log n)^{1/2} = o\bigl(n^{-\nu(a_0,a_1,a_e,1)}\bigr).
+\]
+Hence
+\[
+R_n(\lambda_0 n^{-t_\star}) \le C n^{-\nu(a_0,a_1,a_e,1)}
+\]
+for all large $n$, while the lower bound $R_n(\lambda_0 n^{-t})\ge c n^{-m_1(t)}\ge c n^{-\nu(a_0,a_1,a_e,1)}$ holds for every admissible $t$. Therefore
+\[
+R_n^* \asymp n^{-\nu(a_0,a_1,a_e,1)}
+\]
+when $\kappa=1$ and $\nu(a_0,a_1,a_e,1)<1/2$.
+
+Assume next that $\kappa=1$, $\nu(a_0,a_1,a_e,1)=1/2$, and $t=0$ attains the supremum in Definition \texttt{def:phase-exponent}. Then $m_1(0)=1/2$. Evaluating the frontier at the fixed threshold $\lambda=\lambda_0$ gives
+\[
+R_n(\lambda_0)
+= n^{-1/2}
++ O\bigl(n^{-\{1/2+a_1\}} + n^{-\{1/2+a_0\}} + n^{-\{1/2+a_e\}} + n^{-(a_1+a_e)} + n^{-(a_0+a_e)}\bigr)
+= O(n^{-1/2}).
+\]
+On the other hand, for every $\lambda\in\Lambda_n$ the variance term is at least $n^{-1/2}$ because $v_1(\lambda)=(1+\log(\lambda_0/\lambda))^{1/2}\ge 1$. Hence
+\[
+R_n^* \asymp n^{-1/2}
+\]
+in this branch.
+
+Finally, assume $\kappa=1$, $\nu(a_0,a_1,a_e,1)=1/2$, and every maximizer of $m_1$ is strictly positive. Let
+\[
+M=\{t\ge 0: m_1(t)=1/2\}.
+\]
+Because $m_1$ is continuous, $M$ is closed; because $m_1(t)\le a_1+a_e-t\to-\infty$, $M$ is bounded; because the supremum equals $1/2$, $M$ is nonempty. By assumption $M\subset(0,\infty)$, so $t_-:=\min M>0$.
+
+For the upper bound, choose any $t_\star\in M$. Then every polynomial summand in $R_n(\lambda_0 n^{-t_\star})$ is $O(n^{-1/2})$, while the variance term is
+\[
+n^{-1/2}(1+t_\star\log n)^{1/2}=O\bigl(n^{-1/2}(\log n)^{1/2}\bigr).
+\]
+Thus
+\[
+R_n^* \le R_n(\lambda_0 n^{-t_\star}) \le C n^{-1/2}(\log n)^{1/2}.
+\]
+
+For the lower bound, continuity of $m_1$ and the fact that $[0,t_-/2]$ is disjoint from the maximizer set imply that there exists $\gamma>0$ such that
+\[
+\sup_{0\le t\le t_-/2} m_1(t) \le \frac12-\gamma.
+\]
+Hence for $0\le t\le t_-/2$,
+\[
+R_n(\lambda_0 n^{-t}) \ge c n^{-1/2+\gamma}.
+\]
+Since $n^{\gamma}/(\log n)^{1/2}\to\infty$, this lower bound is eventually stronger than $c' n^{-1/2}(\log n)^{1/2}$.
+
+If $t\ge t_-/2$, then the variance term alone gives
+\[
+R_n(\lambda_0 n^{-t}) \ge n^{-1/2}(1+t\log n)^{1/2}
+\ge n^{-1/2}\Bigl(1+\frac{t_-}{2}\log n\Bigr)^{1/2}
+\ge c'' n^{-1/2}(\log n)^{1/2}
+\]
+for all large $n$. Combining the two regions shows that
+\[
+R_n(\lambda_0 n^{-t}) \ge c_* n^{-1/2}(\log n)^{1/2}
+\qquad\text{for every admissible }t,
+\]
+so after taking the infimum over $\Lambda_n$ we obtain
+\[
+R_n^* \asymp n^{-1/2}(\log n)^{1/2}.
+\]
+This proves all branches of the lemma.
+\par\smallskip\noindent \textit{Justification.} R_n^* order from the termwise-minimum optimization of R_n over the clipping grid; pure consequence of the frontier and phase-exponent definitions. \textit{Gap.} Computes the inf-over-clip-level order of the frontier functional. \textit{Consumer.} prop:phase-diagram
+
+\begin{lemma}[lem:phase-boundary-from-critical-exponent]\label{lem:phase-boundary-from-critical-exponent}
+Let B = min{1/2, a_1 + a_e, a_0 + a_e}. Then nu(a_0,a_1,a_e,kappa) <= B for every kappa > 0, and kappa -> nu(a_0,a_1,a_e,kappa) is continuous and nondecreasing. Consequently, if kappa^*(a_0,a_1,a_e) < +infinity then { kappa > 0 : nu = B } = [kappa^*, infinity), and if kappa^* = +infinity the equality set is empty; equivalently nu(a_0,a_1,a_e,kappa) < B exactly when 0 < kappa < kappa^*(a_0,a_1,a_e).
+\end{lemma}
+Let
+\[
+B=\min\{1/2,\ a_1+a_e,\ a_0+a_e\}.
+\]
+For each $t\ge 0$, write $m_\kappa(t)$ for the inner minimum appearing in Definition \texttt{def:phase-exponent}, so that
+\[
+\nu(a_0,a_1,a_e,\kappa)=\sup_{t\ge 0} m_\kappa(t).
+\]
+
+We first show $\nu(a_0,a_1,a_e,\kappa)\le B$ for every $\kappa>0$. If $0<\kappa<1$, then one coordinate of $m_\kappa(t)$ is $1/2-(1-\kappa)t/2\le 1/2$; if $\kappa\ge 1$, one coordinate is exactly $1/2$. In all cases another coordinate is $a_1+a_e-t\le a_1+a_e$, and another is $a_0+a_e$. Therefore
+\[
+m_\kappa(t)\le \min\{1/2,\ a_1+a_e,\ a_0+a_e\}=B
+\qquad\text{for every }t\ge 0.
+\]
+Taking the supremum over $t$ gives $\nu(a_0,a_1,a_e,\kappa)\le B$.
+
+Next we prove that $\kappa\mapsto \nu(a_0,a_1,a_e,\kappa)$ is nondecreasing and continuous on $(0,\infty)$. For fixed $t$, each coordinate in the minimum defining $m_\kappa(t)$ is continuous and nondecreasing as a function of $\kappa$: the first coordinate is $1/2-(1-\kappa)t/2$ for $\kappa<1$ and $1/2$ for $\kappa\ge 1$, which is continuous and nondecreasing at $\kappa=1$; the second coordinate $a_1+\kappa t/2$ is continuous and increasing in $\kappa$; the remaining four coordinates do not depend on $\kappa$. Hence $m_\kappa(t)$ itself is continuous and nondecreasing in $\kappa$ for each fixed $t$.
+
+Taking the supremum over $t$ immediately preserves monotonicity, so $\nu(\kappa)$ is nondecreasing. For continuity, fix $\kappa_0>0$ and choose a compact neighborhood $K=[\kappa_0/2,2\kappa_0]\subset(0,\infty)$. Set
+\[
+L:=\min_{\kappa\in K} m_\kappa(0).
+\]
+This is finite because $K$ is compact and $m_\kappa(0)$ is continuous in $\kappa$. Also, for every $\kappa>0$ and every $t\ge 0$,
+\[
+m_\kappa(t)\le a_1+a_e-t.
+\]
+Choose $T>a_1+a_e-L$. Then for every $\kappa\in K$ and every $t>T$,
+\[
+m_\kappa(t) < L \le m_\kappa(0) \le \nu(a_0,a_1,a_e,\kappa).
+\]
+So for $\kappa\in K$ the supremum defining $\nu$ is already attained on the compact interval $[0,T]$:
+\[
+\nu(a_0,a_1,a_e,\kappa)=\max_{0\le t\le T} m_\kappa(t),\qquad \kappa\in K.
+\]
+Since $(\kappa,t)\mapsto m_\kappa(t)$ is continuous on the compact set $K\times[0,T]$, the maximum theorem implies that $\kappa\mapsto \nu(a_0,a_1,a_e,\kappa)$ is continuous on $K$. Because $\kappa_0$ was arbitrary, $\nu$ is continuous on $(0,\infty)$.
+
+Now define the equality set
+\[
+S:=\{\kappa>0: \nu(a_0,a_1,a_e,\kappa)=B\}.
+\]
+By the already-proved bound $\nu\le B$ and monotonicity of $\nu$, the set $S$ is upward closed: if $\kappa\in S$ and $\kappa'\ge \kappa$, then
+\[
+B=\nu(\kappa)\le \nu(\kappa')\le B,
+\]
+so $\nu(\kappa')=B$ and therefore $\kappa'\in S$. By continuity of $\nu$, the set $S$ is also closed. Hence $S$ is either empty or a closed ray of the form $[\underline\kappa,\infty)$.
+
+Definition \texttt{def:critical-exponent} sets
+\[
+\kappa^*(a_0,a_1,a_e)=\inf\bigl(S\cup\{+\infty\}\bigr).
+\]
+If $S=\varnothing$, then $\kappa^*=+\infty$ by construction. If $S\neq\varnothing$, then because $S$ is a closed upper ray we must have
+\[
+S=[\kappa^*(a_0,a_1,a_e),\infty).
+\]
+Equivalently,
+\[
+\nu(a_0,a_1,a_e,\kappa)<B
+\quad\Longleftrightarrow\quad
+0<\kappa<\kappa^*(a_0,a_1,a_e).
+\]
+This is exactly the claimed phase-boundary characterization.
+\par\smallskip\noindent \textit{Justification.} Pure unpacking of def:critical-exponent (kappa^* := inf{kappa: nu=B}) plus monotonicity/continuity of nu; NO dependence on prop:phase-diagram. \textit{Gap.} Characterizes the phase boundary from the critical-exponent definition. \textit{Consumer.} prop:phase-diagram
+
+\section{Honest scope}
+
+The exact clipped-score upper envelope U_n(lambda), the tail-order reduction comparing U_n(lambda) and R_n(lambda), the compatibility condition 2 lambda_0 < 1 - eta_plus, the separate regular-overlap comparator class W_n^reg, and the strict-overlap reduction to the bounded-overlap benchmark are the settled formal objects in the proposal. The open object is the converse: complete the Le Cam / Assouad handle on W_n^lb into a bounded-divergence family at a deterministic near-minimizer lambda_dagger_n and then prove the lower bound c R_n^*. The minimax-frontier conjecture, the phase diagram, and the weak-tail strict-deterioration half of prop:comparator-separation are conditional on that converse rather than assumed as class conditions.
+
+\begin{thebibliography}{99}
+
+  \bibitem{HiranoImbensRidder2003EfficientATE} Hirano, K., Imbens, G. W., and Ridder, G. (2003). Efficient estimation of average treatment effects using the estimated propensity score. Econometrica.
+
+  \bibitem{KhanTamer2010IrregularIdentification} Khan, S., and Tamer, E. (2010). Irregular identification, support conditions, and inverse-weight treatment-effect problems. Econometrica.
+
+  \bibitem{HongLeungLi2020FinitePopulationLimitedOverlap} Hong, H., Leung, M. P., and Li, J. (2020). Finite-population limited overlap in estimating average treatment effects. The Econometrics Journal.
+
+  \bibitem{HeilerKazak2021ExtremePropensity} Heiler, P., and Kazak, E. (2021). Extreme propensity scores and non-Gaussian limits for IPW and doubly robust estimators. Journal of Econometrics.
+
+  \bibitem{MaWang2020RobustIPW} Ma, X., and Wang, J. (2020). Robust inference for inverse probability weighting with small denominators. Journal of the American Statistical Association.
+
+  \bibitem{MaSantAnnaSasakiUra2023DRWeakOverlap} Ma, Y., Sant'Anna, P. H. C., Sasaki, Y., and Ura, T. (2023). Doubly robust estimators with weak overlap. arXiv:2304.08974.
+
+  \bibitem{ChernozhukovEtAl2018DML} Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C., Newey, W., and Robins, J. (2018). Double/debiased machine learning for treatment and structural parameters. The Econometrics Journal.
+
+  \bibitem{ArmstrongKolesar2021FiniteSampleATE} Armstrong, T. B., and Kolesar, M. (2021). Finite-sample optimal estimation and inference on average treatment effects under unconfoundedness. Econometrica 89(3), 1141-1177.
+
+  \bibitem{JinSyrgkanis2024StructureAgnosticDR} Jin, J., and Syrgkanis, V. (2024). Structure-agnostic optimality of doubly robust learning for treatment effect estimation. arXiv:2402.14264.
+
+  \bibitem{BonviniKennedyDukesBalakrishnan2024StructureAgnosticATE} Bonvini, M., Kennedy, E. H., Dukes, O., and Balakrishnan, S. (2024). Doubly-robust inference and optimality in structure-agnostic models with smoothness. arXiv:2405.08525.
+
+  \bibitem{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE} Kennedy, E. H., Balakrishnan, S., Robins, J. M., and Wasserman, L. (2024). Minimax rates for heterogeneous causal effect estimation. Annals of Statistics.
+
+  \bibitem{RobinsLiMukherjeeTchetgenVanDerVaart2017MinimaxHOIF} Robins, J. M., Li, L., Mukherjee, R., Tchetgen Tchetgen, E., and van der Vaart, A. (2017). Minimax estimation of a functional on a structured high-dimensional model. Annals of Statistics.
+
+  \bibitem{Dorn2025WeakOverlapDRTStats} Dorn, J. (2025). How much weak overlap can doubly robust t-statistics handle? arXiv:2504.13273.
+
+  \bibitem{JinSyrgkanis2025GeneralLinearFunctionalLowerBounds} Jin, J., and Syrgkanis, V. (2025). Sharp structure-agnostic lower bounds for general functional estimation. arXiv:2512.17341.
+
+  \bibitem{ChaudhuriHill2024HeavyTailRobustATE} Chaudhuri and Hill (2024). Heavy tail robust estimation and inference for average treatment effects. Working paper.
+
+\end{thebibliography}
+
+\end{document}

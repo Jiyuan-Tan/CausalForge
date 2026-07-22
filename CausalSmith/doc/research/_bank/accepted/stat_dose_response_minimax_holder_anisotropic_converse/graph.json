@@ -1,0 +1,2994 @@
+{
+  "qid": "stat_dose_response_minimax",
+  "specialization": "holder_anisotropic_converse",
+  "nodes": [
+    {
+      "id": "S1",
+      "obj_id": "S-1",
+      "kind": "setup",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "iid observational sampling: observed unit O=(Y,A,X) in R x [0,1] x [0,1]^d, single-observation data law P (a probability Measure on the unit space) with induced marginal P_X, nuisances mu_P, pi_P, p_{X,P}; n-sample law is the i.i.d. product Measure.pi (fun _ : Fin n => P). — Direct architectural analogue: Causalean.Estimation.MinimaxATE.Model (Obs/obsLaw/productLaw/minimaxMiss/nMSE/nMiss_sq_le_nMSE) realizes exactly this i.i.d. two-point world but over a FINITE covariate (X : Fin M, Y : Bool) so all laws are finite PMFs. Here X ranges over [0,1]^d and A over [0,1] with a continuous-in-treatment bump, so the single-observation law is a genuine Measure (Mathlib MeasureTheory + Measure.pi tensorization); cannot reuse the finite-PMF Model verbatim -> define-local over Mathlib, importing the Stat.Minimax Le Cam layer. Search trace: surveyed Causalean/Stat/Minimax/{LeCam,MinimaxRisk,Pinsker,ChiSquared,TotalVariation}, Estimation/MinimaxATE; no continuous-treatment dose-response sampling world present.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": null,
+        "file": null
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      },
+      "setup": {
+        "required_modules": [
+          "CausalSmith.Stat.STAT_DoseResponseMinimax_Research.Basic",
+          "Causalean.Stat.Minimax.MinimaxRisk",
+          "Causalean.Estimation.MinimaxATE"
+        ]
+      }
+    },
+    {
+      "id": "S2",
+      "obj_id": "S-2",
+      "kind": "setup",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "potential-outcome causal overlay on S1: the PO process a -> Y(a) on the same probability space, with consistency (Y = Y(A) a.s.) and conditional ignorability (Y(a) indep A | X); the causal target value E_P[Y(t_0)] is identified by the observed-data partial mean theta_P(t_0). — Causalean.PO (POSystem, POSystem.Consistency, counterfactual-independence) is the framework analogue but is a skeleton (sorry-bearing) and graph/regime-indexed, heavier than the scalar continuous-treatment overlay needed here. The construction supplies its own explicit PO realization (draw U ~ Unif[0,1], set Y_zeta(a) via the two-point mean channel), so consistency + ignorability are verified directly on the constructed laws rather than imported. Define-local over Mathlib with PO naming aligned to Causalean.PO. Search trace: surveyed Causalean/PO/{Core,Assumptions}; no continuous-dose PO partial-mean world to reuse verbatim.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": null,
+        "file": null
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      },
+      "setup": {
+        "required_modules": [
+          "CausalSmith.Stat.STAT_DoseResponseMinimax_Research.Basic",
+          "Causalean.PO.Core.System",
+          "Causalean.PO.Assumptions.Consistency"
+        ]
+      }
+    },
+    {
+      "id": "S3",
+      "obj_id": "S-3",
+      "kind": "setup",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "regime constants and frontier objects: smoothness/positivity/bound scalars and the evaluation geometry, plus the minimax-risk and published-rate frontier sequences. — Plain real/nat regime parameters (alpha,beta,s,M,c_0,t_0,epsilon_0 : R>0, d,n : N) and two real-valued frontier sequences R_n (minimax MSE, def:minimax-risk) and rho_n (def:published-hoif-rate). No measure-theoretic world; bound directly in Basic.lean.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": null,
+        "file": null
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "sorry",
+        "sorry_count": 0
+      },
+      "setup": {
+        "required_modules": [
+          "CausalSmith.Stat.STAT_DoseResponseMinimax_Research.Basic"
+        ]
+      }
+    },
+    {
+      "id": "ass:iid-sampling",
+      "obj_id": "A-1",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "O_1, ..., O_n are iid draws from P.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.IidSampling",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "e656f59719f75b3875380dd68859a9d16c15a5f2",
+        "note": "Unfolding IIDSample gives measurable, mutually independent, identically P.dataMeasure-distributed draws; the probability and a.s. A/X support conjuncts realize the declared probability-law and observation-space domains."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "iid sampling",
+        "cite": "Tsybakov2009Nonparametric",
+        "citation": "Tsybakov, A. B. (2009). Introduction to Nonparametric Estimation. Springer."
+      }
+    },
+    {
+      "id": "ass:consistency",
+      "obj_id": "A-2",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Y = Y(A) almost surely under P.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.Consistency",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "35bd262bcae8bf8fbd97be468fdbd10ffdb0a8c1",
+        "note": "The predicate is exactly the P-a.s. identity O.Y = P.pot O.A O, i.e. Y = Y(A)."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "consistency",
+        "cite": "KennedyMaMcHughSmall2017ContinuousDR",
+        "citation": "Kennedy, E. H., Ma, Z., McHugh, M. D., and Small, D. S. (2017). Nonparametric methods for doubly robust estimation of continuous treatment effects. Journal of the Royal Statistical Society, Series B 79(4), 1229-1245."
+      }
+    },
+    {
+      "id": "ass:no-unmeasured-confounding",
+      "obj_id": "A-3",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For every a in [0,1], Y(a) is independent of A conditional on X under P.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.NoUnmeasuredConfounding",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "b82c8b37c0798566c9e7604f6e984377d8267fd3",
+        "note": "For every a in [0,1], equality of the conditional expectations of every bounded measurable transform of Y(a) given (A,X) and given X is the standard two-way characterization of Y(a) conditionally independent of A given X; measurability and integrability are intrinsic bookkeeping."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "conditional ignorability for continuous treatments",
+        "cite": "KennedyMaMcHughSmall2017ContinuousDR",
+        "citation": "Kennedy, E. H., Ma, Z., McHugh, M. D., and Small, D. S. (2017). Nonparametric methods for doubly robust estimation of continuous treatment effects. Journal of the Royal Statistical Society, Series B 79(4), 1229-1245."
+      }
+    },
+    {
+      "id": "ass:bounded-outcome",
+      "obj_id": "A-4",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "|Y| <= M almost surely under P.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.BoundedOutcome",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "8c313acb949d313d8d1ca0aa3f4a791102b145d1",
+        "note": "The predicate is exactly |O.Y| ≤ M P-almost surely."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "uniform bounded outcome",
+        "cite": "BonviniKennedy2022FastDRF",
+        "citation": "Bonvini, M., and Kennedy, E. H. (2022). Fast convergence rates for dose-response estimation. arXiv:2207.11825."
+      }
+    },
+    {
+      "id": "ass:interior-dose",
+      "obj_id": "A-5",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "[t_0 - epsilon_0, t_0 + epsilon_0] is contained in (0,1).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.InteriorDose",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "50d9f72dff18aee7d071bfb117a84f7c3671805a",
+        "note": "Unfolding doseWindow yields Set.Icc (t0 - eps0) (t0 + eps0) ⊆ Set.Ioo 0 1, exactly the stated interval containment."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "interior evaluation point",
+        "cite": "ColangeloLee2020ContinuousDML",
+        "citation": "Colangelo, K., and Lee, Y.-Y. (2020). Double debiased machine learning nonparametric inference with continuous treatments. arXiv:2004.03036."
+      }
+    },
+    {
+      "id": "ass:local-positivity",
+      "obj_id": "A-6",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "pi_P(a|x) >= c_0 for every a in [t_0 - epsilon_0, t_0 + epsilon_0] and every x in [0,1]^d.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.LocalPositivity",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "a7dfadea6b183cf410e271beb116af60bafad148",
+        "note": "Unfolding doseWindow and cube gives exactly ∀ a ∈ [t₀−ε₀,t₀+ε₀], ∀ x ∈ [0,1]^d, π_P(a|x) ≥ c₀."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "local positivity",
+        "cite": "BonviniKennedy2022FastDRF",
+        "citation": "Bonvini, M., and Kennedy, E. H. (2022). Fast convergence rates for dose-response estimation. arXiv:2207.11825."
+      }
+    },
+    {
+      "id": "ass:mu-treatment-holder",
+      "obj_id": "A-7",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For every x in [0,1]^d, the function a -> mu_P(a,x) belongs to a Holder ball of order alpha and radius M on [t_0 - epsilon_0, t_0 + epsilon_0].",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.MuTreatmentHolder",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "a3d9827d6ddbd05073b165578f19bf3bc0e1280b",
+        "note": "Unfolding doseWindow, cube, and HolderBall1D gives exactly uniform order-α, radius-M Hölder membership of a ↦ μ_P(a,x) on the stated window for every x in the cube."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "Holder smoothness in the treatment coordinate",
+        "cite": "Tsybakov2009Nonparametric",
+        "citation": "Tsybakov, A. B. (2009). Introduction to Nonparametric Estimation. Springer."
+      }
+    },
+    {
+      "id": "ass:pi-treatment-holder",
+      "obj_id": "A-8",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For every x in [0,1]^d, the function a -> pi_P(a|x) belongs to a Holder ball of order beta and radius M on [t_0 - epsilon_0, t_0 + epsilon_0].",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.PiTreatmentHolder",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "e2aa6f225d9facc7538189c5629683c37b481dc9",
+        "note": "Unfolding doseWindow, cube, and HolderBall1D gives exactly uniform order-β, radius-M Hölder membership of a ↦ π_P(a|x) on the stated window for every x in the cube."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "Holder smoothness of the conditional treatment density in the treatment coordinate",
+        "cite": "BonviniKennedy2022FastDRF",
+        "citation": "Bonvini, M., and Kennedy, E. H. (2022). Fast convergence rates for dose-response estimation. arXiv:2207.11825."
+      }
+    },
+    {
+      "id": "ass:mu-covariate-holder",
+      "obj_id": "A-9",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "The function x -> mu_P(t_0,x) belongs to a Holder ball of order s and radius M on [0,1]^d.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.MuCovariateHolder",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "9e2adfb99d3fa108828f7ac087d7e1953533713c",
+        "note": "Unfolding cube and HolderBallND gives exactly that x ↦ μ_P(t₀,x) belongs to the order-s, radius-M multivariate Hölder ball on [0,1]^d."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "Holder smoothness in the covariate coordinate",
+        "cite": "Tsybakov2009Nonparametric",
+        "citation": "Tsybakov, A. B. (2009). Introduction to Nonparametric Estimation. Springer."
+      }
+    },
+    {
+      "id": "ass:pi-covariate-holder",
+      "obj_id": "A-10",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "The function x -> pi_P(t_0|x) belongs to a Holder ball of order s and radius M on [0,1]^d.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.PiCovariateHolder",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "593cf29c32c4ea1f9d9c366878b3322b3db2e085",
+        "note": "Unfolding cube and HolderBallND gives exactly that x ↦ π_P(t₀|x) belongs to the order-s, radius-M multivariate Hölder ball on [0,1]^d."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "Holder smoothness of the conditional treatment density in the covariate coordinate",
+        "cite": "BonviniKennedy2022FastDRF",
+        "citation": "Bonvini, M., and Kennedy, E. H. (2022). Fast convergence rates for dose-response estimation. arXiv:2207.11825."
+      }
+    },
+    {
+      "id": "ass:px-holder",
+      "obj_id": "A-11",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "The density p_{X,P} belongs to a Holder ball of order s and radius M on [0,1]^d and is bounded above by M.",
+        "tex_anchor": "",
+        "frozen": true,
+        "frozen_body": "The marginal covariate density \\(p_{X,P}\\) belongs to the Hölder ball\n\\[\n\\mathcal H^s(M;[0,1]^d)\n\\]\nand satisfies\n\\[\n0 \\le p_{X,P}(x) \\le M\n\\]\nfor every \\(x\\in[0,1]^d\\).",
+        "frozen_title": "Covariate-density smoothness"
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.PxHolder",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "6db24b896fedca0fe31e1d485f00fd7fde3bce0f",
+        "note": "HolderBallND supplies the stated order-s radius-M Hölder condition and the final conjunct the upper bound; explicit nonnegativity is intrinsic to the paper's designation of p_{X,P} as a density."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "standard": {
+        "name": "Holder-smooth covariate density",
+        "cite": "KennedyBalakrishnanRobinsWasserman2022MinimaxCATE",
+        "citation": "Kennedy, E. H., Balakrishnan, S., Robins, J. M., and Wasserman, L. (2022). Minimax rates for heterogeneous causal effect estimation. arXiv:2203.00837."
+      }
+    },
+    {
+      "id": "ass:baseline-submodel-slack",
+      "obj_id": "A-12",
+      "kind": "assumption",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "There exist a density p_0 on [0,1]^d, a conditional treatment density q_0 on [0,1], and a constant eta_0>0 such that p_0 and q_0 have Holder norms at most M-eta_0 in the smoothness classes required of p_{X,P} and pi_P, q_0(a) >= c_0+eta_0 for all a in [t_0-epsilon_0,t_0+epsilon_0], and p_0 is bounded above by M-eta_0.",
+        "tex_anchor": "",
+        "frozen": true,
+        "frozen_body": "There exist a covariate density \\(p_0\\) on \\([0,1]^d\\), a conditional treatment density \\(q_0\\) on \\([0,1]\\), a constant \\(\\eta_0>0\\), and a constant \\(B_0\\) with \\(0<B_0<M\\), such that \\(p_0(x)\\ge 0\\) for all \\(x\\in[0,1]^d\\), \\(q_0(a)\\ge 0\\) for all \\(a\\in\\mathbb R\\),\n\\[\n\\int_{[0,1]^d} p_0(x)\\,dx=1\n\\qquad\\text{and}\\qquad\n\\int_0^1 q_0(a)\\,da=1,\n\\]\n\\[\n\\|p_0\\|_{\\mathcal H^s([0,1]^d)}\\le M-\\eta_0,\n\\]\n\\(q_0\\) has Hölder norm at most \\(M-\\eta_0\\) of order \\(\\beta\\) on \\([t_0-\\varepsilon_0,t_0+\\varepsilon_0]\\),\n\\[\nq_0(a)\\ge c_0+\\eta_0\n\\qquad\\text{for all }a\\in[t_0-\\varepsilon_0,t_0+\\varepsilon_0],\n\\]\nand\n\\[\np_0(x)\\le M-\\eta_0\n\\qquad\\text{for all }x\\in[0,1]^d.\n\\]",
+        "frozen_title": "Baseline submodel slack"
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.BaselineSubmodelSlack",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "5090dfb5c06115dd5eb8edd4131fb31c48a40657",
+        "note": "The existential p₀ and q₀ are nonnegative normalized densities with exactly the stated Hölder, upper-bound, and window-positivity slack; the extra B₀∈(0,M) witness is logically redundant because the p₀ density and bound p₀≤M-η₀ on the unit-volume cube force M>η₀>0."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:holder-dose-class",
+      "obj_id": "P-1",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "{P : P satisfies ass:iid-sampling, ass:consistency, ass:no-unmeasured-confounding, ass:bounded-outcome, ass:interior-dose, ass:local-positivity, ass:mu-treatment-holder, ass:pi-treatment-holder, ass:mu-covariate-holder, ass:pi-covariate-holder, ass:px-holder}",
+        "tex_anchor": "",
+        "frozen": true,
+        "frozen_body": "With the minimax risk \\(R_n(\\mathcal P_{\\alpha,\\beta,s}(M,c_0,\\varepsilon_0,t_0),t_0)\\) and the published HOIF benchmark \\(\\rho_n\\) as in \\cref{obj:def:minimax-risk,obj:def:published-hoif-rate}, define\n\\[\n\\mathcal P_{\\alpha,\\beta,s}(M,c_0,\\varepsilon_0,t_0)\n\\]\nto be the collection of observed-data laws \\(P\\) satisfying all of the following conditions:\n\\begin{itemize}\n\\item \\textbf{(Sampling.)} The observations satisfy \\cref{obj:ass:iid-sampling}.\n\\item \\textbf{(Causal identification.)} Consistency and no unmeasured confounding hold as in \\cref{obj:ass:consistency,obj:ass:no-unmeasured-confounding}.\n\\item \\textbf{(Outcome boundedness.)} The bounded-outcome condition holds as in \\cref{obj:ass:bounded-outcome}.\n\\item \\textbf{(Interior dose.)} The evaluation dose \\(t_0\\) and local radius \\(\\varepsilon_0\\) satisfy \\cref{obj:ass:interior-dose}.\n\\item \\textbf{(Local positivity.)} The treatment density obeys the local positivity condition with constant \\(c_0\\) as in \\cref{obj:ass:local-positivity}.\n\\item \\textbf{(Treatment-direction smoothness.)} The maps \\(a\\mapsto \\mu_P(a,x)\\) and \\(a\\mapsto \\pi_P(a\\mid x)\\) satisfy the treatment-direction Hölder conditions in \\cref{obj:ass:mu-treatment-holder,obj:ass:pi-treatment-holder}.\n\\item \\textbf{(Covariate-direction smoothness and density range.)} The maps \\(x\\mapsto\\mu_P(t_0,x)\\) and \\(x\\mapsto\\pi_P(t_0\\mid x)\\) satisfy the covariate-direction Hölder conditions in \\cref{obj:ass:mu-covariate-holder,obj:ass:pi-covariate-holder}, and \\(p_{X,P}\\) satisfies the Hölder, nonnegativity, and upper-envelope condition in \\cref{obj:ass:px-holder}.\n\\item \\textbf{(Semantic ties to the observed-data law.)} The regression, covariate-density, and treatment-density symbols are tied to \\(P\\): \\(\\mu_P(A,X)\\) equals the conditional mean of \\(Y\\) given \\((A,X)\\) \\(P\\)-almost surely; \\(p_{X,P}\\) is the density of the \\(X\\)-marginal on \\([0,1]^d\\); and \\(\\pi_P\\) is nonnegative on \\([0,1]\\times[0,1]^d\\) with the \\((A,X)\\)-law density \\((a,x)\\mapsto \\pi_P(a\\mid x)p_{X,P}(x)\\) relative to Lebesgue measure on \\([0,1]\\times[0,1]^d\\), as in \\cref{obj:ass:mu-is-regression,obj:ass:px-is-x-density,obj:ass:pi-is-cond-treatment-density}.\n\\end{itemize}",
+        "frozen_title": "Hölder Dose Class \\(\\mathcal P_{\\alpha,\\beta,s}(M,c_0,\\varepsilon_0,t_0)\\)"
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.HolderDoseClass",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "b50fffc428e39ac3fa380a3ddd880a089777cdbe",
+        "note": "The eleven listed member assumptions are present exactly; muReg, pxDens, and piCond merely enforce the paper-defined meanings of μ_P, p_{X,P}, and π_P for DoseLaw's free carrier fields, so they do not narrow the paper class."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:theta-functional",
+      "obj_id": "P-2",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "theta_P(t_0) = int_{[0,1]^d} mu_P(t_0,x) p_{X,P}(x) dx",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.thetaFunctional",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "1184c61cefdb80757dca2c4152eed266cd239065",
+        "note": "Unfolding cube gives precisely the Lebesgue integral over [0,1]^d of μ_P(t₀,x)p_{X,P}(x)."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:minimax-risk",
+      "obj_id": "P-3",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0), t_0) = inf_{hat_theta_n} sup_{P in P_{alpha,beta,s}(M,c_0,epsilon_0,t_0)} E_P[(hat_theta_n - theta_P(t_0))^2]",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.minimaxRisk",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "0ddf89c345964ca01078d69988f03acfa1dee41d",
+        "note": "The nested infimum and supremum encode the stated n-sample minimax MSE under the product law; restricting to measurable estimators valued in [-M,M] is equivalent by clipping because the class assumptions place θ_P(t₀) in that interval."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:published-hoif-rate",
+      "obj_id": "P-4",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "rho_n = n^(-2*alpha/(2*alpha+1)) vee n^(-2/(1 + d/(4*s) + 1/alpha))",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.publishedHoifRate",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "6b0c86bcb70d896c32907965cfbd3ff4912f6d27",
+        "note": "After unfolding, Lean's `max` is exactly the paper's `vee` of the same two real-power branches, with identical binders and exponents."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "def:beta-frontier-handle",
+      "obj_id": "P-5",
+      "kind": "definition",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Headline and frontier handle. The delivered content is the all-beta lower floor: by a de-laundered two-point Le Cam construction perturbing only mu_P with the covariate density and treatment-density baselines fixed, the original class satisfies R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0),t_0) >= c n^{-2*alpha/(2*alpha+1)} for every beta>0. When s>=d/4, lem:rho-oracle-regime-algebra identifies the published benchmark rho_n with this same exponent, so the converse lands on the classical interior treatment-regression scale. When 0<s<d/4, rho_n = n^{-2/(1+d/(4*s)+1/alpha)} is recorded only as the published HOIF comparator, not as a same-class certified upper endpoint. The residual carried by oeq:full-beta-frontier is therefore the unrestricted upper frontier itself: can one attain rho_n on the original class, or does a genuinely beta-sensitive phase intervene?",
+        "tex_anchor": "",
+        "frozen": true,
+        "frozen_body": "The beta comparison handle \\(\\mathfrak B_{\\alpha,\\beta,s}\\) denotes the following frontier statement. For every \\(\\beta>0\\), there is a constant \\(c>0\\) such that, for all sufficiently large \\(n\\),\n\\[\nc\\,n^{-2\\alpha/(2\\alpha+1)}\n\\le\nR_n\\!\\left(\\mathcal P_{\\alpha,\\beta,s}(M,c_0,\\varepsilon_0,t_0),t_0\\right).\n\\]\nFor every \\(n\\ge 1\\), when \\(d\\le 4s\\), the published benchmark satisfies\n\\[\n\\rho_n\n=\nn^{-2\\alpha/(2\\alpha+1)}.\n\\]\nFor every \\(n\\ge 1\\), when \\(0<s\\) and \\(4s<d\\), the published benchmark satisfies\n\\[\n\\rho_n\n=\nn^{-2/(1+d/(4s)+1/\\alpha)}\n\\]\nand its exponent obeys\n\\[\n\\frac{2}{1+d/(4s)+1/\\alpha}\n<\n\\frac{2\\alpha}{2\\alpha+1}.\n\\]\nThe upper-frontier alternatives are recorded as the following disjunction: either there is a constant \\(C>0\\) such that, for all sufficiently large \\(n\\),\n\\[\nR_n\\!\\left(\\mathcal P_{\\alpha,\\beta,s}(M,c_0,\\varepsilon_0,t_0),t_0\\right)\n\\le\nC\\rho_n,\n\\]\nor there are \\(\\kappa\\) and \\(C>0\\) with\n\\[\n\\frac{2}{1+d/(4s)+1/\\alpha}<\\kappa<\\frac{2\\alpha}{2\\alpha+1}\n\\]\nsuch that, for all sufficiently large \\(n\\),\n\\[\nR_n\\!\\left(\\mathcal P_{\\alpha,\\beta,s}(M,c_0,\\varepsilon_0,t_0),t_0\\right)\n\\le\nC n^{-\\kappa},\n\\]\nor there are \\(\\beta'>0\\), \\(\\beta'\\ne\\beta\\), exponents \\(\\kappa,\\kappa'\\) with \\(\\kappa'\\ne\\kappa\\), and positive constants \\(c,C,c',C'\\) such that, for all sufficiently large \\(n\\),\n\\[\nc n^{-\\kappa}\n\\le\nR_n\\!\\left(\\mathcal P_{\\alpha,\\beta,s}(M,c_0,\\varepsilon_0,t_0),t_0\\right)\n\\le\nC n^{-\\kappa}\n\\]\nand\n\\[\nc' n^{-\\kappa'}\n\\le\nR_n\\!\\left(\\mathcal P_{\\alpha,\\beta',s}(M,c_0,\\varepsilon_0,t_0),t_0\\right)\n\\le\nC' n^{-\\kappa'}.\n\\]",
+        "frozen_title": "Beta frontier handle $\\mathfrak B_{\\alpha,\\beta,s}$"
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.betaFrontierHandle",
+        "file": "Frontier.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "9f3bad01a6fcb1e059bee67805b12b1b05f365d1",
+        "note": "The never-proved, unused handle records under `∀ beta > 0` the eventual all-beta lower floor on the original `HolderDoseClass`, both stated regime identities and the deficient-regime exponent ordering, plus an unresolved disjunction covering rho-rate attainability, an intermediate exponent, or beta-sensitive rates; it certifies no upper endpoint and faithfully records the paper's open frontier."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "thm:sharp-pointwise-lower-bound",
+      "obj_id": "T-1",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Assume ass:baseline-submodel-slack. Then for every beta>0 there exists a constant c > 0, depending only on the fixed model radii and the slack baseline, such that for all sufficiently large n, R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0), t_0) >= c n^(-2*alpha/(2*alpha+1)). Equivalently, uniformly over every beta>0, every estimator of theta_P(t_0) over P_{alpha,beta,s}(M,c_0,epsilon_0,t_0) has worst-case mean-squared error at least a constant multiple of the classical interior treatment-regression pointwise rate.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.sharp_pointwise_lower_bound",
+        "file": "T_SharpPointwiseLowerBound.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "fe311b99618906a4ccd9958ad80eae3f16ad9ab0",
+        "note": "After unfolding RegimeConstants, BaselineSubmodelSlack, HolderDoseClass, and minimaxRisk, the Lean statement has the paper's ∀ beta>0, ∃ c>0, eventual-in-n lower bound with the identical exponent and model class; the regime premises are standing parameter-domain bookkeeping, and restricting estimators to measurable [-M,M]-valued maps is equivalent by truncation because the class bounds theta_P(t0) in [-M,M]."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "prop:oracle-regime-reduction",
+      "obj_id": "T-2",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Under the assumptions of thm:sharp-pointwise-lower-bound, if s >= d/4 then rho_n = n^(-2*alpha/(2*alpha+1)) and therefore R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0), t_0) >= c n^(-2*alpha/(2*alpha+1)) = c rho_n for some c > 0. Thus the certified lower floor reduces to the classical interior pointwise nonparametric regression barrier.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.oracle_regime_reduction",
+        "file": "T_OracleRegimeReduction.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "7777fb16343c71021304f0d3318832727400ffeb",
+        "note": "Unfolding publishedHoifRate, hsd with positive alpha and s makes the oracle branch the max for every n≥1; the eventual conjunction is therefore equivalent to the paper's rate identity plus the sufficiently-large-n minimax lower bound, with the same HolderDoseClass, minimaxRisk, and baseline-slack assumptions."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "thm:certified-partial-beta-frontier",
+      "obj_id": "T-3",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Under baseline-submodel slack, for every fixed beta > 0 the original dose-response class has minimax MSE at least c n^(-2 alpha/(2 alpha+1)) for all sufficiently large n. This lower floor matches the published rho_n exponent when s >= d/4; when 0 < s < d/4, rho_n has a strictly smaller exponent and remains only an upper-side comparator, so no same-class upper endpoint is asserted.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.certifiedPartialBetaFrontier",
+        "file": "T_CertifiedPartialBetaFrontier.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "6b3057878f211e3dfa52bea0e85bd18655f03d15",
+        "note": "After unfolding the class, minimax risk, published rate, regime constants, and baseline slack, the Lean statement is equivalent: it gives a beta-dependent positive constant and an eventual oracle lower floor, identifies the published exponent for s ≥ d/4, proves the strictly smaller published exponent for 0 < s < d/4, and asserts no same-class upper endpoint."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:bernoulli-mean-channel-kl",
+      "obj_id": "L-1",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Fix B>0. Let Q_u and Q_v be distributions on {-B,B} with means u and v, respectively, so Q_u(B)=(1+u/B)/2 and Q_v(B)=(1+v/B)/2. If |u|<=B/2 and |v|<=B/2, then KL(Q_u,Q_v) <= 2*(u-v)^2/B^2.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.bernoulli_mean_channel_kl_source",
+        "file": "Helpers/Divergence.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "a0c8c7cdf56d90956c171719aab203dd4b50e4d4",
+        "note": "Unfolding twoPointMean gives exactly the {-B,B} laws with masses (1+u/B)/2 and (1-u/B)/2; under B>0 and the central-half bounds, the ENNReal KL inequality is equivalent to the paper's nonnegative real quadratic bound."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:le-cam-two-point-mse-source",
+      "obj_id": "L-2",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Let Q_0 and Q_1 be two laws for the n-sample experiment and let theta_0,theta_1 be the corresponding values of a real parameter, with Delta=|theta_1-theta_0|. If KL(Q_0,Q_1)<=K<infinity, then every estimator T satisfies max_{i=0,1} E_{Q_i}[(T-theta_i)^2] >= c_K Delta^2 for a constant c_K>0 depending only on K.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.le_cam_two_point_mse_source",
+        "file": "Helpers/Divergence.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "dd026396f00d25a3f15cddf587b6d7ed540d073a",
+        "note": "The Lean quantifiers make cK positive and uniform over all probability laws, parameter values, and measurable estimators under the KL budget; (theta1-theta0)^2 equals Delta^2, while measurability and squared-loss integrability are legitimate expectation bookkeeping."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:rho-oracle-regime-algebra",
+      "obj_id": "L-3",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "If s >= d/4, then the published beta>=alpha rate rho_n satisfies rho_n = n^{-2 alpha/(2 alpha+1)} for every n >= 1.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.rho_oracle_regime_algebra",
+        "file": "Helpers/RateAlgebra.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "0c6aab3ad8d561a4f619fd37ec2c49845fa2b285",
+        "note": "Unfolding publishedHoifRate as the maximum of the two published power rates, d≤4s is exactly s≥d/4, and the positivity premises are the intrinsic domain conditions for the smoothness indices and denominators."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:oracle-dose-regression-lower-all-beta",
+      "obj_id": "L-4",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Assume ass:baseline-submodel-slack. For every beta>0 there is a constant c_or>0, depending only on the fixed model radii and on the slack baseline but not on n, such that for all sufficiently large n, R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0),t_0) >= c_or n^{-2 alpha/(2 alpha+1)}. The construction leaves the treatment density fixed, so the bound is independent of whether beta>=alpha.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.oracle_dose_regression_lower_all_beta",
+        "file": "Helpers/TwoPointConstruction.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "7e7e66dc515f1bcee20c1692b396ac919197628d",
+        "note": "After unfolding BaselineSubmodelSlack, HolderDoseClass, and minimaxRisk, universal closure over beta with hbeta is the paper's every-beta quantifier, and ∃ cor>0 before the Nat-atTop eventual bound is equivalent to a positive n-independent constant valid for all sufficiently large n."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:rho-deficient-regime-algebra",
+      "obj_id": "L-5",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "If 0<s<d/4, then rho_n = n^{-2/(1+d/(4s)+1/alpha)} for every n>=1, and 2/(1+d/(4s)+1/alpha) < 2 alpha/(2 alpha+1).",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.rho_deficient_regime_algebra",
+        "file": "Helpers/RateAlgebra.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "441631d9ad9c92a83143aeae3f866c2e4a9c895e",
+        "note": "After unfolding publishedHoifRate as the maximum of the oracle and deficient powers, hs together with 4*s<d is equivalent to 0<s<d/4, and universal closure over n with 1≤n gives exactly the stated identity and strict exponent comparison for every n≥1."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "thm:sharp-minimax-smooth-covariate",
+      "obj_id": "T-4",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Assume ass:baseline-submodel-slack. For every fixed beta>0 and every s>=d/4, there exists c>0 such that, for all sufficiently large n, R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0),t_0) >= c n^{-2 alpha/(2 alpha+1)} = c rho_n. Thus, in the smooth-covariate regime, the certified lower floor lands on the same exponent as the published benchmark rho_n, but this core does not claim a matching same-class upper bound.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.sharp_minimax_smooth_covariate",
+        "file": "T_SharpMinimaxSmoothCovariate.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "16c9f89094a6e6f4bf3093d813b946d83539097b",
+        "note": "After unfolding the model class, minimax risk, benchmark rate, slack condition, and regime constants, `d ≤ 4s` is equivalent to `s ≥ d/4`, `∀ᶠ n atTop` means all sufficiently large n, and the positive witness `c` makes `n^{-2α/(2α+1)} = ρ_n` equivalent to the paper's scaled equality `c n^{-2α/(2α+1)} = cρ_n`; the additional positivity/interiority premises are global setup conditions."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "thm:frontier-bracket-deficient",
+      "obj_id": "T-5",
+      "kind": "theorem",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "For every fixed beta>0 and every 0<s<d/4, under the declared same-class assumptions and ass:baseline-submodel-slack, there exists c>0 such that, for all sufficiently large n, R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0),t_0) >= c n^{-2 alpha/(2 alpha+1)}. Moreover rho_n = n^{-2/(1+d/(4s)+1/alpha)} has a strictly smaller exponent than the certified lower floor. The same-class upper endpoint C rho_n is not discharged on the present core.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.frontier_bracket_deficient",
+        "file": "T_FrontierBracketDeficient.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "2ce2235f47ba3986d2e424d00efaa66ad31d47fa",
+        "note": "After unfolding RegimeConstants, BaselineSubmodelSlack, HolderDoseClass, minimaxRisk, thetaFunctional, and publishedHoifRate, the hypotheses encode beta>0, 0<s<d/4, the standing same-class conditions, and strict baseline slack, while the conclusion gives exactly an eventual positive-constant lower floor and the deficient-rate identity with strictly smaller exponent; the absent upper endpoint is correctly left unasserted."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:certified-beta-frontier-bracket",
+      "obj_id": "L-6",
+      "kind": "lemma",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Assume ass:baseline-submodel-slack. For every fixed beta>0 there exists c>0 such that, for all sufficiently large n, R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0),t_0) >= c n^{-2 alpha/(2 alpha+1)}. If s>=d/4 then rho_n = n^{-2 alpha/(2 alpha+1)}. If 0<s<d/4 then rho_n = n^{-2/(1+d/(4s)+1/alpha)} and 2/(1+d/(4s)+1/alpha) < 2 alpha/(2 alpha+1). Hence the certified unrestricted beta-frontier is the all-beta oracle lower floor together with the algebraic comparison to the published rho_n benchmark.",
+        "tex_anchor": "",
+        "frozen": true
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.certified_beta_frontier_bracket",
+        "file": "Helpers/FrontierBracket.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "ceadc10dd889afa1150e9673db91021a100449fc",
+        "note": "The existential positive constant and Nat-atTop clause exactly encode the eventual all-beta oracle floor, while the separate ∀ n≥1 conditional conjuncts exactly encode both published-rate regimes, including equality at s=d/4 and the strict deficient exponent comparison."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "lem:published-upper-bound-cited",
+      "kind": "gate",
+      "provenance": "from-note",
+      "nl": {
+        "statement": "Cited conditional comparator (Bonvini-Kennedy 2022). Under Assumptions 1-2 and Conditions 1-4 of the source theorem, alpha <= beta, equal covariate smoothness s for the two nuisance functions, projection approximation of order k^(-2s/d), the source's optimal choices of k and h, equal-rate estimation of w and 1/pi, and negligibility of the third-order density-estimation remainder ||v||_g ||q||_g ||p_hat(t,.)-p(t,.)||_infinity, the conditional MSE of the source's specified second-order estimator is eventually at most a constant times rho_n as displayed in Figure 1. This is an estimator-specific conditional risk implication, not an unconditional minimax upper bound over any class and not a same-class upper theorem for def:holder-dose-class.",
+        "tex_anchor": "",
+        "frozen": true,
+        "frozen_body": "For covariate dimension \\(d\\) and parameters \\(\\alpha,\\beta,s,\\gamma_1,\\gamma_2\\), consider any Bonvini--Kennedy HOIF estimator specification \\(E\\) consisting of an observed-data law \\(P\\), evaluation dose \\(t_0\\), nuisance estimators \\(\\hat\\mu_n,\\hat\\pi_n,\\hat p_n\\), kernel \\(K\\), bandwidths \\(h_n\\), projection dimensions \\(k_n\\), and true and estimated projection kernels \\(\\Pi_n\\) and \\(\\widehat\\Pi_n\\). Suppose the following conditions of \\citet[Theorem~3.1 and \\S3.4]{bonvini2022} hold for these same inputs: \\(P\\) is a probability law; \\(\\mu_P\\), \\(p_{X,P}\\), and \\(\\pi_P\\) are respectively the outcome regression, covariate density, and conditional treatment density of \\(P\\); there exist \\(0<\\ell\\le u\\) such that, for every \\(n,a,x\\), \\(\\ell\\le\\pi_P(a\\mid x)\\le u\\) and \\(\\ell\\le\\hat\\pi_n(a\\mid x)\\le u\\); there exists \\(B>0\\) such that \\(|Y|\\le B\\) and \\(|A|\\le B\\) \\(P\\)-almost surely and \\(|\\hat\\mu_n(a,x)|\\le B\\) for every \\(n,a,x\\); and, for every \\(n\\) and \\(x\\), the maps \\(a\\mapsto\\mu_P(a,x)\\) and \\(a\\mapsto\\hat\\mu_n(a,x)\\) lie in the one-dimensional Hölder ball of order \\(\\alpha\\) and radius \\(1\\) on \\(\\mathbb R\\), while \\(a\\mapsto\\pi_P(a\\mid x)\\) and \\(a\\mapsto\\hat\\pi_n(a\\mid x)\\) lie in the corresponding ball of order \\(\\beta\\). Writing \\(K_{h_n,t_0}(a)=h_n^{-1}K((a-t_0)/h_n)\\), assume also that there exist \\(K_{\\max}>0\\) and \\(0<g_{\\ell}\\le g_u\\) such that \\(|K(u)|\\le K_{\\max}\\), \\(\\operatorname{supp}(K)\\subseteq[-1,1]\\), \\(\\int K(u)\\,du=1\\), \\(\\int u^jK(u)\\,du=0\\) for \\(1\\le j\\le\\lceil\\alpha\\rceil-1\\), \\(h_n>0\\), \\(\\int K_{h_n,t_0}(a)\\,da=1\\), and, for every \\(n,x\\), \\(g_{\\ell}\\le\\int K_{h_n,t_0}(a)\\pi_P(a\\mid x)p_{X,P}(x)\\,da\\le g_u\\); that there exists \\(C_\\Pi>0\\) with \\(\\Pi_n(x,x)\\le C_\\Pi k_n\\) and \\(\\widehat\\Pi_n(x,x)\\le C_\\Pi k_n\\) for every \\(n,x\\); and that there exist \\(0<r_{\\ell}\\le r_u\\) such that, for every \\(n,x\\),\n\\[\nr_{\\ell}\\le\n\\frac{\\int K_{h_n,t_0}(a)\\pi_P(a\\mid x)p_{X,P}(x)\\,da}\n{\\int K_{h_n,t_0}(a)\\hat p_n(a,x)\\,da}\n\\le r_u .\n\\]\nAssume further that \\(d>0\\), \\(\\alpha>0\\), \\(\\beta>0\\), \\(s>0\\), \\(\\alpha\\le\\beta\\), \\(\\gamma_1=\\gamma_2=s\\), and that there exists \\(B_X>0\\) such that, for every \\(a\\) and \\(n\\), the maps \\(x\\mapsto\\mu_P(a,x)\\), \\(x\\mapsto\\hat\\mu_n(a,x)\\), \\(x\\mapsto\\pi_P(a\\mid x)\\), and \\(x\\mapsto\\hat\\pi_n(a\\mid x)\\) lie in the \\(s\\)-Hölder ball of radius \\(B_X\\) on \\([0,1]^d\\). Let \\(v_n(x)=\\hat\\mu_n(t_0,x)-\\mu_P(t_0,x)\\) and \\(q_n(x)=\\hat\\pi_n(t_0\\mid x)^{-1}-\\pi_P(t_0\\mid x)^{-1}\\). The rate specialization requires\n\\[\n\\|v_n-\\Pi_n v_n\\|_{L^2([0,1]^d)}\n\\|q_n-\\Pi_n q_n\\|_{L^2([0,1]^d)}\n\\lesssim k_n^{-(\\gamma_1+\\gamma_2)/d}\n\\]\neventually, \\(\\|v_n\\|_{L^2([0,1]^d)}\\asymp\\|q_n\\|_{L^2([0,1]^d)}\\) eventually, and\n\\[\n\\bigl(\\|v_n\\|_{L^2([0,1]^d)}\n\\|q_n\\|_{L^2([0,1]^d)}\n\\|\\hat p_n(t_0,\\cdot)-\\pi_P(t_0\\mid\\cdot)p_{X,P}(\\cdot)\\|_{\\infty,[0,1]^d}\\bigr)^2\n\\lesssim \\rho_n\n\\]\neventually. The tuning satisfies, when \\(d\\le 4s\\), \\(h_n\\asymp n^{-1/(2\\alpha+1)}\\) and \\(k_n\\asymp nh_n\\) eventually, and, when \\(4s<d\\), \\(h_n\\asymp n^{-4s/(\\alpha(4s+d)+4s)}\\) and \\(k_n\\asymp(nh_n)^{2d/(d+4s)}\\) eventually. Then the specified Bonvini--Kennedy HOIF estimator \\(\\hat\\theta_n\\), with its nuisance-training outputs held fixed, attains the published benchmark conditional mean-squared-error rate of \\cref{obj:def:published-hoif-rate}: there exists \\(C>0\\) such that, for all sufficiently large \\(n\\),\n\\[\n\\int (\\hat\\theta_n(O_1,\\ldots,O_n)-\\theta_P(t_0))^2\\,dP^n\n\\le C\\rho_n,\\qquad\n\\rho_n=\n\\max\\left\\{n^{-2\\alpha/(2\\alpha+1)},\nn^{-2/(1+d/(4s)+1/\\alpha)}\\right\\}.\n\\]",
+        "frozen_title": "Published HOIF Comparator"
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.publishedUpperBoundCited",
+        "file": "Helpers/UpperBoundCited.lean"
+      },
+      "review": {
+        "status": "matched",
+        "passed_hash": "9af74576a11ead83c642a05485f23fbea873cdbe",
+        "note": "The cited predicate self-containedly quantifies over the explicitly specified second-order HOIF estimator, encodes the source theorem conditions and Figure-1 specialization on its actual nuisance errors and tuning sequences, and concludes the correct eventual conditional-MSE upper bound by a positive constant times rho_n without asserting a minimax or HolderDoseClass upper bound."
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      },
+      "gate": {
+        "gate_class": "cited",
+        "source": "cite:bonvini-kennedy-2022"
+      }
+    },
+    {
+      "id": "ass:mu-is-regression",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Stat.DoseResponseMinimax.MuIsRegression)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.MuIsRegression",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "ass:px-is-x-density",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Stat.DoseResponseMinimax.PxIsXDensity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.PxIsXDensity",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "ass:pi-is-cond-treatment-density",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Stat.DoseResponseMinimax.PiIsCondTreatmentDensity)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.PiIsCondTreatmentDensity",
+        "file": "Basic.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "minimaxRisk-two-point-lower",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.minimaxRisk_two_point_lower)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.minimaxRisk_two_point_lower",
+        "file": "Helpers/TwoPointConstruction.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "measurable-set-cube",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.measurableSet_cube)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.measurableSet_cube",
+        "file": "Helpers/Witness/Base.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "restrict-withDensity-ofReal-isProbability",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.restrict_withDensity_ofReal_isProbabilityMeasure)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.restrict_withDensity_ofReal_isProbabilityMeasure",
+        "file": "Helpers/Witness/Base.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "integrable-of-ae-bounded",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.integrable_of_measurable_ae_bounded)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.integrable_of_measurable_ae_bounded",
+        "file": "Helpers/Witness/Base.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "doseObs-measurability",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.measurable_doseObs_tuple)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.measurable_doseObs_tuple",
+        "file": "Helpers/Witness/Base.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "bump-holder-substrate-gate",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseBump_holder_gate)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseBump_holder_gate",
+        "file": "Helpers/Witness/BumpHolder.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-channel-ax",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Stat.DoseResponseMinimax.doseChannelAX)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseChannelAX",
+        "file": "Helpers/Witness/Channel.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-ax-probability",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseAXMeasure_isProbabilityMeasure)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseAXMeasure_isProbabilityMeasure",
+        "file": "Helpers/Witness/Channel.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-data-eq-axbind",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure_eq_AXbind)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure_eq_AXbind",
+        "file": "Helpers/Witness/Channel.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-bump",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Stat.DoseResponseMinimax.doseContDiffBump)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseContDiffBump",
+        "file": "Helpers/Witness/Core.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-bump-function",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Stat.DoseResponseMinimax.doseBump)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseBump",
+        "file": "Helpers/Witness/Core.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "twoPointMean-map-doseObs-measurable",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.measurable_twoPointMean_map_doseObs)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.measurable_twoPointMean_map_doseObs",
+        "file": "Helpers/Witness/Core.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "twoPointMean-map-doseObs-pair-measurable",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.measurable_twoPointMean_map_doseObs_pair)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.measurable_twoPointMean_map_doseObs_pair",
+        "file": "Helpers/Witness/Core.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-x-measure",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Stat.DoseResponseMinimax.doseXMeasure)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseXMeasure",
+        "file": "Helpers/Witness/Core.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-a-measure",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Stat.DoseResponseMinimax.doseAMeasure)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseAMeasure",
+        "file": "Helpers/Witness/Core.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-outcome-kernel-measurable",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.measurable_doseOutcomeKernel)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.measurable_doseOutcomeKernel",
+        "file": "Helpers/Witness/Core.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-ax-measure",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Stat.DoseResponseMinimax.doseAXMeasure)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseAXMeasure",
+        "file": "Helpers/Witness/Core.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-data-measure",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure",
+        "file": "Helpers/Witness/Core.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-potential",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Stat.DoseResponseMinimax.dosePotential)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.dosePotential",
+        "file": "Helpers/Witness/Core.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-witness",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Stat.DoseResponseMinimax.doseWitness)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseWitness",
+        "file": "Helpers/Witness/Core.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-base-probability",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseXMeasure_isProbabilityMeasure)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseXMeasure_isProbabilityMeasure",
+        "file": "Helpers/Witness/Core.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-witness-kl-single",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseWitness_kl_single_le)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_kl_single_le",
+        "file": "Helpers/Witness/KL.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-witness-kl-nfold",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseWitness_kl_nfold_le)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_kl_nfold_le",
+        "file": "Helpers/Witness/KL.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-data-probability",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure_isProbabilityMeasure)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure_isProbabilityMeasure",
+        "file": "Helpers/Witness/Measure.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-data-x-marginal",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure_map_X)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure_map_X",
+        "file": "Helpers/Witness/Measure.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-witness-px-density",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseWitness_pxDens)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_pxDens",
+        "file": "Helpers/Witness/Measure.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-witness-consistency",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseWitness_consistency)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_consistency",
+        "file": "Helpers/Witness/Measure.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-data-y-support",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure_ae_Y_mem_Icc)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure_ae_Y_mem_Icc",
+        "file": "Helpers/Witness/Measure.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-witness-bounded-outcome",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseWitness_bdd)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_bdd",
+        "file": "Helpers/Witness/Measure.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-witness-membership",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseWitness_mem_class)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_mem_class",
+        "file": "Helpers/Witness/Membership.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-data-ax-marginal",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure_map_AX)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseDataMeasure_map_AX",
+        "file": "Helpers/Witness/PiCond.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-ax-product",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseAXMeasure_eq_prod)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseAXMeasure_eq_prod",
+        "file": "Helpers/Witness/PiCond.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-ax-density",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseAXMeasure_density)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseAXMeasure_density",
+        "file": "Helpers/Witness/PiCond.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-witness-pi-cond",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseWitness_piCond)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_piCond",
+        "file": "Helpers/Witness/PiCond.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-witness-mu-regression",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseWitness_muReg)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_muReg",
+        "file": "Helpers/Witness/Regression.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-witness-ignorability",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseWitness_ignorability)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_ignorability",
+        "file": "Helpers/Witness/Regression.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-witness-theta",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseWitness_theta)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_theta",
+        "file": "Helpers/Witness/Theta.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-witness-theta-sep",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.doseWitness_theta_sep)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseWitness_theta_sep",
+        "file": "Helpers/Witness/Theta.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "map-bind-map-proj",
+      "kind": "lemma",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced lemma CausalSmith.Stat.DoseResponseMinimax.map_bind_map_proj)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.map_bind_map_proj",
+        "file": "Helpers/Witness/Base.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    },
+    {
+      "id": "dose-witness-mu",
+      "kind": "definition",
+      "provenance": "agent-introduced",
+      "nl": {
+        "statement": "(agent-introduced def CausalSmith.Stat.DoseResponseMinimax.doseWitnessMu)",
+        "tex_anchor": "",
+        "frozen": false
+      },
+      "lean": {
+        "decl_name": "CausalSmith.Stat.DoseResponseMinimax.doseWitnessMu",
+        "file": "Helpers/Witness/Core.lean"
+      },
+      "review": {
+        "status": "unreviewed",
+        "passed_hash": null
+      },
+      "proof": {
+        "state": "complete",
+        "sorry_count": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-pointwise-lower-bound",
+      "to": "ass:iid-sampling",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-pointwise-lower-bound",
+      "to": "ass:bounded-outcome",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-pointwise-lower-bound",
+      "to": "ass:interior-dose",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-pointwise-lower-bound",
+      "to": "ass:local-positivity",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-pointwise-lower-bound",
+      "to": "ass:mu-treatment-holder",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-pointwise-lower-bound",
+      "to": "ass:pi-treatment-holder",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-pointwise-lower-bound",
+      "to": "ass:mu-covariate-holder",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-pointwise-lower-bound",
+      "to": "ass:pi-covariate-holder",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-pointwise-lower-bound",
+      "to": "ass:px-holder",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-pointwise-lower-bound",
+      "to": "def:holder-dose-class",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-pointwise-lower-bound",
+      "to": "def:minimax-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-pointwise-lower-bound",
+      "to": "def:published-hoif-rate",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-pointwise-lower-bound",
+      "to": "ass:baseline-submodel-slack",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-pointwise-lower-bound",
+      "to": "lem:oracle-dose-regression-lower-all-beta",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-pointwise-lower-bound",
+      "to": "def:theta-functional",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:oracle-regime-reduction",
+      "to": "thm:sharp-pointwise-lower-bound",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:oracle-regime-reduction",
+      "to": "def:published-hoif-rate",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "prop:oracle-regime-reduction",
+      "to": "def:minimax-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:certified-partial-beta-frontier",
+      "to": "def:holder-dose-class",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:certified-partial-beta-frontier",
+      "to": "def:minimax-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:certified-partial-beta-frontier",
+      "to": "def:published-hoif-rate",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:certified-partial-beta-frontier",
+      "to": "def:beta-frontier-handle",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:certified-partial-beta-frontier",
+      "to": "lem:certified-beta-frontier-bracket",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:certified-partial-beta-frontier",
+      "to": "lem:rho-oracle-regime-algebra",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:certified-partial-beta-frontier",
+      "to": "lem:rho-deficient-regime-algebra",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:rho-oracle-regime-algebra",
+      "to": "def:published-hoif-rate",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "ass:iid-sampling",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "ass:consistency",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "ass:no-unmeasured-confounding",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "ass:bounded-outcome",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "ass:interior-dose",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "ass:local-positivity",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "ass:mu-treatment-holder",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "ass:pi-treatment-holder",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "ass:mu-covariate-holder",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "ass:pi-covariate-holder",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "ass:px-holder",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "ass:baseline-submodel-slack",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "def:holder-dose-class",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "def:theta-functional",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "def:minimax-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "lem:bernoulli-mean-channel-kl",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "lem:le-cam-two-point-mse-source",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:rho-deficient-regime-algebra",
+      "to": "def:published-hoif-rate",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-minimax-smooth-covariate",
+      "to": "ass:baseline-submodel-slack",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-minimax-smooth-covariate",
+      "to": "def:holder-dose-class",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-minimax-smooth-covariate",
+      "to": "def:minimax-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-minimax-smooth-covariate",
+      "to": "def:published-hoif-rate",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-minimax-smooth-covariate",
+      "to": "thm:sharp-pointwise-lower-bound",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:sharp-minimax-smooth-covariate",
+      "to": "lem:rho-oracle-regime-algebra",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:frontier-bracket-deficient",
+      "to": "ass:baseline-submodel-slack",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:frontier-bracket-deficient",
+      "to": "def:holder-dose-class",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:frontier-bracket-deficient",
+      "to": "def:minimax-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:frontier-bracket-deficient",
+      "to": "def:published-hoif-rate",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:frontier-bracket-deficient",
+      "to": "lem:oracle-dose-regression-lower-all-beta",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "thm:frontier-bracket-deficient",
+      "to": "lem:rho-deficient-regime-algebra",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:certified-beta-frontier-bracket",
+      "to": "ass:baseline-submodel-slack",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:certified-beta-frontier-bracket",
+      "to": "def:holder-dose-class",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:certified-beta-frontier-bracket",
+      "to": "def:minimax-risk",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:certified-beta-frontier-bracket",
+      "to": "def:published-hoif-rate",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:certified-beta-frontier-bracket",
+      "to": "thm:sharp-pointwise-lower-bound",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:certified-beta-frontier-bracket",
+      "to": "lem:rho-oracle-regime-algebra",
+      "source": "declared"
+    },
+    {
+      "kind": "proof-uses",
+      "from": "lem:certified-beta-frontier-bracket",
+      "to": "lem:rho-deficient-regime-algebra",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:sharp-pointwise-lower-bound",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:sharp-pointwise-lower-bound",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S3",
+      "to": "thm:sharp-pointwise-lower-bound",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "prop:oracle-regime-reduction",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "prop:oracle-regime-reduction",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S3",
+      "to": "prop:oracle-regime-reduction",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:certified-partial-beta-frontier",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:certified-partial-beta-frontier",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S3",
+      "to": "thm:certified-partial-beta-frontier",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:sharp-minimax-smooth-covariate",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:sharp-minimax-smooth-covariate",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S3",
+      "to": "thm:sharp-minimax-smooth-covariate",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S1",
+      "to": "thm:frontier-bracket-deficient",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S2",
+      "to": "thm:frontier-bracket-deficient",
+      "source": "declared"
+    },
+    {
+      "kind": "setup-of",
+      "from": "S3",
+      "to": "thm:frontier-bracket-deficient",
+      "source": "declared"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:holder-dose-class",
+      "to": "ass:iid-sampling",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:holder-dose-class",
+      "to": "ass:consistency",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:holder-dose-class",
+      "to": "ass:no-unmeasured-confounding",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:holder-dose-class",
+      "to": "ass:bounded-outcome",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:holder-dose-class",
+      "to": "ass:interior-dose",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:holder-dose-class",
+      "to": "ass:local-positivity",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:holder-dose-class",
+      "to": "ass:mu-treatment-holder",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:holder-dose-class",
+      "to": "ass:pi-treatment-holder",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:holder-dose-class",
+      "to": "ass:mu-covariate-holder",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:holder-dose-class",
+      "to": "ass:pi-covariate-holder",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:holder-dose-class",
+      "to": "ass:px-holder",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:holder-dose-class",
+      "to": "ass:mu-is-regression",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:holder-dose-class",
+      "to": "ass:px-is-x-density",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:holder-dose-class",
+      "to": "ass:pi-is-cond-treatment-density",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:holder-dose-class",
+      "to": "def:minimax-risk",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "def:holder-dose-class",
+      "to": "def:published-hoif-rate",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:certified-beta-frontier-bracket",
+      "to": "ass:baseline-submodel-slack",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:certified-beta-frontier-bracket",
+      "to": "def:minimax-risk",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:certified-beta-frontier-bracket",
+      "to": "def:holder-dose-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:certified-beta-frontier-bracket",
+      "to": "def:published-hoif-rate",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:rho-oracle-regime-algebra",
+      "to": "def:published-hoif-rate",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:rho-deficient-regime-algebra",
+      "to": "def:published-hoif-rate",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "minimaxRisk-two-point-lower",
+      "to": "def:holder-dose-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "minimaxRisk-two-point-lower",
+      "to": "def:theta-functional",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "minimaxRisk-two-point-lower",
+      "to": "def:minimax-risk",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "ass:baseline-submodel-slack",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "def:minimax-risk",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "lem:oracle-dose-regression-lower-all-beta",
+      "to": "def:holder-dose-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "bump-holder-substrate-gate",
+      "to": "dose-bump-function",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-ax-probability",
+      "to": "dose-x-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-ax-probability",
+      "to": "dose-a-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-ax-probability",
+      "to": "dose-ax-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-data-eq-axbind",
+      "to": "dose-data-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-data-eq-axbind",
+      "to": "dose-ax-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-data-eq-axbind",
+      "to": "dose-channel-ax",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "twoPointMean-map-doseObs-measurable",
+      "to": "dose-witness-mu",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "twoPointMean-map-doseObs-pair-measurable",
+      "to": "dose-witness-mu",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-outcome-kernel-measurable",
+      "to": "dose-a-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-outcome-kernel-measurable",
+      "to": "dose-witness-mu",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-base-probability",
+      "to": "dose-x-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-kl-single",
+      "to": "dose-x-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-kl-single",
+      "to": "dose-a-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-kl-single",
+      "to": "dose-data-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-kl-nfold",
+      "to": "dose-x-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-kl-nfold",
+      "to": "dose-a-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-kl-nfold",
+      "to": "dose-witness-mu",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-kl-nfold",
+      "to": "dose-data-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-data-probability",
+      "to": "dose-x-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-data-probability",
+      "to": "dose-a-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-data-probability",
+      "to": "dose-witness-mu",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-data-probability",
+      "to": "dose-data-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-data-x-marginal",
+      "to": "dose-a-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-data-x-marginal",
+      "to": "dose-witness-mu",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-data-x-marginal",
+      "to": "dose-data-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-data-x-marginal",
+      "to": "dose-x-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-px-density",
+      "to": "dose-a-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-px-density",
+      "to": "dose-witness-mu",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-px-density",
+      "to": "ass:px-is-x-density",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-px-density",
+      "to": "dose-witness",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-consistency",
+      "to": "ass:consistency",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-consistency",
+      "to": "dose-witness",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-data-y-support",
+      "to": "dose-data-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-bounded-outcome",
+      "to": "ass:bounded-outcome",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-bounded-outcome",
+      "to": "dose-witness",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-membership",
+      "to": "dose-witness-mu",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-membership",
+      "to": "dose-bump-function",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-membership",
+      "to": "def:holder-dose-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-membership",
+      "to": "dose-witness",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-data-ax-marginal",
+      "to": "dose-witness-mu",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-data-ax-marginal",
+      "to": "dose-data-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-data-ax-marginal",
+      "to": "dose-ax-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-ax-product",
+      "to": "dose-ax-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-ax-product",
+      "to": "dose-a-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-ax-product",
+      "to": "dose-x-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-ax-density",
+      "to": "dose-ax-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-pi-cond",
+      "to": "dose-witness-mu",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-pi-cond",
+      "to": "ass:pi-is-cond-treatment-density",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-pi-cond",
+      "to": "dose-witness",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-mu-regression",
+      "to": "dose-x-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-mu-regression",
+      "to": "dose-a-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-mu-regression",
+      "to": "dose-witness-mu",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-mu-regression",
+      "to": "ass:mu-is-regression",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-mu-regression",
+      "to": "dose-witness",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-ignorability",
+      "to": "dose-x-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-ignorability",
+      "to": "dose-a-measure",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-ignorability",
+      "to": "dose-witness-mu",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-ignorability",
+      "to": "ass:no-unmeasured-confounding",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-ignorability",
+      "to": "dose-witness",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-theta",
+      "to": "def:theta-functional",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-theta",
+      "to": "dose-witness",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-theta-sep",
+      "to": "def:theta-functional",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "dose-witness-theta-sep",
+      "to": "dose-witness",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:certified-partial-beta-frontier",
+      "to": "ass:baseline-submodel-slack",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:certified-partial-beta-frontier",
+      "to": "def:minimax-risk",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:certified-partial-beta-frontier",
+      "to": "def:holder-dose-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:certified-partial-beta-frontier",
+      "to": "def:published-hoif-rate",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:frontier-bracket-deficient",
+      "to": "ass:baseline-submodel-slack",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:frontier-bracket-deficient",
+      "to": "def:minimax-risk",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:frontier-bracket-deficient",
+      "to": "def:holder-dose-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:frontier-bracket-deficient",
+      "to": "def:published-hoif-rate",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:oracle-regime-reduction",
+      "to": "ass:baseline-submodel-slack",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:oracle-regime-reduction",
+      "to": "def:published-hoif-rate",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:oracle-regime-reduction",
+      "to": "def:minimax-risk",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "prop:oracle-regime-reduction",
+      "to": "def:holder-dose-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:sharp-minimax-smooth-covariate",
+      "to": "ass:baseline-submodel-slack",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:sharp-minimax-smooth-covariate",
+      "to": "def:minimax-risk",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:sharp-minimax-smooth-covariate",
+      "to": "def:holder-dose-class",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:sharp-minimax-smooth-covariate",
+      "to": "def:published-hoif-rate",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:sharp-pointwise-lower-bound",
+      "to": "ass:baseline-submodel-slack",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:sharp-pointwise-lower-bound",
+      "to": "def:minimax-risk",
+      "source": "extracted"
+    },
+    {
+      "kind": "statement-uses",
+      "from": "thm:sharp-pointwise-lower-bound",
+      "to": "def:holder-dose-class",
+      "source": "extracted"
+    }
+  ],
+  "symbolReview": {
+    "sym:O": {
+      "verdict": "matched",
+      "hash": "b371cdaf6ec552afa660cafa8bae066440d78b6f"
+    },
+    "sym:O_1, ..., O_n": {
+      "verdict": "matched",
+      "hash": "41b26b1698b0389ab710ee099501369688ca823a"
+    },
+    "sym:A": {
+      "verdict": "matched",
+      "hash": "b43644091e111ac3314703bf900b26df5d93a798"
+    },
+    "sym:X": {
+      "verdict": "matched",
+      "hash": "7ea715a3f083cf8475b1adce6e154849b15a7169"
+    },
+    "sym:Y(a)": {
+      "verdict": "matched",
+      "hash": "a60d901193c1d5abd6cac08989df39f5d8ac1a10"
+    },
+    "sym:t_0": {
+      "verdict": "matched",
+      "hash": "f38413a6e562d3cbba938bc19cf68721dd933d25"
+    },
+    "sym:epsilon_0": {
+      "verdict": "matched",
+      "hash": "5801a32b6af9a8cebb220b7a0eacb0a4838f6e50"
+    },
+    "sym:alpha": {
+      "verdict": "matched",
+      "hash": "e1c1b9699aa39f89c16ace012e7aff6272267cbe"
+    },
+    "sym:beta": {
+      "verdict": "matched",
+      "hash": "939284f65c3bdbce4ef12922ad046d57fb5dfff3"
+    },
+    "sym:s": {
+      "verdict": "matched",
+      "hash": "b4bf41678cea2aa06b6662d3cb2482302179d87a"
+    },
+    "sym:M": {
+      "verdict": "matched",
+      "hash": "2367c65110565cba32dd74b2528576dac6590b0c"
+    },
+    "sym:c_0": {
+      "verdict": "matched",
+      "hash": "b6704ceb9d3537f7498b04ad51d02a6431105a75"
+    },
+    "sym:rho_n": {
+      "verdict": "matched",
+      "hash": "da149095cec7e30f71fc6214674dd5e761736407"
+    }
+  }
+}

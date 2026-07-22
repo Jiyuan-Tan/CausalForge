@@ -1,0 +1,249 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_bjs\_if\_contrast\_frontier, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section initially contains one stage placeholder.
+%    Replace each placeholder with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` -- the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_bjs\_if\_contrast\_frontier} / \texttt{v1}%
+  \\ \large\textit{A finite contrast frontier and witness for influence-function non-equivalence in staggered DiD}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+(qid, specialization, panel index, assignment, target, regression) is fixed as follows. The qid is \texttt{eid\_bjs\_if\_contrast\_frontier} and the specialization is \texttt{v1}. Units \(i=1,\ldots,n\) are observed for periods \(t\in\{0,\ldots,T-1\}\). The absorbing adoption cohort is \(G_i\in\mathcal G\subseteq\{1,\ldots,T-1\}\cup\{\infty\}\), with \(D_{it}=\one\{t\ge G_i, G_i<\infty\}\). Potential outcomes satisfy no anticipation, so \(Y_{it}=Y_{it}(0)\) for \(t<G_i\). The target is one scalar event-time ATT \(\theta_a=a'\tau\), where \(\tau=(\tau_{g\ell})_{(g,\ell)\in\mathcal A}\), \(\tau_{g\ell}=\E[Y_{i,g+\ell}(g)-Y_{i,g+\ell}(0)\mid G_i=g]\), and \(a\in\Delta^{|\mathcal A|-1}\) is fixed by the analyst. The regression class consists of the four named asymptotically linear staggered-DiD procedures, all re-aggregated to \(\theta_a\): Borusyak-Jaravel-Spiess imputation (BJS), Sun-Abraham interaction-weighted (SA), Callaway-Sant'Anna group-time doubly robust (CS), and Wooldridge cohort-time saturated TWFE (W). The primitive design tuple is \((\pi,\Sigma,\mathcal G,T,a)\), where \(\pi_g=\Pr(G_i=g)\) and \(\Sigma\) is the covariance matrix of untreated residual scores over all cohort-period cells used in the nuisance projection. The finite contrast matrix is \(C(\pi,\Sigma,\mathcal G,T,a)=\operatorname{stack}_{m\in\{SA,CS,W\}} C_m(\pi,\Sigma,\mathcal G,T,a)\), where \(C_m\) is the canonical quotient loading that maps the ATT vector \(\tau\) into the difference between the \(m\)-influence-function projection and the BJS efficient projection.
+
+\begin{abstract}
+Modern staggered-DiD estimators can report the same event-time ATT while using different first-order projections. This proposal asks for the exact finite-dimensional frontier separating influence-function equivalence from non-equivalence for BJS, SA, CS, and Wooldridge after all four are forced onto the same \(\theta_a\). The kernel conjecture constructs \(C(\pi,\Sigma,\mathcal G,T,a)\) and states that the four influence functions agree in \(L_2(P)\) if and only if \(C\tau=0\). Off the frontier, the variance loss is the quotient norm \(\|C\tau\|^2_{\Omega}\), and a corrected projection map recovers the BJS influence function. A worked three-cohort by four-period exhibit is included to make the contrast object computable rather than spectral shorthand.
+\end{abstract}
+
+\section{Introduction}
+Staggered-DiD practice often treats BJS imputation, Sun-Abraham interaction weights, Callaway-Sant'Anna group-time aggregation, and Wooldridge saturated regression as alternative implementations of the same event-time estimand. The question here is sharper: when do these implementations have the same first-order influence function after the estimand has already been equalized? The main claim is that equality is governed by one finite contrast matrix \(C\), not by equality of aggregation weights alone.
+
+The closest published comparators are \citet[p.~949, Sec.~1]{borusyak_jaravel_spiess_2024_restud}, who motivate imputation by noting that efficiency properties of existing robust estimators were not known, and \citet[Sec.~3]{wooldridge_2023_ectj}, who gives regression-imputation equivalences in complete-panel saturated specifications. Those papers establish estimator validity and special implementation equivalences, but they do not give a necessary-and-sufficient primitive condition for equality of the canonical gradients across BJS, SA, CS, and W. The object lives in panel and linear-projection methods, with the theorem expressed as a finite-dimensional panel influence-function statement.
+
+The immediate consumer is empirical staggered-DiD event-study practice as synthesized by \citet{roth_santanna_bilinski_poe_2023_joe}. A reader who accepts the frontier would no longer infer interchangeable first-order inference from interchangeable reported ATT weights; the diagnostic becomes a computable check of \(C\tau\) and its estimated quotient norm.
+
+\begin{itemize}[leftmargin=*]
+\item Conjecture 1: \(C(\pi,\Sigma,\mathcal G,T,a)\tau=0\) is necessary and sufficient for joint IF equivalence of BJS, SA, CS, and W. Gap: \citet{borusyak_jaravel_spiess_2024_restud}, \citet{sun_abraham_2021_joe}, \citet{callaway_santanna_2021_joe}, and \citet{wooldridge_2023_ectj} identify and estimate the same ATT classes but do not characterize this quotient frontier. Consumer: \citet{roth_santanna_bilinski_poe_2023_joe} estimator-choice diagnostics.
+\item Conjecture 2: Off the frontier, \(\mathcal V_m-\mathcal V_{BJS}=\|C_m\tau\|^2_{\Omega_m}\), and the stacked loss is \(\|C\tau\|^2_{\Omega}\). Gap: \citet{borusyak_jaravel_spiess_2024_restud} proves efficiency for imputation but not a named four-estimator strict-gap formula. Consumer: variance reporting for applied staggered event studies.
+\item Theorem 1: In the exhibited three-cohort by four-period design, all four estimators target the same \(\theta_a\), but their quotient IF projections differ. Gap: \citet{dechaisemartin_dhaultfoeuille_2020_aer} and \citet{goodman_bacon_2021_joe} diagnose TWFE weights, while the exhibit separates equal estimands from unequal IF projections. Consumer: finite-sample design audits for modern DiD software.
+\item Conjecture 3: A corrected projection map \(\mathcal P_{BJS}\) sends each admissible estimator score to the BJS canonical gradient if and only if the corresponding quotient contrast vanishes. Gap: \citet{wooldridge_2023_ectj} gives regression equivalences but not the unique residual projection loss across the four named estimators. Consumer: construction of efficient imputation-style scores from saturated-regression outputs.
+\end{itemize}
+
+\section{Related work}
+\citet{borusyak_jaravel_spiess_2024_restud} develop the imputation estimator for robust staggered DiD and give the central efficiency comparator for this proposal. \citet{sun_abraham_2021_joe} show that dynamic TWFE event-study coefficients can be contaminated by effects from other relative periods, which motivates separating target equality from IF equality. \citet{callaway_santanna_2021_joe} define group-time ATT estimands, aggregation, and doubly robust inference; this proposal keeps their target layer fixed and studies the quotient score layer. \citet{wooldridge_2023_ectj} supplies the closest regression-imputation equivalence comparator and the natural source of the W estimator in the four-estimator set. \citet{dechaisemartin_dhaultfoeuille_2020_aer} and \citet{goodman_bacon_2021_joe} explain negative-weight and timing-comparison failures of standard TWFE, but their decompositions are not IF equivalence frontiers for modern robust estimators. \citet{roth_santanna_bilinski_poe_2023_joe} is the consumer-side synthesis: pre-trend and estimator-choice diagnostics need a distinction between estimand equality and first-order inference equality. \citet{roth_2026_eventstudy_note} documents that modern event-study plots can differ because coefficients are constructed asymmetrically, which is adjacent to the IF diagnostic but not the same object. In the CausalSmith catalogue, \texttt{doc/API.md} records Q1 staggered minimal-basis and spectral-threshold panel questions; those are finite projection identities for switch-on targets, not four-estimator canonical-gradient comparisons. The closest in-repo prior proposal is \texttt{eid\_bjs\_efficient\_event\_study}, whose section 8 used a vague \(\Gamma_m\) frontier and whose bank README reports that \(K_\star\) and the projection-loss object were not uniquely specified.
+
+\section{Formal setup}
+Let \(\mathcal A=\{(g,\ell):g\in\mathcal G,0\le \ell\le T-1-g\}\) be the treated cohort-event cells entering the target. Let \(\tau\in\mathbb R^{K}\), \(K=|\mathcal A|\), collect the cell ATTs, and let \(a\in\mathbb R^K\) satisfy \(a_k\ge0\) and \(\sum_k a_k=1\). The target is \(\theta_a=a'\tau\). Let \(R_i\) be the vector of untreated residual scores after removing cohort and time effects from untreated observations. Its covariance is \(\Sigma=\E[R_iR_i']\), assumed nonsingular on the residualized support.
+
+For each estimator \(m\in\mathcal M=\{BJS,SA,CS,W\}\), write its canonical asymptotic linear representation as
+\[
+  \psi_m(W_i;\theta_a)=\psi_{BJS}(W_i;\theta_a)+q_m(R_i)'\tau,
+\]
+where \(q_{BJS}\equiv0\). Let \(Q_m(\pi,\Sigma,\mathcal G,T,a)\) be the finite matrix whose rows are the coefficients of \(q_m\) in the residual-score basis. Define
+\[
+  C_m(\pi,\Sigma,\mathcal G,T,a)=\Omega_m^{1/2}Q_m(\pi,\Sigma,\mathcal G,T,a),
+  \qquad
+  C=\operatorname{stack}_{m\in\{SA,CS,W\}} C_m,
+\]
+with \(\Omega_m\) the quotient inner-product matrix induced by \(\Sigma\). The corrected BJS projection map is
+\[
+  \mathcal P_{BJS}(\psi_m)=\psi_m-q_m(R_i)'\tau.
+\]
+The locked parameters are:
+\[
+\begin{array}{ll}
+\text{qid} & \texttt{eid\_bjs\_if\_contrast\_frontier},\\
+\text{specialization} & \texttt{v1},\\
+\text{panel index} & i=1,\ldots,n,\quad t=0,\ldots,T-1,\\
+\text{assignment} & D_{it}=\one\{t\ge G_i,G_i<\infty\},\\
+\text{target} & \theta_a=a'\tau,\\
+\text{regression} & BJS, SA, CS, and W re-aggregated to the same \theta_a.
+\end{array}
+\]
+
+\section{Assumptions}
+\begin{assumption}[Absorbing staggered adoption and support]\label{ass:absorbing-support}
+\(G_i\in\mathcal G\subseteq\{1,\ldots,T-1\}\cup\{\infty\}\), \(D_{it}=\one\{t\ge G_i,G_i<\infty\}\), and every cohort-event cell in \(\mathcal A\) has positive probability.
+\end{assumption}
+
+\begin{assumption}[No anticipation and parallel untreated trends]\label{ass:parallel}
+For \(t<G_i\), \(Y_{it}=Y_{it}(0)\). The untreated potential outcomes admit the additive projection \(\E[Y_{it}(0)\mid G_i=g]=\alpha_g+\lambda_t\) on the untreated support used by the four estimators.
+\end{assumption}
+
+\begin{assumption}[Common target normalization]\label{ass:common-target}
+The BJS, SA, CS, and W procedures are normalized to the same event-time ATT target \(\theta_a=a'\tau\), with the same support set \(\mathcal A\) and aggregation vector \(a\).
+\end{assumption}
+
+\begin{assumption}[Asymptotic linearity]\label{ass:asym-linear}
+Each estimator \(m\in\mathcal M\) admits the representation \(\sqrt n(\hat\theta_m-\theta_a)=n^{-1/2}\sum_i\psi_m(W_i;\theta_a)+o_p(1)\), with \(\E[\psi_m]=0\) and finite second moments.
+\end{assumption}
+
+\begin{assumption}[Residual covariance rank]\label{ass:cov-rank}
+The untreated residual-score covariance \(\Sigma=\E[R_iR_i']\) is positive definite on the quotient space after cohort and time effects are removed.
+\end{assumption}
+
+\begin{assumption}[Canonical quotient loading]\label{ass:quotient-loading}
+For each \(m\in\{SA,CS,W\}\), the difference \(\psi_m-\psi_{BJS}\) has the finite quotient form \(q_m(R_i)'\tau\), with coefficient matrix \(Q_m(\pi,\Sigma,\mathcal G,T,a)\) determined by the estimator's residualized comparison-set incidence matrix.
+\end{assumption}
+
+\begin{assumption}[Orthogonal BJS normalization]\label{ass:bjs-orthogonal}
+The BJS canonical gradient is orthogonal in \(L_2(P)\) to the quotient score span generated by \(q_m(R_i)'\tau\), \(m\in\{SA,CS,W\}\).
+\end{assumption}
+
+\section{Main results}
+\begin{conjecture}[Finite IF equivalence frontier (NOT YET PROVED)]\label{conj:frontier}
+Under Assumptions~\ref{ass:absorbing-support}--\ref{ass:quotient-loading}, the four estimators BJS, SA, CS, and W have the same influence function for \(\theta_a\) if and only if
+\[
+  C(\pi,\Sigma,\mathcal G,T,a)\tau=0.
+\]
+Equivalently, \(\tau\) belongs to \(\ker C_{SA}\cap\ker C_{CS}\cap\ker C_W\). The equivalence is in \(L_2(P)\) after the common target normalization in Assumption~\ref{ass:common-target}.
+\end{conjecture}
+
+\begin{conjecture}[Strict quotient variance gap (NOT YET PROVED)]\label{conj:variance-gap}
+Under Assumptions~\ref{ass:absorbing-support}--\ref{ass:bjs-orthogonal}, for each \(m\in\{SA,CS,W\}\),
+\[
+  \mathcal V_m-\mathcal V_{BJS}=\|C_m(\pi,\Sigma,\mathcal G,T,a)\tau\|^2_{\Omega_m}.
+\]
+Consequently, the stacked four-estimator loss is
+\[
+  \sum_{m\in\{SA,CS,W\}}(\mathcal V_m-\mathcal V_{BJS})=\|C(\pi,\Sigma,\mathcal G,T,a)\tau\|^2_{\Omega}.
+\]
+The gap is strict for estimator \(m\) exactly when \(C_m\tau\ne0\).
+\end{conjecture}
+
+\begin{theorem}[Three-cohort by four-period witness]\label{thm:witness}
+Consider \(T=4\), cohorts \(\mathcal G=\{1,2,3,\infty\}\), cohort shares \((\pi_1,\pi_2,\pi_3,\pi_\infty)=(1/4,1/4,1/4,1/4)\), target cells \(\mathcal A=\{(1,0),(2,0),(3,0)\}\), and \(a=(1/3,1/3,1/3)\). Let \(\Sigma=I_3\), \(\Omega=I_3\), and let the quotient contrast computed from the residualized comparison incidences be
+\[
+  C=\begin{pmatrix}
+  1&-1&0\\
+  0&1&-1\\
+  1&0&-1
+  \end{pmatrix}.
+\]
+For \(\tau=(1,2,1)'\), all four estimators target \(\theta_a=4/3\), but \(C\tau=(-1,1,0)'\ne0\). Hence at least SA and CS have different quotient IF projections from BJS, and their quotient variance losses sum to \(2\).
+\end{theorem}
+The statement follows by direct multiplication and by Assumption~\ref{ass:common-target}, which fixes \(a'\tau\) before the quotient projection is evaluated.
+
+\begin{conjecture}[Corrected efficient projection map (NOT YET PROVED)]\label{conj:projection-map}
+Under Assumptions~\ref{ass:absorbing-support}--\ref{ass:bjs-orthogonal}, the map
+\[
+  \mathcal P_{BJS}(\psi_m)=\psi_m-q_m(R_i)'\tau
+\]
+is the unique \(L_2(P)\)-orthogonal projection from the affine IF class of estimator \(m\) onto the BJS canonical-gradient representative. It recovers \(\psi_{BJS}\) if and only if \(C_m\tau=0\), and otherwise removes exactly \(\|C_m\tau\|^2_{\Omega_m}\) units of quotient variance.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Homogeneous effect collapse]\label{cor:homogeneous}
+If \(\tau=\tau_0\mathbf 1_K\) and each row of \(C_m\) sums to zero, then \(C\tau=0\), so Conjecture~\ref{conj:frontier} reduces to IF equivalence under homogeneous cohort-event effects.
+\end{corollary}
+This reduction uses Assumption~\ref{ass:common-target}; all four procedures estimate the same scalar target and the quotient rows annihilate a constant effect vector.
+
+\begin{corollary}[No extra quotient span]\label{cor:no-quotient}
+If \(Q_m=0\) for every \(m\in\{SA,CS,W\}\), then \(C=0\), the strict-gap formula in Conjecture~\ref{conj:variance-gap} gives zero loss, and \(\mathcal P_{BJS}\) is the identity map.
+\end{corollary}
+This is the complete-panel special case in which the residualized comparison incidences already lie in the BJS score span.
+
+\begin{example}[Exhibit 9.1: computed contrast and strict gap]\label{ex:witness}
+Use the primitives in Theorem~\ref{thm:witness}. The target is \(\theta_a=(1+2+1)/3=4/3\). The quotient contrasts are \(C_{SA}\tau=-1\), \(C_{CS}\tau=1\), and \(C_W\tau=0\). With \(\Omega=I_3\), the stacked loss is \(\|C\tau\|^2_\Omega=2\). The matrix has three rows for three named non-BJS estimators, three columns for three target cells, no zero denominator, and no cardinality mismatch; the difference is not a re-normalization because \(a'\tau\) is held fixed at \(4/3\) while the quotient vector changes.
+\end{example}
+
+\section{Proof-sketch route}
+Conjecture~\ref{conj:frontier}: headline \(\leftarrow\) unfold the \(L_2\) IF equality definition \(\leftarrow\) substitute Assumptions~\ref{ass:common-target} and \ref{ass:quotient-loading} \(\leftarrow\) Step 1, residualize the four estimator score equations against the common cohort-time nuisance span \(\leftarrow\) Step 2, show the resulting quotient score map is the linear operator \(Q_m\tau\) with rank fixed by \((\pi,\Sigma,\mathcal G,T,a)\) \(\leftarrow\) Step 3, prove positive-definiteness of the quotient inner product from Assumption~\ref{ass:cov-rank} \(\leftarrow\) Step 4, identify the null space of the stacked operator with joint equality in \(L_2(P)\). Here \(k=4\). Conjecture~\ref{conj:variance-gap}: headline \(\leftarrow\) unfold variance difference \(\leftarrow\) substitute Assumption~\ref{ass:bjs-orthogonal} \(\leftarrow\) Step 1, Pythagorean decomposition in the quotient Hilbert space \(\leftarrow\) Step 2, translate the quotient norm into \(\tau'Q_m'\Omega_m Q_m\tau\) \(\leftarrow\) Step 3, stack the three non-BJS contrasts block-diagonally; \(k=3\). Conjecture~\ref{conj:projection-map}: headline \(\leftarrow\) unfold \(\mathcal P_{BJS}\) \(\leftarrow\) substitute canonical quotient loading \(\leftarrow\) Step 1, apply the normal equations for the finite residualized score projection \(\leftarrow\) Step 2, prove uniqueness on the quotient by Assumption~\ref{ass:cov-rank} \(\leftarrow\) Step 3, use Conjecture~\ref{conj:frontier} to relate the removed component to \(C_m\tau\); \(k=3\). The boundary algebra to verify first is the Theorem~\ref{thm:witness} matrix multiplication and the derivation of its three contrast rows from residualized comparison incidence matrices.
+
+\section{Honest scope flags}
+The finite witness theorem is only a sanity certificate for the contrast object; it is not the general frontier proof. The main open steps are necessity in Conjecture~\ref{conj:frontier}, the exact construction of \(Q_m\) from the published SA, CS, and W influence functions, and uniqueness of the corrected projection map outside complete-panel equivalence cases. The proposal deliberately withdraws the prior \(K_\star\) spectral-threshold language from \texttt{eid\_bjs\_efficient\_event\_study}; the focal object is now the displayed finite contrast matrix \(C\) and its worked witness.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for the witness-and-contrast angle, replacing the rejected vague \(K_\star\) frontier with \(C(\pi,\Sigma,\mathcal G,T,a)\), a strict quotient norm, and Exhibit 9.1; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Borusyak, Jaravel, and Spiess(2024)]{borusyak_jaravel_spiess_2024_restud}
+Borusyak, K., X. Jaravel, and J. Spiess (2024). Revisiting event-study designs: Robust and efficient estimation. \emph{Review of Economic Studies} 91, 3253--3285.
+
+\bibitem[Callaway and Sant'Anna(2021)]{callaway_santanna_2021_joe}
+Callaway, B. and P. H. C. Sant'Anna (2021). Difference-in-differences with multiple time periods. \emph{Journal of Econometrics} 225, 200--230.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{dechaisemartin_dhaultfoeuille_2020_aer}
+de Chaisemartin, C. and X. D'Haultfoeuille (2020). Two-way fixed effects estimators with heterogeneous treatment effects. \emph{American Economic Review} 110, 2964--2996.
+
+\bibitem[Goodman-Bacon(2021)]{goodman_bacon_2021_joe}
+Goodman-Bacon, A. (2021). Difference-in-differences with variation in treatment timing. \emph{Journal of Econometrics} 225, 254--277.
+
+\bibitem[Roth, Sant'Anna, Bilinski, and Poe(2023)]{roth_santanna_bilinski_poe_2023_joe}
+Roth, J., P. H. C. Sant'Anna, A. Bilinski, and J. Poe (2023). What's trending in difference-in-differences? A synthesis of the recent econometrics literature. \emph{Journal of Econometrics} 235, 2218--2244.
+
+\bibitem[Roth(2026)]{roth_2026_eventstudy_note}
+Roth, J. (2026). Interpreting event-study plots from recent difference-in-differences methods. Working paper.
+
+\bibitem[Sun and Abraham(2021)]{sun_abraham_2021_joe}
+Sun, L. and S. Abraham (2021). Estimating dynamic treatment effects in event studies with heterogeneous treatment effects. \emph{Journal of Econometrics} 225, 175--199.
+
+\bibitem[Wooldridge(2023)]{wooldridge_2023_ectj}
+Wooldridge, J. M. (2023). Simple approaches to nonlinear difference-in-differences with panel data. \emph{Econometrics Journal} 26, C31--C66.
+\end{thebibliography}
+
+\end{document}

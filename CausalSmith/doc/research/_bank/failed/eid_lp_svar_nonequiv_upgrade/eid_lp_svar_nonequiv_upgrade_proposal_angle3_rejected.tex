@@ -1,0 +1,337 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_lp\_svar\_nonequiv, specialization=upgrade
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section initially contained one stage-1 placeholder. The proposal
+%    content below replaces those placeholders.
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen convention precisely. Stage 0 quotes this block.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_lp\_svar\_nonequiv} / \texttt{upgrade}%
+  \\ \large\textit{A masquerading-channel decomposition for LP/sign versus non-Gaussian SVAR identification}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+qid = eid_lp_svar_nonequiv
+specialization = upgrade
+anchor_cluster = exact identification / structural impulse-response
+  identification, with set-valued partial sign restrictions used only as a
+  relaxation to be compared against the exact non-Gaussian shock law
+graph / SWIG = a finite-order linear structural VAR innovation system
+  u_t = B epsilon_t, B B' = Sigma_u, with one labelled structural shock j;
+  the graph is the contemporaneous mixing map epsilon_t -> u_t plus dynamic
+  propagation rows Gamma_h = E[Y_{t+h} u_t'] Sigma_u^{-1}
+treatment = the labelled structural shock epsilon_{j,t}; a masquerading
+  shock is any unit vector q in R^n satisfying the same partial sign/zero
+  response restrictions as q_j but not lying in the cumulant-labelled orbit
+target estimand = the horizon response vector psi_j(Q) =
+  (e_y' Gamma_h Sigma_u^{1/2} Q e_j)_{h=0}^H and its directional report
+  w' psi_j(Q), where Q is the impact rotation and w in R^{H+1}
+identifying assumptions = finite-order linear VAR population rows, identity
+  structural shock covariance, partial sign/zero restrictions A psi_j(Q)>=0
+  and Z psi_j(Q)=0, observed fourth-cumulant tensor K_u, independent
+  non-Gaussian shocks with separated fourth cumulants kappa in K_delta4(j),
+  and a common cumulant-labelling restriction requiring the same rotation
+  Q to generate the sign-admissible response and diagonalize K_u
+mechanism functional = decompose the parent support gap Delta_w(P) into
+  S_w(P), the sign-cone masquerading exposure; C_w(P), the cumulant-label
+  filtering loss on exposed masqueraders; and I_w(P), their interaction.
+  The proposed operational threshold is
+  tau_w^*(P)=inf_{Q in M_w(P)} m_delta4(Q;P)/g_w(Q), with Delta_w(P)>0
+  conjectured exactly when tau_w^*(P)>0 and M_w(P) is nonempty.
+\end{verbatim}
+
+\begin{abstract}
+This upgrade revisits the banked parent \texttt{eid\_lp\_svar\_nonequiv}/\texttt{v1}, whose proposed strict LP/sign versus non-Gaussian SVAR separation collapsed downstream into a single assumed margin.  The new mechanism question is whether that margin can be decomposed into a sign-cone masquerading channel, a fourth-cumulant labelling channel, and their interaction.  The flagship conjecture states that the LP/SVAR support gap is positive exactly when the sign restrictions expose at least one Wolf-style masquerading direction whose response advantage is bounded away from the cumulant-labelled SVAR orbit by a positive operational threshold \(\tau_w^*(P)\).  This is not a new LP/VAR finite-sample comparison: it is an exact-identification boundary for whether an LP sign-admissible shock can be interpreted as the same non-Gaussian structural shock.  If resolved, the result would give sign-restricted SVAR and LP users a named diagnostic that separates sign-pattern weakness from higher-moment labelling failure.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+The parent proposal identified a real tension between \citet{PlagborgMollerWolf2021}, where LPs and VARs share impulse-response estimands under common restrictions, and non-Gaussian SVAR papers where the shock label is supplied by one innovation law.  Its weak point was mechanistic: it treated strict non-equivalence as a support-margin event without explaining which part of the empirical workflow creates that margin.  For applied macroeconomics this distinction matters, because a sign-restricted LP robustness response can fail for two different reasons: the sign cone may admit Wolf-style masquerading shocks, or the non-Gaussian cumulant tensor may label a different shock even if signs are informative.
+
+\paragraph{The main finding (proposed).}
+The proposed flagship result is Conjecture~\ref{conj:masquerading-threshold}: under finite-order structural VAR population rows, separated non-Gaussian fourth cumulants, and partial sign/zero restrictions, the LP/sign and non-Gaussian SVAR/sign directional supports differ if and only if the sign-cone masquerading exposure set contains an exposed direction with strictly positive cumulant-distance-to-response-advantage threshold \(\tau_w^*(P)\).  Theorem~\ref{thm:mechanism-identity} is the routine decomposition identity that splits the parent gap into sign exposure, cumulant filtering, and interaction.  Conjecture~\ref{conj:generic-open-channel} asks for the open-class genericity statement that this mechanism survives perturbations of rows, signs, and fourth cumulants.
+
+\paragraph{What is new.}
+Relative to the parent \texttt{eid\_lp\_svar\_nonequiv}/\texttt{v1}, the upgrade delta is the declared mechanism axis: the parent bundled every source of strict separation into \(\chi_w(P)\), while this proposal isolates the specific channel in which a sign-admissible linear combination of shocks masquerades as the labelled shock and is then rejected by the cumulant-labelled non-Gaussian law.  Relative to published work, the closest comparator chain is \citet{Wolf2022}, who names shock masquerading in sign-restricted SVARs; \citet{PlagborgMollerWolf2021}, who provide common-restriction LP/VAR equivalence; and \citet{DrautzburgWright2023}, who refine sign sets by independence but do not decompose the population LP/SVAR support gap into a masquerading channel and a cumulant-labelling channel.
+
+\paragraph{How it positions in the literature.}
+The anchor cluster is exact identification of structural impulse responses, with partial sign restrictions appearing as an outer relaxation.  The LP side follows \citet{Jorda2005}, \citet{PlagborgMollerWolf2021}, and \citet{MontielOleaPlagborgMollerQianWolf2024}; the structural-labelling side follows \citet{GourierouxMonfortRenne2017}, \citet{LanneMeitzSaikkonen2017}, \citet{Guay2021}, and \citet{LanneLiuLuoto2026}.  The new active-frontier anchor is \citet{Wolf2022}: the proposal turns his sign-restriction ``shock masquerading'' phenomenon into a support-function mechanism inside a non-Gaussian LP/SVAR equivalence boundary.
+
+\paragraph{Implications for the community.}
+The direct consumer is \citet{DrautzburgWright2023}: their independence-refined sign-restricted VAR sets need to distinguish weak sign restrictions from higher-moment labelling information when LP responses are reported as robustness checks for the same shock.  A successful \(\tau_w^*(P)\) theorem would tell that workflow whether the LP/SVAR discrepancy is caused by sign-cone masquerading, by cumulant labels alone, or by the interaction of both.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report a masquerading-channel diagnostic \(\tau_w^*(P)\), not only an LP-vs-SVAR gap, before interpreting sign-restricted LP responses as robustness evidence for a non-Gaussian SVAR shock.
+
+\section{Related work}
+\citet{Jorda2005} introduced local projections as direct impulse-response regressions, which is why the population rows \(\Gamma_h\) are treated as observable reduced-form objects.  \citet{PlagborgMollerWolf2021} [reused from parent] prove that LPs and VARs estimate the same impulse responses and that VAR sign restrictions can be implemented with LPs when the identifying restrictions are the same; this proposal's epsilon-gap is that the LP object omits the non-Gaussian common-law restriction.  \citet{MontielOleaPlagborgMoller2021} [reused from parent] and \citet{MontielOleaPlagborgMollerQianWolf2024} [reused from parent] motivate LPs as robust empirical summaries, but their results concern inference and lag misspecification rather than fourth-cumulant shock labelling.
+
+\citet{Wolf2022} is the new mechanism anchor: he shows that sign-restricted SVARs are vulnerable to shock masquerading, where linear combinations of other shocks satisfy the same sign restrictions as the intended shock.  The present proposal differs by asking when those masquerading directions are exactly the LP/sign directions that a non-Gaussian SVAR cumulant label rejects.  \citet{AriasRubioRamirezWaggoner2018} [reused from parent] give the sign/zero rotation geometry used to define the sign cone.  \citet{BaumeisterHamilton2015} [reused from parent] emphasize sensitivity of sign-restricted SVAR conclusions, motivating a mechanism-level diagnostic rather than a single support-gap number.
+
+\citet{GourierouxMonfortRenne2017} [reused from parent] and \citet{LanneMeitzSaikkonen2017} [reused from parent] identify non-Gaussian SVAR shocks through independent components, making the cumulant-labelled orbit a single-law restriction rather than a horizonwise response inequality.  \citet{Guay2021} [reused from parent] gives higher-moment rank conditions, which is the closest local identification comparator for the cumulant channel.  \citet{DrautzburgWright2023} [reused from parent] refine sign-restricted VAR sets using independence and document nonconvexity; their paper is the closest partial-identification consumer, but it does not state a support-function decomposition into masquerading exposure and cumulant filtering.  \citet{LanneLiuLuoto2026} is the frontier anchor for dependent non-Gaussian shocks; it shows that higher-moment labels can be partial or block-level, making mechanism separation more than a cosmetic relabelling.
+
+The in-catalogue prior art does not duplicate this kernel.  `doc/API.md' records that `CausalSmith/ExactID/' and `CausalSmith/PartialID/' are empty seed catalogues for new \texttt{eid\_*} and \texttt{pid\_*} runs, and no accepted LP/SVAR or non-Gaussian impulse-response theorem is listed.  The closest banked parent is \texttt{eid\_lp\_svar\_nonequiv}/\texttt{v1}, whose headline was a strict cumulant-matching support gap but whose derivation substituted a granted quantitative margin.  The adjacent `q1_spectral_phase_transition' family is panel row-space/spectral work, not a structural-shock masquerading or fourth-cumulant identification result.
+
+\section{Formal setup}
+Let \(Y_t\in\R^n\) be covariance stationary with reduced-form innovation \(u_t\), covariance \(\Sigma_u\succ0\), finite fourth cumulant tensor \(K_u=\operatorname{cum}_4(u_t)\), and population response rows
+\[
+\Gamma_h=\E[Y_{t+h}u_t^\transpose]\Sigma_u^{-1},\qquad h=0,\ldots,H.
+\]
+A structural completion writes \(u_t=B\varepsilon_t\), \(\E[\varepsilon_t\varepsilon_t^\transpose]=I_n\), and \(B(Q)=\Sigma_u^{1/2}Q\) for \(Q\in O(n)\).  The reported response of outcome coordinate \(e_y\) to labelled shock \(j\) is
+\[
+\psi_j(Q)=\bigl(e_y^\transpose\Gamma_h\Sigma_u^{1/2}Qe_j\bigr)_{h=0}^H.
+\]
+Partial sign and zero restrictions are \(A\psi_j(Q)\ge0\) and \(Z\psi_j(Q)=0\).  The non-Gaussian SVAR law requires
+\[
+K_u=\sum_{k=1}^n\kappa_k\,(\Sigma_u^{1/2}Qe_k)^{\otimes4},
+\qquad \kappa\in\mathcal K_{\delta_4}(j),
+\]
+where \(\mathcal K_{\delta_4}(j)=\{\kappa:|\kappa_j|\ge\delta_4,\ |\kappa_\ell-\kappa_j|\ge\delta_4\ \forall \ell\ne j\}\).
+
+Define \(\mathcal Q_{\mathrm{LP}}(P)=\{Q\in O(n):A\psi_j(Q)\ge0,\ Z\psi_j(Q)=0\}\) and \(\mathcal Q_{\mathrm{SVAR}}(P)\subseteq\mathcal Q_{\mathrm{LP}}(P)\) as the rotations satisfying the cumulant equation for some \(\kappa\in\mathcal K_{\delta_4}(j)\).  For \(w\in\R^{H+1}\), let \(F_w(Q)=w^\transpose\psi_j(Q)\), \(h_{\mathrm{LP}}(w;P)=\sup_{\mathcal Q_{\mathrm{LP}}(P)}F_w(Q)\), \(h_{\mathrm{SVAR}}(w;P)=\sup_{\mathcal Q_{\mathrm{SVAR}}(P)}F_w(Q)\), and \(\Delta_w(P)=h_{\mathrm{LP}}(w;P)-h_{\mathrm{SVAR}}(w;P)\).
+
+The mechanism upgrade introduces three objects.  First, the support-exposed sign-masquerading set
+\[
+\mathcal M_w(P)=
+\{Q\in\arg\max_{\mathcal Q_{\mathrm{LP}}(P)}F_w(Q):
+Q\notin\mathcal Q_{\mathrm{SVAR}}(P),\
+\psi_j(Q)\text{ satisfies the same sign/zero pattern as the labelled shock}\}.
+\]
+Second, the cumulant mismatch
+\[
+m_{\delta_4}(Q;P)=
+\inf_{\kappa\in\mathcal K_{\delta_4}(j)}
+\left\|K_u-\sum_{k=1}^n\kappa_k(\Sigma_u^{1/2}Qe_k)^{\otimes4}\right\|_F.
+\]
+Third, the response advantage over the SVAR support, \(g_w(Q;P)=F_w(Q)-h_{\mathrm{SVAR}}(w;P)\), for \(Q\in\mathcal M_w(P)\).  The proposed operational threshold is
+\[
+\tau_w^*(P)=\inf_{Q\in\mathcal M_w(P)}
+\frac{m_{\delta_4}(Q;P)}{g_w(Q;P)},
+\]
+with \(\tau_w^*(P)=+\infty\) if \(\mathcal M_w(P)=\emptyset\).  The three mechanism channels are \(S_w(P)=\sup_{\mathcal Q_{\mathrm{LP}}}F_w-\sup_{\mathcal Q_{\mathrm{LP}}\setminus\mathcal M_w}F_w\), \(C_w(P)=\inf_{\mathcal M_w}m_{\delta_4}\), and \(I_w(P)=\inf_{\mathcal M_w}m_{\delta_4}/g_w\).
+
+\begin{verbatim}
+qid = eid_lp_svar_nonequiv
+specialization = upgrade
+anchor_cluster = exact identification / structural impulse-response
+  identification, with set-valued partial sign restrictions used only as a
+  relaxation to be compared against the exact non-Gaussian shock law
+graph / SWIG = a finite-order linear structural VAR innovation system
+  u_t = B epsilon_t, B B' = Sigma_u, with one labelled structural shock j;
+  the graph is the contemporaneous mixing map epsilon_t -> u_t plus dynamic
+  propagation rows Gamma_h = E[Y_{t+h} u_t'] Sigma_u^{-1}
+treatment = the labelled structural shock epsilon_{j,t}; a masquerading
+  shock is any unit vector q in R^n satisfying the same partial sign/zero
+  response restrictions as q_j but not lying in the cumulant-labelled orbit
+target estimand = the horizon response vector psi_j(Q) =
+  (e_y' Gamma_h Sigma_u^{1/2} Q e_j)_{h=0}^H and its directional report
+  w' psi_j(Q), where Q is the impact rotation and w in R^{H+1}
+identifying assumptions = finite-order linear VAR population rows, identity
+  structural shock covariance, partial sign/zero restrictions A psi_j(Q)>=0
+  and Z psi_j(Q)=0, observed fourth-cumulant tensor K_u, independent
+  non-Gaussian shocks with separated fourth cumulants kappa in K_delta4(j),
+  and a common cumulant-labelling restriction requiring the same rotation
+  Q to generate the sign-admissible response and diagonalize K_u
+mechanism functional = decompose the parent support gap Delta_w(P) into
+  S_w(P), the sign-cone masquerading exposure; C_w(P), the cumulant-label
+  filtering loss on exposed masqueraders; and I_w(P), their interaction.
+  The proposed operational threshold is
+  tau_w^*(P)=inf_{Q in M_w(P)} m_delta4(Q;P)/g_w(Q), with Delta_w(P)>0
+  conjectured exactly when tau_w^*(P)>0 and M_w(P) is nonempty.
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite-order structural impulse-response environment]\label{ass:finite-var}
+The population law \(P\) is generated by a covariance-stationary finite-order VAR with innovation \(u_t\), \(\Sigma_u\succ0\), finite fourth moments, and population rows \(\Gamma_h\) for \(h=0,\ldots,H\).
+\end{assumption}
+
+\begin{assumption}[Rotation normalization and labelled target shock]\label{ass:normalization}
+Structural shocks have identity covariance, \(B(Q)=\Sigma_u^{1/2}Q\) with \(Q\in O(n)\), and a target label \(j\) is fixed after sign and permutation normalization.
+\end{assumption}
+
+\begin{assumption}[Partial sign and zero cone]\label{ass:sign-zero}
+Known matrices \(A\) and \(Z\) encode \(A\psi_j(Q)\ge0\) and \(Z\psi_j(Q)=0\).  The set \(\mathcal Q_{\mathrm{LP}}(P)\) is nonempty and contains at least one positive-dimensional component unless a corollary explicitly imposes full labelling.
+\end{assumption}
+
+\begin{assumption}[Separated non-Gaussian cumulant label]\label{ass:cumulant-label}
+The observed fourth cumulant tensor \(K_u\) is finite, and admissible structural completions satisfy \(K_u=\sum_k\kappa_k(\Sigma_u^{1/2}Qe_k)^{\otimes4}\) with \(\kappa\in\mathcal K_{\delta_4}(j)\) for some fixed \(\delta_4>0\).  The non-Gaussian SVAR feasible set \(\mathcal Q_{\mathrm{SVAR}}(P)\) is nonempty.
+\end{assumption}
+
+\begin{assumption}[Support exposure and nonflat report]\label{ass:support-exposure}
+The report direction \(w\in\R^{H+1}\) has an LP support maximizer, and \(F_w(Q)\) is not constant on any positive-dimensional sign-feasible component containing both cumulant-labelled and non-cumulant-labelled rotations.
+\end{assumption}
+
+\begin{assumption}[Masquerading-channel regularity]\label{ass:masq-regular}
+For every \(Q\in\mathcal M_w(P)\), the response advantage \(g_w(Q;P)=F_w(Q)-h_{\mathrm{SVAR}}(w;P)\) is strictly positive and the cumulant mismatch \(m_{\delta_4}(Q;P)\) is finite.  The denominator in \(\tau_w^*(P)\) is therefore well-defined on \(\mathcal M_w(P)\).
+\end{assumption}
+
+\begin{assumption}[Parent collapse specialization]\label{ass:parent-collapse}
+The three-channel mechanism is collapsed by treating \(\chi_w(P)=\inf_{Q\in\mathcal M_w(P)}g_w(Q;P)\) as a primitive positive margin and ignoring the distinction between \(S_w(P)\), \(C_w(P)\), and \(I_w(P)\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: mechanism decomposition identity]\label{thm:mechanism-identity}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:support-exposure}, \(\mathcal Q_{\mathrm{SVAR}}(P)\subseteq\mathcal Q_{\mathrm{LP}}(P)\) and \(\Delta_w(P)\ge0\).  Moreover \(\Delta_w(P)>0\) if and only if \(\mathcal M_w(P)\) is nonempty.  On the event \(\mathcal M_w(P)\ne\emptyset\), every exposed LP/SVAR support difference can be assigned to three named nonnegative channels: sign-cone exposure \(S_w(P)\), cumulant-label rejection \(C_w(P)\), and interaction threshold \(I_w(P)=\tau_w^*(P)\).  Strict positivity of the cumulant channel and threshold is exactly the additional content isolated in Conjecture~\ref{conj:masquerading-threshold}.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) The closest in-repo result is the parent \texttt{eid\_lp\_svar\_nonequiv}/\texttt{v1}, which only asserted a support gap after granting a quantitative margin; this theorem records the algebra that separates that margin into mechanism channels.  The closest published comparators are \citet{PlagborgMollerWolf2021} and \citet{Wolf2022}: neither states the LP/SVAR support difference as a masquerading-channel decomposition.  (b) The concrete consumer is \citet{DrautzburgWright2023}, whose independence-refined sign sets can use this identity to label whether a rejected rotation is a sign masquerader or merely a higher-moment outlier.
+
+\begin{conjecture}[Conjecture 1: sharp masquerading threshold for LP/SVAR non-equivalence (NOT YET PROVED)]\label{conj:masquerading-threshold}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:masq-regular}, for an open semi-algebraic class of observable objects \((\Gamma_0,\ldots,\Gamma_H,\Sigma_u,K_u,A,Z,w)\),
+\[
+\Delta_w(P)>0
+\quad\Longleftrightarrow\quad
+\mathcal M_w(P)\ne\emptyset\ \text{and}\ \tau_w^*(P)>0.
+\]
+Equivalently, LP/sign and non-Gaussian SVAR/sign identify distinct structural impulse-response functionals exactly when the sign cone exposes a response-improving masquerading shock whose cumulant mismatch is bounded away from zero per unit response advantage.  At the parent-collapse specialization in Assumption~\ref{ass:parent-collapse}, the conjecture reduces to the parent margin statement with \(\chi_w(P)=\inf_{Q\in\mathcal M_w(P)}g_w(Q;P)>0\).
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{Wolf2022} names shock masquerading, \citet{LanneMeitzSaikkonen2017} identifies non-Gaussian shocks, and \citet{DrautzburgWright2023} refines sign sets through independence, but none gives an iff threshold linking masquerading exposure to an LP/SVAR support gap.  The epsilon-gap is the operational scalar \(\tau_w^*(P)\), which is neither the parent \(\chi_w(P)\) assumption nor the set-theoretic fact that added constraints shrink a set.  (b) Resolving the conjecture gives \citet{DrautzburgWright2023} and sign-restricted LP robustness workflows a diagnostic: if \(\tau_w^*(P)=0\), observed LP/SVAR differences should not be interpreted as robust non-Gaussian structural separation.
+
+\begin{conjecture}[Conjecture 2: open-neighborhood stability of the masquerading channel (NOT YET PROVED)]\label{conj:generic-open-channel}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:masq-regular}, suppose a two-shock or finite-dimensional witness has \(\mathcal M_w(P_0)\ne\emptyset\) and \(\tau_w^*(P_0)>0\).  Then there exists a neighborhood \(\mathcal U(P_0)\) in the observable objects such that every \(P\in\mathcal U(P_0)\) with nonempty \(\mathcal Q_{\mathrm{SVAR}}(P)\) satisfies \(\mathcal M_w(P)\ne\emptyset\), \(\tau_w^*(P)>0\), and \(\Delta_w(P)>0\).
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The parent Stage 0 attempt produced a planar certificate but reviewers rejected it as not a generic-class obstruction.  \citet{Read2022} gives sign/zero feasibility algorithms and \citet{Guay2021} gives higher-moment rank tests, but neither proves perturbation stability of a sign-masquerading LP/SVAR support gap.  (b) The concrete consumer is \citet{Wolf2022}: the conjecture would show when a masquerading-shock example is a robust population frontier rather than a hand-tuned sign-restriction anecdote.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Reduction to the parent margin]\label{cor:parent-reduction}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:parent-collapse}, if one ignores the separate channel labels and assumes the primitive margin \(\chi_w(P)=\inf_{Q\in\mathcal M_w(P)}g_w(Q;P)>0\), then Conjecture~\ref{conj:masquerading-threshold} collapses to the parent \texttt{v1} strict-gap claim \(\Delta_w(P)\ge\chi_w(P)>0\).
+\end{corollary}
+
+\begin{corollary}[Common-restriction Gaussian limit]\label{cor:gaussian-common}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:sign-zero}, if the cumulant-label restriction is removed or \(K_u\) carries no separated non-Gaussian label, then \(\mathcal Q_{\mathrm{SVAR}}(P)\) is replaced by \(\mathcal Q_{\mathrm{LP}}(P)\), \(\mathcal M_w(P)=\emptyset\), and \(\Delta_w(P)=0\), matching the common-restriction implication of \citet{PlagborgMollerWolf2021}.
+\end{corollary}
+
+\begin{corollary}[Full sign labelling kills masquerading]\label{cor:full-sign}
+If Assumption~\ref{ass:sign-zero} is strengthened so that the sign/zero restrictions pin the labelled shock column to the same signed-permutation orbit selected by \(K_u\), then \(\mathcal M_w(P)=\emptyset\), \(\tau_w^*(P)=+\infty\) by convention, and there is no sign-cone masquerading channel.
+\end{corollary}
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:mechanism-identity} is compact-set support algebra: parameterize all impact matrices by \(Q\in O(n)\), note that cumulant labelling adds polynomial equations to the sign/zero feasible set, and split exposed LP maximizers by whether they belong to the cumulant-labelled orbit.  Conjecture~\ref{conj:masquerading-threshold} should reduce to semi-algebraic stratification of the orthogonal group: prove that exposed nonmatching maximizers have positive mismatch-to-advantage ratio exactly off the algebraic boundary where either response advantage or cumulant mismatch vanishes.  Conjecture~\ref{conj:generic-open-channel} should use stability of strict polynomial inequalities, upper hemicontinuity of compact argmax correspondences, and explicit treatment of boundary cases where signs fully label the shock, the fourth cumulant gap closes, or \(F_w\) is flat on a feasible component.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:mechanism-identity} is a setup theorem and should not be oversold as the flagship result.  Conjectures~\ref{conj:masquerading-threshold} and \ref{conj:generic-open-channel} are not yet proved; the main open mathematical point is the iff direction that rules out positive LP/SVAR gaps arising from non-masquerading boundary artefacts.  The proposal does not claim that \citet{PlagborgMollerWolf2021} or \citet{Wolf2022} made an erroneous statement; it refines the boundary between their common-restriction and sign-masquerading phenomena.  The exact-ID cluster label is used because the target is the labelled structural shock law; support functions enter only to compare the sign relaxation against that exact non-Gaussian law.  No inference or estimator-rate theorem is claimed.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) --- initial mechanism-upgrade draft selecting the Wolf shock-masquerading channel as the surviving angle 3; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Arias, Rubio-Ramirez, and Waggoner(2018)]{AriasRubioRamirezWaggoner2018}
+Arias, J.~E., J.~F. Rubio-Ramirez, and D.~F. Waggoner (2018).
+Inference based on structural vector autoregressions identified with sign and zero restrictions: Theory and applications.
+\emph{Econometrica} 86(2), 685--720.
+
+\bibitem[Baumeister and Hamilton(2015)]{BaumeisterHamilton2015}
+Baumeister, C. and J.~D. Hamilton (2015).
+Sign restrictions, structural vector autoregressions, and useful prior information.
+\emph{Econometrica} 83(5), 1963--1999.
+
+\bibitem[Drautzburg and Wright(2023)]{DrautzburgWright2023}
+Drautzburg, T. and J.~H. Wright (2023).
+Refining set-identification in VARs through independence.
+\emph{Journal of Econometrics} 235(2), 1827--1847.
+
+\bibitem[Gourieroux, Monfort, and Renne(2017)]{GourierouxMonfortRenne2017}
+Gourieroux, C., A. Monfort, and J.-P. Renne (2017).
+Statistical inference for independent component analysis: Application to structural VAR models.
+\emph{Journal of Econometrics} 196(1), 111--126.
+
+\bibitem[Guay(2021)]{Guay2021}
+Guay, A. (2021).
+Identification of structural vector autoregressions through higher unconditional moments.
+\emph{Journal of Econometrics} 225(1), 27--46.
+
+\bibitem[Jorda(2005)]{Jorda2005}
+Jorda, O. (2005).
+Estimation and inference of impulse responses by local projections.
+\emph{American Economic Review} 95(1), 161--182.
+
+\bibitem[Lanne, Liu, and Luoto(2026)]{LanneLiuLuoto2026}
+Lanne, M., K. Liu, and J. Luoto (2026).
+Identifying structural vector autoregressions via non-Gaussianity of potentially dependent shocks.
+\emph{The Econometrics Journal}, utag002.
+
+\bibitem[Lanne, Meitz, and Saikkonen(2017)]{LanneMeitzSaikkonen2017}
+Lanne, M., M. Meitz, and P. Saikkonen (2017).
+Identification and estimation of non-Gaussian structural vector autoregressions.
+\emph{Journal of Econometrics} 196(2), 288--304.
+
+\bibitem[Montiel Olea and Plagborg-Moller(2021)]{MontielOleaPlagborgMoller2021}
+Montiel Olea, J.~L. and M. Plagborg-Moller (2021).
+Local projection inference is simpler and more robust than you think.
+\emph{Econometrica} 89(4), 1789--1823.
+
+\bibitem[Montiel Olea, Plagborg-Moller, Qian, and Wolf(2024)]{MontielOleaPlagborgMollerQianWolf2024}
+Montiel Olea, J.~L., M. Plagborg-Moller, E. Qian, and C.~K. Wolf (2024).
+Double robustness of local projections and some unpleasant VARithmetic.
+NBER Working Paper 32495; \emph{Econometrica}, forthcoming.
+
+\bibitem[Plagborg-Moller and Wolf(2021)]{PlagborgMollerWolf2021}
+Plagborg-Moller, M. and C.~K. Wolf (2021).
+Local projections and VARs estimate the same impulse responses.
+\emph{Econometrica} 89(2), 955--980.
+
+\bibitem[Read(2022)]{Read2022}
+Read, M. (2022).
+Algorithms for inference in SVARs identified with sign and zero restrictions.
+\emph{The Econometrics Journal} 25(3), 699--718.
+
+\bibitem[Wolf(2022)]{Wolf2022}
+Wolf, C.~K. (2022).
+What can we learn from sign-restricted VARs?
+\emph{AEA Papers and Proceedings} 112, 471--475.
+\end{thebibliography}
+
+\end{document}

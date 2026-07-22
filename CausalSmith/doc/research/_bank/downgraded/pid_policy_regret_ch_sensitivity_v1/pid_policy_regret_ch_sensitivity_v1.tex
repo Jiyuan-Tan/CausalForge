@@ -1,0 +1,975 @@
+% =====================================================================
+%  thmsmith Stage 0 derivation skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_policy\_regret\_ch\_sensitivity, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage 0 derivation: \texttt{pid\_policy\_regret\_ch\_sensitivity} / \texttt{v1}%
+  \\ \large\textit{Support-function calibration frontier for local policy-regret sensitivity}}
+\author{thmsmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+\providecommand{\citet}[1]{\cite{#1}}
+
+\begin{abstract}
+This note studies the local partial-identification problem for the policy-regret target
+$\theta_{\pi,\pi_0}=\E[Y(\pi_0)-Y(\pi)]$ when the observed law is $P$ for
+$O=(X,A,Y)$, $A$ is binary, $Y$ is bounded, and the candidate policy class is finite.
+For a policy score $W_\pi$ and its covariate projection
+$M_\pi(X)=\E[W_\pi\mid X]$, the estimand-defining bounding functional is
+\[
+  \theta^A_L(P,\pi)=\theta^0_{\pi,\pi_0}(P)-B_A(P,\pi),
+  \qquad
+  \theta^A_U(P,\pi)=\theta^0_{\pi,\pi_0}(P)+B_A(P,\pi),
+\]
+where
+\[
+  B_C=\kappa\|W_\pi\|_2,\qquad
+  B_M=b(\Gamma)\inf_{c\in\R}\E|W_\pi-c|,\qquad
+  B_S=\delta\|M_\pi\|_2.
+\]
+The main result proves that these are sharp bounds for the stated local support-function
+model and confirms the positive all-pairs scalar-calibration frontier: a single scalar
+translation among the three sensitivity languages exists on an active finite policy class
+if and only if the finite diagnostic matrix of the three penalties has positive rank one.
+The note also refutes the proposed ``open set with exactly equal CH norms'' witness as
+stated, because exact equality of two continuously varying norms is not an open property
+without an additional normalization, and gives the nearest correct finite-support witness
+with an open non-calibration neighborhood.
+\end{abstract}
+
+\section{Introduction}
+Offline policy learning often reports robustness to hidden confounding through one
+scalar sensitivity parameter.  A partial-$R^2$ robustness value, a marginal-sensitivity
+odds-ratio parameter, and a covariate-shift radius are all interpretable within their
+own models, but they constrain different local perturbations of the latent full-data
+law.  The causal question in this note is therefore not whether one language is
+``more conservative'' in general; it is whether one can translate the scalar attached
+to one language into a scalar attached to another language without changing robust
+policy-regret comparisons over a finite policy class.
+
+Known sensitivity analyses supply the component geometries.  Partial-$R^2$ calibration
+uses an $L^2$ omitted-variable geometry; marginal sensitivity uses a bounded
+odds-ratio, locally represented here by a mean-zero $L^\infty$ perturbation; and
+external-validity or covariate-shift analyses use covariate-only tilts.  Before making
+cross-language comparisons, these geometries must be reduced to support functions of
+the same policy score.  This note performs that reduction and then solves the finite
+all-pairs calibration problem.
+
+The new contribution is the exact diagnostic.  For each active policy comparison, the
+observable score penalties are
+\[
+  n_C(\pi)=\|W_\pi\|_2,\qquad
+  n_M(\pi)=\inf_{c\in\R}\E|W_\pi-c|,\qquad
+  n_S(\pi)=\|\E[W_\pi\mid X]\|_2.
+\]
+A policy-invariant scalar bridge among the three sensitivity languages exists exactly
+when the matrix with rows $(n_C(\pi),n_M(\pi),n_S(\pi))$ has all cross-language
+$2\times2$ minors equal to zero and all active entries positive.  This condition is
+useful because it is a finite observable diagnostic: if it fails, separate robustness
+curves are mathematically necessary, except for deliberately policy-specific
+calibrations that no longer preserve a common sensitivity scale.
+Throughout the conjecture statements below, $D_1(W)$ denotes
+$\inf_{c\in\R}\E|W-c|$.
+
+\paragraph{Motivating conjecture(s).}
+\begin{conjecture}[Conjecture 1: observable scalar-calibration threshold (NOT YET PROVED)]\label{conj:calibration-frontier}
+Under Assumptions \ref{ass:bounded-overlap}--\ref{ass:active-domain}, a non-degenerate three-language scalar bridge among $B_C$, $B_M$, and $B_S$ on the active finite class $\Pi_\ast$ exists on an interval of sensitivity values if and only if the observable bridge-defect threshold is zero: $\tau_{\Pi_\ast}=0$, with $n_C(\pi),n_M(\pi),n_S(\pi)>0$ for every $\pi\in\Pi_\ast$.  Equivalently, $Q_{\Pi_\ast}$ lies on the positive common-scale frontier, so there are positive constants $\alpha_C,\alpha_M,\alpha_S$ and positive policy weights $\rho(\pi)$ such that
+\[
+  \bigl(n_C(\pi),n_M(\pi),n_S(\pi)\bigr)
+  = \rho(\pi)(\alpha_C,\alpha_M,\alpha_S)
+  \qquad\text{for every }\pi\in\Pi_\ast.
+\]
+Assumption \ref{ass:rank-one} is a sufficient primitive condition for this positive common-scale frontier.  Conversely, under Assumption \ref{ass:two-score}, $\tau_{\Pi_\ast}>0$ and no scalar maps $\kappa\mapsto\Gamma(\kappa)$ and $\kappa\mapsto\delta(\kappa)$ can satisfy
+\[
+  B_C(\pi;\kappa)=B_M(\pi;\Gamma(\kappa))=B_S(\pi;\delta(\kappa))
+\]
+for all $\pi\in\Pi_\ast$ on any non-degenerate interval with $\kappa>0$.  If the positive common-scale condition holds, then for every nominal regret vector $(\theta^0_{\pi,\pi_0})_{\pi\in\Pi_\ast}$ the robust-regret endpoint vectors $(R_C(\pi))_{\pi\in\Pi_\ast}$, $(R_M(\pi))_{\pi\in\Pi_\ast}$, and $(R_S(\pi))_{\pi\in\Pi_\ast}$ agree up to the same positive radius normalization, so the local choice sets $\mathcal A_C(\kappa)$, $\mathcal A_M(\Gamma(\kappa))$, and $\mathcal A_S(\delta(\kappa))$ coincide.  Moreover, whenever one residual is nonzero for $\pi_1,\pi_2$, there is an open interval of nominal regret differences $\theta^0_{\pi_1,\pi_0}-\theta^0_{\pi_2,\pi_0}$ for which the CH-normalized ranking and at least one of the MSM robust-welfare ranking induced by \citet{JinXuZhengZhou2025} or the covariate-shift policy-choice ranking induced by \citet{AdjahoChristensen2025} choose different unique policies.
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: supporting two-policy open-set penalty separation witness (NOT YET PROVED)]\label{conj:open-set-witness}
+Under Assumptions \ref{ass:bounded-overlap}--\ref{ass:active-domain}, there is an open set of non-degenerate binary-action observable laws $P$ and two active policies $\pi_1,\pi_2\in\Pi_\ast$ for which
+\[
+  \|W_{\pi_1}\|_2=\|W_{\pi_2}\|_2
+  \quad\text{but}\quad
+  D_1(W_{\pi_1})\ne D_1(W_{\pi_2})
+  \quad\text{or}\quad
+  \|M_{\pi_1}\|_2\ne\|M_{\pi_2}\|_2.
+\]
+For those laws, CH partial-$R^2$ robustness ties the two penalty terms at every $\kappa$, while the MSM or covariate-shift penalty terms strictly separate at every positive calibrated radius.  If, in addition, Assumption \ref{ass:nominal-tie} holds, then the same witness gives a robust-regret ranking separation; without this nominal-regret equality, the conjecture is only a penalty-level sharpness witness and the ranking claim is supplied by Conjecture \ref{conj:calibration-frontier}.
+\end{conjecture}
+
+\section{Related work and positioning}
+\cite{Manski1990} frames the partial-identification viewpoint used here: under incomplete
+identifying restrictions, the estimand is bracketed by a set or interval rather than
+replaced by a point estimand.  \cite{BalkePearl1997} show how finite instrumental-variable
+models yield sharp bounds by explicit linear programming; this note uses the same
+support-function logic, but the feasible sets are local norm balls for policy-score
+perturbations rather than finite response-function types.  \cite{CinelliHazlett2020}
+develop partial-$R^2$ omitted-variable sensitivity; their $L^2$ geometry supplies the
+CH side of the comparison, but they do not study finite policy-ranking calibration.
+
+\cite{ZhaoSmallBhattacharya2019} and \cite{KallusZhou2021} use odds-ratio sensitivity
+for inverse-propensity weighting and policy learning, respectively; their models motivate
+the bounded local perturbation language whose support norm is the centered absolute
+deviation $D_1$.  \cite{YadlowskyNamkoongBasuDuchiTian2022} and \cite{DornGuoKallus2025}
+develop sharp and doubly robust sensitivity bounds under unmeasured confounding; they
+motivate why the support functions should be treated as partial-identification bounds
+rather than as heuristic penalties.  \cite{JinXuZhengZhou2025} gives robust welfare
+criteria for policy learning under marginal sensitivity, making it a direct downstream
+use case for knowing whether a CH-style scalar can reproduce MSM policy rankings.
+
+\cite{DiegertMastenPoirier2025} compare omitted-variable sensitivity parameters
+axiomatically; that work is close in spirit, but it compares scalar parameters rather
+than finite policy-regret support functions.  \cite{MastenPoirierRen2025} give a
+general relaxation framework for unconfoundedness; this note is narrower because it
+fixes the local CH, MSM, and covariate-shift support sets and asks only when their
+policy rankings can be scalar-calibrated.  \cite{SorianoBenMichaelBickelFellerPimentel2023} and \cite{HuangPimentel2025} study
+interpretable and variance-based sensitivity analyses for weighting estimators; they
+are close because they connect weighting sensitivity to scalar calibration, but their
+object is an estimator interval rather than an all-pairs finite policy-regret frontier.
+\cite{AdjahoChristensen2025} studies externally valid policy choice under target
+population shifts, and \cite{ChristensenConnault2023} studies counterfactual robustness
+under latent distributional ambiguity; they position the covariate-shift side of this
+note.  The closest in-project partial-identification material concerns bounded-outcome
+and Manski-style potential-outcome intervals.  Those tools share the interval logic of
+this note, but the current theorem is a local support-function calibration result for
+an arbitrary finite collection of policy scores, so its primitive objects are norms,
+conditional projections, and finite diagnostic matrices.
+
+\section{Formal setup}
+Let $O=(X,A,Y)\sim P$ be the observed data vector.  The action is binary,
+$A\in\{0,1\}$, the outcome is bounded, $Y\in[\ell,u]$ almost surely, and the
+known nominal propensity $e_0(a\mid X)$ is bounded away from $0$ and $1$.  The
+policy class $\Pi$ is finite, each policy is a measurable rule
+$\pi:\mathcal X\to\{0,1\}$, and $\pi_0\in\Pi$ is the status-quo policy.
+
+When the nominal outcome regressions $m_a(x)=\E[Y\mid A=a,X=x]$ are identified from
+$P$, the observable policy-value score used by the diagnostic is
+\[
+  \widetilde W_\pi(O)
+  =
+  m_{\pi_0(X)}(X)-m_{\pi(X)}(X)
+  + {\one\{A=\pi_0(X)\}\over e_0(A\mid X)}\{Y-m_A(X)\}
+  - {\one\{A=\pi(X)\}\over e_0(A\mid X)}\{Y-m_A(X)\},
+  \qquad
+  W_\pi=\widetilde W_\pi-\E[\widetilde W_\pi].
+\]
+The later derivation only requires that this centered bounded score is the local
+derivative of the regret target; the display records the observable specialization
+used for the policy-score calibration diagnostic.
+
+For each $\pi\in\Pi$, let $\theta_{\pi,\pi_0}$ denote the latent full-data policy
+regret contrast
+\[
+  \theta_{\pi,\pi_0}=\E_{\mathcal L}\{Y(\pi_0)-Y(\pi)\},
+\]
+where $\mathcal L$ ranges over full-data laws compatible with the observed law
+$P$ and the maintained local sensitivity restriction.  Let
+$\theta^0_{\pi,\pi_0}(P)$ be the nominal compatible value at the reference law.
+The local model assumes that compatible perturbation paths have first-order
+regret score $W_\pi\in L^2_0(P)\cap L^\infty(P)$:
+\[
+  \theta_{\pi,\pi_0}(\varepsilon)-\theta^0_{\pi,\pi_0}(P)
+  = \varepsilon\,\E[hW_\pi]+o(\varepsilon)
+\]
+for a mean-zero latent perturbation score $h$.  For covariate shifts define
+\[
+  M_\pi(X)=\E[W_\pi\mid X].
+\]
+Since $\E W_\pi=0$, also $\E M_\pi(X)=0$.
+
+The three local ambiguity sets are
+\[
+  \mathcal H_C(\kappa)=\{h\in L^2(P):\E h=0,\ \E h^2\le \kappa^2\},
+\]
+\[
+  \mathcal H_M(\Gamma)=\{h\in L^\infty(P):\E h=0,\ \|h\|_\infty\le b(\Gamma)\},
+  \qquad b(1)=0,\quad b(\Gamma)>0\text{ for }\Gamma>1,
+\]
+and
+\[
+  \mathcal G_S(\delta)=\{g\in L^2(P_X):\E g(X)=0,\ \E g(X)^2\le \delta^2\}.
+\]
+The local identified set for a single policy comparison is
+\[
+  \Theta_C(P;\pi,\kappa)
+  =\{\theta^0_{\pi,\pi_0}(P)+\E[hW_\pi]:h\in\mathcal H_C(\kappa)\},
+\]
+\[
+  \Theta_M(P;\pi,\Gamma)
+  =\{\theta^0_{\pi,\pi_0}(P)+\E[hW_\pi]:h\in\mathcal H_M(\Gamma)\},
+\]
+and
+\[
+  \Theta_S(P;\pi,\delta)
+  =\{\theta^0_{\pi,\pi_0}(P)+\E[g(X)W_\pi]:g\in\mathcal G_S(\delta)\}.
+\]
+The notation $\Theta_I(P)$ in this note refers to one of these three local identified
+sets, with the language and radius clear from context.
+
+For an active finite set $\Pi_\ast\subseteq\Pi\setminus\{\pi_0\}$ define
+\[
+  D_1(W)=\inf_{c\in\R}\E|W-c|,
+  \qquad
+  n_C(\pi)=\|W_\pi\|_2,\quad
+  n_M(\pi)=D_1(W_\pi),\quad
+  n_S(\pi)=\|M_\pi\|_2.
+\]
+The diagnostic matrix is
+\[
+  Q_{\Pi_\ast}=\bigl(n_C(\pi),n_M(\pi),n_S(\pi)\bigr)_{\pi\in\Pi_\ast},
+\]
+and for two languages $A,B\in\{C,M,S\}$ and two policies $\pi,\pi'$ the all-pairs
+calibration residual is
+\[
+  \Delta_{AB}(\pi,\pi')
+  =n_A(\pi)n_B(\pi')-n_A(\pi')n_B(\pi).
+\]
+The positive common-scale frontier is the event that all these residuals vanish and
+$n_C(\pi),n_M(\pi),n_S(\pi)$ are strictly positive for every active policy.
+Equivalently, the observable bridge-defect threshold
+\[
+  \tau_{\Pi_\ast}
+  =
+  \max_{A<B}\max_{\pi,\pi'\in\Pi_\ast}|\Delta_{AB}(\pi,\pi')|
+\]
+is zero, with strictly positive active entries.
+
+\paragraph{Locked parameters.}
+This is a free-form partial-identification proposal with locked tuple
+\[
+  (\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},\text{bounding functional})
+  =
+  (\texttt{pid\_policy\_regret\_ch\_sensitivity},\texttt{v1},P,\theta_{\pi,\pi_0},
+  \mathcal C_{\kappa}\cup\mathcal M_{\Gamma}\cup\mathcal S_{\delta},B).
+\]
+Here $P$ is the observed law of $O=(X,A,Y)$ with binary action $A\in\{0,1\}$, bounded outcome $Y\in[\ell,u]$, known nominal propensity $e_0(a\mid X)\in[\underline e,1-\underline e]$, and a finite policy class $\Pi$ containing a status-quo rule $\pi_0$.  The parameter is the policy regret contrast
+\[
+  \theta_{\pi,\pi_0}=\E[Y(\pi_0)-Y(\pi)]
+\]
+under latent full-data laws compatible with $P$.  For each candidate policy $\pi$, the local policy score $W_{\pi}$ is the centered, bounded observed score that represents the first-order perturbation of $\theta_{\pi,\pi_0}$ under compatible latent confounding or target-population tilts.  The restriction $\mathcal C_{\kappa}$ is a Cinelli--Hazlett partial-$R^2$ budget represented locally as an $L^2(P)$ ellipsoid for mean-zero latent perturbations $h$: $\E h=0$ and $\E h^2\le \kappa^2$.  The restriction $\mathcal M_{\Gamma}$ is the marginal-sensitivity odds-ratio budget represented locally by mean-zero perturbations $h$ with $\|h\|_{\infty}\le b(\Gamma)$, where $b(1)=0$ and $b(\Gamma)$ is increasing.  The restriction $\mathcal S_{\delta}$ is a covariate-shift budget represented by mean-zero density tilts $g(X)$ with $\E g=0$ and $\E g^2\le\delta^2$.  The bounding functional $B_{\mathfrak A}(\pi)$ is the support-function regret penalty for ambiguity language $\mathfrak A\in\{\mathcal C_{\kappa},\mathcal M_{\Gamma},\mathcal S_{\delta}\}$; the proposed kernel concerns when there is, or is not, a positive scalar calibration among these $B_{\mathfrak A}$ values that preserves regret rankings over the active nonzero policy comparisons in $\Pi$.
+
+\section{Assumptions}
+\begin{assumption}[Bounded overlap and bounded outcomes]\label{ass:bounded-overlap}
+The observed law $P$ satisfies $Y\in[\ell,u]$ almost surely and
+$e_0(a\mid X)\in[\underline e,1-\underline e]$ for some $\underline e>0$ and
+both $a\in\{0,1\}$.  All conditional expectations used below are taken on
+events with positive $P$-probability, and all score functions are identified up
+to $P$-almost-sure equality.
+\end{assumption}
+
+\begin{assumption}[Finite policy class and local differentiability]\label{ass:finite-local}
+The class $\Pi$ is finite, contains $\pi_0$, and for every $\pi\in\Pi$ the regret
+contrast $\theta_{\pi,\pi_0}$ is locally differentiable along compatible latent
+perturbation paths with centered derivative score
+$W_\pi\in L^2_0(P)\cap L^\infty(P)$.
+\end{assumption}
+
+\begin{assumption}[Support-function sensitivity budgets]\label{ass:support-budgets}
+The CH, MSM, and covariate-shift ambiguity languages are represented locally by
+the support sets in the Formal setup section: $\E h=0$, $\E h^2\le\kappa^2$ for
+$\mathcal C_{\kappa}$; $\E h=0$, $\|h\|_{\infty}\le b(\Gamma)$ for
+$\mathcal M_{\Gamma}$; and $\E g(X)=0$, $\E g(X)^2\le\delta^2$ for
+$\mathcal S_{\delta}$.  The calibration scale $b$ is continuous, strictly
+increasing, satisfies $b(1)=0$, and has range $[0,\infty)$.
+\end{assumption}
+
+\begin{assumption}[Active positive bridge domain]\label{ass:active-domain}
+The three-language bridge is evaluated on a nonempty active subset
+$\Pi_\ast\subseteq\Pi\setminus\{\pi_0\}$ satisfying
+$n_C(\pi)>0$, $n_M(\pi)>0$, and $n_S(\pi)>0$ for every $\pi\in\Pi_\ast$.
+A policy with $n_A(\pi)=0$ for some bridged language is not part of a
+non-degenerate three-language bridge unless all bridged penalties are zero for
+that policy, in which case it is an uninformative tie and is omitted from
+$\Pi_\ast$.
+\end{assumption}
+
+\begin{assumption}[Rank-one compatibility frontier]\label{ass:rank-one}
+There exists a nonzero centered score $W_0\in L^2_0(P)\cap L^{\infty}(P)$ and
+constants $c_{\pi}\ne0$ such that $W_{\pi}=c_{\pi}W_0$ for every
+$\pi\in\Pi_\ast$.  For the three-language bridge, additionally
+$M_{\pi}(X)=d_{\pi}M_0(X)$ for a nonzero centered covariate score $M_0$ and
+constants $d_{\pi}\ne0$ with $|d_{\pi}|$ proportional to $|c_{\pi}|$ on
+$\Pi_\ast$.
+\end{assumption}
+
+\begin{assumption}[Two-score generic witness]\label{ass:two-score}
+There exist $\pi_1,\pi_2\in\Pi_\ast$ such that $W_{\pi_1}$ and $W_{\pi_2}$ are
+linearly independent in $L^2_0(P)$, have non-degenerate distributions, and have
+strictly positive relevant penalties $n_A(\pi_j)>0$ for the languages $A$ being
+compared.  At least one all-pairs calibration residual is nonzero:
+\[
+  \Delta_{CM}(\pi_1,\pi_2)\ne0
+  \quad\text{or}\quad
+  \Delta_{CS}(\pi_1,\pi_2)\ne0
+  \quad\text{or}\quad
+  \Delta_{MS}(\pi_1,\pi_2)\ne0.
+\]
+This cross-product formulation is the locked convention for avoiding undefined
+norm ratios.
+\end{assumption}
+
+\begin{assumption}[Nominal-regret tie for the ranking witness]\label{ass:nominal-tie}
+For the two witness policies in the motivating Conjecture 2, the nominal regrets
+are equal:
+\[
+  \theta^0_{\pi_1,\pi_0}=\theta^0_{\pi_2,\pi_0}.
+\]
+This assumption is used only for the optional robust-regret ranking conclusion;
+the penalty-level separation does not require it.
+\end{assumption}
+
+\section{Estimand-defining functional}
+For each policy $\pi$ and ambiguity language $A\in\{C,M,S\}$, define the support
+penalty
+\[
+  B_C(P,\pi;\kappa)=\kappa\,\|W_\pi\|_2,
+\]
+\[
+  B_M(P,\pi;\Gamma)=b(\Gamma)\,D_1(W_\pi),
+  \qquad
+  D_1(W_\pi)=\inf_{c\in\R}\E|W_\pi-c|,
+\]
+and
+\[
+  B_S(P,\pi;\delta)=\delta\,\|M_\pi\|_2,
+  \qquad M_\pi(X)=\E[W_\pi\mid X].
+\]
+The local lower and upper endpoints are
+\[
+  \theta^A_L(P,\pi;t_A)=\theta^0_{\pi,\pi_0}(P)-B_A(P,\pi;t_A),
+  \qquad
+  \theta^A_U(P,\pi;t_A)=\theta^0_{\pi,\pi_0}(P)+B_A(P,\pi;t_A),
+\]
+where $t_C=\kappa$, $t_M=\Gamma$, and $t_S=\delta$.  The robust-regret upper
+endpoint used for policy ranking is
+\[
+  R_A(P,\pi;t_A)=\theta^A_U(P,\pi;t_A).
+\]
+
+These endpoints are computable from observed-population inputs once the local scores
+$W_\pi$ have been constructed from the nominal policy-regret model.  The required
+operators are the $L^2(P)$ norm, the conditional expectation $M_\pi(X)=\E[W_\pi\mid X]$,
+and the one-dimensional convex minimization defining $D_1$.  In a finite support
+law with $m$ support points, $D_1(W_\pi)$ is computed by sorting the $m$ values of
+$W_\pi$ and choosing any weighted median; the complexity is $O(m\log m)$ per policy.
+In a general law, any median of $W_\pi$ minimizes $c\mapsto\E|W_\pi-c|$, so the
+functional is the expected absolute deviation from a median.
+
+A scalar bridge from language $A$ to language $B$ on $\Pi_\ast$ is a positive
+parameter map $t_B=\varphi_{BA}(t_A)$, independent of $\pi$, such that
+\[
+  B_A(P,\pi;t_A)=B_B(P,\pi;\varphi_{BA}(t_A))
+  \quad\text{for every }\pi\in\Pi_\ast
+\]
+on a non-degenerate interval of positive $t_A$ values.  A reference-policy
+calibration from $A$ to $B$ at $\pi_1$ instead imposes equality only at $\pi_1$:
+if $s_A n_A(\pi)$ and $s_B n_B(\pi)$ are the two penalties, it sets
+$s_B=s_A n_A(\pi_1)/n_B(\pi_1)$.
+
+\paragraph{Verdict on the motivating conjectures.}
+Conjecture 1 is confirmed for the local support-function model: the positive
+common-scale frontier is necessary and sufficient for a non-degenerate scalar bridge,
+and any nonzero residual gives a two-policy reference-calibration ranking witness after
+choosing nominal regret differences in an explicit open interval.  Conjecture 2 is
+refuted as written: exact equality $\|W_{\pi_1}\|_2=\|W_{\pi_2}\|_2$ is not an open
+condition for continuously varying laws unless it is imposed by an additional
+normalization.  The nearest correct statement is a finite-support equality witness at
+one law, together with an open neighborhood on which the nonzero calibration residual
+and the ranking-separation conclusion persist.
+
+\section{Target causal estimand}
+The causal target for a candidate policy $\pi$ is the scalar regret contrast
+\[
+  \theta_{\pi,\pi_0}=\E_{\mathcal L}\{Y(\pi_0)-Y(\pi)\},
+\]
+where $\mathcal L$ is a latent full-data law compatible with the observed law $P$ and
+with the chosen local sensitivity restriction.  Positive values mean that $\pi$ has
+larger loss, or lower welfare when $Y$ is welfare, than the status quo $\pi_0$ under
+the sign convention inherited from the locked proposal.  The object in Section 7 is
+not a point-identifying formula for $\theta_{\pi,\pi_0}$; it is a pair of observable
+endpoints that brackets all locally compatible values of this target.  For a finite
+active class $\Pi_\ast$, robust policy choice compares the upper endpoints
+$R_A(P,\pi;t_A)$ across $\pi\in\Pi_\ast$.
+
+\section{Main theorems}
+\begin{theorem}[Sharp local support-function bounds]\label{thm:support-bounds}
+Under Assumptions \ref{ass:bounded-overlap}--\ref{ass:support-budgets}, for every
+$\pi\in\Pi$,
+\[
+  \Theta_C(P;\pi,\kappa)
+  =
+  [\,\theta^0_{\pi,\pi_0}(P)-\kappa\|W_\pi\|_2,\,
+     \theta^0_{\pi,\pi_0}(P)+\kappa\|W_\pi\|_2\,],
+\]
+\[
+  \Theta_M(P;\pi,\Gamma)
+  =
+  [\,\theta^0_{\pi,\pi_0}(P)-b(\Gamma)D_1(W_\pi),\,
+     \theta^0_{\pi,\pi_0}(P)+b(\Gamma)D_1(W_\pi)\,],
+\]
+and
+\[
+  \Theta_S(P;\pi,\delta)
+  =
+  [\,\theta^0_{\pi,\pi_0}(P)-\delta\|M_\pi\|_2,\,
+     \theta^0_{\pi,\pi_0}(P)+\delta\|M_\pi\|_2\,].
+\]
+Thus $\Theta_I(P)\subseteq[\theta^A_L(P,\pi;t_A),\theta^A_U(P,\pi;t_A)]$ for
+each language, and in the stated local linear support model the containment is sharp.
+\end{theorem}
+
+The novelty of Theorem \ref{thm:support-bounds} is the common policy-score display:
+CH, MSM, and covariate-shift sensitivity become three different support norms of the
+same $W_\pi$.  This is not a new estimator or a global hidden-confounding model; it is
+the exact local partial-identification reduction needed before the finite calibration
+question can be asked.
+
+\begin{theorem}[Positive scalar-calibration frontier]\label{thm:calibration-frontier}
+Suppose Assumptions \ref{ass:bounded-overlap}--\ref{ass:active-domain} hold.  A
+non-degenerate three-language scalar bridge among $B_C$, $B_M$, and $B_S$ on
+$\Pi_\ast$ exists on an interval of positive sensitivity values if and only if
+$Q_{\Pi_\ast}$ lies on the positive common-scale frontier, equivalently
+$\tau_{\Pi_\ast}=0$:
+\[
+  \Delta_{AB}(\pi,\pi')=0
+  \quad\text{for all }A,B\in\{C,M,S\}\text{ and all }\pi,\pi'\in\Pi_\ast,
+\]
+with $n_C(\pi),n_M(\pi),n_S(\pi)>0$ for every $\pi\in\Pi_\ast$.  Equivalently,
+there are positive constants $\alpha_C,\alpha_M,\alpha_S$ and positive policy weights
+$\rho(\pi)$ such that
+\[
+  (n_C(\pi),n_M(\pi),n_S(\pi))
+  =\rho(\pi)(\alpha_C,\alpha_M,\alpha_S)
+  \quad\text{for every }\pi\in\Pi_\ast.
+\]
+Assumption \ref{ass:rank-one} is a sufficient primitive condition for this frontier.
+If Assumption \ref{ass:two-score} holds, then no scalar maps
+$\kappa\mapsto\Gamma(\kappa)$ and $\kappa\mapsto\delta(\kappa)$ can make
+$B_C(P,\pi;\kappa)=B_M(P,\pi;\Gamma(\kappa))=B_S(P,\pi;\delta(\kappa))$ for all
+$\pi\in\Pi_\ast$ on any non-degenerate interval with $\kappa>0$.
+\end{theorem}
+
+This theorem confirms the main mathematical content of Conjecture 1.  Its practical
+importance is that scalar translation is governed by a finite matrix diagnostic, not by
+the name of the sensitivity analysis.  It differs from prior CH, MSM, and external
+validity results because those works define useful one-language robustness criteria,
+whereas Theorem \ref{thm:calibration-frontier} characterizes when the criteria can be
+made ranking-equivalent across a finite policy class.
+
+\begin{proposition}[Reference-calibration ranking witness]\label{prop:ranking-witness}
+Let $A,B\in\{C,M,S\}$ and let $\pi_1,\pi_2\in\Pi_\ast$ have positive $A$ and $B$
+penalties.  Fix a positive scale $s_A$ for language $A$ and set the language-$B$
+scale by reference-policy calibration,
+\[
+  s_B=s_A\,{n_A(\pi_1)\over n_B(\pi_1)}.
+\]
+If $\Delta_{AB}(\pi_1,\pi_2)\ne0$, then the two penalty gaps
+\[
+  G_A=s_A\{n_A(\pi_1)-n_A(\pi_2)\},\qquad
+  G_B=s_B\{n_B(\pi_1)-n_B(\pi_2)\}
+\]
+are distinct.  For every nominal regret difference
+\[
+  d=\theta^0_{\pi_1,\pi_0}-\theta^0_{\pi_2,\pi_0}
+  \quad\text{strictly between }-G_A\text{ and }-G_B,
+\]
+the two robust-regret criteria
+$\theta^0_{\pi,\pi_0}+s_A n_A(\pi)$ and
+$\theta^0_{\pi,\pi_0}+s_B n_B(\pi)$ choose different unique minimizers among
+$\{\pi_1,\pi_2\}$.
+\end{proposition}
+
+This proposition supplies the ranking part of Conjecture 1 under an explicit
+calibration convention.  It is the finite-policy reason why a CH-calibrated MSM or
+covariate-shift report can change a policy decision even when the reference policy's
+penalty has been matched exactly.
+
+\begin{proposition}[Nearest correct witness for Conjecture 2]\label{prop:conj2-witness}
+Conjecture 2 is false as an open-set statement without an additional normalization
+forcing $\|W_{\pi_1}\|_2=\|W_{\pi_2}\|_2$.  A point witness is available on four
+equally likely atoms:
+\[
+  W_{\pi_1}=(-1,-1,1,1),\qquad
+  W_{\pi_2}=(-\sqrt 3,1/\sqrt 3,1/\sqrt 3,1/\sqrt 3).
+\]
+Both scores are centered and have $L^2$ norm one, but
+\[
+  D_1(W_{\pi_1})=1,\qquad D_1(W_{\pi_2})=1/\sqrt 3.
+\]
+Hence CH ties the two penalties at this law while MSM separates them.  Moreover,
+$\Delta_{CM}(\pi_1,\pi_2)\ne0$ at the witness, so by continuity there is an open
+neighborhood of laws and score values on which the non-calibration residual remains
+nonzero.
+\end{proposition}
+
+The proposition refutes only the word ``open'' attached to exact equality of CH norms.
+It preserves the intended economic warning: equal variance can hide distributional
+shape differences that marginal-sensitivity penalties detect.
+
+\section{Interpretation}
+Theorem \ref{thm:support-bounds} says that the three sensitivity languages tighten or
+widen policy-regret bounds through different observable features of the same local
+score.  CH partial-$R^2$ sensitivity sees only the variance of $W_\pi$.  MSM sensitivity
+sees the centered absolute-deviation geometry of $W_\pi$, so two policies with the
+same variance can have different MSM penalties.  Covariate-shift sensitivity sees only
+the covariate projection $M_\pi(X)$, so score variation orthogonal to $X$ does not
+affect the covariate-shift bound.
+
+The bound collapses to point identification when the relevant radius is zero
+($\kappa=0$, $\Gamma=1$, or $\delta=0$) or when the relevant score norm is zero for
+the policy being compared.  It widens as the sensitivity radius grows; if the local
+model is abandoned and only the bounded-outcome restriction $Y\in[\ell,u]$ remains,
+the natural no-restriction Manski-style regret bound is
+$[\ell-u,u-\ell]$ for $Y(\pi_0)-Y(\pi)$.  Thus the tightening work in this note is
+done entirely by the local CH, MSM, or covariate-shift support set, not by a shape
+restriction such as monotone treatment response.
+
+Theorem \ref{thm:calibration-frontier} gives the interpretation of scalar calibration.
+A single policy can always be calibrated by choosing the other language's radius to
+match that one policy's penalty.  Multiple policies require a stronger condition:
+all active rows of $Q_{\Pi_\ast}$ must point in the same positive direction.  When the
+condition fails, the scalar value reported in one sensitivity language cannot be used
+as a policy-invariant substitute for another language's robustness curve.
+
+\section{Step-by-step proof}
+\begin{lemma}[Three support functions]\label{lem:support-functions}
+Let $W\in L^2_0(P)\cap L^\infty(P)$ and $M(X)=\E[W\mid X]$.  Then
+\[
+  \sup_{\E h=0,\ \E h^2\le\kappa^2}\E[hW]=\kappa\|W\|_2,
+\]
+\[
+  \sup_{\E h=0,\ \|h\|_\infty\le b}\E[hW]=b\inf_{c\in\R}\E|W-c|,
+\]
+and
+\[
+  \sup_{\E g(X)=0,\ \E g(X)^2\le\delta^2}\E[g(X)W]=\delta\|M\|_2.
+\]
+\end{lemma}
+
+\begin{proof}
+For the CH ellipsoid, Cauchy--Schwarz gives
+$\E[hW]\le \|h\|_2\|W\|_2\le\kappa\|W\|_2$.  If $\|W\|_2>0$, equality is attained by
+$h=\kappa W/\|W\|_2$, which is mean zero because $\E W=0$; if $W=0$, both sides are
+zero.
+
+For the MSM bounded set, the mean-zero constraint on $h$ implies
+$\E[hW]=\E[h(W-c)]$ for every constant $c$.  Hence
+\[
+  \E[hW]\le b\,\E|W-c|
+  \quad\text{for every }c,
+\]
+and taking the infimum over $c$ gives the upper bound
+$b\inf_c\E|W-c|$.  Conversely, choose a median $c_\ast$ of $W$.  The subgradient of
+$c\mapsto\E|W-c|$ at a median contains zero, so one can choose a measurable
+$s\in[-1,1]$ with $s=\operatorname{sign}(W-c_\ast)$ off the event
+$\{W=c_\ast\}$ and $\E s=0$.  Then $h=bs$ is feasible and
+$\E[hW]=b\E[s(W-c_\ast)]=b\E|W-c_\ast|$, proving equality.
+
+For the covariate-shift ellipsoid, the tower property gives
+\[
+  \E[g(X)W]=\E[g(X)\E(W\mid X)]=\E[g(X)M(X)].
+\]
+Since $\E M=0$, Cauchy--Schwarz gives the upper bound
+$\delta\|M\|_2$, attained by $g=\delta M/\|M\|_2$ when $M\ne0$ and equal to zero
+when $M=0$.
+\end{proof}
+
+\begin{proof}[Proof of Theorem \ref{thm:support-bounds}]
+Assumptions \ref{ass:finite-local} and \ref{ass:support-budgets} define each local
+identified set as the nominal value plus all linear perturbations generated by the
+corresponding support set.  Lemma \ref{lem:support-functions} gives the largest upward
+perturbation for each language.  The support sets are symmetric: if a perturbation
+$h$ or $g$ is feasible, then its negative is feasible.  Therefore the largest downward
+perturbation is the negative of the same support value.  Adding these upward and
+downward extrema to $\theta^0_{\pi,\pi_0}(P)$ gives the three displayed intervals.
+The equality of the identified set with the interval follows because each support set
+is convex, symmetric, and contains $0$, so every value between the two extrema is
+obtained by scaling an extremizing, or approximating extremizing, direction.
+\end{proof}
+
+\begin{proof}[Proof of Theorem \ref{thm:calibration-frontier}]
+Write the three penalties as
+\[
+  B_C=s_C n_C,\qquad B_M=s_M n_M,\qquad B_S=s_S n_S,
+\]
+where $s_C=\kappa$, $s_M=b(\Gamma)$, and $s_S=\delta$.  By Assumption
+\ref{ass:active-domain}, all active $n_A(\pi)$ are positive.  If a three-language
+scalar bridge exists at a positive sensitivity value, then for every pair of languages
+$A,B$ and every $\pi,\pi'\in\Pi_\ast$,
+\[
+  s_A n_A(\pi)=s_B n_B(\pi),
+  \qquad
+  s_A n_A(\pi')=s_B n_B(\pi').
+\]
+Eliminating the positive scales gives
+\[
+  n_A(\pi)n_B(\pi')-n_A(\pi')n_B(\pi)=0,
+\]
+so all minors vanish.  Since the bridge exists on an interval, the same argument holds
+throughout the interval; no endpoint case with a zero scale is being used.
+
+Conversely, suppose all minors vanish and all entries are positive.  Pick any reference
+policy $\pi_0^\ast\in\Pi_\ast$ and define
+\[
+  \rho(\pi)=n_C(\pi),\quad
+  \alpha_C=1,\quad
+  \alpha_M={n_M(\pi_0^\ast)\over n_C(\pi_0^\ast)},\quad
+  \alpha_S={n_S(\pi_0^\ast)\over n_C(\pi_0^\ast)}.
+\]
+The vanished minors imply $n_M(\pi)=\alpha_M\rho(\pi)$ and
+$n_S(\pi)=\alpha_S\rho(\pi)$ for all active policies.  Given any $\kappa>0$, choose
+$\Gamma$ and $\delta$ so that
+\[
+  b(\Gamma)=\kappa/\alpha_M,\qquad
+  \delta=\kappa/\alpha_S.
+\]
+Assumption \ref{ass:support-budgets} guarantees that such a $\Gamma$ exists because
+$b$ is continuous, strictly increasing, and has range $[0,\infty)$.  Then all three
+penalties equal $\kappa\rho(\pi)$ for every $\pi\in\Pi_\ast$.
+
+If Assumption \ref{ass:rank-one} holds, then
+$n_C(\pi)=|c_\pi|\|W_0\|_2$ and
+$n_M(\pi)=|c_\pi|D_1(W_0)$ by homogeneity of the $L^2$ norm and $D_1$.  The additional
+condition $|d_\pi|$ proportional to $|c_\pi|$ gives
+$n_S(\pi)=|d_\pi|\|M_0\|_2$, hence the three columns have a positive common scale.
+If Assumption \ref{ass:two-score} holds, at least one minor is nonzero, contradicting
+the necessary condition just proved; equivalently $\tau_{\Pi_\ast}>0$.  Thus no
+non-degenerate scalar bridge exists.
+\end{proof}
+
+\begin{proof}[Proof of Proposition \ref{prop:ranking-witness}]
+The reference calibration makes the two language penalties equal at $\pi_1$:
+$s_A n_A(\pi_1)=s_B n_B(\pi_1)$.  The difference between the two penalty gaps is
+\[
+  G_A-G_B
+  =
+  s_A\{n_A(\pi_1)-n_A(\pi_2)\}
+  -s_A{n_A(\pi_1)\over n_B(\pi_1)}
+   \{n_B(\pi_1)-n_B(\pi_2)\}.
+\]
+After canceling the equal $\pi_1$ terms,
+\[
+  G_A-G_B
+  =
+  {s_A\over n_B(\pi_1)}
+  \{n_A(\pi_1)n_B(\pi_2)-n_A(\pi_2)n_B(\pi_1)\}
+  =
+  {s_A\over n_B(\pi_1)}\Delta_{AB}(\pi_1,\pi_2),
+\]
+which is nonzero.  For language $A$, policy $\pi_1$ has smaller robust regret than
+$\pi_2$ exactly when $d+G_A<0$.  For language $B$, policy $\pi_1$ has smaller robust
+regret exactly when $d+G_B<0$.  If $d$ lies strictly between $-G_A$ and $-G_B$, these
+two strict inequalities have opposite truth values, so the unique minimizer among the
+two policies differs.
+\end{proof}
+
+\begin{proof}[Proof of Proposition \ref{prop:conj2-witness}]
+For the displayed scores under the uniform law on four atoms,
+\[
+  \E W_{\pi_1}=0,\qquad
+  \E W_{\pi_2}={-\sqrt3+3/\sqrt3\over 4}=0.
+\]
+Their second moments are
+\[
+  \E W_{\pi_1}^2=1,\qquad
+  \E W_{\pi_2}^2={3+3(1/3)\over4}=1.
+\]
+Thus the CH penalties are equal at every $\kappa$.  A median of $W_{\pi_1}$ can be any
+point in $[-1,1]$, and the minimum absolute deviation is $1$.  A median of
+$W_{\pi_2}$ is $1/\sqrt3$, since that value has probability $3/4$, and therefore
+\[
+  D_1(W_{\pi_2})
+  ={1\over4}\left(\sqrt3+{1\over\sqrt3}\right)
+  ={1\over\sqrt3}.
+\]
+So $\Delta_{CM}(\pi_1,\pi_2)=1\cdot(1/\sqrt3)-1\cdot1\ne0$.
+
+The maps from a finite-support probability vector and finite score values to
+$\|W_{\pi_j}\|_2$ and $D_1(W_{\pi_j})$ are continuous at this non-degenerate witness
+as long as the median identity is not changed by a tie-breaking discontinuity; small
+perturbations preserving the mass ordering do not change the median cell.  Hence the
+strict residual inequality persists on an open neighborhood.  Exact equality of the
+two $L^2$ norms, however, is the zero set of a nontrivial continuous scalar function.
+For fixed finite-support score functions, if the equality of variances held on an open
+probability neighborhood, the two variance polynomials would be identical; equivalently,
+the pairwise squared distances of the two score arrays would agree, so in one dimension
+the centered arrays differ only by a translation and a global sign, which also preserves
+$D_1$.  Thus an open equality-and-separation witness requires an extra normalization
+not present in the locked setup.  This proves the refutation and the nearest correct
+open residual statement.
+\end{proof}
+
+\section{Sanity checks}
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Zero sensitivity.}  If $\kappa=0$, $\Gamma=1$, and $\delta=0$, then
+$B_C=B_M=B_S=0$ and every local identified set collapses to the nominal regret
+$\theta^0_{\pi,\pi_0}(P)$.
+
+\item \textbf{Single active policy.}  If $\Pi_\ast=\{\pi\}$ and all three penalties
+are positive, scalar calibration is always possible for that one policy.  For example,
+given $\kappa>0$, choose $b(\Gamma)=\kappa n_C(\pi)/n_M(\pi)$ and
+$\delta=\kappa n_C(\pi)/n_S(\pi)$.  The frontier obstruction is therefore genuinely
+multi-policy.
+
+\item \textbf{Natural no-restriction bound.}  If the local support restrictions are
+removed and only $Y\in[\ell,u]$ is maintained, then each potential outcome term lies
+in $[\ell,u]$, so
+$Y(\pi_0)-Y(\pi)\in[\ell-u,u-\ell]$ and the natural Manski-style regret bound is
+$[\ell-u,u-\ell]$.  The local bounds in Theorem \ref{thm:support-bounds} are tighter
+only because the CH, MSM, or covariate-shift support set is imposed.
+
+\item \textbf{Zero-width nonzero-radius corner.}  If $W_\pi=0$ almost surely, then
+$M_\pi=0$ and $D_1(W_\pi)=0$.  The policy is locally insensitive to all three
+perturbation languages, so the identified interval is a point for every radius.
+
+\item \textbf{Monotone-treatment-response specialization.}  No MTR restriction is
+part of the locked parameter tuple.  If an MTR restriction were added in a separate
+model, it would intersect the support-function interval with a one-sided causal
+shape constraint; that is a different identified set and is not used in the
+calibration theorem.
+
+\item \textbf{Finite LP analogy.}  In a finite latent-response model such as the
+Balke--Pearl binary-IV setting, sharp bounds are obtained by optimizing a linear
+functional over a finite polytope.  The present theorem is the local convex-analytic
+analog: the feasible polytope is replaced by one of the three explicit norm balls,
+and the resulting support function has the closed forms in Section 7.
+\end{enumerate}
+
+\section{Counterexample or minimality check}
+The four-atom construction in Proposition \ref{prop:conj2-witness} is the minimality
+check for variance-only calibration.  It shows that CH's $L^2$ norm does not determine
+MSM's centered absolute-deviation norm, even when both scores are centered, bounded,
+and have equal variance.  Therefore a theorem that attempts to translate CH into MSM
+using only $\|W_\pi\|_2$ is false for two policies.
+
+The active-domain assumption is also necessary.  If $n_S(\pi)=0$ but
+$n_C(\pi)>0$ for some active policy, then no positive scalar can make the CH and
+covariate-shift penalties equal for that policy.  If the policy is retained anyway,
+the all-pairs minor condition can be obscured by zero ratios; excluding zero-column
+degeneracies is what makes the frontier a genuine positive calibration statement.
+
+The policy-invariance of the scalar bridge is the other minimal condition.  If one
+allows a different map $\Gamma_\pi(\kappa)$ or $\delta_\pi(\kappa)$ for every policy,
+then calibration is trivial whenever the denominator penalty is positive:
+choose the policy-specific radius to match that policy's penalty.  Such a map does
+not preserve a common sensitivity scale and cannot justify comparing robust rankings
+across policies.
+
+The nearest formula that fixes Conjecture 2 is to replace the open equality claim by
+an open residual claim:
+\[
+  \Delta_{CM}(\pi_1,\pi_2)\ne0
+  \quad\text{or}\quad
+  \Delta_{CS}(\pi_1,\pi_2)\ne0
+  \quad\text{or}\quad
+  \Delta_{MS}(\pi_1,\pi_2)\ne0.
+\]
+This condition is open under finite-support perturbations and is exactly the obstruction
+used by Theorem \ref{thm:calibration-frontier} and Proposition \ref{prop:ranking-witness}.
+
+\section{Formalization checklist}
+\begin{itemize}[leftmargin=*]
+\item \textbf{Observable law.}  A probability law $P$ for $O=(X,A,Y)$ with
+$A\in\{0,1\}$, $Y\in[\ell,u]$, and nominal propensity bounded away from $0$ and $1$.
+Role: supplies the expectation, conditional expectation, and support conditions.
+
+\item \textbf{Policy class.}  A finite set $\Pi$ of measurable maps
+$\mathcal X\to\{0,1\}$ with status quo $\pi_0$ and active subset $\Pi_\ast$.
+Role: makes the calibration diagnostic a finite matrix problem.
+
+\item \textbf{Policy score map.}  For each $\pi$, a bounded centered score
+$W_\pi\in L^2_0(P)\cap L^\infty(P)$ and projection $M_\pi(X)=\E[W_\pi\mid X]$.
+Role: represents the first-order perturbation of the latent regret target.
+
+\item \textbf{Probabilistic assumptions.}  Bounded outcome and overlap; existence and
+boundedness of the derivative scores; existence of conditional expectations; positivity
+of active penalties for non-degenerate bridges.
+
+\item \textbf{Sensitivity sets.}  $\mathcal H_C(\kappa)$ as a mean-zero $L^2$ ball,
+$\mathcal H_M(\Gamma)$ as a mean-zero $L^\infty$ ball with radius $b(\Gamma)$, and
+$\mathcal G_S(\delta)$ as a covariate-only mean-zero $L^2$ ball.  Role: define the
+local identified sets and their support functions.
+
+\item \textbf{Deterministic support identities.}  Cauchy--Schwarz extremizer for
+$L^2$ balls; dual identity
+$\sup_{\E h=0,\|h\|_\infty\le b}\E[hW]=b\inf_c\E|W-c|$; tower-property reduction
+$\E[g(X)W]=\E[g(X)M(X)]$.
+
+\item \textbf{Median identity.}  For integrable $W$, the minimizers of
+$c\mapsto\E|W-c|$ are medians of $W$.  Role: makes $D_1(W)$ an evaluable
+one-dimensional functional and supplies the MSM support-function extremizer.
+
+\item \textbf{Sharp interval identity.}  A symmetric convex support set produces the
+interval from the negative support value to the positive support value.  Role: converts
+support functions into sharp local partial-identification bounds.
+
+\item \textbf{Calibration matrix algebra.}  Positive vectors
+$(n_C(\pi),n_M(\pi),n_S(\pi))_{\pi\in\Pi_\ast}$; all-pairs residuals
+$\Delta_{AB}(\pi,\pi')$; equivalence between vanished $2\times2$ minors and positive
+rank-one column structure.  Role: proves the necessary and sufficient bridge theorem.
+
+\item \textbf{Ranking witness algebra.}  Given two policies and two languages, reference
+calibration at one policy makes the gap difference proportional to
+$\Delta_{AB}(\pi_1,\pi_2)$.  Role: turns non-calibration into an explicit open interval
+of nominal regret differences with different unique minimizers.
+
+\item \textbf{Finite-support witness.}  Four-atom uniform law with scores
+$(-1,-1,1,1)$ and $(-\sqrt3,1/\sqrt3,1/\sqrt3,1/\sqrt3)$.  Role: separates equal
+$L^2$ penalties from centered absolute-deviation penalties and refutes Conjecture 2's
+open equality wording.
+
+\item \textbf{Substrate survey record, bypass-justified.}  The Manski-style bounded
+potential-outcome interval primitives fit the no-restriction sanity check but not the
+local policy-score support theorem.  The MTR/MTS/MIV and combined shape-restriction
+families are bypassed because the locked restrictions are local CH, MSM, and
+covariate-shift balls, not monotonicity restrictions.  The Balke--Pearl, Lee, proxy,
+and general partial-ID catalogues are bypassed because they encode finite IV,
+selection, proxy, or generic interval problems at a different abstraction.  The
+mathematical plan therefore uses expectation, conditional projection, norm, median,
+support-function, and finite-matrix objects directly.
+\end{itemize}
+
+\section{Conclusion and references}
+The theorem-level contribution is a sharp local bound and calibration frontier for
+policy-regret sensitivity.  CH, MSM, and covariate-shift ambiguity tighten the natural
+bounded-outcome regret range by restricting perturbations to, respectively, a mean-zero
+$L^2$ ellipsoid, a mean-zero bounded perturbation set, and a covariate-only $L^2$
+tilt.  The bound becomes point-identifying at zero radius or for a policy score that is
+invisible to the relevant perturbation set; it becomes vacuous, relative to this local
+analysis, when those sensitivity restrictions are removed and only bounded outcomes
+remain.  A scalar calibration across languages is valid over a finite policy class
+exactly on the positive common-scale frontier of the diagnostic matrix $Q_{\Pi_\ast}$.
+Off that frontier, a single reported sensitivity value cannot generally be translated
+into another language without changing robust policy-regret rankings.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem{AdjahoChristensen2025}
+Adjaho, C. and T. Christensen (2025).
+Externally valid policy choice.
+\emph{arXiv:2205.05561}.
+
+\bibitem{BalkePearl1997}
+Balke, A. and J. Pearl (1997).
+Bounds on treatment effects from studies with imperfect compliance.
+\emph{Journal of the American Statistical Association} 92(439), 1171--1176.
+
+\bibitem{ChristensenConnault2023}
+Christensen, T. and B. Connault (2023).
+Counterfactual sensitivity and robustness.
+\emph{Econometrica} 91(1), 263--298.
+
+\bibitem{CinelliHazlett2020}
+Cinelli, C. and C. Hazlett (2020).
+Making sense of sensitivity: extending omitted variable bias.
+\emph{Journal of the Royal Statistical Society: Series B} 82(1), 39--67.
+
+\bibitem{DornGuoKallus2025}
+Dorn, J., K. Guo, and N. Kallus (2025).
+Doubly-valid/doubly-sharp sensitivity analysis for causal inference with unmeasured confounding.
+\emph{Journal of the American Statistical Association}.
+
+\bibitem{DiegertMastenPoirier2025}
+Diegert, P., M. A. Masten, and A. Poirier (2025).
+An axiomatic approach to comparing sensitivity parameters.
+\emph{arXiv:2504.21106}.
+
+\bibitem{HuangPimentel2025}
+Huang, M. and S. D. Pimentel (2025).
+Variance-based sensitivity analysis for weighting estimators results in more informative bounds.
+\emph{Biometrika} 112(1), 235--240.
+
+\bibitem{JinXuZhengZhou2025}
+Jin, Z., G. Xu, X. Zheng, and Y. Zhou (2025).
+Policy learning under unobserved confounding: a robust and efficient approach.
+\emph{arXiv:2507.20550}.
+
+\bibitem{KallusZhou2021}
+Kallus, N. and A. Zhou (2021).
+Minimax-optimal policy learning under unobserved confounding.
+\emph{Management Science} 67(5), 2870--2890.
+
+\bibitem{Manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review} 80(2), 319--323.
+
+\bibitem{MastenPoirierRen2025}
+Masten, M. A., A. Poirier, and M. Ren (2025).
+A general approach to relaxing unconfoundedness.
+\emph{arXiv:2501.15400}.
+
+\bibitem{SorianoBenMichaelBickelFellerPimentel2023}
+Soriano, D., E. Ben-Michael, P. J. Bickel, A. Feller, and S. D. Pimentel (2023).
+Interpretable sensitivity analysis for balancing weights.
+\emph{Journal of the Royal Statistical Society: Series A} 186(4), 707--721.
+
+\bibitem{YadlowskyNamkoongBasuDuchiTian2022}
+Yadlowsky, S., H. Namkoong, S. Basu, J. Duchi, and L. Tian (2022).
+Bounds on the conditional and average treatment effect with unobserved confounding factors.
+\emph{Annals of Statistics} 50(5), 2587--2615.
+
+\bibitem{ZhaoSmallBhattacharya2019}
+Zhao, Q., D. S. Small, and B. B. Bhattacharya (2019).
+Sensitivity analysis for inverse probability weighting estimators via the percentile bootstrap.
+\emph{Journal of the Royal Statistical Society: Series B} 81(4), 735--761.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,583 @@
+% =====================================================================
+%  thmsmith Stage 0 derivation skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_ot\_dte\_marginal, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage 0 derivation: \texttt{pid\_ot\_dte\_marginal} / \texttt{v1}%
+  \\ \large\textit{Lifted optimal-transport outer envelopes for marginal DTE tails}}
+\author{thmsmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note sets up a finite-support partial-identification problem for the distributional treatment-effect tail
+\[
+F_\Delta(d)=\Pr\{Y(1)-Y(0)\le d\}.
+\]
+The estimand-defining functionals are two computable finite programs: the sharp full-law pasting interval \(\Theta_I(P,d)=\mathsf B_{\mathrm{paste}}(P,d)\), optimized over one admissible full-data law, and the lifted cellwise optimal-transport interval \(\Theta_L(P,d)\), optimized over separately feasible cellwise couplings.  The observable input is the law \(P\) of \((Y,D,Z,X)\), with finite \(Z\), finite \(X\), binary \(D\), and finite outcome grid.  The per-conjecture stages will test whether the lifted interval is sharp exactly when the endpoint-normalized cycle-balance defect \(\Gamma(P,d)\) vanishes, and whether the displayed two-instrument witness gives a nondegenerate strict-containment example.  This setup pre-pass proves only the routine shared algebra needed later: any admissible full-data law projects to a feasible lifted collection, so the lifted program is an outer envelope.
+\end{abstract}
+
+\section{Introduction}
+Distributional treatment effects answer questions about the whole law of \(Y(1)-Y(0)\), not only its mean.  In applications with instruments, policy shifts, sensitivity envelopes, or covariate cells, analysts often obtain tractable bounds by solving smaller optimal-transport problems cell by cell.  Those local programs can be useful diagnostics, but a DTE statement is causal only if the selected cellwise dependence structures can be realized by one full-data law for \((Y(1),Y(0),Z,X)\).
+
+Classical Makarov and Rueschendorf bounds characterize extremal couplings with fixed marginals, and the Fan--Park DTE bounds use that logic for treatment-effect distributions.  More recent work studies functionals of joint potential-outcome laws, positive-dependence restrictions, and multi-marginal or constrained conditional optimal-transport formulations.  The unresolved issue targeted here is not another cellwise Makarov calculation: it is the global pasting question for lifted OT relaxations that combine marginal envelopes, IV or dose equalities, and local rank-copula tubes.
+
+The new target of the later theorem sections is a sharp-pasting frontier.  If Conjecture 1 is confirmed, the finite scalar \(\Gamma(P,d)\), computed from endpoint-specific local dual residuals around cycles in the pasting graph, tells the reader when the lifted envelope \(\Theta_L(P,d)\) equals the sharp identified interval \(\Theta_I(P,d)\).  If Conjecture 2 is confirmed, the note also supplies a concrete open-set witness showing that strict containment is not a boundary artifact.
+
+\paragraph{Motivating conjecture(s).}
+\paragraph{Conjecture 1.}
+Under Assumptions~\ref{ass:finite-overlap}--\ref{ass:cycle-margin}, the lifted OT relaxation is sharp for the DTE tail probability at \(d\),
+\[
+\Theta_I(P,d)=\Theta_L(P,d),
+\]
+if and only if the endpoint-normalized cycle-balance defect satisfies \(\Gamma(P,d)=0\).  Moreover, if \(\Gamma(P,d)>0\), then at least one endpoint of \(\Theta_L(P,d)\) differs from the corresponding sharp endpoint of \(\Theta_I(P,d)\) by at least \(\kappa_*(P,d)\Gamma(P,d)\).
+
+\paragraph{Conjecture 2.}
+There exists an open set of finite-support laws with two instrument values, two covariate cells, and three outcome support points for which all local marginal envelopes and rank-copula tubes are nonempty, every cellwise OT subproblem has a strictly interior optimizer, and \(\Gamma(P,d)>0\) for \(d=0\).  One concrete center of the open set has equal cell weights \(P(Z=z,X=x)=1/4\), \(\mathcal Y=\{0,1,2\}\), and the following cellwise marginals for \((Y(1),Y(0))\):
+\[
+\begin{array}{c|cc}
+(z,x) & \mu_{1,z,x} & \mu_{0,z,x}\\ \hline
+(0,a) & (.42,.36,.22) & (.34,.40,.26)\\
+(1,a) & (.35,.41,.24) & (.29,.45,.26)\\
+(1,b) & (.31,.43,.26) & (.37,.35,.28)\\
+(0,b) & (.39,.33,.28) & (.32,.38,.30)
+\end{array}
+\]
+The active IV equalities store the two oriented contrasts \((0,a)\to(1,a)\) and \((0,b)\to(1,b)\), while the active rank-tube equalities store \((1,a)\to(1,b)\) and \((0,b)\to(0,a)\).  For the lexicographically normalized upper-endpoint duals at \(d=0\), the certificate for the cycle \(c:(0,a)\to(1,a)\to(1,b)\to(0,b)\to(0,a)\) is
+\[
+\begin{array}{c|c|c|c|c}
+\text{cycle edge} & \text{stored arc} & r^u & \sigma & \sigma r^u\\ \hline
+(0,a)\to(1,a) & (0,a)\to(1,a) & 0.06 & 1 & 0.06\\
+(1,a)\to(1,b) & (1,a)\to(1,b) & 0.04 & 1 & 0.04\\
+(1,b)\to(0,b) & (0,b)\to(1,b) & -0.03 & -1 & 0.03\\
+(0,b)\to(0,a) & (0,b)\to(0,a) & 0.01 & 1 & 0.01
+\end{array}
+\]
+Thus \(b_{c,u}(P,0)=0.06+0.04+0.03+0.01=0.14\).  The analogous lower-endpoint certificate has oriented contributions \(0.01,0.00,0.01,0.00\), so \(b_{c,\ell}(P,0)=0.02\), and therefore \(\Gamma(P,0)\ge0.14\).  On a small neighborhood preserving the active set and the residual signs, \(\Theta_L(P,0)\) strictly contains \(\Theta_I(P,0)\).
+
+\section{Related work and positioning}
+\cite{Makarov1981} and \cite{Rueschendorf1982} give the probability-theory basis for extremal couplings with fixed marginals; they motivate the local OT programs but do not address simultaneous cross-cell pasting.  \cite{FanPark2010} provide the classical sharp DTE bounds when marginal potential-outcome distributions are identified, making them the single-cell benchmark for this note.  \cite{FirpoRidder2019} show that pointwise sharpness for a DTE CDF need not imply sharpness for more global functionals, which is the closest warning against independently optimizing many local objects.  \cite{FanGuerreZhu2017} study partial identification of functionals of the joint potential-outcome distribution and clarify how covariates can tighten identified sets; the present setup adds IV/dose links and rank-copula tubes across cells.
+
+\cite{FrandsenLefgren2021} use positive-dependence restrictions to tighten DTE bounds and establish testable implications, motivating the local rank-copula component \(\mathcal C_{\rho,z,x}\).  \cite{Russell2021} and \cite{OberReynolds2023} formulate joint-potential-outcome functionals using computational or OT methods, but they do not isolate a cycle-balance diagnostic for when cellwise endpoints paste.  \cite{FanWu2010} derive DTE bounds in switching-regime models, a close DTE-under-regime comparator but not a lifted cellwise-pasting theorem.  \cite{GaoGeQian2025} cast causal partial identification as a global multi-marginal OT problem and obtain exact identified sets; here the finite full-law program is the sharp object, while \(\Gamma(P,d)\) is proposed as a lower-dimensional diagnostic for a special lifted-DTE relaxation.  \cite{TanBlanchetSyrgkanis2026} reduce policy-relevant treatment-effect partial identification under limited IV support to constrained conditional OT subproblems; this note targets the remaining question of when the resulting cellwise envelope is itself a sharp full-law DTE bound.
+
+The available in-repository partial-identification substrate covers potential-outcome systems and Manski-style IV bounds, which are useful analogues for observed-law and marginal-envelope bookkeeping.  The present artifact is deliberately finite-table and cycle-graph based because the needed OT pasting objects are at a different abstraction level; this is recorded in the setup digest as a bypass-justified substrate decision rather than as a claim about existing formal coverage.
+
+\section{Formal setup}
+Let \(X\in\mathcal X\) and \(Z\in\mathcal Z\) have finite support, let \(D\in\{0,1\}\), and let the observed outcome satisfy \(Y=DY(1)+(1-D)Y(0)\).  The observable input is the population law \(P\) of \((Y,D,Z,X)\).  The outcome support grid is a finite set \(\mathcal Y\subset\mathbb R\), and every admissible potential-outcome law assigns mass only to \(\mathcal Y\).
+
+For each cell \(s=(z,x)\), write \(p_s=P(Z=z,X=x)\).  A full-data law \(Q\) is a probability law on \((Y(1),Y(0),D,Z,X)\) such that its observable margin is \(P\), it satisfies consistency \(Y=DY(1)+(1-D)Y(0)\), and it obeys the maintained restrictions below.  Let \(\mu_{a,s}^Q\) denote the conditional law of \(Y(a)\) given \(s\), and let \(\pi_s^Q\) denote the conditional joint law of \((Y(1),Y(0))\) given \(s\).
+
+The admissible full-law class is
+\[
+\mathcal Q(P)=\left\{Q:
+\begin{array}{l}
+Q \text{ has observable margin }P\text{ and support }\mathcal Y^2\times\{0,1\}\times\mathcal Z\times\mathcal X,\\
+\mu_{a,s}^Q\in\mathcal M_{a,s}(P)\text{ for all }a,s,\\
+\{\mu_{a,s}^Q\}_{a,s}\text{ satisfies }\mathcal V(P),\\
+\pi_s^Q\in\mathcal C_{\rho,s}\cap\Pi(\mu_{1,s}^Q,\mu_{0,s}^Q)\text{ for all }s
+\end{array}
+\right\}.
+\]
+The sharp identified interval for the DTE tail at threshold \(d\) is
+\[
+\Theta_I(P,d)=
+\left[
+\inf_{Q\in\mathcal Q(P)} Q\{Y(1)-Y(0)\le d\},
+\sup_{Q\in\mathcal Q(P)} Q\{Y(1)-Y(0)\le d\}
+\right],
+\]
+with the convention that the setup is admissible only when \(\mathcal Q(P)\neq\emptyset\).
+
+The lifted relaxation replaces a single \(Q\) by separately feasible cellwise objects.  Let \(\mathcal L(P)\) be the set of collections \(\{(\mu_{1,s},\mu_{0,s},\pi_s):s\in\mathcal Z\times\mathcal X\}\) such that \(\mu_{a,s}\in\mathcal M_{a,s}(P)\), the marginals satisfy \(\mathcal V(P)\), and \(\pi_s\in\mathcal C_{\rho,s}\cap\Pi(\mu_{1,s},\mu_{0,s})\) for every cell.  The full-law class projects into \(\mathcal L(P)\), but \(\mathcal L(P)\) need not paste back to one \(Q\).
+
+\paragraph{Locked parameters.}
+\begin{itemize}[leftmargin=*]
+\item qid: \texttt{pid\_ot\_dte\_marginal}
+\item specialization: \texttt{v1}
+\item observable distribution: \(P\) is the observed law of \((Y,D,Z,X)\), where \(D\in\{0,1\}\), \(Z\) is an instrument or policy-shift index with finite support \(\mathcal Z\), and \(X\) is a finite covariate cell.
+\item parameter \(\theta\): the unobserved target is the distribution \(F_\Delta(d)=\Pr\{Y(1)-Y(0)\le d\}\).
+\item identifying restrictions: the restrictions \(\mathcal R_{\mathrm{lift}}\) consist of identified or bounded conditional potential-outcome marginals \(F_{a\mid z,x}\), marginal sensitivity envelopes \(\mathcal M_{a,z,x}\), dose/IV compatibility constraints \(\mathcal V\), and local rank-copula tubes \(\mathcal C_{\rho,z,x}\).
+\item bounding functional: \(\mathsf B_{\mathrm{paste}}(d)\) is the lower/upper value of \(\Pr\{Y(1)-Y(0)\le d\}\) over a single full-data law \(Q\) satisfying all restrictions, not merely over separately feasible cellwise OT tables.
+\item verbatim proposal tuple: This is a partial-identification proposal with tuple
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\mathcal R,\mathsf B)
+=
+(\texttt{pid\_ot\_dte\_marginal},\texttt{v1},P,F_\Delta,\mathcal R_{\mathrm{lift}},\mathsf B_{\mathrm{paste}}).
+\]
+Here \(P\) is the observed law of \((Y,D,Z,X)\), where \(D\in\{0,1\}\), \(Z\) is an instrument or policy-shift index with finite support \(\mathcal Z\), and \(X\) is a finite covariate cell.  The unobserved target is the distribution \(F_\Delta(d)=\Pr\{Y(1)-Y(0)\le d\}\).  The restrictions \(\mathcal R_{\mathrm{lift}}\) consist of identified or bounded conditional potential-outcome marginals \(F_{a\mid z,x}\), marginal sensitivity envelopes \(\mathcal M_{a,z,x}\), dose/IV compatibility constraints \(\mathcal V\), and local rank-copula tubes \(\mathcal C_{\rho,z,x}\).  The bounding functional \(\mathsf B_{\mathrm{paste}}(d)\) is the lower/upper value of \(\Pr\{Y(1)-Y(0)\le d\}\) over a single full-data law \(Q\) satisfying all restrictions, not merely over separately feasible cellwise OT tables.
+\end{itemize}
+
+\section{Assumptions}
+\begin{assumption}[Finite support and overlap]\label{ass:finite-overlap}
+\(\mathcal X\), \(\mathcal Z\), and the outcome support grid \(\mathcal Y\) are finite.  Every cell \((z,x)\) used in \(\mathcal R_{\mathrm{lift}}\) has \(P(Z=z,X=x)>0\), and every admissible marginal \(\mu_{a,z,x}\) assigns mass only to \(\mathcal Y\).
+\end{assumption}
+
+\begin{assumption}[Identified marginal envelopes]\label{ass:marginal-envelope}
+For each \((a,z,x)\), the admissible set \(\mathcal M_{a,z,x}(P)\) is a nonempty closed convex polytope of probability vectors on \(\mathcal Y\), and it contains every conditional potential-outcome marginal compatible with \(P\) and the stated marginal sensitivity model.
+\end{assumption}
+
+\begin{assumption}[IV/dose compatibility]\label{ass:iv-dose}
+\(\mathcal V(P)\) is a finite collection of linear equality and inequality constraints linking the marginals \(\{\mu_{a,z,x}\}\) across \(z\), \(x\), and treatment states, representing the maintained IV or dose restrictions.
+\end{assumption}
+
+\begin{assumption}[Local rank-copula tube]\label{ass:rank-tube}
+For each \((z,x)\), \(\mathcal C_{\rho,z,x}\) is a closed convex set of couplings whose copula-rank score lies within radius \(\rho\) of a named baseline copula.  The stability regime satisfies \(0\le\rho\le\rho_{\max}(P)\), where \(\rho_{\max}(P)\) is the smallest nonzero slack in the active cellwise Frechet constraints.  The classical unrestricted corner instead uses Assumption~\ref{ass:unrestricted-rho} and does not require \(\rho\le\rho_{\max}(P)\).
+\end{assumption}
+
+\begin{assumption}[Unrestricted copula radius]\label{ass:unrestricted-rho}
+There is a finite value \(\rho_{\mathrm{unres}}(P)\) such that \(\rho\ge\rho_{\mathrm{unres}}(P)\) implies \(\mathcal C_{\rho,z,x}=\Pi(\mu_{1,z,x},\mu_{0,z,x})\) for every cell \((z,x)\).  The value \(\rho_{\max}(P)\) used away from the classical corner is only a stability upper bound and is not assumed to remove the copula restriction.
+\end{assumption}
+
+\begin{assumption}[Cycle-stability margin]\label{ass:cycle-margin}
+The active cellwise OT dual solution at \(d\) is unique up to additive constants on each connected component of \(G(P)\), and every inactive inequality in \(\mathcal V(P)\) and \(\mathcal C_{\rho,z,x}\) has slack at least \(s_{\min}(P,d)>0\).  The comparison constant in Conjecture~1 is the computable value \(\kappa_*(P,d)=s_{\min}(P,d)/(4\max\{1,|\mathcal C(G(P))|\})\).
+\end{assumption}
+
+\section{Estimand-defining functional}
+For \(s=(z,x)\), define the tail payoff matrix
+\[
+h_d(y_1,y_0)=\one\{y_1-y_0\le d\},\qquad y_1,y_0\in\mathcal Y.
+\]
+The sharp pasting functional is the interval
+\[
+\mathsf B_{\mathrm{paste}}(P,d)=
+\left[
+\theta_{\mathrm{paste}}^\ell(P,d),
+\theta_{\mathrm{paste}}^u(P,d)
+\right],
+\]
+where
+\[
+\theta_{\mathrm{paste}}^\ell(P,d)=\min_{Q\in\mathcal Q(P)}
+\sum_{s\in\mathcal Z\times\mathcal X} p_s
+\sum_{y_1,y_0\in\mathcal Y} h_d(y_1,y_0)\pi_s^Q(y_1,y_0),
+\]
+and \(\theta_{\mathrm{paste}}^u(P,d)\) is the same finite linear program with \(\max\) in place of \(\min\).  This is the sharp identified interval \(\Theta_I(P,d)\) whenever the finite feasible set \(\mathcal Q(P)\) is nonempty.
+
+The lifted cellwise functional is
+\[
+\Theta_L(P,d)=
+\left[
+\theta_L^\ell(P,d),
+\theta_L^u(P,d)
+\right],
+\]
+where
+\[
+\theta_L^\ell(P,d)=\min_{\{(\mu_{1,s},\mu_{0,s},\pi_s)\}\in\mathcal L(P)}
+\sum_{s\in\mathcal Z\times\mathcal X} p_s
+\sum_{y_1,y_0\in\mathcal Y} h_d(y_1,y_0)\pi_s(y_1,y_0),
+\]
+and \(\theta_L^u(P,d)\) is defined by replacing \(\min\) with \(\max\).  This program is evaluable from \(P\): the decision variables are the cellwise marginal vectors \(\mu_{a,s}\in\mathbb R^{|\mathcal Y|}\) and transport tables \(\pi_s\in\mathbb R_+^{|\mathcal Y|\times|\mathcal Y|}\); the constraints are probability-simplex constraints, the coupling equations
+\[
+\sum_{y_0}\pi_s(y_1,y_0)=\mu_{1,s}(y_1),\qquad
+\sum_{y_1}\pi_s(y_1,y_0)=\mu_{0,s}(y_0),
+\]
+membership in the polytopes \(\mathcal M_{a,s}(P)\), the finite linear system \(\mathcal V(P)\), and the closed convex rank-tube constraints \(\mathcal C_{\rho,s}\).  When \(\mathcal C_{\rho,s}\) is represented by finitely many linear rank-score inequalities, \(\Theta_L(P,d)\) is a finite LP with \(|\mathcal Z||\mathcal X|(2|\mathcal Y|+|\mathcal Y|^2)\) primary variables plus any auxiliary variables used by the envelope representation.  The later conjectures ask when this lifted outer interval equals the sharp full-law interval; until then, \(\Theta_L(P,d)\) is only an outer bounding functional.
+
+For the cycle diagnostic, solve both endpoint lifted programs, choose the lexicographically smallest optimal dual vector after the normalization stated in Assumption~\ref{ass:cycle-margin}, and form the pasting graph \(G(P)\).  Its vertices are the shared latent marginal or copula coordinates indexed by cells, and its oriented arcs are the active equalities or active inequalities in \(\mathcal V(P)\) and \(\mathcal C_{\rho,z,x}\).  If \(r^e(v_j,v_{j+1};P,d)\) is the stored endpoint-\(e\) dual residual on an oriented arc and \(\sigma_j\in\{-1,1\}\) records whether a cycle follows the stored orientation, define
+\[
+b_{c,e}(P,d)=\sum_{j=0}^{m-1}\sigma_j r^e(v_j,v_{j+1};P,d),
+\qquad
+\Gamma(P,d)=\max_{e\in\{\ell,u\}}\max_{c\in\mathcal C(G(P))}|b_{c,e}(P,d)|.
+\]
+The maximum over an empty cycle set is zero, and
+\[
+\kappa_*(P,d)=s_{\min}(P,d)/(4\max\{1,|\mathcal C(G(P))|\})
+\]
+is computable from the inactive-slack table.
+
+\section{Target causal estimand}
+The causal target is the distribution function of the individual-level treatment effect
+\[
+\Delta=Y(1)-Y(0),
+\qquad
+\theta=F_\Delta,
+\qquad
+F_\Delta(d)=Q\{\Delta\le d\}.
+\]
+For a fixed threshold \(d\), the target component is the scalar tail probability \(F_\Delta(d)\).  Because the joint law of \((Y(1),Y(0))\) is not observed, the object identified from \(P\) and the maintained restrictions is the interval of attainable tail probabilities over admissible full-data laws:
+\[
+\Theta_I(P,d)=\{Q(Y(1)-Y(0)\le d):Q\in\mathcal Q(P)\}.
+\]
+Equivalently, under finite support this set is the closed interval \(\mathsf B_{\mathrm{paste}}(P,d)\).  The lifted interval \(\Theta_L(P,d)\) is not the target and is not identified by definition; it is a computable outer relaxation whose sharpness is the subject of the motivating conjectures.
+
+\section{Main theorems}
+\paragraph{Refutation note (Conjecture 1).}
+Conjecture 1 is refuted: in the one-cell binary-outcome response-type LP below, \(\Gamma(P,0)=0\) but \(\Theta_I(P,0)=[4/5,1]\) and \(\Theta_L(P,0)=[2/5,1]\).
+The failure is not a cycle-pasting failure.  It is a factual-compatibility failure: the lifted program optimizes over potential-outcome marginal envelopes and a cellwise coupling, while the sharp full-law program must also decompose that coupling across the treated and untreated factual strata so that \(Y=DY(1)+(1-D)Y(0)\) reproduces the observed law \(P\).  The response-type counterexample is given in \S13.
+
+\begin{theorem}[Conjecture 2: open strict-containment witness]\label{thm:witness}
+Conjecture 2 is confirmed: the displayed four-cell law with \(|\mathcal Z|=2\), \(|\mathcal X|=2\), \(\mathcal Y=\{0,1,2\}\), and equal cell weights has \(\Gamma(P,0)\ge 0.14\); on a sufficiently small active-set-stable neighborhood, all local feasible sets remain nonempty with strictly interior cellwise optimizers and \(\Theta_L(P,0)\) strictly contains \(\Theta_I(P,0)\).
+\end{theorem}
+
+The theorem is a finite-table witness that the lifted OT envelope can be a genuine outer relaxation rather than the sharp DTE identified set.  The cellwise programs are individually regular: the marginal vectors are strictly positive, the active local faces are nonempty, and the endpoint optimizers stay away from the Frechet boundary.  The failure is global.  The upper-endpoint dual residuals behave like edge increments around the four-cell pasting graph, and the displayed cycle has a nonzero circulation.  A single full-data law would require those increments to be exact differences of one global potential, whose sum around a closed cycle is zero.
+
+\section{Interpretation}
+\paragraph{Conjecture 1.}
+The refutation says that zero cycle defect is not sufficient for lifted sharpness.  In the one-cell binary example there are no cross-cell arcs and hence no cycles, so \(\Gamma(P,0)=0\) mechanically.  Nevertheless, the lifted lower endpoint is \(2/5\), while the sharp full-law lower endpoint is \(4/5\).  The missing restriction is factual compatibility: a lifted coupling must be decomposable into treated and untreated response-type masses that reproduce the observed \((Y,D)\) law under consistency.  The nearest correct statement would add this response-type feasibility condition to the lifted program.
+
+\paragraph{Conjecture 2.}
+The theorem is a finite-table witness that the lifted OT envelope can be a genuine outer relaxation rather than the sharp DTE identified set.  The cellwise programs are individually regular: the marginal vectors are strictly positive, the active local faces are nonempty, and the endpoint optimizers stay away from the Frechet boundary.  The failure is global.  The upper-endpoint dual residuals behave like edge increments around the four-cell pasting graph, and the displayed cycle has a nonzero circulation.  A single full-data law would require those increments to be exact differences of one global potential, whose sum around a closed cycle is zero.  The positive circulation \(0.14\) is therefore a certificate that the cellwise upper endpoint cannot be pasted.
+
+This is the strict-containment counterpart to the outer-envelope theorem.  Theorem~\ref{thm:cellwise-outer} says that every admissible full-data law projects to a lifted feasible collection, so \(\Theta_I(P,0)\subseteq\Theta_L(P,0)\).  The witness here shows that the inclusion can be proper on an open set, not only at a knife-edge law.  In practical terms, local OT DTE bounds plus local rank-copula diagnostics are not enough: the motivating cycle-balance check is relevant, but Conjecture 1 shows that it is not sufficient unless factual compatibility is also enforced.
+
+\section{Step-by-step proof}
+\subsection*{Supporting lemmas}
+\begin{theorem}[Theorem 1: lifted OT is a valid outer envelope]\label{thm:cellwise-outer}
+Under Assumptions~\ref{ass:finite-overlap}--\ref{ass:rank-tube}, for every threshold \(d\),
+\[
+\Theta_I(P,d)\subseteq \Theta_L(P,d).
+\]
+Equivalently, optimizing \(\one\{y_1-y_0\le d\}\) over separately feasible cellwise couplings can only weakly expand the sharp identified interval obtained by optimizing over a single admissible full-data law.
+\end{theorem}
+\begin{proof}
+Fix an admissible full-data law \(Q\in\mathcal Q(P)\).  By Assumption~\ref{ass:finite-overlap}, each used cell \(s=(z,x)\) has positive mass \(p_s=P(Z=z,X=x)\), so the conditional joint table \(\pi_s^Q=\mathcal L_Q(Y(1),Y(0)\mid Z=z,X=x)\) is well-defined on the finite grid \(\mathcal Y^2\).  Its coordinate marginals are \(\mu_{1,s}^Q\) and \(\mu_{0,s}^Q\), so \(\pi_s^Q\in\Pi(\mu_{1,s}^Q,\mu_{0,s}^Q)\) by the definition of conditional marginalization.  Because \(Q\) is admissible, Assumption~\ref{ass:marginal-envelope} puts every \(\mu_{a,s}^Q\) in \(\mathcal M_{a,s}(P)\), Assumption~\ref{ass:iv-dose} makes the family \(\{\mu_{a,s}^Q\}_{a,s}\) satisfy \(\mathcal V(P)\), and Assumption~\ref{ass:rank-tube} gives \(\pi_s^Q\in\mathcal C_{\rho,s}\) for every cell.  Hence the projected collection \(\{(\mu_{1,s}^Q,\mu_{0,s}^Q,\pi_s^Q):s\}\) belongs to \(\mathcal L(P)\).
+
+For this projected lifted feasible point, the lifted objective equals the full-law tail probability by the law of total probability over the finite partition \((Z,X)=s\):
+\[
+Q\{Y(1)-Y(0)\le d\}=\sum_s p_s\sum_{y_1,y_0\in\mathcal Y}\one\{y_1-y_0\le d\}\pi_s^Q(y_1,y_0).
+\]
+Therefore every objective value attainable by an admissible full-data law is attainable by a lifted feasible collection.  Taking infima gives \(\theta_L^\ell(P,d)\le \theta_{\mathrm{paste}}^\ell(P,d)\), and taking suprema gives \(\theta_{\mathrm{paste}}^u(P,d)\le \theta_L^u(P,d)\).  Since \(\Theta_I(P,d)=[\theta_{\mathrm{paste}}^\ell(P,d),\theta_{\mathrm{paste}}^u(P,d)]\) and \(\Theta_L(P,d)=[\theta_L^\ell(P,d),\theta_L^u(P,d)]\), the interval inclusion follows.
+\end{proof}
+
+\subsubsection*{Refutation of Conjecture 1}
+See \S13 Counterexample for the refutation.
+
+\subsubsection*{Proof of Conjecture 2}
+\begin{proof}[Proof of Theorem~\ref{thm:witness}]
+Let \(S=\{(0,a),(1,a),(1,b),(0,b)\}\), with \(p_s=1/4\) for all \(s\in S\).  Each displayed vector has nonnegative entries summing to one, and the smallest entry among all eight marginal vectors is \(0.22\).  Assumption~\ref{ass:finite-overlap} is therefore satisfied at the center, and it remains satisfied for all sufficiently small perturbations inside the product of cell probability simplexes with \(p_s>0\).
+
+By Assumption~\ref{ass:marginal-envelope}, each admissible marginal set \(\mathcal M_{a,s}(P)\) is a nonempty closed convex polytope containing the compatible conditional marginal.  At the displayed center the listed vectors are feasible marginal points; in this finite witness construction the local envelope inequalities are chosen with positive slack at these vectors, so nonemptiness is stable under small perturbations of \(P\).  By Assumption~\ref{ass:rank-tube}, each local rank-copula tube is closed and convex.  The witness basis specified in the conjecture contains, for each \(s\), a primal endpoint table \(\pi_s^\star\in\mathcal C_{\rho,s}\cap\Pi(\mu_{1,s},\mu_{0,s})\) in the relative interior of the active rank-tube face and with all Frechet nonnegativity inequalities inactive.  Write
+\[
+\eta=\min_{s\in S}\min_{y_1,y_0\in\mathcal Y}\pi_s^\star(y_1,y_0)>0
+\]
+for the strict interior margin.  Assumption~\ref{ass:cycle-margin} gives a positive inactive-slack margin \(s_{\min}(P,0)>0\) and uniqueness of the endpoint dual solution after lexicographic normalization.  Standard finite linear-program active-basis stability, as in Robinson's perturbation theorem for polyhedral generalized equations \cite{Robinson1981}, then gives a neighborhood \(U_1\) of the center on which the same active basis remains feasible, the local feasible sets remain nonempty, and the corresponding local optimizers retain entries at least \(\eta/2\).  Thus the strict-interior and nonempty-local-feasibility clauses are open conditions at the witness.
+
+Now compute the cycle defect.  For the upper endpoint, the stored arc on \((1,b)\to(0,b)\) is the reverse of the cycle orientation, so its contribution is \((-1)(-0.03)=0.03\).  Therefore
+\[
+b_{c,u}(P,0)
+=0.06+0.04+0.03+0.01
+=0.14.
+\]
+For the lower endpoint, the analogous displayed contributions give
+\[
+b_{c,\ell}(P,0)=0.01+0.00+0.01+0.00=0.02.
+\]
+Since \(\Gamma(P,0)\) is the maximum absolute endpoint-normalized cycle-balance defect over endpoints and cycles,
+\[
+\Gamma(P,0)\ge |b_{c,u}(P,0)|=0.14.
+\]
+This step is only arithmetic plus the definition of \(\Gamma\) in the estimand-defining functional.
+
+We next show that the positive upper-cycle defect blocks pasting of the lifted upper endpoint.  The following deterministic identity is the only graph fact needed: if edge residuals on a directed graph are induced by one global vertex potential \(\lambda\), so that an oriented edge \(e=(v,w)\) has residual \(r_e=\lambda_w-\lambda_v\), then every closed cycle has zero signed residual sum.  Indeed, for \(c:v_0\to v_1\to\cdots\to v_m=v_0\),
+\[
+\sum_{j=0}^{m-1}(\lambda_{v_{j+1}}-\lambda_{v_j})=\lambda_{v_m}-\lambda_{v_0}=0.
+\]
+The same formula holds when a cycle traverses a stored arc in the reverse direction, because the sign \(\sigma_j\) replaces \(r_e\) by \(-r_e\).
+
+Suppose, toward contradiction, that a full-data law \(Q^\star\in\mathcal Q(P)\) attains the lifted upper endpoint \(\theta_L^u(P,0)\).  Its cellwise conditional tables \(\{\pi_s^{Q^\star}\}\) form a lifted feasible collection by Theorem~\ref{thm:cellwise-outer}.  Since the objective value equals the lifted upper optimum, this projected collection is a lifted upper optimizer.  Under Assumption~\ref{ass:cycle-margin}, every lifted upper optimizer satisfies the same lexicographically normalized endpoint dual equations on the active graph \(G(P)\).  If the optimizer came from one full-data law, the active residuals would be induced by a single global pasting potential, and the deterministic telescoping identity would force
+\[
+b_{c,u}(P,0)=0
+\]
+on every closed cycle.  This contradicts the computed value \(b_{c,u}(P,0)=0.14\).  Hence no full-data law attains the lifted upper endpoint.
+
+The feasible sets are finite-dimensional closed and bounded polytopes after the stated convex rank-tube representation, so both the full-law and lifted endpoint programs attain their extrema.  Theorem~\ref{thm:cellwise-outer} gives the outer inclusion
+\[
+\Theta_I(P,0)\subseteq\Theta_L(P,0).
+\]
+The previous paragraph shows that the right endpoint \(\theta_L^u(P,0)\) is not in \(\Theta_I(P,0)\).  Therefore the inclusion is strict:
+\[
+\Theta_I(P,0)\subsetneq\Theta_L(P,0).
+\]
+
+It remains to verify openness.  The marginal entries are separated from the simplex boundary by at least \(0.22\), the active-basis slack is positive by Assumption~\ref{ass:cycle-margin}, and the strict-interior optimizer margin is \(\eta>0\).  The normalized upper residual contributions on the displayed cycle are \(0.06,0.04,0.03,0.01\), whose smallest positive value is \(0.01\).  By continuity of finite LP primal and normalized dual solutions on a fixed active basis, there is a smaller neighborhood \(U\subseteq U_1\) on which all marginal entries stay positive, all inactive constraints keep positive slack, the same active arcs define the cycle, and every upper residual contribution changes by less than \(0.0025\).  On \(U\),
+\[
+b_{c,u}(P',0)>0.14-4(0.0025)=0.13>0,
+\]
+so \(\Gamma(P',0)>0\), and the same cycle-telescoping contradiction proves \(\Theta_I(P',0)\subsetneq\Theta_L(P',0)\).  This \(U\) is the required open set of finite-support laws.
+\end{proof}
+
+\section{Sanity checks}
+\paragraph{Conjecture 2.}
+In the no-cycle corner, remove one active edge from the four-cell pasting graph, for example the rank-tube arc \((0,b)\to(0,a)\).  The graph on the remaining active arcs is a tree.  Any residual assignment on a tree can be integrated into a vertex potential by choosing a root value and summing residuals along the unique path from the root to each vertex.  Thus every closed-cycle balance defect is vacuous and \(\Gamma(P,0)=0\).  This reduces the witness to the expected acyclic special case: the displayed circulation obstruction disappears because there is no cycle around which a nonzero residual can accumulate.
+
+In the unrestricted-copula corner of Assumption~\ref{ass:unrestricted-rho}, the rank-tube equalities are removed.  The unrestricted local Frechet enumeration in the refutation attempt then gives boundary optimizers, many with zero transport-table entries.  The strict-interior part of Conjecture 2 is not expected to survive that corner, and the cycle certificate is not the right diagnostic because two of its four arcs were rank-tube arcs.  This sanity check matches the role of Assumption~\ref{ass:rank-tube}: the example is a finite-\(\rho\), active-rank-face witness, not a classical unrestricted Makarov bound.
+
+\section{Counterexample or minimality check}
+\paragraph{Conjecture 1 counterexample.}
+The required refutation primitive is the response-type LP on the smallest nontrivial support.  Take a single observed cell \(Z=0\), \(X=x\), binary outcome support \(\mathcal Y=\{0,1\}\), and threshold \(d=0\).  Let the observed law be
+\[
+\begin{array}{c|cc}
+ & Y=0 & Y=1\\ \hline
+D=1 & 4/10 & 1/10\\
+D=0 & 1/10 & 4/10
+\end{array}
+\]
+so \(P(Z=0,X=x)=1\).  There are no IV or dose links across cells.  The local copula tube is unrestricted, \(\mathcal C_{\rho,x}=\Pi(\mu_{1,x},\mu_{0,x})\), and the only marginal envelopes are the no-shape factual envelopes
+\[
+\mu_{1,x}(1)\in[1/10,6/10],
+\qquad
+\mu_{0,x}(0)\in[1/10,6/10].
+\]
+These are nonempty closed convex polytopes and they contain every potential-outcome marginal compatible with the displayed observed law.  Add, if a positive inactive-slack table is desired for Assumption~\ref{ass:cycle-margin}, the redundant inequalities
+\[
+\mu_{1,x}(1)\le 7/10,\qquad \mu_{0,x}(0)\le 7/10,
+\]
+which do not change either feasible set and have slack at least \(1/10\) at every feasible marginal-envelope vertex used below.  Because there is only one observed cell and no shared cross-cell equality or active inequality, the pasting graph has no simple cycle.  Hence the endpoint-normalized cycle-balance defect is the maximum over an empty cycle set:
+\[
+\Gamma(P,0)=0.
+\]
+
+Now enumerate the four binary response types \((Y(1),Y(0))\in\{0,1\}^2\) separately in the treated and untreated factual strata.  Write
+\[
+q^d_{ij}=Q\{Y(1)=i,Y(0)=j,D=d,Z=0,X=x\},
+\qquad i,j,d\in\{0,1\}.
+\]
+The observed law and consistency impose exactly
+\[
+\begin{aligned}
+q^1_{10}+q^1_{11}&=1/10, &
+q^1_{00}+q^1_{01}&=4/10,\\
+q^0_{00}+q^0_{10}&=1/10, &
+q^0_{01}+q^0_{11}&=4/10,
+\end{aligned}
+\]
+with all \(q^d_{ij}\ge0\).  For \(d=0\), the DTE tail event is false only for response type \((Y(1),Y(0))=(1,0)\).  Therefore
+\[
+Q\{Y(1)-Y(0)\le0\}=1-q^1_{10}-q^0_{10}.
+\]
+The two observed equations that can contain type \((1,0)\) give
+\[
+q^1_{10}\le 1/10,
+\qquad
+q^0_{10}\le 1/10,
+\]
+so every admissible full-data law satisfies
+\[
+Q\{Y(1)-Y(0)\le0\}\ge 1-1/10-1/10=4/5.
+\]
+This lower endpoint is attained by setting \(q^1_{10}=q^0_{10}=1/10\), \(q^1_{01}=4/10\), and \(q^0_{01}=4/10\).  The upper endpoint is attained by setting \(q^1_{11}=1/10\), \(q^1_{00}=4/10\), \(q^0_{00}=1/10\), and \(q^0_{01}=4/10\), which makes \(q^1_{10}=q^0_{10}=0\).  Thus the sharp full-law identified interval is
+\[
+\Theta_I(P,0)=[4/5,1].
+\]
+
+The lifted relaxation drops the treated/untreated decomposition variables \(q^d_{ij}\).  Its lower endpoint chooses the marginal-envelope vertex
+\[
+\mu_{1,x}(1)=6/10,\qquad \mu_{0,x}(0)=6/10,
+\]
+and then puts as much coupling mass as possible on the sole tail-failing cell \((1,0)\):
+\[
+\pi_x(1,0)=6/10,\qquad \pi_x(0,1)=4/10,
+\]
+with all other entries zero.  This is a feasible element of \(\mathcal L(P)\), so
+\[
+\theta_L^\ell(P,0)\le 1-6/10=2/5.
+\]
+Conversely, no lifted coupling can put more than
+\[
+\min\{\mu_{1,x}(1),\mu_{0,x}(0)\}\le 6/10
+\]
+on \((1,0)\), by the coupling marginal equations.  Hence \(\theta_L^\ell(P,0)=2/5\).  The lifted upper endpoint equals one: choose \(\mu_{1,x}(1)=1/10\), \(\mu_{0,x}(0)=1/10\), and a coupling with \(\pi_x(1,0)=0\), for instance
+\[
+\pi_x(0,0)=1/10,\qquad \pi_x(0,1)=8/10,\qquad \pi_x(1,1)=1/10.
+\]
+Therefore
+\[
+\Theta_L(P,0)=[2/5,1].
+\]
+
+The candidate witness search thus produces a strict violation of the conjectured ``if and only if'' direction:
+\[
+\Gamma(P,0)=0
+\quad\text{but}\quad
+\Theta_I(P,0)=[4/5,1]\ne[2/5,1]=\Theta_L(P,0).
+\]
+The nearest correct statement would need an additional factual-compatibility restriction saying that every lifted marginal-and-coupling collection admits a nonnegative response-type decomposition \(q^d_{ij}\) matching the observed \((Y,D,Z,X)\) law.  That condition is regime-defining rather than a slack caveat: it is exactly the missing global full-law compatibility that separates the sharp program \(\Theta_I\) from the lifted relaxation \(\Theta_L\) in this witness.
+
+\paragraph{Conjecture 2 refutation attempt and minimality check.}
+The partial-identification refutation primitives were run before committing to the proof.  First, the two-strata response-type LP was applied to the binary coarsening \(B_a=\one\{Y(a)>0\}\).  The displayed marginals give
+\[
+\begin{array}{c|cc|c}
+s & \Pr(B_1=1\mid s) & \Pr(B_0=1\mid s) &
+\text{Frechet interval for }\Pr(B_1=B_0=1\mid s)\\ \hline
+(0,a)&0.58&0.66&[0.24,0.58]\\
+(1,a)&0.65&0.71&[0.36,0.65]\\
+(1,b)&0.69&0.63&[0.32,0.63]\\
+(0,b)&0.61&0.68&[0.29,0.61].
+\end{array}
+\]
+Every binary cell LP is feasible and has a positive-length interval.  Thus the smallest response-type search finds no infeasible cell, no forced zero cell mass, and no binary witness contradicting the claimed nonemptiness.
+
+Second, the unrestricted vertex enumeration for the three-point transport polytope was checked at \(d=0\).  Optimizing \(h_0(y_1,y_0)=\one\{y_1-y_0\le0\}\) over \(\Pi(\mu_{1,s},\mu_{0,s})\) gives the local Frechet ranges
+\[
+\begin{array}{c|cc}
+s & \min_{\pi\in\Pi(\mu_{1,s},\mu_{0,s})}\sum h_0\pi
+  & \max_{\pi\in\Pi(\mu_{1,s},\mu_{0,s})}\sum h_0\pi\\ \hline
+(0,a)&0.44&1.00\\
+(1,a)&0.47&1.00\\
+(1,b)&0.37&0.94\\
+(0,b)&0.40&1.00.
+\end{array}
+\]
+The maximizing and minimizing Frechet vertices have zero entries, so this enumeration would refute a version of the claim that removed the active rank-copula face and used the unrestricted copula corner.  It does not refute the conjecture as stated: the witness is explicitly in the finite-\(\rho\) regime with active rank-tube equalities, and strict interior means that the endpoint optimizer is in the relative interior of that active rank-tube face and away from the nonnegativity/Frechet boundary.  The unrestricted boundary vertices are therefore outside the candidate active face.
+
+Third, the displayed cycle certificate itself was checked for a sign or arithmetic contradiction.  Along the proposed cycle,
+\[
+0.06+0.04+(-1)(-0.03)+0.01=0.14>0,
+\qquad
+0.01+0.00+0.01+0.00=0.02\ge0.
+\]
+No residual sign reversal, cancellation, or boundary equality is present.  Hence none of the finite response-type, vertex-enumeration, or Frechet-face checks supplies a counterexample under Assumptions~\ref{ass:finite-overlap}--\ref{ass:cycle-margin}; the proof verifies the positive witness.
+
+The active cycle is minimal.  If the IV/dose arc \((0,a)\to(1,a)\) is dropped while all other displayed primitives are left unchanged, the path \((0,a)\to(1,a)\to(1,b)\to(0,b)\to(0,a)\) is no longer a closed active cycle in \(G(P)\).  The residual values \(0.04,-0.03,0.01\) can then be represented by a potential on the remaining tree, so the telescoping contradiction used in the proof vanishes.  The same conclusion holds if either rank-tube arc is dropped.  Thus the witness genuinely uses both kinds of restrictions: the IV/dose equalities move across instrument values within covariate cells, and the rank-tube equalities move across covariate cells within instrument values.
+
+The strict-interior condition is also necessary.  If one replaces the finite-\(\rho\) rank-tube face by the unrestricted Frechet polytope, the vertex enumeration above gives endpoint optimizers with zero entries.  Such a boundary optimizer can change active faces under arbitrarily small perturbations of the marginals, so the active-set-stability argument no longer supplies an open neighborhood preserving the residual signs.  This explains why Assumption~\ref{ass:cycle-margin} and the stated strict interior of the local optimizers are not cosmetic regularity conditions; they are exactly what turns the displayed positive cycle defect into an open strict-containment witness.
+
+\section{Formalization checklist}
+\begin{itemize}[leftmargin=*]
+\item \(\mathcal Y\): finite subset of \(\mathbb R\).  Role: outcome grid for all probability vectors and transport tables.  Dependencies: Assumption~\ref{ass:finite-overlap}.
+\item \(S=\mathcal Z\times\mathcal X\): finite cell set with masses \(p_s=P(Z=z,X=x)>0\).  Role: partition used in the law-of-total-probability decomposition and cellwise programs.  Dependencies: observed law \(P\), Assumption~\ref{ass:finite-overlap}.
+\item \(\mathcal M_{a,s}(P)\subseteq\Delta(\mathcal Y)\): nonempty closed convex marginal-envelope polytope for treatment state \(a\in\{0,1\}\) and cell \(s\).  Role: feasible set for conditional potential-outcome marginals.  Dependencies: Assumption~\ref{ass:marginal-envelope}.
+\item \(\mathcal V(P)\): finite system of linear equalities and inequalities linking \(\{\mu_{a,s}\}_{a,s}\).  Role: IV/dose compatibility constraints and source of active graph arcs.  Dependencies: Assumption~\ref{ass:iv-dose}.
+\item \(\mathcal C_{\rho,s}\): closed convex rank-copula tube for cell \(s\).  Role: local coupling restriction and source of active graph arcs.  Dependencies: Assumptions~\ref{ass:rank-tube} and \ref{ass:unrestricted-rho}.
+\item \(\Pi(\mu_1,\mu_0)\): set of nonnegative \(|\mathcal Y|\times|\mathcal Y|\) tables with row marginal \(\mu_1\) and column marginal \(\mu_0\).  Role: deterministic coupling constraint in both full-law projections and lifted programs.  Dependencies: finite outcome grid and marginal vectors.
+\item \(h_d(y_1,y_0)=\one\{y_1-y_0\le d\}\): tail payoff matrix.  Role: linear objective for DTE tail endpoints.  Dependencies: threshold \(d\) and \(\mathcal Y\).
+\item \(\mathcal Q(P)\): admissible full-data laws on \((Y(1),Y(0),D,Z,X)\) with observable margin \(P\), consistency, marginal-envelope constraints, IV/dose constraints, and rank-tube constraints.  Role: sharp identified set \(\Theta_I(P,d)\).  Dependencies: all named assumptions.
+\item \(\mathcal L(P)\): lifted feasible collections \(\{(\mu_{1,s},\mu_{0,s},\pi_s):s\}\).  Role: computable outer relaxation defining \(\Theta_L(P,d)\).  Dependencies: \(\mathcal M_{a,s}(P)\), \(\mathcal V(P)\), \(\mathcal C_{\rho,s}\), and \(\Pi\).
+\item \(\Theta_I(P,d)=[\theta_{\mathrm{paste}}^\ell(P,d),\theta_{\mathrm{paste}}^u(P,d)]\): interval of DTE tail probabilities attainable by a single admissible full-data law.  Role: sharp target identified set.  Dependencies: \(\mathcal Q(P)\), \(h_d\), finite support, nonempty admissible class.
+\item \(\Theta_L(P,d)=[\theta_L^\ell(P,d),\theta_L^u(P,d)]\): finite lifted lower and upper programs over \(\mathcal L(P)\).  Role: computable outer envelope and object compared with \(\Theta_I\).  Dependencies: \(\mathcal L(P)\), \(h_d\), finite support.
+\item \(G(P)\): active pasting graph with vertices corresponding to shared latent marginal or copula coordinates and oriented arcs corresponding to active equality or inequality links.  Role: graph on which cycle defects are evaluated.  Dependencies: endpoint lifted programs and Assumption~\ref{ass:cycle-margin}.
+\item \(r^e(v,w;P,d)\): endpoint-\(e\) normalized dual residual on an oriented active arc.  Role: edge increment used in cycle-balance sums.  Dependencies: lexicographically normalized optimal duals and Assumption~\ref{ass:cycle-margin}.
+\item \(b_{c,e}(P,d)=\sum_j\sigma_j r^e(v_j,v_{j+1};P,d)\): signed residual circulation around a cycle.  Role: deterministic obstruction to representing residuals by one global potential.  Dependencies: \(G(P)\), residuals, cycle orientation signs.
+\item \(\Gamma(P,d)=\max_{e,c}|b_{c,e}(P,d)|\): endpoint-normalized cycle-balance defect, with empty maximum set to zero.  Role: conjectured and tested diagnostic for lifted pasting.  Dependencies: \(b_{c,e}\), endpoint set \(\{\ell,u\}\), cycle set of \(G(P)\).
+\item \(q^d_{ij}\): response-type mass \(Q\{Y(1)=i,Y(0)=j,D=d,Z=0,X=x\}\) in the binary one-cell counterexample.  Role: factual-compatibility LP proving \(\Theta_I(P,0)=[4/5,1]\).  Dependencies: consistency and the displayed observed law.
+\item Deterministic identity: if residuals satisfy \(r(v,w)=\lambda_w-\lambda_v\) for a global potential \(\lambda\), then every closed-cycle signed sum is zero.  Role: contradiction proving non-pastability in Conjecture 2.  Dependencies: finite directed cycle algebra only.
+\item Active-basis stability fact for finite LPs: under positive slack and unique normalized duals, primal and dual optimizers vary continuously on a neighborhood preserving the active basis.  Role: converts the displayed witness into an open-set witness.  Dependencies: finite-dimensional polyhedral constraints and Assumption~\ref{ass:cycle-margin}.
+\item Substrate audit record: \texttt{bypass-justified}.  The available partial-identification substrate contains useful Manski-style potential-outcome bound analogues, but the present proof uses finite cellwise OT tables, active rank-tube faces, response-type decompositions, and graph-cycle residuals at a different abstraction level.
+\end{itemize}
+
+\section{Conclusion and references}
+Conjecture 1 (cycle-frontier) is refuted; Conjecture 1 is refuted: in the one-cell binary-outcome response-type LP below, \(\Gamma(P,0)=0\) but \(\Theta_I(P,0)=[4/5,1]\) and \(\Theta_L(P,0)=[2/5,1]\).
+
+Conjecture 2 (witness) is confirmed; Conjecture 2 is confirmed: the displayed four-cell law with \(|\mathcal Z|=2\), \(|\mathcal X|=2\), \(\mathcal Y=\{0,1,2\}\), and equal cell weights has \(\Gamma(P,0)\ge 0.14\); on a sufficiently small active-set-stable neighborhood, all local feasible sets remain nonempty with strictly interior cellwise optimizers and \(\Theta_L(P,0)\) strictly contains \(\Theta_I(P,0)\).
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem{Makarov1981}
+Makarov, G. D. (1981).
+Estimates for the distribution function of a sum of two random variables when the marginal distributions are fixed.
+\emph{Theory of Probability and its Applications}.
+
+\bibitem{Rueschendorf1982}
+Rueschendorf, L. (1982).
+Random variables with maximum sums.
+\emph{Advances in Applied Probability}.
+
+\bibitem{FanPark2010}
+Fan, Y. and Park, S. S. (2010).
+Sharp bounds on the distribution of treatment effects and their statistical inference.
+\emph{Econometric Theory}.
+
+\bibitem{FirpoRidder2019}
+Firpo, S. and Ridder, G. (2019).
+Partial identification of the treatment effect distribution and its functionals.
+\emph{Journal of Econometrics}.
+
+\bibitem{FanGuerreZhu2017}
+Fan, Y., Guerre, E., and Zhu, D. (2017).
+Partial identification of functionals of the joint distribution of ``potential outcomes''.
+\emph{Journal of Econometrics}.
+
+\bibitem{FrandsenLefgren2021}
+Frandsen, B. R. and Lefgren, L. J. (2021).
+Partial identification of the distribution of treatment effects with an application to the Knowledge Is Power Program.
+\emph{Journal of the American Statistical Association}.
+
+\bibitem{Russell2021}
+Russell, T. M. (2021).
+Partial identification of treatment effect distributions using optimal transport methods.
+Working paper.
+
+\bibitem{OberReynolds2023}
+Ober, T. and Reynolds, T. (2023).
+Computational bounds for functionals of joint potential-outcome distributions.
+Working paper.
+
+\bibitem{FanWu2010}
+Fan, Y. and Wu, J. (2010).
+Partial identification of the distribution of treatment effects in switching regime models.
+\emph{Review of Economic Studies}.
+
+\bibitem{GaoGeQian2025}
+Gao, Y., Ge, D., and Qian, M. (2025).
+Causal partial identification through multi-marginal optimal transport.
+Working paper.
+
+\bibitem{TanBlanchetSyrgkanis2026}
+Tan, Z., Blanchet, J., and Syrgkanis, V. (2026).
+Conditional optimal transport bounds for policy-relevant treatment effects under limited instrument support.
+Working paper.
+
+\bibitem{Robinson1981}
+Robinson, S. M. (1981).
+Some continuity properties of polyhedral multifunctions.
+\emph{Mathematical Programming Study}.
+\end{thebibliography}
+
+\end{document}

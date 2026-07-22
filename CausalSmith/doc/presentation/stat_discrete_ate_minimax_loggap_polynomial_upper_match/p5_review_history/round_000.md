@@ -1,0 +1,33 @@
+# Referee review
+
+**Recommendation:** minor_revision
+**Overall score:** 8.2/10 — The paper delivers a substantial and apparently sharp minimax contribution with verified formal statements, but several scope and presentation fixes are needed before publication.
+
+The submission studies ATE estimation with unrestricted finite-alphabet confounding and proves the sharp fixed-interior minimax MSE rate n^{-1}+d^2/(n^2 log^2 n), with a constructive hybrid estimator and a transferred lower bound. The contribution is significant for econometric theory and causal inference because it gives a clean benchmark for what overlap alone can and cannot buy in growing discrete adjustment problems. The formal results appear to deliver the main advertised theorem, subject to the clearly footnoted external lower-bound input. The paper is publishable after relatively small but important revisions to scope statements, near-randomization wording, and exposition.
+
+## Strengths
+- Sharp minimax characterization in a natural and underexplored causal-inference benchmark.
+- Constructive estimator with an explicit heavy/light split and polynomial factorial-moment light-cell branch.
+- Clear separation between fixed-interior overlap, the exact-randomization endpoint, and the unresolved triangular-array transition.
+- The verified theorem statements substantially reduce ambiguity about the mathematical claims.
+- Good conceptual connection to large-alphabet nonsmooth functional estimation.
+
+## Findings
+- **[minor·prose] abstract/intro/discussion** — The near-randomization upper-envelope claim is stated too broadly in prose. For example, the abstract says, "We also record a separate upper envelope near exact randomization," and the introduction displays the selected-estimator envelope without restating that the verified selected-envelope result is under the fixed-interior calibration conditions, in particular fixed 0<epsilon<1/2, n>=N_epsilon, and d<=rho_epsilon n log n.
+  - *Fix:* Whenever the selected envelope is summarized outside the theorem, add the same scope: it is an upper bound for each fixed interior epsilon under the hybrid calibration range n>=N_epsilon and d<=rho_epsilon n log n. Keep the separate all-d endpoint statement for epsilon=1/2 distinct.
+- **[minor·statement] setup and assumptions** — The selected estimator is defined for generic sample size n using d^2/(n^2 log^2 n), which is mathematically undefined at n=1. The theorem later only uses the selector under a large-n cutoff, but the definition as written appears global.
+  - *Fix:* Define the selected estimator only for n>=2, or preferably only under the theorem's n>=N_epsilon calibration range; alternatively replace the denominator in the selection rule by the same positive log-scale convention used elsewhere and state that convention explicitly.
+- **[minor·prose] verification note** — The final sentence, "All theorem statements and the corresponding formal proofs in this paper are machine-checked in Lean 4," can be read as including the cited lower-bound proof itself, although the theorem-local footnotes correctly state that the Zeng et al. lower-bound input is not formalized here.
+  - *Fix:* Revise to something like: "All theorem statements and formal derivations in this paper are machine-checked in Lean 4, subject to the theorem-local external inputs explicitly identified in the formalization-scope footnotes."
+- **[minor·citation] positioning** — The manuscript does not cite or discuss Robins and Ritov (1997), although it is directly relevant to the message that high-dimensional/unstructured adjustment can defeat ordinary likelihood or plug-in reasoning. The related-work context supplied to the authors identifies it as especially relevant.
+  - *Fix:* Add a short comparison in the introduction or discussion explaining how this finite-alphabet minimax result relates to Robins and Ritov's warning about high-dimensional adjustment and model-free inference.
+- **[nit·structure] setup and assumptions** — Definitions synth_8 and synth_4 present the same selected estimator twice, and the manuscript then says they are equivalent. This adds noise and makes the estimator look more central than it is.
+  - *Fix:* Keep a single selected-estimator definition, perhaps with one displayed rule, and remove the duplicate environment and explanatory sentence.
+- **[nit·prose] main results** — The sentence "Theorem 1 gives three equivalent readings of the same rate statement" slightly overstates the relationship: the parametric window and consistency threshold are consequences of the sharp sandwich under the same growth gate, not literally equivalent formulations in all regimes.
+  - *Fix:* Replace "equivalent readings" by "three consequences" or "three interpretations under the displayed fixed-interior range."
+
+## Questions for authors
+- Can the constants and cutoff in the selected-envelope result be stated with a single explicit convention for the logarithm so that the selector is well-defined for every n for which it is invoked?
+- Do you intend the selected estimator to be a practical estimator requiring knowledge of epsilon and C_epsilon, or only an oracle comparison device for an upper envelope? A one-sentence clarification would help.
+- Can you add a concise comparison to Robins and Ritov (1997) to sharpen the econometric positioning of the unrestricted-discrete benchmark?
+

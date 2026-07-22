@@ -1,0 +1,787 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_dml\_orthogonality\_frontier, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_dml\_orthogonality\_frontier} / \texttt{v1}%
+  \\ \large\textit{Primitive two-channel frontier for first-order HTE DML inference}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This proposal uses the ExactID/free-form convention
+\[
+(\texttt{qid},\texttt{specialization},\text{SWIG/DAG},\text{treatment},
+\text{target estimand},\text{identifying assumptions}).
+\]
+The locked tuple is
+\[
+\begin{gathered}
+\texttt{qid}=\texttt{eid\_dml\_orthogonality\_frontier},\qquad
+\texttt{specialization}=\texttt{v1},\\
+\text{SWIG/DAG}=X\to D\to Y,\; X\to Y,\quad
+\text{treatment }D\in\{0,1\},\\
+\text{target estimand } \theta_0(\ell)=\E[\ell(X)\{Y(1)-Y(0)\}]
+\text{ for }\ell\in\mathcal{L}_n,\\
+\text{identifying assumptions}=\text{consistency, conditional unconfoundedness }
+(Y(1),Y(0))\perp D\mid X,\\
+\text{overlap } \underline e\le p_0(X)\le 1-\underline e,\text{ the Holder--entropy nuisance classes,}\\
+\text{and the primitive Holder--entropy experiment in Assumptions
+\ref{ass:unconfounded}--\ref{ass:primitive-geometry}.}
+\end{gathered}
+\]
+Here \(p_0(x)=\Pr(D=1\mid X=x)\), \(g_{d,0}(x)=\E[Y\mid D=d,X=x]\), and
+\(\mathcal{L}_n\) is a deterministic class of HTE report weights with entropy
+integral \(\mathcal{E}_n\).  The focal mathematical object is the
+\emph{two-channel orthogonality frontier}
+\[
+\mathfrak{F}_n(P)=
+\max\{\mathfrak{D}_n(P),\mathfrak{S}_n(P)\},\qquad
+\mathfrak{D}_n(P)=\sqrt n\,\delta_{g,n}(P)\delta_{p,n}(P),\quad
+\mathfrak{S}_n(P)=\{\delta_{g,n}(P)+\delta_{p,n}(P)\}\mathcal{E}_n,
+\]
+where \(\delta_{g,n}\) and \(\delta_{p,n}\) are the \(L^2(P)\) nuisance radii
+attainable by the learners over the locked Holder/entropy classes.  The
+entropy factor is deliberately attached to the nuisance empirical-process
+channel \(\mathfrak{S}_n\), not to the bounded population bilinear drift
+\(\mathfrak{D}_n\).
+
+\begin{abstract}
+This proposal asks for the sharp boundary at which first-order Neyman
+orthogonality stops delivering uniform Gaussian inference for heterogeneous
+treatment-effect DML reports.  The target is not a new adjustment formula:
+under unconfoundedness the weighted CATE reports are already identified by the
+usual AIPW signal.  Version 5 splits the earlier iff claim into a conditional
+bookkeeping theorem, where the upper and lower frontier channels are explicitly
+assumed, and a flagship primitive conjecture, where those channels must be
+derived from Holder smoothness, report entropy, and minimax lower-bound
+geometry.  The proposed kernel is therefore not the conditional theorem but the
+claim that the two-channel scalar \(\mathfrak{F}_n(P)\) is derivable as a
+necessary-and-sufficient frontier over the primitive Holder--entropy
+experiment.  Resolving it would tell DML users when first-order
+orthogonalization is enough and when higher-order debiasing or a weaker report
+class is mathematically necessary.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+First-order orthogonal DML is now a default route for treatment-effect
+inference with machine-learned nuisances.  The standard message is robust but
+qualitative: if nuisance products are small enough and the score class is tame
+enough, the estimator behaves as if the nuisances were known.  For HTE reports,
+that message leaves a real design question unanswered.  A confidence band, a
+large collection of subgroup contrasts, or a rich CATE projection adds a second
+nuisance channel: the population plug-in drift remains a bounded-envelope
+product term, while the nuisance empirical process can be amplified by the
+entropy of the report class.
+
+\paragraph{The main finding (proposed).}
+Theorem \ref{thm:conditional-frontier} records the conditional implication that
+was previously overloaded as the flagship statement: if a high-level active
+frontier bridge supplies both the sharp empirical-process upper bound and the
+matching minimax lower-bound alternatives, then the iff boundary follows.
+Conjecture \ref{conj:primitive-frontier} is the revised kernel.  It proposes
+that the bridge can be proved, rather than assumed, for the primitive
+Holder--entropy experiment: if
+\(\mathfrak{F}_n(P)=\max\{\sqrt n\,\delta_{g,n}(P)\delta_{p,n}(P),
+(\delta_{g,n}(P)+\delta_{p,n}(P))\mathcal{E}_n\}\) vanishes uniformly, the
+\(\mathcal{L}_n\)-indexed DML process is oracle Gaussian; if it does not, a
+minimax testing-distance criterion stays bounded away from zero through either
+population bilinear drift or nuisance empirical-process leakage.
+
+\paragraph{What is new.}
+The closest published DML result, \citet[\S3]{ChernozhukovEtAl2018DML}, gives
+sufficient product-rate and entropy conditions for orthogonal scores; it does
+not claim necessity and does not identify a single operational scalar whose
+crossing marks uniform failure.  \citet[\S2--\S3]{FosterSyrgkanis2023OSL}
+show that orthogonality makes excess risk second order under entropy control,
+but their object is risk rather than Gaussian inference.  \citet[\S3]{SemenovaChernozhukov2021DMLCATE}
+give simultaneous inference for CATE summaries under high-level nuisance
+conditions, while \citet[\S2--\S4]{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}
+derive minimax CATE elbows that require higher-order ideas in low-smoothness
+regimes.  \citet[abstract and pp.~1141--1142]{ArmstrongKolesar2021FiniteSampleATE}
+and \citet[abstract]{MackeySyrgkanisZadik2018OML} are limitations comparators
+that inform the conjecture rather than extension targets: the former ties low
+smoothness and overlap to impossible \(\sqrt n\)-inference, and the latter
+shows higher-order orthogonality can relax first-stage rate requirements.  The
+epsilon-gap is now precise: Conjecture \ref{conj:primitive-frontier} must
+replace the high-level frontier bridge in Assumption \ref{ass:frontier-active}
+with primitive empirical-process and minimax lower-bound arguments, yielding an
+iff frontier with the named two-channel object \(\mathfrak{F}_n(P)\).
+
+\paragraph{How it positions in the literature.}
+The anchor cluster is ExactID semiparametric inference under unconfoundedness.
+The proposal consumes the exact-identification formula
+\(\theta_0(\ell)=\E[\ell(X)\{g_{1,0}(X)-g_{0,0}(X)\}]\) and studies the
+uniform inference consequences of estimating \(g_0\) and \(p_0\).  It sits at
+the methodological-statistics edge of causal ML: DML, orthogonal statistical
+learning, ADML/Riesz methods, minimax CATE theory, and honest finite-sample ATE
+inference.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the simultaneous CATE and structural-function
+workflow of \citet{SemenovaChernozhukov2021DMLCATE}: the proposed frontier would
+say when its orthogonal-signal reports can be expanded to richer entropy-indexed
+HTE classes without changing the debiasing order, and when the report class or
+the score order must be changed.
+
+\paragraph{How research benefits from the conclusion.}
+If the conclusion resolves favorably, empirical DML papers should report or
+bound \(\mathfrak{F}_n(P)\), not only separate nuisance rates, before claiming
+uniform HTE confidence bands.
+
+\section{Related work}
+\citet{ChernozhukovEtAl2018DML} is the canonical DML anchor: it introduces
+Neyman-orthogonal scores and cross-fitting, with sufficient product-rate and
+entropy assumptions rather than a sharp uniform breakdown frontier.
+\citet{SemenovaChernozhukov2021DMLCATE} moves DML toward HTE and CATE summaries
+through orthogonal signals, best linear predictors, group averages, and
+simultaneous inference; it is the closest positive HTE-inference comparator.
+\citet{FosterSyrgkanis2023OSL} gives orthogonal statistical learning excess-risk
+bounds under metric entropy and local complexity; it motivates the entropy
+factor but does not deliver Gaussian approximation or lower bounds for DML
+reports.
+\citet{ChernozhukovChetverikovKato2014Gaussian} provides the Gaussian
+approximation theorem planned for the oracle report process; this proposal uses
+it as a proof-route input, not as prior art on orthogonal DML breakdown.
+\citet{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE} gives minimax CATE
+rates and nuisance-smoothness elbows using higher-order influence-function
+ideas; it is the main evidence that first-order orthogonality should have a
+necessity boundary.
+\citet[abstract and pp.~1141--1142]{ArmstrongKolesar2021FiniteSampleATE}
+studies honest finite-sample ATE inference under smoothness, shape, and overlap
+restrictions and states that feasible CIs can remain valid even when
+\(\sqrt n\)-inference is impossible because of low smoothness or lack of
+overlap; it supplies the necessity-oriented econometric precedent for not
+treating DML rate conditions as merely technical.
+\citet[abstract]{MackeySyrgkanisZadik2018OML} separates the power and limits of
+first-order orthogonality by showing how higher-order orthogonality improves the
+nuisance-rate requirement; it is the closest published limitations comparator
+for the proposed first-order breakdown side.
+\citet{ChernozhukovNeweySingh2022AutoDML} develops automatic DML and learned
+Riesz representers for causal and structural effects; it is relevant because
+its inference conditions depend on the learnability of a bias-correction object.
+\citet{ChernozhukovNeweySingh2022Riesz} treats global and local linear
+functionals, including nonregular local objects with growing Riesz norms; this
+proposal uses the same regular-to-nonregular warning in an HTE report-class
+frontier.
+\citet{WagerAthey2018CausalForests}, \citet{AtheyTibshiraniWager2019GRF}, and
+\citet{OprescuSyrgkanisWu2019ORF} provide forest-based HTE inference under
+honesty, local estimating equations, and orthogonality; they are adjacent
+algorithmic comparators rather than sharp Holder/entropy iff frontiers.
+\citet{FarrellLiangMisra2021DNNInference} links deep neural-network rates to
+semiparametric causal inference; it motivates modern nuisance classes where
+approximation, entropy, and inference interact.
+
+The precise published-axis gap for the v5 kernel is the absence of a primitive
+lower-and-upper theorem.  The DML, CATE, OSL, and ADML papers above either give
+sufficient high-level inference conditions, risk bounds, or minimax estimation
+elbows; none derives both the empirical-process upper bound and the matching
+minimax lower-bound alternatives for the two-channel scalar
+\(\mathfrak{F}_n(P)\) over the same Holder--entropy HTE report experiment.
+
+In-repo prior art is nonduplicative.  The auto-generated \texttt{doc/API.md}
+catalogue is dominated by Panel Q1 basis-cleanliness theorems and records no
+existing ExactID theorem for Holder/entropy DML frontiers.  The closest banked
+CausalSmith predecessor is \texttt{eid\_dml\_orth\_uniform/v2}, whose rejected
+kernel proposed a DML/LRO/ADML studentization-report frontier; reviewer signals
+asked for explicit variance-report summands and scale-free spectral
+normalization.  The present proposal changes the object from estimator-report
+equivalence to a Holder/entropy first-order orthogonality breakdown frontier
+for HTE reports, anchored by the named object \(\mathfrak{F}_n(P)\).
+
+\section{Formal setup}
+Let \(W=(Y,D,X)\sim P\), \(D\in\{0,1\}\), \(X\in[0,1]^d\), and
+\(|Y|\le M\).  The SWIG/DAG is \(X\to D\to Y\) and \(X\to Y\).  Potential
+outcomes \(Y(1),Y(0)\) satisfy consistency and conditional unconfoundedness.
+Write
+\[
+g_{d,0}(x)=\E[Y\mid D=d,X=x],\qquad p_0(x)=\Pr(D=1\mid X=x),\qquad
+\tau_0(x)=g_{1,0}(x)-g_{0,0}(x).
+\]
+For each report weight \(\ell\in\mathcal{L}_n\), the HTE report is
+\[
+\theta_0(\ell)=\E[\ell(X)\tau_0(X)].
+\]
+The identified AIPW signal is
+\[
+\Gamma(W;\eta_0)=g_{1,0}(X)-g_{0,0}(X)
++\frac{D}{p_0(X)}\{Y-g_{1,0}(X)\}
+-\frac{1-D}{1-p_0(X)}\{Y-g_{0,0}(X)\},
+\]
+where \(\eta_0=(g_{1,0},g_{0,0},p_0)\).  Then
+\(\theta_0(\ell)=\E[\ell(X)\Gamma(W;\eta_0)]\).  The first-order DML estimator
+uses cross-fitted nuisance estimates \(\hat\eta=(\hat g_1,\hat g_0,\hat p)\):
+\[
+\hat\theta_n(\ell)=\mathbb{P}_n[\ell(X)\Gamma(W;\hat\eta_{-k(i)})],
+\qquad \ell\in\mathcal{L}_n.
+\]
+The nuisance empirical-process remainder is
+\[
+\Delta^{\mathrm{ep}}_n(\ell)
+=
+(\mathbb{P}_n-P)\!\left[
+\ell(X)\{\Gamma(W;\hat\eta_{-k(i)})-\Gamma(W;\eta_0)\}
+\right],
+\qquad \ell\in\mathcal{L}_n,
+\]
+where the fold index emphasizes that the nuisance estimate in the score for
+observation \(i\) is trained off the fold containing \(i\).
+Let \(\delta_{g,n}(P)=\|\hat g_1-g_{1,0}\|_{2,P}+\|\hat g_0-g_{0,0}\|_{2,P}\)
+and \(\delta_{p,n}(P)=\|\hat p-p_0\|_{2,P}\), interpreted as deterministic
+upper envelopes over the locked learner/nuisance class.  For Holder balls
+\(\mathcal{H}(\alpha,L,d)\), the canonical minimax radii are
+\[
+r_g=\frac{\alpha_g}{2\alpha_g+d},\quad
+r_p=\frac{\alpha_p}{2\alpha_p+d},\quad
+\delta_{g,n}\asymp n^{-r_g},\quad \delta_{p,n}\asymp n^{-r_p},
+\]
+up to logarithmic factors.  The HTE report class has entropy integral
+\[
+\mathcal{E}_n=
+1+\int_0^1\sqrt{\log N(\varepsilon\|\mathcal{L}_n\|_{2,P},
+\mathcal{L}_n,L^2(P))}\,d\varepsilon,
+\]
+uniformly over \(P\in\mathcal{P}_n\).  The focal frontier is
+\[
+\mathfrak{F}_n(P)=\max\{\mathfrak{D}_n(P),\mathfrak{S}_n(P)\},\qquad
+\mathfrak{D}_n(P)=\sqrt n\,\delta_{g,n}(P)\delta_{p,n}(P),\quad
+\mathfrak{S}_n(P)=\{\delta_{g,n}(P)+\delta_{p,n}(P)\}\mathcal{E}_n.
+\]
+When \(\mathcal{E}_n\asymp n^\zeta\) and the nuisance radii have the Holder
+rates above, the exponent version of the boundary is the pair of inequalities
+\[
+r_g+r_p>\frac12,\qquad \min\{r_g,r_p\}>\zeta.
+\]
+Let
+\[
+\mathbb{G}_n(\ell)=\sqrt n\,(\mathbb{P}_n-P)[\ell(X)\{\Gamma(W;\eta_0)-\theta_0(\ell)\}]
+\]
+be the oracle Gaussian target process.  For a pair of nuisance perturbations
+\(u=(u_1,u_0)\) and \(v\), define the ideal-denominator second-order remainder
+bilinear map
+\[
+R_P(\ell;u,v)=
+\E_P\!\left[
+\ell(X)v(X)
+\left\{\frac{u_1(X)}{p_0(X)}+\frac{u_0(X)}{1-p_0(X)}\right\}
+\right].
+\]
+\[
+\widetilde R_P(\ell;u,v,\bar p)=
+\E_P\!\left[
+\ell(X)v(X)
+\left\{\frac{u_1(X)}{\bar p(X)}+\frac{u_0(X)}{1-\bar p(X)}\right\}
+\right]
+\]
+is the exact plug-in drift map for an estimated propensity \(\bar p\), and
+\[
+Q_P(\ell;u,v,\bar p)=\widetilde R_P(\ell;u,v,\bar p)-R_P(\ell;u,v)
+\]
+is the estimated-denominator residual.
+The curvature constant \(c_R(P)\) in Assumption \ref{ass:primitive-geometry}
+is the operator norm of \(R_P\) on the active Holder tangent cone.  The
+empirical leakage constant \(c_{\mathrm{ep}}(P)\) is the corresponding
+Sudakov/minoration constant for the nuisance empirical-process class in the
+same primitive experiment.
+The minimax oracle-centering defect used in Conjecture
+\ref{conj:primitive-frontier} is
+\[
+\mathcal{K}_n(\mathcal{P}_n,\mathcal{L}_n)
+=
+\inf_{\hat\theta}
+\sup_{P\in\mathcal{P}_n}
+d_{\mathrm{BL}}\!\left(
+\mathcal{L}_P\!\left(
+\sup_{\ell\in\mathcal{L}_n}
+\left|\sqrt n\{\hat\theta(\ell)-\theta_0(\ell)\}-\mathbb{G}_n(\ell)\right|
+\right),\delta_0\right),
+\]
+where \(d_{\mathrm{BL}}\) is bounded-Lipschitz distance and \(\delta_0\) is
+point mass at zero.  A positive liminf of \(\mathcal{K}_n\) is the formal
+testing-distance criterion for uniform first-order Gaussian failure.
+
+\begin{quote}
+\begin{verbatim}
+Locked tuple:
+(qid, specialization, SWIG/DAG, treatment, target estimand, identifying assumptions)
+qid = eid_dml_orthogonality_frontier
+specialization = v1
+SWIG/DAG = X -> D -> Y and X -> Y
+treatment = binary D
+target estimand = theta_0(ell)=E[ell(X){Y(1)-Y(0)}], ell in L_n
+identifying assumptions = consistency, conditional unconfoundedness,
+overlap, Holder--entropy nuisance classes, and Assumptions 1--7.
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Unconfounded exact-ID model]\label{ass:unconfounded}
+For every \(P\in\mathcal{P}_n\), \(Y=DY(1)+(1-D)Y(0)\),
+\((Y(1),Y(0))\perp D\mid X\), \(X\in[0,1]^d\), \(|Y|\le M\), and
+\(\underline e\le p_0(X)\le1-\underline e\) almost surely for a fixed
+\(\underline e>0\).
+\end{assumption}
+
+\begin{assumption}[Holder nuisance and learner radii]\label{ass:holder}
+The outcome regressions \(g_{1,0},g_{0,0}\) belong to a Holder ball
+\(\mathcal{H}(\alpha_g,L_g,d)\), the propensity \(p_0\) belongs to
+\(\mathcal{H}(\alpha_p,L_p,d)\), and the cross-fitted learners have uniform
+\(L^2(P)\) envelopes \(\delta_{g,n}(P)\) and \(\delta_{p,n}(P)\).  In the
+canonical Holder-rate specialization,
+\(\delta_{g,n}\asymp n^{-\alpha_g/(2\alpha_g+d)}\) and
+\(\delta_{p,n}\asymp n^{-\alpha_p/(2\alpha_p+d)}\).
+\end{assumption}
+
+\begin{assumption}[Report-class entropy]\label{ass:entropy}
+The deterministic HTE report class \(\mathcal{L}_n\) is uniformly bounded by
+\(L_\ell\), centered when required by the covariance normalization, and has
+finite entropy integral \(\mathcal{E}_n\) as defined in Section 3.  Polynomial
+entropy classes with \(\log N(\varepsilon,\mathcal{L}_n,L^2(P))\lesssim
+a_n\varepsilon^{-v_\ell}\) are allowed; \(\mathcal{E}_n\) records the resulting
+growth.
+\end{assumption}
+
+\begin{assumption}[Cross-fitting and oracle-process regularity]\label{ass:crossfit}
+The sample is split into a fixed number of folds, nuisance estimates used for
+observation \(i\) are trained off fold \(k(i)\), and the oracle process
+\(\mathbb{G}_n\) is the target oracle empirical process on
+\(\mathcal{L}_n\).  The primitive oracle-process route is the
+Chernozhukov--Chetverikov--Kato Gaussian approximation for suprema of empirical
+processes, plus the corresponding maximal inequality for VC/polynomial-entropy
+report classes.  This assumption fixes fold independence and the intended
+oracle comparison theorem; it does not assume the sharp bound for
+\(\Delta^{\mathrm{ep}}_n\) at scale \(\mathfrak{S}_n(P)\).
+\end{assumption}
+
+\begin{assumption}[Estimated-denominator residual]\label{ass:denominator}
+The estimated propensity obeys the same fixed overlap bound as \(p_0\) with
+probability approaching one, and the denominator-substitution residual is
+negligible on the upper-bound side:
+\[
+\sqrt n\sup_{\ell\in\mathcal{L}_n}
+\left|Q_P(\ell;\hat g-g_0,\hat p-p_0,\hat p)\right|=o_P(1).
+\]
+A sufficient primitive envelope is
+\(\sqrt n\,\delta_{g,n}(P)\delta_{p,n}(P)^2=o(1)\), together with bounded
+report weights and fixed overlap.
+\end{assumption}
+
+\begin{assumption}[Primitive Holder--entropy tangent geometry]\label{ass:primitive-geometry}
+The Holder balls admit wavelet or spline tangent sets
+\(\mathcal{T}_{g,n}\times\mathcal{T}_{p,n}\) with finite support dimension
+growing at the minimax resolutions, and the report class \(\mathcal{L}_n\)
+contains a matching finite packet subfamily with entropy integral
+\(\mathcal{E}_n\).  Define
+\[
+c_R(P)=
+\sup_{\ell\in\mathcal{L}_n,\; \|u\|_{2,P}\le1,\; \|v\|_{2,P}\le1}
+|R_P(\ell;u,v)|
+\]
+restricted to the active tangent packet, and define \(c_{\mathrm{ep}}(P)\) as
+the Sudakov/minoration constant for the centered class
+\(\{\ell(X)(\Gamma(W;\eta_0+t h)-\Gamma(W;\eta_0)):
+\ell\in\mathcal{L}_n,h\in\mathcal{T}_{g,n}\times\mathcal{T}_{p,n}\}\) at the
+local nuisance scale.  On the active channel under consideration,
+\(\inf_{P\in\mathcal{P}_n}\max\{c_R(P),c_{\mathrm{ep}}(P)\}\ge c_0>0\), where
+\(c_0\) is a fixed structural constant independent of \(n\).
+\end{assumption}
+
+\begin{assumption}[Conditional active-frontier bridge]\label{ass:frontier-active}
+There exist nuisance estimators and a tangent-cone collection such that
+(i) the empirical-process remainder of the AIPW exact-identification score is
+bounded above by \(\mathfrak{S}_n(P)\), up to logarithmic factors,
+(ii) the oracle Gaussian approximation holds whenever
+\(\mathfrak{F}_n(P)\to0\), and (iii) active local alternatives realize
+matching minimax lower bounds with constants \(c_R,c_{\mathrm{ep}}>0\) at the
+same scale \(\mathfrak{F}_n(P)\).  This is the consolidated
+\texttt{A-frontier-active} bridge supplied after the Stage 0.5 rewind; it is
+used only for the conditional theorem and is exactly what Conjecture
+\ref{conj:primitive-frontier} proposes to derive from primitive arguments.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: exact-ID score and exact plug-in remainder]\label{thm:score-remainder}
+Under Assumptions \ref{ass:unconfounded}--\ref{ass:denominator}, for every
+\(\ell\in\mathcal{L}_n\),
+\(\theta_0(\ell)=\E[\ell(X)\Gamma(W;\eta_0)]\), and the cross-fit plug-in
+expansion satisfies
+\[
+\hat\theta_n(\ell)-\theta_0(\ell)
+=(\mathbb{P}_n-P)\ell(X)\{\Gamma(W;\eta_0)-\theta_0(\ell)\}
++\widetilde R_P(\ell;\hat g-g_0,\hat p-p_0,\hat p)
++\Delta^{\mathrm{ep}}_n(\ell)+o_P(n^{-1/2})
+\]
+uniformly in \(\ell\in\mathcal{L}_n\).  The displayed empirical-process summand
+is intentionally left explicit: bounding it at the sharp scale
+\(\mathfrak{S}_n(P)\) is not assumed in this theorem and is part of the
+primitive frontier conjecture below.  Moreover, under Assumption
+\ref{ass:denominator},
+\[
+\sup_{\ell\in\mathcal{L}_n}
+\left|
+\sqrt n\{\widetilde R_P(\ell;\hat g-g_0,\hat p-p_0,\hat p)
+-R_P(\ell;\hat g-g_0,\hat p-p_0)\}
+\right|=o_P(1),
+\]
+so the ideal-denominator bilinear map \(R_P\) is the valid frontier object.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This is not the flagship novelty: it records the exact-ID AIPW identity used
+by \citet{ChernozhukovEtAl2018DML} and \citet{SemenovaChernozhukov2021DMLCATE},
+but isolates the \(\mathcal{L}_n\)-indexed bilinear remainder \(R_P\) that those
+papers control by sufficient conditions.  (b) The consumer is Conjecture
+\ref{conj:primitive-frontier}: without this uniform remainder object, the proposed
+frontier would be a rate slogan rather than a theorem-level target.
+
+\begin{theorem}[Theorem 2: conditional active-frontier theorem]\label{thm:conditional-frontier}
+Under Assumptions \ref{ass:unconfounded}--\ref{ass:frontier-active},
+first-order orthogonal DML is uniformly asymptotically linear and Gaussian for
+the \(\mathcal{L}_n\)-indexed HTE report process if and only if
+\[
+\sup_{P\in\mathcal{P}_n}\mathfrak{F}_n(P)
+=\sup_{P\in\mathcal{P}_n}\max\{\sqrt n\,\delta_{g,n}(P)\delta_{p,n}(P),
+\{\delta_{g,n}(P)+\delta_{p,n}(P)\}\mathcal{E}_n\}
+\longrightarrow0 .
+\]
+The theorem is conditional: the upper empirical-process scale, the oracle
+Gaussian approximation, and the matching lower-bound alternatives are supplied
+by Assumption \ref{ass:frontier-active}.  It should be read as a theorem split
+that makes the earlier high-level frontier bridge explicit, not as the
+flagship novelty.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This is a correction, not the new flagship claim: the Stage 0.5 rejection
+identified v4 Assumptions 4 and 6 as encoding the upper and lower sides of the
+frontier.  Theorem
+\ref{thm:conditional-frontier} demotes that content to a conditional
+bookkeeping statement under the consolidated bridge Assumption
+\ref{ass:frontier-active}.  (b) The consumer is Stage 0's derivation pipeline:
+it can formalize the conditional theorem without mistaking it for the
+unconditional contribution.
+
+\begin{conjecture}[Conjecture 1: primitive two-channel minimax frontier (NOT YET PROVED)]\label{conj:primitive-frontier}\label{conj:frontier}
+Under Assumptions \ref{ass:unconfounded}--\ref{ass:primitive-geometry}, and
+without invoking Assumption \ref{ass:frontier-active}, the conclusions of the
+active-frontier bridge can be derived from primitive empirical-process and
+minimax arguments for the locked Holder--entropy experiment.  Equivalently,
+first-order orthogonal DML is uniformly asymptotically linear and Gaussian for
+the \(\mathcal{L}_n\)-indexed HTE report process if and only if
+\[
+\sup_{P\in\mathcal{P}_n}\mathfrak{F}_n(P)\to0.
+\]
+The lower-bound side is formalized by the testing-distance criterion
+\(\mathcal{K}_n(\mathcal{P}_n,\mathcal{L}_n)\) from Section 3: if
+\(\limsup_n\sup_{P\in\mathcal{P}_n}\mathfrak{F}_n(P)>0\), then
+\[
+\liminf_{n\to\infty}\mathcal{K}_n(\mathcal{P}_n,\mathcal{L}_n)>0
+\]
+for an open subset of the locked Holder nuisance class.  If
+\(\mathfrak{D}_n\) is the active channel, the proof must construct local
+least-favorable \(u_n,v_n\) with a nonzero bilinear translation \(R_P\).  If
+\(\mathfrak{S}_n\) is the active channel, the proof must produce a
+Sudakov/Haar empirical-leakage witness at scale
+\((\delta_{g,n}+\delta_{p,n})\mathcal{E}_n\).  Faster oracle learners outside
+the active error class are not claimed to fail.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet[\S3]{ChernozhukovEtAl2018DML} gives sufficient product-rate
+conditions, \citet[\S2--\S3]{FosterSyrgkanis2023OSL} gives excess-risk rather
+than inference thresholds, and \citet[\S3]{SemenovaChernozhukov2021DMLCATE}
+states high-level simultaneous-inference conditions; none states or proves an
+iff frontier with the named two-channel object \(\mathfrak{F}_n(P)\), a
+bounded-Lipschitz minimax failure criterion \(\mathcal{K}_n\), and open-class
+lower-bound witnesses separating deterministic drift from empirical leakage.
+(b) The consumer is the HTE simultaneous-inference workflow in
+\citet{SemenovaChernozhukov2021DMLCATE}: resolving this conjecture tells that
+workflow exactly when a richer report class invalidates first-order DML.
+
+\begin{conjecture}[Conjecture 2: Holder exponent corollary of the primitive frontier (NOT YET PROVED)]\label{conj:holder}
+In the canonical Holder-rate specialization of Assumption \ref{ass:holder} with
+\(\mathcal{E}_n\asymp n^\zeta\), the frontier in Conjecture
+\ref{conj:frontier} is equivalent, up to logarithmic factors, to
+\[
+\frac{\alpha_g}{2\alpha_g+d}+\frac{\alpha_p}{2\alpha_p+d}
+>\frac12,\qquad
+\min\left\{\frac{\alpha_g}{2\alpha_g+d},\frac{\alpha_p}{2\alpha_p+d}\right\}
+>\zeta.
+\]
+Below this boundary, first-order DML cannot be uniformly Gaussian over the
+locked Holder/entropy class; above it, first-order DML is uniformly Gaussian
+provided Conjecture \ref{conj:primitive-frontier}'s primitive empirical-process
+and oracle-Gaussian upper bound has been proved.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet[\S2--\S4]{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}
+identifies nuisance-smoothness elbows for minimax CATE estimation and uses
+higher-order ideas, while
+\citet[abstract and pp.~1141--1142]{ArmstrongKolesar2021FiniteSampleATE} shows
+that low smoothness or lack of overlap can preclude \(\sqrt n\)-inference and
+\citet[abstract]{MackeySyrgkanisZadik2018OML} shows higher-order orthogonality
+can relax first-stage rate requirements; none gives this first-order DML
+uniform-inference exponent boundary for HTE report classes.  This result is an
+exponent translation of Conjecture \ref{conj:primitive-frontier}, not an
+independent derivation of the primitive frontier.
+(b) The consumer is the higher-order orthogonalization program in
+\citet{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}: the conjecture
+pinpoints the exponent region where first-order scores must be replaced or the
+target report class weakened.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[ATE singleton reduction]\label{cor:ate}
+If \(\mathcal{L}_n=\{1\}\), then \(\mathcal{E}_n\asymp1\) and Conjecture
+\ref{conj:frontier} reduces to the familiar DML product-rate condition
+\(\sqrt n\,\delta_{g,n}\delta_{p,n}\to0\), matching
+\citet{ChernozhukovEtAl2018DML} up to logarithmic factors.
+\end{corollary}
+
+\begin{corollary}[Fixed subgroup-report reduction]\label{cor:fixed-subgroups}
+If \(\mathcal{L}_n\) is a fixed finite collection of subgroup indicators or
+Haar cells, then \(\mathcal{E}_n=O(1)\).  Under the primitive frontier in
+Conjecture \ref{conj:primitive-frontier}, the entropy channel is constant and
+the boundary collapses to the ATE-style product-rate condition plus
+\(\delta_{g,n}+\delta_{p,n}\to0\), matching the fixed-dimensional report
+intuition in \citet{SemenovaChernozhukov2021DMLCATE}.  If the number of Haar
+cells grows with \(n\), \(\mathcal{E}_n\) reappears and the empirical-leakage
+channel becomes the binding constraint.
+\end{corollary}
+
+\begin{corollary}[Equal-smoothness Holder elbow]\label{cor:equal-holder}
+If \(\alpha_g=\alpha_p=\alpha\) and \(\mathcal{E}_n\asymp1\), Conjecture
+\ref{conj:holder} reduces to \(\alpha>d/2\).  If
+\(\mathcal{E}_n\asymp n^\zeta\), it reduces to
+\(2\alpha/(2\alpha+d)>1/2\) and \(\alpha/(2\alpha+d)>\zeta\), so richer HTE
+reporting requires enough nuisance smoothness to control the empirical-process
+channel in addition to the usual product-rate channel.
+\end{corollary}
+
+\begin{example}[Concrete non-corner witness class]\label{ex:witness}
+Take \(X\sim \mathrm{Unif}[0,1]^d\), \(p_0(x)=1/2+\rho\prod_{j=1}^d
+\sin(2\pi x_j)\) with \(0<\rho<1/4\), and outcome regressions equal to
+finite wavelet packets at resolution \(J_n\) scaled to lie in the Holder balls.
+Let \(\mathcal{L}_n\) be the span of the corresponding Haar cells with
+\(\mathcal{E}_n\asymp n^\zeta\).  The bounded-envelope check is explicit:
+\[
+\sup_{\ell\in\mathcal{L}_n}|R_P(\ell;u,v)|
+\le C(\underline e,L_\ell)\|u\|_{2,P}\|v\|_{2,P},
+\]
+so the witness only asserts \(R_P\ge c_R\delta_{g,n}\delta_{p,n}\), with no
+entropy multiplier in the population drift.  Entropy enters through the Haar
+maximal inequality
+\[
+\sqrt n\sup_{\ell\in\mathcal{L}_n}|\Delta^{\mathrm{ep}}_n(\ell)|
+\gtrsim c_{\mathrm{ep}}\{\delta_{g,n}+\delta_{p,n}\}\mathcal{E}_n
+\]
+on the active finite-packet subfamily.  Away from a finite collection of
+coefficient hyperplanes, either \(c_R(P)>0\) or \(c_{\mathrm{ep}}(P)>0\), giving
+the proposed open-class witness for the necessity half of Conjecture
+\ref{conj:frontier}.
+\end{example}
+
+\section{Proof-sketch route}
+Theorem \ref{thm:score-remainder} is the standard AIPW identity plus an exact
+plug-in drift calculation: conditional on \(X\), the drift equals
+\((\hat p-p_0)\{(\hat g_1-g_{1,0})/\hat p+(\hat g_0-g_{0,0})/(1-\hat p)\}\),
+and Assumption \ref{ass:denominator} replaces estimated denominators by
+population denominators at \(o(n^{-1/2})\) scale.  Theorem
+\ref{thm:conditional-frontier} then follows by substituting the consolidated
+active-frontier bridge into that expansion; this is the conditional theorem
+split requested by the Stage 0.5 review.  The sufficiency half of Conjecture
+\ref{conj:primitive-frontier} must replace that bridge with a
+bounded-envelope Cauchy--Schwarz bound for the \(\mathcal{L}_n\)-indexed
+bilinear population remainder, a maximal inequality for
+\(\Delta^{\mathrm{ep}}_n\) at scale \(\mathfrak{S}_n\), a high-dimensional
+Gaussian comparison for the oracle process, and anti-concentration for the
+multiplier statistic.  The necessity half should split by active channel.  If
+\(\mathfrak{D}_n\) is active, the primitive tangent geometry in Assumption
+\ref{ass:primitive-geometry} should be used to construct local least-favorable
+Holder perturbations \(u_n,v_n\) whose bilinear remainder has size
+\(\delta_{g,n}\delta_{p,n}\), followed by a two-point lower-bound argument for
+\(\mathcal{K}_n\).  If \(\mathfrak{S}_n\) is active, the Haar/wavelet packet in
+Example \ref{ex:witness} supplies the intended Sudakov or high-dimensional
+maximal-inequality lower bound for the nuisance empirical process itself.  When
+\(\mathfrak{F}_n\to\infty\), the centered process has a non-negligible
+active-channel error; when \(\mathfrak{F}_n\to c\in(0,\infty)\), the active
+channel produces a fixed nonzero departure from the oracle Gaussian process,
+so the oracle-centered multiplier law misses the limit even though the failure
+is not explosive.  The Holder exponent statement follows by
+substituting the classical nonparametric \(L^2\) rates and the entropy-integral
+growth of \(\mathcal{L}_n\).  Boundary cases needing explicit algebra are the
+singleton ATE report, the finite-dimensional subgroup report, the Haar/wavelet
+witness in Example \ref{ex:witness}, and weak-overlap sequences where
+\(\underline e\) is allowed to drift.
+
+\section{Honest scope flags}
+Theorem \ref{thm:score-remainder} is intended as routine setup, not the
+flagship claim.  Theorem \ref{thm:conditional-frontier} is also not the
+flagship claim: it is a conditional theorem under Assumption
+\ref{ass:frontier-active}, which explicitly assumes the upper and lower
+frontier channels.  Conjectures \ref{conj:primitive-frontier} and
+\ref{conj:holder} are not yet proved; the primitive maximal inequality,
+Sudakov/Haar lower-bound witness, and two-point minimax testing-distance
+argument are the open mathematical steps.  The proposal does not claim that
+first-order DML is invalid in all low-smoothness problems: it claims invalidity
+over the locked open Holder class when either the population curvature constant
+or the empirical leakage constant is bounded away from zero.  The most delicate
+primitive step is replacing Assumption \ref{ass:frontier-active}, because
+Gaussian approximation for a growing HTE report class can impose restrictions
+separate from the population orthogonality remainder.  Version 2 patches the exact
+plug-in denominator algebra and narrows the lower-bound half to a
+minimax/adversarial first-order experiment.  Version 3 makes the nuisance
+empirical-process remainder explicit and assumes its uniform negligibility.
+Version 4 withdraws the entropy-multiplied population-drift normalization and
+places entropy only in the empirical-process channel; no kernel claims have
+been withdrawn.  Version 5 demotes the earlier iff frontier to a conditional
+theorem under Assumption \ref{ass:frontier-active} and makes the primitive
+empirical-process/minimax derivation the open flagship conjecture.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft of the entropy-remainder frontier for
+first-order HTE DML; prior verdict: none.
+\item v2 (revise) -- patched the exact plug-in remainder, lower-bound
+quantifiers, Armstrong--Kolesar anchor, and intermediate-boundary proof route;
+prior verdict: REVISE.
+\item v3 (revise) -- displayed the nuisance empirical-process remainder in
+Theorem \ref{thm:score-remainder} and added its uniform \(o_P(n^{-1/2})\)
+condition to Assumption \ref{ass:crossfit}; prior verdict: REVISE.
+\item v4 (revise) -- split the old entropy-multiplied drift into the
+population channel \(\mathfrak{D}_n\) and the empirical-process channel
+\(\mathfrak{S}_n\), removing entropy growth from the bounded bilinear
+population remainder; prior verdict: REVISE.
+\item v5 (revise) -- theorem-split after Stage 0.5: demoted the iff frontier
+to a conditional active-frontier theorem and made the primitive
+empirical-process/minimax derivation the open flagship conjecture; prior
+verdict: REJECT.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Armstrong and Kolesar(2021)]{ArmstrongKolesar2021FiniteSampleATE}
+Armstrong, T. B. and Kolesar, M. (2021).
+\newblock Finite-sample optimal estimation and inference on average treatment effects under unconfoundedness.
+\newblock \emph{Econometrica} 89(3), 1141--1177.
+
+\bibitem[Athey, Tibshirani, and Wager(2019)]{AtheyTibshiraniWager2019GRF}
+Athey, S., Tibshirani, J., and Wager, S. (2019).
+\newblock Generalized random forests.
+\newblock \emph{Annals of Statistics} 47(2), 1148--1178.
+
+\bibitem[Chernozhukov et~al.(2018)]{ChernozhukovEtAl2018DML}
+Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C., Newey, W., and Robins, J. (2018).
+\newblock Double/debiased machine learning for treatment and structural parameters.
+\newblock \emph{Econometrics Journal} 21(1), C1--C68.
+
+\bibitem[Chernozhukov, Chetverikov, and Kato(2014)]{ChernozhukovChetverikovKato2014Gaussian}
+Chernozhukov, V., Chetverikov, D., and Kato, K. (2014).
+\newblock Gaussian approximation of suprema of empirical processes.
+\newblock \emph{Annals of Statistics} 42(4), 1564--1597.
+
+\bibitem[Chernozhukov, Newey, and Singh(2022a)]{ChernozhukovNeweySingh2022AutoDML}
+Chernozhukov, V., Newey, W., and Singh, R. (2022a).
+\newblock Automatic debiased machine learning of causal and structural effects.
+\newblock \emph{Econometrica} 90(3), 967--1027.
+
+\bibitem[Chernozhukov, Newey, and Singh(2022b)]{ChernozhukovNeweySingh2022Riesz}
+Chernozhukov, V., Newey, W., and Singh, R. (2022b).
+\newblock Debiased machine learning of global and local parameters using regularized Riesz representers.
+\newblock \emph{Econometrics Journal} 25(3), 576--601.
+
+\bibitem[Farrell, Liang, and Misra(2021)]{FarrellLiangMisra2021DNNInference}
+Farrell, M. H., Liang, T., and Misra, S. (2021).
+\newblock Deep neural networks for estimation and inference.
+\newblock \emph{Econometrica} 89(1), 181--213.
+
+\bibitem[Foster and Syrgkanis(2023)]{FosterSyrgkanis2023OSL}
+Foster, D. J. and Syrgkanis, V. (2023).
+\newblock Orthogonal statistical learning.
+\newblock \emph{Annals of Statistics} 51(3), 879--908.
+
+\bibitem[Kennedy et~al.(2024)]{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}
+Kennedy, E. H., Balakrishnan, S., Robins, J. M., and Wasserman, L. (2024).
+\newblock Minimax rates for heterogeneous causal effect estimation.
+\newblock \emph{Annals of Statistics} 52(2), 793--817.
+
+\bibitem[Mackey, Syrgkanis, and Zadik(2018)]{MackeySyrgkanisZadik2018OML}
+Mackey, L., Syrgkanis, V., and Zadik, I. (2018).
+\newblock Orthogonal machine learning: Power and limitations.
+\newblock \emph{Proceedings of the 35th International Conference on Machine Learning}, PMLR 80, 3375--3383.
+
+\bibitem[Oprescu, Syrgkanis, and Wu(2019)]{OprescuSyrgkanisWu2019ORF}
+Oprescu, M., Syrgkanis, V., and Wu, Z. S. (2019).
+\newblock Orthogonal random forest for causal inference.
+\newblock \emph{Proceedings of the 36th International Conference on Machine Learning}.
+
+\bibitem[Semenova and Chernozhukov(2021)]{SemenovaChernozhukov2021DMLCATE}
+Semenova, V. and Chernozhukov, V. (2021).
+\newblock Debiased machine learning of conditional average treatment effects and other causal functions.
+\newblock \emph{Econometrics Journal} 24(2), 264--289.
+
+\bibitem[Wager and Athey(2018)]{WagerAthey2018CausalForests}
+Wager, S. and Athey, S. (2018).
+\newblock Estimation and inference of heterogeneous treatment effects using random forests.
+\newblock \emph{Journal of the American Statistical Association} 113(523), 1228--1242.
+\end{thebibliography}
+
+\end{document}

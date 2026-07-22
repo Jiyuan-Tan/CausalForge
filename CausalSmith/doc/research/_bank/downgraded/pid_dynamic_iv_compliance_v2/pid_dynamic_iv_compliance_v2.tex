@@ -1,0 +1,777 @@
+% =====================================================================
+%  ThmSmith Stage 0 derivation skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=flagship\_explore, specialization=f2
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to a Q1..Q6
+%    pool-mode, fill it VERBATIM from the question-specific block of
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    For free-form panel / ExactID / PartialID anchors, reproduce the
+%    locked-parameter block from the Stage -1 proposal verbatim. Do not
+%    rephrase locked parameters; Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage 0 derivation: \texttt{flagship\_explore} / \texttt{f2}%
+  \\ \large\textit{Response-contribution memory bounds for a two-stage one-sided IV design}}
+\author{ThmSmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note studies a two-stage binary encouragement design with imperfect compliance and a retained first-stage assignment-memory label.  The estimand-defining functional is not a regression coefficient; it is the sharp finite latent-response linear-programming bound
+\([\underline\theta_{\mathrm{mem}}(P,e),\overline\theta_{\mathrm{mem}}(P,e)]\)
+for the target
+\(\theta_{C,0}^{(2)}=\E[Y(0,1)-Y(0,0)\mid D_1(1)=1,D_1(0)=0]\).
+The main analytic result is an explicit response-contribution formula: in each \(X=x\) cell the \(Y(0,0)\) complier mean, the complier second-stage response rate, and the observed complier responder contribution are recovered by subtracting the pure never-taker memory branch from the mixed untreated branch.  The sharp cellwise contrast interval is therefore
+\([\gamma_C^{\star}(x)-\mu_{C,0}^{\star}(x),\,\gamma_C^{\star}(x)+1-\rho_C^{\star}(x)-\mu_{C,0}^{\star}(x)]\), and the aggregate interval is the complier-weighted Minkowski sum of these cellwise intervals.  The note also gives the standard coarsening containment for a precisely defined summed-equation relaxation and refutes the Stage -1 product envelope, whose independently optimized marginal means ignore response-type compatibility.
+\end{abstract}
+
+\section{Introduction}
+Sequential experiments frequently adapt later encouragements to earlier assignment and treatment history.  With imperfect compliance, the earlier assignment can remain informative even after one conditions on the earlier treatment state: under one-sided first-stage compliance, the cell \((Z_1,D_1)=(1,0)\) consists only of first-stage never-takers, whereas \((Z_1,D_1)=(0,0)\) mixes never-takers with latent first-stage compliers.  The causal question is whether this remembered randomization label should be retained when bounding the second-period effect among first-stage compliers who were untreated in period 1.
+
+Static nonparametric IV bounds already show how binary encouragements restrict treatment-effect means under imperfect compliance.  Dynamic IV and SMART analyses add time-varying assignment and treatment histories, but point-identification results typically require extra cross-period restrictions, while generic automated bounds do not by themselves expose the assignment-memory mechanism.  The Stage -1 proposal conjectured that retaining \(Z_1\) produces a closed-form mixture-subtraction envelope for
+\(\theta_{C,0}^{(2)}\).
+
+This note separates the valid analytic reduction from the invalid marginal simplification.  The useful reduction is not merely that an identified set is an LP projection.  In the retained-memory problem, the observed pure never-taker branch identifies the never-taker response rate and responder outcome contribution; subtracting those contributions from the mixed untreated branch identifies the corresponding complier response contribution.  The only remaining freedom for \(Y(0,1)\) among target compliers is the bounded outcome carried by second-stage nonresponders, which gives a closed-form sharp cellwise interval.  By contrast, replacing the coupled response-contribution equations by independently optimized mixed-branch and pure-never-taker mean intervals loses compatibility and can include impossible complier means.
+
+\section{Related work and positioning}
+Balke and Pearl \cite{BalkePearl1997} derive sharp nonparametric IV bounds for binary encouragement, treatment, and outcome models with imperfect compliance; the present note uses the same finite response-type logic inside each second-stage history, but the target is a two-period principal-stratum contrast.  Swanson et al. \cite{SwansonHernanMillerRobinsRichardson2018} review binary-IV partial-identification methods and clarify which static assumptions drive the classical bounds; this note differs by asking what a retained earlier assignment label contributes after a later randomized encouragement.  Manski and Pepper \cite{ManskiPepper2000} show how monotone instrumental-variable and monotone-response restrictions can sharpen bounds; here the tightening mechanism is not an outcome-shape restriction but a randomized mixture split.
+
+Bugni, Canay, and Shaikh \cite{BugniCanayShaikh2018} study inference under covariate-adaptive randomization and provide the design background for experiments whose assignment probabilities depend on strata.  Bugni et al. \cite{BugniGaoObradovicVelez2024} analyze treatment-effect identification and inference under covariate-adaptive randomization with imperfect compliance; their assignment strata are pre-treatment covariates, whereas the present formula uses a post-baseline assignment-memory label to separate response contributions inside a later treatment state.  Duarte et al. \cite{DuarteFinkelsteinKnoxMummoloShpitser2024} develop Autobounds, an automated polynomial-programming approach to causal bounds in discrete settings; it is the closest generic-computation comparator.  The present note does not replace that machinery with a general bound algorithm or a field-level characterization of dynamic IV bounds.  Its narrower mathematical contribution is the hand-indexed response-contribution reduction for this two-stage one-sided design and the compatibility counterexample showing why the natural product of sharp marginal mean sets is not itself sharp.
+
+Chen and Zhang \cite{ChenZhang2023} study IV-optimal dynamic treatment regimes through time-varying IV partial identification; their object is an optimal-regime value rather than a fixed second-period complier contrast.  Sojitra and Syrgkanis \cite{SojitraSyrgkanis2024} obtain dynamic LATE identification under one-sided noncompliance and additional cross-period conditions; this note keeps the weaker nonparametric restrictions and reports bounds.  Michael et al. \cite{MichaelCuiLorchTchetgen2024} identify marginal structural mean model parameters with time-varying IVs under compliance-type restrictions; the present result is nonparametric and finite-dimensional at the response-type level.  Artman et al. \cite{ArtmanBhattacharyaErtefaieLynchMcKayJohnson2024} model partial compliance in SMARTs using principal-strata marginal structural models, and Murphy \cite{Murphy2005} gives the SMART design context in which retained assignment history is operationally natural.
+
+The closest in-repository prior described in the Stage -1 proposal is a one-period bounded-defier LATE proposal; it does not use a post-baseline memory label.  The burned \texttt{flagship\_explore}/\texttt{f1} angle concerned sustained-regime full-history separation, whereas the present note is a two-stage partial-identification statement for
+\(\theta_{C,0}^{(2)}\).  The precise difference from the Stage -1 conjecture is that the valid closed form subtracts response rates and observed responder contributions before adding bounded nonresponder mass; subtracting independently optimized potential-outcome mean intervals is only an outer relaxation.
+
+\section{Formal setup}
+Let
+\[
+O=(Y,D_1,D_2,Z_1,Z_2,X)
+\]
+have observable law \(P=P_{Y,D_1,D_2,Z_1,Z_2,X}\).  The covariate \(X\) takes values in a finite set \(\mathcal X\), \(Z_t,D_t\in\{0,1\}\) for \(t=1,2\), and \(Y\in[0,1]\).  Write
+\(\pi_x=\Pr(X=x)\),
+\(p_1(z\mid x)=\Pr(Z_1=z\mid X=x)\), and let
+\[
+e_2(z\mid x,z_1,d_1)=\Pr(Z_2=z\mid X=x,Z_1=z_1,D_1=d_1)
+\]
+be the known adaptive second-stage assignment law.
+
+First-stage potential treatment is \(D_1(z_1)\).  One-sided first-stage compliance leaves two first-stage principal strata:
+\[
+S=C\quad\Longleftrightarrow\quad (D_1(1),D_1(0))=(1,0),
+\qquad
+S=N\quad\Longleftrightarrow\quad (D_1(1),D_1(0))=(0,0).
+\]
+For each \(x\), define
+\[
+q_C(x)=\Pr(S=C\mid X=x),\qquad q_N(x)=1-q_C(x).
+\]
+Under first-stage randomization and one-sided compliance,
+\[
+q_C(x)=\Pr(D_1=1\mid Z_1=1,X=x),
+\]
+so \((Z_1,D_1)=(1,0)\) is a pure \(N\) cell and \((Z_1,D_1)=(0,0)\) is a \(q_C(x)\)-by-\(q_N(x)\) mixture.
+
+For \(s\in\{C,N\}\) and \(d_1\in\{0,1\}\), second-stage potential treatment is \(D_2^{s,d_1}(z_2)\).  The potential outcome is \(Y(d_1,d_2)\).  The assignment-memory restriction used below says that, within \(D_1=0\), the law of \(D_2^{s,0}(z_2)\) and the potential outcomes \(Y(0,d_2)\) do not directly depend on whether the retained label was \(Z_1=0\) or \(Z_1=1\).
+
+For a fixed \(x\), let \(\mathcal T_x\) be the finite set of first-stage strata and one-sided second-stage response types.  A type \(t\in\mathcal T_x\) records \(s(t)\in\{C,N\}\) and response indicators
+\[
+R_{t,s,d_1}=D_2^{s,d_1}(1)\in\{0,1\},
+\qquad D_2^{s,d_1}(0)=0.
+\]
+The mean LP uses variables \(a_{x,t}\ge0\) for type probabilities conditional on \(X=x\), together with variables
+\[
+b_{x,t,d_1,d_2}=a_{x,t}\,\E[Y(d_1,d_2)\mid X=x,t],
+\qquad 0\le b_{x,t,d_1,d_2}\le a_{x,t}.
+\]
+The linear observational equations require the type probabilities and outcome moments implied by \((a,b)\), the first-stage assignment law, and \(e_2\) to match the corresponding probabilities and first moments extracted from \(P\).  For example, for every reachable cell,
+\[
+\Pr(X=x,Z_1=z_1,D_1=d_1,Z_2=z_2,D_2=d_2)
+=\pi_x p_1(z_1\mid x)e_2(z_2\mid x,z_1,d_1)
+\sum_{t\in\mathcal T_x} a_{x,t}\,\one\{d_1(t,z_1)=d_1,\ d_2(t,d_1,z_2)=d_2\},
+\]
+with the analogous equation for the first moment of \(Y\) obtained by replacing \(a_{x,t}\) by \(b_{x,t,d_1,d_2}\).  The mean LP is the bounding program for the scalar mean target.  Its sharpness is proved below by lifting feasible mean variables to bounded potential-outcome kernels; the lift reproduces the relevant observed cell probabilities and first moments extracted from \(P\).
+
+Let \(\mathcal L_{\mathrm{mem}}(P,e)\) denote the set of all \((a,b)\) satisfying these linear restrictions and the assumptions below.  The memory-retaining identified set is
+\[
+\Theta_I(P)=
+\left\{\theta_{C,0}^{(2)}(a,b):(a,b)\in\mathcal L_{\mathrm{mem}}(P,e)\right\}.
+\]
+To avoid a false randomization claim after discarding memory, define coarsening as an image relaxation.  Let \(T(P)\) be the vector of observable cell probabilities and \(Y\)-first moments used in the equations above, and let \(B_e(a,b)\) be the same vector implied by a latent table and the known assignment law \(e=(p_1,e_2)\).  The linear map \(A\) leaves the equations for \(D_1=1\) unchanged and, within \(D_1=0\), replaces the two \(Z_1\)-indexed equations by their sum for each \((x,z_2,d_2)\), with the same summing operation for the \(Y\)-first moments.  The coarsened feasible set is
+\[
+\mathcal L_{\mathrm{coarse}}(A P,e)
+=\{(a,b): A B_e(a,b)=A T(P)\ \text{and the latent restrictions above hold}\}.
+\]
+This definition keeps the original adaptive probabilities \(e_2(z\mid x,z_1,d_1)\) inside the summed equations; it does not impose sequential randomization of \(Z_2\) given only \((X,D_1)\), which would generally fail when \(e_2\) depends on the discarded \(Z_1\) label.
+
+\paragraph{Locked parameters.}
+This is a partial-identification anchor, not a panel pool-mode.  The locked tuple is
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},
+  \text{bounding functional})\\
+=
+(\texttt{flagship\_explore},\texttt{f2},
+  P_{Y,D_1,D_2,Z_1,Z_2,X},\ \theta_{C,0}^{(2)},\
+  \mathcal{R}_{\mathrm{2stageIV+memory+1sided}},\
+  [\underline\theta_{\mathrm{mem}}(P,e),\overline\theta_{\mathrm{mem}}(P,e)]) .
+\end{gathered}
+\]
+Here \(X\) has finite support, \(Z_t,D_t\in\{0,1\}\), and \(Y\in[0,1]\).  The first-stage encouragement \(Z_1\) is randomized within \(X\); the second-stage encouragement follows the known adaptive law
+\[
+e_2(z\mid x,z_1,d_1)=\Pr(Z_2=z\mid X=x,Z_1=z_1,D_1=d_1),
+\]
+which is allowed to depend on the retained assignment-memory label \(Z_1\) even after conditioning on \((X,D_1)\).  The target is the first-stage-complier, first-stage-untreated second-period effect
+\[
+\theta_{C,0}^{(2)}
+=\E\!\left[Y(0,1)-Y(0,0)\mid D_1(1)=1,\ D_1(0)=0\right].
+\]
+The restrictions \(\mathcal{R}_{\mathrm{2stageIV+memory+1sided}}\) are consistency, exclusion of \(Z_1,Z_2\) except through \(D_1,D_2\), randomized \(Z_1\) within \(X\), sequential randomization of \(Z_2\) given \((X,Z_1,D_1)\), positivity of all reachable encouragement cells, one-sided first-stage compliance \(D_1(0)=0\le D_1(1)\), one-sided second-stage compliance within each retained history, and a no-direct-memory restriction equating \(Y(0,d_2)\) and second-stage response laws across \((Z_1,D_1)=(0,0)\) and \((1,0)\) within the same first-stage principal stratum.  The bounding functional is the sharp interval obtained by a finite latent-response linear program that retains \(Z_1\) as an assignment-memory splitter inside the \(D_1=0\) state.
+
+\section{Assumptions}
+\begin{assumption}[Finite support and bounded outcomes]\label{ass:finite-bounded}
+\(X\) has finite support; \(Z_1,Z_2,D_1,D_2\in\{0,1\}\); and \(0\le Y(d_1,d_2)\le1\) almost surely for all \(d_1,d_2\in\{0,1\}\).
+\end{assumption}
+
+\begin{assumption}[First-stage random encouragement]\label{ass:first-rand}
+For every \(x\) used in the target, \(0<p_1(1\mid x)<1\), and \(Z_1\) is independent of the first-stage stratum, second-stage response types, and potential outcomes conditional on \(X=x\).
+\end{assumption}
+
+\begin{assumption}[Sequential second-stage random encouragement]\label{ass:second-rand}
+For every reachable \((x,z_1,d_1)\), \(0<e_2(1\mid x,z_1,d_1)<1\), and \(Z_2\) is independent of the latent first-stage stratum, second-stage response type, and potential outcomes conditional on \((X,Z_1,D_1)=(x,z_1,d_1)\).
+\end{assumption}
+
+\begin{assumption}[Consistency and exclusion]\label{ass:consistency}
+The realized treatments satisfy \(D_1=D_1(Z_1)\) and \(D_2=D_2^{S,D_1}(Z_2)\).  The realized outcome is \(Y=Y(D_1,D_2)\), and the encouragements \(Z_1,Z_2\) affect \(Y\) only through \(D_1,D_2\).
+\end{assumption}
+
+\begin{assumption}[One-sided compliance]\label{ass:one-sided}
+First-stage compliance is one-sided: \(D_1(0)=0\le D_1(1)\) almost surely.  For each \(s,d_1\), second-stage compliance is one-sided: \(D_2^{s,d_1}(0)=0\le D_2^{s,d_1}(1)\) almost surely.
+\end{assumption}
+
+\begin{assumption}[Nondegenerate first-stage mixture]\label{ass:nondegenerate}
+For every \(x\) appearing in a ratio for a complier target, \(q_C(x)>0\).  In strict mixture-splitting claims, \(0<q_C(x)<1\).  Cells with \(q_C(x)=0\) have zero complier target mass and are omitted from the aggregate target.
+\end{assumption}
+
+\begin{assumption}[No direct assignment-memory effect in the untreated first-stage state]\label{ass:no-memory-direct}
+Within \(X=x\), first-stage stratum \(s\), and first-stage treatment \(D_1=0\), the second-stage response law \(D_2^{s,0}(z_2)\) and the potential outcomes \(Y(0,d_2)\) do not depend directly on whether the retained label was \(Z_1=0\) or \(Z_1=1\).
+\end{assumption}
+
+\begin{assumption}[Observational compatibility]\label{ass:compatible}
+The observed law \(P\) and adaptive assignment law \(e\) are in the maintained model: \(\mathcal L_{\mathrm{mem}}(P,e)\) is nonempty.  Consequently all endpoint optimizations below are over nonempty feasible sets.
+\end{assumption}
+
+\begin{assumption}[Cellwise covariate separability]\label{ass:cellwise}
+The latent-response restrictions are imposed separately within each \(X=x\) cell, and no cross-\(x\) monotonicity, smoothness, rank, or shape restriction is added.
+\end{assumption}
+
+\begin{assumption}[Informative pure never-taker branch]\label{ass:informative-never}
+For at least one \(x\) with \(0<q_C(x)<1\), the pure-never-taker branch \((Z_1,D_1)=(1,0)\) imposes a proper restriction on at least one second-stage mean or response-type component.  Equivalently, its projection is a proper subset of the natural no-data box for that component.
+\end{assumption}
+
+\section{Regression estimator}
+For this partial-identification anchor, the section title is inherited from the skeleton but the estimand-defining object is a bounding functional, not a regression estimator.  For every feasible \((a,b)\in\mathcal L_{\mathrm{mem}}(P,e)\), define
+\[
+\mu_{C,d}(x;a,b)=
+\frac{\sum_{t:s(t)=C} b_{x,t,0,d}}{\sum_{t:s(t)=C} a_{x,t}},
+\qquad d\in\{0,1\},
+\]
+whenever \(q_C(x)=\sum_{t:s(t)=C}a_{x,t}>0\).  The cell-level contrast is
+\[
+\theta_{C,0}^{(2)}(x;a,b)=\mu_{C,1}(x;a,b)-\mu_{C,0}(x;a,b).
+\]
+The aggregate complier weights are observable under Assumptions~\ref{ass:first-rand} and \ref{ass:one-sided}:
+\[
+w_C(x)=
+\frac{\pi_x q_C(x)}{\sum_{x'\in\mathcal X}\pi_{x'}q_C(x')}.
+\]
+The aggregate target functional induced by \((a,b)\) is
+\[
+\theta_{C,0}^{(2)}(a,b)
+=\sum_{x:q_C(x)>0} w_C(x)\,\theta_{C,0}^{(2)}(x;a,b).
+\]
+
+The memory-retaining sharp bounds are the observable functionals
+\[
+\underline\theta_{\mathrm{mem}}(P,e)=
+\inf_{(a,b)\in\mathcal L_{\mathrm{mem}}(P,e)}
+\theta_{C,0}^{(2)}(a,b),
+\qquad
+\overline\theta_{\mathrm{mem}}(P,e)=
+\sup_{(a,b)\in\mathcal L_{\mathrm{mem}}(P,e)}
+\theta_{C,0}^{(2)}(a,b).
+\]
+The coarsened bounds
+\(\underline\theta_{\mathrm{coarse}}(A P,e)\) and
+\(\overline\theta_{\mathrm{coarse}}(A P,e)\) are defined by the same objective over \(\mathcal L_{\mathrm{coarse}}(A P,e)\), and
+\[
+\Theta_{\mathrm{coarse}}(A P,e)=
+\left\{\theta_{C,0}^{(2)}(a,b):(a,b)\in\mathcal L_{\mathrm{coarse}}(A P,e)\right\}.
+\]
+
+For the analytic memory formula, define the following observable summaries in every \(x\) cell with \(0<q_C(x)<1\).  The pure never-taker branch summaries are
+\[
+\nu_N(x)=\E[Y\mid X=x,Z_1=1,D_1=0,Z_2=0],
+\]
+\[
+\rho_N(x)=\Pr(D_2=1\mid X=x,Z_1=1,D_1=0,Z_2=1),
+\qquad
+\gamma_N(x)=\E[Y\one\{D_2=1\}\mid X=x,Z_1=1,D_1=0,Z_2=1].
+\]
+The mixed untreated branch summaries are
+\[
+\nu_M(x)=\E[Y\mid X=x,Z_1=0,D_1=0,Z_2=0],
+\]
+\[
+\rho_M(x)=\Pr(D_2=1\mid X=x,Z_1=0,D_1=0,Z_2=1),
+\qquad
+\gamma_M(x)=\E[Y\one\{D_2=1\}\mid X=x,Z_1=0,D_1=0,Z_2=1].
+\]
+The response-contribution subtraction quantities are
+\[
+\mu_{C,0}^{\star}(x)=\frac{\nu_M(x)-q_N(x)\nu_N(x)}{q_C(x)},
+\quad
+\rho_C^{\star}(x)=\frac{\rho_M(x)-q_N(x)\rho_N(x)}{q_C(x)},
+\quad
+\gamma_C^{\star}(x)=\frac{\gamma_M(x)-q_N(x)\gamma_N(x)}{q_C(x)}.
+\]
+Under observational compatibility these quantities obey
+\[
+0\le \mu_{C,0}^{\star}(x)\le1,\qquad
+0\le \gamma_C^{\star}(x)\le \rho_C^{\star}(x)\le1.
+\]
+They are not new assumptions; they are algebraic consequences of the retained-memory cell equations.
+If \(q_N(x)=0\), the mixed branch is already pure complier; use the boundary convention
+\[
+\mu_{C,0}^{\star}(x)=\nu_M(x),\qquad
+\rho_C^{\star}(x)=\rho_M(x),\qquad
+\gamma_C^{\star}(x)=\gamma_M(x).
+\]
+
+For comparison with the Stage -1 conjecture, define the true cellwise memory projection
+\[
+\mathcal C_x^{\mathrm{mem}}
+=
+\left\{(\mu_{C,0}(x;a,b),\mu_{C,1}(x;a,b)):
+(a,b)\in\mathcal L_{\mathrm{mem}}(P,e)\right\}.
+\]
+Let \(\mathcal J_{M,0,x}\) be the sharp joint set for the mixed-branch means
+\((m_0,m_1)\), where
+\[
+m_d=q_C(x)\mu_{C,d}(x)+q_N(x)\mu_{N,d}(x),
+\]
+using only the \((Z_1,D_1)=(0,0)\) branch.  Let \(\mathcal J_{N,0,x}\) be the sharp joint set for the pure never-taker means
+\((n_0,n_1)=(\mu_{N,0}(x),\mu_{N,1}(x))\), using only the \((Z_1,D_1)=(1,0)\) branch.  The Stage -1 product subtraction set is
+\[
+\mathcal E_x^{\mathrm{prod}}
+=
+\left\{
+\left(
+\frac{m_0-q_N(x)n_0}{q_C(x)},
+\frac{m_1-q_N(x)n_1}{q_C(x)}
+\right):
+(m_0,m_1)\in\mathcal J_{M,0,x},\
+(n_0,n_1)\in\mathcal J_{N,0,x},\
+0\le \frac{m_d-q_N(x)n_d}{q_C(x)}\le1
+\right\}.
+\]
+Theorems below show that \(\mathcal E_x^{\mathrm{prod}}\) is generally an outer relaxation, not the sharp cellwise projection.
+
+\section{Target causal estimand}
+The target is the first-stage-complier, first-stage-untreated second-period effect
+\[
+\theta_{C,0}^{(2)}
+=\E\!\left[Y(0,1)-Y(0,0)\mid S=C\right],
+\qquad
+S=C\Longleftrightarrow D_1(1)=1,\ D_1(0)=0.
+\]
+Equivalently, when \(q_C(x)>0\),
+\[
+\theta_{C,0}^{(2)}
+=\sum_{x:q_C(x)>0}
+\frac{\Pr(X=x)q_C(x)}{\sum_{x'}\Pr(X=x')q_C(x')}
+\left\{
+\E[Y(0,1)\mid S=C,X=x]
+-
+\E[Y(0,0)\mid S=C,X=x]
+\right\}.
+\]
+This is a causal parameter of the latent principal stratum.  It is distinct from the observed mixed-branch mean, the pure-never-taker mean, and the LP endpoints; the endpoints are functionals of \(P\) that bound the causal target under the maintained restrictions.
+
+\section{Main theorems}
+\begin{theorem}[Sharp response-contribution formula and memory refinement]\label{thm:sharp-memory}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:compatible}, fix \(x\) with \(q_C(x)>0\).  The sharp memory-retaining cellwise identified set for
+\(\theta_{C,0}^{(2)}(x)=\mu_{C,1}(x)-\mu_{C,0}(x)\) is
+\[
+\Theta_{x,\mathrm{mem}}(P,e)
+=
+\left[
+\gamma_C^{\star}(x)-\mu_{C,0}^{\star}(x),\
+\gamma_C^{\star}(x)+1-\rho_C^{\star}(x)-\mu_{C,0}^{\star}(x)
+\right].
+\]
+Equivalently,
+\[
+\mathcal C_x^{\mathrm{mem}}
+=
+\left\{
+\left(\mu_{C,0}^{\star}(x),u_1\right):
+\gamma_C^{\star}(x)\le u_1\le
+\gamma_C^{\star}(x)+1-\rho_C^{\star}(x)
+\right\}.
+\]
+Every point in this interval is attained by a latent-response completion satisfying the maintained restrictions and reproducing the relevant observable probabilities and outcome first moments in \(P\).  If Assumption~\ref{ass:cellwise} holds, the aggregate sharp set is
+\[
+\Theta_I(P)=
+\left[
+\sum_{x:q_C(x)>0}w_C(x)\{\gamma_C^{\star}(x)-\mu_{C,0}^{\star}(x)\},\
+\sum_{x:q_C(x)>0}w_C(x)\{\gamma_C^{\star}(x)+1-\rho_C^{\star}(x)-\mu_{C,0}^{\star}(x)\}
+\right]
+=
+\left[
+\underline\theta_{\mathrm{mem}}(P,e),
+\overline\theta_{\mathrm{mem}}(P,e)
+\right].
+\]
+Finally, for the summed-equation coarsened feasible set defined in Section 5,
+\[
+\Theta_I(P)\subseteq
+\Theta_{\mathrm{coarse}}(A P,e),
+\]
+or equivalently
+\[
+\underline\theta_{\mathrm{coarse}}(A P,e)
+\le
+\underline\theta_{\mathrm{mem}}(P,e)
+\le
+\overline\theta_{\mathrm{mem}}(P,e)
+\le
+\overline\theta_{\mathrm{coarse}}(A P,e).
+\]
+\end{theorem}
+
+The nonstandard part of the theorem is the response-contribution formula.  It is a closed-form reduction of the retained-memory LP for this target: \(Z_1=1,D_1=0\) supplies the never-taker response contribution, \(Z_1=0,D_1=0\) supplies the mixed response contribution, and their subtraction leaves only the unobserved bounded \(Y(0,1)\) values among complier nonresponders.  This is a useful two-stage specialization of finite latent-response sharp-bound machinery, not a new general theory of dynamic IV identification.  The coarsening containment is included as a benchmark and confirms the Stage -1 memory-refinement claim, but by itself it is just feasible-set monotonicity.
+
+\begin{theorem}[Verdict on the Stage -1 mixture-subtraction conjecture]\label{thm:product-fails}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:compatible}, for any \(x\) with \(0<q_C(x)<1\),
+\[
+\mathcal C_x^{\mathrm{mem}}\subseteq \mathcal E_x^{\mathrm{prod}}.
+\]
+The containment can be strict.  Therefore the Stage -1 joint mixture-subtraction envelope is refuted as an equality: independently sharp mixed-branch and pure-never-taker marginal projections do not generally encode a common response-type decomposition.  The nearest correct closed-form statement for this one-sided second-stage problem is the response-contribution projection in Theorem~\ref{thm:sharp-memory}:
+\[
+\mathcal C_x^{\mathrm{mem}}
+=
+\left\{
+\left(\mu_{C,0}^{\star}(x),u_1\right):
+\gamma_C^{\star}(x)\le u_1\le
+\gamma_C^{\star}(x)+1-\rho_C^{\star}(x)
+\right\},
+\]
+which subtracts response rates and observed responder contributions rather than independently optimized potential-outcome means.
+\end{theorem}
+
+This theorem is the main correction to the Stage -1 proposal.  It explains why Balke--Pearl-style response-type bounds cannot always be combined by optimizing two marginal faces separately: the hidden nonresponder outcome mass and response-type composition have to be allocated jointly across the pure and mixed histories.  Generic Autobounds-style computations also keep these variables coupled; the theorem gives the analytic reason that the product envelope is too large.  Its role is a compatibility diagnostic for this proposed closed form, rather than a field-level identification theorem.
+
+\begin{proposition}[Strict assignment-memory gain]\label{prop:strict-aggregation}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:compatible}, strict containment in Theorem~\ref{thm:sharp-memory} occurs for a nonempty relatively open set of observed laws and positive adaptive assignment laws, where openness is taken in the finite-dimensional observable-law coordinates subject to the maintained support and positivity restrictions.  One such family has a single \(x\), \(p_1(1\mid x)=1/2\), \(q_C(x)=q_N(x)=1/2\), different positive second-stage assignment probabilities across \((Z_1,D_1)=(0,0)\) and \((1,0)\), and the second-stage response/outcome pattern displayed in Section~\ref{sec:counterexample}.
+\end{proposition}
+
+This proposition confirms the substantive Stage -1 intuition that remembered assignment can tighten dynamic IV bounds, but only after the coarsened feasible set is defined as a summed-equation relaxation and only through the response-contribution calculation rather than the refuted product envelope.  The Stage -1 covariate-aggregation conjecture is confirmed by the aggregate formula in Theorem~\ref{thm:sharp-memory} under Assumption~\ref{ass:cellwise}.
+
+\section{Interpretation}
+Theorem~\ref{thm:sharp-memory} says that the retained-memory bound has a simple response-contribution interpretation.  The \(Z_2=0\) cells identify the \(Y(0,0)\) mixed and pure never-taker means, so \(\mu_{C,0}^{\star}\) is obtained by ordinary mixture subtraction.  The \(Z_2=1,D_2=1\) cells identify responder outcome contributions, not full \(Y(0,1)\) means; subtracting the pure never-taker contribution from the mixed contribution gives \(\gamma_C^{\star}\), and the nonresponder share \(1-\rho_C^{\star}\) is the only remaining worst-case mass.  If the coarsened analyst discards \(Z_1\) among \(D_1=0\) units, that analyst merges a pure never-taker cell with a mixed complier/never-taker cell and therefore weakens the observable restrictions.
+
+Theorem~\ref{thm:product-fails} says that mixture subtraction is valid only when the quantities being subtracted come from a common latent completion.  The pure never-taker branch may bound \(\mu_{N,1}\), and the mixed branch may bound \(m_1\), but the endpoint choices for those two marginal problems can require incompatible allocations of second-stage responders and nonresponders.  The product envelope is therefore safe as an outer bound but not as a sharp formula.
+
+The memory bound collapses to point identification when the retained histories make the relevant complier potential-outcome means unique; perfect second-stage compliance is the clearest case because then \(\rho_C^{\star}=1\) and no unobserved \(Y(0,1)\) nonresponder mass remains.  It widens to the natural Manski no-restriction bound \([-1,1]\) for the contrast when the IV, memory, and response-type restrictions provide no information about either potential-outcome mean beyond \(Y\in[0,1]\).  The restriction doing the tightening is the combination of one-sided first-stage compliance, which makes \((Z_1,D_1)=(1,0)\) a pure never-taker branch, and no direct assignment-memory effects, which lets that pure branch constrain the never-taker contribution inside \((Z_1,D_1)=(0,0)\).
+
+\section{Step-by-step proof}
+\begin{lemma}[Observed cell equations]\label{lem:cell-equations}
+Under Assumptions~\ref{ass:first-rand}--\ref{ass:consistency}, the observable conditional probabilities and first moments in each \(X=x\) cell are linear functions of the latent variables \((a,b)\) described in the formal setup.
+\end{lemma}
+
+\begin{proof}
+Fix \(x,z_1,d_1,z_2,d_2\).  First-stage randomization gives the factor \(p_1(z_1\mid x)\), and sequential second-stage randomization gives the factor \(e_2(z_2\mid x,z_1,d_1)\).  Consistency and exclusion replace realized \(D_1,D_2,Y\) by \(D_1(z_1)\), \(D_2^{S,d_1}(z_2)\), and \(Y(d_1,d_2)\).  Summing the indicators of the compatible response types gives the probability equation in Section 5.  Replacing the type mass \(a_{x,t}\) by the bounded outcome-mass variable \(b_{x,t,d_1,d_2}\) gives the first-moment equation.  All operations are finite sums because \(X\), treatments, instruments, and response types are finite, and boundedness gives \(0\le b_{x,t,d_1,d_2}\le a_{x,t}\).
+\end{proof}
+
+\begin{lemma}[Convex projection interval]\label{lem:convex-interval}
+For fixed \(P,e\), \(\mathcal L_{\mathrm{mem}}(P,e)\) is a nonempty compact convex polytope, and the image of \(\mathcal L_{\mathrm{mem}}(P,e)\) under the scalar linear functional \(\theta_{C,0}^{(2)}\) is a closed interval.
+\end{lemma}
+
+\begin{proof}
+Assumption~\ref{ass:compatible} gives nonemptiness.  Lemma~\ref{lem:cell-equations} and Assumptions~\ref{ass:finite-bounded}--\ref{ass:no-memory-direct} define \(\mathcal L_{\mathrm{mem}}(P,e)\) by finitely many linear equalities and inequalities, including \(a_{x,t}\ge0\), \(\sum_t a_{x,t}=1\), and \(0\le b_{x,t,d_1,d_2}\le a_{x,t}\).  Hence it is compact and convex.  The denominator \(q_C(x)\) in each target cell is fixed by the first-stage observed law under Assumptions~\ref{ass:first-rand} and \ref{ass:one-sided}; Assumption~\ref{ass:nondegenerate} excludes division by zero.  Therefore \(\theta_{C,0}^{(2)}(a,b)\) is linear in the \(b\)-variables with fixed weights.  A continuous linear image of a compact convex set in \(\mathbb R\) is a compact interval.
+\end{proof}
+
+\begin{lemma}[Mean-kernel lift]\label{lem:mean-kernel-lift}
+Every feasible \((a,b)\in\mathcal L_{\mathrm{mem}}(P,e)\) is induced by bounded potential-outcome kernels that satisfy the maintained restrictions and reproduce the observable cell probabilities and outcome first moments used by the LP.
+\end{lemma}
+
+\begin{proof}
+Fix \(x\) and type \(t\).  If \(a_{x,t}>0\), set
+\[
+\E[Y(d_1,d_2)\mid X=x,t]=b_{x,t,d_1,d_2}/a_{x,t};
+\]
+if \(a_{x,t}=0\), choose any value in \([0,1]\).  The inequalities \(0\le b_{x,t,d_1,d_2}\le a_{x,t}\) ensure these means lie in \([0,1]\).  A bounded kernel with the required mean exists, for instance a two-point distribution on \(\{0,1\}\) with success probability equal to the chosen mean, coupled arbitrarily across potential-outcome coordinates.  Drawing \(X\), then the latent type with probabilities \(a_{x,t}\), then potential outcomes from these kernels, and finally drawing \(Z_1,Z_2\) from \(p_1\) and \(e_2\), gives a causal completion satisfying consistency, exclusion, one-sided compliance, and the no-direct-memory restriction by construction.  Lemma~\ref{lem:cell-equations} then shows that the induced observed probabilities and first moments equal the LP equations, hence the corresponding summaries of \(P\).
+\end{proof}
+
+\begin{lemma}[Response-contribution subtraction]\label{lem:response-contribution}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:compatible}, for every \(x\) with \(0<q_C(x)<1\),
+\[
+\mu_{C,0}(x)=\mu_{C,0}^{\star}(x),\qquad
+\rho_C(x)=\rho_C^{\star}(x),\qquad
+\E[R_CY(0,1)\mid S=C,X=x]=\gamma_C^{\star}(x),
+\]
+where \(R_C=D_2^{C,0}(1)\).  Moreover
+\[
+\mu_{C,1}(x)=\gamma_C^{\star}(x)+\delta_C(x)
+\quad\text{for some}\quad
+0\le\delta_C(x)\le1-\rho_C^{\star}(x),
+\]
+and every value of \(\delta_C(x)\) in that interval is attainable without changing the observed cell probabilities or first moments.
+\end{lemma}
+
+\begin{proof}
+In the pure never-taker branch \((Z_1,D_1)=(1,0)\), one-sided first-stage compliance implies \(S=N\).  With \(Z_2=0\), one-sided second-stage compliance gives \(D_2=0\), so consistency gives
+\(\nu_N(x)=\E[Y(0,0)\mid S=N,X=x]\).  With \(Z_2=1\), the observed response rate is
+\(\rho_N(x)=\E[R_N\mid S=N,X=x]\), and the observed responder outcome contribution is
+\(\gamma_N(x)=\E[R_NY(0,1)\mid S=N,X=x]\).
+
+In the mixed branch \((Z_1,D_1)=(0,0)\), the conditional stratum weights are \(q_C(x)\) and \(q_N(x)\).  The same consistency and exclusion arguments give
+\[
+\nu_M(x)=q_C(x)\mu_{C,0}(x)+q_N(x)\nu_N(x),
+\]
+\[
+\rho_M(x)=q_C(x)\rho_C(x)+q_N(x)\rho_N(x),
+\]
+and, using the no-direct-memory restriction for the never-taker component,
+\[
+\gamma_M(x)=q_C(x)\E[R_CY(0,1)\mid S=C,X=x]+q_N(x)\gamma_N(x).
+\]
+Solving these three linear equations gives the displayed \(\star\)-quantities.  Finally,
+\[
+\mu_{C,1}(x)
+=\E[R_CY(0,1)\mid S=C,X=x]
+ +\E[(1-R_C)Y(0,1)\mid S=C,X=x].
+\]
+The second term lies between \(0\) and \(1-\rho_C^{\star}(x)\) by boundedness.  It is never observed, because units with \(R_C=0\) have \(D_2=0\) even when \(Z_2=1\), so their observed outcome is \(Y(0,0)\).  Holding all observed components fixed and varying this unobserved mean over \([0,1]\) gives every \(\delta_C(x)\) in the stated interval; Lemma~\ref{lem:mean-kernel-lift} supplies the corresponding bounded kernels.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:sharp-memory}]
+Lemma~\ref{lem:response-contribution} gives the cellwise formula when \(0<q_C(x)<1\).  If \(q_N(x)=0\), the \(Z_1=0,D_1=0\) branch is already a complier branch, so the same formula follows from the boundary convention \((\mu_{C,0}^{\star},\rho_C^{\star},\gamma_C^{\star})=(\nu_M,\rho_M,\gamma_M)\).  The lower endpoint sets the unobserved complier nonresponder mean for \(Y(0,1)\) to zero; the upper endpoint sets it to one; intermediate points set it to the corresponding value in \([0,1]\).  Lemma~\ref{lem:mean-kernel-lift} turns each such choice into a bounded latent causal completion, so the interval is sharp for the observable probabilities and first moments.
+
+If Assumption~\ref{ass:cellwise} holds, the feasible set factors by \(x\) once the observable weights \(w_C(x)\) are fixed.  The target is the weighted sum of cellwise contrasts, so minimizing or maximizing the aggregate objective over the Cartesian product of cellwise intervals is obtained by minimizing or maximizing every cell separately.  This gives the displayed aggregate interval and identifies its endpoints with \(\underline\theta_{\mathrm{mem}}(P,e)\) and \(\overline\theta_{\mathrm{mem}}(P,e)\).  Lemma~\ref{lem:convex-interval} gives the same interval conclusion from the LP geometry.
+
+For memory refinement, take any \((a,b)\in\mathcal L_{\mathrm{mem}}(P,e)\).  By definition, \(B_e(a,b)=T(P)\).  Applying the deterministic coarsening map gives \(A B_e(a,b)=A T(P)\), while all latent inequalities and the target functional are unchanged.  Therefore the same latent completion is feasible for \(\mathcal L_{\mathrm{coarse}}(A P,e)\), as that set was defined by the summed equations \(A B_e(a,b)=A T(P)\) rather than by an invalid collapsed sequential-randomization restriction.  Hence every value in \(\Theta_I(P)\) also belongs to \(\Theta_{\mathrm{coarse}}(A P,e)\), and the endpoint inequalities are the order relation for nested compact intervals.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:product-fails}]
+Let \((u_0,u_1)\in\mathcal C_x^{\mathrm{mem}}\).  By definition there is a common feasible cellwise latent completion.  Its mixed branch means \((m_0,m_1)\) belong to \(\mathcal J_{M,0,x}\), its pure never-taker means \((n_0,n_1)\) belong to \(\mathcal J_{N,0,x}\), and the algebraic mixture identity
+\[
+m_d=q_C(x)u_d+q_N(x)n_d,\qquad d=0,1,
+\]
+holds because \((Z_1,D_1)=(0,0)\) is a \(C/N\) mixture and Assumption~\ref{ass:no-memory-direct} equates the never-taker component across the two \(D_1=0\) histories.  Solving this identity for \(u_d\) gives \((u_0,u_1)\in\mathcal E_x^{\mathrm{prod}}\).  Hence \(\mathcal C_x^{\mathrm{mem}}\subseteq\mathcal E_x^{\mathrm{prod}}\).
+
+Strictness is demonstrated by the counterexample in Section~\ref{sec:counterexample}.  In that example, the marginal sets allow \(m_1=3/4\) and \(n_1=1/2\), which the product formula maps to \(u_1=1\).  The coupled LP, however, forces \(u_1\le9/10\) because first-stage compliers have only one-half nonresponder mass available for unobserved \(Y(0,1)\), and their observed responder contribution is \(2/5\).  Thus the product point is not attainable by any common latent-response completion.
+\end{proof}
+
+\begin{lemma}[Finite LP strict-witness stability]\label{lem:lp-stability}
+Let \(\eta\) collect finitely many observable cell probabilities, first moments, and assignment probabilities, and suppose a finite latent-response feasibility problem can be written locally as
+\[
+\mathcal P(\eta)=
+\{v:\ C(\eta)v=d(\eta),\ \ell\le v\le u,\ Hv\le h\},
+\]
+where \(C(\eta)\), \(d(\eta)\), and the linear objective \(c(\eta)^\transpose v\) are continuous in \(\eta\), while \(\ell,u,H,h\) are fixed finite arrays.  Fix \(\eta_0\) and a feasible point \(v_0\in\mathcal P(\eta_0)\).  Assume that \(v_0\) has positive inequality slack,
+\[
+\ell_i+\kappa<v_{0i}<u_i-\kappa,\qquad
+Hv_0\le h-\kappa\mathbf 1
+\]
+for some \(\kappa>0\), except for coordinates that are fixed by structural equalities already included in \(C(\eta)v=d(\eta)\).  Assume also that there is a set of coordinates \(J\) such that the submatrix \(C_J(\eta_0)\) has full row rank and the remaining coordinates \(v_{J^c}\) are held fixed at \(v_{0,J^c}\).  Then, after possibly shrinking the parameter neighborhood, there is a continuous feasible selection \(v(\eta)\in\mathcal P(\eta)\) with \(v(\eta_0)=v_0\).  Consequently the objective value at this feasible point remains arbitrarily close to \(c(\eta_0)^\transpose v_0\) for all \(\eta\) sufficiently close to \(\eta_0\).
+\end{lemma}
+
+\begin{proof}
+Full row rank is stable under small perturbations.  Shrink the neighborhood so that \(C_J(\eta)\) has the same row rank as \(C_J(\eta_0)\), and let
+\[
+R(\eta)=C_J(\eta)^\transpose\{C_J(\eta)C_J(\eta)^\transpose\}^{-1}
+\]
+be a continuous right inverse.  Define
+\[
+v_{J^c}(\eta)=v_{0,J^c},\qquad
+v_J(\eta)=v_{0,J}+R(\eta)\{d(\eta)-C(\eta)v_0\}.
+\]
+Then \(C(\eta)v(\eta)=d(\eta)\), and \(v(\eta)\to v_0\) as \(\eta\to\eta_0\).  The positive slack inequalities therefore continue to hold after a further shrinkage of the neighborhood.  The objective is continuous in both \(c(\eta)\) and \(v(\eta)\), so \(c(\eta)^\transpose v(\eta)\to c(\eta_0)^\transpose v_0\).
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:strict-aggregation}]
+The strict-gain witness is the single-\(x\) law in Section~\ref{sec:counterexample}.  There the memory-retaining interval for the contrast is \([2/5,9/10]\), while the coarsened interval contains the whole \([0,1]\).  Hence the containment in Theorem~\ref{thm:sharp-memory} is strict at the displayed law.  The assignment probabilities are strictly positive with \(e_2(1\mid x,0,0)\ne e_2(1\mid x,1,0)\).
+
+It remains to justify openness.  The memory endpoints in Theorem~\ref{thm:sharp-memory} are the closed-form functions
+\[
+L_{\mathrm{mem}}=\gamma_C^{\star}-\mu_{C,0}^{\star},
+\qquad
+U_{\mathrm{mem}}=\gamma_C^{\star}+1-\rho_C^{\star}-\mu_{C,0}^{\star}.
+\]
+They are continuous in the observed conditional moments and in \(q_C\) on the positive-support region \(q_C>0\).  Therefore, in a sufficiently small neighborhood of the witness,
+\[
+L_{\mathrm{mem}}>3/10,\qquad U_{\mathrm{mem}}<19/20.
+\]
+
+For the coarsened lower side, fix a small \(\delta\in(0,1/100)\).  In the notation of Section~\ref{sec:counterexample}, where \(A=1/12\) and \(B=1/4\), the strictly interior choice
+\[
+r_C=\delta,\quad
+r_N=\frac23-\frac{\delta}{3},\quad
+g_C=\frac{\delta}{2},\quad
+g_N=\frac7{30}-\frac{\delta}{6}
+\]
+satisfies
+\[
+Ar_C+Br_N=\frac16,\qquad
+Ag_C+Bg_N=\frac7{120},
+\]
+and has \(0<g_s<r_s<1\) for \(s=C,N\).  If the complier nonresponder mean is \(h_C=\delta/2\), the resulting coarsened target is
+\[
+g_C+(1-r_C)h_C=\delta-\frac{\delta^2}{2}<\delta.
+\]
+For the coarsened upper side, the strictly interior choice
+\[
+r_C=\frac7{10},\quad
+r_N=\frac{13}{30},\quad
+g_C=\frac7{10}-\delta,\quad
+g_N=\frac{\delta}{3},\quad
+h_C=1-\delta
+\]
+satisfies the same two collapsed equations and \(0<g_s<r_s<1\), and its target is
+\[
+g_C+(1-r_C)h_C=1-\frac{13\delta}{10}>19/20.
+\]
+Both choices have positive slack in the finite LP inequalities.  Applying Lemma~\ref{lem:lp-stability} to the lower and upper coarsened witnesses, and shrinking the neighborhood if needed, gives nearby feasible coarsened completions with target values still below \(3/10\) and above \(19/20\).  Combining this neighborhood with the continuity neighborhood for the memory endpoints yields
+\[
+\underline\theta_{\mathrm{coarse}}(A P,e)<3/10<
+\underline\theta_{\mathrm{mem}}(P,e)
+\le
+\overline\theta_{\mathrm{mem}}(P,e)
+<19/20<
+\overline\theta_{\mathrm{coarse}}(A P,e),
+\]
+so strict containment persists on a nonempty relatively open neighborhood within the maintained finite-response model.
+\end{proof}
+
+\section{Sanity checks}
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Vacuous no-restriction bound.}  If the IV, compliance, and memory restrictions are removed and only \(0\le Y(d_1,d_2)\le1\) remains, then each potential-outcome mean for the target stratum can range over \([0,1]\).  The contrast bound becomes the natural Manski worst-case interval \([-1,1]\).
+
+\item \textbf{Point identification under perfect second-stage compliance.}  If \(D_2^{s,0}(z_2)=z_2\) for \(s\in\{C,N\}\), then the \(d_2\)-specific means are observed in the \(Z_2=d_2\) cells.  In each \(x\) cell,
+\[
+\mu_{C,d}(x)=
+\frac{m_d(x)-q_N(x)n_d(x)}{q_C(x)}
+\]
+is point identified whenever \(q_C(x)>0\), and the LP interval has zero width.
+
+\item \textbf{Mean-level monotone-treatment-response specialization.}  If the added restriction is only the mean-level target-stratum inequality \(\E[Y(0,1)-Y(0,0)\mid S=C,X=x]\ge0\), then the cellwise contrast interval is intersected with \([0,1]\).  A unit- or type-level MTR restriction \(Y(0,1)\ge Y(0,0)\) is stronger and would have to be imposed inside the LP; no claim is made here that such a stronger shape restriction reduces merely to intersection with \([0,1]\).
+
+\item \textbf{Static Balke--Pearl reduction.}  If there is a single \(X\) cell and no first-stage mixture to split, the second-stage \(D_1=0\) problem is the standard binary IV response-type problem.  For binary \(Y\), the LP reduces to the Balke--Pearl sharp-bound system \cite{BalkePearl1997}; for bounded \(Y\), the same response-type equations give the usual bounded-outcome mean version reviewed by Swanson et al. \cite{SwansonHernanMillerRobinsRichardson2018}.
+\end{enumerate}
+
+\section{Counterexample or minimality check}\label{sec:counterexample}
+This section gives both the counterexample to the Stage -1 product envelope and a strict memory-gain witness.  Take one covariate cell \(x\), \(p_1(1\mid x)=1/2\), \(q_C(x)=q_N(x)=1/2\), and positive adaptive probabilities such as
+\[
+e_2(1\mid x,0,0)=1/3,\qquad e_2(1\mid x,1,0)=2/3.
+\]
+In the \(D_1=0\) state, let the second-stage response satisfy
+\[
+\Pr(R_C=1\mid X=x,S=C)=\Pr(R_N=1\mid X=x,S=N)=1/2,
+\]
+where \(R_s=D_2^{s,0}(1)\), and let \(D_2^{s,0}(0)=0\).  Set \(Y(0,0)=0\) for both strata.  Among second-stage responders, set
+\[
+\E[Y(0,1)\mid S=C,R_C=1,X=x]=4/5,\qquad
+\E[Y(0,1)\mid S=N,R_N=1,X=x]=1/5.
+\]
+The nonresponder values of \(Y(0,1)\) are not observed and may vary in \([0,1]\).
+
+The pure never-taker branch then has
+\[
+\mathcal J_{N,0,x}=\{(0,n_1):1/10\le n_1\le3/5\},
+\]
+because the observed responder contribution is \((1/2)(1/5)=1/10\) and the nonresponder mass is \(1/2\).  The mixed branch has
+\[
+\mathcal J_{M,0,x}=\{(0,m_1):1/4\le m_1\le3/4\},
+\]
+because its observed responder contribution is
+\[
+\frac12\cdot\frac12\cdot\frac45+\frac12\cdot\frac12\cdot\frac15=\frac14
+\]
+and its total nonresponder mass is \(1/2\).  The product subtraction set therefore contains \(u_1=1\), obtained from \(m_1=3/4\) and \(n_1=1/2\):
+\[
+u_1=\frac{3/4-(1/2)(1/2)}{1/2}=1.
+\]
+But the coupled complier projection is
+\[
+\mathcal C_x^{\mathrm{mem}}=\{(0,u_1):2/5\le u_1\le9/10\}.
+\]
+The upper endpoint is \(2/5+1/2=9/10\), the observed complier responder contribution plus the complier nonresponder mass.  Thus \(u_1=1\) is a product-envelope artifact and the Stage -1 mixture-subtraction equality is false.
+
+The same law shows a strict memory gain once the coarsened problem is treated as the summed-equation relaxation from Section 5.  The memory-retaining target interval is \([2/5,9/10]\).  After summing out \(Z_1\) inside \(D_1=0\), the \(Z_2=1\) equations are not obtained by using the unconditional \(D_1=0\) composition, because the two discarded \(Z_1\) branches have different assignment probabilities.  In unnormalized \(X=x\) units the complier weight entering the collapsed \(D_1=0,Z_2=1\) equation is
+\[
+A=p_1(0\mid x)e_2(1\mid x,0,0)q_C=1/12,
+\]
+and the combined never-taker weight is
+\[
+B=p_1(0\mid x)e_2(1\mid x,0,0)q_N+p_1(1\mid x)e_2(1\mid x,1,0)q_N=1/4.
+\]
+The collapsed observed equations for the response rate and responder outcome contribution are therefore
+\[
+A r_C+B r_N=1/6,\qquad A g_C+B g_N=7/120,
+\]
+where \(g_s=\E[R_sY(0,1)\mid S=s,X=x]\).  The coarsened law attains target \(0\) by taking
+\[
+r_C=0,\qquad r_N=2/3,\qquad g_C=0,\qquad g_N=7/30,
+\]
+and setting the complier nonresponder \(Y(0,1)\) mean to zero.  It attains target \(1\) by taking
+\[
+r_C=g_C=7/10,\qquad r_N=13/30,\qquad g_N=0,
+\]
+and setting the complier nonresponder \(Y(0,1)\) mean to one.  These choices satisfy \(0\le g_s\le r_s\le1\), reproduce the same collapsed equations, and keep \(Y(0,0)=0\).  Hence the coarsened interval contains the natural range \([0,1]\), whereas the retained-memory interval is \([2/5,9/10]\).
+
+\section{Formalization checklist}
+\begin{itemize}[leftmargin=*]
+\item \textbf{Observable objects.}  Finite covariate support \(\mathcal X\); observable law \(P\) over \((Y,D_1,D_2,Z_1,Z_2,X)\); assignment probabilities \(p_1(z\mid x)\) and \(e_2(z\mid x,z_1,d_1)\); cell probabilities and first moments extracted from \(P\).
+
+\item \textbf{Latent objects.}  First-stage stratum \(S\in\{C,N\}\); one-sided second-stage response indicators \(R_{s,d_1}\in\{0,1\}\); type probabilities \(a_{x,t}\); bounded outcome-mass variables \(b_{x,t,d_1,d_2}\); complier shares \(q_C(x)\) and weights \(w_C(x)\).
+
+\item \textbf{Probabilistic assumptions.}  First-stage randomization within \(X\); sequential second-stage randomization given \((X,Z_1,D_1)\); consistency and exclusion; one-sided first- and second-stage compliance; no direct assignment-memory effect within \(D_1=0\); positivity; observational compatibility.
+
+\item \textbf{Deterministic identities.}  \(q_C(x)=\Pr(D_1=1\mid Z_1=1,X=x)\); response-contribution identities \(\nu_M=q_C\mu_{C,0}+q_N\nu_N\), \(\rho_M=q_C\rho_C+q_N\rho_N\), and \(\gamma_M=q_C\gamma_C+q_N\gamma_N\); target aggregation \(\theta=\sum_x w_C(x)(\mu_{C,1}(x)-\mu_{C,0}(x))\); coarsening identity \(A B_e(a,b)=A T(P)\) obtained by summing full-memory equations over \(Z_1\) inside \(D_1=0\).
+
+\item \textbf{Convex-analysis and sharpness lemmas.}  Linear observational equations define a compact convex feasible set; feasible mean variables can be lifted to bounded potential-outcome kernels reproducing observed first moments; a scalar linear projection of a compact convex set is a compact interval; nested summed-equation feasible sets imply nested endpoint inequalities; separable products over \(x\) imply weighted Minkowski sums of cellwise intervals; a finite LP strict-witness stability lemma preserves feasible coarsened endpoint witnesses under small perturbations when positive slack and a full-rank equality chart are present.
+
+\item \textbf{Counterexample arithmetic.}  Single-cell parameters \(q_C=q_N=1/2\), memory response rates \(1/2\), responder outcome means \(4/5\) for compliers and \(1/5\) for never-takers, product-envelope endpoint \(1\), coupled endpoint \(9/10\), and coarsened summed-equation weights \(A=1/12\), \(B=1/4\) with endpoint completions attaining \(0\) and \(1\).
+\end{itemize}
+
+\section{Conclusion and references}
+Within this narrow two-stage IV design, the theorem-level contribution is a sharp response-contribution formula with retained assignment memory.  The memory-retaining interval for
+\(\theta_{C,0}^{(2)}\) is obtained by subtracting pure never-taker response rates and observed responder outcome contributions from the mixed untreated branch, then adding the bounded nonresponder mass.  The coarsened summed-equation relaxation is necessarily weakly wider, and the strict witness shows that this widening can be substantive when \(e_2\) depends on the discarded \(Z_1\) label.  The Stage -1 product subtraction formula is false because independently sharp marginal mean sets need not share a response-type allocation.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+
+\bibitem[Artman et~al.(2024)]{ArtmanBhattacharyaErtefaieLynchMcKayJohnson2024}
+William J. Artman, Indrabati Bhattacharya, Ashkan Ertefaie, Kevin G. Lynch, James R. McKay, and Brent A. Johnson.
+\newblock A marginal structural model for partial compliance in SMARTs.
+\newblock \emph{Annals of Applied Statistics}, 18(2):905--921, 2024.
+\newblock \url{https://doi.org/10.1214/21-AOAS1586}.
+
+\bibitem[Balke and Pearl(1997)]{BalkePearl1997}
+Alexander Balke and Judea Pearl.
+\newblock Bounds on treatment effects from studies with imperfect compliance.
+\newblock \emph{Journal of the American Statistical Association}, 92(439):1171--1176, 1997.
+\newblock \url{https://doi.org/10.1080/01621459.1997.10474074}.
+
+\bibitem[Bugni, Canay, and Shaikh(2018)]{BugniCanayShaikh2018}
+Federico A. Bugni, Ivan A. Canay, and Azeem M. Shaikh.
+\newblock Inference under covariate-adaptive randomization.
+\newblock \emph{Journal of the American Statistical Association}, 113(524):1784--1796, 2018.
+\newblock \url{https://doi.org/10.1080/01621459.2017.1375934}.
+
+\bibitem[Bugni et~al.(2024)]{BugniGaoObradovicVelez2024}
+Federico A. Bugni, Mengsi Gao, Filip Obradovic, and Amilcar Velez.
+\newblock Identification and inference on treatment effects under covariate-adaptive randomization and imperfect compliance.
+\newblock \emph{arXiv:2406.08419}, 2024.
+\newblock \url{https://arxiv.org/abs/2406.08419}.
+
+\bibitem[Chen and Zhang(2023)]{ChenZhang2023}
+Shuxiao Chen and Bo Zhang.
+\newblock Estimating and improving dynamic treatment regimes with a time-varying instrumental variable.
+\newblock \emph{arXiv:2104.07822}, 2023.
+\newblock \url{https://arxiv.org/abs/2104.07822}.
+
+\bibitem[Duarte et~al.(2024)]{DuarteFinkelsteinKnoxMummoloShpitser2024}
+Guilherme Duarte, Noam Finkelstein, Dean Knox, Jonathan Mummolo, and Ilya Shpitser.
+\newblock An automated approach to causal inference in discrete settings.
+\newblock \emph{Journal of the American Statistical Association}, 119(547):1778--1793, 2024.
+\newblock \url{https://doi.org/10.1080/01621459.2023.2216909}.
+
+\bibitem[Manski(1990)]{Manski1990}
+Charles F. Manski.
+\newblock Nonparametric bounds on treatment effects.
+\newblock \emph{American Economic Review Papers and Proceedings}, 80(2):319--323, 1990.
+
+\bibitem[Manski and Pepper(2000)]{ManskiPepper2000}
+Charles F. Manski and John V. Pepper.
+\newblock Monotone instrumental variables: With an application to the returns to schooling.
+\newblock \emph{Econometrica}, 68(4):997--1010, 2000.
+\newblock \url{https://doi.org/10.1111/1468-0262.00144}.
+
+\bibitem[Michael et~al.(2024)]{MichaelCuiLorchTchetgen2024}
+Haben Michael, Yifan Cui, Scott A. Lorch, and Eric J. Tchetgen Tchetgen.
+\newblock Instrumental variable estimation of marginal structural mean models for time-varying treatment.
+\newblock \emph{Journal of the American Statistical Association}, 119(546):1240--1251, 2024.
+\newblock \url{https://doi.org/10.1080/01621459.2023.2183131}.
+
+\bibitem[Murphy(2005)]{Murphy2005}
+Susan A. Murphy.
+\newblock An experimental design for the development of adaptive treatment strategies.
+\newblock \emph{Statistics in Medicine}, 24(10):1455--1481, 2005.
+\newblock \url{https://doi.org/10.1002/sim.2022}.
+
+\bibitem[Sojitra and Syrgkanis(2024)]{SojitraSyrgkanis2024}
+Ravi B. Sojitra and Vasilis Syrgkanis.
+\newblock Dynamic local average treatment effects.
+\newblock \emph{arXiv:2405.01463}, 2024.
+\newblock \url{https://arxiv.org/abs/2405.01463}.
+
+\bibitem[Swanson et~al.(2018)]{SwansonHernanMillerRobinsRichardson2018}
+Sonja A. Swanson, Miguel A. Hernan, Matthew Miller, James M. Robins, and Thomas S. Richardson.
+\newblock Partial identification of the average treatment effect using instrumental variables: Review of methods for binary instruments, treatments, and outcomes.
+\newblock \emph{Journal of the American Statistical Association}, 113(522):933--947, 2018.
+\newblock \url{https://doi.org/10.1080/01621459.2018.1434530}.
+
+\end{thebibliography}
+
+\end{document}

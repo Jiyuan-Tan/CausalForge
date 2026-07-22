@@ -1,0 +1,307 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_qte\_marginal\_sensitivity, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to a Q1..Q6 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    If it is a free-form `(qid, specialization)`, define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_qte\_marginal\_sensitivity} / \texttt{v1}%
+  \\ \large\textit{Finite-\(\Gamma\) quantile envelopes and the Manski--Pepper endpoint boundary}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a partial-identification anchor, not a panel pool-mode.  The locked tuple is
+\begin{quote}
+\begin{verbatim}
+qid = pid_qte_marginal_sensitivity
+specialization = v1
+observable distribution P = law of (Y,D,X), with D in {0,1},
+  Y in [y_min(x), y_max(x)] conditionally on X=x, observed propensity
+  e(x)=P(D=1|X=x), and arm-specific observed conditional CDF
+  F_obs,a(y|x)=P(Y<=y|D=a,X=x)
+parameter theta = conditional QTE curve
+  theta_Gamma(tau|x)=Q_1,Gamma(tau|x)-Q_0,Gamma(tau|x)
+identifying restrictions = consistency, conditional positivity, bounded
+  conditional outcome support, and a covariate-wise Rosenbaum marginal
+  sensitivity restriction: for each arm a and x, the odds of observing
+  D=a among units with potential outcome Y(a) differ from the observed
+  arm odds by at most Gamma(x)
+bounding functional = arm-specific CDF envelope
+  [lowerF_a,Gamma(y|x), upperF_a,Gamma(y|x)] obtained by bounded
+  likelihood-ratio clipping, then inverted to
+  [lowerQ_a,Gamma(tau|x), upperQ_a,Gamma(tau|x)] and combined as the
+  interval-hull CQTE envelope
+\end{verbatim}
+\end{quote}
+
+\begin{abstract}
+This proposal asks for a sharp population partial-identification statement for conditional quantile treatment effects under a covariate-wise Rosenbaum marginal sensitivity model.  The background theorem records the standard bounded-likelihood-ratio CDF envelope for each treatment arm and threshold, then inverts it into a conditional quantile envelope.  The novelty-bearing conjecture is a finite-\(\Gamma\) boundary theorem: except in degenerate observed-tail cases, no finite odds-ratio bound reproduces the Manski--Pepper endpoint-filled quantile envelope, while the envelope converges to that endpoint object as \(\Gamma(x)\to\infty\) and collapses to Firpo-style point identification at \(\Gamma(x)=1\).  This separates the algebraic endpoint path from recent general QTE sensitivity frameworks, which give sharp sets but do not isolate the exact finite-\(\Gamma\)-versus-trivial-bound phase boundary.  If resolved, the result would give Stage~0 a small closed-form target for sensitivity curves and a sanity check for any future computational partial-ID implementation.
+\end{abstract}
+
+\section{Introduction}
+Conditional and unconditional quantile treatment effects are often the estimands practitioners want when a policy changes the lower tail, upper tail, or inequality of outcomes rather than only the mean.  Under unconfoundedness, the potential-outcome quantiles are point identified by inverse-propensity weighting or equivalent distributional formulas.  Under unmeasured confounding, sensitivity analyses usually report intervals indexed by a scalar \(\Gamma\), but it is easy to lose track of what happens between the point-identified \(\Gamma=1\) corner and the no-information endpoint bound.
+
+The main proposed finding has two layers.  Theorem~\ref{thm:cdf-envelope} is a background CDF-envelope theorem: under the locked marginal sensitivity model, each potential-outcome CDF \(F_{a,\Gamma}(\cdot\mid x)\) lies between two clipped functions of the observed arm CDF \(F_{\mathrm{obs},a}(\cdot\mid x)\), and these bounds are pointwise sharp for each threshold.  Conjecture~\ref{conj:finite-gamma-boundary} is the novelty kernel: under mild nondegeneracy, finite \(\Gamma(x)\) yields a strict interior quantile envelope relative to the Manski--Pepper endpoint-filled bound, while the limiting envelope as \(\Gamma(x)\to\infty\) equals that endpoint-filled bound and the \(\Gamma(x)=1\) envelope equals the point-identified Firpo conditional quantile.
+
+What is new is not the general idea that marginal sensitivity bounds QTEs.  \citet{MastenPoirierRen2025} already provide sharp QTE bounds for a broad relaxation class including the marginal sensitivity model, and \citet{Wang2026} very recently gives closed-form process-level envelopes for transported QTEs under nested source-confounding and transport sensitivity.  The proposed gap is narrower but sharper: a one-sensitivity, covariate-wise endpoint theorem that says exactly when the \(\Gamma\)-indexed conditional quantile envelope reaches, or fails to reach, the Manski--Pepper/Manski endpoint completion.  The conjecture predicts a genuine phase boundary rather than a relabeling of a general identified-set formula.
+
+The proposal sits in the partial-identification and sensitivity-analysis cluster.  Its ancestors are Manski-style worst-case bounds, Manski--Pepper monotone-response and monotone-selection endpoint logic, Tan's marginal sensitivity model, Dorn--Guo quantile-balancing sharp mean bounds, and Firpo's point-identification theory for QTE under selection on observables.  It deliberately avoids the panel and structural-SCM clusters: the mathematical object is a conditional identified set for potential-outcome quantile curves under a bounded selection-odds restriction.
+
+\section{Related work}
+\citet{Manski1990} is the baseline partial-identification reference: bounded unobserved potential outcomes generate sharp intervals rather than point estimates.  \citet{ManskiPepper2000} introduce monotone instrumental variables and monotone treatment selection/response restrictions; this proposal uses ``Manski--Pepper endpoint'' as the no-additional-confounding-information corner in which the missing arm can fill the conditional support subject only to the locked support convention.  \citet{Tan2006} formulates the marginal sensitivity model that bounds departures from unconfoundedness through treatment-assignment odds or equivalent density-ratio restrictions; the locked \(\Gamma(x)\) restriction is a covariate-wise specialization of that model.
+
+\citet{Firpo2007} gives efficient semiparametric estimation of QTE under selection on observables; Theorem~\ref{thm:point-id-corner} must recover this point-identified distributional formula at \(\Gamma(x)=1\).  \citet{ZhaoSmallBhattacharya2019} and \citet{DornGuo2023} develop IPW sensitivity analyses under marginal sensitivity, with Dorn--Guo giving sharp population bounds for mean functionals through quantile balancing; this proposal applies the same sensitivity primitive to threshold events and quantile inversions rather than to the mean endpoint itself.  \citet{Tan2024} provides new representations and inference for sharp and relaxed population bounds under the marginal sensitivity model; its focus is ATE-style bounds and regression-assisted inference, while the present kernel is the finite-\(\Gamma\) endpoint geometry of quantile curves.
+
+\citet{DAmourFranksFeller2020} use Tukey-style factorization to separate observed and unidentified parts of causal sensitivity models and include QTE examples; the contrast here is that the Rosenbaum/Tan odds cap collapses each threshold event to a two-cell likelihood-ratio clipping problem.  \citet{MastenPoirierRen2025} is the closest broad published comparator because it derives sharp bounds for QTE and DTE under a general class of relaxations including the marginal sensitivity model; this proposal is not a replacement for that framework, but asks for the explicit endpoint-continuity and finite-\(\Gamma\) strictness theorem that a theorem catalogue can formalize directly.  \citet{Wang2026} is the closest recent comparator on closed-form QTE envelopes because it proves process-level sharp CDF envelopes for transported QTEs; the epsilon-gap is that the proposed statement removes transport sensitivity and isolates the one-dimensional \(\Gamma=1\) to \(\Gamma=\infty\) Manski--Pepper boundary.
+
+The in-repository prior art does not already contain this kernel.  \texttt{doc/API.md} Section~3 records \texttt{ThmSmith/PartialID/} as the staging area for Manski-family bounds, Balke--Pearl bounds, IV bounds, sensitivity analysis, shape restrictions, and missing-data bounds, but it is empty at seed time for marginal-sensitivity QTEs.  The banked \texttt{pid\_dynamic\_iv\_compliance} proposal concerns finite response-type dynamic IV bounds and has no quantile or Rosenbaum sensitivity envelope.  The accepted \texttt{pid\_ordinal\_late\_partial\_defiers} proposal studies ordinal-IV LATE bounds under bounded adjacent defiers; it is a latent-response-path compatibility result, not a conditional CDF clipping theorem.  The accepted \texttt{pid\_network\_exposure} proposal studies shared graph-completion bounds for network exposure mappings; it is another partial-ID sharpness analogue but not prior art for marginal sensitivity or QTEs.
+
+\section{Formal setup}
+Fix a covariate value \(x\) in a stratum with \(0<e(x)<1\), where \(e(x)=\Pr(D=1\mid X=x)\).  The observed law supplies \(F_{\mathrm{obs},a}(y\mid x)=\Pr(Y\le y\mid D=a,X=x)\) for \(a\in\{0,1\}\).  The potential outcomes \(Y(0),Y(1)\) obey consistency, so \(Y=Y(D)\), and each conditional support is contained in the known interval \([y_{\min}(x),y_{\max}(x)]\).  For \(p_a(x)=\Pr(D=a\mid X=x)\), define arm-specific sensitivity constants
+\[
+\ell_a(\Gamma,x)=\frac{\Gamma(x)p_a(x)+1-p_a(x)}{\Gamma(x)},\qquad
+u_a(\Gamma,x)=p_a(x)+\Gamma(x)(1-p_a(x)).
+\]
+These are the induced lower and upper bounds on the likelihood ratio \(r_a(y,x)=dP(Y(a)\mid X=x)/dP(Y(a)\mid D=a,X=x)\) when the odds of observing \(D=a\) given \((Y(a),X=x)\) differ from the observed arm odds by at most \(\Gamma(x)\).
+
+For \(p=F_{\mathrm{obs},a}(y\mid x)\), define the arm-specific CDF envelope
+\[
+\underline F_{a,\Gamma}(y\mid x)
+=\max\{\ell_a(\Gamma,x)p,\;1-u_a(\Gamma,x)(1-p)\},
+\]
+\[
+\overline F_{a,\Gamma}(y\mid x)
+=\min\{u_a(\Gamma,x)p,\;1-\ell_a(\Gamma,x)(1-p)\}.
+\]
+The associated lower and upper quantile curves are
+\[
+\underline Q_{a,\Gamma}(\tau\mid x)=\inf\{y:\overline F_{a,\Gamma}(y\mid x)\ge \tau\},\qquad
+\overline Q_{a,\Gamma}(\tau\mid x)=\inf\{y:\underline F_{a,\Gamma}(y\mid x)\ge \tau\}.
+\]
+The interval-hull conditional QTE envelope is
+\[
+\Theta_{\Gamma}(\tau\mid x)=
+[\underline Q_{1,\Gamma}(\tau\mid x)-\overline Q_{0,\Gamma}(\tau\mid x),\;
+ \overline Q_{1,\Gamma}(\tau\mid x)-\underline Q_{0,\Gamma}(\tau\mid x)].
+\]
+The identified set \(\Theta_I(P)\) is the collection of all such conditional QTE values induced by potential-outcome laws compatible with the observable \(P\), consistency, support, positivity, and the locked marginal sensitivity restriction.
+
+\begin{quote}
+\begin{verbatim}
+qid = pid_qte_marginal_sensitivity
+specialization = v1
+observable distribution P = law of (Y,D,X), with D in {0,1},
+  Y in [y_min(x), y_max(x)] conditionally on X=x, observed propensity
+  e(x)=P(D=1|X=x), and arm-specific observed conditional CDF
+  F_obs,a(y|x)=P(Y<=y|D=a,X=x)
+parameter theta = conditional QTE curve
+  theta_Gamma(tau|x)=Q_1,Gamma(tau|x)-Q_0,Gamma(tau|x)
+identifying restrictions = consistency, conditional positivity, bounded
+  conditional outcome support, and a covariate-wise Rosenbaum marginal
+  sensitivity restriction: for each arm a and x, the odds of observing
+  D=a among units with potential outcome Y(a) differ from the observed
+  arm odds by at most Gamma(x)
+bounding functional = arm-specific CDF envelope
+  [lowerF_a,Gamma(y|x), upperF_a,Gamma(y|x)] obtained by bounded
+  likelihood-ratio clipping, then inverted to
+  [lowerQ_a,Gamma(tau|x), upperQ_a,Gamma(tau|x)] and combined as the
+  interval-hull CQTE envelope
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Conditional consistency]\label{ass:consistency}
+For \(a\in\{0,1\}\), the observed outcome satisfies \(Y=Y(a)\) whenever \(D=a\).
+\end{assumption}
+
+\begin{assumption}[Conditional positivity]\label{ass:positivity}
+For every covariate value \(x\) under consideration, \(0<e(x)<1\), where \(e(x)=\Pr(D=1\mid X=x)\).
+\end{assumption}
+
+\begin{assumption}[Bounded conditional support]\label{ass:support}
+For every \(a\in\{0,1\}\) and \(x\), \(Y(a)\in[y_{\min}(x),y_{\max}(x)]\) almost surely conditional on \(X=x\).  The endpoints are finite and known.
+\end{assumption}
+
+\begin{assumption}[Covariate-wise marginal Rosenbaum sensitivity]\label{ass:msm}
+For a fixed function \(\Gamma(x)\ge 1\), each arm \(a\), and each \(x\), the odds of observing \(D=a\) among units with potential outcome \(Y(a)=y\) satisfy
+\[
+\Gamma(x)^{-1}\le
+\frac{\Pr(D=a\mid Y(a)=y,X=x)/(1-\Pr(D=a\mid Y(a)=y,X=x))}
+     {p_a(x)/(1-p_a(x))}
+\le \Gamma(x)
+\]
+where \(p_1(x)=e(x)\) and \(p_0(x)=1-e(x)\).  Equivalently, the likelihood ratio \(r_a(y,x)\) is constrained to lie in \([\ell_a(\Gamma,x),u_a(\Gamma,x)]\) and integrates to one under the observed arm law.
+\end{assumption}
+
+\begin{assumption}[Quantile regularity for boundary statements]\label{ass:regular-quantile}
+For the boundary and strictness claims, \(F_{\mathrm{obs},a}(\cdot\mid x)\) is continuous and strictly increasing on the relevant quantile interval, and the target quantile index \(\tau\) lies in \((0,1)\) away from flat portions and endpoint atoms.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: clipped CDF envelope]\label{thm:cdf-envelope}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:msm}, for each arm \(a\), covariate value \(x\), and threshold \(y\),
+\[
+\underline F_{a,\Gamma}(y\mid x)
+\le
+\Pr(Y(a)\le y\mid X=x)
+\le
+\overline F_{a,\Gamma}(y\mid x).
+\]
+The bounds are pointwise sharp for the threshold event \(\{Y(a)\le y\}\): whenever the displayed interval is nonempty, each value in it is attained by a feasible likelihood ratio \(r_a(\cdot,x)\in[\ell_a,u_a]\) that normalizes to one.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This theorem is not claimed as the field-level novelty.  It is the threshold-event specialization of Tan-style marginal sensitivity and the sharp bounded-weight calculations used by \citet{DornGuo2023}, \citet{Tan2024}, \citet{MastenPoirierRen2025}, and \citet{Wang2026}.  The local gap is that it packages the exact arm-specific constants needed for the endpoint-boundary conjecture.  (b) It is worth recording because every later quantile statement should reduce to these two max/min expressions before invoking inversion or endpoint limits.
+
+\begin{theorem}[Theorem 2: point-identification corner]\label{thm:point-id-corner}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:msm}, if \(\Gamma(x)=1\), then \(\ell_a(1,x)=u_a(1,x)=1\), \(\underline F_{a,1}=\overline F_{a,1}=F_{\mathrm{obs},a}\), and the CQTE envelope \(\Theta_{1}(\tau\mid x)\) is the singleton
+\[
+F_{\mathrm{obs},1}^{-1}(\tau\mid x)-F_{\mathrm{obs},0}^{-1}(\tau\mid x).
+\]
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This is a sanity theorem, not the main novelty: \citet{Firpo2007} is the closest point-identification reference for QTE under selection on observables.  The difference is that the statement is embedded as the \(\Gamma=1\) face of the partial-ID envelope.  (b) The result is useful because it prevents the proposed sensitivity curve from drifting away from the standard QTE estimand at the unconfoundedness corner.
+
+\begin{conjecture}[Conjecture 1: finite-\(\Gamma\) endpoint boundary (NOT YET PROVED)]\label{conj:finite-gamma-boundary}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:regular-quantile}, fix \(x\), \(a\), and \(\tau\in(0,1)\).  As \(\Gamma(x)\to\infty\), the arm-specific quantile envelope converges to the Manski--Pepper endpoint-filled envelope obtained from
+\[
+\underline F_{a,\infty}(y\mid x)=p_a(x)F_{\mathrm{obs},a}(y\mid x),\qquad
+\overline F_{a,\infty}(y\mid x)=p_a(x)F_{\mathrm{obs},a}(y\mid x)+1-p_a(x).
+\]
+Moreover, for every finite \(\Gamma(x)>1\), this endpoint-filled envelope is strictly wider at \(\tau\) unless the relevant observed lower-tail or upper-tail probability is already at a support-degenerate boundary.  Equivalently, finite \(\Gamma(x)\) excludes at least one endpoint-filler quantile law that becomes feasible only in the \(\Gamma(x)=\infty\) limit.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest published papers are \citet{MastenPoirierRen2025} and \citet{Wang2026}.  They establish broad or transported QTE sensitivity bounds, but the proposed epsilon-gap is the exact finite-\(\Gamma\) strictness boundary relative to the Manski--Pepper endpoint completion.  \citet{ManskiPepper2000} supplies the endpoint-restriction logic, but not the Rosenbaum/Tan \(\Gamma\)-homotopy or quantile inversion.  (b) Resolving the conjecture would give a transparent diagnostic: if an implementation reports the trivial endpoint envelope at a finite \(\Gamma\) in a nondegenerate stratum, it has lost information.  It would also connect sensitivity curves, worst-case partial identification, and point identification in one theorem-level object.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Unconfoundedness reduction]\label{cor:unconfounded}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:msm} with \(\Gamma(x)=1\), Theorem~\ref{thm:point-id-corner} reduces the proposal to the standard point-identified conditional QTE formula.
+\end{corollary}
+
+\begin{corollary}[No-information endpoint reduction]\label{cor:noinfo}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:support}, in the formal \(\Gamma(x)=\infty\) limit of Conjecture~\ref{conj:finite-gamma-boundary}, the missing mass \(1-p_a(x)\) can be placed below or above any threshold.  The arm CDF bounds therefore reduce to \(p_aF_{\mathrm{obs},a}\) and \(p_aF_{\mathrm{obs},a}+1-p_a\), which is the conditional endpoint-filling analogue of Manski/Manski--Pepper worst-case partial identification.
+\end{corollary}
+
+\section{Proof-sketch route}
+The mathematical route is finite-dimensional after conditioning on \(x\), arm \(a\), and threshold \(y\).  Theorem~\ref{thm:cdf-envelope} reduces to optimizing \(E[r\one\{Y\le y\}]\) over functions \(r\in[\ell,u]\) with \(E[r]=1\), so the endpoint formula follows from putting the minimum or maximum admissible weight on the event and using the normalization constraint on its complement.  Quantile envelopes follow by monotone inversion of the lower and upper CDF bounds.  The boundary conjecture should then be checked by analyzing the \(\Gamma\)-dependence of \(\ell_a(\Gamma,x)\) and \(u_a(\Gamma,x)\), proving order convergence of the CDF envelopes, and enumerating the tail-probability equalities under which the finite-\(\Gamma\) inverse equals the \(\Gamma=\infty\) inverse.
+
+\section{Honest scope flags}
+The clipped CDF formula and \(\Gamma=1\) corner are labelled as theorems because they are routine bounded-likelihood-ratio algebra.  The finite-\(\Gamma\) strictness and endpoint convergence statement is labelled as a conjecture because the quantile-inversion boundary requires a careful treatment of atoms, flat CDF pieces, and support endpoints.  The proposal does not claim new inference, confidence bands, efficient estimation, or transportability.  It also does not claim that \citet{MastenPoirierRen2025} or \citet{Wang2026} are wrong; the proposed contribution is a smaller theorem-level endpoint atlas that may be implicit in their machinery but is not isolated as a reusable partial-ID kernel.  No statements were withdrawn in this pivot v1.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for the Manski--Pepper endpoint-boundary angle; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[D'Amour, Franks, and Feller(2020)]{DAmourFranksFeller2020}
+D'Amour, A., Franks, A., and Feller, A. (2020).
+Flexible sensitivity analysis for observational studies without observable implications.
+\emph{Journal of the American Statistical Association}, 115(532), 1730--1746.
+
+\bibitem[Dorn and Guo(2023)]{DornGuo2023}
+Dorn, J. and Guo, K. (2023).
+Sharp sensitivity analysis for inverse propensity weighting via quantile balancing.
+\emph{Journal of the American Statistical Association}, 118(544), 2645--2657.
+
+\bibitem[Tan(2024)]{Tan2024}
+Tan, Z. (2024).
+Model-assisted sensitivity analysis for treatment effects under unmeasured confounding via regularized calibrated estimation.
+\emph{Journal of the Royal Statistical Society: Series B}, 86(5), 1339--1363.
+
+\bibitem[Firpo(2007)]{Firpo2007}
+Firpo, S. (2007).
+Efficient semiparametric estimation of quantile treatment effects.
+\emph{Econometrica}, 75(1), 259--276.
+
+\bibitem[Manski(1990)]{Manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review}, 80(2), 319--323.
+
+\bibitem[Manski and Pepper(2000)]{ManskiPepper2000}
+Manski, C. F. and Pepper, J. V. (2000).
+Monotone instrumental variables: With an application to the returns to schooling.
+\emph{Econometrica}, 68(4), 997--1010.
+
+\bibitem[Masten, Poirier, and Ren(2025)]{MastenPoirierRen2025}
+Masten, M. A., Poirier, A., and Ren, M. (2025).
+A general approach to relaxing unconfoundedness.
+arXiv:2501.15400.
+
+\bibitem[Tan(2006)]{Tan2006}
+Tan, Z. (2006).
+A distributional approach for causal inference using propensity scores.
+\emph{Journal of the American Statistical Association}, 101(476), 1619--1637.
+
+\bibitem[Wang(2026)]{Wang2026}
+Wang, P. (2026).
+Nested sensitivity envelopes for transported quantile treatment effects.
+arXiv:2605.09264.
+
+\bibitem[Zhao, Small, and Bhattacharya(2019)]{ZhaoSmallBhattacharya2019}
+Zhao, Q., Small, D. S., and Bhattacharya, B. B. (2019).
+Sensitivity analysis for inverse probability weighting estimators via the percentile bootstrap.
+\emph{Journal of the Royal Statistical Society: Series B}, 81(4), 735--761.
+\end{thebibliography}
+
+\end{document}

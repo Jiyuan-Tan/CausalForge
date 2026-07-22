@@ -1,0 +1,904 @@
+{
+  "qid": "stat_dose_response_minimax",
+  "specialization": "holder_anisotropic_converse",
+  "cluster": "stat",
+  "symbols": [
+    {
+      "name": "n",
+      "type": "sample_size",
+      "space": "N",
+      "def": "Sample size.",
+      "role": "index"
+    },
+    {
+      "name": "d",
+      "type": "dimension",
+      "space": "N",
+      "def": "Dimension of the covariate vector X.",
+      "role": "regime_parameter"
+    },
+    {
+      "name": "O",
+      "type": "random_vector",
+      "space": "{(Y,A,X): Y in R, A in [0,1], X in [0,1]^d}",
+      "def": "Observed data unit O = (Y, A, X).",
+      "role": "data_unit"
+    },
+    {
+      "name": "O_1, ..., O_n",
+      "type": "sample",
+      "space": "({(Y,A,X): Y in R, A in [0,1], X in [0,1]^d})^n",
+      "def": "Observed iid sample of size n.",
+      "role": "data",
+      "refs": [
+        "O",
+        "n"
+      ]
+    },
+    {
+      "name": "Y",
+      "type": "outcome",
+      "space": "R",
+      "def": "Observed outcome.",
+      "role": "data_component",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "A",
+      "type": "treatment",
+      "space": "[0,1]",
+      "def": "Observed continuous treatment.",
+      "role": "data_component",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "X",
+      "type": "covariate",
+      "space": "[0,1]^d",
+      "def": "Observed covariate vector.",
+      "role": "data_component",
+      "refs": [
+        "O",
+        "d"
+      ]
+    },
+    {
+      "name": "P",
+      "type": "law",
+      "space": "laws of O",
+      "def": "Observed-data law of O.",
+      "role": "model",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "P_X",
+      "type": "marginal_law",
+      "space": "laws of X",
+      "def": "Marginal law of X induced by P.",
+      "role": "nuisance_law",
+      "refs": [
+        "P",
+        "X"
+      ]
+    },
+    {
+      "name": "Y(a)",
+      "type": "potential_outcome_process",
+      "space": "R for each a in [0,1]",
+      "def": "Potential outcome under treatment level a.",
+      "role": "causal_primitive",
+      "refs": [
+        "A"
+      ]
+    },
+    {
+      "name": "t_0",
+      "type": "evaluation_point",
+      "space": "(0,1)",
+      "def": "Interior treatment level at which the dose-response is evaluated.",
+      "role": "target_index"
+    },
+    {
+      "name": "epsilon_0",
+      "type": "interior_radius",
+      "space": "(0,1/2)",
+      "def": "Radius of the interior neighborhood around t_0 on which positivity and treatment-direction smoothness are imposed.",
+      "role": "regularity_constant",
+      "refs": [
+        "t_0"
+      ]
+    },
+    {
+      "name": "alpha",
+      "type": "smoothness_index",
+      "space": "(0, infinity)",
+      "def": "Holder smoothness order of a -> mu_P(a,x) on [t_0 - epsilon_0, t_0 + epsilon_0].",
+      "role": "regime_parameter",
+      "refs": [
+        "t_0",
+        "epsilon_0"
+      ]
+    },
+    {
+      "name": "beta",
+      "type": "smoothness_index",
+      "space": "(0, infinity)",
+      "def": "Holder smoothness order of a -> pi_P(a|x) on [t_0 - epsilon_0, t_0 + epsilon_0].",
+      "role": "regime_parameter",
+      "refs": [
+        "t_0",
+        "epsilon_0"
+      ]
+    },
+    {
+      "name": "s",
+      "type": "smoothness_index",
+      "space": "(0, infinity)",
+      "def": "Common Holder smoothness order in the covariate direction for x -> mu_P(t_0,x), x -> pi_P(t_0|x), and the density of P_X.",
+      "role": "regime_parameter",
+      "refs": [
+        "t_0"
+      ]
+    },
+    {
+      "name": "M",
+      "type": "bound_constant",
+      "space": "(0, infinity)",
+      "def": "Generic envelope constant for boundedness and Holder radii.",
+      "role": "regularity_constant"
+    },
+    {
+      "name": "c_0",
+      "type": "positivity_constant",
+      "space": "(0, infinity)",
+      "def": "Lower positivity bound in the neighborhood of t_0.",
+      "role": "regularity_constant"
+    },
+    {
+      "name": "mu_P",
+      "type": "outcome_regression",
+      "sig": "[0,1] x [0,1]^d -> R",
+      "def": "mu_P(a,x) = E_P[Y | A = a, X = x].",
+      "role": "nuisance",
+      "refs": [
+        "P",
+        "Y",
+        "A",
+        "X"
+      ]
+    },
+    {
+      "name": "pi_P",
+      "type": "conditional_density",
+      "sig": "[0,1] x [0,1]^d -> [0,infinity)",
+      "def": "pi_P(a|x) is the conditional density of A given X = x under P.",
+      "role": "nuisance",
+      "refs": [
+        "P",
+        "A",
+        "X"
+      ]
+    },
+    {
+      "name": "p_{X,P}",
+      "type": "density",
+      "sig": "[0,1]^d -> [0,infinity)",
+      "def": "Density of P_X with respect to Lebesgue measure.",
+      "role": "nuisance",
+      "refs": [
+        "P_X",
+        "X"
+      ]
+    },
+    {
+      "name": "theta_P(t_0)",
+      "type": "causal_parameter",
+      "space": "R",
+      "def": "theta_P(t_0) = E_P[mu_P(t_0,X)] = E_P[Y(t_0)] under the causal assumptions.",
+      "role": "target_estimand",
+      "refs": [
+        "P",
+        "mu_P",
+        "t_0",
+        "Y(a)"
+      ]
+    },
+    {
+      "name": "R_n",
+      "type": "minimax_risk_functional",
+      "sig": "(class, point) -> [0,infinity)",
+      "def": "Pointwise minimax mean-squared risk for estimating theta_P(t_0).",
+      "role": "frontier_object",
+      "refs": [
+        "n",
+        "theta_P(t_0)"
+      ]
+    },
+    {
+      "name": "rho_n",
+      "type": "rate_sequence",
+      "space": "[0,infinity)^N",
+      "def": "Candidate sharp pointwise minimax MSE sequence in the beta >= alpha regime.",
+      "role": "frontier_object",
+      "refs": [
+        "n",
+        "alpha",
+        "s",
+        "d"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:iid-sampling",
+      "kind": "sampling",
+      "condition": "O_1, ..., O_n are iid draws from P.",
+      "free_symbols": [
+        "O_1, ..., O_n",
+        "P",
+        "n"
+      ],
+      "standard": {
+        "name": "iid sampling",
+        "cite": "Tsybakov2009Nonparametric"
+      },
+      "used_by": [
+        "thm:sharp-pointwise-lower-bound",
+        "prop:oracle-regime-reduction"
+      ]
+    },
+    {
+      "id": "ass:consistency",
+      "kind": "identification",
+      "condition": "Y = Y(A) almost surely under P.",
+      "free_symbols": [
+        "Y",
+        "Y(a)",
+        "A",
+        "P"
+      ],
+      "standard": {
+        "name": "consistency",
+        "cite": "KennedyMaMcHughSmall2017ContinuousDR"
+      },
+      "used_by": [
+        "def:holder-dose-class"
+      ]
+    },
+    {
+      "id": "ass:no-unmeasured-confounding",
+      "kind": "identification",
+      "condition": "For every a in [0,1], Y(a) is independent of A conditional on X under P.",
+      "free_symbols": [
+        "Y(a)",
+        "A",
+        "X",
+        "P"
+      ],
+      "standard": {
+        "name": "conditional ignorability for continuous treatments",
+        "cite": "KennedyMaMcHughSmall2017ContinuousDR"
+      },
+      "used_by": [
+        "def:holder-dose-class"
+      ]
+    },
+    {
+      "id": "ass:bounded-outcome",
+      "kind": "regularity",
+      "condition": "|Y| <= M almost surely under P.",
+      "free_symbols": [
+        "Y",
+        "M",
+        "P"
+      ],
+      "standard": {
+        "name": "uniform bounded outcome",
+        "cite": "BonviniKennedy2022FastDRF"
+      },
+      "used_by": [
+        "def:holder-dose-class",
+        "thm:sharp-pointwise-lower-bound"
+      ]
+    },
+    {
+      "id": "ass:interior-dose",
+      "kind": "support",
+      "condition": "[t_0 - epsilon_0, t_0 + epsilon_0] is contained in (0,1).",
+      "free_symbols": [
+        "t_0",
+        "epsilon_0"
+      ],
+      "standard": {
+        "name": "interior evaluation point",
+        "cite": "ColangeloLee2020ContinuousDML"
+      },
+      "used_by": [
+        "def:holder-dose-class",
+        "thm:sharp-pointwise-lower-bound",
+        "prop:oracle-regime-reduction"
+      ]
+    },
+    {
+      "id": "ass:local-positivity",
+      "kind": "overlap",
+      "condition": "pi_P(a|x) >= c_0 for every a in [t_0 - epsilon_0, t_0 + epsilon_0] and every x in [0,1]^d.",
+      "free_symbols": [
+        "pi_P",
+        "c_0",
+        "t_0",
+        "epsilon_0",
+        "d"
+      ],
+      "standard": {
+        "name": "local positivity",
+        "cite": "BonviniKennedy2022FastDRF"
+      },
+      "used_by": [
+        "def:holder-dose-class",
+        "thm:sharp-pointwise-lower-bound"
+      ]
+    },
+    {
+      "id": "ass:mu-treatment-holder",
+      "kind": "smoothness",
+      "condition": "For every x in [0,1]^d, the function a -> mu_P(a,x) belongs to a Holder ball of order alpha and radius M on [t_0 - epsilon_0, t_0 + epsilon_0].",
+      "free_symbols": [
+        "mu_P",
+        "alpha",
+        "M",
+        "t_0",
+        "epsilon_0",
+        "d"
+      ],
+      "standard": {
+        "name": "Holder smoothness in the treatment coordinate",
+        "cite": "Tsybakov2009Nonparametric"
+      },
+      "used_by": [
+        "def:holder-dose-class",
+        "thm:sharp-pointwise-lower-bound",
+        "prop:oracle-regime-reduction"
+      ]
+    },
+    {
+      "id": "ass:pi-treatment-holder",
+      "kind": "smoothness",
+      "condition": "For every x in [0,1]^d, the function a -> pi_P(a|x) belongs to a Holder ball of order beta and radius M on [t_0 - epsilon_0, t_0 + epsilon_0].",
+      "free_symbols": [
+        "pi_P",
+        "beta",
+        "M",
+        "t_0",
+        "epsilon_0",
+        "d"
+      ],
+      "standard": {
+        "name": "Holder smoothness of the conditional treatment density in the treatment coordinate",
+        "cite": "BonviniKennedy2022FastDRF"
+      },
+      "used_by": [
+        "def:holder-dose-class",
+        "thm:sharp-pointwise-lower-bound"
+      ]
+    },
+    {
+      "id": "ass:mu-covariate-holder",
+      "kind": "smoothness",
+      "condition": "The function x -> mu_P(t_0,x) belongs to a Holder ball of order s and radius M on [0,1]^d.",
+      "free_symbols": [
+        "mu_P",
+        "t_0",
+        "s",
+        "M",
+        "d"
+      ],
+      "standard": {
+        "name": "Holder smoothness in the covariate coordinate",
+        "cite": "Tsybakov2009Nonparametric"
+      },
+      "used_by": [
+        "def:holder-dose-class",
+        "thm:sharp-pointwise-lower-bound",
+        "prop:oracle-regime-reduction"
+      ]
+    },
+    {
+      "id": "ass:pi-covariate-holder",
+      "kind": "smoothness",
+      "condition": "The function x -> pi_P(t_0|x) belongs to a Holder ball of order s and radius M on [0,1]^d.",
+      "free_symbols": [
+        "pi_P",
+        "t_0",
+        "s",
+        "M",
+        "d"
+      ],
+      "standard": {
+        "name": "Holder smoothness of the conditional treatment density in the covariate coordinate",
+        "cite": "BonviniKennedy2022FastDRF"
+      },
+      "used_by": [
+        "def:holder-dose-class",
+        "thm:sharp-pointwise-lower-bound"
+      ]
+    },
+    {
+      "id": "ass:px-holder",
+      "kind": "smoothness",
+      "condition": "The density p_{X,P} belongs to a Holder ball of order s and radius M on [0,1]^d and is bounded above by M.",
+      "free_symbols": [
+        "p_{X,P}",
+        "s",
+        "M",
+        "d"
+      ],
+      "standard": {
+        "name": "Holder-smooth covariate density",
+        "cite": "KennedyBalakrishnanRobinsWasserman2022MinimaxCATE"
+      },
+      "used_by": [
+        "def:holder-dose-class",
+        "thm:sharp-pointwise-lower-bound"
+      ]
+    },
+    {
+      "id": "ass:beta-dominates-alpha",
+      "kind": "regime",
+      "condition": "beta >= alpha.",
+      "free_symbols": [
+        "beta",
+        "alpha"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This is the clean Bonvini-Kennedy subregime where the published HOIF upper rate is already interpretable in terms of the dose-response smoothness alpha. It is realistic in continuous-dose settings where the assignment density is smoother in dose than the response surface, such as Gaussian or log-concave treatment rules with smooth conditional means."
+      },
+      "used_by": [
+        "thm:sharp-pointwise-lower-bound",
+        "prop:oracle-regime-reduction"
+      ]
+    },
+    {
+      "id": "ass:baseline-submodel-slack",
+      "condition": "There exist a density p_0 on [0,1]^d, a conditional treatment density q_0 on [0,1], and a constant eta_0>0 such that p_0 and q_0 have Holder norms at most M-eta_0 in the smoothness classes required of p_{X,P} and pi_P, q_0(a) >= c_0+eta_0 for all a in [t_0-epsilon_0,t_0+epsilon_0], and p_0 is bounded above by M-eta_0.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: nonempty interior-of-model condition used in minimax lower bounds for Holder balls and overlap classes; cf. Tsybakov (2009, Nonparametric Estimation, lower-bound constructions) and Kennedy, Balakrishnan, Robins, Wasserman (2022, minimax causal lower bounds)."
+      }
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:holder-dose-class",
+      "name": "P_{alpha,beta,s}(M,c_0,epsilon_0,t_0)",
+      "construction": "{P : P satisfies ass:iid-sampling, ass:consistency, ass:no-unmeasured-confounding, ass:bounded-outcome, ass:interior-dose, ass:local-positivity, ass:mu-treatment-holder, ass:pi-treatment-holder, ass:mu-covariate-holder, ass:pi-covariate-holder, ass:px-holder}",
+      "by_member_properties": [
+        "ass:iid-sampling",
+        "ass:consistency",
+        "ass:no-unmeasured-confounding",
+        "ass:bounded-outcome",
+        "ass:interior-dose",
+        "ass:local-positivity",
+        "ass:mu-treatment-holder",
+        "ass:pi-treatment-holder",
+        "ass:mu-covariate-holder",
+        "ass:pi-covariate-holder",
+        "ass:px-holder"
+      ]
+    },
+    {
+      "id": "def:theta-functional",
+      "name": "theta_P(t_0)",
+      "construction": "theta_P(t_0) = int_{[0,1]^d} mu_P(t_0,x) p_{X,P}(x) dx",
+      "inputs": [
+        "mu_P",
+        "p_{X,P}",
+        "t_0",
+        "d"
+      ]
+    },
+    {
+      "id": "def:minimax-risk",
+      "name": "R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0), t_0)",
+      "construction": "R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0), t_0) = inf_{hat_theta_n} sup_{P in P_{alpha,beta,s}(M,c_0,epsilon_0,t_0)} E_P[(hat_theta_n - theta_P(t_0))^2]",
+      "inputs": [
+        "n",
+        "theta_P(t_0)"
+      ]
+    },
+    {
+      "id": "def:published-hoif-rate",
+      "name": "rho_n",
+      "construction": "rho_n = n^(-2*alpha/(2*alpha+1)) vee n^(-2/(1 + d/(4*s) + 1/alpha))",
+      "inputs": [
+        "n",
+        "alpha",
+        "s",
+        "d"
+      ]
+    },
+    {
+      "id": "def:beta-frontier-handle",
+      "name": "beta-frontier handle",
+      "construction": "Headline and frontier handle. The delivered results are: (1) the first all-beta minimax lower bound R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0),t_0) >= c n^{-2*alpha/(2*alpha+1)} over the interior Holder dose-response class, by a de-laundered two-point Le Cam construction perturbing only mu_P with the covariate density and treatment-density baselines fixed; (2) the sharp same-class minimax characterization R_n asymp n^{-2*alpha/(2*alpha+1)} in the smooth-covariate regime s>=d/4, matched by an explicit self-contained cross-fitted projection-HOIF estimator on the same class; and (3) for 0<s<d/4 and fixed beta>0, the honest same-class bracket c n^{-2*alpha/(2*alpha+1)} <= R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0),t_0) <= C n^{-2/(1+d/(4*s)+1/alpha)} obtained by re-optimizing the projection-HOIF sieve dimension. The terminal residual carried by oeq:full-beta-frontier is only the sharp deficient-regime exponent inside this bracket; no matching converse for the functional branch is asserted.",
+      "inputs": [
+        "mu_P",
+        "pi_P",
+        "t_0",
+        "alpha",
+        "beta",
+        "s",
+        "d"
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "thm:sharp-pointwise-lower-bound",
+      "kind": "theorem",
+      "statement": "Assume ass:baseline-submodel-slack. Then for every beta>0 there exists a constant c > 0, depending only on the fixed model radii and the slack baseline, such that for all sufficiently large n, R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0), t_0) >= c n^(-2*alpha/(2*alpha+1)). Equivalently, uniformly over every beta>0, every estimator of theta_P(t_0) over P_{alpha,beta,s}(M,c_0,epsilon_0,t_0) has worst-case mean-squared error at least a constant multiple of the classical interior treatment-regression pointwise rate.",
+      "depends_on": [
+        "ass:iid-sampling",
+        "ass:bounded-outcome",
+        "ass:interior-dose",
+        "ass:local-positivity",
+        "ass:mu-treatment-holder",
+        "ass:pi-treatment-holder",
+        "ass:mu-covariate-holder",
+        "ass:pi-covariate-holder",
+        "ass:px-holder",
+        "def:holder-dose-class",
+        "def:minimax-risk",
+        "def:published-hoif-rate",
+        "ass:baseline-submodel-slack"
+      ],
+      "status": "to-prove",
+      "justification": "This is the missing converse to the Bonvini-Kennedy HOIF upper bound in the clean beta >= alpha regime where the published rate is already explicit.",
+      "gap": "BonviniKennedy2022FastDRF gives the fastest published upper rate but explicitly states that a tight lower bound remains elusive; KennedyBalakrishnanRobinsWasserman2022MinimaxCATE supplies the closest fuzzy-hypothesis template, but not the continuous-dose localization with density normalization.",
+      "consumer": "It closes the optimality gap for interior fixed-dose estimation and turns the Bonvini-Kennedy HOIF rate into a certified benchmark for later estimator design, tuning, and adaptation work."
+    },
+    {
+      "id": "prop:oracle-regime-reduction",
+      "kind": "proposition",
+      "statement": "Under the assumptions of thm:sharp-pointwise-lower-bound, if s >= d/4 then rho_n = n^(-2*alpha/(2*alpha+1)) and therefore R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0), t_0) >= c n^(-2*alpha/(2*alpha+1)) for some c > 0. Thus the lower frontier reduces to the classical interior pointwise nonparametric regression barrier.",
+      "depends_on": [
+        "thm:sharp-pointwise-lower-bound",
+        "def:published-hoif-rate"
+      ],
+      "status": "to-prove",
+      "justification": "A sharp converse needs a transparent sanity reduction showing that once the covariate nuisances are smooth enough, no causal complication beats the ordinary local-regression difficulty.",
+      "gap": "The reduction is implicit in BonviniKennedy2022FastDRF and classical regression theory, but the interior dose-response literature does not currently state it as part of a unified minimax frontier.",
+      "consumer": "It gives the referee-visible special case that collapses to a known result and clarifies exactly when the nuisance-product obstruction disappears."
+    },
+    {
+      "id": "oeq:full-beta-frontier",
+      "kind": "openendedquestion",
+      "statement": "Certified partial resolution of the unrestricted beta frontier. Under ass:baseline-submodel-slack, if s>=d/4 then for every beta>0 the original class P_{alpha,beta,s}(M,c_0,epsilon_0,t_0) has sharp pointwise minimax MSE R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0),t_0) asymp n^{-2 alpha/(2 alpha+1)}=rho_n. If 0<s<d/4, then for every fixed beta>0 the original class satisfies the proved bracket c n^{-2 alpha/(2 alpha+1)} <= R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0),t_0) <= C n^{-2/(1+d/(4s)+1/alpha)}=C rho_n for all large n. The remaining open question is to determine the sharp deficient-regime exponent within this bracket: the oracle floor, the HOIF functional branch, an intermediate exponent, or a genuinely beta-sensitive phase.",
+      "depends_on": [
+        "def:holder-dose-class",
+        "def:minimax-risk",
+        "def:published-hoif-rate",
+        "def:beta-frontier-handle"
+      ],
+      "status": "to-prove",
+      "justification": "Bonvini-Kennedy themselves note that the treatment-density smoothness beta may enter their upper bound only through proof bookkeeping, so the full beta-frontier is the real unresolved mathematical content beyond the clean subregime.",
+      "gap": "No published paper determines whether the beta dependence in continuous-dose HOIF rates is structural or an artifact of the current upper-bound argument.",
+      "consumer": "Resolving this question would complete the anisotropic phase diagram and determine whether future adaptive confidence procedures must learn beta as a genuine hardness parameter."
+    }
+  ],
+  "target_estimand": "theta_P(t_0) = E_P[Y(t_0)]",
+  "estimand_functional": "theta_P(t_0) = int_{[0,1]^d} mu_P(t_0,x) p_{X,P}(x) dx",
+  "sampling_model": {
+    "design": "iid observational sampling",
+    "units": "O_i = (Y_i, A_i, X_i), i = 1,...,n",
+    "treatment": "A_i is a scalar continuous treatment supported on [0,1]",
+    "overlap": "The conditional treatment density pi_P(a|x) is bounded below on an epsilon_0-neighborhood of the interior dose t_0",
+    "nuisance_estimation": "No estimator is built into the class; nuisance difficulty is encoded by Holder regularity of mu_P, pi_P, and p_{X,P}"
+  },
+  "bibliography": [
+    {
+      "key": "BonviniKennedy2022FastDRF",
+      "citation": "Bonvini, M., and Kennedy, E. H. (2022). Fast convergence rates for dose-response estimation. arXiv:2207.11825."
+    },
+    {
+      "key": "KennedyBalakrishnanRobinsWasserman2022MinimaxCATE",
+      "citation": "Kennedy, E. H., Balakrishnan, S., Robins, J. M., and Wasserman, L. (2022). Minimax rates for heterogeneous causal effect estimation. arXiv:2203.00837."
+    },
+    {
+      "key": "RobinsLiTchetgenVanderVaart2008HOIF",
+      "citation": "Robins, J. M., Li, L., Tchetgen Tchetgen, E., and van der Vaart, A. (2008). Higher order influence functions and minimax estimation of nonlinear functionals. arXiv:0805.3040."
+    },
+    {
+      "key": "RobinsLiTchetgenVanderVaart2016HOIFTechnical",
+      "citation": "Robins, J. M., Li, L., Tchetgen Tchetgen, E., and van der Vaart, A. (2016). Technical report: Higher order influence functions and minimax estimation of nonlinear functionals. arXiv:1601.05820."
+    },
+    {
+      "key": "ColangeloLee2020ContinuousDML",
+      "citation": "Colangelo, K., and Lee, Y.-Y. (2020). Double debiased machine learning nonparametric inference with continuous treatments. arXiv:2004.03036."
+    },
+    {
+      "key": "SemenovaChernozhukov2017CausalFunctions",
+      "citation": "Semenova, V., and Chernozhukov, V. (2017). Debiased machine learning of conditional average treatment effects and other causal functions. arXiv:1702.06240."
+    },
+    {
+      "key": "KennedyMaMcHughSmall2017ContinuousDR",
+      "citation": "Kennedy, E. H., Ma, Z., McHugh, M. D., and Small, D. S. (2017). Nonparametric methods for doubly robust estimation of continuous treatment effects. Journal of the Royal Statistical Society, Series B 79(4), 1229-1245."
+    },
+    {
+      "key": "SchindlShenKennedy2024IncrementalContinuous",
+      "citation": "Schindl, K., Shen, S., and Kennedy, E. H. (2024). Incremental effects for continuous exposures. arXiv:2409.11967."
+    },
+    {
+      "key": "BibautVanderLaan2017AdaptiveSmoothing",
+      "citation": "Bibaut, A. F., and van der Laan, M. J. (2017). Data-adaptive smoothing for optimal-rate estimation of possibly non-regular parameters. arXiv:1706.07408."
+    },
+    {
+      "key": "CinelliEtAl2025CausalChallenges",
+      "citation": "Cinelli, C., Feller, A., Imbens, G., Kennedy, E., Magliacane, S., and Zubizarreta, J. (2025). Challenges in statistics: A dozen challenges in causality and causal inference. arXiv:2508.17099."
+    },
+    {
+      "key": "Tsybakov2009Nonparametric",
+      "citation": "Tsybakov, A. B. (2009). Introduction to Nonparametric Estimation. Springer."
+    }
+  ],
+  "comparator_promise_table": [
+    {
+      "comparator_bibkey": "BonviniKennedy2022FastDRF",
+      "comparator_claim": "The higher-order dose-response estimator attains the rate n^(-2*alpha/(2*alpha+1)) vee n^(-2/(1 + d/(4*s) + 1/alpha)) in the beta >= alpha regime when the higher-order remainder is negligible.",
+      "matched_by": "thm:sharp-pointwise-lower-bound",
+      "match_kind": "equivalence"
+    },
+    {
+      "comparator_bibkey": "KennedyBalakrishnanRobinsWasserman2022MinimaxCATE",
+      "comparator_claim": "Minimax CATE lower bounds are proved by localized fuzzy hypotheses that mix regression and nonlinear-functional difficulty.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "ColangeloLee2020ContinuousDML",
+      "comparator_claim": "Kernel-localized DML delivers asymptotic normality for interior continuous-treatment effects under high-level nuisance conditions.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "KennedyMaMcHughSmall2017ContinuousDR",
+      "comparator_claim": "Pseudo-outcome local regression yields doubly robust continuous-treatment dose-response estimation with second-order remainder control.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "SemenovaChernozhukov2017CausalFunctions",
+      "comparator_claim": "Orthogonal-signal projection delivers estimation and inference for causal functionals through best linear prediction.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "RobinsLiTchetgenVanderVaart2008HOIF",
+      "comparator_claim": "Higher-order influence functions yield rate-optimal estimation of nonlinear functionals in nonparametric models.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "RobinsLiTchetgenVanderVaart2016HOIFTechnical",
+      "comparator_claim": "Higher-order influence-function calculus and product expansions justify the HOIF bias-variance frontier used by later causal estimators.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "SchindlShenKennedy2024IncrementalContinuous",
+      "comparator_claim": "Incremental continuous-exposure lower bounds scale with an effective sample size n/delta and yield edge-dose rates as delta tends to infinity.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "BibautVanderLaan2017AdaptiveSmoothing",
+      "comparator_claim": "Data-adaptive smoothing can deliver almost-optimal confidence intervals for nonregular parameters such as fixed-dose dose-response values.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    }
+  ],
+  "tldr": "The proposal targets the missing converse for interior continuous-treatment dose-response estimation at a fixed dose t_0. Bonvini and Kennedy derive the fastest published HOIF upper rate and explicitly leave the minimax lower bound open. The kernel here is to prove that, on a clean anisotropic Holder class with common covariate smoothness s and treatment-density smoothness at least as large as the dose-response smoothness alpha, every estimator of theta_P(t_0) has worst-case MSE at least n^(-2*alpha/(2*alpha+1)) vee n^(-2/(1 + d/(4*s) + 1/alpha)). That theorem would certify the published HOIF rate as sharp in the beta >= alpha regime, while the honest open content is whether a distinct beta-dominated phase appears once beta < alpha is allowed.",
+  "project_justification": {
+    "gap": "The interior fixed-dose dose-response literature has a published higher-order upper rate but no matching minimax converse, so the central frontier is still one-sided.",
+    "niche": "The target theta_P(t_0) is neither ordinary regression nor an ordinary nonlinear functional: the hard subexperiment must localize in the treatment coordinate while preserving conditional-density normalization and positivity.",
+    "fill": "The project fills that gap by adapting the CATE fuzzy-hypothesis architecture to a continuous-dose partial-mean target, proving the matching pointwise lower bound in the beta >= alpha regime, and isolating the unresolved beta-frontier as a separate open question rather than hiding it in a vague future-work sentence."
+  },
+  "related_work": "BonviniKennedy2022FastDRF is the anchor because it introduces the continuous-dose HOIF estimator, separates treatment-direction and covariate-direction smoothness, and states that a tight lower bound remains elusive. KennedyMaMcHughSmall2017ContinuousDR is the first pseudo-outcome dose-response precursor because it establishes the regression-plus-nuisance-remainder representation that later estimators refine. ColangeloLee2020ContinuousDML and SemenovaChernozhukov2017CausalFunctions are the main first-order comparators: both provide orthogonal-score or orthogonal-signal inference machinery for continuous or function-valued causal targets, but neither characterizes the minimax frontier for interior fixed-dose estimation. KennedyBalakrishnanRobinsWasserman2022MinimaxCATE is the closest lower-bound template because it proves a hybrid regression-functional rate by localized fuzzy hypotheses, yet its construction does not enforce continuous-treatment density normalization or fixed-dose localization. RobinsLiTchetgenVanderVaart2008HOIF and RobinsLiTchetgenVanderVaart2016HOIFTechnical provide the higher-order von Mises and U-statistic logic underlying the Bonvini-Kennedy upper bound that the converse must match. SchindlShenKennedy2024IncrementalContinuous is the natural foil because it delivers genuine continuous-exposure lower bounds, but for incremental tilts and edge-dose limits rather than the interior fixed-dose partial mean. BibautVanderLaan2017AdaptiveSmoothing explains why closing the rate frontier matters for inference: fixed-dose dose-response values are nonregular, so any later adaptive confidence procedure must know the sharp benchmark it is adapting to. CinelliEtAl2025CausalChallenges underscores that minimax optimality for modern causal functionals remains a live open problem rather than a settled technicality.",
+  "honest_scope": "The settled kernel in this version is the pointwise lower bound in the common-covariate-smoothness class with beta >= alpha. The proposal does not claim the full anisotropic phase diagram, integrated-risk sharpness, or adaptive confidence bounds. Those are downstream consumers of the converse. The explicit open frontier is whether beta enters the true rate once beta < alpha, since Bonvini and Kennedy themselves suggest the current beta dependence in the upper analysis may be partly an artifact. The special-case reduction s >= d/4 is included to satisfy the sanity check against classical interior nonparametric regression.",
+  "seeds": [
+    "seed:sharp-pointwise-beta-ge-alpha",
+    "seed:full-pointwise-phase-diagram",
+    "seed:integrated-risk-frontier",
+    "seed:joint-pointwise-integrated-frontier",
+    "seed:known-density-separation",
+    "seed:incremental-nonreduction",
+    "seed:adaptive-ci-impossibility",
+    "seed:adaptive-ci-attainability"
+  ],
+  "seed_details": [
+    {
+      "id": "seed:sharp-pointwise-beta-ge-alpha",
+      "anchor_open_problem": "Prove a sharp minimax lower bound for the interior fixed-dose value theta(t)=E[mu(t,X)] over anisotropic Holder classes that matches the Bonvini-Kennedy higher-order influence-function upper rate.",
+      "anchor_bibkey": "BonviniKennedy2022FastDRF",
+      "motif": "M11",
+      "target_tier": "field",
+      "summary": "Match the published HOIF upper rate from below at a fixed interior dose on the beta >= alpha subclass with common covariate smoothness s.",
+      "anchor_read": "Bonvini-Kennedy introduction states that a tight lower bound remains elusive and identifies minimax optimality as a natural next step; their Section 3.4 discussion isolates the beta >= alpha, common-s regime where the upper rate is explicit.",
+      "red_team": "Immediate from the CATE minimax paper because both are regression-functional hybrids.",
+      "rebuttal": "The CATE construction does not preserve continuous-treatment density normalization, local positivity in a dose neighborhood, or the fixed-dose partial-mean geometry.",
+      "scores": {
+        "importance": 5,
+        "novelty": 4,
+        "feasibility": 4,
+        "sharpness": 5,
+        "leverage": 5
+      },
+      "selected": true
+    },
+    {
+      "id": "seed:full-pointwise-phase-diagram",
+      "anchor_open_problem": "Determine the complete anisotropic phase diagram for pointwise and integrated interior dose-response risk, including the transition boundaries where oracle regression, HOIF nuisance products, or conditional-density estimation dominates.",
+      "anchor_bibkey": "BonviniKennedy2022FastDRF",
+      "motif": "M11",
+      "target_tier": "flagship",
+      "summary": "Characterize every elbow in alpha, beta, and s for pointwise interior risk on one law class.",
+      "anchor_read": "Bonvini-Kennedy frame the problem exactly as a competition between oracle smoothing and nuisance-product terms, but do not supply a converse or a complete elbow map.",
+      "red_team": "This is just a longer restatement of the first seed without extra math.",
+      "rebuttal": "A complete phase diagram would have to prove which lower-bound channel dominates in each regime and whether beta creates a genuinely new phase.",
+      "scores": {
+        "importance": 5,
+        "novelty": 5,
+        "feasibility": 2,
+        "sharpness": 5,
+        "leverage": 5
+      },
+      "selected": true
+    },
+    {
+      "id": "seed:integrated-risk-frontier",
+      "anchor_open_problem": "Determine the complete anisotropic phase diagram for pointwise and integrated interior dose-response risk, including the transition boundaries where oracle regression, HOIF nuisance products, or conditional-density estimation dominates.",
+      "anchor_bibkey": "BonviniKennedy2022FastDRF",
+      "motif": "M11",
+      "target_tier": "field",
+      "summary": "Prove the sharp integrated L2 risk frontier and compare it to the pointwise frontier.",
+      "anchor_read": "The Bonvini-Kennedy setup distinguishes pointwise and integrated losses but leaves both converse questions open; the CATE discussion suggests L2 and pointwise rates can differ in how localization enters.",
+      "red_team": "Integrated risk is a routine integral of the pointwise result.",
+      "rebuttal": "Integrated loss changes the localization geometry and can eliminate or soften the fixed-dose kernel barrier, so a separate converse is needed.",
+      "scores": {
+        "importance": 4,
+        "novelty": 4,
+        "feasibility": 3,
+        "sharpness": 4,
+        "leverage": 4
+      },
+      "selected": false
+    },
+    {
+      "id": "seed:joint-pointwise-integrated-frontier",
+      "anchor_open_problem": "Determine the complete anisotropic phase diagram for pointwise and integrated interior dose-response risk, including the transition boundaries where oracle regression, HOIF nuisance products, or conditional-density estimation dominates.",
+      "anchor_bibkey": "KennedyBalakrishnanRobinsWasserman2022MinimaxCATE",
+      "motif": "M11",
+      "target_tier": "flagship",
+      "summary": "Deliver one theorem family covering both pointwise and integrated risk with explicit elbow boundaries.",
+      "anchor_read": "The CATE paper's discussion flags other loss functions as open, and the dose-response paper already separates local and global estimators without a unified frontier.",
+      "red_team": "Too broad to be a first cold-start angle.",
+      "rebuttal": "The unified statement is mathematically coherent, but it likely depends on first solving the narrower pointwise converse.",
+      "scores": {
+        "importance": 4,
+        "novelty": 4,
+        "feasibility": 2,
+        "sharpness": 4,
+        "leverage": 4
+      },
+      "selected": false
+    },
+    {
+      "id": "seed:known-density-separation",
+      "anchor_open_problem": "Determine the complete anisotropic phase diagram for pointwise and integrated interior dose-response risk, including the transition boundaries where oracle regression, HOIF nuisance products, or conditional-density estimation dominates.",
+      "anchor_bibkey": "BonviniKennedy2022FastDRF",
+      "motif": "M2",
+      "target_tier": "field",
+      "summary": "Compare the minimax frontier when the marginal or joint treatment density is known versus unknown, to certify whether the density channel is structural.",
+      "anchor_read": "Bonvini-Kennedy's upper analysis isolates a remainder tied to estimating the density side of the problem, but leaves open whether that is a proof artifact or a true frontier shift.",
+      "red_team": "This only diagnoses the proof, not the parameter.",
+      "rebuttal": "If the lower frontier changes across known-density and unknown-density classes, that is a structural statement about the parameter's information geometry.",
+      "scores": {
+        "importance": 4,
+        "novelty": 5,
+        "feasibility": 3,
+        "sharpness": 4,
+        "leverage": 4
+      },
+      "selected": true
+    },
+    {
+      "id": "seed:incremental-nonreduction",
+      "anchor_open_problem": "Prove a formal separation between minimax lower bounds for incremental continuous-exposure effects or edge-dose limits and the unresolved interior fixed-dose dose-response minimax lower bound.",
+      "anchor_bibkey": "SchindlShenKennedy2024IncrementalContinuous",
+      "motif": "M2",
+      "target_tier": "field",
+      "summary": "Show that incremental and edge-dose lower bounds do not reduce to the interior fixed-dose problem.",
+      "anchor_read": "Schindl-Shen-Kennedy emphasize delta-scaled effective sample size and an edge-dose limit, then list higher-smoothness interior dose-response questions as future work.",
+      "red_team": "The estimands are obviously different, so formalizing the distinction adds little.",
+      "rebuttal": "A theorem-level counterexample would stop referees from citing incremental lower bounds as a surrogate solution to the interior minimax gap.",
+      "scores": {
+        "importance": 3,
+        "novelty": 4,
+        "feasibility": 4,
+        "sharpness": 4,
+        "leverage": 3
+      },
+      "selected": false
+    },
+    {
+      "id": "seed:adaptive-ci-impossibility",
+      "anchor_open_problem": "Establish whether adaptive honest confidence intervals or bands for the interior dose-response curve can attain the sharp minimax rate when the anisotropic smoothness vector (alpha,beta,s) is unknown.",
+      "anchor_bibkey": "BibautVanderLaan2017AdaptiveSmoothing",
+      "motif": "M11",
+      "target_tier": "field",
+      "summary": "After fixing the frontier, prove the unavoidable adaptation penalty for honest fixed-dose intervals over unknown smoothness.",
+      "anchor_read": "Bibaut and van der Laan treat fixed-dose dose-response as a nonregular smoothing problem and derive adaptive intervals, but not against the Bonvini-Kennedy anisotropic frontier.",
+      "red_team": "This is premature because the base rate frontier is still unresolved.",
+      "rebuttal": "It becomes viable on a solved subclass, but it is not the best first angle for the current qid.",
+      "scores": {
+        "importance": 4,
+        "novelty": 4,
+        "feasibility": 2,
+        "sharpness": 4,
+        "leverage": 4
+      },
+      "selected": false
+    },
+    {
+      "id": "seed:adaptive-ci-attainability",
+      "anchor_open_problem": "Establish whether adaptive honest confidence intervals or bands for the interior dose-response curve can attain the sharp minimax rate when the anisotropic smoothness vector (alpha,beta,s) is unknown.",
+      "anchor_bibkey": "BibautVanderLaan2017AdaptiveSmoothing",
+      "motif": "M11+M8",
+      "target_tier": "subfield",
+      "summary": "Construct Lepski-style honest intervals on a self-similar subclass adapted to the continuous-dose nuisance geometry.",
+      "anchor_read": "Bibaut and van der Laan already provide a generic adaptive-smoothing route, so the distinct open content is specific to the continuous-treatment nuisance structure.",
+      "red_team": "This looks like a direct implementation of existing adaptive smoothing ideas.",
+      "rebuttal": "The nuisance-density interaction makes the bias bookkeeping nontrivial, but the kernel is still weaker than the converse itself.",
+      "scores": {
+        "importance": 4,
+        "novelty": 3,
+        "feasibility": 2,
+        "sharpness": 3,
+        "leverage": 3
+      },
+      "selected": false
+    }
+  ],
+  "literature_map": {
+    "anchor": "BonviniKennedy2022FastDRF is the direct open-problem source: the introduction says a tight minimax lower bound remains elusive, Section 3.4 isolates the explicit beta >= alpha rate regime, and the later discussion keeps the sharp converse open.",
+    "adjacent_threads": [
+      "KennedyBalakrishnanRobinsWasserman2022MinimaxCATE gives the closest lower-bound architecture: localized fuzzy hypotheses combining a regression bump with nuisance perturbations.",
+      "RobinsLiTchetgenVanderVaart2008HOIF and RobinsLiTchetgenVanderVaart2016HOIFTechnical explain why the relevant upper frontier is a higher-order nonlinear-functional frontier rather than a first-order DML one.",
+      "ColangeloLee2020ContinuousDML and SemenovaChernozhukov2017CausalFunctions are first-order orthogonal-score comparators, useful for delimiting what is already settled on asymptotic normality but not on minimax optimality.",
+      "SchindlShenKennedy2024IncrementalContinuous proves genuine continuous-exposure lower bounds, but only for incremental tilts and edge-dose limits, confirming that no published interior fixed-dose converse has already appeared.",
+      "BibautVanderLaan2017AdaptiveSmoothing shows why the converse matters downstream: honest inference for fixed-dose dose-response values must adapt to a nonregular benchmark."
+    ],
+    "writing_exemplar_used": "BonviniKennedy2022FastDRF",
+    "method_exemplars_used": [
+      "KennedyBalakrishnanRobinsWasserman2022MinimaxCATE",
+      "RobinsLiTchetgenVanderVaart2016HOIFTechnical"
+    ]
+  },
+  "novelty_justification": {
+    "closest_published_results": [
+      "BonviniKennedy2022FastDRF",
+      "KennedyBalakrishnanRobinsWasserman2022MinimaxCATE"
+    ],
+    "precise_gap": "The first paper gives the upper side but no converse; the second gives the right lower-bound technology but for a binary-treatment CATE target without continuous-dose density normalization, interior-dose localization, or the partial-mean structure theta_P(t_0) = int mu_P(t_0,x) dP_X(x).",
+    "why_not_subsumed": "No paper located in the scan proves a minimax lower bound for the interior fixed-dose continuous-treatment mean response. Incremental-effect lower bounds are for a different estimand and effective-sample-size geometry, and the continuous-treatment DML papers establish first-order inference rather than a matching minimax frontier.",
+    "chosen_kernel_reason": "The beta >= alpha pointwise converse is the highest-scoring seed that survives the scan: it is sharp, theorem-level, close enough to the published upper result to be feasible, and still leaves honest open content in the unresolved full beta-frontier."
+  }
+}

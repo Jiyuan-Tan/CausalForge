@@ -1,0 +1,1284 @@
+{
+  "qid": "stat_prte_ot_boundary_adaptation",
+  "specialization": "v1",
+  "cluster": "stat",
+  "symbols": [
+    {
+      "name": "n",
+      "type": "sample_size",
+      "space": "N",
+      "def": "Sample size.",
+      "role": "index"
+    },
+    {
+      "name": "O",
+      "type": "random_vector",
+      "space": "{(Y,D,Z,X): Y in R, D in {0,1}, Z in Z, X in X}",
+      "def": "Observed unit O = (Y, D, Z, X).",
+      "role": "data_unit"
+    },
+    {
+      "name": "O_1, ..., O_n",
+      "type": "sample",
+      "space": "({(Y,D,Z,X): Y in R, D in {0,1}, Z in Z, X in X})^n",
+      "def": "Observed sample of n units.",
+      "role": "data",
+      "refs": [
+        "O",
+        "n"
+      ]
+    },
+    {
+      "name": "Y",
+      "type": "outcome",
+      "space": "R",
+      "def": "Observed outcome component of O.",
+      "role": "data_component",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "D",
+      "type": "treatment",
+      "space": "{0,1}",
+      "def": "Observed treatment indicator component of O.",
+      "role": "data_component",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "Z",
+      "type": "instrument",
+      "space": "Z",
+      "def": "Observed continuous instrument component of O.",
+      "role": "data_component",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "X",
+      "type": "covariate",
+      "space": "X",
+      "def": "Observed covariate component of O.",
+      "role": "data_component",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "P",
+      "type": "law",
+      "space": "laws of O",
+      "def": "Observed-data law of O.",
+      "role": "model",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "p",
+      "type": "propensity_map",
+      "sig": "(z,x) -> [0,1]",
+      "def": "p(z,x) = P(D = 1 | Z = z, X = x).",
+      "role": "primitive_function",
+      "refs": [
+        "P",
+        "D",
+        "Z",
+        "X"
+      ]
+    },
+    {
+      "name": "underline_p",
+      "type": "support_boundary_map",
+      "sig": "X -> [0,1]",
+      "def": "underline_p(x) = inf_{z in supp(Z | X = x)} p(z,x).",
+      "role": "boundary_object",
+      "refs": [
+        "p",
+        "Z",
+        "X"
+      ]
+    },
+    {
+      "name": "B",
+      "type": "boundary_radius",
+      "space": "[0,1]",
+      "def": "B = p(Z,X) - underline_p(X), the lower-propensity boundary distance of the realized instrument value.",
+      "role": "boundary_localization",
+      "refs": [
+        "p",
+        "Z",
+        "X",
+        "underline_p"
+      ]
+    },
+    {
+      "name": "Pi_ccot(P)",
+      "type": "transport_feasible_set",
+      "space": "set of conditional couplings indexed by X",
+      "def": "Feasible conditional optimal-transport couplings entering the sharp PRTE lower bound under P.",
+      "role": "identified_set_primitive",
+      "refs": [
+        "P"
+      ]
+    },
+    {
+      "name": "m_P",
+      "type": "transport_payoff_kernel",
+      "sig": "(u,v,x) -> R",
+      "def": "PRTE payoff kernel in the conditional optimal-transport representation under P.",
+      "role": "identified_set_primitive",
+      "refs": [
+        "P"
+      ]
+    },
+    {
+      "name": "Gamma",
+      "type": "endpoint_map",
+      "sig": "P -> R",
+      "def": "Gamma(P) is the lower endpoint map of the sharp CCOT PRTE identified interval.",
+      "role": "endpoint_map",
+      "refs": [
+        "P",
+        "Pi_ccot(P)",
+        "m_P"
+      ]
+    },
+    {
+      "name": "theta_L",
+      "type": "partial_identification_endpoint",
+      "space": "R",
+      "def": "theta_L = Gamma(P), the lower endpoint of the sharp PRTE identified interval.",
+      "role": "target_estimand",
+      "refs": [
+        "Gamma",
+        "P"
+      ]
+    },
+    {
+      "name": "A",
+      "type": "active_face_label_space",
+      "space": "finite or countable label set",
+      "def": "Index set for active CCOT transport faces near the lower propensity boundary.",
+      "role": "geometry_index"
+    },
+    {
+      "name": "a_P",
+      "type": "active_face_label_map",
+      "sig": "O -> A",
+      "def": "a_P(O) is the label of the active lower-endpoint CCOT transport face at observation O on the region 0 < B <= bar_b.",
+      "role": "boundary_geometry",
+      "refs": [
+        "O",
+        "A",
+        "B"
+      ]
+    },
+    {
+      "name": "chi_P",
+      "type": "boundary_loading",
+      "sig": "O -> R",
+      "def": "Boundary loading in the directional derivative of Gamma at P along the unique active transport face.",
+      "role": "boundary_derivative",
+      "refs": [
+        "Gamma",
+        "P",
+        "O"
+      ]
+    },
+    {
+      "name": "phi_P",
+      "type": "influence_function",
+      "sig": "O -> R",
+      "def": "Regular interior influence function for perturbations of Gamma that stay away from the boundary-local region B = 0.",
+      "role": "regular_component",
+      "refs": [
+        "Gamma",
+        "P",
+        "O"
+      ]
+    },
+    {
+      "name": "bar_b",
+      "type": "boundary_cutoff",
+      "space": "(0,1)",
+      "def": "Fixed upper cutoff delimiting the boundary-local region 0 < B <= bar_b.",
+      "role": "localization_constant"
+    },
+    {
+      "name": "alpha",
+      "type": "tail_exponent",
+      "space": "(0, infinity)",
+      "def": "Boundary-tail exponent governing the mass of laws with small boundary distance B.",
+      "role": "regime_parameter",
+      "refs": [
+        "B",
+        "P"
+      ]
+    },
+    {
+      "name": "c_B",
+      "type": "tail_scale_constant",
+      "space": "(0, infinity)",
+      "def": "Exact regular-variation constant in P(0 < B <= t) = c_B t^alpha {1 + o(1)}.",
+      "role": "tail_constant",
+      "refs": [
+        "P",
+        "B",
+        "alpha"
+      ]
+    },
+    {
+      "name": "M_P",
+      "type": "mark_limit_law",
+      "space": "probability measures on R x A",
+      "def": "Weak limit of the conditional law of (chi_P(O), a_P(O)) given 0 < B <= t as t downarrow 0.",
+      "role": "shell_mark_distribution",
+      "refs": [
+        "chi_P",
+        "a_P"
+      ]
+    },
+    {
+      "name": "K_alpha",
+      "type": "tail_scale_function",
+      "sig": "(0,1] -> (0, infinity)",
+      "def": "Boundary variance scale K_alpha(t) = 1 if alpha > 1, K_alpha(t) = 1 + log(1 / t) if alpha = 1, and K_alpha(t) = t^(alpha - 1) if 0 < alpha < 1.",
+      "role": "normalization_object",
+      "refs": [
+        "alpha"
+      ]
+    },
+    {
+      "name": "rho_n(alpha)",
+      "type": "normalization_sequence",
+      "space": "(0, infinity)^N",
+      "def": "rho_n(alpha) = sqrt(n / K_alpha(n^(-1))).",
+      "role": "rate_normalization",
+      "refs": [
+        "n",
+        "K_alpha",
+        "alpha"
+      ]
+    },
+    {
+      "name": "hat_P_n",
+      "type": "empirical_law",
+      "space": "random laws on O",
+      "def": "hat_P_n = n^(-1) sum_{i=1}^n delta_{O_i}.",
+      "role": "empirical_object",
+      "refs": [
+        "O_1, ..., O_n",
+        "n"
+      ]
+    },
+    {
+      "name": "hat_theta_L_n",
+      "type": "plugin_endpoint_estimator",
+      "space": "R",
+      "def": "hat_theta_L_n = Gamma(hat_P_n), the empirical CCOT plug-in lower endpoint.",
+      "role": "estimator",
+      "refs": [
+        "Gamma",
+        "hat_P_n"
+      ]
+    },
+    {
+      "name": "G_n,P,u",
+      "type": "shell_summand_map",
+      "sig": "O -> R",
+      "def": "G_n,P,u(O) = rho_n(alpha) chi_P(O) B^(-1/2) 1{ u n^(-1) < B <= bar_b }.",
+      "role": "local_summand",
+      "refs": [
+        "rho_n(alpha)",
+        "chi_P",
+        "B",
+        "bar_b",
+        "n"
+      ]
+    },
+    {
+      "name": "J_n,P",
+      "type": "extreme_shell_summand_map",
+      "sig": "O -> R",
+      "def": "J_n,P(O) = rho_n(alpha) chi_P(O) B^(-1/2) 1{ 0 < B <= n^(-1) }.",
+      "role": "extreme_shell_summand",
+      "refs": [
+        "rho_n(alpha)",
+        "chi_P",
+        "B",
+        "n"
+      ]
+    },
+    {
+      "name": "S_nP",
+      "type": "boundary_score",
+      "space": "R",
+      "def": "S_nP = n^(-1) sum_{i=1}^n [ G_n,P,1(O_i) - E_P G_n,P,1(O) ].",
+      "role": "boundary_statistic",
+      "refs": [
+        "n",
+        "G_n,P,u",
+        "O_1, ..., O_n",
+        "P"
+      ]
+    },
+    {
+      "name": "R_nP",
+      "type": "extreme_shell_statistic",
+      "space": "R",
+      "def": "R_nP = n^(-1) sum_{i=1}^n [ J_n,P(O_i) - E_P J_n,P(O) ].",
+      "role": "extreme_shell_residual",
+      "refs": [
+        "n",
+        "J_n,P",
+        "O_1, ..., O_n",
+        "P"
+      ]
+    },
+    {
+      "name": "u_0",
+      "type": "truncation_index",
+      "space": "(0,1]",
+      "def": "Fixed lower shell index used to avoid the singular point u = 0.",
+      "role": "process_domain_parameter"
+    },
+    {
+      "name": "H_nP_u0",
+      "type": "truncated_boundary_process",
+      "sig": "[u_0,1] -> R",
+      "def": "For u in [u_0,1], H_nP_u0(u) = n^(-1) sum_{i=1}^n [ G_n,P,u(O_i) - E_P G_n,P,u(O) ].",
+      "role": "local_experiment_process",
+      "refs": [
+        "n",
+        "G_n,P,u",
+        "u_0",
+        "O_1, ..., O_n",
+        "P"
+      ]
+    },
+    {
+      "name": "Sigma_P,u0",
+      "type": "covariance_kernel",
+      "sig": "[u_0,1] x [u_0,1] -> R",
+      "def": "Positive-semidefinite covariance kernel governing the Gaussian or logarithmic finite-dimensional shell limits on [u_0,1].",
+      "role": "limit_covariance",
+      "refs": [
+        "u_0",
+        "P"
+      ]
+    },
+    {
+      "name": "Lambda_P,alpha,u0",
+      "type": "levy_measure_family",
+      "space": "family of Levy measures on finite-dimensional vectors with one extreme-shell coordinate and truncated-shell coordinates indexed by [u_0,1]",
+      "def": "Levy-measure family governing the joint infinitely divisible limits of the extreme-shell coordinate J_n,P and the truncated shell coordinates G_n,P,u when 0 < alpha < 1.",
+      "role": "jump_limit_object",
+      "refs": [
+        "J_n,P",
+        "G_n,P,u",
+        "u_0",
+        "alpha",
+        "P"
+      ]
+    },
+    {
+      "name": "H_P,alpha,u0",
+      "type": "limit_process",
+      "space": "D([u_0,1])",
+      "def": "Boundary-local limit experiment for H_nP_u0 on [u_0,1], with covariance kernel Sigma_P,u0 when alpha >= 1 and truncated-shell marginals of the finite-dimensional Levy law indexed by Lambda_P,alpha,u0 when 0 < alpha < 1.",
+      "role": "limit_object",
+      "refs": [
+        "u_0",
+        "alpha",
+        "P",
+        "Sigma_P,u0",
+        "Lambda_P,alpha,u0"
+      ]
+    },
+    {
+      "name": "p_so",
+      "type": "strict_overlap_floor",
+      "space": "(0,1)",
+      "def": "Deterministic external lower-propensity floor for the strict-overlap comparator class.",
+      "role": "sanity_parameter"
+    },
+    {
+      "name": "alpha_0, alpha_1",
+      "type": "tail_exponents",
+      "space": "(0, infinity)^2",
+      "def": "Two tail exponents used in the between-class honest-CI adaptation comparison.",
+      "role": "adaptation_parameters",
+      "refs": [
+        "alpha"
+      ]
+    },
+    {
+      "name": "delta",
+      "type": "coverage_level",
+      "space": "(0,1)",
+      "def": "Target miscoverage level for confidence intervals.",
+      "role": "inference_parameter"
+    },
+    {
+      "name": "C_n",
+      "type": "confidence_interval_sequence",
+      "sig": "data -> intervals in R",
+      "def": "Generic confidence interval sequence for theta_L used in the two-alpha honesty lower bound.",
+      "role": "lower_bound_object",
+      "refs": [
+        "theta_L",
+        "O_1, ..., O_n"
+      ]
+    },
+    {
+      "name": "C_n_alpha",
+      "type": "confidence_interval_sequence",
+      "sig": "data -> intervals in R",
+      "def": "Prospective alpha-specific confidence interval sequence for theta_L posed in oeq:boundary-honest-ci.",
+      "role": "open_problem_object",
+      "refs": [
+        "theta_L",
+        "alpha",
+        "O_1, ..., O_n"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:iid",
+      "kind": "sampling",
+      "condition": "O_1, ..., O_n are i.i.d. draws from P.",
+      "free_symbols": [
+        "O_1, ..., O_n",
+        "P",
+        "n"
+      ],
+      "standard": {
+        "name": "i.i.d. sampling",
+        "cite": "TanBlanchetSyrgkanis2026PRTEOT"
+      },
+      "used_by": [
+        "prop:phase-normalization",
+        "thm:local-experiment",
+        "prop:boundary-nonuniformity",
+        "thm:endpoint-limit-law",
+        "thm:no-honest-adaptation",
+        "prop:strict-overlap-reduction"
+      ]
+    },
+    {
+      "id": "ass:boundary-atom-free",
+      "kind": "support",
+      "condition": "P(B = 0) = 0.",
+      "free_symbols": [
+        "P",
+        "B"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This is realistic when the generalized propensity map reaches its lower support boundary only along a null set of instrument realizations, so the continuous-IV design has a thin boundary neighborhood rather than a positive-mass pile-up at the edge."
+      },
+      "used_by": [
+        "def:boundary-class",
+        "thm:local-experiment",
+        "thm:endpoint-limit-law",
+        "thm:no-honest-adaptation"
+      ]
+    },
+    {
+      "id": "ass:boundary-tail",
+      "kind": "tail",
+      "condition": "There exists c_B > 0 such that P(0 < B <= t) = c_B t^alpha {1 + o(1)} as t downarrow 0.",
+      "free_symbols": [
+        "P",
+        "B",
+        "c_B",
+        "alpha"
+      ],
+      "constants": [
+        "c_B"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This holds in latent-index IV designs where the realized propensity distance from the lower face has an exact regularly varying tail. It is the natural primitive version of the alpha-indexed boundary-mass regime singled out by the CCOT PRTE endpoint."
+      },
+      "used_by": [
+        "def:boundary-class",
+        "prop:phase-normalization",
+        "thm:local-experiment",
+        "prop:boundary-nonuniformity",
+        "thm:endpoint-limit-law",
+        "thm:no-honest-adaptation"
+      ]
+    },
+    {
+      "id": "ass:boundary-mark-stabilization",
+      "kind": "boundary_regularity",
+      "condition": "There exists a probability measure M_P on R x A such that the conditional law of (chi_P(O), a_P(O)) given 0 < B <= t converges weakly to M_P as t downarrow 0.",
+      "free_symbols": [
+        "P",
+        "chi_P",
+        "a_P",
+        "B",
+        "M_P",
+        "A"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This is realistic when the active face and its derivative loading stabilize along the lower propensity edge, which is exactly the regime where a boundary-local asymptotic experiment should exist. It permits the shell law to be summarized by a limiting mark distribution instead of by ad hoc shell-wise constants."
+      },
+      "used_by": [
+        "def:boundary-class",
+        "thm:local-experiment",
+        "thm:endpoint-limit-law",
+        "thm:no-honest-adaptation"
+      ]
+    },
+    {
+      "id": "ass:centered-shell-variance",
+      "kind": "boundary_regularity",
+      "condition": "There exist c_V_minus > 0 and c_V_plus > 0 such that c_V_minus K_alpha(t) <= Var_P( chi_P(O) B^(-1/2) 1{ t < B <= bar_b } ) <= c_V_plus K_alpha(t) for every t in (0, bar_b].",
+      "free_symbols": [
+        "P",
+        "chi_P",
+        "B",
+        "K_alpha",
+        "bar_b"
+      ],
+      "constants": [
+        "c_V_minus",
+        "c_V_plus"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This holds when the boundary loading is not asymptotically canceled by sign changes within shrinking shells, so the singular shell contributes at the alpha-indexed order identified by K_alpha. It is the centered nondegeneracy condition needed for a genuine phase transition rather than a variance upper bound alone."
+      },
+      "used_by": [
+        "def:boundary-class",
+        "prop:phase-normalization",
+        "thm:local-experiment",
+        "prop:boundary-nonuniformity",
+        "thm:endpoint-limit-law",
+        "thm:no-honest-adaptation"
+      ]
+    },
+    {
+      "id": "ass:unique-active-face",
+      "kind": "ot_geometry",
+      "condition": "For P-almost every X and every realized boundary point with 0 < B <= bar_b, the lower-endpoint CCOT program has a unique active transport face.",
+      "free_symbols": [
+        "P",
+        "B",
+        "bar_b",
+        "Pi_ccot(P)"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This is realistic on generic subclasses where the supporting hyperplane to the CCOT value is unique except on tie sets of codimension one. It isolates the identifiable geometry already implicit in the anchor paper's one-dimensional transport formulas and keeps the proposal off the tie/slack frontier."
+      },
+      "used_by": [
+        "def:boundary-class",
+        "thm:local-experiment",
+        "thm:endpoint-limit-law",
+        "thm:no-honest-adaptation",
+        "oeq:boundary-honest-ci"
+      ]
+    },
+    {
+      "id": "ass:dual-gap-scale",
+      "kind": "ot_geometry",
+      "condition": "There exists c_gap > 0 such that, on the region 0 < B <= bar_b, the dual value gap between the active face and the closest competing face is at least c_gap B.",
+      "free_symbols": [
+        "B",
+        "bar_b"
+      ],
+      "constants": [
+        "c_gap"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This is realistic in smooth support-price models where the winning transport face remains separated from runners-up at first order as one approaches the lower propensity edge. It is the exact genericity condition needed to keep the endpoint derivative from being dominated by accidental face switches."
+      },
+      "used_by": [
+        "def:boundary-class",
+        "thm:local-experiment",
+        "thm:endpoint-limit-law",
+        "thm:no-honest-adaptation",
+        "oeq:boundary-honest-ci"
+      ]
+    },
+    {
+      "id": "ass:gaussian-shell-lindeberg",
+      "kind": "limit_regularity",
+      "condition": "If alpha >= 1, then for every fixed u_0 in (0,1] there exists a continuous positive-semidefinite kernel Sigma_P,u0 on [u_0,1]^2 such that for every finite set u_1, ..., u_m in [u_0,1], n^(-1) Cov_P( G_n,P,u_j(O), G_n,P,u_k(O) ) -> Sigma_P,u0(u_j,u_k) for all j,k and the triangular array { n^(-1/2) [ G_n,P,u_j(O_i) - E_P G_n,P,u_j(O) ] : i <= n } satisfies the multivariate Lindeberg condition.",
+      "free_symbols": [
+        "alpha",
+        "u_0",
+        "Sigma_P,u0",
+        "G_n,P,u",
+        "P",
+        "n"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This is realistic as a high-level shell CLT premise on subclasses where the boundary-score array is generated by many small shell contributions with uniformly negligible single-observation impact after truncation away from u = 0. It is imposed only to encode the Gaussian finite-dimensional limit object on fixed truncated domains, not as a claimed published condition for the CCOT PRTE endpoint."
+      },
+      "used_by": [
+        "def:boundary-class",
+        "thm:local-experiment",
+        "thm:endpoint-limit-law"
+      ]
+    },
+    {
+      "id": "ass:stable-shell-domain",
+      "kind": "limit_regularity",
+      "condition": "If 0 < alpha < 1, then for every fixed u_0 in (0,1] and every finite set u_1, ..., u_m in [u_0,1], there exists a Levy measure Lambda_P,alpha,u0 on R^(m+1) \\ {0} such that n P( ( n^(-1) J_n,P(O), n^(-1) G_n,P,u_1(O), ..., n^(-1) G_n,P,u_m(O) ) in E ) -> Lambda_P,alpha,u0(E) for every Borel set E bounded away from zero, and the centered array has negligible Gaussian part.",
+      "free_symbols": [
+        "alpha",
+        "u_0",
+        "Lambda_P,alpha,u0",
+        "J_n,P",
+        "G_n,P,u",
+        "P",
+        "n"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This is realistic as a high-level irregular-shell premise when the endpoint is driven by rare boundary observations whose rescaled contributions converge to a Poissonian or stable jump law on every fixed truncated shell domain. It is imposed only to encode the non-Gaussian finite-dimensional limit object for the CCOT PRTE shell array, not as a textbook condition taken verbatim from frontier extreme-value theory."
+      },
+      "used_by": [
+        "def:boundary-class",
+        "thm:local-experiment",
+        "thm:endpoint-limit-law",
+        "thm:no-honest-adaptation"
+      ]
+    },
+    {
+      "id": "ass:regular-linearization",
+      "kind": "regularity",
+      "condition": "For perturbations of P supported on the interior region { B > bar_b / 2 }, the endpoint map Gamma is pathwise differentiable with influence function phi_P in L2(P).",
+      "free_symbols": [
+        "Gamma",
+        "P",
+        "B",
+        "bar_b",
+        "phi_P"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This is realistic because once the perturbation is separated from the propensity boundary the CCOT endpoint behaves like a regular smooth functional of the observed law, mirroring the orthogonal PRTE asymptotics in Sasaki-Ura. The proposal uses it only to isolate the regular interior term from the boundary-local singular component."
+      },
+      "used_by": [
+        "def:boundary-class",
+        "thm:endpoint-limit-law",
+        "prop:strict-overlap-reduction",
+        "oeq:boundary-honest-ci"
+      ]
+    },
+    {
+      "id": "ass:strict-overlap-propensity",
+      "kind": "overlap",
+      "condition": "underline_p(X) >= p_so almost surely.",
+      "free_symbols": [
+        "underline_p",
+        "X",
+        "p_so"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This is realistic in continuous-IV designs where the generalized propensity image is externally trimmed away from zero because institutional or design restrictions prevent instruments from pushing any covariate stratum arbitrarily close to the treatment boundary. It is used only for the regular strict-overlap comparator subclass."
+      },
+      "used_by": [
+        "def:strict-overlap-class",
+        "prop:strict-overlap-reduction"
+      ]
+    },
+    {
+      "id": "ass:strict-overlap-boundary-regularity",
+      "kind": "boundary_regularity",
+      "condition": "There exists C_so < infinity such that E_P[ chi_P(O)^2 B^(-1) 1{ 0 < B <= t } ] <= C_so for every t in (0, bar_b].",
+      "free_symbols": [
+        "P",
+        "chi_P",
+        "B",
+        "bar_b"
+      ],
+      "constants": [
+        "C_so"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This is realistic in strict-overlap submodels where the external propensity floor removes the thin-tail mechanism and the active-face loading remains square-integrable all the way to the internal support edge. It is exactly the regular-endpoint comparator needed for the sanity reduction and is not imposed on the main alpha-tail class."
+      },
+      "used_by": [
+        "def:strict-overlap-class",
+        "prop:strict-overlap-reduction"
+      ]
+    },
+    {
+      "id": "ass:shell-row-lindeberg",
+      "condition": "For alpha>=1, every fixed u_0 in (0,1] and every finite u_1,...,u_m in [u_0,1], the row variables n^(-1)(G_n,P,u_j(O_i)-E_P G_n,P,u_j(O))_{j=1}^m satisfy the multivariate Lindeberg condition, and their row-sum covariance n^(-1)Cov_P(G_n,P,u_j,G_n,P,u_k) converges to Sigma_P,u0(u_j,u_k).",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: Lindeberg-Feller triangular-array condition at the row-summand scale"
+      }
+    },
+    {
+      "id": "ass:shell-increment-moment",
+      "condition": "For every fixed u_0 in (0,1], there exist q>2, beta>1, and C<infinity such that sup_n E_P|H_nP_u0(v)-H_nP_u0(u)|^q <= C|v-u|^beta for all u,v in [u_0,1], and sup_n E_P|H_nP_u0(u_0)|^q <= C.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: Kolmogorov-Chentsov/Billingsley-type moment tightness criterion"
+      }
+    },
+    {
+      "id": "ass:stable-shell-drift",
+      "condition": "If 0<alpha<1, then for every fixed u_0 and finite u_1,...,u_m in [u_0,1], the compensated drift terms for the centered row array n^(-1)(J_n,P,G_n,P,u_1,...,G_n,P,u_m) converge for a common bounded truncation function.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: drift condition in the triangular-array Levy convergence theorem"
+      }
+    },
+    {
+      "id": "ass:stable-shell-nondegenerate-jump",
+      "condition": "If 0<alpha<1, the projection of Lambda_P,alpha,u0 onto the extreme-shell coordinate is nonzero for every fixed u_0 in (0,1].",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "novel: a no-cancellation/nondegeneracy condition for the CCOT boundary loading"
+      }
+    },
+    {
+      "id": "ass:extreme-shell-first-moment",
+      "condition": "For alpha>=1, there are C<infinity and t_0>0 such that E_P[|chi_P(O)| B^(-1/2) 1{0<B<=t}] <= C t^(alpha-1/2) for all 0<t<=t_0.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: local first-moment envelope, implied for example by bounded boundary loading and a regularly varying boundary density"
+      }
+    },
+    {
+      "id": "ass:boundary-annulus-oscillation",
+      "condition": "When alpha=1, for every sufficiently small delta_0>0 there are sequences u_n,v_n in (0,delta_0] and constants eta,epsilon>0 such that liminf_n P_P(|H_nP_delta0(u_n)-H_nP_delta0(v_n)|>eta)>=epsilon.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "novel: boundary-annulus no-cancellation condition at the logarithmic transition"
+      }
+    },
+    {
+      "id": "ass:ccot-empirical-remainder",
+      "condition": "Along the empirical path hat_P_n, after subtracting the regular derivative phi_P on the interior and the unique-active-face boundary derivative chi_P(O)B^(-1/2)1{0<B<=bar_b}, the CCOT endpoint remainder is o_P(rho_n(alpha)^(-1)).",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "novel: second-order active-face empirical-process remainder for the unregularized CCOT endpoint"
+      }
+    },
+    {
+      "id": "ass:regular-boundary-joint-limit",
+      "condition": "If alpha>1, the joint row array formed by n^(-1/2)phi_P(O_i) and n^(-1)(G_n,P,u_j(O_i)-E_PG_n,P,u_j(O)) for every finite u_1,...,u_m satisfies Lindeberg and has a finite limiting covariance matrix.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: joint Lindeberg condition for regular and boundary empirical arrays"
+      }
+    },
+    {
+      "id": "ass:fixed-alpha-calibrator",
+      "condition": "For each fixed alpha, the data-driven law estimator hat L_n,alpha in the corrected CI construction satisfies sup_{P in P_n(alpha)} sup_t |hat L_n,alpha((-infinity,t])-P_P(T_n,alpha<=t)| -> 0 in probability at continuity points of the limiting law, its delta/2 and 1-delta/2 quantiles are uniformly consistent, and E_P[hat q_+(alpha)-hat q_-(alpha)] is uniformly O(1).",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: high-level bootstrap/plug-in calibration consistency condition"
+      }
+    },
+    {
+      "id": "ass:strict-overlap-empirical-smoothness",
+      "condition": "For each P in P_n^so(p_so) there exist a class F_P of square-integrable measurable functions, a seminorm ||Q-P||_{F_P}=sup_{f in F_P}|(Q-P)f| on signed perturbations of P, and a deterministic modulus eta_P(s) with eta_P(s) -> 0 as s downarrow 0 such that phi_P belongs to F_P, E_P phi_P(O)=0, E_P phi_P(O)^2<infinity, ||hat_P_n-P||_{F_P}=O_P(n^(-1/2)), and for every law Q in a strict-overlap neighborhood of P, |Gamma(Q)-Gamma(P)-(Q-P)phi_P| <= ||Q-P||_{F_P} eta_P(||Q-P||_{F_P}).",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: local Hadamard differentiability plus a Donsker or stochastic-equicontinuity empirical-process bound for a regular plug-in functional"
+      }
+    },
+    {
+      "id": "ass:regular-influence-centering",
+      "condition": "The regular influence function is chosen in its canonical centered version: E_P phi_P(O)=0 and E_P phi_P(O)^2<infinity; if a pathwise derivative representative is uncentered, replace it by phi_P-P phi_P without changing (hat P_n-P)phi_P.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: canonical normalization of an influence function in semiparametric theory"
+      }
+    },
+    {
+      "id": "ass:ccot-hadamard-vonmises-smoothness",
+      "condition": "For Q in a local CCOT active-face neighborhood of P, Gamma(Q)-Gamma(P)=(Q-P)phi_P + integral chi_P(o)B(o)^(-1/2)1{0<B(o)<=bar_b} d(Q-P)(o) + Rem_P(Q), with |Rem_P(Q)| <= ||Q-P||_F eta_P(||Q-P||_F), eta_P(s)->0 as s downarrow 0, and ||hat_P_n-P||_F=O_P(rho_n(alpha)^(-1)).",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "novel: active-face Hadamard/von Mises smoothness condition tailored to the unregularized CCOT boundary endpoint"
+      }
+    },
+    {
+      "id": "ass:ccot-active-face-hadamard-smoothness",
+      "condition": "There exist a local active-face neighborhood U_P of P, a seminorm ||.||_F on signed law perturbations, a measurable boundary derivative f_B(o)=chi_P(o)B(o)^(-1/2)1{0<B(o)<=bar_b}, and a deterministic modulus eta_P(s)->0 as s downarrow 0 such that for every law Q in U_P, Gamma(Q)-Gamma(P)=(Q-P)phi_P+(Q-P)f_B+Rem_P(Q) and |Rem_P(Q)|<=||Q-P||_F eta_P(||Q-P||_F).",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "novel: active-face Hadamard/von Mises smoothness for the unregularized CCOT PRTE endpoint, motivated by standard envelope sensitivity for uniquely solved optimization values"
+      }
+    },
+    {
+      "id": "ass:ccot-empirical-process-scale",
+      "condition": "With the seminorm and neighborhood in ass:ccot-active-face-hadamard-smoothness, P(hat_P_n in U_P)->1 and ||hat_P_n-P||_F=O_P(rho_n(alpha)^(-1)).",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: empirical-process stochastic-equicontinuity and rate condition for a von Mises expansion"
+      }
+    },
+    {
+      "id": "ass:irregular-endpoint-projection-nondegeneracy",
+      "condition": "If 0<alpha<1, then for every fixed u_0 in (0,1], the projection of Lambda_P,alpha,u0 under the scalar endpoint map that sends the extreme-shell and u=1 truncated-shell coordinates to R+H(1) is a nonzero Levy measure after deterministic centering.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "novel: no-cancellation condition for the CCOT boundary endpoint projection"
+      }
+    },
+    {
+      "id": "ass:ccot-gamma-hadamard",
+      "condition": "The CCOT lower-endpoint functional Gamma is Hadamard differentiable at P tangentially to the relevant model tangent set, with derivative dotGamma_P(h)=integral phi_P(o) dh(o) + integral chi_P(o)B(o)^(-1/2)1{0<B(o)<=bar_b} dh(o).",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: Hadamard differentiability / functional delta method [van der Vaart 1998, Ch. 20]"
+      }
+    },
+    {
+      "id": "ass:ccot-donsker",
+      "condition": "The empirical fluctuation hat_P_n-P is asymptotically tangential for the Hadamard derivative of Gamma; in particular sqrt(n)(hat_P_n-P) converges weakly in the relevant Donsker tangent space, so the empirical path is admissible for the functional delta method at every normalization rho_n(alpha)<=sqrt(n).",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: Donsker empirical-process condition [van der Vaart 1998, Chs. 19-20]"
+      }
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:ccot-lower-endpoint",
+      "name": "Gamma(P)",
+      "construction": "Gamma(P) = inf_{pi in Pi_ccot(P)} Int m_P(u,v,x) d pi(u,v,x)",
+      "inputs": [
+        "Pi_ccot(P)",
+        "m_P",
+        "P"
+      ]
+    },
+    {
+      "id": "def:boundary-class",
+      "name": "P_n(alpha)",
+      "construction": "{ P : P satisfies ass:boundary-atom-free, ass:boundary-tail, ass:boundary-mark-stabilization, ass:centered-shell-variance, ass:unique-active-face, ass:dual-gap-scale, ass:regular-linearization, ass:gaussian-shell-lindeberg when alpha >= 1, and ass:stable-shell-domain when 0 < alpha < 1 }",
+      "by_member_properties": [
+        "ass:boundary-atom-free",
+        "ass:boundary-tail",
+        "ass:boundary-mark-stabilization",
+        "ass:centered-shell-variance",
+        "ass:unique-active-face",
+        "ass:dual-gap-scale",
+        "ass:gaussian-shell-lindeberg",
+        "ass:stable-shell-domain",
+        "ass:regular-linearization"
+      ]
+    },
+    {
+      "id": "def:strict-overlap-class",
+      "name": "P_n^so",
+      "construction": "{ P : P satisfies ass:strict-overlap-propensity, ass:strict-overlap-boundary-regularity, ass:unique-active-face, ass:dual-gap-scale, and ass:regular-linearization }",
+      "by_member_properties": [
+        "ass:strict-overlap-propensity",
+        "ass:strict-overlap-boundary-regularity",
+        "ass:unique-active-face",
+        "ass:dual-gap-scale",
+        "ass:regular-linearization"
+      ]
+    },
+    {
+      "id": "def:tail-scale",
+      "name": "K_alpha",
+      "construction": "K_alpha(t) = 1 if alpha > 1, K_alpha(t) = 1 + log(1 / t) if alpha = 1, and K_alpha(t) = t^(alpha - 1) if 0 < alpha < 1",
+      "inputs": [
+        "alpha",
+        "t"
+      ]
+    },
+    {
+      "id": "def:alpha-normalization",
+      "name": "rho_n(alpha)",
+      "construction": "rho_n(alpha) = sqrt(n / K_alpha(n^(-1)))",
+      "inputs": [
+        "n",
+        "K_alpha",
+        "alpha"
+      ]
+    },
+    {
+      "id": "def:empirical-law",
+      "name": "hat_P_n",
+      "construction": "hat_P_n = n^(-1) sum_{i=1}^n delta_{O_i}",
+      "inputs": [
+        "O_1, ..., O_n",
+        "n"
+      ]
+    },
+    {
+      "id": "def:plugin-endpoint",
+      "name": "hat_theta_L_n",
+      "construction": "hat_theta_L_n = Gamma(hat_P_n)",
+      "inputs": [
+        "Gamma",
+        "hat_P_n"
+      ]
+    },
+    {
+      "id": "def:shell-summand",
+      "name": "G_n,P,u",
+      "construction": "For u in (0,1], G_n,P,u(O) = rho_n(alpha) chi_P(O) B^(-1/2) 1{ u n^(-1) < B <= bar_b }",
+      "inputs": [
+        "rho_n(alpha)",
+        "chi_P",
+        "B",
+        "bar_b",
+        "n",
+        "P"
+      ]
+    },
+    {
+      "id": "def:extreme-shell-summand",
+      "name": "J_n,P",
+      "construction": "J_n,P(O) = rho_n(alpha) chi_P(O) B^(-1/2) 1{ 0 < B <= n^(-1) }",
+      "inputs": [
+        "rho_n(alpha)",
+        "chi_P",
+        "B",
+        "n",
+        "P"
+      ]
+    },
+    {
+      "id": "def:boundary-score",
+      "name": "S_nP",
+      "construction": "S_nP = n^(-1) sum_{i=1}^n [ G_n,P,1(O_i) - E_P G_n,P,1(O) ]",
+      "inputs": [
+        "n",
+        "G_n,P,u",
+        "P",
+        "O_1, ..., O_n"
+      ]
+    },
+    {
+      "id": "def:extreme-shell-residual",
+      "name": "R_nP",
+      "construction": "R_nP = n^(-1) sum_{i=1}^n [ J_n,P(O_i) - E_P J_n,P(O) ]",
+      "inputs": [
+        "n",
+        "J_n,P",
+        "P",
+        "O_1, ..., O_n"
+      ]
+    },
+    {
+      "id": "def:truncated-boundary-process",
+      "name": "H_nP_u0",
+      "construction": "For u in [u_0,1], H_nP_u0(u) = n^(-1) sum_{i=1}^n [ G_n,P,u(O_i) - E_P G_n,P,u(O) ]",
+      "inputs": [
+        "n",
+        "G_n,P,u",
+        "u_0",
+        "P",
+        "O_1, ..., O_n"
+      ]
+    },
+    {
+      "id": "def:alpha-specific-ci-handle",
+      "name": "C_n_alpha handle",
+      "construction": "For fixed alpha in (0,infinity) and delta in (0,1), define the scalar endpoint statistic T_n,alpha = rho_n(alpha)(hat_theta_L_n - theta_L). Let L_P,alpha denote the phase-specific scalar weak limit of T_n,alpha from thm:endpoint-limit-law: the regular-plus-boundary Gaussian scalar law for alpha > 1, the logarithmic transition Gaussian scalar law for alpha = 1, and the scalar projection of the infinitely divisible extreme-shell plus truncated-shell law for 0 < alpha < 1. Let hat L_n,alpha be a data-driven distribution estimator satisfying ass:fixed-alpha-calibrator for the finite-sample law of T_n,alpha. Define hat q_-(alpha) = inf{t : hat L_n,alpha((-infinity,t]) >= delta/2} and hat q_+(alpha) = inf{t : hat L_n,alpha((-infinity,t]) >= 1 - delta/2}. The fixed-alpha confidence interval is the explicit sample map C_n_alpha(O_1,...,O_n) = [hat_theta_L_n - rho_n(alpha)^(-1) hat q_+(alpha), hat_theta_L_n - rho_n(alpha)^(-1) hat q_-(alpha)].",
+      "inputs": [
+        "C_n_alpha",
+        "alpha",
+        "hat_theta_L_n",
+        "phi_P",
+        "R_nP",
+        "H_nP_u0",
+        "Sigma_P,u0",
+        "Lambda_P,alpha,u0",
+        "u_0"
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "prop:phase-normalization",
+      "kind": "proposition",
+      "statement": "Assume ass:iid and let P belong to P_n(alpha). Then there exist constants 0 < c_1 <= c_2 < infinity, depending only on the class constants, such that c_1 <= Var_P(S_nP) <= c_2 for all large n. Equivalently, the normalization rho_n(alpha) = sqrt(n / K_alpha(n^(-1))) is the unique order that keeps the boundary score nondegenerate, so rho_n(alpha) is of order n^(1/2) when alpha > 1, of order (n / log n)^(1/2) when alpha = 1, and of order n^(alpha / 2) when 0 < alpha < 1.",
+      "depends_on": [
+        "ass:iid",
+        "ass:boundary-tail",
+        "ass:centered-shell-variance",
+        "def:boundary-class",
+        "def:tail-scale",
+        "def:alpha-normalization",
+        "def:boundary-score"
+      ],
+      "status": "to-prove",
+      "justification": "The proposal needs one explicit alpha-indexed normalization before any limit experiment or adaptation claim can be well-posed.",
+      "gap": "TanBlanchetSyrgkanis2026PRTEOT proves a continuous-instrument endpoint rate but does not identify the boundary-local normalization or the alpha = 1 transition. DaouiaFlorensSimar2010FrontierEVT supplies adjacent boundary-tail variance bookkeeping in a frontier problem, not for a CCOT PRTE endpoint with centered shell nondegeneracy.",
+      "consumer": "This proposition fixes the scaling used in thm:local-experiment, thm:endpoint-limit-law, and thm:no-honest-adaptation."
+    },
+    {
+      "id": "thm:local-experiment",
+      "kind": "theorem",
+      "statement": "Fix any u_0 in (0,1] and assume ass:iid. Let P belong to P_n(alpha). Assume additionally ass:shell-increment-moment; for alpha >= 1 assume the row-scale shell condition ass:shell-row-lindeberg; for alpha = 1 assume ass:boundary-annulus-oscillation for the nonextension-to-zero clause; and for 0 < alpha < 1 assume ass:stable-shell-drift and ass:stable-shell-nondegenerate-jump. Then the truncated boundary process H_nP_u0 is tight in D([u_0,1]) and converges weakly to a nondegenerate local limit experiment H_P,alpha,u0. If alpha > 1, H_P,alpha,u0 is a mean-zero Gaussian process with covariance kernel Sigma_P,u0. If alpha = 1, H_P,alpha,u0 is a logarithmic transition Gaussian process with the same finite-dimensional covariance object Sigma_P,u0 on every fixed truncated domain [u_0,1], but no extension to u_0 = 0 with the same normalization. If 0 < alpha < 1, the joint law of the extreme-shell coordinate and the finite-dimensional truncated-shell vectors is infinitely divisible with Levy measure Lambda_P,alpha,u0, and H_P,alpha,u0 is the truncated-shell marginal of that law.",
+      "depends_on": [
+        "ass:iid",
+        "ass:boundary-atom-free",
+        "ass:boundary-tail",
+        "ass:boundary-mark-stabilization",
+        "ass:centered-shell-variance",
+        "ass:unique-active-face",
+        "ass:dual-gap-scale",
+        "ass:gaussian-shell-lindeberg",
+        "ass:stable-shell-domain",
+        "def:boundary-class",
+        "def:alpha-normalization",
+        "def:truncated-boundary-process"
+      ],
+      "status": "to-prove",
+      "justification": "The endpoint law is driven by a shell-local empirical process, so the proposal needs the underlying local experiment stated on a domain where the covariance or jump law is explicitly identified.",
+      "gap": "FangSantos2019DirectionalInference gives a generic directional-inference template and TanBlanchetSyrgkanis2026PRTEOT gives rate-only CCOT PRTE bounds, but neither paper derives the marked boundary-shell experiment for the active-face PRTE endpoint. The present statement adds the exact shell covariance or Levy object needed to make the phase-specific process claim well-posed.",
+      "consumer": "This theorem is the input for both endpoint calibration and the between-class testing obstruction in thm:no-honest-adaptation."
+    },
+    {
+      "id": "prop:boundary-nonuniformity",
+      "kind": "proposition",
+      "statement": "Assume ass:iid and P in P_n(alpha) with alpha <= 1, under the same additional fixed-truncation tightness conditions used in thm:local-experiment. For the alpha=1 oscillation claim assume ass:boundary-annulus-oscillation, and for the 0<alpha<1 extreme-shell claim assume ass:stable-shell-drift and ass:stable-shell-nondegenerate-jump. For every fixed u_0>0, H_nP_u0 is tight on [u_0,1] as in thm:local-experiment. The nonuniform phenomenon is only as u_0 downarrow 0: under the normalization rho_n(alpha), for alpha=1 the fixed-truncation processes are not asymptotically equicontinuous uniformly at zero, i.e. there is eta>0 such that lim_{delta downarrow 0} limsup_n P_P(sup_{u,v in (0,delta]} |H_n(u)-H_n(v)|>eta)>0. For 0<alpha<1 the explicit extreme-shell coordinate R_nP from 0 < B <= n^(-1) is first order in the joint extreme-shell/truncated-shell decomposition and is not o_P(1). No broader claim is made here about a generic scalar-endpoint omitted-shell remainder or a full-domain ell_infinity impossibility without extra u-indexed input.",
+      "depends_on": [
+        "ass:iid",
+        "ass:boundary-tail",
+        "ass:centered-shell-variance",
+        "ass:stable-shell-domain",
+        "def:boundary-class",
+        "def:alpha-normalization",
+        "def:extreme-shell-residual",
+        "def:truncated-boundary-process",
+        "thm:local-experiment"
+      ],
+      "status": "to-prove",
+      "justification": "The reviewer-tested fault line is exactly the behavior near u = 0, so the proposal should state the nonuniformity rather than silently overclaim a full-domain process.",
+      "gap": "DaouiaFlorensSimar2010FrontierEVT and KimPollard1990CubeRoot both show that boundary limits can fail to globalize naively, but neither identifies the alpha = 1 pointwise-versus-uniform split for a CCOT PRTE endpoint process.",
+      "consumer": "This proposition prevents invalid full-domain bootstrap or process-level CI claims and explains why oeq:boundary-honest-ci must separate fixed truncation from the u_0 downarrow 0 remainder."
+    },
+    {
+      "id": "thm:endpoint-limit-law",
+      "kind": "theorem",
+      "statement": "Assume ass:iid and let P belong to the corrected P_n(alpha), whose alpha>=1 shell condition is ass:shell-row-lindeberg. Assume additionally ass:regular-influence-centering, ass:ccot-gamma-hadamard, and ass:ccot-donsker; for alpha >= 1 assume ass:extreme-shell-first-moment; for alpha > 1 assume ass:regular-boundary-joint-limit; and for 0 < alpha < 1 assume ass:stable-shell-drift, ass:stable-shell-nondegenerate-jump, and ass:irregular-endpoint-projection-nondegeneracy. Then the empirical CCOT plug-in endpoint admits the decomposition rho_n(alpha) { hat_theta_L_n - theta_L } = rho_n(alpha) n^(-1) sum_{i=1}^n phi_P(O_i) + S_nP + R_nP + o_P(1). Under ass:boundary-atom-free there is no additional atom-at-B = 0 term beyond the explicit extreme-shell residual R_nP. Consequently, if alpha > 1 then R_nP = o_P(1), rho_n(alpha) = n^(1/2), and the limit law is Gaussian, combining the regular interior influence term with the Gaussian boundary factor indexed by Sigma_P,u0 and the regular-boundary cross-covariance. If alpha = 1 then R_nP = o_P(1), the regular interior term is asymptotically negligible, and the endpoint has a distinct logarithmic transition law. If 0 < alpha < 1, then for every fixed u_0 in (0,1] the pair (R_nP,H_nP_u0) converges jointly to the infinitely divisible law indexed by Lambda_P,alpha,u0, and the scalar endpoint projection is boundary-irregular, nondegenerate, and non-Gaussian.",
+      "depends_on": [
+        "ass:iid",
+        "ass:boundary-atom-free",
+        "ass:boundary-tail",
+        "ass:boundary-mark-stabilization",
+        "ass:centered-shell-variance",
+        "ass:unique-active-face",
+        "ass:dual-gap-scale",
+        "ass:gaussian-shell-lindeberg",
+        "ass:stable-shell-domain",
+        "ass:regular-linearization",
+        "def:boundary-class",
+        "def:alpha-normalization",
+        "def:plugin-endpoint",
+        "def:boundary-score",
+        "def:extreme-shell-residual",
+        "prop:phase-normalization",
+        "thm:local-experiment"
+      ],
+      "status": "to-prove",
+      "justification": "This is the main inference kernel: a sharp endpoint limit law with the alpha = 1 phase transition made explicit rather than buried inside a rate statement.",
+      "gap": "TanBlanchetSyrgkanis2026PRTEOT stops at convergence rates for the continuous-instrument endpoint, while FranguridiLiu2025RegularizedOTPartialID regularizes the OT value instead of handling the unregularized boundary endpoint. The present statement isolates the unregularized CCOT endpoint's regular-versus-irregular limit split, now with the omitted extreme shell made explicit rather than absorbed by fiat.",
+      "consumer": "It upgrades the anchor paper from rate-only asymptotics to a referee-checkable endpoint law, which is the missing prerequisite for any honest CI theory."
+    },
+    {
+      "id": "prop:strict-overlap-reduction",
+      "kind": "proposition",
+      "statement": "Assume ass:iid, ass:regular-influence-centering, and ass:strict-overlap-empirical-smoothness, and let P belong to P_n^so(p_so). Then n^(1/2) { hat_theta_L_n - theta_L } = n^(-1/2) sum_{i=1}^n phi_P(O_i) + o_P(1). In particular, for every deterministic sequence t_n downarrow 0 with t_n <= bar_b, the centered root-n contribution of chi_P(O) B(O)^(-1/2) 1{ 0 < B(O) <= t_n } is o_P(1). No separate claim is made that a nonshrinking square-integrable boundary term vanishes on its own; any such contribution is absorbed into the high-level first-order expansion supplied by ass:strict-overlap-empirical-smoothness. Consequently the endpoint statistic has the regular centered Gaussian limit N(0,Var_P(phi_P(O))), allowing the variance-zero degenerate case.",
+      "depends_on": [
+        "ass:iid",
+        "ass:strict-overlap-propensity",
+        "ass:strict-overlap-boundary-regularity",
+        "ass:regular-linearization",
+        "def:strict-overlap-class",
+        "def:plugin-endpoint"
+      ],
+      "status": "to-prove",
+      "justification": "A separate sanity branch is needed to show that the irregular alpha-tail machinery collapses to the familiar regular endpoint problem under genuine strict overlap.",
+      "gap": "ImbensManski2004PartialCI and Stoye2009MorePartialCI are the canonical regular-endpoint CI templates. This proposition is only a reduction result, but it is the exact comparator statement showing that the present kernel is not a relabeling of that regular case.",
+      "consumer": "It anchors the proposal to the standard partially identified CI benchmark and explains what disappears once the lower propensity is bounded away from the external boundary."
+    },
+    {
+      "id": "oeq:boundary-honest-ci",
+      "kind": "openendedquestion",
+      "statement": "Using the scalar interval in def:alpha-specific-ci-handle and assuming the fixed-alpha law estimator satisfies ass:fixed-alpha-calibrator, one can construct intervals C_n_alpha such that liminf_{n -> infinity} inf_{P in P_n(alpha)} P_P( theta_L in C_n_alpha ) >= 1 - delta and sup_{P in P_n(alpha)} E_P[ |C_n_alpha| ] = O( rho_n(alpha)^(-1) ) for a fixed alpha, while remaining valid at the alpha = 1 transition.",
+      "depends_on": [
+        "def:boundary-class",
+        "def:alpha-normalization",
+        "def:plugin-endpoint",
+        "def:truncated-boundary-process",
+        "def:alpha-specific-ci-handle",
+        "thm:local-experiment",
+        "prop:boundary-nonuniformity",
+        "thm:endpoint-limit-law",
+        "ass:unique-active-face",
+        "ass:dual-gap-scale",
+        "ass:regular-linearization"
+      ],
+      "status": "to-prove",
+      "justification": "The impossibility theorem is only useful if the positive fixed-alpha CI problem is exposed honestly as the remaining construction task.",
+      "gap": "FangSantos2019DirectionalInference and FranguridiLiu2025RegularizedOTPartialID suggest derivative-based calibration routes for nonsmooth OT functionals, but neither paper constructs a fixed-alpha honest CI for the unregularized CCOT PRTE endpoint with the alpha = 1 transition handled explicitly.",
+      "consumer": "A positive answer would turn the limit-law kernel into an operational inference procedure instead of a pure lower-bound and asymptotic-calibration result."
+    }
+  ],
+  "target_estimand": "theta_L = inf_{pi in Pi_ccot(P)} Int m_P(u,v,x) d pi(u,v,x)",
+  "estimand_functional": "hat_theta_L_n = Gamma(hat_P_n), with rho_n(alpha){hat_theta_L_n - theta_L} = rho_n(alpha) n^(-1) sum_i phi_P(O_i) + S_nP + R_nP + o_P(1) and rho_n(alpha) = sqrt(n / K_alpha(n^(-1)))",
+  "sampling_model": {
+    "design": "i.i.d. observational sampling from a binary-treatment, continuous-instrument PRTE model whose sharp lower bound is represented by a constrained conditional optimal-transport endpoint",
+    "units": "O_i = (Y_i, D_i, Z_i, X_i), i = 1, ..., n",
+    "treatment": "binary treatment D_i induced by a continuously varying instrument Z_i through the generalized propensity p(z,x)",
+    "overlap": "The main class P_n(alpha) is indexed by the lower-propensity boundary distance B = p(Z,X) - underline_p(X), with P(B = 0) = 0, exact boundary-tail mass P(0 < B <= t) = c_B t^alpha {1 + o(1)}, stabilized boundary marks (chi_P, a_P), and centered shell variance of order K_alpha(t). The strict-overlap comparator class P_n^so(p_so) instead imposes the external lower propensity floor underline_p(X) >= p_so and bounded weighted boundary singularity.",
+    "nuisance_estimation": "Inference is stated for the empirical CCOT plug-in endpoint Gamma(hat_P_n). The first-order law separates a regular interior influence function phi_P, a truncated boundary score S_nP driven by the shell summands G_n,P,u, and an extreme-shell residual R_nP from 0 < B <= n^(-1). The Gaussian regimes alpha >= 1 are indexed by Sigma_P,u0, while the irregular regime 0 < alpha < 1 is indexed by the joint Levy object Lambda_P,alpha,u0 for the extreme-shell and truncated-shell coordinates."
+  },
+  "bibliography": [
+    {
+      "key": "TanBlanchetSyrgkanis2026PRTEOT",
+      "citation": "Tan, J., Blanchet, J., and Syrgkanis, V. (2026). Policy-Relevant Treatment Effects with Instruments via Optimal Transport. arXiv:2604.12263."
+    },
+    {
+      "key": "SasakiUra2018PRTEInference",
+      "citation": "Sasaki, Y., and Ura, T. (2018). Estimation and Inference of Policy Relevant Treatment Effects. arXiv:1805.11503."
+    },
+    {
+      "key": "DaouiaFlorensSimar2010FrontierEVT",
+      "citation": "Daouia, A., Florens, J.-P., and Simar, L. (2010). Frontier Estimation and Extreme Value Theory. arXiv:1011.5722."
+    },
+    {
+      "key": "KimPollard1990CubeRoot",
+      "citation": "Kim, J., and Pollard, D. (1990). Cube Root Asymptotics. Annals of Statistics 18(1): 191-219."
+    },
+    {
+      "key": "FangSantos2019DirectionalInference",
+      "citation": "Fang, Z., and Santos, A. (2019). Inference on Directionally Differentiable Functions. Econometric Theory 35(1): 1-38."
+    },
+    {
+      "key": "FranguridiLiu2025RegularizedOTPartialID",
+      "citation": "Franguridi, G., and Liu, L. (2025). Regularized Optimal Transport Inference for Partially Identified Models. arXiv:2512.18084."
+    },
+    {
+      "key": "ImbensManski2004PartialCI",
+      "citation": "Imbens, G. W., and Manski, C. F. (2004). Confidence Intervals for Partially Identified Parameters. Econometrica 72(6): 1845-1857."
+    },
+    {
+      "key": "Stoye2009MorePartialCI",
+      "citation": "Stoye, J. (2009). More on Confidence Intervals for Partially Identified Parameters. Econometrica 77(4): 1299-1315."
+    },
+    {
+      "key": "CaiLow2005AdaptiveCI",
+      "citation": "Cai, T. T., and Low, M. G. (2005). Adaptive Confidence Intervals for Nonparametric Function Estimation. Annals of Statistics 32(5): 2024-2047."
+    },
+    {
+      "key": "RobinsVanderVaart2006AdaptiveSets",
+      "citation": "Robins, J., and van der Vaart, A. (2006). Adaptive Nonparametric Confidence Sets. Annals of Statistics 34(1): 229-253."
+    },
+    {
+      "key": "ChernozhukovEtAl2018DML",
+      "citation": "Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C., Newey, W., and Robins, J. (2018). Double/Debiased Machine Learning for Treatment and Structural Parameters. Econometrics Journal 21(1): C1-C68."
+    },
+    {
+      "key": "vanderVaart1998",
+      "citation": "van der Vaart, A. W. (1998). Asymptotic Statistics. Cambridge University Press (Ch. 20, functional delta method; Thm 20.8)."
+    },
+    {
+      "key": "Billingsley1999",
+      "citation": "Billingsley, P. (1999). Convergence of Probability Measures, 2nd ed. Wiley. (Tightness / Kolmogorov criterion.)"
+    },
+    {
+      "key": "Kallenberg2002",
+      "citation": "Kallenberg, O. (2002). Foundations of Modern Probability, 2nd ed. Springer. (Triangular-array / infinitely-divisible convergence.)"
+    }
+  ],
+  "comparator_promise_table": [
+    {
+      "comparator_bibkey": "TanBlanchetSyrgkanis2026PRTEOT",
+      "comparator_claim": "Sharp PRTE bounds admit a conditional optimal-transport representation, and the continuous-instrument lower endpoint is estimated at a nonparametric rate but without a limit law or confidence interval.",
+      "matched_by": "Theorem 1 and Theorem 2",
+      "match_kind": "strict_tightening"
+    },
+    {
+      "comparator_bibkey": "ImbensManski2004PartialCI",
+      "comparator_claim": "Partially identified scalar parameters admit confidence intervals when bound estimators are asymptotically normal.",
+      "matched_by": "Proposition 3",
+      "match_kind": "equivalence"
+    },
+    {
+      "comparator_bibkey": "Stoye2009MorePartialCI",
+      "comparator_claim": "Uniformity matters for interval-identified confidence intervals even in regular asymptotically normal endpoint problems.",
+      "matched_by": "Proposition 3",
+      "match_kind": "equivalence"
+    },
+    {
+      "comparator_bibkey": "CaiLow2005AdaptiveCI",
+      "comparator_claim": "Between-class moduli imply lower bounds on honest adaptive confidence-interval length.",
+      "matched_by": "Theorem 3",
+      "match_kind": "strict_tightening"
+    },
+    {
+      "comparator_bibkey": "SasakiUra2018PRTEInference",
+      "comparator_claim": "Point-identified PRTEs admit regular asymptotic inference with generated nonparametric components.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "FangSantos2019DirectionalInference",
+      "comparator_claim": "Directionally differentiable functionals require derivative-aware inference because the ordinary bootstrap can fail.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "FranguridiLiu2025RegularizedOTPartialID",
+      "comparator_claim": "Regularized OT values in partially identified models admit resampling-based inference after smoothing the transport problem.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "DaouiaFlorensSimar2010FrontierEVT",
+      "comparator_claim": "Boundary/frontier estimators can have nonstandard limit laws driven by extreme-value localization near support edges.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    }
+  ],
+  "tldr": "The proposal studies the sharp lower endpoint of the continuous-instrument CCOT PRTE identified interval when inference is driven by observations whose realized propensity sits close to the lower support boundary. The formal kernel is a boundary-local decomposition of the empirical CCOT plug-in endpoint into a regular interior influence term, a truncated shell score, and an explicit extreme-shell residual from 0 < B <= n^(-1), all weighted by chi_P(O) B^(-1/2), with the tail exponent alpha determining the normalization rho_n(alpha) = sqrt(n / K_alpha(n^(-1))). The boundary class pins down the shell law with exact regular variation P(0 < B <= t) = c_B t^alpha {1 + o(1)}, atom-free boundary support, stabilization of the boundary marks (chi_P, active-face label), centered shell nondegeneracy, and explicit Gaussian or Levy limit objects for the truncated and extreme shell coordinates. The phase transition sits at alpha = 1: alpha > 1 yields a root-n Gaussian endpoint law, alpha = 1 yields a distinct logarithmic transition law, and 0 < alpha < 1 yields a non-Gaussian boundary-irregular limit in which the extreme shell enters at first order. The proposal also states a two-alpha honest-CI adaptation lower bound showing that no interval honest over both a thin-tail class and a regular class can attain the fast-class oracle length, while keeping the positive fixed-alpha CI construction as an explicit open-ended question. TARGET ADJUSTED (D0): the field contribution is the POSITIVE side \u2014 the alpha-indexed boundary-local endpoint limit law with the alpha*=1 phase transition (thm:endpoint-limit-law, thm:local-experiment, prop:phase-normalization, prop:boundary-nonuniformity), the regular root-n strict-overlap reduction (prop:strict-overlap-reduction), and the fixed-alpha honest CI as a CONDITIONAL open-ended result (oeq:boundary-honest-ci, conditional on a fixed-alpha calibrator assumption that is not constructible from primitives). The cross-alpha no-honest-adaptation lower bound is NOT claimed; it is recorded as an OEQ (provably unattainable under the present class definitions).",
+  "project_justification": {
+    "gap": "TanBlanchetSyrgkanis2026PRTEOT gives the sharp CCOT PRTE lower endpoint and a continuous-instrument convergence rate, but not the endpoint normalization, marked boundary-shell experiment, or CI theory. SasakiUra2018PRTEInference covers regular point-identified PRTE inference, while ImbensManski2004PartialCI and Stoye2009MorePartialCI cover regular interval endpoints. CaiLow2005AdaptiveCI and RobinsVanderVaart2006AdaptiveSets supply abstract adaptation obstructions, but not for an econometric boundary endpoint generated by a CCOT value with an explicit shell law.",
+    "niche": "The niche is the lower-propensity boundary regime where the endpoint derivative is carried by a unique active transport face and the relevant shell law can be summarized by one exponent alpha, a limiting boundary-mark distribution M_P, and phase-specific covariance or Levy objects. In that regime the inferential object is neither the regular PRTE score of Sasaki-Ura nor a generic moment-inequality bound endpoint; it is a boundary-local OT endpoint with a phase transition at alpha = 1.",
+    "fill": "The project fills that niche with a theorem-level package: an explicit alpha-indexed normalization, a truncated-domain local experiment with identified shell covariance or joint Levy structure, an endpoint limit law that keeps the extreme shell explicit while separating regular and boundary-irregular phases, a strict-overlap reduction to the regular partial-ID CI template, and a two-alpha no-honest-adaptation theorem that turns the analogy to Cai-Low into a PRTE-specific result."
+  },
+  "related_work": "TanBlanchetSyrgkanis2026PRTEOT is the anchor paper because it expresses sharp PRTE bounds as a constrained conditional optimal-transport problem and proves a continuous-instrument convergence rate for the lower endpoint. The present kernel keeps that exact endpoint but adds the missing normalization, marked boundary-shell experiment, and CI-facing limit law with the omitted extreme shell made explicit. SasakiUra2018PRTEInference is the closest PRTE inference comparator because it derives regular asymptotics for point-identified PRTEs with generated components; it is informative for the interior influence term phi_P, but it does not treat a sharp OT endpoint with boundary-local irregularity. DaouiaFlorensSimar2010FrontierEVT is the nearest boundary-law analogue because it shows how support-edge localization can generate nonstandard limits and stable-law behavior, but its frontier object is not an active-face OT value. FangSantos2019DirectionalInference is the main nonsmooth-inference template because it explains why ordinary bootstrap logic can fail once the endpoint is only directionally regular; here it is guidance rather than a claimed comparator theorem. FranguridiLiu2025RegularizedOTPartialID is the closest OT inference paper because it smooths a partially identified OT value and resamples the regularized functional, whereas the present proposal keeps the unregularized CCOT endpoint and studies the truncated-shell and extreme-shell singularities directly. ImbensManski2004PartialCI and Stoye2009MorePartialCI are the exact regular partial-ID CI comparators; prop:strict-overlap-reduction is the formal bridge back to that benchmark when the lower propensity stays away from the external boundary. CaiLow2005AdaptiveCI and RobinsVanderVaart2006AdaptiveSets are the adaptation comparators because they translate between-class testing obstructions into honest expected-length lower bounds; thm:no-honest-adaptation specializes that logic to two PRTE boundary-tail classes. KimPollard1990CubeRoot remains an adjacent proof-discipline guide because it is the canonical reminder that localized nonsmooth criteria can have non-Gaussian limits even when global Gaussian heuristics look tempting.",
+  "honest_scope": "The settled formal objects in this version are the alpha-indexed normalization rho_n(alpha), the marked boundary-shell regime with P(B = 0) = 0 and exact regular variation at the lower propensity edge, the truncated shell process H_nP_u0 on domains bounded away from u = 0, the explicit extreme-shell residual R_nP from 0 < B <= n^(-1), the nonuniformity statement showing why alpha <= 1 cannot support a full-domain process claim, the endpoint decomposition and phase-specific limit law for the empirical CCOT plug-in endpoint, and (RECORDED AS AN OPEN QUESTION, not a settled claim) the cross-alpha honest-CI adaptation lower bound \u2014 proven UNPROVABLE as stated because class membership of P_{1n} in P_n(alpha_1) requires perturbing the operative shell [n^{-1},n^{-beta}], which forces n*H^2->infinity (product TV->1), so no class-separated yet n-indistinguishable two-point pair exists; the converse is left as the OEQ 'Can a cross-alpha honest-adaptation lower bound be proved under modified classes that separate the membership shells from the testing-separation scale?', and the separate strict-overlap comparator class based on an external lower propensity floor. All headline claims remain conditional on the unique-active-face, separated-dual-gap subclass and on the high-level shell-limit conditions that identify Sigma_P,u0 or the joint Levy object Lambda_P,alpha,u0. The open object is the positive fixed-alpha CI construction in oeq:boundary-honest-ci: the present core names the studentized local-experiment route but does not claim a completed honest interval. The proposal does not claim a full process limit on a domain that includes u = 0 when alpha <= 1; the extreme-shell coordinate is explicit precisely because that failure is part of the kernel."
+}

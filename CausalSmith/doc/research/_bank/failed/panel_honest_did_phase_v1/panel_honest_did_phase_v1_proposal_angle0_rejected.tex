@@ -1,0 +1,406 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=panel\_honest\_did\_phase, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section initially contains exactly one stage-1 placeholder.
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{panel\_honest\_did\_phase} / \texttt{v1}%
+  \\ \large\textit{Singular-value phase transition for covariance-whitened Honest-DiD breakdown frontiers}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+qid = panel_honest_did_phase
+specialization = v1
+p = finite event-study memory with pre-period length T_pre >= 2 and post-period
+  target dimension r >= 1; the smoothness operator uses second differences
+  across the ordered pre/post event-time grid.
+assignment = staggered or non-staggered DiD event-study input summarized by
+  the asymptotically Gaussian coefficient vector beta_hat =
+  (beta_hat_pre, beta_hat_post), covariance matrix Sigma, and a fixed
+  post-period loading matrix L selecting the dynamic ATT vector theta =
+  L tau_post.  Cohort aggregation is allowed through a known linear map A.
+target = robust zero-exclusion threshold for theta under a quadratic
+  Honest-DiD smoothness budget M: the smallest M at which the robust
+  confidence set for theta contains 0, together with the lower and upper
+  phase boundaries M_star_lo and M_star_hi for directional refutability.
+regression = event-study or modern staggered-DiD coefficient estimator whose
+  output is beta_hat and Sigma; the baseline decomposition is
+  beta = tau + delta with tau_pre = 0, theta = L tau_post, and delta constrained
+  by the pretrend-matching and second-difference budget below.  The proposed
+  closed form is for the covariance-whitened ellipsoidal descendant of the
+  Rambachan-Roth smoothness set, not for every polyhedral l_infty variant.
+\end{verbatim}
+
+\begin{abstract}
+Rambachan and Roth's Honest-DiD procedure asks researchers to report how robust an event-study conclusion is as the smoothness budget \(M\) for violations of parallel trends grows.
+This proposal asks for a theorem-level description of the first zero-crossing and the surrounding active-direction geometry, rather than a grid search over \(M\).
+For the covariance-whitened quadratic descendant of the Honest-DiD second-difference restriction, the kernel conjecture is a sharp three-regime phase transition: below \(M_\star^{lo}\) zero is excluded for every admissible trend deviation, between \(M_\star^{lo}\) and \(M_\star^{hi}\) zero is excluded only for a calibrated subset of projection directions, and above \(M_\star^{hi}\) zero is robustly irrefutable.
+The conjectured thresholds are singular-value functionals of an observable kernel matrix built from the event-study covariance, the post-period loading, the pretrend extrapolation operator, and the second-difference smoothness operator.
+If resolved, the result would turn Honest-DiD breakdown plots into closed-form diagnostics for staggered event studies and would give applied researchers a reproducible way to report the exact amount and direction of pretrend deviation needed to overturn a null-effect conclusion.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Honest-DiD made sensitivity to violations of parallel trends operational, but the usual empirical object is still a curve or table: evaluate a robust confidence interval at several values of \(M\), then report the value at which the interval first contains zero.
+That workflow hides the geometry of the breakdown point.
+In particular, it does not say whether the conclusion fails because every admissible post-trend direction can mimic zero, because one narrow active direction can do so, or because staggered aggregation has made some directions invisible.
+
+\paragraph{The main finding (proposed).}
+The flagship claim is Conjecture~\ref{conj:svd-phase}: in the covariance-whitened quadratic Honest-DiD descendant, the robust zero-exclusion decision is governed by the ellipsoid
+\[
+  q - M K u,\qquad \|u\|_2\le 1,
+\]
+where \(q=V^{-1/2}\widehat\theta\), \(V=L\Sigma_{post}L^\transpose\), and \(K=V^{-1/2}L S\) is the observable bias-kernel induced by the second-difference smoothness operator.
+The conjecture gives two sharp thresholds \(M_\star^{lo}\le M_\star^{hi}\) and an active-direction set \(\mathcal U(M)\).
+For \(M<M_\star^{lo}\), zero is excluded for every admissible deviation in the smoothness ball; for \(M_\star^{lo}\le M<M_\star^{hi}\), zero is globally included but some projection directions still reject; for \(M\ge M_\star^{hi}\), zero is included by every regularized projection direction.
+
+\paragraph{What is new.}
+The closest published result is \citet{rambachan2023parallel}, which constructs valid robust confidence sets for fixed \(M\), discusses breakdown values in applications, and proves optimality properties for several procedures.
+The epsilon-gap is that the paper does not classify the zero-crossing as a singular-value phase diagram of the whitened bias map; it computes or plots robust sets under a user-chosen restriction.
+The proposal is also distinct from \citet{masten2020breakdown}: breakdown frontiers are the conceptual target, but the new object is the closed-form crossing geometry for an Honest-DiD event-study confidence set with covariance and smoothness operators visible in the formula.
+
+\paragraph{How it positions in the literature.}
+The anchor cluster is panel and partial identification: event-study DiD supplies the coefficient vector, while the uncertainty about \(\delta_{post}\) is a partial-identification problem.
+\citet{andrews2023linear} is the nearest inference geometry comparator because Honest-DiD restrictions can be written as linear moment inequalities, but its contribution is valid inference at fixed nuisance configurations rather than an explicit active-face or singular-value breakdown formula.
+Modern staggered-DiD papers such as \citet{callaway2021multiple}, \citet{sunabraham2021eventstudy}, and \citet{borusyak2024eventstudy} determine which event-study coefficients are meaningful; the proposed result starts after that estimator is chosen and asks how the robustness threshold depends on its covariance and aggregation map.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the HonestDiD empirical workflow used after Rambachan--Roth: a researcher who now reports a grid-based breakdown value for the Benzarti--Carloni or teen-employment style event study could instead report \(M_\star^{lo}\), \(M_\star^{hi}\), and the active projection direction that explains the crossing.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report the singular direction of the pretrend violation that overturns the result, not only the scalar \(M\) at which a plotted interval first touches zero.
+
+\section{Related work}
+\citet{rambachan2023parallel} introduce robust inference for DiD and event studies under restrictions on violations of parallel trends; this is the primary anchor because the proposal studies the crossing geometry of their \(CI(M)\) path.
+\citet{roth2022pretest} shows why binary pretrend testing has low power and can distort inference after pretesting; this motivates a continuous breakdown threshold rather than a pass/fail pretrend screen.
+\citet{manski2018bounded} use bounded-variation restrictions to cope with ambiguity in panel policy evaluation; their role here is the bounded-deviation tradition that Honest-DiD makes inferential.
+\citet{masten2020breakdown} define breakdown frontiers as boundaries between assumptions that preserve or overturn a conclusion; the proposal specializes that frontier idea to the Honest-DiD smoothness parameter and seeks a closed-form event-study frontier.
+\citet{andrews2023linear} provide uniformly valid inference for linear conditional moment inequalities with nuisance parameters; the closest gap is that they do not derive symbolic active-face formulas for the Honest-DiD zero crossing.
+\citet{kwon2024bayes} propose Bayes and empirical-Bayes approaches to parallel-trends deviations learned from pretrends; this creates a useful contrast between posterior calibration and the minimax singular direction proposed here.
+\citet{callaway2021multiple} identify group-time ATT parameters in staggered DiD under conditional parallel trends; the proposed threshold can be applied after their event-study aggregation map is fixed.
+\citet{sunabraham2021eventstudy} show that TWFE event-study coefficients can be contaminated by treatment effects from other relative periods; this proposal treats the resulting coefficient vector and covariance as inputs and studies robustness to trend deviations, not treatment-effect contamination itself.
+\citet{borusyak2024eventstudy} develop imputation-based event-study estimation for staggered designs; their estimator is a natural source of \((\widehat\beta,\Sigma)\) for the proposed threshold.
+\citet{rothsantanna2023efficient} derive efficient estimators for staggered rollout designs; the covariance-aware threshold here would quantify how efficiency changes the Honest-DiD breakdown frontier.
+\citet{wing2024stacked} show that stacked DiD can impose different implicit weights on treatment and control trends; this is the aggregation warning behind Conjecture~\ref{conj:aggregation}.
+\citet{liu2025cohort} argues that aggregated Rambachan--Roth robust inference can be misleading in staggered adoption because pre and post coefficients mix cohorts differently; the proposal gives an operator-level threshold diagnostic for that problem.
+
+In-repository prior art is related but not duplicative.
+\texttt{ThmSmith/doc/API.md} Section 1.1, Q1\_MinimalBasis, records a minimal decontaminating history-basis theorem for the \(p=1\) switch-on target.
+\texttt{ThmSmith/doc/API.md} Section 1.2, Q1\_StaggeredMinimalBasis, records a staggered-adoption analogue with cohort-period switch-on and continued-treatment columns.
+\texttt{ThmSmith/doc/API.md} Section 1.4, Q1\_SpectralThreshold, records a Markov spectral-threshold refutation about FWL weight signs, while the banked \texttt{q1\_spectral\_phase\_transition/p1\_markov} proposal attempted a row-space phase transition for dynamic ATT support.
+The closest banked DiD partial-ID proposal, \texttt{pid\_did\_anticipation\_bounded/v1}, gives support-function intervals for bounded anticipation boxes.
+The present proposal differs from all of these: its kernel is a covariance-whitened Honest-DiD breakdown frontier for a chosen event-study estimator, with the phase boundaries expressed through the smoothness-bias kernel rather than through history-cell contamination or anticipation boxes.
+
+\section{Formal setup}
+Let \(\widehat\beta=(\widehat\beta_{pre}^\transpose,\widehat\beta_{post}^\transpose)^\transpose\in\R^{T_{pre}+T_{post}}\) be an event-study coefficient vector with covariance matrix \(\Sigma\).
+Partition \(\Sigma\) conformably and write \(\Sigma_{post}\) for the post-period block.
+The population event-study coefficient decomposes as
+\[
+  \beta=\tau+\delta,\qquad \tau_{pre}=0,\qquad \theta=L\tau_{post}\in\R^r,
+\]
+where \(\delta\) is the untreated trend violation and \(L\in\R^{r\times T_{post}}\) is a known loading matrix for the dynamic ATT vector.
+The null of interest is \(\theta=0\).
+The observed post-period point estimate is \(\widehat\theta=L\widehat\beta_{post}\), and its covariance is \(V=L\Sigma_{post}L^\transpose\).
+
+Let \(D_2\) be the second-difference operator on the ordered pre/post event-time grid.
+Let \(R_{pre}\) select the pre-period restrictions and \(R_{post}\) select the post-period coordinates.
+The quadratic Honest-DiD descendant used here fixes the observed pretrend deviation at \(\delta_{pre}=\widehat\beta_{pre}\), chooses the minimum-energy extrapolation \(\delta^0\) satisfying that pre-period match, and writes every admissible post-period deviation as
+\[
+  \delta_{post}=\delta^0_{post}+S u,\qquad \|u\|_2\le M.
+\]
+The matrix \(S\in\R^{T_{post}\times d}\) is the observable post-bias sensitivity matrix induced by the second-difference budget after eliminating the pre-period equality constraints.
+The corresponding possible bias in the target is \(L\delta^0_{post}+M L S u\).
+After subtracting the baseline extrapolated bias, define
+\[
+  \widetilde\theta=\widehat\theta-L\delta^0_{post},\qquad
+  q=V^{-1/2}\widetilde\theta,\qquad
+  K=V^{-1/2}L S.
+\]
+Let \(c_\alpha\) be the critical radius for the chosen \(1-\alpha\) Gaussian confidence ellipsoid for the \(r\)-dimensional target.
+For a budget \(M\), the covariance-whitened robust confidence set contains zero exactly when
+\[
+  d(M):=\inf_{\|u\|_2\le1}\|q-MKu\|_2\le c_\alpha.
+\]
+For a unit projection direction \(v\in\R^r\), define the directional statistic
+\[
+  T_M(v)=\inf_{\|u\|_2\le1}|v^\transpose(q-MKu)|.
+\]
+The direction \(v\) rejects zero at budget \(M\) when \(T_M(v)>c_\alpha\).
+The active rejecting-direction set is
+\[
+  \mathcal U(M)=\{v\in\R^r:\|v\|_2=1,\ T_M(v)>c_\alpha\}.
+\]
+Let \(\sigma_{\max}(K)\) be the largest singular value and \(\sigma_{\min}^+(K)\) the smallest positive singular value of \(K\), with \(\sigma_{\min}^+(K)=+\infty\) when \(K=0\).
+For staggered aggregation, let \(A\) map cohort-period ATT components and cohort-period trend-deviation components into the reported event-study coefficient vector.
+The staggered Honest-DiD kernel is \(K_A=V^{-1/2}L A S_A\), where \(S_A\) is the second-difference sensitivity matrix before aggregation.
+
+\begin{verbatim}
+qid = panel_honest_did_phase
+specialization = v1
+p = finite event-study memory with pre-period length T_pre >= 2 and post-period
+  target dimension r >= 1; the smoothness operator uses second differences
+  across the ordered pre/post event-time grid.
+assignment = staggered or non-staggered DiD event-study input summarized by
+  the asymptotically Gaussian coefficient vector beta_hat =
+  (beta_hat_pre, beta_hat_post), covariance matrix Sigma, and a fixed
+  post-period loading matrix L selecting the dynamic ATT vector theta =
+  L tau_post.  Cohort aggregation is allowed through a known linear map A.
+target = robust zero-exclusion threshold for theta under a quadratic
+  Honest-DiD smoothness budget M: the smallest M at which the robust
+  confidence set for theta contains 0, together with the lower and upper
+  phase boundaries M_star_lo and M_star_hi for directional refutability.
+regression = event-study or modern staggered-DiD coefficient estimator whose
+  output is beta_hat and Sigma; the baseline decomposition is
+  beta = tau + delta with tau_pre = 0, theta = L tau_post, and delta constrained
+  by the pretrend-matching and second-difference budget below.  The proposed
+  closed form is for the covariance-whitened ellipsoidal descendant of the
+  Rambachan-Roth smoothness set, not for every polyhedral l_infty variant.
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Gaussian event-study input]\label{ass:gaussian-input}
+The estimator supplies \(\widehat\beta\) and a positive semidefinite covariance matrix \(\Sigma\), and the target covariance \(V=L\Sigma_{post}L^\transpose\) is positive definite on the reported target space \(\R^r\).
+\end{assumption}
+
+\begin{assumption}[Event-study causal decomposition]\label{ass:decomposition}
+The population coefficient decomposes as \(\beta=\tau+\delta\), with \(\tau_{pre}=0\), \(\theta=L\tau_{post}\), and the null hypothesis \(\theta=0\).
+\end{assumption}
+
+\begin{assumption}[Pretrend match]\label{ass:pretrend-match}
+For the sensitivity calculation, admissible trend deviations satisfy \(\delta_{pre}=\widehat\beta_{pre}\), so the only unknown violation component entering the target is \(\delta_{post}\).
+\end{assumption}
+
+\begin{assumption}[Quadratic second-difference budget]\label{ass:quadratic-budget}
+After imposing the pretrend match, the admissible post-period deviations are exactly
+\(\delta_{post}=\delta^0_{post}+S u\) with \(\|u\|_2\le M\), where \(\delta^0_{post}\) and \(S\) are the minimum-energy extrapolation and sensitivity matrix induced by the second-difference operator \(D_2\).
+\end{assumption}
+
+\begin{assumption}[Honest critical radius]\label{ass:critical-radius}
+The robust \(1-\alpha\) confidence decision for the \(r\)-dimensional target uses the covariance-whitened Gaussian critical radius \(c_\alpha\), and zero is included in \(CI(M)\) if and only if \(d(M)\le c_\alpha\).
+\end{assumption}
+
+\begin{assumption}[Regular projection directions]\label{ass:regular-directions}
+Directional statements range over unit vectors \(v\in\R^r\) with nonzero projected sensitivity \(\|K^\transpose v\|_2>0\), unless explicitly stated otherwise.
+\end{assumption}
+
+\begin{assumption}[Staggered aggregation map]\label{ass:aggregation-map}
+For staggered event-study inputs, cohort-period treatment-effect and trend-deviation components enter the reported event-study coefficient through a known linear aggregation map \(A\), and the covariance matrix \(\Sigma\) is the covariance of the aggregated coefficient vector.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: deterministic ellipsoid zero-crossing dictionary]\label{thm:ellipsoid-dictionary}
+Under Assumptions~\ref{ass:gaussian-input}--\ref{ass:critical-radius}, the covariance-whitened robust confidence set contains zero at budget \(M\) if and only if
+\[
+  d(M)=\inf_{\|u\|_2\le1}\|q-MKu\|_2\le c_\alpha.
+\]
+Moreover, for each unit direction \(v\), zero is directionally rejected at \(M\) if and only if
+\[
+  T_M(v)=\max\{|v^\transpose q|-M\|K^\transpose v\|_2,0\}>c_\alpha.
+\]
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This theorem is routine convex duality, not the flagship novelty; the gap to \citet{rambachan2023parallel} and \citet{andrews2023linear} is only organizational, namely isolating the exact ellipsoid dictionary needed before proving a symbolic phase transition.
+(b) It advances the HonestDiD workflow by giving the reviewer and Stage 0 a precise target: the empirical breakdown plot is the scalar function \(d(M)\), and the active directions are the vectors \(v\) with \(T_M(v)>c_\alpha\).
+
+\begin{conjecture}[Conjecture 1: singular-value Honest-DiD phase transition (NOT YET PROVED)]\label{conj:svd-phase}
+Under Assumptions~\ref{ass:gaussian-input}--\ref{ass:regular-directions}, suppose \(K\) has full row rank on the reported target space.
+There exist observable thresholds \(M_\star^{lo}\le M_\star^{hi}\), expressible from \(q\) and the singular system of \(K\), such that:
+\[
+  M_\star^{lo}=
+  \inf\{M\ge0:d(M)\le c_\alpha\},\qquad
+  M_\star^{hi}=
+  \sup_{\|v\|_2=1,\ \|K^\transpose v\|_2>0}
+  \frac{(|v^\transpose q|-c_\alpha)_+}{\|K^\transpose v\|_2}.
+\]
+Equivalently, \(M_\star^{lo}\) is the first global zero-crossing of \(CI(M)\), while \(M_\star^{hi}\) is the last budget at which any regular projection direction can still reject zero.
+The following sharp phase diagram holds:
+\[
+\begin{array}{ll}
+M<M_\star^{lo}: & 0\notin CI(M)\ \text{for every admissible deviation, and}\ \mathcal U(M)\neq\varnothing;\\[2mm]
+M_\star^{lo}\le M<M_\star^{hi}: & 0\in CI(M)\ \text{globally, but}\ \mathcal U(M)\ \text{is a nonempty proper spherical cap};\\[2mm]
+M\ge M_\star^{hi}: & \mathcal U(M)=\varnothing,\ \text{so zero is robustly irrefutable in every regular direction.}
+\end{array}
+\]
+In the special case where \(q\) is aligned with a right singular direction of \(K^\transpose\), the two boundaries reduce to the closed forms
+\[
+  M_\star^{lo}=\frac{(\|q\|_2-c_\alpha)_+}{\sigma_{\max}(K)},\qquad
+  M_\star^{hi}=\frac{(\|q\|_2-c_\alpha)_+}{\sigma_{\min}^+(K)}
+\]
+with the convention that \(M_\star^{hi}=+\infty\) if the aligned direction lies outside the row space of \(K\).
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest paper is \citet{rambachan2023parallel}: it constructs valid robust sets and reports breakdown values, but it does not state a two-threshold singular-value phase diagram or identify the active spherical cap of trend-deviation directions.
+\citet{masten2020breakdown} names the frontier object, but not the Honest-DiD covariance-whitened kernel or its active-direction singular values.
+(b) Resolving this conjecture would give users of \texttt{HonestDiD} a closed-form diagnostic: which pretrend-deviation direction overturns the result, and whether the reported breakdown value is a knife-edge direction or a fully irrefutable null.
+
+\begin{conjecture}[Conjecture 2: staggered aggregation sharpness threshold (NOT YET PROVED)]\label{conj:aggregation}
+Under Assumptions~\ref{ass:gaussian-input}--\ref{ass:aggregation-map}, replace \(K\) in Conjecture~\ref{conj:svd-phase} by \(K_A=V^{-1/2}L A S_A\).
+Then the same three-regime phase diagram is sharp for the aggregated staggered Honest-DiD coefficient if and only if \(K_A\) has the same row space as the unaggregated cohort-period bias kernel after applying \(L\).
+If the row spaces differ, the aggregate threshold is conservative exactly in the quotient directions in
+\[
+  \operatorname{Row}(L S_A)\big/\operatorname{Row}(L A S_A),
+\]
+and the gap in \(M_\star^{lo}\) is bounded below by the smallest nonzero singular value lost by the aggregation map.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{callaway2021multiple}, \citet{sunabraham2021eventstudy}, and \citet{borusyak2024eventstudy} clarify which staggered event-study coefficients should be estimated, while \citet{liu2025cohort} warns that aggregated Rambachan--Roth robust inference can be misleading when cohort composition changes.
+The epsilon-gap is an operator-level necessary-and-sufficient condition for when the aggregate Honest-DiD breakdown threshold is sharp rather than conservative.
+(b) The concrete consumer is cohort-anchored robust inference for staggered adoption: Conjecture~\ref{conj:aggregation} would tell researchers when they must compute Honest-DiD thresholds at the cohort-period level instead of from aggregated event-study coefficients.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Zero budget recovers the linear-pretrend point estimate]\label{cor:zero-budget}
+Under Assumptions~\ref{ass:gaussian-input}--\ref{ass:critical-radius}, when \(M=0\), zero is excluded exactly when \(\|q\|_2>c_\alpha\).
+Thus the proposal recovers the Rambachan--Roth \(M=0\) linear-extrapolation corner for the covariance-whitened target.
+\end{corollary}
+
+\begin{corollary}[Scalar target collapses to a single threshold]\label{cor:scalar}
+Under Assumptions~\ref{ass:gaussian-input}--\ref{ass:regular-directions}, if \(r=1\) and \(K\neq0\), then \(\sigma_{\max}(K)=\sigma_{\min}^+(K)=\|K\|_2\) and the intermediate cap regime degenerates to the usual single breakdown value \((|q|-c_\alpha)_+/\|K\|_2\).
+\end{corollary}
+
+\begin{corollary}[No aggregation loss]\label{cor:no-aggregation-loss}
+Under Assumption~\ref{ass:aggregation-map}, if \(A\) is the identity on the cohort-period bias coordinates used by \(L\), then \(K_A=K\) and Conjecture~\ref{conj:aggregation} reduces to Conjecture~\ref{conj:svd-phase}.
+\end{corollary}
+
+\section{Proof-sketch route}
+The mathematical route is finite-dimensional convex geometry.
+First, derive Theorem~\ref{thm:ellipsoid-dictionary} by applying the support function of the Euclidean ball to the affine bias set \(q-MK B_2\), then use the separating-hyperplane theorem to equate zero inclusion with \(d(M)\le c_\alpha\).
+Second, diagonalize \(K=U\Sigma_K W^\transpose\) and reduce \(d(M)\) to the distance from \(U^\transpose q\) to the axis-aligned ellipsoid \(M\Sigma_K B_2\), with separate algebra for full row rank, rank-deficient, and aligned-direction cases.
+Third, for staggered aggregation, compare the row spaces of \(L S_A\) and \(L A S_A\) through singular values of the quotient map; the smallest explicit check should be a two-cohort, one-pre, two-post design where \(A\) either preserves or averages away one cohort-specific pretrend-curvature direction.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:ellipsoid-dictionary} is proposed as routine and should be provable by convex duality.
+Conjecture~\ref{conj:svd-phase} is the main novel kernel and is not yet proved; the exact closed form for non-aligned \(q\) may require replacing the displayed simple aligned formulas by a secular equation for distance to an ellipsoid.
+Conjecture~\ref{conj:aggregation} is also open; the row-space quotient statement may need an additional regularity condition excluding nearly singular covariance directions.
+This v1 deliberately uses the covariance-whitened quadratic descendant of Honest-DiD, not the full Rambachan--Roth polyhedral \(\ell_\infty\) second-difference class.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft centered on the covariance-whitened Honest-DiD singular-value phase transition; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Andrews, Roth, and Pakes(2023)]{andrews2023linear}
+Andrews, I., J. Roth, and A. Pakes (2023).
+Inference for linear conditional moment inequalities.
+\emph{Review of Economic Studies} 90(6), 2763--2791.
+
+\bibitem[Borusyak, Jaravel, and Spiess(2024)]{borusyak2024eventstudy}
+Borusyak, K., X. Jaravel, and J. Spiess (2024).
+Revisiting event-study designs: Robust and efficient estimation.
+\emph{Review of Economic Studies} 91(6), 3253--3285.
+
+\bibitem[Callaway and Sant'Anna(2021)]{callaway2021multiple}
+Callaway, B. and P. H. C. Sant'Anna (2021).
+Difference-in-differences with multiple time periods.
+\emph{Journal of Econometrics} 225(2), 200--230.
+
+\bibitem[Kwon and Roth(2024)]{kwon2024bayes}
+Kwon, S. and J. Roth (2024).
+(Empirical) Bayes approaches to parallel trends.
+\emph{AEA Papers and Proceedings} 114, 629--633.
+
+\bibitem[Liu(2025)]{liu2025cohort}
+Liu, Z. (2025).
+Cohort-anchored robust inference for event-study with staggered adoption.
+\emph{arXiv:2509.01829}.
+
+\bibitem[Manski and Pepper(2018)]{manski2018bounded}
+Manski, C. F. and J. V. Pepper (2018).
+How do right-to-carry laws affect crime rates? Coping with ambiguity using bounded-variation assumptions.
+\emph{Review of Economics and Statistics} 100(2), 232--244.
+
+\bibitem[Masten and Poirier(2020)]{masten2020breakdown}
+Masten, M. A. and A. Poirier (2020).
+Inference on breakdown frontiers.
+\emph{Quantitative Economics} 11(1), 41--111.
+
+\bibitem[Rambachan and Roth(2023)]{rambachan2023parallel}
+Rambachan, A. and J. Roth (2023).
+A more credible approach to parallel trends.
+\emph{Review of Economic Studies} 90(5), 2555--2591.
+
+\bibitem[Roth(2022)]{roth2022pretest}
+Roth, J. (2022).
+Pretest with caution: Event-study estimates after testing for parallel trends.
+\emph{American Economic Review: Insights} 4(3), 305--322.
+
+\bibitem[Roth and Sant'Anna(2023)]{rothsantanna2023efficient}
+Roth, J. and P. H. C. Sant'Anna (2023).
+Efficient estimation for staggered rollout designs.
+\emph{Journal of Political Economy Microeconomics} 1(4), 669--709.
+
+\bibitem[Sun and Abraham(2021)]{sunabraham2021eventstudy}
+Sun, L. and S. Abraham (2021).
+Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\emph{Journal of Econometrics} 225(2), 175--199.
+
+\bibitem[Wing, Freedman, and Hollingsworth(2024)]{wing2024stacked}
+Wing, C., S. Freedman, and A. Hollingsworth (2024).
+Stacked difference-in-differences.
+\emph{NBER Working Paper No. 32054}.
+\end{thebibliography}
+
+\end{document}

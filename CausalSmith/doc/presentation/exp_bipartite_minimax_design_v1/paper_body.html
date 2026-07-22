@@ -1,0 +1,670 @@
+<div class="abstract"><h2>Abstract</h2><p>We study independent, heterogeneous Bernoulli assignment in bipartite experiments, where intervention units are assigned treatment and outcome units may depend on assignments in known intervention neighborhoods. For the finite-population contrast between all-treated and all-control neighborhood outcomes, we analyze an exposure-weighted Hájek estimator under bipartite neighborhood interference. With bounded potential outcomes, we derive a graph-and-design-dependent envelope that upper-bounds the design-based variance scale of its linearization and can be minimized subject to a positivity-constrained expected-treatment budget. Under the full assumptions of theorem <a class="objref" href="#obj-thm:hetero-clt">4</a> and theorem <a class="objref" href="#obj-thm:postdesign-wald">5</a>, the envelope-optimal design supports asymptotic normality and a graph-only Wald scale yields asymptotically conservative coverage. We also give conditions under which heterogeneous probabilities strictly improve the envelope relative to homogeneous assignment and, under an admissible budget and bounded outcome degree, certify a separable overlap-based surrogate. A complementary unbounded-degree construction establishes the necessity of richer overlap control for this approximation. Together, the results provide an outcome-model-free design criterion with convex, inferential, separation, and approximation guarantees.</p></div>
+<h1 id="introduction">Introduction</h1>
+<p>Interference often separates the units receiving assignments from the units whose outcomes are measured. In bipartite experiments, treatments are assigned to one set of units, while outcomes are recorded for another set whose members may each depend on several assigned interventions. This structure arises in settings involving suppliers and customers, advertisers and users, providers and patients, or policies and exposed populations. It also creates a design problem: even when assignments are independent, overlapping intervention neighborhoods induce dependence among outcome-level exposure terms.</p>
+<p>This paper considers a finite-population bipartite experiment with known graph structure and independent Bernoulli assignment probabilities that may differ across intervention units. The estimand is the average contrast between each outcome unit’s all-treated and all-control neighborhood potential outcomes. Under the bipartite interference restriction in assumption <a class="objref" href="#obj-ass:bipartite-interference">1</a>, the exposure-weighted Hájek estimator in definition <a class="objref" href="#obj-def:hetero-hajek-estimator">3</a> uses realized all-treated and all-control neighborhood exposures. The design question is how to allocate a fixed expected number of treated intervention units when potential outcomes are unavailable at the design stage.</p>
+<p>The answer studied here is a conservative design criterion. Theorem <a class="objref" href="#obj-thm:hetero-envelope">2</a> gives an outcome-model-independent graph envelope under heterogeneous Bernoulli assignment with <span class="math inline">\(0&lt;p_k&lt;1\)</span> and bounded potential outcomes. When the budget is admissible, we minimize this upper bound over the feasible class in definition <a class="objref" href="#obj-def:feasible-designs">1</a>, which imposes both a positivity floor and a fixed expected-treatment budget. This yields a graph-adaptive allocation with an auditable robustness interpretation before outcomes are observed.</p>
+<p>The criterion targets an analytically convenient uniform variance upper bound over the bounded-outcome class. Its value is that the objective is observable before randomization, permits an exact convex formulation, and comes with formal separation, inference, and approximation certificates. It provides a robust graph-only benchmark for subsequent numerical comparisons with homogeneous, clustered, and outcome-informed alternatives.</p>
+<p>The paper’s closest literatures differ in either the assignment law, the information used to choose a design, or the target of optimization.</p>
+<table style="width:88%;">
+<caption>Scope of the graph-only heterogeneous-probability criterion relative to related approaches.</caption>
+<colgroup>
+<col style="width: 22%" />
+<col style="width: 18%" />
+<col style="width: 18%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Approach</th>
+<th style="text-align: left;">Assignment law</th>
+<th style="text-align: left;">Outcome information in design</th>
+<th style="text-align: left;">Objective and deliverable</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Homogeneous bipartite Bernoulli analysis (Lu et al., 2025)</td>
+<td style="text-align: left;">Common Bernoulli probability</td>
+<td style="text-align: left;">None</td>
+<td style="text-align: left;">Design-based estimation, asymptotic inference, and conservative variance analysis under homogeneous assignment.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Graph-cluster and bipartite-cluster designs (Ugander et al., 2020; Brennan et al., 2022)</td>
+<td style="text-align: left;">Correlated assignment induced by clusters</td>
+<td style="text-align: left;">Depends on the design objective and model restrictions</td>
+<td style="text-align: left;">Cluster construction to alter exposure probabilities, spillovers, bias, power, or minimax performance.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Exposure-reweighted or model-based bipartite methods (Harshaw et al., 2021; Doudchenko et al., 2020)</td>
+<td style="text-align: left;">Varies by method</td>
+<td style="text-align: left;">Typically exposure or response-model structure</td>
+<td style="text-align: left;">Estimation or design criteria tailored to specified exposure-response structure.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">This paper</td>
+<td style="text-align: left;">Independent heterogeneous Bernoulli probabilities</td>
+<td style="text-align: left;">None beyond the observed bipartite graph</td>
+<td style="text-align: left;">Convex minimization of an analytically convenient bounded-outcome variance upper bound, a strict objective-separation diagnostic, and a bounded-degree surrogate certificate.</td>
+</tr>
+</tbody>
+</table>
+<p>The first contribution is a covariance representation that separates graph-and-design loads from unknown centered potential outcomes. Theorem <a class="objref" href="#obj-prop:homogeneous-reduction">1</a> recovers the homogeneous Bernoulli case, in which same-exposure loads depend on the size of shared neighborhoods. Theorem <a class="objref" href="#obj-thm:hetero-envelope">2</a> extends this representation to heterogeneous independent probabilities and establishes the corresponding envelope under bounded potential outcomes. This extension captures an intervention’s full role in outcome-pair overlap beyond its intervention-side incidence.</p>
+<p>The second contribution concerns the allocation problem induced by that envelope. Under an admissible positivity floor and budget, theorem <a class="objref" href="#obj-thm:convex-design">3</a> establishes existence of an envelope minimizer and characterizes it with first-order conditions. The associated gradient score aggregates the overlap contribution of an intervention across outcome pairs. Theorem <a class="objref" href="#obj-thm:heterogeneity-separation">6</a> shows that, when homogeneous-point scores differ and the homogeneous rate is strictly interior and unequal to one half, a heterogeneous direction strictly improves the envelope and admits a quantitative lower bound. In the special case of singleton outcome neighborhoods, unequal intervention-side incidences are sufficient for this score heterogeneity.</p>
+<p>The third contribution is a computational simplification with an exact certificate. The envelope couples probabilities within shared neighborhoods, while theorem <a class="objref" href="#obj-thm:surrogate-certificate">7</a> gives a uniform approximation ratio for a separable surrogate under an admissible positivity-constrained budget and bounded outcome degree. Theorem <a class="objref" href="#obj-thm:dispersion-certificate-unbounded">8</a> complements this guarantee with an unbounded-degree construction in which the approximation ratio diverges despite dispersed intervention-side degrees and comparable surrogate weights. Together, the results identify outcome-neighborhood and overlap diagnostics as the decisive inputs for surrogate reliability.</p>
+<p>The inferential results remain design based throughout: potential outcomes are fixed, and assignment is the source of randomness. For sequences satisfying the full assumptions of theorem <a class="objref" href="#obj-thm:hetero-clt">4</a>, including outcome indexing and feasible envelope-optimal designs, theorem <a class="objref" href="#obj-thm:hetero-clt">4</a> establishes a Hájek central limit theorem. Under the full assumptions of theorem <a class="objref" href="#obj-thm:postdesign-wald">5</a>, the deterministic graph-only scale in definition <a class="objref" href="#obj-def:conservative-variance-estimator">9</a> yields asymptotically conservative coverage. The stated bounded-degree regime supplies the local-dependence control supporting both guarantees.</p>
+<p>The paper is related to design-based causal inference under interference (Hudgens et al., 2008; Aronow et al., 2017; Sävje et al., 2021), to approximate or structured neighborhood restrictions (Leung, 2019), and to bipartite causal designs (Zigler et al., 2018; Chattopadhyay et al., 2023). Relative to homogeneous Bernoulli bipartite analysis (Lu et al., 2025), the contribution is the graph-dependent heterogeneous-probability envelope and the associated optimization and approximation results. Relative to clustered designs, the assignment law remains independent across intervention units; whether that operational distinction is preferable is application dependent.</p>
+<p>The formal statements and associated proofs have Lean 4 verification support; the verification appendix describes its precise scope. The remainder of the paper sets out the experiment, estimator, and feasible design class; develops the envelope, inference, separation, and surrogate results; and discusses the resulting scope and limitations.</p>
+<h1 id="sec:setup-and-assumptions">Setup and assumptions</h1>
+<p>At stage <span class="math inline">\(n\)</span>, the experiment assigns interventions to a finite set <span class="math inline">\(I_n\)</span>, with <span class="math inline">\(\lvert I_n\rvert=m_n\)</span>, and records outcomes for the <span class="leanref" data-objid="sym:O_n">outcome-unit set <span class="math inline">\(O_n\)</span></span> of size <span class="leanref" data-objid="sym:n"><span class="math inline">\(n\)</span></span>. A known bipartite graph <span class="math inline">\(G_n\)</span> links intervention units to outcome units. For outcome unit <span class="math inline">\(i\)</span>, its <span class="leanref" data-objid="sym:N_i(G_n)">intervention neighborhood <span class="math inline">\(N_i(G_n)\)</span></span> collects adjacent intervention units and has <span class="leanref" data-objid="sym:d_i">degree <span class="math inline">\(d_i\)</span></span>. Conversely, let <span class="leanref" data-objid="sym:M_k(G_n)"><span class="math inline">\(M_k(G_n)\)</span></span> denote the outcome units adjacent to intervention unit <span class="math inline">\(k\)</span>, and write <span class="leanref" data-objid="sym:s_k"><span class="math inline">\(s_k\)</span></span> for its cardinality. These two degree concepts can differ: <span class="math inline">\(d_i\)</span> governs the number of assignments entering one outcome’s exposure, whereas <span class="math inline">\(s_k\)</span> summarizes the outcomes potentially affected by a given intervention.</p>
+<p>For <span class="math inline">\(i,j\in O_n\)</span>, the <span class="leanref" data-objid="sym:S_{ij}(G_n)">shared neighborhood <span class="math inline">\(S_{ij}(G_n)\)</span></span> equals <span class="math inline">\(N_i(G_n)\cap N_j(G_n)\)</span>. Distinct outcomes are adjacent in the usual loop-free overlap graph when this set is nonempty. The formal quantity <span class="leanref" data-objid="sym:Delta_n"><span class="math inline">\(\Delta_n\)</span></span> is instead the maximum cardinality of the closed overlap neighborhood <span class="math inline">\(\{j\in O_n:S_{ij}(G_n)\neq\varnothing\}\)</span>, so it includes <span class="math inline">\(i\)</span> whenever <span class="math inline">\(N_i(G_n)\neq\varnothing\)</span>. In the nonempty-neighborhood case it is the conventional overlap-graph degree plus one. Thus, <span class="math inline">\(s_k\)</span> measures intervention-side incidence, while <span class="math inline">\(\Delta_n\)</span> bounds the number of outcome-level exposure terms that can depend on a given term.</p>
+<p>We work with a fixed finite-population potential-outcome schedule <span class="leanref" data-objid="sym:Y"><span class="math inline">\(Y\)</span></span>. Specifically, <span class="math inline">\(Y_i(z_{N_i})\)</span> is the potential outcome induced by a neighborhood assignment vector, and the all-treated and all-control potential outcomes are <span class="leanref" data-objid="sym:Y_i^1"><span class="math inline">\(Y_i^1\)</span></span> and <span class="leanref" data-objid="sym:Y_i^0"><span class="math inline">\(Y_i^0\)</span></span>, respectively. The observed outcome is <span class="math inline">\(Y_i^{\mathrm{obs}}=Y_i(Z_{N_i(G_n)})\)</span>. Let <span class="math inline">\(\mu_1=n^{-1}\sum_{i\in O_n}Y_i^1\)</span> and <span class="math inline">\(\mu_0=n^{-1}\sum_{i\in O_n}Y_i^0\)</span>, so that the finite-population estimand is <span class="leanref" data-objid="sym:tau_n"><span class="math inline">\(\tau_n=\mu_1-\mu_0\)</span></span>.</p>
+<p>The potential-outcome restriction is as follows.</p>
+<div class="formal-block kind-assumption" id="obj-ass:bipartite-interference" data-objid="ass:bipartite-interference" tabindex="0"><span class="env-label">Assumption 1 <span class="obj-tag">[ass:bipartite-interference]</span> (Bipartite interference restriction).</span><p>For every <span class="math inline">\(i\in O_n\)</span> and every <span class="math inline">\(z,z&#39;\in\{0,1\}^{m_n}\)</span>, <span class="math display">\[z_{N_i(G_n)}=z&#39;_{N_i(G_n)}
+\quad\Longrightarrow\quad
+Y_i\!\left(z_{N_i(G_n)}\right)=Y_i\!\left(z&#39;_{N_i(G_n)}\right).\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>assumption <a class="objref" href="#obj-ass:bipartite-interference">1</a> is the usual neighborhood-interference restriction for a bipartite experiment: outcome <span class="math inline">\(i\)</span> depends exclusively on assignments in <span class="math inline">\(N_i(G_n)\)</span>. It permits arbitrary interference within a neighborhood while making the exposure mapping graph-based and known to the researcher (Lu et al., 2025).</p>
+<p>Assignment follows a <span class="leanref" data-objid="S-1">finite-population Bernoulli randomization design</span>. Write <span class="leanref" data-objid="sym:Z"><span class="math inline">\(Z=(Z_k)_{k\in I_n}\)</span></span> for the assignment vector, with <span class="leanref" data-objid="sym:Z_k"><span class="math inline">\(Z_k\)</span></span> denoting its coordinate for intervention unit <span class="math inline">\(k\)</span>, and let <span class="leanref" data-objid="sym:p"><span class="math inline">\(p=(p_k)_{k\in I_n}\)</span></span> denote the probability vector.</p>
+<div class="formal-block kind-assumption" id="obj-ass:independent-heterogeneous-bernoulli" data-objid="ass:independent-heterogeneous-bernoulli" tabindex="0"><span class="env-label">Assumption 2 <span class="obj-tag">[ass:independent-heterogeneous-bernoulli]</span> (Independent heterogeneous Bernoulli assignment).</span><p>For every <span class="math inline">\(k\in I_n\)</span>, <span class="math inline">\(Z_k\)</span> is Bernoulli with success probability <span class="math inline">\(p_k\)</span>, and the collection <span class="math inline">\(\{Z_k:k\in I_n\}\)</span> is mutually independent.</p><span class="lean-hint">⊢ Lean</span></div>
+<p>assumption <a class="objref" href="#obj-ass:independent-heterogeneous-bernoulli">2</a> allows assignment probabilities to vary across intervention units while retaining independent randomization. This is the design feature that permits adaptation to the observed graph, in the spirit of heterogeneous exposure-based designs (Leung, 2019).</p>
+<p>Fix a common <span class="leanref" data-objid="sym:epsilon">positivity margin <span class="math inline">\(0&lt;\epsilon&lt;1/2\)</span></span> and an <span class="leanref" data-objid="sym:B_n">expected-treatment budget <span class="math inline">\(B_n\)</span></span>. The design is subject to both restrictions.</p>
+<div class="formal-block kind-assumption" id="obj-ass:positivity-floor" data-objid="ass:positivity-floor" tabindex="0"><span class="env-label">Assumption 3 <span class="obj-tag">[ass:positivity-floor]</span> (Assignment positivity).</span><p>For every <span class="math inline">\(k\in I_n\)</span>, <span class="math display">\[\epsilon\leq p_k\leq 1-\epsilon.\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>assumption <a class="objref" href="#obj-ass:positivity-floor">3</a> imposes uniform overlap through the <span class="leanref" data-objid="sym:epsilon">positivity floor <span class="math inline">\(\epsilon\)</span></span>. It keeps every relevant exposure probability away from zero once outcome degrees are bounded, preventing unstable inverse-probability weights (Leung, 2019).</p>
+<div class="formal-block kind-assumption" id="obj-ass:budget-balance" data-objid="ass:budget-balance" tabindex="0"><span class="env-label">Assumption 4 <span class="obj-tag">[ass:budget-balance]</span> (Assignment budget balance).</span><p><span class="math display">\[\sum_{k\in I_n}p_k=B_n.\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>assumption <a class="objref" href="#obj-ass:budget-balance">4</a> fixes the expected number of treated intervention units through the budget <span class="leanref" data-objid="sym:B_n"><span class="math inline">\(B_n\)</span></span>. This restriction is specific to the present design problem: heterogeneous probabilities may be reallocated across intervention units, but their total must remain fixed.</p>
+<p>Together, assumption <a class="objref" href="#obj-ass:positivity-floor">3</a> and assumption <a class="objref" href="#obj-ass:budget-balance">4</a> define the admissible design set.</p>
+<div class="formal-block kind-definition" id="obj-def:feasible-designs" data-objid="def:feasible-designs" tabindex="0"><span class="env-label">Definition 1 <span class="obj-tag">[def:feasible-designs]</span> (Feasible design class <span class="math inline">\(\mathcal P_{n,B_n,\epsilon}\)</span>).</span><p>Under assumption <a class="objref" href="#obj-ass:positivity-floor">3</a> and assumption <a class="objref" href="#obj-ass:budget-balance">4</a>, with <span class="math inline">\(0&lt;\epsilon&lt;1/2\)</span>, define <span class="math display">\[\mathcal P_{n,B_n,\epsilon}
+=
+\left\{
+p\in[0,1]^{m_n}:
+\epsilon\le p_k\le 1-\epsilon\ \text{for every } k\in I_n,
+\quad
+\sum_{k\in I_n}p_k=B_n
+\right\}.\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>The class in definition <a class="objref" href="#obj-def:feasible-designs">1</a> is the intersection of a probability box and a budget hyperplane. It therefore isolates the design trade-off of interest: probabilities can respond to graph structure while preserving the experiment’s expected treatment intensity.</p>
+<p>For each outcome unit, define the treated exposure indicator <span class="leanref" data-objid="sym:T_i(Z)"><span class="math inline">\(T_i(Z)\)</span></span> as the indicator that every intervention in <span class="math inline">\(N_i(G_n)\)</span> is treated, and define the control exposure indicator <span class="leanref" data-objid="sym:C_i(Z)"><span class="math inline">\(C_i(Z)\)</span></span> analogously. Their design probabilities are <span class="leanref" data-objid="sym:pi_i^1(p)"><span class="math inline">\(\pi_i^1(p)\)</span></span> and <span class="leanref" data-objid="sym:pi_i^0(p)"><span class="math inline">\(\pi_i^0(p)\)</span></span>. The inverse-probability denominators are</p>
+<div class="formal-block kind-definition" id="obj-def:hajek-denominators" data-objid="def:hajek-denominators" tabindex="0"><span class="env-label">Definition 2 <span class="obj-tag">[def:hajek-denominators]</span> (Hájek denominators <span class="math inline">\(D_1(p,Z)\)</span> and <span class="math inline">\(D_0(p,Z)\)</span>).</span><p>Define <span class="math display">\[D_1(p,Z)=\sum_{i\in O_n}\frac{T_i(Z)}{\pi_i^1(p)},
+\qquad
+D_0(p,Z)=\sum_{i\in O_n}\frac{C_i(Z)}{\pi_i^0(p)}.\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>Here, <span class="leanref" data-objid="sym:D_1(p,Z)"><span class="math inline">\(D_1(p,Z)\)</span></span> and <span class="leanref" data-objid="sym:D_0(p,Z)"><span class="math inline">\(D_0(p,Z)\)</span></span> normalize the treated- and control-exposure weighted sums. The indicator convention in the next definition assigns value zero to a ratio whose corresponding exposure denominator is zero.</p>
+<div class="formal-block kind-definition" id="obj-def:hetero-hajek-estimator" data-objid="def:hetero-hajek-estimator" tabindex="0"><span class="env-label">Definition 3 <span class="obj-tag">[def:hetero-hajek-estimator]</span> (Hájek estimator <span class="math inline">\(\widehat\tau_H(p)\)</span>).</span><p>Define <span class="math display">\[\widehat\tau_H(p)
+=
+\mathbf 1\{D_1(p,Z)&gt;0\}
+\frac{\displaystyle\sum_{i\in O_n}\frac{T_i(Z)Y_i^{obs}}{\pi_i^1(p)}}{D_1(p,Z)}
+-
+\mathbf 1\{D_0(p,Z)&gt;0\}
+\frac{\displaystyle\sum_{i\in O_n}\frac{C_i(Z)Y_i^{obs}}{\pi_i^0(p)}}{D_0(p,Z)}.\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>definition <a class="objref" href="#obj-def:hetero-hajek-estimator">3</a> is the exposure-weighted Hájek estimator. Normalization makes the estimator less sensitive to random fluctuations in the number of realized all-treated and all-control exposures than its unnormalized counterpart.</p>
+<p>Its first-order behavior is described by the following centered summands.</p>
+<div class="formal-block kind-definition" id="obj-def:first-order-linearization" data-objid="def:first-order-linearization" tabindex="0"><span class="env-label">Definition 4 <span class="obj-tag">[def:first-order-linearization]</span> (Linearization summand <span class="math inline">\(\eta_i(p,Z)\)</span>).</span><p>For each <span class="math inline">\(i\in O_n\)</span>, define <span class="math display">\[\eta_i(p,Z)
+=
+\left(\frac{T_i(Z)}{\pi_i^1(p)}-1\right)(Y_i^1-\mu_1)
+-
+\left(\frac{C_i(Z)}{\pi_i^0(p)}-1\right)(Y_i^0-\mu_0).\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>The summands in definition <a class="objref" href="#obj-def:first-order-linearization">4</a> inherit a dependency graph from outcome-neighborhood overlap. Their scaled average has variance</p>
+<div class="formal-block kind-definition" id="obj-def:variance-scale" data-objid="def:variance-scale" tabindex="0"><span class="env-label">Definition 5 <span class="obj-tag">[def:variance-scale]</span> (Variance scale <span class="math inline">\(\sigma^2_{G_n,p}(Y)\)</span>).</span><p>For a working finite design <span class="math inline">\(D\)</span>, define <span class="math display">\[\sigma^2_{G_n,D,p}(Y)
+=
+n\,\operatorname{Var}_D\!\left(
+\frac{1}{n}\sum_{i\in O_n}\eta_i(p,Z)
+\right).\]</span> When <span class="math inline">\(D\)</span> is the heterogeneous Bernoulli design indexed by <span class="math inline">\(p\)</span>, abbreviate this quantity as <span class="math inline">\(\sigma^2_{G_n,p}(Y)\)</span>.</p><span class="lean-hint">⊢ Lean</span></div>
+<p>The variance scale <span class="leanref" data-objid="sym:sigma_{G_n,p}^2(Y)"><span class="math inline">\(\sigma^2_{G_n,p}(Y)\)</span></span> is design based: potential outcomes are held fixed and variation is taken only over the assignment mechanism.</p>
+<p>We next construct a graph-only upper envelope for this scale. The treated and control covariance loads, <span class="leanref" data-objid="sym:r_{ij}^1(G_n,p)"><span class="math inline">\(r_{ij}^1(G_n,p)\)</span></span> and <span class="leanref" data-objid="sym:r_{ij}^0(G_n,p)"><span class="math inline">\(r_{ij}^0(G_n,p)\)</span></span>, quantify the inverse-probability amplification arising from the shared neighborhood of <span class="math inline">\(i\)</span> and <span class="math inline">\(j\)</span>. The cross-exposure load <span class="leanref" data-objid="sym:r_{ij}^{10}(G_n)"><span class="math inline">\(r_{ij}^{10}(G_n)\)</span></span> records whether that shared neighborhood is nonempty. These quantities depend only on <span class="math inline">\(G_n\)</span> and, for the same-exposure loads, on <span class="math inline">\(p\)</span>.</p>
+<div class="formal-block kind-definition" id="obj-def:graph-envelope" data-objid="def:graph-envelope" tabindex="0"><span class="env-label">Definition 6 <span class="obj-tag">[def:graph-envelope]</span> (Graph envelope <span class="math inline">\(V_{\mathrm{env}}(G_n,p)\)</span>).</span><p>Define <span class="math display">\[V_{\mathrm{env}}(G_n,p)
+=
+\frac{4}{n}\sum_{i,j\in O_n}
+\left\{
+r_{ij}^1(G_n,p)
++
+r_{ij}^0(G_n,p)
++
+2r_{ij}^{10}(G_n)
+\right\}.\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>The graph envelope <span class="leanref" data-objid="sym:V_env(G_n,p)"><span class="math inline">\(V_{\mathrm{env}}(G_n,p)\)</span></span> replaces unknown outcome contrasts by a uniform bound, thereby making the design criterion observable before randomization. The envelope-optimal design is</p>
+<div class="formal-block kind-definition" id="obj-def:optimal-design" data-objid="def:optimal-design" tabindex="0"><span class="env-label">Definition 7 <span class="obj-tag">[def:optimal-design]</span> (Envelope-optimal design <span class="math inline">\(p_n^*(G_n)\)</span>).</span><p>Whenever the minimizer set is nonempty, define <span class="math display">\[p_n^*(G_n)
+\in
+\operatorname{argmin}_{p\in\mathcal P_{n,B_n,\epsilon}}
+V_{\mathrm{env}}(G_n,p).\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>definition <a class="objref" href="#obj-def:optimal-design">7</a> selects <span class="leanref" data-objid="sym:p_n^*(G_n)"><span class="math inline">\(p_n^*(G_n)\)</span></span> from the feasible envelope minimizers. To characterize its allocation of probability mass, we use the coordinatewise envelope score.</p>
+<div class="formal-block kind-definition" id="obj-def:kkt-gradient" data-objid="def:kkt-gradient" tabindex="0"><span class="env-label">Definition 8 <span class="obj-tag">[def:kkt-gradient]</span> (Envelope gradient score <span class="math inline">\(g_k(G_n,p)\)</span>).</span><p>Define <span class="math display">\[g_k(G_n,p)
+=
+\frac{1}{n}
+\sum_{\substack{i,j\in O_n:\ k\in S_{ij}(G_n)}}
+\left\{
+-
+\left(\prod_{\ell\in S_{ij}(G_n)}p_\ell^{-1}\right)p_k^{-1}
++
+\left(\prod_{\ell\in S_{ij}(G_n)}(1-p_\ell)^{-1}\right)(1-p_k)^{-1}
+\right\}.\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>definition <a class="objref" href="#obj-def:kkt-gradient">8</a> gives the partial derivative of one quarter of the envelope. Its dependence on all pairs sharing intervention unit <span class="math inline">\(k\)</span> shows that design value incorporates the full overlap pattern beyond direct degree.</p>
+<p>For implementation, we also consider a separable surrogate. Define the overlap-derived first-order weight <span class="math display">\[h_k(G_n)
+=
+\frac{1}{n}\sum_{\substack{i,j\in O_n:\\ k\in S_{ij}(G_n)}}
+\lvert S_{ij}(G_n)\rvert^{-1}.\]</span> These weights average pairwise overlaps and reduce to degree-based summaries under additional graph structure.</p>
+<div class="formal-block kind-definition" id="obj-def:conservative-variance-estimator" data-objid="def:conservative-variance-estimator" tabindex="0"><span class="env-label">Definition 9 <span class="obj-tag">[def:conservative-variance-estimator]</span> (Conservative variance estimator <span class="math inline">\(\widehat V_{\mathrm{cons}}(G_n,p)\)</span>).</span><p>Define <span class="math display">\[\widehat V_{\mathrm{cons}}(G_n,p)
+=
+V_{\mathrm{env}}(G_n,p).\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>The retained notation <span class="leanref" data-objid="sym:hat_V_cons(G_n,p)"><span class="math inline">\(\widehat V_{\mathrm{cons}}(G_n,p)\)</span></span> denotes a deterministic graph-and-design scale known before randomization.</p>
+<div class="formal-block kind-definition" id="obj-def:surrogate-design" data-objid="def:surrogate-design" tabindex="0"><span class="env-label">Definition 10 <span class="obj-tag">[def:surrogate-design]</span> (Surrogate design <span class="math inline">\(p_n^{\deg}(G_n)\)</span>).</span><p>Whenever the minimizer set is nonempty, define <span class="math display">\[p_n^{\deg}(G_n)\in
+\operatorname{argmin}_{p\in\mathcal P_{n,B_n,\epsilon}}
+\sum_{k\in I_n} h_k(G_n)
+\left\{p_k^{-1}+(1-p_k)^{-1}\right\}.\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>definition <a class="objref" href="#obj-def:surrogate-design">10</a> selects the computationally separable design <span class="leanref" data-objid="sym:p_n^{deg}(G_n)"><span class="math inline">\(p_n^{\deg}(G_n)\)</span></span>. Its performance relative to the envelope optimum is measured by</p>
+<div class="formal-block kind-definition" id="obj-def:approximation-ratio" data-objid="def:approximation-ratio" tabindex="0"><span class="env-label">Definition 11 <span class="obj-tag">[def:approximation-ratio]</span> (Approximation ratio <span class="math inline">\(\alpha_{\mathrm{cert}}(G_n)\)</span>).</span><p>Define <span class="math display">\[\alpha_{\mathrm{cert}}(G_n)=
+\begin{cases}
+\dfrac{V_{\mathrm{env}}\!\left(G_n,p_n^{\deg}(G_n)\right)}
+{V_{\mathrm{env}}\!\left(G_n,p_n^*(G_n)\right)},
+&amp; \text{if }0&lt;V_{\mathrm{env}}\!\left(G_n,p_n^*(G_n)\right),\\
+1,
+&amp; \text{otherwise}.
+\end{cases}\]</span> Here, each design selector equals its respective feasible minimizer when one exists, and equals the homogeneous budget vector otherwise.</p><span class="lean-hint">⊢ Lean</span></div>
+<p>The approximation ratio <span class="leanref" data-objid="sym:alpha_cert(G_n)"><span class="math inline">\(\alpha_{\mathrm{cert}}(G_n)\)</span></span> adopts a zero-loss convention when the optimal envelope is zero.</p>
+<p>For later comparison with homogeneous assignment, let <span class="math inline">\(\rho=B_n/m_n\)</span> and set <span class="math inline">\(p_k^{\mathrm{hom}}=\rho\)</span> for every <span class="math inline">\(k\in I_n\)</span>. Write <span class="math inline">\(\Delta_g\)</span> for the difference between the largest and smallest values of <span class="math inline">\(g_k(G_n,p^{\mathrm{hom}})\)</span>, and let <span class="math inline">\(a\)</span> and <span class="math inline">\(b\)</span> index the corresponding extremal scores. The largest symmetric budget-feasible displacement from <span class="math inline">\(p^{\mathrm{hom}}\)</span> in direction <span class="math inline">\(e_b-e_a\)</span> is denoted by <span class="math inline">\(\eta_{\mathrm{box}}\)</span>, where <span class="math inline">\(e_k\)</span> is the <span class="math inline">\(k\)</span>th coordinate vector. The associated <span class="leanref" data-objid="sym:L_ab">directional second-order modulus <span class="math inline">\(L_{ab}\)</span></span> is <span class="math display">\[L_{ab}
+=
+\sup_{q\in\mathcal P_{n,B_n,\epsilon}}
+(e_b-e_a)^\top
+\operatorname{Hess}\!\left\{V_{\mathrm{env}}(G_n,q)/4\right\}
+(e_b-e_a).\]</span> The supremum is explicitly over the feasible probability domain. Positivity therefore supplies a compact domain on which application-specific finite bounds on this directional curvature can be obtained.</p>
+<p>The large-sample results impose regularity on potential outcomes and graph dependence.</p>
+<div class="formal-block kind-assumption" id="obj-ass:bounded-outcomes" data-objid="ass:bounded-outcomes" tabindex="0"><span class="env-label">Assumption 5 <span class="obj-tag">[ass:bounded-outcomes]</span> (Bounded potential outcomes).</span><p>For every <span class="math inline">\(i\in O_n\)</span>, <span class="math display">\[\lvert Y_i^1\rvert\leq 1
+\qquad\text{and}\qquad
+\lvert Y_i^0\rvert\leq 1.\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>assumption <a class="objref" href="#obj-ass:bounded-outcomes">5</a> is a standard bounded finite-population potential-outcome condition. It keeps the potential-outcome component of exposure-weighted summands uniformly bounded in the design-based model.</p>
+<div class="formal-block kind-assumption" id="obj-ass:bounded-outcome-degree" data-objid="ass:bounded-outcome-degree" tabindex="0"><span class="env-label">Assumption 6 <span class="obj-tag">[ass:bounded-outcome-degree]</span> (Bounded outcome degree).</span><p><span class="math display">\[0 &lt; \bar d
+\quad\text{and}\quad
+\max_{i\in O_n} d_i \leq \bar d.\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>assumption <a class="objref" href="#obj-ass:bounded-outcome-degree">6</a> keeps every outcome neighborhood uniformly small through the positive constant <span class="leanref" data-objid="sym:dbar"><span class="math inline">\(\bar d\)</span></span>. Together with uniform positivity, it limits the number of assignment factors entering all-treated and all-control exposure probabilities.</p>
+<div class="formal-block kind-assumption" id="obj-ass:bounded-overlap-dependency" data-objid="ass:bounded-overlap-dependency" tabindex="0"><span class="env-label">Assumption 7 <span class="obj-tag">[ass:bounded-overlap-dependency]</span> (Bounded overlap dependency).</span><p><span class="math display">\[0 &lt; \bar D \quad\text{and}\quad \Delta_n \le \bar D.\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>assumption <a class="objref" href="#obj-ass:bounded-overlap-dependency">7</a> bounds outcome-level dependence by the positive constant <span class="leanref" data-objid="sym:Dbar"><span class="math inline">\(\bar D\)</span></span>. It is the standard dependency-graph sparsity condition that permits a central-limit argument despite interference among overlapping neighborhoods (Aronow et al., 2017).</p>
+<p>Finally, inference requires an asymptotically positive variance scale under the optimal design.</p>
+<div class="formal-block kind-assumption" id="obj-ass:variance-nondegenerate" data-objid="ass:variance-nondegenerate" tabindex="0"><span class="env-label">Assumption 8 <span class="obj-tag">[ass:variance-nondegenerate]</span> (Nondegenerate variance scale).</span><p><span class="math display">\[\liminf_{n\to\infty}\sigma^2_{G_n,p_n^*(G_n)}(Y)&gt;0.\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>assumption <a class="objref" href="#obj-ass:variance-nondegenerate">8</a> excludes sequences in which the design-based fluctuation of the linearized estimator degenerates. Such a lower-bound condition is standard for asymptotic normal approximation under interference (Lu et al., 2025).</p>
+<h1 id="main-results">Main results</h1>
+<p>This section characterizes the design-based variance of the Hájek linearization, then studies the graph-only envelope as a conservative allocation criterion. The outcome-agnostic criterion protects against the bounded potential-outcome schedules permitted by assumption <a class="objref" href="#obj-ass:bounded-outcomes">5</a>. It provides an exploratory design-stage rule for reallocating a fixed expected treatment budget using observed overlap structure. Related design-based analyses under interference likewise distinguish the randomization distribution from an outcome model (Aronow et al., 2017; Sävje et al., 2021).</p>
+<p>We first recover the familiar homogeneous Bernoulli expressions as a special case. When all intervention units receive the same probability, only the size of the shared neighborhood determines the same-exposure covariance loads.</p>
+<div class="formal-block kind-theorem" id="obj-prop:homogeneous-reduction" data-objid="prop:homogeneous-reduction" tabindex="0"><span class="env-label">Theorem 1 <span class="obj-tag">[prop:homogeneous-reduction]</span> (Homogeneous Bernoulli Reduction).</span><p>Under assumption <a class="objref" href="#obj-ass:independent-heterogeneous-bernoulli">2</a>, suppose that the assignment probabilities are constant, <span class="math inline">\(p_k=p\)</span> for every <span class="math inline">\(k\in I_n\)</span>, for some <span class="math inline">\(p\in(0,1)\)</span>. Then, for every <span class="math inline">\(i,j\in O_n\)</span>, <span class="math display">\[r_{ij}^1(G_n,p)=
+\begin{cases}
+p^{-|S_{ij}(G_n)|}-1, &amp; |S_{ij}(G_n)|&gt;0,\\
+0, &amp; |S_{ij}(G_n)|=0,
+\end{cases}
+\qquad
+r_{ij}^0(G_n,p)=
+\begin{cases}
+(1-p)^{-|S_{ij}(G_n)|}-1, &amp; |S_{ij}(G_n)|&gt;0,\\
+0, &amp; |S_{ij}(G_n)|=0.
+\end{cases}\]</span> Moreover, <span class="math display">\[\sigma_{G_n,p}^2(Y)
+=
+\frac{1}{n}\sum_{i\in O_n}\sum_{j\in O_n}
+\left[
+r_{ij}^1(G_n,p)(Y_i^1-\mu_1)(Y_j^1-\mu_1)
++r_{ij}^0(G_n,p)(Y_i^0-\mu_0)(Y_j^0-\mu_0)
++2r_{ij}^{10}(G_n)(Y_i^1-\mu_1)(Y_j^0-\mu_0)
+\right].\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>theorem <a class="objref" href="#obj-prop:homogeneous-reduction">1</a> shows that homogeneous assignment is governed by overlap counts beyond the marginal degrees of outcome units. It also supplies the benchmark against which the heterogeneous criterion below is compared.</p>
+<h2 id="variance-representation-and-envelope-optimization">Variance representation and envelope optimization</h2>
+<p>The next result gives the pairwise covariance representation under heterogeneous assignment and bounds the resulting variance scale by the graph envelope.</p>
+<div class="formal-block kind-theorem" id="obj-thm:hetero-envelope" data-objid="thm:hetero-envelope" tabindex="0"><span class="env-label">Theorem 2 <span class="obj-tag">[thm:hetero-envelope]</span> (Heterogeneous envelope kernel).</span><p>Suppose that:</p>
+<ul>
+<li><p><strong>(Assignment probabilities.)</strong> <span class="math inline">\(0&lt;p_k&lt;1\)</span> for every <span class="math inline">\(k\in I_n\)</span>.</p></li>
+<li><p><strong>(Design.)</strong> assumption <a class="objref" href="#obj-ass:independent-heterogeneous-bernoulli">2</a> holds with assignment-probability vector <span class="math inline">\(p\)</span>.</p></li>
+<li><p><strong>(Outcomes.)</strong> assumption <a class="objref" href="#obj-ass:bounded-outcomes">5</a> holds.</p></li>
+</ul>
+<p>Then, for every <span class="math inline">\(i,j\in O_n\)</span>, <span class="math display">\[\mathbb E_p\!\left[\eta_i(p,Z)\eta_j(p,Z)\right]
+=
+r_{ij}^1(G_n,p)(Y_i^1-\mu_1)(Y_j^1-\mu_1)
++r_{ij}^0(G_n,p)(Y_i^0-\mu_0)(Y_j^0-\mu_0)
++r_{ij}^{10}(G_n)\!\left\{(Y_i^1-\mu_1)(Y_j^0-\mu_0)+(Y_i^0-\mu_0)(Y_j^1-\mu_1)\right\}.\]</span> Moreover, <span class="math display">\[\sigma^2_{G_n,p}(Y)\le V_{\mathrm{env}}(G_n,p).\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>theorem <a class="objref" href="#obj-thm:hetero-envelope">2</a> separates the schedule-dependent covariance terms from their graph-and-design loads. Bounded outcomes make the displayed envelope uniform over the admissible schedule class and give it a conservative design interpretation.</p>
+<p>The envelope’s inputs are known before randomization, and its minimization has a convex formulation. The following result establishes existence and provides the corresponding optimality characterization.</p>
+<div class="formal-block kind-theorem" id="obj-thm:convex-design" data-objid="thm:convex-design" tabindex="0"><span class="env-label">Theorem 3 <span class="obj-tag">[thm:convex-design]</span> (Convex feasible design).</span><p>Let <span class="math inline">\(G_n\)</span> be a bipartite experiment with intervention-unit set <span class="math inline">\(I_n\)</span>, and let <span class="math inline">\(\epsilon,B_n\in\mathbb R\)</span>. Suppose that</p>
+<ul>
+<li><p><strong>(Positivity margin.)</strong> <span class="math inline">\(0&lt;\epsilon&lt;1/2\)</span>;</p></li>
+<li><p><strong>(Feasible budget.)</strong> <span class="math inline">\(m_n\epsilon\le B_n\le m_n(1-\epsilon)\)</span>.</p></li>
+</ul>
+<p>Then <span class="math inline">\(\mathcal P_{n,B_n,\epsilon}\)</span> is nonempty, compact, and convex, and <span class="math inline">\(p\mapsto V_{\mathrm{env}}(G_n,p)\)</span> is convex on <span class="math inline">\(\mathcal P_{n,B_n,\epsilon}\)</span>. Moreover, there exists a minimizer <span class="math inline">\(p_n^*(G_n)\in\mathcal P_{n,B_n,\epsilon}\)</span> such that <span class="math display">\[V_{\mathrm{env}}(G_n,p_n^*(G_n))
+\le V_{\mathrm{env}}(G_n,q)
+\qquad\text{for every }q\in\mathcal P_{n,B_n,\epsilon}.\]</span> For every such minimizer <span class="math inline">\(p_n^*(G_n)\)</span>, there exist <span class="math inline">\(\lambda_n\in\mathbb R\)</span> and functions <span class="math inline">\(\nu^+_{\cdot,n},\nu^-_{\cdot,n}:I_n\to\mathbb R\)</span> such that, for every <span class="math inline">\(k\in I_n\)</span>, <span class="math display">\[\nu^+_{k,n}\ge0,\qquad \nu^-_{k,n}\ge0,\qquad
+g_k(G_n,p_n^*(G_n))=\lambda_n-\nu^+_{k,n}+\nu^-_{k,n},\]</span> and <span class="math display">\[\nu^+_{k,n}\bigl((p_n^*(G_n))_k-(1-\epsilon)\bigr)=0,
+\qquad
+\nu^-_{k,n}\bigl(\epsilon-(p_n^*(G_n))_k\bigr)=0.\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>theorem <a class="objref" href="#obj-thm:convex-design">3</a> places the allocation problem in a standard finite-dimensional convex-optimization form (Boyd et al., 2004). Positivity makes every reciprocal-product term differentiable on the feasible box; convexity, the affine budget equality, and the two coordinate bounds supply the objective and constraint structure. At an interior coordinate, the envelope gradient score equals the common budget multiplier; at a probability bound, complementary slackness gives the corresponding one-sided condition. The formally verified statement covers feasible endpoint budgets directly. Because the objective couples probabilities across shared neighborhoods, the allocation depends on the full overlap score beyond <span class="math inline">\(s_k\)</span>, intervention degree, or any single local statistic.</p>
+<h2 id="large-sample-inference-and-design-stage-coverage">Large-sample inference and design-stage coverage</h2>
+<p>We next turn to inference for the envelope-optimal design. The central-limit result combines the Hájek linearization with the bounded-degree dependency structure induced by overlapping neighborhoods.</p>
+<div class="formal-block kind-theorem" id="obj-thm:hetero-clt" data-objid="thm:hetero-clt" tabindex="0"><span class="env-label">Theorem 4 <span class="obj-tag">[thm:hetero-clt]</span> (Heterogeneous Hájek CLT).</span><p>Consider a sequence of bipartite experiments indexed by <span class="math inline">\(n\)</span>. Suppose:</p>
+<ul>
+<li><p><strong>(Outcome indexing.)</strong> For all sufficiently large <span class="math inline">\(n\)</span>, <span class="math inline">\(|O_n|=n\)</span>.</p></li>
+<li><p><strong>(Assignment and interference.)</strong> assumption <a class="objref" href="#obj-ass:independent-heterogeneous-bernoulli">2</a> and assumption <a class="objref" href="#obj-ass:bipartite-interference">1</a> hold at every <span class="math inline">\(n\)</span> for the assignment design <span class="math inline">\(D_n\)</span> and probabilities <span class="math inline">\(p_n\)</span>.</p></li>
+<li><p><strong>(Outcome and graph regularity.)</strong> assumption <a class="objref" href="#obj-ass:bounded-outcomes">5</a>, assumption <a class="objref" href="#obj-ass:bounded-outcome-degree">6</a>, and assumption <a class="objref" href="#obj-ass:bounded-overlap-dependency">7</a> hold at every <span class="math inline">\(n\)</span>, with constants <span class="math inline">\(\bar d\)</span> and <span class="math inline">\(\bar D\)</span>, respectively.</p></li>
+<li><p><strong>(Feasibility and optimality.)</strong> For every <span class="math inline">\(n\)</span>, <span class="math inline">\(p_n\in\mathcal P_{n,B_n,\epsilon_n}\)</span> as in definition <a class="objref" href="#obj-def:feasible-designs">1</a>, and <span class="math display">\[p_n=p_n^*(G_n)\]</span> as in definition <a class="objref" href="#obj-def:optimal-design">7</a>.</p></li>
+<li><p><strong>(Uniform positivity.)</strong> There exists <span class="math inline">\(\epsilon_0&gt;0\)</span> such that <span class="math inline">\(\epsilon_0\le\epsilon_n\)</span> for all sufficiently large <span class="math inline">\(n\)</span>.</p></li>
+<li><p><strong>(Variance.)</strong> assumption <a class="objref" href="#obj-ass:variance-nondegenerate">8</a> holds for <span class="math inline">\(\sigma^2_{G_n,p_n}(Y)\)</span> as in definition <a class="objref" href="#obj-def:variance-scale">5</a>.</p></li>
+</ul>
+<p>Then, for every <span class="math inline">\(\delta&gt;0\)</span>, <span class="math display">\[\Pr_{D_n}\!\left(
+\left|
+\sqrt n\bigl\{\widehat\tau_H(p_n^*(G_n))-\tau_n\bigr\}
+-n^{-1/2}\sum_{i\in O_n}\eta_i(p_n^*(G_n),Z)
+\right|\ge\delta
+\right)\longrightarrow 0,\]</span> and, for every <span class="math inline">\(s\in\mathbb R\)</span>, <span class="math display">\[\Pr_{D_n}\!\left(
+\frac{\sqrt n\bigl\{\widehat\tau_H(p_n^*(G_n))-\tau_n\bigr\}}
+{\sqrt{\sigma^2_{G_n,p_n^*(G_n)}(Y)}}\le s
+\right)
+\longrightarrow
+\Pr\!\left\{N(0,1)\le s\right\}.\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>theorem <a class="objref" href="#obj-thm:hetero-clt">4</a> is a design-based result: the potential-outcome schedule remains fixed throughout. Uniform positivity and bounded outcome degree control inverse-probability weights, bounded overlap dependency limits the number of dependent exposure terms associated with any outcome, and nondegeneracy supplies positive fluctuation. These familiar dependency-graph conditions define a sparse local-dependence regime (Aronow et al., 2017; Lu et al., 2025).</p>
+<p>For applied use, the relevant graph diagnostics are the empirical distributions of <span class="math inline">\(d_i\)</span>, intervention incidences <span class="math inline">\(s_k\)</span>, and degrees in the outcome-overlap graph. Sequences with uniformly bounded values of the first and third quantities fall within the theorem’s graph scope. These diagnostics therefore make the bounded-local-dependence requirement directly auditable.</p>
+<p>The next result translates the same regularity conditions into a Wald interval based on the deterministic graph-only scale of definition <a class="objref" href="#obj-def:conservative-variance-estimator">9</a>.</p>
+<div class="formal-block kind-theorem" id="obj-thm:postdesign-wald" data-objid="thm:postdesign-wald" tabindex="0"><span class="env-label">Theorem 5 <span class="obj-tag">[thm:postdesign-wald]</span> (Post-design Wald coverage).</span><p>For a sequence of bipartite experiments <span class="math inline">\(G_n\)</span> with outcome sets <span class="math inline">\(O_n\)</span>, finite assignment designs, probability vectors <span class="math inline">\(p_n\)</span>, positivity margins <span class="math inline">\(\epsilon_n\)</span>, and budgets <span class="math inline">\(B_n\)</span>, suppose:</p>
+<ul>
+<li><p><strong>(Outcome indexing.)</strong> <span class="math inline">\(|O_n|=n\)</span> for all sufficiently large <span class="math inline">\(n\)</span>.</p></li>
+<li><p><strong>(Assignment law.)</strong> The assignment design satisfies assumption <a class="objref" href="#obj-ass:independent-heterogeneous-bernoulli">2</a> with <span class="math inline">\(0\le p_{n,k}\le 1\)</span> for every <span class="math inline">\(n\)</span> and <span class="math inline">\(k\in I_n\)</span>.</p></li>
+<li><p><strong>(Interference and boundedness.)</strong> assumption <a class="objref" href="#obj-ass:bipartite-interference">1</a>, assumption <a class="objref" href="#obj-ass:bounded-outcomes">5</a>, assumption <a class="objref" href="#obj-ass:bounded-outcome-degree">6</a>, and assumption <a class="objref" href="#obj-ass:bounded-overlap-dependency">7</a> hold with constants <span class="math inline">\(\bar d\)</span> and <span class="math inline">\(\bar D\)</span>.</p></li>
+<li><p><strong>(Feasibility and optimality.)</strong> For every <span class="math inline">\(n\)</span>, <span class="math inline">\(p_n\)</span> is a feasible design in the sense of definition <a class="objref" href="#obj-def:feasible-designs">1</a>, <span class="math inline">\(\epsilon_n\in(0,1/2)\)</span>, and <span class="math display">\[p_n=p_n^*(G_n)\]</span> in the sense of definition <a class="objref" href="#obj-def:optimal-design">7</a>.</p></li>
+<li><p><strong>(Uniform positivity.)</strong> There exists <span class="math inline">\(\epsilon_0&gt;0\)</span> such that <span class="math inline">\(\epsilon_0\le\epsilon_n\)</span> for all sufficiently large <span class="math inline">\(n\)</span>.</p></li>
+<li><p><strong>(Nondegenerate variance.)</strong> assumption <a class="objref" href="#obj-ass:variance-nondegenerate">8</a> holds for <span class="math inline">\(\sigma^2_{G_n,p_n}(Y)\)</span>.</p></li>
+<li><p><strong>(Wald critical value.)</strong> <span class="math inline">\(\alpha_{\mathrm{cov}}\in(0,1)\)</span>, <span class="math inline">\(z_{1-\alpha_{\mathrm{cov}}/2}\ge0\)</span>, and <span class="math display">\[\Phi\!\left(z_{1-\alpha_{\mathrm{cov}}/2}\right)
+=1-\frac{\alpha_{\mathrm{cov}}}{2}.\]</span></p></li>
+</ul>
+<p>Then, for every <span class="math inline">\(n\)</span>, <span class="math display">\[\sigma^2_{G_n,p_n}(Y)\le \widehat V_{\mathrm{cons}}(G_n,p_n),\]</span> where <span class="math inline">\(\sigma^2_{G_n,p_n}(Y)\)</span> and <span class="math inline">\(\widehat V_{\mathrm{cons}}(G_n,p_n)\)</span> are as in definition <a class="objref" href="#obj-def:variance-scale">5</a> and definition <a class="objref" href="#obj-def:conservative-variance-estimator">9</a>, respectively; moreover, <span class="math display">\[1-\alpha_{\mathrm{cov}}
+\le
+\liminf_{n\to\infty}
+\Pr_{p_n}\!\left(
+\left|\tau_n-\widehat\tau_H(p_n)\right|
+\le
+z_{1-\alpha_{\mathrm{cov}}/2}
+\sqrt{\frac{\widehat V_{\mathrm{cons}}(G_n,p_n)}{n}}
+\right).\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>theorem <a class="objref" href="#obj-thm:postdesign-wald">5</a> yields asymptotically conservative coverage using a scale determined entirely by the graph and selected probabilities, giving an outcome-model-free guarantee.</p>
+<h2 id="when-heterogeneous-probabilities-improve-on-homogeneity">When heterogeneous probabilities improve on homogeneity</h2>
+<p>The envelope can strictly favor heterogeneity even under a fixed expected treatment budget. To state a quantitative comparison, recall the directional curvature quantity introduced in section 2. Equivalently, along the budget-preserving direction from the highest-score coordinate <span class="math inline">\(a\)</span> to the lowest-score coordinate <span class="math inline">\(b\)</span>, <span class="math display">\[L_{ab}
+=
+\sup_{q\in\mathcal P_{n,B_n,\epsilon}}
+(e_b-e_a)^\top
+\operatorname{Hess}\!\left\{V_{\mathrm{env}}(G_n,q)/4\right\}
+(e_b-e_a).\]</span> The supremum ranges only over the feasible probability domain. Since the positivity floor makes that domain compact and keeps every reciprocal probability factor finite, <span class="math inline">\(L_{ab}\)</span> admits finite graph-specific bounds whenever the displayed derivatives are evaluated on that domain.</p>
+<div class="formal-block kind-theorem" id="obj-thm:heterogeneity-separation" data-objid="thm:heterogeneity-separation" tabindex="0"><span class="env-label">Theorem 6 <span class="obj-tag">[thm:heterogeneity-separation]</span> (Heterogeneity separation).</span><p>Let <span class="math inline">\(G_n\)</span> be a bipartite experiment with <span class="math inline">\(m_n=|I_n|&gt;0\)</span>, and let <span class="math inline">\(\epsilon\in(0,1/2)\)</span>. Suppose that:</p>
+<ul>
+<li><p><strong>(Admissible budget.)</strong> <span class="math inline">\(m_n\epsilon\le B_n\le m_n(1-\epsilon)\)</span>.</p></li>
+<li><p><strong>(Homogeneous rate.)</strong> <span class="math inline">\(\rho=B_n/m_n\)</span>, with <span class="math inline">\(\epsilon&lt;\rho&lt;1-\epsilon\)</span> and <span class="math inline">\(\rho\neq 1/2\)</span>.</p></li>
+<li><p><strong>(Homogeneous design.)</strong> <span class="math inline">\(p^{\mathrm{hom}}_k=\rho\)</span> for every <span class="math inline">\(k\in I_n\)</span>.</p></li>
+</ul>
+<p>Then all of the following hold:</p>
+<ul>
+<li><p>If there exist <span class="math inline">\(a,b\in I_n\)</span> such that <span class="math display">\[g_a(G_n,p^{\mathrm{hom}})\neq g_b(G_n,p^{\mathrm{hom}}),\]</span> then <span class="math inline">\(p^{\mathrm{hom}}\)</span> is not a minimizer of <span class="math inline">\(V_{\mathrm{env}}(G_n,\cdot)\)</span> over <span class="math inline">\(\mathcal P_{n,B_n,\epsilon}\)</span>. Moreover, there exist <span class="math inline">\(a,b\in I_n\)</span> attaining, respectively, the maximum and minimum homogeneous-point gradient scores, such that <span class="math display">\[\Delta_g:=g_a(G_n,p^{\mathrm{hom}})-g_b(G_n,p^{\mathrm{hom}})&gt;0.\]</span> For every <span class="math inline">\(p_n^*(G_n)\in\operatorname{argmin}_{p\in\mathcal P_{n,B_n,\epsilon}}V_{\mathrm{env}}(G_n,p)\)</span>, <span class="math display">\[p_n^*(G_n)\neq p^{\mathrm{hom}},\qquad
+V_{\mathrm{env}}(G_n,p_n^*(G_n))&lt;V_{\mathrm{env}}(G_n,p^{\mathrm{hom}}),\]</span> and <span class="math display">\[V_{\mathrm{env}}(G_n,p^{\mathrm{hom}})-V_{\mathrm{env}}(G_n,p_n^*(G_n))
+\ge
+2\Delta_g
+\begin{cases}
+\min\{\rho-\epsilon,\,1-\epsilon-\rho\}, &amp; L_{ab}=0,\\
+\min\!\left\{\min\{\rho-\epsilon,\,1-\epsilon-\rho\},\,\Delta_g/L_{ab}\right\}, &amp; L_{ab}\neq0,
+\end{cases}\]</span> where <span class="math inline">\(L_{ab}\)</span> is the directional modulus along <span class="math inline">\(e_b-e_a\)</span>.</p></li>
+<li><p>If <span class="math inline">\(|N_i(G_n)|=1\)</span> for every <span class="math inline">\(i\in O_n\)</span>, then, for every <span class="math inline">\(k\in I_n\)</span>, <span class="math display">\[g_k(G_n,p^{\mathrm{hom}})
+=
+n^{-1}s_k^2\left((1-\rho)^{-2}-\rho^{-2}\right).\]</span></p></li>
+<li><p>If <span class="math inline">\(|N_i(G_n)|=1\)</span> for every <span class="math inline">\(i\in O_n\)</span> and there exist <span class="math inline">\(a,b\in I_n\)</span> such that <span class="math inline">\(s_a^2\neq s_b^2\)</span>, then the preceding non-homogeneity, strict-improvement, and gap conclusions hold.</p></li>
+</ul><span class="lean-hint">⊢ Lean</span></div>
+<p>The singleton-neighborhood case gives a transparent diagnostic: when <span class="math inline">\(\rho\neq 1/2\)</span>, heterogeneity in intervention-side incidence produces heterogeneous homogeneous-point scores and a strict envelope-improving direction away from homogeneous assignment. More generally, the score spread captures overlap patterns beyond <span class="math inline">\(s_k\)</span> alone.</p>
+<h2 id="a-bounded-degree-surrogate-and-its-limitation">A bounded-degree surrogate and its limitation</h2>
+<p>The exact envelope couples probabilities across shared neighborhoods. The additive surrogate in definition <a class="objref" href="#obj-def:surrogate-design">10</a> removes that coupling and is therefore attractive for implementation. Under bounded outcome degree, its loss relative to the envelope optimum is uniformly controlled.</p>
+<div class="formal-block kind-theorem" id="obj-thm:surrogate-certificate" data-objid="thm:surrogate-certificate" tabindex="0"><span class="env-label">Theorem 7 <span class="obj-tag">[thm:surrogate-certificate]</span> (Surrogate approximation certificate).</span><p>For a bipartite experiment on <span class="math inline">\(G_n\)</span>, suppose:</p>
+<ul>
+<li><p><strong>(Admissible floor.)</strong> <span class="math inline">\(0&lt;\epsilon&lt;1/2\)</span>.</p></li>
+<li><p><strong>(Bounded outcome degree.)</strong> assumption <a class="objref" href="#obj-ass:bounded-outcome-degree">6</a> holds with bound <span class="math inline">\(\bar d\)</span>.</p></li>
+<li><p><strong>(Admissible budget.)</strong> <span class="math inline">\(m_n\epsilon\le B_n\le m_n(1-\epsilon)\)</span>.</p></li>
+</ul>
+<p>Then, for every <span class="math inline">\(p\in\mathcal P_{n,B_n,\epsilon}\)</span> of definition <a class="objref" href="#obj-def:feasible-designs">1</a>, <span class="math display">\[\sum_{k\in I_n}h_k(G_n)\!\left\{p_k^{-1}+(1-p_k)^{-1}\right\}
+\le \frac{V_{\mathrm{env}}(G_n,p)}{4}
+\le
+\max\!\left\{1,\epsilon^{-(\bar d-1)}\right\}
+\sum_{k\in I_n}h_k(G_n)\!\left\{p_k^{-1}+(1-p_k)^{-1}\right\}.\]</span> Moreover, the approximation ratio of definition <a class="objref" href="#obj-def:approximation-ratio">11</a> satisfies <span class="math display">\[\alpha_{\mathrm{cert}}(G_n)\le
+\max\!\left\{1,\epsilon^{-(\bar d-1)}\right\}.\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>The certificate constant deteriorates with the allowed outcome degree and with a small positivity floor. Reporting <span class="math inline">\(\max_i d_i\)</span>, <span class="math inline">\(\epsilon\)</span>, and the resulting bound therefore makes clear when the surrogate guarantee is informative and when it is effectively vacuous.</p>
+<p>A natural conjecture is that broad dispersion in intervention-side degrees, combined with the one-sided conditional weight-ratio restriction used below, might itself control the surrogate’s envelope approximation quality. The following result rules out such a conclusion; its counterexample can satisfy equal positive <span class="math inline">\(h\)</span>-weights even though the formal condition is stated one-sidedly.</p>
+<div class="formal-block kind-theorem" id="obj-thm:dispersion-certificate-unbounded" data-objid="thm:dispersion-certificate-unbounded" tabindex="0"><span class="env-label">Theorem 8 <span class="obj-tag">[thm:dispersion-certificate-unbounded]</span> (Unbounded dispersion certificate).</span><p>For every <span class="math inline">\(\epsilon\in(0,1/2)\)</span>, <span class="math inline">\(c_{\mathrm{disp}}&gt;0\)</span>, and <span class="math inline">\(C_{\mathrm{disp}}\geq 1\)</span>, there exist sequences of finite intervention-unit sets <span class="math inline">\(I_n\)</span>, finite outcome-unit sets <span class="math inline">\(O_n\)</span>, finite bipartite experiments <span class="math inline">\(G_n\)</span>, and budgets <span class="math inline">\(B_n\)</span> such that, for every <span class="math inline">\(n\)</span>,</p>
+<ul>
+<li><p><strong>(Admissible budget.)</strong> With <span class="math inline">\(m_n=|I_n|\)</span>, <span class="math display">\[m_n\epsilon\leq B_n\leq m_n(1-\epsilon).\]</span></p></li>
+<li><p><strong>(Positive energy.)</strong> <span class="math display">\[0&lt;\sum_{k\in I_n}s_k^2.\]</span></p></li>
+</ul>
+<p>Moreover, for all sufficiently large <span class="math inline">\(n\)</span>,</p>
+<ul>
+<li><p><strong>(Degree dispersion.)</strong> For every <span class="math inline">\(k\in I_n\)</span>, <span class="math display">\[s_k^2\leq c_{\mathrm{disp}}\sum_{l\in I_n}s_l^2.\]</span></p></li>
+<li><p><strong>(<span class="math inline">\(h\)</span>-weight ratio.)</strong> For every <span class="math inline">\(k,l\in I_n\)</span>, <span class="math display">\[h_l(G_n)&gt;0\ \Longrightarrow\ h_k(G_n)\leq C_{\mathrm{disp}}\,h_l(G_n).\]</span></p></li>
+</ul>
+<p>Finally, the approximation ratio of definition <a class="objref" href="#obj-def:approximation-ratio">11</a> satisfies <span class="math display">\[\alpha_{\mathrm{cert}}(G_n)\longrightarrow\infty .\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<p>theorem <a class="objref" href="#obj-thm:dispersion-certificate-unbounded">8</a> shows that degree dispersion and the conditional restriction <span class="math inline">\(h_l(G_n)&gt;0\Longrightarrow h_k(G_n)\le C_{\mathrm{disp}}h_l(G_n)\)</span> cannot replace the bounded-degree condition behind theorem <a class="objref" href="#obj-thm:surrogate-certificate">7</a>. Thus, the separable rule is best treated as a bounded-degree approximation with an explicit certificate, not as a generally reliable proxy for the full overlap criterion.</p>
+<h1 id="discussion-and-extensions">Discussion and extensions</h1>
+<p>The proposed allocation rule uses the observed bipartite graph to choose independent assignment probabilities before outcomes are observed. Its objective is deliberately conservative: <span class="math inline">\(V_{\mathrm{env}}(G_n,p)\)</span> bounds the design-based variance scale uniformly over the bounded potential-outcome schedules allowed by assumption <a class="objref" href="#obj-ass:bounded-outcomes">5</a>. The resulting design gives researchers a transparent, outcome-model-free way to reallocate a fixed expected treatment budget.</p>
+<h2 id="a-prespecified-design-checklist">A prespecified design checklist</h2>
+<p>The following checklist turns the theoretical scope into a reproducible design-stage comparison using graph and design inputs alone.</p>
+<ol>
+<li><p><strong>Fix capacity and candidate floors.</strong> Set <span class="math inline">\(\rho=B_n/m_n\)</span> from the substantive treatment-capacity constraint. Any candidate floor must satisfy <span class="math inline">\(0&lt;\epsilon\leq\min\{\rho,1-\rho\}\)</span>. Prespecify a small grid of substantively acceptable floors inside this interval to insulate the reported gain from floor selection.</p></li>
+<li><p><strong>Audit graph scope.</strong> Report the maximum and selected quantiles of <span class="math inline">\(d_i\)</span>, <span class="math inline">\(s_k\)</span>, and the closed outcome-overlap-neighborhood sizes. Flag persistent hubs or graph sequences whose maxima grow with <span class="math inline">\(n\)</span> for analysis under growing-degree methods.</p></li>
+<li><p><strong>Audit exposure support.</strong> For every candidate design, compute <span class="math display">\[\pi_i^1(p)=\prod_{k\in N_i(G_n)}p_k,
+\qquad
+\pi_i^0(p)=\prod_{k\in N_i(G_n)}(1-p_k),\]</span> and report their minima and selected quantiles. An experiment-specific minimum acceptable exposure probability should be chosen before optimization. A candidate that violates it is rejected even if its envelope is smaller.</p></li>
+<li><p><strong>Compare transparent benchmarks.</strong> For each floor, report the homogeneous vector, the exact envelope minimizer when numerically available, and the separable surrogate. Report <span class="math inline">\(V_{\mathrm{env}}\)</span>, the relative envelope reduction from homogeneity, the number of coordinates at each probability bound, the KKT residual for the exact program, and the surrogate ratio together with its theorem bound <span class="math inline">\(\max\{1,\epsilon^{-(\bar d-1)}\}\)</span>.</p></li>
+<li><p><strong>Apply fallback rules.</strong> Retain homogeneous assignment when the envelope reduction is no larger than the declared numerical tolerance, changes sign or is highly unstable across acceptable floors, or requires unacceptable exposure probabilities. Treat the surrogate as uncertified when its displayed bound is too large for the application’s prespecified tolerance. Evaluate clustering as a separate design candidate when cohesive graph regions, hubs, or exposure-support failures make independent assignment unattractive.</p></li>
+</ol>
+<h2 id="limitations-and-future-work">Limitations and future work</h2>
+<p>The numerical tolerances and minimum exposure probability in this checklist are application-specific design inputs, not universal constants supplied by the theory. Publishing the full floor-sensitivity table prevents them from becoming hidden researcher choices. Sparse implementations, computation benchmarks, and simulations relating the envelope to realized variance and coverage remain necessary before recommending routine use.</p>
+<p>This perspective differs from clustering-based approaches to interference. Cluster randomization and graph-cluster constructions alter the dependence structure of assignment in order to increase the probability of informative exposures or reduce cross-cluster spillovers (Eckles et al., 2017; Ugander et al., 2020; Brennan et al., 2022). Here the assignment law remains independent across intervention units; adaptation occurs through the probability vector. That distinction can be useful when independent implementation is operationally attractive, when clusters would be difficult to define, or when a fixed expected treatment total is an important design constraint. At the same time, clustering may be preferable when the graph contains cohesive regions for which correlated assignment produces substantially more relevant exposure variation.</p>
+<p>The surrogate results clarify the scope for computational simplification. Under an admissible positivity-constrained budget and bounded outcome degree, theorem <a class="objref" href="#obj-thm:surrogate-certificate">7</a> gives a uniform approximation guarantee with a constant determined by the positivity floor and the degree bound. Thus, the additive rule is a certified substitute for the full overlap criterion only when the reported constant meets the application’s prespecified tolerance.</p>
+<p>Theorem <a class="objref" href="#obj-thm:dispersion-certificate-unbounded">8</a> supplies the complementary limitation. Neither dispersed intervention-side incidences nor the theorem’s one-sided conditional <span class="math inline">\(h\)</span>-weight-ratio restriction is sufficient to control the envelope approximation ratio without bounded outcome degree. In particular, intervention-side degree summaries can miss higher-order overlap patterns that enter the exact criterion through shared neighborhoods. Applied work should consequently report outcome-neighborhood and overlap diagnostics, rather than relying on intervention-side degree summaries alone. Related work on low-order and graph-aware experimental designs likewise emphasizes that graph structure beyond marginal degree can matter for design performance (Eichhorn et al., 2024; Harshaw et al., 2021).</p>
+<p>Several extensions are natural but are not developed here. First, auxiliary pre-treatment outcomes or credible structural restrictions could support an outcome-informed criterion that targets an estimated variance rather than its uniform envelope. Such an approach would trade the present robustness for dependence on an outcome model and its validation. Second, clustered or dependent assignment mechanisms could be incorporated by replacing the independent-Bernoulli exposure probabilities and covariance loads with those induced by the chosen randomization scheme. Finally, graphs with growing degrees or overlap dependence may require asymptotic conditions tailored to their growth rates, beyond the bounded-degree regime used for theorem <a class="objref" href="#obj-thm:hetero-clt">4</a>. These extensions would connect the present design problem to broader work on network experimentation and optimized randomization (Ugander et al., 2020; Viviano, 2020).</p>
+<h1 class="unnumbered" id="appendices">Appendices</h1>
+<h1 id="proofs-and-auxiliary-lemmas">Proofs and auxiliary lemmas</h1>
+<p>This appendix records the auxiliary probability results used by the large-sample analysis. The first lemma controls the exceptional event on which either Hájek denominator vanishes; the second supplies the normal approximation for bounded summands indexed by a sparse dependency graph.</p>
+<h2 id="denominator-positivity">Denominator positivity</h2>
+<p>Uniform positivity and bounded overlap ensure that realized all-treated and all-control exposures are sufficiently numerous with high probability. The following result makes that statement uniform over feasible assignment-probability vectors.</p>
+<div class="formal-block kind-lemma" id="obj-lem:denominator-positivity" data-objid="lem:denominator-positivity" tabindex="0"><span class="env-label">Lemma 1 <span class="obj-tag">[lem:denominator-positivity]</span> (Denominator Degeneracy Bound).</span><p>Let <span class="math inline">\(\epsilon\in(0,1/2)\)</span>, and let <span class="math inline">\((G_n)_{n\geq 0}\)</span> be a sequence of bipartite experiments with intervention sets <span class="math inline">\(I_n\)</span> and outcome sets <span class="math inline">\(O_n\)</span>. Suppose that:</p>
+<ul>
+<li><p><strong>(Outcome-population indexing.)</strong> <span class="math inline">\(|O_n|=n\)</span> for every <span class="math inline">\(n\geq 0\)</span>.</p></li>
+<li><p><strong>(Admissible budgets.)</strong> For every <span class="math inline">\(n\geq 0\)</span>, <span class="math display">\[|I_n|\epsilon\leq B_n\leq |I_n|(1-\epsilon).\]</span></p></li>
+<li><p><strong>(Bounded degrees.)</strong> assumption <a class="objref" href="#obj-ass:bounded-outcome-degree">6</a> holds with constant <span class="math inline">\(\bar d\)</span>.</p></li>
+<li><p><strong>(Bounded overlap dependency.)</strong> assumption <a class="objref" href="#obj-ass:bounded-overlap-dependency">7</a> holds with constant <span class="math inline">\(\bar D\)</span>.</p></li>
+</ul>
+<p>Then there exists a constant <span class="math inline">\(C\geq 0\)</span> such that, for all sufficiently large <span class="math inline">\(n\)</span>, every <span class="math inline">\(q=(q_k)_{k\in I_n}\)</span> with <span class="math inline">\(0\leq q_k\leq1\)</span> for all <span class="math inline">\(k\in I_n\)</span> and <span class="math inline">\(q\in\mathcal P_{n,B_n,\epsilon}\)</span> as in definition <a class="objref" href="#obj-def:feasible-designs">1</a> satisfies <span class="math display">\[\Pr_q\!\left(D_1(q,Z)=0\ \text{or}\ D_0(q,Z)=0\right)
+\leq \frac{C}{n},\]</span> where <span class="math inline">\(Z\)</span> has independent Bernoulli coordinates with assignment probabilities <span class="math inline">\(q\)</span>, and <span class="math inline">\(D_1(q,Z)\)</span> and <span class="math inline">\(D_0(q,Z)\)</span> are as in definition <a class="objref" href="#obj-def:hajek-denominators">2</a>.</p><span class="lean-hint">⊢ Lean</span></div>
+<div class="proof"><span class="env-label">Proof of lemma <a class="objref" href="#obj-lem:denominator-positivity">1</a>.</span><p>Put <span class="math display">\[K=\epsilon^{-1}\max\{1,\epsilon^{-(\bar d-1)}\},
+\qquad
+C=2\max\{0,\bar D\}K.\]</span> Then <span class="math inline">\(C\geq0\)</span>.</p>
+<p>Fix <span class="math inline">\(n\geq1\)</span> and a feasible <span class="math inline">\(q\)</span>. Since <span class="math inline">\(|O_n|=n\)</span>, the outcome population is nonempty. Feasibility gives <span class="math inline">\(\epsilon\leq q_k\leq1-\epsilon\)</span>, so all treated and control exposure probabilities are positive. For <span class="math display">\[X_1=D_1(q,Z),\]</span> the inverse-probability weighting gives <span class="math inline">\(\mathbb E_q[X_1]=n\)</span>, and the bounded-degree and bounded-overlap assumptions give <span class="math display">\[\operatorname{Var}_q(X_1)\leq n\bar D K.\]</span> On <span class="math inline">\(\{X_1=0\}\)</span>, one has <span class="math inline">\(\lvert X_1-\mathbb E_q[X_1]\rvert=n\)</span>. Hence Chebyshev’s inequality yields <span class="math display">\[\Pr_q(D_1(q,Z)=0)
+ \leq \Pr_q\!\left(n\leq\lvert X_1-\mathbb E_q[X_1]\rvert\right)
+ \leq \frac{\operatorname{Var}_q(X_1)}{n^2}
+ \leq \frac{\bar D K}{n}.\]</span></p>
+<p>The identical argument for <span class="math inline">\(X_0=D_0(q,Z)\)</span>, using the control exposure probabilities, gives <span class="math display">\[\Pr_q(D_0(q,Z)=0)\leq \frac{\bar D K}{n}.\]</span> Therefore, by the union bound and <span class="math inline">\(\bar D&gt;0\)</span>, <span class="math display">\[\Pr_q\!\left(D_1(q,Z)=0\ \text{or}\ D_0(q,Z)=0\right)
+ \leq \frac{2\bar D K}{n}
+ =\frac{C}{n}.\]</span></p><span class="qed">∎</span></div>
+<p>lemma <a class="objref" href="#obj-lem:denominator-positivity">1</a> shows that the zero-denominator convention in definition <a class="objref" href="#obj-def:hetero-hajek-estimator">3</a> affects the estimator only on an event with probability of order <span class="math inline">\(n^{-1}\)</span>. Bounded outcome degree keeps exposure probabilities uniformly controlled, while bounded overlap dependency limits covariance among the denominator summands. The result applies uniformly to every feasible design, including the envelope-optimal design used in theorem <a class="objref" href="#obj-thm:hetero-clt">4</a> and theorem <a class="objref" href="#obj-thm:postdesign-wald">5</a>.</p>
+<h2 id="dependency-graph-normal-approximation">Dependency-graph normal approximation</h2>
+<p>The linearization summands in definition <a class="objref" href="#obj-def:first-order-linearization">4</a> are dependent only when their outcome neighborhoods overlap. The next lemma states the bounded-degree central-limit result used to convert that structure into the asymptotic normality asserted in theorem <a class="objref" href="#obj-thm:hetero-clt">4</a>; it is the bounded-summand, bounded-dependency-degree specialization of the dependency-graph normal approximation of Baldi et al. (1989).</p>
+<div class="formal-block kind-lemma" id="obj-lem:bounded-degree-dependency-clt" data-objid="lem:bounded-degree-dependency-clt" tabindex="0"><span class="env-label">Lemma 2 <span class="obj-tag">[lem:bounded-degree-dependency-clt]</span> (Bounded-Degree Dependency CLT).</span><p>Let <span class="math inline">\(\{X_{n,i}: i\in\iota_n\}\)</span> be real-valued random variables, where <span class="math inline">\(|\iota_n|=n\)</span>, under the usual measurability and integrability conditions. Suppose:</p>
+<ul>
+<li><p><strong>(Centered summands.)</strong> For every <span class="math inline">\(n\)</span> and <span class="math inline">\(i\in\iota_n\)</span>, <span class="math inline">\(\mathbb E[X_{n,i}]=0\)</span>.</p></li>
+<li><p><strong>(Dependency degree.)</strong> The variables admit a dependency graph whose neighborhood of every <span class="math inline">\(i\in\iota_n\)</span> has cardinality at most <span class="math inline">\(D\)</span>, for a fixed <span class="math inline">\(D\in\mathbb N\)</span>.</p></li>
+<li><p><strong>(Uniform bound.)</strong> There is an <span class="math inline">\(M\ge 0\)</span> such that <span class="math inline">\(|X_{n,i}|\le M\)</span> for every <span class="math inline">\(n\)</span>, <span class="math inline">\(i\in\iota_n\)</span>, and outcome.</p></li>
+<li><p><strong>(Variance growth.)</strong> Writing <span class="math inline">\(S_n=\sum_{i\in\iota_n}X_{n,i}\)</span>, suppose <span class="math inline">\(\mathbb E[S_n^2]=v_n\)</span> for every <span class="math inline">\(n\)</span>, and, for some <span class="math inline">\(c&gt;0\)</span>, <span class="math inline">\(v_n\ge cn\)</span> for all sufficiently large <span class="math inline">\(n\)</span>.</p></li>
+</ul>
+<p>Then, for every <span class="math inline">\(s\in\mathbb R\)</span>, <span class="math display">\[\lim_{n\to\infty}\Pr\!\left(\frac{S_n}{\sqrt{v_n}}\le s\right)
+=
+\Pr\!\left(Z\le s\right),
+\qquad Z\sim\mathcal N(0,1).\]</span></p><span class="lean-hint">⊢ Lean</span></div>
+<div class="proof"><span class="env-label">Proof of lemma <a class="objref" href="#obj-lem:bounded-degree-dependency-clt">2</a>.</span><p>Discard a finite initial segment so that <span class="math inline">\(v_n\geq cn&gt;0\)</span>. Define <span class="math display">\[Y_{n,i}=\frac{X_{n,i}}{\sqrt{v_n}}.\]</span> Scaling by a deterministic constant preserves the dependency graph, the summands remain centered, and their sum has second moment one: <span class="math display">\[\mathbb E\!\left[\left(\sum_{i\in\iota_n}Y_{n,i}\right)^2\right]=1.\]</span></p>
+<p>Moreover, <span class="math display">\[|Y_{n,i}|
+ \leq \frac{M}{\sqrt{v_n}}
+ \leq \frac{M/\sqrt c}{\sqrt n}
+ =:b_n.\]</span> Thus <span class="math inline">\(b_n\to0\)</span> and <span class="math display">\[n b_n^3=\frac{(M/\sqrt c)^3}{\sqrt n}\longrightarrow0.\]</span> The dependency degree is still bounded by <span class="math inline">\(D\)</span>, so the dependency-graph Stein central limit theorem applies to the standardized array. It gives, for every <span class="math inline">\(s\in\mathbb R\)</span>, <span class="math display">\[\Pr\!\left(\frac{S_n}{\sqrt{v_n}}\leq s\right)
+\longrightarrow
+\Pr(Z\leq s),
+\qquad Z\sim\mathcal N(0,1).\]</span></p><span class="qed">∎</span></div>
+<p>The imported hypotheses map directly to the paper’s primitives. Bounded outcomes, bounded outcome degree, and the positivity floor give a uniform bound on each centered linearization summand. The outcome-overlap graph is a dependency graph because disjoint intervention neighborhoods depend on disjoint independent assignments, and assumption <a class="objref" href="#obj-ass:bounded-overlap-dependency">7</a> bounds its closed-neighborhood size. Assumption <a class="objref" href="#obj-ass:variance-nondegenerate">8</a>, together with the paper’s normalization, supplies variance growth of order <span class="math inline">\(n\)</span>. These are precisely the boundedness, local-dependence, and nondegeneracy inputs used in the displayed design-based specialization of Baldi et al. (1989).</p>
+<h2 id="convex-program-provenance">Convex-program provenance</h2>
+<p>The KKT characterization used in theorem <a class="objref" href="#obj-thm:convex-design">3</a> is the standard convex-program optimality system for a differentiable objective with affine budget and box constraints (Boyd et al., 2004). The positivity box keeps the reciprocal objective differentiable; the theorem supplies convexity and existence; the budget equality and coordinate bounds are affine. Its displayed multipliers state dual feasibility, stationarity, and complementary slackness coordinate by coordinate. The verified theorem directly includes feasible endpoint budgets and the corresponding optimality conditions.</p>
+<h4 id="verification-note.">Verification note.</h4>
+<p>The theorem and lemma statements, together with their proofs for the finite-design and independent Bernoulli-randomization components, are machine-checked in Lean 4. The formal development takes as hypotheses the experiment-specific bipartite graph and neighborhood structure, the fixed potential-outcome schedule and interference restriction, feasibility and positivity conditions, and the stated asymptotic regularity conditions on outcomes, degrees, overlap dependence, indexing, and variance nondegeneracy. Classical mathematical and probability-theory inputs used by the underlying libraries form the assumed formal substrate.</p>
+<h1 id="sec:deferred-proofs">Proofs of the main results</h1>
+<div class="proof"><span class="env-label">Proof of theorem <a class="objref" href="#obj-prop:homogeneous-reduction">1</a>.</span><ol>
+<li><p>For every <span class="math inline">\(k\in I_n\)</span>, the homogeneity condition and <span class="math inline">\(p\in(0,1)\)</span> give <span class="math display">\[0&lt;p_k=p&lt;1.\]</span></p></li>
+<li><p>Fix <span class="math inline">\(i,j\in O_n\)</span>. If <span class="math inline">\(\lvert S_{ij}(G_n)\rvert&gt;0\)</span>, substituting <span class="math inline">\(p_k=p\)</span> into the product defining the treated overlap load yields <span class="math display">\[r_{ij}^1(G_n,p)
+=\prod_{k\in S_{ij}(G_n)}p^{-1}-1
+=p^{-\lvert S_{ij}(G_n)\rvert}-1.\]</span> If <span class="math inline">\(\lvert S_{ij}(G_n)\rvert=0\)</span>, that definition gives <span class="math inline">\(r_{ij}^1(G_n,p)=0\)</span>.</p></li>
+<li><p>The same split gives the control overlap load. When <span class="math inline">\(\lvert S_{ij}(G_n)\rvert&gt;0\)</span>, <span class="math display">\[r_{ij}^0(G_n,p)
+=\prod_{k\in S_{ij}(G_n)}(1-p)^{-1}-1
+=(1-p)^{-\lvert S_{ij}(G_n)\rvert}-1;\]</span> when <span class="math inline">\(\lvert S_{ij}(G_n)\rvert=0\)</span>, it equals <span class="math inline">\(0\)</span>.</p></li>
+<li><p>By the variance-scale covariance expansion for independent heterogeneous Bernoulli assignment, applicable by step 1, <span class="math display">\[\sigma_{G_n,p}^2(Y)
+=
+\frac{1}{n}\sum_{i\in O_n}\sum_{j\in O_n}
+\left[
+r_{ij}^1(G_n,p)(Y_i^1-\mu_1)(Y_j^1-\mu_1)
++r_{ij}^0(G_n,p)(Y_i^0-\mu_0)(Y_j^0-\mu_0)
++2r_{ij}^{10}(G_n)(Y_i^1-\mu_1)(Y_j^0-\mu_0)
+\right].\]</span></p></li>
+</ol><span class="qed">∎</span></div>
+<div class="proof"><span class="env-label">Proof of theorem <a class="objref" href="#obj-thm:hetero-envelope">2</a>.</span><ol>
+<li><p>Write <span class="math display">\[a_i=Y_i^1-\mu_1,\qquad b_i=Y_i^0-\mu_0,\]</span> and <span class="math display">\[A_i=\frac{T_i(Z)}{\pi_i^1(p)}-1,\qquad
+B_i=\frac{C_i(Z)}{\pi_i^0(p)}-1.\]</span> Under assumption <a class="objref" href="#obj-ass:independent-heterogeneous-bernoulli">2</a>, <span class="math display">\[\mathbb E_p[A_iA_j]=r_{ij}^1(G_n,p),\quad
+\mathbb E_p[B_iB_j]=r_{ij}^0(G_n,p),\]</span> while <span class="math display">\[\mathbb E_p[A_iB_j]=\mathbb E_p[B_iA_j]=-r_{ij}^{10}(G_n).\]</span> Since <span class="math inline">\(\eta_i(p,Z)=A_i a_i-B_i b_i\)</span>, expanding the product gives <span class="math display">\[\mathbb E_p\!\left[\eta_i(p,Z)\eta_j(p,Z)\right]
+=
+r_{ij}^1(G_n,p)a_i a_j
++r_{ij}^0(G_n,p)b_i b_j
++r_{ij}^{10}(G_n)\bigl(a_i b_j+b_i a_j\bigr),\]</span> which is the first claim.</p></li>
+<li><p>The same calculation gives <span class="math inline">\(\mathbb E_p[\eta_i(p,Z)]=0\)</span>. Expanding the variance scale into outcome-pair moments and using the symmetry of <span class="math inline">\(r_{ij}^{10}(G_n)\)</span> therefore yields <span class="math display">\[\sigma^2_{G_n,p}(Y)
+=
+\frac1n\sum_{i\in O_n}\sum_{j\in O_n}
+\left\{
+r_{ij}^1(G_n,p)a_i a_j
++r_{ij}^0(G_n,p)b_i b_j
++2r_{ij}^{10}(G_n)a_i b_j
+\right\}.\]</span></p></li>
+<li><p>assumption <a class="objref" href="#obj-ass:bounded-outcomes">5</a> and the triangle inequality imply <span class="math display">\[|\mu_1|\le 1,\qquad |\mu_0|\le 1;\]</span> the zero-outcome case is immediate. Hence, for every <span class="math inline">\(i\in O_n\)</span>, <span class="math display">\[|a_i|\le2,\qquad |b_i|\le2.\]</span> Moreover, if <span class="math inline">\(S_{ij}(G_n)=\varnothing\)</span>, all three overlap loads are zero. Otherwise, <span class="math inline">\(0&lt;p_k&lt;1\)</span> implies <span class="math display">\[\prod_{k\in S_{ij}(G_n)}p_k^{-1}\ge1,
+\qquad
+\prod_{k\in S_{ij}(G_n)}(1-p_k)^{-1}\ge1.\]</span> Thus <span class="math display">\[r_{ij}^1(G_n,p)\ge0,\qquad
+r_{ij}^0(G_n,p)\ge0,\qquad
+r_{ij}^{10}(G_n)\ge0.\]</span></p></li>
+<li><p>Consequently, each of the three terms in the preceding variance representation is bounded above by four times its nonnegative load: <span class="math display">\[\begin{aligned}
+&amp;r_{ij}^1(G_n,p)a_i a_j
++r_{ij}^0(G_n,p)b_i b_j
++2r_{ij}^{10}(G_n)a_i b_j\\
+&amp;\hspace{2cm}\le
+4\left\{
+r_{ij}^1(G_n,p)+r_{ij}^0(G_n,p)+2r_{ij}^{10}(G_n)
+\right\}.
+\end{aligned}\]</span></p></li>
+<li><p>Summing this inequality over <span class="math inline">\(i,j\in O_n\)</span> and multiplying by <span class="math inline">\(n^{-1}\ge0\)</span> gives <span class="math display">\[\begin{aligned}
+\sigma^2_{G_n,p}(Y)
+&amp;\le
+\frac1n\sum_{i\in O_n}\sum_{j\in O_n}
+4\left\{
+r_{ij}^1(G_n,p)+r_{ij}^0(G_n,p)+2r_{ij}^{10}(G_n)
+\right\}\\
+&amp;=
+V_{\mathrm{env}}(G_n,p),
+\end{aligned}\]</span> by definition <a class="objref" href="#obj-def:graph-envelope">6</a>.</p></li>
+</ol><span class="qed">∎</span></div>
+<div class="proof"><span class="env-label">Proof of theorem <a class="objref" href="#obj-thm:convex-design">3</a>.</span><ol>
+<li><p>Put <span class="math inline">\(m_n=|I_n|\)</span>. First suppose that <span class="math inline">\(I_n\)</span> is nonempty and define the constant design <span class="math display">\[p_k=\frac{B_n}{m_n}\qquad(k\in I_n).\]</span> Since <span class="math inline">\(m_n&gt;0\)</span>, the budget bounds give <span class="math display">\[\epsilon\le \frac{B_n}{m_n}\le 1-\epsilon.\]</span> Thus <span class="math inline">\(p\)</span> satisfies the probability, positivity, and budget requirements, the last because <span class="math inline">\(\sum_{k\in I_n}p_k=m_n(B_n/m_n)=B_n\)</span>. If instead <span class="math inline">\(I_n\)</span> is empty, the two budget inequalities force <span class="math inline">\(B_n=0\)</span>, and the unique empty design is feasible. Hence <span class="math inline">\(\mathcal P_{n,B_n,\epsilon}\)</span> is nonempty.</p></li>
+<li><p>The feasible class is closed. Indeed, when the positivity-margin condition is admissible, it is the intersection of the coordinatewise closed probability constraints, the coordinatewise closed bounds <span class="math inline">\(\epsilon\le p_k\le1-\epsilon\)</span>, and the closed affine hyperplane <span class="math inline">\(\sum_k p_k=B_n\)</span>. When that condition is not admissible, the feasible class is empty and hence closed. It is contained in the finite product <span class="math inline">\([0,1]^{I_n}\)</span>, which is compact; therefore <span class="math inline">\(\mathcal P_{n,B_n,\epsilon}\)</span> is compact.</p></li>
+<li><p>Let <span class="math inline">\(p,q\in\mathcal P_{n,B_n,\epsilon}\)</span>, and let <span class="math inline">\(a,b\ge0\)</span> with <span class="math inline">\(a+b=1\)</span>. Coordinatewise, <span class="math display">\[\epsilon=a\epsilon+b\epsilon
+ \le ap_k+bq_k
+ \le a(1-\epsilon)+b(1-\epsilon)=1-\epsilon.\]</span> The same convex combination lies in <span class="math inline">\([0,1]\)</span>, and its budget is <span class="math display">\[\sum_{k\in I_n}(ap_k+bq_k)
+ =aB_n+bB_n=B_n.\]</span> Thus <span class="math inline">\(ap+bq\in\mathcal P_{n,B_n,\epsilon}\)</span>, proving convexity.</p></li>
+<li><p>The envelope is continuous on the feasible class. For fixed outcome indices <span class="math inline">\(i,j\)</span>, write <span class="math inline">\(S_{ij}=S_{ij}(G_n)\)</span>. If <span class="math inline">\(S_{ij}\)</span> is nonempty, the positivity bounds imply that both <span class="math display">\[\prod_{k\in S_{ij}}p_k
+\quad\text{and}\quad
+\prod_{k\in S_{ij}}(1-p_k)\]</span> are nonzero throughout the feasible class. Their reciprocal kernels, and hence <span class="math inline">\(r^1_{ij}(G_n,p)\)</span> and <span class="math inline">\(r^0_{ij}(G_n,p)\)</span>, are therefore continuous there. If <span class="math inline">\(S_{ij}\)</span> is empty, both kernels are identically zero. Adding the constant cross term <span class="math inline">\(2r^{10}_{ij}(G_n)\)</span> and taking the finite double sum shows that <span class="math inline">\(V_{\mathrm{env}}(G_n,\cdot)\)</span> is continuous on <span class="math inline">\(\mathcal P_{n,B_n,\epsilon}\)</span>.</p></li>
+<li><p>For each <span class="math inline">\(i,j\)</span>, the maps <span class="math display">\[p\longmapsto
+\left(\prod_{k\in S_{ij}}p_k\right)^{-1},
+\qquad
+p\longmapsto
+\left(\prod_{k\in S_{ij}}(1-p_k)\right)^{-1}\]</span> are convex on the feasible class. When <span class="math inline">\(S_{ij}\)</span> is nonempty, this gives convexity of <span class="math inline">\(r^1_{ij}(G_n,\cdot)\)</span> and <span class="math inline">\(r^0_{ij}(G_n,\cdot)\)</span> after subtracting <span class="math inline">\(1\)</span>; when <span class="math inline">\(S_{ij}\)</span> is empty, these kernels are constant. Hence each summand <span class="math display">\[r^1_{ij}(G_n,p)+r^0_{ij}(G_n,p)+2r^{10}_{ij}(G_n)\]</span> is convex. Finite summation preserves convexity, and multiplication by the nonnegative factor <span class="math inline">\(4/n\)</span> preserves it as well. Thus <span class="math inline">\(V_{\mathrm{env}}(G_n,\cdot)\)</span> is convex on <span class="math inline">\(\mathcal P_{n,B_n,\epsilon}\)</span>.</p></li>
+<li><p>By nonemptiness and compactness of the feasible class and continuity of the envelope, <span class="math inline">\(V_{\mathrm{env}}(G_n,\cdot)\)</span> attains its minimum on <span class="math inline">\(\mathcal P_{n,B_n,\epsilon}\)</span>. Denote one minimizer by <span class="math inline">\(p_n^*(G_n)\)</span>. Then <span class="math display">\[V_{\mathrm{env}}(G_n,p_n^*(G_n))
+\le V_{\mathrm{env}}(G_n,q)\]</span> for every <span class="math inline">\(q\in\mathcal P_{n,B_n,\epsilon}\)</span>.</p></li>
+<li><p>It remains to establish the multiplier statement. Introduce a globally continuously differentiable reciprocal cutoff which agrees with <span class="math inline">\(x^{-1}\)</span> whenever <span class="math inline">\(x\ge\epsilon/2\)</span>, and replace each reciprocal factor in the treated and control kernels by this cutoff. This yields a globally continuously differentiable extension of <span class="math inline">\(V_{\mathrm{env}}(G_n,\cdot)\)</span> which agrees with the original envelope whenever <span class="math display">\[p_k\ge\epsilon/2,\qquad 1-p_k\ge\epsilon/2
+\quad(k\in I_n).\]</span> Transporting the resulting objective, divided by <span class="math inline">\(4\)</span>, to Euclidean coordinates indexed by <span class="math inline">\(\operatorname{Fin}(m_n)\)</span> gives a differentiable objective.</p>
+<p>For a feasible <span class="math inline">\(p\)</span>, a coordinate <span class="math inline">\(k\)</span>, and a shared neighborhood <span class="math inline">\(S_{ij}\)</span>, differentiation along the <span class="math inline">\(k\)</span>-th coordinate line gives <span class="math display">\[\left.\frac{d}{dt}\right|_{t=0}
+ \prod_{\ell\in S_{ij}}
+ \bigl(p_\ell+\mathbf 1\{\ell=k\}t\bigr)^{-1}
+=
+\begin{cases}
+-\left(\prod_{\ell\in S_{ij}}p_\ell^{-1}\right)p_k^{-1},
+   &amp;k\in S_{ij},\\
+0,&amp;k\notin S_{ij},
+\end{cases}\]</span> and <span class="math display">\[\left.\frac{d}{dt}\right|_{t=0}
+ \prod_{\ell\in S_{ij}}
+ \bigl(1-p_\ell-\mathbf 1\{\ell=k\}t\bigr)^{-1}
+=
+\begin{cases}
+\left(\prod_{\ell\in S_{ij}}(1-p_\ell)^{-1}\right)(1-p_k)^{-1},
+   &amp;k\in S_{ij},\\
+0,&amp;k\notin S_{ij}.
+\end{cases}\]</span> The same formulas hold for the corresponding overlap kernels, including the case of an empty shared neighborhood. Summing these derivatives shows that the derivative of <span class="math inline">\(V_{\mathrm{env}}(G_n,\cdot)/4\)</span> in coordinate <span class="math inline">\(k\)</span> is <span class="math inline">\(g_k(G_n,p)\)</span>. Since sufficiently small coordinate perturbations remain in the region where the smooth extension equals the original envelope, the <span class="math inline">\(k\)</span>-th Euclidean gradient coordinate of the transported objective at <span class="math inline">\(p\)</span> is exactly <span class="math inline">\(g_k(G_n,p)\)</span>.</p></li>
+<li><p>Fix any minimizer <span class="math inline">\(p_n^*(G_n)\)</span>. In Euclidean coordinates, impose the equality constraint <span class="math display">\[\sum_{a=1}^{m_n}x_a-B_n=0\]</span> and the <span class="math inline">\(2m_n\)</span> inequality constraints <span class="math display">\[x_a-\epsilon\ge0,
+\qquad
+1-\epsilon-x_a\ge0
+\qquad(a=1,\ldots,m_n).\]</span> The correspondence between these feasible Euclidean points and <span class="math inline">\(\mathcal P_{n,B_n,\epsilon}\)</span> is exact. Moreover, the transported smooth objective agrees on this feasible set with <span class="math inline">\(V_{\mathrm{env}}(G_n,\cdot)/4\)</span>, so the Euclidean image of <span class="math inline">\(p_n^*(G_n)\)</span> is a local minimum. The objective is differentiable, all constraints are affine, and the linear constraint qualification holds.</p>
+<p>The finite-dimensional first-order necessary condition therefore supplies a multiplier <span class="math inline">\(\lambda_n\)</span> for the budget constraint and nonnegative multipliers for the lower and upper box constraints. Let <span class="math inline">\(\nu^-_{k,n}\)</span> be the lower-box multiplier for coordinate <span class="math inline">\(k\)</span>, and let <span class="math inline">\(\nu^+_{k,n}\)</span> be the upper-box multiplier. Coordinatewise stationarity, together with the preceding gradient identity, is <span class="math display">\[g_k(G_n,p_n^*(G_n))
+-\lambda_n-\nu^-_{k,n}+\nu^+_{k,n}=0,\]</span> or equivalently <span class="math display">\[g_k(G_n,p_n^*(G_n))
+=\lambda_n-\nu^+_{k,n}+\nu^-_{k,n}.\]</span> The multipliers satisfy <span class="math inline">\(\nu^+_{k,n}\ge0\)</span> and <span class="math inline">\(\nu^-_{k,n}\ge0\)</span>. Complementary slackness for the upper and lower constraints gives, respectively, <span class="math display">\[\nu^+_{k,n}\bigl((p_n^*(G_n))_k-(1-\epsilon)\bigr)=0,
+\qquad
+\nu^-_{k,n}\bigl(\epsilon-(p_n^*(G_n))_k\bigr)=0.\]</span> This holds for every <span class="math inline">\(k\in I_n\)</span>, as required.</p></li>
+</ol><span class="qed">∎</span></div>
+<div class="proof"><span class="env-label">Proof of theorem <a class="objref" href="#obj-thm:hetero-clt">4</a>.</span><p>Write <span class="math inline">\(p_n=p_n^*(G_n)\)</span>. The optimality condition identifies this sequence; the argument uses its stated feasibility and regularity properties.</p>
+<ol>
+<li><p>Outcome indexing gives <span class="math inline">\(|O_n|=n\)</span> eventually. Hence <span class="math inline">\(|O_n|\to\infty\)</span>, and, on this tail, <span class="math inline">\(\sqrt{|O_n|}=\sqrt n\)</span> and <span class="math inline">\(|O_n|^{-1/2}=n^{-1/2}\)</span>.</p></li>
+<li><p>Let <span class="math inline">\(K(\epsilon,\bar d)\)</span> be the denominator-kernel bound. Uniform positivity gives <span class="math inline">\(\epsilon_0&gt;0\)</span> with <span class="math inline">\(\epsilon_0\le\epsilon_n\)</span> eventually. Thus <span class="math inline">\(K(\epsilon_n,\bar d)\)</span> is eventually bounded by <span class="math inline">\(K(\epsilon_0,\bar d)\)</span>, and therefore <span class="math display">\[\frac{K(\epsilon_n,\bar d)}{|O_n|}\longrightarrow0.\]</span></p></li>
+<li><p>Define <span class="math display">\[R_{1n}=|O_n|^{-1/2}\{\text{treated numerator}\},\qquad
+R_{0n}=|O_n|^{-1/2}\{\text{control numerator}\},\]</span> and <span class="math display">\[Q_{1n}=|O_n|^{-1}D_1(p_n,Z)-1,\qquad
+Q_{0n}=|O_n|^{-1}D_0(p_n,Z)-1.\]</span> The local numerator bounds give boundedness in probability of <span class="math inline">\(R_{1n}\)</span> and <span class="math inline">\(R_{0n}\)</span>. The rate in (2), together with assumption <a class="objref" href="#obj-ass:bounded-outcome-degree">6</a> and assumption <a class="objref" href="#obj-ass:bounded-overlap-dependency">7</a>, gives <span class="math display">\[Q_{1n}\xrightarrow{\Pr}0,\qquad Q_{0n}\xrightarrow{\Pr}0.\]</span> Consequently, <span class="math display">\[2|R_{1n}||Q_{1n}|+2|R_{0n}||Q_{0n}|
+\xrightarrow{\Pr}0.\]</span></p>
+<p>For all sufficiently large <span class="math inline">\(n\)</span>, split according as <span class="math display">\[D_1(p_n,Z)\ge\frac{|O_n|}{2}
+\quad\text{and}\quad
+D_0(p_n,Z)\ge\frac{|O_n|}{2}.\]</span> When both inequalities hold, the capped Hájek remainder bound yields <span class="math display">\[\left|
+\sqrt{|O_n|}\{\widehat\tau_H(p_n)-\tau_n\}
+-|O_n|^{-1/2}\sum_{i\in O_n}\eta_i(p_n,Z)
+\right|
+\le
+2|R_{1n}||Q_{1n}|+2|R_{0n}||Q_{0n}|.\]</span> If either inequality fails, then respectively <span class="math display">\[|Q_{1n}|\ge\frac12
+\quad\text{or}\quad
+|Q_{0n}|\ge\frac12.\]</span> Thus, for every <span class="math inline">\(\delta&gt;0\)</span>, the probability that the absolute remainder exceeds <span class="math inline">\(\delta\)</span> is bounded by the probability of this denominator-ratio bad event plus <span class="math display">\[\Pr_{D_n}\!\left(
+2|R_{1n}||Q_{1n}|+2|R_{0n}||Q_{0n}|\ge\delta
+\right),\]</span> and both terms converge to zero.</p></li>
+<li><p>Taking the absolute remainder itself as the dominating product tail, the preceding convergence and the rate in (2) give the denominator-tightness condition. The resulting squeeze therefore gives <span class="math display">\[\sqrt{|O_n|}\{\widehat\tau_H(p_n)-\tau_n\}
+-|O_n|^{-1/2}\sum_{i\in O_n}\eta_i(p_n,Z)
+\xrightarrow{\Pr}0.\]</span></p></li>
+<li><p>Set <span class="math inline">\(X_{n,i}=\eta_i(p_n,Z)\)</span> for <span class="math inline">\(i\in O_n\)</span>, and use the outcome-overlap graph as a dependency graph. These summands have mean zero; its neighborhoods have cardinality at most <span class="math inline">\(\lceil\bar D\rceil+1\)</span>; and assumption <a class="objref" href="#obj-ass:bounded-outcomes">5</a> and assumption <a class="objref" href="#obj-ass:bounded-outcome-degree">6</a>, together with the eventual positivity floor, give the eventual bound <span class="math display">\[|X_{n,i}|\le 4\{K(\epsilon_0,\bar d)+2\}.\]</span> Moreover, with <span class="math display">\[v_n=\mathbb E_{D_n}\!\left[\left(\sum_{i\in O_n}X_{n,i}\right)^2\right],\]</span> the score-moment identity gives <span class="math display">\[v_n=|O_n|\,\sigma^2_{G_n,p_n}(Y).\]</span> assumption <a class="objref" href="#obj-ass:variance-nondegenerate">8</a> consequently supplies <span class="math inline">\(c&gt;0\)</span> such that <span class="math inline">\(v_n\ge c|O_n|\)</span> eventually. On the tail from (1), lemma <a class="objref" href="#obj-lem:bounded-degree-dependency-clt">2</a> applies and yields, for every <span class="math inline">\(s\in\mathbb R\)</span>, <span class="math display">\[\Pr_{D_n}\!\left(
+\frac{|O_n|^{-1/2}\sum_{i\in O_n}\eta_i(p_n,Z)}
+{\sqrt{\sigma^2_{G_n,p_n}(Y)}}\le s
+\right)
+\longrightarrow
+\Pr\{N(0,1)\le s\}.\]</span></p></li>
+<li><p>Define <span class="math display">\[S_n=
+\frac{\sqrt{|O_n|}\{\widehat\tau_H(p_n)-\tau_n\}}
+{\sqrt{\sigma^2_{G_n,p_n}(Y)}},
+\qquad
+T_n=
+\frac{|O_n|^{-1/2}\sum_{i\in O_n}\eta_i(p_n,Z)}
+{\sqrt{\sigma^2_{G_n,p_n}(Y)}}.\]</span> For every <span class="math inline">\(\eta&gt;0\)</span>, the variance lower bound implies eventually <span class="math display">\[\Pr_{D_n}(|S_n-T_n|\ge\eta)
+\le
+\Pr_{D_n}\!\left(
+\left|
+\sqrt{|O_n|}\{\widehat\tau_H(p_n)-\tau_n\}
+-|O_n|^{-1/2}\sum_{i\in O_n}\eta_i(p_n,Z)
+\right|
+\ge\eta\sqrt c
+\right),\]</span> which tends to zero by (4). Since <span class="math inline">\(T_n\)</span> has the standard-normal CDF limit by (5), continuity of that CDF and the converging-together argument yield <span class="math display">\[\Pr_{D_n}(S_n\le s)\longrightarrow\Pr\{N(0,1)\le s\}\]</span> for every <span class="math inline">\(s\in\mathbb R\)</span>. Replacing <span class="math inline">\(|O_n|\)</span> by <span class="math inline">\(n\)</span> on the eventual tail from (1) proves both conclusions.</p></li>
+</ol><span class="qed">∎</span></div>
+<div class="proof"><span class="env-label">Proof of theorem <a class="objref" href="#obj-thm:postdesign-wald">5</a>.</span><p>The eventual identity <span class="math inline">\(|O_n|=n\)</span> implies that <span class="math inline">\(|O_n|\to\infty\)</span>.</p>
+<ol>
+<li><p>Fix <span class="math inline">\(n\)</span>. Feasibility and <span class="math inline">\(\epsilon_n\in(0,1/2)\)</span> give <span class="math display">\[0&lt;\epsilon_n\le p_{n,k}\le 1-\epsilon_n&lt;1
+\qquad(k\in I_n).\]</span> Thus the heterogeneous envelope bound applies. Its variance conclusion, together with the defining identity between the conservative estimator and the graph envelope, yields <span class="math display">\[\sigma^2_{G_n,p_n}(Y)\le \widehat V_{\mathrm{cons}}(G_n,p_n).\]</span> Since <span class="math inline">\(n\)</span> was arbitrary, this proves the first assertion.</p></li>
+<li><p>By nondegeneracy, there are <span class="math inline">\(c&gt;0\)</span> and an eventual tail on which <span class="math display">\[c\le \sigma^2_{G_n,p_n}(Y).\]</span> Hence <span class="math inline">\(\sigma^2_{G_n,p_n}(Y)&gt;0\)</span> eventually. The eventual identity <span class="math inline">\(|O_n|=n\)</span>, together with <span class="math inline">\(n\to\infty\)</span>, also gives <span class="math inline">\(|O_n|&gt;0\)</span> eventually. Under the remaining assumptions, theorem <a class="objref" href="#obj-thm:hetero-clt">4</a> gives, for every <span class="math inline">\(s\in\mathbb R\)</span>, <span class="math display">\[\Pr_{p_n}\!\left(
+\frac{\sqrt n\,[\widehat\tau_H(p_n)-\tau_n]}
+{\sqrt{\sigma^2_{G_n,p_n}(Y)}}\le s
+\right)
+\longrightarrow \Phi(s).\]</span></p></li>
+<li><p>Write <span class="math display">\[W_n=
+\frac{\sqrt n\,[\widehat\tau_H(p_n)-\tau_n]}
+{\sqrt{\sigma^2_{G_n,p_n}(Y)}}.\]</span> The preceding convergence at <span class="math inline">\(z_{1-\alpha_{\mathrm{cov}}/2}\)</span> and at its negative, the symmetry <span class="math inline">\(\Phi(-z)=1-\Phi(z)\)</span>, and <span class="math inline">\(\Phi(z_{1-\alpha_{\mathrm{cov}}/2})=1-\alpha_{\mathrm{cov}}/2\)</span> show that <span class="math display">\[\Pr_{p_n}\!\left(
+-z_{1-\alpha_{\mathrm{cov}}/2}&lt;W_n
+\le z_{1-\alpha_{\mathrm{cov}}/2}
+\right)
+\longrightarrow 1-\alpha_{\mathrm{cov}}.\]</span> On the eventual tail where both <span class="math inline">\(n\)</span> and <span class="math inline">\(\sigma^2_{G_n,p_n}(Y)\)</span> are positive, this event implies <span class="math display">\[\left|\tau_n-\widehat\tau_H(p_n)\right|
+\le
+z_{1-\alpha_{\mathrm{cov}}/2}
+\sqrt{\frac{\sigma^2_{G_n,p_n}(Y)}{n}}
+\le
+z_{1-\alpha_{\mathrm{cov}}/2}
+\sqrt{\frac{\widehat V_{\mathrm{cons}}(G_n,p_n)}{n}},\]</span> where the last inequality uses the first assertion and <span class="math inline">\(z_{1-\alpha_{\mathrm{cov}}/2}\ge0\)</span>. Taking lower limits of the corresponding probabilities gives the claimed coverage bound.</p></li>
+</ol><span class="qed">∎</span></div>
+<div class="proof"><span class="env-label">Proof of theorem <a class="objref" href="#obj-thm:dispersion-certificate-unbounded">8</a>.</span><p>Fix <span class="math inline">\(\epsilon\in(0,1/2)\)</span>, <span class="math inline">\(c_{\mathrm{disp}}&gt;0\)</span>, and <span class="math inline">\(C_{\mathrm{disp}}\geq 1\)</span>. Put <span class="math display">\[t_n=n+1,\qquad d_n=t_n^2,\qquad
+\rho=\frac{\epsilon+1/2}{2},\qquad
+\varphi=\frac{3\rho-1/2}{2}.\]</span></p>
+<ol>
+<li><p>Let <span class="math inline">\(I_n\)</span> be the disjoint union of a core block of <span class="math inline">\(d_n\)</span> interventions and a filler block of <span class="math inline">\(2d_n\)</span> interventions. Let <span class="math inline">\(O_n\)</span> consist of <span class="math inline">\(d_n\)</span> core outcomes together with <span class="math inline">\(t_n\)</span> filler outcomes for each filler intervention. Each core outcome is adjacent to every core intervention, while each filler outcome is adjacent only to its designated filler intervention; take all potential-outcome schedules to be zero. Thus, if <span class="math inline">\(k\)</span> is a core intervention, then <span class="math inline">\(s_k=d_n\)</span>, whereas if <span class="math inline">\(k\)</span> is a filler intervention, then <span class="math inline">\(s_k=t_n\)</span>.</p></li>
+<li><p>Set <span class="math inline">\(B_n=|I_n|\rho\)</span>. Since <span class="math inline">\(\epsilon&lt;\rho&lt;1/2\)</span>, one has <span class="math inline">\(\epsilon\leq\rho\leq1-\epsilon\)</span>, and hence <span class="math display">\[|I_n|\epsilon\leq B_n\leq |I_n|(1-\epsilon).\]</span></p></li>
+<li><p>The degree energy is <span class="math display">\[\sum_{k\in I_n}s_k^2
+=d_n\,d_n^2+2d_n\,t_n^2,\]</span> which is strictly positive.</p></li>
+<li><p>Since <span class="math inline">\(d_n\to\infty\)</span> and <span class="math inline">\(c_{\mathrm{disp}}&gt;0\)</span>, for all sufficiently large <span class="math inline">\(n\)</span>, <span class="math display">\[1\leq c_{\mathrm{disp}}d_n.\]</span> Fix such an <span class="math inline">\(n\)</span>. If <span class="math inline">\(k\)</span> is a core intervention, then <span class="math display">\[s_k^2=d_n^2
+ \leq c_{\mathrm{disp}}
+ \bigl(d_n\,d_n^2+2d_n\,t_n^2\bigr).\]</span> If <span class="math inline">\(k\)</span> is a filler intervention, then <span class="math inline">\(s_k^2=t_n^2=d_n\)</span>, and the same bound follows from <span class="math inline">\(d_n\geq1\)</span>, <span class="math inline">\(1\leq c_{\mathrm{disp}}d_n\)</span>, and the displayed energy formula. Thus the degree-dispersion condition holds eventually.</p></li>
+<li><p>Every intervention has the same strictly positive <span class="math inline">\(h\)</span>-weight, namely <span class="math display">\[h_k(G_n)=\frac{d_n}{|O_n|}\qquad(k\in I_n).\]</span> Consequently, for every <span class="math inline">\(k,l\in I_n\)</span>, <span class="math display">\[h_k(G_n)=h_l(G_n)\leq C_{\mathrm{disp}}h_l(G_n),\]</span> so the <span class="math inline">\(h\)</span>-weight-ratio condition in fact holds for every <span class="math inline">\(n\)</span>.</p></li>
+<li><p>Write <span class="math inline">\(R(x)=x^{-1}+(1-x)^{-1}\)</span>. The common positive <span class="math inline">\(h\)</span>-weight makes the surrogate objective a positive multiple of <span class="math inline">\(\sum_{k\in I_n}R(p_k)\)</span>. Under the budget constraint with mean <span class="math inline">\(\rho\)</span>, its unique minimizer is therefore the homogeneous design <span class="math inline">\(p_k=\rho\)</span>.</p>
+<p>For comparison, use the feasible design assigning <span class="math inline">\(1/2\)</span> on the core block and <span class="math inline">\(\varphi\)</span> on the filler block. Direct evaluation of the two envelopes, together with positivity of the envelope minimum, yields <span class="math display">\[\alpha_{\mathrm{cert}}(G_n)\geq
+\frac{\rho^{-d_n}}
+ {2^{d_n+1}+2R(\varphi)}.\]</span> Since <span class="math inline">\(2^{d_n}\to\infty\)</span>, eventually <span class="math inline">\(2^{d_n}\geq2R(\varphi)\)</span>, and hence <span class="math display">\[\alpha_{\mathrm{cert}}(G_n)\geq
+\frac13(2\rho)^{-d_n}.\]</span> Finally, <span class="math inline">\(\rho&lt;1/2\)</span>, so <span class="math inline">\((2\rho)^{-1}&gt;1\)</span>; as <span class="math inline">\(d_n\to\infty\)</span>, the right-hand side tends to <span class="math inline">\(+\infty\)</span>. Therefore <span class="math inline">\(\alpha_{\mathrm{cert}}(G_n)\to\infty\)</span>.</p></li>
+</ol><span class="qed">∎</span></div>
+<div class="proof"><span class="env-label">Proof of theorem <a class="objref" href="#obj-thm:heterogeneity-separation">6</a>.</span><ol>
+<li><p>Suppose that the homogeneous-point gradient scores are not all equal. First, <span class="math inline">\(p^{\mathrm{hom}}\in\mathcal P_{n,B_n,\epsilon}\)</span>: each coordinate equals <span class="math inline">\(\rho\in(\epsilon,1-\epsilon)\)</span>, and <span class="math display">\[\sum_{k\in I_n}p^{\mathrm{hom}}_k=m_n\rho=B_n.\]</span></p>
+<p>For later use, fix arbitrary <span class="math inline">\(a,b\in I_n\)</span>, write <span class="math display">\[d=e_b-e_a,\qquad
+T=\min\{\rho-\epsilon,\,1-\epsilon-\rho\},\]</span> and set <span class="math display">\[\gamma(s)=\frac14V_{\mathrm{env}}(G_n,p^{\mathrm{hom}}+sd).\]</span> The segment <span class="math inline">\(p^{\mathrm{hom}}+sd\)</span> is feasible for <span class="math inline">\(s\in[-T,T]\)</span>. For <span class="math inline">\(s\geq0\)</span>, this follows directly from the bounds defining <span class="math inline">\(T\)</span>; for <span class="math inline">\(s&lt;0\)</span>, it follows by applying the same argument with <span class="math inline">\(a\)</span> and <span class="math inline">\(b\)</span> exchanged. Moreover, <span class="math inline">\(|d_k|\leq1\)</span> for every <span class="math inline">\(k\)</span>, and, on <span class="math inline">\(0\leq s\leq T\)</span>, both coordinates <span class="math inline">\(p^{\mathrm{hom}}_k+sd_k\)</span> and their complements are at least <span class="math inline">\(\epsilon/2\)</span>.</p>
+<p>Consequently, <span class="math inline">\(\gamma\)</span> is twice continuously differentiable on <span class="math inline">\([0,T]\)</span>, differentiable at <span class="math inline">\(0\)</span>, and <span class="math display">\[\gamma&#39;(0)=g_b(G_n,p^{\mathrm{hom}})-g_a(G_n,p^{\mathrm{hom}}).\]</span> Writing <span class="math inline">\(L_{ab}\)</span> for the directional modulus along <span class="math inline">\(d\)</span>, convexity of the envelope from theorem <a class="objref" href="#obj-thm:convex-design">3</a>, together with the directional curvature representation, gives <span class="math display">\[0\leq L_{ab},
+\qquad
+\gamma&#39;&#39;(s)\leq L_{ab}\quad(0\leq s\leq T).\]</span></p>
+<p>We next show that <span class="math inline">\(p^{\mathrm{hom}}\)</span> is not a minimizer. Otherwise, theorem <a class="objref" href="#obj-thm:convex-design">3</a> supplies a budget multiplier <span class="math inline">\(\lambda_n\)</span> and nonnegative upper- and lower-box multipliers <span class="math inline">\(\nu^+_{k,n}\)</span> and <span class="math inline">\(\nu^-_{k,n}\)</span> satisfying <span class="math display">\[g_k(G_n,p^{\mathrm{hom}})
+=\lambda_n-\nu^+_{k,n}+\nu^-_{k,n},\]</span> together with the complementary-slackness identities <span class="math display">\[\nu^+_{k,n}\bigl(p^{\mathrm{hom}}_k-(1-\epsilon)\bigr)=0,
+\qquad
+\nu^-_{k,n}\bigl(\epsilon-p^{\mathrm{hom}}_k\bigr)=0.\]</span> Since every homogeneous coordinate is strictly interior, both factors multiplying the respective multipliers are nonzero. Thus <span class="math inline">\(\nu^+_{k,n}=\nu^-_{k,n}=0\)</span> for every <span class="math inline">\(k\)</span>, so all gradient scores equal <span class="math inline">\(\lambda_n\)</span>, a contradiction.</p>
+<p>Choose <span class="math inline">\(a\)</span> attaining the maximum and <span class="math inline">\(b\)</span> attaining the minimum of <span class="math inline">\(k\mapsto g_k(G_n,p^{\mathrm{hom}})\)</span>. If these extrema were equal, all scores would be equal, contrary to hypothesis. Hence <span class="math display">\[\Delta_g
+=g_a(G_n,p^{\mathrm{hom}})-g_b(G_n,p^{\mathrm{hom}})
+&gt;0.\]</span> For the above line function associated with these extremal indices, <span class="math display">\[\gamma&#39;(0)=-\Delta_g.\]</span> Define <span class="math display">\[s_*=
+\begin{cases}
+T, &amp; L_{ab}=0,\\
+\min\{T,\Delta_g/L_{ab}\}, &amp; L_{ab}\ne0.
+\end{cases}\]</span> The one-dimensional second-order descent estimate yields <span class="math inline">\(s_*\in[0,T]\)</span> and <span class="math display">\[\gamma(0)-\gamma(s_*)\geq \frac{\Delta_g}{2}s_*.\]</span> The design <span class="math inline">\(q=p^{\mathrm{hom}}+s_*d\)</span> is feasible. Therefore, for every <span class="math inline">\(p_n^*(G_n)\in\operatorname{argmin}_{p\in\mathcal P_{n,B_n,\epsilon}}
+V_{\mathrm{env}}(G_n,p)\)</span>, <span class="math display">\[V_{\mathrm{env}}(G_n,p_n^*(G_n))
+\leq V_{\mathrm{env}}(G_n,q).\]</span> Multiplying the preceding descent inequality by <span class="math inline">\(4\)</span> gives <span class="math display">\[V_{\mathrm{env}}(G_n,p^{\mathrm{hom}})
+-
+V_{\mathrm{env}}(G_n,p_n^*(G_n))
+\geq 2\Delta_gs_*,\]</span> which is the asserted bound after substituting <span class="math inline">\(T\)</span> and <span class="math inline">\(s_*\)</span>.</p>
+<p>Finally, <span class="math inline">\(p_n^*(G_n)\neq p^{\mathrm{hom}}\)</span>, since otherwise <span class="math inline">\(p^{\mathrm{hom}}\)</span> would be a minimizer. Optimality gives the corresponding weak inequality in envelope values; equality would again make <span class="math inline">\(p^{\mathrm{hom}}\)</span> a minimizer. Thus <span class="math display">\[V_{\mathrm{env}}(G_n,p_n^*(G_n))
+&lt;
+V_{\mathrm{env}}(G_n,p^{\mathrm{hom}}).\]</span></p></li>
+<li><p>Now suppose that <span class="math inline">\(|N_i(G_n)|=1\)</span> for every <span class="math inline">\(i\in O_n\)</span>, and fix <span class="math inline">\(k\in I_n\)</span>. If <span class="math inline">\(k\in S_{ij}(G_n)\)</span>, then <span class="math inline">\(S_{ij}(G_n)\)</span> is a nonempty subset of <span class="math inline">\(N_i(G_n)\)</span>, and hence has cardinality one. Therefore every nonzero summand in the homogeneous-point gradient formula equals <span class="math display">\[(1-\rho)^{-2}-\rho^{-2}.\]</span> The number of ordered pairs <span class="math inline">\((i,j)\)</span> such that <span class="math inline">\(k\in S_{ij}(G_n)\)</span> is <span class="math inline">\(s_k^2\)</span>. Substitution into the gradient formula gives <span class="math display">\[g_k(G_n,p^{\mathrm{hom}})
+=
+n^{-1}s_k^2\left((1-\rho)^{-2}-\rho^{-2}\right).\]</span></p></li>
+<li><p>Retain the singleton-neighborhood condition and suppose that <span class="math inline">\(s_a^2\neq s_b^2\)</span> for some <span class="math inline">\(a,b\in I_n\)</span>. Put <span class="math display">\[C=(1-\rho)^{-2}-\rho^{-2}.\]</span> This scalar is nonzero. Indeed, if <span class="math inline">\(C=0\)</span>, then <span class="math inline">\((1-\rho)^2=\rho^2\)</span>; thus either <span class="math inline">\(1-\rho=\rho\)</span>, contradicting <span class="math inline">\(\rho\neq1/2\)</span>, or <span class="math inline">\(1-\rho=-\rho\)</span>, which would imply <span class="math inline">\(1=0\)</span>.</p>
+<p>Also <span class="math inline">\(n&gt;0\)</span>. Otherwise <span class="math inline">\(O_n\)</span> would be empty, every intervention-side degree quantity would vanish, and <span class="math inline">\(s_a^2\neq s_b^2\)</span> would be impossible. Hence <span class="math inline">\(n^{-1}C\neq0\)</span>. The formula from the preceding step then implies <span class="math display">\[g_a(G_n,p^{\mathrm{hom}})\neq g_b(G_n,p^{\mathrm{hom}}).\]</span> The conclusions of the first step therefore apply.</p></li>
+</ol><span class="qed">∎</span></div>
+<div class="proof"><span class="env-label">Proof of theorem <a class="objref" href="#obj-thm:surrogate-certificate">7</a>.</span><p>Put <span class="math display">\[A(q):=\sum_{k\in I_n}h_k(G_n)\{q_k^{-1}+(1-q_k)^{-1}\},
+\qquad
+C:=\max\{1,\epsilon^{-(\bar d-1)}\}.\]</span> Then <span class="math inline">\(C\geq 1\)</span>, hence <span class="math inline">\(C\geq0\)</span>.</p>
+<ol>
+<li><p>By theorem <a class="objref" href="#obj-thm:convex-design">3</a>, the envelope-optimal design <span class="math inline">\(p_n^*(G_n)\)</span> is feasible and satisfies <span class="math display">\[V_{\mathrm{env}}(G_n,p_n^*(G_n))
+ \leq V_{\mathrm{env}}(G_n,q)
+\quad\text{for every }q\in\mathcal P_{n,B_n,\epsilon}.\]</span></p></li>
+<li><p>On <span class="math inline">\(\mathcal P_{n,B_n,\epsilon}\)</span>, every <span class="math inline">\(q_k\)</span> and <span class="math inline">\(1-q_k\)</span> is strictly positive. Thus <span class="math inline">\(A\)</span> is continuous there, being a finite sum of reciprocal coordinate functions. Compactness from theorem <a class="objref" href="#obj-thm:convex-design">3</a> therefore yields a feasible surrogate design <span class="math inline">\(p_n^{\deg}(G_n)\)</span> such that <span class="math display">\[A(p_n^{\deg}(G_n))\leq A(q)
+\quad\text{for every }q\in\mathcal P_{n,B_n,\epsilon}.\]</span></p></li>
+<li><p>Fix <span class="math inline">\(q\in\mathcal P_{n,B_n,\epsilon}\)</span>, and write <span class="math display">\[K_{ij}:=r_{ij}^1(G_n,q)+r_{ij}^0(G_n,q)+2r_{ij}^{10}(G_n).\]</span> The definitions give <span class="math display">\[A(q)=\sum_{i\in O_n}\sum_{j\in O_n}\sum_{k\in S_{ij}(G_n)}
+ n^{-1}|S_{ij}(G_n)|^{-1}
+ \{q_k^{-1}+(1-q_k)^{-1}\},\]</span> and <span class="math display">\[\frac{V_{\mathrm{env}}(G_n,q)}4
+=\sum_{i\in O_n}\sum_{j\in O_n}n^{-1}K_{ij}.\]</span> For a fixed pair <span class="math inline">\((i,j)\)</span>, let <span class="math inline">\(S=S_{ij}(G_n)\)</span>. If <span class="math inline">\(S=\varnothing\)</span>, both corresponding terms are zero. Otherwise, set <span class="math inline">\(a_k=q_k^{-1}\)</span> and <span class="math inline">\(b_k=(1-q_k)^{-1}\)</span>. Since <span class="math inline">\(0&lt;q_k&lt;1\)</span>, all these factors are at least one. Hence their averages do not exceed their products: <span class="math display">\[|S|^{-1}\sum_{k\in S}a_k\leq\prod_{k\in S}a_k,
+\qquad
+|S|^{-1}\sum_{k\in S}b_k\leq\prod_{k\in S}b_k.\]</span> For nonempty <span class="math inline">\(S\)</span>, the definition of the loads gives <span class="math display">\[K_{ij}=\prod_{k\in S}a_k+\prod_{k\in S}b_k.\]</span> Adding the preceding two inequalities yields <span class="math display">\[|S|^{-1}\sum_{k\in S}(a_k+b_k)\leq K_{ij}.\]</span> Multiplication by <span class="math inline">\(n^{-1}\geq0\)</span> and summation over <span class="math inline">\((i,j)\)</span> prove <span class="math display">\[A(q)\leq \frac{V_{\mathrm{env}}(G_n,q)}4.\]</span></p></li>
+<li><p>For the reverse bound, retain <span class="math inline">\(S\neq\varnothing\)</span>. Since <span class="math inline">\(S\subseteq N_i(G_n)\)</span>, assumption <a class="objref" href="#obj-ass:bounded-outcome-degree">6</a> gives <span class="math inline">\(|S|\leq\bar d\)</span>. Moreover, <span class="math display">\[0\leq a_k,b_k\leq\epsilon^{-1}.\]</span> After deleting any <span class="math inline">\(k\in S\)</span>, each of the two products is therefore bounded by <span class="math display">\[(\epsilon^{-1})^{|S|-1}
+ \leq \epsilon^{-(\bar d-1)}
+ \leq C.\]</span> For nonnegative factors whose product after removal of any one factor is at most <span class="math inline">\(C\)</span>, the full product is at most <span class="math inline">\(C\)</span> times the factors’ average. Applying this separately to <span class="math inline">\((a_k)\)</span> and <span class="math inline">\((b_k)\)</span> gives <span class="math display">\[\prod_{k\in S}a_k
+ \leq C|S|^{-1}\sum_{k\in S}a_k,
+\qquad
+\prod_{k\in S}b_k
+ \leq C|S|^{-1}\sum_{k\in S}b_k.\]</span> Consequently, <span class="math display">\[K_{ij}\leq
+C|S|^{-1}\sum_{k\in S}\{q_k^{-1}+(1-q_k)^{-1}\}.\]</span> The same inequality is immediate when <span class="math inline">\(S=\varnothing\)</span>. Multiplying by <span class="math inline">\(n^{-1}\geq0\)</span>, summing over <span class="math inline">\((i,j)\)</span>, and using the two displayed expansions in the preceding step yields <span class="math display">\[\frac{V_{\mathrm{env}}(G_n,q)}4\leq C A(q).\]</span> This proves the asserted sandwich for every feasible <span class="math inline">\(q\)</span>.</p></li>
+<li><p>Let <span class="math inline">\(V_*:=V_{\mathrm{env}}(G_n,p_n^*(G_n))\)</span>. If <span class="math inline">\(V_*&gt;0\)</span>, the two sandwich bounds and the minimizing property of <span class="math inline">\(p_n^{\deg}(G_n)\)</span> imply <span class="math display">\[\frac{V_{\mathrm{env}}(G_n,p_n^{\deg}(G_n)}4
+ \leq C A(p_n^{\deg}(G_n))
+ \leq C A(p_n^*(G_n))
+ \leq C\frac{V_*}{4}.\]</span> Thus <span class="math display">\[V_{\mathrm{env}}(G_n,p_n^{\deg}(G_n))\leq C V_*,\]</span> and division by <span class="math inline">\(V_*&gt;0\)</span>, together with definition <a class="objref" href="#obj-def:approximation-ratio">11</a>, gives <span class="math inline">\(\alpha_{\mathrm{cert}}(G_n)\leq C\)</span>. If <span class="math inline">\(V_*\not&gt;0\)</span>, that definition assigns <span class="math inline">\(\alpha_{\mathrm{cert}}(G_n)=1\)</span>, which is at most <span class="math inline">\(C\)</span>. The claimed approximation-ratio bound follows.</p></li>
+</ol><span class="qed">∎</span></div>
+<section class="references"><h2>References</h2><ul>
+<li id="ref-LuShiFangZhangDing2025BipartiteDesign">Lu, Sizhu and Shi, Lei and Fang, Yue and Zhang, Wenxin and Ding, Peng (2025). Design-based causal inference in bipartite experiments. <em></em>. <a href="https://arxiv.org/abs/2501.09844">arXiv</a></li>
+<li id="ref-HarshawSavjeEisenstatMirrokniPougetAbadie2021BipartiteERL">Harshaw, Christopher and S{\&quot;a}vje, Fredrik and Eisenstat, David and Mirrokni, Vahab and Pouget-Abadie, Jean (2021). Design and Analysis of Bipartite Experiments under a Linear Exposure-Response Model. <em></em>. <a href="https://arxiv.org/abs/2103.06392">arXiv</a></li>
+<li id="ref-Viviano2026NetworkDesign">Davide Viviano (2020). Experimental Design under Network Interference. <em></em>. <a href="https://arxiv.org/abs/2003.08421">arXiv</a></li>
+<li id="ref-Leung2019ApproxNeighborhoodInterference">Michael P. Leung (2019). Causal Inference Under Approximate Neighborhood Interference. <em></em>. <a href="https://arxiv.org/abs/1911.07085">arXiv</a></li>
+<li id="ref-AronowSamii2017GeneralInterference">Aronow, Peter M. and Samii, Cyrus (2017). Estimating Average Causal Effects under General Interference, with Application to a Social Network Experiment. <em>The Annals of Applied Statistics</em>. <a href="https://doi.org/10.1214/16-AOAS1005">doi</a></li>
+<li id="ref-UganderYin2020RandomizedGCR">Ugander, Johan and Yin, Hao (2020). Randomized Graph Cluster Randomization. <em></em>. <a href="https://arxiv.org/abs/2009.02297">arXiv</a></li>
+<li id="ref-EichhornKhanUganderYu2024LowOrderClusteredDesigns">Eichhorn, Matthew and Khan, Samir and Ugander, Johan and Yu, Christina Lee (2024). Low-Order Outcomes and Clustered Designs: Combining Design and Analysis for Causal Inference under Network Interference. <em></em>. <a href="https://arxiv.org/abs/2405.07979">arXiv</a></li>
+<li id="ref-ChattopadhyayImaiZubizarreta2023GeneralizedNetwork">Chattopadhyay, Ambarish and Imai, Kosuke and Zubizarreta, Jos{\'e} R. (2023). Design-Based Inference for Generalized Network Experiments with Stochastic Interventions. <em></em>. <a href="https://arxiv.org/abs/2312.03268">arXiv</a></li>
+<li id="ref-DoudchenkoEtAl2020BipartiteDesign">Doudchenko, Nick and Zhang, Minzhengxiong and Drynkin, Evgeni and Airoldi, Edoardo and Mirrokni, Vahab and Pouget-Abadie, Jean (2020). Causal Inference with Bipartite Designs. <em></em>. <a href="https://arxiv.org/abs/2010.02108">arXiv</a></li>
+<li id="ref-BrennanMirrokniPougetAbadie2022ClusterBipartite">Brennan, Jennifer and Mirrokni, Vahab and Pouget-Abadie, Jean (2022). Cluster Randomized Designs for One-Sided Bipartite Experiments. <em>Advances in Neural Information Processing Systems</em>.</li>
+<li id="ref-HudgensHalloran2008">Hudgens, Michael G. and Halloran, M. Elizabeth (2008). Toward Causal Inference with Interference. <em>Journal of the American Statistical Association</em>. <a href="https://doi.org/10.1198/016214508000000292">doi</a></li>
+<li id="ref-EcklesKarrerUgander2017">Eckles, Dean and Karrer, Brian and Ugander, Johan (2017). Design and Analysis of Experiments in Networks: Reducing Bias from Interference. <em>Journal of Causal Inference</em>. <a href="https://doi.org/10.1515/jci-2015-0021">doi</a></li>
+<li id="ref-SavjeAronowHudgens2021">Sävje, Fredrik and Aronow, Peter M. and Hudgens, Michael G. (2021). Average treatment effects in the presence of unknown interference. <em>The Annals of Statistics</em>. <a href="https://doi.org/10.1214/20-AOS1973">doi</a></li>
+<li id="ref-ZiglerPapadogeorgou2018">Zigler, Corwin M. and Papadogeorgou, Georgia (2018). Bipartite Causal Inference with Interference. <em></em>. <a href="https://arxiv.org/abs/1807.08660">arXiv</a></li>
+<li id="ref-BaldiRinott1989">Baldi, Pierre and Rinott, Yosef (1989). On Normal Approximations of Distributions in Terms of Dependency Graphs. <em>The Annals of Probability</em>. <a href="https://doi.org/10.1214/aop/1176991178">doi</a></li>
+<li id="ref-BoydVandenberghe2004">Boyd, Stephen and Vandenberghe, Lieven (2004). Convex Optimization. <em>Cambridge University Press</em>.</li>
+</ul></section>

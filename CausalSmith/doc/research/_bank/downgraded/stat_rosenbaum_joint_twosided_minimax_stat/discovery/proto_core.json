@@ -1,0 +1,713 @@
+{
+  "qid": "stat_rosenbaum_joint_twosided_minimax",
+  "specialization": "stat",
+  "cluster": "stat",
+  "comparator_promise_table": [
+    {
+      "comparator_bibkey": "RosenbaumKrieger1990",
+      "comparator_claim": "Equations (9)--(10) on page 496 evaluate the ordered hidden-covariate assignment configurations used in the ordered sensitivity calculation.",
+      "matched_by": "Theorem 1",
+      "match_kind": "non_representability"
+    },
+    {
+      "comparator_bibkey": "FogartySmall2016MultipleComparisons",
+      "comparator_claim": "A common-confounder quadratically constrained program coordinates simultaneous sensitivity analyses through mean and variance summaries.",
+      "matched_by": "Theorem 1",
+      "match_kind": "non_representability"
+    },
+    {
+      "comparator_bibkey": "Zhao2019SensitivityValue",
+      "comparator_claim": "The conventional two-sided matched-study workflow forms a doubled one-sided sensitivity calculation.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "Rosenbaum2018Stratified",
+      "comparator_claim": "The heterogeneous-stratum calculation uses a separable near-extreme solution and a conservative Taylor bound.",
+      "matched_by": "Open-ended Question 1",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "CohenOlsonFogarty2020AdversarialGame",
+      "comparator_claim": "The shared-bias adversarial game gives asymptotic multivariate one-sided calibration.",
+      "matched_by": "Open-ended Question 1",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "ZhangSmallHeng2024Continuous",
+      "comparator_claim": "The paper develops sensitivity analysis for matched observational studies with continuous exposures and binary outcomes.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "ChiuKang2025Contingency",
+      "comparator_claim": "The preprint develops exact nonparametric worst-case null calibration for permutation-invariant contingency-table tests.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    }
+  ],
+  "symbols": [
+    {
+      "name": "\\\\(\\\\pi_{ij}\\\\)",
+      "type": "real number",
+      "space": "\\([0,1]\\)",
+      "def": "the \\(j\\)-th coordinate of \\(\\pi_i\\)",
+      "role": "unit-level assignment probability"
+    },
+    {
+      "name": "\\\\(p\\\\)",
+      "type": "rational number",
+      "def": "calibration value returned by \\(\\mathsf{JPC}\\)",
+      "role": "algorithm output"
+    },
+    {
+      "name": "\\\\(\\\\tau_{ij}\\\\)",
+      "type": "real number",
+      "def": "\\(Y_{ij}(1)-Y_{ij}(0)\\)",
+      "role": "unit-level causal effect"
+    },
+    {
+      "name": "\\(n\\)",
+      "type": "positive integer",
+      "def": "number of matched sets",
+      "role": "design size"
+    },
+    {
+      "name": "\\(i\\)",
+      "type": "index",
+      "space": "\\(\\{1,\\ldots,n\\}\\)",
+      "def": "matched-set index",
+      "role": "index"
+    },
+    {
+      "name": "\\(m_i\\)",
+      "type": "integer",
+      "space": "\\(\\{2,3,\\ldots\\}\\)",
+      "def": "number of units in matched set \\(i\\)",
+      "role": "set size"
+    },
+    {
+      "name": "\\(j\\)",
+      "type": "index",
+      "space": "\\(\\{1,\\ldots,m_i\\}\\)",
+      "def": "unit index within matched set \\(i\\)",
+      "role": "index"
+    },
+    {
+      "name": "\\(\\Omega_n\\)",
+      "type": "finite set",
+      "def": "\\(\\prod_{i=1}^n\\{1,\\ldots,m_i\\}\\)",
+      "role": "one-treated-per-set assignment space"
+    },
+    {
+      "name": "\\(Z\\)",
+      "type": "random vector",
+      "space": "\\(\\Omega_n\\)",
+      "def": "conditional treated-unit assignment",
+      "role": "randomization variable"
+    },
+    {
+      "name": "\\(z_{\\mathrm{obs}}\\)",
+      "type": "vector",
+      "space": "\\(\\Omega_n\\)",
+      "def": "realized assignment",
+      "role": "observed assignment"
+    },
+    {
+      "name": "\\(Y_{ij}(a)\\)",
+      "type": "real number",
+      "space": "\\(a\\in\\{0,1\\}\\)",
+      "def": "potential outcome of unit \\(ij\\) under treatment \\(a\\)",
+      "role": "causal primitive"
+    },
+    {
+      "name": "\\(\\mathcal F\\)",
+      "type": "sigma-field",
+      "def": "fixed potential outcomes and matched-set membership conditioned on by the sensitivity analysis",
+      "role": "conditioning information"
+    },
+    {
+      "name": "\\(r\\)",
+      "type": "finite record",
+      "def": "observed outcome record under the Fisher sharp null",
+      "role": "input to the randomization statistic"
+    },
+    {
+      "name": "\\(\\Gamma\\)",
+      "type": "real number",
+      "space": "\\([1,\\infty)\\)",
+      "def": "Rosenbaum hidden-bias parameter",
+      "role": "sensitivity level"
+    },
+    {
+      "name": "\\(\\alpha\\)",
+      "type": "real number",
+      "space": "\\((0,1)\\)",
+      "def": "test level",
+      "role": "rejection threshold"
+    },
+    {
+      "name": "\\(t\\)",
+      "type": "nonnegative real number",
+      "def": "two-sided statistic threshold",
+      "role": "tail-event index"
+    },
+    {
+      "name": "\\(P\\)",
+      "type": "probability law",
+      "space": "\\(\\mathcal P_\\Gamma\\)",
+      "def": "candidate conditional assignment law",
+      "role": "adversarial law"
+    },
+    {
+      "name": "\\(\\Delta_m\\)",
+      "type": "simplex",
+      "def": "\\(\\{q\\in[0,1]^m:\\sum_{j=1}^m q_j=1\\}\\)",
+      "role": "probability-vector space"
+    },
+    {
+      "name": "\\(\\pi_i\\)",
+      "type": "probability vector",
+      "space": "\\(\\Delta_{m_i}\\)",
+      "def": "conditional assignment probabilities in set \\(i\\)",
+      "role": "assignment nuisance"
+    },
+    {
+      "name": "\\(\\mathcal P_\\Gamma\\)",
+      "type": "class of probability laws",
+      "def": "conditional product assignment laws satisfying the Rosenbaum odds restriction",
+      "role": "composite null law class"
+    },
+    {
+      "name": "\\(s_{ij}(r)\\)",
+      "type": "real number",
+      "def": "fixed contribution of assigning treatment to unit \\(j\\) in set \\(i\\), computed from \\(r\\)",
+      "role": "observed score"
+    },
+    {
+      "name": "\\(S(z;r)\\)",
+      "type": "real number",
+      "def": "\\(\\sum_{i=1}^n s_{i,z_i}(r)\\)",
+      "role": "signed matched-set statistic"
+    },
+    {
+      "name": "\\(T(z;r)\\)",
+      "type": "nonnegative real number",
+      "def": "\\(\\lvert S(z;r)\\rvert\\)",
+      "role": "two-sided ordering statistic"
+    },
+    {
+      "name": "\\(t_{\\mathrm{obs}}\\)",
+      "type": "nonnegative real number",
+      "def": "\\(T(z_{\\mathrm{obs}};r)\\)",
+      "role": "observed extremeness"
+    },
+    {
+      "name": "\\(A_+(t;r)\\)",
+      "type": "subset",
+      "space": "\\(\\Omega_n\\)",
+      "def": "\\(\\{z:S(z;r)\\ge t\\}\\)",
+      "role": "upper-tail event"
+    },
+    {
+      "name": "\\(A_-(t;r)\\)",
+      "type": "subset",
+      "space": "\\(\\Omega_n\\)",
+      "def": "\\(\\{z:S(z;r)\\le-t\\}\\)",
+      "role": "lower-tail event"
+    },
+    {
+      "name": "\\(A_J(t;r)\\)",
+      "type": "subset",
+      "space": "\\(\\Omega_n\\)",
+      "def": "\\(A_+(t;r)\\cup A_-(t;r)\\)",
+      "role": "joint two-tail event"
+    },
+    {
+      "name": "\\(p_+(t;r,\\Gamma)\\)",
+      "type": "real number",
+      "space": "\\([0,1]\\)",
+      "def": "worst-case upper-tail probability over \\(\\mathcal P_\\Gamma\\)",
+      "role": "one-sided sensitivity p-value"
+    },
+    {
+      "name": "\\(p_-(t;r,\\Gamma)\\)",
+      "type": "real number",
+      "space": "\\([0,1]\\)",
+      "def": "worst-case lower-tail probability over \\(\\mathcal P_\\Gamma\\)",
+      "role": "one-sided sensitivity p-value"
+    },
+    {
+      "name": "\\(p_J(t;r,\\Gamma)\\)",
+      "type": "real number",
+      "space": "\\([0,1]\\)",
+      "def": "worst-case probability of the union of the two tails under one shared assignment law",
+      "role": "joint sensitivity p-value"
+    },
+    {
+      "name": "\\(p_B(t;r,\\Gamma)\\)",
+      "type": "real number",
+      "space": "\\([0,1]\\)",
+      "def": "conventional doubled-smaller-tail sensitivity p-value",
+      "role": "workflow comparator"
+    },
+    {
+      "name": "\\(G(t;r,\\Gamma)\\)",
+      "type": "real number",
+      "def": "\\(p_B(t;r,\\Gamma)-p_J(t;r,\\Gamma)\\)",
+      "role": "joint-calibration gain"
+    },
+    {
+      "name": "\\(\\mathfrak R_{\\mathrm{strict}}\\)",
+      "type": "set",
+      "def": "level, sensitivity, design, and record configurations at which \\(G>0\\)",
+      "role": "strict-improvement frontier"
+    },
+    {
+      "name": "\\(\\iota\\)",
+      "type": "bijection",
+      "space": "\\(\\Omega_n\\to\\Omega_n\\)",
+      "def": "assignment reversal map",
+      "role": "symmetry map"
+    },
+    {
+      "name": "\\(U_n\\)",
+      "type": "probability law",
+      "def": "uniform distribution on \\(\\Omega_n\\)",
+      "role": "unbiased assignment law"
+    },
+    {
+      "name": "\\(d^\\dagger\\)",
+      "type": "finite design-record pair",
+      "def": "explicit two-set score instance specified in \\(\\texttt{def:gamma-two-witness}\\)",
+      "role": "strict-gap regression instance"
+    },
+    {
+      "name": "\\(\\mathcal V_i^\\Gamma\\)",
+      "type": "finite set",
+      "def": "local extreme Rosenbaum assignment vectors for matched set \\(i\\)",
+      "role": "local adversary support"
+    },
+    {
+      "name": "\\(\\mathcal I_{\\mathbb Q}\\)",
+      "type": "set",
+      "def": "finitely encoded rational score, level, and sensitivity inputs",
+      "role": "computational input domain"
+    },
+    {
+      "name": "\\(\\mathcal C\\)",
+      "type": "finite bit string",
+      "def": "a putative exact-rational attaining-law, convolution, primal--dual, and finite branch transcript for \\(\\mathsf{JPC}\\)",
+      "role": "independently verifiable exact calibration certificate"
+    },
+    {
+      "name": "\\(\\mathsf{JPC}\\)",
+      "type": "algorithm",
+      "def": "the proposed deterministic score-state primal--dual calibration algorithm whose correctness and termination are posed in \\(\\texttt{oeq:operational-joint-certificate}\\)",
+      "role": "proposed implementable exact joint-tail calibration"
+    },
+    {
+      "name": "\\(d\\)",
+      "type": "fixed design-record query",
+      "def": "\\(d=(n,(m_i)_{i=1}^n,(s_{ij}(r))_{1\\le i\\le n,1\\le j\\le m_i},t)\\)",
+      "role": "fixed input for parametric calibration"
+    },
+    {
+      "name": "\\(\\Lambda_d\\)",
+      "type": "set",
+      "def": "the finitely encoded rational parameter pairs \\(\\lambda=(\\alpha,\\Gamma)\\) associated with fixed query \\(d\\)",
+      "role": "fixed-design cell parameter domain"
+    },
+    {
+      "name": "\\(\\lambda\\)",
+      "type": "parameter pair",
+      "space": "\\(\\Lambda_d\\)",
+      "def": "\\(\\lambda=(\\alpha,\\Gamma)\\)",
+      "role": "level and sensitivity parameter"
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:fisher-sharp-null",
+      "kind": "condition",
+      "condition": "\\(Y_{ij}(1)=Y_{ij}(0)\\) for every \\(i\\in\\{1,\\ldots,n\\}\\) and every \\(j\\in\\{1,\\ldots,m_i\\}\\).",
+      "free_symbols": [
+        "\\(Y_{ij}(a)\\)",
+        "\\(n\\)",
+        "\\(m_i\\)"
+      ],
+      "standard": {
+        "name": "Fisher sharp null",
+        "cite": "Rosenbaum1987SensitivityPermutation"
+      },
+      "used_by": []
+    },
+    {
+      "id": "ass:conditional-product-assignment",
+      "kind": "condition",
+      "condition": "\\(\\Pr(Z=z\\mid\\mathcal F)=\\prod_{i=1}^n\\pi_{i,z_i}\\) for every \\(z\\in\\Omega_n\\).",
+      "free_symbols": [
+        "\\(Z\\)",
+        "\\(\\mathcal F\\)",
+        "\\(\\pi_i\\)",
+        "\\(\\Omega_n\\)",
+        "\\(n\\)"
+      ],
+      "standard": {
+        "name": "conditional independent matched-set assignment",
+        "cite": "Rosenbaum2018Stratified"
+      },
+      "used_by": [
+        "def:rosenbaum-laws"
+      ]
+    },
+    {
+      "id": "ass:rosenbaum-odds",
+      "kind": "condition",
+      "condition": "\\(\\pi_{ij}\\le\\Gamma\\pi_{ik}\\) for every \\(i\\in\\{1,\\ldots,n\\}\\) and every \\(j,k\\in\\{1,\\ldots,m_i\\}\\).",
+      "free_symbols": [
+        "\\(\\pi_i\\)",
+        "\\(\\Gamma\\)",
+        "\\(n\\)",
+        "\\(m_i\\)"
+      ],
+      "standard": {
+        "name": "Rosenbaum bounded-odds sensitivity model",
+        "cite": "Rosenbaum1987SensitivityPermutation"
+      },
+      "used_by": [
+        "def:rosenbaum-laws",
+        "oeq:operational-joint-certificate",
+        "lem:parametric-one-sided-monotone-separation",
+        "lem:one-sided-score-monotone-candidate-reduction",
+        "lem:fogarty-small-moment-qcqp",
+        "thm:opposite-tail-capability-separation-and-hardness"
+      ]
+    },
+    {
+      "id": "ass:assignment-reversal-symmetry",
+      "kind": "condition",
+      "condition": "There is a bijection \\(\\iota:\\Omega_n\\to\\Omega_n\\) such that \\(S(\\iota(z);r)=-S(z;r)\\) for every \\(z\\in\\Omega_n\\).",
+      "free_symbols": [
+        "\\(\\iota\\)",
+        "\\(\\Omega_n\\)",
+        "\\(S(z;r)\\)",
+        "\\(r\\)"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This is satisfied by paired signed-score analyses when relabelling treatment positions reverses every pair contribution, and by balanced matched-set constructions with a prespecified global assignment reversal. It isolates the conventional no-hidden-bias reduction without restricting the general computational question."
+      },
+      "used_by": [
+        "thm:gamma-one-equality"
+      ]
+    },
+    {
+      "id": "ass:rational-computational-input",
+      "kind": "condition",
+      "condition": "\\(\\Gamma\\), \\(\\alpha\\), and every \\(s_{ij}(r)\\) are rational numbers supplied in finite binary encoding.",
+      "free_symbols": [
+        "\\(\\Gamma\\)",
+        "\\(\\alpha\\)",
+        "\\(s_{ij}(r)\\)",
+        "\\(n\\)",
+        "\\(m_i\\)"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "Matched-study sensitivity software commonly receives integer or rational rank and \\(M\\)-scores, while sensitivity levels and reported \\(\\Gamma\\) values are finite decimals. This input restriction gives exact arithmetic and a checkable finite certificate a concrete operational meaning."
+      },
+      "used_by": [
+        "def:rational-input-domain",
+        "oeq:operational-joint-certificate"
+      ]
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:rosenbaum-laws",
+      "name": "Rosenbaum product-law class",
+      "construction": "\\(\\mathcal P_\\Gamma=\\{P: P\\text{ satisfies }\\texttt{ass:conditional-product-assignment}\\text{ and }\\texttt{ass:rosenbaum-odds}\\text{ for every }i\\in\\{1,\\ldots,n\\}\\}\\).",
+      "by_member_properties": [
+        "ass:conditional-product-assignment",
+        "ass:rosenbaum-odds"
+      ]
+    },
+    {
+      "id": "def:two-tail-events",
+      "name": "two-tail randomization events",
+      "construction": "\\(S(z;r)=\\sum_{i=1}^n s_{i,z_i}(r),\\quad T(z;r)=\\lvert S(z;r)\\rvert,\\quad A_+(t;r)=\\{z\\in\\Omega_n:S(z;r)\\ge t\\},\\quad A_-(t;r)=\\{z\\in\\Omega_n:S(z;r)\\le-t\\},\\quad A_J(t;r)=A_+(t;r)\\cup A_-(t;r)\\).",
+      "inputs": [
+        "\\(s_{ij}(r)\\)",
+        "\\(\\Omega_n\\)",
+        "\\(n\\)",
+        "\\(t\\)"
+      ]
+    },
+    {
+      "id": "def:robust-two-tail-calibration",
+      "name": "shared-law and doubled-tail calibrations",
+      "construction": "\\(p_+(t;r,\\Gamma)=\\sup_{P\\in\\mathcal P_\\Gamma}P\\{A_+(t;r)\\},\\quad p_-(t;r,\\Gamma)=\\sup_{P\\in\\mathcal P_\\Gamma}P\\{A_-(t;r)\\},\\quad p_J(t;r,\\Gamma)=\\sup_{P\\in\\mathcal P_\\Gamma}P\\{A_J(t;r)\\},\\quad p_B(t;r,\\Gamma)=\\min\\{1,2\\min[p_+(t;r,\\Gamma),p_-(t;r,\\Gamma)]\\},\\quad G(t;r,\\Gamma)=p_B(t;r,\\Gamma)-p_J(t;r,\\Gamma)\\).",
+      "inputs": [
+        "def:rosenbaum-laws",
+        "def:two-tail-events"
+      ]
+    },
+    {
+      "id": "def:strict-improvement-region",
+      "name": "strict joint-improvement region",
+      "construction": "\\(\\mathfrak R_{\\mathrm{strict}}=\\{(\\alpha,\\Gamma,(m_i)_{i=1}^n,r,z_{\\mathrm{obs}}):0<\\alpha<1,\\ t_{\\mathrm{obs}}=T(z_{\\mathrm{obs}};r),\\ p_J(t_{\\mathrm{obs}};r,\\Gamma)\\le\\alpha<p_B(t_{\\mathrm{obs}};r,\\Gamma)\\}\\).",
+      "inputs": [
+        "def:two-tail-events",
+        "def:robust-two-tail-calibration"
+      ]
+    },
+    {
+      "id": "def:local-rosenbaum-vertices",
+      "name": "local Rosenbaum vertices",
+      "construction": "\\(\\mathcal V_i^\\Gamma=\\{\\pi_i^H:\\varnothing\\ne H\\subseteq\\{1,\\ldots,m_i\\},\\ \\pi_{ij}^H=\\Gamma/(|H|\\Gamma+m_i-|H|)\\text{ if }j\\in H,\\ \\pi_{ij}^H=1/(|H|\\Gamma+m_i-|H|)\\text{ if }j\\notin H\\}\\).",
+      "inputs": [
+        "\\(\\Gamma\\)",
+        "\\(m_i\\)"
+      ]
+    },
+    {
+      "id": "def:rational-input-domain",
+      "name": "rational computational input domain",
+      "construction": "\\(\\mathcal I_{\\mathbb Q}=\\{((m_i)_{i=1}^n,(s_{ij}(r))_{1\\le i\\le n,1\\le j\\le m_i},t,\\alpha,\\Gamma):\\texttt{ass:rational-computational-input}\\text{ holds and }t\\in\\mathbb Q_{\\ge0}\\}\\).",
+      "by_member_properties": [
+        "ass:rational-computational-input"
+      ]
+    },
+    {
+      "id": "def:fixed-query-parameter-domain",
+      "name": "fixed-query rational parameter domain",
+      "construction": "\\(d=(n,(m_i)_{i=1}^n,(s_{ij}(r))_{1\\le i\\le n,1\\le j\\le m_i},t),\\qquad \\Lambda_d=\\{(\\alpha,\\Gamma)\\in\\mathbb Q^2:0<\\alpha<1,\\ 1\\le\\Gamma,\\ d,\\alpha,\\Gamma\\text{ have finite binary encodings}\\}\\).",
+      "inputs": [
+        "def:rational-input-domain"
+      ]
+    },
+    {
+      "id": "def:joint-primal-dual-handle",
+      "name": "joint primal-dual calibration handle",
+      "construction": "For \\(d\\) and \\(\\lambda=(\\alpha,\\Gamma)\\in\\Lambda_d\\) from \\(\\texttt{def:fixed-query-parameter-domain}\\), design a branch-and-price transcript for \\(\\mathsf{JPC}(d,\\lambda)=(p,\\mathcal C)\\) using the local vertices \\(\\mathcal V_i^\\Gamma\\), a master relaxation for \\(A_J(t;r)\\), and exact rational primal and dual bounds. The computation may visit every branch and serially write every visited product vertex to \\(\\mathcal C\\), but it may neither receive nor retain an in-memory array listing \\(\\prod_{i=1}^n\\mathcal V_i^\\Gamma\\). For fixed \\(d\\), the target parametric transcript additionally lists finitely many systems of strict or weak rational-polynomial inequalities in \\((\\alpha,\\Gamma)\\) whose disjoint intersections with \\(\\Lambda_d\\) are labelled by \\(p_J\\le\\alpha<p_B\\), \\(p_B\\le\\alpha\\), or \\(\\alpha<p_J\\).",
+      "inputs": [
+        "def:local-rosenbaum-vertices",
+        "def:rational-input-domain",
+        "def:fixed-query-parameter-domain",
+        "def:rosenbaum-laws",
+        "def:two-tail-events",
+        "def:robust-two-tail-calibration"
+      ]
+    },
+    {
+      "id": "def:gamma-two-witness",
+      "name": "inherited \\(\\Gamma=2\\) strict-gap regression instance",
+      "construction": "\\(d^\\dagger=(n,(m_1,m_2),\\Gamma,(s_{1j})_{j=1}^{m_1},(s_{2j})_{j=1}^{m_2},t)=(2,(5,3),2,(-4,-4,-1,-1,1),(6,5,-2),6)\\), with \\(S(z;d^\\dagger)=s_{1,z_1}+s_{2,z_2}\\).",
+      "inputs": [
+        "\\(n\\)",
+        "\\(m_i\\)",
+        "\\(\\Gamma\\)",
+        "\\(s_{ij}(r)\\)",
+        "\\(t\\)"
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "thm:opposite-tail-capability-separation-and-hardness",
+      "kind": "theorem",
+      "statement": "The exact joint-tail calibration has three capability-separation properties under the Rosenbaum product-law. First, for \\(n=1\\), \\(m_1=4\\), \\(t=1\\), scores \\((-2,0,1,2)\\), and every real \\(\\gamma>1\\) with \\(\\Gamma=\\gamma\\), let \\(E=A_J(1;r)=\\{1,3,4\\}\\). For a local high set \\(H\\), set \\(a=\\lvert H\\cap E\\rvert\\) and \\(b=\\lvert H\\cap E^c\\rvert\\). Then \\[P_H(E)=\\frac{3+(\\gamma-1)a}{4+(\\gamma-1)(a+b)},\\] the unique maximizing high set is the nonmonotone event set \\(H=E\\), \\[p_J(1;r,\\gamma)=\\frac{3\\gamma}{3\\gamma+1},\\qquad \\max_{H\\in\\mathcal M}P_H(E)=\\frac{2\\gamma+1}{2\\gamma+2},\\] where \\(\\mathcal M\\) is the nonempty upper-score suffixes and lower-score prefixes, and their exact gap is \\((\\gamma-1)/[(3\\gamma+1)(2\\gamma+2)]>0\\). At \\(\\gamma=2\\), these values are \\(6/7\\), \\(5/6\\), and \\(1/42\\). Thus the exact Rosenbaum--Krieger one-sided score-monotone candidate capability does not extend to the opposite-tail union. Second, the mean--variance moment summary used by a Fogarty--Small-type QCQP cannot determine \\(p_J\\): at \\(n=1\\), \\(m_1=4\\), \\(\\Gamma=1\\), and \\(t=1\\), the score vectors \\((-1,-1,1,1)\\) and \\((1,-5/3,1/3,1/3)\\) both have uniform assignment mean \\(0\\) and variance \\(1\\), but their joint-tail probabilities are \\(1\\) and \\(1/2\\). Third, on binary-encoded integer-score inputs, exact value computation of \\(p_J\\) is \\(\\#\\mathrm P\\)-hard under polynomial-time metric reductions, even for reversal-symmetric matched pairs at \\(\\Gamma=1\\). Specifically, for positive integers \\(a_1,\\ldots,a_n\\), give pair \\(i\\) scores \\((-a_i,a_i)\\), set \\(t=1\\), and let \\(N_0=\\lvert\\{\\varepsilon\\in\\{-1,1\\}^n:\\sum_i\\varepsilon_i a_i=0\\}\\rvert\\). Then \\[p_J=1-\\frac{N_0}{2^n}.\\] This is exact-value hardness only and does not assert an unconditional exponential lower bound on certificate length.",
+      "depends_on": [
+        "ass:rosenbaum-odds",
+        "def:rosenbaum-laws",
+        "def:two-tail-events",
+        "def:robust-two-tail-calibration",
+        "def:local-rosenbaum-vertices",
+        "lem:parametric-one-sided-monotone-separation",
+        "lem:one-sided-score-monotone-candidate-reduction",
+        "lem:fogarty-small-moment-qcqp",
+        "lem:counting-subset-sum-hardness"
+      ],
+      "status": "to-prove",
+      "justification": "This durable root identifies the required exact state representation, proves the all-\\(\\gamma>1\\) failure of score-monotone one-sided candidates, and states the honest exact-computation ceiling.",
+      "gap": "Rosenbaum--Krieger (1990, equations (9)--(10), p. 496) parameterize ordered hidden-covariate configurations for their one-sided permutation calculation; this theorem proves only that that ordered candidate capability is not representationally complete for an opposite-tail union. Fogarty--Small (2016) coordinate common assignment probabilities through a mean--variance QCQP; the equal-moment clause proves that two moments do not determine exact finite \\(p_J\\).",
+      "consumer": "Exact two-sided sensitivity implementations use it to justify score-state evaluation and to set honest worst-case computational expectations."
+    },
+    {
+      "id": "lem:parametric-one-sided-monotone-separation",
+      "kind": "lemma",
+      "statement": "Set \\(n=1\\), \\(m_1=4\\), \\(t=1\\), and let the ordered scores be \\((-2,0,1,2)\\). For every \\(\\gamma>1\\), set \\(\\Gamma=\\gamma\\) and write \\(E=A_J(1;r)=\\{1,3,4\\}\\). Under the local Rosenbaum vertex whose nonempty high set is \\(H\\), put \\(a=\\lvert H\\cap E\\rvert\\) and \\(b=\\lvert H\\cap E^c\\rvert\\). Then \\[P_H(E)=\\frac{3+(\\gamma-1)a}{4+(\\gamma-1)(a+b)}.\\] The unique maximizing high set is \\(H=E\\), and hence \\[p_J(1;r,\\gamma)=\\frac{3\\gamma}{3\\gamma+1}.\\] The exact maximum over all nonempty upper-score suffixes and lower-score prefixes is \\((2\\gamma+1)/(2\\gamma+2)\\). Consequently, \\[p_J(1;r,\\gamma)-\\max_{H\\,\\mathrm{monotone}}P_H(E)=\\frac{\\gamma-1}{(3\\gamma+1)(2\\gamma+2)}>0.\\] At \\(\\gamma=2\\), the three displayed quantities are \\(6/7\\), \\(5/6\\), and \\(1/42\\), respectively.",
+      "depends_on": [
+        "ass:rosenbaum-odds",
+        "def:rosenbaum-laws",
+        "def:two-tail-events",
+        "def:robust-two-tail-calibration",
+        "def:local-rosenbaum-vertices"
+      ],
+      "status": "to-prove",
+      "justification": "The lemma supplies the closed-form all-\\(\\gamma>1\\) structural gap and its \\(\\gamma=2\\) regression values.",
+      "gap": "It is a finite support calculation, not a general power comparison.",
+      "consumer": "Software tests can verify the event law, unique support, and exact rational gap at arbitrary rational \\(\\gamma>1\\)."
+    },
+    {
+      "id": "lem:one-sided-score-monotone-candidate-reduction",
+      "kind": "lemma",
+      "statement": "For the ordered score vector \\((-2,0,1,2)\\), the nonempty upper-score suffixes and lower-score prefixes are precisely \\[\\{4\\},\\{3,4\\},\\{2,3,4\\},\\{1,2,3,4\\},\\{1\\},\\{1,2\\},\\{1,2,3\\}.\\] At threshold \\(t=1\\), the opposite-tail event is \\(E=\\{1,3,4\\}\\), which is neither an upper suffix nor a lower prefix. For every \\(\\gamma>1\\), the best local Rosenbaum vertex whose high set belongs to this one-sided score-monotone candidate class has event probability \\((2\\gamma+1)/(2\\gamma+2)\\), attained exactly by \\(H=\\{3,4\\}\\) within the displayed class.",
+      "depends_on": [
+        "ass:rosenbaum-odds",
+        "def:two-tail-events",
+        "def:local-rosenbaum-vertices"
+      ],
+      "status": "to-prove",
+      "justification": "The lemma enumerates the comparator's candidate geometry on the separating score design.",
+      "gap": "It preserves the correctness of one-sided ordered searches for their own events and proves only their insufficiency for this union event.",
+      "consumer": "Reviewers and implementers can audit exactly which prefix and suffix supports were compared."
+    },
+    {
+      "id": "lem:fogarty-small-moment-qcqp",
+      "kind": "lemma",
+      "statement": "At \\(n=1\\), \\(m_1=4\\), \\(\\Gamma=1\\), and \\(t=1\\), the rational score vectors \\(x=(-1,-1,1,1)\\) and \\(y=(1,-5/3,1/3,1/3)\\) have the same uniform assignment mean \\(0\\) and variance \\(1\\), but their exact joint-tail probabilities are \\(p_J(x)=1\\) and \\(p_J(y)=1/2\\). Therefore the exact finite joint-tail probability is not a function of the assignment mean and variance, and no mean--variance-only moment QCQP can determine \\(p_J\\) on this class.",
+      "depends_on": [
+        "ass:rosenbaum-odds",
+        "def:rosenbaum-laws",
+        "def:two-tail-events",
+        "def:robust-two-tail-calibration"
+      ],
+      "status": "to-prove",
+      "justification": "The lemma gives a rational equal-moment witness with exact tail probabilities \\(1\\) and \\(1/2\\).",
+      "gap": "It rules out exact determination from two moments, not asymptotic usefulness of moment methods.",
+      "consumer": "An exact implementation must retain the full score-state event information."
+    },
+    {
+      "id": "lem:counting-subset-sum-hardness",
+      "kind": "lemma",
+      "statement": "The counting subset-sum problem that maps positive binary-encoded integers \\(w_1,\\ldots,w_N\\) and a binary-encoded target \\(T\\) to \\(N_T=\\lvert\\{B\\subseteq\\{1,\\ldots,N\\}:\\sum_{i\\in B}w_i=T\\}\\rvert\\) is \\(\\#\\mathrm P\\)-complete, and in particular \\(\\#\\mathrm P\\)-hard under polynomial-time parsimonious reductions.",
+      "depends_on": [],
+      "status": "to-prove",
+      "justification": "The proof-bearing lemma supplies a parsimonious counting substrate for the metric reduction.",
+      "gap": "It is classical complexity infrastructure, not the causal-method contribution.",
+      "consumer": "The root theorem maps its target count to the complement of an unbiased joint-tail probability."
+    },
+    {
+      "id": "thm:gamma-one-equality",
+      "kind": "theorem",
+      "statement": "If \\(\\texttt{ass:assignment-reversal-symmetry}\\) holds and \\(t_{\\mathrm{obs}}>0\\), then at \\(\\Gamma=1\\), \\[p_+(t_{\\mathrm{obs}};r,1)=p_-(t_{\\mathrm{obs}};r,1),\\qquad p_J(t_{\\mathrm{obs}};r,1)=p_B(t_{\\mathrm{obs}};r,1).\\]",
+      "depends_on": [
+        "ass:assignment-reversal-symmetry",
+        "def:rosenbaum-laws",
+        "def:two-tail-events",
+        "def:robust-two-tail-calibration"
+      ],
+      "status": "to-prove",
+      "justification": "This banked regression result supplies the exact no-hidden-bias equality benchmark.",
+      "gap": "The equality is an elementary symmetry-specific reduction and is retained as a credited sanity check, not as new kernel novelty.",
+      "consumer": "Exact implementations use it as a baseline calibration check."
+    },
+    {
+      "id": "prop:gamma-two-gap-witness",
+      "kind": "proposition",
+      "statement": "For \\(d^\\dagger\\) in \\(\\texttt{def:gamma-two-witness}\\), \\[p_+(6;d^\\dagger,2)=\\frac{4}{15},\\qquad p_-(6;d^\\dagger,2)=\\frac{2}{7},\\qquad p_J(6;d^\\dagger,2)=\\frac{3}{8},\\qquad G(6;d^\\dagger,2)=\\frac{19}{120}\\approx0.158.\\]",
+      "depends_on": [
+        "def:rosenbaum-laws",
+        "def:two-tail-events",
+        "def:robust-two-tail-calibration",
+        "def:gamma-two-witness"
+      ],
+      "status": "to-prove",
+      "justification": "This banked regression result supplies the reporting-scale gain \\(19/120\\approx0.158\\).",
+      "gap": "It is a credited inherited heterogeneous design-record fixture, rather than a new kernel contribution or a universal dominance statement.",
+      "consumer": "Two-sided sensitivity reports can use it as an interpretable exact regression example."
+    },
+    {
+      "id": "oeq:operational-joint-certificate",
+      "kind": "openendedquestion",
+      "statement": "For every fixed query \\(d\\) with finitely encoded rational scores and threshold, and every \\(\\lambda=(\\alpha,\\Gamma)\\in\\Lambda_d\\), does there exist a deterministic finite terminating implementation \\(\\mathsf{JPC}(d,\\lambda)=(p,\\mathcal C)\\) such that an exact-rational verifier accepts \\(\\mathcal C\\) if and only if \\(p=p_J(t;r,\\Gamma)\\) and \\(p\\) is the supremum over \\(\\mathcal P_\\Gamma\\)? The implementation may visit every branch and serially record every visited product vertex, but it may not receive or retain an in-memory array of the full family \\(\\prod_{i=1}^n\\mathcal V_i^\\Gamma\\). For each fixed \\(d\\), can accepted parametric transcripts provide a finite partition of \\(\\Lambda_d\\) by systems of strict or weak rational-polynomial inequalities, with each cell carrying a necessary-and-sufficient label \\(p_J\\le\\alpha<p_B\\), \\(p_B\\le\\alpha\\), or \\(\\alpha<p_J\\)?",
+      "depends_on": [
+        "ass:rosenbaum-odds",
+        "ass:rational-computational-input",
+        "def:rosenbaum-laws",
+        "def:two-tail-events",
+        "def:robust-two-tail-calibration",
+        "def:strict-improvement-region",
+        "def:local-rosenbaum-vertices",
+        "def:rational-input-domain",
+        "def:fixed-query-parameter-domain",
+        "def:joint-primal-dual-handle"
+      ],
+      "status": "to-prove",
+      "justification": "The field-level gap is an observable exact calibration with an independently checkable certificate, rather than a fixed-record oracle calculation.",
+      "gap": "Rosenbaum (2018) provides an operational conservative Taylor calculation for heterogeneous strata; Zhao (2019) studies pair-matched sensitivity values using the conventional doubled-smaller-tail workflow; and Cohen--Olson--Fogarty (2020) provide an asymptotic directional game. Zhang--Small--Heng (2024) treat continuous exposures with binary outcomes, and Chiu--Kang (2025) give exact worst-case calibration for permutation-invariant contingency-table tests. These works are informative but do not state an exact finite certificate for a single signed-statistic opposite-tail union over heterogeneous matched-set product laws or a complete strictness-cell characterization.",
+      "consumer": "A certified routine can be integrated into \\(\texttt{sensitivitymv}\\), \\(\texttt{senfm}\\), and two-sided matched-study sensitivity reports."
+    }
+  ],
+  "sampling_model": {
+    "design": "One treated unit is observed in each of \\(n\\) matched sets; inference conditions on \\(\\mathcal F\\).",
+    "units": "Set \\(i\\) contains \\(m_i\\ge2\\) units with fixed potential outcomes \\(Y_{ij}(0),Y_{ij}(1)\\).",
+    "treatment": "\\(Z_i=j\\) denotes treatment of unit \\(j\\) in set \\(i\\).",
+    "overlap": "The Rosenbaum class requires \\(\\pi_i\\in\\Delta_{m_i}\\) and \\(\\pi_{ij}\\le\\Gamma\\pi_{ik}\\).",
+    "nuisance_estimation": "No nuisance law is estimated: calibration maximizes over the conditional assignment-law class using the observed sharp-null record."
+  },
+  "estimand_functional": "\\(p_J(t_{\\mathrm{obs}};r,\\Gamma)=\\sup_{P\\in\\mathcal P_\\Gamma}P\\{\\lvert S(Z;r)\\rvert\\ge t_{\\mathrm{obs}}\\}\\)",
+  "target_estimand": "\\(\\tau_{ij}=Y_{ij}(1)-Y_{ij}(0)=0\\ \\text{for all }i,j\\)",
+  "bibliography": [
+    {
+      "key": "RosenbaumKrieger1990",
+      "citation": "Rosenbaum, P. R. and Krieger, A. M. (1990). Sensitivity of two-sample permutation inferences in observational studies. \\emph{Journal of the American Statistical Association}, 85(410), 493--498. doi:10.1080/01621459.1990.10476226."
+    },
+    {
+      "key": "ZhangSmallHeng2024Continuous",
+      "citation": "Zhang, J., Small, D. S., and Heng, S. (2024). Sensitivity analysis for matched observational studies with continuous exposures and binary outcomes. \\emph{Biometrika}, 111(4), 1349--1368. doi:10.1093/biomet/asae021."
+    },
+    {
+      "key": "ChiuKang2025Contingency",
+      "citation": "Chiu, E. K. and Kang, H. (2025). Exact, nonparametric sensitivity analysis for observational studies of contingency tables. arXiv:2507.17207."
+    },
+    {
+      "key": "Rosenbaum1987SensitivityPermutation",
+      "citation": "Rosenbaum, P. R. (1987). Sensitivity analysis for certain permutation inferences in matched observational studies. \\emph{Biometrika}, 74(1), 13--26."
+    },
+    {
+      "key": "Rosenbaum2007M",
+      "citation": "Rosenbaum, P. R. (2007). Sensitivity analysis for m-estimates, tests, and confidence intervals in matched observational studies. \\emph{Biometrics}, 63(2), 456--464. doi:10.1111/j.1541-0420.2006.00717.x."
+    },
+    {
+      "key": "FogartySmall2016MultipleComparisons",
+      "citation": "Fogarty, C. B. and Small, D. S. (2016). Sensitivity analysis for multiple comparisons in matched observational studies through quadratically constrained linear programming. \\emph{Journal of the American Statistical Association}, 111(516), 1820--1830. doi:10.1080/01621459.2015.1120675."
+    },
+    {
+      "key": "Rosenbaum2018Stratified",
+      "citation": "Rosenbaum, P. R. (2018). Sensitivity analysis for stratified comparisons in an observational study of the effect of smoking on homocysteine levels. \\emph{Annals of Applied Statistics}, 12(4), 2312--2334. doi:10.1214/18-AOAS1153."
+    },
+    {
+      "key": "CohenOlsonFogarty2020AdversarialGame",
+      "citation": "Cohen, P. L., Olson, M. A., and Fogarty, C. B. (2020). Multivariate one-sided testing in matched observational studies as an adversarial game. \\emph{Biometrika}, 107(4), 809--825. doi:10.1093/biomet/asaa024."
+    },
+    {
+      "key": "Zhao2019SensitivityValue",
+      "citation": "Zhao, Q. (2019). On sensitivity value of pair-matched observational studies. \\emph{Journal of the American Statistical Association}, 114(526), 713--722. doi:10.1080/01621459.2018.1429277."
+    },
+    {
+      "key": "HowardPimentel2021Adaptive",
+      "citation": "Howard, S. R. and Pimentel, S. D. (2021). The uniform general signed rank test and its design sensitivity. \\emph{Biometrika}, 108(2), 381--396."
+    },
+    {
+      "key": "FaussZoubirPoor2021Minimax",
+      "citation": "Fauß, M., Zoubir, A. M., and Poor, H. V. (2021). Minimax robust detection: classic results and recent advances. \\emph{IEEE Transactions on Signal Processing}, 69, 2252--2283. doi:10.1109/TSP.2021.3061298."
+    },
+    {
+      "key": "Fogarty2023WeakNulls",
+      "citation": "Fogarty, C. B. (2023). Testing weak nulls in matched observational studies. \\emph{Biometrics}, 79(3), 2196--2207. doi:10.1111/biom.13741."
+    }
+  ],
+  "tldr": "The settled contribution is a sharp capability-separation theorem for exact joint two-sided Rosenbaum calibration in heterogeneous matched sets, paired with a precisely scoped operational question. For every real \\(\\gamma>1\\), the four-score witness has a unique nonmonotone joint optimizer, \\(p_J=3\\gamma/(3\\gamma+1)\\), which exceeds the best one-sided score-monotone candidate by exactly \\((\\gamma-1)/[(3\\gamma+1)(2\\gamma+2)]\\); at \\(\\gamma=2\\), the values are \\(6/7\\), \\(5/6\\), and \\(1/42\\). Equal assignment moments do not determine the exact union tail, and exact evaluation is \\(\\#\\mathrm P\\)-hard even for unbiased reversal-symmetric pairs. The open operational target is a score-state primal--dual procedure that, on a finitely encoded rational query, returns an attaining shared law and an exact-rational certificate without retaining a Cartesian-product array, and that supplies fixed-design rational parameter cells. Strict reporting improvement is defined by \\(p_J\\le\\alpha<p_B\\); reversal symmetry gives the retained \\(\\Gamma=1\\) regression equality, while the independent heterogeneous \\(\\Gamma=2\\) regression design has gain \\(19/120\\approx0.158\\).",
+  "project_justification": {
+    "gap": "Published workflows solve adjacent but different optimization problems. Rosenbaum's matched-set sensitivity analysis and the Rosenbaum--Krieger ordered one-sided search exploit score-monotone high sets, whereas Fogarty--Small enforce a shared confounder through a mean--variance QCQP. Neither restricted representation evaluates the exact finite probability of an opposite-tail union under one shared Rosenbaum law: the all-\\(\\gamma>1\\) witness requires a nonmonotone high set, and the equal-moment witness assigns different exact joint-tail probabilities to identical first two assignment moments.",
+    "niche": "The target is the fixed-record shared-law functional \\(p_J(t;r,\\Gamma)=\\sup_{P\\in\\mathcal P_\\Gamma}P\\{\\lvert S(Z;r)\\rvert\\ge t\\}\\), contrasted with \\(p_B\\), which separately optimizes the two one-sided tails before doubling the smaller optimum. The operational problem is to compute and certify this exact union probability for heterogeneous matched sets without an oracle for the unknown assignment law, while exposing precisely when the shared-law report improves, agrees with, or loses to the conventional comparator.",
+    "fill": "The parametric support theorem proves a closed-form strict separation from every one-sided prefix or suffix for all \\(\\gamma>1\\); the equal-moment theorem rules out moment-only exact evaluation; and the metric reduction supplies the honest \\(\\#\\mathrm P\\)-hardness ceiling. The open construction target is a verified, possibly exponential, score-state primal--dual algorithm. If established, three certified event runs would yield \\(p_J\\), \\(p_+\\), and \\(p_-\\), the exact level-qualified region \\(p_J\\le\\alpha<p_B\\), the gain/equality/loss partition, and a fixed-design rational support-switch certificate."
+  },
+  "related_work": "Rosenbaum introduced the bounded-odds conditional sensitivity model for matched permutation inference \\cite{Rosenbaum1987SensitivityPermutation}. Rosenbaum--Krieger's ordered two-sample calculation uses the ordered hidden-covariate configurations in equations (9)--(10) on page 496 \\cite{RosenbaumKrieger1990}; the capability theorem makes the limited comparison that these upper-suffix and lower-prefix candidates omit the unique optimizer for one opposite-tail union. Fogarty--Small coordinate common assignment probabilities through a mean--variance quadratically constrained program \\cite{FogartySmall2016MultipleComparisons}; the equal-moment clause proves that those two summaries cannot determine exact finite \\(p_J\\). Rosenbaum's heterogeneous-stratum calculation is a conservative Taylor/separable workflow \\cite{Rosenbaum2018Stratified}, and Cohen--Olson--Fogarty give an asymptotic multivariate one-sided adversarial game \\cite{CohenOlsonFogarty2020AdversarialGame}; both inform, rather than define, the exact finite shared-law union target. Zhang--Small--Heng study continuous exposures and binary outcomes \\cite{ZhangSmallHeng2024Continuous}, whereas Chiu--Kang give exact nonparametric calibration for permutation-invariant contingency-table tests \\cite{ChiuKang2025Contingency}; neither has the heterogeneous matched-set product-law, signed single-statistic opposite-tail functional here. The \\(\\Gamma=1\\) equality and \\(\\Gamma=2\\) gain are credited regression fixtures from the banked substrate, not standalone novelty claims.",
+  "interpretation": "The quantity \\(p_J\\) forces one admissible assignment law to allocate mass to both tails simultaneously. The comparator \\(p_B\\) optimizes the two tails under potentially different laws and doubles the smaller optimum, so a universal ordering is not assumed. The four-score theorem identifies the new structural requirement exactly. Its joint event indicator \\((1,0,1,1)\\) is nonmonotone, and raising precisely those three coordinates is uniquely optimal for every hidden-bias level above one. A two-sided report improves on a level-qualified gain cell \\(p_J\\le\\alpha<p_B\\), agrees on an equality cell, and cannot claim improvement on a loss cell. The operational question asks for a certificate that recognizes these cells for a fixed query. Reversal symmetry gives the no-hidden-bias equality check; the heterogeneous \\(\\Gamma=2\\) example supplies the separate reporting-scale gain \\(19/120\\approx0.158\\).",
+  "technical_internal_limitation": "Exact value computation is \\(\\#\\mathrm P\\)-hard under polynomial-time metric reductions even for \\(\\Gamma=1\\) reversal-symmetric matched pairs with integer scores. Any score-state formulation, branch transcript, and exact certificate may therefore be exponential and may visit every implicit binary support choice. The settled results do not prove an unconditional exponential lower bound on certificate length or a polynomial-time exact algorithm, and the operational question does not claim ordinary mixed-integer optimization or omission of an explicit Cartesian-product table as novelty. The capability witnesses establish non-evaluability by the named restricted representations; they do not imply uniform power dominance over every one-sided or moment-based procedure.",
+  "honest_scope": "The formal scope is one treated unit per finite matched set, conditional product assignment, the Rosenbaum bounded-odds class, fixed finitely encoded rational score records for the computational procedure, and the Fisher-sharp-null sensitivity-analysis context. The settled capability results concern exact calibration of the supplied score record; they do not justify outcome-adaptive scoring, estimate heterogeneous causal effects, allow cross-set assignment dependence, or guarantee polynomial complexity. The open deliverable within this scope is an exact shared-law two-sided calibration with an attaining-law and verifier certificate plus a fixed-design gain/equality/loss and support-switch characterization usable by \\(\\texttt{sensitivitymv}\\), \\(\\texttt{senfm}\\), and explicit two-sided reporting. The retained \\(\\Gamma=1\\) equality and \\(\\Gamma=2\\) numerical gain are regression checks."
+}

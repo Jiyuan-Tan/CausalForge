@@ -1,0 +1,719 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_proximal\_completeness, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_proximal\_completeness} / \texttt{v1}%
+  \\ \large\textit{A target-active null-score threshold for long-term proximal ATE identification}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Exact-identification tuple:
+\[
+(\texttt{qid},\texttt{specialization},\text{graph/SWIG},\text{treatment},
+\text{target estimand},\text{identifying assumptions})
+\]
+is fixed as follows.  \(\texttt{qid}=\texttt{eid\_proximal\_completeness}\) and
+\(\texttt{specialization}=\texttt{v1}\).  The graph/SWIG is a two-sample
+long-term proximal negative-control design with baseline covariates \(X\),
+binary treatment \(A\in\{0,1\}\), short-term proxy history \(S\), treatment
+negative-control proxy \(Z\), outcome negative-control proxy \(W\), latent
+confounder \(U\), and terminal outcome \(Y^L\); sample \(E\) is randomized or
+short-term experimental and supplies the target loading on \((W,S,X,A)\), while
+sample \(B\) is the bridge-learning sample with \(Y^L\).  The treatment is the
+binary intervention \(A=a\).  The target estimand is the long-term average
+treatment effect
+\[
+\theta(P)=\E_E\{Y^L(1)-Y^L(0)\}.
+\]
+Identifying assumptions are consistency and positivity, negative-control
+exclusions for \(Z,W\), existence of bounded outcome bridges
+\(h_a(W,S,X)\in[0,1]\) satisfying the observed bridge equation in sample \(B\),
+and cross-sample transport of the bridge equation to the experimental loading.
+Completeness of the full bridge operator is not locked in, and
+\(\alpha_{\mathrm{LT}}(P)=0\) is the tested frontier condition rather than a
+locked identifying assumption; the question is the sharp boundary at which the
+target remains identified as completeness approaches failure.
+
+\begin{abstract}
+Proximal long-term treatment-effect analyses use negative-control proxies to
+solve outcome-bridge equations, but standard point-identification statements
+typically impose completeness or rank conditions that make the bridge unique.
+Recent proximal work shows that the causal functional may remain identified even
+when bridge functions are nonunique, while proxy partial-identification work
+studies what happens after completeness is abandoned.  This proposal asks for
+the sharp critical boundary between those regimes in a two-sample long-term ATE
+setting.  The proposed focal object is the target-active null score
+\(\alpha_{\mathrm{LT}}(P)\), the component of the experimental long-term ATE
+loading that lies in the null space of the observed bridge operator.  The
+headline conjecture is that \(\alpha_{\mathrm{LT}}(P)\) and a finite bridge-LP
+support function yield both the exact point-identification frontier and a
+local-to-incomplete phase diagram for regularized bridge estimators when the
+smallest target-relevant singular values shrink.  If resolved, the result would
+tell analysts when a weak or nonunique
+proximal bridge still identifies the long-term ATE and when it must be reported
+as a sharp proxy-sensitive interval.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Proximal causal inference is attractive precisely in settings where ordinary
+selection-on-observables is not credible but proxy variables for the hidden
+confounder are available.  Long-term ATE problems sharpen the issue: short-term
+experimental data may contain rich proxy histories, while terminal outcomes are
+observed only in a bridge-learning sample.  The practical question is not
+whether an analyst can invoke a global completeness condition, but whether the
+specific long-term ATE loading is orthogonal to the directions of the bridge
+equation that the data cannot see.
+
+\paragraph{The main finding (proposed).}
+The main finding proposed here is a sharp target-specific completeness
+frontier.  Proposition~\ref{prop:null-annihilator} records the routine finite
+linear-algebra backbone: if every observed bridge-null direction is annihilated
+by the long-term ATE loading, then all bounded bridge solutions deliver the
+same ATE.  Conjecture~\ref{conj:critical-frontier} is the flagship claim: on a
+finite positive-cell class with nondegenerate bridge fibers, the target-active
+null score \(\alpha_{\mathrm{LT}}(P)\) is the sharp critical completeness
+threshold, with \(\alpha_{\mathrm{LT}}(P)=0\) giving point identification and
+\(\alpha_{\mathrm{LT}}(P)>0\) giving a sharp non-singleton bridge envelope whose
+width is the value of a finite support-function LP over the bounded bridge
+fiber, not a one-dimensional radius unless the fiber is exposed and
+one-dimensional.  Conjecture~\ref{conj:local-weak} adds the
+local-to-incomplete phase diagram for regularized outcome-bridge estimators.
+
+\paragraph{What is new.}
+What is new is the long-term target-loading threshold and its support-function
+width object, not the generic fact that linear functionals are constant on a
+null space.  \citet[Sections 2--4]{MiaoGengTchetgen2018} and
+\citet[Theorem 3.1 and equation (9)]{CuiPuShiMiaoTchetgen2024} give proximal
+point-identification and semiparametric proximal inference under bridge
+conditions.  \citet[Section 2 and Section 3]{ZhangLiMiaoTchetgen2023} separate
+bridge uniqueness from target-functional identification, and
+\citet[Abstract and Sections 2--3]{Santos2011JoE} gives the NPIV predecessor
+where a continuous linear functional is recoverable even when the nuisance
+structural function is not identified.  \citet[Abstract and Section
+4]{KallusMaoUehara2021} gives the minimax negative-control bridge-learning
+comparator whose finite selector behavior is not characterized at the boundary.
+\citet[Abstract and Theorem 2.1]{BennettKallusMaoNeweySyrgkanisUehara2023}
+studies strong functionals of weakly identified functions.  This proposal
+targets the missing two-sample long-term boundary: an experimentally weighted
+terminal ATE loading can be target-inactive even when the bridge operator is
+incomplete, or target-active even when a bridge equation still has many bounded
+solutions.
+
+\paragraph{How it positions in the literature.}
+This is an ExactID proposal with a proximal/negative-control bridge substrate
+and a PartialID boundary corollary.  It is informed by the long-term surrogate
+and persistent-confounding literature of \citet{AtheyChettyImbensKang2019} and
+\citet{ImbensKallusMaoWang2025}, but it does not use a panel or surrogate-index
+estimand.  The proposed conjecture consumes the observed two-sample law and asks
+whether the long-term ATE functional is invariant over the outcome-bridge fiber.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the long-term data-combination analysis of
+\citet{ImbensKallusMaoWang2025}: a resolved threshold would distinguish cases
+where their sufficient bridge/proxy structure can be relaxed from cases where
+the terminal ATE is necessarily interval-valued.
+
+\paragraph{How research benefits from the conclusion.}
+Before reporting a proximal long-term point estimate, analysts should report
+the target-active null score and the support-function bridge-envelope width,
+then switch to a bridge-envelope interval whenever the score is positive.
+
+\section{Related work}
+\citet[Sections 2--4, especially the categorical rank result in Section
+2 and the nonparametric completeness discussion in Section 3]{MiaoGengTchetgen2018}
+is the point-identification anchor: it uses proxy rank/completeness conditions
+for causal-effect identification with negative controls, and when proxy
+information is insufficient it turns to testing rather than a sharp
+target-specific boundary.  \citet[Theorem 3.1 and influence-function equation
+(9)]{CuiPuShiMiaoTchetgen2024} develops semiparametric proximal estimation and
+double robustness under bridge equations; the present proposal asks what its
+outcome-bridge workflow identifies when the bridge equation is weak or
+nonunique.  \citet[Section 2, Theorem 2.1, and Section 3's solution-set
+construction]{ZhangLiMiaoTchetgen2023} is the closest bridge-nonuniqueness
+paper because it shows counterfactual means may be identified without unique
+bridge functions; the proposed gap is a named long-term target-loading score
+with a critical-completeness phase diagram.  \citet[Abstract and Section
+3 bound construction]{GhassamiShpitserTchetgen2023} is the closest
+no-completeness partial-identification comparator; it gives proxy partial-ID
+bounds rather than the exact row-space frontier separating point ID from a
+bridge-envelope interval.  \citet[Theorem 1 and Section 4]{CanaySantosShaikh2013}
+motivates a threshold/sensitivity object because it shows completeness-type
+identification conditions in nonparametric endogenous models may be
+nontrivially untestable.  \citet[Abstract, Theorem 2.1, and Section 4 proximal
+example]{BennettKallusMaoNeweySyrgkanisUehara2023} gives the strongest
+functional inference comparator: strong identification of a functional despite
+weak identification of a nuisance; this proposal specializes the issue to
+long-term proximal ATE loadings and asks for a finite observable threshold and
+sharp envelope.  \citet[Abstract and Sections 2--3]{Santos2011JoE} is the NPIV
+ancestor for recovering a continuous linear functional when the underlying
+structural function is not identified; the present proposal differs by adding
+bounded negative-control bridge fibers, long-term experimental loadings, and
+sharp bridge-envelope endpoints.  \citet[Chapter 77, Sections 1 and 3]{CarrascoFlorensRenault2007}
+and \citet[Abstract plus Sections 2--3 on approximation numbers and link
+conditions]{ChenReiss2011} supply the inverse-problem and singular-value
+language for the local weak-completeness conjecture.  \citet[Abstract and
+Section 4's minimax bridge-learning construction]{KallusMaoUehara2021} and
+\citet{MastouriZhuGultchinEtAl2021} study bridge learning through minimax or
+kernel inverse-problem methods; they are relevant because regularized bridge
+selection can mask target-active null directions.  \citet{AtheyChettyImbensKang2019}
+and \citet{ImbensKallusMaoWang2025} motivate the long-term ATE setting with
+short-term proxies and persistent confounding, but they use sufficient surrogate
+or sequential proxy structures rather than a sharp critical-completeness
+frontier.  \citet{YingMiaoShiTchetgen2023} extends proximal inference to
+longitudinal treatment regimes and shows why bridge equations and
+regularization become central in time-indexed settings.
+
+The in-catalogue prior-work substrate is the archived
+\texttt{eid\_proximal\_phase}/\texttt{v1} proposal, especially the reviewer
+request to strengthen a finite diagnostic taxonomy into a generic-class
+proximal obstruction or theorem.  That banked run proposed scalar singular-value
+and native-selector thresholds but was downgraded because its accepted content
+was finite taxonomy and selector-range geometry.  The failed
+\texttt{pid\_long\_term\_surrogate}/\texttt{v1} run is relevant only as a
+warning: prevalence dilation and generic LP containment did not prove the
+reviewer-requested common-kernel bridge compatibility theorem.  The failed
+\texttt{pid\_mediation\_proxy}/\texttt{v1} run is relevant because reviewers
+flagged bridge-envelope realizability as a hard sharpness step.  This proposal
+therefore avoids a generic LP endpoint theorem and makes the exact focal object
+the target-active null score for a long-term proximal ATE loading.
+
+\section{Formal setup}
+All variables have finite support.  Let \(P=(P_E,P_B)\) denote the observed
+two-sample law.  Sample \(E\) supplies the experimental loading distribution
+for \((A,W,S,X)\), and sample \(B\) supplies the terminal outcome regression and
+the bridge conditional law for \((Y^L,A,Z,W,S,X)\).  For each treatment value
+\(a\), write \(h_a\in\R^{d_a}\) for the vector of bounded outcome-bridge values
+\(h_a(w,s,x)\), and stack \(h=(h_0,h_1)\in[0,1]^d\).  The observed bridge
+operator \(K_P:\R^d\to\R^q\) and right-hand side \(m_P\in\R^q\) encode the
+conditional moment equations
+\[
+  \E_B\{Y^L-h_A(W,S,X)\mid Z=z,A=a,S=s,X=x\}=0
+\]
+over the positive cells.  The bridge fiber is
+\[
+  \calH(P)=\{h\in[0,1]^d:K_P h=m_P\}.
+\]
+The long-term experimental ATE loading is the vector \(c_P\in\R^d\) satisfying
+\[
+  \theta_h(P)=c_P^\transpose h
+  =\E_E\{h_1(W,S,X)-h_0(W,S,X)\}.
+\]
+Let \(N_P=\ker(K_P)\), let \(\Pi_{N_P}\) be the Euclidean projection onto
+\(N_P\), and define the target-active null score
+\[
+  \alpha_{\mathrm{LT}}(P)=\|\Pi_{N_P}c_P\|_2.
+\]
+For local sequences, let \(K_{P_n}=U_n \Sigma_n V_n^\transpose\) be a singular
+value decomposition and let \(a_{j,n}=c_{P_n}^\transpose v_{j,n}\) be the
+long-term loading on the \(j\)-th right singular vector.  The target-relevant
+weak-completeness index is
+\[
+  \omega_n=\min_{j:a_{j,n}\neq 0}\sqrt{n}\,\sigma_{j,n}/|a_{j,n}|.
+\]
+The sharp bridge-envelope set is
+\[
+  \Theta_I(P)=\{c_P^\transpose h:h\in\calH(P)\}.
+\]
+Let \(h_P^\star\) denote the lexicographically selected Chebyshev center of
+\(\calH(P)\), i.e. a bridge solution maximizing the minimum coordinate slack
+\(\min_j\{h_j,1-h_j\}\), with lexicographic tie-breaking.  Define the bounded
+null-displacement polytope and its support function by
+\[
+  \mathcal{D}_P=N_P\cap\{u\in\R^d:0\le h_P^\star+u\le1\},\qquad
+  \psi_P(g)=\sup_{u\in\mathcal{D}_P}g^\transpose u .
+\]
+The bridge-envelope support half-width is
+\[
+  R_{\mathrm{LT}}(P)=\frac12\left\{\sup_{h\in\calH(P)}c_P^\transpose h
+  -\inf_{h\in\calH(P)}c_P^\transpose h\right\}.
+\]
+Equivalently, when \(h_P^\star\in\calH(P)\),
+\[
+  R_{\mathrm{LT}}(P)=\{\psi_P(c_P)+\psi_P(-c_P)\}/2 .
+\]
+For the concrete witness in Section~\ref{ex:witness}, \(X\) and \(S\) are
+degenerate, \(A\sim\operatorname{Bernoulli}(1/2)\), \(Z\) is binary, \(W\) has
+three values, and the bridge matrix has \(q=2<d=3\) with a one-dimensional
+target-active null space on an open positive-cell stratum.
+
+\[
+\boxed{\begin{minipage}{0.94\linewidth}
+Exact-identification tuple:
+\((\texttt{qid},\texttt{specialization},\text{graph/SWIG},\text{treatment},
+\text{target estimand},\text{identifying assumptions})\) is fixed as follows.
+\(\texttt{qid}=\texttt{eid\_proximal\_completeness}\) and
+\(\texttt{specialization}=\texttt{v1}\).  The graph/SWIG is a two-sample
+long-term proximal negative-control design with baseline covariates \(X\),
+binary treatment \(A\in\{0,1\}\), short-term proxy history \(S\), treatment
+negative-control proxy \(Z\), outcome negative-control proxy \(W\), latent
+confounder \(U\), and terminal outcome \(Y^L\); sample \(E\) is randomized or
+short-term experimental and supplies the target loading on \((W,S,X,A)\), while
+sample \(B\) is the bridge-learning sample with \(Y^L\).  The treatment is the
+binary intervention \(A=a\).  The target estimand is
+\(\theta(P)=\E_E\{Y^L(1)-Y^L(0)\}\).  Identifying assumptions are consistency
+and positivity, negative-control exclusions for \(Z,W\), existence of bounded
+outcome bridges \(h_a(W,S,X)\in[0,1]\) satisfying the observed bridge equation
+in sample \(B\), and cross-sample transport of the bridge equation to the
+experimental loading.  The condition \(\alpha_{\mathrm{LT}}(P)=0\) is the
+tested frontier object, not a locked assumption.  Completeness of the full
+bridge operator is not locked in; the question is the sharp boundary at which
+the target remains identified as completeness approaches failure.
+\end{minipage}}
+\]
+
+\section{Assumptions}
+\begin{assumption}[Finite positive cells]\label{ass:finite-positive}
+The support of \((A,W,Z,S,X,Y^L)\) used in the bridge equations is finite, and
+every conditioning cell \((Z=z,A=a,S=s,X=x)\) appearing in \(K_P\) has positive
+probability in sample \(B\).  The experimental loading cells used in \(c_P\)
+have positive probability in sample \(E\).
+\end{assumption}
+
+\begin{assumption}[Negative-control proximal restrictions]\label{ass:proximal}
+The SWIG obeys consistency, no interference, the standard negative-control
+exclusion restrictions for \(Z\) and \(W\) relative to \(U\), and overlap for
+the interventions \(A=0,1\).  Under these restrictions, any bounded outcome
+bridge \(h\in\calH(P)\) evaluates the long-term intervention mean through
+\(c_P^\transpose h\) when the target-active null-score condition holds.
+\end{assumption}
+
+\begin{assumption}[Bounded bridge fiber]\label{ass:bounded-fiber}
+The bridge fiber \(\calH(P)=\{h\in[0,1]^d:K_Ph=m_P\}\) is nonempty and contains
+at least one relative-interior point \(h^\circ\) satisfying
+\(\varepsilon_P\le h^\circ_j\le 1-\varepsilon_P\) for all coordinates, where
+\(\varepsilon_P\in(0,1/2]\) is a named slack constant.  The Chebyshev center
+\(h_P^\star\), the null-displacement polytope \(\mathcal{D}_P\), the support function
+\(\psi_P\), and the support half-width \(R_{\mathrm{LT}}(P)\) are defined as in
+Section 6.
+\end{assumption}
+
+\begin{assumption}[Target-active null score]\label{ass:null-score}
+The target-active null score is \(\alpha_{\mathrm{LT}}(P)=\|\Pi_{N_P}c_P\|_2\),
+where \(N_P=\ker(K_P)\).  The point-identifying threshold condition is
+\(\alpha_{\mathrm{LT}}(P)=0\), but this condition is not assumed unless a
+statement explicitly invokes the point-identification side of the frontier.
+\end{assumption}
+
+\begin{assumption}[Open bounded bridge class]\label{ass:open-bridge}
+The law \(P\) belongs to a finite-support open neighborhood in which the bridge
+fiber remains nonempty, the relative-interior slack in
+Assumption~\ref{ass:bounded-fiber} remains bounded below by
+\(\underline{\varepsilon}>0\), and the maps \(P\mapsto K_P\), \(P\mapsto m_P\),
+and \(P\mapsto c_P\) are continuously differentiable on the positive-cell
+simplex.  The rank of \(K_P\) is locally constant on the considered stratum, so
+the null dimension of the bridge fiber does not appear only at a rank-drop
+boundary.
+\end{assumption}
+
+\begin{assumption}[Open one-dimensional weak-completeness class]\label{ass:open-weak}
+For the local weak-completeness statement, \(P_n\) lies in a finite-support
+open class in which exactly one right singular direction \(v_{*,n}\) is
+target-active and weak, \(a_{*,n}=c_{P_n}^\transpose v_{*,n}\neq0\),
+\(\sigma_{*,n}\downarrow0\), all other target-active singular directions are
+bounded away from zero by \(\underline{\sigma}>0\), and the bridge slack obeys
+\(\varepsilon_{P_n}\ge\underline{\varepsilon}>0\).  The loading is bounded and
+bounded away from zero, \(\underline a\le |a_{*,n}|\le\overline a\), and the
+local sequence is restricted to exactly one of the three named regimes:
+\(\omega_n\to\infty\), \(\omega_n\to\tau\in(0,\infty)\), or
+\(\omega_n\to0\), where
+\(\omega_n=\sqrt{n}\sigma_{*,n}/|a_{*,n}|\).  No additional free threshold is
+allowed.
+\end{assumption}
+
+\begin{assumption}[Regularized bridge workflow]\label{ass:regularized}
+Let \((\widehat K,\widehat m,\widehat c,\widehat V)\) be finite-dimensional
+estimators satisfying a joint central limit theorem for
+\(\sqrt n\,\mathrm{vec}(\widehat K-K_P,\widehat m-m_P,\widehat c-c_P)\), with
+\(\widehat V\) consistently estimating the covariance of
+\(\sqrt n(\widehat K h-\widehat m)\) uniformly over bounded \(h\), and with
+\(\widehat V\) positive definite on the residual span with probability tending
+to one.  The
+regularized bridge estimator is the concrete Tikhonov selector
+\[
+  \widehat h_{\lambda_n}\in\arg\min_{h\in[0,1]^d}
+  \{ \|\widehat K h-\widehat m\|_{\widehat V^{-1}}^2
+     +\lambda_n\|h-h_P^\star\|_2^2\},
+  \qquad
+  \widehat\theta_{\lambda_n}=\widehat c^\transpose\widehat h_{\lambda_n},
+\]
+with \(\lambda_n\asymp n^{-1/2}\sigma_{*,n}\) in the local weak-completeness
+class.  For nominal level \(1-\gamma\), the projection confidence set is
+\[
+  C_n(\gamma)=\{\widehat c^\transpose h:h\in[0,1]^d,\,
+  n\|\widehat K h-\widehat m\|_{\widehat V^{-1}}^2
+  \le \chi^2_{q,1-\gamma}\}.
+\end{assumption}
+
+\section{Main results}
+\begin{proposition}[Support Proposition: null-annihilator point-identification criterion]\label{prop:null-annihilator}
+Under Assumptions~\ref{ass:finite-positive}--\ref{ass:null-score}, if
+\(\alpha_{\mathrm{LT}}(P)=0\), then \(c_P^\transpose h\) is constant over
+\(\calH(P)\).  Hence the long-term ATE is point identified by any bounded
+outcome bridge in \(\calH(P)\).  If Assumption~\ref{ass:bounded-fiber} also
+holds and \(\alpha_{\mathrm{LT}}(P)>0\), then there exist two bridge solutions
+in the affine hull of \(\calH(P)\) that disagree on \(c_P^\transpose h\).
+\end{proposition}
+
+\paragraph{Why this is new and worth studying.}
+(a) This support proposition is not claimed as the flagship novelty.  It is the finite
+linear-algebra backbone behind \citet{ZhangLiMiaoTchetgen2023} and
+\citet{BennettKallusMaoNeweySyrgkanisUehara2023}: target functionals can be
+identified even when nuisance bridges are not.  The difference is that the
+functional here is the two-sample long-term ATE loading \(c_P\), which is the
+object needed by \citet{ImbensKallusMaoWang2025}.  (b) Recording the criterion
+makes the proposed bridge threshold auditable: the consumer is the
+\citet{ImbensKallusMaoWang2025} long-term data-combination design, where the
+analyst needs to know whether weak proxies still suffice for the terminal ATE.
+
+\begin{conjecture}[Conjecture 1: sharp critical-completeness frontier (NOT YET PROVED)]\label{conj:critical-frontier}
+Under Assumptions~\ref{ass:finite-positive}--\ref{ass:open-bridge}, the
+following hold on an open neighborhood of every law in that class.
+\begin{enumerate}[label=(\roman*)]
+\item \(\alpha_{\mathrm{LT}}(P)=0\) if and only if \(\Theta_I(P)\) is a
+singleton equal to the proximal long-term ATE.
+\item If \(\alpha_{\mathrm{LT}}(P)>0\), then \(\Theta_I(P)\) is a non-singleton
+compact interval and its half-width is the finite support-function LP
+\[
+  R_{\mathrm{LT}}(P)=\{\psi_P(c_P)+\psi_P(-c_P)\}/2>0,
+  \qquad
+  \psi_P(g)=\sup_{u\in N_P,\;0\le h_P^\star+u\le1}g^\transpose u .
+\]
+On a one-dimensional exposed-null subclass this reduces to the two endpoint
+radii along the exposed null direction; in higher-dimensional fibers the LP,
+not a single radius, is the claimed width object.
+\item The interval endpoints are attained by bounded bridge solutions that can
+be represented by a finite proximal negative-control mean law, not merely by an
+abstract bridge array.
+\end{enumerate}
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet[Sections 2--4]{MiaoGengTchetgen2018} gives point identification
+under proxy rank/completeness; \citet[Abstract and Section 3]{GhassamiShpitserTchetgen2023}
+gives partial-ID bounds when completeness is not available; and
+\citet[Section 2 and Section 3]{ZhangLiMiaoTchetgen2023} shows nonunique
+bridges need not destroy target identification.  None gives an open
+finite-support critical threshold for the long-term ATE loading, a finite
+support-function LP \(R_{\mathrm{LT}}(P)\), and a bridge-envelope realization
+clause.  This is also the exact gap flagged by the archived
+\texttt{eid\_proximal\_phase} reviewers: strengthen the finite diagnostic
+taxonomy into a generic-class theorem or obstruction.  (b) Resolving the
+conjecture gives the \citet[Theorem 3.1 and equation (9)]{CuiPuShiMiaoTchetgen2024}
+proximal OR/DR workflow a concrete warning label: when
+\(\alpha_{\mathrm{LT}}(P)>0\), the reported point estimate is a
+selector-dependent element of a sharp interval, not an identified long-term ATE.
+
+\begin{conjecture}[Conjecture 2: local weak-completeness phase diagram (NOT YET PROVED)]\label{conj:local-weak}
+Under Assumptions~\ref{ass:finite-positive}--\ref{ass:regularized}, let the
+single target-active singular value \(\sigma_{*,n}\) approach zero and write
+\(\omega_n=\sqrt{n}\sigma_{*,n}/|a_{*,n}|\).  The regularized proximal
+long-term ATE estimator has three regimes:
+\begin{enumerate}[label=(\roman*)]
+\item if \(\omega_n\to\infty\), the target is locally regular and the usual
+proximal influence-function limit from the strong-completeness regime is
+recovered;
+\item if \(\omega_n\to\tau\in(0,\infty)\), the limit experiment is a Gaussian
+shift inverse problem in the active bridge-null coordinate, truncated only when
+the box constraint binds at a bridge-envelope endpoint, and the projection
+confidence set \(C_n(\gamma)\) has nondegenerate random length;
+\item if \(\omega_n\to0\), no regular point estimator is uniformly valid and
+the projection confidence set converges to the sharp bridge-envelope interval
+from Conjecture~\ref{conj:critical-frontier}.
+\end{enumerate}
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet[Chapter 77, Sections 1 and 3]{CarrascoFlorensRenault2007} describes
+spectral regularization for econometric inverse problems,
+\citet[Sections 2--3]{ChenReiss2011} separates rate behavior by approximation
+numbers and link conditions, and
+\citet[Abstract and Sections 2--3]{Santos2011JoE} recovers continuous linear
+functionals in NPIV even when the nuisance function is only partially
+identified.  In addition,
+\citet[Abstract, Theorem 2.1, and Section 4]{BennettKallusMaoNeweySyrgkanisUehara2023}
+studies strongly identified functionals of weakly identified functions.  The
+proposed gap is the explicit proximal long-term ATE phase diagram indexed by
+\(\omega_n=\sqrt{n}\sigma_{*,n}/|a_{*,n}|\), with a bridge-envelope endpoint
+when completeness fails and the concrete \(C_n(\gamma)\) projection set when it
+nearly fails.  (b) The concrete consumer is the negative-control bridge learning
+workflow of \citet[Abstract and Section 4]{KallusMaoUehara2021}: the phase
+diagram would tell when minimax or Tikhonov bridge learning can support ordinary
+point inference and when only projection inference is defensible.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Complete-operator reduction]\label{cor:complete}
+If \(K_P\) has full column rank, then \(N_P=\{0\}\),
+\(\alpha_{\mathrm{LT}}(P)=0\), and Proposition~\ref{prop:null-annihilator} collapses
+to the standard proximal point-identification corner of
+\citet{MiaoGengTchetgen2018} and \citet{CuiPuShiMiaoTchetgen2024}.
+\end{corollary}
+
+\begin{corollary}[Nonunique but target-inactive reduction]\label{cor:nonunique}
+If \(K_P\) is rank deficient but \(c_P\in\operatorname{Row}(K_P)\), then
+\(\calH(P)\) can contain many bridges while \(\Theta_I(P)\) remains a
+singleton.  This is the long-term two-sample analogue of the
+\citet{ZhangLiMiaoTchetgen2023} nonunique-bridge identification phenomenon.
+\end{corollary}
+
+\begin{example}[Concrete open-stratum incomplete witness]\label{ex:witness}
+Let \(X\) and \(S\) be degenerate, let \(A\sim\operatorname{Bernoulli}(1/2)\),
+let \(Z\in\{0,1\}\), and let \(W\in\{0,1,2\}\).  For a fixed treatment arm,
+take the bridge conditional matrix
+\[
+K=
+\begin{pmatrix}
+1/2&3/10&1/5\\
+1/5&3/10&1/2
+\end{pmatrix},
+\qquad
+h^\star=(2/5,1/2,3/5)^\transpose,\qquad
+m=Kh^\star .
+\]
+All entries of \(K\) are strictly positive, \(q=2<d=3\), and
+\(\ker(K)=\operatorname{span}\{(3,-7,3)^\transpose\}\) on an open neighborhood
+of positive matrices with rank two.  Let the experimental long-term loading for
+this arm be \(c=(0,0,1)^\transpose\).  Then
+\[
+\alpha_{\mathrm{LT}}(P)=|c^\transpose(3,-7,3)|/\sqrt{67}=3/\sqrt{67}>0,
+\]
+and the bounded bridge fiber is
+\[
+  h(t)=h^\star+t(3,-7,3)^\transpose,\qquad -1/14\le t\le1/14.
+\]
+Thus
+\[
+\Theta_I(P)=\{3/5+3t:-1/14\le t\le1/14\}
+=[27/70,57/70],\qquad R_{\mathrm{LT}}(P)=3/14.
+\]
+The two endpoint bridge arrays are strictly inside \([0,1]^3\) except for the
+exposed middle-coordinate constraint, and the same rank-two, target-active
+null geometry persists under small positive-cell perturbations.  This supplies
+a non-corner witness for Conjecture~\ref{conj:critical-frontier}; replacing the
+fixed nonzero singular value by \(\sigma_{*,n}\downarrow0\) along the same
+right-null direction supplies the one-dimensional local witness for
+Conjecture~\ref{conj:local-weak}.
+\end{example}
+
+\section{Proof-sketch route}
+Proposition~\ref{prop:null-annihilator} is finite-dimensional linear algebra:
+two bridge solutions differ by an element of \(\ker(K_P)\), and a linear
+functional is constant on an affine fiber exactly when its loading lies in the
+row space of the operator.  Conjecture~\ref{conj:critical-frontier} would be
+attacked by combining that row-space identity with support-function calculus
+for the bounded bridge fiber: the width calculation is the finite linear
+program defining \(\psi_P(c_P)\) and \(\psi_P(-c_P)\) over
+\(N_P\cap([0,1]^d-h_P^\star)\), with the one-dimensional exposed-null formula
+as a corollary rather than an assumption.  The remaining step is a finite
+latent mean-law realization for the endpoint bridge arrays; the explicit
+open-stratum algebra is the observable ternary-\(W\) law in
+Example~\ref{ex:witness}.  The local weak-completeness conjecture studies the
+concrete Tikhonov estimator \(\widehat h_{\lambda_n}\) and projection set
+\(C_n(\gamma)\), reducing the bridge residual process along the target-active
+singular vector to a one-dimensional Gaussian shift inverse problem, with the
+strong, weak, and failed regimes separated by
+\(\omega_n=\sqrt{n}\sigma_{*,n}/|a_{*,n}|\).  The main mathematical risk is the
+realization clause: the endpoint bridge arrays must be completed to an actual
+negative-control mean law rather than only to an abstract solution of
+\(K_Ph=m_P\).
+
+\section{Honest scope flags}
+Proposition~\ref{prop:null-annihilator} is routine and included only to make the
+focal threshold precise.  Conjectures~\ref{conj:critical-frontier} and
+\ref{conj:local-weak} are not yet proved; they are the proposed research
+kernel.  The largest open soundness issue is finite bridge-envelope
+realization, because prior CausalSmith proxy proposals failed when they assumed
+endpoint attainability instead of proving it.  The local weak-completeness
+phase diagram is now restricted to the concrete finite-dimensional Tikhonov
+selector and projection confidence set in Assumption~\ref{ass:regularized}, but
+its covariance regularity may still need to be narrowed after the mathematical
+proof attempt.  The v1 reviewer rejected the support proposition as
+novelty-bearing and requested a support-function width object, location-level
+anchors, and a concrete finite-law witness; v2 patched those items without
+changing the kernel.  The v2 reviewer found that the witness was only a
+rank-drop boundary, the width formula was under-specified in higher-dimensional
+null spaces, Santos (2011) was missing, and Conjecture~\ref{conj:local-weak}
+needed a concrete estimator and confidence set; v3 narrows the width claim to a
+finite support-function LP, adds an open-stratum \(q<d\) witness, and specifies
+the Tikhonov/projection workflow.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=1.5em]
+\item v1 (cold-start) --- initial draft proposing the target-active null-score
+threshold and local weak-completeness phase diagram; prior verdict: none.
+\item v2 (revise) --- demoted the null-annihilator theorem to a support
+proposition, rewrote the width claim using support-function radii, added
+location-level comparator anchors, and replaced the abstract matrix witness by
+an observable binary-cell law; prior verdict: REVISE.
+\item v3 (revise) --- replaced the one-dimensional radius formula by a finite
+support-function LP, added an open-stratum ternary-\(W\) incomplete witness,
+added Santos (2011) and location-level Kallus--Mao--Uehara anchors, and made
+the weak-completeness estimator/confidence set concrete; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Athey et~al.(2019)]{AtheyChettyImbensKang2019}
+Athey, S., Chetty, R., Imbens, G.~W., and Kang, H. (2019).
+\newblock The surrogate index: Combining short-term proxies to estimate
+long-term treatment effects more rapidly and precisely.
+\newblock \emph{NBER Working Paper} 26463.
+\newblock \url{https://doi.org/10.3386/w26463}.
+
+\bibitem[Bennett et~al.(2023)]{BennettKallusMaoNeweySyrgkanisUehara2023}
+Bennett, A., Kallus, N., Mao, X., Newey, W., Syrgkanis, V., and Uehara, M.
+(2023).
+\newblock Inference on strongly identified functionals of weakly identified
+functions.
+\newblock \emph{Proceedings of Machine Learning Research}, 195:2265--2265.
+\newblock \url{https://proceedings.mlr.press/v195/bennett23a.html}.
+
+\bibitem[Canay et~al.(2013)]{CanaySantosShaikh2013}
+Canay, I.~A., Santos, A., and Shaikh, A.~M. (2013).
+\newblock On the testability of identification in some nonparametric models
+with endogeneity.
+\newblock \emph{Econometrica}, 81(6):2535--2559.
+\newblock \url{https://doi.org/10.3982/ECTA10851}.
+
+\bibitem[Carrasco et~al.(2007)]{CarrascoFlorensRenault2007}
+Carrasco, M., Florens, J.-P., and Renault, E. (2007).
+\newblock Linear inverse problems in structural econometrics: Estimation based
+on spectral decomposition and regularization.
+\newblock In Heckman, J.~J. and Leamer, E.~E., editors, \emph{Handbook of
+Econometrics}, volume 6B, pages 5633--5751. Elsevier.
+\newblock \url{https://doi.org/10.1016/S1573-4412(07)06077-1}.
+
+\bibitem[Chen and Reiss(2011)]{ChenReiss2011}
+Chen, X. and Reiss, M. (2011).
+\newblock On rate optimality for ill-posed inverse problems in econometrics.
+\newblock \emph{Econometric Theory}, 27(3):497--521.
+\newblock \url{https://doi.org/10.1017/S0266466610000381}.
+
+\bibitem[Cui et~al.(2024)]{CuiPuShiMiaoTchetgen2024}
+Cui, Y., Pu, H., Shi, X., Miao, W., and Tchetgen Tchetgen, E. (2024).
+\newblock Semiparametric proximal causal inference.
+\newblock \emph{Journal of the American Statistical Association}.
+\newblock \url{https://doi.org/10.1080/01621459.2023.2191817}.
+
+\bibitem[Ghassami et~al.(2023)]{GhassamiShpitserTchetgen2023}
+Ghassami, A., Shpitser, I., and Tchetgen Tchetgen, E. (2023).
+\newblock Partial identification of causal effects using proxy variables.
+\newblock \emph{arXiv preprint}.
+\newblock \url{https://doi.org/10.48550/arXiv.2304.04374}.
+
+\bibitem[Imbens et~al.(2025)]{ImbensKallusMaoWang2025}
+Imbens, G., Kallus, N., Mao, X., and Wang, Y. (2025).
+\newblock Long-term causal inference under persistent confounding via data
+combination.
+\newblock \emph{Journal of the Royal Statistical Society Series B},
+87(2):362--392.
+\newblock \url{https://doi.org/10.1093/jrsssb/qkae095}.
+
+\bibitem[Kallus et~al.(2021)]{KallusMaoUehara2021}
+Kallus, N., Mao, X., and Uehara, M. (2021).
+\newblock Causal inference under unmeasured confounding with negative controls:
+A minimax learning approach.
+\newblock \emph{arXiv preprint}.
+\newblock \url{https://doi.org/10.48550/arXiv.2103.14029}.
+
+\bibitem[Mastouri et~al.(2021)]{MastouriZhuGultchinEtAl2021}
+Mastouri, A., Zhu, Y., Gultchin, L., Korba, A., Silva, R., Kusner, M.~J.,
+Gretton, A., and Muandet, K. (2021).
+\newblock Proximal causal learning with kernels: Two-stage estimation and
+moment restriction.
+\newblock \emph{Proceedings of the 38th International Conference on Machine
+Learning}.
+\newblock \url{https://proceedings.mlr.press/v139/mastouri21a.html}.
+
+\bibitem[Miao et~al.(2018)]{MiaoGengTchetgen2018}
+Miao, W., Geng, Z., and Tchetgen Tchetgen, E.~J. (2018).
+\newblock Identifying causal effects with proxy variables of an unmeasured
+confounder.
+\newblock \emph{Biometrika}, 105(4):987--993.
+\newblock \url{https://doi.org/10.1093/biomet/asy038}.
+
+\bibitem[Santos(2011)]{Santos2011JoE}
+Santos, A. (2011).
+\newblock Instrumental variable methods for recovering continuous linear
+functionals.
+\newblock \emph{Journal of Econometrics}, 161(2):129--146.
+\newblock \url{https://doi.org/10.1016/j.jeconom.2010.11.014}.
+
+\bibitem[Ying et~al.(2023)]{YingMiaoShiTchetgen2023}
+Ying, A., Miao, W., Shi, X., and Tchetgen Tchetgen, E.~J. (2023).
+\newblock Proximal causal inference for complex longitudinal studies.
+\newblock \emph{Journal of the Royal Statistical Society Series B},
+85(3):684--704.
+\newblock \url{https://doi.org/10.1093/jrsssb/qkad020}.
+
+\bibitem[Zhang et~al.(2023)]{ZhangLiMiaoTchetgen2023}
+Zhang, J., Li, W., Miao, W., and Tchetgen Tchetgen, E. (2023).
+\newblock Proximal causal inference without uniqueness assumptions.
+\newblock \emph{Statistics and Probability Letters}, 198:109836.
+\newblock \url{https://doi.org/10.1016/j.spl.2023.109836}.
+\end{thebibliography}
+
+\end{document}

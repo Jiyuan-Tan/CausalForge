@@ -1,0 +1,975 @@
+% =====================================================================
+%  ThmSmith Stage 0 derivation skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_ordinal\_late\_partial\_defiers, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to a Q1..Q6
+%    pool-mode, fill it VERBATIM from the question-specific block of
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    For free-form panel / ExactID / PartialID anchors, reproduce the
+%    locked-parameter block from the Stage -1 proposal verbatim. Do not
+%    rephrase locked parameters; Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage 0 derivation: \texttt{pid\_ordinal\_late\_partial\_defiers} / \texttt{v1}%
+  \\ \large\textit{Sharp ordinal-IV LATE bounds with bounded adjacent defiers}}
+\author{ThmSmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note studies a partial-identification analogue of the adjacent-rung
+ordinal-IV Wald formula when Imbens--Angrist monotonicity is relaxed by known
+per-rung down-defier caps.  The estimand-defining formula is not a regression
+coefficient but the sharp linear-fractional response-path program whose
+endpoints are denoted
+\([\underline\theta_\omega(P,\eta),\overline\theta_\omega(P,\eta)]\).  The
+target causal estimand is the weighted positive-rung LATE
+\(\theta^+_\omega\), the average treatment effect over adjacent up-complier
+events \(U_j=\{D(j)=0,D(j+1)=1\}\) with known positive weights \(\omega_j\).
+The main result is sharpness:
+\(\Theta_I(P,\eta)=[\underline\theta_\omega(P,\eta),
+\overline\theta_\omega(P,\eta)]\), where the endpoints are attained by a
+finite latent response-path program over \(r\in\{0,1\}^{J+1}\).  When all caps
+are zero, the interval collapses to the usual adjacent-rung weighted Wald
+estimand.  With three instrument levels, the global ordinal response-path
+program can be strictly tighter than independently pasted adjacent binary-IV
+bounded-defier bounds; a rational witness has global upper endpoint \(1/9\)
+while the pairwise relaxation attains \(1/5\).
+\end{abstract}
+
+\section{Introduction}
+Ordinal instruments arise when encouragement, eligibility, or exposure
+intensity has several ordered levels.  Under the standard no-defiers
+monotonicity condition, adjacent reduced-form contrasts identify weighted
+averages of local treatment effects.  The full no-defiers restriction is often
+substantive rather than mechanical, so a useful sensitivity analysis should
+allow a calibrated amount of defiance while preserving the fact that a unit has
+one whole treatment response path across all instrument levels.
+
+For a binary instrument, bounded defier shares lead naturally to a finite
+latent-type partial-identification problem.  With an ordinal instrument, the
+same adjacent binary calculation can be run pair by pair, but that calculation
+forgets cross-rung compatibility.  A path such as \(010\) is an up-complier for
+the \(0\to1\) rung and a down-defier for the \(1\to2\) rung, so the same
+potential-outcome contrast must serve both roles.  Pairwise binary programs can
+assign incompatible values to those two appearances.
+
+This note gives the exact finite response-path bounding functional for the
+locked target \(\theta^+_\omega\).  It proves that the response-path projection
+is sharp, proves the monotone zero-cap reduction to the adjacent weighted Wald
+estimand, and confirms the Stage -1 zig-zag compatibility conjecture by an
+explicit rational witness.  It also records the correct parametric-LP statement
+behind the proposed kink claim: endpoint functions along a cap ray are
+piecewise linear-fractional, but the stronger ``first kink is ordinal''
+existence claim requires an additional active-basis certificate and is left as
+partial rather than asserted.
+
+The result is useful for formula design because it separates three objects:
+the causal target, the sharp global bounding functional, and the looser
+pairwise-pasting comparator.  That separation identifies exactly when a local
+binary-IV sensitivity analysis is conservative for an ordinal design and when
+it coincides with the sharp global response-path analysis.
+
+\section{Related work and positioning}
+\cite{ImbensAngrist1994} establish binary-instrument LATE identification under
+independence, exclusion, relevance, and monotonicity; the present note keeps
+the IV structure but replaces no-defiers by per-rung defier caps.
+\cite{AngristImbens1995} study IV with variable treatment intensity and give
+the ordered-monotonicity weighted-average interpretation; the zero-cap result
+below is the adjacent-rung version of that benchmark.  \cite{AngristImbensRubin1996}
+develop the principal-strata language used here to name up-compliers and
+down-defiers.  \cite{Vytlacil2002} links monotonicity and latent-index
+selection; the zig-zag paths \(010\) and \(101\) are precisely the ordinal
+patterns that violate a scalar monotone threshold picture.
+
+\cite{BalkePearl1997} derive sharp IV bounds by optimizing over latent
+response types.  The finite response-path program in this note follows that
+sharpness logic, but its latent type is the full ordinal treatment path
+\((D(0),\ldots,D(J))\), not an independent binary type for each adjacent pair.
+\cite{deChaisemartin2017} shows that IV estimands can retain a LATE
+interpretation with defiers under additional compliers-defiers restrictions;
+the present model imposes only quantitative adjacent defier caps and therefore
+delivers an interval.  \cite{HuberMellace2012} and
+\cite{DahlHuberMellace2023} study local monotonicity and defier/complier
+identification in binary-IV settings, whereas the new feature here is
+cross-rung compatibility in a single ordinal response path.  \cite{Noack2021}
+studies sensitivity of LATE estimates to monotonicity violations for binary
+instruments; the strictness witness below shows what binary sensitivity misses
+when adjacent rungs share latent paths.  \cite{MogstadTorgovitskyWalters2021}
+analyze when multiple-IV 2SLS has a positive-weight LATE interpretation; this
+note instead treats one ordered instrument and a partial-ID target.  \cite{Kitagawa2015}
+and \cite{HuberMellace2015} provide inequality tests of IV/LATE restrictions;
+the present result uses inequalities as calibrated bounds rather than as a
+validity test.  \cite{SunWuthrich2025} is the closest pairwise comparator
+because it works with researcher-selected valid instrument pairs, but it does
+not impose one global response path across all pairs.
+
+The in-repository positioning is as follows.  The ThmSmith catalogue reserves
+\texttt{ThmSmith/PartialID/} for Manski-family bounds, Balke--Pearl bounds, IV
+bounds, sensitivity analysis, and shape restrictions.  The existing
+Manski-family infrastructure is relevant because it uses bounded outcomes and
+worst-case completion, while the Balke--Pearl infrastructure is relevant
+because it optimizes over latent response tables.  The closest banked proposal
+is \texttt{pid\_late\_bounded\_defiers}/\texttt{one\_sided\_compliance}, a
+binary-instrument bounded-defier envelope; it cannot contain the ordinal
+zig-zag compatibility phenomenon because it has only one adjacent rung.
+
+\section{Formal setup}
+Let \(Z\in\{0,\ldots,J\}\) be an ordinal instrument with \(J\ge1\), let
+\(D\in\{0,1\}\) be the treatment, and let \(Y\in[0,1]\) be the observed
+outcome.  The observable object is the first-moment array
+\[
+P=P^{(1)}=\{p_z,d_z,m_z:z=0,\ldots,J\},
+\quad
+p_z=\Pr(Z=z)>0,\quad
+d_z=\E[D\mid Z=z],\quad
+m_z=\E[Y\mid Z=z].
+\]
+The full-data object consists of the potential treatment path
+\[
+R=(D(0),\ldots,D(J))\in\{0,1\}^{J+1}
+\]
+and potential outcomes \(Y(0),Y(1)\in[0,1]\).  For a response path
+\(r\in\{0,1\}^{J+1}\), write \(\pi_r=\Pr(R=r)\) and
+\(\mu_{dr}=\pi_r y_d(r)\), where \(y_d(r)=\E[Y(d)\mid R=r]\in[0,1]\) when
+\(\pi_r>0\) and any value in \([0,1]\) when \(\pi_r=0\).  Thus
+\[
+0\le \mu_{dr}\le \pi_r,\qquad
+\sum_r\pi_r=1,\qquad
+\pi_r\ge0.
+\]
+The response-path representation matches the observable moments when, for
+every instrument value \(z\),
+\[
+\sum_r \pi_r r_z=d_z,\qquad
+\sum_r\{r_z\mu_{1r}+(1-r_z)\mu_{0r}\}=m_z.
+\]
+
+For each adjacent rung \(j=0,\ldots,J-1\), define
+\[
+U_j=\{R_j=0,R_{j+1}=1\},\qquad
+V_j=\{R_j=1,R_{j+1}=0\},
+\]
+with masses \(q_j^+=\Pr(U_j)\) and \(q_j^-=\Pr(V_j)\).  The maintained
+restriction \(q_j^-\le\eta_j\) is imposed by
+\[
+\sum_{r:r_j=1,r_{j+1}=0}\pi_r\le\eta_j.
+\]
+Let \(\mathcal C(P,\eta)\) denote the finite set of all arrays
+\((\pi_r,\mu_{0r},\mu_{1r})_{r\in\{0,1\}^{J+1}}\) satisfying the preceding
+linear constraints, boundedness, and the defier caps.  The identified set is
+\[
+\Theta_I(P,\eta)
+=\{\theta^+_\omega(\pi,\mu):(\pi,\mu)\in\mathcal C(P,\eta),
+\ \sum_j\omega_j q_j^+>0\}.
+\]
+The positivity condition on the denominator is a boundary condition for the
+ratio target; without it the positive-rung LATE is not defined.
+
+\paragraph{Locked parameters.}
+This is a partial-identification anchor, not a panel pool-mode.  The locked
+tuple is
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},
+  \text{bounding functional})\\
+=
+(\texttt{pid\_ordinal\_late\_partial\_defiers},\texttt{v1},
+  P^{(1)},\theta^+_\omega,\mathcal R_{\eta}^{\mathrm{ordIV}},
+  [\underline\theta_\omega(P,\eta),\overline\theta_\omega(P,\eta)]) .
+\end{gathered}
+\]
+Here \(P^{(1)}=\{p_z,d_z,m_z:z=0,\ldots,J\}\) is the observable first-moment
+array with \(p_z=\Pr(Z=z)>0\), \(d_z=\E[D\mid Z=z]\), and
+\(m_z=\E[Y\mid Z=z]\).  The outcome is bounded, \(Y\in[0,1]\),
+\(Z\in\{0,\ldots,J\}\) is an ordinal instrument with \(J\ge 1\),
+\(D\in\{0,1\}\), and the full-data response path is
+\(R=(D(0),\ldots,D(J))\in\{0,1\}^{J+1}\).  For adjacent rung \(j\), let
+\[
+U_j=\{D(j)=0,D(j+1)=1\},\qquad V_j=\{D(j)=1,D(j+1)=0\}
+\]
+be the up-complier and down-defier events, with masses \(q^+_j=\Pr(U_j)\) and
+\(q^-_j=\Pr(V_j)\).  The target is the weighted positive-rung LATE
+\[
+\theta^+_\omega
+=\frac{\sum_{j=0}^{J-1}\omega_j\,\E[(Y(1)-Y(0))\one\{U_j\}]}
+        {\sum_{j=0}^{J-1}\omega_j q^+_j},
+\]
+where the known weights satisfy \(\omega_j>0\).  The restrictions
+\(\mathcal R_{\eta}^{\mathrm{ordIV}}\) are ordinal-IV random assignment,
+exclusion, consistency, bounded outcomes, positive instrument cells,
+\(q^-_j\le \eta_j\) for known per-rung defier caps \(\eta_j\), and the
+observable feasibility inequalities
+\(\max\{0,d_j-d_{j+1}\}\le\eta_j\).  The bounding functional is the sharp
+projection of the finite response-path latent-type polytope matching
+\(P^{(1)}\), with the pairwise-pasting relaxation defined in
+Assumption~\ref{ass:pairwise}.
+
+\section{Assumptions}
+\begin{assumption}[Ordinal finite IV setup]\label{ass:finite-ordinal}
+\(Z\in\{0,\ldots,J\}\) with \(J\ge1\), \(D\in\{0,1\}\), \(Y\in[0,1]\), and
+the known target weights satisfy \(\omega_j>0\) for every adjacent rung
+\(j=0,\ldots,J-1\).
+\end{assumption}
+
+\begin{assumption}[Ordinal IV validity]\label{ass:ord-iv}
+\((D(0),\ldots,D(J),Y(0),Y(1))\) is independent of \(Z\).  Exclusion and
+consistency hold: \(D=D(Z)\) and \(Y=Y(D)\) almost surely.
+\end{assumption}
+
+\begin{assumption}[Positive cells and positive target mass]\label{ass:positive}
+\(\Pr(Z=z)>0\) for every \(z\in\{0,\ldots,J\}\).  For each full-data law whose
+target is evaluated,
+\[
+\sum_{j=0}^{J-1}\omega_j q_j^+>0.
+\]
+\end{assumption}
+
+\begin{assumption}[Known per-rung defier caps]\label{ass:defier-caps}
+For known constants \(\eta_j\in[0,1]\), the adjacent down-defier masses satisfy
+\(q_j^-=\Pr(V_j)\le\eta_j\).  The observable first-stage feasibility condition
+\[
+\max\{0,d_j-d_{j+1}\}\le\eta_j
+\]
+holds for every \(j=0,\ldots,J-1\).
+\end{assumption}
+
+\begin{assumption}[Finite response-path sharpness class]\label{ass:finite-types}
+Sharpness is evaluated over all response paths \(r\in\{0,1\}^{J+1}\).  Let
+\(\pi_r\) be the path mass and let \(\mu_{0r},\mu_{1r}\) be outcome-mass
+variables, where \(\mu_{dr}=\pi_r y_d(r)\) for some path-specific
+potential-outcome mean \(y_d(r)\in[0,1]\).  Equivalently, the endpoint program
+uses the linear constraints
+\[
+0\le\mu_{dr}\le\pi_r,\qquad
+\sum_r\pi_r=1,\qquad
+\pi_r\ge0.
+\]
+The induced moments must equal \(P\): for every \(z\),
+\[
+\sum_r \pi_r r_z=d_z,\qquad
+\sum_r \{r_z\mu_{1r}+(1-r_z)\mu_{0r}\}=m_z.
+\]
+The class must also satisfy Assumptions~\ref{ass:finite-ordinal}--\ref{ass:defier-caps};
+in particular, each cap is
+\[
+\sum_{r:r_j=1,r_{j+1}=0}\pi_r\le\eta_j.
+\]
+\end{assumption}
+
+\begin{assumption}[Pairwise-pasting comparator]\label{ass:pairwise}
+For each adjacent pair \(j\), let \(\mathcal F_j(P,\eta_j)\) be the binary-IV
+bounded-defier feasible set for the two cells \((Z=j,Z=j+1)\), matching
+\((d_j,m_j,d_{j+1},m_{j+1})\) and satisfying \(q_j^-\le\eta_j\).  Each element
+of \(\mathcal F_j\) supplies an adjacent up-complier numerator
+\[
+a_j=\E[(Y(1)-Y(0))\one\{U_j\}]
+\]
+and denominator \(b_j=q_j^+\).  The pairwise-pasting interval is
+\[
+B_{\mathrm{pair}}(P,\eta)=
+\left[
+\inf_{(a_j,b_j)\in\mathcal F_j\ \forall j}
+\frac{\sum_j\omega_j a_j}{\sum_j\omega_j b_j},
+\;
+\sup_{(a_j,b_j)\in\mathcal F_j\ \forall j}
+\frac{\sum_j\omega_j a_j}{\sum_j\omega_j b_j}
+\right],
+\]
+where the product relaxation optimizes the adjacent binary problems
+independently before forming the aggregate ratio, and the denominator is
+restricted to be positive.
+\end{assumption}
+
+\begin{assumption}[Three-rung zig-zag witness class]\label{ass:zigzag-class}
+For the zig-zag and kink claims, take \(J=2\), \(\omega_0=\omega_1=1\),
+positive first stages \(\Delta^D_0,\Delta^D_1>0\), and caps satisfying
+\(0<\eta_0,\eta_1<1\).  The response paths \(010\) and \(101\) have positive
+admissible mass under the response-path polytope.  For cap sensitivity,
+evaluate only along a fixed positive ray \(\eta(s)=s v\), where
+\(v=(v_0,v_1)\in(0,\infty)^2\) is fixed and \(s\ge0\).
+\end{assumption}
+
+\section{Regression estimator}
+This partial-identification instance has no regression estimator.  The
+estimand-defining functional is the sharp response-path bounding functional.
+For \((\pi,\mu)\in\mathcal C(P,\eta)\), define
+\[
+N_\omega(\pi,\mu)
+=\sum_{j=0}^{J-1}\omega_j
+  \sum_{r:r_j=0,r_{j+1}=1}(\mu_{1r}-\mu_{0r}),
+\qquad
+B_\omega(\pi)
+=\sum_{j=0}^{J-1}\omega_j
+  \sum_{r:r_j=0,r_{j+1}=1}\pi_r.
+\]
+The pointwise response-path value is
+\[
+\psi_\omega(\pi,\mu)=\frac{N_\omega(\pi,\mu)}{B_\omega(\pi)}
+\]
+on the domain \(B_\omega(\pi)>0\).  The sharp endpoint functionals are
+\[
+\underline\theta_\omega(P,\eta)
+=\inf\{\psi_\omega(\pi,\mu):(\pi,\mu)\in\mathcal C(P,\eta),
+B_\omega(\pi)>0\},
+\]
+\[
+\overline\theta_\omega(P,\eta)
+=\sup\{\psi_\omega(\pi,\mu):(\pi,\mu)\in\mathcal C(P,\eta),
+B_\omega(\pi)>0\}.
+\]
+They are sharp bounds, not merely outer bounds, once
+\(\mathcal C(P,\eta)\) is interpreted as the full finite response-path class
+of Assumption~\ref{ass:finite-types}.  The pairwise-pasting interval
+\(B_{\mathrm{pair}}(P,\eta)\) in Assumption~\ref{ass:pairwise} is only a
+comparator: it is an outer relaxation of the global ordinal program and need
+not be sharp for the ordinal model.
+
+\section{Target causal estimand}
+The target is the weighted positive-rung local average treatment effect
+\[
+\theta^+_\omega
+=
+\frac{\sum_{j=0}^{J-1}\omega_j
+\E[(Y(1)-Y(0))\one\{U_j\}]}
+{\sum_{j=0}^{J-1}\omega_j q_j^+},
+\qquad
+U_j=\{D(j)=0,D(j+1)=1\}.
+\]
+The numerator averages treatment effects only over adjacent up-complier
+events.  Down-defier events \(V_j=\{D(j)=1,D(j+1)=0\}\) affect the observed
+reduced forms but are not part of the target numerator or target denominator.
+Thus the causal target is not defined as an observable contrast.  The
+observable object \(P\) and restrictions \(\mathcal R_\eta^{\mathrm{ordIV}}\)
+instead determine an identified set \(\Theta_I(P,\eta)\) of target values.
+The theorem below proves containment and sharpness of that set.
+
+\section{Main theorems}
+\begin{proposition}[Monotone ordinal-IV reduction]\label{prop:monotone-reduction}
+Under Assumptions~\ref{ass:finite-ordinal}--\ref{ass:defier-caps}, if
+\(\eta_j=0\) for every \(j\), then every feasible full-data law has
+\[
+\theta^+_\omega
+=
+\frac{\sum_{j=0}^{J-1}\omega_j\Delta^Y_j}
+     {\sum_{j=0}^{J-1}\omega_j\Delta^D_j},
+\quad
+\Delta^D_j=d_{j+1}-d_j,\quad
+\Delta^Y_j=m_{j+1}-m_j,
+\]
+whenever the denominator is positive.  Equivalently, the sharp identified set
+is a singleton equal to the adjacent-rung weighted Wald estimand.
+\end{proposition}
+
+This proposition confirms the Stage -1 monotone benchmark.  Its role is not
+novelty relative to \cite{ImbensAngrist1994} and \cite{AngristImbens1995};
+it verifies that the bounded-defier construction reduces to the familiar
+ordered-monotonicity formula when the caps are zero.
+
+\begin{proposition}[Sharp finite response-path bounds]\label{prop:finite-polytope}
+Under Assumptions~\ref{ass:finite-ordinal}--\ref{ass:finite-types}, for every
+nonempty feasible array \(P\) with positive target denominator,
+\[
+\Theta_I(P,\eta)
+=
+[\underline\theta_\omega(P,\eta),\overline\theta_\omega(P,\eta)].
+\]
+The lower and upper endpoints are attained by finite linear-fractional
+programs over \((\pi_r,\mu_{0r},\mu_{1r})_{r\in\{0,1\}^{J+1}}\) satisfying the
+constraints in Assumption~\ref{ass:finite-types}.  Because
+\(B_\omega(\pi)>0\), each endpoint program is equivalent to a finite linear
+program by Charnes--Cooper rescaling.
+\end{proposition}
+
+This proposition confirms the Stage -1 finite-polytope theorem.  It is the
+sharpness analogue of the Balke--Pearl latent-table argument, with the
+important difference that the latent type is one full ordinal treatment path.
+That difference is the source of the strict pairwise gap in the next
+proposition.
+
+\begin{proposition}[Zig-zag compatibility strictly tightens pairwise bounds]\label{prop:zigzag-strict}
+The pairwise-pasting interval is an outer relaxation:
+\[
+\Theta_I(P,\eta)\subseteq B_{\mathrm{pair}}(P,\eta)
+\]
+whenever Assumptions~\ref{ass:finite-ordinal}--\ref{ass:pairwise} hold and
+the target denominator is positive.  The inclusion can be strict.  In the
+three-rung witness class with \(J=2\), \(\omega_0=\omega_1=1\), take
+\[
+d=(1/5,2/5,4/5),\qquad
+m=(3/5,1/5,2/5),\qquad
+\eta=(3/5,2/5),
+\]
+and any strictly positive instrument cell probabilities \(p_z\).  Then the
+global response-path upper endpoint is \(1/9\), whereas the pairwise-pasting
+relaxation attains \(1/5\).  Hence
+\[
+[\underline\theta_\omega(P,\eta),\overline\theta_\omega(P,\eta)]
+\subsetneq B_{\mathrm{pair}}(P,\eta).
+\]
+\end{proposition}
+
+This proposition confirms Stage -1 Conjecture 1.  The mechanism is genuinely
+ordinal: a path \(010\) is an up-complier on the first rung and a down-defier
+on the second, while \(101\) has the opposite sign pattern.  Adjacent binary
+programs can paste together effect assignments that no single ordinal
+response-path law can realize.
+
+\begin{proposition}[Cap-ray endpoint regularity; partial verdict on the kink claim]\label{prop:kink-partial}
+Fix \(P\), \(J=2\), a positive ray \(v\in(0,\infty)^2\), and
+\(\eta(s)=s v\).  On any interval of \(s\)-values for which the feasible
+polytope is nonempty and \(B_\omega(\pi)>0\) for the evaluated target, the
+endpoint functions
+\[
+s\mapsto \underline\theta_\omega(P,\eta(s)),
+\qquad
+s\mapsto \overline\theta_\omega(P,\eta(s))
+\]
+are piecewise linear-fractional.  Breakpoints occur only when the active basis
+of the finite response-path endpoint program changes.  The stronger Stage -1
+claim that there exist \(P\) and \(v\) whose first positive breakpoint is an
+ordinal zig-zag compatibility facet is therefore reduced to a finite
+active-basis certificate; this note does not prove that stronger existence
+claim.
+\end{proposition}
+
+This is the verdict on Stage -1 Conjecture 2: partial.  The parametric
+linear-fractional regularity is proved, but the proposed first-breakpoint
+existence statement is not asserted without a separate rational active-basis
+certificate.
+
+\section{Interpretation}
+The monotone reduction says that, when all adjacent down-defier masses are
+ruled out, the observed reduced form on each rung equals the target numerator
+contribution on that rung and the observed first stage equals the target
+denominator contribution.  The adjacent weighted Wald ratio is then clean.
+
+With positive defier caps, the same observed contrasts decompose as
+\[
+\Delta^D_j=q_j^+-q_j^-,
+\qquad
+\Delta^Y_j
+=\E[(Y(1)-Y(0))\one\{U_j\}]
+-\E[(Y(1)-Y(0))\one\{V_j\}].
+\]
+The target contains the up-complier terms but not the down-defier terms.
+Thus a Wald-style ratio is contaminated by defier effect contributions unless
+the caps, outcomes, or additional restrictions force those terms to vanish or
+to be known.
+
+The finite response-path bound is the exact way to account for this
+contamination under the locked restrictions.  It allows every bounded
+potential-outcome completion consistent with \(P\), but it requires all
+adjacent appearances to come from one response path.  The pairwise relaxation
+forgets that requirement, so it is always conservative and can be strictly
+conservative.  The rational witness demonstrates that the tightening can be
+substantive even with only first moments and only three instrument levels.
+
+The bound collapses to point identification in the zero-cap monotone case.  It
+widens toward the natural bounded-outcome IV envelope as the defier caps become
+large, because the restrictions then place less control on the contaminating
+terms.  The tightening work is done by the per-rung cap inequalities together
+with the global path compatibility constraints, not by any regression
+orthogonality or panel structure.
+
+\section{Step-by-step proof}
+\begin{lemma}[Adjacent first-stage and reduced-form identities]\label{lem:adjacent-identities}
+Under Assumptions~\ref{ass:finite-ordinal} and~\ref{ass:ord-iv}, for each
+adjacent rung \(j\),
+\[
+\Delta^D_j=q_j^+-q_j^-,
+\]
+and
+\[
+\Delta^Y_j
+=\E[(Y(1)-Y(0))\one\{U_j\}]
+-\E[(Y(1)-Y(0))\one\{V_j\}].
+\]
+\end{lemma}
+
+\begin{proof}
+By ordinal IV validity, the distribution of the full-data vector is the same
+in every instrument cell.  Consistency gives
+\[
+d_z=\E[D\mid Z=z]=\E[D(z)].
+\]
+Therefore
+\[
+\Delta^D_j=\E[D(j+1)-D(j)].
+\]
+Since \(D(j+1)-D(j)\) equals \(1\) on \(U_j\), equals \(-1\) on \(V_j\), and
+equals \(0\) otherwise, \(\Delta^D_j=q_j^+-q_j^-\).
+
+Similarly, exclusion and consistency imply
+\[
+m_z=\E[Y\mid Z=z]=\E[Y(D(z))].
+\]
+Thus
+\[
+\Delta^Y_j
+=\E[Y(D(j+1))-Y(D(j))].
+\]
+If the treatment does not change between \(j\) and \(j+1\), the integrand is
+zero.  On \(U_j\) it is \(Y(1)-Y(0)\); on \(V_j\) it is
+\(Y(0)-Y(1)\).  Taking expectations gives the displayed identity.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:monotone-reduction}]
+Assumption~\ref{ass:defier-caps} and \(\eta_j=0\) imply \(q_j^-=0\) for every
+\(j\).  Lemma~\ref{lem:adjacent-identities} then gives
+\[
+\Delta^D_j=q_j^+,\qquad
+\Delta^Y_j=\E[(Y(1)-Y(0))\one\{U_j\}].
+\]
+Multiplying by \(\omega_j\), summing over \(j\), and using the positive
+denominator condition in Assumption~\ref{ass:positive} gives the ratio in the
+statement.  Because every feasible full-data law has the same ratio, the
+identified set is the singleton containing that ratio.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:finite-polytope}]
+The proof is a finite extreme-point and worst-case-completion argument in the
+style of Balke--Pearl.
+
+First prove necessity.  Take any full-data law satisfying
+Assumptions~\ref{ass:finite-ordinal}--\ref{ass:finite-types}.  Define
+\(\pi_r=\Pr(R=r)\) and
+\(\mu_{dr}=\E[Y(d)\one\{R=r\}]\).  Bounded outcomes give
+\(0\le\mu_{dr}\le\pi_r\).  Independence, exclusion, and consistency give the
+moment equations in Assumption~\ref{ass:finite-types}.  The defier caps give
+the cap inequalities.  Therefore the law induces a point of
+\(\mathcal C(P,\eta)\), and its target value is
+\(\psi_\omega(\pi,\mu)\).  This proves
+\[
+\Theta_I(P,\eta)
+\subseteq
+[\underline\theta_\omega(P,\eta),\overline\theta_\omega(P,\eta)].
+\]
+
+Now prove sufficiency.  Take any point \((\pi,\mu)\in\mathcal C(P,\eta)\).
+Construct a canonical full-data law as follows.  Draw \(Z\) independently of
+\((R,Y(0),Y(1))\) with \(\Pr(Z=z)=p_z\).  Draw \(R=r\) with probability
+\(\pi_r\).  Conditional on \(R=r\), set \(Y(d)\) to be a Bernoulli random
+variable with mean \(y_d(r)=\mu_{dr}/\pi_r\) if \(\pi_r>0\), and choose any
+mean in \([0,1]\) if \(\pi_r=0\).  Set \(D=D(Z)\) and \(Y=Y(D)\).  The
+constructed law satisfies ordinal IV validity, bounded outcomes, the positive
+cell condition, and the defier caps.  Its observable first moments are exactly
+the constraints defining \(\mathcal C(P,\eta)\), and its target value is
+\(\psi_\omega(\pi,\mu)\).  Hence every feasible program value is attainable,
+so the displayed containment is equality.
+
+Finally, \(\mathcal C(P,\eta)\) is a closed and bounded finite-dimensional
+polytope.  On the positive-denominator domain, the endpoint values are
+attained by standard compactness after restricting to the feasible component
+where \(B_\omega(\pi)>0\).  Charnes--Cooper rescaling sets
+\[
+T=\frac{1}{B_\omega(\pi)},\qquad
+X_r=T\pi_r,\qquad
+M_{dr}=T\mu_{dr},
+\]
+and adds the normalization
+\[
+\sum_j\omega_j\sum_{r:r_j=0,r_{j+1}=1}X_r=1.
+\]
+All constraints become linear in \((X,M,T)\), and the objective becomes the
+linear form
+\[
+\sum_j\omega_j\sum_{r:r_j=0,r_{j+1}=1}(M_{1r}-M_{0r}).
+\]
+Thus each endpoint is the value of a finite linear program.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:zigzag-strict}]
+The outer-bound part follows by marginalization.  Given any globally feasible
+ordinal response-path law, restrict the path \(R\) to the adjacent pair
+\((R_j,R_{j+1})\).  The resulting four-type binary table matches
+\((d_j,m_j,d_{j+1},m_{j+1})\), preserves the same adjacent numerator
+\(a_j\), denominator \(b_j\), and defier cap \(q_j^-\le\eta_j\).  Doing this
+for every \(j\) maps a global feasible law into the product relaxation
+\(\prod_j\mathcal F_j(P,\eta_j)\).  Therefore every global target value lies
+in \(B_{\mathrm{pair}}(P,\eta)\).
+
+It remains to prove strictness for the rational witness.  The first stages are
+positive:
+\[
+\Delta^D_0=1/5,\qquad \Delta^D_1=2/5.
+\]
+The following global response-path table is feasible for \(P\) and \(\eta\):
+\[
+\begin{array}{c|ccccc}
+r & 000 & 001 & 010 & 011 & 101\\ \hline
+\pi_r & 1/10 & 3/10 & 1/10 & 3/10 & 1/5\\
+y_0(r) & 1 & 0 & 0 & 1 & 0\\
+y_1(r) & 0 & 1/3 & 1 & 0 & 1
+\end{array}
+\]
+all omitted paths having mass zero.  It matches
+\[
+d=(1/5,2/5,4/5),\qquad m=(3/5,1/5,2/5),
+\]
+has \(q^-_0=1/5\le3/5\) and \(q^-_1=1/10\le2/5\), and gives
+\[
+B_\omega=9/10,\qquad N_\omega=1/10,\qquad \psi_\omega=1/9.
+\]
+To certify that no global feasible law has value above \(1/9\), apply
+Charnes--Cooper normalization \(B_\omega=1\) and minimize \(-N_\omega\).  Use
+the equality constraints in the order
+\[
+\sum X=T,\ d_0,\ d_1,\ d_2,\ m_0,\ m_1,\ m_2,\ B_\omega=1.
+\]
+The equality dual multipliers
+\[
+\left(0,-\frac{13}{9},-\frac49,\frac19,\frac{13}{9},-\frac49,-1,-\frac19\right)
+\]
+together with the following nonzero multipliers on constraints
+\(M_{dr}\le X_r\),
+\[
+\begin{array}{c|cccccc}
+(d,r) &(0,011)&(0,110)&(1,010)&(1,100)&(1,101)&(1,110)\\ \hline
+\lambda_{d,r}&-4/9&-8/9&-5/9&-13/9&-13/9&-1
+\end{array}
+\]
+and zero multipliers on all other upper-bound and cap inequalities form a
+dual-feasible certificate for the minimization problem.  The nonzero reduced
+costs on the nonnegative variables are
+\[
+\begin{array}{c|cccccc}
+\text{variable}&X_{111}&M_{0,010}&M_{0,100}&M_{0,101}&M_{0,110}&M_{1,011}\\
+\hline
+\text{reduced cost}&16/9&5/9&13/9&13/9&17/9&4/9,
+\end{array}
+\]
+with all omitted reduced costs equal to zero.  The dual objective is
+\(-1/9\), so weak duality gives \(-N_\omega\ge-1/9\), or
+\(N_\omega\le1/9\), for every globally feasible normalized solution.  The
+displayed primal table attains \(1/9\), so the global upper endpoint is
+\(1/9\).
+
+By contrast, the pairwise relaxation attains \(1/5\).  For rung \(0\), use the
+binary table
+\[
+\begin{array}{c|ccc}
+(D(j),D(j+1))&00&01&10\\ \hline
+\pi&2/5&2/5&1/5\\
+y_0&1/2&1/2&0\\
+y_1&0&0&1
+\end{array}
+\]
+which matches \((d_0,m_0,d_1,m_1)\), has \(q^-_0=1/5\), and gives
+\(a_0=-1/5\), \(b_0=2/5\).  For rung \(1\), use
+\[
+\begin{array}{c|ccc}
+(D(j),D(j+1))&01&10&11\\ \hline
+\pi&3/5&1/5&1/5\\
+y_0&0&0&0\\
+y_1&2/3&1&0
+\end{array}
+\]
+which matches \((d_1,m_1,d_2,m_2)\), has \(q^-_1=1/5\), and gives
+\(a_1=2/5\), \(b_1=3/5\).  Hence the pasted pairwise value is
+\[
+\frac{a_0+a_1}{b_0+b_1}
+=\frac{-1/5+2/5}{2/5+3/5}
+=\frac15.
+\]
+Since \(1/5>1/9\), the pairwise relaxation contains values excluded by the
+sharp global ordinal response-path program.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:kink-partial}]
+Work in the original variables \((\pi,\mu)\), before Charnes--Cooper
+rescaling.  For a fixed active set of equality constraints and binding
+inequalities, the constraint matrix is constant and the right-hand side is
+affine in the cap vector \(\eta(s)=s v\), because the only cap-dependent
+constraints are
+\[
+\sum_{r:r_j=1,r_{j+1}=0}\pi_r\le s v_j.
+\]
+Therefore each basic feasible solution is affine in \(s\) on the interval
+where that basis remains feasible.  At such a basis, both
+\(N_\omega(\pi,\mu)\) and \(B_\omega(\pi)\) are affine functions of \(s\), and
+the endpoint value is their ratio.  Because there are finitely many bases, the
+lower and upper endpoints are piecewise linear-fractional, and breakpoints can
+occur only when the active basis changes.  This proves the regularity claim.
+It does not identify which basis changes first from \(s=0\); that requires an
+additional certificate for a particular \(P\) and ray \(v\).
+\end{proof}
+
+\section{Sanity checks}
+\paragraph{Binary-instrument reduction.}
+If \(J=1\), there is only one adjacent rung.  The global response path has the
+four binary principal strata \(00,01,10,11\), and the product relaxation has
+only one factor.  Hence the pairwise-pasting comparator equals the global
+sharp bound.  No zig-zag path can appear because there is no second rung on
+which a type can switch back.
+
+\paragraph{Full-monotonicity reduction.}
+If \(\eta_j=0\) for all \(j\), Assumption~\ref{ass:defier-caps} gives
+\(q_j^-=0\) for all \(j\).  Proposition~\ref{prop:monotone-reduction} then
+recovers the ordered adjacent Wald estimand.  This is the zero-width,
+point-identification special case.
+
+\paragraph{Natural bounded-outcome envelope.}
+If the defier caps are set to their vacuous values and no ordinal monotonicity
+shape is imposed, the only remaining outcome restriction is \(Y(d)\in[0,1]\).
+The response-path program then reduces to a Manski-style worst-case completion
+over the unobserved potential-outcome means \(y_0(r),y_1(r)\), subject only to
+matching the observed first moments.  The interval can be wide because the
+contaminating defier terms in Lemma~\ref{lem:adjacent-identities} are no
+longer controlled.
+
+\paragraph{MTR specialization.}
+If one additionally imposed monotone treatment response,
+\(Y(1)\ge Y(0)\) pathwise, the endpoint program would add the linear
+constraints \(\mu_{1r}\ge\mu_{0r}\) for all \(r\).  Those constraints are not
+part of the locked tuple, but the specialization shows how a standard shape
+restriction would tighten the same response-path polytope without changing the
+observable array \(P\).
+
+\paragraph{Balke--Pearl special case.}
+For \(J=1\), the response-path sharpness argument is the binary-IV latent-type
+argument of \cite{BalkePearl1997} with first moments rather than full outcome
+cell probabilities.  The difference for \(J=2\) is not the LP technique; it is
+the single shared ordinal path across adjacent binary margins.
+
+\section{Counterexample or minimality check}
+The strictness witness in Proposition~\ref{prop:zigzag-strict} is also the
+minimality check for replacing the global response-path basis by adjacent
+binary bases.  The pairwise construction reaches \(1/5\), but the global
+ordinal program has upper endpoint \(1/9\).  Thus a formula that pastes
+adjacent binary bounded-defier intervals is not sharp for the locked ordinal
+target, even though each adjacent binary table is internally feasible and
+matches its two observed cells.
+
+The positive-cell condition is also necessary for the conditioning notation in
+\(P^{(1)}\).  If some \(p_z=0\), the conditional means \(d_z\) and \(m_z\) are
+not identified from the observable law without a separate convention for null
+instrument cells.  The positive-denominator condition is necessary for the
+target itself: if \(q_j^+=0\) for every rung with positive weight, then
+\(\theta^+_\omega\) divides by zero and no LATE ratio exists.
+
+For Stage -1 Conjecture 2, the nearest correct statement is
+Proposition~\ref{prop:kink-partial}.  The locked assumptions imply finite
+piecewise linear-fractional endpoint paths along a cap ray, but they do not by
+themselves specify a rational \(P\) and ray \(v\) whose first positive
+breakpoint is an ordinal zig-zag facet.  Establishing that stronger statement
+requires a separate active-basis certificate analogous to the dual/primal
+certificate used for Proposition~\ref{prop:zigzag-strict}.
+
+\section{Formalization checklist}
+\paragraph{Probabilistic objects and assumptions.}
+\begin{itemize}[leftmargin=*]
+\item Finite ordinal instrument: a finite set \(\{0,\ldots,J\}\) with
+positive cell probabilities \(p_z>0\).
+\item Binary treatment and bounded outcome: \(D\in\{0,1\}\) and
+\(Y(0),Y(1)\in[0,1]\).
+\item Full response path: \(R=(D(0),\ldots,D(J))\in\{0,1\}^{J+1}\), with path
+mass function \(\pi_r\).
+\item Ordinal IV validity: \(Z\) independent of \((R,Y(0),Y(1))\), plus
+exclusion and consistency \(D=D(Z)\), \(Y=Y(D)\).
+\item Adjacent events: \(U_j=\{R_j=0,R_{j+1}=1\}\) and
+\(V_j=\{R_j=1,R_{j+1}=0\}\), with masses \(q_j^+\) and \(q_j^-\).
+\item Defier caps: linear inequalities \(q_j^-\le\eta_j\).
+\item Positive target denominator:
+\(\sum_j\omega_j q_j^+>0\).
+\end{itemize}
+
+\paragraph{Deterministic finite-dimensional objects.}
+\begin{itemize}[leftmargin=*]
+\item Observable first-moment array:
+\(P^{(1)}=\{p_z,d_z,m_z:z=0,\ldots,J\}\).
+\item Outcome-mass variables:
+\(\mu_{dr}=\pi_r y_d(r)\), constrained by \(0\le\mu_{dr}\le\pi_r\).
+\item Moment equations:
+\(\sum_r\pi_r r_z=d_z\) and
+\(\sum_r\{r_z\mu_{1r}+(1-r_z)\mu_{0r}\}=m_z\).
+\item Feasible polytope \(\mathcal C(P,\eta)\): all finite arrays satisfying
+nonnegativity, moment equations, boundedness, and cap inequalities.
+\item Target numerator and denominator:
+\[
+N_\omega=\sum_j\omega_j\sum_{r:r_j=0,r_{j+1}=1}(\mu_{1r}-\mu_{0r}),\quad
+B_\omega=\sum_j\omega_j\sum_{r:r_j=0,r_{j+1}=1}\pi_r.
+\]
+\item Sharp endpoint functionals:
+\(\inf N_\omega/B_\omega\) and \(\sup N_\omega/B_\omega\) over
+\(\mathcal C(P,\eta)\) with \(B_\omega>0\).
+\item Charnes--Cooper transformation:
+\((\pi,\mu)\mapsto (X,M,T)=(\pi/B_\omega,\mu/B_\omega,1/B_\omega)\), turning
+the endpoint problem into a linear program.
+\end{itemize}
+
+\paragraph{Lemmas and identities.}
+\begin{itemize}[leftmargin=*]
+\item Adjacent first-stage identity:
+\(\Delta^D_j=q_j^+-q_j^-\), derived by case analysis on
+\((D(j),D(j+1))\).
+\item Adjacent reduced-form identity:
+\(\Delta^Y_j=\E[(Y(1)-Y(0))\one\{U_j\}]
+-\E[(Y(1)-Y(0))\one\{V_j\}]\), derived by consistency and case analysis.
+\item Canonical sharpness construction: any feasible \((\pi,\mu)\) is realized
+by drawing \(Z\) independently, drawing \(R\sim\pi\), and choosing bounded
+potential outcomes with means \(\mu_{dr}/\pi_r\).
+\item Pairwise outer-bound map: global ordinal feasible point
+\(\mapsto\) adjacent binary feasible point by marginalizing
+\((R_j,R_{j+1})\).
+\item Strictness certificate: rational witness with global upper dual value
+\(1/9\) and pairwise attainable value \(1/5\).
+\item Parametric endpoint regularity: fixed active bases give affine
+\((\pi,\mu)\) in the cap parameter and hence linear-fractional endpoint values.
+\end{itemize}
+
+\section{Conclusion and references}
+The theorem-level contribution is a sharp finite response-path bound for the
+weighted positive-rung ordinal-IV LATE under known adjacent down-defier caps.
+The clean point-identification condition is exactly the zero-cap monotone
+case, where every down-defier mass vanishes and the target equals the adjacent
+weighted Wald ratio.  With positive caps, reduced forms contain contaminating
+down-defier effect terms, and the sharp way to bound the target is to optimize
+over one global ordinal response-path polytope.  The pairwise binary-IV
+relaxation is always an outer bound and can be strictly too wide; the rational
+three-rung witness proves the Stage -1 zig-zag compatibility claim.  The cap-ray
+kink claim is partially resolved: endpoint paths are piecewise
+linear-fractional, but a first-zig-zag-breakpoint theorem needs a separate
+active-basis witness.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem{AngristImbens1995}
+Angrist, J. D. and G. W. Imbens (1995).
+\newblock Two-stage least squares estimation of average causal effects in
+models with variable treatment intensity.
+\newblock \emph{Journal of the American Statistical Association} 90(430),
+431--442.
+\newblock \url{https://doi.org/10.1080/01621459.1995.10476535}.
+
+\bibitem{AngristImbensRubin1996}
+Angrist, J. D., G. W. Imbens, and D. B. Rubin (1996).
+\newblock Identification of causal effects using instrumental variables.
+\newblock \emph{Journal of the American Statistical Association} 91(434),
+444--455.
+\newblock \url{https://doi.org/10.1080/01621459.1996.10476902}.
+
+\bibitem{BalkePearl1997}
+Balke, A. and J. Pearl (1997).
+\newblock Bounds on treatment effects from studies with imperfect compliance.
+\newblock \emph{Journal of the American Statistical Association} 92(439),
+1171--1176.
+\newblock \url{https://doi.org/10.1080/01621459.1997.10474074}.
+
+\bibitem{DahlHuberMellace2023}
+Dahl, C. M., M. Huber, and G. Mellace (2023).
+\newblock It is never too LATE: a new look at local average treatment effects
+with or without defiers.
+\newblock \emph{The Econometrics Journal} 26(3), 378--404.
+\newblock \url{https://doi.org/10.1093/ectj/utad013}.
+
+\bibitem{deChaisemartin2017}
+de Chaisemartin, C. (2017).
+\newblock Tolerating defiance? Local average treatment effects without
+monotonicity.
+\newblock \emph{Quantitative Economics} 8(2), 367--396.
+\newblock \url{https://doi.org/10.3982/QE601}.
+
+\bibitem{HuberMellace2012}
+Huber, M. and G. Mellace (2012).
+\newblock Relaxing monotonicity in the identification of local average
+treatment effects.
+\newblock Economics Working Paper Series 1212, University of St. Gallen.
+\newblock \url{https://ux-tauri.unisg.ch/RePEc/usg/econwp/EWP-1212.pdf}.
+
+\bibitem{HuberMellace2015}
+Huber, M. and G. Mellace (2015).
+\newblock Testing instrument validity for LATE identification based on
+inequality moment constraints.
+\newblock \emph{Review of Economics and Statistics} 97(2), 398--411.
+\newblock \url{https://doi.org/10.1162/REST_a_00450}.
+
+\bibitem{ImbensAngrist1994}
+Imbens, G. W. and J. D. Angrist (1994).
+\newblock Identification and estimation of local average treatment effects.
+\newblock \emph{Econometrica} 62(2), 467--475.
+\newblock \url{https://www.nber.org/papers/t0118}.
+
+\bibitem{Kitagawa2015}
+Kitagawa, T. (2015).
+\newblock A test for instrument validity.
+\newblock \emph{Econometrica} 83(5), 2043--2063.
+\newblock \url{https://doi.org/10.3982/ECTA11974}.
+
+\bibitem{MogstadTorgovitskyWalters2021}
+Mogstad, M., A. Torgovitsky, and C. R. Walters (2021).
+\newblock The causal interpretation of two-stage least squares with multiple
+instrumental variables.
+\newblock \emph{American Economic Review} 111(11), 3663--3698.
+\newblock \url{https://doi.org/10.1257/aer.20190221}.
+
+\bibitem{Noack2021}
+Noack, C. (2021).
+\newblock Sensitivity of LATE estimates to violations of the monotonicity
+assumption.
+\newblock arXiv:2106.06421.
+\newblock \url{https://arxiv.org/abs/2106.06421}.
+
+\bibitem{SunWuthrich2025}
+Sun, Z. and K. W\"uthrich (2025).
+\newblock Pairwise valid instruments.
+\newblock \emph{Journal of Econometrics} 250, 106009.
+\newblock \url{https://doi.org/10.1016/j.jeconom.2025.106009}.
+
+\bibitem{Vytlacil2002}
+Vytlacil, E. (2002).
+\newblock Independence, monotonicity, and latent index models: An equivalence
+result.
+\newblock \emph{Econometrica} 70(1), 331--341.
+\newblock \url{https://doi.org/10.1111/1468-0262.00282}.
+\end{thebibliography}
+
+\end{document}

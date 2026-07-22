@@ -1,0 +1,233 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_cic\_cl\_quantile\_nonequiv, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_cic\_cl\_quantile\_nonequiv} / \texttt{v1}%
+  \\ \large\textit{A Gateaux-linearized decomposition of the staggered Callaway--Li quantile aggregate into the Athey--Imbens CIC aggregate plus a closed-form cohort-timing contamination $\kappa(P)$, together with a corrected estimator $\theta^\star_\tau$ that purges the contamination and reduces to CL under timing homogeneity.}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Anchor cluster: \textbf{Panel (free-form)}, with the kernel statement reaching into the exact-identification cluster for the rank-invariance baseline (Athey--Imbens) and the partial-identification cluster for the corrected estimand's sharp identified set under copula relaxations.
+\begin{itemize}
+  \item \textbf{qid}: \texttt{eid\_cic\_cl\_quantile\_nonequiv}.
+  \item \textbf{specialization}: \texttt{v1} --- the Gateaux-linearized decomposition + correction kernel for the staggered quantile-on-treated.
+  \item \textbf{Panel index}: $(i,t)$ with $i \in \{1,\dots,N\}$, $t \in \{1,\dots,T\}$, $T \geq 3$ fixed and $N \to \infty$.
+  \item \textbf{Cohort label}: $G_i \in \mathcal{G} \cup \{\infty\}$, $\mathcal{G} \subseteq \{2,\dots,T\}$ the set of treated adoption times; $G_i = \infty$ marks never-treated controls. Let $\pi_g := \Pr(G_i = g)$ and $\boldsymbol\pi := (\pi_g)_{g\in\mathcal{G}}$.
+  \item \textbf{Treatment indicator}: $D_{it} = \one\{t \geq G_i\}$ (absorbing staggered adoption, no reversal).
+  \item \textbf{Outcomes}: real-valued $Y_{it}$ with potential outcomes $Y_{it}(0), Y_{it}(1)$; observed $Y_{it} = D_{it} Y_{it}(1) + (1-D_{it}) Y_{it}(0)$.
+  \item \textbf{Target estimand}: the cohort-aggregated quantile-on-treated
+        \[ \theta_\tau := \sum_{g \in \mathcal{G}} \tilde\pi_g \cdot \theta_\tau(g,T), \qquad \tilde\pi_g := \pi_g / \sum_{g' \in \mathcal{G}} \pi_{g'}, \]
+        where $\theta_\tau(g,T) := F^{-1}_{Y_{iT}(1)\mid G_i=g}(\tau) - F^{-1}_{Y_{iT}(0)\mid G_i=g}(\tau)$ is the cohort-$g$ QTT at terminal period $T$.
+  \item \textbf{Identification route under test}: two named published routes are compared:
+        \begin{itemize}
+          \item[(A)] \emph{Athey--Imbens 2006 (CIC) route}: cohort-by-cohort rank invariance under the cohort-specific pre/post comparison against the never-treated control, then $\boldsymbol\pi$-aggregated. Call this $\theta^{\mathrm{CIC}}_\tau$.
+          \item[(B)] \emph{Callaway--Li 2019 (CL) route}: distributional DID plus time-invariance copula, naively extended to staggered adoption by pooling all not-yet-treated as controls at each $t$. Call this $\theta^{\mathrm{CL}}_\tau$.
+        \end{itemize}
+  \item \textbf{Regression / estimation route}: the proposal targets the population estimands $\theta^{\mathrm{CIC}}_\tau$ and $\theta^{\mathrm{CL}}_\tau$ and their plug-in estimators based on empirical cohort-period CDFs $\widehat F_{Y_t \mid G=g}$. No parametric outcome model is imposed.
+  \item \textbf{Rank index}: $\tau \in (\underline\tau, \bar\tau) \subset (0,1)$ a compact interior interval avoiding the tails (avoids quantile-inversion non-smoothness at the boundary).
+\end{itemize}
+
+\begin{abstract}
+Under staggered adoption, the two leading routes to a quantile-on-treated --- Athey--Imbens (2006) changes-in-changes (CIC) under cohort-by-cohort rank invariance, and Callaway--Li (2019) distributional-DID under a time-invariance copula --- agree under timing homogeneity but disagree in general, with the gap admitting no published decomposition. We propose a Gateaux-linearized decomposition $\theta^{\mathrm{CL}}_\tau - \theta^{\mathrm{CIC}}_\tau = \sum_{g \in \mathcal{G}} w_g(\boldsymbol\pi,\tau) \cdot \delta_g(\tau)$ along the one-parameter family of cohort-timing distributions $\boldsymbol\pi_s = (1-s)\boldsymbol\pi_{\mathrm{hom}} + s\,\boldsymbol\pi$, and a closed-form scalar contamination $\kappa(P) := \sum_g w_g \cdot \delta_g$ expressed purely in observed cohort-period marginals. We conjecture (i) a sharp characterization $\mathrm{sign}(\theta^{\mathrm{CL}}_\tau - \theta^{\mathrm{CIC}}_\tau) = \mathrm{sign}(\kappa(P))$ on an open class of DGPs, with negative-weight cohort terms exhibited on a concrete three-cohort Gaussian-shift witness, and (ii) a corrected estimator $\theta^\star_\tau := \theta^{\mathrm{CL}}_\tau - \kappa(P)$ that recovers $\mathrm{sign}(\theta^{\mathrm{CIC}}_\tau)$ on the same open class, reduces exactly to $\theta^{\mathrm{CL}}_\tau$ at timing homogeneity, and admits a root-$N$ consistent plug-in with a closed-form influence function. The resolution would supply the missing quantile counterpart to the Goodman-Bacon (2021) / Sun--Abraham (2021) decomposition program, give applied users a closed-form diagnostic for whether the CL or CIC route is contaminated under the panel they have, and downgrade Li--Lin (2024)'s ``delicate'' status for the staggered Callaway--Li copula extension to a named contamination object that can be quantified ex ante.
+\end{abstract}
+
+\section{Introduction}
+
+\paragraph{Why the problem matters.} Staggered adoption is now the empirical default, and the past five years of econometric methodology have produced a clean decomposition picture for the \emph{mean}: \citet{GoodmanBacon2021} shows the TWFE estimand is a weighted average of $2\!\times\!2$ DIDs with potentially negative weights, \citet{SunAbraham2021} shows event-study coefficients contaminate one another across leads and lags, and \citet{deChaisemartinDHaultfoeuille2020} shows TWFE can flip sign relative to the ATT under heterogeneity. The distributional / quantile analogues --- on which empirical work increasingly relies (inequality, wage dispersion, treatment-on-the-tail in development) --- have no such decomposition. The two leading identification routes for the quantile-on-treated, \citet{AtheyImbens2006} CIC and \citet{CallawayLi2019} CL, were derived in non-staggered settings and rest on \emph{different} non-nested invariances (cohort-by-cohort rank invariance vs.\ time-invariance copula). Applied users staring at a staggered panel currently must either pick one route by faith or fall back to the partial-identification anchor of \citet{FanYu2012}, which is two-period and gives no actionable decomposition. \citet{LiLin2024} explicitly flag the staggered Callaway--Li copula extension as ``delicate'' and leave it open.
+
+\paragraph{The main finding (proposed).} Let $\theta_\tau$ denote the cohort-aggregated quantile-on-treated at rank $\tau$ defined in \S\ref{sec:setup}. We propose:
+\begin{itemize}
+  \item (Theorem~\ref{thm:gateaux-decomp}) A first-order Gateaux-linearized identity
+        \[ \theta^{\mathrm{CL}}_\tau - \theta^{\mathrm{CIC}}_\tau = \sum_{g \in \mathcal{G}} w_g(\boldsymbol\pi, \tau) \cdot \delta_g(\tau) + R(\boldsymbol\pi, \tau), \]
+        where $w_g$ depends only on the cohort-timing distribution and $\tau$, $\delta_g(\tau)$ is a cohort-time CDF--gap functional in observed marginals, and the remainder $R$ vanishes to first order along the homogeneity path.
+  \item (Conjecture~\ref{conj:kappa-sign}) On an open class of DGPs, the sign of $\theta^{\mathrm{CL}}_\tau - \theta^{\mathrm{CIC}}_\tau$ is governed by the closed-form scalar $\kappa(P) := \sum_g w_g \delta_g$, with $|\theta^{\mathrm{CL}}_\tau - \theta^{\mathrm{CIC}}_\tau| \leq C_\Phi(P)|\kappa(P)|$ for a structural curvature constant $C_\Phi$ defined in Assumption~\ref{ass:curvature}.
+  \item (Conjecture~\ref{conj:correction}) The corrected estimand $\theta^\star_\tau := \theta^{\mathrm{CL}}_\tau - \kappa(P)$ satisfies (a) $\theta^\star_\tau = \theta^{\mathrm{CL}}_\tau = \theta^{\mathrm{CIC}}_\tau$ at timing homogeneity, (b) $\mathrm{sign}(\theta^\star_\tau) = \mathrm{sign}(\theta^{\mathrm{CIC}}_\tau)$ on the same open class as Conjecture~\ref{conj:kappa-sign}, and (c) the plug-in estimator $\widehat\theta^\star_\tau$ is $\sqrt{N}$-consistent and asymptotically normal with a closed-form influence function under Assumptions~\ref{ass:smooth-cdf}--\ref{ass:overlap}.
+\end{itemize}
+
+\paragraph{What is new.} The novelty is not ``extend CL to staggered'' (that direction has been pursued by \citet{LiLin2024} and \citet{Ciaccio2025} from the identification side, and by \citet{KimWooldridge2025} from the estimation side, all under additional copula or rank-invariance assumptions). The novelty is that the \emph{disagreement} between two named published routes is itself a closed-form object in observables, and that one of the two routes can be \emph{purged} of the disagreement without imposing additional copula stability. The decomposition is a Gateaux-derivative along a one-parameter family in $\boldsymbol\pi$-space; this is the quantile-and-staggered counterpart of \citet{GoodmanBacon2021}'s weighting argument for the mean, but operates through nonlinear quantile inversion rather than through linear two-group/two-period sums. The contamination $\kappa(P)$ is a single scalar functional of cohort-period marginals --- a named operational quantity --- not a vector of weights, and its observable form is what gives Conjecture~\ref{conj:correction}(c) its closed-form influence function.
+
+\paragraph{How it positions in the literature.} The proposal sits at the intersection of the panel / staggered-design cluster (\citet{GoodmanBacon2021,SunAbraham2021,CallawaySantAnna2021,BorusyakJaravelSpiess2024}) and the exact-identification cluster for distributional DID (\citet{AtheyImbens2006,CallawayLi2019,CallawayLiOka2018,Ciaccio2025,ChernozhukovFernandezValLuo2024}). It also makes contact with the partial-identification literature (\citet{FanYu2012}) at the timing-homogeneity boundary, where the decomposition collapses to a point and the partial-ID bounds become degenerate. We anchor in the panel cluster because the active object is the cohort-timing distribution $\boldsymbol\pi$; the exact-identification anchors supply the underlying identification of $\theta^{\mathrm{CIC}}_\tau$ and $\theta^{\mathrm{CL}}_\tau$ as inputs.
+
+\paragraph{Implications for the community.} Concretely: a reader running staggered QTT analyses (e.g.\ a labor economist studying minimum-wage adoption tail effects in the panel-event-study tradition of \citet{CengizDubeLindnerZipperer2019}, or a development economist applying \citet{CallawayLi2019}-style estimators to staggered program rollouts) can now (i) compute $\widehat\kappa(P)$ as a single-line diagnostic on their data and (ii) read off whether the CL and CIC point estimates can be expected to differ in sign in finite samples, and use $\widehat\theta^\star_\tau$ as a sign-anchored alternative. The result also turns Li--Lin (2024)'s ``delicate'' obstacle into a quantified one: $\kappa(P)$ is exactly the obstruction, and timing homogeneity ($\kappa \equiv 0$) is exactly when CL extends safely.
+
+\paragraph{How research benefits.} The reader takes away one rule: \textbf{before reporting a staggered QTT, compute $\widehat\kappa(P)$ and report it alongside the point estimate; if $\widehat\kappa(P)$ is non-negligible relative to the headline effect, prefer $\widehat\theta^\star_\tau$ to $\widehat\theta^{\mathrm{CL}}_\tau$}. This is a concrete change to applied practice that replaces today's coin-flip between CL and CIC.
+
+\section{Related work}
+\label{sec:related}
+
+\paragraph{Distributional / quantile DID identification (the routes being compared).}
+\begin{itemize}
+  \item \citet{AtheyImbens2006} (Econometrica): the CIC anchor. Identifies the full counterfactual distribution of the treated outcome under cohort-by-cohort rank invariance and a scale-invariant nonlinear DID. We adopt cohort-by-cohort CIC and aggregate by $\boldsymbol\pi$ to build $\theta^{\mathrm{CIC}}_\tau$; the rank-invariance baseline is the benchmark that $\theta^\star_\tau$ is engineered to track in sign.
+  \item \citet{CallawayLi2019} (Quantitative Economics): the CL anchor. Identifies panel-data QTT under distributional DID plus time-invariance of the copula linking pre- and post-treatment untreated outcomes. We use the natural staggered extension --- pooling not-yet-treated as control at each $t$ --- as $\theta^{\mathrm{CL}}_\tau$.
+  \item \citet{CallawayLiOka2018} (J.\ Econometrics): two-period CQTT identification with a group-invariance copula; supplies the copula-based identification template that we read into the staggered setting.
+  \item \citet{LiLin2024} (Economics Letters): explicit acknowledgement that extending CL's time-invariance copula to staggered adoption is ``delicate.'' This is the named open problem our Conjecture~\ref{conj:kappa-sign} quantifies.
+  \item \citet{Ciaccio2025} (arXiv): recovers full counterfactual distributions in multi-period staggered distributional DID; an existence-level result for the recovery but not a decomposition of the CL vs.\ CIC gap.
+  \item \citet{KimWooldridge2025} (JBES) and \citet{MillerGalvao2026} (SSRN working paper): recent staggered QTT estimators, including doubly robust variants. They contribute estimation under copula assumptions; they do not isolate the CIC--CL gap.
+\end{itemize}
+
+\paragraph{Staggered-DID decomposition program (the program our proposal extends).}
+\begin{itemize}
+  \item \citet{GoodmanBacon2021} (J.\ Econometrics): TWFE = weighted average of $2\!\times\!2$ DIDs with potentially negative weights for cohort-on-cohort comparisons. The structural template for our Gateaux decomposition. Their decomposition is linear in $Y$; ours operates through the nonlinear $F^{-1}$ map and so cannot be obtained by lifting theirs.
+  \item \citet{SunAbraham2021} (J.\ Econometrics): event-study lead/lag contamination under heterogeneous treatment effects. The contamination diagnostic we offer is the quantile / cohort-distribution analogue.
+  \item \citet{deChaisemartinDHaultfoeuille2020} (AER): mean DID flipping sign relative to ATT under heterogeneity. Our Conjecture~\ref{conj:kappa-sign} is the distributional analogue --- sign flipping between CL and CIC rather than between TWFE and ATT.
+  \item \citet{CallawaySantAnna2021} (J.\ Econometrics): the $\mathrm{ATT}(g,t)$ architecture and aggregation weights. We re-use the cohort-by-cohort indexing $(g,t)$ but at the quantile level.
+  \item \citet{BorusyakJaravelSpiess2024} (RES): efficient imputation for staggered mean event studies. Sets the efficiency benchmark the QTT literature lacks; our $\theta^\star_\tau$ does not claim efficiency but supplies a closed-form influence function as the substrate.
+\end{itemize}
+
+\paragraph{Functional-form sensitivity and partial-ID anchors.}
+\begin{itemize}
+  \item \citet{RothSantAnna2023} (Econometrica): functional-form sensitivity of mean DID. We use this in our Honest scope flags --- our claims are at the population QTT level, not at any one transformation of $Y$.
+  \item \citet{FanYu2012} (Economics Letters): two-period sharp QTE bounds. Degenerate-slice anchor: when timing homogeneity holds, $\kappa = 0$ and the CL--CIC gap collapses to zero, recovering the joint point identification implicit in Fan--Yu's two-period setting.
+  \item \citet{ChernozhukovFernandezValLuo2024} (arXiv/IZA WP): distribution-regression DID linking distributional DID to CIC-style recovery; supplies estimation templates for $\delta_g(\tau)$.
+\end{itemize}
+
+\paragraph{In-repo prior art (CausalSmith catalogue).}
+\begin{itemize}
+  \item \texttt{eid\_dist\_synth\_control\_v1} (banked / downgraded): Conjecture~2 gestured at a CIC--CL quantile comparison but supplied only a taxonomy plus threshold diagnostic, with no closed-form decomposition. Our Theorem~\ref{thm:gateaux-decomp} delivers the missing closed-form decomposition and our $\kappa(P)$ supplies the missing computable equality / separation test that the angle2 reviewers explicitly requested.
+  \item \texttt{pid\_qte\_marginal\_sensitivity\_v1} (banked): reviewer strengthening\_paths asked for an LP-complexity or simultaneous-inference theorem for quantile certificates. The Gateaux decomposition supplies a cohort-indexed family of contamination components of dimension $K = |\mathcal{G}|$, giving a finite LP whose dimension is named and bounded.
+  \item \texttt{pid\_did\_anticipation\_bounded\_v1} (candidate): pooled signed coefficients for staggered DID aggregates. Adjacent in spirit (staggered DID aggregates with shared distortion coordinates) but operates on the mean and on partial identification; the present proposal is on quantiles and on exact identification of the corrected estimand.
+\end{itemize}
+
+\section{Formal setup}
+\label{sec:setup}
+
+\paragraph{Panel and cohort structure.} Repeat from the Locked parameters: $i=1,\dots,N$ (i.i.d.\ across $i$), $t=1,\dots,T$ with $T \geq 3$ fixed; $G_i \in \mathcal{G} \cup \{\infty\}$ with $\mathcal{G} \subseteq \{2,\dots,T\}$ the treated-cohort labels; $\pi_g = \Pr(G_i = g)$, $\boldsymbol\pi = (\pi_g)_{g\in\mathcal{G}}$, $\pi_\infty = \Pr(G_i = \infty)$ the never-treated mass; $D_{it} = \one\{t \geq G_i\}$. Potential outcomes $(Y_{it}(0), Y_{it}(1))$, observed $Y_{it} = D_{it} Y_{it}(1) + (1-D_{it}) Y_{it}(0)$. Denote by $F_{Y_t \mid G=g}$ the marginal CDF of $Y_{it}$ given $G_i = g$, and by $F^{-1}_{Y_t \mid G=g}$ its quantile function on $(\underline\tau, \bar\tau)$.
+
+\paragraph{The two identification routes as functionals of marginals.}
+
+\emph{Route A (CIC, Athey--Imbens 2006).} For cohort $g$ with pre-period $t_0 < g \leq T$, define the cohort-$g$ CIC counterfactual CDF at terminal period $T$ for the never-treated mapping
+\[ F^{\mathrm{CIC}, 0}_{Y_T \mid G=g}(y) := F_{Y_{t_0} \mid G=g} \!\left( F^{-1}_{Y_{t_0} \mid G=\infty} \!\left( F_{Y_T \mid G=\infty}(y) \right) \right), \]
+and let $\theta_\tau^{\mathrm{CIC}}(g) := F^{-1}_{Y_T \mid G=g}(\tau) - (F^{\mathrm{CIC},0}_{Y_T \mid G=g})^{-1}(\tau)$. The aggregate is
+\[ \theta^{\mathrm{CIC}}_\tau := \sum_{g \in \mathcal{G}} \tilde\pi_g \cdot \theta_\tau^{\mathrm{CIC}}(g), \qquad \tilde\pi_g = \pi_g/(1-\pi_\infty). \]
+(Choice of $t_0$: cohort-specific last pre-period $t_0 = g-1$.)
+
+\emph{Route B (staggered CL, Callaway--Li 2019).} For cohort $g$, let $\mathcal{C}_g := \{i : G_i > T \text{ or } G_i > t \text{ for all } t \in [g-1, T]\}$ be the pool of not-yet-treated controls relative to cohort $g$'s switch window, and define the CL counterfactual CDF via distributional DID
+\[ F^{\mathrm{CL}, 0}_{Y_T \mid G=g}(y) := F_{Y_{g-1} \mid G=g} + \big( F_{Y_T \mid \mathcal{C}_g} - F_{Y_{g-1} \mid \mathcal{C}_g} \big)(y) \]
+combined with the time-invariance copula linking $(Y_{g-1}(0), Y_T(0))$ in the control pool. Let $\theta^{\mathrm{CL}}_\tau(g)$ be the resulting cohort-$g$ QTT and $\theta^{\mathrm{CL}}_\tau := \sum_g \tilde\pi_g \theta^{\mathrm{CL}}_\tau(g)$.
+
+Both $\theta^{\mathrm{CIC}}_\tau$ and $\theta^{\mathrm{CL}}_\tau$ are functionals of $\boldsymbol\pi$ and of the cohort-period marginals $\{F_{Y_t \mid G=g}\}_{(g,t)}$. We write $\theta^{\bullet}_\tau = \Psi^\bullet(\boldsymbol\pi; \mathbf{F})$ where $\mathbf{F} = (F_{Y_t \mid G=g})$.
+
+\paragraph{Timing-homogeneity reference path.} Let $\boldsymbol\pi_{\mathrm{hom}}$ denote any reference cohort-timing distribution with the property that, conditional on being treated, $G_i$ is independent of the cohort-specific marginal CDF shape (formal version in Assumption~\ref{ass:homogeneity}). Define the one-parameter family $\boldsymbol\pi_s := (1-s)\boldsymbol\pi_{\mathrm{hom}} + s\boldsymbol\pi$ for $s \in [0,1]$.
+
+\paragraph{Cohort-time CDF-gap functional.} For each $g \in \mathcal{G}$, define
+\[ \delta_g(\tau) := \big[ F^{-1, \mathrm{CL}, 0}_{Y_T \mid G=g}(\tau) - F^{-1, \mathrm{CIC}, 0}_{Y_T \mid G=g}(\tau) \big], \]
+the cohort-$g$ counterfactual-quantile gap between the two routes. This is the cohort-time \emph{disagreement} object; it lives entirely in observed marginals.
+
+\paragraph{Closed-form contamination scalar.} The scalar
+\[ \kappa(P; \tau) := \sum_{g \in \mathcal{G}} w_g(\boldsymbol\pi, \tau) \cdot \delta_g(\tau), \qquad w_g(\boldsymbol\pi, \tau) := \tilde\pi_g \cdot \frac{\partial}{\partial s}\!\bigg|_{s=1} \big[ \text{(cohort-$g$ contribution under }\boldsymbol\pi_s\text{)} \big], \]
+is the first-order Gateaux derivative of $\theta^{\mathrm{CL}}_\tau - \theta^{\mathrm{CIC}}_\tau$ along $s \mapsto \boldsymbol\pi_s$, evaluated at the observed $\boldsymbol\pi$. The weights $w_g$ are computable in closed form from $\boldsymbol\pi$ and the rank density $f_{Y_T \mid G=g}(F^{-1}_{Y_T \mid G=g}(\tau))$. By construction $\kappa(P; \tau) = 0$ when $\boldsymbol\pi = \boldsymbol\pi_{\mathrm{hom}}$.
+
+\paragraph{Corrected estimand.} Define
+\[ \theta^\star_\tau := \theta^{\mathrm{CL}}_\tau - \kappa(P; \tau). \]
+$\theta^\star_\tau$ is also a functional of $(\boldsymbol\pi, \mathbf{F})$ and is in particular computable as a plug-in from empirical cohort-period CDFs.
+
+\section{Assumptions}
+% TODO(stage-1 \S7 Assumptions):
+%   - Each named assumption in its own `assumption` environment with a unique label.
+%   - Every hypothesis cited in any Theorem/Conjecture must appear here.
+
+\section{Main results}
+% TODO(stage-1 \S8 Main results):
+%   - Number each result `Theorem N` (provable from existing substrate or by routine algebra)
+%     or `Conjecture N` (novel kernel, verification still open --- mark `(NOT YET PROVED)`).
+%   - REQUIRED after every result: a `\paragraph{Why this is new and worth studying.}` with
+%       (a) the precise gap to prior art (closest paper(s) and why this differs), and
+%       (b) why resolving it advances the field (what becomes possible / what test or design is unlocked / what existing result becomes a corollary).
+%   - At least one `Conjecture` is expected. All-`Theorem` usually means the proposer slipped statements past themselves.
+
+\section{Sanity-check corollaries}
+% TODO(stage-1 \S9 Sanity-check corollaries):
+%   - At least one reduction the proposal must satisfy under existing assumptions
+%     (homogeneous effects, no carry-over, T=2, iid, etc.). Catches "novelty by accident of error".
+
+\section{Proof-sketch route}
+% TODO(stage-1 \S10 Proof-sketch route --- math-only):
+%   - One paragraph sketching the *mathematical* verification route: which classical
+%     theorems / identities the proof would reduce to, and which boundary cases need
+%     explicit algebra (e.g., a T=3 weight computation for panel kernels, a small-support
+%     enumeration for partial-ID bounds, a back-door adjustment closed-form check for ExactID).
+%     No proofs.
+%   - Do NOT name Mathlib lemmas, AutoID Lean files, or any Lean / formalization artefacts here.
+%     Stage 1 (NL formalizer) owns the Lean-feasibility gate; the proposer's job is to convince
+%     a *journal referee* the math is tractable, not a Lean engineer the substrate exists.
+
+\section{Honest scope flags}
+% TODO(stage-1 \S11 Scope flags):
+%   - What is open vs proved.
+%   - What was withdrawn during v1 --> vK iteration.
+%   - Any assumptions the proposer is unsure about.
+
+\section{Iteration trail}
+% TODO(stage-1 \S12 Iteration trail):
+%   - Bulleted summary of v1, v2, ..., vK with reviewer verdict / one-line change at each step.
+%   - Even on a v1 ACCEPT, include a one-line entry for transparency.
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+% TODO(stage-1 \S13 Bibliography): `\bibitem{key} ...` entries for every paper cited in \S5. Use stable citation keys.
+\end{thebibliography}
+
+\end{document}

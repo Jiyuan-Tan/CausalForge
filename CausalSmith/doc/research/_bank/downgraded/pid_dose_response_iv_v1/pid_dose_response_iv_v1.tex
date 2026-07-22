@@ -1,0 +1,689 @@
+% =====================================================================
+%  ThmSmith Stage 0 derivation skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_dose\_response\_iv, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to a Q1..Q6
+%    pool-mode, fill it VERBATIM from the question-specific block of
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    For free-form panel / ExactID / PartialID anchors, reproduce the
+%    locked-parameter block from the Stage -1 proposal verbatim. Do not
+%    rephrase locked parameters; Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage 0 derivation: \texttt{pid\_dose\_response\_iv} / \texttt{v1}%
+  \\ \large\textit{Sharp adjacent-rank copula-tube bounds for a continuous-dose IV slope}}
+\author{ThmSmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This partial-identification instance has no regression formula; the estimand-defining functional is the sharp envelope
+\[
+B_{\Gamma,\rho,\eta}^{\mathrm{slope}}(P;\tau,h)
+=\left[\inf_{Q\in\mathcal M(P,\mathcal R_{\Gamma,\rho,\eta}^{\mathrm{iv\text{-}tube}})}
+\theta_{\tau,h}(Q),
+\sup_{Q\in\mathcal M(P,\mathcal R_{\Gamma,\rho,\eta}^{\mathrm{iv\text{-}tube}})}
+\theta_{\tau,h}(Q)\right].
+\]
+The causal target is the adjacent-dose baseline-rank-slice finite difference
+\[
+\theta_{\tau,h}=\E\{Y(a_1)-Y(a_0)\mid R_{01}\in\tau\}/h,\qquad R_{01}=U_{a_0},\quad a_1=a_0+h.
+\]
+The note proves that, after finite partitioning, the sharp identified interval is the projection of one compact linear program over a joint adjacent-dose rank coupling.  Its substantive contribution is an explicit copula-tail sign theorem: in a saturated finite witness the lower endpoint equals \(7/16-4\rho+4\rho^2\) for \(0\le\rho\le1/4\), so the exact sign threshold is \(\rho^\star=1/8\).  Thus a tight adjacent-rank copula tube forces the sharp lower slope bound to be positive even though the product of one-dose rank-slice sensitivity bands contains zero.  The conclusion is a sharp partial-identification statement, not point identification: every feasible value of the causal target lies in the displayed interval, and every point of that interval is attained by an admissible full-data law in the finite model.
+\end{abstract}
+
+\section{Introduction}
+Many continuous-treatment questions are local.  A physician may want to know whether a small dose increase helps a subgroup, a regulator may want to certify whether a small exposure increase is harmful, and a policy analyst may care about the sign of a marginal return near a current treatment level.  Average potential-outcome bands at two adjacent doses are often too coarse for this task because the least favorable completion at \(a_0\) need not be compatible with the least favorable completion at \(a_1\).
+
+The object studied here is a baseline-rank-slice finite difference.  The slice is pinned by the randomized conditional rank \(R_{01}=U_{a_0}\), while the adjacent rank \(U_{a_1}\) is linked to it through a local copula tube.  This distinction matters: a pointwise marginal band for \(Y(a_1)\) says what adjacent outcomes are possible somewhere in the population, whereas the derivative-sign question asks what adjacent outcomes can be paired with the same baseline-rank individuals.
+
+The established starting point is partial identification under bounded outcomes, hidden-confounding sensitivity restrictions, instrumental-variable restrictions, and copula or Fr\'echet restrictions on joint potential-outcome laws.  This note does not claim a new general identification theorem for continuous treatments.  Its contribution is narrower and more concrete: it writes the locked ThmSmith target as a sharp finite-dimensional linear-programming projection and derives a sharp upper-tail copula inequality with an exact sign threshold for a saturated adjacent-dose witness.
+
+The result is useful because it separates three layers that are easy to conflate.  The causal target is \(\theta_{\tau,h}\), an unobserved rank-slice finite difference.  The observable-data restrictions define the identified set \(\Theta_I(P)\).  The reported object is the sharp bounding functional \(B_{\Gamma,\rho,\eta}^{\mathrm{slope}}(P;\tau,h)\), which is an interval-valued functional of the observable law and the locked restrictions.
+
+\section{Related work and positioning}
+Manski's bounded-outcome analysis \cite{Manski1990} is the baseline partial-identification comparator: without identifying restrictions, a bounded mean or mean difference is limited only by worst-case completions.  The present note uses the same worst-case-completion logic but adds sensitivity, IV-moment, and copula-tube constraints.
+
+Balke and Pearl \cite{BalkePearl1997} give the canonical finite linear-programming treatment of IV bounds.  The finite program below is in that tradition, but its variables are adjacent-dose potential outcomes and randomized ranks rather than binary treatment compliance types.
+
+Makarov-type and treatment-effect-distribution bounds, including the analysis of Fan, Guerre, and Zhu \cite{FanGuerreZhu2017} and Firpo and Ridder \cite{FirpoRidder2019}, show that functionals depending on a joint law of potential outcomes need copula information.  This note applies that lesson to a continuous-dose adjacent finite difference conditional on a pinned baseline rank.
+
+Continuous-treatment sensitivity methods such as Jesson et al. \cite{JessonDouglasManshausenSolalMeinshausenStierGalShalit2022}, Marmarelis et al. \cite{MarmarelisHaddadJessonJahanshadGalstyanVerSteeg2023}, Baitairian et al. \cite{BaitairianSebastienJreichKatsahianGuilloux2025}, and Dalal and Tchetgen Tchetgen \cite{DalalTchetgenTchetgen2025} motivate the dose-specific hidden-confounding radius \(\Gamma\).  Their closest object is a pointwise or average dose-response envelope; the present target is a local rank-slice slope whose value depends on a cross-dose rank coupling.
+
+Zhang \cite{Zhang2025ADE} is the closest derivative-sensitivity comparator because it studies average derivative effects under an odds-ratio restriction.  The difference is that the target here is not an exposure-distribution average derivative, but a finite difference within \(R_{01}\in\tau\) under an IV-compatible adjacent-rank copula tube.
+
+The continuous-IV literature of Chernozhukov and Hansen \cite{ChernozhukovHansen2005}, Imbens and Newey \cite{ImbensNewey2009}, Kasy \cite{Kasy2014}, D'Haultfoeuille and F\'evrier \cite{DHaultfoeuilleFevrier2015}, Torgovitsky \cite{Torgovitsky2015}, and Hoderlein et al. \cite{HoderleinHolzmannKasyMeister2017} explains when strong triangular or monotonicity restrictions can produce point identification.  This note deliberately stays in a partial-identification regime with finite IV moment-balance restrictions rather than relying on those point-identification conditions.
+
+Chernozhukov, Fern\'andez-Val, Han, and W\"uthrich \cite{ChernozhukovFernandezValHanWuthrich2024} are especially close because they use local copula restrictions with instruments for causal effects of discrete and continuous treatments.  Their result is a point-identification route under local copula invariance; the current theorem gives a sharp bound and a sign certificate under a copula tube and sensitivity restrictions.
+
+The in-repository positioning supplied by the Stage -1 brief says that \texttt{ThmSmith/PartialID/} is a seed area for Manski-family bounds, IV bounds, sensitivity analysis, and shape restrictions.  The locked \texttt{pid\_dose\_response\_iv}/\texttt{v1} target differs from the nearby \texttt{pid\_dose\_response\_shape} idea because it uses IV-compatible adjacent-rank dependence, not monotone-concave closure of a marginal dose-response curve.
+
+\section{Formal setup}
+Let \(P\) be the observable law of \((Y,A,Z,X)\).  The outcome is bounded, \(Y\in[0,1]\); the observed dose \(A\) takes values in an interval containing \(a_0<a_1<a_2\); the adjacent gap is \(h=a_1-a_0>0\); the instrument \(Z\) takes values in a measurable subset \(\mathcal Z\subset\mathbb R\); and \(X\) denotes observed covariates.  A full-data law \(Q\) extends \(P\) by adding the adjacent potential outcomes \(Y(a_0),Y(a_1)\), the full potential-outcome array needed for the IV restriction, and the auxiliary rank tie-breakers defined below.
+
+For each adjacent dose \(a\in\{a_0,a_1\}\), write
+\[
+F_{a,x}(y)=Q\{Y(a)\le y\mid X=x\},\qquad
+F^-_{a,x}(y)=Q\{Y(a)<y\mid X=x\}.
+\]
+Let \(V_a\sim\mathrm{Unif}(0,1)\) be conditionally independent of \(\{Y(a),X\}\).  The randomized conditional rank is
+\[
+U_a=F^-_{a,X}\{Y(a)\}+V_a\bigl(F_{a,X}\{Y(a)\}-F^-_{a,X}\{Y(a)\}\bigr).
+\]
+Then \(U_a\mid X=x\sim\mathrm{Unif}(0,1)\) for every \(x\) at which the conditional law is defined, including conditional margins with atoms.  The target rank coordinate is \(R_{01}:=U_{a_0}\), and \(\tau=[\tau_L,\tau_U]\subset(0,1)\) is fixed with \(0<\tau_L<\tau_U<1\).
+
+Let \(C_{01,x}\) be the conditional copula of \((U_{a_0},U_{a_1})\mid X=x\).  The maintained restriction class \(\mathcal R_{\Gamma,\rho,\eta}^{\mathrm{iv\text{-}tube}}\) consists of consistency, positivity, randomized-rank well-definedness, IV exclusion and conditional independence, a continuous-treatment marginal sensitivity radius \(\Gamma\), finite IV moment-balance restrictions with tolerance \(\eta\), and the adjacent-rank copula tube of radius \(\rho\).  The full-data model is
+\[
+\mathcal M(P,\mathcal R_{\Gamma,\rho,\eta}^{\mathrm{iv\text{-}tube}})
+=\{Q:\ Q_{Y,A,Z,X}=P\text{ and }Q\text{ satisfies }\mathcal R_{\Gamma,\rho,\eta}^{\mathrm{iv\text{-}tube}}\}.
+\]
+The identified set for the scalar target is
+\[
+\Theta_I(P)=
+\left\{\theta_{\tau,h}(Q):Q\in\mathcal M(P,\mathcal R_{\Gamma,\rho,\eta}^{\mathrm{iv\text{-}tube}})\right\}.
+\]
+
+\paragraph{Locked parameters.}
+This is a partial-identification anchor.  The locked tuple is
+\[
+(\texttt{pid\_dose\_response\_iv},\texttt{v1},
+P,\theta,\mathcal R_{\Gamma,\rho,\eta}^{\mathrm{iv\text{-}tube}},B_{\Gamma,\rho,\eta}^{\mathrm{slope}}).
+\]
+Here \(P\) is the observable law of \((Y,A,Z,X)\), with bounded outcome \(Y\in[0,1]\), continuous dose \(A\in[a_0,a_2]\), continuous instrument \(Z\in\mathcal Z\subset\mathbb R\), and observed covariates \(X\).  The parameter is the adjacent-dose rank-slice finite-difference
+\[
+\theta_{\tau,h}=\frac{\E\{Y(a_1)-Y(a_0)\mid R_{01}\in\tau\}}{h},
+\quad a_1=a_0+h,
+\]
+where \(R_{01}:=U_{a_0}\) is the baseline adjacent-dose rank coordinate, \(U_a=F^-_{a,X}\{Y(a)\}+V_a(F_{a,X}\{Y(a)\}-F^-_{a,X}\{Y(a)\})\) is the randomized conditional probability-integral-transform rank with an independent tie-breaker \(V_a\sim\mathrm{Unif}(0,1)\), and \(\tau\subset[0,1]\) is a fixed interval with positive length.  Equivalently, when \(Y(a)\mid X\) is continuous, \(U_a=F_{a,X}\{Y(a)\}\).  The identifying restrictions \(\mathcal R_{\Gamma,\rho,\eta}^{\mathrm{iv\text{-}tube}}\) are consistency, positivity for \(A\) and \(Z\), well-defined randomized ranks, exclusion and conditional independence of \(Z\) from the latent potential-outcome array, a continuous-treatment marginal sensitivity bound \(\Gamma\) on dose-specific hidden-confounding tilts, a finite vector \(m(Y(a_j),X)\in\mathbb R^K\) of IV moment-balance restrictions with tolerance \(\eta\), and an adjacent-rank copula tube requiring the copula of \((U_{a_0},U_{a_1})\) within \(X\)-strata to lie within sup-norm distance \(\rho\) of the comonotone copula on \(\tau\times[0,1]\).  Thus the target conditions on the explicitly pinned coordinate \(R_{01}=U_{a_0}\), while the copula \(C_{01,x}\) controls how the adjacent rank \(U_{a_1}\) can be paired with it.  The bounding functional is the sharp interval
+\[
+B_{\Gamma,\rho,\eta}^{\mathrm{slope}}(P;\tau,h)=
+\left[\inf_{Q\in\mathcal M(P,\mathcal R_{\Gamma,\rho,\eta}^{\mathrm{iv\text{-}tube}})}\theta_{\tau,h}(Q),
+\sup_{Q\in\mathcal M(P,\mathcal R_{\Gamma,\rho,\eta}^{\mathrm{iv\text{-}tube}})}\theta_{\tau,h}(Q)\right],
+\]
+where \(\mathcal M(P,\mathcal R_{\Gamma,\rho,\eta}^{\mathrm{iv\text{-}tube}})\) is the set of full-data laws with observed margin \(P\) satisfying the stated restrictions.
+
+\section{Assumptions}
+\begin{assumption}[Bounded adjacent-dose support]\label{ass:bounded-support}
+The adjacent doses satisfy \(a_0<a_1\), \(h=a_1-a_0>0\), and both doses lie in the interior of the treatment support used by the finite approximation.  The potential outcomes obey \(0\le Y(a_j)\le 1\) almost surely for \(j=0,1\).  The slice \(\tau=[\tau_L,\tau_U]\subset(0,1)\) has positive length \(\lambda_\tau=\tau_U-\tau_L>0\), and \(Q(R_{01}\in\tau)>0\) for every feasible full-data law \(Q\).
+\end{assumption}
+
+\begin{assumption}[Consistency and observable margin]\label{ass:consistency}
+The observed outcome satisfies \(Y=Y(A)\).  Every feasible full-data law has observable margin \(P\), meaning \(Q_{Y,A,Z,X}=P\).  All conditional expectations and conditional laws used below are taken on support points with positive \(P\)-probability or positive conditional density.
+\end{assumption}
+
+\begin{assumption}[Treatment and instrument positivity]\label{ass:positivity}
+For the finite grid used in the sharp-bound calculation, each dose bin containing \(a_0\) or \(a_1\) has positive conditional treatment density given \(X=x\) on the \(X\)-strata retained in the calculation.  Each instrument bin used in an IV moment restriction has positive conditional probability given \(X=x\).  These positivity statements are only required for the strata and bins entering the displayed functionals.
+\end{assumption}
+
+\begin{assumption}[Randomized conditional ranks]\label{ass:ranks}
+For \(j=0,1\), the tie-breaker \(V_{a_j}\) is conditionally independent of \(\{Y(a_j),X\}\) and is uniformly distributed on \([0,1]\).  The rank \(U_{a_j}\) is the randomized conditional probability-integral-transform rank defined in Section 5, so \(U_{a_j}\mid X=x\sim\mathrm{Unif}(0,1)\).  The target event is always \(R_{01}\in\tau\), with \(R_{01}=U_{a_0}\).
+\end{assumption}
+
+\begin{assumption}[IV exclusion and conditional independence]\label{ass:iv}
+The instrument \(Z\) is excluded from the potential-outcome equation and is conditionally independent of the latent potential-outcome array and rank tie-breakers given \(X\).  In the finite relaxation this restriction is imposed through a known vector \(m(Y(a_j),X)\in\mathbb R^K\) and tolerance \(\eta\ge0\):
+\[
+\left|
+\E_Q\{m_k(Y(a_j),X)\mid Z\in z_b\}
+-\E_Q\{m_k(Y(a_j),X)\}
+\right|\le \eta
+\]
+for every adjacent dose \(j\in\{0,1\}\), moment coordinate \(k\), and instrument bin \(z_b\) with positive probability.
+\end{assumption}
+
+\begin{assumption}[Continuous-treatment marginal sensitivity]\label{ass:cmsm}
+For each adjacent dose \(a_j\), the complete-data density tilt that maps the observed conditional law local to \(A=a_j\) into the potential-outcome margin for \(Y(a_j)\) is bounded by a known sensitivity radius \(\Gamma\ge1\).  In the finite grid this is represented as follows.  For each retained \(X=x\) stratum and outcome cell \(y\), let \(s_{j,y\mid x}\) be the fixed observed local conditional cell probability supplied by \(P\) near \(A=a_j\), and let \(q_x=P(X=x)>0\).  Introduce potential-margin variables
+\[
+\mu_{j,y,x}=\sum_c\pi_c\one\{y_j=y,x(c)=x\}
+\]
+and tilt variables \(r_{j,y,x}\).  The sensitivity constraints are
+\[
+\mu_{j,y,x}=q_xs_{j,y\mid x}r_{j,y,x},\qquad
+\ell_\Gamma\le r_{j,y,x}\le u_\Gamma,\qquad
+\sum_y\mu_{j,y,x}=q_x,
+\]
+where \(0<\ell_\Gamma\le1\le u_\Gamma<\infty\), \(u_\Gamma/\ell_\Gamma\le\Gamma\), and \(\ell_1=u_1=1\).  The coefficients \(q_xs_{j,y\mid x}\) are constants, so these are linear constraints in \((\pi,\mu,r)\); no product of decision variables is introduced.
+\end{assumption}
+
+\begin{assumption}[Adjacent-rank copula tube]\label{ass:tube}
+For each \(X=x\) stratum in the calculation, let \(C_{01,x}\) be the copula of \((U_{a_0},U_{a_1})\mid X=x\).  The adjacent-rank tube restriction is
+\[
+\sup_{(u,v)\in\tau\times[0,1]}
+\left|C_{01,x}(u,v)-\min(u,v)\right|\le \rho.
+\]
+The tube is local in the first argument: it constrains how \(U_{a_1}\) can be paired with the pinned baseline rank \(U_{a_0}\in\tau\), but it does not impose global rank invariance outside \(\tau\).
+\end{assumption}
+
+\begin{assumption}[Finite grid compactness]\label{ass:grid}
+For the finite theorem, \(X\), \(Z\), \(Y(a_0)\), \(Y(a_1)\), \(U_{a_0}\), and \(U_{a_1}\) are represented on fixed finite partitions.  The finite moment vector has dimension \(K<\infty\).  The linear equalities and inequalities induced by Assumptions \ref{ass:bounded-support}--\ref{ass:tube} define a nonempty closed feasible set.
+\end{assumption}
+
+\begin{assumption}[Two-bin sign-witness specialization]\label{ass:witness}
+For the existential sign certificate, take a degenerate \(X\), \(h=1\), \(\tau=[t,1]\) with \(t=3/4\), and \(\lambda=1-t=1/4\).  The witness law \(P^\dagger\) has two positive-probability instrument bins and observed local dose-cell distributions at \(a_0\) and \(a_1\) generated by the quantile functions below.  The finite IV moment vector contains the indicator basis for the retained adjacent-dose outcome cells, so at \(\eta=0\) the moment-balance equalities force each instrument-bin potential-outcome margin to equal the pooled margin.  At the reference point \((\Gamma,\eta)=(1,0)\), the sensitivity constraints have \(r_{j,y,x}=1\) and the finite constraint matrix fixes the adjacent-dose marginal quantile functions on the witness grid to
+\[
+Q_0(u)=u/2,\qquad Q_1(v)=v,\qquad 0\le u,v\le1,
+\]
+where \(Y(a_0)=Q_0(U_{a_0})\) and \(Y(a_1)=Q_1(U_{a_1})\).  The coupling constructions in Lemma \ref{lem:tube-tail} are represented by finite interval tables on the partition endpoints used there.  No persistence statement for \(\Gamma>1\) or \(\eta>0\) is assumed in this witness condition; the perturbation neighborhood is derived from finite linear-program value continuity in Proposition \ref{prop:sign-certificate}.
+\end{assumption}
+
+\section{Regression estimator}
+There is no regression estimator in this partial-identification anchor.  The section title is inherited from the common skeleton; the estimand-defining functional here is the sharp bounding functional.
+
+\begin{definition}[Identified set and sharp slope envelope]\label{def:sharp-envelope}
+For fixed locked parameters \((P,\Gamma,\rho,\eta,\tau,h)\), define
+\[
+\Theta_I(P)=
+\left\{
+\frac{\E_Q\{Y(a_1)-Y(a_0)\mid R_{01}\in\tau\}}{h}:
+Q\in\mathcal M(P,\mathcal R_{\Gamma,\rho,\eta}^{\mathrm{iv\text{-}tube}})
+\right\}.
+\]
+The lower and upper slope functionals are
+\[
+\theta_L(P;\Gamma,\rho,\eta,\tau,h)
+=\inf_{\theta\in\Theta_I(P)}\theta,
+\qquad
+\theta_U(P;\Gamma,\rho,\eta,\tau,h)
+=\sup_{\theta\in\Theta_I(P)}\theta.
+\]
+The bounding functional is
+\[
+B_{\Gamma,\rho,\eta}^{\mathrm{slope}}(P;\tau,h)
+=
+\left[
+\theta_L(P;\Gamma,\rho,\eta,\tau,h),
+\theta_U(P;\Gamma,\rho,\eta,\tau,h)
+\right].
+\]
+\end{definition}
+
+In the finite grid of Assumption \ref{ass:grid}, let \(\pi_c\) denote the joint cell probabilities for
+\[
+c=(y_0,y_1,u_0,u_1,z,x),
+\]
+together with the finite sensitivity-margin variables \(\mu_{j,y,x}\) and \(r_{j,y,x}\) from Assumption \ref{ass:cmsm}.  The observed local masses \(q_xs_{j,y\mid x}\), the \(X\)-stratum masses \(q_x\), and the instrument-bin masses are fixed by \(P\).  Therefore the observed margin, normalization, positivity, IV moment balance, sensitivity bounds, and copula tube are all linear equalities or inequalities in \((\pi,\mu,r)\).  Since \(Q(R_{01}\in\tau)\) is fixed and positive under Assumption \ref{ass:bounded-support}, the numerator of \(\theta_{\tau,h}\) is linear in the cell probabilities and the denominator is a positive constant.  Therefore the lower and upper endpoints are linear-program optima.  Proposition \ref{prop:lp-sharpness} below proves sharpness, so \(B_{\Gamma,\rho,\eta}^{\mathrm{slope}}\) is not merely an outer interval in the finite model.
+
+\section{Target causal estimand}
+\begin{definition}[Baseline-rank-slice adjacent finite difference]\label{def:target}
+For a full-data law \(Q\), the causal target is
+\[
+\theta_{\tau,h}(Q)
+=
+\frac{\E_Q\{Y(a_1)-Y(a_0)\mid R_{01}\in\tau\}}{h}
+=
+\frac{
+\E_Q\left[(Y(a_1)-Y(a_0))\one\{U_{a_0}\in\tau\}\right]
+}{
+h\,Q(U_{a_0}\in\tau)
+}.
+\]
+\end{definition}
+
+The target is causal because it is defined through adjacent potential outcomes, not through observed conditional means.  It is rank-local because the conditioning event is \(U_{a_0}\in\tau\), and it is asymmetric in the two ranks: \(U_{a_0}\) defines the slice, while \(U_{a_1}\) only enters through the adjacent potential outcome and the copula restriction.  The sharp interval in Definition \ref{def:sharp-envelope} is an identifying or bounding functional for this target; it is not a redefinition of the target itself.
+
+\section{Main theorems}
+\begin{proposition}[Finite sharp coupling projection]\label{prop:lp-sharpness}
+Under Assumptions \ref{ass:bounded-support}--\ref{ass:grid}, the finite-grid identified set \(\Theta_I(P)\) is a nonempty compact interval and
+\[
+\Theta_I(P)=B_{\Gamma,\rho,\eta}^{\mathrm{slope}}(P;\tau,h).
+\]
+Equivalently, the lower and upper endpoints are attained by linear programs over one joint adjacent-dose coupling polytope.  This confirms the Stage -1 finite sharp coupling projection claim.
+\end{proposition}
+
+This proposition is the bookkeeping contribution needed for the causal question.  It is close in method to Balke--Pearl finite IV bounds and to joint-potential-outcome bounds, but the finite table here carries randomized adjacent ranks, dose-specific sensitivity tilts, IV moment-balance inequalities, and a local copula tube simultaneously.
+
+\begin{proposition}[Adjacent-rank sign certificate and radius threshold]\label{prop:sign-certificate}
+Under Assumptions \ref{ass:bounded-support}--\ref{ass:tube} and the witness specialization in Assumption \ref{ass:witness}, the reference problem \((\Gamma,\eta)=(1,0)\) has exact lower endpoint
+\[
+\theta_L(P;1,\rho,0,\tau,1)=\frac{7}{16}-4\rho+4\rho^2,\qquad 0\le\rho\le\frac14.
+\]
+Hence its critical radius is \(\rho^\star=1/8\): the lower endpoint is positive for \(\rho<1/8\), equals zero at \(\rho=1/8\), and is negative for \(1/8<\rho\le1/4\).  Moreover, for every fixed \(\bar\rho<1/8\), there are \(\bar\gamma>1\) and \(\bar\eta>0\) such that for every \(\Gamma\in[1,\bar\gamma]\), every \(\eta\in[0,\bar\eta]\), and every \(\rho\in[0,\bar\rho]\),
+\[
+\theta_L(P;\Gamma,\rho,\eta,\tau,1)>0.
+\]
+At the same observable law, the one-dose rank-slice marginal finite-difference interval contains zero.  Thus Stage -1 Conjecture 1 is confirmed for this witness, and Stage -1 Conjecture 2 is confirmed with the explicit finite-grid threshold \(\rho^\star=1/8\).
+\end{proposition}
+
+This proposition is the main substantive finding.  It shows that independently sharp one-dose bands can be jointly too pessimistic for a derivative-sign question: the sign-reversing completion requires pairing upper-tail baseline ranks with lower-tail adjacent ranks, and the copula tube blocks that pairing until the exact radius threshold is reached.  The new ingredient relative to a standard LP projection is the sharp copula-tail calculation and its explicit feasible shuffle construction.
+
+\begin{proposition}[No-tube and no-IV reduction]\label{prop:no-tube}
+Under Assumptions \ref{ass:bounded-support}--\ref{ass:grid}, suppose \(\rho\) is large enough that Assumption \ref{ass:tube} imposes no effective restriction on the adjacent copula over the finite grid and \(\eta\) is large enough that the IV moment inequalities in Assumption \ref{ass:iv} are vacuous.  Let
+\[
+\begin{aligned}
+L_j^\tau(P,\Gamma)
+&=\inf_Q \E_Q\{Y(a_j)\mid R_{01}\in\tau\},\\
+U_j^\tau(P,\Gamma)
+&=\sup_Q \E_Q\{Y(a_j)\mid R_{01}\in\tau\},
+\end{aligned}
+\]
+where the extrema range over the corresponding one-dose sensitivity model without a cross-dose copula restriction.  Then
+\[
+\left[
+\frac{L_1^\tau(P,\Gamma)-U_0^\tau(P,\Gamma)}{h},
+\frac{U_1^\tau(P,\Gamma)-L_0^\tau(P,\Gamma)}{h}
+\right]
+\subseteq
+B_{\Gamma,\rho,\eta}^{\mathrm{slope}}(P;\tau,h),
+\]
+provided the one-dose endpoint laws can be pasted on a common observed margin.  This confirms the Stage -1 no-tube reduction with the explicit pasting condition needed for sharpness.
+\end{proposition}
+
+This is a minimality result rather than the novel sign certificate.  It says that without shared-rank information or informative IV moments, the proposed object contains the familiar product of marginal worst-case completions, so a positive sign cannot be certified when that product interval straddles zero.
+
+\section{Interpretation}
+Proposition \ref{prop:lp-sharpness} says that the bound is a genuine sharp partial-identification object in the finite model.  The analyst is not subtracting two unrelated dosewise bands; the LP chooses one full-data law and therefore one admissible pairing of \(Y(a_0)\), \(Y(a_1)\), \(U_{a_0}\), and \(U_{a_1}\).
+
+Proposition \ref{prop:sign-certificate} explains when a local derivative sign can be certified.  The clean case is not a regression-orthogonality condition, but a dependence condition: upper-tail baseline ranks cannot be matched with sufficiently low adjacent ranks when the copula tube is tight enough around comonotonicity.  In the witness, the marginal lower adjacent mean over arbitrary pairings is below the baseline upper-tail mean, so one-dose bands alone produce an interval containing zero.  The joint copula tube removes precisely the contaminating pairing responsible for that negative endpoint.
+
+Proposition \ref{prop:no-tube} identifies the failure mode.  If the copula restriction is vacuous and the IV moments are uninformative, the slope interval contains the pessimistic independent one-dose completions.  This is the partial-identification analogue of a contaminated estimator: the reported interval is widened by cross-dose rank pairings that are mathematically possible under the weakened restrictions even if they are not scientifically plausible.
+
+The result therefore sits between point-identification copula-IV models and ordinary continuous-treatment sensitivity bands.  It does not identify the whole dose-response curve, and it does not identify the whole joint law of potential outcomes.  It gives a local sign certificate exactly when the restrictions make sign-reversing adjacent-rank pairings infeasible.
+
+\section{Step-by-step proof}
+\begin{lemma}[Finite feasible laws form a compact polytope]\label{lem:polytope}
+Under Assumptions \ref{ass:bounded-support}--\ref{ass:grid}, the finite set of admissible cell probabilities and tilt variables is a nonempty compact polytope.
+\end{lemma}
+
+\begin{proof}
+Let \(\pi_c\ge0\) be the probability assigned to a finite cell \(c=(y_0,y_1,u_0,u_1,z,x)\).  Normalization gives \(\sum_c\pi_c=1\).  The observed-margin restriction in Assumption \ref{ass:consistency} is a finite list of linear equalities matching the induced distribution of \((Y,A,Z,X)\) to \(P\).  Positivity in Assumption \ref{ass:positivity} restricts attention to cells and bins with positive support and prevents divisions by zero.
+
+The IV restrictions in Assumption \ref{ass:iv} are linear because each moment inequality has the form
+\[
+\begin{aligned}
+-\eta\,Q(Z\in z_b)
+&\le
+\sum_c \pi_c m_k(y_j,x)\one\{z\in z_b\}\\
+&\quad
+-Q(Z\in z_b)\sum_c\pi_c m_k(y_j,x)
+\le
+\eta\,Q(Z\in z_b),
+\end{aligned}
+\]
+where \(Q(Z\in z_b)=P(Z\in z_b)>0\) is fixed by the observed margin.  The sensitivity restriction in Assumption \ref{ass:cmsm} is linear on the finite grid because
+\[
+\mu_{j,y,x}-q_xs_{j,y\mid x}r_{j,y,x}=0,\qquad
+\ell_\Gamma\le r_{j,y,x}\le u_\Gamma,\qquad
+\sum_y\mu_{j,y,x}=q_x,
+\]
+and \(\mu_{j,y,x}=\sum_c\pi_c\one\{y_j=y,x(c)=x\}\); the factors \(q_xs_{j,y\mid x}\) are known constants.  The copula-tube condition in Assumption \ref{ass:tube} becomes finitely many inequalities
+\[
+-\rho\,Q(X=x)\le
+\sum_c \pi_c\one\{u_0\le u,u_1\le v,x\}
+-\min(u,v)\,Q(X=x)
+\le \rho\,Q(X=x)
+\]
+at the grid points \((u,v)\in\tau\times[0,1]\), after conditioning within the \(X=x\) stratum and multiplying by the fixed stratum mass.  Thus the feasible set is an intersection of finitely many closed half-spaces and affine spaces with the probability simplex.  It is closed and bounded, hence compact; it is nonempty by Assumption \ref{ass:grid}.
+\end{proof}
+
+\begin{lemma}[Sharp upper-tail tube bound]\label{lem:tube-tail}
+Let \(X\) be degenerate, let \(\tau=[t,1]\), and write \(\lambda=1-t\).  Suppose \(0\le\rho\le\lambda\) and the copula \(C\) of \((U_0,U_1)\) satisfies
+\[
+\sup_{(u,v)\in[t,1]\times[0,1]}|C(u,v)-\min(u,v)|\le\rho.
+\]
+Then
+\[
+\E(U_1\mid U_0\ge t)\ge
+1-\frac{\lambda}{2}-\frac{\rho}{\lambda}+\frac{\rho^2}{\lambda}.
+\]
+The bound is sharp: there is a measure-preserving rearrangement \(U_1=S_\rho(U_0)\) satisfying the same tube restriction and attaining equality.
+\end{lemma}
+
+\begin{proof}
+For \(T=\{U_0\ge t\}\), the conditional distribution function of \(U_1\) on \(T\) is
+\[
+F_T(v)=Q(U_1\le v\mid T)=\frac{Q(U_1\le v)-Q(U_0\le t,U_1\le v)}{Q(U_0\ge t)}
+=\frac{v-C(t,v)}{\lambda}.
+\]
+The tube restriction at \(u=t\), the Fr\'echet lower bound for copulas, and \(C(t,v)\ge0\) imply
+\[
+C(t,v)\ge c_\rho(v):=
+\max\{0,\min(t,v)-\rho,t+v-1\}.
+\]
+For \(0\le\rho\le\lambda\), this lower envelope is
+\[
+c_\rho(v)=
+\begin{cases}
+0, & 0\le v\le\rho,\\
+v-\rho, & \rho\le v\le t,\\
+t-\rho, & t\le v\le1-\rho,\\
+v-\lambda, & 1-\rho\le v\le1.
+\end{cases}
+\]
+Therefore
+\[
+F_T(v)\le\frac{v-c_\rho(v)}{\lambda}.
+\]
+Integrating this upper envelope gives
+\[
+\int_0^1 F_T(v)\,dv
+\le
+\frac{\lambda}{2}+\frac{\rho}{\lambda}-\frac{\rho^2}{\lambda}.
+\]
+Since \(0\le U_1\le1\), \(\E(U_1\mid T)=1-\int_0^1F_T(v)\,dv\), proving the displayed lower bound.
+
+It remains to show that the bound is feasible, not merely an outer inequality.  Define a measure-preserving map of \([0,1]\) by
+\[
+S_\rho(u)=
+\begin{cases}
+u+\rho, & 0\le u\le t-\rho,\\
+u+\lambda, & t-\rho\le u\le t,\\
+u-t, & t\le u\le t+\rho,\\
+u-\rho, & t+\rho\le u\le1.
+\end{cases}
+\]
+The four source intervals have the same lengths as their four image intervals \([\rho,t]\), \([1-\rho,1]\), \([0,\rho]\), and \([t,1-\rho]\), so \(S_\rho(U_0)\) is uniform when \(U_0\) is uniform.  For \(u\in[t,t+\rho]\), the image of \([0,u]\) is
+\[
+[0,u-t]\cup[\rho,t]\cup[1-\rho,1],
+\]
+and for \(u\in[t+\rho,1]\), the image of \([0,u]\) is
+\[
+[0,u-\rho]\cup[1-\rho,1].
+\]
+Counting lengths in these two displays shows
+\[
+0\le \min(u,v)-Q\{U_0\le u,S_\rho(U_0)\le v\}\le\rho
+\]
+for every \(u\in[t,1]\) and \(v\in[0,1]\).  Thus the rearrangement satisfies the copula tube.  At \(u=t\) its copula section is exactly \(c_\rho(v)\), so all inequalities above bind and the lower bound is attained.
+\end{proof}
+
+\begin{proof}[Proof of Proposition \ref{prop:lp-sharpness}]
+By Lemma \ref{lem:polytope}, the feasible finite-grid full-data laws form a compact polytope.  Assumption \ref{ass:bounded-support} gives \(Q(R_{01}\in\tau)>0\), so
+\[
+\theta_{\tau,h}(Q)=
+\frac{
+\sum_c \pi_c (y_1-y_0)\one\{u_0\in\tau\}
+}{
+h\sum_c\pi_c\one\{u_0\in\tau\}
+}
+\]
+has a positive denominator.  Because \(U_{a_0}\mid X\) is uniform by Assumption \ref{ass:ranks}, and the \(X\)-margin is fixed by \(P\), the denominator is fixed by \(P\) and \(\tau\).  Hence \(\theta_{\tau,h}\) is an affine functional of the finite cell probabilities.  A continuous affine functional attains its infimum and supremum on a compact polytope, and its image over a convex set is an interval.  The endpoint programs in Definition \ref{def:sharp-envelope} therefore attain the exact lower and upper elements of \(\Theta_I(P)\).  This proves \(\Theta_I(P)=B_{\Gamma,\rho,\eta}^{\mathrm{slope}}(P;\tau,h)\).
+\end{proof}
+
+\begin{proof}[Proof of Proposition \ref{prop:sign-certificate}]
+First prove the reference witness at \((\Gamma,\eta)=(1,0)\).  Under Assumption \ref{ass:witness},
+\[
+Y(a_0)=U_{a_0}/2,\qquad Y(a_1)=U_{a_1},\qquad \tau=[3/4,1],
+\]
+and \(h=1\).  Therefore
+\[
+\E\{Y(a_0)\mid U_{a_0}\in\tau\}
+=\E(U_{a_0}/2\mid U_{a_0}\ge3/4)
+=\frac12\cdot\frac{1+3/4}{2}
+=\frac{7}{16}.
+\]
+Lemma \ref{lem:tube-tail}, with \(t=3/4\) and \(\lambda=1/4\), gives
+\[
+\inf_Q\E\{Y(a_1)\mid U_{a_0}\in\tau\}
+=\inf_Q\E(U_{a_1}\mid U_{a_0}\ge3/4)
+=\frac{7}{8}-4\rho+4\rho^2,
+\qquad 0\le\rho\le\frac14.
+\]
+The equality, not only the inequality, follows from the shuffle \(S_\rho\) constructed in Lemma \ref{lem:tube-tail}; it preserves the uniform adjacent-rank marginal, satisfies the tube with radius \(\rho\), and is compatible with the saturated marginal restrictions in Assumption \ref{ass:witness}.  Consequently the exact lower endpoint is
+\[
+\theta_L(P;1,\rho,0,\tau,1)
+=
+\frac{7}{8}-4\rho+4\rho^2-\frac{7}{16}
+=
+\frac{7}{16}-4\rho+4\rho^2,
+\qquad 0\le\rho\le\frac14.
+\]
+The quadratic has roots \(1/8\) and \(7/8\), so on \(0\le\rho\le1/4\) the reference lower endpoint is positive for \(\rho<1/8\), equals zero at \(\rho=1/8\), and is negative for \(1/8<\rho\le1/4\).  This proves the exact reference threshold \(\rho^\star=1/8\).
+
+Now compare with the one-dose marginal interval without the adjacent copula restriction.  If \(U_{a_1}\) may be coupled arbitrarily with the event \(U_{a_0}\ge3/4\) while retaining its uniform marginal, the smallest possible conditional mean of \(U_{a_1}\) on a set of probability \(1/4\) is the average over the lower quarter:
+\[
+\inf \E(U_{a_1}\mid U_{a_0}\ge3/4)=\E(U\mid 0\le U\le1/4)=\frac18.
+\]
+The largest possible conditional mean is the average over the upper quarter:
+\[
+\sup \E(U_{a_1}\mid U_{a_0}\ge3/4)=\E(U\mid 3/4\le U\le1)=\frac78.
+\]
+Since the baseline mean is \(7/16\), the one-dose marginal finite-difference interval is
+\[
+\left[\frac18-\frac{7}{16},\frac78-\frac{7}{16}\right]
+=
+\left[-\frac{5}{16},\frac{7}{16}\right],
+\]
+which contains zero.
+
+The lower endpoint is nonincreasing in \(\rho\) because a larger copula radius weakens Assumption \ref{ass:tube}: if \(0\le\rho_1\le\rho_2\), then
+\[
+\mathcal M(P,\mathcal R_{\Gamma,\rho_1,\eta}^{\mathrm{iv\text{-}tube}})
+\subseteq
+\mathcal M(P,\mathcal R_{\Gamma,\rho_2,\eta}^{\mathrm{iv\text{-}tube}}),
+\]
+so the infimum over the larger set cannot be larger.  The endpoint formula above gives the crossing exactly.  At \(\rho=1/4\), the same shuffle sends the upper-tail baseline set \(U_{a_0}\ge3/4\) onto the lower adjacent-rank interval \([0,1/4]\), so it attains the negative value \(-5/16\) and has tube radius \(1/4\).  This is the explicit feasible construction for the large-radius side of the phase transition.
+
+Finally fix any \(\bar\rho<1/8\), and set
+\[
+\delta=\frac{7}{16}-4\bar\rho+4\bar\rho^2>0.
+\]
+In the finite grid the constraint matrix is fixed while \(\Gamma\) changes only the constants \(\ell_\Gamma,u_\Gamma\) in Assumption \ref{ass:cmsm} and \(\eta\) changes only the right-hand sides of the IV inequalities.  Standard finite-dimensional LP value continuity therefore gives \(\bar\gamma>1\) and \(\bar\eta>0\) such that
+\[
+\theta_L(P;\Gamma,\bar\rho,\eta,\tau,1)>\delta/2
+\]
+for all \(\Gamma\in[1,\bar\gamma]\) and \(\eta\in[0,\bar\eta]\).  Monotonicity in \(\rho\) then implies
+\[
+\theta_L(P;\Gamma,\rho,\eta,\tau,1)>0,\qquad 0\le\rho\le\bar\rho.
+\]
+The one-dose interval contains zero with strict slack at the reference value \([-5/16,7/16]\), and its finite LP endpoints are continuous under the same perturbations, so sign ambiguity of the one-dose marginal interval persists after shrinking \(\bar\gamma\) and \(\bar\eta\) if necessary.  This proves the stated perturbation claim without assuming it in Assumption \ref{ass:witness}.
+\end{proof}
+
+\begin{proof}[Proof of Proposition \ref{prop:no-tube}]
+When \(\rho\) is vacuous and \(\eta\) is vacuous, the joint finite-grid constraints separate into the observed-margin and sensitivity constraints for the \(a_0\) margin and the corresponding constraints for the \(a_1\) margin, plus the requirement that the two margins be pasted into one joint probability law.  By the stated pasting condition, a law attaining \(U_0^\tau(P,\Gamma)\) for \(Y(a_0)\) can be coupled with a law attaining \(L_1^\tau(P,\Gamma)\) for \(Y(a_1)\) on the same \(R_{01}\in\tau\) event.  This joint law is feasible because no active IV moment or copula constraint links the two dose-specific completions.  It attains the lower endpoint
+\[
+\frac{L_1^\tau(P,\Gamma)-U_0^\tau(P,\Gamma)}{h}.
+\]
+The same argument pastes the law attaining \(U_1^\tau(P,\Gamma)\) with the law attaining \(L_0^\tau(P,\Gamma)\), giving the upper endpoint
+\[
+\frac{U_1^\tau(P,\Gamma)-L_0^\tau(P,\Gamma)}{h}.
+\]
+Convex mixtures of feasible pasted laws are feasible and vary the slope linearly, so the entire interval between these endpoints is contained in the sharp slope interval.
+\end{proof}
+
+\section{Sanity checks}
+\begin{itemize}[leftmargin=*]
+\item \textbf{Vacuous restrictions.}  If the sensitivity, IV, and copula restrictions are all removed and only \(0\le Y(a_j)\le1\) remains, then
+\[
+-1/h\le \theta_{\tau,h}(Q)\le 1/h.
+\]
+This is the natural Manski worst-case bound for a bounded adjacent mean difference.
+
+\item \textbf{Point-identification corner.}  If \(\Gamma=1\), \(\eta=0\), the adjacent potential-outcome margins are identified from the observed-confounder law, and the adjacent copula is known on \(\tau\times[0,1]\), then \(\mathcal M(P,\mathcal R_{\Gamma,\rho,\eta}^{\mathrm{iv\text{-}tube}})\) fixes the joint distribution of \((Y(a_0),Y(a_1))\) on \(R_{01}\in\tau\).  The interval collapses to the singleton containing the corresponding rank-slice finite difference.
+
+\item \textbf{MTR specialization.}  If a monotone-treatment-response restriction \(Y(a_1)\ge Y(a_0)\) is added to the maintained restrictions, then the lower endpoint is at least zero.  The current sign certificate is different: Proposition \ref{prop:sign-certificate} obtains a positive lower endpoint in the witness from rank dependence, not by assuming \(Y(a_1)\ge Y(a_0)\) pointwise.
+
+\item \textbf{Balke--Pearl finite-IV corner.}  If the dose is replaced by a binary treatment, the rank variables and copula tube are dropped, and the IV restrictions are exact finite compliance-type constraints, the finite LP reduces to the Balke--Pearl style IV bounding program.  The current LP is a continuous-dose adjacent-rank analogue with sensitivity tilts and a local copula tube.
+
+\item \textbf{No shared-rank information.}  Proposition \ref{prop:no-tube} shows that the sharp slope interval contains the product of one-dose rank-slice envelopes when \(\rho\) and \(\eta\) are vacuous.  In the witness this product interval is \([-5/16,7/16]\), so it cannot certify a positive sign.
+\end{itemize}
+
+\section{Counterexample or minimality check}
+\begin{example}[Dropping the copula tube destroys the sign certificate]\label{ex:no-tube-counterexample}
+Use the witness margins from Assumption \ref{ass:witness}: \(Y(a_0)=U_{a_0}/2\), \(Y(a_1)=U_{a_1}\), and \(\tau=[3/4,1]\).  If the adjacent copula is unrestricted, couple \(U_{a_1}\) so that, on the event \(U_{a_0}\ge3/4\), it is uniformly distributed on \([0,1/4]\).  This preserves the uniform marginal distribution of \(U_{a_1}\) but gives
+\[
+\E\{Y(a_1)-Y(a_0)\mid U_{a_0}\ge3/4\}
+=\frac18-\frac{7}{16}
+=-\frac{5}{16}.
+\]
+The explicit shuffle \(S_{1/4}\) from Lemma \ref{lem:tube-tail} realizes this coupling and has copula-tube distance exactly \(1/4\) on \([3/4,1]\times[0,1]\).  Thus the negative law is excluded by any tube radius below the exact threshold \(1/8\), but is certainly feasible once the tube is removed.
+Thus the same one-dose margins that yield a positive sign under a tight copula tube yield a negative feasible slope when the tube is removed.
+\end{example}
+
+This example is the minimality check for Assumption \ref{ass:tube}.  Assumption \ref{ass:bounded-support} is also necessary: without \(Q(R_{01}\in\tau)>0\), the conditional target divides by zero.  Assumption \ref{ass:ranks} is necessary because the copula tube is a statement about ranks with uniform conditional margins; without well-defined randomized ranks, the tube has no invariant meaning under atoms.  Assumption \ref{ass:grid} is the compactness condition that turns the sharp envelope into attained LP endpoints rather than merely an infimum and supremum over a noncompact relaxation.
+
+\section{Formalization checklist}
+\paragraph{Probabilistic objects.}
+\begin{itemize}[leftmargin=*]
+\item Observable law \(P\): probability law on \((Y,A,Z,X)\) with \(Y\in[0,1]\), \(A\in[a_0,a_2]\), \(Z\in\mathcal Z\), and \(X\) measurable.
+\item Full-data law \(Q\): extension of \(P\) carrying \((Y(a_0),Y(a_1))\), the latent potential-outcome array used by IV independence, and tie-breakers \(V_{a_0},V_{a_1}\).
+\item Randomized conditional rank \(U_a\): measurable map from \((Y(a),X,V_a)\) to \([0,1]\) with \(U_a\mid X\sim\mathrm{Unif}(0,1)\).
+\item Conditional copula \(C_{01,x}\): joint distribution function of \((U_{a_0},U_{a_1})\mid X=x\) after uniformization of the margins.
+\item Feasible model \(\mathcal M(P,\mathcal R_{\Gamma,\rho,\eta}^{\mathrm{iv\text{-}tube}})\): set of full-data laws satisfying observed-margin, consistency, positivity, IV, sensitivity, and copula-tube restrictions.
+\item Identified set \(\Theta_I(P)\): image of the feasible model under \(Q\mapsto\theta_{\tau,h}(Q)\).
+\end{itemize}
+
+\paragraph{Deterministic definitions and identities.}
+\begin{itemize}[leftmargin=*]
+\item Target map: \(\theta_{\tau,h}(Q)=\E_Q[(Y(a_1)-Y(a_0))\one\{U_{a_0}\in\tau\}]/\{hQ(U_{a_0}\in\tau)\}\).
+\item Bounding functional: lower and upper extrema of the target over \(\mathcal M(P,\mathcal R_{\Gamma,\rho,\eta}^{\mathrm{iv\text{-}tube}})\).
+\item Finite-grid LP variables: joint cell probabilities \(\pi_c\), potential-margin variables \(\mu_{j,y,x}\), and sensitivity tilt variables \(r_{j,y,x}\), with simplex, observed-margin, IV-moment, sensitivity, and copula inequalities.
+\item Compactness identity: a closed subset of a finite simplex is compact; affine images of compact convex sets are compact intervals in \(\mathbb R\).
+\item Upper-tail copula identity: for \(\tau=[t,1]\), \(Q(U_1\le v\mid U_0\ge t)=\{v-C(t,v)\}/(1-t)\), combined with \(C(t,v)\ge\max\{0,\min(t,v)-\rho,t+v-1\}\).
+\item Expectation-from-cdf identity: for \(0\le V\le1\), \(\E(V)=1-\int_0^1F_V(v)\,dv\).
+\item Shuffle construction: the measure-preserving map \(S_\rho\) in Lemma \ref{lem:tube-tail} attains the upper-tail lower bound and has tube distance at most \(\rho\).
+\item Witness arithmetic: with \(t=3/4\), \(Q_0(u)=u/2\), and \(Q_1(v)=v\),
+\[
+\begin{aligned}
+\E(Y(a_0)\mid U_0\ge3/4)&=7/16,\\
+\inf_{\rho\text{-tube}}\E(Y(a_1)\mid U_0\ge3/4)&=7/8-4\rho+4\rho^2,\quad 0\le\rho\le1/4,\\
+\inf_{\text{no tube}}\E(Y(a_1)\mid U_0\ge3/4)&=1/8,\\
+\sup_{\text{no tube}}\E(Y(a_1)\mid U_0\ge3/4)&=7/8.
+\end{aligned}
+\]
+\end{itemize}
+
+\paragraph{Named lemmas and dependencies.}
+\begin{itemize}[leftmargin=*]
+\item Lemma \ref{lem:polytope}: depends on Assumptions \ref{ass:bounded-support}--\ref{ass:grid}; used for finite sharpness and LP endpoint attainment.
+\item Lemma \ref{lem:tube-tail}: depends on uniform rank margins, the Fr\'echet lower copula bound, and the copula-tube inequality; used for the exact threshold \(\rho^\star=1/8\) in Proposition \ref{prop:sign-certificate}.
+\item Pasting argument: depends on vacuous copula and IV constraints plus common observed margin; used in Proposition \ref{prop:no-tube}.
+\item Monotonicity in \(\rho\): deterministic set inclusion of feasible models as the copula tube radius expands; used for the phase-transition verdict.
+\item LP continuity: finite-dimensional value-function continuity under small right-hand-side perturbations; used to extend the witness from \((\Gamma,\eta)=(1,0)\) to \(\Gamma>1\) close to one and \(\eta>0\) small.
+\end{itemize}
+
+\section{Conclusion and references}
+The locked target is the baseline-rank-slice adjacent finite difference \(\theta_{\tau,h}\), and the correct reported functional is the sharp partial-identification interval \(B_{\Gamma,\rho,\eta}^{\mathrm{slope}}(P;\tau,h)\).  The finite-grid theorem proves that this interval is the projection of one compact LP over a joint adjacent-dose rank coupling.  The explicit upper-rank-tail witness confirms that a tight adjacent-rank copula tube can certify a positive local slope even when the product of one-dose rank-slice bands contains zero.  The clean condition is shared-rank compatibility through the copula tube, supported by informative moment restrictions; the main source of contamination is allowing the baseline-rank slice to be paired with arbitrary adjacent ranks.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+
+\bibitem{BalkePearl1997}
+Balke, A. and J. Pearl (1997).
+\newblock Bounds on treatment effects from studies with imperfect compliance.
+\newblock \emph{Journal of the American Statistical Association} 92(439), 1171--1176.
+
+\bibitem{BaitairianSebastienJreichKatsahianGuilloux2025}
+Baitairian, J.-B., B. Sebastien, R. Jreich, S. Katsahian, and A. Guilloux (2025).
+\newblock Sharp bounds for continuous-valued treatment effects with unobserved confounders.
+\newblock \emph{Biometrical Journal} 67(5), e70084. \url{https://arxiv.org/abs/2411.02231}.
+
+\bibitem{ChernozhukovHansen2005}
+Chernozhukov, V. and C. Hansen (2005).
+\newblock An IV model of quantile treatment effects.
+\newblock \emph{Econometrica} 73(1), 245--261.
+
+\bibitem{ChernozhukovFernandezValHanWuthrich2024}
+Chernozhukov, V., I. Fern\'andez-Val, S. Han, and K. W\"uthrich (2024).
+\newblock Estimating causal effects of discrete and continuous treatments with binary instruments.
+\newblock arXiv:2403.05850. \url{https://arxiv.org/abs/2403.05850}.
+
+\bibitem{DalalTchetgenTchetgen2025}
+Dalal, A. and E. J. Tchetgen Tchetgen (2025).
+\newblock Partial identification of causal effects for endogenous continuous treatments.
+\newblock arXiv:2508.13946. \url{https://ideas.repec.org/p/arx/papers/2508.13946.html}.
+
+\bibitem{DHaultfoeuilleFevrier2015}
+D'Haultfoeuille, X. and P. F\'evrier (2015).
+\newblock Identification of nonseparable triangular models with discrete instruments.
+\newblock \emph{Econometrica} 83(3), 1199--1210.
+
+\bibitem{FanGuerreZhu2017}
+Fan, Y., E. Guerre, and D. Zhu (2017).
+\newblock Partial identification of functionals of the joint distribution of potential outcomes.
+\newblock \emph{Journal of Econometrics} 197(1), 42--59.
+
+\bibitem{FirpoRidder2019}
+Firpo, S. and G. Ridder (2019).
+\newblock Partial identification of the treatment effect distribution and its functionals.
+\newblock \emph{Journal of Econometrics} 213(1), 210--234.
+
+\bibitem{HoderleinHolzmannKasyMeister2017}
+Hoderlein, S., H. Holzmann, M. Kasy, and A. Meister (2017).
+\newblock Corrigendum: Instrumental variables with unrestricted heterogeneity and continuous treatment.
+\newblock \emph{Review of Economic Studies} 84(2), 964--968. \url{https://doi.org/10.1093/restud/rdw027}.
+
+\bibitem{ImbensNewey2009}
+Imbens, G. W. and W. K. Newey (2009).
+\newblock Identification and estimation of triangular simultaneous equations models without additivity.
+\newblock \emph{Econometrica} 77(5), 1481--1512.
+
+\bibitem{JessonDouglasManshausenSolalMeinshausenStierGalShalit2022}
+Jesson, A., A. Douglas, P. Manshausen, M. Solal, N. Meinshausen, P. Stier, Y. Gal, and U. Shalit (2022).
+\newblock Scalable sensitivity and uncertainty analyses for causal-effect estimates of continuous-valued interventions.
+\newblock \emph{NeurIPS 2022}. \url{https://arxiv.org/abs/2204.10022}.
+
+\bibitem{Kasy2014}
+Kasy, M. (2014).
+\newblock Instrumental variables with unrestricted heterogeneity and continuous treatment.
+\newblock \emph{Review of Economic Studies} 81(4), 1614--1636.
+
+\bibitem{Manski1990}
+Manski, C. F. (1990).
+\newblock Nonparametric bounds on treatment effects.
+\newblock \emph{American Economic Review Papers and Proceedings} 80(2), 319--323.
+
+\bibitem{MarmarelisHaddadJessonJahanshadGalstyanVerSteeg2023}
+Marmarelis, M. G., E. Haddad, A. Jesson, N. Jahanshad, A. Galstyan, and G. Ver Steeg (2023).
+\newblock Partial identification of dose responses with hidden confounders.
+\newblock \emph{Proceedings of the Thirty-Ninth Conference on Uncertainty in Artificial Intelligence}, PMLR 216:1368--1379.
+
+\bibitem{Torgovitsky2015}
+Torgovitsky, A. (2015).
+\newblock Identification of nonseparable models using instruments with small support.
+\newblock \emph{Econometrica} 83(3), 1185--1197.
+
+\bibitem{Zhang2025ADE}
+Zhang, J. (2025).
+\newblock A sensitivity analysis for the average derivative effect.
+\newblock arXiv:2511.06243. \url{https://arxiv.org/abs/2511.06243}.
+
+\end{thebibliography}
+
+\end{document}

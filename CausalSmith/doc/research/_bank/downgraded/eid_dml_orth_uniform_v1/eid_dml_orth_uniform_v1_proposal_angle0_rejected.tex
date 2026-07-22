@@ -1,0 +1,797 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_dml\_orth\_uniform, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{eid\_dml\_orth\_uniform} / \texttt{v1}%
+  \\ \large\textit{Spectral local-misspecification frontier for DML, LRO, and ADML ATE inference}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This proposal uses the ExactID/free-form convention
+\[
+(\texttt{qid},\texttt{specialization},\text{SWIG},\text{treatment},
+\text{target estimand},\text{identifying assumptions}).
+\]
+The locked tuple is
+\[
+\begin{gathered}
+\texttt{qid}=\texttt{eid\_dml\_orth\_uniform},\qquad
+\texttt{specialization}=\texttt{v1},\\
+\text{SWIG/DAG}=X\to D\to Y,\; X\to Y,\quad
+\text{treatment }D\in\{0,1\},\\
+\text{target } \theta_0=\E[Y(1)-Y(0)],\\
+\text{identifying assumptions}=\text{consistency, unconfoundedness }
+(Y(1),Y(0))\perp D\mid X,\text{ overlap } \epsilon\le p_0(X)\le 1-\epsilon,\\
+\text{and the local nuisance-rate experiment in Assumptions \ref{ass:rates}--\ref{ass:spectral-kernel}.}
+\end{gathered}
+\]
+The estimators compared are the cross-fit DML AIPW estimator of
+\citet{ChernozhukovEtAl2018DML}, the locally robust semiparametric GMM estimator
+of \citet{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO} specialized to the
+ATE moment and Jacobian normalization in Assumption \ref{ass:eif-normalization},
+and the automatic debiased ML/Riesz estimator of
+\citet{ChernozhukovNeweySingh2022ADML}.  Nuisance rates are exponent rates
+\(\delta_{g,n}=n^{-r_g}\) for outcome-regression error and
+\(\delta_{p,n}=n^{-r_p}\) for propensity/Riesz error.
+
+\begin{abstract}
+This proposal asks when three leading orthogonal ATE estimators that share the
+same efficient influence function still separate uniformly over local
+misspecification sequences.  The proposed kernel is a spectral frontier:
+cross-fit DML, locally robust semiparametric GMM (LRO), and automatic debiased
+ML (ADML) are uniformly first-order equivalent if and only if the joint nuisance
+rate exponent \(r_g+r_p\) exceeds a threshold \(\rho_\star(K_n)\) determined by
+the smallest nonzero eigenvalue of a population covariance kernel whose
+cross-fitted plug-in version is observable.
+Below that frontier, the conjectured local experiment has rate-scaled pairwise
+influence-remainder gaps, with DML weakly dominated by the orthogonalized
+estimators and ADML attaining the smallest tangent-cone risk envelope when the
+LRO moment omits a residual Riesz direction.  Resolving the conjecture would turn
+the current collection of pointwise validity theorems into an estimator-choice
+diagnostic: report the plug-in spectral kernel, the rate exponents, and the
+implied equivalence or separation regime.  The proposal is deliberately stated as a
+research question, not as a completed proof.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Applied users often treat DML, LRO, and ADML as interchangeable ways to obtain
+orthogonal ATE inference under unconfoundedness.  That practice is justified by
+their common efficient influence function under correct specification and
+sufficiently fast nuisance learning, but it is not a uniform-in-DGP comparison:
+near weak overlap, Riesz instability, or joint outcome-propensity
+misspecification, the leading remainder can be the object that determines
+whether two Wald intervals are practically identical.
+
+\paragraph{The main finding (proposed).}
+Conjecture \ref{conj:spectral-frontier} proposes a necessary-and-sufficient
+frontier for uniform equivalence.  Let \(K_n\) be the covariance kernel of the
+outcome-residual channel and the propensity/Riesz-representer channel after the
+estimator-specific first-step projections have been put on one common EIF
+normalization.  If the smallest nonzero eigenvalue satisfies
+\(\lambda_{\min}^+(K_n)\asymp n^{-2\kappa}\), define
+\(\rho_\star(K_n)=1/2-\kappa\).  The conjecture says that the
+supremum of \(\sqrt n\) pairwise estimator differences vanishes exactly when
+\(r_g+r_p>\rho_\star(K_n)\); when \(\rho_\star(K_n)<0\) this condition is
+automatic for nonnegative rate exponents.  Otherwise an open set of local DGP
+sequences generates pairwise tangent-cone risk-envelope gaps of order
+\(s_{mm',n}^2n^{1-2(r_g+r_p)}\lambda_{\min}^+(K_n)\), where the active
+projection-gap singular values \(s_{mm',n}\) certify which estimator pairs
+actually separate.
+
+\paragraph{What is new.}
+The closest published results prove validity, robustness, or efficiency for one
+construction at a time: \citet{ChernozhukovEtAl2018DML} for DML,
+\citet{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO} for LRO, and
+\citet{ChernozhukovNeweySingh2022ADML},
+\citet{ChernozhukovNeweySingh2022RR},
+\citet{ChernozhukovNeweyQuintasMartinezSyrgkanis2024RieszRegression}, and
+\citet{Singh2024KRRR} for ADML/Riesz debiasing and effective-dimension
+analysis, while \citet{Velez2024DML} separates DML1 and DML2 under growing
+cross-fitting fold counts.  The epsilon-gap is the absence of a single plug-in spectral
+diagnostic that classifies pairwise non-equivalence among the three named
+estimators over local nuisance-rate sequences.  This proposal makes the
+comparison against one fixed ATE EIF rather than assigning each estimator its
+own canonical gradient.
+
+\paragraph{How it positions in the literature.}
+The anchor cluster is ExactID semiparametric ATE under unconfoundedness.  The
+proposal consumes the usual exact-identification statement
+\(\theta_0=\E[g_{1,0}(X)-g_{0,0}(X)]\) and studies the inferential consequences of
+estimating the nuisance functions, not a new do-calculus rule or a new
+identification formula.  It sits at the boundary between the DML product-rate
+literature, locally robust semiparametric GMM, and Riesz-representer debiasing.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is empirical ATE work that follows the ADML
+standard-error practice in \citet{ChernozhukovNeweySingh2022ADML}: the proposed
+frontier would say when ADML's Riesz-based studentization is a harmless
+implementation choice and when it gives a strictly sharper tangent-cone risk
+diagnostic than the original DML or a locally robust moment with an incomplete
+Riesz projection.
+
+\paragraph{How research benefits from the conclusion.}
+If the conjecture resolves favorably, researchers should report the estimated
+Riesz-overlap spectral kernel before treating DML, LRO, and ADML confidence
+intervals as equivalent.
+
+\section{Related work}
+\citet{ChernozhukovEtAl2018DML} is the baseline DML paper: it gives cross-fit
+orthogonal-score ATE inference under product-rate and overlap conditions, but
+does not classify uniform pairwise equivalence against LRO or ADML.
+\citet{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO} constructs locally
+robust semiparametric moments by adding first-step influence adjustments; the
+present proposal asks which ATE specialization and Jacobian normalization share
+the global ATE EIF and which retain a residual projection loss.
+\citet{ChernozhukovNeweySingh2022ADML} develops ADML for causal and structural
+effects using automatic bias correction and misspecification-robust standard
+errors; the present proposal treats that robust studentization as one endpoint
+of the pairwise frontier.
+\citet{ChernozhukovNeweySingh2022RR} gives regularized Riesz representers for
+global and local functionals and is the closest published source for the
+spectral Riesz-instability channel, but it does not compare DML, LRO, and ADML
+over a single local nuisance experiment.
+\citet{ChernozhukovNeweyQuintasMartinezSyrgkanis2024RieszRegression} is closer
+than generic DML references on the automatic side: it learns Riesz
+representers by Riesz regression and gives end-to-end automatic debiasing
+theory, while the present proposal asks whether that automatic Riesz route is
+uniformly equivalent to two named nonautomatic ATE estimators.
+\citet{Singh2024KRRR} is the closest kernel/effective-dimension reference: it
+interprets kernel balancing weights as kernel ridge Riesz representers and
+analyzes misspecification and counterfactual effective dimension, but it does
+not supply a DML-LRO-ADML pairwise frontier.
+\citet{Velez2024DML} is the closest estimator-frontier paper missed in the
+previous version: it shows that DML2 can dominate DML1 in bias, MSE, and
+inference when the number of cross-fitting folds grows with sample size, while
+the present proposal holds the original cross-fit DML route fixed and compares
+it with LRO and ADML through nuisance-misspecification and Riesz-projection
+geometry.
+\citet{NeweyRobins2018CrossFit} studies cross-fitting and fast remainder rates,
+which supplies the mathematical template for turning nuisance error products
+into first-order equivalence or separation statements.
+\citet{AvagyanVansteelandt2022PBR} extends uniform ATE inference to regimes
+where one nuisance need not converge to truth, making it a close prior-art
+candidate for one-sided misspecification boundaries rather than triple
+estimator comparison.
+\citet{DukesVansteelandtWhitney2024DRDML} proves doubly robust DML inference in
+semiparametric regression and notes nonregularity when only one nuisance is
+consistent; that nonregularity motivates the local-to-misspecification
+experiment used here.
+\citet{vanDerLaanLuedtkeCarone2024CDML} introduces calibrated DML for automatic
+doubly robust inference on linear functionals, allowing one nuisance to be slow
+or inconsistent after calibration; it is the closest one-slow-nuisance
+comparator, but it does not classify the pairwise DML-LRO-ADML spectral
+frontier or give an iff variance-separation threshold among the three named
+estimators.
+\citet{BrunsSmithDukesFellerOgburn2024ABW} characterizes augmented balancing
+weights and AutoDML-style estimators through algebraic equivalences and
+tuning-dependent behavior; it is the nearest algebraic-equivalence thread, but
+not a sharp uniform tangent-cone risk frontier for the three named estimators.
+\citet{ChernozhukovNeweySingh2023Biometrika} gives a finite-sample debiased ML
+theorem for global and local functionals; it provides a general robustness
+benchmark but not an iff comparison between DML, LRO, and ADML.
+
+In-repo prior art is currently negative rather than duplicative.  The active
+\texttt{eid\_dml\_orth\_uniform} catalogue entry has only state and pipeline
+metadata before this proposal.  The closest banked ThmSmith analogue is
+\texttt{eid\_bjs\_efficient\_event\_study}, whose rejected proposal asked for
+an influence-function equivalence frontier between named estimators and whose
+reviewer requested a gap matrix to one fixed efficient EIF.  The downgraded
+\texttt{eid\_lp\_svar\_nonequiv} proposal is relevant because its non-equivalence
+margin was assumed rather than derived from primitive finite-support
+conditions.  The downgraded
+\texttt{pid\_offline\_policy\_joint\_misspec} proposal is relevant only as an
+analogy for joint nuisance envelopes: it warns that rectangular one-nuisance
+bounds can miss compatibility restrictions.
+
+\section{Formal setup}
+Let \(W=(Y,D,X)\sim P\), with \(D\in\{0,1\}\), outcome \(Y\in\R\), and
+covariates \(X\in\mathcal{X}\).  The SWIG has baseline covariates \(X\), treatment
+node \(D\), and potential outcomes \(Y(1),Y(0)\).  Define
+\[
+g_{d,0}(x)=\E[Y\mid D=d,X=x],\qquad p_0(x)=\Pr(D=1\mid X=x),
+\]
+\[
+\theta_0=\E[Y(1)-Y(0)]=\E[g_{1,0}(X)-g_{0,0}(X)].
+\]
+The efficient ATE influence function under the nonparametric unconfoundedness
+model is
+\[
+\phi_0(W)=g_{1,0}(X)-g_{0,0}(X)-\theta_0+
+\frac{D}{p_0(X)}\{Y-g_{1,0}(X)\}
+-\frac{1-D}{1-p_0(X)}\{Y-g_{0,0}(X)\}.
+\]
+For a local law \(P_n\), \(\phi_n\) denotes the same formula with
+\((g_{1,n},g_{0,n},p_n,\theta_n)\) in place of
+\((g_{1,0},g_{0,0},p_0,\theta_0)\), and \(\mathcal{P}_n\) denotes the local DGP
+class satisfying the assumptions below.  The notation \(g_{D,n}^\star(X)\)
+means \(Dg_{1,n}^\star(X)+(1-D)g_{0,n}^\star(X)\).
+Let \(\hat\theta_D\), \(\hat\theta_L\), and \(\hat\theta_A\) denote,
+respectively, the DML, LRO, and ADML estimators after cross-fitting on the same
+fold partition.  For a local sequence \(P_n\), write
+\(\Delta_{g,n}=(\hat g_1-g_{1,n}^\star,\hat g_0-g_{0,n}^\star)\) and
+\(\Delta_{p,n}=\hat p-p_n^\star\), where starred limits may equal the truth
+or a pseudo-truth under misspecification.  The pairwise first-order remainders
+are modeled as bilinear forms
+\[
+B_m(\Delta_g,\Delta_p)=
+\E\!\left[\langle \Delta_g(X),\, T_m\Delta_p(X)\rangle\right],
+\qquad m\in\{D,L,A\},
+\]
+where \(T_D\) is the DML propensity channel, \(T_L\) is the LRO channel after
+its moment/Jacobian projection, and \(T_A\) is the minimal Riesz projection
+channel.
+
+To put the three channels in one coordinate system, fix a finite
+gap-coordinate dictionary \(b_n(X)\in\R^{q_n}\).  The dictionary is either
+fixed ex ante or selected by a training-fold-only rule; the observable version
+\(\hat b_n\) converges in \(L^2(P_n)\) to \(b_n\).  Its span contains the
+projected propensity/Riesz directions used by \(T_D,T_L,T_A\) and the pairwise
+gap directions \(T_m-T_{m'}\).  Let
+\(\Pi_{D,n},\Pi_{L,n},\Pi_{A,n}\) be the population limits of the
+estimator-specific coordinate projection matrices, with observable
+cross-fitted analogues \(\hat\Pi_{D,n},\hat\Pi_{L,n},\hat\Pi_{A,n}\).  The
+coordinate form of \(T_m\Delta_p\) is \(\Pi_{m,n}\beta_p\) when
+\(\Delta_p(X)=b_n(X)^\transpose\beta_p\).  For the LRO estimator,
+\(\Pi_{L,n}=J_{L,n}^{-1}G_{L,n}\) is the ATE-specialized Jacobian/GMM
+projection matrix; the exact LRO--ADML collapse condition is
+\(\operatorname{span}(\Pi_{L,n})=\operatorname{span}(\Pi_{A,n})\) on the
+pairwise gap subspace.  The finite gap-coordinate selection rule keeps the
+union of estimated singular directions of
+\(\hat\Pi_{D,n}-\hat\Pi_{L,n}\), \(\hat\Pi_{L,n}-\hat\Pi_{A,n}\), and
+\(\hat\Pi_{D,n}-\hat\Pi_{A,n}\) whose singular values exceed a deterministic
+tolerance \(\tau_n\downarrow0\).  Define the population residual and Riesz
+coordinate vectors
+\[
+Z_{g,n}(W)=b_n(X)\{Y-g_{D,n}^\star(X)\},\qquad
+Z_{p,n}(W)=b_n(X)\left\{\frac{D}{p_n^\star(X)}
+-\frac{1-D}{1-p_n^\star(X)}\right\}.
+\]
+Both vectors lie in \(\R^{q_n}\).  The spectral covariance kernel is the
+\(q_n\times q_n\) population target
+\[
+K_n=\E_{P_n}\!\left[
+Z_{g,n}(W)Z_{g,n}(W)^\transpose+
+Z_{p,n}(W)Z_{p,n}(W)^\transpose\right],
+\]
+and the actual diagnostic is the cross-fitted plug-in
+\[
+\hat K_n=\frac1n\sum_{i=1}^n
+\left[
+\hat Z_{g,n}(W_i)\hat Z_{g,n}(W_i)^\transpose+
+\hat Z_{p,n}(W_i)\hat Z_{p,n}(W_i)^\transpose
+\right],
+\]
+where \(\hat Z_{g,n}\) and \(\hat Z_{p,n}\) replace
+\((g_{D,n}^\star,p_n^\star,b_n)\) by their training-fold estimates.  The
+frontier uses \(K_n\), while observability means
+\(\|\hat K_n-K_n\|_{\mathrm{op}}=o_P(\lambda_{\min}^+(K_n))\) on the selected
+gap span.  Let
+\(\lambda_{\min}^+(K_n)\) be the smallest positive eigenvalue on the span of the
+coordinate gap directions
+\(\operatorname{range}(\Pi_{D,n}-\Pi_{L,n})+
+\operatorname{range}(\Pi_{L,n}-\Pi_{A,n})+
+\operatorname{range}(\Pi_{D,n}-\Pi_{A,n})\).  If
+\(\lambda_{\min}^+(K_n)\asymp n^{-2\kappa}\), set
+\[
+\rho_\star(K_n)=1/2-\kappa.
+\]
+For each active pair \(m,m'\), let
+\[
+s_{mm',n}=\sigma_{\min}^+\!\left((\Pi_{m,n}-\Pi_{m',n})\big|_{\mathcal{G}_{mm',n}}\right)
+\]
+be the smallest nonzero singular value of the pairwise projection gap on its
+selected coordinate gap span \(\mathcal{G}_{mm',n}\).  The observable diagnostic
+therefore consists of \((\hat K_n,\hat s_{DL,n},\hat s_{LA,n},\hat s_{DA,n})\);
+\(\lambda_{\min}^+(K_n)\) measures the size of perturbations in the selected
+coordinates, while the \(s_{mm',n}\)'s measure whether a given estimator pair
+actually loads on those perturbations.
+Let \(\mathcal{T}_n\) be the set of local tangent directions generated by the
+normalized outcome-regression and propensity/Riesz perturbations, with
+\(\mathcal{T}\) used as shorthand when \(n\) is clear.  For
+\(m\in\{D,L,A\}\), let \(\mathfrak V_{m,n}\) denote the local
+tangent-cone asymptotic risk envelope
+\[
+\mathfrak V_{m,n}
+=\sup_{h\in\mathcal{T}_n:\|h\|_{K_n}\le 1}
+\operatorname{Var}_{\Omega_n(h)}\!\left(Z_{0,n}+G_{m,n}(h)\right),
+\]
+where \(G_{m,n}(h)\) is the Gaussian limit of
+\(\sqrt n\,B_m(\Delta_{g,n},\Delta_{p,n})\) along tangent direction \(h\) and
+\(\|h\|_{K_n}\) is the norm induced by the selected gap-coordinate kernel.  More
+precisely, \((Z_{0,n},G_{D,n}(h),G_{L,n}(h),G_{A,n}(h))\) denotes the joint
+Gaussian limit of the EIF empirical process and the three rate-scaled bilinear
+channels, with \(Z_{0,n}\sim N(0,\E_{P_n}[\phi_n(W)^2])\).  Cross-fitting
+removes own-fold empirical-process products but does not by itself force
+\(\operatorname{Cov}(Z_{0,n},G_{m,n}(h))=0\); the covariance blocks are part of
+the local Gaussian experiment below and enter every displayed variance envelope.
+
+\begin{verbatim}
+qid=eid_dml_orth_uniform
+specialization=v1
+cluster=ExactID semiparametric ATE under unconfoundedness
+SWIG/DAG=X -> D -> Y with X -> Y
+treatment=D in {0,1}
+target=theta_0 = E[Y(1)-Y(0)]
+estimators=DML cross-fit AIPW, LRO ATE-specialized semiparametric GMM, ADML Riesz debiased ML
+nuisance_rates=||g_hat-g_star||_2=O_P(n^{-r_g}), ||p_hat-p_star||_2=O_P(n^{-r_p})
+frontier_index=rho_star(K_n)=1/2-kappa, lambda_min^+(K_n) asymp n^{-2 kappa}
+gap_coordinates=b_n(X) in R^{q_n}; observable plug-in K_hat,n estimates population K_n
+projection matrices Pi_D,n, Pi_L,n, Pi_A,n are population limits of cross-fitted estimator matrices
+active_pair_singular_values=s_DL,n, s_LA,n, s_DA,n for projection gaps on selected coordinates
+identifying_assumptions=consistency, unconfoundedness, overlap, local nuisance-rate experiment
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Exact ATE identification]\label{ass:identification}
+The observed law \(P_n\) satisfies consistency \(Y=DY(1)+(1-D)Y(0)\),
+unconfoundedness \((Y(1),Y(0))\perp D\mid X\), and positivity
+\(\epsilon_n\le p_n(X)\le 1-\epsilon_n\) almost surely, with
+\(\epsilon_n>0\).  The phrase ``bounded-overlap corner'' means
+\(\inf_n\epsilon_n>0\).  The target is
+\(\theta_n=\E_{P_n}[Y(1)-Y(0)]\).
+\end{assumption}
+
+\begin{assumption}[Common EIF normalization]\label{ass:eif-normalization}
+The DML, LRO, and ADML estimators are all centered at the same ATE functional
+\(\theta_n\) and are normalized so that, under correct specification and
+bounded overlap, their asymptotic linear term is the single efficient influence
+function \(\phi_n\) defined in \S6.  In the LRO estimator, the Jacobian and GMM
+weight induce the coordinate projection
+\(\Pi_{L,n}=J_{L,n}^{-1}G_{L,n}\) in the common basis \(b_n\), so the ATE moment
+is compared to \(\phi_n\), not to an estimator-specific canonical gradient.
+\end{assumption}
+
+\begin{assumption}[Cross-fitting and local nuisance rates]\label{ass:rates}
+All nuisance estimates are cross-fitted on folds independent of the evaluation
+fold.  Along \(P_n\),
+\[
+\|\Delta_{g,n}\|_{2,P_n}=O_P(n^{-r_g}),\qquad
+\|\Delta_{p,n}\|_{2,P_n}=O_P(n^{-r_p}),
+\]
+with deterministic exponents \(r_g,r_p\ge 0\).  The normalized errors have
+weak limits in a fixed tangent cone \(\mathcal{T}\), so local risk envelopes can
+be formed by taking suprema over \(\mathcal{T}\).
+\end{assumption}
+
+\begin{assumption}[Second-order expansion]\label{ass:second-order}
+For \(m\in\{D,L,A\}\),
+\[
+\sqrt n(\hat\theta_m-\theta_n)=n^{-1/2}\sum_{i=1}^n\phi_n(W_i)
+\;+\;
+\sqrt n\,B_m(\Delta_{g,n},\Delta_{p,n})+o_P(1)
+\]
+uniformly over the local DGP class.  The maps \(B_m\) are the bilinear
+remainder maps defined in \S6 and have finite operator norm on \(\mathcal{T}\).
+\end{assumption}
+
+\begin{assumption}[Spectral kernel and eigengap]\label{ass:spectral-kernel}
+The dictionary \(b_n(X)\), observable dictionary \(\hat b_n(X)\), projection
+matrices \(\Pi_{D,n},\Pi_{L,n},\Pi_{A,n}\), observable projections
+\(\hat\Pi_{D,n},\hat\Pi_{L,n},\hat\Pi_{A,n}\), coordinate vectors
+\(Z_{g,n}(W),Z_{p,n}(W)\), population kernel \(K_n\), plug-in kernel
+\(\hat K_n\), tolerance \(\tau_n\), selected gap-coordinate span, and active
+pairwise singular values \(s_{DL,n},s_{LA,n},s_{DA,n}\) are as
+defined in \S6.  The kernel is finite and has a positive eigenvalue on at least
+one pairwise estimator-gap direction.  The plug-in diagnostic is consistent on
+the selected span:
+\(\|\hat K_n-K_n\|_{\mathrm{op}}=o_P(\lambda_{\min}^+(K_n))\).  The smallest
+positive population eigenvalue on that span satisfies
+\(\lambda_{\min}^+(K_n)\asymp n^{-2\kappa}\) for some \(\kappa\ge 0\), and
+\(\rho_\star(K_n)=1/2-\kappa\).
+\end{assumption}
+
+\begin{assumption}[Local Gaussian experiment]\label{ass:gaussian-experiment}
+For each \(h\in\mathcal{T}_n\), the vector
+\[
+\left(n^{-1/2}\sum_{i=1}^n\phi_n(W_i),\;
+\sqrt n B_D(\Delta_{g,n},\Delta_{p,n}),\;
+\sqrt n B_L(\Delta_{g,n},\Delta_{p,n}),\;
+\sqrt n B_A(\Delta_{g,n},\Delta_{p,n})\right)
+\]
+converges jointly to a centered Gaussian vector
+\((Z_{0,n},G_{D,n}(h),G_{L,n}(h),G_{A,n}(h))\) with covariance matrix
+\(\Omega_n(h)\).  Its upper-left entry is \(\E_{P_n}[\phi_n(W)^2]\), and the
+off-diagonal blocks between \(Z_{0,n}\) and the \(G_{m,n}(h)\)'s are retained
+unless an auxiliary-sample design or an explicit orthogonality calculation makes
+them zero.  The risk envelope \(\mathfrak V_{m,n}\) is
+\(\sup_{\|h\|_{K_n}\le1}\operatorname{Var}_{\Omega_n(h)}(Z_{0,n}+G_{m,n}(h))\).
+\end{assumption}
+
+\begin{assumption}[Primitive finite-support inequalities]\label{ass:primitive-open}
+For any candidate three-point witness law \(P^\circ\), write its covariate
+support as \(\{x_1,x_2,x_3\}\), cell probabilities as \(\pi_j=P^\circ(X=x_j)\),
+propensities as \(p_j=P^\circ(D=1\mid X=x_j)\), conditional means as
+\(\mu_{dj}=E_{P^\circ}[Y\mid D=d,X=x_j]\), conditional residual variances as
+\(\sigma^2_{dj}=\operatorname{Var}_{P^\circ}(Y\mid D=d,X=x_j)\), let
+\(u_{DL}\) be the coordinate vector of the DML propensity channel after
+orthogonal projection away from the LRO span, and let \(u_{LA}\) be the
+coordinate vector of the ADML Riesz direction after orthogonal projection away
+from the LRO span.  The primitive witness
+inequalities are
+\[
+\pi_j>0,\qquad 0<\epsilon<p_j<1-\epsilon<1,\qquad
+\max_{d,j}\sigma^2_{dj}<\infty,\qquad
+\sum_{d,j}\sigma^2_{dj}>0,\qquad
+\|u_{DL}\|_{K^\circ}>0,\qquad
+\|u_{LA}\|_{K^\circ}>0,
+\]
+where \(K^\circ\) is the finite-support version of the covariance kernel in
+\S6.  These are pointwise inequalities for a proposed law, not an existential
+or open-neighborhood condition.
+\end{assumption}
+
+\begin{assumption}[Moment regularity]\label{ass:moments}
+For some \(q>4\), \(\sup_n\E_{P_n}[|Y|^q]<\infty\) after weighting by the
+inverse-overlap factors appearing in \(\phi_n\), and the fold-level empirical
+process remainders are \(o_P(1)\) uniformly over the local class.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: common EIF corner case]\label{thm:common-eif}
+Under Assumptions \ref{ass:identification}, \ref{ass:eif-normalization},
+\ref{ass:rates}, \ref{ass:second-order}, and \ref{ass:moments}, if
+\(p_n^\star=p_n\), \(g_{d,n}^\star=g_{d,n}\), overlap is bounded away from zero,
+and \(r_g+r_p>1/2\), then
+\[
+\sqrt n(\hat\theta_D-\theta_n),\quad
+\sqrt n(\hat\theta_L-\theta_n),\quad
+\sqrt n(\hat\theta_A-\theta_n)
+\]
+have the same first-order limit \(N(0,\E[\phi_n(W)^2])\), and every pairwise
+difference is \(o_P(1)\).
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+This theorem is not the flagship novelty; it is a required sanity anchor.  The
+closest result is \citet{ChernozhukovEtAl2018DML}, with supporting comparisons
+in \citet{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO} and
+\citet{ChernozhukovNeweySingh2022ADML}.  The epsilon-gap is only the common
+normalization across the three named estimators.  Its concrete consumer is
+Conjecture \ref{conj:spectral-frontier}: the conjectured frontier must reduce
+to this textbook product-rate equivalence when \(K_n\) is bounded away from
+singularity.
+
+\begin{conjecture}[Conjecture 1: spectral uniform non-equivalence frontier (NOT YET PROVED)]\label{conj:spectral-frontier}
+Under Assumptions \ref{ass:identification}--\ref{ass:moments}, the following
+are equivalent:
+\[
+\sup_{P_n\in\mathcal{P}_n}\max_{m\ne m'}\left|
+\sqrt n\{(\hat\theta_m-\theta_n)-(\hat\theta_{m'}-\theta_n)\}\right|
+\stackrel{P}{\longrightarrow}0
+\]
+for \(m,m'\in\{D,L,A\}\), and
+\[
+r_g+r_p>\rho_\star(K_n).
+\]
+If \(r_g+r_p\le \rho_\star(K_n)\), then necessarily \(\kappa\le 1/2\), and
+there is an open set of local DGP sequences satisfying Assumption
+\ref{ass:primitive-open} and active pairwise singular values
+\(s_{DL,n},s_{LA,n}\) bounded below on the selected spans for which the pairwise
+tangent-cone risk envelopes are strictly ordered:
+\[
+\mathfrak V_{D,n}-\mathfrak V_{L,n}
+\ge c_{DL} s_{DL,n}^2 n^{1-2(r_g+r_p)}\lambda_{\min}^+(K_n),\qquad
+\mathfrak V_{L,n}-\mathfrak V_{A,n}
+\ge c_{LA} s_{LA,n}^2 n^{1-2(r_g+r_p)}\lambda_{\min}^+(K_n),
+\]
+for constants \(c_{DL},c_{LA}>0\) determined by the tangent-cone normalization.
+Equivalently, the strict risk-envelope separation is governed by the normalized
+local amplitude
+\(a_n(r_g,r_p,K_n)=n^{1-2(r_g+r_p)}\lambda_{\min}^+(K_n)\), which vanishes
+if and only if \(r_g+r_p>1/2-\kappa=\rho_\star(K_n)\), including the
+automatic-equivalence case \(\kappa>1/2\).  If only one active singular value is
+bounded below, the same frontier gives strict separation only for that active
+pair and not a universal \(D>L>A\) ordering.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+The closest papers are \citet{ChernozhukovEtAl2018DML},
+\citet{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO},
+\citet{ChernozhukovNeweySingh2022ADML}, and
+\citet{ChernozhukovNeweySingh2022RR}, with the nearest automatic-Riesz
+extensions \citet{ChernozhukovNeweyQuintasMartinezSyrgkanis2024RieszRegression}
+and \citet{Singh2024KRRR}, and the nearest calibrated doubly robust comparator
+\citet{vanDerLaanLuedtkeCarone2024CDML}; the closest estimator-frontier
+comparator is \citet{Velez2024DML}.  The latter separates DML1 and DML2 under a
+growing-\(K\) asymptotic experiment, whereas this conjecture fixes the DML
+cross-fitting convention and asks for a DML-LRO-ADML nuisance-rate and
+projection-gap threshold.  Each of the other papers establishes validity,
+orthogonality, robust standard errors, Riesz construction, Riesz-regression
+learning, effective-dimension control, or one-slow-nuisance asymptotic
+linearity for its own estimator class; none gives an iff, uniform-in-DGP,
+closed-form spectral boundary for pairwise non-equivalence among all three
+named ATE estimators.  The epsilon-gap to calibrated DML is especially narrow:
+C-DML uses calibration to restore doubly robust asymptotic linearity when one
+nuisance is slow or inconsistent, while this conjecture compares three named
+uncalibrated/calibrated-adjacent estimator routes against one fixed ATE EIF and
+asks when their variance envelopes coincide or separate.
+Resolving the conjecture would give applied users of
+\citet{ChernozhukovNeweySingh2022ADML} a computable diagnostic for when ADML
+standard errors are first-order interchangeable with DML/LRO standard errors
+and when the ADML tangent-cone risk envelope is strictly smaller.
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+Gap & Projection difference & Main consumer \\
+\hline
+\(D-L\) & \(\Pi_{D,n}-\Pi_{L,n}\) & \citet{ChernozhukovEtAl2018DML} product-rate diagnostics \\
+\(L-A\) & \(\Pi_{L,n}-\Pi_{A,n}\) & \citet{ChernozhukovNeweySingh2022ADML} Riesz studentization \\
+\(D-A\) & \(\Pi_{D,n}-\Pi_{A,n}\) & \citet{vanDerLaanLuedtkeCarone2024CDML} one-slow-nuisance comparison \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{conjecture}[Conjecture 2: primitive finite-support witness (NOT YET PROVED)]\label{conj:witness}
+There exists a three-point covariate support, binary treatment, and bounded
+outcome law whose cell probabilities, treatment propensities, residual
+variances, DML--LRO coordinate gap, and LRO--ADML residual Riesz coordinate
+satisfy the pointwise primitive
+inequalities in Assumption \ref{ass:primitive-open}, and whose induced local
+DGP class satisfies Assumptions \ref{ass:identification},
+\ref{ass:eif-normalization}, \ref{ass:rates}, \ref{ass:second-order},
+\ref{ass:spectral-kernel}, \ref{ass:gaussian-experiment}, and
+\ref{ass:moments}, with
+\(\lambda_{\min}^+(K_n)>0\), such that the inequalities in Conjecture
+\ref{conj:spectral-frontier} are strict.  Moreover the primitive inequalities
+and the strict risk-envelope inequalities persist on an open neighborhood of
+the cell probabilities, treatment propensities, conditional residual variances,
+conditional outcome means, and DML/LRO/ADML projection coordinates.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+This statement responds to the recurring ThmSmith failure mode visible in the
+banked \texttt{eid\_lp\_svar\_nonequiv} and
+\texttt{eid\_bjs\_efficient\_event\_study} proposals: a non-equivalence margin
+should not be hidden inside an assumption.  The closest published thread is
+\citet{BrunsSmithDukesFellerOgburn2024ABW}, which gives concrete algebraic
+equivalences for augmented balancing weights and AutoDML-style estimators, but
+not a finite-support witness for strict DML-LRO-ADML risk separation.  The
+concrete consumer is Conjecture \ref{conj:spectral-frontier}: a finite-support
+witness would make the spectral frontier falsifiable rather than merely formal.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Bounded-overlap product-rate reduction]\label{cor:product-rate}
+Under Assumptions \ref{ass:identification}--\ref{ass:moments}, if
+\(\lambda_{\min}^+(K_n)\) is bounded away from zero, then
+\(\rho_\star(K_n)=1/2\).  Conjecture \ref{conj:spectral-frontier} therefore
+collapses to the standard product-rate condition \(r_g+r_p>1/2\), the usual
+\(n^{-1/4}\)-by-\(n^{-1/4}\) DML boundary.
+\end{corollary}
+
+\begin{corollary}[Fast spectral decay]\label{cor:fast-spectral-decay}
+Under Assumptions \ref{ass:rates} and \ref{ass:spectral-kernel}, if
+\(\kappa>1/2\), then \(\rho_\star(K_n)<0\).  Since \(r_g,r_p\ge0\), the
+condition \(r_g+r_p>\rho_\star(K_n)\) holds automatically and the normalized
+amplitude \(a_n(r_g,r_p,K_n)\) vanishes even at \(r_g+r_p=0\).
+\end{corollary}
+
+\begin{corollary}[No residual Riesz direction]\label{cor:no-gap}
+Under Assumptions \ref{ass:eif-normalization} and \ref{ass:spectral-kernel}, if
+the LRO projection span equals the ADML minimal Riesz span on the pairwise
+gap directions, then \(K_n\) has no positive eigenvalue on the \(L-A\) gap
+subspace and Conjecture \ref{conj:spectral-frontier} predicts no strict
+LRO-ADML tangent-cone risk separation.
+\end{corollary}
+
+\begin{corollary}[Correct specification]\label{cor:correct-spec}
+Under Assumptions \ref{ass:identification}, \ref{ass:eif-normalization},
+\ref{ass:rates}, \ref{ass:second-order}, and \ref{ass:gaussian-experiment}, if
+\(\Delta_{g,n}=0\) or \(\Delta_{p,n}=0\) on every evaluation fold, all bilinear
+remainders \(B_m(\Delta_{g,n},\Delta_{p,n})\) vanish, the Gaussian channels
+\(G_{m,n}(h)\) are zero, and the three estimators share the same first-order
+law with variance \(\E_{P_n}[\phi_n(W)^2]\).
+\end{corollary}
+
+\section{Proof-sketch route}
+The mathematical route is to put the three estimators on one ATE EIF
+normalization, derive their cross-fitted von Mises expansions, and isolate the
+pairwise bilinear remainder maps \(B_D-B_L\), \(B_L-B_A\), and \(B_D-B_A\).
+Those maps should reduce to compact quadratic forms on the finite-dimensional
+tangent span generated by the outcome-regression and propensity/Riesz
+perturbations in the common \(b_n\)-coordinate basis.  The spectral threshold
+follows by comparing the rate-scaled amplitude
+\(n^{1-2(r_g+r_p)}\lambda_{\min}^+(K_n)\) with zero: if it vanishes, pairwise
+remainders are first-order negligible, while if it is bounded away from zero
+the local experiment should deliver a nonzero tangent-cone risk-envelope gap.  The
+hard boundary cases are (i) weak-overlap
+local sequences where the Riesz norm diverges, (ii) LRO Jacobian choices that
+project away only part of the Riesz direction, and (iii) a three-point
+finite-support enumeration proving a strict open-set gap rather than a
+hand-tuned equality failure.  The covariance matrix \(\Omega_n(h)\) must be
+carried through the comparison, because cross-fitting alone does not eliminate
+all covariance between the empirical EIF process and nuisance-remainder limits.
+No Lean or formalization substrate is needed to
+judge this route at the proposal stage.
+
+\section{Honest scope flags}
+Theorem \ref{thm:common-eif} is a routine corner-case theorem conditional on
+the common normalization and second-order expansion.  Conjectures
+\ref{conj:spectral-frontier} and \ref{conj:witness} are not yet proved and are
+the actual research kernel.  The most fragile modeling choice is the exact
+definition of the LRO projection channel \(T_L\): if the intended LRO
+specialization already spans the same minimal Riesz direction as ADML, the
+strict \(L-A\) part should be withdrawn and replaced by a DML-versus-common
+orthogonal frontier.  The second fragile choice is the scaling convention for
+\(\rho_\star(K_n)\); this draft defines it without max-truncation as
+\(1/2-\kappa\) through
+\(\lambda_{\min}^+(K_n)\asymp n^{-2\kappa}\) and the normalized amplitude
+\(n^{1-2(r_g+r_p)}\lambda_{\min}^+(K_n)\), so that the bounded-overlap case
+recovers the textbook product-rate boundary and the \(\kappa>1/2\) case becomes
+automatic equivalence for all nonnegative nuisance-rate exponents.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft of a spectral local-misspecification
+frontier with common EIF normalization, primitive witness conjecture, and
+named DML/LRO/ADML prior-art checklist; prior verdict: none.
+\item v2 (revise) -- pinned the spectral kernel to common finite
+gap-coordinate projections and inserted the rate-scaled separation amplitude
+requested by the soundness review; prior verdict: REVISE.
+\item v3 (revise) -- removed the max-truncated frontier, made the spectral
+kernel observable through an explicit cross-fitted plug-in diagnostic, replaced
+estimator-specific lower-bound language with tangent-cone risk envelopes, and
+added the closer Riesz-regression/effective-dimension references; prior
+verdict: REVISE.
+\item v4 (revise) -- added calibrated DML as the close one-slow-nuisance
+comparator, inserted a D-L/L-A/D-A gap table, and replaced the existential
+primitive witness assumption with pointwise finite-support inequalities; prior
+verdict: REVISE.
+\item v5 (revise) -- added the Velez DML1/DML2 growing-\(K\) comparator,
+defined the joint local Gaussian experiment behind the risk envelopes, and made
+strict separation depend on active D-L and L-A projection singular values; prior
+verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Chernozhukov et~al.(2018)]{ChernozhukovEtAl2018DML}
+Chernozhukov, V., D.~Chetverikov, M.~Demirer, E.~Duflo, C.~Hansen,
+W.~Newey, and J.~Robins (2018).
+\newblock Double/debiased machine learning for treatment and structural
+parameters.
+\newblock \emph{The Econometrics Journal} 21(1), C1--C68.
+\newblock \url{https://doi.org/10.1111/ectj.12097}.
+
+\bibitem[Chernozhukov et~al.(2022a)]{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO}
+Chernozhukov, V., J.~C. Escanciano, H.~Ichimura, W.~K. Newey, and J.~M. Robins
+(2022).
+\newblock Locally robust semiparametric estimation.
+\newblock \emph{Econometrica} 90(4), 1501--1535.
+\newblock \url{https://doi.org/10.3982/ECTA16294}.
+
+\bibitem[Chernozhukov et~al.(2022b)]{ChernozhukovNeweySingh2022ADML}
+Chernozhukov, V., W.~K. Newey, and R.~Singh (2022).
+\newblock Automatic debiased machine learning of causal and structural effects.
+\newblock \emph{Econometrica} 90(3), 967--1027.
+\newblock \url{https://doi.org/10.3982/ECTA18515}.
+
+\bibitem[Chernozhukov et~al.(2022c)]{ChernozhukovNeweySingh2022RR}
+Chernozhukov, V., W.~K. Newey, and R.~Singh (2022).
+\newblock Debiased machine learning of global and local parameters using
+regularized Riesz representers.
+\newblock \emph{The Econometrics Journal} 25(3), 576--601.
+\newblock \url{https://doi.org/10.1093/ectj/utac002}.
+
+\bibitem[Chernozhukov et~al.(2024)]{ChernozhukovNeweyQuintasMartinezSyrgkanis2024RieszRegression}
+Chernozhukov, V., W.~K. Newey, V.~Quintas-Martinez, and V.~Syrgkanis (2024).
+\newblock Automatic debiased machine learning via Riesz regression.
+\newblock arXiv:2104.14737.
+\newblock \url{https://arxiv.org/abs/2104.14737}.
+
+\bibitem[Chernozhukov et~al.(2023)]{ChernozhukovNeweySingh2023Biometrika}
+Chernozhukov, V., W.~K. Newey, and R.~Singh (2023).
+\newblock A simple and general debiased machine learning theorem with
+finite-sample guarantees.
+\newblock \emph{Biometrika} 110(1), 257--264.
+\newblock \url{https://doi.org/10.1093/biomet/asac033}.
+
+\bibitem[Newey and Robins(2018)]{NeweyRobins2018CrossFit}
+Newey, W.~K. and J.~M. Robins (2018).
+\newblock Cross-fitting and fast remainder rates for semiparametric estimation.
+\newblock arXiv:1801.09138.
+\newblock \url{https://arxiv.org/abs/1801.09138}.
+
+\bibitem[Avagyan and Vansteelandt(2022)]{AvagyanVansteelandt2022PBR}
+Avagyan, V. and S.~Vansteelandt (2022).
+\newblock High-dimensional inference for the average treatment effect under
+model misspecification using penalized bias reduction.
+\newblock \emph{Biostatistics and Epidemiology} 6(2), 323--341.
+\newblock \url{https://doi.org/10.1080/24709360.2021.1898730}.
+
+\bibitem[Dukes et~al.(2024)]{DukesVansteelandtWhitney2024DRDML}
+Dukes, O., S.~Vansteelandt, and D.~Whitney (2024).
+\newblock On doubly robust inference for double machine learning in
+semiparametric regression.
+\newblock \emph{Journal of Machine Learning Research} 25(279), 1--46.
+\newblock \url{https://jmlr.org/papers/v25/22-1233.html}.
+
+\bibitem[van der Laan et~al.(2024)]{vanDerLaanLuedtkeCarone2024CDML}
+van der Laan, L., A.~Luedtke, and M.~Carone (2024).
+\newblock Automatic doubly robust inference for linear functionals via
+calibrated debiased machine learning.
+\newblock arXiv:2411.02771.
+\newblock \url{https://arxiv.org/abs/2411.02771}.
+
+\bibitem[Bruns-Smith et~al.(2024)]{BrunsSmithDukesFellerOgburn2024ABW}
+Bruns-Smith, D., O.~Dukes, A.~Feller, and E.~L. Ogburn (2024).
+\newblock Augmented balancing weights as linear regression.
+\newblock arXiv:2304.14545.
+\newblock \url{https://arxiv.org/abs/2304.14545}.
+
+\bibitem[Singh(2024)]{Singh2024KRRR}
+Singh, R. (2024).
+\newblock Kernel ridge Riesz representers: generalization, mis-specification,
+and the counterfactual effective dimension.
+\newblock arXiv:2102.11076.
+\newblock \url{https://arxiv.org/abs/2102.11076}.
+
+\bibitem[Velez(2024)]{Velez2024DML}
+Velez, A. (2024).
+\newblock On the asymptotic properties of debiased machine learning estimators.
+\newblock arXiv:2411.01864, updated March 20, 2026.
+\newblock \url{https://arxiv.org/abs/2411.01864}.
+\end{thebibliography}
+
+\end{document}

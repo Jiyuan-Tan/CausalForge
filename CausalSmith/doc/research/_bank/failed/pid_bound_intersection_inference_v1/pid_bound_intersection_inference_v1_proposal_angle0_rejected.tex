@@ -1,0 +1,346 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_bound\_intersection\_inference, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section originally contained a stage placeholder.
+%    Replace each placeholder with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` -- the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_bound\_intersection\_inference} / \texttt{v1}%
+  \\ \large\textit{Contact-cone inference for covariate-level partial-identification bound intersections}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Free-form PartialID anchor.  The locked tuple is
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\mathcal R,\mathcal B)
+=
+(\texttt{pid\_bound\_intersection\_inference},\texttt{v1},P,\theta,\mathcal R,\mathcal B).
+\]
+Here \(P\) is the observable law of \(O=(Y,D,X)\), with \(Y\in[\underline y,\overline y]\), \(D\in\{0,1\}\), and \(X\in\mathcal X\), where \(\mathcal X\) is a compact metric space.  The scalar parameter \(\theta\) is a common treatment-effect or structural-index value constrained by covariate-level partial-identification intervals \([\ell_P(x),u_P(x)]\).  The identifying restrictions \(\mathcal R\) are bounded outcomes, consistency for the observed treatment arm, overlap \(0<\Pr(D=1\mid X=x)<1\) on the effective support, continuity of the bound maps in \(x\), and the maintained common-\(\theta\) restriction \(\theta\in[\ell_P(x),u_P(x)]\) for every \(x\in\mathcal X\).  The bounding functional is the intersection endpoint pair
+\[
+  \mathcal B(P)=[L(P),U(P)],
+  \qquad
+  L(P)=\sup_{x\in\mathcal X}\ell_P(x),\quad
+  U(P)=\inf_{x\in\mathcal X}u_P(x).
+\]
+The flagship object is the contact-cone derivative of \(L(P)\), with the upper endpoint obtained by replacing \(\ell\), \(\sup\), and upper contact sets by \(u\), \(\inf\), and lower contact sets.
+
+\begin{abstract}
+Many partial-identification problems deliver a scalar interval only after intersecting covariate-level bounds over a rich support.  The lower endpoint \(L(P)=\sup_x \ell_P(x)\) is a nonregular functional when the active covariate set changes with the law.  The central conjecture is a contact-cone phase calculus for \(L(P)\): singleton contact gives an ordinary linear limit, finite ties give a maximum of finitely many Gaussian scores, and continuum contact gives a Gaussian support functional over the flat face.  A second conjecture gives a two-point witness where the centered naive bootstrap has the wrong conditional law at a tie.  If resolved, the result would turn intersection-bound inference from a generic moment-inequality exercise into an endpoint-specific diagnostic based on the geometry of the active level set.
+\end{abstract}
+
+\section{Introduction}
+Partial-identification intervals often arise by intersecting many covariate-level restrictions.  The statistical question is how to conduct inference on the endpoint when the maximizer of the lower bound is not fixed by the law.
+
+The main claim is that the endpoint has a three-phase contact calculus.  Under smooth first-stage bound maps, the directional derivative of \(L(P)=\sup_x\ell_P(x)\) is the support functional of the tangent scores restricted to the contact set; its limit law changes discretely between singleton, finite-tie, and continuum-flat regimes.
+
+The closest published comparator is \citet[pp. 667--737]{ChernozhukovLeeRosen2013}, whose intersection-bound method treats suprema of estimated functions and adaptive inequality selection, and \citet[Section 3]{FangSantos2019}, whose bootstrap theorem explains why ordinary resampling can fail for directionally but not fully differentiable maps.  The gap is that neither paper isolates the covariate-contact geometry of a partial-identification endpoint or gives a phase threshold that says when the endpoint reduces to a finite-dimensional face and when it remains a continuum Gaussian supremum.  The kernel is a PartialID inference theorem, not a new sharpness theorem for Manski bounds.
+
+The consumer is empirical work that uses covariate-indexed missing-data, monotone-IV, or selection bounds and then reports the intersection interval as the object of inference, as in the quantile-selection and interval-outcome examples discussed by \citet{AndrewsShi2013}.  A reader would report the active contact regime and choose inference by contact geometry, rather than treating every rich-support bound intersection as a generic conditional-moment-inequality problem.
+
+\begin{itemize}[leftmargin=*]
+  \item Conjecture 1: the lower endpoint has the contact-cone derivative \(\dot L_P(h)=\sup_{x\in C_L(P)}\dot\ell_P[h](x)\). Gap: \citet{ChernozhukovLeeRosen2013} supplies intersection-bound inference, but not a phase calculus for moving covariate contact sets. Consumer: covariate-level partial-ID bound applications using \citet{Manski1990} or \citet{ManskiPepper2000}.
+  \item Conjecture 2: singleton, finite-tie, and continuum-flat contact sets imply three different local laws. Gap: \citet{FangSantos2019} gives the general nonsmooth delta method, but not the endpoint-specific finite-versus-continuum reduction criterion. Consumer: conditional-moment and functional-inequality procedures such as \citet{AndrewsShi2013}, \citet{Armstrong2014}, and \citet{LeeSongWhang2018}.
+  \item Theorem 1: the two-point tie model gives a hand-computed bootstrap-failure witness for the centered naive bootstrap. Gap: \citet{ImbensManski2004} treats scalar interval nonuniformity and \citet{FangSantos2019} gives a general failure condition, but neither computes this bound-intersection witness. Consumer: bootstrap implementations for intersection bounds, including the workflow described by \citet{ChernozhukovKimLeeRosen2015}.
+\end{itemize}
+
+\section{Related work}
+\citet{Manski1990} provides the baseline bounded-outcome partial-identification logic behind the pointwise covariate bounds \(\ell_P(x)\) and \(u_P(x)\).  \citet{ManskiPepper2000} shows how monotone instrumental-variable restrictions sharpen such bounds through covariate-indexed inequalities.  \citet{ImbensManski2004} develops confidence intervals for a scalar partially identified interval and documents nonuniformity when the interval width approaches zero.  \citet{ChernozhukovHongTamer2007} studies confidence regions for parameter sets defined by moment inequalities and equalities, which is the broad set-inference comparator rather than the endpoint-specific object here.  \citet{BeresteanuMolinari2008} develops support-function inference for random-set identification regions, a finite-dimensional face comparator for the continuum contact-set issue.  \citet{AndrewsShi2013} gives uniformly valid conditional-moment-inequality inference and includes intersection-bound examples, but the procedure is not organized around the endpoint contact set.  \citet{ChernozhukovLeeRosen2013} is the closest direct paper because it studies inference on suprema and infima of estimated bound functions with adaptive inequality selection.  \citet{Armstrong2014} shows that conditional-moment-inequality inference can have rate and critical-value changes under weighted Kolmogorov-Smirnov statistics.  \citet{LeeSongWhang2018} uses estimated contact sets for nonparametric functional-inequality tests, which is adjacent to but not the same as inference on an identified-set endpoint.  \citet{KaidoMolinariStoye2019} gives calibrated projection intervals for finite-dimensional moment-inequality models, making clear what is lost when the active face is a covariate contact set rather than a finite constraint face.  \citet{FangSantos2019} supplies the directional-differentiability and bootstrap-failure framework used to phrase the endpoint law.
+
+The in-catalogue PartialID closest entry is `doc/API.md` Section 3.1, especially `t3_thm`, which records a level-set restriction theorem intersecting pointwise Manski intervals across covariate sets.  The closest banked proposal is `pid_rdd_manipulation_bounded_v1`, whose scope flags state that continuous covariates need an additional measurability and regularization layer.  The failed `pid_text_treatment_distortion_v1` proposal is relevant only as a warning that rich Borel-support extrema need simultaneous bands and measurable-selection care.
+
+\section{Formal setup}
+Let \(O=(Y,D,X)\sim P\), where \(Y\in[\underline y,\overline y]\), \(D\in\{0,1\}\), and \(X\in\mathcal X\).  The support \(\mathcal X\) is compact.  For each \(x\), the maintained partial-identification restrictions \(\mathcal R\) generate an interval \([\ell_P(x),u_P(x)]\) for a common scalar \(\theta\).  A concrete bounded-outcome example is
+\[
+  \ell_P(x)=e_P(x)m_{1P}(x)+(1-e_P(x))\underline y-m_{0P}(x),\qquad
+  u_P(x)=e_P(x)m_{1P}(x)+(1-e_P(x))\overline y-m_{0P}(x),
+\]
+where \(e_P(x)=\Pr_P(D=1\mid X=x)\), \(m_{1P}(x)=\E_P[Y\mid D=1,X=x]\), and \(m_{0P}(x)=\E_P[Y\mid D=0,X=x]\).  The proposal allows other pointwise bound maps as long as their first-order perturbations are defined by the same smooth-map condition below.
+
+The identified set for the common scalar is
+\[
+  \Theta_I(P)=\bigcap_{x\in\mathcal X}[\ell_P(x),u_P(x)]
+  =[L(P),U(P)],
+  \qquad
+  L(P)=\sup_{x\in\mathcal X}\ell_P(x),\quad
+  U(P)=\inf_{x\in\mathcal X}u_P(x),
+\]
+when \(L(P)\le U(P)\).  The upper contact set for the lower endpoint is
+\[
+  C_L(P)=\{x\in\mathcal X:\ell_P(x)=L(P)\}.
+\]
+For a regular parametric submodel \(P_t\) with score direction \(h\), write \(\dot\ell_P[h](x)\) for the first-order perturbation of \(\ell_{P_t}(x)\) at \(t=0\).  The contact-phase map is
+\[
+  \Phi_P(h)=\sup_{x\in C_L(P)}\dot\ell_P[h](x).
+\]
+For an estimator \(\widehat P_n\), let \(G_\ell\) be the tight Gaussian limit of \(x\mapsto\sqrt n\{\ell_{\widehat P_n}(x)-\ell_P(x)\}\) in \(\ell^\infty(\mathcal X)\).  Define the deterministic contact gap
+\[
+  \Delta_P(A)=L(P)-\sup_{x\in A}\ell_P(x)
+\]
+for closed \(A\subseteq\mathcal X\), and the local contact radius \(r_n(P)=\inf\{\Delta_P(\mathcal X\setminus N):N\supset C_L(P)\}/n^{-1/2}\) for a chosen shrinking neighborhood \(N\).
+
+\begin{verbatim}
+Locked parameters.
+qid = pid_bound_intersection_inference
+specialization = v1
+observable distribution P = law of O=(Y,D,X), with bounded Y, binary D, and
+  compact covariate support X in mathcal X
+parameter theta = common scalar constrained by all covariate-level partial-ID
+  intervals [ell_P(x), u_P(x)]
+identifying restrictions = bounded outcomes; consistency for the observed arm;
+  overlap on the effective support; continuous pointwise bound maps; common-theta
+  intersection restriction theta in [ell_P(x), u_P(x)] for every x
+bounding functional = [L(P), U(P)] where L(P)=sup_x ell_P(x) and
+  U(P)=inf_x u_P(x)
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Bound maps and compact support]\label{ass:compact-continuous}
+\(\mathcal X\) is compact, and \(x\mapsto\ell_P(x)\) and \(x\mapsto u_P(x)\) are continuous.  The intersection is nonempty: \(L(P)\le U(P)\).
+\end{assumption}
+
+\begin{assumption}[First-stage process]\label{ass:first-stage-process}
+The estimator \(\widehat P_n\) satisfies
+\[
+  \sqrt n\{\ell_{\widehat P_n}-\ell_P\}\rightsquigarrow G_\ell
+  \quad\text{in }\ell^\infty(\mathcal X),
+\]
+where \(G_\ell\) has a.s. bounded, uniformly continuous sample paths on \(\mathcal X\).  Along regular submodels, \(\ell_{P_t}(x)=\ell_P(x)+t\dot\ell_P[h](x)+o(t)\) uniformly in \(x\).
+\end{assumption}
+
+\begin{assumption}[Contact regularity]\label{ass:contact-regularity}
+The contact set \(C_L(P)\) is nonempty and compact.  For every sequence \(x_n\) with \(\ell_P(x_n)\to L(P)\), every cluster point lies in \(C_L(P)\).
+\end{assumption}
+
+\begin{assumption}[Phase alternatives]\label{ass:phase-alternatives}
+One of the following regimes holds: (i) \(C_L(P)=\{x_0\}\); (ii) \(C_L(P)=\{x_1,\ldots,x_K\}\) with \(2\le K<\infty\); or (iii) \(C_L(P)\) contains a compact continuum \(C\) on which \(\ell_P(x)=L(P)\) and the restriction of \(G_\ell\) to \(C\) is non-degenerate.
+\end{assumption}
+
+\begin{assumption}[Two-point tie witness]\label{ass:two-point-witness}
+For the bootstrap witness, \(\mathcal X=\{a,b\}\), \(\ell_P(a)=\ell_P(b)=0\), \(L(P)=0\), and
+\[
+  \sqrt n(\ell_{\widehat P_n}(a),\ell_{\widehat P_n}(b))
+  \rightsquigarrow (Z_a,Z_b),
+  \qquad
+  (Z_a,Z_b)\sim N(0,I_2).
+\]
+The naive centered bootstrap conditionally satisfies
+\[
+  \sqrt n(\ell_{\widehat P_n^*}(a)-\ell_{\widehat P_n}(a),
+           \ell_{\widehat P_n^*}(b)-\ell_{\widehat P_n}(b))
+  \rightsquigarrow_{\Pr} (Z_a^*,Z_b^*),
+\]
+with \(N(0,I_2)\) limit independent of the original sample.
+\end{assumption}
+
+\section{Main results}
+\begin{conjecture}[Conjecture 1: contact-cone derivative]\label{conj:contact-cone}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:compact-continuous}--\ref{ass:contact-regularity}, the lower endpoint \(L(P)=\sup_x\ell_P(x)\) is Hadamard directionally differentiable tangentially to the first-stage tangent set, with derivative
+\[
+  \dot L_P(h)=\Phi_P(h)=\sup_{x\in C_L(P)}\dot\ell_P[h](x).
+\]
+Consequently, under Assumption~\ref{ass:first-stage-process},
+\[
+  \sqrt n\{L(\widehat P_n)-L(P)\}\rightsquigarrow
+  \sup_{x\in C_L(P)}G_\ell(x).
+\]
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: contact-phase threshold]\label{conj:phase-threshold}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:compact-continuous}--\ref{ass:phase-alternatives}, the limiting law in Conjecture~\ref{conj:contact-cone} has three regimes:
+\[
+  \begin{array}{ll}
+  C_L(P)=\{x_0\}: & G_\ell(x_0),\\[2mm]
+  C_L(P)=\{x_1,\ldots,x_K\}: & \max_{1\le k\le K}G_\ell(x_k),\\[2mm]
+  C_L(P)\supset C\text{ continuum}: & \sup_{x\in C}G_\ell(x).
+  \end{array}
+\]
+Moreover, a local sequence with \(n^{1/2}\{L(P_n)-\sup_{x\notin C_L(P)}\ell_{P_n}(x)\}\to\infty\) has the same active-contact law, while finite limits enter the support functional through a deterministic drift penalty.
+\end{conjecture}
+
+\begin{theorem}[Theorem 1: centered-bootstrap failure at a two-point tie]\label{thm:bootstrap-failure}
+Under Assumption~\ref{ass:two-point-witness},
+\[
+  \sqrt n\{L(\widehat P_n)-L(P)\}\rightsquigarrow \max\{Z_a,Z_b\}.
+\]
+The centered naive bootstrap statistic
+\[
+  T_n^*=\sqrt n\{L(\widehat P_n^*)-L(\widehat P_n)\}
+\]
+has conditional weak limits of the form
+\[
+  \max\{Z_a+Z_a^*,Z_b+Z_b^*\}-\max\{Z_a,Z_b\}
+\]
+along subsequences where the realized original score converges to \((Z_a,Z_b)\), and this random conditional law is not the fixed law of \(\max\{Z_a,Z_b\}\).
+The first display is the continuous mapping theorem for the maximum map.  The second follows by conditioning on the first-stage tie gap and observing that the centering term selects a random face.
+\end{theorem}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Unique-contact reduction]\label{cor:unique-contact}
+Under Assumptions~\ref{ass:compact-continuous}--\ref{ass:phase-alternatives}, if \(C_L(P)=\{x_0\}\), then the endpoint limit reduces to the ordinary first-stage limit \(G_\ell(x_0)\).  This collapses to scalar endpoint inference because the supremum map is locally linear at a strict maximizer.
+\end{corollary}
+
+\begin{corollary}[Finite-cell Manski reduction]\label{cor:finite-cell}
+If \(\mathcal X=\{x_1,\ldots,x_K\}\), the proposal reduces to inference on the maximum of \(K\) estimated pointwise lower bounds.  Under Assumption~\ref{ass:two-point-witness} with \(K=2\), Corollary~\ref{cor:finite-cell} is exactly the nonregular maximum law in Theorem~\ref{thm:bootstrap-failure}.
+\end{corollary}
+
+\paragraph{Exhibit 9.1: computing the contact-cone object.}
+Let \(\mathcal X=\{a,b\}\), \(\ell_P(a)=\ell_P(b)=0\), and \(u_P(a)=u_P(b)=1\).  Then \(L(P)=0\), \(U(P)=1\), \(C_L(P)=\{a,b\}\), and for a perturbation \(h\) with \(\dot\ell_P[h](a)=s_a\), \(\dot\ell_P[h](b)=s_b\),
+\[
+  \Phi_P(h)=\max\{s_a,s_b\}.
+\]
+No denominator appears, the two contact labels represent exactly two observable covariate atoms, and the displayed derivative is computed from the Section 6 primitives \((\ell_P(a),\ell_P(b),\dot\ell_P[h](a),\dot\ell_P[h](b))\).
+
+\paragraph{Exhibit 9.2: bootstrap witness.}
+In the same two-point design, take realized original scores \((z_a,z_b)=(1,-1)\).  The population limit law is \(\max\{Z_a,Z_b\}\), whereas the conditional centered bootstrap face is
+\[
+  \max\{1+Z_a^*,-1+Z_b^*\}-1.
+\]
+This differs from \(\max\{Z_a,Z_b\}\) because the first coordinate is selected with a two-unit deterministic drift, not by a normalization of the same Gaussian maximum.
+
+\section{Proof-sketch route}
+For Conjecture~\ref{conj:contact-cone}, the route is: headline \(<-\) unfold \(L(P)=\sup_x\ell_P(x)\) and \(C_L(P)\) \(<-\) substitute the uniform first-stage expansion \(<-\) prove epi-localization to \(C_L(P)\) using the contact-gap condition \(<-\) apply the directional derivative formula for the supremum norm functional \(<-\) transfer the result from deterministic paths to the empirical process by stochastic equicontinuity \(<-\) verify measurability of the contact support functional.  This gives \(k=4\) substantive steps: localization, supremum derivative, empirical-process transfer, and measurability.  For Conjecture~\ref{conj:phase-threshold}, the route is: headline \(<-\) unfold the derivative \(<-\) classify \(C_L(P)\) by Assumption~\ref{ass:phase-alternatives} \(<-\) show singleton evaluation is linear \(<-\) show finite contact is a maximum over a finite Gaussian vector \(<-\) show continuum contact is a support functional on \(\ell^\infty(C)\) \(<-\) add local drift penalties through the contact-gap expansion; here \(k=4\).  Theorem~\ref{thm:bootstrap-failure} is a direct two-coordinate calculation using the continuous mapping theorem and conditional weak convergence for the bootstrap scores.
+
+\section{Honest scope flags}
+Conjectures~\ref{conj:contact-cone} and \ref{conj:phase-threshold} are not yet proved.  The proposal assumes a tight first-stage process for the bound map rather than proving kernel or series conditions for a specific estimator.  The continuum-contact case may require an outer-probability formulation if the contact set is not separable under the covariance metric.  The upper endpoint \(U(P)\) is omitted from the main statements only to avoid duplication; it should follow by applying the same argument to \(-u_P\).  No claim is made that generic conditional-moment-inequality confidence sets are invalid; the claim is that they do not identify the endpoint-specific phase law.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+  \item v1 (cold-start) -- initial draft centered on the contact-cone derivative, three-phase active-set law, and two-point bootstrap-failure witness; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Andrews and Shi(2013)]{AndrewsShi2013}
+Andrews, D. W. K. and X. Shi (2013).
+\newblock Inference based on conditional moment inequalities.
+\newblock \emph{Econometrica} 81(2), 609--666.
+\newblock \url{https://doi.org/10.3982/ECTA9370}.
+
+\bibitem[Armstrong(2014)]{Armstrong2014}
+Armstrong, T. B. (2014).
+\newblock Weighted KS statistics for inference on conditional moment inequalities.
+\newblock \emph{Journal of Econometrics} 181(2), 92--116.
+\newblock \url{https://doi.org/10.1016/j.jeconom.2014.04.021}.
+
+\bibitem[Beresteanu and Molinari(2008)]{BeresteanuMolinari2008}
+Beresteanu, A. and F. Molinari (2008).
+\newblock Asymptotic properties for a class of partially identified models.
+\newblock \emph{Econometrica} 76(4), 763--814.
+\newblock \url{https://doi.org/10.1111/j.1468-0262.2008.00859.x}.
+
+\bibitem[Chernozhukov, Hong, and Tamer(2007)]{ChernozhukovHongTamer2007}
+Chernozhukov, V., H. Hong, and E. Tamer (2007).
+\newblock Estimation and confidence regions for parameter sets in econometric models.
+\newblock \emph{Econometrica} 75(5), 1243--1284.
+\newblock \url{https://doi.org/10.1111/j.1468-0262.2007.00794.x}.
+
+\bibitem[Chernozhukov, Kim, Lee, and Rosen(2015)]{ChernozhukovKimLeeRosen2015}
+Chernozhukov, V., W. Kim, S. Lee, and A. M. Rosen (2015).
+\newblock Implementing intersection bounds in Stata.
+\newblock \emph{Stata Journal} 15(1), 21--44.
+\newblock \url{https://doi.org/10.1177/1536867X1501500103}.
+
+\bibitem[Chernozhukov, Lee, and Rosen(2013)]{ChernozhukovLeeRosen2013}
+Chernozhukov, V., S. Lee, and A. M. Rosen (2013).
+\newblock Intersection bounds: Estimation and inference.
+\newblock \emph{Econometrica} 81(2), 667--737.
+\newblock \url{https://doi.org/10.3982/ECTA8718}.
+
+\bibitem[Fang and Santos(2019)]{FangSantos2019}
+Fang, Z. and A. Santos (2019).
+\newblock Inference on directionally differentiable functions.
+\newblock \emph{Review of Economic Studies} 86(1), 377--412.
+\newblock \url{https://doi.org/10.1093/restud/rdy049}.
+
+\bibitem[Imbens and Manski(2004)]{ImbensManski2004}
+Imbens, G. W. and C. F. Manski (2004).
+\newblock Confidence intervals for partially identified parameters.
+\newblock \emph{Econometrica} 72(6), 1845--1857.
+\newblock \url{https://doi.org/10.1111/j.1468-0262.2004.00555.x}.
+
+\bibitem[Kaido, Molinari, and Stoye(2019)]{KaidoMolinariStoye2019}
+Kaido, H., F. Molinari, and J. Stoye (2019).
+\newblock Confidence intervals for projections of partially identified parameters.
+\newblock \emph{Econometrica} 87(4), 1397--1432.
+\newblock \url{https://doi.org/10.3982/ECTA14075}.
+
+\bibitem[Lee, Song, and Whang(2018)]{LeeSongWhang2018}
+Lee, S., K. Song, and Y.-J. Whang (2018).
+\newblock Testing for a general class of functional inequalities.
+\newblock \emph{Econometric Theory} 34(5), 1018--1064.
+\newblock \url{https://doi.org/10.1017/S0266466617000329}.
+
+\bibitem[Manski(1990)]{Manski1990}
+Manski, C. F. (1990).
+\newblock Nonparametric bounds on treatment effects.
+\newblock \emph{American Economic Review} 80(2), 319--323.
+
+\bibitem[Manski and Pepper(2000)]{ManskiPepper2000}
+Manski, C. F. and J. V. Pepper (2000).
+\newblock Monotone instrumental variables: With an application to the returns to schooling.
+\newblock \emph{Econometrica} 68(4), 997--1010.
+\newblock \url{https://doi.org/10.1111/1468-0262.00144}.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,352 @@
+\section{Appendix A. Reduced geometry and proof ingredients}
+
+This appendix makes visible the auxiliary geometry behind the two main optimization statements: the reduced coordinates, vertex certificates, parity restriction, and finite active-set calculation used in \cref{obj:thm:gap-window} and~\cref{obj:thm:sharp-rho-star}. The reduction is a low-dimensional convex-analytic one: the block symmetry turns the covariance problem into a weighted simplex problem, in the same general spirit as elliptope and semidefinite relaxations for discrete optimization \citep{goemans1995,deza1997,boyd2004}.
+
+The first ingredient identifies the spectral coordinates in which the block elliptope becomes a simplex and the objective becomes a scalar function.
+
+\begin{lemmav}{lem:block-spectral-coordinates}[Block Spectral Coordinates]
+For any real numbers $r,\kappa,u,v$, assume:
+\begin{itemize}
+\item \textbf{(Homophily.)} \cref{obj:ass:two-block-homophily} holds for the block size $m$ and weights $a,b$.
+\item \textbf{(Spectral coordinates.)} Set
+\[
+q=2(m-1),\qquad
+x=1-u,\qquad
+y=1+(m-1)u-mv,\qquad
+z_{\mathrm{sp}}=1+(m-1)u+mv .
+\]
+\item \textbf{(Reduced coefficients.)} Set
+\[
+c_x=q\left((a+b)+\frac{r}{a+b}\right),\qquad
+c_y=2b+\frac{r}{2b},\qquad
+c_z=2m .
+\]
+\end{itemize}
+Then the block covariance matrix $X(u,v)$ belongs to the block elliptope $\mathcal E_m^{\mathrm{blk}}$ if and only if
+\[
+x\ge 0,\qquad y\ge 0,\qquad z_{\mathrm{sp}}\ge 0,\qquad
+qx+y+z_{\mathrm{sp}}=2m .
+\]
+Moreover, for the design objective of \cref{obj:def:design-objective},
+\[
+F_{r,\kappa}\bigl(X(u,v)\bigr)
+=
+c_xx+c_yy+c_zz_{\mathrm{sp}}
++\kappa\sqrt{qx^2+y^2+z_{\mathrm{sp}}^2}.
+\]
+Finally,
+\[
+X_{\mathrm{cut}}=X(1,-1)
+\quad\text{and}\quad
+(1-1,\;1+(m-1)\cdot 1-m(-1),\;1+(m-1)\cdot 1+m(-1))
+=(0,2m,0),
+\]
+while
+\[
+I_n=X(0,0)
+\quad\text{and}\quad
+(1-0,\;1+(m-1)\cdot 0-m\cdot 0,\;1+(m-1)\cdot 0+m\cdot 0)
+=(1,1,1).
+\]
+\end{lemmav}
+
+\cref{obj:lem:block-spectral-coordinates} is the coordinate change used throughout the main text. It replaces the two covariance parameters \(u,v\) by nonnegative spectral coordinates satisfying one affine constraint. In these coordinates, the cut covariance is the vertex \((0,2m,0)\), the iid covariance is the center-like point \((1,1,1)\), and the objective separates into a linear part plus a weighted Euclidean norm.
+
+The next two statements are vertex certificates. They give simple coefficient inequalities under which either the cut vertex or the spread vertex is the unique minimizer of the reduced problem.
+
+\begin{lemmav}{lem:cut-vertex-certificate}[Cut Vertex Certificate]
+Let \(m\) be fixed and write \(q=2(m-1)\). Suppose that
+\begin{itemize}
+\item \textbf{(Positive spectral multiplicity.)} \(q>0\).
+\item \textbf{(Nonnegative robustness.)} \(\kappa\ge 0\).
+\item \textbf{(Cut-side coefficient separation.)} The coefficients satisfy
+\[
+\frac{c_x}{q}>c_y+\kappa
+\qquad\text{and}\qquad
+c_z>c_y+\kappa .
+\]
+\end{itemize}
+Then \((0,2m,0)\in T_m\), where
+\[
+T_m=\{(x,y,z_{\mathrm{sp}}): x\ge 0,\ y\ge 0,\ z_{\mathrm{sp}}\ge 0,\ qx+y+z_{\mathrm{sp}}=2m\}.
+\]
+Moreover, for every \((x,y,z_{\mathrm{sp}})\in T_m\) with
+\((x,y,z_{\mathrm{sp}})\neq (0,2m,0)\),
+\[
+c_x\cdot 0+c_y(2m)+c_z\cdot 0
++\kappa\sqrt{q\cdot 0^2+(2m)^2+0^2}
+<
+c_xx+c_yy+c_zz_{\mathrm{sp}}
++\kappa\sqrt{qx^2+y^2+z_{\mathrm{sp}}^2}.
+\]
+Thus \((0,2m,0)\) is the unique minimizer on \(T_m\) of the reduced objective.
+\end{lemmav}
+
+\cref{obj:lem:cut-vertex-certificate} is the reduced certificate underlying the cut exactness result. The coefficient separation says that moving mass away from the \(y\)-coordinate toward either the within-block spectral coordinate or the aggregate coordinate is too costly, even after accounting for the robustness term.
+
+\begin{lemmav}{lem:spread-vertex-certificate}[Spread Vertex Certificate]
+Let \(m\in\mathbb N\), let \(c_x,c_y,c_z,\kappa\in\mathbb R\), and set \(q=2(m-1)\). Suppose that
+\begin{itemize}
+\item \textbf{(Positive multiplicity.)} \(q>0\).
+\item \textbf{(Nonnegative robustness.)} \(\kappa\ge 0\).
+\item \textbf{(The \(y\)-coefficient is large.)} \(c_y>c_x/q+\kappa/\sqrt q\).
+\item \textbf{(The \(z_{\mathrm{sp}}\)-coefficient is large.)} \(c_z>c_x/q+\kappa/\sqrt q\).
+\end{itemize}
+Define
+\[
+T_m=\{(x,y,z_{\mathrm{sp}}):x\ge0,\ y\ge0,\ z_{\mathrm{sp}}\ge0,\ qx+y+z_{\mathrm{sp}}=2m\}
+\]
+and
+\[
+\phi(x,y,z_{\mathrm{sp}})
+=
+c_xx+c_yy+c_zz_{\mathrm{sp}}
++\kappa\sqrt{qx^2+y^2+z_{\mathrm{sp}}^2}.
+\]
+Then \((2m/q,0,0)\in T_m\), and for every \((x,y,z_{\mathrm{sp}})\in T_m\) with
+\((x,y,z_{\mathrm{sp}})\neq (2m/q,0,0)\),
+\[
+\phi(2m/q,0,0)<\phi(x,y,z_{\mathrm{sp}}).
+\]
+\end{lemmav}
+
+\cref{obj:lem:spread-vertex-certificate} plays the corresponding role for the spread vertex. In the notation of \cref{obj:thm:gap-window}, this vertex is the reduced representation of \(X_{\mathrm{spread}}\). The coefficient inequalities make the \(x\)-direction uniquely cheapest, so the relaxed optimizer concentrates all simplex mass there.
+
+The iid result uses a different geometric fact: the point \((1,1,1)\) is the unique minimizer of the Frobenius part on the simplex, but it minimizes the full objective only when the linear coefficients are balanced across the three spectral directions.
+
+\begin{lemmav}{lem:frobenius-center-certificate}[Frobenius Center Certificate]
+Let \(m\in\mathbb N\), set \(q=2(m-1)\), and suppose \(q>0\).  For any real coefficients \(c_x,c_y,c_z\) and any real \(\kappa\), define
+\[
+T_m=\{(x,y,z_{\mathrm{sp}}): x,y,z_{\mathrm{sp}}\ge 0,\ qx+y+z_{\mathrm{sp}}=2m\}
+\]
+and
+\[
+\phi_{r,\kappa}(x,y,z_{\mathrm{sp}})
+=
+c_xx+c_yy+c_zz_{\mathrm{sp}}
++\kappa\sqrt{q x^2+y^2+z_{\mathrm{sp}}^2}.
+\]
+Then:
+\begin{itemize}
+\item \textbf{(Frobenius center.)} The point \((1,1,1)\) belongs to \(T_m\), and for every \((x,y,z_{\mathrm{sp}})\in T_m\) with \((x,y,z_{\mathrm{sp}})\ne(1,1,1)\),
+\[
+\sqrt{q\cdot 1^2+1^2+1^2}
+<
+\sqrt{q x^2+y^2+z_{\mathrm{sp}}^2}.
+\]
+\item \textbf{(Certificate necessity.)} If \((1,1,1)\) minimizes \(\phi_{r,\kappa}\) over \(T_m\), that is, if
+\[
+\phi_{r,\kappa}(1,1,1)\le
+\phi_{r,\kappa}(x,y,z_{\mathrm{sp}})
+\quad\text{for all }(x,y,z_{\mathrm{sp}})\in T_m,
+\]
+then
+\[
+\frac{c_x}{q}=c_y
+\quad\text{and}\quad
+c_y=c_z.
+\]
+\item \textbf{(Strict optimality.)} If \(\kappa>0\), \(\frac{c_x}{q}=c_y\), and \(c_y=c_z\), then for every \((x,y,z_{\mathrm{sp}})\in T_m\) with \((x,y,z_{\mathrm{sp}})\ne(1,1,1)\),
+\[
+\phi_{r,\kappa}(1,1,1)
+<
+\phi_{r,\kappa}(x,y,z_{\mathrm{sp}}).
+\]
+\end{itemize}
+\end{lemmav}
+
+\cref{obj:lem:frobenius-center-certificate} explains why the iid covariance has a knife-edge exactness condition in \cref{obj:thm:robust-corner-exactness}. The norm term alone favors the point \((1,1,1)\), but the linear coefficients must be equal after accounting for the \(q\)-multiplicity of the \(x\)-coordinate. When that equality fails, the linear part tilts the objective away from the iid point at every finite positive robustness weight.
+
+The next statement is the implementability restriction in reduced form. It is where the parity of the block size enters the geometry.
+
+\begin{lemmav}{lem:pm-reduced-slice-characterization}[Parity-Truncated Reduced Slice]
+Let \(m\ge 2\) be an integer and let \(u,v\in\mathbb R\). Write
+\[
+x=1-u,\qquad
+y=1+(m-1)u-mv,\qquad
+z_{\mathrm{sp}}=1+(m-1)u+mv,
+\]
+and let \(d_m=0\) when \(m\) is even and \(d_m=2/m\) when \(m\) is odd. Then the block covariance matrix \(X(u,v)\) belongs to the implementable covariance class \(\mathcal C_m^{\pm}\) of \cref{obj:def:implementable-covariance-class} if and only if
+\[
+x\ge 0,\qquad y\ge 0,\qquad z_{\mathrm{sp}}\ge 0,\qquad
+2(m-1)x+y+z_{\mathrm{sp}}=2m,
+\]
+and
+\[
+y+z_{\mathrm{sp}}\ge d_m .
+\]
+\end{lemmav}
+
+\cref{obj:lem:pm-reduced-slice-characterization} gives implementability a transparent low-dimensional form. Relative to the relaxed simplex, the implementable slice adds the lower bound \(y+z_{\mathrm{sp}}\ge d_m\). For even \(m\), \(d_m=0\), so this lower bound is already implied by nonnegativity. For odd \(m\), the positive lower bound records the positive squared magnitude of the realized block sums.
+
+It remains to solve the reduced optimization problem. The next lemma gives the unconstrained weighted-simplex solution as a finite active-set calculation.
+
+\begin{lemmav}{lem:weighted-simplex-active-set}[Weighted Simplex Active Set]
+Let \(m\ge 2\), let \(M>0\) satisfy \(M=2m\), and let
+\(\mathcal I=\{x,y,z_{\mathrm{sp}}\}\). Let
+\(\alpha=(\alpha_i)_{i\in\mathcal I}\), let \(\kappa\ge 0\), and let
+\(\beta=(\beta_i)_{i\in\mathcal I}\) have strictly positive entries with
+\[
+  \beta_x=\frac{1}{2(m-1)},\qquad
+  \beta_y=\beta_{z_{\mathrm{sp}}}=1 .
+\]
+For \(t\in\mathbb R^{\mathcal I}\), write
+\[
+  \Delta_M=\Bigl\{t:\ t_i\ge 0\ \text{for all }i\in\mathcal I,\ 
+  \sum_{i\in\mathcal I}t_i=M\Bigr\},
+\]
+and
+\[
+  \Phi(t)=\sum_{i\in\mathcal I}\alpha_i t_i
+  +\kappa\sqrt{\sum_{i\in\mathcal I}\beta_i t_i^2}.
+\]
+Then the following hold.
+\begin{itemize}
+\item \textbf{(Positive robustness.)} If \(\kappa>0\), there is a unique pair
+\((S,\lambda)\), where \(S\subseteq\mathcal I\) is nonempty and
+\(\lambda\in\mathbb R\), such that
+\[
+  \sum_{i\in S}\frac{(\lambda-\alpha_i)^2}{\beta_i}=\kappa^2,\qquad
+  \alpha_i<\lambda\ \text{for every }i\in S,\qquad
+  \lambda\le \alpha_j\ \text{for every }j\notin S .
+\]
+For this unique pair, define
+\[
+  t_i^\star=
+  \begin{cases}
+  \displaystyle
+  M\,\frac{(\lambda-\alpha_i)/\beta_i}
+  {\sum_{h\in S}(\lambda-\alpha_h)/\beta_h}, & i\in S,\\[1.1em]
+  0, & i\notin S .
+  \end{cases}
+\]
+Then \(t^\star\in\Delta_M\), and \(t^\star\) is the unique minimizer of
+\(\Phi\) over \(\Delta_M\) in the strict sense that, for every
+\(s\in\Delta_M\) with \(s\ne t^\star\),
+\[
+  \Phi(t^\star)<\Phi(s).
+\]
+Its value is
+\[
+  \Phi(t^\star)=M\lambda .
+\]
+
+\item \textbf{(Zero robustness.)} If \(\kappa=0\), then for every
+\(t\in\mathbb R^{\mathcal I}\),
+\[
+  \Bigl(t\in\Delta_M\ \text{and}\ 
+  \Phi(t)\le \Phi(s)\ \text{for every }s\in\Delta_M\Bigr)
+  \quad\Longleftrightarrow\quad
+  t\in\Delta_M\ \text{and whenever }t_i\ne 0,\ 
+  \alpha_i\le \alpha_j\ \text{for every }j\in\mathcal I .
+\]
+Equivalently, the minimizer set is exactly the exposed
+\(\alpha\)-minimizing face of \(\Delta_M\).
+\end{itemize}
+\end{lemmav}
+
+\cref{obj:lem:weighted-simplex-active-set} is the finite case split behind the active-set formula in \cref{obj:thm:sharp-rho-star}. For \(\kappa>0\), the support and multiplier determine both the optimizer and the value. For \(\kappa=0\), the norm term drops out and the minimizers form the exposed face associated with the smallest linear coefficient.
+
+The implementable problem may add the parity lower bound. The following truncation statement records how the solution changes when the unconstrained active-set point lies outside that truncated simplex.
+
+\begin{lemmav}{lem:weighted-simplex-truncation}[Weighted Simplex Truncation]
+Let \(m\ge 2\), let \(M,d\in\mathbb R\), and let \(\alpha=(\alpha_x,\alpha_y,\alpha_z)\), \(\beta=(\beta_x,\beta_y,\beta_z)\), and \(\kappa\in\mathbb R\). Suppose:
+\begin{itemize}
+\item \textbf{(Mass and truncation.)} \(M>0\), \(M=2m\), and \(0\le d\le M\).
+\item \textbf{(Weights.)} Each \(\beta_i\) is strictly positive and
+\[
+\beta=\left(\frac{1}{2(m-1)},1,1\right),
+\]
+so in particular \(\beta_y=\beta_z=1\).
+\item \textbf{(Robustness.)} \(\kappa\ge 0\).
+\end{itemize}
+Write
+\[
+K_d=\{t\in\Delta_M:t_y+t_z\ge d\},
+\qquad
+\Phi(t)=\sum_i\alpha_i t_i+\kappa\sqrt{\sum_i\beta_i t_i^2}.
+\]
+For \(\kappa>0\), for every nonempty active support \(S\subseteq\{x,y,z\}\) and multiplier \(\lambda\) satisfying
+\[
+\sum_{i\in S}\frac{(\lambda-\alpha_i)^2}{\beta_i}=\kappa^2,\qquad
+\alpha_i<\lambda\ \text{for }i\in S,\qquad
+\lambda\le \alpha_j\ \text{for }j\notin S,
+\]
+let \(t^{\mathrm{rel}}\) be the active-set point
+\[
+t^{\mathrm{rel}}_i=
+\begin{cases}
+\displaystyle
+\frac{M((\lambda-\alpha_i)/\beta_i)}
+{\sum_{h\in S}(\lambda-\alpha_h)/\beta_h}, & i\in S,\\[1em]
+0, & i\notin S .
+\end{cases}
+\]
+If \(t^{\mathrm{rel}}\in K_d\), then
+\[
+\Phi(t^{\mathrm{rel}})\le \Phi(s)
+\qquad\text{for every }s\in K_d.
+\]
+If \(t^{\mathrm{rel}}_y+t^{\mathrm{rel}}_z<d\), then
+\[
+t^\star=(M-d,s^\star,d-s^\star)\in K_d
+\]
+and
+\[
+\Phi(t^\star)\le \Phi(s)
+\qquad\text{for every }s\in K_d,
+\]
+where \(s^\star=\operatorname{truncSelector}(M,d,\alpha,\beta,\kappa)\), namely with
+\[
+\delta=\alpha_y-\alpha_z,\qquad A=\beta_x(M-d)^2,
+\]
+\[
+s^\star=
+\begin{cases}
+0, & \displaystyle \delta\ge \frac{\kappa d}{\sqrt{A+d^2}},\\[0.8em]
+d, & \displaystyle \delta\le -\frac{\kappa d}{\sqrt{A+d^2}},\\[0.8em]
+\displaystyle
+\frac{d-\delta\sqrt{(A+d^2/2)/(\kappa^2-\delta^2/2)}}{2},
+& \text{otherwise.}
+\end{cases}
+\]
+
+For \(\kappa=0\), let \(t^{\mathrm{rel}}\) be a point of the exposed \(\alpha\)-minimizing face
+\[
+\{t\in\Delta_M:\ t_i\ne 0\Rightarrow \alpha_i\le \alpha_j\ \text{for every }j\}.
+\]
+Assume the tie convention that, if this exposed face contains at least one point of \(K_d\), then the selected point \(t^{\mathrm{rel}}\) lies in \(K_d\). If \(t^{\mathrm{rel}}\in K_d\), then
+\[
+\Phi(t^{\mathrm{rel}})\le \Phi(s)
+\qquad\text{for every }s\in K_d.
+\]
+If \(t^{\mathrm{rel}}_y+t^{\mathrm{rel}}_z<d\), then
+\[
+t^\star=(M-d,s^\star,d-s^\star)\in K_d
+\]
+and
+\[
+\Phi(t^\star)\le \Phi(s)
+\qquad\text{for every }s\in K_d,
+\]
+where \(s^\star=\operatorname{truncSelector}(M,d,\alpha,\beta,0)\), equivalently, in the ordered selector convention, \(s^\star=0\) if \(\alpha_y-\alpha_z\ge 0\) and \(s^\star=d\) if \(\alpha_y-\alpha_z<0\).
+\end{lemmav}
+
+\cref{obj:lem:weighted-simplex-truncation} reduces the constrained implementable calculation to a one-dimensional boundary segment whenever the relaxed optimizer violates the lower bound. The selector chooses either an endpoint of that segment or the unique interior point identified by the displayed expression. This is the source of the truncation correction in \cref{obj:thm:sharp-rho-star}.
+
+The final ingredient ties the reduced optimization problems back to the implementability loss defined in the main text.
+
+\begin{lemmav}{lem:rounding-gap-reduction}[Reduced Gap Identity]
+For any real $r$ and any $\kappa\ge 0$, under \cref{obj:ass:two-block-homophily}, the implementability loss of \cref{obj:def:implementability-gap} satisfies
+\[
+\Delta_m^{\pm}(r,\kappa)
+=
+\inf_{\substack{(x,y,z_{\mathrm{sp}})\in T_m\\ y+z_{\mathrm{sp}}\ge d_m}}
+\phi_{r,\kappa}(x,y,z_{\mathrm{sp}})
+-
+\inf_{(x,y,z_{\mathrm{sp}})\in T_m}
+\phi_{r,\kappa}(x,y,z_{\mathrm{sp}}).
+\]
+\end{lemmav}
+
+\cref{obj:lem:rounding-gap-reduction} is the bridge from geometry back to design. The relaxed benchmark is the infimum over \(T_m\), while the implementable benchmark is the same reduced objective with the parity truncation imposed. Consequently, the loss is exactly the value difference between these two scalar problems, which is the quantity evaluated by the active-set and truncation formulas above.

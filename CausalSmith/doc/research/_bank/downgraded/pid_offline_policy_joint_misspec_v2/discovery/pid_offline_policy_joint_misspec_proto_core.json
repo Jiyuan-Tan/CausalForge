@@ -1,0 +1,945 @@
+{
+  "qid": "pid_offline_policy_joint_misspec",
+  "specialization": "v2",
+  "cluster": "partialid",
+  "target_estimand": "V(pi) = E[sum_{a in A} pi(a|X) Y(a)]",
+  "estimand_functional": "[V_cpl_minus(pi;Gamma,epsilon), V_cpl_plus(pi;Gamma,epsilon)] with V_cpl_plus(pi;Gamma,epsilon) = E[sum_{a in A} pi(a|X) sup_{w in W_a^Gamma(X): sup_{u in (0,1)} |Q_a^w(u|X) - Q0_a(u|X)| <= epsilon(X)} m_a^w(X)] and V_cpl_minus defined symmetrically with inf",
+  "symbols": [
+    {
+      "name": "O",
+      "type": "observed contextual-bandit tuple",
+      "space": "X x A x R",
+      "def": "O = (X, A, Y)",
+      "role": "sampling unit"
+    },
+    {
+      "name": "n",
+      "type": "sample size",
+      "space": "N"
+    },
+    {
+      "name": "P_n",
+      "type": "empirical measure",
+      "def": "P_n g is the empirical average of g over the n observed tuples",
+      "refs": [
+        "O",
+        "n"
+      ]
+    },
+    {
+      "name": "X",
+      "type": "covariates",
+      "space": "X"
+    },
+    {
+      "name": "P_X",
+      "type": "covariate law",
+      "def": "P_X is the marginal law of X",
+      "refs": [
+        "X"
+      ]
+    },
+    {
+      "name": "A",
+      "type": "action",
+      "space": "A = {0,1,...,K-1}"
+    },
+    {
+      "name": "Y",
+      "type": "realized reward",
+      "space": "R"
+    },
+    {
+      "name": "Y(a)",
+      "type": "potential reward under action a",
+      "space": "R",
+      "role": "causal potential outcome"
+    },
+    {
+      "name": "pi",
+      "type": "evaluation policy",
+      "sig": "A x X -> [0,1]",
+      "def": "pi(a|x) is the probability with which the target policy assigns action a at covariate value x"
+    },
+    {
+      "name": "e_a",
+      "type": "logging propensity",
+      "sig": "X -> (0,1)",
+      "def": "e_a(x) = P(A=a | X=x)"
+    },
+    {
+      "name": "Gamma",
+      "type": "MSM sensitivity budget",
+      "space": "[1,inf)",
+      "role": "fixed scalar"
+    },
+    {
+      "name": "epsilon",
+      "type": "quantile-tube radius",
+      "sig": "X -> [0,inf)",
+      "def": "epsilon(x) is the sup-norm radius of the conditional quantile tube around the fixed center law"
+    },
+    {
+      "name": "L_a",
+      "type": "lower support endpoint",
+      "sig": "X -> R",
+      "def": "L_a(x) is the lower endpoint of the support of Y(a) given X=x"
+    },
+    {
+      "name": "U_a",
+      "type": "upper support endpoint",
+      "sig": "X -> R",
+      "def": "U_a(x) is the upper endpoint of the support of Y(a) given X=x"
+    },
+    {
+      "name": "Fobs_a",
+      "type": "observed arm CDF",
+      "sig": "R x X -> [0,1]",
+      "def": "Fobs_a(y|x) = P(Y <= y | A=a, X=x)"
+    },
+    {
+      "name": "fobs_a",
+      "type": "observed arm density",
+      "sig": "R x X -> [0,inf)",
+      "def": "fobs_a(y|x) is the conditional density of Fobs_a(.|x) on the regular region",
+      "refs": [
+        "Fobs_a"
+      ]
+    },
+    {
+      "name": "F0_a",
+      "type": "fixed center arm law",
+      "sig": "R x X -> [0,1]",
+      "def": "F0_a(.|x) is the analyst-specified center conditional law used by the structural tube"
+    },
+    {
+      "name": "Q0_a",
+      "type": "fixed center arm quantile",
+      "sig": "(0,1) x X -> R",
+      "def": "Q0_a(u|x) = inf{y : F0_a(y|x) >= u}",
+      "refs": [
+        "F0_a"
+      ]
+    },
+    {
+      "name": "m0_a",
+      "type": "center-law arm mean",
+      "sig": "X -> R",
+      "def": "m0_a(x) = int_0^1 Q0_a(u|x) du",
+      "refs": [
+        "Q0_a"
+      ]
+    },
+    {
+      "name": "ell_a",
+      "type": "lower likelihood-ratio cap",
+      "sig": "X -> (0,1]",
+      "def": "ell_a(x) = e_a(x) + (1 - e_a(x)) / Gamma",
+      "refs": [
+        "e_a",
+        "Gamma"
+      ]
+    },
+    {
+      "name": "u_a",
+      "type": "upper likelihood-ratio cap",
+      "sig": "X -> [1,inf)",
+      "def": "u_a(x) = e_a(x) + Gamma * (1 - e_a(x))",
+      "refs": [
+        "e_a",
+        "Gamma"
+      ]
+    },
+    {
+      "name": "W_a^Gamma",
+      "type": "MSM feasible weight class",
+      "sig": "X -> subsets of measurable functions on [L_a(x),U_a(x)]",
+      "role": "conditional likelihood-ratio class"
+    },
+    {
+      "name": "w_a",
+      "type": "MSM likelihood-ratio weight",
+      "sig": "R x X -> [0,inf)",
+      "role": "reweights the observed arm law into a latent potential-outcome law"
+    },
+    {
+      "name": "Q_a^w",
+      "type": "quantile induced by a feasible weight",
+      "sig": "(0,1) x X -> R",
+      "def": "Q_a^w(u|x) = inf{y : int_{L_a(x)}^y w_a(t|x) dFobs_a(t|x) >= u}",
+      "refs": [
+        "w_a",
+        "Fobs_a",
+        "L_a"
+      ]
+    },
+    {
+      "name": "m_a^w",
+      "type": "mean induced by a feasible weight",
+      "sig": "X -> R",
+      "def": "m_a^w(x) = int_{L_a(x)}^{U_a(x)} y w_a(y|x) dFobs_a(y|x)",
+      "refs": [
+        "w_a",
+        "Fobs_a",
+        "L_a",
+        "U_a"
+      ]
+    },
+    {
+      "name": "Qmsm_a_plus",
+      "type": "MSM pointwise upper quantile envelope",
+      "sig": "(0,1) x X -> R",
+      "role": "pointwise sharp MSM quantile upper bound"
+    },
+    {
+      "name": "Qmsm_a_minus",
+      "type": "MSM pointwise lower quantile envelope",
+      "sig": "(0,1) x X -> R",
+      "role": "pointwise sharp MSM quantile lower bound"
+    },
+    {
+      "name": "M_a_plus",
+      "type": "MSM-only sharp upper arm mean",
+      "sig": "X -> R",
+      "def": "M_a_plus(x) = sup_{w in W_a^Gamma(x)} m_a^w(x)",
+      "refs": [
+        "W_a^Gamma",
+        "m_a^w"
+      ]
+    },
+    {
+      "name": "M_a_minus",
+      "type": "MSM-only sharp lower arm mean",
+      "sig": "X -> R",
+      "def": "M_a_minus(x) = inf_{w in W_a^Gamma(x)} m_a^w(x)",
+      "refs": [
+        "W_a^Gamma",
+        "m_a^w"
+      ]
+    },
+    {
+      "name": "Qrect_a_plus",
+      "type": "pointwise rectangular upper quantile envelope",
+      "sig": "(0,1) x X -> R",
+      "role": "pointwise cap of the marginal upper envelopes"
+    },
+    {
+      "name": "Qrect_a_minus",
+      "type": "pointwise rectangular lower quantile envelope",
+      "sig": "(0,1) x X -> R",
+      "role": "pointwise floor of the marginal lower envelopes"
+    },
+    {
+      "name": "Qcpl_a_plus",
+      "type": "coupled upper quantile law",
+      "sig": "(0,1) x X -> R",
+      "role": "mean-maximizing jointly feasible quantile law under the symmetric tube"
+    },
+    {
+      "name": "Qcpl_a_minus",
+      "type": "coupled lower quantile law",
+      "sig": "(0,1) x X -> R",
+      "role": "mean-minimizing jointly feasible quantile law under the symmetric tube"
+    },
+    {
+      "name": "C_a_plus",
+      "type": "coupled upper arm mean",
+      "sig": "X -> R",
+      "def": "C_a_plus(x) = int_0^1 Qcpl_a_plus(u|x) du",
+      "refs": [
+        "Qcpl_a_plus"
+      ]
+    },
+    {
+      "name": "C_a_minus",
+      "type": "coupled lower arm mean",
+      "sig": "X -> R",
+      "def": "C_a_minus(x) = int_0^1 Qcpl_a_minus(u|x) du",
+      "refs": [
+        "Qcpl_a_minus"
+      ]
+    },
+    {
+      "name": "V_MSM_plus",
+      "type": "MSM-only sharp upper policy value",
+      "def": "V_MSM_plus = E[sum_{a in A} pi(a|X) M_a_plus(X)]",
+      "refs": [
+        "pi",
+        "M_a_plus"
+      ]
+    },
+    {
+      "name": "V_MSM_minus",
+      "type": "MSM-only sharp lower policy value",
+      "def": "V_MSM_minus = E[sum_{a in A} pi(a|X) M_a_minus(X)]",
+      "refs": [
+        "pi",
+        "M_a_minus"
+      ]
+    },
+    {
+      "name": "V_rect_plus",
+      "type": "rectangular upper policy value",
+      "def": "V_rect_plus = E[sum_{a in A} pi(a|X) int_0^1 Qrect_a_plus(u|X) du]",
+      "refs": [
+        "pi",
+        "Qrect_a_plus"
+      ]
+    },
+    {
+      "name": "V_rect_minus",
+      "type": "rectangular lower policy value",
+      "def": "V_rect_minus = E[sum_{a in A} pi(a|X) int_0^1 Qrect_a_minus(u|X) du]",
+      "refs": [
+        "pi",
+        "Qrect_a_minus"
+      ]
+    },
+    {
+      "name": "V_cpl_plus",
+      "type": "coupled sharp upper policy value",
+      "def": "V_cpl_plus = E[sum_{a in A} pi(a|X) C_a_plus(X)]",
+      "refs": [
+        "pi",
+        "C_a_plus"
+      ]
+    },
+    {
+      "name": "V_cpl_minus",
+      "type": "coupled sharp lower policy value",
+      "def": "V_cpl_minus = E[sum_{a in A} pi(a|X) C_a_minus(X)]",
+      "refs": [
+        "pi",
+        "C_a_minus"
+      ]
+    },
+    {
+      "name": "Delta_rect",
+      "type": "rectangularity gap",
+      "space": "[0,inf)",
+      "def": "Delta_rect(Gamma,epsilon;pi) = V_rect_plus - V_cpl_plus",
+      "refs": [
+        "V_rect_plus",
+        "V_cpl_plus"
+      ]
+    },
+    {
+      "name": "A_a_plus",
+      "type": "upper tube-contact set",
+      "sig": "X -> subsets of (0,1)",
+      "def": "A_a_plus(x) = {u in (0,1) : Qcpl_a_plus(u|x) = Q0_a(u|x) + epsilon(x)}",
+      "refs": [
+        "Qcpl_a_plus",
+        "Q0_a",
+        "epsilon"
+      ]
+    },
+    {
+      "name": "eta_MSM",
+      "type": "baseline MSM nuisance bundle",
+      "role": "collects the nuisance functions entering the published Hess-Frauen score for V_MSM_plus"
+    },
+    {
+      "name": "phi_MSM_plus",
+      "type": "Hess-Frauen upper EIF",
+      "sig": "observation x nuisance -> R",
+      "role": "published baseline influence function for V_MSM_plus"
+    },
+    {
+      "name": "eta",
+      "type": "coupled nuisance bundle",
+      "role": "collects the estimable MSM components together with the fixed center-law inputs Q0_a, epsilon, and the active contact set A_a_plus"
+    },
+    {
+      "name": "phi_tube_plus",
+      "type": "tube-contact influence adjustment",
+      "sig": "observation x nuisance -> R",
+      "role": "Firpo-style correction defined on the unique upper contact face of the coupled optimizer"
+    },
+    {
+      "name": "phi_cpl_plus",
+      "type": "coupled upper EIF candidate",
+      "sig": "observation x nuisance -> R",
+      "def": "phi_cpl_plus(O;eta) = phi_MSM_plus(O;eta_MSM) - phi_tube_plus(O;eta)",
+      "refs": [
+        "phi_MSM_plus",
+        "eta_MSM",
+        "phi_tube_plus"
+      ]
+    },
+    {
+      "name": "etahat",
+      "type": "cross-fit nuisance estimate",
+      "role": "sample-split estimate of the estimable components of eta, with Q0_a and epsilon treated as fixed inputs"
+    },
+    {
+      "name": "Fobsahat_a",
+      "type": "estimated observed arm CDF",
+      "sig": "R x X -> [0,1]",
+      "role": "cross-fit estimate of Fobs_a"
+    },
+    {
+      "name": "What_a^Gamma",
+      "type": "estimated MSM feasible weight class",
+      "sig": "X -> subsets of measurable functions on [L_a(x),U_a(x)]",
+      "role": "sample analog of W_a^Gamma"
+    },
+    {
+      "name": "Qhat_a^w",
+      "type": "estimated quantile induced by a feasible weight",
+      "sig": "(0,1) x X -> R",
+      "role": "sample analog of Q_a^w"
+    },
+    {
+      "name": "mhat_a^w",
+      "type": "estimated mean induced by a feasible weight",
+      "sig": "X -> R",
+      "role": "sample analog of m_a^w"
+    },
+    {
+      "name": "Chat_a_plus",
+      "type": "plug-in coupled upper arm mean",
+      "sig": "X -> R",
+      "role": "sample analog of C_a_plus built from the coupled empirical optimization"
+    },
+    {
+      "name": "Vhat_cpl_plus",
+      "type": "cross-fit one-step estimator",
+      "sig": "sample -> R",
+      "role": "estimator candidate for V_cpl_plus"
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:consistency",
+      "kind": "causal-structural",
+      "condition": "Y = Y(A) almost surely",
+      "free_symbols": [
+        "Y",
+        "A",
+        "Y(a)"
+      ],
+      "standard": {
+        "name": "consistency / SUTVA",
+        "cite": "ImbensRubin2015"
+      }
+    },
+    {
+      "id": "ass:positivity",
+      "kind": "support",
+      "condition": "e_a(X) > 0 almost surely on {x : pi(a|x) > 0} for every a in A",
+      "free_symbols": [
+        "e_a",
+        "X",
+        "pi"
+      ],
+      "standard": {
+        "name": "policy overlap",
+        "cite": "AtheyWager2021"
+      }
+    },
+    {
+      "id": "ass:bounded-support",
+      "kind": "support",
+      "condition": "L_a(X) <= Y(a) <= U_a(X) almost surely for every a in A",
+      "free_symbols": [
+        "L_a",
+        "Y(a)",
+        "U_a"
+      ],
+      "standard": {
+        "name": "bounded outcomes",
+        "cite": "Manski1990"
+      }
+    },
+    {
+      "id": "ass:msm",
+      "kind": "sensitivity",
+      "condition": "for every a in A and every y in [L_a(x), U_a(x)], Gamma^{-1} <= [P(A=a | Y(a)=y, X=x) / (1 - P(A=a | Y(a)=y, X=x))] / [e_a(x) / (1 - e_a(x))] <= Gamma",
+      "free_symbols": [
+        "A",
+        "Y(a)",
+        "X",
+        "Gamma",
+        "e_a",
+        "L_a",
+        "U_a"
+      ],
+      "standard": {
+        "name": "marginal sensitivity model",
+        "cite": "Tan2006"
+      }
+    },
+    {
+      "id": "ass:center-support",
+      "kind": "support",
+      "condition": "L_a(x) <= Q0_a(u|x) <= U_a(x) for every a in A, every x, and almost every u in (0,1)",
+      "free_symbols": [
+        "L_a",
+        "Q0_a",
+        "U_a"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "A fixed analyst-specified center law must live on the same reward support as the latent arm law it is meant to approximate. This is realistic in bounded-reward bandits where the center law is chosen from a calibrated simulator, transport reference, or benchmark observational fit on the same support."
+      }
+    },
+    {
+      "id": "ass:joint-feasible",
+      "kind": "compatibility",
+      "condition": "for every a in A and P_X-almost every x with pi(a|x) > 0, there exists w in W_a^Gamma(x) such that sup_{u in (0,1)} |Q_a^w(u|x) - Q0_a(u|x)| <= epsilon(x)",
+      "free_symbols": [
+        "A",
+        "pi",
+        "W_a^Gamma",
+        "Q_a^w",
+        "Q0_a",
+        "epsilon"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "The joint model is only meaningful on laws where the outcome-side tube and the treatment-side MSM are simultaneously satisfiable. This holds, for example, whenever the center law itself is generated by an admissible bounded likelihood-ratio tilt or when epsilon dominates the discrepancy between the center law and one feasible MSM law."
+      }
+    },
+    {
+      "id": "ass:quantile-regularity",
+      "kind": "smoothness",
+      "condition": "for every a in A, Fobs_a(.|x) is continuous and strictly increasing on neighborhoods of the quantile levels that enter Qcpl_a_plus and Qcpl_a_minus, with conditional density fobs_a bounded away from 0 and inf on those neighborhoods",
+      "free_symbols": [
+        "A",
+        "Fobs_a",
+        "Qcpl_a_plus",
+        "Qcpl_a_minus",
+        "fobs_a"
+      ],
+      "standard": {
+        "name": "regular quantile inversion",
+        "cite": "Firpo2007"
+      }
+    },
+    {
+      "id": "ass:regular-contact",
+      "kind": "regularity",
+      "condition": "for every a in A and P_X-almost every x with pi(a|x) > 0, the optimizer in def:qcpl-plus is unique up to almost-everywhere equality, the contact set A_a_plus(x) is a finite union of interior intervals of (0,1), and fobs_a is continuous and strictly positive at the corresponding contact values Q0_a(u|x) + epsilon(x)",
+      "free_symbols": [
+        "A",
+        "pi",
+        "Qcpl_a_plus",
+        "A_a_plus",
+        "Q0_a",
+        "epsilon",
+        "fobs_a"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "Smooth bounded-support location-shift, scale-shift, and monotone-rearrangement families typically generate a unique clipped maximizer whose contact region is a finite union of interior rank intervals. This is the regular regime in which an influence-function expansion can be expected to be stable."
+      }
+    },
+    {
+      "id": "ass:rate-msm",
+      "kind": "estimability",
+      "condition": "the nuisance bundle eta_MSM is estimable at rate r_MSM,n uniformly over a neighborhood of the true law",
+      "free_symbols": [
+        "eta_MSM"
+      ],
+      "constants": [
+        "r_MSM,n -> 0"
+      ],
+      "standard": {
+        "name": "cross-fit nuisance-rate condition for a baseline orthogonal score",
+        "cite": "ChernozhukovEtAl2018"
+      },
+      "used_by": [
+        "conj:eif-one-step"
+      ]
+    },
+    {
+      "id": "ass:rate-fobs",
+      "kind": "estimability",
+      "condition": "fobs_a is L2-estimable at rate r_f,n on the upper contact region",
+      "free_symbols": [
+        "fobs_a",
+        "A_a_plus"
+      ],
+      "constants": [
+        "r_f,n -> 0"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "Positive-density conditional reward models permit local smoothing or sieve density estimation on the same interior region where inverse-CDF derivatives are standard. Restricting the rate to the realized contact region matches the derivative object that enters the conjectured score."
+      },
+      "used_by": [
+        "conj:eif-one-step"
+      ]
+    },
+    {
+      "id": "ass:rate-product",
+      "kind": "rate",
+      "condition": "sqrt(n) * r_MSM,n * r_f,n -> 0",
+      "free_symbols": [],
+      "constants": [
+        "r_MSM,n -> 0",
+        "r_f,n -> 0"
+      ],
+      "standard": {
+        "name": "cross-fit product-rate condition for orthogonal scores",
+        "cite": "ChernozhukovEtAl2018"
+      },
+      "used_by": [
+        "conj:eif-one-step"
+      ]
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:msm-weight-class",
+      "name": "MSM feasible weight class",
+      "construction": "W_a^Gamma(x) = { w : [L_a(x),U_a(x)] -> [0,inf) : ell_a(x) <= w(y) <= u_a(x) for every y in [L_a(x),U_a(x)] and int_{L_a(x)}^{U_a(x)} w(y) dFobs_a(y|x) = 1 }",
+      "by_member_properties": [
+        "ass:positivity",
+        "ass:bounded-support",
+        "ass:msm"
+      ]
+    },
+    {
+      "id": "def:mean-tube-class",
+      "name": "additive mean-tube benchmark class",
+      "construction": "{ m : A x X -> R : for every a in A and x, |m(a,x) - m0_a(x)| <= epsilon(x) }",
+      "by_member_properties": []
+    },
+    {
+      "id": "def:quantile-tube-class",
+      "name": "fixed-center conditional quantile tube",
+      "construction": "{ Q : A x (0,1) x X -> R : for every a in A and x, Q(a,.,x) is nondecreasing, L_a(x) <= Q(a,u,x) <= U_a(x), and sup_{u in (0,1)} |Q(a,u,x) - Q0_a(u|x)| <= epsilon(x) }",
+      "by_member_properties": [
+        "ass:bounded-support",
+        "ass:center-support"
+      ]
+    },
+    {
+      "id": "def:qmsm-plus",
+      "name": "MSM pointwise upper quantile envelope",
+      "construction": "Qmsm_a_plus(u|x) = sup_{w in W_a^Gamma(x)} Q_a^w(u|x)",
+      "inputs": [
+        "W_a^Gamma",
+        "Q_a^w"
+      ]
+    },
+    {
+      "id": "def:qmsm-minus",
+      "name": "MSM pointwise lower quantile envelope",
+      "construction": "Qmsm_a_minus(u|x) = inf_{w in W_a^Gamma(x)} Q_a^w(u|x)",
+      "inputs": [
+        "W_a^Gamma",
+        "Q_a^w"
+      ]
+    },
+    {
+      "id": "def:qrect-plus",
+      "name": "pointwise rectangular upper envelope",
+      "construction": "Qrect_a_plus(u|x) = min{Qmsm_a_plus(u|x), Q0_a(u|x) + epsilon(x), U_a(x)}",
+      "inputs": [
+        "Qmsm_a_plus",
+        "Q0_a",
+        "epsilon",
+        "U_a"
+      ]
+    },
+    {
+      "id": "def:qrect-minus",
+      "name": "pointwise rectangular lower envelope",
+      "construction": "Qrect_a_minus(u|x) = max{Qmsm_a_minus(u|x), Q0_a(u|x) - epsilon(x), L_a(x)}",
+      "inputs": [
+        "Qmsm_a_minus",
+        "Q0_a",
+        "epsilon",
+        "L_a"
+      ]
+    },
+    {
+      "id": "def:qcpl-plus",
+      "name": "coupled upper quantile map",
+      "construction": "Qcpl_a_plus(.|x) = arg max_{q} { int_0^1 q(u) du : there exists w in W_a^Gamma(x) such that q(u) = Q_a^w(u|x) for almost every u in (0,1) and Q0_a(u|x) - epsilon(x) <= q(u) <= Q0_a(u|x) + epsilon(x) for almost every u in (0,1) }",
+      "inputs": [
+        "W_a^Gamma",
+        "Q_a^w",
+        "Q0_a",
+        "epsilon"
+      ]
+    },
+    {
+      "id": "def:qcpl-minus",
+      "name": "coupled lower quantile map",
+      "construction": "Qcpl_a_minus(.|x) = arg min_{q} { int_0^1 q(u) du : there exists w in W_a^Gamma(x) such that q(u) = Q_a^w(u|x) for almost every u in (0,1) and Q0_a(u|x) - epsilon(x) <= q(u) <= Q0_a(u|x) + epsilon(x) for almost every u in (0,1) }",
+      "inputs": [
+        "W_a^Gamma",
+        "Q_a^w",
+        "Q0_a",
+        "epsilon"
+      ]
+    },
+    {
+      "id": "def:vrect-plus",
+      "name": "rectangular upper endpoint",
+      "construction": "V_rect_plus = E[sum_{a in A} pi(a|X) int_0^1 Qrect_a_plus(u|X) du]",
+      "inputs": [
+        "pi",
+        "Qrect_a_plus"
+      ]
+    },
+    {
+      "id": "def:vrect-minus",
+      "name": "rectangular lower endpoint",
+      "construction": "V_rect_minus = E[sum_{a in A} pi(a|X) int_0^1 Qrect_a_minus(u|X) du]",
+      "inputs": [
+        "pi",
+        "Qrect_a_minus"
+      ]
+    },
+    {
+      "id": "def:delta-rect",
+      "name": "non-rectangularity gap",
+      "construction": "Delta_rect(Gamma,epsilon;pi) = V_rect_plus - V_cpl_plus",
+      "inputs": [
+        "V_rect_plus",
+        "V_cpl_plus"
+      ]
+    },
+    {
+      "id": "def:phi-tube-plus",
+      "name": "active tube-contact influence adjustment",
+      "construction": "Let c_a(u,x) = Q0_a(u|x) + epsilon(x). For each regular-contact arm, let G_{a,+}^*(y|x) denote the latent CDF generated by an active jointly feasible mean-maximizing weight w_{a,+}^*(.|x), and let g_{a,+}^*(y|x) be its density on the regular region. Define phi_tube_plus(O;eta) = sum_{a in A} pi(a|X) int_{A_a_plus(X)} [- dotG_{a,+}^*(c_a(u,X)|X;O,eta) / g_{a,+}^*(c_a(u,X)|X)] du, where dotG_{a,+}^*(.|X;O,eta) is the full canonical gradient of the active latent CDF at the contact level, including both the weighted empirical-CDF term and the first-order perturbation of the active optimizing weight / density.",
+      "inputs": [
+        "pi",
+        "A_a_plus",
+        "e_a",
+        "Q0_a",
+        "epsilon",
+        "fobs_a"
+      ]
+    },
+    {
+      "id": "def:chat-plus",
+      "name": "coupled empirical plug-in arm mean",
+      "construction": "Chat_a_plus(x) = sup { mhat_a^w(x) : w in What_a^Gamma(x) and sup_{u in (0,1)} |Qhat_a^w(u|x) - Q0_a(u|x)| <= epsilon(x) }",
+      "inputs": [
+        "mhat_a^w",
+        "What_a^Gamma",
+        "Qhat_a^w",
+        "Q0_a",
+        "epsilon"
+      ]
+    },
+    {
+      "id": "def:phi-cpl-plus",
+      "name": "candidate coupled EIF",
+      "construction": "phi_cpl_plus(O;eta) = phi_MSM_plus(O;eta_MSM) - phi_tube_plus(O;eta)",
+      "inputs": [
+        "phi_MSM_plus",
+        "eta_MSM",
+        "phi_tube_plus"
+      ]
+    },
+    {
+      "id": "def:vhat-cpl-plus",
+      "name": "candidate coupled one-step estimator",
+      "construction": "Vhat_cpl_plus = P_n[sum_{a in A} pi(a|X) Chat_a_plus(X)] + P_n[phi_cpl_plus(O;etahat)]",
+      "inputs": [
+        "P_n",
+        "pi",
+        "Chat_a_plus",
+        "phi_cpl_plus",
+        "etahat"
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "thm:mean-decoupling",
+      "kind": "theorem",
+      "statement": "Under ass:consistency, ass:positivity, ass:bounded-support, ass:msm, and def:mean-tube-class, the armwise joint feasible mean set is [M_a_minus(x), M_a_plus(x)] intersect [m0_a(x) - epsilon(x), m0_a(x) + epsilon(x)] for each a in A and x. Hence the additive-mean-tube identified set for V(pi) is nonempty if and only if max{M_a_minus(x), m0_a(x) - epsilon(x)} <= min{M_a_plus(x), m0_a(x) + epsilon(x)} for P_X-almost every policy-relevant arm. Conditional on this nonemptiness event, the sharp upper endpoint is E[sum_{a in A} pi(a|X) min{M_a_plus(X), m0_a(X) + epsilon(X)}] and the sharp lower endpoint is E[sum_{a in A} pi(a|X) max{M_a_minus(X), m0_a(X) - epsilon(X)}].",
+      "depends_on": [
+        "ass:consistency",
+        "ass:positivity",
+        "ass:bounded-support",
+        "ass:msm",
+        "def:mean-tube-class",
+        "def:msm-weight-class"
+      ],
+      "status": "to-prove",
+      "justification": "The mean benchmark is truly scalar once emptiness is handled correctly: it is the intersection of two armwise mean intervals, not a hidden process-feasibility problem.",
+      "gap": "YadlowskyNamkoongBasuDuchiTian2022 and ZhangXuTan2025 study mean-side sensitivity tightening, but neither states the offline-policy mean-versus-quantile dichotomy with an explicit nonempty-intersection condition for the additive mean tube.",
+      "consumer": "It gives the correct benchmark for applied audits of Hess/Frauen-style workflows: a mean-only structural tolerance calls only for scalar truncation of the published MSM endpoint, plus an emptiness check."
+    },
+    {
+      "id": "thm:quantile-coupled-endpoint",
+      "kind": "theorem",
+      "statement": "Under ass:consistency, ass:positivity, ass:bounded-support, ass:msm, ass:center-support, ass:joint-feasible, and ass:quantile-regularity, the sharp joint policy-value endpoints under the symmetric fixed-center conditional-quantile tube are V_cpl_plus = E[sum_{a in A} pi(a|X) int_0^1 Qcpl_a_plus(u|X) du] and V_cpl_minus = E[sum_{a in A} pi(a|X) int_0^1 Qcpl_a_minus(u|X) du], where Qcpl_a_plus and Qcpl_a_minus solve the symmetric tube-constrained programs in def:qcpl-plus and def:qcpl-minus. The pointwise caps Qrect_a_plus and Qrect_a_minus are valid rectangular outer envelopes, but the sharp endpoint requires one latent arm law to satisfy both the MSM weight window and the full two-sided quantile-tube path constraint simultaneously. Moreover V_cpl_plus <= V_MSM_plus. Equality holds if and only if for P_X-almost every x and every action a with pi(a|x) > 0, there exists w_a^*(.|x) in W_a^Gamma(x) such that m_a^{w_a^*}(x) = M_a_plus(x) and sup_{u in (0,1)} |Q_a^{w_a^*}(u|x) - Q0_a(u|x)| <= epsilon(x).",
+      "depends_on": [
+        "ass:consistency",
+        "ass:positivity",
+        "ass:bounded-support",
+        "ass:msm",
+        "ass:center-support",
+        "ass:joint-feasible",
+        "ass:quantile-regularity",
+        "def:msm-weight-class",
+        "def:quantile-tube-class",
+        "def:qmsm-plus",
+        "def:qmsm-minus",
+        "def:qrect-plus",
+        "def:qrect-minus",
+        "def:qcpl-plus",
+        "def:qcpl-minus"
+      ],
+      "status": "to-prove",
+      "justification": "This is the kernel result: it defines the sharp endpoint for the symmetric tube and states the exact frontier against the published MSM-only endpoint.",
+      "gap": "HessFrauenMelnychukFeuerriegel2026 Proposition 4.1 gives the MSM-only sharp off-policy endpoint V_MSM_plus and DornGuo2023 supplies the bounded-weight quantile geometry used to characterize its extremizer. MastenPoirierRen2025 gives sharp QTE and DTE bounds for broad relaxations including the marginal sensitivity model, and Wang2026 gives process-level nested quantile envelopes under source confounding plus transport shift, but neither paper targets offline policy value under a fixed analyst-centered conditional-quantile tube on the same latent arm law. The theorem therefore reduces exactly to the published Hess/Frauen frontier when the tube is inactive and otherwise strictly tightens that frontier within the fixed-center tube model.",
+      "consumer": "It supplies the population correction to the Hess/Frauen sharp upper endpoint: analysts can keep the published target when the MSM extremizer already lies inside the tube and otherwise must replace it by the coupled endpoint."
+    },
+    {
+      "id": "prop:rect-gap",
+      "kind": "proposition",
+      "statement": "Under the hypotheses of thm:quantile-coupled-endpoint, Delta_rect(Gamma,epsilon;pi) >= 0. Moreover, Delta_rect(Gamma,epsilon;pi) = 0 if and only if for P_X-almost every x and every action a with pi(a|x) > 0, the pointwise rectangular envelope Qrect_a_plus(.|x) is itself representable as Q_a^w(.|x) for some w in W_a^Gamma(x) that also satisfies sup_{u in (0,1)} |Q_a^w(u|x) - Q0_a(u|x)| <= epsilon(x). If there is a set of x with positive P_X-probability and an action a with pi(a|x) > 0 such that no jointly feasible w in W_a^Gamma(x) generates Qrect_a_plus(.|x), then Delta_rect(Gamma,epsilon;pi) > 0 and the coupled identified set is a strict subset of the rectangular envelope based on V_rect_plus and V_rect_minus.",
+      "depends_on": [
+        "thm:quantile-coupled-endpoint",
+        "def:vrect-plus",
+        "def:vrect-minus",
+        "def:delta-rect"
+      ],
+      "status": "to-prove",
+      "justification": "The proposition isolates the representability obstruction behind rectangular widening and pins strictness to a single-law feasibility test.",
+      "gap": "The v1 bank had only a generic no-go warning. None of HessFrauenMelnychukFeuerriegel2026, MastenPoirierRen2025, or Wang2026 states an equality-versus-strictness criterion against a rectangular post-processing of a named sharp off-policy endpoint, because their published envelopes are already sharp within their own single sensitivity models rather than an intersection with a fixed analyst-centered tube. The precise novelty here is the representability test for when the clipped pointwise envelope is or is not induced by one jointly feasible latent law.",
+      "consumer": "It yields a diagnostic for whether rectangular post-processing of a sharp MSM workflow is exact or whether it pastes together incompatible quantile ranks from different latent laws."
+    },
+    {
+      "id": "conj:eif-one-step",
+      "kind": "conjecture",
+      "statement": "Under thm:quantile-coupled-endpoint together with ass:regular-contact, ass:rate-msm, and ass:rate-fobs, and treating the analyst-specified center law Q0_a and tube radius epsilon as fixed known inputs, the coupled upper endpoint V_cpl_plus is pathwise differentiable along submodels that preserve the unique contact face A_a_plus. On that regular-contact stratum its efficient influence function is the Hess-Frauen-Melnychuk-Feuerriegel baseline phi_MSM_plus(O;eta_MSM) minus the full active-face canonical gradient of the latent optimizing CDF at the contact levels Q0_a(u|X)+epsilon(X); this correction equals the reciprocal-density inverse-CDF term only after adding the first-order weighted-density / optimizing-weight contribution induced by the active jointly feasible law. The cross-fit plug-in estimator P_n[sum_{a in A} pi(a|X) Chat_a_plus(X)] is consistent for V_cpl_plus. When the unique contact face breaks down or a contact boundary hits the support edge, the endpoint is only directionally differentiable and inference must switch from a regular EIF expansion to directional or conservative procedures.",
+      "depends_on": [
+        "thm:quantile-coupled-endpoint",
+        "ass:regular-contact",
+        "ass:rate-msm",
+        "ass:rate-fobs",
+        "ass:rate-product",
+        "def:phi-tube-plus",
+        "def:phi-cpl-plus",
+        "def:chat-plus",
+        "def:vhat-cpl-plus"
+      ],
+      "status": "to-prove",
+      "justification": "The conjecture now conditions on a well-defined unique contact face, so the open content is the semiparametric derivation rather than missing identification of the active set.",
+      "gap": "HessFrauenMelnychukFeuerriegel2026 Theorem 4.3 gives the MSM-only one-step estimator, Wang2026 gives canonical gradients and one-step inference for nested quantile envelopes in a two-sample transport model, and Firpo2007 with ChernozhukovEtAl2018 supplies the inverse-CDF and orthogonality components. The missing step is an optimizer-invariant correction for the unique contact face created by intersecting the published MSM extremizer with a fixed known center-law tube in a one-sample offline-policy endpoint. The conjectured score reduces exactly to the Hess/Frauen score when the tube is inactive.",
+      "consumer": "This is the estimator-level correction promised by the topic statement: a replacement for the published sharp MSM score when the structural tube is active, with the center law treated as a fixed analyst input and with an explicit boundary between regular and nonregular inference."
+    }
+  ],
+  "sampling_model": {
+    "design": "i.i.d. offline contextual-bandit sample",
+    "units": "n i.i.d. copies of O = (X, A, Y)",
+    "treatment": "finite action set A with target policy pi(a|x)",
+    "overlap": "policy overlap only on the support of pi via ass:positivity; hidden confounding is controlled by the MSM budget Gamma rather than ignorability",
+    "nuisance_estimation": "cross-fit estimation of the baseline MSM nuisance bundle and the observed-arm density on the unique upper contact region, with the center-law quantiles Q0_a and tube radius epsilon treated as fixed analyst inputs"
+  },
+  "bibliography": [
+    {
+      "key": "ImbensRubin2015",
+      "citation": "Imbens, G. W., and Rubin, D. B. (2015). Causal Inference for Statistics, Social, and Biomedical Sciences. Cambridge University Press."
+    },
+    {
+      "key": "Manski1990",
+      "citation": "Manski, C. F. (1990). Nonparametric bounds on treatment effects. American Economic Review Papers and Proceedings 80(2): 319-323."
+    },
+    {
+      "key": "Tan2006",
+      "citation": "Tan, Z. (2006). A distributional approach for causal inference using propensity scores. Journal of the American Statistical Association 101(476): 1619-1637."
+    },
+    {
+      "key": "YadlowskyNamkoongBasuDuchiTian2022",
+      "citation": "Yadlowsky, S., Namkoong, H., Basu, S., Duchi, J., and Tian, L. (2022). Bounds on the conditional and average treatment effect with unobserved confounding factors. Annals of Statistics 50(4): 2256-2287."
+    },
+    {
+      "key": "DornGuo2023",
+      "citation": "Dorn, J., and Guo, K. (2023). Sharp sensitivity analysis for inverse propensity weighting via quantile balancing. Journal of the American Statistical Association 118(543): 1822-1835."
+    },
+    {
+      "key": "KallusZhou2021",
+      "citation": "Kallus, N., and Zhou, A. (2021). Minimax-optimal policy learning under unobserved confounding. Management Science 67(5): 2870-2890."
+    },
+    {
+      "key": "ChernozhukovEtAl2018",
+      "citation": "Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C., Newey, W., and Robins, J. (2018). Double/debiased machine learning for treatment and structural parameters. The Econometrics Journal 21(1): C1-C68."
+    },
+    {
+      "key": "AtheyWager2021",
+      "citation": "Athey, S., and Wager, S. (2021). Policy learning with observational data. Econometrica 89(1): 133-161."
+    },
+    {
+      "key": "Firpo2007",
+      "citation": "Firpo, S. (2007). Efficient semiparametric estimation of quantile treatment effects. Econometrica 75(1): 259-276."
+    },
+    {
+      "key": "FanPark2010",
+      "citation": "Fan, Y., and Park, S. S. (2010). Partial identification of distributions, quantiles, and quantile treatment effects in the presence of sample selection. Econometric Theory 26(1): 109-136."
+    },
+    {
+      "key": "MastenPoirierRen2025",
+      "citation": "Masten, M. A., Poirier, A., and Ren, M. (2025). A general approach to relaxing unconfoundedness. arXiv:2501.15400."
+    },
+    {
+      "key": "Wang2026",
+      "citation": "Wang, P. (2026). Nested sensitivity envelopes for transported quantile treatment effects. arXiv:2605.09264."
+    },
+    {
+      "key": "ZhangXuTan2025",
+      "citation": "Zhang, Y., Xu, W., and Tan, Z. (2025). Enhanced marginal sensitivity model and bounds. arXiv:2504.08301."
+    },
+    {
+      "key": "ZhangXuTan2025deMSM",
+      "citation": "Zhang, Y., Xu, W., and Tan, Z. (2025). Distributionally enhanced marginal sensitivity model and bounds. arXiv:2505.13868."
+    },
+    {
+      "key": "HessFrauenMelnychukFeuerriegel2026",
+      "citation": "Hess, K., Frauen, D., Melnychuk, V., and Feuerriegel, S. (2025). Efficient and Sharp Off-Policy Learning under Unobserved Confounding. arXiv:2502.13022."
+    }
+  ],
+  "tldr": "The proposal studies offline policy value under two simultaneous misspecification restrictions on the same latent arm law: an MSM budget on the treatment assignment distortion and a fixed-center symmetric conditional-quantile tube on the potential-outcome distribution. The additive mean-tube branch remains rectangular once one writes the correct nonempty-intersection condition. The quantile-tube branch does not: its sharp endpoint is the mean-maximizing jointly feasible law in the intersection of the MSM weight class and the two-sided quantile tube, which reduces to the published Hess/Frauen MSM-only endpoint when the tube is inactive and otherwise tightens it. The rectangularity gap is the failure of the pointwise clipped envelope to be representable by one jointly feasible law, and the semiparametric rung asks for a one-step correction built on the unique upper contact face of the coupled optimizer while treating the center law as a fixed analyst input.",
+  "project_justification": {
+    "gap": "The literature contains sharp MSM off-policy learning, mean-side joint sensitivity, and newer distributional sensitivity enrichments, but not the fixed-center quantile-process intersection that this topic needs. HessFrauenMelnychukFeuerriegel2026 Proposition 4.1 and Theorem 4.3 give the MSM-only sharp endpoint and one-step estimator, DornGuo2023 supplies the bounded-weight quantile geometry, MastenPoirierRen2025 gives sharp QTE and DTE bounds for a broad relaxation class including marginal sensitivity, and Wang2026 gives process-level sharp nested quantile envelopes with semiparametric inference under source confounding plus transport shift. None of these papers fixes an analyst-specified center conditional quantile path on the same latent arm law and then studies offline policy value under that pathwise restriction.",
+    "niche": "The niche is a narrow correction to a named sharp OPE workflow. It is not a generic warning about combining restrictions. The distinctive object is the difference between a pointwise clipped quantile envelope and a single latent arm law that must satisfy both the MSM likelihood-ratio window and the symmetric center-law quantile tube.",
+    "fill": "The fill is a three-part package: a corrected mean benchmark with an explicit emptiness condition; a coupled quantile-law endpoint that reduces to the Hess/Frauen frontier when the tube is inactive and otherwise tightens it without collapsing to the single-population or transport comparators; and an optimizer-face conjecture for a one-step estimator that separates regular from nonregular inference while treating the center law as fixed."
+  },
+  "related_work": "Tan2006 supplies the marginal sensitivity primitive and bounded-likelihood-ratio interpretation used to define the latent arm-law class. DornGuo2023 is the closest identification ancestor because it turns sharp MSM bounds into quantile geometry under bounded weights; that geometry is reused here, but Dorn and Guo do not add a fixed analyst-centered quantile tube or an offline-policy aggregation step. KallusZhou2021 and HessFrauenMelnychukFeuerriegel2026 are the closest policy-facing comparators: they solve the MSM-only off-policy problem, with Hess et al. deriving the closed-form sharp endpoint in Proposition 4.1 and the one-step estimator in Theorem 4.3, but they do not impose a fixed-center conditional quantile path on the same latent law. ZhangXuTan2025 is the closest mean-side joint-sensitivity comparator because it intersects treatment and outcome restrictions through an enhanced MSM mean bound, yet its outcome restriction is not a fixed-center quantile-process tube. ZhangXuTan2025deMSM is the closest law-level comparator because deMSM adds potential-outcome distribution-shift density-ratio constraints and proves sharper bounds through implied MSM parameters, but it does not anchor the latent law to an analyst-chosen center quantile function and does not study offline policy value. MastenPoirierRen2025 is the closest single-population quantile-sensitivity threat because it provides sharp QTE and DTE bounds for a broad relaxation class that includes the marginal sensitivity model, but its target is treatment-effect functionals rather than a policy-value endpoint under a fixed center-law tube. Wang2026 is the closest semiparametric quantile-envelope threat because it proves process-level sharpness, canonical gradients, and nonregular inference for nested sensitivity envelopes, but its model is a two-sample transport problem with a source-to-target shift layer rather than a fixed analyst-centered tube in one-sample offline policy evaluation. YadlowskyNamkoongBasuDuchiTian2022 explains why mean-side restrictions can stay scalar, which is exactly the benchmark formalized in the first theorem. Firpo2007 and FanPark2010 provide the regular inverse-CDF and partial-identification quantile templates needed for the contact-face correction and the endpoint caveats. ChernozhukovEtAl2018 and AtheyWager2021 supply the orthogonality and policy-value inference templates that the conjectured one-step estimator adapts rather than replaces.",
+  "comparator_promise_table": [
+    {
+      "comparator_bibkey": "HessFrauenMelnychukFeuerriegel2026",
+      "comparator_claim": "MSM-only sharp off-policy policy-value endpoint and one-step estimator under hidden confounding.",
+      "matched_by": "thm:quantile-coupled-endpoint and conj:eif-one-step",
+      "match_kind": "exact_reduction_when_tube_inactive_and_strict_tightening_when_active"
+    },
+    {
+      "comparator_bibkey": "DornGuo2023",
+      "comparator_claim": "Bounded-weight quantile-balancing geometry for sharp MSM sensitivity bounds.",
+      "matched_by": "thm:quantile-coupled-endpoint",
+      "match_kind": "method_reuse_not_subsumption"
+    },
+    {
+      "comparator_bibkey": "ZhangXuTan2025deMSM",
+      "comparator_claim": "A second law-level outcome sensitivity restriction tightens MSM bounds through density-ratio constraints.",
+      "matched_by": "thm:quantile-coupled-endpoint and prop:rect-gap",
+      "match_kind": "different_outcome_restriction_no_fixed_center_policy_value_endpoint"
+    },
+    {
+      "comparator_bibkey": "MastenPoirierRen2025",
+      "comparator_claim": "Sharp QTE and DTE bounds under a broad relaxation class including the marginal sensitivity model.",
+      "matched_by": "thm:quantile-coupled-endpoint",
+      "match_kind": "different_estimand_and_no_fixed_center_tube"
+    },
+    {
+      "comparator_bibkey": "Wang2026",
+      "comparator_claim": "Process-level sharp nested quantile envelopes with canonical gradients and nonregular inference under source confounding plus transport shift.",
+      "matched_by": "conj:eif-one-step",
+      "match_kind": "different_two_sample_nested_model_and_no_offline_policy_value_target"
+    }
+  ],
+  "honest_scope": "The identification rung is conditional on joint feasibility: if the MSM likelihood-ratio window and the symmetric fixed-center quantile tube do not intersect on a policy-relevant arm, the restricted class is empty rather than widened. The clean sanity reductions are the inactive-tube face and the no-confounding face. If Qmsm_a_plus(u|x) and Qmsm_a_minus(u|x) already lie inside [Q0_a(u|x) - epsilon(x), Q0_a(u|x) + epsilon(x)] almost everywhere for every policy-relevant arm, then V_cpl_plus = V_MSM_plus and V_cpl_minus = V_MSM_minus, so the frontier collapses to the published Hess/Frauen MSM-only result. If Gamma = 1, then W_a^Gamma(x) is the singleton weight w = 1, so the joint class reduces to the observed-arm policy value when the observed conditional quantile law lies inside the tube and is empty otherwise. The inference rung remains conjectural and is explicitly limited to regular laws with a unique upper contact face, with Q0_a and epsilon treated as fixed analyst inputs; support-boundary contact and optimizer switching are left to directional or conservative inference."
+}

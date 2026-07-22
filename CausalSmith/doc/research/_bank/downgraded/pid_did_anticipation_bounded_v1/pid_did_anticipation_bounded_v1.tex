@@ -1,0 +1,836 @@
+% =====================================================================
+%  ThmSmith Stage 0 derivation skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_did\_anticipation\_bounded, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to a Q1..Q6
+%    pool-mode, fill it VERBATIM from the question-specific block of
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    For free-form panel / ExactID / PartialID anchors, reproduce the
+%    locked-parameter block from the Stage -1 proposal verbatim. Do not
+%    rephrase locked parameters; Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage 0 derivation: \texttt{pid\_did\_anticipation\_bounded} / \texttt{v1}%
+  \\ \large\textit{Sharp Staggered-DID ATT Bounds under Covariate-Conditional Bounded Anticipation}}
+\author{ThmSmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note derives the bounding functional for a fixed staggered-adoption group-time
+\(ATT(g,t)\), and for finite weighted aggregates of such effects, when
+anticipatory outcome distortions are not ruled out but are bounded
+covariate-conditionally.  The functional starts from the observable conditional
+DID contrast and adds the support function of the finite box of treated-cohort and
+comparison-cohort anticipation distortions.  The causal target is
+\(\theta_{g,t}=\E[Y_t(g)-Y_t(\infty)\mid G=g]\), with aggregate targets obtained by
+finite known weights over post-adoption cohort-period cells.  Under finite
+support, consistency, conditional baseline parallel trends, overlap, normalized
+comparison weights, bounded anticipation, and variation-independent anticipation
+boxes, the identified set is exactly the proposed interval.  Thus the Stage -1
+sharp-support conjecture is confirmed; without the variation-independent box
+condition the same formula remains a valid outer bound but need not be sharp.
+\end{abstract}
+
+\section{Introduction}
+Staggered DID designs often involve policies that are announced before the legal
+or administrative adoption date.  Firms may reorganize before a subsidy starts,
+students may respond before a school reform is implemented, and local governments
+may alter behavior before a regulation binds.  A strict no-anticipation
+assumption turns these pre-adoption responses into violations; excluding all
+near-adoption cells restores a clean design only when the exclusion horizon is
+credible and enough comparison support remains.
+
+The question here is partial identification rather than point identification.
+Suppose the researcher is willing to bound, but not eliminate, the conditional
+mean anticipatory distortion for each cohort, period, and covariate cell.  The
+standard group-time DID contrast is then not equal to \(ATT(g,t)\).  It equals the
+target minus a finite signed linear functional of latent anticipation
+distortions.  The useful object is therefore the support interval of that signed
+functional, computed after the observable DID contrast has been fixed by \(P\).
+
+The note establishes that this interval is sharp under the proposal's
+variation-independent anticipation-box condition.  The result keeps the
+Callaway--Sant'Anna style group-time target and risk-set comparison structure, but
+it replaces the binary choice between clean exclusion and no causal statement with
+a finite support-function calculation.  It also records the aggregate rule: when a
+single latent anticipation coordinate enters several cohort-period contrasts, its
+signed coefficients must be pooled before taking absolute values.
+
+The result is useful for formula design because it separates three ingredients
+that are often conflated: the causal target \(ATT(g,t)\), the observed DID
+contrast, and the latent anticipation support correction.  Once the comparison
+risk set, base period, and bound radii \(M_{h,s}(x)\) are specified, the width of
+the identified set is a deterministic diagnostic of which treated and
+not-yet-treated cells are doing the sensitivity work.
+
+\paragraph{Motivating conjecture(s).}
+Conjecture 1: sharp support interval for bounded anticipation (NOT YET PROVED).
+Under Assumptions~\ref{ass:finite-overlap}--\ref{ass:fixed-weights}, the interval in Theorem~\ref{thm:linear-contamination} is the sharp identified set for \(ATT(g,t)\).  More generally, for any finite aggregate \(\Theta(w)=\sum_{(g,t)}w_{g,t}ATT(g,t)\), the sharp identified set is
+\[
+  \left[
+    \sum_{(g,t)} w_{g,t}\E[\Delta_{g,t,b}(X)\mid G=g]
+      - \sum_{h,s,x}|c^{(w)}_{h,s}(x)|M_{h,s}(x),
+    \sum_{(g,t)} w_{g,t}\E[\Delta_{g,t,b}(X)\mid G=g]
+      + \sum_{h,s,x}|c^{(w)}_{h,s}(x)|M_{h,s}(x)
+  \right],
+\]
+where \(c^{(w)}_{h,s}(x)\) is the total signed coefficient on \(a_{h,s}(x)\) after expanding the weighted sum of \(\Lambda_{g,t,b}\) functionals.  Thus, when the same anticipation coordinate enters multiple cohort-period contrasts, the aggregate width is computed by summing signed coefficients before taking absolute values.
+
+\section{Related work and positioning}
+Callaway and Sant'Anna \cite{CallawaySantAnna2021} identify group-time ATT
+parameters in staggered DID under conditional parallel trends and a known limited
+anticipation convention; their result is the point-identification benchmark that
+is recovered when all relevant anticipation bounds are zero.  de Chaisemartin and
+D'Haultfoeuille \cite{DCDH2020} show how heterogeneous effects interact with DID
+weights and motivate explicit accounting for the cells that enter a comparison;
+the present note keeps known comparison weights but bounds anticipation bias
+rather than decomposing a TWFE coefficient.  Goodman-Bacon
+\cite{GoodmanBacon2021} decomposes timing-variation DID into weighted two-by-two
+comparisons, which is relevant because later-treated controls may be untreated but
+already anticipatory.  Sun and Abraham \cite{SunAbraham2021} show that staggered
+event-study leads and lags can mix effects from other relative periods; here the
+near-adoption preperiod object is a bounded latent causal distortion entering the
+ATT contrast.
+
+Borusyak, Jaravel, and Spiess \cite{BorusyakJaravelSpiess2024} develop imputation
+estimators for staggered event studies under no anticipation; the present theorem
+asks what remains identified when an imputation or base cell can itself contain a
+bounded anticipatory component.  Rambachan and Roth \cite{RambachanRoth2023}
+provide a modern sensitivity-analysis and support-function perspective for DID
+violations; this note specializes the support-function logic to a staggered
+adoption anticipation operator with shared latent coordinates across aggregates.
+Manski \cite{Manski1990,Manski2003} and Manski and Pepper
+\cite{ManskiPepper2018} supply the partial-identification tradition of replacing
+exact assumptions by transparent bounds; the difference here is that adoption
+timing fixes exactly which latent coordinates enter each DID contrast.  Roth,
+Sant'Anna, Bilinski, and Poe \cite{RothSantAnnaBilinskiPoe2023} emphasize
+sensitivity analysis in modern DID practice; the current result gives a concrete
+sensitivity target for anticipation rather than for parallel-trends drift.
+Piccininni, Tchetgen Tchetgen, and Stensrud
+\cite{PiccininniTchetgenStensrud2025} stress that no anticipation must be tied to
+a precise intervention and timing convention; the locked adoption-cohort
+notation here makes that convention explicit.  Augustin, Gutknecht, and Liu
+\cite{AugustinGutknechtLiu2025} study staggered adoption with anticipation and
+timing misclassification; their work motivates the bias concern, while the
+present note gives a nonparametric sharp interval under covariate-conditional
+magnitude bounds.
+
+In-repository prior work is adjacent but not duplicative.  The staggered
+minimal-basis panel catalogue studies point formulas and coefficient
+decompositions under exact history conventions.  The earlier
+\texttt{q1\_partial\_did\_unobserved\_trends} proposal studies latent trend
+summary sufficiency and nonsharpness.  The theorem below differs from both:
+it is a partial-identification result whose identified set is a finite linear
+image of a bounded anticipation box.
+
+\section{Formal setup}
+Let the observable distribution \(P\) be the law of
+\((Y_0,\ldots,Y_T,G,X)\), where \(T<\infty\),
+\(G\in\{1,\ldots,T,\infty\}\), and \(X\) takes values in a finite set
+\(\mathcal{X}\).  The observed adoption path is absorbing:
+\[
+  D_s=\one\{G\le s\},\qquad s=0,\ldots,T.
+\]
+For a finite adoption cohort \(h\), \(Y_s(h)\) denotes the potential outcome at
+period \(s\) under first adoption at \(h\).  The symbol \(Y_s(\infty)\) denotes
+the never-adopt potential outcome.  The never-adopt cohort has no anticipation
+coordinate.
+
+For \(s<h<\infty\), define the conditional anticipation distortion
+\[
+  a_{h,s}(x)
+  =
+  \E[Y_s(h)-Y_s(\infty)\mid G=h,X=x],
+  \qquad x\in\mathcal{X}.
+\]
+Set \(a_{\infty,s}(x)=0\).  Coordinates outside the anticipation horizon have
+radius zero.  Thus the finite anticipation box is
+\[
+  \mathcal{A}(M)
+  =
+  \prod_{\substack{x\in\mathcal{X}\\ h<\infty,\ s<h}}
+  [-M_{h,s}(x),M_{h,s}(x)],
+  \qquad
+  M_{h,s}(x)=0\ \text{if }h-s>k.
+\]
+
+Fix a finite target collection \(\mathcal{J}\).  Each
+\(j\in\mathcal{J}\) consists of a post-adoption cell
+\((g_j,t_j)\) with \(t_j\ge g_j\), a base period \(b_j<g_j\), a comparison risk
+set \(R_j\subseteq\{h:h>t_j\}\cup\{\infty\}\), and known comparison weights
+\(\omega_{h\mid j}(x)\) for \(h\in R_j\).  The singleton target is obtained by
+taking \(\mathcal{J}=\{j\}\) and weight \(w_j=1\).  A finite aggregate uses known
+nonnegative weights \(w_j\) with \(\sum_{j\in\mathcal{J}}w_j=1\).
+
+Write
+\[
+  \pi_j(x)=\Pr(X=x\mid G=g_j).
+\]
+The target value induced by a compatible full potential-outcome law is
+\[
+  \theta_w
+  =
+  \sum_{j\in\mathcal{J}}w_j
+  \E[Y_{t_j}(g_j)-Y_{t_j}(\infty)\mid G=g_j].
+\]
+The identified set is the set of all such values across full laws that preserve
+the observable distribution \(P\) and satisfy the maintained restrictions:
+\[
+  \Theta_I^w(P)
+  =
+  \left\{\theta_w:
+  \text{there is a compatible potential-outcome law satisfying
+  Assumptions~\ref{ass:finite-overlap}--\ref{ass:fixed-weights}}\right\}.
+\]
+
+\paragraph{Locked parameters.}
+\begin{itemize}[leftmargin=*]
+  \item qid: \texttt{pid\_did\_anticipation\_bounded}
+  \item specialization: \texttt{v1}
+  \item observable distribution: \(P=\) law of \((Y_t,G,X)\) for finite periods \(t=0,\ldots,T\), adoption cohort \(G\in\{1,\ldots,T,\infty\}\), and finite covariate support \(X\).
+  \item parameter \(\theta\): \(ATT(g,t)=\E[Y_t(g)-Y_t(\infty)\mid G=g]\) for a fixed treated cohort \(g\) and post-adoption period \(t\ge g\), plus finite weighted aggregates of such cohort-period ATTs.
+  \item identifying restrictions: absorbing staggered adoption; conditional baseline parallel trends for \(Y(\infty)\) between cohort \(g\) and the chosen comparison risk set; consistency; overlap; bounded anticipation horizon \(k\); for every cohort \(h\) and pre-adoption period \(s\) with \(0<h-s\le k\), the conditional anticipation distortion \(a_{h,s}(x)=\E[Y_s(h)-Y_s(\infty)\mid G=h,X=x]\) lies in the known interval \([-M_{h,s}(x),M_{h,s}(x)]\), and \(a_{h,s}(x)=0\) outside that horizon; comparison weights are defined only on positive-overlap risk-set cells and satisfy \(\sum_h\omega_{h\mid g,t,b}(x)=1\) for every target cell and \(x\).
+  \item bounding functional: the support-function interval obtained by adding to the observed conditional DID contrast the sharp box support of all treated-cohort and comparison-cohort anticipation distortions that enter the contrast.
+\end{itemize}
+
+\section{Assumptions}
+\begin{assumption}[Finite support, finite means, and overlap]\label{ass:finite-overlap}
+The period set, treated-cohort set, target collection \(\mathcal{J}\), comparison
+risk sets, and covariate support \(\mathcal{X}\) are finite.  All conditional
+means appearing in the displayed formulas exist as finite real numbers.  For
+every \(j\in\mathcal{J}\), \(x\) with \(\pi_j(x)>0\), and comparison cohort
+\(h\in R_j\) with \(\omega_{h\mid j}(x)\ne0\), the conditional cell probability
+\(\Pr(G=h,X=x)\) is positive.
+\end{assumption}
+
+\begin{assumption}[Consistency and absorbing adoption]\label{ass:consistency}
+Observed treatment is \(D_s=\one\{G\le s\}\).  Observed outcomes satisfy
+\[
+  Y_s=Y_s(G)\ \text{when }G<\infty,
+  \qquad
+  Y_s=Y_s(\infty)\ \text{when }G=\infty.
+\]
+\end{assumption}
+
+\begin{assumption}[Conditional baseline parallel trends]\label{ass:baseline-pt}
+For every \(j\in\mathcal{J}\), comparison cohort \(h\in R_j\), and covariate
+value \(x\) used by the contrast,
+\[
+  \E[Y_{t_j}(\infty)-Y_{b_j}(\infty)\mid G=g_j,X=x]
+  =
+  \E[Y_{t_j}(\infty)-Y_{b_j}(\infty)\mid G=h,X=x].
+\]
+\end{assumption}
+
+\begin{assumption}[Bounded anticipation horizon]\label{ass:bounded-anticipation}
+There is a fixed integer \(k\ge0\) and known finite radii \(M_{h,s}(x)\ge0\) such
+that, for every finite cohort \(h\), pre-adoption period \(s<h\), and
+\(x\in\mathcal{X}\),
+\[
+  a_{h,s}(x)=0\quad\text{if }h-s>k,
+  \qquad
+  -M_{h,s}(x)\le a_{h,s}(x)\le M_{h,s}(x)
+  \quad\text{if }0<h-s\le k.
+\]
+For the never-adopt cohort, \(a_{\infty,s}(x)=0\).
+\end{assumption}
+
+\begin{assumption}[Variation-independent anticipation boxes]\label{ass:box-independence}
+Every finite array \(a\in\mathcal{A}(M)\) is compatible with at least one joint
+potential-outcome law that preserves the observable distribution \(P\),
+Assumptions~\ref{ass:consistency}--\ref{ass:baseline-pt}, and the post-treatment
+ATT values induced by the decomposition in Lemma~\ref{lem:conditional-decomp}.
+\end{assumption}
+
+\begin{assumption}[Fixed normalized comparison weights]\label{ass:fixed-weights}
+The weights \(\omega_{h\mid j}(x)\) and aggregate weights \(w_j\) are known
+functions of the observable law and the chosen comparison convention; they are not
+functions of unobserved anticipation distortions.  For every \(j\in\mathcal{J}\)
+and \(x\in\mathcal{X}\) with \(\pi_j(x)>0\), comparison weights are defined only
+on positive-overlap cells and satisfy
+\[
+  \sum_{h\in R_j}\omega_{h\mid j}(x)=1.
+\]
+\end{assumption}
+
+\section{Estimand-defining functional}
+For \(j=(g_j,t_j,b_j,R_j,\omega_j)\), define the observable conditional DID
+contrast
+\[
+  \Delta_j(x)
+  =
+  \E[Y_{t_j}-Y_{b_j}\mid G=g_j,X=x]
+  -
+  \sum_{h\in R_j}\omega_{h\mid j}(x)
+  \E[Y_{t_j}-Y_{b_j}\mid G=h,X=x].
+\]
+Define the latent anticipation-bias functional
+\[
+  \Lambda_j(a)(x)
+  =
+  a_{g_j,b_j}(x)
+  +
+  \sum_{h\in R_j}\omega_{h\mid j}(x)
+    \{a_{h,t_j}(x)-a_{h,b_j}(x)\},
+\]
+where \(a_{\infty,s}(x)=0\) and every coordinate outside the anticipation horizon
+has radius zero.
+
+The observable aggregate contrast is
+\[
+  \delta_w(P)=\sum_{j\in\mathcal{J}}w_j
+  \sum_{x\in\mathcal{X}}\pi_j(x)\Delta_j(x).
+\]
+For each anticipation coordinate \((h,s,x)\), define the pooled signed
+coefficient
+\[
+  c^{(w)}_{h,s}(x)
+  =
+  \sum_{j\in\mathcal{J}}w_j\pi_j(x)
+  \left[
+    \one\{h=g_j,\ s=b_j\}
+    +
+    \one\{h\in R_j,\ s=t_j\}\omega_{h\mid j}(x)
+    -
+    \one\{h\in R_j,\ s=b_j\}\omega_{h\mid j}(x)
+  \right].
+\]
+The candidate bounding functional is the interval
+\[
+  [\theta_L^w(P),\theta_U^w(P)]
+  =
+  \left[
+    \delta_w(P)-\sum_{h,s,x}|c^{(w)}_{h,s}(x)|M_{h,s}(x),
+    \delta_w(P)+\sum_{h,s,x}|c^{(w)}_{h,s}(x)|M_{h,s}(x)
+  \right],
+\]
+where the sums are finite and \(M_{h,s}(x)=0\) for impossible, never-adopt, and
+outside-horizon coordinates.  The singleton \(ATT(g,t)\) interval is obtained by
+using one \(j\) and \(w_j=1\).  Without
+Assumption~\ref{ass:box-independence}, the interval is an outer bound; with that
+assumption, Theorem~\ref{thm:sharp-box-stage0} proves that it is sharp.
+
+\section{Target causal estimand}
+For a fixed treated cohort \(g<\infty\) and post-adoption period \(t\ge g\), the
+causal target is
+\[
+  \theta_{g,t}=ATT(g,t)
+  =
+  \E[Y_t(g)-Y_t(\infty)\mid G=g].
+\]
+The conditional target is
+\[
+  ATT(g,t\mid x)
+  =
+  \E[Y_t(g)-Y_t(\infty)\mid G=g,X=x].
+\]
+For a finite target collection \(\mathcal{J}\), the aggregate causal target is
+\[
+  \theta_w
+  =
+  \sum_{j\in\mathcal{J}}w_j ATT(g_j,t_j).
+\]
+The object in Section~7 is not the target by definition.  It is an observable
+contrast plus a support correction for the latent anticipation coordinates.  The
+main result is the partial-identification statement
+\(\Theta_I^w(P)=[\theta_L^w(P),\theta_U^w(P)]\), not a point equality except in
+zero-width cases.
+
+\section{Main theorems}
+\begin{theorem}[Linear anticipation contamination]\label{thm:linear-contamination}
+Under Assumptions~\ref{ass:finite-overlap}--\ref{ass:fixed-weights}, for every
+\(j\in\mathcal{J}\) and covariate value \(x\) used by the contrast,
+\[
+  ATT(g_j,t_j\mid x)=\Delta_j(x)+\Lambda_j(a)(x).
+\]
+Consequently, for any compatible law,
+\[
+  \theta_w
+  =
+  \delta_w(P)+
+  \sum_{h,s,x}c^{(w)}_{h,s}(x)a_{h,s}(x).
+\]
+For a singleton target \(j=(g,t,b,R,\omega)\), this implies the outer interval
+\[
+  ATT(g,t)\in
+  \left[
+  \E[\Delta_j(X)\mid G=g]-W_j(M),
+  \E[\Delta_j(X)\mid G=g]+W_j(M)
+  \right],
+\]
+where
+\[
+  W_j(M)
+  =
+  \E\!\left[
+    M_{g,b}(X)+
+    \sum_{h\in R}|\omega_{h\mid j}(X)|
+      \{M_{h,t}(X)+M_{h,b}(X)\}
+    \,\middle|\,G=g
+  \right].
+\]
+\end{theorem}
+
+This theorem is the algebraic decomposition behind the result.  It is useful
+because it identifies the exact treated-cohort and comparison-cohort
+anticipation cells that contaminate a group-time DID contrast.  It differs from
+the usual point-ID DID formulas by retaining, rather than ruling out, those
+latent terms.
+
+\begin{theorem}[Sharp bounded-anticipation identified set]\label{thm:sharp-box-stage0}
+Under Assumptions~\ref{ass:finite-overlap}--\ref{ass:fixed-weights}, the
+identified set for the finite aggregate \(\theta_w\) is exactly
+\[
+  \Theta_I^w(P)=[\theta_L^w(P),\theta_U^w(P)].
+\]
+For a singleton target this gives the sharp identified set for \(ATT(g,t)\).  The
+verdict on Conjecture 1 is therefore: confirmed under the proposal's
+variation-independent anticipation-box assumption; without that assumption the
+same displayed interval is only an outer bound.
+\end{theorem}
+
+The theorem is the contribution of the note.  It turns a bounded-anticipation
+restriction into a sharp finite-dimensional support-function interval and shows
+that aggregates require coefficient pooling before taking absolute values.  This
+is more specific than the general sensitivity logic of Rambachan and Roth
+\cite{RambachanRoth2023} and more permissive than point-ID limited-anticipation
+DID formulas because it allows contaminated comparison cohorts to remain in the
+risk set.
+
+\begin{proposition}[Zero-bound recovery]\label{prop:zero-bound-recovery}
+If \(M_{h,s}(x)=0\) for every coordinate with
+\(|c^{(w)}_{h,s}(x)|>0\), then
+\[
+  \Theta_I^w(P)=\{\delta_w(P)\}.
+\]
+For a singleton target with a clean base period \(b<g-k\) and comparison cohorts
+satisfying \(h-t>k\), this singleton is the usual conditional group-time DID
+functional.  With any normalized heterogeneity-robust comparison convention whose
+weights satisfy Assumption~\ref{ass:fixed-weights}, the corresponding aggregate
+also collapses to its no-anticipation point estimand.
+\end{proposition}
+
+This recovery result is not the new partial-identification kernel; it is the
+sanity link to Callaway and Sant'Anna \cite{CallawaySantAnna2021} and to
+heterogeneity-robust staggered DID weighting ideas such as de Chaisemartin and
+D'Haultfoeuille \cite{DCDH2020}.  It confirms that the interval extends standard
+workflows instead of changing the target at the clean corner.
+
+\section{Interpretation}
+The interval is centered at an observable DID contrast.  Its half-width is not a
+generic penalty; it is the support value of the exact signed anticipation
+operator induced by the selected base period, risk set, covariate distribution,
+and aggregate weights.  A treated cohort contributes through its base-period
+anticipation \(a_{g,b}(x)\).  A not-yet-treated comparison cohort contributes
+through \(a_{h,t}(x)-a_{h,b}(x)\), so controls can be contaminated even though
+they are untreated at period \(t\).
+
+The bound collapses to point identification precisely when every anticipation
+coordinate with a nonzero pooled coefficient has zero radius.  This includes the
+usual clean-horizon design in which \(b<g-k\) and every comparison cohort is more
+than \(k\) periods away from adoption at \(t\).  It also includes less obvious
+aggregate cancellations: if the same latent coordinate enters two targets with
+opposite signed pooled coefficients, the aggregate interval can be narrower than
+the sum of singleton half-widths.
+
+The bound widens as the radii \(M_{h,s}(x)\) grow or as risk-set weights place
+mass on cohorts close to adoption.  If the bounded-anticipation restriction is
+removed and no alternative outcome-support bound is imposed, the relevant latent
+coordinates are unrestricted and the partial-ID interval becomes uninformative.
+If only a global bounded-outcome restriction is imposed, the result reduces to a
+Manski-style worst-case completion for the missing counterfactual components.
+
+The tightening work is done by Assumption~\ref{ass:bounded-anticipation}; the
+sharpness work is done by Assumption~\ref{ass:box-independence}.  Conditional
+baseline parallel trends and normalized weights move the untreated trend out of
+the contrast.  The anticipation boxes then say how far the remaining latent bias
+can move the target.
+
+\section{Step-by-step proof}
+\begin{lemma}[Conditional DID decomposition]\label{lem:conditional-decomp}
+Under Assumptions~\ref{ass:finite-overlap}, \ref{ass:consistency},
+\ref{ass:baseline-pt}, and \ref{ass:fixed-weights},
+\[
+  ATT(g_j,t_j\mid x)=\Delta_j(x)+\Lambda_j(a)(x)
+\]
+for every used cell \((j,x)\).
+\end{lemma}
+
+\begin{proof}
+Fix \(j\) and \(x\).  By consistency and the definition of \(ATT(g_j,t_j\mid x)\),
+\[
+\begin{aligned}
+  \E[Y_{t_j}-Y_{b_j}\mid G=g_j,X=x]
+  &=
+  \E[Y_{t_j}(g_j)-Y_{b_j}(g_j)\mid G=g_j,X=x] \\
+  &=
+  ATT(g_j,t_j\mid x)
+  +\E[Y_{t_j}(\infty)-Y_{b_j}(\infty)\mid G=g_j,X=x]
+  -a_{g_j,b_j}(x).
+\end{aligned}
+\]
+For each \(h\in R_j\), the restriction \(h>t_j\) or \(h=\infty\) means the
+comparison cohort is not yet adopted at both \(b_j\) and \(t_j\).  By consistency,
+\[
+\begin{aligned}
+  \E[Y_{t_j}-Y_{b_j}\mid G=h,X=x]
+  &=
+  \E[Y_{t_j}(h)-Y_{b_j}(h)\mid G=h,X=x] \\
+  &=
+  \E[Y_{t_j}(\infty)-Y_{b_j}(\infty)\mid G=h,X=x]
+  +a_{h,t_j}(x)-a_{h,b_j}(x),
+\end{aligned}
+\]
+with both anticipation terms equal to zero when \(h=\infty\).  Substituting these
+two displays into the definition of \(\Delta_j(x)\) gives
+\[
+\begin{aligned}
+  \Delta_j(x)
+  &=
+  ATT(g_j,t_j\mid x)-a_{g_j,b_j}(x) \\
+  &\quad
+  +\E[Y_{t_j}(\infty)-Y_{b_j}(\infty)\mid G=g_j,X=x] \\
+  &\quad
+  -\sum_{h\in R_j}\omega_{h\mid j}(x)
+    \E[Y_{t_j}(\infty)-Y_{b_j}(\infty)\mid G=h,X=x] \\
+  &\quad
+  -\sum_{h\in R_j}\omega_{h\mid j}(x)
+    \{a_{h,t_j}(x)-a_{h,b_j}(x)\}.
+\end{aligned}
+\]
+Assumption~\ref{ass:baseline-pt} makes every comparison untreated trend in the
+sum equal to the treated-cohort untreated trend at the same \(x\).  The
+normalization in Assumption~\ref{ass:fixed-weights} then cancels the entire
+untreated-trend line.  Rearranging the remaining terms yields
+\[
+  ATT(g_j,t_j\mid x)
+  =
+  \Delta_j(x)
+  +a_{g_j,b_j}(x)
+  +\sum_{h\in R_j}\omega_{h\mid j}(x)
+    \{a_{h,t_j}(x)-a_{h,b_j}(x)\},
+\]
+which is the claimed identity.
+\end{proof}
+
+\begin{lemma}[Support function of a finite symmetric box]\label{lem:box-support}
+Let \(I\) be finite, \(M_i\ge0\), and
+\(\mathcal{B}=\prod_{i\in I}[-M_i,M_i]\).  For any real coefficients \(c_i\),
+\[
+  \left\{\sum_{i\in I}c_i u_i:u\in\mathcal{B}\right\}
+  =
+  \left[-\sum_{i\in I}|c_i|M_i,\ \sum_{i\in I}|c_i|M_i\right].
+\]
+\end{lemma}
+
+\begin{proof}
+For any \(u\in\mathcal{B}\),
+\[
+  \sum_{i\in I}c_i u_i
+  \le
+  \sum_{i\in I}|c_i||u_i|
+  \le
+  \sum_{i\in I}|c_i|M_i,
+\]
+and applying the same argument to \(-u\) gives the lower bound.  The upper bound
+is attained by taking \(u_i=M_i\) when \(c_i\ge0\) and \(u_i=-M_i\) when
+\(c_i<0\); the lower bound is attained by the opposite choice.  Since
+\(\mathcal{B}\) is convex and the displayed map is linear, every point between
+the two endpoint values is attained by convexly mixing the two endpoint arrays.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:linear-contamination}]
+The first display is Lemma~\ref{lem:conditional-decomp}.  Multiply that identity
+by \(w_j\pi_j(x)\), sum over \(j\in\mathcal{J}\) and \(x\in\mathcal{X}\), and
+use the law of iterated expectation over the finite support of \(X\mid G=g_j\).
+The terms involving \(\Delta_j(x)\) sum to \(\delta_w(P)\).  Collecting equal
+anticipation coordinates gives exactly the coefficient definition
+\(c^{(w)}_{h,s}(x)\), hence
+\[
+  \theta_w
+  =
+  \delta_w(P)+\sum_{h,s,x}c^{(w)}_{h,s}(x)a_{h,s}(x).
+\]
+For a singleton target, Assumption~\ref{ass:bounded-anticipation} bounds
+\(a_{g,b}(X)\), \(a_{h,t}(X)\), and \(a_{h,b}(X)\) by their corresponding radii.
+The triangle inequality applied inside the finite conditional expectation gives
+the displayed outer interval with half-width \(W_j(M)\).
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:sharp-box-stage0}]
+First prove containment.  For any element of \(\Theta_I^w(P)\), the compatible
+law satisfies Assumption~\ref{ass:bounded-anticipation}, so its anticipation
+array lies in \(\mathcal{A}(M)\).  Theorem~\ref{thm:linear-contamination}
+expresses the target as \(\delta_w(P)\) plus a finite linear functional of that
+array.  Lemma~\ref{lem:box-support} therefore implies
+\[
+  \theta_L^w(P)\le \theta_w\le \theta_U^w(P),
+\]
+so \(\Theta_I^w(P)\subseteq[\theta_L^w(P),\theta_U^w(P)]\).
+
+Now prove sharpness.  Lemma~\ref{lem:box-support} says that for every
+\(r\) between
+\(-\sum_{h,s,x}|c^{(w)}_{h,s}(x)|M_{h,s}(x)\) and
+\(\sum_{h,s,x}|c^{(w)}_{h,s}(x)|M_{h,s}(x)\), there is an anticipation array
+\(a^r\in\mathcal{A}(M)\) such that
+\[
+  \sum_{h,s,x}c^{(w)}_{h,s}(x)a^r_{h,s}(x)=r.
+\]
+By Assumption~\ref{ass:box-independence}, this array is compatible with some
+full potential-outcome law preserving \(P\) and the maintained restrictions.
+For that law, Theorem~\ref{thm:linear-contamination} gives
+\(\theta_w=\delta_w(P)+r\).  Since \(r\) ranges over the whole support interval,
+every point in \([\theta_L^w(P),\theta_U^w(P)]\) is in
+\(\Theta_I^w(P)\).  Combining this reverse containment with the first one proves
+equality and confirms Conjecture 1.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:zero-bound-recovery}]
+If \(M_{h,s}(x)=0\) for every coordinate with nonzero pooled coefficient, then
+\(\sum_{h,s,x}|c^{(w)}_{h,s}(x)|M_{h,s}(x)=0\).  The endpoints in Section~7 are
+both \(\delta_w(P)\), and Theorem~\ref{thm:sharp-box-stage0} gives
+\(\Theta_I^w(P)=\{\delta_w(P)\}\).  In the clean-horizon singleton case,
+\(b<g-k\) sets \(M_{g,b}(x)=0\), and \(h-t>k\) plus \(h-b>k\) sets the comparison
+anticipation radii to zero.  The remaining identity is the standard conditional
+DID point formula under conditional baseline parallel trends.
+\end{proof}
+
+\section{Sanity checks}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{No anticipation.}  If \(k=0\), or if all nonzero-coefficient
+  coordinates have \(M_{h,s}(x)=0\), the interval has zero width and
+  \(\theta_w=\delta_w(P)\).  This is Proposition~\ref{prop:zero-bound-recovery}.
+
+  \item \textbf{Clean never-treated controls.}  If the singleton target uses
+  \(R_j=\{\infty\}\) and \(b_j<g_j-k\), then \(a_{g_j,b_j}(x)=0\) and the
+  never-treated comparison has no anticipation coordinate.  The formula reduces
+  to the usual two-period conditional DID expression.
+
+  \item \textbf{One contaminated treated base period.}  If \(R_j=\{\infty\}\) but
+  \(g_j-k\le b_j<g_j\), then the only latent coordinate is \(a_{g_j,b_j}(x)\).
+  The singleton interval is
+  \[
+    \E[\Delta_j(X)\mid G=g_j]
+    \pm
+    \E[M_{g_j,b_j}(X)\mid G=g_j].
+  \]
+
+  \item \textbf{Anticipatory not-yet-treated controls.}  If \(X\) is degenerate,
+  \(R_j=\{h\}\), \(h>t_j\), \(h-t_j\le k\), \(h-b_j>k\), and \(g_j-b_j>k\), then
+  \[
+    ATT(g_j,t_j)=\Delta_j+a_{h,t_j},
+  \]
+  and the singleton interval is \([\Delta_j-M_{h,t_j},\Delta_j+M_{h,t_j}]\).
+  This is the smallest case showing why untreated controls need not be
+  unanticipated controls.
+
+  \item \textbf{Aggregate coefficient pooling.}  Suppose two singleton targets
+  share one anticipation coordinate with coefficients \(+1\) and \(-1\) and have
+  equal aggregate weights.  The pooled coefficient is zero, so that coordinate
+  does not widen the aggregate interval even though it widens each singleton
+  interval.  This verifies the absolute-value-after-pooling rule.
+
+  \item \textbf{Vacuous no-restriction corner.}  If the bounded-anticipation
+  restriction is removed and no outcome-support restriction replaces it, the
+  affected latent coordinates are unrestricted and the interval is all of
+  \(\mathbb{R}\).  If instead one imposes only a bounded outcome support
+  \(Y_s(h)\in[\underline y,\overline y]\), the same proof becomes the standard
+  Manski worst-case completion, replacing each missing latent mean by its support
+  endpoints.
+\end{itemize}
+
+\section{Counterexample or minimality check}
+\begin{example}[Normalization is necessary]\label{ex:normalization}
+Let \(X\) be degenerate, let there be no anticipation, and let the true target be
+\(ATT(g,t)=0\).  Suppose two comparison cohorts have the same untreated trend as
+the treated cohort, equal to \(1\), so conditional baseline parallel trends holds.
+If a researcher used weights \(1\) and \(1\), whose sum is \(2\), then
+\[
+  \Delta=(0+1)-2\cdot 1=-1.
+\]
+The DID contrast would not equal the target even though no anticipation is
+present.  The failure is exactly the missing normalization
+\(\sum_h\omega_h=1\) in Assumption~\ref{ass:fixed-weights}.
+\end{example}
+
+\begin{example}[Variation independence is necessary for sharpness]\label{ex:box-independence}
+Let the observable contrast be \(\delta_w(P)=0\) and let two latent anticipation
+coordinates have coefficients \(+1\) and \(-1\), each with radius \(M>0\).  The
+box-support formula gives the outer interval \([-2M,2M]\).  If a substantive
+restriction not included in the proposal forced the two coordinates to be equal,
+then the latent functional would be \(a_1-a_2=0\) for every compatible law, and
+the true identified set would be the singleton \(\{0\}\).  Thus
+Assumption~\ref{ass:box-independence} is the minimal condition turning the outer
+box support into a sharp identified set.
+\end{example}
+
+These examples also describe the nearest correct weakenings.  Without normalized
+weights, one must either renormalize the comparison contrast or add an explicit
+baseline-trend remainder.  Without variation-independent boxes, the formula in
+Section~7 remains a valid outer bound, but sharpness must be recomputed using the
+smaller feasible set of anticipation arrays.
+
+\section{Formalization checklist}
+\paragraph{Probabilistic objects and assumptions.}
+\begin{itemize}[leftmargin=*]
+  \item Finite period set \(\{0,\ldots,T\}\), finite covariate support
+  \(\mathcal{X}\), cohort set \(\{1,\ldots,T,\infty\}\), and finite target index
+  set \(\mathcal{J}\).
+  \item Observable law \(P\) of \((Y_0,\ldots,Y_T,G,X)\), with conditional cell
+  probabilities \(\Pr(G=h,X=x)\) and \(\pi_j(x)=\Pr(X=x\mid G=g_j)\).
+  \item Potential outcomes \(Y_s(h)\) for finite \(h\) and \(Y_s(\infty)\), with
+  consistency and absorbing adoption.
+  \item Conditional target \(ATT(g,t\mid x)\), marginal target \(ATT(g,t)\), and
+  aggregate target \(\theta_w\).
+  \item Anticipation coordinates \(a_{h,s}(x)\), radii \(M_{h,s}(x)\), and the
+  product box \(\mathcal{A}(M)\).
+  \item Conditional baseline parallel trends for \(Y(\infty)\), positive overlap
+  on all used cells, fixed normalized comparison weights, and
+  variation-independent compatibility of every array in \(\mathcal{A}(M)\).
+\end{itemize}
+
+\paragraph{Deterministic definitions and identities.}
+\begin{itemize}[leftmargin=*]
+  \item Observable DID contrast \(\Delta_j(x)\) and latent anticipation
+  functional \(\Lambda_j(a)(x)\).
+  \item Algebraic identity
+  \(ATT(g_j,t_j\mid x)=\Delta_j(x)+\Lambda_j(a)(x)\), depending on consistency,
+  baseline parallel trends, and normalized weights.
+  \item Aggregate observable center \(\delta_w(P)\) and pooled coefficient
+  \(c^{(w)}_{h,s}(x)\), obtained by collecting equal anticipation coordinates
+  after summing over \(j\) and \(x\).
+  \item Finite symmetric-box support identity:
+  \(\{\sum_i c_i u_i:u_i\in[-M_i,M_i]\}
+    =[-\sum_i|c_i|M_i,\sum_i|c_i|M_i]\).
+  \item Containment proof:
+  \(\Theta_I^w(P)\subseteq[\theta_L^w(P),\theta_U^w(P)]\) from the box support
+  inequality.
+  \item Sharpness proof: endpoint attainment and convex interpolation in the
+  finite box, combined with variation-independent compatibility, gives the
+  reverse containment.
+\end{itemize}
+
+\section{Conclusion and references}
+The theorem-level contribution is a sharp identified-set formula for staggered
+DID group-time ATT targets under covariate-conditional bounded anticipation.  The
+observable DID contrast is corrected by the support function of exactly those
+anticipation coordinates that enter through the treated base period and the
+not-yet-treated comparison cohorts.  Bounded anticipation tightens the interval;
+variation-independent boxes make the support interval sharp.  The interval is
+point-identifying when every nonzero pooled coordinate has zero radius, and it is
+vacuous when the relevant latent coordinates are left unrestricted with no
+alternative outcome-support bound.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem{AugustinGutknechtLiu2025}
+Augustin, C., D. Gutknecht, and C. Liu (2025).
+\newblock Staggered adoption DID designs with misclassification and anticipation.
+\newblock arXiv preprint arXiv:2507.20415.
+
+\bibitem{BorusyakJaravelSpiess2024}
+Borusyak, K., X. Jaravel, and J. Spiess (2024).
+\newblock Revisiting event-study designs: Robust and efficient estimation.
+\newblock \emph{Review of Economic Studies} 91(6), 3253--3285.
+
+\bibitem{CallawaySantAnna2021}
+Callaway, B. and P. H. C. Sant'Anna (2021).
+\newblock Difference-in-differences with multiple time periods.
+\newblock \emph{Journal of Econometrics} 225(2), 200--230.
+
+\bibitem{DCDH2020}
+de Chaisemartin, C. and X. D'Haultfoeuille (2020).
+\newblock Two-way fixed effects estimators with heterogeneous treatment effects.
+\newblock \emph{American Economic Review} 110(9), 2964--2996.
+
+\bibitem{GoodmanBacon2021}
+Goodman-Bacon, A. (2021).
+\newblock Difference-in-differences with variation in treatment timing.
+\newblock \emph{Journal of Econometrics} 225(2), 254--277.
+
+\bibitem{Manski1990}
+Manski, C. F. (1990).
+\newblock Nonparametric bounds on treatment effects.
+\newblock \emph{American Economic Review, Papers and Proceedings} 80(2), 319--323.
+
+\bibitem{Manski2003}
+Manski, C. F. (2003).
+\newblock \emph{Partial Identification of Probability Distributions}.
+\newblock Springer.
+
+\bibitem{ManskiPepper2018}
+Manski, C. F. and J. V. Pepper (2018).
+\newblock How do right-to-carry laws affect crime rates? Coping with ambiguity using bounded-variation assumptions.
+\newblock \emph{Review of Economics and Statistics} 100(2), 232--244.
+
+\bibitem{PiccininniTchetgenStensrud2025}
+Piccininni, M., E. J. Tchetgen Tchetgen, and M. J. Stensrud (2025).
+\newblock Refining the notion of no anticipation in difference-in-differences studies.
+\newblock arXiv preprint arXiv:2507.12891.
+
+\bibitem{RambachanRoth2023}
+Rambachan, A. and J. Roth (2023).
+\newblock A more credible approach to parallel trends.
+\newblock \emph{Review of Economic Studies} 90(5), 2555--2591.
+
+\bibitem{RothSantAnnaBilinskiPoe2023}
+Roth, J., P. H. C. Sant'Anna, A. Bilinski, and J. Poe (2023).
+\newblock What's trending in difference-in-differences? A synthesis of the recent econometrics literature.
+\newblock \emph{Journal of Econometrics} 235(2), 2218--2244.
+
+\bibitem{SunAbraham2021}
+Sun, L. and S. Abraham (2021).
+\newblock Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\newblock \emph{Journal of Econometrics} 225(2), 175--199.
+\end{thebibliography}
+
+\end{document}

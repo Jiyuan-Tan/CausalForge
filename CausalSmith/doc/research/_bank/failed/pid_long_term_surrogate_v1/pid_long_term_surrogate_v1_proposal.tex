@@ -1,0 +1,340 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_long\_term\_surrogate, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to a Q1..Q6 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    If it is a free-form `(qid, specialization)`, define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_long\_term\_surrogate} / \texttt{v1}%
+  \\ \large\textit{A drift-radius phase diagram for long-term surrogate-index ATE bounds}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+cluster=partial identification
+qid=pid_long_term_surrogate
+specialization=v1
+observable distribution P=the joint law P^E of a randomized short
+  experiment (A,S_0,...,S_J), A in {0,1}, J>=1, with finitely many noisy
+  surrogate coordinates at each observed date, together with a historical
+  bridge law P^B of (S_J,Y_H) in a no-new-treatment regime on the same
+  finite surrogate support
+parameter theta=E[Y_H(1)-Y_H(0)], the long-term ATE at horizon H>J
+identifying restrictions=randomization and consistency in the experiment;
+  binary latent terminal surrogate U_J(d) in {0,1}; the noisy short-panel
+  law identifies a sharp interval [ell_d,u_d] for p_d=Pr(U_J(d)=1);
+  the bridge law identifies endpoint means m_0<=m_1 for the post-drift
+  latent state U_H in {0,1}; all surrogate-index failure is through an
+  unobserved post-surrogate transition U_J(d)->U_H(d); the Hamming drift
+  budget Pr(U_H(d)!=U_J(d))<=rho_d has a separating cost
+  c(u,v)=1{u!=v}; outcomes are bounded in [0,1]; no Prentice surrogacy
+  conditioning on observed S_J is imposed
+bounding functional=the closed-form lower and upper support values of
+  theta obtained by dilating each terminal-prevalence interval
+  [ell_d,u_d] by the drift radius rho_d and mapping the resulting
+  post-drift prevalence interval through the bridge means m_0,m_1
+\end{verbatim}
+
+\begin{abstract}
+Longitudinal surrogate-index methods extrapolate long-term treatment effects from short experimental panels by assuming that observed surrogate histories and treatment histories are rich enough to predict the delayed endpoint.  This proposal asks for the sharp partial-identification replacement when that assumption fails only after the last observed surrogate, through an unobserved binary drift state.  The kernel claim is a drift-radius phase diagram: in the minimal binary latent-terminal model, the sharp long-term ATE interval is obtained by a closed-form dilation of the noisy-panel terminal-prevalence interval, and point identification collapses exactly at the zero-drift or flat-bridge boundary.  The proposal deliberately treats generic finite-LP sharpness as background; the new object is the explicit phase diagram separating longitudinal surrogate/pivot-index point extrapolation from sharp bounded-drift partial identification.  If resolved, it would give applied long-term-treatment studies a transparent diagnostic for when short-panel surrogates justify a sign or point claim and when they only justify an interval.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Long-term treatment effects are often needed before the long-term endpoint is observed.  Recent surrogate-index and longitudinal-surrogate methods answer this problem by using short-run metrics, baseline variables, and treatment histories to predict future outcomes.  The scientific risk is that the final observed surrogate wave may not be the final state on the causal path: users may habituate, skills may decay, health may rebound, or behavior may drift after the surrogate panel closes.  A sharp bound is needed because the policy question is usually not whether a point estimator can be regular, but whether the delayed endpoint sign remains defensible after allowing a quantitatively bounded drift.
+
+\paragraph{The main finding proposed.}
+Theorem~\ref{thm:binary-dilation} records the closed-form binary transport calculation once the noisy panel has delivered a sharp terminal-prevalence interval.  Conjecture~\ref{conj:pivot-boundary} is the flagship proposal: under the longitudinal surrogate/pivot-index regime of \citet{HuangWangYuanZhaoZhang2026}, replacing exact longitudinal surrogacy by a separated Hamming drift budget changes the estimand from a point to exactly the dilation interval in Theorem~\ref{thm:binary-dilation}, with no hidden tightening from the short-panel indices beyond their sharp terminal-prevalence interval.  Conjecture~\ref{conj:phase-diagram} states the phase boundary: with a non-flat bridge \(m_1>m_0\), the long-term ATE is point identified if and only if both arm-specific post-drift prevalence intervals have zero width, which in the sharp-terminal corner is equivalent to zero drift in both arms.
+
+\paragraph{What is new.}
+\citet{HuangWangYuanZhaoZhang2026} define longitudinal surrogate and pivot indices and use them for point extrapolation of long-term treatment effects from short experimental panels.  \citet{AtheyChettyImbensKang2019} and \citet{ChenRitzwoller2023} give the main surrogate-index and data-fusion point-identification/efficiency ancestors.  The gap targeted here is not another relaxation of an estimator and not a generic Manski projection: it is the exact binary phase diagram for the specific failure mode in which longitudinal surrogacy is correct up to the terminal latent surrogate \(U_J\), and all remaining failure is a bounded, unobserved transition \(U_J\to U_H\).  The proposed theorem-level content is that the drift budget acts as a morphological dilation of the noisy-panel terminal-prevalence set; this produces an observable point-ID collapse criterion that is absent from longitudinal surrogate-index papers, terminal-copula sensitivity analyses, and generic finite partial-ID algorithms.
+
+\paragraph{How it positions in the literature.}
+The proposal lives in the partial-identification cluster.  It uses the Manski/Balke--Pearl principle of optimizing a causal parameter over latent structures compatible with the observed distribution, but it refuses to count the existence of such an optimization problem as the contribution.  The substantive object is a short-panel surrogate bound: repeated noisy surrogates identify or bound the terminal latent prevalence, a bridge law identifies the endpoint response to the post-drift latent state, and a drift radius maps the former into the latter.  The proposal is therefore adjacent to exact surrogate-index identification, sensitivity analysis for surrogate indices, and surrogate-paradox sign criteria, not to panel linear-projection or do-calculus axiomatics.
+
+\section{Related work}
+\citet{AtheyChettyImbensKang2019} introduce the surrogate-index method and show that, under Prentice-style surrogacy and comparability, the treatment effect on the index identifies the long-term ATE; this is the zero-drift point-ID corner of the present proposal.  \citet{Prentice1989} supplies the classical operational surrogacy condition, making post-surrogate drift a direct violation of the condition rather than an estimation nuisance.  \citet{HuangWangYuanZhaoZhang2026} is the named-claim anchor: it introduces longitudinal surrogate and pivot indices for long-term treatments and validates point extrapolation under longitudinal surrogate assumptions; this proposal asks for the sharp bounded-drift replacement when that assumption fails after the short panel.  \citet{TranBibautKallus2024} study long-term treatments from short-term experiments through a reinforcement-learning style route, which is a useful contrast because their target is long-term treatment inference under sequential exposure rather than a bounded post-surrogate partial-ID phase diagram.  \citet{ChenRitzwoller2023} develop semiparametric estimation and efficiency theory for combining short-term experimental and long-term observational samples; this proposal addresses identification width before regular estimation is available.
+
+\citet{FanManzanaresParkQi2026} develop surrogate-index sensitivity analysis and identified sets under unknown conditional copulas; the contrast is that terminal-copula ambiguity does not isolate the binary post-surrogate drift-radius phase diagram.  \citet{HungChen2026} propose a proximal surrogate index for long-term effects under unobserved confounding; it is close because it uses proxy logic, but it restores point identification through proximal bridge conditions rather than giving bounded-drift sharp intervals.  \citet{BibautKallusEjdemyrZhao2023} use many weak experiments, proxies, and cross-fold moments to handle imperfect surrogates and effect leakage; the present proposal asks what one randomized short panel and one bridge law identify without many historical instruments.  \citet{LalImbensHull2026} analyze long-term causal inference with many noisy proxies for latent surrogates; their many-proxy prediction regime is complementary to the finite binary sharp-bound phase diagram here.
+
+\citet{ChenGengJia2007} name and analyze the surrogate paradox, showing that positive surrogate effects and positive surrogate-endpoint associations can still coexist with a negative true endpoint effect; Conjecture~\ref{conj:phase-diagram} gives a bounded-drift sign and point-ID boundary for that phenomenon in a long-term ATE setting.  \citet{YinLiuGengLuo2020} give optimal observed-data criteria to exclude the surrogate paradox, while \citet{MaYinLiuGeng2021} derive sharp criteria for the individual surrogate paradox; both are close sign-comparison papers, but neither treats noisy short panels and a post-surrogate drift radius.  \citet{Manski1990} provides the foundational bounded-outcome partial-ID logic used for sanity checks, and \citet{BalkePearl1997} exemplify sharp finite-support causal bounds, but the proposal's novelty is the explicit binary drift dilation formula rather than the generic fact that a finite latent model has sharp bounds.  \citet{HuiWalter1980} is relevant only for measurement algebra: two noisy binary measurements across populations can identify latent-class quantities under invariant errors, whereas the new claim starts after the noisy panel has produced a sharp terminal-prevalence interval.
+
+In the ThmSmith catalogue, \texttt{doc/API.md} Section 3 records \texttt{ThmSmith/PartialID/} as an empty seed catalogue for Manski-family bounds, Balke--Pearl bounds, IV bounds, sensitivity analysis, shape restrictions, and missing-data questions; it contains no accepted long-term-surrogate partial-ID theorem.  The archived \texttt{pid\_long\_term\_surrogate} angle 0 proposed generic noisy-panel drift LP tightening and was rejected after derivation because it collapsed to standard finite-LP and support-function machinery.  The archived angle 1 proposed a common-kernel noisy-proxy bridge boundary; the present angle is structurally different because it discards common-kernel measurement identification as the kernel and targets the longitudinal-surrogate drift-radius phase diagram anchored in \citet{HuangWangYuanZhaoZhang2026}.
+
+\section{Formal setup}
+The observable law is \(P=(P^E,P^B)\).  The experimental component \(P^E\) is the joint law of \((A,S_0,\ldots,S_J)\), where \(A\in\{0,1\}\) is randomized, \(J\ge1\), and each \(S_j\) is a finite vector of noisy surrogate measurements.  The bridge component \(P^B\) is the historical law of \((S_J,Y_H)\) in a regime without the new treatment.  The target is
+\[
+  \theta=\E[Y_H(1)-Y_H(0)].
+\]
+
+For each arm \(d\), let \(U_J(d)\in\{0,1\}\) be the latent terminal surrogate after the last observed short-panel wave and let \(U_H(d)\in\{0,1\}\) be the unobserved post-surrogate latent state just before the long-run endpoint.  Write
+\[
+  p_d=\Pr(U_J(d)=1),\qquad q_d=\Pr(U_H(d)=1).
+\]
+The noisy panel and its measurement restrictions deliver a sharp interval \([\ell_d,u_d]\) for \(p_d\).  The bridge law delivers endpoint means \(m_0,m_1\) for the post-drift state, with \(m_0\le m_1\), so that \(\E[Y_H(d)\mid U_H(d)=v]=m_v\).  The arm-specific drift radius \(\rho_d\in[0,1]\) restricts feasible post-surrogate drift by
+\[
+  \Pr(U_H(d)\ne U_J(d))\le \rho_d .
+\]
+The identified set is
+\[
+  \Theta_I(P;\rho_0,\rho_1)=
+  \{\E[Y_H(1)-Y_H(0)] : \text{an admissible latent law matches }P
+  \text{ and satisfies the restrictions}\}.
+\]
+The proposed bounding functional is the interval
+\[
+  B(P;\rho_0,\rho_1)=
+  [\,m_0+(m_1-m_0)L_1 - (m_0+(m_1-m_0)U_0),\ 
+     m_0+(m_1-m_0)U_1 - (m_0+(m_1-m_0)L_0)\,],
+\]
+where \(L_d=\max\{0,\ell_d-\rho_d\}\) and \(U_d=\min\{1,u_d+\rho_d\}\).
+
+\begin{verbatim}
+cluster=partial identification
+qid=pid_long_term_surrogate
+specialization=v1
+observable distribution P=the joint law P^E of a randomized short
+  experiment (A,S_0,...,S_J), A in {0,1}, J>=1, with finitely many noisy
+  surrogate coordinates at each observed date, together with a historical
+  bridge law P^B of (S_J,Y_H) in a no-new-treatment regime on the same
+  finite surrogate support
+parameter theta=E[Y_H(1)-Y_H(0)], the long-term ATE at horizon H>J
+identifying restrictions=randomization and consistency in the experiment;
+  binary latent terminal surrogate U_J(d) in {0,1}; the noisy short-panel
+  law identifies a sharp interval [ell_d,u_d] for p_d=Pr(U_J(d)=1);
+  the bridge law identifies endpoint means m_0<=m_1 for the post-drift
+  latent state U_H in {0,1}; all surrogate-index failure is through an
+  unobserved post-surrogate transition U_J(d)->U_H(d); the Hamming drift
+  budget Pr(U_H(d)!=U_J(d))<=rho_d has a separating cost
+  c(u,v)=1{u!=v}; outcomes are bounded in [0,1]; no Prentice surrogacy
+  conditioning on observed S_J is imposed
+bounding functional=the closed-form lower and upper support values of
+  theta obtained by dilating each terminal-prevalence interval
+  [ell_d,u_d] by the drift radius rho_d and mapping the resulting
+  post-drift prevalence interval through the bridge means m_0,m_1
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Randomized short panel]\label{ass:randomized-panel}
+The experimental component \(P^E\) is generated by randomized treatment \(A\in\{0,1\}\), consistency \(S_j=S_j(A)\), and finite-support surrogate histories \((S_0,\ldots,S_J)\).
+\end{assumption}
+
+\begin{assumption}[Sharp terminal-prevalence interval]\label{ass:terminal-interval}
+For each arm \(d\in\{0,1\}\), the noisy short-panel law and its measurement restrictions imply the sharp interval \([\ell_d,u_d]\subseteq[0,1]\) for \(p_d=\Pr(U_J(d)=1)\): every \(p_d\in[\ell_d,u_d]\) and no \(p_d\notin[\ell_d,u_d]\) is compatible with \(P^E\).
+\end{assumption}
+
+\begin{assumption}[Bridge endpoint response]\label{ass:bridge-response}
+The bridge law \(P^B\) identifies two endpoint means \(m_0,m_1\in[0,1]\) for the post-drift state \(U_H\), with \(m_0\le m_1\), and the potential endpoint satisfies \(\E[Y_H(d)\mid U_H(d)=v]=m_v\) for \(d,v\in\{0,1\}\).
+\end{assumption}
+
+\begin{assumption}[Armwise prevalence pasting]\label{ass:armwise-pasting}
+For each arm \(d\), every terminal prevalence \(p_d\in[\ell_d,u_d]\) can be paired with every post-drift prevalence \(q_d\) satisfying \(|q_d-p_d|\le\rho_d\), without changing \(P^E\), \(P^B\), or the other arm's latent construction.
+\end{assumption}
+
+\begin{assumption}[Separated Hamming drift budget]\label{ass:hamming-drift}
+For each arm \(d\), post-surrogate drift is measured by \(c(u,v)=\one\{u\ne v\}\), so \(c(u,v)=0\) if and only if \(u=v\).  Feasible latent laws satisfy \(\Pr(U_H(d)\ne U_J(d))\le\rho_d\), where \(\rho_d\in[0,1]\) is fixed.
+\end{assumption}
+
+\begin{assumption}[No residual endpoint channel]\label{ass:no-residual-channel}
+All failure of the surrogate-index condition after date \(J\) operates through \(U_J(d)\to U_H(d)\).  Conditional on \(U_H(d)\), the endpoint mean is the bridge response in Assumption~\ref{ass:bridge-response}; there is no additional arm-specific endpoint residual.
+\end{assumption}
+
+\begin{assumption}[Longitudinal surrogate/pivot-index corner]\label{ass:pivot-corner}
+In the point-identification corner corresponding to \citet{HuangWangYuanZhaoZhang2026}, the short-panel longitudinal surrogate and pivot indices identify the arm-specific terminal prevalences \(p_d\) exactly, so \(\ell_d=u_d=p_d\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Binary drift dilation]\label{thm:binary-dilation}
+Under Assumptions~\ref{ass:randomized-panel}--\ref{ass:no-residual-channel}, the arm-specific post-drift prevalence \(q_d=\Pr(U_H(d)=1)\) has sharp interval
+\[
+  q_d\in [L_d,U_d]
+  =[\max\{0,\ell_d-\rho_d\},\ \min\{1,u_d+\rho_d\}].
+\]
+Consequently the long-term ATE identified set is contained in \(B(P;\rho_0,\rho_1)\).  Under Assumption~\ref{ass:armwise-pasting}, the containment is sharp.
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) This theorem is routine binary transport algebra, not the flagship novelty claim; the closest general ancestors are \citet{Manski1990}, \citet{BalkePearl1997}, and \citet{HuiWalter1980}.  Its gap relative to those papers is specialization: it isolates the exact Hamming-drift dilation that Stage~0 must use before evaluating the genuinely new longitudinal-surrogate boundary.  (b) It advances the project by replacing a black-box finite LP with a closed-form interval whose variables have direct surrogate-index interpretations: terminal latent prevalence, bridge slope, and drift radius.
+
+\begin{conjecture}[Longitudinal pivot-index drift boundary (NOT YET PROVED)]\label{conj:pivot-boundary}
+Under Assumptions~\ref{ass:randomized-panel}, \ref{ass:terminal-interval}, \ref{ass:bridge-response}, \ref{ass:hamming-drift}, \ref{ass:no-residual-channel}, and \ref{ass:pivot-corner}, the armwise pasting property in Assumption~\ref{ass:armwise-pasting} is implied rather than assumed, and the sharp identified set for the long-term ATE is exactly \(B(P;\rho_0,\rho_1)\).  Equivalently, once the short-panel law has been reduced to its sharp terminal-prevalence intervals \([\ell_d,u_d]\), the longitudinal surrogate and pivot indices impose no additional endpoint restriction under the bounded post-surrogate drift model.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) The closest published result is \citet{HuangWangYuanZhaoZhang2026}, which gives longitudinal surrogate and pivot-index point extrapolation under assumptions that rule out the post-surrogate drift channel.  \citet{FanManzanaresParkQi2026} is also close because it derives surrogate-index identified sets under unknown terminal copulas, but its uncertainty object is terminal copula dependence rather than a post-panel latent transition.  The epsilon-gap is the proposed sufficiency-and-sharpness statement: all short-panel information relevant for the bounded-drift endpoint is captured by \([\ell_d,u_d]\), and the exact bound is the Hamming dilation formula rather than a generic support-function projection.  (b) Resolving the conjecture would give applied longitudinal-surrogate studies a precise failure-mode diagnostic: compute or bound terminal latent prevalence, choose a drift radius, and immediately know the sharp ATE and sign interval.
+
+\begin{conjecture}[Point-identification phase diagram (NOT YET PROVED)]\label{conj:phase-diagram}
+Assume the sharpness conclusion of Conjecture~\ref{conj:pivot-boundary}.  If \(m_1>m_0\), then \(\Theta_I(P;\rho_0,\rho_1)\) is a singleton if and only if \(L_d=U_d\) for both \(d=0,1\).  In the exact-terminal-prevalence corner \(\ell_d=u_d=p_d\), this is equivalent to \(\rho_0=\rho_1=0\).  If \(m_1=m_0\), the endpoint bridge is flat and \(\theta=0\) is point identified for the trivial reason that the bridge carries no terminal-state margin.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{AtheyChettyImbensKang2019} give the no-drift surrogate-index point-ID corner, and \citet{ChenGengJia2007}, \citet{YinLiuGengLuo2020}, and \citet{MaYinLiuGeng2021} study surrogate-paradox sign reversals and exclusion criteria.  The gap is a sharp phase diagram for long-term ATE point identification under bounded post-surrogate drift, with the flat-bridge and zero-drift degeneracies separated explicitly.  (b) Proving or refuting this conjecture would determine when a positive longitudinal surrogate-index margin is enough for a sign decision and when any nonzero drift radius necessarily leaves interval uncertainty.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Surrogate-index point-ID corner]\label{cor:no-drift}
+Under Assumptions~\ref{ass:randomized-panel}--\ref{ass:pivot-corner}, if \(\rho_0=\rho_1=0\) and \(\ell_d=u_d=p_d\) for both arms, then
+\[
+  \Theta_I(P;0,0)=\{(m_1-m_0)(p_1-p_0)\}.
+\]
+\end{corollary}
+The reduction is concrete: under Assumption~\ref{ass:hamming-drift}, zero drift gives \(U_H(d)=U_J(d)\), so Theorem~\ref{thm:binary-dilation} has \(L_d=U_d=p_d\) and recovers the standard surrogate-index bridge estimand.
+
+\begin{corollary}[Manski fallback]\label{cor:manski}
+If Assumption~\ref{ass:bridge-response} is dropped and outcomes are only known to lie in \([0,1]\), the long-term ATE set falls back to the bounded-outcome interval \([-1,1]\).
+\end{corollary}
+The reduction is concrete: without bridge means \(m_0,m_1\), neither \(U_J\) nor \(U_H\) restricts endpoint means, so the target ranges over the usual bounded-outcome completions from \citet{Manski1990}.
+
+\begin{corollary}[Flat bridge]\label{cor:flat-bridge}
+Under Assumptions~\ref{ass:randomized-panel}--\ref{ass:no-residual-channel}, if \(m_1=m_0\), then every admissible post-drift prevalence gives \(\E[Y_H(d)]=m_0\) for both arms, hence \(\theta=0\).
+\end{corollary}
+The reduction is concrete: the bridge response has no terminal-state margin, so the dilation interval in Theorem~\ref{thm:binary-dilation} is multiplied by \(m_1-m_0=0\).
+
+\section{Proof-sketch route}
+The mathematical route is finite and explicit.  For Theorem~\ref{thm:binary-dilation}, fix \(p=\Pr(U_J=1)\) and \(q=\Pr(U_H=1)\); the Hamming drift inequality is equivalent to \(|q-p|\le\rho\) in the binary case, and optimizing over \(p\in[\ell,u]\) gives the displayed dilation.  The ATE interval follows by monotonicity of the bridge mean \(m_0+(m_1-m_0)q\) and independent armwise endpoint selection.  For Conjecture~\ref{conj:pivot-boundary}, the hard step is a pasting construction: show that every \(q_d\in[L_d,U_d]\) can be realized by a latent transition kernel from some terminal law \(p_d\in[\ell_d,u_d]\) while preserving the observed noisy short-panel law and bridge means.  For Conjecture~\ref{conj:phase-diagram}, the proof reduces to computing when the two armwise dilation intervals have zero width and checking the flat-bridge exception; the only boundary cases are \(p_d\in\{0,1\}\), \(\rho_d=0\), and \(m_1=m_0\).
+
+\section{Honest scope flags}
+Theorem~\ref{thm:binary-dilation} is labelled as a theorem because it is routine binary transport algebra conditional on the sharp terminal-prevalence interval.  Conjectures~\ref{conj:pivot-boundary} and \ref{conj:phase-diagram} are not yet proved and are the only novelty-bearing statements.  The proposal withdraws generic finite-LP sharpness, generic support-face tightening, and tautological sign tests as flagship content; those were the failure modes in the archived same-qid angle.  The main modelling uncertainty is Assumption~\ref{ass:terminal-interval}: Stage~0 must either treat \([\ell_d,u_d]\) as an input from a validated noisy-measurement submodel or instantiate it in a minimal two-proxy panel.  The bridge-response assumption is also intentionally strong; relaxing it would move the question back toward generic proxy partial identification rather than the drift-radius phase diagram targeted here.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial fresh angle anchored to \citet{HuangWangYuanZhaoZhang2026}, replacing generic drift LP tightening with a binary drift-radius phase diagram for longitudinal surrogate-index bounds; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Athey et~al.(2019)]{AtheyChettyImbensKang2019}
+Athey, S., R. Chetty, G. W. Imbens, and H. Kang (2019).
+\newblock The surrogate index: Combining short-term proxies to estimate long-term treatment effects more rapidly and precisely.
+\newblock NBER Working Paper 26463, revised 2024.
+
+\bibitem[Balke and Pearl(1997)]{BalkePearl1997}
+Balke, A. and J. Pearl (1997).
+\newblock Bounds on treatment effects from studies with imperfect compliance.
+\newblock \emph{Journal of the American Statistical Association} 92(439), 1171--1176.
+
+\bibitem[Bibaut et~al.(2023)]{BibautKallusEjdemyrZhao2023}
+Bibaut, A., N. Kallus, S. Ejdemyr, and M. Zhao (2023).
+\newblock Long-term causal inference with imperfect surrogates using many weak experiments, proxies, and cross-fold moments.
+\newblock arXiv:2311.04657.
+
+\bibitem[Chen et~al.(2007)]{ChenGengJia2007}
+Chen, H., Z. Geng, and J. Jia (2007).
+\newblock Criteria for surrogate end points.
+\newblock \emph{Journal of the Royal Statistical Society: Series B} 69(5), 919--932.
+
+\bibitem[Chen and Ritzwoller(2023)]{ChenRitzwoller2023}
+Chen, J. and D. M. Ritzwoller (2023).
+\newblock Semiparametric estimation of long-term treatment effects.
+\newblock \emph{Journal of Econometrics} 237(2), 105545.
+
+\bibitem[Fan et~al.(2026)]{FanManzanaresParkQi2026}
+Fan, Y., C. A. Manzanares, H. Park, and Y. Qi (2026).
+\newblock A sensitivity analysis of the surrogate index approach for estimating long-term treatment effects.
+\newblock arXiv:2603.00580.
+
+\bibitem[Huang et~al.(2026)]{HuangWangYuanZhaoZhang2026}
+Huang, S., C. Wang, Y. Yuan, J. Zhao, and B. Zhang (2026).
+\newblock Estimating effects of long-term treatments.
+\newblock \emph{Management Science}, Articles in Advance.
+
+\bibitem[Hung and Chen(2026)]{HungChen2026}
+Hung, T.-C. and Y.-C. Chen (2026).
+\newblock The proximal surrogate index: Long-term treatment effects under unobserved confounding.
+\newblock arXiv:2601.17712.
+
+\bibitem[Hui and Walter(1980)]{HuiWalter1980}
+Hui, S. L. and S. D. Walter (1980).
+\newblock Estimating the error rates of diagnostic tests.
+\newblock \emph{Biometrics} 36(1), 167--171.
+
+\bibitem[Lal et~al.(2026)]{LalImbensHull2026}
+Lal, A., G. Imbens, and P. Hull (2026).
+\newblock Long-term causal inference with many noisy proxies.
+\newblock arXiv:2601.06359.
+
+\bibitem[Ma et~al.(2021)]{MaYinLiuGeng2021}
+Ma, L., Y. Yin, L. Liu, and Z. Geng (2021).
+\newblock On the individual surrogate paradox.
+\newblock \emph{Statistics in Medicine} 40(14), 3334--3352.
+
+\bibitem[Manski(1990)]{Manski1990}
+Manski, C. F. (1990).
+\newblock Nonparametric bounds on treatment effects.
+\newblock \emph{American Economic Review} 80(2), 319--323.
+
+\bibitem[Prentice(1989)]{Prentice1989}
+Prentice, R. L. (1989).
+\newblock Surrogate endpoints in clinical trials: Definition and operational criteria.
+\newblock \emph{Statistics in Medicine} 8(4), 431--440.
+
+\bibitem[Tran et~al.(2024)]{TranBibautKallus2024}
+Tran, A., A. Bibaut, and N. Kallus (2024).
+\newblock Inferring the long-term causal effects of long-term treatments from short-term experiments.
+\newblock In \emph{Proceedings of the 41st International Conference on Machine Learning}, PMLR 235, 48565--48577.
+
+\bibitem[Yin et~al.(2020)]{YinLiuGengLuo2020}
+Yin, Y., L. Liu, Z. Geng, and P. Luo (2020).
+\newblock Novel criteria to exclude the surrogate paradox and their optimalities.
+\newblock \emph{Scandinavian Journal of Statistics} 47(1), 84--103.
+\end{thebibliography}
+
+\end{document}

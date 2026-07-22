@@ -1,0 +1,33 @@
+\section{Discussion and extensions}
+
+The proposed allocation rule uses the observed bipartite graph to choose independent assignment probabilities before outcomes are observed. Its objective is deliberately conservative: \(V_{\mathrm{env}}(G_n,p)\) bounds the design-based variance scale uniformly over the bounded potential-outcome schedules allowed by \cref{obj:ass:bounded-outcomes}. The resulting design gives researchers a transparent, outcome-model-free way to reallocate a fixed expected treatment budget.
+
+\subsection{A prespecified design checklist}
+
+The following checklist turns the theoretical scope into a reproducible design-stage comparison using graph and design inputs alone.
+
+\begin{enumerate}
+\item \textbf{Fix capacity and candidate floors.} Set \(\rho=B_n/m_n\) from the substantive treatment-capacity constraint. Any candidate floor must satisfy \(0<\epsilon\leq\min\{\rho,1-\rho\}\). Prespecify a small grid of substantively acceptable floors inside this interval to insulate the reported gain from floor selection.
+\item \textbf{Audit graph scope.} Report the maximum and selected quantiles of \(d_i\), \(s_k\), and the closed outcome-overlap-neighborhood sizes. Flag persistent hubs or graph sequences whose maxima grow with \(n\) for analysis under growing-degree methods.
+\item \textbf{Audit exposure support.} For every candidate design, compute
+\[
+\pi_i^1(p)=\prod_{k\in N_i(G_n)}p_k,
+\qquad
+\pi_i^0(p)=\prod_{k\in N_i(G_n)}(1-p_k),
+\]
+and report their minima and selected quantiles. An experiment-specific minimum acceptable exposure probability should be chosen before optimization. A candidate that violates it is rejected even if its envelope is smaller.
+\item \textbf{Compare transparent benchmarks.} For each floor, report the homogeneous vector, the exact envelope minimizer when numerically available, and the separable surrogate. Report \(V_{\mathrm{env}}\), the relative envelope reduction from homogeneity, the number of coordinates at each probability bound, the KKT residual for the exact program, and the surrogate ratio together with its theorem bound \(\max\{1,\epsilon^{-(\bar d-1)}\}\).
+\item \textbf{Apply fallback rules.} Retain homogeneous assignment when the envelope reduction is no larger than the declared numerical tolerance, changes sign or is highly unstable across acceptable floors, or requires unacceptable exposure probabilities. Treat the surrogate as uncertified when its displayed bound is too large for the application's prespecified tolerance. Evaluate clustering as a separate design candidate when cohesive graph regions, hubs, or exposure-support failures make independent assignment unattractive.
+\end{enumerate}
+
+\subsection{Limitations and future work}
+
+The numerical tolerances and minimum exposure probability in this checklist are application-specific design inputs, not universal constants supplied by the theory. Publishing the full floor-sensitivity table prevents them from becoming hidden researcher choices. Sparse implementations, computation benchmarks, and simulations relating the envelope to realized variance and coverage remain necessary before recommending routine use.
+
+This perspective differs from clustering-based approaches to interference. Cluster randomization and graph-cluster constructions alter the dependence structure of assignment in order to increase the probability of informative exposures or reduce cross-cluster spillovers \citep{EcklesKarrerUgander2017,UganderYin2020RandomizedGCR,BrennanMirrokniPougetAbadie2022ClusterBipartite}. Here the assignment law remains independent across intervention units; adaptation occurs through the probability vector. That distinction can be useful when independent implementation is operationally attractive, when clusters would be difficult to define, or when a fixed expected treatment total is an important design constraint. At the same time, clustering may be preferable when the graph contains cohesive regions for which correlated assignment produces substantially more relevant exposure variation.
+
+The surrogate results clarify the scope for computational simplification. \Cref{obj:thm:surrogate-certificate} gives a uniform approximation guarantee when outcome neighborhoods are bounded, with a constant determined by the positivity floor and the degree bound. Thus, the additive rule is a certified substitute for the full overlap criterion only when the reported constant meets the application's prespecified tolerance.
+
+\Cref{obj:thm:dispersion-certificate-unbounded} supplies the complementary limitation. Neither dispersed intervention-side incidences nor the theorem's one-sided conditional \(h\)-weight-ratio restriction is sufficient to control the envelope approximation ratio without bounded outcome degree. In particular, summaries based on \(s_k\) can miss higher-order overlap patterns that enter the exact criterion through shared neighborhoods. Applied work should consequently report outcome-neighborhood and overlap diagnostics, rather than relying on intervention-side degree summaries alone. Related work on low-order and graph-aware experimental designs likewise emphasizes that graph structure beyond marginal degree can matter for design performance \citep{EichhornKhanUganderYu2024LowOrderClusteredDesigns,HarshawSavjeEisenstatMirrokniPougetAbadie2021BipartiteERL}.
+
+Several extensions are natural but are not developed here. First, auxiliary pre-treatment outcomes or credible structural restrictions could support an outcome-informed criterion that targets an estimated variance rather than its uniform envelope. Such an approach would trade the present robustness for dependence on an outcome model and its validation. Second, clustered or dependent assignment mechanisms could be incorporated by replacing the independent-Bernoulli exposure probabilities and covariance loads with those induced by the chosen randomization scheme. Finally, graphs with growing degrees or overlap dependence may require asymptotic conditions tailored to their growth rates, beyond the bounded-degree regime used for \cref{obj:thm:hetero-clt}. These extensions would connect the present design problem to broader work on network experimentation and optimized randomization \citep{UganderYin2020RandomizedGCR,Viviano2026NetworkDesign}.

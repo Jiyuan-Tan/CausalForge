@@ -1,0 +1,590 @@
+% =====================================================================
+%  ThmSmith Stage 0 derivation skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_long\_term\_surrogate, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to a Q1..Q6
+%    pool-mode, fill it VERBATIM from the question-specific block of
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    For free-form panel / ExactID / PartialID anchors, reproduce the
+%    locked-parameter block from the Stage -1 proposal verbatim. Do not
+%    rephrase locked parameters; Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage 0 derivation: \texttt{pid\_long\_term\_surrogate} / \texttt{v1}%
+  \\ \large\textit{Sharp response-type bounds for drift-contaminated long-term surrogate panels}}
+\author{ThmSmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note studies the partial-identification problem in which a randomized short experiment observes a noisy surrogate panel \((A,S_0,\ldots,S_J)\), an auxiliary bridge law observes \((S_J,Y_H)\) in a historical/control regime, and the causal target is the long-term ATE \(\theta=\E[Y_H(1)-Y_H(0)]\) at a horizon \(H>J\).  Because the anchor is partial identification, the estimand-defining formula is not a regression coefficient: it is the pair of linear-program support values \((\theta_L(P),\theta_U(P))\) obtained by optimizing \(\theta\) over finite latent response-type distributions that match the observable law \(P\) and satisfy the noisy-measurement, bridge, bounded-outcome, and post-surrogate-drift restrictions.  The main positive result proves the sharp containment \(\Theta_I(P)=[\theta_L(P),\theta_U(P)]\) whenever the finite compatibility polytope is nonempty.  The note also proves the zero-drift exact-surrogate corner in which the interval collapses to the usual surrogate-index functional \(\E[m(S_J(1))-m(S_J(0))]\).  For the Stage -1 conjectures, the finite LP sharpness claim is confirmed, the endpoint-extension part of the panel-tightening claim is confirmed as the exact face-removal condition, the separate observed-increment relevance clause is only a diagnostic rather than a theorem, and the sign-boundary claim is confirmed once the residual endpoints are defined from the sharp bounds.
+\end{abstract}
+
+\section{Introduction}
+Short experiments often measure rich short-run outcomes before the long-run endpoint is available.  Surrogate-index methods use those short-run measurements to forecast long-run treatment effects, but their identifying power depends on a demanding exclusion: after conditioning on the surrogate information, treatment must have no remaining path to the long-term endpoint.  In applications such as online experimentation, education, labor markets, and clinical studies, a natural violation is dynamic.  Treatment may move observed surrogates by date \(J\), and then an unobserved state may drift between \(J\) and the endpoint horizon \(H\).
+
+The econometric question is therefore not whether the standard surrogate index is exact; by design, it need not be.  The question is how much can still be learned from the short randomized panel and the auxiliary bridge law when post-surrogate drift is bounded but not eliminated.  A finite partial-identification formulation answers this question by optimizing the causal target over every latent structure compatible with the observable distribution and the maintained restrictions, following the nonparametric-bounds logic of \cite{Manski1990} and the finite latent-type LP logic used in sharp IV bounds such as \cite{BalkePearl1997}.
+
+The new object in this note is the joint response-type compatibility polytope for long-term surrogate panels.  The response type records potential latent surrogate paths, noisy observed surrogate panels, post-surrogate states, and potential long-term outcomes in both treatment arms.  The main theorem proves that the sharp identified set is exactly the interval between two finite linear programs over this polytope.  A second result identifies the exact condition under which adding the full panel, rather than only the terminal surrogate vector, strictly changes a support endpoint: the full-panel constraints must remove every terminal-only optimizer for at least one endpoint.
+
+This distinction matters for formula design.  Repeated noisy surrogates do not automatically restore point identification, and an observed panel increment is not by itself a sharpness theorem.  The panel is useful when its compatibility constraints remove endpoint-achieving latent completions that would otherwise be allowed by a terminal-only surrogate-index or unknown-copula analysis.  The result gives a transparent way to separate a causal target, an observable bounding functional, and the residual drift contamination that prevents point identification.
+
+\section{Related work and positioning}
+\cite{Prentice1989} gives the classical operational criterion for surrogate endpoints: conditioning on the surrogate should remove the treatment-outcome association.  The present note studies the opposite finite problem, where observed terminal surrogacy is not imposed and post-surrogate drift is explicitly allowed.
+
+\cite{FrangakisRubin2002} introduced principal stratification for post-treatment variables and surrogate endpoints.  Their warning against naive conditioning on post-treatment variables motivates the response-type formulation used here: latent surrogate histories are potential-response objects, not pretreatment covariates.
+
+\cite{AtheyChettyImbensKang2019} is the direct surrogate-index anchor.  It identifies long-term effects by combining short-term proxies with a bridge sample under a surrogate-index condition; this note keeps the same applied data fusion motivation but replaces exact surrogacy with sharp bounds under finite measurement and drift restrictions.
+
+\cite{ChenRitzwoller2023} and \cite{LiLuedtke2023} develop efficient data-fusion estimators for long-term treatment effects when the identifying structure is accepted.  Their contribution is estimation and efficiency; the present contribution is an identified-set calculation when the long-term treated endpoint remains latent.
+
+\cite{FanManzanaresParkQi2026} studies sensitivity and identified sets for surrogate-index estimation under unknown conditional copulas.  The closest comparison in this note is the terminal-only relaxation: it keeps terminal surrogate information but drops the full panel compatibility constraints, so it can be wider than the drift-aware panel bound.
+
+\cite{HuangWangYuanZhaoZhang2026} uses longitudinal surrogate information to extrapolate long-term effects under longitudinal surrogacy and comparability assumptions.  The current theorem differs by treating the unobserved post-\(J\) state as a bounded-drift latent variable and returning bounds rather than a point estimand.
+
+\cite{LalImbensHull2026} studies many noisy proxies for low-dimensional latent surrogates.  This note is adjacent in its noisy-proxy motivation, but the mathematical object is a nonparametric finite response-type LP with treatment-specific latent paths and post-surrogate drift.
+
+\cite{ChenGengJia2007}, \cite{VanderWeele2013}, and \cite{MaYinLiuGeng2021} analyze surrogate paradoxes and criteria for reliable surrogate signs.  The sign result below is a partial-identification analogue: the sign is certified exactly when the sharp lower endpoint is positive or the sharp upper endpoint is negative.
+
+\cite{Manski1990} supplies the foundational principle of optimizing a causal parameter over all latent completions compatible with the observables.  \cite{BalkePearl1997} shows how sharp bounds in finite IV models can be written as linear programs over latent response types.  The in-repository partial-identification catalogue positions Manski-family, Balke--Pearl, proxy, and selection bounds as the relevant family for generated partial-ID entries; the present note contributes a long-term-surrogate member of that family rather than a new panel-regression or exact-ID formula.
+
+\section{Formal setup}
+All random variables have finite support unless explicitly noted.  The short experiment observes
+\[
+  O^E=(A,S_0,\ldots,S_J),
+  \qquad A\in\{0,1\},\qquad
+  S_j=(S_{j1},\ldots,S_{jK})\in\mathcal S_j,
+\]
+where \(J<H\).  The auxiliary bridge sample observes \(O^B=(S_J^B,Y_H^B)\) on the same terminal-surrogate support, with \(Y_H^B\in[0,1]\).  The observable distribution is
+\[
+  P=(P^E,P^B)
+  =\mathcal L(A,S_0,\ldots,S_J)\otimes \mathcal L(S_J^B,Y_H^B),
+\]
+where the product notation only records that the two observable laws are supplied together; it is not an independence assumption between the studies.
+
+For each treatment arm \(d\in\{0,1\}\), a unit has a latent observed-date path
+\[
+  U_0(d),\ldots,U_J(d)\in\mathcal U,
+\]
+an unobserved pre-outcome state \(U_H(d)\in\mathcal U_H\), potential noisy surrogate measurements \(S_j(d)\), and a potential long-term outcome \(Y_H(d)\in[0,1]\).  The experiment reveals \(S_j=S_j(A)\).  A nonnegative cost \(c:\mathcal U\times\mathcal U_H\to[0,\infty)\) measures post-surrogate drift, and the drift budget \(\rho\ge0\) restricts feasible transitions from \(U_J(d)\) to \(U_H(d)\).
+
+The noisy-measurement restriction is represented by finite admissible measurement kernels \(Q_{jk}(s\mid u)\), or more generally by a fixed finite collection of linear constraints on the joint law of \((U_j(d),S_{jk}(d))\).  The bridge restriction is represented by a finite latent bridge response curve
+\[
+  m(v)=\E[Y_H^B\mid U_H^B=v],
+\]
+and, on terminal surrogate cells with \(P^B(S_J^B=s)>0\), by the observed bridge regression
+\[
+  g(s)=\E[Y_H^B\mid S_J^B=s].
+\]
+The notation \(m\) is latent and \(g\) is observable.  The setup deliberately does not impose \(Y_H(d)\perp A\mid S_J(d)\) in the treated experimental arm.
+
+Let \(\mathcal T\) be the finite set of response types
+\[
+  \tau=\Bigl(
+    \{U_0(d;\tau),\ldots,U_J(d;\tau),U_H(d;\tau),
+      S_0(d;\tau),\ldots,S_J(d;\tau),Y_H(d;\tau)\}_{d=0}^1
+  \Bigr)
+\]
+that satisfy the support, outcome-bound, measurement, bridge-response, and drift restrictions at the type level.  A candidate latent experimental population is a probability vector \(\pi\in\Delta(\mathcal T)\).  The finite observation map \(M\) sends \(\pi\) to the experimental law implied by randomization and consistency, together with the bridge restrictions induced by the shared measurement and response objects.  The feasible compatibility polytope is
+\[
+  \mathcal C(P)=\{\pi\in\Delta(\mathcal T): M\pi=P\}.
+\]
+When \(\mathcal C(P)=\varnothing\), the maintained restrictions and the observable law are mutually inconsistent.
+
+The sharp identified set for the scalar target is
+\[
+  \Theta_I(P)
+  =
+  \left\{
+    L(\pi):\pi\in\mathcal C(P)
+  \right\},
+  \qquad
+  L(\pi)=
+  \sum_{\tau\in\mathcal T}\pi_\tau
+  \bigl(Y_H(1;\tau)-Y_H(0;\tau)\bigr).
+\]
+This definition separates the causal target, which is a feature of the latent response-type population, from the observable bounding functional, which is obtained by optimizing \(L\) over \(\mathcal C(P)\).
+
+\paragraph{Locked parameters.}
+\begin{itemize}[leftmargin=*]
+  \item cluster: partial identification.
+  \item qid: \texttt{pid\_long\_term\_surrogate}.
+  \item specialization: \texttt{v1}.
+  \item observable distribution \(P\): law of a randomized short experimental panel
+  \((A,S_0,S_1,\ldots,S_J)\) with \(A\in\{0,1\}\) and \(K\) noisy surrogate coordinates
+  at each observed date, together with an auxiliary bridge law of
+  \((S_J,Y_H)\) in the historical/control regime on the same finite support.
+  \item parameter \(\theta\): \(\E[Y_H(1)-Y_H(0)]\), the long-term ATE at horizon \(H>J\).
+  \item identifying restrictions: randomization and consistency in the experiment;
+  finite latent surrogate path \(U_0(d),\ldots,U_J(d)\); conditionally
+  nondifferential noisy surrogate measurements around \(U_j(d)\) at each date \(j\);
+  bounded post-surrogate drift from \(U_J(d)\) to the
+  unobserved pre-outcome state \(U_H(d)\); bounded outcomes \(Y_H(d)\in[0,1]\);
+  bridge comparability for the no-drift response curve plus a latent
+  post-drift response \(m(U_H(d))\) for transport endpoints; no full
+  Prentice surrogacy conditioning on observed \(S_J(d)\) under treatment.
+  \item bounding functional: lower and upper support values of \(\theta\) over all finite
+  latent response-type distributions matching \(P\) and satisfying the
+  measurement, bridge, outcome, and drift restrictions.
+\end{itemize}
+
+\section{Assumptions}
+\begin{assumption}[Finite support and bounded outcomes]\label{ass:finite}
+The treatment set is \(\{0,1\}\), the surrogate-coordinate spaces, latent-state spaces, and response-type set are finite, and \(Y_H(d)\in[0,1]\) for \(d\in\{0,1\}\).  All sums and conditional means below are over cells with well-defined finite support.
+\end{assumption}
+
+\begin{assumption}[Experimental randomization, positivity, and consistency]\label{ass:randomization}
+The treatment \(A\) is randomized independently of the full response type \(\tau\), with \(0<\Pr(A=d)<1\) for \(d=0,1\).  The observed surrogate panel satisfies \(S_j=S_j(A)\) for every date \(j=0,\ldots,J\).
+\end{assumption}
+
+\begin{assumption}[Conditionally nondifferential noisy surrogates]\label{ass:noisy-measurement}
+For each date \(j\) and coordinate \(k\), the admissible law of \(S_{jk}(d)\) depends on treatment only through the same-date latent state \(U_j(d)\).  The measurement kernels or uncertainty set are fixed before optimizing the target and impose only finite linear restrictions on the response-type distribution.
+\end{assumption}
+
+\begin{assumption}[Bridge comparability without full observed-surrogate surrogacy]\label{ass:bridge}
+The auxiliary bridge law of \((S_J,Y_H)\) restricts the latent no-drift response curve \(m(v)=\E[Y_H^B\mid U_H^B=v]\) and the observed regression \(g(s)=\E[Y_H^B\mid S_J^B=s]\) through the same terminal measurement model used in the experiment.  The restriction does not assert \(Y_H(d)\perp A\mid S_J(d)\) in the experimental population.
+\end{assumption}
+
+\begin{assumption}[Latent bridge-response for transport endpoints]\label{ass:bridge-response}
+For endpoint calculations that transport mass from \(U_J(d)\) to \(U_H(d)\), the conditional mean contribution of \(Y_H(d)\) given \(U_H(d)=v\) is \(m(v)\).  This is a restriction on the latent post-drift state, not on the observed noisy terminal surrogate.
+\end{assumption}
+
+\begin{assumption}[Bounded post-surrogate drift]\label{ass:drift}
+The treatment-specific post-surrogate transition is feasible only if
+\[
+  c(U_J(d),U_H(d))\le\rho
+\]
+for \(d=0,1\), where \(c\) and \(\rho\) are fixed independently of the optimized latent population.  No restriction is imposed on the pre-\(J\) latent transition unless it is implied by the finite response-type restrictions.
+\end{assumption}
+
+\begin{assumption}[Response-type sharpness convention]\label{ass:response-types}
+The response-type set \(\mathcal T\), observation map \(M\), and target map \(L\) are exactly those generated by Assumptions~\ref{ass:finite}--\ref{ass:drift}.  A latent population is admissible if and only if it is a probability vector \(\pi\in\Delta(\mathcal T)\) with \(M\pi=P\).
+\end{assumption}
+
+\begin{assumption}[Minimal binary panel for closed-form transport]\label{ass:minimal-binary}
+For the two-by-two transport specialization, \(\mathcal U=\mathcal U_H=\{0,1\}\), \(J=1\), \(K=2\), every noisy coordinate has false-positive and false-negative probabilities strictly between zero and one, and the bridge response curve \(m\) is weakly increasing in the latent post-surrogate state.
+\end{assumption}
+
+\begin{assumption}[Observed panel-increment relevance]\label{ass:increment-relevance}
+The treatment changes the joint law of at least one observed increment \(S_{1k}-S_{0k}\), and this change is not measurable with respect to the terminal noisy surrogate vector \(S_J\) alone under the admissible measurement laws.
+\end{assumption}
+
+\section{Regression estimator}
+This section title is fixed by the skeleton.  In the present partial-identification anchor, there is no regression estimator and no coefficient to decompose.  The estimand-defining functional is the support-function pair
+\[
+  \theta_L(P)=
+  \min_{\pi\in\mathcal C(P)} L(\pi),
+  \qquad
+  \theta_U(P)=
+  \max_{\pi\in\mathcal C(P)} L(\pi),
+\]
+whenever \(\mathcal C(P)\ne\varnothing\).  These are observable functionals in the partial-ID sense: the feasible set \(\mathcal C(P)\) is obtained by applying the known support, measurement, bridge, outcome, and drift restrictions to the observed law \(P\).  If only an outer approximation \(\overline{\mathcal C}(P)\supseteq\mathcal C(P)\) is used, the resulting support values give an outer interval; the theorem below uses the exact response-type compatibility set and is therefore sharp.
+
+For comparison with a terminal-only surrogate analysis, define \(\mathcal C_{\mathrm{term}}(P)\) by dropping all restrictions that involve the earlier measurements \(S_0,\ldots,S_{J-1}\) and retaining only the terminal surrogate vector \(S_J\), the bridge law, and the same outcome and drift support restrictions.  Its support values are \(\theta_L^{\mathrm{term}}(P)\) and \(\theta_U^{\mathrm{term}}(P)\).  The full-panel feasible set projects into the terminal-only feasible set, so the full-panel interval is always weakly contained in the terminal-only interval.
+
+In the minimal binary case, write \(p_d(u)\) for the full-panel-compatible row margin of \(U_1(d)=u\).  Let \(\Gamma_d(P;\rho)\) be the exact arm-\(d\) projection of \(\mathcal C(P)\) onto arrays
+\[
+  \gamma^d_{uv}=\Pr_\pi(U_1(d)=u,U_H(d)=v),
+  \qquad u,v\in\{0,1\},
+\]
+with row sums \(p_d(u)\), nonnegative entries, the bridge-compatible column restrictions implied by Assumptions~\ref{ass:bridge} and~\ref{ass:bridge-response}, and support zeros whenever \(c(u,v)>\rho\).  Under Assumption~\ref{ass:bridge-response}, the arm-\(d\) mean endpoint contribution is
+\[
+  \mu_d(\gamma^d)=\sum_{u,v}\gamma^d_{uv}m(v).
+\]
+The observed surrogate-index margin used only for sign comparison is
+\[
+  \mu_{\mathrm{SI}}(P)=
+  \E[g(S_J(1))-g(S_J(0))],
+\]
+where the expectation uses the experimental treatment-specific laws of \(S_J\) and \(g\) is the bridge regression.
+
+\section{Target causal estimand}
+The target is the long-term average treatment effect in the experimental population,
+\[
+  \theta
+  =
+  \E[Y_H(1)-Y_H(0)].
+\]
+Under a candidate response-type distribution \(\pi\), this target equals the linear functional
+\[
+  L(\pi)=
+  \sum_{\tau\in\mathcal T}\pi_\tau
+  \bigl(Y_H(1;\tau)-Y_H(0;\tau)\bigr).
+\]
+The observed data do not contain \(Y_H(1)\) or \(Y_H(0)\) in the short experiment, so \(\theta\) is not defined as a function of \(P\).  Instead, the identified set \(\Theta_I(P)\) contains every value \(L(\pi)\) attainable by an admissible latent population \(\pi\in\mathcal C(P)\).  The result to be proved is a containment and sharpness statement for this set, not equality between \(\theta\) and a single regression or adjustment formula.
+
+\section{Main theorems}
+\begin{proposition}[Sharp finite LP bounds]\label{prop:sharp-lp}
+Under Assumptions~\ref{ass:finite}--\ref{ass:response-types}, if \(\mathcal C(P)\ne\varnothing\), then
+\[
+  \Theta_I(P)=[\theta_L(P),\theta_U(P)].
+\]
+Equivalently, every admissible target value lies in the LP interval, and every point of the LP interval is attained by some admissible finite response-type distribution.
+\end{proposition}
+
+This confirms the Stage -1 finite LP sharpness claim.  The contribution is not the generic fact that finite partial-ID problems can be written as LPs; that principle is classical after \cite{Manski1990} and \cite{BalkePearl1997}.  The contribution here is the exact response-type object for noisy long-term surrogate panels with bounded post-surrogate drift.
+
+\begin{proposition}[Endpoint-extension criterion for panel tightening]\label{prop:endpoint-extension}
+Let \([\theta_L^{\mathrm{term}}(P),\theta_U^{\mathrm{term}}(P)]\) be the terminal-only interval and let \([\theta_L(P),\theta_U(P)]\) be the full-panel interval.  Then
+\[
+  [\theta_L(P),\theta_U(P)]
+  \subseteq
+  [\theta_L^{\mathrm{term}}(P),\theta_U^{\mathrm{term}}(P)].
+\]
+Moreover, the lower endpoint is strictly tightened if and only if no terminal-only lower-endpoint optimizer admits a full-panel extension in \(\mathcal C(P)\), and the upper endpoint is strictly tightened if and only if no terminal-only upper-endpoint optimizer admits a full-panel extension in \(\mathcal C(P)\).  Hence the full-panel interval has strictly shorter length if and only if at least one of these two endpoint faces is removed.
+\end{proposition}
+
+Verdict on the Stage -1 panel-tightening conjecture: partial.  The endpoint-extension part is confirmed: a quantity such as \(\kappa_b(P)\) is useful exactly when it is defined as the least drift budget needed to extend the terminal-only endpoint face.  The separate observed-increment relevance clause is only a diagnostic unless it is strengthened to this endpoint-face statement; the proof does not require a special role for increments except through the constraints they impose on \(\mathcal C(P)\).
+
+\begin{proposition}[Surrogate-index collapse under exact terminal no-drift]\label{prop:point-collapse}
+Assume Assumptions~\ref{ass:finite}--\ref{ass:response-types}.  Strengthen Assumption~\ref{ass:noisy-measurement} at date \(J\) so that \(S_J(d)=U_J(d)\) is observed without error, set \(\rho=0\) in Assumption~\ref{ass:drift}, and impose the latent bridge-response restriction in Assumption~\ref{ass:bridge-response} for both arms.  Then
+\[
+  \Theta_I(P)
+  =
+  \left\{
+    \E[m(S_J(1))-m(S_J(0))]
+  \right\}.
+\]
+\end{proposition}
+
+This is the classical surrogate-index corner inside the present notation.  It is useful as a boundary check: the drift-aware partial-ID model relaxes exact terminal surrogacy, and the interval collapses only when the unobserved post-\(J\) drift and terminal measurement error are removed.
+
+\begin{proposition}[Sharp sign boundary and binary transport residuals]\label{prop:sign-boundary}
+Assume Assumptions~\ref{ass:finite}--\ref{ass:response-types}.  Define
+\[
+  r_-(P)=\mu_{\mathrm{SI}}(P)-\theta_L(P),
+  \qquad
+  r_+(P)=\theta_U(P)-\mu_{\mathrm{SI}}(P).
+\]
+Then the sign of the long-term ATE is identified by the maintained restrictions and \(P\) if and only if
+\[
+  \mu_{\mathrm{SI}}(P)>r_-(P)
+  \quad\text{or}\quad
+  -\mu_{\mathrm{SI}}(P)>r_+(P).
+\]
+Under Assumption~\ref{ass:minimal-binary}, if the exact armwise projections \(\Gamma_d(P;\rho)\) defined in the Regression estimator section characterize the full feasible endpoint problem, then
+\[
+  r_-(P)=
+  \max_{\gamma^0\in\Gamma_0(P;\rho),\ \gamma^1\in\Gamma_1(P;\rho)}
+  \left\{
+    \mu_{\mathrm{SI}}(P)-\mu_1(\gamma^1)+\mu_0(\gamma^0)
+  \right\},
+\]
+\[
+  r_+(P)=
+  \max_{\gamma^0\in\Gamma_0(P;\rho),\ \gamma^1\in\Gamma_1(P;\rho)}
+  \left\{
+    \mu_1(\gamma^1)-\mu_0(\gamma^0)-\mu_{\mathrm{SI}}(P)
+  \right\}.
+\]
+\end{proposition}
+
+Verdict on the Stage -1 sign-boundary conjecture: confirmed for the sharp sign criterion and confirmed for the two-by-two transport formula when \(\Gamma_d\) is the exact projection of the full response-type polytope.  The criterion is exactly the ordinary sharp-interval sign test, written relative to the observed surrogate-index margin.  If \(\Gamma_d\) is replaced by a larger row-and-column relaxation, the same formulas give only outer residual bounds.
+
+\section{Interpretation}
+Proposition~\ref{prop:sharp-lp} says that the right estimand for this problem is an interval, not a single surrogate-index plug-in value.  The interval is sharp because the latent response-type model is finite, the observable restrictions are linear, and the target is linear in the latent population.  No additional smoothness, parametric outcome model, or regression projection is doing hidden work.
+
+Proposition~\ref{prop:endpoint-extension} explains exactly when the short panel matters.  Dropping earlier surrogate waves can only enlarge the feasible set, so the terminal-only interval cannot be shorter than the full-panel interval.  Strict tightening occurs only when the dropped panel constraints remove all latent completions that achieve a terminal-only endpoint.  An observed increment can be a useful empirical signal for this removal, but the mathematical condition is endpoint-face removal, not the existence of an increment by itself.
+
+Proposition~\ref{prop:point-collapse} identifies the clean case.  If the terminal surrogate is the latent endpoint state, the post-surrogate drift budget is zero, and the bridge response curve transports to both experimental arms, then the usual surrogate-index formula equals the target.  Once measurement error or post-\(J\) drift is admitted, the surrogate-index margin \(\mu_{\mathrm{SI}}(P)\) is only a reference point inside or outside the sharp interval, and the residual endpoints \(r_-(P)\) and \(r_+(P)\) measure the remaining sign risk.
+
+The bound widens to the natural Manski range when the measurement, bridge, and drift restrictions stop constraining \(Y_H(1)\) and \(Y_H(0)\).  It narrows when the bridge response \(m\), the terminal measurement model, and the drift budget jointly restrict how much mass can be moved from observed-date latent states to post-surrogate states.  The restriction doing the most causal work is not full Prentice surrogacy; it is the finite compatibility of noisy repeated measurements with bounded latent drift.
+
+\section{Step-by-step proof}
+\begin{lemma}[Finite compatibility polytope]\label{lem:polytope}
+Under Assumptions~\ref{ass:finite}--\ref{ass:response-types}, \(\mathcal C(P)\) is a closed convex polytope in a finite-dimensional simplex.  If it is nonempty, it is compact.
+\end{lemma}
+
+\begin{proof}
+By Assumption~\ref{ass:finite}, \(\mathcal T\) is finite and \(\Delta(\mathcal T)=\{\pi:\pi_\tau\ge0,\ \sum_\tau\pi_\tau=1\}\) is a compact simplex.  By Assumptions~\ref{ass:noisy-measurement}, \ref{ass:bridge}, \ref{ass:bridge-response}, and \ref{ass:drift}, every maintained restriction is encoded either by deleting infeasible response types or by imposing finitely many linear equalities and inequalities on \(\pi\).  By Assumption~\ref{ass:randomization}, the experimental observation equations are also linear because
+\[
+  \Pr_P(A=d,S_0=s_0,\ldots,S_J=s_J)
+  =
+  \Pr_P(A=d)
+  \sum_{\tau\in\mathcal T}\pi_\tau
+  \one\{S_0(d;\tau)=s_0,\ldots,S_J(d;\tau)=s_J\}.
+\]
+Bridge matching is linear by Assumption~\ref{ass:bridge}.  Therefore \(\mathcal C(P)\) is the intersection of the simplex with finitely many closed half-spaces and hyperplanes.  A closed subset of a compact finite-dimensional simplex is compact.
+\end{proof}
+
+\begin{lemma}[Linear image of a convex feasible set]\label{lem:linear-image}
+Let \(C\) be a nonempty convex subset of a real vector space and let \(L:C\to\R\) be affine.  Then \(L(C)\) is an interval.  If \(C\) is compact and \(L\) is continuous, then \(L(C)=[\min_C L,\max_C L]\).
+\end{lemma}
+
+\begin{proof}
+For any \(x_0,x_1\in C\) and \(\lambda\in[0,1]\), convexity gives \(x_\lambda=\lambda x_1+(1-\lambda)x_0\in C\).  Affineness gives \(L(x_\lambda)=\lambda L(x_1)+(1-\lambda)L(x_0)\), so every point between two attainable values is attainable.  Compactness and continuity give existence of the minimum and maximum.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:sharp-lp}]
+By Lemma~\ref{lem:polytope}, the feasible set \(\mathcal C(P)\) is compact and convex.  The target map \(L(\pi)=\sum_\tau\pi_\tau(Y_H(1;\tau)-Y_H(0;\tau))\) is linear by the definition of the response-type target.  Lemma~\ref{lem:linear-image} then gives
+\[
+  \Theta_I(P)
+  =
+  L(\mathcal C(P))
+  =
+  [\min_{\pi\in\mathcal C(P)}L(\pi),\max_{\pi\in\mathcal C(P)}L(\pi)]
+  =
+  [\theta_L(P),\theta_U(P)].
+\]
+The containment \(\Theta_I(P)\subseteq[\theta_L(P),\theta_U(P)]\) is the support-value inequality.  Sharpness follows from the interval part of Lemma~\ref{lem:linear-image}: for any \(t\in[\theta_L(P),\theta_U(P)]\), a convex mixture of a lower optimizer and an upper optimizer is still admissible and attains \(t\).
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:endpoint-extension}]
+The terminal-only feasible set is obtained by dropping restrictions involving \(S_0,\ldots,S_{J-1}\).  Therefore every full-panel feasible latent population has a terminal-only projection, so
+\[
+  \mathcal C(P)\subseteq \mathcal C_{\mathrm{term}}(P)
+\]
+after identifying full response types with their terminal projections.  Minimizing the same linear target over the smaller set gives
+\[
+  \theta_L^{\mathrm{term}}(P)
+  \le
+  \theta_L(P),
+\]
+and maximizing over the smaller set gives
+\[
+  \theta_U(P)
+  \le
+  \theta_U^{\mathrm{term}}(P).
+\]
+This proves interval containment.
+
+For the lower endpoint, equality \(\theta_L(P)=\theta_L^{\mathrm{term}}(P)\) holds if and only if there exists \(\pi\in\mathcal C(P)\) whose terminal projection is feasible for the terminal-only problem and attains the terminal-only lower optimum.  That is exactly the existence of a full-panel extension of a terminal-only lower-endpoint optimizer.  If no such extension exists, compactness of the two polytopes and continuity of \(L\) imply the minimum over the closed smaller feasible set is strictly larger.  The upper-endpoint statement is identical with ``minimum'' replaced by ``maximum''.  Since the full interval is contained in the terminal-only interval, strict movement of either endpoint is equivalent to a strictly shorter interval.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:point-collapse}]
+Exact terminal measurement gives \(S_J(d)=U_J(d)\).  The zero-drift restriction gives \(U_H(d)=U_J(d)\), since \(c(U_J(d),U_H(d))\le0\) permits only no-drift transitions by Assumption~\ref{ass:drift}.  Hence \(U_H(d)=S_J(d)\).  By Assumption~\ref{ass:bridge-response}, the conditional mean of \(Y_H(d)\) given \(U_H(d)=v\) is \(m(v)\).  Taking expectations under the treatment-specific experimental laws gives
+\[
+  \E[Y_H(d)]
+  =
+  \E[m(U_H(d))]
+  =
+  \E[m(S_J(d))].
+\]
+Subtracting the \(d=0\) identity from the \(d=1\) identity yields
+\[
+  \theta
+  =
+  \E[m(S_J(1))-m(S_J(0))].
+\]
+Every admissible \(\pi\in\mathcal C(P)\) has this same value, so the identified set is the displayed singleton.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:sign-boundary}]
+The sign of the long-term ATE is identified as positive exactly when every element of \(\Theta_I(P)\) is positive, which by Proposition~\ref{prop:sharp-lp} is equivalent to \(\theta_L(P)>0\).  It is identified as negative exactly when every element of \(\Theta_I(P)\) is negative, equivalently \(\theta_U(P)<0\).  By definition,
+\[
+  \mu_{\mathrm{SI}}(P)>r_-(P)
+  \quad\Longleftrightarrow\quad
+  \mu_{\mathrm{SI}}(P)>\mu_{\mathrm{SI}}(P)-\theta_L(P)
+  \quad\Longleftrightarrow\quad
+  \theta_L(P)>0,
+\]
+and
+\[
+  -\mu_{\mathrm{SI}}(P)>r_+(P)
+  \quad\Longleftrightarrow\quad
+  -\mu_{\mathrm{SI}}(P)>\theta_U(P)-\mu_{\mathrm{SI}}(P)
+  \quad\Longleftrightarrow\quad
+  \theta_U(P)<0.
+\]
+This proves the sign criterion.
+
+Under Assumption~\ref{ass:minimal-binary} and the exact projection definition of \(\Gamma_d(P;\rho)\), Assumption~\ref{ass:bridge-response} rewrites the arm means as \(\mu_d(\gamma^d)=\sum_{u,v}\gamma^d_{uv}m(v)\).  Therefore
+\[
+  \theta_L(P)
+  =
+  \min_{\gamma^0\in\Gamma_0(P;\rho),\ \gamma^1\in\Gamma_1(P;\rho)}
+  \{\mu_1(\gamma^1)-\mu_0(\gamma^0)\}
+\]
+and similarly \(\theta_U(P)\) is the corresponding maximum.  Substituting these two support values into the definitions of \(r_-\) and \(r_+\) changes a minimum of \(\theta\) into a maximum of \(\mu_{\mathrm{SI}}-\theta\), and changes a maximum of \(\theta\) into a maximum of \(\theta-\mu_{\mathrm{SI}}\).  This gives the two displayed transport programs.
+\end{proof}
+
+\section{Sanity checks}
+\paragraph{Vacuous Manski fallback.}
+If the measurement, bridge, and drift restrictions place no effective restrictions on \(Y_H(1)\) and \(Y_H(0)\) beyond \(Y_H(d)\in[0,1]\), then \(\mathcal C(P)\) contains completions with \(Y_H(1)=1,Y_H(0)=0\) for all types and completions with \(Y_H(1)=0,Y_H(0)=1\) for all types.  Proposition~\ref{prop:sharp-lp} then gives
+\[
+  \Theta_I(P)=[-1,1],
+\]
+the natural bounded-outcome ATE range.
+
+\paragraph{Zero-width surrogate-index corner.}
+Under the strengthened exact-terminal and zero-drift restrictions in Proposition~\ref{prop:point-collapse}, the lower and upper support values coincide:
+\[
+  \theta_L(P)=\theta_U(P)=\E[m(S_J(1))-m(S_J(0))].
+\]
+This recovers the surrogate-index identification formula in the no-drift, no-terminal-measurement-error limit.
+
+\paragraph{Monotone-treatment-response specialization.}
+If an additional shape restriction required \(Y_H(1;\tau)\ge Y_H(0;\tau)\) for every response type, then the LP can be solved over the smaller face \(L(\pi)\ge0\).  The immediate consequence is the lower bound \(\theta_L(P)\ge0\).  This is the same algebraic role played by monotone-treatment-response restrictions in Manski-style bounds: they remove response types with negative individual-level effects but do not generally identify the upper endpoint.
+
+\paragraph{High-drift terminal-only limit.}
+If \(\rho\) is large enough that every terminal-only endpoint optimizer has a full-panel extension satisfying \(c(U_J(d),U_H(d))\le\rho\) for both arms, Proposition~\ref{prop:endpoint-extension} gives equality of the corresponding endpoints.  In this case the repeated panel may still improve prediction or diagnostics, but it does not change the sharp support value for \(\theta\).
+
+\paragraph{Balke--Pearl comparison.}
+When the latent type consists of finitely many potential treatment and outcome response maps and the observed restrictions are cell-probability equations, Proposition~\ref{prop:sharp-lp} reduces to the same finite-LP sharpness logic used by Balke--Pearl binary IV bounds.  The difference is substantive rather than algebraic: here the latent table contains surrogate paths, noisy measurements, and post-surrogate drift states instead of instrument compliance and potential-outcome cells.
+
+\section{Counterexample or minimality check}
+\paragraph{Dropping bounded outcomes destroys finite Manski bounds.}
+Suppose all observable restrictions are otherwise vacuous and \(Y_H(d)\) is allowed to range over all real numbers.  For any \(M>0\), a feasible completion can set \(Y_H(1)=M\) and \(Y_H(0)=0\) for every type without changing the short surrogate panel.  It can also set \(Y_H(1)=0\) and \(Y_H(0)=M\).  Hence the support values are unbounded above and below.  Assumption~\ref{ass:finite}'s bounded-outcome component is therefore not cosmetic; it is the boundary condition that makes the fallback interval finite.
+
+\paragraph{Terminal-only extension is the minimal tightening condition.}
+An observed increment can fail to move the target bound if it does not remove any endpoint-achieving terminal-only completion.  For example, let the full-panel constraints restrict only latent features that are independent of \(U_H(d)\) under every endpoint optimizer, while the bridge-response curve \(m\) and drift support determine the same feasible post-surrogate arrays as the terminal-only problem.  Then Assumption~\ref{ass:increment-relevance} may hold as a diagnostic about the observed panel law, but Proposition~\ref{prop:endpoint-extension} gives no strict endpoint movement because an endpoint optimizer still extends.  The nearest correct replacement is exactly the endpoint-face condition in Proposition~\ref{prop:endpoint-extension}.
+
+\paragraph{Dropping the bridge-response restriction blocks the transport formula.}
+Without Assumption~\ref{ass:bridge-response}, a coupling \(\gamma^d_{uv}\) from \(U_1(d)\) to \(U_H(d)\) does not determine the mean contribution of \(Y_H(d)\).  Two feasible latent populations can have the same \(\gamma^d\) and different conditional means of \(Y_H(d)\) within the same \(U_H(d)=v\) cell.  The two-by-two formulas in Proposition~\ref{prop:sign-boundary} would then be outer calculations unless the missing conditional means were added as explicit LP variables with their own bounds.
+
+\section{Formalization checklist}
+\paragraph{Finite objects and maps.}
+\begin{itemize}[leftmargin=*]
+  \item Finite sets \(\mathcal S_j\), \(\mathcal U\), \(\mathcal U_H\), and \(\mathcal T\); role: supports for observed surrogates, latent states, and response types.
+  \item Observable law \(P=(P^E,P^B)\); type: a pair of probability mass functions on finite spaces; role: right-hand side of compatibility equations.
+  \item Response-type distribution \(\pi\in\Delta(\mathcal T)\); type: nonnegative finite vector summing to one; role: latent population.
+  \item Observation map \(M:\Delta(\mathcal T)\to\mathcal P(O^E)\times\mathcal P(O^B)\); type: finite linear map; role: imposes \(M\pi=P\).
+  \item Target map \(L:\Delta(\mathcal T)\to\R\), \(L(\pi)=\sum_\tau \pi_\tau(Y_H(1;\tau)-Y_H(0;\tau))\); role: causal ATE under a latent population.
+\end{itemize}
+
+\paragraph{Probabilistic assumptions.}
+\begin{itemize}[leftmargin=*]
+  \item Randomization and positivity: \(A\) independent of response type and \(0<\Pr(A=d)<1\); role: converts observed experimental cells into treatment-specific response-type margins.
+  \item Consistency: \(S_j=S_j(A)\); role: links potential surrogate panels to observed surrogate panels.
+  \item Nondifferential measurement: \(S_{jk}(d)\) depends on \(d\) only through \(U_j(d)\); role: shared measurement restrictions across arms.
+  \item Bridge comparability: bridge law restricts \(m\) and \(g\), without observed-surrogate Prentice surrogacy; role: supplies endpoint response information.
+  \item Bounded drift: \(c(U_J(d),U_H(d))\le\rho\); role: support restriction on post-surrogate transport arrays.
+  \item Bounded outcomes: \(Y_H(d)\in[0,1]\); role: finite Manski fallback and compactness of endpoint values.
+\end{itemize}
+
+\paragraph{Deterministic identities and convex analysis.}
+\begin{itemize}[leftmargin=*]
+  \item Simplex compactness: a finite probability simplex is compact and convex.
+  \item Linear-constraint intersection: intersecting a finite simplex with finitely many linear equalities and inequalities gives a compact convex polytope when nonempty.
+  \item Linear image interval: the image of a convex set under an affine real map is an interval; compactness gives attained endpoints.
+  \item Support-value monotonicity: if \(C_1\subseteq C_2\), then \(\min_{C_2}L\le\min_{C_1}L\) and \(\max_{C_1}L\le\max_{C_2}L\).
+  \item Endpoint-face criterion: equality of a support value over \(C_1\subseteq C_2\) holds iff \(C_1\) intersects the support face of \(C_2\) for that value.
+  \item Sign-bound algebra: \(\mu> \mu-\theta_L\) iff \(\theta_L>0\), and \(-\mu>\theta_U-\mu\) iff \(\theta_U<0\).
+  \item Binary transport rewrite: under a latent response \(m(v)\), the arm mean is \(\sum_{u,v}\gamma^d_{uv}m(v)\).
+\end{itemize}
+
+\section{Conclusion and references}
+The theorem-level contribution is a sharp finite response-type characterization for a long-term surrogate-panel partial-identification problem.  The identified set for \(\theta=\E[Y_H(1)-Y_H(0)]\) is exactly the interval between two LP support values over latent populations that match the short randomized panel, the bridge law, noisy-measurement restrictions, bounded outcomes, and bounded post-surrogate drift.  The clean point-identification condition is the exact terminal, zero-drift, bridge-response corner, where the interval collapses to \(\E[m(S_J(1))-m(S_J(0))]\).  Outside that corner, the main source of residual uncertainty is the unobserved transport from \(U_J(d)\) to \(U_H(d)\), filtered through noisy terminal measurements and the bridge response curve.  Repeated surrogate measurements tighten the interval exactly when they remove terminal-only endpoint completions, not merely because an observed increment is present.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem{AtheyChettyImbensKang2019}
+Athey, S., Chetty, R., Imbens, G. W., and Kang, H. (2019).
+\newblock The surrogate index: Combining short-term proxies to estimate long-term treatment effects more rapidly and precisely.
+\newblock NBER Working Paper No. 26463.
+
+\bibitem{BalkePearl1997}
+Balke, A. and Pearl, J. (1997).
+\newblock Bounds on treatment effects from studies with imperfect compliance.
+\newblock \emph{Journal of the American Statistical Association}, 92(439):1171--1176.
+
+\bibitem{BibautKallusEjdemyrZhao2023}
+Bibaut, A., Kallus, N., Ejdemyr, S., and Zhao, M. (2023).
+\newblock Long-term causal inference with imperfect surrogates using many weak experiments, proxies, and cross-fold moments.
+\newblock arXiv:2311.04657.
+
+\bibitem{ChenGengJia2007}
+Chen, H., Geng, Z., and Jia, J. (2007).
+\newblock Criteria for surrogate end points.
+\newblock \emph{Journal of the Royal Statistical Society: Series B}, 69(5):919--932.
+
+\bibitem{ChenRitzwoller2023}
+Chen, J. and Ritzwoller, D. M. (2023).
+\newblock Semiparametric estimation of long-term treatment effects.
+\newblock \emph{Journal of Econometrics}, 237(2):105545.
+
+\bibitem{FanManzanaresParkQi2026}
+Fan, Y., Manzanares, C. A., Park, H., and Qi, Y. (2026).
+\newblock A sensitivity analysis of the surrogate index approach for estimating long-term treatment effects.
+\newblock arXiv:2603.00580.
+
+\bibitem{FrangakisRubin2002}
+Frangakis, C. E. and Rubin, D. B. (2002).
+\newblock Principal stratification in causal inference.
+\newblock \emph{Biometrics}, 58(1):21--29.
+
+\bibitem{HuangWangYuanZhaoZhang2026}
+Huang, S., Wang, C., Yuan, Y., Zhao, J., and Zhang, B. (2026).
+\newblock Estimating effects of long-term treatments.
+\newblock \emph{Management Science}, Articles in Advance.
+
+\bibitem{LalImbensHull2026}
+Lal, A., Imbens, G., and Hull, P. (2026).
+\newblock Long-term causal inference with many noisy proxies.
+\newblock arXiv:2601.06359.
+
+\bibitem{LiLuedtke2023}
+Li, S. and Luedtke, A. (2023).
+\newblock Efficient estimation under data fusion.
+\newblock \emph{Biometrika}, 110(4):1041--1054.
+
+\bibitem{MaYinLiuGeng2021}
+Ma, L., Yin, Y., Liu, L., and Geng, Z. (2021).
+\newblock On the individual surrogate paradox.
+\newblock \emph{Biostatistics}, 22(1):97--113.
+
+\bibitem{Manski1990}
+Manski, C. F. (1990).
+\newblock Nonparametric bounds on treatment effects.
+\newblock \emph{American Economic Review}, 80(2):319--323.
+
+\bibitem{Prentice1989}
+Prentice, R. L. (1989).
+\newblock Surrogate endpoints in clinical trials: Definition and operational criteria.
+\newblock \emph{Statistics in Medicine}, 8(4):431--440.
+
+\bibitem{VanderWeele2013}
+VanderWeele, T. J. (2013).
+\newblock Surrogate measures and consistent surrogates.
+\newblock \emph{Biometrics}, 69(3):561--565.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,925 @@
+{
+  "commit": "6e3ba5a09e998cb7c7b15f45d6a11634157a62aa",
+  "snippets": {
+    "ass:iid": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.IsIIDSample",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- A1 i.i.d. sampling (`ass:iid`): the `n` observations are an i.i.d. sample\ndrawn from the observed law `P`. This carries the FULL i.i.d. sampling content by\nreusing the cluster primitive `Causalean.Stat.IIDSample` — a sequence of\nmeasurable maps `Z i` on a common ambient probability space `(Ω, μ)` with mutual\nindependence (`iIndepFun`), identical distribution (`IdentDistrib`), and law-match\n`μ.map (Z 0) = P.dataMeasure` — rather than only asserting that the one-draw law\nis a probability measure (which omits the i.i.d. content). The conjoined\n`IsProbabilityMeasure P.dataMeasure` certifies that the per-draw law, hence the\n`n`-fold experiment `Measure.pi (fun _ : Fin n => P.dataMeasure)` formed\ndownstream, is a probability measure. -/\ndef IsIIDSample (P : ObservedLaw 𝒳) : Prop :=\n  IsProbabilityMeasure P.dataMeasure ∧\n    ∃ (Ω : Type) (_mΩ : MeasurableSpace Ω) (μ : @MeasureTheory.Measure Ω _mΩ),\n      Nonempty (@Causalean.Stat.IIDSample Ω (Observation 𝒳) _mΩ\n        instMeasurableSpaceObservation μ P.dataMeasure)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:bounded-outcome": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.BoundedOutcome",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- A2 bounded outcomes: the (potential) outcome `Y(a)` lies in `[-1,1]` for both\ntreatment arms `a ∈ {0,1}`. Treatment is binary at the TYPE level (`Observation.A :\nBool`, `true ↦ 1`), so the observed-law projection of `Y(a) ∈ [-1,1]` is the\nconjunction of: the OBSERVED outcome lies in the EXACT range `[-1,1]` a.s. under the\ndata law (the realized `Y = Y(A)`, hence the realized arm's potential outcome), and\nboth outcome REGRESSIONS `μ₀, μ₁` — the arm-conditional means `E[Y(a)|X]` for\n`a ∈ {0,1}` — also lie in `[-1,1]`. The ranges are stated as `Set.Icc (-1) 1`\nmembership so the encoding realizes the `[-1,1]` symbol space exactly (not merely an\nabsolute-value surrogate). -/\ndef BoundedOutcome (P : ObservedLaw 𝒳) : Prop :=\n  (∀ᵐ O ∂P.dataMeasure, O.Y ∈ Set.Icc (-1 : ℝ) 1) ∧ -- @realizes Y(O.Y ∈ Icc (-1) 1 a.s.)\n    (∀ x, P.mu0 x ∈ Set.Icc (-1 : ℝ) 1 ∧ P.mu1 x ∈ Set.Icc (-1 : ℝ) 1) -- @realizes mu_0(mu0 x ∈ Icc (-1) 1), mu_1(mu1 x ∈ Icc (-1) 1)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:positivity": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.Positivity",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- A3 positivity: `0 < e_P(X) < 1` holds `P_X`-a.s.\n@realizes e_P(a.s. 0 < propensity x ∧ propensity x < 1) -/\ndef Positivity (P : ObservedLaw 𝒳) : Prop :=\n  ∀ᵐ x ∂P.PX, 0 < P.propensity x ∧ P.propensity x < 1",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:welfare-regret": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.regret",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Welfare regret `R_P(π)=V_P(π_⋆)-V_P(π)`, with `π_⋆=optimalPolicy τ`.\n@realizes R_P((𝒳→{0,1})→ℝ regret functional) -/\nnoncomputable def regret (PX : Measure 𝒳) (τ : 𝒳 → ℝ) (π : Policy 𝒳) : ℝ :=\n  welfare PX τ (optimalPolicy τ) - welfare PX τ π",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:policy-class": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.PolicyClassVC",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- A7 pointwise measurable finite-VC policy class with a countable\npointwise-dense skeleton `Π₀` and polynomial (Sauer–Shelah) trace growth at\nVC-dimension `d_Π`.\n@realizes Pi(policySet : Set (Policy 𝒳); measurable, countable dense skeleton, finite-VC) -/\ndef PolicyClassVC (policySet : Set (Policy 𝒳)) (dPi : ℕ) : Prop :=\n  (∀ π ∈ policySet, Measurable π) ∧\n  (∃ Pi0 : Set (Policy 𝒳), Pi0.Countable ∧ Pi0 ⊆ policySet ∧\n    ∀ π ∈ policySet, ∃ seq : ℕ → Policy 𝒳,\n      (∀ j, seq j ∈ Pi0) ∧ ∀ x, ∀ᶠ j in Filter.atTop, seq j x = π x) ∧\n  (∀ m : ℕ, ∀ s : Fin m → 𝒳,\n    Nat.card ((fun π : Policy 𝒳 => fun i => π (s i)) '' policySet) ≤ (m + 1) ^ dPi)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:optimal-in-class": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.OptimalInClass",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- A8 optimum-in-class: `π_⋆ ∈ Π`. -/\ndef OptimalInClass (P : ObservedLaw 𝒳) (policySet : Set (Policy 𝒳)) : Prop :=\n  lawOptimalPolicy P ∈ policySet",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:margin": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.MarginTail",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- A4 Tsybakov margin: `P(0<|τ|≤u) ≤ C_m u^α` for `0 < u ≤ u_0`, with the named\ncondition's intrinsic parameter domain — nonnegative margin exponent `α`, positive\nconstant `C_m`, positive window `u_0` ([Tsybakov 2004]). The domain is load-bearing:\nwithout `0 ≤ α` the localization bound is false (`α = -2` gives exponent `2`, and a\nconstant-contrast law forces `1 ≤ C·R²`, impossible uniformly as `R → 0`). -/\ndef MarginTail (P : ObservedLaw 𝒳) (Cm α u0 : ℝ) : Prop :=\n  0 ≤ α ∧ 0 < Cm ∧ 0 < u0 ∧\n  ∀ u : ℝ, 0 < u → u ≤ u0 →\n    P.PX.real {x | 0 < |P.contrast x| ∧ |P.contrast x| ≤ u} ≤ Cm * u ^ α",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:zero-effect": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.ZeroEffectRegular",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- A5 canonical zero-effect region: either the zero-contrast set is null, or\nevery policy in the class agrees with `π_⋆` there. -/\ndef ZeroEffectRegular (P : ObservedLaw 𝒳) (policySet : Set (Policy 𝒳)) : Prop :=\n  P.PX.real {x | P.contrast x = 0} = 0 ∨\n    ∀ π ∈ policySet,\n      P.PX.real {x | P.contrast x = 0 ∧ π x ≠ lawOptimalPolicy P x} = 0",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:margin-window": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.MarginWindow",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- A9 margin-window normalization: `0 < u_0 < 2`. -/\ndef MarginWindow (u0 : ℝ) : Prop := 0 < u0 ∧ u0 < 2",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:disagreement": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.disagreementSet",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Disagreement set `D_π = {x : π(x) ≠ π_⋆(x)}`. -/\ndef disagreementSet (π πstar : Policy 𝒳) : Set 𝒳 :=\n  {x | π x ≠ πstar x}",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "thm:welfare-identity": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.regret_eq_disagreement_integral",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- `thm:welfare-identity`. Under the well-formed law (`τ = μ₁-μ₀`) and bounded\noutcomes, regret equals the `|τ|`-weighted disagreement mass. `hwf` is load-bearing:\nthe integral identity needs `τ` integrable, and `BoundedOutcome` bounds only `μ₀,μ₁`\n— the contrast field is bounded (`τ ∈ [-2,2]`) only once `WellFormedLaw` ties\n`τ = μ₁-μ₀`. Both are global standing setup conditions of the observed law. -/\ntheorem regret_eq_disagreement_integral\n    (P : ObservedLaw 𝒳) (π : Policy 𝒳)\n    (hwf : WellFormedLaw P) (hbdd : BoundedOutcome P) (hπ : Measurable π) :\n    lawRegret P π =\n      ∫ x, |P.contrast x| * disagreementIndicator π (lawOptimalPolicy P) x ∂P.PX",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "thm:margin-localization": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.margin_localization",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- `thm:margin-localization`. Under the margin and zero-effect conditions,\ndisagreement mass is controlled by regret at the fast exponent `α/(1+α)`:\n`P_X(D_π) ≤ C R_P(π)^{α/(1+α)}` for every `π ∈ policySet`.\n\nThe displayed paper statement names only `ass:margin` and `ass:zero-effect`;\n`hwf : WellFormedLaw P` and `hbdd : BoundedOutcome P` are the paper's GLOBAL STANDING\nsetup conditions of the observed law (`ass:bounded-outcome` plus the well-formedness\n`τ = μ₁-μ₀`), carried here as per-theorem hypotheses. They are pure bookkeeping —\ntogether they bound the contrast `τ ∈ [-2,2]` (`WellFormedLaw` ties `τ = μ₁-μ₀`,\n`BoundedOutcome` bounds `μ₀,μ₁ ∈ [-1,1]`) so the welfare/regret Bochner integrals\ninvoked through `thm:welfare-identity` are genuine (a non-integrable contrast would\ncollapse `R_P(π)` to the junk value `0` while `P_X(D_π) > 0`, falsifying the bound),\nand carry no rate/separation content. Per the route \"do not rely on an ambient\nhidden prerequisite\", they are stated explicitly rather than assumed silently. -/\ntheorem margin_localization\n    (Cm α u0 : ℝ) :\n    -- UNIFORM constant `C = C(C_m,u_0,α)`: the `∃ C` is hoisted ABOVE `∀ P` so the\n    -- constant depends only on the margin parameters, not on the specific law (the\n    -- `.tex` states \"there is C=C(C_m,u_0,α) such that for every π …\"); a per-law\n    -- `∃ C(P)` inside `∀ P` would be a strictly weaker claim.\n    ∃ C : ℝ, 0 < C ∧\n      ∀ (P : ObservedLaw 𝒳) (policySet : Set (Policy 𝒳)),\n        MarginTail P Cm α u0 → ZeroEffectRegular P policySet →\n        WellFormedLaw P → BoundedOutcome P → (∀ π ∈ policySet, Measurable π) →\n          ∀ π ∈ policySet,\n            P.PX.real (disagreementSet π (lawOptimalPolicy P))\n              ≤ C * (lawRegret P π) ^ (α / (1 + α))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:overlap-decay": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.OverlapDecay",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- A6 (novel) one-sided overlap-decay envelope:\n`P{p_P ≤ v, 0<|τ|≤u} ≤ C_o u^α v^{1/γ}` for `0<v ≤ c_o u^γ`\n(with `v^{1/γ}=1` when `γ=0`) in the margin window `0 < u ≤ u_0`. -/\ndef OverlapDecay (P : ObservedLaw 𝒳) (u0 Co co α γ : ℝ) : Prop :=\n  ∀ u v : ℝ, 0 < u → u ≤ u0 → 0 < v → v ≤ co * u ^ γ →\n    P.PX.real {x | overlap P x ≤ v ∧ 0 < |P.contrast x| ∧ |P.contrast x| ≤ u}\n      ≤ Co * u ^ α * (if γ = 0 then 1 else v ^ (1 / γ))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:strict-overlap-endpoint": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.StrictOverlapEndpoint",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- A11 strict-overlap endpoint: when `γ=0`, `p_P ≥ underline_p` a.s. -/\ndef StrictOverlapEndpoint (P : ObservedLaw 𝒳) (γ underlineP : ℝ) : Prop :=\n  γ = 0 →\n    0 < underlineP ∧ underlineP ≤ 1 / 2 ∧ (∀ᵐ x ∂P.PX, underlineP ≤ overlap P x)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:exponents": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.infoExponents",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Derived information exponents `(β_{α,γ}, D_{α,γ}, r_⋆)`. -/\nnoncomputable def infoExponents (α γ : ℝ) : ℝ × ℝ × ℝ :=\n  (betaAG α γ, Dag α γ, rStar α γ)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:law-class": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.LawClass",
+          "statement": "/-- Baseline observed-law class `𝒫_{α,γ}`: the bundle of the six member\nproperties at fixed uniform constants. -/\nstructure LawClass (α γ Cm u0 Co co underlineP : ℝ)\n    (policySet : Set (Policy 𝒳)) (P : ObservedLaw 𝒳) : Prop where\n  /-- Ambient space/probability/marginal/range well-formedness of the observed law\n  on `𝒳 × {0,1} × [-1,1]` (probability measures, `P_X` the marginal, `τ = μ₁-μ₀`,\n  propensity in `[0,1]`); this is the law-space definition, not a 7th modelling\n  assumption. -/\n  wf : WellFormedLaw P\n  bdd : BoundedOutcome P\n  pos : Positivity P\n  margin : MarginTail P Cm α u0\n  zero : ZeroEffectRegular P policySet\n  overlapDecay : OverlapDecay P u0 Co co α γ\n  strict : StrictOverlapEndpoint P γ underlineP"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.BoundedOutcome",
+          "statement": "/-- A2 bounded outcomes: the (potential) outcome `Y(a)` lies in `[-1,1]` for both\ntreatment arms `a ∈ {0,1}`. Treatment is binary at the TYPE level (`Observation.A :\nBool`, `true ↦ 1`), so the observed-law projection of `Y(a) ∈ [-1,1]` is the\nconjunction of: the OBSERVED outcome lies in the EXACT range `[-1,1]` a.s. under the\ndata law (the realized `Y = Y(A)`, hence the realized arm's potential outcome), and\nboth outcome REGRESSIONS `μ₀, μ₁` — the arm-conditional means `E[Y(a)|X]` for\n`a ∈ {0,1}` — also lie in `[-1,1]`. The ranges are stated as `Set.Icc (-1) 1`\nmembership so the encoding realizes the `[-1,1]` symbol space exactly (not merely an\nabsolute-value surrogate). -/\ndef BoundedOutcome (P : ObservedLaw 𝒳) : Prop :=\n  (∀ᵐ O ∂P.dataMeasure, O.Y ∈ Set.Icc (-1 : ℝ) 1) ∧ -- @realizes Y(O.Y ∈ Icc (-1) 1 a.s.)\n    (∀ x, P.mu0 x ∈ Set.Icc (-1 : ℝ) 1 ∧ P.mu1 x ∈ Set.Icc (-1 : ℝ) 1) -- @realizes mu_0(mu0 x ∈ Icc (-1) 1), mu_1(mu1 x ∈ Icc (-1) 1)"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.Positivity",
+          "statement": "/-- A3 positivity: `0 < e_P(X) < 1` holds `P_X`-a.s.\n@realizes e_P(a.s. 0 < propensity x ∧ propensity x < 1) -/\ndef Positivity (P : ObservedLaw 𝒳) : Prop :=\n  ∀ᵐ x ∂P.PX, 0 < P.propensity x ∧ P.propensity x < 1"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.MarginTail",
+          "statement": "/-- A4 Tsybakov margin: `P(0<|τ|≤u) ≤ C_m u^α` for `0 < u ≤ u_0`, with the named\ncondition's intrinsic parameter domain — nonnegative margin exponent `α`, positive\nconstant `C_m`, positive window `u_0` ([Tsybakov 2004]). The domain is load-bearing:\nwithout `0 ≤ α` the localization bound is false (`α = -2` gives exponent `2`, and a\nconstant-contrast law forces `1 ≤ C·R²`, impossible uniformly as `R → 0`). -/\ndef MarginTail (P : ObservedLaw 𝒳) (Cm α u0 : ℝ) : Prop :=\n  0 ≤ α ∧ 0 < Cm ∧ 0 < u0 ∧\n  ∀ u : ℝ, 0 < u → u ≤ u0 →\n    P.PX.real {x | 0 < |P.contrast x| ∧ |P.contrast x| ≤ u} ≤ Cm * u ^ α"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.ZeroEffectRegular",
+          "statement": "/-- A5 canonical zero-effect region: either the zero-contrast set is null, or\nevery policy in the class agrees with `π_⋆` there. -/\ndef ZeroEffectRegular (P : ObservedLaw 𝒳) (policySet : Set (Policy 𝒳)) : Prop :=\n  P.PX.real {x | P.contrast x = 0} = 0 ∨\n    ∀ π ∈ policySet,\n      P.PX.real {x | P.contrast x = 0 ∧ π x ≠ lawOptimalPolicy P x} = 0"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.OverlapDecay",
+          "statement": "/-- A6 (novel) one-sided overlap-decay envelope:\n`P{p_P ≤ v, 0<|τ|≤u} ≤ C_o u^α v^{1/γ}` for `0<v ≤ c_o u^γ`\n(with `v^{1/γ}=1` when `γ=0`) in the margin window `0 < u ≤ u_0`. -/\ndef OverlapDecay (P : ObservedLaw 𝒳) (u0 Co co α γ : ℝ) : Prop :=\n  ∀ u v : ℝ, 0 < u → u ≤ u0 → 0 < v → v ≤ co * u ^ γ →\n    P.PX.real {x | overlap P x ≤ v ∧ 0 < |P.contrast x| ∧ |P.contrast x| ≤ u}\n      ≤ Co * u ^ α * (if γ = 0 then 1 else v ^ (1 / γ))"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.StrictOverlapEndpoint",
+          "statement": "/-- A11 strict-overlap endpoint: when `γ=0`, `p_P ≥ underline_p` a.s. -/\ndef StrictOverlapEndpoint (P : ObservedLaw 𝒳) (γ underlineP : ℝ) : Prop :=\n  γ = 0 →\n    0 < underlineP ∧ underlineP ≤ 1 / 2 ∧ (∀ᵐ x ∂P.PX, underlineP ≤ overlap P x)"
+        }
+      ]
+    },
+    "def:minimax-regret": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.minimaxRegret",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Minimax regret `M_n = inf_{π̂} sup_{P ∈ 𝓟} E_P R_P(π̂)`. The infimum ranges\nONLY over MEASURABLE `Π`-valued estimators: `est sample ∈ policySet` for every\nrealized sample (`Π`-valued), and the induced per-law regret map\n`sample ↦ R_P(est sample)` is measurable for every law (so each `E_P R_P(π̂)`\nis genuinely the Bochner integral, not a junk value). The regret loss is bounded\nin `[0,2]`, so the `iInf`/`iSup` are well-posed. -/\nnoncomputable def minimaxRegret (𝓟 : Set (ObservedLaw 𝒳))\n    (policySet : Set (Policy 𝒳)) (n : ℕ) : ℝ :=\n  ⨅ est : {est : (Fin n → Observation 𝒳) → Policy 𝒳 //\n      (∀ sample, est sample ∈ policySet) ∧\n        ∀ P : ObservedLaw 𝒳,\n          Measurable (fun sample : Fin n → Observation 𝒳 => lawRegret P (est sample))},\n    ⨆ P : 𝓟,\n      ∫ sample, lawRegret P.1 (est.1 sample)\n        ∂(Measure.pi (fun _ : Fin n => P.1.dataMeasure))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:two-point-witness": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.twoPointWitness",
+      "file": "T_minimax_lower.lean",
+      "line": 0,
+      "statement": "/-- Explicit two-point least-favorable law `P_{n,σ}` on `𝒳=ℝ` with covariate\nmarginal Lebesgue on `[0,1]`, active block `B_n=[0, c_B h_n^α]`, weak-arm\npropensity `q_n` on `B_n`, charged treated cell carrying contrast `σ h_n`, and\noff-block contrast `τ_0=(u_0+2)/2 ∈ (u_0,2)`. The weak-arm scale is EXACTLY the\ndisplayed `q_n = qLower α γ n` (`= 1/4` if `β_{α,γ}=0`, else `h_n^{β_{α,γ}}`),\nwhich lies in `(0,1/2]` for all large `n`; the constants admissibility\n`8 c_B c_Q < log 5` (`c_Q = 1` here) is carried by the divergence lemma. -/\nnoncomputable def twoPointWitness (α γ u0 cB : ℝ) (n : ℕ) (σ : ℝ) :\n    ObservedLaw ℝ :=\n  let h := hLower α γ n\n  let q := qLower α γ n\n  let τ0 := (u0 + 2) / 2\n  let inBlock : ℝ → Prop := fun x => 0 ≤ x ∧ x ≤ cB * h ^ α\n  let prop : ℝ → ℝ := fun x => if inBlock x then q else 1 / 2\n  let contrast : ℝ → ℝ := fun x => if inBlock x then σ * h else τ0\n  let mu0 : ℝ → ℝ := fun x => if inBlock x then 0 else -τ0 / 2\n  let mu1 : ℝ → ℝ := fun x => if inBlock x then σ * h else τ0 / 2\n  let outcome : ℝ → Bool → Measure ℝ := fun x a =>\n    if inBlock x then (if a then bernoulliPM (σ * h) else Measure.dirac 0)\n    else (if a then bernoulliPM (τ0 / 2) else bernoulliPM (-τ0 / 2))\n  { dataMeasure :=\n      ((volume.restrict (Set.Icc (0 : ℝ) 1)).bind fun x =>\n        (bernoulliBool (prop x)).bind fun a =>\n          (outcome x a).map (Observation.mk x a))\n    PX := volume.restrict (Set.Icc (0 : ℝ) 1)\n    contrast := contrast\n    propensity := prop\n    mu0 := mu0\n    mu1 := mu1 }",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "prop:overlap-envelope": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.overlap_envelope",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- `prop:overlap-envelope`. At the tight window `v=h^β`, `u=h^{β/γ}`, the\nenvelope value equals `h^{(α+1)β/γ}`, admissibility `≥ h^α` is equivalent to\n`β ≤ αγ/(α+1)=β_{α,γ}`, with equality at `β=β_{α,γ}`. Hence (final conjunct) a block\nof mass `~h^α` with weak-arm exponent `β'` meets the `ass:overlap-decay` envelope iff\n`β' ≤ β_{α,γ}`, so `β_{α,γ} ≥ 0` is the LEAST INFORMATIVE (largest) admissible\nweak-arm exponent. -/\nlemma overlap_envelope (α γ h β : ℝ)\n    (hα : 0 ≤ α) (hγ : 0 < γ) (hh0 : 0 < h) (hh1 : h < 1) (_hβ : 0 ≤ β) :\n    (h ^ (β / γ)) ^ α * (h ^ β) ^ (1 / γ) = h ^ ((α + 1) * β / γ) ∧\n      ((h ^ (β / γ)) ^ α * (h ^ β) ^ (1 / γ) ≥ h ^ α ↔ β ≤ betaAG α γ) ∧\n      (β = betaAG α γ →\n        (h ^ (β / γ)) ^ α * (h ^ β) ^ (1 / γ) = h ^ α) ∧\n      (0 ≤ betaAG α γ ∧\n        ∀ β' : ℝ, 0 ≤ β' →\n          ((h ^ (β' / γ)) ^ α * (h ^ β') ^ (1 / γ) ≥ h ^ α ↔ β' ≤ betaAG α γ))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:witness-membership": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.witness_membership",
+      "file": "T_minimax_lower.lean",
+      "line": 0,
+      "statement": "/-- `lem:witness-membership`. For all large `n` the two witness laws belong to\n`def:law-class`, and the two explicit witness-optimal policies are\n`x ↦ 1` (under `P_{n,+}`) and `x ↦ 1{x ∉ B_n}` (under `P_{n,-}`); if these belong\nto `Π` they are the two policy actions of the two-point reduction. The membership\nis DERIVED from the construction, not assumed. -/\nlemma witness_membership (α γ u0 cB Cm Co co underlineP : ℝ)\n    (policySet : Set (Policy ℝ)) (σ : ℝ)\n    (hα : 0 ≤ α) (hγ : 0 ≤ γ) (hwin : MarginWindow u0)\n    (hCm : 0 < Cm) (hCo : 0 < Co) (hco : 0 < co) (hcB : 0 < cB)\n    (hcBm : cB ≤ Cm) (hcBo : cB ≤ Co) (hup : 0 < underlineP)\n    -- note c_B overlap-decay smallness (def:two-point-witness constant choice)\n    (hcB_gpos : 0 < γ → 0 < α → cB ≤ Co * co ^ (-(α / γ)))\n    (hcB_gzero : 0 < γ → α = 0 → cB ≤ Co * (4 : ℝ) ^ (-(1 / γ)))\n    (huple : underlineP ≤ 1 / 4) (hσ : σ = 1 ∨ σ = -1) :\n    ∀ᶠ n : ℕ in Filter.atTop,\n      LawClass α γ Cm u0 Co co underlineP policySet\n        (twoPointWitness α γ u0 cB n σ) ∧\n      (∀ x : ℝ, lawOptimalPolicy (twoPointWitness α γ u0 cB n 1) x = true) ∧\n      (∀ x : ℝ, lawOptimalPolicy (twoPointWitness α γ u0 cB n (-1)) x = true ↔\n        ¬ (0 ≤ x ∧ x ≤ cB * (hLower α γ n) ^ α))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:two-point-divergence": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.two_point_divergence",
+      "file": "T_minimax_lower.lean",
+      "line": 0,
+      "statement": "/-- `lem:two-point-divergence`. The per-observation χ²-divergence scales as\n`χ² ≤ C h_n^{2+α+β_{α,γ}} = C h_n^{D_{α,γ}}` (i.e. `m_n q_n h_n²` with\n`m_n ~ h_n^α`, `q_n ~ h_n^{β_{α,γ}}`); with `h_n = n^{-1/D_{α,γ}}` the per-draw\ndivergence is `≤ C/n`, so by the product identity the `n`-fold divergence is\nuniformly bounded. The admissibility `8 c_B c_Q < log 5` (`c_Q = 1` for the\n`qLower` weak-arm scale) keeps the product divergence below a constant. -/\nlemma two_point_divergence (α γ u0 cB : ℝ) (hwin : MarginWindow u0)\n    (hcB : 0 < cB) (hα : 0 ≤ α) (hγ : 0 ≤ γ)\n    (hconst : 8 * cB < Real.log 5) :\n    ∃ C : ℝ, 0 < C ∧ ∀ᶠ n : ℕ in Filter.atTop,\n      (Measure.pi fun _ : Fin n => (twoPointWitness α γ u0 cB n 1).dataMeasure) ≪\n          (Measure.pi fun _ : Fin n => (twoPointWitness α γ u0 cB n (-1)).dataMeasure) ∧\n      Integrable\n          (fun x =>\n            (((Measure.pi fun _ : Fin n => (twoPointWitness α γ u0 cB n 1).dataMeasure).rnDeriv\n                (Measure.pi fun _ : Fin n =>\n                  (twoPointWitness α γ u0 cB n (-1)).dataMeasure) x).toReal - 1) ^ 2)\n          (Measure.pi fun _ : Fin n => (twoPointWitness α γ u0 cB n (-1)).dataMeasure) ∧\n      Causalean.Stat.chiSqDiv\n            (twoPointWitness α γ u0 cB n 1).dataMeasure\n            (twoPointWitness α γ u0 cB n (-1)).dataMeasure\n          ≤ C * (hLower α γ n) ^ (2 + α + betaAG α γ) ∧\n      Causalean.Stat.chiSqDiv\n          (Measure.pi fun _ : Fin n => (twoPointWitness α γ u0 cB n 1).dataMeasure)\n          (Measure.pi fun _ : Fin n => (twoPointWitness α γ u0 cB n (-1)).dataMeasure)\n        ≤ C",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:regret-separation": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.regret_separation",
+      "file": "T_minimax_lower.lean",
+      "line": 0,
+      "statement": "/-- `lem:regret-separation`. The witness optimal labels are opposite on `B_n`,\nforcing regret separation `≥ c h_n^{1+α}` for every policy. -/\nlemma regret_separation (α γ u0 cB Cm Co co underlineP : ℝ)\n    (policySet : Set (Policy ℝ))\n    (hwin : MarginWindow u0) (hcB : 0 < cB) (hα : 0 ≤ α) (hγ : 0 ≤ γ)\n    (hCm : 0 < Cm) (hCo : 0 < Co) (hco : 0 < co)\n    (hcBm : cB ≤ Cm) (hcBo : cB ≤ Co) (hup : 0 < underlineP)\n    -- note c_B overlap-decay smallness (def:two-point-witness constant choice)\n    (hcB_gpos : 0 < γ → 0 < α → cB ≤ Co * co ^ (-(α / γ)))\n    (hcB_gzero : 0 < γ → α = 0 → cB ≤ Co * (4 : ℝ) ^ (-(1 / γ)))\n    (huple : underlineP ≤ 1 / 4) (hπmeas : ∀ π ∈ policySet, Measurable π) :\n    ∃ c : ℝ, 0 < c ∧ ∀ᶠ n : ℕ in Filter.atTop, ∀ π ∈ policySet,\n      max (lawRegret (twoPointWitness α γ u0 cB n 1) π)\n          (lawRegret (twoPointWitness α γ u0 cB n (-1)) π)\n        ≥ c * (hLower α γ n) ^ (1 + α)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "thm:minimax-lower": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.minimax_lower",
+      "file": "T_minimax_lower.lean",
+      "line": 0,
+      "statement": "/-- `thm:minimax-lower` (CRUX). The sharp constructive converse over the\nbaseline observed-law class: `M_n ≥ c n^{-r_⋆(α,γ)}` for all large `n`. -/\ntheorem minimax_lower (α γ u0 cB Cm Co co underlineP : ℝ)\n    (policySet : Set (Policy ℝ))\n    (hwin : MarginWindow u0) (hα : 0 ≤ α) (hγ : 0 ≤ γ)\n    (hCm : 0 < Cm) (hCo : 0 < Co) (hco : 0 < co) (hcB : 0 < cB)\n    (hcBm : cB ≤ Cm) (hcBo : cB ≤ Co) (hup : 0 < underlineP)\n    -- note c_B overlap-decay smallness (def:two-point-witness constant choice)\n    (hcB_gpos : 0 < γ → 0 < α → cB ≤ Co * co ^ (-(α / γ)))\n    (hcB_gzero : 0 < γ → α = 0 → cB ≤ Co * (4 : ℝ) ^ (-(1 / γ)))\n    (huple : underlineP ≤ 1 / 4) (hsmall : 8 * cB < Real.log 5)\n    (hπnonempty : policySet.Nonempty)\n    (hπmeas : ∀ π ∈ policySet, Measurable π) :\n    ∃ c : ℝ, 0 < c ∧ ∀ᶠ n : ℕ in Filter.atTop,\n      minimaxRegret\n          {P : ObservedLaw ℝ | LawClass α γ Cm u0 Co co underlineP policySet P}\n          policySet n\n        ≥ c * (n : ℝ) ^ (-(rStar α γ))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:vc-localized-envelope": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.VCLocalizedEnvelope",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "-- Atomic empirical-process ASSUMPTION (note kind `empirical-process`): carried as\n-- this threaded Prop hypothesis on the consumers, NOT discharged. See Helpers.lean.\n/-- A15 localized finite-VC fixed-radius empirical-process envelope. This is a\nGENUINE in-EXPECTATION bound on a real centered policy-indexed empirical process\n`(P_m - P) g_π` built from an i.i.d. sample of size `m` drawn from `P.dataMeasure`\n(not an abstract scalar placeholder): for every policy-compatible increment `g`\nwith envelope `B` and localized conditional second moment `≤ B² P_X(D_π)`, the\nEXPECTED localized supremum over `{π : R_P(π) ≤ r}` is bounded by\n`C B m^{-1/2} r^{α/(2+2α)}(log m)^p`.\nThe second-moment coupling constant is fixed (`B²`, decoupled from the rate\nconstant `C`). -/\ndef VCLocalizedEnvelope (P : ObservedLaw 𝒳)\n    (policySet : Set (Policy 𝒳)) (α : ℝ) : Prop :=\n  ∃ C p : ℝ, 0 < C ∧ 0 ≤ p ∧\n    ∀ (m : ℕ) (B r : ℝ) (g : Policy 𝒳 → Observation 𝒳 → ℝ),\n      PolicyCompatible g →\n      0 < m → 0 ≤ B → 0 ≤ r →\n      (∀ π ∈ policySet, ∀ O, |g π O| ≤ B) →\n      (∀ π ∈ policySet,\n        ∫ O, (g π O) ^ 2 ∂P.dataMeasure\n          ≤ B ^ 2 * P.PX.real (disagreementSet π (lawOptimalPolicy P))) →\n      ∫ sample,\n          sSup ((fun π => |(m : ℝ)⁻¹ * ∑ i, g π (sample i)\n                  - ∫ O, g π O ∂P.dataMeasure|) ''\n            {π | π ∈ policySet ∧ lawRegret P π ≤ r})\n        ∂(Measure.pi (fun _ : Fin m => P.dataMeasure))\n        ≤ C * B * (m : ℝ) ^ (-(1 / 2 : ℝ)) * r ^ (α / (2 + 2 * α))\n            * (Real.log m) ^ p",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:nuisance-rate": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.NuisanceRate",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- A10 cross-fit L²(P) nuisance rates with product rate `O(n^{-1/2})`. The per-`n`\nL²(P) rate bounds `‖μ̂_a-μ_a‖ ≤ r_μ,n`, `‖ê-e‖ ≤ r_e,n` are definitional (they\nDEFINE the rate schedules `r_μ,n, r_e,n`), so they are stated for every `n`; the\nproduct rate is the genuinely ASYMPTOTIC `O(n^{-1/2})` of the NL — stated as an\nEVENTUAL bound (`∀ᶠ n in atTop`), not a per-`n` claim that would be false at `n=0`\n(where `(0:ℝ)^{-1/2}=0`). -/\ndef NuisanceRate (P : ObservedLaw 𝒳)\n    (muHat0 muHat1 eHat : ℕ → 𝒳 → ℝ) (rMu rE : ℕ → ℝ) : Prop :=\n  (∀ n, ∫ x, (muHat0 n x - P.mu0 x) ^ 2 ∂P.PX ≤ (rMu n) ^ 2) ∧\n  (∀ n, ∫ x, (muHat1 n x - P.mu1 x) ^ 2 ∂P.PX ≤ (rMu n) ^ 2) ∧\n  (∀ n, ∫ x, (eHat n x - P.propensity x) ^ 2 ∂P.PX ≤ (rE n) ^ 2) ∧\n  (∃ C : ℝ, 0 < C ∧ ∀ᶠ n : ℕ in Filter.atTop,\n    rMu n * rE n ≤ C * (n : ℝ) ^ (-(1 / 2 : ℝ)))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:bounded-crossfit-nuisances": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.BoundedCrossfitNuisances",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- A12 bounded cross-fit outcome regressions: `μ̂_a ∈ [-1,1]`. -/\ndef BoundedCrossfitNuisances (muHat0 muHat1 : ℕ → 𝒳 → ℝ) : Prop :=\n  ∀ n x, muHat0 n x ∈ Set.Icc (-1 : ℝ) 1 ∧ muHat1 n x ∈ Set.Icc (-1 : ℝ) 1",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:polynomial-nuisance-exponents": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.PolynomialNuisanceExponents",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- A13 polynomial nuisance exponents: `r_μ ≤ C_μ n^{-a}` and\n`r_μ r_e ≤ C_prod n^{-c}` for large `n`, with `a ≥ 0`, `c ≥ 1/2`. -/\ndef PolynomialNuisanceExponents (rMu rE : ℕ → ℝ) (a c CMu CProd : ℝ) : Prop :=\n  0 ≤ a ∧ 1 / 2 ≤ c ∧\n    ∀ᶠ n in Filter.atTop,\n      rMu n ≤ CMu * (n : ℝ) ^ (-a) ∧ rMu n * rE n ≤ CProd * (n : ℝ) ^ (-c)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:fixed-crossfit-fold-count": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.FixedFoldCount",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- A14 fixed-`K` balanced cross-fitting: `K` is a fixed positive integer\nindependent of `n` (a single `ℕ`, not an `n`-indexed quantity), and the\ndeterministic fold-assignment `assign n : Fin n → Fin K` realizes a balanced\npartition `I_1,…,I_K` of `{1,…,n}` whose every cell has size `⌊n/K⌋` or\n`⌊n/K⌋+1`. -/\ndef FixedFoldCount (K : ℕ) (assign : (n : ℕ) → Fin n → Fin K) : Prop :=\n  0 < K ∧\n    ∀ n : ℕ, ∀ k : Fin K,\n      Nat.card {i : Fin n // assign n i = k} = n / K ∨\n        Nat.card {i : Fin n // assign n i = k} = n / K + 1",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:vc-localized-offset-envelope": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.VCLocalizedOffsetEnvelope",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "-- Atomic empirical-process ASSUMPTION (note kind `empirical-process`): carried as\n-- this threaded Prop hypothesis on the consumers, NOT discharged. See Helpers.lean.\n/-- A16 localized finite-VC offset/Rademacher bound. The GENUINE in-EXPECTATION\noffset positive-part bound on a real centered empirical process `(P_m - P) g_π`\nfrom an i.i.d. sample of size `m`: `E sup_π {2|z_π| - R_P(π)/4}_+ ≤\nC (B²/m)^{A_α}(log m)^p`, `A_α=(1+α)/(2+α)`, with the same fixed `B²` second-moment\ncoupling, for policy-compatible increments. -/\ndef VCLocalizedOffsetEnvelope (P : ObservedLaw 𝒳)\n    (policySet : Set (Policy 𝒳)) (α : ℝ) : Prop :=\n  ∃ C p : ℝ, 0 < C ∧ 0 ≤ p ∧\n    ∀ (m : ℕ) (B : ℝ) (g : Policy 𝒳 → Observation 𝒳 → ℝ),\n      PolicyCompatible g →\n      0 < m → 0 ≤ B →\n      (∀ π ∈ policySet, ∀ O, |g π O| ≤ B) →\n      (∀ π ∈ policySet,\n        ∫ O, (g π O) ^ 2 ∂P.dataMeasure\n          ≤ B ^ 2 * P.PX.real (disagreementSet π (lawOptimalPolicy P))) →\n      ∫ sample,\n          sSup ((fun π => max 0 (2 * |(m : ℝ)⁻¹ * ∑ i, g π (sample i)\n                  - ∫ O, g π O ∂P.dataMeasure| - lawRegret P π / 4)) '' policySet)\n        ∂(Measure.pi (fun _ : Fin m => P.dataMeasure))\n        ≤ C * (B ^ 2 / (m : ℝ)) ^ ((1 + α) / (2 + α)) * (Real.log m) ^ p",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:feasible-rate": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.FeasibleRate",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Certified feasible-rate object (`def:feasible-rate`). Bundles the construction\nDATA — the maximizer exponents `(s_feas, t_feas)`, the SELECTED clip/window\nschedules `q_n = qSched`, `u_n = uSched` (with the `γ=0` fixed-clip branch baked\ninto `qSched`), and the solved exponent `r_feas` — TOGETHER WITH the certifying\nPROPERTIES the NL construction asserts, bundled INTO the object rather than split\ninto separate consumer hypotheses: the input-domain restriction on the chosen\nwindow/clip constants `ū, q₀` (`inputs`); feasibility and maximality of\n`(s_feas, t_feas)` on the compact box for `γ>0` (`feasible`, `maximal`, so\n`g_joint = φ(s_feas, t_feas)`); the definitional schedule/exponent ties\n(`qDef, uDef, rDef`); and the eventual schedule admissibility `q_n ≤ c_o u_n^γ`\n(`admissible`). -/\nstructure FeasibleRate (α γ a c co underlineP u0 q0 uBar : ℝ) where\n  /-- Analysis clip exponent `s_feas` (`q_n = q_0 n^{-s_feas}` for `γ>0`). -/\n  s : ℝ\n  /-- Margin-window exponent `t_feas` (`u_n = ū n^{-t_feas}`). -/\n  t : ℝ\n  /-- Solved feasible upper exponent `r_feas`. -/\n  r : ℝ\n  /-- Selected clip schedule `q_n` (γ-branched). -/\n  q : ℕ → ℝ\n  /-- Selected window schedule `u_n`. -/\n  u : ℕ → ℝ\n  /-- NL input-domain restriction on the chosen window/clip constants `ū, q₀`\n  (`ū ∈ (0,u₀]`, `q₀ ∈ (0, min{1/2, c_o ū^γ}]` for `γ>0`;\n  `q₀ ∈ (0, underline_p/2]` for `γ=0`). -/\n  inputs : FeasibleRateInputs γ co underlineP u0 q0 uBar\n  /-- `(s_feas, t_feas)` lies in the compact feasible box (`γ>0`). -/\n  feasible : 0 < γ → 0 ≤ s ∧ s ≤ 1 / 2 ∧ 0 ≤ t ∧ t ≤ s / γ\n  /-- `(s_feas, t_feas)` MAXIMIZES `feasiblePhi` over the compact box (`γ>0`), so\n  `g_joint = feasiblePhi (s_feas) (t_feas)`. -/\n  maximal : 0 < γ → ∀ s' t' : ℝ, 0 ≤ s' → s' ≤ 1 / 2 → 0 ≤ t' → t' ≤ s' / γ →\n    feasiblePhi α γ a c s' t' ≤ feasiblePhi α γ a c s t\n  /-- Selected clip schedule definition `q_n = qSched`. -/\n  qDef : q = qSched α γ a c q0\n  /-- Selected window schedule definition `u_n = uSched`. -/\n  uDef : u = uSched α γ a c uBar\n  /-- Solved-exponent definition `r_feas = min{r_⋆, g_joint}` (`γ>0`) /\n  `min{A_α, c}` (`γ=0`). -/\n  rDef : r = rFeas α γ a c\n  /-- Eventual schedule admissibility `q_n ≤ c_o u_n^γ` (`γ>0`). -/\n  admissible : 0 < γ → feasibleAdmissible α γ a c co q0 uBar",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:clipped-propensity": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.clippedPropensity",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Clipped propensity `e_q(x)=min(1-q, max(q, e(x)))`. -/\nnoncomputable def clippedPropensity (q : ℝ) (e : 𝒳 → ℝ) (x : 𝒳) : ℝ :=\n  min (1 - q) (max q (e x))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:clipped-aipw-score": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.clippedAIPWScore",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Clipped AIPW score\n`Γ_q(O;η)=μ₁-μ₀+(A/e_q)(Y-μ₁)-((1-A)/(1-e_q))(Y-μ₀)`. -/\nnoncomputable def clippedAIPWScore (q : ℝ) (mu0 mu1 e : 𝒳 → ℝ)\n    (O : Observation 𝒳) : ℝ :=\n  mu1 O.X - mu0 O.X\n    + (boolIndicator O.A / clippedPropensity q e O.X) * (O.Y - mu1 O.X)\n    - ((1 - boolIndicator O.A) / (1 - clippedPropensity q e O.X)) * (O.Y - mu0 O.X)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:feasible-erm": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.feasibleERM",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Feasible clipped-AIPW `1/n`-ERM over the countable pointwise-dense skeleton\n`Π₀` enumerated by `enum : ℕ → Policy 𝒳`. With foldwise cross-fitted nuisances\n`η̂^{(-k)}` and fold assignment `assign`, `π̂_n = enum j_n` where `j_n` is the\nSMALLEST index `j` such that `enum j` is a `1/n`-near-maximizer of the cross-fitted\ncriterion over the whole enumeration (`sInf` of the near-maximizer index set). -/\nnoncomputable def feasibleERM {n K : ℕ} (q : ℝ) (enum : ℕ → Policy 𝒳)\n    (muHat0 muHat1 eHat : Fin K → 𝒳 → ℝ) (assign : Fin n → Fin K)\n    (sample : Fin n → Observation 𝒳) : Policy 𝒳 :=\n  enum (sInf {j : ℕ |\n    ∀ j' : ℕ,\n      empiricalWelfareScore q muHat0 muHat1 eHat assign sample (enum j')\n        ≤ empiricalWelfareScore q muHat0 muHat1 eHat assign sample (enum j)\n            + (n : ℝ)⁻¹})",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:upper-risk": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.upperRisk",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "noncomputable def upperRisk {n K : ℕ}\n    (α γ Cm u0 Co co underlineP a c CMu CProd q0 : ℝ) (dPi : ℕ)\n    (policySet : Set (Policy 𝒳)) (enum : ℕ → Policy 𝒳)\n    (muHat0 muHat1 eHat : ℕ → Fin K → 𝒳 → ℝ) (assign : (m : ℕ) → Fin m → Fin K)\n    (rMu rE : ℕ → ℝ) : ℝ :=\n  sSup ((fun P : ObservedLaw 𝒳 =>\n      ∫ sample, lawRegret P\n          (feasibleERM (qSched α γ a c q0 n) enum\n            (muHat0 n) (muHat1 n) (eHat n) (assign n) sample)\n        ∂(Measure.pi (fun _ : Fin n => P.dataMeasure))) ''\n    {P | LawClass α γ Cm u0 Co co underlineP policySet P ∧\n         OptimalInClass P policySet ∧\n         IsIIDSample P ∧\n         (∀ k : Fin K,\n           NuisanceRate P (fun m => muHat0 m k) (fun m => muHat1 m k)\n             (fun m => eHat m k) rMu rE) ∧\n         (∀ k : Fin K,\n           BoundedCrossfitNuisances (fun m => muHat0 m k) (fun m => muHat1 m k)) ∧\n         PolynomialNuisanceExponents rMu rE a c CMu CProd ∧\n         PolicyClassVC policySet dPi ∧\n         VCLocalizedEnvelope P policySet α ∧\n         VCLocalizedOffsetEnvelope P policySet α ∧\n         FixedFoldCount K assign ∧\n         DenseSkeleton enum policySet})",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:feasible-erm-basic-inequality": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.feasible_erm_basic_inequality",
+      "file": "Helpers/FeasibleERM.lean",
+      "line": 0,
+      "statement": "/-- `lem:feasible-erm-basic-inequality`. The feasible ERM (`enum`-skeleton,\nfoldwise cross-fit) is a MEASURABLE `Π`-valued estimator: it is `Π`-valued for\nevery realized sample, the induced regret map `sample ↦ R_P(π̂_n(sample))` is\nmeasurable (so the `U_n`/`M_n` integrals are well-defined), and against EVERY\ncomparator `π^b ∈ Π` the `1/n` basic inequality holds; under `OptimalInClass`\nit applies in particular to `π^b = π_⋆`. The comparator inequality over ALL of `Π`\nis load-bearing on `enum` being a POINTWISE-DENSE skeleton of `Π` (the countable\n`Π₀` of `ass:policy-class` that `def:feasible-erm` fixes): `hdense` says every\n`π ∈ Π` is a pointwise limit of `enum`-indexed policies, which is what reduces\n`sup_Π V̂` to `sup_j V̂(enum j)`. Without it the bare `henum : enum j ∈ Π` would not\nlicense the `Π`-wide near-maximality. -/\nlemma feasible_erm_basic_inequality {n K : ℕ} (P : ObservedLaw 𝒳) (q : ℝ)\n    (enum : ℕ → Policy 𝒳) (muHat0 muHat1 eHat : Fin K → 𝒳 → ℝ)\n    (assign : Fin n → Fin K) (policySet : Set (Policy 𝒳)) (dPi : ℕ)\n    (hvc : PolicyClassVC policySet dPi) (_hopt : OptimalInClass P policySet)\n    (henum : ∀ j, enum j ∈ policySet)\n    (hdense : ∀ π ∈ policySet, ∃ seq : ℕ → ℕ,\n      ∀ x, ∀ᶠ j in Filter.atTop, enum (seq j) x = π x)\n    -- regularity: measurable foldwise plug-in estimators\n    (hμ0meas : ∀ k : Fin K, Measurable (muHat0 k))\n    (hμ1meas : ∀ k : Fin K, Measurable (muHat1 k))\n    (hemeas : ∀ k : Fin K, Measurable (eHat k))\n    (hn : 0 < n) :\n    Measurable (fun s : Fin n → Observation 𝒳 =>\n        lawRegret P (feasibleERM q enum muHat0 muHat1 eHat assign s)) ∧\n      ∀ sample : Fin n → Observation 𝒳,\n        feasibleERM q enum muHat0 muHat1 eHat assign sample ∈ policySet ∧\n          ∀ πb ∈ policySet,\n            empiricalWelfareScore q muHat0 muHat1 eHat assign sample πb\n              ≤ empiricalWelfareScore q muHat0 muHat1 eHat assign sample\n                  (feasibleERM q enum muHat0 muHat1 eHat assign sample) + (n : ℝ)⁻¹\n    := by\n  classical\n  have hπmeas : ∀ π ∈ policySet, Measurable π := hvc.1\n  let score : ℕ → (Fin n → Observation 𝒳) → ℝ := fun j sample =>\n    empiricalWelfareScore q muHat0 muHat1 eHat assign sample (enum j)\n  let near : (Fin n → Observation 𝒳) → ℕ → Prop := fun sample j =>\n    ∀ j' : ℕ, score j' sample ≤ score j sample + (n : ℝ)⁻¹\n  let sel : (Fin n → Observation 𝒳) → ℕ := fun sample =>\n    sInf {j : ℕ | near sample j}\n  have hscore_meas : ∀ j, Measurable (score j) := by\n    intro j\n    exact measurable_empiricalWelfareScore_sample q muHat0 muHat1 eHat assign\n      hμ0meas hμ1meas hemeas (enum j) (hπmeas (enum j) (henum j))\n  have hnear_meas : ∀ j, MeasurableSet {sample : Fin n → Observation 𝒳 | near sample j} := by\n    intro j\n    have hInter : MeasurableSet\n        (⋂ j' : ℕ,\n          {sample : Fin n → Observation 𝒳 |\n            score j' sample ≤ score j sample + (n : ℝ)⁻¹}) := by\n      exact MeasurableSet.iInter (fun j' =>\n        measurableSet_le (hscore_meas j') ((hscore_meas j).add measurable_const))\n    simpa [near, Set.setOf_forall] using hInter\n  have hsel_fiber : ∀ j, MeasurableSet {sample : Fin n → Observation 𝒳 | sel sample = j} := by\n    intro j\n    have hlower_meas :\n        MeasurableSet\n          {sample : Fin n → Observation 𝒳 | ∀ k : ℕ, k < j → ¬ near sample k} := by\n      have hInter : MeasurableSet\n          (⋂ k : ℕ,\n            {sample : Fin n → Observation 𝒳 | k < j → ¬ near sample k}) := by\n        exact MeasurableSet.iInter (fun k => by\n          by_cases hk : k < j\n          · have hc : MeasurableSet\n                ({sample : Fin n → Observation 𝒳 | near sample k}ᶜ)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:crude-clipped-score-envelope": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.crude_clipped_score_envelope",
+      "file": "Helpers/FeasibleERM.lean",
+      "line": 0,
+      "statement": "/-- `lem:crude-clipped-score-envelope`. Crude `q^{-1}` envelope of the clipped\nAIPW score from clipped denominators and bounded outcomes/nuisances. -/\nlemma crude_clipped_score_envelope (P : ObservedLaw 𝒳)\n    (muHat0 muHat1 eHat : 𝒳 → ℝ) (q : ℝ)\n    (hbdd : BoundedOutcome P)\n    (hbn : ∀ x, muHat0 x ∈ Set.Icc (-1 : ℝ) 1 ∧ muHat1 x ∈ Set.Icc (-1 : ℝ) 1)\n    (hq : 0 < q) (hq1 : q ≤ 1 / 2) :\n    ∃ C : ℝ, 0 < C ∧\n      (∀ᵐ O ∂P.dataMeasure,\n        |clippedAIPWScore q muHat0 muHat1 eHat O| ≤ C / q) ∧\n      (∀ᵐ O ∂P.dataMeasure,\n        (clippedAIPWScore q muHat0 muHat1 eHat O) ^ 2 ≤ C / q ^ 2)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:localized-clipped-drift-bound": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.localized_clipped_drift_bound",
+      "file": "Helpers/DriftBound.lean",
+      "line": 0,
+      "statement": "lemma localized_clipped_drift_bound (P : ObservedLaw 𝒳)\n    (policySet : Set (Policy 𝒳)) (q rMu rE α γ Co co u0 underlineP : ℝ)\n    (muHat0 muHat1 eHat : 𝒳 → ℝ)\n    (hsq0 : ∫ x, (muHat0 x - P.mu0 x) ^ 2 ∂P.PX ≤ rMu ^ 2)\n    (hsq1 : ∫ x, (muHat1 x - P.mu1 x) ^ 2 ∂P.PX ≤ rMu ^ 2)\n    (hse : ∫ x, (eHat x - P.propensity x) ^ 2 ∂P.PX ≤ rE ^ 2)\n    -- regularity: L² nuisance-error functions are genuine Bochner/MemLp inputs\n    -- for the Cauchy-Schwarz step; this is intrinsic to the stated L² rates.\n    (hμ0L2 : MemLp (fun x => muHat0 x - P.mu0 x) 2 P.PX)\n    (hμ1L2 : MemLp (fun x => muHat1 x - P.mu1 x) 2 P.PX)\n    (heL2 : MemLp (fun x => eHat x - P.propensity x) 2 P.PX)\n    -- regularity: nuisance rates are nonnegative radii (NuisanceRate /\n    -- PolynomialNuisanceExponents bookkeeping in the note).\n    (hrMu_nonneg : 0 ≤ rMu) (hrE_nonneg : 0 ≤ rE)\n    -- regularity: standing observed-law setup needed for welfare identity,\n    -- strict-overlap projection, and measurable disagreement sets.\n    (hwf : WellFormedLaw P)\n    -- regularity: policy measurability needed by `clipped_region_localization`.\n    (hπmeas : ∀ π ∈ policySet, Measurable π)\n    -- regularity: `q` is a clipping level, so denominators obey\n    -- `q ≤ ē_q ≤ 1-q`; the note's selected clips satisfy this.\n    (hq_half : q ≤ 1 / 2)\n    (hod : OverlapDecay P u0 Co co α γ) (hze : ZeroEffectRegular P policySet)\n    (hbdd : BoundedOutcome P)\n    (hstrict : StrictOverlapEndpoint P γ underlineP) (hq : 0 < q) :\n    (∃ C0 : ℝ, 0 < C0 ∧ C0 = 4 * (1 + (max Co 1) ^ (1 / 2 : ℝ)) ∧\n      (0 < γ → ∀ π ∈ policySet, ∀ u : ℝ,\n        0 < u → u ≤ u0 → q ≤ co * u ^ γ →\n          |driftIntegral P q muHat0 muHat1 eHat π|\n            ≤ C0 * (rMu * rE / q + rMu * u ^ (α / 2) * q ^ (1 / (2 * γ))\n                + rMu * (lawRegret P π / u) ^ (1 / 2 : ℝ)))) ∧\n      (∃ C1 : ℝ, 0 < C1 ∧\n        C1 = max 1 (2 / q) ∧\n        (γ = 0 → q ≤ underlineP / 2 → ∀ π ∈ policySet,\n          |driftIntegral P q muHat0 muHat1 eHat π| ≤ C1 * (rMu * rE)))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:crude-localized-master-bound": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.crude_localized_master_bound",
+      "file": "Helpers/MasterBound.lean",
+      "line": 0,
+      "statement": "/-- `lem:crude-localized-master-bound`. Pooled crude `q^{-2}`-envelope master\nbound for the cross-fit clipped-AIPW `1/n`-ERM (ARBITRARY `enum`, foldwise\nnuisances, `assign` partition). BOTH overlap regimes: for `γ>0` with `q ≤ c_o u^γ`\nit is the five-term bound; for `γ=0` with fixed `q ≤ underline_p/2` it collapses\nto `C{n^{-A_α}+r_μ r_e}(log n)^p`.\n\nSCOPE (Lean encoding fidelity): the enumeration `enum : ℕ → Policy 𝒳` carries the\nnote's dense-`Π₀` enumeration condition as `hskel : DenseSkeleton enum policySet`\n(every `enum j ∈ Π`, and every `π ∈ Π` is a pointwise limit of an `enum`-indexed\nsubsequence). So this master bound is the upper-bound backbone specifically for the\npointwise-dense-skeleton `1/n`-ERM of `def:feasible-erm`, not an ARBITRARY\nenumeration-based ERM. -/\nlemma crude_localized_master_bound {K : ℕ} (policySet : Set (Policy 𝒳))\n    (α γ Cm u0 Co co underlineP a c CMu CProd : ℝ) (dPi : ℕ)\n    (assign : (m : ℕ) → Fin m → Fin K) (qSeq uSeq rMu rE : ℕ → ℝ)\n    (enum : ℕ → Policy 𝒳) (muHat0 muHat1 eHat : ℕ → Fin K → 𝒳 → ℝ)\n    (hvc : PolicyClassVC policySet dPi)\n    (henvU : VCLocalizedEnvelopeUnif policySet α)\n    (hoffU : VCLocalizedOffsetEnvelopeUnif policySet α)\n    (hskel : DenseSkeleton enum policySet)\n    (hK : FixedFoldCount K assign)\n    (hpoly : PolynomialNuisanceExponents rMu rE a c CMu CProd)\n    (hq_pos : ∀ᶠ n : ℕ in Filter.atTop, 0 < qSeq n)\n    -- regularity: the note's clips are in the genuine clipping interval, giving\n    -- `q ≤ ē_q ≤ 1-q` for score envelopes and drift denominators.\n    (hq_half : ∀ᶠ n : ℕ in Filter.atTop, qSeq n ≤ 1 / 2)\n    -- schedule regularity: in the strict-overlap endpoint (`γ=0`) the feasible\n    -- construction uses a fixed clip, so q-dependent constants are still\n    -- hoistable above `∀ n`.\n    (hq_zero_fixed : γ = 0 → ∃ q0fix : ℝ, 0 < q0fix ∧\n      ∀ᶠ n : ℕ in Filter.atTop, qSeq n = q0fix)\n    -- regularity: nuisance rates are nonnegative radii, intrinsic to\n    -- `NuisanceRate` / `PolynomialNuisanceExponents` bookkeeping.\n    (hrMu_nonneg : ∀ᶠ n : ℕ in Filter.atTop, 0 ≤ rMu n)\n    (hrE_nonneg : ∀ᶠ n : ℕ in Filter.atTop, 0 ≤ rE n)\n    -- regularity: foldwise plug-in nuisances are measurable so\n    -- `feasible_erm_basic_inequality`, `clip_bias`, and centered processes are\n    -- genuine Bochner objects.\n    (hμ0meas : ∀ n k, Measurable (muHat0 n k))\n    (hμ1meas : ∀ n k, Measurable (muHat1 n k))\n    (hemeas : ∀ n k, Measurable (eHat n k))\n    -- regularity: L² nuisance-error fields are MemLp inputs for\n    -- Cauchy-Schwarz in the deterministic drift bound.\n    (hμ0L2 : ∀ᶠ n : ℕ in Filter.atTop,\n      ∀ P : ObservedLaw 𝒳,\n        LawClass α γ Cm u0 Co co underlineP policySet P →\n          ∀ k : Fin K, MemLp (fun x => muHat0 n k x - P.mu0 x) 2 P.PX)\n    (hμ1L2 : ∀ᶠ n : ℕ in Filter.atTop,\n      ∀ P : ObservedLaw 𝒳,\n        LawClass α γ Cm u0 Co co underlineP policySet P →\n          ∀ k : Fin K, MemLp (fun x => muHat1 n k x - P.mu1 x) 2 P.PX)\n    (heL2 : ∀ᶠ n : ℕ in Filter.atTop,\n      ∀ P : ObservedLaw 𝒳,\n        LawClass α γ Cm u0 Co co underlineP policySet P →\n          ∀ k : Fin K, MemLp (fun x => eHat n k x - P.propensity x) 2 P.PX)\n    -- bounded cross-fit outcome regressions (A12): needed — together with the\n    -- finite-VC dense skeleton (`hvc`) and the positive clip schedule — to DISCHARGE\n    -- the Bochner side conditions internally via `bochner_discharge`, so they are no\n    -- longer an assumed input.\n    (hbn : ∀ k : Fin K,\n      BoundedCrossfitNuisances (fun m => muHat0 m k) (fun m => muHat1 m k)) :\n    ∃ C p : ℝ, 0 < C ∧ 0 ≤ p ∧\n      ∀ᶠ n : ℕ in Filter.atTop,\n        ∀ (P : ObservedLaw 𝒳),\n          LawClass α γ Cm u0 Co co underlineP policySet P →\n          OptimalInClass P policySet →\n          IsIIDSample P →\n          (∀ k : Fin K,\n            NuisanceRate P (fun m => muHat0 m k) (fun m => muHat1 m k)\n              (fun m => eHat m k) rMu rE) →\n          (∀ k : Fin K,\n            BoundedCrossfitNuisances (fun m => muHat0 m k) (fun m => muHat1 m k)) →\n          (0 < γ → 0 < uSeq n → uSeq n ≤ u0 → qSeq n ≤ co * (uSeq n) ^ γ →\n            ∫ sample,\n                lawRegret P\n                  (feasibleERM (qSeq n) enum (muHat0 n) (muHat1 n) (eHat n)\n                    (assign n) sample)\n              ∂(Measure.pi (fun _ : Fin n => P.dataMeasure))\n              ≤ C * ((n : ℝ) ^ (-(rStar α γ))\n                  + ((n : ℝ) * (qSeq n) ^ 2) ^ (-(Aalpha α))\n                  + rMu n * rE n / qSeq n\n                  + rMu n * (uSeq n) ^ (α / 2) * (qSeq n) ^ (1 / (2 * γ))\n                  + (rMu n) ^ 2 / uSeq n) * (Real.log n) ^ p) ∧\n          (γ = 0 → qSeq n ≤ underlineP / 2 →\n            ∫ sample,\n                lawRegret P\n                  (feasibleERM (qSeq n) enum (muHat0 n) (muHat1 n) (eHat n)\n                    (assign n) sample)\n          ∂(Measure.pi (fun _ : Fin n => P.dataMeasure))\n            ≤ C * ((n : ℝ) ^ (-(Aalpha α)) + rMu n * rE n) * (Real.log n) ^ p)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:clip-balance-exponent": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.clip_balance_exponent",
+      "file": "Helpers/MasterBound.lean",
+      "line": 0,
+      "statement": "/-- `lem:clip-balance-exponent`. Optimization of the master-bound terms over the\nDETERMINISTIC `def:feasible-rate` schedule `q_n = qSched`, `u_n = uSched` (tied to\n`s_feas`, `t_feas`, not arbitrary) under the admissibility `q_n ≤ c_o u_n^γ`, to\nthe solved exponent `r_feas = rFeas α γ a c` (the `FeasibleRate.r` accessor). BOTH\nregimes: for `γ>0` the\nfive master-bound terms; for `γ=0` the fixed-clip `n^{-A_α}+r_μ r_e` terms. -/\nlemma clip_balance_exponent (α γ a c CMu CProd q0 uBar co : ℝ) (rMu rE : ℕ → ℝ)\n    (hpoly : PolynomialNuisanceExponents rMu rE a c CMu CProd)\n    (hCMu : 0 ≤ CMu) (hCProd : 0 ≤ CProd)\n    (hrMu_nonneg : ∀ᶠ n : ℕ in Filter.atTop, 0 ≤ rMu n)\n    (hq0 : 0 < q0) (huBar : 0 < γ → 0 < uBar)\n    (hadm : 0 < γ → feasibleAdmissible α γ a c co q0 uBar) :\n    ∃ C p : ℝ, 0 < C ∧ 0 ≤ p ∧\n      (0 < γ → ∀ᶠ n : ℕ in Filter.atTop,\n        (n : ℝ) ^ (-(rStar α γ))\n          + ((n : ℝ) * (qSched α γ a c q0 n) ^ 2) ^ (-(Aalpha α))\n          + rMu n * rE n / qSched α γ a c q0 n\n          + rMu n * (uSched α γ a c uBar n) ^ (α / 2)\n              * (qSched α γ a c q0 n) ^ (1 / (2 * γ))\n          + (rMu n) ^ 2 / uSched α γ a c uBar n\n        ≤ C * (n : ℝ) ^ (-(rFeas α γ a c)) * (Real.log n) ^ p) ∧\n      (γ = 0 → ∀ᶠ n : ℕ in Filter.atTop,\n        (n : ℝ) ^ (-(Aalpha α)) + rMu n * rE n\n        ≤ C * (n : ℝ) ^ (-(rFeas α γ a c)) * (Real.log n) ^ p)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "oeq:feasible-upper": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.feasible_upper",
+      "file": "T_feasible_upper.lean",
+      "line": 0,
+      "statement": "theorem feasible_upper {K : ℕ}\n    (α γ Cm u0 Co co underlineP a c CMu CProd q0 uBar : ℝ) (dPi : ℕ)\n    (assign : (m : ℕ) → Fin m → Fin K) (policySet : Set (Policy 𝒳))\n    (enum : ℕ → Policy 𝒳) (muHat0 muHat1 eHat : ℕ → Fin K → 𝒳 → ℝ)\n    (rMu rE : ℕ → ℝ)\n    (hγ : 0 ≤ γ)\n    (hpoly : PolynomialNuisanceExponents rMu rE a c CMu CProd)\n    (hCMu : 0 ≤ CMu) (hCProd : 0 ≤ CProd)\n    (hrMu_nonneg : ∀ᶠ n : ℕ in Filter.atTop, 0 ≤ rMu n)\n    (hrE_nonneg : ∀ᶠ n : ℕ in Filter.atTop, 0 ≤ rE n)\n    (hμ0meas : ∀ n k, Measurable (muHat0 n k))\n    (hμ1meas : ∀ n k, Measurable (muHat1 n k))\n    (hemeas : ∀ n k, Measurable (eHat n k))\n    (hμ0L2 : ∀ᶠ n : ℕ in Filter.atTop,\n      ∀ P : ObservedLaw 𝒳,\n        LawClass α γ Cm u0 Co co underlineP policySet P →\n          ∀ k : Fin K, MemLp (fun x => muHat0 n k x - P.mu0 x) 2 P.PX)\n    (hμ1L2 : ∀ᶠ n : ℕ in Filter.atTop,\n      ∀ P : ObservedLaw 𝒳,\n        LawClass α γ Cm u0 Co co underlineP policySet P →\n          ∀ k : Fin K, MemLp (fun x => muHat1 n k x - P.mu1 x) 2 P.PX)\n    (heL2 : ∀ᶠ n : ℕ in Filter.atTop,\n      ∀ P : ObservedLaw 𝒳,\n        LawClass α γ Cm u0 Co co underlineP policySet P →\n          ∀ k : Fin K, MemLp (fun x => eHat n k x - P.propensity x) 2 P.PX)\n    (hvc : PolicyClassVC policySet dPi)\n    (henvU : VCLocalizedEnvelopeUnif policySet α)\n    (hoffU : VCLocalizedOffsetEnvelopeUnif policySet α)\n    (hK : FixedFoldCount K assign)\n    (hbn : ∀ k : Fin K,\n      BoundedCrossfitNuisances (fun m => muHat0 m k) (fun m => muHat1 m k))\n    (hskel : DenseSkeleton enum policySet)\n    (hinputs : FeasibleRateInputs γ co underlineP u0 q0 uBar) :\n    ∃ C p : ℝ, 0 < C ∧ 0 ≤ p ∧\n      ∀ᶠ n : ℕ in Filter.atTop,\n        upperRisk (n := n) α γ Cm u0 Co co underlineP a c CMu CProd q0 dPi\n            policySet enum muHat0 muHat1 eHat assign rMu rE\n          ≤ C * (n : ℝ)\n              ^ (-(feasibleRate α γ a c co underlineP u0 q0 uBar hinputs).r)\n              * (Real.log n) ^ p",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "oeq:feasible-tight": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.FeasibleTightQuestion",
+      "file": "T_feasible_tight.lean",
+      "line": 0,
+      "statement": "/-- `oeq:feasible-tight` (OPEN research question — STATED, not proven).\n\nIn the strict-gap branch `g_joint < r_⋆`, the residual question is whether SOME\ngenuinely feasible cross-fitted-nuisance estimator — the `feasibleERM` built\nfrom estimated nuisances `(μ̂₀, μ̂₁, ê)` that obey the bounded-truncation\n(`BoundedCrossfitNuisances`), polynomial cross-fit-rate\n(`PolynomialNuisanceExponents` at the same regime `(a, c, C_μ, C_prod)`), and\n`L²(P)` nuisance-rate (`NuisanceRate`) conditions over the bundled\nside-condition domain `dom` — attains the converse exponent `r_⋆`, i.e. whether\nits conditional upper risk `upperRisk dom (feasibleERM …)` decays like\n`n^{-r_⋆}` up to logarithmic factors, rather than the slower conditional\nexponent `g_joint` of `oeq:feasible-upper`.\n\nSCOPE (Lean encoding fidelity): the enumeration `enum : ℕ → Policy 𝒳` threaded\nthrough `upperRisk` carries the note's dense-`Π₀` enumeration condition: the open\ndichotomy is guarded by `DenseSkeleton enum policySet`, so the residual question is\nrecorded specifically for the pointwise-dense-skeleton feasible ERM of\n`def:feasible-erm`, consistent with `def:upper-risk` and `oeq:feasible-upper`.\n\nPer the OEQ rule this is a `Prop` `def` recording the open proposition: it\ncarries NO proof, no theorem is emitted for it, and no downstream theorem\ndepends on it. -/\ndef FeasibleTightQuestion {𝒳 : Type*} [MeasurableSpace 𝒳] {K : ℕ}\n    (α γ Cm u0 Co co underlineP a c CMu CProd q0 : ℝ) (dPi : ℕ)\n    (policySet : Set (Policy 𝒳)) (enum : ℕ → Policy 𝒳)\n    (assign : (m : ℕ) → Fin m → Fin K) (rMu rE : ℕ → ℝ) : Prop :=\n  -- The achievability predicate: SOME genuinely feasible cross-fitted-nuisance estimator\n  -- attains the converse exponent `r_⋆` over a GENUINELY INHABITED feasible side-condition\n  -- domain. SCAFFOLD REDIRECT: the `∃ P …` guard must witness the SAME bundled domain that\n  -- `upperRisk` takes its `sSup` over (`def:upper-risk`), otherwise an EMPTY `upperRisk`\n  -- domain (`sSup ∅ = 0`) would satisfy `Attains` vacuously. So the guard pins ALL the\n  -- `upperRisk` side conditions: `IsIIDSample` (`ass:iid`), `NuisanceRate` (`ass:nuisance-rate`),\n  -- `PolicyClassVC` (`ass:policy-class`), the two localized VC envelopes\n  -- (`ass:vc-localized-envelope`, `ass:vc-localized-offset-envelope`), `FixedFoldCount`\n  -- (`ass:fixed-crossfit-fold-count`), and `DenseSkeleton` (the dense-`Π₀` enumeration), in\n  -- addition to the `BoundedCrossfitNuisances`/`PolynomialNuisanceExponents` conjuncts already\n  -- carried in the outer existential — exactly the genuinely feasible domain of `def:upper-risk`.\n  let Attains : Prop :=\n    (∃ muHat0 muHat1 eHat : ℕ → Fin K → 𝒳 → ℝ,\n        (∀ k : Fin K,\n          BoundedCrossfitNuisances (fun m => muHat0 m k) (fun m => muHat1 m k)) ∧\n        PolynomialNuisanceExponents rMu rE a c CMu CProd ∧\n        (∃ P : ObservedLaw 𝒳,\n          LawClass α γ Cm u0 Co co underlineP policySet P ∧\n            OptimalInClass P policySet ∧\n            IsIIDSample P ∧\n            (∀ k : Fin K,\n              NuisanceRate P (fun m => muHat0 m k) (fun m => muHat1 m k)\n                (fun m => eHat m k) rMu rE) ∧\n            PolicyClassVC policySet dPi ∧\n            VCLocalizedEnvelope P policySet α ∧\n            VCLocalizedOffsetEnvelope P policySet α ∧\n            FixedFoldCount K assign ∧\n            DenseSkeleton enum policySet) ∧\n        ∃ C p : ℝ, 0 < C ∧ 0 ≤ p ∧ ∀ᶠ n : ℕ in Filter.atTop,\n          upperRisk (n := n) α γ Cm u0 Co co underlineP a c CMu CProd q0 dPi\n              policySet enum muHat0 muHat1 eHat assign rMu rE\n            ≤ C * (n : ℝ) ^ (-(rStar α γ)) * (Real.log n) ^ p)\n  -- The SUBSTANTIVE slower-exponent alternative: weak-arm nuisance learning genuinely\n  -- IMPOSES the slower conditional exponent `g_joint` — over an inhabited feasible domain,\n  -- EVERY feasible cross-fitted-nuisance estimator has worst-case risk `U_n` bounded BELOW\n  -- by `c' n^{-g_joint}` (so NO feasible estimator attains `r_⋆`; the feasible rate is\n  -- exactly `g_joint`, matching the proven `U_n ≤ C n^{-g_joint}` upper bound). This is the\n  -- `∀`-over-estimators DETERMINATION the NL asks for — not the trivial `¬ Attains`\n  -- (a classical tautology) nor a single failing-config existential.\n  -- UNIFORM CONVERSE-FLOOR CONSTANT (scaffold redirect): the floor constant `c'` is\n  -- quantified ABOVE the `∀`-over-estimators, so a SINGLE `c' > 0` (depending only on the\n  -- regime/class, not on the particular feasible estimator) certifies the `g_joint` floor\n  -- uniformly over the whole feasible-estimator class — the \"feasible rate is exactly\n  -- `g_joint`\" determination, with the converse constant chosen BEFORE fixing the estimator\n  -- (mirroring the uniform `c(C_χ)` of `lem:le-cam-two-point-chisq`), not after.\n  let SlowerImposed : Prop :=\n    (∃ P : ObservedLaw 𝒳,\n        LawClass α γ Cm u0 Co co underlineP policySet P ∧ OptimalInClass P policySet) ∧\n    (∃ c' : ℝ, 0 < c' ∧\n      ∀ muHat0 muHat1 eHat : ℕ → Fin K → 𝒳 → ℝ,\n        (∀ k : Fin K,\n          BoundedCrossfitNuisances (fun m => muHat0 m k) (fun m => muHat1 m k)) →\n        PolynomialNuisanceExponents rMu rE a c CMu CProd →\n        ∀ᶠ n : ℕ in Filter.atTop,\n          c' * (n : ℝ) ^ (-(gJoint α γ a c))\n            ≤ upperRisk (n := n) α γ Cm u0 Co co underlineP a c CMu CProd q0 dPi\n                policySet enum muHat0 muHat1 eHat assign rMu rE)\n  -- The OPEN DICHOTOMY (STATED, not resolved): for the genuine pointwise-dense-skeleton\n  -- ERM (`DenseSkeleton enum policySet`, the note's dense-`Π₀` enumeration condition on\n  -- `enum`), in the strict-gap branch, EITHER some feasible estimator attains `r_⋆`\n  -- (`Attains`) OR the slower exponent `g_joint` is genuinely imposed for every feasible\n  -- estimator (`SlowerImposed`).\n  DenseSkeleton enum policySet → gJoint α γ a c < rStar α γ → (Attains ∨ SlowerImposed)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:localized-vc-self-bound": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.localized_vc_self_bound",
+      "file": "Helpers/SelfBound.lean",
+      "line": 0,
+      "statement": "/-- `lem:localized-vc-self-bound`. EXPECTED-risk self-localized selection bound\nfrom the offset-control node. With `ρ_n = (B²/n)^{A_α}(log n)^p`, `B ≥ 1`, the\nEXPECTED pooled offset positive-part supremum controlled by `ρ_n` (the bound\nsupplied by `crossfit_localized_offset_control`, `hoff`), and any data-dependent\n`Π`-valued selector `π̃` satisfying the SAMPLE-WISE selection inequality\n`R_P(π̃(sample)) ≤ 2|G_cf(sample, π̃(sample))| + δ`, the EXPECTED regret obeys\n`E_P R_P(π̃) ≤ C{ρ_n + δ}`, and if `δ ≤ 1/n` the `δ` term is absorbed into\n`C ρ_n`. -/\nlemma localized_vc_self_bound {n K : ℕ} (P : ObservedLaw 𝒳)\n    (policySet : Set (Policy 𝒳)) (α B δ Coff p : ℝ)\n    (g : Fin K → Policy 𝒳 → Observation 𝒳 → ℝ) (assign : Fin n → Fin K)\n    (πt : (Fin n → Observation 𝒳) → Policy 𝒳)\n    (hprob : IsProbabilityMeasure P.dataMeasure)\n    (hB : 1 ≤ B) (hn : 0 < n) (hp : 0 ≤ p) (hδ_nonneg : 0 ≤ δ)\n    (hmem : ∀ sample, πt sample ∈ policySet)\n    (hoff : expectedPooledOffsetSup P g assign policySet\n              ≤ Coff * ((B ^ 2 / (n : ℝ)) ^ (Aalpha α) * (Real.log n) ^ p))\n    (hlarge : (n : ℝ)⁻¹\n              ≤ Coff * ((B ^ 2 / (n : ℝ)) ^ (Aalpha α) * (Real.log n) ^ p))\n    (hInt_regret : Integrable (fun sample : Fin n → Observation 𝒳 =>\n        lawRegret P (πt sample)) (Measure.pi (fun _ : Fin n => P.dataMeasure)))\n    (hInt_offset : Integrable (fun sample : Fin n → Observation 𝒳 =>\n        sSup ((fun π =>\n          max 0 (2 * |pooledCrossfitProcess P g assign sample π| -\n            lawRegret P π / 4)) '' policySet))\n        (Measure.pi (fun _ : Fin n => P.dataMeasure)))\n    (hbdd_offset : ∀ sample : Fin n → Observation 𝒳,\n        BddAbove ((fun π =>\n          max 0 (2 * |pooledCrossfitProcess P g assign sample π| -\n            lawRegret P π / 4)) '' policySet))\n    (hsel : ∀ sample, lawRegret P (πt sample)\n              ≤ 2 * |pooledCrossfitProcess P g assign sample (πt sample)| + δ) :\n    0 < (8 / 3 : ℝ) ∧\n      ∫ sample, lawRegret P (πt sample)\n            ∂(Measure.pi (fun _ : Fin n => P.dataMeasure))\n          ≤ (8 / 3 : ℝ) *\n              (Coff * ((B ^ 2 / (n : ℝ)) ^ (Aalpha α) * (Real.log n) ^ p) + δ) ∧\n      (δ ≤ (n : ℝ)⁻¹ →\n        ∫ sample, lawRegret P (πt sample)\n              ∂(Measure.pi (fun _ : Fin n => P.dataMeasure))\n            ≤ (8 / 3 : ℝ) *\n                (Coff * ((B ^ 2 / (n : ℝ)) ^ (Aalpha α) * (Real.log n) ^ p)))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:localized-vc-process-bound": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.localized_vc_process_bound",
+      "file": "Helpers/OffsetControl.lean",
+      "line": 0,
+      "statement": "/-- `lem:localized-vc-process-bound`. Fixed-radius localized process bound: for an\ni.i.d. sample of size `m`, the EXPECTED localized supremum `E_P Z_m(r)` of the\ncentered policy-indexed empirical process `(P_m - P) g_π` — with increment envelope\n`B` and conditional second moment `≤ C B² P_X(D_π)` — is bounded by\n`C B m^{-1/2} r^{α/(2+2α)}(log m)^p`, combining `margin_localization` with the\ndischarged finite-VC envelope. -/\nlemma localized_vc_process_bound (P : ObservedLaw 𝒳)\n    (policySet : Set (Policy 𝒳)) (Cm α u0 : ℝ) (dPi : ℕ)\n    (hpc : PolicyClassVC policySet dPi)\n    (hmargin : MarginTail P Cm α u0) (hze : ZeroEffectRegular P policySet)\n    (hwf : WellFormedLaw P) (hbdd : BoundedOutcome P)\n    -- `ass:vc-localized-envelope` (atomic empirical-process assumption), supplied\n    -- from the `upperRisk` domain conjunct at the consumer; threaded, not discharged.\n    (henv : VCLocalizedEnvelope P policySet α) :\n    ∃ C p : ℝ, 0 < C ∧ 0 ≤ p ∧\n      ∀ (m : ℕ) (B r : ℝ) (g : Policy 𝒳 → Observation 𝒳 → ℝ),\n        PolicyCompatible g →\n        0 < m → 0 ≤ B → 0 ≤ r →\n        (∀ π ∈ policySet, ∀ O, |g π O| ≤ B) →\n        (∀ π ∈ policySet,\n          ∫ O, (g π O) ^ 2 ∂P.dataMeasure\n            ≤ B ^ 2 * P.PX.real (disagreementSet π (lawOptimalPolicy P))) →\n        expectedLocalizedSup (m := m) P g policySet r\n          ≤ C * B * (m : ℝ) ^ (-(1 / 2 : ℝ)) * r ^ (α / (2 + 2 * α))\n              * (Real.log m) ^ p",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:crossfit-localized-process-reduction": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.crossfit_localized_process_reduction",
+      "file": "Helpers/OffsetControl.lean",
+      "line": 0,
+      "statement": "/-- `lem:crossfit-localized-process-reduction`. Foldwise application plus balanced\nfixed-`K` collapse: conditioning on the training folds, each balanced evaluation\nfold is i.i.d., so `localized_vc_process_bound` applies foldwise. The conclusion\nrecords BOTH halves of the NL statement: (1) the CONDITIONAL-on-training-folds\nfoldwise bound — each evaluation-fold centered increment process `g k` has expected\nlocalized supremum bounded at the same rate (this is the i.i.d.-per-fold deliverable\nthat conditioning on the training fold supplies); and (2) HENCE the unconditional\npooled bound — the pooled cross-fit centered process `pooledCrossfitProcess` (built\nfrom the foldwise increments `g k` via `assign n`) has expected localized supremum\nbounded by `C B n^{-1/2} r^{α/(2+2α)}(log n)^p`.\n\nSCOPE (Lean encoding fidelity): this pooled-process reduction is itself\nenumeration-independent (it quantifies over a generic increment family `g`, not\nthe ERM `enum`), but it feeds the upper-bound track\n(`crude_localized_master_bound`, `feasible_upper`) which is stated for an\nARBITRARY enumeration-based ERM — Lean OMITS the note's dense `Π₀` enumeration\ncondition on `enum`. -/\nlemma crossfit_localized_process_reduction (P : ObservedLaw 𝒳)\n    (policySet : Set (Policy 𝒳)) (Cm α u0 : ℝ) (dPi K : ℕ)\n    (assign : (n : ℕ) → Fin n → Fin K)\n    (hpc : PolicyClassVC policySet dPi)\n    (hmargin : MarginTail P Cm α u0) (hze : ZeroEffectRegular P policySet)\n    (hwf : WellFormedLaw P) (hbdd : BoundedOutcome P)\n    (hK : FixedFoldCount K assign) (hiid : IsIIDSample P)\n    -- `ass:vc-localized-envelope`, threaded from the `upperRisk` domain conjunct.\n    (henv : VCLocalizedEnvelope P policySet α) :\n    ∃ C p : ℝ, 0 < C ∧ 0 ≤ p ∧\n      ∀ (n : ℕ) (B r : ℝ) (g : Fin K → Policy 𝒳 → Observation 𝒳 → ℝ),\n        0 < n → 0 ≤ B → 0 ≤ r →\n        -- The cross-fit increments factor through `π O.X` (note: `(π-π_⋆)·Γ`), so\n        -- they are policy-compatible — the form the localized envelope applies to.\n        (∀ k : Fin K, PolicyCompatible (g k)) →\n        -- Increment measurability (note's increments are measurable): with the\n        -- `PolicyClassVC` countable dense skeleton this makes the localized/offset\n        -- `sSup` over `policySet` measurable+integrable (regularity-bookkeeping).\n        (∀ (k : Fin K), ∀ π ∈ policySet, Measurable (g k π)) →\n        -- regularity gate: empirical-process sSup measurability/integrability\n        -- (vdV-Wellner; presupposed by the envelope; deferred Causalean infra,\n        -- SUBSTRATE_DEBT).  Pure Bochner regularity, no rate or bound content.\n        (hInt_pooledLocalized : Integrable (fun sample : Fin n → Observation 𝒳 =>\n          sSup ((fun π => |pooledCrossfitProcess P g (assign n) sample π|) ''\n            {π | π ∈ policySet ∧ lawRegret P π ≤ r}))\n          (Measure.pi (fun _ : Fin n => P.dataMeasure))) →\n        (hInt_foldLocalized : ∀ k : Fin K,\n          Integrable (fun sample : foldIndex (assign n) k → Observation 𝒳 =>\n            foldLocalizedSubSup P g (assign n) policySet r k sample)\n          (Measure.pi (fun _ : foldIndex (assign n) k => P.dataMeasure))) →\n        (∀ (k : Fin K), ∀ π ∈ policySet, ∀ O, |g k π O| ≤ B) →\n        (∀ (k : Fin K), ∀ π ∈ policySet,\n          ∫ O, (g k π O) ^ 2 ∂P.dataMeasure\n            ≤ B ^ 2 * P.PX.real (disagreementSet π (lawOptimalPolicy P))) →\n        (∀ k : Fin K,\n          expectedLocalizedSup (m := n) P (g k) policySet r\n            ≤ C * B * (n : ℝ) ^ (-(1 / 2 : ℝ)) * r ^ (α / (2 + 2 * α))\n                * (Real.log n) ^ p) ∧\n        expectedPooledLocalizedSup P g (assign n) policySet r\n          ≤ C * B * (n : ℝ) ^ (-(1 / 2 : ℝ)) * r ^ (α / (2 + 2 * α))\n              * (Real.log n) ^ p",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:crossfit-localized-offset-control": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.crossfit_localized_offset_control",
+      "file": "Helpers/OffsetControl.lean",
+      "line": 0,
+      "statement": "/-- `lem:crossfit-localized-offset-control`. Pooled offset positive-part control:\nconditioning on training folds and applying the discharged offset envelope\nfoldwise, the EXPECTED pooled cross-fit offset supremum\n`E_P sup_π {2|G_cf(π)| - R_P(π)/4}_+` is bounded by `C (B²/n)^{A_α}(log n)^p`,\n`A_α=(1+α)/(2+α)`. Stochastic input to `localized_vc_self_bound`; must not depend\non it. -/\nlemma crossfit_localized_offset_control\n    (policySet : Set (Policy 𝒳)) (Cm α u0 : ℝ) (dPi K : ℕ)\n    (assign : (n : ℕ) → Fin n → Fin K)\n    (hpc : PolicyClassVC policySet dPi) (hK : FixedFoldCount K assign)\n    -- `ass:vc-localized-offset-envelope`, in its uniform class-level form.\n    (hoffU : VCLocalizedOffsetEnvelopeUnif policySet α) :\n    ∃ C p : ℝ, 0 < C ∧ 0 ≤ p ∧\n      ∀ (P : ObservedLaw 𝒳),\n        MarginTail P Cm α u0 → ZeroEffectRegular P policySet →\n        IsIIDSample P → WellFormedLaw P → BoundedOutcome P →\n          ∀ (n : ℕ) (B : ℝ) (g : Fin K → Policy 𝒳 → Observation 𝒳 → ℝ),\n            0 < n → 0 ≤ B →\n            -- The cross-fit increments factor through `π O.X` (note: `(π-π_⋆)·Γ`), so\n            -- they are policy-compatible — the form the localized offset envelope applies to.\n            (∀ k : Fin K, PolicyCompatible (g k)) →\n            -- Increment measurability (note's increments are measurable): with the\n            -- `PolicyClassVC` countable dense skeleton this makes the localized/offset\n            -- `sSup` over `policySet` measurable+integrable (regularity-bookkeeping).\n            (∀ (k : Fin K), ∀ π ∈ policySet, Measurable (g k π)) →\n            -- regularity gate: empirical-process sSup measurability/integrability\n            -- (vdV-Wellner; presupposed by the envelope; deferred Causalean infra,\n            -- SUBSTRATE_DEBT).  Pure Bochner regularity, no rate or bound content.\n            (hInt_pooledOffset : Integrable (fun sample : Fin n → Observation 𝒳 =>\n              sSup ((fun π =>\n                max 0 (2 * |pooledCrossfitProcess P g (assign n) sample π| -\n                  lawRegret P π / 4)) '' policySet))\n              (Measure.pi (fun _ : Fin n => P.dataMeasure))) →\n            (hInt_foldOffset : ∀ k : Fin K,\n              Integrable (fun sample : foldIndex (assign n) k → Observation 𝒳 =>\n                foldOffsetSubSup P g (assign n) policySet k sample)\n              (Measure.pi (fun _ : foldIndex (assign n) k => P.dataMeasure))) →\n            (∀ (k : Fin K), ∀ π ∈ policySet, ∀ O, |g k π O| ≤ B) →\n            (∀ (k : Fin K), ∀ π ∈ policySet,\n              ∫ O, (g k π O) ^ 2 ∂P.dataMeasure\n                ≤ B ^ 2 * P.PX.real (disagreementSet π (lawOptimalPolicy P))) →\n            expectedPooledOffsetSup P g (assign n) policySet\n              ≤ C * (B ^ 2 / (n : ℝ)) ^ ((1 + α) / (2 + α)) * (Real.log n) ^ p",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:clip-bias": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.clip_bias",
+      "file": "Helpers/ClipBias.lean",
+      "line": 0,
+      "statement": "lemma clip_bias (P : ObservedLaw 𝒳) (q : ℝ) (muHat0 muHat1 eHat : 𝒳 → ℝ)\n    (hwf : WellFormedLaw P) (hbdd : BoundedOutcome P) (hpos : Positivity P)\n    -- regularity: nuisances are measurable bounded plug-ins (BoundedCrossfitNuisances)\n    (hμ0meas : Measurable muHat0) (hμ1meas : Measurable muHat1)\n    (hemeas : Measurable eHat)\n    (hμ0bdd : ∃ M : ℝ, ∀ x, |muHat0 x| ≤ M)\n    (hμ1bdd : ∃ M : ℝ, ∀ x, |muHat1 x| ≤ M)\n    (hq : 0 < q) (hq1 : q < 1)\n    (φ : 𝒳 → ℝ) (hφmeas : Measurable φ) (hφbdd : ∃ M : ℝ, ∀ x, |φ x| ≤ M) :\n    ((∫ O, φ O.X * clippedAIPWScore q muHat0 muHat1 eHat O ∂P.dataMeasure)\n        - ∫ x, φ x * P.contrast x ∂P.PX\n      = ∫ x, φ x * clipBias P q muHat0 muHat1 eHat x ∂P.PX) ∧\n    (∀ x : 𝒳, clippedPropensity q eHat x = P.propensity x ∨\n          (muHat1 x = P.mu1 x ∧ muHat0 x = P.mu0 x) →\n        clipBias P q muHat0 muHat1 eHat x = 0) ∧\n    (∃ (P' : ObservedLaw ℝ) (q' : ℝ) (m0 m1 e' : ℝ → ℝ) (x : ℝ),\n        WellFormedLaw P' ∧ BoundedOutcome P' ∧ Positivity P' ∧\n          0 < q' ∧ q' < 1 ∧ q' < overlap P' x ∧\n          clipBias P' q' m0 m1 e' x ≠ 0)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:clipped-region-localization": {
+      "decl": "CausalSmith.Stat.PolicyRegretMarginOverlap.clipped_region_localization",
+      "file": "Helpers/DriftBound.lean",
+      "line": 0,
+      "statement": "/-- `lem:clipped-region-localization`. For `γ>0`, the disagreement mass inside\nthe clipped region is controlled: `P_X(D_π ∩ {p_P≤q}) ≤ C u^α q^{1/γ}+r/u`. -/\nlemma clipped_region_localization (P : ObservedLaw 𝒳)\n    (policySet : Set (Policy 𝒳)) (Co co α γ u0 : ℝ)\n    (hod : OverlapDecay P u0 Co co α γ) (hze : ZeroEffectRegular P policySet)\n    (hbdd : BoundedOutcome P) (hwf : WellFormedLaw P)\n    (hπmeas : ∀ π ∈ policySet, Measurable π) (hγ : 0 < γ) :\n    0 < max Co 1 ∧ ∀ π ∈ policySet, ∀ u q : ℝ,\n      0 < u → u ≤ u0 → 0 < q → q ≤ co * u ^ γ →\n        P.PX.real (disagreementSet π (lawOptimalPolicy P) ∩ {x | overlap P x ≤ q})\n          ≤ max Co 1 * u ^ α * q ^ (1 / γ) + lawRegret P π / u",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "sym:pi": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 47,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "Policy — 𝒳→Bool realizes 𝒳→{0,1}",
+          "statement": "/-- Deterministic binary policy `X → {0,1}`.\n@realizes pi(𝒳→Bool realizes 𝒳→{0,1}) -/\nabbrev Policy (𝒳 : Type*) := 𝒳 → Bool"
+        }
+      ]
+    },
+    "sym:O": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 58,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "Observation — carrier 𝒳×Bool×ℝ realizes 𝒳×{0,1}×[-1,1]",
+          "statement": "/-- Observation `O=(X,A,Y) ∈ 𝒳 × {0,1} × [-1,1]`. The treatment space `{0,1}`\nis encoded at the TYPE level by `A : Bool` (`true ↦ 1`, `false ↦ 0`, via\n`boolIndicator`); the outcome space `[-1,1]` is a RANGE/support constraint carried\nat the law level (`BoundedOutcome`, `WellFormedLaw`) rather than by a subtype,\nsince the witness measure constructions are stated over `ℝ`.\n@realizes O(carrier 𝒳×Bool×ℝ realizes 𝒳×{0,1}×[-1,1]) -/\nstructure Observation (𝒳 : Type*) where\n  X : 𝒳\n  A : Bool -- @realizes A(A:Bool ↔ {0,1} at type level)\n  Y : ℝ -- @realizes Y(carrier ℝ; range [-1,1] via BoundedOutcome)\n\ninstance instMeasurableSpaceObservation : MeasurableSpace (Observation 𝒳) :=\n  MeasurableSpace.comap (fun O : Observation 𝒳 => (O.X, O.A, O.Y)) inferInstance"
+        },
+        {
+          "label": "ObservedLaw — law of O; its conditional structure given X is pinned to e_P, mu_0, mu_1 by the WellFormedLaw semantic clauses",
+          "statement": "/-- Build-inline observed-law object: the covariate marginal, the per-draw\nobservation law, and the law-side nuisance functionals the statements range\nover. -/\nstructure ObservedLaw (𝒳 : Type*) [MeasurableSpace 𝒳] where\n  dataMeasure : Measure (Observation 𝒳) -- @realizes O(law of O; its conditional structure given X is pinned to e_P, mu_0, mu_1 by the WellFormedLaw semantic clauses)\n  PX : Measure 𝒳\n  contrast : 𝒳 → ℝ -- @realizes tau_P(carrier 𝒳→ℝ; =μ₁-μ₀ & range [-2,2] via WellFormedLaw+BoundedOutcome)\n  propensity : 𝒳 → ℝ -- @realizes e_P(carrier 𝒳→ℝ; range via WellFormedLaw+Positivity)\n  mu0 : 𝒳 → ℝ -- @realizes mu_0(carrier 𝒳→ℝ; [-1,1] via BoundedOutcome)\n  mu1 : 𝒳 → ℝ -- @realizes mu_1(carrier 𝒳→ℝ; [-1,1] via BoundedOutcome)"
+        }
+      ]
+    },
+    "sym:A": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 61,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "Observation — A:Bool ↔ {0,1} at type level",
+          "statement": "/-- Observation `O=(X,A,Y) ∈ 𝒳 × {0,1} × [-1,1]`. The treatment space `{0,1}`\nis encoded at the TYPE level by `A : Bool` (`true ↦ 1`, `false ↦ 0`, via\n`boolIndicator`); the outcome space `[-1,1]` is a RANGE/support constraint carried\nat the law level (`BoundedOutcome`, `WellFormedLaw`) rather than by a subtype,\nsince the witness measure constructions are stated over `ℝ`.\n@realizes O(carrier 𝒳×Bool×ℝ realizes 𝒳×{0,1}×[-1,1]) -/\nstructure Observation (𝒳 : Type*) where\n  X : 𝒳\n  A : Bool -- @realizes A(A:Bool ↔ {0,1} at type level)\n  Y : ℝ -- @realizes Y(carrier ℝ; range [-1,1] via BoundedOutcome)\n\ninstance instMeasurableSpaceObservation : MeasurableSpace (Observation 𝒳) :=\n  MeasurableSpace.comap (fun O : Observation 𝒳 => (O.X, O.A, O.Y)) inferInstance"
+        }
+      ]
+    },
+    "sym:Y": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 62,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "Observation — carrier ℝ; range [-1,1] via BoundedOutcome",
+          "statement": "/-- Observation `O=(X,A,Y) ∈ 𝒳 × {0,1} × [-1,1]`. The treatment space `{0,1}`\nis encoded at the TYPE level by `A : Bool` (`true ↦ 1`, `false ↦ 0`, via\n`boolIndicator`); the outcome space `[-1,1]` is a RANGE/support constraint carried\nat the law level (`BoundedOutcome`, `WellFormedLaw`) rather than by a subtype,\nsince the witness measure constructions are stated over `ℝ`.\n@realizes O(carrier 𝒳×Bool×ℝ realizes 𝒳×{0,1}×[-1,1]) -/\nstructure Observation (𝒳 : Type*) where\n  X : 𝒳\n  A : Bool -- @realizes A(A:Bool ↔ {0,1} at type level)\n  Y : ℝ -- @realizes Y(carrier ℝ; range [-1,1] via BoundedOutcome)\n\ninstance instMeasurableSpaceObservation : MeasurableSpace (Observation 𝒳) :=\n  MeasurableSpace.comap (fun O : Observation 𝒳 => (O.X, O.A, O.Y)) inferInstance"
+        },
+        {
+          "label": "BoundedOutcome — O.Y ∈ Icc (-1) 1 a.s.",
+          "statement": "/-- A2 bounded outcomes: the (potential) outcome `Y(a)` lies in `[-1,1]` for both\ntreatment arms `a ∈ {0,1}`. Treatment is binary at the TYPE level (`Observation.A :\nBool`, `true ↦ 1`), so the observed-law projection of `Y(a) ∈ [-1,1]` is the\nconjunction of: the OBSERVED outcome lies in the EXACT range `[-1,1]` a.s. under the\ndata law (the realized `Y = Y(A)`, hence the realized arm's potential outcome), and\nboth outcome REGRESSIONS `μ₀, μ₁` — the arm-conditional means `E[Y(a)|X]` for\n`a ∈ {0,1}` — also lie in `[-1,1]`. The ranges are stated as `Set.Icc (-1) 1`\nmembership so the encoding realizes the `[-1,1]` symbol space exactly (not merely an\nabsolute-value surrogate). -/\ndef BoundedOutcome (P : ObservedLaw 𝒳) : Prop :=\n  (∀ᵐ O ∂P.dataMeasure, O.Y ∈ Set.Icc (-1 : ℝ) 1) ∧ -- @realizes Y(O.Y ∈ Icc (-1) 1 a.s.)\n    (∀ x, P.mu0 x ∈ Set.Icc (-1 : ℝ) 1 ∧ P.mu1 x ∈ Set.Icc (-1 : ℝ) 1) -- @realizes mu_0(mu0 x ∈ Icc (-1) 1), mu_1(mu1 x ∈ Icc (-1) 1)"
+        }
+      ]
+    },
+    "sym:pi_star": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 68,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "optimalPolicy — Policy-valued, i.e. 𝒳→{0,1}",
+          "statement": "/-- Optimal policy `π_⋆(x)=1{τ(x) ≥ 0}`.\n@realizes pi_star(Policy-valued, i.e. 𝒳→{0,1}) -/\nnoncomputable def optimalPolicy (τ : 𝒳 → ℝ) : Policy 𝒳 :=\n  fun x => if 0 ≤ τ x then true else false"
+        }
+      ]
+    },
+    "sym:V_P": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 82,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "welfare — (𝒳→{0,1})→ℝ welfare functional",
+          "statement": "/-- Welfare `V_P(π)=E_P[π(X) τ(X)]`.\n@realizes V_P((𝒳→{0,1})→ℝ welfare functional) -/\nnoncomputable def welfare (PX : Measure 𝒳) (τ : 𝒳 → ℝ) (π : Policy 𝒳) : ℝ :=\n  ∫ x, boolIndicator (π x) * τ x ∂PX"
+        }
+      ]
+    },
+    "sym:R_P": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 88,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "regret — (𝒳→{0,1})→ℝ regret functional",
+          "statement": "/-- Welfare regret `R_P(π)=V_P(π_⋆)-V_P(π)`, with `π_⋆=optimalPolicy τ`.\n@realizes R_P((𝒳→{0,1})→ℝ regret functional) -/\nnoncomputable def regret (PX : Measure 𝒳) (τ : 𝒳 → ℝ) (π : Policy 𝒳) : ℝ :=\n  welfare PX τ (optimalPolicy τ) - welfare PX τ π"
+        }
+      ]
+    },
+    "sym:tau_P": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 98,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "ObservedLaw — carrier 𝒳→ℝ; =μ₁-μ₀ & range [-2,2] via WellFormedLaw+BoundedOutcome",
+          "statement": "/-- Build-inline observed-law object: the covariate marginal, the per-draw\nobservation law, and the law-side nuisance functionals the statements range\nover. -/\nstructure ObservedLaw (𝒳 : Type*) [MeasurableSpace 𝒳] where\n  dataMeasure : Measure (Observation 𝒳) -- @realizes O(law of O; its conditional structure given X is pinned to e_P, mu_0, mu_1 by the WellFormedLaw semantic clauses)\n  PX : Measure 𝒳\n  contrast : 𝒳 → ℝ -- @realizes tau_P(carrier 𝒳→ℝ; =μ₁-μ₀ & range [-2,2] via WellFormedLaw+BoundedOutcome)\n  propensity : 𝒳 → ℝ -- @realizes e_P(carrier 𝒳→ℝ; range via WellFormedLaw+Positivity)\n  mu0 : 𝒳 → ℝ -- @realizes mu_0(carrier 𝒳→ℝ; [-1,1] via BoundedOutcome)\n  mu1 : 𝒳 → ℝ -- @realizes mu_1(carrier 𝒳→ℝ; [-1,1] via BoundedOutcome)"
+        },
+        {
+          "label": "WellFormedLaw — contrast x = mu1 x - mu0 x",
+          "statement": "/-- Well-formedness of an observed law on `𝒳 × {0,1} × [-1,1]`: the data law and\nits covariate marginal are PROBABILITY measures, `P_X` IS the covariate marginal\nof `dataMeasure`, the contrast is the regression difference `τ = μ₁ - μ₀`, and the\npropensity takes values in `[0,1]`. These are the ambient SPACE/probability/marginal\nfacts (not statistical modelling assumptions); carrying them makes the welfare and\nminimax integrals genuine Bochner integrals (probability measures), not junk\nvalues.\n\nThe final three conjuncts are the OBSERVED-LAW SEMANTIC CONDITIONS tying\n`dataMeasure` to the nuisance functionals `e_P`, `μ₀`, `μ₁`: they pin\n`e_P(x)=P(A=1∣X=x)`, `μ₁(x)=E[Y∣A=1,X=x]`, and `μ₀(x)=E[Y∣A=0,X=x]` in the\nstandard tested (weak / conditional-expectation defining) form — for every bounded\nmeasurable covariate test function `φ`, the `dataMeasure`-integral of the\narm-weighted (and outcome-weighted) score equals the `P_X`-integral of the\ncorresponding closed form. Without these the nuisance fields are detached from the\ndata law and `lem:clip-bias` is not the genuine conditional-expectation drift\nidentity. Bundled into `LawClass`. -/\ndef WellFormedLaw (P : ObservedLaw 𝒳) : Prop :=\n  IsProbabilityMeasure P.dataMeasure ∧\n    IsProbabilityMeasure P.PX ∧\n    P.dataMeasure.map (fun O => O.X) = P.PX ∧\n    -- Measurability of the law functionals: a well-formed law's contrast/propensity/regressions\n    -- are measurable (implicit in the `.tex`'s Bochner integrals ∫|τ|·1{D_π}, ∫ e·φ, …). Regularity\n    -- bookkeeping needed to make the welfare/regret integral manipulations genuine.\n    Measurable P.contrast ∧ Measurable P.propensity ∧ Measurable P.mu0 ∧ Measurable P.mu1 ∧\n    (∀ x, P.contrast x = P.mu1 x - P.mu0 x) ∧ -- @realizes tau_P(contrast x = mu1 x - mu0 x)\n    (∀ x, P.propensity x ∈ Set.Icc (0 : ℝ) 1) ∧ -- @realizes e_P(propensity x ∈ Icc 0 1)\n    (∀ φ : 𝒳 → ℝ, Measurable φ → (∃ M : ℝ, ∀ x, |φ x| ≤ M) →\n      ∫ O, boolIndicator O.A * φ O.X ∂P.dataMeasure\n        = ∫ x, P.propensity x * φ x ∂P.PX) ∧ -- @realizes e_P(e_P = P(A=1∣X): ∫ 1{A}·φ dP = ∫ e_P·φ dP_X)\n    (∀ φ : 𝒳 → ℝ, Measurable φ → (∃ M : ℝ, ∀ x, |φ x| ≤ M) →\n      ∫ O, boolIndicator O.A * O.Y * φ O.X ∂P.dataMeasure\n        = ∫ x, P.propensity x * P.mu1 x * φ x ∂P.PX) ∧ -- @realizes mu_1(mu1 = E[Y∣A=1,X]: ∫ 1{A}·Y·φ dP = ∫ e_P·mu1·φ dP_X)\n    (∀ φ : 𝒳 → ℝ, Measurable φ → (∃ M : ℝ, ∀ x, |φ x| ≤ M) →\n      ∫ O, (1 - boolIndicator O.A) * O.Y * φ O.X ∂P.dataMeasure\n        = ∫ x, (1 - P.propensity x) * P.mu0 x * φ x ∂P.PX) -- @realizes mu_0(mu0 = E[Y∣A=0,X]: ∫ 1{A=0}·Y·φ dP = ∫ (1-e_P)·mu0·φ dP_X)"
+        }
+      ]
+    },
+    "sym:e_P": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 99,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "ObservedLaw — carrier 𝒳→ℝ; range via WellFormedLaw+Positivity",
+          "statement": "/-- Build-inline observed-law object: the covariate marginal, the per-draw\nobservation law, and the law-side nuisance functionals the statements range\nover. -/\nstructure ObservedLaw (𝒳 : Type*) [MeasurableSpace 𝒳] where\n  dataMeasure : Measure (Observation 𝒳) -- @realizes O(law of O; its conditional structure given X is pinned to e_P, mu_0, mu_1 by the WellFormedLaw semantic clauses)\n  PX : Measure 𝒳\n  contrast : 𝒳 → ℝ -- @realizes tau_P(carrier 𝒳→ℝ; =μ₁-μ₀ & range [-2,2] via WellFormedLaw+BoundedOutcome)\n  propensity : 𝒳 → ℝ -- @realizes e_P(carrier 𝒳→ℝ; range via WellFormedLaw+Positivity)\n  mu0 : 𝒳 → ℝ -- @realizes mu_0(carrier 𝒳→ℝ; [-1,1] via BoundedOutcome)\n  mu1 : 𝒳 → ℝ -- @realizes mu_1(carrier 𝒳→ℝ; [-1,1] via BoundedOutcome)"
+        },
+        {
+          "label": "WellFormedLaw — propensity x ∈ Icc 0 1; e_P = P(A=1∣X): ∫ 1{A}·φ dP = ∫ e_P·φ dP_X",
+          "statement": "/-- Well-formedness of an observed law on `𝒳 × {0,1} × [-1,1]`: the data law and\nits covariate marginal are PROBABILITY measures, `P_X` IS the covariate marginal\nof `dataMeasure`, the contrast is the regression difference `τ = μ₁ - μ₀`, and the\npropensity takes values in `[0,1]`. These are the ambient SPACE/probability/marginal\nfacts (not statistical modelling assumptions); carrying them makes the welfare and\nminimax integrals genuine Bochner integrals (probability measures), not junk\nvalues.\n\nThe final three conjuncts are the OBSERVED-LAW SEMANTIC CONDITIONS tying\n`dataMeasure` to the nuisance functionals `e_P`, `μ₀`, `μ₁`: they pin\n`e_P(x)=P(A=1∣X=x)`, `μ₁(x)=E[Y∣A=1,X=x]`, and `μ₀(x)=E[Y∣A=0,X=x]` in the\nstandard tested (weak / conditional-expectation defining) form — for every bounded\nmeasurable covariate test function `φ`, the `dataMeasure`-integral of the\narm-weighted (and outcome-weighted) score equals the `P_X`-integral of the\ncorresponding closed form. Without these the nuisance fields are detached from the\ndata law and `lem:clip-bias` is not the genuine conditional-expectation drift\nidentity. Bundled into `LawClass`. -/\ndef WellFormedLaw (P : ObservedLaw 𝒳) : Prop :=\n  IsProbabilityMeasure P.dataMeasure ∧\n    IsProbabilityMeasure P.PX ∧\n    P.dataMeasure.map (fun O => O.X) = P.PX ∧\n    -- Measurability of the law functionals: a well-formed law's contrast/propensity/regressions\n    -- are measurable (implicit in the `.tex`'s Bochner integrals ∫|τ|·1{D_π}, ∫ e·φ, …). Regularity\n    -- bookkeeping needed to make the welfare/regret integral manipulations genuine.\n    Measurable P.contrast ∧ Measurable P.propensity ∧ Measurable P.mu0 ∧ Measurable P.mu1 ∧\n    (∀ x, P.contrast x = P.mu1 x - P.mu0 x) ∧ -- @realizes tau_P(contrast x = mu1 x - mu0 x)\n    (∀ x, P.propensity x ∈ Set.Icc (0 : ℝ) 1) ∧ -- @realizes e_P(propensity x ∈ Icc 0 1)\n    (∀ φ : 𝒳 → ℝ, Measurable φ → (∃ M : ℝ, ∀ x, |φ x| ≤ M) →\n      ∫ O, boolIndicator O.A * φ O.X ∂P.dataMeasure\n        = ∫ x, P.propensity x * φ x ∂P.PX) ∧ -- @realizes e_P(e_P = P(A=1∣X): ∫ 1{A}·φ dP = ∫ e_P·φ dP_X)\n    (∀ φ : 𝒳 → ℝ, Measurable φ → (∃ M : ℝ, ∀ x, |φ x| ≤ M) →\n      ∫ O, boolIndicator O.A * O.Y * φ O.X ∂P.dataMeasure\n        = ∫ x, P.propensity x * P.mu1 x * φ x ∂P.PX) ∧ -- @realizes mu_1(mu1 = E[Y∣A=1,X]: ∫ 1{A}·Y·φ dP = ∫ e_P·mu1·φ dP_X)\n    (∀ φ : 𝒳 → ℝ, Measurable φ → (∃ M : ℝ, ∀ x, |φ x| ≤ M) →\n      ∫ O, (1 - boolIndicator O.A) * O.Y * φ O.X ∂P.dataMeasure\n        = ∫ x, (1 - P.propensity x) * P.mu0 x * φ x ∂P.PX) -- @realizes mu_0(mu0 = E[Y∣A=0,X]: ∫ 1{A=0}·Y·φ dP = ∫ (1-e_P)·mu0·φ dP_X)"
+        },
+        {
+          "label": "Positivity — a.s. 0 < propensity x ∧ propensity x < 1",
+          "statement": "/-- A3 positivity: `0 < e_P(X) < 1` holds `P_X`-a.s.\n@realizes e_P(a.s. 0 < propensity x ∧ propensity x < 1) -/\ndef Positivity (P : ObservedLaw 𝒳) : Prop :=\n  ∀ᵐ x ∂P.PX, 0 < P.propensity x ∧ P.propensity x < 1"
+        }
+      ]
+    },
+    "sym:mu_0": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 100,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "ObservedLaw — carrier 𝒳→ℝ; [-1,1] via BoundedOutcome",
+          "statement": "/-- Build-inline observed-law object: the covariate marginal, the per-draw\nobservation law, and the law-side nuisance functionals the statements range\nover. -/\nstructure ObservedLaw (𝒳 : Type*) [MeasurableSpace 𝒳] where\n  dataMeasure : Measure (Observation 𝒳) -- @realizes O(law of O; its conditional structure given X is pinned to e_P, mu_0, mu_1 by the WellFormedLaw semantic clauses)\n  PX : Measure 𝒳\n  contrast : 𝒳 → ℝ -- @realizes tau_P(carrier 𝒳→ℝ; =μ₁-μ₀ & range [-2,2] via WellFormedLaw+BoundedOutcome)\n  propensity : 𝒳 → ℝ -- @realizes e_P(carrier 𝒳→ℝ; range via WellFormedLaw+Positivity)\n  mu0 : 𝒳 → ℝ -- @realizes mu_0(carrier 𝒳→ℝ; [-1,1] via BoundedOutcome)\n  mu1 : 𝒳 → ℝ -- @realizes mu_1(carrier 𝒳→ℝ; [-1,1] via BoundedOutcome)"
+        },
+        {
+          "label": "WellFormedLaw — mu0 = E[Y∣A=0,X]: ∫ 1{A=0}·Y·φ dP = ∫ (1-e_P)·mu0·φ dP_X",
+          "statement": "/-- Well-formedness of an observed law on `𝒳 × {0,1} × [-1,1]`: the data law and\nits covariate marginal are PROBABILITY measures, `P_X` IS the covariate marginal\nof `dataMeasure`, the contrast is the regression difference `τ = μ₁ - μ₀`, and the\npropensity takes values in `[0,1]`. These are the ambient SPACE/probability/marginal\nfacts (not statistical modelling assumptions); carrying them makes the welfare and\nminimax integrals genuine Bochner integrals (probability measures), not junk\nvalues.\n\nThe final three conjuncts are the OBSERVED-LAW SEMANTIC CONDITIONS tying\n`dataMeasure` to the nuisance functionals `e_P`, `μ₀`, `μ₁`: they pin\n`e_P(x)=P(A=1∣X=x)`, `μ₁(x)=E[Y∣A=1,X=x]`, and `μ₀(x)=E[Y∣A=0,X=x]` in the\nstandard tested (weak / conditional-expectation defining) form — for every bounded\nmeasurable covariate test function `φ`, the `dataMeasure`-integral of the\narm-weighted (and outcome-weighted) score equals the `P_X`-integral of the\ncorresponding closed form. Without these the nuisance fields are detached from the\ndata law and `lem:clip-bias` is not the genuine conditional-expectation drift\nidentity. Bundled into `LawClass`. -/\ndef WellFormedLaw (P : ObservedLaw 𝒳) : Prop :=\n  IsProbabilityMeasure P.dataMeasure ∧\n    IsProbabilityMeasure P.PX ∧\n    P.dataMeasure.map (fun O => O.X) = P.PX ∧\n    -- Measurability of the law functionals: a well-formed law's contrast/propensity/regressions\n    -- are measurable (implicit in the `.tex`'s Bochner integrals ∫|τ|·1{D_π}, ∫ e·φ, …). Regularity\n    -- bookkeeping needed to make the welfare/regret integral manipulations genuine.\n    Measurable P.contrast ∧ Measurable P.propensity ∧ Measurable P.mu0 ∧ Measurable P.mu1 ∧\n    (∀ x, P.contrast x = P.mu1 x - P.mu0 x) ∧ -- @realizes tau_P(contrast x = mu1 x - mu0 x)\n    (∀ x, P.propensity x ∈ Set.Icc (0 : ℝ) 1) ∧ -- @realizes e_P(propensity x ∈ Icc 0 1)\n    (∀ φ : 𝒳 → ℝ, Measurable φ → (∃ M : ℝ, ∀ x, |φ x| ≤ M) →\n      ∫ O, boolIndicator O.A * φ O.X ∂P.dataMeasure\n        = ∫ x, P.propensity x * φ x ∂P.PX) ∧ -- @realizes e_P(e_P = P(A=1∣X): ∫ 1{A}·φ dP = ∫ e_P·φ dP_X)\n    (∀ φ : 𝒳 → ℝ, Measurable φ → (∃ M : ℝ, ∀ x, |φ x| ≤ M) →\n      ∫ O, boolIndicator O.A * O.Y * φ O.X ∂P.dataMeasure\n        = ∫ x, P.propensity x * P.mu1 x * φ x ∂P.PX) ∧ -- @realizes mu_1(mu1 = E[Y∣A=1,X]: ∫ 1{A}·Y·φ dP = ∫ e_P·mu1·φ dP_X)\n    (∀ φ : 𝒳 → ℝ, Measurable φ → (∃ M : ℝ, ∀ x, |φ x| ≤ M) →\n      ∫ O, (1 - boolIndicator O.A) * O.Y * φ O.X ∂P.dataMeasure\n        = ∫ x, (1 - P.propensity x) * P.mu0 x * φ x ∂P.PX) -- @realizes mu_0(mu0 = E[Y∣A=0,X]: ∫ 1{A=0}·Y·φ dP = ∫ (1-e_P)·mu0·φ dP_X)"
+        },
+        {
+          "label": "BoundedOutcome — mu0 x ∈ Icc (-1) 1",
+          "statement": "/-- A2 bounded outcomes: the (potential) outcome `Y(a)` lies in `[-1,1]` for both\ntreatment arms `a ∈ {0,1}`. Treatment is binary at the TYPE level (`Observation.A :\nBool`, `true ↦ 1`), so the observed-law projection of `Y(a) ∈ [-1,1]` is the\nconjunction of: the OBSERVED outcome lies in the EXACT range `[-1,1]` a.s. under the\ndata law (the realized `Y = Y(A)`, hence the realized arm's potential outcome), and\nboth outcome REGRESSIONS `μ₀, μ₁` — the arm-conditional means `E[Y(a)|X]` for\n`a ∈ {0,1}` — also lie in `[-1,1]`. The ranges are stated as `Set.Icc (-1) 1`\nmembership so the encoding realizes the `[-1,1]` symbol space exactly (not merely an\nabsolute-value surrogate). -/\ndef BoundedOutcome (P : ObservedLaw 𝒳) : Prop :=\n  (∀ᵐ O ∂P.dataMeasure, O.Y ∈ Set.Icc (-1 : ℝ) 1) ∧ -- @realizes Y(O.Y ∈ Icc (-1) 1 a.s.)\n    (∀ x, P.mu0 x ∈ Set.Icc (-1 : ℝ) 1 ∧ P.mu1 x ∈ Set.Icc (-1 : ℝ) 1) -- @realizes mu_0(mu0 x ∈ Icc (-1) 1), mu_1(mu1 x ∈ Icc (-1) 1)"
+        }
+      ]
+    },
+    "sym:mu_1": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 101,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "ObservedLaw — carrier 𝒳→ℝ; [-1,1] via BoundedOutcome",
+          "statement": "/-- Build-inline observed-law object: the covariate marginal, the per-draw\nobservation law, and the law-side nuisance functionals the statements range\nover. -/\nstructure ObservedLaw (𝒳 : Type*) [MeasurableSpace 𝒳] where\n  dataMeasure : Measure (Observation 𝒳) -- @realizes O(law of O; its conditional structure given X is pinned to e_P, mu_0, mu_1 by the WellFormedLaw semantic clauses)\n  PX : Measure 𝒳\n  contrast : 𝒳 → ℝ -- @realizes tau_P(carrier 𝒳→ℝ; =μ₁-μ₀ & range [-2,2] via WellFormedLaw+BoundedOutcome)\n  propensity : 𝒳 → ℝ -- @realizes e_P(carrier 𝒳→ℝ; range via WellFormedLaw+Positivity)\n  mu0 : 𝒳 → ℝ -- @realizes mu_0(carrier 𝒳→ℝ; [-1,1] via BoundedOutcome)\n  mu1 : 𝒳 → ℝ -- @realizes mu_1(carrier 𝒳→ℝ; [-1,1] via BoundedOutcome)"
+        },
+        {
+          "label": "WellFormedLaw — mu1 = E[Y∣A=1,X]: ∫ 1{A}·Y·φ dP = ∫ e_P·mu1·φ dP_X",
+          "statement": "/-- Well-formedness of an observed law on `𝒳 × {0,1} × [-1,1]`: the data law and\nits covariate marginal are PROBABILITY measures, `P_X` IS the covariate marginal\nof `dataMeasure`, the contrast is the regression difference `τ = μ₁ - μ₀`, and the\npropensity takes values in `[0,1]`. These are the ambient SPACE/probability/marginal\nfacts (not statistical modelling assumptions); carrying them makes the welfare and\nminimax integrals genuine Bochner integrals (probability measures), not junk\nvalues.\n\nThe final three conjuncts are the OBSERVED-LAW SEMANTIC CONDITIONS tying\n`dataMeasure` to the nuisance functionals `e_P`, `μ₀`, `μ₁`: they pin\n`e_P(x)=P(A=1∣X=x)`, `μ₁(x)=E[Y∣A=1,X=x]`, and `μ₀(x)=E[Y∣A=0,X=x]` in the\nstandard tested (weak / conditional-expectation defining) form — for every bounded\nmeasurable covariate test function `φ`, the `dataMeasure`-integral of the\narm-weighted (and outcome-weighted) score equals the `P_X`-integral of the\ncorresponding closed form. Without these the nuisance fields are detached from the\ndata law and `lem:clip-bias` is not the genuine conditional-expectation drift\nidentity. Bundled into `LawClass`. -/\ndef WellFormedLaw (P : ObservedLaw 𝒳) : Prop :=\n  IsProbabilityMeasure P.dataMeasure ∧\n    IsProbabilityMeasure P.PX ∧\n    P.dataMeasure.map (fun O => O.X) = P.PX ∧\n    -- Measurability of the law functionals: a well-formed law's contrast/propensity/regressions\n    -- are measurable (implicit in the `.tex`'s Bochner integrals ∫|τ|·1{D_π}, ∫ e·φ, …). Regularity\n    -- bookkeeping needed to make the welfare/regret integral manipulations genuine.\n    Measurable P.contrast ∧ Measurable P.propensity ∧ Measurable P.mu0 ∧ Measurable P.mu1 ∧\n    (∀ x, P.contrast x = P.mu1 x - P.mu0 x) ∧ -- @realizes tau_P(contrast x = mu1 x - mu0 x)\n    (∀ x, P.propensity x ∈ Set.Icc (0 : ℝ) 1) ∧ -- @realizes e_P(propensity x ∈ Icc 0 1)\n    (∀ φ : 𝒳 → ℝ, Measurable φ → (∃ M : ℝ, ∀ x, |φ x| ≤ M) →\n      ∫ O, boolIndicator O.A * φ O.X ∂P.dataMeasure\n        = ∫ x, P.propensity x * φ x ∂P.PX) ∧ -- @realizes e_P(e_P = P(A=1∣X): ∫ 1{A}·φ dP = ∫ e_P·φ dP_X)\n    (∀ φ : 𝒳 → ℝ, Measurable φ → (∃ M : ℝ, ∀ x, |φ x| ≤ M) →\n      ∫ O, boolIndicator O.A * O.Y * φ O.X ∂P.dataMeasure\n        = ∫ x, P.propensity x * P.mu1 x * φ x ∂P.PX) ∧ -- @realizes mu_1(mu1 = E[Y∣A=1,X]: ∫ 1{A}·Y·φ dP = ∫ e_P·mu1·φ dP_X)\n    (∀ φ : 𝒳 → ℝ, Measurable φ → (∃ M : ℝ, ∀ x, |φ x| ≤ M) →\n      ∫ O, (1 - boolIndicator O.A) * O.Y * φ O.X ∂P.dataMeasure\n        = ∫ x, (1 - P.propensity x) * P.mu0 x * φ x ∂P.PX) -- @realizes mu_0(mu0 = E[Y∣A=0,X]: ∫ 1{A=0}·Y·φ dP = ∫ (1-e_P)·mu0·φ dP_X)"
+        },
+        {
+          "label": "BoundedOutcome — mu1 x ∈ Icc (-1) 1",
+          "statement": "/-- A2 bounded outcomes: the (potential) outcome `Y(a)` lies in `[-1,1]` for both\ntreatment arms `a ∈ {0,1}`. Treatment is binary at the TYPE level (`Observation.A :\nBool`, `true ↦ 1`), so the observed-law projection of `Y(a) ∈ [-1,1]` is the\nconjunction of: the OBSERVED outcome lies in the EXACT range `[-1,1]` a.s. under the\ndata law (the realized `Y = Y(A)`, hence the realized arm's potential outcome), and\nboth outcome REGRESSIONS `μ₀, μ₁` — the arm-conditional means `E[Y(a)|X]` for\n`a ∈ {0,1}` — also lie in `[-1,1]`. The ranges are stated as `Set.Icc (-1) 1`\nmembership so the encoding realizes the `[-1,1]` symbol space exactly (not merely an\nabsolute-value surrogate). -/\ndef BoundedOutcome (P : ObservedLaw 𝒳) : Prop :=\n  (∀ᵐ O ∂P.dataMeasure, O.Y ∈ Set.Icc (-1 : ℝ) 1) ∧ -- @realizes Y(O.Y ∈ Icc (-1) 1 a.s.)\n    (∀ x, P.mu0 x ∈ Set.Icc (-1 : ℝ) 1 ∧ P.mu1 x ∈ Set.Icc (-1 : ℝ) 1) -- @realizes mu_0(mu0 x ∈ Icc (-1) 1), mu_1(mu1 x ∈ Icc (-1) 1)"
+        }
+      ]
+    },
+    "sym:p_P": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 104,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "overlap — min(e,1-e); ∈[0,1/2] since e∈[0,1] via WellFormedLaw",
+          "statement": "/-- Overlap `p_P(x)=min(e_P(x),1-e_P(x))`.\n@realizes p_P(min(e,1-e); ∈[0,1/2] since e∈[0,1] via WellFormedLaw) -/\nnoncomputable def overlap (P : ObservedLaw 𝒳) (x : 𝒳) : ℝ :=\n  min (P.propensity x) (1 - P.propensity x)"
+        }
+      ]
+    },
+    "sym:Pi": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 228,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "PolicyClassVC — policySet : Set (Policy 𝒳); measurable, countable dense skeleton, finite-VC",
+          "statement": "/-- A7 pointwise measurable finite-VC policy class with a countable\npointwise-dense skeleton `Π₀` and polynomial (Sauer–Shelah) trace growth at\nVC-dimension `d_Π`.\n@realizes Pi(policySet : Set (Policy 𝒳); measurable, countable dense skeleton, finite-VC) -/\ndef PolicyClassVC (policySet : Set (Policy 𝒳)) (dPi : ℕ) : Prop :=\n  (∀ π ∈ policySet, Measurable π) ∧\n  (∃ Pi0 : Set (Policy 𝒳), Pi0.Countable ∧ Pi0 ⊆ policySet ∧\n    ∀ π ∈ policySet, ∃ seq : ℕ → Policy 𝒳,\n      (∀ j, seq j ∈ Pi0) ∧ ∀ x, ∀ᶠ j in Filter.atTop, seq j x = π x) ∧\n  (∀ m : ℕ, ∀ s : Fin m → 𝒳,\n    Nat.card ((fun π : Policy 𝒳 => fun i => π (s i)) '' policySet) ≤ (m + 1) ^ dPi)"
+        }
+      ]
+    },
+    "sym:mu_a": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 100,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "ObservedLaw — carrier 𝒳→ℝ; [-1,1] via BoundedOutcome; carrier 𝒳→ℝ; [-1,1] via BoundedOutcome",
+          "statement": "/-- Build-inline observed-law object: the covariate marginal, the per-draw\nobservation law, and the law-side nuisance functionals the statements range\nover. -/\nstructure ObservedLaw (𝒳 : Type*) [MeasurableSpace 𝒳] where\n  dataMeasure : Measure (Observation 𝒳) -- @realizes O(law of O; its conditional structure given X is pinned to e_P, mu_0, mu_1 by the WellFormedLaw semantic clauses)\n  PX : Measure 𝒳\n  contrast : 𝒳 → ℝ -- @realizes tau_P(carrier 𝒳→ℝ; =μ₁-μ₀ & range [-2,2] via WellFormedLaw+BoundedOutcome)\n  propensity : 𝒳 → ℝ -- @realizes e_P(carrier 𝒳→ℝ; range via WellFormedLaw+Positivity)\n  mu0 : 𝒳 → ℝ -- @realizes mu_0(carrier 𝒳→ℝ; [-1,1] via BoundedOutcome)\n  mu1 : 𝒳 → ℝ -- @realizes mu_1(carrier 𝒳→ℝ; [-1,1] via BoundedOutcome)"
+        },
+        {
+          "label": "WellFormedLaw — mu0 = E[Y∣A=0,X]: ∫ 1{A=0}·Y·φ dP = ∫ (1-e_P)·mu0·φ dP_X; mu1 = E[Y∣A=1,X]: ∫ 1{A}·Y·φ dP = ∫ e_P·mu1·φ dP_X",
+          "statement": "/-- Well-formedness of an observed law on `𝒳 × {0,1} × [-1,1]`: the data law and\nits covariate marginal are PROBABILITY measures, `P_X` IS the covariate marginal\nof `dataMeasure`, the contrast is the regression difference `τ = μ₁ - μ₀`, and the\npropensity takes values in `[0,1]`. These are the ambient SPACE/probability/marginal\nfacts (not statistical modelling assumptions); carrying them makes the welfare and\nminimax integrals genuine Bochner integrals (probability measures), not junk\nvalues.\n\nThe final three conjuncts are the OBSERVED-LAW SEMANTIC CONDITIONS tying\n`dataMeasure` to the nuisance functionals `e_P`, `μ₀`, `μ₁`: they pin\n`e_P(x)=P(A=1∣X=x)`, `μ₁(x)=E[Y∣A=1,X=x]`, and `μ₀(x)=E[Y∣A=0,X=x]` in the\nstandard tested (weak / conditional-expectation defining) form — for every bounded\nmeasurable covariate test function `φ`, the `dataMeasure`-integral of the\narm-weighted (and outcome-weighted) score equals the `P_X`-integral of the\ncorresponding closed form. Without these the nuisance fields are detached from the\ndata law and `lem:clip-bias` is not the genuine conditional-expectation drift\nidentity. Bundled into `LawClass`. -/\ndef WellFormedLaw (P : ObservedLaw 𝒳) : Prop :=\n  IsProbabilityMeasure P.dataMeasure ∧\n    IsProbabilityMeasure P.PX ∧\n    P.dataMeasure.map (fun O => O.X) = P.PX ∧\n    -- Measurability of the law functionals: a well-formed law's contrast/propensity/regressions\n    -- are measurable (implicit in the `.tex`'s Bochner integrals ∫|τ|·1{D_π}, ∫ e·φ, …). Regularity\n    -- bookkeeping needed to make the welfare/regret integral manipulations genuine.\n    Measurable P.contrast ∧ Measurable P.propensity ∧ Measurable P.mu0 ∧ Measurable P.mu1 ∧\n    (∀ x, P.contrast x = P.mu1 x - P.mu0 x) ∧ -- @realizes tau_P(contrast x = mu1 x - mu0 x)\n    (∀ x, P.propensity x ∈ Set.Icc (0 : ℝ) 1) ∧ -- @realizes e_P(propensity x ∈ Icc 0 1)\n    (∀ φ : 𝒳 → ℝ, Measurable φ → (∃ M : ℝ, ∀ x, |φ x| ≤ M) →\n      ∫ O, boolIndicator O.A * φ O.X ∂P.dataMeasure\n        = ∫ x, P.propensity x * φ x ∂P.PX) ∧ -- @realizes e_P(e_P = P(A=1∣X): ∫ 1{A}·φ dP = ∫ e_P·φ dP_X)\n    (∀ φ : 𝒳 → ℝ, Measurable φ → (∃ M : ℝ, ∀ x, |φ x| ≤ M) →\n      ∫ O, boolIndicator O.A * O.Y * φ O.X ∂P.dataMeasure\n        = ∫ x, P.propensity x * P.mu1 x * φ x ∂P.PX) ∧ -- @realizes mu_1(mu1 = E[Y∣A=1,X]: ∫ 1{A}·Y·φ dP = ∫ e_P·mu1·φ dP_X)\n    (∀ φ : 𝒳 → ℝ, Measurable φ → (∃ M : ℝ, ∀ x, |φ x| ≤ M) →\n      ∫ O, (1 - boolIndicator O.A) * O.Y * φ O.X ∂P.dataMeasure\n        = ∫ x, (1 - P.propensity x) * P.mu0 x * φ x ∂P.PX) -- @realizes mu_0(mu0 = E[Y∣A=0,X]: ∫ 1{A=0}·Y·φ dP = ∫ (1-e_P)·mu0·φ dP_X)"
+        },
+        {
+          "label": "BoundedOutcome — mu0 x ∈ Icc (-1) 1; mu1 x ∈ Icc (-1) 1",
+          "statement": "/-- A2 bounded outcomes: the (potential) outcome `Y(a)` lies in `[-1,1]` for both\ntreatment arms `a ∈ {0,1}`. Treatment is binary at the TYPE level (`Observation.A :\nBool`, `true ↦ 1`), so the observed-law projection of `Y(a) ∈ [-1,1]` is the\nconjunction of: the OBSERVED outcome lies in the EXACT range `[-1,1]` a.s. under the\ndata law (the realized `Y = Y(A)`, hence the realized arm's potential outcome), and\nboth outcome REGRESSIONS `μ₀, μ₁` — the arm-conditional means `E[Y(a)|X]` for\n`a ∈ {0,1}` — also lie in `[-1,1]`. The ranges are stated as `Set.Icc (-1) 1`\nmembership so the encoding realizes the `[-1,1]` symbol space exactly (not merely an\nabsolute-value surrogate). -/\ndef BoundedOutcome (P : ObservedLaw 𝒳) : Prop :=\n  (∀ᵐ O ∂P.dataMeasure, O.Y ∈ Set.Icc (-1 : ℝ) 1) ∧ -- @realizes Y(O.Y ∈ Icc (-1) 1 a.s.)\n    (∀ x, P.mu0 x ∈ Set.Icc (-1 : ℝ) 1 ∧ P.mu1 x ∈ Set.Icc (-1 : ℝ) 1) -- @realizes mu_0(mu0 x ∈ Icc (-1) 1), mu_1(mu1 x ∈ Icc (-1) 1)"
+        }
+      ]
+    },
+    "lem:clip-bias-drift-l2-localized-from-region": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.BoundedOutcome",
+          "statement": "/-- A2 bounded outcomes: the (potential) outcome `Y(a)` lies in `[-1,1]` for both\ntreatment arms `a ∈ {0,1}`. Treatment is binary at the TYPE level (`Observation.A :\nBool`, `true ↦ 1`), so the observed-law projection of `Y(a) ∈ [-1,1]` is the\nconjunction of: the OBSERVED outcome lies in the EXACT range `[-1,1]` a.s. under the\ndata law (the realized `Y = Y(A)`, hence the realized arm's potential outcome), and\nboth outcome REGRESSIONS `μ₀, μ₁` — the arm-conditional means `E[Y(a)|X]` for\n`a ∈ {0,1}` — also lie in `[-1,1]`. The ranges are stated as `Set.Icc (-1) 1`\nmembership so the encoding realizes the `[-1,1]` symbol space exactly (not merely an\nabsolute-value surrogate). -/\ndef BoundedOutcome (P : ObservedLaw 𝒳) : Prop :=\n  (∀ᵐ O ∂P.dataMeasure, O.Y ∈ Set.Icc (-1 : ℝ) 1) ∧ -- @realizes Y(O.Y ∈ Icc (-1) 1 a.s.)\n    (∀ x, P.mu0 x ∈ Set.Icc (-1 : ℝ) 1 ∧ P.mu1 x ∈ Set.Icc (-1 : ℝ) 1) -- @realizes mu_0(mu0 x ∈ Icc (-1) 1), mu_1(mu1 x ∈ Icc (-1) 1)"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.StrictOverlapEndpoint",
+          "statement": "/-- A11 strict-overlap endpoint: when `γ=0`, `p_P ≥ underline_p` a.s. -/\ndef StrictOverlapEndpoint (P : ObservedLaw 𝒳) (γ underlineP : ℝ) : Prop :=\n  γ = 0 →\n    0 < underlineP ∧ underlineP ≤ 1 / 2 ∧ (∀ᵐ x ∂P.PX, underlineP ≤ overlap P x)"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.disagreementSet",
+          "statement": "/-- Disagreement set `D_π = {x : π(x) ≠ π_⋆(x)}`. -/\ndef disagreementSet (π πstar : Policy 𝒳) : Set 𝒳 :=\n  {x | π x ≠ πstar x}"
+        }
+      ]
+    },
+    "clippedPropensity_error_le_error_plus_overlap_indicator": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.clippedPropensity",
+          "statement": "/-- Clipped propensity `e_q(x)=min(1-q, max(q, e(x)))`. -/\nnoncomputable def clippedPropensity (q : ℝ) (e : 𝒳 → ℝ) (x : 𝒳) : ℝ :=\n  min (1 - q) (max q (e x))"
+        }
+      ]
+    },
+    "policy_overlap_indicator_mul_le_inter_indicator": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.disagreementSet",
+          "statement": "/-- Disagreement set `D_π = {x : π(x) ≠ π_⋆(x)}`. -/\ndef disagreementSet (π πstar : Policy 𝒳) : Set 𝒳 :=\n  {x | π x ≠ πstar x}"
+        }
+      ]
+    },
+    "policy_clipBias_abs_pointwise_le": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.disagreementSet",
+          "statement": "/-- Disagreement set `D_π = {x : π(x) ≠ π_⋆(x)}`. -/\ndef disagreementSet (π πstar : Policy 𝒳) : Set 𝒳 :=\n  {x | π x ≠ πstar x}"
+        }
+      ]
+    },
+    "clipBias_drift_l2_mass_bound": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.disagreementSet",
+          "statement": "/-- Disagreement set `D_π = {x : π(x) ≠ π_⋆(x)}`. -/\ndef disagreementSet (π πstar : Policy 𝒳) : Set 𝒳 :=\n  {x | π x ≠ πstar x}"
+        }
+      ]
+    },
+    "clippedPolicyIncrementTrunc_second_moment": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.disagreementSet",
+          "statement": "/-- Disagreement set `D_π = {x : π(x) ≠ π_⋆(x)}`. -/\ndef disagreementSet (π πstar : Policy 𝒳) : Set 𝒳 :=\n  {x | π x ≠ πstar x}"
+        }
+      ]
+    },
+    "expectedPooledOffsetSup_trunc_eq_original_ae_36": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.BoundedOutcome",
+          "statement": "/-- A2 bounded outcomes: the (potential) outcome `Y(a)` lies in `[-1,1]` for both\ntreatment arms `a ∈ {0,1}`. Treatment is binary at the TYPE level (`Observation.A :\nBool`, `true ↦ 1`), so the observed-law projection of `Y(a) ∈ [-1,1]` is the\nconjunction of: the OBSERVED outcome lies in the EXACT range `[-1,1]` a.s. under the\ndata law (the realized `Y = Y(A)`, hence the realized arm's potential outcome), and\nboth outcome REGRESSIONS `μ₀, μ₁` — the arm-conditional means `E[Y(a)|X]` for\n`a ∈ {0,1}` — also lie in `[-1,1]`. The ranges are stated as `Set.Icc (-1) 1`\nmembership so the encoding realizes the `[-1,1]` symbol space exactly (not merely an\nabsolute-value surrogate). -/\ndef BoundedOutcome (P : ObservedLaw 𝒳) : Prop :=\n  (∀ᵐ O ∂P.dataMeasure, O.Y ∈ Set.Icc (-1 : ℝ) 1) ∧ -- @realizes Y(O.Y ∈ Icc (-1) 1 a.s.)\n    (∀ x, P.mu0 x ∈ Set.Icc (-1 : ℝ) 1 ∧ P.mu1 x ∈ Set.Icc (-1 : ℝ) 1) -- @realizes mu_0(mu0 x ∈ Icc (-1) 1), mu_1(mu1 x ∈ Icc (-1) 1)"
+        }
+      ]
+    },
+    "weighted_drift_sum_bound_pos": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.OverlapDecay",
+          "statement": "/-- A6 (novel) one-sided overlap-decay envelope:\n`P{p_P ≤ v, 0<|τ|≤u} ≤ C_o u^α v^{1/γ}` for `0<v ≤ c_o u^γ`\n(with `v^{1/γ}=1` when `γ=0`) in the margin window `0 < u ≤ u_0`. -/\ndef OverlapDecay (P : ObservedLaw 𝒳) (u0 Co co α γ : ℝ) : Prop :=\n  ∀ u v : ℝ, 0 < u → u ≤ u0 → 0 < v → v ≤ co * u ^ γ →\n    P.PX.real {x | overlap P x ≤ v ∧ 0 < |P.contrast x| ∧ |P.contrast x| ≤ u}\n      ≤ Co * u ^ α * (if γ = 0 then 1 else v ^ (1 / γ))"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.ZeroEffectRegular",
+          "statement": "/-- A5 canonical zero-effect region: either the zero-contrast set is null, or\nevery policy in the class agrees with `π_⋆` there. -/\ndef ZeroEffectRegular (P : ObservedLaw 𝒳) (policySet : Set (Policy 𝒳)) : Prop :=\n  P.PX.real {x | P.contrast x = 0} = 0 ∨\n    ∀ π ∈ policySet,\n      P.PX.real {x | P.contrast x = 0 ∧ π x ≠ lawOptimalPolicy P x} = 0"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.BoundedOutcome",
+          "statement": "/-- A2 bounded outcomes: the (potential) outcome `Y(a)` lies in `[-1,1]` for both\ntreatment arms `a ∈ {0,1}`. Treatment is binary at the TYPE level (`Observation.A :\nBool`, `true ↦ 1`), so the observed-law projection of `Y(a) ∈ [-1,1]` is the\nconjunction of: the OBSERVED outcome lies in the EXACT range `[-1,1]` a.s. under the\ndata law (the realized `Y = Y(A)`, hence the realized arm's potential outcome), and\nboth outcome REGRESSIONS `μ₀, μ₁` — the arm-conditional means `E[Y(a)|X]` for\n`a ∈ {0,1}` — also lie in `[-1,1]`. The ranges are stated as `Set.Icc (-1) 1`\nmembership so the encoding realizes the `[-1,1]` symbol space exactly (not merely an\nabsolute-value surrogate). -/\ndef BoundedOutcome (P : ObservedLaw 𝒳) : Prop :=\n  (∀ᵐ O ∂P.dataMeasure, O.Y ∈ Set.Icc (-1 : ℝ) 1) ∧ -- @realizes Y(O.Y ∈ Icc (-1) 1 a.s.)\n    (∀ x, P.mu0 x ∈ Set.Icc (-1 : ℝ) 1 ∧ P.mu1 x ∈ Set.Icc (-1 : ℝ) 1) -- @realizes mu_0(mu0 x ∈ Icc (-1) 1), mu_1(mu1 x ∈ Icc (-1) 1)"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.StrictOverlapEndpoint",
+          "statement": "/-- A11 strict-overlap endpoint: when `γ=0`, `p_P ≥ underline_p` a.s. -/\ndef StrictOverlapEndpoint (P : ObservedLaw 𝒳) (γ underlineP : ℝ) : Prop :=\n  γ = 0 →\n    0 < underlineP ∧ underlineP ≤ 1 / 2 ∧ (∀ᵐ x ∂P.PX, underlineP ≤ overlap P x)"
+        }
+      ]
+    },
+    "weighted_drift_sum_bound_zero": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.OverlapDecay",
+          "statement": "/-- A6 (novel) one-sided overlap-decay envelope:\n`P{p_P ≤ v, 0<|τ|≤u} ≤ C_o u^α v^{1/γ}` for `0<v ≤ c_o u^γ`\n(with `v^{1/γ}=1` when `γ=0`) in the margin window `0 < u ≤ u_0`. -/\ndef OverlapDecay (P : ObservedLaw 𝒳) (u0 Co co α γ : ℝ) : Prop :=\n  ∀ u v : ℝ, 0 < u → u ≤ u0 → 0 < v → v ≤ co * u ^ γ →\n    P.PX.real {x | overlap P x ≤ v ∧ 0 < |P.contrast x| ∧ |P.contrast x| ≤ u}\n      ≤ Co * u ^ α * (if γ = 0 then 1 else v ^ (1 / γ))"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.ZeroEffectRegular",
+          "statement": "/-- A5 canonical zero-effect region: either the zero-contrast set is null, or\nevery policy in the class agrees with `π_⋆` there. -/\ndef ZeroEffectRegular (P : ObservedLaw 𝒳) (policySet : Set (Policy 𝒳)) : Prop :=\n  P.PX.real {x | P.contrast x = 0} = 0 ∨\n    ∀ π ∈ policySet,\n      P.PX.real {x | P.contrast x = 0 ∧ π x ≠ lawOptimalPolicy P x} = 0"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.BoundedOutcome",
+          "statement": "/-- A2 bounded outcomes: the (potential) outcome `Y(a)` lies in `[-1,1]` for both\ntreatment arms `a ∈ {0,1}`. Treatment is binary at the TYPE level (`Observation.A :\nBool`, `true ↦ 1`), so the observed-law projection of `Y(a) ∈ [-1,1]` is the\nconjunction of: the OBSERVED outcome lies in the EXACT range `[-1,1]` a.s. under the\ndata law (the realized `Y = Y(A)`, hence the realized arm's potential outcome), and\nboth outcome REGRESSIONS `μ₀, μ₁` — the arm-conditional means `E[Y(a)|X]` for\n`a ∈ {0,1}` — also lie in `[-1,1]`. The ranges are stated as `Set.Icc (-1) 1`\nmembership so the encoding realizes the `[-1,1]` symbol space exactly (not merely an\nabsolute-value surrogate). -/\ndef BoundedOutcome (P : ObservedLaw 𝒳) : Prop :=\n  (∀ᵐ O ∂P.dataMeasure, O.Y ∈ Set.Icc (-1 : ℝ) 1) ∧ -- @realizes Y(O.Y ∈ Icc (-1) 1 a.s.)\n    (∀ x, P.mu0 x ∈ Set.Icc (-1 : ℝ) 1 ∧ P.mu1 x ∈ Set.Icc (-1 : ℝ) 1) -- @realizes mu_0(mu0 x ∈ Icc (-1) 1), mu_1(mu1 x ∈ Icc (-1) 1)"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.StrictOverlapEndpoint",
+          "statement": "/-- A11 strict-overlap endpoint: when `γ=0`, `p_P ≥ underline_p` a.s. -/\ndef StrictOverlapEndpoint (P : ObservedLaw 𝒳) (γ underlineP : ℝ) : Prop :=\n  γ = 0 →\n    0 < underlineP ∧ underlineP ≤ 1 / 2 ∧ (∀ᵐ x ∂P.PX, underlineP ≤ overlap P x)"
+        }
+      ]
+    },
+    "measurableSet_disagreementSet": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.disagreementSet",
+          "statement": "/-- Disagreement set `D_π = {x : π(x) ≠ π_⋆(x)}`. -/\ndef disagreementSet (π πstar : Policy 𝒳) : Set 𝒳 :=\n  {x | π x ≠ πstar x}"
+        }
+      ]
+    },
+    "regret_disagreement_large_contrast_le": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.BoundedOutcome",
+          "statement": "/-- A2 bounded outcomes: the (potential) outcome `Y(a)` lies in `[-1,1]` for both\ntreatment arms `a ∈ {0,1}`. Treatment is binary at the TYPE level (`Observation.A :\nBool`, `true ↦ 1`), so the observed-law projection of `Y(a) ∈ [-1,1]` is the\nconjunction of: the OBSERVED outcome lies in the EXACT range `[-1,1]` a.s. under the\ndata law (the realized `Y = Y(A)`, hence the realized arm's potential outcome), and\nboth outcome REGRESSIONS `μ₀, μ₁` — the arm-conditional means `E[Y(a)|X]` for\n`a ∈ {0,1}` — also lie in `[-1,1]`. The ranges are stated as `Set.Icc (-1) 1`\nmembership so the encoding realizes the `[-1,1]` symbol space exactly (not merely an\nabsolute-value surrogate). -/\ndef BoundedOutcome (P : ObservedLaw 𝒳) : Prop :=\n  (∀ᵐ O ∂P.dataMeasure, O.Y ∈ Set.Icc (-1 : ℝ) 1) ∧ -- @realizes Y(O.Y ∈ Icc (-1) 1 a.s.)\n    (∀ x, P.mu0 x ∈ Set.Icc (-1 : ℝ) 1 ∧ P.mu1 x ∈ Set.Icc (-1 : ℝ) 1) -- @realizes mu_0(mu0 x ∈ Icc (-1) 1), mu_1(mu1 x ∈ Icc (-1) 1)"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.disagreementSet",
+          "statement": "/-- Disagreement set `D_π = {x : π(x) ≠ π_⋆(x)}`. -/\ndef disagreementSet (π πstar : Policy 𝒳) : Set 𝒳 :=\n  {x | π x ≠ πstar x}"
+        }
+      ]
+    },
+    "disagreement_measure_le_margin_plus_regret_over_u": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.MarginTail",
+          "statement": "/-- A4 Tsybakov margin: `P(0<|τ|≤u) ≤ C_m u^α` for `0 < u ≤ u_0`, with the named\ncondition's intrinsic parameter domain — nonnegative margin exponent `α`, positive\nconstant `C_m`, positive window `u_0` ([Tsybakov 2004]). The domain is load-bearing:\nwithout `0 ≤ α` the localization bound is false (`α = -2` gives exponent `2`, and a\nconstant-contrast law forces `1 ≤ C·R²`, impossible uniformly as `R → 0`). -/\ndef MarginTail (P : ObservedLaw 𝒳) (Cm α u0 : ℝ) : Prop :=\n  0 ≤ α ∧ 0 < Cm ∧ 0 < u0 ∧\n  ∀ u : ℝ, 0 < u → u ≤ u0 →\n    P.PX.real {x | 0 < |P.contrast x| ∧ |P.contrast x| ≤ u} ≤ Cm * u ^ α"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.ZeroEffectRegular",
+          "statement": "/-- A5 canonical zero-effect region: either the zero-contrast set is null, or\nevery policy in the class agrees with `π_⋆` there. -/\ndef ZeroEffectRegular (P : ObservedLaw 𝒳) (policySet : Set (Policy 𝒳)) : Prop :=\n  P.PX.real {x | P.contrast x = 0} = 0 ∨\n    ∀ π ∈ policySet,\n      P.PX.real {x | P.contrast x = 0 ∧ π x ≠ lawOptimalPolicy P x} = 0"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.BoundedOutcome",
+          "statement": "/-- A2 bounded outcomes: the (potential) outcome `Y(a)` lies in `[-1,1]` for both\ntreatment arms `a ∈ {0,1}`. Treatment is binary at the TYPE level (`Observation.A :\nBool`, `true ↦ 1`), so the observed-law projection of `Y(a) ∈ [-1,1]` is the\nconjunction of: the OBSERVED outcome lies in the EXACT range `[-1,1]` a.s. under the\ndata law (the realized `Y = Y(A)`, hence the realized arm's potential outcome), and\nboth outcome REGRESSIONS `μ₀, μ₁` — the arm-conditional means `E[Y(a)|X]` for\n`a ∈ {0,1}` — also lie in `[-1,1]`. The ranges are stated as `Set.Icc (-1) 1`\nmembership so the encoding realizes the `[-1,1]` symbol space exactly (not merely an\nabsolute-value surrogate). -/\ndef BoundedOutcome (P : ObservedLaw 𝒳) : Prop :=\n  (∀ᵐ O ∂P.dataMeasure, O.Y ∈ Set.Icc (-1 : ℝ) 1) ∧ -- @realizes Y(O.Y ∈ Icc (-1) 1 a.s.)\n    (∀ x, P.mu0 x ∈ Set.Icc (-1 : ℝ) 1 ∧ P.mu1 x ∈ Set.Icc (-1 : ℝ) 1) -- @realizes mu_0(mu0 x ∈ Icc (-1) 1), mu_1(mu1 x ∈ Icc (-1) 1)"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.disagreementSet",
+          "statement": "/-- Disagreement set `D_π = {x : π(x) ≠ π_⋆(x)}`. -/\ndef disagreementSet (π πstar : Policy 𝒳) : Set 𝒳 :=\n  {x | π x ≠ πstar x}"
+        }
+      ]
+    },
+    "lem:feasible-erm-welfare-bridge": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.PolicyClassVC",
+          "statement": "/-- A7 pointwise measurable finite-VC policy class with a countable\npointwise-dense skeleton `Π₀` and polynomial (Sauer–Shelah) trace growth at\nVC-dimension `d_Π`.\n@realizes Pi(policySet : Set (Policy 𝒳); measurable, countable dense skeleton, finite-VC) -/\ndef PolicyClassVC (policySet : Set (Policy 𝒳)) (dPi : ℕ) : Prop :=\n  (∀ π ∈ policySet, Measurable π) ∧\n  (∃ Pi0 : Set (Policy 𝒳), Pi0.Countable ∧ Pi0 ⊆ policySet ∧\n    ∀ π ∈ policySet, ∃ seq : ℕ → Policy 𝒳,\n      (∀ j, seq j ∈ Pi0) ∧ ∀ x, ∀ᶠ j in Filter.atTop, seq j x = π x) ∧\n  (∀ m : ℕ, ∀ s : Fin m → 𝒳,\n    Nat.card ((fun π : Policy 𝒳 => fun i => π (s i)) '' policySet) ≤ (m + 1) ^ dPi)"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.OptimalInClass",
+          "statement": "/-- A8 optimum-in-class: `π_⋆ ∈ Π`. -/\ndef OptimalInClass (P : ObservedLaw 𝒳) (policySet : Set (Policy 𝒳)) : Prop :=\n  lawOptimalPolicy P ∈ policySet"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.BoundedOutcome",
+          "statement": "/-- A2 bounded outcomes: the (potential) outcome `Y(a)` lies in `[-1,1]` for both\ntreatment arms `a ∈ {0,1}`. Treatment is binary at the TYPE level (`Observation.A :\nBool`, `true ↦ 1`), so the observed-law projection of `Y(a) ∈ [-1,1]` is the\nconjunction of: the OBSERVED outcome lies in the EXACT range `[-1,1]` a.s. under the\ndata law (the realized `Y = Y(A)`, hence the realized arm's potential outcome), and\nboth outcome REGRESSIONS `μ₀, μ₁` — the arm-conditional means `E[Y(a)|X]` for\n`a ∈ {0,1}` — also lie in `[-1,1]`. The ranges are stated as `Set.Icc (-1) 1`\nmembership so the encoding realizes the `[-1,1]` symbol space exactly (not merely an\nabsolute-value surrogate). -/\ndef BoundedOutcome (P : ObservedLaw 𝒳) : Prop :=\n  (∀ᵐ O ∂P.dataMeasure, O.Y ∈ Set.Icc (-1 : ℝ) 1) ∧ -- @realizes Y(O.Y ∈ Icc (-1) 1 a.s.)\n    (∀ x, P.mu0 x ∈ Set.Icc (-1 : ℝ) 1 ∧ P.mu1 x ∈ Set.Icc (-1 : ℝ) 1) -- @realizes mu_0(mu0 x ∈ Icc (-1) 1), mu_1(mu1 x ∈ Icc (-1) 1)"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.Positivity",
+          "statement": "/-- A3 positivity: `0 < e_P(X) < 1` holds `P_X`-a.s.\n@realizes e_P(a.s. 0 < propensity x ∧ propensity x < 1) -/\ndef Positivity (P : ObservedLaw 𝒳) : Prop :=\n  ∀ᵐ x ∂P.PX, 0 < P.propensity x ∧ P.propensity x < 1"
+        },
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.feasibleERM",
+          "statement": "/-- Feasible clipped-AIPW `1/n`-ERM over the countable pointwise-dense skeleton\n`Π₀` enumerated by `enum : ℕ → Policy 𝒳`. With foldwise cross-fitted nuisances\n`η̂^{(-k)}` and fold assignment `assign`, `π̂_n = enum j_n` where `j_n` is the\nSMALLEST index `j` such that `enum j` is a `1/n`-near-maximizer of the cross-fitted\ncriterion over the whole enumeration (`sInf` of the near-maximizer index set). -/\nnoncomputable def feasibleERM {n K : ℕ} (q : ℝ) (enum : ℕ → Policy 𝒳)\n    (muHat0 muHat1 eHat : Fin K → 𝒳 → ℝ) (assign : Fin n → Fin K)\n    (sample : Fin n → Observation 𝒳) : Policy 𝒳 :=\n  enum (sInf {j : ℕ |\n    ∀ j' : ℕ,\n      empiricalWelfareScore q muHat0 muHat1 eHat assign sample (enum j')\n        ≤ empiricalWelfareScore q muHat0 muHat1 eHat assign sample (enum j)\n            + (n : ℝ)⁻¹})"
+        }
+      ]
+    },
+    "lawRegret_nonneg_of_wellformed": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.BoundedOutcome",
+          "statement": "/-- A2 bounded outcomes: the (potential) outcome `Y(a)` lies in `[-1,1]` for both\ntreatment arms `a ∈ {0,1}`. Treatment is binary at the TYPE level (`Observation.A :\nBool`, `true ↦ 1`), so the observed-law projection of `Y(a) ∈ [-1,1]` is the\nconjunction of: the OBSERVED outcome lies in the EXACT range `[-1,1]` a.s. under the\ndata law (the realized `Y = Y(A)`, hence the realized arm's potential outcome), and\nboth outcome REGRESSIONS `μ₀, μ₁` — the arm-conditional means `E[Y(a)|X]` for\n`a ∈ {0,1}` — also lie in `[-1,1]`. The ranges are stated as `Set.Icc (-1) 1`\nmembership so the encoding realizes the `[-1,1]` symbol space exactly (not merely an\nabsolute-value surrogate). -/\ndef BoundedOutcome (P : ObservedLaw 𝒳) : Prop :=\n  (∀ᵐ O ∂P.dataMeasure, O.Y ∈ Set.Icc (-1 : ℝ) 1) ∧ -- @realizes Y(O.Y ∈ Icc (-1) 1 a.s.)\n    (∀ x, P.mu0 x ∈ Set.Icc (-1 : ℝ) 1 ∧ P.mu1 x ∈ Set.Icc (-1 : ℝ) 1) -- @realizes mu_0(mu0 x ∈ Icc (-1) 1), mu_1(mu1 x ∈ Icc (-1) 1)"
+        }
+      ]
+    },
+    "lawRegret_le_two_of_wellformed": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Stat.PolicyRegretMarginOverlap.BoundedOutcome",
+          "statement": "/-- A2 bounded outcomes: the (potential) outcome `Y(a)` lies in `[-1,1]` for both\ntreatment arms `a ∈ {0,1}`. Treatment is binary at the TYPE level (`Observation.A :\nBool`, `true ↦ 1`), so the observed-law projection of `Y(a) ∈ [-1,1]` is the\nconjunction of: the OBSERVED outcome lies in the EXACT range `[-1,1]` a.s. under the\ndata law (the realized `Y = Y(A)`, hence the realized arm's potential outcome), and\nboth outcome REGRESSIONS `μ₀, μ₁` — the arm-conditional means `E[Y(a)|X]` for\n`a ∈ {0,1}` — also lie in `[-1,1]`. The ranges are stated as `Set.Icc (-1) 1`\nmembership so the encoding realizes the `[-1,1]` symbol space exactly (not merely an\nabsolute-value surrogate). -/\ndef BoundedOutcome (P : ObservedLaw 𝒳) : Prop :=\n  (∀ᵐ O ∂P.dataMeasure, O.Y ∈ Set.Icc (-1 : ℝ) 1) ∧ -- @realizes Y(O.Y ∈ Icc (-1) 1 a.s.)\n    (∀ x, P.mu0 x ∈ Set.Icc (-1 : ℝ) 1 ∧ P.mu1 x ∈ Set.Icc (-1 : ℝ) 1) -- @realizes mu_0(mu0 x ∈ Icc (-1) 1), mu_1(mu1 x ∈ Icc (-1) 1)"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,1256 @@
+% =====================================================================
+%  ThmSmith Stage 0 derivation skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_continuous\_iv\_no\_monotonicity, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage 0 derivation: \texttt{pid\_continuous\_iv\_no\_monotonicity} / \texttt{v1}%
+  \\ \large\textit{Continuous-IV bounds with calibrated local nonmonotonicity}}
+\author{ThmSmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note studies the partial-identification functional obtained by projecting
+globally path-compatible continuous-IV response laws onto the positive-responder
+ratio
+\[
+\theta=\frac{\int_0^1 a_+(z)\,dz}{\int_0^1 c_+(z)\,dz}.
+\]
+The observable law is \(P\) for \((Y,D,Z)\), with \(Y\in[0,1]\), binary
+\(D\), and scalar \(Z\in[0,1]\); the maintained restrictions are IV
+validity, exclusion, differentiable reduced forms, full level matching to
+\(P\), and a known envelope \(0\le c_-(z)\le b(z)\) on negative response
+density.  The bounding functional is
+\((\theta_L(P,b),\theta_U(P,b))\), the infimum and supremum of the same
+ratio over all full-\(P\)-compatible response paths satisfying the envelope.
+The per-conjecture stages will verify whether local signed-derivative
+constraints paste sharply into one global response path and whether the usual
+quasi-monotone integrated IV formula is robustly separated from the resulting
+positive-responder identified set.
+\end{abstract}
+
+\section{Introduction}
+Continuous instruments are often used because infinitesimal changes in the
+instrument can reveal marginal treatment effects rather than a single
+finite-instrument local average.  The standard interpretation requires a
+monotone first stage: as the instrument increases, units may enter treatment
+but may not exit.  In applications based on prices, distances, eligibility
+scores, or policy generosity, this monotonicity condition is economically
+strong; small changes in the instrument can plausibly move some units in the
+opposite direction.
+
+The problem addressed here is the following calibrated sensitivity question.
+The observable derivatives
+\[
+p'(z)=\frac{d}{dz}\E[D\mid Z=z],
+\qquad
+m'(z)=\frac{d}{dz}\E[Y\mid Z=z]
+\]
+are signed mixtures of positive and negative marginal response types.  If the
+negative response density is known only to be bounded by \(b(z)\), what can be
+said about the average treatment effect among positive marginal responders?
+The answer cannot be just the derivative ratio \(m'(z)/p'(z)\), because a
+negative response margin contributes with the opposite sign to both derivatives.
+
+This note makes three contributions.  First, it derives the exact local
+signed-response interval implied by bounded outcomes and the envelope
+\(0\le c_-\le b\).  Second, it defines the global bounding functional as an
+optimization over full response paths that match the whole observable law
+\(P_{Y,D\mid Z=z}\), not merely the derivative pair \((p',m')\).  Third, it
+separates what is proved from what remains a genuine sharpness issue:
+local derivative constraints give an outer relaxation, while global
+path-compatibility and endpoint attainment determine whether the closed
+interval is fully sharp at its endpoints.  The result is useful for formula
+design because it identifies the exact objects that a continuous-IV
+monotonicity-violation bound must optimize and the conditions under which the
+usual local-IV formula is recovered.
+
+\paragraph{Motivating conjecture(s).}
+\paragraph{Conjecture 1.}\label{conj:sharp-pasting}
+Under Assumptions~\ref{ass:continuous-iv}--\ref{ass:path-compatible}, the sharp identified set \(\Theta_{\mathrm{CIV}}(P,b)\) is exactly the interval obtained by optimizing
+\[
+\frac{\int_0^1 a_+(z)\,dz}{\int_0^1 (p'(z)+f(z))\,dz}
+\]
+over measurable functions \(f\) and \(a_+\) satisfying the pointwise constraints in Theorem~\ref{thm:local-envelope}, with \(0\le f\le b\), together with the following level constraints: \(p(z)=p(0)+\int_0^z p'(u)\,du\), \(m(z)=m(0)+\int_0^z m'(u)\,du\), the induced conditional law of \((Y(D(z)),D(z))\) equals \(P_{Y,D\mid Z=z}\) for every \(z\), the signed first-stage derivative measure is \(p'(z)\,dz\), and the total-variation response measure \((c_++c_-)\,dz=(p'+2f)\,dz\) is generated by one bounded-variation binary response path.  Moreover, the endpoints are attained by extreme full-data signed-response laws, so the interval is sharp rather than an outer relaxation.
+
+\paragraph{Conjecture 2.}\label{conj:strict-separation}
+There exists a nonempty open set of observable laws \(P\), baseline envelope directions \(b_0\), and constants \(\delta>0\) and \(\eta>0\) satisfying Assumptions~\ref{ass:continuous-iv}--\ref{ass:path-compatible} with \(\int_0^1 p'(z)\,dz>0\) such that the quasi-monotone integrated formula
+\[
+q_{\mathrm{IV}}(P)=\frac{\int_0^1 m'(z)\,dz}{\int_0^1 p'(z)\,dz}
+\]
+has distance at least \(\delta\) from \(\Theta_{\mathrm{CIV}}(P,b_0)\).  This separation is locally robust: for every observable law \(\widetilde P\) and envelope direction \(\widetilde b_0\) in an \(L^1\)-neighborhood of radius \(\eta\), \(\operatorname{dist}(q_{\mathrm{IV}}(\widetilde P),\Theta_{\mathrm{CIV}}(\widetilde P,\widetilde b_0))\ge\delta/2\), and the robustness curve \(t\mapsto\mathcal R_{\widetilde P}(t)\) has a positive, locally Lipschitz breakdown radius \(\tau^\star(\widetilde P;\widetilde b_0)>1\).  A target witness class partitions \([0,1]\) into two positive-measure regions \(A\) and \(B\), has \(p'\ge\kappa>0\) on both regions, places \(b_0>0\) only on \(B\), and assigns positive outcome variation so that positive responders on \(A\) and bounded negative responders on \(B\) have separated treatment-effect numerators with all inequalities in Theorem~\ref{thm:local-envelope} slack.  The separation is generated by negative response density concentrated where defier treatment effects differ from positive-responder treatment effects, so the signed derivative ratio is not a member of the positive-responder sharp set even though the observed first stage remains positive.
+
+\section{Related work and positioning}
+The classical binary-IV reference is \cite{ImbensAngrist1994}, which identifies
+a local average treatment effect under independence, exclusion, relevance, and
+monotonicity.  This note keeps the positive-responder causal target but replaces
+exact monotonicity by a known bound on the local negative response density.
+\cite{Vytlacil2002} shows that the LATE monotonicity condition is equivalent,
+under the usual IV restrictions, to a latent-index threshold-crossing model;
+here \(c_-(z)\) is precisely the local object that records departures from that
+threshold-crossing structure.  \cite{HeckmanVytlacil2005} derive the local
+instrumental-variable and marginal-treatment-effect formula using derivatives
+of the reduced forms; Theorem~\ref{thm:zero-envelope} below verifies that
+the proposed bound collapses to that formula when \(b=0\).
+
+\cite{Klein2010} studies instrumental variables without monotonicity and shows
+how local violations create bias terms in monotonicity-based estimands.  The
+current note differs by treating the negative response density as a calibrated
+partial-identification restriction and by deriving a feasible-set projection
+rather than a bias expression around a point estimand.  \cite{KennedyLorchSmall2019}
+develop robust estimation of the local-IV curve for continuous instruments; the
+object here is not an estimator of that curve but a population identified set
+when the curve's monotone-complier interpretation is relaxed.  \cite{Marx2024}
+gives sharp bounds for marginal treatment effects and linear functionals inside
+a monotone latent-index selection model; the difference is that the present
+response path may have both positive and negative variation, with the negative
+part bounded by \(b\).
+
+The partial-identification geometry is closest to Manski worst-case completion
+and finite instrumental-variable linear programs.  \cite{Manski1990} gives the
+canonical bounded-outcome logic: when the missing counterfactual component is
+not restricted, the identified set is obtained by assigning it its extreme
+support values.  \cite{BalkePearl1997} derive sharp binary-IV bounds through a
+finite latent-type linear program; the continuous-IV program here is its
+infinite-dimensional signed-response analogue with a path-compatibility
+constraint across adjacent instrument values.  \cite{Kitagawa2015} characterizes
+testable implications of IV validity and monotonicity, which is relevant because
+the feasibility of the present derivative program is also a compatibility
+condition between observables and latent response restrictions.
+
+Several monotonicity-relaxation papers are adjacent but do not solve this
+problem.  \cite{DeChaisemartin2017} obtains LATE-like interpretation without
+full monotonicity by imposing structure connecting compliers and defiers, while
+this note imposes a quantitative envelope and otherwise allows arbitrary
+bounded treatment-effect heterogeneity.  \cite{Yap2022} studies sensitivity of
+policy-relevant parameters to monotonicity violations with finite-instrument
+defier-to-complier calibration; the present envelope is indexed continuously by
+the instrument margin.  \cite{MogstadSantosTorgovitsky2018} use IV-like moments
+and MTE restrictions to bound policy-relevant treatment parameters; the current
+\(\Theta_{\mathrm{CIV}}(P,b)\) is a candidate robustness input for that policy
+evaluation agenda.  The in-repository bounded-defier and ordinal-IV proposal
+families are relevant because they exposed the same distinction between local
+cell accounting and global latent-response compatibility; the present note
+keeps that distinction explicit for a scalar continuous instrument.
+
+\section{Formal setup}
+Let \(P\) be the observable law of \((Y,D,Z)\), where \(Y\in[0,1]\),
+\(D\in\{0,1\}\), and \(Z\in[0,1]\).  The instrument has density \(g\) with
+\(0<\underline g\le g(z)\le \overline g<\infty\), so conditioning on \(Z=z\)
+is interpreted through a regular conditional distribution \(P_{Y,D\mid Z=z}\).
+Write
+\[
+p(z)=\E_P[D\mid Z=z],
+\qquad
+m(z)=\E_P[Y\mid Z=z].
+\]
+The observable map is therefore
+\[
+(Y,D,Z)\mapsto P,\qquad
+P\mapsto \{P_{Y,D\mid Z=z}:z\in[0,1]\},\quad p,\quad m.
+\]
+
+A full-data law consists of a binary response path \(z\mapsto D(z)\) of bounded
+variation and potential outcomes \(Y(1),Y(0)\in[0,1]\).  Exclusion means that
+the observed outcome at instrument value \(z\) is
+\[
+Y(D(z))=Y(1)D(z)+Y(0)(1-D(z)).
+\]
+The positive and negative variation measures of the response path, aggregated
+over the population, are assumed absolutely continuous with densities
+\(c_+\) and \(c_-\).  Their treatment-effect numerator measures are also
+absolutely continuous with densities \(a_+\) and \(a_-\).  Thus the derivative
+identities are
+\[
+p'(z)=c_+(z)-c_-(z),
+\qquad
+m'(z)=a_+(z)-a_-(z)
+\]
+for almost every \(z\).
+
+For a fixed envelope \(b\in L^1_+([0,1])\), let \(\mathfrak L(P,b)\) be the set
+of all full-data laws satisfying the assumptions in Section~\ref{sec-assumptions}
+below, matching \(P_{Y,D\mid Z=z}\) for every \(z\), and satisfying
+\(0\le c_-(z)\le b(z)\) almost everywhere.  The identified set is
+\[
+\Theta_I(P,b)
+=
+\left\{
+\frac{\int_0^1 a_+(z)\,dz}{\int_0^1 c_+(z)\,dz}
+:
+L\in\mathfrak L(P,b),\ \int_0^1 c_+(z)\,dz>0
+\right\}.
+\]
+The notation \(\Theta_{\mathrm{CIV}}(P,b)\) denotes the same set, emphasizing
+that it is the continuous-IV sharp projection over full-\(P\)-compatible
+response paths.
+
+\paragraph{Locked parameters.}
+Free-form partial-identification anchor.  The locked tuple is
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},\text{bounding functional}).
+\]
+Here \(\texttt{qid}=\texttt{pid\_continuous\_iv\_no\_monotonicity}\) and \(\texttt{specialization}=\texttt{v1}\).  \(P\) is the observable law of \((Y,D,Z)\), where \(Y\in[0,1]\), \(D\in\{0,1\}\), and the scalar instrument \(Z\) has support \(\mathcal Z=[0,1]\) with a positive density; write \(p(z)=\E[D\mid Z=z]\) and \(m(z)=\E[Y\mid Z=z]\).  The parameter \(\theta\) is the average treatment effect for infinitesimal positive responders induced along the \(Z\)-margin,
+\[
+\theta=\frac{\int_{\mathcal Z} a_+(z)\,dz}{\int_{\mathcal Z} c_+(z)\,dz},
+\]
+where \(c_+(z)\) is the positive first-stage response density and \(a_+(z)\) is the corresponding signed treatment-effect numerator density.  The identifying restrictions are instrument independence and exclusion, bounded potential outcomes \(Y(d)\in[0,1]\) so numerator densities may be signed but obey \(-c_\pm(z)\le a_\pm(z)\le c_\pm(z)\), differentiability of the observable reduced forms, level matching to the full observable law \(P\), and a calibrated nonmonotonicity envelope \(0\le c_-(z)\le b(z)\) on the negative first-stage response density with \(p'(z)=c_+(z)-c_-(z)\).  The bounding functional is the sharp projection of the signed-response feasible set onto \(\theta\), denoted \(\Theta_{\mathrm{CIV}}(P,b)\).
+
+\section{Assumptions}\label{sec-assumptions}
+\begin{assumption}[Observable support and bounded outcomes]\label{ass:continuous-iv}
+\(Z\) has support \([0,1]\) and a density bounded away from zero and infinity.
+\(D\in\{0,1\}\), \(Y(0),Y(1)\in[0,1]\) almost surely, and hence
+\(Y\in[0,1]\).
+\end{assumption}
+
+\begin{assumption}[Instrument independence and exclusion]\label{ass:iv-valid}
+\(Z\) is independent of the full latent response path
+\(\{D(z):z\in[0,1]\}\) and the potential outcomes \((Y(1),Y(0))\).
+The observed variables obey \(D=D(Z)\) and \(Y=Y(D(Z))\).
+\end{assumption}
+
+\begin{assumption}[Differentiable reduced forms]\label{ass:differentiable}
+The reduced forms \(p(z)=\E[D\mid Z=z]\) and
+\(m(z)=\E[Y\mid Z=z]\) are absolutely continuous on \([0,1]\), with
+derivatives \(p',m'\in L^1([0,1])\).  Endpoint statements use the
+corresponding one-sided absolutely continuous representatives.
+\end{assumption}
+
+\begin{assumption}[Signed response decomposition]\label{ass:signed-response}
+The population positive and negative variation measures of the response path
+are absolutely continuous with nonnegative densities
+\(c_+,c_-\in L^1([0,1])\).  The corresponding treatment-effect numerator
+measures have densities \(a_+,a_-\in L^1([0,1])\) satisfying, almost
+everywhere,
+\[
+p'=c_+-c_-,
+\qquad
+m'=a_+-a_-,
+\qquad
+-c_+\le a_+\le c_+,
+\qquad
+-c_-\le a_-\le c_-.
+\]
+\end{assumption}
+
+\begin{assumption}[Calibrated nonmonotonicity envelope]\label{ass:envelope}
+The negative response density is bounded by a known envelope
+\(b\in L^1_+([0,1])\):
+\[
+0\le c_-(z)\le b(z)
+\quad\text{for almost every }z.
+\]
+\end{assumption}
+
+\begin{assumption}[Full-\(P\) level matching and global path compatibility]\label{ass:path-compatible}
+The densities \(c_+,c_-\) and \(a_+,a_-\) are induced by one measurable
+bounded-variation binary response path \(z\mapsto D(z)\) and one pair of
+potential outcomes \((Y(1),Y(0))\).  The same full-data law reproduces the
+observable conditional law \(P_{Y,D\mid Z=z}\) for every \(z\), not only the
+two derivative functions \(p'\) and \(m'\).
+\end{assumption}
+
+\begin{assumption}[Positive positive-responder mass]\label{ass:positive-mass}
+Every feasible full-data law considered in \(\mathfrak L(P,b)\) satisfies
+\[
+\int_0^1 c_+(z)\,dz>0.
+\]
+For the zero-envelope local-IV reduction, assume additionally that
+\(p'(z)\ge \kappa>0\) almost everywhere for some \(\kappa>0\).
+\end{assumption}
+
+\section{Estimand-defining functional}
+For \(P\) and \(b\), define the global signed-response shadow set
+\(\mathfrak S(P,b)\) as the set of all pairs \((f,u)\in L^1_+([0,1])\times
+L^1([0,1])\) for which there exists a full-data law in \(\mathfrak L(P,b)\)
+such that
+\[
+f(z)=c_-(z),
+\qquad
+u(z)=a_+(z)
+\quad\text{almost everywhere.}
+\]
+For any \((f,u)\in\mathfrak S(P,b)\), the positive response density is
+\[
+c_+(z)=p'(z)+f(z),
+\]
+and the numerator ratio is
+\[
+R_P(f,u)=
+\frac{\int_0^1 u(z)\,dz}
+     {\int_0^1 (p'(z)+f(z))\,dz}.
+\]
+Assumption~\ref{ass:positive-mass} makes the denominator strictly positive on
+\(\mathfrak S(P,b)\).
+
+The bounding functional is the closed interval
+\[
+\theta_L(P,b)=\inf_{(f,u)\in\mathfrak S(P,b)} R_P(f,u),
+\qquad
+\theta_U(P,b)=\sup_{(f,u)\in\mathfrak S(P,b)} R_P(f,u),
+\]
+with the convention that the interval is empty when \(\mathfrak S(P,b)\) is
+empty.  This is a sharp closed-interval projection of the globally compatible
+feasible set.  It should be distinguished from the local derivative relaxation
+\(\mathfrak S_{\mathrm{loc}}(P,b)\), which keeps only the pointwise inequalities
+derived in Theorem~\ref{thm:local-envelope} and drops full-\(P\) matching
+and path compatibility.  Optimizing over \(\mathfrak S_{\mathrm{loc}}(P,b)\)
+gives an outer bound; it need not be sharp for \(\Theta_I(P,b)\).
+
+When \(\int_0^1 p'(z)\,dz>0\), define the quasi-monotone integrated IV formula
+\[
+q_{\mathrm{IV}}(P)=
+\frac{\int_0^1 m'(z)\,dz}{\int_0^1 p'(z)\,dz}.
+\]
+This is an observable functional of \(P\), but it is not the target and is not
+generally an element of the positive-responder identified set.
+
+\section{Target causal estimand}
+The causal target is the average treatment effect for infinitesimal positive
+responders induced along the instrument margin:
+\[
+\theta(L)=
+\frac{\int_0^1 a_+(z)\,dz}
+     {\int_0^1 c_+(z)\,dz}.
+\]
+Here \(c_+(z)\,dz\) is the population measure of units whose treatment path
+switches from \(0\) to \(1\) at margins in \(dz\), and \(a_+(z)\,dz\) is the
+same measure weighted by the unit-level treatment effect \(Y(1)-Y(0)\).  The
+target is a scalar attached to a full-data law \(L\), not to the observable law
+\(P\) alone.  Partial identification asks which values of \(\theta(L)\) are
+compatible with \(P\) and the maintained restrictions; the answer is a set or
+interval, not an equality between \(\theta\) and an observable derivative ratio.
+
+\section{Main theorems}
+\begin{theorem}[Conjecture 1: sharp global pasting of local envelopes]\label{thm:sharp-pasting}
+Under Assumptions~\ref{ass:continuous-iv}--\ref{ass:path-compatible}, the sharp identified set \(\Theta_{\mathrm{CIV}}(P,b)\) is exactly the interval obtained by optimizing
+\[
+\frac{\int_0^1 a_+(z)\,dz}{\int_0^1 (p'(z)+f(z))\,dz}
+\]
+over measurable functions \(f\) and \(a_+\) satisfying the pointwise constraints in Theorem~\ref{thm:local-envelope}, with \(0\le f\le b\), together with the following level constraints: \(p(z)=p(0)+\int_0^z p'(u)\,du\), \(m(z)=m(0)+\int_0^z m'(u)\,du\), the induced conditional law of \((Y(D(z)),D(z))\) equals \(P_{Y,D\mid Z=z}\) for every \(z\), the signed first-stage derivative measure is \(p'(z)\,dz\), and the total-variation response measure \((c_++c_-)\,dz=(p'+2f)\,dz\) is generated by one bounded-variation binary response path.  Moreover, the endpoints are attained by extreme full-data signed-response laws, so the interval is sharp rather than an outer relaxation.
+
+Equivalently, with \(\mathfrak S(P,b)\), \(R_P\), \(\theta_L(P,b)\), and
+\(\theta_U(P,b)\) defined in Section~7 on the positive-mass domain,
+\[
+\Theta_{\mathrm{CIV}}(P,b)
+=
+\bigl[\theta_L(P,b),\theta_U(P,b)\bigr],
+\qquad
+\theta_L(P,b)=\min_{(f,u)\in\mathfrak S(P,b)}R_P(f,u),
+\quad
+\theta_U(P,b)=\max_{(f,u)\in\mathfrak S(P,b)}R_P(f,u).
+\]
+The endpoints are also the limits of the finite mesh linear-fractional
+programs whose variables are latent binary response paths on a partition of
+\([0,1]\), binned potential-outcome types in \([0,1]^2\), and nonnegative
+type weights matching the observed binned laws \(P_{Y,D\mid Z=z_j}\), the
+cell first-stage increments, the cell outcome increments, and the integrated
+envelope constraints.
+\end{theorem}
+
+The theorem says that the local envelope in Theorem~\ref{thm:local-envelope}
+is not merely a necessary derivative accounting identity.  Once the candidate
+densities are required to come from one full-data bounded-variation response
+path that matches the entire conditional law \(P_{Y,D\mid Z=z}\), optimizing
+the positive-responder numerator ratio over those candidates is exactly the
+sharp partial-identification problem.
+
+\begin{theorem}[Conjecture 2: strict structural separation]\label{thm:strict-separation}
+Conjecture 2 is confirmed: the two-region tagged-response witness class below gives a nonempty \(L^1\)-open neighborhood on which \(q_{\mathrm{IV}}\) is separated from \(\Theta_{\mathrm{CIV}}(P,b_0)\) and has locally Lipschitz breakdown radius strictly larger than one.
+
+At the center of the witness class, let
+\[
+A=[0,1/2],\qquad B=(1/2,1],
+\]
+and let the response densities and numerator densities be constant on these two regions as follows:
+\[
+\begin{array}{c|c|c|c|c}
+\text{region/type} & c_+ & a_+ & c_- & a_-\\
+\hline
+A\text{ visible positive responders} & 1/10 & 2/25 & 0 & 0\\
+B\text{ visible positive responders} & 1/10 & 2/25 & 0 & 0\\
+B\text{ visible negative responders} & 0 & 0 & 1/25 & 9/250
+\end{array}
+\]
+The baseline envelope is
+\[
+b_0(z)=0\quad(z\in A),\qquad b_0(z)=21/500\quad(z\in B).
+\]
+The observable derivatives are therefore
+\[
+p'(z)=1/10,\quad m'(z)=2/25\quad(z\in A),
+\]
+and
+\[
+p'(z)=3/50,\quad m'(z)=11/250\quad(z\in B).
+\]
+The witness law also contains, only on \(B\), an unobserved zero-effect cancelling response component of density \(s\ge0\): equal masses of \(0\to1\) and \(1\to0\) movers with \(Y(1)=Y(0)=1/2\).  This component leaves \(P_{Y,D\mid Z=z}\), \(p'\), and \(m'\) unchanged, contributes \(s\) to both \(c_+\) and \(c_-\), and contributes zero to both \(a_+\) and \(a_-\).  Full-\(P\) level matching and the separated outcome tags force the visible entries in the table and leave \(s\) as the only free scalar.  Under the baseline envelope,
+\[
+0\le s\le b_0|_B-1/25=1/500.
+\]
+Consequently
+\[
+\Theta_{\mathrm{CIV}}(P^\star,b_0^\star)
+=
+\left[
+\frac{2/25}{1/10+(1/2)(1/500)},\,
+\frac{2/25}{1/10}
+\right]
+=
+\left[\frac{80}{101},\,\frac45\right],
+\]
+whereas
+\[
+q_{\mathrm{IV}}(P^\star)
+=
+\frac{(1/2)(2/25)+(1/2)(11/250)}
+     {(1/2)(1/10)+(1/2)(3/50)}
+=\frac{31}{40}.
+\]
+Thus
+\[
+\operatorname{dist}\!\left(q_{\mathrm{IV}}(P^\star),
+\Theta_{\mathrm{CIV}}(P^\star,b_0^\star)\right)
+=
+\frac{80}{101}-\frac{31}{40}
+=\frac{69}{4040}
+>\frac1{100}.
+\]
+For the robustness curve \(\mathcal R_{P^\star}(t)=\Theta_{\mathrm{CIV}}(P^\star,tb_0^\star)\), the available cancelling density on \(B\) is
+\[
+0\le s\le t(21/500)-1/25.
+\]
+The value \(q_{\mathrm{IV}}(P^\star)=31/40\) is reached exactly when
+\[
+\frac{2/25}{1/10+s/2}=\frac{31}{40},
+\qquad\text{namely}\qquad s=\frac1{155}.
+\]
+Hence
+\[
+\tau^\star(P^\star;b_0^\star)
+=
+\frac{1/25+1/155}{21/500}
+=\frac{240}{217}>1.
+\]
+The same inequalities continue to hold throughout a sufficiently small
+\(L^1\)-open neighborhood of the tagged cell-flow vector and envelope direction.
+For that neighborhood one may take \(\delta=1/100\) and some \(\eta>0\) small
+enough that the perturbed lower endpoint, \(q_{\mathrm{IV}}\), and
+\(\tau^\star\) move by less than one fourth of the displayed strict margins.
+\end{theorem}
+
+The example isolates the reason the signed derivative ratio is not the
+positive-responder target.  On both \(A\) and \(B\), positive responders have
+treatment-effect numerator \(a_+/c_+=4/5\); on \(B\), however, the observed
+outcome derivative subtracts the negative-responder numerator
+\(a_-=9/250\), while the observed first-stage derivative subtracts the
+negative-responder density \(c_-=1/25\).
+
+\section{Interpretation}
+\paragraph{Interpretation for Conjecture~\ref{conj:sharp-pasting}.}
+The theorem says that the local envelope in Theorem~\ref{thm:local-envelope}
+is not merely a necessary derivative accounting identity.  Once the candidate
+densities are required to come from one full-data bounded-variation response
+path that matches the entire conditional law \(P_{Y,D\mid Z=z}\), optimizing
+the positive-responder numerator ratio over those candidates is exactly the
+sharp partial-identification problem.  The causal estimand remains
+\[
+\theta(L)=
+\frac{\int_0^1 a_+(z)\,dz}{\int_0^1 c_+(z)\,dz}
+\]
+for a full-data law \(L\); the observable law \(P\) identifies only the set of
+values generated by all globally compatible laws.  The pointwise inequalities
+are useful because they reduce every feasible law to the two observable
+derivatives \(p'\), \(m'\), the unknown negative response density \(f=c_-\),
+and the positive-responder numerator \(u=a_+\).  The path and level
+constraints are equally essential: dropping them would give only a local outer
+relaxation, not the sharp set.
+
+The endpoint formula is computable from observed-population inputs in the
+following population sense.  For a partition
+\(\pi=\{0=z_0<z_1<\cdots<z_J=1\}\) and an outcome grid
+\(\mathcal H=\{h_1,\ldots,h_H\}\), solve the finite linear-fractional program
+with variables
+\[
+\lambda_{r,h_0,h_1}\ge0,
+\qquad
+r\in\{0,1\}^{J+1},\quad (h_0,h_1)\in\mathcal H^2,
+\]
+where \(\sum_{r,h_0,h_1}\lambda_{r,h_0,h_1}=1\).  The constraints match, for
+each grid point \(z_j\), the binned observed probabilities of
+\((Y,D)\mid Z=z_j\); match \(\Delta p_j=p(z_j)-p(z_{j-1})\) and
+\(\Delta m_j=m(z_j)-m(z_{j-1})\); and impose
+\[
+\sum_{r,h_0,h_1}\lambda_{r,h_0,h_1}
+\one\{r_{j-1}=1,r_j=0\}
+\le \int_{z_{j-1}}^{z_j}b(z)\,dz
+\]
+on each cell.  The objective is the ratio of the weighted positive-transition
+treatment-effect sum to the weighted positive-transition mass.  The finite
+program has \(2^{J+1}H^2\) nonnegative weights plus one Charnes--Cooper scale
+variable and linear constraints after the standard fractional-program
+transformation.  As the partition mesh and outcome-bin diameter go to zero,
+these finite values converge to \(\theta_L(P,b)\) and \(\theta_U(P,b)\).
+
+\paragraph{Interpretation for Conjecture~\ref{conj:strict-separation}.}
+The example isolates the reason the signed derivative ratio is not the
+positive-responder target.  On both \(A\) and \(B\), positive responders have
+treatment-effect numerator \(a_+/c_+=4/5\).  On \(B\), however, the observed
+outcome derivative subtracts the negative-responder numerator
+\(a_-=9/250\), while the observed first-stage derivative subtracts the
+negative-responder density \(c_-=1/25\).  The observable ratio
+\[
+q_{\mathrm{IV}}=\frac{\int m'}{\int p'}
+\]
+therefore averages a signed mixture, not the positive-responder numerator over
+positive-responder mass.  The hidden zero-effect cancelling movers explain why
+the robustness radius is finite: enlarging the envelope eventually permits
+enough invisible opposite movement to dilute the positive-responder ratio down
+to \(q_{\mathrm{IV}}\), but the baseline envelope does not permit enough of it.
+
+\paragraph{Synthesis.}
+The pointwise inequalities are useful because they reduce every feasible law
+to the two observable derivatives \(p'\), \(m'\), the unknown negative response
+density \(f=c_-\), and the positive-responder numerator \(u=a_+\).  The path
+and level constraints are equally essential: dropping them would give only a
+local outer relaxation, not the sharp set; the observable ratio averages a
+signed mixture, not the positive-responder numerator over positive-responder
+mass.
+
+\section{Step-by-step proof}
+\subsection*{Supporting lemmas}
+\begin{theorem}[Theorem 1: local signed-derivative envelope]\label{thm:local-envelope}
+Under Assumptions~\ref{ass:continuous-iv}--\ref{ass:envelope}, any feasible full-data law must admit an auxiliary negative response density \(f(z)=c_-(z)\) with
+\[
+\max\{0,-p'(z)\}\le f(z)\le b(z)
+\]
+almost everywhere, and \(c_+(z)=p'(z)+f(z)\).  Conditional on any such \(f\), the positive-responder numerator density must satisfy
+\[
+\max\{-p'(z)-f(z),m'(z)-f(z)\}\le a_+(z)\le
+\min\{p'(z)+f(z),m'(z)+f(z)\}.
+\]
+Equivalently, \(a_-(z)=a_+(z)-m'(z)\) lies in \([-f(z),f(z)]\) while \(a_+(z)\) lies in \([-(p'(z)+f(z)),p'(z)+f(z)]\).
+\end{theorem}
+\begin{proof}
+Fix any feasible full-data law and set \(f=c_-\).  Assumption~\ref{ass:envelope} gives \(0\le f\le b\) almost everywhere.  Assumption~\ref{ass:signed-response} gives \(p'=c_+-c_-\), hence
+\[
+c_+(z)=p'(z)+f(z)
+\]
+almost everywhere.  Since \(c_+\ge0\), \(p'(z)+f(z)\ge0\), so \(f(z)\ge -p'(z)\).  Combining this with \(f\ge0\) gives
+\[
+\max\{0,-p'(z)\}\le f(z)\le b(z)
+\]
+almost everywhere.
+
+Now write \(u=a_+\).  The bounded-outcome numerator restriction in Assumption~\ref{ass:signed-response} gives
+\[
+-(p'(z)+f(z))\le u(z)\le p'(z)+f(z),
+\]
+because \(c_+=p'+f\).  The derivative identity \(m'=a_+-a_-\) gives \(a_-=u-m'\).  The negative-response numerator bound \(-c_-\le a_-\le c_-\), with \(c_-=f\), is therefore equivalent to
+\[
+-f(z)\le u(z)-m'(z)\le f(z),
+\]
+or
+\[
+m'(z)-f(z)\le u(z)\le m'(z)+f(z).
+\]
+Intersecting the interval implied by \(|a_+|\le c_+\) with the interval implied by \(|a_-|\le c_-\) yields
+\[
+\max\{-p'(z)-f(z),m'(z)-f(z)\}\le u(z)\le
+\min\{p'(z)+f(z),m'(z)+f(z)\}.
+\]
+Substituting back \(u=a_+\) proves the displayed positive-responder numerator constraint.  The equivalent formulation follows from the two separate bounds \(a_-=a_+-m'\in[-f,f]\) and \(a_+\in[-(p'+f),p'+f]\).
+\end{proof}
+
+\begin{theorem}[Theorem 2: zero-envelope Heckman--Vytlacil reduction]\label{thm:zero-envelope}
+Under Assumptions~\ref{ass:continuous-iv}--\ref{ass:positive-mass}, if \(b(z)=0\) almost everywhere and \(p'(z)\ge\kappa>0\), then \(c_-(z)=0\), \(c_+(z)=p'(z)\), \(a_+(z)=m'(z)\), and
+\[
+\Theta_{\mathrm{CIV}}(P,0)=
+\left\{
+\frac{\int_0^1 m'(z)\,dz}{\int_0^1 p'(z)\,dz}
+\right\}.
+\]
+Pointwise, the local effect is the Heckman--Vytlacil LIV/MTE derivative \(m'(z)/p'(z)\) wherever \(p'(z)>0\).
+\end{theorem}
+\begin{proof}
+Let a feasible full-data law be given.  Since \(b=0\) almost everywhere, Assumption~\ref{ass:envelope} implies
+\[
+0\le c_-(z)\le0
+\]
+almost everywhere, so \(c_-(z)=0\) almost everywhere.  The first signed-response identity then gives
+\[
+c_+(z)=p'(z)+c_-(z)=p'(z)
+\]
+almost everywhere.  The negative numerator bound gives \(-c_-(z)\le a_-(z)\le c_-(z)\), hence \(a_-(z)=0\) almost everywhere.  The outcome derivative identity \(m'=a_+-a_-\) therefore gives \(a_+(z)=m'(z)\) almost everywhere.
+
+By the maintained positive-mass condition and the extra lower bound \(p'(z)\ge\kappa>0\), the denominator is strictly positive:
+\[
+\int_0^1 c_+(z)\,dz=\int_0^1 p'(z)\,dz\ge\kappa>0.
+\]
+Substituting the pointwise identities into the target ratio gives, for every feasible law,
+\[
+\theta(L)=\frac{\int_0^1 a_+(z)\,dz}{\int_0^1 c_+(z)\,dz}
+=\frac{\int_0^1 m'(z)\,dz}{\int_0^1 p'(z)\,dz}.
+\]
+Thus all feasible full-data laws generate the same scalar, so \(\Theta_{\mathrm{CIV}}(P,0)\) is the displayed singleton.  At every margin where \(p'(z)>0\), the same identities give the local ratio \(a_+(z)/c_+(z)=m'(z)/p'(z)\), which is the Heckman--Vytlacil local-IV/MTE derivative in the zero-envelope monotone corner.
+\end{proof}
+
+\subsubsection*{Proof of Conjecture 1}
+\begin{proof}
+Let \(\mathfrak L^+(P,b)\) denote the full-data laws in \(\mathfrak L(P,b)\)
+with positive positive-responder mass.  This is the domain already used in
+the definition of \(\Theta_{\mathrm{CIV}}(P,b)\) and in the ratio \(R_P\).
+
+First prove necessity.  Fix \(L\in\mathfrak L^+(P,b)\).  Set
+\[
+f(z)=c_-(z),\qquad u(z)=a_+(z).
+\]
+By Theorem~\ref{thm:local-envelope}, which uses
+Assumptions~\ref{ass:continuous-iv}--\ref{ass:envelope},
+\[
+\max\{0,-p'(z)\}\le f(z)\le b(z)
+\]
+and
+\[
+\max\{-p'(z)-f(z),m'(z)-f(z)\}\le u(z)\le
+\min\{p'(z)+f(z),m'(z)+f(z)\}
+\]
+almost everywhere.  Assumption~\ref{ass:signed-response} gives
+\[
+c_+(z)=p'(z)+f(z),
+\qquad
+a_-(z)=u(z)-m'(z),
+\]
+and Assumption~\ref{ass:path-compatible} gives the full level matching
+constraint
+\[
+\mathcal L_L\bigl(Y(D(z)),D(z)\bigr)=P_{Y,D\mid Z=z}
+\quad\text{for every }z\in[0,1],
+\]
+together with generation of the signed first-stage derivative measure
+\(p'(z)\,dz\) and the total-variation response measure
+\[
+(c_++c_-)\,dz=(p'+2f)\,dz
+\]
+by the same bounded-variation binary response path.  Therefore
+\((f,u)\in\mathfrak S(P,b)\).  Since \(L\in\mathfrak L^+(P,b)\),
+\[
+\theta(L)=
+\frac{\int_0^1 a_+(z)\,dz}{\int_0^1 c_+(z)\,dz}
+=
+\frac{\int_0^1 u(z)\,dz}
+       {\int_0^1(p'(z)+f(z))\,dz}
+=R_P(f,u).
+\]
+It follows that every value in \(\Theta_{\mathrm{CIV}}(P,b)\) is generated by
+the displayed optimization.
+
+Now prove sufficiency.  Take any \((f,u)\in\mathfrak S(P,b)\).  By the
+definition of the global shadow set, there is a full-data law
+\(L\in\mathfrak L^+(P,b)\) whose induced densities satisfy
+\[
+c_-=f,\qquad a_+=u.
+\]
+Define
+\[
+c_+=p'+f,\qquad a_-=u-m'.
+\]
+The pointwise constraints in Theorem~\ref{thm:local-envelope} give
+\[
+c_+\ge0,\qquad -c_+\le a_+\le c_+,\qquad -c_-\le a_-\le c_-,
+\]
+and the two derivative identities are then algebraic:
+\[
+c_+-c_-=p',\qquad a_+-a_-=m'.
+\]
+The level constraints in the statement ensure that this same law reproduces
+\(P_{Y,D\mid Z=z}\), and the path constraint ensures that the two variation
+density measures are produced by one binary bounded-variation response path.
+Thus the law is feasible for the original sharp partial-identification
+problem, and
+\[
+R_P(f,u)=\theta(L)\in\Theta_{\mathrm{CIV}}(P,b).
+\]
+The feasible values of the optimization and the feasible values of the causal
+target therefore coincide.
+
+It remains to show that the coincident set is a closed interval and that its
+endpoints are attained at extreme laws.  The feasible law set is convex:
+mixing two full-data laws that both match \(P\) again matches \(P\), preserves
+instrument independence and exclusion, preserves the envelope
+\(0\le c_-\le b\), and mixes the response and numerator measures linearly.
+For \(L_0,L_1\in\mathfrak L^+(P,b)\), write
+\[
+N_i=\int_0^1 a_{+,i}(z)\,dz,\qquad
+D_i=\int_0^1 c_{+,i}(z)\,dz>0,\qquad
+r_i=N_i/D_i .
+\]
+For \(L_\lambda=\lambda L_0+(1-\lambda)L_1\),
+\[
+\theta(L_\lambda)=
+\frac{\lambda N_0+(1-\lambda)N_1}
+     {\lambda D_0+(1-\lambda)D_1}
+=
+\omega_\lambda r_0+(1-\omega_\lambda)r_1,
+\]
+where
+\[
+\omega_\lambda=
+\frac{\lambda D_0}{\lambda D_0+(1-\lambda)D_1}.
+\]
+As \(\lambda\) varies in \([0,1]\), \(\omega_\lambda\) varies continuously
+from \(0\) to \(1\).  Hence the image of the convex feasible set under the
+positive-denominator ratio contains the whole interval between any two of its
+values.
+
+Compactness supplies attainment.  By Assumptions~\ref{ass:differentiable}
+and~\ref{ass:envelope},
+\[
+\int_0^1(c_+(z)+c_-(z))\,dz
+\le
+\int_0^1 |p'(z)|\,dz+2\int_0^1b(z)\,dz<\infty
+\]
+uniformly over feasible laws.  Binary bounded-variation paths with variation
+bounded by \(M\) are compact in \(L^1([0,1])\) along subsequences by Helly's
+selection theorem, and the displayed uniform first-moment bound makes the
+family of path laws tight by Markov's inequality.  The outcome space
+\([0,1]^2\) is compact by Assumption~\ref{ass:continuous-iv}.  The constraints
+of IV validity, exclusion, level matching to \(P_{Y,D\mid Z=z}\), the
+absolutely continuous signed derivative identities, and the envelope
+constraint are closed under this weak convergence because the induced response
+and numerator measures are dominated by
+\(|p'|\,dz+2b(z)\,dz\).  Therefore \(\mathfrak L^+(P,b)\) is compact in the
+topology generated by bounded continuous path/outcome functionals and the
+four aggregate signed-response measures.  The positive-mass convention in
+Section~7 makes the denominator functional \(D(L)=\int c_+\,dz\) strictly
+positive on this compact feasible set, so it is bounded away from zero.
+Consequently \(L\mapsto \theta(L)=N(L)/D(L)\) is continuous and attains its
+minimum and maximum.
+
+Let \(K=\mathfrak L^+(P,b)\), \(D(L)=\int c_+\,dz\), and
+\(N(L)=\int a_+\,dz\).  If \(\theta_U=\max_K N/D\), then
+\[
+F_U=\{L\in K:N(L)-\theta_U D(L)=0\}
+\]
+is a nonempty compact exposed face of \(K\); similarly
+\[
+F_L=\{L\in K:N(L)-\theta_L D(L)=0\}
+\]
+is the lower exposed face.  By the Krein--Milman extreme-point theorem, each
+nonempty compact convex face contains an extreme point, and an extreme point
+of an exposed face is an extreme point of \(K\).  Thus both endpoints are
+attained by extreme full-data signed-response laws.  Combining necessity,
+sufficiency, interval convexity, and endpoint attainment proves the theorem.
+\end{proof}
+
+\subsubsection*{Proof of Conjecture 2}
+All response paths in the center law are generated by threshold types whose
+thresholds are uniformly distributed over the relevant region.  The visible
+positive responders on \(A\) and \(B\) have outcome tags
+\[
+(Y(0),Y(1))=(1/10,9/10),
+\]
+so their treatment-effect numerator is \(4/5\) times their response density.
+The visible negative responders on \(B\) have outcome tags
+\[
+(Y(0),Y(1))=(0,9/10),
+\]
+so their numerator is \(9/10\) times their response density.  The hidden
+cancelling responders on \(B\) have
+\[
+Y(0)=Y(1)=1/2,
+\]
+and equal positive and negative threshold densities.  The tags
+\(0,1/10,1/2,9/10\) are disjoint observed outcome cells, so the derivatives of
+the corresponding conditional cell masses identify the visible flows in the
+table.  The equal zero-effect cancelling pair at the common tag \(1/2\) moves
+the same amount of mass from \(D=0\) to \(D=1\) as from \(D=1\) to \(D=0\);
+therefore it leaves the full conditional law \(P_{Y,D\mid Z=z}\) unchanged.
+Adding fixed always-treated and never-treated background types with disjoint
+tags and sufficiently large slack makes all conditional probabilities strictly
+positive and keeps \(p(z)\in(0,1)\) for every \(z\).  Assumptions
+\ref{ass:continuous-iv}--\ref{ass:path-compatible} follow directly from this
+single bounded-variation threshold construction, IV independence, and bounded
+potential outcomes.
+
+By Assumption~\ref{ass:signed-response}, the derivative identities are
+\[
+p'=c_+-c_-,
+\qquad
+m'=a_+-a_-.
+\]
+On \(A\), this gives \(p'=1/10\) and \(m'=2/25\).  On \(B\), the visible
+flows give
+\[
+p'=1/10-1/25=3/50,
+\qquad
+m'=2/25-9/250=11/250.
+\]
+Thus \(p'\ge3/50\) on both regions, so the positive first-stage denominator is
+bounded away from zero:
+\[
+\int_0^1p'(z)\,dz
+=
+\frac12\cdot\frac1{10}+\frac12\cdot\frac3{50}
+=\frac2{25}>0.
+\]
+Substituting the same derivatives into the observable quasi-monotone formula
+gives
+\[
+q_{\mathrm{IV}}(P^\star)
+=
+\frac{\frac12(2/25)+\frac12(11/250)}
+     {\frac12(1/10)+\frac12(3/50)}
+=\frac{31}{40}.
+\]
+
+Next compute the sharp projection.  Full-\(P\) level matching identifies the
+visible tagged flows, as just noted.  The only remaining full-data freedom is
+the hidden cancelling density \(s\) on \(B\).  It contributes \(s\) to \(c_+\)
+and \(s\) to \(c_-\) on \(B\), contributes no numerator, and is feasible
+exactly when the envelope permits the total negative density:
+\[
+1/25+s\le b_0|_B=21/500.
+\]
+Hence \(0\le s\le1/500\).  The positive-responder numerator is fixed at
+\[
+\int_0^1a_+(z)\,dz
+=
+\frac12\cdot\frac2{25}+\frac12\cdot\frac2{25}
+=\frac2{25},
+\]
+while the positive-responder mass is
+\[
+\int_0^1c_+(z)\,dz
+=
+\frac12\cdot\frac1{10}
++\frac12\cdot\left(\frac1{10}+s\right)
+=
+\frac1{10}+\frac{s}{2}.
+\]
+Therefore every feasible full-data law has
+\[
+\theta(s)=
+\frac{2/25}{1/10+s/2},
+\qquad 0\le s\le1/500.
+\]
+This continuous one-dimensional image is the interval
+\[
+\Theta_{\mathrm{CIV}}(P^\star,b_0^\star)
+=
+\left[
+\theta(1/500),\theta(0)
+\right]
+=
+\left[
+\frac{80}{101},\frac45
+\right].
+\]
+The distance calculation in the theorem then gives the strict baseline
+separation
+\[
+\operatorname{dist}\!\left(q_{\mathrm{IV}}(P^\star),
+\Theta_{\mathrm{CIV}}(P^\star,b_0^\star)\right)
+=\frac{69}{4040}>\frac1{100}.
+\]
+
+The local-envelope inequalities are slack on the active nonmonotone region
+\(B\).  There \(f=c_-=1/25\), \(b_0=21/500\), and \(p'=3/50\), so
+\[
+0<f<b_0.
+\]
+For the numerator,
+\[
+\max\{-p'-f,m'-f\}
+=
+\max\{-1/10,1/250\}
+=\frac1{250}
+<
+\frac2{25}=a_+,
+\]
+and
+\[
+a_+=\frac2{25}
+<
+\min\{p'+f,m'+f\}
+=
+\min\{1/10,21/250\}
+=\frac{21}{250}.
+\]
+Thus the strictness claim is compatible with Theorem~\ref{thm:local-envelope}.
+On \(A\), \(b_0=0\) by design, so the zero-envelope constraints bind there;
+that is the monotone positive-responder part of the witness, not the source of
+the separation.
+
+For the breakdown calculation, scaling the envelope to \(t b_0\) changes only
+the upper bound on \(s\):
+\[
+0\le s\le t(21/500)-1/25.
+\]
+Solving \(\theta(s)=q_{\mathrm{IV}}(P^\star)\) gives
+\[
+\frac{2/25}{1/10+s/2}=\frac{31}{40}
+\quad\Longleftrightarrow\quad
+s=\frac1{155}.
+\]
+Thus
+\[
+\tau^\star(P^\star;b_0^\star)
+=
+\frac{1/25+1/155}{21/500}
+=
+\frac{240}{217}>1.
+\]
+
+It remains to record why the property is open.  The finite tagged-cell LP has
+one free scalar \(s\), denominator at least \(1/10\), baseline separation
+margin \(69/4040\), envelope slack \(1/500\), and breakdown margin
+\(240/217-1\).  Perturbing the observable conditional law in integrated total
+variation and perturbing \(b_0\) in \(L^1\) perturbs the tagged cell-flow
+right-hand sides and the envelope capacity by at most a constant multiple of
+the perturbation radius.  Linear-fractional objectives with denominators
+bounded below are locally Lipschitz in these right-hand sides; in this
+one-dimensional LP this is immediate from the displayed formula for
+\(\theta(s)\).  Choose \(\eta>0\) so small that all induced perturbations move
+\(q_{\mathrm{IV}}\), the lower endpoint of the baseline interval, and
+\(\tau^\star\) by less than one fourth of their displayed strict margins.
+Then every \((\widetilde P,\widetilde b_0)\) in the \(L^1\)-ball of radius
+\(\eta\) satisfies
+\[
+\operatorname{dist}\!\left(q_{\mathrm{IV}}(\widetilde P),
+\Theta_{\mathrm{CIV}}(\widetilde P,\widetilde b_0)\right)
+\ge\frac1{200}
+=\delta/2
+\]
+with \(\delta=1/100\), and its breakdown radius remains strictly larger than
+one and locally Lipschitz.  This proves the conjecture.
+
+\section{Sanity checks}
+\paragraph{Sanity check for Conjecture~\ref{conj:sharp-pasting}: zero-envelope monotone corner.}
+Set \(b=0\) and suppose \(p'(z)\ge\kappa>0\) almost everywhere.  The envelope
+forces \(f=c_-=0\).  The local constraints reduce to
+\[
+c_+(z)=p'(z),\qquad a_-(z)=0,\qquad a_+(z)=m'(z),
+\]
+which is exactly Theorem~\ref{thm:zero-envelope}.  Therefore
+\[
+\theta_L(P,0)=\theta_U(P,0)
+=
+\frac{\int_0^1m'(z)\,dz}{\int_0^1p'(z)\,dz},
+\]
+and pointwise the local positive-responder effect is the usual
+Heckman--Vytlacil derivative \(m'(z)/p'(z)\) wherever \(p'(z)>0\).  Thus the
+sharp-pasting theorem collapses to the standard local-IV/MTE formula in the
+monotone zero-defier limit.
+
+\paragraph{Sanity check for Conjecture~\ref{conj:strict-separation}.}
+If the nonmonotone region is switched off by setting \(b_0=0\) and removing
+the visible negative responders on \(B\), then \(s=0\), \(c_-=a_-=0\), and
+Theorem~\ref{thm:zero-envelope} applies.  In that corner
+\[
+p'(z)=1/10,\qquad m'(z)=2/25\quad\text{on both }A\text{ and }B,
+\]
+so
+\[
+q_{\mathrm{IV}}(P)=
+\frac{\int_0^1m'(z)\,dz}{\int_0^1p'(z)\,dz}
+=
+\frac{2/25}{1/10}
+=\frac45.
+\]
+The sharp set is the singleton \(\Theta_{\mathrm{CIV}}(P,0)=\{4/5\}\), matching
+the zero-envelope Heckman--Vytlacil reduction.  Thus the strict separation is
+not an artifact of the two-region partition; it appears only when the negative
+response component on \(B\) is genuinely present.
+
+\section{Counterexample or minimality check}
+\paragraph{Refutation attempt before proof for Conjecture~\ref{conj:sharp-pasting}.}
+The prescribed smallest search is the two-point response-type linear program.
+Restrict \(Z\) to two adjacent grid values \(z_0<z_1\) and write
+\[
+\Delta p=p(z_1)-p(z_0),\qquad
+\Delta m=m(z_1)-m(z_0),\qquad
+B=\int_{z_0}^{z_1}b(z)\,dz .
+\]
+The four binary response paths are never-taker \(00\), positive responder
+\(01\), negative responder \(10\), and always-taker \(11\).  Let their masses
+be \(\pi_{00},\pi_{01},\pi_{10},\pi_{11}\), and let \(A_{01}\) and \(A_{10}\)
+be the signed treatment-effect numerators carried by the positive and
+negative transition types.  The finite LP constraints are
+\[
+\Delta p=\pi_{01}-\pi_{10},\qquad
+\Delta m=A_{01}-A_{10},\qquad
+0\le\pi_{10}\le B,
+\]
+\[
+-\pi_{01}\le A_{01}\le\pi_{01},
+\qquad
+-\pi_{10}\le A_{10}\le\pi_{10}.
+\]
+Putting \(f=\pi_{10}\), \(c_+=\pi_{01}=\Delta p+f\), and
+\(a_+=A_{01}\), the LP projects to
+\[
+\max\{0,-\Delta p\}\le f\le B,
+\]
+\[
+\max\{-\Delta p-f,\Delta m-f\}\le a_+\le
+\min\{\Delta p+f,\Delta m+f\}.
+\]
+Thus each candidate vertex of the projected box, namely \(f\) at one of its
+two endpoints and \(a_+\) at one of the two induced numerator endpoints,
+is represented by a genuine mixture of the four response paths whenever it
+satisfies the displayed inequalities.  Conversely, every mixture of the four
+paths obeys exactly those inequalities.  The binary search therefore finds no
+extreme point outside the conjectured interval and no endpoint that violates
+the claimed sharp projection.  The continuous proof below is the compact
+bounded-variation analogue of this finite LP calculation; it is the same
+Manski--Balke--Pearl extreme-point logic with the adjacent-cell response
+types pasted into one path.
+
+\paragraph{Minimality check for Conjecture~\ref{conj:sharp-pasting}: local envelopes alone are not sharp.}
+The path-compatibility part of Assumption~\ref{ass:path-compatible} cannot be
+dropped.  Let \(p(z)\equiv1\), \(m(z)\equiv1/2\), and take an envelope
+\(b(z)\equiv\beta>0\).  The local derivative equations have
+\[
+p'(z)=0,\qquad m'(z)=0.
+\]
+The pointwise envelope relaxation alone allows, for every \(z\),
+\[
+f(z)=\beta,\qquad c_+(z)=\beta,\qquad c_-(z)=\beta,\qquad
+a_+(z)=a_-(z)=0.
+\]
+These choices satisfy the displayed inequalities in
+Theorem~\ref{thm:local-envelope}.  They cannot be induced by a full-data law
+matching \(P_{D\mid Z=z}\) with \(p(z)=1\) for every \(z\): when \(D(z)=1\)
+almost surely at a margin, there is no mass in state \(0\) available to make a
+positive \(0\to1\) jump at that same margin.  Hence \(c_+(z)>0\) on a set of
+positive measure contradicts generation by one binary response path matching
+the level \(p(z)=1\).  This example shows that the local signed-derivative
+box is only an outer relaxation unless full-\(P\) level matching and global
+path compatibility are imposed.  The theorem's sharpness conclusion therefore
+uses exactly the extra global condition that the conjecture names.
+
+\paragraph{Refutation attempt before proof for Conjecture~\ref{conj:strict-separation}.}
+The required refutation-first check was run on the smallest two-region
+response-type LP.  The first candidate was the derivative-only relaxation from
+Theorem~\ref{thm:local-envelope}.  With only the variables \(f=c_-\) and
+\(u=a_+\), positive \(p'\), and \(q_{\mathrm{IV}}\in[-1,1]\), the choice
+\(f=0\) and \(u=m'\) puts the quasi-monotone formula back into the relaxed
+set.  This candidate therefore cannot witness strict separation; it shows that
+full-\(P\) level information is essential.
+
+The second candidate was the tagged two-region LP used in
+Theorem~\ref{thm:strict-separation}.  Its decision variable is the hidden
+cancelling density \(s\) on \(B\), subject at baseline to
+\[
+0\le s\le1/500.
+\]
+The LP vertices are \(s=0\) and \(s=1/500\), giving
+\[
+R(0)=4/5,\qquad R(1/500)=80/101.
+\]
+The quasi-monotone value is \(31/40\), and
+\[
+31/40<80/101<4/5.
+\]
+Thus vertex enumeration produces no extreme point contradicting the conjecture.
+It instead produces the positive witness: the conjectured separation holds at
+the center, and the unique breakdown vertex occurs only after the envelope is
+scaled to \(t=240/217>1\).
+
+\paragraph{Counterexample or minimality check for Conjecture~\ref{conj:strict-separation}.}
+Dropping full-\(P\) level matching destroys the result.  In the same center
+law, keep only \(p'\), \(m'\), and the envelope.  Since \(p'(z)>0\) and
+\(|m'(z)|\le p'(z)\) on both regions, the local relaxation admits the monotone
+completion \(f=0\) and \(a_+=m'\), which yields
+\[
+\frac{\int_0^1a_+(z)\,dz}{\int_0^1(p'(z)+f(z))\,dz}
+=
+q_{\mathrm{IV}}(P).
+\]
+Hence the separation is a full-distribution and path-compatibility statement,
+not a consequence of the derivative envelope alone.  The support condition
+needed in the proof is the separated tagged-cell condition: the outcome cells
+used to identify the visible positive and negative response flows must remain
+disjoint with positive probability margins.  Without that condition, an
+alternative monotone or weakly nonmonotone completion can absorb the signed
+derivative ratio into the feasible projection.
+
+\section{Formalization checklist}
+\begin{enumerate}[label=\arabic*.]
+\item \(\mathfrak L(P,b)\).  Typed signature: observable law \(P\), envelope
+\(b\in L^1_+([0,1])\) \(\mapsto\) set of full-data laws over bounded-variation
+binary response paths and bounded potential outcomes.  Role: original feasible
+set for the causal target.  Dependencies: Assumptions~\ref{ass:continuous-iv}--\ref{ass:path-compatible}.
+
+\item \(\mathfrak S(P,b)\).  Typed signature:
+\((P,b)\mapsto\{(f,u)\in L^1_+([0,1])\times L^1([0,1])\}\).  Role: global
+shadow set for negative response density and positive-responder numerator.
+Dependencies: existence of a full-data law in \(\mathfrak L(P,b)\), full-\(P\)
+level matching, path compatibility, and positive-mass convention.
+
+\item \(R_P(f,u)\).  Typed signature:
+\(\mathfrak S(P,b)\to\R\), \(R_P(f,u)=\int u/\int(p'+f)\).  Role:
+computable ratio optimized for \(\theta_L(P,b)\) and \(\theta_U(P,b)\).
+Dependencies: \(p'\in L^1\), \(f\in L^1_+\), and
+\(\int_0^1(p'(z)+f(z))\,dz>0\).
+
+\item \(\Theta_{\mathrm{CIV}}(P,b)\).  Typed signature: \((P,b)\mapsto\)
+subset of \(\R\).  Role: sharp positive-responder identified set.
+Dependencies: \(\mathfrak L(P,b)\), the target map \(\theta(L)\), and the
+positive positive-responder mass condition.
+
+\item Local envelope inequalities.  Typed signature:
+\((p',m',b)\mapsto\) pointwise interval constraints for \(f=c_-\) and
+\(u=a_+\).  Role: necessary local accounting identities and finite-cell LP
+projection.  Dependencies: signed response decomposition, bounded outcomes,
+and calibrated envelope.
+
+\item Finite mesh linear-fractional program.  Typed signature: partition
+\(\pi\), outcome grid \(\mathcal H\), binned observed laws, increments
+\((\Delta p_j,\Delta m_j)\), and cell envelope masses \(\mapsto\) lower and
+upper objective values.  Role: computable approximation and extreme-point
+description of the endpoint formula.  Dependencies: nonnegative type weights
+\(\lambda_{r,h_0,h_1}\), observed cell matching constraints, response
+increment constraints, envelope constraints, and Charnes--Cooper
+linearization.
+
+\item Tagged two-region witness.  Typed signature: regions \(A,B\), table of
+constant densities \((c_+,a_+,c_-,a_-)\), envelope \(b_0\), and scalar hidden
+cancelling density \(s\).  Role: explicit open-set witness for strict
+separation and breakdown radius \(240/217\).  Dependencies: separated outcome
+tags, \(0\le s\le1/500\) at baseline, denominator lower bound, and local
+Lipschitz perturbation of the one-dimensional linear-fractional program.
+
+\item Bypass-justified substrate audit record.  Typed signature: queried names
+\(\{\texttt{POManskiIVSystem},\texttt{manski\_bounds\_ATE},\texttt{BalkePearl}\}\)
+\(\mapsto\) no local declaration matches from the available index.  Role:
+documents why this Stage 0 note stays at the paper-level algebraic and
+measure-path abstraction rather than citing repository primitives.  Dependencies:
+no Lean source files were opened or cited.
+\end{enumerate}
+
+\section{Conclusion and references}
+Conjecture 1 (sharp-pasting) is confirmed; Under Assumptions~\ref{ass:continuous-iv}--\ref{ass:path-compatible}, the sharp identified set \(\Theta_{\mathrm{CIV}}(P,b)\) is exactly the interval obtained by optimizing.
+
+Conjecture 2 (strict-separation) is confirmed; Conjecture 2 is confirmed: the two-region tagged-response witness class below gives a nonempty \(L^1\)-open neighborhood on which \(q_{\mathrm{IV}}\) is separated from \(\Theta_{\mathrm{CIV}}(P,b_0)\) and has locally Lipschitz breakdown radius strictly larger than one.
+
+\begin{thebibliography}{99}
+\bibitem{BalkePearl1997}
+Balke, A. and Pearl, J. (1997).
+Bounds on treatment effects from studies with imperfect compliance.
+\emph{Journal of the American Statistical Association}, 92(439), 1171--1176.
+
+\bibitem{DeChaisemartin2017}
+de Chaisemartin, C. (2017).
+Tolerating defiance? Local average treatment effects without monotonicity.
+\emph{Quantitative Economics}, 8(2), 367--396.
+
+\bibitem{HeckmanVytlacil2005}
+Heckman, J. J. and Vytlacil, E. (2005).
+Structural equations, treatment effects, and econometric policy evaluation.
+\emph{Econometrica}, 73(3), 669--738.
+
+\bibitem{ImbensAngrist1994}
+Imbens, G. W. and Angrist, J. D. (1994).
+Identification and estimation of local average treatment effects.
+\emph{Econometrica}, 62(2), 467--475.
+
+\bibitem{KennedyLorchSmall2019}
+Kennedy, E. H., Lorch, S., and Small, D. S. (2019).
+Robust causal inference with continuous instruments using the local instrumental variable curve.
+\emph{Journal of the Royal Statistical Society: Series B}, 81(1), 121--143.
+
+\bibitem{Kitagawa2015}
+Kitagawa, T. (2015).
+A test for instrument validity.
+\emph{Econometrica}, 83(5), 2043--2063.
+
+\bibitem{Klein2010}
+Klein, T. J. (2010).
+Heterogeneous treatment effects: Instrumental variables without monotonicity?
+\emph{Journal of Econometrics}, 155(2), 99--116.
+
+\bibitem{Manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review Papers and Proceedings}, 80(2), 319--323.
+
+\bibitem{Marx2024}
+Marx, P. (2024).
+Sharp bounds for marginal treatment effects.
+\emph{Working paper}.
+
+\bibitem{MogstadSantosTorgovitsky2018}
+Mogstad, M., Santos, A., and Torgovitsky, A. (2018).
+Using instrumental variables for inference about policy relevant treatment parameters.
+\emph{Econometrica}, 86(5), 1589--1619.
+
+\bibitem{Vytlacil2002}
+Vytlacil, E. (2002).
+Independence, monotonicity, and latent index models: An equivalence result.
+\emph{Econometrica}, 70(1), 331--341.
+
+\bibitem{Yap2022}
+Yap, C. (2022).
+Sensitivity analysis for monotonicity in instrumental variables.
+\emph{Working paper}.
+\end{thebibliography}
+
+\end{document}

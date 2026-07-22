@@ -1,0 +1,34 @@
+name: kb-lint
+
+# Knowledge-base consistency lint (C1 crosswalk anchors, C3 API.md paths,
+# C4 study-graph ↔ bank). Pure text/file checks — no Lean build needed, so this
+# is fast and runs on every push/PR. WARN-ONLY for now (`continue-on-error`):
+# findings surface as a non-blocking warning. Promote to a hard gate (drop
+# `continue-on-error`) once C2 lands and the bank is clean — see
+# CausalSmith/doc/presentation/2026-06-16-knowledge-base-lint-design.md §6.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  kb-lint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: CausalSmith/tools
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: CausalSmith/tools/package-lock.json
+      - run: npm ci
+      - name: Knowledge-base lint (warn-only)
+        continue-on-error: true
+        run: npm run lint:kb:strict

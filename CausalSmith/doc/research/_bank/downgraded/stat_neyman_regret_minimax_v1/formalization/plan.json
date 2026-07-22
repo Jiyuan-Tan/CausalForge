@@ -1,0 +1,729 @@
+{
+  "qid": "stat_neyman_regret_minimax",
+  "status": "needs-new-infrastructure",
+  "lean_target_subdir": "CausalSmith/Stat/STAT_NeymanRegretMinimax_Research",
+  "env": [
+    {
+      "id": "S1",
+      "world": "Superpopulation bounded-outcome potential-outcome law: nu a probability measure on [0,1]^2 with i.i.d. draws (Y_t(0),Y_t(1)) ~ nu; all arm-law functionals (marginals, root second moments, tangent strengths, scores, information program, oracle allocation/curvature/complexity, local perturbation path) live over this measure world.",
+      "binds_symbols": [
+        "epsilon",
+        "Y_t(0), Y_t(1)",
+        "nu",
+        "nu_0, nu_1",
+        "m_0, m_1",
+        "r_{0,nu}, r_{1,nu}",
+        "tau",
+        "pi_nu_star",
+        "delta",
+        "V_nu",
+        "g_nu",
+        "u_0, u_1",
+        "u",
+        "s_0, s_1",
+        "KL",
+        "J_{0,nu}(u_0), J_{1,nu}(u_1)",
+        "J_nu(u)",
+        "dot_pi_nu(u)",
+        "H_nu",
+        "U_nu",
+        "kappa_nu",
+        "h",
+        "nu^(u,h)",
+        "h_T(nu,u)",
+        "underline_m, overline_m",
+        "underline_r",
+        "K(underline_m, overline_m, underline_r)"
+      ],
+      "binds_sampling_model": true,
+      "disposition": "reuse",
+      "reuse": "Causalean.Stat.IIDSample",
+      "modules": [
+        "Causalean.Stat.Sample",
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic",
+        "Mathlib.MeasureTheory.Measure.ProbabilityMeasure",
+        "Mathlib.Probability.Moments.Basic"
+      ],
+      "notes": "REUSE (round-2 correction): the i.i.d. superpopulation SAMPLING substrate is Causalean.Stat.IIDSample — it packages Z : ℕ → Ω → X with meas (measurability), indep (iIndepFun), identDist (identical distribution), and law ((μ.map (Z 0)) = P). Instantiate X = the PO pair space [0,1]^2 (Icc 0 1 × Icc 0 1) and P = nu, so the i.i.d. draws (Y_t(0),Y_t(1)) ~ nu ARE an IIDSample; do NOT rebuild i.i.d. sampling from scratch. LOCAL EXTENSION (kept local, existing decls do not provide it): the superpopulation PO law nu on [0,1]^2 itself, its arm marginals nu_0,nu_1, and all arm-law functionals (root second moments m_a, tangent strengths r_{a,nu}, L2(nu_a) score program J_{a,nu}, oracle allocation/curvature/complexity, local perturbation path nu^(u,h)) plus PO-specific bounded/support fields, scaffolded over Mathlib probability measures on top of the reused IIDSample. Causalean/PO/* and Experimentation/DesignBased are DESIGN-BASED (fixed finite POs), so those functionals stay local; only the i.i.d. sampling packaging is reused."
+    },
+    {
+      "id": "S2",
+      "world": "Adaptive sequential two-arm experiment / joint law: predictable assignment probabilities pi_t (H_{t-1}-measurable), A_t | H_{t-1} ~ Bernoulli(pi_t), observed Y_t = A_t Y_t(1)+(1-A_t)Y_t(0) over horizon T, with joint law P_{nu,Alg} on ((0,1)x{0,1}x[0,1])^T and cumulative Neyman regret functional.",
+      "binds_symbols": [
+        "T",
+        "t",
+        "H_{t-1}",
+        "A_t",
+        "pi_t",
+        "Y_t",
+        "Alg",
+        "P_{nu,Alg}",
+        "mathfrak_R_T(Alg,nu)"
+      ],
+      "binds_sampling_model": true,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic",
+        "Causalean.Mathlib.Probability.BernoulliMeasure",
+        "Mathlib.MeasureTheory.Measure.GiryMonad",
+        "Mathlib.MeasureTheory.Constructions.Pi"
+      ],
+      "notes": "SYNC-BACK (F2): the planned reuse of Causalean.Experimentation.Sequential.AdaptiveExperiment is DROPPED. AdaptiveExperiment's world is an abstract (Ω, m0) with a filtration ℱ and an adapted [0,1] propensity process but NO probability measure and no observed-history value space, so it cannot host the concrete sequential joint-law kernel composition that the regret INTEGRAL requires (∫ over the record path space). The S2 world is realized concretely: AdaptiveAlgorithm is a history-measurable strict-interior strategy `policy : ∀ t, (Fin t → ℝ×ℝ×ℝ) → ℝ` valued in (0,1) (predictability = measurability-in-observed-history), and jointLaw is the iterated Measure.bind of stepKernel (IIDSample draw + Bernoulli assignment + observed outcome) over Fin T, giving a genuine law on ((0,1)×{0,1}×[0,1])^T. Predictability/strict-interior is faithful; the bare-AdaptiveExperiment predictability substrate is superseded by the concrete strategy. ORIGINAL NOTE: reuse Causalean.Experimentation.Sequential.AdaptiveExperiment ONLY as the PREDICTABILITY SUBSTRATE — it packages a filtration ℱ : Filtration ℕ m0 (models H_{t-1}), a propensity process propensity : ℕ → Ω → ℝ (the pi_t), propensity_adapted (Adapted ℱ propensity: predictable/non-anticipating), and propensity_nonneg / propensity_le_one (CLOSED [0,1] bounds). It is NOT the full realization of the S2 world: the core binds pi_t in the OPEN interval (0,1) and P_{nu,Alg} on ((0,1)x{0,1}x[0,1])^T, and the regret denominator V_nu(pi)=m_1^2/pi+m_0^2/(1-pi) needs pi_t strictly interior. AdaptiveExperiment's closed [0,1] bounds admit pi_t=0 or 1 and do NOT host the strict-interior propensity world. Therefore the S2 world is a LOCAL EXTENSION of AdaptiveExperiment (def:algorithm-class = AdaptiveAlgorithm) that ADDS explicit strict propensity fields (0 < pi_t and pi_t < 1) — equivalently the inherited AdaptiveExperiment.HasOverlap margin (δ ≤ propensity ≤ 1-δ, propensity_pos_of_overlap) upgraded to a nonvacuous interior predicate matching (0,1). Also LOCAL (existing decls do not provide it): the Bernoulli conditional randomization A_t | H_{t-1} ~ Bernoulli(pi_t) (via Causalean.Mathlib.Probability.BernoulliMeasure.bernoulliLaw), the observed outcome map Y_t = A_t Y_t(1)+(1-A_t)Y_t(0), and the FULL sequential joint law P_{nu,Alg} on ((0,1)x{0,1}x[0,1])^T (kernel composition of the reused IIDSample draws + the strict-interior predictable propensity + Bernoulli assignment). Do NOT rebuild the filtration/adaptedness from scratch (reuse AdaptiveExperiment); do NOT treat bare AdaptiveExperiment as the S2 world (its (0,1) interior is added locally)."
+    }
+  ],
+  "nodes": {
+    "ass:bounded-outcomes": {
+      "lean_kind": "assumption",
+      "lean_name": "BoundedOutcomes",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "kind": "modeling",
+      "notes": "Prop: supp(nu) subseteq [0,1]^2. Bounded-outcome modeling restriction; threaded hypothesis, bundled into MInt/MTan/MBand. Small support/measure predicate over nu."
+    },
+    "ass:superpopulation-iid": {
+      "lean_kind": "assumption",
+      "lean_name": "SuperpopulationIID",
+      "disposition": "reuse",
+      "reuse": "Causalean.Stat.IIDSample",
+      "modules": [
+        "Causalean.Stat.Sample",
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "kind": "sampling",
+      "notes": "REUSE (round-2 correction): the i.i.d. sampling condition ((Y_t(0),Y_t(1)))_{t=1..T} i.i.d. with common law nu IS realized by Causalean.Stat.IIDSample instantiated at X = [0,1]^2 (PO pair space) and P = nu — its fields Z (draws), meas, indep (iIndepFun), identDist, law ((μ.map (Z 0)) = nu) exactly encode this atom. The SuperpopulationIID Prop wraps a (Nonempty) IIDSample plus the PO-specific bounded/support fields (supp ⊆ [0,1]^2) locally. Remains a THREADED sampling hypothesis (NOT discharged: IIDSample packages the model, it does not prove the data satisfies it) — still inline in def:joint-law, thm:instance-local-minimax, lem:local-neighborhood-cumulative-risk. Prior round rebuilt this from scratch; now reused."
+    },
+    "ass:predictable-design": {
+      "lean_kind": "assumption",
+      "lean_name": "PredictableDesign",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "kind": "design",
+      "notes": "SYNC-BACK (F2): AdaptiveExperiment reuse dropped (see S2). PredictableDesign is a local Prop def over the concrete strategy `policy : ∀ t, (Fin t → ℝ×ℝ×ℝ) → ℝ`: (∀ t, Measurable (policy t)) ∧ ∀ t h, policy t h ∈ Ioo 0 1 — i.e. H_{t-1}-measurability (measurability in the observed history, realizing the core atom) AND the strict (0,1) interior (the plan's D0 refinement matching π_t's space). ORIGINAL NOTE: SUBSTRATE-REUSE + LOCAL STRICT-INTERIOR (round-3 correction, ass:predictable-design FLAG-type-fit): the predictable (non-anticipating) design condition — pi_t is H_{t-1}-measurable AND pi_t valued in the OPEN interval (0,1) for each t. Its MEASURABILITY/adaptedness half REUSES the Causalean.Experimentation.Sequential.AdaptiveExperiment substrate (filtration ℱ = H_{t-1}, propensity process = pi_t, propensity_adapted = Adapted ℱ propensity = predictability) — do NOT rebuild the filtration/adapted predicate. But AdaptiveExperiment supplies only propensity_nonneg/propensity_le_one (CLOSED [0,1]), which the core's (0,1) assignment-probability space does NOT match (the regret denominator needs strict interior). So this assumption is a LOCAL Prop def that pairs the reused adaptedness with EXPLICIT STRICT-INTERIOR fields 0 < pi_t and pi_t < 1 (equivalently the AdaptiveExperiment.HasOverlap margin δ ≤ propensity ≤ 1-δ as a nonvacuous interior predicate). Remains a THREADED design hypothesis, bundled through def:algorithm-class (AdaptiveAlgorithm, which extends AdaptiveExperiment and carries the strict-interior fields). Prior round reused bare AdaptiveExperiment (closed [0,1] only) as the full realization; now the strict (0,1) interior is added locally."
+    },
+    "ass:bernoulli-randomization": {
+      "lean_kind": "assumption",
+      "lean_name": "BernoulliRandomization",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "kind": "design",
+      "notes": "Prop: A_t | H_{t-1} ~ Bernoulli(pi_t). SYNC-BACK (F2): NOT a field of AdaptiveAlgorithm — it is a functional of nu (the assignment-marginal law), whereas AdaptiveAlgorithm is nu-agnostic, so it cannot be a structure member. Realized as a threaded atom `BernoulliRandomization (nu) (Alg) : Prop := ∀ t hist, (stepKernel nu (policy t hist)).map (·.2.1) = bernoulliLaw (policy t hist)` — construction-true for the jointLaw kernel composition (which bakes in bernoulliLaw), kept as an honest threaded modeling atom."
+    },
+    "ass:interior-second-moments": {
+      "lean_kind": "assumption",
+      "lean_name": "InteriorSecondMoments",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "kind": "modeling",
+      "notes": "Prop: m_a > 0 for a in {0,1}. Interior/positivity modeling restriction guaranteeing an interior Neyman allocation; threaded hypothesis, bundled into MInt/MTan/MBand."
+    },
+    "ass:arm-tangent-nondegeneracy": {
+      "lean_kind": "assumption",
+      "lean_name": "ArmTangentNondegeneracy",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "kind": "modeling",
+      "notes": "Prop: inf_{b0,b1} int (y^2-b0-b1 y)^2 dnu_a > 0 for a in {0,1} (y^2 not a.s. affine in y; >2 support points). Strong-identification / non-degenerate-information modeling condition (D0.R provisional, faithful-refinement). Threaded hypothesis, member of MTan/MBand."
+    },
+    "ass:interior-band": {
+      "lean_kind": "assumption",
+      "lean_name": "InteriorBand",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "kind": "modeling",
+      "constants": [
+        "underline_m",
+        "overline_m"
+      ],
+      "notes": "Prop: underline_m <= m_a <= overline_m for a in {0,1}. Compact interior moment/overlap band (D0.R provisional). Radii are named class constants controlling only frontier constant K, not the log T rate. Member of MBand."
+    },
+    "ass:tangent-band": {
+      "lean_kind": "assumption",
+      "lean_name": "TangentBand",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "kind": "modeling",
+      "constants": [
+        "underline_r"
+      ],
+      "notes": "Prop: underline_r <= inf_{b0,b1} int (y^2-b0-b1 y)^2 dnu_a for a in {0,1}. Uniform tangent-strength / Fisher-information lower bound (D0.R provisional). Radius is a named class constant controlling only K. Member of MBand."
+    },
+    "def:model-class": {
+      "lean_kind": "structure",
+      "lean_name": "MInt",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "members": [
+        "ass:bounded-outcomes",
+        "ass:interior-second-moments"
+      ],
+      "notes": "Interior bounded-outcome model class; structure bundling BoundedOutcomes + InteriorSecondMoments over a law nu on [0,1]^2."
+    },
+    "def:tangent-model-class": {
+      "lean_kind": "structure",
+      "lean_name": "MTan",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "members": [
+        "ass:bounded-outcomes",
+        "ass:interior-second-moments",
+        "ass:arm-tangent-nondegeneracy"
+      ],
+      "notes": "Tangent-regular model class M_tan = MInt + ArmTangentNondegeneracy; the world every local-converse lemma is stated over."
+    },
+    "def:joint-law": {
+      "lean_kind": "def",
+      "lean_name": "jointLaw",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "inputs": [
+        "nu",
+        "Alg",
+        "T"
+      ],
+      "notes": "SYNC-BACK (F2): realized as `pathLaw nu Alg.policy T`, the iterated Measure.bind of `stepKernel nu (policy t hist)` over Fin T (Measure.dirac base at T=0, Fin.snoc extension), where stepKernel = nu.bind (draw PO pair) ∘ bernoulliLaw (assignment) ∘ dirac (observed record). The AdaptiveExperiment reuse for the predictable-propensity substrate is dropped (see S2); the i.i.d. nu draws are baked in per-round (giving the ass:superpopulation-iid model), the strict-interior predictable propensity is Alg.policy, and Bernoulli is bernoulliLaw. ORIGINAL NOTE: Construction: sequential kernel-composition joint law P_{nu,Alg} on ((0,1)x{0,1}x[0,1])^T from the i.i.d. nu draws (reused Causalean.Stat.IIDSample, S1) + the STRICT-INTERIOR predictable propensity pi_t in (0,1) (adaptedness reused from Causalean.Experimentation.Sequential.AdaptiveExperiment, S2, with the (0,1) interior added locally via AdaptiveAlgorithm's strict fields — see def:algorithm-class) + Bernoulli(pi_t) assignment + observed Y_t. The (0,1) factor of the state space is exactly this strict-interior propensity. LOCAL EXTENSION: the full joint-law kernel composition itself is built over Mathlib.Probability.Kernel + Causalean.Mathlib.Probability.BernoulliMeasure; the existing IIDSample/AdaptiveExperiment decls supply the i.i.d. draws and predictable(-adapted) propensity but NOT the strict-interior interval nor this full adaptive joint-law construction (searched Experimentation/*, none provides it)."
+    },
+    "def:oracle-allocation": {
+      "lean_kind": "def",
+      "lean_name": "oracleAllocation",
+      "disposition": "reuse",
+      "reuse": "Causalean.Experimentation.DesignBased.neymanFraction",
+      "modules": [
+        "Causalean.Experimentation.DesignBased.Optimality.Neyman",
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "inputs": [
+        "m_0, m_1"
+      ],
+      "notes": "REUSE (round-3 correction, directive item 3): the oracle Neyman allocation pi_nu_star = m_1/(m_0+m_1) IS Causalean.Experimentation.DesignBased.neymanFraction A B = sqrt A/(sqrt A + sqrt B) instantiated at A = m_1^2, B = m_0^2 (then sqrt A = m_1, sqrt B = m_0 since m_a>0, so neymanFraction (m_1^2) (m_0^2) = m_1/(m_0+m_1) = pi_nu_star exactly). oracleAllocation nu := neymanFraction (m_1 nu ^ 2) (m_0 nu ^ 2) is a one-line DERIVED wrapper (same reuse-by-derivation pattern as def:algorithm-class extending AdaptiveExperiment); do NOT re-derive the sqrt/allocation algebra locally. Reuse the supporting DesignBased lemmas: neymanFraction_mem_Ioo (0<pi_nu_star<1 interior, discharges the interior-allocation obligation from ass:interior-second-moments m_a>0) and neyman_allocation_eq_at_fraction (V_nu(pi_nu_star) = neymanOptimalValue (m_1^2) (m_0^2) = (m_0+m_1)^2, feeding lem:neyman-gap-identity). Prior round kept this local; now routed to the DesignBased primitives per CKPT-1 reuse audit."
+    },
+    "def:variance-objective": {
+      "lean_kind": "def",
+      "lean_name": "varianceObjective",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "inputs": [
+        "m_0, m_1"
+      ],
+      "notes": "V_nu(pi) = m_1^2/pi + m_0^2/(1-pi). Analogous decl: Causalean.Experimentation.DesignBased.neyman_allocation_lower_bound proves A/x+B/(1-x) >= (sqrt A+sqrt B)^2 (the minimum value), reusable as the lower-bound half; the exact gap identity is built-inline (lem:neyman-gap-identity). One-line def."
+    },
+    "def:neyman-gap": {
+      "lean_kind": "def",
+      "lean_name": "neymanGap",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "inputs": [
+        "V_nu",
+        "pi_nu_star"
+      ],
+      "notes": "g_nu(pi) = V_nu(pi) - V_nu(pi_nu_star). One-line def over varianceObjective/oracleAllocation."
+    },
+    "def:algorithm-class": {
+      "lean_kind": "structure",
+      "lean_name": "AdaptiveAlgorithm",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "members": [
+        "ass:predictable-design"
+      ],
+      "notes": "SYNC-BACK (F2): AdaptiveExperiment reuse dropped (see S2); members reduced to [ass:predictable-design] since ass:bernoulli-randomization is a nu-functional realized by jointLaw, not a nu-agnostic structure field (see that node). AdaptiveAlgorithm := { policy : ∀ t, (Fin t → ℝ×ℝ×ℝ) → ℝ ; predictable : PredictableDesign policy } — a concrete history-measurable strict-interior strategy. ORIGINAL NOTE: PARTIAL-REUSE/EXTEND (round-3 correction, def:algorithm-class FLAG-type-fit): AdaptiveAlgorithm EXTENDS Causalean.Experimentation.Sequential.AdaptiveExperiment as its PREDICTABILITY SUBSTRATE — inheriting ℱ (filtration), propensity (= pi_t), propensity_adapted (predictability). BUT AdaptiveExperiment inherits only CLOSED-bound propensities (propensity_nonneg/propensity_le_one, so it can admit pi_t = 0 or 1), while the core A_T / joint-law / regret functional require pi_t in the OPEN (0,1). Bare AdaptiveExperiment is therefore only a PARTIAL fit, NOT a total realization. FIX: AdaptiveAlgorithm ADDS EXPLICIT STRICT-INTERIOR propensity fields propensity_pos (0 < pi_t) and propensity_lt_one (pi_t < 1) — equivalently it includes the inherited AdaptiveExperiment.HasOverlap margin (δ ≤ propensity ≤ 1-δ, propensity_pos_of_overlap) as a nonvacuous interior predicate — so its realized propensity is valued in (0,1) exactly as the core assignment-probability space demands. These strict fields together REALIZE the ass:predictable-design member (adaptedness from the substrate + strict interior added here). It also ADDS the ass:bernoulli-randomization member (A_t | H_{t-1} ~ Bernoulli(pi_t) via BernoulliMeasure.bernoulliLaw) as a local field. members == core by_member_properties = [ass:predictable-design, ass:bernoulli-randomization] (P2). Algorithm class A_T over horizon T. Do NOT use bare AdaptiveExperiment as the full AdaptiveAlgorithm realization — the strict (0,1) interior is a required local extension, not inherited."
+    },
+    "def:cumulative-regret": {
+      "lean_kind": "def",
+      "lean_name": "cumulativeNeymanRegret",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "inputs": [
+        "Alg",
+        "g_nu",
+        "P_{nu,Alg}",
+        "T"
+      ],
+      "notes": "mathfrak_R_T(Alg,nu) = int [sum_{t=1}^T g_nu(pi_t)] dP_{nu,Alg}. Headline functional; integral of summed per-round Neyman gaps against the joint law."
+    },
+    "def:arm-tangent-strengths": {
+      "lean_kind": "def",
+      "lean_name": "armTangentStrength",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "target_file": "Basic.lean",
+      "defer_tier": false,
+      "gate": false,
+      "inputs": [
+        "nu_0, nu_1"
+      ],
+      "notes": "r_{a,nu} = inf_{b0,b1} int (y^2-b0-b1 y)^2 dnu_a as an iInf over ℝ×ℝ of the squared-residual integral. SYNC-BACK (F2): relocated from Helpers/ScoreProgram to Basic.lean so the assumption atoms ArmTangentNondegeneracy and TangentBand (both in Basic) can reference it without a circular import; ScoreProgram (which imports Basic) still uses it freely."
+    },
+    "def:arm-score-costs": {
+      "lean_kind": "def",
+      "lean_name": "armScoreCost",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Helpers.ScoreProgramDefs"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "inputs": [
+        "nu_0, nu_1",
+        "u_0, u_1",
+        "s_0, s_1"
+      ],
+      "notes": "J_{a,nu}(u_a) = inf { int s^2 dnu_a : int s dnu_a=0, int y s dnu_a=0, int y^2 s dnu_a=u_a }. Constrained L2 minimization; value proved =u_a^2/r_{a,nu} in lem:arm-score-program-solution. Build local over Mathlib L2. [SYNC-BACK F2: relocated to Helpers/ScoreProgramDefs.lean (file split of the ScoreProgram/Tilt helper cluster into ScoreProgramDefs/TiltConstruction/TiltBand for post-proof file-length; @node tag lives in that file).]",
+      "target_file": "Helpers/ScoreProgramDefs.lean"
+    },
+    "def:local-information": {
+      "lean_kind": "def",
+      "lean_name": "localInformation",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Helpers.ScoreProgramDefs"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "inputs": [
+        "pi_nu_star",
+        "J_{0,nu}(u_0), J_{1,nu}(u_1)",
+        "u"
+      ],
+      "notes": "J_nu(u) = pi_nu_star J_{1,nu}(u_1) + (1-pi_nu_star) J_{0,nu}(u_0). One-line def. [SYNC-BACK F2: relocated to Helpers/ScoreProgramDefs.lean (file split of the ScoreProgram/Tilt helper cluster into ScoreProgramDefs/TiltConstruction/TiltBand for post-proof file-length; @node tag lives in that file).]",
+      "target_file": "Helpers/ScoreProgramDefs.lean"
+    },
+    "def:oracle-sensitivity": {
+      "lean_kind": "def",
+      "lean_name": "oracleSensitivity",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "inputs": [
+        "u_0, u_1",
+        "m_0, m_1"
+      ],
+      "notes": "dot_pi_nu(u) = (u_1 m_0/m_1 - u_0 m_1/m_0) / (2(m_0+m_1)^2). One-line algebraic def."
+    },
+    "def:loss-curvature": {
+      "lean_kind": "def",
+      "lean_name": "lossCurvature",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "inputs": [
+        "m_0, m_1"
+      ],
+      "notes": "H_nu = (m_0+m_1)^4/(m_0 m_1). One-line def."
+    },
+    "def:feasible-direction-set": {
+      "lean_kind": "def",
+      "lean_name": "feasibleDirectionSet",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Helpers.ScoreProgramDefs"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "inputs": [
+        "J_nu(u)",
+        "dot_pi_nu(u)"
+      ],
+      "notes": "U_nu = {u in R^2 : 0 < J_nu(u) < infinity and dot_pi_nu(u) != 0}. Set/predicate def over localInformation and oracleSensitivity. [SYNC-BACK F2: relocated to Helpers/ScoreProgramDefs.lean (file split of the ScoreProgram/Tilt helper cluster into ScoreProgramDefs/TiltConstruction/TiltBand for post-proof file-length; @node tag lives in that file).]",
+      "target_file": "Helpers/ScoreProgramDefs.lean"
+    },
+    "def:local-complexity": {
+      "lean_kind": "def",
+      "lean_name": "localComplexity",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Helpers.ScoreProgramDefs"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "inputs": [
+        "U_nu",
+        "H_nu",
+        "dot_pi_nu(u)",
+        "J_nu(u)"
+      ],
+      "notes": "kappa_nu = sup_{u in U_nu} S_nu^2 dot_pi_nu(u)^2/J_nu(u), S_nu=m_0+m_1 (corrected S^2-scaled complexity). sSup over the feasible directions; closed form via lem:local-complexity-rayleigh. [SYNC-BACK F2: relocated to Helpers/ScoreProgramDefs.lean (file split of the ScoreProgram/Tilt helper cluster into ScoreProgramDefs/TiltConstruction/TiltBand for post-proof file-length; @node tag lives in that file).]",
+      "target_file": "Helpers/ScoreProgramDefs.lean"
+    },
+    "def:local-path-handle": {
+      "lean_kind": "def",
+      "lean_name": "IsLocalPath",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Helpers.Tilt"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "inputs": [
+        "nu",
+        "u",
+        "h",
+        "J_{0,nu}(u_0), J_{1,nu}(u_1)"
+      ],
+      "notes": "Construction predicate: a bounded-support path h -> nu^(u,h) with nu^(u,0)=nu, EACH p h a probability measure (a law, per core nu^(u,h) in laws on [0,1]^2), supp(p h) subseteq [0,1]^2, preserved arm means, m_a(h)^2=m_a^2+h u_a+o(h), KL(nu_a^h,nu_a)=(h^2/2)J_{a,nu}(u_a)+o(h^2). def : (R -> Measure) -> Prop bundling the clauses (uses Mathlib littleO / KL). SCAFFOLD REDIRECT (sym:nu^(u,h)): added the `forall h, IsProbabilityMeasure (p h)` clause so the symbol's space (a law on [0,1]^2) holds across the IsLocalPath/IsLinearTiltPath cluster conjunction; the bounded-support clause alone did not pin p h to a probability measure. Strengthening ripples to lem:path-existence (conclusion) and thm:instance-local-minimax (threads IsLocalPath); thm:global-log-rate's path measures already carry MInt.isLaw via MBand. Realized concretely by lem:linear-tilt-path-valid."
+    },
+    "def:testing-scale": {
+      "lean_kind": "def",
+      "lean_name": "testingScale",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Helpers.ScoreProgramDefs"
+      ],
+      "target_file": "Helpers/ScoreProgramDefs.lean",
+      "defer_tier": false,
+      "gate": false,
+      "inputs": [
+        "T",
+        "J_nu(u)"
+      ],
+      "notes": "h_T(nu,u) = (log T/(T J_nu(u)))^(1/2). One-line def (Real.log, Real.sqrt). SYNC-BACK (F2): relocated from Basic to Helpers/ScoreProgram since it references localInformation (J_nu), which lives in ScoreProgram. [SYNC-BACK F2: relocated to Helpers/ScoreProgramDefs.lean (file split of the ScoreProgram/Tilt helper cluster into ScoreProgramDefs/TiltConstruction/TiltBand for post-proof file-length; @node tag lives in that file).]"
+    },
+    "def:regular-band-class": {
+      "lean_kind": "structure",
+      "lean_name": "MBand",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "members": [
+        "ass:bounded-outcomes",
+        "ass:interior-second-moments",
+        "ass:arm-tangent-nondegeneracy",
+        "ass:interior-band",
+        "ass:tangent-band"
+      ],
+      "notes": "Compact tangent-regular band class M(underline_m,overline_m,underline_r) = MTan + InteriorBand + TangentBand; structure over which the global minimax converse is stated."
+    },
+    "lem:arm-score-program-solution": {
+      "lean_kind": "lemma",
+      "lean_name": "arm_score_program_solution",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Helpers.ScoreProgramDefs"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/ScoreProgramDefs.lean",
+      "hyps": [
+        "def:tangent-model-class"
+      ],
+      "notes": "J_{a,nu}(x)=x^2/r_{a,nu}, minimizer s_a^x = x e_a/r_{a,nu} (e_a = L2(nu_a) residual of y^2 on span{1,y}), scores bounded on [0,1]. Hilbert-space projection + Cauchy-Schwarz on finite-dim L=span{1,y}. Build-inline over Mathlib InnerProductSpace/orthogonalProjection. Searched Causalean Stat/Orthogonality, Stat/GMM for an L2 residual/projection cost lemma of this exact shape — analogous projection algebra in GMM/VarianceAlgebra but not this constrained-score program; build local. [SYNC-BACK F2: relocated to Helpers/ScoreProgramDefs.lean (file split of the ScoreProgram/Tilt helper cluster into ScoreProgramDefs/TiltConstruction/TiltBand for post-proof file-length; @node tag lives in that file).]"
+    },
+    "lem:linear-tilt-path-valid": {
+      "lean_kind": "lemma",
+      "lean_name": "linear_tilt_path_valid",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Helpers.TiltConstruction"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/TiltConstruction.lean",
+      "hyps": [
+        "def:tangent-model-class"
+      ],
+      "notes": "The linear tilt dnu_a^h=(1+h s_a)dnu_a for small |h| is a bounded-support probability law preserving arm mean, perturbing second moment as m_a^2+h u_a, with KL(nu_a^h,nu_a)=(h^2/2)J_{a,nu}(u_a)+o(h^2). Bounded-score tilt + (1+x)log(1+x) expansion. Build-inline over Mathlib; may reference Causalean.Mathlib.InformationTheory.KLBind for KL manipulation. Medium (bounded measure-theory). [SYNC-BACK F2: relocated to Helpers/TiltConstruction.lean (file split of the ScoreProgram/Tilt helper cluster into ScoreProgramDefs/TiltConstruction/TiltBand for post-proof file-length; @node tag lives in that file).]"
+    },
+    "lem:path-existence": {
+      "lean_kind": "lemma",
+      "lean_name": "path_existence",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Helpers.TiltConstruction"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/TiltConstruction.lean",
+      "hyps": [
+        "def:tangent-model-class"
+      ],
+      "notes": "Existence of a bounded-support path satisfying IsLocalPath for every u with 0<J_nu(u)<infinity. Assembles arm_score_program_solution + linear_tilt_path_valid + product coupling of arm marginals. Build-inline. [SYNC-BACK F2: relocated to Helpers/TiltConstruction.lean (file split of the ScoreProgram/Tilt helper cluster into ScoreProgramDefs/TiltConstruction/TiltBand for post-proof file-length; @node tag lives in that file).]"
+    },
+    "lem:neyman-gap-identity": {
+      "lean_kind": "lemma",
+      "lean_name": "neyman_gap_identity",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Helpers.NeymanAlgebra"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/NeymanAlgebra.lean",
+      "hyps": [
+        "ass:interior-second-moments"
+      ],
+      "notes": "V_nu(pi)-V_nu(p) = S^2(pi-p)^2/[pi(1-pi)], S=m_0+m_1, p=m_1/S=oracleAllocation (reused neymanFraction). Pure field algebra (field_simp/ring) for the (pi-p) identity. REUSE the value at the optimum from DesignBased: neyman_allocation_eq_at_fraction gives V_nu(p)=neymanOptimalValue (m_1^2)(m_0^2)=(m_0+m_1)^2=S^2, and neyman_allocation_lower_bound gives the min-value bound; only the exact quadratic gap ratio is built inline. Small."
+    },
+    "lem:local-complexity-rayleigh": {
+      "lean_kind": "lemma",
+      "lean_name": "local_complexity_rayleigh",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Helpers.ScoreProgram"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/ScoreProgram.lean",
+      "hyps": [
+        "ass:interior-second-moments",
+        "ass:arm-tangent-nondegeneracy"
+      ],
+      "notes": "J_nu(u)=p u_1^2/r_1+(1-p)u_0^2/r_0 and kappa_nu={r_0 m_1^2/m_0^3+r_1 m_0^2/m_1^3}/[4 S]. Rayleigh-quotient identity for a diagonal positive quadratic form: sup (alpha u1+beta u0)^2/(a u1^2+b u0^2)=alpha^2/a+beta^2/b. Build-inline; the Rayleigh sup is a Cauchy-Schwarz equality case. Medium (sSup computation)."
+    },
+    "lem:feasible-directions": {
+      "lean_kind": "lemma",
+      "lean_name": "feasible_directions_nonempty",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Helpers.ScoreProgram"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/ScoreProgram.lean",
+      "hyps": [
+        "def:tangent-model-class"
+      ],
+      "notes": "U_nu nonempty (witness u=(0,1)) and 0<kappa_nu<infinity, via arm_score_program_solution + local_complexity_rayleigh. Build-inline."
+    },
+    "prop:quadratic-loss-expansion": {
+      "lean_kind": "lemma",
+      "lean_name": "quadratic_loss_expansion",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Helpers.NeymanAlgebra"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/NeymanAlgebra.lean",
+      "hyps": [
+        "def:tangent-model-class"
+      ],
+      "notes": "g_nu(pi_nu_star+delta)=H_nu delta^2+o(delta^2); along IsLocalPath, pi_{nu^(u,h)}_star=pi_nu_star+h dot_pi_nu(u)+o(h). Taylor/sqrt expansion from neyman_gap_identity + m_a(h)=m_a+h u_a/(2 m_a)+o(h). Build-inline over Mathlib Asymptotics.IsLittleO. Medium."
+    },
+    "prop:balanced-base-law": {
+      "lean_kind": "lemma",
+      "lean_name": "balanced_base_law",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Helpers.Balanced"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/Balanced.lean",
+      "hyps": [
+        "def:tangent-model-class"
+      ],
+      "notes": "SYNC-BACK (F2): relocated from Helpers/NeymanAlgebra.lean to Helpers/Balanced.lean (F3 file split; keeps NeymanAlgebra small). The balanced witness (balanced_diagonal_threePoint_mtan_witness, a self-contained symmetric 3-point law on {0,1/2,1}) no longer depends on the removed closed-form-frontier envelope. If m_0=m_1 then pi_nu_star=1/2 and fixed design pi_t=1/2 gives zero regret; plus a balanced witness law with kappa_nu>0. Algebra + explicit example via feasible_directions_nonempty. Build-inline."
+    },
+    "lem:band-continuity-for-linear-tilts": {
+      "lean_kind": "lemma",
+      "lean_name": "band_continuity_for_linear_tilts",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Helpers.TiltBand"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/TiltBand.lean",
+      "hyps": [
+        "def:regular-band-class"
+      ],
+      "notes": "For nu strict-interior in the band, a linear tilt nu^(u,h) stays in MBand for |h|<=eta. Continuity of arm moments (order <=4) and of the projection residual r_{a,nu^(u,h)} in h (Gram matrix stays nonsingular). Build-inline over Mathlib continuity of integral-of-bounded-polynomial. Medium. [SYNC-BACK F2: relocated to Helpers/TiltBand.lean (file split of the ScoreProgram/Tilt helper cluster into ScoreProgramDefs/TiltConstruction/TiltBand for post-proof file-length; @node tag lives in that file).] [SCAFFOLD REDIRECT (band-continuity derive-not-assume): the prior scaffold over-assumed the band-functional continuity by threading a LinearTiltBandFunctionalContinuity p premise (and a matching hcont premise on global_log_rate). The note DERIVES this continuity from the fixed finite-information linear-tilt construction, so both premises are DROPPED: band_continuity_for_linear_tilts now takes only hlin:IsLinearTiltPath / hp:IsLocalPath and derives `have hcont : LinearTiltBandFunctionalContinuity p := by sorry` in-proof; global_log_rate's hcont premise and its call-site argument are removed. LinearTiltBandFunctionalContinuity remains a local Prop def used internally.]"
+    },
+    "lem:bayes-cramer-rao-predictable": {
+      "lean_kind": "assumption",
+      "lean_name": "BayesCramerRaoPredictable",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Helpers.VanTrees"
+      ],
+      "defer_tier": true,
+      "gate": false,
+      "gate_class": "gated",
+      "target_file": "Helpers/VanTrees.lean",
+      "hyps": [],
+      "infrastructure_id": "I-1",
+      "notes": "SYNC-BACK (F2 van-Trees discharge, I-1 BUILT): the classical van Trees / Bayesian Cramer-Rao (multi-parameter, sequential/predictable) information inequality is now BUILT substrate -- Causalean.Stat.Limit.VanTreesInequality.van_trees_inequality (single-parameter van Trees in DQM regularity form) + Causalean.Stat.Limit.SequentialCumulativeRisk.sequential_cumulative_risk_regret (the harmonic accumulation engine, exposed locally via cumulative_risk_engine_uniform_threshold). BayesCramerRaoPredictable remains a Prop `def` in VanTrees.lean documenting the van-Trees statement + its concrete LocalNeighborhoodRiskInputs bridge, but is NO LONGER threaded as a hypothesis: it is DERIVED in-proof inside local_neighborhood_cumulative_risk (`have hVT : BayesCramerRaoPredictable.{u} := by sorry`, to be filled from van_trees_inequality), so gate=false and NO hVT premise appears on local_neighborhood_cumulative_risk nor on the headline theorems instance_local_minimax / global_log_rate. ORIGINAL NOTE: SUBSTRATE-GATE. E_q E_h[(delta-psi)^2] >= (int psi' q)^2/(I_q + int I q), with additive martingale Fisher information through a predictable history. depends_on=[] (standalone external tool), not the paper's novel content."
+    },
+    "lem:local-neighborhood-cumulative-risk": {
+      "lean_kind": "lemma",
+      "lean_name": "local_neighborhood_cumulative_risk",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.Helpers.SequentialRisk"
+      ],
+      "defer_tier": true,
+      "gate": false,
+      "target_file": "Helpers/SequentialRisk.lean",
+      "hyps": [
+        "def:algorithm-class",
+        "ass:superpopulation-iid"
+      ],
+      "infrastructure_id": "I-2",
+      "notes": "SYNC-BACK (F2 van-Trees discharge): the lem:bayes-cramer-rao-predictable hyp is REMOVED from the signature -- the van-Trees inequality is now BUILT substrate and DERIVED in-proof (`have hVT`, filled from Causalean.Stat.Limit.van_trees_inequality), not threaded. The harmonic accumulation reuses Causalean.Stat.Limit.sequential_cumulative_risk_regret (via cumulative_risk_engine_uniform_threshold). CRUX (large). The paper's core reduction: sup_{|h|<=eta} mathfrak_R_T(Alg,nu^(u,h)) >= c_0 S^2 dot_pi_nu(u)^2 J_nu(u)^{-1} log T. Turns second-moment learning delay into cumulative Neyman loss: quadratic loss lower bound (neyman_gap_identity + quadratic_loss_expansion) + sequential Fisher-information accounting of the tilted marginals through the predictable Bernoulli history + Bayes-average regret with a C^1 boundary-vanishing prior + van Trees (derived in-proof) + harmonic/dyadic accumulation to log T. defer_tier:true: difficulty is NOT entirely the gate -- it needs NEW sequential-experiment Fisher-information substrate (conditional Fisher info = sum of per-round infos, martingale score) absent from Causalean/Mathlib, so it is genuine crux infrastructure to build, conditional on the van Trees gate. Not dropped: consumers (headlines) remain planned. Search trace: grep 'sequential|predictable|Fisher|adaptive' Causalean/Stat, Causalean/Experimentation -> no sequential-Fisher-information / adaptive-lower-bound engine; Causalean/Mathlib/InformationTheory/KLBind (klDiv_bind_eq_of_base_recording) is the closest reusable KL-through-a-channel primitive to adapt. => build-inline crux (large)."
+    },
+    "thm:instance-local-minimax": {
+      "lean_kind": "theorem",
+      "lean_name": "instance_local_minimax",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.TInstanceLocalMinimax"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "TInstanceLocalMinimax.lean",
+      "hyps": [
+        "def:tangent-model-class",
+        "def:algorithm-class",
+        "ass:superpopulation-iid"
+      ],
+      "notes": "Headline instance-level converse: for every nu in M_tan and epsilon>0 there is u_epsilon in U_nu (H_nu dot_pi_nu^2/J_nu >= kappa_nu-epsilon) and eta>0 with sup_{|h|<=eta} mathfrak_R_T(Alg,nu^(u_epsilon,h)) >= c_0 (kappa_nu-epsilon) log T for all large T. Assembly/reduction: feasible_directions_nonempty + linear_tilt_path_valid + local_neighborhood_cumulative_risk + H_nu>=S_nu^2. defer_tier:false (in-scope assembly); its heavy engine local_neighborhood_cumulative_risk (and the threaded van Trees gate) are the infrastructure items. The van Trees gate reaches this theorem transitively via local_neighborhood_cumulative_risk (not in this node's depends_on, so not in its own hyps; F2 threads it through the lemma)."
+    },
+    "thm:global-log-rate": {
+      "lean_kind": "theorem",
+      "lean_name": "global_log_rate",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_NeymanRegretMinimax_Research.TGlobalLogRate"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "TGlobalLogRate.lean",
+      "hyps": [
+        "def:algorithm-class",
+        "def:regular-band-class"
+      ],
+      "notes": "Headline global converse: inf_{Alg} sup_{nu in MBand} mathfrak_R_T(Alg,nu) >= c(underline_m,overline_m,underline_r) log T for large T, with c ~ sup_{nu in M^circ} kappa_nu. Local-to-global lift: pick near-extremal nu_alpha in strict interior, linear_tilt_path_valid + band_continuity_for_linear_tilts keeps the neighborhood in MBand, apply local_neighborhood_cumulative_risk. defer_tier:false (assembly); infrastructure debt inherited via the lemma + van Trees gate."
+    }
+  },
+  "infrastructure_needed": [
+    {
+      "id": "I-1",
+      "kind": "autoid-lemma",
+      "description": "Substrate-gate: van Trees / Bayesian Cramer-Rao (multi-parameter, sequential/predictable) information inequality with additive martingale Fisher information; classical external tool absent from Causalean/Mathlib (requires differentiability-in-quadratic-mean + sequential Fisher-information scaffolding). Assumed visibly (gate), discharged before banking.",
+      "effort": "large"
+    },
+    {
+      "id": "I-2",
+      "kind": "autoid-lemma",
+      "description": "Crux: sequential-experiment cumulative-risk engine (local_neighborhood_cumulative_risk) -- conditional Fisher-information accounting of tilted arm marginals through the predictable Bernoulli history + Bayes-average cumulative Neyman regret with a boundary-vanishing C^1 prior + van Trees application + harmonic/dyadic accumulation to c_0 S^2 dot_pi^2 J^{-1} log T. New adaptive-experiment information substrate; built conditional on I-1.",
+      "effort": "large"
+    }
+  ],
+  "theorems": [
+    {
+      "theorem_local_id": "thm:instance-local-minimax"
+    },
+    {
+      "theorem_local_id": "thm:global-log-rate"
+    }
+  ],
+  "feasibility_notes": "Verdict: needs-new-infrastructure (planned, no statement dropped). The algebraic backbone is fully in-scope build-inline: oracle allocation / variance objective / Neyman-gap identity (analogous to the confirmed Causalean.Experimentation.DesignBased.neymanFraction / neyman_allocation_lower_bound, kept local for the superpopulation root-moment form), the Rayleigh closed form for kappa_nu, quadratic loss expansion, feasible-direction nonemptiness, and the balanced base-law sanity check. The score program (L2(nu_a) projection cost J_{a,nu}=x^2/r_{a,nu}), the linear-tilt path with its KL(second-moment) expansion, path existence, and band-continuity are build-inline measure-theory over Mathlib (KL manipulation can reuse Causalean.Mathlib.InformationTheory.KLBind). Three Defer items: (I-1) the classical van Trees / Bayesian Cramer-Rao sequential information inequality is a SUBSTRATE-GATE (external, standalone depends_on=[], not the paper's novel content) -- assumed visibly and threaded into local_neighborhood_cumulative_risk; (I-2) local_neighborhood_cumulative_risk is the crux reduction requiring NEW adaptive-experiment sequential-Fisher-information substrate (its difficulty is not entirely the gate, so defer_tier crux, built conditional on I-1); (I-3) rho_envelope_closed_form is a heavy self-contained real-algebraic envelope (quartic Sturm root + three-point extremal law). The world REUSES Causalean substrate for its two sampling pieces (round-2 correction): S1's i.i.d. superpopulation sampling reuses Causalean.Stat.IIDSample (Z/meas/indep/identDist/law) instantiated at X=[0,1]^2, P=nu; S2's predictable design reuses Causalean.Experimentation.Sequential.AdaptiveExperiment (filtration ℱ + adapted [0,1] propensity), which AdaptiveAlgorithm extends. The PO outcome law nu on [0,1]^2, its arm-law functionals, the Bernoulli conditional randomization, the observed outcome map, and the full sequential joint law P_{nu,Alg} remain local extensions over Mathlib, since IIDSample/AdaptiveExperiment do not provide that full PO/joint-law construction. Causalean's Minimax cluster is two-point/Fano/Pinsker (LeCamTwoPoint = leCam_two_point_L1_lower), not the continuum-prior van Trees route this converse uses. Both headline theorems (instance_local_minimax, global_log_rate) and the resolved frontier (closed_form_frontier) are planned as in-scope assemblies over these infrastructure lemmas; nothing is dropped. [DESCOPED FRONTIER: the closed-form class-frontier cluster (oeq:closed-form-frontier/class-frontier/frontier-duality-handle/rho-envelope-closed-form) needs measure-level Markov-Krein moment-envelope theory (IsLUB/attainment over measures, three-point extremal law, unique interior quartic root, dualRho continuity) — a genuine hard wall; 2 --study attempts halted. OEQ-level; headline theorems independent. Substrate-debt.]"
+}

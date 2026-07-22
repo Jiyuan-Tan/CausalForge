@@ -1,0 +1,357 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_proximal\_did\_bridge\_frontier, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_proximal\_did\_bridge\_frontier} / \texttt{v1}%
+  \\ \large\textit{Finite negative-control bridge frontier for proximal difference-in-differences}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is an exact-identification proposal with locked tuple
+\[
+(\texttt{qid},\texttt{specialization},\text{SWIG},\text{treatment},
+\text{target estimand},\text{identifying assumptions}).
+\]
+Here \(\texttt{qid}=\texttt{eid\_proximal\_did\_bridge\_frontier}\) and
+\(\texttt{specialization}=\texttt{v1}\).  The SWIG is a two-group,
+three-period panel with periods \(t\in\{-1,0,1\}\), group
+\(G\in\{0,1\}\), treatment \(D_t=G\one\{t=1\}\), observed outcome
+\(Y_t\), binary negative-control exposure \(W\in\{0,1\}\), binary
+negative-control outcome \(Z\in\{0,1\}\), and latent trend state \(U\).
+The treatment is the switch from \(D_0=0\) to \(D_1=1\) for the treated
+group \(G=1\).  The target estimand is
+\[
+\theta_{\mathrm{ATT}}=\E\{Y_1(1)-Y_1(0)\mid G=1\}.
+\]
+The identifying assumptions are consistency; no anticipation through
+period \(0\); negative-control exclusion for \((W,Z)\); preperiod bridge
+stability linking the untreated trend bias from \(0\) to \(1\) to the
+preperiod negative-control moment from \(-1\) to \(0\); positivity for
+all displayed conditional probabilities; and, for the ordinary branch,
+parallel trends.  The finite bridge-rank condition below is the candidate
+frontier to be characterized, not an identifying assumption.  The focal
+observable object is the finite pretrend-proxy bridge operator
+\[
+B_P(z,w)=\Pr_P(W=w\mid Z=z,G=1),\qquad
+b_P(z)=\E_P(Y_0-Y_{-1}\mid Z=z,G=1)-\E_P(Y_0-Y_{-1}\mid Z=z,G=0),
+\]
+with bridge class
+\[
+\mathcal H_P=\{h\in\R^{\{0,1\}}:B_Ph=b_P\}.
+\]
+The proximal DiD adjustment is
+\[
+\Gamma_P(h)=\sum_{w\in\{0,1\}} h(w)\Pr_P(W=w\mid G=1),
+\qquad
+\theta_{\mathrm{prox}}(P,h)=\theta_{\mathrm{did}}(P)-\Gamma_P(h),
+\]
+where
+\[
+\theta_{\mathrm{did}}(P)=
+\{\E_P(Y_1-Y_0\mid G=1)-\E_P(Y_1-Y_0\mid G=0)\}.
+\]
+
+\begin{abstract}
+Difference-in-differences can be read as a negative-control design, but the published proximal and negative-control literatures do not isolate the finite preperiod object that decides when proxy information replaces parallel trends.  This proposal studies a two-group, three-period, binary-proxy design and asks for the exact frontier among three regimes: ordinary parallel trends identifies the ATT, a proximal bridge identifies the ATT after parallel trends fails, and neither restriction identifies the ATT.  The focal object is the observable matrix pair \((B_P,b_P)\) and the loading \(\pi_P(w)=\Pr_P(W=w\mid G=1)\), not a generic completeness condition.  The main conjecture states that, on a finite nondegenerate class, primitive negative-control exclusion and bridge stability imply proximal DiD identifies the ATT if and only if the bridge equation is solvable and \(\pi_P\) annihilates every null bridge direction, while ordinary DiD identifies it if and only if the untreated trend bias is zero.  A worked binary law computes all three regimes and shows that the parallel-trends and proximal-bridge restrictions are neither nested nor equivalent.  If resolved, the result would turn negative-control DiD diagnostics into an identification frontier rather than a placebo-test convention.
+\end{abstract}
+
+\section{Introduction}
+Many applications have more credible negative controls than untreated-trend equality.  The question is whether two preperiods and a negative-control pair contain a finite bridge operator that identifies the treated counterfactual trend when ordinary parallel trends is false.  The headline claim is that the answer is governed by the observable pair \((B_P,b_P)\) and by a null-annihilator condition for the ATT loading.
+
+\citet[\S3.2, pp. 1157--1160]{MiaoGengTchetgen2018ProxyVariables} identify causal effects through proxy rank conditions, and \citet[\S3, pp. 12--15]{SoferRichardsonColicinoSchwartzTchetgen2016NOC} interpret DiD as a negative-outcome-control strategy under constant unobserved-confounder association.  Direct negative-control DiD estimators in \citet{Gregori2025DIDNegativeControls} and calibration designs in \citet{ZhangEtAl2025NCCDiD} use negative controls to remove omitted-trend bias, but they do not state the finite pretrend-proxy rank frontier that separates ordinary DiD, proximal DiD, and nonidentification.  The kernel lives in exact identification, with panel notation used only to define the observed law.
+
+The immediate consumer is negative-control DiD for real-world evidence and marketing panels, including \citet{PenningDeVriesGroenwold2023NegativeControls}, \citet{Gregori2025DIDNegativeControls}, and \citet{ZhangEtAl2025NCCDiD}.  A reader who accepts the conclusion would report the rank and null-loading frontier before treating negative-control balance as support for a DiD estimand.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: ordinary DiD and proximal DiD are two distinct exact-identification functionals in the finite binary-proxy design. Gap: \citet{SoferRichardsonColicinoSchwartzTchetgen2016NOC} gives the additive DiD control reading, while \citet{MiaoGengTchetgen2018ProxyVariables} gives generic proxy rank; neither states the joint frontier. Consumer: negative-control DiD applications in \citet{ZhangEtAl2025NCCDiD}.
+\item Conjecture 1: the bridge frontier is necessary and sufficient for proximal ATT identification on a nondegenerate finite class. Gap: \citet[\S3.2, pp. 1157--1160]{MiaoGengTchetgen2018ProxyVariables} assumes a rank condition and \citet[\S2--\S3]{ParkRichardsonTchetgen2024SingleProxy} separates single-proxy ATT identification from two-proxy proximal identification; the conjecture gives the finite DiD null-loading frontier. Consumer: \citet{PenningDeVriesGroenwold2023NegativeControls}.
+\item Theorem 2: a concrete \(2\times3\times2\times2\) witness exhibits parallel-trends-only, proximal-only, and neither-identified regimes, so the restrictions are neither nested nor equivalent. Gap: \citet{TchetgenParkRichardson2024UniversalDID} replaces additive parallel trends on outcome scale, and \citet{SoferRichardsonColicinoSchwartzTchetgen2016NOC} does not give pairwise non-nesting distributions. Consumer: empirical negative-control DiD design audits.
+\end{itemize}
+
+\section{Related work}
+\citet[\S3.2, pp. 1157--1160]{MiaoGengTchetgen2018ProxyVariables} is the closest proxy-identification anchor; it uses two proxies and rank conditions for causal identification but does not specialize the rank object to finite preperiod DiD moments.  \citet[\S2--\S3]{TchetgenTchetgenYingCuiShiMiao2024Proximal} gives the broader proximal causal-inference framework in which outcome and treatment bridges replace unmeasured-confounding adjustment.  \citet[\S3--\S4]{CuiPuShiMiaoTchetgen2024JASA} develops proximal ATE and ATT efficiency theory under bridge existence and completeness; the present question precedes efficiency and asks when the finite DiD bridge functional is identified at all.  \citet[\S3, pp. 12--15]{SoferRichardsonColicinoSchwartzTchetgen2016NOC} is the closest ordinary-DiD negative-control anchor because it links DiD to equal unobserved-confounder associations over exposure groups and time.  \citet{Gregori2025DIDNegativeControls} is direct prior art: its doubly robust negative-control DiD estimator targets omitted-covariate bias using NCO/NCE pairs, while this draft asks when the finite population bridge object exists and is unique before estimation.  \citet{ZhangEtAl2025NCCDiD} is also direct prior art because it calibrates DiD with negative controls in real-world data; its calibration step is a consumer of, not a substitute for, the rank and nonidentification frontier in Conjecture~\ref{conj:frontier}.  \citet{PenningDeVriesGroenwold2023NegativeControls} compares COCA, DiD, generalized DiD, and double-negative-control methods and motivates a finite assumption-separation theorem.  \citet[\S2--\S3]{ParkRichardsonTchetgen2024SingleProxy} identifies ATT with a single negative-control outcome proxy under different restrictions, which makes the two-proxy bridge frontier non-redundant.  \citet{TchetgenParkRichardson2024UniversalDID} replaces additive parallel trends with odds-ratio equi-confounding for noncontinuous outcomes, which shows that scale and restriction choice matter.  \citet{RambachanRoth2023ParallelTrends} supplies the main DiD sensitivity comparator; it bounds violations using pretrend restrictions rather than negative-control bridge rank.  \citet{EgamiYamauchi2023MultiplePretreatmentDID} shows that multiple pretreatment periods can test and weaken trend assumptions, but its double-DID and K-DID moments are not proximal bridge equations.  \citet{ImbensKallusMao2021MinimalBridgePanel} treats panel fixed effects through bridge functions in factor settings and is adjacent to, but distinct from, the finite negative-control table studied here.  The in-catalogue prior art in \texttt{doc/API.md} records mature panel Q1 algebra and an empty ExactID catalogue; the closest banked proposal is \texttt{eid\_proximal\_phase\_v1}, whose reviewer asked for finite examples exhibiting all three proximal phases with explicit certificates.  This draft answers that banked gap in a DiD-specific observed law rather than by reusing the earlier generic bridge-envelope LP.
+
+\section{Formal setup}
+Let the observed law \(P\) be the distribution of
+\[
+O=(G,Y_{-1},Y_0,Y_1,W,Z),
+\]
+where \(G,W,Z\in\{0,1\}\), \(0<\Pr(G=1)<1\), and all conditional probabilities used below are positive.  The treatment path is \(D_t=G\one\{t=1\}\), so \(G=1\) indexes the treated group.  Potential outcomes are \(Y_t(d)\), with no anticipation \(Y_{-1}=Y_{-1}(0)\) and \(Y_0=Y_0(0)\).  The target is \(\theta_{\mathrm{ATT}}=\E\{Y_1(1)-Y_1(0)\mid G=1\}\).
+
+Define the ordinary DiD estimand
+\[
+\theta_{\mathrm{did}}(P)=
+\E(Y_1-Y_0\mid G=1)-\E(Y_1-Y_0\mid G=0).
+\]
+Define the untreated post-trend bias
+\[
+\Delta_P=\E\{Y_1(0)-Y_0(0)\mid G=1\}-\E\{Y_1(0)-Y_0(0)\mid G=0\}.
+\]
+Ordinary parallel trends is \(\Delta_P=0\).  The negative-control bridge uses
+\[
+B_P=
+\begin{pmatrix}
+\Pr(W=0\mid Z=0,G=1)&\Pr(W=1\mid Z=0,G=1)\\
+\Pr(W=0\mid Z=1,G=1)&\Pr(W=1\mid Z=1,G=1)
+\end{pmatrix},
+\]
+\[
+b_P=
+\begin{pmatrix}
+\E(Y_0-Y_{-1}\mid Z=0,G=1)-\E(Y_0-Y_{-1}\mid Z=0,G=0)\\
+\E(Y_0-Y_{-1}\mid Z=1,G=1)-\E(Y_0-Y_{-1}\mid Z=1,G=0)
+\end{pmatrix},
+\quad
+\pi_P=
+\begin{pmatrix}
+\Pr(W=0\mid G=1)&\Pr(W=1\mid G=1)
+\end{pmatrix}.
+\]
+The bridge fiber is \(\mathcal H_P=\{h\in\R^2:B_Ph=b_P\}\), and the proximal correction is \(\Gamma_P(h)=\pi_Ph\).  The finite bridge frontier is the triplet
+\[
+\mathfrak F(P)=\bigl(\mathbf 1\{\Delta_P=0\},\ \mathcal H_P,\ \pi_P\operatorname{ker}(B_P)\bigr).
+\]
+
+\[
+\boxed{
+\begin{gathered}
+\texttt{qid}=\texttt{eid\_proximal\_did\_bridge\_frontier},\quad
+\texttt{specialization}=\texttt{v1},\\
+\text{SWIG}: (G,D_{-1},D_0,D_1,Y_{-1},Y_0,Y_1,W,Z,U),\quad
+D_t=G\one\{t=1\},\\
+\text{treatment}:D_1=1\text{ for }G=1,\quad
+\text{target}:\theta_{\mathrm{ATT}}=\E\{Y_1(1)-Y_1(0)\mid G=1\},\\
+\text{identifying assumptions}: \text{consistency, no anticipation, positivity, negative-control exclusion,}\\
+\text{preperiod bridge stability; the candidate frontier is }(\mathcal H_P\neq\emptyset,\ \pi_P\operatorname{ker}(B_P)=\{0\}).
+\end{gathered}}
+\]
+
+\section{Assumptions}
+\begin{assumption}[Finite nondegenerate observed law]\label{ass:finite}
+\(G,W,Z\in\{0,1\}\), \(Y_t\) is integrable for \(t=-1,0,1\), and every conditional probability entering \(B_P\) and \(\pi_P\) is strictly between zero and one.
+\end{assumption}
+
+\begin{assumption}[Consistency and no anticipation]\label{ass:consistency}
+\(Y_t=Y_t(0)\) for \(t=-1,0\), and \(Y_1=G\,Y_1(1)+(1-G)Y_1(0)\).
+\end{assumption}
+
+\begin{assumption}[Ordinary parallel trends]\label{ass:parallel}
+\(\Delta_P=0\).
+\end{assumption}
+
+\begin{assumption}[Negative-control exclusion]\label{ass:nc}
+Conditional on the latent trend state \(U\) and group \(G\), \(W\) is not affected by the period-one treatment and \(Z\) has no direct causal effect on \(Y_t(d)\).  The pair \((W,Z)\) may be associated with \(U\).
+\end{assumption}
+
+\begin{assumption}[Preperiod bridge stability]\label{ass:stability}
+If \(h\in\mathcal H_P\), then the untreated post-trend bias for the treated group equals \(\Gamma_P(h)\):
+\[
+\Delta_P=\pi_Ph.
+\]
+This is the finite DiD specialization of an outcome-bridge restriction; it is not assumed when ordinary parallel trends alone is invoked.
+\end{assumption}
+
+\begin{definition}[Candidate bridge frontier]\label{def:frontier}
+The observable bridge frontier condition is
+\[
+\mathcal H_P\neq\emptyset
+\quad\text{and}\quad
+\pi_Pr=0\ \text{for every }r\in\operatorname{ker}(B_P).
+\]
+This condition is not assumed as identification.  Conjecture~\ref{conj:frontier} asserts that it is the primitive implication of negative-control exclusion, bridge stability, and finite support for the proximal branch.
+\end{definition}
+
+\begin{assumption}[Open-class realization]\label{ass:openclass}
+The observed moments lie in a nonempty open subset of the finite observable simplex on which the displayed matrices and mean differences are generated by latent trend-state models satisfying Assumptions~\ref{ass:nc}--\ref{ass:stability}.  Boundary cases with zero denominators, deterministic \(W\), deterministic \(Z\), or collapsed group support are excluded.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: two exact-identification functionals]\label{thm:functionals}
+Under Assumptions~\ref{ass:finite}--\ref{ass:consistency}, ordinary parallel trends, Assumption~\ref{ass:parallel}, implies
+\[
+\theta_{\mathrm{ATT}}=\theta_{\mathrm{did}}(P).
+\]
+Under Assumptions~\ref{ass:finite}, \ref{ass:consistency}, \ref{ass:nc}, and \ref{ass:stability}, if Definition~\ref{def:frontier} holds, then every \(h\in\mathcal H_P\) gives the same value and
+\[
+\theta_{\mathrm{ATT}}=\theta_{\mathrm{did}}(P)-\pi_Ph.
+\]
+\end{theorem}
+The first display is the usual DiD decomposition.  The second follows because bridge stability rewrites the untreated post-trend bias as \(\pi_Ph\), while Definition~\ref{def:frontier} makes \(\pi_Ph\) invariant over the bridge fiber.
+
+\begin{conjecture}[Conjecture 1: finite bridge-rank ATT frontier (NOT YET PROVED)]\label{conj:frontier}
+On the open finite class in Assumption~\ref{ass:openclass}, the following are necessary and sufficient for exact identification from \(P\).
+\begin{enumerate}[label=(\roman*)]
+\item Ordinary DiD identifies \(\theta_{\mathrm{ATT}}\) if and only if \(\Delta_P=0\).
+\item Proximal negative-control DiD identifies \(\theta_{\mathrm{ATT}}\) through the finite pretrend bridge if and only if \(\mathcal H_P\neq\emptyset\) and \(\pi_Pr=0\) for every \(r\in\operatorname{ker}(B_P)\).
+\item Neither ordinary DiD nor proximal DiD identifies \(\theta_{\mathrm{ATT}}\) if \(\Delta_P\neq0\) and either \(\mathcal H_P=\emptyset\) or there exists \(r\in\operatorname{ker}(B_P)\) with \(\pi_Pr\neq0\).
+\end{enumerate}
+Moreover each of the three regimes contains a nonempty open set of observable laws.
+\end{conjecture}
+
+\begin{theorem}[Theorem 2: binary-proxy non-equivalence witness]\label{thm:witness}
+The three finite laws in Exhibit~9.1 satisfy Assumptions~\ref{ass:finite}--\ref{ass:consistency} and have no zero denominators.  The first is parallel-trends-only, the second is proximal-only, and the third is neither-identified.  Hence ordinary parallel trends and the finite proximal bridge frontier are neither nested nor equivalent as restrictions on \(P\).
+\end{theorem}
+The proof is direct matrix arithmetic.  The parallel-trends-only array has \(\Delta_P=0\) but \(\pi_P\operatorname{ker}(B_P)\neq\{0\}\), the proximal-only array has \(\Delta_P\neq0\) and invertible \(B_P\), and the third array has \(\Delta_P\neq0\) with \(b_P\notin\operatorname{range}(B_P)\).
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No-proxy reduction]\label{cor:noproxy}
+Under Assumptions~\ref{ass:finite}--\ref{ass:consistency} and \ref{ass:parallel}, Theorem~\ref{thm:functionals} collapses to standard two-period DiD because the ordinary branch sets \(\Delta_P=0\) and does not invoke any proxy correction.  If, in addition, the no-proxy specialization \(b_P=0\) and \(\pi_Pr=0\) for all \(r\in\operatorname{ker}(B_P)\) holds, then every admissible bridge has \(\Gamma_P=0\) and \(\theta_{\mathrm{prox}}=\theta_{\mathrm{did}}\).
+\end{corollary}
+
+\begin{corollary}[Full-rank bridge reduction]\label{cor:fullrank}
+Under Assumptions~\ref{ass:finite}, \ref{ass:consistency}, \ref{ass:nc}, and \ref{ass:stability}, if \(\det(B_P)\neq0\), then the bridge solution is unique and the proximal ATT is
+\[
+\theta_{\mathrm{ATT}}=\theta_{\mathrm{did}}(P)-\pi_PB_P^{-1}b_P.
+\]
+This is the finite binary analogue of the usual proximal rank condition.
+\end{corollary}
+
+\paragraph{Exhibit 9.1: computed \(2\times3\) binary-proxy frontier witness.}
+All three laws use \(\Pr(G=1)=1/2\), \(\Pr(Z=1\mid G=g)=1/2\), latent state \(U=Z\), and the displayed \(B_P(z,w)=\Pr(W=w\mid Z=z,G=1)\).  For \(G=0\), set \(\Pr(W=1\mid Z=z,G=0)=1/2\).  Conditional on \((G,U,W)\), the outcomes are degenerate at the displayed means, with \(Y_{-1}=0\), \(m_g(u)=\E(Y_0-Y_{-1}\mid U=u,G=g)\), \(q_g=\E\{Y_1(0)-Y_0(0)\mid G=g\}\), and treatment effect \(\tau=1\) for \(G=1\).  Thus \(Z\) is predictive of \(Y\) only through \(U\), the observed treated postperiod mean is \(\E(Y_1\mid G=1,Z=z,W=w)=m_1(z)+q_1+\tau\), and the latent completion records \(Y_1(0)=m_1(z)+q_1\).  The entries below compute every object in Section~6 from these finite primitives.
+\[
+\begin{array}{c|c|c|c|c|c}
+\text{regime} & B_P & (m_0(0),m_0(1)) & (m_1(0),m_1(1)) & (q_0,q_1) & \pi_P\\ \hline
+\text{parallel-trends-only} &
+\begin{pmatrix}.5&.5\\.5&.5\end{pmatrix} &
+(0,0) & (0,0) & (0,0) &
+\begin{pmatrix}.8&.2\end{pmatrix}\\[1.1em]
+\text{proximal-only} &
+\begin{pmatrix}.8&.2\\.3&.7\end{pmatrix} &
+(0,0) & (.10,-.05) & (0,.04) &
+\begin{pmatrix}.6&.4\end{pmatrix}\\[1.1em]
+\text{neither} &
+\begin{pmatrix}.5&.5\\.5&.5\end{pmatrix} &
+(0,0) & (.10,-.10) & (0,.06) &
+\begin{pmatrix}.8&.2\end{pmatrix}
+\end{array}
+\]
+These primitives imply \(b_P=m_1-m_0\), \(\Delta_P=q_1-q_0\), \(\theta_{\mathrm{ATT}}=1\), and \(\theta_{\mathrm{did}}=1+\Delta_P\).  For the first law, \(\operatorname{ker}(B_P)=\operatorname{span}\{(1,-1)^\transpose\}\) and \(\pi_P(1,-1)^\transpose=.6\), so bridge correction is not invariant even though \(\Delta_P=0\).  It is parallel-trends-only.  For the second law, \(\det(B_P)=.50\) and
+\[
+h=B_P^{-1}b_P=(.16,-.14)^\transpose,\qquad
+\pi_Ph=.6(.16)+.4(-.14)=.04=\Delta_P,
+\]
+so \(\theta_{\mathrm{prox}}=(1+.04)-.04=1=\theta_{\mathrm{ATT}}\), while ordinary DiD is biased by \(.04\).  For the third law, \(b_P\notin\operatorname{range}(B_P)=\operatorname{span}\{(1,1)^\transpose\}\) and \(\Delta_P=.06\), so no bridge exists and ordinary DiD is biased.  The internal checks are immediate: each row of \(B_P\) sums to one, every entry lies in \((0,1)\), the determinant in the full-rank case is nonzero, the singular cases have an explicit null vector, and the outcomes above give a finite observed law plus a latent untreated completion without zero denominators or collapsed arms.
+
+\section{Proof-sketch route}
+For Theorem~\ref{thm:functionals}, the route is: ATT decomposition \(\leftarrow\) unfold Section~6 definitions \(\leftarrow\) substitute consistency and no anticipation \(\leftarrow\) isolate \(\Delta_P\) \(\leftarrow\) either set \(\Delta_P=0\) or use bridge stability \(\Delta_P=\pi_Ph\) \(\leftarrow\) use null-annihilation to show invariance over \(\mathcal H_P\).  For Conjecture~\ref{conj:frontier}, the route is: finite frontier headline \(\leftarrow\) unfold bridge fiber and ATT loading \(\leftarrow\) prove sufficiency by the preceding decomposition \(\leftarrow\) prove necessity by constructing two latent trend-state completions with the same \(P\) but distinct \(Y_1(0)\) means whenever \(b_P\) is infeasible or \(\pi_P\) moves along a null direction \(\leftarrow\) show the completions persist under small perturbations of \(P\) using finite-dimensional rank-stratum arguments \(\leftarrow\) verify the three explicit cells in Exhibit~9.1 and thicken them to open neighborhoods by determinant and range-continuity inequalities.  This chain has four substantive steps beyond definitions and assumptions: the ATT-bias decomposition, the bridge-null invariance lemma, the equal-\(P\) latent-completion necessity construction, and the open-neighborhood thickening.  For Theorem~\ref{thm:witness}, the route is the displayed matrix calculation plus the non-nesting logic across the three rows.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:functionals}, Corollary~\ref{cor:noproxy}, Corollary~\ref{cor:fullrank}, and Theorem~\ref{thm:witness} are intended as finite algebraic statements.  Conjecture~\ref{conj:frontier} is not yet proved because the necessity direction requires a latent completion argument showing that bridge infeasibility or non-invariant null directions can change \(\theta_{\mathrm{ATT}}\) without changing \(P\).  The proposal does not claim efficiency theory, staggered-adoption inference, or validity for continuous proxies.  The open-class realization assumption may need to be narrowed if the latent completion requires additional support inequalities.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft centered on the finite pretrend-proxy bridge operator, a binary witness, and non-equivalence of parallel trends and proximal bridge restrictions; prior verdict: none.
+\item v2 (revise) -- removed the bridge frontier as an identifying assumption, added direct negative-control DiD comparators, replaced the witness with finite observed and latent laws, and fixed the no-proxy sanity reduction; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Cui et~al.(2024)]{CuiPuShiMiaoTchetgen2024JASA}
+Cui, Y., H. Pu, X. Shi, W. Miao, and E. J. Tchetgen Tchetgen (2024).
+Semiparametric proximal causal inference.
+\textit{Journal of the American Statistical Association}.
+
+\bibitem[Egami and Yamauchi(2023)]{EgamiYamauchi2023MultiplePretreatmentDID}
+Egami, N. and S. Yamauchi (2023).
+Using multiple pretreatment periods to improve difference-in-differences and related designs.
+\textit{Political Analysis}.
+
+\bibitem[Gregori(2025)]{Gregori2025DIDNegativeControls}
+Gregori, P. (2025).
+Difference-in-differences with negative controls.
+\textit{Proceedings of the European Marketing Academy}.
+
+\bibitem[Imbens et~al.(2021)]{ImbensKallusMao2021MinimalBridgePanel}
+Imbens, G., N. Kallus, and X. Mao (2021).
+Controlling for unobserved confounding in panel data using minimal bridge functions.
+arXiv:2108.03849.
+
+\bibitem[Miao et~al.(2018)]{MiaoGengTchetgen2018ProxyVariables}
+Miao, W., Z. Geng, and E. J. Tchetgen Tchetgen (2018).
+Identifying causal effects with proxy variables of an unmeasured confounder.
+\textit{Biometrika} 105(4), 987--993.
+
+\bibitem[Park et~al.(2024)]{ParkRichardsonTchetgen2024SingleProxy}
+Park, C., D. B. Richardson, and E. J. Tchetgen Tchetgen (2024).
+Single proxy control.
+\textit{Biometrics}.
+
+\bibitem[Penning de Vries and Groenwold(2023)]{PenningDeVriesGroenwold2023NegativeControls}
+Penning de Vries, B. B. L. and R. H. H. Groenwold (2023).
+A comparison of approaches to correct for unmeasured confounding using negative controls.
+\textit{Statistical Methods in Medical Research}.
+
+\bibitem[Rambachan and Roth(2023)]{RambachanRoth2023ParallelTrends}
+Rambachan, A. and J. Roth (2023).
+A more credible approach to parallel trends.
+\textit{Review of Economic Studies}.
+
+\bibitem[Sofer et~al.(2016)]{SoferRichardsonColicinoSchwartzTchetgen2016NOC}
+Sofer, T., D. B. Richardson, E. Colicino, J. Schwartz, and E. J. Tchetgen Tchetgen (2016).
+On negative outcome control of unobserved confounding as a generalization of difference-in-differences.
+\textit{Statistical Science} 31(3), 348--361.
+
+\bibitem[Tchetgen Tchetgen et~al.(2024a)]{TchetgenTchetgenYingCuiShiMiao2024Proximal}
+Tchetgen Tchetgen, E. J., A. Ying, Y. Cui, X. Shi, and W. Miao (2024).
+An introduction to proximal causal learning.
+\textit{Statistical Science}.
+
+\bibitem[Tchetgen Tchetgen et~al.(2024b)]{TchetgenParkRichardson2024UniversalDID}
+Tchetgen Tchetgen, E. J., C. Park, and D. B. Richardson (2024).
+Universal difference-in-differences.
+\textit{Epidemiology}.
+
+\bibitem[Zhang et~al.(2025)]{ZhangEtAl2025NCCDiD}
+Zhang, Y. et~al. (2025).
+Negative-control-calibrated difference-in-differences for real-world data.
+\textit{npj Digital Medicine}.
+\end{thebibliography}
+
+\end{document}

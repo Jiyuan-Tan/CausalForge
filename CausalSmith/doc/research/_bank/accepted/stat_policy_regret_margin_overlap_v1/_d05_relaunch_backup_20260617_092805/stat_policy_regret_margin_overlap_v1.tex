@@ -1,0 +1,1689 @@
+% =====================================================================
+%  thmsmith Stage 0 derivation skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=stat\_policy\_regret\_margin\_overlap, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+%  - Immutability is SCOPED to section headers, macro names, and the
+%    preamble. The PLACEMENT of theorem/proposition/lemma/assumption
+%    environments is YOUR responsibility: a `theorem` env may be freely
+%    moved into whichever fixed-header section fits (e.g. promote the
+%    field-level result from \S11 into \S9). Relocating a block between
+%    fixed headers is NOT a skeleton violation.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage 0 derivation: \texttt{stat\_policy\_regret\_margin\_overlap} / \texttt{v1}%
+  \\ \large\textit{Calibrated offline policy regret under margin and one-sided overlap decay}}
+\author{thmsmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note studies offline binary policy learning under unconfoundedness,
+bounded outcomes, a Tsybakov decision-margin condition, one-sided polynomial
+overlap decay near the decision boundary, and finite-VC policy complexity.
+The causal estimand is welfare regret,
+\[
+R_P(\pi)=V_P(\pi_P^*)-V_P(\pi)
+      =E_P[|\tau_P(X)|\one\{\pi(X)\ne\pi_P^*(X)\}],
+\]
+where \(\tau_P(x)=E_P[Y(1)-Y(0)\mid X=x]\) and
+\(\pi_P^*(x)=\one\{\tau_P(x)\ge0\}\).  Identification of \(\tau_P\) is taken
+as given by consistency and unconfoundedness; the contribution is the
+statistical rate for learning a low-regret policy from offline data.
+
+The weak-overlap lower-bound layer is obtained by optimizing an active block
+with contrast height \(h\), covariate mass \(h^\alpha\), and weak-arm
+propensity \(h^\beta\).  Membership in the one-sided overlap class forces
+\[
+\beta\le \beta_{\alpha,\gamma}:=
+\begin{cases}
+0, & \gamma=0,\\
+\alpha\gamma/(\alpha+1), & \gamma>0.
+\end{cases}
+\]
+The least informative admissible layer has one-observation information
+\(h^{2+\alpha+\beta_{\alpha,\gamma}}\) and regret separation
+\(h^{1+\alpha}\), giving the converse exponent
+\[
+r_*(\alpha,\gamma)=
+\frac{1+\alpha}{2+\alpha+\beta_{\alpha,\gamma}}.
+\]
+The note proves a two-point lower bound at this exponent over the full
+weak-overlap law class.  It also proves a data-only cross-fitted
+clipped-AIPW empirical welfare upper bound over any law collection for which
+the fixed nuisance learners satisfy stated foldwise high-level rates at the
+chosen clipping level:
+\[
+\sup_{P\in\mathcal Q}
+E_P R_P(\widehat\pi_{n,q_n^*})
+\lesssim
+n^{-r_*(\alpha,\gamma)}(\log n)^{(1+\alpha)/(2+\alpha)}.
+\]
+The logarithmic multiplier is the finite-VC localized entropy factor.  The
+proof derives the clipped-score drift and the empirical-process offset from
+the foldwise rate conditions; the upper theorem is conditional on those
+conditions and does not assert that one-sided overlap decay alone supplies
+nuisance learnability.
+\end{abstract}
+
+\section{Introduction}
+Observational policy learning asks for a treatment rule that improves welfare
+using fixed offline data.  In the binary-treatment setting the welfare
+criterion is driven by the sign of the conditional causal contrast
+\[
+\tau_P(x)=E_P[Y(1)-Y(0)\mid X=x].
+\]
+Unconfoundedness identifies this contrast through observed conditional means.
+The statistical problem is harder where \(|\tau_P(x)|\) is small and the arm
+that reveals the sign is rare.  A margin condition limits the mass near
+\(\tau_P=0\), while the one-sided overlap condition limits how much of that
+near-boundary mass can also have a small weak-arm propensity.
+
+The weak-arm layer must be optimized directly under the overlap-tail
+constraint.  If an active block has margin height \(h\), mass \(h^\alpha\),
+and weak-arm propensity \(h^\beta\), then membership in the overlap class
+requires
+\[
+\beta\le \beta_{\alpha,\gamma}:=\alpha\gamma/(\alpha+1)
+\quad(\gamma>0).
+\]
+Balancing
+\[
+n h^{2+\alpha+\beta_{\alpha,\gamma}}\asymp1
+\]
+gives the converse exponent
+\[
+r_*(\alpha,\gamma)=
+\frac{1+\alpha}{2+\alpha+\beta_{\alpha,\gamma}}.
+\]
+
+The feasible upper bound uses a target-preserving clipped-AIPW score.  The
+clipping level controls the score variance on weak-overlap strata.  Clipping
+also creates a first-order conditional-bias term when the outcome regressions
+are estimated, so the achievability theorem is stated conditional on
+foldwise high-level nuisance rates: propensity localization at the clipping
+scale, local outcome-regression accuracy on the clipped weak-arm layer, and
+the usual weighted propensity/outcome product.  Under these rate conditions,
+the cross-fitted empirical welfare maximizer is data-only and satisfies the
+same polynomial exponent with the finite-VC logarithmic multiplier.  The
+overlap-decay assumption is used to calibrate the converse and the natural
+choice of clipping level; it is not, by itself, a proof of the high-level
+nuisance rates needed by the feasible estimator.
+
+\paragraph{Motivating conjecture(s).}
+Let \(\delta_{\alpha,\gamma}=(\gamma-\alpha)_+\).
+
+\textbf{Conjecture 1.} (Upper-rate claim.) Under
+Assumptions~\ref{ass:causal-sampling}--\ref{ass:nuisance}, the clipped-AIPW
+ERM with \(t_n=n^{-s(\alpha,\gamma)}\) satisfies
+\[
+\sup_{P\in\mathcal{P}_{\alpha,\gamma}}
+E_P R_P(\widehat\pi_{t_n})
+\le C n^{-r(\alpha,\gamma)}
+\]
+for \(r(\alpha,\gamma)=(1+\alpha)/(2+\alpha+\delta_{\alpha,\gamma})\), where
+\(\delta_{\alpha,\gamma}=(\gamma-\alpha)_+\).
+
+\textbf{Conjecture 2.} (Calibrated lower claim.) Under
+Assumptions~\ref{ass:causal-sampling}, \ref{ass:margin},
+\ref{ass:overlap-decay}, \ref{ass:primitive-cube}, and the
+calibrated-overlap-richness condition, for
+\(h_n=n^{-1/(2+\alpha+\delta_{\alpha,\gamma})}\) there exist paired laws
+\(P_{n,+},P_{n,-}\) in a calibrated subclass with active-block mass
+\(h_n^\alpha\), contrast height \(h_n\), weak-arm propensity
+\(h_n^{\delta_{\alpha,\gamma}}\), one-observation Hellinger radius
+\(h_n^{2+\alpha+\delta_{\alpha,\gamma}}\), and regret separation
+\(h_n^{1+\alpha}\).
+
+The verdict is as follows.  Conjecture 1 is false as a full-class no-log
+claim whenever
+\[
+\frac{1+\alpha}{2+\alpha+\delta_{\alpha,\gamma}}
+>
+\frac{1+\alpha}{2+\alpha+\beta_{\alpha,\gamma}}.
+\]
+At \((\alpha,\gamma)=(2,2)\), it predicts \(3/4\), while the full-class
+two-point witness forces \(9/16\).  The corrected feasible upper theorem is
+not a full-class assertion from overlap alone: it is conditional on the
+foldwise nuisance-rate condition and keeps the finite-VC logarithmic
+multiplier explicit.  Conjecture 2 is corrected by using the largest
+overlap-admissible weak-arm exponent \(\beta_{\alpha,\gamma}\).  Under the
+known-logging finite-cell witness condition, where the logging propensity is
+known by design and the outcome regressions are learned from the foldwise
+sample, the same witnesses satisfy the high-level nuisance-rate condition at
+the logarithmically inflated feasible scale.
+
+\section{Related work and positioning}
+Athey and Wager (2021) provide the observational policy-learning template:
+the causal target is a policy welfare, the empirical criterion is built from
+doubly robust scores, and the policy search is restricted by a manageable
+complexity condition.  Kitagawa and Tetenov (2018) give the empirical welfare
+maximization perspective for treatment choice.  Luedtke and Chambaz (2017)
+show how a margin condition can convert score accuracy into fast policy-regret
+rates.  Chernozhukov et al. (2018) provide the cross-fitting and orthogonal
+score template used to separate nuisance learning from validation-sample
+empirical processes.
+
+Ma, Sant'Anna, Sasaki, and Ura (2023) separate variance stabilization from
+target-changing trimming for scalar causal estimands under weak overlap.  The
+present note uses target-preserving clipping for policy regret.  Kallus
+(2017) gives an alternative variance-stabilized policy-learning route.  Jin,
+Ren, Yang, and Wang (2022) and Zhan, Ren, Athey, and Zhou (2021) show why
+scarce treatment observations matter for policy learning, though their
+scarcity mechanisms differ from the fixed offline overlap surface studied
+here.  D'Amour, Ding, Feller, Lei, and Sekhon (2021) motivate replacing
+strict overlap by tail and diagnostic conditions in observational studies.
+
+Audibert and Tsybakov (2007) supply the lower-bound grammar: localized
+finite-cell sign perturbations under a margin condition.  The additional
+ingredient here is that the lower-bound cells must satisfy the same
+one-sided overlap-decay envelope as every other member of the law class.
+Standard VC maximal inequalities, as in Vapnik and Chervonenkis (1971) and
+van der Vaart and Wellner (1996), supply the finite-VC localized empirical
+process bound, with the logarithmic entropy factor retained.
+
+\section{Formal setup}
+Let \(O=(X,A,Y)\sim P\), where \(A\in\{0,1\}\) and \(Y\in[-1,1]\).  Potential
+outcomes \(Y(0),Y(1)\) satisfy consistency and unconfoundedness.  Define
+\[
+e_P(x)=P(A=1\mid X=x),\qquad
+\mu_a(x)=E_P[Y\mid A=a,X=x],
+\]
+\[
+\tau_P(x)=\mu_1(x)-\mu_0(x)=E_P[Y(1)-Y(0)\mid X=x].
+\]
+A deterministic policy \(\pi:\mathcal X\to\{0,1\}\) has normalized welfare
+\[
+V_P(\pi)=E_P[\pi(X)\tau_P(X)].
+\]
+The optimal policy is
+\[
+\pi_P^*(x)=\one\{\tau_P(x)\ge0\},
+\]
+and its regret is \(R_P(\pi)=V_P(\pi_P^*)-V_P(\pi)\).
+
+Let
+\[
+p_P(x)=\min\{e_P(x),1-e_P(x)\}.
+\]
+For \(\gamma>0\) define
+\[
+\beta_{\alpha,\gamma}=\frac{\alpha\gamma}{\alpha+1},
+\]
+and set \(\beta_{\alpha,0}=0\).  Let
+\[
+D_{\alpha,\gamma}=2+\alpha+\beta_{\alpha,\gamma},\qquad
+h_n^*=n^{-1/D_{\alpha,\gamma}},\qquad
+r_*(\alpha,\gamma)=\frac{1+\alpha}{D_{\alpha,\gamma}}.
+\]
+Define
+\[
+L_n^*=\log\{e/(h_n^*)^{1+\alpha}\},\qquad
+a_\alpha=\frac{1+\alpha}{2+\alpha},\qquad
+\bar\rho_n^*=(h_n^*)^{1+\alpha}(L_n^*)^{a_\alpha}.
+\]
+Fix a strict-overlap clipping constant \(q_0\in(0,1/8]\).  For
+\(h\in(0,1)\), define
+\[
+q(h)=
+\begin{cases}
+q_0, & \beta_{\alpha,\gamma}=0,\\
+h^{\beta_{\alpha,\gamma}}, & \beta_{\alpha,\gamma}>0.
+\end{cases}
+\]
+The overlap-calibrated upper and lower displays use
+\[
+q_n^*=q(h_n^*).
+\]
+This convention covers the strict-overlap case \(\gamma=0\) and the
+\(\alpha=0,\gamma>0\) case, where \(\beta_{\alpha,\gamma}=0\).
+
+For a nuisance tuple \(\eta=(\mu_0,\mu_1,e)\) and a lower clipping level
+\(q\in(0,1/2]\), define
+\[
+e_q(x;\eta)=\min\{1-q,\max\{q,e(x)\}\}
+\]
+and the clipped AIPW score
+\[
+\Gamma_q(O;\eta)=\mu_1(X)-\mu_0(X)
++\frac{A}{e_q(X;\eta)}\{Y-\mu_1(X)\}
+-\frac{1-A}{1-e_q(X;\eta)}\{Y-\mu_0(X)\}.
+\]
+The oracle nuisance tuple is \(\eta_P=(\mu_0,\mu_1,e_P)\).  Its score
+\(\Gamma_q^\circ(O)=\Gamma_q(O;\eta_P)\) satisfies
+\[
+E_P[\Gamma_q^\circ(O)\mid X]=\tau_P(X)
+\]
+for every \(q\in(0,1/2]\).
+
+The feasible score is formed from a fixed nonrandom \(K\)-fold partition
+\(I_1,\ldots,I_K\) of \(\{1,\ldots,n\}\), with \(K\) fixed,
+\(n_k=|I_k|\), \(w_k=n_k/n\), and \(c_Kn\le n_k\le C_Kn\).  For
+\(i\in I_k\), let
+\[
+\widehat\eta^{(-k)}=(\widehat\mu_0^{(-k)},\widehat\mu_1^{(-k)},
+\widehat e^{(-k)})
+\]
+be measurable with respect to the training sigma-field
+\(\mathcal T_k=\sigma(O_i:i\notin I_k)\), together with any independent
+algorithmic randomization, and define
+\[
+\widehat\Gamma_{q,k}(O)=\Gamma_q(O;\widehat\eta^{(-k)}).
+\]
+The data-only clipped-AIPW empirical welfare maximizer is
+\[
+\widehat\pi_{n,q}\in\arg\max_{\pi\in\Pi}
+\widehat V_{n,q}(\pi),\qquad
+\widehat V_{n,q}(\pi)=
+\sum_{k=1}^K w_k\, n_k^{-1}\sum_{i\in I_k}
+\pi(X_i)\widehat\Gamma_{q,k}(O_i).
+\]
+The overlap-calibrated estimator uses \(q=q_n^*\) and writes
+\[
+\widehat\pi_{n}^{\mathsf F}:=\widehat\pi_{n,q_n^*}.
+\]
+Measurable selectors are assumed when an argmax is not unique.
+
+The margin-overlap law class is
+\[
+\mathcal P_{\alpha,\gamma}
+=\{P:\text{Assumptions~\ref{ass:causal-sampling},
+\ref{ass:margin}, \ref{ass:overlap-decay}, and
+\ref{ass:policy-class} hold with exponents }\alpha,\gamma\}.
+\]
+For any law collection \(\mathcal Q\), define the policy-regret minimax risk
+\[
+\mathfrak M_n(\mathcal Q)
+=\inf_{\widehat\pi}
+\sup_{P\in\mathcal Q}E_P R_P(\widehat\pi),
+\]
+where the infimum ranges over measurable data-dependent policies taking
+values in \(\Pi\).  The full weak-overlap risk is
+\[
+\mathfrak M_n(\alpha,\gamma)=\mathfrak M_n(\mathcal P_{\alpha,\gamma}).
+\]
+The upper theorem is stated for a generic collection \(\mathcal Q\) satisfying
+the foldwise nuisance-rate condition with common constants.  That condition
+is an achievability-side hypothesis on the chosen nuisance learners; it is
+not part of the definition of \(\mathcal P_{\alpha,\gamma}\).
+
+\paragraph{Locked parameters.}
+\begin{itemize}[leftmargin=*]
+  \item \texttt{(qid, specialization) = (stat\_policy\_regret\_margin\_overlap, v1).}
+  \item \texttt{Anchor cluster = Stat.}
+  \item \texttt{Statistical model and causal estimand: iid observations O\_i=(X\_i,A\_i,Y\_i), A\_i in \{0,1\}, unconfoundedness, consistency, bounded outcomes, and known-or-estimable propensity e\_P(x)=P(A=1|X=x). The causal contrast is tau\_P(x)=E[Y(1)-Y(0)|X=x]. For a policy pi:X->\{0,1\}, V\_P(pi)=E[pi(X)tau\_P(X)] and R\_P(pi)=V\_P(pi\_P\textasciicircum{}*)-V\_P(pi), where pi\_P\textasciicircum{}*(x)=1\{tau\_P(x)>=0\}.}
+  \item \texttt{Sampling model: iid draws from P in a fixed offline logging design; no adaptive exploration.}
+  \item \texttt{Target object: the information-theoretic minimax expected welfare-regret exponent over the one-sided overlap-decay class, r\_*(alpha,gamma)=(1+alpha)/(2+alpha+beta\_{alpha,gamma}) with beta\_{alpha,gamma}=alpha gamma/(alpha+1) for gamma>0 and beta\_{alpha,0}=0.}
+  \item \texttt{Estimator: a data-only cross-fitted target-preserving clipped-AIPW-score empirical welfare maximizer using the overlap-calibrated clipping level q\_n\textasciicircum{}*=q\_0 whenever beta\_{alpha,gamma}=0 and q\_n\textasciicircum{}*=(h\_n\textasciicircum{}*)\textasciicircum{}\{beta\_{alpha,gamma}\} otherwise, with achievability conditional on foldwise nuisance-rate hypotheses.}
+  \item \texttt{Matching converse: a primitive localized two-point construction whose cube mass, contrast height, weak-arm propensity height, and chi-square divergence radius are calibrated to r\_*(alpha,gamma), with known-logging finite-cell witnesses that satisfy the high-level nuisance-rate condition at the logarithmically inflated feasible scale.}
+\end{itemize}
+
+\section{Assumptions}
+\begin{assumption}[Causal sampling and bounded outcomes]\label{ass:causal-sampling}
+The observations \(O_1,\ldots,O_n\) are iid from \(P\).  Consistency and
+unconfoundedness hold, \(Y(a)\in[-1,1]\), and \(0<e_P(X)<1\) almost surely.
+The conditional means \(\mu_a(x)=E_P[Y\mid A=a,X=x]\) exist as measurable
+versions.
+\end{assumption}
+
+\begin{assumption}[Tsybakov decision margin and canonical zero-effect region]\label{ass:margin}
+There are constants \(0<C_m<\infty\), \(u_0>0\), and \(\alpha\ge0\) such that
+\[
+P(0<|\tau_P(X)|\le u)\le C_m u^\alpha
+\quad\text{for all }0<u\le u_0.
+\]
+In addition, either \(P_X\{\tau_P(X)=0\}=0\), or every
+\(\pi\in\Pi\) satisfies \(\pi(x)=\pi_P^*(x)\) for \(P_X\)-almost every
+\(x\) with \(\tau_P(x)=0\).
+\end{assumption}
+
+\begin{assumption}[One-sided polynomial overlap decay]\label{ass:overlap-decay}
+Let \(p_P(x)=\min\{e_P(x),1-e_P(x)\}\).  There are constants
+\(C_o,c_o>0\) and \(\gamma\ge0\) such that
+\[
+P\{p_P(X)\le v,\;0<|\tau_P(X)|\le u\}
+  \le C_o u^\alpha v^{1/\gamma}
+\]
+for all \(0<v\le c_o u^\gamma\), with the convention that \(v^{1/\gamma}=1\)
+when \(\gamma=0\).  In the \(\gamma=0\) case, the condition is read as a
+strict-overlap condition on the strict-margin region.
+\end{assumption}
+
+\begin{assumption}[Policy class entropy]\label{ass:policy-class}
+The policy class \(\Pi\) consists of measurable deterministic policies, has
+finite VC dimension \(d_\Pi<\infty\), and \(\pi_P^*\in\Pi\) for each law
+\(P\) in the law collection to which the theorem is applied.
+\end{assumption}
+
+\begin{assumption}[High-level foldwise nuisance-rate condition]\label{ass:nuisance}
+Fix a law collection \(\mathcal Q\), a clipping sequence \(q_n\in(0,1/2]\),
+a positive rate sequence \(\rho_n\), and the cross-fit learners
+\(\widehat\eta^{(-k)}\).  There are constants
+\(C_\eta,C_G,N_\eta<\infty\) such that, for every \(P\in\mathcal Q\), every
+fold \(k\), and every \(n\ge N_\eta\), there is an event
+\(G_{n,k}\in\mathcal T_k\) satisfying
+\[
+P^n(G_{n,k}^c)\le C_G\rho_n.
+\]
+On \(G_{n,k}\), the nuisance estimates obey
+\[
+|\widehat\mu_a^{(-k)}(x)|\le1\quad(a=0,1),\qquad
+0\le\widehat e^{(-k)}(x)\le1,
+\]
+\[
+\|\widehat e^{(-k)}-e_P\|_{\infty,P_X}\le q_n/2,
+\]
+\[
+\sum_{a=0}^1
+E_{P_X}\!\left[
+|\widehat\mu_a^{(-k)}(X)-\mu_a(X)|
+\one\{p_P(X)\le2q_n\}
+\,\middle|\,\mathcal T_k\right]
+\le C_\eta\rho_n,
+\]
+and
+\[
+q_n^{-1}
+\|\widehat e^{(-k)}-e_P\|_{2,P_X}
+\sum_{a=0}^1
+\|\widehat\mu_a^{(-k)}-\mu_a\|_{2,P_X}
+\le C_\eta\rho_n.
+\]
+\end{assumption}
+
+\begin{remark}
+Assumption~\ref{ass:nuisance} is an achievability-side condition on the
+fixed nuisance learners, not a law-side smoothness or overlap condition.  It
+states the foldwise rates needed by the clipped-score estimator: a sup-norm
+propensity localization at the clipping scale, a local outcome-regression
+\(L_1(P_X)\) rate on the clipped weak-arm layer, and a weighted
+propensity/outcome \(L_2\) product rate.  It does not assume a bound on the
+clipped-score drift or on the policy-indexed empirical-process offset; those
+are derived below from the displayed inequalities.
+\end{remark}
+
+\begin{assumption}[Primitive local policy richness]\label{ass:primitive-cube}
+The policy class \(\Pi\) consists of measurable deterministic policies and has
+finite VC dimension.  For each sufficiently small \(h\) and each
+\(0\le\beta\le\beta_{\alpha,\gamma}\), define
+\[
+q_\beta(h)=
+\begin{cases}
+q_0,& \beta=0,\\
+h^\beta,& \beta>0.
+\end{cases}
+\]
+There exist a covariate probability law \(Q_h\), a measurable active block
+\(B_h\subseteq\mathcal X\), a logging propensity
+\(e_{h,\beta}:\mathcal X\to(0,1)\), and two bounded outcome regression
+systems indexed by \(\sigma\in\{+,-\}\) such that
+\[
+c_B h^\alpha\le Q_h(B_h)\le C_B h^\alpha.
+\]
+The policy class \(\Pi\) can assign either treatment label on \(B_h\) while
+agreeing with the common off-block label \(1\).  The treatment contrast
+induced by the \(\sigma=+\) regression system is \(+h\) on \(B_h\), the
+treatment contrast induced by the \(\sigma=-\) regression system is \(-h\)
+on \(B_h\), and both systems have a common off-block treatment contrast
+\(\tau_0\in(0,1)\).  The weak-arm propensity on \(B_h\) satisfies
+\[
+c_Qq_\beta(h)\le \min\{e_{h,\beta}(x),1-e_{h,\beta}(x)\}
+\le C_Qq_\beta(h)
+\quad\text{for all }x\in B_h,
+\]
+and the propensities are bounded away from zero off \(B_h\); specifically,
+\[
+4q_0\le e_{h,\beta}(x)\le 1-4q_0
+\quad\text{for all }x\notin B_h.
+\]
+The witness constants can be chosen with \(8C_BC_Q<\log 5\).
+\end{assumption}
+
+\begin{assumption}[Known-logging finite-cell witnesses]\label{ass:learnable-cube}
+The witnesses in Assumption~\ref{ass:primitive-cube} can be chosen so that
+\(B_h\) and \(B_h^c\) are atoms of an observed finite partition known to the
+nuisance-learning procedure.  The logging propensity \(e_{h,\beta}\) is known
+by design on this partition, and the procedure sets
+\(\widehat e^{(-k)}=e_{h,\beta}\) on both atoms for every fold.  The outcome
+regressions \(\mu_0\) and \(\mu_1\) are constant on each atom, and the
+procedure uses foldwise empirical cell-mean estimators for
+\(\mu_0,\mu_1\), truncated to \([-1,1]\).  The procedure is not supplied with
+the sign index \(\sigma\); the active-block outcome contrast is learned only
+from the training sample.
+\end{assumption}
+
+\begin{remark}
+Assumption~\ref{ass:learnable-cube} is a local lower-bound witness condition.
+Known logging propensities are compatible with fixed offline designs and do
+not reveal the sign of the active-block treatment contrast.  The feasible
+upper theorem uses Assumption~\ref{ass:nuisance}; it does not claim that
+finite-cell structure is necessary for achievability.
+\end{remark}
+
+\section{Estimand-defining functional}
+The causal functional is the policy welfare \(V_P(\pi)=E_P[\pi(X)\tau_P(X)]\)
+and its regret
+\[
+R_P(\pi)=V_P(\pi_P^*)-V_P(\pi).
+\]
+The full-class minimax object is
+\[
+\mathfrak M_n(\alpha,\gamma)
+=\inf_{\widehat\pi}
+\sup_{P\in\mathcal P_{\alpha,\gamma}}E_P R_P(\widehat\pi).
+\]
+For a law collection \(\mathcal Q\), the conditional achievability object is
+\[
+\sup_{P\in\mathcal Q}E_P R_P(\widehat\pi_n^{\mathsf F}),
+\]
+where \(\mathcal Q\) satisfies the foldwise nuisance-rate condition of
+Assumption~\ref{ass:nuisance} at \(q_n^*\) and \(\bar\rho_n^*\).  The
+data-only estimator is
+\[
+\widehat\pi_n^{\mathsf F}
+\in\arg\max_{\pi\in\Pi}
+\sum_{k=1}^K w_k\,n_k^{-1}\sum_{i\in I_k}
+\pi(X_i)\Gamma_{q_n^*}(O_i;\widehat\eta^{(-k)}).
+\]
+The target rate object proved for this estimator is
+\[
+\sup_{P\in\mathcal Q}
+E_P R_P(\widehat\pi_n^{\mathsf F})
+\lesssim
+n^{-r_*(\alpha,\gamma)}(\log n)^{(1+\alpha)/(2+\alpha)}.
+\]
+The converse object is
+\[
+\mathfrak M_n(\alpha,\gamma)
+\gtrsim n^{-r_*(\alpha,\gamma)}.
+\]
+If a law collection \(\mathcal Q\subseteq\mathcal P_{\alpha,\gamma}\)
+contains the known-logging finite-cell witness sequence and also satisfies
+the high-level nuisance-rate condition uniformly, then the same polynomial
+lower exponent applies to \(\mathfrak M_n(\mathcal Q)\).
+
+\section{Target causal estimand}
+For each deterministic \(\pi\in\Pi\), the causal welfare increment is
+\[
+V_P(\pi)=E_P[Y(\pi(X))-Y(0)]
+=E_P[\pi(X)\{Y(1)-Y(0)\}]
+=E_P[\pi(X)\tau_P(X)].
+\]
+The optimal policy is \(\pi_P^*(x)=\one\{\tau_P(x)\ge0\}\), and the loss is
+the welfare regret \(R_P(\pi)=V_P(\pi_P^*)-V_P(\pi)\).  The clipping level,
+cross-fitting scheme, nuisance learners, empirical process, VC entropy
+factor, and weak-arm exponent are statistical devices used to learn a good
+policy; they are not causal estimands.
+
+\section{Main theorems}
+\begin{theorem}[Conditional clipped-score finite-VC upper bound]\label{thm:feasible-upper-log}\label{conj:upper-rate}
+Let \(\mathcal Q\) be a collection of laws satisfying
+Assumptions~\ref{ass:causal-sampling}, \ref{ass:margin}, and
+\ref{ass:policy-class} with common constants, and let the fold number \(K\)
+be fixed.  Set
+\[
+h_n^*=n^{-1/(2+\alpha+\beta_{\alpha,\gamma})},
+\qquad q_n^*=q(h_n^*),
+\qquad
+L_n^*=\log\{e/(h_n^*)^{1+\alpha}\},
+\qquad
+\bar\rho_n^*=(h_n^*)^{1+\alpha}(L_n^*)^{(1+\alpha)/(2+\alpha)}.
+\]
+Suppose Assumption~\ref{ass:nuisance} holds for the collection
+\(\mathcal Q\), the clipping sequence \(q_n=q_n^*\), and the rate sequence
+\(\rho_n=\bar\rho_n^*\).  Let \(\widehat\pi_n^{\mathsf F}\) be the
+cross-fitted clipped-AIPW empirical welfare maximizer defined in the formal
+setup.  Then there are constants \(C<\infty\) and \(N<\infty\), depending
+only on the common assumption constants, such that for all \(n\ge N\),
+\[
+\sup_{P\in\mathcal Q}
+E_P R_P(\widehat\pi_n^{\mathsf F})
+\le
+C (h_n^*)^{1+\alpha}(L_n^*)^{(1+\alpha)/(2+\alpha)}
+\le
+C n^{-r_*(\alpha,\gamma)}(\log n)^{(1+\alpha)/(2+\alpha)}.
+\]
+The statement does not require Assumption~\ref{ass:overlap-decay} for its
+empirical-process proof; \(\beta_{\alpha,\gamma}\) enters here through the
+chosen clipping calibration.
+\end{theorem}
+
+\begin{theorem}[Weak-overlap margin converse]\label{thm:lower-full-class}\label{conj:lower-calibration}
+Suppose Assumption~\ref{ass:primitive-cube} holds.  Let
+\[
+\beta=\beta_{\alpha,\gamma},\qquad
+h_n=n^{-1/(2+\alpha+\beta)},\qquad
+q_n=q(h_n).
+\]
+For all sufficiently large \(n\), there are paired laws
+\(P_{n,+},P_{n,-}\in\mathcal P_{\alpha,\gamma}\) with common covariate law,
+common logging propensity, common law off an active block \(B_n\), a fixed
+common off-block contrast \(\tau_0\in(0,1)\), and
+\[
+P_X(B_n)\asymp h_n^\alpha,\qquad
+\tau_{P_{n,+}}(x)=h_n,\qquad
+\tau_{P_{n,-}}(x)=-h_n
+\quad (x\in B_n),
+\]
+\[
+\tau_{P_{n,+}}(x)=\tau_{P_{n,-}}(x)=\tau_0
+\quad (x\notin B_n),
+\]
+\[
+p_{P_{n,+}}(x)=p_{P_{n,-}}(x)\asymp q_n
+\quad (x\in B_n).
+\]
+They satisfy
+\[
+n\,\chi^2(P_{n,+}\|P_{n,-})\le C_\chi,
+\qquad
+\chi^2(P_{n,+}\|P_{n,-})=O(h_n^{2+\alpha+\beta}),
+\]
+and
+\[
+\inf_{\pi\in\Pi}
+\max_{\sigma\in\{+,-\}}R_{P_{n,\sigma}}(\pi)
+\asymp h_n^{1+\alpha}.
+\]
+Consequently,
+\[
+\mathfrak M_n(\alpha,\gamma)\ge c n^{-r_*(\alpha,\gamma)}.
+\]
+If Assumption~\ref{ass:learnable-cube} also holds, then these same witness
+laws satisfy the high-level foldwise nuisance-rate condition of
+Assumption~\ref{ass:nuisance} at \(q_n=q_n^*\) and
+\(\rho_n=\bar\rho_n^*\), with common constants.
+\end{theorem}
+
+\begin{corollary}[Conditional feasible bracket]\label{cor:feasible-bracket}
+Let \(\mathcal Q\subseteq\mathcal P_{\alpha,\gamma}\) be a law collection
+satisfying the high-level foldwise nuisance-rate condition of
+Assumption~\ref{ass:nuisance} at \(q_n=q_n^*\) and
+\(\rho_n=\bar\rho_n^*\).  Then
+\[
+\mathfrak M_n(\mathcal Q)
+\le
+C n^{-r_*(\alpha,\gamma)}(\log n)^{(1+\alpha)/(2+\alpha)}.
+\]
+If, in addition, Assumptions~\ref{ass:primitive-cube} and
+\ref{ass:learnable-cube} hold and \(\mathcal Q\) contains the corresponding
+two witness laws for all sufficiently large \(n\), then
+\[
+c n^{-r_*(\alpha,\gamma)}
+\le
+\mathfrak M_n(\mathcal Q)
+\le
+C n^{-r_*(\alpha,\gamma)}(\log n)^{(1+\alpha)/(2+\alpha)}.
+\]
+Thus \(r_*(\alpha,\gamma)\) is the polynomial exponent in this conditional
+known-logging feasible bracket, with the finite-VC logarithmic multiplier in
+the achievability theorem.
+\end{corollary}
+
+\section{Interpretation}
+The full-class converse is controlled by the largest weak-arm exponent
+compatible with the overlap tail.  A block with \(|\tau|\asymp h\), mass
+\(h^\alpha\), and weak-arm propensity \(h^\beta\) is included in the event
+\(\{p_P(X)\le v,0<|\tau_P(X)|\le u\}\) when
+\[
+v\asymp h^\beta,\qquad u\asymp h^{\beta/\gamma}.
+\]
+The overlap envelope then requires
+\[
+h^\alpha\lesssim u^\alpha v^{1/\gamma}
+\asymp h^{(\alpha+1)\beta/\gamma},
+\]
+which is equivalent to
+\(\beta\le\alpha\gamma/(\alpha+1)\).  The least informative admissible layer
+uses equality.  It has one-observation information
+\[
+h^\alpha h^{\beta_{\alpha,\gamma}}h^2
+=h^{2+\alpha+\beta_{\alpha,\gamma}}
+\]
+and regret separation \(h^{1+\alpha}\), giving \(r_*\).
+
+The feasible upper theorem uses the same polynomial calibration as a
+clipping choice, but the empirical-process proof itself needs only margin,
+finite-VC complexity, bounded clipped scores, cross-fitting, and the
+foldwise nuisance-rate condition.  At regret scale \(\rho\), margin
+localization gives disagreement probability at most of order
+\(\rho^{\alpha/(1+\alpha)}\).  On the nuisance good event, the clipped score
+has conditional second moment at most of order \(q_n^{-1}\), hence the
+localized finite-VC radius is
+\[
+\sqrt{\frac{q_n^{-1}\rho^{\alpha/(1+\alpha)}
+\log(e/\rho)}{n}}
++\frac{q_n^{-1}\log(e/\rho)}{n}.
+\]
+Solving the fixed point with \(q_n=(h_n^*)^{\beta_{\alpha,\gamma}}\) when
+\(\beta_{\alpha,\gamma}>0\) yields
+\[
+\rho=
+(h_n^*)^{1+\alpha}
+\{\log(e/(h_n^*)^{1+\alpha})\}^{(1+\alpha)/(2+\alpha)}.
+\]
+
+The nuisance-rate conditions have separate roles.  The sup-norm propensity
+condition prevents estimated clipping from creating a \(q_n^{-2}\) second
+moment.  The local weak-arm outcome condition controls the first-order
+clipped bias on \(\{p_P\le2q_n\}\).  The weighted \(L_2\) product condition
+controls the ordinary doubly robust product term away from the clipped
+layer.  The proof below derives the policy-regret drift bound from these
+displayed conditions.
+
+For the lower-bound witnesses compatible with the high-level nuisance-rate
+condition, the logging propensity is known by design on the finite witness
+partition.  Therefore the propensity sup-norm and propensity/outcome product
+terms are zero for those witnesses.  The hard lower-bound uncertainty remains
+the sign of the active-block outcome contrast, whose weak-arm sample size is
+calibrated to be of order \(h^{-2}\).  The high-probability outcome
+cell-mean threshold is \(h\{\log(e/h^{1+\alpha})\}^{(1+\alpha)/(2+\alpha)}\),
+so multiplying by the active mass \(h^\alpha\) gives exactly the feasible
+upper scale \(\bar\rho_n^*\).
+
+\section{Step-by-step proof}
+\subsection*{Supporting lemmas}
+\begin{lemma}[Welfare-regret identity]\label{lem:welfare-identity}
+Under Assumption~\ref{ass:causal-sampling}, for every measurable
+deterministic policy \(\pi\),
+\[
+R_P(\pi)=E_P[|\tau_P(X)|\one\{\pi(X)\ne\pi_P^*(X)\}].
+\]
+\end{lemma}
+\begin{proof}
+By definition,
+\[
+R_P(\pi)
+=E_P[(\pi_P^*(X)-\pi(X))\tau_P(X)].
+\]
+If \(\tau_P(x)\ge0\), then \(\pi_P^*(x)=1\), and
+\[
+(1-\pi(x))\tau_P(x)
+=|\tau_P(x)|\one\{\pi(x)\ne1\}.
+\]
+If \(\tau_P(x)<0\), then \(\pi_P^*(x)=0\), and
+\[
+-\pi(x)\tau_P(x)
+=|\tau_P(x)|\one\{\pi(x)\ne0\}.
+\]
+If \(\tau_P(x)=0\), both sides are zero.  Taking expectations proves the
+claim.
+\end{proof}
+
+\begin{lemma}[Margin localization]\label{lem:margin-localization}
+Under Assumption~\ref{ass:margin}, for every measurable policy \(\pi\in\Pi\),
+\[
+P_X\{\pi(X)\ne\pi_P^*(X)\}
+\le C_P R_P(\pi)^{\alpha/(1+\alpha)}.
+\]
+If the margin constants are common over a law collection, then \(C_P\) is
+common over that collection.
+\end{lemma}
+\begin{proof}
+Let \(D_\pi=\{x:\pi(x)\ne\pi_P^*(x)\}\).  The zero-effect clause in
+Assumption~\ref{ass:margin} removes disagreements on \(\{\tau_P=0\}\).  For
+any \(u\in(0,u_0]\),
+\[
+P_X(D_\pi)
+\le
+P(0<|\tau_P(X)|\le u)
++P(D_\pi\cap\{|\tau_P(X)|>u\})
+\le C_m u^\alpha+\frac{R_P(\pi)}{u}.
+\]
+Choose \(u\asymp R_P(\pi)^{1/(1+\alpha)}\), truncated at \(u_0\).  Enlarging
+the constant handles the truncation case.
+\end{proof}
+
+\begin{lemma}[Foldwise nuisance rates imply clipped-score drift]\label{lem:drift-derived}
+Fix a law collection \(\mathcal Q\), a clipping sequence \(q_n\), and a rate
+sequence \(\rho_n\) satisfying Assumption~\ref{ass:nuisance}.  Fix
+\(P\in\mathcal Q\), a fold \(k\), and write \(q=q_n\).  On \(G_{n,k}\), let
+\[
+b_k(x)=E_P[\widehat\Gamma_{q,k}(O)\mid X=x,\mathcal T_k]-\tau_P(x).
+\]
+Then
+\[
+\sup_{\pi\in\Pi}
+\left|E_P[(\pi(X)-\pi_P^*(X))b_k(X)\mid\mathcal T_k]\right|
+\le C\rho_n.
+\]
+\end{lemma}
+\begin{proof}
+Write
+\[
+\Delta_k(x)=\widehat e^{(-k)}(x)-e_P(x),\qquad
+\delta_{a,k}(x)=\widehat\mu_a^{(-k)}(x)-\mu_a(x),
+\]
+and
+\[
+\widehat e_{q,k}(x)=e_q(x;\widehat\eta^{(-k)}).
+\]
+Taking the conditional mean of the score given \(X=x\) and \(\mathcal T_k\)
+gives
+\[
+b_k(x)
+=
+\delta_{1,k}(x)\left(1-\frac{e_P(x)}{\widehat e_{q,k}(x)}\right)
+-\delta_{0,k}(x)\left(1-\frac{1-e_P(x)}{1-\widehat e_{q,k}(x)}\right).
+\]
+On \(G_{n,k}\), \(\|\Delta_k\|_{\infty,P_X}\le q/2\).  If
+\(p_P(x)>2q\), clipping is inactive up to the estimation error and
+\[
+\left|1-\frac{e_P(x)}{\widehat e_{q,k}(x)}\right|
++
+\left|1-\frac{1-e_P(x)}{1-\widehat e_{q,k}(x)}\right|
+\le C\frac{|\Delta_k(x)|}{q}.
+\]
+If \(p_P(x)\le2q\), both displayed coefficients are bounded by a universal
+constant.  Hence, for \(P_X\)-almost every \(x\),
+\[
+|b_k(x)|
+\le
+C\{\ |\delta_{0,k}(x)|+|\delta_{1,k}(x)|\ \}
+\left\{\one\{p_P(x)\le2q\}+\frac{|\Delta_k(x)|}{q}\right\}.
+\]
+Since \(|\pi-\pi_P^*|\le1\),
+\[
+\sup_{\pi\in\Pi}
+\left|E_P[(\pi-\pi_P^*)b_k\mid\mathcal T_k]\right|
+\le E_P[|b_k(X)|\mid\mathcal T_k].
+\]
+The first part is bounded by the local \(L_1\) condition in
+Assumption~\ref{ass:nuisance}.  The second part is bounded by Cauchy-Schwarz:
+\[
+q^{-1}
+\|\Delta_k\|_{2,P_X}
+\sum_{a=0}^1\|\delta_{a,k}\|_{2,P_X}
+\le C_\eta\rho_n.
+\]
+This proves the displayed drift bound.
+\end{proof}
+
+\begin{lemma}[Estimated-score finite-VC offset]\label{lem:feasible-vc-offset}
+Let \(\mathcal Q\) satisfy the hypotheses of
+Theorem~\ref{thm:feasible-upper-log}.  Fix \(P\in\mathcal Q\).  On
+\(G_n=\cap_{k=1}^K G_{n,k}\), define
+\[
+\widehat f_{\pi,k,n}(O)=(\pi-\pi_P^*)(X)\widehat\Gamma_{q_n^*,k}(O),
+\]
+\[
+\widehat Z_n(P)=
+\sup_{\pi\in\Pi}
+\left\{
+\left|\sum_{k=1}^K w_k
+(\mathbb P_{n,k}-P)\widehat f_{\pi,k,n}\right|
+-\frac12R_P(\pi)
+\right\}_+,
+\]
+where \(\mathbb P_{n,k}\) is the empirical measure on validation fold
+\(I_k\).  Then
+\[
+E_P[\widehat Z_n(P)\one_{G_n}]
+\le C\bar\rho_n^*
+\]
+uniformly over \(P\in\mathcal Q\).
+\end{lemma}
+\begin{proof}
+Condition on \(\mathcal T_k\) and the event \(G_{n,k}\).  The validation
+observations in fold \(k\) are iid from \(P\) and independent of
+\(\widehat\eta^{(-k)}\).  The score envelope obeys
+\[
+|\widehat\Gamma_{q_n^*,k}(O)|\le C(q_n^*)^{-1},
+\]
+because the estimated outcome regressions are bounded by one and the
+estimated propensity is clipped into \([q_n^*,1-q_n^*]\).
+
+The same event gives a sharper second-moment bound.  If \(e_P(x)>2q_n^*\),
+then \(\widehat e_{q_n^*,k}(x)\ge e_P(x)/2\), so
+\(e_P(x)/\widehat e_{q_n^*,k}(x)^2\le C/q_n^*\).  If \(e_P(x)\le2q_n^*\),
+then \(e_P(x)/\widehat e_{q_n^*,k}(x)^2\le C/q_n^*\).  The untreated arm is
+identical with \(1-e_P(x)\).  Therefore
+\[
+E_P[\widehat\Gamma_{q_n^*,k}(O)^2\mid X,\mathcal T_k]
+\le C(q_n^*)^{-1}.
+\]
+For policies with \(R_P(\pi)\le\rho\), Lemma~\ref{lem:margin-localization}
+gives
+\[
+\operatorname{Var}_P\{\widehat f_{\pi,k,n}(O)\mid\mathcal T_k\}
+\le C(q_n^*)^{-1}\rho^{\alpha/(1+\alpha)}.
+\]
+The class \(\{x\mapsto \pi(x)-\pi_P^*(x):\pi\in\Pi\}\) has finite VC
+dimension depending only on \(d_\Pi\).  The finite-VC maximal inequality for
+bounded classes yields, uniformly on \(G_{n,k}\),
+\[
+E_P\!\left[
+\sup_{R_P(\pi)\le\rho}
+|(\mathbb P_{n,k}-P)\widehat f_{\pi,k,n}|
+\,\middle|\,\mathcal T_k\right]
+\le
+C\left\{
+\sqrt{\frac{(q_n^*)^{-1}\rho^{\alpha/(1+\alpha)}
+\log(e/\rho)}{n_k}}
++\frac{(q_n^*)^{-1}\log(e/\rho)}{n_k}
+\right\}.
+\]
+
+Set
+\[
+\bar\rho_n=\bar\rho_n^*
+=(h_n^*)^{1+\alpha}(L_n^*)^{(1+\alpha)/(2+\alpha)}.
+\]
+Since \(q_n^*=q_0\) when \(\beta_{\alpha,\gamma}=0\), and
+\(q_n^*=(h_n^*)^{\beta_{\alpha,\gamma}}\) otherwise, there is a constant
+\(c>0\) such that
+\[
+q_n^*\ge c(h_n^*)^{\beta_{\alpha,\gamma}}.
+\]
+Using \(n(h_n^*)^{2+\alpha+\beta_{\alpha,\gamma}}=1\) and
+\(\log(e/\bar\rho_n)\le C L_n^*\), the leading term at
+\(\rho=\bar\rho_n\) is bounded by
+\[
+C\sqrt{
+(h_n^*)^{-\beta_{\alpha,\gamma}}
+(h_n^*)^\alpha
+(L_n^*)^{\alpha/(2+\alpha)}
+L_n^*
+(h_n^*)^{2+\alpha+\beta_{\alpha,\gamma}}
+}
+=C\bar\rho_n.
+\]
+The linear VC term is
+\[
+\frac{(q_n^*)^{-1}\log(e/\bar\rho_n)}{n}
+\le
+C(h_n^*)^{2+\alpha}L_n^*
+\le C\bar\rho_n
+\]
+for all sufficiently large \(n\).
+
+A dyadic peeling over regret shells
+\[
+\mathcal S_j=\{\pi:2^j\bar\rho_n<R_P(\pi)\le2^{j+1}\bar\rho_n\},\qquad j\ge0,
+\]
+and the base set \(\{R_P(\pi)\le\bar\rho_n\}\), gives the offset form.  On
+\(\mathcal S_j\), the first localized ratio is bounded by a constant multiple
+of \(2^{-j(2+\alpha)/(2+2\alpha)}\), and the linear term by a constant
+multiple of \(2^{-j}\).  Bernstein tails for bounded finite-VC classes are
+summable over the same shells.  Hence, conditionally on \(G_{n,k}\),
+\[
+E_P\!\left[
+\sup_{\pi\in\Pi}
+\left\{|(\mathbb P_{n,k}-P)\widehat f_{\pi,k,n}|
+-\frac12R_P(\pi)\right\}_+
+\,\middle|\,\mathcal T_k\right]
+\le C\bar\rho_n.
+\]
+Finally,
+\[
+\left|\sum_{k=1}^K w_k
+(\mathbb P_{n,k}-P)\widehat f_{\pi,k,n}\right|
+-\frac12R_P(\pi)
+\le
+\sum_{k=1}^K w_k
+\left\{|(\mathbb P_{n,k}-P)\widehat f_{\pi,k,n}|
+-\frac12R_P(\pi)\right\}_+.
+\]
+Taking the supremum over \(\pi\), then expectations, proves the lemma.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:feasible-upper-log}]
+Let
+\[
+B_n(\pi)=
+\sum_{k=1}^K w_k
+E_P[(\pi(X)-\pi_P^*(X))b_k(X)\mid\mathcal T_k],
+\]
+with \(b_k\) as in Lemma~\ref{lem:drift-derived}.  On
+\(G_n=\cap_{k=1}^K G_{n,k}\), Lemma~\ref{lem:drift-derived} gives
+\[
+\sup_{\pi\in\Pi}|B_n(\pi)|\le C\bar\rho_n^*.
+\]
+For each \(\pi\),
+\[
+\sum_{k=1}^K w_k
+E_P[\widehat f_{\pi,k,n}(O)\mid\mathcal T_k]
+=
+-R_P(\pi)+B_n(\pi),
+\]
+by Lemma~\ref{lem:welfare-identity} and the definition of \(b_k\).
+
+Since \(\widehat\pi_n^{\mathsf F}\) maximizes the feasible empirical welfare
+criterion and \(\pi_P^*\in\Pi\),
+\[
+0\le
+\sum_{k=1}^K w_k\mathbb P_{n,k}
+\widehat f_{\widehat\pi_n^{\mathsf F},k,n}.
+\]
+Therefore, on \(G_n\),
+\[
+R_P(\widehat\pi_n^{\mathsf F})
+\le
+\sum_{k=1}^K w_k
+(\mathbb P_{n,k}-P)\widehat f_{\widehat\pi_n^{\mathsf F},k,n}
++B_n(\widehat\pi_n^{\mathsf F}).
+\]
+By the definition of \(\widehat Z_n(P)\),
+\[
+R_P(\widehat\pi_n^{\mathsf F})
+\le
+\widehat Z_n(P)
++\frac12R_P(\widehat\pi_n^{\mathsf F})
++C\bar\rho_n^*.
+\]
+Thus
+\[
+R_P(\widehat\pi_n^{\mathsf F})\one_{G_n}
+\le
+2\widehat Z_n(P)\one_{G_n}+C\bar\rho_n^*.
+\]
+The regret is bounded by \(2\), and
+\[
+P^n(G_n^c)\le\sum_{k=1}^K P^n(G_{n,k}^c)
+\le KC_G\bar\rho_n^*.
+\]
+Taking expectations and applying Lemma~\ref{lem:feasible-vc-offset} gives
+\[
+E_P R_P(\widehat\pi_n^{\mathsf F})
+\le C\bar\rho_n^*
+\]
+uniformly over \(P\in\mathcal Q\).  Substituting the definitions of
+\(h_n^*\), \(L_n^*\), and \(r_*(\alpha,\gamma)\) gives the displayed rate.
+\end{proof}
+
+\begin{lemma}[Primitive witnesses are overlap-class laws]\label{lem:witness-membership}
+Suppose Assumption~\ref{ass:primitive-cube} holds.  Fix
+\(\beta=\beta_{\alpha,\gamma}\) and a sufficiently small \(h\).  Define
+\[
+q_h=q(h).
+\]
+Then there are paired laws \(P_{h,+},P_{h,-}\in\mathcal P_{\alpha,\gamma}\)
+with common covariate law \(Q_h\), common logging propensity, common law off
+an active block \(B_h\), and
+\[
+Q_h(B_h)\asymp h^\alpha,\qquad
+\tau_{P_{h,+}}=h,\quad \tau_{P_{h,-}}=-h\quad\text{on }B_h,
+\]
+\[
+\tau_{P_{h,+}}=\tau_{P_{h,-}}=\tau_0\in(0,1)\quad\text{off }B_h,\qquad
+p_{P_{h,+}}=p_{P_{h,-}}\asymp q_h\quad\text{on }B_h.
+\]
+Moreover
+\[
+\chi^2(P_{h,+}\|P_{h,-})\le C h^{2+\alpha+\beta},
+\]
+and every deterministic \(\pi\in\Pi\) satisfies
+\[
+R_{P_{h,+}}(\pi)+R_{P_{h,-}}(\pi)\ge c h^{1+\alpha}.
+\]
+If Assumption~\ref{ass:learnable-cube} also holds and \(h=h_n\) with
+\(n h_n^{2+\alpha+\beta}=1\), then the two laws satisfy the high-level
+foldwise nuisance-rate condition of Assumption~\ref{ass:nuisance} with
+\[
+q_n=q(h_n),\qquad
+\rho_n=h_n^{1+\alpha}\{\log(e/h_n^{1+\alpha})\}^{(1+\alpha)/(2+\alpha)}.
+\]
+\end{lemma}
+
+\begin{proof}
+By Assumption~\ref{ass:primitive-cube}, choose \(Q_h\), \(B_h\),
+\(e_{h,\beta}\), and the two bounded regression systems.  Let
+\[
+m_h:=Q_h(B_h),\qquad c h^\alpha\le m_h\le C h^\alpha.
+\]
+On \(B_h\), take the weak-arm propensity to be comparable to \(q_h\); off
+\(B_h\), keep the propensities in \([4q_0,1-4q_0]\).  The paired laws have
+\(X\sim Q_h\) and identical \(A\mid X\) distributions.  They differ only in
+the weak-arm outcome regression on \(B_h\).  For concreteness, take the weak
+arm to be \(A=1\), take \(Y\in\{-1,1\}\), set the untreated conditional mean
+to zero everywhere, and set
+\[
+P_{h,+}(Y=1\mid A=1,X=x)=\frac{1+h}{2},\qquad
+P_{h,-}(Y=1\mid A=1,X=x)=\frac{1-h}{2}
+\]
+for \(x\in B_h\).  Off \(B_h\), set the treated conditional mean to the
+common value \(\tau_0\).
+
+The laws satisfy Assumption~\ref{ass:causal-sampling} by construction.
+Choose the margin scale \(u_0<\tau_0/2\).  There is no zero-effect region.
+For \(0<u\le u_0\), the only possible strict effects below \(u\) are on
+\(B_h\):
+\[
+P_{h,\pm}\{0<|\tau_{P_{h,\pm}}(X)|\le u\}=0
+\quad (u<h),
+\]
+and for \(u\ge h\),
+\[
+P_{h,\pm}\{0<|\tau_{P_{h,\pm}}(X)|\le u\}=m_h
+\le C h^\alpha\le C u^\alpha.
+\]
+The policy-class condition follows from the local label-flexibility in
+Assumption~\ref{ass:primitive-cube}.
+
+It remains to verify Assumption~\ref{ass:overlap-decay}.  If \(\gamma=0\),
+choose the overlap constant \(c_o\) below the lower bound for the weak-arm
+propensity on the strict-margin region; then the overlap event is empty in
+the required range.  Let \(\gamma>0\).  If \(\beta=0\), then \(q_h=q_0\) and
+the on-block weak arm is bounded away from zero, so the same empty-event
+argument applies after choosing \(c_o u_0^\gamma\) below that bound.  Now
+suppose \(\beta>0\).  For \(0<u\le u_0\), the off-block contrast \(\tau_0\)
+is larger than \(u\), so the overlap event can only include \(B_h\).  It is
+empty unless \(u\ge h\) and \(v\gtrsim h^\beta\).  In the required range
+\(v\le c_o u^\gamma\), nonemptiness also implies
+\[
+u\gtrsim h^{\beta/\gamma}.
+\]
+Because \(\beta/\gamma=\alpha/(\alpha+1)\), this is the binding window for
+small \(h\).  Hence
+\[
+u^\alpha v^{1/\gamma}
+\gtrsim h^{\alpha\beta/\gamma}h^{\beta/\gamma}
+=h^{(\alpha+1)\beta/\gamma}
+=h^\alpha.
+\]
+Thus
+\[
+P_{h,\pm}\{p_{P_{h,\pm}}(X)\le v,\;0<|\tau_{P_{h,\pm}}(X)|\le u\}
+\le m_h
+\le C u^\alpha v^{1/\gamma}.
+\]
+
+The one-observation \(\chi^2\) divergence is concentrated on
+\(\{X\in B_h,A=1\}\), which has probability \(m_h q_h\).  The \(\chi^2\)
+divergence between Bernoulli laws with success probabilities \((1+h)/2\) and
+\((1-h)/2\) is at most \(8h^2\) for \(h\le1/2\).  Hence
+\[
+\chi^2(P_{h,+}\|P_{h,-})
+\le C m_h q_h h^2
+\le C h^{2+\alpha+\beta}.
+\]
+
+The optimal policies are opposite on \(B_h\).  By
+Lemma~\ref{lem:welfare-identity}, every deterministic \(\pi\in\Pi\) satisfies
+\[
+R_{P_{h,+}}(\pi)+R_{P_{h,-}}(\pi)
+\ge h Q_h(B_h)
+\asymp h^{1+\alpha}.
+\]
+
+If Assumption~\ref{ass:learnable-cube} holds, the active block is an observed
+cell and the logging propensity is known by design on the witness partition.
+The learner sets \(\widehat e^{(-k)}=e_{h,\beta}\), so
+\[
+\|\widehat e^{(-k)}-e_{h,\beta}\|_{\infty,Q_h}
+=
+\|\widehat e^{(-k)}-e_{h,\beta}\|_{2,Q_h}
+=0.
+\]
+The propensity sup-norm condition in Assumption~\ref{ass:nuisance} is
+therefore exact, and the weighted propensity/outcome \(L_2\) product is zero.
+
+It remains only to control the outcome-regression part of
+Assumption~\ref{ass:nuisance}.  Let \(h=h_n\), so
+\[
+n h^{2+\alpha+\beta}=1,
+\qquad
+L_h=\log(e/h^{1+\alpha}),
+\qquad
+a_\alpha=\frac{1+\alpha}{2+\alpha}.
+\]
+The expected number of training observations in the active weak arm is of
+order
+\[
+n\,Q_h(B_h)\,q_h\asymp n h^\alpha h^\beta=h^{-2}
+\]
+when \(\beta>0\), and the same order holds when \(\beta=0\) because
+\(q_h=q_0\).  The active strong-arm cell count is no smaller in order.
+Chernoff's inequality gives probability at least \(1-\exp(-c h^{-2})\) that
+the relevant active-arm training counts are at least a constant multiple of
+\(h^{-2}\).  Conditional on those counts, Bernstein's inequality for bounded
+variables gives
+\[
+\Pr\!\left(
+|\widehat\mu_a^{(-k)}-\mu_a|>C h L_h^{a_\alpha}
+\text{ on the active cell}
+\,\middle|\,\mathcal T_k\text{ cell counts}\right)
+\le 2\exp\{-c C^2 L_h^{2a_\alpha}\}.
+\]
+Choose \(C\) large enough.  Since \(a_\alpha\ge1/2\),
+\[
+\exp\{-c C^2 L_h^{2a_\alpha}\}
+\le C' h^{1+\alpha}L_h^{a_\alpha}
+\]
+for all sufficiently small \(h\).  A finite union over the two arms, two
+signs, and fixed folds gives an event with failure probability at most
+\(C h^{1+\alpha}L_h^{a_\alpha}\) on which all active-cell outcome
+regression errors are bounded by \(C h L_h^{a_\alpha}\).  The truncation
+keeps all estimates in \([-1,1]\).
+
+Since off-block propensities are at least \(4q_0\), for sufficiently small
+\(h\) the set \(\{p_P\le2q_h\}\) is contained in \(B_h\).  Therefore, on the
+displayed event,
+\[
+\sum_{a=0}^1
+E_{Q_h}\!\left[
+|\widehat\mu_a^{(-k)}(X)-\mu_a(X)|
+\one\{p_P(X)\le2q_h\}
+\,\middle|\,\mathcal T_k\right]
+\le C\,Q_h(B_h)\,hL_h^{a_\alpha}
+\le C h^{1+\alpha}L_h^{a_\alpha}.
+\]
+This is exactly the required scale \(\rho_n\).  Thus the high-level
+nuisance-rate condition holds for the two known-logging finite-cell witness
+laws with common constants.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:lower-full-class}]
+Apply Lemma~\ref{lem:witness-membership} with
+\(\beta=\beta_{\alpha,\gamma}\) and \(h=h_n\).  The resulting laws are
+members of \(\mathcal P_{\alpha,\gamma}\) and have the stated block mass,
+contrast, weak-arm propensity, and one-observation divergence.  The same
+lemma gives
+\[
+\inf_{\pi\in\Pi}\max_{\sigma\in\{+,-\}}R_{P_{n,\sigma}}(\pi)
+\ge c h_n^{1+\alpha}.
+\]
+The local label-flexibility clause gives the reverse order: choose a policy
+that uses the common off-block label \(1\) and either one of the two
+active-block labels.  It makes no active-block mistakes under one sign and
+pays at most \(h_nP_X(B_n)\le C h_n^{1+\alpha}\) under the other sign.  Hence
+the deterministic two-law separation is \(\asymp h_n^{1+\alpha}\).
+
+Since
+\[
+n h_n^{2+\alpha+\beta}=1,
+\]
+the lemma gives
+\[
+n\chi^2(P_{n,+}\|P_{n,-})\le C_\chi.
+\]
+Using the witness constants in Assumption~\ref{ass:primitive-cube}, calibrate
+the construction so that
+\[
+n\chi^2(P_{n,+}\|P_{n,-})\le 8C_BC_Q<\log 5.
+\]
+Tensorization gives
+\[
+1+\chi^2(P_{n,+}^{\otimes n}\|P_{n,-}^{\otimes n})
+=(1+\chi^2(P_{n,+}\|P_{n,-}))^n
+\le \exp(8C_BC_Q)<5.
+\]
+For any data-dependent policy \(\widehat\pi\), define a test that reports
+``+'' when the policy assigns treatment \(1\) to at least half of the active
+block and reports ``-'' otherwise.  If this test is wrong, the corresponding
+active-block regret is at least a fixed multiple of \(h_nP_X(B_n)\).  Le
+Cam's two-point inequality and
+\(\operatorname{TV}(P,Q)\le\tfrac12\sqrt{\chi^2(P\|Q)}\) yield a fixed
+positive lower bound on the sum of the two testing error probabilities.
+Integrating the active-block regret separation gives
+\[
+E_{P_{n,+}}R_{P_{n,+}}(\widehat\pi)
++E_{P_{n,-}}R_{P_{n,-}}(\widehat\pi)
+\ge c h_n^{1+\alpha}.
+\]
+Taking the maximum over the two signs and then the infimum over all
+measurable estimators proves
+\[
+\mathfrak M_n(\alpha,\gamma)\ge c h_n^{1+\alpha}
+=c n^{-r_*(\alpha,\gamma)}.
+\]
+If Assumption~\ref{ass:learnable-cube} holds,
+Lemma~\ref{lem:witness-membership} verifies the final high-level
+nuisance-rate assertion for the same witness laws.
+\end{proof}
+
+\begin{proof}[Proof of Corollary~\ref{cor:feasible-bracket}]
+The upper bound is Theorem~\ref{thm:feasible-upper-log} applied to
+\(\mathcal Q\), followed by the definition of \(\mathfrak M_n(\mathcal Q)\)
+as an infimum over all data-dependent policies.  If \(\mathcal Q\) contains
+the two witness laws from Theorem~\ref{thm:lower-full-class} for all large
+\(n\), the Le Cam lower-bound argument in the proof of
+Theorem~\ref{thm:lower-full-class} applies inside \(\mathcal Q\), giving
+\(\mathfrak M_n(\mathcal Q)\ge c n^{-r_*(\alpha,\gamma)}\).
+\end{proof}
+
+\section{Sanity checks}
+\paragraph{Strict overlap.}
+If \(\gamma=0\), then \(\beta_{\alpha,0}=0\),
+\[
+r_*(\alpha,0)=\frac{1+\alpha}{2+\alpha}.
+\]
+The clipping level and the lower-bound weak-arm propensity are fixed
+constants bounded away from zero.  The converse construction has information
+\(h^{2+\alpha}\) and regret \(h^{1+\alpha}\), matching the standard
+fast-margin polynomial exponent.  The finite-VC feasible upper fixed point is
+\[
+\rho\asymp
+\sqrt{\rho^{\alpha/(1+\alpha)}\log(e/\rho)/n},
+\]
+so the proved feasible benchmark, conditional on the foldwise nuisance-rate
+condition, is
+\[
+n^{-(1+\alpha)/(2+\alpha)}
+(\log n)^{(1+\alpha)/(2+\alpha)}.
+\]
+
+\paragraph{Zero-margin exponent with weak-overlap parameter.}
+If \(\alpha=0\) and \(\gamma>0\), then
+\(\beta_{\alpha,\gamma}=0\).  The clipping convention uses \(q(h)=q_0\),
+not \(h^0=1\).  The overlap witness has constant weak-arm propensity and
+therefore satisfies the overlap-tail condition by the empty-event argument
+for \(v\le c_o u^\gamma\).  The converse exponent is
+\(r_*(0,\gamma)=1/2\), and the finite-VC feasible upper benchmark is
+\(n^{-1/2}(\log n)^{1/2}\).
+
+\paragraph{Diagnostic point \((\alpha,\gamma)=(2,2)\).}
+Here
+\[
+\beta_{2,2}=\frac{2\cdot2}{2+1}=\frac43,\qquad
+D_{2,2}=2+2+\frac43=\frac{16}{3},
+\]
+so
+\[
+r_*(2,2)=\frac3{16/3}=\frac9{16}.
+\]
+The lower witness uses \(h_n=n^{-3/16}\), weak-arm propensity
+\[
+q_n=h_n^{4/3}=n^{-1/4},
+\]
+one-observation information \(h_n^{16/3}=n^{-1}\), and regret
+\[
+h_n^3=n^{-9/16}.
+\]
+The finite-VC feasible upper fixed point with \(q_n=n^{-1/4}\) solves
+\[
+\rho\asymp\sqrt{\rho^{2/3}\log(e/\rho)/(nq_n)}
+=\sqrt{\rho^{2/3}\log(e/\rho)n^{-3/4}},
+\]
+giving
+\[
+\rho\asymp n^{-9/16}(\log n)^{3/4}.
+\]
+Thus a full-class \(n^{-3/4}\) rate is too fast at this diagnostic point.
+
+\paragraph{Large \(\gamma\).}
+As \(\gamma\) grows with \(\alpha>0\),
+\(\beta_{\alpha,\gamma}=\alpha\gamma/(\alpha+1)\) grows linearly.  The
+weak-arm layer can then be made rarer while staying in the overlap-tail
+class, and the converse exponent \(r_*(\alpha,\gamma)\) decreases.  This is
+the expected behavior for a fixed offline design: the regret cost is
+concentrated in a small margin block, but the samples that identify its sign
+arrive with probability \(h^{\beta_{\alpha,\gamma}}\).
+
+\paragraph{Known-logging cell means.}
+For the lower witnesses with \(h=h_n\), the active weak-arm training count is
+of order \(h^{-2}\).  A cell-mean threshold of order \(h\) has only constant
+Bernstein exponent and is not enough for a good event whose failure
+probability is of order \(\bar\rho_n^*\).  The threshold
+\[
+h\{\log(e/h^{1+\alpha})\}^{(1+\alpha)/(2+\alpha)}
+\]
+has exponent
+\[
+\{\log(e/h^{1+\alpha})\}^{2(1+\alpha)/(2+\alpha)},
+\]
+which is at least linear in \(\log(e/h^{1+\alpha})\).  With a sufficiently
+large constant, the failure probability is bounded by
+\(C\bar\rho_n^*\), while the local \(L_1(P_X)\) contribution remains
+\(h^\alpha\) times the threshold, exactly \(\bar\rho_n^*\).
+
+\section{Counterexample or minimality check}
+\paragraph{Why the faster \(r(\alpha,\gamma)\) claim fails.}
+The two-point construction in Theorem~\ref{thm:lower-full-class} is a
+counterexample whenever
+\[
+\frac{1+\alpha}{2+\alpha+\delta_{\alpha,\gamma}}
+>
+\frac{1+\alpha}{2+\alpha+\beta_{\alpha,\gamma}}.
+\]
+At \((\alpha,\gamma)=(2,2)\), \(\delta_{2,2}=0\), so Conjecture 1 predicts
+\(3/4\).  But the weak-overlap laws with active mass \(h^2\), contrast
+\(h\), and weak-arm propensity \(h^{4/3}\) satisfy the law-side assumptions
+and force regret at least \(n^{-9/16}\).  No estimator can have uniformly
+smaller expected regret on a class containing these laws.
+
+\paragraph{Minimality of \(\beta_{\alpha,\gamma}\).}
+Keep active mass \(h^\alpha\), contrast height \(h\), and weak-arm propensity
+\(h^\beta\).  If \(\beta>\alpha\gamma/(\alpha+1)\), then at the tight window
+\[
+v\asymp h^\beta,\qquad u\asymp h^{\beta/\gamma},
+\]
+the overlap envelope is
+\[
+u^\alpha v^{1/\gamma}
+\asymp h^{(\alpha+1)\beta/\gamma}
+=o(h^\alpha).
+\]
+Thus the active block violates Assumption~\ref{ass:overlap-decay}.  If
+\(\beta\le\alpha\gamma/(\alpha+1)\), Lemma~\ref{lem:witness-membership}
+verifies membership for the primitive witnesses.  Hence
+\(\beta_{\alpha,\gamma}\) is the least informative admissible weak-arm layer.
+
+\paragraph{Why finite VC dimension gives a logarithmic upper factor.}
+At the no-log scale \(\rho_0=(h_n^*)^{1+\alpha}\), the localized finite-VC
+maximal inequality gives
+\[
+E_P\sup_{R_P(\pi)\le\rho_0}
+|(\mathbb P_n-P)f_{\pi,n}|
+\lesssim
+\sqrt{\frac{(q_n^*)^{-1}\rho_0^{\alpha/(1+\alpha)}
+\log(e/\rho_0)}{n}}
++
+\frac{(q_n^*)^{-1}\log(e/\rho_0)}{n}.
+\]
+The leading term equals
+\[
+(h_n^*)^{1+\alpha}\sqrt{\log(e/\rho_0)}
+\]
+up to constants, not \(O(\rho_0)\).  Therefore finite-VC entropy alone closes
+the fixed point at
+\[
+\rho_0\{\log(e/\rho_0)\}^{(1+\alpha)/(2+\alpha)}.
+\]
+
+\paragraph{Why overlap decay alone is not an upper-bound nuisance condition.}
+Assumption~\ref{ass:overlap-decay} controls the joint population mass of
+small margins and small weak-arm propensities.  It does not state that a
+particular regression or propensity learner estimates \(\mu_a\) and \(e_P\)
+at the clipping-localized rates in Assumption~\ref{ass:nuisance}.  The upper
+proof consumes the displayed foldwise nuisance rates, margin localization,
+finite-VC entropy, and bounded clipped scores.  Thus the upper theorem is a
+conditional achievability result over law collections where those rates are
+available, while the overlap assumption supplies the lower-bound calibration
+and the natural clipping exponent.
+
+\paragraph{Why product-only nuisance control is insufficient.}
+Suppose \(e_P\) is known exactly, so a propensity-estimation product is zero.
+Let \(\widehat\mu_1-\mu_1\) be nonzero on the clipped weak-overlap region
+\(\{p_P(X)<q_n^*,0<|\tau_P(X)|\le h_n^*\}\).  Even with known propensity, the
+clipped treated-arm term has conditional mean contribution
+\[
+(\widehat\mu_1-\mu_1)(X)
+\left\{1-\frac{e_P(X)}{e_{q_n^*}(X;\eta_P)}\right\},
+\]
+which is first order on the region \(e_P(X)<q_n^*\).  Therefore a
+product-only remainder cannot imply the feasible clipped-score drift.  The
+local outcome-regression term in Assumption~\ref{ass:nuisance} is needed.
+
+\paragraph{Why empirical off-block propensity witnesses are not asserted.}
+For the finite-cell witnesses with \(h=h_n\), an empirical off-block
+propensity estimate has \(L_2(P_X)\) error of order
+\[
+n^{-1/2}=h^{(2+\alpha+\beta)/2}.
+\]
+The active weak-arm outcome-regression estimate has \(L_2(P_X)\) error of
+order \(h^{1+\alpha/2}\), up to the logarithmic threshold used for the
+high-probability event.  If the off-block propensity error enters the
+weighted product in Assumption~\ref{ass:nuisance}, the polynomial part of
+that product is
+\[
+q_h^{-1}\,h^{(2+\alpha+\beta)/2}\,h^{1+\alpha/2}
+=
+h^{2+\alpha-\beta/2}.
+\]
+The target scale is \(h^{1+\alpha}\) up to the finite-VC logarithm, so this
+bound is too large when \(\beta>2\).  The empirical off-block sup-norm
+propensity error is of order
+\[
+\sqrt{\log n/n}
+=
+h^{(2+\alpha+\beta)/2}\sqrt{\log n},
+\]
+whereas Assumption~\ref{ass:nuisance} requires it to be at most a constant
+multiple of \(q_h=h^\beta\).  This fails polynomially when
+\(\beta>2+\alpha\), with a logarithmic boundary obstruction.  The
+known-logging witness condition therefore uses known propensities on the
+finite witness partition, which is primitive for a fixed offline logging
+design and leaves the active sign problem intact.
+
+\paragraph{Why bounded residual weighting cannot remove the bias.}
+Consider any treated-arm score of the residual-weight form
+\[
+S_1(X,A,Y)=c_1(X)\widehat\mu_1(X)+w_1(X)A\{Y-\widehat\mu_1(X)\}.
+\]
+Conditional on \(X=x\),
+\[
+E_P[S_1\mid X=x]
+=e_P(x)w_1(x)\mu_1(x)
++\{c_1(x)-e_P(x)w_1(x)\}\widehat\mu_1(x).
+\]
+For this conditional mean to equal \(\mu_1(x)\) for every value of
+\(\widehat\mu_1(x)\), the coefficient of \(\widehat\mu_1(x)\) must be zero
+and the coefficient of \(\mu_1(x)\) must be one.  Thus
+\(w_1(x)=1/e_P(x)\).  The untreated arm gives
+\(w_0(x)=1/\{1-e_P(x)\}\).  Exact first-order orthogonality for arbitrary
+outcome-regression error therefore forces the unclipped inverse-propensity
+weights.  A bounded clipped residual score can either control variance by
+clipping or be fully orthogonal to arbitrary outcome error, but not both.
+
+\paragraph{Open exact-value qualification.}
+Corollary~\ref{cor:feasible-bracket} gives a conditional data-only feasible
+upper theorem with the finite-VC logarithmic multiplier and a matching
+polynomial lower exponent for law collections containing the known-logging
+finite-cell witnesses.  It does not prove a no-log upper bound under finite
+VC dimension alone.  It also does not prove an upper bound over the larger
+class \(\mathcal P_{\alpha,\gamma}\) without nuisance learnability
+conditions.  The exact no-log full-class minimax value remains open.
+
+\section{Formalization checklist}
+\begin{itemize}[leftmargin=*]
+\item \textbf{Causal objects.}  \(\tau_P:\mathcal X\to\mathbb R\),
+\(\pi_P^*(x)=\one\{\tau_P(x)\ge0\}\), \(V_P(\pi)=E_P[\pi(X)\tau_P(X)]\),
+and \(R_P(\pi)=V_P(\pi_P^*)-V_P(\pi)\).  Role: target estimand and loss.
+\item \textbf{Regret identity.}  Lemma~\ref{lem:welfare-identity} rewrites
+\(R_P(\pi)\) as
+\(E_P[|\tau_P(X)|\one\{\pi(X)\ne\pi_P^*(X)\}]\).  Role: connects causal
+welfare regret to sign classification.
+\item \textbf{Law classes.}  \(\mathcal P_{\alpha,\gamma}\) is carved by
+Assumptions~\ref{ass:causal-sampling}--\ref{ass:policy-class};
+\(\mathfrak M_n(\mathcal Q)\) is the minimax risk over a generic collection
+\(\mathcal Q\).  Role: separates law-side lower-bound classes from
+achievability-side learner conditions.
+\item \textbf{High-level nuisance rates.}  Assumption~\ref{ass:nuisance}
+states a training-fold good event, propensity sup-norm accuracy at the
+clipping scale, local outcome \(L_1\) accuracy on \(\{p_P\le2q_n\}\), and a
+weighted propensity/outcome \(L_2\) product rate.  Role: conditional inputs
+for the feasible upper theorem.
+\item \textbf{Overlap layer.}  \(\beta_{\alpha,\gamma}=0\) for \(\gamma=0\)
+and \(\beta_{\alpha,\gamma}=\alpha\gamma/(\alpha+1)\) for \(\gamma>0\).
+Role: optimized weak-arm exponent allowed by Assumption~\ref{ass:overlap-decay}.
+\item \textbf{Clipping convention.}  \(q(h)=q_0\) whenever
+\(\beta_{\alpha,\gamma}=0\), and
+\(q(h)=h^{\beta_{\alpha,\gamma}}\) otherwise.  Role: keeps the clipping level
+inside \((0,1/2]\), including the \(\alpha=0,\gamma>0\) case.
+\item \textbf{Rate and logarithmic scale.}
+\(D_{\alpha,\gamma}=2+\alpha+\beta_{\alpha,\gamma}\),
+\(h_n^*=n^{-1/D_{\alpha,\gamma}}\),
+\(q_n^*=q(h_n^*)\),
+\(r_*(\alpha,\gamma)=(1+\alpha)/D_{\alpha,\gamma}\),
+\(L_n^*=\log\{e/(h_n^*)^{1+\alpha}\}\), and
+\(\bar\rho_n^*=(h_n^*)^{1+\alpha}(L_n^*)^{(1+\alpha)/(2+\alpha)}\).
+Role: lower-bound calibration and finite-VC feasible upper-bound calibration.
+\item \textbf{Clipped score.}  \(e_q(x;\eta)\), \(\Gamma_q(O;\eta)\), and
+\(\widehat\Gamma_{q,k}(O)\).  Role: explicit data-only score used by the
+estimator.
+\item \textbf{Feasible estimator.}
+\(\widehat\pi_n^{\mathsf F}\in\arg\max_{\pi\in\Pi}\sum_k w_k n_k^{-1}
+\sum_{i\in I_k}\pi(X_i)\Gamma_{q_n^*}(O_i;\widehat\eta^{(-k)})\).  Role:
+sample-to-policy map in Theorem~\ref{thm:feasible-upper-log}.
+\item \textbf{Derived drift.}  Lemma~\ref{lem:drift-derived} derives the
+policy-uniform clipped-score conditional-bias bound from the foldwise
+nuisance-rate condition.  Role: prevents laundering of the first-order
+clipped weak-arm bias.
+\item \textbf{VC localization.}  Lemma~\ref{lem:feasible-vc-offset} combines
+finite VC complexity, estimated-score second-moment control, margin
+localization, and the entropy multiplier \(\log(e/\rho)\).  Role: proves the
+feasible fixed point \(\bar\rho_n^*\).
+\item \textbf{Lower-bound witnesses.}  The witness covariate law \(Q_h\),
+active block \(B_h\), \(m_h=Q_h(B_h)\), \(P_{h,+}\), \(P_{h,-}\),
+\(q_h=q(h)\), and the fixed off-block contrast \(\tau_0>0\).  Lemma
+\ref{lem:witness-membership} verifies bounded outcomes, positivity, margin,
+overlap decay, policy membership, divergence, and high-level nuisance-rate
+compatibility when Assumption~\ref{ass:learnable-cube} is imposed.
+\item \textbf{Known-logging witness learnability.}  In
+Assumption~\ref{ass:learnable-cube}, \(\widehat e=e_{h,\beta}\) is known by
+design on the finite witness partition, so the lower-witness propensity
+sup-norm error and propensity/outcome product are zero.  Outcome regressions
+are empirical cell means, and the active weak-arm cell has expected sample
+size of order \(h^{-2}\).  Role: verifies the high-level nuisance condition
+using the inflated threshold \(h\{\log(e/h^{1+\alpha})\}^{(1+\alpha)/(2+\alpha)}\).
+\item \textbf{Divergences.}  \(\chi^2(P\|Q)\) and total variation.  Role:
+product-law indistinguishability and Le Cam testing lower bound.
+\end{itemize}
+
+\section{Conclusion and references}
+The calibrated weak-arm exponent is
+\[
+\beta_{\alpha,\gamma}=
+\begin{cases}
+0,&\gamma=0,\\
+\alpha\gamma/(\alpha+1),&\gamma>0,
+\end{cases}
+\]
+and the polynomial regret exponent is
+\[
+r_*(\alpha,\gamma)=
+\frac{1+\alpha}{2+\alpha+\beta_{\alpha,\gamma}}.
+\]
+A primitive two-point construction gives the full weak-overlap lower bound
+\[
+\mathfrak M_n(\alpha,\gamma)\ge c n^{-r_*(\alpha,\gamma)}.
+\]
+For any law collection over which the stated foldwise nuisance-rate condition
+holds, the cross-fitted clipped-AIPW empirical welfare maximizer is data-only
+and satisfies
+\[
+\sup_{P\in\mathcal Q}
+E_P R_P(\widehat\pi_n^{\mathsf F})
+\le
+C n^{-r_*(\alpha,\gamma)}(\log n)^{(1+\alpha)/(2+\alpha)}.
+\]
+If the collection contains the known-logging finite-cell witnesses, the same
+collection has the matching polynomial lower exponent.  The logarithmic
+multiplier comes from finite-VC local entropy; removing it requires stronger
+primitive local-complexity structure.  An upper theorem over the larger class
+\(\mathcal P_{\alpha,\gamma}\) without nuisance learnability is not
+established here.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem[Athey and Wager(2021)]{AtheyWager2021PolicyLearning}
+Athey, S. and Wager, S. (2021).
+Policy learning with observational data.
+\emph{Econometrica}, 89(1), 133--161.
+
+\bibitem[Audibert and Tsybakov(2007)]{AudibertTsybakov2007PluginClassifiers}
+Audibert, J.-Y. and Tsybakov, A. B. (2007).
+Fast learning rates for plug-in classifiers.
+\emph{Annals of Statistics}, 35(2), 608--633.
+
+\bibitem[Chernozhukov et al.(2018)]{ChernozhukovEtAl2018DML}
+Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C.,
+Newey, W., and Robins, J. (2018).
+Double/debiased machine learning for treatment and structural parameters.
+\emph{The Econometrics Journal}, 21(1), C1--C68.
+
+\bibitem[D'Amour et al.(2021)]{DAmourDingFellerLeiSekhon2017Overlap}
+D'Amour, A., Ding, P., Feller, A., Lei, L., and Sekhon, J. (2021).
+Overlap in observational studies with high-dimensional covariates.
+\emph{Journal of Econometrics}, 221(2), 644--654.
+
+\bibitem[Jin et al.(2022)]{JinRenYangWang2022PessimisticPolicy}
+Jin, Y., Ren, Z., Yang, Z., and Wang, Z. (2022).
+Policy learning ``without'' overlap: Pessimism and generalized empirical
+Bernstein's inequality.
+arXiv:2212.09900.
+
+\bibitem[Kallus(2017)]{Kallus2017BalancedPolicy}
+Kallus, N. (2017).
+Balanced policy evaluation and learning.
+arXiv:1705.07384.
+
+\bibitem[Kitagawa and Tetenov(2018)]{KitagawaTetenov2018WhoShouldBeTreated}
+Kitagawa, T. and Tetenov, A. (2018).
+Who should be treated? Empirical welfare maximization methods for treatment
+choice.
+\emph{Econometrica}, 86(2), 591--616.
+
+\bibitem[Luedtke and Chambaz(2017)]{LuedtkeChambaz2017FasterRates}
+Luedtke, A. and Chambaz, A. (2017).
+Faster rates for policy learning.
+arXiv:1704.06431.
+
+\bibitem[Ma et al.(2023)]{MaSantAnnaSasakiUra2023DRWeakOverlap}
+Ma, Y., Sant'Anna, P. H. C., Sasaki, Y., and Ura, T. (2023).
+Doubly robust estimators with weak overlap.
+arXiv:2304.08974.
+
+\bibitem[Vapnik and Chervonenkis(1971)]{VapnikChervonenkis1971}
+Vapnik, V. N. and Chervonenkis, A. Y. (1971).
+On the uniform convergence of relative frequencies of events to their
+probabilities.
+\emph{Theory of Probability and its Applications}, 16(2), 264--280.
+
+\bibitem[van der Vaart and Wellner(1996)]{VanderVaartWellner1996}
+van der Vaart, A. W. and Wellner, A. W. (1996).
+\emph{Weak Convergence and Empirical Processes}.
+Springer.
+
+\bibitem[Zhan et al.(2021)]{ZhanRenAtheyZhou2021AdaptivePolicy}
+Zhan, R., Ren, Z., Athey, S., and Zhou, Z. (2021).
+Policy learning with adaptively collected data.
+arXiv:2105.02344.
+\end{thebibliography}
+
+\end{document}

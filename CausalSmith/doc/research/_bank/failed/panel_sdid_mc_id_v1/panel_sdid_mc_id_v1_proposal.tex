@@ -1,0 +1,522 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=panel\_sdid\_mc\_id, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{panel\_sdid\_mc\_id} / \texttt{v1}%
+  \\ \large\textit{Strict span lattice for SCM, ridge ASCM, SDiD, and matrix completion under bounded-rank panels}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\textbf{Tuple:} $(qid,\ specialization,\ p,\ assignment,\ target,\ regression)$.
+Here $qid=\texttt{panel\_sdid\_mc\_id}$ and
+$specialization=\texttt{v1}$. The memory length is $p=0$: treatment is a
+single absorbing intervention beginning after $T_0$ pre-treatment periods, so
+the untreated potential outcome is $Y_{it}(0)$. The assignment is one treated
+unit (or one treated cohort collapsed to its average) observed with $N_0$
+never-treated donors, $T_0\ge 2$ pre-periods, and one target post period
+$T_1=T_0+1$; staggered-cohort variants enter only through the donor/post vector
+and are not assumed in the headline result. The target is the post-period ATT
+$\tau=Y_{0,T_1}(1)-Y_{0,T_1}(0)$ and, equivalently, the untreated
+counterfactual mean $\mu_0=\E[Y_{0,T_1}(0)]$. The regression convention is the
+bounded-rank interactive fixed-effect mean surface
+$m_{it}=\alpha_i+\lambda_t+\ell_i^{\transpose}f_t$ with latent rank at most
+$R$, centered pre-treatment donor matrix $X\in\R^{N_0\times T_0}$, treated
+pre-vector $x_0\in\R^{T_0}$, donor post-vector $y_1\in\R^{N_0}$, and population
+linear functionals for convex SCM, signed/ridge ASCM, SDiD, and rank-$R$ matrix
+completion defined in Section~\ref{sec:setup}.
+
+\begin{abstract}
+Synthetic control, augmented synthetic control, synthetic difference-in-
+differences, and nuclear-norm matrix completion are often presented as nearby
+solutions to the same causal-panel missing-entry problem. This proposal asks
+for the exact population frontier between those solutions in the simplest
+single-shock bounded-rank panel where all four methods can be written as
+linear identifying functionals. The kernel conjecture is a strict span lattice:
+convex SCM, signed/ridge ASCM, SDiD, and rank-$R$ matrix completion coincide
+only on an explicitly defined intersection of observable row-span and
+donor-span certificates, and every inclusion in the lattice is strict on an
+open set of rank-$R$ panels. Resolving the conjecture would turn informal
+"robustness check" comparisons among SCM, ASCM, SDiD, and MC into a diagnostic
+test based on primitive matrices $(X,x_0,y_1)$ rather than on method labels. It
+would also give a clean finite-dimensional target for later staggered-cohort
+extensions, where cohort pooling and time reweighting add further span
+obstructions.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Applied users of synthetic-control methods routinely report SCM, ASCM, SDiD,
+and matrix-completion estimates side by side. The scientific question is
+whether disagreement among those estimates is merely finite-sample instability
+or evidence that the estimators target genuinely different population
+counterfactuals under the same interactive fixed-effect model. Existing papers
+give strong consistency and design motivations for individual methods, but
+they do not give a necessary-and-sufficient algebraic boundary for equality of
+the underlying ATT functionals.
+
+\paragraph{The main finding (proposed).}
+The proposed flagship result is Conjecture~\ref{conj:strict-lattice}: after
+centering out additive unit and time effects, the equality classes of convex
+SCM, signed/ridge ASCM, SDiD, and rank-$R$ matrix completion form a strict span
+lattice. The routine part, Theorem~\ref{thm:certificate-nesting}, defines the
+observable certificates and proves the formal nesting of the equality sets.
+The nontrivial part is the strictness and minimal-witness claim: for each
+proper inclusion there should be a nondegenerate open family of rank-$R$
+panels, with $R\le \min\{N_0,T_0\}$, where the lower method is undefined or
+targets the wrong post counterfactual while the next method in the lattice
+recovers $\mu_0$.
+
+\paragraph{What is new.}
+The closest published anchors are \citet{DoudchenkoImbens2016}, who synthesize
+SCM, regression, and DiD by relaxing weight restrictions, and
+\citet{AtheyBayatiDoudchenkoImbensKhosravi2021}, who connect low-rank matrix
+completion to SCM and unconfoundedness through regularization. The epsilon-gap
+is that neither paper characterizes the equality set of the induced ATT
+functionals as a finite-dimensional span certificate, and neither proves
+strict separation between convex weights, signed/ridge augmentation, two-sided
+SDiD contrasts, and rank completion. This proposal is not a new estimator: it
+is a theorem-level equivalence/separation map for named published estimators.
+
+\paragraph{How it positions in the literature.}
+The proposal belongs to the panel and linear-projection methods cluster,
+specifically the synthetic-control and low-rank causal-panel branch. It uses
+the weighting geometry of \citet{AbadieDiamondHainmueller2010},
+\citet{DoudchenkoImbens2016}, \citet{BenMichaelFellerRothstein2021}, and
+\citet{ArkhangelskyAtheyHirshbergImbensWager2021}, together with the block
+rank-completion geometry of \citet{Xu2017} and
+\citet{AtheyBayatiDoudchenkoImbensKhosravi2021}. It deliberately avoids a
+generic staggered-DiD weighting claim; staggered designs enter only as a named
+downstream consumer through \citet{BenMichaelFellerRothstein2022} and
+\citet{ArkhangelskyImbensLeiLuo2024}.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the robustness workflow recommended by
+\citet{DoudchenkoImbens2016} and implemented in applied SCM/SDiD comparisons:
+if the lattice conjecture is resolved, an applied paper can report which
+observable certificate fails instead of merely listing four different
+estimates. For staggered adoption, the same certificate becomes the
+single-shock primitive that \citet{BenMichaelFellerRothstein2022} and
+\citet{ArkhangelskyImbensLeiLuo2024} would need before cohort pooling can be
+interpreted as an SDiD or ASCM functional.
+
+\paragraph{How research benefits from the conclusion.}
+Readers should stop treating SCM/ASCM/SDiD/MC agreement as a method-brand
+choice and instead check the convex-span, affine-span, two-sided-span, and
+rank-completion certificates before interpreting estimator disagreement.
+
+\section{Related work}
+\citet{AbadieGardeazabal2003} and \citet{AbadieDiamondHainmueller2010}
+provide the convex-weight SCM foundation; they motivate the convex-span
+certificate used here as the smallest node of the lattice.
+\citet{DoudchenkoImbens2016} relax SCM through intercepts, signed weights,
+non-unit-sum weights, and regularization; this is the closest paper to the
+proposed affine/ridge node, but it does not prove a strict hierarchy against
+SDiD or MC.
+\citet{Xu2017} formulates generalized synthetic control under interactive
+fixed effects; it supplies the rank-$R$ nuisance model but not the equality
+frontier among later estimators.
+\citet{ArkhangelskyAtheyHirshbergImbensWager2021} introduce SDiD with unit and
+time weights and prove consistency/asymptotic normality under latent factors;
+the proposal isolates the span condition under which the SDiD population
+functional equals signed ASCM or MC.
+\citet{AtheyBayatiDoudchenkoImbensKhosravi2021} connect nuclear-norm matrix
+completion, IFE, SCM, and unconfoundedness; their comparison is conceptual and
+regularization-based rather than a necessary-and-sufficient equality theorem.
+\citet{BenMichaelFellerRothstein2021} introduce ASCM and ridge ASCM as bias
+correction for imperfect SCM fit; their modified SCM representation is the
+published anchor for the signed/ridge lattice node.
+\citet{AbadieLHour2021} show that penalization changes synthetic-control
+geometry in disaggregated data; their result motivates the warning that
+regularization can change the population functional, not only the computation.
+\citet{BenMichaelFellerRothstein2022} extend SCM to staggered adoption and
+show that average and unit-specific imbalance both matter; their partially
+pooled objective is a downstream setting where the proposed single-shock
+certificate should be checked before pooling.
+\citet{ArkhangelskyImbensLeiLuo2024} give design-robust panel weights for
+general treatment paths; their assignment-weight perspective is adjacent but
+does not settle the low-rank span lattice here.
+
+In-repo prior art is limited to adjacent proposal signals rather than an
+existing catalogue theorem with this kernel. The banked
+\texttt{pid\_synth\_control\_factor\_misspec} proposal studied sharp
+partial-identification intervals under deterministic factor misspecification
+and explicitly left row-span visibility as an assumption; this proposal instead
+targets exact-identification equality and strict separation among named
+estimators. The failed \texttt{eid\_bjs\_efficient\_event\_study} proposal
+explored spectral rank thresholds for efficient event-study functionals; this
+proposal reuses the reviewer signal that thresholds must be pinned to primitive
+matrices, but changes the object to SCM/ASCM/SDiD/MC span certificates.
+The \texttt{pid\_did\_anticipation\_bounded} banked reviews are relevant only
+as a caution about signed coefficient pooling in staggered designs, not as a
+duplicate of the single-shock lattice proposed here.
+
+\section{Formal setup}\label{sec:setup}
+There is one treated unit $i=0$, $N_0$ donor units $i=1,\ldots,N_0$, pre-periods
+$t=1,\ldots,T_0$, and one post period $T_1=T_0+1$. Let
+$X\in\R^{N_0\times T_0}$ be the donor pre-period mean matrix after removing the
+sample donor and time means used by the estimators, let $x_0\in\R^{T_0}$ be the
+treated pre-period mean vector in the same coordinates, and let
+$y_1\in\R^{N_0}$ be the donor post-period mean vector. The untreated mean
+surface satisfies $m_{it}=\alpha_i+\lambda_t+\ell_i^{\transpose}f_t$ with
+factor rank at most $R$ after additive effects are included. The estimand is
+$\mu_0=m_{0,T_1}$ and the ATT is $\tau=Y_{0,T_1}(1)-\mu_0$.
+
+Define the affine donor simplex
+$\Delta=\{w\in\R^{N_0}: w_j\ge 0,\ \one^{\transpose}w=1\}$, the signed affine
+donor plane $A=\{w\in\R^{N_0}:\one^{\transpose}w=1\}$, and the row-space
+projection $P_X$ onto the column space of $X$. The convex SCM counterfactual is
+$\mu_{\mathrm{SCM}}(w)=w^{\transpose}y_1$ for $w\in\Delta$ satisfying
+$X^{\transpose}w=x_0$. The signed/ridge ASCM population functional is
+$\mu_{\mathrm{ASCM}}(w,\beta)=w^{\transpose}y_1+\beta^{\transpose}
+(x_0-X^{\transpose}w)$ with $w\in A$ and $\beta$ equal to a specified ridge
+limit of the donor post-on-pre regression. The SDiD population functional is
+$\mu_{\mathrm{SDID}}(w,\lambda)=w^{\transpose}y_1+\lambda^{\transpose}
+(x_0-X^{\transpose}w)$, where $w\in A$ and $\lambda$ is the limit of the
+pre-period time weights. The rank-$R$ matrix-completion functional
+$\mu_{\mathrm{MC},R}$ is the value $\mu$ for which the completed block matrix
+\[
+M(\mu)=
+\begin{pmatrix}
+x_0^{\transpose} & \mu\\
+X & y_1
+\end{pmatrix}
+\]
+has rank at most $R+2$ after additive effects are uncentered; when the centered
+$X$ has rank $R$ and $x_0,y_1$ are visible in its row and column spans, this
+value is the Schur complement $x_0^{\transpose}X^{+}y_1$.
+
+The observable certificates are
+\[
+\begin{aligned}
+S_R&=x_0^{\transpose}X^{+}y_1,\\
+K_{\mathrm{conv}}&=\inf_{w\in\Delta}
+  \{\|X^{\transpose}w-x_0\|_2^2+|w^{\transpose}y_1-S_R|^2\},\\
+K_{\mathrm{aff}}&=\inf_{w\in A}
+  \{\|X^{\transpose}w-x_0\|_2^2+|w^{\transpose}y_1-S_R|^2\},\\
+K_{\mathrm{sdid}}&=\inf_{w\in A,\lambda\in\R^{T_0}}
+  |w^{\transpose}y_1+\lambda^{\transpose}(x_0-X^{\transpose}w)-S_R|^2,\\
+K_{\mathrm{rank},R}&=\inf_{\mu:\operatorname{rank}M(\mu)\le R+2}
+  |\mu-S_R|^2,
+\end{aligned}
+\]
+with $K_{\mathrm{rank},R}=0$ interpreted as uniqueness of the rank-$R$
+completion value in a neighborhood of the observed block. For
+Conjecture~\ref{conj:penalty-frontier}, let
+$\Phi_{\mathrm{ridge}}(X,x_0,y_1;\rho)$ be the population ridge-ASCM
+first-order residual at penalty limit $\rho$, let
+$\Phi_{\mathrm{sdid}}(X,x_0,y_1;\eta)$ be the SDiD quadratic-balancing
+first-order residual at penalty limit $\eta$, and let
+$\Phi_{\mathrm{nuc}}(M(\mu);\nu)$ be the nuclear-norm matrix-completion
+subgradient residual at penalty limit $\nu$.
+
+\begin{quote}
+\begin{verbatim}
+Tuple: (qid, specialization, p, assignment, target, regression).
+qid = panel_sdid_mc_id; specialization = v1; p = 0.
+assignment = one treated unit or treated-cohort average, N0 never-treated
+donors, T0 >= 2 pre-periods, and one target post period T1 = T0 + 1.
+target = post-period ATT tau = Y_0,T1(1) - Y_0,T1(0), equivalently
+the untreated counterfactual mean mu0 = E[Y_0,T1(0)].
+regression = bounded-rank interactive fixed-effect mean surface
+m_it = alpha_i + lambda_t + ell_i^T f_t with rank <= R, centered donor
+pre-matrix X, treated pre-vector x0, donor post-vector y1, and population
+SCM/ASCM/SDiD/MC linear functionals defined above.
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Single-shock panel geometry]\label{ass:single-shock}
+The observed design has one treated unit or treated-cohort average, $N_0$
+never-treated donors, $T_0\ge 2$ pre-periods, and one target post period.
+Treatment begins only in the post period for the treated unit and never begins
+for donors.
+\end{assumption}
+
+\begin{assumption}[Bounded-rank untreated surface]\label{ass:bounded-rank}
+The untreated mean surface satisfies
+$m_{it}=\alpha_i+\lambda_t+\ell_i^{\transpose}f_t$ with latent factor rank at
+most $R$ after additive unit and time effects are included.
+\end{assumption}
+
+\begin{assumption}[Centered observable block]\label{ass:centered-block}
+The matrices $X$, $x_0$, and $y_1$ are the population centered donor-pre,
+treated-pre, and donor-post blocks obtained after applying the same additive
+normalization to every estimator. The Moore--Penrose inverse $X^+$ and
+projection $P_X$ are taken under this normalization.
+\end{assumption}
+
+\begin{assumption}[Visibility and nondegeneracy]\label{ass:visibility}
+For the rank-completion node, the relevant rank is
+$R\le \min\{N_0,T_0\}$, the nonzero singular values of the centered rank-$R$
+component of $X$ are bounded away from zero, and the rank-$R$ completion value
+is locally unique whenever $K_{\mathrm{rank},R}=0$.
+\end{assumption}
+
+\begin{assumption}[Population penalty limits]\label{ass:penalty-limits}
+The ridge ASCM, SDiD quadratic, and nuclear-norm MC penalties have deterministic
+population limits, so their first-order conditions define the population
+vectors $\beta$, $\lambda$, and the rank-$R$ completion functional before
+sampling error is considered.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Certificate nesting]\label{thm:certificate-nesting}
+Under Assumptions~\ref{ass:single-shock}--\ref{ass:penalty-limits}, the zero
+sets of the population certificates obey
+\[
+\{K_{\mathrm{conv}}=0\}\subseteq
+\{K_{\mathrm{aff}}=0\}\subseteq
+\{K_{\mathrm{sdid}}=0\}\subseteq
+\{K_{\mathrm{rank},R}=0\}
+\]
+whenever the rank-completion value is the locally unique Schur candidate
+$S_R=x_0^{\transpose}X^+y_1$. On the first set, convex SCM, signed/ridge ASCM, SDiD,
+and rank-$R$ MC all return the same counterfactual $\mu_0$. On the second set,
+signed/ridge ASCM, SDiD, and rank-$R$ MC agree even when no convex SCM weights
+exist. On the third set, SDiD and rank-$R$ MC agree even if no exact signed
+donor-only representation exists.
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) The closest papers are \citet{DoudchenkoImbens2016},
+\citet{BenMichaelFellerRothstein2021}, \citet{ArkhangelskyAtheyHirshbergImbensWager2021},
+and \citet{AtheyBayatiDoudchenkoImbensKhosravi2021}. Each gives one estimator
+or a conceptual synthesis, but none states the nested equality sets as
+observable certificates in $(X,x_0,y_1)$. (b) This theorem would give the
+diagnostic backbone for the applied robustness workflow in
+\citet{DoudchenkoImbens2016}: if estimates agree, the analyst can report which
+certificate explains the agreement.
+
+\begin{conjecture}[Strict span lattice; NOT YET PROVED]\label{conj:strict-lattice}
+Under Assumptions~\ref{ass:single-shock}--\ref{ass:penalty-limits}, every
+inclusion in Theorem~\ref{thm:certificate-nesting} is strict on a nonempty open
+set of bounded-rank panels. More precisely, for each adjacent pair of lattice
+nodes there exists a minimal witness with
+$R\le \min\{N_0,T_0\}$, $T_0\le R+2$, and $N_0\le R+2$ such that the upper node
+identifies $\mu_0$ while the lower node either is infeasible or has a population
+limit separated from $\mu_0$ by a nonzero Schur-complement residual. The witness
+families can be chosen nondegenerate: the separation persists under small
+perturbations of $(X,x_0,y_1)$ that preserve rank $R$ and the penalty-limit
+regime in Assumption~\ref{ass:penalty-limits}.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{DoudchenkoImbens2016} show that relaxing SCM restrictions changes
+the estimator class, and \citet{AbadieLHour2021} show that penalization changes
+the selected synthetic control, but neither proves strict separation witnesses
+for the full SCM/ASCM/SDiD/MC chain. The epsilon-gap is the open-set,
+minimal-rank witness requirement, not the observation that the objective
+functions differ. (b) Resolving the conjecture would give
+\citet{BenMichaelFellerRothstein2022} a single-shock primitive for deciding
+when partially pooled staggered SCM can be interpreted as a sum of ASCM/SDiD
+functionals.
+
+\begin{conjecture}[Penalty-stable equality frontier; NOT YET PROVED]\label{conj:penalty-frontier}
+Under Assumptions~\ref{ass:centered-block}--\ref{ass:penalty-limits}, if
+$K_{\mathrm{aff}}>0$ or $K_{\mathrm{sdid}}>0$, then equality between the ASCM,
+SDiD, and rank-$R$ MC population functionals is not stable to all three
+regularization sequences. There is an explicit finite-dimensional exceptional
+set, defined by simultaneous vanishing of
+$\Phi_{\mathrm{ridge}}(X,x_0,y_1;\rho)$,
+$\Phi_{\mathrm{sdid}}(X,x_0,y_1;\eta)$, and
+$\Phi_{\mathrm{nuc}}(M(\mu);\nu)$, outside which at least two of the three
+limits differ by first order in the penalty limit.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{BenMichaelFellerRothstein2021} and
+\citet{AtheyBayatiDoudchenkoImbensKhosravi2021} use different penalty
+normalizations, while \citet{ArkhangelskyAtheyHirshbergImbensWager2021} uses a
+quadratic SDiD balancing penalty; the closest literature does not state a
+shared exceptional set where their population limits remain equal. (b) This
+result would tell applied users of \citet{ArkhangelskyAtheyHirshbergImbensWager2021}
+and \citet{BenMichaelFellerRothstein2021} when changing the penalty is an
+identification choice rather than only a stability choice.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Convex exact-fit collapse]\label{cor:convex-collapse}
+Under Assumptions~\ref{ass:single-shock}--\ref{ass:centered-block}, if
+$K_{\mathrm{conv}}=0$ and $y_1$ is generated by the same affine donor weights
+that match $x_0$, then all four functionals reduce to the usual exact-fit SCM
+counterfactual $w^{\transpose}y_1$.
+\end{corollary}
+
+\begin{corollary}[Rank-zero DiD collapse]\label{cor:rank-zero-collapse}
+Under Assumptions~\ref{ass:single-shock}--\ref{ass:bounded-rank}, if $R=0$
+after additive effects are removed, then $X=0$, $x_0=0$, $y_1=0$ in centered
+coordinates and the lattice collapses to the ordinary difference-in-differences
+counterfactual determined by additive unit and time effects.
+\end{corollary}
+
+\begin{corollary}[Visible low-rank Schur complement]\label{cor:schur-collapse}
+Under Assumptions~\ref{ass:centered-block} and~\ref{ass:visibility}, if
+$\operatorname{rank}(X)=R$, $x_0$ lies in the row span of $X$, and $y_1$ lies in
+the column span of $X$, then the rank-$R$ MC functional is uniquely
+$x_0^{\transpose}X^+y_1$.
+\end{corollary}
+
+\section{Proof-sketch route}
+The mathematical route is finite-dimensional linear algebra. First center the
+panel to remove additive unit and time effects, so every candidate functional
+is a linear map of $(X,x_0,y_1)$. Theorem~\ref{thm:certificate-nesting} should
+reduce to convex-set containment, affine-span containment, and the standard
+Schur-complement formula for completing a rank-$R$ block matrix. The strictness
+conjecture then requires explicit small-support witnesses: one witness where
+$x_0$ lies in the affine but not convex hull of donor pre-vectors, one where
+the donor post-vector has a row-space component recoverable by time weighting
+but not by signed donor weights alone, and one where rank completion recovers a
+Schur complement while two-sided SDiD misses a column-space residual. The
+penalty-frontier conjecture should follow by writing the ridge, SDiD quadratic,
+and nuclear-norm first-order conditions as three Schur-complement equations and
+showing their simultaneous equality imposes positive-codimension polynomial
+conditions.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:certificate-nesting} is labelled as a theorem because it is
+intended as routine finite-dimensional algebra once the population functionals
+are fixed. Conjectures~\ref{conj:strict-lattice} and~\ref{conj:penalty-frontier}
+are the novel kernel and are not yet proved. The strongest uncertainty is the
+exact direction of the SDiD-to-MC inclusion when SDiD time weights are fixed by
+the original quadratic regularization rather than by an arbitrary row-space
+representer; if the original first-order conditions are too restrictive,
+Theorem~\ref{thm:certificate-nesting} should be narrowed to a necessary
+certificate and Conjecture~\ref{conj:penalty-frontier} should carry the
+estimator-specific equality claim. No claim is made here about asymptotic
+variance or semiparametric efficiency; this pivot deliberately withdraws the
+earlier spectral-efficiency angle and focuses on population identifying
+functionals.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for a strict span-lattice angle after the
+spectral-equivalence angles were exhausted; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Abadie and Gardeazabal(2003)]{AbadieGardeazabal2003}
+Abadie, A. and J. Gardeazabal (2003).
+The economic costs of conflict: A case study of the Basque Country.
+\emph{American Economic Review} 93(1), 113--132.
+
+\bibitem[Abadie, Diamond, and Hainmueller(2010)]{AbadieDiamondHainmueller2010}
+Abadie, A., A. Diamond, and J. Hainmueller (2010).
+Synthetic control methods for comparative case studies: Estimating the effect
+of California's tobacco control program.
+\emph{Journal of the American Statistical Association} 105(490), 493--505.
+
+\bibitem[Abadie and L'Hour(2021)]{AbadieLHour2021}
+Abadie, A. and J. L'Hour (2021).
+A penalized synthetic control estimator for disaggregated data.
+\emph{Journal of the American Statistical Association} 116(536), 1817--1834.
+doi:10.1080/01621459.2021.1971535.
+
+\bibitem[Arkhangelsky et~al.(2021)]{ArkhangelskyAtheyHirshbergImbensWager2021}
+Arkhangelsky, D., S. Athey, D. A. Hirshberg, G. W. Imbens, and S. Wager
+(2021). Synthetic difference-in-differences.
+\emph{American Economic Review} 111(12), 4088--4118.
+doi:10.1257/aer.20190159.
+
+\bibitem[Arkhangelsky et~al.(2024)]{ArkhangelskyImbensLeiLuo2024}
+Arkhangelsky, D., G. W. Imbens, L. Lei, and X. Luo (2024).
+Design-robust two-way fixed effects regression for panel data.
+\emph{Quantitative Economics} 15, 999--1034.
+doi:10.3982/QE1962.
+
+\bibitem[Athey et~al.(2021)]{AtheyBayatiDoudchenkoImbensKhosravi2021}
+Athey, S., M. Bayati, N. Doudchenko, G. W. Imbens, and K. Khosravi (2021).
+Matrix completion methods for causal panel data models.
+\emph{Journal of the American Statistical Association} 116(536), 1716--1730.
+doi:10.1080/01621459.2021.1891924.
+
+\bibitem[Ben-Michael, Feller, and Rothstein(2021)]{BenMichaelFellerRothstein2021}
+Ben-Michael, E., A. Feller, and J. Rothstein (2021).
+The augmented synthetic control method.
+\emph{Journal of the American Statistical Association} 116(536), 1789--1803.
+doi:10.1080/01621459.2021.1929245.
+
+\bibitem[Ben-Michael, Feller, and Rothstein(2022)]{BenMichaelFellerRothstein2022}
+Ben-Michael, E., A. Feller, and J. Rothstein (2022).
+Synthetic controls with staggered adoption.
+\emph{Journal of the Royal Statistical Society: Series B} 84(2), 351--381.
+doi:10.1111/rssb.12448.
+
+\bibitem[Doudchenko and Imbens(2016)]{DoudchenkoImbens2016}
+Doudchenko, N. and G. W. Imbens (2016).
+Balancing, regression, difference-in-differences and synthetic control methods:
+A synthesis.
+\emph{NBER Working Paper} 22791.
+doi:10.3386/w22791.
+
+\bibitem[Xu(2017)]{Xu2017}
+Xu, Y. (2017).
+Generalized synthetic control method: Causal inference with interactive fixed
+effects models.
+\emph{Political Analysis} 25(1), 57--76.
+doi:10.1017/pan.2016.2.
+\end{thebibliography}
+
+\end{document}

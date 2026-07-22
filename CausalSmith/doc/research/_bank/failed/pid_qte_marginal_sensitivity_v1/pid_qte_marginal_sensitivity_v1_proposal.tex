@@ -1,0 +1,359 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_qte\_marginal\_sensitivity, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to a Q1..Q6 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    If it is a free-form `(qid, specialization)`, define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_qte\_marginal\_sensitivity} / \texttt{v1}%
+  \\ \large\textit{Tukey-factor tail collapse for conditional QTE sensitivity under covariate-wise odds caps}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a free-form partial-identification proposal with locked tuple
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},\text{bounding functional}).
+\]
+\begin{verbatim}
+qid = pid_qte_marginal_sensitivity
+specialization = v1
+observable distribution P = law of O = (Y,A,X), where A in {0,1},
+    X is a covariate value, and Y is real-valued with conditional
+    support [L_x,U_x].
+parameter theta = conditional quantile treatment effect curve
+    Delta_x(tau) = Q_{1,x}(tau) - Q_{0,x}(tau),
+    where Q_{a,x} is the generalized inverse of the conditional law of
+    Y(a) given X=x and tau lies in (0,1).
+identifying restrictions = consistency, conditional positivity, and a
+    covariate-wise marginal Rosenbaum/Tan sensitivity model: for each
+    arm a and covariate value x, the latent Tukey selection multiplier
+    r_a(y,x) relating the observed arm law to the potential-outcome law
+    is bounded by lower and upper constants ell_a(x;Gamma) and
+    u_a(x;Gamma), with normalization E[r_a(Y,x) | A=a,X=x]=1.
+bounding functional = the Tukey-factor CQTE identified set obtained by
+    optimizing lower-tail indicators 1{Y(a)<=y}; the novelty kernel is
+    the conjectured reduction of the infinite-dimensional selection
+    function to a provably minimal finite tail-cell certificate for
+    finite threshold-coded Boolean CQTE claims along a pinned scalar
+    sensitivity path, where quantile atoms are represented only through
+    grid CDF inequalities.
+\end{verbatim}
+
+\begin{abstract}
+This proposal asks whether flexible Tukey-factor sensitivity models for conditional quantile treatment effects simplify sharply when the unidentified selection function is constrained by a covariate-wise Rosenbaum odds-ratio bound.  Prior work now includes sharp pointwise and process-level QTE envelopes under marginal sensitivity, so this revision does not claim those envelopes as new.  The proposed kernel is instead a certificate theorem: once a finite threshold-coded CQTE claim is fixed, the infinite-dimensional Tukey selection function should reduce to a canonical coarsest tail quotient with an exact active-cell rank.  Version 5 strengthens the earlier two-threshold witness to a \(K\)-threshold rank-gap family showing that identical pointwise envelope information can hide arbitrarily large differences in claim-audit dimension.  The quotient-minimality results are stated as conjectures because the minimal quotient, uniqueness, and rank lower bound are the novel parts; the one-threshold bounded-weight algebra and the \(\Gamma=1\) corner are background checks.
+\end{abstract}
+
+\section{Introduction}
+Distributional causal conclusions are often the reason for doing observational sensitivity analysis: a treatment may help the median but harm the lower tail, or a sign conclusion may be robust for some conditional quantiles and fragile for others.  Flexible Tukey-factor sensitivity models are attractive because they separate the observed law from an unidentified selection function and impose no observable restrictions.  Their drawback is that the unidentified object is a whole function, so even simple CQTE sensitivity statements can look like infinite-dimensional modeling choices rather than sharp partial-identification statements.
+
+The main proposed finding is Conjecture~\ref{conj:tukey-tail-collapse}.  Under the locked covariate-wise marginal Rosenbaum/Tan sensitivity model, every threshold-coded CQTE claim should have a unique coarsest tail quotient that preserves its truth value uniformly over admissible observed laws and sensitivity values.  Theorem~\ref{thm:rank-separation-witness} gives the field-level separation the conjecture is meant to explain: for any \(K\ge2\), two threshold-coded CQTE audits can be evaluated against the same pointwise envelope table while their coarsest quotients have ranks \(2\) and \(K+1\).  Conjecture~\ref{conj:breakdown-frontier} then turns that quotient into a finite non-refutation certificate: for a finite threshold-coded claim, the smallest common \(\Gamma\) making the claim compatible with the data is the first value at which the associated minimal quotient feasibility system is nonempty, and the number of indispensable active degrees equals an incidence-rank quantity defined by the claim.
+
+What is new is not another pointwise QTE envelope, an interval-hull QTE bound, or a scalar breakdown frontier for one-sided signs.  \citet{MastenPoirier2020}, \citet{MastenPoirierRen2025}, and especially \citet{Wang2026} are treated as close prior art for those objects.  Generic moment-set extreme-point results such as \citet{Winkler1988} also explain why finite-dimensional extrema exist after finitely many moments are fixed.  The novelty claimed here is the information layer between an envelope and an auditable claim: the unique coarsest threshold quotient and the exact active-cell rank needed to decide a specified CQTE formula in the Tukey-factor representation.  Theorem~\ref{thm:rank-separation-witness} makes the distinction concrete by separating, for arbitrary \(K\), two claims that use the same pointwise envelope table but require ranks \(2\) and \(K+1\).  This distinguishes the proposal from scalar breakdown-frontier bookkeeping because the finite quotient controls the dimension of the non-refutation certificate and hence the LP, audit, and simultaneous-inference object needed for the formula.
+
+The proposal belongs to the partial-identification and sensitivity-analysis cluster.  It consumes potential-outcome notation and propensity-score odds bounds as primitives; it does not propose a do-calculus rule, graphical axiom, or new SCM semantics.  The intended output is an identified-set theorem for conditional quantile curves and their sensitivity breakdown values under covariate-wise odds-ratio restrictions.
+
+\section{Related work}
+\citet{Rosenbaum1995} is the classical source for hidden-bias sensitivity through bounded treatment-assignment odds ratios, which fixes the sensitivity scale used here.  \citet{ManskiPepper2000} supply the endpoint and monotone-shape partial-identification comparator that should reappear only as a limiting sanity check.  \citet{Tan2006} develops distributional causal inference using propensity-score departures and is the closest older reference for interpreting marginal sensitivity as a bounded likelihood-ratio restriction.  \citet{DAmourFranksFeller2020} introduce a Tukey-factor sensitivity framework with unidentified selection functions and illustrate QTE sensitivity; this proposal asks whether Rosenbaum/Tan odds caps force those functions to collapse to a canonical minimal tail quotient for threshold-coded CQTE claims.  \citet{ZhaoSmallBhattacharya2019} analyze sensitivity for IPW estimators and motivate why population sharpness can differ from sampling-oriented procedures.  \citet{KallusMaoZhou2019} and \citet{YadlowskyNamkoongBasuDuchiTian2022} study heterogeneous mean-effect sensitivity under unobserved confounding, providing the CATE/ATE analogue rather than a quantile-tail certificate theorem.  \citet{DornGuo2023} give sharp marginal-sensitivity analysis for IPW through quantile balancing; Lemma~\ref{lem:threshold-envelope} should be read as routine algebra in that lineage, not as the novelty-bearing result.  \citet{Tan2024} provides ATE population-bound representations and model-assisted inference under marginal sensitivity, making bounded-weight duality a close mean-effect comparator but not CQTE-envelope prior art.  \citet{Firpo2007} supplies the point-identified QTE corner under selection on observables, which should be recovered at \(\Gamma=1\).  \citet{MastenPoirier2020} develop breakdown frontiers and inference for robustness conclusions under relaxations of random assignment and rank invariance; Conjecture~\ref{conj:breakdown-frontier} is therefore compared against their non-refutation/frontier methodology rather than presented as a new robustness concept.  \citet{MastenPoirierRen2025} derive sharp QTE and DTE bounds for a broad relaxation class including the marginal sensitivity model, and are the closest published threat to any pointwise-envelope claim.  \citet{Wang2026} explicitly gives closed-form sharp CDF envelopes, process-level sharpness, sharp target quantile bounds, sharp interval-hull QTE bounds, and breakdown-frontier inference under nested marginal sensitivity; this revision therefore treats Wang's envelope and scalar-frontier results as prior art and focuses only on the canonical minimal quotient and active-rank certificate for threshold-coded CQTE claims in the Tukey-factor representation.  \citet{Winkler1988} characterizes extreme points of probability-measure sets determined by finitely many generalized moment conditions; it is the closest generic convex-analytic threat, and the claimed gap is that Winkler does not identify the unique coarsest tail quotient or the claim-specific rank lower bound for Rosenbaum/Tan CQTE certificates.
+
+Within this repository, \texttt{ThmSmith/doc/API.md} Section~3 records that the ThmSmith ExactID and PartialID catalogues are empty at seed time, so there is no in-catalogue \texttt{pid\_*} theorem for CQTE sensitivity.  The banked and rejected proposals for \texttt{pid\_qte\_marginal\_sensitivity} cover two different kernels: finite-support CQTE process compatibility and the finite-\(\Gamma\) endpoint boundary.  This v5 revision does not reuse either kernel; it proposes a claim-specific quotient-minimality and active-rank theorem for threshold-coded CQTE certificates, with an arbitrary-\(K\) rank separation to show that the certificate layer carries information not visible in pointwise envelope summaries alone.
+
+\section{Formal setup}
+Let \(P\) be the observable law of \(O=(Y,A,X)\), with \(A\in\{0,1\}\), real outcome \(Y\), and covariates \(X\in\mathcal{X}\).  Fix a covariate value \(x\) with \(0<P(A=a\mid X=x)<1\) for both arms.  Write
+\[
+e_a(x)=P(A=a\mid X=x),\qquad
+F^{\mathrm{obs}}_{a,x}(y)=P(Y\le y\mid A=a,X=x).
+\]
+Let \(Q^{\mathrm{obs}}_{a,x}\) denote the generalized inverse of \(F^{\mathrm{obs}}_{a,x}\) using the same quantile convention as below.
+The unobserved arm CDF is \(F_{a,x}(y)=P(Y(a)\le y\mid X=x)\), with generalized inverse
+\[
+Q_{a,x}(\tau)=\inf\{y:F_{a,x}(y)\ge \tau\},\qquad
+\Delta_x(\tau)=Q_{1,x}(\tau)-Q_{0,x}(\tau).
+\]
+
+Use the Tukey-factor parameterization
+\[
+dF_{a,x}(y)=r_a(y,x)\,dF^{\mathrm{obs}}_{a,x}(y),
+\qquad
+\int r_a(y,x)\,dF^{\mathrm{obs}}_{a,x}(y)=1,
+\]
+where \(r_a(\cdot,x)\) is the unidentified selection multiplier for arm \(a\).  The covariate-wise Rosenbaum/Tan sensitivity value \(\Gamma_a(x)\in[1,\infty]\) induces deterministic caps
+\[
+\ell_a(x;\Gamma)=e_a(x)+\frac{1-e_a(x)}{\Gamma_a(x)},\qquad
+u_a(x;\Gamma)=e_a(x)+(1-e_a(x))\Gamma_a(x),
+\]
+and requires \(\ell_a(x;\Gamma)\le r_a(y,x)\le u_a(x;\Gamma)\) almost surely.  For a threshold \(y\), abbreviate
+\[
+p_{a,x}(y)=F^{\mathrm{obs}}_{a,x}(y),\quad
+L_{a,x,\Gamma}(y)=\max\{\ell_a p_{a,x}(y),\,1-u_a(1-p_{a,x}(y))\},
+\]
+\[
+U_{a,x,\Gamma}(y)=\min\{u_a p_{a,x}(y),\,1-\ell_a(1-p_{a,x}(y))\},
+\]
+where \(\ell_a=\ell_a(x;\Gamma)\) and \(u_a=u_a(x;\Gamma)\).  Define \(Q^L_{a,x,\Gamma}\) as the generalized inverse of \(U_{a,x,\Gamma}\), and \(Q^U_{a,x,\Gamma}\) as the generalized inverse of \(L_{a,x,\Gamma}\).  The identified set \(\Theta_I(P,\Gamma)\) is the set of all CQTE curves \(\Delta_x\) generated by latent laws reproducing \(P\), satisfying consistency and positivity, and admitting multipliers \(r_a\) within the caps.  For a null or design claim \(\mathcal{C}\) about \(\Delta_x\), define the breakdown value
+\[
+\Gamma^\star_x(\mathcal{C})=\inf\{\Gamma\ge 1:\Theta_I(P,\Gamma)\cap\mathcal{C}\ne\varnothing\}.
+\]
+For breakdown values in this proposal, \(\Gamma\) is the pinned common-scalar path \(\Gamma_0(x)=\Gamma_1(x)=\Gamma\) at the fixed covariate value \(x\); arm-specific vectors are part of the sensitivity model but not part of the frontier claim.
+
+For a finite threshold grid \(G=\{y_1<\cdots<y_m\}\), define tail cells \(I_0=(-\infty,y_1]\), \(I_j=(y_j,y_{j+1}]\) for \(1\le j<m\), and \(I_m=(y_m,\infty)\).  Let \(\pi^{\mathrm{obs}}_{a,j}=P(Y\in I_j\mid A=a,X=x)\).  A scalar-\(\Gamma\) tail-cell certificate for arm \(a\) is a vector \(w_{a,0:m}\) with \(w_{a,j}\ge0\), \(\sum_j w_{a,j}=1\), and, whenever \(\pi^{\mathrm{obs}}_{a,j}>0\),
+\[
+\ell_a(x;\Gamma)\le \frac{w_{a,j}}{\pi^{\mathrm{obs}}_{a,j}}\le u_a(x;\Gamma),
+\]
+with \(w_{a,j}=0\) when \(\pi^{\mathrm{obs}}_{a,j}=0\).  The certificate induces grid CDF values \(F^G_{a,x}(y_k)=\sum_{j\le k}w_{a,j}\).  Let \(A_G\) be the lower-triangular incidence matrix mapping the cell-weight vector \(w_{a,0:m}\) to \((F^G_{a,x}(y_1),\ldots,F^G_{a,x}(y_m))\), with the all-ones normalization row appended when ranks are computed.
+
+A threshold-coded CQTE claim \(\mathcal{C}\) over \((G,T)\) is a finite Boolean formula built from the following atoms only: \(F_{a,x}(y_k)\le c\), \(F_{a,x}(y_k)\ge c\), \(Q_{a,x}(\tau)\le y_k\), and \(Q_{a,x}(\tau)>y_k\), where quantile atoms are interpreted through the generalized-inverse equivalences \(Q_{a,x}(\tau)\le y_k\iff F_{a,x}(y_k)\ge\tau\) and \(Q_{a,x}(\tau)>y_k\iff F_{a,x}(y_k)<\tau\).  A numerical CQTE comparison such as \(\Delta_x(\tau)\ge c\) is admissible only after it is supplied as a finite Boolean combination of these grid-location atoms, for example over candidate pairs \((u,v)\in G^2\) satisfying \(u-v\ge c\).  The language therefore records which grid cell contains each relevant quantile; it does not claim to recover unobserved quantile values inside an open outcome cell.  Let \(A_{\mathcal{C}}\) be the submatrix of \(A_G\) containing exactly the CDF coordinates that occur after reducing \(\mathcal{C}\) to CDF inequalities.  Define the claim quotient \(\Pi_{\mathcal{C}}\) by grouping positive-probability cells whose columns in the arm-block matrix \(A_{\mathcal{C}}\) are identical, and define the active rank \(d_{\mathcal{C}}\) as the rank of this arm-block matrix after zero-probability columns are removed and per-arm normalization rows are retained.  Write \(\mathsf{Cert}_G(\Gamma,\mathcal{C})\) for the set of paired arm certificates whose induced grid CDFs make the threshold-coded formula true.  A cell \(I_j\) is active in a certificate if \(\pi^{\mathrm{obs}}_{a,j}>0\) for some arm and changing \(w_{a,j}\) while holding the totals on all other cells of \(\Pi_{\mathcal{C}}\) fixed can change at least one atom of \(\mathcal{C}\).
+
+The locked parameters are reproduced here for downstream quoting:
+\begin{verbatim}
+qid = pid_qte_marginal_sensitivity
+specialization = v1
+observable distribution P = law of O = (Y,A,X), where A in {0,1},
+    X is a covariate value, and Y is real-valued with conditional
+    support [L_x,U_x].
+parameter theta = conditional quantile treatment effect curve
+    Delta_x(tau) = Q_{1,x}(tau) - Q_{0,x}(tau),
+    where Q_{a,x} is the generalized inverse of the conditional law of
+    Y(a) given X=x and tau lies in (0,1).
+identifying restrictions = consistency, conditional positivity, and a
+    covariate-wise marginal Rosenbaum/Tan sensitivity model: for each
+    arm a and covariate value x, the latent Tukey selection multiplier
+    r_a(y,x) relating the observed arm law to the potential-outcome law
+    is bounded by lower and upper constants ell_a(x;Gamma) and
+    u_a(x;Gamma), with normalization E[r_a(Y,x) | A=a,X=x]=1.
+bounding functional = the Tukey-factor CQTE identified set obtained by
+    optimizing lower-tail indicators 1{Y(a)<=y}; the novelty kernel is
+    the conjectured reduction of the infinite-dimensional selection
+    function to a provably minimal finite tail-cell certificate for
+    finite threshold-coded Boolean CQTE claims along a pinned scalar
+    sensitivity path, where quantile atoms are represented only through
+    grid CDF inequalities.
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Consistency and conditional observability]\label{ass:consistency}
+For \(a\in\{0,1\}\), \(Y=Y(a)\) almost surely on \(\{A=a\}\).  The conditional law \(P(Y,A\mid X=x)\) and the observed arm CDFs \(F^{\mathrm{obs}}_{a,x}\) are defined for the fixed covariate value \(x\) under study.
+\end{assumption}
+
+\begin{assumption}[Conditional positivity]\label{ass:positivity}
+For the fixed covariate value \(x\), \(0<e_a(x)<1\) for \(a=0,1\).
+\end{assumption}
+
+\begin{assumption}[Known conditional support and inverse convention]\label{ass:support}
+For each arm \(a\), \(Y(a)\in[L_x,U_x]\) almost surely given \(X=x\).  Quantiles are generalized inverses \(Q(\tau)=\inf\{y:F(y)\ge\tau\}\) for \(\tau\in(0,1)\), with endpoint masses allowed.
+\end{assumption}
+
+\begin{assumption}[Tukey factorization]\label{ass:tukey}
+For each arm \(a\), the conditional law of \(Y(a)\) given \(X=x\) is absolutely continuous with respect to \(F^{\mathrm{obs}}_{a,x}\), with Radon--Nikodym multiplier \(r_a(\cdot,x)\) satisfying \(r_a\ge 0\) and \(\int r_a\,dF^{\mathrm{obs}}_{a,x}=1\).
+\end{assumption}
+
+\begin{assumption}[Covariate-wise marginal Rosenbaum cap]\label{ass:msm}
+For a sensitivity value \(\Gamma_a(x)\in[1,\infty]\), the Tukey multiplier satisfies
+\[
+\ell_a(x;\Gamma)\le r_a(y,x)\le u_a(x;\Gamma)
+\]
+for \(F^{\mathrm{obs}}_{a,x}\)-almost every \(y\).  When \(\Gamma_a(x)=\infty\), the upper cap is interpreted by the limiting convention while the lower cap remains \(e_a(x)\).
+For breakdown-frontier statements, the admissible path is the common scalar path \(\Gamma_0(x)=\Gamma_1(x)=\Gamma\); vector-valued arm-specific perturbations require a separate coordinatewise order and are outside this proposal's frontier claim.
+\end{assumption}
+
+\begin{assumption}[Tail claim class]\label{ass:tailclaim}
+The certificate statement is restricted to threshold-coded claims \(\mathcal{C}\) over a finite grid \(G\) and finite quantile-index set \(T\).  All atoms must reduce to CDF inequalities at thresholds in \(G\) using the generalized-inverse convention defined in the setup.  Numerical quantile-difference claims are admissible only when the claim data includes a finite grid-location encoding, such as a Boolean formula over candidate grid pairs \((u,v)\in G^2\); no result in this proposal treats unencoded within-cell quantile values as determined by cell weights.
+\end{assumption}
+
+\begin{assumption}[Nondegenerate tail probabilities]\label{ass:nondegenerate}
+Whenever a strict finite-\(\Gamma\) comparison is invoked, the relevant observed tail probabilities satisfy \(0<p_{a,x}(y)<1\), and the relevant quantile index is not pinned solely by endpoint mass at \(L_x\) or \(U_x\).
+\end{assumption}
+
+\begin{assumption}[Finite rank-separation grid]\label{ass:separationgrid}
+When Theorem~\ref{thm:rank-separation-witness} is invoked, \(G\) contains \(K\ge2\) thresholds \(y_1<\cdots<y_K\) and, for the selected arm \(b\in\{0,1\}\), all \(K+1\) observed cells \((-\infty,y_1]\), \((y_j,y_{j+1}]\) for \(1\le j<K\), and \((y_K,\infty)\) have positive \(P(Y\in\cdot\mid A=b,X=x)\)-probability.  The constants \(c_1,\ldots,c_K\) appearing in the rank-separation claims are chosen strictly inside the corresponding attainable finite-\(\Gamma\) CDF intervals, with no displayed atom implied by the other displayed atoms plus CDF monotonicity and the box constraints, so every atom is nonvacuous and nonredundant.
+\end{assumption}
+
+\section{Main results}
+\begin{lemma}[Background Lemma A: one-threshold bounded-weight envelope]\label{lem:threshold-envelope}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:msm}, for each arm \(a\) and threshold \(y\), the sharp identified interval for \(F_{a,x}(y)\) over all admissible Tukey multipliers is
+\[
+L_{a,x,\Gamma}(y)\le F_{a,x}(y)\le U_{a,x,\Gamma}(y).
+\]
+Both endpoints are attained by a multiplier that is constant on \(\{Y\le y\}\) and constant on \(\{Y>y\}\), with one of the two constants equal to a cap whenever the cap is active.
+\end{lemma}
+\paragraph{Why this is new and worth studying.}
+This lemma is not a novelty claim; the bounded-likelihood-ratio calculation already underlies \citet{Tan2006}, \citet{DornGuo2023}, \citet{MastenPoirierRen2025}, and \citet{Wang2026}.  Its role is to pin the exact two-cell algebra that the novelty-bearing quotient-minimality and finite-certificate conjectures build on, so that the new results can be compared against the known one-threshold envelope rather than accidentally reproving it.
+
+\begin{theorem}[Theorem 1: arbitrary finite rank separation from pointwise envelopes]\label{thm:rank-separation-witness}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:tailclaim} and \ref{ass:separationgrid}, fix an arm \(b\) and thresholds \(y_1<\cdots<y_K\) as in Assumption~\ref{ass:separationgrid}.  Let \(\mathcal{C}_{\min}\) be a threshold-coded CQTE formula whose nontrivial arm-\(b\) atom set is \(\{F_{b,x}(y_1)\ge c_1\}\), and let \(\mathcal{C}_{\mathrm{full}}\) have the same nonbinding atoms for the other arm but nontrivial arm-\(b\) atom set \(\{F_{b,x}(y_k)\ge c_k:1\le k\le K\}\).  For the same observable law \(P\), grid \(G\), and scalar sensitivity value \(\Gamma\), the pointwise CDF envelope table \((L_{b,x,\Gamma}(y_k),U_{b,x,\Gamma}(y_k))_{k=1}^K\), the induced marginal quantile envelope table, and any interval-hull summary formed only from coordinatewise lower and upper bounds are the same reported envelope inputs for \(\mathcal{C}_{\min}\) and \(\mathcal{C}_{\mathrm{full}}\).  Nevertheless, the coarsest quotient and active rank can differ by \(K-1\): \(\Pi_{\mathcal{C}_{\min}}\) groups all cells above \(y_1\) and has arm-\(b\) rank \(2\) after retaining normalization, whereas \(\Pi_{\mathcal{C}_{\mathrm{full}}}\) separates all \(K+1\) cells and has arm-\(b\) rank \(K+1\).  Hence the audit-dimension gap hidden by pointwise or interval-hull envelope reporting is unbounded over finite threshold-coded CQTE claims.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+\citet{Wang2026} supplies sharp envelope and interval-hull objects, \citet{MastenPoirier2020} supplies breakdown-frontier methodology for robustness conclusions, and \citet{Winkler1988} supplies generic finite-moment extreme-point geometry, but none of these papers asks whether two claims with the same envelope inputs require quotient systems whose ranks differ without bound.  The separation family shows the proposed \(d_{\mathcal{C}}\) is not merely notation for an envelope endpoint: it records the minimum number of active tail degrees an auditor must retain to verify the claim.  This raises the contribution above a bookkeeping layer because it identifies when envelope-level sensitivity reports are insufficient for reproducing, auditing, or doing simultaneous frontier inference for a finite CQTE robustness claim.
+
+\begin{conjecture}[Conjecture 1: canonical minimal tail quotient for threshold-coded CQTEs (NOT YET PROVED)]\label{conj:tukey-tail-collapse}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:tailclaim} and \ref{ass:nondegenerate}, fix a threshold-coded CQTE claim \(\mathcal{C}\) over \((G,T)\).  Projection of the full infinite-dimensional Tukey multiplier class onto the atoms of \(\mathcal{C}\) is exactly the projection of the finite tail-cell polytope through \(A_{\mathcal{C}}\).  Moreover, the quotient \(\Pi_{\mathcal{C}}\) defined by equal columns of the arm-block incidence matrix is the unique coarsest quotient with this property uniformly over all observed arm laws satisfying Assumption~\ref{ass:nondegenerate} and all finite \(\Gamma\).  Its indispensable active dimension is \(d_{\mathcal{C}}\): any representation with fewer than \(d_{\mathcal{C}}\) active linear degrees of freedom fails to preserve the truth value of some threshold-coded CQTE formula with the same atom set for some admissible observed law and scalar sensitivity value.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+\citet{DAmourFranksFeller2020} leave the unidentified selection function as a flexible nuisance object, while \citet{DornGuo2023} and \citet{Tan2024} emphasize optimization, duality, and inference representations for marginal-sensitivity mean bounds.  \citet{Wang2026} is stronger for process-level QTE envelopes, and \citet{Winkler1988} explains why finite-moment convex sets have extreme points; the proposed gap is the claim-specific coarsest quotient and exact active-rank lower bound for Tukey CQTE certificates.  Resolving it would let sensitivity analysts report the exact degrees of freedom that matter for a quantile claim rather than only reporting the resulting envelope.
+
+\begin{conjecture}[Conjecture 2: minimal finite-tail non-refutation certificate (NOT YET PROVED)]\label{conj:breakdown-frontier}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:tailclaim} and \ref{ass:nondegenerate}, along the common scalar path \(\Gamma_0(x)=\Gamma_1(x)=\Gamma\), every threshold-coded CQTE claim \(\mathcal{C}\) has breakdown value
+\[
+\Gamma^\star_x(\mathcal{C})=\inf\{\Gamma\ge1:\mathsf{Cert}_G(\Gamma,\mathcal{C})\ne\varnothing\}.
+\]
+Furthermore, whenever \(\mathsf{Cert}_G(\Gamma,\mathcal{C})\) is nonempty, it contains a certificate on the quotient \(\Pi_{\mathcal{C}}\) whose feasibility can be checked using \(d_{\mathcal{C}}\) active linear coordinates plus only the Boolean branch inequalities selected by \(\mathcal{C}\).  No strict quotient of \(\Pi_{\mathcal{C}}\), and no certificate language that drops one positive-probability active quotient cell, is uniformly sound for the same atom set.  Thus the output is not another closed-form scalar QTE envelope, but a smallest finite witness that certifies non-refutation of threshold-coded CQTE claims and records the rank complexity of the witness.  In particular, the certificate cost is exact in the sense illustrated by Theorem~\ref{thm:rank-separation-witness}: adding an atom that does not alter any pointwise envelope can still increase \(d_{\mathcal{C}}\) and force an additional quotient cell to be audited.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+\citet{MastenPoirier2020} already defines breakdown frontiers as non-refutation boundaries for robustness conclusions, and \citet{Wang2026} already covers closed-form sharp CDF envelopes, process-level sharpness, QTE interval-hull bounds, and breakdown-frontier inference, so those are explicitly not the novelty.  The remaining gap is a minimal certificate theorem for threshold-coded CQTE claims in the Tukey-factor representation: it states exactly which quotient cells must be retained, gives a rank target for the certificate, and separates that target from generic extreme-point existence results such as \citet{Winkler1988}.  The payoff is methodological and computational because robustness claims about CQTE signs, policy-relevant quantile contrasts encoded on a grid, and curve restrictions would come with finite witnesses whose LP dimension and simultaneous frontier audit complexity are exactly \(d_{\mathcal{C}}\), and Theorem~\ref{thm:rank-separation-witness} shows that this dimension cannot be recovered from scalar frontier or coordinatewise envelope reports.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Gamma-one collapse]\label{cor:gamma-one}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:msm} with \(\Gamma_a(x)=1\), Lemma~\ref{lem:threshold-envelope} gives \(L_{a,x,\Gamma}(y)=U_{a,x,\Gamma}(y)=F^{\mathrm{obs}}_{a,x}(y)\).  Therefore Conjecture~\ref{conj:tukey-tail-collapse} collapses to the singleton multiplier \(r_a\equiv 1\), and Conjecture~\ref{conj:breakdown-frontier} agrees with the point-identified Firpo-style conditional quantile contrast \(Q^{\mathrm{obs}}_{1,x}(\tau)-Q^{\mathrm{obs}}_{0,x}(\tau)\).
+\end{corollary}
+
+\begin{corollary}[Endpoint noninformation limit]\label{cor:gamma-infty}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:msm}, in the formal limit \(\Gamma_a(x)=\infty\), the finite upper restriction disappears while the lower cap becomes \(e_a(x)\).  The CDF interval therefore reduces to \(e_a(x)F^{\mathrm{obs}}_{a,x}(y)\le F_{a,x}(y)\le e_a(x)F^{\mathrm{obs}}_{a,x}(y)+1-e_a(x)\), the endpoint-filling Manski-style range allowed by the observed support and the observed arm law, with any additional Manski--Pepper monotone shape restriction imposed only if explicitly added outside the locked baseline.
+\end{corollary}
+
+\section{Proof-sketch route}
+Lemma~\ref{lem:threshold-envelope} reduces to optimizing \(\int_B r\,dF\) subject to box constraints on \(r\) and the single normalization \(\int r\,dF=1\); the endpoints follow by moving as much mass as possible onto or off of \(B\).  Theorem~\ref{thm:rank-separation-witness} is incidence-matrix algebra: with rows \(F(y_1),\ldots,F(y_K)\) and normalization, the \(K+1\) cell columns are nested step vectors, so all columns are distinct when all \(K\) CDF rows are retained, while the one-threshold claim deletes rows \(F(y_2),\ldots,F(y_K)\) and makes all cells above \(y_1\) identical.  Conjecture~\ref{conj:tukey-tail-collapse} should start with conditional expectation of \(r\) onto the finite algebra generated by \(G\), which preserves normalization, box constraints, and all threshold-coded atoms.  The non-generic step is then a rank and separation argument: columns of \(A_{\mathcal{C}}\) with identical atom incidence may be quotient-compressed, while every attempted lower-rank quotient should admit a two-cell perturbation of an observed arm law that flips one atom of the same Boolean language.  Conjecture~\ref{conj:breakdown-frontier} then reduces non-refutation to finite feasibility over quotient cell weights \(w_{a,j}\), with generalized-inverse algebra translating the allowed quantile-location atoms into CDF inequalities and with \(d_{\mathcal{C}}\) controlling the smallest LP/inference dimension that remains uniformly sound.  This differs from a direct Winkler-style extreme-point invocation because the desired output is not merely existence of an extreme probability measure but the unique coarsest tail quotient and its claim-specific rank.  The boundary cases that need explicit checking are endpoint mass, ties in generalized inverses, zero-probability grid cells, Boolean branch changes, and the \(\Gamma=\infty\) limiting convention.
+
+\section{Honest scope flags}
+Lemma~\ref{lem:threshold-envelope}, Theorem~\ref{thm:rank-separation-witness}, and the \(\Gamma=1\) corollary are finite-dimensional algebraic background.  Conjecture~\ref{conj:tukey-tail-collapse} and Conjecture~\ref{conj:breakdown-frontier} are the open novelty-bearing statements and are not yet proved.  This v5 revision withdraws novelty claims for pointwise QTE envelopes, process-level sharpness, scalar one-sided QTE frontiers, closed-form interval-hull QTE bounds, generic breakdown-frontier methodology, and the standard unconfoundedness corner because \citet{MastenPoirier2020}, \citet{Wang2026}, and \citet{Firpo2007} are prior art for those objects.  It also restricts the Boolean CQTE language to threshold-coded atoms; numerical quantile differences are covered only when encoded by grid-location formulas.  The proposal deliberately withdraws two earlier kernels for this qid: finite-support CQTE process compatibility and the finite-\(\Gamma\) endpoint boundary.  The main uncertainty is whether the arbitrary-\(K\) rank-gap theorem plus exact quotient-rank conjecture is strong enough for field-level novelty, or whether a reviewer will still view it as an audit layer over Wang's process sharpness plus generic moment-set geometry.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for the Tukey-factor tail-collapse and CQTE breakdown-frontier angle; prior verdict: none.
+\item v2 (revise) -- corrected Tan~2024 citation, pinned the scalar \(\Gamma\) path, downgraded envelope/frontier novelty after Wang~2026, and refocused Conjecture~\ref{conj:breakdown-frontier} on minimal finite-tail certificates; prior verdict: REVISE.
+\item v3 (revise) -- demoted known envelope and \(\Gamma=1\) facts to background/sanity material, added the Winkler extreme-point comparison, restricted the claim language to threshold-coded atoms, and sharpened the kernel to a canonical quotient plus active-rank conjecture; prior verdict: REVISE.
+\item v4 (revise) -- added the required why-new block for Background Lemma A and introduced a two-threshold rank-separation theorem showing that identical pointwise envelope inputs can require different claim quotients and audit dimensions; prior verdict: REVISE.
+\item v5 (revise) -- added Masten--Poirier~2020 as direct breakdown-frontier prior art, strengthened the rank-separation witness to an arbitrary finite \(K\) gap, and made the Conjecture~\ref{conj:breakdown-frontier} payoff computational/inferential via \(d_{\mathcal{C}}\); prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Rosenbaum(1995)]{Rosenbaum1995}
+Rosenbaum, P. R. (1995).
+\newblock \emph{Observational Studies}.
+\newblock Springer.
+
+\bibitem[Manski and Pepper(2000)]{ManskiPepper2000}
+Manski, C. F. and Pepper, J. V. (2000).
+\newblock Monotone instrumental variables: With an application to the returns to schooling.
+\newblock \emph{Econometrica}, 68(4), 997--1010.
+
+\bibitem[Tan(2006)]{Tan2006}
+Tan, Z. (2006).
+\newblock A distributional approach for causal inference using propensity scores.
+\newblock \emph{Journal of the American Statistical Association}, 101(476), 1619--1637.
+
+\bibitem[Franks et~al.(2020)]{DAmourFranksFeller2020}
+Franks, A., D'Amour, A., and Feller, A. (2020).
+\newblock Flexible sensitivity analysis for observational studies without observable implications.
+\newblock \emph{Journal of the American Statistical Association}, 115(532), 1730--1746.
+
+\bibitem[Zhao et~al.(2019)]{ZhaoSmallBhattacharya2019}
+Zhao, Q., Small, D. S., and Bhattacharya, B. B. (2019).
+\newblock Sensitivity analysis for inverse probability weighting estimators via the percentile bootstrap.
+\newblock \emph{Journal of the Royal Statistical Society: Series B}, 81(4), 735--761.
+
+\bibitem[Kallus et~al.(2019)]{KallusMaoZhou2019}
+Kallus, N., Mao, X., and Zhou, A. (2019).
+\newblock Interval estimation of individual-level causal effects under unobserved confounding.
+\newblock \emph{Proceedings of AISTATS}, PMLR 89, 2281--2290.
+
+\bibitem[Yadlowsky et~al.(2022)]{YadlowskyNamkoongBasuDuchiTian2022}
+Yadlowsky, S., Namkoong, H., Basu, S., Duchi, J., and Tian, L. (2022).
+\newblock Bounds on the conditional and average treatment effect with unobserved confounding factors.
+\newblock \emph{Annals of Statistics}, 50(5), 2587--2615.
+
+\bibitem[Dorn and Guo(2023)]{DornGuo2023}
+Dorn, J. and Guo, K. (2023).
+\newblock Sharp sensitivity analysis for inverse propensity weighting via quantile balancing.
+\newblock \emph{Journal of the American Statistical Association}, 118(544), 2645--2657.
+
+\bibitem[Tan(2024)]{Tan2024}
+Tan, Z. (2024).
+\newblock Model-assisted sensitivity analysis for treatment effects under unmeasured confounding via regularized calibrated estimation.
+\newblock \emph{Journal of the Royal Statistical Society: Series B}, 86(5), 1339--1363.
+
+\bibitem[Firpo(2007)]{Firpo2007}
+Firpo, S. (2007).
+\newblock Efficient semiparametric estimation of quantile treatment effects.
+\newblock \emph{Econometrica}, 75(1), 259--276.
+
+\bibitem[Masten and Poirier(2020)]{MastenPoirier2020}
+Masten, M. A. and Poirier, A. (2020).
+\newblock Inference on breakdown frontiers.
+\newblock \emph{Quantitative Economics}, 11(1), 41--111.
+
+\bibitem[Masten et~al.(2025)]{MastenPoirierRen2025}
+Masten, M. A., Poirier, A., and Ren, M. (2025).
+\newblock A general approach to relaxing unconfoundedness.
+\newblock arXiv:2501.15400.
+
+\bibitem[Wang(2026)]{Wang2026}
+Wang, P. (2026).
+\newblock Nested sensitivity envelopes for transported quantile treatment effects.
+\newblock arXiv:2605.09264.
+
+\bibitem[Winkler(1988)]{Winkler1988}
+Winkler, G. (1988).
+\newblock Extreme points of moment sets.
+\newblock \emph{Mathematics of Operations Research}, 13(4), 581--587.
+\end{thebibliography}
+
+\end{document}

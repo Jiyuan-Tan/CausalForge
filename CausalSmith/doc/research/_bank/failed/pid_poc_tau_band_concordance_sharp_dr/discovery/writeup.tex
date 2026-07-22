@@ -1,0 +1,851 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb,amsthm}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\coreref}[1]{\ref{#1}}
+
+\begin{document}
+
+\section*{pid_poc_tau_band (concordance_sharp_dr)}
+
+\paragraph{TL;DR.} The proposal studies the population counterfactual attribution target theta = P(Y(0) < c_0 | Y(1) >= c_1) when the only cross-world information is that the conditional copula of (Y(1), Y(0)) has Kendall's tau in a prespecified band. Because this target depends on the joint law only through the point value C_x(m_1(x), m_0(x)), the identified set should be reducible to direct pointwise optimization over the copula class, using the best-possible Kendall-tau copula bounds rather than a parametric Gaussian path. In the band-regular same-piece regime, the scalar endpoints are ratio functionals with a well-defined efficient influence function; under tailored active-envelope nuisance product-rate conditions, that gradient supports the single declared cross-fitted one-step endpoint estimator. The remaining open inferential content is uniform coverage for the full tau-indexed endpoint curve when the active closed-form copula piece switches.
+
+\section{Project justification}
+
+\paragraph{Gap.} Continuous-outcome attribution now has observed-event GPN bounds and parametric-copula sensitivity analyses, but no family-free sharp theorem for the analogous population counterfactual target under an interpretable concordance restriction and no endpoint inference theory for that object.
+
+\paragraph{Niche.} The population GPN ratio depends on the cross-world joint law only through one copula evaluation, so Kendall-tau pointwise copula theory can be imported more tightly here than in broader strict-benefit transport problems.
+
+\paragraph{Fill.} The project fills that gap by converting the causal problem into Kendall-constrained pointwise copula optimization, then attaching a band-regular population EIF characterization, a regular-regime orthogonal endpoint estimator, and a tau-uniform inference conjecture tailored to active-piece switches.
+
+\section{Related work}
+
+ChaogeHanLiuWu2026 is the closest causal anchor because it defines the observed-event continuous-outcome GPN as P(Y(0) < c_0 | A = 1, Y >= c_1), derives sharp Fréchet and monotonicity bounds for the conditional target GPN(x), and studies parametric copula sensitivity; the present proposal instead targets the population counterfactual conditioning event Y(1) >= c_1 and replaces parametric copula families by the full Kendall-band class. KawakamiKurokiTian2024 is the broader continuous-PoC precursor because it extends probabilities of causation to continuous and vector variables and proves identification under generalized monotonicity, but it pursues point identification under structural restrictions rather than partial identification under cross-world dependence bands. NelsenQuesadaMolinaRodriguezLallenaUbedaFlores2001 is the primary fixed-Kendall-tau source because it derives best-possible pointwise lower and upper bounds for copulas with a given value of Kendall's tau. NelsenUbedaFlores2004 compares those local-bound constructions across Kendall's tau, Spearman's rho, and Blomqvist's beta, providing the exact pointwise-bound discipline that a tau band aggregates over. KokolBukovsekKosirMojskercOmladic2021 extends the local-bound program to Spearman's footrule and Gini's gamma and explicitly records that local bounds for Kendall's tau, Spearman's rho, and Blomqvist's beta were already available, so it is useful here mainly as a proof-discipline guide rather than as the source of the Kendall formulas. UbedaFlores2025 is narrower still: it derives Gini's-gamma pointwise bounds and uses the contrast with known Kendall, Spearman, and Blomqvist bounds to show that Gini envelopes may be proper quasi-copulas, which helps motivate why Kendall's tau is the attractive concordance restriction for the present causal problem. HeLi2026 is the closest estimation template because it derives efficient influence functions for copula-indexed causal functionals under the same observed-data nuisance structure, whereas the present note establishes the analogous efficiency claim only for the band-regular same-piece family-free endpoint model rather than for a fixed parametric copula. TianWu2024 is the closest attribution-inference benchmark because it derives semiparametric efficient PN estimators, but only in point-identified binary settings. DornGuoKallus2022 is the closest sensitivity-estimation analogue because it shows how sharp bound endpoints can be estimated with orthogonal procedures and validity guarantees, though for unmeasured-confounding ATE bounds rather than cross-world copula restrictions. ChernozhukovLeeRosen2013 and Stoye2020 provide the inference discipline once the endpoint map becomes nonsmooth or set-valued.
+
+\section{Setup}
+
+Target estimand: theta(c_0,c_1) = P(Y(0) < c_0 | Y(1) >= c_1).
+Estimand-defining functional: [theta_L, theta_U] = [(E[m_0(X) - B_plus(X)] / E[1 - m_1(X)]), (E[m_0(X) - B_minus(X)] / E[1 - m_1(X)])].
+\begin{itemize}
+  \item $n$ --- sample_size; N $:= Observed sample size.$
+  \item $O$ --- observed_unit; X x {0,1} x R; sampling_unit $:= Observed unit O = (X, A, Y).$
+  \item $O_1, ..., O_n$ --- sample; (X x {0,1} x R)^n; data $:= I.i.d. observed sample of size n.$
+  \item $X$ --- covariate; X $:= Pretreatment covariate vector.$
+  \item $A$ --- treatment; {0,1} $:= Binary treatment indicator.$
+  \item $Y$ --- observed_outcome; R $:= Observed continuous outcome.$
+  \item $Y(1)$ --- treated_potential_outcome; R $:= Potential outcome under treatment.$
+  \item $Y(0)$ --- control_potential_outcome; R $:= Potential outcome under control.$
+  \item $P$ --- law; laws of (X, A, Y, Y(1), Y(0)); model $:= Observed-data law together with latent potential outcomes.$
+  \item $P_X$ --- marginal_law; laws of X $:= Marginal law of X induced by P.$
+  \item $P_tauband$ --- law_class; subsets of laws of (X, A, Y, Y(1), Y(0)) $:= Class of laws satisfying the maintained sampling, causal, margin, and Kendall-tau-band restrictions.$
+  \item $e$ --- propensity_score; nuisance $:= e(x) = P(A = 1 | X = x).$
+  \item $c_1$ --- treated_threshold; R $:= Observed treated-outcome threshold defining the attribution event.$
+  \item $c_0$ --- control_threshold; R $:= Counterfactual control threshold defining the attribution event.$
+  \item $m_1$ --- treated_tail_regression; nuisance $:= m_1(x) = P(Y < c_1 | A = 1, X = x) = P(Y(1) < c_1 | X = x).$
+  \item $m_0$ --- control_threshold_regression; nuisance $:= m_0(x) = P(Y < c_0 | A = 0, X = x) = P(Y(0) < c_0 | X = x).$
+  \item $pi_1$ --- treated_tail_mass; (0,1]; normalizing_mass $:= pi_1 = E_P[1 - m_1(X)] = P(Y(1) >= c_1).$
+  \item $tau_L$ --- kendall_tau_lower_bound; [-1,1] $:= Lower endpoint of the admissible Kendall-tau band.$
+  \item $tau_U$ --- kendall_tau_upper_bound; [-1,1] $:= Upper endpoint of the admissible Kendall-tau band.$
+  \item $C_x$ --- conditional_copula; copulas on [0,1]^2; latent_dependence $:= Unique conditional copula of (Y(1), Y(0)) given X = x.$
+  \item $B_plus$ --- upper_pointwise_tau_band_bound; upper_copula_envelope $:= Pointwise largest feasible value of C_x(m_1(x), m_0(x)) among copulas with Kendall's tau in [tau_L, tau_U].$
+  \item $b_plus$ --- upper_pointwise_tau_band_map $:= b_plus(u_1, u_0; tau_L, tau_U) = sup{C(u_1, u_0) : C is a copula on [0,1]^2 and tau(C) in [tau_L, tau_U]}.$
+  \item $B_minus$ --- lower_pointwise_tau_band_bound; lower_copula_envelope $:= Pointwise smallest feasible value of C_x(m_1(x), m_0(x)) among copulas with Kendall's tau in [tau_L, tau_U].$
+  \item $b_minus$ --- lower_pointwise_tau_band_map $:= b_minus(u_1, u_0; tau_L, tau_U) = inf{C(u_1, u_0) : C is a copula on [0,1]^2 and tau(C) in [tau_L, tau_U]}.$
+  \item $nu_L$ --- lower_numerator; [0,1] $:= nu_L = E_P[m_0(X) - B_plus(X)].$
+  \item $nu_U$ --- upper_numerator; [0,1] $:= nu_U = E_P[m_0(X) - B_minus(X)].$
+  \item $theta$ --- general_probability_of_necessity; [0,1]; target_estimand $:= theta = P(Y(0) < c_0 | Y(1) >= c_1).$
+  \item $Theta_Gauss$ --- gaussian_copula_sensitivity_set $:= Set of population-target values theta induced by restricting each conditional copula C_x to the Gaussian family with Kendall's tau in [tau_L, tau_U].$
+  \item $theta_L$ --- identified_lower_endpoint; [0,1]; identified_lower_bound $:= Lower endpoint of the identified set for theta under the Kendall-tau band.$
+  \item $theta_L(tau)$ --- singleton_tau_lower_endpoint_curve $:= Lower endpoint map obtained by imposing the singleton Kendall-tau restriction {tau}.$
+  \item $theta_U$ --- identified_upper_endpoint; [0,1]; identified_upper_bound $:= Upper endpoint of the identified set for theta under the Kendall-tau band.$
+  \item $theta_U(tau)$ --- singleton_tau_upper_endpoint_curve $:= Upper endpoint map obtained by imposing the singleton Kendall-tau restriction {tau}.$
+  \item $zeta_0$ --- orthogonal_control_residual $:= zeta_0(O) = ((1 - A) / (1 - e(X))) * (1{Y < c_0} - m_0(X)).$
+  \item $zeta_1$ --- orthogonal_treated_residual $:= zeta_1(O) = (A / e(X)) * (1{Y < c_1} - m_1(X)).$
+  \item $d_L0$ --- lower_endpoint_partial_derivative_in_m0 $:= d_L0(x) = partial_2{u_0 - b_plus(u_1, u_0; tau_L, tau_U)} evaluated at (u_1, u_0) = (m_1(x), m_0(x)).$
+  \item $d_L1$ --- lower_endpoint_partial_derivative_in_m1 $:= d_L1(x) = partial_1{u_0 - b_plus(u_1, u_0; tau_L, tau_U)} evaluated at (u_1, u_0) = (m_1(x), m_0(x)).$
+  \item $d_U0$ --- upper_endpoint_partial_derivative_in_m0 $:= d_U0(x) = partial_2{u_0 - b_minus(u_1, u_0; tau_L, tau_U)} evaluated at (u_1, u_0) = (m_1(x), m_0(x)).$
+  \item $d_U1$ --- upper_endpoint_partial_derivative_in_m1 $:= d_U1(x) = partial_1{u_0 - b_minus(u_1, u_0; tau_L, tau_U)} evaluated at (u_1, u_0) = (m_1(x), m_0(x)).$
+  \item $phi_pi$ --- influence_function_for_pi1 $:= Influence function for pi_1.$
+  \item $phi_nuL$ --- influence_function_for_nuL $:= Influence function for nu_L in the locally smooth active-piece regime.$
+  \item $phi_nuU$ --- influence_function_for_nuU $:= Influence function for nu_U in the locally smooth active-piece regime.$
+  \item $varphi_L$ --- efficient_influence_function_lower_endpoint; influence_function $:= Efficient influence function for theta_L.$
+  \item $varphi_U$ --- efficient_influence_function_upper_endpoint; influence_function $:= Efficient influence function for theta_U.$
+  \item $hat_m_1$ --- estimated_treated_tail_regression $:= Cross-fitted estimator of m_1.$
+  \item $hat_m_0$ --- estimated_control_threshold_regression $:= Cross-fitted estimator of m_0.$
+  \item $hat_e$ --- estimated_propensity_score $:= Cross-fitted estimator of e.$
+  \item $hat_theta_L_os$ --- one_step_lower_endpoint_estimator; R; estimator $:= Cross-fitted one-step estimator of theta_L.$
+  \item $hat_theta_L_os(tau)$ --- one_step_lower_endpoint_curve_estimator $:= Singleton-tau version of the cross-fitted one-step estimator of theta_L(tau).$
+  \item $hat_theta_L_plug$ --- plug_in_lower_endpoint_estimator; R $:= Cross-fitted plug-in estimator of theta_L obtained from def:endpoint-functionals after replacing (m_1, m_0, e) with (hat_m_1, hat_m_0, hat_e).$
+  \item $hat_theta_U_os$ --- one_step_upper_endpoint_estimator; R; estimator $:= Cross-fitted one-step estimator of theta_U.$
+  \item $hat_theta_U_os(tau)$ --- one_step_upper_endpoint_curve_estimator $:= Singleton-tau version of the cross-fitted one-step estimator of theta_U(tau).$
+  \item $hat_theta_U_plug$ --- plug_in_upper_endpoint_estimator; R $:= Cross-fitted plug-in estimator of theta_U obtained from def:endpoint-functionals after replacing (m_1, m_0, e) with (hat_m_1, hat_m_0, hat_e).$
+  \item $hat_varphi_L$ --- estimated_lower_endpoint_influence_function $:= Estimated influence function obtained from varphi_L after replacing (m_1, m_0, e) with (hat_m_1, hat_m_0, hat_e).$
+  \item $hat_varphi_U$ --- estimated_upper_endpoint_influence_function $:= Estimated influence function obtained from varphi_U after replacing (m_1, m_0, e) with (hat_m_1, hat_m_0, hat_e).$
+  \item $e_min$ --- real; constant $:= overlap lower bound from ass:overlap: 0 < e_min <= e(X) <= 1 - e_min a.s.$
+  \item $kappa$ --- real; constant $:= known trimming constant in (0,1) with kappa <= e_min, used to clip the estimated propensity operationally$
+\end{itemize}
+
+\section{Assumptions}
+
+\begin{assumption}[ass:iid-sampling]\label{ass:iid-sampling}
+O_1, ..., O_n are i.i.d. draws from P.
+\par\smallskip\noindent\emph{Standard} (i.i.d. sampling, \cite{Rubin1974}).
+\end{assumption}
+
+\begin{assumption}[ass:consistency]\label{ass:consistency}
+Y = A Y(1) + (1 - A) Y(0) almost surely.
+\par\smallskip\noindent\emph{Standard} (consistency, \cite{Rubin1974}).
+\end{assumption}
+
+\begin{assumption}[ass:ignorability]\label{ass:ignorability}
+(Y(1), Y(0)) is independent of A conditional on X.
+\par\smallskip\noindent\emph{Standard} (unconfoundedness, \cite{RosenbaumRubin1983}).
+\end{assumption}
+
+\begin{assumption}[ass:overlap]\label{ass:overlap}
+There exists e_min > 0 such that e_min <= e(X) <= 1 - e_min almost surely.
+\par\smallskip\noindent\emph{Standard} (overlap, \cite{RosenbaumRubin1983}).
+\end{assumption}
+
+\begin{assumption}[ass:treated-margin-continuity]\label{ass:treated-margin-continuity}
+For P_X-almost every x, the conditional distribution function y -> P(Y(1) <= y | X = x) is continuous on R.
+\par\smallskip\noindent\emph{Standard} (continuous conditional treated margin, \cite{Nelsen2006}).
+\end{assumption}
+
+\begin{assumption}[ass:control-margin-continuity]\label{ass:control-margin-continuity}
+For P_X-almost every x, the conditional distribution function y -> P(Y(0) <= y | X = x) is continuous on R.
+\par\smallskip\noindent\emph{Standard} (continuous conditional control margin, \cite{Nelsen2006}).
+\end{assumption}
+
+\begin{assumption}[ass:treated-event-positive]\label{ass:treated-event-positive}
+There exists pi_min > 0 such that pi_1 >= pi_min.
+\par\smallskip\noindent\emph{Standard} (positive conditioning-event probability, \cite{ChaogeHanLiuWu2026}).
+\end{assumption}
+
+\begin{assumption}[ass:conditional-tau-band]\label{ass:conditional-tau-band}
+For P_X-almost every x, the conditional copula C_x of (Y(1), Y(0)) given X = x satisfies tau(C_x) in [tau_L, tau_U].
+\par\smallskip\noindent\emph{Novel.} A constant conditional Kendall-tau band is an interpretable elicitation object because experts often can rule out sign and rough magnitude of rank concordance while refusing to commit to a copula family; Gaussian, Frank, and Clayton latent-threshold models all induce such bands for suitable parameter intervals.
+\end{assumption}
+
+\begin{assumption}[ass:regular-piece-lower]\label{ass:regular-piece-lower}
+With probability one under P_X, the pair (m_1(X), m_0(X)) lies at a distance bounded below by a fixed positive constant from every Nelsen active-piece switching boundary for B_plus, so the active piece is locally constant and is consistently identified from any sufficiently accurate nuisance estimates.
+\par\smallskip\noindent\emph{Novel.} This excludes the measure-zero switching loci where two closed-form copula-bound pieces tie. In applications with continuous covariates and thresholds away from exact symmetry or tail corners, the active piece is locally unique except at accidental kinks.
+\end{assumption}
+
+\begin{assumption}[ass:regular-piece-upper]\label{ass:regular-piece-upper}
+With probability one under P_X, the pair (m_1(X), m_0(X)) lies at a distance bounded below by a fixed positive constant from every Nelsen active-piece switching boundary for B_minus, so the active piece is locally constant and is consistently identified from any sufficiently accurate nuisance estimates.
+\par\smallskip\noindent\emph{Novel.} This excludes the switching loci for the lower copula envelope. The condition is realistic when thresholds are fixed ex ante and the observed-data distribution does not place mass exactly on copula-envelope kink surfaces.
+\end{assumption}
+
+\begin{assumption}[ass:nuisance-rate-m1e]\label{ass:nuisance-rate-m1e}
+The cross-fitted OUT-OF-FOLD nuisance estimates (each fit on the folds NOT containing the unit, ass:fold-geometry) satisfy the primitive L2 rates ||hat_m_1 - m_1||_2 = o_P(n^(-1/4)) and ||hat_e - e||_2 = o_P(n^(-1/4)), uniformly over the finitely many folds (each fold trains on a fixed fraction of n).
+\par\smallskip\noindent\emph{Novel.} This is a tailored active-envelope product-rate condition rather than a named textbook hypothesis. It is realistic in parametric, sieve, or sufficiently regular machine-learning settings where each nuisance reaches roughly n^(-1/4) L2 accuracy and the lower endpoint remains on one smooth Nelsen piece.
+\end{assumption}
+
+\begin{assumption}[ass:nuisance-rate-m0e]\label{ass:nuisance-rate-m0e}
+The cross-fitted OUT-OF-FOLD nuisance estimates (each fit on the folds NOT containing the unit, ass:fold-geometry) satisfy the primitive L2 rates ||hat_m_0 - m_0||_2 = o_P(n^(-1/4)) and ||hat_e - e||_2 = o_P(n^(-1/4)), uniformly over the finitely many folds.
+\par\smallskip\noindent\emph{Novel.} This is the upper-endpoint analogue of the tailored lower-endpoint remainder condition. It is realistic under the same nuisance-learning regimes, provided the upper endpoint remains on one smooth Nelsen piece so the remainder is governed by first-order derivatives of that piece.
+\end{assumption}
+
+\begin{assumption}[ass:fold-geometry]\label{ass:fold-geometry}
+Cross-fitting uses a fixed finite number of folds (at least two) whose sample sizes are each a fixed positive fraction of n bounded away from zero as n grows.
+\par\smallskip\noindent\emph{Standard} (fixed finite cross-fitting fold geometry, \cite{ChernozhukovChetverikovDemirerDufloHansenNeweyRobins2018}).
+\end{assumption}
+
+\begin{assumption}[ass:band-regular-piece]\label{ass:band-regular-piece}
+The interval-band envelopes B_plus(.; tau_L, tau_U) and B_minus(.; tau_L, tau_U) are piecewise-smooth on the support of (m_1(X), m_0(X)) with finitely many active branches, and with probability one (m_1(X), m_0(X)) lies at a distance bounded below by a fixed positive constant from every band-envelope branch-switching boundary.
+\par\smallskip\noindent\emph{Novel.} Regularity condition for the non-smooth band-envelope functional — the band-level analogue of the (accepted) fixed-tau ass:regular-piece. Realistic whenever the conditional marginals avoid the finitely many band-envelope kinks; it is the standard way to make a kinked/envelope functional pathwise-differentiable, ASSUMED rather than derived.
+\end{assumption}
+
+\section{Definitions}
+
+\begin{definition}[def:tau-band-law-class]\label{def:tau-band-law-class}
+$P_tauband := {P : P satisfies ass:consistency, ass:ignorability, ass:overlap, ass:treated-margin-continuity, ass:control-margin-continuity, ass:treated-event-positive, ass:conditional-tau-band}$ --- the class of all objects satisfying: ass:iid-sampling; ass:consistency; ass:ignorability; ass:overlap; ass:treated-margin-continuity; ass:control-margin-continuity; ass:treated-event-positive; ass:conditional-tau-band.
+\end{definition}
+
+\begin{definition}[def:pointwise-tau-envelopes]\label{def:pointwise-tau-envelopes}
+$B_plus and B_minus := B_plus(x) = b_plus(m_1(x), m_0(x); tau_L, tau_U); B_minus(x) = b_minus(m_1(x), m_0(x); tau_L, tau_U)$ \quad (\text{inputs: } b_plus, b_minus, m_1, m_0, tau_L, tau_U, X)
+\end{definition}
+
+\begin{definition}[def:endpoint-functionals]\label{def:endpoint-functionals}
+$nu_L, nu_U, theta_L, theta_U := nu_L = E_P[m_0(X) - B_plus(X)], nu_U = E_P[m_0(X) - B_minus(X)], theta_L = nu_L / pi_1, theta_U = nu_U / pi_1$ \quad (\text{inputs: } P, m_0, B_plus, B_minus, pi_1)
+\end{definition}
+
+\begin{definition}[def:orthogonal-residuals]\label{def:orthogonal-residuals}
+$zeta_0 and zeta_1 := zeta_0(O) = ((1 - A) / (1 - e(X))) * (1{Y < c_0} - m_0(X)); zeta_1(O) = (A / e(X)) * (1{Y < c_1} - m_1(X))$ \quad (\text{inputs: } O, A, Y, e, X, c_0, c_1, m_0, m_1)
+\end{definition}
+
+\begin{definition}[def:regular-piece-derivatives]\label{def:regular-piece-derivatives}
+$d_L0, d_L1, d_U0, d_U1 := d_L0(x) = partial_2[u_0 - b_plus(u_1, u_0; tau_L, tau_U)] at (u_1, u_0) = (m_1(x), m_0(x)); d_L1(x) = partial_1[u_0 - b_plus(u_1, u_0; tau_L, tau_U)] at (u_1, u_0) = (m_1(x), m_0(x)); d_U0(x) = partial_2[u_0 - b_minus(u_1, u_0; tau_L, tau_U)] at (u_1, u_0) = (m_1(x), m_0(x)); d_U1(x) = partial_1[u_0 - b_minus(u_1, u_0; tau_L, tau_U)] at (u_1, u_0) = (m_1(x), m_0(x))$ \quad (\text{inputs: } b_plus, b_minus, B_plus, B_minus, m_1, m_0, X)
+\end{definition}
+
+\begin{definition}[def:eif-components]\label{def:eif-components}
+$phi_pi, phi_nuL, phi_nuU, varphi_L, varphi_U := phi_pi(O) = 1 - m_1(X) - pi_1 - zeta_1(O); phi_nuL(O) = m_0(X) - B_plus(X) - nu_L + d_L0(X) zeta_0(O) + d_L1(X) zeta_1(O); phi_nuU(O) = m_0(X) - B_minus(X) - nu_U + d_U0(X) zeta_0(O) + d_U1(X) zeta_1(O); varphi_L(O) = (phi_nuL(O) - theta_L phi_pi(O)) / pi_1; varphi_U(O) = (phi_nuU(O) - theta_U phi_pi(O)) / pi_1$ \quad (\text{inputs: } m_0, m_1, B_plus, B_minus, nu_L, nu_U, d_L0, d_L1, d_U0, d_U1, zeta_0, zeta_1, theta_L, theta_U, phi_pi, pi_1)
+\end{definition}
+
+\begin{definition}[def:one-step-estimators]\label{def:one-step-estimators}
+$hat_theta_L_os and hat_theta_U_os := Cross-fitted K-fold (ass:fold-geometry) one-step estimators. For each unit i, let the out-of-fold nuisances be m_1, m_0 fit on the folds NOT containing i, and let the propensity be CLIPPED to the overlap region, e_clip = min(max(hat_e, kappa), 1 - kappa), where kappa in (0,1) is a KNOWN trimming constant fixed by the analyst with kappa <= e_min (operational: computable without knowing e). Under ass:overlap the true e lies in [e_min,1-e_min] subset of [kappa,1-kappa], so clipping does not distort the true propensity and gives 1/e_clip <= 1/kappa. Let hat_varphi_t^cf(O_i) denote the efficient-influence integrand varphi_t of def:eif-components evaluated at these out-of-fold clipped nuisances, and hat_theta_t_plug^cf the corresponding cross-fitted plug-in. Define hat_theta_t_os = hat_theta_t_plug^cf + n^(-1) sum_{i=1}^n hat_varphi_t^cf(O_i), for t in {L,U}.$ \quad (\text{inputs: } O_1, ..., O_n, n, hat_m_1, hat_m_0, hat_e, e_min, hat_theta_L_plug, hat_theta_U_plug, hat_varphi_L, hat_varphi_U, varphi_L, varphi_U, kappa)
+\end{definition}
+
+\section{Main results}
+
+\begin{theorem}[thm:sharp-tau-band-gpn]\label{thm:sharp-tau-band-gpn}
+If P belongs to P_tauband, then for the observed law P_obs induced by this admissible source law the identified set Theta_I(P_obs) for theta is exactly [theta_L, theta_U], where theta_L = nu_L / pi_1 and theta_U = nu_U / pi_1 with nu_L = E_P[m_0(X) - B_plus(X)] and nu_U = E_P[m_0(X) - B_minus(X)]. Equivalently, theta_L and theta_U are obtained by direct pointwise optimization of C_x(m_1(x), m_0(x)) over all conditional copulas whose Kendall's tau lies in [tau_L, tau_U] for P_X-almost every x.
+\end{theorem}
+Let P_obs denote the observed law of (X, A, Y) induced by P. Define the completion class
+
+Q(P_obs) := {Q : Q_(X,A,Y) = P_obs and Q satisfies ass:consistency, ass:ignorability, ass:overlap, ass:treated-margin-continuity, ass:control-margin-continuity, ass:treated-event-positive, and ass:conditional-tau-band},
+
+and define the identified set relative to the observed law P_obs by
+
+Theta_I(P_obs) := {theta(Q) : Q in Q(P_obs)}.
+
+Because the theorem is anchored at an admissible source law P in P_tauband, the restrictions in def:tau-band-law-class hold for P itself. Therefore P belongs to Q(P_obs). In particular Q(P_obs) is nonempty, so Theta_I(P_obs) is well-defined and nonempty. This admissible-source witness is the precise role of the premise P in P_tauband in the present observed-law identified-set statement. We prove Theta_I(P_obs) = [theta_L, theta_U].
+
+Outer bound. Fix any Q in Q(P_obs). Since Q and P share the same observed law, they have the same marginal law of X and the same observed-law functionals m_1, m_0, and pi_1. By Lemma lem:gpn-copula-representation,
+
+theta(Q) = E_Q[m_0(X) - C_X^Q(m_1(X), m_0(X))] / pi_1,
+
+where C_x^Q denotes the conditional copula of (Y(1), Y(0)) given X = x under Q.
+
+Because Q satisfies ass:conditional-tau-band, tau(C_x^Q) belongs to [tau_L, tau_U] for P_X-almost every x. By def:pointwise-tau-envelopes,
+
+B_minus(x) <= C_x^Q(m_1(x), m_0(x)) <= B_plus(x)
+
+for P_X-almost every x. Subtracting from m_0(x) gives
+
+m_0(x) - B_plus(x) <= m_0(x) - C_x^Q(m_1(x), m_0(x)) <= m_0(x) - B_minus(x).
+
+Integrating with respect to the common law of X yields
+
+nu_L = E_P[m_0(X) - B_plus(X)] <= E_Q[m_0(X) - C_X^Q(m_1(X), m_0(X))] <= E_P[m_0(X) - B_minus(X)] = nu_U.
+
+Ass:treated-event-positive gives pi_1 > 0. Dividing by pi_1 therefore yields
+
+theta_L = nu_L / pi_1 <= theta(Q) <= nu_U / pi_1 = theta_U.
+
+Since Q in Q(P_obs) was arbitrary, Theta_I(P_obs) is contained in [theta_L, theta_U].
+
+Sharpness. Fix any lambda in [0,1] and define
+
+eta_lambda(x) := (1 - lambda) B_plus(x) + lambda B_minus(x).
+
+Because B_minus(x) <= B_plus(x) almost surely, eta_lambda is measurable and satisfies
+
+B_minus(X) <= eta_lambda(X) <= B_plus(X)
+
+almost surely. Lemma lem:tau-band-measurable-selector, whose attainment step rests on the pointwise fixed-tau exact-region result Lemma lem:tau-copula-attainment and the band bridge Lemma lem:band-attainment-bridge, therefore yields a full law Q^lambda such that Q^lambda_(X,A,Y) = P_obs, Q^lambda satisfies ass:consistency, ass:ignorability, ass:overlap, ass:treated-margin-continuity, ass:control-margin-continuity, ass:treated-event-positive, and ass:conditional-tau-band, and
+
+theta(Q^lambda) = E_P[m_0(X) - eta_lambda(X)] / pi_1.
+
+By linearity of expectation,
+
+E_P[m_0(X) - eta_lambda(X)]
+= (1 - lambda) E_P[m_0(X) - B_plus(X)] + lambda E_P[m_0(X) - B_minus(X)]
+= (1 - lambda) nu_L + lambda nu_U.
+
+Hence
+
+theta(Q^lambda) = (1 - lambda) theta_L + lambda theta_U.
+
+So every point of [theta_L, theta_U] is attained by some Q^lambda in Q(P_obs). In particular, lambda = 0 attains theta_L and lambda = 1 attains theta_U. Therefore [theta_L, theta_U] is contained in Theta_I(P_obs).
+
+Combining the outer bound and sharpness parts yields
+
+Theta_I(P_obs) = [theta_L, theta_U].
+
+The equivalent pointwise-optimization formulation is immediate from def:pointwise-tau-envelopes:
+
+B_plus(x) = b_plus(m_1(x), m_0(x); tau_L, tau_U),
+B_minus(x) = b_minus(m_1(x), m_0(x); tau_L, tau_U).
+
+Thus nu_L and nu_U are obtained by integrating, over the observed covariate law P_X, the pointwise largest and smallest feasible values of C_x(m_1(x), m_0(x)) among conditional copulas whose Kendall's tau lies in [tau_L, tau_U]. Dividing by pi_1 gives theta_L = nu_L / pi_1 and theta_U = nu_U / pi_1. This proves the theorem.
+\par\smallskip\noindent \textit{Justification.} This is the kernel: it converts population continuous-outcome GPN under a family-free dependence restriction into an evaluable copula-envelope formula rather than a parametric sensitivity curve. \textit{Gap.} ChaogeHanLiuWu2026 derive Fréchet and parametric-copula bounds for the observed-event continuous-outcome GPN, while NelsenQuesadaMolinaRodriguezLallenaUbedaFlores2001 and NelsenUbedaFlores2004 supply the primary fixed-Kendall pointwise copula bounds. UbedaFlores2025 is relevant only as a modern contrast showing that Gini's-gamma envelopes can fail to be copulas, unlike the known Kendall bounds used here. The missing step is a sharp causal theorem that pastes those pointwise Kendall extrema into the population counterfactual functional theta = P(Y(0) < c_0 | Y(1) >= c_1). \textit{Consumer.} A legal or biomedical attribution analysis can report the sharp population GPN interval implied by an elicited Kendall-tau band without committing to a Gaussian or Frank copula family.
+
+\begin{proposition}[prop:gaussian-subfamily]\label{prop:gaussian-subfamily}
+Let Theta_Gauss(P; [tau_L, tau_U]) denote the set of theta values generated when the conditional copula C_x is restricted to the Gaussian family and its Kendall's tau lies in [tau_L, tau_U]. Then Theta_Gauss(P; [tau_L, tau_U]) is a subset of [theta_L, theta_U]. If the Gaussian family fails to attain either B_plus(X) or B_minus(X) on a set of X with positive P_X-probability, the inclusion is strict.
+\end{proposition}
+Fix the observed law P_obs induced by P. By definition, Theta_Gauss(P; [tau_L, tau_U]) is the set of theta values generated by full laws that preserve P_obs, satisfy the maintained causal and margin restrictions, and whose conditional copula C_x is restricted to the Gaussian family with Kendall's tau in [tau_L, tau_U]. Every Gaussian copula is a copula, so every Gaussian-admissible completion is also admissible for the family-free Kendall-band model. Theorem thm:sharp-tau-band-gpn therefore implies
+
+Theta_Gauss(P; [tau_L, tau_U]) is a subset of [theta_L, theta_U].
+
+Now suppose the Gaussian family fails to attain B_plus(X) on a measurable set S with P_X(S) > 0. Then every Gaussian-admissible conditional copula family G_X satisfies
+
+G_X(m_1(X), m_0(X)) <= B_plus(X)
+
+almost surely, with strict inequality on S. Hence
+
+m_0(X) - G_X(m_1(X), m_0(X)) >= m_0(X) - B_plus(X)
+
+almost surely, with strict inequality on S. Integrating yields
+
+E_P[m_0(X) - G_X(m_1(X), m_0(X))] > E_P[m_0(X) - B_plus(X)] = nu_L.
+
+Since pi_1 > 0, every Gaussian-admissible law then satisfies theta > theta_L. But thm:sharp-tau-band-gpn shows that theta_L itself is attainable in the family-free model. Therefore theta_L is not in Theta_Gauss(P; [tau_L, tau_U]), so the inclusion is strict.
+
+The same reasoning applies if the Gaussian family fails to attain B_minus(X) on a set of positive P_X-probability. Then every Gaussian-admissible law satisfies
+
+G_X(m_1(X), m_0(X)) >= B_minus(X)
+
+almost surely, with strict inequality on a set of positive probability, so
+
+E_P[m_0(X) - G_X(m_1(X), m_0(X))] < E_P[m_0(X) - B_minus(X)] = nu_U.
+
+Thus every Gaussian-admissible law has theta < theta_U, while theta_U is attainable in the family-free model. Hence theta_U is not in Theta_Gauss(P; [tau_L, tau_U]), and the inclusion is again strict.
+
+Therefore Theta_Gauss(P; [tau_L, tau_U]) is a subset of [theta_L, theta_U], and the inclusion is strict whenever the Gaussian family misses either sharp endpoint on a set of positive P_X-probability.
+\par\smallskip\noindent \textit{Justification.} This pins down the precise relation to the current Gaussian-copula sensitivity benchmark instead of leaving the comparison informal. \textit{Gap.} ChaogeHanLiuWu2026 motivate Gaussian copula sensitivity for the observed-event GPN; this proposition reformulates the same copula-family restriction for the population counterfactual target theta and shows that it is only a strict subfamily inside the family-free Kendall-band class. \textit{Consumer.} Applied readers can see exactly how much a Gaussian sensitivity curve excludes relative to the full Kendall-band class; the parametric path is narrower and may miss feasible values admitted by the family-free sensitivity model.
+
+\begin{theorem}[thm:population-endpoint-eif]\label{thm:population-endpoint-eif}
+Under ass:band-regular-piece, together with ass:consistency, ass:ignorability, ass:overlap, and ass:treated-event-positive, the functions varphi_L and varphi_U are the canonical gradients (hence efficient influence functions) for theta_L and theta_U in the band-regular same-piece observed-data model. Equivalently, for every regular one-dimensional observed-data submodel {P_epsilon} through P that remains in P_tauband and stays on the same band-envelope branches for all sufficiently small |epsilon|, with score S, d/d epsilon theta_L(P_epsilon)|_0 = E_P[varphi_L(O) S(O)] and d/d epsilon theta_U(P_epsilon)|_0 = E_P[varphi_U(O) S(O)]; moreover E_P[varphi_L] = E_P[varphi_U] = 0 and varphi_L, varphi_U belong to L^2(P).
+\end{theorem}
+Lemma `lem:endpoint-pathwise-gradient` proves the displayed score identities and the mean-zero `L^2` facts for every regular one-dimensional observed-data submodel through `P` that remains inside `P_tauband` and stays on the same band-envelope branches for all sufficiently small `|\varepsilon|`. Its derivation uses the observed-data nuisance map, `ass:overlap`, `ass:treated-event-positive`, and the load-bearing smoothness condition `ass:band-regular-piece`; the older endpoint labels `ass:regular-piece-lower` and `ass:regular-piece-upper` are not separate mathematical inputs once the band-level condition is imposed.
+
+To identify canonical gradients, note first that `ass:band-regular-piece`, `ass:overlap`, and `ass:treated-event-positive` are open local restrictions at `P`, so they do not shrink the first-order observed-data tangent space. Lemma `lem:observed-data-tangent-space` therefore gives the full tangent-space description for the present band-regular same-piece model. By `def:eif-components`, for `t \in \{L,U\}` we may write
+\[
+varphi_t(O)=g_t(X)-E_P[g_t(X)] + a_{t0}(X) zeta_0(O) + a_{t1}(X) zeta_1(O),
+\]
+where `g_t(X)` is the corresponding `X`-only term and the coefficient functions are bounded and measurable; explicitly,
+\[
+a_{L0}(X)=\pi_1^{-1} d_{L0}(X),\quad a_{L1}(X)=\pi_1^{-1}(d_{L1}(X)+\theta_L),
+\]
+\[
+a_{U0}(X)=\pi_1^{-1} d_{U0}(X),\quad a_{U1}(X)=\pi_1^{-1}(d_{U1}(X)+\theta_U).
+\]
+Because `E_P[zeta_0\mid X]=E_P[zeta_1\mid X]=0`, Lemma `lem:observed-data-tangent-space` places `varphi_L` and `varphi_U` in the tangent space. Lemma `lem:endpoint-pathwise-gradient` already shows that these tangent-space elements represent the pathwise derivatives along every regular submodel in the model. Uniqueness of the `L^2(P)` Riesz representer therefore identifies `varphi_L` and `varphi_U` as the canonical gradients, hence as the efficient influence functions. This is exactly the theorem.
+\par\smallskip\noindent \textit{Justification.} The endpoint map needs both a population pathwise-gradient formula and a tangent-space identification before estimator-rate arguments can be layered on top. \textit{Gap.} HeLi2026 derive efficient influence functions for fixed parametric-copula causal functionals, but not for family-free Kendall-envelope endpoints whose differentiability and tangent-space bookkeeping are tied to remaining inside one band-regular active Nelsen piece. \textit{Consumer.} This theorem pins down the semiparametric efficiency benchmark for regular estimation of the scalar Kendall-band GPN endpoints in the band-regular same-piece regime.
+
+\begin{theorem}[thm:regular-one-step-clt]\label{thm:regular-one-step-clt}
+Under thm:population-endpoint-eif, ass:band-regular-piece, ass:nuisance-rate-m1e, and ass:nuisance-rate-m0e, with the score-L2-consistency needed for the empirical-process term derived in lem:score-consistency from the primitive nuisance rates and the clipped-propensity definition (no separately assumed score-consistency), the single globally defined cross-fitted one-step estimators hat_theta_L_os and hat_theta_U_os from def:one-step-estimators satisfy sqrt(n) (hat_theta_L_os - theta_L) -> N(0, E_P[varphi_L(O)^2]) and sqrt(n) (hat_theta_U_os - theta_U) -> N(0, E_P[varphi_U(O)^2]). These are pointwise CLTs for the scalar endpoints in the band-regular same-piece regime encoded by ass:band-regular-piece.
+\end{theorem}
+We prove the lower-endpoint claim; the upper endpoint is identical after replacing the lower-envelope objects by their upper analogues.
+
+Let `I_1,\dots,I_K` be the folds from `ass:fold-geometry`, let `n_k=|I_k|`, let `\rho_k=n_k/n`, and let `P_{n,k}` be the empirical measure on fold `k`. Let `\hat\varphi_L^{cf}` denote the single globally defined cross-fitted score integrand from `def:one-step-estimators`, and for each fold `k` write `\hat\varphi_{L,k}^{cf}` for its restriction to validation observations `i\in I_k`; let `\hat\theta_{L,plug}^{cf}` be the single global cross-fitted plug-in ratio from the same definition. Then
+\[
+\hat\theta_{L,os}=\hat\theta_{L,plug}^{cf}+\sum_{k=1}^K \rho_k P_{n,k}\hat\varphi_{L,k}^{cf}.
+\]
+Hence the exact decomposition for the declared estimator is
+\[
+\hat\theta_{L,os}-\theta_L=(P_n-P)\varphi_L+G_{L,n}+R_{L,n},
+\]
+where
+\[
+G_{L,n}:=\sum_{k=1}^K \rho_k (P_{n,k}-P)(\hat\varphi_{L,k}^{cf}-\varphi_L),
+\qquad
+R_{L,n}:=\hat\theta_{L,plug}^{cf}-\theta_L+\sum_{k=1}^K \rho_k P\hat\varphi_{L,k}^{cf}.
+\]
+
+By `thm:population-endpoint-eif`, `varphi_L\in L_0^2(P)`. With `ass:iid-sampling`, Lemma `lem:iid-l2-clt` gives
+\[
+\sqrt n (P_n-P)\varphi_L \Rightarrow N\bigl(0,E_P[varphi_L(O)^2]\bigr).
+\]
+
+We next control `G_{L,n}`. Conditional on the out-of-fold training sample for fold `k`, the function `\hat\varphi_{L,k}^{cf}-\varphi_L` is deterministic on the validation fold and the validation observations are still i.i.d. from `P`. Therefore
+\[
+E\\!\left[(P_{n,k}-P)(\hat\varphi_{L,k}^{cf}-\varphi_L)\mid \mathcal T_k\right]=0,
+\]
+and
+\[
+\operatorname{Var}\\!\left(\sqrt n\\,\rho_k (P_{n,k}-P)(\hat\varphi_{L,k}^{cf}-\varphi_L)\mid \mathcal T_k\right)
+\le \rho_k \|\hat\varphi_{L,k}^{cf}-\varphi_L\|_2^2.
+\]
+Lemma `lem:score-consistency` gives `\max_k \|\hat\varphi_{L,k}^{cf}-\varphi_L\|_2=o_P(1)`. Since `K` is fixed and the `\rho_k` are bounded away from `0` and `1`, conditional Chebyshev implies `\sqrt n\\,G_{L,n}=o_P(1)`.
+
+For the deterministic term, Lemma `lem:one-step-remainder` gives `R_{L,n}=o_P(n^{-1/2})`. Hence
+\[
+\sqrt n(\hat\theta_{L,os}-\theta_L)=\sqrt n(P_n-P)\varphi_L+o_P(1),
+\]
+and Slutsky yields
+\[
+\sqrt n(\hat\theta_{L,os}-\theta_L)\Rightarrow N\bigl(0,E_P[varphi_L(O)^2]\bigr).
+\]
+
+The upper endpoint is identical. One writes
+\[
+\hat\theta_{U,os}-\theta_U=(P_n-P)\varphi_U+G_{U,n}+R_{U,n},
+\]
+with
+\[
+G_{U,n}:=\sum_{k=1}^K \rho_k (P_{n,k}-P)(\hat\varphi_{U,k}^{cf}-\varphi_U),
+\qquad
+R_{U,n}:=\hat\theta_{U,plug}^{cf}-\theta_U+\sum_{k=1}^K \rho_k P\hat\varphi_{U,k}^{cf}.
+\]
+Again `thm:population-endpoint-eif` and Lemma `lem:iid-l2-clt` give
+\[
+\sqrt n(P_n-P)\varphi_U\Rightarrow N\bigl(0,E_P[varphi_U(O)^2]\bigr),
+\]
+Lemma `lem:score-consistency` gives `\sqrt n\\,G_{U,n}=o_P(1)`, and Lemma `lem:one-step-remainder` gives `R_{U,n}=o_P(n^{-1/2})`. Therefore
+\[
+\sqrt n(\hat\theta_{U,os}-\theta_U)=\sqrt n(P_n-P)\varphi_U+o_P(1),
+\]
+so
+\[
+\sqrt n(\hat\theta_{U,os}-\theta_U)\Rightarrow N\bigl(0,E_P[varphi_U(O)^2]\bigr).
+\]
+This proves the theorem.
+\par\smallskip\noindent \textit{Justification.} Once the population gradient is isolated, the remaining task is to show that tailored active-envelope nuisance rates make the one-step remainder negligible. \textit{Gap.} HeLi2026 obtain one-step asymptotic normality for fixed parametric copulas, while the present theorem handles a family-free bound endpoint whose nonlinear remainder is tied to the active Nelsen envelope rather than a smooth parametric copula score. \textit{Consumer.} Empirical sensitivity analyses can attach feasible root-n confidence intervals to the scalar lower and upper Kendall-band GPN endpoints in regular regimes.
+
+\begin{lemma}[lem:conditional-sklar]\label{lem:conditional-sklar}
+Let F_1(. | x) and F_0(. | x) be conditional distribution functions. If H_x is a conditional bivariate distribution with these margins and the margins are continuous for P_X-almost every x, then there is a unique conditional copula C_x such that H_x(y_1, y_0) = C_x(F_1(y_1 | x), F_0(y_0 | x)) for P_X-almost every x. Conversely, if x -> C_x is a measurable family of copulas, then H_x(y_1, y_0) := C_x(F_1(y_1 | x), F_0(y_0 | x)) defines a conditional bivariate distribution with conditional margins F_1 and F_0.
+\end{lemma}
+SOURCE: Patton (2006), 'Modelling Asymmetric Exchange Rate Dependence', conditional Sklar theorem, together with Nelsen (2006), 'An Introduction to Copulas', Theorem 2.3.3 for the constructive direction. These results supply exactly the two facts used here: uniqueness of the conditional copula under conditional continuity of the margins, and construction of a joint conditional law from a measurable copula family and fixed conditional margins.
+
+\begin{lemma}[lem:copula-space-topology]\label{lem:copula-space-topology}
+Let C denote the set of bivariate copulas on [0,1]^2 equipped with the uniform metric. Then C is a compact metric space, hence Polish. For every fixed (u_1, u_0) in [0,1]^2, the evaluation map D -> D(u_1, u_0) is continuous on C. Kendall's tau D -> tau(D) is also continuous on C.
+\end{lemma}
+Every copula is bounded in [0,1] and is 1-Lipschitz in each coordinate, hence the class is equicontinuous and uniformly bounded. The copula boundary conditions and 2-increasing property are preserved under uniform convergence, so the copula class is closed in C([0,1]^2). Arzela-Ascoli therefore gives compactness under the uniform metric; every compact metric space is Polish. Continuity of evaluation is immediate from |D(u_1, u_0) - D'(u_1, u_0)| <= ||D - D'||_infty. Continuity of Kendall's tau on copula space is classical; see Nelsen (2006), Chapter 5 on measures of concordance.
+
+\begin{lemma}[lem:tau-copula-attainment]\label{lem:tau-copula-attainment}
+Fix t in [-1,1] and a point (u_1, u_0) in [0,1]^2. Define b_plus_eq(u_1, u_0; t) := sup{D(u_1, u_0) : D is a copula and tau(D) = t} and b_minus_eq(u_1, u_0; t) := inf{D(u_1, u_0) : D is a copula and tau(D) = t}. Then the attainable values of D(u_1, u_0) over all copulas with tau(D) = t are exactly the interval [b_minus_eq(u_1, u_0; t), b_plus_eq(u_1, u_0; t)]. In addition, the maps t -> b_minus_eq(u_1, u_0; t) and t -> b_plus_eq(u_1, u_0; t) are continuous on [-1,1].
+\end{lemma}
+SOURCE: Nelsen, Quesada-Molina, Rodriguez-Lallena, and Ubeda-Flores (2001), 'Bounds on bivariate distribution functions with given margins and measures of association', together with Nelsen and Ubeda-Flores (2004), 'Exact regions determined by Kendall's tau'. The exact fact used here is the following fixed-tau pointwise theorem: for every t in [-1,1] and every (u_1, u_0) in [0,1]^2, the set {D(u_1, u_0) : D is a copula and tau(D) = t} is the exact closed interval between the published lower and upper Nelsen bounds, so every interior ordinate as well as both endpoints is attained by at least one copula with tau(D) = t. The same sources give closed-form descriptions of those endpoint functions, from which the continuity of t -> b_minus_eq(u_1, u_0; t) and t -> b_plus_eq(u_1, u_0; t) follows.
+
+\begin{lemma}[lem:band-attainment-bridge]\label{lem:band-attainment-bridge}
+Fix a tau band [tau_L, tau_U] and a point (u_1, u_0) in [0,1]^2. Then the attainable set S_band(u_1, u_0) := {D(u_1, u_0) : D is a copula and tau(D) in [tau_L, tau_U]} is exactly the closed interval [b_minus(u_1, u_0; tau_L, tau_U), b_plus(u_1, u_0; tau_L, tau_U)]. In particular every w in [b_minus(u_1, u_0; tau_L, tau_U), b_plus(u_1, u_0; tau_L, tau_U)] is attained by at least one copula D with tau(D) in [tau_L, tau_U].
+\end{lemma}
+For each fixed t in [tau_L, tau_U], write
+
+I_t(u_1, u_0) := {D(u_1, u_0) : D is a copula and tau(D) = t}.
+
+By Lemma lem:tau-copula-attainment,
+
+I_t(u_1, u_0) = [b_minus_eq(u_1, u_0; t), b_plus_eq(u_1, u_0; t)]
+
+for every t in [tau_L, tau_U]. By definition of S_band,
+
+S_band(u_1, u_0) = union_{t in [tau_L, tau_U]} I_t(u_1, u_0)
+= union_{t in [tau_L, tau_U]} [b_minus_eq(u_1, u_0; t), b_plus_eq(u_1, u_0; t)].
+
+Consider the map
+
+F : [tau_L, tau_U] x [0,1] -> R,
+F(t, s) := (1 - s) b_minus_eq(u_1, u_0; t) + s b_plus_eq(u_1, u_0; t).
+
+Lemma lem:tau-copula-attainment gives continuity of t -> b_minus_eq(u_1, u_0; t) and t -> b_plus_eq(u_1, u_0; t), so F is continuous. Its image is exactly S_band(u_1, u_0), because for fixed t the set F({t} x [0,1]) is the whole interval [b_minus_eq(u_1, u_0; t), b_plus_eq(u_1, u_0; t)], and taking the union over t recovers S_band(u_1, u_0). The domain [tau_L, tau_U] x [0,1] is connected, so its continuous image S_band(u_1, u_0) is connected. Every connected subset of R is an interval. Because S_band(u_1, u_0) is also bounded, it must equal [min S_band(u_1, u_0), max S_band(u_1, u_0)]. By the definitions of b_minus and b_plus,
+
+min S_band(u_1, u_0) = b_minus(u_1, u_0; tau_L, tau_U),
+max S_band(u_1, u_0) = b_plus(u_1, u_0; tau_L, tau_U).
+
+Therefore
+
+S_band(u_1, u_0) = [b_minus(u_1, u_0; tau_L, tau_U), b_plus(u_1, u_0; tau_L, tau_U)].
+
+The attainment claim is immediate from this identity.
+
+\begin{lemma}[lem:aumann-measurable-selection]\label{lem:aumann-measurable-selection}
+Let (Omega, F, mu) be a complete finite measure space and let E be a Polish space. If G is an F tensor B(E)-measurable subset of Omega x E whose sections G_omega := {e in E : (omega, e) in G} are nonempty and closed for every omega, then there exists an F-measurable selector s : Omega -> E such that s(omega) belongs to G_omega for every omega.
+\end{lemma}
+SOURCE: Aumann (1965), 'Integrals of set-valued functions', measurable selection theorem for measurable graphs with nonempty closed sections in complete finite measure spaces and Polish codomain.
+
+\begin{lemma}[lem:gpn-copula-representation]\label{lem:gpn-copula-representation}
+Let Q be any full law on (X, A, Y, Y(1), Y(0)) that has the same observed law of (X, A, Y) as P and satisfies ass:consistency, ass:ignorability, ass:overlap, ass:treated-margin-continuity, ass:control-margin-continuity, and ass:treated-event-positive. Let C_x^Q denote the conditional copula of (Y(1), Y(0)) given X = x under Q. Then theta(Q) = E_Q[m_0(X) - C_X^Q(m_1(X), m_0(X))] / pi_1, where m_1, m_0, and pi_1 are the observed-law functionals determined by the common observed law of (X, A, Y).
+\end{lemma}
+Because Q and P share the same observed law of (X, A, Y), they share the same conditional law of Y given (A, X), hence the same marginal law of X, the same observed-law functions m_1 and m_0, and the same scalar pi_1 = E[1 - m_1(X)]. By ass:consistency and ass:ignorability, for P_X-almost every x,
+
+Q(Y(1) < c_1 | X = x) = Q(Y < c_1 | A = 1, X = x) = m_1(x),
+Q(Y(0) < c_0 | X = x) = Q(Y < c_0 | A = 0, X = x) = m_0(x).
+
+Ass:overlap ensures the observed conditional probabilities on the right are well-defined. Let F_1^Q(. | x) and F_0^Q(. | x) denote the conditional distribution functions of Y(1) and Y(0) given X = x under Q. By ass:treated-margin-continuity and ass:control-margin-continuity,
+
+F_1^Q(c_1 | x) = Q(Y(1) <= c_1 | X = x) = Q(Y(1) < c_1 | X = x) = m_1(x),
+F_0^Q(c_0 | x) = Q(Y(0) <= c_0 | X = x) = Q(Y(0) < c_0 | X = x) = m_0(x)
+
+for P_X-almost every x. Lemma lem:conditional-sklar therefore yields a unique conditional copula C_x^Q such that
+
+Q(Y(1) < c_1, Y(0) < c_0 | X = x) = C_x^Q(m_1(x), m_0(x))
+
+for P_X-almost every x. Hence
+
+Q(Y(0) < c_0, Y(1) >= c_1 | X = x)
+= Q(Y(0) < c_0 | X = x) - Q(Y(1) < c_1, Y(0) < c_0 | X = x)
+= m_0(x) - C_x^Q(m_1(x), m_0(x)).
+
+Integrating over X gives
+
+Q(Y(0) < c_0, Y(1) >= c_1) = E_Q[m_0(X) - C_X^Q(m_1(X), m_0(X))].
+
+Likewise,
+
+Q(Y(1) >= c_1) = E_Q[1 - Q(Y(1) < c_1 | X)] = E_Q[1 - m_1(X)] = pi_1.
+
+Ass:treated-event-positive gives pi_1 > 0. Dividing the numerator identity by pi_1 proves the claim.
+
+\begin{lemma}[lem:tau-band-measurable-selector]\label{lem:tau-band-measurable-selector}
+Let eta : X -> [0,1] be measurable and satisfy B_minus(X) <= eta(X) <= B_plus(X) almost surely. Then there exists a measurable family of copulas x -> C_x^eta such that tau(C_x^eta) belongs to [tau_L, tau_U] and C_x^eta(m_1(x), m_0(x)) = eta(x) for P_X-almost every x. Consequently there exists a full law P^eta satisfying ass:consistency, ass:ignorability, ass:overlap, ass:treated-margin-continuity, ass:control-margin-continuity, ass:treated-event-positive, and ass:conditional-tau-band, having the same observed law of (X, A, Y) as P, and obeying theta(P^eta) = E_P[m_0(X) - eta(X)] / pi_1.
+\end{lemma}
+Let C denote the compact Polish space of bivariate copulas from Lemma lem:copula-space-topology, equipped with the uniform metric. By def:pointwise-tau-envelopes,
+
+B_minus(x) = b_minus(m_1(x), m_0(x); tau_L, tau_U),
+B_plus(x) = b_plus(m_1(x), m_0(x); tau_L, tau_U)
+
+for P_X-almost every x. Hence the hypothesis B_minus(X) <= eta(X) <= B_plus(X) is equivalent to
+
+eta(x) in [b_minus(m_1(x), m_0(x); tau_L, tau_U), b_plus(m_1(x), m_0(x); tau_L, tau_U)]
+
+for P_X-almost every x.
+
+Define the section map
+
+F(x) := {D in C : tau(D) in [tau_L, tau_U] and D(m_1(x), m_0(x)) = eta(x)}.
+
+We first show that F(x) is nonempty and closed for P_X-almost every x. Nonemptiness follows from Lemma lem:band-attainment-bridge, because the displayed envelope condition says exactly that eta(x) is an attainable ordinate at (m_1(x), m_0(x)) under the band restriction. Closedness follows from Lemma lem:copula-space-topology: both D -> tau(D) and D -> D(m_1(x), m_0(x)) are continuous on C, so F(x) is the intersection of the closed band {D : tau(D) in [tau_L, tau_U]} and the closed level set {D : D(m_1(x), m_0(x)) = eta(x)}.
+
+We next verify measurability of the graph of F. Define
+
+G(x, D) := D(m_1(x), m_0(x)).
+
+For fixed x, D -> G(x, D) is continuous by continuity of evaluation. For fixed D, x -> G(x, D) is measurable because m_1 and m_0 are measurable and every copula D is continuous on [0,1]^2. Hence G is jointly measurable on X x C. Since D -> tau(D) is continuous, the graph
+
+Gr(F) = {(x, D) in X x C : tau_L <= tau(D) <= tau_U and G(x, D) = eta(x)}
+
+is measurable in the completion of the product sigma-field generated by P_X and the Borel sigma-field on C. Lemma lem:aumann-measurable-selection therefore yields a P_X-measurable selector x -> C_x^eta with C_x^eta in F(x) for P_X-almost every x. Equivalently,
+
+tau(C_x^eta) in [tau_L, tau_U],
+C_x^eta(m_1(x), m_0(x)) = eta(x)
+
+for P_X-almost every x.
+
+Let F_1(. | x) and F_0(. | x) denote the conditional margins of Y(1) and Y(0) given X = x under P. Define
+
+H_x^eta(y_1, y_0) := C_x^eta(F_1(y_1 | x), F_0(y_0 | x)).
+
+By the constructive direction of Lemma lem:conditional-sklar, H_x^eta is a conditional bivariate distribution with conditional margins F_1 and F_0. Construct a new full law P^eta as follows: draw X from P_X; conditional on X = x, draw (Y(1), Y(0)) from H_x^eta; conditional on X = x, draw A from the same Bernoulli(e(x)) law as under P independently of (Y(1), Y(0)); then set Y = A Y(1) + (1 - A) Y(0).
+
+This construction verifies the seven population restrictions used in the identified-set model. Consistency holds by construction of Y. Ignorability holds because A is generated independently of (Y(1), Y(0)) given X. Overlap holds because the propensity remains e(x), which obeys ass:overlap. The conditional margins of Y(1) and Y(0) given X are unchanged, so ass:treated-margin-continuity, ass:control-margin-continuity, and ass:treated-event-positive remain true. Finally, the conditional copula under P^eta is exactly C_x^eta, so ass:conditional-tau-band holds.
+
+The observed law is unchanged as well: P_X is unchanged, the conditional law of A given X is unchanged, and for each t in {0,1} the conditional law of Y given A = t and X = x equals the unchanged conditional marginal law of Y(t) given X = x. Hence P^eta_(X,A,Y) = P_(X,A,Y).
+
+Applying Lemma lem:gpn-copula-representation under P^eta yields
+
+theta(P^eta) = E_{P^eta}[m_0(X) - C_X^eta(m_1(X), m_0(X))] / pi_1.
+
+Because P^eta and P share the same law of X and the same observed-law functionals m_0, m_1, and pi_1, while C_X^eta(m_1(X), m_0(X)) = eta(X) almost surely, this identity becomes
+
+theta(P^eta) = E_P[m_0(X) - eta(X)] / pi_1.
+
+This proves the lemma.
+
+\begin{lemma}[lem:tau-band-piecewise-smooth]\label{lem:tau-band-piecewise-smooth}
+Under `ass:band-regular-piece`, the band envelopes `B_plus` and `B_minus` are locally equal, on the support of `(m_1(X),m_0(X))`, to one of finitely many smooth active branches, and the partial derivatives entering `d_L0,d_L1,d_U0,d_U1` are measurable and essentially bounded.
+\end{lemma}
+`ass:band-regular-piece` is exactly the substantive input here: each band envelope is piecewise-smooth on the support of `(m_1(X),m_0(X))`, only finitely many active branches occur, and the realized pair stays a fixed positive distance from every branch-switching boundary. Therefore, for `P_X`-almost every `x`, the point `(m_1(x),m_0(x))` lies in the interior of one smooth active branch for `B_plus` and one smooth active branch for `B_minus`. Because `(m_1(X),m_0(X))` always takes values in the compact square `[0,1]^2`, the realized region inside each active branch is a closed subset of `[0,1]^2` contained in the smooth interior of that branch. The first partial derivatives of each active branch are therefore bounded on that realized region by compactness, and taking the maximum over finitely many branches preserves essential boundedness. Measurability follows from evaluating finitely many smooth branch-derivative maps on the measurable pair `(m_1(X),m_0(X))`. The objects `d_L0,d_L1,d_U0,d_U1` from `def:regular-piece-derivatives` are exactly those branch derivatives evaluated at `(m_1(X),m_0(X))`. This proves the lemma.
+
+\begin{lemma}[lem:endpoint-pathwise-gradient]\label{lem:endpoint-pathwise-gradient}
+Under `ass:consistency`, `ass:ignorability`, `ass:overlap`, `ass:treated-event-positive`, `def:tau-band-law-class`, `def:endpoint-functionals`, `def:orthogonal-residuals`, `def:regular-piece-derivatives`, `def:eif-components`, and `ass:band-regular-piece`, every regular one-dimensional observed-data submodel `{P_\varepsilon}` through `P` that remains in `P_tauband` and stays on the same band-envelope branches for all sufficiently small `|\varepsilon|` obeys
+\[
+\left.\frac{d}{d\varepsilon}\theta_L(P_\varepsilon)\right|_{0}=E_P[varphi_L(O)S(O)],\qquad
+\left.\frac{d}{d\varepsilon}\theta_U(P_\varepsilon)\right|_{0}=E_P[varphi_U(O)S(O)],
+\]
+where `S` is the score. In particular `varphi_L` and `varphi_U` are mean-zero square-integrable regular influence functions along those submodels.
+\end{lemma}
+Fix such a regular submodel `{P_\varepsilon}` with score `S(O)`. Write `m_{t,\varepsilon}`, `\nu_{L,\varepsilon}`, `\nu_{U,\varepsilon}`, `\pi_{1,\varepsilon}`, `\theta_{L,\varepsilon}`, and `\theta_{U,\varepsilon}` for the corresponding pathwise quantities, and write `\dot m_t(x)=\left.\frac{d}{d\varepsilon}m_{t,\varepsilon}(x)\right|_0`. The membership in `P_tauband` is ambient model bookkeeping; the differentiation itself uses the observed-data nuisance map plus the same-branch regularity encoded by `ass:band-regular-piece`. By `ass:band-regular-piece` and Lemma `lem:tau-band-piecewise-smooth`, the active branch of each band envelope is locally fixed and smooth along the submodel for all sufficiently small `|\varepsilon|`. Therefore the chain rule is valid on one fixed branch.
+
+By `ass:consistency` and `ass:ignorability`, for `P_X`-almost every `x`,
+\[
+m_{1,\varepsilon}(x)=P_\varepsilon(Y<c_1\mid A=1,X=x)=P_\varepsilon(Y(1)<c_1\mid X=x),
+\]
+\[
+m_{0,\varepsilon}(x)=P_\varepsilon(Y<c_0\mid A=0,X=x)=P_\varepsilon(Y(0)<c_0\mid X=x).
+\]
+Let `h_L(u_1,u_0)=u_0-b_plus(u_1,u_0;\tau_L,\tau_U)` and `h_U(u_1,u_0)=u_0-b_minus(u_1,u_0;\tau_L,\tau_U)`. Then
+\[
+\nu_{L,\varepsilon}=E_{P_\varepsilon}[h_L(m_{1,\varepsilon}(X),m_{0,\varepsilon}(X))],\qquad
+\nu_{U,\varepsilon}=E_{P_\varepsilon}[h_U(m_{1,\varepsilon}(X),m_{0,\varepsilon}(X))],
+\]
+\[
+\pi_{1,\varepsilon}=E_{P_\varepsilon}[1-m_{1,\varepsilon}(X)],\qquad
+\theta_{L,\varepsilon}=\nu_{L,\varepsilon}/\pi_{1,\varepsilon},\qquad
+\theta_{U,\varepsilon}=\nu_{U,\varepsilon}/\pi_{1,\varepsilon}.
+\]
+Because the branch is fixed and smooth,
+\[
+\left.\frac{d}{d\varepsilon}h_L(m_{1,\varepsilon}(x),m_{0,\varepsilon}(x))\right|_0=d_{L1}(x)\dot m_1(x)+d_{L0}(x)\dot m_0(x),
+\]
+\[
+\left.\frac{d}{d\varepsilon}h_U(m_{1,\varepsilon}(x),m_{0,\varepsilon}(x))\right|_0=d_{U1}(x)\dot m_1(x)+d_{U0}(x)\dot m_0(x).
+\]
+
+Write the score decomposition `S=S_X+S_{A\mid X}+S_{Y\mid AX}`. Since `m_{0,\varepsilon}(x)` is the conditional mean of `1\{Y<c_0\}` in the stratum `(A,X)=(0,x)`,
+\[
+\dot m_0(x)=E_P[(1\{Y<c_0\}-m_0(x))S_{Y\mid AX}(Y,0,x)\mid A=0,X=x].
+\]
+Multiplying by `(1-A)/(1-e(X))` and conditioning on `X`, `ass:overlap` gives
+\[
+E_P[zeta_0(O)S(O)\mid X=x]=\dot m_0(x).
+\]
+Likewise,
+\[
+E_P[zeta_1(O)S(O)\mid X=x]=\dot m_1(x).
+\]
+Hence for every bounded measurable `r(X)`,
+\[
+E_P[r(X)\dot m_0(X)]=E_P[r(X)zeta_0(O)S(O)],
+\qquad
+E_P[r(X)\dot m_1(X)]=E_P[r(X)zeta_1(O)S(O)].
+\]
+
+Differentiating the lower numerator and using the regular-path identity `\left.\frac{d}{d\varepsilon}E_{P_\varepsilon}g_\varepsilon\right|_0=E_P[(g_0-E_Pg_0)S]+E_P[\dot g_0]`, we obtain
+\[
+\left.\frac{d}{d\varepsilon}\nu_{L,\varepsilon}\right|_0
+=E_P[(m_0(X)-B_plus(X)-\nu_L)S(O)] + E_P[d_{L0}(X)\dot m_0(X)+d_{L1}(X)\dot m_1(X)].
+\]
+Substituting the previous displays yields
+\[
+\left.\frac{d}{d\varepsilon}\nu_{L,\varepsilon}\right|_0
+=E_P[(m_0(X)-B_plus(X)-\nu_L+d_{L0}(X)zeta_0(O)+d_{L1}(X)zeta_1(O))S(O)]
+=E_P[phi_nuL(O)S(O)].
+\]
+The same argument gives
+\[
+\left.\frac{d}{d\varepsilon}\nu_{U,\varepsilon}\right|_0=E_P[phi_nuU(O)S(O)].
+\]
+For the denominator,
+\[
+\left.\frac{d}{d\varepsilon}\pi_{1,\varepsilon}\right|_0
+=E_P[(1-m_1(X)-\pi_1)S(O)]-E_P[\dot m_1(X)]
+=E_P[(1-m_1(X)-\pi_1-zeta_1(O))S(O)]
+=E_P[phi_pi(O)S(O)].
+\]
+Since `ass:treated-event-positive` gives `\pi_1>0`, the ratio rule gives
+\[
+\left.\frac{d}{d\varepsilon}\theta_L(P_\varepsilon)\right|_0
+=\pi_1^{-1}\left(\left.\frac{d}{d\varepsilon}\nu_{L,\varepsilon}\right|_0-\theta_L\left.\frac{d}{d\varepsilon}\pi_{1,\varepsilon}\right|_0\right)
+=E_P[varphi_L(O)S(O)],
+\]
+\[
+\left.\frac{d}{d\varepsilon}\theta_U(P_\varepsilon)\right|_0
+=\pi_1^{-1}\left(\left.\frac{d}{d\varepsilon}\nu_{U,\varepsilon}\right|_0-\theta_U\left.\frac{d}{d\varepsilon}\pi_{1,\varepsilon}\right|_0\right)
+=E_P[varphi_U(O)S(O)].
+\]
+Finally, `E_P[zeta_0\mid X]=E_P[zeta_1\mid X]=0` by construction, so `E_P[phi_nuL]=E_P[phi_nuU]=E_P[phi_pi]=0`, hence `E_P[varphi_L]=E_P[varphi_U]=0`. Square integrability follows because `m_0,m_1,B_plus,B_minus` lie in `[0,1]`, `1/e(X)` and `1/(1-e(X))` are bounded by `1/e_min` under `ass:overlap`, the branch derivatives are essentially bounded by Lemma `lem:tau-band-piecewise-smooth`, and `1/\pi_1` is bounded by `1/\pi_{min}` under `ass:treated-event-positive`. This proves the lemma.
+
+\begin{lemma}[lem:off-piece-control]\label{lem:off-piece-control}
+Fix a validation fold `k` and let `\tilde m_{1,k},\tilde m_{0,k},\tilde e_k` be the out-of-fold nuisance estimates used on that fold, with `\tilde e_{\kappa,k}=\min(\max(\tilde e_k,\kappa),1-\kappa)`. Let `A_{L,k}` and `A_{U,k}` be the random sets of covariate values where the estimated pair `(\tilde m_{1,k},\tilde m_{0,k})` selects a different active band branch from the true pair `(m_1,m_0)` for `B_plus` and `B_minus`, respectively. Under `ass:nuisance-rate-m1e`, `ass:nuisance-rate-m0e`, `ass:overlap`, `ass:treated-event-positive`, `def:one-step-estimators`, and `ass:band-regular-piece`,
+\[
+P_X(A_{L,k})=o_P(n^{-1/2}),\qquad P_X(A_{U,k})=o_P(n^{-1/2}).
+\]
+Moreover the off-piece contributions to score `L^2` error are `o_P(1)` and the off-piece contributions to the foldwise one-step remainders are `o_P(n^{-1/2})`.
+\end{lemma}
+We prove the lower-endpoint claim; the upper endpoint is identical. By `ass:band-regular-piece`, there is a constant `\delta_0>0` such that `(m_1(X),m_0(X))` lies at distance at least `\delta_0` from every lower band-branch switching boundary, almost surely. Hence a branch switch on fold `k` can occur only if
+\[
+\max\{ |\tilde m_{1,k}(X)-m_1(X)|,\,|\tilde m_{0,k}(X)-m_0(X)|\}>\delta_0/2.
+\]
+Therefore
+\[
+P_X(A_{L,k})\le 4\delta_0^{-2} E_P\\!\left[(\tilde m_{1,k}(X)-m_1(X))^2+(\tilde m_{0,k}(X)-m_0(X))^2\right].
+\]
+The foldwise out-of-fold rates in `ass:nuisance-rate-m1e` and `ass:nuisance-rate-m0e` imply
+\[
+\|\tilde m_{1,k}-m_1\|_2=o_P(n^{-1/4}),\qquad \|\tilde m_{0,k}-m_0\|_2=o_P(n^{-1/4}),
+\]
+uniformly over the finitely many folds. Hence
+\[
+P_X(A_{L,k})=O_P(\|\tilde m_{1,k}-m_1\|_2^2+\|\tilde m_{0,k}-m_0\|_2^2)=o_P(n^{-1/2}).
+\]
+The same argument applies to `A_{U,k}`.
+
+For boundedness, `def:one-step-estimators` gives `1/\tilde e_{\kappa,k}\le 1/\kappa` and `1/(1-\tilde e_{\kappa,k})\le 1/\kappa`. The indicator terms are bounded by `1`, the regressions lie in `[0,1]`, `1/\pi_1` is bounded under `ass:treated-event-positive`, and the active-branch derivatives are bounded on the realized region by Lemma `lem:tau-band-piecewise-smooth`. Therefore there are deterministic constants `M` and `M'` such that, with probability tending to one, the foldwise score integrands are bounded by `M` in absolute value and the foldwise Taylor remainder integrands are bounded by `M'` in absolute value.
+
+Consequently,
+\[
+\|(\hat\varphi_{L,k}^{cf}-\varphi_L)1_{A_{L,k}}\|_2^2\le 4M^2 P_X(A_{L,k})=o_P(1),
+\]
+and any foldwise remainder contribution supported on `A_{L,k}` is bounded by `M'P_X(A_{L,k})=o_P(n^{-1/2})`. The same bounds hold for the upper endpoint. This proves the lemma.
+
+\begin{lemma}[lem:score-consistency]\label{lem:score-consistency}
+Write `\hat\varphi_{t,k}^{cf}` for the restriction to validation fold `k` of the single actual cross-fitted score integrand declared in `def:one-step-estimators`. Under `ass:nuisance-rate-m1e`, `ass:nuisance-rate-m0e`, `ass:fold-geometry`, `ass:overlap`, `ass:treated-event-positive`, `ass:band-regular-piece`, `def:endpoint-functionals`, `def:eif-components`, `def:one-step-estimators`, `lem:tau-band-piecewise-smooth`, and `lem:off-piece-control`, these actual out-of-fold score pieces satisfy
+\[
+\max_{1\le k\le K}\|\hat\varphi_{L,k}^{cf}-\varphi_L\|_2=o_P(1),\qquad
+\max_{1\le k\le K}\|\hat\varphi_{U,k}^{cf}-\varphi_U\|_2=o_P(1).
+\]
+\end{lemma}
+We prove the lower-endpoint claim for one fixed fold `k`; the upper-endpoint claim is identical. Condition on the out-of-fold training samples. Then the foldwise nuisance functions `\tilde m_{1,j},\tilde m_{0,j},\tilde e_j` are deterministic for each fold `j`, and `\hat\varphi_{L,k}^{cf}` is the actual declared score obtained by evaluating the single global cross-fitted formula from `def:one-step-estimators` on validation fold `k`. Let `\tilde e_{\kappa,j}=\min(\max(\tilde e_j,\kappa),1-\kappa)` and define the foldwise errors
+\[
+\delta_{1,j}=\tilde m_{1,j}-m_1,\qquad \delta_{0,j}=\tilde m_{0,j}-m_0,\qquad \delta_{e,j}=\tilde e_{\kappa,j}-e.
+\]
+Because `\kappa\le e_{min}` and `e(X)\in[e_{min},1-e_{min}]` by `ass:overlap`, clipping is `1`-Lipschitz at the truth, so `\|\delta_{e,j}\|_2\le \|\tilde e_j-e\|_2=o_P(n^{-1/4})`. The nuisance-rate assumptions also give `\|\delta_{1,j}\|_2=o_P(n^{-1/4})` and `\|\delta_{0,j}\|_2=o_P(n^{-1/4})`, uniformly over the finitely many folds.
+
+Define the global population-centered cross-fitted quantities
+\[
+\tilde\nu_L^{cf}:=\sum_{j=1}^K \rho_j E_P[\tilde m_{0,j}(X)-\tilde B_{+,j}(X)],\qquad
+\tilde\pi_1^{cf}:=\sum_{j=1}^K \rho_j E_P[1-\tilde m_{1,j}(X)],\qquad
+\tilde\theta_L^{cf}:=\tilde\nu_L^{cf}/\tilde\pi_1^{cf},
+\]
+where `\tilde B_{+,j}(x)=b_plus(\tilde m_{1,j}(x),\tilde m_{0,j}(x);\tau_L,\tau_U)`. Let `\bar\varphi_{L,k}` be the lower score obtained by substituting the fold-`k` nuisance functions `(\tilde m_{1,k},\tilde m_{0,k},\tilde e_{\kappa,k})` and the global population centerings `(\tilde\nu_L^{cf},\tilde\pi_1^{cf},\tilde\theta_L^{cf})` into the algebraic formula in `def:eif-components`.
+
+First compare `\bar\varphi_{L,k}` with `\varphi_L`. On `A_{L,k}^c`, the estimated pair and true pair lie on the same smooth branch by Lemma `lem:off-piece-control` and Lemma `lem:tau-band-piecewise-smooth`. On that event the map `(u_1,u_0,e,\nu,\pi,\theta)\mapsto \varphi_L` is Lipschitz on the compact region `u_1,u_0\in[0,1]`, `e\in[\kappa,1-\kappa]`, `\pi\ge \pi_{min}/2`. Hence
+\[
+|\bar\varphi_{L,k}(O)-\varphi_L(O)|1_{A_{L,k}^c}
+\le C\Big(|\delta_{1,k}(X)|+|\delta_{0,k}(X)|+|\delta_{e,k}(X)|+|\tilde\nu_L^{cf}-\nu_L|+|\tilde\pi_1^{cf}-\pi_1|+|\tilde\theta_L^{cf}-\theta_L|\Big).
+\]
+Because `K` is fixed,
+\[
+|\tilde\pi_1^{cf}-\pi_1|\le \sum_{j=1}^K \rho_j \|\delta_{1,j}\|_2=o_P(1).
+\]
+By the same branchwise Lipschitz bound for `u_0-b_plus(u_1,u_0;\tau_L,\tau_U)` on `A_{L,j}^c`, together with boundedness on `A_{L,j}` and Lemma `lem:off-piece-control`,
+\[
+|\tilde\nu_L^{cf}-\nu_L|\le C\max_j(\|\delta_{1,j}\|_2+\|\delta_{0,j}\|_2)+C\max_j P_X(A_{L,j})=o_P(1).
+\]
+Since `\pi_1\ge \pi_{min}>0`, continuity of the ratio map gives `|\tilde\theta_L^{cf}-\theta_L|=o_P(1)`. Therefore
+\[
+\|(\bar\varphi_{L,k}-\varphi_L)1_{A_{L,k}^c}\|_2=o_P(1).
+\]
+The off-piece part is `o_P(1)` by Lemma `lem:off-piece-control`, so `\|\bar\varphi_{L,k}-\varphi_L\|_2=o_P(1)`.
+
+Second compare the actual declared score `\hat\varphi_{L,k}^{cf}` with `\bar\varphi_{L,k}`. The nuisance functions are the same; the only difference is that `\hat\varphi_{L,k}^{cf}` uses the global empirical cross-fitted centerings `\hat\nu_L^{cf}`, `\hat\pi_1^{cf}`, and `\hat\theta_L^{cf}` from `def:one-step-estimators`, whereas `\bar\varphi_{L,k}` uses their global population analogues. Because the validation-fold summands are bounded and `K` is fixed,
+\[
+|\hat\nu_L^{cf}-\tilde\nu_L^{cf}|+|\hat\pi_1^{cf}-\tilde\pi_1^{cf}|=O_P(n^{-1/2}),
+\]
+and by smoothness of the ratio map near `\pi_1\ge \pi_{min}>0`, also `|\hat\theta_L^{cf}-\tilde\theta_L^{cf}|=O_P(n^{-1/2})`. The score formula is Lipschitz in these scalar centerings, so
+\[
+\|\hat\varphi_{L,k}^{cf}-\bar\varphi_{L,k}\|_2=O_P(n^{-1/2})=o_P(1).
+\]
+By the triangle inequality,
+\[
+\|\hat\varphi_{L,k}^{cf}-\varphi_L\|_2\le \|\hat\varphi_{L,k}^{cf}-\bar\varphi_{L,k}\|_2+\|\bar\varphi_{L,k}-\varphi_L\|_2=o_P(1).
+\]
+The upper-endpoint proof is identical. Because `K` is fixed by `ass:fold-geometry`, the maximum over folds is still `o_P(1)`. This proves the lemma.
+
+\begin{lemma}[lem:iid-l2-clt]\label{lem:iid-l2-clt}
+If `O_1,\dots,O_n` are i.i.d. from `P` and `f\in L_0^2(P)`, then `\sqrt n (P_n-P)f \Rightarrow N(0,E_P[f(O)^2])`.
+\end{lemma}
+SOURCE: the classical Lindeberg-Levy central limit theorem for i.i.d. mean-zero finite-variance variables, applied to `X_i=f(O_i)`; see for example van der Vaart (1998), *Asymptotic Statistics*, Chapter 2.
+
+\begin{lemma}[lem:observed-data-tangent-space]\label{lem:observed-data-tangent-space}
+In the nonparametric observed-data model for `O=(X,A,Y)` with binary `A` and overlap, every tangent element admits the standard orthogonal decomposition `s_X(X)+s_A(A,X)+s_Y(Y,A,X)` with `E[s_X]=0`, `E[s_A\mid X]=0`, and `E[s_Y\mid A,X]=0`; conversely every square-integrable mean-zero function with this structure belongs to the tangent space. In particular, any mean-zero function of the form `g(X)-E[g(X)] + a_0(X) zeta_0(O) + a_1(X) zeta_1(O)` with square-integrable coefficients `a_0,a_1` belongs to the tangent space.
+\end{lemma}
+SOURCE: the standard tangent-space decomposition for nonparametric observed-data models with mixed covariates, treatment, and outcome; see for example Bickel, Klaassen, Ritov, and Wellner (1993), Chapter 3, or van der Vaart (1998), Chapter 25. The displayed special case follows because `zeta_0` and `zeta_1` are exactly the treatment-arm residual scores from `def:orthogonal-residuals`, and `E_P[zeta_0\mid X]=E_P[zeta_1\mid X]=0` under `ass:overlap`.
+
+\begin{lemma}[lem:one-step-remainder]\label{lem:one-step-remainder}
+Let `\hat\varphi_{t,k}^{cf}` denote the restriction to validation fold `k` of the single actual cross-fitted score integrand from `def:one-step-estimators`, and let
+\[
+R_{L,n}:=\hat\theta_{L,plug}^{cf}-\theta_L+\sum_{k=1}^K \rho_k P\hat\varphi_{L,k}^{cf},
+\qquad
+R_{U,n}:=\hat\theta_{U,plug}^{cf}-\theta_U+\sum_{k=1}^K \rho_k P\hat\varphi_{U,k}^{cf}.
+\]
+Under `thm:population-endpoint-eif`, `ass:nuisance-rate-m1e`, `ass:nuisance-rate-m0e`, `ass:fold-geometry`, `ass:overlap`, `ass:treated-event-positive`, `ass:band-regular-piece`, `def:one-step-estimators`, `def:endpoint-functionals`, `def:eif-components`, `def:orthogonal-residuals`, `lem:tau-band-piecewise-smooth`, and `lem:off-piece-control`, one has `R_{L,n}=o_P(n^{-1/2})` and `R_{U,n}=o_P(n^{-1/2})`.
+\end{lemma}
+We prove the lower-endpoint claim; the upper endpoint is identical. Condition on the out-of-fold training samples, so each foldwise nuisance triple `(\tilde m_{1,k},\tilde m_{0,k},\tilde e_k)` is deterministic. Let `\tilde e_{\kappa,k}=\min(\max(\tilde e_k,\kappa),1-\kappa)` and let `\delta_{1,k},\delta_{0,k},\delta_{e,k}` denote the corresponding errors relative to `(m_1,m_0,e)`. By the nuisance-rate assumptions and clipping,
+\[
+\max_k \bigl(\|\delta_{1,k}\|_2+\|\delta_{0,k}\|_2+\|\delta_{e,k}\|_2\bigr)=o_P(n^{-1/4}).
+\]
+
+Define the global population-centered cross-fitted plug-in quantities
+\[
+\tilde\nu_L^{cf}:=\sum_{k=1}^K \rho_k E_P[\tilde m_{0,k}(X)-\tilde B_{+,k}(X)],
+\qquad
+\tilde\pi_1^{cf}:=\sum_{k=1}^K \rho_k E_P[1-\tilde m_{1,k}(X)],
+\qquad
+\tilde\theta_L^{cf}:=\tilde\nu_L^{cf}/\tilde\pi_1^{cf},
+\]
+and let `\bar\varphi_{L,k}` be the fold-`k` lower score with nuisance functions `(\tilde m_{1,k},\tilde m_{0,k},\tilde e_{\kappa,k})` and the population centerings `(\tilde\nu_L^{cf},\tilde\pi_1^{cf},\tilde\theta_L^{cf})`.
+
+Step 1: population-centered second-order remainder. On `A_{L,k}^c`, the lower band envelope is one fixed smooth branch by Lemmas `lem:tau-band-piecewise-smooth` and `lem:off-piece-control`. Therefore Taylor's formula gives
+\[
+E_P[\tilde m_{0,k}(X)-\tilde B_{+,k}(X)]-\nu_L
+=E_P[d_{L1}(X)\delta_{1,k}(X)+d_{L0}(X)\delta_{0,k}(X)]
++O_P\bigl(\|\delta_{1,k}\|_2^2+\|\delta_{0,k}\|_2^2+\|\delta_{1,k}\|_2\|\delta_{0,k}\|_2\bigr)
++o_P(n^{-1/2}),
+\]
+where the final `o_P(n^{-1/2})` is the off-piece contribution from Lemma `lem:off-piece-control`. Also
+\[
+\tilde\pi_1^{cf}-\pi_1=-\sum_{k=1}^K \rho_k E_P[\delta_{1,k}(X)].
+\]
+Since `\pi_1\ge \pi_{min}>0`, a second-order ratio expansion yields
+\[
+\tilde\theta_L^{cf}-\theta_L
+=\pi_1^{-1}\sum_{k=1}^K \rho_k \Big(E_P[d_{L1}(X)\delta_{1,k}(X)+d_{L0}(X)\delta_{0,k}(X)] + \theta_L E_P[\delta_{1,k}(X)]\Big)
++O_P(\mathcal R_n)+o_P(n^{-1/2}),
+\]
+where
+\[
+\mathcal R_n:=\max_k\Big(\|\delta_{1,k}\|_2^2+\|\delta_{0,k}\|_2^2+\|\delta_{1,k}\|_2\|\delta_{0,k}\|_2\Big).
+\]
+Now evaluate `\sum_k \rho_k P\bar\varphi_{L,k}`. The orthogonality identities coming from `def:orthogonal-residuals` imply
+\[
+P\hat\zeta_{0,k} = O_P(\|\delta_{e,k}\|_2\|\delta_{0,k}\|_2),
+\qquad
+P\hat\zeta_{1,k} = -E_P[\delta_{1,k}(X)] + O_P(\|\delta_{e,k}\|_2\|\delta_{1,k}\|_2),
+\]
+and, with the derivative weights included,
+\[
+P[\tilde d_{L0,k}(X)\hat\zeta_{0,k}(O)] = -E_P[d_{L0}(X)\delta_{0,k}(X)] + O_P(\mathcal R_n+\|\delta_{e,k}\|_2\|\delta_{0,k}\|_2)+o_P(n^{-1/2}),
+\]
+\[
+P[\tilde d_{L1,k}(X)\hat\zeta_{1,k}(O)] = -E_P[d_{L1}(X)\delta_{1,k}(X)] + O_P(\mathcal R_n+\|\delta_{e,k}\|_2\|\delta_{1,k}\|_2)+o_P(n^{-1/2}).
+\]
+Substituting these displays into the formula for `\bar\varphi_{L,k}` gives first-order cancellation of the linear terms in `\delta_{1,k}` and `\delta_{0,k}`, so
+\[
+\tilde\theta_L^{cf}-\theta_L+\sum_{k=1}^K \rho_k P\bar\varphi_{L,k}
+=O_P\\!\left(\mathcal R_n + \max_k \|\delta_{e,k}\|_2(\|\delta_{1,k}\|_2+\|\delta_{0,k}\|_2)\right)+o_P(n^{-1/2}).
+\]
+Every displayed term is `o_P(n^{-1/2})` because each primitive nuisance error is `o_P(n^{-1/4})`. Hence
+\[
+\tilde\theta_L^{cf}-\theta_L+\sum_{k=1}^K \rho_k P\bar\varphi_{L,k}=o_P(n^{-1/2}).
+\]
+
+Step 2: empirical recentering from population centerings to the actual estimator. Let `\hat\nu_L^{cf}` and `\hat\pi_1^{cf}` be the empirical cross-fitted numerator and denominator entering `\hat\theta_{L,plug}^{cf}=\hat\nu_L^{cf}/\hat\pi_1^{cf}`. Because the validation-fold summands are bounded and `K` is fixed,
+\[
+|\hat\nu_L^{cf}-\tilde\nu_L^{cf}|+|\hat\pi_1^{cf}-\tilde\pi_1^{cf}|=O_P(n^{-1/2}),
+\qquad
+|\hat\theta_{L,plug}^{cf}-\tilde\theta_L^{cf}|=O_P(n^{-1/2}).
+\]
+Holding the nuisance functions fixed, the map from the scalar centerings `(\nu,\pi,\theta)` to the one-step combination `\theta + \sum_k \rho_k P\varphi_{L,k}(\nu,\pi,\theta)` is continuously differentiable, and its first derivative vanishes at `(\tilde\nu_L^{cf},\tilde\pi_1^{cf},\tilde\theta_L^{cf})` because the one-step correction is exactly the first-order ratio correction in those scalar arguments. Therefore replacing the population centerings by the empirical centerings changes the population remainder only at second order:
+\[
+\hat\theta_{L,plug}^{cf}-\tilde\theta_L^{cf} + \sum_{k=1}^K \rho_k P(\hat\varphi_{L,k}^{cf}-\bar\varphi_{L,k}) = O_P(n^{-1}).
+\]
+Combining this with Step 1 gives
+\[
+R_{L,n}=\hat\theta_{L,plug}^{cf}-\theta_L+\sum_{k=1}^K \rho_k P\hat\varphi_{L,k}^{cf}=o_P(n^{-1/2}).
+\]
+The upper-endpoint proof is identical, with `B_minus`, `d_{U0}`, and `d_{U1}` in place of the lower objects. Thus `R_{U,n}=o_P(n^{-1/2})` as well. This proves the lemma.
+
+\section{Honest scope}
+
+The sharp tau-band GPN identification theorem (thm:sharp-tau-band-gpn), the Gaussian-subfamily comparison (prop:gaussian-subfamily), the Frechet reduction (lem:frechet-reduction), the population EIF theorem in the band-regular same-piece observed-data model (thm:population-endpoint-eif), and the regular-regime pointwise one-step CLT for the single declared cross-fitted estimator (thm:regular-one-step-clt, under L2-consistency of the cross-fitted influence functions) are the proved field-tier results, delivering the sharp identified set plus its doubly-robust endpoint estimator and pointwise inference. Uniform inference for the full tau-indexed endpoint curve [theta_L(tau), theta_U(tau)] is an explicit OPEN FRONTIER: the singleton-tau endpoint admits a finite Nelsen branch-envelope representation and the endpoint operator is Hadamard directionally differentiable (deterministic facts, established), but a complete uniform theory requires weak convergence in ell^infty([tau_L, tau_U]) of the pre-envelope (x,tau) max/min-under-expectation random field under a P-Donsker branchwise EIF class and uniform cross-fitted nuisance rates, plus consistency of the estimated active-branch directional derivative for the Fang-Santos (2019) derivative-estimated/rescaled bootstrap (the ordinary bootstrap is inconsistent at branch-switching kinks). That uniform weak-convergence step is left open. The proposal fixes a constant conditional Kendall band across X and studies the population counterfactual target theta = P(Y(0) < c_0 | Y(1) >= c_1); translating every statement to the observed-event GPN of ChaogeHanLiuWu2026 would require explicit e(X)-reweighting or constant treatment propensity and is outside this version.
+
+\begin{thebibliography}{99}
+
+  \bibitem{Rubin1974} Rubin, D. B. (1974). Estimating causal effects of treatments in randomized and nonrandomized studies. Journal of Educational Psychology 66(5), 688-701.
+
+  \bibitem{RosenbaumRubin1983} Rosenbaum, P. R. and D. B. Rubin (1983). The central role of the propensity score in observational studies for causal effects. Biometrika 70(1), 41-55.
+
+  \bibitem{Nelsen2006} Nelsen, R. B. (2006). An Introduction to Copulas, 2nd edition. Springer, New York.
+
+  \bibitem{FanPark2010} Fan, Y. and H. Park (2010). Sharp bounds on the distribution of treatment effects and their statistical inference. Econometric Theory 26(3), 931-951.
+
+  \bibitem{ChernozhukovChetverikovDemirerDufloHansenNeweyRobins2018} Chernozhukov, V., D. Chetverikov, M. Demirer, E. Duflo, C. Hansen, W. Newey, and J. Robins (2018). Double/debiased machine learning for treatment and structural parameters. The Econometrics Journal 21(1), C1-C68.
+
+  \bibitem{ChaogeHanLiuWu2026} Chaoge, J., K. Han, F. Liu, and P. Wu (2026). Probabilities of causation for continuous outcomes: Bounds and identification. arXiv:2605.01883.
+
+  \bibitem{KawakamiKurokiTian2024} Kawakami, Y., M. Kuroki, and J. Tian (2024). Probabilities of causation for continuous and vector variables. arXiv:2405.20487.
+
+  \bibitem{NelsenQuesadaMolinaRodriguezLallenaUbedaFlores2001} Nelsen, R. B., J. J. Quesada-Molina, J. A. Rodriguez-Lallena, and M. Ubeda-Flores (2001). Bounds on bivariate distribution functions with given margins and measures of association. Communications in Statistics - Theory and Methods 30(6), 1155-1162.
+
+  \bibitem{NelsenUbedaFlores2004} Nelsen, R. B. and M. Ubeda-Flores (2004). A comparison of bounds on sets of joint distribution functions derived from various measures of association. Communications in Statistics - Theory and Methods 33(10), 2299-2305.
+
+  \bibitem{UbedaFlores2025} Ubeda-Flores, M. (2025). Best-possible bounds on the set of copulas with a given value of Gini's gamma. arXiv:2501.06915.
+
+  \bibitem{KokolBukovsekKosirMojskercOmladic2021} Kokol Bukovsek, D., T. Kosir, B. Mojskerc, and M. Omladic (2021). Spearman's footrule and Gini's gamma: Local bounds for bivariate copulas and the exact region with respect to Blomqvist's beta. Journal of Computational and Applied Mathematics 388, 113385.
+
+  \bibitem{TianWu2024} Tian, Z. and P. Wu (2024). Semiparametric efficient inference for the probability of necessary and sufficient causation. arXiv:2407.10185.
+
+  \bibitem{HeLi2026} He, P. and F. Li (2026). Causal inference with ordinal outcomes: copula-based identification, estimation and sensitivity analysis. arXiv:2605.11415.
+
+  \bibitem{DornGuoKallus2022} Dorn, J., K. Guo, and N. Kallus (2022). Doubly-valid/doubly-sharp sensitivity analysis for causal inference with unmeasured confounding. arXiv:2112.11449.
+
+  \bibitem{ChernozhukovLeeRosen2013} Chernozhukov, V., S. Lee, and A. M. Rosen (2013). Intersection bounds: estimation and inference. Econometrica 81(2), 667-737.
+
+  \bibitem{Stoye2020} Stoye, J. (2020). A simple, short, but never-empty confidence interval for partially identified parameters. arXiv:2010.10484.
+
+  \bibitem{vanderVaartWellner1996} A. W. van der Vaart and J. A. Wellner (1996). Weak Convergence and Empirical Processes. Springer.
+
+  \bibitem{FangSantos2019} Z. Fang and A. Santos (2019). Inference on Directionally Differentiable Functions. Review of Economic Studies 86(1):377-412.
+
+\end{thebibliography}
+
+\end{document}

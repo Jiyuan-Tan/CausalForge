@@ -1,0 +1,610 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_frontdoor\_multi\_mediator, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section initially contains exactly one stage-1 placeholder.
+%    Replace each placeholder with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to a Q1..Q6 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    If it is a free-form `(qid, specialization)`, define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{eid\_frontdoor\_multi\_mediator} / \texttt{v1}%
+  \\ \large\textit{Sharp NDE bounds when proxy-confounding constraints and unobserved mediator dependence share a latent face}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{quote}
+\textbf{Partial identification tuple.}
+\texttt{qid = eid\_frontdoor\_multi\_mediator};
+\texttt{specialization = v1};
+observable distribution \(P_{\mathrm{obs}}\) consists of the treatment law
+\(\Pr(A=a)\), the outcome/proxy law \(\Pr(A,Y,W,Z)\), the two marginal
+mediator laws \(p_{ja}(m)=\Pr(M_j=m\mid A=a)\) for \(j=1,2\) and
+\(a\in\{0,1\}\), and a reported dependence band
+\(\mathcal Q_a=[\underline q_a,\overline q_a]\) for
+\(q_a=\Pr(M_1(a)=1,M_2(a)=1)\);
+the parameter \(\theta\) is the pure natural direct effect
+\[
+  \theta_{\mathrm{PNDE}}
+  = \E\{Y(1,M_1(0),M_2(0))-Y(0,M_1(0),M_2(0))\};
+\]
+identifying restrictions are finite binary treatment and mediators, bounded
+outcome \(Y\in[0,1]\), randomized treatment with consistency, marginal
+mediator consistency, the dependence-band restriction \(q_a\in\mathcal Q_a\),
+and negative-control proxy restrictions summarized by the shared linear
+bridge-envelope system in Assumption~\ref{ass:proxy-envelope};
+the bounding functional is the projection of the finite mediator--response
+polytope
+\[
+  B(P_{\mathrm{obs}})
+  = \{\sum_m(v_{1m}-v_{0m}) :
+       (q_0,\pi^0,v_0,v_1)\in\mathcal P(P_{\mathrm{obs}})\},
+\]
+where \(\pi^0\) is the no-treatment joint mediator law induced by
+\((p_{10},p_{20},q_0)\), and \(v_{am}=\pi^0_m\E\{Y(a,m)\mid M(0)=m\}\).
+\end{quote}
+
+\begin{abstract}
+This proposal asks for sharp partial identification of a natural direct effect
+when two sequential binary mediators are not jointly observed.  The proposed
+kernel is that negative-control proxy information and the unknown mediator
+dependence structure need not decouple: the LP endpoint, and under canonical
+finite sharpness the sharp PNDE bound, can be determined by a shared latent
+face that is invisible if one first bounds the mediator copula and the
+proxy-confounding problem separately.  The flagship statement is
+a conjectured smallest binary counterexample in which both Fréchet endpoint
+couplings are feasible marginally, but the LP lower endpoint is attained only
+at an interior mediator-dependence value because the proxy bridge equations
+paste the same latent response coordinate across mediator cells.  Resolving the
+question would turn a common data limitation---only marginal mediator
+distributions are available---into a finite, checkable sharp-bounds problem
+rather than a generic warning about unidentified mediator dependence.  The
+proposal also records the routine LP envelope and the no-interaction reduction
+that any correct sharp theorem must satisfy.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Natural direct and indirect effects are often the estimands that encode a
+scientific mechanism, but multiple sequential mediators make those estimands
+depend on a joint counterfactual mediator distribution.  In many applications,
+the mediator measurements come from separate modules, registries, or summary
+reports, so the marginal mediator distributions are available while the
+within-unit dependence structure is only partially specified.  Negative-control
+proxies can bound mediator--outcome confounding, but existing proximal and
+partial-identification results do not say whether these proxy bounds can simply
+be combined with a separate Fréchet or copula bound for the mediators.
+
+\paragraph{The main finding (proposed).}
+The headline conjecture is a coupling--proxy incompatibility phenomenon,
+interpreting the LP endpoint as a sharp PNDE bound only under the canonical
+finite realization assumption:
+there exists a finite binary two-mediator law satisfying the locked parameters
+for which the LP lower endpoint for \(\theta_{\mathrm{PNDE}}\) is not obtained
+by either endpoint of the admissible no-treatment mediator coupling
+\(\mathcal Q_0\).  Instead, the active LP face is created by proxy bridge
+constraints that force the same latent response coordinate to be used across
+several mediator cells.  Thus a reviewer cannot certify sharpness by separately
+applying two-mediator decomposition bounds and proximal proxy bounds.
+
+\paragraph{What is new.}
+The novelty kernel is not that finite partial identification can be written as
+an LP; that is classical.  The new claim is the specific non-rectangularity
+created by three ingredients appearing together: only marginal mediator
+distributions, a partially specified mediator dependence band, and a shared
+negative-control bridge envelope for mediator--outcome confounding.  The
+closest published results either assume the relevant joint mediator law, give
+proximal point or partial identification for a single target without an
+unobserved mediator coupling, or derive two-mediator sharp bounds without proxy
+bridge constraints.
+
+\paragraph{How it positions in the literature.}
+This is a partial-identification proposal in the mediation and negative-control
+proxy cluster.  It is adjacent to sharp two-mediator decomposition bounds,
+proximal mediation identification, and proxy-based partial identification
+without completeness.  It uses front-door/natural-effect notation only to name
+the causal target; the theorem substrate is a finite sharp-bounds problem in
+the Manski/Balke--Pearl/proximal-bounds tradition.
+
+\section{Related work}
+\citet{RobinsGreenland1992} and \citet{Pearl2001} introduced the direct and
+indirect effect language that motivates the PNDE target.
+\citet{ImaiKeeleYamamoto2010} gave nonparametric identification and
+sensitivity analysis for single-mediator causal mediation under sequential
+ignorability, making clear which assumptions fail under mediator--outcome
+confounding.
+\citet{TchetgenShpitser2012} developed semiparametric theory for marginal
+natural direct and indirect effects and is the closest classical efficient
+estimation reference once identification is available.
+\citet{DanielDeStavolaCousensVansteelandt2015} and
+\citet{VanderWeeleVansteelandt2014} explain why multiple mediators cannot in
+general be handled one at a time and why joint mediator behavior matters.
+\citet{VansteelandtDaniel2017} introduced interventional effects for multiple
+mediators that avoid some cross-world assumptions but still rely on an
+intervention distribution for the mediator vector.
+\citet{XiaChan2022} decompose natural effects with multiple mediators using
+copula-compatible nuisance models; this proposal turns the copula from a
+model-compatibility device into an unidentified coordinate in a sharp-bounds
+problem.
+\citet{DingVanderWeele2016} give sharp sensitivity bounds for mediation under
+unmeasured mediator--outcome confounding in the single-mediator setting.
+\citet{MilesKankiMeloniTchetgen2017} give partial identification of the natural
+indirect effect for a binary mediator when key cross-world or no-induced-
+confounding assumptions are absent.
+\citet{DukesShpitserTchetgen2023} give proximal identification results for
+natural mediation effects with unmeasured confounding; this proposal studies
+the bounded/noncomplete and marginal-mediator case instead.
+\citet{GhassamiShpitserTchetgen2023} establish proxy-based partial
+identification without completeness for causal effects and hidden mediators,
+but not the mediator-coupling geometry of a natural direct effect.
+\citet{GhassamiYangShpitserTchetgen2025} give proximal identification results
+for causal mediation and front-door effects when mediators are hidden but
+proxies are observed; their point-identification regime differs from the
+present marginal-only mediator coupling and bounded proxy-confounding problem.
+\citet{GabrielSachsSjolander2023} derive sharp bounds for decomposition
+effects with two binary sequential mediators and show that separately sharp
+component bounds generally do not combine sharply; their setting observes the
+joint mediator structure and does not include negative-control proxy envelopes.
+\citet{HanLuoZhangGu2026} study bounds for direct and indirect effects when part of
+the mediator--endpoint confounding is observed, providing a recent comparator
+for partial confounder information that is not proxy-based.
+
+The in-repository catalogue currently has no active ThmSmith ExactID or
+PartialID proposal for multi-mediator proxy bounds; \texttt{ThmSmith/doc/API.md}
+\S3 states that these catalogues are empty at seed time.  AutoID's promoted
+\texttt{Identification/ExactID/Frontdoor.lean} records a single-mediator
+front-door ATE identification theorem, not a partial-identification theorem for
+natural effects.  AutoID's \texttt{Identification/PartialID/Proxy/} records
+Ghassami--Shpitser--Tchetgen-style proxy bounds for causal effects without
+completeness and explicitly defers mediator NIE/NDE sharpness.  AutoID's
+\texttt{Identification/PartialID/BalkePearl/} supplies the finite latent-table
+sharpness paradigm that the proposed LP should emulate.
+
+\section{Formal setup}
+Let \(A\in\{0,1\}\) be randomized treatment, \(M=(M_1,M_2)\in\{0,1\}^2\) two
+sequential mediators, \(Y\in[0,1]\) an outcome, and \(W,Z\) negative-control
+proxies for mediator--outcome confounding.  For \(a\in\{0,1\}\) and
+\(m=(m_1,m_2)\), write \(Y(a,m)\) for the counterfactual outcome under
+treatment \(a\) and mediator vector fixed to \(m\), and write \(M_j(a)\) for
+the potential mediator \(j\).  The target is
+\[
+  \theta_{\mathrm{PNDE}}
+  =\sum_{m\in\{0,1\}^2}\pi^0_m\{r_{1m}-r_{0m}\},
+  \qquad
+  r_{am}=\E\{Y(a,m)\mid M(0)=m\},
+\]
+where \(\pi^0_m=\Pr(M(0)=m)\).
+
+The observable mediator information is \(p_{10},p_{20}\) together with a
+dependence band \(\mathcal Q_0=[\underline q_0,\overline q_0]\) for
+\(q_0=\Pr(M_1(0)=1,M_2(0)=1)\).  For \(q\in\mathcal Q_0\), define
+\[
+\pi^0_{11}=q,\quad
+\pi^0_{10}=p_{10}(1)-q,\quad
+\pi^0_{01}=p_{20}(1)-q,\quad
+\pi^0_{00}=1-p_{10}(1)-p_{20}(1)+q.
+\]
+Let \(v_{am}=\pi^0_m r_{am}\).  The negative-control information is summarized
+by observable matrices \(G_a(P_{\mathrm{obs}})\in\R^{R_a\times4}\), vectors
+\(b_a(P_{\mathrm{obs}})\in\R^{R_a}\),
+and cell envelopes \(\ell_{am}(P_{\mathrm{obs}}),u_{am}(P_{\mathrm{obs}})\)
+such that feasible weighted response vectors \(v_a=(v_{am})_m\) satisfy
+\[
+  G_a(P_{\mathrm{obs}})v_a=b_a(P_{\mathrm{obs}}),
+  \qquad
+  \ell_{am}(P_{\mathrm{obs}})\pi^0_m
+  \le v_{am}\le
+  u_{am}(P_{\mathrm{obs}})\pi^0_m.
+\]
+The identified set \(B(P_{\mathrm{obs}})\) is the range of
+\(\sum_m(v_{1m}-v_{0m})\) over all \(q\in\mathcal Q_0\), induced
+\(\pi^0\), and feasible \(v_0,v_1\).
+For a fixed \(q\in\mathcal Q_0\), let \(\pi(q)\) denote the induced mediator
+law and define the fixed-coupling proxy-feasible response set
+\[
+  R_a^{\mathrm{sh}}(q)=
+  \{r_a\in[0,1]^4:
+      G_a(\pi(q)\odot r_a)=b_a,\ 
+      \ell_{am}\le r_{am}\le u_{am}\text{ for all }m\},
+\]
+where \(\odot\) denotes coordinatewise multiplication.  The full LP range is
+the convex interval generated by
+\[
+  I^{\mathrm{sh}}(q)=
+  \{\sum_m\pi_m(q)(r_{1m}-r_{0m}):
+      r_a\in R_a^{\mathrm{sh}}(q),\ a=0,1\}
+\]
+jointly over \(q\in\mathcal Q_0\).  The separate or rectangular relaxation
+used as the comparator first unions the fixed-\(q\) proxy intervals
+coordinatewise,
+\[
+  [\underline r^{\mathrm{sep}}_{am},\overline r^{\mathrm{sep}}_{am}]
+  =
+  \operatorname{conv}\Bigl(
+    \bigcup_{q\in\mathcal Q_0}
+    \{r_{am}:r_a\in R_a^{\mathrm{sh}}(q)\}
+  \Bigr),
+\]
+and only afterwards forms the product relaxation
+\[
+  B_{\mathrm{sep}}(P_{\mathrm{obs}})
+  =
+  \left\{
+    \sum_m\pi_m(q)(r_{1m}-r_{0m}):
+    q\in\mathcal Q_0,\ 
+    r_{am}\in
+    [\underline r^{\mathrm{sep}}_{am},\overline r^{\mathrm{sep}}_{am}]
+  \right\}.
+\]
+Thus \(B_{\mathrm{sep}}\) is a union-over-fixed-\(q\) projection followed by a
+rectangular product over mediator cells, not an intersection with the jointly
+feasible LP range.  Conjecture~\ref{conj:interior-coupling} asserts that this
+well-defined relaxation can be strictly too wide.
+
+\begin{quote}
+\textbf{Partial identification tuple.}
+\texttt{qid = eid\_frontdoor\_multi\_mediator};
+\texttt{specialization = v1};
+observable distribution \(P_{\mathrm{obs}}\) consists of the treatment law
+\(\Pr(A=a)\), the outcome/proxy law \(\Pr(A,Y,W,Z)\), the two marginal
+mediator laws \(p_{ja}(m)=\Pr(M_j=m\mid A=a)\) for \(j=1,2\) and
+\(a\in\{0,1\}\), and a reported dependence band
+\(\mathcal Q_a=[\underline q_a,\overline q_a]\) for
+\(q_a=\Pr(M_1(a)=1,M_2(a)=1)\);
+the parameter \(\theta\) is the pure natural direct effect
+\[
+  \theta_{\mathrm{PNDE}}
+  = \E\{Y(1,M_1(0),M_2(0))-Y(0,M_1(0),M_2(0))\};
+\]
+identifying restrictions are finite binary treatment and mediators, bounded
+outcome \(Y\in[0,1]\), randomized treatment with consistency, marginal
+mediator consistency, the dependence-band restriction \(q_a\in\mathcal Q_a\),
+and negative-control proxy restrictions summarized by the shared linear
+bridge-envelope system in Assumption~\ref{ass:proxy-envelope};
+the bounding functional is the projection of the finite mediator--response
+polytope
+\[
+  B(P_{\mathrm{obs}})
+  = \{\sum_m(v_{1m}-v_{0m}) :
+       (q_0,\pi^0,v_0,v_1)\in\mathcal P(P_{\mathrm{obs}})\},
+\]
+where \(\pi^0\) is the no-treatment joint mediator law induced by
+\((p_{10},p_{20},q_0)\), and \(v_{am}=\pi^0_m\E\{Y(a,m)\mid M(0)=m\}\).
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite bounded mediation system]\label{ass:finite}
+\(A,M_1,M_2\) are binary, \(Y\in[0,1]\), and all sums over mediator cells are
+over \(m\in\{0,1\}^2\).  The objects \(p_{10},p_{20},\mathcal Q_0\),
+\(G_a,b_a,\ell_{am},u_{am}\), \(\pi^0\), \(v_a\), and
+\(\theta_{\mathrm{PNDE}}\) are those defined in the Formal setup.
+\end{assumption}
+
+\begin{assumption}[Randomization and consistency]\label{ass:rand-consistency}
+Treatment is randomized relative to the mediator and outcome potential
+outcomes, and the observed variables equal their corresponding potential
+variables under the realized treatment and mediator values.  In particular,
+\(M_j=M_j(A)\) and \(Y=Y(A,M_1,M_2)\) on factual histories.
+\end{assumption}
+
+\begin{assumption}[Marginal mediator observation]\label{ass:marginal-mediators}
+The observable law identifies \(p_{j0}(m)=\Pr(M_j(0)=m)\) for
+\(j\in\{1,2\}\), but does not identify the joint no-treatment mediator law
+\(\pi^0\) beyond the dependence band \(q_0\in\mathcal Q_0\).
+\end{assumption}
+
+\begin{assumption}[Dependence-band feasibility]\label{ass:dependence-band}
+\(\mathcal Q_0=[\underline q_0,\overline q_0]\) is a nonempty subinterval of
+the Fréchet interval
+\[
+\max\{0,p_{10}(1)+p_{20}(1)-1\}\le q_0\le \min\{p_{10}(1),p_{20}(1)\}.
+\]
+For every \(q_0\in\mathcal Q_0\), the induced vector \(\pi^0\) in the Formal
+setup is nonnegative and sums to one.
+\end{assumption}
+
+\begin{assumption}[Shared proxy bridge-envelope system]\label{ass:proxy-envelope}
+For each treatment arm \(a\), negative-control proxies \(W,Z\) imply observable
+linear restrictions \(G_a v_a=b_a\) and cell envelopes
+\(\ell_{am}\pi^0_m\le v_{am}\le u_{am}\pi^0_m\), with
+\(0\le\ell_{am}\le u_{am}\le1\).  The same vector \(v_a\) must satisfy all
+proxy equations, so the proxy restrictions are shared across mediator cells
+rather than imposed as independent cellwise sensitivity intervals.
+\end{assumption}
+
+\begin{assumption}[Canonical sharpness]\label{ass:canonical-sharpness}
+Every finite array \((q_0,\pi^0,v_0,v_1)\) satisfying
+Assumptions~\ref{ass:dependence-band} and~\ref{ass:proxy-envelope} can be
+realized by a finite potential-outcome model with the same observable
+\(P_{\mathrm{obs}}\), mediator marginals, dependence band, and proxy-envelope
+summaries.
+\end{assumption}
+
+\begin{assumption}[No mediator interaction]\label{ass:no-interaction}
+For each treatment arm \(a\), the weighted response table admits additive cell
+increments \(v_{a,m}=\pi^0_m(\alpha_a+\beta_{a1}m_1+\beta_{a2}m_2)\) for
+some real coefficients \(\alpha_a,\beta_{a1},\beta_{a2}\) compatible with the
+proxy-envelope system.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: finite LP envelope]\label{thm:lp-envelope}
+Under Assumptions~\ref{ass:finite}--\ref{ass:proxy-envelope}, the outer
+identified set delivered by the locked parameters is the interval
+\[
+  B_{\mathrm{LP}}(P_{\mathrm{obs}})
+  =\left[
+     \min_{\mathcal P(P_{\mathrm{obs}})} \sum_m(v_{1m}-v_{0m}),
+     \max_{\mathcal P(P_{\mathrm{obs}})} \sum_m(v_{1m}-v_{0m})
+   \right],
+\]
+where \(\mathcal P(P_{\mathrm{obs}})\) is the finite polytope of all
+\((q_0,\pi^0,v_0,v_1)\) satisfying the dependence-band equations and the shared
+proxy bridge-envelope constraints.
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+This theorem is deliberately labelled as routine finite-dimensional partial
+identification: the closest in-repo analogue is AutoID's Balke--Pearl sharp LP
+machinery, and the closest published background is \citet{GabrielSachsSjolander2023}
+plus \citet{GhassamiShpitserTchetgen2023}.  The useful gap is the exact
+dictionary for the present target: the mediator coupling \(q_0\) and the
+proxy-weighted response vectors \(v_a\) live in the same polytope, so later
+sharpness and counterexample statements have a precise object rather than a
+verbal combination of two separate bounds.
+
+\begin{conjecture}[Conjecture 1: coupling--proxy incompatibility (NOT YET PROVED)]\label{conj:interior-coupling}
+There exists a distribution \(P_{\mathrm{obs}}\) satisfying
+Assumptions~\ref{ass:finite}--\ref{ass:canonical-sharpness} with
+\(\underline q_0<\overline q_0\) such that both endpoint couplings
+\(q_0=\underline q_0\) and \(q_0=\overline q_0\) are feasible after ignoring
+the shared proxy equations, but the minimum of
+\(\sum_m(v_{1m}-v_{0m})\) over the full polytope
+\(\mathcal P(P_{\mathrm{obs}})\) is attained only at an interior value
+\(q_0^\star\in(\underline q_0,\overline q_0)\).  Under
+Assumption~\ref{ass:canonical-sharpness}, this LP endpoint is the sharp lower
+PNDE bound, and it is strictly larger than the lower endpoint of the
+rectangular relaxation \(B_{\mathrm{sep}}(P_{\mathrm{obs}})\) defined in the
+Formal setup.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+\citet{GabrielSachsSjolander2023} warn that separately sharp decomposition
+bounds do not generally combine sharply, but their two-binary-mediator bounds
+do not contain negative-control bridge equations or a missing joint mediator
+law.  \citet{GhassamiShpitserTchetgen2023} and
+\citet{DukesShpitserTchetgen2023} explain proxy identification and proxy
+partial identification, while \citet{GhassamiYangShpitserTchetgen2025} treats
+hidden mediators under proximal point-identification conditions.  None of
+these closest proxy papers studies the bounded, marginal-only setting where
+counterfactual responses are weighted by an unknown mediator coupling.  The
+conjecture would identify a new failure mode: the analyst can know correct
+mediator marginals and correct proxy envelopes, and still lose sharpness by
+treating the two uncertainty sources as rectangular.
+
+\begin{theorem}[Theorem 2: no-interaction marginal reduction]\label{thm:additive-reduction}
+Under Assumptions~\ref{ass:finite}--\ref{ass:dependence-band} and
+Assumption~\ref{ass:no-interaction}, the PNDE functional is independent of
+the mediator-dependence coordinate \(q_0\).  In particular,
+\[
+  \theta_{\mathrm{PNDE}}
+  =(\alpha_1-\alpha_0)
+   +(\beta_{11}-\beta_{01})p_{10}(1)
+   +(\beta_{12}-\beta_{02})p_{20}(1),
+\]
+so all \(q_0\in\mathcal Q_0\) give the same value whenever the additive
+coefficients are fixed by the proxy-envelope system.
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+This is the sanity-corner theorem.  It is closest to the additivity discussion
+in \citet{VanderWeeleVansteelandt2014} and the model-compatibility role of
+copulas in \citet{XiaChan2022}; it is not the flagship novelty.  It matters
+because it pins the proposed phenomenon to mediator interaction or shared
+proxy constraints: if the outcome response has no mediator interaction, the
+unobserved mediator copula cannot by itself create the conjectured interior
+bound.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Observed joint mediator law]\label{cor:joint-observed}
+Under Assumptions~\ref{ass:finite}--\ref{ass:proxy-envelope}, if
+\(\mathcal Q_0=\{q_0^\dagger\}\), then
+\(B_{\mathrm{LP}}(P_{\mathrm{obs}})\) reduces to the proxy-envelope LP with
+the mediator weights fixed at the observed joint law \(\pi^0(q_0^\dagger)\).
+This is the expected reduction to a two-mediator sharp-bounds problem with no
+mediator-copula uncertainty.
+\end{corollary}
+
+\begin{corollary}[No proxy-confounding information]\label{cor:no-proxy}
+Under Assumptions~\ref{ass:finite}--\ref{ass:dependence-band}, if
+Assumption~\ref{ass:proxy-envelope} is replaced by the trivial envelopes
+\(0\le v_{am}\le \pi^0_m\) and no equations \(G_a v_a=b_a\), then
+\(B_{\mathrm{LP}}(P_{\mathrm{obs}})=[-1,1]\).  Thus any nontrivial narrowing
+in Conjecture~\ref{conj:interior-coupling} must come from the shared proxy
+bridge-envelope system, not from notation.
+\end{corollary}
+
+\section{Proof-sketch route}
+The verification route is finite convex geometry.  Theorem~\ref{thm:lp-envelope}
+is the standard projection of a finite feasible set: encode the no-treatment
+mediator law by the scalar \(q_0\), express all weighted response means as
+variables \(v_{am}\), and observe that the target is a linear functional over
+linear equality, inequality, and box constraints.  Sharpness, if pursued, would
+use a canonical finite potential-outcome construction analogous to a
+Balke--Pearl latent-table construction.  Conjecture~\ref{conj:interior-coupling}
+requires an explicit small-support witness: choose rational mediator margins,
+a nondegenerate interval \(\mathcal Q_0\), and two or three proxy equations
+whose feasible face intersects the \(q_0\)-axis only through an interior active
+vertex for the target objective.  Theorem~\ref{thm:additive-reduction} is a
+one-line expansion of the additive response table against the four mediator
+cell probabilities, where the \(+q_0\) and \(-q_0\) terms cancel.
+
+\section{Honest scope flags}
+The LP-envelope statement and the additive no-interaction reduction are
+presented as theorems because they are routine algebra once the locked
+parameters are accepted.  The interior-coupling statement is explicitly a
+conjecture and needs a rational finite witness or a proof that no such witness
+exists under the current proxy-envelope abstraction.  The sharpness assumption
+is separated because the proposal must not confuse the outer LP with a sharp
+identified set; Conjecture~\ref{conj:interior-coupling} now invokes
+Assumption~\ref{ass:canonical-sharpness} whenever it calls the LP endpoint a
+sharp PNDE bound.  The qid
+name begins with \texttt{eid} because the skeleton was preallocated by the
+pipeline, but the locked tuple and theorem substrate are partial
+identification, not exact identification.  The v1 reviewer requested a closer
+hidden-mediator proxy comparator and a formal definition of the rectangular
+relaxation; both are incorporated in v2.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft; prior verdict: none.
+\item v2 (revise) -- added the hidden-mediator proxy comparator, required
+canonical sharpness in Conjecture~\ref{conj:interior-coupling}, and defined
+\(B_{\mathrm{sep}}\) as a coordinatewise union-over-fixed-\(q\) rectangular
+relaxation; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Daniel et~al.(2015)]{DanielDeStavolaCousensVansteelandt2015}
+Daniel, R.~M., De Stavola, B.~L., Cousens, S.~N., and Vansteelandt, S. (2015).
+\newblock Causal mediation analysis with multiple mediators.
+\newblock \emph{Biometrics} 71(1), 1--14. doi:10.1111/biom.12248.
+
+\bibitem[Ding and VanderWeele(2016)]{DingVanderWeele2016}
+Ding, P. and VanderWeele, T.~J. (2016).
+\newblock Sharp sensitivity bounds for mediation under unmeasured
+mediator--outcome confounding.
+\newblock \emph{Biometrika} 103(2), 483--490. doi:10.1093/biomet/asw012.
+
+\bibitem[Dukes et~al.(2023)]{DukesShpitserTchetgen2023}
+Dukes, O., Shpitser, I., and Tchetgen Tchetgen, E.~J. (2023).
+\newblock Proximal mediation analysis.
+\newblock \emph{Biometrika} 110(4). doi:10.1093/biomet/asad015.
+
+\bibitem[Gabriel et~al.(2023)]{GabrielSachsSjolander2023}
+Gabriel, E.~E., Sachs, M.~C., and Sjolander, A. (2023).
+\newblock Sharp nonparametric bounds for decomposition effects with two binary
+mediators.
+\newblock \emph{Journal of the American Statistical Association} 118(544),
+2446--2453. doi:10.1080/01621459.2022.2057316.
+
+\bibitem[Ghassami et~al.(2023)]{GhassamiShpitserTchetgen2023}
+Ghassami, A., Shpitser, I., and Tchetgen Tchetgen, E.~J. (2023).
+\newblock Partial identification of causal effects using proxy variables.
+\newblock arXiv:2304.04374.
+
+\bibitem[Ghassami et~al.(2025)]{GhassamiYangShpitserTchetgen2025}
+Ghassami, A., Yang, A., Shpitser, I., and Tchetgen Tchetgen, E.~J. (2025).
+\newblock Causal inference with hidden mediators.
+\newblock \emph{Biometrika} 112(1), asae037. doi:10.1093/biomet/asae037.
+
+\bibitem[Imai et~al.(2010)]{ImaiKeeleYamamoto2010}
+Imai, K., Keele, L., and Yamamoto, T. (2010).
+\newblock Identification, inference and sensitivity analysis for causal
+mediation effects.
+\newblock \emph{Statistical Science} 25(1), 51--71. doi:10.1214/10-STS321.
+
+\bibitem[Miles et~al.(2017)]{MilesKankiMeloniTchetgen2017}
+Miles, C.~H., Kanki, P., Meloni, S., and Tchetgen Tchetgen, E.~J. (2017).
+\newblock On partial identification of the natural indirect effect.
+\newblock \emph{Journal of Causal Inference} 5(2). doi:10.1515/jci-2016-0004.
+
+\bibitem[Pearl(2001)]{Pearl2001}
+Pearl, J. (2001).
+\newblock Direct and indirect effects.
+\newblock In \emph{Proceedings of the Seventeenth Conference on Uncertainty in
+Artificial Intelligence}, 411--420.
+
+\bibitem[Robins and Greenland(1992)]{RobinsGreenland1992}
+Robins, J.~M. and Greenland, S. (1992).
+\newblock Identifiability and exchangeability for direct and indirect effects.
+\newblock \emph{Epidemiology} 3(2), 143--155.
+
+\bibitem[Tchetgen Tchetgen and Shpitser(2012)]{TchetgenShpitser2012}
+Tchetgen Tchetgen, E.~J. and Shpitser, I. (2012).
+\newblock Semiparametric theory for causal mediation analysis: efficiency
+bounds, multiple robustness and sensitivity analysis.
+\newblock \emph{Annals of Statistics} 40(3), 1816--1845.
+
+\bibitem[VanderWeele and Vansteelandt(2014)]{VanderWeeleVansteelandt2014}
+VanderWeele, T.~J. and Vansteelandt, S. (2014).
+\newblock Mediation analysis with multiple mediators.
+\newblock \emph{Epidemiologic Methods} 2(1), 95--115.
+
+\bibitem[Vansteelandt and Daniel(2017)]{VansteelandtDaniel2017}
+Vansteelandt, S. and Daniel, R.~M. (2017).
+\newblock Interventional effects for mediation analysis with multiple
+mediators.
+\newblock \emph{Epidemiology} 28(2), 258--265. doi:10.1097/EDE.0000000000000596.
+
+\bibitem[Xia and Chan(2022)]{XiaChan2022}
+Xia, F. and Chan, K.~C.~G. (2022).
+\newblock Decomposition, identification and multiply robust estimation of
+natural mediation effects with multiple mediators.
+\newblock \emph{Biometrika} 109(4), 1085--1100. doi:10.1093/biomet/asac004.
+
+\bibitem[Han et~al.(2026)]{HanLuoZhangGu2026}
+Han, Y., Luo, P., Zhang, W., and Gu, X. (2026).
+\newblock Bounds and identification on direct and indirect effects under
+partially observed mediator-endpoint confounders.
+\newblock \emph{Journal of Multivariate Analysis} 213, 105565.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,1176 @@
+% =====================================================================
+%  ThmSmith Stage 0 derivation skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_offline\_policy\_joint\_misspec, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to a Q1..Q6
+%    pool-mode, fill it VERBATIM from the question-specific block of
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    For free-form panel / ExactID / PartialID anchors, reproduce the
+%    locked-parameter block from the Stage -1 proposal verbatim. Do not
+%    rephrase locked parameters; Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage 0 derivation: \texttt{pid\_offline\_policy\_joint\_misspec} / \texttt{v1}%
+  \\ \large\textit{Sharp joint sensitivity intervals for offline policy value}}
+\author{ThmSmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\newcounter{stagezeroconjecture}
+
+\begin{abstract}
+This note studies the partial-identification problem for the target-policy value
+$\theta=V(\pi)=\E_X\sum_{a\in\mathcal A}\pi(a\mid X)\E[Y(a)\mid X]$
+from an offline contextual-bandit law of $(X,A,Y)$.  The estimand-defining
+functional is the program pair $(B_L(P),B_U(P))$ obtained by optimizing
+$V(\pi)$ over full-data laws for $(X,(Y(a))_{a\in\mathcal A},A)$ that match the
+full observed reward-cell law of $(A,Y)$ given $X$, obey bounded outcomes,
+satisfy a pointwise $f$-divergence ball around the nominal logging kernel
+$e_0$, and keep each arm mean within $\eta$ of the nominal regression $m_0$.
+The main representation theorem proves that this
+program pair equals the lower and upper extrema of the identified set, rather
+than defining those extrema by notation.  The field-level kernel is a strict
+non-rectangularity obstruction to separable rectangular support-function
+formulas for joint causal sensitivity: on an open binary-action class, the
+joint endpoint is smaller than the envelope formed by solving a propensity-only
+sensitivity problem and then adding an independent outcome-regression error
+allowance.  The two calibration faces are the expected ones: the zero-budget
+calibrated face collapses to the usual doubly robust point value, while vacuous
+general bounded-outcome budgets recover the Manski fill-in interval and the
+finite-grid face replaces the support endpoints by the minimum and maximum grid
+points when needed.
+\end{abstract}
+
+\section{Introduction}
+Offline policy evaluation asks what value a target policy would have if deployed
+using only data collected under an existing logging policy.  In the ideal
+contextual-bandit model the logging propensity is known, the logged action is
+as-good-as randomized conditional on $X$, and doubly robust formulas identify
+the policy value.  In many applications the recorded propensity and the fitted
+reward regression are both nominal objects: unmeasured factors may affect
+assignment, and the regression can drift away from the true arm means.  The
+causal question is therefore not only how to estimate a point value, but which
+policy values remain compatible with the log after both nuisance models are
+allowed to be wrong by explicit budgets.
+
+This note gives the population identification object for that question.  The
+observable input is the law of $(X,A,Y)$ together with a target policy
+$\pi$, a nominal logging kernel $e_0$, a nominal regression $m_0$, a divergence
+budget $\rho$, and an outcome-regression budget $\eta$.  The unobserved object
+is a full response table $(Y(a))_{a\in\mathcal A}$ and a latent logging kernel
+that may depend on that response table.  The key mathematical point is that the
+same latent response table must satisfy both restrictions; the propensity tilt
+and the outcome-regression perturbation cannot be optimized independently.
+
+The result is useful because it separates a sharp identified interval from
+conservative rectangular ambiguity envelopes.  The interval reduces to standard
+doubly robust policy value when both budgets are zero and calibrated, and it
+reduces to Manski's bounded-outcome fill-in logic when the budgets are vacuous
+on the general bounded-outcome face, with the finite-grid support endpoints
+used if that restriction is kept.
+Away from those faces, the theorem supplies a conditional convex program that
+can be used as the population formula before any statistical estimation or
+policy-learning layer is added.  The strict-gap theorem is a model-class
+no-go result for separable rectangular support functions: if the upper endpoint
+is obtained by first solving the propensity-only sensitivity problem and then
+adding an independent outcome-regression allowance, the resulting formula is
+not uniformly sharp for the joint causal model.  This elevates the contribution
+beyond a finite latent-type representation.  The joint model opens a genuinely
+non-separable sensitivity regime because the same latent response table must
+satisfy both restrictions while matching every factual reward cell.
+
+\paragraph{Motivating conjecture(s).}
+\refstepcounter{stagezeroconjecture}\label{conj:sharp-interval}
+\paragraph{Conjecture \thestagezeroconjecture: sharp joint-misspecification variational interval (NOT YET PROVED).}
+Under Assumptions \ref{ass:bounded}--\ref{ass:finite-support}, whenever $\mathcal Q(P;\rho,\eta)$ is nonempty, the endpoints $L(P;\rho,\eta)$ and $U(P;\rho,\eta)$ equal the integral over $X$ of the conditional optimum of a finite-dimensional convex program. At each $x$, the program ranges over a conditional distribution on response vectors $y_{\mathcal A}\in\mathcal G^{|\mathcal A|}$ and a stochastic logging kernel $e^\star(\cdot\mid x,y_{\mathcal A})$; it imposes every observed factual reward-cell probability,
+\[
+  \sum_{y_{\mathcal A}:y_a=c}
+    H_x(y_{\mathcal A})e^\star(a\mid x,y_{\mathcal A})
+  =q_a(c\mid x),
+  \qquad a\in\mathcal A,\ c\in\mathcal G,
+\]
+which are equivalent to matching the full finite conditional law of $(A,Y)$ given $X=x$. It also imposes the pointwise divergence budget in Assumption \ref{ass:f-budget} and the arm-mean band
+$|\int y_a\,dH_x(y_{\mathcal A})-m_0(a,x)|\le\eta$. The conditional objective is
+$\sum_a\pi(a\mid x)\int y_a\,dH_x(y_{\mathcal A})$ for the upper endpoint and its negative for the lower endpoint.
+
+\refstepcounter{stagezeroconjecture}\label{conj:nonrect}
+\paragraph{Conjecture \thestagezeroconjecture: non-rectangular phase transition (NOT YET PROVED).}
+Assume \ref{ass:bounded}--\ref{ass:finite-support} and \ref{ass:binary-nondegenerate}. There is an open set of observable conditional laws $P(\cdot\mid X=x)$ on a two-action, three-reward grid $\mathcal A=\{0,1\}$ and $\mathcal G=\{g_L,g_M,g_H\}$ with $\ell\le g_L<g_M<g_H\le u$, and budgets $(\rho,\eta)$ with $\rho>0$, $0<\eta<u-\ell$, and $\mathcal Q(P;\rho,\eta)\ne\varnothing$, such that the sharp upper endpoint in Conjecture \ref{conj:sharp-interval} is strictly below the rectangular diagnostic envelope:
+\[
+  U(P;\rho,\eta) < U_{\mathrm{rect}}(P;\rho,\eta).
+\]
+The witness template has positive observed mass in at least two reward cells for each action, target mass on action $1$, and an $m_0(1,x)+\eta$ cap lying strictly between the pure propensity-sensitivity optimum and the rectangular envelope. The strict gap occurs when the propensity tilt that increases the pure sensitivity endpoint would require response-vector mass assignments that violate either the full factual reward-cell constraints or the $\eta$-tube around $m_0$, so the two worst-case mechanisms compete for the same response types. In the theorem below this conjecture is strengthened into a generic no-go theorem for separable rectangular endpoint formulas, rather than being used as an estimator-specific complaint.
+
+Theorem~\ref{thm:nonrect} confirms this conjecture through a stronger
+generic-class obstruction: separable rectangular support-function formulas are
+conservative on an open set for this joint causal sensitivity target.
+
+\section{Related work and positioning}
+The nearest point-identification baseline is doubly robust contextual-bandit
+evaluation and learning.  Dudik, Langford, and Li \cite{DudikLangfordLi2011}
+introduced the doubly robust policy-value score that this note recovers on the
+calibrated zero-budget face.  Wang, Agarwal, and Dudik
+\cite{WangAgarwalDudik2017} analyze minimax and adaptive offline policy
+evaluation, motivating why outcome-regression errors matter even before
+sensitivity analysis is introduced.
+
+The nearest sensitivity-analysis baseline is the marginal-sensitivity and
+confounding-robust policy literature.  Tan \cite{Tan2006} is the classical
+propensity-score sensitivity ancestor for bounded deviations from a nominal
+assignment law.  Kallus and Zhou \cite{KallusZhou2018,KallusZhou2020,KallusZhou2021}
+study confounding-robust policy improvement, policy evaluation, and minimax
+policy learning under unobserved confounding; their uncertainty sets do not
+also impose a sup-norm tube around a nominal arm-mean regression.  Dorn and Guo
+\cite{DornGuo2023} and Dorn, Guo, and Kallus \cite{DornGuoKallus2025}
+establish sharp sensitivity bounds in treatment-effect settings; the present
+result instead targets a fixed contextual-bandit policy value with multiple
+actions and a paired outcome-regression budget.  Hess, Frauen, Melnychuk, and
+Feuerriegel \cite{HessFrauenMelnychukFeuerriegel2026} study sharp off-policy
+learning bounds under unobserved confounding, but without the same nominal
+regression tube.  Zhang, Xu, and Tan \cite{ZhangXuTan2025} is the closest
+simultaneous-constraint comparator because it combines treatment-probability
+and outcome-distribution sensitivity constraints; the second restriction here
+is different, since it is an analyst-supplied sup-norm restriction on the
+contextual arm means.  Ishikawa and He \cite{IshikawaHe2023} study confounding
+robust inference for contextual bandits using conditional moment constraints
+and $f$-divergence ideas, but not the paired nominal arm-mean tube with full
+factual reward-cell matching.  Jin, Xu, Zheng, and Zhou
+\cite{JinXuZhengZhou2025} study robust policy learning under unobserved
+confounding; their welfare criteria are natural downstream consumers of the
+sharp fixed-policy interval derived here.
+
+Si, Zhang, Zhou, and Blanchet \cite{SiZhangZhouBlanchet2020} and Kallus, Mao,
+Wang, and Zhou \cite{KallusMaoWangZhou2022} are relevant distributionally robust
+offline-policy comparators because they combine offline policy evaluation with
+ambiguity sets and doubly robust ideas.  They also illustrate a standard
+separable support-function workflow: specify an uncertainty source, optimize
+the value over that source, and report the resulting worst-case value.  The
+present paper abstracts from those examples to a causal identified-set question
+and proves that the corresponding separable endpoint formula fails for the
+joint propensity-plus-regression sensitivity model.  Theorem~\ref{thm:nonrect}
+therefore targets the mathematical workflow class itself: optimize the
+propensity/confounding sensitivity source and then add an independent
+regression-error allowance.  The open-set gap shows that this class is not a
+valid sharp formula for the model, because after full reward-cell matching the
+two worst-case mechanisms must be carried by the same latent response table.
+
+The limiting partial-identification faces connect to classical bounded-outcome
+and finite latent-response methods.  Manski \cite{Manski1990} supplies the
+fill-in argument recovered when both misspecification restrictions are vacuous,
+and Manski and Pepper \cite{ManskiPepper2000} show how additional shape
+restrictions can tighten bounded-outcome intervals.  Balke and Pearl
+\cite{BalkePearl1997} give the canonical finite latent-type linear-programming
+template for sharp bounds, although their binary-IV target differs from the
+offline policy value studied here.  The current theorem differs from these
+known result classes by imposing two simultaneous restrictions on the same
+latent response table while matching the full factual reward-cell law.
+
+\section{Formal setup}
+Let $\mathcal A$ be a finite action set and let $P$ denote the observable input:
+the law of $(X,A,Y)$, the target policy $\pi(a\mid x)$, the nominal logging
+kernel $e_0(a\mid x)$, and the nominal regression $m_0(a,x)$.  The outcome is
+bounded in the known interval $[\ell,u]$ with $\ell<u$.  In the finite-grid
+version locked by the proposal, there is a finite reward grid
+$\mathcal G=\{g_1,\ldots,g_M\}\subset[\ell,u]$ such that the observed reward and
+every admissible potential reward take values in $\mathcal G$.  Write
+$g_{\min}=\min\mathcal G$ and $g_{\max}=\max\mathcal G$.  The grid endpoints
+need not equal $\ell$ and $u$ unless this is stated explicitly; this distinction
+matters only for the vacuous finite-grid face in Proposition~\ref{prop:manski}.
+For $P_X$-almost every $x$, define the observed conditional reward-cell law,
+action mass, and factual first moment by
+\[
+  q_a(c\mid x)=P(A=a,Y=c\mid X=x),\qquad
+  p_a(x)=\sum_{c\in\mathcal G}q_a(c\mid x),\qquad
+  r_a(x)=\sum_{c\in\mathcal G}c\,q_a(c\mid x).
+\]
+Equivalently,
+\[
+  p_a(x)=P(A=a\mid X=x), \qquad
+  r_a(x)=\E_P[Y\one\{A=a\}\mid X=x].
+\]
+If $p_a(x)>0$, then $\bar y_a(x)=r_a(x)/p_a(x)$ is the observed conditional
+mean in the factual action cell; all endpoint formulas below are written using
+$r_a(x)$ so that zero-cell means need not be defined.
+
+A compatible full-data law $Q$ augments the observed law by the response table
+$Y_{\mathcal A}=(Y(a))_{a\in\mathcal A}$ and by a latent logging kernel
+\[
+  e_Q^\star(a\mid x,y_{\mathcal A})
+  =Q(A=a\mid X=x,Y_{\mathcal A}=y_{\mathcal A}).
+\]
+The conditional law of $Y_{\mathcal A}$ given $X=x$ is denoted by $H_x^Q$.
+Observational compatibility means that the marginal law of $(X,A,Y(A))$ under
+$Q$ equals the observed law $P$.  On the finite reward grid this is the full
+reward-cell matching condition
+\[
+  \int \one\{y_a=c\}e_Q^\star(a\mid x,y_{\mathcal A})\,
+      dH_x^Q(y_{\mathcal A})
+  =q_a(c\mid x),
+  \qquad a\in\mathcal A,\ c\in\mathcal G,
+\]
+for almost every $x$.  Summing this display over $c$ gives the action mass
+$p_a(x)$, and multiplying by $c$ before summing over $c$ gives the factual
+moment $r_a(x)$.
+
+The unobserved parameter is the scalar policy value
+\[
+  \theta=V_Q(\pi)
+  =\E_Q\!\left[\sum_{a\in\mathcal A}\pi(a\mid X)Y(a)\right]
+  =\E_{P_X}\sum_{a\in\mathcal A}\pi(a\mid X)\mu_a^Q(X),
+  \qquad
+  \mu_a^Q(x)=\int y_a\,dH_x^Q(y_{\mathcal A}).
+\]
+Let $\mathcal Q(P;\rho,\eta)$ be the set of compatible full-data laws satisfying
+the assumptions in Section~\ref{sec-assumptions}.  The identified set is
+\[
+  \Theta_I(P;\rho,\eta)
+  =\{V_Q(\pi):Q\in\mathcal Q(P;\rho,\eta)\}.
+\]
+If $\mathcal Q(P;\rho,\eta)=\varnothing$ then $\Theta_I(P;\rho,\eta)=\varnothing$;
+the endpoint theorems are stated on nonempty faces.  Otherwise define the
+identified-set extrema semantically by
+\[
+  \underline{\theta}_I(P;\rho,\eta)=\inf \Theta_I(P;\rho,\eta),\qquad
+  \overline{\theta}_I(P;\rho,\eta)=\sup \Theta_I(P;\rho,\eta).
+\]
+Section~7 defines the computable program endpoints
+$B_L(P;\rho,\eta)$ and $B_U(P;\rho,\eta)$ separately; the main theorem proves
+$\underline{\theta}_I=B_L$ and $\overline{\theta}_I=B_U$.
+The support convention is absolute continuity with respect to the nominal
+kernel: if $e_0(a\mid x)=0$, then every admissible latent kernel assigns zero
+probability to action $a$ at $(x,y_{\mathcal A})$.  Hence an observed cell with
+$p_a(x)>0$ but $e_0(a\mid x)=0$ makes the compatible class empty.
+
+\paragraph{Locked parameters.}
+\begin{quote}\small
+\begin{verbatim}
+(qid, specialization) =
+  (pid_offline_policy_joint_misspec, v1)
+anchor cluster = PartialID
+observable distribution P =
+  law of (X,A,Y) with finite action set Acal, bounded outcome Y in [lo,hi],
+  nominal logging propensity e0(a|x), nominal outcome regression m0(a,x),
+  and target policy pi(a|x)
+parameter theta =
+  V(pi) = E_X sum_a pi(a|X) E[Y(a)|X]
+identifying restrictions =
+  consistency Y=Y(A); bounded potential outcomes lo <= Y(a) <= hi;
+  overlap e0(a|x)>0 on pi(a|x)>0; f-divergence support convention
+  e_star(.|x,y_vec) << e0(.|x), with zero e0 cells carrying zero latent
+  logging mass and with f(t)>=0 uniquely minimized at t=1; under any
+  compatible full-data law Q, the latent logging kernel
+  e_star^Q(a|x,y_vec)=Q(A=a|X=x,Y_vec=y_vec) satisfies
+  D_f(e_star(.|x,y_vec) || e0(.|x)) <= rho pointwise; and
+  |E[Y(a)|X=x]-m0(a,x)| <= eta for every action a
+bounding functional =
+  lower/upper sharp values obtained by optimizing V(pi) over all full-data
+  laws of (X,(Y(a))_a,A) satisfying the observable law P and the restrictions
+  above; rho=0, eta=0 is the doubly robust point-ID corner, and vacuous
+  rho/eta gives Manski fill-in bounds for unobserved action outcomes
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}\label{sec-assumptions}
+\begin{assumption}[Finite actions, standard measurability, and bounded outcomes]\label{ass:bounded}
+The action set $\mathcal A$ is finite.  The covariate space is a standard
+Borel space, regular conditional laws given $X=x$ exist, and the kernels
+$q_a(c\mid x)$, $e_0(a\mid x)$, $\pi(a\mid x)$, and $m_0(a,x)$ are measurable.
+There are known constants $\ell<u$ such that $\ell\le Y(a)\le u$ almost surely
+for every action $a$ under every compatible full-data law.
+\end{assumption}
+
+\begin{assumption}[Consistency and observational compatibility]\label{ass:compat}
+The observed outcome equals the potential outcome under the logged action:
+$Y=Y(A)$.  Every admissible full-data law $Q$ has observed marginal law $P$ for
+$(X,A,Y(A))$.
+\end{assumption}
+
+\begin{assumption}[Nominal overlap and zero-cell support]\label{ass:overlap}
+For $P_X$-almost every $x$, $e_0(\cdot\mid x)$ and $\pi(\cdot\mid x)$ are
+probability mass functions on $\mathcal A$, and $e_0(a\mid x)>0$ whenever
+$\pi(a\mid x)>0$.  If $e_0(a\mid x)=0$, then admissible latent kernels satisfy
+$e_Q^\star(a\mid x,y_{\mathcal A})=0$ for almost every response vector.
+\end{assumption}
+
+\begin{assumption}[Pointwise finite-valued $f$-divergence logging budget]\label{ass:f-budget}
+The generator $f:[0,\infty)\to[0,\infty)$ is convex, lower semicontinuous,
+satisfies $f(1)=0$, and has unique zero at $1$.  For probability mass functions
+$q$ and $e_0(\cdot\mid x)$ on the finite action set, define
+\[
+  D_f(q\Vert e_0(\cdot\mid x))
+  =\sum_{a:e_0(a\mid x)>0} e_0(a\mid x)
+      f\!\left(\frac{q(a)}{e_0(a\mid x)}\right),
+\]
+with the support convention in Assumption~\ref{ass:overlap}.  For every
+admissible full-data law $Q$ and almost every $(x,y_{\mathcal A})$,
+\[
+  D_f(e_Q^\star(\cdot\mid x,y_{\mathcal A})\Vert e_0(\cdot\mid x))\le \rho.
+\]
+When $\rho=0$, the unique-zero condition forces
+$e_Q^\star(\cdot\mid x,y_{\mathcal A})=e_0(\cdot\mid x)$ almost surely.
+\end{assumption}
+
+\begin{assumption}[Sup-norm outcome-regression budget]\label{ass:outcome-gap}
+For every admissible full-data law $Q$, every action $a$, and $P_X$-almost
+every $x$,
+\[
+  |\mu_a^Q(x)-m_0(a,x)|\le \eta.
+\]
+\end{assumption}
+
+\begin{assumption}[Finite observed reward grid]\label{ass:finite-support}
+There is a fixed finite grid $\mathcal G=\{g_1,\ldots,g_M\}\subset[\ell,u]$
+such that $P(Y\in\mathcal G\mid X,A)=1$, and every admissible full-data law has
+$Y(a)\in\mathcal G$ almost surely for every action $a$.  The theorem is a
+finite-grid statement; no limiting claim for general bounded outcomes is part
+of this specialization.
+\end{assumption}
+
+\begin{assumption}[Calibrated zero-budget face]\label{ass:zero-calibrated}
+For $P_X$-almost every $x$ and every action $a$,
+$p_a(x)=e_0(a\mid x)$ and $r_a(x)=e_0(a\mid x)m_0(a,x)$.  The class
+$\mathcal Q(P;0,0)$ is nonempty.
+\end{assumption}
+
+\begin{assumption}[Vacuous-budget face]\label{ass:vacuous}
+The phrase ``vacuous $\rho$ and $\eta$'' means that the logging budget allows
+every stochastic kernel on the finite action set and the outcome-regression
+budget allows every arm mean in $[\ell,u]$.
+\end{assumption}
+
+\begin{assumption}[Binary non-degenerate phase-transition specialization]\label{ass:binary-nondegenerate}
+For the non-rectangularity theorem, $\mathcal A=\{0,1\}$ on a non-null
+covariate stratum and the reward grid contains three ordered points
+$g_L<g_M<g_H$.  The nominal logging probabilities
+$e_0(0\mid x)$ and $e_0(1\mid x)$ are both strictly positive, the target policy
+puts positive weight on action $1$, and each action has positive observed mass
+in at least two reward cells on the relevant stratum.
+\end{assumption}
+
+\section{Estimand-defining functional}
+For a fixed $x$, write
+\[
+  \mathcal C_\rho(x)
+  =\{q\in\Delta(\mathcal A):q(a)=0\text{ if }e_0(a\mid x)=0,
+       D_f(q\Vert e_0(\cdot\mid x))\le \rho\}.
+\]
+Enumerate the finite response-vector grid
+$\mathcal G^{|\mathcal A|}=\{y^1,\ldots,y^J\}$, where
+$y^j=(y^j_a)_{a\in\mathcal A}$.  Define the conditional feasible set
+$\mathcal K_x(P;\rho,\eta)$ to consist of nonnegative arrays
+$z_{ja}$, $j=1,\ldots,J$, $a\in\mathcal A$, with
+$h_j=\sum_b z_{jb}$, satisfying the full factual reward-cell constraints
+\[
+  \sum_{j:y^j_a=c} z_{ja}=q_a(c\mid x),
+  \qquad a\in\mathcal A,\ c\in\mathcal G,
+\]
+the support convention $z_{ja}=0$ whenever $e_0(a\mid x)=0$, the arm-mean bands
+\[
+  \sum_j h_j y^j_a \in [m_0(a,x)-\eta,\ m_0(a,x)+\eta]\cap[\ell,u],
+  \qquad a\in\mathcal A,
+\]
+and, for every $j$ with $h_j>0$,
+\[
+  \left(\frac{z_{ja}}{h_j}\right)_{a\in\mathcal A}\in\mathcal C_\rho(x).
+\]
+If $h_j=0$, then $z_{ja}=0$ for all $a$ and the divergence constraint is void.
+The cell constraints imply $\sum_{j,a}z_{ja}=1$ and
+$\sum_j z_{ja}=p_a(x)$.  They also imply
+$\sum_j y^j_a z_{ja}=r_a(x)$, but the stronger cell-by-cell equalities are the
+locked functional.  This is a finite-dimensional convex representation: the
+cell constraints and mean bands are linear in $z$, and the divergence constraint
+is the perspective inequality
+\[
+  h_j\!\left[
+  D_f\!\left(\left(\frac{z_{ja}}{h_j}\right)_a
+          \middle\Vert e_0(\cdot\mid x)\right)-\rho\right]\le 0,
+\]
+with the usual closed extension at $h_j=0$.
+
+For $z\in\mathcal K_x(P;\rho,\eta)$ define
+\[
+  v_x(z)=\sum_{a\in\mathcal A}\pi(a\mid x)
+       \sum_{j=1}^J h_j y^j_a.
+\]
+The conditional program values are
+\[
+  \ell_x(P;\rho,\eta)=\inf_{z\in\mathcal K_x(P;\rho,\eta)}v_x(z),
+  \qquad
+  u_x(P;\rho,\eta)=\sup_{z\in\mathcal K_x(P;\rho,\eta)}v_x(z),
+\]
+with the convention that the endpoints are undefined if
+$\mathcal K_x(P;\rho,\eta)$ is empty on a set of positive $P_X$ mass.  The
+population program functional is
+\[
+  B_L(P;\rho,\eta)=\E_{P_X}[\ell_X(P;\rho,\eta)],\qquad
+  B_U(P;\rho,\eta)=\E_{P_X}[u_X(P;\rho,\eta)].
+\]
+These are only program values at this point in the note.  Theorem~\ref{thm:sharp}
+proves that they are equal to the identified-set extrema
+$\underline{\theta}_I$ and $\overline{\theta}_I$, at which point they are the sharp
+bounding functionals customarily denoted by $\theta_L$ and $\theta_U$.  The
+diagnostic rectangular upper envelope used only for comparison is
+\[
+  U_{\mathrm{rect}}(P;\rho,\eta)
+  =\min\left\{
+       U_{\mathrm{prop}}(P;\rho)
+       +\eta\,\E_{P_X}\sum_a\pi(a\mid X),\
+       u\,\E_{P_X}\sum_a\pi(a\mid X)
+     \right\},
+\]
+where $U_{\mathrm{prop}}(P;\rho)$ is the upper endpoint of the same program with
+the outcome-regression budget removed.  A rectangular post-processing workflow
+for the present problem is any workflow that reports this envelope after first
+solving the one-source propensity or confounding sensitivity problem.  This is
+the separable product-ambiguity support function for the two sensitivity
+sources: one source is optimized to a worst-case value, and the other is added
+as an independent arm-mean allowance.  The envelope is always an outer
+relaxation because it adds the regression-error allowance after solving the
+propensity-sensitivity problem, without requiring a single latent response table
+to realize both worst cases.
+
+\section{Target causal estimand}
+The causal target is the scalar value of the target policy under the full-data
+law:
+\[
+  \theta=V_Q(\pi)=\E_Q\left[\sum_{a\in\mathcal A}\pi(a\mid X)Y(a)\right].
+\]
+This is not defined as an observable functional of $P$.  Different compatible
+full-data laws can agree on the same observed law and nominal nuisance inputs
+while assigning different values to the unobserved response table.  The
+identified set is therefore
+\[
+  \Theta_I(P;\rho,\eta)
+  =\{V_Q(\pi):Q\in\mathcal Q(P;\rho,\eta)\},
+\]
+and the theorem-level conclusion is the sharp containment, in fact equality,
+\[
+  \Theta_I(P;\rho,\eta)=[B_L(P;\rho,\eta),B_U(P;\rho,\eta)]
+\]
+on nonempty faces, equivalently
+$\underline{\theta}_I(P;\rho,\eta)=B_L(P;\rho,\eta)$ and
+$\overline{\theta}_I(P;\rho,\eta)=B_U(P;\rho,\eta)$.  Point identification occurs
+only when these two endpoints coincide.
+
+\section{Main theorems}
+\begin{theorem}[Sharp joint variational interval]\label{thm:sharp}
+Under Assumptions~\ref{ass:bounded}--\ref{ass:finite-support}, if
+$\mathcal Q(P;\rho,\eta)$ is nonempty, then
+\[
+  \underline{\theta}_I(P;\rho,\eta)=B_L(P;\rho,\eta),\qquad
+  \overline{\theta}_I(P;\rho,\eta)=B_U(P;\rho,\eta),
+\]
+and consequently
+\[
+  \Theta_I(P;\rho,\eta)=[B_L(P;\rho,\eta),B_U(P;\rho,\eta)].
+\]
+Equivalently, the lower and upper identified-set extrema are obtained by
+integrating the conditional finite-dimensional convex programs in Section~7.
+Therefore Conjecture~\ref{conj:sharp-interval} is confirmed, with the endpoint
+notation made explicit and with convexity understood through the closed
+measure-variable perspective parametrization $z_{ja}$.
+\end{theorem}
+
+The new ingredient is the shared latent-response compatibility program.  Manski
+\cite{Manski1990} fixes only observed factual contributions and fills the
+unobserved parts of the response table at endpoints, while Balke and Pearl
+\cite{BalkePearl1997} optimize over finite latent types for binary-IV bounds.
+Here the same conditional response types must also carry a pointwise
+$f$-divergence-constrained logging kernel and arm-mean bands around $m_0$.
+As a representation theorem, Theorem~\ref{thm:sharp} is best viewed as a
+Balke--Pearl/Manski finite latent-type optimization with additional convex
+feasibility constraints.  The field-level contribution is the
+non-rectangularity theorem below, which shows that this paired sensitivity model
+does not reduce to a product or Minkowski sum of its one-source faces.
+
+\begin{theorem}[Non-rectangular upper endpoint]\label{thm:nonrect}
+Under Assumptions~\ref{ass:bounded}--\ref{ass:finite-support} and the binary
+specialization in Assumption~\ref{ass:binary-nondegenerate}, there is an open
+set of conditional
+observable inputs and budgets with $\rho>0$,
+$0<\eta<u-\ell$, and $\mathcal Q(P;\rho,\eta)\ne\varnothing$ such that
+\[
+  B_U(P;\rho,\eta)<U_{\mathrm{rect}}(P;\rho,\eta).
+\]
+Thus Conjecture~\ref{conj:nonrect} is confirmed in a stronger generic-class
+form: the separable rectangular support-function formula
+$U_{\mathrm{rect}}$ is conservative on this open class and therefore cannot be
+a sharp identified-set formula for the joint propensity-plus-regression
+sensitivity model.
+\end{theorem}
+
+This theorem matters because it rules out a whole separable formula class in
+this setting: solve a sharp propensity-sensitivity problem and then add a
+separate regression-error band.  That shortcut is only an outer envelope for
+the present causal model.  When the reward types that raise the propensity-only
+endpoint would also move the arm mean outside the $\eta$-tube around $m_0$, the
+joint endpoint is strictly lower.
+
+\begin{proposition}[Calibrated zero-budget point face]\label{prop:dr-corner}
+Under Assumptions~\ref{ass:bounded}--\ref{ass:outcome-gap} and
+\ref{ass:zero-calibrated}, if $\rho=0$ and $\eta=0$, then
+\[
+  \Theta_I(P;0,0)
+  =\left\{\E_{P_X}\sum_{a\in\mathcal A}\pi(a\mid X)m_0(a,X)\right\}.
+\]
+The same value is the population doubly robust score
+\[
+  \E_P\left[
+    \sum_a\pi(a\mid X)m_0(a,X)
+    +\frac{\pi(A\mid X)}{e_0(A\mid X)}\{Y-m_0(A,X)\}
+  \right].
+\]
+The ratio is evaluated on positive-$e_0$ cells; under
+Assumptions~\ref{ass:overlap} and \ref{ass:zero-calibrated}, any remaining
+zero-$e_0$ cell has both zero target mass and zero observed probability.
+\end{proposition}
+
+\begin{proposition}[Vacuous-budget Manski fill-in faces]\label{prop:manski}
+Under Assumptions~\ref{ass:bounded}, \ref{ass:compat}, and \ref{ass:vacuous},
+without imposing the finite-grid restriction in Assumption~\ref{ass:finite-support},
+the sharp general bounded-outcome identified interval is
+\[
+  \left[
+  \E_{P_X}\sum_a\pi(a\mid X)\{r_a(X)+(1-p_a(X))\ell\},
+  \E_{P_X}\sum_a\pi(a\mid X)\{r_a(X)+(1-p_a(X))u\}
+  \right].
+\]
+If Assumption~\ref{ass:finite-support} is also imposed and the grid endpoints
+are arbitrary, the sharp finite-grid vacuous interval is instead
+\[
+  \left[
+  \E_{P_X}\sum_a\pi(a\mid X)\{r_a(X)+(1-p_a(X))g_{\min}\},
+  \E_{P_X}\sum_a\pi(a\mid X)\{r_a(X)+(1-p_a(X))g_{\max}\}
+  \right].
+\]
+The two displays coincide when the finite-grid specialization includes
+$\ell,u\in\mathcal G$ as its minimum and maximum grid points.
+\end{proposition}
+
+\section{Interpretation}
+Theorem~\ref{thm:sharp} says that the right population object is a joint
+conditional program.  The factual law pins down, for each action and reward
+cell, the conditional probability $q_a(c\mid x)$; the masses $p_a(x)$ and
+moments $r_a(x)$ are only summaries of these stronger constraints.  The
+unobserved response-table distribution may still vary, but each candidate table
+must be paired with a latent logging kernel that remains inside the
+$f$-divergence ball and whose resulting arm means remain inside the
+$\eta$-tube around $m_0$.
+
+The interval collapses to point identification when the conditional feasible set
+forces the target-weighted arm mean to be unique.  The most important such face
+is Proposition~\ref{prop:dr-corner}: $\rho=0$ makes the latent logging kernel
+equal to $e_0$ for every response type, and $\eta=0$ fixes each arm mean at
+$m_0$.  If the observed law is calibrated to those two equalities, the residual
+part of the doubly robust score integrates to zero and the policy value is
+unique.
+
+The interval widens to the natural Manski no-restriction bound when both
+misspecification budgets are vacuous.  Then the only fixed contribution to
+$\mu_a(x)$ is the factual part $r_a(x)$ among units actually assigned action
+$a$; the unobserved contribution among the remaining mass $1-p_a(x)$ can be
+filled with $\ell$ or $u$ in the general bounded-outcome face.  If the
+finite-grid restriction is kept and $\ell,u$ are not grid points, the same
+logic fills with $g_{\min}$ or $g_{\max}$ instead.  Between these faces, the
+$f$-divergence restriction tightens the bound by limiting how much high-reward
+response types can be hidden behind low logging probabilities, while the
+outcome-regression budget tightens the bound by capping the marginal arm means
+directly.
+
+The non-rectangularity theorem explains why a rectangular post-processing
+workflow should not report the two restrictions as independent robustness
+adjustments for this joint causal target.  The same latent mass that would raise
+the propensity-only endpoint also raises the arm mean, so the
+outcome-regression tube can bind exactly where the propensity tilt is most
+valuable.
+
+\section{Step-by-step proof}
+\begin{lemma}[Conditional compatibility equals the finite program]\label{lem:conditional-program}
+Fix $x$ outside a $P_X$-null set and suppose Assumptions~\ref{ass:bounded}--
+\ref{ass:finite-support} hold.  A conditional full-data law
+$H_x(dy_{\mathcal A})e^\star(da\mid x,y_{\mathcal A})$ is compatible with the
+observed conditional law and the two budgets if and only if its finite-grid
+weights $z_{ja}=H_x(\{y^j\})e^\star(a\mid x,y^j)$ lie in
+$\mathcal K_x(P;\rho,\eta)$.
+\end{lemma}
+
+\begin{proof}
+Given a conditional full-data law, set $h_j=H_x(\{y^j\})$ and
+$z_{ja}=h_j e^\star(a\mid x,y^j)$.  Nonnegativity and
+$\sum_{j,a}z_{ja}=1$ follow because $H_x$ is a probability law and
+$e^\star(\cdot\mid x,y^j)$ is a stochastic kernel.  Observational compatibility
+and consistency in Assumption~\ref{ass:compat} give, for every action $a$ and
+reward cell $c$,
+\[
+  \sum_{j:y^j_a=c}z_{ja}
+  =\sum_{j:y^j_a=c}H_x(\{y^j\})e^\star(a\mid x,y^j)
+  =q_a(c\mid x).
+\]
+Assumption~\ref{ass:overlap} gives the zero-$e_0$ support convention.
+Assumption~\ref{ass:f-budget} gives
+$(z_{ja}/h_j)_a\in\mathcal C_\rho(x)$ whenever $h_j>0$, and
+Assumption~\ref{ass:outcome-gap} gives the arm-mean bands because
+$\mu_a(x)=\sum_j h_jy^j_a$.
+
+Conversely, given $z\in\mathcal K_x(P;\rho,\eta)$, set
+$H_x(\{y^j\})=h_j=\sum_b z_{jb}$.  If $h_j>0$, set
+$e^\star(a\mid x,y^j)=z_{ja}/h_j$; if $h_j=0$, choose any kernel in
+$\mathcal C_\rho(x)$, which exists because $e_0(\cdot\mid x)\in\mathcal C_\rho(x)$.
+The constraints defining $\mathcal K_x(P;\rho,\eta)$ then give the conditional
+observed reward-cell probabilities, divergence budget, support convention,
+bounded outcomes, and arm-mean bands.  Summing the reward-cell equalities gives
+the observed action probabilities and factual moments.  This proves the
+equivalence.
+\end{proof}
+
+\begin{lemma}[Pasting conditional laws]\label{lem:pasting}
+Under Assumptions~\ref{ass:bounded}--\ref{ass:finite-support}, measurable
+conditional selections
+$z_x\in\mathcal K_x(P;\rho,\eta)$ paste together to an admissible
+full-data law $Q$ whose policy value is
+$\E_{P_X}v_X(z_X)$.
+\end{lemma}
+
+\begin{proof}
+For each $x$, Lemma~\ref{lem:conditional-program} turns $z_x$ into a
+conditional response-table law and latent logging kernel.  Define the full law
+by
+\[
+  Q(dx,dy_{\mathcal A},da)
+  =P_X(dx)H_x(dy_{\mathcal A})e^\star(da\mid x,y_{\mathcal A}),
+\]
+and set the observed outcome to $Y=Y(A)$.  The two compatibility equalities in
+Lemma~\ref{lem:conditional-program} imply that every conditional cell
+probability $P(A=a,Y(A)=c\mid X=x)$ matches $q_a(c\mid x)$, so the marginal law
+of $(X,A,Y)$ is $P$.  The support, divergence, outcome-band, and boundedness
+restrictions hold conditionally and therefore hold under $Q$.  Finally,
+\[
+  V_Q(\pi)=\E_{P_X}\sum_a\pi(a\mid X)\sum_j h_j(X)y^j_a
+          =\E_{P_X}v_X(z_X),
+\]
+which is the desired value identity.
+\end{proof}
+
+\begin{lemma}[Convex posterior-mixture closure]\label{lem:mixture-closure}
+Under Assumptions~\ref{ass:bounded}--\ref{ass:finite-support}, if
+$Q^0,Q^1\in\mathcal Q(P;\rho,\eta)$ and $t\in[0,1]$, then there is an
+admissible law $Q^t\in\mathcal Q(P;\rho,\eta)$ with
+\[
+  V_{Q^t}(\pi)=tV_{Q^1}(\pi)+(1-t)V_{Q^0}(\pi).
+\]
+\end{lemma}
+
+\begin{proof}
+The common grid is already $\mathcal G^{|\mathcal A|}$.  Let $z^k_{ja}$ be the
+conditional program array associated with $Q^k$, $k=0,1$, and set
+\[
+  z^t_{ja}=tz^1_{ja}+(1-t)z^0_{ja},\qquad
+  h_j^t=\sum_a z^t_{ja}.
+\]
+The reward-cell constraints are affine, so $z^t$ matches the same
+$q_a(c\mid x)$ as $P$.  The arm means also mix linearly, hence remain inside
+the convex intervals
+$[m_0(a,x)-\eta,m_0(a,x)+\eta]$.
+
+It remains to check the response-type logging constraints.  If $h_j^t=0$, the
+closed perspective convention makes the constraint void.  If $h_j^t>0$, write
+\[
+  q_j^t(a)=\frac{z^t_{ja}}{h_j^t}
+  =\alpha_j q_j^1(a)+(1-\alpha_j)q_j^0(a),
+  \qquad
+  \alpha_j=\frac{t h_j^1}{t h_j^1+(1-t)h_j^0},
+\]
+with the obvious convention when one denominator term is zero.  Each
+$q_j^k$ lies in $\mathcal C_\rho(x)$, and $\mathcal C_\rho(x)$ is convex because
+the finite-action $f$-divergence is convex in its first argument and the support
+restriction is linear.  Thus $q_j^t\in\mathcal C_\rho(x)$.  Lemma~\ref{lem:pasting}
+turns the measurable family $z^t_X$ into a full-data law $Q^t$, and the
+objective identity follows from the linearity of $v_x$.
+\end{proof}
+
+\begin{lemma}[Compact measurable conditional programs]\label{lem:measurable-program}
+Under Assumptions~\ref{ass:bounded}--\ref{ass:finite-support}, for almost every
+$x$ such that $\mathcal K_x(P;\rho,\eta)$ is nonempty, the set
+$\mathcal K_x(P;\rho,\eta)$ is compact and convex, the conditional values
+$\ell_x(P;\rho,\eta)$ and $u_x(P;\rho,\eta)$ are measurable in $x$, and there
+exist measurable minimizer and maximizer selections.
+\end{lemma}
+
+\begin{proof}
+The variables $z_{ja}$ live in a finite-dimensional simplex because
+$\mathcal A$ and $\mathcal G^{|\mathcal A|}$ are finite.  The reward-cell
+constraints, support constraints, and mean bands are closed affine constraints.
+For each response type $j$, the divergence condition is the closed perspective
+extension of a convex lower-semicontinuous function, so the feasible set is
+closed; it is therefore compact.  Convexity follows from the same affine
+constraints and from convexity of the perspective divergence sublevel set.  The
+data entering the constraints, namely $q_a(c\mid x)$, $e_0(a\mid x)$,
+$m_0(a,x)$, and $\pi(a\mid x)$, are measurable kernels or functions by the setup
+and Assumption~\ref{ass:bounded}.  The finite-dimensional measurable maximum
+theorem then gives measurable value functions and measurable selections of the
+argmin and argmax correspondences on the nonempty face.
+\end{proof}
+
+\begin{lemma}[Finite strict-gap stability]\label{lem:strict-gap-stability}
+Fix a finite binary conditional program with reward grid contained in $[0,1]$,
+target policy $\pi(1)=1$, and $e_0(0),e_0(1)>0$.  Suppose that at a parameter
+point $(q,e_0,m_0,\rho,\eta)$ with $\rho>0$ and $\eta>0$: there is a jointly
+feasible array with strict slack in the divergence inequalities and in the
+outcome-regression bands; there is a propensity-only feasible array matching
+the same reward-cell probabilities $q_a(c)$ with strict divergence slack and
+value $w$; and for some
+$\delta>0$,
+\[
+  w+\eta \le 1-\delta,\qquad
+  w+\eta \ge m_0(1)+\eta+2\delta .
+\]
+Then the compatible class remains nonempty and the strict inequality
+$B_U(P;\rho,\eta)<U_{\mathrm{rect}}(P;\rho,\eta)$ persists on a sufficiently
+small open neighborhood of that parameter point.
+\end{lemma}
+
+\begin{proof}
+The finite feasible sets are compact subsets of a Euclidean simplex cut out by
+linear equalities, closed perspective divergence inequalities, and closed
+mean-band inequalities.  The displayed strict feasible arrays give lower
+hemicontinuity and nonemptiness under small perturbations of the right-hand
+sides and budgets; the closed graph of the constraints gives upper
+hemicontinuity.  Berge's maximum theorem for compact-valued finite-dimensional
+correspondences then gives continuity of the joint value $B_U$ and of the
+propensity-only value $U_{\mathrm{prop}}$ at the strict point.  The upper bound
+$B_U(P;\rho,\eta)\le m_0(1)+\eta$ is continuous in $(m_0(1),\eta)$, while the
+rectangular envelope is the minimum of continuous functions near the point
+because $w+\eta\le1-\delta$ keeps the outcome-support cap inactive.  The margin
+$2\delta$ therefore shrinks to a positive margin on a small enough
+neighborhood, and the strict gap persists.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:sharp}]
+First take any admissible $Q\in\mathcal Q(P;\rho,\eta)$.  By
+Lemma~\ref{lem:conditional-program}, its conditional weights
+$z_X^Q$ lie in $\mathcal K_X(P;\rho,\eta)$ almost surely.  Therefore
+\[
+  \ell_X(P;\rho,\eta)\le v_X(z_X^Q)\le u_X(P;\rho,\eta)
+  \quad\text{almost surely}.
+\]
+Integrating this conditional sandwich gives
+\[
+  B_L(P;\rho,\eta)\le V_Q(\pi)\le B_U(P;\rho,\eta).
+\]
+Thus $\Theta_I(P;\rho,\eta)\subseteq[B_L,B_U]$, and consequently
+$\underline{\theta}_I\ge B_L$ and $\overline{\theta}_I\le B_U$.
+
+For the reverse inclusion, Lemma~\ref{lem:measurable-program} gives measurable
+minimizer and maximizer selections of the compact correspondence
+$\mathcal K_x(P;\rho,\eta)$.  Lemma~\ref{lem:pasting} pastes these selections
+into full-data laws $Q^L,Q^U\in\mathcal Q(P;\rho,\eta)$ with
+\[
+  V_{Q^L}(\pi)=B_L(P;\rho,\eta),\qquad
+  V_{Q^U}(\pi)=B_U(P;\rho,\eta).
+\]
+Therefore $\underline{\theta}_I\le B_L$ and $\overline{\theta}_I\ge B_U$, so the
+identified-set extrema equal the program endpoints.  Finally,
+Lemma~\ref{lem:mixture-closure} applies to $Q^L$ and $Q^U$: every convex
+combination of their policy values is realized by a posterior-mixture
+full-data law that preserves the same observed law $P$, the same support
+restriction, the same $f$-divergence budget, and the same mean bands.  Hence
+the identified set is the full interval $[B_L,B_U]$.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:nonrect}]
+It is enough to give one strict binary construction and then apply
+Lemma~\ref{lem:strict-gap-stability}.  Let $X$ be degenerate,
+$\mathcal A=\{0,1\}$, $\ell=0$, $u=1$, and
+$\mathcal G=\{0,1/2,1\}$.  Set
+$e_0(1)=e_0(0)=1/2$ and let the target policy put all mass on action $1$.
+Fix a small $\gamma\in(0,1/2)$ and choose the observed reward-cell law
+\[
+  q_1(1)=q_1(0)=q_0(1)=q_0(0)=\frac{1-\gamma}{4},
+  \qquad q_1(1/2)=q_0(1/2)=\frac{\gamma}{2}.
+\]
+Thus each action has positive observed mass in all three reward cells.  Set
+$m_0(1)=m_0(0)=1/2$ and choose $0<\eta<1/4$.  The independent response law with
+$Y(1)$ and $Y(0)$ each having marginal mass $(1-\gamma)/2$ at $0$, mass
+$\gamma$ at $1/2$, and mass $(1-\gamma)/2$ at $1$, and with
+$e^\star=e_0$ matches these six observed cells, has
+$\mu_1=\mu_0=1/2$, and therefore is strictly inside the outcome bands and has
+zero divergence.  Hence the joint class is nonempty with strict slack whenever
+$\rho>0$.
+
+Because $f$ is finite-valued and convex, it is continuous near $1$.  Choose
+$\varepsilon>0$ small enough that
+\[
+  0<\varepsilon<\min\{1/4,\ 1/2-\eta\}
+\]
+and that $(1-\gamma)\varepsilon+\eta<1/2$, and that the logging probabilities
+below have divergence strictly below $\rho$.  Construct a propensity-only
+feasible law on the four endpoint response types and the middle type
+$(1/2,1/2)$.  Let the middle type have mass $\gamma$ and action-one logging
+probability $1/2$.  On the endpoint types, let
+\[
+  h_{11}=(1-\gamma)\alpha,\quad
+  h_{10}=(1-\gamma)(1/2+\varepsilon-\alpha),\quad
+  h_{01}=(1-\gamma)\beta,\quad
+  h_{00}=(1-\gamma)(1/2-\varepsilon-\beta),
+\]
+where the first subscript is $Y(1)$ and the second is $Y(0)$.  Choose $\beta>0$
+small enough that $\beta<1/2-\varepsilon$ and, after defining
+\[
+  q_H=\frac{1/4}{1/2+\varepsilon},\qquad
+  q_L=\frac{1/4}{1/2-\varepsilon},\qquad
+  \alpha=\frac{1/4-\beta(1-q_L)}{1-q_H},
+\]
+we have $0<\alpha<1/2+\varepsilon$.  Such a $\beta$ exists because the value at
+$\beta=0$ is strictly between $0$ and $1/2+\varepsilon$.  On response types with
+$Y(1)=1$ set the action-one logging probability to $q_H$, and on response types
+with $Y(1)=0$ set it to $q_L$; the remaining logging mass goes to action $0$.
+The action-one observed cells
+are matched because
+\[
+  (1-\gamma)(1/2+\varepsilon)q_H=(1-\gamma)/4,\qquad
+  (1-\gamma)(1/2-\varepsilon)q_L=(1-\gamma)/4,
+\]
+and the middle type contributes $\gamma/2$ to $q_1(1/2)$.
+The action-zero observed cells are matched because
+\[
+  \alpha(1-q_H)+\beta(1-q_L)=1/4,\qquad
+  (1/2+\varepsilon-\alpha)(1-q_H)
+    +(1/2-\varepsilon-\beta)(1-q_L)=1/4,
+\]
+where the first equality is exactly the definition of $\alpha$ and the second
+follows by subtracting the first from the endpoint-type action-zero mass
+$1/2$.  Multiplying these two equalities by $1-\gamma$ gives the observed
+endpoint cells $q_0(1)$ and $q_0(0)$, and the middle type contributes
+$\gamma/2$ to $q_0(1/2)$.  For
+$\varepsilon$ small, $q_H$ and $q_L$ are close to $1/2$, so the pointwise
+$f$-divergences from $e_0$ are strictly below $\rho$.  This response law has
+$\mu_1=1/2+(1-\gamma)\varepsilon$; therefore the propensity-only upper endpoint
+satisfies
+$U_{\mathrm{prop}}(P;\rho)\ge w:=1/2+(1-\gamma)\varepsilon$.
+
+In the joint problem, Assumption~\ref{ass:outcome-gap} implies
+$\mu_1\le m_0(1)+\eta=1/2+\eta$, hence
+$B_U(P;\rho,\eta)\le1/2+\eta$.  The rectangular envelope satisfies
+\[
+  U_{\mathrm{rect}}(P;\rho,\eta)
+  \ge 1/2+(1-\gamma)\varepsilon+\eta
+  > 1/2+\eta
+  \ge B_U(P;\rho,\eta).
+\]
+Moreover $1/2+(1-\gamma)\varepsilon+\eta<1$, so the outcome-support cap in
+$U_{\mathrm{rect}}$ is inactive with slack.  Taking
+$\delta<(1-\gamma)\varepsilon/2$ and also smaller than the support-cap slack
+verifies the strict inequalities required by
+Lemma~\ref{lem:strict-gap-stability}.  Hence the compatible class remains
+nonempty and the strict gap persists on an open neighborhood of the displayed
+conditional law and budget pair.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:dr-corner}]
+When $\rho=0$, Assumption~\ref{ass:f-budget} and the unique-zero property of
+$f$ force $e_Q^\star(\cdot\mid x,y_{\mathcal A})=e_0(\cdot\mid x)$ for almost
+every response table.  When $\eta=0$, Assumption~\ref{ass:outcome-gap} forces
+$\mu_a^Q(x)=m_0(a,x)$ for every arm.  Hence every compatible full-data law has
+the same value
+$\E_{P_X}\sum_a\pi(a\mid X)m_0(a,X)$.  For the doubly robust score, expand the
+residual term conditionally on $X=x$:
+\[
+  \E_P\!\left[
+    \frac{\pi(A\mid X)}{e_0(A\mid X)}\{Y-m_0(A,X)\}\middle|X=x
+  \right]
+  =\sum_{a:e_0(a\mid x)>0} \frac{\pi(a\mid x)}{e_0(a\mid x)}
+        \{r_a(x)-e_0(a\mid x)m_0(a,x)\}=0,
+\]
+where the last equality is Assumption~\ref{ass:zero-calibrated}.  The point
+value and the population doubly robust score coincide.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:manski}]
+For the general bounded-outcome face, under vacuous budgets no restriction
+remains on the unobserved potential outcomes except $\ell\le Y(a)\le u$ and
+consistency.  For each arm and context,
+\[
+  \mu_a^Q(x)
+  =\E_Q[Y(a)\one\{A=a\}\mid X=x]
+   +\E_Q[Y(a)\one\{A\ne a\}\mid X=x].
+\]
+The first term equals $r_a(x)$ by consistency and observational compatibility.
+The second term lies between $(1-p_a(x))\ell$ and $(1-p_a(x))u$ by
+Assumption~\ref{ass:bounded}.  Multiplying by $\pi(a\mid x)$, summing over
+actions, and integrating gives the displayed interval.  Sharpness follows by
+Manski worst-case completion: set the unobserved $Y(a)$ on the off-arm stratum
+$\{A\ne a\}$ equal to $\ell$ for the lower endpoint and $u$ for the upper
+endpoint, leaving the factual outcomes unchanged.
+
+If Assumption~\ref{ass:finite-support} is also imposed, the same argument runs
+inside the finite set $\mathcal G$.  The second term then lies between
+$(1-p_a(x))g_{\min}$ and $(1-p_a(x))g_{\max}$, and sharpness is obtained by
+assigning the off-arm potential outcomes to $g_{\min}$ or $g_{\max}$.  These
+finite-grid endpoints equal the general $\ell,u$ endpoints exactly when
+$g_{\min}=\ell$ and $g_{\max}=u$.
+\end{proof}
+
+\section{Sanity checks}
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Vacuous restrictions.}  If both budgets are vacuous, the sharp
+program drops the divergence and mean-tube constraints.  Proposition~\ref{prop:manski}
+then gives exactly the general bounded-outcome fill-in interval
+$r_a(x)+(1-p_a(x))[\ell,u]$ for each arm and context, the contextual-policy
+analogue of Manski \cite{Manski1990}.  If the finite-grid restriction remains
+active and $\ell,u$ are not grid endpoints, this sanity check becomes
+$r_a(x)+(1-p_a(x))[g_{\min},g_{\max}]$.
+
+\item \textbf{Zero-width point face.}  If $\rho=0$, $\eta=0$, and the observed
+law is calibrated to $e_0$ and $m_0$, Proposition~\ref{prop:dr-corner} gives a
+singleton interval equal to the standard doubly robust policy-value functional.
+
+\item \textbf{Random logging special case.}  If $\rho=0$ but $\eta$ is not zero,
+the latent logging kernel is independent of the response table and equal to
+$e_0$.  Compatibility fixes $\mu_a(x)=r_a(x)/e_0(a\mid x)$ on positive-$e_0$
+cells; the outcome-regression tube only checks whether this already-identified
+arm mean is admissible.  Thus the interval is either empty or point identified,
+as it should be under known randomized logging.
+
+\item \textbf{Single-action target policy.}  If $\pi(a_0\mid x)=1$ for one arm,
+the conditional objective is just $\mu_{a_0}(x)$.  The program reduces to the
+partial-identification interval for one mean potential outcome under the same
+joint sensitivity budgets, and under vacuous budgets it becomes
+$r_{a_0}(x)+(1-p_{a_0}(x))[\ell,u]$.
+
+\item \textbf{Balke--Pearl-style finite latent table.}  With finite $X$, finite
+outcome grid, binary action, and additional IV restrictions replacing the
+present sensitivity restrictions, the proof technique becomes the finite
+latent-table linear program of Balke and Pearl \cite{BalkePearl1997}.  The
+current theorem differs by using a logging-kernel divergence ball and
+arm-mean bands instead of IV exclusion and independence.
+\end{enumerate}
+
+\section{Counterexample or minimality check}
+The binary construction in the proof of Theorem~\ref{thm:nonrect} is also the
+minimality check.  If the outcome-regression budget is dropped, the same
+observed reward-cell law admits response tables with
+$\mu_1=1/2+(1-\gamma)\varepsilon$ while keeping the six factual cells on
+$\mathcal G=\{0,1/2,1\}$ fixed through a small response-dependent logging
+tilt.  If one then adds an independent
+$+\eta$ allowance after solving that propensity-only problem, the value
+$1/2+(1-\gamma)\varepsilon+\eta$ is counted by the rectangular envelope.
+
+That value is not generated by any single full-data law satisfying the joint
+restrictions when $m_0(1)=1/2$ and the outcome tube is active, because every
+jointly admissible law must obey $\mu_1\le1/2+\eta$.  The nearest correct
+formula is therefore not the rectangular envelope but the joint conditional
+program in Section~7.  The support condition is also minimal: if
+$e_0(a\mid x)=0$ while $p_a(x)>0$, absolute continuity of the latent logging
+kernel makes the feasible set empty; if $e_0(a\mid x)=0$ while
+$\pi(a\mid x)>0$, the target policy asks for an action outside the nominal
+support and the sensitivity model supplies no logging-kernel mass with which to
+identify or bound that arm beyond the stated empty/support convention.
+
+\section{Formalization checklist}
+\begin{itemize}[leftmargin=*]
+\item \textbf{Observable input.}  A finite action type $\mathcal A$; a standard
+Borel covariate space; a probability law $P$ for $(X,A,Y)$; bounded support
+$Y\in[\ell,u]$; optional finite grid $\mathcal G\subset[\ell,u]$ with
+$g_{\min}$ and $g_{\max}$; kernels
+$e_0,\pi:\mathcal X\to\Delta(\mathcal A)$; regression
+$m_0:\mathcal A\times\mathcal X\to[\ell,u]$; budgets $\rho,\eta\ge0$.
+
+\item \textbf{Full-data object.}  A law $Q$ for
+$(X,Y_{\mathcal A},A)$ with conditional response-table law $H_x$ and latent
+logging kernel $e^\star(\cdot\mid x,y_{\mathcal A})$.
+
+\item \textbf{Probabilistic assumptions.}  Consistency $Y=Y(A)$; observed
+compatibility constraints for $p_a(x)$ and $r_a(x)$; bounded potential outcomes;
+absolute continuity of $e^\star$ with respect to $e_0$; pointwise
+$f$-divergence budget; arm-mean tube around $m_0$; nonemptiness of the
+compatible class on the faces where endpoints are asserted.
+
+\item \textbf{Deterministic convex objects.}  The finite conditional feasible
+set $\mathcal K_x(P;\rho,\eta)$; variables $z_{ja}\ge0$;
+$h_j=\sum_a z_{ja}$; the perspective form of the $f$-divergence constraint;
+linear observed reward-cell constraints
+$\sum_{j:y^j_a=c}z_{ja}=q_a(c\mid x)$; linear mean-band constraints; linear
+objective $v_x(z)$.
+
+\item \textbf{Identified-set definitions.}  Policy value
+$V_Q(\pi)$; compatible class $\mathcal Q(P;\rho,\eta)$; identified set
+$\Theta_I(P;\rho,\eta)$; semantic extrema
+$\underline{\theta}_I(P;\rho,\eta)$ and $\overline{\theta}_I(P;\rho,\eta)$; program
+endpoints $B_L(P;\rho,\eta)$ and $B_U(P;\rho,\eta)$; theorem identity
+$\underline{\theta}_I=B_L$ and $\overline{\theta}_I=B_U$; diagnostic outer envelope
+$U_{\mathrm{rect}}(P;\rho,\eta)$.
+
+\item \textbf{Lemmas.}  Conditional full reward-cell compatibility is
+equivalent to membership in $\mathcal K_x$; compact measurable conditional
+programs have optimizer selections; conditional optimizer selections paste into
+full-data laws; posterior mixtures of compatible full-data laws remain
+compatible because $q_j^t=\alpha_jq_j^1+(1-\alpha_j)q_j^0$ and
+$\mathcal C_\rho(x)$ is convex; Manski worst-case completion fills off-arm
+potential outcomes at $\ell,u$ in the general bounded-outcome face and at
+$g_{\min},g_{\max}$ in the finite-grid face; zero divergence implies equality
+of finite kernels because $f$ has unique minimum at $1$.
+
+\item \textbf{Continuity and open-set step.}  The finite strict-gap stability
+lemma uses compact closed feasible correspondences, strict divergence slack,
+strict outcome-band slack for nonemptiness, an inactive support cap in
+$U_{\mathrm{rect}}$, and Berge continuity of the joint and propensity-only
+value functions.  This turns the binary strict-gap construction into an open
+set of conditional observable laws and budgets.
+\end{itemize}
+
+\section{Conclusion and references}
+The theorem-level contribution is a sharp partial-identification formula for an
+offline target-policy value under joint propensity and outcome-regression
+misspecification.  The tightening work is done by two restrictions imposed on
+the same latent response table: the pointwise $f$-divergence budget limits
+response-dependent logging distortions, and the sup-norm regression budget
+limits the arm means.  The bound is point-identifying on the calibrated
+zero-budget face and becomes the Manski fill-in interval when both budgets are
+vacuous, with $\ell,u$ used in the general bounded-outcome face and
+$g_{\min},g_{\max}$ used when the finite grid excludes the support endpoints.
+The non-rectangularity result shows that a separable rectangular support
+function is generally conservative for this joint causal sensitivity problem:
+it allows two worst-case mechanisms that no single compatible full-data law can
+realize simultaneously.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem{BalkePearl1997}
+Balke, A. and Pearl, J. (1997).
+Bounds on treatment effects from studies with imperfect compliance.
+\emph{Journal of the American Statistical Association}, 92(439):1171--1176.
+
+\bibitem{DornGuo2023}
+Dorn, J. and Guo, K. (2023).
+Sharp sensitivity analysis for inverse propensity weighting via quantile balancing.
+\emph{Journal of the American Statistical Association}, 118(544):2645--2657.
+
+\bibitem{DornGuoKallus2025}
+Dorn, J., Guo, K., and Kallus, N. (2025).
+Doubly-valid/doubly-sharp sensitivity analysis for causal inference with unmeasured confounding.
+\emph{Journal of the American Statistical Association}, 120(549):331--342.
+
+\bibitem{DudikLangfordLi2011}
+Dudik, M., Langford, J., and Li, L. (2011).
+Doubly robust policy evaluation and learning.
+\emph{Proceedings of the 28th International Conference on Machine Learning}.
+
+\bibitem{HessFrauenMelnychukFeuerriegel2026}
+Hess, K., Frauen, D., Melnychuk, V., and Feuerriegel, S. (2026).
+Efficient and sharp off-policy learning under unobserved confounding.
+\emph{International Conference on Learning Representations}.
+
+\bibitem{IshikawaHe2023}
+Ishikawa, K. and He, N. (2023).
+Kernel conditional moment constraints for confounding robust inference.
+\emph{Proceedings of The 26th International Conference on Artificial
+Intelligence and Statistics}, PMLR 206:650--674.
+
+\bibitem{JinXuZhengZhou2025}
+Jin, Z., Xu, G., Zheng, X., and Zhou, Y. (2025).
+Policy learning under unobserved confounding: A robust and efficient approach.
+\emph{arXiv:2507.20550}.
+
+\bibitem{KallusZhou2018}
+Kallus, N. and Zhou, A. (2018).
+Confounding-robust policy improvement.
+\emph{Advances in Neural Information Processing Systems 31}, 9289--9299.
+
+\bibitem{KallusZhou2020}
+Kallus, N. and Zhou, A. (2020).
+Confounding-robust policy evaluation in infinite-horizon reinforcement learning.
+\emph{Advances in Neural Information Processing Systems 33}.
+
+\bibitem{KallusZhou2021}
+Kallus, N. and Zhou, A. (2021).
+Minimax-optimal policy learning under unobserved confounding.
+\emph{Management Science}, 67(5):2870--2890.
+
+\bibitem{KallusMaoWangZhou2022}
+Kallus, N., Mao, X., Wang, K., and Zhou, Z. (2022).
+Doubly robust distributionally robust off-policy evaluation and learning.
+\emph{Proceedings of the 39th International Conference on Machine Learning},
+PMLR 162:10598--10632.
+
+\bibitem{Manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review}, 80(2):319--323.
+
+\bibitem{ManskiPepper2000}
+Manski, C. F. and Pepper, J. V. (2000).
+Monotone instrumental variables: With an application to the returns to schooling.
+\emph{Econometrica}, 68(4):997--1010.
+
+\bibitem{Tan2006}
+Tan, Z. (2006).
+A distributional approach for causal inference using propensity scores.
+\emph{Journal of the American Statistical Association}, 101(476):1619--1637.
+
+\bibitem{SiZhangZhouBlanchet2020}
+Si, N., Zhang, F., Zhou, Z., and Blanchet, J. (2020).
+Distributionally robust policy evaluation and learning in offline contextual
+bandits.
+\emph{Proceedings of the 37th International Conference on Machine Learning},
+PMLR 119:8884--8894.
+
+\bibitem{WangAgarwalDudik2017}
+Wang, Y.-X., Agarwal, A., and Dudik, M. (2017).
+Optimal and adaptive off-policy evaluation in contextual bandits.
+\emph{Proceedings of the 34th International Conference on Machine Learning}, PMLR 70:3589--3597.
+
+\bibitem{ZhangXuTan2025}
+Zhang, Y., Xu, R., and Tan, Z. (2025).
+Distributionally enhanced marginal sensitivity model: Simultaneous sensitivity constraints on treatment probability and outcome distribution.
+\emph{arXiv preprint}.
+\end{thebibliography}
+
+\end{document}

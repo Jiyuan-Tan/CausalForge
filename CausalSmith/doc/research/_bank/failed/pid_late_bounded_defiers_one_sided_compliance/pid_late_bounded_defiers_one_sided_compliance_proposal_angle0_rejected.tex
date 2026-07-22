@@ -1,0 +1,315 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_late\_bounded\_defiers, specialization=one\_sided\_compliance
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `tools/thmsmith/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to a Q1..Q6 pool-mode,
+%    reproduce that block verbatim from
+%    `doc/ThmSmith/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    If it is a free-form `(qid, specialization)`, define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_late\_bounded\_defiers} / \texttt{one\_sided\_compliance}%
+  \\ \large\textit{Sharp complier-LATE bounds with bounded defiers and a zero-threshold point-identification phase transition}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{quote}\small
+\begin{verbatim}
+(qid, specialization, observable distribution P, parameter theta,
+ identifying restrictions, bounding functional)
+= (pid_late_bounded_defiers, one_sided_compliance,
+    P_X together with P(Y,D | Z=z,X=x) for z,d in {0,1}
+      on a finite covariate support X and a bounded outcome Y in [0,1],
+    theta_C = E[Y(1)-Y(0) | D(1)=1,D(0)=0],
+    conditional IV exogeneity and exclusion given X; consistency;
+      no always-takers A={D(1)=D(0)=1}; defier share
+      eta(x)=P(D(1)=0,D(0)=1 | X=x) bounded by eta_bar(x);
+      positive instrument and complier-cell probabilities,
+    the covariate-weighted closed-form lower/upper envelope obtained by
+      varying the latent untreated complier mean inside the observed
+      Z=0,D=0 mixture, with feasibility eta(x)<=eta_bar(x)).
+\end{verbatim}
+\end{quote}
+
+\begin{abstract}
+This proposal asks for sharp partial-identification bounds for the complier local average treatment effect when the Imbens--Angrist monotonicity condition is relaxed by allowing a covariate-dependent defier mass bounded by a sensitivity function \(\bar\eta(x)\).  The specialization is a near one-sided compliance design: always-takers are ruled out, but a small subpopulation may take treatment only when not encouraged.  The proposed kernel is a closed-form sharp interval for \(\theta_C=\E[Y(1)-Y(0)\mid C]\) that replaces the Balke--Pearl latent linear program by a two-cell envelope over the untreated complier mean inside the observed \(Z=0,D=0,X=x\) mixture.  A second, deliberately negative, kernel conjectures that under standard order-type shape restrictions the point-identification threshold is zero: any nonzero admissible defier slack leaves a nondegenerate interval unless a visible mixture cell is already degenerate.  Resolving the proposal would give AutoID a reusable formal bridge between exact Wald LATE and sharp IV partial-identification bounds.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+The Wald LATE estimand is one of the central exact-identification results for instrumental variables, but its no-defiers condition is often the least credible part of the design.  Recent work has either replaced monotonicity by alternative equal-cancellation assumptions or treated defiers through sensitivity parameters.  What is still missing, in the finite binary-IV setting most suitable for formalization, is a closed-form sharp identified set for the actual complier effect when defiers are allowed but bounded locally by covariates.
+
+\paragraph{The main finding (proposed).}
+Conjecture~\ref{conj:sharp-bounds} states that, under the locked near one-sided convention, the sharp identified set for \(\theta_C\) is the interval obtained by isolating \(\E[Y(1)\mid C,X=x]\) from the \(Z=1,D=1\) cell and bounding \(\E[Y(0)\mid C,X=x]\) inside the \(Z=0,D=0\) mixture.  The formula is pointwise in \(x\) and then averages with complier weights \(\Pr(X=x)\pi_C(x)\).  Conjecture~\ref{conj:zero-threshold} states the phase-transition claim: apart from degenerate observed cells or shape restrictions that directly fix the never-taker untreated mean, standard monotone-response or principal-stratum order restrictions do not create a positive \(\bar\eta\) threshold for point identification.
+
+\paragraph{What is new.}
+The novelty kernel is not another weakening of monotonicity.  It is the observation that, in the near one-sided design, the relevant uncertainty for complier LATE is a one-dimensional latent-mixture problem for the untreated complier mean, while defier mass controls feasibility and the size of the hidden never-taker component.  This differs from Balke--Pearl ATE bounds, which optimize the population ATE over a 16-cell latent table; from Noack-style sensitivity analysis, which indexes both defier share and outcome-distribution differences; and from de Chaisemartin / Dahl--Huber--Mellace, which recover alternative LATE objects under equal-cancellation or local monotonicity assumptions.
+
+\paragraph{How it positions in the literature.}
+The proposal lives in the partial-identification cluster for IV bounds and LATE sensitivity.  It uses the exact LATE substrate only as the \(\bar\eta=0\) sanity corner, and the partial-ID substrate as the natural formalization target.  It does not touch SCM axiomatics or graphical completeness; the theorem content is a sharp finite latent-type bound for a causal estimand.
+
+\section{Related work}
+\citet{ImbensAngrist1994} introduce LATE and show that IV plus monotonicity identifies the average treatment effect for compliers; this is the exact-identification corner that the present proposal relaxes.  \citet{AngristImbensRubin1996} give the canonical principal-strata formulation and discuss how defiers bias the IV estimand, motivating an explicit defier-mass sensitivity parameter.  \citet{Manski1990} supplies the partial-identification template: bounded outcomes and latent counterfactual means produce sharp interval rather than point conclusions.  \citet{BalkePearl1997} derive sharp IV bounds through latent-type linear programming; the present proposal seeks a closed form for the complier-LATE target rather than ATE.  \citet{deChaisemartin2017} shows that IV can remain interpretable under a compliers-defiers cancellation condition; the present proposal does not assume cancellation and therefore keeps a genuine partial-ID interval.  \citet{DahlHuberMellace2023} identify LATEs for compliers and defiers under local monotonicity and local compliers-defiers assumptions; the proposed bound targets the global complier mean under a bounded-defier sensitivity restriction.  \citet{Noack2021} develops sharp sensitivity analysis for LATE violations using a defier-share parameter and an outcome-distribution-distance parameter; the proposed formula asks what is sharp when only a covariate-dependent defier-share cap is imposed.  \citet{HuberMellace2015}, \citet{Kitagawa2015}, and \citet{MourifieWan2017} derive testable implications of the LATE assumptions; their local negative-density constraints are adjacent because the proposed covariate cells quantify rather than merely test monotonicity failures.  \citet{BaiHuangMoonShaikhVytlacil2024} show that monotonicity has no identifying power for ATE in broad IV settings; the present target is complier LATE, where the proposal conjectures a discontinuous loss of point identification once defiers are admitted.
+
+In-repo, \texttt{AutoID/Identification/ExactID/LATE.lean} proves \texttt{POIVSystem.late\_wald}, the exact Wald identification theorem under monotonicity.  \texttt{AutoID/Identification/PartialID/Basic.lean} defines \texttt{PartialID.IdentifiedInterval}, the abstract sharp identified set used by existing bound theorems.  \texttt{AutoID/Identification/PartialID/BalkePearl/Main.lean} proves \texttt{ATE\_mem\_BPIdentifiedInterval}, and \texttt{AutoID/Identification/PartialID/BalkePearl/Sharp.lean} proves \texttt{balkePearl\_sharp}; these are the closest in-repo sharp IV partial-ID results, but they target ATE with binary outcomes rather than complier LATE with a bounded defier share.  \texttt{AutoID/Identification/PartialID/Manski/NonAsp.lean} proves \texttt{manski\_bounds\_ATE} and \texttt{manski\_bounds\_ATE\_ciSup}; these provide reusable bounded-outcome envelope algebra but do not encode principal strata.
+
+\section{Formal setup}
+\begin{quote}\small
+\begin{verbatim}
+(qid, specialization, observable distribution P, parameter theta,
+ identifying restrictions, bounding functional)
+= (pid_late_bounded_defiers, one_sided_compliance,
+    P_X together with P(Y,D | Z=z,X=x) for z,d in {0,1}
+      on a finite covariate support X and a bounded outcome Y in [0,1],
+    theta_C = E[Y(1)-Y(0) | D(1)=1,D(0)=0],
+    conditional IV exogeneity and exclusion given X; consistency;
+      no always-takers A={D(1)=D(0)=1}; defier share
+      eta(x)=P(D(1)=0,D(0)=1 | X=x) bounded by eta_bar(x);
+      positive instrument and complier-cell probabilities,
+    the covariate-weighted closed-form lower/upper envelope obtained by
+      varying the latent untreated complier mean inside the observed
+      Z=0,D=0 mixture, with feasibility eta(x)<=eta_bar(x)).
+\end{verbatim}
+\end{quote}
+
+Let \(X\) take values in a finite set \(\mathcal X\), let \(Z,D\in\{0,1\}\), and let \(Y\in[0,1]\).  Potential treatments are \(D(1),D(0)\), potential outcomes are \(Y(1),Y(0)\), and exclusion means observed outcomes depend on \(Z\) only through observed \(D\).  Principal strata are
+\[
+C=\{D(1)=1,D(0)=0\},\quad
+N=\{D(1)=0,D(0)=0\},\quad
+F=\{D(1)=0,D(0)=1\},\quad
+A=\{D(1)=1,D(0)=1\}.
+\]
+The near one-sided convention imposes \(\Pr(A\mid X=x)=0\) but permits \(\eta(x)=\Pr(F\mid X=x)\le \bar\eta(x)\).  Write
+\[
+\pi_C(x)=\Pr(C\mid X=x),\quad
+\pi_N(x)=\Pr(N\mid X=x),\quad
+p_X(x)=\Pr(X=x),
+\]
+and define observed conditional means
+\[
+m_{11}(x)=\E[Y\mid Z=1,D=1,X=x],\qquad
+m_{00}(x)=\E[Y\mid Z=0,D=0,X=x].
+\]
+Under the no-always-takers convention, the observable treatment probabilities identify \(\pi_C(x)=\Pr(D=1\mid Z=1,X=x)\), \(\eta(x)=\Pr(D=1\mid Z=0,X=x)\), and \(\pi_N(x)=1-\pi_C(x)-\eta(x)\).  The target is
+\[
+\theta_C=
+\frac{\sum_x p_X(x)\pi_C(x)\{\mu_{C1}(x)-\mu_{C0}(x)\}}
+     {\sum_x p_X(x)\pi_C(x)},
+\]
+where \(\mu_{Cd}(x)=\E[Y(d)\mid C,X=x]\).  The proposed identified set \(\Theta_I(P;\bar\eta)\) is the range of this target over all latent principal-stratum outcome means in \([0,1]\) satisfying the observed mixture equations and \(\eta(x)\le \bar\eta(x)\).
+
+\section{Assumptions}
+\begin{assumption}[Finite conditional IV design]\label{ass:finite-iv}
+\(\mathcal X\) is finite, \(0<\Pr(Z=z\mid X=x)<1\) for all \(z\in\{0,1\}\) and \(x\) with \(p_X(x)>0\), and \(Z\perp (D(1),D(0),Y(1),Y(0))\mid X\).
+\end{assumption}
+
+\begin{assumption}[Consistency and exclusion]\label{ass:consistency-exclusion}
+Observed treatment satisfies \(D=D(Z)\), and observed outcome satisfies \(Y=Y(D)\).  Thus \(Z\) has no direct effect on \(Y\) after fixing \(D\).
+\end{assumption}
+
+\begin{assumption}[Bounded outcomes]\label{ass:bounded-outcomes}
+For \(d\in\{0,1\}\), \(0\le Y(d)\le 1\) almost surely.
+\end{assumption}
+
+\begin{assumption}[Near one-sided compliance with bounded defiers]\label{ass:bounded-defiers}
+There are no always-takers: \(\Pr(A\mid X=x)=0\) for every \(x\).  The defier share \(\eta(x)=\Pr(F\mid X=x)\) satisfies \(0\le \eta(x)\le \bar\eta(x)\), where \(\bar\eta(x)\) is fixed before seeing the latent model.
+\end{assumption}
+
+\begin{assumption}[Complier relevance and observable cells]\label{ass:relevance}
+The complier mass \(\kappa=\sum_x p_X(x)\pi_C(x)\) is positive.  Whenever \(p_X(x)\pi_C(x)>0\), the cell means \(m_{11}(x)\) and \(m_{00}(x)\) are well-defined; equivalently, the corresponding observed cells have positive probability.
+\end{assumption}
+
+\begin{assumption}[Order-type shape restrictions]\label{ass:order-shape}
+Optional shape restrictions may include monotone treatment response \(Y(1)\ge Y(0)\) a.s., principal-stratum mean ordering such as \(\E[Y(0)\mid N,X=x]\le\E[Y(0)\mid C,X=x]\), or the reversed ordering.  These restrictions do not directly set \(\mu_{N0}(x)\) equal to a known endpoint unless explicitly stated.
+\end{assumption}
+
+\begin{assumption}[Endpoint-forcing shape]\label{ass:endpoint-shape}
+For a point-identification corner, a shape restriction is endpoint-forcing at \(x\) if it implies either \(\pi_N(x)=0\), \(m_{00}(x)\in\{0,1\}\), or a known value for \(\mu_{N0}(x)=\E[Y(0)\mid N,X=x]\).  This is stronger than Assumption~\ref{ass:order-shape}.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: observable principal-stratum masses]\label{thm:observable-masses}
+Under Assumptions~\ref{ass:finite-iv}, \ref{ass:consistency-exclusion}, \ref{ass:bounded-defiers}, and \ref{ass:relevance}, for every \(x\) with \(p_X(x)>0\),
+\[
+\pi_C(x)=\Pr(D=1\mid Z=1,X=x),\quad
+\eta(x)=\Pr(D=1\mid Z=0,X=x),\quad
+\pi_N(x)=1-\pi_C(x)-\eta(x).
+\]
+The model is feasible only if \(\eta(x)\le \bar\eta(x)\) and \(\pi_N(x)\ge0\) for all such \(x\).
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+This is routine algebra, but it pins the convention that prevents the proposal from becoming an arbitrary Balke--Pearl LP.  The closest in-repo result is \texttt{POIVSystem.first\_stage\_identity}, which uses monotonicity to turn the first stage into complier mass; here the control-arm take-up identifies the bounded defier mass instead.  This decomposition is the entry point for a small-support Lean formalization.
+
+\begin{conjecture}[Conjecture 1: sharp closed-form bounds (NOT YET PROVED)]\label{conj:sharp-bounds}
+Under Assumptions~\ref{ass:finite-iv}--\ref{ass:relevance}, define for every relevant \(x\)
+\[
+L_{C0}(x)=
+\max\left\{0,\frac{(1-\eta(x))m_{00}(x)-\pi_N(x)}{\pi_C(x)}\right\},
+\quad
+U_{C0}(x)=
+\min\left\{1,\frac{(1-\eta(x))m_{00}(x)}{\pi_C(x)}\right\}.
+\]
+Then the sharp identified set for \(\theta_C\) is the interval
+\[
+\Theta_I(P;\bar\eta)=
+\left[
+\frac{\sum_x p_X(x)\pi_C(x)\{m_{11}(x)-U_{C0}(x)\}}{\kappa},
+\frac{\sum_x p_X(x)\pi_C(x)\{m_{11}(x)-L_{C0}(x)\}}{\kappa}
+\right],
+\]
+provided the feasibility conditions in Theorem~\ref{thm:observable-masses} hold; otherwise the identified set is empty.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+The closest published results are \citet{BalkePearl1997}, which give sharp ATE bounds through a latent LP, and \citet{Noack2021}, which gives sensitivity bounds using both defier-share and distributional-distance parameters.  This conjecture gives a closed form for the actual complier LATE under a single covariate-dependent defier cap.  If proved, it becomes a compact formal target that recovers exact Wald LATE when the hidden mixture collapses and gives a reusable partial-ID theorem for sensitivity analyses.
+
+\begin{conjecture}[Conjecture 2: zero-threshold point-identification phase transition (NOT YET PROVED)]\label{conj:zero-threshold}
+Under Assumptions~\ref{ass:finite-iv}--\ref{ass:order-shape}, suppose there is a covariate value \(x\) with \(p_X(x)\pi_C(x)>0\), \(0<m_{00}(x)<1\), and \(\pi_N(x)>0\).  Then for every admissible \(\bar\eta\) that leaves this cell feasible, there exist two latent models with the same observable distribution and the same \(\eta(\cdot)\le\bar\eta(\cdot)\) but different values of \(\theta_C\).  Consequently, standard order-type shape restrictions do not create a positive defier-mass threshold for point identification; point identification requires the zero-defier Wald corner or an endpoint-forcing condition from Assumption~\ref{ass:endpoint-shape}.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+The closest literature is \citet{deChaisemartin2017} and \citet{DahlHuberMellace2023}, where alternative monotonicity or cancellation conditions recover interpretable point-identified LATE objects.  The proposed result is a negative complement: bounded defiers plus ordinary order restrictions still leave a hidden \(C/N\) untreated mixture.  This would tell applied users when a sensitivity parameter can sharpen bounds and when it cannot buy point identification.
+
+\begin{theorem}[Theorem 2: endpoint-forcing collapse]\label{thm:endpoint-collapse}
+Under Assumptions~\ref{ass:finite-iv}--\ref{ass:relevance} and Assumption~\ref{ass:endpoint-shape}, if every \(x\) with \(p_X(x)\pi_C(x)>0\) is endpoint-forcing, then the interval in Conjecture~\ref{conj:sharp-bounds} collapses to a singleton after substituting the forced value of \(\mu_{C0}(x)\).  In the special case \(\pi_N(x)=0\) for all relevant \(x\), this singleton is
+\[
+\theta_C=
+\frac{\sum_x p_X(x)\pi_C(x)\{m_{11}(x)-m_{00}(x)\}}{\kappa}.
+\]
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+This theorem is routine once Conjecture~\ref{conj:sharp-bounds} is available, but it makes the phase-transition statement auditable.  It distinguishes a real point-identification corner from a merely narrower interval, avoiding the common overclaim that monotone response or principal ordering alone restores Wald-style identification.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Wald corner]\label{cor:wald-corner}
+If \(\eta(x)=0\), \(\pi_N(x)=0\), and Assumptions~\ref{ass:finite-iv}--\ref{ass:relevance} hold, then Conjecture~\ref{conj:sharp-bounds} reduces to the exact Wald complier effect because \(D=Z\) on the relevant compliance margin and \(m_{11}(x)-m_{00}(x)=\E[Y(1)-Y(0)\mid C,X=x]\).
+\end{corollary}
+
+\begin{corollary}[Manski fill-in corner]\label{cor:manski-corner}
+If \(m_{00}(x)\in\{0,1\}\) for every relevant \(x\), then \(L_{C0}(x)=U_{C0}(x)=m_{00}(x)\), so the closed-form interval collapses even when \(\eta(x)>0\).  This is the same endpoint logic used by bounded-outcome Manski envelopes.
+\end{corollary}
+
+\section{Why feasible}
+The Lean route is finite algebra rather than measure-theoretic novelty.  Define a new partial-ID system parallel to \texttt{POBalkePearlSystem}, but with finite \(X\), real bounded \(Y\), principal-stratum probabilities \((\pi_C,\pi_N,\eta)\), and observed cell means.  Necessity follows from the mixture identity \((1-\eta)m_{00}=\pi_C\mu_{C0}+\pi_N\mu_{N0}\) plus \(0\le\mu_{N0}\le1\); sharpness follows by constructing a two-point conditional distribution for \((Y(0)\mid C,N,X=x)\) at the chosen envelope value and pasting cells over finite \(x\).  Existing ingredients are \texttt{PartialID.IdentifiedInterval}, the Balke--Pearl feasibility/sharpness pattern, and the Manski bounded-outcome fill-in lemmas; Mathlib needs only finite sums, interval max/min inequalities, and basic field simplification under \(\pi_C(x)>0\).
+
+\section{Honest scope flags}
+Theorem~\ref{thm:observable-masses} and Theorem~\ref{thm:endpoint-collapse} are labelled as theorems because they are routine consequences of the setup once the mixture formula is accepted.  Conjecture~\ref{conj:sharp-bounds} is the flagship kernel and still needs the sharpness construction.  Conjecture~\ref{conj:zero-threshold} is deliberately negative and should be stress-tested against stronger shape restrictions; if a reviewer finds a standard restriction that fixes \(\mu_{N0}(x)\) without being endpoint-forcing, the statement should be narrowed.  The phrase ``one-sided compliance'' is locked to mean no always-takers, not the classical no-control-access condition \(D(0)=0\), because classical one-sided noncompliance would rule out defiers by definition.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft with closed-form complier-LATE bounds and zero-threshold phase-transition conjecture; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Angrist, Imbens, and Rubin(1996)]{AngristImbensRubin1996}
+Angrist, J. D., G. W. Imbens, and D. B. Rubin (1996).
+Identification of causal effects using instrumental variables.
+\emph{Journal of the American Statistical Association} 91(434), 444--455.
+
+\bibitem[Bai et~al.(2024)]{BaiHuangMoonShaikhVytlacil2024}
+Bai, Y., S. Huang, S. Moon, A. Shaikh, and E. J. Vytlacil (2024).
+On the identifying power of generalized monotonicity for average treatment effects.
+NBER Working Paper 32983.
+
+\bibitem[Balke and Pearl(1997)]{BalkePearl1997}
+Balke, A. and J. Pearl (1997).
+Bounds on treatment effects from studies with imperfect compliance.
+\emph{Journal of the American Statistical Association} 92(439), 1171--1176.
+
+\bibitem[Dahl, Huber, and Mellace(2023)]{DahlHuberMellace2023}
+Dahl, C. M., M. Huber, and G. Mellace (2023).
+It is never too LATE: a new look at local average treatment effects with or without defiers.
+\emph{The Econometrics Journal} 26(3), 378--404.
+
+\bibitem[de Chaisemartin(2017)]{deChaisemartin2017}
+de Chaisemartin, C. (2017).
+Tolerating defiance? Local average treatment effects without monotonicity.
+\emph{Quantitative Economics} 8(2), 367--396.
+
+\bibitem[Huber and Mellace(2015)]{HuberMellace2015}
+Huber, M. and G. Mellace (2015).
+Testing instrument validity for LATE identification based on inequality moment constraints.
+\emph{Review of Economics and Statistics} 97(2), 398--411.
+
+\bibitem[Imbens and Angrist(1994)]{ImbensAngrist1994}
+Imbens, G. W. and J. D. Angrist (1994).
+Identification and estimation of local average treatment effects.
+\emph{Econometrica} 62(2), 467--475.
+
+\bibitem[Kitagawa(2015)]{Kitagawa2015}
+Kitagawa, T. (2015).
+A test for instrument validity.
+\emph{Econometrica} 83(5), 2043--2063.
+
+\bibitem[Manski(1990)]{Manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review} 80(2), 319--323.
+
+\bibitem[Mourifie and Wan(2017)]{MourifieWan2017}
+Mourifie, I. and Y. Wan (2017).
+Testing local average treatment effect assumptions.
+\emph{Review of Economics and Statistics} 99(2), 305--313.
+
+\bibitem[Noack(2021)]{Noack2021}
+Noack, C. (2021).
+Sensitivity of LATE estimates to violations of the monotonicity assumption.
+arXiv:2106.06421.
+\end{thebibliography}
+
+\end{document}

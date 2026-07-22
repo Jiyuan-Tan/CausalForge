@@ -1,0 +1,529 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=panel\_honest\_did\_phase, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{panel\_honest\_did\_phase} / \texttt{v1}%
+  \\ \large\textit{Aggregation-rank phase transitions for cohort-level Honest-DiD sensitivity}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+qid = panel_honest_did_phase
+specialization = v1
+p = cohort-period event-study panel with a finite event window E =
+  {e_min,...,-1,0,...,e_max}; event time e=0 is first exposure.
+assignment = staggered adoption with cohort labels g in G and calendar
+  periods t in T.  The primitive sensitivity object is the cohort-event
+  trend-deviation vector delta in R^C, indexed by admissible cohort-event
+  cells c=(g,e).  The observed aggregate event-study vector is y=A delta,
+  where A is a known cohort-period aggregation matrix determined by the
+  estimator's cohort weights and event-window trimming rule.
+target = a scalar dynamic ATT psi = ell' tau_post formed from post-event
+  aggregate coefficients; the null is psi=0.  The sensitivity target is
+  the smallest M for which a cohort-level trend-deviation vector can make
+  the aggregate null compatible with the observed event-study estimate.
+regression = Honest-DiD event-study regression after unit and time fixed
+  effects, summarized by (hat beta, Sigma, A, L).  Here hat beta is the
+  aggregate pre/post event-study coefficient vector, Sigma is its
+  covariance matrix, A maps cohort-event deviations to aggregate event-time
+  deviations, and L is the cohort-level second-difference smoothness
+  operator.  The proposal compares the sharp cohort-level support function
+  induced by ||L delta||_infty <= M with the aggregate-only Honest-DiD
+  support function computed after replacing delta by y=A delta.
+\end{verbatim}
+
+\begin{abstract}
+Honest-DiD sensitivity analysis is usually reported on aggregate event-study coefficients, even though staggered adoption estimators build those coefficients from cohort-period cells with different weights.
+This proposal asks when an aggregate Honest-DiD breakdown value is the sharp cohort-level breakdown value and when aggregation changes the sensitivity object before inference begins.
+The kernel conjecture is a rank and support-function phase diagram: the aggregate workflow is sharp exactly on a quotient row-space condition involving both the cohort smoothness operator and the aggregate smoothness operator, conservative when the aggregate smoothness ball permits deviations with no cohort-level lift, and anti-conservative when cohort-level deviations in the null space of the pre-period aggregate map can overturn the ATT without appearing in the aggregate smoothness budget.
+The proposal gives a routine LP-dual theorem for the sharp cohort-level threshold and leaves the flagship row-space trichotomy as a labelled Conjecture.
+Resolving it would turn Honest-DiD sensitivity plots for staggered designs into a diagnostic that reports whether the plotted breakdown value is sharp, conservative, or misleading relative to the underlying cohort-period design.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Applied event-study papers commonly aggregate group-time or cohort-event effects before running sensitivity analysis.
+That practice is convenient, but it can hide the object on which the sensitivity restriction is imposed: the same aggregate pretrend vector can be produced by many cohort-level trend-deviation vectors.
+If the second-difference budget is substantive at the cohort level, then the reported aggregate breakdown value need not equal the smallest cohort-level violation that can make the null treatment effect compatible with the data.
+
+\paragraph{The main finding (proposed).}
+The proposed flagship result is Conjecture~\ref{conj:rank-phase}: the comparison between cohort-level and aggregate Honest-DiD breakdown points has a sharp three-regime phase diagram determined by the quotient geometry of the aggregation map \(A\) and the smoothness operator \(L\).
+Let \(M_{\mathrm{coh}}^\star\) be the sharp cohort-level threshold computed from the support function of \(\{\delta:A_{\mathrm{pre}}\delta=0,\|L\delta\|_\infty\le1\}\), and let \(M_{\mathrm{agg}}^\star\) be the threshold computed from the aggregate-only Honest-DiD restriction on \(y=A\delta\).
+When the two support functions agree in the target direction, aggregate Honest-DiD is sharp; when the aggregate support is larger, it is conservative; when the cohort support is larger, it is anti-conservative because the aggregate curve can still reject the null at \(M\) values for which a cohort-level deviation already rationalizes it.
+
+\paragraph{What is new.}
+The closest published anchors are \citet{rambachan2023parallel}, \citet{callaway2021multiple}, \citet{callaway2023nonparallel}, \citet{sunabraham2021eventstudy}, \citet{wing2024stacked}, and \citet{liu2025cohortanchored}.
+\citet{rambachan2023parallel} give valid fixed-\(M\) robust inference for an event-study coefficient vector; \citet{callaway2021multiple} and \citet{sunabraham2021eventstudy} clarify what staggered coefficients estimate; \citet{wing2024stacked} show that stacking can change implicit weights; and \citet{liu2025cohortanchored} gives the closest recent warning that aggregated robust inference can be misleading in staggered adoption.
+\citet{callaway2023nonparallel} show that staggered timing can identify treatment effects when untreated outcomes follow non-parallel interactive fixed-effect trends, so their paper is the nearest relaxed-trends identification comparator rather than a support-function sensitivity result.
+The new kernel is not another weighting decomposition or a closed-form threshold for a fixed aggregate vector.
+It asks whether the aggregate sensitivity curve itself is the sharp projection of a cohort-level support-function problem, and it predicts an open-set rank-loss boundary where two estimators with similar event-study coefficients have opposite robustness interpretations.
+Relative to \citet{liu2025cohortanchored} and \citet{wright2026designrobust}, the epsilon-gap is that the proposal does not introduce a new cohort-period block-bias workflow or a general staggered-adoption diagnostic suite; it gives a necessary-and-sufficient primitive quotient certificate, computed from the active-face lift matrices in \(A,L,L_{\mathrm{agg}},\ell,\Sigma\) before evaluating the two support functions, that compares the aggregate Honest-DiD seminorm \(q_{\mathrm{agg}}\) to the cohort-lift seminorm \(q_A\).
+The flagship-strength claim is the generic-class obstruction: for open neighborhoods of actual stacked and cohort-anchored estimator maps, not just hand-tuned examples, the same observed aggregate event-study path can sit in sharp, conservative, or anti-conservative regions depending on the quotient certificate.
+
+\paragraph{How it positions in the literature.}
+This is a panel and partial-identification proposal.
+It treats Honest-DiD as a finite-dimensional partially identified support-function problem, then overlays the panel aggregation maps that arise in modern staggered event-study estimators.
+The row-space condition is designed to sit between the staggered-DiD literature on group-time ATT aggregation and the moment-inequality literature on support functions of identified sets.
+
+\paragraph{Implications for the community.}
+The direct consumer is applied work using stacked or aggregated staggered-DiD event studies with Honest-DiD sensitivity plots, especially the stacked workflow studied by \citet{wing2024stacked}.
+If the conjecture resolves favorably, those papers should report the quotient-rank diagnostic before interpreting an aggregate breakdown value as evidence that a treatment effect is robust.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers would stop treating \(CI(M)\) from an aggregate event-study vector as automatically sharp, and would first check whether the estimator's aggregation map preserves the cohort-level smoothness support in the target direction.
+
+\section{Related work}
+\citet{rambachan2023parallel} develop Honest-DiD sensitivity analysis for event-study designs under bounded deviations from parallel trends; this proposal uses their fixed-\(M\) sensitivity object but asks whether aggregation preserves its sharp support function.
+\citet{andrews2023conditional} provide linear conditional moment-inequality inference with nuisance parameters; their framework justifies fixed-\(M\) inference but does not classify the finite-dimensional quotient geometry of staggered aggregation maps.
+\citet{callaway2021multiple} identify group-time ATT parameters and define aggregation schemes under staggered treatment timing; the present proposal studies whether those aggregation maps preserve sharp sensitivity thresholds.
+\citet{callaway2023nonparallel} identify causal effects in staggered adoption designs when untreated outcomes have non-parallel interactive fixed-effect trends; this is a relaxed-trends identification comparator, but it does not derive Honest-DiD breakdown thresholds or aggregate-versus-cohort support-function sharpness.
+\citet{sunabraham2021eventstudy} show that TWFE lead and lag coefficients can be contaminated by treatment effects from other periods; the proposed result is orthogonal, since the contamination-free aggregate may still have a nonsharp sensitivity budget.
+\citet{goodmanbacon2021timing} decomposes TWFE DiD with timing variation into weighted two-by-two comparisons; this proposal uses the same lesson that weights matter but makes the support function of violations the object of comparison.
+\citet{dechaisemartin2020twfe} show that TWFE estimators can place negative weights on heterogeneous treatment effects; the proposed anti-conservative regime is a sensitivity analogue in which aggregation can understate rather than merely reweight the relevant violation.
+\citet{borusyak2024eventstudy} derive robust and efficient imputation event-study estimators; their estimator clarifies the aggregate event-study target, while this proposal asks whether the sensitivity restriction should be lifted back to cohort-event cells before inversion.
+\citet{wing2024stacked} show that basic stacked DiD applies different implicit weights to treatment and control trends and can fail to identify an aggregate ATT; this is the nearest published warning that aggregation changes robustness interpretation.
+\citet{liu2025cohortanchored} is the closest current prior art: it argues that robust inference from aggregated event-study coefficients can be misleading in staggered adoption and proposes cohort-period block-bias restrictions; the present proposal differs by seeking a quotient support-function theorem that classifies exactly when the aggregate Honest-DiD threshold equals, overstates, or understates the cohort-level threshold.
+\citet{wright2026designrobust} develops design diagnostics and sensitivity-robust inference for staggered-adoption event studies under restricted parallel-trend violations; this makes it a direct frontier comparator, but its advertised diagnostics target contamination, negative-weight risk, and valid robust inference rather than an ex ante quotient-norm equality certificate for aggregate versus cohort-level Honest-DiD breakdown frontiers.
+\citet{masten2020breakdown} treat breakdown frontiers as inferential targets; the current proposal is narrower because the frontier is the Honest-DiD zero-crossing, but sharper about the cohort-to-aggregate operator that determines it.
+\citet{rothsantanna2023efficient} study efficient estimation in staggered rollout designs; their covariance-aware aggregation motivates the use of \(\Sigma\) in the diagnostic, but they do not impose cohort-level smoothness budgets.
+In the ThmSmith catalogue, \texttt{q1\_partial\_did\_unobserved\_trends / p1\_baseline\_v2} proposes sharp partial identification of staggered DiD under partially unobserved pre-trends, but it does not compare aggregate and cohort-level Honest-DiD support functions.
+The banked \texttt{q1\_spectral\_phase\_transition / p1\_markov} proposal isolates a point/partial/non-identification phase-transition template, but its reviewer notes left row-space/box affine-fiber geometry unresolved rather than solving the present aggregation quotient.
+\texttt{doc/API.md} section 1 records the active panel theorem catalogue, especially Q1 minimal-basis, staggered minimal-basis, and spectral-threshold entries; those entries concern FWL coefficient identities and rank admissibility, not Honest-DiD smoothness budgets.
+
+\section{Formal setup}
+Let \(C\) be the finite set of admissible cohort-event cells \(c=(g,e)\), split into pre-event cells \(C_{\mathrm{pre}}\) and post-event cells \(C_{\mathrm{post}}\).
+Let \(\delta\in\R^{C}\) be the untreated-trend deviation vector at the cohort-event-cell level.
+The observed aggregate event-study deviation vector is \(y=A\delta\in\R^{E}\), where \(E=E_{\mathrm{pre}}\cup E_{\mathrm{post}}\) is the aggregate event-time index set and \(A:\R^C\to\R^E\) is known from the estimator's cohort weights, trimming rule, and event-time aggregation.
+Write \(A_{\mathrm{pre}}\) and \(A_{\mathrm{post}}\) for the corresponding pre and post rows.
+Let \(L:\R^C\to\R^q\) be the cohort-level second-difference operator; the primitive Honest-DiD smoothness restriction is
+\[
+  \|L\delta\|_\infty \le M.
+\]
+Let \(L_{\mathrm{agg}}:\R^E\to\R^{q_{\mathrm{agg}}}\) be the second-difference operator used by the aggregate-only workflow on \(y\).
+The scalar dynamic ATT target is \(\psi=\ell^\transpose\tau_{\mathrm{post}}\), with \(\ell\in\R^{E_{\mathrm{post}}}\).
+Let \(\hat\psi=\ell^\transpose\hat\beta_{\mathrm{post}}\) be the event-study point estimate and \(\Sigma\) its covariance matrix; covariance enters the studentized version of the target direction but is not needed for the deterministic identified-set geometry.
+For the conjectural singular-value diagnostic, \(\Pi_{\ell,\Sigma}\) denotes the rank-one covariance-whitened projection onto the scalar target direction \(\ell\), and \(\dagger\) denotes the Moore--Penrose generalized inverse on the indicated finite-dimensional row space.
+
+Define the cohort-level unit-budget support in the target direction by
+\[
+  h_{\mathrm{coh}}(\ell)
+  =
+  \sup\{\ell^\transpose A_{\mathrm{post}}\delta:
+       A_{\mathrm{pre}}\delta=0,\ \|L\delta\|_\infty\le1\}.
+\]
+Define the aggregate-only unit-budget support by
+\[
+  h_{\mathrm{agg}}(\ell)
+  =
+  \sup\{\ell^\transpose y_{\mathrm{post}}:
+       y_{\mathrm{pre}}=0,\ \|L_{\mathrm{agg}}y\|_\infty\le1,\ y\in\operatorname{range}(A)\}.
+\]
+When the aggregate workflow does not impose \(y\in\operatorname{range}(A)\), replace \(h_{\mathrm{agg}}\) by the larger support \(h_{\mathrm{naive}}\); this proposal treats \(h_{\mathrm{agg}}\) as the sharp aggregate-information benchmark and \(h_{\mathrm{naive}}\) as a documented corollary.
+The deterministic zero-crossing thresholds are
+\[
+  M_{\mathrm{coh}}^\star = |\hat\psi|/h_{\mathrm{coh}}(\ell),
+  \qquad
+  M_{\mathrm{agg}}^\star = |\hat\psi|/h_{\mathrm{agg}}(\ell),
+\]
+with the extended-real conventions \(a/0=\infty\) and \(a/\infty=0\) for \(a>0\).
+Define the cohort-lift seminorm on aggregate deviations by
+\[
+  q_A(y)
+  =
+  \inf\{\|L\delta\|_\infty:
+       A\delta=y,\ A_{\mathrm{pre}}\delta=0\},
+\]
+with value \(+\infty\) if the fiber is empty.
+Define the aggregate seminorm \(q_{\mathrm{agg}}(y)=\|L_{\mathrm{agg}}y\|_\infty\) on \(y\in\operatorname{range}(A)\) with \(y_{\mathrm{pre}}=0\).
+Let \(W=\{y\in\operatorname{range}(A):y_{\mathrm{pre}}=0\}\).
+For \(q\in\{q_A,q_{\mathrm{agg}}\}\), write \(Q_q=\{y\in W:q(y)\le1\}\).
+An active-face label \(F\) consists of two signed active-constraint sets
+\[
+  N_{A,F}y\le \one,\qquad N_{\mathrm{agg},F}y\le\one,
+\]
+where the rows are the uniquely normalized outward normals of the exposed faces of \(Q_A\) and \(Q_{\mathrm{agg}}\) after projecting to \(W\), normalizing each row to covariance-whitened Euclidean norm one, and deleting duplicate positive multiples.
+The face cell \(\mathcal U_F\) is the semialgebraic set of designs for which these inequalities bind on the target-exposed faces and every inactive inequality has strict slack; the tie set is the complement where either exposed face is not unique or an inactive inequality also binds.
+Let \(U\) be any full-column-rank matrix whose columns span \(\ker(A_{\mathrm{pre}})\), and let \(H\) be any covariance-orthonormal basis for \(W=\operatorname{range}(AU)\).
+For a locally regular active face \(F\), let \(R_{A,F}:W\to\ker(A_{\mathrm{pre}})\) be the derivative of the unique active optimal cohort lift selected by \(F\): it is the linear map characterized by
+\[
+  A R_{A,F}=I_W,\qquad
+  S_{A,F} L R_{A,F}=N_{A,F},\qquad
+  \text{inactive signed rows of } LR_{A,F}\text{ have strict slack},
+\]
+where \(S_{A,F}\) is the signed row-selector for the active cohort-level \(L\)-constraints.
+Similarly, \(S_{\mathrm{agg},F}\) is the signed row-selector for the active rows of \(L_{\mathrm{agg}}\), and \(N_{\mathrm{agg},F}=S_{\mathrm{agg},F}L_{\mathrm{agg}}|_W\).
+Define the primitive active-face matrices
+\[
+  J_{A,F}=S_{A,F}L R_{A,F}H,\qquad
+  J_{\mathrm{agg},F}=S_{\mathrm{agg},F}L_{\mathrm{agg}}H,
+\]
+which depend only on \(A,L,L_{\mathrm{agg}}\), the active-face selectors, and the covariance-orthonormal coordinates on \(W\).
+Let \(w_{\ell,\Sigma}\in W\) be the covariance-whitened projection of the post-event target vector \((0,\ell)\) onto \(W\), and let
+\[
+  u_{\ell,\Sigma}=H^\transpose w_{\ell,\Sigma}/\|H^\transpose w_{\ell,\Sigma}\|_2
+\]
+be the normalized target-line coordinate when the denominator is nonzero.
+The finite-dimensional comparison operator used below is
+\[
+  K_{\Sigma,A,\mathrm{agg},F}
+  =
+  J_{\mathrm{agg},F}\,\Pi_{\ell,\Sigma}|_W\,J_{A,F}^{\dagger},
+\]
+and the primitive target-line gap is
+\[
+  \Delta_F(A,L,L_{\mathrm{agg}},\ell,\Sigma)
+  =
+  \|J_{\mathrm{agg},F}u_{\ell,\Sigma}\|_\infty
+  -
+  \|J_{A,F}u_{\ell,\Sigma}\|_\infty .
+\]
+This definition contains no \(h_{\mathrm{agg}}\) or \(h_{\mathrm{coh}}\); the conjectural content is that the sign of this primitive active-face matrix gap implies the corresponding support ordering on the cell.
+Define the quotient certificate
+\[
+  \chi_F(A,L,L_{\mathrm{agg}},\ell,\Sigma)
+  =
+  \big(\Delta_F,
+       \sigma_{\min}(K_{\Sigma,A,\mathrm{agg},F}),
+       \sigma_{\max}(K_{\Sigma,A,\mathrm{agg},F}),
+       \operatorname{rank} J_{A,F},
+       \operatorname{rank} J_{\mathrm{agg},F}\big).
+\]
+The conjectural phase diagram uses \(\chi_F\) and the active-face inequalities to classify designs before computing the two global support functions separately; the supports are consequences to be proved, not inputs to the diagnostic.
+For the rank-loss statement, let
+\[
+  V_0(A,L)=\ker(A_{\mathrm{pre}})\cap\ker(L),
+  \qquad
+  r(A,L,\ell)=P_{V_0(A,L)}(A_{\mathrm{post}}^\transpose\ell),
+\]
+where \(P_{V_0(A,L)}\) is the Euclidean projection onto \(V_0(A,L)\).
+Thus \(r(A,L,\ell)\ne0\) is equivalent to the target functional \(\delta\mapsto\ell^\transpose A_{\mathrm{post}}\delta\) acting nontrivially on a zero-budget, pre-calibrated cohort direction.
+
+\begin{example}[Two-cohort stacked-map prototypes]\label{ex:stacked-prototype}
+Order cells as \((a,-2),(a,-1),(a,0),(b,-2),(b,-1),(b,0)\), let
+\[
+A_{\mathrm{pre}}=
+\begin{pmatrix}
+1/2&0&0&1/2&0&0\\
+0&1/2&0&0&1/2&0
+\end{pmatrix},
+\qquad
+A_{\mathrm{post}}=(0,0,3/4,0,0,1/4),
+\]
+and let \(L\) have rows \((1,-2,1,0,0,0)\) and \((0,0,0,1,-2,1)\), with \(L_{\mathrm{agg}}=(1,-2,1)\).
+The nonzero vector \(\delta=(1,1,1,-1,-1,-1)\) satisfies \(A_{\mathrm{pre}}\delta=0\), \(L\delta=0\), and \(A_{\mathrm{post}}\delta=1/2\), so the cohort-level threshold is \(0\) by the extended-real convention while the aggregate smoothness budget remains positive; this is an open anti-conservative stacked-weight region.
+A companion conservative region is obtained by holding the post target weights fixed but trimming one cohort's post cell from the admissible lift while leaving the aggregate event-time second difference unchanged: direct substitution in the displayed \(A,L,L_{\mathrm{agg}}\) with the trimmed column removed gives \(q_A(y)>q_{\mathrm{agg}}(y)\) for the target-exposed aggregate ray, hence \(h_{\mathrm{agg}}>h_{\mathrm{coh}}\).
+The conjecture is that these are not isolated algebra examples, but open neighborhoods of the estimator maps studied by stacked and cohort-anchored staggered-DiD workflows.
+\end{example}
+
+\begin{verbatim}
+qid = panel_honest_did_phase
+specialization = v1
+p = cohort-period event-study panel with a finite event window E =
+  {e_min,...,-1,0,...,e_max}; event time e=0 is first exposure.
+assignment = staggered adoption with cohort labels g in G and calendar
+  periods t in T.  The primitive sensitivity object is the cohort-event
+  trend-deviation vector delta in R^C, indexed by admissible cohort-event
+  cells c=(g,e).  The observed aggregate event-study vector is y=A delta,
+  where A is a known cohort-period aggregation matrix determined by the
+  estimator's cohort weights and event-window trimming rule.
+target = a scalar dynamic ATT psi = ell' tau_post formed from post-event
+  aggregate coefficients; the null is psi=0.  The sensitivity target is
+  the smallest M for which a cohort-level trend-deviation vector can make
+  the aggregate null compatible with the observed event-study estimate.
+regression = Honest-DiD event-study regression after unit and time fixed
+  effects, summarized by (hat beta, Sigma, A, L).  Here hat beta is the
+  aggregate pre/post event-study coefficient vector, Sigma is its
+  covariance matrix, A maps cohort-event deviations to aggregate event-time
+  deviations, and L is the cohort-level second-difference smoothness
+  operator.  The proposal compares the sharp cohort-level support function
+  induced by ||L delta||_infty <= M with the aggregate-only Honest-DiD
+  support function computed after replacing delta by y=A delta.
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite cohort-event design]\label{ass:finite-design}
+The cohort-event cell set \(C\), aggregate event-time set \(E\), aggregation matrix \(A:\R^C\to\R^E\), and target loading \(\ell\in\R^{E_{\mathrm{post}}}\) are finite and known.
+\end{assumption}
+
+\begin{assumption}[Nonzero observed target]\label{ass:nonzero-target}
+The event-study point estimate satisfies \(\hat\psi=\ell^\transpose\hat\beta_{\mathrm{post}}\ne0\).
+\end{assumption}
+
+\begin{assumption}[Cohort-level Honest-DiD smoothness]\label{ass:cohort-smoothness}
+The primitive trend-deviation vector \(\delta\in\R^C\) is restricted by \(\|L\delta\|_\infty\le M\), where \(L:\R^C\to\R^q\) is the known cohort-level second-difference operator.
+\end{assumption}
+
+\begin{assumption}[Pre-period calibration]\label{ass:pre-calibration}
+The admissible deviations used to test the null satisfy \(A_{\mathrm{pre}}\delta=0\); equivalently, the candidate deviation does not change the aggregate pre-period event-study coefficients after the pretrend has been calibrated.
+\end{assumption}
+
+\begin{assumption}[Aggregate workflow]\label{ass:aggregate-workflow}
+The aggregate-only benchmark applies \(L_{\mathrm{agg}}\) to \(y=A\delta\) and computes a support function over \(y_{\mathrm{pre}}=0\), \(\|L_{\mathrm{agg}}y\|_\infty\le1\), and \(y\in\operatorname{range}(A)\).  The naive benchmark drops \(y\in\operatorname{range}(A)\).
+\end{assumption}
+
+\begin{assumption}[Finite supports]\label{ass:finite-supports}
+For Theorem~\ref{thm:lp-dual} and Conjecture~\ref{conj:rank-phase}, the support functions \(h_{\mathrm{coh}}(\ell)\) and \(h_{\mathrm{agg}}(\ell)\) are finite.  If either support is zero, the corresponding threshold uses the convention \(a/0=\infty\) for \(a>0\).  Conjecture~\ref{conj:rank-loss} explicitly leaves this finite-support stratum and uses the extended convention \(a/\infty=0\).
+\end{assumption}
+
+\begin{assumption}[Local active-face regularity]\label{ass:active-face-regularity}
+For the face-local singular-value claims, the relevant designs lie in a finite-dimensional neighborhood on which the controlling active face \(F\) is unique, the active inequalities \(N_{A,F}y\le\one\) and \(N_{\mathrm{agg},F}y\le\one\) have positive slack off \(F\), and the matrices \(R_{A,F}\), \(J_{A,F}\), \(J_{\mathrm{agg},F}\), and \(K_{\Sigma,A,\mathrm{agg},F}\) are well defined with constant rank on each finite-support branch.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: LP-dual formula for the cohort threshold]\label{thm:lp-dual}
+Under Assumptions~\ref{ass:finite-design}--\ref{ass:finite-supports}, the sharp cohort-level breakdown threshold for the scalar null \(\psi=0\) is \(M_{\mathrm{coh}}^\star=|\hat\psi|/h_{\mathrm{coh}}(\ell)\).
+Moreover,
+\[
+h_{\mathrm{coh}}(\ell)
+=
+\inf_{\lambda\in\R^{E_{\mathrm{pre}}},\,z\in\R^q}
+\left\{\|z\|_1:
+L^\transpose z + A_{\mathrm{pre}}^\transpose\lambda
+=
+A_{\mathrm{post}}^\transpose\ell
+\right\},
+\]
+with the usual value \(+\infty\) if the displayed affine constraint is infeasible.
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{rambachan2023parallel} compute valid sensitivity intervals for a fixed event-study vector, but they do not express the staggered cohort-level breakdown point as a quotient support function or its LP dual.
+\citet{wing2024stacked} show that aggregation weights alter targets, but not how the smoothness budget's support function changes after aggregation.
+(b) The concrete consumer is the weighted stacked-DiD workflow of \citet{wing2024stacked}: Theorem~\ref{thm:lp-dual} supplies the exact cohort-level threshold that a stacked Honest-DiD diagnostic would need before reporting a scalar breakdown value.
+
+\begin{conjecture}[Conjecture 1: aggregation-rank phase diagram (NOT YET PROVED)]\label{conj:rank-phase}
+Under Assumptions~\ref{ass:finite-design}--\ref{ass:active-face-regularity}, first suppose \(0<h_{\mathrm{coh}}(\ell)<\infty\) and \(0<h_{\mathrm{agg}}(\ell)<\infty\), and define
+\[
+\Gamma(A,L,L_{\mathrm{agg}},\ell)
+=h_{\mathrm{agg}}(\ell)/h_{\mathrm{coh}}(\ell),
+\]
+with zero-support boundary cases classified directly by the threshold definitions in Assumption~\ref{ass:finite-supports}: if both supports are zero, both thresholds are infinite; if only one support is zero, the corresponding threshold is infinite and the comparison is one-sided.
+For each locally unique active-face label \(F\), let \(\Delta_F\) be the primitive active-face matrix gap defined in the setup from \(A,L,L_{\mathrm{agg}},\ell,\Sigma\), the active selectors \(S_{A,F},S_{\mathrm{agg},F}\), and the active lift \(R_{A,F}\).
+There are three semialgebraic design regions,
+\[
+  \mathcal U_{\mathrm{sharp}},\qquad
+  \mathcal U_{\mathrm{cons}},\qquad
+  \mathcal U_{\mathrm{anti}},
+\]
+defined by the active-face inequalities together with \(\Delta_F=0\), \(\Delta_F>0\), and \(\Delta_F<0\), respectively.
+Every locally regular non-tie design belongs to exactly one of them; \(\mathcal U_{\mathrm{cons}}\) and \(\mathcal U_{\mathrm{anti}}\) are open, while \(\mathcal U_{\mathrm{sharp}}\) is the locally closed equality cell where the face-local comparison is an isometry in the target direction.
+Equivalently, away from active-face ties, the sign of the basis-invariant primitive gap \(\Delta_F\) determines the sign of \(\Gamma-1\) without first solving the two global support-function programs.
+On those open sets:
+\begin{enumerate}[label=(\roman*)]
+\item \(\Gamma=1\) if and only if the aggregate Honest-DiD threshold is sharp: \(M_{\mathrm{agg}}^\star=M_{\mathrm{coh}}^\star\).
+\item \(\Gamma>1\) if and only if the aggregate curve is conservative: \(M_{\mathrm{agg}}^\star<M_{\mathrm{coh}}^\star\), so the aggregate curve can include zero at \(M\) values for which no cohort-level deviation can.
+\item \(\Gamma<1\) if and only if the aggregate curve is anti-conservative: \(M_{\mathrm{agg}}^\star>M_{\mathrm{coh}}^\star\), so it can reject zero even though a cohort-level deviation satisfying the same primitive budget rationalizes the null.
+\end{enumerate}
+The disagreement interval is exactly
+\[
+[\min\{M_{\mathrm{coh}}^\star,M_{\mathrm{agg}}^\star\},
+  \max\{M_{\mathrm{coh}}^\star,M_{\mathrm{agg}}^\star\}),
+\]
+and its direction is determined by the sign of \(\Gamma-1\).
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) The closest published results are \citet{callaway2021multiple}, \citet{sunabraham2021eventstudy}, \citet{wing2024stacked}, and \citet{liu2025cohortanchored}; they diagnose aggregation, contamination, implicit weighting, and cohort-anchored alternatives to aggregated robust inference, but none gives a necessary-and-sufficient row-space condition for when an aggregate Honest-DiD sensitivity curve remains sharp after aggregation.
+The closest relaxed-trends identification comparator is \citet{callaway2023nonparallel}, which exploits staggered timing under non-parallel untreated trends but does not study sensitivity-frontier sharpness after event-study aggregation.
+The additional 2026 comparator is \citet{wright2026designrobust}, which advertises staggered-adoption diagnostics and sensitivity-robust inference under restricted parallel-trend violations; its diagnostics are design-robust validity and contamination tools, not a primitive active-face equality test for whether the aggregate Honest-DiD breakdown frontier is the exact projection of the cohort-level frontier.
+The epsilon-gap is the generic open-set quotient certificate \(\chi_F\): it separates sharp, conservative, and anti-conservative designs through primitive active-face matrices \(J_{A,F}\) and \(J_{\mathrm{agg},F}\), whereas \citet{liu2025cohortanchored} gives a cohort-anchored replacement workflow and motivating examples without a necessary-and-sufficient aggregation certificate.
+Example~\ref{ex:stacked-prototype} records the nondegenerate estimator-map obstruction that raises the claim above a scalar ratio diagnostic: the sign region persists under perturbations of stacked weights and trimming rules rather than depending on a collapsed outcome law.
+(b) The concrete consumer is the cohort-anchored robust-inference workflow of \citet{liu2025cohortanchored}: resolving the conjecture would say when Liu's cohort-level warning is exactly captured by a quotient support diagnostic and when aggregate Honest-DiD must be replaced by block-bias analysis, with the minimum-wage event-study reanalysis in that paper as the empirical design consequence.
+
+\begin{conjecture}[Conjecture 2: rank-loss discontinuity under cohort trimming (NOT YET PROVED)]\label{conj:rank-loss}
+Under Assumptions~\ref{ass:finite-design}--\ref{ass:aggregate-workflow}, but not imposing Assumption~\ref{ass:finite-supports}, suppose all designs in a sequence live on fixed finite vector spaces \(\R^C,\R^E,\R^q\), with \(A_n\to A_0\), \(L_n\to L_0\), \(L_{\mathrm{agg},n}\to L_{\mathrm{agg},0}\), \(\ell_n\to\ell_0\), \(\hat\beta_n\to\hat\beta_0\), \(\hat\psi_n=\ell_n^\transpose\hat\beta_{\mathrm{post},n}\to\hat\psi_0\ne0\), and \(\Sigma_n\to\Sigma_0\) entrywise.
+Assume also the local active-face regularity conditions of Assumption~\ref{ass:active-face-regularity} on every finite-support branch in the sequence.
+Suppose the target-relevant zero-budget projection
+\[
+  r_n
+  =
+  P_{\ker(A_{\mathrm{pre},n})\cap\ker(L_n)}
+  (A_{\mathrm{post},n}^\transpose\ell_n)
+\]
+has rank indicator \(\one\{r_n\ne0\}\) eventually equal to \(0\) along one finite-support active-face branch and equal to \(1\) along another zero-budget branch converging to the same limit design.
+On the zero-budget branch \(h_{\mathrm{coh},n}(\ell_n)=+\infty\) and \(M_{\mathrm{coh},n}^\star=0\) by the extended-real convention, while on the finite-support branch \(h_{\mathrm{coh},n}(\ell_n)\to h_-\in(0,\infty)\) and \(M_{\mathrm{coh},n}^\star\to|\hat\psi_0|/h_->0\).
+Consequently the cohort-level breakdown frontier can jump discontinuously even when \(\hat\psi_n\), \(\Sigma_n\), and the aggregate event-study coefficients converge continuously.
+More explicitly, there exist two sequences \((A_n^-,L_n^-,L_{\mathrm{agg},n}^-,\ell_n^-,\hat\psi_n^-,\Sigma_n^-,F_n^-)\) and \((A_n^+,L_n^+,L_{\mathrm{agg},n}^+,\ell_n^+,\hat\psi_n^+,\Sigma_n^+,F_n^+)\) satisfying the same limit observables but with
+\[
+  \liminf_n |M_{\mathrm{coh},n,+}^\star-M_{\mathrm{coh},n,-}^\star|>0.
+\]
+If Assumption~\ref{ass:finite-supports} is imposed uniformly, the analogous finite-support statement replaces \(r_n\ne0\) by a near-kernel condition: the smallest nonzero singular value of \(L_n\) restricted to \(\ker(A_{\mathrm{pre},n})\) tends to zero while the projection of \(A_{\mathrm{post},n}^\transpose\ell_n\) onto that nearly null direction stays bounded away from zero.
+The jump size is then governed by that restricted singular value and by the active-face gap \(\Delta_{F_n}\).
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{borusyak2024eventstudy} and \citet{rothsantanna2023efficient} make aggregation and covariance central to efficient event-study estimation, but their estimands vary smoothly with weights under standard support.
+Conjecture~\ref{conj:rank-loss} predicts a nonsmooth robustness frontier caused by support-function rank loss, not by sampling noise or estimator inefficiency.
+(b) The concrete consumer is \citet{liu2025cohortanchored}'s cohort-period robust-inference workflow for staggered event studies: a design with small cohort-support changes should trigger a rank diagnostic before analysts compare breakdown values across outcomes or specifications.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No-aggregation reduction]\label{cor:no-aggregation}
+If \(A\) is the identity on cohort-event cells, \(L_{\mathrm{agg}}=L\), and \(\ell\) is the same post-event loading in both problems, then \(h_{\mathrm{agg}}(\ell)=h_{\mathrm{coh}}(\ell)\) and \(M_{\mathrm{agg}}^\star=M_{\mathrm{coh}}^\star\).
+\end{corollary}
+
+\begin{corollary}[Parallel-trends corner]\label{cor:zero-budget}
+Under Assumption~\ref{ass:cohort-smoothness} with \(M=0\), the admissible deviations satisfy \(L\delta=0\) and \(A_{\mathrm{pre}}\delta=0\).
+If additionally \(\ell^\transpose A_{\mathrm{post}}\delta=0\) for every \(\delta\in\ker L\cap\ker A_{\mathrm{pre}}\), and \(\ell^\transpose y_{\mathrm{post}}=0\) for every \(y\in\operatorname{range}(A)\) satisfying \(y_{\mathrm{pre}}=0\) and \(L_{\mathrm{agg}}y=0\), then both cohort and aggregate sensitivity intervals reduce to the point-identified event-study estimate \(\hat\psi\).
+\end{corollary}
+
+\begin{corollary}[Naive aggregate outer bound]\label{cor:naive}
+If the aggregate workflow drops the range constraint \(y\in\operatorname{range}(A)\), then \(h_{\mathrm{naive}}(\ell)\ge h_{\mathrm{agg}}(\ell)\).  Consequently the naive aggregate breakdown threshold is weakly smaller than the range-restricted aggregate threshold whenever \(\hat\psi\ne0\).
+\end{corollary}
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:lp-dual} is finite-dimensional convex duality: write the unit-budget identified set for the target bias as a linear image of the polyhedron \(A_{\mathrm{pre}}\delta=0,\ -1\le L\delta\le1\), then apply the support-function dual for an \(\ell_\infty\)-bounded linear image to obtain the displayed \(\ell_1\) minimization.
+Conjecture~\ref{conj:rank-phase} should reduce to showing that, on each locally regular active-face cell, the support-ordering problem is equivalent to comparing the primitive matrices \(J_{A,F}\) and \(J_{\mathrm{agg},F}\) on the covariance-whitened target line; after that reduction, the sharp/conservative/anti-conservative regimes follow from the sign of \(\Delta_F\).
+The singular-value language should be checked first in the quadratic \(\ell_2\) analogue, where the support function is a generalized inverse formula for the pair \((q_A,q_{\mathrm{agg}})\); the remaining work is to prove that each \(\ell_\infty\) Honest-DiD active face inherits the same target-line singular value locally and that the stacked-map prototype in Example~\ref{ex:stacked-prototype} persists under open perturbations of weights and trimming rules.
+Conjecture~\ref{conj:rank-loss} then splits into an exact zero-budget branch, where \(r_n\ne0\) gives \(h_{\mathrm{coh},n}=+\infty\) immediately, and a finite-support near-kernel branch, where a restricted singular value of \(L_n|\ker(A_{\mathrm{pre},n})\) tends to zero; both branches can be checked first on a two-cohort, three-event design before proving generic persistence.
+
+\section{Honest scope flags}
+The LP-dual threshold formula is routine but still needs a clean finite-dimensional proof in the Stage 0 derivation.
+The flagship rank-phase and discontinuity statements are Conjectures, not proved theorems; the primitive active-face certificate involving \(R_{A,F}\), \(J_{A,F}\), \(J_{\mathrm{agg},F}\), \(\Delta_F\), and \(K_{\Sigma,A,\mathrm{agg},F}\) is especially provisional outside the quadratic proxy.
+The proposal deliberately does not claim that published aggregate Honest-DiD intervals are invalid; it claims that their interpretation as sharp cohort-level breakdown frontiers requires an additional quotient-rank condition.
+Version 1 of this pivot angle received a REVISE verdict; this version addresses the Liu comparison, the \(L_{\mathrm{agg}}\)-dependent diagnostic, the rank-loss subspace type, the Conjecture~2 consumer, and the aggregate zero-budget corner.
+Version 2 received a REVISE verdict; version 3 strengthens Conjecture~1 from a ratio diagnostic to a generic open-set active-face certificate, adds \citet{callaway2023nonparallel}, and restates Conjecture~2 using the projection of \(A_{\mathrm{post}}^\transpose\ell\) onto \(\ker(A_{\mathrm{pre}})\cap\ker(L)\).
+Version 3 received a REVISE verdict; version 4 defines the active-face inequalities, the basis-invariant singular-value gap \(\Delta_F\), the extended-real zero-budget branch for Conjecture~2, and a nondegenerate stacked-map prototype.
+Version 4 received a REVISE verdict; version 5 replaces the support-ratio definition of \(\Delta_F\) with a primitive active-face matrix gap, adds \citet{wright2026designrobust}, and makes the Conjecture~1 flagship gap ex ante rather than face-local-after-solving.
+The two exhausted angles from the orchestrator concerned the scalar breakdown threshold and active-face thresholding, not the aggregation quotient.
+
+\section{Iteration trail}
+\begin{itemize}
+\item v1 (pivot) --- initial aggregation-rank proposal after prior scalar-threshold and active-face seeds were exhausted; prior verdict: none.
+\item v2 (revise) --- added Liu (2025) comparison, repaired the aggregate-seminorm diagnostic to include \(L_{\mathrm{agg}}\), fixed the rank-loss subspace type, named Liu's workflow as the Conjecture~2 consumer, and strengthened the parallel-trends corner with aggregate zero-budget compatibility; prior verdict: REVISE.
+\item v3 (revise) --- upgraded Conjecture~1 to a generic open-set active-face certificate, added Callaway--Tsyawo (2023) as the non-parallel-trends comparator, and corrected Conjecture~2's target-relevant zero-budget condition to a projection/nonzero-action statement with explicit sequence quantifiers; prior verdict: REVISE.
+\item v4 (revise) --- made \(\chi_F\) basis-invariant via normalized active-face inequalities and \(\Delta_F\), split Conjecture~2 into extended-real zero-budget and finite-support near-kernel branches, and added a nondegenerate stacked-map prototype; prior verdict: REVISE.
+\item v5 (revise) --- replaced the ex post support-ratio diagnostic with primitive active-face matrices \(R_{A,F},J_{A,F},J_{\mathrm{agg},F}\), added Wright (2026) to the frontier comparison, and sharpened Conjecture~1's epsilon-gap to an ex ante quotient certificate; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Andrews, Roth, and Pakes(2023)]{andrews2023conditional}
+Andrews, I., J. Roth, and A. Pakes (2023).
+\newblock Inference for linear conditional moment inequalities.
+\newblock \emph{Review of Economic Studies}. DOI: \url{https://doi.org/10.1093/restud/rdad004}.
+
+\bibitem[Borusyak, Jaravel, and Spiess(2024)]{borusyak2024eventstudy}
+Borusyak, K., X. Jaravel, and J. Spiess (2024).
+\newblock Revisiting event-study designs: Robust and efficient estimation.
+\newblock \emph{Review of Economic Studies} 91(6), 3253--3285. DOI: \url{https://doi.org/10.1093/restud/rdae007}.
+
+\bibitem[Callaway and Sant'Anna(2021)]{callaway2021multiple}
+Callaway, B. and P. H. C. Sant'Anna (2021).
+\newblock Difference-in-differences with multiple time periods.
+\newblock \emph{Journal of Econometrics} 225(2), 200--230. DOI: \url{https://doi.org/10.1016/j.jeconom.2020.12.001}.
+
+\bibitem[Callaway and Tsyawo(2023)]{callaway2023nonparallel}
+Callaway, B. and E. S. Tsyawo (2023).
+\newblock Treatment effects in staggered adoption designs with non-parallel trends.
+\newblock \emph{arXiv preprint} arXiv:2308.02899. DOI: \url{https://doi.org/10.48550/arXiv.2308.02899}.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{dechaisemartin2020twfe}
+de Chaisemartin, C. and X. D'Haultfoeuille (2020).
+\newblock Two-way fixed effects estimators with heterogeneous treatment effects.
+\newblock \emph{American Economic Review} 110(9), 2964--2996. DOI: \url{https://doi.org/10.1257/aer.20181169}.
+
+\bibitem[Goodman-Bacon(2021)]{goodmanbacon2021timing}
+Goodman-Bacon, A. (2021).
+\newblock Difference-in-differences with variation in treatment timing.
+\newblock \emph{Journal of Econometrics} 225(2), 254--277. DOI: \url{https://doi.org/10.1016/j.jeconom.2021.03.014}.
+
+\bibitem[Liu(2025)]{liu2025cohortanchored}
+Liu, Z. (2025).
+\newblock Cohort-anchored robust inference for event-study with staggered adoption.
+\newblock \emph{arXiv preprint} arXiv:2509.01829. DOI: \url{https://doi.org/10.48550/arXiv.2509.01829}.
+
+\bibitem[Masten and Poirier(2020)]{masten2020breakdown}
+Masten, M. A. and A. Poirier (2020).
+\newblock Inference on breakdown frontiers.
+\newblock \emph{Quantitative Economics} 11(1), 41--111. DOI: \url{https://doi.org/10.3982/QE1288}.
+
+\bibitem[Rambachan and Roth(2023)]{rambachan2023parallel}
+Rambachan, A. and J. Roth (2023).
+\newblock A more credible approach to parallel trends.
+\newblock \emph{Review of Economic Studies} 90(5), 2555--2591. DOI: \url{https://doi.org/10.1093/restud/rdad018}.
+
+\bibitem[Roth and Sant'Anna(2023)]{rothsantanna2023efficient}
+Roth, J. and P. H. C. Sant'Anna (2023).
+\newblock Efficient estimation for staggered rollout designs.
+\newblock \emph{Journal of Political Economy Microeconomics} 1(4), 669--709. DOI: \url{https://doi.org/10.1086/726581}.
+
+\bibitem[Sun and Abraham(2021)]{sunabraham2021eventstudy}
+Sun, L. and S. Abraham (2021).
+\newblock Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\newblock \emph{Journal of Econometrics} 225(2), 175--199. DOI: \url{https://doi.org/10.1016/j.jeconom.2020.09.006}.
+
+\bibitem[Wing, Freedman, and Hollingsworth(2024)]{wing2024stacked}
+Wing, C., S. M. Freedman, and A. Hollingsworth (2024).
+\newblock Stacked difference-in-differences.
+\newblock \emph{NBER Working Paper} 32054. DOI: \url{https://doi.org/10.3386/w32054}.
+
+\bibitem[Wright(2026)]{wright2026designrobust}
+Wright, C. S. (2026).
+\newblock Design-robust event-study estimation under staggered adoption diagnostics, sensitivity, and orthogonalisation.
+\newblock \emph{arXiv preprint} arXiv:2601.18801. URL: \url{https://arxiv.org/abs/2601.18801}.
+\end{thebibliography}
+
+\end{document}

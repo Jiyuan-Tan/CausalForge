@@ -1,0 +1,799 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_proximal\_phase, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{eid\_proximal\_phase} / \texttt{v1}%
+  \\ \large\textit{Functional-null proximal phase transition for weak negative-control completeness}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a partial-identification proposal with locked tuple
+\[
+(\texttt{qid},\texttt{specialization}, P, \theta, \text{identifying restrictions}, \text{bounding functional}).
+\]
+Here \(\texttt{qid}=\texttt{eid\_proximal\_phase}\) and
+\(\texttt{specialization}=\texttt{v1}\).  The observable distribution \(P\) is
+the joint law of \(O=(Y,A,W,Z,X)\), where \(A\in\{0,1\}\), \(Y\in[0,1]\), and
+\((W,Z,X)\) have finite supports.  The target parameter is
+\(\theta=\E\{Y(1)-Y(0)\}\).  The identifying restrictions are consistency,
+positivity for both treatment arms, the negative-control exclusion and latent
+exchangeability restrictions that justify the proximal outcome-bridge moment,
+bounded potential outcomes in \([0,1]\), and the finite bridge-envelope
+realizability restriction stated in Assumption~\ref{ass:finite-realization}.
+The bounding functional is the sharp support interval
+\[
+\Theta_I(P)=
+\left[
+\inf_{h\in\calH(P)} L_P(h),\,
+\sup_{h\in\calH(P)} L_P(h)
+\right],
+\quad
+L_P(h)=\E_P\{h(W,1,X)-h(W,0,X)\},
+\]
+where \(\calH(P)=\{h\in[0,1]^{\mathcal W\times\{0,1\}\times\mathcal X}:T_Ph=m_P\}\),
+\((T_Ph)(z,a,x)=\E_P\{h(W,a,x)\mid Z=z,A=a,X=x\}\), and
+\(m_P(z,a,x)=\E_P(Y\mid Z=z,A=a,X=x)\).
+
+\begin{abstract}
+Proximal causal inference identifies average treatment effects by solving an
+outcome-bridge equation, but the standard completeness condition can fail in
+empirically plausible negative-control designs.  This proposal asks for the
+sharp finite-state ATE identified set when the bridge operator has weak or
+rank-deficient proxy information.  The proposed kernel has two non-routine
+pieces: a generic finite response-type realization theorem for the observable
+bridge envelope, and a sharp residual-tolerance modulus describing how fast
+the identified set inflates as bridge moments are allowed to fail.  Conditional
+on realization, point identification holds when the ATE loading annihilates
+every attainable bridge-null direction, a nontrivial interval appears when
+some bounded null direction changes the loading, and the interval becomes
+Manski-trivial only when the two observable endpoint LP certificate problems
+are feasible.  The flagship conjecture therefore replaces a scalar ``smallest
+singular value'' story by a computable support-function threshold that can
+distinguish weak bridge identification from weak causal-effect
+identification.  If resolved, the result would turn proximal completeness
+failure into a reportable finite LP diagnostic rather than an all-or-nothing
+modeling assumption.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Negative controls have made unmeasured-confounding adjustment possible in
+settings where ordinary covariate adjustment is scientifically implausible.
+The price is an inverse problem: the researcher must believe that the outcome
+bridge equation has enough proxy variation to identify the causal contrast.
+Completeness is a mathematical condition rather than an empirical diagnostic,
+so applied proximal analyses need a sharp answer to what remains identified
+when the bridge function is weakly identified, nonunique, or not identified at
+all.
+
+\paragraph{The main finding (proposed).}
+The headline claims are Conjectures~\ref{conj:realization}
+and~\ref{conj:residual-modulus}.  The first asserts that, on a generic
+finite negative-control class, every rational point of the observable bridge
+envelope is realized by a finite latent response-type model with an explicit
+support-size bound.  The second asserts that the proximal ATE has a
+first-order residual-tolerance phase modulus: after the sharp exact-moment
+interval is known, the rate at which it expands under
+\(\|T_Ph-m_P\|_2\le\varepsilon\) is the value of a finite tangent-cone support
+problem, bounded by the active singular-value scale and attained on an open
+class of proxy laws.
+
+\paragraph{What is new.}
+The closest point-identification papers, \citet{MiaoGengTchetgen2018Biometrika}
+and \citet{CuiPuShiMiaoTchetgen2024JASA}, assume bridge/completeness
+conditions under which the proximal formula returns a single ATE.  The closest
+partial-identification paper, \citet{GhassamiShpitserTchetgen2023ProxyPI},
+drops completeness and derives proxy bounds, but it does not prove that a
+finite bridge-null envelope is generically realized by actual
+negative-control causal models with a support-size certificate.  The closest
+functional-identification papers,
+\citet{ZhangLiMiaoTchetgen2023SPL},
+\citet{BennettKallusMaoNeweySyrgkanisUehara2023COLT}, and
+\citet{Santos2011JoE}, explain when a linear functional is identified despite
+nonunique nuisances; they do not characterize the sharp interval or its
+residual-tolerance modulus once that condition fails.  The novel epsilon gap
+is the combination of finite bridge-envelope realization and a tangent-cone
+phase constant, not the deterministic observation that a compact interval has
+zero, intermediate, or full width.
+
+\paragraph{How it positions in the literature.}
+The proposal sits at the intersection of exact proximal identification and
+partial identification.  It treats the bridge equation as the exact-ID
+object, but its main result is an identified-set theorem in the
+Manski/Balke--Pearl spirit: the causal parameter is the image of an observable
+feasible set under a linear functional.  The finite-state restriction is
+deliberate; it creates an observable matrix operator \(T_P\), singular
+subspaces, and LP support functions that can be checked directly.
+
+\paragraph{Implications for the community.}
+The concrete consumer is the proximal semiparametric workflow of
+\citet{CuiPuShiMiaoTchetgen2024JASA}: when completeness is doubtful, an
+analysis could report the null-loading phase and the sharp interval
+\(\Theta_I(P)\) before applying OR, IPW, or doubly robust estimators.  If the
+realization and residual-modulus conjectures resolve favorably, empirical PCI
+papers can replace an untestable ``assume completeness'' sentence by a finite
+proxy-strength diagnostic, a sharp fallback bound, and a first-order
+fragility calculation.
+
+\paragraph{How research benefits from the conclusion.}
+A researcher should check whether the ATE loading annihilates the estimated
+bridge-null directions, report the resulting sharp interval whenever it does
+not, and use \(\Gamma_P\) as the sensitivity scale for small bridge-moment
+misspecification.
+
+\section{Related work}
+\citet{MiaoGengTchetgen2018Biometrika} is the foundational two-proxy point
+identification paper: it establishes nonparametric causal-effect
+identification under rank/completeness-type proxy conditions, leaving
+rank-deficient failure regimes outside the theorem.  \citet{CuiPuShiMiaoTchetgen2024JASA}
+develop semiparametric proximal OR/IPW/DR identification and efficiency under
+bridge assumptions; this proposal asks what sharp identified set the same
+observable law supports when those bridge assumptions are not strong enough
+for point identification.  \citet{TchetgenYingCuiShiMiao2024StatSci} gives
+the current statistical overview of proximal causal inference and motivates
+proxy bridge assumptions as a replacement for measured exchangeability.
+\citet{GhassamiShpitserTchetgen2023ProxyPI} is the closest partial-ID anchor:
+it obtains proxy-based causal-effect bounds without completeness, but does
+not supply a finite singular-subspace phase transition for the ATE loading.
+\citet{Manski1990AER} is the canonical partial-identification reference for
+bounded-outcome treatment-effect intervals; it motivates using the full
+\([-1,1]\) ATE range as the fallback rather than forcing point identification.
+\citet{BalkePearl1997JASA} gives sharp finite response-type LP bounds for
+binary instrumental-variable models; Conjecture~\ref{conj:realization} is
+intended as a proximal analogue only after proving a new negative-control
+response-type realization step, not as a routine restatement of their IV LP.
+\citet{ZhangLiMiaoTchetgen2023SPL} shows that proximal bridges may be
+nonunique while counterfactual means can still be identified, directly
+motivating the null-annihilation criterion in
+Theorem~\ref{thm:phase-classification}.
+\citet{BennettKallusMaoNeweySyrgkanisUehara2023COLT} studies strongly
+identified linear functionals of weakly identified nuisance functions,
+including proximal examples; this proposal treats their strong-identification
+principle as prior art and asks for the finite sharp identified set when the
+functional is not strongly identified.  \citet{Santos2011JoE}
+separates recovery of linear functionals from full NPIV structural-function
+identification, providing the adjoint-range analogy for \(L_P\in\operatorname{range}(T_P^*)\).
+\citet{CanaySantosShaikh2013Econometrica} shows that completeness and related
+identification hypotheses can be non-testable in nonparametric endogenous
+models, which is why the present proposal locks finite supports and observable
+matrices rather than claiming a universal diagnostic.  \citet{Andrews2017JoECompleteness}
+provides econometric examples of \(L^2\)-complete and boundedly-complete
+distributions, but not sharp rank-deficient causal-effect intervals.
+\citet{DarollesFanFlorensRenault2011Econometrica} is the inverse-problem
+estimation anchor: it treats NPIV as an ill-posed integral equation, whereas
+the current proposal isolates the identification set before regularization.
+\citet{Fiacco1983Sensitivity} and \citet{BonnansShapiro2000Perturbation}
+are the standard optimization references for value-function and active-set
+sensitivity; Conjecture~\ref{conj:residual-modulus} uses that calculus only
+after adding the proximal-specific facts that the perturbed LP is generated
+by the observable bridge operator and that its support-function derivative is
+sharp for an actual negative-control causal model.
+
+\begin{center}
+\begin{tabular}{p{0.24\linewidth}p{0.32\linewidth}p{0.34\linewidth}}
+\textbf{Thread} & \textbf{What is already settled} & \textbf{Gap used here}\\
+Miao--Geng--Tchetgen and Cui--Pu--Shi--Miao--Tchetgen &
+Proximal ATE point identification and efficient estimation under bridge
+conditions &
+No sharp finite fallback set when the bridge operator is rank deficient.\\
+Ghassami--Shpitser--Tchetgen &
+Proxy-based partial identification without completeness &
+No generic response-type realization theorem for the finite bridge envelope.\\
+Zhang--Li--Miao--Tchetgen, Bennett et al., Santos &
+Functional identification can survive nonunique nuisance functions &
+No sharp residual-tolerance modulus after functional identification fails.\\
+Balke--Pearl &
+Finite IV response-type LP sharpness &
+No negative-control bridge-array realization preserving proxy exclusions.
+\\
+Fiacco and Bonnans--Shapiro &
+Parametric optimization value sensitivity under active-set regularity &
+No causal sharpness or weak-proxy singular-value lower-bound class.
+\end{tabular}
+\end{center}
+
+In the ThmSmith catalogue, \texttt{pid\_mediation\_proxy} is the closest
+failed proxy partial-ID artifact: its reviewer record warns that a full
+bridge-null interval can collapse to a projection identity if finite
+realization is not proved.  The downgraded \texttt{eid\_frontdoor\_multi\_mediator}
+proposal supplies a related bridge-envelope/nonrectangular LP geometry and
+the same realization obstruction.  The \texttt{q1\_spectral\_phase\_transition}
+proposal is an in-repository singular-value analogue in panel/FWL algebra,
+but it does not concern proximal bridges or causal-effect identified sets.
+The project API describes the PartialID family as the repository home for
+Manski and Balke--Pearl style bounds; this proposal belongs there
+mathematically even though its qid prefix is \texttt{eid}.
+
+\section{Formal setup}
+All variables are finite except the bounded outcome \(Y\in[0,1]\).  The
+observed law \(P\) is over \(O=(Y,A,W,Z,X)\), with binary treatment \(A\),
+outcome-confounding proxy \(W\), treatment-confounding proxy \(Z\), and
+covariates \(X\).  A latent proximal model augments \(P\) with an unobserved
+confounder \(U\), potential outcomes \(Y(0),Y(1)\), consistency
+\(Y=Y(A)\), latent exchangeability \(Y(a)\perp A\mid U,X\), negative-control
+exclusions for \(W\) and \(Z\), and overlap \(0<P(A=a\mid X)<1\).  The
+target is \(\theta=\E\{Y(1)-Y(0)\}\).
+
+For a candidate bridge \(h:\mathcal W\times\{0,1\}\times\mathcal X\to[0,1]\),
+define the observable bridge operator and right-hand side by
+\[
+(T_Ph)(z,a,x)=\sum_w h(w,a,x)P(W=w\mid Z=z,A=a,X=x),\qquad
+m_P(z,a,x)=\E_P(Y\mid Z=z,A=a,X=x).
+\]
+The observable bridge fiber is
+\[
+\calH(P)=\{h\in[0,1]^{\mathcal W\times\{0,1\}\times\mathcal X}:T_Ph=m_P\}.
+\]
+The ATE loading is the linear functional
+\[
+L_P(h)=\sum_{x,w}\{h(w,1,x)-h(w,0,x)\}P(W=w\mid X=x)P(X=x).
+\]
+Let \(N_P=\{r:T_Pr=0\}\) be the bridge-null space, let
+\(\calR_P(h)=\{r\in N_P:h+r\in[0,1]^{\mathcal W\times\{0,1\}\times\mathcal X}\}\)
+be the attainable null directions at \(h\).  Define the sharp LP endpoints and width
+\[
+\underline\theta_P=\min_{h\in\calH(P)}L_P(h),\qquad
+\overline\theta_P=\max_{h\in\calH(P)}L_P(h),\qquad
+\Delta_P=\overline\theta_P-\underline\theta_P.
+\]
+Equivalently, \(\Delta_P\) is the two-sided support-function width of
+\(\calH(P)\) in the direction \(L_P\), so \(0\le\Delta_P\le2\) because
+\(Y(a)\in[0,1]\).  For \(s\in\{-1,1\}\), let
+\[
+\mathsf{Cert}_s(P)=
+\left\{h\in[0,1]^{\mathcal W\times\{0,1\}\times\mathcal X}:
+T_Ph=m_P,\ L_P(h)=s\right\}
+\]
+be the observable endpoint LP certificate set.  The smallest positive singular value of \(T_P\) on the orthogonal
+complement of \(N_P\) is denoted by \(\sigma_+(P)\); if no positive singular
+value exists, \(\sigma_+(P)=0\).  For \(\varepsilon\ge0\), the
+residual-tolerance fiber is
+\[
+\calH_\varepsilon(P)=\{h\in[0,1]^{\mathcal W\times\{0,1\}\times\mathcal X}:
+\|T_Ph-m_P\|_2\le\varepsilon\}.
+\]
+Define the perturbed endpoints and width by
+\[
+\underline\theta_{P,\varepsilon}=\min_{h\in\calH_\varepsilon(P)}L_P(h),
+\quad
+\overline\theta_{P,\varepsilon}=\max_{h\in\calH_\varepsilon(P)}L_P(h),
+\quad
+\Delta_{P,\varepsilon}=\overline\theta_{P,\varepsilon}
+-\underline\theta_{P,\varepsilon}.
+\]
+Let \(\ell_P\) be the vector representing \(L_P\) under the Euclidean inner
+product on bridge arrays.  The estimand-active row space is the span of the
+right singular directions \(v\) of \(T_P\) with positive singular value and
+\(\langle \ell_P,v\rangle\neq0\).  Let \(\sigma_{\mathrm{act}}(P)\) be the
+minimum positive singular value among these active directions; if there are no
+active directions, set \(\sigma_{\mathrm{act}}(P)=+\infty\), so
+\(\varepsilon/\sigma_{\mathrm{act}}(P)=0\).  Let
+\(\Pi_{\mathrm{act},P}\ell_P\) be the projection of \(\ell_P\) onto this
+active row space and define \(C_P=2\|\Pi_{\mathrm{act},P}\ell_P\|_2\).  The
+residual-tolerance width inflation is
+\[
+I_P(\varepsilon)=\Delta_{P,\varepsilon}-\Delta_P.
+\]
+Let \(\calH_P^+\) and \(\calH_P^-\) denote the upper and lower endpoint
+optimizer sets for \(L_P\) over \(\calH(P)\).  When these optimizers are
+unique, write them as \(h_P^+\) and \(h_P^-\).  For any bridge array \(h\),
+let \(\mathcal T_{\Box}(h)\) be the tangent cone of the box
+\([0,1]^{\mathcal W\times\{0,1\}\times\mathcal X}\) at \(h\).  The candidate
+first-order residual modulus is
+\[
+\Gamma_P=
+\sup_{\substack{d\in\mathcal T_{\Box}(h_P^+)\\ \|T_Pd\|_2\le1}}L_P(d)
+-
+\inf_{\substack{d\in\mathcal T_{\Box}(h_P^-)\\ \|T_Pd\|_2\le1}}L_P(d),
+\]
+whenever \(h_P^+\) and \(h_P^-\) are unique.  This is a finite conic LP
+quantity; under strict complementarity it is the directional derivative
+candidate for \(\Delta_{P,\varepsilon}\) at \(\varepsilon=0\).
+No perturbation claim below divides by \(\sigma_+(P)\) when
+\(\sigma_+(P)=0\).
+The finite realization support-size bound used in
+Conjecture~\ref{conj:realization} is
+\[
+B_P
+=1+
+|\mathcal A||\mathcal W||\mathcal Z||\mathcal X|
++2|\mathcal W||\mathcal A||\mathcal X|
++|\mathcal Z||\mathcal A||\mathcal X|.
+\]
+The identified set is the set of all ATE values compatible with \(P\) and the
+restrictions in Section 7, denoted \(\Theta_I(P)\).
+
+To make the genericity language in Conjecture~\ref{conj:realization}
+concrete, identify \(T_P\) with its finite matrix and \(m_P\) with its vector.
+Let
+\[
+\mathcal M(T_P)=\{T_Ph:0\le h\le1\}
+\]
+be the observable bridge-moment polytope, and let \(F_P\) be the minimal face
+of \(\mathcal M(T_P)\) containing \(m_P\).  The phrase ``\(P\) belongs to the
+relative interior of the observable bridge-feasibility stratum'' means the
+following three observable quantities are held fixed in a local cell:
+\begin{enumerate}[label=(\alph*)]
+\item the zero pattern of \(P(W=w,Z=z,A=a,X=x)\), so all conditioning rows used
+in \(T_P\) remain either positive or structurally absent;
+\item \(\operatorname{rank}(T_P)\) and the ranks of the submatrices of \(T_P\)
+whose columns define the face \(F_P\); and
+\item the face itself, with \(m_P\in\operatorname{relint}(F_P)\).
+\end{enumerate}
+Thus the local stratum is a relative-interior cell of the finite observable
+simplex crossed with a fixed-rank matrix cell; the polyhedral object is the
+face \(F_P\subseteq\mathcal M(T_P)\), and the rank data state exactly which
+singular directions and zero cells are not allowed to change during the
+generic realization claim.
+
+\begin{verbatim}
+qid = eid_proximal_phase
+specialization = v1
+observable distribution P = law of (Y,A,W,Z,X), with finite W,Z,X,A and Y in [0,1]
+parameter theta = E[Y(1)-Y(0)]
+identifying restrictions = consistency, positivity, latent proximal exchangeability,
+  negative-control exclusions, bounded potential outcomes, and finite bridge-envelope
+  realizability
+bounding functional = sharp support interval of L_P(h) over h in H(P), where
+  H(P) = {h in [0,1]^(W x {0,1} x X) : T_P h = m_P}
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite observable support and bounded outcomes]\label{ass:finite-bounded}
+The supports of \(W,Z,X,A\) are finite, \(A\in\{0,1\}\), and \(Y\in[0,1]\)
+almost surely.
+\end{assumption}
+
+\begin{assumption}[Treatment positivity]\label{ass:positivity}
+For each \(x\) with \(P(X=x)>0\), \(0<P(A=a\mid X=x)<1\) for \(a=0,1\).
+All conditional probabilities used in \(T_P\) are evaluated only on cells with
+positive \(P(Z=z,A=a,X=x)\).
+\end{assumption}
+
+\begin{assumption}[Proximal negative-control validity]\label{ass:proximal-valid}
+There exists a latent variable \(U\) such that consistency holds,
+\(Y=Y(A)\), \(Y(a)\perp A\mid U,X\), \(Z\) has no direct effect on \(Y\)
+given \(A,U,X\), and \(W\) is not affected by \(A\) or \(Z\) except through
+\((U,X)\).  These restrictions are the finite negative-control restrictions
+that justify the outcome-bridge moment when an outcome bridge is present.
+\end{assumption}
+
+\begin{assumption}[Nonempty bounded bridge fiber]\label{ass:bridge-nonempty}
+The observable bridge fiber \(\calH(P)\) is nonempty.
+\end{assumption}
+
+\begin{assumption}[Finite bridge-envelope realization]\label{ass:finite-realization}
+Every \(h\in\calH(P)\) that satisfies the boundedness restriction is
+attainable by at least one finite latent proximal model obeying
+Assumptions~\ref{ass:finite-bounded}--\ref{ass:proximal-valid} and inducing
+the observed law \(P\); conversely, every compatible latent proximal model
+induces an element of \(\calH(P)\) whose ATE is \(L_P(h)\).
+\end{assumption}
+
+\begin{assumption}[Endpoint attainability]\label{ass:endpoint-attain}
+The extrema of \(L_P(h)\) over \(\calH(P)\) are attained.  Under
+Assumption~\ref{ass:finite-bounded}, this holds because \(\calH(P)\) is a
+closed bounded polytope.
+\end{assumption}
+
+\begin{assumption}[Endpoint LP certificates]\label{ass:endpoint-certificates}
+The phrase ``Manski-trivial'' means \(\Theta_I(P)=[-1,1]\), the full ATE
+range implied only by \(Y(a)\in[0,1]\).  The endpoint certificates are the two
+finite feasibility problems
+\[
+\mathsf{Cert}_{-1}(P)\neq\emptyset,\qquad
+\mathsf{Cert}_{1}(P)\neq\emptyset,
+\]
+where \(\mathsf{Cert}_s(P)\) is defined in Section~6 by the observable
+constraints \(T_Ph=m_P\), \(0\le h\le1\), and \(L_P(h)=s\).  This condition is
+independent of the label ``Manski-trivial'': it can be checked by two linear
+program feasibility calls before invoking any causal sharpness conclusion.
+\end{assumption}
+
+\begin{assumption}[Observable support-rank genericity]\label{ass:generic-stratum}
+The observed law \(P\) lies in the relative interior of the observable
+bridge-feasibility stratum defined in Section~6: the zero pattern of
+\(P(W,Z,A,X)\), the rank of \(T_P\), the ranks of the submatrices defining
+the bridge-moment face \(F_P\), and the condition
+\(m_P\in\operatorname{relint}(F_P)\) are all fixed in the local cell.
+\end{assumption}
+
+\begin{assumption}[Generic endpoint regularity]\label{ass:generic-endpoint}
+The endpoint LPs defining \(\underline\theta_P\) and \(\overline\theta_P\)
+have unique optimizers \(h_P^-\) and \(h_P^+\), and the active box constraints
+at those optimizers satisfy strict complementarity for the finite LP pair.
+This is the generic finite-dimensional regularity condition used only for
+the first-order residual-tolerance statement.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: bridge-envelope support interval]\label{thm:support-interval}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:endpoint-attain},
+\[
+\Theta_I(P)=
+\left[
+\min_{h\in\calH(P)} L_P(h),\,
+\max_{h\in\calH(P)} L_P(h)
+\right].
+\]
+Equivalently, for any \(h_0\in\calH(P)\),
+\[
+\Theta_I(P)=L_P(h_0)+
+\left[
+\min_{r\in N_P:\,h_0+r\in[0,1]}L_P(r),\,
+\max_{r\in N_P:\,h_0+r\in[0,1]}L_P(r)
+\right].
+\]
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) The algebraic support interval is routine once
+Assumption~\ref{ass:finite-realization} is granted; the closest published
+comparison is \citet{GhassamiShpitserTchetgen2023ProxyPI}, which gives proxy
+bounds without packaging the finite bridge fiber as this null-space support
+functional.  The epsilon gap is not the LP itself but the bridge-envelope
+realization needed to make it sharp for causal models.  (b) The concrete
+consumer is the proximal DR estimator setup in \citet{CuiPuShiMiaoTchetgen2024JASA}:
+Theorem~\ref{thm:support-interval} supplies the finite fallback interval to
+report when its point-identifying bridge conditions are not defensible.
+
+\begin{conjecture}[Conjecture 1: generic finite proximal realization theorem (NOT YET PROVED)]\label{conj:realization}
+For every rational finite observed law \(P\) satisfying
+Assumptions~\ref{ass:finite-bounded}--\ref{ass:bridge-nonempty} and
+Assumption~\ref{ass:generic-stratum}, every rational \(h\in\calH(P)\) is
+realized by a finite latent proximal model
+obeying Assumptions~\ref{ass:finite-bounded}--\ref{ass:proximal-valid} and
+inducing the same observed law \(P\).  Moreover the latent support can be
+chosen with at most
+\[
+B_P
+=1+
+|\mathcal A||\mathcal W||\mathcal Z||\mathcal X|
++2|\mathcal W||\mathcal A||\mathcal X|
++|\mathcal Z||\mathcal A||\mathcal X|
+\]
+response types, where the two potential-outcome coordinates are real values
+in \([0,1]\) rather than finite outcome categories.  The construction is
+locally stable: there is a nonempty
+open neighborhood of such \(P\)'s inside the finite observable simplex on
+which the same support bound realizes all rational bridge-envelope points.
+Consequently the interval in Theorem~\ref{thm:support-interval} is the sharp
+proximal ATE identified set on this generic class, not merely an outer
+relaxation.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest project prior is the failed \texttt{pid\_mediation\_proxy}
+angle, whose reviewer rejected a full-fiber sharpness claim because no finite
+model realized each bridge-null array.  The closest published anchor,
+\citet{MiaoGengTchetgen2018Biometrika}, uses rank/completeness for point
+identification and does not construct rank-deficient response-type models
+realizing every bounded bridge solution.  The epsilon gap is the missing
+Balke--Pearl-style finite realization theorem for proximal bridge fibers:
+\citet{BalkePearl1997JASA} supplies sharp finite IV response-type LP bounds,
+but its response table is tied to instrument/treatment monotone types rather
+than negative-control bridge arrays constrained by \(T_Ph=m_P\).
+(b) Resolving it would unblock \citet{GhassamiShpitserTchetgen2023ProxyPI}
+style proxy bounds in finite negative-control designs by certifying when the
+computed LP is sharp rather than conservative.
+
+\begin{theorem}[Theorem 2: conditional finite LP-width phase classification]\label{thm:phase-classification}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:endpoint-certificates}, the
+following three regimes are sharp and exhaustive.
+\begin{enumerate}[label=(\roman*)]
+\item Point regime: \(\Theta_I(P)\) is a singleton if and only if
+\(\Delta_P=0\), equivalently \(L_P(r)=0\) for every feasible difference
+\(r=h'-h\) with \(h,h'\in\calH(P)\).
+\item Nontrivial interval regime: \(\Theta_I(P)\) is a strict subset of
+\([-1,1]\) with positive width if and only if \(0<\Delta_P<2\).  Its width is
+the computable LP support-function width
+\[
+\max_{h\in\calH(P)}L_P(h)-\min_{h\in\calH(P)}L_P(h).
+\]
+\item Manski-trivial regime: \(\Theta_I(P)=[-1,1]\) if and only if
+\(\mathsf{Cert}_{-1}(P)\neq\emptyset\) and
+\(\mathsf{Cert}_{1}(P)\neq\emptyset\), equivalently
+\(\underline\theta_P=-1\), \(\overline\theta_P=1\), and
+\(\Delta_P=2\).  This can occur when \(\sigma_+(P)=0\), but
+\(\sigma_+(P)=0\) alone is not sufficient because the ATE loading and the box
+constraints may still exclude one or both endpoints.
+\end{enumerate}
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This theorem is intentionally conditional: after
+Assumption~\ref{ass:finite-realization}, the trichotomy is the exact finite
+LP classification needed to state the non-tautological conjectures cleanly.
+The closest published comparison is
+\citet{GhassamiShpitserTchetgen2023ProxyPI}, which supplies proxy bounds but
+not the endpoint certificate formulation separating point, interval, and
+Manski-trivial phases.  (b) The concrete consumer is the proximal OR/IPW/DR
+workflow of \citet{CuiPuShiMiaoTchetgen2024JASA}; analysts using that
+workflow could report whether bridge nonuniqueness is harmless for the ATE,
+forces a nontrivial interval, or leaves only the full Manski range.
+
+\begin{conjecture}[Conjecture 2: sharp residual-tolerance phase modulus (NOT YET PROVED)]\label{conj:residual-modulus}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:generic-endpoint}, and
+on the generic realization class of Conjecture~\ref{conj:realization}, the
+residual-tolerance width has the one-sided expansion
+\[
+\Delta_{P,\varepsilon}
+=\Delta_P+\varepsilon\Gamma_P+o(\varepsilon)
+\qquad\text{as }\varepsilon\downarrow0.
+\]
+The constant \(\Gamma_P\) is the finite tangent-cone support value defined in
+Section~6 and satisfies
+\[
+0\le\Gamma_P\le C_P/\sigma_{\mathrm{act}}(P)
+\]
+with the convention that the right side is \(0\) when
+\(\sigma_{\mathrm{act}}(P)=+\infty\).  The bound is sharp on an open class of
+finite proxy laws with a one-dimensional active singular direction: for those
+laws \(\Gamma_P=C_P/\sigma_{\mathrm{act}}(P)\), so the
+\(1/\sigma_{\mathrm{act}}\) inflation is an identification phenomenon rather
+than an artifact of regularized bridge estimation.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{ZhangLiMiaoTchetgen2023SPL} and
+\citet{BennettKallusMaoNeweySyrgkanisUehara2023COLT} show that functionals
+can be identified when nuisance bridges are not unique, and
+\citet{Santos2011JoE} gives the NPIV adjoint-range analogue.  This proposal
+therefore does not claim the null-annihilation principle as new.  The epsilon
+gap is the first-order \(\Gamma_P\) formula and the matching lower-bound
+class showing when weak proxy singular values genuinely inflate the sharp ATE
+set.  This is not a restatement of the deterministic LP trichotomy in
+Theorem~\ref{thm:phase-classification}, and it is not covered by standard
+LP perturbation theory alone: \citet{Fiacco1983Sensitivity} and
+\citet{BonnansShapiro2000Perturbation} justify directional value derivatives
+under active-set regularity, but they do not prove that the perturbed
+finite program is the sharp causal identified set for a negative-control
+law or that a weak-proxy singular direction yields a matching open-class
+lower bound.  (b) The concrete consumer is the
+proximal OR/IPW/DR workflow of \citet{CuiPuShiMiaoTchetgen2024JASA}; the
+modulus tells analysts when a reported point estimate is fragile to a small
+bridge-moment violation even if the exact-moment interval is narrow.  The
+overview of \citet{TchetgenYingCuiShiMiao2024StatSci} motivates the
+bridge-assumption setting but is not treated here as recommending this
+diagnostic.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Completeness collapse]\label{cor:complete-collapse}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:endpoint-attain}, if
+\(T_P\) is injective on the bridge domain, then \(N_P=\{0\}\),
+\(\Delta_P=0\), and Theorem~\ref{thm:support-interval} collapses to the usual
+proximal point formula
+\[
+\Theta_I(P)=\{L_P(h_0)\},
+\qquad T_Ph_0=m_P.
+\]
+This is the finite-support reduction to the point-identification regime of
+\citet{MiaoGengTchetgen2018Biometrika} and
+\citet{CuiPuShiMiaoTchetgen2024JASA}.
+\end{corollary}
+
+\begin{corollary}[Nonunique harmless bridge]\label{cor:nonunique-harmless}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:endpoint-attain}, if
+\(N_P\neq\{0\}\) but \(L_P(r)=0\) for every attainable \(r\in N_P\), then
+\(\Theta_I(P)\) is still a singleton.  The reduction is clean because the
+second display in Theorem~\ref{thm:support-interval} has zero radius even
+though the bridge fiber contains more than one element.
+\end{corollary}
+
+\begin{example}[Binary-proxy nontrivial interval check]\label{ex:binary-nontrivial}
+Take no \(X\), a constant \(Z\), \(W\in\{0,1\}\), and
+\(P(W=1)=1/2\).  Let
+\(P(W=1\mid A=1)=0.8\), \(P(W=1\mid A=0)=0.2\), and
+\(m_P(Z,A=a)=1/2\) for both treatment arms.  For each arm, the bridge
+constraint leaves a one-dimensional box segment, and direct substitution
+gives
+\[
+\min_{h\in\calH(P)} L_P(h)=-3/8,\qquad
+\max_{h\in\calH(P)} L_P(h)=3/8 .
+\]
+Thus the reduction is neither point identified nor Manski-trivial; it is the
+finite nontrivial interval phase that Theorem~\ref{thm:phase-classification}
+must reproduce.
+\end{example}
+
+\begin{corollary}[Manski endpoint certificate]\label{cor:manski-cert}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:endpoint-certificates},
+if both endpoint LP certificate sets \(\mathsf{Cert}_{-1}(P)\) and
+\(\mathsf{Cert}_{1}(P)\) are nonempty, then
+\(\underline\theta_P=-1\), \(\overline\theta_P=1\), and
+\(\Theta_I(P)=[-1,1]\).  The reduction is a direct endpoint substitution:
+the lower and upper support LPs attain the bounded-outcome extremes, so the
+finite bridge interval coincides with Manski's full ATE range.
+\end{corollary}
+
+\section{Proof-sketch route}
+The proof route is finite-dimensional convex geometry.  First rewrite the
+bridge equation as a matrix system \(T_Ph=m_P\) and express every bridge as
+\(h_0+r\), \(r\in N_P\), with box constraints \(0\le h_0+r\le1\).  Theorem
+1 is then the image of a compact polytope under a linear functional, with
+endpoints obtained by primal LP or by the dual support function.  Conjecture
+1 is the hard step: construct a finite latent response-type distribution
+realizing each rational feasible bridge array, using a Caratheodory or
+Balke--Pearl table argument while preserving the negative-control exclusions.
+Theorem~\ref{thm:phase-classification} then follows by decomposing \(L_P\)
+into components on \(\operatorname{range}(T_P^*)\) and \(N_P\), then checking
+the boundary cases: injective \(T_P\), nontrivial null space with
+\(L_P\)-annihilation, active null directions with interior box slack, and
+endpoint bridge arrays that solve the two endpoint LP certificate problems
+for \(\theta=-1\) and \(\theta=1\).
+Conjecture~\ref{conj:residual-modulus} requires directional sensitivity
+analysis of the two endpoint LPs: identify the tangent cone at the upper and
+lower optimizers, compute the conic support value \(\Gamma_P\), and prove
+that strict complementarity and the fixed support-rank stratum make the
+\(o(\varepsilon)\) remainder uniform on a small observable neighborhood.  The matching lower-bound class should be
+obtained from a two-proxy finite matrix with one active singular direction
+and endpoint optimizers in the relative interior of their active faces.  This
+is not asymptotic distribution theory.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:support-interval} is only routine conditional on
+Assumption~\ref{ass:finite-realization}; it should not be marketed as a
+published novelty by itself.  Conjecture~\ref{conj:realization} is the main
+sharpness risk, because prior ThmSmith proxy proposals failed precisely when
+LP arrays were not shown to correspond to actual causal models.
+Theorem~\ref{thm:phase-classification} is a conditional classification, not
+the flagship novelty by itself.  Conjecture~\ref{conj:residual-modulus} is
+the flagship phase-transition statement and is not yet proved.  The draft
+intentionally withdraws the stronger scalar claim that a
+positive critical value \(\sigma_\star\) alone separates point, interval, and
+Manski regimes; the proposed boundary also depends on the ATE loading and on
+attainable box-constrained null directions.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft; prior verdict: none.
+\item v2 (revise) -- normalized the phase conjecture by LP width,
+replaced circular Manski visibility with endpoint LP certificates, and
+narrowed the Santos/Bennett novelty comparison; prior verdict: REVISE.
+\item v3 (revise) -- added Manski and Balke--Pearl sharp-bounds anchors,
+removed the overstated StatSci diagnostic attribution, and made the
+residual-tolerance width functional well posed; prior verdict: REVISE.
+\item v4 (revise) -- upgraded the flagship kernel by adding a generic
+response-type support bound, splitting the deterministic LP trichotomy into a
+conditional theorem, isolating the residual-tolerance modulus conjecture, and
+adding a comparison table plus a nontrivial finite interval example; prior
+verdict: REVISE.
+\item v5 (revise) -- defined the observable bridge-feasibility stratum as a
+fixed zero-pattern, fixed-rank, relative-interior face condition and added
+the missing optimization sensitivity comparison for the residual-modulus
+conjecture; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Andrews(2017)]{Andrews2017JoECompleteness}
+Andrews, D. W. K. (2017).
+Examples of \(L^2\)-complete and boundedly-complete distributions.
+\textit{Journal of Econometrics} 199(2), 213--220.
+
+\bibitem[Balke and Pearl(1997)]{BalkePearl1997JASA}
+Balke, A. and Pearl, J. (1997).
+Bounds on treatment effects from studies with imperfect compliance.
+\textit{Journal of the American Statistical Association} 92(439), 1171--1176.
+
+\bibitem[Bennett et~al.(2023)]{BennettKallusMaoNeweySyrgkanisUehara2023COLT}
+Bennett, A., Kallus, N., Mao, X., Newey, W., Syrgkanis, V., and Uehara, M. (2023).
+Inference on strongly identified functionals of weakly identified functions.
+\textit{Proceedings of Thirty Sixth Conference on Learning Theory}, PMLR 195.
+
+\bibitem[Canay et~al.(2013)]{CanaySantosShaikh2013Econometrica}
+Canay, I. A., Santos, A., and Shaikh, A. M. (2013).
+On the testability of identification in some nonparametric models with endogeneity.
+\textit{Econometrica} 81(6), 2535--2559.
+
+\bibitem[Cui et~al.(2024)]{CuiPuShiMiaoTchetgen2024JASA}
+Cui, Y., Pu, H., Shi, X., Miao, W., and Tchetgen Tchetgen, E. J. (2024).
+Semiparametric proximal causal inference.
+\textit{Journal of the American Statistical Association}.
+
+\bibitem[Darolles et~al.(2011)]{DarollesFanFlorensRenault2011Econometrica}
+Darolles, S., Fan, Y., Florens, J.-P., and Renault, E. (2011).
+Nonparametric instrumental regression.
+\textit{Econometrica} 79(5), 1541--1565.
+
+\bibitem[Fiacco(1983)]{Fiacco1983Sensitivity}
+Fiacco, A. V. (1983).
+\textit{Introduction to Sensitivity and Stability Analysis in Nonlinear Programming}.
+Academic Press.
+
+\bibitem[Ghassami et~al.(2023)]{GhassamiShpitserTchetgen2023ProxyPI}
+Ghassami, A., Shpitser, I., and Tchetgen Tchetgen, E. J. (2023).
+Partial identification of causal effects using proxy variables.
+arXiv:2304.04374.
+
+\bibitem[Miao et~al.(2018)]{MiaoGengTchetgen2018Biometrika}
+Miao, W., Geng, Z., and Tchetgen Tchetgen, E. J. (2018).
+Identifying causal effects with proxy variables of an unmeasured confounder.
+\textit{Biometrika} 105(4), 987--993.
+
+\bibitem[Manski(1990)]{Manski1990AER}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\textit{American Economic Review} 80(2), 319--323.
+
+\bibitem[Bonnans and Shapiro(2000)]{BonnansShapiro2000Perturbation}
+Bonnans, J. F. and Shapiro, A. (2000).
+\textit{Perturbation Analysis of Optimization Problems}.
+Springer.
+
+\bibitem[Santos(2011)]{Santos2011JoE}
+Santos, A. (2011).
+Instrumental variable methods for recovering continuous linear functionals.
+\textit{Journal of Econometrics} 161(2), 129--146.
+
+\bibitem[Tchetgen Tchetgen et~al.(2024)]{TchetgenYingCuiShiMiao2024StatSci}
+Tchetgen Tchetgen, E. J., Ying, A., Cui, Y., Shi, X., and Miao, W. (2024).
+An introduction to proximal causal inference.
+\textit{Statistical Science} 39(3).
+
+\bibitem[Zhang et~al.(2023)]{ZhangLiMiaoTchetgen2023SPL}
+Zhang, J., Li, W., Miao, W., and Tchetgen Tchetgen, E. J. (2023).
+Proximal causal inference without uniqueness assumptions.
+\textit{Statistics and Probability Letters} 198, 109836.
+\end{thebibliography}
+
+\end{document}

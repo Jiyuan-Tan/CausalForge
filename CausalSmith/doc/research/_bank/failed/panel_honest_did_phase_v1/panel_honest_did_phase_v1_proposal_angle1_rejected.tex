@@ -1,0 +1,886 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=panel\_honest\_did\_phase, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{panel\_honest\_did\_phase} / \texttt{v1}%
+  \\ \large\textit{Active-face phase diagram for zero inclusion in Honest-DiD sensitivity analysis}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a free-form panel / partial-identification proposal, not a Q1
+pool-mode instance.  The locked tuple is:
+\[
+(\texttt{qid},\texttt{specialization},p,\texttt{assignment},\texttt{target},\texttt{regression})
+=
+(\texttt{panel\_honest\_did\_phase},\texttt{v1},(T_0,T_1),
+\texttt{event-study normal limit},\ell^\transpose\tau_{\mathrm{post}},
+\texttt{Honest-DiD polyhedral sensitivity}).
+\]
+Here \(T_0 \ge 2\) is the number of pre-treatment event-time coefficients and
+\(T_1 \ge 1\) is the number of post-treatment coefficients.  The observable
+input is
+\[
+\widehat\beta=(\widehat\beta_{\mathrm{pre}}^\transpose,
+\widehat\beta_{\mathrm{post}}^\transpose)^\transpose
+\in \mathbb{R}^{T_0+T_1}, \qquad
+\widehat\Sigma \in \mathbb{S}^{T_0+T_1}_{++},
+\]
+with the usual event-study normal approximation for
+\(\widehat\beta-\beta\).  The target is the scalar dynamic ATT
+\(\theta=\ell^\transpose\tau_{\mathrm{post}}\) for a fixed
+\(\ell\in\mathbb{R}^{T_1}\).  The sensitivity restriction is the
+Rambachan--Roth smoothness class written as a parametric polyhedron
+\(\Delta(M)=\{\delta: A\delta \le a+M b\}\), where \(A,a,b\) encode the
+chosen second-difference or relative-magnitude restriction and \(M\ge 0\).
+The proposed kernel concerns the zero-null decision
+\[
+0\in CI(M) \quad\Longleftrightarrow\quad
+\text{the Honest-DiD test of }H_0:\theta=0\text{ does not reject at budget }M,
+\]
+using the same fixed-\(M\) conditional or hybrid confidence-set convention as
+\citet{RambachanRoth2023}; the novelty is the facewise characterization as
+\(M\) varies, not a change in the fixed-\(M\) procedure.
+
+\begin{abstract}
+Honest-DiD sensitivity analysis asks how much violation of parallel trends is
+needed before an event-study conclusion changes, but current implementations
+treat the sensitivity budget \(M\) as an external grid value.  This proposal
+asks for a sharp pathwise inference principle for affine-budget linear
+conditional-moment sensitivity problems, with Rambachan--Roth Honest-DiD as the
+leading specialization.  The kernel conjecture is that the whole zero-null
+decision path decomposes into finitely many observable certificate intervals,
+each carrying the active sensitivity face, selected moment set, RR/ARP critical
+value, and first-crossing equation; zero rejection, tangency, and zero
+inclusion are separated by certificate-specific endpoint formulas.  Unlike a
+generic parametric-linear-programming restatement, the proposed object includes
+the data-dependent RR/ARP conditional critical value, the pretrend nuisance
+equality, slack-moment selection, and the regular-conditional tie law needed
+for coverage.  The flagship conjecture then uses that diagram to give local
+and tie-robust inference for the random breakdown frontier itself.  Resolving
+it would turn sensitivity plots into auditable face certificates for any
+affine-budget conditional-moment sensitivity path, not only into a faster way
+to compute one Honest-DiD grid crossing.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Applied Honest-DiD papers now report sensitivity curves and breakdown values,
+but the substantive interpretation of a breakdown value depends on which
+admissible trend-deviation face makes the zero null feasible.  Two studies can
+have the same reported breakdown budget while one is overturned by a single
+stable curvature pattern and the other only by a knife-edge tie among slack
+moments.  The scientific question is therefore not only ``how large is \(M\)?''
+but ``which counterfactual trend geometry makes the conclusion fail?''
+
+\paragraph{The main finding (proposed).}
+The headline result is Conjecture 1: for affine-budget linear
+conditional-moment sensitivity paths with RR/ARP-style conditional critical
+values, the zero-null decision admits a finite active-face certificate, and
+Honest-DiD is the motivating specialization.  Each certificate cell is indexed
+by a pair \((F,J)\), where \(F\) is a face of the sensitivity polyhedron and
+\(J\) is the set of binding conditional moment inequalities, and the endpoints
+are explicit roots of facewise equations whose deterministic support component
+is obtained from a labelled KKT system and whose cutoff is the RR/ARP
+conditional Gaussian critical value.  A companion conjecture gives the
+tie-case boundary through a regular conditional Gaussian law on the affine tie
+subspace, equivalently a vanishing-tube limit.  A final conjecture inverts this
+local law under a transversality condition to form confidence sets for the
+breakdown point \(M_\star\) itself.
+
+\paragraph{What is new.}
+\citet{RambachanRoth2023} provide uniformly valid confidence sets for each
+fixed \(M\), and \citet{AndrewsRothPakes2023} provide the conditional
+moment-inequality inference machinery underlying the fixed-\(M\) test.
+Classical multiparametric programming already gives critical regions and
+piecewise affine or quadratic value maps for parametric LP/QP problems, so
+the labelled KKT partition is treated here as imported optimization
+bookkeeping rather than a novelty claim.  The epsilon-gap is the econometric
+object that those optimization results do not cover: a uniform-in-\(M\)
+certificate for a moving-budget conditional-moment inference path whose
+critical value, selected moments, and tie law are themselves part of the
+statistical procedure.  Honest-DiD supplies the leading pretrend nuisance
+equality and smoothness budget, but the proposed theorem is stated for the
+broader affine-budget RR/ARP class.  The proposed kernel is the observable
+face certificate and crossing-time law for the entire path
+\(\{0\in CI(M):M\ge 0\}\), with the same fixed-\(M\) inference convention held
+fixed.
+
+\paragraph{How it positions in the literature.}
+The anchor cluster is panel / linear-projection DiD with a partial-ID
+sensitivity layer.  It sits downstream of staggered and event-study DiD
+estimators, but its theorem is not an estimator-comparison theorem; it is a
+pathwise geometry theorem for the Honest-DiD identified set and its robust
+confidence set.  It uses the partial-identification language of breakdown
+frontiers while staying inside the event-study normal limit used by
+Rambachan--Roth.
+
+\paragraph{Implications for the community.}
+The concrete consumer is the applied Honest-DiD workflow implemented in the
+HonestDiD and moderndid packages and used in sensitivity plots following
+\citet{RambachanRoth2023}: instead of reporting only the first \(M\) on a
+grid at which zero enters the interval, or only the one-sided confidence
+interval for \(M_\star\) noted in their discussion of breakdown values, a
+paper could report the controlling face, the slack moments, and whether the
+crossing is regular or tied.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report the active deviation pattern and tie status of an
+Honest-DiD breakdown value, not only the scalar budget.
+
+\section{Related work}
+\citet{RambachanRoth2023} are the direct anchor: they define the Honest-DiD
+sensitivity restrictions, show fixed-\(M\) uniform validity for robust
+confidence sets, and present empirical breakdown plots, but they do not give a
+pathwise active-face theorem in \(M\).  \citet{AndrewsRothPakes2023} provide
+linear conditional moment-inequality tests with nuisance parameters and slack
+moment robustness; this proposal asks how those binding moments change along
+the Honest-DiD sensitivity path.  \citet{KaidoMolinariStoye2019} study
+projection inference for partially identified parameters by optimizing over
+moment-inequality regions, which is the closest general partial-ID inference
+thread, but their target is calibrated projection intervals rather than an
+Honest-DiD zero-crossing face diagram.  \citet{MastenPoirier2020} formalize
+breakdown frontiers as targets, motivating the crossing value as an object in
+its own right; the present proposal specializes this idea to the
+Rambachan--Roth event-study geometry and adds active-face certificates.
+\citet{Roth2022Pretrends} explains why binary pretrend tests distort
+event-study inference, which motivates continuous sensitivity paths rather
+than accept/reject pretesting.  \citet{RothSantAnnaBilinskiPoe2023} survey
+recent DiD methods and identify violations of parallel trends as a central
+frontier; this proposal contributes a pathwise diagnostic for that frontier.
+\citet{SunAbraham2021} and \citet{CallawaySantAnna2021} are relevant because
+modern event-study inputs to Honest-DiD often come from staggered-adoption
+estimators; the proposal treats those inputs through their asymptotic
+coefficient vector and covariance matrix.  \citet{ChernozhukovHongTamer2007}
+are a foundational moment-inequality inference reference; they are included to
+mark that the novelty is not generic inequality inference but the
+Rambachan--Roth moving-budget face path.  \citet{GalNedoma1972} and
+\citet{BemporadMorariDuaPistikopoulos2002} are the relevant
+multiparametric-programming comparators: they show that parametric LP/QP
+solutions admit critical regions and piecewise affine control/value maps, but
+they do not contain the conditional moment-inequality critical values,
+slack-moment conditioning, or breakdown-value coverage target of Honest-DiD.
+\citet{FangSantos2019} give the closest generic nonsmooth-inference
+comparison through the delta method for directionally differentiable
+functionals; the proposed gap is that the Honest-DiD crossing functional has a
+moving RR/ARP critical value and a data-dependent active-moment selection rule
+that must be stated before the directional derivative is usable.
+\citet{FirpoGalvaoParker2023} are a closer value-function comparator: they
+develop uniform inference after marginal optimization, while this proposal
+targets a moving-budget zero-crossing value with RR/ARP conditional critical
+values and tied active moments.
+\citet{AndrewsSoares2010} develop generalized moment selection for moment
+inequality models; this proposal asks for the special selection path generated
+by the Rambachan--Roth budget \(M\), including which selected moments survive
+at a breakdown crossing.  \citet{KaidoMolinariStoye2022} is the closest
+constraint-qualification comparison: it relates partial-identification
+regularity assumptions to Mangasarian--Fromowitz type conditions, whereas this
+proposal asks how RR/ARP critical values behave when the Honest-DiD path
+crosses regular and tied faces.
+
+In-catalogue ThmSmith prior art is nearby but distinct.  The API entry
+``Q1\_SpectralThreshold -- stationary first-order Markov spectral-threshold
+refutation'' records a panel FWL sign-lock refutation for Q1 Markov assignment,
+not Honest-DiD sensitivity inference.  The banked
+\texttt{q1\_spectral\_phase\_transition/p1\_markov} proposal identified a
+three-regime phase-transition vocabulary, but its review notes left the
+row-space/box affine-fiber lemma unresolved and it did not involve
+Rambachan--Roth fixed-\(M\) confidence sets.  The banked
+\texttt{pid\_did\_anticipation\_bounded/v1} proposal gives sharp intervals for
+independent anticipation boxes and explicitly warns that coupled restrictions
+make the displayed interval only an outer bound; this proposal studies the
+coupled second-difference polyhedron used by Honest-DiD.
+
+\section{Formal setup}
+There are \(T_0\) pre-treatment event-time coefficients and \(T_1\)
+post-treatment event-time coefficients.  Write
+\[
+\beta=(\beta_{\mathrm{pre}}^\transpose,\beta_{\mathrm{post}}^\transpose)^\transpose
+=
+(\delta_{\mathrm{pre}}^\transpose,
+(\delta_{\mathrm{post}}+\tau_{\mathrm{post}})^\transpose)^\transpose,
+\]
+where \(\delta\in\mathbb{R}^{T_0+T_1}\) is the untreated differential trend
+and \(\tau_{\mathrm{post}}\in\mathbb{R}^{T_1}\) is the dynamic ATT vector.
+The observed estimator satisfies the finite-dimensional normal approximation
+\[
+\widehat\beta \sim N(\beta,\widehat\Sigma/n)
+\]
+with \(\widehat\Sigma\) treated as known for the normal-limit problem.
+
+The target is \(\theta=\ell^\transpose\tau_{\mathrm{post}}\).  For
+\(M\ge 0\), the sensitivity set is the polyhedron
+\[
+\Delta(M)=\{\delta\in\mathbb{R}^{T_0+T_1}: A\delta \le a+M b\}.
+\]
+The zero-null feasible set is
+\[
+\mathcal{N}_0(M)=\{(\delta,\tau_{\mathrm{post}}):
+\delta\in\Delta(M),\ \ell^\transpose\tau_{\mathrm{post}}=0,\ 
+\beta=(\delta_{\mathrm{pre}},
+\delta_{\mathrm{post}}+\tau_{\mathrm{post}})\}.
+\]
+Let \(Y(M)\) denote the Rambachan--Roth linear-inequality statistic for the
+null \(\theta=0\) after eliminating \((\delta,\tau_{\mathrm{post}})\), and
+write it in canonical form as
+\[
+G(M)\eta \le h(M)+R\widehat\beta,\qquad
+h(M)=h_0+M h_1,
+\]
+where \(\eta\in\mathbb{R}^d\) is the nuisance parameter left by the null,
+\(G(M)\in\mathbb{R}^{q\times d}\), \(h_0,h_1\in\mathbb{R}^q\), and
+\(R\in\mathbb{R}^{q\times(T_0+T_1)}\) is the observable coefficient-loading
+matrix in the zero-null inequality system.  For each face pair \((F,J)\),
+\(F\) indexes binding sensitivity inequalities and \(J\) indexes binding
+conditional moment inequalities in the fixed-\(M\) test.
+The fixed-\(M\) RR/ARP decision is represented by the studentized slack
+statistic
+\[
+T_{\mathrm{RR}}(M)
+=\inf_{\eta\in\mathbb{R}^d}
+\left\| \left(G(M)\eta-h_0-Mh_1-R\widehat\beta\right)_{+}
+\right\|_{\Omega(M)^{-1}},
+\]
+where \(\Omega(M)\) is the covariance matrix of the canonical inequalities
+induced by \(\widehat\Sigma\).  Let \(\mathcal{C}(M)\) denote the conditioning
+event or hybrid selection event used by the fixed-\(M\) Rambachan--Roth
+procedure, let \(S(M)\subseteq\{1,\ldots,q\}\) be the selected non-slack
+moment set, and let
+\[
+c_{1-\alpha}^{\mathrm{RR}}(M;S,\mathcal{C})
+\]
+be the corresponding conditional or hybrid critical value.  Thus
+\[
+\mathsf{Acc}(M)=1
+\quad\Longleftrightarrow\quad
+T_{\mathrm{RR}}(M)\le
+c_{1-\alpha}^{\mathrm{RR}}(M;S(M),\mathcal{C}(M)).
+\]
+For tied active pairs
+\(\mathcal{Q}=\{(F_1,J_1),\ldots,(F_s,J_s)\}\), let
+\(L_r\subseteq\mathbb{R}^{q}\) be the tangent space of canonical inequality
+scores that leaves the face pair \((F_r,J_r)\) first-order unchanged, and let
+\[
+L_{\mathcal{Q}}=\bigcap_{r=1}^s L_r,\qquad
+H_{\mathcal{Q}}=\mathbb{R}^{q}/L_{\mathcal{Q}}.
+\]
+Let \(\Pi_{\mathcal{Q}}\) be the \(\Omega(M_0)\)-orthogonal projection onto a
+chosen representative of the quotient space \(H_{\mathcal{Q}}\).  If
+\(Z\sim N(0,\Omega(M_0))\), the adjacent face scores are
+\[
+\mathbb{G}_r=g_r^\transpose\Pi_{\mathcal{Q}}Z,\qquad r=1,\ldots,s,
+\]
+where \(g_r\) is the normalized outward support direction for face pair
+\((F_r,J_r)\).  Let \(B_{\mathcal{Q}}\) be the \((s-1)\times q\) matrix whose
+rows are \((g_r-g_1)^\transpose\Pi_{\mathcal{Q}}\), \(r=2,\ldots,s\).  Let
+\(\Pr_{\mathcal{Q}}\) be the regular conditional Gaussian law of
+\(\Pi_{\mathcal{Q}}Z\) given the affine tie subspace
+\[
+E_{\mathcal{Q}}=\{B_{\mathcal{Q}}Z=0\};
+\]
+equivalently, \(\Pr_{\mathcal{Q}}\) is the limit of the conditional laws given
+\(\|B_{\mathcal{Q}}Z\|\le\varepsilon\) as \(\varepsilon\downarrow 0\), whenever
+that tube limit exists.  Let \(\mathcal{A}(\mathcal{Q})\) be the finite set of
+adjacent nonselected face pairs whose one-sided support scores are comparable
+at \(M_0\), and write their scores as
+\(\mathbb{G}_{r'}=g_{r'}^\transpose\Pi_{\mathcal{Q}}Z\).  The tied
+conditioning event inside the tie law is
+\[
+K_{\mathcal{Q}}
+=\{\mathbb{G}_1
+\ge \mathbb{G}_{r'}\text{ for every }r'\in\mathcal{A}(\mathcal{Q})\},
+\]
+with nonadjacent slack inequalities conditioned on the same slack rule used in
+the fixed-\(M\) RR/ARP procedure.  The tied quotient critical value is the
+regular-conditional quantile
+\[
+c_{1-\alpha}^{\mathrm{RR}}(\mathcal{Q})
+=\inf\{c:\Pr_{\mathcal{Q}}(\max_{r\le s}\mathbb{G}_r\le c\mid
+K_{\mathcal{Q}})\ge 1-\alpha\}.
+\]
+The acceptance indicator is
+\[
+\mathsf{Acc}(M)=\one\{0\in CI(M)\}.
+\]
+The first crossing is
+\[
+M_\star=\inf\{M\ge 0:\mathsf{Acc}(M)=1\}.
+\]
+The plug-in crossing \(\widehat M_\star\) is the same functional with
+\((\widehat\beta,\widehat\Sigma)\) substituted for the limiting inputs.
+For inference on \(M_\star\), the observable Gaussian analogue draws
+\(Z^\ast\sim N(0,\widehat\Omega(\widehat M_\star))\) conditional on the data,
+forms \(\widehat{\mathbb{G}}_r^{\,\ast}
+=\widehat g_r^\transpose\widehat\Pi_{\widehat{\mathcal{Q}}}Z^\ast\), and
+computes the plug-in tied critical value
+\(\widehat c_{1-\alpha}^{\mathrm{RR}}(\widehat{\mathcal{Q}})\) by the same
+conditional-quantile rule on the estimated quotient event.
+
+The locked parameters are reproduced verbatim:
+\begin{quote}
+\begin{verbatim}
+(qid, specialization, p, assignment, target, regression)
+= (panel_honest_did_phase, v1, (T0,T1),
+   event-study normal limit, ell' tau_post,
+   Honest-DiD polyhedral sensitivity).
+Observable input: beta_hat in R^(T0+T1), Sigma_hat positive definite.
+Sensitivity set: Delta(M) = {delta : A delta <= a + M b}, M >= 0.
+Decision path: Acc(M) = 1{0 in CI(M)} under the fixed-M
+Rambachan-Roth conditional or hybrid confidence-set convention.
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Normal event-study limit]\label{ass:normal}
+The event-study estimator obeys the fixed-dimensional normal approximation
+\(\widehat\beta\sim N(\beta,\widehat\Sigma/n)\), with
+\(\widehat\Sigma\in\mathbb{S}_{++}^{T_0+T_1}\) treated as known in the
+normal-limit problem.
+\end{assumption}
+
+\begin{assumption}[Polyhedral Honest-DiD sensitivity]\label{ass:poly}
+For every \(M\ge 0\), the admissible trend-deviation set is
+\(\Delta(M)=\{\delta:A\delta\le a+Mb\}\), with fixed observable matrices
+\((A,a,b)\).  The rows include the chosen second-difference or
+relative-magnitude smoothness restriction and any sign restriction being held
+fixed throughout the path.
+\end{assumption}
+
+\begin{assumption}[Fixed-\(M\) confidence-set convention]\label{ass:fixedM}
+For every fixed \(M\), \(CI(M)\) is the Rambachan--Roth conditional or hybrid
+confidence set for \(\theta=\ell^\transpose\tau_{\mathrm{post}}\) using the
+linear conditional moment-inequality representation of the zero null.  The
+proposal does not alter the fixed-\(M\) critical-value rule.
+\end{assumption}
+
+\begin{assumption}[Facewise critical-value specification]\label{ass:critical}
+On every open phase interval, the selected non-slack set \(S(M)\), conditioning
+event \(\mathcal{C}(M)\), covariance map \(\Omega(M)\), and critical value
+\(c_{1-\alpha}^{\mathrm{RR}}(M;S(M),\mathcal{C}(M))\) are given by the
+fixed-\(M\) RR/ARP conditional or hybrid rule applied to the same canonical
+rows.  Conditional on a fixed active pair \((F,J)\), this critical value is
+the \(1-\alpha\) quantile of the Gaussian statistic induced by
+\(\Omega(M)\) and \(\mathcal{C}(M)\); it is continuous on the open phase
+interval.  At a finite tie, the quotient space \(H_{\mathcal{Q}}\), tie
+subspace \(E_{\mathcal{Q}}\), regular conditional law
+\(\Pr_{\mathcal{Q}}\), tie event \(K_{\mathcal{Q}}\), and tied critical value
+\(c_{1-\alpha}^{\mathrm{RR}}(\mathcal{Q})\) are those defined in the formal
+setup; the regular conditional law is equivalently the vanishing-tube limit
+around \(E_{\mathcal{Q}}\), \(K_{\mathcal{Q}}\) has positive
+\(\Pr_{\mathcal{Q}}\)-probability, and the resulting tied critical value is
+finite.
+\end{assumption}
+
+\begin{assumption}[Moving-budget RR/ARP moment-inequality path]\label{ass:moving_budget}
+After imposing the scalar zero null, the fixed-\(M\) confidence-set decision
+for the class under study can be written as a finite linear conditional
+moment-inequality system
+\[
+G(M)\eta \le h_0+Mh_1+R\widehat\beta,
+\]
+with \(q\) canonical inequalities, nuisance parameter
+\(\eta\in\mathbb{R}^d\), positive-definite covariance map \(\Omega(M)\), and
+the RR/ARP conditional or hybrid critical-value rule applied to the canonical
+rows.  The Honest-DiD system in the formal setup is the maintained
+specialization, with \(G(M),h_0,h_1,R\) generated by the
+Rambachan--Roth sensitivity restrictions.
+\end{assumption}
+
+\begin{assumption}[Nondegenerate target]\label{ass:target}
+The target loading \(\ell\neq 0\), and the zero-null elimination map has full
+row rank after quotienting out nuisance directions that are unidentified under
+\(\ell^\transpose\tau_{\mathrm{post}}=0\).
+\end{assumption}
+
+\begin{assumption}[Face regularity on open phases]\label{ass:face_regular}
+On each open phase interval, the binding sensitivity face \(F\) and binding
+moment set \(J\) satisfy the linear independence constraint qualification of
+the fixed-\(M\) moment-inequality problem, and all nonbinding inequalities are
+slack by a positive margin.
+\end{assumption}
+
+\begin{assumption}[Finite tie set]\label{ass:finite_tie}
+The observable path is generic except at finitely many values of \(M\): outside
+that finite set there is a unique active pair \((F,J)\), and at each tie value
+only finitely many adjacent active pairs bind.
+\end{assumption}
+
+\begin{assumption}[Consistent quotient-law estimation]\label{ass:quotient_est}
+At every regular or tied breakdown crossing, the plug-in active-pair set
+\(\widehat{\mathcal{Q}}\), projection
+\(\widehat\Pi_{\widehat{\mathcal{Q}}}\), adjacent support directions
+\(\widehat g_r\), one-sided slopes \(\widehat c_r\), and covariance
+\(\widehat\Omega(\widehat M_\star)\) converge to their population analogues
+uniformly over local sequences with the same adjacent active-pair set.  The
+conditional Gaussian simulation or analytic calculation used to compute
+\(\widehat c_{1-\alpha}^{\mathrm{RR}}(\widehat{\mathcal{Q}})\) consistently
+estimates the tied quotient critical value.
+\end{assumption}
+
+\begin{assumption}[Breakdown transversality]\label{ass:transversal}
+The first crossing \(M_\star\) is finite and isolated.  On a regular face,
+the controlling function \(\chi_k(M)\) satisfies
+\(\chi_k(M_\star)=0\) and has nonzero one-sided derivative
+\(\dot\chi_k(M_\star)<0\), so the path moves from rejection
+\((\chi_k>0)\) to nonrejection \((\chi_k\le 0)\) at a first-order rate.  At a
+tied crossing with adjacent set \(\mathcal{Q}\), each active one-sided score
+has a finite slope \(c_r\), at least one adjacent direction has inward slope
+and at least one has outward slope after applying the RR/ARP critical-value
+derivative, and no nonadjacent slack inequality becomes binding at the same
+\(n^{-1/2}\) scale.
+\end{assumption}
+
+\section{Main results}
+\paragraph{Known optimization input, not claimed as a novel theorem.}
+Classical multiparametric programming and KKT normal-fan arguments imply that,
+under Assumptions \ref{ass:normal}, \ref{ass:poly},
+\ref{ass:moving_budget}, \ref{ass:target}, \ref{ass:face_regular}, and
+\ref{ass:finite_tie}, the deterministic statistic
+\[
+D(M)=\inf_{\eta\in\mathbb{R}^d}
+\left\| \left(G(M)\eta-h_0-Mh_1-R\widehat\beta\right)_{+}
+\right\|_{\Omega(M)^{-1}}
+\]
+has a finite partition of the \(M\)-axis into open intervals and finitely many
+tie points such that one active pair \((F_k,J_k)\) solves the KKT system on
+each open interval.  On such an interval,
+\[
+D(M)=D_k(M;\widehat\beta,\widehat\Sigma,\ell,A,a,b),
+\]
+where \(D_k\) is obtained by solving the linear KKT equations for
+\((F_k,J_k)\) and substituting the solution into the displayed norm.  The
+endpoints of the interval are exactly the smallest nonnegative roots of the
+face-feasibility, nonbinding-slack, or adjacent-face equality equations for
+that labelled KKT solution.  This paragraph is included only to name the
+imported deterministic support-function skeleton; the novelty claims below
+begin where this generic active-region decomposition is combined with RR/ARP
+critical values, moment selection, and breakdown-value inference.
+
+\begin{conjecture}[Conjecture 1: uniform active-face certificate for
+affine-budget sensitivity paths (NOT YET PROVED)]\label{conj:phase_diagram}
+Under Assumptions \ref{ass:normal}--\ref{ass:finite_tie}, every
+moving-budget RR/ARP moment-inequality path satisfying Assumption
+\ref{ass:moving_budget} has a finite ordered certificate
+\[
+\Gamma=\{(m_{k-1},m_k,F_k,J_k,S_k,\mathcal{C}_k,\chi_k):k=1,\ldots,K\}
+\]
+with partition
+\[
+0=m_0<m_1<\cdots<m_{K-1}<m_K=\infty
+\]
+such that, for the Honest-DiD specialization and for any other member of the
+same affine-budget RR/ARP class, on every open interval
+\((m_{k-1},m_k)\):
+\begin{enumerate}[label=(\roman*)]
+\item the fixed-\(M\) zero-null test is controlled by the same sensitivity
+face \(F_k\) and moment set \(J_k\);
+\item the deterministic slack statistic is the facewise function
+\[
+D_k(M;\widehat\beta,\widehat\Sigma,\ell,A,a,b)
+\]
+from the labelled KKT skeleton above, while the stochastic cutoff is the
+RR/ARP conditional or hybrid quantile
+\[
+c_k(M)=c_{1-\alpha}^{\mathrm{RR}}(M;S_k,\mathcal{C}_k)
+\]
+specified in Assumption \ref{ass:critical};
+\item \(\mathsf{Acc}(M)=1\) if and only if
+\[
+\chi_k(M):=
+D_k(M;\widehat\beta,\widehat\Sigma,\ell,A,a,b)-c_k(M)\le 0.
+\]
+\end{enumerate}
+Consequently \(M_\star\) is the first nonnegative zero of the explicitly
+defined facewise equation \(\chi_k(M)=0\), with the additional requirement
+that the zero lies inside the interval on which \((F_k,J_k)\), \(S_k\), and
+\(\mathcal{C}_k\) are feasible and slack-compatible.  Moreover, the certificate
+is uniform in \(M\): checking the finitely many labelled equations and tie
+rules in \(\Gamma\) is equivalent to checking the whole path
+\(\{\mathsf{Acc}(M):M\ge 0\}\), so no grid search or post hoc active-set
+selection is part of the target estimand.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{RambachanRoth2023} prove fixed-\(M\) validity and show empirical
+breakdown values, while \citet{AndrewsRothPakes2023} classify conditional
+tests by binding and slack moments at a fixed parameter value.
+\citet{GalNedoma1972} and
+\citet{BemporadMorariDuaPistikopoulos2002} give the closest generic
+optimization analogue, namely critical regions for parametric LP/QP problems.
+\citet{FirpoGalvaoParker2023} give the closest value-function inference
+comparison after optimization.  The epsilon-gap is that the proposed
+certificate is not merely an optimizer or value-function region: it is a
+uniform-in-\(M\) zero-null inference certificate whose endpoint must include
+the RR/ARP critical value, slack-moment selection, and nuisance conditioning
+convention, with Honest-DiD as the leading specialization of a broader
+affine-budget class.  \citet{AndrewsSoares2010} gives moment-selection critical
+values, but not the ordered sensitivity-budget path generated by a
+moving-budget restriction.  None of these papers states an observable
+certificate for which sensitivity face and selected moment set controls the
+first zero crossing of a conditional-moment sensitivity confidence set.
+(b) Resolving this advances the applied HonestDiD workflow in
+\citet{RambachanRoth2023}: sensitivity plots would gain a reproducible
+face certificate and would distinguish regular crossings from crossings caused
+by a slack-moment tie.
+
+\begin{conjecture}[Conjecture 2: regular-conditional tie law and tangent regime
+(NOT YET PROVED)]\label{conj:tie_law}
+Under Assumptions \ref{ass:normal}--\ref{ass:finite_tie}, suppose
+\(M_0=m_k\) is a boundary at which active pairs
+\((F_1,J_1),\ldots,(F_s,J_s)\) tie.  In a local experiment
+\(M=M_0+t/\sqrt{n}\), the zero-null acceptance boundary is governed by
+\[
+\max_{r\le s}\{\mathbb{G}_r+c_r t\}\le c_{1-\alpha}^{\mathrm{RR}}(F_1,J_1,
+\ldots,F_s,J_s),
+\]
+where \((\mathbb{G}_1,\ldots,\mathbb{G}_s)\) is distributed under the regular
+conditional Gaussian law \(\Pr_{\mathcal{Q}}\) on the quotient-space tie
+subspace \(E_{\mathcal{Q}}\) defined in the setup, equivalently under the
+vanishing-tube limit around that subspace,
+\(c_r\) is the one-sided derivative of face \(r\)'s support score with
+respect to \(M\), and
+\[
+c_{1-\alpha}^{\mathrm{RR}}(F_1,J_1,\ldots,F_s,J_s)
+\]
+is the Rambachan--Roth conditional or hybrid critical value for the tied
+quotient problem defined in the setup.  The tangent phase is the set of local
+\(t\)-values for which at least two adjacent facewise scores attain the
+maximum with positive regular-conditional probability; outside it the crossing
+is regular and inherits the single-face law.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) The closest published comparisons are \citet{AndrewsRothPakes2023}, which
+shows slack-moment-insensitive conditional inference for fixed linear
+conditional moment inequalities, \citet{FangSantos2019}, which supplies
+generic inference tools for directionally differentiable functionals,
+\citet{FirpoGalvaoParker2023}, which develops uniform inference for optimized
+value functions, and \citet{KaidoMolinariStoye2022}, which clarifies how
+partial-identification regularity conditions relate to Mangasarian--Fromowitz
+constraint qualification.  The epsilon-gap is the operational RR/ARP quotient
+problem created when a moving sensitivity budget crosses a tie of active
+faces: regular conditional Gaussian law on the tie hyperplane, common tangent
+space, projected covariance, selected moment event, and tied critical value
+must all be named before generic directional-delta or value-function bootstrap
+theory applies.  (b) The concrete consumer is
+breakdown-frontier inference in \citet{MastenPoirier2020}: this conjecture
+supplies the Honest-DiD kink law needed before one can attach valid
+uncertainty bands to an estimated breakdown value \(M_\star\).
+
+\begin{conjecture}[Conjecture 3: valid local inference for affine-budget
+breakdown frontiers (NOT YET PROVED)]\label{conj:mstar_inference}
+Under Assumptions \ref{ass:normal}--\ref{ass:transversal}, let
+\(\widehat M_\star\) be the plug-in first crossing of the fixed-\(M\)
+RR/ARP decision path, with Honest-DiD as the leading specialization.  On a
+regular face,
+\(\sqrt{n}(\widehat M_\star-M_\star)\) has the one-dimensional delta-method
+law obtained by differentiating the controlling \(\chi_k(M)\) at
+\(M_\star\), with nonzero derivative as required by Assumption
+\ref{ass:transversal}.  At a tied crossing satisfying the inward/outward
+one-sided slope condition in Assumption \ref{ass:transversal}, define the
+observable confidence set by
+\[
+\widehat{\mathcal{I}}_{1-\alpha}^{M_\star}
+=\left\{m\ge 0:
+\Pr^\ast\!\left[
+\max_{r\le s}\{\widehat{\mathbb{G}}_r^{\,\ast}
++\widehat c_r\sqrt n(m-\widehat M_\star)\}
+\le
+\widehat c_{1-\alpha}^{\mathrm{RR}}(\widehat{\mathcal{Q}})
+\right]\ge 1-\alpha
+\right\},
+\]
+where \(\Pr^\ast\) is conditional probability over
+\(Z^\ast\sim N(0,\widehat\Omega(\widehat M_\star))\), the scores
+\(\widehat{\mathbb{G}}_r^{\,\ast}\), slopes \(\widehat c_r\), and critical
+value \(\widehat c_{1-\alpha}^{\mathrm{RR}}(\widehat{\mathcal{Q}})\) are the
+sample analogues defined in the setup and the probability is computed under
+the plug-in regular conditional or vanishing-tube tie law.  The set
+\(\widehat{\mathcal{I}}_{1-\alpha}^{M_\star}\) has asymptotic coverage at
+least \(1-\alpha\), uniformly over local sequences with the same adjacent
+active-pair set.  Thus the phase diagram yields inference for the breakdown
+value itself, not only fixed-\(M\) inference for whether zero belongs to
+\(CI(M)\).
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{RambachanRoth2023} give valid robust confidence sets at fixed
+\(M\) and note a valid one-sided confidence interval for the breakdown value
+under their fixed-\(M\) size control, \citet{MastenPoirier2020} develop
+inference on breakdown frontiers in general sensitivity models,
+\citet{FangSantos2019} covers directionally differentiable plug-in
+functionals, \citet{FirpoGalvaoParker2023} covers uniform inference for value
+functions after marginal optimization, and \citet{AndrewsSoares2010} covers
+generalized moment selection.  The epsilon-gap is therefore not first
+inference for a breakdown value; it is an observable two-sided/local
+crossing-time law for an affine-budget RR/ARP sensitivity path under moving
+conditional critical values, including tied active faces, estimated quotient
+events, and an explicit transversality condition.  This is not supplied by
+generic multiparametric LP/QP critical regions, static moment-selection theory,
+or value-function bootstrap theory.  (b) The
+concrete consumer is the empirical breakdown value reported in Honest-DiD
+applications following \citet{RambachanRoth2023}: the conjecture would say
+when that number can be accompanied by a local tie-robust uncertainty interval
+and when a reported crossing is a nonregular kink.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Reduction to fixed-\(M\) Honest-DiD]\label{cor:fixedM}
+Under Assumptions \ref{ass:normal}--\ref{ass:fixedM}, if \(M\) is held fixed
+and the active pair \((F,J)\) is known, the canonical system used by the
+labelled KKT skeleton in §8
+collapses to the Rambachan--Roth fixed-\(M\) linear conditional
+moment-inequality test with statistic \(T_{\mathrm{RR}}(M)\) and critical
+value \(c_{1-\alpha}^{\mathrm{RR}}(M;S(M),\mathcal{C}(M))\).
+\end{corollary}
+
+The reduction is immediate because \(\Delta(M)\) is then a single fixed
+polyhedron and the phase index carries no pathwise content.
+
+\begin{corollary}[Parallel-trends corner]\label{cor:M0}
+Under Assumptions \ref{ass:normal}--\ref{ass:target}, if \(M=0\) and the
+chosen \(A,a,b\) encode exact linear extrapolation of the pretrend, then
+\(\Delta(0)\) is the Rambachan--Roth baseline restriction and
+\(\mathsf{Acc}(0)\) is exactly the zero-null decision of the baseline robust
+confidence set.
+\end{corollary}
+
+The reduction checks that the phase diagram does not create a new estimand at
+the Honest-DiD origin; it only organizes the movement away from that origin.
+
+\begin{corollary}[Single post-period scalar sanity check]\label{cor:scalar}
+Under Assumptions \ref{ass:normal}--\ref{ass:finite_tie}, if \(T_1=1\),
+\(\ell=1\), and the zero-null system has a unique binding sensitivity
+inequality on an open \(M\)-interval, then Conjecture
+\ref{conj:phase_diagram} reduces to a one-dimensional affine crossing rule:
+zero enters \(CI(M)\) at the first root of the unique facewise inequality plus
+the fixed-\(M\) critical-value correction.
+\end{corollary}
+
+This is the corner in which an applied breakdown plot should be reproducible
+by inspecting a single trend-deviation inequality.
+
+\section{Proof-sketch route}
+The route is finite-dimensional convex analysis.  First eliminate the
+zero-null nuisance parameters by Fourier--Motzkin elimination or LP duality to
+obtain a labelled conditional moment system with right-hand side affine in
+\(M\), its covariance \(\Omega(M)\), and the associated RR/ARP critical-value
+map.  Next apply the normal-fan decomposition of a polyhedron to partition
+the \(M\)-axis by active sensitivity faces and binding moment sets; on each
+open cell, the KKT system is linear after fixing \((F,J)\), so the
+deterministic slack statistic is an explicit fixed-face function of the
+observable coefficient vector and covariance matrix.  The RR/ARP cutoff is
+then appended as the conditional Gaussian quantile for the same labelled rows,
+not folded into the KKT algebra.  The boundary cases are exactly the failures
+of unique active face or LICQ, so the remaining algebra is a local expansion
+of adjacent KKT systems, a regular-conditional Gaussian calculation on the
+affine tie subspace (or its vanishing-tube limit), and a plug-in inversion
+step for \(\widehat M_\star\).  The transversality condition is then checked
+by the one-sided derivatives of the selected facewise \(\chi_k\) functions.
+The smallest nontrivial worked example should be \(T_0=2,T_1=1\), where all
+faces can be enumerated and the regular crossing formula can be checked by
+hand against the Rambachan--Roth fixed-\(M\) test.
+
+\section{Honest scope flags}
+The deterministic active-region skeleton is imported convex-analytic
+bookkeeping from multiparametric programming, not a flagship novelty claim.
+Conjectures \ref{conj:phase_diagram}, \ref{conj:tie_law}, and
+\ref{conj:mstar_inference} are the open research kernel and are not yet
+proved.  The proposal deliberately withdraws
+the prior angle's singular-value formulas for global thresholds: the active
+face, not a global singular direction, is now the primitive object.  The main
+assumption requiring care is Assumption \ref{ass:finite_tie}; a non-generic
+observable covariance or coefficient vector may produce continua of ties, in
+which case the phase diagram should be stated after perturbation or as a
+stratified semialgebraic result rather than a finite interval list.
+The v3 revision also withdraws the earlier claim that the full
+critical-value-adjusted endpoint is affine-quadratic; only the deterministic
+support component has the fixed-face KKT closed form, while the RR/ARP cutoff
+is an explicitly defined conditional Gaussian quantile.
+The v4 revision withdraws the deterministic active-region decomposition as a
+numbered theorem, acknowledges the Rambachan--Roth one-sided confidence
+interval for \(M_\star\), and narrows the open inference claim to
+two-sided/local/tie-robust moving-critical-value inference.
+The v5 revision responds to the field-tier novelty concern by restating the
+flagship kernel as a uniform-in-\(M\) active-face certificate for the broader
+affine-budget RR/ARP sensitivity class, while keeping Honest-DiD as the lead
+application.  It also replaces exact-probability-zero tie conditioning by a
+regular conditional Gaussian or vanishing-tube law and adds the nonzero
+crossing-rate / inward-outward transversality assumption needed for
+\(M_\star\) inference.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) --- initial draft for angle 1, replacing the rejected
+singular-value threshold kernel with an active-face phase diagram; prior
+verdict: none.
+\item v2 (revise) --- added multiparametric-programming and
+constraint-qualification prior art, made the fixed-\(M\) RR/ARP test statistic
+and critical-value convention explicit, fixed the terminal phase ray, defined
+the tied quotient object, and added a breakdown-value inference conjecture;
+prior verdict: REVISE.
+\item v3 (revise) --- removed the already-known fixed-\(M\) reduction as a
+main novelty claim, separated deterministic active-region geometry from the
+RR/ARP stochastic critical-value path, added Fang--Santos and Andrews--Soares
+comparators, operationalized the tied quotient, and replaced the infeasible
+population-score \(M_\star\) interval with an observable plug-in Gaussian
+construction; prior verdict: REVISE.
+\item v4 (revise) --- withdrew the generic active-region decomposition as a
+numbered theorem, fixed the tied-face \(s\)-versus-\(q\) notation, added
+Firpo--Galvao--Parker as the value-function comparator, accounted for the
+Rambachan--Roth one-sided \(M_\star\) interval, and strengthened the kernel to
+a moving-budget RR/ARP class theorem with Honest-DiD as the specialization;
+prior verdict: REVISE.
+\item v5 (revise) --- lifted the novelty claim to a uniform-in-\(M\)
+active-face certificate for affine-budget RR/ARP sensitivity paths, defined
+ties through a regular conditional Gaussian / vanishing-tube law, and added
+the transversality condition for regular and tied \(M_\star\) crossings; prior
+verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Andrews, Roth, and Pakes(2023)]{AndrewsRothPakes2023}
+Andrews, I., J. Roth, and A. Pakes (2023).
+\newblock Inference for linear conditional moment inequalities.
+\newblock \emph{Review of Economic Studies} 90(6), 2763--2791.
+
+\bibitem[Andrews and Soares(2010)]{AndrewsSoares2010}
+Andrews, D. W. K. and G. Soares (2010).
+\newblock Inference for parameters defined by moment inequalities using
+generalized moment selection.
+\newblock \emph{Econometrica} 78(1), 119--157.
+
+\bibitem[Bemporad, Morari, Dua, and Pistikopoulos(2002)]{BemporadMorariDuaPistikopoulos2002}
+Bemporad, A., M. Morari, V. Dua, and E. N. Pistikopoulos (2002).
+\newblock The explicit linear quadratic regulator for constrained systems.
+\newblock \emph{Automatica} 38(1), 3--20.
+
+\bibitem[Callaway and Sant'Anna(2021)]{CallawaySantAnna2021}
+Callaway, B. and P. H. C. Sant'Anna (2021).
+\newblock Difference-in-differences with multiple time periods.
+\newblock \emph{Journal of Econometrics} 225(2), 200--230.
+
+\bibitem[Chernozhukov, Hong, and Tamer(2007)]{ChernozhukovHongTamer2007}
+Chernozhukov, V., H. Hong, and E. Tamer (2007).
+\newblock Estimation and confidence regions for parameter sets in econometric
+models.
+\newblock \emph{Econometrica} 75(5), 1243--1284.
+
+\bibitem[Gal and Nedoma(1972)]{GalNedoma1972}
+Gal, T. and J. Nedoma (1972).
+\newblock Multiparametric linear programming.
+\newblock \emph{Management Science} 18(7), 406--422.
+
+\bibitem[Fang and Santos(2019)]{FangSantos2019}
+Fang, Z. and A. Santos (2019).
+\newblock Inference on directionally differentiable functions.
+\newblock \emph{Review of Economic Studies} 86(1), 377--412.
+
+\bibitem[Firpo, Galvao, and Parker(2023)]{FirpoGalvaoParker2023}
+Firpo, S., A. F. Galvao, and T. Parker (2023).
+\newblock Uniform inference for value functions.
+\newblock \emph{Journal of Econometrics} 235(2), 1680--1699.
+
+\bibitem[Kaido, Molinari, and Stoye(2019)]{KaidoMolinariStoye2019}
+Kaido, H., F. Molinari, and J. Stoye (2019).
+\newblock Confidence intervals for projections of partially identified
+parameters.
+\newblock \emph{Econometrica} 87(4), 1397--1432.
+
+\bibitem[Kaido, Molinari, and Stoye(2022)]{KaidoMolinariStoye2022}
+Kaido, H., F. Molinari, and J. Stoye (2022).
+\newblock Constraint qualifications in partial identification.
+\newblock \emph{Econometric Theory} 38(3), 596--619.
+
+\bibitem[Masten and Poirier(2020)]{MastenPoirier2020}
+Masten, M. A. and A. Poirier (2020).
+\newblock Inference on breakdown frontiers.
+\newblock \emph{Quantitative Economics} 11(1), 41--111.
+
+\bibitem[Rambachan and Roth(2023)]{RambachanRoth2023}
+Rambachan, A. and J. Roth (2023).
+\newblock A more credible approach to parallel trends.
+\newblock \emph{Review of Economic Studies} 90(5), 2555--2591.
+
+\bibitem[Roth(2022)]{Roth2022Pretrends}
+Roth, J. (2022).
+\newblock Pretest with caution: Event-study estimates after testing for
+parallel trends.
+\newblock \emph{American Economic Review: Insights} 4(3), 305--322.
+
+\bibitem[Roth, Sant'Anna, Bilinski, and Poe(2023)]{RothSantAnnaBilinskiPoe2023}
+Roth, J., P. H. C. Sant'Anna, A. Bilinski, and J. Poe (2023).
+\newblock What's trending in difference-in-differences? A synthesis of the
+recent econometrics literature.
+\newblock \emph{Journal of Econometrics} 235(2), 2218--2244.
+
+\bibitem[Sun and Abraham(2021)]{SunAbraham2021}
+Sun, L. and S. Abraham (2021).
+\newblock Estimating dynamic treatment effects in event studies with
+heterogeneous treatment effects.
+\newblock \emph{Journal of Econometrics} 225(2), 175--199.
+\end{thebibliography}
+
+\end{document}

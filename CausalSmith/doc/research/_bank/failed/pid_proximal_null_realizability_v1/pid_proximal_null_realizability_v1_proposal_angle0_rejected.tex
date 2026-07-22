@@ -1,0 +1,273 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_proximal\_null\_realizability, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_proximal\_null\_realizability} / \texttt{v1}%
+  \\ \large\textit{A latent-realizability certificate for finite proximal bridge-null directions}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Partial-identification anchor. The tuple is
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\mathcal R_K,\mathcal B_K).
+\]
+Here \(\texttt{qid}=\texttt{pid\_proximal\_null\_realizability}\) and \(\texttt{specialization}=\texttt{v1}\). The observable law \(P\) is a finite law for \((Y,A,Z,W,X)\), with \(A\in\{0,1\}\), finite negative-control exposure \(Z\), finite negative-control outcome \(W\), and optional discrete covariates \(X\). The parameter is the average treatment effect \(\theta=\E\{Y(1)-Y(0)\}\). The identifying restrictions \(\mathcal R_K\) are finite latent negative-control restrictions with a locked support cap \(|\mathcal U|\le K\): there exists a finite latent \(U\in\{1,\ldots,K\}\) such that \((Y(0),Y(1),W)\perp(A,Z)\mid(U,X)\), \(Z\) is a negative-control exposure, \(W\) is a negative-control outcome, consistency holds, and all latent conditional probability tables are nonnegative and sum to one. The bounding functional \(\mathcal B_K(P)\) is the sharp image of \(\theta\) over all latent laws satisfying \(\mathcal R_K\) and projecting to \(P\), after restricting bridge-null perturbations to the \(K\)-latent-realizable null cone \(\mathcal K_{\mathrm{lat},K}(P)\), not the full algebraic kernel \(\mathcal K_{\mathrm{alg}}(P)\).
+
+\begin{abstract}
+Proximal bridge equations may have nonunique solutions, yet published identification results treat the induced null directions algebraically. In finite negative-control models, an algebraic bridge-null vector need not be induced by any nonnegative latent negative-control law with a fixed support cap. The main conjecture characterizes the \(K\)-latent-realizable null cone by a finite Farkas certificate and separates it from the row-space/null-annihilator quotient used for functional bridge identification. A second conjecture promotes this separation to an open class of finite observed laws with the same bridge operator nullspace and the same quotient certificate but different sharp ATE sets. Resolving the conjectures would turn rank-deficient proximal analysis into a sharp partial-identification problem over causal latent fibers rather than over all bridge fibers.
+\end{abstract}
+
+\section{Introduction}
+Rank-deficient proximal bridge equations create directions along which the bridge function can move without changing the observed bridge equation. The question is whether those algebraic directions are also directions along which a valid finite negative-control causal model can move. The main claim is that the answer is no: the live object is a \(K\)-latent-realizable null cone, and it can be strictly smaller than the algebraic nullspace even when the usual quotient certificate is identical.
+
+\citet[Theorem 3.3 and Corollary 4.1]{ZhangLiMiaoTchetgen2023} give a null-space condition under which a linear functional of a nonunique proximal bridge is still identified, while \citet[Section 3]{ShiMiaoNelsonTchetgen2020} give the closest finite categorical negative-control latent-class model. \citet[Section 3]{BalkePearl1997} show how finite latent response-type sharp bounds reduce to linear programming. The gap is that neither the algebraic quotient condition nor the response-type LP decides which bridge-null directions are liftable while preserving a negative-control latent law with the observed \((Y,A,Z,W)\) table.
+
+The direct consumer is the partial-proxy program of \citet{GhassamiShpitserTchetgen2024}, where completeness fails and bounds replace point identification. A reader should not optimize an ATE over all algebraic bridge solutions unless the endpoint directions have a latent-completion certificate.
+
+\begin{itemize}[leftmargin=*]
+\item Conjecture 1: The \(K\)-latent-realizable null cone is the union of support-pattern cones produced by a support-capped elimination algorithm, and each excluded algebraic direction has a pattern-indexed Farkas certificate. Gap: \citet{ZhangLiMiaoTchetgen2023} characterize algebraic functional invariance, \citet{ShiMiaoNelsonTchetgen2020} impose categorical latent structure, and \citet{BalkePearl1997} optimize over response types; none characterize proximal bridge-null liftability under fixed negative-control exclusions. Consumer: \citet{GhassamiShpitserTchetgen2024}.
+\item Conjecture 2: There is a hand-checkable \(2\)-by-\(3\), \(K=2\) paired-law witness with the same algebraic bridge nullspace and quotient certificate but different sharp ATE sets. Gap: the banked \texttt{eid\_proximal\_bridge\_quotient} result covers the quotient criterion, and Balke-Pearl style LP sharpness covers a fixed latent response-type model; this statement separates quotient equivalence from latent sharp-set equivalence across proximal laws with the same observed bridge operator. Consumer: finite proximal sensitivity analyses in the applied setting of \citet{ZivichColeEdwardsMulhollandShookSaTchetgen2023}.
+\item Theorem 1: If the bridge operator has full column rank and a \(K\)-latent law satisfies exchangeability, the latent-realizable null cone is trivial and the sharp ATE set collapses to the standard proximal estimand whenever a bridge exists. Gap: this is a sanity reduction to \citet{MiaoGengTchetgen2018} and \citet{CuiPuShiMiaoTchetgen2024}. Consumer: baseline proximal identification checks.
+\end{itemize}
+
+\section{Related work}
+\citet{MiaoGengTchetgen2018} establish proxy-variable identification using two conditionally independent proxies and rank-style restrictions; their result is the point-identified benchmark that disappears when the bridge operator is rank deficient. \citet{MiaoShiLiTchetgen2024} formulate outcome confounding bridges for double negative-control inference; the present question keeps that bridge equation but treats nonunique solutions as a partial-identification substrate. \citet{ShiMiaoNelsonTchetgen2020} give categorical double-negative-control estimators under finite latent confounding; their latent tables supply the finite causal feasibility constraints used here. \citet{CuiPuShiMiaoTchetgen2024} develop semiparametric proximal ATE theory and emphasize bridge-based inference; the proposed result instead concerns finite sharp sets when bridge uniqueness is absent. \citet{ZhangLiMiaoTchetgen2023} show in Theorem 3.3 and Corollary 4.1 that nonunique bridge solutions can still identify a counterfactual mean through an adjoint null-space condition; their null-annihilator algebra is the comparator intentionally not reproved here. \citet{BalkePearl1997} derive sharp bounds for finite latent response-type causal models by linear programming; the present certificate differs by conditioning the LP image on an observed proximal bridge operator and asking which algebraic null directions are liftable. \citet{GhassamiShpitserTchetgen2024} develop partial-identification bounds with proxies without requiring completeness or a bridge; their paper motivates a middle regime in which bridge fibers exist but only some are causal-latent fibers. \citet{KallusMaoUehara2022} study minimax and weak negative-control behavior; this proposal asks for population sharp sets, not estimator risk. \citet{ZivichColeEdwardsMulhollandShookSaTchetgen2023} present practical proximal guidance for epidemiologists; their applied obstacle is that negative-control assumptions must correspond to a plausible latent confounder.
+
+The in-repo prior-art slice is narrow. The banked \texttt{eid\_proximal\_bridge\_quotient} proposal is recorded as already giving the bridge-nullspace orthocomplement criterion, so this draft does not claim novelty for the quotient condition. The downgraded \texttt{eid\_proximal\_phase} reviewer trail asks for finite realization preserving the full observed \(Y\) law. The failed \texttt{eid\_proximal\_completeness} reviews ask for the image of latent completions paired with an explicit bridge and reject matrix-only witnesses. The current \texttt{pid\_proximal\_null\_realizability} state has no accepted catalogue theorem closing that latent-realizability layer.
+
+\section{Formal setup}
+Fix a stratum \(x\) and suppress \(X\). All variables are finite. Let \(A\in\{0,1\}\), \(Z\in\mathcal Z\), \(W\in\mathcal W\), \(Y\in[0,1]\), and let \(P\) denote the observable law of \((Y,A,Z,W)\). For each treatment arm \(a\), define the bridge operator
+\[
+T_a(P)h(z)=\sum_{w\in\mathcal W} h(w,a)P(W=w\mid Z=z,A=a),
+\]
+and the observed outcome regression \(m_a(z)=\E(Y\mid Z=z,A=a)\). The algebraic bridge fiber is
+\[
+\mathcal H_a(P)=\{h_a\in\R^{|\mathcal W|}:T_a(P)h_a=m_a\},
+\quad
+\mathcal K_{\mathrm{alg},a}(P)=\ker T_a(P).
+\]
+A \(K\)-latent law is a law \(L\) on \((Y(0),Y(1),A,Z,W,U)\) with \(U\in\{1,\ldots,K\}\) satisfying \(\mathcal R_K\) and projecting to \(P\). A bridge \(h_a\) is induced by \(L\) when \(\E_L\{Y(a)\mid U=u\}=\sum_w h_a(w,a)L(W=w\mid U=u)\) for every latent state \(u\). The \(K\)-latent-realizable null cone \(\mathcal K_{\mathrm{lat},K,a}(P)\subseteq \mathcal K_{\mathrm{alg},a}(P)\) contains exactly those signed bridge perturbations \(v\) for which there is an \(\epsilon>0\), a bridge \(h_a\in\mathcal H_a(P)\), and two \(K\)-latent laws projecting to \(P\) whose induced bridges are \(h_a+\epsilon v\) and \(h_a-\epsilon v\). The sharp ATE set is
+\[
+\Theta_{I,K}(P)=\{\E_L[Y(1)-Y(0)]:L\in\mathcal L_K(P,\mathcal R_K)\},
+\]
+where \(\mathcal L_K(P,\mathcal R_K)\) is the set of \(K\)-latent laws satisfying the restrictions in the locked parameters and projecting to \(P\).
+
+\begin{quote}
+Partial-identification anchor. The tuple is
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\mathcal R_K,\mathcal B_K).
+\]
+Here \(\texttt{qid}=\texttt{pid\_proximal\_null\_realizability}\) and \(\texttt{specialization}=\texttt{v1}\). The observable law \(P\) is a finite law for \((Y,A,Z,W,X)\), with \(A\in\{0,1\}\), finite negative-control exposure \(Z\), finite negative-control outcome \(W\), and optional discrete covariates \(X\). The parameter is the average treatment effect \(\theta=\E\{Y(1)-Y(0)\}\). The identifying restrictions \(\mathcal R_K\) are finite latent negative-control restrictions with a locked support cap \(|\mathcal U|\le K\): there exists a finite latent \(U\in\{1,\ldots,K\}\) such that \((Y(0),Y(1),W)\perp(A,Z)\mid(U,X)\), \(Z\) is a negative-control exposure, \(W\) is a negative-control outcome, consistency holds, and all latent conditional probability tables are nonnegative and sum to one. The bounding functional \(\mathcal B_K(P)\) is the sharp image of \(\theta\) over all latent laws satisfying \(\mathcal R_K\) and projecting to \(P\), after restricting bridge-null perturbations to the \(K\)-latent-realizable null cone \(\mathcal K_{\mathrm{lat},K}(P)\), not the full algebraic kernel \(\mathcal K_{\mathrm{alg}}(P)\).
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite positivity and support cap]\label{ass:finite-positive}
+All observable cells used in \(T_a(P)\) have positive conditioning probability, and every latent law in \(\mathcal L_K(P,\mathcal R_K)\) has support contained in \(\{1,\ldots,K\}\) with nonnegative conditional probability tables.
+\end{assumption}
+
+\begin{assumption}[Negative-control latent exchangeability]\label{ass:nc-exclusion}
+There exists a finite \(U\in\{1,\ldots,K\}\) such that \((Y(0),Y(1),W)\perp(A,Z)\mid(U,X)\), consistency holds, and the observed law is the \((Y,A,Z,W,X)\) marginal of the latent law.
+\end{assumption}
+
+\begin{assumption}[Bridge feasibility]\label{ass:bridge-feasible}
+For each arm \(a\), the observed regression \(m_a\) lies in the column space of \(T_a(P)\), so \(\mathcal H_a(P)\) is nonempty.
+\end{assumption}
+
+\begin{assumption}[Bounded outcome]\label{ass:bounded-y}
+The latent conditional means of \(Y(a)\) and the bridge values considered in the finite witness lie in \([0,1]\).
+\end{assumption}
+
+\begin{assumption}[Endpoint sharpness convention]\label{ass:endpoint}
+An endpoint of \(\Theta_{I,K}(P)\) is sharp only if it is attained by a law in \(\mathcal L_K(P,\mathcal R_K)\), not merely by a signed solution of the bridge equation.
+\end{assumption}
+
+\section{Main results}
+\begin{conjecture}[\(K\)-latent-realizable null-cone certificate]\label{conj:null-cone}
+(NOT YET PROVED.) Under Assumptions \ref{ass:finite-positive}--\ref{ass:endpoint}, for each arm \(a\) there is a finite list of latent support patterns \(\mathfrak S_K(P)\), with cardinality bounded by a polynomial in the number of positive observable cells for fixed \(K,|\mathcal Z|,|\mathcal W|\), and for each pattern \(s\in\mathfrak S_K(P)\) there are matrices \(M_{a,s}(P)\), vectors \(b_{a,s}(P)\), and projections \(\Pi_{a,s}(P)\), all computable from the observed finite law and the locked support cap, such that
+\[
+\mathcal K_{\mathrm{lat},K,a}(P)
+=\bigcup_{s\in\mathfrak S_K(P)}
+\{\Pi_{a,s}(P)r:T_a(P)\Pi_{a,s}(P)r=0,\ M_{a,s}(P)r\le b_{a,s}(P)\}.
+\]
+Moreover, \(v\in\mathcal K_{\mathrm{alg},a}(P)\setminus\mathcal K_{\mathrm{lat},K,a}(P)\) if and only if each pattern \(s\in\mathfrak S_K(P)\) admits a nonnegative Farkas multiplier separating the affine \(K\)-latent-completion constraints for that pattern from every signed tangent inducing \(v\).
+\end{conjecture}
+
+\begin{conjecture}[Quotient-equivalent laws with different sharp ATE sets]\label{conj:non-equivalence}
+(NOT YET PROVED.) There is a \(2\)-by-\(3\) paired finite observed-law witness \((P,Q)\) with binary \(A\) and support cap \(K=2\), such that \(T_a(P)=T_a(Q)\), \(\mathcal K_{\mathrm{alg},a}(P)=\mathcal K_{\mathrm{alg},a}(Q)\), and the Zhang-Li-Miao-Tchetgen null-annihilator quotient certificate agrees for \(P\) and \(Q\), but \(\Theta_{I,2}(P)\ne\Theta_{I,2}(Q)\). The difference is witnessed by a direction \(v\) with \(v\in\mathcal K_{\mathrm{lat},2,a}(P)\) and \(v\notin\mathcal K_{\mathrm{lat},2,a}(Q)\), where nonmembership is certified only by the stated \(K=2\) latent negative-control restrictions and not by an extra equality of latent outcome means.
+\end{conjecture}
+
+\begin{theorem}[Full-rank reduction]\label{thm:full-rank}
+Under Assumptions \ref{ass:finite-positive}--\ref{ass:bridge-feasible}, if \(T_a(P)\) has full column rank for both treatment arms and a law in \(\mathcal L_K(P,\mathcal R_K)\) exists, then \(\mathcal K_{\mathrm{alg},a}(P)=\mathcal K_{\mathrm{lat},K,a}(P)=\{0\}\). If the proximal bridge exists, \(\Theta_{I,K}(P)\) collapses to the singleton value obtained by the unique bridge functional.
+\end{theorem}
+The proof is the rank-nullity theorem plus the standard bridge functional argument under latent exchangeability: a full-column-rank finite bridge operator has no nonzero null perturbation, so latent-realizability cannot add or remove bridge directions.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No-null sanity check]\label{cor:no-null}
+Under Assumptions \ref{ass:finite-positive}--\ref{ass:bridge-feasible}, if \(|\mathcal Z|\ge|\mathcal W|\) and \(T_a(P)\) has column rank \(|\mathcal W|\), Conjectures \ref{conj:null-cone} and \ref{conj:non-equivalence} reduce to Theorem \ref{thm:full-rank}: there is no bridge-null direction to classify, and every sharp endpoint is the unique bridge value.
+\end{corollary}
+
+\begin{example}[Exhibit 9.1: a 2-by-3 algebraic null direction]\label{ex:small-witness}
+Let one treatment arm have
+\[
+T=\begin{pmatrix}
+1/2&1/2&0\\
+0&1/2&1/2
+\end{pmatrix},
+\qquad
+v=(1,-1,1)^\transpose,
+\qquad
+h_0=(1/2,1/2,1/2)^\transpose .
+\]
+Then \(Tv=0\) and \(\mathcal K_{\mathrm{alg}}=\operatorname{span}\{v\}\). For \(K=2\), set \(U\in\{0,1\}\), \(P(Z=u)=1/2\), \(P(W\mid U=0)=(1/2,1/2,0)\), \(P(W\mid U=1)=(0,1/2,1/2)\), and \(Z=U\). The signed scalar \(s\) indexes bridges \(h_s=h_0+s v\). The certificate is
+\[
+\Pi s=s(1,-1,1)^\transpose,
+\quad
+M=\begin{pmatrix}1\\-1\end{pmatrix},
+\quad
+b=\begin{pmatrix}1/2\\1/2\end{pmatrix},
+\]
+so \(M s\le b\) is exactly \(-1/2\le s\le1/2\), the interval on which \(h_s\in[0,1]^3\). The internal check uses only primitives: each row of \(T\) is the conditional law of \(W\) given \((Z,A=a)\), \(T\Pi s=0\), all denominators are positive, and \(T h_s=(1/2,1/2)^\transpose\) for every feasible \(s\).
+\end{example}
+
+\begin{example}[Exhibit 9.2: corrected \(K=2\) witness target]\label{ex:two-laws}
+Keep the operator \(T\), null vector \(v\), and support cap \(K=2\) from Exhibit \ref{ex:small-witness}. The previous v2 table is withdrawn: with rows \((1/2,1/2,0)\) and \((0,1/2,1/2)\), the bridge \(h_s=(1/2+s,1/2-s,1/2+s)\) gives latent means \(1/2\) in both latent states, so it cannot support the stated \(1/4,3/4\) endpoint calculation. The v3 witness target instead uses the following support-pattern certificate as the focal finite object. Pattern \(s_P\) allows two latent proxy rows
+\[
+B_0=(2/3,1/3,0),\qquad B_1=(0,1/3,2/3),
+\]
+mixed with weights \(3/4\) and \(1/4\) for \(Z=0\), and \(1/4\) and \(3/4\) for \(Z=1\). This produces the observed bridge operator
+\[
+T=\begin{pmatrix}1/2&1/3&1/6\\[2pt]1/6&1/3&1/2\end{pmatrix},
+\qquad v=(1,-2,1)^\transpose,\qquad Tv=0.
+\]
+For \(h_t=(1/2,1/2,1/2)^\transpose+t v\), the latent induced means are
+\[
+B_0h_t=1/2+\tfrac{4}{3}t,\qquad B_1h_t=1/2+\tfrac{4}{3}t,
+\]
+so \(s_P\) certifies the nonzero interval \(-3/8\le t\le3/8\). The paired law \(Q\) is required to have the same \(T\) and \(m=T(1/2,1/2,1/2)^\transpose\), but only support patterns \(s_Q\) whose two latent proxy rows lie on the affine face \(b_1-2b_2+b_3=0\). On that face \(B_u v=0\) for each latent state, so the bridge-null direction is algebraic but has zero causal loading; the candidate Farkas certificate is the row vector \(c=(1,-2,1)\) applied to every latent proxy row, with nonnegative multipliers on the two face inequalities \(cB_u\le0\) and \(-cB_u\le0\). The internal check is explicit: all displayed rows are probability rows, the mixing weights reproduce \(T\), \(Tv=0\), and \(h_t\in[0,1]^3\) exactly for \(-1/2\le t\le1/2\). The remaining conjectural step is to show that the face restriction for \(Q\) is forced by its full observed \((Y,W,Z,A)\) law rather than imposed as an extra assumption; this is the finite enumeration required by Conjecture \ref{conj:non-equivalence}.
+\end{example}
+
+\section{Proof-sketch route}
+For Conjecture \ref{conj:null-cone}, the chain is: headline \(\leftarrow\) unfold the finite latent projection \(\mathcal L_K(P,\mathcal R_K)\) and bridge fiber definitions \(\leftarrow\) substitute Assumptions \ref{ass:finite-positive}--\ref{ass:endpoint} \(\leftarrow\) enumerate latent support patterns consistent with the positive observable cells \(\leftarrow\) form the signed tangent cone within each pattern \(\leftarrow\) eliminate nuisance coordinates by Fourier-Motzkin or Farkas projection \(\leftarrow\) identify the image coordinates that perturb bridge values while leaving \(T_a(P)h_a\) fixed \(\leftarrow\) prove that the pattern list is exhaustive and that the separating multipliers glue across patterns. This gives \(k=5\) substantive steps beyond definitions and removes the v2 reliance on a single generic projection theorem. For Conjecture \ref{conj:non-equivalence}, the chain is: construct the 2-by-3 operator in Exhibit 9.2 \(\leftarrow\) solve the \(s_P\) support-pattern completion and bridge-loading interval \(\leftarrow\) enumerate all \(K=2\) support patterns for the candidate \(Q\) law \(\leftarrow\) prove the observed \((Y,W,Z,A)\) law forces \(B_uv=0\) on every feasible pattern \(\leftarrow\) compute the resulting sharp ATE endpoints. This gives \(k=5\) substantive steps and isolates the finite enumeration that remains open.
+
+\section{Honest scope flags}
+Conjectures \ref{conj:null-cone} and \ref{conj:non-equivalence} are open. The certificate is deliberately indexed by the latent support cap \(K\); optimizing over arbitrary finite supports is not claimed. The v2 Exhibit 9.2 endpoint calculation is withdrawn. The v3 exhibit computes a corrected \(2\)-by-\(3\) operator and one support-pattern interval, but the second law \(Q\) still requires a full finite enumeration showing that its face restriction is forced by the observed law. The proposal does not claim novelty for the Zhang-Li-Miao-Tchetgen quotient criterion, bridge existence, Balke-Pearl response-type LP sharpness, or generic LP sharpness.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft around a latent-realizable null-cone certificate and a 2-by-3 non-equivalence witness; prior verdict: none.
+\item v2 (revise) -- locked the support cap \(K\), defined induced bridges, added Balke-Pearl and theorem anchors, computed the 2-by-3 certificate matrices, and added a candidate same-quotient second law with separating multiplier; prior verdict: REVISE.
+\item v3 (revise) -- withdrew the invalid equal-mean witness, replaced the null-cone statement with a support-pattern certificate, and supplied a corrected 2-by-3 support-pattern exhibit that isolates the remaining finite enumeration; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Balke and Pearl(1997)]{BalkePearl1997}
+Balke, A. and Pearl, J. (1997).
+Bounds on treatment effects from studies with imperfect compliance.
+\emph{Journal of the American Statistical Association}, 92(439):1171--1176.
+
+\bibitem[Cui et~al.(2024)]{CuiPuShiMiaoTchetgen2024}
+Cui, Y., Pu, H., Shi, X., Miao, W., and Tchetgen Tchetgen, E. J. (2024).
+Semiparametric proximal causal inference.
+\emph{Journal of the American Statistical Association}.
+
+\bibitem[Ghassami et~al.(2024)]{GhassamiShpitserTchetgen2024}
+Ghassami, A., Shpitser, I., and Tchetgen Tchetgen, E. J. (2024).
+Partial identification of causal effects using proxy variables.
+\emph{arXiv:2304.04374}.
+
+\bibitem[Kallus et~al.(2022)]{KallusMaoUehara2022}
+Kallus, N., Mao, X., and Uehara, M. (2022).
+Minimax negative controls.
+\emph{arXiv:2103.14029}.
+
+\bibitem[Miao et~al.(2018)]{MiaoGengTchetgen2018}
+Miao, W., Geng, Z., and Tchetgen Tchetgen, E. J. (2018).
+Identifying causal effects with proxy variables of an unmeasured confounder.
+\emph{Biometrika}, 105(4):987--993.
+
+\bibitem[Miao et~al.(2024)]{MiaoShiLiTchetgen2024}
+Miao, W., Shi, X., Li, W., and Tchetgen Tchetgen, E. J. (2024).
+A confounding bridge approach for double negative control inference on causal effects.
+\emph{Statistical Theory and Related Fields}.
+
+\bibitem[Shi et~al.(2020)]{ShiMiaoNelsonTchetgen2020}
+Shi, X., Miao, W., Nelson, J. C., and Tchetgen Tchetgen, E. J. (2020).
+Multiply robust causal inference with double-negative control adjustment for categorical unmeasured confounding.
+\emph{Journal of the Royal Statistical Society: Series B}, 82(2):521--540.
+
+\bibitem[Zhang et~al.(2023)]{ZhangLiMiaoTchetgen2023}
+Zhang, J., Li, W., Miao, W., and Tchetgen Tchetgen, E. J. (2023).
+Proximal causal inference without uniqueness assumptions.
+\emph{Statistics and Probability Letters}, 198:109836.
+
+\bibitem[Zivich et~al.(2023)]{ZivichColeEdwardsMulhollandShookSaTchetgen2023}
+Zivich, P. N., Cole, S. R., Edwards, J. K., Mulholland, G. E., Shook-Sa, B. E., and Tchetgen Tchetgen, E. J. (2023).
+Introducing proximal causal inference for epidemiologists.
+\emph{American Journal of Epidemiology}, 192(7):1224--1227.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,73 @@
+{
+  "qid": "exactid_backdoor_ate",
+  "specialization": "v1",
+  "cluster": "exactid",
+  "target_estimand": "ATE = E[Y(1) - Y(0)]",
+  "estimand_functional": "ψ(P) = E_X[ E[Y | A=1, X] − E[Y | A=0, X] ]",
+  "symbols": [
+    { "name": "X", "type": "covariate vector", "space": "𝒳" },
+    { "name": "A", "type": "treatment", "space": "{0,1}" },
+    { "name": "Y", "type": "outcome", "space": "ℝ" },
+    { "name": "Y0", "type": "potential outcome under control", "space": "ℝ" },
+    { "name": "Y1", "type": "potential outcome under treatment", "space": "ℝ" },
+    { "name": "e", "type": "propensity score", "sig": "𝒳 → (0,1)", "def": "e(x) = P(A=1 | X=x)" }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:consistency",
+      "kind": "causal-structural",
+      "condition": "Y = A·Y1 + (1−A)·Y0",
+      "free_symbols": ["Y", "A", "Y0", "Y1"],
+      "standard": { "name": "SUTVA / consistency", "cite": "ImbensRubin2015" }
+    },
+    {
+      "id": "ass:ignorability",
+      "kind": "causal-structural",
+      "condition": "(Y0, Y1) ⊥ A | X",
+      "free_symbols": ["Y0", "Y1", "A", "X"],
+      "standard": { "name": "conditional ignorability", "cite": "RosenbaumRubin1983" }
+    },
+    {
+      "id": "ass:positivity",
+      "kind": "support",
+      "condition": "0 < e(X) < 1 almost surely",
+      "free_symbols": ["e", "X"],
+      "standard": { "name": "positivity / overlap", "cite": "RosenbaumRubin1983" }
+    }
+  ],
+  "definitions": [],
+  "statements": [
+    {
+      "id": "lem:cond-mean-identified",
+      "kind": "lemma",
+      "statement": "for a ∈ {0,1}, E[Y(a) | X] = E[Y | A=a, X] almost surely",
+      "depends_on": ["ass:consistency", "ass:ignorability", "ass:positivity"],
+      "route": "consistency rewrites Y as Y(a) on {A=a}; ignorability swaps the conditioning on A; positivity makes the conditional event non-null",
+      "proof_tex": "Fix a. On {A=a}, consistency gives Y = Y(a). By ignorability (Y0,Y1) ⊥ A | X, so E[Y(a) | A=a, X] = E[Y(a) | X]; positivity ensures P(A=a | X) > 0 a.s. so the conditional expectation is well-defined. Combining, E[Y | A=a, X] = E[Y(a) | A=a, X] = E[Y(a) | X].",
+      "status": "proved"
+    },
+    {
+      "id": "thm:backdoor",
+      "kind": "theorem",
+      "statement": "ATE = ψ(P), i.e. E[Y(1) − Y(0)] = E_X[ E[Y | A=1, X] − E[Y | A=0, X] ]",
+      "depends_on": ["ass:consistency", "ass:ignorability", "ass:positivity", "lem:cond-mean-identified"],
+      "route": "apply lem:cond-mean-identified to each arm and average over X (g-formula / backdoor adjustment)",
+      "proof_tex": "By lem:cond-mean-identified, E[Y(a) | X] = E[Y | A=a, X] a.s. for a ∈ {0,1}. Taking the difference and the outer expectation over X, E[Y(1) − Y(0)] = E_X[ E[Y | A=1, X] − E[Y | A=0, X] ] = ψ(P).",
+      "status": "proved"
+    },
+    {
+      "id": "lem:randomized-sanity",
+      "kind": "lemma",
+      "statement": "when A ⊥ X (randomized treatment), ψ(P) reduces to E[Y | A=1] − E[Y | A=0]",
+      "depends_on": ["thm:backdoor"],
+      "route": "under A ⊥ X the inner conditional means do not depend on X and the outer average collapses",
+      "proof_tex": "If A ⊥ X then E[Y | A=a, X] = E[Y | A=a], so the outer X-average in ψ(P) is constant in X and equals E[Y | A=1] − E[Y | A=0]. This recovers the unadjusted difference-in-means under randomization.",
+      "status": "proved"
+    }
+  ],
+  "bibliography": [
+    { "key": "ImbensRubin2015", "citation": "Imbens & Rubin (2015), Causal Inference for Statistics, Social, and Biomedical Sciences." },
+    { "key": "RosenbaumRubin1983", "citation": "Rosenbaum & Rubin (1983), The central role of the propensity score, Biometrika." },
+    { "key": "Pearl1995", "citation": "Pearl (1995), Causal diagrams for empirical research, Biometrika." }
+  ]
+}

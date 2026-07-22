@@ -1,0 +1,980 @@
+% =====================================================================
+%  ThmSmith Stage 0 derivation skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=eid\_dml\_orth\_uniform, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage 0 derivation: \texttt{eid\_dml\_orth\_uniform} / \texttt{v1}%
+  \\ \large\textit{Weak-overlap studentization frontier for orthogonal ATE scores}}
+\author{ThmSmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+The observable identifying functional is the back-door ATE functional
+\[
+  \Phi_n(P_n)=\E_{P_n}\{g_{1,n}(X)-g_{0,n}(X)\},
+  \qquad
+  g_{d,n}(x)=\E_{P_n}[Y\mid D=d,X=x].
+\]
+The causal target is the triangular-array average treatment effect
+\(\theta_n=\E_{P_n}[Y(1)-Y(0)]\), distinguished from the observable functional
+whose equality to the target follows from consistency, conditional
+exchangeability, and overlap.  The same setup also defines the efficient ATE
+score \(\psi_n\), the variance \(V_n=\E_{P_n}[\psi_n(W)^2]\), and the
+covariance-kernel projection indices \(\Delta_{m,n}\) attached to the DML,
+LRO, and ADML variance rules.  The per-conjecture stages will verify whether
+these indices characterize studentized equivalence and whether the proposed
+two-cell weak-overlap witness gives a strict DML--LRO--ADML ordering.
+\end{abstract}
+
+\section{Introduction}
+Average treatment effect estimation under unconfoundedness is commonly
+reported as an orthogonal or debiased point estimate together with a Wald
+interval.  The point-identifying formula is the back-door adjustment, but the
+efficient score contains the inverse propensity factors \(D/e_n(X)\) and
+\((1-D)/(1-e_n(X))\).  When overlap degenerates with sample size, those factors
+can make the efficient variance \(V_n\) grow and can move the first-order
+fragility from the point estimate to the reported denominator.
+
+Before this note, the fixed-overlap theory already implies that cross-fitted
+DML, locally robust semiparametric moments, and automatic Riesz debiasing share
+the same ATE efficient influence function when nuisance remainders are small;
+see \cite{ChernozhukovEtAl2018DML,ChernozhukovEscancianoIchimuraNeweyRobins2022LRO,ChernozhukovNeweySingh2022ADML}.
+The weak-overlap literature explains why small propensities destabilize ATE
+inference, often through trimming, robust confidence intervals, or local
+limited-overlap asymptotics.  The present conjectural contribution is narrower:
+it asks whether, along the same local-to-weak-overlap sequence, DML, LRO, and
+ADML can remain point-equivalent after normalization by \(V_n^{1/2}\) while
+their studentized statistics and Wald half-lengths separate.
+
+The targeted new content is a projection-index description of that boundary.
+If Conjecture 1 is confirmed, equality of studentized limits is governed by
+the limits of observable covariance-kernel residual indices
+\(\Delta_{m,n}\), with ratio-consistent studentization as the special case
+\(\Delta_{m,n}\to0\).  If Conjecture 2 is confirmed, a primitive two-cell
+finite-support construction supplies an open-set witness on which the indices
+are strictly ordered for the three named rules.  The setup below is deliberately
+separate from those verdicts: it defines the causal target, the observable
+functional, the common score normalization, and the projection objects that
+later stages will use.
+
+\paragraph{Motivating conjecture(s).}
+Conjecture 1.
+Under Assumptions~\ref{ass:exact-ate}--\ref{ass:kernel-observable}, including the standardized EIF central limit condition in Assumption~\ref{ass:eif-clt}, the centered point estimators are uniformly equivalent:
+\[
+  \max_{m,m'\in\mathcal M}|Z_{m,n}-Z_{m',n}|\to_p0.
+\]
+For any \(m,m'\in\mathcal M\), their studentized statistics are asymptotically equivalent,
+\[
+  T_{m,n}-T_{m',n}\to_p0,
+\]
+if and only if
+\[
+  \Delta_{m,n}-\Delta_{m',n}\to0.
+\]
+If \(\Delta_{m,n}\to\delta_m\) and \(\Delta_{m',n}\to\delta_{m'}\) with \(\delta_m\ne\delta_{m'}\), then the studentized statistics have different scale limits:
+\[
+  T_{m,n}\Rightarrow N(0,(1+\delta_m)^{-1}),\qquad
+  T_{m',n}\Rightarrow N(0,(1+\delta_{m'})^{-1}),
+\]
+even though their centered point estimates share the same \(N(0,1)\) limit after normalization by \(V_n^{1/2}\).  In the canonical ordering where ADML absorbs the full weak-overlap Riesz direction and DML/LRO leave progressively larger residual projections, \(\delta_{\mathrm{ADML}}=0<\delta_{\mathrm{LRO}}<\delta_{\mathrm{DML}}\), so Wald intervals separate first through studentization, not through the point estimate.  Moreover, a single estimator \(m\) has ratio-consistent studentization relative to the efficient variance \(V_n\) if and only if \(\Delta_{m,n}\to0\).
+
+Conjecture 2.
+Under Assumptions~\ref{ass:exact-ate}--\ref{ass:kernel-observable} and \ref{ass:two-cell}, there is a nonempty open set of finite-support triangular arrays for which
+\[
+  \Delta_{\mathrm{ADML},n}=0,\qquad
+  0<\liminf_n\Delta_{\mathrm{LRO},n}
+  \le \limsup_n\Delta_{\mathrm{LRO},n}
+  < \liminf_n\Delta_{\mathrm{DML},n}.
+\]
+On this open set,
+\[
+  \max_{m,m'\in\mathcal M}|Z_{m,n}-Z_{m',n}|\to_p0
+\]
+but the three Wald half-lengths based on \(\hat V_{m,n}^{1/2}/\sqrt n\) have strict limiting ratios.  The witness is nondegenerate on the observable law: both treatment states occur with positive probability in each \(n\), residual variances are bounded away from zero on the weak-overlap cell, and the strict gaps persist under sufficiently small perturbations of the two cell probabilities and residual variances.  For the displayed two-cell matrices, the indices are computed directly as
+\[
+  \Delta_{\mathrm{ADML},n}=0,\qquad
+  \Delta_{\mathrm{DML},n}=a_{A,n}^2/V_n,\qquad
+  \Delta_{\mathrm{LRO},n}
+  =
+  \frac{(a_{A,n}-\lambda a_{B,n})^2}{(1+\lambda^2)V_n},
+\]
+so strict separation follows whenever \(0< (a_{A,n}-\lambda a_{B,n})^2/(1+\lambda^2)<a_{A,n}^2\) eventually.
+Because \(a_{B,n}/a_{A,n}\to0\), the displayed LRO index converges to \(\eta_A/(1+\lambda^2)\) while the DML index converges to \(\eta_A\), giving strict separation for every fixed \(\lambda>0\).
+
+\section{Related work and positioning}
+\cite{Pearl1995CausalDiagrams} introduced graphical adjustment criteria and
+is the source of the back-door logic used to identify
+\(\E[Y(1)-Y(0)]\) from \((Y,D,X)\).  \cite{Robins1986GFormula} developed the
+g-formula and potential-outcome identification calculus; the back-door ATE
+functional in this note is the single-treatment specialization.
+\cite{Hahn1998Efficiency} characterizes semiparametric efficiency for ATEs
+under unconfoundedness and supplies the efficient influence-function benchmark
+whose variance is denoted \(V_n\).
+
+\cite{ChernozhukovEtAl2018DML} is the baseline cross-fitted DML reference: it
+shows how Neyman orthogonality and product-rate nuisance conditions produce an
+asymptotically linear ATE estimator under overlap.  \cite{NeweyRobins2018}
+gives cross-fitting and fast-remainder machinery that explains why several
+orthogonal scores can share one first-order expansion.  \cite{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO}
+is the LRO comparator because it constructs locally robust semiparametric GMM
+moments and sandwich variance formulas.  \cite{ChernozhukovNeweySingh2022ADML}
+is the ADML comparator because it estimates and uses Riesz representers
+automatically, with robust variance reporting for causal and structural
+functionals.  \cite{ChernozhukovNeweySingh2022RR} is closest on the Riesz side:
+it emphasizes that global parameters can become nonregular when the Riesz
+representer is hard, while this note turns that warning into an explicit
+DML--LRO--ADML studentization comparison.
+
+\cite{CrumpHotzImbensMitnik2009} motivates the overlap problem through
+diagnostics and trimming for average treatment effects; this note keeps the
+untrimmed full-population ATE and studies the variance reports attached to it.
+\cite{Rothe2017LimitedOverlapCI} studies robust confidence intervals under
+limited overlap and is relevant because coverage can fail even when the target
+is well-defined.  \cite{HongLeungLi2020} gives local limited-overlap
+asymptotics in which the rate is affected by degenerating propensities.
+\cite{HeilerKazak2021ExtremePS} treats inference with many extreme propensity
+scores and irregular identification.  \cite{ArmstrongKolesar2021FiniteSampleATE}
+studies finite-sample optimal ATE confidence intervals under unconfoundedness,
+which is a different remedy from comparing named orthogonal variance rules.
+\cite{SasakiUra2022MomentsRatios} addresses a neighboring small-denominator
+problem through robust inference for moments of ratios.  \cite{MaSantAnnaSasakiUra2026WeakOverlapDR}
+uses trimming and bias correction to preserve original causal targets under
+weak overlap, whereas this note does not change the estimator target.
+\cite{Dorn2025WeakOverlapDR} studies how much weak overlap doubly robust
+\(t\)-statistics can handle; the present contribution is the projection-index
+frontier for the three named DML, LRO, and ADML reports.  \cite{DukesVansteelandtWhitney2024DRDML}
+is adjacent on doubly robust DML inference and nonregularity, but its source of
+nonregularity is not the same weak-overlap variance-rule residual.
+
+The closest in-repository positioning supplied by the Stage -1 proposal is the
+empty ExactID seed catalogue and earlier rejected non-equivalence attempts.
+Those attempts are relevant as a warning: strict non-equivalence must be
+derived from primitive finite-support or covariance-kernel conditions rather
+than assumed as a positive margin.  The present setup follows that discipline
+by making \(\Pi_{m,n}\), \(\Delta_{m,n}\), and the two-cell matrices explicit.
+
+\section{Formal setup}
+For each \(n\), let \(P_n\) be the observable law of
+\(W=(Y,D,X)\) on a measurable space \(\mathcal Y\times\{0,1\}\times\mathcal X\).
+The causal substrate is the usual single-treatment SWIG or NPSEM-with-potential
+outcomes model: \(D\) is a binary treatment, \(X\) is a vector of pre-treatment
+covariates, \(Y(1)\) and \(Y(0)\) are potential outcomes, and
+\[
+  Y=D\,Y(1)+(1-D)\,Y(0)
+\]
+is the observed outcome.  The graph has arrows from \(X\) to \(D\) and \(Y\),
+from \(D\) to \(Y\), and may contain latent common causes of \(X\) and the
+potential outcomes, but no unmeasured common cause of \(D\) and
+\((Y(1),Y(0))\) after conditioning on \(X\).
+
+Define the propensity score and outcome regressions
+\[
+  e_n(x)=\Pr_{P_n}(D=1\mid X=x),\qquad
+  g_{d,n}(x)=\E_{P_n}[Y\mid D=d,X=x],\quad d\in\{0,1\}.
+\]
+All conditional expectations are taken on strata with positive conditioning
+probability.  The local-overlap convention below supplies
+\(\kappa_n\le e_n(X)\le1-\kappa_n\) almost surely, so the two displayed
+conditional means and the inverse-propensity expressions used later are
+well-defined on the support of \(X\).
+
+The ATE Riesz representer and efficient influence function are
+\[
+  \alpha_n(W)=\frac{D}{e_n(X)}-\frac{1-D}{1-e_n(X)},
+\]
+\[
+  \psi_n(W)=g_{1,n}(X)-g_{0,n}(X)
+  +\alpha_n(W)\{Y-g_{D,n}(X)\}-\theta_n.
+\]
+Write
+\[
+  V_n=\E_{P_n}[\psi_n(W)^2],\qquad
+  L_n^2=\E_{P_n}\!\left[\alpha_n(W)^2\{Y-g_{D,n}(X)\}^2\right].
+\]
+The weak-overlap regime studied here allows \(L_n\to\infty\) and
+normalizes point-estimator comparisons by \(V_n^{1/2}\).
+
+Let
+\(\mathcal M=\{\mathrm{DML},\mathrm{LRO},\mathrm{ADML}\}\).  For
+\(m\in\mathcal M\), \(\hat\theta_{m,n}\) is the corresponding cross-fitted ATE
+estimator and \(\hat V_{m,n}\) is its named variance estimator: empirical
+AIPW-score variance for DML, locally robust GMM sandwich variance for LRO, and
+automatic Riesz robust variance for ADML.  Define
+\[
+  Z_{m,n}=\frac{\sqrt n(\hat\theta_{m,n}-\theta_n)}{V_n^{1/2}},
+  \qquad
+  T_{m,n}=\frac{\sqrt n(\hat\theta_{m,n}-\theta_n)}{\hat V_{m,n}^{1/2}}.
+\]
+The square root in \(T_{m,n}\) is used on the event \(\hat V_{m,n}>0\), which
+has probability tending to one under the variance-ratio assumption below.
+
+\paragraph{Locked parameters.}
+\begin{itemize}
+  \item \((\texttt{qid},\texttt{specialization})=(\texttt{eid\_dml\_orth\_uniform},\texttt{v1})\).
+  \item \(\texttt{anchor cluster}=\texttt{ExactID}\).
+  \item \(\texttt{graph / SWIG}\): binary treatment \(D\) with potential outcomes \((Y(1),Y(0))\), observed outcome \(Y=D\,Y(1)+(1-D)Y(0)\), and covariates \(X\) satisfying conditional exchangeability \((Y(1),Y(0))\) independent of \(D\) conditional on \(X\).
+  \item \(\texttt{treatment}\): binary \(D\in\{0,1\}\).
+  \item \(\texttt{target estimand}\): \(\theta_n=\E_{P_n}[Y(1)-Y(0)]=\E_{P_n}[g_{1,n}(X)-g_{0,n}(X)]\) along a triangular array of laws \(P_n\).
+  \item \(\texttt{identifying assumptions}\): consistency, conditional exchangeability, positivity with local weak overlap \(\kappa_n\le e_n(X)\le1-\kappa_n\), square-integrable outcomes, and cross-fitted nuisance learners for outcome regression \(g_d\), propensity \(e\), and the ATE Riesz representer \(\alpha_n(W)=D/e_n(X)-(1-D)/(1-e_n(X))\).
+  \item \(\texttt{estimator comparison}\): the original cross-fit DML ATE score of Chernozhukov et al. (2018), the ATE-specialized locally robust semiparametric GMM score of Chernozhukov, Escanciano, Ichimura, Newey, and Robins (2022), and the automatic debiased ML Riesz-score estimator of Chernozhukov, Newey, and Singh (2022).
+  \item \(\texttt{frontier object}\): point-estimator equivalence is measured after normalization by the exploding efficient standard deviation \(V_n^{1/2}\); studentization equivalence is measured by the ratio-consistency of each named variance estimator relative to \(V_n\).
+\end{itemize}
+
+\section{Assumptions}
+\begin{assumption}[Exact-ID ATE model]\label{ass:exact-ate}
+For each \(n\), consistency holds, \((Y(1),Y(0))\perp D\mid X\), and \(\E_n[Y^2]<\infty\).  The target is \(\theta_n=\E_n[Y(1)-Y(0)]\).
+\end{assumption}
+
+\begin{assumption}[Local weak overlap]\label{ass:local-overlap}
+There is a deterministic \(\kappa_n\downarrow0\) such that
+\[
+  \kappa_n\le e_n(X)\le 1-\kappa_n
+\]
+almost surely.  The efficient variance satisfies \(V_n\asymp L_n^2\),
+\(L_n\to\infty\), and \(L_n^2=o(n)\).
+\end{assumption}
+
+\begin{assumption}[Cross-fitted common EIF expansion]\label{ass:common-eif}
+For each \(m\in\mathcal M\),
+\[
+  \sqrt n(\hat\theta_{m,n}-\theta_n)
+  =
+  n^{-1/2}\sum_{i=1}^n \psi_n(W_i)+R_{m,n},
+  \qquad
+  \max_{m\in\mathcal M}|R_{m,n}|/V_n^{1/2}=o_p(1).
+\]
+The expansion uses the same efficient influence function \(\psi_n\) for DML,
+LRO, and ADML.
+\end{assumption}
+
+\begin{assumption}[Standardized EIF central limit]\label{ass:eif-clt}
+The triangular array satisfies the Lindeberg condition for \(\psi_n\), so
+\[
+  V_n^{-1/2}n^{-1/2}\sum_{i=1}^n\psi_n(W_i)\Rightarrow N(0,1).
+\]
+\end{assumption}
+
+\begin{assumption}[Variance-rule linearization]\label{ass:variance-linear}
+For each \(m\in\mathcal M\),
+\[
+  \frac{\hat V_{m,n}}{V_n}
+  =
+  1+\Delta_{m,n}+\xi_{m,n}+o_p(1),
+\]
+where \(\max_{m\in\mathcal M}|\xi_{m,n}|\to_p0\), and \(\Delta_{m,n}\) is the covariance-kernel projection index defined in Section~\ref{sec:functional}.  Thus the first-order variance-ratio limit is determined by the observable projection index rather than by an uncontrolled residual term.
+\end{assumption}
+
+\begin{assumption}[Kernel observability and nondegeneracy]\label{ass:kernel-observable}
+The kernel \(K_n\), the projections \(\Pi_{m,n}\), and \(V_n\) are identified from the observable law of \((Y,D,X)\) and the named variance rule \(m\).  If \(\liminf_n\Delta_{m,n}>0\), then the variance-estimator ratio \(\hat V_{m,n}/V_n\) has a nondegenerate limit strictly larger than one for that \(m\).
+\end{assumption}
+
+\begin{assumption}[Fixed-overlap corner]\label{ass:fixed-overlap}
+There is an \(\varepsilon>0\) such that
+\(\varepsilon\le e_n(X)\le1-\varepsilon\) for all \(n\).  In addition,
+\(\sup_n\E_{P_n}[Y^2]<\infty\), the usual DML product-rate remainder is
+\(o_p(1)\) after \(\sqrt n\) scaling, and each named variance estimator is
+ratio-consistent for \(V_n\).
+\end{assumption}
+
+\begin{assumption}[Known-propensity common-score corner]\label{ass:known-propensity}
+The propensity score \(e_n\) is known and DML, LRO, and ADML use the same
+empirical efficient score for variance estimation.  Equivalently, the
+variance-rule adjoint range \(\mathcal{A}_{m,n}\) contains \(\alpha_n\) for
+every \(m\in\mathcal M\).
+\end{assumption}
+
+\begin{assumption}[Two-cell weak-overlap witness]\label{ass:two-cell}
+The covariate support contains two cells \(x_A,x_B\) with positive probabilities, \(e_n(x_A)=\kappa_n\), \(e_n(x_B)=1/2\), bounded residual variances \(\sigma_A^2,\sigma_B^2\in[c,C]\) for constants \(0<c<C<\infty\), and outcome regressions chosen so that \(V_n\asymp \kappa_n^{-1}\).  Let \(q_A,q_B\) be the \(K_n\)-orthonormal cell indicators, with signs chosen so the displayed coefficients are eventually positive, and write \(\alpha_n=a_{A,n}q_A+a_{B,n}q_B\) with \(a_{A,n}^2/V_n\to\eta_A>0\), \(a_{B,n}^2=O(1)\), and \(a_{B,n}^2/V_n\to0\).  In the \((q_A,q_B)\) basis, the first-order variance-rule adjoint matrices are
+\[
+  B_{\mathrm{DML},n}=\begin{pmatrix}0\\1\end{pmatrix},\qquad
+  B_{\mathrm{LRO},n}=\begin{pmatrix}\lambda\\1\end{pmatrix},\qquad
+  B_{\mathrm{ADML},n}=\begin{pmatrix}1&0\\0&1\end{pmatrix},
+\]
+for a fixed observable \(\lambda\in(0,\infty)\).  Thus \(\Pi_{m,n}\) is the \(K_n\)-projection onto the column space of the displayed matrix for rule \(m\), rather than an assumed omit/include relation.  The strong \(x_A\) contribution and \(a_{B,n}^2/V_n\to0\) imply \(a_{B,n}/a_{A,n}\to0\), so the LRO projection captures a strict but incomplete fraction of the weak-overlap direction.
+\end{assumption}
+
+\section{Estimand-defining functional}\label{sec:functional}
+The exact-identification functional is the back-door ATE map
+\[
+  \Phi_n(P_n)=
+  \int_{\mathcal X}\{g_{1,n}(x)-g_{0,n}(x)\}\,dP_{X,n}(x).
+\]
+Equivalently, on finite support \(x_1,\ldots,x_J\),
+\[
+  \Phi_n(P_n)=
+  \sum_{j=1}^J
+  \{\E_{P_n}[Y\mid D=1,X=x_j]-\E_{P_n}[Y\mid D=0,X=x_j]\}
+  \Pr_{P_n}(X=x_j).
+\]
+This is a computable map from the observed law: estimate or read from \(P_n\)
+the conditional means in the two treatment arms and average their difference
+over the marginal distribution of \(X\).  Positivity in
+Assumption~\ref{ass:local-overlap} is exactly the support condition that makes
+both conditional means available wherever \(P_{X,n}\) puts mass.
+
+Let \(\mathcal H_n\) be the closed \(K_n\)-square-integrable space of
+\(D,X\)-measurable perturbations of \(\alpha_n\).  Define the observable
+covariance kernel
+\[
+  K_n(h,h')=
+  \E_{P_n}\!\left[h(W)h'(W)\varepsilon_n(W)^2\right],
+  \qquad \|h\|_{K_n}^2=K_n(h,h).
+\]
+For each variance rule \(m\), let \(S_{m,n}\) be the Gateaux derivative, at
+the truth and with folds held fixed, of the named variance functional
+\(\hat V_{m,n}\) with respect to a perturbation \(h\in\mathcal H_n\) of
+\(\alpha_n\).  Its adjoint \(S_{m,n}^*\) is taken under the \(K_n\) inner
+product.  Define
+\[
+  \mathcal A_{m,n}
+  =
+  \overline{\operatorname{Range}(S_{m,n}^*)}^{\|\cdot\|_{K_n}},
+  \qquad
+  \Pi_{m,n}:\mathcal H_n\to\mathcal A_{m,n}
+\]
+as the \(K_n\)-orthogonal projection.  The studentization projection index is
+\[
+  \Delta_{m,n}
+  =
+  \frac{\|(I-\Pi_{m,n})\alpha_n\|_{K_n}^2}{V_n}.
+\]
+
+For finite support, the projection is an explicit weighted least-squares
+calculation.  Suppose \(\mathcal H_n\) is represented in a known basis
+\(b_1,\ldots,b_J\), \(\alpha_n\) has coordinate vector \(a_n\in\R^J\), and the
+certificate range of report \(m\) is represented by a supplied matrix
+\(B_{m,n}\in\R^{J\times r_m}\).  Let
+\[
+  G_n(j,k)=K_n(b_j,b_k),\qquad j,k=1,\ldots,J,
+\]
+the observable \(K_n\)-Gram matrix.  The projection coefficients
+\(\hat c_{m,n}\in\R^{r_m}\) solve the explicit weighted least-squares problem
+\[
+  \hat c_{m,n}\in
+  \arg\min_{c\in\R^{r_m}}(a_n-B_{m,n}c)^{\transpose}G_n(a_n-B_{m,n}c),
+\]
+with no constraints other than the normal equations.  Equivalently,
+\[
+  \Pi_{m,n}a_n
+  =
+  B_{m,n}(B_{m,n}^{\transpose}G_nB_{m,n})^+
+  B_{m,n}^{\transpose}G_na_n,
+\]
+where \((\cdot)^+\) denotes the Moore--Penrose inverse on the finite matrix.
+Thus
+\[
+  \Delta_{m,n}=
+  \frac{(a_n-\Pi_{m,n}a_n)^{\transpose}G_n(a_n-\Pi_{m,n}a_n)}{V_n}.
+\]
+This formula is computable from the observed law and the named variance rule:
+\(G_n\) is obtained from the conditional residual second moments, \(a_n\) is
+the coordinate vector of the ATE Riesz representer, and \(B_{m,n}\) is the
+finite-support matrix representation of \(S_{m,n}^*\).
+
+\section{Target causal estimand}
+The causal target is the full-population average treatment effect in the
+triangular-array law \(P_n\):
+\[
+  \theta_n=\E_{P_n}[Y(1)-Y(0)].
+\]
+This is not defined to be an observed regression functional.  It is a
+counterfactual contrast of two potential outcomes under the law \(P_n\).  The
+role of Section~\ref{sec:functional} is to define the observable functional
+\(\Phi_n(P_n)\), the common score normalization, and the variance-rule
+projection indices that later theorem blocks connect to studentized
+statistics.
+
+\section{Main theorems}
+\begin{theorem}[Conjecture 1: studentization frontier]\label{thm:student-frontier}
+Under Assumptions~\ref{ass:exact-ate}--\ref{ass:kernel-observable}, including the standardized EIF central limit condition in Assumption~\ref{ass:eif-clt}, the centered point estimators are uniformly equivalent:
+\[
+  \max_{m,m'\in\mathcal M}|Z_{m,n}-Z_{m',n}|\to_p0.
+\]
+For any \(m,m'\in\mathcal M\), their studentized statistics are asymptotically equivalent,
+\[
+  T_{m,n}-T_{m',n}\to_p0,
+\]
+if and only if
+\[
+  \Delta_{m,n}-\Delta_{m',n}\to0.
+\]
+If \(\Delta_{m,n}\to\delta_m\) and \(\Delta_{m',n}\to\delta_{m'}\) with \(\delta_m\ne\delta_{m'}\), then the studentized statistics have different scale limits:
+\[
+  T_{m,n}\Rightarrow N(0,(1+\delta_m)^{-1}),\qquad
+  T_{m',n}\Rightarrow N(0,(1+\delta_{m'})^{-1}),
+\]
+even though their centered point estimates share the same \(N(0,1)\) limit after normalization by \(V_n^{1/2}\).  In the canonical ordering where ADML absorbs the full weak-overlap Riesz direction and DML/LRO leave progressively larger residual projections, \(\delta_{\mathrm{ADML}}=0<\delta_{\mathrm{LRO}}<\delta_{\mathrm{DML}}\), so Wald intervals separate first through studentization, not through the point estimate.  Moreover, a single estimator \(m\) has ratio-consistent studentization relative to the efficient variance \(V_n\) if and only if \(\Delta_{m,n}\to0\).
+\end{theorem}
+
+The theorem separates two layers of weak-overlap behavior.  The point estimators remain first-order equivalent after the common efficient standard-deviation normalization because all three estimators have the same efficient influence-function expansion.  Studentization depends on a different object: the observable residual projection index \(\Delta_{m,n}\) attached to the variance rule.
+
+\begin{theorem}[Conjecture 2: two-cell weak-overlap witness]\label{thm:two-cell-witness}
+Under Assumptions~\ref{ass:exact-ate}--\ref{ass:kernel-observable} and \ref{ass:two-cell}, the two-cell matrices yield \(\Delta_{\mathrm{ADML},n}=0\), \(0<\lim_{n\to\infty}\Delta_{\mathrm{LRO},n}=\eta_A/(1+\lambda^2)<\eta_A=\lim_{n\to\infty}\Delta_{\mathrm{DML},n}\), centered point-statistic equivalence, and strict Wald half-length ratios.
+\end{theorem}
+
+The theorem is a finite-dimensional certificate for the studentization frontier.  The reported Wald denominators can separate because Assumption~\ref{ass:variance-linear} lets each variance rule leave a different covariance-kernel residual of the ATE Riesz representer.
+
+\section{Interpretation}
+\subsubsection*{Conjecture 1}
+The theorem separates two layers of weak-overlap behavior.  The point
+estimators remain first-order equivalent after the common efficient
+standard-deviation normalization because all three estimators have the same
+efficient influence-function expansion.  Studentization depends on a different
+object: the observable residual projection index \(\Delta_{m,n}\) attached to
+the variance rule.  Equal limiting projection loss gives equal Wald scaling;
+unequal finite projection losses give distinct Gaussian scale limits even
+though the centered numerators share the same limit.
+
+The last clause is the ratio-consistency special case.  A variance rule is
+studentized as if it used the efficient variance \(V_n\) exactly when its
+reported variance is first-order ratio-consistent for \(V_n\), and under the
+linearization in Assumption~\ref{ass:variance-linear} this is equivalent to
+the residual projection index vanishing.
+
+\subsubsection*{Conjecture 2}
+The theorem is a finite-dimensional certificate for the studentization frontier.  The point estimators remain equivalent because Assumption~\ref{ass:common-eif} gives all three estimators the same efficient influence-function expansion after scaling by \(V_n^{1/2}\).  The reported Wald denominators can still separate because Assumption~\ref{ass:variance-linear} lets each variance rule leave a different covariance-kernel residual of the ATE Riesz representer.
+
+In the two-cell basis, ADML spans both weak- and strong-overlap cell directions, so its residual index is zero.  DML spans only the \(q_B\) direction and leaves the entire weak-overlap component \(a_{A,n}q_A\).  LRO spans the tilted line \((\lambda,1)\), so it captures a fixed positive fraction of \(q_A\) but not all of it.  Since the weak-overlap coefficient dominates, \(a_{B,n}/a_{A,n}\to0\), the LRO residual limit is exactly \(1/(1+\lambda^2)\) of the DML residual limit.
+
+The point estimators remain first-order equivalent after the common efficient standard-deviation normalization because all three estimators have the same efficient influence-function expansion.  In the two-cell basis, ADML spans both weak- and strong-overlap cell directions, so its residual index is zero.  DML spans only the \(q_B\) direction and leaves the entire weak-overlap component \(a_{A,n}q_A\).  LRO spans the tilted line \((\lambda,1)\), so it captures a fixed positive fraction of \(q_A\) but not all of it.
+
+\section{Step-by-step proof}
+\subsection*{Supporting lemmas}
+\begin{theorem}[Theorem 1: fixed-overlap equivalence sanity theorem]\label{thm:fixed-overlap}
+Under Assumptions~\ref{ass:exact-ate}, \ref{ass:common-eif}, \ref{ass:eif-clt}, and \ref{ass:fixed-overlap},
+\[
+  Z_{\mathrm{DML},n}-Z_{\mathrm{LRO},n}\to_p0,\qquad
+  Z_{\mathrm{DML},n}-Z_{\mathrm{ADML},n}\to_p0,
+\]
+and
+\[
+  T_{\mathrm{DML},n}-T_{\mathrm{LRO},n}\to_p0,\qquad
+  T_{\mathrm{DML},n}-T_{\mathrm{ADML},n}\to_p0.
+\]
+Thus, in the fixed-overlap product-rate corner, the three named estimators give the same first-order Wald inference for \(\theta_n\).
+\end{theorem}
+\begin{proof}
+For any \(m\in\mathcal M\), Assumption~\ref{ass:common-eif} gives
+\[
+  Z_{m,n}=V_n^{-1/2}n^{-1/2}\sum_{i=1}^n\psi_n(W_i)+R_{m,n}/V_n^{1/2}.
+\]
+The leading empirical-score term is common to DML, LRO, and ADML, while the remainder term is \(o_p(1)\) uniformly over \(m\).  Therefore, for each pair \(m,m'\),
+\[
+  Z_{m,n}-Z_{m',n}=(R_{m,n}-R_{m',n})/V_n^{1/2}=o_p(1),
+\]
+which gives the two displayed centered-statistic differences.  Assumption~\ref{ass:eif-clt} also makes each \(Z_{m,n}\) tight and asymptotically standard normal.
+
+By Assumption~\ref{ass:fixed-overlap}, each named variance estimator is ratio-consistent for \(V_n\): \(\hat V_{m,n}/V_n\to_p1\).  Hence
+\[
+  T_{m,n}=Z_{m,n}\left(\frac{V_n}{\hat V_{m,n}}\right)^{1/2}=Z_{m,n}\{1+o_p(1)\}.
+\]
+For any pair \(m,m'\),
+\[
+  T_{m,n}-T_{m',n}
+  =(Z_{m,n}-Z_{m',n})\left(\frac{V_n}{\hat V_{m,n}}\right)^{1/2}
+  +Z_{m',n}\left[\left(\frac{V_n}{\hat V_{m,n}}\right)^{1/2}-\left(\frac{V_n}{\hat V_{m',n}}\right)^{1/2}\right].
+\]
+The first term is \(o_p(1)\) by centered-statistic equivalence and ratio consistency.  The second term is \(o_p(1)\) because \(Z_{m',n}=O_p(1)\) and both bracketed multipliers converge in probability to one.  Taking \((m,m')=(\mathrm{DML},\mathrm{LRO})\) and \((\mathrm{DML},\mathrm{ADML})\) proves the studentized equivalences.
+\end{proof}
+
+\subsubsection*{Proof of Conjecture 1}
+\begin{proof}
+Let
+\[
+  S_n=V_n^{-1/2}n^{-1/2}\sum_{i=1}^n\psi_n(W_i).
+\]
+By Assumption~\ref{ass:eif-clt}, \(S_n\Rightarrow N(0,1)\), so \(S_n=O_p(1)\)
+and the limiting law is nondegenerate.  Assumption~\ref{ass:common-eif} gives,
+uniformly over the finite set \(\mathcal M\),
+\[
+  Z_{m,n}=S_n+\frac{R_{m,n}}{V_n^{1/2}}
+  =S_n+o_p(1).
+\]
+Therefore
+\[
+  \max_{m,m'\in\mathcal M}|Z_{m,n}-Z_{m',n}|
+  \le
+  2\max_{m\in\mathcal M}|R_{m,n}|/V_n^{1/2}
+  \to_p0,
+\]
+which proves centered point-estimator equivalence.  The same display and the
+central limit theorem give \(Z_{m,n}\Rightarrow N(0,1)\) for every
+\(m\in\mathcal M\).
+
+Next, Assumption~\ref{ass:variance-linear} gives
+\[
+  \frac{\hat V_{m,n}}{V_n}=1+\Delta_{m,n}+\rho_{m,n},
+  \qquad
+  \max_{m\in\mathcal M}|\rho_{m,n}|\to_p0,
+\]
+where \(\rho_{m,n}\) absorbs \(\xi_{m,n}\) and the displayed \(o_p(1)\) term.
+Because \(\Pi_{m,n}\) is a \(K_n\)-orthogonal projection,
+\[
+  0\le\Delta_{m,n}
+  \le \|\alpha_n\|_{K_n}^2/V_n
+  =L_n^2/V_n.
+\]
+Assumption~\ref{ass:local-overlap} states \(V_n\asymp L_n^2\), so the
+deterministic sequence \(\{\Delta_{m,n}:m\in\mathcal M\}\) is uniformly
+bounded.  Since \(d\mapsto(1+d)^{-1/2}\) is continuously differentiable on
+\([0,C]\) for any finite \(C\), the continuous mapping theorem and the
+uniform \(o_p(1)\) remainder imply
+\[
+  \left(\frac{V_n}{\hat V_{m,n}}\right)^{1/2}
+  =
+  (1+\Delta_{m,n})^{-1/2}+o_p(1)
+\]
+uniformly over \(m\in\mathcal M\).  Hence
+\[
+  T_{m,n}
+  =
+  Z_{m,n}\left(\frac{V_n}{\hat V_{m,n}}\right)^{1/2}
+  =
+  S_n(1+\Delta_{m,n})^{-1/2}+o_p(1)
+\]
+uniformly over \(m\).
+
+Fix \(m,m'\).  The preceding expansion yields
+\[
+  T_{m,n}-T_{m',n}
+  =
+  S_n\left\{(1+\Delta_{m,n})^{-1/2}
+      -(1+\Delta_{m',n})^{-1/2}\right\}
+  +o_p(1).
+\]
+If \(\Delta_{m,n}-\Delta_{m',n}\to0\), then the bracketed deterministic
+difference tends to zero by continuity, and \(T_{m,n}-T_{m',n}\to_p0\)
+because \(S_n=O_p(1)\).
+
+Conversely suppose \(T_{m,n}-T_{m',n}\to_p0\).  If the bracketed deterministic
+difference did not converge to zero, a subsequence would have absolute value
+at least some \(\varepsilon>0\).  Along that subsequence,
+\(\varepsilon S_n+o_p(1)\) could not converge to zero in probability because
+\(S_n\Rightarrow N(0,1)\) is nondegenerate.  Therefore
+\[
+  (1+\Delta_{m,n})^{-1/2}
+      -(1+\Delta_{m',n})^{-1/2}\to0.
+\]
+The indices are bounded and the inverse map \(b\mapsto b^{-2}-1\) is
+continuous on the corresponding compact range bounded away from zero, so
+\(\Delta_{m,n}-\Delta_{m',n}\to0\).  This proves the stated if and only if.
+
+If \(\Delta_{m,n}\to\delta_m\), then the expansion above and Slutsky's theorem
+give
+\[
+  T_{m,n}
+  \Rightarrow
+  (1+\delta_m)^{-1/2}N(0,1)
+  =
+  N(0,(1+\delta_m)^{-1}).
+\]
+The same argument applies to \(m'\).  If \(\delta_m\ne\delta_{m'}\), the
+limiting variances \((1+\delta_m)^{-1}\) and \((1+\delta_{m'})^{-1}\) are
+different.  In the canonical ordering
+\(\delta_{\mathrm{ADML}}=0<\delta_{\mathrm{LRO}}<\delta_{\mathrm{DML}}\), this
+means the ADML Wald denominator has the efficient first-order scale, while
+LRO and DML have progressively larger reported variance ratios and therefore
+different studentized Gaussian scales.  The centered numerators still share
+the \(N(0,1)\) limit by the first part of the proof.
+
+Finally, for one estimator \(m\),
+\[
+  \frac{\hat V_{m,n}}{V_n}
+  =
+  1+\Delta_{m,n}+o_p(1).
+\]
+If \(\Delta_{m,n}\to0\), then \(\hat V_{m,n}/V_n\to_p1\).  Conversely, if
+\(\hat V_{m,n}/V_n\to_p1\), then the deterministic nonnegative term
+\(\Delta_{m,n}\) must converge to zero; otherwise a subsequence bounded away
+from zero would force the variance ratio away from one in probability.  Thus
+ratio-consistent studentization relative to \(V_n\) holds if and only if
+\(\Delta_{m,n}\to0\).
+\end{proof}
+
+\subsubsection*{Proof of Conjecture 2}
+\begin{proof}[Proof of Theorem~\ref{thm:two-cell-witness}]
+Let
+\[
+  U_n=V_n^{-1/2}n^{-1/2}\sum_{i=1}^n\psi_n(W_i).
+\]
+Assumption~\ref{ass:common-eif} gives, uniformly over \(m\in\mathcal M\),
+\[
+  Z_{m,n}=U_n+R_{m,n}/V_n^{1/2}=U_n+o_p(1).
+\]
+Therefore, for any \(m,m'\in\mathcal M\),
+\[
+  Z_{m,n}-Z_{m',n}
+  =(R_{m,n}-R_{m',n})/V_n^{1/2}
+  =o_p(1),
+\]
+and hence
+\[
+  \max_{m,m'\in\mathcal M}|Z_{m,n}-Z_{m',n}|\to_p0.
+\]
+Assumption~\ref{ass:eif-clt} also gives \(U_n\Rightarrow N(0,1)\), so the common point-estimator numerator is nondegenerate.
+
+It remains to compute the observable variance indices.  By Assumption~\ref{ass:two-cell}, \(q_A,q_B\) are \(K_n\)-orthonormal and
+\[
+  \alpha_n=a_{A,n}q_A+a_{B,n}q_B.
+\]
+For ADML, the displayed matrix \(B_{\mathrm{ADML},n}=I_2\) has column space \(\mathbb R^2\).  Thus \(\Pi_{\mathrm{ADML},n}\alpha_n=\alpha_n\), so
+\[
+  (I-\Pi_{\mathrm{ADML},n})\alpha_n=0,
+  \qquad
+  \Delta_{\mathrm{ADML},n}=0.
+\]
+
+For DML, \(B_{\mathrm{DML},n}=(0,1)^\transpose\), so the projection range is \(\operatorname{span}\{q_B\}\).  Orthogonality of \(q_A,q_B\) gives
+\[
+  \Pi_{\mathrm{DML},n}\alpha_n=a_{B,n}q_B,\qquad
+  (I-\Pi_{\mathrm{DML},n})\alpha_n=a_{A,n}q_A.
+\]
+Since \(\|q_A\|_{K_n}=1\),
+\[
+  \Delta_{\mathrm{DML},n}
+  =
+  \frac{\|(I-\Pi_{\mathrm{DML},n})\alpha_n\|_{K_n}^2}{V_n}
+  =
+  \frac{a_{A,n}^2}{V_n}.
+\]
+
+For LRO, \(B_{\mathrm{LRO},n}=(\lambda,1)^\transpose\), so the projection range is the line spanned by \(v=(\lambda,1)^\transpose\).  In the \(K_n\)-orthonormal coordinates \((q_A,q_B)\), the squared distance from \(a=(a_{A,n},a_{B,n})^\transpose\) to this line is
+\[
+  \|a\|^2-\frac{(a^\transpose v)^2}{v^\transpose v}
+  =
+  a_{A,n}^2+a_{B,n}^2
+  -
+  \frac{(\lambda a_{A,n}+a_{B,n})^2}{1+\lambda^2}
+  =
+  \frac{(a_{A,n}-\lambda a_{B,n})^2}{1+\lambda^2}.
+\]
+Dividing by \(V_n\) yields
+\[
+  \Delta_{\mathrm{LRO},n}
+  =
+  \frac{(a_{A,n}-\lambda a_{B,n})^2}{(1+\lambda^2)V_n}.
+\]
+
+Assumption~\ref{ass:two-cell} gives \(a_{A,n}^2/V_n\to\eta_A>0\), \(a_{B,n}/a_{A,n}\to0\), and fixed \(\lambda\in(0,\infty)\).  Hence
+\[
+  \Delta_{\mathrm{DML},n}\to\eta_A
+\]
+and
+\[
+  \Delta_{\mathrm{LRO},n}
+  =
+  \frac{a_{A,n}^2}{V_n}
+  \frac{(1-\lambda a_{B,n}/a_{A,n})^2}{1+\lambda^2}
+  \to
+  \frac{\eta_A}{1+\lambda^2}.
+\]
+Because \(\lambda>0\),
+\[
+  0<\frac{\eta_A}{1+\lambda^2}<\eta_A.
+\]
+The displayed liminf--limsup ordering follows because the three sequences converge to the displayed limits.
+
+Assumption~\ref{ass:variance-linear} gives, uniformly over \(m\in\mathcal M\),
+\[
+  \frac{\hat V_{m,n}}{V_n}=1+\Delta_{m,n}+o_p(1),
+\]
+where Assumption~\ref{ass:kernel-observable} makes the indices computable from the observable law and the named variance rule.  Therefore a Wald half-length of the form \(c_\gamma\hat V_{m,n}^{1/2}/\sqrt n\), for any fixed normal critical value \(c_\gamma>0\), satisfies
+\[
+  \frac{c_\gamma\hat V_{m,n}^{1/2}/\sqrt n}{c_\gamma V_n^{1/2}/\sqrt n}
+  \to_p
+  (1+\delta_m)^{1/2},
+\]
+where
+\[
+  \delta_{\mathrm{ADML}}=0,\qquad
+  \delta_{\mathrm{LRO}}=\frac{\eta_A}{1+\lambda^2},\qquad
+  \delta_{\mathrm{DML}}=\eta_A.
+\]
+Thus the limiting half-length ratios are strict:
+\[
+  1
+  <
+  \sqrt{1+\eta_A/(1+\lambda^2)}
+  <
+  \sqrt{1+\eta_A}.
+\]
+
+Finally, the witness is nonempty and open in the finite-support parameterization.  One concrete member is obtained by taking two cells with positive probabilities, \(e_n(x_A)=\kappa_n\), \(e_n(x_B)=1/2\), residual variances in a compact interval \([c,C]\), fixed \(\lambda>0\), \(a_{A,n}^2/V_n\to\eta_A>0\), and \(a_{B,n}/a_{A,n}\to0\), as stipulated by Assumption~\ref{ass:two-cell}.  Both treatment states occur on each cell because \(\kappa_n>0\) and \(1/2\in(0,1)\), and the residual variances are bounded away from zero by the same assumption.  The formulas above are continuous functions of the cell probabilities, residual variances, \(\lambda\), and normalized coefficient ratio \(a_{B,n}/a_{A,n}\) wherever \(V_n>0\) and the displayed projection matrices keep their ranks.  Since the strict inequality \(0<\eta_A/(1+\lambda^2)<\eta_A\) has positive margin, sufficiently small perturbations preserving positivity, \(\lambda>0\), and \(|a_{B,n}/a_{A,n}|\) small enough preserve the same strict ordering.  This proves the claimed nonempty open set and completes the proof.
+\end{proof}
+
+\section{Sanity checks}
+\subsubsection*{Conjecture 1}
+In the fixed-overlap corner, Assumption~\ref{ass:fixed-overlap} states that
+each named variance estimator is ratio-consistent for \(V_n\).  The final part
+of Theorem~\ref{thm:student-frontier} then gives
+\(\Delta_{m,n}\to0\) for every \(m\in\mathcal M\), and the pairwise
+studentized differences converge to zero.  This recovers the fixed-overlap
+equivalence stated in Theorem~\ref{thm:fixed-overlap}.  In the known-propensity
+common-score corner, Assumption~\ref{ass:known-propensity} puts
+\(\alpha_n\) in every variance-rule adjoint range, so
+\((I-\Pi_{m,n})\alpha_n=0\), \(\Delta_{m,n}=0\), and the same collapse occurs.
+
+\subsubsection*{Conjecture 2}
+Take the clean corner \(\lambda=1\) and \(a_{B,n}/a_{A,n}\to0\).  Then
+\[
+  \Delta_{\mathrm{ADML},n}\to0,\qquad
+  \Delta_{\mathrm{LRO},n}\to\eta_A/2,\qquad
+  \Delta_{\mathrm{DML},n}\to\eta_A.
+\]
+The limiting Wald half-length multipliers relative to the efficient scale are
+\[
+  1,\qquad \sqrt{1+\eta_A/2},\qquad \sqrt{1+\eta_A},
+\]
+which are strictly ordered for every \(\eta_A>0\).  This matches the intended weak-overlap picture: all three centered point estimates have the same \(V_n^{1/2}\)-normalized numerator, but the denominator reports differ.
+
+In the fixed-overlap corner, Theorem~\ref{thm:fixed-overlap} gives equality of the named first-order Wald statistics.  The two-cell witness does not contradict that result because Assumption~\ref{ass:two-cell} instead places nonvanishing normalized Riesz energy in the weak-overlap \(q_A\) direction.
+
+\section{Counterexample or minimality check}
+\subsubsection*{Conjecture 1}
+The bounded projection-index condition is essential.  If one dropped the
+support bound \(\Delta_{m,n}\le L_n^2/V_n=O(1)\) supplied by
+Assumption~\ref{ass:local-overlap} and the projection definition, the
+``only if'' direction would fail algebraically: take deterministic indices
+\(\Delta_{m,n}=n\) and \(\Delta_{m',n}=2n\).  Then
+\[
+  (1+\Delta_{m,n})^{-1/2}
+  -(1+\Delta_{m',n})^{-1/2}\to0
+\]
+and hence the leading approximation to \(T_{m,n}-T_{m',n}\) vanishes, while
+\(\Delta_{m,n}-\Delta_{m',n}=-n\not\to0\).  This is not a counterexample to
+the theorem because such indices cannot arise from the stated
+\(K_n\)-orthogonal projection functional under \(V_n\asymp L_n^2\), but it
+shows why the overlap/variance-scale bound cannot be omitted from the proof.
+
+\subsubsection*{Conjecture 2}
+The required refutation-first check was run inside the exact-identification regime stated in Assumptions~\ref{ass:exact-ate}--\ref{ass:kernel-observable} and the finite-support two-cell regime stated in Assumption~\ref{ass:two-cell}.  The first primitive was the three-node back-door/SWIG check with variables \(X,D,Y\).  For a candidate law satisfying consistency, \((Y(1),Y(0))\perp D\mid X\), and \(0<e_n(X)<1\) on the two cells, the standard adjustment trace gives
+\[
+  \E_n[Y(d)]
+  =\E_n\{\E_n[Y(d)\mid X]\}
+  =\E_n\{\E_n[Y(d)\mid D=d,X]\}
+  =\E_n\{\E_n[Y\mid D=d,X]\},
+\]
+where the second equality uses Assumption~\ref{ass:exact-ate}, the third uses consistency in Assumption~\ref{ass:exact-ate}, and local overlap from Assumption~\ref{ass:local-overlap} makes the conditional means observable.  Thus no finite two-cell law satisfying the stated assumptions can refute the target-functional equality.
+
+The second primitive was the finite-support overlap-violation check.  Setting \(e_n(x_A)=0\) would make the treated weak-overlap cell unobserved and would obstruct the conditional mean \(g_{1,n}(x_A)\), but that candidate violates Assumptions~\ref{ass:local-overlap} and \ref{ass:two-cell}, which require \(e_n(x_A)=\kappa_n>0\).  It is therefore outside the conjecture's regime and is not a refutation.
+
+The third check was the two-dimensional projection algebra itself.  Potential refutations would require one of the displayed residual norms to be zero or ordered incorrectly while the two-cell hypotheses remain true.  The equality \(a_{A,n}-\lambda a_{B,n}=0\) would force \(a_{B,n}/a_{A,n}=1/\lambda\), contradicting \(a_{B,n}/a_{A,n}\to0\) for fixed \(\lambda>0\).  The equality \(\lambda=0\) would collapse LRO to the DML column space, but Assumption~\ref{ass:two-cell} fixes \(\lambda\in(0,\infty)\).  No admissible witness was found, so the derivation proceeds to the positive proof.
+
+The restriction \(\lambda>0\) is necessary for strict DML--LRO separation in the displayed two-cell certificate.  If \(\lambda=0\), then
+\[
+  B_{\mathrm{LRO},n}=(0,1)^\transpose=B_{\mathrm{DML},n},
+\]
+so
+\[
+  \Delta_{\mathrm{LRO},n}=\Delta_{\mathrm{DML},n}=a_{A,n}^2/V_n,
+\]
+and the strict inequality \(\limsup_n\Delta_{\mathrm{LRO},n}<\liminf_n\Delta_{\mathrm{DML},n}\) fails.
+
+The dominance condition \(a_{B,n}/a_{A,n}\to0\) is also necessary for the advertised LRO limit.  If instead \(a_{B,n}/a_{A,n}\to1/\lambda\), then
+\[
+  \Delta_{\mathrm{LRO},n}
+  =
+  \frac{a_{A,n}^2}{V_n}
+  \frac{(1-\lambda a_{B,n}/a_{A,n})^2}{1+\lambda^2}
+  \to0,
+\]
+so the claimed positive LRO limit disappears.  This shows that the two-cell theorem is not merely a consequence of weak overlap; it depends on the weak-overlap Riesz direction being asymptotically aligned with \(q_A\) and only tilted, not fully absorbed, by the LRO certificate.
+
+\section{Formalization checklist}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Observable laws \(P_n\).}  Type: triangular array of probability laws on \(\mathcal Y\times\{0,1\}\times\mathcal X\).  Role: supplies observable expectations, conditional laws, covariance kernels, and finite-support cell probabilities.  Dependencies: measurability, square-integrability, and positivity assumptions.
+  \item \textbf{Potential outcomes \(Y(1),Y(0)\).}  Type: square-integrable random variables coupled to \((Y,D,X)\).  Role: define the causal target \(\theta_n=\E_n[Y(1)-Y(0)]\).  Dependencies: consistency and conditional exchangeability.
+  \item \textbf{Propensity and outcome regressions.}  Type: \(e_n:\mathcal X\to(0,1)\) and \(g_{d,n}:\mathcal X\to\R\) for \(d\in\{0,1\}\).  Role: define the back-door functional and efficient score.  Dependencies: positive treatment-arm probabilities on each conditioning stratum.
+  \item \textbf{Back-door functional \(\Phi_n(P_n)\).}  Type: scalar map \(P_n\mapsto\E_{P_n}\{g_{1,n}(X)-g_{0,n}(X)\}\).  Role: observed-population identifying functional for \(\theta_n\).  Dependencies: Assumptions~\ref{ass:exact-ate} and \ref{ass:local-overlap}.
+  \item \textbf{Riesz representer \(\alpha_n\) and EIF \(\psi_n\).}  Type: square-integrable functions of \(W=(Y,D,X)\), with \(\alpha_n(W)=D/e_n(X)-(1-D)/(1-e_n(X))\).  Role: common first-order expansion and variance normalization.  Dependencies: overlap, finite second moments, and the ATE score construction.
+  \item \textbf{Efficient variance \(V_n\) and Riesz energy \(L_n^2\).}  Type: positive real sequences \(V_n=\E_n[\psi_n(W)^2]\) and \(L_n^2=\E_n[\alpha_n(W)^2\{Y-g_{D,n}(X)\}^2]\).  Role: normalize centered statistics and bound projection indices.  Dependencies: Assumption~\ref{ass:local-overlap}.
+  \item \textbf{Estimator set \(\mathcal M\).}  Type: finite set \(\{\mathrm{DML},\mathrm{LRO},\mathrm{ADML}\}\).  Role: indexes point estimators, variance rules, centered statistics, and studentized statistics.  Dependencies: common-EIF expansion and variance-rule linearization.
+  \item \textbf{Centered and studentized statistics \(Z_{m,n},T_{m,n}\).}  Type: real-valued random variables.  Role: theorem conclusions compare \(Z\)-equivalence and Wald-scale equivalence.  Dependencies: \(V_n>0\), \(\hat V_{m,n}>0\) with probability tending to one, and the common expansion.
+  \item \textbf{Covariance kernel \(K_n\) and Hilbert space \(\mathcal H_n\).}  Type: inner product \(K_n(h,h')\) on \(D,X\)-measurable perturbations.  Role: defines orthogonality, projections, and residual indices.  Dependencies: residual second moments under \(P_n\).
+  \item \textbf{Projection operators \(\Pi_{m,n}\).}  Type: \(K_n\)-orthogonal projections from \(\mathcal H_n\) onto variance-rule adjoint ranges \(\mathcal A_{m,n}\).  Role: compute residual Riesz components.  Dependencies: Assumption~\ref{ass:kernel-observable} and closed range definition.
+  \item \textbf{Projection indices \(\Delta_{m,n}\).}  Type: nonnegative real sequences \(\|(I-\Pi_{m,n})\alpha_n\|_{K_n}^2/V_n\).  Role: necessary and sufficient frontier for studentized equivalence and ratio-consistent studentization.  Dependencies: \(K_n\), \(\Pi_{m,n}\), \(\alpha_n\), and \(V_n\).
+  \item \textbf{Variance remainders \(R_{m,n},\xi_{m,n},\rho_{m,n}\).}  Type: stochastic error sequences.  Role: justify replacing estimators by common scores and reported variances by \(V_n(1+\Delta_{m,n})\).  Dependencies: Assumptions~\ref{ass:common-eif} and \ref{ass:variance-linear}.
+  \item \textbf{Two-cell basis \((q_A,q_B)\).}  Type: \(K_n\)-orthonormal basis for the finite-support witness subspace.  Role: gives explicit projection-distance calculations.  Dependencies: Assumption~\ref{ass:two-cell}.
+  \item \textbf{Two-cell coefficients \((a_{A,n},a_{B,n})\).}  Type: real coordinate sequences in \(\alpha_n=a_{A,n}q_A+a_{B,n}q_B\).  Role: determine the DML and LRO residual limits.  Dependencies: \(a_{A,n}^2/V_n\to\eta_A>0\), \(a_{B,n}/a_{A,n}\to0\).
+  \item \textbf{Adjoint matrices \(B_{\mathrm{DML},n},B_{\mathrm{LRO},n},B_{\mathrm{ADML},n}\).}  Type: finite matrices \((0,1)^\transpose\), \((\lambda,1)^\transpose\), and \(I_2\).  Role: define the column spaces whose projection residuals yield the strict two-cell ordering.  Dependencies: fixed \(\lambda\in(0,\infty)\) and the two-cell basis.
+  \item \textbf{Continuity and injectivity maps.}  Type: deterministic functions \(d\mapsto(1+d)^{-1/2}\) and inverse \(b\mapsto b^{-2}-1\) on compact positive ranges.  Role: prove the if-and-only-if link between studentized equivalence and projection-index equality.  Dependencies: bounded nonnegative projection indices.
+\end{itemize}
+
+\section{Conclusion and references}
+Conjecture 1 (student-frontier) is confirmed; Under Assumptions~\ref{ass:exact-ate}--\ref{ass:kernel-observable}, including the standardized EIF central limit condition in Assumption~\ref{ass:eif-clt}, the centered point estimators are uniformly equivalent:
+\[
+  \max_{m,m'\in\mathcal M}|Z_{m,n}-Z_{m',n}|\to_p0.
+\]
+For any \(m,m'\in\mathcal M\), their studentized statistics are asymptotically equivalent,
+\[
+  T_{m,n}-T_{m',n}\to_p0,
+\]
+if and only if
+\[
+  \Delta_{m,n}-\Delta_{m',n}\to0.
+\]
+If \(\Delta_{m,n}\to\delta_m\) and \(\Delta_{m',n}\to\delta_{m'}\) with \(\delta_m\ne\delta_{m'}\), then the studentized statistics have different scale limits:
+\[
+  T_{m,n}\Rightarrow N(0,(1+\delta_m)^{-1}),\qquad
+  T_{m',n}\Rightarrow N(0,(1+\delta_{m'})^{-1}),
+\]
+even though their centered point estimates share the same \(N(0,1)\) limit after normalization by \(V_n^{1/2}\).  In the canonical ordering where ADML absorbs the full weak-overlap Riesz direction and DML/LRO leave progressively larger residual projections, \(\delta_{\mathrm{ADML}}=0<\delta_{\mathrm{LRO}}<\delta_{\mathrm{DML}}\), so Wald intervals separate first through studentization, not through the point estimate.  Moreover, a single estimator \(m\) has ratio-consistent studentization relative to the efficient variance \(V_n\) if and only if \(\Delta_{m,n}\to0\).
+
+Conjecture 2 (two-cell-witness) is confirmed; Under Assumptions~\ref{ass:exact-ate}--\ref{ass:kernel-observable} and \ref{ass:two-cell}, the two-cell matrices yield \(\Delta_{\mathrm{ADML},n}=0\), \(0<\lim_{n\to\infty}\Delta_{\mathrm{LRO},n}=\eta_A/(1+\lambda^2)<\eta_A=\lim_{n\to\infty}\Delta_{\mathrm{DML},n}\), centered point-statistic equivalence, and strict Wald half-length ratios.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem{Pearl1995CausalDiagrams}
+Pearl, J. (1995).
+Causal diagrams for empirical research.
+\emph{Biometrika} 82(4), 669--688.
+
+\bibitem{Robins1986GFormula}
+Robins, J. M. (1986).
+A new approach to causal inference in mortality studies with a sustained
+exposure period: application to control of the healthy worker survivor effect.
+\emph{Mathematical Modelling} 7(9--12), 1393--1512.
+
+\bibitem{Hahn1998Efficiency}
+Hahn, J. (1998).
+On the role of the propensity score in efficient semiparametric estimation of
+average treatment effects.
+\emph{Econometrica} 66(2), 315--331.
+
+\bibitem{ChernozhukovEtAl2018DML}
+Chernozhukov, V., D. Chetverikov, M. Demirer, E. Duflo, C. Hansen, W. Newey,
+and J. Robins (2018).
+Double/debiased machine learning for treatment and structural parameters.
+\emph{The Econometrics Journal} 21(1), C1--C68.
+
+\bibitem{NeweyRobins2018}
+Newey, W. K. and J. R. Robins (2018).
+Cross-fitting and fast remainder rates for semiparametric estimation.
+arXiv:1801.09138.
+
+\bibitem{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO}
+Chernozhukov, V., J. C. Escanciano, H. Ichimura, W. K. Newey, and
+J. M. Robins (2022).
+Locally robust semiparametric estimation.
+\emph{Econometrica} 90(4), 1501--1535.
+
+\bibitem{ChernozhukovNeweySingh2022ADML}
+Chernozhukov, V., W. K. Newey, and R. Singh (2022).
+Automatic debiased machine learning of causal and structural effects.
+\emph{Econometrica} 90(3), 967--1027.
+
+\bibitem{ChernozhukovNeweySingh2022RR}
+Chernozhukov, V., W. K. Newey, and R. Singh (2022).
+Debiased machine learning of global and local parameters using regularized
+Riesz representers.
+\emph{The Econometrics Journal} 25(3), 576--601.
+
+\bibitem{CrumpHotzImbensMitnik2009}
+Crump, R. K., V. J. Hotz, G. W. Imbens, and O. A. Mitnik (2009).
+Dealing with limited overlap in estimation of average treatment effects.
+\emph{Biometrika} 96(1), 187--199.
+
+\bibitem{Rothe2017LimitedOverlapCI}
+Rothe, C. (2017).
+Robust confidence intervals for average treatment effects under limited
+overlap.
+\emph{Econometrica} 85(2), 645--660.
+
+\bibitem{HongLeungLi2020}
+Hong, G., M. P. Leung, and J. Li (2020).
+Inference on finite-population treatment effects under limited overlap.
+\emph{The Econometrics Journal} 23(1), 32--47.
+
+\bibitem{HeilerKazak2021ExtremePS}
+Heiler, P. and E. Kazak (2021).
+Valid inference for treatment effect parameters under irregular identification
+and many extreme propensity scores.
+\emph{Journal of Econometrics} 222(2), 1083--1108.
+
+\bibitem{ArmstrongKolesar2021FiniteSampleATE}
+Armstrong, T. B. and M. Kolesar (2021).
+Finite-sample optimal estimation and inference on average treatment effects
+under unconfoundedness.
+\emph{Econometrica} 89(3), 1141--1177.
+
+\bibitem{SasakiUra2022MomentsRatios}
+Sasaki, Y. and T. Ura (2022).
+Estimation and inference for moments of ratios with robustness against large
+trimming bias.
+\emph{Econometric Theory} 38(1), 66--112.
+
+\bibitem{MaSantAnnaSasakiUra2026WeakOverlapDR}
+Ma, Y., P. H. C. Sant'Anna, Y. Sasaki, and T. Ura (2026).
+Doubly robust estimators with weak overlap.
+arXiv:2304.08974, revised April 2026.
+
+\bibitem{Dorn2025WeakOverlapDR}
+Dorn, J. (2025).
+How much weak overlap can doubly robust \(t\)-statistics handle?
+arXiv:2504.13273.
+
+\bibitem{DukesVansteelandtWhitney2024DRDML}
+Dukes, O., S. Vansteelandt, and D. Whitney (2024).
+On doubly robust inference for double machine learning in semiparametric
+regression.
+\emph{Journal of Machine Learning Research} 25(279), 1--46.
+\end{thebibliography}
+
+\end{document}

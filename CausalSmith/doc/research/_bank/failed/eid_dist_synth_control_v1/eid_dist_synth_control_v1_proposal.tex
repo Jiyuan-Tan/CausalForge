@@ -1,0 +1,336 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_dist\_synth\_control, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_dist\_synth\_control} / \texttt{v1}%
+  \\ \large\textit{A copula-width diagnostic for distributional synthetic-control treatment-effect claims}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\[
+\begin{aligned}
+(qid,\ specialization,\ observable\ distribution\ P,\ parameter\ \theta,\ identifying\ restrictions,\ bounding\ functional)
+=(&\texttt{eid\_dist\_synth\_control},\ \texttt{v1},\\
+&P=\{F^1_{0s},\ F^0_{0s},\ (F^0_{jt})_{j\le J,t\le s},\ (F^0_{0t})_{t\le T_0}\}\text{ after marginal DSC identification of }F^0_{0s},\\
+&\theta=F_\Delta,\ \Delta=Y_{0s}(1)-Y_{0s}(0),\text{ together with rank and quantile treatment-effect functionals},\\
+&\text{consistency/no anticipation, donor validity, finite-donor distributional synthetic-control identification of }F^0_{0s},\\
+&\text{rank-invariant untreated interactive quantile factors, and explicitly named post-treatment copula restrictions only when imposed},\\
+&\text{Frechet--Makarov/optimal-transport bounds over couplings of the identified marginals }(F^1_{0s},F^0_{0s}).)
+\end{aligned}
+\]
+
+\begin{abstract}
+Distributional synthetic control identifies or estimates an untreated counterfactual marginal distribution for a treated unit, while applied reports often want quantile effects, tail-gain probabilities, or a distribution of individual effects.  This proposal asks for the sharp diagnose-and-correct frontier between those objects in a finite-donor synthetic-control panel with rank-invariant untreated quantile factors.  The proposed flagship kernel is Conjecture~\ref{conj:frontier}: after marginal DiSCo identification of \(F^0_{0s}\), the treatment-effect CDF is point-identified by a DiSCo-style plug-in curve if and only if the observable LP width \(W(d)\) vanishes at every reported threshold or an explicit post-treatment copula restriction is supplied.  Otherwise the corrected reporting object is the Frechet--Makarov/optimal-transport envelope, not the curve \(Q^1_{0s}(u)-Q^0_{0s}(u)\).  The companion taxonomy in Conjecture~\ref{conj:taxonomy} proposes a computable copula-discrepancy diagnostic separating comonotone, externally stable, and unrestricted DiSCo treatment-effect claims.  If resolved, the proposal would give distributional-SC users a precise rule: report marginal counterfactual distributions by default, and report \(W(d)\) or a named copula diagnostic before reporting treatment-effect distributions.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Distributional policy evaluation is rarely satisfied by the mean.  Researchers want lower-tail effects, stochastic-dominance statements, and the distribution of individual gains and losses.  Distributional synthetic control helps with the first step by constructing or identifying an untreated counterfactual marginal distribution for a treated unit.  The methodological risk is that a point-identified marginal counterfactual can be mistaken for the joint object needed to identify the distribution of \(Y_{0s}(1)-Y_{0s}(0)\).
+
+\paragraph{The main finding (proposed).}
+The proposed flagship result is a diagnose-and-correct frontier.  Theorem~\ref{thm:marginal} defines the marginal DiSCo input and the post-processing diagnostic \(W(d)\) rather than claiming that marginal identification is new.  Conjecture~\ref{conj:frontier} states the non-representability boundary: under the same observable law, every coupling between the identified marginals \(F^1_{0s}\) and \(F^0_{0s}\) is attainable by some compatible causal panel law unless a post-treatment cross-world copula restriction is added.  Thus a DiSCo report that gives a plug-in quantile-effect curve must be corrected to the Frechet--Makarov/optimal-transport envelope whenever \(W(d)>0\) at a reported threshold.
+
+\paragraph{What is new.}
+The closest published result is \cite{Callaway2021BoundsDTEPanel}, whose abstract and Section 2 emphasize that distributional treatment-effect parameters depend on the joint distribution of potential outcomes and then use panel-data dependence restrictions to tighten bounds.  The flagship epsilon-gap is that Callaway's object is not the finite-donor distributional synthetic-control workflow: it does not supply an observable diagnostic telling a DiSCo user when a reported quantile-effect or tail-gain curve is justified by the marginal counterfactual alone.  \cite{FanPark2010SharpBounds} and \cite{FirpoRidder2019Functionals} are the classical sharp-bound comparators for treatment-effect distributions and their functionals; the proposed result differs by using a finite-donor DiSCo marginal-identification theorem as the input and returning the corrected reporting map \(d\mapsto(\underline F_\Delta^{LP}(d),\overline F_\Delta^{LP}(d),W(d))\).  \cite{AtheyImbens2006CIC} and \cite{CallawayLi2019QTEDID} show how strong monotonicity, distributional DID, or dependence restrictions can identify QTT-type objects; the proposed result instead gives an iff frontier for when those restrictions have actually been imported into a distributional-SC analysis.  The new kernel is therefore not another Makarov formula, but a DiSCo-specific equivalence: marginal DiSCo identification plus untreated rank-factor structure justifies treatment-effect reporting at threshold \(d\) exactly when \(W(d)=0\) or a named copula restriction supplies the missing coupling.
+
+\paragraph{How it positions in the literature.}
+The proposal sits at the boundary of exact identification and partial identification.  It uses distributional synthetic control and panel factor ideas from \cite{Gunsilius2023DiSCo}, \cite{Chen2020DistributionalSC}, \cite{Bai2009IFE}, and \cite{Masini2025DCA} to obtain the marginal untreated distribution.  It then imports the partial-identification lesson of \cite{FanYu2012PartialDID}, \cite{FanPark2010SharpBounds}, \cite{FirpoRidder2019Functionals}, \cite{CallawayLi2019QTEDID}, and \cite{Callaway2021BoundsDTEPanel}: marginal counterfactual distributions do not identify treatment-effect distributions without a coupling.  The target is deliberately narrower than a new DiSCo estimator and sharper than a general warning, because it asks for the exact coupling frontier induced by finite-donor rank-invariant synthetic-control laws.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the distributional synthetic-control workflow of \cite{Gunsilius2023DiSCo}: if the proposal resolves favorably, a DiSCo application can keep using its identified counterfactual marginal curve while adding the threshold-by-threshold diagnostic \(W(d)\) before reporting quantile treatment effects, tail-gain probabilities, or the distribution of individual effects.  It also directly informs users of \cite{CallawayLi2019QTEDID}, because it states which dependence restrictions must be newly supplied when replacing distributional DID with distributional synthetic control.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should stop interpreting \(Q^1_{0s}(u)-Q^0_{0s}(u)\) from a distributional synthetic control as a quantile treatment effect unless they also defend a post-treatment rank-coupling restriction.
+
+\section{Related work}
+\cite{AtheyImbens2006CIC} identifies counterfactual distributions in nonlinear difference-in-differences using a monotone structural model; Sections 2--3 and Theorem 3.1 are the canonical positive example where rank structure is strong enough to move beyond marginal distributions.  \cite{FanYu2012PartialDID} shows that distributional and quantile treatment effects in DID are generally partially identified, making it the closest early warning that marginals are not enough.  \cite{FanPark2010SharpBounds} derives sharp bounds and inference for the treatment-effect distribution from marginal potential-outcome distributions; Section 2 and Theorem 2.1 are the closest classical Makarov-bound comparator for Conjecture~\ref{conj:frontier}.  \cite{FirpoRidder2019Functionals} shows that sharp bounds for functionals of the joint distribution require solving the joint-distribution problem rather than reading off pointwise marginal envelopes; Sections 2--3 motivate the finite-support LP/optimal-transport diagnostic below.  \cite{CallawayLi2019QTEDID} identifies QTT in panel DID under distributional DID plus dependence restrictions, especially Assumptions 2.1--2.3 and Theorems 2.1--2.2; this is exactly the kind of extra cross-world restriction this proposal claims distributional synthetic control does not supply automatically.  \cite{Callaway2021BoundsDTEPanel} develops bounds for distributional treatment-effect parameters using panel data and dependence restrictions; the abstract and Section 2 are the nearest published panel partial-identification comparator.
+
+\cite{AbadieGardeazabal2003} and \cite{AbadieDiamondHainmueller2010} anchor synthetic control for aggregate mean counterfactuals.  \cite{Bai2009IFE} gives the mean interactive-fixed-effect model that motivates finite-dimensional factor structure in panel counterfactuals.  \cite{Xu2017GSC} connects generalized synthetic control to interactive fixed effects for average effects, showing why latent factors are natural in donor construction.  \cite{AtheyBayatiDoudchenkoImbensKhosravi2021MC} connects synthetic control and matrix completion for mean counterfactual prediction but does not address post-treatment cross-world copulas.
+
+\cite{Chen2020DistributionalSC} proposes a distributional synthetic-control method using pre-intervention quantile residuals; Sections 2--3 target distributional policy effects but do not state the sharp marginal-versus-treatment-effect frontier proposed here.  \cite{Gunsilius2023DiSCo} constructs distributional synthetic controls by weighting donor quantile functions in Wasserstein space; Sections 2--3 and the uniqueness discussion are the closest distributional-SC comparator, because the counterfactual quantile curve is a marginal object that can be misread as a quantile-treatment-effect curve.  \cite{Masini2025DCA} estimates full conditional quantile functions for one or few treated units in high-dimensional panels; its contribution is estimation, not the finite-donor copula identification boundary.
+
+\paragraph{Location-anchored comparator table.}
+For Conjecture~\ref{conj:frontier}, the closest comparators are \cite{Gunsilius2023DiSCo}, Sections 2--3 (marginal counterfactual quantile synthesis), \cite{Chen2020DistributionalSC}, Sections 2--3 (quantile-residual distributional SC), \cite{FanPark2010SharpBounds}, Section 2 and Theorem 2.1 (sharp DTE bounds from marginals), \cite{FirpoRidder2019Functionals}, Sections 2--3 (functionals of the joint distribution), and \cite{Callaway2021BoundsDTEPanel}, abstract and Section 2 (panel DTE bounds from dependence restrictions).  For Conjecture~\ref{conj:taxonomy}, the positive comparators are \cite{AtheyImbens2006CIC}, Sections 2--3 and Theorem 3.1, and \cite{CallawayLi2019QTEDID}, Assumptions 2.1--2.3 and Theorems 2.1--2.2; the proposed epsilon-gap is the DiSCo-specific equality test \(W(d)=0\) or \(D_{C^\star}(d)=0\), not the existence of those rank/dependence formulas.
+
+The in-catalogue prior-art substrate reported by Stage -1.1 contains no direct accepted theorem for \texttt{eid\_dist\_synth\_control}.  The banked \texttt{eid\_dist\_synth\_control} angle was downgraded after the derivation stage for substituting a row-span/monotone-envelope kernel below the flagship floor.  The adjacent \texttt{pid\_synth\_control\_factor\_misspec} proposal studied scalar Chebyshev synthetic-control intervals and was downgraded as a routine support-function projection.  The present proposal differs from both: it does not try to repackage row-span nonidentification or scalar misspecification, but instead asks for the marginal-versus-copula frontier for distributional treatment effects after a marginal distributional-SC identification result is granted.
+
+\section{Formal setup}
+There is one treated aggregate unit \(i=0\), donor units \(j=1,\ldots,J\), pre-treatment periods \(t=1,\ldots,T_0\), and one post-treatment period \(s=T_0+1\).  The treated unit is untreated through \(T_0\) and treated at \(s\); donors are never treated.  Let \(Y_{0s}(1)\) and \(Y_{0s}(0)\) denote the treated unit's post-period treated and untreated potential outcomes.  Their marginal CDFs are \(F^1(y)=\Pr\{Y_{0s}(1)\le y\}\) and \(F^0(y)=\Pr\{Y_{0s}(0)\le y\}\), with left-continuous quantile functions \(Q^1\) and \(Q^0\).  The observed post-treatment distribution identifies \(F^1\), and the distributional synthetic-control premise identifies \(F^0\).
+
+The observable law \(P\) consists of the treated post distribution \(F^1\), the identified untreated marginal \(F^0\), donor untreated distributions \((F^0_{jt})_{j\le J,t\le s}\), and treated pre-period untreated distributions \((F^0_{0t})_{t\le T_0}\).  The untreated potential-outcome panel may satisfy a rank-invariant interactive quantile-factor law
+\[
+Q^0_{it}(u)=m_t(u)+\ell_t(u)^\transpose b_i,\qquad u\in(0,1),
+\]
+with unit loadings \(b_i\) fixed across periods and ranks.  This law is allowed to identify \(F^0\), but it is an untreated-path restriction: it does not by itself define the copula of \((Y_{0s}(1),Y_{0s}(0))\).
+
+The target parameter is the distribution \(F_\Delta\) of \(\Delta=Y_{0s}(1)-Y_{0s}(0)\).  Let \(\Pi(F^1,F^0)\) be the set of bivariate distributions \(\pi\) on \(\R^2\) whose first marginal is \(F^1\) and whose second marginal is \(F^0\).  For \(\pi\in\Pi(F^1,F^0)\), define
+\[
+F_{\Delta,\pi}(d)=\pi\{(y_1,y_0):y_1-y_0\le d\}.
+\]
+The unrestricted copula identified set is
+\[
+\Theta_I(P)=\{F_{\Delta,\pi}:\pi\in\Pi(F^1,F^0)\}.
+\]
+When \(F^1\) and \(F^0\) have finite supports \(a_1,\ldots,a_m\) and \(b_1,\ldots,b_n\) with masses \(p_r\) and \(q_c\), the computable diagnostic for a threshold \(d\) is the transport linear program
+\[
+\underline F_\Delta^{LP}(d)=\min_{\gamma\in\R_+^{m\times n}}\sum_{r,c}\gamma_{rc}\one\{a_r-b_c\le d\},
+\quad
+\overline F_\Delta^{LP}(d)=\max_{\gamma\in\R_+^{m\times n}}\sum_{r,c}\gamma_{rc}\one\{a_r-b_c\le d\},
+\]
+subject to \(\sum_c\gamma_{rc}=p_r\) for each \(r\) and \(\sum_r\gamma_{rc}=q_c\) for each \(c\).  Its empirical reporting object is the bound width \(W(d)=\overline F_\Delta^{LP}(d)-\underline F_\Delta^{LP}(d)\) for tail-gain probabilities \(\Pr\{\Delta\le d\}\).
+For each \(d\), the Frechet--Makarov lower and upper bounds are
+\[
+\underline F_\Delta(d)=\sup_{y\in\R}\max\{0,F^1(y)-F^0(y-d)\},
+\]
+\[
+\overline F_\Delta(d)=1+\inf_{y\in\R}\min\{0,F^1(y)-F^0(y-d)\},
+\]
+equivalently the optimal-transport extrema of the indicator cost \(\one\{y_1-y_0\le d\}\) over \(\Pi(F^1,F^0)\).  The comonotone plug-in curve is \(q^{RI}(u)=Q^1(u)-Q^0(u)\), and its induced CDF is \(F^{RI}_\Delta(d)=\int_0^1\one\{q^{RI}(u)\le d\}\,du\).
+For any named copula \(C^\star\) with marginals \(F^1\) and \(F^0\), write \(F^{C^\star}_\Delta\) for the pushforward of that copula under \((y_1,y_0)\mapsto y_1-y_0\).  The copula-discrepancy diagnostic at threshold \(d\) is
+\[
+D_{C^\star}(d)=|F^{RI}_\Delta(d)-F^{C^\star}_\Delta(d)|,
+\]
+with \(D_{C^\star}(d)=0\) marking equality of the comonotone and \(C^\star\)-stable reported tail probabilities at that threshold.
+
+\begin{definition}[Post-treatment copula restrictions]\label{def:copulas}
+The no-copula model imposes no restriction beyond \(\pi\in\Pi(F^1,F^0)\).  The comonotone rank-invariance model imposes \((Y_{0s}(1),Y_{0s}(0))=(Q^1(U),Q^0(U))\) for \(U\sim\mathrm{Unif}(0,1)\).  A copula-stability model imposes that the copula of \((Y_{0s}(1),Y_{0s}(0))\) equals a named pre-treatment or external copula \(C^\star\), when such a copula is observed or assumed.
+\end{definition}
+
+\begin{verbatim}
+(qid, specialization, observable distribution P, parameter theta, identifying restrictions, bounding functional)
+= (eid_dist_synth_control, v1,
+   P={F^1_0s, F^0_0s, donor untreated distributions, treated pre-period untreated distributions}
+     after marginal DSC identification of F^0_0s,
+   theta=F_Delta for Delta=Y_0s(1)-Y_0s(0), plus rank/QTE functionals,
+   consistency/no anticipation, donor validity, marginal DSC identification of F^0_0s,
+   rank-invariant untreated interactive quantile factors, and explicit copula restrictions only when imposed,
+   Frechet-Makarov/optimal-transport bounds over couplings of (F^1_0s,F^0_0s)).
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Consistency and donor validity]\label{ass:consistency}
+The observed treated post distribution equals \(F^1\).  Donor post-period distributions and treated pre-period distributions are untreated potential-outcome distributions, with no anticipation and no interference from the treated unit's intervention to donors.
+\end{assumption}
+
+\begin{assumption}[Marginal distributional synthetic-control identification]\label{ass:marginal-id}
+The observable donor/pre-period panel and the distributional synthetic-control identifying restrictions point-identify the treated unit's untreated post-period marginal distribution \(F^0\).  This assumption can be discharged by a DiSCo-style weighted quantile-function theorem, a rank-invariant finite-donor factor theorem, or any other valid marginal identification argument.
+\end{assumption}
+
+\begin{assumption}[Untreated rank-factor restriction is marginal]\label{ass:untreated-only}
+Any rank-invariant interactive quantile-factor restriction imposed by the synthetic-control stage is a restriction on the untreated potential-outcome path \((Y^0_{it})\).  It does not restrict the post-treatment copula of \((Y_{0s}(1),Y_{0s}(0))\) unless a post-treatment copula restriction is separately named.
+\end{assumption}
+
+\begin{assumption}[Regular marginals]\label{ass:regular}
+\(F^1\) and \(F^0\) are proper CDFs on \(\R\) with left-continuous quantile functions \(Q^1\) and \(Q^0\).  All distribution functions are interpreted up to continuity-point equality.
+\end{assumption}
+
+\begin{assumption}[Observable-marginal topology]\label{ass:topology}
+Open-set claims for marginal pairs \((F^1,F^0)\) are stated in the product Levy--Prokhorov topology, restricted to the subspace of proper nondegenerate CDF pairs satisfying Assumptions~\ref{ass:consistency}--\ref{ass:regular}.  The same claims may be specialized to finite-support marginal pairs with the usual Euclidean topology on support probabilities and support locations.
+\end{assumption}
+
+\begin{assumption}[No post-treatment copula restriction]\label{ass:no-copula}
+The maintained model imposes no named equality, monotonicity, rank-invariance, copula-stability, or parametric restriction on the post-treatment copula of \((Y_{0s}(1),Y_{0s}(0))\) beyond the identified marginals \(F^1\) and \(F^0\).  Whether this absence of restrictions permits every \(\pi\in\Pi(F^1,F^0)\) while holding fixed \(P\) is the pasting claim in Conjecture~\ref{conj:frontier}, not an assumption.
+\end{assumption}
+
+\begin{assumption}[Comonotone rank coupling]\label{ass:comonotone}
+There exists \(U\sim\mathrm{Unif}(0,1)\) such that \(Y_{0s}(1)=Q^1(U)\) and \(Y_{0s}(0)=Q^0(U)\).  This is an additional cross-world restriction and is not implied by Assumptions~\ref{ass:marginal-id} or \ref{ass:untreated-only}.
+\end{assumption}
+
+\begin{assumption}[Observed pre-treatment copula stability]\label{ass:copula-stability}
+An externally named copula \(C^\star\) is observed from pre-treatment panel information or imposed substantively, and the post-treatment copula of \((Y_{0s}(1),Y_{0s}(0))\) equals \(C^\star\).  The proposal treats this as an optional identifying restriction, not as part of distributional synthetic control itself.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: DiSCo post-processing diagnostic is well defined]\label{thm:marginal}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:regular}, once the treated unit's untreated marginal counterfactual distribution \(F^0\) has been identified by a distributional synthetic-control argument, the objects \(F^{RI}_\Delta(d)\), \(\underline F_\Delta^{LP}(d)\), \(\overline F_\Delta^{LP}(d)\), and \(W(d)\) are identified functionals of the observable law \(P\) for every finite-support reporting threshold \(d\).  The theorem makes no claim that \(F_\Delta\) itself is point identified; it only defines the diagnostic that separates a marginal DiSCo curve from a treatment-effect distribution.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) \cite{Gunsilius2023DiSCo}, Sections 2--3, and \cite{Chen2020DistributionalSC}, Sections 2--3, deliver a marginal counterfactual distribution or quantile curve, while \cite{FanPark2010SharpBounds}, Section 2, and \cite{FirpoRidder2019Functionals}, Sections 2--3, deliver bound machinery for treatment-effect functionals from marginals.  The epsilon-gap filled here is the explicit DiSCo post-processing map from a fitted marginal curve to the reporting triple \((\underline F_\Delta^{LP}(d),\overline F_\Delta^{LP}(d),W(d))\).  (b) The concrete consumer is \cite{Gunsilius2023DiSCo}; the theorem tells DiSCo users which diagnostic must accompany any tail-gain probability before adding dependence assumptions.
+
+\begin{conjecture}[Conjecture 1 (NOT YET PROVED): sharp copula frontier after marginal DiSCo identification]\label{conj:frontier}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:no-copula}, every \(\pi\in\Pi(F^1,F^0)\) can be pasted onto the same observed donor/pre-treatment panel and the same marginal distributional-SC identification of \(F^0\).  Consequently, the sharp identified set for the treatment-effect distribution is
+\[
+\Theta_I(P)=\{F_{\Delta,\pi}:\pi\in\Pi(F^1,F^0)\},
+\]
+and for every \(d\in\R\) its pointwise sharp bounds are the Frechet--Makarov/optimal-transport bounds \(\underline F_\Delta(d)\) and \(\overline F_\Delta(d)\) defined in Section 3.  In finite-support applications the same frontier is computed by the \(mn\)-variable transport LP defining \(\underline F_\Delta^{LP}(d)\), \(\overline F_\Delta^{LP}(d)\), and the width \(W(d)\).  A DiSCo plug-in tail statement \(F_\Delta(d)=F^{RI}_\Delta(d)\) is point identified by the marginal DiSCo law if and only if \(W(d)=0\) or an additional named copula restriction selects a unique admissible coupling at \(d\).  Moreover, if both \(F^1\) and \(F^0\) are nondegenerate, then there is a nonempty open set of pairs \((F^1,F^0)\) for which \(W(d)>0\) at some empirically reportable threshold and \(F^{RI}_\Delta\) is a strict interior member or endpoint member of \(\Theta_I(P)\) rather than a point-identified implication of the observable law.  Thus the map \((F^1,F^0)\mapsto\mathcal{L}(Q^1(U)-Q^0(U))\) is not representable as a distributional synthetic-control estimand without Assumption~\ref{ass:comonotone} or another named copula restriction.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest published comparators are \cite{FanPark2010SharpBounds}, \cite{FirpoRidder2019Functionals}, and \cite{Callaway2021BoundsDTEPanel}.  Fan--Park give sharp treatment-effect-distribution bounds from marginals, Firpo--Ridder show why functional bounds require more than pointwise Makarov envelopes, and Callaway uses panel dependence restrictions to tighten distributional-treatment-effect bounds.  The epsilon-gap is the synthetic-control equivalence frontier: once \cite{Gunsilius2023DiSCo} or \cite{Chen2020DistributionalSC} has supplied a marginal counterfactual distribution for a treated unit, the conjecture says exactly when a DiSCo treatment-effect report is justified (\(W(d)=0\) or a named copula) and exactly which corrected LP width remains otherwise.  \cite{CallawayLi2019QTEDID} is also close, but it assumes the dependence restrictions needed for QTT rather than proving that distributional synthetic control lacks them.  (b) Resolving this conjecture would give applied DiSCo studies a concrete reporting requirement: for tail-gain probabilities \(\Pr\{\Delta\le d\}\), report \(W(d)\) or the Frechet--Makarov envelope unless a comonotone or copula-stability restriction is explicitly justified.
+
+\begin{conjecture}[Conjecture 2 (NOT YET PROVED): equivalence frontier for rank, copula-stability, and QTT claims]\label{conj:taxonomy}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:topology}, the following three claims are logically distinct and form a strict hierarchy on a nonempty open set of marginal pairs \((F^1,F^0)\): (i) marginal distributional-SC identification of \(F^0\); (ii) point identification of the comonotone quantile-effect distribution \(F^{RI}_\Delta\) under Assumption~\ref{ass:comonotone}; and (iii) point identification of a copula-stable treatment-effect distribution under Assumption~\ref{ass:copula-stability}.  Claim (i) implies neither (ii) nor (iii).  Claim (ii) equals the usual plug-in quantile-difference formula, while claim (iii) equals the pushforward \(F^{C^\star}_\Delta\); the two agree at threshold \(d\) exactly when the observable diagnostic \(D_{C^\star}(d)=0\).  They agree as full CDFs only when \(D_{C^\star}(d)=0\) at every continuity point of both curves; this happens, generically, only when \(C^\star\) induces the same difference law as the comonotone copula or when the marginal pair is degenerate in a way that makes all admissible couplings induce the same \(\Delta\) distribution.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \cite{AtheyImbens2006CIC} and \cite{CallawayLi2019QTEDID} provide positive identification results under rank or dependence restrictions, while \cite{FanYu2012PartialDID} and \cite{Callaway2021BoundsDTEPanel} show partial-identification phenomena.  The proposed epsilon-gap is a taxonomy tailored to finite-donor distributional synthetic control with an operational diagnostic \(D_{C^\star}(d)\): it classifies which additional assumptions turn a marginal DSC counterfactual into a QTT or DTE object and gives an equality test between comonotone and externally stable reports.  (b) The concrete consumer is \cite{CallawayLi2019QTEDID}: researchers importing QTT language into a synthetic-control application would know whether they have supplied the dependence restriction that the DID literature requires.
+
+\begin{theorem}[Theorem 2: named-copula correction formula]\label{thm:comonotone}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:regular} and Assumption~\ref{ass:comonotone}, the treatment-effect distribution is point identified as
+\[
+F_\Delta(d)=\int_0^1\one\{Q^1(u)-Q^0(u)\le d\}\,du.
+\]
+Under Assumption~\ref{ass:copula-stability}, the treatment-effect distribution is point identified as \(F^{C^\star}_\Delta\), the pushforward of \(C^\star\) with marginals \(F^1\) and \(F^0\) under \((y_1,y_0)\mapsto y_1-y_0\).  The equality of a comonotone DiSCo report and a \(C^\star\)-stable DiSCo report at threshold \(d\) is certified by \(D_{C^\star}(d)=0\).
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This is the positive correction formula that prevents the proposal from overstating nonidentification: it recovers the familiar rank-invariant quantile-effect formula from \cite{AtheyImbens2006CIC} and \cite{CallawayLi2019QTEDID} once the missing copula restriction is added, and it supplies the DiSCo-specific equality diagnostic \(D_{C^\star}\).  (b) The consumer is again the DiSCo workflow of \cite{Gunsilius2023DiSCo}; it specifies the exact additional assumption and diagnostic needed to convert a marginal synthetic-control curve into a treatment-effect distribution.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Degenerate-effect reduction]\label{cor:degenerate}
+If \(Y_{0s}(1)=Y_{0s}(0)+\tau\) almost surely is imposed as an additional structural restriction and the marginals are compatible in the sense that \(F^1(y)=F^0(y-\tau)\) at all continuity points, then the restricted identified set collapses to the point mass at \(\tau\), and the restricted Frechet--Makarov bounds coincide at \(F_\Delta(d)=\one\{\tau\le d\}\).
+\end{corollary}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:regular} plus the stated constant-effect restriction and shifted-marginal compatibility, the reduction is immediate because the joint law is no longer free: the support of every admissible restricted coupling lies on the line \(y_1-y_0=\tau\), so the restricted Makarov lower and upper bounds coincide.  Without \(F^1(y)=F^0(y-\tau)\), the constant-effect restriction is simply incompatible with the identified marginals rather than a corner case of \(\Theta_I(P)\).
+
+\begin{corollary}[No-effect marginal reduction]\label{cor:noeffect}
+If \(F^1=F^0\), Theorem~\ref{thm:marginal} still does not identify \(F_\Delta\) without a copula restriction.  Under Assumption~\ref{ass:comonotone}, \(F_\Delta\) collapses to a point mass at zero; under Assumption~\ref{ass:no-copula}, nondegenerate couplings can yield nonzero positive and negative individual effects with the same marginals.
+\end{corollary}
+Under Assumptions~\ref{ass:regular} and \ref{ass:no-copula}, equal marginals leave all self-couplings as candidates in Conjecture~\ref{conj:frontier}.  The comonotone self-coupling gives \(\Delta=0\), while a countermonotone or shifted-rank coupling can create dispersion in \(Y_{0s}(1)-Y_{0s}(0)\), so the corollary cleanly reduces to the classic marginal-versus-joint distinction used by \cite{FanPark2010SharpBounds}, \cite{FirpoRidder2019Functionals}, and \cite{Callaway2021BoundsDTEPanel}.
+
+\section{Proof-sketch route}
+The proof route is measure-theoretic but classical.  Theorem~\ref{thm:marginal} follows by composing the assumed marginal DSC identification result with the finite-support transport LP; the only algebra is verifying that \(W(d)\) depends only on the identified masses and support points.  For Conjecture~\ref{conj:frontier}, first show that the untreated rank-factor and donor-validity restrictions only constrain \(F^0\) and the observed donor panel, not the post-treatment copula; then prove the nontrivial pasting step that attaches any \(\pi\in\Pi(F^1,F^0)\) to the already compatible untreated panel while preserving the same observable \(P\).  The sharp bounds are then the usual Frechet--Makarov or optimal-transport extrema for the difference map, with finite-support instances verified by the \(mn\)-variable transport LP and boundary cases checked at continuity points of \(F_\Delta\).  The iff clause is checked by showing that \(W(d)=0\) is exactly equality of the LP minimum and maximum at threshold \(d\), while \(W(d)>0\) creates two compatible couplings with different reported tail probabilities.  Conjecture~\ref{conj:taxonomy} reduces to comparing pushforwards under the comonotone copula and an arbitrary named copula \(C^\star\), with equality characterized thresholdwise by \(D_{C^\star}(d)=0\) and globally by equality at continuity points.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:marginal} and Theorem~\ref{thm:comonotone} are intended as routine consequences of definitions and standard coupling algebra.  Conjecture~\ref{conj:frontier} and Conjecture~\ref{conj:taxonomy} are the novel kernel and are not yet proved in the finite-donor DSC language.  The proposal intentionally assumes marginal identification of \(F^0\) rather than reproving the row-span/monotone-envelope result that was downgraded in the previous banked angle.  The open technical issue is the pasting argument: the proof must verify that arbitrary post-treatment couplings can be attached without violating any panel-level causal restrictions already used to identify \(F^0\).  If a version of distributional synthetic control explicitly assumes post-treatment comonotonicity, this proposal becomes a taxonomy rather than a negative result for that version.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- fresh angle centered on the marginal-counterfactual versus treatment-effect-distribution copula frontier after marginal distributional synthetic-control identification; prior verdict: none.
+\item v2 (revise) -- corrected the Callaway/Fan--Park/Firpo--Ridder comparator chain, moved all-coupling admissibility from Assumption~\ref{ass:no-copula} into Conjecture~\ref{conj:frontier}, added the finite-support LP diagnostic \(W(d)\), and patched the constant-effect sanity reduction; prior verdict: REVISE.
+\item v3 (revise) -- reframed the kernel as a DiSCo diagnose-and-correct frontier, replaced the Firpo--Ridder working-paper comparator with \cite{FirpoRidder2019Functionals}, added location-anchored comparator claims, and introduced the copula-discrepancy diagnostic \(D_{C^\star}(d)\); prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Abadie and Gardeazabal(2003)]{AbadieGardeazabal2003}
+Abadie, A. and J. Gardeazabal (2003).
+The economic costs of conflict: A case study of the Basque Country.
+\emph{American Economic Review} 93(1), 113--132.
+
+\bibitem[Abadie, Diamond, and Hainmueller(2010)]{AbadieDiamondHainmueller2010}
+Abadie, A., A. Diamond, and J. Hainmueller (2010).
+Synthetic control methods for comparative case studies: Estimating the effect of California's tobacco control program.
+\emph{Journal of the American Statistical Association} 105(490), 493--505.
+
+\bibitem[Athey and Imbens(2006)]{AtheyImbens2006CIC}
+Athey, S. and G. W. Imbens (2006).
+Identification and inference in nonlinear difference-in-differences models.
+\emph{Econometrica} 74(2), 431--497.
+
+\bibitem[Athey et al.(2021)]{AtheyBayatiDoudchenkoImbensKhosravi2021MC}
+Athey, S., M. Bayati, N. Doudchenko, G. Imbens, and K. Khosravi (2021).
+Matrix completion methods for causal panel data models.
+\emph{Journal of the American Statistical Association} 116(536), 1716--1730.
+
+\bibitem[Bai(2009)]{Bai2009IFE}
+Bai, J. (2009).
+Panel data models with interactive fixed effects.
+\emph{Econometrica} 77(4), 1229--1279.
+
+\bibitem[Callaway and Li(2019)]{CallawayLi2019QTEDID}
+Callaway, B. and T. Li (2019).
+Quantile treatment effects in difference in differences models with panel data.
+\emph{Quantitative Economics} 10(4), 1579--1618.
+
+\bibitem[Chen(2020)]{Chen2020DistributionalSC}
+Chen, Y.-T. (2020).
+A distributional synthetic control method for policy evaluation.
+\emph{Journal of Applied Econometrics} 35(5), 505--525.
+
+\bibitem[Fan and Yu(2012)]{FanYu2012PartialDID}
+Fan, Y. and Z. Yu (2012).
+Partial identification of distributional and quantile treatment effects in difference-in-differences models.
+\emph{Economics Letters} 115(3), 511--515.
+
+\bibitem[Fan and Park(2010)]{FanPark2010SharpBounds}
+Fan, Y. and S. S. Park (2010).
+Sharp bounds on the distribution of treatment effects and their statistical inference.
+\emph{Econometric Theory} 26(3), 931--951.
+
+\bibitem[Firpo and Ridder(2019)]{FirpoRidder2019Functionals}
+Firpo, S. and G. Ridder (2019).
+Sharp bounds on functionals of the joint distribution in the analysis of treatment effects.
+\emph{Journal of Business \& Economic Statistics} 39(2), 532--546; published online 2019.
+
+\bibitem[Gunsilius(2023)]{Gunsilius2023DiSCo}
+Gunsilius, F. F. (2023).
+Distributional synthetic controls.
+\emph{Econometrica} 91(3), 1105--1117.
+
+\bibitem[Callaway(2021)]{Callaway2021BoundsDTEPanel}
+Callaway, B. (2021).
+Bounds on distributional treatment effect parameters using panel data with an application on job displacement.
+\emph{Journal of Econometrics} 222(2), 861--881.
+
+\bibitem[Masini(2025)]{Masini2025DCA}
+Masini, R. (2025).
+Distributional counterfactual analysis in high-dimensional setup.
+\emph{Journal of Econometrics} 249(PA), 105675.
+
+\bibitem[Xu(2017)]{Xu2017GSC}
+Xu, Y. (2017).
+Generalized synthetic control method: Causal inference with interactive fixed effects models.
+\emph{Political Analysis} 25(1), 57--76.
+\end{thebibliography}
+
+\end{document}

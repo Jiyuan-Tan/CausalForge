@@ -1,0 +1,272 @@
+---
+import { loadBundles, type Bundle } from "../../lib/bundles.js";
+import { bundleRoots, GITHUB_REPO, SERIES_NAME, SERIES_TAGLINE } from "../../lib/config.js";
+import "../../styles/series.css";
+import "../../styles/paper.css";
+import katex from "katex";
+
+export async function getStaticPaths() {
+  const bundles = await loadBundles(bundleRoots());
+  return bundles.map((b) => ({ params: { id: b.id }, props: { bundle: b } }));
+}
+
+const { bundle } = Astro.props as { bundle: Bundle };
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+// Render pandoc math spans at BUILD TIME so formulas are baked into the static
+// HTML (no client-side KaTeX dependency, immune to load order / cache / the
+// HTML-entity-escaped `&gt;`/`&lt;` that pandoc emits inside `\(...\)`). The
+// client script still re-runs on any span left raw, as a fallback.
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#0*39;|&#x0*27;/gi, "'")
+    .replace(/&#0*(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&amp;/g, "&");
+}
+function renderMath(html: string): string {
+  return html.replace(
+    /<span class="math (inline|display)">([\s\S]*?)<\/span>/g,
+    (whole, mode: string, body: string) => {
+      const tex = decodeEntities(body)
+        .replace(/^\s*\\\(|\\\)\s*$/g, "")
+        .replace(/^\s*\\\[|\\\]\s*$/g, "")
+        // A cross-reference (\ref{obj:X}) that sits INSIDE a math span (e.g. the
+        // rollout-law-class definition's "\text{satisfies Assumptions~\ref{…}}")
+        // is emitted as an <a class="objref"> HTML anchor. KaTeX cannot parse raw
+        // HTML, so convert each anchor to KaTeX's own \href (rendered as a clickable
+        // link; trusted below for internal #-fragment targets only) instead of
+        // letting the whole block fall back to raw LaTeX.
+        .replace(
+          /<a\b[^>]*\bhref="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g,
+          (_m, url: string, txt: string) => `\\href{${url}}{${txt.replace(/<[^>]+>/g, "").trim()}}`,
+        )
+        .trim();
+      try {
+        return katex.renderToString(tex, {
+          displayMode: mode === "display",
+          throwOnError: false,
+          trust: (ctx) => ctx.command === "\\href" && ctx.url.startsWith("#"),
+        });
+      } catch {
+        return whole; // leave raw; client-side fallback will retry
+      }
+    },
+  );
+}
+const renderedBody = renderMath(bundle.bodyHtml);
+
+// Build-time table of contents from the rendered body's headings
+// (h1 = sections, h2 = subsections; the id-less abstract heading is skipped).
+const toc: { id: string; text: string; level: number }[] = [];
+for (const m of bundle.bodyHtml.matchAll(/<h([12])[^>]*\bid="([^"]+)"[^>]*>([\s\S]*?)<\/h\1>/g)) {
+  const text = m[3].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  if (text) toc.push({ id: m[2], text, level: Number(m[1]) });
+}
+
+// objId → anchor on the per-paper Lean page (the decl card's id: fully
+// qualified when the decl is in the paper index, the short name for the
+// private snippet-only cards). Powers the drawer's "view in Lean development".
+const leanAnchors: Record<string, string> = {};
+if (bundle.paperLib) {
+  const names = (bundle.paperLib.entries as { name: string }[]).map((e) => e.name);
+  for (const e of bundle.entries) {
+    if (!e.lean) continue;
+    leanAnchors[e.obj_id] =
+      names.find((n) => n === e.lean!.decl || n.endsWith(`.${e.lean!.decl}`)) ?? e.lean.decl;
+  }
+}
+
+const paperData = {
+  github: GITHUB_REPO,
+  commit: bundle.commit,
+  leanSubdir: bundle.leanSubdir,
+  entries: bundle.entries,
+  snippets: bundle.snippets,
+  leanPage: bundle.paperLib ? `${base}/papers/${bundle.id}/formalization` : null,
+  leanAnchors,
+};
+
+// Formal-layer panel: objects already presented in the paper (a formal block or an inline
+// \leanref) are drawer-openable; the rest get a GitHub source link. Both are complete from
+// the graph, so every object is reachable.
+const entryIds = new Set(bundle.entries.map((e) => e.obj_id));
+const ghBase = GITHUB_REPO ? `https://github.com/${GITHUB_REPO}/blob/${bundle.commit}/${bundle.leanSubdir}` : null;
+const statusLabel: Record<string, string> = {
+  matched: "verified",
+  derived: "verified",
+  drift: "drift",
+  unreviewed: "—",
+};
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{bundle.meta.title} · {SERIES_NAME}</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css"
+    />
+  </head>
+  <body>
+    {toc.length > 0 && (
+      <nav class="paper-toc" id="paper-toc" aria-label="Contents">
+        <div class="toc-head">Contents</div>
+        <ul>
+          {toc.map((t) => (
+            <li class={`toc-l${t.level}`}>
+              <a href={`#${t.id}`}>{t.text}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    )}
+    <article class="paper">
+      <div class="paper-byline">
+        <a href={`${base}/`}>{SERIES_NAME} · {SERIES_TAGLINE}</a>
+        — {bundle.meta.wp_number ?? bundle.id} · {bundle.meta.area} ·
+        {typeof bundle.meta.score === "number" && (
+          <> <span class="score-badge" title={bundle.meta.score_rationale ?? undefined}>self-reported score {bundle.meta.score}/10</span> · </>
+        )}
+        pinned commit
+        <code>{bundle.commit.slice(0, 7)}</code>
+        {bundle.hasPdf && <> · <a href={`${base}/papers/${bundle.id}/paper.pdf`}>PDF</a></>}
+        {bundle.paperLib && <> · <a href={`${base}/papers/${bundle.id}/formalization`}>Lean code</a></>}
+      </div>
+      <h1>{bundle.meta.title}</h1>
+      <div set:html={renderedBody} />
+
+      {bundle.formalLayer && bundle.formalLayer.groups.length > 0 && (
+        <aside class="formal-layer" aria-label="Formal layer">
+          <details open>
+            <summary>Formal layer — Lean correspondence</summary>
+            <p class="fl-note">
+              Every object below is formalized in Lean 4. Click a verified row to view its
+              statement; the rest link to the Lean source.
+            </p>
+            {bundle.formalLayer.groups.map((g) => (
+              <details class="fl-group" open={g.kind !== "auxiliary"}>
+                <summary>
+                  {g.kind === "auxiliary"
+                    ? "Auxiliary Lean lemmas (machine-checked)"
+                    : g.kind === "symbol"
+                      ? "Symbol realizations (Lean @realizes)"
+                      : `${cap(g.kind)}s`}{" "}
+                  ({g.items.length})
+                </summary>
+                <ul>
+                  {g.items.map((it) => (
+                    <li
+                      class={`fl-row${entryIds.has(it.obj_id) ? " fl-open" : ""}`}
+                      data-objid={entryIds.has(it.obj_id) ? it.obj_id : undefined}
+                      tabindex={entryIds.has(it.obj_id) ? 0 : undefined}
+                    >
+                      <span class="fl-label">{it.label}</span>
+                      <span class={`fl-badge fl-${it.status}`}>{statusLabel[it.status] ?? it.status}</span>
+                      {it.lean && <code class="fl-decl">{it.lean.decl}</code>}
+                      <span class="fl-nl">{it.nl}</span>
+                      {it.lean && ghBase && !entryIds.has(it.obj_id) && (
+                        <a class="fl-gh" href={`${ghBase}/${it.lean.file}`} target="_blank" rel="noopener">↗ Lean</a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ))}
+          </details>
+        </aside>
+      )}
+    </article>
+
+    <div class="drawer-scrim" id="drawer-scrim"></div>
+    <aside class="drawer" id="drawer" aria-hidden="true">
+      <div class="drawer-head">
+        <button class="close" id="drawer-close" aria-label="Close">✕</button>
+        <span class="drawer-title" id="drawer-title"></span>
+        <span id="drawer-sub"></span>
+      </div>
+      <div class="drawer-body" id="drawer-body"></div>
+    </aside>
+
+    <script type="application/json" id="paper-data" set:html={JSON.stringify(paperData)} />
+    <script>
+      import { initDrawer } from "../../scripts/drawer.js";
+      // Wire the drawer FIRST, and never behind a top-level `import katex` — a
+      // failed katex load (e.g. a stale Vite optimize-deps chunk 504ing in dev)
+      // would otherwise abort this whole module before initDrawer() runs, leaving
+      // every formal block un-clickable. katex is loaded lazily below instead.
+      initDrawer();
+      // #<objId> deep link (e.g. from the Lean page's "in the paper" badge):
+      // scroll to and flash the matching formal block
+      {
+        const hash = decodeURIComponent(location.hash.slice(1));
+        const t = hash && document.querySelector(`[data-objid="${hash.replace(/"/g, "")}"]`);
+        if (t) {
+          t.scrollIntoView({ block: "center" });
+          t.classList.add("flash");
+          setTimeout(() => t.classList.remove("flash"), 1600);
+        }
+      }
+      // TOC: highlight the section currently in view
+      {
+        const links = new Map(
+          [...document.querySelectorAll("#paper-toc a")].map((a) => [
+            decodeURIComponent((a as HTMLAnchorElement).hash.slice(1)),
+            a,
+          ]),
+        );
+        let active: Element | null = null;
+        const obs = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (!e.isIntersecting) continue;
+              const link = links.get(e.target.id);
+              if (!link) continue;
+              active?.classList.remove("active");
+              link.classList.add("active");
+              active = link;
+            }
+          },
+          { rootMargin: "0px 0px -75% 0px" },
+        );
+        for (const id of links.keys()) {
+          const h = document.getElementById(id);
+          if (h) obs.observe(h);
+        }
+      }
+      // Fallback render for any \( … \) math spans pandoc left raw (most math is
+      // already baked in by build-time KaTeX). Load katex lazily and only when
+      // such spans exist, so its failure can't break the page's other scripts;
+      // on failure the raw TeX simply stays visible.
+      {
+        const rawMath = [...document.querySelectorAll("span.math")];
+        if (rawMath.length) {
+          void import("katex")
+            .then(({ default: katex }) => {
+              for (const el of rawMath) {
+                const tex = (el.textContent ?? "").replace(/^\\[([]|\\[)\]]$/g, "");
+                const clean = tex.replace(/^\\\(|\\\)$/g, "").replace(/^\\\[|\\\]$/g, "");
+                try {
+                  katex.render(clean, el as HTMLElement, {
+                    displayMode: el.classList.contains("display"),
+                    throwOnError: false,
+                  });
+                } catch {
+                  /* leave raw TeX visible */
+                }
+              }
+            })
+            .catch(() => {
+              /* katex unavailable — leave raw TeX visible */
+            });
+        }
+      }
+    </script>
+  </body>
+</html>

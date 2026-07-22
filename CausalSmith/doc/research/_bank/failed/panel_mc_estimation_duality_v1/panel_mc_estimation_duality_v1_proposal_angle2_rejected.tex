@@ -1,0 +1,862 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=panel\_mc\_estimation\_duality, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{panel\_mc\_estimation\_duality} / \texttt{v1}%
+  \\ \large\textit{Projected Riesz--Schur certificates for a strict SCM/ASCM/SDiD/matrix-completion exact-identification lattice}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\textbf{Tuple:} $(qid,\ specialization,\ p,\ assignment,\ target,\ regression)$.
+Here $qid=\texttt{panel\_mc\_estimation\_duality}$ and
+$specialization=\texttt{v1}$. The memory length is $p=0$: units follow
+absorbing staggered adoption $D_{it}=\one\{t\ge G_i\}$ over
+$t=1,\ldots,T$, with $G_i\in\mathcal G\subseteq\{2,\ldots,T,\infty\}$.
+The assignment convention is deterministic in the proposal: the cohort sizes,
+the treated cells $\mathcal A=\{(i,t):t\ge G_i,\ G_i<\infty\}$, and the
+donor pre-adoption cells $\mathcal O_0=\{(i,t):t<G_i\}$ are fixed design
+objects; randomness enters through outcomes only. The target is the fixed
+weighted ATT
+\[
+  \theta(M^0,Y)=\sum_{(i,t)\in\mathcal A}q_{it}\{Y_{it}-M^0_{it}\},
+  \qquad q_{it}>0,\quad \sum_{(i,t)\in\mathcal A}q_{it}=1,
+\]
+where $M^0$ is the untreated mean matrix and $Y_{it}$ is observed. The
+regression / estimator convention is the ordered lattice of four population
+counterfactual functionals: convex SCM, affine ridge ASCM, staggered SDiD, and
+rank-$r$ matrix completion, each defined by the optimization problems in
+Section~\ref{sec:setup}. The low-rank untreated surface is
+$M^0=A+B+L^0$, where $A_{it}=\alpha_i$, $B_{it}=\lambda_t$ and
+$\operatorname{rank}(L^0)\le r$ after additive effects are removed.
+
+\begin{abstract}
+This proposal asks whether the leading synthetic-control and matrix-completion
+identification domains form a strict lattice in staggered-treatment panels.
+The proposed focal object is an adjacent projected Riesz--Schur certificate
+$\Delta_{a,b,r}(P,D)$ computed from each lower method's normal equations, each
+higher method's admissible tangent directions, and the ATT linear functional.
+The flagship conjecture is that, for each adjacent pair
+convex SCM $\subset$ affine ASCM $\subset$ staggered SDiD $\subset$ rank-$r$
+matrix completion, exact ATT equality holds for all compatible rank-$r$
+untreated matrices if and only if the corresponding certificate vanishes, and
+strict separation occurs on a relative-open fixed-rank chart whenever it does
+not vanish. This is a proposal, not a proof: the certificate theorem, plug-in
+diagnostic law, and minimal witnesses are labelled as Conjectures. If resolved,
+the result would turn the current
+``compare SDiD, augmented SCM, and matrix completion'' practice into a finite
+diagnostic for when the methods identify the same ATT and when disagreement is
+structural rather than tuning noise.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Applied staggered-adoption studies often report synthetic-control,
+augmented-synthetic-control, SDiD, and matrix-completion estimates as
+robustness checks for the same ATT. The estimators are built from different
+restrictions: convex donor weights, signed or ridge-corrected weights, joint
+unit--time balancing, and low-rank completion. Without a theorem that compares
+their exact-identification domains, disagreement is hard to interpret: it may
+reflect finite-sample tuning, or it may prove that the observed panel does not
+contain enough untreated information for the claimed counterfactual.
+
+\paragraph{The main finding (proposed).}
+The proposed main finding is the projected Riesz--Schur lattice in
+Conjecture~\ref{conj:lattice}. For each adjacent pair of estimator classes
+$(a,b)$ in the ordered list
+\[
+  \mathrm{SCM}_{+}\prec \mathrm{ASCM}_{\rho}\prec
+  \mathrm{SDID}_{\rho_N,\rho_T}\prec \mathrm{MC}_{r,\lambda},
+\]
+define $\Delta_{a,b,r}(P,D)$ as the norm of the ATT Riesz representer after
+projecting it onto the quotient of the higher method's tangent space by the
+lower method's normal-equation tangent space. The conjecture says that
+$\Delta_{a,b,r}(P,D)=0$ is exactly the equality frontier; when it is positive,
+there is a rank-$r$ untreated matrix compatible with the observed donor cells
+on which the two methods give different ATT functionals.
+
+\paragraph{What is new.}
+The closest published comparators are \citet{AbadieDiamondHainmueller2010}
+for convex SCM, \citet{DoudchenkoImbens2016} for relaxed regression-style
+synthetic controls, \citet{BenMichaelFellerRothstein2021} for augmented SCM,
+\citet{ArkhangelskyAtheyHirshbergImbensWager2021} for SDiD, and
+\citet{AtheyBayatiDoudchenkoImbensKhosravi2021} and
+\citet{AtheyBayatiImbensQu2019} for matrix-completion / ensemble panel
+predictors, and \citet[arXiv v3 abstract and Section~2 estimator definition]{AtheyImbensQuViviano2025}
+for a combined low-rank, unit-weight, and time-weight estimator. Those papers define methods and
+consistency or performance regimes, but do not give an adjacent-pair
+necessary-and-sufficient certificate for equality of the ATT functional over a
+common bounded-rank completion class. The new object is not a relabelled
+spectral gap: $\Delta_{a,b,r}(P,D)$ is an ATT-projected Riesz residual built
+from explicit normal-equation matrices, so its zero test compares the estimand
+delivered by two named methods rather than the numerical conditioning of one
+estimator.
+
+\paragraph{How it positions in the literature.}
+The kernel lives in the panel / linear-projection cluster. It borrows the
+modern staggered target language of \citet{CallawaySantAnna2021} and
+\citet{BorusyakJaravelSpiess2024}, the synthetic-control geometry of
+\citet{AbadieDiamondHainmueller2010} and \citet{DoudchenkoImbens2016}, the
+augmented and staggered synthetic-control comparisons of
+\citet{BenMichaelFellerRothstein2021} and
+\citet{BenMichaelFellerRothstein2022}, the SDiD weighting system of
+\citet{ArkhangelskyAtheyHirshbergImbensWager2021}, and the causal-panel
+matrix-completion framework of
+\citet{AtheyBayatiDoudchenkoImbensKhosravi2021}. The proposal is deliberately
+orthogonal to Q1 history-regression sign-flip results in the CausalSmith
+catalogue: the object here is a cross-estimator ATT equality certificate, not
+a coefficient contamination formula for a particular treatment-history basis.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the staggered synthetic-control workflow
+of \citet{BenMichaelFellerRothstein2022}. If the conjecture is true, analysts
+can compute $\Delta_{\mathrm{ASCM},\mathrm{SDID},r}$ and
+$\Delta_{\mathrm{SDID},\mathrm{MC},r}$ before treating ASCM, SDiD, and matrix
+completion as interchangeable ATT estimators; positive certificates warn that
+the methods identify different counterfactual functionals on admissible
+low-rank panels. The companion sample diagnostic in
+Conjecture~\ref{conj:plugin} makes this operational: the same active-set
+matrices define a plug-in $\widehat\Delta_{a,b,r}$ whose first-order law is
+conjectured to be valid when the estimated active set is stable.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report the adjacent Riesz--Schur certificates alongside
+SCM/ASCM/SDiD/MC estimates and avoid interpreting agreement or disagreement
+without first checking the exact-identification lattice node they occupy.
+
+\section{Related work}
+\citet[Section~2, donor-weight program]{AbadieDiamondHainmueller2010} define
+the convex synthetic-control estimator under exact donor balancing; this is
+the bottom node of the proposed lattice.
+\citet[Sections~2--3, restriction map between SC, DID, and regression]{DoudchenkoImbens2016}
+show how synthetic controls, difference in differences, and linear regression
+are connected through restrictions on weights and intercepts; this motivates
+the affine/relaxed node but does not state adjacent exact-ID certificates.
+\citet[Sections~2--3, bias-correction formula after imperfect SC fit]{BenMichaelFellerRothstein2021}
+develop augmented synthetic control, using an outcome model to correct
+imperfect synthetic-control fit; this is the closest ASCM comparator for the
+affine ridge node.
+\citet[Section~2, unit/time weighting objective and ATT estimator]{ArkhangelskyAtheyHirshbergImbensWager2021}
+introduce synthetic DiD with unit and time weights and prove
+consistency/asymptotic normality under latent-factor structure; this is the
+SDiD node of the proposed lattice.
+\citet[Sections~2--3, nuclear-norm objective and causal-panel setup]{AtheyBayatiDoudchenkoImbensKhosravi2021}
+propose nuclear-norm matrix completion for causal panels and discuss links to
+synthetic controls; this is the matrix-completion node, but the paper does not
+give a finite adjacent equality certificate against SDiD or ASCM.
+\citet[Section~2, completion-matrix construction and local/global uniqueness tests]{SingerCucuringu2010}
+give deterministic low-rank completion certificates via a completion matrix
+adapted from rigidity theory; this is a close finite-certificate precedent,
+but its certificate concerns uniqueness of a low-rank completion under an
+observation mask, not equality of adjacent causal ATT functionals after SDiD
+or ASCM normal equations are imposed.
+\citet[main theorem and graph-limit solvability criterion]{Chatterjee2020}
+gives a deterministic asymptotic theory for arbitrary low-rank matrix
+completion masks; it is a closer mask-design comparator than random-mask
+phase-transition papers, but it does not include staggered causal estimators,
+ATT Riesz rows, or adjacent SCM/SDiD/MC equality frontiers.
+\citet[Section~2, ensemble comparison of panel estimators]{AtheyBayatiImbensQu2019}
+compare ensemble methods for causal effects in panel settings, including
+regression, synthetic control, and matrix completion; it is a close
+multi-method comparator, but it treats combination and prediction performance
+rather than a necessary-and-sufficient ATT identification lattice.
+\citet[Sections~2--3, interactive-fixed-effect counterfactual estimator]{Xu2017}
+develop the generalized synthetic-control method by imputing counterfactuals
+with interactive fixed effects; it is a close low-rank/SC unification
+comparator, but it does not give an adjacent active-set certificate comparing
+GSC/MC with SDiD or ASCM on the same ATT functional.
+\citet[arXiv v3 abstract and Section~2 estimator definition]{AtheyImbensQuViviano2025}
+introduce the Triply RObust Panel (TROP) estimator, combining a low-rank
+outcome model with unit and time weights; it is the closest 2025 comparator,
+but it targets estimator performance against TWFE, SC, MC, and SDiD rather
+than an observable adjacent-pair equality certificate.
+\citet{BenMichaelFellerRothstein2022} extend synthetic controls to staggered
+adoption and emphasize individual and pooled treated-unit imbalance; this
+supplies the staggered-design consumer of the proposed certificates.
+\citet{BaiNg2021} give factor-imputation theory for counterfactuals under
+interactive fixed effects; their rank and factor-strength restrictions are the
+background low-rank regime for the matrix-completion node.
+\citet{ChoiKwonLiao2024} develop inference after low-rank completion without
+sample splitting and apply it to ATE estimation; it is adjacent to the
+matrix-completion node but does not compare exact-ID domains across
+SCM/ASCM/SDiD/MC.
+\citet{CallawaySantAnna2021} and \citet{BorusyakJaravelSpiess2024} provide
+staggered-adoption ATT notation and imputation estimators; they anchor the
+target parameter but not the synthetic-control / matrix-completion lattice.
+In-catalogue prior art is doc/API.md Section~1: Q1\_MinimalBasis,
+Q1\_StaggeredMinimalBasis, Q1\_SignFlip, and Q1\_SpectralThreshold give
+FWL, clean-basis, staggered-basis, and Markov spectral sign-threshold panel
+results. Those entries do not define synthetic-control, augmented-control,
+SDiD, or matrix-completion population optimizers and therefore do not contain
+the proposed Riesz--Schur lattice. The failed banked proposal
+\texttt{panel\_sdid\_mc\_id\_v1} is the nearest in-repo signal: its reviewer
+asked for explicit finite-dimensional observable computation after earlier
+spectral-frontier and lattice drafts left the certificate underdefined.
+
+\section{Formal setup}\label{sec:setup}
+Let $I=\{1,\ldots,N\}$ and $T=\{1,\ldots,\bar T\}$ be fixed finite sets.
+The observed outcome matrix is $Y\in\R^{N\times \bar T}$ and the untreated
+mean matrix is $M^0\in\R^{N\times\bar T}$. Write $P$ for the finite
+observable law consisting of $(Y_{it},D_{it},G_i)$ and the fixed design
+weights $q_{it}$. For proposal purposes all estimator functionals are
+population maps of $(P,D)$; the sample diagnostic is defined after the
+population certificate.
+
+Let $\mathcal O_0=\{(i,t):t<G_i\}$ be untreated observed cells and
+$\mathcal A=\{(i,t):t\ge G_i,\ G_i<\infty\}$ be target cells. Let
+$\ell_q(H)=\sum_{(i,t)\in\mathcal A}q_{it}H_{it}$ be the ATT linear
+functional on counterfactual matrices. Let $\Pi_{\alpha,\lambda}$ be the
+orthogonal residual-maker that removes unit and time additive effects on the
+ambient Frobenius space. The admissible rank-$r$ completion class is
+\[
+  \mathcal C_r(P,D)=
+  \{M:\ M_{\mathcal O_0}=\E[Y_{\mathcal O_0}\mid D],\
+        \operatorname{rank}(\Pi_{\alpha,\lambda}M)\le r\}.
+\]
+For a candidate counterfactual $\widehat M^m(P,D)$ produced by method $m$,
+the method's ATT functional is
+$\phi_m(P,D)=\ell_q(Y-\widehat M^m)$. For the lattice conjecture the
+completion must also be allowed to vary. Define
+\[
+  \widehat M^m(P,D;M)=\mathcal A_m(P,D)M+\mathcal B_m(P,D)Y
+  \quad\text{and}\quad
+  \phi_m(P,D;M)=\ell_q\{Y-\widehat M^m(P,D;M)\},
+\]
+where $\mathcal A_m(P,D)$ and $\mathcal B_m(P,D)$ are the finite matrices
+obtained by freezing method $m$'s active set and differentiating its displayed
+population normal equations with respect to the compatible completion
+$M\in\mathcal C_r(P,D)$. Thus $\phi_m(P,D)=\phi_m(P,D;M^0)$ at the true
+untreated matrix, while $\phi_m(P,D;M)$ is a linear functional on the local
+rank-$r$ completion class.
+
+The four population optimizers are fixed as follows. Convex SCM solves, for
+each target row/cohort block $c$, a donor-weight problem
+\[
+  \min_{w\in\Delta_c}\|X_c-X_D^\transpose w\|_{V_c}^2
+  \quad\text{and sets}\quad \widehat M^{+}_{ct}=Y_{Dt}^\transpose w_c
+  \ \text{on target post cells},
+\]
+where $\Delta_c=\{w\ge0:\one^\transpose w=1,\ w_i=0\text{ if }i\text{ is not a
+donor for }c\}$, $X_c\in\R^{T_c^-}$ is the vector of cohort-$c$
+pre-adoption outcomes, $X_D\in\R^{n_c(D)\times T_c^-}$ stacks the corresponding
+donor pre-adoption rows, and $V_c\in\R^{T_c^-\times T_c^-}$ is a fixed
+positive semidefinite pre-period weighting matrix. Affine ASCM solves
+\[
+  \min_{w\in\Delta_c^{\mathrm{aff}},\,\beta\in\R^{d_\mu}}
+  \|X_c-X_D^\transpose w-Z_c^\transpose\beta+
+      \sum_{i\in D_c}w_i Z_i^\transpose\beta\|_{V_c}^2
+  +\rho_{\mathrm A}\|w\|_2^2+\rho_\mu\|\beta\|_2^2,
+\]
+where $\Delta_c^{\mathrm{aff}}=\{w:\one^\transpose w=1,\ w_i=0\text{ off }
+D_c\}$, $Z_i\in\R^{d_\mu\times T_c^-}$ are the pre-period regressors for the
+ridge outcome model, and
+$\widehat\mu_{it}=z_{it}^\transpose\widehat\beta_c$. The ASCM target-cell
+counterfactual is
+\[
+  \widehat M^{\mathrm A}_{ct}
+  =Y_{D_ct}^\transpose \widehat w_c+
+    \widehat\mu_{ct}-\sum_{i\in D_c}\widehat w_{ci}\widehat\mu_{it}.
+\]
+Thus the ASCM KKT block entering $J_m$ contains derivatives with respect to
+both $w_c$ and $\beta_c$, and its target-cell Riesz row includes the explicit
+outcome-model correction above.
+
+For staggered SDiD, let $C$ index treated cohorts, let $D_C$ be their
+not-yet-treated donor risk set, let $\mathcal T_C^-$ be the pre-adoption
+periods used for time balancing, and let $\mathcal T_C^+$ be the target
+post-periods. Define
+$X_T^{C}\in\R^{|C|\times |\mathcal T_C^-|}$ as the matrix of cohort-average
+treated outcomes before adoption and
+$X_D^{C}\in\R^{|D_C|\times |\mathcal T_C^-|}$ as the donor pre-adoption matrix.
+The donor target-period vector is
+$Y_{D_C,\mathcal T_C^+}\in\R^{|D_C|\times |\mathcal T_C^+|}$ and the treated
+target-period vector is
+$Y_{C,\mathcal T_C^+}\in\R^{|C|\times |\mathcal T_C^+|}$. Staggered SDiD solves
+\[
+  \min_{\omega,\lambda}
+  \| (X_T^{C})^\transpose\pi_C-(X_D^{C})^\transpose\omega\|_{\lambda}^2+
+  \rho_N\|\omega\|_2^2+\rho_T\|\lambda\|_2^2
+\]
+subject to donor-risk-set support,
+$\one^\transpose\omega=1$, $\omega\ge0$, $\one^\transpose\lambda=1$,
+$\lambda\ge0$, where $\pi_C$ are the fixed cohort aggregation weights and
+$\|v\|_\lambda^2=\sum_{t\in\mathcal T_C^-}\lambda_t v_t^2$. Its target
+functional is the weighted double contrast
+\[
+  \phi_{\mathrm{SDID}}=
+  \sum_{t\in\mathcal T_C^+}\nu_t
+  \{Y_{C,t}^\transpose\pi_C-Y_{D_C,t}^\transpose\omega\}
+  -\sum_{t\in\mathcal T_C^-}\lambda_t
+  \{Y_{C,t}^\transpose\pi_C-Y_{D_C,t}^\transpose\omega\},
+\]
+with fixed post weights $\nu_t$. The SDiD KKT block entering $J_m$ therefore
+has columns for the active donor weights $\omega$, active pre-period time
+weights $\lambda$, and the simplex multipliers. Rank-$r$ MC solves
+\[
+  \min_{M}\ \|P_{\mathcal O_0}(Y-M)\|_F^2+\lambda_{\mathrm{MC}}\|M\|_\*
+  \quad\text{subject to}\quad
+  \operatorname{rank}(\Pi_{\alpha,\lambda}M)\le r
+\]
+with the deterministic tie-breaker choosing the minimum Frobenius norm among
+population minimizers.
+
+For each method $m$, let $J_m(P,D)$ be the active-set Jacobian of the frozen
+normal equations with columns indexed by local perturbations of $M$. Define
+\[
+  N_m(P,D)=\operatorname{rowspan}\{J_m(P,D)\},\qquad
+  R_m(P,D)=\mathcal A_m(P,D)^\transpose \ell_q,
+\]
+the normal-equation tangent row space and Frobenius Riesz row for
+$M\mapsto\phi_m(P,D;M)$. For adjacent $a\prec b$, define
+the common row space
+\[
+  H_{a,b}(P,D)=N_a(P,D)\cap N_b(P,D),
+\]
+and the higher-method quotient slice
+\[
+  K_{a\to b}(P,D)=N_b(P,D)\cap H_{a,b}(P,D)^\perp,
+\]
+where the orthogonal complement is taken in the ambient Frobenius row space
+after both systems are embedded in the same tangent coordinates for
+$\mathcal C_r(P,D)$. Thus $K_{a\to b}$ is the canonical representative of
+the quotient $N_b/H_{a,b}$ and does not require $N_a\subseteq N_b$ or
+$N_b\subseteq N_a$. Define the independent
+focal object
+\[
+  \Delta_{a,b,r}(P,D)=
+  \left\|(I-\Pi_{\overline{N_a+K_{a\to b}}})\{R_b-R_a\}\right\|_F,
+\]
+where $\overline{N_a+K_{a\to b}}$ is its closed finite-dimensional
+span and $\Pi_{\overline{N_a+K_{a\to b}}}$ is the Frobenius projection. This
+definition does not mention equality of $\phi_a$ and $\phi_b$; equality is the
+nontrivial claim of Conjecture~\ref{conj:lattice}. Let $c_{a,b}>0$ denote the
+smallest singular value of the quotient evaluation map from
+$K_{a\to b}(P,D)$ modulo the null directions annihilated by $R_b-R_a$ to the
+ATT contrast row on the fixed active-set chart; Assumption~\ref{ass:nongenerate}
+requires this finite constant to be well-defined whenever a positive-margin
+separation is stated.
+
+For a random panel sequence indexed by $s=1,\ldots,n_{\mathrm{eff}}$, let
+$\widehat P$ denote the empirical analogue of the finite moments entering the
+four active-set normal equations. The sample diagnostic is
+$\widehat\Delta_{a,b,r}=\Delta_{a,b,r}(\widehat P,D)$ computed after replacing
+population Gram matrices, Riesz rows, and rank-$r$ completion Jacobians by
+their sample analogues on the selected active-set chart. Let
+$g_{a,b,r}(P,D)$ be the vector of all finite moments entering
+$\Delta_{a,b,r}$, and let $\Gamma_{a,b,r}(P,D)$ be the derivative of the map
+$g\mapsto\Delta_{a,b,r}$ on the region where the projection residual is
+nonzero. Define
+\[
+  \sigma^2_{a,b,r}(P,D)=
+  \Gamma_{a,b,r}(P,D)\,\Omega_{a,b,r}(P,D)\,
+  \Gamma_{a,b,r}(P,D)^\transpose,
+\]
+where $\Omega_{a,b,r}$ is the long-run covariance matrix of
+$\sqrt{n_{\mathrm{eff}}}\{g_{a,b,r}(\widehat P,D)-g_{a,b,r}(P,D)\}$.
+
+\begin{verbatim}
+Locked parameters:
+qid = panel_mc_estimation_duality
+specialization = v1
+p = 0
+assignment = fixed absorbing staggered adoption mask D with cohort risk sets
+target = weighted ATT theta(M0,Y)=sum_{(i,t) in A} q_it (Y_it-M0_it)
+regression = additive effects plus rank-r untreated matrix; estimator lattice
+             convex SCM -> affine ridge ASCM -> staggered SDiD -> rank-r MC
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Staggered overlap and target support]\label{ass:overlap}
+Every target cell $(i,t)\in\mathcal A$ has a nonempty not-yet-treated donor
+risk set at $t$, and every cohort block appearing in $q$ has at least one
+pre-adoption cell and one donor row outside the treated cohort.
+\end{assumption}
+
+\begin{assumption}[Rank-$r$ untreated completion class]\label{ass:rank}
+The untreated mean matrix satisfies $M^0\in\mathcal C_r(P,D)$ and the tangent
+cone of $\mathcal C_r(P,D)$ at $M^0$ is generated by first-order perturbations
+$UV^\transpose+U_\perp V^\transpose+UV_\perp^\transpose$ after additive effects
+are residualized.
+\end{assumption}
+
+\begin{assumption}[Unique population optimizers]\label{ass:unique}
+The four population optimization problems defining
+$\mathrm{SCM}_{+}$, $\mathrm{ASCM}_{\rho}$,
+$\mathrm{SDID}_{\rho_N,\rho_T}$, and $\mathrm{MC}_{r,\lambda}$ have unique
+solutions under the stated tie-breaker, and their active constraints are
+locally constant on the neighborhood under study.
+\end{assumption}
+
+\begin{assumption}[Regular normal-equation linearization]\label{ass:linear}
+The KKT systems for the four optimizers are differentiable at $(P,D)$ after
+conditioning on the active set, and their derivative matrices have Moore--Penrose
+inverses on the orthogonal complement of their null spaces.
+\end{assumption}
+
+\begin{assumption}[Nondegenerate observed design]\label{ass:nongenerate}
+The donor pre-period Gram matrices, SDiD unit/time Gram matrices, and the
+rank-$r$ observed-cell completion Jacobian all have positive smallest
+nonzero singular values. Let $\kappa_{\min}(P,D)$ be the minimum of these
+singular values.
+\end{assumption}
+
+\begin{assumption}[Bounded certificate margin]\label{ass:margin}
+For any positive-margin statement, the displayed margin satisfies
+$0<\delta\le \kappa_{\min}(P,D)/4$. This prevents separation claims from
+using a free tuning parameter unrelated to the observable design.
+\end{assumption}
+
+\begin{assumption}[Sampling and active-set stability]\label{ass:sampling}
+For the growing-panel sequence used to estimate
+$\widehat\Delta_{a,b,r}$, fixed rank $r$ is maintained, the selected active
+sets of the four optimizers equal their population active sets with
+probability tending to one, and
+\[
+  \sqrt{n_{\mathrm{eff}}}\{g_{a,b,r}(\widehat P,D)-g_{a,b,r}(P,D)\}
+  \rightsquigarrow N(0,\Omega_{a,b,r}(P,D)).
+\]
+The matrix $\Omega_{a,b,r}(P,D)$ is positive semidefinite and consistently
+estimable on the fixed active-set chart.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: explicit adjacent certificate construction]\label{thm:construction}
+Under Assumptions~\ref{ass:overlap}, \ref{ass:rank}, \ref{ass:unique},
+\ref{ass:linear}, and \ref{ass:nongenerate}, the quantity
+$\Delta_{a,b,r}(P,D)$ is a finite-dimensional computable scalar for every
+adjacent pair
+$a\prec b$ in
+$\mathrm{SCM}_{+}\prec \mathrm{ASCM}_{\rho}\prec
+\mathrm{SDID}_{\rho_N,\rho_T}\prec \mathrm{MC}_{r,\lambda}$. Its inputs are
+the four displayed population optimization systems, the active constraint
+sets, the rank-$r$ completion Jacobian, the ATT row vector $\ell_q$, and
+Moore--Penrose inverses of the resulting normal-equation matrices.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) The construction is closest to \citet{DoudchenkoImbens2016},
+\citet{BenMichaelFellerRothstein2021},
+\citet{ArkhangelskyAtheyHirshbergImbensWager2021}, and
+\citet{AtheyBayatiDoudchenkoImbensKhosravi2021}: respectively, their
+restriction-map sections, ASCM bias-correction sections, SDiD Section~2
+weighting objective, and MC Sections~2--3 nuclear-norm objective define the
+individual optimizers but do not assemble their active-set normal equations
+into one adjacent Riesz--Schur zero-test. The deterministic completion
+certificates of \citet[Section~2]{SingerCucuringu2010} and the arbitrary-mask
+solvability criterion of \citet[main theorem]{Chatterjee2020} are closer to
+the $J_{\mathrm{MC}}$ block, but they test low-rank completion uniqueness or
+asymptotic solvability rather than whether an ATT Riesz row is already
+spanned by SDiD/ASCM normal equations. The in-repo Q1 panel entries in doc/API.md
+contain Gram/FWL computations for treatment-history regressions, not these
+synthetic-control and matrix-completion normal equations. (b) Resolving this
+construction gives Stage~0 a concrete object to verify for the
+\texttt{panel\_sdid\_mc\_id\_v1} reviewer request for an explicit finite
+observable computation.
+
+\begin{conjecture}[Conjecture 1: strict adjacent exact-identification lattice (NOT YET PROVED)]\label{conj:lattice}
+Under Assumptions~\ref{ass:overlap}--\ref{ass:margin}, for each adjacent
+pair $a\prec b$ and every $(P,D)$ in the locally fixed active-set region,
+\[
+  \phi_a(P,D;M)=\phi_b(P,D;M)\ \text{for all }M\in\mathcal C_r(P,D)
+  \quad\Longleftrightarrow\quad
+  \Delta_{a,b,r}(P,D)=0.
+\]
+If $\Delta_{a,b,r}(P,D)\ge\delta$ for
+$0<\delta\le\kappa_{\min}(P,D)/4$, then there is a relative-open
+neighborhood in the fixed-rank completion manifold, with the observed donor
+cells and active-set chart fixed, on which the adjacent ATT functionals differ
+by at least $c_{a,b}\delta$ for a method-specific positive constant $c_{a,b}$.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet[Sections~2--3]{AtheyBayatiDoudchenkoImbensKhosravi2021} state that
+causal-panel matrix completion, synthetic controls, and related methods differ
+in restrictions; \citet[Section~2]{AtheyBayatiImbensQu2019} compare ensembles
+of such predictors; \citet[Sections~2--3]{Xu2017} imputes counterfactuals
+with interactive fixed effects; \citet[arXiv v3 abstract and Section~2 estimator definition]{AtheyImbensQuViviano2025}
+combine low-rank outcome structure with unit and time weights in TROP. None
+gives an iff frontier for ATT equality over a common rank-$r$ completion
+class. The proposed epsilon-gap is the adjacent-pair iff certificate plus
+relative-open strict separation, not another consistency theorem for one
+method. \citet{SingerCucuringu2010} and \citet{Chatterjee2020} supply
+deterministic low-rank completion comparators, but their null object is
+completion uniqueness or solvability of the whole missing matrix; the proposed
+certificate allows completion nonuniqueness in directions orthogonal to the
+ATT contrast.
+(b) The concrete consumer is the staggered synthetic-control
+analysis of \citet{BenMichaelFellerRothstein2022}: the conjecture would tell
+when pooled SCM imbalance can be corrected by SDiD or MC without changing the
+identified ATT.
+
+\begin{conjecture}[Conjecture 2: plug-in diagnostic and first-order law (NOT YET PROVED)]\label{conj:plugin}
+Under Assumptions~\ref{ass:overlap}--\ref{ass:sampling}, fix an adjacent
+pair $a\prec b$ with $\Delta_{a,b,r}(P,D)>0$. The plug-in diagnostic
+$\widehat\Delta_{a,b,r}=\Delta_{a,b,r}(\widehat P,D)$ is locally regular on
+the fixed active-set chart and satisfies
+\[
+  \sqrt{n_{\mathrm{eff}}}
+  \{\widehat\Delta_{a,b,r}-\Delta_{a,b,r}(P,D)\}
+  \rightsquigarrow
+  N(0,\sigma^2_{a,b,r}(P,D)).
+\]
+When $\Delta_{a,b,r}(P,D)=0$, the squared diagnostic
+$n_{\mathrm{eff}}\widehat\Delta_{a,b,r}^{\,2}$ has the corresponding
+projected quadratic-form limit determined by the same quotient projection.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet[Section~2]{ArkhangelskyAtheyHirshbergImbensWager2021} prove
+large-sample theory for SDiD itself, \citet[Sections~2--3]{ChoiKwonLiao2024}
+study low-rank completion inference, and \citet[Sections~2--3]{Xu2017}
+estimate interactive-fixed-effect counterfactuals. None derives a sampling
+law for an adjacent-pair equality diagnostic whose null is that two named
+panel estimators identify the same ATT functional. (b) The concrete consumer
+is the \citet{BenMichaelFellerRothstein2022} staggered-SCM workflow: analysts
+would have a rate-calibrated test statistic for deciding whether ASCM, SDiD,
+and MC agreement is an identification fact or a finite-sample accident.
+
+\begin{conjecture}[Conjecture 3: minimal noncorner witnesses (NOT YET PROVED)]\label{conj:witnesses}
+Under Assumptions~\ref{ass:overlap}--\ref{ass:margin}, each strict adjacent
+inclusion in Conjecture~\ref{conj:lattice} has a concrete noncorner witness:
+\begin{enumerate}[label=(\roman*)]
+\item a $3\times3$ donor-pre-period block for
+$\mathrm{SCM}_{+}\prec\mathrm{ASCM}_{\rho}$ with one negative affine weight
+direction and nonzero ATT projection;
+\item a $3\times4$ staggered block for
+$\mathrm{ASCM}_{\rho}\prec\mathrm{SDID}_{\rho_N,\rho_T}$ where time weights
+remove a cohort shock that affine unit weights cannot remove;
+\item a $4\times4$ rank-one-plus-additive block for
+$\mathrm{SDID}_{\rho_N,\rho_T}\prec\mathrm{MC}_{1,\lambda}$ where the
+rank-one completion tangent contains a treated-post direction orthogonal to
+all SDiD unit/time balancing equations.
+\end{enumerate}
+In each witness the observable donor cells are nonconstant, each target and
+donor risk set is nonempty, and the determinant-ratio ATT gap is bounded below
+by a positive $\delta\le\kappa_{\min}(P,D)/4$.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The nearest negative examples in
+\citet[Sections~2--3, bias correction after imperfect pretreatment fit]{BenMichaelFellerRothstein2021}
+and
+\citet[Sections~2--3, penalized donor-choice objective for disaggregated data]{AbadieLHour2021}
+show that penalization or imperfect fit matters for synthetic controls, but
+do not give minimal staggered rank-$r$ witnesses for each adjacent pair in
+the SCM/ASCM/SDiD/MC lattice. (b) The consumer is the
+\citet{AtheyBayatiDoudchenkoImbensKhosravi2021} matrix-completion user: the
+witnesses would identify the smallest panel sizes where agreement with SDiD
+is mathematically impossible rather than empirically accidental.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Additive exact-balance collapse]\label{cor:additive}
+Under Assumptions~\ref{ass:overlap}, \ref{ass:unique}, and
+\ref{ass:linear}, if $r=0$ and each target cohort's additive untreated profile
+lies in the convex hull of its donor profiles with exact pre-period balance,
+then all three adjacent certificates vanish and all four method functionals
+equal the same ATT.
+\end{corollary}
+The reduction is: under $r=0$ the completion tangent contains only additive
+unit and time directions; exact convex pre-period balance makes the SCM
+normal equations already span the affine, SDiD, and MC ATT Riesz directions,
+so $\Delta_{a,b,0}(P,D)=0$ for every adjacent pair.
+
+\begin{corollary}[One-treated-cohort nonstaggered corner]\label{cor:single}
+If there is one treated cohort, a never-treated donor pool, and exactly one
+pre-period enters the SDiD time-weight program, then the
+$\mathrm{ASCM}_{\rho}\prec\mathrm{SDID}_{\rho_N,\rho_T}$ certificate reduces
+to the affine-weight residual direction in \citet{DoudchenkoImbens2016}.
+\end{corollary}
+The reduction is: with one pre-period the SDiD time-weight simplex is the
+singleton $\lambda_1=1$, so the time-weight normal equation contributes no
+quotient direction over affine ASCM; only the affine donor-weight residual
+remains.
+
+\begin{corollary}[Pure completion-matrix corner]\label{cor:completion}
+Suppress the lower estimator constraints by taking
+$N_{\mathrm{SDID}}=\{0\}$, remove additive effects before forming the rank-$r$
+tangent chart, and let $J_{\mathrm{MC}}$ be the local completion matrix for
+the observed untreated mask in the sense of \citet{SingerCucuringu2010}. Then
+the MC part of $\Delta_{\mathrm{SDID},\mathrm{MC},r}$ reduces to
+\[
+  \left\|(I-\Pi_{\operatorname{rowspan}(J_{\mathrm{MC}})})R_{\mathrm{MC}}\right\|_F,
+\]
+the ATT-projected completion residual. This vanishes whenever the standard
+completion-matrix rank test gives local uniqueness, but it can also vanish
+when the completion is nonunique and all nonunique tangent directions have
+zero ATT projection.
+\end{corollary}
+The reduction is: with the lower SDiD row space set to zero,
+$H_{\mathrm{SDID},\mathrm{MC}}=\{0\}$ and
+$K_{\mathrm{SDID}\to\mathrm{MC}}=\operatorname{rowspan}(J_{\mathrm{MC}})$,
+so the certificate is exactly the projection of the ATT Riesz row onto the
+orthogonal complement of the completion-matrix row space. This is weaker than
+full local completion uniqueness and explains why the proposed causal
+certificate is not subsumed by a standard completion-matrix rank test.
+
+\begin{example}[Concrete witness route for the SCM--ASCM gap]\label{ex:scm-ascm}
+Take three units and three periods, with unit 1 treated only in period 3 and
+units 2 and 3 never treated. Let the pre-period donor profiles be
+$X_2=(0,2)^\transpose$, $X_3=(2,0)^\transpose$, and target profile
+$X_1=(-\eta,2+\eta)^\transpose$ with $0<\eta<1/4$. Convex SCM projects
+$X_1$ to donor 2 and leaves residual $(-\eta,\eta)$, whereas affine ASCM can
+match the target profile exactly with weights
+$w_2=1+\eta/2$ and $w_3=-\eta/2$, which satisfy
+$w_2+w_3=1$ but violate convexity through one negative weight. Assign post
+outcomes so this affine direction has ATT projection $\eta$. The determinant
+route is to write the $2\times2$ donor Gram matrix and check that the
+projected SCM residual row is not in the affine normal-equation row space for
+$\eta\ne0$, giving
+$\Delta_{\mathrm{SCM}_{+},\mathrm{ASCM}_{\rho},r}>0$ on a nonconstant
+observable law.
+\end{example}
+
+\begin{example}[Concrete witness route for the ASCM--SDiD gap]\label{ex:ascm-sdid}
+Take three units and four periods, with unit 1 treated from period 4 and
+units 2 and 3 never treated. Let pre-period residualized outcomes be
+\[
+  \begin{pmatrix}
+  0&1&1+\eta\\
+  0&1&1\\
+  1&0&1
+  \end{pmatrix}
+\]
+for periods 1--3, and set the target-period untreated donor outcomes to
+$(1,0)$. Affine ASCM can only choose one signed unit-weight vector across all
+pre-periods, so the residualized cohort shock in period 3 leaves a nonzero ATT
+Riesz row. SDiD adds a time-weight normal equation that places positive mass
+on periods 2 and 3 and removes that shock before the post-period contrast.
+The explicit Stage~0 route is to compute the $3\times3$ block Gram matrix for
+unit and time weights and verify that the SDiD time row is linearly independent
+of the affine unit rows when $\eta\ne0$.
+\end{example}
+
+\begin{example}[Concrete witness route for the SDiD--MC gap]\label{ex:witness}
+Take four units and four periods, cohorts $G=(3,4,\infty,\infty)$, and
+untreated residual matrix
+\[
+  L^0(\eta)=
+  \begin{pmatrix}
+  0&1&\eta&2\eta\\
+  1&0&2\eta&\eta\\
+  0&1&0&1\\
+  1&0&1&0
+  \end{pmatrix}
+  - \Pi_{\alpha,\lambda}
+  \begin{pmatrix}
+  0&1&\eta&2\eta\\
+  1&0&2\eta&\eta\\
+  0&1&0&1\\
+  1&0&1&0
+  \end{pmatrix}.
+\]
+For small nonzero $\eta$, the Stage~0 calculation should check that the
+rank-one tangent direction generated by the treated-post block has nonzero
+ATT projection while satisfying the SDiD unit/time balance equations only at
+$\eta=0$. This is the noncorner witness attached to
+Conjecture~\ref{conj:witnesses}(iii).
+\end{example}
+
+\section{Proof-sketch route}
+The verification route is finite-dimensional. First write the KKT systems for
+convex SCM, affine ridge ASCM, staggered SDiD, and rank-$r$ MC after active
+sets are fixed; this gives four block normal-equation matrices and four ATT
+Riesz rows. Second, for each adjacent pair, form the Schur complement of the
+lower method's normal equations inside the higher method's tangent system and
+project the ATT Riesz difference onto the resulting quotient space. The
+``if'' direction of Conjecture~\ref{conj:lattice} should follow by showing
+that a zero projected Riesz residual makes the two ATT rows equal on every
+rank-$r$ feasible perturbation. The ``only if'' direction should follow by
+choosing the Moore--Penrose least-norm perturbation in the quotient direction
+and using Assumption~\ref{ass:margin} to keep the witness inside the local
+active-set and rank-$r$ neighborhood. Boundary cases are the $3\times3$
+SCM--ASCM determinant in Example~\ref{ex:scm-ascm}, the $3\times4$
+ASCM--SDiD block in Example~\ref{ex:ascm-sdid}, the $4\times4$ SDiD--MC
+determinant in Example~\ref{ex:witness}, plus the $r=0$ additive collapse in
+Corollary~\ref{cor:additive}. For Conjecture~\ref{conj:plugin}, the route is
+the delta method on the fixed active-set chart; the zero-certificate boundary
+uses the quadratic-form expansion of the projected residual norm.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:construction} is intended as routine finite-dimensional
+linear algebra once the four population optimizers and active sets are fixed.
+Conjectures~\ref{conj:lattice}, \ref{conj:plugin}, and
+\ref{conj:witnesses} are not proved:
+the hard part is showing that the rank-$r$ tangent cone and active-set KKT
+linearizations are sufficient for global equality over the compatible
+completion class, not merely first-order equality at one base point; for the
+plug-in diagnostic, the hard part is proving active-set stability and the
+nonregular zero-boundary limit under staggered masks. The proposal deliberately
+does not claim semiparametric efficiency or tuning-path optimality. Earlier
+spectral-threshold and penalty-stability angles for this topic were exhausted
+by the orchestrator; this pivot keeps the strict adjacent-lattice kernel and
+adds the sample diagnostic needed to use the certificate.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial angle-2 draft proposing the projected
+Riesz--Schur strict SCM/ASCM/SDiD/MC exact-identification lattice; prior
+verdict: none.
+\item v2 (revise) -- defined completion-dependent functionals and finite
+maps $N_m,R_m,K_b$, added rank to Theorem~1, anchored flagship comparators
+including TROP, and supplied concrete witnesses for all three adjacent gaps;
+prior verdict: REVISE.
+\item v3 (revise) -- added the plug-in $\widehat\Delta_{a,b,r}$ diagnostic
+and first-order-law conjecture, repaired the relative-open manifold wording,
+strengthened Xu/Abadie--L'Hour/Ben-Michael--Feller--Rothstein anchors, and
+fixed the one-cohort SDiD sanity reduction; prior verdict: REVISE.
+\item v4 (revise) -- pinned the ASCM ridge outcome-model objective and SDiD
+matrix dimensions for Theorem~1, replaced the invalid SCM--ASCM witness with
+affine weights summing to one, and gave TROP a section-level anchor; prior
+verdict: REVISE.
+\item v5 (revise) -- replaced the ambiguous informal quotient by the
+orthogonal quotient slice $K_{a\to b}=N_b\cap(N_a\cap N_b)^\perp$, added
+Singer--Cucuringu and Chatterjee deterministic completion comparators, and
+added the pure completion-matrix sanity corner; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Abadie, Diamond, and Hainmueller(2010)]{AbadieDiamondHainmueller2010}
+Abadie, A., A. Diamond, and J. Hainmueller (2010).
+Synthetic control methods for comparative case studies: Estimating the effect
+of California's tobacco control program.
+\emph{Journal of the American Statistical Association} 105(490), 493--505.
+
+\bibitem[Abadie and L'Hour(2021)]{AbadieLHour2021}
+Abadie, A. and J. L'Hour (2021).
+A penalized synthetic control estimator for disaggregated data.
+\emph{Journal of the American Statistical Association} 116(536), 1817--1834.
+
+\bibitem[Arkhangelsky, Athey, Hirshberg, Imbens, and Wager(2021)]{ArkhangelskyAtheyHirshbergImbensWager2021}
+Arkhangelsky, D., S. Athey, D. A. Hirshberg, G. W. Imbens, and S. Wager
+(2021). Synthetic difference-in-differences.
+\emph{American Economic Review} 111(12), 4088--4118.
+
+\bibitem[Athey, Bayati, Doudchenko, Imbens, and Khosravi(2021)]{AtheyBayatiDoudchenkoImbensKhosravi2021}
+Athey, S., M. Bayati, N. Doudchenko, G. Imbens, and K. Khosravi (2021).
+Matrix completion methods for causal panel data models.
+\emph{Journal of the American Statistical Association} 116(536), 1716--1730.
+
+\bibitem[Athey, Bayati, Imbens, and Qu(2019)]{AtheyBayatiImbensQu2019}
+Athey, S., M. Bayati, G. W. Imbens, and Z. Qu (2019).
+Ensemble methods for causal effects in panel data settings.
+\emph{AEA Papers and Proceedings} 109, 65--70.
+
+\bibitem[Athey, Imbens, Qu, and Viviano(2025)]{AtheyImbensQuViviano2025}
+Athey, S., G. W. Imbens, Z. Qu, and D. Viviano (2025).
+Triply robust panel estimators.
+arXiv:2508.21536.
+
+\bibitem[Bai and Ng(2021)]{BaiNg2021}
+Bai, J. and S. Ng (2021).
+Matrix completion, counterfactuals, and factor analysis of missing data.
+\emph{Journal of the American Statistical Association} 116(536), 1746--1763.
+
+\bibitem[Ben-Michael, Feller, and Rothstein(2021)]{BenMichaelFellerRothstein2021}
+Ben-Michael, E., A. Feller, and J. Rothstein (2021).
+The augmented synthetic control method.
+\emph{Journal of the American Statistical Association} 116(536), 1789--1803.
+
+\bibitem[Ben-Michael, Feller, and Rothstein(2022)]{BenMichaelFellerRothstein2022}
+Ben-Michael, E., A. Feller, and J. Rothstein (2022).
+Synthetic controls with staggered adoption.
+\emph{Journal of the Royal Statistical Society: Series B} 84(2), 351--381.
+
+\bibitem[Borusyak, Jaravel, and Spiess(2024)]{BorusyakJaravelSpiess2024}
+Borusyak, K., X. Jaravel, and J. Spiess (2024).
+Revisiting event-study designs: Robust and efficient estimation.
+\emph{Review of Economic Studies} 91(6), 3253--3285.
+
+\bibitem[Callaway and Sant'Anna(2021)]{CallawaySantAnna2021}
+Callaway, B. and P. H. C. Sant'Anna (2021).
+Difference-in-differences with multiple time periods.
+\emph{Journal of Econometrics} 225(2), 200--230.
+
+\bibitem[Choi, Kwon, and Liao(2024)]{ChoiKwonLiao2024}
+Choi, J., S. Kwon, and Z. Liao (2024).
+Inference for low-rank completion without sample splitting with application to
+treatment effect estimation.
+\emph{Journal of Econometrics} 240(2), 105682.
+
+\bibitem[Chatterjee(2020)]{Chatterjee2020}
+Chatterjee, S. (2020).
+A deterministic theory of low rank matrix completion.
+\emph{IEEE Transactions on Information Theory} 66(12), 8046--8058.
+
+\bibitem[Doudchenko and Imbens(2016)]{DoudchenkoImbens2016}
+Doudchenko, N. and G. W. Imbens (2016).
+Balancing, regression, difference-in-differences and synthetic control methods:
+A synthesis.
+NBER Working Paper No. 22791.
+
+\bibitem[Singer and Cucuringu(2010)]{SingerCucuringu2010}
+Singer, A. and M. Cucuringu (2010).
+Uniqueness of low-rank matrix completion by rigidity theory.
+\emph{SIAM Journal on Matrix Analysis and Applications} 31(4), 1621--1641.
+
+\bibitem[Xu(2017)]{Xu2017}
+Xu, Y. (2017).
+Generalized synthetic control method: Causal inference with interactive fixed
+effects models.
+\emph{Political Analysis} 25(1), 57--76.
+\end{thebibliography}
+
+\end{document}

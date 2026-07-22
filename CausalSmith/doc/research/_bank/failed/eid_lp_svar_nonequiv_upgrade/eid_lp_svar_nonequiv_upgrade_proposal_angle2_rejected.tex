@@ -1,0 +1,461 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_lp\_svar\_nonequiv, specialization=upgrade
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_lp\_svar\_nonequiv} / \texttt{upgrade}%
+  \\ \large\textit{A contact-loss mechanism for LP/sign versus non-Gaussian SVAR impulse-response support}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+qid = eid_lp_svar_nonequiv
+specialization = upgrade
+anchor_cluster = exact identification for structural impulse responses with
+  a partial-identification support-function comparison
+graph / SWIG = a covariance-stationary finite-order linear VAR innovation
+  system u_t = B epsilon_t with reduced-form law summarized by
+  P = (Gamma_0,...,Gamma_H, Sigma_u, K_u), where Gamma_h =
+  E[Y_{t+h} u_t'] Sigma_u^{-1}, Sigma_u = E[u_t u_t'], and
+  K_u = cum4(u_t)
+treatment = labelled structural shock j, represented by the j-th column
+  b_j(Q) = Sigma_u^{1/2} Q e_j of the impact matrix B(Q)
+target estimand = the structural impulse-response vector
+  psi_j(Q) = (e_y' Gamma_h b_j(Q))_{h=0}^H and directional reports
+  w' psi_j(Q)
+identifying assumptions = finite-order LP/VAR population rows; unit-variance
+  structural shocks; partial sign/zero restrictions A psi_j(Q) >= 0 and
+  Z psi_j(Q) = 0; observed fourth-cumulant tensor K_u; independent
+  non-Gaussian shocks with admissible separated cumulants kappa in
+  K_delta4(j); and, for SVAR but not LP/sign, one common rotation Q that
+  satisfies the sign/zero restrictions and diagonalizes K_u
+mechanism diagnostic = tau_w^*(P), the three-channel contact support loss
+  obtained by filtering the horizonwise LP/sign support problem through the
+  zero set of M_delta4(x;P)=L_delta4(x;P)+Pi(x;P), where x is a bundle of
+  per-horizon LP shock directions, L_delta4 is the fourth-cumulant label
+  residual, and Pi is the distance from x to the diagonal common-shock
+  embedding required by a single SVAR innovation law
+\end{verbatim}
+
+\begin{abstract}
+This upgrade asks why the parent LP/sign versus non-Gaussian SVAR gap appears, not merely whether an assumed margin implies non-equivalence.  The proposed mechanism theorem decomposes the parent margin into three named channels: sign-cone support exposure, fourth-cumulant label residual, and horizonwise-to-common shock pasting defect.  The flagship conjecture defines a finite operational quantity \(\tau_w^*(P)\): the contact support loss from the horizonwise LP/sign exposed value to the best per-horizon shock-direction bundle that both pastes into one common SVAR shock and satisfies zero fourth-cumulant label residual.  The parent v1 margin \(\chi_w(P)\) is recovered algebraically as the collapsed one-channel corner when the horizonwise bundle is restricted to the diagonal common-rotation embedding and the residual is replaced by the parent cumulant-envelope filter.  If resolved, the result would turn the parent diagnostic into a mechanism-level rule for deciding whether an LP sign-restricted robustness report is sharp for the same non-Gaussian SVAR shock or only an outer relaxation.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+\citet{PlagborgMollerWolf2021} show that LPs and VARs estimate the same impulse responses when the same identifying restrictions are imposed.  Non-Gaussian SVAR identification imposes a different kind of restriction: one impact rotation must explain the reduced-form fourth-cumulant tensor and label the structural shock.  The parent proposal \texttt{eid\_lp\_svar\_nonequiv}/\texttt{v1} identified the resulting LP/sign outer-relaxation issue, but its derivation bundled the obstruction into a single assumed support margin.  For applied non-Gaussian SVAR work, that is not enough: a researcher needs to know whether the gap comes from the sign cone exposing the wrong row, from weak cumulant labeling, or from failure to paste independently chosen horizonwise LP shock directions into one structural innovation law.
+
+\paragraph{The main finding (proposed).}
+The proposed flagship result is Conjecture~\ref{conj:critical-threshold}: a sharp contact loss \(\tau_w^*(P)\) equals zero if and only if the exposed horizonwise LP/sign face contains a bundle generated by a common cumulant-diagonalizing rotation, and is strictly positive exactly when the LP/sign support is a non-sharp outer bound for the non-Gaussian SVAR directional report.  Theorem~\ref{thm:mechanism-decomposition} is routine algebra defining the three channels and showing that their zero set is precisely the diagonal cumulant-matching face.  Conjecture~\ref{conj:threshold-lower-bound} asks for the quantitative step: a computable residual-to-support modulus that lower-bounds \(\tau_w^*(P)\) and therefore \(\Delta_w(P)\) on an open semi-algebraic class.
+
+\paragraph{What is new.}
+The upgrade delta versus the parent \texttt{eid\_lp\_svar\_nonequiv}/\texttt{v1} is mechanism, not a relabelled strict-gap claim.  Parent v1 has one collapsed margin \(\chi_w(P)\) over a common rotation; this proposal first exposes the larger horizonwise LP/sign relaxation over bundles \(x=(q_0,\ldots,q_H)\), then factors the lost support into row-exposure \(E_w\), cumulant-label residual \(L_{\delta_4}\), and diagonal common-shock pasting defect \(\Pi\).  The contact loss \(\tau_w^*(P)\) determines when those channels jointly force LP/SVAR non-equivalence and which channel is responsible.  On the published-literature axis, the closest comparator chain is \citet[pp.~955--980 and the abstract's common-estimand claim]{PlagborgMollerWolf2021} for common-restriction LP/VAR equivalence, \citet[pp.~288--304]{LanneMeitzSaikkonen2017} for non-Gaussian SVAR shock labels, \citet[pp.~1827--1847]{DrautzburgWright2023} for independence-refined sign-restricted sets, and the new frontier anchor \citet[abstract and pp.~1--3]{AnttonenLanneLuoto2024} for fully and partially identified potentially non-Gaussian SVARs.  None gives a contact-loss decomposition that separates these three mechanisms in an LP/sign support comparison.
+
+\paragraph{How it positions in the literature.}
+The locked cluster is exact identification for structural impulse responses, with a partial-identification support-function comparison used to state the boundary.  The exact-ID side is the non-Gaussian SVAR question: which rotation \(Q\) and structural cumulants \(\kappa\) identify the labelled shock \(j\).  The partial-ID side enters only because partial sign/zero restrictions leave a set of admissible response vectors, so the LP/sign and SVAR/sign objects are compared by directional support functions.  This keeps the proposal inside the LP/VAR and non-Gaussian SVAR frontier rather than treating it as a generic panel-regression question.
+
+\paragraph{Implications for the community.}
+The direct downstream consumer is \citet{DrautzburgWright2023}: their independence-refined sign-restricted VAR sets would gain a population diagnostic explaining whether an LP sign-restricted robustness band differs because the sign cone over-exposes a row, because fourth cumulants do not label the candidate shock, or because per-horizon LP shock directions fail the diagonal common-shock pasting requirement.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report the contact loss \(\tau_w^*(P)\) and its channel decomposition before treating LP sign-restricted responses as robustness evidence for a labelled non-Gaussian SVAR shock.
+
+\section{Related work}
+\citet{Jorda2005} introduced local projections as direct horizonwise impulse-response regressions; this is the projection-side baseline reused from the parent.  \citet[abstract and pp.~955--980]{PlagborgMollerWolf2021} [reused from parent] prove that LPs and VARs estimate the same impulse responses under unrestricted lag structures and common identifying restrictions, making them the comparator for any claimed LP/SVAR non-equivalence.  \citet{MontielOleaPlagborgMoller2021} [reused from parent] establish robust LP inference under persistence and long horizons, explaining why applied work may prefer LP reports even when structural labeling comes from VAR innovations.  \citet{MontielOleaPlagborgMollerQianWolf2024} [reused from parent] show local VAR misspecification can make LP intervals robust where short VARs undercover, sharpening the motivation for a population LP/SVAR diagnostic.  \citet{LiPlagborgMollerWolf2024} [reused from parent] compare LP and VAR estimators across many DGPs, but their contrast is statistical rather than an identified-set contact-loss mechanism.
+
+\citet{RubioRamirezWaggonerZha2010} [reused from parent] give rank and rotation conditions for SVAR identification, which underlie the rotation parameterization used here.  \citet{AriasRubioRamirezWaggoner2018} [reused from parent] develop inference for sign/zero-restricted SVARs and supply the partial sign/zero geometry.  \citet[Section~4 and Algorithm~4.1]{Read2022} [reused from parent] gives algorithms for sign/zero SVAR restrictions, relevant because the proposed threshold adds a cumulant-distance layer to the same feasible-rotation problem.
+
+\citet{GourierouxMonfortRenne2017} [reused from parent] use independent-component non-Gaussianity to identify structural VAR shocks, making fourth-cumulant diagonalization a structural restriction rather than an LP response inequality.  \citet[pp.~288--304]{LanneMeitzSaikkonen2017} [reused from parent] show independent non-Gaussian structural errors can identify SVAR impulse responses up to normalization, with Gaussianity as the non-identification boundary.  \citet[pp.~27--46]{Guay2021} [reused from parent] gives higher-moment rank conditions for local SVAR identification; the proposed label residual \(L_{\delta_4}\) is a support-function analogue of checking whether moment information actually labels the shock.  \citet{LanneLuoto2021} [reused from parent] supplies the GMM estimation comparator for non-Gaussian SVARs, although this proposal is about population identification rather than estimator asymptotics.
+
+\citet[pp.~1827--1847]{DrautzburgWright2023} [reused from parent] are the closest partial-identification comparator because independence refines sign-restricted VAR sets and can leave nonconvex confidence sets; this proposal asks for the contact-loss mechanism behind the corresponding LP/sign outer relaxation.  \citet{LanneLiuLuoto2026} [reused from parent] show that potentially dependent non-Gaussian shocks can identify some components while leaving blocks set-identified, marking the equal-kurtosis and partial-label boundary as active.  \citet[abstract and pp.~1--3]{AnttonenLanneLuoto2024} is the new anchor for this upgrade: their Bayesian analysis of fully and partially identified potentially non-Gaussian SVARs reinforces that non-Gaussian information can identify, partially identify, or fail to label shocks, but it does not provide an LP/sign versus SVAR/sign mechanism decomposition.
+
+The in-catalogue duplicate check is thin but useful.  `CausalSmith/doc/API.md' says the ExactID and PartialID catalogues are empty at seed time except for unrelated Manski bounded-outcome study entries, so no accepted CausalSmith qid duplicates this LP/SVAR non-Gaussian kernel.  The parent proposal \texttt{eid\_lp\_svar\_nonequiv}/\texttt{v1} is the only direct in-repo ancestor; its headline statement is a cumulant-matching boundary with a single support margin \(\chi_w(P)\), whereas the present upgrade isolates the contact loss and channel decomposition.
+
+\section{Formal setup}
+Let \(Y_t\in\R^n\) be covariance stationary with reduced-form innovation \(u_t\), covariance \(\Sigma_u\succ0\), and population LP/VAR response rows
+\[
+\Gamma_h=\E[Y_{t+h}u_t^\transpose]\Sigma_u^{-1},\qquad h=0,\ldots,H.
+\]
+Fix the symmetric square root \(\Sigma_u^{1/2}\).  Every unit-variance structural completion is \(u_t=B(Q)\varepsilon_t\) with \(B(Q)=\Sigma_u^{1/2}Q\) and \(Q\in O(n)\).  For a labelled shock \(j\), define \(b_j(Q)=B(Q)e_j\) and
+\[
+\psi_j(Q)=\bigl(e_y^\transpose\Gamma_h b_j(Q)\bigr)_{h=0}^H\in\R^{H+1}.
+\]
+The partial sign/zero restrictions are \(A\psi_j(Q)\ge0\) and \(Z\psi_j(Q)=0\).  The common-rotation LP/sign set is
+\[
+\mathcal Q_{\mathrm{com}}(P)=\{Q\in O(n):A\psi_j(Q)\ge0,\ Z\psi_j(Q)=0\}.
+\]
+The upgrade separates this common-rotation object from the genuinely horizonwise LP/sign relaxation.  A horizonwise LP shock-direction bundle is \(x=(q_0,\ldots,q_H)\in(S^{n-1})^{H+1}\), with response
+\[
+r_h(x)=e_y^\transpose\Gamma_h\Sigma_u^{1/2}q_h,\qquad
+r(x)=(r_0(x),\ldots,r_H(x)).
+\]
+The horizonwise LP/sign feasible set is
+\[
+\mathcal X_{\mathrm{LP}}(P)=
+\{x\in(S^{n-1})^{H+1}:Ar(x)\ge0,\ Zr(x)=0\}.
+\]
+The diagonal common-shock embedding is
+\[
+\iota(Q)=(Qe_j,\ldots,Qe_j)\in(S^{n-1})^{H+1},
+\]
+and the corresponding common bundle set is
+\[
+\mathcal X_{\mathrm{com}}(P)=\{\iota(Q):Q\in\mathcal Q_{\mathrm{com}}(P)\}
+\subseteq\mathcal X_{\mathrm{LP}}(P).
+\]
+The observed fourth cumulant tensor is \(K_u=\operatorname{cum}_4(u_t)\).  For separated target cumulants,
+\[
+\mathcal K_{\delta_4}(j)=\{\kappa\in\R^n:|\kappa_j|\ge\delta_4,\ |\kappa_\ell-\kappa_j|\ge\delta_4\ \forall \ell\ne j\}.
+\]
+The non-Gaussian SVAR feasible rotations are
+\[
+\mathcal Q_{\mathrm{SVAR}}(P)=\left\{Q\in\mathcal Q_{\mathrm{com}}(P):
+K_u=\sum_{k=1}^n\kappa_k(\Sigma_u^{1/2}Qe_k)^{\otimes4}
+\text{ for some }\kappa\in\mathcal K_{\delta_4}(j)\right\}.
+\]
+\[
+\mathcal X_{\mathrm{SVAR}}(P)=\{\iota(Q):Q\in\mathcal Q_{\mathrm{SVAR}}(P)\}.
+\]
+For \(w\in\R^{H+1}\), define
+\[
+h_{\mathrm{LP}}(w;P)=\sup_{x\in\mathcal X_{\mathrm{LP}}(P)}w^\transpose r(x),\quad
+h_{\mathrm{com}}(w;P)=\sup_{Q\in\mathcal Q_{\mathrm{com}}(P)}w^\transpose\psi_j(Q),\quad
+h_{\mathrm{SVAR}}(w;P)=\sup_{Q\in\mathcal Q_{\mathrm{SVAR}}(P)}w^\transpose\psi_j(Q),
+\]
+and \(\Delta_w(P)=h_{\mathrm{LP}}(w;P)-h_{\mathrm{SVAR}}(w;P)\).  The parent proposal implicitly began at \(h_{\mathrm{com}}\); this upgrade makes the additional horizonwise-to-common loss \(h_{\mathrm{LP}}-h_{\mathrm{com}}\) explicit.  The three mechanism channels on \(x\in\mathcal X_{\mathrm{LP}}(P)\) are:
+\[
+E_w(x;P)=h_{\mathrm{LP}}(w;P)-w^\transpose r(x),
+\]
+\[
+L_{\delta_4}(x;P)=\operatorname{dist}\bigl(x,\mathcal X_{\mathrm{SVAR}}(P)\bigr),
+\]
+and
+\[
+\Pi(x;P)=\operatorname{dist}\bigl(x,\mathcal X_{\mathrm{com}}(P)\bigr),
+\]
+with product Euclidean distance on \((S^{n-1})^{H+1}\).  Here \(L_{\delta_4}\) is zero only for horizonwise bundles generated by one cumulant-diagonalizing SVAR rotation, whereas \(\Pi\) is zero for every bundle generated by one common shock direction, whether or not that direction diagonalizes \(K_u\).  Therefore \(\Pi\) is nonredundant: it can be positive for a bundle that satisfies all per-horizon sign restrictions even when no cumulant restriction is imposed.  The mechanism score is
+\[
+T_w(x;P)=E_w(x;P)+L_{\delta_4}(x;P)+\Pi(x;P),
+\]
+and the combined structural-contact residual is
+\[
+M_{\delta_4}(x;P)=L_{\delta_4}(x;P)+\Pi(x;P).
+\]
+For a residual tolerance \(r\ge0\), define the contact-filtered support
+\[
+h_r(w;P)=
+\sup_{\substack{x\in\mathcal X_{\mathrm{LP}}(P)\\ M_{\delta_4}(x;P)\le r}}
+w^\transpose r(x).
+\]
+The finite critical contact loss is
+\[
+\tau_w^*(P)=h_{\mathrm{LP}}(w;P)-h_0(w;P).
+\]
+Thus \(\tau_w^*(P)\) measures the support value lost when the horizonwise LP/sign problem is filtered to bundles with zero cumulant-label residual and zero diagonal common-shock pasting residual.  Under Assumption~\ref{ass:mechanism-regularity}, \(h_0(w;P)=h_{\mathrm{SVAR}}(w;P)\), so \(\tau_w^*(P)=\Delta_w(P)\) at the population level; Conjecture~\ref{conj:threshold-lower-bound} asks for a primitive lower bound on this loss from a positive residual on the exposed LP face.
+
+\begin{verbatim}
+qid = eid_lp_svar_nonequiv
+specialization = upgrade
+anchor_cluster = exact identification for structural impulse responses with
+  a partial-identification support-function comparison
+graph / SWIG = a covariance-stationary finite-order linear VAR innovation
+  system u_t = B epsilon_t with reduced-form law summarized by
+  P = (Gamma_0,...,Gamma_H, Sigma_u, K_u), where Gamma_h =
+  E[Y_{t+h} u_t'] Sigma_u^{-1}, Sigma_u = E[u_t u_t'], and
+  K_u = cum4(u_t)
+treatment = labelled structural shock j, represented by the j-th column
+  b_j(Q) = Sigma_u^{1/2} Q e_j of the impact matrix B(Q)
+target estimand = the structural impulse-response vector
+  psi_j(Q) = (e_y' Gamma_h b_j(Q))_{h=0}^H and directional reports
+  w' psi_j(Q)
+identifying assumptions = finite-order LP/VAR population rows; unit-variance
+  structural shocks; partial sign/zero restrictions A psi_j(Q) >= 0 and
+  Z psi_j(Q) = 0; observed fourth-cumulant tensor K_u; independent
+  non-Gaussian shocks with admissible separated cumulants kappa in
+  K_delta4(j); and, for SVAR but not LP/sign, one common rotation Q that
+  satisfies the sign/zero restrictions and diagonalizes K_u
+mechanism diagnostic = tau_w^*(P), the three-channel contact support loss
+  obtained by filtering the horizonwise LP/sign support problem through the
+  zero set of M_delta4(x;P)=L_delta4(x;P)+Pi(x;P), where x is a bundle of
+  per-horizon LP shock directions, L_delta4 is the fourth-cumulant label
+  residual, and Pi is the distance from x to the diagonal common-shock
+  embedding required by a single SVAR innovation law
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite-order linear projection environment]\label{ass:finite-var}
+The population law \(P\) is generated by a covariance-stationary finite-order VAR(p) with innovation \(u_t\), \(\Sigma_u\succ0\), finite fourth moments, and LP rows \(\Gamma_h\) for \(h=0,\ldots,H\) equal to the unrestricted population VAR response rows.
+\end{assumption}
+
+\begin{assumption}[Rotation normalization and labelled shock]\label{ass:normalization}
+Structural shocks have identity covariance and the impact matrix is \(B(Q)=\Sigma_u^{1/2}Q\) with \(Q\in O(n)\).  A target shock index \(j\) is fixed after sign and permutation normalization.
+\end{assumption}
+
+\begin{assumption}[Partial sign and zero restrictions]\label{ass:sign-zero}
+Known matrices \(A\in\R^{m_A\times(H+1)}\) and \(Z\in\R^{m_Z\times(H+1)}\) encode \(A\psi_j(Q)\ge0\) and \(Z\psi_j(Q)=0\) for common rotations and \(Ar(x)\ge0\), \(Zr(x)=0\) for horizonwise bundles.  The horizonwise LP/sign feasible set \(\mathcal X_{\mathrm{LP}}(P)\) and the common-rotation feasible set \(\mathcal Q_{\mathrm{com}}(P)\) are nonempty and compact.
+\end{assumption}
+
+\begin{assumption}[Observed non-Gaussian cumulant tensor]\label{ass:cumulant-tensor}
+The fourth cumulant tensor \(K_u=\operatorname{cum}_4(u_t)\) is finite and observed at the population level.  A non-Gaussian SVAR completion must satisfy \(K_u=\sum_{k=1}^n\kappa_k(\Sigma_u^{1/2}Qe_k)^{\otimes4}\) for some moment-realizable \(\kappa\).
+\end{assumption}
+
+\begin{assumption}[Separated target cumulant]\label{ass:bounded-gap}
+For a fixed \(\delta_4>0\), the admissible structural cumulant vector lies in \(\mathcal K_{\delta_4}(j)\).  Gaussian and equal-target-kurtosis cases are excluded from strict-threshold claims.
+\end{assumption}
+
+\begin{assumption}[Nonempty SVAR feasible set]\label{ass:svar-nonempty}
+\(\mathcal Q_{\mathrm{SVAR}}(P)\) is nonempty for the population law under comparison, so all finite support-function comparisons are well defined.
+\end{assumption}
+
+\begin{assumption}[Exposed LP/sign face]\label{ass:exposed-face}
+For the report direction \(w\), the horizonwise LP/sign support \(h_{\mathrm{LP}}(w;P)\) is attained and the exposed face \(\mathcal F_w(P)=\arg\max_{x\in\mathcal X_{\mathrm{LP}}(P)}w^\transpose r(x)\) is nonempty.
+\end{assumption}
+
+\begin{assumption}[Mechanism regularity]\label{ass:mechanism-regularity}
+The maps \(E_w(\cdot;P)\), \(L_{\delta_4}(\cdot;P)\), and \(\Pi(\cdot;P)\) are continuous on \(\mathcal X_{\mathrm{LP}}(P)\), and \(\mathcal X_{\mathrm{com}}(P)\) and \(\mathcal X_{\mathrm{SVAR}}(P)\) are closed.  The zero set of \(L_{\delta_4}+\Pi\) on \(\mathcal X_{\mathrm{LP}}(P)\) equals \(\mathcal X_{\mathrm{SVAR}}(P)\).
+\end{assumption}
+
+\begin{assumption}[Open threshold class]\label{ass:open-threshold-class}
+The observable object belongs to a nonempty open semi-algebraic class \(\mathcal O_\tau\) on which the exposed LP/sign face is stable, the SVAR feasible set remains nonempty, and the response objective is not flat along any positive-dimensional component with \(L_{\delta_4}+\Pi>0\).
+\end{assumption}
+
+\begin{assumption}[Channel collapse to parent margin]\label{ass:channel-collapse}
+For the parent-corner comparison, the combined residual \(M_{\delta_4}\) is replaced by the parent cumulant-envelope residual
+\[
+M_{\mathrm{par}}(Q;P)=\inf_{\kappa\in\mathcal K_{\delta_4}(j)}
+\left\|K_u-\sum_{k=1}^n\kappa_k(\Sigma_u^{1/2}Qe_k)^{\otimes4}\right\|_F,
+\]
+and the support base is restricted to the diagonal common-rotation embedding:
+\[
+h^{\mathrm{par}}_0(w;P)=\lim_{\varepsilon\downarrow0}
+\sup\{w^\transpose\psi_j(Q):Q\in\mathcal Q_{\mathrm{com}}(P),M_{\mathrm{par}}(Q;P)\le\varepsilon\}.
+\]
+The parent margin is \(\chi_w(P)=h_{\mathrm{com}}(w;P)-h^{\mathrm{par}}_0(w;P)\).  This assumption is the corner reduction to parent v1, not the definition of the upgraded horizonwise loss.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: three-channel mechanism decomposition]\label{thm:mechanism-decomposition}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:mechanism-regularity}, for every \(x\in\mathcal X_{\mathrm{LP}}(P)\),
+\[
+T_w(x;P)=0
+\quad\Longleftrightarrow\quad
+x\in\mathcal F_w(P)\cap\mathcal X_{\mathrm{SVAR}}(P).
+\]
+Consequently, \(h_{\mathrm{LP}}(w;P)=h_{\mathrm{SVAR}}(w;P)\) if and only if the horizonwise LP/sign exposed face contains at least one bundle with zero cumulant-label residual and zero diagonal common-shock pasting defect.  The two intermediate losses satisfy
+\[
+h_{\mathrm{LP}}(w;P)-h_{\mathrm{SVAR}}(w;P)
+=\bigl[h_{\mathrm{LP}}(w;P)-h_{\mathrm{com}}(w;P)\bigr]
++\bigl[h_{\mathrm{com}}(w;P)-h_{\mathrm{SVAR}}(w;P)\bigr],
+\]
+where the first bracket is generated by \(\Pi\) and the second by \(L_{\delta_4}\) on the common-rotation face.  If Assumption~\ref{ass:channel-collapse} is also imposed, restricting to the diagonal common-rotation embedding gives \(h_{\mathrm{com}}(w;P)-h^{\mathrm{par}}_0(w;P)=\chi_w(P)\), the parent one-channel margin in \texttt{eid\_lp\_svar\_nonequiv}/\texttt{v1}.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) The closest published comparator is \citet[abstract and pp.~955--980]{PlagborgMollerWolf2021}, whose exact gap is that it transports common restrictions but does not separate sign-cone exposure, cumulant labeling, and diagonal common-shock pasting.  The closest in-repo comparator is parent v1, whose exact gap is that it assumes a single \(\chi_w(P)\) margin rather than decomposing its mechanisms.  (b) The concrete consumer is \citet[pp.~1827--1847]{DrautzburgWright2023}: their independence-refined sign-restricted VAR workflow can use the decomposition to diagnose why a sign-only LP robustness report is conservative.
+
+\begin{conjecture}[Conjecture 1: sharp critical contact loss (NOT YET PROVED)]\label{conj:critical-threshold}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:open-threshold-class}, there is a computable scalar \(\tau_w^*(P)\) with the following iff frontier:
+\[
+\tau_w^*(P)=0
+\quad\Longleftrightarrow\quad
+h_{\mathrm{LP}}(w;P)=h_{\mathrm{SVAR}}(w;P),
+\]
+and
+\[
+\tau_w^*(P)>0
+\quad\Longleftrightarrow\quad
+\Delta_w(P)>0
+\]
+for every \((P,w)\in\mathcal O_\tau\).  Moreover, the sign of \(\tau_w^*(P)\) is invariant to equivalent rotations of the reduced-form innovation basis and decomposes through the three mechanisms \(E_w\), \(L_{\delta_4}\), and \(\Pi\): \(E_w\) selects the support-exposed horizonwise face, \(\Pi\) tests whether the selected per-horizon shock directions paste into one diagonal common-shock bundle, and \(L_{\delta_4}\) tests whether that common bundle can be generated by a fourth-cumulant-diagonalizing non-Gaussian SVAR.  Setting \(\Pi\equiv0\) recovers the parent common-rotation comparison; setting \(L_{\delta_4}\equiv0\) recovers the common-restriction LP/VAR frontier; setting \(E_w\equiv0\) isolates pure feasibility contact.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest comparator chain is \citet[abstract and pp.~955--980]{PlagborgMollerWolf2021}, \citet[pp.~288--304]{LanneMeitzSaikkonen2017}, \citet[pp.~1827--1847]{DrautzburgWright2023}, and \citet[abstract and pp.~1--3]{AnttonenLanneLuoto2024}.  The epsilon-gap is a named operational contact loss \(\tau_w^*(P)\) that gives an iff boundary between LP/sign equality and non-Gaussian SVAR strictness; the cited papers provide equivalence, non-Gaussian identification, or partial-identification workflows separately, not this mechanism frontier.  (b) Resolving the conjecture gives users of \citet{DrautzburgWright2023} and \citet{AnttonenLanneLuoto2024} a reportable scalar explaining whether weak higher-moment information merely labels shocks or actually shrinks an LP/sign support report.
+
+\begin{conjecture}[Conjecture 2: residual-to-gap lower bound (NOT YET PROVED)]\label{conj:threshold-lower-bound}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:open-threshold-class}, there exists a locally computable modulus \(c_w(P)>0\) on \(\mathcal O_\tau\) such that
+\[
+\tau_w^*(P)\ge c_w(P)\,
+\inf_{x\in\mathcal F_w(P)}M_{\delta_4}(x;P),
+\qquad\text{and hence}\qquad
+\Delta_w(P)\ge c_w(P)\,
+\inf_{x\in\mathcal F_w(P)}M_{\delta_4}(x;P).
+\]
+In the two-shock planar specialization with \(Q(\varphi)\), this modulus can be chosen so that the lower bound reduces to the parent trigonometric witness
+\[
+\Delta_w(P)\ge \rho_w(1-\cos d_w),
+\]
+where \(\rho_w\) is the response-row amplitude and \(d_w\) is the angular distance from the LP support optimizer to the cumulant-diagonalizing SVAR orbit.  In the collapsed parent specialization where the feasible bundles are restricted to \(x=\iota(Q)\) and \(M_{\delta_4}\) is replaced by the cumulant-envelope residual \(M_{\mathrm{par}}\), the diagonal contact loss \(\tau_{w,\mathrm{com}}^*(P)\) reduces algebraically to the parent margin \(\chi_w(P)\).
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet[pp.~27--46]{Guay2021} gives higher-moment rank conditions and \citet[Section~4 and Algorithm~4.1]{Read2022} gives sign/zero algorithms, but neither turns a mechanism residual into a directional support-gap lower bound.  The parent v1 lower bound was conditional on \(\chi_w(P)\); the epsilon-gap here is the channel-wise contact loss \(\tau_w^*(P)\) and its reduction to the parent corner.  (b) The concrete consumer is \citet[abstract and pp.~955--980]{PlagborgMollerWolf2021}: the lower bound marks the exact operational distance from their common-restriction equivalence to a non-Gaussian SVAR restriction omitted by an LP/sign relaxation.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Reduction to parent v1 under channel collapse]\label{cor:parent-collapse}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:mechanism-regularity} and \ref{ass:channel-collapse}, if the horizonwise relaxation is restricted to diagonal bundles \(x=\iota(Q)\), the upgraded contact loss reduces to
+\[
+\tau_{w,\mathrm{com}}^*(P)=h_{\mathrm{com}}(w;P)-h^{\mathrm{par}}_0(w;P)=\chi_w(P).
+\]
+Thus the upgrade reduces to the parent conditional theorem \(\Delta_w(P)\ge\chi_w(P)>0\) when the horizonwise-to-common channel is switched off and the remaining cumulant channel is bundled into the parent cumulant-envelope filter.
+\end{corollary}
+
+\begin{corollary}[Common restrictions recover LP/VAR equivalence]\label{cor:common-restrictions}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:sign-zero}, if the fourth-cumulant restriction is removed and the LP/sign object is also restricted to the diagonal common-rotation embedding \(x=\iota(Q)\), then there is no non-Gaussian label or horizonwise-pasting channel to enforce.  If the fourth-cumulant restriction is instead imposed symmetrically on both diagonal LP/sign and SVAR/sign sides, the common feasible set is \(\mathcal Q_{\mathrm{SVAR}}(P)\) by definition.  In either common-restriction specialization \(\tau_{w,\mathrm{com}}^*(P)=0\), and the support functions agree, matching \citet{PlagborgMollerWolf2021}.
+\end{corollary}
+
+\begin{corollary}[Gaussian and equal-kurtosis boundary]\label{cor:gaussian-boundary}
+If \(K_u=0\) or \(\kappa_\ell=\kappa_j\) for some \(\ell\ne j\), Assumption~\ref{ass:bounded-gap} fails.  The strict-threshold claims in Conjectures~\ref{conj:critical-threshold} and \ref{conj:threshold-lower-bound} then make no positive-gap assertion; this boundary is the label-failure channel rather than a contradiction.
+\end{corollary}
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:mechanism-decomposition} is deterministic set algebra on compact horizonwise bundle and common-rotation sets: \(E_w=0\) selects the exposed horizonwise LP support face, \(\Pi=0\) selects the diagonal common-shock embedding, and Assumption~\ref{ass:mechanism-regularity} makes \(M_{\delta_4}=L_{\delta_4}+\Pi=0\) equivalent to common non-Gaussian SVAR feasibility.  Conjecture~\ref{conj:critical-threshold} should reduce to semi-algebraic geometry on \((S^{n-1})^{H+1}\) and \(O(n)\): stratify the horizonwise LP/sign exposed face, the diagonal common-shock locus, and the cumulant-diagonalizing tensor locus, then show the contact-loss sign is stable off the algebraic exceptional set where response exposure is flat or the cumulant label is non-separated.  Conjecture~\ref{conj:threshold-lower-bound} should be attacked by an error-bound theorem for polynomial inequalities, such as a Lojasiewicz-type modulus on compact semi-algebraic sets, plus explicit two-shock trigonometry to verify the parent planar corner.  Boundary cases needing separate algebra are \(K_u=0\), equal target kurtoses, an empty SVAR feasible set, full sign/zero restrictions that already pin the shock direction, and a report direction orthogonal to every non-cumulant-matching tangent.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:mechanism-decomposition} is a setup theorem and should not be sold as the flagship contribution.  Conjectures~\ref{conj:critical-threshold} and \ref{conj:threshold-lower-bound} are the upgrade delta and are not yet proved.  The v3 definition of \(\Pi(x;P)\) deliberately lives on horizonwise bundles \(x=(q_0,\ldots,q_H)\), so it captures genuine diagonal common-shock pasting rather than duplicating the cumulant residual \(L_{\delta_4}\).  The proposal also does not claim an estimator or asymptotic distribution for \(\tau_w^*(P)\); it is a population identification diagnostic.  Version 2 withdraws the ill-posed tolerance definition of \(\tau_w^*(P)\) from v1 and replaces it with the finite contact support loss \(h_{\mathrm{LP}}-h_0\).  Version 3 withdraws the redundant \(Q\)-level pasting residual and replaces it with a horizonwise LP bundle object.  The parent v1 primitive strict-gap claim remains open, and this upgrade does not treat the parent derivation's substituted conditional margin as a proof of the flagship claim.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) --- initial flagship upgrade angle 2, replacing the parent one-channel margin with the mechanism threshold \(\tau_w^*(P)\); prior verdict: none.
+\item v2 (revise) --- replaced the ill-posed score-tolerance definition with a finite contact support loss, added location-level anchors, repaired the parent-corner algebra, and fixed the Anttonen--Lanne--Luoto SSRN citation; prior verdict: REVISE.
+\item v3 (revise) --- replaced the redundant full-rotation pasting residual with a horizonwise LP shock-direction bundle \(x=(q_0,\ldots,q_H)\), making \(\Pi\) a nonredundant distance to the diagonal common-shock embedding; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Anttonen, Lanne, and Luoto(2024)]{AnttonenLanneLuoto2024}
+Anttonen, J., M. Lanne, and J. Luoto (2024).
+Bayesian inference on fully and partially identified potentially non-Gaussian structural vector autoregressions.
+SSRN working paper 4804325, doi:10.2139/ssrn.4804325.
+
+\bibitem[Arias, Rubio-Ramirez, and Waggoner(2018)]{AriasRubioRamirezWaggoner2018}
+Arias, J.~E., J.~F. Rubio-Ramirez, and D.~F. Waggoner (2018).
+Inference based on structural vector autoregressions identified with sign and zero restrictions: Theory and applications.
+\emph{Econometrica} 86(2), 685--720.
+
+\bibitem[Drautzburg and Wright(2023)]{DrautzburgWright2023}
+Drautzburg, T. and J.~H. Wright (2023).
+Refining set-identification in VARs through independence.
+\emph{Journal of Econometrics} 235(2), 1827--1847.
+
+\bibitem[Gourieroux, Monfort, and Renne(2017)]{GourierouxMonfortRenne2017}
+Gourieroux, C., A. Monfort, and J.-P. Renne (2017).
+Statistical inference for independent component analysis: Application to structural VAR models.
+\emph{Journal of Econometrics} 196(1), 111--126.
+
+\bibitem[Guay(2021)]{Guay2021}
+Guay, A. (2021).
+Identification of structural vector autoregressions through higher unconditional moments.
+\emph{Journal of Econometrics} 225(1), 27--46.
+
+\bibitem[Jorda(2005)]{Jorda2005}
+Jorda, O. (2005).
+Estimation and inference of impulse responses by local projections.
+\emph{American Economic Review} 95(1), 161--182.
+
+\bibitem[Lanne and Luoto(2021)]{LanneLuoto2021}
+Lanne, M. and J. Luoto (2021).
+GMM estimation of non-Gaussian structural vector autoregression.
+\emph{Journal of Business \& Economic Statistics} 39(1), 69--81.
+
+\bibitem[Lanne, Liu, and Luoto(2026)]{LanneLiuLuoto2026}
+Lanne, M., K. Liu, and J. Luoto (2026).
+Identifying structural vector autoregressions via non-Gaussianity of potentially dependent shocks.
+\emph{The Econometrics Journal}, utag002.
+
+\bibitem[Lanne, Meitz, and Saikkonen(2017)]{LanneMeitzSaikkonen2017}
+Lanne, M., M. Meitz, and P. Saikkonen (2017).
+Identification and estimation of non-Gaussian structural vector autoregressions.
+\emph{Journal of Econometrics} 196(2), 288--304.
+
+\bibitem[Li, Plagborg-Moller, and Wolf(2024)]{LiPlagborgMollerWolf2024}
+Li, D., M. Plagborg-Moller, and C.~K. Wolf (2024).
+Local projections vs. VARs: Lessons from thousands of DGPs.
+\emph{Journal of Econometrics} 244, 105722.
+
+\bibitem[Montiel Olea and Plagborg-Moller(2021)]{MontielOleaPlagborgMoller2021}
+Montiel Olea, J.~L. and M. Plagborg-Moller (2021).
+Local projection inference is simpler and more robust than you think.
+\emph{Econometrica} 89(4), 1789--1823.
+
+\bibitem[Montiel Olea, Plagborg-Moller, Qian, and Wolf(2024)]{MontielOleaPlagborgMollerQianWolf2024}
+Montiel Olea, J.~L., M. Plagborg-Moller, E. Qian, and C.~K. Wolf (2024).
+Double robustness of local projections and some unpleasant VARithmetic.
+NBER Working Paper 32495; \emph{Econometrica}, forthcoming.
+
+\bibitem[Plagborg-Moller and Wolf(2021)]{PlagborgMollerWolf2021}
+Plagborg-Moller, M. and C.~K. Wolf (2021).
+Local projections and VARs estimate the same impulse responses.
+\emph{Econometrica} 89(2), 955--980.
+
+\bibitem[Read(2022)]{Read2022}
+Read, M. (2022).
+Algorithms for inference in SVARs identified with sign and zero restrictions.
+\emph{The Econometrics Journal} 25(3), 699--718.
+
+\bibitem[Rubio-Ramirez, Waggoner, and Zha(2010)]{RubioRamirezWaggonerZha2010}
+Rubio-Ramirez, J.~F., D.~F. Waggoner, and T. Zha (2010).
+Structural vector autoregressions: Theory of identification and algorithms for inference.
+\emph{Review of Economic Studies} 77(2), 665--696.
+\end{thebibliography}
+
+\end{document}

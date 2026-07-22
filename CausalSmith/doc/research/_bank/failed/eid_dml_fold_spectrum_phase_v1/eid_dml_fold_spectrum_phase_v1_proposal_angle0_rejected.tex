@@ -1,0 +1,320 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_dml\_fold\_spectrum\_phase, specialization=v1
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{Fold-spectrum phase threshold for cross-fitted DML causal estimators}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{quote}\small
+\begin{verbatim}
+(qid, specialization) = (eid_dml_fold_spectrum_phase, v1)
+anchor cluster = ExactID / causal-ML inference
+graph / SWIG = observed O=(Y,D,X) with binary treatment D, potential
+  outcomes (Y(1),Y(0)), observed outcome Y=D Y(1)+(1-D)Y(0), and
+  covariates X satisfying consistency and conditional exchangeability
+treatment = binary D in {0,1}
+target estimand = theta_0 = E[Y(1)-Y(0)] = E[mu_1(X)-mu_0(X)]
+  for mu_d(x)=E[Y | D=d,X=x]
+identifying assumptions = consistency, conditional exchangeability,
+  overlap e_min <= e_0(X) <= 1-e_min, finite fourth moments, and
+  Neyman-orthogonal AIPW/DML scores
+fold geometry = deterministic triangular-array partitions
+  I_{1,n},...,I_{K_n,n} of {1,...,n}; c_{k,n}=|I_{k,n}|/n;
+  c_n^min=min_k c_{k,n}; rho_n=sum_k c_{k,n}^2; nuisance learners
+  eta_hat_{-k} are trained off I_{k,n}
+estimator = DML2/AIPW root solving the fold-weighted score average
+  n^{-1} sum_k sum_{i in I_{k,n}} psi(O_i;theta,eta_hat_{-k})=0
+phase functional = the fold-spectrum certificate
+  Gamma_n = max{ max_k c_{k,n}^{-1/2} R_{k,n},
+                 sqrt(n) sum_k c_{k,n} R_{k,n}^2,
+                 1/(n c_n^min) }
+  with R_{k,n} the fold-specific nuisance L2 error envelope.
+\end{verbatim}
+\end{quote}
+
+\begin{abstract}
+Cross-fitted DML theory treats fold choice as asymptotically harmless under fixed, equal folds. This proposal asks whether that conclusion survives deterministic triangular arrays in which the evaluation-fold masses \(c_{k,n}\) are unequal, vanish, or approach leave-one-out geometry. The main conjecture is a phase theorem: a computable fold-spectrum certificate separates ordinary \(\sqrt n\) asymptotic linearity, inflated or slower small-fold regimes, and a no-splitting endpoint that requires leave-one-out stability. A calibration theorem records the equal-fold corner of \citet{ChernozhukovEtAl2018DML}. If the conjecture is correct, software that exposes custom folds can report a fold-geometry diagnostic before applying the usual DML standard error.
+\end{abstract}
+
+\section{Introduction}
+Cross-fitting removes overfitting bias by training nuisance functions away from the observations used in the estimating score. The question is whether the standard DML first-order law is still the right law when the evaluation folds have a non-degenerate mass spectrum rather than equal mass.
+
+\citet[Section~3.1]{ChernozhukovEtAl2018DML} defines DML through a \(K\)-fold partition with equal fold sizes, and \citet[Sections~5.2.1--5.2.3]{AhrensHansenSchafferWiemann2024DDML} exposes custom folds and repeated folds in software practice. \citet[abstract]{Velez2024DMLGrowingK} shows that changing the asymptotic fold regime can separate DML1 and DML2, but it does not characterize unequal evaluation-fold masses as the theorem object. The kernel lives in exact identification and causal-ML inference: the estimand is the ATE identified by the standard AIPW score, while the new object is the fold geometry of the estimating equation.
+
+The direct consumer is applied DML practice using DoubleML or ddml when folds are clustered, deterministic, custom, or repeated. A reader who accepts the phase theorem would no longer treat \(K\) and the fold labels as bookkeeping; the fold-mass certificate becomes part of the inferential report.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: equal positive fold masses recover the usual DML asymptotic linear representation. Gap: \citet{ChernozhukovEtAl2018DML} proves this under equal folds; this theorem fixes the calibration corner for the fold-spectrum notation. Consumer: DML implementations following \citet{BachEtAl2024DoubleMLR}.
+\item Conjecture 1: the fold-spectrum certificate \(\Gamma_n\) gives a three-phase frontier for root-\(n\) DML, small-fold slower limits, and leave-one-out endpoints. Gap: \citet{Velez2024DMLGrowingK} changes \(K\), and \citet{ChenSyrgkanisAustern2022NoSplitDML} changes the dependence condition; neither gives an unequal-fold mass threshold. Consumer: custom-fold and repeated-fold inference in \citet{AhrensHansenSchafferWiemann2024DDML}.
+\item Conjecture 2: a two-fold triangular-array witness has the same target and nuisance rates as the equal-fold design but invalidates the usual score-variance report when \(c_{2,n}\to0\) and \(n c_{2,n}\) stays bounded. Gap: \citet{ChernozhukovEtAl2018DML} treats split randomness as finite-sample relevant, not as an asymptotic variance component. Consumer: variance reporting for custom folds in \citet{AhrensHansenSchafferWiemann2024DDML}.
+\end{itemize}
+
+\section{Related work}
+\citet[Sections~3.1 and~3.4]{ChernozhukovEtAl2018DML} is the baseline reference because it defines DML1/DML2 with equal \(K\)-fold partitions and proves asymptotic linearity under product-rate and orthogonality conditions. Its finite-sample repeated-splitting discussion motivates, but does not solve, an asymptotic fold-geometry variance theorem.
+
+\citet{ChernozhukovEtAl2017DMLAPP} gives the earlier treatment-effect DML presentation and fixes the AIPW score used here. It is cited only to identify the causal estimand, not as a fold-spectrum result.
+
+\citet{BachEtAl2024DoubleMLR} is the software and implementation comparator because DoubleML reports score-based inference after \(K\)-fold sample splitting. The proposed certificate is meant to be evaluated before that report is trusted under unbalanced folds.
+
+\citet[Sections~5.2.1--5.2.3]{AhrensHansenSchafferWiemann2024DDML} is the practice-facing comparator because ddml exposes \texttt{kfolds}, \texttt{foldvar}, repetitions, and fold-frequency tables. That interface creates exactly the deterministic custom-fold regimes studied here.
+
+\citet[abstract]{Velez2024DMLGrowingK} is the closest asymptotic-regime comparator because it separates DML1 and DML2 when the fold count grows. The present proposal instead keeps the AIPW/DML2 score fixed and asks how the mass vector \((c_{k,n})\) changes the first-order law.
+
+\citet[abstract]{ChenSyrgkanisAustern2022NoSplitDML} is the no-splitting endpoint comparator because it replaces cross-fitting by leave-one-out stability. Conjecture~\ref{conj:phase} treats that result as the limiting boundary, not as an ordinary cross-fitting theorem.
+
+\citet{NeweyRobins2018CrossFittingFastRemainders} is relevant because different cross-fit constructions can change semiparametric remainder rates. The fold-spectrum certificate makes that dependence explicit through fold-specific remainder envelopes.
+
+\citet{McGrathMukherjee2022NuisanceTuningSplitting} is adjacent because nuisance tuning and splitting choices jointly affect rates for doubly robust functionals. The present proposal freezes the target score and makes the allocation mass itself the focal object.
+
+\citet{ChernozhukovNeweySingh2023FiniteSampleDML} translates nuisance rates into finite-sample DML inference conditions. It is a comparator for the rate-conversion pieces of \(\Gamma_n\), but it does not state a fold-allocation phase diagram.
+
+\citet{ChiangKatoMaSasaki2022MultiwayDML} shows that changing the DML sampling geometry can require a new cross-fitting algorithm and variance formula. That paper supports the premise that fold geometry can be inferential, even though its geometry is multiway clustering rather than unequal evaluation folds.
+
+The closest in-repo artifacts are the downgraded \texttt{eid\_dml\_orth\_uniform}/v1 and failed \texttt{eid\_dml\_orth\_uniform}/v2 proposals, which studied weak-overlap and DML/LRO/ADML studentization frontiers rather than fold-mass spectra. The downgraded \texttt{eid\_dml\_orthogonality\_frontier}/v1 proposal studied local Riesz critical radii for shrinking HTE reports; it is adjacent on DML rate frontiers but does not vary the cross-fitting partition.
+
+\section{Formal setup}
+Let \(O=(Y,D,X)\sim P_0\), with \(D\in\{0,1\}\), consistency, conditional exchangeability \((Y(1),Y(0))\perp D\mid X\), and overlap. Write \(e_0(x)=\Pr(D=1\mid X=x)\), \(\mu_d(x)=\E[Y\mid D=d,X=x]\), and
+\[
+  \theta_0=\E[\mu_1(X)-\mu_0(X)].
+\]
+For \(\eta=(\mu_0,\mu_1,e)\), define the orthogonal AIPW score
+\[
+  \psi(O;\theta,\eta)=\mu_1(X)-\mu_0(X)-\theta+
+  \left\{\frac{D}{e(X)}-\frac{1-D}{1-e(X)}\right\}\{Y-\mu_D(X)\}.
+\]
+The true score is \(\psi_0(O)=\psi(O;\theta_0,\eta_0)\), and \(V_0=\E[\psi_0(O)^2]\in(0,\infty)\).
+
+For each \(n\), let \(I_{1,n},\ldots,I_{K_n,n}\) be a deterministic partition of \(\{1,\ldots,n\}\), with \(m_{k,n}=|I_{k,n}|\), \(c_{k,n}=m_{k,n}/n\), \(c_n^{\min}=\min_k c_{k,n}\), and \(\rho_n=\sum_{k=1}^{K_n}c_{k,n}^2\). Let \(\hat\eta_{-k}\) be learned on the complement of \(I_{k,n}\). The estimator \(\hat\theta_n\) solves
+\[
+  \Psi_n(\theta)=\frac{1}{n}\sum_{k=1}^{K_n}\sum_{i\in I_{k,n}}
+  \psi(O_i;\theta,\hat\eta_{-k})=0.
+\]
+Let
+\[
+  R_{k,n}=\|\hat\mu_{1,-k}-\mu_1\|_{2,I_k}+\|\hat\mu_{0,-k}-\mu_0\|_{2,I_k}+\|
+  \hat e_{-k}-e_0\|_{2,I_k},
+\]
+where \(\|f\|_{2,I_k}^2=m_{k,n}^{-1}\sum_{i\in I_{k,n}}\E[f(O_i)^2]\). The focal fold-spectrum certificate is
+\[
+  \Gamma_n=\max\left\{
+  \max_{k\le K_n}c_{k,n}^{-1/2}R_{k,n},\quad
+  \sqrt n\sum_{k=1}^{K_n}c_{k,n}R_{k,n}^2,
+  \quad \frac{1}{n c_n^{\min}}
+  \right\}.
+\]
+The first component controls foldwise stochastic equicontinuity, the second controls the orthogonal second-order remainder, and the third records whether the smallest evaluation fold has a genuine empirical-process limit.
+
+\paragraph{Locked parameters reproduced.}
+\begin{quote}\small
+\begin{verbatim}
+(qid, specialization) = (eid_dml_fold_spectrum_phase, v1)
+anchor cluster = ExactID / causal-ML inference
+graph / SWIG = observed O=(Y,D,X) with binary treatment D, potential
+  outcomes (Y(1),Y(0)), observed outcome Y=D Y(1)+(1-D)Y(0), and
+  covariates X satisfying consistency and conditional exchangeability
+treatment = binary D in {0,1}
+target estimand = theta_0 = E[Y(1)-Y(0)] = E[mu_1(X)-mu_0(X)]
+  for mu_d(x)=E[Y | D=d,X=x]
+identifying assumptions = consistency, conditional exchangeability,
+  overlap e_min <= e_0(X) <= 1-e_min, finite fourth moments, and
+  Neyman-orthogonal AIPW/DML scores
+fold geometry = deterministic triangular-array partitions
+  I_{1,n},...,I_{K_n,n} of {1,...,n}; c_{k,n}=|I_{k,n}|/n;
+  c_n^min=min_k c_{k,n}; rho_n=sum_k c_{k,n}^2; nuisance learners
+  eta_hat_{-k} are trained off I_{k,n}
+estimator = DML2/AIPW root solving the fold-weighted score average
+  n^{-1} sum_k sum_{i in I_{k,n}} psi(O_i;theta,eta_hat_{-k})=0
+phase functional = the fold-spectrum certificate
+  Gamma_n = max{ max_k c_{k,n}^{-1/2} R_{k,n},
+                 sqrt(n) sum_k c_{k,n} R_{k,n}^2,
+                 1/(n c_n^min) }
+  with R_{k,n} the fold-specific nuisance L2 error envelope.
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[ATE identification and overlap]\label{ass:id}
+The observed law satisfies consistency, conditional exchangeability \((Y(1),Y(0))\perp D\mid X\), and overlap \(e_{\min}\le e_0(X)\le1-e_{\min}\) almost surely for a constant \(e_{\min}>0\). The outcome has finite fourth moment.
+\end{assumption}
+
+\begin{assumption}[Orthogonal score regularity]\label{ass:orth}
+The map \(\eta\mapsto \E[\psi(O;\theta_0,\eta)]\) is Neyman orthogonal at \(\eta_0\), the derivative in \(\theta\) equals \(-1\), and the second-order expansion is bounded by a constant times the product of outcome and propensity errors on each evaluation fold.
+\end{assumption}
+
+\begin{assumption}[Foldwise independence]\label{ass:split}
+For each fold \(I_{k,n}\), \(\hat\eta_{-k}\) is measurable with respect to observations outside \(I_{k,n}\). Conditional on those training observations, the score summands indexed by \(I_{k,n}\) are independent with conditional variance converging to \(V_0\).
+\end{assumption}
+
+\begin{assumption}[Fold-spectrum regularity]\label{ass:spectrum}
+The deterministic masses satisfy \(\sum_{k=1}^{K_n}c_{k,n}=1\), \(m_{k,n}\ge1\), and either \(c_n^{\min}\) is bounded away from zero, or the triangular-array limits of \(n c_n^{\min}\), \(\rho_n\), and \(\Gamma_n\) exist along a subsequence.
+\end{assumption}
+
+\begin{assumption}[Equal-fold calibration]\label{ass:equal}
+For Theorem~\ref{thm:equal}, \(K\) is fixed, \(c_{k,n}=1/K+o(1)\) for every \(k\), \(\max_k R_{k,n}=o_p(1)\), and \(\sqrt n\max_k R_{k,n}^2=o_p(1)\).
+\end{assumption}
+
+\begin{assumption}[Open witness class]\label{ass:witness}
+For Conjecture~\ref{conj:witness}, there is a two-fold design with \(c_{1,n}=1-a_n\), \(c_{2,n}=a_n\), \(a_n\downarrow0\), and \(n a_n\to\lambda\in(0,\infty)\). The nuisance learner on the large training set has fold-two prediction error whose conditional mean is zero and conditional variance has a nonzero limit on an open neighborhood of laws satisfying Assumption~\ref{ass:id}.
+\end{assumption}
+
+\begin{assumption}[Leave-one-out stability endpoint]\label{ass:loo}
+When \(n c_n^{\min}\) is bounded, the no-splitting endpoint is admitted only if replacing one training observation changes each nuisance prediction by \(o_p(n^{-1/2})\) uniformly over the evaluation observations.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: equal-fold calibration]\label{thm:equal}
+Under Assumptions~\ref{ass:id}--\ref{ass:equal},
+\[
+  \sqrt n(\hat\theta_n-\theta_0)=\frac{1}{\sqrt n}\sum_{i=1}^n\psi_0(O_i)+o_p(1),
+  \qquad
+  \sqrt n(\hat\theta_n-\theta_0)\rightsquigarrow N(0,V_0).
+\]
+The empirical score variance computed over all evaluation observations is consistent for \(V_0\).
+\end{theorem}
+The proof is the standard cross-fit DML expansion: conditional independence removes first-order overfitting terms, orthogonality bounds the foldwise remainder by \(\sum_k c_{k,n}R_{k,n}^2\), and the fixed equal-fold CLT applies to the oracle score average.
+
+\begin{conjecture}[Conjecture 1: fold-spectrum phase theorem (NOT YET PROVED)]\label{conj:phase}
+Under Assumptions~\ref{ass:id}--\ref{ass:spectrum}, the following trichotomy is sharp for the DML2/AIPW estimator.
+\begin{enumerate}[label=(\roman*),leftmargin=*]
+\item If \(\Gamma_n=o_p(1)\) and \(n c_n^{\min}\to\infty\), then the equal-fold representation in Theorem~\ref{thm:equal} remains valid, possibly with a design effect in the consistent variance estimator when folds are random and repeated.
+\item If \(\max_k c_{k,n}^{-1/2}R_{k,n}\not\to0\) or \(\sqrt n\sum_k c_{k,n}R_{k,n}^2\not\to0\) while \(n c_n^{\min}\to\infty\), then \(\hat\theta_n\) has a slower or inflated first-order limit governed by the active fold components of \(\Gamma_n\).
+\item If \(n c_n^{\min}\) is bounded, ordinary cross-fitting ceases to be the relevant asymptotic approximation; root-\(n\) DML can hold only under the leave-one-out stability endpoint in Assumption~\ref{ass:loo}.
+\end{enumerate}
+Moreover, each boundary is witnessed by an open class of triangular-array laws with the same identified ATE and the same pointwise nuisance-rate exponents.
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: two-fold report-separation witness (NOT YET PROVED)]\label{conj:witness}
+Under Assumptions~\ref{ass:id}, \ref{ass:orth}, \ref{ass:split}, and \ref{ass:witness}, there is an open class of two-fold triangular arrays for which
+\[
+  \sqrt n(\hat\theta_n-\theta_0)-\frac{1}{\sqrt n}\sum_{i=1}^n\psi_0(O_i)
+  \rightsquigarrow Z_{\lambda},
+\]
+where \(Z_{\lambda}\) is non-degenerate and generated by the vanishing evaluation fold. On the same class, the usual empirical score variance over \(n\) observations converges to \(V_0\), but the variance of the centered estimator is \(V_0+\operatorname{Var}(Z_{\lambda})\).
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Balanced-fold reduction]\label{cor:balanced}
+Under Assumptions~\ref{ass:id}--\ref{ass:equal}, Conjecture~\ref{conj:phase} reduces to Theorem~\ref{thm:equal} because \(c_n^{\min}\to1/K\), \(1/(n c_n^{\min})\to0\), and the certificate satisfies \(\Gamma_n=o_p(1)\) whenever the standard DML product-rate condition holds.
+\end{corollary}
+
+\begin{corollary}[No-splitting endpoint is not a cross-fitting corollary]\label{cor:loo}
+If \(K_n=n\), then \(c_n^{\min}=1/n\) and the third component of \(\Gamma_n\) equals one. Thus Conjecture~\ref{conj:phase} cannot recover root-\(n\) inference from fold averaging alone; it must invoke the stability condition used by \citet{ChenSyrgkanisAustern2022NoSplitDML}.
+\end{corollary}
+
+\paragraph{Exhibit 9.1: fold-spectrum certificate on a two-fold instance.}
+Let \(I_{1,n}\) have mass \(1-a_n\) and \(I_{2,n}\) have mass \(a_n\), with fold errors \(R_{1,n}=n^{-1/4}\) and \(R_{2,n}=b_n\). Then
+\[
+  \Gamma_n=\max\left\{(1-a_n)^{-1/2}n^{-1/4},\ a_n^{-1/2}b_n,
+  \sqrt n\{(1-a_n)n^{-1/2}+a_nb_n^2\},\ (n a_n)^{-1}\right\}.
+\]
+For \(a_n=n^{-1/2}\) and \(b_n=n^{-1/4}\), \(\Gamma_n\ge a_n^{-1/2}b_n=1\), although the equal-fold product-rate expression \(\sqrt n b_n^2\) is constant and hides the fold mass. The denominators are positive for \(0<a_n<1\), and the two fold labels encode exactly two distinct evaluation distributions.
+
+\paragraph{Exhibit 9.2: report separation is not a normalization artifact.}
+In the witness of Assumption~\ref{ass:witness}, set \(n a_n\to\lambda\) and let the fold-two nuisance prediction perturbation contribute conditional variance \(\omega^2>0\) to the score average. The usual score report estimates \(V_0\), while the centered estimator has limit variance \(V_0+\omega^2\); multiplying both reports by the same \(\sqrt n\) scale leaves the additive \(\omega^2\) gap unchanged.
+
+\section{Proof-sketch route}
+For Theorem~\ref{thm:equal}: headline \(\leftarrow\) unfold \(\hat\theta_n\) and \(\psi\) definitions \(\leftarrow\) substitute Assumptions~\ref{ass:id}--\ref{ass:equal} \(\leftarrow\) Taylor expansion of the orthogonal score \(\leftarrow\) foldwise conditional mean-zero empirical-process bound \(\leftarrow\) Lindeberg CLT for the oracle score average. For Conjecture~\ref{conj:phase}: headline \(\leftarrow\) unfold \(\Gamma_n\) \(\leftarrow\) substitute Assumptions~\ref{ass:id}--\ref{ass:spectrum} \(\leftarrow\) prove a foldwise maximal inequality with mass-dependent constants \(\leftarrow\) derive the orthogonal second-order remainder with fold weights \(\leftarrow\) classify triangular-array CLT regimes by \(n c_n^{\min}\) \(\leftarrow\) construct boundary alternatives with equal pointwise nuisance exponents. For Conjecture~\ref{conj:witness}: headline \(\leftarrow\) unfold the two-fold design \(\leftarrow\) substitute Assumption~\ref{ass:witness} \(\leftarrow\) compute the conditional law of the small-fold score average \(\leftarrow\) show the empirical score variance omits the training-induced component \(\leftarrow\) verify openness by perturbing the cell probabilities and error variance.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:equal} is a calibration theorem, not the novelty claim. Conjectures~\ref{conj:phase} and~\ref{conj:witness} are open and may need stronger empirical-process assumptions on the nuisance learner class. The proposal deliberately does not claim that all growing-\(K\) DML results fail; it claims that unequal evaluation-fold mass is a distinct theorem object. No v1 statement has been withdrawn.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft around the fold-spectrum certificate, phase theorem, and two-fold witness; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Bach et~al.(2024)]{BachEtAl2024DoubleMLR}
+Bach, P., V. Chernozhukov, M. S. Kurz, M. Spindler, and S. Klaassen (2024).
+\newblock DoubleML: An object-oriented implementation of double machine learning in R.
+\newblock \emph{Journal of Statistical Software} 108(3), 1--56.
+
+\bibitem[Chernozhukov et~al.(2017)]{ChernozhukovEtAl2017DMLAPP}
+Chernozhukov, V., D. Chetverikov, M. Demirer, E. Duflo, C. Hansen, and W. Newey (2017).
+\newblock Double/debiased/neyman machine learning of treatment effects.
+\newblock \emph{American Economic Review Papers and Proceedings} 107(5), 261--265.
+
+\bibitem[Chernozhukov et~al.(2018)]{ChernozhukovEtAl2018DML}
+Chernozhukov, V., D. Chetverikov, M. Demirer, E. Duflo, C. Hansen, W. Newey, and J. Robins (2018).
+\newblock Double/debiased machine learning for treatment and structural parameters.
+\newblock \emph{The Econometrics Journal} 21(1), C1--C68.
+
+\bibitem[Chernozhukov, Newey, and Singh(2023)]{ChernozhukovNeweySingh2023FiniteSampleDML}
+Chernozhukov, V., W. Newey, and R. Singh (2023).
+\newblock A simple and general debiased machine learning theorem with finite-sample guarantees.
+\newblock \emph{Biometrika} 110(1), 257--264.
+
+\bibitem[Chen, Syrgkanis, and Austern(2022)]{ChenSyrgkanisAustern2022NoSplitDML}
+Chen, Q., V. Syrgkanis, and M. Austern (2022).
+\newblock Debiased machine learning without sample-splitting for stable estimators.
+\newblock \emph{NeurIPS}.
+
+\bibitem[Chiang et~al.(2022)]{ChiangKatoMaSasaki2022MultiwayDML}
+Chiang, H. D., K. Kato, Y. Ma, and Y. Sasaki (2022).
+\newblock Multiway cluster robust double/debiased machine learning.
+\newblock \emph{Journal of Business \& Economic Statistics} 40(3), 1046--1056.
+
+\bibitem[McGrath and Mukherjee(2022)]{McGrathMukherjee2022NuisanceTuningSplitting}
+McGrath, S. and R. Mukherjee (2022).
+\newblock Nuisance tuning and sample splitting for doubly robust functionals.
+\newblock arXiv:2212.14857.
+
+\bibitem[Newey and Robins(2018)]{NeweyRobins2018CrossFittingFastRemainders}
+Newey, W. K. and J. M. Robins (2018).
+\newblock Cross-fitting and fast remainder rates for semiparametric estimation.
+\newblock arXiv:1801.09138.
+
+\bibitem[Velez(2024)]{Velez2024DMLGrowingK}
+Velez, A. (2024).
+\newblock On the asymptotic properties of debiased machine learning estimators.
+\newblock arXiv:2411.01864.
+
+\bibitem[Ahrens et~al.(2024)]{AhrensHansenSchafferWiemann2024DDML}
+Ahrens, A., C. B. Hansen, M. E. Schaffer, and T. Wiemann (2024).
+\newblock ddml: Double/debiased machine learning in Stata.
+\newblock \emph{The Stata Journal} 24(1), 3--45.
+\end{thebibliography}
+
+\end{document}

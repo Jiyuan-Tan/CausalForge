@@ -1,0 +1,846 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_dml\_orth\_uniform, specialization=v2
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_dml\_orth\_uniform} / \texttt{v2}%
+  \\ \large\textit{A sharp studentization-report frontier for DML, LRO, and ADML ATE inference}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Exact-identification anchor, free-form qid.  The locked tuple is
+\[
+(\texttt{qid},\texttt{specialization},\text{graph/SWIG},\text{treatment},\text{target estimand},\text{identifying assumptions})
+\]
+with the following meanings: \texttt{qid}=\texttt{eid\_dml\_orth\_uniform};
+\texttt{specialization}=\texttt{v2}; graph/SWIG is the binary-treatment
+unconfoundedness model \(Y(d)\perp D\mid X\), \(d\in\{0,1\}\), with observed
+law of \(O=(Y,D,X)\); treatment is the binary exposure \(D\); target estimand
+is the population ATE \(\theta_0=\E[Y(1)-Y(0)]\); identifying assumptions are
+consistency, conditional unconfoundedness, square integrability, and local
+overlap sequences allowing the ATE Riesz representer
+\(\alpha_0(D,X)=D/e_0(X)-(1-D)/(1-e_0(X))\) to be stable or weakly unstable.
+The objects compared are the exact published studentization reports attached
+to the DML AIPW score of \citet{ChernozhukovEtAl2018ECTJ}, the
+ATE-specialized locally robust GMM report of
+\citet{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO}, and the automatic
+Riesz/debiased report of \citet{ChernozhukovNeweySingh2022ADML}.
+
+\begin{abstract}
+This proposal asks whether three leading DML-style ATE procedures that share
+the canonical efficient influence function can nevertheless produce uniformly
+different studentized Wald limits once their exact published variance reports
+are compared under local nuisance and weak-overlap sequences.  The first
+result is a guardrail rather than a novelty claim: any comparison that replaces
+the three reports by the same population EIF variance map necessarily
+collapses to first-order equivalence and cannot deliver a strict
+DML--LRO--ADML ordering.  The flagship
+conjecture is a positive report-level frontier: after deriving the three exact
+binary-ATE variance-score summands, their pairwise report gaps are governed by
+an observable, scale-invariant generalized spectral kernel whose weak-overlap
+growth defines the sharp exponent \(\rho_\star\).  The conjectured boundary is
+\(r_g+r_\alpha>\rho_\star\) for common studentized inference and
+\(r_g+r_\alpha\le \rho_\star\) for strict report separation on an open class
+of laws.  Resolving this would tell applied users whether DML, locally robust
+GMM, and automatic debiasing are interchangeable for Wald inference, or only
+for point estimation and canonical first-order influence functions.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+DML, locally robust semiparametric GMM, and automatic debiased machine learning
+are now standard routes to ATE inference under unconfoundedness.  For the same
+ATE law they are usually described through the same canonical AIPW influence
+function, but practitioners use estimator-specific variance reports and
+software-level studentization rules.  The methodological question is whether
+``same EIF'' really means ``same Wald inference'' uniformly over weak
+nuisance and weak-overlap designs.
+
+\paragraph{The main finding (proposed).}
+The proposal has a guardrail theorem and a flagship conjecture.  The guardrail
+theorem records the already-known collapse: a strict first-order variance
+ordering is impossible if the three procedures are compared only through the
+common canonical EIF variance.
+Conjecture 1, the novel kernel, says that a strict boundary reappears at the
+studentization-report level: the exact DML empirical AIPW variance, LRO
+first-step-adjusted sandwich variance, and ADML Riesz robust variance have a
+common Wald limit if and only if \(r_g+r_\alpha>\rho_\star\), where
+\(\rho_\star\) is computed from a normalized Rayleigh quotient comparing the
+observable covariance kernel for outcome-regression/Riesz perturbations to the
+chosen nuisance-direction norm.
+
+\paragraph{What is new.}
+\citet{ChernozhukovEtAl2018ECTJ} gives sufficient product-rate conditions for
+orthogonal-score inference, \citet{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO}
+constructs locally robust moments and misspecification-robust standard errors,
+and \citet{ChernozhukovNeweySingh2022ADML} automates debiasing and robust
+standard errors through Riesz representations.  None of these papers supplies
+a three-way necessary-and-sufficient comparison of the exact ATE variance
+reports under one normalization.  The epsilon-gap is the report derivative:
+the proposal targets pairwise matrices \(\Gamma_{\mathrm{DML},\mathrm{LRO}}\),
+\(\Gamma_{\mathrm{DML},\mathrm{ADML}}\), and
+\(\Gamma_{\mathrm{LRO},\mathrm{ADML}}\) that vanish for the population EIF
+map but may be nonzero for the published studentization reports.
+
+\paragraph{How it positions in the literature.}
+This is an exact-identification ATE proposal, not a panel or partial-ID
+proposal.  The identifying model is the standard binary-treatment
+unconfoundedness model, while the frontier sits in semiparametric inference
+for exact-ID targets.  It is closest to the active DML/Riesz/locally robust
+thread opened by \citet{ChernozhukovEtAl2018ECTJ},
+\citet{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO},
+\citet{ChernozhukovNeweySingh2022ADML}, and
+\citet{ChernozhukovNeweySingh2022RR}; it also uses the recent warnings from
+\citet{DukesVansteelandtWhitney2024JMLR} and
+\citet{VanDerLaanLuedtkeCarone2024CDML} that one-good-nuisance and
+calibrated regimes are subtler than a single product-rate slogan.  For weak
+overlap, it is adjacent to \citet{Rothe2017LimitedOverlapCI},
+\citet{HongLeungLi2020LimitedOverlap}, \citet{HeilerKazak2021ExtremePS}, and
+\citet{MaSantAnnaSasakiUra2026WeakOverlapDR}, but those papers study valid
+inference, slow rates, stable laws, trimming, or bias correction rather than a
+three-report DML--LRO--ADML equivalence frontier.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the weak-overlap ATE inference problem
+studied by \citet{Dorn2025WeakOverlapDR}: if the conjecture is true, thresholded
+or regularized doubly robust \(t\)-statistics should report which variance
+rule they use, because point-estimate equivalence need not imply
+studentized-law equivalence.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should check and report the variance-report normalization, not
+only the orthogonal score, whenever overlap or Riesz instability makes
+\(\rho_\star\) close to the product-rate exponent.
+
+\section{Related work}
+\citet{ChernozhukovEtAl2018ECTJ} is the baseline DML paper: it supplies the
+cross-fit Neyman-orthogonal ATE score and product-rate sufficient conditions
+whose sharp report-level frontier is studied here.  \citet{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO}
+is the LRO comparator: it gives the broad locally robust GMM construction and
+the sandwich logic whose ATE specialization must be pinned down.  \citet{ChernozhukovNeweySingh2022ADML}
+is the ADML comparator: it automates debiasing through Riesz representations
+and gives robust standard errors, but not a closed-form three-way ATE
+studentization comparison.  \citet{ChernozhukovNeweySingh2022RR} is the
+regularized-Riesz bridge: it documents weak double-sparsity robustness and
+Riesz instability, both of which motivate a spectral exponent rather than a
+fixed-overlap product-rate boundary.  \citet{Newey1994Econometrica} provides
+the semiparametric variance benchmark: for a regular estimator with the same
+canonical gradient, first-order population variance equality is forced.
+\citet{RobinsRotnitzkyZhao1994JASA} is the augmented-IPW ancestor for the
+canonical ATE influence function and double robustness.  \citet{AtheyImbensWager2018JRSSB}
+is relevant because approximate residual balancing highlights that weak
+overlap makes ATE inference sensitive to weighting and extrapolation choices.
+\citet{DukesVansteelandtWhitney2024JMLR} shows that doubly robust DML inference
+can lose regularity when only one nuisance is consistently estimated, so a
+sharp validity partition cannot be replaced by a slogan.  \citet{VanDerLaanLuedtkeCarone2024CDML}
+proposes calibrated DML to recover doubly robust asymptotic linearity, making
+calibration an adjacent route to one-good-nuisance inference rather than a
+three-estimator report comparison.  \citet{Dorn2025WeakOverlapDR} is the
+weak-overlap consumer whose thresholded doubly robust \(t\)-statistics would
+benefit from knowing whether estimator-specific studentization rules separate.
+\citet{Rothe2017LimitedOverlapCI} shows that limited overlap can make
+traditional ATE confidence intervals unreliable because local effective sample
+sizes, not only total sample size, drive coverage.  \citet{HongLeungLi2020LimitedOverlap}
+models finite-population treatment-effect inference with propensities drifting
+to zero or one and derives slower-rate asymptotics under common randomization
+schemes.  \citet{HeilerKazak2021ExtremePS} studies irregular identification
+with many extreme propensity scores and alpha-stable limits for IPW and
+doubly robust estimators.  \citet{MaSantAnnaSasakiUra2026WeakOverlapDR}
+constructs trim-and-bias-correct doubly robust estimators under weak overlap;
+it is close in motivation but not a comparison of DML, LRO, and ADML
+studentization reports under a common ATE law.
+\citet{BrunsSmithDukesFellerOgburn2024ABW} and \citet{BrunsSmith2026RieszApproaches}
+are adjacent Riesz-equivalence papers: they compare augmented balancing and
+direct Riesz constructions, showing that exact equivalence can hold for some
+regularized linear/RKHS cases and fail for other ML classes.
+
+In-repo prior art is the downgraded \texttt{eid\_dml\_orth\_uniform}/v1 entry:
+its banking note records that the population variance maps coincide at the
+truth with identical Riesz-direction derivatives, and its reviewer requested
+exact published variance summands before any renewed frontier claim.  The
+\texttt{doc/API.md} ExactID catalogue is currently a seed catalogue for
+\texttt{eid\_*} qids rather than a bank of completed DML/LRO/ADML theorems, so
+there is no in-catalogue theorem that already gives the report-level spectral
+boundary proposed here.
+
+\section{Formal setup}
+Let \(O=(Y,D,X)\sim P_n\), where \(D\in\{0,1\}\).  Write
+\(e_n(x)=\Pr_n(D=1\mid X=x)\), \(\mu_{d,n}(x)=\E_n[Y\mid D=d,X=x]\), and
+\[
+\theta_n=\E_n[\mu_{1,n}(X)-\mu_{0,n}(X)]
+\]
+for the identified ATE under consistency and conditional unconfoundedness.
+The ATE Riesz representer is
+\[
+\alpha_n(D,X)=\frac{D}{e_n(X)}-\frac{1-D}{1-e_n(X)},
+\]
+and the canonical efficient influence function is
+\[
+\phi_n(O)=\mu_{1,n}(X)-\mu_{0,n}(X)-\theta_n
+          +\alpha_n(D,X)\{Y-\mu_{D,n}(X)\}.
+\]
+Let \(m\in\mathcal M=\{\mathrm{DML},\mathrm{LRO},\mathrm{ADML}\}\).  For a
+candidate nuisance tuple \(\eta=(\mu_0,\mu_1,e)\), write
+\(\alpha_e(D,X)=D/e(X)-(1-D)/(1-e(X))\) and set
+\[
+\psi(O;\theta,\eta)=\mu_1(X)-\mu_0(X)-\theta+\alpha_e(D,X)\{Y-\mu_D(X)\}.
+\]
+The DML report summand is
+\[
+s_{\mathrm{DML}}(O;\theta,\eta)
+  =\{\psi(O;\theta,\eta)-P_n\psi(\cdot;\theta,\eta)\}^2.
+\]
+Fix a published-rule first-step score vector
+\[
+q^{\mathrm{pub}}_n(O;\eta)\in\R^{K_n},\qquad
+\Omega_n=P_n[q^{\mathrm{pub}}_n q^{\mathrm{pub}\transpose}_n],
+\]
+whose coordinates are the finite-dimensional score equations used by the
+published variance report to estimate the outcome-regression and
+propensity/Riesz nuisances.  This proposal locks the following common
+population normalization of the three reports.
+\begin{itemize}[leftmargin=*]
+\item DML source object: the cross-fit AIPW score and empirical variance in
+\citet{ChernozhukovEtAl2018ECTJ}; locked population report:
+\[
+V_{\mathrm{DML},n}(\eta)=P_n\{\psi-P_n\psi\}^2.
+\]
+\item LRO source object: the scalar locally robust GMM sandwich in
+\citet{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO}; locked population
+report:
+\[
+V_{\mathrm{LRO},A,n}(\eta)=P_n h_A(O;\theta_n,\eta)^2.
+\]
+\item ADML source object: the automatic Riesz/debiased robust variance in
+\citet{ChernozhukovNeweySingh2022ADML}; locked population report:
+\[
+V_{\mathrm{ADML},n}(\eta)=P_n\{\psi-c_{\mathrm{AD},n}^{\transpose}
+q^{\mathrm{pub}}_n\}^2.
+\]
+\end{itemize}
+On finite support with cells \(x_1,\ldots,x_J\), the locked diagnostic choice is
+\[
+q^{\mathrm{pub}}_n(O;\eta)=
+\bigl((1-D)\one\{X=x_j\}(Y-\mu_0(x_j)),
+D\one\{X=x_j\}(Y-\mu_1(x_j)),
+\one\{X=x_j\}(D-e(x_j))\bigr)_{j=1}^J,
+\]
+so the first-step score dimension is \(K_n=3J\); in a sieve version the same display is replaced by the chosen
+basis coordinates.  A report is therefore exact in this proposal only after
+the triple
+\((q^{\mathrm{pub}}_n,L_{A,n},\Omega_n)\) is fixed; changing this triple is a
+different report rule, not a proof of the same conjecture.
+
+The LRO report is locked to scalar ATE-GMM moments
+\[
+h_A(O;\theta,\eta)=
+\psi(O;\theta,\eta)-c_{L,A,n}^{\transpose}q^{\mathrm{pub}}_n(O;\eta),
+\]
+where \(A_n=(1,-c_{L,A,n}^{\transpose})\in\R^{1\times(1+K_n)}\) is the
+published scalar ATE normalization and \(G_{A,n}=P_n[\partial_\theta
+h_A(O;\theta_n,\eta_n)]=-1\).  The finite-dimensional LRO normalization is an
+operator \(L_{A,n}\in\R^{d_A\times K_n}\) selecting the first-step score
+directions used in the scalar sandwich.  Its coefficient space is
+\[
+\mathcal C_{L,A,n}=\operatorname{range}(L_{A,n}^{\transpose})\subseteq\R^{K_n}.
+\]
+The first-step-adjustment coefficient is the unique \(\Omega_n\)-projection of
+the raw AIPW score onto this space:
+\[
+c_{L,A,n}
+=\arg\min_{c\in\mathcal C_{L,A,n}}P_n\{\psi(O;\theta_n,\eta_n)-
+c^{\transpose}q^{\mathrm{pub}}_n(O;\eta_n)\}^2
+=L_{A,n}^{\transpose}(L_{A,n}\Omega_nL_{A,n}^{\transpose})^\dagger
+L_{A,n}P_n[q^{\mathrm{pub}}_n\psi_n],
+\]
+where \(\psi_n=\psi(O;\theta_n,\eta_n)\) and \({}^\dagger\) denotes the
+Moore--Penrose inverse after redundant score directions are dropped.  The report
+summand is
+\[
+s_{\mathrm{LRO},A}(O;\theta,\eta)
+  =G_{A,n}^{-2}h_A(O;\theta,\eta)^2
+\]
+and is read as a scalar sandwich report after projecting onto the ATE coordinate.
+The ADML report summand is
+\[
+s_{\mathrm{ADML}}(O;\theta,\eta)
+  =\{\psi(O;\theta,\eta)-c_{\mathrm{AD},n}^{\transpose}
+       q^{\mathrm{pub}}_n(O;\eta)\}^2,
+\]
+where \(c_{\mathrm{AD},n}\in\R^{K_n}\) is the automatic Riesz/debiasing
+coefficient obtained by the full normal equation
+\[
+c_{\mathrm{AD},n}
+=\arg\min_{c\in\R^{K_n}}P_n\{\psi(O;\theta_n,\eta_n)-
+c^{\transpose}q^{\mathrm{pub}}_n(O;\eta_n)\}^2
+=\Omega_n^\dagger P_n[q^{\mathrm{pub}}_n\psi_n].
+\]
+Thus the ADML random-variable correction is fixed as
+\(\kappa_{\mathrm{AD},n}(O;\eta)=-c_{\mathrm{AD},n}^{\transpose}
+q^{\mathrm{pub}}_n(O;\eta)\).  The
+population report maps are \(V_{m,n}(\eta)=P_n s_{m}(O;\theta_n,\eta)\), with
+\(V_{\mathrm{LRO},n}\) meaning \(V_{\mathrm{LRO},A,n}\) for an \(A_n\) in the
+locked LRO class below.  Local nuisance perturbations are
+\(\delta\mu_{d,n}=n^{-r_g}u_{d,n}\) and the induced Riesz perturbation
+\(\delta\alpha_{e,n}=n^{-r_\alpha}v_n\), with
+\(u_n=(u_{0,n},u_{1,n})\).  The
+report-difference expansion, when it exists, is written
+\[
+V_{m,n}(\eta_n+\delta\eta_n)-V_{\ell,n}(\eta_n+\delta\eta_n)
+= n^{-(r_g+r_\alpha)}
+  \langle z_n,\Gamma_{m\ell,n}z_n\rangle + o(n^{-(r_g+r_\alpha)}),
+\]
+where \(z_n=(u_n,v_n)\) and the symmetric matrix or compact operator
+\(\Gamma_{m\ell,n}\) is obtained by the mixed Gateaux derivative of the
+displayed summands with respect to \((u_n,v_n)\).  Specifically, with
+\(\eta_{t,s}=(\mu_{0,n}+tu_{0,n},\mu_{1,n}+tu_{1,n},
+\alpha_n+sv_n)\),
+\[
+\langle z_n,\Gamma_{m\ell,n}z_n\rangle
+=\left.
+\frac{\partial^2}{\partial t\,\partial s}
+\{V_{m,n}(\eta_{t,s})-V_{\ell,n}(\eta_{t,s})\}
+\right|_{t=s=0}.
+\]
+Let \(V^{\mathrm{EIF}}_n=P_n\phi_n^2\).  The object
+\(\mathcal V_{m,n}(z)\) used below is the local report-ratio lower bound
+\[
+\mathcal V_{m,n}(z)
+=\liminf_{n\to\infty}
+\frac{V_{m,n}(\eta_n+\delta\eta_n(z))}{V^{\mathrm{EIF}}_n};
+\]
+it is a variance-report ratio for the Wald interval, not the variance of the
+studentized statistic itself and not a new semiparametric efficiency bound.
+The observable covariance kernel \(\mathsf K_n\) is the covariance matrix of the
+finite-dimensional score vector formed by the outcome residual
+\(\varepsilon_n=Y-\mu_{D,n}(X)\), the Riesz term \(\alpha_n(D,X)\), and the
+chosen basis coordinates for \(u_n\) and \(v_n\).  The nuisance-direction
+metric \(S_n\) is the block \(L^2(P_n)\) Gram matrix for the same coordinates.
+Define the scale-invariant generalized weak-overlap index
+\[
+\chi_n=\inf_{z\ne 0}\frac{z^{\transpose}\mathsf K_nz}{z^{\transpose}S_nz},
+\qquad
+\omega_K=\limsup_{n\to\infty}\frac{-\log \chi_n}{\log n},
+\qquad
+\rho_\star=\frac{1+\omega_K}{2}.
+\]
+With fixed overlap and a nondegenerate finite support, \(\chi_n\) is bounded
+away from zero, \(\omega_K=0\), and \(\rho_\star=1/2\), the usual
+product-rate exponent.  With weak overlap, \(\chi_n\asymp n^{-\omega}\) gives
+\(\rho_\star=(1+\omega)/2\), separating shrinking-overlap sequences from
+fixed-overlap bounded-eigenvalue designs.
+
+\begin{quote}
+\begin{verbatim}
+Locked parameters:
+qid = eid_dml_orth_uniform
+specialization = v2
+graph/SWIG = binary-treatment unconfoundedness model Y(d) independent of D given X
+treatment = binary D
+target estimand = theta_0 = E[Y(1)-Y(0)]
+identifying assumptions = consistency, conditional unconfoundedness,
+  square integrability, and local overlap/Riesz stability or weak instability
+compared reports = exact DML AIPW, LRO ATE-GMM sandwich, and ADML Riesz robust variance reports
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[ATE identification]\label{ass:ate-id}
+For each \(n\), \(Y=DY(1)+(1-D)Y(0)\), \(Y(d)\perp D\mid X\) for
+\(d\in\{0,1\}\), and the conditional means \(\mu_{d,n}\) are square
+integrable.  The ATE is \(\theta_n=\E_n[Y(1)-Y(0)]\).
+\end{assumption}
+
+\begin{assumption}[Local overlap and Riesz scale]\label{ass:overlap}
+The propensity satisfies \(0<e_n(X)<1\) almost surely.  The Riesz representer
+\(\alpha_n\) is square integrable for every \(n\), but
+\(\E_n[\alpha_n(D,X)^2]\) and the generalized index \(\chi_n\) may vary with
+\(n\).  The metric matrix \(S_n\) is positive definite on the chosen
+nuisance-direction sieve, and \(\Omega_n\) is positive definite on the chosen
+first-step score coordinates after dropping redundant coordinates.
+\end{assumption}
+
+\begin{assumption}[Exact report definitions]\label{ass:reports}
+The report maps \(V_{\mathrm{DML},n}\), \(V_{\mathrm{LRO},n}\), and
+\(V_{\mathrm{ADML},n}\) are the population means of the summands
+\(s_{\mathrm{DML}}\), \(s_{\mathrm{LRO},A}\), and \(s_{\mathrm{ADML}}\)
+defined in Section 3.  The DML report is the centered empirical AIPW variance.
+The LRO report is the scalar ATE coordinate of the first-step-adjusted
+sandwich variance with \(A_n=(1,-c_{L,A,n}^{\transpose})\),
+\(L_{A,n}\in\R^{d_A\times K_n}\), and
+\[
+c_{L,A,n}
+=L_{A,n}^{\transpose}(L_{A,n}\Omega_nL_{A,n}^{\transpose})^\dagger
+L_{A,n}P_n[q^{\mathrm{pub}}_n\psi_n].
+\]
+The ADML report is the Riesz-robust variance after the automatic correction
+\(\kappa_{\mathrm{AD},n}=-c_{\mathrm{AD},n}^{\transpose}q^{\mathrm{pub}}_n\),
+where
+\[
+c_{\mathrm{AD},n}=\Omega_n^\dagger P_n[q^{\mathrm{pub}}_n\psi_n].
+\]
+The dimensions are fixed by \(q^{\mathrm{pub}}_n\in\R^{K_n}\),
+\(c_{L,A,n},c_{\mathrm{AD},n}\in\R^{K_n}\),
+\(L_{A,n}\in\R^{d_A\times K_n}\), and
+\(A_n\in\R^{1\times(1+K_n)}\).
+\end{assumption}
+
+\begin{assumption}[Locked LRO normalization class]\label{ass:lro-class}
+The LRO normalization domain is
+\[
+\mathcal A_n=\{(A_n,L_{A,n}): A_n=(1,-c_{L,A,n}^{\transpose}),\
+L_{A,n}\in\R^{d_A\times K_n},\
+G_{A,n}=-1,\ P_n h_A(O;\theta_n,\eta_n)=0,\ 
+h_A\text{ is Neyman-orthogonal at }\eta_n,\ 
+c_{L,A,n}\text{ is given by Assumption \ref{ass:reports}}\}.
+\]
+Conjecture \ref{conj:spectral-frontier} uses one fixed published ATE
+normalization \((A_n^{\mathrm{pub}},L_{A^{\mathrm{pub}},n})\in\mathcal A_n\).
+For any \(A\), define the closed coefficient subspace
+\[
+\mathcal C_{L,A,n}=\operatorname{range}(L_{A,n}^{\transpose})
+\]
+with the inner product \(\langle a,b\rangle_{\Omega_n}=a^\transpose
+\Omega_nb\).  Conjecture
+\ref{conj:lro-class} quantifies over the whole class and defines the
+subclass that is report-equivalent to ADML.
+\end{assumption}
+
+\begin{assumption}[Report-separating normalization for the frontier]\label{ass:lro-separated}
+For the fixed \(A_n^{\mathrm{pub}}\) used in Conjecture
+\ref{conj:spectral-frontier}, the LRO coefficient is not ADML-equivalent:
+\[
+c_{L,A^{\mathrm{pub}},n}\ne
+\Pi_{\mathcal C_{L,A^{\mathrm{pub}},n}}^{\Omega_n}c_{\mathrm{AD},n}
+\]
+along the local sequence, where
+\(\Pi_{\mathcal C_{L,A^{\mathrm{pub}},n}}^{\Omega_n}\) denotes coefficient-space
+\(\Omega_n\)-orthogonal projection onto the stated closed coefficient
+subspace.  This assumption is not imposed in Conjecture
+\ref{conj:lro-class}, whose purpose is to classify exactly when it fails.
+\end{assumption}
+
+\begin{assumption}[Common canonical EIF]\label{ass:eif}
+At the true nuisance \(\eta_n=(\mu_{0,n},\mu_{1,n},e_n)\), all three
+methods have influence function \(\phi_n\) for the target \(\theta_n\).
+\end{assumption}
+
+\begin{assumption}[Quadratic report expansion]\label{ass:quadratic}
+For each pair \(m,\ell\in\mathcal M\), the difference between their report
+maps has the expansion in Section 3 with a symmetric coefficient
+\(\Gamma_{m\ell,n}\), uniformly over perturbation directions \(z_n=(u_n,v_n)\)
+in the chosen finite-dimensional sieve with \(z_n^{\transpose}S_nz_n=1\).
+\end{assumption}
+
+\begin{assumption}[Observable spectral nondegeneracy]\label{ass:spectral}
+The covariance kernel \(\mathsf K_n\) and metric \(S_n\) are consistently estimable
+from the observed law, \(\chi_n>0\) for all large \(n\), and \(\omega_K\)
+exists along the local sequence.  Pairwise report-gap signs are not assumed;
+when a strict ordering is claimed below, it is derived from positive
+generalized eigenvalue gaps of \((\Gamma_{m\ell,n},S_n)\) on the stated open
+set of finite-support laws and perturbation directions.
+\end{assumption}
+
+\begin{assumption}[Finite-support audit design]\label{ass:finite-audit}
+For the audit theorem only, \(X\) has finite support
+\(\{x_1,\ldots,x_J\}\), \(q^{\mathrm{pub}}_n\) is the \(3J\)-coordinate cell
+score vector from Section 3, and the perturbation sieve is cellwise constant
+in the coordinates
+\((u_{01},\ldots,u_{0J},u_{11},\ldots,u_{1J},v_1,\ldots,v_J)\).
+\end{assumption}
+
+\section{Main results}
+\begin{proposition}[Guardrail: canonical-EIF equivalence]\label{prop:eif-no-go}
+Under Assumptions \ref{ass:ate-id}, \ref{ass:overlap}, \ref{ass:reports},
+\ref{ass:lro-class}, and \ref{ass:eif}, if
+\[
+V_{\mathrm{DML},n}(\eta_n)=V_{\mathrm{LRO},n}(\eta_n)
+=V_{\mathrm{ADML},n}(\eta_n)=\E_n[\phi_n(O)^2]
+\]
+and the three studentizers are replaced by any uniformly consistent estimator
+of \(\E_n[\phi_n(O)^2]\), then the studentized DML, LRO, and ADML Wald
+statistics have the same first-order Gaussian limit whenever they are
+asymptotically linear with influence function \(\phi_n\).  Consequently no
+strict first-order variance ordering among the three named procedures can be
+proved from the common population EIF variance map alone.
+\end{proposition}
+\paragraph{Why this is new and worth studying.}
+(a) The closest published results are \citet{Newey1994Econometrica},
+\citet{ChernozhukovEtAl2018ECTJ}, and \citet{ChernozhukovNeweySingh2022ADML},
+and the closest project artifact is the banked \texttt{eid\_dml\_orth\_uniform}/v1
+note that population variance maps coincide at truth with identical
+Riesz-direction derivatives.  This result is therefore not claimed as the
+flagship novelty; it is an explicit guardrail documenting that the common-EIF
+route is already exhausted.  (b) Recording this guardrail prevents the
+\texttt{eid\_dml\_orth\_uniform}/v1 failure mode from recurring: the
+downstream Stage 0 derivation must compare exact variance reports, not relabel
+the canonical EIF variance.
+
+\begin{conjecture}[Conjecture 1: spectral studentization-report frontier (NOT YET PROVED)]\label{conj:spectral-frontier}
+Under Assumptions \ref{ass:ate-id}, \ref{ass:overlap}, \ref{ass:reports},
+\ref{ass:lro-class}, \ref{ass:lro-separated}, \ref{ass:eif},
+\ref{ass:quadratic}, and \ref{ass:spectral}, suppose the local
+nuisance rates satisfy
+\(\|\delta\mu_{0,n}\|_2+\|\delta\mu_{1,n}\|_2\asymp n^{-r_g}\) and
+\(\|\delta\alpha_{e,n}\|_2\asymp n^{-r_\alpha}\).  Then the exact published DML,
+the fixed published LRO normalization \(A_n^{\mathrm{pub}}\), and ADML
+studentization reports are uniformly first-order equivalent if and only if
+\[
+r_g+r_\alpha>\rho_\star=\frac{1+\omega_K}{2}.
+\]
+If \(r_g+r_\alpha\le \rho_\star\), there is an open set of finite-support laws
+and perturbation directions on which the generalized eigenvalue gaps of
+\((\Gamma_{\mathrm{DML},\mathrm{LRO},n},S_n)\) and
+\((\Gamma_{\mathrm{LRO},\mathrm{ADML},n},S_n)\) are positive and bounded away
+from zero after the \(\chi_n\) normalization; on that open set the Wald
+interval report-ratio lower bounds
+\(\mathcal V_{m,n}(z)=\liminf V_{m,n}(\eta_n+\delta\eta_n(z))/V^{\mathrm{EIF}}_n\)
+are strictly separated in the variance order
+\[
+\mathcal V_{\mathrm{ADML},n}
+<\mathcal V_{\mathrm{LRO},n}
+<\mathcal V_{\mathrm{DML},n},
+\]
+with the pairwise separation constants proportional to the nonzero spectral
+gaps of
+\(\Gamma_{\mathrm{DML},\mathrm{LRO},n}\) and
+\(\Gamma_{\mathrm{LRO},\mathrm{ADML},n}\) in the generalized
+\((\mathsf K_n,S_n)\)-geometry.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{ChernozhukovEtAl2018ECTJ} gives sufficient product-rate validity,
+\citet{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO} gives locally robust
+GMM variance formulas, and \citet{ChernozhukovNeweySingh2022ADML} gives robust
+Riesz standard errors, but none characterizes an iff exponent boundary for the
+three exact reports under one binary-ATE normalization.  The epsilon-gap is
+the scale-invariant threshold \(\rho_\star=(1+\omega_K)/2\): fixed-overlap
+theory gives \(\rho_\star=1/2\), while weak-overlap/Riesz instability changes
+it through the generalized eigenvalue decay \(\chi_n\).  The closest
+weak-overlap comparators, \citet{Rothe2017LimitedOverlapCI},
+\citet{HongLeungLi2020LimitedOverlap}, \citet{HeilerKazak2021ExtremePS}, and
+\citet{MaSantAnnaSasakiUra2026WeakOverlapDR}, analyze robust intervals,
+slow-rate randomization limits, stable-law inference, and trimmed DR
+corrections, not an iff boundary among the three named report rules.  (b) The
+consumer is \citet{Dorn2025WeakOverlapDR}: a true frontier would tell users of
+weak-overlap doubly robust \(t\)-statistics when equal point-estimate behavior
+still permits different studentized laws across named variance rules.
+
+\begin{theorem}[Theorem 1: finite-support auditability of the report certificates]\label{thm:finite-audit}
+Under Assumptions \ref{ass:ate-id}, \ref{ass:overlap}, \ref{ass:reports},
+\ref{ass:lro-class}, \ref{ass:quadratic}, and \ref{ass:finite-audit}, with
+\(\kappa_{\mathrm{AD},n}=-c_{\mathrm{AD},n}^{\transpose}
+q^{\mathrm{pub}}_n\), each
+coefficient \(\Gamma_{m\ell,n}\), the kernels \(\mathsf K_n,S_n\), and the exponent
+\(\rho_\star\) reduce to explicit finite matrices as follows.  Let
+\(\pi_j=P_n(X=x_j)\), \(p_j=e_n(x_j)\),
+\(\sigma_{dj}^2=\operatorname{Var}_n(Y\mid D=d,X=x_j)\), and let the
+cellwise direction vector be
+\[
+z=(u_{01},\ldots,u_{0J},u_{11},\ldots,u_{1J},v_1,\ldots,v_J)^\transpose.
+\]
+For \(a,b\) indexing these \(3J\) coordinates,
+\[
+(\Gamma_{m\ell,n})_{ab}
+=\left.
+\frac{\partial^2}{\partial t_a\,\partial t_b}
+\{V_{m,n}(\eta_n+\sum_c t_c e_c)-V_{\ell,n}(\eta_n+\sum_c t_c e_c)\}
+\right|_{t=0},
+\]
+where \(e_c\) is the corresponding cellwise outcome or Riesz perturbation
+direction.  The metric entries are
+\[
+(S_n)_{u_{dj},u_{d'k}}=\one\{d=d',j=k\}\pi_jP_n(D=d\mid X=x_j),\qquad
+(S_n)_{v_j,v_k}=\one\{j=k\}\pi_j,\qquad
+(S_n)_{u_{dj},v_k}=0.
+\]
+The covariance-kernel entries are \((\mathsf K_n)_{ab}=P_n[\ell_a(O)\ell_b(O)]\), where
+\[
+\ell_{u_{dj}}(O)=\one\{X=x_j,D=d\}\{\alpha_n(D,X)\varepsilon_n\},\qquad
+\ell_{v_j}(O)=\one\{X=x_j\}\varepsilon_n,
+\]
+and \(\varepsilon_n=Y-\mu_{D,n}(X)\).  Hence
+\(\chi_n=\lambda_{\min}(S_n^{-1/2}\mathsf K_nS_n^{-1/2})\) after restricting to the
+nonredundant score span, and strict separation in Conjecture 1 can be audited
+by checking generalized eigenvalues of the finite pairs
+\((\Gamma_{m\ell,n},S_n)\).
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) The nearest project artifact is the \texttt{eid\_dml\_orth\_uniform}/v1
+banked note, which warned that certificate matrices were asserted rather than
+derived from the published formulas; no published DML/LRO/ADML paper gives
+this common finite-support audit table.  (b) The consumer is
+\citet{Dorn2025WeakOverlapDR}'s weak-overlap \(t\)-statistic problem together
+with the Stage 0 derivation for this qid: both need a concrete algebraic
+diagnostic rather than a frontier hidden behind estimator labels.
+
+\begin{conjecture}[Conjecture 2: LRO normalization equivalence class (NOT YET PROVED)]\label{conj:lro-class}
+Under Assumptions \ref{ass:ate-id}, \ref{ass:overlap}, \ref{ass:reports},
+\ref{ass:lro-class}, \ref{ass:eif}, and \ref{ass:quadratic}, for a sequence
+\((A_n,L_{A,n})\in\mathcal A_n\), the ATE-specialized LRO
+report shares the ADML report certificate if and only if the LRO coefficient
+\[
+c_{L,A,n}
+\]
+equals the coefficient-space \(\Omega_n\)-orthogonal projection of
+\(c_{\mathrm{AD},n}\) onto the closed coefficient subspace
+\(\mathcal C_{L,A,n}=\operatorname{range}(L_{A,n}^{\transpose})
+\subseteq\R^{K_n}\):
+\[
+c_{L,A,n}=\Pi_{\mathcal C_{L,A,n}}^{\Omega_n}c_{\mathrm{AD},n}.
+\]
+Outside this equivalence class, a two- or three-point finite-support law and
+an open neighborhood of LRO normalizations exist for which
+\(\Gamma_{\mathrm{LRO},\mathrm{ADML},n}\ne 0\).
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO} deliberately
+allows broad locally robust moments, while
+\citet{ChernozhukovNeweySingh2022ADML} constructs the Riesz correction from
+the functional; neither paper classifies which ATE-specialized LRO choices are
+report-equivalent to ADML.  (b) The consumer is the exact LRO specialization
+requested by prior CausalSmith reviewers: before any strict DML--LRO--ADML
+claim is reviewed, the LRO moment and Jacobian must be pinned to an
+equivalence class.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Fixed-overlap product-rate reduction]\label{cor:fixed-overlap}
+Under Assumptions \ref{ass:ate-id}, \ref{ass:overlap}, \ref{ass:reports},
+\ref{ass:lro-class}, \ref{ass:lro-separated}, \ref{ass:eif},
+\ref{ass:quadratic}, and \ref{ass:spectral}, if overlap is fixed
+so that the generalized eigenvalues of \((\mathsf K_n,S_n)\) are bounded above and
+below away from zero, then \(\omega_K=0\), \(\rho_\star=1/2\), and
+Conjecture 1 reduces to the standard product-rate requirement
+\(r_g+r_\alpha>1/2\) from
+\citet{ChernozhukovEtAl2018ECTJ}.
+\end{corollary}
+
+\begin{corollary}[Common-report collapse]\label{cor:common-report}
+Under Assumptions \ref{ass:ate-id}, \ref{ass:overlap}, \ref{ass:reports},
+\ref{ass:lro-class}, and \ref{ass:eif}, if
+\(V_{\mathrm{DML},n}=V_{\mathrm{LRO},n}=V_{\mathrm{ADML},n}\) as functionals
+in a neighborhood of \(\eta_n\), then all \(\Gamma_{m\ell,n}=0\), the spectral
+gap is zero, and Conjecture 1 has no strict-separation branch.
+\end{corollary}
+
+\section{Proof-sketch route}
+The no-go proposition reduces to the classical semiparametric fact that
+asymptotically linear estimators with the same influence function and
+consistent studentizers have the same first-order studentized limit.  The
+conjectured frontier requires writing the three published variance reports as
+sample averages plus first-step adjustment terms, taking Gateaux derivatives
+in \((\mu_0,\mu_1,\alpha_e)\), and identifying the pairwise bilinear forms
+\(\Gamma_{m\ell,n}\).  On finite support, this becomes ordinary matrix
+algebra: enumerate the \(J\) covariate cells, compute the residual/Riesz
+covariance kernel \(\mathsf K_n\), compute the nuisance metric \(S_n\), diagonalize
+the generalized pairwise report-gap matrices, and
+check whether the local term
+\(\sqrt n\,n^{-(r_g+r_\alpha)}\chi_n^{-1/2}\) vanishes, is tight, or diverges.
+The main boundary cases are fixed overlap, a two-cell
+weak-overlap sequence, and an LRO normalization whose coefficient vector is
+exactly the ADML coefficient-space projection.
+
+\section{Honest scope flags}
+The guardrail proposition is intended to be routine once the common canonical
+EIF hypothesis is accepted.  Theorem 1 is an algebraic auditability claim, not a proof that
+the pairwise certificate matrices are nonzero.  Conjectures 1 and 2 are the
+open kernels: they require exact published DML, LRO, and ADML report summands
+under one normalization and may fail if those reports collapse as functionals
+near the truth.  The strict ordering in Conjecture 1 is conditional on the
+computed generalized eigenvalues of the exact report-gap matrices; if those
+matrices are indefinite, the result should be revised to an incomparability
+frontier rather than a dominance frontier.  The withdrawn v1 claim was the
+stronger assertion that population variance maps themselves separate; this
+version treats that as refuted and moves the possible novelty to exact report
+derivatives.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft reframing the topic as a canonical-EIF
+no-go theorem plus a conjectured exact studentization-report spectral
+frontier; prior verdict: none.
+\item v2 (revise) -- downgraded Theorem 1 to a guardrail, added exact
+report-summand conventions, replaced the scale-dependent eigenvalue by a
+generalized Rayleigh quotient, parameterized the LRO normalization class, and
+added weak-overlap comparators; prior verdict: REVISE.
+\item v3 (revise) -- moved the common-EIF result out of the novelty-bearing
+theorem list, replaced unnamed report-adjustment placeholders by explicit
+published-rule score and correction coefficients, and narrowed the spectral
+frontier to a fixed non-equivalent LRO normalization; prior verdict: REVISE.
+\item v4 (revise) -- pinned the three report maps to explicit population
+summands and normal equations, defined the LRO coefficient subspace as
+\(\operatorname{range}(L_{A,n}^{\transpose})\), replaced undefined variance
+objects by report-ratio lower bounds, and gave entrywise finite-support matrix
+definitions; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Chernozhukov et~al.(2018)]{ChernozhukovEtAl2018ECTJ}
+Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C.,
+Newey, W., and Robins, J. (2018).
+\newblock Double/debiased machine learning for treatment and structural parameters.
+\newblock \emph{The Econometrics Journal}, 21(1):C1--C68.
+\newblock \url{https://doi.org/10.1111/ectj.12097}.
+
+\bibitem[Chernozhukov et~al.(2022a)]{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO}
+Chernozhukov, V., Escanciano, J. C., Ichimura, H., Newey, W. K., and
+Robins, J. M. (2022).
+\newblock Locally robust semiparametric estimation.
+\newblock \emph{Econometrica}, 90(4):1501--1535.
+\newblock \url{https://doi.org/10.3982/ECTA16294}.
+
+\bibitem[Chernozhukov et~al.(2022b)]{ChernozhukovNeweySingh2022ADML}
+Chernozhukov, V., Newey, W. K., and Singh, R. (2022).
+\newblock Automatic debiased machine learning of causal and structural effects.
+\newblock \emph{Econometrica}, 90(3):967--1027.
+\newblock \url{https://doi.org/10.3982/ECTA18515}.
+
+\bibitem[Chernozhukov et~al.(2022c)]{ChernozhukovNeweySingh2022RR}
+Chernozhukov, V., Newey, W. K., and Singh, R. (2022).
+\newblock Debiased machine learning of global and local parameters using
+regularized Riesz representers.
+\newblock \emph{The Econometrics Journal}, 25(3):576--601.
+\newblock \url{https://doi.org/10.1093/ectj/utac002}.
+
+\bibitem[Newey(1994)]{Newey1994Econometrica}
+Newey, W. K. (1994).
+\newblock The asymptotic variance of semiparametric estimators.
+\newblock \emph{Econometrica}, 62(6):1349--1382.
+
+\bibitem[Robins et~al.(1994)]{RobinsRotnitzkyZhao1994JASA}
+Robins, J. M., Rotnitzky, A., and Zhao, L. P. (1994).
+\newblock Estimation of regression coefficients when some regressors are not
+always observed.
+\newblock \emph{Journal of the American Statistical Association}, 89(427):846--866.
+
+\bibitem[Athey et~al.(2018)]{AtheyImbensWager2018JRSSB}
+Athey, S., Imbens, G. W., and Wager, S. (2018).
+\newblock Approximate residual balancing: debiased inference of average
+treatment effects in high dimensions.
+\newblock \emph{Journal of the Royal Statistical Society: Series B},
+80(4):597--623.
+\newblock \url{https://doi.org/10.1111/rssb.12268}.
+
+\bibitem[Dukes et~al.(2024)]{DukesVansteelandtWhitney2024JMLR}
+Dukes, O., Vansteelandt, S., and Whitney, D. (2024).
+\newblock On doubly robust inference for double machine learning in
+semiparametric regression.
+\newblock \emph{Journal of Machine Learning Research}, 25:1--46.
+\newblock \url{https://jmlr.org/papers/v25/22-1233.html}.
+
+\bibitem[van der Laan et~al.(2024)]{VanDerLaanLuedtkeCarone2024CDML}
+van der Laan, L., Luedtke, A., and Carone, M. (2024).
+\newblock Automatic doubly robust inference for linear functionals via
+calibrated debiased machine learning.
+\newblock \emph{arXiv:2411.02771}.
+\newblock \url{https://doi.org/10.48550/arXiv.2411.02771}.
+
+\bibitem[Dorn(2025)]{Dorn2025WeakOverlapDR}
+Dorn, J. (2025).
+\newblock Weak overlap and thresholded doubly robust inference for average
+treatment effects.
+\newblock Working paper.
+\newblock \url{https://arxiv.org/abs/2504.13273}.
+
+\bibitem[Rothe(2017)]{Rothe2017LimitedOverlapCI}
+Rothe, C. (2017).
+\newblock Robust confidence intervals for average treatment effects under
+limited overlap.
+\newblock \emph{Econometrica}, 85(2):645--660.
+
+\bibitem[Hong et~al.(2020)]{HongLeungLi2020LimitedOverlap}
+Hong, H., Leung, M. P., and Li, J. (2020).
+\newblock Inference on finite-population treatment effects under limited
+overlap.
+\newblock \emph{The Econometrics Journal}, 23(1):32--47.
+\newblock \url{https://doi.org/10.1093/ectj/utz017}.
+
+\bibitem[Heiler and Kazak(2021)]{HeilerKazak2021ExtremePS}
+Heiler, P. and Kazak, E. (2021).
+\newblock Valid inference for treatment effect parameters under irregular
+identification and many extreme propensity scores.
+\newblock \emph{Journal of Econometrics}, 222(2):1083--1108.
+\newblock \url{https://doi.org/10.1016/j.jeconom.2020.03.025}.
+
+\bibitem[Ma et~al.(2026)]{MaSantAnnaSasakiUra2026WeakOverlapDR}
+Ma, Y., Sant'Anna, P. H. C., Sasaki, Y., and Ura, T. (2026).
+\newblock Doubly robust estimators with weak overlap.
+\newblock Working paper.
+\newblock \url{https://psantanna.com/files/MSSU2026.pdf}.
+
+\bibitem[Bruns-Smith et~al.(2024)]{BrunsSmithDukesFellerOgburn2024ABW}
+Bruns-Smith, D., Dukes, O., Feller, A., and Ogburn, E. L. (2024).
+\newblock Augmented balancing weights as linear regression.
+\newblock Working paper.
+\newblock \url{https://doi.org/10.48550/arXiv.2304.14545}.
+
+\bibitem[Bruns-Smith(2026)]{BrunsSmith2026RieszApproaches}
+Bruns-Smith, D. (2026).
+\newblock Two approaches to direct estimation of Riesz representers.
+\newblock \emph{arXiv:2603.20936}.
+\newblock \url{https://arxiv.org/abs/2603.20936}.
+\end{thebibliography}
+
+\end{document}

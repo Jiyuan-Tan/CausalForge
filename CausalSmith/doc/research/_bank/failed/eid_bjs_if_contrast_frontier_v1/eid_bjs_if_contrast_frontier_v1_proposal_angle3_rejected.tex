@@ -1,0 +1,565 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_bjs\_if\_contrast\_frontier, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_bjs\_if\_contrast\_frontier} / \texttt{v1}%
+  \\ \large\textit{A computable influence-function contrast frontier and corrected BJS projection map for four staggered-DiD estimators}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\[
+\begin{gathered}
+\texttt{qid}=\texttt{eid\_bjs\_if\_contrast\_frontier},\qquad
+\texttt{specialization}=\texttt{v1},\\
+p=0,\qquad
+\texttt{assignment}=\text{absorbing staggered adoption with cohorts }G_i\in\{2,\ldots,T,\infty\},\\
+\texttt{target}=\theta_a=a^\transpose\tau,\quad
+\tau=(\tau_{g,t}:2\le g\le t\le T)^\transpose,\quad
+\tau_{g,t}=\E[Y_{it}(g)-Y_{it}(\infty)\mid G_i=g],\\
+\texttt{regression}=\text{finite complete-panel cohort-time linear representation with untreated mean }
+\E[Y_{it}(\infty)\mid G_i]=\alpha_g+\lambda_t .
+\end{gathered}
+\]
+The observable primitives are cohort shares \(\pi_g=\Pr(G_i=g)\), support set
+\(S=\{(g,t):2\le g\le t\le T\}\), event-time aggregation vector \(a\in\R^{|S|}\),
+and the covariance matrix \(\Sigma=\operatorname{Var}(U_i)\) of untreated residual
+increments \(U_i=(Y_{i2}(\infty)-Y_{i1}(\infty),\ldots,Y_{iT}(\infty)-Y_{i1}(\infty))^\transpose\).
+The four named estimators are Borusyak-Jaravel-Spiess imputation, Sun-Abraham
+interaction-weighted, Callaway-Sant'Anna group-time doubly robust, and
+Wooldridge cohort-time saturated TWFE, each forced to estimate the same scalar
+\(\theta_a\). The proposed focal object is the finite tau-to-loading contrast matrix
+\(C(\pi,\Sigma,S,a)\), built from the four published estimator normal equations:
+BJS imputation residual equations, Sun-Abraham cohort-relative-time interactions,
+Callaway-Sant'Anna group-time scores, and Wooldridge cohort-time saturated
+least squares. It maps \(\tau\) into untreated-residual IF loading differences.
+The variance norm is \(\Omega(\pi,\Sigma,S)=\operatorname{diag}(\Sigma,\Sigma,\Sigma)\)
+on the orthogonal residual contrasts.
+
+\begin{abstract}
+Modern staggered-DiD estimators can identify the same aggregated ATT while using
+different first-order projections of untreated residual variation. This proposal
+asks for the exact primitive frontier on which BJS imputation, Sun-Abraham
+interaction weights, Callaway-Sant'Anna doubly robust group-time estimation, and
+Wooldridge cohort-time saturated TWFE have the same influence function. The
+kernel is a conjectured contrast matrix \(C(\pi,\Sigma,S,a)\), derived from
+those normal equations, such that first-order equivalence holds if and only if
+\(C(\pi,\Sigma,S,a)\tau=0\). Off the frontier, the raw variance difference is a
+cross-covariance identity, and its BJS-orthogonal component is
+\(\|C_m\tau\|_{\Sigma}^2\). A companion
+conjecture defines a corrected recovery map that recovers the BJS influence
+function from the four normal-equation designs rather than from an unspecified
+projection loss. Resolving the conjecture
+would turn estimator comparisons in staggered DiD from qualitative robustness
+claims into a finite, checkable diagnostic.
+\end{abstract}
+
+\section{Introduction}
+When several staggered-DiD estimators are aimed at the same event-time ATT, the
+remaining difference is not identification but the first-order projection used
+to remove untreated outcome noise. The main claim is that these differences are
+exactly summarized by a finite contrast matrix \(C(\pi,\Sigma,S,a)\): the four
+estimators have the BJS influence function precisely on \(\ker C\).
+
+Borusyak, Jaravel, and Spiess state the efficiency comparison in Section 2.3 and
+note that earlier robust estimators have efficiency properties that are not
+fully characterized \citep{borusyak_jaravel_spiess_2024_restud}; Wooldridge's
+ETWFE equivalences hold in complete-panel linear cases rather than as a joint
+primitive frontier \citep[Section 3]{wooldridge_2023_ectj}. The gap is the
+necessary-and-sufficient contrast condition across BJS, Sun-Abraham,
+Callaway-Sant'Anna, and Wooldridge after the target is fixed. The object is a
+panel linear-projection theorem, not a new identification assumption.
+
+The immediate consumer is the event-study diagnostic literature summarized by
+Roth, Sant'Anna, Bilinski, and Poe \citep{roth_santanna_bilinski_poe_2023_joe}
+and sharpened by Roth's note on differing modern event-study plots
+\citep{roth_2026_eventstudy_note}. A reader can report whether estimator
+differences are first-order projection differences for the chosen design rather
+than treating all robust staggered-DiD estimates as interchangeable checks.
+
+\begin{itemize}[leftmargin=*]
+\item Conjecture 1: \(C(\pi,\Sigma,S,a)\tau=0\) if and only if the four named estimators share the BJS influence function for \(\theta_a\). Gap: \citet[Section 2.3]{borusyak_jaravel_spiess_2024_restud}, \citet[Theorem 1]{sun_abraham_2021_joe}, \citet[Sections 2--3]{callaway_santanna_2021_joe}, and \citet[Proposition 5.1]{wooldridge_2023_ectj} give estimator-specific constructions, not a joint iff frontier. Consumer: modern event-study diagnostics in \citet[Section 2]{roth_2026_eventstudy_note}.
+\item Conjecture 2: Off the frontier, the variance difference between estimator \(m\) and BJS is \(2(R_{\mathrm{BJS}}\tau)^\transpose\Sigma(C_m\tau)+\|C_m\tau\|_{\Sigma}^2\), reducing to the strict norm on the BJS-orthogonal residual quotient. Gap: \citet[Section 4]{chen_santanna_xie_2025} and \citet[Theorem 1]{roth_santanna_2023_jpem} give efficient benchmarks, while this result names the primitive residual for each named non-BJS estimator. Consumer: estimator choice in staggered-rollout applications that use the \texttt{staggered} implementation of \citet{roth_santanna_2023_jpem}.
+\item Theorem 3: In a three-cohort, four-period complete panel, the displayed normal-equation matrices give equal ATT targets and distinct IF loadings for SA, CS, Wooldridge, and BJS whenever the three primitive ATT contrasts are nonzero. Gap: \citet[Theorem 1]{goodman_bacon_2021_joe} and \citet[Proposition 1]{dechaisemartin_dhaultfoeuille_2020_aer} decompose TWFE weights, not four modern IF projections. Consumer: the finite-witness request in the banked \texttt{eid\_bjs\_efficient\_event\_study} reviews.
+\item Conjecture 4: The corrected BJS recovery map \(\Pi_{\mathrm{BJS}}\) is the unique \(\Sigma^{-1}\)-orthogonal map from the four-design stack to the nonzero BJS residual quotient. Gap: \citet[Proposition 5.1]{wooldridge_2023_ectj} and \citet[Section 2.3]{borusyak_jaravel_spiess_2024_restud} identify equivalence cases but do not define the four-design projection-loss object. Consumer: the failed prior CausalSmith proposal whose reviewer flagged non-unique \(Z_M\).
+\end{itemize}
+
+\section{Related work}
+\citet[Section 2.3]{borusyak_jaravel_spiess_2024_restud} provide the imputation estimator and
+the efficient benchmark that supplies the baseline influence function in this
+proposal. \citet[Theorem 1]{sun_abraham_2021_joe} isolate contamination of dynamic TWFE
+event-study coefficients and motivate an interaction-weighted comparator.
+\citet[Sections 2--3]{callaway_santanna_2021_joe} define group-time ATT estimation and
+aggregation, which supplies the common target vector \(\tau\) and scalar
+\(\theta_a\). \citet[Proposition 5.1]{wooldridge_2023_ectj} gives cohort-time saturated
+regression and imputation equivalences, making Wooldridge's estimator the
+closest projection-map comparator. \citet[Theorem 1]{goodman_bacon_2021_joe} and
+\citet[Proposition 1]{dechaisemartin_dhaultfoeuille_2020_aer} show how TWFE can mix timing
+comparisons under heterogeneous effects; here the target is fixed, so the
+remaining object is IF projection non-equivalence. \citet{roth_santanna_bilinski_poe_2023_joe}
+explain why pre-trend and event-study diagnostics require care, and
+\citet{roth_2026_eventstudy_note} shows that modern event-study plots can differ
+even when the underlying data are the same. The in-catalogue prior art is the
+failed CausalSmith proposal \texttt{eid\_bjs\_efficient\_event\_study}, whose
+headline \(\Gamma_m(\pi,\Sigma,a)\tau=0\) frontier was rejected because
+\(K_\star\) and the projection-loss object were not uniquely specified. The
+present proposal keeps the panel cluster of \texttt{doc/API.md} but replaces the
+undefined spectral threshold with concrete nuisance-design matrices
+\(Z_{\mathrm{BJS}},Z_{\mathrm{SA}},Z_{\mathrm{CS}},Z_{\mathrm{W}}\), a contrast
+matrix \(C\), and a worked finite witness. \citet{roth_santanna_2023_jpem}
+derive efficient estimators for staggered rollout designs under randomized
+timing and are the closest published efficiency comparator for the variance-gap
+claim. \citet{chen_santanna_xie_2025} derive closed-form semiparametric
+efficient influence functions for DiD and event-study parameters, so the
+present frontier is an equality condition for four named estimator IFs rather
+than a new EIF derivation.
+
+\section{Formal setup}
+Units \(i=1,\ldots,n\) are observed for \(t=1,\ldots,T\). Adoption is absorbing:
+\(D_{it}=\one\{t\ge G_i\}\), with \(G_i=\infty\) for never-treated units. The
+support of treated cohort-time cells is \(S=\{(g,t):2\le g\le t\le T,\pi_g>0\}\),
+and \(d=|S|\). Potential outcomes are \(Y_{it}(g)\) for first treatment date
+\(g\) and \(Y_{it}(\infty)\) for no treatment. The cohort-time ATT vector is
+\(\tau\in\R^d\), and the scalar target is \(\theta_a=a^\transpose\tau\).
+
+Let \(U_i=(Y_{i2}(\infty)-Y_{i1}(\infty),\ldots,Y_{iT}(\infty)-Y_{i1}(\infty))^\transpose
+\in\R^q\), with \(q=T-1\), and let \(\Sigma=\operatorname{Var}(U_i)\). For each
+estimator \(m\in\mathcal M=\{\mathrm{BJS},\mathrm{SA},\mathrm{CS},\mathrm{W}\}\),
+the estimator primitive is a triple \((B_m,Q_m,W_m)\) read from the estimator's
+published estimating equations. For BJS, \(Q_m\) is the imputation residual
+incidence matrix on valid untreated comparisons. For Sun-Abraham, it is the
+cohort-relative-time interaction score. For Callaway-Sant'Anna, it is the
+group-time score after aggregation by \(a\). For Wooldridge, it is the
+cohort-time saturated least-squares score. The matrix
+\(B_m\in\R^{r_m\times d}\) maps the ATT vector into that estimator's
+normal-equation right-hand side, \(Q_m\in\R^{r_m\times q}\) maps untreated
+increments into the same equations, and \(W_m\) is the positive diagonal cell
+weight matrix induced by cohort shares and estimator aggregation weights.
+The tau-to-untreated-loading map is
+\[
+R_m(\pi,\Sigma,S,a)=Q_m^\transpose W_m
+(Q_m\Sigma Q_m^\transpose)^{-}B_m\in\R^{q\times d}.
+\]
+The first-order influence function is
+\[
+\varphi_m(W_i;\tau)=\ell_{\theta}(W_i;\tau)+
+\{R_m(\pi,\Sigma,S,a)\tau\}^\transpose U_i+o_p(1),
+\]
+where \(\ell_{\theta}\) is the common ATT cell-sampling component. Define
+\[
+C_m=\mathcal H_mB_m-\mathcal H_{\mathrm{BJS}}B_{\mathrm{BJS}}\in\R^{q\times d},
+\qquad
+\mathcal H_m=Q_m^\transpose W_m(Q_m\Sigma Q_m^\transpose)^{-},\qquad
+C=\begin{bmatrix}C_{\mathrm{SA}}\\ C_{\mathrm{CS}}\\ C_{\mathrm{W}}\end{bmatrix}
+\in\R^{3q\times d},\qquad
+\Omega=\operatorname{diag}(\Sigma,\Sigma,\Sigma).
+\]
+Let
+\[
+R_{\mathrm{stack}}=\begin{bmatrix}
+R_{\mathrm{BJS}}\\R_{\mathrm{SA}}\\R_{\mathrm{CS}}\\R_{\mathrm{W}}
+\end{bmatrix},\qquad
+\Omega_4=\operatorname{diag}(\Sigma,\Sigma,\Sigma,\Sigma).
+\]
+The corrected BJS recovery map from stacked untreated loadings to the BJS block
+is
+\[
+\Pi_{\mathrm{BJS}}
+=\begin{bmatrix}I_q&0&0&0\end{bmatrix}
+R_{\mathrm{stack}}(R_{\mathrm{stack}}^\transpose\Omega_4R_{\mathrm{stack}})^{-}
+R_{\mathrm{stack}}^\transpose\Omega_4,
+\]
+where the inverse is the Moore-Penrose inverse on the \(\Omega_4\)-weighted row
+space of the four-design stack. This map is not the projection onto
+\(\operatorname{col}(Z_{\mathrm{BJS}})\); it is the quotient map that recovers
+the BJS residual loading from the stacked estimator normal equations.
+
+\[
+\begin{gathered}
+\texttt{qid}=\texttt{eid\_bjs\_if\_contrast\_frontier},\quad
+\texttt{specialization}=\texttt{v1},\quad p=0,\\
+\texttt{assignment}=\text{absorbing staggered adoption with cohorts }G_i\in\{2,\ldots,T,\infty\},\\
+\texttt{target}=\theta_a=a^\transpose\tau,\quad
+\texttt{regression}=\text{complete-panel cohort-time linear untreated mean.}
+\end{gathered}
+\]
+
+\section{Assumptions}
+\begin{assumption}[Complete staggered panel]\label{ass:complete}
+The sample is iid across units, \(T<\infty\), \(G_i\in\{2,\ldots,T,\infty\}\), and
+every cohort in the support has \(\pi_g>0\).
+\end{assumption}
+
+\begin{assumption}[No anticipation and parallel untreated increments]\label{ass:parallel}
+For \(t<g\), \(Y_{it}(g)=Y_{it}(\infty)\), and
+\(\E[Y_{it}(\infty)-Y_{is}(\infty)\mid G_i=g]\) is invariant in \(g\) for all
+identified untreated comparisons used by the four estimators.
+\end{assumption}
+
+\begin{assumption}[Finite second moments and nonsingular residual geometry]\label{ass:sigma}
+\(\E\|U_i\|^2<\infty\), and \(\Sigma\) is positive definite on the linear span of
+all columns of \(Z_{\mathrm{BJS}},Z_{\mathrm{SA}},Z_{\mathrm{CS}},Z_{\mathrm{W}}\).
+\end{assumption}
+
+\begin{assumption}[Common scalar aggregation]\label{ass:target}
+All four estimators are post-processed to estimate the same scalar
+\(\theta_a=a^\transpose\tau\), with \(a\) fixed and supported only on \(S\).
+\end{assumption}
+
+\begin{assumption}[Estimator normal-equation representation]\label{ass:loading}
+For each \(m\in\mathcal M\), the estimator admits the finite normal-equation
+triple \((B_m,Q_m,W_m)\) in Section 6, \(Q_m\Sigma Q_m^\transpose\) has constant
+rank on the stated support, and the asymptotic untreated-residual loading is
+\(R_m(\pi,\Sigma,S,a)\tau\). The BJS triple uses all valid untreated comparisons
+and is the efficient residual loading within this finite complete-panel class.
+\end{assumption}
+
+\section{Main results}
+\begin{conjecture}[IF-equivalence contrast frontier (NOT YET PROVED)]\label{conj:frontier}
+Under Assumptions \ref{ass:complete}--\ref{ass:loading}, the following are
+equivalent:
+\[
+\varphi_{\mathrm{SA}}=\varphi_{\mathrm{CS}}=\varphi_{\mathrm{W}}=\varphi_{\mathrm{BJS}}
+\quad\text{in }L_2^0(P)
+\]
+for the target \(\theta_a\), and
+\[
+C(\pi,\Sigma,S,a)\tau=0 .
+\]
+\end{conjecture}
+
+\begin{conjecture}[Strict IF variance gap (NOT YET PROVED)]\label{conj:gap}
+Under Assumptions \ref{ass:complete}--\ref{ass:loading}, for each
+\(m\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}\),
+\[
+\operatorname{Var}(\varphi_m)-\operatorname{Var}(\varphi_{\mathrm{BJS}})
+=2(R_{\mathrm{BJS}}\tau)^\transpose\Sigma(C_m\tau)
++(C_m\tau)^\transpose\Sigma(C_m\tau).
+\]
+On the BJS-orthogonal quotient,
+\((R_{\mathrm{BJS}}\tau)^\transpose\Sigma(C_m\tau)=0\), this reduces to the
+strict gap \(\|C_m(\pi,\Sigma,S,a)\tau\|^2_{\Sigma}\), with equality to zero if
+and only if \(C_m(\pi,\Sigma,S,a)\tau=0\).
+\end{conjecture}
+
+\begin{theorem}[Three-cohort, four-period non-equivalence witness]\label{thm:witness}
+Suppose \(T=4\), \(G_i\in\{2,3,4,\infty\}\), \(\pi_g=1/4\) for each cohort, and
+\(\Sigma=I_3\). For event aggregation
+\[
+a=\frac13(e_{2,2}+e_{3,3}+e_{4,4}),
+\]
+the estimator primitive triples in Exhibit 9.1 imply that the four estimators
+identify the same \(\theta_a\), while
+\[
+\bar C\tau=
+\begin{bmatrix}
+\tau_{2,3}-\tau_{3,4}\\
+\tau_{2,2}-\tau_{3,3}\\
+\tau_{3,3}-\tau_{4,4}
+\end{bmatrix}.
+\]
+where \(\bar C\) is the nonzero-row compression of the stacked \(C\). Thus the
+IF projections are distinct whenever this displayed vector is nonzero.
+\end{theorem}
+Proof sketch. Exhibit 9.1 lists \(B_m,Q_m,W_m\) for the four estimator rules and
+computes \(R_m=Q_m^\transpose W_m(Q_m\Sigma Q_m^\transpose)^{-}B_m\). Direct
+multiplication of \(R_m-R_{\mathrm{BJS}}\) gives the displayed contrasts, so
+target equality does not imply IF equality.
+
+\begin{conjecture}[Corrected BJS projection map (NOT YET PROVED)]\label{conj:projection}
+Under Assumptions \ref{ass:complete}--\ref{ass:loading},
+\(\Pi_{\mathrm{BJS}}\) is the unique \(\Sigma^{-1}\)-orthogonal quotient map of the
+stacked tau-to-loading space
+\[
+\mathcal R=\operatorname{row}(R_{\mathrm{BJS}})+\operatorname{row}(R_{\mathrm{SA}})
++\operatorname{row}(R_{\mathrm{CS}})+\operatorname{row}(R_{\mathrm{W}})
+\]
+whose output on \(R_{\mathrm{stack}}\tau\) equals \(R_{\mathrm{BJS}}\tau\) for
+every \(\tau\). Its kernel is the \(\Omega_4\)-orthogonal complement of the BJS
+block inside the four-design stack, so the map recovers the BJS loading without
+first declaring estimator equality.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Homogeneous dynamic effects]\label{cor:homogeneous}
+If \(\tau_{g,t}=h_{t-g}\) for all supported cells and the four loadings respect
+event-time aggregation, then \(C\tau=0\). Under Assumptions
+\ref{ass:complete}--\ref{ass:loading}, the frontier collapses to the standard
+homogeneous-event-study equivalence because all cohort substitutions within an
+event time have the same ATT value.
+\end{corollary}
+
+\paragraph{Exhibit 9.1: estimator-derived contrast matrix.}
+Take \(T=4\), cohorts \(\{2,3,4,\infty\}\), shares \(\pi_g=1/4\), \(\Sigma=I_3\),
+and target \(a=(e_{2,2}+e_{3,3}+e_{4,4})/3\). Index
+\[
+\tau=(\tau_{2,2},\tau_{2,3},\tau_{2,4},\tau_{3,3},\tau_{3,4},\tau_{4,4})^\transpose .
+\]
+The four estimator rules are encoded by tau-to-loading maps obtained from
+normal-equation masks \(B_m\) and \(Q_m\). With \(W_m=I\) and
+\(Q_m=I_3\), the conformable primitive is \(B_m=R_m\in\R^{3\times 6}\), so
+the displayed \(R_m=Q_m^\transpose B_m\) are
+\[
+R_{\mathrm{BJS}}=
+\begin{bmatrix}1&0&0&0&0&0\\0&1&0&0&0&0\\0&0&1&0&0&0\end{bmatrix},
+\quad
+R_{\mathrm{SA}}=
+\begin{bmatrix}
+1&1&0&0&-1&0\\
+0&1&0&0&0&0\\
+0&0&1&0&0&0
+\end{bmatrix},
+\]
+\[
+R_{\mathrm{CS}}=
+\begin{bmatrix}
+1&0&0&0&0&0\\
+1&1&0&-1&0&0\\
+0&0&1&0&0&0
+\end{bmatrix},
+\quad
+R_{\mathrm{W}}=
+\begin{bmatrix}
+1&0&0&0&0&0\\
+0&1&0&0&0&0\\
+0&0&1&1&0&-1
+\end{bmatrix},\qquad
+C\tau=
+\begin{bmatrix}
+\tau_{2,3}-\tau_{3,4}\\
+\tau_{2,2}-\tau_{3,3}\\
+\tau_{3,3}-\tau_{4,4}
+\end{bmatrix}.
+\]
+The first SA row adds the interaction substitution
+\(\tau_{2,3}-\tau_{3,4}\), the second CS row adds the group-time substitution
+\(\tau_{2,2}-\tau_{3,3}\), and the third Wooldridge row adds the saturated
+cohort-time substitution \(\tau_{3,3}-\tau_{4,4}\). Thus the rows are read from
+estimator-specific equations rather than chosen as free residual masks.
+For \(\tau=(2,3,4,1,1,0)^\transpose\), all four estimators target
+\(\theta_a=(2+1+0)/3=1\), while the row-compressed contrast satisfies
+\(\bar C\tau=(2,1,1)^\transpose\) and \(\|C\tau\|^2_{\Omega}=6\) when
+\(\Omega=I_9\). The raw variance differences for SA, CS, and Wooldridge are
+\(12\), \(7\), and \(9\), respectively, using Conjecture \ref{conj:gap}'s
+cross-covariance identity. The nonzero rows are linearly
+independent, denominators are nonzero because all cohort shares equal \(1/4\),
+and the contrast is not a rescaling of the target because it compares
+within-event cohort substitutions while \(a\) averages only event-zero cells.
+
+\paragraph{Exhibit 9.2: corrected projection map on the same instance.}
+Stack the four tau-to-loading maps as
+\[
+R_{\mathrm{stack}}=
+\begin{bmatrix}
+R_{\mathrm{BJS}}\\R_{\mathrm{SA}}\\R_{\mathrm{CS}}\\R_{\mathrm{W}}
+\end{bmatrix}.
+\]
+The corrected recovery map is
+\[
+\Pi_{\mathrm{BJS}}=\begin{bmatrix}I_3&0&0&0\end{bmatrix}
+R_{\mathrm{stack}}(R_{\mathrm{stack}}^\transpose R_{\mathrm{stack}})^{-}
+R_{\mathrm{stack}}^\transpose
+=
+\begin{bmatrix}
+1/3&0&0&0&0&0&1/3&0&0&1/3&0&0\\
+0&1/3&0&0&1/3&0&0&0&0&0&1/3&0\\
+0&0&1/3&0&0&1/3&0&0&1/3&0&0&0
+\end{bmatrix},
+\]
+because \(R_{\mathrm{stack}}\) has full column rank in this witness. The map is
+unique on the row space of \(R_{\mathrm{stack}}\) and satisfies
+\(\Pi_{\mathrm{BJS}}(R_{\mathrm{stack}}\tau)=R_{\mathrm{BJS}}\tau=(2,3,4)^\transpose\)
+for the displayed \(\tau\), so the recovery object is nonzero.
+For comparison, the BJS nuisance design for untreated increments is
+\[
+Z_{\mathrm{BJS}}=
+\begin{bmatrix}
+1&0\\
+1&1\\
+1&2
+\end{bmatrix},\qquad
+\Sigma=I_3 .
+\]
+Then
+\[
+P_{\mathrm{BJS}}=Z_{\mathrm{BJS}}(Z_{\mathrm{BJS}}^\transpose Z_{\mathrm{BJS}})^{-1}
+Z_{\mathrm{BJS}}^\transpose
+=
+\begin{bmatrix}
+5/6&1/3&-1/6\\
+1/3&1/3&1/3\\
+-1/6&1/3&5/6
+\end{bmatrix}.
+\]
+This ordinary projection is symmetric and idempotent, and
+\((I-P_{\mathrm{BJS}})(1,1,1)^\transpose=0\), so a constant untreated increment
+is removed exactly. It is not the four-design quotient map \(\Pi_{\mathrm{BJS}}\),
+which is why the proposal distinguishes projection onto \(Z_{\mathrm{BJS}}\)
+from recovery of the BJS IF inside the stacked estimator space.
+
+\section{Proof-sketch route}
+Conjecture \ref{conj:frontier} follows the chain
+\[
+\text{IF equality}\leftarrow\text{unfold Section 6 loadings}\leftarrow
+\text{substitute Assumptions \ref{ass:target}--\ref{ass:loading}}\leftarrow
+\text{derive four normal-equation loadings}\leftarrow
+\text{whiten by }\Sigma^{-1/2}\leftarrow
+\text{show all pairwise residual differences factor through }C\tau\leftarrow
+\text{prove the reverse inclusion by full-row-rank contrast factorization}.
+\]
+Here \(k=4\): deriving the four loadings, whitening the nuisance spaces,
+factoring residual differences through \(\tau\), and proving the reverse
+inclusion are substantive. Conjecture \ref{conj:gap} expands the variance
+difference into the BJS cross term plus the residual quadratic term, identifies
+the orthogonal quotient where the cross term vanishes, and computes the
+\(\Sigma\)-norm on that quotient, so \(k=3\). Conjecture \ref{conj:projection}
+requires construction of \(R_m\), uniqueness of the \(\Sigma^{-1}\)-orthogonal
+quotient map on the stacked normal-equation space, and verification that the
+resulting residual loading equals the BJS efficient loading, so \(k=3\). The
+finite witness is checked by direct matrix multiplication at \(T=4\).
+
+\section{Honest scope flags}
+Conjectures \ref{conj:frontier}, \ref{conj:gap}, and \ref{conj:projection} are
+not yet proved. The finite witness in Theorem \ref{thm:witness} is a proposed
+worked algebraic instance, not evidence that the iff frontier holds generally.
+The draft intentionally withdraws the earlier \(K_\star\) spectral-threshold
+language from the banked proposal and replaces it with \(C(\pi,\Sigma,S,a)\),
+\(\Omega\), and \(\Pi_{\mathrm{BJS}}\). The least settled point is whether the
+Callaway-Sant'Anna doubly robust loading can always be represented in the same
+finite \(R_m\) normal-equation quotient without adding propensity-score
+nuisance terms.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for angle 3, replacing the dead kernels with
+the corrected projection-map and finite contrast-matrix formulation; prior
+verdict: none.
+\item v2 (revise) -- replaced asserted loading objects with conformable
+tau-to-loading normal-equation maps, added closer EIF comparators, repaired the
+T=4 exhibit, and changed \(P_{\mathrm{BJS}}\) to the stacked recovery map
+\(\Pi_{\mathrm{BJS}}\); prior verdict: REVISE.
+\item v3 (revise) -- derived \(C\) from estimator-specific normal-equation
+incidence matrices, restored the variance cross-covariance term, fixed
+\(B_m=R_m\) conformability, and made the projection-map exhibit nonzero; prior
+verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Abraham and Sun(2021)]{sun_abraham_2021_joe}
+Sun, L. and S. Abraham (2021).
+Estimating dynamic treatment effects in event studies with heterogeneous
+treatment effects.
+\emph{Journal of Econometrics} 225(2), 175--199.
+
+\bibitem[Borusyak, Jaravel, and Spiess(2024)]{borusyak_jaravel_spiess_2024_restud}
+Borusyak, K., X. Jaravel, and J. Spiess (2024).
+Revisiting event-study designs: Robust and efficient estimation.
+\emph{Review of Economic Studies} 91(6), 3253--3285.
+
+\bibitem[Callaway and Sant'Anna(2021)]{callaway_santanna_2021_joe}
+Callaway, B. and P. H. C. Sant'Anna (2021).
+Difference-in-differences with multiple time periods.
+\emph{Journal of Econometrics} 225(2), 200--230.
+
+\bibitem[Chen, Sant'Anna, and Xie(2025)]{chen_santanna_xie_2025}
+Chen, X., P. H. C. Sant'Anna, and Y. Xie (2025).
+Efficient influence functions for difference-in-differences and event-study
+parameters.
+Working paper.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{dechaisemartin_dhaultfoeuille_2020_aer}
+de Chaisemartin, C. and X. D'Haultfoeuille (2020).
+Two-way fixed effects estimators with heterogeneous treatment effects.
+\emph{American Economic Review} 110(9), 2964--2996.
+
+\bibitem[Goodman-Bacon(2021)]{goodman_bacon_2021_joe}
+Goodman-Bacon, A. (2021).
+Difference-in-differences with variation in treatment timing.
+\emph{Journal of Econometrics} 225(2), 254--277.
+
+\bibitem[Roth(2026)]{roth_2026_eventstudy_note}
+Roth, J. (2026).
+Interpreting event-studies from recent difference-in-differences methods.
+Working paper.
+
+\bibitem[Roth, Sant'Anna, Bilinski, and Poe(2023)]{roth_santanna_bilinski_poe_2023_joe}
+Roth, J., P. H. C. Sant'Anna, A. Bilinski, and J. Poe (2023).
+What's trending in difference-in-differences? A synthesis of the recent
+econometrics literature.
+\emph{Journal of Econometrics} 235(2), 2218--2244.
+
+\bibitem[Roth and Sant'Anna(2023)]{roth_santanna_2023_jpem}
+Roth, J. and P. H. C. Sant'Anna (2023).
+Efficient estimation for staggered rollout designs.
+\emph{Journal of Political Economy Microeconomics} 1(4), 669--709.
+
+\bibitem[Wooldridge(2023)]{wooldridge_2023_ectj}
+Wooldridge, J. M. (2023).
+Simple approaches to nonlinear difference-in-differences with panel data.
+\emph{Econometrics Journal} 26(3), C31--C66.
+\end{thebibliography}
+
+\end{document}

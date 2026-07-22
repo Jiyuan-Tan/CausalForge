@@ -1,0 +1,410 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_ordinal\_principal\_strata, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to a Q1..Q6 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    If it is a free-form `(qid, specialization)`, define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_ordinal\_principal\_strata} / \texttt{v1}%
+  \\ \large\textit{Sharp ordinal principal-stratum bounds under adjacent principal-score divergence}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+qid=pid_ordinal_principal_strata
+specialization=v1
+anchor_cluster=Partial identification
+observable_distribution_P=law of (Z,S,Y,X), where Z in {0,1} is randomized,
+  S in {0,...,K-1} is the observed ordinal post-treatment intermediate,
+  Y in finite support Ygrid subset [0,1], X in finite support Xgrid, K>=3 unless
+  a theorem explicitly specializes to K=2
+parameter_theta=theta_g = mu_1g - mu_0g for a fixed principal stratum
+  g=(s0,s1), with mu_zg=E[Y(z)|G=g] and G=(S(0),S(1))
+identifying_restrictions=randomization, consistency, positivity, known covariate-
+  conditional ordinal principal scores pi_g(x)=P(G=g|X=x), and Gamma-adjacent
+  covariate-conditional principal-score divergence for latent posterior stratum
+  weights inside each observed (Z=z,S=k,X=x,Y=y) cell
+bounding_functional=L_g(P,pi,Gamma), U_g(P,pi,Gamma), the sharp lower and upper
+  values of theta_g obtained by optimizing mu_1g(q)-mu_0g(q) over posterior
+  weights q_{z,g}(x,y) satisfying principal-score calibration to the supplied
+  pi, simplex constraints, and all adjacent odds-ratio divergence inequalities
+\end{verbatim}
+
+\begin{abstract}
+Principal ignorability turns latent principal strata into a principal-score reweighting problem, but it is rarely credible when the post-treatment intermediate is ordinal and has three or more levels.  This proposal asks for sharp partial identification of principal-stratum-specific average causal effects when violations of principal ignorability are bounded by an adjacent-stratum odds-ratio divergence, conditional on covariates and the observed ordinal cell.  The kernel claim is that the \(K\ge 3\) ordinal problem is not a cosmetic extension of the binary case: adjacent divergence constraints couple a whole chain of latent posterior weights, so the sharp identified set is a calibrated chain-flow linear program depending on both the observed law \(P\) and the supplied principal-score vector \(\pi\).  The proposal deliberately labels that chain sharpness and the nonrectangular middle-stratum compatibility phenomenon as a conjecture, while recording the principal-ignorability collapse and the \(K=2\) reduction as routine theorems.  A full-cell-scaled edgewise binary relaxation \(\mathcal B_{\mathrm{bin}}(P,\pi,\Gamma;g)\) is retained only as a diagnostic outer bound for what is lost by solving adjacent pairs separately.  Resolving the conjecture would give principal-score sensitivity analyses a finite, checkable target for ordinal intercurrent events in clinical trials and ordinal mediators in social-science experiments.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Principal stratification is attractive precisely because it defines effects inside subpopulations indexed by potential values of a post-treatment intermediate variable, not by the post-treatment value that happens to be observed.  In modern applications the intermediate is often ordinal: disease severity, adherence level, rescue-medication intensity, infection severity, or educational attainment.  The binary principal-score literature gives clean formulas under principal ignorability and binary sensitivity analyses when principal ignorability is relaxed, but an ordinal intermediate creates many latent strata inside the same observed cell.  The scientific question is whether a bounded, local departure from principal ignorability can be made sharp without discarding the ordinal structure through dichotomization.
+
+\paragraph{The main finding (proposed).}
+Theorem~\ref{thm:pi-collapse} states the calibration result: when the divergence parameter is \(\Gamma=1\) and the positive principal-score strata form a connected ordinal chain in each observed cell, the partial-identification program collapses to the usual principal-score point-identification formula for each \(\theta_g\).  Theorem~\ref{thm:binary-reduction} states the \(K=2\) sanity check: every observed cell has at most one latent adjacent pair, so the feasible set is the standard one-pair odds-ratio sensitivity set.  Conjecture~\ref{conj:ordinal-chain-sharpness} is the novelty-bearing statement: for \(K\ge 3\), the sharp identified set is the value interval of one calibrated adjacent-chain linear program in \((P,\pi,\Gamma)\), and the feasible posterior polytope has genuinely ordinal nonrectangular facets created by a shared middle stratum.  As a diagnostic consequence, there is an open set of \((P,\pi)\) where the full-cell-scaled edgewise binary relaxation \(\mathcal B_{\mathrm{bin}}(P,\pi,\Gamma;g)\) is a strict outer bound.
+
+\paragraph{What is new.}
+The novelty kernel is the ordinal chain coupling induced by adjacent principal-score divergence.  \citet{DingLu2017} and \citet{JiangYangDing2022} use principal scores to identify principal causal effects under principal ignorability, while \citet{NguyenStuartScharfsteinOgburn2024} and \citet{WuAntonelli2024} relax principal ignorability in binary or low-dimensional principal-strata settings.  \citet{VanderWeele2011} explicitly warns that continuous or ordinal intermediates are often dichotomized in principal-stratification practice, and \citet{WangZhangMealliBornkamp2023} gives a binary discontinuation/intercurrent-event sensitivity workflow for principal ignorability.  This proposal does not claim that Wang et al.\ use an ordinal edgewise method and does not refute a named ordinal estimator.  The field-level claim is positive: the ordinal posterior chain has a sharp finite LP with compatibility facets that disappear when adjacent two-level problems are solved independently.
+
+\paragraph{How it positions in the literature.}
+The proposal lives in partial identification and sensitivity analysis for principal stratification.  It is downstream from the Frangakis--Rubin definition of principal strata, the principal-score identification program, and recent sharp sensitivity-bound work for unmeasured confounding.  It is adjacent to ordinal and continuous principal-stratification work, but it differs by treating the ordinal levels as a finite graph that constrains the latent principal-stratum posterior, rather than as a continuous surface or a parametric latent-class model.  It also differs from panel and DID partial-identification proposals in this repository: the latent object here is a principal stratum \(G=(S(0),S(1))\), not an untreated-trend coordinate or a projection nuisance.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is ICH E9(R1)-style principal-stratum estimand analysis for intercurrent events in clinical trials, as represented by \citet{WangZhangMealliBornkamp2023}: analysts often report a principal-stratum strategy and then need sensitivity analyses for principal ignorability.  If Conjecture~\ref{conj:ordinal-chain-sharpness} resolves favorably, those analyses can keep ordinal intercurrent-event severity levels instead of collapsing them to responder/nonresponder or discontinued/not-discontinued indicators.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report the adjacent-chain bound for ordinal principal strata, or explicitly state when they are replacing the ordinal compatibility polytope by a coarser binary analysis, because the shared middle-stratum constraints can change the sharp identified interval.
+
+\section{Related work}
+\citet{FrangakisRubin2002} introduced principal stratification for post-treatment variables and defined principal effects as comparisons within strata indexed by joint potential intermediate values; this proposal keeps that estimand and changes only the identifying restrictions.  \citet{VanderWeele2011} surveys uses and limitations of principal stratification, notes that continuous or ordinal intermediates are often dichotomized in practice, and warns that such dichotomization can mislead; the present proposal turns that warning into the formal comparator \(\mathcal B_{\mathrm{bin}}(P,\pi,\Gamma;g)\), not into a claim that VanderWeele proposed an edgewise ordinal estimator.  \citet{DingLu2017} develop principal stratification analysis using principal scores and principal ignorability; Theorem~\ref{thm:pi-collapse} is the exact \(\Gamma=1\) corner case of that strategy.  \citet{JiangYangDing2022} derive multiply robust principal-score estimators under principal ignorability in observational studies; this proposal treats their point-identified estimand as the sensitivity baseline rather than the endpoint.
+
+\citet{ForastiereMatteiDing2018} connect principal ignorability to mediation analysis and clarify how principal stratification avoids cross-world extrapolation for some targets; this proposal uses the same principal-strata target but weakens the ignorability condition.  \citet{NguyenStuartScharfsteinOgburn2024} propose sensitivity analyses for principal ignorability violations in a one-sided noncompliance setting with compliers and noncompliers; the closest gap is that their latent-cell geometry is binary, whereas this proposal studies the \(K\ge3\) ordinal chain.  \citet{WuAntonelli2024} show that violations of principal ignorability lead to partial identification even when principal-strata distributions are known; this proposal agrees with that warning and asks for a sharp finite program under a specific adjacent-divergence restriction.  \citet{TongKahanHarhayLi2025} use an odds-ratio sensitivity parameter for semiparametric principal stratification beyond monotonicity; the proposed kernel differs by making ordinal adjacency and sharpness of the nonparametric finite-support identified set the theorem-level object.
+
+\citet{MatteiMealli2011} provide augmented designs and large-sample bounds for principal-strata direct effects; their design-based route motivates why extra information can sharpen principal-strata effects, while this proposal asks what a covariate-conditional adjacent-divergence restriction alone can sharpen.  \citet{LeeDanielsSargent2010} study three treatment arms with ordinal quality-of-life outcomes in the presence of death using principal stratification and sensitivity analysis; they show the applied relevance of ordinal principal-stratum analyses but do not give the adjacent principal-score divergence program proposed here.  \citet{WangZhangMealliBornkamp2023} give a multiple-imputation sensitivity analysis for principal ignorability in a binary discontinuation intercurrent-event stratum; they are cited as a concrete downstream consumer of PI sensitivity analysis, not as an ordinal edgewise binary-collapse method.  \citet{LuJiangDing2024} extend principal stratification to continuous post-treatment variables and note that non-binary intermediates remain technically hard; the present proposal takes the finite ordinal case and uses its graph structure rather than smoothing a continuous stratum surface.  \citet{DornGuoKallus2022} and \citet{FrauenMelnychukFeuerriegel2023} derive sharp bounds for causal sensitivity models under bounded unmeasured confounding; their optimization perspective is the closest sensitivity-bound technology, but their treatment-confounding sensitivity parameter is not a latent ordinal principal-stratum posterior divergence.
+
+In-repository prior art is thin in the live PartialID catalogue.  \texttt{doc/API.md} Section 3 says that \texttt{ThmSmith/PartialID/} is initially empty and will receive \texttt{pid\_*} outputs, so there is no live catalogue proposal whose kernel is an ordinal principal-strata sensitivity theorem.  The closest banked ThmSmith analogue is \texttt{pid\_ordinal\_late\_partial\_defiers\_v1}, especially its Conjecture 1: a shared ordinal middle response path makes adjacent binary IV bounds strictly too wide.  This proposal deliberately imports that compatibility lesson but changes both the latent object and the feasible polytope: the banked proposal couples full ordinal IV response paths such as \(010\) across adjacent instrument rungs, whereas the present proposal couples posterior principal-stratum weights \(q_{z,g}(x,y)\) inside one observed \((Z,S,X,Y)\) cell through adjacent principal-score divergence and calibration to a supplied ordinal principal-score vector \(\pi\).  Thus the common mechanism is ``shared middle ordinal compatibility,'' but the theorem-level claim here is a posterior-chain LP for principal-stratum sensitivity, not an IV response-path bounded-defier interval.  The proposed qid therefore belongs to the PartialID family, not to the Panel Q1--Q6 lattice.
+
+\section{Formal setup}
+The observed law \(P\) is the joint distribution of \((Z,S,Y,X)\).  Treatment \(Z\in\{0,1\}\) is randomized with \(e_z=\Pr(Z=z)\in(0,1)\), the post-treatment intermediate \(S\in\{0,\ldots,K-1\}\) is ordinal, the outcome \(Y\in\mathcal Y\subset[0,1]\) has finite support, and \(X\in\mathcal X\) has finite support.  Potential intermediates are \(S(0)\) and \(S(1)\), and the principal stratum is \(G=(S(0),S(1))\in\mathcal G_K=\{0,\ldots,K-1\}^2\).  For \(g=(g_0,g_1)\), write \(g_z\) for the level of \(S(z)\), \(p_g=\Pr(G=g)\), and \(\pi_g(x)=\Pr(G=g\mid X=x)\).  For each arm \(z\) and observed ordinal level \(k\), the latent strata compatible with the observed cell are
+\[
+  A_z(k)=\{g\in\mathcal G_K:g_z=k\}.
+\]
+The known principal-score weights inside that cell are
+\[
+  w^z_g(x)=\frac{\pi_g(x)}{\sum_{h\in A_z(g_z)}\pi_h(x)}, \qquad g\in A_z(g_z).
+\]
+
+The target is the principal-stratum-specific average causal effect
+\[
+  \theta_g=\mu_{1g}-\mu_{0g}, \qquad
+  \mu_{zg}=\E\{Y(z)\mid G=g\}.
+\]
+Because \(G\) is latent, define a candidate posterior-weight system \(q=\{q_{z,g}(x,y)\}\), where \(q_{z,g}(x,y)\) represents \(\Pr(G=g\mid Z=z,S=g_z,X=x,Y=y)\) under a latent completion of the observed law.  The induced arm-specific stratum mean is
+\[
+  \mu_{zg}(q)=
+  \frac{\E_P\left[\one\{Z=z,S=g_z\}q_{z,g}(X,Y)Y/e_z\right]}{p_g}.
+\]
+Let \(\mathcal Q(P,\pi,\Gamma)\) be the set of all posterior-weight systems satisfying the simplex, principal-score calibration to the supplied vector \(\pi=\{\pi_g(x)\}\), and adjacent divergence restrictions stated in Assumption~\ref{ass:divergence}.  The principal-score vector is part of the bound's input because the observed law \(P\) determines only the arm-specific ordinal margins, not the joint distribution of \(G=(S(0),S(1))\).  The identified set and bounding functional are
+\[
+  \Theta_I(P,\pi,\Gamma;g)=
+  \{\mu_{1g}(q)-\mu_{0g}(q):q\in\mathcal Q(P,\pi,\Gamma)\},
+  \qquad
+  [L_g(P,\pi,\Gamma),U_g(P,\pi,\Gamma)]
+  =
+  [\inf\Theta_I(P,\pi,\Gamma;g),\sup\Theta_I(P,\pi,\Gamma;g)].
+\]
+For the binary-collapse comparator, define \(\mathcal Q_{\mathrm{bin}}(P,\pi,\Gamma)\) as the edgewise relaxation that replaces one cell-level posterior vector \(q_{z,\cdot}(x,y)\) by separate full-cell-scale edge posterior pairs \(r^{e}_{z,\cdot}(x,y)\) for every adjacent edge \(e=\{a,b\}\) of \(A_z(k)\).  For each such edge, \(\mathcal Q^e_{\mathrm{bin}}(P,\pi,\Gamma)\) is the set of full-cell-scale pair weights satisfying \(r^e_{z,a}(x,y),r^e_{z,b}(x,y)\ge0\), \(r^e_{z,a}(x,y)+r^e_{z,b}(x,y)\le1\),
+\[
+  \sum_y r^e_{z,a}(x,y)\Pr(Y=y\mid Z=z,S=k,X=x)
+  =
+  w^z_a(x),
+\]
+the analogous calibration equation for \(b\), and the two-stratum odds-ratio inequality
+\[
+  \Gamma^{-1}r^e_{z,b}(x,y)w^z_a(x)
+  \le r^e_{z,a}(x,y)w^z_b(x)
+  \le \Gamma r^e_{z,b}(x,y)w^z_a(x).
+\]
+Copies sharing a middle stratum across two edges are not required to agree.  If \(E_z(g)\) denotes the set of adjacent edges in \(A_z(g_z)\) incident to \(g\), write
+\[
+  \operatorname{proj}_e \mathcal Q(P,\pi,\Gamma)
+\]
+for the set obtained by retaining only the two coordinates \((q_{z,a},q_{z,b})\) on edge \(e=\{a,b\}\) from a feasible ordinal posterior system.  Then
+\[
+  \mu^e_{zg}(r^e)
+  =
+  \frac{\E_P[\one\{Z=z,S=g_z\}r^e_{z,g}(X,Y)Y/e_z]}{p_g}
+  \quad (e\in E_z(g)).
+\]
+The edgewise lower and upper arm means are
+\[
+  \ell^{\mathrm{bin}}_{zg}
+  =
+  \min_{e\in E_z(g)}\inf_{r^e\in\mathcal Q^e_{\mathrm{bin}}(P,\pi,\Gamma)}\mu^e_{zg}(r^e),
+  \qquad
+  u^{\mathrm{bin}}_{zg}
+  =
+  \max_{e\in E_z(g)}\sup_{r^e\in\mathcal Q^e_{\mathrm{bin}}(P,\pi,\Gamma)}\mu^e_{zg}(r^e),
+\]
+with \(E_z(g)\) a singleton at an endpoint of the ordinal chain.  The binary-collapse outer interval aggregates those arm envelopes by differencing worst endpoints:
+\[
+  \mathcal B_{\mathrm{bin}}(P,\pi,\Gamma;g)
+  =
+  [L^{\mathrm{bin}}_g(P,\pi,\Gamma),U^{\mathrm{bin}}_g(P,\pi,\Gamma)]
+  =
+  [\ell^{\mathrm{bin}}_{1g}-u^{\mathrm{bin}}_{0g},
+   u^{\mathrm{bin}}_{1g}-\ell^{\mathrm{bin}}_{0g}].
+\]
+This formalizes an edgewise diagnostic in which an ordinal intermediate is analyzed through adjacent two-level principal-strata sensitivity problems rather than through one coherent ordinal posterior vector; using \(r^e\) rather than pair-normalized weights keeps each edge contribution on the same full-cell posterior scale as \(\mu_{zg}(q)\).
+
+\begin{verbatim}
+qid=pid_ordinal_principal_strata
+specialization=v1
+anchor_cluster=Partial identification
+observable_distribution_P=law of (Z,S,Y,X), where Z in {0,1} is randomized,
+  S in {0,...,K-1} is the observed ordinal post-treatment intermediate,
+  Y in finite support Ygrid subset [0,1], X in finite support Xgrid, K>=3 unless
+  a theorem explicitly specializes to K=2
+parameter_theta=theta_g = mu_1g - mu_0g for a fixed principal stratum
+  g=(s0,s1), with mu_zg=E[Y(z)|G=g] and G=(S(0),S(1))
+identifying_restrictions=randomization, consistency, positivity, known covariate-
+  conditional ordinal principal scores pi_g(x)=P(G=g|X=x), and Gamma-adjacent
+  covariate-conditional principal-score divergence for latent posterior stratum
+  weights inside each observed (Z=z,S=k,X=x,Y=y) cell
+bounding_functional=L_g(P,pi,Gamma), U_g(P,pi,Gamma), the sharp lower and upper
+  values of theta_g obtained by optimizing mu_1g(q)-mu_0g(q) over posterior
+  weights q_{z,g}(x,y) satisfying principal-score calibration to the supplied
+  pi, simplex constraints, and all adjacent odds-ratio divergence inequalities
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Randomization and consistency]\label{ass:randomization}
+\((Y(0),Y(1),S(0),S(1),X)\perp Z\), \(S=S(Z)\), and \(Y=Y(Z)\).
+\end{assumption}
+
+\begin{assumption}[Finite support and positivity]\label{ass:positivity}
+\(\mathcal X\), \(\mathcal Y\), and \(\mathcal G_K\) are finite; \(0<e_z<1\) for \(z=0,1\); and all observed cells and all principal strata used in the target have positive probability.  In particular, if \(g\) is the target stratum, then \(p_g=\E\{\pi_g(X)\}>0\).
+\end{assumption}
+
+\begin{assumption}[Known ordinal principal scores]\label{ass:principal-scores}
+For every \(x\in\mathcal X\), the vector \(\pi(x)=\{\pi_g(x):g\in\mathcal G_K\}\) is known or identified by auxiliary design information, satisfies \(\pi_g(x)\ge0\), \(\sum_g\pi_g(x)=1\), and is compatible with the observed intermediate margins:
+\[
+  \Pr(S=k\mid Z=z,X=x)=\sum_{g\in A_z(k)}\pi_g(x).
+\]
+\end{assumption}
+
+\begin{assumption}[Ordinal adjacency graph]\label{ass:adjacency}
+Within each observed arm-level cell \(A_z(k)\), two strata \(g,h\in A_z(k)\) are adjacent, written \(g\sim_z h\), if they differ by one ordinal step in the unobserved potential intermediate coordinate and agree in the observed coordinate.  Equivalently, \(g_z=h_z=k\) and \(|g_{1-z}-h_{1-z}|=1\).
+\end{assumption}
+
+\begin{assumption}[Cellwise connected positive principal-score support]\label{ass:connected-support}
+For every \(z,k,x\) with \(\Pr(Z=z,S=k,X=x)>0\), the subgraph of \(A_z(k)\) induced by the vertices with \(w^z_g(x)>0\) is connected under the ordinal adjacency relation of Assumption~\ref{ass:adjacency}.  If \(w^z_g(x)=0\), then any feasible posterior system must set \(q_{z,g}(x,y)=0\) for every \(y\) in the support of \(Y\mid Z=z,S=k,X=x\).
+\end{assumption}
+
+\begin{assumption}[\(\Gamma\)-adjacent principal-score divergence]\label{ass:divergence}
+Fix \(\Gamma\in[1,\infty]\).  A posterior-weight system \(q=\{q_{z,g}(x,y)\}\) is feasible if, for every \(z,k,x,y\) with positive \(P(Z=z,S=k,X=x,Y=y)\), the weights \(q_{z,g}(x,y)\) for \(g\in A_z(k)\) are nonnegative and sum to one; they calibrate to the principal scores,
+\[
+  \sum_{y\in\mathcal Y} q_{z,g}(x,y)\Pr(Y=y\mid Z=z,S=k,X=x)=w^z_g(x);
+\]
+and for every adjacent \(g\sim_z h\) in \(A_z(k)\) with positive \(w^z_g(x)\) and \(w^z_h(x)\),
+\[
+  \Gamma^{-1}q_{z,h}(x,y)w^z_g(x)
+  \le
+  q_{z,g}(x,y)w^z_h(x)
+  \le
+  \Gamma q_{z,h}(x,y)w^z_g(x),
+\]
+with the \(\Gamma=\infty\) case interpreted as dropping the ratio inequalities while retaining simplex and calibration constraints.
+\end{assumption}
+
+\begin{assumption}[Nondegenerate ordinal chain for the flagship target]\label{ass:nondegenerate-chain}
+For Conjecture~\ref{conj:ordinal-chain-sharpness}, \(K\ge3\), \(1<\Gamma<\infty\), and the target stratum \(g\) has at least one observed arm cell containing three adjacent ordinal strata with positive principal scores.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: principal-ignorability collapse]\label{thm:pi-collapse}
+Under Assumptions~\ref{ass:randomization}--\ref{ass:divergence} with \(\Gamma=1\), including the connected-positive-support condition in Assumption~\ref{ass:connected-support}, the feasible set \(\mathcal Q(P,\pi,1)\) contains exactly the principal-score posterior \(q_{z,g}(x,y)=w^z_g(x)\) within each observed cell.  Therefore \(\Theta_I(P,\pi,1;g)\) is the singleton \(\{\theta_g^{PI}\}\), where
+\[
+  \theta_g^{PI}
+  =
+  \frac{\E_P[\one\{Z=1,S=g_1\}w^1_g(X)Y/e_1]}{p_g}
+  -
+  \frac{\E_P[\one\{Z=0,S=g_0\}w^0_g(X)Y/e_0]}{p_g}.
+\]
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) This theorem is not the novelty claim: it is the exact corner case corresponding to the principal-score identification program in \citet{DingLu2017} and \citet{JiangYangDing2022}.  The gap is that those papers take principal ignorability as the identifying condition, whereas this proposal needs the \(\Gamma=1\) collapse only as a calibration check for a larger partial-identification family.  (b) The concrete consumer is \citet{WangZhangMealliBornkamp2023}: their clinical-trial principal-stratum sensitivity workflow needs the main analysis recovered when the sensitivity parameter says that PI is unviolated.
+
+\begin{theorem}[Theorem 2: binary one-pair reduction]\label{thm:binary-reduction}
+Under Assumptions~\ref{ass:randomization}--\ref{ass:divergence} with \(K=2\), every nontrivial observed cell \(A_z(k)\) contains at most one adjacent latent pair.  Consequently, \(\mathcal Q(P,\pi,\Gamma)\) factors across observed cells into calibrated binary odds-ratio sensitivity sets, and \([L_g(P,\pi,\Gamma),U_g(P,\pi,\Gamma)]\) is the same interval obtained by applying the one-pair posterior-tilting bound separately in the \(Z=1,S=g_1\) and \(Z=0,S=g_0\) cells and differencing the resulting arm-specific endpoints.
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) This theorem is also a calibration theorem, closest to the binary principal-ignorability sensitivity analysis in \citet{NguyenStuartScharfsteinOgburn2024} and to binary odds-ratio sharp-bound technology in \citet{DornGuoKallus2022}; the gap is that it records exactly what the proposed ordinal model must reduce to before any \(K\ge3\) novelty is claimed.  (b) The concrete consumer is the binary noncompliance CACE sensitivity literature surveyed in \citet{DingLu2017}: it can treat the proposed ordinal model as conservative only if this binary boundary is algebraically correct.
+
+\begin{conjecture}[Conjecture 1: sharp ordinal chain polytope with nonrectangular compatibility (NOT YET PROVED)]\label{conj:ordinal-chain-sharpness}
+Under Assumptions~\ref{ass:randomization}--\ref{ass:nondegenerate-chain}, the following hold.
+
+First, the sharp identified set for \(\theta_g\) is exactly the interval
+\[
+  [L_g(P,\pi,\Gamma),U_g(P,\pi,\Gamma)]
+  =
+  \left[
+  \min_{q\in\mathcal Q(P,\pi,\Gamma)}\{\mu_{1g}(q)-\mu_{0g}(q)\},
+  \max_{q\in\mathcal Q(P,\pi,\Gamma)}\{\mu_{1g}(q)-\mu_{0g}(q)\}
+  \right].
+\]
+Second, for at least one three-vertex chain \(a\sim_z b\sim_z c\) in an observed cell, the projection of \(\mathcal Q(P,\pi,\Gamma)\) onto the two incident edge coordinates is generically nonrectangular: it is a proper subset of the product of the two separately feasible full-cell-scale edge projections because the same posterior coordinate \(q_{z,b}(x,y)\) must satisfy both adjacent inequalities and one calibration equation.  Equivalently, the shared middle stratum creates compatibility facets that are absent from any product of adjacent two-stratum sensitivity problems.
+
+Third, as a scale-comparable diagnostic rather than a refutation of a named ordinal estimator, there exists an open set of observable laws \(P\) and principal-score vectors \(\pi\) for which the full-cell-scale edgewise binary-collapse interval strictly contains the ordinal sharp interval:
+\[
+  [L_g(P,\pi,\Gamma),U_g(P,\pi,\Gamma)]
+  \subsetneq
+  \mathcal B_{\mathrm{bin}}(P,\pi,\Gamma;g).
+\]
+The strictness mechanism is that separate edge problems choose incompatible full-cell-scale posterior tilts for the shared middle ordinal stratum, whereas \(\mathcal Q(P,\pi,\Gamma)\) requires one posterior vector to satisfy all adjacent inequalities at once.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) The closest papers are \citet{WuAntonelli2024}, which proves partial identification under PI violations but does not isolate an ordinal adjacency graph; \citet{TongKahanHarhayLi2025}, which uses odds-ratio sensitivity in principal stratification but not a sharp finite ordinal chain theorem; and \citet{VanderWeele2011}, which names the practical dichotomization issue for ordinal intermediates but does not give a sharp compatibility polytope.  \citet{WangZhangMealliBornkamp2023} is not treated as an ordinal edgewise-binary method; it is the binary PI-sensitivity workflow that motivates why an ordinal replacement is needed for intercurrent events with more than two ordered severities.  The epsilon-gap is the nonrectangular compatibility facet created by a shared middle stratum when \(K\ge3\), now formalized as a positive sharp-LP claim rather than a refutation of a published estimator.  (b) Resolving the conjecture would directly serve ordinal intercurrent-event analyses under ICH E9(R1), especially the sensitivity-analysis workflow in \citet{WangZhangMealliBornkamp2023}, by saying when ordinal severity levels should be analyzed through the adjacent-chain sensitivity bound.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[PI point-identification sanity check]\label{cor:pi}
+Under Assumptions~\ref{ass:randomization}--\ref{ass:divergence} with \(\Gamma=1\) and Assumption~\ref{ass:connected-support}, Conjecture~\ref{conj:ordinal-chain-sharpness} reduces to Theorem~\ref{thm:pi-collapse}: all adjacent ratios equal one on each connected positive-support component, zero principal-score vertices carry zero posterior mass, and every posterior vector equals \(w^z(x)\).
+\end{corollary}
+
+\begin{corollary}[Binary-level sanity check]\label{cor:binary}
+Under Assumptions~\ref{ass:randomization}--\ref{ass:divergence} with \(K=2\), Conjecture~\ref{conj:ordinal-chain-sharpness} has no nonrectangular edge-compatibility phenomenon because every observed cell has at most two compatible strata and no middle stratum can be shared by two adjacent inequalities.
+\end{corollary}
+
+\begin{corollary}[Trivial-bound Manski cell check]\label{cor:infty}
+Under Assumptions~\ref{ass:randomization}--\ref{ass:divergence} with \(\Gamma=\infty\), the only remaining restrictions on \(q\) are simplex and calibration.  The arm-specific extrema are therefore the calibrated finite-support mixture bounds obtained by placing the target stratum's posterior mass on the largest or smallest observed \(Y\) values allowed by the calibration equation.
+\end{corollary}
+
+\section{Proof-sketch route}
+The mathematical route is finite-dimensional partial identification.  Theorems~\ref{thm:pi-collapse} and \ref{thm:binary-reduction} require only Bayes calibration and elementary odds-ratio algebra: when \(\Gamma=1\), adjacent ratios pin \(q=w\) on each connected positive-support component; when \(K=2\), the adjacency graph in each observed cell has one edge, so the feasible set is the usual calibrated binary posterior-tilting interval.  For Conjecture~\ref{conj:ordinal-chain-sharpness}, one first proves sharpness by constructing, for every feasible \(q\in\mathcal Q(P,\pi,\Gamma)\), a latent joint law over \((G,Y(0),Y(1),S(0),S(1),X,Z)\) that reproduces \(P\), the supplied \(\pi\), and the proposed posterior weights; the reverse inclusion is the same Bayes disintegration.  The nonrectangularity and diagnostic strict-gap clauses should be checked first on the smallest nontrivial cell \(K=3\), one arm, one covariate value, and a three-point outcome support, where the two incident full-cell-scale edge optimizers in \(\mathcal Q_{\mathrm{bin}}(P,\pi,\Gamma)\) tilt the shared middle stratum in opposite directions; openness then follows by continuity of linear-program values under nondegenerate slack.
+
+\section{Honest scope flags}
+Theorems~\ref{thm:pi-collapse} and \ref{thm:binary-reduction} are intended as routine algebraic calibration statements, not as publication-level novelty.  Conjecture~\ref{conj:ordinal-chain-sharpness} is the open kernel: the global sharpness construction, the nonrectangular compatibility-facet claim, and the open-set strict diagnostic gap against \(\mathcal B_{\mathrm{bin}}(P,\pi,\Gamma;g)\) still need to be verified.  The known-principal-score assumption is deliberately strong; it isolates sensitivity to principal ignorability from the separate problem of identifying the joint ordinal principal-score vector from the observed ordinal margins.  The connected-support assumption in Theorem~\ref{thm:pi-collapse} is needed only for the \(\Gamma=1\) point-identification collapse; if an observed cell has disconnected positive support, the calibrated program pins components but need not identify every posterior weight pointwise.  The binary-collapse comparator is a scale-comparable diagnostic outer relaxation, not a claim that \citet{WangZhangMealliBornkamp2023} or any other cited paper proposed an ordinal edgewise estimator.  If a later reviewer judges known \(\pi_g(x)\) too strong for the field-tier claim, the correct revision is to state the theorem conditionally on an externally identified or sensitivity-indexed principal-score polytope, not to hide the issue.  v4 replaces pair-normalized edge variables by full-cell-scale \(r^e\) variables and reframes Conjecture~\ref{conj:ordinal-chain-sharpness} around the positive ordinal-chain compatibility polytope.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft of the adjacent ordinal principal-score divergence proposal; prior verdict: none.
+\item v2 (revise) -- added connected positive support for the \(\Gamma=1\) collapse and replaced the vague binary-collapse comparator with a first draft of \(\mathcal B_{\mathrm{bin}}\); prior verdict: REVISE.
+\item v3 (revise) -- promoted \(\pi\) into the formal endpoint arguments, specified the edgewise binary relaxation and endpoint aggregation, and softened the Wang et al.\ comparison to a downstream-consumer citation; prior verdict: REVISE.
+\item v4 (revise) -- replaced the pair-normalized edge comparator by full-cell-scale edge variables and made the flagship conjecture a positive ordinal-chain nonrectangularity claim with the binary interval only as a diagnostic relaxation; prior verdict: REVISE.
+\item v5 (revise) -- corrected the Forastiere--Mattei--Ding bibliography entry and added the closest repo-prior-art comparison to \texttt{pid\_ordinal\_late\_partial\_defiers\_v1}; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Frangakis and Rubin(2002)]{FrangakisRubin2002}
+Frangakis, C. E. and Rubin, D. B. (2002).
+Principal stratification in causal inference.
+\emph{Biometrics} 58, 21--29.
+
+\bibitem[VanderWeele(2011)]{VanderWeele2011}
+VanderWeele, T. J. (2011).
+Principal stratification--uses and limitations.
+\emph{International Journal of Biostatistics} 7, Article 28.
+
+\bibitem[Ding and Lu(2017)]{DingLu2017}
+Ding, P. and Lu, J. (2017).
+Principal stratification analysis using principal scores.
+\emph{Journal of the Royal Statistical Society: Series B} 79, 757--777.
+
+\bibitem[Jiang, Yang, and Ding(2022)]{JiangYangDing2022}
+Jiang, Z., Yang, S., and Ding, P. (2022).
+Multiply robust estimation of causal effects under principal ignorability.
+\emph{Journal of the Royal Statistical Society: Series B} 84, 1423--1445.
+
+\bibitem[Forastiere, Mattei, and Ding(2018)]{ForastiereMatteiDing2018}
+Forastiere, L., Mattei, A., and Ding, P. (2018).
+Principal ignorability in mediation analysis: through and beyond sequential ignorability.
+\emph{Biometrika} 105, 979--986.
+
+\bibitem[Nguyen et~al.(2024)]{NguyenStuartScharfsteinOgburn2024}
+Nguyen, T. Q., Stuart, E. A., Scharfstein, D. O., and Ogburn, E. L. (2024).
+Sensitivity analysis for principal ignorability violation in estimating complier and noncomplier average causal effects.
+\emph{arXiv:2303.05032}.
+
+\bibitem[Wu and Antonelli(2024)]{WuAntonelli2024}
+Wu, M. and Antonelli, J. (2024).
+Partial identification of principal causal effects under violations of principal ignorability.
+\emph{arXiv:2412.06628}.
+
+\bibitem[Tong et~al.(2025)]{TongKahanHarhayLi2025}
+Tong, J., Kahan, B., Harhay, M. O., and Li, F. (2025).
+Semiparametric principal stratification analysis beyond monotonicity.
+\emph{arXiv:2501.17514}.
+
+\bibitem[Mattei and Mealli(2011)]{MatteiMealli2011}
+Mattei, A. and Mealli, F. (2011).
+Augmented designs to assess principal strata direct effects.
+\emph{Journal of the Royal Statistical Society: Series B} 73, 729--752.
+
+\bibitem[Lee, Daniels, and Sargent(2010)]{LeeDanielsSargent2010}
+Lee, K., Daniels, M. J., and Sargent, D. J. (2010).
+Causal effects of treatments for informative missing data due to progression/death.
+\emph{Journal of the American Statistical Association} 105, 912--929.
+
+\bibitem[Wang et~al.(2023)]{WangZhangMealliBornkamp2023}
+Wang, C., Zhang, Y., Mealli, F., and Bornkamp, B. (2023).
+Sensitivity analyses for the principal ignorability assumption using multiple imputation.
+\emph{Pharmaceutical Statistics} 22, 64--78.
+
+\bibitem[Lu, Jiang, and Ding(2024)]{LuJiangDing2024}
+Lu, S., Jiang, Z., and Ding, P. (2024).
+Principal stratification with continuous post-treatment variables: nonparametric identification and semiparametric estimation.
+\emph{arXiv:2309.12425}.
+
+\bibitem[Dorn, Guo, and Kallus(2022)]{DornGuoKallus2022}
+Dorn, J., Guo, K., and Kallus, N. (2022).
+Doubly-valid/doubly-sharp sensitivity analysis for causal inference with unmeasured confounding.
+\emph{arXiv:2112.11449}.
+
+\bibitem[Frauen, Melnychuk, and Feuerriegel(2023)]{FrauenMelnychukFeuerriegel2023}
+Frauen, D., Melnychuk, V., and Feuerriegel, S. (2023).
+Sharp bounds for generalized causal sensitivity analysis.
+\emph{Advances in Neural Information Processing Systems} 36.
+\end{thebibliography}
+
+\end{document}

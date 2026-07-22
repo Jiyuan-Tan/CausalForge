@@ -1,0 +1,785 @@
+{
+  "qid": "stat_dose_response_minimax",
+  "specialization": "holder_anisotropic_converse",
+  "cluster": "stat",
+  "symbols": [
+    {
+      "name": "n",
+      "type": "sample_size",
+      "space": "N",
+      "def": "Sample size.",
+      "role": "index"
+    },
+    {
+      "name": "d",
+      "type": "dimension",
+      "space": "N",
+      "def": "Dimension of the covariate vector X.",
+      "role": "regime_parameter"
+    },
+    {
+      "name": "O",
+      "type": "random_vector",
+      "space": "{(Y,A,X): Y in R, A in [0,1], X in [0,1]^d}",
+      "def": "Observed data unit O = (Y, A, X).",
+      "role": "data_unit"
+    },
+    {
+      "name": "O_1, ..., O_n",
+      "type": "sample",
+      "space": "({(Y,A,X): Y in R, A in [0,1], X in [0,1]^d})^n",
+      "def": "Observed iid sample of size n.",
+      "role": "data",
+      "refs": [
+        "O",
+        "n"
+      ]
+    },
+    {
+      "name": "Y",
+      "type": "outcome",
+      "space": "R",
+      "def": "Observed outcome.",
+      "role": "data_component",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "A",
+      "type": "treatment",
+      "space": "[0,1]",
+      "def": "Observed continuous treatment.",
+      "role": "data_component",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "X",
+      "type": "covariate",
+      "space": "[0,1]^d",
+      "def": "Observed covariate vector.",
+      "role": "data_component",
+      "refs": [
+        "O",
+        "d"
+      ]
+    },
+    {
+      "name": "P",
+      "type": "law",
+      "space": "laws of O",
+      "def": "Observed-data law of O.",
+      "role": "model",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "P_X",
+      "type": "marginal_law",
+      "space": "laws of X",
+      "def": "Marginal law of X induced by P.",
+      "role": "nuisance_law",
+      "refs": [
+        "P",
+        "X"
+      ]
+    },
+    {
+      "name": "Y(a)",
+      "type": "potential_outcome_process",
+      "space": "R for each a in [0,1]",
+      "def": "Potential outcome under treatment level a.",
+      "role": "causal_primitive",
+      "refs": [
+        "A"
+      ]
+    },
+    {
+      "name": "t_0",
+      "type": "evaluation_point",
+      "space": "(0,1)",
+      "def": "Interior treatment level at which the dose-response is evaluated.",
+      "role": "target_index"
+    },
+    {
+      "name": "epsilon_0",
+      "type": "interior_radius",
+      "space": "(0,1/2)",
+      "def": "Radius of the interior neighborhood around t_0 on which positivity and treatment-direction smoothness are imposed.",
+      "role": "regularity_constant",
+      "refs": [
+        "t_0"
+      ]
+    },
+    {
+      "name": "alpha",
+      "type": "smoothness_index",
+      "space": "(0, infinity)",
+      "def": "Holder smoothness order of a -> mu_P(a,x) on [t_0 - epsilon_0, t_0 + epsilon_0].",
+      "role": "regime_parameter",
+      "refs": [
+        "t_0",
+        "epsilon_0"
+      ]
+    },
+    {
+      "name": "beta",
+      "type": "smoothness_index",
+      "space": "(0, infinity)",
+      "def": "Holder smoothness order of a -> pi_P(a|x) on [t_0 - epsilon_0, t_0 + epsilon_0].",
+      "role": "regime_parameter",
+      "refs": [
+        "t_0",
+        "epsilon_0"
+      ]
+    },
+    {
+      "name": "s",
+      "type": "smoothness_index",
+      "space": "(0, infinity)",
+      "def": "Common Holder smoothness order in the covariate direction for x -> mu_P(t_0,x), x -> pi_P(t_0|x), and the density of P_X.",
+      "role": "regime_parameter",
+      "refs": [
+        "t_0"
+      ]
+    },
+    {
+      "name": "M",
+      "type": "bound_constant",
+      "space": "(0, infinity)",
+      "def": "Generic envelope constant for boundedness and Holder radii.",
+      "role": "regularity_constant"
+    },
+    {
+      "name": "c_0",
+      "type": "positivity_constant",
+      "space": "(0, infinity)",
+      "def": "Lower positivity bound in the neighborhood of t_0.",
+      "role": "regularity_constant"
+    },
+    {
+      "name": "mu_P",
+      "type": "outcome_regression",
+      "sig": "[0,1] x [0,1]^d -> R",
+      "def": "mu_P(a,x) = E_P[Y | A = a, X = x].",
+      "role": "nuisance",
+      "refs": [
+        "P",
+        "Y",
+        "A",
+        "X"
+      ]
+    },
+    {
+      "name": "pi_P",
+      "type": "conditional_density",
+      "sig": "[0,1] x [0,1]^d -> [0,infinity)",
+      "def": "pi_P(a|x) is the conditional density of A given X = x under P.",
+      "role": "nuisance",
+      "refs": [
+        "P",
+        "A",
+        "X"
+      ]
+    },
+    {
+      "name": "p_{X,P}",
+      "type": "density",
+      "sig": "[0,1]^d -> [0,infinity)",
+      "def": "Density of P_X with respect to Lebesgue measure.",
+      "role": "nuisance",
+      "refs": [
+        "P_X",
+        "X"
+      ]
+    },
+    {
+      "name": "theta_P(t_0)",
+      "type": "causal_parameter",
+      "space": "R",
+      "def": "theta_P(t_0) = E_P[mu_P(t_0,X)] = E_P[Y(t_0)] under the causal assumptions.",
+      "role": "target_estimand",
+      "refs": [
+        "P",
+        "mu_P",
+        "t_0",
+        "Y(a)"
+      ]
+    },
+    {
+      "name": "R_n",
+      "type": "minimax_risk_functional",
+      "sig": "(class, point) -> [0,infinity)",
+      "def": "Pointwise minimax mean-squared risk for estimating theta_P(t_0).",
+      "role": "frontier_object",
+      "refs": [
+        "n",
+        "theta_P(t_0)"
+      ]
+    },
+    {
+      "name": "rho_n",
+      "type": "rate_sequence",
+      "space": "[0,infinity)^N",
+      "def": "Published Bonvini-Kennedy benchmark rate sequence; in the smooth-covariate regime it collapses to the oracle exponent n^{-2*alpha/(2*alpha+1)}.",
+      "role": "frontier_object",
+      "refs": [
+        "n",
+        "alpha",
+        "s",
+        "d"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:iid-sampling",
+      "kind": "sampling",
+      "condition": "O_1, ..., O_n are iid draws from P.",
+      "free_symbols": [
+        "O_1, ..., O_n",
+        "P",
+        "n"
+      ],
+      "standard": {
+        "name": "iid sampling",
+        "cite": "Tsybakov2009Nonparametric"
+      },
+      "used_by": [
+        "thm:sharp-pointwise-lower-bound",
+        "prop:oracle-regime-reduction"
+      ]
+    },
+    {
+      "id": "ass:consistency",
+      "kind": "identification",
+      "condition": "Y = Y(A) almost surely under P.",
+      "free_symbols": [
+        "Y",
+        "Y(a)",
+        "A",
+        "P"
+      ],
+      "standard": {
+        "name": "consistency",
+        "cite": "KennedyMaMcHughSmall2017ContinuousDR"
+      },
+      "used_by": [
+        "def:holder-dose-class"
+      ]
+    },
+    {
+      "id": "ass:no-unmeasured-confounding",
+      "kind": "identification",
+      "condition": "For every a in [0,1], Y(a) is independent of A conditional on X under P.",
+      "free_symbols": [
+        "Y(a)",
+        "A",
+        "X",
+        "P"
+      ],
+      "standard": {
+        "name": "conditional ignorability for continuous treatments",
+        "cite": "KennedyMaMcHughSmall2017ContinuousDR"
+      },
+      "used_by": [
+        "def:holder-dose-class"
+      ]
+    },
+    {
+      "id": "ass:bounded-outcome",
+      "kind": "regularity",
+      "condition": "|Y| <= M almost surely under P.",
+      "free_symbols": [
+        "Y",
+        "M",
+        "P"
+      ],
+      "standard": {
+        "name": "uniform bounded outcome",
+        "cite": "BonviniKennedy2022FastDRF"
+      },
+      "used_by": [
+        "def:holder-dose-class",
+        "thm:sharp-pointwise-lower-bound"
+      ]
+    },
+    {
+      "id": "ass:interior-dose",
+      "kind": "support",
+      "condition": "[t_0 - epsilon_0, t_0 + epsilon_0] is contained in (0,1).",
+      "free_symbols": [
+        "t_0",
+        "epsilon_0"
+      ],
+      "standard": {
+        "name": "interior evaluation point",
+        "cite": "ColangeloLee2020ContinuousDML"
+      },
+      "used_by": [
+        "def:holder-dose-class",
+        "thm:sharp-pointwise-lower-bound",
+        "prop:oracle-regime-reduction"
+      ]
+    },
+    {
+      "id": "ass:local-positivity",
+      "kind": "overlap",
+      "condition": "pi_P(a|x) >= c_0 for every a in [t_0 - epsilon_0, t_0 + epsilon_0] and every x in [0,1]^d.",
+      "free_symbols": [
+        "pi_P",
+        "c_0",
+        "t_0",
+        "epsilon_0",
+        "d"
+      ],
+      "standard": {
+        "name": "local positivity",
+        "cite": "BonviniKennedy2022FastDRF"
+      },
+      "used_by": [
+        "def:holder-dose-class",
+        "thm:sharp-pointwise-lower-bound"
+      ]
+    },
+    {
+      "id": "ass:mu-treatment-holder",
+      "kind": "smoothness",
+      "condition": "For every x in [0,1]^d, the function a -> mu_P(a,x) belongs to a Holder ball of order alpha and radius M on [t_0 - epsilon_0, t_0 + epsilon_0].",
+      "free_symbols": [
+        "mu_P",
+        "alpha",
+        "M",
+        "t_0",
+        "epsilon_0",
+        "d"
+      ],
+      "standard": {
+        "name": "Holder smoothness in the treatment coordinate",
+        "cite": "Tsybakov2009Nonparametric"
+      },
+      "used_by": [
+        "def:holder-dose-class",
+        "thm:sharp-pointwise-lower-bound",
+        "prop:oracle-regime-reduction"
+      ]
+    },
+    {
+      "id": "ass:pi-treatment-holder",
+      "kind": "smoothness",
+      "condition": "For every x in [0,1]^d, the function a -> pi_P(a|x) belongs to a Holder ball of order beta and radius M on [t_0 - epsilon_0, t_0 + epsilon_0].",
+      "free_symbols": [
+        "pi_P",
+        "beta",
+        "M",
+        "t_0",
+        "epsilon_0",
+        "d"
+      ],
+      "standard": {
+        "name": "Holder smoothness of the conditional treatment density in the treatment coordinate",
+        "cite": "BonviniKennedy2022FastDRF"
+      },
+      "used_by": [
+        "def:holder-dose-class",
+        "thm:sharp-pointwise-lower-bound"
+      ]
+    },
+    {
+      "id": "ass:mu-covariate-holder",
+      "kind": "smoothness",
+      "condition": "The function x -> mu_P(t_0,x) belongs to a Holder ball of order s and radius M on [0,1]^d.",
+      "free_symbols": [
+        "mu_P",
+        "t_0",
+        "s",
+        "M",
+        "d"
+      ],
+      "standard": {
+        "name": "Holder smoothness in the covariate coordinate",
+        "cite": "Tsybakov2009Nonparametric"
+      },
+      "used_by": [
+        "def:holder-dose-class",
+        "thm:sharp-pointwise-lower-bound",
+        "prop:oracle-regime-reduction"
+      ]
+    },
+    {
+      "id": "ass:pi-covariate-holder",
+      "kind": "smoothness",
+      "condition": "The function x -> pi_P(t_0|x) belongs to a Holder ball of order s and radius M on [0,1]^d.",
+      "free_symbols": [
+        "pi_P",
+        "t_0",
+        "s",
+        "M",
+        "d"
+      ],
+      "standard": {
+        "name": "Holder smoothness of the conditional treatment density in the covariate coordinate",
+        "cite": "BonviniKennedy2022FastDRF"
+      },
+      "used_by": [
+        "def:holder-dose-class",
+        "thm:sharp-pointwise-lower-bound"
+      ]
+    },
+    {
+      "id": "ass:px-holder",
+      "kind": "smoothness",
+      "condition": "The density p_{X,P} belongs to a Holder ball of order s and radius M on [0,1]^d and is bounded above by M.",
+      "free_symbols": [
+        "p_{X,P}",
+        "s",
+        "M",
+        "d"
+      ],
+      "standard": {
+        "name": "Holder-smooth covariate density",
+        "cite": "KennedyBalakrishnanRobinsWasserman2022MinimaxCATE"
+      },
+      "used_by": [
+        "def:holder-dose-class",
+        "thm:sharp-pointwise-lower-bound"
+      ]
+    },
+    {
+      "id": "ass:baseline-submodel-slack",
+      "condition": "There exist a density p_0 on [0,1]^d, a conditional treatment density q_0 on [0,1], and a constant eta_0>0 such that p_0 and q_0 have Holder norms at most M-eta_0 in the smoothness classes required of p_{X,P} and pi_P, q_0(a) >= c_0+eta_0 for all a in [t_0-epsilon_0,t_0+epsilon_0], and p_0 is bounded above by M-eta_0.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: nonempty interior-of-model condition used in minimax lower bounds for Holder balls and overlap classes; cf. Tsybakov (2009, Nonparametric Estimation, lower-bound constructions) and Kennedy, Balakrishnan, Robins, Wasserman (2022, minimax causal lower bounds)."
+      }
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:holder-dose-class",
+      "name": "P_{alpha,beta,s}(M,c_0,epsilon_0,t_0)",
+      "construction": "{P : P satisfies ass:iid-sampling, ass:consistency, ass:no-unmeasured-confounding, ass:bounded-outcome, ass:interior-dose, ass:local-positivity, ass:mu-treatment-holder, ass:pi-treatment-holder, ass:mu-covariate-holder, ass:pi-covariate-holder, ass:px-holder}",
+      "by_member_properties": [
+        "ass:iid-sampling",
+        "ass:consistency",
+        "ass:no-unmeasured-confounding",
+        "ass:bounded-outcome",
+        "ass:interior-dose",
+        "ass:local-positivity",
+        "ass:mu-treatment-holder",
+        "ass:pi-treatment-holder",
+        "ass:mu-covariate-holder",
+        "ass:pi-covariate-holder",
+        "ass:px-holder"
+      ]
+    },
+    {
+      "id": "def:theta-functional",
+      "name": "theta_P(t_0)",
+      "construction": "theta_P(t_0) = int_{[0,1]^d} mu_P(t_0,x) p_{X,P}(x) dx",
+      "inputs": [
+        "mu_P",
+        "p_{X,P}",
+        "t_0",
+        "d"
+      ]
+    },
+    {
+      "id": "def:minimax-risk",
+      "name": "R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0), t_0)",
+      "construction": "R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0), t_0) = inf_{hat_theta_n} sup_{P in P_{alpha,beta,s}(M,c_0,epsilon_0,t_0)} E_P[(hat_theta_n - theta_P(t_0))^2]",
+      "inputs": [
+        "n",
+        "theta_P(t_0)"
+      ]
+    },
+    {
+      "id": "def:published-hoif-rate",
+      "name": "rho_n",
+      "construction": "rho_n = n^(-2*alpha/(2*alpha+1)) vee n^(-2/(1 + d/(4*s) + 1/alpha))",
+      "inputs": [
+        "n",
+        "alpha",
+        "s",
+        "d"
+      ]
+    },
+    {
+      "id": "def:beta-frontier-handle",
+      "name": "beta-frontier handle",
+      "construction": "Headline and frontier handle. The delivered content is the all-beta lower floor: by a de-laundered two-point Le Cam construction perturbing only mu_P with the covariate density and treatment-density baselines fixed, the original class satisfies R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0),t_0) >= c n^{-2*alpha/(2*alpha+1)} for every beta>0. When s>=d/4, lem:rho-oracle-regime-algebra identifies the published benchmark rho_n with this same exponent, so the converse lands on the classical interior treatment-regression scale. When 0<s<d/4, rho_n = n^{-2/(1+d/(4*s)+1/alpha)} is recorded only as the published HOIF comparator, not as a same-class certified upper endpoint. The residual carried by oeq:full-beta-frontier is therefore the unrestricted upper frontier itself: can one attain rho_n on the original class, or does a genuinely beta-sensitive phase intervene?",
+      "inputs": [
+        "mu_P",
+        "pi_P",
+        "t_0",
+        "alpha",
+        "beta",
+        "s",
+        "d"
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "thm:sharp-pointwise-lower-bound",
+      "kind": "theorem",
+      "statement": "Assume ass:baseline-submodel-slack. Then for every beta>0 there exists a constant c > 0, depending only on the fixed model radii and the slack baseline, such that for all sufficiently large n, R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0), t_0) >= c n^(-2*alpha/(2*alpha+1)). Equivalently, uniformly over every beta>0, every estimator of theta_P(t_0) over P_{alpha,beta,s}(M,c_0,epsilon_0,t_0) has worst-case mean-squared error at least a constant multiple of the classical interior treatment-regression pointwise rate.",
+      "depends_on": [
+        "ass:iid-sampling",
+        "ass:bounded-outcome",
+        "ass:interior-dose",
+        "ass:local-positivity",
+        "ass:mu-treatment-holder",
+        "ass:pi-treatment-holder",
+        "ass:mu-covariate-holder",
+        "ass:pi-covariate-holder",
+        "ass:px-holder",
+        "def:holder-dose-class",
+        "def:minimax-risk",
+        "def:published-hoif-rate",
+        "ass:baseline-submodel-slack",
+        "lem:oracle-dose-regression-lower-all-beta",
+        "def:theta-functional"
+      ],
+      "status": "proved",
+      "justification": "This is the certified kernel: a two-point converse that survives for every beta>0 because the least-favorable construction freezes the treatment density and perturbs only the treatment regression.",
+      "gap": "BonviniKennedy2022FastDRF gives the fastest published upper rate but explicitly states that a tight lower bound remains elusive; KennedyBalakrishnanRobinsWasserman2022MinimaxCATE supplies the closest fuzzy-hypothesis template, but not the continuous-dose localization with density normalization.",
+      "consumer": "It supplies the universal lower floor that every later frontier claim must respect and remains the durable benchmark even where same-class upper-side sharpness is still open.",
+      "proof_tex": "Proof. Fix beta>0 and write C_{alpha,beta,s}=P_{alpha,beta,s}(M,c_0,epsilon_0,t_0). The embedded two-point subexperiment constructed in lem:oracle-dose-regression-lower-all-beta is contained in C_{alpha,beta,s}: it uses the strict-interior baseline p_0 and q_0 from ass:baseline-submodel-slack, keeps the covariate density and treatment density fixed, and perturbs only the treatment regression by the local Holder-alpha bump mu_zeta(a,x)=zeta lambda h_n^alpha psi((a-t_0)/h_n). The support condition ass:interior-dose keeps this perturbation inside the local treatment window, ass:local-positivity and the baseline slack keep the fixed treatment density admissible, ass:px-holder and the pi Holder assumptions are inherited from p_0 and q_0, and the Bernoulli mean channel on {-B,B} gives |Y|<=M while realizing the desired outcome regression. The causal overlay in the lemma gives consistency and no unmeasured confounding, so the causal target is the identifying functional theta_P(t_0)=int mu_P(t_0,x)p_{X,P}(x)dx from def:theta-functional. For h_n=a_0 n^{-1/(2 alpha+1)}, the lemma proves that the two n-sample laws have KL bounded by a fixed finite constant and that their target separation is Delta_n=2 lambda a_0^alpha n^{-alpha/(2 alpha+1)}. Applying the declared Le Cam two-point lemma inside this subexperiment gives, for every estimator T_n, max_{zeta in {-1,1}} E_{P_zeta}[(T_n-theta_{P_zeta}(t_0))^2] >= c_K Delta_n^2 >= c n^{-2 alpha/(2 alpha+1)}. Since the two laws P_+ and P_- are members of C_{alpha,beta,s}, the supremum risk over C_{alpha,beta,s} is at least this two-point maximum. Taking the infimum over all estimators in def:minimax-risk yields R_n(C_{alpha,beta,s},t_0) >= c n^{-2 alpha/(2 alpha+1)} for all sufficiently large n. The constants depend only on the fixed radii, the chosen universal bump, and the slack baseline, not on n. Because q_0 is not perturbed, no step uses beta>=alpha; the same lower bound holds for every beta>0."
+    },
+    {
+      "id": "prop:oracle-regime-reduction",
+      "kind": "proposition",
+      "statement": "Under the assumptions of thm:sharp-pointwise-lower-bound, if s >= d/4 then rho_n = n^(-2*alpha/(2*alpha+1)) and therefore R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0), t_0) >= c n^(-2*alpha/(2*alpha+1)) = c rho_n for some c > 0. Thus the certified lower floor reduces to the classical interior pointwise nonparametric regression barrier.",
+      "depends_on": [
+        "thm:sharp-pointwise-lower-bound",
+        "def:published-hoif-rate",
+        "def:minimax-risk"
+      ],
+      "status": "proved",
+      "justification": "A sharp converse needs a transparent sanity reduction showing that once the covariate nuisances are smooth enough, no causal complication beats the ordinary local-regression difficulty.",
+      "gap": "The reduction is implicit in BonviniKennedy2022FastDRF and classical regression theory, but the interior dose-response literature does not currently state it as part of a unified minimax frontier.",
+      "consumer": "It gives the referee-visible special case that collapses to a known result and clarifies exactly when the nuisance-product obstruction disappears.",
+      "proof_tex": "Proof. Work under the assumptions of thm:sharp-pointwise-lower-bound and fix beta>0. Put C_{alpha,beta,s}=P_{alpha,beta,s}(M,c_0,epsilon_0,t_0). By thm:sharp-pointwise-lower-bound, applied to this same class and to the minimax risk functional in def:minimax-risk, there are constants c>0 and n_0<infinity, depending only on the fixed model radii and the slack baseline, such that for every n>=n_0, R_n(C_{alpha,beta,s},t_0) >= c n^{-2 alpha/(2 alpha+1)}. It remains only to check the algebraic collapse of the published rate in def:published-hoif-rate. Write a=2 alpha/(2 alpha+1) and b=2/(1+d/(4s)+1/alpha), so rho_n=n^{-a} vee n^{-b}. If s>=d/4, then d/(4s)<=1. Hence 1+d/(4s)+1/alpha <= 2+1/alpha=(2 alpha+1)/alpha, and therefore b=2/(1+d/(4s)+1/alpha) >= 2 alpha/(2 alpha+1)=a. For every n>=1, b>=a implies n^{-b}<=n^{-a}; consequently rho_n=n^{-a}=n^{-2 alpha/(2 alpha+1)}. Combining this identity with the preceding minimax lower bound gives R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0),t_0) >= c n^{-2 alpha/(2 alpha+1)} = c rho_n whenever s>=d/4 and n is sufficiently large. Thus, in the smooth-covariate regime, the certified lower floor is exactly the classical interior pointwise nonparametric treatment-regression barrier."
+    },
+    {
+      "id": "thm:certified-partial-beta-frontier",
+      "kind": "theorem",
+      "statement": "Under baseline-submodel slack, for every fixed beta > 0 the original dose-response class has minimax MSE at least c n^(-2 alpha/(2 alpha+1)) for all sufficiently large n. This lower floor matches the published rho_n exponent when s >= d/4; when 0 < s < d/4, rho_n has a strictly smaller exponent and remains only an upper-side comparator, so no same-class upper endpoint is asserted.",
+      "depends_on": [
+        "def:holder-dose-class",
+        "def:minimax-risk",
+        "def:published-hoif-rate",
+        "def:beta-frontier-handle",
+        "lem:certified-beta-frontier-bracket",
+        "lem:rho-oracle-regime-algebra",
+        "lem:rho-deficient-regime-algebra"
+      ],
+      "status": "proved",
+      "justification": "Bonvini-Kennedy themselves note that the treatment-density smoothness beta may enter their upper bound only through proof bookkeeping, so the full beta-frontier is the real unresolved mathematical content beyond the clean subregime.",
+      "gap": "No published paper determines whether the beta dependence in continuous-dose HOIF rates is structural or an artifact of the current upper-bound argument.",
+      "consumer": "Resolving this question would complete the anisotropic phase diagram and determine whether future adaptive confidence procedures must learn beta as a genuine hardness parameter.",
+      "proof_tex": "Proof. Let C_{alpha,beta,s}=P_{alpha,beta,s}(M,c_0,epsilon_0,t_0), and let R_n(C_{alpha,beta,s},t_0) be the minimax MSE for the causal dose-response value theta_P(t_0)=int_{[0,1]^d} mu_P(t_0,x)p_{X,P}(x) dx. The identifying equality with E_P[Y(t_0)] is the given consistency and ignorability identification statement; the present argument concerns estimation risk for this already identified functional. The quantitative certificate is lem:certified-beta-frontier-bracket. That lemma supplies the universal lower floor c n^{-2 alpha/(2 alpha+1)} for every fixed beta>0. If s>=d/4, lem:rho-oracle-regime-algebra identifies rho_n with n^{-2 alpha/(2 alpha+1)}, so the certified lower floor lands on the same exponent as the published benchmark. If 0<s<d/4, lem:rho-deficient-regime-algebra identifies rho_n=n^{-2/(1+d/(4s)+1/alpha)} and proves that its exponent is strictly smaller than 2 alpha/(2 alpha+1). Thus the unresolved content is now exactly what def:beta-frontier-handle says: whether the original class admits a same-class upper bound of order rho_n, an intermediate exponent, or a genuinely beta-sensitive phase. No proof below asserts a certified same-class upper endpoint."
+    },
+    {
+      "id": "lem:bernoulli-mean-channel-kl",
+      "kind": "lemma",
+      "statement": "Fix B>0. Let Q_u and Q_v be distributions on {-B,B} with means u and v, respectively, so Q_u(B)=(1+u/B)/2 and Q_v(B)=(1+v/B)/2. If |u|<=B/2 and |v|<=B/2, then KL(Q_u,Q_v) <= 2*(u-v)^2/B^2.",
+      "depends_on": [],
+      "status": "proved",
+      "proof_tex": "Put p=(1+u/B)/2 and q=(1+v/B)/2. The restrictions |u|,|v|<=B/2 imply p,q in [1/4,3/4]. The Bernoulli KL divergence satisfies KL(Ber(p),Ber(q)) <= (p-q)^2/[q(1-q)], because log x <= x-1 gives p log(p/q)+(1-p)log((1-p)/(1-q)) <= (p-q)^2/[q(1-q)]. Since q(1-q)>=3/16 and p-q=(u-v)/(2B), we get KL(Q_u,Q_v) <= (16/3)*(u-v)^2/(4B^2) <= 2*(u-v)^2/B^2."
+    },
+    {
+      "id": "lem:le-cam-two-point-mse-source",
+      "kind": "lemma",
+      "statement": "Let Q_0 and Q_1 be two laws for the n-sample experiment and let theta_0,theta_1 be the corresponding values of a real parameter, with Delta=|theta_1-theta_0|. If KL(Q_0,Q_1)<=K<infinity, then every estimator T satisfies max_{i=0,1} E_{Q_i}[(T-theta_i)^2] >= c_K Delta^2 for a constant c_K>0 depending only on K.",
+      "depends_on": [],
+      "status": "proved",
+      "proof_tex": "Source lemma. This is the standard two-point reduction from estimation to testing; see Tsybakov, Introduction to Nonparametric Estimation, 2009, Chapter 2, especially Theorem 2.2 and the preceding testing reduction. In the form used here, for any estimator T, the event that T is closer to the wrong parameter induces a test between Q_0 and Q_1, giving max_i E_{Q_i}[(T-theta_i)^2] >= (Delta^2/16) inf_phi {Q_0(phi=1)+Q_1(phi=0)}. The Bretagnolle-Huber/Le Cam inequality bounds the testing error below by a positive constant depending only on KL(Q_0,Q_1) when KL(Q_0,Q_1)<=K. Combining these inequalities yields the stated c_K Delta^2 bound."
+    },
+    {
+      "id": "lem:rho-oracle-regime-algebra",
+      "kind": "lemma",
+      "statement": "If s >= d/4, then the published beta>=alpha rate rho_n satisfies rho_n = n^{-2 alpha/(2 alpha+1)} for every n >= 1.",
+      "depends_on": [
+        "def:published-hoif-rate"
+      ],
+      "status": "proved",
+      "proof_tex": "Let e_1=2 alpha/(2 alpha+1) and e_2=2/(1+d/(4s)+1/alpha). The definition def:published-hoif-rate says rho_n=n^{-e_1} vee n^{-e_2}. If s>=d/4, then d/(4s)<=1. Hence 1+d/(4s)+1/alpha <= 2+1/alpha=(2 alpha+1)/alpha. Taking reciprocals of positive quantities gives e_2 >= alpha*2/(2 alpha+1)=e_1. For n>=1, the map e -> n^{-e} is nonincreasing, so n^{-e_2} <= n^{-e_1}. Therefore the maximum in def:published-hoif-rate is n^{-e_1}, i.e. rho_n=n^{-2 alpha/(2 alpha+1)}."
+    },
+    {
+      "id": "lem:oracle-dose-regression-lower-all-beta",
+      "kind": "lemma",
+      "statement": "Assume ass:baseline-submodel-slack. For every beta>0 there is a constant c_or>0, depending only on the fixed model radii and on the slack baseline but not on n, such that for all sufficiently large n, R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0),t_0) >= c_or n^{-2 alpha/(2 alpha+1)}. The construction leaves the treatment density fixed, so the bound is independent of whether beta>=alpha.",
+      "depends_on": [
+        "ass:iid-sampling",
+        "ass:consistency",
+        "ass:no-unmeasured-confounding",
+        "ass:bounded-outcome",
+        "ass:interior-dose",
+        "ass:local-positivity",
+        "ass:mu-treatment-holder",
+        "ass:pi-treatment-holder",
+        "ass:mu-covariate-holder",
+        "ass:pi-covariate-holder",
+        "ass:px-holder",
+        "ass:baseline-submodel-slack",
+        "def:holder-dose-class",
+        "def:theta-functional",
+        "def:minimax-risk",
+        "lem:bernoulli-mean-channel-kl",
+        "lem:le-cam-two-point-mse-source"
+      ],
+      "status": "proved",
+      "proof_tex": "Proof. Fix beta>0 and write C_{alpha,beta,s}=P_{alpha,beta,s}(M,c_0,epsilon_0,t_0). Let I=[t_0-epsilon_0,t_0+epsilon_0], which is contained in (0,1) by ass:interior-dose. By ass:baseline-submodel-slack choose a covariate density p_0, a conditional treatment density q_0, and eta_0>0 satisfying the stated Holder, boundedness, and positivity requirements with strict slack. Choose B=M/2. Let psi be a nonzero C-infinity bump supported on (-1,1) with psi(0)=1. Its Holder-alpha norm on R is finite. For h>0 and zeta in {-1,1}, define mu_zeta(a,x)=zeta lambda h^alpha psi((a-t_0)/h), where lambda>0 is fixed. For all sufficiently small h, [t_0-h,t_0+h] is contained in I. The scaled bump has treatment-coordinate Holder-alpha norm bounded by a constant times lambda, uniformly in h and x. At a=t_0, the map x -> mu_zeta(t_0,x)=zeta lambda h^alpha is constant, so its covariate Holder-s seminorm is zero and its supremum is lambda h^alpha. Taking lambda small enough, and then h small enough, gives ass:mu-treatment-holder and ass:mu-covariate-holder. Define P_zeta by X having density p_0, A|X having density q_0, and Y|(A=a,X=x) following the two-point mean channel on {-B,B} with P_zeta(Y=B|A=a,X=x)=(1+mu_zeta(a,x)/B)/2. Since |mu_zeta(a,x)|<=lambda h^alpha ||psi||_infty, for all sufficiently large n this probability is in [1/4,3/4], and |Y|<=B<=M, so ass:bounded-outcome holds. A causal realization is obtained by drawing U uniformly on [0,1], independently of A conditional on X, and setting Y_zeta(a)=B*(2*1{U <= (1+mu_zeta(a,X)/B)/2}-1). Then Y=Y_zeta(A), and the potential-outcome process is independent of A conditional on X. Thus ass:consistency and ass:no-unmeasured-confounding hold. Because p_0 and q_0 are unchanged across zeta and satisfy the slack baseline, ass:px-holder, ass:local-positivity, ass:pi-treatment-holder, and ass:pi-covariate-holder hold. The beta condition is automatic because q_0 is fixed and admissible for the declared beta. Hence P_+ and P_- belong to C_{alpha,beta,s}. By def:theta-functional, theta_{P_zeta}(t_0)=int mu_zeta(t_0,x)p_0(x)dx=zeta lambda h^alpha, because psi(0)=1 and p_0 integrates to one. Therefore Delta_h=|theta_{P_+}(t_0)-theta_{P_-}(t_0)|=2 lambda h^alpha. The one-observation KL has no contribution from X or A|X because those laws are common. Conditional on (A,X), lem:bernoulli-mean-channel-kl gives KL(Q_{mu_+(A,X)},Q_{mu_-(A,X)}) <= 2*(mu_+(A,X)-mu_-(A,X))^2/B^2. The difference equals 2 lambda h^alpha psi((A-t_0)/h). Since q_0 is bounded above by a constant supplied by its Holder radius, KL(P_+,P_-) <= C lambda^2 h^{2 alpha} int psi((a-t_0)/h)^2 q_0(a) da <= C' lambda^2 h^{2 alpha+1}. Under ass:iid-sampling, KL(P_+^n,P_-^n)=n KL(P_+,P_-). Set h_n=a_0 n^{-1/(2 alpha+1)} with a_0>0 small enough that h_n<=epsilon_0 for all large n and n KL(P_+,P_-)<=K<infinity. Lemma lem:le-cam-two-point-mse-source then implies that every estimator T_n satisfies max_{zeta in {-1,1}} E_{P_zeta}[(T_n-theta_{P_zeta}(t_0))^2] >= c_K Delta_{h_n}^2. Since Delta_{h_n}^2=4 lambda^2 a_0^{2 alpha} n^{-2 alpha/(2 alpha+1)}, the worst-case risk over C_{alpha,beta,s} is at least a constant multiple of n^{-2 alpha/(2 alpha+1)}. Taking the infimum over T_n in def:minimax-risk proves the claim. The constants are fixed by p_0, q_0, eta_0, B, psi, lambda, a_0, and K; hence they may depend on the fixed class radii and the slack baseline, but not on n. Since q_0 is never perturbed, the same argument works for every beta>0."
+    },
+    {
+      "id": "lem:rho-deficient-regime-algebra",
+      "kind": "lemma",
+      "statement": "If 0<s<d/4, then rho_n = n^{-2/(1+d/(4s)+1/alpha)} for every n>=1, and 2/(1+d/(4s)+1/alpha) < 2 alpha/(2 alpha+1).",
+      "depends_on": [
+        "def:published-hoif-rate"
+      ],
+      "status": "proved",
+      "proof_tex": "Proof. Put a=2 alpha/(2 alpha+1) and b=2/(1+d/(4s)+1/alpha). The definition def:published-hoif-rate says rho_n=n^{-a} vee n^{-b}. If 0<s<d/4, then d/(4s)>1, so 1+d/(4s)+1/alpha > 2+1/alpha=(2 alpha+1)/alpha. Taking reciprocals of positive quantities gives b < 2 alpha/(2 alpha+1)=a. For n>=1, b<a implies n^{-b}>=n^{-a}. Therefore rho_n=n^{-b}=n^{-2/(1+d/(4s)+1/alpha)}, and the deficient functional exponent is strictly smaller than the oracle exponent."
+    },
+    {
+      "id": "thm:sharp-minimax-smooth-covariate",
+      "kind": "theorem",
+      "statement": "Assume ass:baseline-submodel-slack. For every fixed beta>0 and every s>=d/4, there exists c>0 such that, for all sufficiently large n, R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0),t_0) >= c n^{-2 alpha/(2 alpha+1)} = c rho_n. Thus, in the smooth-covariate regime, the certified lower floor lands on the same exponent as the published benchmark rho_n, but this core does not claim a matching same-class upper bound.",
+      "depends_on": [
+        "ass:baseline-submodel-slack",
+        "def:holder-dose-class",
+        "def:minimax-risk",
+        "def:published-hoif-rate",
+        "thm:sharp-pointwise-lower-bound",
+        "lem:rho-oracle-regime-algebra"
+      ],
+      "status": "proved",
+      "proof_tex": "Proof. Fix beta>0 and s>=d/4, and abbreviate C_{alpha,beta,s}=P_{alpha,beta,s}(M,c_0,epsilon_0,t_0). By thm:sharp-pointwise-lower-bound, under ass:baseline-submodel-slack there is c_l>0 such that R_n(C_{alpha,beta,s},t_0) >= c_l n^{-2 alpha/(2 alpha+1)} for all sufficiently large n. Lemma lem:rho-oracle-regime-algebra gives rho_n=n^{-2 alpha/(2 alpha+1)} when s>=d/4. Substituting this identity yields R_n(C_{alpha,beta,s},t_0) >= c_l rho_n. This is a same-scale lower-floor comparison only; the present DAG does not derive a matching same-class upper inequality.",
+      "justification": "Once the converse is proved, the clean regime s>=d/4 is the referee-visible sanity check: the certified lower floor lands on the same exponent as the published benchmark without laundering in an unresolved upper route.",
+      "gap": "The literature does not separate same-scale comparison from same-class sharpness; making that distinction explicit is necessary once the upper-side route is not reproduced on the bare class.",
+      "consumer": "It tells the reader exactly what is settled in the smooth-covariate regime: the converse reaches the benchmark exponent, while the matching same-class upper theorem remains external."
+    },
+    {
+      "id": "thm:frontier-bracket-deficient",
+      "kind": "theorem",
+      "statement": "For every fixed beta>0 and every 0<s<d/4, under the declared same-class assumptions and ass:baseline-submodel-slack, there exists c>0 such that, for all sufficiently large n, R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0),t_0) >= c n^{-2 alpha/(2 alpha+1)}. Moreover rho_n = n^{-2/(1+d/(4s)+1/alpha)} has a strictly smaller exponent than the certified lower floor. The same-class upper endpoint C rho_n is not discharged on the present core.",
+      "depends_on": [
+        "ass:baseline-submodel-slack",
+        "def:holder-dose-class",
+        "def:minimax-risk",
+        "def:published-hoif-rate",
+        "lem:oracle-dose-regression-lower-all-beta",
+        "lem:rho-deficient-regime-algebra"
+      ],
+      "status": "proved",
+      "proof_tex": "Proof. Fix beta>0 and 0<s<d/4, and write C_{alpha,beta,s}=P_{alpha,beta,s}(M,c_0,epsilon_0,t_0). By lem:oracle-dose-regression-lower-all-beta, under ass:baseline-submodel-slack there is c_l>0 such that R_n(C_{alpha,beta,s},t_0) >= c_l n^{-2 alpha/(2 alpha+1)} for all sufficiently large n. That lower construction perturbs only mu_P and keeps p_{X,P} and pi_P fixed at the slack baseline, so it is valid for every s and every beta>0. Lemma lem:rho-deficient-regime-algebra identifies rho_n with n^{-2/(1+d/(4s)+1/alpha)} and proves that this exponent is strictly smaller than 2 alpha/(2 alpha+1). Hence the present core certifies only the lower endpoint together with the algebraic benchmark comparison; it does not derive a same-class upper bound of order rho_n.",
+      "justification": "The deficient regime is exactly where the temptation to overclaim is highest, so the honest theorem must separate the certified lower floor from the still-external functional-branch comparator.",
+      "gap": "The literature offers a deficient-regime HOIF benchmark, but the present class does not yet discharge that same-class upper endpoint because the localized upper route needs more than slice smoothness.",
+      "consumer": "It tells the reader what survives in the deficient regime and what remains to be proved before any two-sided frontier can be advertised."
+    },
+    {
+      "id": "lem:certified-beta-frontier-bracket",
+      "kind": "lemma",
+      "statement": "Assume ass:baseline-submodel-slack. For every fixed beta>0 there exists c>0 such that, for all sufficiently large n, R_n(P_{alpha,beta,s}(M,c_0,epsilon_0,t_0),t_0) >= c n^{-2 alpha/(2 alpha+1)}. If s>=d/4 then rho_n = n^{-2 alpha/(2 alpha+1)}. If 0<s<d/4 then rho_n = n^{-2/(1+d/(4s)+1/alpha)} and 2/(1+d/(4s)+1/alpha) < 2 alpha/(2 alpha+1). Hence the certified unrestricted beta-frontier is the all-beta oracle lower floor together with the algebraic comparison to the published rho_n benchmark.",
+      "depends_on": [
+        "ass:baseline-submodel-slack",
+        "def:holder-dose-class",
+        "def:minimax-risk",
+        "def:published-hoif-rate",
+        "thm:sharp-pointwise-lower-bound",
+        "lem:rho-oracle-regime-algebra",
+        "lem:rho-deficient-regime-algebra"
+      ],
+      "status": "proved",
+      "proof_tex": "Proof. Fix beta>0 and abbreviate C_{alpha,beta,s}=P_{alpha,beta,s}(M,c_0,epsilon_0,t_0). The all-beta lower floor comes directly from thm:sharp-pointwise-lower-bound: there are constants c>0 and n_0<infinity such that R_n(C_{alpha,beta,s},t_0) >= c n^{-2 alpha/(2 alpha+1)} for every n>=n_0. If s>=d/4, lem:rho-oracle-regime-algebra identifies rho_n with n^{-2 alpha/(2 alpha+1)}, so the certified lower floor is of order rho_n. If 0<s<d/4, lem:rho-deficient-regime-algebra identifies rho_n=n^{-2/(1+d/(4s)+1/alpha)} and proves that its exponent is strictly smaller than 2 alpha/(2 alpha+1). Therefore the present certificate is exactly the universal lower floor plus the regime-by-regime algebraic comparison to the published benchmark; it does not package any same-class upper theorem."
+    },
+    {
+      "id": "lem:published-upper-bound-cited",
+      "kind": "lemma",
+      "statement": "Cited conditional comparator (Bonvini-Kennedy 2022). Under Assumptions 1-2 and Conditions 1-4 of the source theorem, alpha <= beta, equal covariate smoothness s for the two nuisance functions, projection approximation of order k^(-2s/d), the source's optimal choices of k and h, equal-rate estimation of w and 1/pi, and negligibility of the third-order density-estimation remainder ||v||_g ||q||_g ||p_hat(t,.)-p(t,.)||_infinity, the conditional MSE of the source's specified second-order estimator is eventually at most a constant times rho_n as displayed in Figure 1. This is an estimator-specific conditional risk implication, not an unconditional minimax upper bound over any class and not a same-class upper theorem for def:holder-dose-class.",
+      "depends_on": [],
+      "status": "cited",
+      "source": {
+        "cite": "BonviniKennedy2022FastDRF",
+        "locator": "arXiv:2207.11825v1, Section 3.4, Theorem 1 and Remarks 7-8/Figure 1 (renumbered Theorem 3.1 in v2)",
+        "verbatim_statement": "The source bounds the conditional bias and variance of its specified mth-order HOIF estimator under Assumptions 1-2 and Conditions 1-4. Its Figure 1 rho_n comparison specializes to the second-order estimator, alpha <= beta, gamma1 = gamma2 = s, projection approximation k^(-(gamma1+gamma2)/d), source-optimal k and h, equal-rate estimation of w and 1/pi, and negligibility of ||v||_g ||q||_g ||p_hat(t,.)-p(t,.)||_infinity. Under those conditions the estimator's conditional MSE has the displayed rho_n order. The source does not state an unconditional minimax upper theorem over arbitrary covariate-density smoothness sp and gives no numerical sp threshold.",
+        "arxiv": "2207.11825",
+        "url": "https://arxiv.org/abs/2207.11825",
+        "attestation": {
+          "by": "main",
+          "note": "Manually transcribed and checked against the lawful arXiv primary source, v1 Section 3.4 Theorem 1 and Remarks 7-8/Figure 1; current v2 renumbers the result Theorem 3.1.",
+          "at": "2026-07-13T06:00:00.000Z"
+        }
+      }
+    }
+  ],
+  "sampling_model": {
+    "design": "iid observational sampling",
+    "units": "O_i = (Y_i, A_i, X_i), i = 1,...,n",
+    "treatment": "A_i is a scalar continuous treatment supported on [0,1]",
+    "overlap": "The conditional treatment density pi_P(a|x) is bounded below on an epsilon_0-neighborhood of the interior dose t_0",
+    "nuisance_estimation": "No estimator is built into the class; nuisance difficulty is encoded by Holder regularity of mu_P, pi_P, and p_{X,P}"
+  },
+  "estimand_functional": "theta_P(t_0) = int_{[0,1]^d} mu_P(t_0,x) p_{X,P}(x) dx",
+  "target_estimand": "theta_P(t_0) = E_P[Y(t_0)]",
+  "bibliography": [
+    {
+      "key": "BonviniKennedy2022FastDRF",
+      "citation": "Bonvini, M., and Kennedy, E. H. (2022). Fast convergence rates for dose-response estimation. arXiv:2207.11825."
+    },
+    {
+      "key": "KennedyBalakrishnanRobinsWasserman2022MinimaxCATE",
+      "citation": "Kennedy, E. H., Balakrishnan, S., Robins, J. M., and Wasserman, L. (2022). Minimax rates for heterogeneous causal effect estimation. arXiv:2203.00837."
+    },
+    {
+      "key": "RobinsLiTchetgenVanderVaart2008HOIF",
+      "citation": "Robins, J. M., Li, L., Tchetgen Tchetgen, E., and van der Vaart, A. (2008). Higher order influence functions and minimax estimation of nonlinear functionals. arXiv:0805.3040."
+    },
+    {
+      "key": "RobinsLiTchetgenVanderVaart2016HOIFTechnical",
+      "citation": "Robins, J. M., Li, L., Tchetgen Tchetgen, E., and van der Vaart, A. (2016). Technical report: Higher order influence functions and minimax estimation of nonlinear functionals. arXiv:1601.05820."
+    },
+    {
+      "key": "ColangeloLee2020ContinuousDML",
+      "citation": "Colangelo, K., and Lee, Y.-Y. (2020). Double debiased machine learning nonparametric inference with continuous treatments. arXiv:2004.03036."
+    },
+    {
+      "key": "SemenovaChernozhukov2017CausalFunctions",
+      "citation": "Semenova, V., and Chernozhukov, V. (2017). Debiased machine learning of conditional average treatment effects and other causal functions. arXiv:1702.06240."
+    },
+    {
+      "key": "KennedyMaMcHughSmall2017ContinuousDR",
+      "citation": "Kennedy, E. H., Ma, Z., McHugh, M. D., and Small, D. S. (2017). Nonparametric methods for doubly robust estimation of continuous treatment effects. Journal of the Royal Statistical Society, Series B 79(4), 1229-1245."
+    },
+    {
+      "key": "SchindlShenKennedy2024IncrementalContinuous",
+      "citation": "Schindl, K., Shen, S., and Kennedy, E. H. (2024). Incremental effects for continuous exposures. arXiv:2409.11967."
+    },
+    {
+      "key": "BibautVanderLaan2017AdaptiveSmoothing",
+      "citation": "Bibaut, A. F., and van der Laan, M. J. (2017). Data-adaptive smoothing for optimal-rate estimation of possibly non-regular parameters. arXiv:1706.07408."
+    },
+    {
+      "key": "CinelliEtAl2025CausalChallenges",
+      "citation": "Cinelli, C., Feller, A., Imbens, G., Kennedy, E., Magliacane, S., and Zubizarreta, J. (2025). Challenges in statistics: A dozen challenges in causality and causal inference. arXiv:2508.17099."
+    },
+    {
+      "key": "Tsybakov2009Nonparametric",
+      "citation": "Tsybakov, A. B. (2009). Introduction to Nonparametric Estimation. Springer."
+    }
+  ],
+  "tldr": "The note now certifies an all-beta lower floor for interior continuous-treatment dose-response estimation at a fixed dose t_0: over the original Holder class, every estimator of theta_P(t_0) has worst-case MSE at least a constant multiple of n^(-2*alpha/(2*alpha+1)). Bonvini and Kennedy remain the upper-side benchmark, but the current core no longer re-derives their HOIF route on the bare class because the localized pilot and score steps need extra window/joint regularity beyond the slice assumptions at t_0. In the smooth-covariate regime s>=d/4 the certified lower floor lands on the same exponent as rho_n; in the deficient regime the same-class upper frontier remains open.",
+  "project_justification": {
+    "gap": "The interior fixed-dose dose-response literature has a published higher-order upper rate but no matching minimax converse, so the central frontier is still one-sided.",
+    "niche": "The target theta_P(t_0) is neither ordinary regression nor an ordinary nonlinear functional: the hard subexperiment must localize in the treatment coordinate while preserving conditional-density normalization and positivity.",
+    "fill": "The project fills that gap by adapting the CATE fuzzy-hypothesis architecture to a continuous-dose partial-mean target, proving an all-beta pointwise lower floor on the original class, showing in the smooth-covariate regime that this lower floor lands on the same exponent as the published benchmark rho_n, and isolating the unresolved same-class upper frontier instead of folding extra regularity into the main theorem."
+  },
+  "related_work": "BonviniKennedy2022FastDRF is the anchor because it introduces the continuous-dose HOIF estimator, separates treatment-direction and covariate-direction smoothness, and states that a tight lower bound remains elusive. The present core now treats that paper as the upper-side benchmark rather than re-deriving its localized nuisance route on the bare Holder class, because the published upper analysis uses window/joint regularity beyond the slice assumptions encoded here. KennedyMaMcHughSmall2017ContinuousDR is the first pseudo-outcome dose-response precursor because it establishes the regression-plus-nuisance-remainder representation that later estimators refine. ColangeloLee2020ContinuousDML and SemenovaChernozhukov2017CausalFunctions are the main first-order comparators: both provide orthogonal-score or orthogonal-signal inference machinery for continuous or function-valued causal targets, but neither characterizes the minimax frontier for interior fixed-dose estimation. KennedyBalakrishnanRobinsWasserman2022MinimaxCATE is the closest lower-bound template because it proves a hybrid regression-functional rate by localized fuzzy hypotheses, yet its construction does not enforce continuous-treatment density normalization or fixed-dose localization. RobinsLiTchetgenVanderVaart2008HOIF and RobinsLiTchetgenVanderVaart2016HOIFTechnical provide the higher-order von Mises and U-statistic logic underlying the Bonvini-Kennedy upper analysis that this core records only as an external comparator. SchindlShenKennedy2024IncrementalContinuous is the natural foil because it delivers genuine continuous-exposure lower bounds, but for incremental tilts and edge-dose limits rather than the interior fixed-dose partial mean. BibautVanderLaan2017AdaptiveSmoothing explains why closing even the lower side of the rate frontier matters for inference: fixed-dose dose-response values are nonregular, so any later adaptive confidence procedure must know the benchmark it is adapting to. CinelliEtAl2025CausalChallenges underscores that minimax optimality for modern causal functionals remains a live open problem rather than a settled technicality.",
+  "honest_scope": "The settled kernel in this version is the all-beta pointwise lower floor R_n >= c n^{-2 alpha/(2 alpha+1)} on the original Holder class. In the smooth-covariate regime s>=d/4 this puts the converse on the same exponent as the published rho_n benchmark, but the note does not certify a matching same-class upper bound. In the deficient regime 0<s<d/4 the Bonvini-Kennedy functional branch remains an external comparator whose same-class validity is open on the present assumptions. The explicit frontier question is whether rho_n is attainable on the original class, whether an intermediate exponent appears, or whether beta becomes a genuine hardness parameter."
+}

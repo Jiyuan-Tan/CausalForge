@@ -1,0 +1,816 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_dml\_orthogonality\_frontier, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_dml\_orthogonality\_frontier} / \texttt{v1}%
+  \\ \large\textit{Orthogonality-order index for CATE DML below the nuisance-smoothness elbow}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This proposal uses the ExactID/free-form convention
+\[
+(\texttt{qid},\texttt{specialization},\text{SWIG/DAG},\text{treatment},
+\text{target estimand},\text{identifying assumptions}).
+\]
+The locked tuple is
+\[
+\begin{gathered}
+\texttt{qid}=\texttt{eid\_dml\_orthogonality\_frontier},\qquad
+\texttt{specialization}=\texttt{v1},\\
+\text{SWIG/DAG}=X\to D\to Y,\; X\to Y,\quad
+\text{treatment }D\in\{0,1\},\\
+\text{target estimand}=\tau_0(x_0)=\E[Y(1)-Y(0)\mid X=x_0]
+\text{ and local CATE reports } \theta_0(\ell_h),\\
+\text{identifying assumptions}=\text{consistency, conditional unconfoundedness }
+(Y(1),Y(0))\perp D\mid X,\\
+\text{overlap } \underline e\le p_0(X)\le 1-\underline e,\text{ and the Holder experiment in
+Assumptions \ref{ass:causal}--\ref{ass:higher-order-class}.}
+\end{gathered}
+\]
+Here \(p_0(x)=\Pr(D=1\mid X=x)\), \(m_{d,0}(x)=\E[Y\mid D=d,X=x]\),
+\(\tau_0(x)=m_{1,0}(x)-m_{0,0}(x)\), and \(x_0\) is an interior point of
+the covariate support.  The focal mathematical object is the
+\emph{primitive orthogonality-order index}.  Let
+\(\mathsf B_K\subset(0,\infty)^3\times\{1,2,\ldots\}\) denote the
+Kennedy--Balakrishnan--Robins--Wasserman below-elbow region: the open set of
+Holder parameters, indexed by their average nuisance smoothness
+\(s=(\alpha+\beta)/2\) together with \(\gamma\) and \(d\), for which their
+published minimax lower bound for CATE estimation is strictly slower than the
+oracle nonparametric-regression rate \(n^{-\gamma/(2\gamma+d)}\).  This
+proposal treats \(\mathsf B_K\) as a published calibration, not as a new
+frontier.  Define first the product/projection candidate
+\[
+q^\dagger(\alpha,\beta,\gamma,d)=
+\begin{cases}
+1,& r_m+r_p>r_\tau,\\
+\min\{q\ge2:\;q(r_m+r_p)>r_\tau\text{ and }\mathcal K_q\ne\varnothing\},
+& r_m+r_p\le r_\tau\text{ and the displayed set is nonempty},\\
+\infty,& r_m+r_p\le r_\tau\text{ and the displayed set is empty}.
+\end{cases}
+\]
+The locked frontier object is
+\[
+q_\star(\alpha,\beta,\gamma,d)=
+\begin{cases}
+\infty,&(\alpha,\beta,\gamma,d)\in\mathsf B_K,\\
+q^\dagger(\alpha,\beta,\gamma,d),&\text{otherwise}.
+\end{cases}
+\]
+where \(\alpha,\beta\) are the Holder smoothness exponents of the outcome and
+propensity nuisances, \(\gamma\) is the Holder smoothness exponent of the CATE
+surface, \(d\) is the covariate dimension,
+\(r_m=\alpha/(2\alpha+d)\), \(r_p=\beta/(2\beta+d)\), and
+\(r_\tau=\gamma/(2\gamma+d)\).  The projection-feasibility set is
+\[
+\mathcal K_q=\left\{\kappa\in(0,1):
+{\kappa\min\{\alpha,\beta\}\over d}>r_\tau
+\text{ and }q(1-\kappa)>1\right\}.
+\]
+First-order DML corresponds to \(q=1\); \(q>1\) denotes a localized
+HOIF/U-statistic correction with projection dimension \(J_n=n^\kappa\).  The
+set \(\mathcal K_q\) is independent of the success event: it records the
+primitive approximation and stochastic projection inequalities that a concrete
+localized higher-order correction must satisfy.
+
+\begin{abstract}
+This proposal asks where first-order Neyman-orthogonal DML stops being enough
+for local CATE inference in the primitive Holder experiment studied by modern
+minimax HTE theory.  The routine theorem records the exact first-order AIPW
+drift for local CATE reports under an explicit localized nuisance-rate
+condition: after cross-fitting, the population bias is a localized product of
+outcome-regression and propensity errors.  The novel kernel is Conjecture
+\ref{conj:order-frontier}: outside the published
+Kennedy--Balakrishnan--Robins--Wasserman below-elbow region \(\mathsf B_K\),
+the independently defined index \(q_\star(\alpha,\beta,\gamma,d)\), including
+primitive projection feasibility through \(\mathcal K_q\), is the necessary
+and sufficient orthogonalization order for oracle-rate Gaussian local CATE
+inference.  Inside \(\mathsf B_K\), the proposal sets \(q_\star=\infty\),
+reflecting the published full-class lower bound rather than a new
+impossibility claim.  Thus the first-order impossibility itself is treated as
+a published minimax calibration, not as the flagship novelty.  The new
+question is whether this Kennedy-calibrated integer frontier, including the
+\(q_\star=\infty\) case, is the minimal order at which localized HOIF
+corrections recover oracle Gaussian local CATE inference whenever the
+published lower bound leaves oracle inference possible.  Resolving the
+conjecture would tell HTE researchers when to use ordinary DML, when to
+construct a concrete localized HOIF correction, and when a claimed CATE
+confidence interval is attempting a nonregular problem with a first-order
+tool.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Heterogeneous-treatment-effect DML often starts from a first-order
+orthogonal pseudo-outcome and then smooths or projects it to estimate CATE
+features.  The usual first-order message is that nuisance products are
+second-order for a root-\(n\) scalar target.  Local CATE reports are different:
+their oracle stochastic scale is \(n^{-\gamma/(2\gamma+d)}\), not
+\(n^{-1/2}\), so the same nuisance product can be first-order relative to the
+target's own minimax scale.
+
+\paragraph{The main finding (proposed).}
+Theorem \ref{thm:first-order-drift} gives the algebraic starting point: for
+the local AIPW report \(\theta_0(\ell_h)\), cross-fitted first-order DML has a
+localized product drift controlled by
+\(\delta_{m,h,n}\delta_{p,h,n}\).  Under the local sup-norm rates in
+Assumption \ref{ass:nuisance-rates}, this product has exponent
+\(r_m+r_p\); under only global \(L^2\) rates an additional localization
+amplification factor would be present.  Theorem
+\ref{thm:kennedy-calibration} separates two frontiers that the v3 draft had
+conflated.  The Kennedy--Balakrishnan--Robins--Wasserman below-elbow region
+\(\mathsf B_K\) is a full-class minimax obstruction stated in their average
+nuisance smoothness \(s=(\alpha+\beta)/2\), whereas
+\(\Delta_1=r_m+r_p-r_\tau\) is only the first-order AIPW product-drift index.
+Conjecture \ref{conj:order-frontier} is the flagship kernel:
+\(q_\star(\alpha,\beta,\gamma,d)\), with \(q_\star=\infty\) on
+\(\mathsf B_K\), is exactly the minimal orthogonalization order needed for
+oracle-rate Gaussian local CATE inference when the correction is a localized
+projection HOIF/U-statistic with \(J_n=n^\kappa\) and
+\(\kappa\in\mathcal K_q\).
+
+\paragraph{What is new.}
+\citet[\S3]{ChernozhukovEtAl2018DML} give sufficient first-order DML product
+rate conditions for low-dimensional treatment and structural parameters, but
+not a local CATE impossibility theorem.  \citet[\S2--\S4]{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}
+derive minimax CATE rates and an elbow in nuisance smoothness, but their
+headline target is CATE estimation rate optimality, not a minimal
+orthogonalization-order index for oracle Gaussian local CATE inference after
+the elbow is crossed.  \citet[\S2.1, \S3.1, Corollary 4]{MackeySyrgkanisZadik2018OML} show that \(k\)-th
+order orthogonality can relax nuisance-rate requirements in orthogonal machine
+learning, while \citet{RobinsLiTchetgenVanDerVaart2008HOIF} develop the
+higher-order influence-function machinery behind many nonparametric
+improvements and \citet{LiTchetgenVanDerVaartRobins2011HOIFTreatment}
+specialize higher-order U-statistic inference to a low-regularity treatment
+effect interval problem.  The Kennedy estimator uses localized higher-order
+local-polynomial/R-learner structure to attain minimax CATE rates; the present
+proposal asks for the integer order at which such localized higher-order
+corrections become necessary and sufficient for oracle Gaussian local reports.
+\citet[\S2--\S3]{ChernozhukovNeweySingh2022Riesz} analyze
+regularized Riesz representers for global and local linear functionals, but
+their local-nonregularity discussion does not give a Holder-indexed minimal
+orthogonalization order.  The epsilon-gap is the named scalar
+\(q_\star(\alpha,\beta,\gamma,d)\), calibrated to the Kennedy below-elbow set
+\(\mathsf B_K\) and refined outside that set by the projection-feasibility set
+\(\mathcal K_q\): the proposal claims an iff frontier tying first-order DML,
+regularized Riesz local inference, minimax CATE elbows, and concrete
+higher-order orthogonal scores in one primitive Holder experiment, with
+\(q_\star=\infty\) marking either the published Kennedy oracle-impossibility
+region or the projection-infeasible regime rather than an undefined minimum.
+
+\paragraph{How it positions in the literature.}
+The anchor cluster is ExactID.  The identifying formula is the usual
+unconfoundedness/back-door formula for \(m_{1,0}(x)-m_{0,0}(x)\); the proposal
+does not add a new causal estimand.  The methodological question is
+semiparametric inference after exact identification: which order of
+orthogonalization makes the identified local CATE functional regular enough
+for oracle Gaussian inference over Holder nuisance classes.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the simultaneous CATE and structural
+function procedure of \citet{SemenovaChernozhukov2021DMLCATE}: the conjecture
+would say when its first-order orthogonal-signal workflow can be pushed from
+linear or group summaries to truly local CATE reports, and when a
+higher-order signal is mathematically required.
+
+\paragraph{How research benefits from the conclusion.}
+If the conclusion resolves favorably, empirical HTE papers should report
+\(q_\star(\alpha,\beta,\gamma,d)\) or a conservative lower bound on it before
+using first-order DML pseudo-outcomes for local CATE confidence intervals.
+
+\section{Related work}
+\citet[\S3]{ChernozhukovEtAl2018DML} is the first-order DML anchor: it gives
+orthogonal scores and cross-fitting under sufficient product-rate conditions,
+but it does not prove a necessary CATE smoothness frontier.  \citet{SemenovaChernozhukov2021DMLCATE}
+develop DML estimation and simultaneous inference for CATE best linear
+predictors and group averages; this proposal asks when the same first-order
+signal can be sharpened to local CATE inference.  \citet[\S2--\S4 and Theorems 1--2]{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}
+derive minimax rates for Holder-smooth CATE and identify an elbow in average
+nuisance smoothness \(s=(\alpha+\beta)/2\) where the oracle
+nonparametric-regression rate is unattainable; this is the closest published
+elbow result and is recorded here as \(\mathsf B_K\).
+\citet{RobinsLiTchetgenVanDerVaart2008HOIF}
+develop higher-order influence functions for minimax estimation of nonlinear
+functionals and supply the mathematical technology the conjecture would
+specialize.  \citet[\S2.1, \S3.1, Corollary 4]{MackeySyrgkanisZadik2018OML} show that higher-order
+orthogonality relaxes first-stage rate requirements in orthogonal machine
+learning, including a limitation result for second-order orthogonality in a
+partially linear setting; this is the closest order-comparison comparator.
+\citet{LiTchetgenVanDerVaartRobins2011HOIFTreatment} is the closest published
+treatment-effect interval precedent: it builds higher-order U-statistic point
+and interval estimators under low regularity by reducing the problem to
+expected conditional covariance estimation, whereas this proposal targets a
+local CATE order frontier indexed by \((\alpha,\beta,\gamma,d)\) and calibrated
+against the Kennedy minimax CATE elbow.
+\citet{ChernozhukovNeweySingh2022AutoDML} gives automatic debiasing through
+Riesz representers for causal and structural effects, motivating the need to
+distinguish first-order automatic bias correction from genuinely higher-order
+orthogonalization.  \citet[\S2--\S3]{ChernozhukovNeweySingh2022Riesz} develops DML for
+global and local linear functionals using regularized Riesz representers,
+including nonregular local objects; this is the closest Riesz-locality
+comparator and motivates the local regular-to-nonregular boundary in the
+present conjecture.  \citet{FosterSyrgkanis2023OSL} provides orthogonal
+statistical-learning excess-risk bounds under metric entropy, which motivates
+but does not settle Gaussian local CATE inference.  \citet{ArmstrongKolesar2021FiniteSampleATE}
+prove finite-sample honest ATE inference and minimum smoothness conditions
+under unconfoundedness, making them a necessity precedent for smoothness-based
+causal inference frontiers.
+
+The in-repository prior-art map supplied by Stage -1.1 says that
+\texttt{eid\_dml\_orthogonality\_frontier}/v1 previously pursued a
+two-channel first-order HTE-DML frontier and failed after Stage 0.5 because
+the claimed iff boundary was encoded in high-level assumptions.  The failed
+banked \texttt{eid\_dml\_orth\_uniform}/v2 proposal targeted DML/LRO/ADML
+variance-report equivalence, not the Holder CATE orthogonalization-order
+frontier.  The \texttt{doc/API.md} catalogue is panel-heavy in the relevant
+index and records no existing ExactID proposal for a CATE
+\(q_\star(\alpha,\beta,\gamma,d)\) order frontier.
+
+\section{Formal setup}
+The observed data are i.i.d. draws \(O_i=(Y_i,D_i,X_i)\), where
+\(D_i\in\{0,1\}\), \(X_i\in[0,1]^d\), and \(Y_i\in\mathbb R\).  Potential
+outcomes \(Y(1),Y(0)\) obey consistency and conditional unconfoundedness.
+Let \(p_0(x)=\Pr(D=1\mid X=x)\), \(m_{d,0}(x)=\E[Y\mid D=d,X=x]\), and
+\(\tau_0(x)=m_{1,0}(x)-m_{0,0}(x)\).  For an interior point \(x_0\) and
+bandwidth \(h\), let \(K_h(x)=h^{-d}K((x-x_0)/h)\) with a bounded compactly
+supported order-\(\lfloor\gamma\rfloor\) kernel, and define
+\[
+\theta_0(\ell_h)=\E[\ell_h(X)\tau_0(X)],\qquad
+\ell_h(x)={K_h(x)\over \E[K_h(X)]}.
+\]
+The oracle local CATE rate is
+\[
+r_\tau={\gamma\over 2\gamma+d},\qquad
+a_n=n^{-r_\tau},
+\]
+obtained by the usual bias-variance balance \(h_n\asymp n^{-1/(2\gamma+d)}\).
+The nuisance rates are
+\[
+r_m={\alpha\over 2\alpha+d},\qquad r_p={\beta\over 2\beta+d},\qquad
+\delta_{m,n}\asymp n^{-r_m},\quad \delta_{p,n}\asymp n^{-r_p}.
+\]
+The localized nuisance scales are
+\[
+\delta_{m,h,n}=\max_{d\in\{0,1\}}
+\sup_{x\in\operatorname{supp}(K_h)}|\hat m_d(x)-m_{d,0}(x)|,\qquad
+\delta_{p,h,n}=\sup_{x\in\operatorname{supp}(K_h)}|\hat p(x)-p_0(x)|.
+\]
+Let \(s=(\alpha+\beta)/2\), and let
+\(\mathsf B_K\subset(0,\infty)^3\times\{1,2,\ldots\}\) be the published
+Kennedy--Balakrishnan--Robins--Wasserman below-elbow region: the open set of
+parameters for which their minimax lower bound for Holder CATE estimation is
+strictly slower than the oracle rate \(a_n\).  The definition is deliberately
+keyed to their average nuisance smoothness \(s\), not to the first-order AIPW
+product exponent below.  Define the first-order deficit,
+projection-feasibility set, product/projection candidate, and primitive
+orthogonalization-order index by
+\[
+\Delta_1(\alpha,\beta,\gamma,d)=r_m+r_p-r_\tau,
+\qquad
+\mathcal K_q=\left\{\kappa\in(0,1):
+{\kappa\min\{\alpha,\beta\}\over d}>r_\tau,\;q(1-\kappa)>1\right\},
+\]
+\[
+q^\dagger(\alpha,\beta,\gamma,d)=
+\begin{cases}
+1,& r_m+r_p>r_\tau,\\
+\min\{q\ge2:\;q(r_m+r_p)>r_\tau\text{ and }\mathcal K_q\ne\varnothing\},
+& r_m+r_p\le r_\tau\text{ and the displayed set is nonempty},\\
+\infty,& r_m+r_p\le r_\tau\text{ and the displayed set is empty}.
+\end{cases}
+\]
+\[
+q_\star(\alpha,\beta,\gamma,d)=
+\begin{cases}
+\infty,&(\alpha,\beta,\gamma,d)\in\mathsf B_K,\\
+q^\dagger(\alpha,\beta,\gamma,d),&\text{otherwise}.
+\end{cases}
+\]
+These are defined from the published Kennedy elbow, Holder localization, and
+projection exponents alone; they are not defined as the first order for which
+inference succeeds.
+The oracle variance \(V_{\mathrm{or}}(x_0)\) is the pointwise variance of the
+localized oracle empirical process obtained by replacing \(Y(1)-Y(0)\) with
+the known regression contrast and using bandwidth \(h_n\).  A two-point lower
+bound has bounded testing distance when the Hellinger distance between the two
+localized laws is bounded away from both \(0\) and infinity while their CATE
+separation is of order \(a_n\).
+
+For nuisances \(\eta=(m_0,m_1,p)\), the first-order AIPW signal is
+\[
+\phi(O;\eta)=m_1(X)-m_0(X)
+ + {D\{Y-m_1(X)\}\over p(X)}
+ - {(1-D)\{Y-m_0(X)\}\over 1-p(X)}.
+\]
+The local first-order DML estimator is
+\[
+\hat\theta_1(\ell_h)=n^{-1}\sum_{i=1}^n \ell_h(X_i)\phi(O_i;\hat\eta_{-i}),
+\]
+where \(\hat\eta_{-i}\) denotes cross-fitted nuisances trained without
+observation \(i\).  Let \(\mathcal A_1\) denote the class of first-order
+cross-fitted estimators obtained from this AIPW signal with nuisance learners
+satisfying Assumption \ref{ass:nuisance-rates}.  For \(q\ge2\), a localized
+projection HOIF estimator
+\(\hat\theta_{q,J}(\ell_h)\) adds to \(\hat\theta_1(\ell_h)\) an explicit sum
+of degenerate U-statistics of orders \(2,\ldots,q\), built from a localized
+basis \(b_J(X)\in\mathbb R^J\) supported on the \(h_n\)-neighborhood of
+\(x_0\).  The conjectured remainder is decomposed as
+\[
+R_{q,J,n}=R^{\mathrm{prod}}_{q,n}+R^{\mathrm{proj}}_{J,n}
+ +R^{\mathrm{ustat}}_{q,J,n},
+\]
+where the three terms are respectively the uncanceled product drift,
+projection approximation error, and degenerate-U-statistic stochastic error.
+
+\begin{verbatim}
+qid = eid_dml_orthogonality_frontier
+specialization = v1
+graph / SWIG = binary-treatment unconfoundedness SWIG with observed
+  O=(Y,D,X), D in {0,1}, potential outcomes (Y(1),Y(0)), consistency
+  Y=D Y(1)+(1-D)Y(0), and no hidden common cause of D and (Y(1),Y(0))
+  after conditioning on X.
+treatment = D, a binary treatment with propensity p0(X)=Pr(D=1|X).
+target estimand = tau0(x0)=E[Y(1)-Y(0)|X=x0] and local CATE
+  reports theta0(ell_h)=E[ell_h(X){Y(1)-Y(0)}].
+identifying assumptions = consistency, conditional exchangeability,
+  overlap, Holder(alpha) outcome regressions, Holder(beta) propensity,
+  Holder(gamma) CATE surface, compact interior localization, localized
+  nuisance rates, and the primitive localized HOIF construction class in
+  Assumption 5.
+focal object = q_star(alpha,beta,gamma,d), the Kennedy-calibrated minimal
+  orthogonalization order. It is infinity on the published Kennedy--
+  Balakrishnan--Robins--Wasserman below-elbow region B_K indexed by average
+  nuisance smoothness s=(alpha+beta)/2; outside B_K it equals the smallest
+  product/projection order whose Holder exponent q(r_m+r_p) beats the oracle
+  CATE exponent r_tau=gamma/(2 gamma+d) and whose projection exponent kappa
+  satisfies the primitive approximation/stochastic inequalities in K_q.
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[ExactID causal model and overlap]\label{ass:causal}
+The observations are i.i.d.; consistency holds; \((Y(1),Y(0))\perp D\mid X\);
+and for a fixed \(\underline e\in(0,1/2)\),
+\(\underline e\le p_0(X)\le 1-\underline e\) almost surely.
+\end{assumption}
+
+\begin{assumption}[Holder nuisance and target classes]\label{ass:holder}
+The outcome regressions \(m_{0,0},m_{1,0}\) belong to Holder balls
+\(\mathcal H^\alpha(L_m)\), the propensity \(p_0\) belongs to
+\(\mathcal H^\beta(L_p)\) and obeys Assumption \ref{ass:causal}, and the CATE
+surface \(\tau_0\) belongs to \(\mathcal H^\gamma(L_\tau)\) on \([0,1]^d\).
+The exponents \(\alpha,\beta,\gamma,d\) are fixed constants with
+\(\alpha,\beta,\gamma>0\) and \(d\ge1\).
+\end{assumption}
+
+\begin{assumption}[Interior local report]\label{ass:local-report}
+The point \(x_0\) lies in the interior of \([0,1]^d\), the density of \(X\) is
+bounded above and below in a neighborhood of \(x_0\), and
+\(\ell_h(x)=K_h(x)/\E[K_h(X)]\) uses a bounded compactly supported kernel of
+order at least \(\lfloor\gamma\rfloor\) with
+\(h_n\asymp n^{-1/(2\gamma+d)}\).
+\end{assumption}
+
+\begin{assumption}[Localized rate-attaining nuisance learners]\label{ass:nuisance-rates}
+There exist cross-fitted learners \(\hat m_d\) and \(\hat p\) such that, on
+the support of \(K_{h_n}\),
+\[
+\delta_{m,h,n}=O_{\Pr}(n^{-r_m}\log^c n),\qquad
+\delta_{p,h,n}=O_{\Pr}(n^{-r_p}\log^c n)
+\]
+for a fixed \(c<\infty\), where \(r_m=\alpha/(2\alpha+d)\) and
+\(r_p=\beta/(2\beta+d)\).  This is a local sup-norm condition; it is stronger
+than a global \(L^2(P_X)\) rate and is included to prevent a hidden
+\(h_n^{-d/2}\) localization amplification from being mistaken for the
+Holder product exponent.
+\end{assumption}
+
+\begin{assumption}[Primitive localized HOIF construction class]\label{ass:higher-order-class}
+For \(q\ge2\), the candidate estimator class \(\mathcal A_q^{\mathrm{loc}}\)
+is restricted to cross-fitted estimators \(\hat\theta_{q,J}(\ell_{h_n})\)
+formed by adding degenerate U-statistics of orders \(2,\ldots,q\) to the
+first-order AIPW report.  The U-statistics use a localized basis
+\(b_J(X)\in\mathbb R^J\) with entropy \(\log N(\varepsilon,\{b_J\},L^2)
+\le C J\log(1/\varepsilon)\), projection dimension \(J_n=n^\kappa\), and
+\(\kappa\in(0,1)\).  Membership in \(\mathcal A_q^{\mathrm{loc}}\) requires
+only the structural cancellation of Gateaux derivatives through order \(q-1\)
+and finite oracle-scale variance; it does not assume that
+\((\delta_{m,h,n}\delta_{p,h,n})^q=o(a_n)\) or that Gaussian inference
+already holds.
+\end{assumption}
+
+\begin{assumption}[Aligned first-order witness perturbations]\label{ass:aligned-witness}
+For the first-order subclass claim in Theorem \ref{thm:kennedy-calibration},
+there is a sequence of laws in the wavelet witness class of Assumption
+\ref{ass:witness} and a sequence of cross-fitted nuisance estimates such that,
+with probability tending to one,
+\[
+\left|\E\!\left[\ell_{h_n}(X)(\hat p(X)-p_0(X))
+\left\{ {\hat m_1(X)-m_{1,0}(X)\over \hat p(X)}
+       +{\hat m_0(X)-m_{0,0}(X)\over 1-\hat p(X)}\right\}
+\middle|\,\hat\eta\right]\right|
+\ge c_{\mathrm{align}} n^{-(r_m+r_p)}\log^{-c_{\mathrm{align}}'}n
+\]
+for fixed constants \(c_{\mathrm{align}},c_{\mathrm{align}}'>0\).  This is a
+conditional aligned-error witness, not a minimax lower bound for every
+first-order learner in \(\mathcal A_1\).
+\end{assumption}
+
+\begin{assumption}[Concrete non-corner witness class]\label{ass:witness}
+The lower-bound witness class contains laws with \(X\) uniform on \([0,1]^d\),
+propensities \(p_0(x)=1/2+b_p\psi_j(x)\), outcome regressions
+\(m_{d,0}(x)=b_{d,j}\psi_j(x)\), and CATE perturbations
+\(\tau_0(x)=b_{\tau,j}\psi_j(x)\), where \(\psi_j\) is an \(L^2\)-normalized
+compactly supported wavelet bump at resolution \(j\), localized in the
+\(h_n\)-neighborhood of \(x_0\).  The raw coefficients scale as
+\[
+|b_p|=c_p2^{-j(\beta+d/2)},\qquad
+|b_{d,j}|=c_{m,d}2^{-j(\alpha+d/2)},\qquad
+|b_{\tau,j}|=c_\tau2^{-j(\gamma+d/2)},
+\]
+with normalized constants \(c_p,c_{m,d},c_\tau\in[\underline c,\bar c]\) for
+fixed \(0<\underline c<\bar c<\infty\), chosen so that
+\(|p_0(x)-1/2|\le1/4\) and all functions remain inside the Holder balls of
+Assumption \ref{ass:holder}.  Thus ``restricted away from zero'' refers to
+the normalized constants, not to the shrinking resolution-level coefficients.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: first-order local AIPW drift]\label{thm:first-order-drift}
+Under Assumptions \ref{ass:causal}--\ref{ass:nuisance-rates}, for any
+cross-fitted nuisances \(\hat\eta=(\hat m_0,\hat m_1,\hat p)\) satisfying the
+overlap bound, the conditional expectation of the local first-order DML report
+obeys
+\[
+\E[\ell_h(X)\phi(O;\hat\eta)\mid \hat\eta]-\theta_0(\ell_h)
+=\E\!\left[
+\ell_h(X)(\hat p(X)-p_0(X))
+\left\{ {\hat m_1(X)-m_{1,0}(X)\over \hat p(X)}
+       +{\hat m_0(X)-m_{0,0}(X)\over 1-\hat p(X)}\right\}
+\middle|\,\hat\eta\right].
+\]
+Consequently the deterministic first-order drift is bounded by a constant
+times the localized product
+\(\delta_{p,h,n}\delta_{m,h,n}\).  Under Assumption
+\ref{ass:nuisance-rates} its exponent is \(r_m+r_p\) up to logarithms; under
+only global \(L^2(P_X)\) nuisance control this conclusion is not asserted,
+because the kernel weight can introduce an \(h_n\)-dependent amplification.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This theorem is not the novelty claim; it is the exact algebraic bridge
+from the DML score of \citet[\S3]{ChernozhukovEtAl2018DML} to the local CATE
+frontier.  Its gap is that the published DML theorem states sufficient
+high-level remainders, while this display isolates the product term whose
+scale is compared with \citet[\S2--\S4]{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}.
+(b) The concrete consumer is \citet{SemenovaChernozhukov2021DMLCATE}: the
+identity tells when their first-order pseudo-outcome has a local report drift
+large enough to obstruct CATE band inference.
+
+\begin{theorem}[Theorem 2: Kennedy calibration and conditional first-order drift witness]\label{thm:kennedy-calibration}
+Under Assumptions \ref{ass:causal}--\ref{ass:witness}, the published
+Kennedy--Balakrishnan--Robins--Wasserman below-elbow region \(\mathsf B_K\)
+and the first-order AIPW product-drift condition
+\(\Delta_1(\alpha,\beta,\gamma,d)=r_m+r_p-r_\tau\le0\) are distinct objects.
+If \((\alpha,\beta,\gamma,d)\in\mathsf B_K\), then by
+\citet[\S2--\S4 and Theorems 1--2]{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}
+uniform oracle-rate local CATE estimation is impossible over the full Holder
+class, and the calibrated index in Conjecture \ref{conj:order-frontier} must
+equal \(q_\star=\infty\).  Separately, if
+\(\Delta_1(\alpha,\beta,\gamma,d)\le0\) and the aligned-error witness in
+Assumption \ref{ass:aligned-witness} holds for a first-order AIPW report, then
+the first-order drift in Theorem \ref{thm:first-order-drift} is not
+\(o_{\Pr}(a_n)\) on that witness sequence.  Therefore that specified
+first-order report cannot have the oracle Gaussian local CATE expansion
+\[
+a_n^{-1}\{\hat\theta_1(\ell_{h_n})-\theta_0(\ell_{h_n})\}
+\rightsquigarrow N(0,V_{\mathrm{or}}(x_0))
+\]
+over the Holder experiment, where \(a_n=n^{-r_\tau}\) and
+\(V_{\mathrm{or}}(x_0)\) is the oracle variance obtained when
+\((m_{0,0},m_{1,0},p_0)\) are known.  The theorem makes no claim that
+\(\Delta_1\le0\) is the Kennedy elbow, a full-class minimax impossibility, or
+a lower bound for every nuisance learner in \(\mathcal A_1\); that uniform
+necessity claim is part of Conjecture \ref{conj:order-frontier}.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This result is not claimed as a new publication-level contribution after
+the v2 novelty review: it is a named calibration to the lower-bound elbow of
+\citet[\S2--\S4 and Theorems 1--2]{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}.
+Its role is to keep their average-smoothness elbow \(\mathsf B_K\) separate
+from the AIPW product index \(\Delta_1\) and to make the first-order failure
+conditional on an explicit aligned-error witness rather than on an unstated
+minimax lower bound.  (b) The concrete consumer is the local CATE
+confidence-interval problem in
+\citet[\S2--\S4]{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}: the theorem
+marks the region where the proposed \(q_\star\) frontier must declare
+oracle-rate inference impossible, and the separate region where only
+specified first-order AIPW reports with aligned nuisance errors are ruled out.
+
+\begin{conjecture}[Conjecture 1: orthogonality-order frontier (NOT YET PROVED)]\label{conj:order-frontier}
+Under Assumptions \ref{ass:causal}--\ref{ass:witness}, consider the primitive
+localized HOIF classes \(\mathcal A_q^{\mathrm{loc}}\) in Assumption
+\ref{ass:higher-order-class}.  For every fixed
+\((\alpha,\beta,\gamma,d)\), the minimal order \(q\) for which there exists
+\(\kappa\in\mathcal K_q\), \(J_n=n^\kappa\), and an estimator
+\(\hat\theta_{q,J}\in\mathcal A_q^{\mathrm{loc}}\) with uniformly oracle
+Gaussian local CATE inference is
+\[
+q_\star(\alpha,\beta,\gamma,d)=
+\begin{cases}
+\infty,&(\alpha,\beta,\gamma,d)\in\mathsf B_K,\\
+q^\dagger(\alpha,\beta,\gamma,d),&\text{otherwise}.
+\end{cases}
+\]
+For finite \(q_\star\), every \(q<q_\star\) fails to give uniform oracle
+Gaussian inference on an open neighborhood of the wavelet witness laws.  If
+\(q_\star=\infty\), no finite-order estimator in
+\(\bigcup_{q<\infty}\mathcal A_q^{\mathrm{loc}}\) achieves that oracle
+Gaussian limit: on \(\mathsf B_K\) this is exactly the published full-class
+lower bound, and outside \(\mathsf B_K\) it is the primitive
+projection-infeasibility claim.  If \(q_\star=1\), first-order DML already
+attains the oracle local CATE Gaussian limit under the localized-rate
+condition.  For any finite
+\(q\ge\max\{2,q_\star\}\), the localized HOIF estimator
+admits the explicit leading decomposition
+\[
+R_{q,J,n}=O_{\Pr}\{(\delta_{m,h,n}\delta_{p,h,n})^q\}
+ +O_{\Pr}\{J_n^{-\min\{\alpha,\beta\}/d}\}
+ +O_{\Pr}\{J_n^{q/2}n^{-q/2}h_n^{-d/2}\},
+\]
+and each displayed term is \(o_{\Pr}(a_n)\) for some
+\(\kappa\in\mathcal K_q\), yielding the oracle local CATE Gaussian limit up to
+logarithmic factors.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest comparator chain is
+\citet[\S3, especially the orthogonal-score product-rate condition]{ChernozhukovEtAl2018DML}
+\(\to\)
+\citet[\S2.1, \S3.1, Corollary 4]{MackeySyrgkanisZadik2018OML} \(\to\)
+\citet[\S2--\S3 on regularized Riesz local functionals]{ChernozhukovNeweySingh2022Riesz}
+\(\to\)
+\citet[\S2--\S4 and Theorems 1--2]{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}
+\(\to\)
+\citet{LiTchetgenVanDerVaartRobins2011HOIFTreatment}:
+respectively first-order sufficient DML, higher-order orthogonality rate
+relief, regularized Riesz local inference, minimax CATE elbows with localized
+higher-order local-polynomial/R-learner upper constructions, and treatment-
+effect higher-order U-statistic intervals under low regularity.  None names
+the Kennedy-calibrated integer frontier
+\(q_\star(\alpha,\beta,\gamma,d)\) together with the projection-feasibility
+set \(\mathcal K_q\) as a necessary-and-sufficient order for local CATE
+Gaussian inference outside the published below-elbow impossibility region.
+(b) The concrete consumer is
+automatic debiasing as in \citet{ChernozhukovNeweySingh2022AutoDML}: if
+\(q_\star>1\), first-order learned Riesz corrections are not enough for local
+CATE inference, and the debiasing target must be upgraded to a higher-order
+correction or the report must be weakened.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Root-\(n\) scalar ATE corner]\label{cor:ate-corner}
+If the report is replaced by a bounded global ATE weight \(\ell\equiv1\) so
+that the oracle exponent becomes \(r_\tau=1/2\) and the Kennedy CATE
+below-elbow set \(\mathsf B_K\) is not invoked, the first-order condition in
+Conjecture \ref{conj:order-frontier} reduces to the usual DML product-rate
+requirement \(r_m+r_p>1/2\); the localized projection set \(\mathcal K_q\) is
+irrelevant in this nonlocal scalar corner.
+\end{corollary}
+
+\begin{corollary}[Oracle CATE corner]\label{cor:oracle-corner}
+If the nuisances are known, then \(\delta_{m,n}=\delta_{p,n}=0\), all
+orthogonality orders have zero nuisance drift, and the local CATE rate reduces
+to the oracle nonparametric-regression rate \(n^{-\gamma/(2\gamma+d)}\).
+\end{corollary}
+
+\begin{example}[Concrete non-corner witness]\label{ex:wavelet-witness}
+In the one-dimensional case with \(X\sim \mathrm{Unif}[0,1]\), interior
+\(x_0=1/2\), and Haar-smooth wavelet perturbations satisfying Assumption
+\ref{ass:witness}, the product-rate part of the boundary condition is
+\[
+q\left({\alpha\over 2\alpha+1}+{\beta\over 2\beta+1}\right)
+>{\gamma\over 2\gamma+1}.
+\]
+For \(q\ge2\), the same witness also requires a projection exponent
+\(\kappa\) satisfying \(\kappa\min\{\alpha,\beta\}>\gamma/(2\gamma+1)\) and
+\(q(1-\kappa)>1\).  This witness is not the Gaussian oracle corner: both the
+propensity and the outcome regression are perturbed away from constants while
+overlap remains strict.
+\end{example}
+
+\section{Proof-sketch route}
+Theorem \ref{thm:first-order-drift} follows by conditioning on the
+cross-fitted nuisance estimates and expanding the AIPW identity under
+unconfoundedness and then applying the local sup-norm rates from Assumption
+\ref{ass:nuisance-rates}.  Theorem \ref{thm:kennedy-calibration} has two
+checks.  The Kennedy-calibration clause is the implication ``oracle Gaussian
+expansion implies oracle-rate estimation'' followed by the published
+Kennedy--Balakrishnan--Robins--Wasserman lower bound on \(\mathsf B_K\),
+whose definition is based on their average nuisance smoothness
+\(s=(\alpha+\beta)/2\).  The conditional first-order-witness clause combines
+the explicit AIPW product display from Theorem \ref{thm:first-order-drift}
+with Assumption \ref{ass:aligned-witness}; no claim is made here that every
+first-order learner must realize that aligned product drift.  The sufficiency
+half of Conjecture
+\ref{conj:order-frontier} would construct the localized HOIF correction
+explicitly: fix \(q\), choose \(J_n=n^\kappa\), project the nuisance tangent
+directions onto the localized basis \(b_{J_n}\), and verify the three-term
+decomposition
+\[
+R_{q,J,n}=R^{\mathrm{prod}}_{q,n}+R^{\mathrm{proj}}_{J,n}
+ +R^{\mathrm{ustat}}_{q,J,n}
+\]
+with the rates displayed in Conjecture \ref{conj:order-frontier}.  The
+necessity half would first import the published lower bound on
+\(\mathsf B_K\); outside \(\mathsf B_K\), it would use a two-point or packing
+lower bound over the wavelet witness class: choose paired perturbations whose
+local CATE shift is of order \(a_n\), whose likelihood ratio remains bounded,
+and whose lower-order nuisance derivatives are canceled only through order
+\(q-1\).  The boundary cases needing explicit algebra are the edge of
+\(\mathsf B_K\), \(\Delta_1=0\), where logarithmic factors decide the
+first-order product edge, and the transition from \(q_\star=1\) to
+\(q_\star=2\), where \(\mathcal K_2\) can be empty even when the product-rate
+inequality alone holds.
+
+\section{Honest scope flags}
+Theorem \ref{thm:first-order-drift} is routine algebra from the AIPW score and
+is included only to lock the object.  Theorem \ref{thm:kennedy-calibration}
+is a calibration to the published Kennedy--Balakrishnan--Robins--Wasserman
+minimax elbow plus a conditional aligned-error first-order witness, not a new
+full-class lower-bound claim.  Conjecture
+\ref{conj:order-frontier} is not yet proved; the primitive localized HOIF
+construction outside \(\mathsf B_K\), the \(q_\star=\infty\)
+projection-infeasible case outside the published Kennedy lower-bound region,
+and the matching wavelet or minimax lower bound for all lower-order
+orthogonal reports are the genuine open work.
+The proposal deliberately withdraws the failed angle-0 claim that a
+two-channel empirical-process frontier had already been derived from
+high-level frontier assumptions.  The v2 revision also withdraws the stronger
+claim that an abstract class \(\mathcal A_q\) with assumed
+\((\delta_m\delta_p)^q\) drift proves the frontier; Conjecture
+\ref{conj:order-frontier} now asks for the primitive localized HOIF
+construction and the matching wavelet lower bound.  The uncertain point is
+whether the scalar product exponent \(q(r_m+r_p)\), plus \(\mathcal K_q\), is
+exactly right for all \(\alpha,\beta\), or whether asymmetric
+outcome/propensity smoothness creates mixed higher-order terms; if the latter
+occurs, \(q_\star\) should be replaced by the corresponding multi-index order
+frontier rather than forcing the scalar index.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for angle 1, replacing the rejected
+two-channel first-order frontier with a structurally different
+orthogonality-order-index conjecture anchored to CATE minimax elbows; prior
+verdict: none.
+\item v2 (revise) -- added the local Riesz comparator, replaced global
+\(L^2\) nuisance-rate language with localized rates, and reframed Conjecture
+\ref{conj:order-frontier} around a primitive localized HOIF/U-statistic
+remainder decomposition instead of an assumed abstract frontier; prior
+verdict: REVISE.
+\item v3 (revise) -- demoted the first-order below-elbow impossibility to a
+Kennedy--Balakrishnan--Robins--Wasserman calibration theorem, made
+\(q_\star\) total with an \(\infty\) projection-infeasible case, added
+location-level anchors for the flagship comparator chain, and normalized the
+wavelet witness coefficients by resolution; prior verdict: REVISE.
+\item v4 (revise) -- separated the Kennedy average-smoothness elbow
+\(\mathsf B_K\) from the first-order AIPW product index \(\Delta_1\), set
+\(q_\star=\infty\) on the published Kennedy below-elbow region, and reframed
+Conjecture \ref{conj:order-frontier} as the primitive localized-HOIF minimal
+order outside that region; prior verdict: REVISE.
+\item v5 (revise) -- narrowed Theorem \ref{thm:kennedy-calibration} to a
+conditional aligned-error first-order witness, made the missing minimax
+necessity an explicit part of Conjecture \ref{conj:order-frontier}, and added
+Kennedy-estimator plus Li--Tchetgen--van der Vaart--Robins HOIF interval
+comparators; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Chernozhukov et~al.(2018)]{ChernozhukovEtAl2018DML}
+Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C.,
+Newey, W., and Robins, J. (2018).
+Double/debiased machine learning for treatment and structural parameters.
+\emph{The Econometrics Journal}, 21(1):C1--C68.
+\url{https://doi.org/10.1111/ectj.12097}.
+
+\bibitem[Semenova and Chernozhukov(2021)]{SemenovaChernozhukov2021DMLCATE}
+Semenova, V. and Chernozhukov, V. (2021).
+Debiased machine learning of conditional average treatment effects and other
+causal functions.
+\emph{The Econometrics Journal}, 24(2):264--289.
+\url{https://doi.org/10.1093/ectj/utaa027}.
+
+\bibitem[Kennedy et~al.(2024)]{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}
+Kennedy, E. H., Balakrishnan, S., Robins, J. M., and Wasserman, L. (2024).
+Minimax rates for heterogeneous causal effect estimation.
+\emph{The Annals of Statistics}, 52(2):793--816.
+\url{https://doi.org/10.1214/24-AOS2369}.
+
+\bibitem[Robins et~al.(2008)]{RobinsLiTchetgenVanDerVaart2008HOIF}
+Robins, J., Li, L., Tchetgen Tchetgen, E., and van der Vaart, A. W. (2008).
+Higher order influence functions and minimax estimation of nonlinear
+functionals.
+In \emph{Probability and Statistics: Essays in Honor of David A. Freedman},
+IMS Collections, volume 2, pages 335--421.
+\url{https://arxiv.org/abs/0805.3040}.
+
+\bibitem[Li et~al.(2011)]{LiTchetgenVanDerVaartRobins2011HOIFTreatment}
+Li, L., Tchetgen Tchetgen, E., van der Vaart, A. W., and Robins, J. M. (2011).
+Higher order inference on a treatment effect under low regularity conditions.
+\emph{Statistics \& Probability Letters}, 81(7):821--828.
+\url{https://doi.org/10.1016/j.spl.2011.02.030}.
+
+\bibitem[Mackey et~al.(2018)]{MackeySyrgkanisZadik2018OML}
+Mackey, L., Syrgkanis, V., and Zadik, I. (2018).
+Orthogonal machine learning: power and limitations.
+In \emph{Proceedings of the 35th International Conference on Machine
+Learning}, PMLR 80:3375--3383.
+\url{https://proceedings.mlr.press/v80/mackey18a.html}.
+
+\bibitem[Chernozhukov et~al.(2022)]{ChernozhukovNeweySingh2022AutoDML}
+Chernozhukov, V., Newey, W. K., and Singh, R. (2022).
+Automatic debiased machine learning of causal and structural effects.
+\emph{Econometrica}, 90(3):967--1027.
+\url{https://doi.org/10.3982/ECTA18515}.
+
+\bibitem[Chernozhukov et~al.(2022)]{ChernozhukovNeweySingh2022Riesz}
+Chernozhukov, V., Newey, W. K., and Singh, R. (2022).
+Debiased machine learning of global and local parameters using regularized
+Riesz representers.
+\emph{The Econometrics Journal}, 25(3):576--601.
+\url{https://doi.org/10.1093/ectj/utac002}.
+
+\bibitem[Foster and Syrgkanis(2023)]{FosterSyrgkanis2023OSL}
+Foster, D. J. and Syrgkanis, V. (2023).
+Orthogonal statistical learning.
+\emph{The Annals of Statistics}, 51(3).
+\url{https://doi.org/10.1214/23-AOS2258}.
+
+\bibitem[Armstrong and Kolesar(2021)]{ArmstrongKolesar2021FiniteSampleATE}
+Armstrong, T. B. and Kolesar, M. (2021).
+Finite-sample optimal estimation and inference on average treatment effects
+under unconfoundedness.
+\emph{Econometrica}, 89(3):1141--1177.
+\url{https://doi.org/10.3982/ECTA16907}.
+\end{thebibliography}
+
+\end{document}

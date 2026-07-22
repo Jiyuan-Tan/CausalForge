@@ -1,0 +1,51 @@
+\section{Appendix C. Clipped-Score Drift and Bias Localization}
+
+This appendix records the deterministic bias calculations used by the clipped-score analysis in \cref{obj:oeq:feasible-upper}.  The key point is that clipping a doubly robust score changes its conditional mean unless the clipped plug-in propensity agrees with the observed-law propensity, or the outcome-regression errors vanish at the same covariate value.  Thus the usual orthogonality logic for AIPW scores \citep{Robins1994,Hahn1998,Hirano2003,Chernozhukov2018} must be combined with an explicit localization argument near the clipped propensity region.
+
+\begin{lemmav}{lem:clip-bias}[Clipped Score Drift]
+Under \cref{obj:ass:bounded-outcome}, \cref{obj:ass:positivity}, and~\cref{obj:ass:bounded-crossfit-nuisances}, and with the clipped propensity and clipped AIPW score of \cref{obj:def:clipped-propensity} and~\cref{obj:def:clipped-aipw-score}, let \(\bar\eta=(\bar\mu_0,\bar\mu_1,\bar e)\) be any measurable plug-in nuisance triple. Define
+\[
+\bar e_q(x)=\min\{1-q,\max\{q,\bar e(x)\}\},
+\qquad
+\Delta_a(x)=\bar\mu_a(x)-\mu_a(x),
+\qquad
+b_q(x)=(\bar e_q(x)-e_P(x))\left\{\frac{\Delta_1(x)}{\bar e_q(x)}+\frac{\Delta_0(x)}{1-\bar e_q(x)}\right\}.
+\]
+Then the clipped score reproduces the contrast up to the drift \(b_q\) in the tested (population) sense: for every bounded measurable \(\varphi\),
+\[
+\mathbb E_P[\varphi(X)\,\Gamma_q(O;\bar\eta)]-\mathbb E_P[\varphi(X)\,\tau_P(X)]
+=
+\mathbb E_P[\varphi(X)\,b_q(X)],
+\]
+equivalently \(\mathbb E_P[\Gamma_q(O;\bar\eta)\mid X=x]-\tau_P(x)=b_q(x)\) for \(P_X\)-almost every \(x\).
+In particular, the drift vanishes whenever \(\bar e_q(x)=e_P(x)\) or \(\Delta_0(x)=\Delta_1(x)=0\), since either makes a factor of \(b_q(x)\) vanish; these conditions are sufficient but not necessary, as the bracketed term \(\Delta_1(x)/\bar e_q(x)+\Delta_0(x)/(1-\bar e_q(x))\) may itself vanish. Cancellation does not, however, follow merely from \(p_P(x)>q\): there exist laws and covariate values with \(p_P(x)>q\) at which the drift is nonzero.
+\end{lemmav}
+
+\cref{obj:lem:clip-bias} is the exact drift identity behind the bias term in \cref{obj:lem:localized-clipped-drift-bound}.  It separates the propensity discrepancy from the regression errors and shows that correct handling of clipping requires the full product identity.  In particular, stronger cancellation requires assumptions beyond the stated boundedness and positivity conditions.
+
+The remaining issue is to control where clipping can matter for regret.  Under one-sided overlap decay, the relevant clipped region becomes small after intersection with the welfare-relevant disagreement and small-contrast regions.  The next lemma gives that localization.
+
+\begin{lemmav}{lem:clipped-region-localization}[Clipped Region Localization]
+Suppose that the following conditions hold:
+\begin{itemize}
+\item \textbf{Positive weak-overlap exponent.} \(\gamma>0\).
+\item \textbf{Well-formed law.} The observed law \(P\) is well formed, with \(P_X\) a probability covariate marginal, \(\tau_P=\mu_1-\mu_0\), measurable nuisance functionals, and \(p_P(x)=\min\{e_P(x),1-e_P(x)\}\).
+\item \textbf{Overlap decay.} \cref{obj:ass:overlap-decay} holds with constants \(C_o,c_o,\alpha,\gamma,u_0\).
+\item \textbf{Zero-effect convention.} \cref{obj:ass:zero-effect} holds for the policy class \(\Pi\).
+\item \textbf{Bounded outcomes.} \cref{obj:ass:bounded-outcome} holds.
+\item \textbf{Measurable policies.} Every \(\pi\in\Pi\) is measurable.
+\item \textbf{Disagreement sets.} \(D_\pi\) is defined as in \cref{obj:def:disagreement}.
+\end{itemize}
+Then \(\max\{C_o,1\}>0\), and every policy \(\pi\in\Pi\) with regret \(r=R_P(\pi)\) satisfies
+\[
+P_X\!\left(D_\pi\cap\{x:p_P(x)\le q\}\right)
+\le
+\max\{C_o,1\} u^\alpha q^{1/\gamma}+\frac{r}{u}
+\]
+whenever \(0<u\le u_0\) and \(0<q\le c_o u^\gamma\).
+\end{lemmav}
+
+\cref{obj:lem:clipped-region-localization} is the measure bound used to localize the drift from \cref{obj:lem:clip-bias}.  The first term is the overlap-decay contribution on the small-contrast window \(\{0<|\tau_P(X)|\le u\}\), while the second term is the regret-controlled contribution from disagreements outside that window.  The admissibility condition \(q\le c_o u^\gamma\) is the same one used in the feasible tuning schedule of \cref{obj:def:feasible-rate}.
+
+Together, \cref{obj:lem:clip-bias} and~\cref{obj:lem:clipped-region-localization} supply the deterministic bias inputs for \cref{obj:lem:localized-clipped-drift-bound}.  They bound the clipped-score drift by combining nuisance-rate control, overlap-decay localization, and the regret radius of the policy under consideration.
+

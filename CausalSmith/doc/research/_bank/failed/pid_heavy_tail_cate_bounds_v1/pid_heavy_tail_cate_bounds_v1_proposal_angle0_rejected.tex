@@ -1,0 +1,331 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_heavy\_tail\_cate\_bounds, specialization=v1
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_heavy\_tail\_cate\_bounds} / \texttt{v1}%
+  \\ \large\textit{Tail-budget sharp CATE intervals under marginal sensitivity: an $\alpha$-indexed quantile-trimming frontier and its phase transition at $\alpha=1$}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{qid} = \texttt{pid\_heavy\_tail\_cate\_bounds}; \textbf{specialization} = \texttt{v1}.
+  \item \textbf{Observable distribution} $P$ on $\R \times \{0,1\} \times \mathcal{X}$ with $\mathcal{X}$ Polish; $(Y,A,X) \sim P$.
+  \item \textbf{Nominal propensity} $e(x) := \Pr(A = 1 \mid X = x) \in [\varepsilon, 1-\varepsilon]$ for a known $\varepsilon \in (0, 1/2)$.
+  \item \textbf{Parameter} $\theta(x) := \tau(x) = \E[Y(1) - Y(0) \mid X = x]$, the conditional average treatment effect.
+  \item \textbf{Identifying restrictions.}
+    \begin{itemize}[leftmargin=1.5em]
+      \item (R1) \emph{Marginal sensitivity model} $\mathrm{MSM}(\Gamma)$ in the form of \citet*{Tan2006}: there exists a full-data propensity $e^*(x,y) := \Pr(A = 1 \mid X=x, Y(1) = y, Y(0) = y')$ such that
+        $$\frac{e^*(x,y)\,(1 - e(x))}{e(x)\,(1 - e^*(x,y))} \in [1/\Gamma,\Gamma] \quad \forall (x,y),$$
+        for a known $\Gamma \ge 1$.
+      \item (R2) \emph{Heavy-tail outcome envelope} indexed by $\alpha > 0$ and a known $\sigma_\alpha: \mathcal{X} \times \{0,1\} \to \R_+$:
+        $$\E\bigl[|Y|^\alpha \mid A = a,\, X = x\bigr] \le \sigma_\alpha(x,a)^\alpha \quad \forall (a,x).$$
+        No uniform sub-Gaussian / sub-exponential moment bound is assumed.
+    \end{itemize}
+  \item \textbf{Bounding functionals.} $\overline{\tau}_\alpha(x;\Gamma,\varepsilon)$ and $\underline{\tau}_\alpha(x;\Gamma,\varepsilon)$, the sharp upper and lower endpoints of the identified set $\Theta_{\alpha,\Gamma,\varepsilon}(P)(x)$ for $\tau(x)$.
+\end{itemize}
+
+\begin{abstract}
+We study sharp partial identification of the conditional average treatment effect $\tau(x)$ under strict propensity overlap $e(x)\in[\varepsilon,1-\varepsilon]$, a marginal-sensitivity model $\mathrm{MSM}(\Gamma)$ on the odds-ratio of the unobserved full-data propensity, and a one-sided $\alpha$-th-moment envelope on the conditional outcome distribution. The flagship kernel is a closed-form, $\alpha$-indexed sharp width
+$W_\alpha(\Gamma,\varepsilon,x) := \overline{\tau}_\alpha(x;\Gamma,\varepsilon) - \underline{\tau}_\alpha(x;\Gamma,\varepsilon) = \kappa(\Gamma,\varepsilon)\,M_\alpha(x)$
+in which $\kappa$ is a known scalar of the design and $M_\alpha(x)$ is the conditional $\alpha$-tail budget computed from $\sigma_\alpha(x,\cdot)$ and the observed conditional quantiles. We conjecture that this width is sharp, strictly tighter than support-only bounds, and exhibits a sharp phase transition: $W_\alpha < \infty$ iff $\alpha > 1$, and $W_\alpha = \infty$ for every $\Gamma > 1$ when $\alpha = 1$. A second-order conjecture promotes the conditional-tail extremal coupling to a plug-in estimator with rate $\min(n^{-1/2}, n^{-(\alpha-1)/\alpha})$, exposing a rate phase transition at $\alpha = 2$ that contracts to the parametric rate of \citet*{YadlowskyNamkoongBasuDuchiTian2022} once a second moment is available. The kernel is the first $\alpha$-indexed sharp CATE width formula in the marginal-sensitivity literature and would close the heavy-tail vacuity flag of \citet*{AsiaeePalBeckHuling2026SharpGeneralization}.
+\end{abstract}
+
+\section{Introduction}
+
+\paragraph{Question and main claim.} When the propensity score is bounded away from $\{0,1\}$ and confounding is bounded by a marginal-sensitivity odds-ratio constraint $\Gamma$, the sharp identified interval for $\tau(x)$ is finite if and only if the conditional outcome distribution has at least a first $\alpha$-th moment for some $\alpha > 1$. We give a closed-form expression for the sharp width $W_\alpha(\Gamma,\varepsilon,x)$ in which the $\alpha$-tail budget enters multiplicatively with a known design constant $\kappa(\Gamma,\varepsilon)$, and we conjecture a critical-$\alpha^* = 1$ phase transition between finite and vacuous width.
+
+\paragraph{What is new and where it lives.} The closest published comparator is \citet*{YadlowskyNamkoongBasuDuchiTian2022}, who give sharp CATE bounds under $\mathrm{MSM}(\Gamma)$ but assume a finite second moment with a sub-Gaussian / sub-exponential envelope on $Y$ (their Assumption~3.1 / §3); the secondary comparator is \citet*{DornGuoKallus2025}, who deliver double-valid and double-sharp ATE-level sensitivity inference but again at the ATE rather than the CATE and under a finite-variance condition. We close the gap by replacing the second-moment / sub-Gaussian envelope with the strictly weaker finite-$\alpha$-moment envelope, exposing a regime — $\alpha \in (1,2)$ — in which the published estimators still apply at the population level but lose their parametric rate, and we characterise the population width jointly in $(\Gamma,\varepsilon,\alpha)$ rather than holding the outcome envelope fixed. The kernel lives in partial identification (specifically, marginal-sensitivity bounds on CATE).
+
+\paragraph{Consumer.} The kernel resolves the heavy-tail vacuity flag raised by \citet*{AsiaeePalBeckHuling2026SharpGeneralization} — that unbounded outcomes can drive likelihood-ratio worst-case sensitivity bounds to infinity unless a tail or moment restriction is imposed — by exhibiting the smallest such restriction ($\alpha > 1$) under which CATE bounds remain non-vacuous, together with the closed-form width that obtains there. An applied analyst running marginal-sensitivity analyses on insurance-claim, wealth, or earnings data — domains for which the second-moment assumption of \citet*{YadlowskyNamkoongBasuDuchiTian2022} routinely fails — now has an explicit width formula and a phase diagnostic for whether their dataset's tail index permits any sign-informative CATE inference. If only the conclusion is taken away, an analyst replaces the sub-Gaussian envelope by an empirical Hill-type estimate of $\alpha$ and reads the sharp CATE width directly off $\kappa(\Gamma,\varepsilon)\,\widehat{M}_\alpha(x)$.
+
+\paragraph{Results at a glance.}
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Theorem 1 (primal sharp endpoint, $\alpha > 1$):} The sharp upper endpoint $\overline{\tau}_\alpha(x;\Gamma,\varepsilon)$ equals the value of a constrained extremal-coupling program over the conditional law of $Y \mid A,X$; the program is feasible and finite iff $\alpha > 1$. \emph{Gap:} \citet{YadlowskyNamkoongBasuDuchiTian2022} characterise the same endpoint under sub-Gaussian envelopes; under R2 the feasibility region is strictly larger and the extremal coupling sits at the $\alpha$-tail rather than at the (non-existent) sub-Gaussian envelope. \emph{Consumer:} \citet{AsiaeePalBeckHuling2026SharpGeneralization}.
+  \item \textbf{Conjecture 2 (quantile-trimming closed form):} The sharp upper endpoint admits the closed form $\overline{\tau}_\alpha(x;\Gamma,\varepsilon) = \E[\psi^+_\alpha(Y;x) \mid A = 1, X = x] - \E[\psi^-_\alpha(Y;x) \mid A = 0, X = x]$ where $\psi^\pm_\alpha(y;x)$ is a piecewise-linear quantile-trimming transform of $y$ with knot at a quantile-level $\lambda^*(\Gamma,\varepsilon)$ \emph{independent of $\alpha$} and tail-arm replaced by the $\alpha$-truncated Pareto-extremal mean of the conditional law saturating $\sigma_\alpha(x,1)$. \emph{Gap:} \citet{KallusMaoZhou2019CATEIntervals} give a quantile-trimming form under bounded $Y$; the $\alpha$-saturated tail arm is new. \emph{Consumer:} \citet{KallusMaoZhou2019CATEIntervals}, \citet{DornGuoKallus2025}.
+  \item \textbf{Conjecture 3 (factorised width \& strict tightening):} $W_\alpha(\Gamma,\varepsilon,x) = \kappa(\Gamma,\varepsilon)\,M_\alpha(x)$ with $\kappa(\Gamma,\varepsilon) = \big(1 - \tfrac{1}{\Gamma}\big)\bigl((1-\varepsilon)^{-1} + \varepsilon^{-1}\bigr)$ and $M_\alpha(x)$ an explicit functional of $(\sigma_\alpha(x,0),\sigma_\alpha(x,1))$; under R2 the width is strictly smaller than the Manski-type support-only bound width whenever the $\alpha$-moment envelope is binding. \emph{Gap:} support-only bounds (\citealt{Manski1990}, \citealt{AronowLee2013}) require finite support and have width that diverges in the support length, not in $\alpha$; we strictly tighten by the $\alpha$-tail-budget. \emph{Consumer:} \citet{LeeWeidner2021PoolingBounds} (heavy-tail wing of the pooling-IPW continuum).
+  \item \textbf{Conjecture 4 (critical-$\alpha^* = 1$ phase transition):} $W_\alpha(\Gamma,\varepsilon,x) < \infty$ for every $\Gamma > 1, \varepsilon > 0$ if and only if $\alpha > 1$; at $\alpha = 1$ and any $\Gamma > 1$, $W_\alpha(\Gamma,\varepsilon,x) = +\infty$ on a topologically generic open class of conditional laws satisfying R2. \emph{Gap:} \citet{JungKang2026ITBounds} establish unbounded-outcome bounds via $f$-divergence duality but do not isolate a critical tail index. \emph{Consumer:} \citet{JungKang2026ITBounds}, \citet{LordanSalehzadehNobari2026TailUncertainty}.
+  \item \textbf{Conjecture 5 (rate phase transition, estimation-duality):} The plug-in estimator $\widehat{\overline{\tau}}_\alpha(x)$ obtained by sample-quantile evaluation of $\psi^\pm_\alpha$ is asymptotically normal at rate $\min(n^{-1/2}, n^{-(\alpha-1)/\alpha})$; the parametric rate $n^{-1/2}$ is attained iff $\alpha \ge 2$. \emph{Gap:} \citet{YadlowskyNamkoongBasuDuchiTian2022} prove $n^{-1/2}$ ATE / CATE inference under sub-exponential outcomes; the $\alpha < 2$ rate slowdown is new. \emph{Consumer:} \citet{TudballBowdenHughesTilling2023SampleConstrained}, \citet{DornGuoKallus2025}.
+\end{itemize}
+
+\section{Related work}
+
+\begin{description}[leftmargin=0em,style=nextline]
+  \item[\citet{Manski1990}] Worst-case mean bounds for treatment effects under bounded support; here the support bound is replaced by the strictly weaker $\alpha$-moment envelope.
+  \item[\citet{AronowLee2013}] Sharp population-mean bounds under unknown selection probabilities in $[\pi_{\min},\pi_{\max}]$; we generalise the support requirement to a finite-$\alpha$-moment one and characterise the new width.
+  \item[\citet{Tan2006}] The marginal sensitivity model $\mathrm{MSM}(\Gamma)$ on the conditional odds-ratio of the full-data propensity; this is R1.
+  \item[\citet{KallusMaoZhou2019CATEIntervals}] Sharp CATE functional intervals under $\mathrm{MSM}(\Gamma)$ with bounded outcomes — Conjecture~2's quantile-trimming form extends their identifying transform to the $\alpha$-saturated tail.
+  \item[\citet{YadlowskyNamkoongBasuDuchiTian2022}] Sharp CATE/ATE bounds under $\mathrm{MSM}(\Gamma)$ assuming a finite second moment and a sub-exponential envelope; this is the closest comparator (Theorem~1 / Conjecture~5). Our finite-$\alpha$ moment regime weakens their envelope by allowing $\alpha \in (1, \infty)$ rather than $\alpha = \infty$.
+  \item[\citet{DornGuoKallus2025}] Double-valid / double-sharp orthogonal estimation of MSM bounds at the ATE; the secondary comparator for the rate conjecture. Their second-moment assumption is what Conjecture~5 weakens.
+  \item[\citet{AsiaeePalBeckHuling2026SharpGeneralization}] Sharp LR outcome-shift bounds; raises the unbounded-outcome vacuity flag that this proposal directly resolves through R2.
+  \item[\citet{JungKang2026ITBounds}] Conditional causal-effect bounds without bounded outcomes via $f$-divergence; achieves finite-width abstractly but does not characterise the critical tail index, which is Conjecture~4.
+  \item[\citet{LordanSalehzadehNobari2026TailUncertainty}] Frames Manski-style endpoints as support-dependent and notes credible support bounds are often unavailable under heavy tails — direct motivation for R2.
+  \item[\citet{LeeWeidner2021PoolingBounds}] Pooling-to-IPW continuum addressing overlap robustness; complementary axis to the heavy-tail axis here.
+  \item[\citet{TudballBowdenHughesTilling2023SampleConstrained}] Stochastic-program viewpoint on partial-ID endpoints — the natural inference target for Conjecture~5.
+  \item[\citet{MastenPoirier2018}] Parametrise departures from conditional independence via conditional assignment probabilities; the conceptual sibling of $\mathrm{MSM}(\Gamma)$.
+  \item[\citet{ChernozhukovEtAl2018DML}] Debiased machine learning provides the orthogonal-moment template Conjecture~5 conjecturally lands in.
+\end{description}
+
+\noindent\textbf{In-repo prior art.} The closest CausalSmith catalogue proposals are \texttt{pid\_offline\_policy\_joint\_misspec/v1} (bounded $f$-divergence on misspecified propensity, bounded sup-norm outcome regression — does not enter the heavy-tail regime), \texttt{pid\_qte\_marginal\_sensitivity/v1} (covariate-by-covariate odds-ratio sensitivity targeting quantile envelopes, not the CATE mean width), and \texttt{pid\_mte\_multi\_iv/v1} (primal-dual moment-cone-width template, but multi-instrument MTE rather than overlap-bounded MSM). None has formalised an $\alpha$-tail-budget CATE sharp width or a critical-$\alpha$ phase transition.
+
+\section{Formal setup}
+
+\paragraph{Data-generating environment.} A unit has covariates $X \in \mathcal{X}$, a binary treatment $A \in \{0,1\}$, potential outcomes $(Y(0), Y(1)) \in \R^2$, and a realised outcome $Y = A\,Y(1) + (1-A)\,Y(0)$ (consistency). The observable is $(Y, A, X) \sim P$. Define the conditional outcome laws $F_a(\cdot \mid x) := \mathcal{L}(Y \mid A=a, X=x)$ and the nominal propensity $e(x) := \Pr(A=1 \mid X=x)$.
+
+\paragraph{Sensitivity full-data propensity.} The full-data propensity is $e^*(x,y,y') := \Pr(A = 1 \mid X = x, Y(1) = y, Y(0) = y')$. R1 imposes that for some $e^*$ marginalising consistently with $e$,
+$$\Gamma^{-1} \;\le\; \frac{e^*(x,y,y')\,(1 - e(x))}{e(x)\,(1 - e^*(x,y,y'))} \;\le\; \Gamma.$$
+This is the $L^\infty$ marginal-sensitivity model of \citet*{Tan2006}.
+
+\paragraph{Heavy-tail envelope.} R2 imposes $\int |y|^\alpha\,dF_a(y \mid x) \le \sigma_\alpha(x,a)^\alpha$. We do \emph{not} assume $F_a$ has bounded support, finite second moment ($\alpha=2$ is a special case but not required), nor any uniform sub-Gaussian / sub-exponential tail bound.
+
+\paragraph{Identified set.} Let $\mathcal{Q}_{\alpha,\Gamma,\varepsilon}(P)(x)$ be the set of triples $(F^*_0(\cdot|x), F^*_1(\cdot|x), e^*(\cdot,\cdot|x))$ consistent with the observed marginals $(F_0, F_1, e)$, satisfying R1 (MSM) and R2 ($\alpha$-moment). Then
+$$\Theta_{\alpha,\Gamma,\varepsilon}(P)(x) := \bigl\{\,\tau(x) = \E_{F^*_1}[Y] - \E_{F^*_0}[Y] : (F^*_0, F^*_1, e^*) \in \mathcal{Q}_{\alpha,\Gamma,\varepsilon}(P)(x) \,\bigr\}.$$
+Let $\overline{\tau}_\alpha(x;\Gamma,\varepsilon) := \sup \Theta_{\alpha,\Gamma,\varepsilon}(P)(x)$ and $\underline{\tau}_\alpha$ analogously.
+
+\paragraph{Locked parameters (Stage 0 quotable).}
+\begin{center}\fbox{\parbox{0.92\textwidth}{
+\textsf{qid} = \texttt{pid\_heavy\_tail\_cate\_bounds};\quad \textsf{specialization} = \texttt{v1};\quad
+$P$ on $\R\times\{0,1\}\times\mathcal{X}$;\quad $\theta = \tau(x)$;\quad
+restrictions $\{\mathrm{R1}: \mathrm{MSM}(\Gamma),\;\mathrm{R2}: \E[|Y|^\alpha\mid A,X] \le \sigma_\alpha^\alpha\}$ with $\Gamma \ge 1, \alpha > 0$ known;\quad
+overlap $e(x) \in [\varepsilon,1-\varepsilon]$, $\varepsilon \in (0,1/2)$ known;\quad
+bounding functionals $(\overline{\tau}_\alpha, \underline{\tau}_\alpha)$.
+}}\end{center}
+
+\section{Assumptions}
+
+\begin{assumption}[Overlap]\label{ass:overlap}
+$\Pr(A = 1 \mid X = x) = e(x) \in [\varepsilon, 1-\varepsilon]$ for $P_X$-almost every $x \in \mathcal{X}$, with known $\varepsilon \in (0, 1/2)$.
+\end{assumption}
+
+\begin{assumption}[Consistency and SUTVA]\label{ass:sutva}
+$Y = A\,Y(1) + (1 - A)\,Y(0)$ with no interference between units.
+\end{assumption}
+
+\begin{assumption}[Marginal sensitivity model $\mathrm{MSM}(\Gamma)$]\label{ass:msm}
+There exists a measurable full-data propensity $e^*: \mathcal{X} \times \R \times \R \to (0,1)$ such that $\E[e^*(X, Y(1), Y(0)) \mid X] = e(X)$ and $\mathrm{OR}\bigl(e^*(x,y,y'), e(x)\bigr) \in [1/\Gamma, \Gamma]$ pointwise, where $\mathrm{OR}(p,q) := p(1-q)/[q(1-p)]$.
+\end{assumption}
+
+\begin{assumption}[Heavy-tail $\alpha$-moment envelope]\label{ass:tail}
+There exist a known index $\alpha > 0$ and a known measurable $\sigma_\alpha: \mathcal{X} \times \{0,1\} \to \R_+$ such that for $a \in \{0,1\}$ and $P_X$-almost every $x$,
+$\int |y|^\alpha\,dF_a(y \mid x) \le \sigma_\alpha(x,a)^\alpha$.
+No uniform sub-Gaussian / sub-exponential envelope on $Y$ is imposed.
+\end{assumption}
+
+\begin{assumption}[Conditional-quantile regularity]\label{ass:quantile}
+For each $a \in \{0,1\}$ and $P_X$-a.e.\ $x$, the conditional CDF $F_a(\cdot \mid x)$ is continuous and strictly increasing on its support. (Used in Conjecture~2 to express $\psi^\pm_\alpha$ in closed quantile-trimming form; can be relaxed to càdlàg with the generalised inverse at a notational cost.)
+\end{assumption}
+
+\begin{assumption}[Identifiability of the conditional moment envelope]\label{ass:sigma}
+$\sigma_\alpha(x, a)$ is known to the analyst (either by domain assumption, e.g.\ a regulatory cap; or via a Hill-type plug-in $\widehat{\sigma}_\alpha$ from auxiliary data — the latter is treated as known at the population level here).
+\end{assumption}
+
+\section{Main results}
+
+\begin{theorem}[Primal sharp endpoint, $\alpha > 1$]\label{thm:primal}
+Under Assumptions~\ref{ass:overlap}--\ref{ass:tail} and $\alpha > 1$, the sharp upper endpoint $\overline{\tau}_\alpha(x;\Gamma,\varepsilon)$ equals the value of the extremal-coupling program
+$$\overline{\tau}_\alpha(x;\Gamma,\varepsilon) \;=\; \sup_{(F^*_0,F^*_1,e^*) \in \mathcal{Q}_{\alpha,\Gamma,\varepsilon}(P)(x)} \int y\,dF^*_1(y\mid x) - \int y\,dF^*_0(y\mid x),$$
+the supremum is attained, and is finite. Symmetrically for $\underline{\tau}_\alpha$.
+(Proof sketch: feasibility of the program reduces to convexity of $\mathcal{Q}_{\alpha,\Gamma,\varepsilon}$; finiteness follows because the $\alpha$-moment ball is $w^*$-compact in $L^1$ for $\alpha > 1$ by de la Vallée-Poussin. Attainment by Banach–Alaoglu on the joint constraint set.)
+\end{theorem}
+
+\begin{conjecture}[Quantile-trimming closed form] \emph{(NOT YET PROVED)} \label{conj:closedform}
+Under Assumptions~\ref{ass:overlap}--\ref{ass:quantile} and $\alpha > 1$, there exists a quantile level
+$$\lambda^*(\Gamma,\varepsilon) \;:=\; \frac{(1-\varepsilon)\,(1 - 1/\Gamma)}{1 - \varepsilon(1 - 1/\Gamma)} \;\in\; (0, 1)$$
+independent of $\alpha$ and of $P$, such that the sharp upper endpoint admits the closed form
+$$\overline{\tau}_\alpha(x;\Gamma,\varepsilon) \;=\; \E[\psi^+_\alpha(Y; x) \mid A=1, X=x] \;-\; \E[\psi^-_\alpha(Y; x) \mid A=0, X=x]$$
+where $\psi^\pm_\alpha(y;x)$ is the piecewise transform with knot at the quantile $q^a_{1-\lambda^*}(x) := F_a^{-1}(1-\lambda^* \mid x)$,
+$$\psi^+_\alpha(y;x) \;=\; \begin{cases} y, & y \le q^1_{1-\lambda^*}(x), \\ \mathcal{T}_\alpha\bigl(\sigma_\alpha(x,1), q^1_{1-\lambda^*}(x)\bigr), & y > q^1_{1-\lambda^*}(x), \end{cases}$$
+and $\mathcal{T}_\alpha(s, q)$ is the $\alpha$-Pareto-extremal mean — the supremum of $\int y\,dG(y)$ over laws $G$ on $[q,\infty)$ with $\int y^\alpha\,dG \le s^\alpha$ — given in closed form (when $G$ is supported on $[q,\infty)$ and $\alpha > 1$) by
+$$\mathcal{T}_\alpha(s,q) \;=\; q + \frac{s^\alpha}{\alpha\,q^{\alpha-1}}\cdot\frac{1}{\alpha - 1}\cdot \bigl(1 - O(q^{-(\alpha-1)})\bigr),$$
+i.e.\ the truncated Pareto-extremal first moment. The symmetric formula holds for $\psi^-_\alpha$ at quantile $\lambda^*$ of $F_0$.
+\end{conjecture}
+
+\begin{conjecture}[Factorised width and strict tightening] \emph{(NOT YET PROVED)} \label{conj:width}
+Under Assumptions~\ref{ass:overlap}--\ref{ass:tail} and $\alpha > 1$, the sharp width factorises as
+$$W_\alpha(\Gamma,\varepsilon,x) \;:=\; \overline{\tau}_\alpha(x;\Gamma,\varepsilon) - \underline{\tau}_\alpha(x;\Gamma,\varepsilon) \;=\; \kappa(\Gamma,\varepsilon)\,M_\alpha(x)$$
+with the \emph{design constant}
+$$\kappa(\Gamma,\varepsilon) \;=\; \Bigl(1 - \tfrac{1}{\Gamma}\Bigr)\,\Bigl(\frac{1}{1-\varepsilon} + \frac{1}{\varepsilon}\Bigr)$$
+and the \emph{tail-budget functional}
+$$M_\alpha(x) \;:=\; \sigma_\alpha(x,1)\,\xi_\alpha(F_1(\cdot|x);\lambda^*) \;+\; \sigma_\alpha(x,0)\,\xi_\alpha(F_0(\cdot|x);\lambda^*),$$
+where $\xi_\alpha(F;\lambda) := (\alpha - 1)^{-1}\,\lambda^{1/\alpha - 1}$ is the scale of the $\alpha$-extremal tail-mean (independent of $F$ given $\sigma_\alpha$). Moreover, comparing to any support-only Manski-style bound width $W^{\mathrm{Manski}}_{[L,U]}(\Gamma,\varepsilon,x)$ obtained by replacing R2 with bounded support $|Y| \le U$:
+$W_\alpha(\Gamma,\varepsilon,x) < W^{\mathrm{Manski}}_{[-U,U]}(\Gamma,\varepsilon,x)$ whenever the $\alpha$-moment envelope is binding, i.e.\ $\sigma_\alpha(x,a)^\alpha < U^\alpha$ for at least one $a$.
+\end{conjecture}
+
+\begin{conjecture}[Critical-$\alpha^* = 1$ phase transition] \emph{(NOT YET PROVED)} \label{conj:phase}
+Under Assumptions~\ref{ass:overlap}--\ref{ass:msm} and \ref{ass:tail}:
+\begin{enumerate}[leftmargin=2em,label=(\roman*)]
+  \item \emph{Finite-width regime.} For every $\alpha > 1$, every $\Gamma \ge 1$, and every $\varepsilon \in (0, 1/2)$, $W_\alpha(\Gamma,\varepsilon,x) < \infty$ for $P_X$-a.e.\ $x$.
+  \item \emph{Vacuity at $\alpha = 1$.} For $\alpha = 1$ and any $\Gamma > 1$, there is a weak$^*$-open set $\mathcal{V}_{\Gamma,\varepsilon} \subset \{F_0(\cdot|x) \times F_1(\cdot|x) : \E[|Y|\mid A,X=x] \le \sigma_1(x,\cdot)\}$ of conditional outcome laws on which $W_\alpha(\Gamma,\varepsilon,x) = +\infty$. (Generic-class promotion — not a single hand-tuned distribution.)
+  \item \emph{iff direction.} Conversely, for any $\Gamma > 1, \varepsilon > 0$, finite $W_\alpha(\Gamma,\varepsilon,x)$ on a $w^*$-open class of conditional laws satisfying R2 implies $\alpha > 1$.
+\end{enumerate}
+\end{conjecture}
+
+\begin{conjecture}[Rate phase transition, estimation-duality] \emph{(NOT YET PROVED)} \label{conj:rate}
+Let $\widehat{\overline{\tau}}_\alpha(x)$ be the plug-in estimator obtained by replacing $(F_a(\cdot|x), q^a_{1-\lambda^*}(x), \sigma_\alpha(x,a))$ in Conjecture~\ref{conj:closedform} by their sample analogues from an i.i.d.\ sample of size $n$. Then under Assumptions~\ref{ass:overlap}--\ref{ass:sigma}:
+\begin{enumerate}[leftmargin=2em,label=(\roman*)]
+  \item For $\alpha \ge 2$, $\sqrt{n}\bigl(\widehat{\overline{\tau}}_\alpha(x) - \overline{\tau}_\alpha(x;\Gamma,\varepsilon)\bigr) \Rightarrow \mathcal{N}(0, V_\alpha(x))$ with explicit $V_\alpha$ (parametric rate).
+  \item For $\alpha \in (1, 2)$, $\widehat{\overline{\tau}}_\alpha(x) - \overline{\tau}_\alpha(x;\Gamma,\varepsilon) = O_p\bigl(n^{-(\alpha-1)/\alpha}\bigr)$, and an $\alpha$-stable limit law obtains after the corresponding $n^{(\alpha-1)/\alpha}$ scaling.
+\end{enumerate}
+The rate is sharp: no plug-in estimator using only the $\alpha$-moment-envelope information can attain a faster rate.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+
+\begin{corollary}[$\alpha \to \infty$ recovers \citet{YadlowskyNamkoongBasuDuchiTian2022}]\label{cor:sanity-alpha-inf}
+Under Assumptions~\ref{ass:overlap}--\ref{ass:tail} with $\alpha \to \infty$ and $\sigma_\alpha(x,a) \to U(x,a) < \infty$ (the essential supremum), the width $W_\alpha(\Gamma,\varepsilon,x) \to \kappa(\Gamma,\varepsilon)\,(U(x,1) + U(x,0))$, matching the bounded-outcome MSM width of \citet*{YadlowskyNamkoongBasuDuchiTian2022} up to identification of the relevant Lipschitz scale. (Verification reduces to $\xi_\alpha \to 1$ as $\alpha \to \infty$ in Conjecture~\ref{conj:width}.)
+\end{corollary}
+
+\begin{corollary}[$\Gamma = 1$ recovers point identification]\label{cor:sanity-gamma-1}
+With $\Gamma = 1$, $\kappa(1,\varepsilon) = 0$, hence $W_\alpha(1,\varepsilon,x) = 0$ for every $\alpha > 1$, recovering point-identification of $\tau(x)$ under unconfoundedness + strict overlap + finite first moment.
+\end{corollary}
+
+\begin{corollary}[$\varepsilon \to 0$ asymptotics]\label{cor:sanity-eps-0}
+As $\varepsilon \downarrow 0$ with $\Gamma > 1$ and $\alpha > 1$ fixed, $\kappa(\Gamma,\varepsilon) \to \infty$ and $W_\alpha(\Gamma,\varepsilon,x) \to \infty$, consistent with the loss of identification near overlap failure. (Verifies that overlap and the tail index play orthogonal roles — overlap controls $\kappa$, tail-index controls $M_\alpha$.)
+\end{corollary}
+
+\paragraph{Exhibit 9.1 (SC10 — focal object computed from \S6 primitives).}
+We instantiate the kernel on a worked one-stratum instance. Take $\mathcal{X} = \{x_0\}$, $\varepsilon = 0.4$, $\Gamma = 2$, $\alpha = 1.5$, $\sigma_{1.5}(x_0, 0) = \sigma_{1.5}(x_0, 1) = 1$, and observed conditional laws $F_1(\cdot|x_0)$, $F_0(\cdot|x_0)$ both equal to the unit Pareto with shape $1.5$ on $[1, \infty)$ (so $\E[Y\mid A=a] = 3$ and $\E[Y^{1.5}\mid A=a] = 1$; the constraint $\sigma_{1.5}^{1.5} = 1$ is saturated).
+
+Compute, from \S6 primitives only:
+\begin{enumerate}[leftmargin=2em,label=(\alph*)]
+  \item $\lambda^*(2, 0.4) = \dfrac{(1-0.4)(1 - 1/2)}{1 - 0.4(1 - 1/2)} = \dfrac{0.3}{0.8} = 0.375$.
+  \item $\kappa(2, 0.4) = (1 - 1/2)(1/0.6 + 1/0.4) = 0.5\cdot(5/3 + 5/2) = 0.5 \cdot 25/6 = 25/12 \approx 2.083$.
+  \item Quantile $q^a_{1 - \lambda^*}(x_0) = F_a^{-1}(0.625 \mid x_0) = (1 - 0.625)^{-1/1.5} = 0.375^{-2/3} \approx 1.929$.
+  \item Tail-extremal mean $\mathcal{T}_{1.5}(1, 1.929)$ from Conjecture~\ref{conj:closedform}: leading-order $1.929 + (1/(1.5 \cdot 1.929^{0.5})) \cdot (1/0.5) \approx 1.929 + 1.441/0.5 \approx 1.929 + 2.882 \cdot 0.5 \approx 3.371$ (the leading correction term is finite because $\alpha > 1$).
+  \item Tail-budget $\xi_{1.5}(F_a;\lambda^*) = (0.5)^{-1}\,(0.375)^{1/1.5 - 1} = 2 \cdot 0.375^{-1/3} \approx 2 \cdot 1.387 = 2.774$.
+  \item $M_{1.5}(x_0) = 1 \cdot 2.774 + 1 \cdot 2.774 = 5.547$.
+  \item $W_{1.5}(2, 0.4, x_0) = \kappa \cdot M_{1.5} = (25/12) \cdot 5.547 \approx 11.56$.
+\end{enumerate}
+
+\emph{Internal-consistency check.} (i) No quantity is over-determined: $\lambda^*$ is fixed by $(\Gamma,\varepsilon)$, quantile is fixed by $\lambda^*$ and $F_a$, $\mathcal{T}_\alpha$ is fixed by $(\sigma_\alpha, q)$; no zero denominator since $\varepsilon \in (0,1/2)$ and $\Gamma > 1$. (ii) Sign check: $W_{1.5} > 0$ as required for non-trivial partial-ID. (iii) Cardinality: every input is a scalar in this stratum, no implicit overcounting. (iv) Comparator divergence: setting $\alpha \to \infty$ with $\sigma_\alpha \to \mathrm{ess\,sup}(Y) = \infty$ here gives $W_\infty = \infty$, matching the support-only Manski bound on Pareto-tailed outcomes — confirms strict tightening at finite $\alpha$.
+
+\paragraph{Exhibit 9.2 (SC10 — phase transition witness for Conjecture~\ref{conj:phase}).}
+Take the same stratum and let $\alpha_n \downarrow 1$ along $\alpha_n = 1 + 1/n$ with $\sigma_{\alpha_n}(x_0,a) \equiv 1$, $F_a(\cdot|x_0)$ unit Pareto with shape $\alpha_n$. Then $\xi_{\alpha_n}(F_a;\lambda^*) = (\alpha_n - 1)^{-1} (\lambda^*)^{1/\alpha_n - 1} \uparrow \infty$ as $n \to \infty$, so $W_{\alpha_n}(2, 0.4, x_0) \to +\infty$. The set $\{F : \E[|Y|\mid A,X = x_0] \le 1\}$ contains a $w^*$-open neighbourhood of these Pareto laws (perturb by $\delta_{y}$ at $y \in [1,2]$ with mass $\le \eta$, $\eta$ small), so the divergence holds on an open class — promoting witness to generic-class as required by Conjecture~\ref{conj:phase}(ii).
+
+\section{Proof-sketch route}
+
+\paragraph{Headline reduction chain (Conjecture~\ref{conj:closedform} / Conjecture~\ref{conj:width}).}
+$$\overline{\tau}_\alpha \;\leftarrow\; \text{[Theorem~\ref{thm:primal} primal program]} \;\leftarrow\; \text{[step 1: separate per-arm problem via Lagrangian on $e^*$]}$$
+$$\leftarrow\; \text{[step 2: $\mathrm{MSM}(\Gamma)$ dual reduces inner sup to quantile-level $\lambda^*$ via Hardy–Littlewood rearrangement]}$$
+$$\leftarrow\; \text{[step 3: $\alpha$-moment constraint pushes tail mass to the Pareto-extremal coupling via Karamata's theorem on regularly varying functions]}$$
+$$\leftarrow\; \text{[step 4: combine the two extremal couplings via convex-conjugate identification of $\xi_\alpha$]} \;\leftarrow\; \text{[classical: Hardy–Littlewood–Pólya / de la Vallée-Poussin].}$$
+$k = 4$ substantive non-definitional steps; the design-constant factorisation arises from step 1 + step 2 alone (independent of $\alpha$), and the tail-budget factor arises from step 3 + step 4 (independent of $(\Gamma,\varepsilon)$). The multiplicative factorisation in Conjecture~\ref{conj:width} is conjectural because step 2 and step 3 a priori interact through the conditional law at the quantile crossing; the conjecture is that the interaction vanishes when the trimming knot is set at $\lambda^*(\Gamma,\varepsilon)$.
+
+\paragraph{Headline reduction chain (Conjecture~\ref{conj:phase}).}
+$$W_\alpha < \infty \iff \alpha > 1 \;\leftarrow\; \text{[step 1: the inner sup in Theorem~\ref{thm:primal} reduces to $\sup\{\int y\,dG : \int y^\alpha\,dG \le s^\alpha, G \ge 0\}$]}$$
+$$\leftarrow\; \text{[step 2: by Hölder, the sup equals $s\cdot\sup\{(\int y\,dG)/(\int y^\alpha\,dG)^{1/\alpha}\}$ which is finite iff $\alpha > 1$]}$$
+$$\leftarrow\; \text{[step 3: the divergent direction at $\alpha = 1$ is witnessed by Pareto-tail laws with mass escaping to $\infty$ at unit rate, surviving R2 with $\sigma_1$ but driving the integral to $\infty$]} \;\leftarrow\; \text{[classical: Hölder + extremal-coupling].}$$
+$k = 3$ substantive steps; the $w^*$-openness of the divergent class follows because the Pareto-tail family is open in TV, hence in $w^*$.
+
+\paragraph{Headline reduction chain (Conjecture~\ref{conj:rate}).}
+$$\widehat{\overline{\tau}}_\alpha - \overline{\tau}_\alpha \;\leftarrow\; \text{[step 1: linearise plug-in via influence function obtained by Conjecture~\ref{conj:closedform}'s quantile-trimming closed form]}$$
+$$\leftarrow\; \text{[step 2: empirical-process CLT on the trimmed part with bracketing entropy $O(\log n)$]}$$
+$$\leftarrow\; \text{[step 3: tail-mean estimation rate $n^{-(\alpha-1)/\alpha}$ from $\alpha$-stable Karamata-Hill theory, dominating step 2 iff $\alpha < 2$]} \;\leftarrow\; \text{[classical: Hall (1982) / Rolski-Schmidli-Schmidt-Teugels].}$$
+$k = 3$ substantive steps. Sharpness of the rate follows from a Le Cam lower bound against $\alpha$-tail perturbations of equal moment.
+
+\paragraph{Boundary algebra to check.} (i) Verify Exhibit~9.1's closed-form constants match the primal program by direct numerical optimisation over a discretised feasible set; (ii) verify the $\alpha = 1$ divergence direction by integrating the explicit Pareto integral; (iii) verify $\alpha = 2$ matches the Yadlowsky et al.~rate by collapsing $\xi_2$ and the Karamata step.
+
+\section{Honest scope flags}
+
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Open vs proved.} Theorem~\ref{thm:primal} (existence / finiteness of the primal program) is provable from convex-analysis and Banach–Alaoglu and is stated as a \texttt{Theorem}. Conjectures~\ref{conj:closedform}, \ref{conj:width}, \ref{conj:phase}, \ref{conj:rate} are open. The factorisation $W_\alpha = \kappa M_\alpha$ rests on the conjectured non-interaction of the MSM and $\alpha$-moment dual variables at the trimming knot $\lambda^*$; the most likely failure mode is that the closed form involves an $\alpha$-dependent shift of $\lambda^*$, in which case Conjecture~\ref{conj:closedform} would weaken to a quantile-level $\lambda^*(\Gamma,\varepsilon,\alpha)$.
+  \item \textbf{Withdrawn / not yet drafted.} v1 does not yet attempt the multivariate-$X$ functional uniformity of the rate result (Conjecture~\ref{conj:rate} is stated pointwise in $x$). A uniform-in-$x$ version with sieves is the natural follow-up and is deliberately deferred.
+  \item \textbf{Assumption uncertainty.} Assumption~\ref{ass:sigma} (known $\sigma_\alpha$) is strong; in applications it would be replaced by a Hill estimator $\widehat{\sigma}_\alpha$ with a slowly varying correction. Conjecture~\ref{conj:rate} treats $\sigma_\alpha$ as known; the rate when $\sigma_\alpha$ is estimated from the same sample is open and likely contracts to $n^{-(\alpha-1)/(2\alpha)}$ in the $\alpha < 2$ regime.
+  \item \textbf{Regular-variation vs $\alpha$-moment.} The kernel uses the simpler finite-$\alpha$-moment envelope (R2). Strengthening R2 to regular variation $P(|Y| > t \mid A,X) \sim L(t)\,t^{-\alpha}$ would yield exact (rather than upper-bound) Pareto-extremal couplings and may sharpen $\xi_\alpha$; this strengthening is deferred to a follow-up.
+\end{itemize}
+
+\section{Iteration trail}
+
+\begin{itemize}[leftmargin=2em]
+  \item v1 (cold-start) --- initial draft; prior verdict: none. Cold-start over Stage -1.1 gaps payload; anchored on \texttt{KallusMaoZhou2019CATEIntervals}, \texttt{YadlowskyNamkoongBasuDuchiTian2022}, \texttt{DornGuoKallus2025}, and the unbounded-outcome vacuity flag of \texttt{AsiaeePalBeckHuling2026SharpGeneralization}. Motif M3 (sensitivity with critical-$\alpha^* = 1$) + M7 (iff direction) + M11 (non-LP quantile-trimming sharp form) + M9 (estimation-duality with rate phase transition).
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem{Manski1990}
+Manski, C.\,F. (1990). Nonparametric bounds on treatment effects. \emph{American Economic Review} 80(2), 319--323.
+
+\bibitem{AronowLee2013}
+Aronow, P.\,M.\ and Lee, D.\,K.\,K. (2013). Interval estimation of population means under unknown but bounded probabilities of sample selection. \emph{Biometrika} 100(1), 235--240.
+
+\bibitem{Tan2006}
+Tan, Z. (2006). A distributional approach for causal inference using propensity scores. \emph{Journal of the American Statistical Association} 101(476), 1619--1637.
+
+\bibitem{Rosenbaum2002}
+Rosenbaum, P.\,R. (2002). \emph{Observational Studies} (2nd ed.). Springer Series in Statistics.
+
+\bibitem{KallusMaoZhou2019CATEIntervals}
+Kallus, N., Mao, X., and Zhou, A. (2019). Interval estimation of individual-level causal effects under unobserved confounding. \emph{Proceedings of the 22nd International Conference on Artificial Intelligence and Statistics} (AISTATS), PMLR 89.
+
+\bibitem{YadlowskyNamkoongBasuDuchiTian2022}
+Yadlowsky, S., Namkoong, H., Basu, S., Duchi, J., and Tian, L. (2022). Bounds on the conditional and average treatment effect with unobserved confounding factors. \emph{Annals of Statistics} 50(5), 2587--2615.
+
+\bibitem{DornGuoKallus2025}
+Dorn, J., Guo, K., and Kallus, N. (2025). Doubly-valid/doubly-sharp sensitivity analysis for causal inference with unmeasured confounding. \emph{Journal of the American Statistical Association} (forthcoming).
+
+\bibitem{AsiaeePalBeckHuling2026SharpGeneralization}
+Asiaee, A., Pal, S., Beck, C., and Huling, J.\,D. (2026). Sharp generalization bounds for treatment effects under outcome distribution shift. \emph{Proceedings of the 5th Conference on Causal Learning and Reasoning} (CLeaR), PMLR.
+
+\bibitem{JungKang2026ITBounds}
+Jung, Y.\ and Kang, B. (2026). Information-theoretic sharp partial-identification bounds for causal effects without bounded outcomes. \emph{Proceedings of the 5th Conference on Causal Learning and Reasoning} (CLeaR), PMLR.
+
+\bibitem{LordanSalehzadehNobari2026TailUncertainty}
+Lordan, G.\ and Salehzadeh Nobari, K. (2026). Tail uncertainty and the credibility of treatment-effect bounds. SSRN working paper.
+
+\bibitem{LeeWeidner2021PoolingBounds}
+Lee, S.\ and Weidner, M. (2021). Bounding causal effects via limited information pooling. arXiv:2111.05243 (cemmap working paper CWP31/21).
+
+\bibitem{TudballBowdenHughesTilling2023SampleConstrained}
+Tudball, M.\,J., Bowden, J., Hughes, R.\,A., and Tilling, K. (2023). Sample-constrained partial identification with application to selection bias. \emph{Biometrika} 110(2), 485--498.
+
+\bibitem{MastenPoirier2018}
+Masten, M.\,A.\ and Poirier, A. (2018). Identification of treatment effects under conditional partial independence. \emph{Econometrica} 86(1), 317--351.
+
+\bibitem{ChernozhukovEtAl2018DML}
+Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C., Newey, W., and Robins, J. (2018). Double/debiased machine learning for treatment and structural parameters. \emph{The Econometrics Journal} 21(1), C1--C68.
+
+\bibitem{Hall1982TailEstimation}
+Hall, P. (1982). On some simple estimates of an exponent of regular variation. \emph{Journal of the Royal Statistical Society B} 44(1), 37--42.
+
+\end{thebibliography}
+
+\end{document}

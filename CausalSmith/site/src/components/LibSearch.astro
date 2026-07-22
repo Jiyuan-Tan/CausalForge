@@ -1,0 +1,91 @@
+---
+interface Props {
+  base: string;
+}
+const { base } = Astro.props as Props;
+---
+
+<div class="lib-search" data-base={base}>
+  <input
+    type="search"
+    id="lib-search-input"
+    placeholder="Search the whole library — names, translations, statements…"
+    autocomplete="off"
+  />
+  <div id="lib-search-results" hidden></div>
+</div>
+
+<script>
+  const box = document.querySelector(".lib-search") as HTMLElement;
+  const input = document.getElementById("lib-search-input") as HTMLInputElement;
+  const results = document.getElementById("lib-search-results")!;
+  const base = box.dataset.base ?? "";
+  let rows: any[] | null = null;
+  let loading = false;
+
+  async function ensureRows() {
+    if (rows || loading) return;
+    loading = true;
+    const res = await fetch(`${base}/library/search.json`);
+    rows = (await res.json()).rows;
+    loading = false;
+  }
+
+  function esc(s: string) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function run() {
+    const q = input.value.trim().toLowerCase();
+    if (q.length < 2 || !rows) {
+      results.hidden = true;
+      results.innerHTML = "";
+      return;
+    }
+    const terms = q.split(/\s+/);
+    const scored: { r: any; score: number }[] = [];
+    for (const r of rows) {
+      const name = r.n.toLowerCase();
+      const hay = `${name} ${r.d.toLowerCase()} ${r.s.toLowerCase()}`;
+      if (!terms.every((t) => hay.includes(t))) continue;
+      let score = 0;
+      const short = name.split(".").pop()!;
+      for (const t of terms) {
+        if (short === t) score += 100;
+        else if (short.includes(t)) score += 40;
+        else if (name.includes(t)) score += 20;
+        else if (r.d.toLowerCase().includes(t)) score += 10;
+      }
+      if (r.t === 1) score += 5;
+      scored.push({ r, score });
+    }
+    scored.sort((a, b) => b.score - a.score);
+    const top = scored.slice(0, 40);
+    results.innerHTML = top.length
+      ? top
+          .map(({ r }) => {
+            const short = r.n.split(".").pop();
+            return `<a class="hit" href="${base}/library/${r.a}#${r.n}">
+              <span class="hit-kind">${r.k}</span>
+              <span class="hit-name">${esc(short)}</span>
+              <span class="hit-mod">${esc(r.m.replace(/^Causalean\./, ""))}</span>
+              <span class="hit-nl">${esc(r.d.slice(0, 140))}</span>
+            </a>`;
+          })
+          .join("")
+      : `<div class="no-hit">No declarations match.</div>`;
+    results.hidden = false;
+  }
+
+  input.addEventListener("focus", ensureRows);
+  input.addEventListener("input", async () => {
+    await ensureRows();
+    run();
+  });
+  document.addEventListener("click", (ev) => {
+    if (!(ev.target as Element).closest(".lib-search")) results.hidden = true;
+  });
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") results.hidden = true;
+  });
+</script>

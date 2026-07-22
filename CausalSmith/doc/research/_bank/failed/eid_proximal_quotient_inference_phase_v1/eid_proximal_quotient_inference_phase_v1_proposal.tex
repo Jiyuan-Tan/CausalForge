@@ -1,0 +1,316 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_proximal\_quotient\_inference\_phase, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` -- the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_proximal\_quotient\_inference\_phase} / \texttt{v1}%
+  \\ \large\textit{Weak-quotient inference for proximal target uniqueness}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+ExactID/free-form tuple. \(qid=\texttt{eid\_proximal\_quotient\_inference\_phase}\). \(specialization=\texttt{v1}\). The graph/SWIG is a finite negative-control proximal causal model with treatment \(A^{tr}\), outcome \(Y\), observed covariates \(X\), treatment-inducing proxy \(Z\), outcome-inducing proxy \(W\), and latent confounder \(U\); the negative-control exclusion restrictions are maintained. The treatment is a fixed binary intervention \(a\) versus \(a'\). The target estimand is the counterfactual mean contrast \(\theta=\E\{Y(a)-Y(a')\}\), represented in a finite bridge basis by a linear loading \(\ell\in\R^q\) applied to any outcome-bridge coefficient \(h\in\R^q\). The maintained modeling assumptions are the finite bridge equation \(Ah=b\), fixed rank \(r<q\) for the bridge operator \(A\in\R^{m\times q}\), and a joint local asymptotic experiment for estimators \((\widehat A,\widehat \ell)\). Quotient invariance \(\ell\perp\ker(A)\) is not maintained under all regimes; it is the diagnostic boundary whose sampling behavior is studied. The diagnostic functional is the cone-angle certificate
+\[
+        \kappa(A,\ell)=\|P_N(A)\ell\|_2/\|\ell\|_2,
+\]
+where \(P_N(A)\) is the Euclidean projector onto \(\ker(A)\); \(\kappa=0\) is the population target-uniqueness boundary and \(\widehat\kappa=\kappa(\widehat A,\widehat\ell)\) is the plug-in diagnostic.
+
+\begin{abstract}
+Finite proximal bridge models can have many bridge functions while a target functional remains unique. The static null-annihilator criterion says when this happens, but it does not give valid post-diagnostic inference when the bridge operator and target loading are estimated. This proposal treats the cone angle \(\kappa(A,\ell)\) as a weak-quotient statistic rather than as a new identification criterion. The flagship conjecture is a uniform inference phase theorem: separated alternatives have an ordinary Gaussian law, \(n^{-1/2}\)-local quotient sequences have projected-Gaussian or chi-bar-square laws, and a pretest-then-Wald proximal interval has nonvanishing size distortion. The result would calibrate quotient decisions before reporting proximal bridge-functional intervals and would give a small finite-matrix witness separating bridge nonuniqueness, target uniqueness, and weak quotient inference.
+\end{abstract}
+
+\section{Introduction}
+Proximal causal inference separates bridge uniqueness from target uniqueness. The methodological question is whether a target-uniqueness diagnostic can be used before reporting a Gaussian proximal interval when the bridge operator and target loading are estimated. The main claim is that the plug-in cone angle has a sharp weak-quotient phase: regular inference holds off the quotient boundary, but local-to-nullspace sequences generate a projected-Gaussian law and invalidate naive pretest decisions.
+
+The closest algebraic comparator is \citet[Sec. 2, Eq. (4)]{zhang2023proximalWithoutUniqueness}, which characterizes target uniqueness when bridges are nonunique, and the closest regular-inference comparator is \citet[Sec. 2, Thm. 1]{bennett2023stronglyIdentifiedFunctionals}, which gives normality under strong functional identification. The inference comparators are the transformed singular-value rank statistic of \citet[Sec. 2, Eq. (2.3)]{kleibergenPaap2006generalizedReducedRank}, the drifting-identification experiment of \citet[Sec. 2, Assumption A]{andrewsCheng2012weakSemiStrongStrong}, and the nearly singular Jacobian expansion of \citet[Sec. 2, Assumption 2.1]{hanMcCloskey2019nearlySingularJacobian}. The gap is inferential rather than algebraic: none treats an estimated bridge operator, an estimated target loading, and \(n^{-1/2}\) approach to a bridge nullspace as one proximal quotient experiment. The kernel lives in ExactID, with a proximal negative-control bridge representation and a weak-identification local experiment.
+
+The downstream consumer is post-diagnostic proximal inference in categorical or sieve negative-control designs, as in \citet{shi2020multiplyRobustCategorical} and \citet{miao2024confoundingBridgeDoubleNegativeControl}. A reader who uses the conclusion would not decide target uniqueness by comparing \(\widehat\kappa\) with a fixed threshold and then applying an ordinary Gaussian interval without accounting for the local quotient phase.
+
+\begin{itemize}[leftmargin=*]
+\item Lemma 1: The population cone angle is zero exactly when all finite bridge solutions have the same target loading. Gap: \citet{zhang2023proximalWithoutUniqueness} is the comparator; this is supporting algebra, not the novelty claim. Consumer: notation for finite negative-control bridge diagnostics.
+\item Conjecture 1: The plug-in cone-angle process has a two-regime limit experiment with an explicit derivative \(D\kappa\) off the boundary and an explicit projected-loading map \(\Pi_N\) on the \(n^{-1/2}\) boundary. Gap: \citet{kleibergenPaap2006generalizedReducedRank} and \citet{robinSmith2000TestsRank} test rank, while \citet{bennett2023stronglyIdentifiedFunctionals} assumes the regular functional side. Consumer: ordinary and local quotient-diagnostic intervals.
+\item Conjecture 2: Any fixed-threshold pretest that reports a Gaussian proximal interval only after accepting quotient uniqueness has nonvanishing local size distortion, and a calibrated rule must use the projected-Gaussian critical value. Gap: \citet{andrewsCheng2012weakSemiStrongStrong}, \citet{andrewsCheng2014gmmIdentificationFailure}, and \citet{hanMcCloskey2019nearlySingularJacobian} give weak-identification phases, not the proximal quotient decision rule. Consumer: post-diagnostic proximal confidence sets.
+\item Theorem 1: A two-by-two rank-one bridge operator gives a nondegenerate witness in which bridge solutions are nonunique, the target is unique at the boundary, and the local diagnostic includes both row-estimation and loading-estimation noise. Gap: prior \texttt{eid\_proximal\_bridge\_quotient} bank entries requested minimal finite witnesses after the static criterion was rejected as already known. Consumer: auditable Stage 0 formalization target.
+\end{itemize}
+
+\section{Related work}
+\citet[Sec. 2, Eq. (4)]{zhang2023proximalWithoutUniqueness} is the direct proximal comparator because it studies valid inference when bridge functions are not unique; its null-annihilator condition is treated here as known. \citet[Sec. 2, Thm. 1]{bennett2023stronglyIdentifiedFunctionals} shows that linear functionals can be strongly identified even when nuisance bridges are weakly identified, which is the regular side rather than the local quotient boundary. \citet{bennett2023sourceConditionDR} supplies a source-condition route to doubly robust normality in inverse problems, but it does not characterize local target loadings at a bridge nullspace. \citet{cui2024semiparametricProximal} and \citet{ying2023proximalPDR} develop proximal bridge and proximal doubly robust estimators whose diagnostic use requires knowing when ordinary reference laws are valid. \citet{shi2020multiplyRobustCategorical} gives a finite categorical negative-control model that can instantiate the matrices used here. \citet{miao2024confoundingBridgeDoubleNegativeControl} gives a finite double-negative-control bridge setting where bridge nonuniqueness can occur without making the target question vacuous. \citet[Sec. 2, Eq. (2.3)]{kleibergenPaap2006generalizedReducedRank} and \citet[Sec. 3]{robinSmith2000TestsRank} provide estimated-rank asymptotics, but their object is matrix rank rather than a target loading projected on an estimated bridge nullspace. \citet[Sec. 2, Assumption A]{andrewsCheng2012weakSemiStrongStrong}, \citet[Sec. 2]{andrewsCheng2014gmmIdentificationFailure}, and \citet[Sec. 2, Assumption 2.1]{hanMcCloskey2019nearlySingularJacobian} motivate drifting-sequence inference under weak identification and singular Jacobians. \citet{andrews1999EstimationBoundary} and \citet{drton2009LikelihoodRatioSingularities} give boundary and cone-limit asymptotics that are natural tools for the local projected-Gaussian law.
+
+The CausalSmith catalogue has no active ExactID entry that solves proximal quotient inference. The closest in-repo prior art is the failed \texttt{eid\_proximal\_bridge\_quotient} run, whose static nullspace criterion was rejected as already solved but whose reviewer notes requested fixed-rank asymptotics and near-nullspace diagnostics. The downgraded \texttt{eid\_proximal\_phase} run supplied finite bridge-fiber and two-by-two witness language, but it did not give the local sampling law for an estimated operator and loading. The failed \texttt{eid\_proximal\_completeness} run named weak/nullspace phases but was rejected because the rank, nuisance, and weak cases were not pinned down. The only ExactID/PartialID catalogue material in \texttt{doc/API.md} at seed time is unrelated Manski bounded-outcome material, so it is not a duplicate of this kernel.
+
+\section{Formal setup}
+Let \(A\in\R^{m\times q}\) be the finite bridge operator induced by a basis for \(h(W,X,A^{tr})\) and moment functions of \((Z,X,A^{tr})\). Let \(b\in\R^m\) be the corresponding outcome moment vector. A bridge coefficient \(h\in\R^q\) solves \(Ah=b\). The target is the linear functional \(\theta(a)=\ell^\transpose h\), and the contrast \(\theta=\theta(a)-\theta(a')\) is handled by replacing \(\ell\) with the contrast loading. The identified target is unique over bridge solutions iff \(\ell^\transpose v=0\) for every \(v\in\ker(A)\).
+
+The finite sample provides estimators \(\widehat A\) and \(\widehat\ell\). The rank \(r\) is fixed and known for the diagnostic. Write \(P_N(A)\) for the orthogonal projector onto \(\ker(A)\), and define
+\[
+        \kappa(A,\ell)=\|P_N(A)\ell\|_2/\|\ell\|_2,\qquad
+        Q(A,\ell)=\|P_N(A)\ell\|_2^2 .
+\]
+Let \(S_A[H]\) denote the fixed-rank Frechet derivative of \(P_N(A)\) in direction \(H\). The two linear maps used in the limit theory are
+\[
+        \Pi_N(H,u;\ell_0,g)=P_N(A_0)(g+u)+S_{A_0}[H]\ell_0
+\]
+and, when \(P_N(A_0)\ell_0\ne0\),
+\[
+        D\kappa_{(A_0,\ell_0)}[H,u]
+        =\frac{\langle z_0, P_N(A_0)u+S_{A_0}[H]\ell_0\rangle}{\|z_0\|_2\|\ell_0\|_2}
+        -\frac{\|z_0\|_2\langle \ell_0,u\rangle}{\|\ell_0\|_2^3},
+        \qquad z_0=P_N(A_0)\ell_0 .
+\]
+The map \(\Pi_N\) is the projected loading perturbation at the quotient boundary; it includes row/operator noise and loading noise.
+
+\begin{verbatim}
+ExactID/free-form tuple:
+qid = eid_proximal_quotient_inference_phase
+specialization = v1
+graph/SWIG = finite negative-control proximal model with A^tr,Y,X,Z,W,U
+treatment = binary intervention a versus a'
+target estimand = E[Y(a)-Y(a')] represented by loading ell^T h
+maintained modeling assumptions = finite bridge equation Ah=b, rank(A)=r<q,
+  and fixed-rank local asymptotics for (Ahat, ellhat)
+diagnostic boundary = quotient invariance ell perpendicular to ker(A)
+diagnostic functional = kappa(A,ell)=||P_N(A) ell||_2 / ||ell||_2
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite proximal bridge representation]\label{ass:finite-bridge}
+The negative-control model admits finite bases such that all outcome bridge coefficients \(h\in\R^q\) solve \(Ah=b\), with \(A\in\R^{m\times q}\), \(b\in\R^m\), and target loading \(\ell\in\R^q\).
+\end{assumption}
+
+\begin{assumption}[Fixed rank and spectral separation]\label{ass:fixed-rank}
+The population operator has rank \(r<q\). Its nonzero singular values are bounded below by \(\sigma_*>0\) in a neighborhood of the local experiment, so \(P_N(A)\) is differentiable along fixed-rank perturbations.
+\end{assumption}
+
+\begin{assumption}[Joint asymptotic linearity]\label{ass:joint-al}
+For a mean-zero Gaussian vector \(\mathbb G=(G_A,G_\ell)\),
+\[
+        \sqrt n\{(\widehat A,\widehat\ell)-(A_n,\ell_n)\}\Rightarrow \mathbb G
+\]
+in \(\R^{m\times q}\times\R^q\), with covariance consistently estimable.
+\end{assumption}
+
+\begin{assumption}[Nonzero loading]\label{ass:nonzero-loading}
+\(\inf_n \|\ell_n\|_2>0\).
+\end{assumption}
+
+\begin{assumption}[Separated quotient alternative]\label{ass:separated}
+For the regular diagnostic regime, \(\kappa(A_n,\ell_n)\to\kappa_0>0\). This is an alternative to quotient invariance, not an identifying assumption for the target.
+\end{assumption}
+
+\begin{assumption}[Local quotient boundary]\label{ass:local-boundary}
+For the weak-quotient regime, \(A_n=A_0\), \(\ell_n=\ell_0+n^{-1/2}g\), \(P_N(A_0)\ell_0=0\), and \(g\in\R^q\) is fixed.
+\end{assumption}
+
+\begin{assumption}[Naive post-diagnostic rule]\label{ass:naive-rule}
+The analyst reports the usual Gaussian proximal interval for \(\theta\) after accepting quotient uniqueness by a fixed critical rule based on \(n\widehat\kappa^2\), with the critical value calibrated as if the boundary law were central Gaussian delta-method noise.
+\end{assumption}
+
+\section{Main results}
+\begin{lemma}[Population quotient-angle algebra]\label{lem:population-angle}
+Under Assumption \ref{ass:finite-bridge}, all bridge solutions \(h\) of \(Ah=b\) have the same target value \(\ell^\transpose h\) if and only if \(\kappa(A,\ell)=0\).
+\end{lemma}
+If \(h_1\) and \(h_2\) are two solutions, then \(h_1-h_2\in\ker(A)\); target equality for all solutions is therefore equivalent to \(\ell\) annihilating \(\ker(A)\), which is equivalent to \(P_N(A)\ell=0\).
+
+\begin{conjecture}[Uniform cone-angle inference phase; NOT YET PROVED]\label{conj:regular-local}
+Under Assumptions \ref{ass:finite-bridge}--\ref{ass:nonzero-loading}, the plug-in cone-angle process has the following two limits. If Assumption \ref{ass:separated} holds, then
+\[
+        \sqrt n\{\widehat\kappa-\kappa(A_n,\ell_n)\}
+        \Rightarrow D\kappa_{(A_0,\ell_0)}[G_A,G_\ell].
+\]
+If Assumption \ref{ass:local-boundary} holds, then
+\[
+        n\widehat\kappa^2
+        \Rightarrow
+        \frac{\|\Pi_N(G_A,G_\ell;\ell_0,g)\|_2^2}{\|\ell_0\|_2^2}.
+\]
+Under rank-selection or sign-normalization constraints, the squared norm is replaced by the corresponding projection of the same Gaussian shift onto the admissible tangent cone.
+\end{conjecture}
+
+\begin{conjecture}[Post-diagnostic size distortion and calibrated quotient rule; NOT YET PROVED]\label{conj:pretest}
+Under Assumptions \ref{ass:finite-bridge}, \ref{ass:fixed-rank}, \ref{ass:joint-al}, \ref{ass:nonzero-loading}, \ref{ass:local-boundary}, and \ref{ass:naive-rule}, there exists a nonzero local shift \(g\) and a covariance law for \((G_A,G_\ell)\) such that the naive post-diagnostic Gaussian interval has limiting rejection probability different from its nominal level. Replacing the naive critical value by the \((1-\alpha)\)-quantile of \(\|\Pi_N(G_A,G_\ell;\ell_0,g_0)\|_2^2/\|\ell_0\|_2^2\), with \(g_0\) set to the least favorable local loading in the tangent cone, yields a pointwise calibrated quotient decision at the boundary.
+\end{conjecture}
+
+\begin{theorem}[Two-by-two local witness]\label{thm:witness}
+Let \(m=1\), \(q=2\), \(A_0=(1,0)\), \(b=0\), \(\ell_n=(1,h/\sqrt n)^\transpose\), and let
+\[
+        \widehat A_n=(1,G_A/\sqrt n)+o_p(n^{-1/2}),\qquad
+        \widehat\ell_n=(1,(h+G_\ell)/\sqrt n)^\transpose+o_p(n^{-1/2}),
+\]
+with \((G_A,G_\ell)\Rightarrow N(0,\Sigma)\). Then \(Ah=0\) has nonunique bridge solutions, the population target is unique at \(h=0\), and
+\[
+        n\widehat\kappa^2\Rightarrow (h+G_\ell-G_A)^2 .
+\]
+\end{theorem}
+The nullspace of \(\widehat A_n\) is spanned by \((-G_A/\sqrt n,1)^\transpose+o_p(n^{-1/2})\), so the projected loading equals \((h+G_\ell-G_A)/\sqrt n+o_p(n^{-1/2})\).
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Static quotient reduction]
+Under Assumptions \ref{ass:finite-bridge} and \ref{ass:fixed-rank}, Lemma \ref{lem:population-angle} reduces to the null-annihilator criterion when \((A,\ell)\) is known. The reduction is \(P_N(A)\ell=0\) if and only if \(\ell^\transpose v=0\) for every bridge-null direction \(v\).
+\end{corollary}
+
+\begin{corollary}[No-boundary Gaussian reduction]
+Under Assumptions \ref{ass:joint-al}, \ref{ass:nonzero-loading}, and \ref{ass:separated}, Conjecture \ref{conj:regular-local} reduces to the ordinary delta method for a smooth finite-dimensional functional. The reduction follows because fixed rank and \(\kappa_0>0\) make the norm map differentiable at \(P_N(A_0)\ell_0\ne0\).
+\end{corollary}
+
+\paragraph{Exhibit 9.1: computed cone-angle witness.}
+Take \(A_0=(1,0)\), \(\ell_n=(1,h/\sqrt n)^\transpose\), \(\widehat A_n=(1,G_A/\sqrt n)\), and \(\widehat\ell_n=(1,(h+G_\ell)/\sqrt n)^\transpose\). The nullspace unit vector is
+\[
+        \widehat v_n=\frac{(-G_A/\sqrt n,1)^\transpose}{(1+G_A^2/n)^{1/2}} .
+\]
+Thus
+\[
+        \widehat\kappa^2
+        =
+        \frac{(\widehat v_n^\transpose\widehat\ell_n)^2}{\|\widehat\ell_n\|_2^2}
+        =
+        \frac{(h+G_\ell-G_A)^2/n}{(1+G_A^2/n)\{1+(h+G_\ell)^2/n\}} .
+\]
+The internal checks are immediate: the bridge equation has one row and two unknowns, the nullspace is one-dimensional, \(\|\widehat\ell_n\|_2>0\), and the denominator is strictly positive for all finite \(G_A,G_\ell,h,n\). This exhibit computes the focal object from \(\widehat A_n\) and \(\widehat\ell_n\), not from an assumed frontier.
+
+\section{Proof-sketch route}
+For Lemma \ref{lem:population-angle}, the route is target uniqueness \(\leftarrow\) unfold the affine bridge solution set \(h_0+\ker(A)\) \(\leftarrow\) apply linear-functional constancy on an affine space \(\leftarrow\) identify constancy with orthogonality to \(\ker(A)\) \(\leftarrow\) rewrite orthogonality as \(P_N(A)\ell=0\). For Conjecture \ref{conj:regular-local}, the route is uniform cone-angle phase \(\leftarrow\) unfold \(\kappa\) and \(Q\) \(\leftarrow\) substitute Assumptions \ref{ass:fixed-rank}--\ref{ass:joint-al} \(\leftarrow\) derive the fixed-rank projector derivative \(S_A[H]\) by singular-subspace perturbation \(\leftarrow\) compose it with loading perturbation to form \(\Pi_N\) \(\leftarrow\) apply the norm derivative away from zero for the separated regime \(\leftarrow\) replace the invalid norm derivative at zero by the squared projected-Gaussian map for the local regime \(\leftarrow\) specialize rank/sign restrictions through cone-projection limits; \(k=6\). For Conjecture \ref{conj:pretest}, the route is size distortion \(\leftarrow\) write the pretest rejection event as a function of \(n\widehat\kappa^2\) \(\leftarrow\) substitute the local limit in Conjecture \ref{conj:regular-local} \(\leftarrow\) compare its quantile with the naive central Gaussian-delta critical value \(\leftarrow\) choose a nonzero local shift changing the rejection probability \(\leftarrow\) define the least favorable tangent-cone quantile \(\leftarrow\) verify pointwise boundary calibration; \(k=5\). The boundary algebra that must be checked explicitly is the two-by-two witness in Theorem \ref{thm:witness} and the multi-dimensional chi-bar-square replacement when the estimated nullspace is selected under inequality constraints.
+
+\section{Honest scope flags}
+The population angle statement and the two-by-two witness are finite-dimensional linear algebra. The uniform phase and post-diagnostic calibration statements are conjectures because the projector derivative, the cone-projection law, and the least favorable critical value must be proved uniformly over the fixed-rank neighborhood. The proposal does not claim a new proximal identification criterion, a new completeness threshold, or a general infinite-dimensional bridge theory. The rank \(r\) is treated as fixed and known for the diagnostic; rank selection is only mentioned as a source of the cone limit and would need a separate theorem.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft of the cone-angle quotient-inference phase; prior verdict: none.
+\item v2 (revise) -- demoted the static quotient criterion to supporting algebra, added location-level comparator anchors, defined \(\Pi_N\) and \(D\kappa\), and promoted the flagship claim to post-diagnostic weak-quotient inference; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Andrews(1999)]{andrews1999EstimationBoundary}
+Andrews, D. W. K. (1999).
+Estimation when a parameter is on a boundary.
+\emph{Econometrica}.
+
+\bibitem[Andrews and Cheng(2012)]{andrewsCheng2012weakSemiStrongStrong}
+Andrews, D. W. K. and X. Cheng (2012).
+Estimation and inference with weak, semi-strong, and strong identification.
+\emph{Econometrica}.
+
+\bibitem[Andrews and Cheng(2014)]{andrewsCheng2014gmmIdentificationFailure}
+Andrews, D. W. K. and X. Cheng (2014).
+GMM estimation and uniform subvector inference with possible identification failure.
+\emph{Econometric Theory}.
+
+\bibitem[Bennett et al.(2023a)]{bennett2023stronglyIdentifiedFunctionals}
+Bennett, A., N. Kallus, X. Mao, W. Newey, V. Syrgkanis, and M. Uehara (2023).
+Inference on strongly identified functionals of weakly identified functions.
+\emph{Proceedings of Machine Learning Research}, COLT.
+
+\bibitem[Bennett et al.(2023b)]{bennett2023sourceConditionDR}
+Bennett, A., N. Kallus, X. Mao, W. Newey, V. Syrgkanis, and M. Uehara (2023).
+Source condition double robust inference on functionals of inverse problems.
+\emph{arXiv:2307.13793}.
+
+\bibitem[Cui et al.(2024)]{cui2024semiparametricProximal}
+Cui, Y., H. Pu, X. Shi, W. Miao, and E. J. Tchetgen Tchetgen (2024).
+Semiparametric proximal causal inference.
+\emph{Biometrika}.
+
+\bibitem[Drton(2009)]{drton2009LikelihoodRatioSingularities}
+Drton, M. (2009).
+Likelihood ratio tests and singularities.
+\emph{The Annals of Statistics}.
+
+\bibitem[Han and McCloskey(2019)]{hanMcCloskey2019nearlySingularJacobian}
+Han, S. and A. McCloskey (2019).
+Estimation and inference with a nearly singular Jacobian.
+\emph{Quantitative Economics}.
+
+\bibitem[Kleibergen and Paap(2006)]{kleibergenPaap2006generalizedReducedRank}
+Kleibergen, F. and R. Paap (2006).
+Generalized reduced rank tests using the singular value decomposition.
+\emph{Journal of Econometrics}.
+
+\bibitem[Miao et al.(2024)]{miao2024confoundingBridgeDoubleNegativeControl}
+Miao, W., X. Shi, W. Li, and E. J. Tchetgen Tchetgen (2024).
+Confounding bridge functions with double negative controls.
+\emph{Statistical Theory and Related Fields}.
+
+\bibitem[Robin and Smith(2000)]{robinSmith2000TestsRank}
+Robin, J.-M. and R. J. Smith (2000).
+Tests of rank.
+\emph{Econometric Theory}.
+
+\bibitem[Shi et al.(2020)]{shi2020multiplyRobustCategorical}
+Shi, X., W. Miao, J. C. Nelson, and E. J. Tchetgen Tchetgen (2020).
+Multiply robust causal inference with double negative control adjustment for categorical unmeasured confounding.
+\emph{Journal of the Royal Statistical Society: Series B}.
+
+\bibitem[Ying et al.(2023)]{ying2023proximalPDR}
+Ying, A., W. Miao, X. Shi, and E. J. Tchetgen Tchetgen (2023).
+Proximal causal inference for complex longitudinal studies.
+\emph{Journal of the Royal Statistical Society: Series B}.
+
+\bibitem[Zhang et al.(2023)]{zhang2023proximalWithoutUniqueness}
+Zhang, J., W. Li, W. Miao, and E. J. Tchetgen Tchetgen (2023).
+Proximal causal inference without uniqueness of bridge functions.
+\emph{Statistics \& Probability Letters}.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,400 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb,amsthm}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{openendedquestion}{Open-ended Question}
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\coreref}[1]{\ref{#1}}
+
+\begin{document}
+
+\section*{exp_bipartite_minimax_design (v1)}
+
+\paragraph{TL;DR.} The proposal studies a bipartite experiment in which intervention units are independently assigned with heterogeneous Bernoulli probabilities chosen before outcomes are observed. The central object is an observable graph-only conservative asymptotic-variance envelope for the bipartite Hajek estimator under bounded all-treated and all-control potential outcomes. The rewritten construction uses the centered first-order Hajek linearization, fixes the cross-arm overlap sign, adds an explicit zero-denominator convention with a vanishing exceptional-event lemma, and rescales the variance object so the CLT has the correct sqrt(n) normalization. That repair yields an observable convex envelope-optimal design criterion under a budget and positivity floor, a correctly normalized non-identical-Bernoulli Hajek CLT, a pointwise conservative graph-only Wald procedure along nondegenerate sequences, and an honest open question on whether a low-dimensional observable surrogate design admits a constant-factor certificate under degree-dispersion conditions.
+
+\section{Project justification}
+
+\paragraph{Gap.} The direct anchor proves design-based bipartite Hajek inference only for a common Bernoulli(p), and it explicitly leaves richer assignment mechanisms to future work. Existing design papers under interference either optimize pilot-estimated precision in one-mode networks, rely on structural outcome models in bipartite settings, or optimize conservative variance bounds rather than the heterogeneous assignment law itself.
+
+\paragraph{Niche.} The open niche is a model-agnostic design theory for bipartite interference in which the graph is known ex ante, potential outcomes remain fixed apart from boundedness, and the intervention-unit propensity vector is the decision variable for a conservative precision envelope.
+
+\paragraph{Fill.} This project fills that niche by making the heterogeneous Bernoulli probability vector a first-class envelope-optimal design object, deriving a graph-only conservative variance envelope and its convex optimality conditions, and extending the Hajek CLT and conservative Wald theory to the optimized heterogeneous design.
+
+\section{Related work}
+
+Lu, Shi, Fang, Zhang, and Ding (2025) are the direct anchor: they formulate design-based bipartite Hajek inference under homogeneous Bernoulli randomization and explicitly identify richer assignment mechanisms as future work. Harshaw, Savje, Eisenstat, Mirrokni, and Pouget-Abadie (2021) study bipartite design and estimation under a linear exposure-response model, so their design problem is graph-aware but outcome-model dependent. Viviano (2026) optimizes one-mode network experiments using pilot-estimated variance and proves regret guarantees, which is the closest design-side proof template but for a different estimand, different randomization geometry, and a pilot-based rather than graph-only criterion. Harshaw, Middleton, and Savje (2024) show that conservative variance estimation under interference can be cast as a convex program over quadratic bounds, offering the right estimator-class perspective for the post-design standard-error problem but not an assignment-design result. Leung (2021) proves that independent non-identical Bernoulli assignment can coexist with asymptotically normal network IPW estimators under approximate neighborhood interference, which suggests feasibility of heterogeneous-probability inference but does not cover bipartite all-treated/all-control product exposures, Hajek denominators, or graph-chosen propensity vectors. Aronow and Samii (2017) provide the exposure-probability calculus and conservative design-based variance logic that underlies the overlap algebra here. Ugander et al. (2013), Ugander and Yin (2020), and Eichhorn et al. (2024) motivate the search for graph-observable tractability certificates by showing that graph structure can sharply alter interference precision under graph-aware designs. Park and Wager (2026) and Gao and Ding (2023) reinforce that interference-robust standard-error construction is design-specific and coverage can fail for convenient generic alternatives. Chattopadhyay, Imai, and Zubizarreta (2023) broaden design-based network inference to stochastic interventions, but they do not solve the envelope-optimal choice of intervention-unit probability vectors for the all-treated versus all-control bipartite effect.
+
+\section{Setup}
+
+Target (estimand / structural parameter): tau_n = n^{-1} sum_{i in O_n} {Y_i(1_{N_i(G_n)}) - Y_i(0_{N_i(G_n)})}.
+Identifying functional / recovery map: hat_tau_H(p) = 1{D_1(p,Z) > 0}{sum_{i in O_n} T_i(Z) Y_i^obs / pi_i^1(p)} / D_1(p,Z) - 1{D_0(p,Z) > 0}{sum_{i in O_n} C_i(Z) Y_i^obs / pi_i^0(p)} / D_0(p,Z).
+\begin{itemize}
+  \item $m_n$ --- number_of_intervention_units; N; design_size $:= Number of intervention units in stage n.$
+  \item $n$ --- number_of_outcome_units; N; design_size $:= Number of outcome units in stage n.$
+  \item $I_n$ --- intervention_index_set; subsets of N; population_index $:= Intervention-unit index set I_n = {1,...,m_n}.$
+  \item $O_n$ --- outcome_index_set; subsets of N; population_index $:= Outcome-unit index set O_n = {1,...,n}.$
+  \item $G_n$ --- bipartite_graph; subsets of I_n x O_n; design_graph $:= Known bipartite graph linking intervention units to outcome units in stage n.$
+  \item $N_i(G_n)$ --- intervention_neighborhood_of_outcome_unit; subsets of I_n; interference_support $:= Intervention neighborhood of outcome unit i, N_i(G_n) = {k in I_n : (k,i) in G_n}.$
+  \item $M_k(G_n)$ --- outcome_neighborhood_of_intervention_unit; subsets of O_n; design_load $:= Outcome neighborhood of intervention unit k, M_k(G_n) = {i in O_n : (k,i) in G_n}.$
+  \item $d_i$ --- outcome_degree; N; sparsity_index $:= Outcome-side degree d_i = |N_i(G_n)|.$
+  \item $s_k$ --- intervention_output_degree; N; design_load $:= Intervention-side output degree s_k = |M_k(G_n)|.$
+  \item $S_{ij}(G_n)$ --- shared_intervention_set; subsets of I_n; overlap_structure $:= Shared intervention neighborhood S_{ij}(G_n) = N_i(G_n) intersect N_j(G_n).$
+  \item $Delta_n$ --- outcome_overlap_dependency_degree; N; dependency_index $:= Maximum overlap dependency degree Delta_n = max_{i in O_n} |{j in O_n : S_{ij}(G_n) != emptyset}|.$
+  \item $Z_k$ --- intervention_assignment; {0,1}; randomization $:= Treatment indicator for intervention unit k.$
+  \item $Z$ --- assignment_vector; {0,1}^{m_n}; randomization $:= Assignment vector Z = (Z_1,...,Z_{m_n}).$
+  \item $p$ --- heterogeneous_assignment_probability_vector; [0,1]^{m_n}; design_variable $:= Independent Bernoulli assignment probabilities p = (p_1,...,p_{m_n}).$
+  \item $epsilon$ --- positivity_floor; (0,1/2); design_constraint $:= Assignment-probability floor enforcing epsilon <= p_k <= 1-epsilon.$
+  \item $B_n$ --- expected_treated_budget; [m_n epsilon, m_n (1-epsilon)]; design_constraint $:= Budget fixing the expected number of treated intervention units through sum_{k in I_n} p_k = B_n.$
+  \item $Y_i(z_{N_i})$ --- potential_outcome; R; causal_primitive $:= Fixed potential outcome for outcome unit i under the treatment subvector z_{N_i} indexed by N_i(G_n).$
+  \item $Y_i^1$ --- all_treated_potential_outcome; R; causal_primitive $:= All-treated potential outcome Y_i^1 = Y_i(1_{N_i(G_n)}).$
+  \item $Y_i^0$ --- all_control_potential_outcome; R; causal_primitive $:= All-control potential outcome Y_i^0 = Y_i(0_{N_i(G_n)}).$
+  \item $Y_i^obs$ --- observed_outcome; R; observed_outcome $:= Observed outcome Y_i^obs = Y_i(Z_{N_i(G_n)}).$
+  \item $Y_obs$ --- observed_outcome_vector; R^n; observed_outcome $:= Observed outcome vector Y_obs = (Y_1^obs,...,Y_n^obs).$
+  \item $Y$ --- potential_outcome_schedule; R^{2n}; causal_schedule $:= Potential-outcome schedule Y = ((Y_i^1,Y_i^0) : i in O_n).$
+  \item $mu_1$ --- all_treated_mean; R; estimand_component $:= Finite-population all-treated mean mu_1 = n^(-1) sum_{i in O_n} Y_i^1.$
+  \item $mu_0$ --- all_control_mean; R; estimand_component $:= Finite-population all-control mean mu_0 = n^(-1) sum_{i in O_n} Y_i^0.$
+  \item $tau_n$ --- finite_population_average_treatment_effect; R; target_estimand $:= Target effect tau_n = mu_1 - mu_0 = n^(-1) sum_{i in O_n} (Y_i^1 - Y_i^0).$
+  \item $T_i(Z)$ --- all_treated_exposure_indicator; {0,1}; exposure_indicator $:= All-treated exposure indicator T_i(Z) = product_{k in N_i(G_n)} Z_k.$
+  \item $C_i(Z)$ --- all_control_exposure_indicator; {0,1}; exposure_indicator $:= All-control exposure indicator C_i(Z) = product_{k in N_i(G_n)} (1-Z_k).$
+  \item $pi_i^1(p)$ --- all_treated_exposure_probability; (0,1]; known_design_probability $:= All-treated exposure probability pi_i^1(p) = product_{k in N_i(G_n)} p_k.$
+  \item $pi_i^0(p)$ --- all_control_exposure_probability; (0,1]; known_design_probability $:= All-control exposure probability pi_i^0(p) = product_{k in N_i(G_n)} (1-p_k).$
+  \item $D_1(p,Z)$ --- treated_hajek_denominator; [0,infty); estimator_component $:= Exposure-weighted treated denominator D_1(p,Z) = sum_{i in O_n} T_i(Z) / pi_i^1(p).$
+  \item $D_0(p,Z)$ --- control_hajek_denominator; [0,infty); estimator_component $:= Exposure-weighted control denominator D_0(p,Z) = sum_{i in O_n} C_i(Z) / pi_i^0(p).$
+  \item $hat_tau_H(p)$ --- heterogeneous_hajek_estimator; R; design_based_estimator $:= Hajek estimator defined by def:hetero-hajek-estimator.$
+  \item $r_{ij}^1(G_n,p)$ --- treated_overlap_load; [0,infty); graph_only_variance_load $:= Treated overlap load r_{ij}^1(G_n,p) = 1{S_{ij}(G_n) != emptyset}(product_{k in S_{ij}(G_n)} p_k^(-1) - 1).$
+  \item $r_{ij}^0(G_n,p)$ --- control_overlap_load; [0,infty); graph_only_variance_load $:= Control overlap load r_{ij}^0(G_n,p) = 1{S_{ij}(G_n) != emptyset}(product_{k in S_{ij}(G_n)} (1-p_k)^(-1) - 1).$
+  \item $r_{ij}^{10}(G_n)$ --- cross_arm_overlap_load; {0,1}; graph_only_variance_load $:= Cross-arm overlap load r_{ij}^{10}(G_n) = 1{S_{ij}(G_n) != emptyset}.$
+  \item $eta_i(p,Z)$ --- first_order_linearization_term; R; limit_theory_score $:= First-order heterogeneous Hajek linearization term eta_i(p,Z) = (T_i(Z)/pi_i^1(p) - 1)(Y_i^1-mu_1) - (C_i(Z)/pi_i^0(p) - 1)(Y_i^0-mu_0).$
+  \item $sigma_{G_n,p}^2(Y)$ --- asymptotic_variance_scale; [0,infty); precision_object $:= Asymptotic variance scale of sqrt(n){hat_tau_H(p)-tau_n}.$
+  \item $V_env(G_n,p)$ --- graph_only_conservative_variance_envelope; [0,infty); design_objective $:= Observable graph-only conservative envelope for the asymptotic variance scale under bounded potential outcomes.$
+  \item $g_k(G_n,p)$ --- design_gradient_component; R; optimality_certificate $:= Envelope gradient component defined by def:kkt-gradient.$
+  \item $P_{n,B_n,epsilon}$ --- feasible_design_class; subsets of [0,1]^{m_n}; design_class $:= Feasible heterogeneous Bernoulli designs with budget B_n and positivity floor epsilon.$
+  \item $p_n^*(G_n)$ --- envelope_optimal_heterogeneous_design; P_{n,B_n,epsilon}; optimal_design $:= Envelope-optimal design selector defined by def:optimal-design.$
+  \item $lambda_n$ --- budget_kkt_multiplier; R; optimality_certificate $:= Lagrange multiplier on the budget constraint.$
+  \item $nu_{k,n}^+$ --- upper_box_multiplier; [0,infty); optimality_certificate $:= Complementary-slackness multiplier for p_k <= 1-epsilon.$
+  \item $nu_{k,n}^-$ --- lower_box_multiplier; [0,infty); optimality_certificate $:= Complementary-slackness multiplier for epsilon <= p_k.$
+  \item $hat_V_cons(G_n,p)$ --- conservative_variance_scale_estimator; [0,infty); inference_object $:= Conservative observable estimator of the asymptotic variance scale.$
+  \item $alpha_cov$ --- coverage_level; (0,1); inference_index $:= Nominal miscoverage level used in the Wald interval.$
+  \item $z_{1-alpha_cov/2}$ --- normal_quantile; R; inference_constant $:= Upper 1-alpha_cov/2 quantile of the standard normal distribution.$
+  \item $h_k(G_n)$ --- degree_dispersion_weight; [0,infty); certificate_surrogate_load $:= Observable overlap weight h_k(G_n) = n^(-1) sum_{i,j in O_n : k in S_{ij}(G_n)} |S_{ij}(G_n)|^(-1).$
+  \item $p_n^{deg}(G_n)$ --- degree_surrogate_design; P_{n,B_n,epsilon}; certificate_candidate $:= Surrogate-design selector defined by def:surrogate-design.$
+  \item $alpha_cert(G_n)$ --- observable_approximation_ratio; [1,infty); certificate_target $:= Relative envelope loss of the surrogate design against the exact optimum of the conservative envelope.$
+  \item $dbar$ --- degree_bound_constant; (0,infty); regularity_constant $:= Uniform upper bound on outcome-side degree.$
+  \item $Dbar$ --- dependency_bound_constant; (0,infty); regularity_constant $:= Uniform upper bound on the overlap dependency degree.$
+  \item $c_disp$ --- degree_dispersion_constant; (0,infty); regime_constant $:= Constant controlling intervention-side degree dispersion.$
+  \item $C_disp$ --- surrogate_weight_dispersion_constant; (0,infty); regime_constant $:= Constant controlling dispersion of the observable surrogate weights.$
+\end{itemize}
+
+\section{Assumptions}
+
+\begin{assumption}[ass:bipartite-interference]\label{ass:bipartite-interference}
+For every i in O_n and every z,z' in {0,1}^{m_n}, z_{N_i(G_n)} = z'_{N_i(G_n)} implies Y_i(z_{N_i}) = Y_i(z'_{N_i}).
+\par\smallskip\noindent\emph{Standard} (bipartite interference / neighborhood SUTVA, \cite{LuShiFangZhangDing2025BipartiteDesign}).
+\end{assumption}
+
+\begin{assumption}[ass:independent-heterogeneous-bernoulli]\label{ass:independent-heterogeneous-bernoulli}
+For every k in I_n, Z_k is Bernoulli(p_k), and the collection {Z_k : k in I_n} is mutually independent.
+\par\smallskip\noindent\emph{Standard} (independent non-identical Bernoulli randomization, \cite{Leung2019ApproxNeighborhoodInterference}).
+\end{assumption}
+
+\begin{assumption}[ass:positivity-floor]\label{ass:positivity-floor}
+For every k in I_n, epsilon <= p_k <= 1-epsilon.
+\par\smallskip\noindent\emph{Standard} (uniform overlap for heterogeneous Bernoulli exposure probabilities, \cite{Leung2019ApproxNeighborhoodInterference}).
+\end{assumption}
+
+\begin{assumption}[ass:budget-balance]\label{ass:budget-balance}
+sum_{k in I_n} p_k = B_n.
+\par\smallskip\noindent\emph{Novel.} Graph experiments often face ex ante capacity or compliance constraints on the expected number of treated intervention units. A fixed expected-treatment budget is the natural finite-population formulation of those rollout constraints.
+\end{assumption}
+
+\begin{assumption}[ass:bounded-outcomes]\label{ass:bounded-outcomes}
+For every i in O_n, |Y_i^1| <= 1 and |Y_i^0| <= 1.
+\par\smallskip\noindent\emph{Standard} (bounded finite-population potential outcomes, \cite{LuShiFangZhangDing2025BipartiteDesign}).
+\end{assumption}
+
+\begin{assumption}[ass:bounded-outcome-degree]\label{ass:bounded-outcome-degree}
+max_{i in O_n} d_i <= dbar.
+\par\smallskip\noindent\emph{Standard} (bounded outcome-side degree in sparse bipartite graphs, \cite{LuShiFangZhangDing2025BipartiteDesign}).
+\end{assumption}
+
+\begin{assumption}[ass:bounded-overlap-dependency]\label{ass:bounded-overlap-dependency}
+Delta_n <= Dbar.
+\par\smallskip\noindent\emph{Standard} (bounded dependency-graph degree, \cite{AronowSamii2017GeneralInterference}).
+\end{assumption}
+
+\begin{assumption}[ass:variance-nondegenerate]\label{ass:variance-nondegenerate}
+liminf_{n -> infty} sigma_{G_n,p_n^*(G_n)}^2(Y) > 0.
+\par\smallskip\noindent\emph{Standard} (nondegenerate asymptotic design variance, \cite{LuShiFangZhangDing2025BipartiteDesign}).
+\end{assumption}
+
+\section{Definitions}
+
+\begin{definition}[def:feasible-designs]\label{def:feasible-designs}
+$Feasible heterogeneous Bernoulli designs := P_{n,B_n,epsilon} = {p in [0,1]^{m_n} : epsilon <= p_k <= 1-epsilon for every k in I_n, and sum_{k in I_n} p_k = B_n}$ --- the class of all objects satisfying: ass:positivity-floor; ass:budget-balance.
+\end{definition}
+
+\begin{definition}[def:hajek-denominators]\label{def:hajek-denominators}
+$Exposure-weighted Hajek denominators := D_1(p,Z) = sum_{i in O_n} T_i(Z) / pi_i^1(p), D_0(p,Z) = sum_{i in O_n} C_i(Z) / pi_i^0(p)$ \quad (\text{inputs: } O_n, T_i(Z), C_i(Z), pi_i^1(p), pi_i^0(p))
+\end{definition}
+
+\begin{definition}[def:hetero-hajek-estimator]\label{def:hetero-hajek-estimator}
+$Heterogeneous Bernoulli Hajek estimator := hat_tau_H(p) = 1{D_1(p,Z) > 0}{sum_{i in O_n} T_i(Z) Y_i^obs / pi_i^1(p)} / D_1(p,Z) - 1{D_0(p,Z) > 0}{sum_{i in O_n} C_i(Z) Y_i^obs / pi_i^0(p)} / D_0(p,Z)$ \quad (\text{inputs: } O_n, T_i(Z), C_i(Z), Y_i^obs, pi_i^1(p), pi_i^0(p), D_1(p,Z), D_0(p,Z))
+\end{definition}
+
+\begin{definition}[def:first-order-linearization]\label{def:first-order-linearization}
+$First-order heterogeneous Hajek linearization := eta_i(p,Z) = (T_i(Z)/pi_i^1(p) - 1)(Y_i^1-mu_1) - (C_i(Z)/pi_i^0(p) - 1)(Y_i^0-mu_0)$ \quad (\text{inputs: } T_i(Z), C_i(Z), pi_i^1(p), pi_i^0(p), Y_i^1, Y_i^0, mu_1, mu_0)
+\end{definition}
+
+\begin{definition}[def:variance-scale]\label{def:variance-scale}
+$Asymptotic variance scale := sigma_{G_n,p}^2(Y) = n Var_p(n^(-1) sum_{i in O_n} eta_i(p,Z)) = n^(-1) sum_{i,j in O_n} E_p[eta_i(p,Z) eta_j(p,Z)]$ \quad (\text{inputs: } n, O_n, eta_i(p,Z))
+\end{definition}
+
+\begin{definition}[def:graph-envelope]\label{def:graph-envelope}
+$Graph-only conservative variance envelope := V_env(G_n,p) = 4 n^(-1) sum_{i,j in O_n} {r_{ij}^1(G_n,p) + r_{ij}^0(G_n,p) + 2 r_{ij}^{10}(G_n)}$ \quad (\text{inputs: } n, O_n, r_{ij}^1(G_n,p), r_{ij}^0(G_n,p), r_{ij}^{10}(G_n))
+\end{definition}
+
+\begin{definition}[def:optimal-design]\label{def:optimal-design}
+$Envelope-optimal heterogeneous Bernoulli design := p_n^*(G_n) in argmin_{p in P_{n,B_n,epsilon}} V_env(G_n,p), whenever the argmin set is nonempty$ \quad (\text{inputs: } G_n, P_{n,B_n,epsilon}, V_env(G_n,p))
+\end{definition}
+
+\begin{definition}[def:kkt-gradient]\label{def:kkt-gradient}
+$Gradient of the normalized graph-only envelope (V_env/4) := g_k(G_n,p) = partial_{p_k}(V_env(G_n,p)/4) = n^(-1) sum_{i,j in O_n : k in S_{ij}(G_n)} {-(product_{ell in S_{ij}(G_n)} p_ell^(-1)) p_k^(-1) + (product_{ell in S_{ij}(G_n)} (1-p_ell)^(-1)) (1-p_k)^(-1)}$ \quad (\text{inputs: } n, O_n, S_{ij}(G_n), p)
+\end{definition}
+
+\begin{definition}[def:conservative-variance-estimator]\label{def:conservative-variance-estimator}
+$Graph-only conservative variance-scale estimator := hat_V_cons(G_n,p) = V_env(G_n,p)$ \quad (\text{inputs: } G_n, p, V_env(G_n,p))
+\end{definition}
+
+\begin{definition}[def:surrogate-design]\label{def:surrogate-design}
+$Degree-dispersion surrogate design := p_n^{deg}(G_n) in argmin_{p in P_{n,B_n,epsilon}} sum_{k in I_n} h_k(G_n){p_k^(-1) + (1-p_k)^(-1)}, whenever the argmin set is nonempty$ \quad (\text{inputs: } P_{n,B_n,epsilon}, I_n, h_k(G_n))
+\end{definition}
+
+\begin{definition}[def:approximation-ratio]\label{def:approximation-ratio}
+$Observable approximation ratio := alpha_cert(G_n) = V_env(G_n,p_n^{deg}(G_n)) / min_{p in P_{n,B_n,epsilon}} V_env(G_n,p) when min_{p in P_{n,B_n,epsilon}} V_env(G_n,p) > 0, and alpha_cert(G_n) = 1 when min_{p in P_{n,B_n,epsilon}} V_env(G_n,p) = 0 (no-loss convention: a zero envelope minimum forces V_env(G_n,p_n^{deg}(G_n))=0 as well, since V_env is a nonnegative sum over shared-neighborhood pairs that vanishes for every feasible design precisely when there are no such pairs, so there is no relative loss). Thus alpha_cert(G_n) is a total, [1,infty)-valued observable on the admitted bounded-degree graph class.$ \quad (\text{inputs: } G_n, V_env(G_n,p), p_n^{deg}(G_n), P_{n,B_n,epsilon})
+\end{definition}
+
+\section{Main results}
+
+\begin{proposition}[prop:homogeneous-reduction]\label{prop:homogeneous-reduction}
+Under ass:independent-heterogeneous-bernoulli, if p_k = p for every k in I_n for a common scalar p in (0,1), then r_{ij}^1(G_n,p) = 1{S_{ij}(G_n) != emptyset}(p^(-|S_{ij}(G_n)|) - 1), r_{ij}^0(G_n,p) = 1{S_{ij}(G_n) != emptyset}((1-p)^(-|S_{ij}(G_n)|) - 1), r_{ij}^{10}(G_n) = 1{S_{ij}(G_n) != emptyset}, and sigma_{G_n,p}^2(Y) = n^(-1) sum_{i,j in O_n} [r_{ij}^1(G_n,p)(Y_i^1-mu_1)(Y_j^1-mu_1) + r_{ij}^0(G_n,p)(Y_i^0-mu_0)(Y_j^0-mu_0) + 2 r_{ij}^{10}(G_n)(Y_i^1-mu_1)(Y_j^0-mu_0)], which is the homogeneous Bernoulli Hajek overlap formula of Lu, Shi, Fang, Zhang, and Ding (2025).
+\end{proposition}
+\begin{proof}
+Proof. Fix a stage n and fix i,j in O_n. Let S_{ij}=S_{ij}(G_n), let a_i=Y_i^1-mu_1 and b_i=Y_i^0-mu_0, and write A_i=T_i(Z)/pi_i^1(p)-1 and B_i=C_i(Z)/pi_i^0(p)-1. By def:first-order-linearization, eta_i(p,Z)=A_i a_i-B_i b_i. The scalar p lies in (0,1), so all exposure probabilities appearing below are strictly positive. If p_k=p for every k in I_n, then directly from the definitions of the overlap loads, product_{k in S_{ij}} p_k^{-1}=p^{-|S_{ij}|} and product_{k in S_{ij}}(1-p_k)^{-1}=(1-p)^{-|S_{ij}|}. Hence r_{ij}^1(G_n,p)=1{S_{ij} != emptyset}(p^{-|S_{ij}|}-1), r_{ij}^0(G_n,p)=1{S_{ij} != emptyset}((1-p)^{-|S_{ij}|}-1), and r_{ij}^{10}(G_n)=1{S_{ij} != emptyset}.
+
+It remains to compute the covariance terms in def:variance-scale. By ass:independent-heterogeneous-bernoulli, the intervention assignments are mutually independent Bernoulli variables. Since T_i is the product over N_i(G_n), E_p[T_i]=pi_i^1(p), and similarly E_p[C_i]=pi_i^0(p). Therefore E_p[A_i]=E_p[B_i]=0. Also T_iT_j is one exactly when every intervention unit in N_i(G_n) union N_j(G_n) is treated. Thus
+E_p[A_iA_j]=E_p[T_iT_j]/(pi_i^1(p)pi_j^1(p))-1=product_{k in S_{ij}}p_k^{-1}-1.
+When S_{ij}=emptyset this equals 0, and when S_{ij} is nonempty it is exactly r_{ij}^1(G_n,p). Hence E_p[A_iA_j]=r_{ij}^1(G_n,p). The same argument with 1-Z_k in place of Z_k gives E_p[B_iB_j]=r_{ij}^0(G_n,p).
+
+For the cross term, E_p[A_iB_j]=E_p[T_iC_j]/(pi_i^1(p)pi_j^0(p))-1. If S_{ij}=emptyset, the treated exposure event for i and the control exposure event for j involve disjoint assignment coordinates, so independence gives E_p[T_iC_j]=pi_i^1(p)pi_j^0(p), and E_p[A_iB_j]=0. If S_{ij} is nonempty, T_iC_j=0 identically because a shared intervention unit would have to satisfy Z_k=1 and Z_k=0 simultaneously; hence E_p[A_iB_j]=-1. Therefore E_p[A_iB_j]=-r_{ij}^{10}(G_n). By the same argument E_p[B_iA_j]=-r_{ij}^{10}(G_n). Expanding eta_i eta_j gives
+E_p[eta_i(p,Z)eta_j(p,Z)] = r_{ij}^1(G_n,p)a_i a_j + r_{ij}^0(G_n,p)b_i b_j + r_{ij}^{10}(G_n)(a_i b_j+b_i a_j).
+
+Using def:variance-scale,
+sigma_{G_n,p}^2(Y)=n^{-1} sum_{i,j in O_n} E_p[eta_i(p,Z)eta_j(p,Z)].
+The first two blocks are already in the asserted form. For the cross block, r_{ij}^{10}(G_n)=r_{ji}^{10}(G_n), so by reindexing the second double sum,
+sum_{i,j} r_{ij}^{10}(G_n)b_i a_j = sum_{i,j} r_{ji}^{10}(G_n)b_j a_i = sum_{i,j} r_{ij}^{10}(G_n)a_i b_j.
+Consequently the two cross sums combine into 2 sum_{i,j} r_{ij}^{10}(G_n)(Y_i^1-mu_1)(Y_j^0-mu_0). Substituting a_i and b_i back yields
+sigma_{G_n,p}^2(Y) = n^{-1} sum_{i,j in O_n} [r_{ij}^1(G_n,p)(Y_i^1-mu_1)(Y_j^1-mu_1) + r_{ij}^0(G_n,p)(Y_i^0-mu_0)(Y_j^0-mu_0) + 2 r_{ij}^{10}(G_n)(Y_i^1-mu_1)(Y_j^0-mu_0)].
+This is precisely the homogeneous Bernoulli Hajek overlap formula once the heterogeneous loads are specialized to the common scalar p.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The heterogeneous construction must collapse algebraically to the published scalar-p object in the benchmark special case. \textit{Gap.} LuShiFangZhangDing2025BipartiteDesign study only the common-p design. This proposition is the corrected sanity reduction showing the rewritten overlap algebra matches that benchmark, including the positive cross-arm overlap block after centering. \textit{Consumer.} It certifies that every downstream theorem is a strict extension of the anchor rather than a parallel reparameterization.
+
+\begin{theorem}[thm:hetero-envelope]\label{thm:hetero-envelope}
+Under ass:independent-heterogeneous-bernoulli and ass:bounded-outcomes, for every p in (0,1)^{m_n}, E_p[eta_i(p,Z) eta_j(p,Z)] = r_{ij}^1(G_n,p)(Y_i^1-mu_1)(Y_j^1-mu_1) + r_{ij}^0(G_n,p)(Y_i^0-mu_0)(Y_j^0-mu_0) + r_{ij}^{10}(G_n){(Y_i^1-mu_1)(Y_j^0-mu_0) + (Y_i^0-mu_0)(Y_j^1-mu_1)} for every i,j in O_n. Consequently sigma_{G_n,p}^2(Y) = n^(-1) sum_{i,j in O_n} [r_{ij}^1(G_n,p)(Y_i^1-mu_1)(Y_j^1-mu_1) + r_{ij}^0(G_n,p)(Y_i^0-mu_0)(Y_j^0-mu_0) + r_{ij}^{10}(G_n){(Y_i^1-mu_1)(Y_j^0-mu_0) + (Y_i^0-mu_0)(Y_j^1-mu_1)}] <= V_env(G_n,p).
+\end{theorem}
+\begin{proof}
+Fix p in (0,1)^{m_n} and fix i,j in O_n. Write S=S_{ij}(G_n), a_i=Y_i^1-mu_1, b_i=Y_i^0-mu_0, A_i=T_i(Z)/pi_i^1(p)-1, and B_i=C_i(Z)/pi_i^0(p)-1. By def:first-order-linearization, eta_i(p,Z)=A_i a_i-B_i b_i. Under ass:independent-heterogeneous-bernoulli, E_p T_i(Z)=product_{k in N_i(G_n)}p_k=pi_i^1(p) and E_p C_i(Z)=product_{k in N_i(G_n)}(1-p_k)=pi_i^0(p), so E_p A_i=E_p B_i=0.
+
+For the treated-treated term, T_iT_j is the indicator that every intervention unit in N_i(G_n) union N_j(G_n) is treated. Hence E_p[T_iT_j]=product_{k in N_i union N_j}p_k=pi_i^1(p)pi_j^1(p) product_{k in S}p_k^{-1}. Therefore E_p[A_iA_j]=product_{k in S}p_k^{-1}-1. If S is empty this is 0; if S is nonempty it is exactly r_{ij}^1(G_n,p). Thus E_p[A_iA_j]=r_{ij}^1(G_n,p). The same argument with 1-Z_k in place of Z_k gives E_p[B_iB_j]=r_{ij}^0(G_n,p).
+
+For the cross term, E_p[A_iB_j]=E_p[T_iC_j]/(pi_i^1(p)pi_j^0(p))-1. If S is empty, T_i and C_j are functions of disjoint independent assignment coordinates, so E_p[T_iC_j]=pi_i^1(p)pi_j^0(p) and E_p[A_iB_j]=0. If S is nonempty, T_iC_j is identically zero because a shared coordinate would have to satisfy Z_k=1 and Z_k=0 at the same time; hence E_p[A_iB_j]=-1. Therefore E_p[A_iB_j]=-r_{ij}^{10}(G_n), and by symmetry E_p[B_iA_j]=-r_{ij}^{10}(G_n).
+
+Expanding eta_i eta_j and using the four displayed identities gives E_p[eta_i(p,Z)eta_j(p,Z)] = r_{ij}^1(G_n,p)a_i a_j + r_{ij}^0(G_n,p)b_i b_j + r_{ij}^{10}(G_n)(a_i b_j+b_i a_j), which is the asserted covariance identity after substituting back a_i and b_i.
+
+By def:variance-scale, sigma_{G_n,p}^2(Y)=n^{-1} sum_{i,j in O_n} E_p[eta_i(p,Z)eta_j(p,Z)]. Substituting the covariance identity term by term gives the displayed formula for sigma_{G_n,p}^2(Y).
+
+It remains to prove the envelope bound. By ass:bounded-outcomes, |Y_l^1|<=1 and |Y_l^0|<=1 for every l. Hence |mu_1|<=1 and |mu_0|<=1, so |Y_l^1-mu_1|<=2 and |Y_l^0-mu_0|<=2 for every l. The loads r_{ij}^1, r_{ij}^0, and r_{ij}^{10} are nonnegative. Therefore, for every ordered pair (i,j), the corresponding summand in the variance display is at most 4 r_{ij}^1(G_n,p)+4 r_{ij}^0(G_n,p)+8 r_{ij}^{10}(G_n). Summing over i,j and multiplying by n^{-1} yields sigma_{G_n,p}^2(Y) <= 4 n^{-1} sum_{i,j in O_n}{r_{ij}^1(G_n,p)+r_{ij}^0(G_n,p)+2r_{ij}^{10}(G_n)}. By def:graph-envelope the right side is V_env(G_n,p).
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This is the kernel that turns the heterogeneous Hajek variance into a graph-only conservative objective with corrected sign and normalization. \textit{Gap.} LuShiFangZhangDing2025BipartiteDesign derive the homogeneous scalar-p Hajek variance but do not produce a heterogeneous graph-only conservative envelope. HarshawSavjeEisenstatMirrokniPougetAbadie2021BipartiteERL is graph-aware only under a linear exposure-response model. \textit{Consumer.} It supplies a model-agnostic graph-only criterion for choosing intervention-unit treatment probabilities before any outcomes are observed.
+
+\begin{theorem}[thm:convex-design]\label{thm:convex-design}
+The feasible set P_{n,B_n,epsilon} is a nonempty compact convex subset of [0,1]^{m_n}, the map p -> V_env(G_n,p) is convex on P_{n,B_n,epsilon}, and therefore the argmin set in def:optimal-design is nonempty. For every minimizer p_n^*(G_n) there exist lambda_n in R and box multipliers nu_{k,n}^+ >= 0, nu_{k,n}^- >= 0 (k in I_n) such that the observable KKT system g_k(G_n,p_n^*(G_n)) = lambda_n - nu_{k,n}^+ + nu_{k,n}^- holds for each k in I_n, together with nu_{k,n}^+((p_n^*(G_n))_k-(1-epsilon)) = 0 and nu_{k,n}^-(epsilon-(p_n^*(G_n))_k) = 0.
+\end{theorem}
+\begin{proof}
+Let u=1-epsilon. Since the symbol declaration gives B_n in [m_n epsilon,m_n u], the constant vector p_k=B_n/m_n belongs to [epsilon,u]^{m_n} and has sum B_n. Thus P_{n,B_n,epsilon} is nonempty. By def:feasible-designs it is the intersection of the closed box [epsilon,u]^{m_n} with the affine hyperplane sum_k p_k=B_n. Hence it is closed, bounded, and convex, and therefore compact and convex as a subset of [0,1]^{m_n}.
+
+Let F(p)=V_env(G_n,p)/4. The r_{ij}^{10} part of F is constant in p. For a fixed nonempty shared set S, the map p -> product_{k in S}p_k^{-1} is convex on the positive orthant: for any p,q and t in [0,1], Holder's inequality gives product_{k in S}(tp_k+(1-t)q_k)^{-1} <= (product_{k in S}p_k^{-1})^t (product_{k in S}q_k^{-1})^{1-t}, and the weighted geometric mean is bounded by the weighted arithmetic mean. Thus the product is convex. Applying the same argument to the positive coordinates 1-p_k shows that p -> product_{k in S}(1-p_k)^{-1} is convex on the box p_k<1. Each summand in def:graph-envelope is a nonnegative multiple of these convex maps plus constants, so F and V_env are convex on P_{n,B_n,epsilon}. They are also continuous there because every feasible coordinate lies in [epsilon,1-epsilon]. Since P_{n,B_n,epsilon} is nonempty and compact, the continuous function V_env attains its minimum on it. This proves that the argmin set in def:optimal-design is nonempty.
+
+It remains to give the KKT certificate. Fix any minimizer p^*=p_n^*(G_n). Because F is differentiable on an open neighborhood of the box [epsilon,1-epsilon]^{m_n}, convex first-order optimality over P_{n,B_n,epsilon} is equivalent to grad F(p^*) dot (q-p^*) >= 0 for every q in P_{n,B_n,epsilon}. With the standard outward normal cone N_P(p^*)={w:w dot (q-p^*)<=0 for all q in P_{n,B_n,epsilon}}, this condition says -grad F(p^*) belongs to N_P(p^*). The outward normal cone of the polyhedron is generated by the budget normal 1, the active upper-face normals e_k, and the active lower-face normals -e_k. Hence -grad F(p^*)=gamma 1 + nu^+ - nu^- for some gamma in R, nonnegative nu_k^+ supported on upper-bound active coordinates p_k^*=1-epsilon, and nonnegative nu_k^- supported on lower-bound active coordinates p_k^*=epsilon. Setting lambda_n=-gamma gives grad F(p^*)=lambda_n 1 - nu^+ + nu^-.
+
+By def:kkt-gradient, the kth component of grad F(p^*) is g_k(G_n,p^*). Hence there exist lambda_n in R and multipliers nu_{k,n}^+>=0, nu_{k,n}^->=0 such that g_k(G_n,p^*)=lambda_n-nu_{k,n}^+ + nu_{k,n}^- for every k. The support restrictions are exactly the complementary-slackness identities nu_{k,n}^+((p^*)_k-(1-epsilon))=0 and nu_{k,n}^-(epsilon-(p^*)_k)=0. This is the asserted observable KKT system.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The proposal needs an explicit envelope-optimal design object and an observable certificate for that object, not only a variance representation. \textit{Gap.} Prior graph-aware and bipartite design work spans four distinct approaches, none of which delivers this object. (i) LuShiFangZhangDing2025BipartiteDesign study only the HOMOGENEOUS Bernoulli(p) bipartite design and do not optimize the design. (ii) HarshawSavjeEisenstatMirrokniPougetAbadie2021BipartiteERL and DoudchenkoEtAl2020BipartiteDesign design bipartite experiments through a LINEAR exposure-response MSE objective for linear estimators, not a design-based conservative Hajek-variance envelope. (iii) BrennanMirrokniPougetAbadie2022ClusterBipartite choose CLUSTER-randomized bipartite designs minimizing a linear-model bias/variance proxy, not a heterogeneous-Bernoulli propensity vector and not a KKT-certified convex program. (iv) Viviano2026NetworkDesign optimizes pilot-based ONE-MODE network precision. No checked result solves the graph-only bipartite heterogeneous-Bernoulli minimization of a conservative Hajek variance envelope under bounded potential outcomes with an observable GLOBAL KKT optimality certificate, which is exactly what this theorem provides. \textit{Consumer.} It yields the intervention-unit propensity vector a platform or field experiment should implement when it can target treatment probabilities unit by unit.
+
+\begin{lemma}[lem:denominator-positivity]\label{lem:denominator-positivity}
+Under ass:independent-heterogeneous-bernoulli, ass:bounded-outcome-degree, and ass:bounded-overlap-dependency, sup_{p in P_{n,B_n,epsilon}} P_p(D_1(p,Z) = 0 or D_0(p,Z) = 0) = O(n^{-1}).
+\end{lemma}
+\begin{proof}
+Fix p in P_{n,B_n,epsilon}. By def:feasible-designs, epsilon<=p_k<=1-epsilon for every k. Put X_i^1=T_i(Z)/pi_i^1(p) and X_i^0=C_i(Z)/pi_i^0(p). By def:hajek-denominators, D_a(p,Z)=sum_i X_i^a for a in {0,1}.
+
+Under ass:independent-heterogeneous-bernoulli, E_p T_i(Z)=pi_i^1(p) and E_p C_i(Z)=pi_i^0(p). Hence E_p X_i^1=E_p X_i^0=1 and E_p D_1(p,Z)=E_p D_0(p,Z)=n. Ass:bounded-outcome-degree gives |N_i(G_n)|<=dbar, so feasible-set membership gives pi_i^1(p)>=epsilon^{dbar} and pi_i^0(p)>=epsilon^{dbar}. Thus 0<=X_i^a<=epsilon^{-dbar} for a in {0,1}.
+
+If S_{ij}(G_n) is empty, then X_i^a and X_j^a are functions of disjoint independent assignment subvectors, so their covariance is zero. If S_{ij}(G_n) is nonempty, the preceding bound gives |Cov_p(X_i^a,X_j^a)|<=E_p|X_i^aX_j^a|+E_pX_i^a E_pX_j^a<=epsilon^{-2dbar}+1. Ass:bounded-overlap-dependency gives at most Dbar ordered j values with S_{ij}(G_n) nonempty for each i, so Var_p(D_a(p,Z))<=n Dbar(epsilon^{-2dbar}+1) for a in {0,1}, uniformly over feasible p.
+
+Chebyshev's inequality therefore gives P_p(D_a(p,Z)=0)<=P_p(|D_a(p,Z)-n|>=n)<=Dbar(epsilon^{-2dbar}+1)/n for a in {0,1}. Taking a union bound over a=0,1 and then the supremum over p in P_{n,B_n,epsilon} yields sup_p P_p(D_1(p,Z)=0 or D_0(p,Z)=0)=O(n^{-1}).
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The heterogeneous Hajek estimator must be well-defined at finite n before any asymptotic expansion can be meaningful. \textit{Gap.} The homogeneous anchor and adjacent one-mode CLTs do not isolate the zero-denominator issue created by unit-specific exposure probabilities inside bipartite Hajek ratios. This lemma makes that obstruction explicit and shows the convention is asymptotically negligible in the sparse regime. \textit{Consumer.} It licenses the explicit zero-denominator convention in def:hetero-hajek-estimator without changing first-order inference.
+
+\begin{theorem}[thm:hetero-clt]\label{thm:hetero-clt}
+Under ass:bipartite-interference, ass:independent-heterogeneous-bernoulli, ass:bounded-outcomes, ass:bounded-outcome-degree, ass:bounded-overlap-dependency, and ass:variance-nondegenerate, sqrt(n){hat_tau_H(p_n^*(G_n)) - tau_n} = n^(-1/2) sum_{i in O_n} eta_i(p_n^*(G_n),Z) + o_p(1), and sqrt(n){hat_tau_H(p_n^*(G_n)) - tau_n} / sqrt(sigma_{G_n,p_n^*(G_n)}^2(Y)) ->d N(0,1).
+\end{theorem}
+\begin{proof}
+Write p_n^*=p_n^*(G_n), A_i=T_i(Z)/pi_i^1(p_n^*), B_i=C_i(Z)/pi_i^0(p_n^*), a_i=Y_i^1-mu_1, and b_i=Y_i^0-mu_0. By thm:convex-design, p_n^* belongs to P_{n,B_n,epsilon}; hence def:feasible-designs gives epsilon<=p_{n,k}^*<=1-epsilon. Ass:bounded-outcome-degree then implies pi_i^1(p_n^*) and pi_i^0(p_n^*) are at least epsilon^{dbar}.
+
+First prove the linearization. By ass:bipartite-interference, T_i(Z)Y_i^obs=T_i(Z)Y_i^1 and C_i(Z)Y_i^obs=C_i(Z)Y_i^0. On the event D_1>0, the treated Hajek component equals (n^{-1}sum_i A_iY_i^1)/(n^{-1}D_1). Since n^{-1}sum_i a_i=0, this component minus mu_1 is [n^{-1}sum_i(A_i-1)a_i]/[n^{-1}D_1]. The same algebra gives, on D_0>0, the control component minus mu_0 as [n^{-1}sum_i(B_i-1)b_i]/[n^{-1}D_0]. The zero-denominator event has probability O(n^{-1}) by lem:denominator-positivity, so it is negligible for convergence in probability.
+
+The same covariance calculation used for denominator concentration shows D_1/n=1+O_p(n^{-1/2}) and D_0/n=1+O_p(n^{-1/2}): the summands A_i and B_i have mean one, are uniformly bounded by epsilon^{-dbar}, and have dependency graph degree at most Dbar. Also n^{-1}sum_i(A_i-1)a_i=O_p(n^{-1/2}) and n^{-1}sum_i(B_i-1)b_i=O_p(n^{-1/2}), because ass:bounded-outcomes gives |a_i|,|b_i|<=2 and the same bounded-degree covariance argument gives variances O(n^{-1}) for these averages. Expanding 1/(1+x)=1+O_p(x) for x=O_p(n^{-1/2}) yields
+hat_tau_H(p_n^*)-tau_n = n^{-1}sum_i[(A_i-1)a_i-(B_i-1)b_i]+o_p(n^{-1/2}).
+By def:first-order-linearization, the summand is eta_i(p_n^*,Z). Multiplying by sqrt(n) proves sqrt(n){hat_tau_H(p_n^*)-tau_n}=n^{-1/2}sum_i eta_i(p_n^*,Z)+o_p(1).
+
+It remains to prove asymptotic normality of the linear term from primitive design conditions. The variables eta_i(p_n^*,Z) are centered because E_p A_i=E_p B_i=1 under ass:independent-heterogeneous-bernoulli. They are uniformly bounded by 4epsilon^{-dbar}, because |a_i|,|b_i|<=2 and A_i,B_i<=epsilon^{-dbar}. Each eta_i is a function only of Z_{N_i(G_n)}. Therefore eta_i and eta_j are independent whenever S_{ij}(G_n) is empty, and the graph with edges S_{ij}(G_n) nonempty is a dependency graph of maximum degree at most Dbar by ass:bounded-overlap-dependency. Let S_n=sum_i eta_i(p_n^*,Z) and v_n=Var_p(S_n)=n sigma_{G_n,p_n^*}^2(Y), using def:variance-scale. Ass:variance-nondegenerate gives v_n>=c n eventually for some c>0. The hypotheses of lem:bounded-degree-dependency-clt are therefore satisfied, so S_n/sqrt(v_n) converges in distribution to N(0,1).
+
+Combining this dependency-graph CLT with the linearization and v_n=n sigma_{G_n,p_n^*}^2(Y) gives sqrt(n){hat_tau_H(p_n^*)-tau_n}/sqrt(sigma_{G_n,p_n^*}^2(Y)) ->d N(0,1).
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The design problem matters only if valid large-sample design-based inference survives the optimized heterogeneous probabilities. \textit{Gap.} LuShiFangZhangDing2025BipartiteDesign prove a CLT only for homogeneous Bernoulli(p), while Leung2019ApproxNeighborhoodInterference allows non-identical Bernoulli assignment in one-mode IPW settings but not bipartite all-treated/all-control Hajek ratios with product exposures and random denominators. \textit{Consumer.} It turns the envelope-optimal design from a precision criterion into an assignment rule that still supports asymptotically valid Wald inference.
+
+\begin{theorem}[thm:postdesign-wald]\label{thm:postdesign-wald}
+Under the assumptions of thm:hetero-clt, hat_V_cons(G_n,p_n^*(G_n)) = V_env(G_n,p_n^*(G_n)) is conservative for sigma_{G_n,p_n^*(G_n)}^2(Y), and for every sequence of potential-outcome schedules satisfying those assumptions, liminf_{n -> infty} P_{p_n^*(G_n)}(tau_n in [hat_tau_H(p_n^*(G_n)) - z_{1-alpha_cov/2} sqrt{hat_V_cons(G_n,p_n^*(G_n)) / n}, hat_tau_H(p_n^*(G_n)) + z_{1-alpha_cov/2} sqrt{hat_V_cons(G_n,p_n^*(G_n)) / n}]) >= 1-alpha_cov.
+\end{theorem}
+\begin{proof}
+Let p_n^*=p_n^*(G_n). By def:conservative-variance-estimator, hat_V_cons(G_n,p_n^*)=V_env(G_n,p_n^*). By thm:hetero-envelope applied at p=p_n^*, sigma_{G_n,p_n^*}^2(Y)<=V_env(G_n,p_n^*). This is the asserted conservativeness. Under the assumptions of thm:hetero-clt, ass:variance-nondegenerate gives sigma_{G_n,p_n^*}^2(Y)>0 eventually, so the ratio c_n=sqrt{hat_V_cons(G_n,p_n^*)/sigma_{G_n,p_n^*}^2(Y)} is well-defined eventually and satisfies c_n>=1.
+
+Set T_n=sqrt(n){hat_tau_H(p_n^*)-tau_n}/sqrt{sigma_{G_n,p_n^*}^2(Y)}. By thm:hetero-clt, T_n ->d N(0,1) under P_{p_n^*(G_n)}. The Wald event in the statement is exactly {|T_n|<=z_{1-alpha_cov/2} c_n}. Since c_n>=1, this event contains {|T_n|<=z_{1-alpha_cov/2}}. The standard normal distribution is continuous at +/-z_{1-alpha_cov/2}, so P_{p_n^*}(|T_n|<=z_{1-alpha_cov/2}) -> 1-alpha_cov. Therefore the liminf of the coverage probability for the wider conservative interval is at least 1-alpha_cov. The zero-denominator convention in def:hetero-hajek-estimator is asymptotically negligible by lem:denominator-positivity and is already absorbed in the CLT used above.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} A graph-optimized design is only usable if it comes with a feasible conservative standard error after the design is chosen. \textit{Gap.} LuShiFangZhangDing2025BipartiteDesign provide homogeneous conservative variance theory, while ParkWager2026NeymanJackknife and HarshawMiddletonSavje2021OptimizedVariance are adjacent general frameworks rather than this bipartite heterogeneous-p post-design result. \textit{Consumer.} It gives a directly reportable asymptotically conservative Wald interval for experiments that implement the graph-optimal heterogeneous assignment rule along nondegenerate sequences.
+
+\begin{openendedquestion}[oeq:dispersion-certificate]\label{oeq:dispersion-certificate}
+Does alpha_cert(G_n) remain uniformly bounded whenever sum_{ell in I_n} s_ell^2 > 0, max_{k in I_n} s_k^2 / sum_{ell in I_n} s_ell^2 <= c_disp, and max_{k in I_n} h_k(G_n) / min_{k in I_n : h_k(G_n) > 0} h_k(G_n) <= C_disp?
+\end{openendedquestion}
+\begin{proof}
+Answer: no. I prove the stronger statement that, for every fixed epsilon in (0,1/2), every c_disp > 0, and every nonvacuous C_disp >= 1, there is a sequence of finite bipartite graphs satisfying sum_{ell in I_n} s_ell^2 > 0, max_k s_k^2 / sum_ell s_ell^2 <= c_disp, and max_k h_k(G_n) / min_{k:h_k(G_n)>0} h_k(G_n) <= C_disp, but alpha_cert(G_n) -> infinity. If C_disp < 1, the displayed h-ratio condition is empty because any nonempty positive-weight ratio is at least one, so the nonvacuous regime is C_disp >= 1.
+
+Fix epsilon in (0,1/2) and set rho = (epsilon + 1/2)/2. Then epsilon < rho < 1/2 and 2 rho = epsilon + 1/2 < 1. For an integer t let d = t^2. Construct a stage as follows. The intervention set is a disjoint union I = A union F with |A| = d and |F| = 2d, so m = 3d. Set the expected treated budget to B = 3d rho; since rho lies in (epsilon,1-epsilon), the constant vector with all coordinates rho is feasible in P_{n,B,epsilon}. The outcome units are: a block C of d outcomes, each with neighborhood A; and, for each filler intervention f in F, a block C_f of t outcomes, each with neighborhood {f}. There are no other outcome units, so n = d + 2dt. The only nonempty shared-neighborhood sets are S_{ij} = A for ordered pairs i,j in C, and S_{ij} = {f} for ordered pairs i,j in the same filler block C_f.
+
+First verify the graph guards. For a in A, s_a = |C| = d. For f in F, s_f = |C_f| = t. Hence sum_ell s_ell^2 = d d^2 + 2d t^2 = d^3 + 2d^2 > 0, and max_k s_k^2 / sum_ell s_ell^2 = d^2/(d^3+2d^2) = 1/(d+2), which is eventually at most any prescribed c_disp > 0. Next compute the observable weights h_k. For a in A, the ordered pairs with a in S_{ij} are the d^2 pairs in C x C, and |S_{ij}| = d on each such pair. Thus h_a = n^{-1} d^2 d^{-1} = d/n. For f in F, the ordered pairs with f in S_{ij} are the t^2 = d pairs in C_f x C_f, and |S_{ij}| = 1 on each such pair. Thus h_f = n^{-1} d = d/n. Therefore all positive h_k are equal and max_k h_k / min_{k:h_k>0} h_k = 1 <= C_disp.
+
+Now identify the surrogate design from def:surrogate-design. Let phi(x) = x^{-1} + (1-x)^{-1}. Since all h_k are the same positive number d/n, the surrogate objective is (d/n) sum_{k in I} phi(p_k). The function phi is strictly convex on [epsilon,1-epsilon], because phi''(x) = 2x^{-3} + 2(1-x)^{-3} > 0. For every feasible p in P_{n,B,epsilon}, def:feasible-designs gives sum_k p_k = 3d rho. Jensen's inequality gives sum_k phi(p_k) >= 3d phi(rho), with equality only when p_k = rho for every k. Hence the surrogate selector p_n^{deg}(G_n) is the homogeneous vector p^rho with all coordinates equal to rho.
+
+For this graph the envelope in def:graph-envelope simplifies pairwise. For every nonempty shared set S, r^1 + r^0 + 2 r^{10} = (prod_{k in S} p_k^{-1} - 1) + (prod_{k in S} (1-p_k)^{-1} - 1) + 2 = prod_{k in S} p_k^{-1} + prod_{k in S} (1-p_k)^{-1}. There are d^2 ordered clique pairs with S = A and, for each f in F, t^2 = d ordered filler pairs with S = {f}. Therefore, at the surrogate design p^rho,
+V_env(G_n,p^rho)/4 = (d^2/n){rho^{-d} + (1-rho)^{-d} + 2 phi(rho)}.
+The envelope minimum is positive, because this graph has nonempty shared-neighborhood pairs and every displayed product term is strictly positive for p in P_{n,B,epsilon}. Thus def:approximation-ratio uses its positive-minimum ratio branch.
+
+It remains to upper-bound the optimum by a feasible comparison design. Define q by q_a = 1/2 for a in A and q_f = rho_f for f in F, where rho_f = (3rho - 1/2)/2 = rho - (1/2-rho)/2 = 1/8 + 3epsilon/4. Since epsilon < 1/2, epsilon < rho_f < 1/2 < 1-epsilon. Also d(1/2) + 2d rho_f = 3d rho = B, so q belongs to P_{n,B,epsilon} by def:feasible-designs. Evaluating def:graph-envelope at q gives
+V_env(G_n,q)/4 = (d^2/n){2^{d+1} + 2 phi(rho_f)}.
+Consequently min_{p in P_{n,B,epsilon}} V_env(G_n,p) <= V_env(G_n,q), and by the positive branch of def:approximation-ratio,
+alpha_cert(G_n) >= V_env(G_n,p^rho)/V_env(G_n,q)
+= {rho^{-d} + (1-rho)^{-d} + 2 phi(rho)} / {2^{d+1} + 2 phi(rho_f)}
+>= rho^{-d}/(2^{d+1} + 2 phi(rho_f)).
+Because rho_f in [epsilon,1-epsilon], phi(rho_f) <= 2/epsilon. Hence, for all sufficiently large d,
+alpha_cert(G_n) >= rho^{-d}/(2^{d+1}+4/epsilon) >= (1/3)(1/(2rho))^d.
+Since 2rho = epsilon + 1/2 < 1, the base 1/(2rho) is larger than one, and the lower bound diverges as d = t^2 -> infinity.
+
+Thus the first-order dispersion conditions involving only the output degrees s_k and the averaged weights h_k do not uniformly bound alpha_cert(G_n). The explicit obstruction is that these summaries are completely equalized across intervention units, while the true graph envelope contains a reciprocal product over the growing shared-neighborhood set A. Moving the A-coordinates from rho to 1/2 lowers that product by an exponential factor without violating the budget, and the additive degree surrogate cannot see this high-order shared-neighborhood structure.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The exact convex optimum may still be too costly to solve repeatedly at platform scale, so the honest unresolved frontier is an observable constant-factor surrogate guarantee. \textit{Gap.} UganderKarrerBackstromKleinberg2013GraphClusterRandomization and UganderYin2020RandomizedGCR prove graph-regime variance control for cluster designs, but no published result gives a constant-factor observable certificate for graph-only heterogeneous Bernoulli envelope design in bipartite experiments. \textit{Consumer.} A positive answer would justify a fast degree-summary design rule in large marketplace or recommender experiments where solving the full overlap program is operationally expensive.
+
+\begin{theorem}[thm:heterogeneity-separation]\label{thm:heterogeneity-separation}
+Set rho = B_n / m_n and let p^hom denote the homogeneous feasible design with (p^hom)_k = rho for every k in I_n; assume rho in (epsilon, 1-epsilon) and rho != 1/2. If the homogeneous-point envelope-gradient scores {g_k(G_n, p^hom) : k in I_n} of def:kkt-gradient are not all equal, then p^hom is not a minimizer of p -> V_env(G_n,p) over P_{n,B_n,epsilon}; consequently every envelope-optimal design p_n^*(G_n) of def:optimal-design is non-homogeneous and satisfies the strict inequality V_env(G_n, p_n^*(G_n)) < V_env(G_n, p^hom), and the gap admits the explicit observable lower bound V_env(G_n,p^hom) - V_env(G_n,p_n^*(G_n)) >= 2 Delta_g min{eta_box, Delta_g / L_ab}, where Delta_g = max_{k in I_n} g_k(G_n,p^hom) - min_{k in I_n} g_k(G_n,p^hom) > 0 is the gradient-score spread, eta_box = min{rho - epsilon, 1 - epsilon - rho} > 0, a in argmax_{k in I_n} g_k(G_n,p^hom), b in argmin_{k in I_n} g_k(G_n,p^hom), and L_ab = sup_{q in P_{n,B_n,epsilon}} (e_b - e_a)^T Hess(V_env(G_n,cdot)/4)(q) (e_b - e_a) is the directional second-order modulus of the graph-only envelope along the budget-feasible direction e_b - e_a (all four quantities being observable functions of G_n, epsilon, and B_n), with the bound read as 2 Delta_g eta_box when L_ab = 0. In particular, for singleton-exposure graphs, in which each outcome unit's neighborhood is a single intervention unit so that every nonempty S_{ij}(G_n) is a singleton, the gradient scores reduce to observable per-unit degree summaries, and the hypothesis (hence the strict improvement of the optimal heterogeneous design over the homogeneous design) holds whenever those summaries are not all equal.
+\end{theorem}
+\begin{proof}
+Let F(p)=V_env(G_n,p)/4. The homogeneous vector p^hom is feasible because rho=B_n/m_n and rho in (epsilon,1-epsilon). Let a be an index attaining max_k g_k(G_n,p^hom), let b be an index attaining min_k g_k(G_n,p^hom), and set d=e_b-e_a. Then sum_k d_k=0, so d is budget-feasible. Since both coordinates of p^hom are strictly inside the box, p(t)=p^hom+t d belongs to P_{n,B_n,epsilon} for every t in [0,eta_box], where eta_box=min{rho-epsilon,1-epsilon-rho}. By def:kkt-gradient, grad F(p^hom) dot d = g_b(G_n,p^hom)-g_a(G_n,p^hom) = -Delta_g<0.
+
+Thus p^hom cannot satisfy the first-order optimality condition for the convex minimization problem over P_{n,B_n,epsilon}. Equivalently, by thm:convex-design, if p^hom were a minimizer then its projected gradient on every feasible direction would be nonnegative; the direction d violates that. Hence p^hom is not a minimizer. Since the budget fixes the only homogeneous feasible design to be p^hom, every envelope-optimal design p_n^*(G_n) is non-homogeneous, and the optimum value is strictly below V_env(G_n,p^hom).
+
+Now quantify the gap. By the definition of L_ab, for every t in [0,eta_box] Taylor's theorem along the segment p^hom+sd gives F(p(t)) <= F(p^hom)-Delta_g t + (L_ab/2)t^2. If L_ab>0, choose t_*=min{eta_box,Delta_g/L_ab}. If t_*=Delta_g/L_ab, then F(p^hom)-F(p(t_*)) >= Delta_g^2/(2L_ab). If t_*=eta_box<Delta_g/L_ab, then L_ab eta_box<Delta_g and F(p^hom)-F(p(t_*)) >= Delta_g eta_box-(L_ab/2)eta_box^2 >= (Delta_g eta_box)/2. In both cases F(p^hom)-F(p(t_*)) >= (Delta_g/2) min{eta_box,Delta_g/L_ab}. Multiplying by 4 and using optimality of p_n^* gives V_env(G_n,p^hom)-V_env(G_n,p_n^*) >= 2 Delta_g min{eta_box,Delta_g/L_ab}. If L_ab=0, the same Taylor bound has no quadratic term, so taking t=eta_box gives V_env(G_n,p^hom)-V_env(G_n,p_n^*) >= 4 Delta_g eta_box, and in particular the statement's convention-bound 2 Delta_g eta_box holds.
+
+Finally consider singleton-exposure graphs. Then each N_i(G_n) has one intervention unit. For a fixed k, the ordered pairs (i,j) with k in S_{ij}(G_n) are exactly M_k(G_n) x M_k(G_n), and every such shared set has size one. Evaluating def:kkt-gradient at p^hom gives g_k(G_n,p^hom)=n^{-1}s_k^2{(1-rho)^{-2}-rho^{-2}}. Because rho != 1/2, the scalar multiplier {(1-rho)^{-2}-rho^{-2}} is nonzero. Hence the gradient scores are not all equal exactly when the observable per-unit summaries s_k^2, equivalently h_k(G_n)=n^{-1}s_k^2 in the singleton case, are not all equal. The first part of the proof then gives non-homogeneity and strict improvement of the optimal heterogeneous design.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The promised contribution is an optimal HETEROGENEOUS design; without a theorem exhibiting a regime where the optimum strictly departs from and improves on the homogeneous design, heterogeneity might buy nothing. \textit{Gap.} LuShiFangZhangDing2025BipartiteDesign study only homogeneous Bernoulli(p); thm:convex-design gives existence and an observable certificate but not that the optimum is non-homogeneous or strictly better. \textit{Consumer.} It tells a platform WHEN unit-level probability targeting strictly improves design-based precision over a single common probability — the observable degree-dispersion trigger for adopting the heterogeneous design.
+
+\begin{theorem}[thm:surrogate-certificate]\label{thm:surrogate-certificate}
+Under ass:bounded-outcome-degree, which forces max_{i,j in O_n} |S_{ij}(G_n)| <= dbar, with the explicit constant C(epsilon, dbar) = max{1, epsilon^{-(dbar-1)}} depending only on epsilon and dbar, the observable approximation ratio of def:approximation-ratio satisfies alpha_cert(G_n) <= C(epsilon, dbar). The bound follows from a uniform sandwich, valid for every feasible p in P_{n,B_n,epsilon}, between the graph-only envelope V_env(G_n,p) of def:graph-envelope and the additive degree-surrogate objective sum_{k in I_n} h_k(G_n){p_k^{-1} + (1-p_k)^{-1}} minimized in def:surrogate-design, in which the per-pair product loads over the shared-neighborhood sets S_{ij}(G_n) are comparable to their additive per-coordinate counterparts up to a multiplicative factor controlled by the bounded shared-neighborhood size dbar and the positivity floor epsilon. This is the positive counterpart, in the paper's own sparse bounded-degree regime, of the negative first-order-summary answer proved in oeq:dispersion-certificate.
+\end{theorem}
+\begin{proof}
+Proof. Write P = P_{n,B_n,epsilon} and F(p) = V_env(G_n,p)/4. Also write A(p) = sum_{k in I_n} h_k(G_n){p_k^{-1}+(1-p_k)^{-1}} for the additive surrogate objective in def:surrogate-design. We first prove the uniform sandwich A(p) <= F(p) <= C(epsilon,dbar) A(p) for every p in P, where C(epsilon,dbar)=max{1,epsilon^{-(dbar-1)}}.
+
+Fix p in P. By def:feasible-designs, epsilon <= p_k <= 1-epsilon for every k, hence a_k:=p_k^{-1} and b_k:=(1-p_k)^{-1} satisfy 1 <= a_k,b_k <= epsilon^{-1}. Let E = {(i,j) in O_n x O_n : S_{ij}(G_n) is nonempty}. For (i,j) in E put S=S_{ij}(G_n) and s=|S|. By ass:bounded-outcome-degree, S is a subset of N_i(G_n), so s <= d_i <= dbar.
+
+Using def:graph-envelope and the identities r_{ij}^1=1_E(i,j){prod_{k in S} a_k-1}, r_{ij}^0=1_E(i,j){prod_{k in S} b_k-1}, and r_{ij}^{10}=1_E(i,j), the two -1 terms are exactly cancelled by the +2 cross-arm term. Thus
+F(p)=n^{-1} sum_{(i,j) in E} { prod_{k in S_{ij}} a_k + prod_{k in S_{ij}} b_k }.
+By the definition of h_k(G_n) and finite summation interchange,
+A(p)=n^{-1} sum_{(i,j) in E} |S_{ij}|^{-1} sum_{k in S_{ij}} (a_k+b_k).
+For a fixed nonempty S, since all a_k and b_k are at least 1, prod_{k in S} a_k >= a_l and prod_{k in S} b_k >= b_l for every l in S. Therefore
+|S|^{-1} sum_{k in S} a_k <= prod_{k in S} a_k, and |S|^{-1} sum_{k in S} b_k <= prod_{k in S} b_k.
+This gives the lower sandwich A(p) <= F(p) after summing over pairs.
+
+For the upper sandwich, for every l in S,
+prod_{k in S} a_k = a_l prod_{k in S, k != l} a_k <= epsilon^{-(s-1)} a_l,
+and similarly prod_{k in S} b_k <= epsilon^{-(s-1)} b_l. Averaging these inequalities over l in S gives
+prod_{k in S} a_k <= epsilon^{-(s-1)} |S|^{-1} sum_{k in S} a_k,
+prod_{k in S} b_k <= epsilon^{-(s-1)} |S|^{-1} sum_{k in S} b_k.
+Because s <= dbar and epsilon in (0,1), epsilon^{-(s-1)} <= C(epsilon,dbar) for every nonempty S admitted by ass:bounded-outcome-degree. Summing over all nonempty shared-neighborhood pairs yields F(p) <= C(epsilon,dbar) A(p). This proves the claimed uniform sandwich.
+
+It remains to convert the sandwich into the approximation-ratio certificate. The feasible set P is nonempty because the frozen symbol condition B_n in [m_n epsilon,m_n(1-epsilon)] permits a vector in the box with coordinate sum B_n, and P is closed and bounded. The functions F and A are continuous on P because all feasible coordinates lie in [epsilon,1-epsilon]. Hence the minima of F and A over P are attained, and the selector p_n^{deg}(G_n) in def:surrogate-design may be chosen from argmin_P A.
+
+If min_{p in P} V_env(G_n,p)=0, then def:approximation-ratio defines alpha_cert(G_n)=1. Since C(epsilon,dbar)>=1, alpha_cert(G_n) <= C(epsilon,dbar) in this branch.
+
+Now suppose min_{p in P} V_env(G_n,p)>0. Let p^V be any minimizer of F over P and let p^{deg}=p_n^{deg}(G_n). Since V_env=4F, the factor 4 cancels in the ratio. By the upper sandwich, the minimizing property of p^{deg} for A, and the lower sandwich at p^V,
+alpha_cert(G_n) = F(p^{deg})/F(p^V) <= C(epsilon,dbar) A(p^{deg})/F(p^V) <= C(epsilon,dbar) A(p^V)/F(p^V) <= C(epsilon,dbar).
+Thus alpha_cert(G_n) <= C(epsilon,dbar) in both branches of the total definition. The proof uses only the bounded shared-neighborhood size supplied by ass:bounded-outcome-degree and the positivity built into feasible membership p in P. The final comparison with the negative first-order-summary result is therefore a scope statement: this theorem supplies a positive bounded-degree certificate for the explicit additive surrogate objective, not a degree-free certificate based only on first-order dispersion summaries.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} oeq:dispersion-certificate proves first-order dispersion summaries alone cannot bound the approximation ratio; the honest complementary question is whether the paper's own sparse bounded-degree regime yields a positive observable certificate. \textit{Gap.} No published result gives a constant-factor observable certificate for graph-only heterogeneous Bernoulli envelope design in bipartite experiments; oeq:dispersion-certificate settles only the negative first-order-summary direction. \textit{Consumer.} It licenses the fast additive degree-surrogate design rule, with a computable worst-case efficiency-loss factor, in the bounded-degree regime typical of large marketplace or recommender experiments.
+
+\begin{lemma}[lem:bounded-degree-dependency-clt]\label{lem:bounded-degree-dependency-clt}
+Let {X_{n,i}:1<=i<=n} be centered real random variables with a dependency graph of maximum degree at most D, |X_{n,i}|<=M for fixed finite D and M, and Var(sum_i X_{n,i})=v_n with v_n>=c n for some c>0 eventually. Then (sum_i X_{n,i})/sqrt(v_n) converges in distribution to N(0,1).
+\end{lemma}
+\begin{proof}
+Let S_n=sum_i X_{n,i}. For each fixed r>=3, the joint cumulant cum(X_{n,i_1},...,X_{n,i_r}) is zero unless the subgraph induced by {i_1,...,i_r} is connected; this follows from the defining factorization property of a dependency graph, because disconnected index blocks are independent. With maximum degree D fixed, the number of ordered connected r-tuples is at most C_r n for a constant C_r depending only on r and D: choose the first vertex in n ways and then grow a connected labeled exploration with at most D choices at each bounded-depth step. Since |X_{n,i}|<=M, every order-r joint cumulant is bounded in absolute value by a constant K_r depending only on r and M. Hence |cum_r(S_n)|<=C_rK_r n.
+
+The first cumulant of S_n is zero and the second is v_n. For the standardized variable W_n=S_n/sqrt(v_n), cum_1(W_n)=0, cum_2(W_n)=1, and for every fixed r>=3, |cum_r(W_n)|<=C_rK_r n/v_n^{r/2}<=C'_r n^{1-r/2}->0. Thus the cumulants of every fixed order converge to the cumulants of the standard normal law. Equivalently, the moments of W_n of each fixed order converge to the corresponding normal moments, since moments are polynomials in cumulants. The variables W_n have variance one, so the sequence is tight; the standard normal law is moment-determinate. Every subsequential weak limit must therefore have all standard normal moments and hence must be N(0,1). Consequently W_n converges in distribution to N(0,1).
+\end{proof}
+
+\section{Honest scope}
+
+The heterogeneous conservative envelope, envelope-optimal design, corrected CLT normalization, explicit denominator convention with vanishing exceptional event, and pointwise conservative graph-only Wald theorem are posed as theorem-level targets. The observable constant-factor certificate for the low-dimensional surrogate remains the open-ended question.
+
+\begin{thebibliography}{99}
+
+  \bibitem{LuShiFangZhangDing2025BipartiteDesign} Lu, S., Shi, L., Fang, Y., Zhang, W., and Ding, P. (2025). Design-based causal inference in bipartite experiments. arXiv:2501.09844.
+
+  \bibitem{HarshawSavjeEisenstatMirrokniPougetAbadie2021BipartiteERL} Harshaw, C., Savje, F., Eisenstat, D., Mirrokni, V., and Pouget-Abadie, J. (2021). Design and analysis of bipartite experiments under a linear exposure-response model. arXiv:2103.06392.
+
+  \bibitem{Viviano2026NetworkDesign} Viviano, D. (2026). Experimental design under network interference. arXiv:2003.08421.
+
+  \bibitem{HarshawMiddletonSavje2021OptimizedVariance} Harshaw, C., Middleton, J. A., and Savje, F. (2024). Optimized variance estimation under interference and complex experimental designs. arXiv:2112.01709.
+
+  \bibitem{Leung2019ApproxNeighborhoodInterference} Leung, M. P. (2021). Causal inference under approximate neighborhood interference. arXiv:1911.07085.
+
+  \bibitem{AronowSamii2017GeneralInterference} Aronow, P. M. and Samii, C. (2017). Estimating average causal effects under general interference, with application to a social network experiment. Annals of Applied Statistics, 11(4), 1912-1947.
+
+  \bibitem{UganderKarrerBackstromKleinberg2013GraphClusterRandomization} Ugander, J., Karrer, B., Backstrom, L., and Kleinberg, J. (2013). Graph cluster randomization: network exposure to multiple universes. KDD / arXiv:1305.6979.
+
+  \bibitem{UganderYin2020RandomizedGCR} Ugander, J. and Yin, H. (2020). Randomized graph cluster randomization. arXiv:2009.02297.
+
+  \bibitem{ParkWager2026NeymanJackknife} Park, B. and Wager, S. (2026). Neyman Jackknife: design-based variance estimation for causal inference under interference. arXiv:2604.24017.
+
+  \bibitem{GaoDing2023NetworkRegression} Gao, M. and Ding, P. (2023). Regression adjustment for causal inference with network data. arXiv:2309.07476.
+
+  \bibitem{EichhornKhanUganderYu2024LowOrderClusteredDesigns} Eichhorn, M., Khan, S., Ugander, J., and Yu, C. L. (2024). A low-order characterization of optimal clustered experimental designs under interference. arXiv:2405.07979.
+
+  \bibitem{ChattopadhyayImaiZubizarreta2023GeneralizedNetwork} Chattopadhyay, A., Imai, K., and Zubizarreta, J. R. (2023). Design-based inference for generalized network experiments with stochastic interventions. arXiv:2312.03268.
+
+  \bibitem{DoudchenkoEtAl2020BipartiteDesign} Doudchenko, N., et al. (2020). Causal inference with bipartite designs. arXiv:2010.02108.
+
+  \bibitem{BrennanMirrokniPougetAbadie2022ClusterBipartite} Brennan, J., Mirrokni, V., and Pouget-Abadie, J. (2022). Cluster randomized designs for bipartite experiments. Advances in Neural Information Processing Systems (NeurIPS) 35.
+
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,324 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_bunching\_heaping\_phase, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_bunching\_heaping\_phase} / \texttt{v1}%
+  \\ \large\textit{A heap-grid phase frontier for partial identification of bunching mass}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+The partial-identification tuple is
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\mathcal{R},B)
+=
+(\texttt{pid\_bunching\_heaping\_phase},\texttt{v1},P^H,\theta_B,
+\mathcal{R}_{G,W,E,L},B_{G,W,E,L}).
+\]
+The latent running variable \(X\) lies on a finite grid \(\mathcal{X}=\{x_1,\ldots,x_J\}\subset\mathbb{R}\), with policy point \(c\).  The econometrician observes only the deterministic heap \(H=h_G(X)\in\mathcal{H}\), where \(h_G\) maps each \(x\) to a known heap cell of width \(G\).  The observable distribution \(P=P^H\) is the vector of heap probabilities \(p_h=\Pr(H=h)\).  The excluded bunching window is \(W=[c-a,c+b]\cap\mathcal{X}\), and \(E\subset\mathcal{H}\) is the set of heap cells whose latent fibers intersect \(W\).  The target is the latent excess-mass scalar
+\[
+\theta_B(q)=\sum_{x\in W} q_x-\sum_{x\in W} m_L(x;q),
+\]
+where \(q\in\Delta(\mathcal{X})\) is a latent density and \(m_L(\cdot;q)\) is the order-\(L\) counterfactual polynomial continuation fitted on the usable cells \(\mathcal{U}=\mathcal{H}\setminus E\).  The identifying restrictions \(\mathcal{R}_{G,W,E,L}\) are nonnegativity and summability of \(q\), the heap equations \(\sum_{x:h_G(x)=h}q_x=p_h\), and existence and uniqueness of the order-\(L\) continuation from \(\mathcal{U}\).  The bounding functional is
+\[
+B_{G,W,E,L}(P^H)=
+\left[
+\inf_{q\in\mathcal{R}_{G,W,E,L}(P^H)}\theta_B(q),
+\sup_{q\in\mathcal{R}_{G,W,E,L}(P^H)}\theta_B(q)
+\right].
+\]
+
+\begin{abstract}
+Reported running variables in bunching designs are often rounded or heaped before the econometrician sees them.  The question is whether the grid width and the excluded bunching window leave enough information to recover the latent excess mass rather than only a rounded histogram.  The central conjecture is a phase frontier: bunching mass is point-identified exactly when the heap-nullspace contains no feasible signed direction that changes the excess-mass functional, and the uninformative side admits a finite aliasing certificate.  This is a partial-identification result about deterministic coarsening, not a deconvolution or bandwidth-selection result.  If correct, the theorem would turn heaped bunching designs into a finite geometry problem with an explicit recoverability threshold.
+\end{abstract}
+
+\section{Introduction}
+When the running variable is reported on a heap grid, a bunching spike may be a latent behavioral response or an artifact of aggregation.  The main claim is that this ambiguity has a sharp phase frontier determined by the heap fibers, the excluded window, and the order of the counterfactual continuation.
+
+\citet[p.~2]{BarrecaLindoWaddell2016HeapingRD} show that heaping can make regression-discontinuity estimates biased and that the direction of bias depends on heap location and bandwidth.  \citet[Sec.~4]{BoschDekkerStrohmaier2020Window} show that bunching estimates are sensitive to the bunching window, while \citet[p.~3]{KlevenWaseem2013Notches} use missing mass around notches when the latent distribution is effectively observed.  The present question is in partial identification: it asks whether deterministic heap fibers permit any estimator to separate latent bunching mass from counterfactual curvature.
+
+The immediate consumer is empirical bunching work at tax notches and kinks, including the window-selection problem studied by \citet{BoschDekkerStrohmaier2020Window}.  A researcher would first compute the heap-nullspace frontier before interpreting excess mass or changing the excluded window.
+
+\begin{itemize}[leftmargin=*]
+\item Conjecture 1: the sharp identified set equals the support-function image of a normalized heap-nullspace polytope, and the endpoints are computed by signed within-fiber contrasts. Gap: \citet[Sec.~2, pp.~522--524]{ManskiTamer2002IntervalData} and \citet[Sec.~2, pp.~1790--1794]{BeresteanuMolchanovMolinari2011ConvexMoment} give general interval and random-set machinery but not the heap-specific aliasing certificate for bunching mass. Consumer: heaped tax bunching designs.
+\item Conjecture 2: for equal heap grids and symmetric excluded windows, the feasible loading operator \(R^{\mathrm{feas}}_{G,W,L}(q^0)\) gives a computable phase threshold in \(G\), \(W\), \(L\), and the observed histogram face. Gap: \citet{BarrecaLindoWaddell2016HeapingRD} and \citet{BoschDekkerStrohmaier2020Window} document heap and window sensitivity but do not characterize recoverability. Consumer: bunching-window choice in \citet{BoschDekkerStrohmaier2020Window}.
+\end{itemize}
+
+\section{Related work}
+\citet{Saez2010Bunching} and \citet{ChettyFriedmanOlsenPistaferri2011Adjustment} introduce influential kink bunching estimators that convert excess mass into behavioral elasticities under smooth counterfactual density restrictions.  \citet{KlevenWaseem2013Notches} use notches, missing mass, and dominated regions to obtain additional information about behavioral frictions.  \citet{BertanhaMcCallumSeegert2021BetterBunching} warn that flexible heterogeneity weakens identification in bunching designs and motivates partial identification.  \citet{BertanhaMcCallumPayneSeegert2022Stata} emphasize that bunching methods rely on assumptions about an unobserved distribution.  \citet{Song2024GeneralBunching} develops general point and partial identification results for bunching and uses analyticity as a route to point identification.
+
+\citet{BarrecaLindoWaddell2016HeapingRD} study heaping-induced bias in regression-discontinuity designs and show that ordinary diagnostics can miss the problem.  \citet{Dong2015RoundingRD} shows that RD estimation with a rounded running variable can be inconsistent even under a correct functional form.  \citet{DaveziesLeBarbanchon2017RDMeasurementError} show that measurement error in the running variable can smooth discontinuities and destroy RD identification.  \citet{DongKolesar2023IgnoreMeasurementError} derive conditions under which measurement error in the running variable can be ignored, which is the opposite side of the present recoverability frontier.
+
+\citet{BoschDekkerStrohmaier2020Window} document the sensitivity of bunching estimates to the chosen bunching window and propose a data-driven window procedure.  \citet{NoackRothe2023DonutRD} show that donut RD estimators can have larger bias and variance than conventional RD estimators.  \citet{McCrary2008DensityTest} gives the canonical density-continuity manipulation test, but its object is a discontinuity in the observed running-variable density rather than latent heap aliasing.
+
+\citet[Sec.~2, pp.~522--524]{ManskiTamer2002IntervalData} provide partial-identification bounds for interval data without restrictions on the latent values inside intervals.  \citet[Sec.~2, pp.~1790--1794]{BeresteanuMolchanovMolinari2011ConvexMoment} characterize sharp identification regions for convex moment prediction models with interval data through support functions of random sets.  The in-catalogue prior proposal \texttt{pid\_rdd\_manipulation\_bounded} assumes cutoff-side weak limits of the true running variable, whereas deterministic heaping observes only cell totals.  The failed proposal \texttt{pid\_rdd\_flow\_manipulation} records the need for a global endpoint envelope rather than a fixed-slice certificate, and \texttt{pid\_multivariate\_interval\_regression} records the endpoint-pruning failure for interval covariates.
+
+\section{Formal setup}
+Let \(\mathcal{X}=\{x_1,\ldots,x_J\}\) be a finite latent support ordered on the real line, and let \(q=(q_1,\ldots,q_J)\in\Delta(\mathcal{X})\) denote the latent density of the running variable absent sampling error.  A known deterministic heap map \(h_G:\mathcal{X}\to\mathcal{H}\) partitions \(\mathcal{X}\) into fibers \(F_h=\{x:h_G(x)=h\}\).  The econometrician observes \(P^H=(p_h)_{h\in\mathcal{H}}\), where \(p_h=\sum_{x\in F_h}q_x\).  Write \(A_G\) for the \(|\mathcal{H}|\times J\) heap-incidence matrix with \((A_G)_{hx}=1\{x\in F_h\}\).
+
+The policy point is \(c\), the excluded bunching window is \(W=[c-a,c+b]\cap\mathcal{X}\), and \(E=\{h:F_h\cap W\neq\emptyset\}\).  The usable cells are \(\mathcal{U}=\mathcal{H}\setminus E\).  For an integer \(L\geq0\), \(m_L(\cdot;q)\) is the unique order-\(L\) polynomial continuation fitted to the latent cell means on \(\mathcal{U}\) through the known linear operator \(C_{G,W,L}\).  The excess-mass functional is the linear map
+\[
+\theta_B(q)=\ell_{G,W,L}^{\transpose}q
+\]
+that subtracts the continuation-implied counterfactual mass in \(W\) from the actual latent mass in \(W\).  The identified set is
+\[
+\Theta_I(P^H)=\{\ell_{G,W,L}^{\transpose}q:q\in\Delta(\mathcal{X}),\ A_Gq=P^H,\ q\in\mathcal{Q}_{G,W,L}\},
+\]
+where \(\mathcal{Q}_{G,W,L}\) imposes the continuation-existence restriction.
+
+Let \(Z_G\in\mathbb{R}^{J\times d_G}\) be the normalized within-fiber contrast matrix.  Its columns form a basis for \(\operatorname{Null}(A_G)\), have entries in \(\{-1,0,1\}\), have \(\ell_1\)-norm equal to two, and have first nonzero entry equal to one.  Define the feasible contrast polytope at an interior point \(q^0\in\mathcal{F}(P^H)\) by
+\[
+\mathcal{A}_G(q^0)=\{\alpha\in\mathbb{R}^{d_G}:q^0+Z_G\alpha\in\mathcal{F}(P^H)\}.
+\]
+The feasible direction span at \(q^0\) is
+\[
+\mathcal{D}_G(q^0)=\operatorname{span}\{\alpha-\alpha':\alpha,\alpha'\in\mathcal{A}_G(q^0)\}\subseteq\mathbb{R}^{d_G}.
+\]
+The nullspace-loading row is \(r_{G,W,L}^{\transpose}=\ell_{G,W,L}^{\transpose}Z_G\).  Since \(\ell_{G,W,L}\) is constructed from \(S_W\) and \(C_{G,W,L}\), this row records the effect of every normalized within-fiber contrast on actual window mass and continuation-implied counterfactual mass.  For the equal-grid phase class, the typed feasible loading operator is the restriction
+\[
+R^{\mathrm{feas}}_{G,W,L}(q^0)=r_{G,W,L}^{\transpose}\big|_{\mathcal{D}_G(q^0)}:\mathcal{D}_G(q^0)\to\mathbb{R},
+\qquad
+\tau^\star(G,W,L;q^0)=\operatorname{rank}(R^{\mathrm{feas}}_{G,W,L}(q^0)).
+\]
+The full-nullspace row \(R^{\mathrm{full}}_{G,W,L}=r_{G,W,L}^{\transpose}:\mathbb{R}^{d_G}\to\mathbb{R}\) is a design-uniform screen only when \(\mathcal{D}_G(q^0)=\mathbb{R}^{d_G}\), such as at an interior feasible histogram face.
+
+\begin{quote}\small
+Locked parameters: \((\texttt{qid},\texttt{specialization},P,\theta,\mathcal{R},B)=(\texttt{pid\_bunching\_heaping\_phase},\texttt{v1},P^H,\theta_B,\mathcal{R}_{G,W,E,L},B_{G,W,E,L})\).  \(P^H\) is the heap histogram induced by the known deterministic map \(h_G\).  \(\theta_B(q)=\ell_{G,W,L}^{\transpose}q\) is latent excess bunching mass relative to an order-\(L\) continuation fitted outside \(E\).  \(\mathcal{R}_{G,W,E,L}\) imposes \(q\in\Delta(\mathcal{X})\), \(A_Gq=P^H\), and continuation existence.  \(B_{G,W,E,L}(P^H)=[\inf\Theta_I(P^H),\sup\Theta_I(P^H)]\).
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Known deterministic heap map]\label{ass:heap}
+The map \(h_G:\mathcal{X}\to\mathcal{H}\), the support \(\mathcal{X}\), the heap width \(G\), and the incidence matrix \(A_G\) are known.
+\end{assumption}
+
+\begin{assumption}[Finite feasible fiber]\label{ass:fiber}
+The feasible set \(\mathcal{F}(P^H)=\{q\in\Delta(\mathcal{X}):A_Gq=P^H,\ q\in\mathcal{Q}_{G,W,L}\}\) is nonempty and compact, and a reference point \(q^0\in\mathcal{F}(P^H)\) is fixed when the contrast polytope is used.
+\end{assumption}
+
+\begin{assumption}[Linear continuation]\label{ass:linear-cont}
+For fixed \(G,W,E,L\), the counterfactual continuation over \(W\) is a known linear functional of \(q\).  Hence \(\theta_B(q)=\ell_{G,W,L}^{\transpose}q\) for a known vector \(\ell_{G,W,L}\).
+\end{assumption}
+
+\begin{assumption}[Equal-grid phase class]\label{ass:equal-grid}
+For Conjecture 2, \(\mathcal{X}\) is equally spaced, all heap cells have common width \(G\), \(W\) is an interval of consecutive latent support points around \(c\), and \(E\) is the set of heap cells intersecting \(W\).
+\end{assumption}
+
+\begin{assumption}[Interior perturbation]\label{ass:interior}
+For witness statements, there is a feasible \(q^0\in\mathcal{F}(P^H)\) and \(\epsilon>0\) such that \(q^0\pm\epsilon v\in\mathcal{F}(P^H)\) for the signed direction \(v\) under consideration.
+\end{assumption}
+
+\begin{assumption}[Interior feasible face]\label{ass:face}
+For the design-uniform rank screen, the feasible contrast polytope has full affine span, \(\mathcal{D}_G(q^0)=\mathbb{R}^{d_G}\).  Without this condition, phase statements use \(R^{\mathrm{feas}}_{G,W,L}(q^0)\) rather than \(R^{\mathrm{full}}_{G,W,L}\).
+\end{assumption}
+
+\section{Main results}
+\begin{conjecture}[Sharp heap-aliasing frontier (NOT YET PROVED)]\label{conj:frontier}
+Under Assumptions~\ref{ass:heap}, \ref{ass:fiber}, and \ref{ass:linear-cont},
+\[
+B_{G,W,E,L}(P^H)=
+\ell_{G,W,L}^{\transpose}q^0+
+\left[
+\min_{\alpha\in\mathcal{A}_G(q^0)} r_{G,W,L}^{\transpose}\alpha,
+\max_{\alpha\in\mathcal{A}_G(q^0)} r_{G,W,L}^{\transpose}\alpha
+\right],
+\]
+and \(\theta_B\) is point identified if and only if
+\[
+r_{G,W,L}^{\transpose}\alpha=0
+\quad\text{for every }\alpha\in\mathcal{A}_G(q^0)-\mathcal{A}_G(q^0).
+\]
+If the condition fails, an extreme point of the normalized contrast polytope gives a finite signed-nullspace certificate \(Z_G\alpha\) and two feasible latent densities \(q^-,q^+\) with \(A_Gq^-=A_Gq^+=P^H\) and \(\theta_B(q^-)\neq\theta_B(q^+)\).
+\end{conjecture}
+
+\begin{conjecture}[Equal-grid phase threshold (NOT YET PROVED)]\label{conj:phase}
+Under Assumptions~\ref{ass:heap}--\ref{ass:equal-grid}, the integer
+\[
+\tau^\star(G,W,L;q^0)=\operatorname{rank}(R^{\mathrm{feas}}_{G,W,L}(q^0))
+\]
+is well typed and computable from \(A_G\), \(S_W\), \(C_{G,W,L}\), \(\ell_{G,W,L}\), and the face \(\mathcal{D}_G(q^0)\).  The equal-grid design is point-informative for the bunching mass on the observed feasible face exactly when \(\tau^\star(G,W,L;q^0)=0\).  When \(\tau^\star(G,W,L;q^0)=1\), the row \(r_{G,W,L}^{\transpose}\) has one independent loading on feasible heap contrasts, and an aliasing certificate \(Z_G\alpha\) exists for some \(\alpha\in\mathcal{A}_G(q^0)-\mathcal{A}_G(q^0)\) with \(\ell_{G,W,L}^{\transpose}Z_G\alpha\neq0\).  If Assumption~\ref{ass:face} also holds, this criterion equals the full-nullspace screen \(\operatorname{rank}(R^{\mathrm{full}}_{G,W,L})=0\).
+\end{conjecture}
+
+The whole-cell null-vector calculation is retained as Exhibit~\ref{ex:alias}; it is supporting evidence for the uninformative side and is not a novelty-bearing main result.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No-heaping reduction]\label{cor:noheap}
+If \(G\) is one latent grid unit and \(A_G\) is the identity matrix, then \(\operatorname{Null}(A_G)=\{0\}\), so Conjecture~\ref{conj:frontier} collapses to point identification of \(\theta_B(q)\) from the latent histogram.
+\end{corollary}
+
+\begin{example}[Exhibit 9.1: finite aliasing certificate]\label{ex:alias}
+Let \(\mathcal{X}=\{-1,0,1,2\}\), \(W=\{0,1\}\), \(L=0\), and heap cells \(F_a=\{-1\}\), \(F_b=\{0,1\}\), \(F_c=\{2\}\).  Then
+\[
+A_G=\begin{pmatrix}1&0&0&0\\0&1&1&0\\0&0&0&1\end{pmatrix},
+\quad
+v=(0,1,-1,0)^{\transpose},
+\quad
+A_Gv=0.
+\]
+For \(P^H=(1/4,1/2,1/4)\) and \(q^0=(1/4,1/4,1/4,1/4)\), both \(q^\pm=q^0\pm\epsilon v\) are feasible for \(0<\epsilon<1/4\).  If the local excess-mass vector is \(\ell=(0,1,0,0)^{\transpose}\), then \(\theta_B(q^+)-\theta_B(q^-)=2\epsilon\).  The system has four latent unknowns and three independent heap equations, the denominator in each heap total is one, and the distinct excess masses are not a normalization artifact because \(A_Gq^+=A_Gq^-\) exactly.
+\end{example}
+
+\begin{example}[Exhibit 9.2: threshold computation on the same grid]\label{ex:threshold}
+For the grid in Exhibit~\ref{ex:alias}, the normalized contrast matrix is \(Z_G=v=(0,1,-1,0)^{\transpose}\).  With \(S_W=\begin{pmatrix}0&1&0&0\\0&0&1&0\end{pmatrix}\), \(L=0\), and the constant continuation independent of within-cell reallocations inside \(F_b\), take \(C_{G,W,0}Z_G=(0,0)^{\transpose}\).  The local excess-mass row is \(r_{G,W,0}^{\transpose}=\ell^{\transpose}Z_G=1\), so
+\[
+R_{G,W,0}=
+(\,1\,),
+\qquad
+\operatorname{rank}(R^{\mathrm{feas}}_{G,W,0}(q^0))=1,
+\]
+and the point-informativeness screen is decided by the nonzero feasible loading \(r_{G,W,0}^{\transpose}\alpha\), not by a full-nullspace rank placeholder.  The same instance has a nonzero aliasing certificate because \(A_GZ_G=0\), \(\mathcal{D}_G(q^0)=\mathbb{R}\), and \(r_{G,W,0}^{\transpose}\neq0\).  If the heap is refined to singleton fibers, \(Z_G\) has zero columns, \(R^{\mathrm{feas}}_{G,W,0}(q^0)\) is a map from the zero space to \(\mathbb{R}\), and \(\tau^\star(G,W,0;q^0)=0\).
+\end{example}
+
+\section{Proof-sketch route}
+Conjecture~\ref{conj:frontier} follows the chain: headline \(\leftarrow\) unfold \(\mathcal{F}(P^H)\), \(A_G\), \(Z_G\), and \(\ell\) \(\leftarrow\) substitute Assumptions~\ref{ass:heap}--\ref{ass:linear-cont} \(\leftarrow\) construct the normalized within-fiber contrast basis \(\leftarrow\) map the feasible heap fiber bijectively to \(\mathcal{A}_G(q^0)\) \(\leftarrow\) compute the support function of the contrast polytope in direction \(r_{G,W,L}\) \(\leftarrow\) separate boundary-only failures by a finite face decomposition of \(\Delta(\mathcal{X})\).  This gives \(k=4\) substantive steps.  Conjecture~\ref{conj:phase} follows the chain: headline \(\leftarrow\) unfold the equal-grid incidence matrix and excluded-window cells \(\leftarrow\) substitute Assumption~\ref{ass:equal-grid} \(\leftarrow\) derive \(\ell_{G,W,L}\) from \(S_W\) and \(C_{G,W,L}\) \(\leftarrow\) compute \(\mathcal{D}_G(q^0)=\operatorname{span}(\mathcal{A}_G(q^0)-\mathcal{A}_G(q^0))\) \(\leftarrow\) restrict \(r_{G,W,L}^{\transpose}\) to the feasible direction span and compute \(\operatorname{rank}(R^{\mathrm{feas}}_{G,W,L}(q^0))\) \(\leftarrow\) verify the boundary cases \(G=1\), \(W\) equal to one whole heap cell, \(L=0\), and boundary histograms by explicit enumeration.  This gives \(k=5\) substantive steps.  Exhibit~\ref{ex:alias} supplies the finite witness used on the uninformative side.
+
+\section{Honest scope flags}
+Conjectures~\ref{conj:frontier} and \ref{conj:phase} are not yet proved.  Exhibit~\ref{ex:alias} is a finite linear-algebra witness and should be provable by direct calculation.  The phase threshold is now typed as the rank of \(R^{\mathrm{feas}}_{G,W,L}(q^0)\); the full-nullspace rank is asserted only under the interior feasible-face condition.  The generic interval-data witness was withdrawn as a novelty-bearing theorem in v2 and retained only as supporting evidence.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) --- initial draft for the heap-grid phase-threshold angle; prior verdict: none.
+\item v2 (revise) --- corrected window-paper metadata, added interval/coarsening location anchors, typed the phase matrix \(R_{G,W,L}\), and demoted the whole-cell witness to a supporting lemma; prior verdict: REVISE.
+\item v3 (revise) --- replaced the full-nullspace phase criterion with a feasible-direction rank criterion and made the full-rank screen an interior-face corollary; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Barreca, Lindo, and Waddell(2016)]{BarrecaLindoWaddell2016HeapingRD}
+Barreca, A. I., J. M. Lindo, and G. R. Waddell (2016).
+Heaping-induced bias in regression-discontinuity designs.
+\emph{Economic Inquiry} 54(1), 268--293.
+
+\bibitem[Beresteanu, Molchanov, and Molinari(2011)]{BeresteanuMolchanovMolinari2011ConvexMoment}
+Beresteanu, A., I. Molchanov, and F. Molinari (2011).
+Sharp identification regions in models with convex moment predictions.
+\emph{Econometrica} 79(6), 1785--1821.
+
+\bibitem[Bertanha, McCallum, and Seegert(2021)]{BertanhaMcCallumSeegert2021BetterBunching}
+Bertanha, M., A. H. McCallum, and N. Seegert (2021).
+Better bunching, nicer notching.
+Finance and Economics Discussion Series 2021-002.
+
+\bibitem[Bertanha et al.(2022)]{BertanhaMcCallumPayneSeegert2022Stata}
+Bertanha, M., A. H. McCallum, A. Payne, and N. Seegert (2022).
+Bunching estimation of elasticities using Stata.
+\emph{Stata Journal} 22(3), 597--624.
+
+\bibitem[Bosch, Dekker, and Strohmaier(2020)]{BoschDekkerStrohmaier2020Window}
+Bosch, N., V. Dekker, and K. Strohmaier (2020).
+A data-driven procedure to determine the bunching window: An application to the Netherlands.
+\emph{International Tax and Public Finance} 27, 951--979.
+
+\bibitem[Chetty et al.(2011)]{ChettyFriedmanOlsenPistaferri2011Adjustment}
+Chetty, R., J. N. Friedman, T. Olsen, and L. Pistaferri (2011).
+Adjustment costs, firm responses, and micro vs. macro labor supply elasticities: Evidence from Danish tax records.
+\emph{Quarterly Journal of Economics} 126(2), 749--804.
+
+\bibitem[Davezies and Le Barbanchon(2017)]{DaveziesLeBarbanchon2017RDMeasurementError}
+Davezies, L. and T. Le Barbanchon (2017).
+Regression discontinuity design with continuous measurement error in the running variable.
+\emph{Journal of Econometrics} 200(2), 260--281.
+
+\bibitem[Dong(2015)]{Dong2015RoundingRD}
+Dong, Y. (2015).
+Regression discontinuity applications with rounding errors in the running variable.
+\emph{Journal of Applied Econometrics} 30(3), 422--446.
+
+\bibitem[Dong and Kolesar(2023)]{DongKolesar2023IgnoreMeasurementError}
+Dong, Y. and M. Kolesar (2023).
+When can we ignore measurement error in the running variable?
+\emph{Journal of Applied Econometrics} 38(5), 735--750.
+
+\bibitem[Kleven and Waseem(2013)]{KlevenWaseem2013Notches}
+Kleven, H. J. and M. Waseem (2013).
+Using notches to uncover optimization frictions and structural elasticities: Theory and evidence from Pakistan.
+\emph{Quarterly Journal of Economics} 128(2), 669--723.
+
+\bibitem[Manski and Tamer(2002)]{ManskiTamer2002IntervalData}
+Manski, C. F. and E. Tamer (2002).
+Inference on regressions with interval data on a regressor or outcome.
+\emph{Econometrica} 70(2), 519--546.
+
+\bibitem[McCrary(2008)]{McCrary2008DensityTest}
+McCrary, J. (2008).
+Manipulation of the running variable in the regression discontinuity design: A density test.
+\emph{Journal of Econometrics} 142(2), 698--714.
+
+\bibitem[Noack and Rothe(2023)]{NoackRothe2023DonutRD}
+Noack, C. and C. Rothe (2023).
+Donut regression discontinuity designs.
+arXiv:2308.14464.
+
+\bibitem[Saez(2010)]{Saez2010Bunching}
+Saez, E. (2010).
+Do taxpayers bunch at kink points?
+\emph{American Economic Journal: Economic Policy} 2(3), 180--212.
+
+\bibitem[Song(2024)]{Song2024GeneralBunching}
+Song, M. (2024).
+General identification and inference in bunching designs.
+arXiv:2411.03625.
+\end{thebibliography}
+
+\end{document}

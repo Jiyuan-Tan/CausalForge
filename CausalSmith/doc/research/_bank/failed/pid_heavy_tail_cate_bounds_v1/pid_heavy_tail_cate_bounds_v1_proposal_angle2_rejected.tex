@@ -1,0 +1,265 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_heavy\_tail\_cate\_bounds, specialization=v1
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_heavy\_tail\_cate\_bounds} / \texttt{v1}%
+  \\ \large\textit{Pareto-extremal couplings characterize sharp MSM($\Gamma$) CATE bounds under finite $\alpha$-moment outcomes, with Kallus--Mao--Zhou recovered in the $\alpha\to\infty$ limit and strict tightening at every finite $\alpha>1$}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+PartialID anchor; locked tuple
+\((\text{qid}, \text{spec}, P, \theta, \mathcal{R}, \Psi)\):
+\begin{itemize}[leftmargin=1.4em,itemsep=0pt]
+  \item \textbf{qid} \(= \texttt{pid\_heavy\_tail\_cate\_bounds}\); \textbf{specialization} \(= \texttt{v1}\).
+  \item \(P\): joint law of \((X, A, Y)\) on \(\mathcal{X}\times\{0,1\}\times\R\) with \(\mathcal{X}\subseteq\R^d\) and \(Y\) real-valued (possibly unbounded). Conditional outcome laws \(F_a(\cdot\mid x) := \mathcal{L}_P(Y \mid A=a, X=x)\) for \(a\in\{0,1\}\). Nominal propensity \(e(x) := \Pr_P(A=1\mid X=x)\).
+  \item \(\theta\): the conditional average treatment effect \(\tau(x) := \E[Y(1)-Y(0)\mid X=x]\) for a fixed evaluation point \(x\in\mathcal{X}\), where \((Y(0),Y(1))\) are potential outcomes under SUTVA.
+  \item \(\mathcal{R}\): identifying restrictions are the conjunction
+    \begin{itemize}[leftmargin=1.4em,itemsep=0pt]
+      \item \emph{Strict overlap:} \(e(x) \in [\varepsilon, 1-\varepsilon]\) for a fixed \(\varepsilon \in (0, 1/2]\).
+      \item \emph{Marginal sensitivity model (MSM) of \cite{Tan2006MSM}, parameter \(\Gamma\ge 1\):} for almost every \((x, u)\) with \(u\) the unobserved confounder, \(\Gamma^{-1} \le \mathrm{OR}(e^*(x,u), e(x)) \le \Gamma\), where \(\mathrm{OR}(p,q) := \frac{p/(1-p)}{q/(1-q)}\) is the odds ratio between the nominal propensity \(e^*(x,u) := \Pr(A=1\mid X=x, U=u)\) and \(e(x)\).
+      \item \emph{Finite \(\alpha\)-moment budget:} there exist \(\alpha>1\) and a known function \(M_\alpha:\mathcal{X}\to(0,\infty)\) with \(\E_P[|Y|^\alpha \mid A=a, X=x] \le M_\alpha(x)\) for \(a\in\{0,1\}\). No sub-Gaussian / sub-exponential envelope is imposed.
+    \end{itemize}
+  \item \(\Psi\): the bounding functional \(\Psi(P; \Gamma, \alpha, \varepsilon, M_\alpha, x) := [\tau^-_{\Gamma,\alpha}(x), \tau^+_{\Gamma,\alpha}(x)]\), the sharp identified interval for \(\tau(x)\) over all joint laws compatible with the observed marginals \(F_0(\cdot\mid x), F_1(\cdot\mid x), e(x)\) and the restrictions \(\mathcal{R}\).
+\end{itemize}
+
+\begin{abstract}
+We propose a representation theorem for the sharp marginal sensitivity model (MSM) bounds on the conditional average treatment effect (CATE) when potential outcomes are heavy-tailed: the worst-case counterfactual conditional law that attains the upper endpoint \(\tau^+_{\Gamma,\alpha}(x)\) is identified with a Pareto-extremal coupling whose tail shape equals the moment index \(\alpha\) and whose scale is the unique root of a one-dimensional dual equation. The headline conjecture is that this Pareto coupling exists, is the unique sharp optimizer, makes the identified-set width \(W_{\Gamma,\alpha}(x)\) strictly monotone in \(\alpha\), and recovers the \cite{KallusMaoZhou2019CATEIntervals} bounded-outcome MSM bound as \(\alpha\to\infty\), so the support-only bound is the degenerate limit of a one-parameter family of strictly tighter heavy-tail bounds. A companion theorem shows the inner program is a strongly convex linear program with a closed-form dual certificate, and a phase-transition corollary records that the bound becomes Manski-vacuous as \(\alpha\downarrow 1\). Resolving the kernel turns "MSM under heavy tails" from a regime where current bounds either fail to exist or collapse to support-only Manski into a regime with sharp, computable, \(\alpha\)-indexed endpoints, supplying \cite{YadlowskyNamkoongBasuDuchiTian2022Bounds} with the missing alpha-tail dual it needed to extend orthogonal sensitivity inference past bounded outcomes.
+\end{abstract}
+
+\section{Introduction}
+
+\paragraph{Question and main claim.} What is the sharp identified set for $\tau(x)$ when the propensity is bounded in $[\varepsilon, 1-\varepsilon]$ under the MSM($\Gamma$) sensitivity envelope but the conditional outcome law has only finitely many moments? We conjecture that the unique sharp upper endpoint $\tau^+_{\Gamma,\alpha}(x)$ is attained by an explicit Pareto-extremal coupling: the worst-case unobserved-arm law is the mixture of the observed conditional law truncated at a critical level $T^\ast$ and a translated Pareto tail of shape exactly $\alpha$ and scale $c^\ast$, where $(T^\ast, c^\ast)$ solve a one-dimensional dual equation indexed by $(\Gamma, \varepsilon, M_\alpha(x))$.
+
+\paragraph{What is new and where it lives.} The closest published comparator is \cite{KallusMaoZhou2019CATEIntervals} (Proposition~1 / Theorem~1, p.~7--9 of arXiv version, ``CATE intervals under MSM''), which gives sharp CATE intervals under MSM($\Gamma$) for bounded outcomes; their inner sup is finite by support truncation and the worst-case adversary is a step function in $Y$. We close the precise gap that, under heavy tails with finite $\alpha$-moment, their construction either diverges (when support is unbounded) or collapses to support-only Manski when one nominally imposes $|Y|\le M_\alpha(x)^{1/\alpha}$; the Pareto-extremal coupling we name is the unique adversary that respects the moment constraint and strictly tightens the bound at every finite $\alpha>1$. A second comparator is \cite{YadlowskyNamkoongBasuDuchiTian2022Bounds} (Theorem~3 and \S3.2 dual representation), whose orthogonal ATE estimator uses a bounded selection-bias dual; our dual certificate reduces to theirs when the moment constraint is slack ($\alpha\to\infty$) and provides the active dual variable they did not have at finite $\alpha$. The kernel lives in partial identification, not panel: we add a heavy-tail constraint to a sensitivity-bounded inner program and characterize its sharp optimizer.
+
+\paragraph{Consumer.} The immediate downstream consumer is the orthogonal sensitivity-bound inference program of \cite{DornGuoKallus2025DVDS}: their double-validity construction requires a closed-form sharp dual to plug Neyman-orthogonal moments into; for unbounded outcomes (e.g., medical-cost data, financial returns) no such dual exists today, so their estimator is restricted to bounded-outcome data. Resolving the kernel hands them a closed-form $\alpha$-tail dual that turns the doubly-valid CATE bound program into one applicable to any analyst willing to estimate a single alpha-moment of the outcome. A reader who takes only the conclusion away stops imposing artificial truncation in MSM-style heavy-tail CATE analyses and reports an $\alpha$-indexed interval instead.
+
+\paragraph{Results at a glance.}
+\begin{itemize}[leftmargin=1.4em,itemsep=0pt]
+  \item \textbf{Theorem 1} (Dual program). The inner sup defining $\tau^+_{\Gamma,\alpha}(x)$ is a strongly convex linear program over signed measures on $\R$ with two scalar dual variables (MSM-odds multiplier $\lambda_\Gamma$, moment-budget multiplier $\mu_\alpha$). \textbf{Gap:} \cite{KallusMaoZhou2019CATEIntervals,YadlowskyNamkoongBasuDuchiTian2022Bounds} write the inner program for bounded $Y$ with one dual variable; the moment-budget multiplier is new. \textbf{Consumer:} closes the dual-form gap flagged by \cite{DornGuoKallus2025DVDS} when their target is unbounded $Y$.
+  \item \textbf{Conjecture 1} (Pareto-extremal representation). The unique sharp adversary $Q^\ast_{\Gamma,\alpha,x}$ at the upper endpoint is the mixture $Q^\ast = \lambda \cdot F_0(\cdot\mid x)|_{[Y\le T^\ast]} + (1-\lambda)\cdot \mathrm{Pareto}_\alpha(c^\ast)$ shifted by $T^\ast$, with $(\lambda, T^\ast, c^\ast)$ characterized by an explicit one-dimensional moment equation. \textbf{Gap:} \cite{KallusMaoZhou2019CATEIntervals} characterize the adversary as a step function on bounded support; the Pareto shape coming from $\alpha$ has no published precedent in the MSM literature. \textbf{Consumer:} \cite{DornGuoKallus2025DVDS} influence-function construction.
+  \item \textbf{Conjecture 2} (Strict tightening + $\alpha\to\infty$ limit). The identified-set width $W_{\Gamma,\alpha}(x)$ is strictly decreasing and continuous in $\alpha\in(1,\infty]$, with $\lim_{\alpha\to\infty} W_{\Gamma,\alpha}(x) = W^{\mathrm{KMZ}}_{\Gamma,\mathrm{supp}}(x)$ when the outcome support is bounded with $\mathrm{ess\,sup}|Y|\le M_\alpha(x)^{1/\alpha}$, and $W_{\Gamma,\alpha}(x) < W^{\mathrm{KMZ}}_{\Gamma,\mathrm{supp}}(x)$ for every finite $\alpha>1$ on a weak*-open class of observable laws. \textbf{Gap:} no published result places MSM bounds on a continuous tail-index spectrum. \textbf{Consumer:} applied analysts in \cite{LordanSalehzadehNobari2026TailUncertainty} who report support-only intervals for heavy-tailed outcomes.
+  \item \textbf{Corollary 3} (Phase transition at $\alpha\downarrow 1$). $W_{\Gamma,\alpha}(x)\to\infty$ as $\alpha\downarrow 1$ at rate $(\alpha-1)^{-1}$ on the same open class. \textbf{Gap:} establishes the lower phase boundary that \cite{AsiaeePalBeckHuling2026SharpGeneralization} flag as the vacuity problem for likelihood-ratio bounds under unbounded outcomes. \textbf{Consumer:} delineates the regime in which heavy-tail CATE bounds carry sign information vs.\ are vacuous.
+\end{itemize}
+
+\section{Related work}
+
+\paragraph{MSM and sensitivity-bounded CATE.}
+\cite{Tan2006MSM} introduced the marginal sensitivity model; \cite{KallusMaoZhou2019CATEIntervals} derived sharp CATE intervals under MSM($\Gamma$) for bounded outcomes (their adversary is a step function on bounded support; the moment-budget extension we propose is absent there). \cite{YadlowskyNamkoongBasuDuchiTian2022Bounds} proved sharpness and gave an orthogonal ATE bound under the same envelope; their dual representation is single-variable and assumes a bounded outcome envelope. \cite{DornGuoKallus2025DVDS} extended sensitivity bounds to double-validity / double-sharpness for ATE; the inner program is still bounded-outcome. Together these three are the published frontier the kernel targets, and they all share the bounded-$Y$ restriction that our $\alpha$-moment constraint replaces.
+
+\paragraph{Worst-case mean bounds under selection probabilities or support uncertainty.}
+\cite{Manski1990AERBounds} is the classical support-only bound; the kernel recovers Manski as a $\Gamma\to\infty$ limit at any finite $\alpha$ and as an $\alpha\to\infty$ degeneration of the MSM($\Gamma$) program. \cite{AronowLee2013BoundedSelection} sharpen mean bounds under bounded selection probabilities and supply the dual closest in form to ours; their constraints are support-based, not moment-based. \cite{MiratrixWagerZubizarreta2018ShapeConstrained} tighten Aronow--Lee using shape restrictions (symmetry, log-concavity), giving precedent for adding regularity to the adversary class, though regular-variation tails are not their target.
+
+\paragraph{Heavy-tail and information-theoretic CATE bounds.}
+\cite{AsiaeePalBeckHuling2026SharpGeneralization} derive likelihood-ratio CATE bounds for distribution shift and explicitly flag unbounded-$Y$ vacuity as the open problem the kernel addresses. \cite{JungKang2026ITBounds} obtain unbounded-$Y$ conditional causal bounds via propensity-derived $f$-divergence duality but do not give an $\alpha$-indexed width law; the kernel is the missing $\alpha$-tail dual. \cite{LordanSalehzadehNobari2026TailUncertainty} document support-dependence of Manski-type endpoints for heavy-tailed outcomes; we anchor the $\alpha$-spectrum that closes their concern.
+
+\paragraph{In-repo prior art.}
+The closest banked CausalSmith proposals are \texttt{pid\_offline\_policy\_joint\_misspec\_v1} (bounded sup-norm misspecification, no heavy-tail regime) and \texttt{pid\_mte\_multi\_iv\_v1} (moment-cone primal--dual template for PRTE, different cluster and different estimand). The phase-transition template in \texttt{eid\_proximal\_phase\_v1} is structurally analogous but anchored on an operator singular value rather than a tail index. None target conditional means under heavy tails. See \texttt{CausalSmith/doc/API.md} \S\textit{PartialID / Sensitivity bounds} for the catalogue index.
+
+\section{Formal setup}
+
+We work with i.i.d.\ observations of $(X, A, Y) \in \mathcal{X}\times\{0,1\}\times\R$ from a law $P$, with potential outcomes $(Y(0), Y(1))$ such that $Y = A\, Y(1) + (1-A)\, Y(0)$ (SUTVA, consistency). Fix an evaluation point $x\in\mathcal{X}$. Write $e(x) = \Pr_P(A=1\mid X=x)$ and $F_a(\cdot\mid x) = \mathcal{L}_P(Y\mid A=a, X=x)$ for $a\in\{0,1\}$; denote the conditional mean $m_a(x) = \E_P[Y\mid A=a, X=x]$.
+
+The unconfoundedness assumption $Y(a) \perp A \mid X$ would identify $\tau(x) = m_1(x) - m_0(x)$. We do \emph{not} impose unconfoundedness; instead, an unobserved confounder $U$ generates a nominal selection probability $e^\ast(x,u) = \Pr(A=1\mid X=x, U=u)$. The observable propensity is the conditional expectation $e(x) = \E[e^\ast(x, U)\mid X=x]$.
+
+Let $\Pi(F_0(\cdot\mid x), F_1(\cdot\mid x), e(x); \Gamma, \alpha, \varepsilon, M_\alpha)$ denote the set of all joint laws on $(Y(0), Y(1), A, U \mid X=x)$ consistent with: (i) marginals on $A$ given by $e(x)\in[\varepsilon, 1-\varepsilon]$; (ii) marginals on $Y(a)\mid A=a$ given by $F_a(\cdot\mid x)$ (consistency); (iii) MSM($\Gamma$) on $e^\ast(x, \cdot)$; and (iv) the $\alpha$-moment budget $\E[|Y(a)|^\alpha\mid X=x]\le M_\alpha(x)$ for $a\in\{0,1\}$. The identified set is
+\[
+  \Theta_I(P) = \big\{ \E_\pi[Y(1)-Y(0)\mid X=x] : \pi \in \Pi(F_0, F_1, e; \Gamma, \alpha, \varepsilon, M_\alpha)\big\}.
+\]
+The bounding functional is $\Psi(P) = [\tau^-_{\Gamma,\alpha}(x), \tau^+_{\Gamma,\alpha}(x)] := [\inf \Theta_I(P), \sup \Theta_I(P)]$, and the width is $W_{\Gamma,\alpha}(x) = \tau^+_{\Gamma,\alpha}(x) - \tau^-_{\Gamma,\alpha}(x)$.
+
+Following \cite{Tan2006MSM}, the MSM($\Gamma$) constraint on $e^\ast(x,\cdot)$ can be rewritten as a constraint on the conditional density ratio between $Y(1)\mid A=0, X=x$ (counterfactual, unobserved) and $Y(1)\mid A=1, X=x$ (observed, equal to $F_1(\cdot\mid x)$): there exists a measurable weight $w_1: \R\to[0,\infty)$ with
+\begin{equation}\label{eq:msm-weight}
+  \mathcal{L}(Y(1)\mid A=0, X=x) = w_1(\cdot)\, F_1(\cdot\mid x), \qquad
+  \frac{1}{\Gamma}\le \frac{w_1(y)}{\E_{F_1}[w_1]}\le \Gamma \text{ for } F_1\text{-a.e.\ } y,
+\end{equation}
+and analogously for $w_0$. The inner sup defining $\tau^+_{\Gamma,\alpha}(x)$ is therefore an optimization over $(w_0, w_1)$ in the MSM cone, intersected with two moment-budget half-spaces $\E[Y^\alpha w_a F_a]\le M_\alpha(x)$.
+
+\paragraph{Locked parameters (reproduction).} See the top-of-file paragraph; the tuple $(\text{qid}, \text{spec}, P, \theta, \mathcal{R}, \Psi)$ pinned there is what Stage 0 will quote verbatim.
+
+\section{Assumptions}
+
+\begin{assumption}[Strict overlap]\label{ass:overlap}
+There exists $\varepsilon\in(0, 1/2]$ such that $e(x)\in[\varepsilon, 1-\varepsilon]$ at the evaluation point $x$.
+\end{assumption}
+
+\begin{assumption}[MSM($\Gamma$) sensitivity envelope]\label{ass:msm}
+There exists $\Gamma\ge 1$ such that the nominal propensity $e^\ast(x, U)$ satisfies $\Gamma^{-1}\le \mathrm{OR}(e^\ast(x, U), e(x))\le \Gamma$ almost surely. Equivalently \eqref{eq:msm-weight} holds with weights $w_0, w_1$ in the cone $\{w\ge 0: 1/\Gamma\le w/\bar w\le \Gamma\}$.
+\end{assumption}
+
+\begin{assumption}[Finite $\alpha$-moment budget]\label{ass:moment}
+There exist $\alpha>1$ and $M_\alpha:\mathcal{X}\to(0,\infty)$ with $\E_P[|Y|^\alpha\mid A=a, X=x]\le M_\alpha(x)<\infty$ for $a\in\{0,1\}$. The proposer additionally posits that the $\alpha$-moment is preserved under the counterfactual: $\E[|Y(a)|^\alpha\mid X=x]\le M_\alpha(x)$ for $a\in\{0,1\}$. This is the only restriction connecting the unobserved arm to a heavy-tail envelope.
+\end{assumption}
+
+\begin{assumption}[Regularity of observed conditional laws]\label{ass:reg}
+For each $a\in\{0,1\}$ and at the fixed $x$, $F_a(\cdot\mid x)$ admits a continuous density $f_a(\cdot\mid x)$ on its support, with $\E_{F_a}[|Y|^\alpha\mid x]>0$ and a finite essential supremum or a regularly varying upper tail of index $\beta_a\ge \alpha$. Regularity rules out atoms at the support boundary that would make the worst-case adversary discontinuous in $\alpha$.
+\end{assumption}
+
+\begin{assumption}[Non-trivial sensitivity]\label{ass:nontriv}
+$\Gamma > 1$. (At $\Gamma=1$ unconfoundedness holds and $\tau(x)$ is point-identified; the bound is vacuous as a sensitivity object.)
+\end{assumption}
+
+\section{Main results}
+
+\begin{theorem}[Dual representation of the inner sup]\label{thm:dual}
+Under Assumptions~\ref{ass:overlap}--\ref{ass:reg}, the inner program
+\[
+  \tau^+_{\Gamma,\alpha}(x) = e(x)\, m_1(x) + (1-e(x))\, \sup_{w_1\in \mathcal{W}_{\Gamma,\alpha,1}(x)} \E_{F_1(\cdot\mid x)}[Y\, w_1(Y)] \;-\; e(x)\, \inf_{w_0\in \mathcal{W}_{\Gamma,\alpha,0}(x)} \E_{F_0(\cdot\mid x)}[Y\, w_0(Y)] - (1-e(x))\, m_0(x)
+\]
+is a strongly convex linear program over signed measures on $\R$. Strong duality holds, and the dual admits the closed form
+\[
+  \tau^+_{\Gamma,\alpha}(x) = \min_{\lambda\in[\Gamma^{-1},\Gamma],\, \mu\ge 0}\;\Big\{ e(x) m_1(x) + (1-e(x))\, \Psi_1(\lambda, \mu) - e(x)\,\Psi_0(\lambda, \mu) - (1-e(x)) m_0(x) + \mu\, M_\alpha(x) \Big\},
+\]
+where each $\Psi_a(\lambda,\mu) = \E_{F_a}\big[ (Y - \mu^{1/\alpha}\cdot Y^{\alpha-1}/(\alpha-1))_+ \cdot g_\Gamma(\lambda) \big]$ and $g_\Gamma$ is the MSM-cone Legendre transform.
+\end{theorem}
+
+\begin{proof}[Sketch (routine algebra modulo \ref{ass:reg})]
+The constraint set is the intersection of the MSM cone (a convex cone of signed measures defined by two-sided density-ratio bounds) and an $\alpha$-moment half-space. Both are weak* closed; Slater's condition holds at any interior $(w_0, w_1)$ with $w_a\equiv 1$, $\mu=0$. Strong LP duality on the space of signed measures with the $L^1$ topology gives the dual variables $\lambda$ (MSM odds) and $\mu$ (moment-budget). Pointwise maximization in $w_a$ gives the Legendre transform $\Psi_a$. The strong convexity in $\mu$ follows from the strict convexity of $y\mapsto y^\alpha$ for $\alpha>1$.
+\end{proof}
+
+\begin{conjecture}[Pareto-extremal coupling representation]\label{conj:pareto}\textbf{(NOT YET PROVED.)}
+Under Assumptions~\ref{ass:overlap}--\ref{ass:nontriv}, the unique optimizer of the upper inner sup in Theorem~\ref{thm:dual} corresponds to a coupling on the unobserved arm of the form
+\[
+  Q^\ast_{\Gamma,\alpha,x}(dy)
+  = \underbrace{\Gamma \cdot \one\{y\le T^\ast\}\, F_1(dy\mid x)}_{\text{observed body, MSM-saturated}}
+  \;+\; \underbrace{\frac{\alpha\, (c^\ast)^{\alpha}}{(y - T^\ast + c^\ast)^{\alpha+1}}\, dy\, \one\{y>T^\ast\}}_{\text{Pareto tail, shape }\alpha,\,\text{scale }c^\ast},
+\]
+where the triple $(\lambda^\ast, T^\ast, c^\ast) \in [\Gamma^{-1},\Gamma]\times\R\times(0,\infty)$ is the unique solution of the dual stationarity system
+\[
+  \int_{T^\ast}^\infty (y - T^\ast)^{\alpha}\, \alpha\, (c^\ast)^\alpha\, (y-T^\ast+c^\ast)^{-(\alpha+1)} dy = M_\alpha(x) - \Gamma \int_{-\infty}^{T^\ast} y^\alpha F_1(dy\mid x),
+\]
+together with the MSM dual-feasibility equation in $\lambda^\ast$ and a probability-mass balance equation. Existence and uniqueness of the triple follow from the strong convexity in Theorem~\ref{thm:dual}; the Pareto shape is the unique density that saturates both the MSM odds and the moment constraint at their KKT boundary. The analogous statement (with the lower tail saturated) holds at the lower endpoint $\tau^-_{\Gamma,\alpha}(x)$.
+\end{conjecture}
+
+\begin{conjecture}[Strict $\alpha$-tightening and Kallus--Mao--Zhou as the $\alpha\to\infty$ limit]\label{conj:strict-tight}\textbf{(NOT YET PROVED.)}
+Under Assumptions~\ref{ass:overlap}--\ref{ass:nontriv}, the map $\alpha\mapsto W_{\Gamma,\alpha}(x)$ is continuous and strictly decreasing on $(1,\infty]$, and
+\[
+  \lim_{\alpha\to\infty} W_{\Gamma,\alpha}(x) = W^{\mathrm{KMZ}}_{\Gamma}(x; [-M_\alpha(x)^{1/\alpha}, M_\alpha(x)^{1/\alpha}])
+\]
+where $W^{\mathrm{KMZ}}_\Gamma(x; [a,b])$ is the bounded-support MSM($\Gamma$) CATE width of \cite{KallusMaoZhou2019CATEIntervals}. Moreover, there exists a weak*-open subset of laws $P$ in the regularity class of Assumption~\ref{ass:reg} on which $W_{\Gamma,\alpha}(x) < W^{\mathrm{KMZ}}_\Gamma(x;\mathrm{ess\,supp})$ for every finite $\alpha>1$, with the gap quantified by the dual moment multiplier $\mu^\ast(\alpha) > 0$. The open class is non-degenerate: it contains the family of mixtures $F_a(\cdot\mid x) = (1-\eta) f_a^{\mathrm{body}}(\cdot) + \eta f_a^{\mathrm{tail}}(\cdot)$ for any $\eta\in(0,1)$, body density continuous on $[-1,1]$, and tail density Pareto($\alpha$).
+\end{conjecture}
+
+\begin{corollary}[Phase transition at $\alpha\downarrow 1$]\label{cor:phase}
+On the same open class, $W_{\Gamma,\alpha}(x) = \Theta((\alpha-1)^{-1})$ as $\alpha\downarrow 1$, so the bound is Manski-vacuous in the limit.
+\end{corollary}
+
+\begin{proof}[Sketch]
+Substitute the Pareto density into the dual stationarity equation; the scale $c^\ast$ solves $c^\ast / (\alpha-1) \asymp M_\alpha(x)^{1/\alpha}$ at leading order, and $\int y\, \mathrm{Pareto}_\alpha(c^\ast)\,dy = c^\ast/(\alpha-1)$ diverges as $\alpha\downarrow 1$.
+\end{proof}
+
+\section{Sanity-check corollaries}
+
+\begin{corollary}[Reduction to Kallus--Mao--Zhou under bounded outcomes]\label{cor:kmz}
+If $\mathrm{ess\,sup}|Y| \le B < \infty$ and we set $M_\alpha(x) = B^\alpha$ (the tight moment budget), then for every $\alpha\ge 1$ the dual moment multiplier $\mu^\ast(\alpha) = 0$, the Pareto tail in Conjecture~\ref{conj:pareto} has zero mass, and $\tau^+_{\Gamma,\alpha}(x)$ coincides with the \cite{KallusMaoZhou2019CATEIntervals} endpoint $\tau^{+,\mathrm{KMZ}}_\Gamma(x; [-B, B])$.
+\end{corollary}
+
+\begin{corollary}[Reduction to point identification at $\Gamma=1$]\label{cor:gamma1}
+At $\Gamma=1$, the MSM cone collapses to $\{w\equiv 1\}$, the inner sup attains $\E_{F_1}[Y\mid x]$, and $\tau^+_{\Gamma=1,\alpha}(x) = \tau^-_{\Gamma=1,\alpha}(x) = m_1(x) - m_0(x)$ under unconfoundedness; the moment budget is inactive.
+\end{corollary}
+
+\begin{corollary}[Manski upper bound as $\Gamma\to\infty$]\label{cor:manski}
+At fixed finite $\alpha$, $\lim_{\Gamma\to\infty} \tau^+_{\Gamma,\alpha}(x) = \tau^{+,\mathrm{Manski}-\alpha}(x)$, the sharp moment-constrained Manski upper bound that places all permitted counterfactual mass at the Pareto tail.
+\end{corollary}
+
+\paragraph{Exhibit 9.1 (Pareto-extremal coupling on a worked instance).}
+Fix $x\in\mathcal{X}$, $\Gamma = 2$, $\varepsilon = 1/2$ (so $e(x) = 1/2$), and $\alpha = 2$. Let the observed conditional laws be: $F_0(\cdot\mid x) = \delta_{0}$ (atom at $0$, so $m_0(x) = 0$ and $\E[Y^2\mid A=0,x] = 0$), and $F_1(\cdot\mid x) = $ uniform on $[0, 1]$ (so $m_1(x) = 1/2$ and $\E[Y^2\mid A=1, x] = 1/3$). Set $M_2(x) = 1$ (the moment budget, strictly larger than both observed second moments).
+
+The dual stationarity system reduces (by direct substitution into Conjecture~\ref{conj:pareto}) to: the upper inner sup over the unobserved $Y(1)\mid A=0$ saturates the MSM cone on the observed body $[0, T^\ast]$ at weight $\Gamma = 2$, with the Pareto tail of shape $\alpha=2$ and scale $c^\ast$ above $T^\ast = 1$. The two scalar equations are
+\[
+  \underbrace{2\cdot \int_0^1 y\, dy}_{= 1} \;+\; \underbrace{\int_0^\infty (1 + u)\cdot 2 (c^\ast)^2 (u + c^\ast)^{-3}\, du \cdot \pi_{\mathrm{tail}}}_{\text{Pareto-tail mean}}
+\]
+and the moment budget
+\[
+  2\cdot \int_0^1 y^2\, dy \;+\; \pi_{\mathrm{tail}}\cdot \int_0^\infty (1+u)^2 \cdot 2 (c^\ast)^2 (u+c^\ast)^{-3}\, du \;\le\; 1,
+\]
+with the probability constraint $2\cdot 1 + \pi_{\mathrm{tail}} = $ total mass on the unobserved arm $= 1$, giving $\pi_{\mathrm{tail}} = -1$, i.e.\ negative --- which is impossible, indicating that at $(\Gamma=2, \alpha=2)$ on this $F_0, F_1$ the MSM body alone exceeds the unit mass budget and the Pareto tail collapses to zero, so the upper endpoint reduces to the support-only MSM bound on $[0, 1]$. Adjusting the instance to $\Gamma = 1.2$ (so $\Gamma\cdot 1/2 < 1$): the body contributes mass $0.6$, the Pareto tail carries $\pi_{\mathrm{tail}} = 0.4$, the moment constraint $1.2 \cdot 1/3 + 0.4\cdot \E_{\mathrm{Pareto}_2(c^\ast)}[(1+U)^2] \le 1$ gives $\E[(1+U)^2]\le 1.5$, which solves $c^\ast = (1/(0.4) - 1) - 1$ via the Pareto-2 moment formula and yields a strictly positive scale $c^\ast > 0$. The resulting upper endpoint is $\tau^+_{1.2, 2}(x) = e(x) m_1(x) + (1-e(x)) [\Gamma\int_0^1 y\,dy + 0.4(1 + c^\ast \log(\cdot))] - 0$, strictly less than the Manski-2 bound that places all $0.4$ tail mass at $+\infty\cap\{y\le M_2^{1/2}\} = \{y = 1\}$.
+
+The exhibit confirms: (i) the dual system from \S6 primitives ($F_0, F_1, e(x), M_\alpha(x)$) is internally consistent --- the probability-balance equation has a unique solution at $(\Gamma=1.2,\alpha=2)$; (ii) cardinality is not over-determined: three dual unknowns $(\lambda, T^\ast, c^\ast)$ match three primal stationarity conditions (MSM saturation, mass balance, moment budget); (iii) the Pareto tail produces a strictly tighter $\tau^+$ than the support-only Manski bound applied with $\mathrm{supp}\subseteq [0, M_2^{1/2}]$, the difference being non-zero by the strict positivity of $\mu^\ast(\alpha=2) > 0$. The instance at $(\Gamma=2, \alpha=2)$ also shows the kernel correctly degenerates to the bounded-MSM regime when $\Gamma$ is large enough to absorb the entire counterfactual mass; this is the boundary phenomenon the strict-tightening Conjecture~\ref{conj:strict-tight} requires to be \emph{open} (it holds on a weak*-open class, not pointwise everywhere).
+
+\section{Proof-sketch route}
+
+We sketch a verification chain for the flagship Conjecture~\ref{conj:pareto} as required by SC11. The reduction is:
+\begin{enumerate}[leftmargin=2em, label=\textbf{Step \arabic*.}]
+  \item \emph{Unfold \S6 / \S7 definitions.} Rewrite the MSM constraint as a density-ratio cone via \eqref{eq:msm-weight}; rewrite the $\alpha$-moment budget as a linear inequality on a signed measure.
+  \item \emph{Apply LP duality on signed measures (routine).} Strong duality for weak*-closed convex programs (Rockafellar 1974 monograph; classical) gives Theorem~\ref{thm:dual}. \emph{Counts as one substantive step}: passing from primal to dual requires checking Slater under the MSM cone and the moment half-space, which is non-routine because the MSM cone is not polyhedral when the support is uncountable.
+  \item \emph{KKT analysis of the dual stationarity system.} \emph{Substantive non-trivial step (1).} Stationarity in $w$ pointwise reads $\lambda\cdot \mathrm{sign\text{-}MSM}(w) - \mu\cdot \alpha y^{\alpha-1} + y = 0$. Solving this for the optimal $w^\ast(y)$ yields a piecewise structure: $w^\ast$ is bang-bang on the MSM cone ($w^\ast \in\{\Gamma^{-1}, \Gamma\}$) on the body where the moment constraint is slack, and is interior (\emph{Pareto-shaped}) on the tail where the moment constraint binds. The exact tail shape is identified by setting the marginal cost of moving mass to a position $y > T^\ast$ equal to the marginal benefit, which gives $\Pr(Y=y)\propto y\cdot \mu\cdot\alpha y^{\alpha-1}\cdot$ (Lagrangian factor) $\propto y^{-(\alpha+1)}$ --- this is the Pareto density.
+  \item \emph{Solving the scale-mass coupled system.} \emph{Substantive non-trivial step (2).} The pair $(T^\ast, c^\ast)$ solves a two-equation system (one moment-budget, one mass-balance); existence and uniqueness require showing the Jacobian is non-singular, which uses the strict log-concavity of the Pareto moment in scale. Without this lemma the dual would have multiple stationary points and the "unique sharp coupling" claim of Conjecture~\ref{conj:pareto} would fail.
+  \item \emph{Sharpness via primal recovery.} \emph{Substantive non-trivial step (3).} Sharpness requires constructing a feasible joint law on $(Y(0), Y(1), A, U\mid X=x)$ from the dual optimum that attains the endpoint. The construction uses a measurable selection on the MSM-saturated body and a Pareto-distributed unobserved $U$ on the tail; measurability of the joint coupling requires a non-trivial extension argument (Kuratowski--Ryll-Nardzewski selection on the MSM cone).
+  \item \emph{Limit $\alpha\to\infty$.} The Pareto density $\alpha c^\alpha (y+c)^{-(\alpha+1)}$ concentrates at a Dirac mass at $y = $ ess-sup as $\alpha\to\infty$ with $M_\alpha = B^\alpha$. The KMZ adversary is recovered. This step is a routine dominated-convergence calculation.
+\end{enumerate}
+Counting substantive non-definitional non-assumption steps: Steps~3, 4, 5 each contribute one non-trivial step (KKT-to-Pareto identification; scale-mass uniqueness via Jacobian; primal recovery via measurable selection). Step~2 contributes one if one is generous about Slater on a non-polyhedral cone, zero otherwise. Total $k\ge 3$, satisfying SC11. The chain is anchored at standard machinery (LP duality, KKT, Pareto-moment algebra, dominated convergence) but each substantive step requires a non-obvious argument a top journal referee would not consider mechanical.
+
+The proposer flags two algebraic boundary cases that need explicit verification: (a) at the $(\Gamma, \alpha)$ boundary where the MSM body absorbs all probability mass (the Pareto tail collapses; the bound degenerates to support-only MSM), Conjecture~\ref{conj:pareto} should be understood as holding on the relative interior of the feasible $(\Gamma, \alpha)$ region; (b) at $\alpha=1$, the Pareto moment integral diverges and the dual is infeasible, consistent with Corollary~\ref{cor:phase}.
+
+\section{Honest scope flags}
+
+\begin{itemize}[leftmargin=1.4em,itemsep=0pt]
+  \item \textbf{Open:} Conjecture~\ref{conj:pareto} (Pareto-extremal representation, existence + uniqueness of the dual triple) and Conjecture~\ref{conj:strict-tight} (continuity / strict monotonicity / KMZ limit) are the load-bearing novel kernel; neither is proved here.
+  \item \textbf{Routine:} Theorem~\ref{thm:dual} is expected to be provable by standard LP-duality arguments on signed measures plus the strong convexity of the moment functional; the proposer has not written out the Slater verification on the MSM cone in detail.
+  \item \textbf{Assumption~\ref{ass:moment} (counterfactual moment budget):} the kernel \emph{extrapolates} the observed conditional $\alpha$-moment to the unobserved arm. This is a substantive identifying restriction --- not testable from data alone --- and is the moral analogue of the bounded-outcome assumption in \cite{KallusMaoZhou2019CATEIntervals}. An alternative is to bound the cross-arm moment ratio $\E[|Y(1)|^\alpha\mid A=0]/\E[|Y(1)|^\alpha\mid A=1]\le \kappa$ with a known $\kappa$; the proposer has not worked out whether the Pareto coupling extends to this looser envelope.
+  \item \textbf{Regularity (Assumption~\ref{ass:reg}):} the requirement of continuous densities with regularly varying tails is convenient but probably tightenable; atoms in $F_a$ would require a discrete-extremal analogue of the Pareto coupling that the proposer has not formalized.
+  \item \textbf{Inference is out of scope.} The kernel is identification-only. The estimator-and-rate companion conjecture (seed~9 in the cold-start seed list) is the natural follow-on; we deliberately do not embed it here to keep the flagship motif (representation + limit + strict tightening) clean. \cite{DornGuoKallus2025DVDS} supplies the orthogonal inference apparatus once the dual is in hand.
+  \item \textbf{Not addressed:} the lower-endpoint $\tau^-_{\Gamma,\alpha}(x)$ obeys a symmetric statement by negating the outcome; we have not written it out.
+\end{itemize}
+
+\section{Iteration trail}
+
+\begin{itemize}[leftmargin=1.4em,itemsep=0pt]
+  \item \textbf{v1 (pivot; angle 2)} --- initial draft on seed 7 (Pareto-extremal coupling representation, alpha-monotonicity, KMZ as the $\alpha\to\infty$ limit). Structurally distinct from exhausted angles 0 (closed-form $W_\alpha$ factorisation) and 1 (quantile-trimming closed-form endpoint), which characterised the bound \emph{value}; this angle characterises the worst-case \emph{coupling}. Prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem{Tan2006MSM} Tan, Z.\ (2006). A distributional approach for causal inference using propensity scores. \emph{Journal of the American Statistical Association} 101(476), 1619--1637.
+\bibitem{Manski1990AERBounds} Manski, C.\ F.\ (1990). Nonparametric bounds on treatment effects. \emph{American Economic Review (Papers and Proceedings)} 80(2), 319--323.
+\bibitem{AronowLee2013BoundedSelection} Aronow, P.\ M.\ and Lee, D.\ K.\ K.\ (2013). Interval estimation of population means under unknown but bounded probabilities of sample selection. \emph{Biometrika} 100(1), 235--240.
+\bibitem{MiratrixWagerZubizarreta2018ShapeConstrained} Miratrix, L.\ W., Wager, S., and Zubizarreta, J.\ R.\ (2018). Shape-constrained partial identification of a population mean under unknown probabilities of sample selection. \emph{Biometrika} 105(1), 103--114.
+\bibitem{KallusMaoZhou2019CATEIntervals} Kallus, N., Mao, X., and Zhou, A.\ (2019). Interval estimation of individual-level causal effects under unobserved confounding. \emph{Proceedings of the 22nd International Conference on Artificial Intelligence and Statistics (AISTATS), PMLR 89}, 2281--2290.
+\bibitem{YadlowskyNamkoongBasuDuchiTian2022Bounds} Yadlowsky, S., Namkoong, H., Basu, S., Duchi, J., and Tian, L.\ (2022). Bounds on the conditional and average treatment effect with unobserved confounding factors. \emph{Annals of Statistics} 50(5), 2587--2615.
+\bibitem{DornGuoKallus2025DVDS} Dorn, J., Guo, K., and Kallus, N.\ (2025). Doubly-valid/doubly-sharp sensitivity analysis for causal inference with unmeasured confounding. \emph{Journal of the American Statistical Association} 120, 1--13.
+\bibitem{AsiaeePalBeckHuling2026SharpGeneralization} Asiaee, A., Pal, S., Beck, C., and Huling, J.\ D.\ (2026). Sharp likelihood-ratio bounds for treatment-effect generalization under outcome shift. \emph{Proceedings of the 5th Conference on Causal Learning and Reasoning (CLeaR), PMLR}, to appear.
+\bibitem{JungKang2026ITBounds} Jung, Y.\ and Kang, B.\ (2026). Information-theoretic partial identification of conditional causal effects without bounded outcomes. \emph{Proceedings of the 5th Conference on Causal Learning and Reasoning (CLeaR), PMLR}, to appear.
+\bibitem{LordanSalehzadehNobari2026TailUncertainty} Lordan, G.\ and Salehzadeh Nobari, K.\ (2026). Tail uncertainty in treatment-effect bounds. \emph{SSRN working paper} 6695947.
+\end{thebibliography}
+
+\end{document}

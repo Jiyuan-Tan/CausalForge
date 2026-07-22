@@ -1,0 +1,315 @@
+/* Paper page (chosen interaction visual C): full-width article + slide-over drawer. */
+@import "./tokens.css";
+@import "./fonts.css";
+
+article.paper {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 6rem;
+  font-family: Charter, Georgia, "Times New Roman", serif;
+  line-height: 1.6;
+}
+
+article.paper h1 { font-weight: normal; font-size: 1.9rem; }
+article.paper .paper-byline { color: #8C1515; font-size: 0.85rem; margin-bottom: 2rem; }
+article.paper .paper-byline a { color: inherit; }
+
+/* Scholarly links: warm ink, no default blue/underline; dotted baseline on hover-able
+   prose links so they are discoverable without shouting. */
+article.paper a {
+  color: #820000;
+  text-decoration: none;
+  border-bottom: 1px dotted #C58A8A;
+}
+article.paper a:hover { border-bottom-style: solid; }
+article.paper .katex a { border-bottom: none; color: inherit; }
+
+article.paper .abstract {
+  border-left: 3px solid #E0DAD0;
+  padding: 0.2rem 1.1rem;
+  margin: 1.5rem 0 2rem;
+  font-size: 0.95rem;
+}
+article.paper .abstract h2 { font-size: 1rem; margin: 0.4rem 0; }
+
+.formal-block {
+  border-left: 3px solid #B1040E;
+  background: #FDFCFA;
+  padding: 0.65rem 1rem;
+  margin: 1.2rem 0;
+  position: relative;
+  transition: background 0.15s, outline-color 0.15s;
+  outline: 2px solid transparent;
+}
+.formal-block[data-objid] { cursor: pointer; }
+.formal-block[data-objid]:hover { background: #F1EEE7; }
+/* Long display equations scroll inside their container instead of spilling
+   past the block border (KaTeX renders display math wider than the column). */
+.katex-display { overflow-x: auto; overflow-y: hidden; padding: 0.15rem 0; }
+article.paper .math.display { display: block; overflow-x: auto; }
+.formal-block[data-objid]:focus-visible, .formal-block.drawer-open { outline-color: var(--lean); }
+.formal-block.flash { outline-color: var(--lean); background: var(--lean-wash); }
+.formal-block .env-label { font-style: italic; font-weight: 600; margin-right: 0.4rem; }
+.formal-block p { display: inline; }
+.formal-block .lean-hint {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.6rem;
+  font-family: var(--code-font);
+  font-size: 0.68rem;
+  color: #8C1515;
+  opacity: 0.75;
+}
+.kind-assumption, .kind-definition { border-left-color: #888; background: #f6f6f4; }
+.kind-assumption:hover, .kind-definition:hover { background: #ededea; }
+.kind-lemma { border-left-color: #B3A89E; }
+
+.proof {
+  margin: 1rem 0 1.6rem;
+  font-size: 0.95rem;
+}
+.proof .env-label { font-style: italic; }
+.proof .qed { float: right; }
+
+.references { font-size: 0.9rem; }
+.references ul { list-style: none; padding-left: 0; }
+.references li { margin-bottom: 0.5rem; }
+
+/* ---- slide-over drawer (light parchment, matches the paper page) ---- */
+.drawer-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(62, 52, 30, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 40;
+}
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(560px, 92vw);
+  background: #FDFCFA;
+  color: #36342F;
+  border-left: 1px solid #E0DAD0;
+  box-shadow: -10px 0 30px rgba(80, 65, 30, 0.16);
+  transform: translateX(102%);
+  transition: transform 0.22s ease;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+}
+body.drawer-visible .drawer { transform: translateX(0); }
+body.drawer-visible .drawer-scrim { opacity: 1; pointer-events: auto; }
+
+.drawer-head {
+  padding: 0.95rem 1.2rem;
+  border-bottom: 1px solid #E6E0D6;
+  background: #FDFCFA;
+  font-size: 0.8rem;
+  color: #8C1515;
+  font-family: var(--code-font);
+}
+.drawer-head .drawer-title {
+  color: #2E2D29;
+  font-size: 1.02rem;
+  display: block;
+  margin-bottom: 0.25rem;
+  font-family: Charter, Georgia, "Times New Roman", serif;
+}
+/* Kind pill in the drawer head — the drawer reads as a library decl card
+   sliding in (matches the .decl-kind pill on the module pages). */
+.drawer-head .drawer-kind {
+  font-family: var(--code-font);
+  font-size: var(--fs-2xs);
+  color: #fff;
+  background: var(--accent);
+  border-radius: var(--r-badge);
+  padding: 0.05rem 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: 0.1em;
+}
+.drawer-head .close {
+  float: right;
+  background: none;
+  border: none;
+  color: #8C1515;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+.drawer-head .close:hover { color: #2E2D29; }
+.drawer-body { padding: 1.1rem 1.2rem; overflow-y: auto; flex: 1; }
+.drawer-body pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--code-font);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  margin: 0.5rem 0 1rem;
+  background: var(--parchment);
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--r-card);
+  padding: 0.85rem 1rem;
+  color: #36342F;
+}
+/* Verified / sorry status as the site's standard pills, not bare colored text. */
+.drawer .badge-ok, .drawer .badge-warn {
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  padding: 0.08rem 0.45rem;
+  border-radius: var(--r-badge);
+  white-space: nowrap;
+}
+.drawer .badge-ok { background: var(--verified-wash); color: var(--verified); }
+.drawer .badge-warn { background: var(--sorry-wash); color: var(--sorry); }
+.drawer .kw { color: #a12d22; }
+.drawer .sorry-kw { color: #b91c1c; font-weight: 700; background: #fde8e8; border-radius: 3px; padding: 0 0.15rem; }
+.drawer pre a.lib-link { color: var(--lean); text-decoration: none; border-bottom: 1px dotted var(--lean-line); }
+.drawer pre a.lib-link:hover { border-bottom-style: solid; }
+.drawer .ident { color: var(--lean); font-weight: 700; }
+.drawer .comment { color: #6B6661; font-style: italic; }
+.drawer-meta {
+  font-size: 0.75rem;
+  color: #4D4F53;
+  margin-bottom: 0.6rem;
+  font-family: var(--code-font);
+}
+.drawer-meta a { color: #8C1515; }
+.drawer-uses { font-size: 0.78rem; margin-top: 0.4rem; font-family: var(--code-font); }
+.drawer-uses a { color: #8C1515; text-decoration: none; cursor: pointer; border-bottom: 1px dotted #C58A8A; }
+.drawer-uses a:hover { border-bottom-style: solid; }
+.drawer-fallback {
+  font-size: 0.92rem;
+  color: #36342F;
+  font-family: Charter, Georgia, "Times New Roman", serif;
+}
+
+/* foldable Lean blocks (long code collapses; click to expand) */
+details.lean-fold { margin: 0.5rem 0; }
+details.lean-fold > summary {
+  cursor: pointer;
+  font-family: var(--code-font);
+  font-size: 0.82rem;
+  color: var(--ink-soft, #5C5853);
+  padding: 0.35rem 0.5rem;
+  background: var(--parchment-deep, #F4F1EA);
+  border: 1px solid var(--rule, #DBD4C9);
+  border-radius: 4px;
+  user-select: none;
+  list-style: none;
+}
+details.lean-fold > summary::-webkit-details-marker { display: none; }
+details.lean-fold > summary::before { content: "▸ "; color: var(--accent); }
+details.lean-fold[open] > summary::before { content: "▾ "; }
+details.lean-fold > summary:hover { color: var(--ink, #2E2D29); }
+details.lean-fold[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+details.lean-fold > pre { margin-top: 0; border-top-left-radius: 0; border-top-right-radius: 0; }
+.fold-count { opacity: 0.65; font-size: 0.76rem; }
+
+/* table-of-contents sidebar (wide viewports) */
+.paper-toc {
+  position: fixed;
+  top: 2.5rem;
+  left: 1.2rem;
+  width: 230px;
+  max-height: calc(100vh - 5rem);
+  overflow-y: auto;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+.paper-toc .toc-head {
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft, #5C5853);
+  margin-bottom: 0.4rem;
+}
+.paper-toc ul { list-style: none; margin: 0; padding: 0; }
+.paper-toc li.toc-l2 { padding-left: 0.9rem; }
+.paper-toc a {
+  display: block;
+  padding: 0.12rem 0.4rem;
+  color: var(--ink-soft, #5C5853);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  border-radius: 0 3px 3px 0;
+}
+.paper-toc a:hover { color: var(--ink, #2E2D29); }
+.paper-toc a.active {
+  color: var(--ink, #2E2D29);
+  border-left-color: var(--accent, #8C1515);
+  background: var(--parchment-deep, #F4F1EA);
+}
+@media (max-width: 1280px) { .paper-toc { display: none; } }
+
+/* TOC scrollbar: invisible until hovered, then a thin parchment-toned bar */
+.paper-toc { scrollbar-width: none; }
+.paper-toc:hover { scrollbar-width: thin; scrollbar-color: var(--rule, #DBD4C9) transparent; }
+.paper-toc::-webkit-scrollbar { width: 0; }
+.paper-toc:hover::-webkit-scrollbar { width: 5px; }
+.paper-toc::-webkit-scrollbar-thumb { background: var(--rule, #DBD4C9); border-radius: 3px; }
+.paper-toc::-webkit-scrollbar-track { background: transparent; }
+
+/* printed obj-id tag in statement labels (resolves in-body P-k/L-k references) */
+.env-label .obj-tag { font-family: var(--code-font); font-size: 0.78em; color: var(--ink-soft, #5C5853); font-weight: normal; }
+
+/* Inline \leanref links (P2-authored): a from-note object or a realized core symbol named inline in
+   the prose, kept in place but made clickable — opens its verified Lean in the drawer
+   (data-objid="..."). A saturated-blue dashed underline so the reader can clearly tell it is
+   clickable (the old pale dotted line was easy to miss), while the blue keeps it distinct from the
+   cardinal-red citation/reference links. */
+.leanref {
+  cursor: pointer;
+  border-bottom: 1px dashed var(--lean);
+}
+.leanref:hover { border-bottom-style: solid; background: var(--lean-wash); }
+.leanref.drawer-open { background: var(--lean-wash); outline: none; }
+
+/* ---- Formal-layer aside (Lean correspondence index below the paper body) ----
+   Moved out of the page's inline <style> so it draws from the design tokens and
+   can't drift back to raw web greys. */
+.formal-layer {
+  margin-top: var(--sp-12);
+  border-top: 1px solid var(--rule);
+  padding-top: var(--sp-4);
+  font-size: var(--fs-sm);
+}
+.formal-layer > details > summary { font-weight: 600; font-size: 1.05rem; cursor: pointer; }
+.fl-note { color: var(--ink-soft); margin: 0.4rem 0 0.8rem; }
+.fl-group { margin: 0.4rem 0; }
+.fl-group > summary {
+  cursor: pointer;
+  color: var(--ink-faint);
+  font-weight: 600;
+  font-variant: small-caps;
+  letter-spacing: 0.03em;
+}
+.fl-group ul { list-style: none; padding-left: 0.5rem; margin: 0.3rem 0; }
+.fl-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.28rem 0.4rem;
+  border-radius: var(--r-badge);
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.fl-row:last-child { border-bottom: none; }
+.fl-row.fl-open { cursor: pointer; }
+.fl-row.fl-open:hover { background: var(--lean-wash); }
+.fl-label { font-weight: 600; white-space: nowrap; }
+.fl-decl {
+  font-family: var(--code-font);
+  color: var(--lean);
+  background: var(--parchment);
+  padding: 0 0.3rem;
+  border-radius: var(--r-badge);
+}
+.fl-nl { color: var(--ink-soft); flex: 1 1 16rem; }
+.fl-badge { font-size: var(--fs-2xs); padding: 0.05rem 0.45rem; border-radius: var(--r-pill); white-space: nowrap; }
+.fl-matched, .fl-derived { background: var(--verified-wash); color: var(--verified); }
+.fl-drift { background: var(--sorry-wash); color: var(--sorry); }
+.fl-unreviewed { background: var(--parchment-deep); color: var(--ink-faint); }
+.fl-gh { font-size: var(--fs-sm); white-space: nowrap; }

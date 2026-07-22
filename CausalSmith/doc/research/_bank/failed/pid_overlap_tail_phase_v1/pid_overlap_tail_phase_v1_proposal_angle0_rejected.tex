@@ -1,0 +1,285 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_overlap\_tail\_phase, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` -- the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_overlap\_tail\_phase} / \texttt{v1}%
+  \\ \large\textit{Critical overlap-tail profile for sharp CATT and ATE bounds under positivity failure}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a free-form PartialID proposal with tuple
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\mathcal R,\mathcal B)
+=
+(\texttt{pid\_overlap\_tail\_phase},\texttt{v1},P,\theta_{\mathrm{CATT}},\mathcal R_{\mathrm{tail}},\mathcal B_{\alpha}).
+\]
+The observable law \(P\) is the joint law of \(O=(Y,D,X)\), where \(D\in\{0,1\}\), \(Y\in[0,1]\), \(X\in\mathcal X\), and \(e(x)=P(D=1\mid X=x)\) is part of the observable conditional law.  The target parameter is \(\theta_{\mathrm{CATT}}=\E[Y(1)-Y(0)\mid D=1]\), with an ATE analogue \(\theta_{\mathrm{ATE}}=\E[Y(1)-Y(0)]\).  The identifying restrictions \(\mathcal R_{\mathrm{tail}}\) define a tail-profile experiment: outside a critical weak-overlap tail the conditional outcome regressions are observed, while inside the tail the experiment preserves the propensity tail masses but does not use tail-cell outcome extrapolation.  The bounding functional \(\mathcal B_{\alpha}\) maps \(P\) to the sharp profile width of the CATT or ATE interval as a function of the one-sided tail profile \((\mu_1(t),\nu_1(t))\) and its exponent \(\alpha_1(P)\), defined below.
+
+\begin{abstract}
+Limited overlap is usually treated either as an inference problem for inverse weighting or as a coarse missing-cell problem for bounded outcomes.  This proposal asks whether the sharp partial-identification width has an exact phase law when positivity fails only through the tail thickness of the propensity score.  The focal object is an overlap-tail profile \(\alpha(P)\) that compares target mass in the weak-overlap tail with the observable opposite-arm tail mass.  The main conjecture states an if-and-only-if threshold separating finite amplification, polynomial blow-up, and vacuous CATT or ATE bounds, with endpoint-attaining extremal laws.  A proof would turn the limited-overlap literature's rate statements into a sharp partial-identification certificate.
+\end{abstract}
+
+\section{Introduction}
+When \(e(X)\) approaches one, the untreated potential outcome for treated units is learned only through a thin opposite-arm tail.  The question is whether bounded outcomes and the observable tail of \(e(X)\) determine more than the Manski missing-cell width for CATT and ATE.
+
+The main claim is a phase theorem for the \emph{overlap-tail profile}.  For one-sided CATT tails, the conjecture is that the sharp width is governed by the exponent relating treated target mass to untreated observable tail mass, not by nominal support coverage alone.
+
+\citet[p.~2021]{KhanTamer2010IrregularIdentification} show that inverse-weight identification can depend on relative tail conditions, while \citet[abstract]{LeeWeidner2026LimitedPoolingBounds} give limited-pooling ATE and ATT bounds when overlap fails.  Neither paper gives a sharp partial-identification width indexed by a tail exponent with an endpoint certificate.  The kernel lives in PartialID: the object is the sharp identified interval for a bounded potential-outcome functional under a restricted observable tail profile.
+
+The direct consumer is the non-overlap bounds program in \citet{SusmannMcCleanDiaz2025NonOverlapATEBounds}, which treats width as proportional to non-overlap mass.  If the phase law holds, an applied researcher must report the tail profile of the weak-overlap region, not only the size of the excluded or non-overlap subpopulation.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: finite-tail sharp width equals a two-point extremal allocation formula. Gap: \citet{Manski1990NonparametricBounds} gives bounded-outcome extremes but not the overlap-tail certificate. Consumer: non-overlap ATE bounding in \citet{SusmannMcCleanDiaz2025NonOverlapATEBounds}.
+\item Conjecture 1: the overlap-tail exponent gives an iff phase threshold for finite amplification, polynomial blow-up, and vacuity. Gap: \citet{KhanTamer2010IrregularIdentification} and \citet{HeilerKazak2021ExtremePropensity} give tail-rate inference, not sharp width. Consumer: limited-overlap inference and bounding designs.
+\item Conjecture 2: one-sided CATT and two-sided ATE use different tail profiles, so a bad treated tail alone can make ATE vacuous while CATT remains finite. Gap: \citet{HongLeungLi2020FinitePopulationLimitedOverlap} studies finite-population rates and \citet{LeeWeidner2026LimitedPoolingBounds} studies pooling bounds, not the one-tail versus two-tail width frontier. Consumer: ATT/CATT sensitivity reporting in observational studies.
+\end{itemize}
+
+\section{Related work}
+\citet{Manski1990NonparametricBounds} is the bounded-outcome benchmark: missing counterfactual means are bounded by the outcome support.  The present question keeps that support logic but asks how much of the missing cell is certified by the observed overlap tail.
+
+\citet{ImbensManski2004ConfidenceIntervals} study inference for interval-identified parameters.  Their contribution is inferential rather than a characterization of the interval's width under limited overlap.
+
+\citet[p.~2021]{KhanTamer2010IrregularIdentification} connect inverse weighting, support, and relative tail conditions.  The proposed theorem uses that tail signal as a partial-identification object rather than an estimator-rate condition.
+
+\citet{Rothe2017LimitedOverlapCI} attributes distorted ATE confidence intervals to small local sample sizes.  The present object is a population identified set, so the local-sample-size phenomenon enters only as motivation.
+
+\citet{HongLeungLi2020FinitePopulationLimitedOverlap} define limited overlap through propensity scores degenerating to zero or one and derive slower finite-population convergence rates.  Their rate parameter is not a sharp CATT or ATE identified-set width.
+
+\citet{HeilerKazak2021ExtremePropensity} characterize inference with many extreme propensity scores using regular variation and stable limits.  This proposal asks for the corresponding regular-variation phase law for sharp bounded-outcome intervals.
+
+\citet{CrumpHotzImbensMitnik2009LimitedOverlap} and \citet{LiMorganZaslavsky2018OverlapWeights} respond to weak overlap by changing the estimand toward an overlap population.  The proposed CATT and ATE intervals keep the original target and quantify the price of doing so.
+
+\citet{LeeWeidner2026LimitedPoolingBounds} construct ATE and ATT bounds by limited pooling across observations.  The proposed profile is different because the sharp object is an extremal law over tail exponents, not a pooling architecture.
+
+\citet{SusmannMcCleanDiaz2025NonOverlapATEBounds} give bounded-outcome non-overlap ATE bounds whose width is driven by non-overlap mass.  The live gap is that two laws can have the same nominal overlap support and different polynomial tail exponents.
+
+In the CausalSmith catalogue, \texttt{doc/API.md} Section 3.1 records Manski-family nonparametric bounds for bounded outcomes and level-set restrictions.  The failed in-repo run \texttt{pid\_critical\_overlap\_exponent\_v1} left the phrase ``critical overlap exponent controlling interval-width growth near \(e(x)=0\) or \(1\)'' but did not leave a reviewed theorem, witness, or endpoint certificate.
+
+\section{Formal setup}
+Let \(O=(Y,D,X)\sim P\), where \(D\in\{0,1\}\), \(Y\in[0,1]\), and \(X\) lies in a standard Borel space.  Let \(e(x)=P(D=1\mid X=x)\), \(m_d(x)=\E[Y\mid D=d,X=x]\) on the set where \(P(D=d\mid X=x)>0\), and \(\pi=P(D=1)\in(0,1)\).
+
+For the one-sided treated tail define \(s_1(x)=1-e(x)\).  For \(t\in(0,1]\), define the treated target tail mass and untreated observable tail mass
+\[
+\mu_1(t)=\E\!\left[e(X)\one\{0<s_1(X)\le t\}\right],\qquad
+\nu_1(t)=\E\!\left[s_1(X)\one\{0<s_1(X)\le t\}\right].
+\]
+The untreated-tail analogues are \(\mu_0(t)=\E[(1-e(X))\one\{0<e(X)\le t\}]\) and \(\nu_0(t)=\E[e(X)\one\{0<e(X)\le t\}]\).  The profile exponent is
+\[
+\alpha_1(P)=\liminf_{t\downarrow0}\frac{\log \mu_1(t)}{\log \nu_1(t)}
+\]
+when both numerator and denominator are eventually in \((0,1)\), with \(\alpha_0(P)\) defined symmetrically.
+
+For a tail cutoff \(t\), let \(P^{\circ}_{1,t}\) denote the coarsened experiment that preserves \(P\) on \(\{s_1(X)>t\}\), preserves \(e(X)\), \(\mu_1(t)\), and \(\nu_1(t)\), and records only \(Y\in[0,1]\) inside \(\{0<s_1(X)\le t\}\).  Let \(\Theta_{1,t}(P)\) be the sharp profile-identified set for the treated-tail missing mean
+\[
+\eta_{1,t}=\frac{1}{\pi}\E\!\left[Y(0)e(X)\one\{0<s_1(X)\le t\}\right]
+\]
+over all potential-outcome completions satisfying the assumptions below and matching \(P^{\circ}_{1,t}\).  Let \(W_{1}(t;P)=\operatorname{diam}\Theta_{1,t}(P)\).  The ATE width uses \(W_{\mathrm{ATE}}(t;P)=W_1(t;P)+W_0(t;P)\) with the symmetric tail-profile contribution.
+
+\begin{quote}
+\texttt{qid = pid\_overlap\_tail\_phase; specialization = v1; observable law P = law(Y,D,X); target = CATT with ATE analogue; restrictions = consistency, core-cell conditional exchangeability, Y in [0,1], and tail-profile coarsening inside weak-overlap cells; bounding functional = sharp profile interval width W(t;P) and exponent alpha(P).}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Observed law and bounded outcomes]\label{ass:bounded-law}
+\(O=(Y,D,X)\sim P\), \(D\in\{0,1\}\), \(Y\in[0,1]\), and \(\pi=P(D=1)\in(0,1)\).
+\end{assumption}
+
+\begin{assumption}[Consistency]\label{ass:consistency}
+\(Y=DY(1)+(1-D)Y(0)\).
+\end{assumption}
+
+\begin{assumption}[Core-cell exchangeability]\label{ass:exchange}
+For a cutoff \(t\), outside the critical weak-overlap tails \(\{0<1-e(X)\le t\}\) and \(\{0<e(X)\le t\}\), \((Y(0),Y(1))\perp D\mid X\) whenever both treatment arms have positive conditional probability.  Inside the critical tails, the profile experiment does not use conditional outcome-regression extrapolation.
+\end{assumption}
+
+\begin{assumption}[Tail-profile restriction]\label{ass:tail-profile}
+The admissible completions must preserve \(P\) on core cells, preserve \(e\), and preserve the tail masses \((\mu_1,\nu_1,\mu_0,\nu_0)\).  Inside the critical weak-overlap tails no restriction is imposed on missing counterfactual means beyond \(Y(d)\in[0,1]\).
+\end{assumption}
+
+\begin{assumption}[Regularly varying two-tail class]\label{ass:regular-tail}
+For \(j\in\{0,1\}\), the pair \((\mu_j,\nu_j)\) is eventually positive and regularly varying at zero.  Along a one-sided tail, \(\mu_j(t)=c_j t^{a_j}L_{\mu j}(t)\) and \(\nu_j(t)=b_j t^{b_j}L_{\nu j}(t)\), where \(c_j,b_j>0\), \(a_j,b_j>0\), and the \(L\)'s are slowly varying.
+\end{assumption}
+
+\begin{assumption}[Non-corner tail]\label{ass:noncorner}
+For each tail used in a flagship statement, \(0<\mu_j(t)<\pi_j\) and \(0<\nu_j(t)<1-\pi_j\) for all sufficiently small \(t\), and both observed treatment arms have positive probability outside the tail.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Finite-tail extremal width]\label{thm:finite-tail}
+Under Assumptions \ref{ass:bounded-law}--\ref{ass:tail-profile}, for every \(t\in(0,1]\) with \(\mu_1(t)>0\), the sharp width of the treated-tail missing mean is
+\[
+W_1(t;P)=\frac{\mu_1(t)}{\pi}.
+\]
+The lower endpoint is attained by completions with \(Y(0)=0\) on the treated tail \(\{0<1-e(X)\le t\}\), and the upper endpoint is attained by completions with \(Y(0)=1\) on that tail.
+\end{theorem}
+
+The proof is the bounded-outcome missing-cell argument applied after conditioning on the tail event.  Positive-overlap cells are fixed by \(P\); only the missing treated-tail counterfactual mean remains free.
+
+\begin{conjecture}[Critical overlap-tail phase law]\label{conj:phase}
+(NOT YET PROVED.)  Under Assumptions \ref{ass:bounded-law}--\ref{ass:noncorner}, define the observable amplification width
+\[
+A_1(t;P)=\frac{W_1(t;P)}{\nu_1(t)}
+\]
+when \(\nu_1(t)>0\).  If \(\alpha_1(P)=\liminf_{t\downarrow0}\log\mu_1(t)/\log\nu_1(t)\), then the following threshold is sharp:
+\[
+\begin{cases}
+\alpha_1(P)>1 &\Longleftrightarrow A_1(t;P)\to 0,\\
+\alpha_1(P)=1 &\Longleftrightarrow A_1(t;P)\text{ is bounded away from both }0\text{ and }\infty\text{ along regular tails},\\
+\alpha_1(P)<1 &\Longleftrightarrow A_1(t;P)\text{ has polynomial blow-up at rate }\nu_1(t)^{\alpha_1(P)-1}.
+\end{cases}
+\]
+Moreover, for every admissible exponent triple in the regularly varying class there is an endpoint-attaining or endpoint-approaching two-tail law whose sharp CATT interval realizes the corresponding phase.
+\end{conjecture}
+
+\begin{conjecture}[One-tail CATT versus two-tail ATE frontier]\label{conj:one-two}
+(NOT YET PROVED.)  Under Assumptions \ref{ass:bounded-law}--\ref{ass:noncorner}, the CATT width depends only on \((\mu_1,\nu_1,\alpha_1)\), while the ATE width has the sharp decomposition
+\[
+W_{\mathrm{ATE}}(t;P)=\frac{\mu_1(t)}{1}+\frac{\mu_0(t)}{1}
+\]
+up to the treatment-share normalizations fixed in Section 6.  Hence there are open sets of observable laws for which \(\alpha_1(P)\ge1\) but \(\alpha_0(P)<1\), so the one-sided CATT amplification remains finite while the full ATE amplification diverges.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Exact overlap collapse]\label{cor:overlap-collapse}
+Under Assumptions \ref{ass:bounded-law}--\ref{ass:exchange}, if there exists \(\varepsilon>0\) such that \(\varepsilon\le e(X)\le1-\varepsilon\) almost surely, then \(W_1(t;P)=W_0(t;P)=0\) for all \(t<\varepsilon\).  This collapses to the usual point-identified unconfoundedness formula because the weak-overlap tail is empty.
+\end{corollary}
+
+\paragraph{Exhibit 9.1: two-tail exponent witness.}
+Let \(U\sim \mathrm{Unif}(0,1)\), let \(X=U\), and set \(e(U)=1-U\) on the treated tail.  For \(t\in(0,1)\),
+\[
+\mu_1(t)=\int_0^t(1-u)\,du=t-\frac{t^2}{2},\qquad
+\nu_1(t)=\int_0^t u\,du=\frac{t^2}{2}.
+\]
+Thus \(\alpha_1(P)=1/2\), \(W_1(t;P)=(t-t^2/2)/\pi\), and \(A_1(t;P)=2(t-t^2/2)/(\pi t^2)\), which diverges at order \(t^{-1}\).  The endpoint completions \(Y(0)=0\) and \(Y(0)=1\) on \(U\le t\) are compatible with the same observable \(P\); the denominators are nonzero, both arms occur outside the tail, and the two endpoint values differ by exactly \(W_1(t;P)\).
+
+\paragraph{Exhibit 9.2: same nominal support, different exponent.}
+Let \(e(U)=1-U^q\) with \(q>0\).  Then \(\mu_1(t)=t^{1/q}-t^{1+1/q}/(q+1)\) and \(\nu_1(t)=t^{1+1/q}/(q+1)\), so the nominal support \(\{0<1-e(U)\le t\}\) is unchanged but \(\alpha_1(P)=1/(q+1)\).  The width formula in Theorem \ref{thm:finite-tail} therefore gives the same support diagnosis and a different polynomial amplification rate.
+
+\section{Proof-sketch route}
+For Theorem \ref{thm:finite-tail}, the route is: finite-tail width \(\leftarrow\) unfold \(\Theta_{1,t}(P)\) \(\leftarrow\) fix all positive-overlap conditional means by Assumption \ref{ass:exchange} \(\leftarrow\) isolate the missing bounded counterfactual mean on the treated tail \(\leftarrow\) apply the support-function identity for an interval-valued mean with support \([0,1]\).  For Conjecture \ref{conj:phase}, the route is: phase law \(\leftarrow\) unfold \(A_1=W_1/\nu_1\) \(\leftarrow\) substitute Theorem \ref{thm:finite-tail} \(\leftarrow\) prove a regular-variation comparison lemma for \(\mu_1/\nu_1\) \(\leftarrow\) prove necessity by constructing two-tail laws with fixed nominal support and assigned exponent \(\leftarrow\) prove endpoint sharpness by pasting the bounded extremal completions into those laws.  For Conjecture \ref{conj:one-two}, the route is: one-tail frontier \(\leftarrow\) decompose ATE into treated and untreated missing-tail contributions \(\leftarrow\) apply the finite-tail support formula on each side \(\leftarrow\) build a product two-tail law with \(\alpha_1\ne\alpha_0\) \(\leftarrow\) verify non-corner open perturbations preserve the inequalities.  The two conjecture chains have four and four substantive non-definitional steps, respectively: regular-variation comparison, exponent-realizing law construction, endpoint pasting, and open-class perturbation for the phase law; tail decomposition, two-sided support-function additivity, asymmetric-tail construction, and perturbation stability for the ATE frontier.
+
+\section{Honest scope flags}
+The finite-tail support formula is a theorem-level statement, but the flagship phase law is a conjecture.  The proposal intentionally avoids claiming that tail exponents create partial identification when the full conditional law is observed under strict positivity almost surely.  The open mathematical work is the necessity direction for the iff threshold, the endpoint-approaching certificate when the endpoint is not attained by a finite tail law, and the topological open-set statement in Conjecture \ref{conj:one-two}.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft centered on the overlap-tail profile, finite-tail extremal formula, and two conjectural phase frontiers; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Crump et~al.(2009)]{CrumpHotzImbensMitnik2009LimitedOverlap}
+Crump, R., Hotz, V.~J., Imbens, G.~W., and Mitnik, O.~A. (2009).
+Dealing with limited overlap in estimation of average treatment effects.
+\emph{Biometrika}, 96(1), 187--199.
+
+\bibitem[Heiler and Kazak(2021)]{HeilerKazak2021ExtremePropensity}
+Heiler, P. and Kazak, E. (2021).
+Valid inference for treatment effect parameters under irregular identification and many extreme propensity scores.
+\emph{Journal of Econometrics}, 222(2), 1083--1108.
+
+\bibitem[Hong et~al.(2020)]{HongLeungLi2020FinitePopulationLimitedOverlap}
+Hong, H., Leung, M.~P., and Li, J. (2020).
+Inference on finite population treatment effects under limited overlap.
+\emph{The Econometrics Journal}, 23(1), 32--47.
+
+\bibitem[Imbens and Manski(2004)]{ImbensManski2004ConfidenceIntervals}
+Imbens, G.~W. and Manski, C.~F. (2004).
+Confidence intervals for partially identified parameters.
+\emph{Econometrica}, 72(6), 1845--1857.
+
+\bibitem[Khan and Tamer(2010)]{KhanTamer2010IrregularIdentification}
+Khan, S. and Tamer, E. (2010).
+Irregular identification, support conditions, and inverse weight estimation.
+\emph{Econometrica}, 78(6), 2021--2042.
+
+\bibitem[Lee and Weidner(2026)]{LeeWeidner2026LimitedPoolingBounds}
+Lee, S. and Weidner, M. (2026).
+Bounding treatment effects by pooling limited information across observations.
+\emph{Journal of Econometrics}, 106254.
+
+\bibitem[Li et~al.(2018)]{LiMorganZaslavsky2018OverlapWeights}
+Li, F., Morgan, K.~L., and Zaslavsky, A.~M. (2018).
+Balancing covariates via propensity score weighting.
+\emph{Journal of the American Statistical Association}, 113(521), 390--400.
+
+\bibitem[Manski(1990)]{Manski1990NonparametricBounds}
+Manski, C.~F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review}, 80(2), 319--323.
+
+\bibitem[Rothe(2017)]{Rothe2017LimitedOverlapCI}
+Rothe, C. (2017).
+Robust confidence intervals for average treatment effects under limited overlap.
+\emph{Econometrica}, 85(2), 645--660.
+
+\bibitem[Susmann et~al.(2025)]{SusmannMcCleanDiaz2025NonOverlapATEBounds}
+Susmann, H., McClean, M., and Diaz, I. (2025).
+Non-overlap average treatment effect bounds.
+\emph{arXiv:2509.20206}.
+\end{thebibliography}
+
+\end{document}

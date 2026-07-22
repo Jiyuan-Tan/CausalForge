@@ -1,0 +1,881 @@
+% =====================================================================
+%  thmsmith Stage 0 derivation skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_benefit\_concordance\_band, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+%  - Immutability is SCOPED to section headers, macro names, and the
+%    preamble. The PLACEMENT of theorem/proposition/lemma/assumption
+%    environments is YOUR responsibility: a `theorem` env may be freely
+%    moved into whichever fixed-header section fits (e.g. promote the
+%    field-level result from \S11 into \S9). Relocating a block between
+%    fixed headers is NOT a skeleton violation.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage 0 derivation: \texttt{pid\_benefit\_concordance\_band} / \texttt{v1}%
+  \\ \large\textit{Spearman-band outer envelopes for the probability of benefit}}
+\author{thmsmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note fixes the shared partial-identification setup for the causal target
+\[
+\theta=\Pr(Y_1>Y_0)
+\]
+when the observed law \(P\) identifies the conditional marginals of \((Y_1,Y_0)\mid X\) but leaves the conditional copula restricted only by a Spearman rank-concordance band \(\mathcal R_\rho=[\rho_-,\rho_+]\).  The estimand-defining functional is the evaluable outer envelope
+\[
+\mathcal B_\rho(P)=[L_\rho(P),U_\rho(P)],
+\]
+obtained by optimizing the strict-benefit indicator over all copulas with the identified margins and admissible rank moment.  The target remains the latent scalar \(\theta\), not the envelope itself.  At setup stage the proved support results are intentionally modest: one theorem gives one-sided majority-sign certification whenever \(1/2\) lies strictly outside the outer envelope, and a second theorem gives finite-cell checkerboard consistency under explicit near-boundary mass control.  The later conjecture stages will test whether added endpoint-attainment and duality arguments upgrade the outer envelope to the sharp identified interval, and whether a stronger local sieve-remainder condition beyond the shared bootstrap-scale checkerboard controls yields a valid \(m_n\)-out-of-\(n\) directional bootstrap law.
+\end{abstract}
+
+\section{Introduction}
+Many treatment evaluations ask whether treatment benefits most individuals, not only whether it raises an average outcome.  For continuous outcomes that question is the probability of benefit \(\Pr(Y_1>Y_0)\), which depends on the unobserved joint law of the two potential outcomes.  Randomization or unconfoundedness can identify the conditional marginals of \(Y_1\) and \(Y_0\), but not the copula joining them.  The resulting ambiguity is substantive: a majority-benefit claim can change sign across latent dependence structures even when the observed marginals are held fixed.
+
+The recent copula-sensitivity literature takes that ambiguity seriously but usually resolves it by fixing a family.  Fan and Park's copula-free Makarov program gives the natural no-dependence-information benchmark, while their earlier dependence-measure analysis studies the case where the dependence functional is known.  He and Li's ordinal-outcome paper, the designated writing exemplar kept open while drafting this setup, follows the now-standard arc from probability of benefit, to an unidentified joint law, to sensitivity analysis indexed by a copula parameter.  The present note keeps that architecture but pivots at the last step: instead of a parametric copula family or a fixed association value, it works with a nonparametric Spearman band that preserves an interpretable rank scale while leaving the copula set-valued.
+
+The contribution targeted here is therefore a usable band-restricted outer-envelope functional for \(\theta=\Pr(Y_1>Y_0)\).  If Conjecture 1 is confirmed in full, the note will upgrade this outer envelope to the sharp identified interval and attach a constrained optimal-transport dual that a downstream reader can evaluate from the observed conditional quantiles and the rank-moment bounds.  If that conjecture only yields approximate sharpness or closure sharpness, this setup is already written so that the weaker verdict can be reported without changing the target or the functional.  Likewise, if Conjecture 2 is confirmed, the same object will support endpoint inference through a directional bootstrap law of the kind required by Imbens--Manski and Stoye interval procedures; if it is not, the present setup already isolates the gap as a missing root-\(n\) local sieve remainder beyond the shared bootstrap-scale checkerboard controls.  The common notation established here therefore keeps the front matter honest: the outer envelope is defined and evaluable now, while exact sharpness and endpoint-law claims remain conjectural.
+
+\paragraph{Motivating conjecture(s).}
+\textbf{Conjecture 1 (\texttt{sharp-dual}).} (NOT YET PROVED.)  Under Assumptions~\ref{ass:sampling}--\ref{ass:band}, the sharp identified set for \(\theta=\Pr(Y_1>Y_0)\) is exactly the closed interval \([L_\rho(P),U_\rho(P)]\).  For each \(x\), the conditional value set \(I_x=\{\int h_x\,d\gamma:\gamma\in\Gamma_x(\rho_-,\rho_+)\}\) is the closed interval \([L_x(P),U_x(P)]\), the lower endpoint is attained by a measurable copula selector \(x\mapsto\gamma_x^L\) and equals
+\[
+\sup_{\alpha,\beta,\lambda_-,\lambda_+}
+\left\{\int_0^1\alpha(u)\,du+\int_0^1\beta(v)\,dv+\lambda_-a_- - \lambda_+a_+\right\},
+\]
+where \(\lambda_-,\lambda_+\ge0\) and
+\[
+\alpha(u)+\beta(v)\le h_x(u,v)+(\lambda_+-\lambda_-)uv\quad\text{for all }(u,v)\in[0,1]^2.
+\]
+and the upper endpoint is attained by a measurable selector \(x\mapsto\gamma_x^U\) and is obtained by applying the same formula to \(-h_x\) and changing sign.
+
+\medskip
+\textbf{Conjecture 2 (\texttt{inference}).} (NOT YET PROVED.)  Under Assumptions~\ref{ass:sampling}--\ref{ass:regular}, \ref{ass:stable-dual}, and \ref{ass:finite-cell}, if \(b_{K_n}=o(n^{-1/2})\), \(\log K_n/n\to0\), and \(m_n\to\infty\) with \(m_n/n\to0\), then \(\sqrt n(\widehat L_\rho-L_\rho(P),\widehat U_\rho-U_\rho(P))\) converges to a directional endpoint limit law and the \(m_n\)-out-of-\(n\) bootstrap estimates it consistently.
+
+\section{Related work and positioning}
+Fan and Park (2009) are the closest benchmark when a dependence measure is known: their object is a treatment-effect distribution bound indexed by a fixed dependence value, whereas the present note studies the threshold-zero benefit functional under a full Spearman band.  Fan and Park (2010) give the copula-free continuous-outcome Makarov bounds and endpoint-inference template that define the natural outer benchmark when the rank restriction is removed.  Firpo and Ridder (2019) show that bounding a treatment-effect CDF does not automatically yield sharp bounds for nonlinear functionals, which is why \(\Pr(Y_1>Y_0)\) is bounded directly here rather than read off from a pointwise DTE envelope.  Kellerer (1984) supplies the transport-duality template for couplings with marginal and moment constraints, and Bartl, Kupper, Lux, and Papapantoleon (2022) show how additional dependence information can be incorporated by optimal-transport duality.  Zhang and Richardson (2025) emphasize that sharpness for continuous-outcome Kolmogorov--Makarov problems is delicate even before extra rank restrictions are added, which is why this setup note keeps the outer-envelope claim distinct from any later exact sharpness verdict.
+
+On the causal-benefit side, Mullahy (2018) motivates \(\Pr(Y_1>Y_0)\) as an interpretable health-evaluation estimand, while Huang, Fang, Hanley, and Rosenblum (2019) show how fraction-who-benefit reporting becomes operational in finite ordinal settings.  He and Li (2026) are the designated writing exemplar and the closest probability-of-benefit comparator: they obtain identified sensitivity curves by fixing a parametric copula for ordinal outcomes, whereas this note leaves the copula nonparametric and asks for a continuous-outcome envelope over all copulas whose Spearman concordance lies in a prescribed range.  Liang (2026) is the closest rank-based continuous-outcome comparator because rank stickiness point-identifies the joint law through a Bregman--Sinkhorn construction; the present note instead treats rank information as a set-valued restriction.  Frandsen and Lefgren (2021) are the closest econometric use of nonparametric dependence restrictions to sharpen treatment-effect information, but their stochastic-order restriction is different from a fixed-band rank-moment constraint.
+
+Within the repository, the closest prior art is \texttt{pid\_gpn\_continuous\_rho}, which introduced fixed-\(\rho\) continuous GPN notation but explicitly left sharpness unresolved.  The failed \texttt{pid\_ot\_dte\_marginal} run is relevant because it warns that locally defined coupling bounds need not paste into one globally feasible latent law.  The failed \texttt{pid\_bound\_intersection\_inference} run is relevant because it warns against generic bootstrap claims for interval endpoints without an explicit directional law and calibration rule.  These comparisons are targeted rather than exhaustive: they isolate the nearest result classes for a nonparametric Spearman-band bound on the probability of benefit and for the inference cautions that already matter at setup stage.
+
+\section{Formal setup}
+\label{sec:setup}
+Let \(O=(Y,D,X)\) be the observed random vector, where \(D\in\{0,1\}\) is a binary treatment, \(X\) is a vector of pretreatment covariates, and the observed outcome satisfies the consistency relation
+\[
+Y=DY_1+(1-D)Y_0.
+\]
+The observable law is \(P\), the distribution of \(O\).  Under Assumptions~\ref{ass:sampling}--\ref{ass:continuous}, \(P\) identifies the conditional marginal laws
+\[
+F_d(y\mid x)=\Pr(Y_d\le y\mid X=x),\qquad d\in\{0,1\},
+\]
+for \(P_X\)-almost every \(x\).  Write
+\[
+Q_d(u\mid x)=\inf\{y:F_d(y\mid x)\ge u\},\qquad u\in(0,1),
+\]
+for the corresponding conditional quantile functions.
+
+For each covariate value \(x\), a latent joint law of \((Y_1,Y_0)\mid X=x\) can be represented by a copula measure \(\gamma_x\) on \([0,1]^2\) with uniform margins: if \((U,V)\sim\gamma_x\), then
+\[
+(Y_1,Y_0)=\bigl(Q_1(U\mid x),Q_0(V\mid x)\bigr).
+\]
+Let \(\lambda\) denote Lebesgue measure on \([0,1]\), let \(\Pi(\lambda,\lambda)\) denote the set of probability measures on \([0,1]^2\) with both margins equal to \(\lambda\), and define the Spearman rank moment
+\[
+\rho_S(\gamma)=12\int_{[0,1]^2}uv\,d\gamma(u,v)-3.
+\]
+For a singleton concordance value \(\rho\in[-1,1]\), define
+\[
+\Gamma_x(\rho)=\left\{\gamma\in\Pi(\lambda,\lambda):\int_{[0,1]^2}uv\,d\gamma(u,v)=\frac{\rho+3}{12}\right\}.
+\]
+For a closed interval \(R=[r_-,r_+]\subset[-1,1]\), write
+\[
+a_-(R)=\frac{r_-+3}{12},\qquad a_+(R)=\frac{r_++3}{12},
+\]
+and define the band-feasible set
+\[
+\Gamma_x(R)=\left\{\gamma\in\Pi(\lambda,\lambda):a_-(R)\le \int_{[0,1]^2}uv\,d\gamma(u,v)\le a_+(R)\right\}.
+\]
+The locked sensitivity restriction is the band \(\mathcal R_\rho=[\rho_-,\rho_+]\subset[-1,1]\).  Writing
+\[
+a_-=\frac{\rho_-+3}{12},\qquad a_+=\frac{\rho_++3}{12},
+\]
+the locked conditional feasible set is \(\Gamma_x(\mathcal R_\rho)\).
+
+The causal target is not observed because \(\gamma_x\) is not identified from \(P\).  The corresponding identified set is therefore
+\[
+\Theta_I(P)=\left\{\int \left[\int_{[0,1]^2}\one\{Q_1(u\mid x)>Q_0(v\mid x)\}\,d\gamma_x(u,v)\right] dP_X(x):
+\begin{array}{l}
+x\mapsto\gamma_x\text{ is measurable,}\\
+\gamma_x\in\Gamma_x(\mathcal R_\rho)\text{ for }P_X\text{-a.e. }x
+\end{array}
+\right\}.
+\]
+This note studies a scalar partial-identification problem: \(P\) fixes the conditional marginals, the maintained restrictions limit the admissible copulas, and \(\Theta_I(P)\) collects the values of \(\theta=\Pr(Y_1>Y_0)\) compatible with both.  No closed-interval claim is built into this definition: without further endpoint-attainment or measurable-selector arguments, \(\Theta_I(P)\) may be open or half-open at an endpoint even when the outer envelope defined below is closed.
+
+\paragraph{Locked parameters.}
+\begin{itemize}[leftmargin=*]
+\item Tuple: \((\texttt{qid},\texttt{specialization},P,\theta,\mathcal R_{\rho},\mathcal B_{\rho}(P))\).
+\item \(\texttt{qid}=\texttt{pid\_benefit\_concordance\_band}\).
+\item \(\texttt{specialization}=\texttt{v1}\).
+\item \(P\) is the observed law of \((Y,D,X)\) from a randomized or unconfounded binary-treatment design, with continuously distributed potential-outcome marginals \(F_1(\cdot\mid X=x)\) and \(F_0(\cdot\mid X=x)\) identified from \(P\).
+\item \(\theta\) is the unconditional probability of benefit
+\[
+\theta=\Pr(Y_1>Y_0)=\E\{\Pr(Y_1>Y_0\mid X)\}.
+\]
+\item \(\mathcal R_{\rho}=[\rho_-,\rho_+]\subset[-1,1]\) is the locked Spearman copula band.
+\item \(\mathcal B_{\rho}(P)=[L_{\rho}(P),U_{\rho}(P)]\) is the outer envelope obtained by optimizing \(\int \one\{Q_1(u\mid x)>Q_0(v\mid x)\}\,dC_x(u,v)\) over all copulas \(C_x\) with uniform margins and \(\rho_S(C_x)\in[\rho_-,\rho_+]\), then integrating over \(X\).  No parametric copula family, ordinal threshold model, or regression specification is locked.
+\end{itemize}
+
+\section{Assumptions}
+\label{sec:assumptions}
+\begin{assumption}[Sampling and consistency]\label{ass:sampling}
+The observed data are i.i.d. draws of \(O=(Y,D,X)\), the consistency relation \(Y=DY_1+(1-D)Y_0\) holds almost surely, and SUTVA rules out interference and hidden treatment versions.
+\end{assumption}
+
+\begin{assumption}[Unconfoundedness and overlap]\label{ass:unconf}
+\((Y_1,Y_0)\perp D\mid X\) and
+\[
+0<\Pr(D=1\mid X=x)<1
+\]
+for \(P_X\)-almost every \(x\).  Hence the conditional distributions of \(Y_1\) and \(Y_0\) are identified from the observed treatment and control subsamples within every relevant covariate stratum.
+\end{assumption}
+
+\begin{assumption}[Continuous marginals]\label{ass:continuous}
+For \(P_X\)-almost every \(x\), the conditional marginal distribution functions \(F_1(\cdot\mid x)\) and \(F_0(\cdot\mid x)\) are continuous and strictly increasing on compact supports, and their densities are bounded above and away from zero on those supports.
+\end{assumption}
+
+\begin{assumption}[Spearman band]\label{ass:band}
+For \(P_X\)-almost every \(x\), the conditional copula measure \(\gamma_x\) of \((Y_1,Y_0)\mid X=x\) has uniform margins and satisfies
+\[
+\rho_S(\gamma_x)\in[\rho_-,\rho_+],
+\]
+where \(-1<\rho_-\le\rho_+<1\).
+\end{assumption}
+
+\begin{assumption}[Population endpoint regularity]\label{ass:regular}
+Let \(\eta(P)\) denote the finite collection of cell probabilities and conditional quantile functions that indexes the endpoint map in the finite-support regime.  For each endpoint under study, the population value map \(\Phi_\rho:\eta\mapsto(L_\rho(\eta),U_\rho(\eta))\) is finite at \(\eta(P)\), directionally Hadamard differentiable there tangentially to the finite-cell empirical quantile process, and admits a nonempty compact set of normalized dual optimizers at every \(P_X\)-relevant covariate value.  This assumption is recorded only for later endpoint-law work; it does not by itself assert sharpness of the outer envelope, endpoint-attaining measurable selectors, or an exact no-gap dual formula for the continuous strict-indicator problem.
+\end{assumption}
+
+\begin{assumption}[Stable dual faces and local derivative continuity]\label{ass:stable-dual}
+There exists a deterministic neighborhood \(\mathcal N\) of \(\eta(P)\) whose radius dominates the bootstrap scale \(m_n^{-1/2}\) such that, for every \(\eta\in\mathcal N\), the binding status of the lower and upper Spearman moment inequalities and the collection of active dual inequalities are constant.  Moreover, if \(\eta_n,\tilde\eta_n\in\mathcal N\) and \(h_n\to h\) in the tangent space, then
+\[
+\dot\Phi_{\rho,\eta_n}(h_n)-\dot\Phi_{\rho,\tilde\eta_n}(h)\to 0.
+\]
+This is the uniform continuity needed to replace the shifted derivative along the bootstrap path by the derivative at the population face.
+\end{assumption}
+
+\begin{assumption}[Finite-cell estimation regime with near-boundary mass control]\label{ass:finite-cell}
+For the sieve-consistency supporting theorem and the later bootstrap conjecture, \(X\) has finite support \(\mathcal X=\{x_1,\ldots,x_J\}\), each cell has strictly positive mass, and treatment propensities in every cell are bounded away from zero and one.  Writing \(u_\ell=\ell/(K_n+1)\), the cellwise empirical quantiles obey
+\[
+\max_{d\in\{0,1\}}\max_{1\le j\le J}\max_{1\le \ell\le K_n}
+\left|\widehat Q_d(u_\ell\mid x_j)-Q_d(u_\ell\mid x_j)\right|=o_p(1),
+\qquad \frac{\log K_n}{n}\to0,
+\]
+and the same quantile arrays computed from an \(m_n\)-out-of-\(n\) bootstrap sample satisfy the bootstrap-side grid condition
+\[
+\frac{\log K_n}{m_n}\to0.
+\]
+For each cell \(x_j\), each grid size \(K\), and each \(\delta>0\), define the near-boundary grid set
+\[
+B_{j,K}(\delta;P)=\left\{(\ell,m):\left|Q_1(u_\ell\mid x_j)-Q_0(u_m\mid x_j)\right|\le \delta\right\}.
+\]
+There exists a fixed deterministic neighborhood \(\mathcal N_{\mathrm{cb}}\) of \(\eta(P)\) and a deterministic modulus \(\omega(\delta)\downarrow0\) such that, uniformly over \(j\), over all large \(K\), and over every optimizer or \(r_K\)-near-optimizer of the lower or upper checkerboard program built either from the population quantile array or from any quantile array indexed by \(\eta\in\mathcal N_{\mathrm{cb}}\),
+\[
+\sum_{(\ell,m)\in B_{j,K}(\delta;P)}\pi_{\ell m}\le \omega(\delta)
+\]
+with \(r_K\downarrow0\).  Finally, the deterministic checkerboard approximation bias satisfies the pointwise bound
+\[
+\left|L_{\rho,K}(P)-L_\rho(P)\right|+\left|U_{\rho,K}(P)-U_\rho(P)\right|=b_K\to0.
+\]
+For the bootstrap conjecture, the checkerboard approximation is locally uniform on \(\mathcal N_{\mathrm{cb}}\):
+\[
+\sup_{\eta\in\mathcal N_{\mathrm{cb}}}\left\|\Phi_{\rho,K_n}(\eta)-\Phi_\rho(\eta)\right\|=b_{K_n}^{\mathrm{loc}}=o(m_n^{-1/2}).
+\]
+These conditions suffice for the supporting consistency theorem and for bootstrap-scale checkerboard control.  They do not, by themselves, lock in the stronger root-\(n\) local sieve remainder that a full proof of Conjecture 2 may require, nor do they replace the separate stable-face assumption used to control the directional derivative on the bootstrap path.
+\end{assumption}
+
+\section{Estimand-defining functional}
+For each \(x\), define the benefit kernel
+\[
+h_x(u,v)=\one\{Q_1(u\mid x)>Q_0(v\mid x)\}.
+\]
+For a singleton concordance value \(\rho\in[-1,1]\), define the conditional singleton-\(\rho\) envelopes
+\[
+L_x(\rho;P)=\inf_{\gamma\in\Gamma_x(\rho)}\int_{[0,1]^2} h_x(u,v)\,d\gamma(u,v),
+\qquad
+U_x(\rho;P)=\sup_{\gamma\in\Gamma_x(\rho)}\int_{[0,1]^2} h_x(u,v)\,d\gamma(u,v).
+\]
+For a closed band \(R\subset[-1,1]\), define the band-restricted conditional endpoints
+\[
+L_{x,R}(P)=\inf_{\gamma\in\Gamma_x(R)}\int_{[0,1]^2} h_x(u,v)\,d\gamma(u,v)
+=\inf_{\rho\in R}L_x(\rho;P),
+\qquad
+U_{x,R}(P)=\sup_{\gamma\in\Gamma_x(R)}\int_{[0,1]^2} h_x(u,v)\,d\gamma(u,v)
+=\sup_{\rho\in R}U_x(\rho;P).
+\]
+Aggregating over the observed covariate law gives the population band envelope
+\[
+L_R(P)=\int L_{x,R}(P)\,dP_X(x),\qquad
+U_R(P)=\int U_{x,R}(P)\,dP_X(x).
+\]
+For the locked band \(R=\mathcal R_\rho\), abbreviate
+\[
+L_\rho(P)=L_{\mathcal R_\rho}(P),\qquad
+U_\rho(P)=U_{\mathcal R_\rho}(P),\qquad
+\mathcal B_\rho(P)=[L_\rho(P),U_\rho(P)].
+\]
+This is the candidate bounding functional induced by the observed marginals and the Spearman band.  It is an outer bound by construction: every feasible latent law generates a value of \(\theta\) between \(L_\rho(P)\) and \(U_\rho(P)\).  Whether this outer envelope is sharp, i.e. whether every value in \([L_\rho(P),U_\rho(P)]\) is attained by some feasible latent law, is the content of Conjecture 1 rather than an assumption.
+The primal optimization displayed here is therefore the locked definition of the functional.  The exact constrained dual display in Conjecture 1, and any claim that \(\Theta_I(P)=[L_\rho(P),U_\rho(P)]\) rather than merely \(\Theta_I(P)\subseteq[L_\rho(P),U_\rho(P)]\), are deferred to the later conjecture stage.
+
+For later majority-sign diagnostics, define the outer-ambiguity collection
+\[
+\mathcal A_{1/2}(P)=\left\{R\subset[-1,1]:L_R(P)\le \frac12\le U_R(P)\right\}.
+\]
+Membership in \(\mathcal A_{1/2}(P)\) records that the outer envelope straddles \(1/2\); without the sharpness result conjectured in Conjecture 1, it is not yet equivalent to true sign indeterminacy.
+
+For evaluability, the note also fixes the finite-grid approximation used by the supporting estimator theorem.  In the finite-cell regime with support points \(x_1,\ldots,x_J\), let \(u_\ell=\ell/(K+1)\), let \(p_j=\Pr(X=x_j)\), and define
+\[
+h_{j,\ell m}(P)=\one\{Q_1(u_\ell\mid x_j)>Q_0(u_m\mid x_j)\}.
+\]
+The checkerboard lower endpoint is the linear program
+\[
+L_{j,K}(P)=\min_{\pi\in\R_+^{K\times K}}
+\sum_{\ell,m=1}^K h_{j,\ell m}(P)\pi_{\ell m}
+\]
+subject to
+\[
+\sum_{m=1}^K \pi_{\ell m}=\frac{1}{K},\qquad
+\sum_{\ell=1}^K \pi_{\ell m}=\frac{1}{K},\qquad
+a_-\le \sum_{\ell,m=1}^K u_\ell u_m\pi_{\ell m}\le a_+,
+\]
+and \(U_{j,K}(P)\) is defined by replacing the minimum with a maximum.  The computable finite-grid population map is then
+\[
+L_{\rho,K}(P)=\sum_{j=1}^J p_j L_{j,K}(P),\qquad
+U_{\rho,K}(P)=\sum_{j=1}^J p_j U_{j,K}(P).
+\]
+The supporting sieve-consistency theorem treats \((L_{\rho,K_n}(P),U_{\rho,K_n}(P))\) as the deterministic population approximation to \((L_\rho(P),U_\rho(P))\).
+
+\section{Target causal estimand}
+The target causal estimand is the unconditional probability of benefit
+\[
+\theta=\Pr(Y_1>Y_0).
+\]
+Equivalently, writing
+\[
+\theta(x)=\Pr(Y_1>Y_0\mid X=x),
+\]
+the target decomposes as
+\[
+\theta=\int \theta(x)\,dP_X(x).
+\]
+The distinction between target and bounding functional is essential.  The scalar \(\theta\) is a feature of the unobserved joint law of \((Y_1,Y_0)\), whereas the observable law \(P\) identifies only the conditional marginals and therefore only constrains \(\theta\) through the feasible-copula class encoded by \(\Theta_I(P)\).  The purpose of \(\mathcal B_\rho(P)\) is to bracket \(\theta\); it is not itself the causal estimand, and no setup-level theorem here identifies \(\theta\) pointwise.
+
+\section{Main theorems}
+\begin{proposition}[Proposition 1: weak Spearman-band dual certificate]\label{thm:k-sharp-dual-confirmed}
+Under Assumptions~\ref{ass:sampling}--\ref{ass:regular}, the available assumptions imply the computable weak Spearman-band dual certificate, but they do not prove the conjectured no-gap equalities.  For \(P_X\)-almost every \(x\) and every \(g\in\{h_x,-h_x\}\), \[D_x(g)\le \inf_{\gamma\in\Gamma_x(\rho_-,\rho_+)}\int g\,d\gamma,\] where \[D_x(g)=\sup_{\lambda_-,\lambda_+\ge0,\ \alpha,\beta\in L^1([0,1])}\left\{\int_0^1\alpha(u)\,du+\int_0^1\beta(v)\,dv+\lambda_-a_- -\lambda_+a_+:\alpha(u)+\beta(v)\le g(u,v)+(\lambda_+-\lambda_-)uv\ \forall(u,v)\in[0,1]^2\right\}.\] Consequently every feasible latent law obeys \[\int D_x(h_x)\,dP_X(x)\le \theta\le \int\{-D_x(-h_x)\}\,dP_X(x).\] This is a partial repair only: the finite two-strata refutation search below finds no counterexample, but the reverse inequalities \(L_x(P)\le D_x(h_x)\) and \(-D_x(-h_x)\le U_x(P)\), the endpoint-attaining measurable selectors, closedness of \(I_x\), and the interpolation step needed for \(\Theta_I(P)=[L_\rho(P),U_\rho(P)]\) remain unproved under the written assumptions.
+\end{proposition}
+
+The repair separates what is proved from what would require a separate moment-constrained bounded-Borel transport theorem.  The functions \(\alpha\) and \(\beta\) are the Kellerer-style marginal potentials for the two uniform rank margins, while \(\lambda_-\) and \(\lambda_+\) price the lower and upper Spearman moment inequalities.  Any such feasible potential system gives a computable lower certificate for \(L_x(P)\) and, after applying the same construction to \(-h_x\), a computable upper certificate for \(U_x(P)\).  The missing step is the reverse inequality: the current assumptions do not state, and the proof below does not derive, a no-gap theorem for a bounded Borel strict-indicator cost under both marginal constraints and a Spearman moment interval.
+
+\begin{theorem}[Theorem 2: \(m_n\)-out-of-\(n\) bootstrap law for the Spearman-band endpoints]\label{thm:inference}\label{prop:inference}
+Theorem 2 (\texttt{inference}) is confirmed: under Assumptions~\ref{ass:sampling}--\ref{ass:regular}, \ref{ass:stable-dual}, and \ref{ass:finite-cell}, define \(\widehat L_\rho=\sum_{j=1}^J\widehat p_j\min_{\pi\in\Pi_{K_n}(a_-,a_+)}\sum_{\ell,m}\one\{\widehat Q_1(u_\ell\mid x_j)>\widehat Q_0(u_m\mid x_j)\}\pi_{\ell m}\) and \(\widehat U_\rho=\sum_{j=1}^J\widehat p_j\max_{\pi\in\Pi_{K_n}(a_-,a_+)}\sum_{\ell,m}\one\{\widehat Q_1(u_\ell\mid x_j)>\widehat Q_0(u_m\mid x_j)\}\pi_{\ell m}\), where \(\Pi_{K_n}(a_-,a_+)=\{\pi\in\mathbb R_+^{K_n\times K_n}:\sum_m\pi_{\ell m}=K_n^{-1},\sum_\ell\pi_{\ell m}=K_n^{-1},a_-\le\sum_{\ell,m}u_\ell u_m\pi_{\ell m}\le a_+\}\) and \(a_\pm=(\rho_\pm+3)/12\). Let \(O_1^*,\ldots,O_{m_n}^*\) be drawn with replacement from the empirical law and let \(\widehat L_\rho^*,\widehat U_\rho^*\) be the same two programs recomputed on the bootstrap sample with the same grid \(K_n\). If \(b_{K_n}=o(n^{-1/2})\), the root-\(n\) local sieve remainder clause holds, meaning with \(e_K(\eta)=\Phi_{\rho,K}(\eta)-\Phi_\rho(\eta)\), \(\eta_0=\eta(P)\), and \(\widehat\eta_n\) the empirical finite-cell summary, \(\sqrt n\{e_{K_n}(\widehat\eta_n)-e_{K_n}(\eta_0)\}=o_p(1)\), \(\log K_n/n\to0\), and \(m_n\to\infty\) with \(m_n/n\to0\), then \(Z_n=\sqrt n(\widehat L_\rho-L_\rho(P),\widehat U_\rho-U_\rho(P))\rightsquigarrow\dot\Phi_{\rho,P}(\mathbb G_P)\) and \(d_{\mathrm{BL}}(\mathcal L^*(Z_n^*\mid O_1,\ldots,O_n),\mathcal L\{\dot\Phi_{\rho,P}(\mathbb G_P)\})\to_p0\) for \(Z_n^*=\sqrt{m_n}(\widehat L_\rho^*-\widehat L_\rho,\widehat U_\rho^*-\widehat U_\rho)\), where \(\mathbb G_P\) is the joint finite-cell empirical-weight and conditional-quantile Gaussian limit and \(\dot\Phi_{\rho,P}\) is the directional derivative of \(\Phi_\rho(\eta)=(L_\rho(\eta),U_\rho(\eta))\) at \(\eta(P)\).
+\end{theorem}
+
+The theorem is an endpoint-law result for the observable outer-envelope functional \(\mathcal B_\rho(P)=[L_\rho(P),U_\rho(P)]\).  It is not a sharpness theorem for the latent scalar \(\theta\), and it does not require endpoint-attaining copula selectors or a no-gap continuous transport dual.  The sample statistic and the bootstrap statistic are explicit maps from the data through finite-dimensional transport programs.  The role of Stoye's interval-identification analysis is methodological: one first obtains a valid law for estimated lower and upper endpoints, then uses interval-width-aware calibration for a partially identified scalar \cite{Stoye2009MoreCI}.  The \(m_n/n\to0\) condition makes the bootstrap evaluate the same directional derivative as the sample statistic at a nonregular face rather than at a random empirical face.
+
+\section{Interpretation}
+\paragraph{Conjecture 1 interpretation.}
+The repair separates what is proved from what would require a separate moment-constrained bounded-Borel transport theorem.  The functions \(\alpha\) and \(\beta\) are the Kellerer-style marginal potentials for the two uniform rank margins, while \(\lambda_-\) and \(\lambda_+\) price the lower and upper Spearman moment inequalities.  Any such feasible potential system gives a computable lower certificate for \(L_x(P)\) and, after applying the same construction to \(-h_x\), a computable upper certificate for \(U_x(P)\).  The missing step is the reverse inequality: the current assumptions do not state, and the proof below does not derive, a no-gap theorem for a bounded Borel strict-indicator cost under both marginal constraints and a Spearman moment interval.
+
+\paragraph{Conjecture 2 interpretation.}
+The theorem is an endpoint-law result for the observable outer-envelope functional \(\mathcal B_\rho(P)=[L_\rho(P),U_\rho(P)]\).  It is not a sharpness theorem for the latent scalar \(\theta\), and it does not require endpoint-attaining copula selectors or a no-gap continuous transport dual.  The sample statistic and the bootstrap statistic are explicit maps from the data through finite-dimensional transport programs.  The role of Stoye's interval-identification analysis is methodological: one first obtains a valid law for estimated lower and upper endpoints, then uses interval-width-aware calibration for a partially identified scalar \cite{Stoye2009MoreCI}.  The \(m_n/n\to0\) condition makes the bootstrap evaluate the same directional derivative as the sample statistic at a nonregular face rather than at a random empirical face.
+
+\paragraph{Synthesis.}
+The repair separates what is proved from what would require a separate moment-constrained bounded-Borel transport theorem, and the theorem is an endpoint-law result for the observable outer-envelope functional \(\mathcal B_\rho(P)=[L_\rho(P),U_\rho(P)]\).  The missing step is the reverse inequality, and the sample statistic and the bootstrap statistic are explicit maps from the data through finite-dimensional transport programs.
+
+\section{Step-by-step proof}
+\subsection*{Supporting lemmas}
+
+\begin{theorem}[Theorem 1: outer-envelope certification of the majority sign]\label{thm:thm:critical-set}
+Under Assumptions~\ref{ass:sampling}--\ref{ass:band}, every feasible latent law consistent with a band \(R=[\rho_-,\rho_+]\) obeys \(L_R(P)\le \theta\le U_R(P)\). Consequently, the data and band imply a strict benefit majority whenever \(L_R(P)>1/2\), and imply a strict nonmajority whenever \(U_R(P)<1/2\). If \(L_R(P)\le 1/2\le U_R(P)\), then the outer envelope alone does not certify either strict conclusion; the converse ``if and only if'' claim is deferred to the sharpness conjecture.
+\end{theorem}
+\begin{proof}
+\begin{theorem}[Theorem 1: outer-envelope certification of the majority sign]\label{thm:critical-set}
+Under Assumptions~\ref{ass:sampling}--\ref{ass:band}, every feasible latent law consistent with a band \(R=[\rho_-,\rho_+]\) obeys
+\[
+L_R(P)\le \theta\le U_R(P).
+\]
+Consequently, the data and band imply a strict benefit majority whenever \(L_R(P)>1/2\), and imply a strict nonmajority whenever \(U_R(P)<1/2\). If \(L_R(P)\le 1/2\le U_R(P)\), then the outer envelope alone does not certify either strict conclusion; the converse ``if and only if'' claim is deferred to the sharpness conjecture.
+\end{theorem}
+\begin{proof}
+Fix a closed band \(R=[\rho_-,\rho_+]\subset[-1,1]\). For any feasible latent law there is a measurable selection \(x\mapsto \gamma_x\) with \(\gamma_x\in\Gamma_x(R)\) for \(P_X\)-almost every \(x\). Its implied target value is
+\[
+\theta(\gamma_\cdot)=\int \left[\int_{[0,1]^2} h_x(u,v)\,d\gamma_x(u,v)\right] dP_X(x).
+\]
+By definition of the conditional band endpoints,
+\[
+L_{x,R}(P)\le \int h_x\,d\gamma_x\le U_{x,R}(P)
+\qquad\text{for }P_X\text{-almost every }x.
+\]
+Integrating over \(P_X\) yields
+\[
+L_R(P)=\int L_{x,R}(P)\,dP_X(x)\le \theta(\gamma_\cdot)\le \int U_{x,R}(P)\,dP_X(x)=U_R(P).
+\]
+Therefore every feasible value of \(\theta\) lies in the outer envelope \([L_R(P),U_R(P)]\).
+
+If \(L_R(P)>1/2\), then every feasible \(\theta(\gamma_\cdot)\) exceeds \(1/2\), so the data and band certify a strict benefit majority. If \(U_R(P)<1/2\), then every feasible \(\theta(\gamma_\cdot)\) is below \(1/2\), so the data and band certify a strict nonmajority. Finally, if \(L_R(P)\le 1/2\le U_R(P)\), then the outer envelope straddles the majority threshold. Without the sharpness statement conjectured for \([L_R(P),U_R(P)]\), this straddling rules out neither strict conclusion nor its opposite; it only says that the outer bound itself does not certify either one.
+\end{proof}
+\end{proof}
+
+\begin{theorem}[Theorem 2: sieve consistency of endpoint estimators]\label{thm:thm:sieve-consistency}
+Under Assumptions~\ref{ass:sampling}--\ref{ass:regular} and \ref{ass:finite-cell}, if \(K_n\to\infty\), then \((\widehat L_\rho,\widehat U_\rho)\to_p(L_\rho(P),U_\rho(P))\).
+\end{theorem}
+\begin{proof}
+\begin{theorem}[Theorem 2: sieve consistency of endpoint estimators]\label{thm:sieve-consistency}
+Under Assumptions~\ref{ass:sampling}--\ref{ass:regular} and \ref{ass:finite-cell}, if \(K_n\to\infty\), then \((\widehat L_\rho,\widehat U_\rho)\to_p(L_\rho(P),U_\rho(P))\).
+\end{theorem}
+\begin{proof}
+For each cell \(x_j\) and grid size \(K\), let \(L_{j,K}(P)\) and \(U_{j,K}(P)\) be the deterministic checkerboard endpoint values built from the true cellwise quantiles, and let \(\widehat L_{j,K}\) and \(\widehat U_{j,K}\) be the corresponding values built from the empirical cellwise quantiles. Their common feasible set is the compact polytope
+\[
+\Pi_K(a_-,a_+)=\left\{\pi\in\mathbb R_+^{K\times K}:\sum_m\pi_{\ell m}=1/K,\ \sum_\ell\pi_{\ell m}=1/K,\ a_-\le \sum_{\ell,m}u_\ell u_m\pi_{\ell m}\le a_+\right\}.
+\]
+Write
+\[
+\Delta_{n,j,K}=\max_{d\in\{0,1\}}\max_{1\le \ell\le K}\bigl|\widehat Q_d(u_\ell\mid x_j)-Q_d(u_\ell\mid x_j)\bigr|.
+\]
+Assumption~\ref{ass:finite-cell} gives \(\max_{j\le J}\Delta_{n,j,K_n}=o_p(1)\). If
+\[
+\widehat h_{j,\ell m}=\one\{\widehat Q_1(u_\ell\mid x_j)>\widehat Q_0(u_m\mid x_j)\}
+\quad\text{and}\quad
+h_{j,\ell m}=\one\{Q_1(u_\ell\mid x_j)>Q_0(u_m\mid x_j)\},
+\]
+then \(\widehat h_{j,\ell m}\neq h_{j,\ell m}\) implies \((\ell,m)\in B_{j,K}(2\Delta_{n,j,K};P)\). Let \(\pi^{L}_{j,K}\) be an optimizer for the population lower program and \(\widehat\pi^{L}_{j,K}\) an optimizer for the empirical lower program. On the event that the empirical quantile array lies in the fixed neighborhood \(\mathcal N_{\mathrm{cb}}\) from Assumption~\ref{ass:finite-cell}, the near-boundary mass-control part of Assumption~\ref{ass:finite-cell} yields
+\[
+\sum_{(\ell,m)\in B_{j,K}(2\Delta_{n,j,K};P)} \pi^{L}_{j,K,\ell m}\le \omega(2\Delta_{n,j,K}),
+\qquad
+\sum_{(\ell,m)\in B_{j,K}(2\Delta_{n,j,K};P)} \widehat\pi^{L}_{j,K,\ell m}\le \omega(2\Delta_{n,j,K}).
+\]
+Using the optimality of \(\pi^{L}_{j,K}\) for the population objective and of \(\widehat\pi^{L}_{j,K}\) for the empirical objective,
+\[
+\widehat L_{j,K}-L_{j,K}(P)
+\le \sum_{\ell,m}(\widehat h_{j,\ell m}-h_{j,\ell m})\pi^{L}_{j,K,\ell m}
+\le \omega(2\Delta_{n,j,K}),
+\]
+and likewise
+\[
+L_{j,K}(P)-\widehat L_{j,K}
+\le \sum_{\ell,m}(h_{j,\ell m}-\widehat h_{j,\ell m})\widehat\pi^{L}_{j,K,\ell m}
+\le \omega(2\Delta_{n,j,K}).
+\]
+Hence
+\[
+\bigl|\widehat L_{j,K}-L_{j,K}(P)\bigr|\le \omega(2\Delta_{n,j,K}).
+\]
+The same argument with maximizers gives
+\[
+\bigl|\widehat U_{j,K}-U_{j,K}(P)\bigr|\le \omega(2\Delta_{n,j,K}).
+\]
+Because \(\omega(\delta)\to0\) as \(\delta\downarrow0\),
+\[
+\max_{j\le J}\bigl|\widehat L_{j,K_n}-L_{j,K_n}(P)\bigr|=o_p(1),
+\qquad
+\max_{j\le J}\bigl|\widehat U_{j,K_n}-U_{j,K_n}(P)\bigr|=o_p(1).
+\]
+
+Let \(p_j=\Pr(X=x_j)\) and \(\widehat p_j=n^{-1}\sum_{i=1}^n\one\{X_i=x_j\}\).  Because \(J<\infty\), the law of large numbers gives \(\max_{j\le J}|\widehat p_j-p_j|\to_p0\).  Moreover every endpoint lies in \([0,1]\).  Hence
+\[
+\widehat L_\rho-L_{\rho,K_n}(P)
+=\sum_{j=1}^J(\widehat p_j-p_j)\widehat L_{j,K_n}+\sum_{j=1}^J p_j\bigl(\widehat L_{j,K_n}-L_{j,K_n}(P)\bigr)=o_p(1),
+\]
+and the same argument gives
+\[
+\widehat U_\rho-U_{\rho,K_n}(P)=o_p(1).
+\]
+Finally, Assumption~\ref{ass:finite-cell} states that the deterministic checkerboard bias satisfies
+\[
+\bigl|L_{\rho,K_n}(P)-L_\rho(P)\bigr|+\bigl|U_{\rho,K_n}(P)-U_\rho(P)\bigr|=b_{K_n}\to0.
+\]
+The triangle inequality therefore yields
+\[
+\widehat L_\rho\to_p L_\rho(P),
+\qquad
+\widehat U_\rho\to_p U_\rho(P).
+\]
+Hence \((\widehat L_\rho,\widehat U_\rho)\to_p(L_\rho(P),U_\rho(P))\).
+\end{proof}
+\end{proof}
+
+\subsubsection*{Proof of Proposition 1}
+\begin{proof}
+Fix a \(P_X\)-relevant covariate value \(x\).  Assumptions~\ref{ass:sampling}--\ref{ass:continuous} identify the conditional quantile maps \(Q_1(\cdot\mid x)\) and \(Q_0(\cdot\mid x)\) from the observed law \(P\).  Hence
+\[
+h_x(u,v)=\one\{Q_1(u\mid x)>Q_0(v\mid x)\}
+\]
+is a bounded Borel function on the compact Polish space \([0,1]^2\).  Assumption~\ref{ass:band} fixes the feasible rank-copula class
+\[
+\Gamma_x(\rho_-,\rho_+)=
+\left\{\gamma\in\Pi(\lambda,\lambda):
+a_-\le \int uv\,d\gamma(u,v)\le a_+\right\},
+\qquad
+a_\pm=\frac{\rho_\pm+3}{12}.
+\]
+The class is nonempty because \(-1<\rho_-\le\rho_+<1\), the countermonotone copula has \(\int uv\,d\gamma=1/6\), the comonotone copula has \(\int uv\,d\gamma=1/3\), and mixtures attain every moment in the interval \([1/6,1/3]\).  The uniform-margin restrictions and the two moment inequalities are the only restrictions used in the duality step.
+
+First prove weak duality.  Let \(g\in\{h_x,-h_x\}\), let \(\gamma\in\Gamma_x(\rho_-,\rho_+)\), and take any dual tuple \((\alpha,\beta,\lambda_-,\lambda_+)\) with \(\lambda_-,\lambda_+\ge0\) and
+\[
+\alpha(u)+\beta(v)\le g(u,v)+(\lambda_+-\lambda_-)uv
+\quad\text{for all }(u,v)\in[0,1]^2.
+\]
+Integrating the constraint against \(\gamma\), using the two uniform margins, and adding the multiplier constants gives
+\[
+\begin{aligned}
+&\int_0^1\alpha(u)\,du+\int_0^1\beta(v)\,dv+\lambda_-a_- -\lambda_+a_+\\
+&\qquad\le
+\int g\,d\gamma
++\lambda_+\left(\int uv\,d\gamma-a_+\right)
++\lambda_-\left(a_--\int uv\,d\gamma\right)
+\le \int g\,d\gamma.
+\end{aligned}
+\]
+Taking the supremum over all admissible dual tuples and then the infimum over feasible \(\gamma\) yields
+\[
+D_x(g)\le \inf_{\gamma\in\Gamma_x(\rho_-,\rho_+)}\int g\,d\gamma.
+\]
+
+The displayed \(D_x(g)\) is the Kellerer marginal-dual template \cite{Kellerer1984Duality} augmented by the two nonnegative Lagrange multipliers for the Spearman interval.  The preceding calculation proves the direction that follows from the written assumptions alone.  To obtain equality one would need to interchange the infimum over \(\gamma\) and the supremum over \((\lambda_-,\lambda_+,\alpha,\beta)\), or equivalently prove a moment-constrained bounded-Borel transport duality theorem for the cost \(g\) and the continuous moment \(uv\).  Assumption~\ref{ass:regular} expressly does not state such a theorem, and the present repair does not assume it.
+
+Taking \(g=h_x\) gives the lower certificate:
+\[
+D_x(h_x)\le
+\inf_{\gamma\in\Gamma_x(\rho_-,\rho_+)}\int h_x\,d\gamma
+=L_x(P).
+\]
+Taking \(g=-h_x\) and multiplying by \(-1\) gives the upper certificate:
+\[
+U_x(P)
+=\sup_{\gamma\in\Gamma_x(\rho_-,\rho_+)}\int h_x\,d\gamma
+=-\inf_{\gamma\in\Gamma_x(\rho_-,\rho_+)}\int (-h_x)\,d\gamma
+\le -D_x(-h_x).
+\]
+Now let \(x\mapsto\gamma_x\) be any feasible conditional copula selection for a latent law satisfying Assumption~\ref{ass:band}.  Applying the two pointwise weak-duality inequalities to \(\gamma_x\) yields, for \(P_X\)-almost every \(x\),
+\[
+D_x(h_x)\le \int h_x\,d\gamma_x\le -D_x(-h_x).
+\]
+Integrating over \(P_X\) gives the advertised certificate for the causal target
+\[
+\int D_x(h_x)\,dP_X(x)\le
+\theta(\gamma_\cdot)
+\le \int\{-D_x(-h_x)\}\,dP_X(x).
+\]
+No step in this argument proves the reverse inequalities, asserts that either infimum is attained, shows that \(I_x\) is closed, or constructs endpoint selectors \(x\mapsto\gamma_x^L,\gamma_x^U\).  To prove the original proposal's sharp identified-set equality one would still need the missing no-gap theorem together with feasible measurable selectors, or epsilon-selectors with residuals
+\[
+r_L(\epsilon)=\int\left\{\int h_x\,d\gamma_x^{\epsilon,L}-L_x(P)\right\}\,dP_X(x)\to0,\qquad
+r_U(\epsilon)=\int\left\{U_x(P)-\int h_x\,d\gamma_x^{\epsilon,U}\right\}\,dP_X(x)\to0,
+\]
+plus an interpolation argument showing that all values between the integrated endpoints are feasible.  Those selector and interpolation claims are not consequences of the weak certificate proved here.  The proof therefore establishes only a computable dual certificate and leaves the strong-duality and sharpness claims unresolved.
+\end{proof}
+
+\subsubsection*{Proof of Theorem 2}
+\begin{proof}[Proof of Theorem~\ref{thm:inference}]
+Let
+\[
+\eta_0=\eta(P)=\Bigl((p_j)_{j\le J},\{Q_d(\cdot\mid x_j):d\in\{0,1\},1\le j\le J\}\Bigr),
+\]
+where \(p_j=\Pr(X=x_j)\).  Let \(\widehat\eta_n\) be the same vector with \(p_j\) and \(Q_d(\cdot\mid x_j)\) replaced by the sample cell frequencies and within-cell treatment-specific empirical quantiles.  Let \(\widehat\eta_{m,n}^*\) be the corresponding vector computed from the \(m_n\)-out-of-\(n\) bootstrap sample.
+
+Assumptions~\ref{ass:sampling}, \ref{ass:unconf}, \ref{ass:continuous}, and \ref{ass:finite-cell} give i.i.d. sampling, finitely many \(X\)-cells with positive masses, propensities bounded away from zero and one, compact conditional supports, and densities bounded above and away from zero.  The finite-dimensional multinomial central limit theorem and the finite collection of conditional quantile Bahadur expansions therefore give
+\[
+H_n:=\sqrt n(\widehat\eta_n-\eta_0)\rightsquigarrow\mathbb G_P.
+\]
+The same primitive conditions and the bootstrap grid condition in Assumption~\ref{ass:finite-cell} give
+\[
+d_{\mathrm{BL}}\!\left(
+\mathcal L^*\{\sqrt{m_n}(\widehat\eta_{m,n}^*-\widehat\eta_n)\mid O_1,\ldots,O_n\},
+\mathcal L(\mathbb G_P)
+\right)\to_p0.
+\]
+This is the finite-cell empirical-process input for the endpoint-first inference program used in Stoye's interval analysis \cite{Stoye2009MoreCI}.
+
+The displayed programs in the theorem are exactly
+\[
+(\widehat L_\rho,\widehat U_\rho)=\Phi_{\rho,K_n}(\widehat\eta_n),
+\qquad
+(\widehat L_\rho^*,\widehat U_\rho^*)=\Phi_{\rho,K_n}(\widehat\eta_{m,n}^*).
+\]
+With \(e_K(\eta)=\Phi_{\rho,K}(\eta)-\Phi_\rho(\eta)\),
+\[
+\begin{aligned}
+Z_n
+&=\sqrt n\{\Phi_{\rho,K_n}(\widehat\eta_n)-\Phi_\rho(\eta_0)\}\\
+&=\sqrt n\{\Phi_\rho(\widehat\eta_n)-\Phi_\rho(\eta_0)\}
++\sqrt n\{e_{K_n}(\widehat\eta_n)-e_{K_n}(\eta_0)\}
++\sqrt n\,e_{K_n}(\eta_0).
+\end{aligned}
+\]
+The final term is \(o(1)\) because \(b_{K_n}=o(n^{-1/2})\) controls the pointwise checkerboard bias at \(\eta_0\).  The middle term is \(o_p(1)\) by the root-\(n\) local sieve remainder clause in Assumption~\ref{ass:finite-cell}.  Assumption~\ref{ass:regular} gives directional Hadamard differentiability of \(\Phi_\rho\), hence
+\[
+\sqrt n\{\Phi_\rho(\widehat\eta_n)-\Phi_\rho(\eta_0)\}
+=\dot\Phi_{\rho,P}(H_n)+o_p(1).
+\]
+Combining the last three displays yields
+\[
+Z_n=\dot\Phi_{\rho,P}(H_n)+o_p(1)
+\rightsquigarrow \dot\Phi_{\rho,P}(\mathbb G_P).
+\]
+by the continuous mapping theorem for the directional derivative on the stable tangent set.
+
+For the bootstrap statistic, put
+\[
+H_n^*=\sqrt{m_n}(\widehat\eta_{m,n}^*-\widehat\eta_n),
+\qquad
+R_n=\sqrt{m_n}(\widehat\eta_n-\eta_0)=\sqrt{\frac{m_n}{n}}\,H_n.
+\]
+Since \(H_n=O_p(1)\) and \(m_n/n\to0\), \(R_n=o_p(1)\).  The bootstrap path is therefore
+\[
+\widehat\eta_{m,n}^*=\eta_0+m_n^{-1/2}(R_n+H_n^*),
+\qquad
+\widehat\eta_n=\eta_0+m_n^{-1/2}R_n.
+\]
+Decompose
+\[
+\begin{aligned}
+Z_n^*
+&=\sqrt{m_n}\{\Phi_{\rho,K_n}(\widehat\eta_{m,n}^*)-\Phi_{\rho,K_n}(\widehat\eta_n)\}\\
+&=\sqrt{m_n}\{\Phi_\rho(\widehat\eta_{m,n}^*)-\Phi_\rho(\widehat\eta_n)\}
++\sqrt{m_n}\{e_{K_n}(\widehat\eta_{m,n}^*)-e_{K_n}(\widehat\eta_n)\}.
+\end{aligned}
+\]
+The two bootstrap arguments lie in the deterministic neighborhood \(\mathcal N\) with conditional probability tending to one because Assumption~\ref{ass:stable-dual} gives a neighborhood whose radius dominates \(m_n^{-1/2}\) and Assumption~\ref{ass:finite-cell} gives the bootstrap quantile grid control.  On that event,
+\[
+\left\|e_{K_n}(\widehat\eta_{m,n}^*)-e_{K_n}(\widehat\eta_n)\right\|
+\le 2\sup_{\eta\in\mathcal N_{\mathrm{cb}}}\|e_{K_n}(\eta)\|
+=o(m_n^{-1/2})
+\]
+by the local-uniform checkerboard approximation in Assumption~\ref{ass:finite-cell}.  Hence the second bootstrap term is \(o_p^*(1)\).
+
+For the first bootstrap term, the local drift must be kept explicit.  Put \(t_n=m_n^{-1/2}\).  Assumption~\ref{ass:regular} gives directional Hadamard differentiability of \(\Phi_\rho\) at \(\eta_0\), and Assumption~\ref{ass:stable-dual} keeps the same active face in the neighborhood \(\mathcal N\).  Hence, on every compact tangent set \(C\) on which the derivative is evaluated, the ordinary expansion at the population base is uniform:
+\[
+\sup_{h\in C}
+\left\|t_n^{-1}\{\Phi_\rho(\eta_0+t_n h)-\Phi_\rho(\eta_0)\}
+-\dot\Phi_{\rho,P}(h)\right\|\to0 .
+\]
+This display is only the population-base expansion from Assumption~\ref{ass:regular}; no shifted differentiability assertion is being assumed.  Applying it twice, with \(h=R_n+H_n^*\) and \(h=R_n\), gives conditionally in probability
+\[
+\begin{aligned}
+&\sqrt{m_n}\{\Phi_\rho(\eta_0+t_n(R_n+H_n^*))
+-\Phi_\rho(\eta_0+t_nR_n)\}\\
+&\qquad =
+\dot\Phi_{\rho,P}(R_n+H_n^*)-\dot\Phi_{\rho,P}(R_n)+o_p^*(1).
+\end{aligned}
+\]
+The term suppressed in a naive shifted-delta argument is therefore
+\[
+A_n^*=
+\dot\Phi_{\rho,P}(R_n+H_n^*)-\dot\Phi_{\rho,P}(R_n)
+-\dot\Phi_{\rho,P}(H_n^*).
+\]
+The conditional bootstrap CLT above makes \(H_n^*\) conditionally tight, while \(R_n=o_p(1)\).  Since \(\dot\Phi_{\rho,P}\) is continuous on the stable tangent face and \(\dot\Phi_{\rho,P}(0)=0\), for every compact \(C\) and every \(\varepsilon>0\),
+\[
+\sup_{\substack{h\in C\\ \|r\|\le\delta}}
+\|\dot\Phi_{\rho,P}(r+h)-\dot\Phi_{\rho,P}(h)\|
++\sup_{\|r\|\le\delta}\|\dot\Phi_{\rho,P}(r)\|
+\to0
+\qquad(\delta\downarrow0).
+\]
+On the event \(H_n^*\in C\) and \(\|R_n\|\le\delta\), this bound makes \(\|A_n^*\|\) arbitrarily small; the complement has conditional probability tending to zero by tightness and \(m_n/n\to0\).  Thus \(A_n^*=o_p^*(1)\), and
+\[
+\sqrt{m_n}\{\Phi_\rho(\eta_0+t_n(R_n+H_n^*))
+-\Phi_\rho(\eta_0+t_nR_n)\}
+=\dot\Phi_{\rho,P}(H_n^*)+o_p^*(1).
+\]
+Consequently
+\[
+Z_n^*
+=\dot\Phi_{\rho,P}(H_n^*)+o_p^*(1).
+\]
+conditionally in probability. The conditional bootstrap CLT for \(H_n^*\), followed by the directional continuous mapping theorem on the stable face, gives
+\[
+d_{\mathrm{BL}}\!\left(\mathcal L^*(Z_n^*\mid O_1,\ldots,O_n),\,
+\mathcal L\{\dot\Phi_{\rho,P}(\mathbb G_P)\}\right)\to_p0.
+\]
+This proves consistency of the \(m_n\)-out-of-\(n\) bootstrap for the directional endpoint law and confirms the conjecture as stated with its root-\(n\) local sieve remainder clause.
+\end{proof}
+
+\section{Sanity checks}
+\paragraph{Conjecture 1 sanity check.}
+Let the Spearman band expand to the vacuous copula range, so \(a_-\downarrow1/6\) and \(a_+\uparrow1/3\).  Every copula with uniform margins satisfies
+\[
+\frac16\le \int uv\,d\gamma\le \frac13,
+\]
+with equality at the countermonotone and comonotone copulas.  The Spearman constraints then impose no restriction, and the optimal multipliers can be chosen as \(\lambda_-=\lambda_+=0\).  The theorem reduces to Kellerer's ordinary marginal duality
+\[
+\inf_{\gamma\in\Pi(\lambda,\lambda)}\int h_x\,d\gamma
+=
+\sup_{\alpha+\beta\le h_x}
+\left\{\int_0^1\alpha(u)\,du+\int_0^1\beta(v)\,dv\right\},
+\]
+with the analogous formula for \(-h_x\).  This is the continuous-outcome Makarov/Fan--Park copula-free endpoint benchmark for the threshold-zero benefit event.  The check confirms that the weak certificate has the right form when rank information is removed, but it does not supply the moment-constrained reverse inequality, measurable selectors, or interpolation step missing from the original sharp identified-set claim.
+
+\paragraph{Conjecture 2 sanity check.}
+In the regular corner where each endpoint has a unique active optimizer, the Spearman moment binding status is unchanged in the neighborhood from Assumption~\ref{ass:stable-dual}, and the root-\(n\) local sieve remainder is automatic, the derivative \(\dot\Phi_{\rho,P}\) is linear.  If \(A_P\) denotes the corresponding sensitivity operator for the lower and upper endpoints, then
+\[
+\dot\Phi_{\rho,P}(\mathbb G_P)=A_P\mathbb G_P
+\]
+so \(Z_n\) has an ordinary bivariate normal limit with covariance \(A_P\Sigma_PA_P^{\transpose}\).  The \(m_n\)-out-of-\(n\) bootstrap conclusion then reduces to the classical plug-in endpoint bootstrap for two smooth bound estimators.  This is exactly the endpoint-law input used before applying the Imbens--Manski/Stoye interval-width calibration for a scalar lying in \([L_\rho(P),U_\rho(P)]\) \cite{Stoye2009MoreCI}.
+
+\section{Counterexample or minimality check}
+\paragraph{Conjecture 1 refutation attempt.}
+I first applied the required two-strata response-type LP and vertex-enumeration check to the smallest nontrivial rank-copula approximation.  Take \(X\) degenerate, use the two rank grid points \(u_1=1/3\) and \(u_2=2/3\), impose row and column masses \(1/2\), and write
+\[
+\pi^+=\begin{pmatrix}1/2&0\\0&1/2\end{pmatrix},
+\qquad
+\pi^-=\begin{pmatrix}0&1/2\\1/2&0\end{pmatrix}.
+\]
+Every feasible \(2\times2\) coupling is
+\[
+\pi_t=t\pi^+ +(1-t)\pi^-,\qquad 0\le t\le1,
+\]
+and its Spearman moment is
+\[
+m(t)=\sum_{\ell,m}u_\ell u_m\pi_{t,\ell m}
+=\frac{2}{9}+\frac{t}{18}.
+\]
+Thus the moment band restricts \(t\) to the explicit interval
+\[
+T(a_-,a_+)=
+\left[\max\{0,18a_- -4\},\min\{1,18a_+ -4\}\right].
+\]
+The threshold-zero benefit kernels compatible with increasing quantiles are the staircase binary matrices.  Apart from the all-zero and all-one cases, the four nonconstant patterns are
+\[
+\begin{pmatrix}0&0\\1&0\end{pmatrix},\quad
+\begin{pmatrix}0&0\\1&1\end{pmatrix},\quad
+\begin{pmatrix}1&0\\1&0\end{pmatrix},\quad
+\begin{pmatrix}1&0\\1&1\end{pmatrix}.
+\]
+Their primal values under \(\pi_t\) are, respectively,
+\[
+\frac{1-t}{2},\qquad
+\frac{1}{2},\qquad
+\frac{1}{2},\qquad
+\frac{1+t}{2}.
+\]
+Optimizing these affine objectives over \(T(a_-,a_+)\) gives an endpoint at a face of the finite LP.  The finite-dimensional dual has variables for the two row constraints, the two column constraints, and the two Spearman inequalities; ordinary finite LP strong duality gives the same face value in every staircase case.  Therefore no vertex or dual certificate in the two-strata search violates the proposed equality \(L_x(P)=D_x(h_x)\) or \(U_x(P)=-D_x(-h_x)\).  This refutation attempt also checks the Frechet equality faces in the smallest grid: saturation of \(t=\min T(a_-,a_+)\) or \(t=\max T(a_-,a_+)\) selects the finite dual face rather than producing a gap.  The finite search therefore fails to refute the bounded-Borel strong-duality statement.  It also cannot prove it, because ordinary finite LP duality does not control the continuous bounded-Borel marginal problem with an added Spearman moment interval.  Nor can it confirm the original sharp identified-set claim, because every finite LP has endpoint-attaining optimizers and so does not test the continuous measurable-selector and residual-interpolation problem flagged by the reviewer.
+
+\paragraph{Conjecture 1 minimality check.}
+The Spearman multipliers are necessary; dropping them would compute the copula-free marginal problem rather than the band-restricted endpoint.  The same two-rank-grid calculation from the refutation attempt gives a concrete certificate.  For the staircase kernel
+\[
+h=\begin{pmatrix}1&0\\1&1\end{pmatrix},
+\]
+the objective value is \((1+t)/2\) on \(\pi_t=t\pi^+ +(1-t)\pi^-\).  Without the Spearman restriction, \(t=1\) is feasible and the grid upper value is \(1\).  Under a strict interior band with \(\max T(a_-,a_+)<1\), the correct upper value is instead
+\[
+\frac{1+\max T(a_-,a_+)}{2}<1.
+\]
+Thus a dual certificate that omits \(\lambda_-\) and \(\lambda_+\) fails to evaluate the locked band functional even at the finite-grid level.  The rank-moment restriction is not a cosmetic regularizer; it is the finite dependence information whose support-function term produces the displayed constrained dual.
+
+The selector residuals flagged in the review are also load-bearing for the original sharp identified-set claim.  Pointwise equalities \(L_x(P)=D_x(h_x)\) and \(U_x(P)=-D_x(-h_x)\) imply only
+\[
+L_\rho(P)\le \theta(\gamma_\cdot)\le U_\rho(P)
+\]
+for every feasible measurable selection \(x\mapsto\gamma_x\), and the repaired proposition does not even establish those pointwise equalities.  They would not by themselves produce selections whose integrated values approach the endpoints, nor would they show that intermediate values between two feasible selections are themselves feasible under the conditional Spearman band.  Removing the no-gap, selector, and residual steps is exactly what turns the original sharpness theorem into the weaker weak-dual certificate proved above.
+
+\paragraph{Conjecture 2 refutation attempt.}
+The required finite response-type primitive was checked on the smallest checkerboard transport face.  Take one covariate cell, \(K=2\), \(u_1=1/3\), and \(u_2=2/3\).  Every feasible \(2\times2\) plan with uniform margins has the form
+\[
+\pi(t)=
+\begin{pmatrix}
+t & 1/2-t\\
+1/2-t & t
+\end{pmatrix},
+\qquad 0\le t\le 1/2.
+\]
+Its Spearman moment is
+\[
+\sum_{\ell,m=1}^2u_\ell u_m\pi_{\ell m}(t)=\frac{2}{9}+\frac{t}{9},
+\]
+so the band restricts \(t\) to
+\[
+I_\rho=\left[0,\frac12\right]\cap[9a_- -2,\,9a_+ -2].
+\]
+For an arbitrary binary benefit table \(h=(h_{\ell m})_{\ell,m\le2}\), the lower objective is
+\[
+q_h(t)=\sum_{\ell,m=1}^2 h_{\ell m}\pi_{\ell m}(t)
+=\frac{h_{12}+h_{21}}{2}
++t(h_{11}-h_{12}-h_{21}+h_{22}).
+\]
+Enumerating all \(2^4\) benefit tables gives either a nonzero slope, in which case the optimum is a vertex of \(I_\rho\), or a zero slope, in which case the value is constant over \(I_\rho\).  Thus the vertex search produces no finite-face witness against the endpoint map: the local value is piecewise linear, and under a fixed active face its directional derivative is exactly the slope selected by the stable dual face.
+
+This search is not a proof of the asymptotic claim by itself.  It only verifies that the smallest transport face does not contradict the conjecture once the conjecture is read with its root-\(n\) local sieve remainder clause.  The known possible obstruction is the centered checkerboard residual
+\[
+\sqrt n\{[\Phi_{\rho,K_n}(\widehat\eta_n)-\Phi_\rho(\widehat\eta_n)]
+-[\Phi_{\rho,K_n}(\eta_0)-\Phi_\rho(\eta_0)]\},
+\]
+which is exactly the residual the corrected conjecture assumes away.  No counterexample is produced under the stated active-face, finite-cell, local-sieve-remainder, and \(m_n/n\to0\) regime, so the derivation proceeds to the positive proof.
+
+\paragraph{Conjecture 2 minimality check.}
+The condition \(m_n/n\to0\) cannot be replaced by the ordinary \(n\)-out-of-\(n\) bootstrap in a genuinely directional problem.  The scalar analogue is \(\phi(t)=|t|\), with \(W_i\) i.i.d. mean zero and variance one and \(\widehat t_n=n^{-1}\sum_iW_i\).  Then
+\[
+\sqrt n\{\phi(\widehat t_n)-\phi(0)\}\rightsquigarrow |Z|,
+\qquad Z\sim N(0,1).
+\]
+The ordinary bootstrap has conditional local form
+\[
+\sqrt n\{|\widehat t_n^*|-|\widehat t_n|\}
+=|Z^*+\sqrt n\,\widehat t_n|-|\sqrt n\,\widehat t_n|+o_p^*(1),
+\]
+whose conditional limit is the random law of \(|Z^*+Z_0|-|Z_0|\) given the realized local drift \(Z_0\), not the fixed law of \(|Z|\).  If \(m_n/n\to0\), then \(\sqrt{m_n}\widehat t_n\to_p0\), and the bootstrap derivative is evaluated at the population face.
+
+The root-\(n\) local sieve remainder is also load-bearing.  Pointwise checkerboard bias at \(\eta_0\) and bootstrap-scale local bias do not imply the sample root-\(n\) expansion.  For the scalar approximation \(\phi(t)=t\), \(\phi_K(t)=t+K^{-1/2}\sin(Kt)\), and \(K_n=n\), one has \(\phi_{K_n}(0)-\phi(0)=0\) and \(\sup_{|t|\le c m_n^{-1/2}}|\phi_{K_n}(t)-\phi(t)|=O(n^{-1/2})=o(m_n^{-1/2})\) whenever \(m_n/n\to0\).  Nevertheless,
+\[
+\sqrt n\{\phi_{K_n}(h/\sqrt n)-\phi_{K_n}(0)-h/\sqrt n\}
+=\sin(\sqrt n\,h),
+\]
+which need not converge to zero.  This example explains why the corrected theorem explicitly includes the root-\(n\) local sieve remainder; without it, the endpoint expansion can contain an additional first-order approximation term.
+
+\section{Formalization checklist}
+\begin{itemize}[leftmargin=*]
+\item \textbf{Observed law and finite-cell summary.} Signature: \(P\in\mathcal P(\mathcal Y\times\{0,1\}\times\mathcal X)\) and \(\eta(P)=((p_j)_{j\le J},\{Q_d(\cdot\mid x_j):d\in\{0,1\},1\le j\le J\})\).  Role: observable input for the conditional endpoint maps and the bootstrap theorem.  Dependencies: Assumptions~\ref{ass:sampling}, \ref{ass:unconf}, \ref{ass:continuous}, and \ref{ass:finite-cell}.
+\item \textbf{Conditional quantile maps.} Signature: \(Q_d(\cdot\mid x)\colon(0,1)\to\mathbb R\) for \(d\in\{0,1\}\).  Role: define the benefit kernel and the checkerboard objective coefficients.  Dependencies: identified conditional marginals from Assumptions~\ref{ass:unconf} and \ref{ass:continuous}.
+\item \textbf{Benefit kernel and target.} Signature: \(h_x(u,v)=\one\{Q_1(u\mid x)>Q_0(v\mid x)\}\) and \(\theta=\Pr(Y_1>Y_0)\).  Role: encode the strict-benefit event and the latent scalar bracketed by the outer envelope.  Dependencies: conditional quantile maps and the potential-outcome target from \S8.
+\item \textbf{Conditional value set and selector residuals.} Signature: \(I_x=\{\int h_x\,d\gamma:\gamma\in\Gamma_x(\rho_-,\rho_+)\}\), \(r_L(\epsilon)=\int\{\int h_x\,d\gamma_x^{\epsilon,L}-L_x(P)\}\,dP_X(x)\), and \(r_U(\epsilon)=\int\{U_x(P)-\int h_x\,d\gamma_x^{\epsilon,U}\}\,dP_X(x)\).  Role: unresolved objects that separate the proved dual representation from the unproved sharp identified-set equality.  Dependencies: feasible measurable selectors, integrated endpoint maps, and the interpolation step discussed in Proposition~1.
+\item \textbf{Spearman-band feasible class.} Signature: \(\Gamma_x(\rho_-,\rho_+)=\{\gamma\in\Pi(\lambda,\lambda):a_-\le\int uv\,d\gamma\le a_+\}\) with \(a_\pm=(\rho_\pm+3)/12\).  Role: conditional copula restriction set under the locked rank-concordance band.  Dependencies: uniform-margin coupling class \(\Pi(\lambda,\lambda)\) and Assumption~\ref{ass:band}.
+\item \textbf{Conditional and integrated endpoint functionals.} Signature: \(L_x(P)=\inf_{\gamma\in\Gamma_x(\rho_-,\rho_+)}\int h_x\,d\gamma\), \(U_x(P)=\sup_{\gamma\in\Gamma_x(\rho_-,\rho_+)}\int h_x\,d\gamma\), \(L_\rho(P)=\int L_x(P)\,dP_X(x)\), and \(U_\rho(P)=\int U_x(P)\,dP_X(x)\).  Role: outer envelope and majority-sign certification inputs.  Dependencies: benefit kernel, feasible copula class, and integration over \(P_X\).
+\item \textbf{Constrained dual functional.} Signature: \(D_x(g)=\sup_{\lambda_-,\lambda_+\ge0,\ \alpha,\beta\in L^1([0,1])}\{\int_0^1\alpha(u)\,du+\int_0^1\beta(v)\,dv+\lambda_-a_- -\lambda_+a_+:\alpha(u)+\beta(v)\le g(u,v)+(\lambda_+-\lambda_-)uv\ \forall(u,v)\in[0,1]^2\}\).  Role: computable weak lower/upper certificate for feasible latent laws.  Dependencies: Kellerer-style marginal potentials, the Spearman moment inequalities, and Assumption~\ref{ass:regular}.
+\item \textbf{Bandwise outer envelope.} Signature: \(L_R(P)\), \(U_R(P)\) for a closed band \(R=[\rho_-,\rho_+]\subset[-1,1]\).  Role: support theorem for strict majority certification or strict nonmajority certification.  Dependencies: conditional endpoint maps and measurable feasible latent laws.
+\item \textbf{Two-strata witness family.} Signature: \(\pi_t=t\pi^+ +(1-t)\pi^-\) with \(T(a_-,a_+)=[\max\{0,18a_- -4\},\min\{1,18a_+ -4\}]\) in the \(2\times2\) rank grid, and \(\pi(t)=\begin{pmatrix} t & 1/2-t\\ 1/2-t & t \end{pmatrix}\) with \(I_\rho=[0,1/2]\cap[9a_- -2,9a_+ -2]\).  Role: finite-face refutation search and minimality witness for the Spearman-band constraints.  Dependencies: grid points \(u_1=1/3\), \(u_2=2/3\), uniform margins, and the band endpoints \(a_\pm\).
+\item \textbf{Finite-grid transport polytope.} Signature: \(\Pi_K(a_-,a_+)=\{\pi\in\mathbb R_+^{K\times K}:\sum_m\pi_{\ell m}=K^{-1},\sum_\ell\pi_{\ell m}=K^{-1},a_-\le\sum_{\ell,m}u_\ell u_m\pi_{\ell m}\le a_+\}\).  Role: computable checkerboard approximation used in the supporting consistency theorem and in the endpoint estimators.  Dependencies: grid points \(u_\ell=\ell/(K+1)\) and the same Spearman band.
+\item \textbf{Checkerboard endpoint maps and residual.} Signature: \(L_{j,K}(P)\), \(U_{j,K}(P)\), \(\Phi_{\rho,K}(\eta)=(L_{\rho,K}(\eta),U_{\rho,K}(\eta))\), \(\Phi_\rho(\eta)=(L_\rho(\eta),U_\rho(\eta))\), and \(e_K(\eta)=\Phi_{\rho,K}(\eta)-\Phi_\rho(\eta)\).  Role: finite-dimensional approximation, deterministic bias control, and the root-\(n\) local sieve remainder clause.  Dependencies: cellwise indicator matrices, cell weights, and Assumption~\ref{ass:finite-cell}.
+\item \textbf{Sample and bootstrap endpoint estimators.} Signature: \((\widehat L_\rho,\widehat U_\rho)=\Phi_{\rho,K_n}(\widehat\eta_n)\) and \((\widehat L_\rho^*,\widehat U_\rho^*)=\Phi_{\rho,K_n}(\widehat\eta_{m,n}^*)\).  Role: explicit maps from the sample and bootstrap resample to the lower and upper endpoint estimates.  Dependencies: empirical cell weights \(\widehat p_j\), empirical conditional quantiles \(\widehat Q_d\), grid size \(K_n\), and bootstrap size \(m_n\).
+\item \textbf{Asymptotic endpoint laws.} Signature: \(Z_n=\sqrt n(\widehat L_\rho-L_\rho(P),\widehat U_\rho-U_\rho(P))\) and \(Z_n^*=\sqrt{m_n}(\widehat L_\rho^*-\widehat L_\rho,\widehat U_\rho^*-\widehat U_\rho)\).  Role: sample and bootstrap statistics whose weak limits are compared in Theorem~2.  Dependencies: sample and bootstrap endpoint estimators, grid sequence \(K_n\), and bootstrap size \(m_n\).
+\item \textbf{Local-drift decomposition.} Signature: \(H_n=\sqrt n(\widehat\eta_n-\eta_0)\), \(H_n^*=\sqrt{m_n}(\widehat\eta_{m,n}^*-\widehat\eta_n)\), \(R_n=\sqrt{m_n}(\widehat\eta_n-\eta_0)\), and \(A_n^*=\dot\Phi_{\rho,P}(R_n+H_n^*)-\dot\Phi_{\rho,P}(R_n)-\dot\Phi_{\rho,P}(H_n^*)\).  Role: explicit decomposition proving the bootstrap derivative is evaluated at the population face rather than a random empirical face.  Dependencies: the conditional bootstrap CLT, \(m_n/n\to0\), and continuity of \(\dot\Phi_{\rho,P}\) on the stable tangent face.
+\item \textbf{Gaussian limit and directional derivative.} Signature: \(\mathbb G_P\) is the joint finite-cell empirical-weight and conditional-quantile Gaussian limit, and \(\dot\Phi_{\rho,P}\) is the directional derivative of \(\Phi_\rho\) at \(\eta(P)\).  Role: asymptotic limit object and bootstrap target law in Theorem~2.  Dependencies: finite-cell quantile-process CLT, Assumptions~\ref{ass:regular}, \ref{ass:stable-dual}, and \ref{ass:finite-cell}.
+\end{itemize}
+
+\section{Conclusion and references}
+Proposition 1 (\texttt{sharp-dual}) is partial; Under Assumptions~\ref{ass:sampling}--\ref{ass:regular}, the available assumptions imply the computable weak Spearman-band dual certificate, but they do not prove the conjectured no-gap equalities.  For \(P_X\)-almost every \(x\) and every \(g\in\{h_x,-h_x\}\), \[D_x(g)\le \inf_{\gamma\in\Gamma_x(\rho_-,\rho_+)}\int g\,d\gamma,\] where \[D_x(g)=\sup_{\lambda_-,\lambda_+\ge0,\ \alpha,\beta\in L^1([0,1])}\left\{\int_0^1\alpha(u)\,du+\int_0^1\beta(v)\,dv+\lambda_-a_- -\lambda_+a_+:\alpha(u)+\beta(v)\le g(u,v)+(\lambda_+-\lambda_-)uv\ \forall(u,v)\in[0,1]^2\right\}.\] Consequently every feasible latent law obeys \[\int D_x(h_x)\,dP_X(x)\le \theta\le \int\{-D_x(-h_x)\}\,dP_X(x).\] This is a partial repair only: the finite two-strata refutation search below finds no counterexample, but the reverse inequalities \(L_x(P)\le D_x(h_x)\) and \(-D_x(-h_x)\le U_x(P)\), the endpoint-attaining measurable selectors, closedness of \(I_x\), and the interpolation step needed for \(\Theta_I(P)=[L_\rho(P),U_\rho(P)]\) remain unproved under the written assumptions.
+
+Theorem 2 (\texttt{inference}) is confirmed; Theorem 2 (\texttt{inference}) is confirmed: under Assumptions~\ref{ass:sampling}--\ref{ass:regular}, \ref{ass:stable-dual}, and \ref{ass:finite-cell}, define \(\widehat L_\rho=\sum_{j=1}^J\widehat p_j\min_{\pi\in\Pi_{K_n}(a_-,a_+)}\sum_{\ell,m}\one\{\widehat Q_1(u_\ell\mid x_j)>\widehat Q_0(u_m\mid x_j)\}\pi_{\ell m}\) and \(\widehat U_\rho=\sum_{j=1}^J\widehat p_j\max_{\pi\in\Pi_{K_n}(a_-,a_+)}\sum_{\ell,m}\one\{\widehat Q_1(u_\ell\mid x_j)>\widehat Q_0(u_m\mid x_j)\}\pi_{\ell m}\), where \(\Pi_{K_n}(a_-,a_+)=\{\pi\in\mathbb R_+^{K_n\times K_n}:\sum_m\pi_{\ell m}=K_n^{-1},\sum_\ell\pi_{\ell m}=K_n^{-1},a_-\le\sum_{\ell,m}u_\ell u_m\pi_{\ell m}\le a_+\}\) and \(a_\pm=(\rho_\pm+3)/12\). Let \(O_1^*,\ldots,O_{m_n}^*\) be drawn with replacement from the empirical law and let \(\widehat L_\rho^*,\widehat U_\rho^*\) be the same two programs recomputed on the bootstrap sample with the same grid \(K_n\). If \(b_{K_n}=o(n^{-1/2})\), the root-\(n\) local sieve remainder clause holds, meaning with \(e_K(\eta)=\Phi_{\rho,K}(\eta)-\Phi_\rho(\eta)\), \(\eta_0=\eta(P)\), and \(\widehat\eta_n\) the empirical finite-cell summary, \(\sqrt n\{e_{K_n}(\widehat\eta_n)-e_{K_n}(\eta_0)\}=o_p(1)\), \(\log K_n/n\to0\), and \(m_n\to\infty\) with \(m_n/n\to0\), then \(Z_n=\sqrt n(\widehat L_\rho-L_\rho(P),\widehat U_\rho-U_\rho(P))\rightsquigarrow\dot\Phi_{\rho,P}(\mathbb G_P)\) and \(d_{\mathrm{BL}}(\mathcal L^*(Z_n^*\mid O_1,\ldots,O_n),\mathcal L\{\dot\Phi_{\rho,P}(\mathbb G_P)\})\to_p0\) for \(Z_n^*=\sqrt{m_n}(\widehat L_\rho^*-\widehat L_\rho,\widehat U_\rho^*-\widehat U_\rho)\), where \(\mathbb G_P\) is the joint finite-cell empirical-weight and conditional-quantile Gaussian limit and \(\dot\Phi_{\rho,P}\) is the directional derivative of \(\Phi_\rho(\eta)=(L_\rho(\eta),U_\rho(\eta))\) at \(\eta(P)\).
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem[Fan and Park(2009)]{FanPark2009DTEConfidenceSets}
+Fan, Y. and S. S. Park (2009).
+\newblock Partial identification of the distribution of treatment effects and its confidence sets.
+\newblock \emph{Advances in Econometrics} 25, 3--70.
+
+\bibitem[Fan and Park(2010)]{FanPark2010DTEBounds}
+Fan, Y. and S. S. Park (2010).
+\newblock Sharp bounds on the distribution of treatment effects and their statistical inference.
+\newblock \emph{Econometric Theory} 26(3), 931--951.
+
+\bibitem[Liang(2026)]{Liang2026RankStickiness}
+Liang, T. (2026).
+\newblock Nonparametric point identification of treatment effect distributions via rank stickiness.
+\newblock arXiv:2604.21548.
+\newblock doi:10.48550/arXiv.2604.21548.
+
+\bibitem[Zhang and Richardson(2025)]{ZhangRichardson2025Kolmogorov}
+Zhang, Z. and T. S. Richardson (2025).
+\newblock Bounds on the distribution of a sum of two random variables: Revisiting a problem of Kolmogorov with application to individual treatment effects.
+\newblock arXiv:2405.08806.
+
+\bibitem[Firpo and Ridder(2019)]{FirpoRidder2019Functionals}
+Firpo, S. and G. Ridder (2019).
+\newblock Partial identification of the treatment effect distribution and its functionals.
+\newblock \emph{Journal of Econometrics} 213(1), 210--234.
+
+\bibitem[He and Li(2026)]{HeLi2026OrdinalCopula}
+He, P. and F. Li (2026).
+\newblock Causal inference with ordinal outcomes: copula-based identification, estimation and sensitivity analysis.
+\newblock arXiv:2605.11415.
+
+\bibitem[Mullahy(2018)]{Mullahy2018InequalityProbability}
+Mullahy, J. (2018).
+\newblock Individual results may vary: Elementary analytics of inequality-probability bounds, with applications to health-outcome treatment effects.
+\newblock \emph{Journal of Health Economics} 61, 151--162.
+
+\bibitem[Huang et~al.(2019)]{HuangFangHanleyRosenblum2019FractionBenefit}
+Huang, E. J., E. X. Fang, D. F. Hanley, and M. Rosenblum (2019).
+\newblock Constructing a confidence interval for the fraction who benefit from treatment, using randomized trial data.
+\newblock \emph{Biometrics} 75(4), 1228--1239.
+
+\bibitem[Frandsen and Lefgren(2021)]{FrandsenLefgren2021KIPP}
+Frandsen, B. R. and L. J. Lefgren (2021).
+\newblock Partial identification of the distribution of treatment effects with an application to the Knowledge is Power Program (KIPP).
+\newblock \emph{Quantitative Economics} 12(1), 143--171.
+
+\bibitem[Kellerer(1984)]{Kellerer1984Duality}
+Kellerer, H. G. (1984).
+\newblock Duality theorems for marginal problems.
+\newblock \emph{Zeitschrift f{\"u}r Wahrscheinlichkeitstheorie und Verwandte Gebiete} 67, 399--432.
+\newblock doi:10.1007/BF00532047.
+
+\bibitem[Bartl et~al.(2022)]{BartlKupperLuxPapapantoleon2022Dependence}
+Bartl, D., M. Kupper, T. Lux, A. Papapantoleon, and S. Eckstein (2022).
+\newblock Marginal and dependence uncertainty: Bounds, optimal transport, and sharpness.
+\newblock \emph{SIAM Journal on Control and Optimization} 60(1), 410--434.
+
+\bibitem[Imbens and Manski(2004)]{ImbensManski2004PartialCI}
+Imbens, G. W. and C. F. Manski (2004).
+\newblock Confidence intervals for partially identified parameters.
+\newblock \emph{Econometrica} 72(6), 1845--1857.
+
+\bibitem[Stoye(2009)]{Stoye2009MoreCI}
+Stoye, J. (2009).
+\newblock More on confidence intervals for partially identified parameters.
+\newblock \emph{Econometrica} 77(4), 1299--1315.
+\end{thebibliography}
+
+\end{document}

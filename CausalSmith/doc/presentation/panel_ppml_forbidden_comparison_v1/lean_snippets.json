@@ -1,0 +1,1413 @@
+{
+  "commit": "6e3ba5a09e998cb7c7b15f45d6a11634157a62aa",
+  "snippets": {
+    "ass:cohort-share-limit": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.CohortShareLimit",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "def CohortShareLimit (G : ∀ N, Fin N → Cohort T) (pi : Cohort T → OpenUnit) : Prop :=\n  (∀ N, C.card ≤ N →\n    0 < N ∧ -- @realizes pi_gN(positive denominator N)\n    ∀ g ∈ C,\n      0 < cohortCount T (G N) g) ∧ -- @realizes n_gN(supported count in {1,...,N})\n                                      -- @realizes pi_gN(strictly positive supported share)\n  ∀ g ∈ C, Tendsto (fun N => cohortShare T (G N) g) atTop (nhds (pi g : ℝ))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:unit-untreated-exponential-mean": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.UnitUntreatedExponentialMean",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Untreated potential-outcome means factor into a positive unit baseline and a common\ncalendar-time exponential component; the treatment-zero outcome equals that untreated outcome. -/\ndef UnitUntreatedExponentialMean (Omega : ℕ → Type*)\n    (P : ∀ N, SamplingLaw (Omega N))\n    (Y : ∀ N, Fin N → Fin T → Fin 2 → Omega N → ℝ)\n    (b : ∀ N, Fin N → PosReal) (gamma : Fin T → ℝ) : Prop :=\n  (∀ N i t, expectationUnder (P N) (Y N i t 0) = (b N i : ℝ) * Real.exp (gamma t)) ∧\n  ∀ t : Fin T, t.val = 0 → gamma t = 0",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:within-cohort-baseline-limit": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.WithinCohortBaselineLimit",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Within each supported cohort, the average unit baseline converges to a strictly positive\ncohort-specific limiting baseline. -/\ndef WithinCohortBaselineLimit (G : ∀ N, Fin N → Cohort T)\n    (b : ∀ N, Fin N → PosReal) (barB : Cohort T → PosReal) : Prop :=\n  ∀ g ∈ C, Tendsto (fun N => withinCohortBaseline T (G N) (b N) g) atTop (nhds (barB g : ℝ))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:proportional-effects": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.ProportionalEffects",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- In every treated unit-period, the mean treated outcome equals the mean untreated outcome\nmultiplied by that cell's exponential treatment effect. -/\ndef ProportionalEffects (Omega : ℕ → Type*) (P : ∀ N, SamplingLaw (Omega N))\n    (Y : ∀ N, Fin N → Fin T → Fin 2 → Omega N → ℝ)\n    (G : ∀ N, Fin N → Cohort T) (delta : Cell T → ℝ) : Prop :=\n  ∀ N i t, unitTreatment T N (G N) i t = 1 →\n    expectationUnder (P N) (Y N i t 1) =\n      expectationUnder (P N) (Y N i t 0) * Real.exp (delta (G N i, t))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:collapsed-design-rank": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.CollapsedDesignRank",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- The collapsed fixed-effects and treatment design has full rank under the limiting cell masses. -/\ndef CollapsedDesignRank (pi : Cohort T → OpenUnit) : Prop :=\n  ∀ a : CollapsedParameter T C, a ≠ 0 →\n    0 < ∑ g ∈ C, ∑ t : Fin T,\n      limitingCellMass T pi g * (collapsedIndex T C (collapsedRegressor T C g t) a) ^ 2",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:unit-fe-population-projection": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.betaNStar",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- The last coordinate of the selected unit-FE population maximizer. -/\nnoncomputable def betaNStar (G : Fin N → Cohort T) (b : Fin N → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ) : ℝ :=\n  (maximizerOrZero (unitCriterion T N G b gamma delta)).2",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:sample-unit-fe-ppml": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.hatBetaN",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- The total extended-MLE coefficient, with the stipulated minimum-norm selection and zero fallback. -/\nnoncomputable def hatBetaN (G : Fin N → Cohort T) (Y : Fin N → Fin T → ℝ) : ℝ :=\n  by\n    classical\n    exact if h : ∃ p : ExtendedCandidate N T,\n        IsExtendedSampleMaximizer T N G Y p ∧\n        ∀ q, IsExtendedSampleMaximizer T N G Y q →\n          finiteCoordinateNormSq T N p ≤ finiteCoordinateNormSq T N q\n      then (Classical.choose h).2.2 else 0",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:collapsed-population-projection": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.collapsedPopulationProjection",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- The selected maximizer `theta_star(delta)` of the limiting collapsed criterion. -/\nnoncomputable def collapsedPopulationProjection (pi : Cohort T → OpenUnit)\n    (barB : Cohort T → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ) :\n    CollapsedParameter T C :=\n  maximizerOrZero (limitingCriterion T C pi barB gamma delta)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:weighted-fwl-residual": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.weightedFWLResidual",
+      "file": "Helpers/WeightedFWL.lean",
+      "line": 0,
+      "statement": "/-- The pseudo-true mean-weighted FWL treatment residual. -/\nnoncomputable def weightedFWLResidual (T : ℕ) (C : Finset (Cohort T))\n    (hT : 0 < T) (hC : C.Nonempty) (pi : Cohort T → OpenUnit)\n    (barB : Cohort T → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ) :\n    SupportedCell T C → ℝ :=\n  let c := meanWeightedSupport T C hT hC pi barB gamma delta\n  c.tildeX (collapsedNuisanceSubspace T C) (fun z => treatmentIndicator T z.1.1 z.2)\n  -- @realizes Wtilde_gt(delta)(WeightedSupport.tildeX of D against the X_gt span)\n\n/-- The mean-weighted FWL treatment residual is unchanged when the panel, support, and all\ninputs governing the fitted mean are replaced by equal values. -/\nadd_decl_doc weightedFWLResidual.congr_simp",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:multicohort-frontier-scope": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.MulticohortFrontierScope",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- The support contains adoption cohorts 1, 2, and 3, as well as the never-treated cohort. -/\ndef MulticohortFrontierScope : Prop :=\n  (∃ g : Fin T, g.val = 1 ∧ (g : Cohort T) ∈ C) ∧\n  (∃ g : Fin T, g.val = 2 ∧ (g : Cohort T) ∈ C) ∧\n  (∃ g : Fin T, g.val = 3 ∧ (g : Cohort T) ∈ C) ∧\n  (⊤ : Cohort T) ∈ C",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:strict-positive-effects": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.StrictPositiveEffects",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Every treated cohort-period has a strictly positive log treatment effect. -/\ndef StrictPositiveEffects (delta : Cell T → ℝ) : Prop :=\n  ∀ g ∈ C, ∀ t : Fin T, treatmentIndicator T g t = 1 → 0 < delta (g, t)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:global-sign-reversal-region": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.signReversalRegion",
+      "file": "Helpers/Frontier.lean",
+      "line": 0,
+      "statement": "/-- The all-positive-effect PPML sign-reversal region `R_T`. -/\nnoncomputable def signReversalRegion (T : ℕ) (C : Finset (Cohort T))\n    (gamma : Fin T → ℝ) : Set (SignReversalPrimitive T C) :=\n  {p | ValidPanelHorizon T ∧\n    ValidCohortSupport T C ∧\n    MulticohortFrontierScope T C ∧\n    (∑ g : ↑C, (p.1 g : ℝ)) = 1 ∧\n    (∃ barB : ↑C → PosReal, ∀ z : SupportedCell T C,\n      (p.2.1 z : ℝ) = (barB z.1 : ℝ) * Real.exp (gamma z.2)) ∧\n    (∀ z : TreatedSupportedCell T C, 0 < p.2.2 z) ∧\n    (∀ a : CollapsedParameter T C, a ≠ 0 →\n      0 < ∑ z : SupportedCell T C,\n        ((p.1 z.1 : ℝ) / T) *\n          (collapsedIndex T C (collapsedRegressor T C z.1.1 z.2) a) ^ 2) ∧\n    primitiveBetaStar T C p < 0}",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:four-cohort-witness": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.fourCohortWitness",
+      "file": "Helpers/Frontier.lean",
+      "line": 0,
+      "statement": "/-- The concrete four-cohort triangular-array configuration `W4`. -/\nnoncomputable def fourCohortWitness : FourCohortConfiguration :=\n  (fourCohortSupport,\n    (fourCohortCount,\n      (fourCohortBaseline, (fourCohortGamma, fourCohortDelta))))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:frontier-elimination-handle": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.frontierEliminationHandle",
+      "file": "Helpers/Frontier.lean",
+      "line": 0,
+      "statement": "/-- The nuisance-free frontier polynomial `Phi = M*A - sum D_gt R_g C_t`. -/\nnoncomputable def frontierEliminationHandle (T : ℕ) (C : Finset (Cohort T))\n    (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ) : ℝ :=\n  primitiveTotal T C pi barB gamma delta *\n      primitiveTreatedTotal T C pi barB gamma delta -\n    ∑ g ∈ C, ∑ t : Fin T,\n      treatmentIndicator T g t * primitiveRow T pi barB gamma delta g *\n        primitiveColumn T C pi barB gamma delta t",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "thm:sharp-ppml-forbidden-sign": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.sharp_ppml_forbidden_sign",
+      "file": "ForbiddenSign.lean",
+      "line": 0,
+      "statement": "/-- A treated effect moves beta with exactly the sign of its pseudo-true weighted FWL residual. -/\ntheorem sharp_ppml_forbidden_sign (T : ℕ) (C : Finset (Cohort T))\n    (hT : 0 < T) (hC : C.Nonempty) (pi : Cohort T → OpenUnit)\n    (barB : Cohort T → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ)\n    (k : Cohort T) (hk : k ∈ C) (s : Fin T) (hks : treatmentIndicator T k s = 1)\n    (hRank : CollapsedDesignRank T C pi) :\n    let W",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "prop:homogeneous-effect-reduction": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.homogeneous_effect_reduction",
+      "file": "Homogeneous.lean",
+      "line": 0,
+      "statement": "/-- A common treated-cell log effect is recovered exactly by the collapsed PPML projection. -/\ntheorem homogeneous_effect_reduction (T : ℕ) (C : Finset (Cohort T))\n    (Omega : ℕ → Type*) (P : ∀ N, SamplingLaw (Omega N))\n    (Y : ∀ N, Fin N → Fin T → Fin 2 → Omega N → ℝ)\n    (b : ∀ N, Fin N → PosReal) (pi : Cohort T → OpenUnit)\n    (barB : Cohort T → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ)\n    (delta0 : ℝ)\n    (hMean : UnitUntreatedExponentialMean T Omega P Y b gamma)\n    (hRank : CollapsedDesignRank T C pi)\n    (hHomogeneous : ∀ g ∈ C, ∀ t : Fin T,\n      treatmentIndicator T g t = 1 → delta (g, t) = delta0) :\n    betaStar T C pi barB gamma delta = delta0 ∧\n    ∀ g ∈ C, ∀ t : Fin T,\n      fittedMean T C pi barB gamma delta g t =\n        untreatedMean T barB gamma g t * Real.exp (treatmentIndicator T g t * delta0)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "thm:primitive-global-frontier": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.primitive_global_frontier",
+      "file": "PrimitiveFrontier.lean",
+      "line": 0,
+      "statement": "/-- Phi has exactly the sign of the pseudo-true beta and yields the stated PTT diagnosis. -/\ntheorem primitive_global_frontier (T : ℕ) (C : Finset (Cohort T))\n    (hT : 0 < T) (hHorizon : ValidPanelHorizon T) -- @realizes T(standing 4 ≤ T premise)\n    (hSupport : ValidCohortSupport T C) -- @realizes C(paper cohort-support premise)\n    (Omega : ℕ → Type*) (P : ∀ N, SamplingLaw (Omega N))\n    (Y : ∀ N, Fin N → Fin T → Fin 2 → Omega N → ℝ)\n    (G : ∀ N, Fin N → Cohort T) (b : ∀ N, Fin N → PosReal)\n    (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ)\n    (hGSupport : ∀ N i, G N i ∈ C) -- @realizes G_i(every deterministic label lies in C)\n    (hShare : CohortShareLimit T C G pi)\n    (hMean : UnitUntreatedExponentialMean T Omega P Y b gamma)\n    (hBaseline : WithinCohortBaselineLimit T C G b barB)\n    (hEffects : ProportionalEffects T Omega P Y G delta)\n    (hRank : CollapsedDesignRank T C pi)\n    (hScope : MulticohortFrontierScope T C)\n    (hPositive : StrictPositiveEffects T C delta) :\n    let Phi",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "prop:four-cohort-sign-reversal": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.four_cohort_sign_reversal",
+      "file": "FourCohort.lean",
+      "line": 0,
+      "statement": "/-- W4 is an all-positive sign reversal and has the stated negative late-cell derivative. -/\ntheorem four_cohort_sign_reversal :\n    restrictSignReversalPrimitive 4 fourCohortSupport fourCohortShare\n      fourCohortLimitBaseline fourCohortGamma fourCohortDelta ∈\n        signReversalRegion 4 fourCohortSupport fourCohortGamma ∧\n    (∀ g ∈ fourCohortSupport, ∀ t : Fin 4,\n      treatmentIndicator 4 g t = 1 → 0 < fourCohortDelta (g, t)) ∧\n    (∀ g ∈ fourCohortSupport, ∀ t : Fin 4,\n      treatmentIndicator 4 g t = 1 →\n      (g, t) ≠ (fourLateCohort, fourLatePeriod) →\n      fourCohortDelta (g, t) <\n        fourCohortDelta (fourLateCohort, fourLatePeriod)) ∧\n    (∀ z : SupportedCell 4 fourCohortSupport,\n      weightedFWLResidual 4 fourCohortSupport fourHorizonPositive fourSupportNonempty\n        fourCohortShare fourCohortLimitBaseline fourCohortGamma zeroEffects4\n        z = fourResidualTable z.1.1 z.2) ∧\n    weightedFWLResidual 4 fourCohortSupport fourHorizonPositive fourSupportNonempty\n      fourCohortShare fourCohortLimitBaseline fourCohortGamma zeroEffects4\n      fourLateSupportedCell = -(1 : ℝ) / 8 ∧\n    HasDerivAt\n      (fun x => betaStar 4 fourCohortSupport fourCohortShare fourCohortLimitBaseline\n        fourCohortGamma\n        (Function.update zeroEffects4 (fourLateCohort, fourLatePeriod) x))\n      (-(1 : ℝ) / 10) 0 ∧\n    ∃ epsilon : ℝ, 0 < epsilon ∧\n      ∀ delta' : Cell 4 → ℝ,\n        (∀ g ∈ fourCohortSupport, ∀ t : Fin 4, |delta' (g, t)| < epsilon) →\n        StrictPositiveEffects 4 fourCohortSupport delta' →\n        deriv (fun x => betaStar 4 fourCohortSupport fourCohortShare fourCohortLimitBaseline\n          fourCohortGamma\n          (Function.update delta' (fourLateCohort, fourLatePeriod) x))\n          (delta' (fourLateCohort, fourLatePeriod)) < 0",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:unit-fe-collapse": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.unit_fe_collapse",
+      "file": "Collapse.lean",
+      "line": 0,
+      "statement": "/-- The unit-FE and collapsed criteria have the same beta, and these betas converge. -/\nlemma unit_fe_collapse (T : ℕ) (C : Finset (Cohort T))\n    (hHorizon : ValidPanelHorizon T) -- @realizes T(standing 4 ≤ T premise)\n    (hSupport : ValidCohortSupport T C) -- @realizes C(paper cohort-support premise)\n    (Omega : ℕ → Type*) (P : ∀ N, SamplingLaw (Omega N))\n    (Y : ∀ N, Fin N → Fin T → Fin 2 → Omega N → ℝ)\n    (G : ∀ N, Fin N → Cohort T) (b : ∀ N, Fin N → PosReal)\n    (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ)\n    (hGSupport : ∀ N i, G N i ∈ C) -- @realizes G_i(every deterministic label lies in C)\n    (hShare : CohortShareLimit T C G pi)\n    (hMean : UnitUntreatedExponentialMean T Omega P Y b gamma)\n    (hBaseline : WithinCohortBaselineLimit T C G b barB)\n    (hEffects : ProportionalEffects T Omega P Y G delta)\n    (hRank : CollapsedDesignRank T C pi) :\n    (∀ N, C.card ≤ N →\n      IsUniqueGlobalMax (unitCriterion T N (G N) (b N) gamma delta)\n        (maximizerOrZero (unitCriterion T N (G N) (b N) gamma delta)) ∧\n      IsUniqueGlobalMax (finiteCollapsedCriterion T C (G N) (b N) gamma delta)\n        (finiteCollapsedProjection T C (G N) (b N) gamma delta) ∧\n      betaNStar T N (G N) (b N) gamma delta =\n        (finiteCollapsedProjection T C (G N) (b N) gamma delta).2) ∧\n    Tendsto (fun N => betaNStar T N (G N) (b N) gamma delta) atTop\n      (nhds (betaStar T C pi barB gamma delta)) ∧\n    ∀ N (b' : Fin N → PosReal), C.card ≤ N →\n      (∀ g ∈ C, withinCohortBaseline T (G N) b' g =\n        withinCohortBaseline T (G N) (b N) g) →\n      betaNStar T N (G N) b' gamma delta = betaNStar T N (G N) (b N) gamma delta",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:pseudo-true-ppml-projection": {
+      "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.pseudo_true_ppml_projection",
+      "file": "Projection.lean",
+      "line": 0,
+      "statement": "/-- The pseudo-true collapsed parameter is unique and solves every score equation. -/\nlemma pseudo_true_ppml_projection (T : ℕ) (C : Finset (Cohort T))\n    (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ)\n    (hRank : CollapsedDesignRank T C pi) :\n    IsUniqueGlobalMax (limitingCriterion T C pi barB gamma delta)\n      (collapsedPopulationProjection T C pi barB gamma delta) ∧\n    (∀ j : CollapsedNuisanceIndex T C,\n      ∑ g ∈ C, ∑ t : Fin T,\n        limitingCellMass T pi g * collapsedNuisanceRegressor T C g t j *\n          (observedCohortMean T barB gamma delta g t -\n            fittedMean T C pi barB gamma delta g t) = 0) ∧\n    ∑ g ∈ C, ∑ t : Fin T,\n      limitingCellMass T pi g * treatmentIndicator T g t *\n        (observedCohortMean T barB gamma delta g t -\n            fittedMean T C pi barB gamma delta g t) = 0",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "sym:j": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 51,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "UnitDummy — non-base unit-dummy index {2,...,N}",
+          "statement": "abbrev UnitDummy (N : ℕ) := {i : Fin N // i.val ≠ 0}"
+        }
+      ]
+    },
+    "sym:t": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 55,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "PeriodIndex — calendar index Fin T; zero represents paper period one",
+          "statement": "  -- @realizes j(non-base unit-dummy index {2,...,N})\n\n/-- Calendar indices use all Lean indices `0,...,T-1`, representing paper periods `1,...,T`. -/\nabbrev PeriodIndex (T : ℕ) := Fin T"
+        },
+        {
+          "label": "UnitParameter — calendar index Fin T; zero represents period one",
+          "statement": "abbrev UnitParameter (N T : ℕ) := (UnitNuisanceIndex N T → ℝ) × ℝ\n\n/-! ## Collapsed cohort-time world -/\n\n-- @env: S1\n-- @realizes T(natural-number carrier; range pinned by ValidPanelHorizon)\n-- @realizes C(finite support carrier; range pinned by ValidCohortSupport)\n-- @realizes g(index in C through membership premises)\n-- @realizes k(effect-perturbation cohort index in C)\n-- @realizes t(calendar index Fin T; zero represents period one)\n-- @realizes s(effect-perturbation time index Fin T)\nvariable (T : ℕ) (C : Finset (Cohort T))"
+        }
+      ]
+    },
+    "sym:s": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 56,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "PeriodIndex — effect-perturbation time index Fin T",
+          "statement": "  -- @realizes j(non-base unit-dummy index {2,...,N})\n\n/-- Calendar indices use all Lean indices `0,...,T-1`, representing paper periods `1,...,T`. -/\nabbrev PeriodIndex (T : ℕ) := Fin T"
+        },
+        {
+          "label": "UnitParameter — effect-perturbation time index Fin T",
+          "statement": "abbrev UnitParameter (N T : ℕ) := (UnitNuisanceIndex N T → ℝ) × ℝ\n\n/-! ## Collapsed cohort-time world -/\n\n-- @env: S1\n-- @realizes T(natural-number carrier; range pinned by ValidPanelHorizon)\n-- @realizes C(finite support carrier; range pinned by ValidCohortSupport)\n-- @realizes g(index in C through membership premises)\n-- @realizes k(effect-perturbation cohort index in C)\n-- @realizes t(calendar index Fin T; zero represents period one)\n-- @realizes s(effect-perturbation time index Fin T)\nvariable (T : ℕ) (C : Finset (Cohort T))"
+        }
+      ]
+    },
+    "sym:u": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 57,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "PeriodIndex — calendar-period index {1,...,T}",
+          "statement": "  -- @realizes j(non-base unit-dummy index {2,...,N})\n\n/-- Calendar indices use all Lean indices `0,...,T-1`, representing paper periods `1,...,T`. -/\nabbrev PeriodIndex (T : ℕ) := Fin T"
+        }
+      ]
+    },
+    "sym:i": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 61,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "UnitIndex — unit index {1,...,N}",
+          "statement": "  -- @realizes t(calendar index Fin T; zero represents paper period one)\n  -- @realizes s(effect-perturbation time index Fin T)\n  -- @realizes u(calendar-period index {1,...,T})\n\n/-- Unit indices use all Lean indices `0,...,N-1`, representing paper units `1,...,N`. -/\nabbrev UnitIndex (N : ℕ) := Fin N"
+        }
+      ]
+    },
+    "sym:T": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 71,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "UnitParameter — natural-number carrier; range pinned by ValidPanelHorizon",
+          "statement": "abbrev UnitParameter (N T : ℕ) := (UnitNuisanceIndex N T → ℝ) × ℝ\n\n/-! ## Collapsed cohort-time world -/\n\n-- @env: S1\n-- @realizes T(natural-number carrier; range pinned by ValidPanelHorizon)\n-- @realizes C(finite support carrier; range pinned by ValidCohortSupport)\n-- @realizes g(index in C through membership premises)\n-- @realizes k(effect-perturbation cohort index in C)\n-- @realizes t(calendar index Fin T; zero represents period one)\n-- @realizes s(effect-perturbation time index Fin T)\nvariable (T : ℕ) (C : Finset (Cohort T))"
+        },
+        {
+          "label": "ValidPanelHorizon — standing restriction 4 ≤ T",
+          "statement": "/-- The paper only considers horizons in `{4,5,...}`. -/\ndef ValidPanelHorizon : Prop := 4 ≤ T"
+        },
+        {
+          "label": "unit_fe_collapse — standing 4 ≤ T premise",
+          "statement": "/-- The unit-FE and collapsed criteria have the same beta, and these betas converge. -/\nlemma unit_fe_collapse (T : ℕ) (C : Finset (Cohort T))\n    (hHorizon : ValidPanelHorizon T) -- @realizes T(standing 4 ≤ T premise)\n    (hSupport : ValidCohortSupport T C) -- @realizes C(paper cohort-support premise)\n    (Omega : ℕ → Type*) (P : ∀ N, SamplingLaw (Omega N))\n    (Y : ∀ N, Fin N → Fin T → Fin 2 → Omega N → ℝ)\n    (G : ∀ N, Fin N → Cohort T) (b : ∀ N, Fin N → PosReal)\n    (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ)\n    (hGSupport : ∀ N i, G N i ∈ C) -- @realizes G_i(every deterministic label lies in C)\n    (hShare : CohortShareLimit T C G pi)\n    (hMean : UnitUntreatedExponentialMean T Omega P Y b gamma)\n    (hBaseline : WithinCohortBaselineLimit T C G b barB)\n    (hEffects : ProportionalEffects T Omega P Y G delta)\n    (hRank : CollapsedDesignRank T C pi) :\n    (∀ N, C.card ≤ N →\n      IsUniqueGlobalMax (unitCriterion T N (G N) (b N) gamma delta)\n        (maximizerOrZero (unitCriterion T N (G N) (b N) gamma delta)) ∧\n      IsUniqueGlobalMax (finiteCollapsedCriterion T C (G N) (b N) gamma delta)\n        (finiteCollapsedProjection T C (G N) (b N) gamma delta) ∧\n      betaNStar T N (G N) (b N) gamma delta =\n        (finiteCollapsedProjection T C (G N) (b N) gamma delta).2) ∧\n    Tendsto (fun N => betaNStar T N (G N) (b N) gamma delta) atTop\n      (nhds (betaStar T C pi barB gamma delta)) ∧\n    ∀ N (b' : Fin N → PosReal), C.card ≤ N →\n      (∀ g ∈ C, withinCohortBaseline T (G N) b' g =\n        withinCohortBaseline T (G N) (b N) g) →\n      betaNStar T N (G N) b' gamma delta = betaNStar T N (G N) (b N) gamma delta"
+        },
+        {
+          "label": "primitive_global_frontier — standing 4 ≤ T premise",
+          "statement": "/-- Phi has exactly the sign of the pseudo-true beta and yields the stated PTT diagnosis. -/\ntheorem primitive_global_frontier (T : ℕ) (C : Finset (Cohort T))\n    (hT : 0 < T) (hHorizon : ValidPanelHorizon T) -- @realizes T(standing 4 ≤ T premise)\n    (hSupport : ValidCohortSupport T C) -- @realizes C(paper cohort-support premise)\n    (Omega : ℕ → Type*) (P : ∀ N, SamplingLaw (Omega N))\n    (Y : ∀ N, Fin N → Fin T → Fin 2 → Omega N → ℝ)\n    (G : ∀ N, Fin N → Cohort T) (b : ∀ N, Fin N → PosReal)\n    (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ)\n    (hGSupport : ∀ N i, G N i ∈ C) -- @realizes G_i(every deterministic label lies in C)\n    (hShare : CohortShareLimit T C G pi)\n    (hMean : UnitUntreatedExponentialMean T Omega P Y b gamma)\n    (hBaseline : WithinCohortBaselineLimit T C G b barB)\n    (hEffects : ProportionalEffects T Omega P Y G delta)\n    (hRank : CollapsedDesignRank T C pi)\n    (hScope : MulticohortFrontierScope T C)\n    (hPositive : StrictPositiveEffects T C delta) :\n    let Phi"
+        }
+      ]
+    },
+    "sym:C": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 72,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "UnitParameter — finite support carrier; range pinned by ValidCohortSupport",
+          "statement": "abbrev UnitParameter (N T : ℕ) := (UnitNuisanceIndex N T → ℝ) × ℝ\n\n/-! ## Collapsed cohort-time world -/\n\n-- @env: S1\n-- @realizes T(natural-number carrier; range pinned by ValidPanelHorizon)\n-- @realizes C(finite support carrier; range pinned by ValidCohortSupport)\n-- @realizes g(index in C through membership premises)\n-- @realizes k(effect-perturbation cohort index in C)\n-- @realizes t(calendar index Fin T; zero represents period one)\n-- @realizes s(effect-perturbation time index Fin T)\nvariable (T : ℕ) (C : Finset (Cohort T))"
+        },
+        {
+          "label": "ValidCohortSupport — contains infinity and excludes the finite index 0",
+          "statement": "  -- @realizes T(standing restriction 4 ≤ T)\n\n/-- Supported finite cohorts are paper dates `2,...,T`, and never-treated is supported. -/\ndef ValidCohortSupport : Prop :=\n  (⊤ : Cohort T) ∈ C ∧\n  ∀ g : Fin T, (g : Cohort T) ∈ C → g.val ≠ 0"
+        },
+        {
+          "label": "unit_fe_collapse — paper cohort-support premise",
+          "statement": "/-- The unit-FE and collapsed criteria have the same beta, and these betas converge. -/\nlemma unit_fe_collapse (T : ℕ) (C : Finset (Cohort T))\n    (hHorizon : ValidPanelHorizon T) -- @realizes T(standing 4 ≤ T premise)\n    (hSupport : ValidCohortSupport T C) -- @realizes C(paper cohort-support premise)\n    (Omega : ℕ → Type*) (P : ∀ N, SamplingLaw (Omega N))\n    (Y : ∀ N, Fin N → Fin T → Fin 2 → Omega N → ℝ)\n    (G : ∀ N, Fin N → Cohort T) (b : ∀ N, Fin N → PosReal)\n    (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ)\n    (hGSupport : ∀ N i, G N i ∈ C) -- @realizes G_i(every deterministic label lies in C)\n    (hShare : CohortShareLimit T C G pi)\n    (hMean : UnitUntreatedExponentialMean T Omega P Y b gamma)\n    (hBaseline : WithinCohortBaselineLimit T C G b barB)\n    (hEffects : ProportionalEffects T Omega P Y G delta)\n    (hRank : CollapsedDesignRank T C pi) :\n    (∀ N, C.card ≤ N →\n      IsUniqueGlobalMax (unitCriterion T N (G N) (b N) gamma delta)\n        (maximizerOrZero (unitCriterion T N (G N) (b N) gamma delta)) ∧\n      IsUniqueGlobalMax (finiteCollapsedCriterion T C (G N) (b N) gamma delta)\n        (finiteCollapsedProjection T C (G N) (b N) gamma delta) ∧\n      betaNStar T N (G N) (b N) gamma delta =\n        (finiteCollapsedProjection T C (G N) (b N) gamma delta).2) ∧\n    Tendsto (fun N => betaNStar T N (G N) (b N) gamma delta) atTop\n      (nhds (betaStar T C pi barB gamma delta)) ∧\n    ∀ N (b' : Fin N → PosReal), C.card ≤ N →\n      (∀ g ∈ C, withinCohortBaseline T (G N) b' g =\n        withinCohortBaseline T (G N) (b N) g) →\n      betaNStar T N (G N) b' gamma delta = betaNStar T N (G N) (b N) gamma delta"
+        },
+        {
+          "label": "primitive_global_frontier — paper cohort-support premise",
+          "statement": "/-- Phi has exactly the sign of the pseudo-true beta and yields the stated PTT diagnosis. -/\ntheorem primitive_global_frontier (T : ℕ) (C : Finset (Cohort T))\n    (hT : 0 < T) (hHorizon : ValidPanelHorizon T) -- @realizes T(standing 4 ≤ T premise)\n    (hSupport : ValidCohortSupport T C) -- @realizes C(paper cohort-support premise)\n    (Omega : ℕ → Type*) (P : ∀ N, SamplingLaw (Omega N))\n    (Y : ∀ N, Fin N → Fin T → Fin 2 → Omega N → ℝ)\n    (G : ∀ N, Fin N → Cohort T) (b : ∀ N, Fin N → PosReal)\n    (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ)\n    (hGSupport : ∀ N i, G N i ∈ C) -- @realizes G_i(every deterministic label lies in C)\n    (hShare : CohortShareLimit T C G pi)\n    (hMean : UnitUntreatedExponentialMean T Omega P Y b gamma)\n    (hBaseline : WithinCohortBaselineLimit T C G b barB)\n    (hEffects : ProportionalEffects T Omega P Y G delta)\n    (hRank : CollapsedDesignRank T C pi)\n    (hScope : MulticohortFrontierScope T C)\n    (hPositive : StrictPositiveEffects T C delta) :\n    let Phi"
+        }
+      ]
+    },
+    "sym:g": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 73,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "UnitParameter — index in C through membership premises",
+          "statement": "abbrev UnitParameter (N T : ℕ) := (UnitNuisanceIndex N T → ℝ) × ℝ\n\n/-! ## Collapsed cohort-time world -/\n\n-- @env: S1\n-- @realizes T(natural-number carrier; range pinned by ValidPanelHorizon)\n-- @realizes C(finite support carrier; range pinned by ValidCohortSupport)\n-- @realizes g(index in C through membership premises)\n-- @realizes k(effect-perturbation cohort index in C)\n-- @realizes t(calendar index Fin T; zero represents period one)\n-- @realizes s(effect-perturbation time index Fin T)\nvariable (T : ℕ) (C : Finset (Cohort T))"
+        }
+      ]
+    },
+    "sym:k": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 74,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "UnitParameter — effect-perturbation cohort index in C",
+          "statement": "abbrev UnitParameter (N T : ℕ) := (UnitNuisanceIndex N T → ℝ) × ℝ\n\n/-! ## Collapsed cohort-time world -/\n\n-- @env: S1\n-- @realizes T(natural-number carrier; range pinned by ValidPanelHorizon)\n-- @realizes C(finite support carrier; range pinned by ValidCohortSupport)\n-- @realizes g(index in C through membership premises)\n-- @realizes k(effect-perturbation cohort index in C)\n-- @realizes t(calendar index Fin T; zero represents period one)\n-- @realizes s(effect-perturbation time index Fin T)\nvariable (T : ℕ) (C : Finset (Cohort T))"
+        }
+      ]
+    },
+    "sym:D_gt": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 92,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "treatmentIndicator — 1{g≤t}, with top never treated",
+          "statement": "  -- @realizes C(contains infinity and excludes the finite index 0)\n\n/-- Whether adoption cohort `g` is treated in calendar period `t`. -/\nnoncomputable def treatmentIndicator (g : Cohort T) (t : Fin T) : ℝ :=\n  Causalean.Panel.AdoptionPath.absorbingTreatment g t"
+        }
+      ]
+    },
+    "sym:n_gN": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 97,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "cohortCount — cardinality of the units labelled g",
+          "statement": "  -- @realizes D_gt(1{g≤t}, with top never treated)\n\n/-- The finite-array cohort count induced by deterministic cohort labels. -/\ndef cohortCount {N : ℕ} (G : Fin N → Cohort T) (g : Cohort T) : ℕ :=\n  (Finset.univ.filter fun i => G i = g).card"
+        },
+        {
+          "label": "CohortShareLimit — supported count in {1,...,N}",
+          "statement": "def CohortShareLimit (G : ∀ N, Fin N → Cohort T) (pi : Cohort T → OpenUnit) : Prop :=\n  (∀ N, C.card ≤ N →\n    0 < N ∧ -- @realizes pi_gN(positive denominator N)\n    ∀ g ∈ C,\n      0 < cohortCount T (G N) g) ∧ -- @realizes n_gN(supported count in {1,...,N})\n                                      -- @realizes pi_gN(strictly positive supported share)\n  ∀ g ∈ C, Tendsto (fun N => cohortShare T (G N) g) atTop (nhds (pi g : ℝ))"
+        },
+        {
+          "label": "fourCohortCount — equal count m+1 on each supported cohort",
+          "statement": "/-- Equal cohort counts along the cofinal sequence `N = 4(m+1)`. -/\ndef fourCohortCount (m : ℕ) (g : Cohort 4) : ℕ :=\n  if g ∈ fourCohortSupport then m + 1 else 0"
+        },
+        {
+          "label": "fourCohortCount_pos — positive on the declared supported-cohort domain",
+          "statement": "  -- @realizes N(cofinal subsequence N=4(m+1))\n  -- @realizes n_gN(equal count m+1 on each supported cohort)\n\n/-- Every cohort in the declared four-cohort support has positive count. -/\nlemma fourCohortCount_pos (m : ℕ) (g : Cohort 4) (hg : g ∈ fourCohortSupport) :\n    0 < fourCohortCount m g"
+        }
+      ]
+    },
+    "sym:I_gN": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 102,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "cohortIndexSet — {i : G_i = g}",
+          "statement": "  -- @realizes n_gN(cardinality of the units labelled g)\n\n/-- The cohort index set induced by deterministic labels. -/\ndef cohortIndexSet {N : ℕ} (G : Fin N → Cohort T) (g : Cohort T) : Finset (Fin N) :=\n  Finset.univ.filter fun i => G i = g"
+        }
+      ]
+    },
+    "sym:pi_gN": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 107,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "cohortShare — n_gN / N",
+          "statement": "  -- @realizes I_gN({i : G_i = g})\n\n/-- The finite-array cohort share `n_gN / N`. -/\nnoncomputable def cohortShare {N : ℕ} (G : Fin N → Cohort T) (g : Cohort T) : ℝ :=\n  (cohortCount T G g : ℝ) / N"
+        },
+        {
+          "label": "CohortShareLimit — positive denominator N; strictly positive supported share",
+          "statement": "def CohortShareLimit (G : ∀ N, Fin N → Cohort T) (pi : Cohort T → OpenUnit) : Prop :=\n  (∀ N, C.card ≤ N →\n    0 < N ∧ -- @realizes pi_gN(positive denominator N)\n    ∀ g ∈ C,\n      0 < cohortCount T (G N) g) ∧ -- @realizes n_gN(supported count in {1,...,N})\n                                      -- @realizes pi_gN(strictly positive supported share)\n  ∀ g ∈ C, Tendsto (fun N => cohortShare T (G N) g) atTop (nhds (pi g : ℝ))"
+        }
+      ]
+    },
+    "sym:pi_gN(positive-count and N>0 domain gives range (0,1])": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 120,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "cohortShare_mem_Ioc",
+          "statement": "  -- @realizes pi_gN(n_gN / N)\n\n/-- A positive supported count and positive panel size put the finite share in `(0,1]`. -/\nlemma cohortShare_mem_Ioc {N : ℕ} (G : Fin N → Cohort T) (g : Cohort T)\n    (hN : 0 < N) (hCount : 0 < cohortCount T G g) :\n    cohortShare T G g ∈ Set.Ioc (0 : ℝ) 1"
+        }
+      ]
+    },
+    "sym:q_gt": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 125,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "limitingCellMass — pi_g / T",
+          "statement": "  -- @realizes pi_gN(positive-count and N>0 domain gives range (0,1])\n\n/-- The limiting cohort-time mass `pi_g / T`. -/\nnoncomputable def limitingCellMass (pi : Cohort T → OpenUnit) (g : Cohort T) : ℝ :=\n  (pi g : ℝ) / T"
+        }
+      ]
+    },
+    "sym:q_gtN": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 130,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "finiteCellMass — n_gN / (N*T)",
+          "statement": "  -- @realizes q_gt(pi_g / T)\n\n/-- The finite-array cohort-time mass `n_gN / (N*T)`. -/\nnoncomputable def finiteCellMass {N : ℕ} (G : Fin N → Cohort T) (g : Cohort T) : ℝ :=\n  (cohortCount T G g : ℝ) / (N * T)"
+        }
+      ]
+    },
+    "sym:bar_b_gN": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 136,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "withinCohortBaseline — n_gN⁻¹ times the within-cohort baseline sum",
+          "statement": "  -- @realizes q_gtN(n_gN / (N*T))\n\n/-- The within-cohort average of the positive unit baseline masses. -/\nnoncomputable def withinCohortBaseline {N : ℕ} (G : Fin N → Cohort T)\n    (b : Fin N → PosReal) (g : Cohort T) : ℝ :=\n  (cohortCount T G g : ℝ)⁻¹ * ∑ i ∈ cohortIndexSet T G g, (b i : ℝ)"
+        },
+        {
+          "label": "withinCohortBaseline_pos — positive-count domain gives range (0,infinity)",
+          "statement": "  -- @realizes bar_b_gN(n_gN⁻¹ times the within-cohort baseline sum)\n\n/-- On its declared positive-count domain, the within-cohort baseline is strictly positive. -/\nlemma withinCohortBaseline_pos {N : ℕ} (G : Fin N → Cohort T)\n    (b : Fin N → PosReal) (g : Cohort T) (hCount : 0 < cohortCount T G g) :\n    0 < withinCohortBaseline T G b g"
+        }
+      ]
+    },
+    "sym:B_gtN": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 156,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "finiteUntreatedMean — bar_b_gN * exp gamma_t0",
+          "statement": "  -- @realizes bar_b_gN(positive-count domain gives range (0,infinity))\n\n/-- The finite-array untreated cohort mean. -/\nnoncomputable def finiteUntreatedMean {N : ℕ} (G : Fin N → Cohort T)\n    (b : Fin N → PosReal) (gamma : Fin T → ℝ) (g : Cohort T) (t : Fin T) : ℝ :=\n  withinCohortBaseline T G b g * Real.exp (gamma t)"
+        },
+        {
+          "label": "finiteUntreatedMean_pos — positive-count domain gives range (0,infinity)",
+          "statement": "  -- @realizes B_gtN(bar_b_gN * exp gamma_t0)\n\n/-- A supported positive-count cohort has a strictly positive finite untreated mean. -/\nlemma finiteUntreatedMean_pos {N : ℕ} (G : Fin N → Cohort T)\n    (b : Fin N → PosReal) (gamma : Fin T → ℝ) (g : Cohort T) (t : Fin T)\n    (hCount : 0 < cohortCount T G g) :\n    0 < finiteUntreatedMean T G b gamma g t"
+        }
+      ]
+    },
+    "sym:B_gt": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 170,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "untreatedMean — bar_b_g * exp gamma_t0",
+          "statement": "  -- @realizes B_gtN(positive-count domain gives range (0,infinity))\n\n/-- The limiting untreated cohort mean. -/\nnoncomputable def untreatedMean (barB : Cohort T → PosReal) (gamma : Fin T → ℝ)\n    (g : Cohort T) (t : Fin T) : ℝ :=\n  (barB g : ℝ) * Real.exp (gamma t)"
+        },
+        {
+          "label": "signReversalRegion — positive baseline coordinates indexed only by supported cells",
+          "statement": "/-- The all-positive-effect PPML sign-reversal region `R_T`. -/\nnoncomputable def signReversalRegion (T : ℕ) (C : Finset (Cohort T))\n    (gamma : Fin T → ℝ) : Set (SignReversalPrimitive T C) :=\n  {p | ValidPanelHorizon T ∧\n    ValidCohortSupport T C ∧\n    MulticohortFrontierScope T C ∧\n    (∑ g : ↑C, (p.1 g : ℝ)) = 1 ∧\n    (∃ barB : ↑C → PosReal, ∀ z : SupportedCell T C,\n      (p.2.1 z : ℝ) = (barB z.1 : ℝ) * Real.exp (gamma z.2)) ∧\n    (∀ z : TreatedSupportedCell T C, 0 < p.2.2 z) ∧\n    (∀ a : CollapsedParameter T C, a ≠ 0 →\n      0 < ∑ z : SupportedCell T C,\n        ((p.1 z.1 : ℝ) / T) *\n          (collapsedIndex T C (collapsedRegressor T C z.1.1 z.2) a) ^ 2) ∧\n    primitiveBetaStar T C p < 0}"
+        }
+      ]
+    },
+    "sym:m_gtN(delta)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 178,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "finiteObservedCohortMean — B_gtN * exp(D_gt*delta_gt)",
+          "statement": "  -- @realizes B_gt(bar_b_g * exp gamma_t0)\n\n/-- The finite-array observed cohort mean. -/\nnoncomputable def finiteObservedCohortMean {N : ℕ} (G : Fin N → Cohort T)\n    (b : Fin N → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ)\n    (g : Cohort T) (t : Fin T) : ℝ :=\n  finiteUntreatedMean T G b gamma g t *\n    Real.exp (treatmentIndicator T g t * delta (g, t))"
+        },
+        {
+          "label": "finiteObservedCohortMean_pos — positive-count domain gives range (0,infinity)",
+          "statement": "  -- @realizes m_gtN(delta)(B_gtN * exp(D_gt*delta_gt))\n\n/-- A supported positive-count cohort has a strictly positive finite observed mean. -/\nlemma finiteObservedCohortMean_pos {N : ℕ} (G : Fin N → Cohort T)\n    (b : Fin N → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ)\n    (g : Cohort T) (t : Fin T) (hCount : 0 < cohortCount T G g) :\n    0 < finiteObservedCohortMean T G b gamma delta g t"
+        }
+      ]
+    },
+    "sym:m_gt(delta)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 192,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "observedCohortMean — B_gt * exp(D_gt*delta_gt)",
+          "statement": "  -- @realizes m_gtN(delta)(positive-count domain gives range (0,infinity))\n\n/-- The limiting observed cohort mean. -/\nnoncomputable def observedCohortMean (barB : Cohort T → PosReal) (gamma : Fin T → ℝ)\n    (delta : Cell T → ℝ) (g : Cohort T) (t : Fin T) : ℝ :=\n  untreatedMean T barB gamma g t * Real.exp (treatmentIndicator T g t * delta (g, t))"
+        }
+      ]
+    },
+    "sym:X_gt": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 200,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "collapsedNuisanceRegressor — r_gt with the last treatment coordinate removed",
+          "statement": "  -- @realizes m_gt(delta)(B_gt * exp(D_gt*delta_gt))\n\n/-- The fixed-effect nuisance part of the collapsed regressor. -/\nnoncomputable def collapsedNuisanceRegressor (g : Cohort T) (t : Fin T) :\n    CollapsedNuisanceIndex T C → ℝ\n  | Sum.inl _ => 1\n  | Sum.inr (Sum.inl c) => if g = c.1.1 then 1 else 0\n  | Sum.inr (Sum.inr u) => if t = u.1 then 1 else 0"
+        }
+      ]
+    },
+    "sym:r_gt": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 206,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "collapsedRegressor — intercept, cohort FE, time FE, then D_gt",
+          "statement": "  -- @realizes X_gt(r_gt with the last treatment coordinate removed)\n\n/-- The collapsed regressor, with treatment as its final coordinate. -/\nnoncomputable def collapsedRegressor (g : Cohort T) (t : Fin T) :\n    CollapsedParameter T C :=\n  (collapsedNuisanceRegressor T C g t, treatmentIndicator T g t)"
+        }
+      ]
+    },
+    "sym:L(theta;delta)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 221,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "limitingCriterion — finite q_gt-weighted Poisson criterion",
+          "statement": "/-- The limiting collapsed Poisson pseudo-criterion. -/\nnoncomputable def limitingCriterion (pi : Cohort T → OpenUnit)\n    (barB : Cohort T → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ)\n    (theta : CollapsedParameter T C) : ℝ :=\n  ∑ g ∈ C, ∑ t : Fin T,\n    limitingCellMass T pi g *\n      (observedCohortMean T barB gamma delta g t *\n          collapsedIndex T C (collapsedRegressor T C g t) theta -\n        Real.exp (collapsedIndex T C (collapsedRegressor T C g t) theta))"
+        }
+      ]
+    },
+    "sym:theta": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 222,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "limitingCriterion — collapsed coefficient argument; second coordinate is beta",
+          "statement": "/-- The limiting collapsed Poisson pseudo-criterion. -/\nnoncomputable def limitingCriterion (pi : Cohort T → OpenUnit)\n    (barB : Cohort T → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ)\n    (theta : CollapsedParameter T C) : ℝ :=\n  ∑ g ∈ C, ∑ t : Fin T,\n    limitingCellMass T pi g *\n      (observedCohortMean T barB gamma delta g t *\n          collapsedIndex T C (collapsedRegressor T C g t) theta -\n        Real.exp (collapsedIndex T C (collapsedRegressor T C g t) theta))"
+        }
+      ]
+    },
+    "sym:L_Nc(theta;delta)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 233,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "finiteCollapsedCriterion — finite collapsed Poisson criterion",
+          "statement": "  -- @realizes L(theta;delta)(finite q_gt-weighted Poisson criterion)\n  -- @realizes theta(collapsed coefficient argument; second coordinate is beta)\n\n/-- The finite-array collapsed Poisson pseudo-criterion. -/\nnoncomputable def finiteCollapsedCriterion {N : ℕ} (G : Fin N → Cohort T)\n    (b : Fin N → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ)\n    (theta : CollapsedParameter T C) : ℝ :=\n  ∑ g ∈ C, ∑ t : Fin T,\n    finiteCellMass T G g *\n      (finiteObservedCohortMean T G b gamma delta g t *\n          collapsedIndex T C (collapsedRegressor T C g t) theta -\n        Real.exp (collapsedIndex T C (collapsedRegressor T C g t) theta))"
+        }
+      ]
+    },
+    "sym:theta_star(delta)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 241,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "collapsedPopulationProjection — argmax of L(theta;delta)",
+          "statement": "/-- The selected maximizer `theta_star(delta)` of the limiting collapsed criterion. -/\nnoncomputable def collapsedPopulationProjection (pi : Cohort T → OpenUnit)\n    (barB : Cohort T → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ) :\n    CollapsedParameter T C :=\n  maximizerOrZero (limitingCriterion T C pi barB gamma delta)"
+        }
+      ]
+    },
+    "sym:beta_star(delta)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 247,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "betaStar — last coordinate of theta_star(delta)",
+          "statement": "  -- @realizes theta_star(delta)(argmax of L(theta;delta))\n\n/-- The treatment coordinate of the limiting pseudo-true parameter. -/\nnoncomputable def betaStar (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ) : ℝ :=\n  (collapsedPopulationProjection T C pi barB gamma delta).2"
+        }
+      ]
+    },
+    "sym:mu_star_gt(delta)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 254,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "fittedMean — exp(r_gt' theta_star(delta))",
+          "statement": "  -- @realizes beta_star(delta)(last coordinate of theta_star(delta))\n\n/-- The fitted limiting cohort-time mean. -/\nnoncomputable def fittedMean (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ) (g : Cohort T) (t : Fin T) : ℝ :=\n  Real.exp (collapsedIndex T C (collapsedRegressor T C g t)\n    (collapsedPopulationProjection T C pi barB gamma delta))"
+        }
+      ]
+    },
+    "sym:Omega_N": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 259,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "SamplingLaw — finite-array outcome sample space",
+          "statement": "  -- @realizes mu_star_gt(delta)(exp(r_gt' theta_star(delta)))\n\n/-! ## Finite unit-and-time fixed-effect world -/\n\nabbrev SamplingLaw (Omega : Type*) := (Omega → ℝ) → ℝ"
+        }
+      ]
+    },
+    "sym:Pcal": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 260,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "SamplingLaw — array family of abstract sampling laws",
+          "statement": "  -- @realizes mu_star_gt(delta)(exp(r_gt' theta_star(delta)))\n\n/-! ## Finite unit-and-time fixed-effect world -/\n\nabbrev SamplingLaw (Omega : Type*) := (Omega → ℝ) → ℝ"
+        }
+      ]
+    },
+    "sym:E_Pcal_N": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 264,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "expectationUnder — expectation functional of Pcal_N",
+          "statement": "  -- @realizes Omega_N(finite-array outcome sample space)\n  -- @realizes Pcal(array family of abstract sampling laws)\n\n/-- The expectation operator carried by the abstract sampling law. -/\ndef expectationUnder {Omega : Type*} (P : SamplingLaw Omega) : (Omega → ℝ) → ℝ := P\n  -- @realizes E_Pcal_N(expectation functional of Pcal_N)\n\n-- @env: S2\n-- @realizes N(array size; theorem signatures restrict N relative to C)\n-- @realizes G_i(Cohort-valued label carrier; range pinned by hGSupport premises)\n-- @realizes Pcal_N(abstract sampling law represented by its expectation functional)\nvariable (N : ℕ)"
+        }
+      ]
+    },
+    "sym:N": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 267,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "expectationUnder — array size; theorem signatures restrict N relative to C",
+          "statement": "  -- @realizes Omega_N(finite-array outcome sample space)\n  -- @realizes Pcal(array family of abstract sampling laws)\n\n/-- The expectation operator carried by the abstract sampling law. -/\ndef expectationUnder {Omega : Type*} (P : SamplingLaw Omega) : (Omega → ℝ) → ℝ := P\n  -- @realizes E_Pcal_N(expectation functional of Pcal_N)\n\n-- @env: S2\n-- @realizes N(array size; theorem signatures restrict N relative to C)\n-- @realizes G_i(Cohort-valued label carrier; range pinned by hGSupport premises)\n-- @realizes Pcal_N(abstract sampling law represented by its expectation functional)\nvariable (N : ℕ)"
+        },
+        {
+          "label": "fourCohortCount — cofinal subsequence N=4(m+1)",
+          "statement": "/-- Equal cohort counts along the cofinal sequence `N = 4(m+1)`. -/\ndef fourCohortCount (m : ℕ) (g : Cohort 4) : ℕ :=\n  if g ∈ fourCohortSupport then m + 1 else 0"
+        }
+      ]
+    },
+    "sym:G_i": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 268,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "expectationUnder — Cohort-valued label carrier; range pinned by hGSupport premises",
+          "statement": "  -- @realizes Omega_N(finite-array outcome sample space)\n  -- @realizes Pcal(array family of abstract sampling laws)\n\n/-- The expectation operator carried by the abstract sampling law. -/\ndef expectationUnder {Omega : Type*} (P : SamplingLaw Omega) : (Omega → ℝ) → ℝ := P\n  -- @realizes E_Pcal_N(expectation functional of Pcal_N)\n\n-- @env: S2\n-- @realizes N(array size; theorem signatures restrict N relative to C)\n-- @realizes G_i(Cohort-valued label carrier; range pinned by hGSupport premises)\n-- @realizes Pcal_N(abstract sampling law represented by its expectation functional)\nvariable (N : ℕ)"
+        },
+        {
+          "label": "unit_fe_collapse — every deterministic label lies in C",
+          "statement": "/-- The unit-FE and collapsed criteria have the same beta, and these betas converge. -/\nlemma unit_fe_collapse (T : ℕ) (C : Finset (Cohort T))\n    (hHorizon : ValidPanelHorizon T) -- @realizes T(standing 4 ≤ T premise)\n    (hSupport : ValidCohortSupport T C) -- @realizes C(paper cohort-support premise)\n    (Omega : ℕ → Type*) (P : ∀ N, SamplingLaw (Omega N))\n    (Y : ∀ N, Fin N → Fin T → Fin 2 → Omega N → ℝ)\n    (G : ∀ N, Fin N → Cohort T) (b : ∀ N, Fin N → PosReal)\n    (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ)\n    (hGSupport : ∀ N i, G N i ∈ C) -- @realizes G_i(every deterministic label lies in C)\n    (hShare : CohortShareLimit T C G pi)\n    (hMean : UnitUntreatedExponentialMean T Omega P Y b gamma)\n    (hBaseline : WithinCohortBaselineLimit T C G b barB)\n    (hEffects : ProportionalEffects T Omega P Y G delta)\n    (hRank : CollapsedDesignRank T C pi) :\n    (∀ N, C.card ≤ N →\n      IsUniqueGlobalMax (unitCriterion T N (G N) (b N) gamma delta)\n        (maximizerOrZero (unitCriterion T N (G N) (b N) gamma delta)) ∧\n      IsUniqueGlobalMax (finiteCollapsedCriterion T C (G N) (b N) gamma delta)\n        (finiteCollapsedProjection T C (G N) (b N) gamma delta) ∧\n      betaNStar T N (G N) (b N) gamma delta =\n        (finiteCollapsedProjection T C (G N) (b N) gamma delta).2) ∧\n    Tendsto (fun N => betaNStar T N (G N) (b N) gamma delta) atTop\n      (nhds (betaStar T C pi barB gamma delta)) ∧\n    ∀ N (b' : Fin N → PosReal), C.card ≤ N →\n      (∀ g ∈ C, withinCohortBaseline T (G N) b' g =\n        withinCohortBaseline T (G N) (b N) g) →\n      betaNStar T N (G N) b' gamma delta = betaNStar T N (G N) (b N) gamma delta"
+        },
+        {
+          "label": "primitive_global_frontier — every deterministic label lies in C",
+          "statement": "/-- Phi has exactly the sign of the pseudo-true beta and yields the stated PTT diagnosis. -/\ntheorem primitive_global_frontier (T : ℕ) (C : Finset (Cohort T))\n    (hT : 0 < T) (hHorizon : ValidPanelHorizon T) -- @realizes T(standing 4 ≤ T premise)\n    (hSupport : ValidCohortSupport T C) -- @realizes C(paper cohort-support premise)\n    (Omega : ℕ → Type*) (P : ∀ N, SamplingLaw (Omega N))\n    (Y : ∀ N, Fin N → Fin T → Fin 2 → Omega N → ℝ)\n    (G : ∀ N, Fin N → Cohort T) (b : ∀ N, Fin N → PosReal)\n    (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ)\n    (hGSupport : ∀ N i, G N i ∈ C) -- @realizes G_i(every deterministic label lies in C)\n    (hShare : CohortShareLimit T C G pi)\n    (hMean : UnitUntreatedExponentialMean T Omega P Y b gamma)\n    (hBaseline : WithinCohortBaselineLimit T C G b barB)\n    (hEffects : ProportionalEffects T Omega P Y G delta)\n    (hRank : CollapsedDesignRank T C pi)\n    (hScope : MulticohortFrontierScope T C)\n    (hPositive : StrictPositiveEffects T C delta) :\n    let Phi"
+        }
+      ]
+    },
+    "sym:Pcal_N": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 269,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "expectationUnder — abstract sampling law represented by its expectation functional",
+          "statement": "  -- @realizes Omega_N(finite-array outcome sample space)\n  -- @realizes Pcal(array family of abstract sampling laws)\n\n/-- The expectation operator carried by the abstract sampling law. -/\ndef expectationUnder {Omega : Type*} (P : SamplingLaw Omega) : (Omega → ℝ) → ℝ := P\n  -- @realizes E_Pcal_N(expectation functional of Pcal_N)\n\n-- @env: S2\n-- @realizes N(array size; theorem signatures restrict N relative to C)\n-- @realizes G_i(Cohort-valued label carrier; range pinned by hGSupport premises)\n-- @realizes Pcal_N(abstract sampling law represented by its expectation functional)\nvariable (N : ℕ)"
+        }
+      ]
+    },
+    "sym:D_it": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 275,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "unitTreatment — D_{G_i,t}",
+          "statement": "/-- The unit treatment indicator induced by its cohort label. -/\nnoncomputable def unitTreatment (G : Fin N → Cohort T) (i : Fin N) (t : Fin T) : ℝ :=\n  treatmentIndicator T (G i) t"
+        }
+      ]
+    },
+    "sym:v_itN": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 288,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "unitRegressor — intercept, unit FE, time FE, then D_it",
+          "statement": "/-- The unit-and-time regressor with treatment last. -/\nnoncomputable def unitRegressor (G : Fin N → Cohort T) (i : Fin N) (t : Fin T) :\n    UnitParameter N T :=\n  (unitNuisanceRegressor T N i t, unitTreatment T N G i t)"
+        }
+      ]
+    },
+    "sym:theta_N": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 293,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "unitIndex — unit-and-time-FE coefficient argument; beta last",
+          "statement": "  -- @realizes v_itN(intercept, unit FE, time FE, then D_it)\n\n/-- Dot product for finite-array unit parameters. -/\ndef unitIndex (v theta : UnitParameter N T) : ℝ :=\n  (∑ j, v.1 j * theta.1 j) + v.2 * theta.2"
+        }
+      ]
+    },
+    "sym:b_iN": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 299,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "unitObservedMean — positive unit baseline carrier",
+          "statement": "  -- @realizes theta_N(unit-and-time-FE coefficient argument; beta last)\n\n/-- The deterministic unit-time mean implied by the exponential model. -/\nnoncomputable def unitObservedMean (G : Fin N → Cohort T) (b : Fin N → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ) (i : Fin N) (t : Fin T) : ℝ :=\n  (b i : ℝ) * Real.exp (gamma t + unitTreatment T N G i t * delta (G i, t))"
+        },
+        {
+          "label": "fourCohortBaseline — unit baseline identically one in W4",
+          "statement": "  -- @realizes n_gN(positive on the declared supported-cohort domain)\n\n/-- Unit baselines are identically one in the fixture. -/\ndef fourCohortBaseline (m : ℕ) (_i : Fin (4 * (m + 1))) : PosReal := ⟨1, zero_lt_one⟩"
+        }
+      ]
+    },
+    "sym:gamma_t0": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 300,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "unitObservedMean — real time effect; normalization is in UnitUntreatedExponentialMean",
+          "statement": "  -- @realizes theta_N(unit-and-time-FE coefficient argument; beta last)\n\n/-- The deterministic unit-time mean implied by the exponential model. -/\nnoncomputable def unitObservedMean (G : Fin N → Cohort T) (b : Fin N → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ) (i : Fin N) (t : Fin T) : ℝ :=\n  (b i : ℝ) * Real.exp (gamma t + unitTreatment T N G i t * delta (G i, t))"
+        },
+        {
+          "label": "fourCohortGamma — time component identically zero in W4",
+          "statement": "  -- @realizes b_iN(unit baseline identically one in W4)\n\n/-- Untreated time effects are identically zero in the fixture. -/\ndef fourCohortGamma (_t : Fin 4) : ℝ := 0"
+        }
+      ]
+    },
+    "sym:delta_gt": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 301,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "unitObservedMean — real cohort-time log proportional effect",
+          "statement": "  -- @realizes theta_N(unit-and-time-FE coefficient argument; beta last)\n\n/-- The deterministic unit-time mean implied by the exponential model. -/\nnoncomputable def unitObservedMean (G : Fin N → Cohort T) (b : Fin N → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ) (i : Fin N) (t : Fin T) : ℝ :=\n  (b i : ℝ) * Real.exp (gamma t + unitTreatment T N G i t * delta (G i, t))"
+        },
+        {
+          "label": "signReversalRegion — effect coordinates indexed only by treated supported cells",
+          "statement": "/-- The all-positive-effect PPML sign-reversal region `R_T`. -/\nnoncomputable def signReversalRegion (T : ℕ) (C : Finset (Cohort T))\n    (gamma : Fin T → ℝ) : Set (SignReversalPrimitive T C) :=\n  {p | ValidPanelHorizon T ∧\n    ValidCohortSupport T C ∧\n    MulticohortFrontierScope T C ∧\n    (∑ g : ↑C, (p.1 g : ℝ)) = 1 ∧\n    (∃ barB : ↑C → PosReal, ∀ z : SupportedCell T C,\n      (p.2.1 z : ℝ) = (barB z.1 : ℝ) * Real.exp (gamma z.2)) ∧\n    (∀ z : TreatedSupportedCell T C, 0 < p.2.2 z) ∧\n    (∀ a : CollapsedParameter T C, a ≠ 0 →\n      0 < ∑ z : SupportedCell T C,\n        ((p.1 z.1 : ℝ) / T) *\n          (collapsedIndex T C (collapsedRegressor T C z.1.1 z.2) a) ^ 2) ∧\n    primitiveBetaStar T C p < 0}"
+        },
+        {
+          "label": "fourCohortDelta — log(4) at (2,4), log(101/100) at other treated cells",
+          "statement": "  -- @realizes gamma_t0(time component identically zero in W4)\n\n/-- The W4 effect vector: log(4) at paper cell (2,4), and log(101/100) elsewhere treated. -/\nnoncomputable def fourCohortDelta (z : Cell 4) : ℝ :=\n  if treatmentIndicator 4 z.1 z.2 = 1 then\n    if z.1 = (⟨1, by decide⟩ : Fin 4) ∧ z.2 = ⟨3, by decide⟩ then\n      Real.log 4\n    else Real.log (101 / 100 : ℝ)\n  else 0"
+        }
+      ]
+    },
+    "sym:m_itN(delta)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 302,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "unitObservedMean — b_iN * exp(gamma_t0 + D_it*delta_Gi,t)",
+          "statement": "  -- @realizes theta_N(unit-and-time-FE coefficient argument; beta last)\n\n/-- The deterministic unit-time mean implied by the exponential model. -/\nnoncomputable def unitObservedMean (G : Fin N → Cohort T) (b : Fin N → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ) (i : Fin N) (t : Fin T) : ℝ :=\n  (b i : ℝ) * Real.exp (gamma t + unitTreatment T N G i t * delta (G i, t))"
+        }
+      ]
+    },
+    "sym:L_N(theta_N;delta)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 311,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "unitCriterion — (NT)⁻¹ finite unit-time Poisson criterion",
+          "statement": "  -- @realizes b_iN(positive unit baseline carrier)\n  -- @realizes gamma_t0(real time effect; normalization is in UnitUntreatedExponentialMean)\n  -- @realizes delta_gt(real cohort-time log proportional effect)\n  -- @realizes m_itN(delta)(b_iN * exp(gamma_t0 + D_it*delta_Gi,t))\n\n/-- The unit-and-time-FE population Poisson criterion. -/\nnoncomputable def unitCriterion (G : Fin N → Cohort T) (b : Fin N → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ) (theta : UnitParameter N T) : ℝ :=\n  ((N * T : ℕ) : ℝ)⁻¹ * ∑ i : Fin N, ∑ t : Fin T,\n    (unitObservedMean T N G b gamma delta i t *\n        unitIndex T N (unitRegressor T N G i t) theta -\n      Real.exp (unitIndex T N (unitRegressor T N G i t) theta))"
+        }
+      ]
+    },
+    "sym:beta_Nstar(delta)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 318,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "betaNStar — last coordinate of argmax L_N",
+          "statement": "/-- The last coordinate of the selected unit-FE population maximizer. -/\nnoncomputable def betaNStar (G : Fin N → Cohort T) (b : Fin N → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ) : ℝ :=\n  (maximizerOrZero (unitCriterion T N G b gamma delta)).2"
+        }
+      ]
+    },
+    "sym:exp(-infty)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 324,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "extendedExp — extended exponential convention",
+          "statement": "  -- @realizes beta_Nstar(delta)(last coordinate of argmax L_N)\n\n/-- `Option ℝ` realizes finite unit effects together with `none = -∞`. -/\nnoncomputable def extendedExp : Option ℝ → ℝ\n  | none => 0\n  | some x => Real.exp x"
+        }
+      ]
+    },
+    "sym:Y_it": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 365,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "hatBetaN — observed nonnegative outcome supplied to the sample objective",
+          "statement": "/-- The total extended-MLE coefficient, with the stipulated minimum-norm selection and zero fallback. -/\nnoncomputable def hatBetaN (G : Fin N → Cohort T) (Y : Fin N → Fin T → ℝ) : ℝ :=\n  by\n    classical\n    exact if h : ∃ p : ExtendedCandidate N T,\n        IsExtendedSampleMaximizer T N G Y p ∧\n        ∀ q, IsExtendedSampleMaximizer T N G Y q →\n          finiteCoordinateNormSq T N p ≤ finiteCoordinateNormSq T N q\n      then (Classical.choose h).2.2 else 0"
+        }
+      ]
+    },
+    "sym:hat_beta_N": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 366,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "hatBetaN — beta of minimum-finite-coordinate-norm extended maximizer; zero fallback",
+          "statement": "/-- The total extended-MLE coefficient, with the stipulated minimum-norm selection and zero fallback. -/\nnoncomputable def hatBetaN (G : Fin N → Cohort T) (Y : Fin N → Fin T → ℝ) : ℝ :=\n  by\n    classical\n    exact if h : ∃ p : ExtendedCandidate N T,\n        IsExtendedSampleMaximizer T N G Y p ∧\n        ∀ q, IsExtendedSampleMaximizer T N G Y q →\n          finiteCoordinateNormSq T N p ≤ finiteCoordinateNormSq T N q\n      then (Classical.choose h).2.2 else 0"
+        }
+      ]
+    },
+    "sym:pi_g": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 378,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CohortShareLimit — positive open-unit-interval limit of pi_gN",
+          "statement": "def CohortShareLimit (G : ∀ N, Fin N → Cohort T) (pi : Cohort T → OpenUnit) : Prop :=\n  (∀ N, C.card ≤ N →\n    0 < N ∧ -- @realizes pi_gN(positive denominator N)\n    ∀ g ∈ C,\n      0 < cohortCount T (G N) g) ∧ -- @realizes n_gN(supported count in {1,...,N})\n                                      -- @realizes pi_gN(strictly positive supported share)\n  ∀ g ∈ C, Tendsto (fun N => cohortShare T (G N) g) atTop (nhds (pi g : ℝ))"
+        },
+        {
+          "label": "signReversalRegion — simplex shares indexed only by g in C",
+          "statement": "/-- The all-positive-effect PPML sign-reversal region `R_T`. -/\nnoncomputable def signReversalRegion (T : ℕ) (C : Finset (Cohort T))\n    (gamma : Fin T → ℝ) : Set (SignReversalPrimitive T C) :=\n  {p | ValidPanelHorizon T ∧\n    ValidCohortSupport T C ∧\n    MulticohortFrontierScope T C ∧\n    (∑ g : ↑C, (p.1 g : ℝ)) = 1 ∧\n    (∃ barB : ↑C → PosReal, ∀ z : SupportedCell T C,\n      (p.2.1 z : ℝ) = (barB z.1 : ℝ) * Real.exp (gamma z.2)) ∧\n    (∀ z : TreatedSupportedCell T C, 0 < p.2.2 z) ∧\n    (∀ a : CollapsedParameter T C, a ≠ 0 →\n      0 < ∑ z : SupportedCell T C,\n        ((p.1 z.1 : ℝ) / T) *\n          (collapsedIndex T C (collapsedRegressor T C z.1.1 z.2) a) ^ 2) ∧\n    primitiveBetaStar T C p < 0}"
+        },
+        {
+          "label": "fourCohortShare — equal limiting share 1/4 in W4",
+          "statement": "  -- @realizes delta_gt(log(4) at (2,4), log(101/100) at other treated cells)\n\n/-- Equal limiting cohort shares in W4. -/\nnoncomputable def fourCohortShare (_g : Cohort 4) : OpenUnit :=\n  ⟨(1 : ℝ) / 4, by constructor <;> norm_num⟩"
+        }
+      ]
+    },
+    "sym:Y_it(d)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 389,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "UnitUntreatedExponentialMean — potential-outcome random variable; d : Fin 2",
+          "statement": "/-- Untreated potential-outcome means factor into a positive unit baseline and a common\ncalendar-time exponential component; the treatment-zero outcome equals that untreated outcome. -/\ndef UnitUntreatedExponentialMean (Omega : ℕ → Type*)\n    (P : ∀ N, SamplingLaw (Omega N))\n    (Y : ∀ N, Fin N → Fin T → Fin 2 → Omega N → ℝ)\n    (b : ∀ N, Fin N → PosReal) (gamma : Fin T → ℝ) : Prop :=\n  (∀ N i t, expectationUnder (P N) (Y N i t 0) = (b N i : ℝ) * Real.exp (gamma t)) ∧\n  ∀ t : Fin T, t.val = 0 → gamma t = 0"
+        }
+      ]
+    },
+    "sym:bar_b_g": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 397,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "WithinCohortBaselineLimit — positive limit of bar_b_gN",
+          "statement": "/-- Within each supported cohort, the average unit baseline converges to a strictly positive\ncohort-specific limiting baseline. -/\ndef WithinCohortBaselineLimit (G : ∀ N, Fin N → Cohort T)\n    (b : ∀ N, Fin N → PosReal) (barB : Cohort T → PosReal) : Prop :=\n  ∀ g ∈ C, Tendsto (fun N => withinCohortBaseline T (G N) (b N) g) atTop (nhds (barB g : ℝ))"
+        },
+        {
+          "label": "fourCohortLimitBaseline — limiting cohort baseline equal to one in W4",
+          "statement": "  -- @realizes pi_g(equal limiting share 1/4 in W4)\n\n/-- Unit limiting cohort baselines in W4. -/\ndef fourCohortLimitBaseline (_g : Cohort 4) : PosReal := ⟨1, zero_lt_one⟩"
+        }
+      ]
+    },
+    "sym:Ecal(delta)": {
+      "decl": "(symbol)",
+      "file": "ForbiddenSign.lean",
+      "line": 19,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "fwlEnergy — PPML FWL residual-energy denominator",
+          "statement": "/-- The positive residual-energy denominator in the PPML derivative formula. -/\nnoncomputable def fwlEnergy (T : ℕ) (C : Finset (Cohort T))\n    (hT : 0 < T) (hC : C.Nonempty) (pi : Cohort T → OpenUnit)\n    (barB : Cohort T → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ) : ℝ :=\n  ∑ z : SupportedCell T C,\n    limitingCellMass T pi z.1.1 * fittedMean T C pi barB gamma delta z.1.1 z.2 *\n      (weightedFWLResidual T C hT hC pi barB gamma delta z) ^ 2"
+        }
+      ]
+    },
+    "sym:R_T": {
+      "decl": "(symbol)",
+      "file": "Helpers/Frontier.lean",
+      "line": 67,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "signReversalRegion — set of primitive tuples satisfying scope, positivity, rank, and beta_star<0",
+          "statement": "/-- The all-positive-effect PPML sign-reversal region `R_T`. -/\nnoncomputable def signReversalRegion (T : ℕ) (C : Finset (Cohort T))\n    (gamma : Fin T → ℝ) : Set (SignReversalPrimitive T C) :=\n  {p | ValidPanelHorizon T ∧\n    ValidCohortSupport T C ∧\n    MulticohortFrontierScope T C ∧\n    (∑ g : ↑C, (p.1 g : ℝ)) = 1 ∧\n    (∃ barB : ↑C → PosReal, ∀ z : SupportedCell T C,\n      (p.2.1 z : ℝ) = (barB z.1 : ℝ) * Real.exp (gamma z.2)) ∧\n    (∀ z : TreatedSupportedCell T C, 0 < p.2.2 z) ∧\n    (∀ a : CollapsedParameter T C, a ≠ 0 →\n      0 < ∑ z : SupportedCell T C,\n        ((p.1 z.1 : ℝ) / T) *\n          (collapsedIndex T C (collapsedRegressor T C z.1.1 z.2) a) ^ 2) ∧\n    primitiveBetaStar T C p < 0}"
+        }
+      ]
+    },
+    "sym:Rcal_4": {
+      "decl": "(symbol)",
+      "file": "Helpers/Frontier.lean",
+      "line": 68,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "signReversalRegion — four-period specialization of the global sign-reversal region",
+          "statement": "/-- The all-positive-effect PPML sign-reversal region `R_T`. -/\nnoncomputable def signReversalRegion (T : ℕ) (C : Finset (Cohort T))\n    (gamma : Fin T → ℝ) : Set (SignReversalPrimitive T C) :=\n  {p | ValidPanelHorizon T ∧\n    ValidCohortSupport T C ∧\n    MulticohortFrontierScope T C ∧\n    (∑ g : ↑C, (p.1 g : ℝ)) = 1 ∧\n    (∃ barB : ↑C → PosReal, ∀ z : SupportedCell T C,\n      (p.2.1 z : ℝ) = (barB z.1 : ℝ) * Real.exp (gamma z.2)) ∧\n    (∀ z : TreatedSupportedCell T C, 0 < p.2.2 z) ∧\n    (∀ a : CollapsedParameter T C, a ≠ 0 →\n      0 < ∑ z : SupportedCell T C,\n        ((p.1 z.1 : ℝ) / T) *\n          (collapsedIndex T C (collapsedRegressor T C z.1.1 z.2) a) ^ 2) ∧\n    primitiveBetaStar T C p < 0}"
+        }
+      ]
+    },
+    "sym:W4": {
+      "decl": "(symbol)",
+      "file": "Helpers/Frontier.lean",
+      "line": 128,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "fourCohortWitness — equal-share four-period configuration with the exceptional late effect",
+          "statement": "/-- The concrete four-cohort triangular-array configuration `W4`. -/\nnoncomputable def fourCohortWitness : FourCohortConfiguration :=\n  (fourCohortSupport,\n    (fourCohortCount,\n      (fourCohortBaseline, (fourCohortGamma, fourCohortDelta))))"
+        }
+      ]
+    },
+    "sym:h_gt": {
+      "decl": "(symbol)",
+      "file": "Helpers/Frontier.lean",
+      "line": 136,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "primitiveH — pi_g * B_gt * exp(D_gt * delta_gt)",
+          "statement": "  -- @realizes W4(equal-share four-period configuration with the exceptional late effect)\n\n/-- Primitive positive cell mass before division by the common time factor. -/\nnoncomputable def primitiveH (T : ℕ) (pi : Cohort T → OpenUnit)\n    (barB : Cohort T → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ)\n    (g : Cohort T) (t : Fin T) : ℝ :=\n  (pi g : ℝ) * untreatedMean T barB gamma g t *\n    Real.exp (treatmentIndicator T g t * delta (g, t))"
+        }
+      ]
+    },
+    "sym:R_g": {
+      "decl": "(symbol)",
+      "file": "Helpers/Frontier.lean",
+      "line": 143,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "primitiveRow — row margin of h_gt",
+          "statement": "  -- @realizes h_gt(pi_g * B_gt * exp(D_gt * delta_gt))\n\n/-- Row margin `R_g`. -/\nnoncomputable def primitiveRow (T : ℕ) (pi : Cohort T → OpenUnit)\n    (barB : Cohort T → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ)\n  (g : Cohort T) : ℝ :=\n  ∑ t : Fin T, primitiveH T pi barB gamma delta g t"
+        }
+      ]
+    },
+    "sym:C_t": {
+      "decl": "(symbol)",
+      "file": "Helpers/Frontier.lean",
+      "line": 150,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "primitiveColumn — column margin of h_gt",
+          "statement": "  -- @realizes R_g(row margin of h_gt)\n\n/-- Column margin `C_t`. -/\nnoncomputable def primitiveColumn (T : ℕ) (C : Finset (Cohort T))\n    (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ) (t : Fin T) : ℝ :=\n  ∑ g ∈ C, primitiveH T pi barB gamma delta g t"
+        }
+      ]
+    },
+    "sym:M": {
+      "decl": "(symbol)",
+      "file": "Helpers/Frontier.lean",
+      "line": 157,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "primitiveTotal — grand sum of h_gt",
+          "statement": "  -- @realizes C_t(column margin of h_gt)\n\n/-- Total primitive mass `M`. -/\nnoncomputable def primitiveTotal (T : ℕ) (C : Finset (Cohort T))\n    (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ) : ℝ :=\n  ∑ g ∈ C, primitiveRow T pi barB gamma delta g"
+        }
+      ]
+    },
+    "sym:A": {
+      "decl": "(symbol)",
+      "file": "Helpers/Frontier.lean",
+      "line": 165,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "primitiveTreatedTotal — treated-cell sum of h_gt",
+          "statement": "  -- @realizes M(grand sum of h_gt)\n\n/-- Treated primitive total `A`. -/\nnoncomputable def primitiveTreatedTotal (T : ℕ) (C : Finset (Cohort T))\n    (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ) : ℝ :=\n  ∑ g ∈ C, ∑ t : Fin T,\n    treatmentIndicator T g t * primitiveH T pi barB gamma delta g t"
+        }
+      ]
+    },
+    "sym:Phi(delta)": {
+      "decl": "(symbol)",
+      "file": "Helpers/Frontier.lean",
+      "line": 177,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "frontierEliminationHandle — nuisance-free frontier polynomial",
+          "statement": "/-- The nuisance-free frontier polynomial `Phi = M*A - sum D_gt R_g C_t`. -/\nnoncomputable def frontierEliminationHandle (T : ℕ) (C : Finset (Cohort T))\n    (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ) : ℝ :=\n  primitiveTotal T C pi barB gamma delta *\n      primitiveTreatedTotal T C pi barB gamma delta -\n    ∑ g ∈ C, ∑ t : Fin T,\n      treatmentIndicator T g t * primitiveRow T pi barB gamma delta g *\n        primitiveColumn T C pi barB gamma delta t"
+        }
+      ]
+    },
+    "sym:rho_star(delta)": {
+      "decl": "(symbol)",
+      "file": "Helpers/WeightedFWL.lean",
+      "line": 88,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "rhoStar — argmin of the q_gt*mu_star weighted squared residual",
+          "statement": "/-- The selected minimizer of the mean-weighted nuisance projection. -/\nnoncomputable def rhoStar (T : ℕ) (C : Finset (Cohort T))\n    (hT : 0 < T) (hC : C.Nonempty) (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ) :\n    CollapsedNuisanceIndex T C → ℝ :=\n  let c := meanWeightedSupport T C hT hC pi barB gamma delta\n  let H := collapsedNuisanceSubspace T C\n  let D : SupportedCell T C → ℝ := fun z => treatmentIndicator T z.1.1 z.2\n  Classical.choose ((Submodule.mem_span_range_iff_exists_fun ℝ).mp (c.proj_mem H D))\n  -- @realizes rho_star(delta)(argmin of the q_gt*mu_star weighted squared residual)\n\n/-- The selected mean-weighted fixed-effects projection coefficients are unchanged when all\npanel, support, and mean-model inputs are replaced by equal values. -/\nadd_decl_doc rhoStar.congr_simp"
+        }
+      ]
+    },
+    "sym:Wtilde_gt(delta)": {
+      "decl": "(symbol)",
+      "file": "Helpers/WeightedFWL.lean",
+      "line": 102,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "weightedFWLResidual — WeightedSupport.tildeX of D against the X_gt span",
+          "statement": "/-- The pseudo-true mean-weighted FWL treatment residual. -/\nnoncomputable def weightedFWLResidual (T : ℕ) (C : Finset (Cohort T))\n    (hT : 0 < T) (hC : C.Nonempty) (pi : Cohort T → OpenUnit)\n    (barB : Cohort T → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ) :\n    SupportedCell T C → ℝ :=\n  let c := meanWeightedSupport T C hT hC pi barB gamma delta\n  c.tildeX (collapsedNuisanceSubspace T C) (fun z => treatmentIndicator T z.1.1 z.2)\n  -- @realizes Wtilde_gt(delta)(WeightedSupport.tildeX of D against the X_gt span)\n\n/-- The mean-weighted FWL treatment residual is unchanged when the panel, support, and all\ninputs governing the fitted mean are replaced by equal values. -/\nadd_decl_doc weightedFWLResidual.congr_simp"
+        }
+      ]
+    },
+    "sym:H": {
+      "decl": "(symbol)",
+      "file": "PrimitiveFrontier.lean",
+      "line": 19,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "treatedCells — set of treated supported cells",
+          "statement": "/-- The treated supported cells. -/\nnoncomputable def treatedCells (T : ℕ) (C : Finset (Cohort T)) : Finset (SupportedCell T C) :=\n  Finset.univ.filter fun z => treatmentIndicator T z.1.1 z.2 = 1"
+        }
+      ]
+    },
+    "sym:Bobs_gt": {
+      "decl": "(symbol)",
+      "file": "PrimitiveFrontier.lean",
+      "line": 25,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "observedCounterfactualBaseline — observed-data untreated mean proxy",
+          "statement": "  -- @realizes H(set of treated supported cells)\n\n/-- Observed-population untreated baseline formed from period one and never-treated means. -/\nnoncomputable def observedCounterfactualBaseline (T : ℕ) (hT : 0 < T)\n    (m : Cell T → ℝ) (g : Cohort T) (t : Fin T) : ℝ :=\n  m (g, ⟨0, hT⟩) * m (⊤, t) / m (⊤, ⟨0, hT⟩)\n  -- @realizes Bobs_gt(observed-data untreated mean proxy)\n\n/-- The observed-population untreated baseline is unchanged when the panel horizon, observed\ncell means, cohort, and period are replaced by equal values. -/\nadd_decl_doc observedCounterfactualBaseline.congr_simp"
+        }
+      ]
+    },
+    "sym:tau_gt": {
+      "decl": "(symbol)",
+      "file": "PrimitiveFrontier.lean",
+      "line": 35,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "granularTau — granular observed proportional effect",
+          "statement": "/-- The granular observed proportional effect. -/\nnoncomputable def granularTau (T : ℕ) (hT : 0 < T) (m : Cell T → ℝ)\n    (g : Cohort T) (t : Fin T) : ℝ :=\n  m (g, t) / observedCounterfactualBaseline T hT m g t - 1"
+        }
+      ]
+    },
+    "sym:Z": {
+      "decl": "(symbol)",
+      "file": "PrimitiveFrontier.lean",
+      "line": 42,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "pttNormalizer — counterfactual-share normalizing constant",
+          "statement": "  -- @realizes tau_gt(granular observed proportional effect)\n\n/-- Counterfactual-share normalizing constant. -/\nnoncomputable def pttNormalizer (T : ℕ) (C : Finset (Cohort T)) (hT : 0 < T)\n    (pi : Cohort T → OpenUnit) (m : Cell T → ℝ) : ℝ :=\n  ∑ z ∈ treatedCells T C,\n    limitingCellMass T pi z.1.1 * observedCounterfactualBaseline T hT m z.1.1 z.2"
+        }
+      ]
+    },
+    "sym:omega_gt": {
+      "decl": "(symbol)",
+      "file": "PrimitiveFrontier.lean",
+      "line": 49,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "pttWeight — counterfactual-share weight on a treated cell",
+          "statement": "  -- @realizes Z(counterfactual-share normalizing constant)\n\n/-- Counterfactual-share weight on a treated cell. -/\nnoncomputable def pttWeight (T : ℕ) (C : Finset (Cohort T)) (hT : 0 < T)\n    (pi : Cohort T → OpenUnit) (m : Cell T → ℝ) (z : SupportedCell T C) : ℝ :=\n  limitingCellMass T pi z.1.1 * observedCounterfactualBaseline T hT m z.1.1 z.2 /\n    pttNormalizer T C hT pi m\n  -- @realizes omega_gt(counterfactual-share weight on a treated cell)\n\n/-- The counterfactual-share weight assigned to a supported cell is unchanged when the panel,\ncohort support, shares, observed means, and cell are replaced by equal values. -/\nadd_decl_doc pttWeight.congr_simp"
+        }
+      ]
+    },
+    "sym:PTT": {
+      "decl": "(symbol)",
+      "file": "PrimitiveFrontier.lean",
+      "line": 60,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "counterfactualSharePTT — counterfactual-share proportional treatment effect on the treated",
+          "statement": "/-- The distinct counterfactual-share proportional treatment effect target. -/\nnoncomputable def counterfactualSharePTT (T : ℕ) (C : Finset (Cohort T)) (hT : 0 < T)\n    (pi : Cohort T → OpenUnit) (m : Cell T → ℝ) : ℝ :=\n  ∑ z ∈ treatedCells T C,\n    pttWeight T C hT pi m z * granularTau T hT m z.1.1 z.2"
+        }
+      ]
+    },
+    "collapsedDesignMap_injective": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.CollapsedDesignRank",
+          "statement": "/-- The collapsed fixed-effects and treatment design has full rank under the limiting cell masses. -/\ndef CollapsedDesignRank (pi : Cohort T → OpenUnit) : Prop :=\n  ∀ a : CollapsedParameter T C, a ≠ 0 →\n    0 < ∑ g ∈ C, ∑ t : Fin T,\n      limitingCellMass T pi g * (collapsedIndex T C (collapsedRegressor T C g t) a) ^ 2"
+        }
+      ]
+    },
+    "finiteCollapsedCriterion_exists_unique_max": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.CollapsedDesignRank",
+          "statement": "/-- The collapsed fixed-effects and treatment design has full rank under the limiting cell masses. -/\ndef CollapsedDesignRank (pi : Cohort T → OpenUnit) : Prop :=\n  ∀ a : CollapsedParameter T C, a ≠ 0 →\n    0 < ∑ g ∈ C, ∑ t : Fin T,\n      limitingCellMass T pi g * (collapsedIndex T C (collapsedRegressor T C g t) a) ^ 2"
+        }
+      ]
+    },
+    "unitDesignMap_injective": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.CollapsedDesignRank",
+          "statement": "/-- The collapsed fixed-effects and treatment design has full rank under the limiting cell masses. -/\ndef CollapsedDesignRank (pi : Cohort T → OpenUnit) : Prop :=\n  ∀ a : CollapsedParameter T C, a ≠ 0 →\n    0 < ∑ g ∈ C, ∑ t : Fin T,\n      limitingCellMass T pi g * (collapsedIndex T C (collapsedRegressor T C g t) a) ^ 2"
+        }
+      ]
+    },
+    "finite_unit_and_collapsed_unique_beta": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.CollapsedDesignRank",
+          "statement": "/-- The collapsed fixed-effects and treatment design has full rank under the limiting cell masses. -/\ndef CollapsedDesignRank (pi : Cohort T → OpenUnit) : Prop :=\n  ∀ a : CollapsedParameter T C, a ≠ 0 →\n    0 < ∑ g ∈ C, ∑ t : Fin T,\n      limitingCellMass T pi g * (collapsedIndex T C (collapsedRegressor T C g t) a) ^ 2"
+        }
+      ]
+    },
+    "selectedFiniteCollapsed_tendsto": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.CohortShareLimit",
+          "statement": "def CohortShareLimit (G : ∀ N, Fin N → Cohort T) (pi : Cohort T → OpenUnit) : Prop :=\n  (∀ N, C.card ≤ N →\n    0 < N ∧ -- @realizes pi_gN(positive denominator N)\n    ∀ g ∈ C,\n      0 < cohortCount T (G N) g) ∧ -- @realizes n_gN(supported count in {1,...,N})\n                                      -- @realizes pi_gN(strictly positive supported share)\n  ∀ g ∈ C, Tendsto (fun N => cohortShare T (G N) g) atTop (nhds (pi g : ℝ))"
+        },
+        {
+          "label": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.WithinCohortBaselineLimit",
+          "statement": "/-- Within each supported cohort, the average unit baseline converges to a strictly positive\ncohort-specific limiting baseline. -/\ndef WithinCohortBaselineLimit (G : ∀ N, Fin N → Cohort T)\n    (b : ∀ N, Fin N → PosReal) (barB : Cohort T → PosReal) : Prop :=\n  ∀ g ∈ C, Tendsto (fun N => withinCohortBaseline T (G N) (b N) g) atTop (nhds (barB g : ℝ))"
+        },
+        {
+          "label": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.CollapsedDesignRank",
+          "statement": "/-- The collapsed fixed-effects and treatment design has full rank under the limiting cell masses. -/\ndef CollapsedDesignRank (pi : Cohort T → OpenUnit) : Prop :=\n  ∀ a : CollapsedParameter T C, a ≠ 0 →\n    0 < ∑ g ∈ C, ∑ t : Fin T,\n      limitingCellMass T pi g * (collapsedIndex T C (collapsedRegressor T C g t) a) ^ 2"
+        },
+        {
+          "label": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.collapsedPopulationProjection",
+          "statement": "/-- The selected maximizer `theta_star(delta)` of the limiting collapsed criterion. -/\nnoncomputable def collapsedPopulationProjection (pi : Cohort T → OpenUnit)\n    (barB : Cohort T → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ) :\n    CollapsedParameter T C :=\n  maximizerOrZero (limitingCriterion T C pi barB gamma delta)"
+        }
+      ]
+    },
+    "fwlEnergy_pos_of_collapsedDesignRank": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.CollapsedDesignRank",
+          "statement": "/-- The collapsed fixed-effects and treatment design has full rank under the limiting cell masses. -/\ndef CollapsedDesignRank (pi : Cohort T → OpenUnit) : Prop :=\n  ∀ a : CollapsedParameter T C, a ≠ 0 →\n    0 < ∑ g ∈ C, ∑ t : Fin T,\n      limitingCellMass T pi g * (collapsedIndex T C (collapsedRegressor T C g t) a) ^ 2"
+        }
+      ]
+    },
+    "betaStar_update_hasDerivAt": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.CollapsedDesignRank",
+          "statement": "/-- The collapsed fixed-effects and treatment design has full rank under the limiting cell masses. -/\ndef CollapsedDesignRank (pi : Cohort T → OpenUnit) : Prop :=\n  ∀ a : CollapsedParameter T C, a ≠ 0 →\n    0 < ∑ g ∈ C, ∑ t : Fin T,\n      limitingCellMass T pi g * (collapsedIndex T C (collapsedRegressor T C g t) a) ^ 2"
+        },
+        {
+          "label": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.weightedFWLResidual",
+          "statement": "/-- The pseudo-true mean-weighted FWL treatment residual. -/\nnoncomputable def weightedFWLResidual (T : ℕ) (C : Finset (Cohort T))\n    (hT : 0 < T) (hC : C.Nonempty) (pi : Cohort T → OpenUnit)\n    (barB : Cohort T → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ) :\n    SupportedCell T C → ℝ :=\n  let c := meanWeightedSupport T C hT hC pi barB gamma delta\n  c.tildeX (collapsedNuisanceSubspace T C) (fun z => treatmentIndicator T z.1.1 z.2)\n  -- @realizes Wtilde_gt(delta)(WeightedSupport.tildeX of D against the X_gt span)\n\n/-- The mean-weighted FWL treatment residual is unchanged when the panel, support, and all\ninputs governing the fitted mean are replaced by equal values. -/\nadd_decl_doc weightedFWLResidual.congr_simp"
+        }
+      ]
+    },
+    "linearizedScore_snd_eq_weightedFWL": {
+      "decl": "(composite)",
+      "file": "Helpers/WeightedFWL.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.weightedFWLResidual",
+          "statement": "/-- The pseudo-true mean-weighted FWL treatment residual. -/\nnoncomputable def weightedFWLResidual (T : ℕ) (C : Finset (Cohort T))\n    (hT : 0 < T) (hC : C.Nonempty) (pi : Cohort T → OpenUnit)\n    (barB : Cohort T → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ) :\n    SupportedCell T C → ℝ :=\n  let c := meanWeightedSupport T C hT hC pi barB gamma delta\n  c.tildeX (collapsedNuisanceSubspace T C) (fun z => treatmentIndicator T z.1.1 z.2)\n  -- @realizes Wtilde_gt(delta)(WeightedSupport.tildeX of D against the X_gt span)\n\n/-- The mean-weighted FWL treatment residual is unchanged when the panel, support, and all\ninputs governing the fitted mean are replaced by equal values. -/\nadd_decl_doc weightedFWLResidual.congr_simp"
+        }
+      ]
+    },
+    "frontierConditionalScalarScore": {
+      "decl": "(composite)",
+      "file": "Helpers/Frontier.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.frontierEliminationHandle",
+          "statement": "/-- The nuisance-free frontier polynomial `Phi = M*A - sum D_gt R_g C_t`. -/\nnoncomputable def frontierEliminationHandle (T : ℕ) (C : Finset (Cohort T))\n    (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ) : ℝ :=\n  primitiveTotal T C pi barB gamma delta *\n      primitiveTreatedTotal T C pi barB gamma delta -\n    ∑ g ∈ C, ∑ t : Fin T,\n      treatmentIndicator T g t * primitiveRow T pi barB gamma delta g *\n        primitiveColumn T C pi barB gamma delta t"
+        }
+      ]
+    },
+    "betaStar_sign_frontierEliminationHandle": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.CollapsedDesignRank",
+          "statement": "/-- The collapsed fixed-effects and treatment design has full rank under the limiting cell masses. -/\ndef CollapsedDesignRank (pi : Cohort T → OpenUnit) : Prop :=\n  ∀ a : CollapsedParameter T C, a ≠ 0 →\n    0 < ∑ g ∈ C, ∑ t : Fin T,\n      limitingCellMass T pi g * (collapsedIndex T C (collapsedRegressor T C g t) a) ^ 2"
+        },
+        {
+          "label": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.frontierEliminationHandle",
+          "statement": "/-- The nuisance-free frontier polynomial `Phi = M*A - sum D_gt R_g C_t`. -/\nnoncomputable def frontierEliminationHandle (T : ℕ) (C : Finset (Cohort T))\n    (pi : Cohort T → OpenUnit) (barB : Cohort T → PosReal)\n    (gamma : Fin T → ℝ) (delta : Cell T → ℝ) : ℝ :=\n  primitiveTotal T C pi barB gamma delta *\n      primitiveTreatedTotal T C pi barB gamma delta -\n    ∑ g ∈ C, ∑ t : Fin T,\n      treatmentIndicator T g t * primitiveRow T pi barB gamma delta g *\n        primitiveColumn T C pi barB gamma delta t"
+        }
+      ]
+    },
+    "cohortShareLimit_sum_eq_one": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.CohortShareLimit",
+          "statement": "def CohortShareLimit (G : ∀ N, Fin N → Cohort T) (pi : Cohort T → OpenUnit) : Prop :=\n  (∀ N, C.card ≤ N →\n    0 < N ∧ -- @realizes pi_gN(positive denominator N)\n    ∀ g ∈ C,\n      0 < cohortCount T (G N) g) ∧ -- @realizes n_gN(supported count in {1,...,N})\n                                      -- @realizes pi_gN(strictly positive supported share)\n  ∀ g ∈ C, Tendsto (fun N => cohortShare T (G N) g) atTop (nhds (pi g : ℝ))"
+        }
+      ]
+    },
+    "weightedFWLResidual_continuousAt_effects": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.CollapsedDesignRank",
+          "statement": "/-- The collapsed fixed-effects and treatment design has full rank under the limiting cell masses. -/\ndef CollapsedDesignRank (pi : Cohort T → OpenUnit) : Prop :=\n  ∀ a : CollapsedParameter T C, a ≠ 0 →\n    0 < ∑ g ∈ C, ∑ t : Fin T,\n      limitingCellMass T pi g * (collapsedIndex T C (collapsedRegressor T C g t) a) ^ 2"
+        },
+        {
+          "label": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.weightedFWLResidual",
+          "statement": "/-- The pseudo-true mean-weighted FWL treatment residual. -/\nnoncomputable def weightedFWLResidual (T : ℕ) (C : Finset (Cohort T))\n    (hT : 0 < T) (hC : C.Nonempty) (pi : Cohort T → OpenUnit)\n    (barB : Cohort T → PosReal) (gamma : Fin T → ℝ) (delta : Cell T → ℝ) :\n    SupportedCell T C → ℝ :=\n  let c := meanWeightedSupport T C hT hC pi barB gamma delta\n  c.tildeX (collapsedNuisanceSubspace T C) (fun z => treatmentIndicator T z.1.1 z.2)\n  -- @realizes Wtilde_gt(delta)(WeightedSupport.tildeX of D against the X_gt span)\n\n/-- The mean-weighted FWL treatment residual is unchanged when the panel, support, and all\ninputs governing the fitted mean are replaced by equal values. -/\nadd_decl_doc weightedFWLResidual.congr_simp"
+        }
+      ]
+    }
+  }
+}

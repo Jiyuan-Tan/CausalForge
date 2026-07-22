@@ -1,0 +1,43 @@
+name = "CausalSmith"
+version = "0.1.0"
+keywords = ["math", "autogen"]
+defaultTargets = ["CausalSmith"]
+
+# CausalSmith is the umbrella package holding the auto-generated theorem
+# pipeline (`causalsmith research`) and its study mode. It consumes Causalean
+# as a foundational dependency. Dependency direction is one-way:
+#
+#   CausalSmith → Causalean    (allowed)
+#   Causalean → CausalSmith    (FORBIDDEN — checked in CI)
+#
+# Auto-generated Lean files live under `CausalSmith/Panel/`,
+# `CausalSmith/ExactID/`, `CausalSmith/PartialID/`. Pipeline tooling lives
+# under `CausalSmith/tools/`, proposals + state files under `CausalSmith/doc/`.
+#
+# When a CausalSmith proof produces a lemma worth promoting into the
+# foundational library, a human curates it across — copies statement + proof
+# into Causalean, then CausalSmith re-imports the Causalean version. This forced
+# step keeps auto-content from silently becoming foundational.
+
+[leanOptions]
+pp.unicode.fun = true
+relaxedAutoImplicit = false
+weak.linter.mathlibStandardSet = true
+maxSynthPendingDepth = 3
+
+# Sibling-package dependency. Causalean's lakefile lives one directory up
+# (the workspace root); CausalSmith never modifies Causalean, only imports from it.
+[[require]]
+name = "Causalean"
+path = ".."
+
+[[lean_lib]]
+name = "CausalSmith"
+
+# Paper-module index exe: same extractor core as Causalean's library_index,
+# pointed at a paper run's modules; papersmith P4 calls it to emit
+# paper_library_index.json into the bundle (site Formalization view).
+[[lean_exe]]
+name = "paper_index"
+root = "PaperIndex"
+supportInterpreter = true

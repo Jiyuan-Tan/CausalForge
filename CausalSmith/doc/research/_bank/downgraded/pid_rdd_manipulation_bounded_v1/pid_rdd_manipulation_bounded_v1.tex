@@ -1,0 +1,1127 @@
+% =====================================================================
+%  ThmSmith Stage 0 derivation skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_rdd\_manipulation\_bounded, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to a Q1..Q6
+%    pool-mode, fill it VERBATIM from the question-specific block of
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    For free-form panel / ExactID / PartialID anchors, reproduce the
+%    locked-parameter block from the Stage -1 proposal verbatim. Do not
+%    rephrase locked parameters; Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage 0 derivation: \texttt{pid\_rdd\_manipulation\_bounded} / \texttt{v1}%
+  \\ \large\textit{Sharp budgeted RD manipulation bounds from covariate-capped trimming}}
+\author{ThmSmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note studies a regression-discontinuity design in which the right-limit law at the
+cutoff may contain one-sided manipulators, but the total manipulated share is bounded by a
+McCrary-style envelope and each predetermined-covariate cell has its own manipulation cap.
+The target causal estimand is the local Wald effect for the nonmanipulating cutoff
+population, formed from the nonmanipulator right-limit outcome and treatment means and the
+observed left-limit means.  The estimand-defining object is the fractional trimming
+functional
+\[
+  \bigl(B_L(P,\bar\rho,\bar s),B_U(P,\bar\rho,\bar s)\bigr)
+  =
+  \left(\inf_{a\in\mathcal A(P,\bar\rho,\bar s)}\Theta(a),
+  \sup_{a\in\mathcal A(P,\bar\rho,\bar s)}\Theta(a)\right),
+\]
+where \(a\) is a right-side retention weight satisfying the global budget, cell caps, and
+the retained-covariate-law equation.  The first theorem gives the sharp trimming
+characterization: the identified set is exactly the image of this feasible retention class,
+and hence is contained in the displayed interval with sharp endpoints.  The novelty-bearing
+result is cap-envelope separation: on an explicit two-cell finite-support open set, a
+binding external cell cap forces a larger retained mass than the McCrary envelope alone
+and strictly lowers the sharp upper endpoint relative to the cell-cap-free envelope.
+Finite-support endpoint geometry is obtained as a compact linear-fractional program with
+score-threshold retention rules and piecewise-rational formulas only on feasible
+active-basis regions with denominator bounded away from zero.
+\end{abstract}
+
+\section{Introduction}
+Regression discontinuity designs are valuable because they turn local movement across a
+cutoff into a source of quasi-experimental variation.  Manipulation of the running
+variable threatens that interpretation: the right-limit population may contain units that
+selected into the treatment side, so the usual right-minus-left contrast need not compare
+the same local population.  Density and covariate-balance diagnostics often reveal this
+threat, but a diagnostic rejection by itself does not say how large the local effect could
+still be under a controlled amount of manipulation.
+
+The classical RD result identifies a local effect under continuity of potential-outcome and
+compliance laws at the cutoff.  The manipulated-running-variable literature gives sharp
+bounds when one-sided manipulation identifies or restricts the manipulator share, and
+Lee-style trimming results show how bounded contamination can be converted into extremal
+subpopulation means.  This note uses the same contaminated-distribution logic, but treats
+the density discontinuity as an upper envelope and intersects it with finite
+covariate-cell caps.
+
+The first object is a sharp fractional trimming interval.  A feasible retention rule
+removes some right-side mass, subject to the total and cellwise budgets, and forces the
+retained right-side covariate distribution to match the left-side distribution.  The
+retained right-side law then supplies the possible nonmanipulator right-limit means; the
+local Wald ratio over all such retained laws is the identified set.  The additional
+separation result proves that the cell caps are not merely a reparameterization of the
+cell-cap-free envelope: on a nondegenerate open class, the cap removes the uncapped
+worst-case fixed-share face and strictly tightens the upper bound.  Together these results
+turn a pass/fail manipulation diagnostic into a sensitivity curve and identify which global
+or cellwise restriction tightens the interval.
+
+\paragraph{Motivating conjecture(s).}
+\begin{conjecture}[Conjecture 1: sharp budgeted conditional trimming]\label{conj:sharp-budgeted-trim}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:cutoff-limits}--\ref{ass:positive-first-stage},
+the sharp identified set for the nonmanipulator local Wald parameter is exactly
+\[
+  \Theta_I(P,\bar\rho,\bar s)
+  =
+  \{\Theta(a):a\in\mathcal A(P,\bar\rho,\bar s)\}.
+\]
+Equivalently, the tightest sharp interval is
+\[
+  [B_L(P,\bar\rho,\bar s),B_U(P,\bar\rho,\bar s)]
+  =
+  \left[
+  \inf_{a\in\mathcal A(P,\bar\rho,\bar s)}\Theta(a),
+  \sup_{a\in\mathcal A(P,\bar\rho,\bar s)}\Theta(a)
+  \right].
+\]
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: active-budget endpoint geometry]\label{conj:endpoint-geometry}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:cutoff-limits}--\ref{ass:positive-first-stage}
+and Assumption~\ref{ass:finite-support-geometry}, the endpoint functions
+\((\bar\rho,\bar s)\mapsto B_L(P,\bar\rho,\bar s)\) and
+\((\bar\rho,\bar s)\mapsto B_U(P,\bar\rho,\bar s)\) are attained by threshold-retention
+rules that order observations by an affine score
+\[
+  y-\lambda d+\eta_w+\nu
+\]
+for a scalar fractional-program multiplier \(\lambda\), cell multipliers \(\eta_w\), and
+a global density-budget multiplier \(\nu\).  Consequently the endpoints are continuous
+and piecewise rational in \((\bar\rho,\bar s)\), with kinks when the binding constraint
+switches between the McCrary envelope and one or more covariate-share caps.
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 3: positive cap-envelope separation]\label{conj:cap-separation}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:cutoff-limits}--\ref{ass:positive-first-stage}
+and Assumption~\ref{ass:cap-separation}, the capped upper endpoint is
+\[
+  B_U(P,\bar\rho,\bar s)=U(m^c)<U^0(m^0)=U^0_{\mathrm{env}}(\bar\rho).
+\]
+Moreover this strict inequality is locally stable under small perturbations of \(P\),
+\(\bar\rho\), and \(\bar s\) that preserve the unique binding cell.  Thus the external
+cell-cap restriction changes the sharp upper envelope on an open class of observable laws:
+the endpoint is not merely a different maximizer within the cell-cap-free GRR exact-share
+family, but a strictly smaller value forced by the retained-\(W\) equality
+\(\phi_w(m)=1-m\pi_-(w)/P_+(W=w)\) and the binding cap.
+\end{conjecture}
+
+\section{Related work and positioning}
+Hahn, Todd, and van der Klaauw \cite{HahnToddVanDerKlaauw2001} give the continuity-based
+identification argument for sharp and fuzzy RD estimands; the zero-manipulation face below
+reduces to their local Wald formula.  Lee \cite{Lee2008} gives the local-randomization
+interpretation of close elections and motivates the idea that predetermined covariates
+should be continuous at a valid cutoff.  Imbens and Lemieux \cite{ImbensLemieux2008} and
+Lee and Lemieux \cite{LeeLemieux2010} explain the applied RD workflow in which density and
+covariate checks are routine design diagnostics.
+
+McCrary \cite{McCrary2008} introduced the density-discontinuity test used to detect sorting
+around the cutoff.  Cattaneo, Jansson, and Ma \cite{CattaneoJanssonMa2020} provide modern
+local-polynomial density estimators, which are a natural source for the envelope
+\(\bar\rho\).  Canay and Kamat \cite{CanayKamat2018} develop covariate-distribution tests
+in RD, motivating sensitivity parameters that restrict manipulation cell by cell.
+
+Gerard, Rokkanen, and Rothe \cite{GerardRokkanenRothe2020} are the closest prior result:
+they derive sharp RD bounds under one-sided manipulation when density ratios discipline
+the manipulated share, develop covariate-conditioned bounds, and handle fuzzy designs by
+optimizing over partially identified share functions.  The present note does not claim
+that covariate conditioning or share optimization is absent from their analysis.  The
+difference is the feasible set.  GRR's covariate-conditioned and fuzzy/share-optimization
+classes are generated by the exact one-sided manipulation model and the observable
+density/covariate restrictions available inside that model.  Here the analyst instead
+supplies an external McCrary upper envelope \(1-M_a\le\bar\rho\), external cell caps
+\(1-\E[a\mid W=w]\le\bar s_w\), and the retained-covariate-law equation
+\(Q_a(W)=\pi_-\).  The intersection of these three restrictions can delete the
+cell-cap-free worst fixed-share face even when that face is allowed by the global envelope;
+Theorem~\ref{thm:cap-separation} proves this strict deletion on an open two-cell class.
+Lee \cite{Lee2009} and Horowitz and Manski \cite{HorowitzManski1995} supply the trimming
+and contaminated-distribution arguments used in the proof.  Semenova \cite{Semenova2025}
+shows how covariates sharpen Lee-style selection bounds; here the same conditioning logic
+is embedded in an RD manipulation model with an external density envelope.  Arai et al.
+\cite{AraiHsuKitagawaMourifieWan2022} and Hsu, Shiu, and Wan \cite{HsuShiuWan2024} study
+testing assumptions in fuzzy RD, which is why the first-stage denominator remains explicit
+rather than being suppressed.
+
+No in-repository theorem is used as an input to this derivation.  The note is positioned
+as a self-contained partial-identification result: its closest mathematical relatives are
+Manski contaminated-distribution bounds, Lee trimming bounds, and the manipulated-RD
+bounds of Gerard, Rokkanen, and Rothe, but the novelty-bearing comparison is the strict
+separation between the cell-cap-free upper-envelope retention class and the proposed
+global-plus-cell budgeted retention class.
+
+\section{Formal setup}
+Let \(R\) be the running variable with cutoff \(c\), let \(Z=\one\{R\ge c\}\) be the
+cutoff-side indicator, let \(D\in\{0,1\}\) be treatment receipt, let
+\(Y\in[\underline y,\overline y]\) be the observed outcome, and let
+\(W\in\mathcal W=\{1,\ldots,K\}\) be a finite predetermined-covariate cell.  The observable
+distribution is
+\[
+  P=(P_-,P_+),\qquad
+  P_-=\lim_{r\uparrow c}\mathcal L(Y,D,W\mid R=r),\qquad
+  P_+=\lim_{r\downarrow c}\mathcal L(Y,D,W\mid R=r).
+\]
+Write \(\pi_-(w)=P_-(W=w)\), \(p_+(w)=P_+(W=w)\), and
+\(\mu^-_V(w)=\E_{P_-}[V\mid W=w]\) for \(V\in\{Y,D\}\).  The analyst also fixes
+\(\bar\rho\in[0,1)\) and \(\bar s_w\in[0,1)\), interpreted respectively as a total
+right-side manipulation envelope and cellwise manipulation-share caps.
+
+A candidate nonmanipulator right-limit law is represented by a measurable retention weight
+\[
+  a:[\underline y,\overline y]\times\{0,1\}\times\mathcal W\to[0,1].
+\]
+Let
+\[
+  M_a=\E_{P_+}[a(Y,D,W)]
+\]
+be retained right-side mass.  If \(M_a>0\), define the retained law
+\[
+  Q_a(B)=M_a^{-1}\E_{P_+}\!\left[a(Y,D,W)\one\{(Y,D,W)\in B\}\right].
+\]
+The feasible retention class is
+\[
+\begin{split}
+  \mathcal A(P,\bar\rho,\bar s)=
+  \bigl\{a:\;&0\le a\le1,\ M_a>0,\ 1-M_a\le\bar\rho,\\
+  &1-\E_{P_+}[a(Y,D,W)\mid W=w]\le \bar s_w\ \forall w\text{ with }p_+(w)>0,\\
+  &Q_a(W=w)=\pi_-(w)\ \forall w\bigr\}.
+\end{split}
+\]
+If \(p_+(w)=0\) and \(\pi_-(w)>0\), the last equality is impossible, so the feasible set is
+empty; nonemptiness is stated as an assumption below.  For \(a\in\mathcal A(P,\bar\rho,\bar s)\),
+define
+\[
+  \Theta(a)=
+  \frac{\sum_w \pi_-(w)\{\E_{Q_a}[Y\mid W=w]-\mu^-_Y(w)\}}
+       {\sum_w \pi_-(w)\{\E_{Q_a}[D\mid W=w]-\mu^-_D(w)\}}.
+\]
+Equivalently, because \(Q_a(W=w)=\pi_-(w)\),
+\[
+  \Theta(a)=
+  \frac{M_a^{-1}\E_{P_+}[aY]-\E_{P_-}[Y]}
+       {M_a^{-1}\E_{P_+}[aD]-\E_{P_-}[D]}.
+\]
+The identified set \(\Theta_I(P,\bar\rho,\bar s)\) is the set of nonmanipulator local Wald
+values compatible with \(P\), one-sided upward manipulation, conditional nonmanipulator
+continuity, bounded outcomes, positive retained mass, the positive first-stage condition,
+and the two manipulation budgets.
+
+For endpoint geometry, it is useful to fix retained mass \(m\) and write
+\[
+\begin{split}
+  \mathcal A_m(P,\bar s)=
+  \bigl\{a:\;&0\le a\le1,\ M_a=m,\ Q_a(W=w)=\pi_-(w)\ \forall w,\\
+  &1-\E_{P_+}[a(Y,D,W)\mid W=w]\le\bar s_w\ \forall w\text{ with }p_+(w)>0\bigr\},
+\end{split}
+\]
+\[
+  \mathcal A_m^0(P)=
+  \{a:0\le a\le1,\ M_a=m,\ Q_a(W=w)=\pi_-(w)\ \forall w\},
+\]
+and
+\[
+  I(P,\bar\rho,\bar s)=
+  \{m\in(0,1]:\mathcal A_m(P,\bar s)\neq\varnothing,\ 1-m\le\bar\rho\}.
+\]
+Define \(U(m)=\sup\{\Theta(a):a\in\mathcal A_m(P,\bar s)\}\) on the capped feasible
+domain, \(U^0(m)=\sup\{\Theta(a):a\in\mathcal A_m^0(P)\}\), and
+\[
+  U^0_{\mathrm{env}}(\bar\rho)=\sup\{U^0(m):1-m\le\bar\rho\}.
+\]
+For an exact-share face with removed share \(\tau\), define
+\[
+  \mathcal A^{=}_\tau(P,\bar s)
+  =
+  \{a\in\mathcal A(P,\bar\rho,\bar s):M_a=1-\tau\}.
+\]
+The cell-removal fraction forced by retained mass \(m\) and the retained-\(W\) equation is
+\[
+  \phi_w(m)=1-\frac{m\pi_-(w)}{p_+(w)}
+\]
+whenever \(p_+(w)>0\).  Equivalently the retained fraction in cell \(w\) is
+\[
+  r_w(m)=\frac{m\pi_-(w)}{p_+(w)}.
+\]
+Thus fixed-mass feasibility requires both
+\[
+  r_w(m)\le1
+  \quad\Longleftrightarrow\quad
+  m\le \frac{p_+(w)}{\pi_-(w)}
+\]
+from the constraint \(a\le1\), and
+\[
+  r_w(m)\ge1-\bar s_w
+  \quad\Longleftrightarrow\quad
+  m\ge \frac{(1-\bar s_w)p_+(w)}{\pi_-(w)}
+\]
+from the cell cap.  Both inequalities are part of the fixed-mass cell-feasibility algebra.
+
+For sharp RD finite-support separation arguments, define the upper-tail retained mean in
+cell \(w\) by
+\[
+  \Gamma_w(r)
+  =
+  \sup\left\{
+    \frac{\E_{P_+}[b(Y,D,W)Y\mid W=w]}{r}:
+    0\le b\le1,\ \E_{P_+}[b(Y,D,W)\mid W=w]=r
+  \right\},
+  \qquad r\in(0,1].
+\]
+In finite support this supremum is attained by retaining the largest \(Y\)-atoms in that
+cell, with possible fractional retention at the cutoff atom.  The function
+\(\Gamma_w\) is weakly decreasing in \(r\), and it is strictly decreasing on intervals
+where the required retained fraction crosses a positive-mass lower outcome atom after all
+higher atoms are already fully retained.
+
+\paragraph{Locked parameters.}
+\begin{itemize}
+  \item \(\texttt{qid}\): \(\texttt{pid\_rdd\_manipulation\_bounded}\).
+  \item \(\texttt{specialization}\): \(\texttt{v1}\).
+  \item observable distribution \(P\): the two cutoff-side weak limits \(P_-\) and \(P_+\) of
+  \((Y,D,W)\) given the running variable approaches the cutoff from below and above, where
+  \(Y\in[\underline y,\overline y]\), \(D\in\{0,1\}\), and
+  \(W\in\{1,\ldots,K\}\) is a finite predetermined-covariate cell.
+  \item parameter \(\theta\): the local Wald effect for the nonmanipulating cutoff population,
+  \[
+    \theta =
+    \frac{\sum_w \pi_-(w)\{\mu^Y_{+,0}(w)-\mu^Y_-(w)\}}
+         {\sum_w \pi_-(w)\{\mu^D_{+,0}(w)-\mu^D_-(w)\}},
+  \]
+  where \(\pi_-(w)=P_-(W=w)\), \(\mu^-_V(w)=\E_{P_-}[V\mid W=w]\), and
+  \(\mu^V_{+,0}(w)\) denotes the right-limit nonmanipulator mean of \(V\in\{Y,D\}\)
+  in covariate cell \(w\).
+  \item identifying restrictions: one-sided upward manipulation at the cutoff, local continuity
+  of the nonmanipulator potential-outcome and compliance law conditional on \(W\), a
+  McCrary-style global manipulation-share envelope \(\bar\rho\in[0,1)\),
+  covariate-cell manipulation-share caps \(\bar s_w\in[0,1)\), bounded outcomes,
+  positive retained mass, and a positive nonmanipulator first-stage denominator.
+  \item bounding functional: the sharp fractional trimming program over retention weights
+  \(a(y,d,w)\in[0,1]\):
+  \[
+    B_L(P,\bar\rho,\bar s)=\inf_{a\in\mathcal A(P,\bar\rho,\bar s)} \Theta(a),
+    \qquad
+    B_U(P,\bar\rho,\bar s)=\sup_{a\in\mathcal A(P,\bar\rho,\bar s)} \Theta(a),
+  \]
+  where \(\mathcal A(P,\bar\rho,\bar s)\) enforces the global and cellwise removal
+  budgets and the retained right-side covariate distribution \(\pi_-\), and
+  \(\Theta(a)\) is the Wald ratio formed from the retained right-side means and the
+  observed left-side means.  The sharpness verdict proved below is sharp for the
+  maintained bounded-manipulation model.
+\end{itemize}
+
+\section{Assumptions}
+\begin{assumption}[Cutoff limits and finite covariate cells]\label{ass:cutoff-limits}
+The side limits \(P_-\) and \(P_+\) exist as probability laws on
+\([\underline y,\overline y]\times\{0,1\}\times\{1,\ldots,K\}\).  The outcome endpoints
+satisfy \(-\infty<\underline y\le\overline y<\infty\), and
+\(\pi_-(w)=P_-(W=w)>0\) for every \(w\).
+\end{assumption}
+
+\begin{assumption}[One-sided upward manipulation]\label{ass:one-sided}
+Near the cutoff, manipulators can only add mass to the right side \(R\ge c\).  Thus
+\(P_-\) is the nonmanipulator left-limit law, while \(P_+\) is a mixture of a
+right-limit nonmanipulator law and a right-side manipulator law.
+\end{assumption}
+
+\begin{assumption}[Conditional nonmanipulator continuity]\label{ass:conditional-continuity}
+For nonmanipulators, the conditional law of the potential outcomes and treatment-receipt
+types relevant for the local Wald numerator and denominator is continuous at \(c\) within
+each covariate cell \(W=w\).  Consequently the retained right-side covariate law for
+nonmanipulators must equal \(\pi_-\), and retained right-side observed means equal the
+right-limit nonmanipulator means \(\mu^V_{+,0}(w)\), \(V\in\{Y,D\}\).
+\end{assumption}
+
+\begin{assumption}[McCrary-style global manipulation envelope]\label{ass:global-envelope}
+For every admissible structural completion, the total removed right-side mass is bounded
+by \(\bar\rho\in[0,1)\).  In retention-weight notation this is
+\[
+  1-\E_{P_+}[a(Y,D,W)]\le\bar\rho .
+\]
+\end{assumption}
+
+\begin{assumption}[Covariate-cell manipulation-share caps]\label{ass:cell-caps}
+For every admissible structural completion and every \(w\) with \(p_+(w)>0\), the
+right-side fraction removed inside cell \(w\) is bounded by \(\bar s_w\in[0,1)\):
+\[
+  1-\E_{P_+}[a(Y,D,W)\mid W=w]\le\bar s_w .
+\]
+If \(p_+(w)=0\), feasibility requires \(\pi_-(w)=0\), which is ruled out by
+Assumption~\ref{ass:cutoff-limits}; hence nonemptiness below implies \(p_+(w)>0\) for
+all \(w\).
+\end{assumption}
+
+\begin{assumption}[Positive retained mass]\label{ass:positive-retained}
+The feasible set \(\mathcal A(P,\bar\rho,\bar s)\) is nonempty, and every feasible
+retention rule has \(M_a>0\).
+\end{assumption}
+
+\begin{assumption}[Positive nonmanipulator first stage]\label{ass:positive-first-stage}
+There exists \(\kappa>0\) such that for every feasible
+\(a\in\mathcal A(P,\bar\rho,\bar s)\),
+\[
+  \sum_w \pi_-(w)\{\E_{Q_a}[D\mid W=w]-\mu^-_D(w)\}\ge \kappa .
+\]
+This support condition makes the local Wald ratio well defined and rules out a weak or
+zero first-stage denominator over the entire feasible set.
+\end{assumption}
+
+\begin{assumption}[Sharp RD specialization]\label{ass:sharp-rd-specialization}
+For results that invoke the sharp RD face, \(D=Z\) almost surely in the left- and
+right-cutoff limits, so treatment receipt is the threshold assignment indicator.
+\end{assumption}
+
+\begin{assumption}[Finite-support endpoint geometry]\label{ass:finite-support-geometry}
+For results that invoke endpoint geometry, \(Y\) has finite support in each covariate cell
+\(W=w\).  Since \(D\) and \(W\) are already finite, this makes the feasible retention
+region a finite-dimensional polytope.  Endpoint claims below are made only for nonempty
+compact feasible regions, feasible active bases, and denominator values bounded below by
+Assumption~\ref{ass:positive-first-stage}.
+\end{assumption}
+
+\begin{assumption}[Exact-share one-cell face]\label{ass:exact-share-one-cell}
+For results that invoke the one-cell exact-share face, \(K=1\), the removed share is fixed
+at \(\tau\in[0,1)\), \(\tau\le\bar\rho\), the endpoint is evaluated on the restricted
+equality-budget set \(\mathcal A^{=}_\tau(P,\bar s)\), and the cell cap is inactive or
+satisfies \(\bar s_1\ge\tau\).
+\end{assumption}
+
+\begin{assumption}[Two-cell cap-separation design]\label{ass:cap-separation}
+For results that invoke cap-envelope separation, \(K=2\), \(p_+(w)>0\) for both cells,
+\(Y\) has finite support in each cell, and \(D=Z\).  Let
+\[
+  \ell_w=\frac{(1-\bar s_w)p_+(w)}{\pi_-(w)},
+  \qquad
+  u_w=\frac{p_+(w)}{\pi_-(w)},
+  \qquad
+  m^0=1-\bar\rho .
+\]
+The cap-forced minimum retained mass is
+\[
+  m^c=\max\left\{1-\bar\rho,\,
+    \ell_1,\ell_2
+  \right\},
+\]
+and it is feasible in the fixed-mass sense:
+\[
+  m^c\le \min\{1,u_1,u_2\}.
+\]
+There is a unique binding cell \(b\in\{1,2\}\) such that
+\[
+  \ell_b=m^c>\max\{m^0,\ell_{3-b}\}.
+\]
+Finally, the binding cell has a nondegenerate upper tail between the uncapped and capped
+retained fractions:
+\[
+  \Gamma_b\!\left(\frac{m^c\pi_-(b)}{p_+(b)}\right)
+  <
+  \Gamma_b\!\left(\frac{m^0\pi_-(b)}{p_+(b)}\right).
+\]
+No strict inequality comparing \(U(m^c)\) with \(U^0(m^0)\) is assumed here; it is proved
+from these primitive cap-feasibility and tail-shape conditions.
+\end{assumption}
+
+\section{Estimand-defining functional}
+The bounding functional is
+\[
+  \theta_L(P;\bar\rho,\bar s)=B_L(P,\bar\rho,\bar s)
+  =\inf_{a\in\mathcal A(P,\bar\rho,\bar s)}\Theta(a),
+\]
+\[
+  \theta_U(P;\bar\rho,\bar s)=B_U(P,\bar\rho,\bar s)
+  =\sup_{a\in\mathcal A(P,\bar\rho,\bar s)}\Theta(a).
+\]
+This is an observable functional of \(P=(P_-,P_+)\) and the sensitivity parameters because
+\(\mathcal A(P,\bar\rho,\bar s)\) and \(\Theta(a)\) are defined only through integrals
+under \(P_-\) and \(P_+\), the fixed bounds \((\bar\rho,\bar s)\), and the known outcome
+support.
+
+The intended result is sharp, not merely an outer bound.  The outer-bound statement is
+\[
+  \Theta_I(P,\bar\rho,\bar s)\subseteq
+  [\theta_L(P;\bar\rho,\bar s),\theta_U(P;\bar\rho,\bar s)].
+\]
+Sharpness means that every value in the image
+\(\{\Theta(a):a\in\mathcal A(P,\bar\rho,\bar s)\}\) is generated by some structural
+completion satisfying the maintained restrictions, and the interval endpoints are the
+tight lower and upper envelope of that image.  Because the feasible set is convex and the
+positive first-stage assumption makes \(\Theta\) continuous, the image is an interval; in
+finite-support cases the infimum and supremum are attained.
+
+\section{Target causal estimand}
+The causal target is the scalar nonmanipulator local Wald effect at the cutoff,
+\[
+  \theta =
+  \frac{\sum_w \pi_-(w)\{\mu^Y_{+,0}(w)-\mu^Y_-(w)\}}
+       {\sum_w \pi_-(w)\{\mu^D_{+,0}(w)-\mu^D_-(w)\}}.
+\]
+Here \(\mu^V_{+,0}(w)\) is the right-limit mean of \(V\in\{Y,D\}\) for the
+nonmanipulating cutoff population in covariate cell \(w\), and
+\(\mu^-_V(w)=\E_{P_-}[V\mid W=w]\) is observed on the left because upward manipulation
+does not contaminate the left side.  The denominator is the local first stage for
+nonmanipulators and is bounded below by Assumption~\ref{ass:positive-first-stage}.
+
+The target is not defined to be the trimming functional.  Rather, the maintained
+restrictions imply that the unobserved nonmanipulator right-limit law must equal \(Q_a\)
+for some feasible \(a\), and therefore the target must equal \(\Theta(a)\) for that
+completion.  Partial identification arises because \(P_+\) need not reveal which
+right-side units are nonmanipulators.
+
+\section{Main theorems}
+\begin{theorem}[Sharp budgeted conditional trimming]\label{thm:sharp-budgeted-trimming}
+Under Assumptions~\ref{ass:cutoff-limits}--\ref{ass:positive-first-stage},
+\[
+  \Theta_I(P,\bar\rho,\bar s)
+  =
+  \{\Theta(a):a\in\mathcal A(P,\bar\rho,\bar s)\}.
+\]
+Consequently
+\[
+  \Theta_I(P,\bar\rho,\bar s)\subseteq
+  [B_L(P,\bar\rho,\bar s),B_U(P,\bar\rho,\bar s)],
+\]
+and this interval is sharp: no uniformly smaller interval contains all values compatible
+with the maintained restrictions.  Verdict on Conjecture~\ref{conj:sharp-budgeted-trim}:
+confirmed.
+\end{theorem}
+
+This theorem is the sharpness backbone for the maintained model.  By itself it is a
+contaminated-law representation: it converts structural completions into retention weights
+and back again.  The novelty-bearing claim below is that the externally supplied cell caps
+can remove the cell-cap-free worst fixed-share face, so the proposed feasible set is not
+just a relabeling of the upper-envelope version of ordinary trimming.
+
+\begin{proposition}[Finite-support endpoint geometry]\label{prop:endpoint-geometry}
+Under Assumptions~\ref{ass:cutoff-limits}--\ref{ass:positive-first-stage} and
+\ref{ass:finite-support-geometry}, each upper or lower endpoint over a nonempty compact
+finite-support feasible region is attained by an extreme point of a finite-dimensional
+linear-fractional program.  At any feasible active basis whose denominator is bounded away
+from zero, and at any endpoint value \(\lambda\), an optimizer can be chosen as a
+threshold-retention rule: it retains all atoms with favorable affine score, drops all atoms
+with unfavorable affine score, and may fractionally retain only atoms tied at the
+threshold.  For the upper endpoint the relevant score has the form
+\[
+  y-\lambda d+\eta_w+\nu,
+\]
+with \(\eta_w\) absorbing the retained-\(W\) and cell-cap multipliers and \(\nu\)
+absorbing the retained-mass/global-budget multiplier; the lower endpoint uses the
+corresponding sign reversal.  On any region of \((\bar\rho,\bar s)\)-space where the
+feasible active basis remains valid, no denominator approaches zero, and the same endpoint
+basis is optimal, the endpoint is a rational function of
+\((\bar\rho,\bar s)\), and kinks occur when the active basis changes.  Verdict on
+Conjecture~\ref{conj:endpoint-geometry}: partial.  The score-threshold and local
+piecewise-rational claims are confirmed; an unrestricted global piecewise-rational
+statement needs the usual qualification by feasible active-set regions.
+\end{proposition}
+
+This proposition is useful for computation and diagnostics rather than for defining the
+identified set.  It explains why endpoint software can search over finitely many active
+sets in finite-support approximations and why reported sensitivity curves kink when a
+cell cap replaces the global density envelope as the binding constraint.
+
+\begin{proposition}[Zero-budget and exact-share faces]\label{prop:faces}
+Under Assumptions~\ref{ass:cutoff-limits}--\ref{ass:positive-first-stage}, if
+\(\bar\rho=0\), \(\bar s_w=0\) for all \(w\), and \(P_+(W=w)=P_-(W=w)\) for all \(w\),
+then \(\mathcal A(P,0,0)=\{a\equiv1\}\) and
+\[
+  \Theta_I(P,0,0)=
+  \left\{
+  \frac{\E_{P_+}[Y]-\E_{P_-}[Y]}{\E_{P_+}[D]-\E_{P_-}[D]}
+  \right\}.
+\]
+If, in addition, Assumptions~\ref{ass:sharp-rd-specialization} and
+\ref{ass:exact-share-one-cell} hold on an exact-share face
+\(\mathcal A^{=}_\tau(P,\bar s)\), then the endpoint problem reduces to ordinary
+Lee outcome-tail trimming of the right-side outcome distribution, with denominator equal
+to one.
+\end{proposition}
+
+This proposition records the main sanity faces.  The first face is the Hahn--Todd--van der
+Klaauw local Wald estimand; the second is the sharp-design exact-share trimming formula
+that appears in Lee-style and manipulated-RD bounds.
+
+\begin{theorem}[Primitive cap-envelope separation]\label{thm:cap-separation}
+Under Assumptions~\ref{ass:cutoff-limits}--\ref{ass:positive-first-stage},
+\ref{ass:sharp-rd-specialization}, and \ref{ass:cap-separation}, the capped upper endpoint
+satisfies
+\[
+  B_U(P,\bar\rho,\bar s)=U(m^c)<U^0(m^0)=U^0_{\mathrm{env}}(\bar\rho).
+\]
+The strict inequality is locally stable under sufficiently small perturbations of the
+finite-support atom probabilities and sensitivity parameters that preserve
+\(m^c<\min\{1,u_1,u_2\}\), the positive first-stage condition, the unique binding cell,
+and the strict upper-tail crossing in Assumption~\ref{ass:cap-separation}.  Moreover, the
+assumption is nonempty: it contains the explicit witness
+\[
+  \pi_-(1)=\pi_-(2)=\frac12,\quad
+  p_+(1)=\frac35,\quad p_+(2)=\frac25,\quad
+  \bar\rho=\frac12,\quad
+  \bar s_1=\frac5{12},\quad \bar s_2=\frac12,
+\]
+with \(Y=1\) on a right-side atom of mass \(3/10\) in cell \(1\), \(Y=0\) on a right-side
+atom of mass \(3/10\) in cell \(1\), \(Y=0\) on all right-side mass in cell \(2\), and
+left-side outcome mean zero in both cells.  For this witness,
+\[
+  m^0=\frac12,\qquad m^c=\frac7{10},\qquad
+  U^0(m^0)=\frac12,\qquad U(m^c)=\frac37.
+\]
+Verdict on Conjecture~\ref{conj:cap-separation}: confirmed after replacing the circular
+strict-gap assumption by primitive fixed-mass feasibility and upper-tail crossing
+conditions.
+\end{theorem}
+
+The separation theorem identifies the role of covariate caps.  A binding cap can rule out
+the uncapped worst-case retained mass, so the sharp upper endpoint is driven by the
+smallest retained mass that both matches the left covariate law, respects the cap, and
+does not require retaining more than all of any right-side cell.  Relative to the
+cell-cap-free GRR-style envelope, the result proves a strict feasible-set deletion rather
+than a different parametrization of the same share-optimization problem.
+
+\section{Interpretation}
+Theorem~\ref{thm:sharp-budgeted-trimming} says that all uncertainty about manipulation can
+be represented as uncertainty about which portion of the observed right-limit law is
+retained as the nonmanipulator law.  The left side is fixed by one-sided upward
+manipulation, while the right side is partially latent.  The global envelope limits total
+removed mass; the cell caps limit removal inside each covariate cell; the retained-\(W\)
+equation forces the candidate nonmanipulator population to have the same covariate law as
+the uncontaminated left side.
+
+The bound collapses to point identification when no mass may be removed and the observed
+right and left covariate laws already match.  In that case \(a\equiv1\), the retained law
+is just \(P_+\), and the usual local Wald contrast is recovered.  In sharp RD, the
+denominator is one, so the result becomes the ordinary right-minus-left jump in the outcome.
+
+The bound widens toward the Manski contaminated-data face when the budgets allow nearly all
+right-side mass to be reassigned as manipulation while still satisfying the first-stage
+condition.  Then the retained right-side means can be pushed toward extreme feasible
+outcome values, and the interval is driven mostly by bounded outcome support rather than
+by density or covariate information.  The main tightening work is done jointly by
+Assumptions~\ref{ass:global-envelope} and \ref{ass:cell-caps}; the former limits total
+trimming, and the latter can prevent all trimming from being concentrated in the cell that
+would make the Wald ratio most extreme.
+
+Theorem~\ref{thm:cap-separation} gives the noncircular tightening mechanism.  The retained
+mass \(m\) must be large enough to keep each cell's removed fraction below its cap, but it
+also must be small enough that the retained-\(W\) equality does not require more than the
+entire observed right-side cell mass.  In the two-cell witness, the global envelope alone
+would allow \(m^0=1/2\), while the cap in cell \(1\) forces \(m^c=7/10\); crossing the
+upper-tail atom in that cell lowers the attainable retained outcome mean.
+
+Proposition~\ref{prop:endpoint-geometry} explains the computational shape of the bounds.
+Endpoint rules sort atoms by a score that combines outcome desirability, treatment
+first-stage leverage, cell scarcity, and global retained-mass scarcity.  This is why fuzzy
+RD endpoints are not generally ordinary outcome-tail trims: retaining an atom changes both
+the numerator and the denominator of the Wald ratio.
+
+\section{Step-by-step proof}
+\begin{lemma}[Mixture-retention equivalence]\label{lem:mixture-retention}
+Under Assumptions~\ref{ass:one-sided}--\ref{ass:cell-caps}, a structural completion is
+admissible if and only if its right-limit nonmanipulator law can be written as \(Q_a\) for
+some \(a\in\mathcal A(P,\bar\rho,\bar s)\).
+\end{lemma}
+
+\begin{proof}
+First take an admissible structural completion.  By one-sided manipulation,
+\[
+  P_+ = m Q_0 + (1-m)G
+\]
+for some retained nonmanipulator mass \(m\in(0,1]\), right-limit nonmanipulator law
+\(Q_0\), and right-side manipulator law \(G\), with \(P_-=Q_-\) equal to the left-limit
+nonmanipulator law.  The mixture identity implies \(mQ_0(B)\le P_+(B)\) for every
+measurable set \(B\), so \(mQ_0\) is absolutely continuous with respect to \(P_+\).  Let
+\[
+  a=\frac{d(mQ_0)}{dP_+}.
+\]
+Then \(0\le a\le1\), \(M_a=\E_{P_+}[a]=m\), and \(Q_a=Q_0\).  The global envelope and
+cell caps are exactly Assumptions~\ref{ass:global-envelope} and \ref{ass:cell-caps}, so
+\(a\) satisfies the budget inequalities.  Conditional nonmanipulator continuity gives
+\[
+  Q_a(W=w)=Q_0(W=w)=P_-(W=w)=\pi_-(w),
+\]
+so \(a\in\mathcal A(P,\bar\rho,\bar s)\).
+
+Conversely, take \(a\in\mathcal A(P,\bar\rho,\bar s)\) and write \(m=M_a\).  Define the
+candidate nonmanipulator law \(Q_0=Q_a\).  If \(m<1\), define the manipulator law
+\[
+  G_a(B)=\frac{1}{1-m}\E_{P_+}[(1-a(Y,D,W))\one\{(Y,D,W)\in B\}],
+\]
+and if \(m=1\) choose any probability law \(G_a\), which receives zero mixture weight.
+Then
+\[
+  P_+(B)=mQ_a(B)+(1-m)G_a(B)
+\]
+for all \(B\) by construction.  The inequalities in the definition of
+\(\mathcal A(P,\bar\rho,\bar s)\) give the global and cellwise manipulation budgets, and
+the equality \(Q_a(W)=\pi_-\) supplies the conditional continuity restriction at the level
+needed for the local Wald numerator and denominator.  Thus \(a\) generates an admissible
+structural completion.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:sharp-budgeted-trimming}]
+Let \(\theta\in\Theta_I(P,\bar\rho,\bar s)\).  By definition of the identified set, there
+is an admissible structural completion satisfying the maintained restrictions and producing
+the target value \(\theta\).  Lemma~\ref{lem:mixture-retention} gives
+\(a\in\mathcal A(P,\bar\rho,\bar s)\) such that the right-limit nonmanipulator law is
+\(Q_a\).  By Assumption~\ref{ass:conditional-continuity},
+\(\mu^V_{+,0}(w)=\E_{Q_a}[V\mid W=w]\) for \(V\in\{Y,D\}\).  Substituting these equalities
+into the target definition gives
+\[
+  \theta
+  =
+  \frac{\sum_w \pi_-(w)\{\E_{Q_a}[Y\mid W=w]-\mu^-_Y(w)\}}
+       {\sum_w \pi_-(w)\{\E_{Q_a}[D\mid W=w]-\mu^-_D(w)\}}
+  =
+  \Theta(a).
+\]
+The denominator is positive by Assumption~\ref{ass:positive-first-stage}.  Therefore
+\[
+  \Theta_I(P,\bar\rho,\bar s)\subseteq
+  \{\Theta(a):a\in\mathcal A(P,\bar\rho,\bar s)\}.
+\]
+
+For the reverse inclusion, take \(a\in\mathcal A(P,\bar\rho,\bar s)\).  The converse part
+of Lemma~\ref{lem:mixture-retention} constructs an admissible structural completion whose
+right-limit nonmanipulator law is \(Q_a\).  Under Assumption~\ref{ass:conditional-continuity},
+that completion has target value \(\Theta(a)\).  Hence
+\[
+  \{\Theta(a):a\in\mathcal A(P,\bar\rho,\bar s)\}
+  \subseteq \Theta_I(P,\bar\rho,\bar s).
+\]
+The two inclusions prove equality.  Taking the infimum and supremum over the common set
+gives the sharp interval.  Since every feasible retention rule is attainable by a
+completion, lowering the upper endpoint or raising the lower endpoint would exclude an
+admissible target value.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:endpoint-geometry}]
+Under Assumption~\ref{ass:finite-support-geometry}, index each atom of
+\((Y,D,W)\) under \(P_+\) by \(j\), with atom values \((y_j,d_j,w_j)\), probability
+\(p_j\), and decision variable \(a_j\in[0,1]\).  The constraints defining
+\(\mathcal A(P,\bar\rho,\bar s)\) are linear in \(a=(a_j)\): retained mass is
+\(\sum_j p_ja_j\), the retained-\(W\) equations are
+\(\sum_{j:w_j=w}p_ja_j=\pi_-(w)\sum_jp_ja_j\), and the cell caps are
+\(\sum_{j:w_j=w}p_j(1-a_j)\le \bar s_w p_+(w)\).  The numerator and denominator of
+\(\Theta(a)\) are affine in \(a\) after multiplying by \(M_a\):
+\[
+  N(a)=\E_{P_+}[aY]-M_a\E_{P_-}[Y],\qquad
+  F(a)=\E_{P_+}[aD]-M_a\E_{P_-}[D].
+\]
+Assumption~\ref{ass:positive-first-stage} gives \(F(a)\ge \kappa M_a>0\) on the feasible
+set, and the global budget gives \(M_a\ge1-\bar\rho>0\).  Therefore the denominator is
+bounded away from zero on any feasible region covered by the statement.  With
+\(0\le a_j\le1\) and closed linear constraints, maximizing \(\Theta(a)=N(a)/F(a)\) is a
+linear-fractional program on a compact polytope whenever the feasible region is nonempty.
+
+Fix a candidate endpoint value \(\lambda\).  The Dinkelbach or Charnes--Cooper
+transformation says that the inequality \(\Theta(a)\le\lambda\) over the feasible set is
+equivalent to
+\[
+  N(a)-\lambda F(a)\le0
+\]
+over the same set, because \(F(a)>0\).  The transformed objective is linear in \(a\).
+The Lagrangian coefficient on an atom \((y_j,d_j,w_j)\), after collecting constants and
+multipliers for retained mass, retained-\(W\), the global budget, and the cell caps, has
+the form
+\[
+  y_j-\lambda d_j+\eta_{w_j}+\nu
+\]
+up to a positive atom-probability multiplier and sign conventions.  Linear programming
+optimality therefore retains atoms with positive reduced cost, drops atoms with negative
+reduced cost, and allows fractional retention only on zero-reduced-cost ties.  This proves
+the threshold-retention claim.  For a fixed active basis, the basic variables are affine
+functions of the right-hand sides \((1-\bar\rho,\bar s)\), so the ratio \(N(a)/F(a)\) is
+rational in those parameters.  Basis changes are exactly the kink points described in the
+statement.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:faces}]
+If \(\bar\rho=0\), the global budget gives \(M_a=1\).  Since \(0\le a\le1\) and
+\(\E_{P_+}[a]=1\), we have \(a=1\) \(P_+\)-almost surely.  The retained-\(W\) equation is
+then \(P_+(W=w)=\pi_-(w)\), which holds by the proposition's premise.  Thus
+\(\mathcal A(P,0,0)=\{1\}\).  Substituting \(a=1\) into \(\Theta(a)\) gives the displayed
+local Wald contrast.  Under the sharp RD specialization, \(D=0\) on the left and \(D=1\)
+on the right at the cutoff, so the denominator is one.
+
+For the one-cell exact-share face, \(K=1\) makes the retained-\(W\) equation vacuous, and
+Assumption~\ref{ass:exact-share-one-cell} fixes \(M_a=1-\tau\) with no active cell cap.
+Under sharp RD, the denominator of \(\Theta(a)\) is one, so maximizing or minimizing
+\(\Theta(a)\) is the same as maximizing or minimizing the retained right-side outcome
+mean.  The standard Lee trimming argument applies: to maximize the retained mean, retain
+the upper \(1-\tau\) fraction of the right-side outcome distribution, fractionally retaining
+only at the cutoff quantile if needed; to minimize it, retain the lower \(1-\tau\) fraction.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:cap-separation}]
+Under \(D=Z\), the first-stage denominator is one, so the upper endpoint at fixed retained
+mass \(m\) is the largest retained right-side outcome mean minus the fixed left-side mean.
+The retained-\(W\) equation requires cell \(w\) to contribute retained mass
+\(m\pi_-(w)\), so the required retained fraction in that cell is
+\[
+  r_w(m)=\frac{m\pi_-(w)}{p_+(w)}.
+\]
+The constraint \(0\le a\le1\) requires
+\[
+  r_w(m)\le1,
+  \qquad\text{or}\qquad
+  m\le u_w=\frac{p_+(w)}{\pi_-(w)}.
+\]
+The cell cap \(\bar s_w\) is equivalent to
+\[
+  1-r_w(m)\le\bar s_w,
+  \qquad\text{or}\qquad
+  m\ge\ell_w=\frac{(1-\bar s_w)p_+(w)}{\pi_-(w)}.
+\]
+Combining these inequalities with the global budget \(m\ge m^0=1-\bar\rho\) shows that
+the capped fixed-mass domain is
+\[
+  m\in
+  \left[
+    \max\{m^0,\ell_1,\ell_2\},
+    \min\{1,u_1,u_2\}
+  \right]
+\]
+whenever this interval is nonempty.  Assumption~\ref{ass:cap-separation} makes the lower
+endpoint equal to \(m^c\), makes it feasible, and gives a unique binding cell \(b\) with
+\(m^c=\ell_b>m^0\).  Thus the cap itself, together with retained-\(W\), forces
+\(m^c>m^0\); this is not an assumed endpoint inequality.
+
+For sharp RD with finite support, the fixed-mass upper endpoint in each cell is obtained
+by retaining the largest outcomes in that cell.  Hence
+\[
+  U^0(m)
+  =
+  \sum_w \pi_-(w)\Gamma_w(r_w(m))-\E_{P_-}[Y].
+\]
+Each \(\Gamma_w\) is weakly decreasing in its retained fraction and \(r_w(m)\) is
+increasing in \(m\).  Therefore \(U^0(m)\) is weakly decreasing in \(m\), so the
+cell-cap-free upper envelope over the global budget is attained at \(m^0\):
+\[
+  U^0_{\mathrm{env}}(\bar\rho)=U^0(m^0).
+\]
+On the capped domain, the same monotonicity implies that the upper envelope is attained at
+the smallest capped feasible mass \(m^c\).  At a fixed feasible mass the cell caps impose
+only the already-satisfied total retained fraction constraints, so \(U(m^c)=U^0(m^c)\).
+Thus
+\[
+  B_U(P,\bar\rho,\bar s)=U(m^c).
+\]
+The strict upper-tail crossing in Assumption~\ref{ass:cap-separation} gives
+\[
+  \Gamma_b(r_b(m^c))<\Gamma_b(r_b(m^0)).
+\]
+For the other cell \(w\ne b\), weak monotonicity gives
+\(\Gamma_w(r_w(m^c))\le\Gamma_w(r_w(m^0))\).  Since \(\pi_-(b)>0\), summing across cells
+therefore yields
+\[
+  U(m^c)=U^0(m^c)<U^0(m^0)=U^0_{\mathrm{env}}(\bar\rho),
+\]
+which proves the strict endpoint drop.
+
+For the displayed witness, \(\ell_1=7/10\), \(\ell_2=2/5\),
+\(u_1=6/5\), and \(u_2=4/5\).  Hence \(m^0=1/2\), \(m^c=7/10\), and \(m^c<\min\{1,u_1,u_2\}\).
+The conditional high-outcome share in cell \(1\) is \(1/2\).  Thus
+\[
+  r_1(m^0)=\frac{5}{12}<\frac12<\frac{7}{12}=r_1(m^c),
+\]
+so \(\Gamma_1(r_1(m^0))=1\) and
+\(\Gamma_1(r_1(m^c))=(1/2)/(7/12)=6/7\).  Cell \(2\) has only outcome zero, so
+\(\Gamma_2(r)=0\) for all feasible \(r\).  With left-side mean zero,
+\[
+  U^0(m^0)=\frac12\cdot1+\frac12\cdot0=\frac12,\qquad
+  U(m^c)=\frac12\cdot\frac67+\frac12\cdot0=\frac37.
+\]
+This verifies the nondegenerate strict gap in the witness.
+
+The open-set claim follows because all inequalities defining the active configuration are
+strict except the deliberately binding cell cap, the crossing
+\(r_b(m^0)<\) upper-tail mass \(<r_b(m^c)\) is strict, and the finite-support endpoint
+values are continuous rational functions of atom probabilities and budget parameters as
+long as the same active basis and positive denominator persist.  Therefore a sufficiently
+small perturbation preserving the listed primitive inequalities preserves the same
+endpoint ordering.
+\end{proof}
+
+\section{Sanity checks}
+\begin{enumerate}[leftmargin=*]
+  \item \emph{Zero-width point-identification corner.}  If \(\bar\rho=0\),
+  \(\bar s_w=0\) for every \(w\), and \(P_+(W)=P_-(W)\), Proposition~\ref{prop:faces}
+  gives the usual local Wald estimand.  In sharp RD this is
+  \(\E_{P_+}[Y]-\E_{P_-}[Y]\).
+
+  \item \emph{One-cell exact-share Lee corner.}  If \(K=1\), \(D=Z\), and the removed
+  share is fixed at \(\tau\le\bar\rho\) with an inactive cell cap, the endpoint problem is
+  ordinary Lee trimming: the upper bound retains the upper \(1-\tau\) outcome tail and the
+  lower bound retains the lower \(1-\tau\) outcome tail.  This is the sharp-design
+  exact-share face of Gerard, Rokkanen, and Rothe \cite{GerardRokkanenRothe2020}.
+
+  \item \emph{Vacuous contaminated-data corner.}  If \(\bar\rho\) and the cell caps allow
+  arbitrarily small retained mass in every cell while preserving the positive first-stage
+  condition, the right-side nonmanipulator means can approach their bounded-support
+  extremes.  The interval then approaches the Horowitz--Manski contaminated-data bound
+  induced by \(Y\in[\underline y,\overline y]\) and \(D\in\{0,1\}\).
+
+  \item \emph{No ordinary outcome trimming in fuzzy RD.}  When \(D\) is not equal to \(Z\),
+  the endpoint score contains both \(y\) and \(-\lambda d\).  Thus the optimal retained
+  set is ordered by Wald-ratio leverage, not by the outcome alone.  This sanity check
+  prevents importing the sharp-RD Lee-tail formula into the fuzzy design without the
+  needed denominator argument.
+
+  \item \emph{Cell-cap tightening.}  If \(p_+(w)\) is large relative to \(\pi_-(w)\), the
+  retained-\(W\) equation requires removing a large share from cell \(w\) at small retained
+  masses.  The cap \(\bar s_w\) imposes the lower bound
+  \(m\ge (1-\bar s_w)p_+(w)/\pi_-(w)\), while the retention constraint \(a\le1\) imposes
+  the upper bound \(m\le p_+(w)/\pi_-(w)\).  Thus a single cell can force a larger retained
+  mass and narrow the interval only when the resulting \(m\) is still fixed-mass feasible.
+\end{enumerate}
+
+\section{Counterexample or minimality check}
+The retained-\(W\) equation is not cosmetic.  Consider a sharp RD design with
+\(\underline y=0\), \(\overline y=1\), \(K=2\), \(\pi_-(1)=\pi_-(2)=1/2\),
+\(P_+(W=1)=P_+(W=2)=1/2\), and left-side outcome mean zero in both cells.  On the right,
+let \(Y=1\) in cell \(1\) and \(Y=0\) in cell \(2\).  Let \(\bar\rho=1/2\) and take loose
+cell caps.  If the retained-\(W\) equality is dropped, the upper endpoint can retain only
+cell \(1\) with \(M_a=1/2\), giving right-side retained outcome mean \(1\).  With
+\(Q_a(W)=\pi_-\), any retained law with \(M_a=1/2\) must retain mass \(1/4\) from each
+cell, so the right-side retained outcome mean is \(1/2\).  Thus removing the covariate-law
+restriction strictly enlarges the bound and breaks the intended nonmanipulator continuity
+interpretation.
+
+The positive first-stage condition is also minimal for a Wald target.  If a feasible
+retention rule has
+\[
+  \sum_w \pi_-(w)\{\E_{Q_a}[D\mid W=w]-\mu^-_D(w)\}=0,
+\]
+then \(\Theta(a)\) is undefined; if denominators can approach zero while numerators remain
+away from zero, the interval can become unbounded even though \(Y\) is bounded.  The
+restriction is therefore a support condition, not a normalization.
+
+The fixed-mass feasibility upper bound is also necessary.  If one kept only the lower
+bound \(m\ge(1-\bar s_w)p_+(w)/\pi_-(w)\) and ignored
+\(m\le p_+(w)/\pi_-(w)\), the retained-\(W\) equation could demand more retained mass from
+a cell than the observed right-side law contains.  For example, if
+\(\pi_-(1)=1/2\), \(p_+(1)=1/10\), and \(m=1/2\), then cell \(1\) would have to retain
+mass \(1/4\) from only \(1/10\) observed mass, contradicting \(a\le1\).  This is why
+Theorem~\ref{thm:cap-separation} conditions endpoint attainment and separation on
+\(m^c\le\min\{1,u_1,u_2\}\), not just on the cap lower bounds.
+
+\section{Formalization checklist}
+\paragraph{Probability objects.}
+\begin{itemize}[leftmargin=*]
+  \item Observable laws: \(P_-\) and \(P_+\), probability measures on
+  \([\underline y,\overline y]\times\{0,1\}\times\{1,\ldots,K\}\).
+  Dependencies: cutoff-side weak limits.  Role: all functionals are computed from these
+  two laws.
+  \item Cell probabilities: \(\pi_-(w)=P_-(W=w)\), \(p_+(w)=P_+(W=w)\).
+  Dependencies: finite \(W\), positive left cell support.  Role: retained-\(W\) matching
+  and cell-cap feasibility.
+  \item Left means: \(\mu^-_V(w)=\E_{P_-}[V\mid W=w]\) for \(V\in\{Y,D\}\).
+  Dependencies: \(\pi_-(w)>0\), bounded \(Y\), binary \(D\).  Role: fixed left side of the
+  local Wald target.
+  \item Retention weight: measurable \(a(y,d,w)\in[0,1]\).  Dependencies: right-side
+  support.  Role: Radon--Nikodym derivative of retained nonmanipulator mass with respect
+  to \(P_+\).
+  \item Retained mass and law: \(M_a=\E_{P_+}[a]\) and
+  \(Q_a(B)=M_a^{-1}\E_{P_+}[a\one_B]\).  Dependencies: \(M_a>0\).  Role: candidate
+  right-limit nonmanipulator distribution.
+\end{itemize}
+
+\paragraph{Assumptions as mathematical predicates.}
+\begin{itemize}[leftmargin=*]
+  \item Cutoff limits and bounded support: existence of \(P_-,P_+\), finite \(W\), bounded
+  \(Y\), and \(\pi_-(w)>0\).
+  \item One-sided mixture: existence of \(m,Q_0,G\) with \(P_+=mQ_0+(1-m)G\) and \(P_-\)
+  equal to the left nonmanipulator law.
+  \item Conditional continuity: \(Q_0(W=w)=\pi_-(w)\) and
+  \(\mu^V_{+,0}(w)=\E_{Q_0}[V\mid W=w]\).
+  \item Budget predicates: \(1-M_a\le\bar\rho\) and
+  \(1-\E_{P_+}[a\mid W=w]\le\bar s_w\), together with \(a\le1\), which imposes
+  fixed-mass upper feasibility \(m\pi_-(w)/p_+(w)\le1\).
+  \item First-stage support: denominator of \(\Theta(a)\) bounded below by \(\kappa>0\)
+  for all feasible \(a\).
+\end{itemize}
+
+\paragraph{Deterministic identities and lemmas.}
+\begin{itemize}[leftmargin=*]
+  \item Mixture-to-retention identity:
+  if \(P_+=mQ_0+(1-m)G\), then \(a=d(mQ_0)/dP_+\) satisfies \(0\le a\le1\),
+  \(M_a=m\), and \(Q_a=Q_0\).
+  \item Retention-to-mixture identity:
+  if \(0\le a\le1\) and \(M_a=m\), then
+  \(P_+=mQ_a+(1-m)G_a\) with
+  \(G_a(B)=(1-m)^{-1}\E_{P_+}[(1-a)\one_B]\) when \(m<1\).
+  \item Wald simplification under retained-\(W\):
+  \(\sum_w\pi_-(w)\E_{Q_a}[V\mid W=w]=\E_{Q_a}[V]=M_a^{-1}\E_{P_+}[aV]\).
+  \item Fixed-mass cell-cap inequality:
+  \(Q_a(W=w)=\pi_-(w)\) and \(M_a=m\) imply retained cell mass
+  \(m\pi_-(w)\), so the retained fraction is
+  \(r_w(m)=m\pi_-(w)/p_+(w)\).  Fixed-mass feasibility requires
+  \(r_w(m)\le1\), equivalently \(m\le p_+(w)/\pi_-(w)\), and the cell cap is
+  equivalent to \(r_w(m)\ge1-\bar s_w\), equivalently
+  \(m\ge(1-\bar s_w)p_+(w)/\pi_-(w)\), when \(p_+(w)>0\).
+  \item Upper-tail mean function:
+  \(\Gamma_w(r)\) is the maximum retained conditional \(Y\)-mean in cell \(w\) after
+  retaining fraction \(r\).  Dependencies: finite support and \(r\in(0,1]\).  Role:
+  proves \(U^0(m)\) is weakly decreasing in \(m\) and proves strict cap-envelope
+  separation when the binding cell crosses a positive-mass upper-tail threshold.
+  \item Linear-fractional endpoint identity:
+  for positive denominator \(F(a)\), \(\sup_a N(a)/F(a)\le\lambda\) if and only if
+  \(\sup_a\{N(a)-\lambda F(a)\}\le0\).
+  \item Finite-support extreme-point fact:
+  a linear objective over a nonempty compact retention polytope has an optimizer at an
+  extreme point, with at most tie atoms fractionally retained after reduced costs are
+  ordered.  Piecewise-rational endpoint formulas require a feasible active basis and a
+  first-stage denominator bounded away from zero on the active-basis region.
+\end{itemize}
+
+\section{Conclusion and references}
+The sharpness theorem equates the identified set for the nonmanipulator RD local Wald
+effect with the image of the budgeted conditional trimming program.  The novelty-bearing
+theorem proves a stricter fact: external covariate-cell caps, combined with the
+retained-\(W\) equality, can force a larger retained mass than the McCrary envelope alone
+and strictly lower the upper endpoint on an open two-cell finite-support class.  The bound
+becomes point-identifying at the no-manipulation face and approaches a Manski-style
+contaminated-data bound when the budgets permit nearly arbitrary right-side removal.  In
+fuzzy RD, endpoint rules sort by Wald-ratio score rather than by outcome tails alone, so
+the ordinary Lee trimming formula is valid only on the sharp-RD exact-share face.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem{AraiHsuKitagawaMourifieWan2022}
+Arai, Yoichi, Yu-Chin Hsu, Toru Kitagawa, Ismael Mourifie, and Yuanyuan Wan.
+2022.
+Testing identifying assumptions in fuzzy regression discontinuity designs.
+\emph{Quantitative Economics} 13(1): 1--28.
+
+\bibitem{CanayKamat2018}
+Canay, Ivan A., and Vishal Kamat.
+2018.
+Approximate permutation tests and induced order statistics in the regression discontinuity design.
+\emph{Review of Economic Studies} 85(3): 1577--1608.
+
+\bibitem{CattaneoJanssonMa2020}
+Cattaneo, Matias D., Michael Jansson, and Xinwei Ma.
+2020.
+Simple local polynomial density estimators.
+\emph{Journal of the American Statistical Association} 115(531): 1449--1455.
+
+\bibitem{GerardRokkanenRothe2020}
+Gerard, Francois, Miikka Rokkanen, and Christoph Rothe.
+2020.
+Bounds on treatment effects in regression discontinuity designs with a manipulated running variable.
+\emph{Quantitative Economics} 11(3): 839--870.
+
+\bibitem{HahnToddVanDerKlaauw2001}
+Hahn, Jinyong, Petra Todd, and Wilbert van der Klaauw.
+2001.
+Identification and estimation of treatment effects with a regression-discontinuity design.
+\emph{Econometrica} 69(1): 201--209.
+
+\bibitem{HorowitzManski1995}
+Horowitz, Joel L., and Charles F. Manski.
+1995.
+Identification and robustness with contaminated and corrupted data.
+\emph{Econometrica} 63(2): 281--302.
+
+\bibitem{HsuShiuWan2024}
+Hsu, Yu-Chin, Ji-Liang Shiu, and Yuanyuan Wan.
+2024.
+Testing identification conditions of LATE in fuzzy regression discontinuity designs.
+\emph{Journal of Econometrics} 241(1): 105655.
+
+\bibitem{ImbensLemieux2008}
+Imbens, Guido W., and Thomas Lemieux.
+2008.
+Regression discontinuity designs: A guide to practice.
+\emph{Journal of Econometrics} 142(2): 615--635.
+
+\bibitem{Lee2008}
+Lee, David S.
+2008.
+Randomized experiments from non-random selection in U.S. House elections.
+\emph{Journal of Econometrics} 142(2): 675--697.
+
+\bibitem{Lee2009}
+Lee, David S.
+2009.
+Training, wages, and sample selection: Estimating sharp bounds on treatment effects.
+\emph{Review of Economic Studies} 76(3): 1071--1102.
+
+\bibitem{LeeLemieux2010}
+Lee, David S., and Thomas Lemieux.
+2010.
+Regression discontinuity designs in economics.
+\emph{Journal of Economic Literature} 48(2): 281--355.
+
+\bibitem{McCrary2008}
+McCrary, Justin.
+2008.
+Manipulation of the running variable in the regression discontinuity design: A density test.
+\emph{Journal of Econometrics} 142(2): 698--714.
+
+\bibitem{Semenova2025}
+Semenova, Vira.
+2025.
+Generalized Lee bounds.
+\emph{Journal of Econometrics} 251: 106055.
+\end{thebibliography}
+
+\end{document}

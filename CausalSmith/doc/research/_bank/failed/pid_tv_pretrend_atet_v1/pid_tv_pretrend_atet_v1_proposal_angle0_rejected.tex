@@ -1,0 +1,482 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_tv\_pretrend\_atet, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_tv\_pretrend\_atet} / \texttt{v1}%
+  \\ \large\textit{Sharp TV-calibrated ATET intervals and critical breakdown frontiers in staggered-adoption DiD}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+(qid, specialization) =
+  (pid_tv_pretrend_atet, v1)
+observable distribution P =
+  law of a finite staggered-adoption panel summarized by:
+  (i) a scalar ATET point estimate hat theta for a fixed treated-on-the-treated
+  aggregate,
+  (ii) the observed pre-treatment discrepancy path
+       g = (g_{-T0},...,g_{-1}) in R^{T0},
+  (iii) a known post-treatment aggregation-weight vector
+       omega = (omega_1,...,omega_H) in R^H mapping post-treatment untreated
+       trend deviations into ATET bias,
+  (iv) a known cohort-to-event aggregation map A when cohort-level
+       staggered-adoption cells are retained, and
+  (v) an outcome-support radius B > 0 with admissible ATET values in
+      [hat theta - B, hat theta + B]
+parameter theta =
+  scalar staggered-adoption ATET on the treated, theta
+identifying restrictions =
+  consistency; absorbing staggered adoption; no exact parallel-trends
+  requirement; the post-treatment untreated-trend deviation path u in R^H is
+  constrained by an anchored total-variation budget
+    u_0 = 0,
+    TV(u) := sum_{h=1}^H |u_h - u_{h-1}| <= kappa * D_pre,
+  where D_pre = max_j g_j - min_j g_j is the observed pre-treatment
+  discrepancy dispersion. In the cohort-level formulation, the same TV budget
+  is imposed before event-time aggregation and then projected through A.
+bounding functional =
+  Theta_I(P; kappa) = { hat theta - omega' u :
+    u satisfies the anchored TV restriction and |omega' u| <= B }.
+  The proposal studies: (a) the sharp support width of Theta_I(P; kappa),
+  (b) the critical radius kappa_sign at which 0 first enters Theta_I(P; kappa),
+  (c) the vacuity radius kappa_vac at which Theta_I(P; kappa) fills the
+      maintained outcome range, and
+  (d) when the aggregate-path TV interval equals the projection of the
+      cohort-level TV sensitivity set in a staggered-adoption design.
+\end{verbatim}
+
+\begin{abstract}
+This proposal asks for sharp partial identification of a staggered-adoption ATET when the untreated post-treatment trend discrepancy is restricted by a total-variation budget calibrated to the observed pre-treatment discrepancy path. The routine part is a support-function representation of the ATET interval under an anchored TV class, together with deterministic sign-loss and vacuity frontiers defined by the same support. The flagship claim is that this support admits a closed form through a computable TV dual norm of the staggered aggregation weights, and that the resulting interval can be strictly tighter than the Rambachan--Roth relative-magnitude interval because TV uses the ordering and cancellation structure of the bias weights rather than only their maximal magnitude. A second conjecture asks when that aggregate-path TV interval is itself sharp for staggered adoption, rather than a conservative or anti-conservative projection of a cohort-level TV class. If resolved, the result would turn pretrend sensitivity reporting from a generic robustness scalar into an evaluable frontier with an explicit design diagnostic.
+\end{abstract}
+
+\section{Introduction}
+The question is whether staggered-adoption ATET sensitivity to non-parallel trends can be calibrated by the total variation of the observed pre-treatment discrepancy path rather than by a sup-norm or smoothness envelope. The headline claim is a sharp ATET interval under an anchored TV class, with a computable critical radius at which sign identification is lost and a second radius at which the maintained outcome range becomes vacuous.
+
+The closest comparator is \citet{RambachanRoth2023CrediblePT}, who write that they ``place restrictions on the possible post-treatment differences in trends'' (\S2.2, p.~2557) and highlight the relative-magnitude class that ``bounds the maximal post-treatment violation'' by a multiple of the maximal pre-treatment violation (\S1.1, p.~2558). The second comparator is \citet{CallawaySantAnna2021MultiplePeriods}, whose abstract states that ``a family of causal effect parameters are identified in staggered DiD setups'' but does not give TV sensitivity sharpness after aggregation. The gap is an explicit TV support norm and frontier for ATET bias, plus a projection theorem for when event-time aggregation preserves the cohort-level TV identified set. The kernel lives in partial identification, with a staggered-panel aggregation map as the application structure.
+
+The direct consumer is the sensitivity-analysis workflow recommended in \citet{RothSantAnnaBilinskiPoe2023TrendingDiD} for designs with questionable parallel trends and staggered timing. If the proposed results are correct, practitioners using group-time ATT or imputation-style event studies \citep{CallawaySantAnna2021MultiplePeriods,BorusyakJaravelSpiess2024EventStudies} would report a TV frontier and an aggregation-sharpness diagnostic rather than only a relative-magnitude breakdown value. The practical change is that a pretrend robustness table would become a design-specific identified set with an explicit sign-loss threshold.
+
+Results at a glance.
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: the TV-restricted ATET identified set is the support interval of an anchored variation ball intersected with the maintained outcome range. Gap: \citet{RambachanRoth2023CrediblePT} give a general sensitivity framework, not a TV-specific sharp support representation for staggered ATET bias. Consumer: \citet{RothSantAnnaBilinskiPoe2023TrendingDiD}.
+\item Theorem 2: under the anchored event-time TV class, the interval width and the sign-loss / vacuity frontiers reduce to a computable TV dual norm \(\Gamma_{\mathrm{TV}}(\omega)\). Gap: \citet{RambachanRoth2023CrediblePT} and \citet{ManskiPepper2018BoundedVariation} motivate bounded-variation restrictions but do not derive this closed-form ATET frontier. Consumer: \citet{CallawaySantAnna2021MultiplePeriods}.
+\item Conjecture 3: the aggregate-path TV interval is sharp for staggered adoption if and only if event-time aggregation preserves the active TV dual face of the cohort-level class; otherwise the aggregate interval is strictly conservative or anti-conservative. Gap: \citet{SunAbraham2021DynamicEffects} and \citet{BorusyakJaravelSpiess2024EventStudies} study contamination and target aggregation, not identified-set projection under a TV restriction. Consumer: stacked and cohort-aggregated event-study practice.
+\end{itemize}
+
+\section{Related work}
+\citet{RambachanRoth2023CrediblePT} are the main published comparator because they cast violations of parallel trends as a partially identified event-study problem under researcher-specified restrictions and supply relative-magnitude and smoothness examples. The present proposal keeps that partial-identification stance but replaces the sup-norm and smoothness examples with an anchored TV class and asks for a closed-form sharp width for an ATET scalar.
+
+\citet{ManskiPepper2018BoundedVariation} are the bounded-variation anchor in partial identification. Their relevance is conceptual and methodological: they justify replacing exact identifying assumptions by variation restrictions, but they do not study staggered-adoption ATET aggregation or a TV dual norm for event-time bias.
+
+\citet{CallawaySantAnna2021MultiplePeriods} identify group-time treatment effects and aggregation schemes in staggered-adoption DiD. They are the closest positive staggered-design benchmark because the ATET target and aggregation weights used here are built from their estimand family, but their results remain point identifying under parallel trends.
+
+\citet{SunAbraham2021DynamicEffects} show that lead and lag coefficients in staggered event-study regressions can be contaminated by heterogeneous treatment effects. Their relevance is that aggregation can distort causal interpretation even before sensitivity analysis; the current proposal asks whether aggregation also distorts the identified set induced by a TV trend-violation class.
+
+\citet{BorusyakJaravelSpiess2024EventStudies} provide robust and efficient imputation estimators for staggered event studies. They matter here because they clarify the target aggregation map and therefore the post-treatment bias weights \(\omega\), but they do not compare cohort-level and aggregate-path sensitivity classes.
+
+\citet{RothSantAnnaBilinskiPoe2023TrendingDiD} synthesize the recent DiD literature and emphasize sensitivity analysis when exact parallel trends is not credible. The proposed TV frontier is a direct candidate for the kind of design-specific sensitivity output their practitioner guidance calls for.
+
+\citet{KahnLangLang2020PromisePitfalls} are relevant because they argue that pretrends are informative but not dispositive. The proposal uses that insight to motivate a restriction that exploits the whole signed pretrend path rather than only a pass-fail test or maximal deviation.
+
+\citet{Roth2022PretestCaution} show that pretrend tests can have low power and that conditioning on passing them can distort inference. This matters because the TV interval proposed here is intended to be calibrated from the observed pretrend path without conditioning on pretest passage.
+
+In-repo prior art is related but not duplicative. `CausalSmith/doc/API.md` Section 3 records that the current ExactID and PartialID catalogues are still sparse at seed time, so there is no existing in-catalogue theorem with this kernel. The legacy entry `q1_partial_did_unobserved_trends / p1_baseline_v2` is the closest pretrend-oriented partial-DiD proposal, but it targets partially unobserved pretrends rather than a TV geometry and does not name a critical frontier. The failed `panel_honest_did_phase / v1` proposal is the nearest warning on cohort-versus-aggregate support-function geometry; it left the rank-phase language conjectural and did not solve the TV-specific problem. The downgraded `pid_synth_control_factor_misspec / v1` and `pid_offline_policy_joint_misspec / v1` proposals are useful only as methodological comparators showing that signed path information and joint support functions can strictly tighten rectangular envelopes.
+
+\section{Formal setup}
+Let \(\hat\theta\) denote a fixed scalar staggered-adoption ATET estimate for treated units, formed from a valid group-time or imputation aggregation under an exact parallel-trends benchmark. Let \(g=(g_{-T_0},\ldots,g_{-1})\in\R^{T_0}\) be the observed pre-treatment discrepancy path between treated and comparison potential-outcome trends after the same aggregation scheme has been applied. Define the observed pre-treatment discrepancy dispersion
+\[
+D_{\mathrm{pre}}=\max_{1\le j\le T_0} g_{-j}-\min_{1\le j\le T_0} g_{-j}.
+\]
+
+Write \(u=(u_1,\ldots,u_H)\in\R^H\) for the post-treatment untreated-trend discrepancy path relative to the last observed pre-treatment discrepancy, with anchor \(u_0=0\). The ATET bias induced by \(u\) is the known linear functional
+\[
+b_\omega(u)=\omega^\transpose u=\sum_{h=1}^H \omega_h u_h,
+\]
+where \(\omega\in\R^H\) depends only on the chosen staggered-adoption aggregation rule. The identified set for the scalar target \(\theta\) will therefore be the image of an admissible class of \(u\)'s under the map \(u\mapsto \hat\theta-b_\omega(u)\).
+
+The proposal studies the anchored TV class
+\[
+\mathcal U_{\mathrm{TV}}(g,\kappa)
+=
+\left\{
+u\in\R^H:
+u_0=0,\;
+\operatorname{TV}(u):=\sum_{h=1}^H |u_h-u_{h-1}|
+\le \kappa D_{\mathrm{pre}}
+\right\},
+\]
+where \(\kappa\ge 0\) is the sensitivity radius. Let \(B>0\) be a maintained outcome-support radius, so admissible scalar biases also satisfy \(|b_\omega(u)|\le B\). The TV-restricted identified set is
+\[
+\Theta_I(P;\kappa)
+=
+\left\{
+\hat\theta-\omega^\transpose u:
+u\in \mathcal U_{\mathrm{TV}}(g,\kappa),\;
+| \omega^\transpose u|\le B
+\right\}.
+\]
+Define the upper support,
+\[
+h_{\mathrm{TV}}(\omega;g,\kappa,B)
+=
+\sup\left\{
+\omega^\transpose u:
+u\in \mathcal U_{\mathrm{TV}}(g,\kappa),\;
+|\omega^\transpose u|\le B
+\right\},
+\]
+and the dual TV norm candidate
+\[
+\Gamma_{\mathrm{TV}}(\omega)
+=
+\max_{1\le m\le H}
+\left|
+\sum_{h=m}^H \omega_h
+\right|.
+\]
+
+For the cohort-level staggered-adoption formulation, let \(v\in\R^{C}\) collect cohort-event untreated-trend deviations, let \(A:\R^C\to\R^H\) be the known event-time aggregation map, and let \(D_{\mathrm{coh}}\) and \(D_{\mathrm{agg}}\) be the first-difference operators on cohort-event and aggregate event-time paths. The cohort-level TV class is
+\[
+\mathcal V_{\mathrm{TV}}(g,\kappa)
+=
+\left\{
+v\in\R^C:
+v \text{ is anchored at the last pre-treatment cohort event, }\;
+\|D_{\mathrm{coh}}v\|_1\le \kappa D_{\mathrm{pre}}
+\right\}.
+\]
+Its projected aggregate identified set is obtained by replacing \(u\) with \(Av\) in the display for \(\Theta_I(P;\kappa)\). For any matrix \(M\), write \(\operatorname{row}(M)\) for its row space.
+
+\begin{quote}
+\begin{verbatim}
+(qid, specialization) =
+  (pid_tv_pretrend_atet, v1)
+observable distribution P =
+  law of a finite staggered-adoption panel summarized by:
+  (i) a scalar ATET point estimate hat theta for a fixed treated-on-the-treated
+  aggregate,
+  (ii) the observed pre-treatment discrepancy path
+       g = (g_{-T0},...,g_{-1}) in R^{T0},
+  (iii) a known post-treatment aggregation-weight vector
+       omega = (omega_1,...,omega_H) in R^H mapping post-treatment untreated
+       trend deviations into ATET bias,
+  (iv) a known cohort-to-event aggregation map A when cohort-level
+       staggered-adoption cells are retained, and
+  (v) an outcome-support radius B > 0 with admissible ATET values in
+      [hat theta - B, hat theta + B]
+parameter theta =
+  scalar staggered-adoption ATET on the treated, theta
+identifying restrictions =
+  consistency; absorbing staggered adoption; no exact parallel-trends
+  requirement; the post-treatment untreated-trend deviation path u in R^H is
+  constrained by an anchored total-variation budget
+    u_0 = 0,
+    TV(u) := sum_{h=1}^H |u_h - u_{h-1}| <= kappa * D_pre,
+  where D_pre = max_j g_j - min_j g_j is the observed pre-treatment
+  discrepancy dispersion. In the cohort-level formulation, the same TV budget
+  is imposed before event-time aggregation and then projected through A.
+bounding functional =
+  Theta_I(P; kappa) = { hat theta - omega' u :
+    u satisfies the anchored TV restriction and |omega' u| <= B }.
+  The proposal studies: (a) the sharp support width of Theta_I(P; kappa),
+  (b) the critical radius kappa_sign at which 0 first enters Theta_I(P; kappa),
+  (c) the vacuity radius kappa_vac at which Theta_I(P; kappa) fills the
+      maintained outcome range, and
+  (d) when the aggregate-path TV interval equals the projection of the
+      cohort-level TV sensitivity set in a staggered-adoption design.
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite staggered design]\label{ass:finite}
+The event-time horizon \(H\), the number of observed pre-treatment periods \(T_0\), and the cohort-event support \(C\) are finite.
+\end{assumption}
+
+\begin{assumption}[Known bias weights]\label{ass:weights}
+The scalar ATET target admits a deterministic linear bias representation \(u\mapsto \omega^\transpose u\) for a known \(\omega\in\R^H\). In the cohort-level formulation the same scalar target admits the representation \(v\mapsto \omega^\transpose Av\).
+\end{assumption}
+
+\begin{assumption}[Anchored TV restriction]\label{ass:tv}
+The post-treatment untreated-trend discrepancy path is anchored at \(u_0=0\) and satisfies \(\operatorname{TV}(u)\le \kappa D_{\mathrm{pre}}\).
+\end{assumption}
+
+\begin{assumption}[Maintained outcome range]\label{ass:range}
+There exists \(B>0\) such that any admissible scalar bias satisfies \(|\omega^\transpose u|\le B\).
+\end{assumption}
+
+\begin{assumption}[Cohort-level lift]\label{ass:cohort}
+For the cohort-level comparison, the event-time path \(u\) equals \(Av\) for some cohort-event discrepancy vector \(v\in\mathcal V_{\mathrm{TV}}(g,\kappa)\), and the same sensitivity radius \(\kappa D_{\mathrm{pre}}\) bounds \(\|D_{\mathrm{coh}}v\|_1\).
+\end{assumption}
+
+\begin{assumption}[Regular active face]\label{ass:face}
+Whenever a support problem over \(\mathcal U_{\mathrm{TV}}(g,\kappa)\) or \(\mathcal V_{\mathrm{TV}}(g,\kappa)\) is evaluated in the target direction \(\omega\), the maximizer lies on a unique exposed face outside a lower-dimensional tie set.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Support-function form of the TV interval]\label{thm:support}
+Under Assumptions~\ref{ass:finite}--\ref{ass:range},
+\[
+\Theta_I(P;\kappa)
+=
+\left[
+\hat\theta-h_{\mathrm{TV}}(\omega;g,\kappa,B),\;
+\hat\theta+h_{\mathrm{TV}}(-\omega;g,\kappa,B)
+\right].
+\]
+Equivalently,
+\[
+\operatorname{diam}\Theta_I(P;\kappa)
+=
+h_{\mathrm{TV}}(\omega;g,\kappa,B)+h_{\mathrm{TV}}(-\omega;g,\kappa,B).
+\]
+\end{theorem}
+\noindent
+Proof sketch. This is the support function of a convex feasible set under a scalar linear image. The interval form follows by taking the extremal values of \(\hat\theta-\omega^\transpose u\) over \(\mathcal U_{\mathrm{TV}}(g,\kappa)\cap\{u:|\omega^\transpose u|\le B\}\).
+
+\begin{theorem}[Closed-form width and critical frontiers on the aggregate path]\label{thm:closedform}
+Under Assumptions~\ref{ass:finite}--\ref{ass:range}, suppose the sensitivity class is exactly the anchored aggregate-path TV class in Assumption~\ref{ass:tv}. Then
+\[
+h_{\mathrm{TV}}(\omega;g,\kappa,B)
+=
+\min\{\kappa D_{\mathrm{pre}}\Gamma_{\mathrm{TV}}(\omega),\, B\},
+\]
+where
+\[
+\Gamma_{\mathrm{TV}}(\omega)
+=
+\max_{1\le m\le H}
+\left|
+\sum_{h=m}^H \omega_h
+\right|.
+\]
+Hence
+\[
+\operatorname{diam}\Theta_I(P;\kappa)
+=
+2\min\{\kappa D_{\mathrm{pre}}\Gamma_{\mathrm{TV}}(\omega),\, B\}.
+\]
+The sign-identification frontier and vacuity frontier are
+\[
+\kappa_{\mathrm{sign}}
+=
+\frac{|\hat\theta|}{D_{\mathrm{pre}}\Gamma_{\mathrm{TV}}(\omega)},
+\qquad
+\kappa_{\mathrm{vac}}
+=
+\frac{B}{D_{\mathrm{pre}}\Gamma_{\mathrm{TV}}(\omega)},
+\]
+with the convention \(\kappa_{\mathrm{sign}}=\kappa_{\mathrm{vac}}=\infty\) when \(\Gamma_{\mathrm{TV}}(\omega)=0\).
+Moreover, if the Rambachan--Roth relative-magnitude comparator is represented on the same bias weights by the box class \(|u_h|\le \kappa D_{\mathrm{pre}}\), then its width is \(2\min\{\kappa D_{\mathrm{pre}}\|\omega\|_1,B\}\), so the TV interval is weakly tighter and is strictly tighter whenever \(\Gamma_{\mathrm{TV}}(\omega)<\|\omega\|_1\) and \(\kappa D_{\mathrm{pre}}\Gamma_{\mathrm{TV}}(\omega)<B\).
+\end{theorem}
+\noindent
+Proof sketch. Write \(d_h=u_h-u_{h-1}\) and use discrete Abel summation:
+\[
+\omega^\transpose u
+=
+\sum_{h=1}^H\left(\sum_{m=h}^H\omega_m\right)d_h.
+\]
+The support of the \(\ell_1\)-variation ball is therefore the dual \(\ell_\infty\) norm of the cumulative-sum coefficients, which is \(\Gamma_{\mathrm{TV}}(\omega)\). Intersecting with the maintained range contributes the outer \(\min\{\cdot,B\}\).
+
+\begin{conjecture}[Cohort-to-aggregate TV projection frontier {\normalfont (NOT YET PROVED)}]\label{conj:projection}
+Under Assumptions~\ref{ass:finite}--\ref{ass:face}, and in particular Assumptions~\ref{ass:weights}, \ref{ass:range}, and \ref{ass:cohort}, let
+\[
+h_{\mathrm{coh}}(\omega;g,\kappa,B)
+=
+\sup\{\omega^\transpose Av:\,
+v\in\mathcal V_{\mathrm{TV}}(g,\kappa),\;
+|\omega^\transpose Av|\le B\}.
+\]
+Then the aggregate-path interval in Theorem~\ref{thm:closedform} is sharp for the staggered-adoption cohort model if and only if
+\[
+\operatorname{row}(D_{\mathrm{agg}})
+\cap \operatorname{row}(A)
+=
+\operatorname{row}(A D_{\mathrm{coh}})
+\cap \operatorname{row}(A)
+\]
+on the active face exposed by \(\omega\). Equivalently, event-time aggregation preserves the TV dual face relevant for the target direction. If the left-hand row space is strictly larger, the aggregate-path interval is conservative; if it is strictly smaller, the aggregate-path interval is anti-conservative because some cohort-level deviations are invisible after aggregation.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[One-post-period corner]\label{cor:onepost}
+Under Assumptions~\ref{ass:finite}--\ref{ass:range}, if \(H=1\) then \(\Gamma_{\mathrm{TV}}(\omega)=|\omega_1|=\|\omega\|_1\). Hence the TV interval in Theorem~\ref{thm:closedform} coincides with the same-target relative-magnitude box interval.
+\end{corollary}
+\noindent
+Under \(H=1\), discrete Abel summation has one coefficient only, so the TV and box supports are identical.
+
+\begin{corollary}[Zero-dispersion corner]\label{cor:zerodisp}
+Under Assumptions~\ref{ass:finite}--\ref{ass:range}, if \(D_{\mathrm{pre}}=0\) then \(\mathcal U_{\mathrm{TV}}(g,\kappa)=\{0\}\) for every \(\kappa\), and \(\Theta_I(P;\kappa)=\{\hat\theta\}\).
+\end{corollary}
+\noindent
+If the pre-treatment discrepancy path has no dispersion, the anchored TV budget is zero and the only admissible post path is the zero path.
+
+\begin{example}[Exhibit 9.1: computing the TV dual norm and strict tightening]\label{ex:gamma}
+Take \(H=3\), \(\omega=(1/2,-1/2,1/2)^\transpose\), \(g=(-1,1)\), and \(B=2\). Then \(D_{\mathrm{pre}}=2\), and
+\[
+\Gamma_{\mathrm{TV}}(\omega)
+=
+\max\left\{
+\left|\frac12-\frac12+\frac12\right|,
+\left|-\frac12+\frac12\right|,
+\left|\frac12\right|
+\right\}
+=\frac12.
+\]
+By contrast,
+\[
+\|\omega\|_1=\frac32.
+\]
+For \(\kappa=\frac12\), Theorem~\ref{thm:closedform} gives
+\[
+h_{\mathrm{TV}}(\omega;g,\kappa,B)
+=
+\min\left\{\frac12\cdot 2\cdot \frac12,\;2\right\}
+=\frac12,
+\]
+so \(\operatorname{diam}\Theta_I(P;\kappa)=1\). The same-target relative-magnitude box interval has support
+\[
+\min\left\{\frac12\cdot 2\cdot \frac32,\;2\right\}
+=\frac32,
+\]
+so its diameter is \(3\). The difference is not a normalization artifact: both intervals use the same \(\hat\theta\), the same \(D_{\mathrm{pre}}\), and the same bias weights \(\omega\); only the admissible geometry changes from a box to an anchored TV ball.
+\end{example}
+
+\begin{example}[Exhibit 9.2: aggregate anti-conservatism from cohort cancellation]\label{ex:projection}
+Take two treated cohorts \(a,b\), two post periods, and cohort-event deviations
+\[
+v^a=(1,-1),\qquad v^b=(-1,1).
+\]
+Let \(A\) average cohorts at each post period, so the aggregate path is
+\[
+u=A(v^a,v^b)=(0,0).
+\]
+The aggregate TV class therefore reports zero bias for every target weight vector \(\omega\). At the cohort level,
+\[
+\|D_{\mathrm{coh}}(v^a,v^b)\|_1=4,
+\]
+and any target that loads positively on cohort \(a\) and negatively on cohort \(b\) can have nonzero bias even though the aggregate path vanishes. The system is internally consistent: the aggregation map is well defined, no denominator is zero, and the anti-conservative gap comes from cancellation across cohorts rather than from an impossible cardinality convention.
+\end{example}
+
+\section{Proof-sketch route}
+For Theorem~\ref{thm:support}, the chain is: headline \(\leftarrow\) unfold \(\Theta_I(P;\kappa)\) \(\leftarrow\) recognize a convex linear image \(\leftarrow\) apply support-function extrema \(\leftarrow\) interval endpoints; \(k=3\) substantive steps once the definition is unfolded. For Theorem~\ref{thm:closedform}, the chain is: headline \(\leftarrow\) rewrite \(u\) in first differences \(d_h=u_h-u_{h-1}\) \(\leftarrow\) apply discrete Abel summation to express \(\omega^\transpose u\) through cumulative sums of \(\omega\) \(\leftarrow\) identify the dual norm of the \(\ell_1\) variation ball as \(\Gamma_{\mathrm{TV}}(\omega)\) \(\leftarrow\) intersect with the scalar range cap \(B\) to obtain width and frontiers; \(k=4\) substantive steps. For Conjecture~\ref{conj:projection}, the expected route is: cohort-level support problem \(\leftarrow\) quotient by the aggregation map \(A\) \(\leftarrow\) compare active dual faces of \(D_{\mathrm{coh}}\) and \(D_{\mathrm{agg}}\) on \(\operatorname{row}(A)\) \(\leftarrow\) prove equality by a lift-preserving face argument \(\leftarrow\) prove strict conservative and anti-conservative regimes by explicit cohort-cancellation witnesses of the type in Exhibit~\ref{ex:projection}; \(k=4\) substantive steps if the face-comparison lemma is correct.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:support} and Theorem~\ref{thm:closedform} are intended as routine finite-dimensional partial-identification algebra conditional on the chosen anchored TV normalization. Conjecture~\ref{conj:projection} is the flagship open statement; the exact active-face row-space criterion and the conservative/anti-conservative trichotomy have not been proved here. No statements were withdrawn during iteration because this is v1. The main modeling choice that may need reviewer pressure is the precise normalization of the TV radius by \(D_{\mathrm{pre}}\) rather than by \(\operatorname{TV}(g)\); the draft keeps \(D_{\mathrm{pre}}\) because it produces a clean frontier and an observable dispersion scalar.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) --- initial draft; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem{BorusyakJaravelSpiess2024EventStudies}
+Borusyak, K., Jaravel, X., and Spiess, J. (2024).
+\newblock Revisiting event-study designs: Robust and efficient estimation.
+\newblock {\em Review of Economic Studies}, 91(6):3253--3285.
+
+\bibitem{CallawaySantAnna2021MultiplePeriods}
+Callaway, B. and Sant'Anna, P. H. C. (2021).
+\newblock Difference-in-differences with multiple time periods.
+\newblock {\em Journal of Econometrics}, 225(2):200--230.
+
+\bibitem{GoodmanBacon2021Timing}
+Goodman-Bacon, A. (2021).
+\newblock Difference-in-differences with variation in treatment timing.
+\newblock {\em Journal of Econometrics}, 225(2):254--277.
+
+\bibitem{KahnLangLang2020PromisePitfalls}
+Kahn-Lang, A. and Lang, K. (2020).
+\newblock The promise and pitfalls of differences-in-differences: Reflections on 16 and pregnant and other applications.
+\newblock {\em Journal of Business \& Economic Statistics}, 38(3):613--620.
+
+\bibitem{ManskiPepper2018BoundedVariation}
+Manski, C. F. and Pepper, J. V. (2018).
+\newblock How do right-to-carry laws affect crime rates? Coping with ambiguity using bounded-variation assumptions.
+\newblock {\em Review of Economics and Statistics}, 100(2):232--244.
+
+\bibitem{RambachanRoth2023CrediblePT}
+Rambachan, A. and Roth, J. (2023).
+\newblock A more credible approach to parallel trends.
+\newblock {\em Review of Economic Studies}, 90(5):2555--2591.
+
+\bibitem{Roth2022PretestCaution}
+Roth, J. (2022).
+\newblock Pretest with caution: Event-study estimates after testing for parallel trends.
+\newblock {\em American Economic Review: Insights}, 4(3):305--322.
+
+\bibitem{RothSantAnnaBilinskiPoe2023TrendingDiD}
+Roth, J., Sant'Anna, P. H. C., Bilinski, A., and Poe, J. (2023).
+\newblock What's trending in difference-in-differences? A synthesis of the recent econometrics literature.
+\newblock {\em Journal of Econometrics}, 235(2):2218--2244.
+
+\bibitem{SunAbraham2021DynamicEffects}
+Sun, L. and Abraham, S. (2021).
+\newblock Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\newblock {\em Journal of Econometrics}, 225(2):175--199.
+\end{thebibliography}
+
+\end{document}

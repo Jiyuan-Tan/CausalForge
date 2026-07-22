@@ -1,0 +1,712 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_bjs\_efficient\_event\_study, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{eid\_bjs\_efficient\_event\_study} / \texttt{v1}%
+  \\ \large\textit{A spectral active-rank frontier for influence-function equivalence across BJS, Sun--Abraham, Callaway--Sant'Anna, and Wooldridge staggered-DiD estimators}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Free-form panel anchor with tuple
+\[
+(\texttt{qid},\texttt{specialization},p,\text{assignment},\text{target},\text{regression})
+\]
+defined as follows.  \texttt{qid}=\texttt{eid\_bjs\_efficient\_event\_study};
+\texttt{specialization}=\texttt{v1}; \(p=0\) absorbing-treatment event-study design
+with no post-treatment carry-over beyond the event-time treatment effect matrix;
+assignment is staggered adoption with first-treatment cohort \(G_i\in\mathcal G\),
+never-treated or not-yet-treated controls allowed, cohort shares
+\(\pi=(\pi_g)_{g\in\mathcal G}\), no anticipation, and unconditional parallel
+trends for untreated outcomes; the target is a fixed scalar ATT aggregation
+\(\theta_a=\sum_{g\in\mathcal G}\sum_{\ell\in\mathcal L}a_{g\ell}\tau_{g\ell}\)
+over cohort-event cells with \(a_{g\ell}\ge 0\) and
+\(\sum_{g,\ell}a_{g\ell}=1\); regression means the four named first-order
+linear estimators: Borusyak--Jaravel--Spiess imputation, Sun--Abraham
+interaction-weighted event-study, Callaway--Sant'Anna doubly robust group-time
+ATT aggregation, and Wooldridge cohort-time-saturated TWFE/Mundlak regression.
+The spectral boundary object is the integer active rank
+\[
+K_\star(\pi,\Sigma,a)=\operatorname{rank}\{H(\pi,\Sigma,a)\},
+\]
+where \(H(\pi,\Sigma,a)\) is the covariance-whitened observable pre-period
+contrast kernel defined in Section~\ref{sec:setup}; equivalently
+\(\sigma_{K_\star}(H)>0=\sigma_{K_\star+1}(H)\).  Thus \(K_\star\) is determined
+by singular values, but is an integer rank threshold rather than a raw singular
+value.
+
+\begin{abstract}
+Modern staggered-DiD papers now agree on how to identify interpretable
+group-time and event-study ATT parameters under no anticipation and parallel
+trends, but they do not give a sharp frontier for when the leading robust
+estimators have the same first-order influence function.  This proposal asks
+for a closed-form spectral condition under which the BJS imputation estimator,
+Sun--Abraham interaction-weighted estimator, Callaway--Sant'Anna group-time
+doubly robust aggregation, and Wooldridge saturated-TWFE implementation have
+the same canonical normalized influence function for one fixed ATT aggregation.
+The flagship
+conjecture is that equivalence is governed by the row-space of an explicit
+covariance-whitened pre-period contrast kernel \(H(\pi,\Sigma,a)\): rows of the
+residualized heterogeneity matrix outside this active row-space force strict
+first-order variance separation, while rows inside it collapse the four
+estimators to the same canonical score.  The proposal deliberately formulates the rank
+boundary as an integer active-rank certificate, avoiding the ill-posed shortcut
+``rank less than a singular value.''  Resolving the conjecture would turn the
+current estimator-choice discussion into a computable diagnostic based on
+canonical normalized influence functions, cohort shares, pre-period covariance,
+and the observed event-study design.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Applied researchers routinely choose among the BJS imputation estimator, the
+Sun--Abraham interaction-weighted event-study estimator, Callaway--Sant'Anna
+group-time ATT estimators, and Wooldridge saturated-regression implementations
+after agreeing on the same no-anticipation and parallel-trends identifying
+logic.  Point-identification agreement is not enough for inference: two
+estimators can target the same written ATT aggregation while using different
+nuisance projections, comparison sets, and estimated weights.  The methodological
+question is therefore whether estimator choice is only a matter of presentation
+or whether it changes the first-order variance in identifiable regions of
+cohort-event treatment-effect heterogeneity.
+
+\paragraph{The main finding (proposed).}
+The headline result is Conjecture~\ref{conj:if-frontier}: the four canonical
+normalized influence functions are equal if and only if every row of the
+residualized heterogeneity matrix \(\Delta_\tau\) lies in the row-space admitted
+by the covariance-whitened pre-period kernel \(H(\pi,\Sigma,a)\).  A companion
+variance-gap conjecture states that outside this row-space, BJS attains the
+fixed-design linear imputation benchmark while the other three estimator
+classes pay an explicit projection-quadratic penalty in the heterogeneity
+component orthogonal to \(\operatorname{row}(H)\).  The familiar
+homogeneous-effects case appears as the rank-zero corner in
+Theorem~\ref{thm:homogeneous-collapse}.
+
+\paragraph{What is new.}
+The novelty kernel is not another contamination decomposition and not another
+proof that all four estimators identify ATT under parallel trends.  The proposed
+object is an equality-of-influence-functions frontier: a necessary-and-sufficient
+spectral certificate, computable from \(\pi\), \(\Sigma\), and the target
+aggregation \(a\), that separates equivalence from strict variance
+non-equivalence.  The closest published result is \citet{BorusyakJaravelSpiess2024},
+which derives an efficient imputation estimator and restricted imputation/regression
+equivalences, but it does not characterize when BJS has the same influence
+function as Sun--Abraham, Callaway--Sant'Anna, or Wooldridge.  The precise
+epsilon-gap is the passage from ``one estimator is efficient in its event-study
+model'' to ``the four named estimators have equal canonical normalized influence
+functions exactly on a computable active row-space, and strict variance
+separation off it.''
+
+\paragraph{How it positions in the literature.}
+This is a panel and linear-projection methods proposal in the staggered-DiD
+frontier.  It sits after the negative-weight and contamination results of
+\citet{deChaisemartinDHaultfoeuille2020}, \citet{GoodmanBacon2021}, and
+\citet{SunAbraham2021}, and after the interpretable group-time ATT framework of
+\citet{CallawaySantAnna2021}.  It uses the efficiency perspective of
+\citet{SantAnnaZhao2020}, \citet{RothSantAnna2023Efficient},
+\citet{BorusyakJaravelSpiess2024}, and \citet{ChenSantAnnaXie2025}, but asks a
+different question: when does the efficient score for a chosen ATT aggregation
+coincide with the scores delivered by other robust staggered-DiD
+implementations?
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the estimator-choice guidance in
+\citet{RothSantAnnaBilinskiPoe2023}: if the conjecture is resolved, their
+recommendation to report robust DiD estimators can be sharpened into a diagnostic
+that says when BJS, Sun--Abraham, Callaway--Sant'Anna, and Wooldridge are
+first-order interchangeable and when an efficiency gap must be reported.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers would report the active-rank residual
+\(\|\Delta_\tau(I-\Pi_{\calH})\|_{\Sigma,\pi}\) before treating staggered-DiD
+estimators as interchangeable for inference.
+
+\section{Related work}
+\citet{BorusyakJaravelSpiess2024} is the efficiency anchor: it develops robust
+and efficient imputation for staggered event-study designs with unrestricted
+treatment-effect heterogeneity and includes restricted equivalences between
+imputation and Wooldridge-style regression implementations, but it does not give
+an if-and-only-if four-estimator influence-function equivalence frontier across
+BJS, Sun--Abraham, Callaway--Sant'Anna, and Wooldridge.  \citet{SunAbraham2021} is the
+contamination anchor: it shows that lead-lag TWFE coefficients can load on
+other-period effects and proposes interaction-weighted estimators, but it does
+not compare their orthogonal-score subspace to BJS or CS.  \citet{CallawaySantAnna2021}
+is the group-time ATT anchor: it separates identification of \(\operatorname{ATT}(g,t)\)
+from aggregation and inference, but leaves equality of its influence function
+with imputation and saturated-regression estimators unresolved.
+\citet{Wooldridge2021} supplies the saturated TWFE/Mundlak implementation route
+for staggered entry and heterogeneous effects, making it the regression
+implementation comparator in this proposal.
+
+\citet{GoodmanBacon2021} and \citet{deChaisemartinDHaultfoeuille2020} explain why
+ordinary TWFE can produce nonconvex or misleading weighted averages under
+heterogeneous treatment effects; their results motivate robust estimators but
+do not settle efficiency equivalence among robust alternatives.
+\citet{SantAnnaZhao2020} derives semiparametric efficiency bounds for two-period
+DiD ATT parameters, which is the lower-dimensional efficiency benchmark for the
+multi-period frontier considered here.  \citet{ChenSantAnnaXie2025} derives
+closed-form efficient influence functions for modern DiD and event-study
+parameters and emphasizes overidentification restrictions from multiple
+pre-periods; this proposal asks when those restrictions change the efficient
+score relative to named staggered-DiD implementations.
+\citet{RothSantAnnaBilinskiPoe2023} synthesizes modern DiD practice and
+foregrounds estimator-choice issues, which this proposal would convert into a
+spectral diagnostic.  \citet{RothSantAnna2023Efficient} is the closest
+published efficiency comparator: it studies staggered-rollout designs with
+as-good-as-random rollout timing and derives a feasible efficient estimator,
+using an optimal pre-treatment adjustment \(\beta^\star\), that weakly
+dominates existing approaches, but it does not give an if-and-only-if row-space
+frontier across the four parallel-trends estimators studied here.
+\citet{Gardner2022} is the closest untreated-first construction comparator:
+its two-stage DiD estimator estimates group and period effects from untreated
+observations before estimating treatment effects, but it does not characterize
+when that imputation-style projection shares the same canonical influence
+function as BJS, Sun--Abraham, Callaway--Sant'Anna, and Wooldridge for a fixed
+ATT aggregation.  \citet{BelleGoBenatiaDortetBernadet2025} extends efficiency
+questions to unbalanced staggered panels; it is adjacent because unbalanced
+missingness changes the same covariance and comparison-set objects that enter
+\(H(\pi,\Sigma,a)\).
+
+In-catalogue prior art is closest in the banked ThmSmith proposals
+\texttt{panel\_honest\_did\_phase} and
+\texttt{q1\_spectral\_phase\_transition}.  The former proposed a cohort-vs-aggregate
+row-space frontier for Honest-DiD sensitivity and its reviewer requested a
+generic computable operator certificate; the latter proposed a singular-value
+phase-transition template for event-window visibility.  Neither proposal states
+an asymptotic influence-function equivalence theorem across BJS, Sun--Abraham,
+Callaway--Sant'Anna, and Wooldridge.  The relevant catalogue family is the
+ThmSmith Panel section of \texttt{doc/API.md}, not AutoID SCM or graph
+infrastructure.
+
+\section{Formal setup}\label{sec:setup}
+There are units \(i=1,\ldots,n\), periods \(t\in\{1,\ldots,T\}\), and absorbing
+treatment \(D_{it}=\one\{t\ge G_i\}\) for first-treatment cohort
+\(G_i\in\mathcal G\subseteq\{2,\ldots,T\}\cup\{\infty\}\).  Event time is
+\(\ell=t-G_i\), and the target event window is a finite set \(\mathcal L\).
+Potential outcomes satisfy no anticipation, so \(Y_{it}(0)\) is observed for
+\(t<G_i\), and post-treatment causal effects are
+\(\tau_{g\ell}=\E[Y_{i,g+\ell}(1)-Y_{i,g+\ell}(0)\mid G_i=g]\).  Let
+\(\mathcal T=(\tau_{g\ell})_{g\in\mathcal G,\ell\in\mathcal L}\) and
+\(\theta_a=\langle a,\mathcal T\rangle\) for fixed aggregation weights \(a\).
+
+Let \(q\) be the number of treated cohorts entering \(a\), let \(r=|\mathcal L|\),
+and let \(m\) be the number of untreated pre-period residual increments used by
+the comparison system.  Let \(X_i\in\R^m\) be the vector of those untreated
+pre-period residual increments after removing cohort and calendar means.  Write
+\(\Sigma=\operatorname{Var}(X_i\mid D_i=0)\), assumed positive definite on its
+support, and \(\pi_g=\Pr(G_i=g)\), normalized over the \(q\) treated cohorts in
+the target.  Define \(R_\pi=I_q-\mathbf 1\pi^\transpose\), the cohort
+residualizer.  The event-to-precontrast alignment map is
+\(A_a\in\R^{r\times m}\); its \(j\)-th column records the signed event-time
+weights induced by the target aggregation \(a\) for the \(j\)-th untreated
+pre-period contrast.  Thus
+\[
+\Delta_\tau=R_\pi\mathcal T A_a\in\R^{q\times m}.
+\]
+
+The comparison-set convention is fixed once for all four estimators.  BJS uses
+all untreated observations, including never-treated and not-yet-treated units,
+to fit the untreated outcome path before imputation.  Sun--Abraham uses the
+same never-treated/not-yet-treated comparison eligibility for each cohort-event
+cell before applying the target weights \(a\).  Callaway--Sant'Anna uses the
+same eligibility set for each group-time ATT and then aggregates with \(a\).
+Wooldridge uses the cohort-time-saturated/Mundlak regression with the same
+support and target weights.  Under this convention, the pre-period contrast
+matrix is \(C_a\in\R^{q\times m}\), with row \(g\) equal to the signed
+comparison weights that map \(X_i\) into the untreated counterfactual contrast
+for cohort \(g\) and aggregation \(a\).  The observable pre-period contrast
+kernel is
+\[
+H(\pi,\Sigma,a)=\operatorname{diag}(\pi)^{1/2} R_\pi C_a\Sigma^{-1/2}
+\in\R^{q\times m}.
+\]
+Let \(\calH=\operatorname{row}\{H(\pi,\Sigma,a)\}\subseteq\R^m\), let
+\(\Pi_{\calH}\) denote the Euclidean projection onto \(\calH\), and let
+\[
+K_\star(\pi,\Sigma,a)=\operatorname{rank}\{H(\pi,\Sigma,a)\}.
+\]
+For the smallest nontrivial three-period, two-treated-cohort design with one
+post-treatment event cell and one pre-period residual contrast,
+\[
+\mathcal T=\begin{bmatrix}\tau_{2,0}\\ \tau_{3,0}\end{bmatrix},\quad
+A_a=\begin{bmatrix}1\end{bmatrix},\quad
+C_a=\begin{bmatrix}c_2\\ c_3\end{bmatrix},\quad
+R_\pi=\begin{bmatrix}1-\pi_2&-\pi_3\\ -\pi_2&1-\pi_3\end{bmatrix},
+\]
+so \(H=\operatorname{diag}(\pi)^{1/2}R_\pi C_a\sigma^{-1/2}\) and the proposed
+row-space condition is already a concrete one-dimensional contrast test.
+
+For each estimator \(M\in\{\mathrm{BJS},\mathrm{SA},\mathrm{CS},\mathrm{W}\}\),
+let \(\widetilde\psi_M(\theta_a)\) be its canonical normalized influence
+function for \(\theta_a\): \(\E[\widetilde\psi_M]=0\) and its pathwise
+derivative with respect to the scalar target \(\theta_a\) is normalized to one.
+Let \(\mathcal S_M=\operatorname{span}\{\widetilde\psi_M(\theta_a)\}\); equality
+of \(\mathcal S_M\)'s below always means equality of the canonical normalized
+scores, not equality up to an arbitrary nonzero scalar.  Write
+\(V_M(a,\mathcal T)=\operatorname{Var}\{\widetilde\psi_M(\theta_a)\}\).
+
+The efficiency benchmark used in Conjecture~\ref{conj:variance-gap} is not the
+fully unrestricted semiparametric tangent model.  It is the fixed-design linear
+parallel-trends benchmark \(\mathcal M_{\mathrm{LPT}}(a)\): iid unit-level
+panels with finite cohort and time support, known event window, fixed
+aggregation vector \(a\), fixed cohort shares \(\pi\), known comparison
+covariance \(\Sigma\), absorbing adoption, no anticipation, unconditional
+parallel trends for untreated increments, and the common comparison-support
+convention above.  Admissible first-order perturbations vary the untreated
+linear projections and cohort-event treatment-effect matrix while preserving
+the fixed \((a,\pi,\Sigma,C_a)\) design.  Let
+\(\psi_{\mathrm{BJS}\text{-}\mathrm{lin}}(\theta_a)\) be the canonical
+influence function of the BJS generalized least-squares imputation estimator in
+this benchmark, and define
+\[
+V_{\mathrm{BJS}\text{-}\mathrm{lin}}(a,\mathcal T)
+=\operatorname{Var}\{\psi_{\mathrm{BJS}\text{-}\mathrm{lin}}(\theta_a)\}.
+\]
+This is the common known-covariance linear-efficiency object to which the BJS
+Section~5.3 efficiency comparisons and the Roth--Sant'Anna optimal
+pre-treatment adjustment benchmark are mapped below; it deliberately does not
+assert a full unrestricted EIF bound.  For a conformable matrix \(B\), define
+\(\|B\|_{\Sigma,\pi}^2=\operatorname{tr}\{B^\transpose \operatorname{diag}(\pi)B\Sigma^{-1}\}\)
+after restriction to the support of \(\Sigma\).
+
+Define the computable projection-loss term as follows.  Vectorize each
+heterogeneity residual in row-major order, so
+\(\operatorname{vec}(\Delta_\tau)\in\R^{qm}\), and let
+\(\Omega_{\pi,\Sigma}=\operatorname{diag}(\pi)\otimes\Sigma^{-1}\in\R^{qm\times qm}\).
+For each \(M\), let
+\(Z_M(a,\pi,\Sigma)\in\R^{qm\times d_M}\) be the estimator-specific design
+matrix, formed from that estimator's stated first-stage equations, whose
+columns span the nuisance score directions used by estimator \(M\) under the
+comparison-set convention above after vectorization.  Define the
+\(\Omega_{\pi,\Sigma}\)-orthogonal projection \(P_M\in\R^{qm\times qm}\) by
+\[
+P_M=Z_M(Z_M^\transpose\Omega_{\pi,\Sigma}Z_M)^\dagger
+Z_M^\transpose\Omega_{\pi,\Sigma}.
+\]
+With \(P_{\mathrm{BJS}}\) defined analogously, set
+\[
+\rho_M(a,\pi,\Sigma,\Delta_\tau)
+=
+\operatorname{vec}(\Delta_\tau)^\transpose
+(P_M-P_{\mathrm{BJS}})^\transpose\Omega_{\pi,\Sigma}
+(P_M-P_{\mathrm{BJS}})
+\operatorname{vec}(\Delta_\tau).
+\]
+This is nonnegative by construction and is computable from the estimator design
+matrices, \(\pi\), \(\Sigma\), and \(\Delta_\tau\); it is not defined by the
+desired variance decomposition.
+
+\begin{quote}
+\begin{verbatim}
+Locked parameters:
+(qid, specialization, p, assignment, target, regression)
+= (eid_bjs_efficient_event_study, v1, 0,
+   absorbing staggered adoption with no anticipation and unconditional
+   parallel trends, fixed scalar ATT aggregation theta_a over cohort-event
+   cells, BJS / Sun-Abraham / Callaway-Sant'Anna / Wooldridge first-order
+   linear staggered-DiD estimators).
+K_star(pi,Sigma,a) = rank H(pi,Sigma,a), where H is the covariance-whitened
+observable pre-period contrast kernel.
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Absorbing staggered adoption and overlap]\label{ass:adoption}
+Each unit has a first-treatment cohort \(G_i\), treatment is absorbing, and
+\(\pi_g>0\) for every treated cohort entering the aggregation \(a\).  At every
+cohort-event cell used by \(a\), there is a nonempty never-treated or
+not-yet-treated comparison set.
+\end{assumption}
+
+\begin{assumption}[No anticipation]\label{ass:no-anticipation}
+For all \(g\in\mathcal G\) and all \(t<g\), observed outcomes equal untreated
+potential outcomes: \(Y_{it}=Y_{it}(0)\) conditional on \(G_i=g\).
+\end{assumption}
+
+\begin{assumption}[Unconditional parallel trends]\label{ass:parallel}
+For all cohorts \(g,g'\) used in the comparison system and all untreated
+pre/post increments needed by \(C_a\),
+\[
+\E\{Y_{it}(0)-Y_{i,t-1}(0)\mid G_i=g\}
+=
+\E\{Y_{it}(0)-Y_{i,t-1}(0)\mid G_i=g'\}.
+\]
+\end{assumption}
+
+\begin{assumption}[Finite second moments and regular covariance]\label{ass:covariance}
+The pre-period residual vector \(X_i\) has finite second moments, and
+\(\Sigma=\operatorname{Var}(X_i\mid D_i=0)\) is positive definite on the support
+used to form \(H(\pi,\Sigma,a)\).
+\end{assumption}
+
+\begin{assumption}[Common target aggregation]\label{ass:common-target}
+All four estimators are evaluated for the same fixed scalar target
+\(\theta_a=\sum_{g,\ell}a_{g\ell}\tau_{g\ell}\), with nonnegative weights
+\(a_{g\ell}\) summing to one over identified cohort-event cells.
+\end{assumption}
+
+\begin{assumption}[Common comparison support and fixed design maps]\label{ass:design-maps}
+The matrices \(A_a\), \(C_a\), and \(Z_M(a,\pi,\Sigma)\) are formed from the
+comparison-set convention in Section~\ref{sec:setup}: never-treated and
+not-yet-treated observations are eligible exactly when untreated for the
+cohort-event cell, and all four estimators impose the same fixed aggregation
+weights \(a\) after their estimator-specific first-stage projections.
+\end{assumption}
+
+\begin{assumption}[First-order linear regularity]\label{ass:regular}
+The BJS, Sun--Abraham, Callaway--Sant'Anna, and Wooldridge implementations admit
+asymptotically linear representations for \(\theta_a\) under the same sampling
+sequence, and their nuisance estimators are regular enough that first-order
+comparisons reduce to their orthogonal-score projections.
+\end{assumption}
+
+\begin{assumption}[Common linear-efficiency benchmark]\label{ass:eif-model}
+The benchmark variance \(V_{\mathrm{BJS}\text{-}\mathrm{lin}}(a,\mathcal T)\)
+is computed in the fixed-design linear parallel-trends model
+\(\mathcal M_{\mathrm{LPT}}(a)\) from Section~\ref{sec:setup}.  Claims that BJS
+attains the benchmark, or that another implementation has a variance gap
+relative to it, are interpreted after expressing all four estimators'
+influence functions in the same known-\((\pi,\Sigma,C_a,a)\) linear projection
+quotient.  They are not claims about the fully unrestricted semiparametric
+tangent space with unknown covariance or arbitrary distributional
+perturbations.
+\end{assumption}
+
+\begin{assumption}[Homogeneous-effects corner]\label{ass:homogeneous}
+For the sanity-check theorem only, \(\tau_{g\ell}=\tau_0\) for all
+\((g,\ell)\) with \(a_{g\ell}>0\), so \(\Delta_\tau=0\).
+\end{assumption}
+
+\begin{assumption}[Homogeneous canonical weight equivalence]\label{ass:homogeneous-weights}
+For the sanity-check theorem only, when Assumption~\ref{ass:homogeneous} holds,
+the four implementations use the same fixed aggregation \(a\) and common
+comparison support in a way that reduces their canonical normalized influence
+functions to the common homogeneous ATT score \(\psi_0(a)\).  Equivalently, any
+differences among their nuisance projections lie in the null space of the
+homogeneous target score.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: homogeneous-effect target collapse]\label{thm:homogeneous-collapse}
+Under Assumptions~\ref{ass:adoption}--\ref{ass:eif-model} and
+Assumptions~\ref{ass:homogeneous}--\ref{ass:homogeneous-weights}, the
+residualized heterogeneity component
+\(\Delta_\tau\) is zero.  Consequently
+\[
+\mathcal S_{\mathrm{BJS}}=\mathcal S_{\mathrm{SA}}=\mathcal S_{\mathrm{CS}}=\mathcal S_{\mathrm{W}},
+\]
+with equality understood for canonical normalized influence functions, and the
+four estimators have the same first-order asymptotic variance for \(\theta_a\).
+Without Assumption~\ref{ass:homogeneous-weights}, the theorem records only the
+target-side collapse \(\Delta_\tau=0\), not equality of implementation-specific
+canonical scores.
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) This is not the flagship advance; it records the required corner case after
+making the homogeneous projection/weight-equivalence convention explicit.
+\citet{SunAbraham2021}, \citet{CallawaySantAnna2021}, and \citet{Wooldridge2021}
+all contain homogeneous-effect or saturation regimes in which robust
+implementations agree, but they do not express that agreement as the rank-zero
+limit of a spectral IF-frontier.  (b) The concrete consumer is
+\citet{RothSantAnnaBilinskiPoe2023}: their applied guidance needs this reduction
+so that the proposed diagnostic does not contradict the familiar homogeneous
+benchmark.
+
+\begin{conjecture}[Conjecture 1: spectral IF-equivalence frontier (NOT YET PROVED)]\label{conj:if-frontier}
+Under Assumptions~\ref{ass:adoption}--\ref{ass:eif-model}, the following are
+equivalent:
+\begin{enumerate}[label=(\roman*)]
+\item
+\(\mathcal S_{\mathrm{BJS}}=\mathcal S_{\mathrm{SA}}=\mathcal S_{\mathrm{CS}}=\mathcal S_{\mathrm{W}}\)
+for the common ATT aggregation \(\theta_a\), equivalently
+\(\widetilde\psi_{\mathrm{BJS}}=\widetilde\psi_{\mathrm{SA}}
+=\widetilde\psi_{\mathrm{CS}}=\widetilde\psi_{\mathrm{W}}\) almost surely under
+the canonical normalization in Section~\ref{sec:setup};
+\item
+\(\Delta_\tau(I-\Pi_{\calH})=0\), where
+\(\calH=\operatorname{row}\{H(\pi,\Sigma,a)\}\subseteq\R^m\), so
+\(\Pi_{\calH}\) projects each row of \(\Delta_\tau\) in \(\R^m\);
+\item
+the covariance-whitened residual matrix
+\(\operatorname{diag}(\pi)^{1/2}\Delta_\tau\) has no singular direction outside
+the active row-space of \(H(\pi,\Sigma,a)\).
+\end{enumerate}
+In particular, if \(\operatorname{rank}(\Delta_\tau)>K_\star(\pi,\Sigma,a)\),
+then the four canonical normalized influence functions cannot all be equal.  If
+\(\operatorname{rank}(\Delta_\tau)\le K_\star(\pi,\Sigma,a)\), equivalence
+requires the additional sharp alignment condition
+\(\operatorname{row}(\Delta_\tau)\subseteq\calH\).
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) The closest published paper is \citet{BorusyakJaravelSpiess2024}: it gives
+an efficient imputation estimator, but not a necessary-and-sufficient equality
+criterion comparing BJS with Sun--Abraham, Callaway--Sant'Anna, and Wooldridge.
+\citet{ChenSantAnnaXie2025} gives closed-form EIFs for DiD/event-study
+parameters, \citet{RothSantAnna2023Efficient} gives an efficient estimator for
+staggered rollouts, and \citet{Gardner2022} gives an untreated-first two-stage
+construction, but none collapses these four named parallel-trends
+implementations to a single row-space certificate.  The epsilon-gap is the exact
+operator frontier \(\Delta_\tau(I-\Pi_{\calH})=0\), not merely another estimator
+or another ATT aggregation.  (b) The concrete consumer is the estimator-choice
+problem in \citet{RothSantAnnaBilinskiPoe2023}: a resolved theorem would tell
+applied researchers when reporting any one of the four estimators is
+first-order equivalent and when estimator-specific variance reporting is
+mandatory.
+
+\begin{conjecture}[Conjecture 2: strict variance gap off the active row-space (NOT YET PROVED)]\label{conj:variance-gap}
+Under Assumptions~\ref{ass:adoption}--\ref{ass:eif-model}, suppose
+\(\Delta_\tau(I-\Pi_{\calH})\ne 0\).  Then BJS attains the fixed-design
+linear imputation benchmark for \(\theta_a\),
+\(V_{\mathrm{BJS}}(a,\mathcal T)
+=V_{\mathrm{BJS}\text{-}\mathrm{lin}}(a,\mathcal T)\), while each
+non-imputation implementation
+\(M\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}\) has asymptotic variance
+\[
+V_M(a,\mathcal T)-V_{\mathrm{BJS}}(a,\mathcal T)
+=
+\left\|\Delta_\tau(I-\Pi_{\calH})\right\|_{\Sigma,\pi}^2
+\;+\;
+\rho_M(a,\pi,\Sigma,\Delta_\tau),
+\]
+where \(\rho_M(a,\pi,\Sigma,\Delta_\tau)\ge 0\) is the projection quadratic form
+defined in Section~\ref{sec:setup}.  It vanishes exactly when \(M\)'s nuisance
+projection agrees with the BJS projection on the heterogeneity direction
+\(\operatorname{vec}(\Delta_\tau)\).  Hence the variance gap is strictly
+positive on an open set of heterogeneous-effect matrices with rank exceeding
+\(K_\star(\pi,\Sigma,a)\).
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{SantAnnaZhao2020} provides two-period DiD efficiency bounds,
+\citet{BorusyakJaravelSpiess2024} provides an efficient imputation benchmark,
+and \citet{RothSantAnna2023Efficient} proves weak efficiency dominance in
+staggered rollout designs through an optimal pre-treatment adjustment
+\(\beta^\star\), but none gives a computable rank-gap variance formula for
+these four parallel-trends estimators under the common
+\(\mathcal M_{\mathrm{LPT}}(a)\) known-covariance linear benchmark.
+\citet{Gardner2022} is close in projection geometry because it estimates
+untreated fixed effects first, but it does not state the off-row-space loss
+\(\rho_M(a,\pi,\Sigma,\Delta_\tau)\).  Relative to BJS Section~5.3 efficiency
+comparisons and the Roth--Sant'Anna weak-dominance result, the new object is an
+if-and-only-if active-row-space formula for when the comparator projection loss
+is zero.  The epsilon-gap is strict non-equivalence on an open heterogeneity
+class, with the magnitude tied to a computable residual norm and projection
+quadratic form.  (b) The concrete consumer is BJS-style event-study practice in
+\citet{BorusyakJaravelSpiess2024}: the theorem would justify when imputation is
+not just robust but first-order more efficient than alternative robust
+implementations for the same ATT aggregation.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Homogeneous ATT reduction]\label{cor:homogeneous}
+Under Assumptions~\ref{ass:adoption}--\ref{ass:eif-model} and
+Assumptions~\ref{ass:homogeneous}--\ref{ass:homogeneous-weights},
+Conjecture~\ref{conj:if-frontier} reduces to
+Theorem~\ref{thm:homogeneous-collapse}: since \(\Delta_\tau=0\),
+\(\Delta_\tau(I-\Pi_{\calH})=0\) for every \(\pi\), \(\Sigma\), and \(a\), and
+Assumption~\ref{ass:homogeneous-weights} supplies the implementation-side
+canonical score equality.
+\end{corollary}
+
+\begin{corollary}[Two-period one-cohort neutrality]\label{cor:two-period}
+In the two-period, one-treated-cohort design satisfying
+Assumptions~\ref{ass:adoption}--\ref{ass:eif-model} and
+Assumption~\ref{ass:homogeneous-weights}, with a single scalar post-treatment
+cell, the treated-cohort residualizer is \(R_\pi=0\).  Hence
+\(\Delta_\tau=0\) regardless of the scalar post-treatment ATT, and
+Conjecture~\ref{conj:if-frontier} reduces to the canonical-score equality in
+Theorem~\ref{thm:homogeneous-collapse}; the off-row-space premise of
+Conjecture~\ref{conj:variance-gap} is absent rather than a disguised two-period
+efficiency comparison.
+\end{corollary}
+
+\section{Proof-sketch route}
+The verification route is finite-dimensional.  First express each estimator's
+asymptotic linear representation for the same aggregation \(a\) as a common
+ATT score plus an estimator-specific projection of untreated pre-period
+residual moments.  Second, whiten the residual moments by \(\Sigma^{-1/2}\) and
+apply the Frisch--Waugh--Lovell projection identity to identify the row-space
+of nuisance scores retained by each estimator.  Third, show that all four
+canonical normalized scores are equal exactly when every row of the residualized
+heterogeneity matrix \(\Delta_\tau\) lies in the row-space of the common
+pre-period contrast kernel \(H(\pi,\Sigma,a)\).  Fourth, compute the variance difference as the
+\(\Omega_{\pi,\Sigma}\)-quadratic form generated by the difference between the
+BJS projection \(P_{\mathrm{BJS}}\) and each comparator projection \(P_M\).  The
+boundary cases needing explicit algebra are the smallest nontrivial staggered
+design with three periods and two treated cohorts, and the singular design
+where \(H\) loses one row because the pre-period covariance has a near-null
+contrast.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:homogeneous-collapse} is intended as routine algebra and a
+sanity anchor.  Conjectures~\ref{conj:if-frontier} and
+\ref{conj:variance-gap} are the novel kernel and are not yet proved.  The
+proposal intentionally withdraws the literal phrase ``rank is less than the
+smallest singular value'' because that is dimensionally ill-posed; the retained
+claim is an integer active-rank boundary defined by the singular-value pattern
+of \(H(\pi,\Sigma,a)\).  Version 2 narrows the equality language to canonical
+normalized influence functions and defines the projection-loss term as an
+explicit quadratic form.  Version 3 corrects the active-row-space residual to
+the right projection \(\Delta_\tau(I-\Pi_{\calH})\) and pins the vectorized
+dimensions of \(Z_M\) and \(P_M\).  Version 4 makes the homogeneous
+projection/weight-equivalence condition explicit and defines the common
+efficiency convention used before comparing BJS, Chen--Sant'Anna--Xie, and
+Roth--Sant'Anna efficiency claims.  Version 5 narrows
+Conjecture~\ref{conj:variance-gap} to the fixed-design linear parallel-trends
+benchmark \(\mathcal M_{\mathrm{LPT}}(a)\) with known
+\((\pi,\Sigma,C_a,a)\), withdrawing the stronger unrestricted semiparametric
+EIF-bound reading.  The largest mathematical uncertainty is whether the
+Sun--Abraham, Callaway--Sant'Anna, and Wooldridge nuisance projections require
+extra regularity conditions on estimated aggregation weights or covariates even
+after fixing the common comparison-support convention.
+
+\section{Iteration trail}
+\begin{itemize}
+\item v1 (cold-start) --- initial draft with the flagship spectral
+IF-equivalence frontier stated as Conjectures~\ref{conj:if-frontier} and
+\ref{conj:variance-gap}; prior verdict: none.
+\item v2 (revise) --- added Roth--Sant'Anna efficient-rollout and Gardner
+two-stage comparisons, pinned \(A_a\), \(C_a\), canonical IF normalization, and
+the projection-quadratic loss, and replaced the invalid two-period efficiency
+corollary with a one-cohort neutrality reduction; prior verdict: REVISE.
+\item v3 (revise) --- corrected active-row-space projection orientation to
+\(\Delta_\tau(I-\Pi_{\calH})\), pinned \(Z_M\) and \(P_M\) dimensions after
+vectorization, and clarified the gap beyond BJS restricted imputation/regression
+equivalences; prior verdict: REVISE.
+\item v4 (revise) --- added the homogeneous canonical weight-equivalence
+condition and the common semiparametric tangent-space model for
+\(V_{\mathrm{EIF}}\); prior verdict: REVISE.
+\item v5 (revise) --- narrowed Conjecture~\ref{conj:variance-gap} from an
+unrestricted semiparametric EIF-bound claim to the fixed-design
+known-\((\pi,\Sigma,C_a,a)\) linear imputation benchmark
+\(\mathcal M_{\mathrm{LPT}}(a)\); prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Belle'go, Benatia, and Dortet-Bernadet(2025)]{BelleGoBenatiaDortetBernadet2025}
+Belle'go, C., D. Benatia, and V. Dortet-Bernadet.
+\newblock Chained difference-in-differences.
+\newblock \emph{Journal of Econometrics}, 2025.
+
+\bibitem[Borusyak, Jaravel, and Spiess(2024)]{BorusyakJaravelSpiess2024}
+Borusyak, K., X. Jaravel, and J. Spiess.
+\newblock Revisiting event-study designs: robust and efficient estimation.
+\newblock \emph{Review of Economic Studies}, 2024.
+
+\bibitem[Callaway and Sant'Anna(2021)]{CallawaySantAnna2021}
+Callaway, B. and P. H. C. Sant'Anna.
+\newblock Difference-in-differences with multiple time periods.
+\newblock \emph{Journal of Econometrics}, 225(2):200--230, 2021.
+
+\bibitem[Chen, Sant'Anna, and Xie(2025)]{ChenSantAnnaXie2025}
+Chen, X., P. H. C. Sant'Anna, and H. Xie.
+\newblock Efficient difference-in-differences and event study estimators.
+\newblock Cowles Foundation Discussion Paper / arXiv working paper, 2025.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{deChaisemartinDHaultfoeuille2020}
+de Chaisemartin, C. and X. D'Haultfoeuille.
+\newblock Two-way fixed effects estimators with heterogeneous treatment effects.
+\newblock \emph{American Economic Review}, 110(9):2964--2996, 2020.
+
+\bibitem[Gardner(2022)]{Gardner2022}
+Gardner, J.
+\newblock Two-stage differences in differences.
+\newblock arXiv:2207.05943, 2022.  \url{https://arxiv.org/abs/2207.05943}.
+
+\bibitem[Goodman-Bacon(2021)]{GoodmanBacon2021}
+Goodman-Bacon, A.
+\newblock Difference-in-differences with variation in treatment timing.
+\newblock \emph{Journal of Econometrics}, 225(2):254--277, 2021.
+
+\bibitem[Roth and Sant'Anna(2023)]{RothSantAnna2023Efficient}
+Roth, J. and P. H. C. Sant'Anna.
+\newblock Efficient estimation for staggered rollout designs.
+\newblock \emph{Journal of Political Economy Microeconomics}, 1(4):669--709,
+2023.  \url{https://doi.org/10.1086/726581}.
+
+\bibitem[Roth, Sant'Anna, Bilinski, and Poe(2023)]{RothSantAnnaBilinskiPoe2023}
+Roth, J., P. H. C. Sant'Anna, A. Bilinski, and J. Poe.
+\newblock What's trending in difference-in-differences? A synthesis of the recent econometrics literature.
+\newblock \emph{Journal of Econometrics}, 235(2):2218--2244, 2023.
+
+\bibitem[Sant'Anna and Zhao(2020)]{SantAnnaZhao2020}
+Sant'Anna, P. H. C. and J. Zhao.
+\newblock Doubly robust difference-in-differences estimators.
+\newblock \emph{Journal of Econometrics}, 219(1):101--122, 2020.
+
+\bibitem[Sun and Abraham(2021)]{SunAbraham2021}
+Sun, L. and S. Abraham.
+\newblock Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\newblock \emph{Journal of Econometrics}, 225(2):175--199, 2021.
+
+\bibitem[Wooldridge(2021)]{Wooldridge2021}
+Wooldridge, J. M.
+\newblock Two-way fixed effects, the two-way Mundlak regression, and difference-in-differences estimators.
+\newblock SSRN working paper 3906345, 2021.
+\end{thebibliography}
+
+\end{document}

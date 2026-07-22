@@ -1,0 +1,1200 @@
+{
+  "qid": "exp_bipartite_minimax_design",
+  "specialization": "v1",
+  "cluster": "experimentation",
+  "symbols": [
+    {
+      "name": "m_n",
+      "type": "number_of_intervention_units",
+      "space": "N",
+      "def": "Number of intervention units in stage n.",
+      "role": "design_size"
+    },
+    {
+      "name": "n",
+      "type": "number_of_outcome_units",
+      "space": "N",
+      "def": "Number of outcome units in stage n.",
+      "role": "design_size"
+    },
+    {
+      "name": "I_n",
+      "type": "intervention_index_set",
+      "space": "subsets of N",
+      "def": "Intervention-unit index set I_n = {1,...,m_n}.",
+      "role": "population_index",
+      "refs": [
+        "m_n"
+      ]
+    },
+    {
+      "name": "O_n",
+      "type": "outcome_index_set",
+      "space": "subsets of N",
+      "def": "Outcome-unit index set O_n = {1,...,n}.",
+      "role": "population_index",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "G_n",
+      "type": "bipartite_graph",
+      "space": "subsets of I_n x O_n",
+      "def": "Known bipartite graph linking intervention units to outcome units in stage n.",
+      "role": "design_graph",
+      "refs": [
+        "I_n",
+        "O_n"
+      ]
+    },
+    {
+      "name": "N_i(G_n)",
+      "type": "intervention_neighborhood_of_outcome_unit",
+      "space": "subsets of I_n",
+      "def": "Intervention neighborhood of outcome unit i, N_i(G_n) = {k in I_n : (k,i) in G_n}.",
+      "role": "interference_support",
+      "refs": [
+        "G_n",
+        "I_n"
+      ]
+    },
+    {
+      "name": "M_k(G_n)",
+      "type": "outcome_neighborhood_of_intervention_unit",
+      "space": "subsets of O_n",
+      "def": "Outcome neighborhood of intervention unit k, M_k(G_n) = {i in O_n : (k,i) in G_n}.",
+      "role": "design_load",
+      "refs": [
+        "G_n",
+        "O_n"
+      ]
+    },
+    {
+      "name": "d_i",
+      "type": "outcome_degree",
+      "space": "N",
+      "def": "Outcome-side degree d_i = |N_i(G_n)|.",
+      "role": "sparsity_index",
+      "refs": [
+        "N_i(G_n)"
+      ]
+    },
+    {
+      "name": "s_k",
+      "type": "intervention_output_degree",
+      "space": "N",
+      "def": "Intervention-side output degree s_k = |M_k(G_n)|.",
+      "role": "design_load",
+      "refs": [
+        "M_k(G_n)"
+      ]
+    },
+    {
+      "name": "S_{ij}(G_n)",
+      "type": "shared_intervention_set",
+      "space": "subsets of I_n",
+      "def": "Shared intervention neighborhood S_{ij}(G_n) = N_i(G_n) intersect N_j(G_n).",
+      "role": "overlap_structure",
+      "refs": [
+        "N_i(G_n)"
+      ]
+    },
+    {
+      "name": "Delta_n",
+      "type": "outcome_overlap_dependency_degree",
+      "space": "N",
+      "def": "Maximum overlap dependency degree Delta_n = max_{i in O_n} |{j in O_n : S_{ij}(G_n) != emptyset}|.",
+      "role": "dependency_index",
+      "refs": [
+        "O_n",
+        "S_{ij}(G_n)"
+      ]
+    },
+    {
+      "name": "Z_k",
+      "type": "intervention_assignment",
+      "space": "{0,1}",
+      "def": "Treatment indicator for intervention unit k.",
+      "role": "randomization"
+    },
+    {
+      "name": "Z",
+      "type": "assignment_vector",
+      "space": "{0,1}^{m_n}",
+      "def": "Assignment vector Z = (Z_1,...,Z_{m_n}).",
+      "role": "randomization",
+      "refs": [
+        "Z_k",
+        "m_n"
+      ]
+    },
+    {
+      "name": "p",
+      "type": "heterogeneous_assignment_probability_vector",
+      "space": "[0,1]^{m_n}",
+      "def": "Independent Bernoulli assignment probabilities p = (p_1,...,p_{m_n}).",
+      "role": "design_variable",
+      "refs": [
+        "m_n"
+      ]
+    },
+    {
+      "name": "epsilon",
+      "type": "positivity_floor",
+      "space": "(0,1/2)",
+      "def": "Assignment-probability floor enforcing epsilon <= p_k <= 1-epsilon.",
+      "role": "design_constraint"
+    },
+    {
+      "name": "B_n",
+      "type": "expected_treated_budget",
+      "space": "[m_n epsilon, m_n (1-epsilon)]",
+      "def": "Budget fixing the expected number of treated intervention units through sum_{k in I_n} p_k = B_n.",
+      "role": "design_constraint",
+      "refs": [
+        "m_n",
+        "epsilon",
+        "I_n"
+      ]
+    },
+    {
+      "name": "Y_i(z_{N_i})",
+      "type": "potential_outcome",
+      "space": "R",
+      "def": "Fixed potential outcome for outcome unit i under the treatment subvector z_{N_i} indexed by N_i(G_n).",
+      "role": "causal_primitive",
+      "refs": [
+        "N_i(G_n)"
+      ]
+    },
+    {
+      "name": "Y_i^1",
+      "type": "all_treated_potential_outcome",
+      "space": "R",
+      "def": "All-treated potential outcome Y_i^1 = Y_i(1_{N_i(G_n)}).",
+      "role": "causal_primitive",
+      "refs": [
+        "Y_i(z_{N_i})",
+        "N_i(G_n)"
+      ]
+    },
+    {
+      "name": "Y_i^0",
+      "type": "all_control_potential_outcome",
+      "space": "R",
+      "def": "All-control potential outcome Y_i^0 = Y_i(0_{N_i(G_n)}).",
+      "role": "causal_primitive",
+      "refs": [
+        "Y_i(z_{N_i})",
+        "N_i(G_n)"
+      ]
+    },
+    {
+      "name": "Y_i^obs",
+      "type": "observed_outcome",
+      "space": "R",
+      "def": "Observed outcome Y_i^obs = Y_i(Z_{N_i(G_n)}).",
+      "role": "observed_outcome",
+      "refs": [
+        "Y_i(z_{N_i})",
+        "Z",
+        "N_i(G_n)"
+      ]
+    },
+    {
+      "name": "Y_obs",
+      "type": "observed_outcome_vector",
+      "space": "R^n",
+      "def": "Observed outcome vector Y_obs = (Y_1^obs,...,Y_n^obs).",
+      "role": "observed_outcome",
+      "refs": [
+        "Y_i^obs",
+        "n"
+      ]
+    },
+    {
+      "name": "Y",
+      "type": "potential_outcome_schedule",
+      "space": "R^{2n}",
+      "def": "Potential-outcome schedule Y = ((Y_i^1,Y_i^0) : i in O_n).",
+      "role": "causal_schedule",
+      "refs": [
+        "O_n",
+        "Y_i^1",
+        "Y_i^0"
+      ]
+    },
+    {
+      "name": "mu_1",
+      "type": "all_treated_mean",
+      "space": "R",
+      "def": "Finite-population all-treated mean mu_1 = n^(-1) sum_{i in O_n} Y_i^1.",
+      "role": "estimand_component",
+      "refs": [
+        "n",
+        "O_n",
+        "Y_i^1"
+      ]
+    },
+    {
+      "name": "mu_0",
+      "type": "all_control_mean",
+      "space": "R",
+      "def": "Finite-population all-control mean mu_0 = n^(-1) sum_{i in O_n} Y_i^0.",
+      "role": "estimand_component",
+      "refs": [
+        "n",
+        "O_n",
+        "Y_i^0"
+      ]
+    },
+    {
+      "name": "tau_n",
+      "type": "finite_population_average_treatment_effect",
+      "space": "R",
+      "def": "Target effect tau_n = mu_1 - mu_0 = n^(-1) sum_{i in O_n} (Y_i^1 - Y_i^0).",
+      "role": "target_estimand",
+      "refs": [
+        "mu_1",
+        "mu_0",
+        "n",
+        "O_n",
+        "Y_i^1",
+        "Y_i^0"
+      ]
+    },
+    {
+      "name": "T_i(Z)",
+      "type": "all_treated_exposure_indicator",
+      "space": "{0,1}",
+      "def": "All-treated exposure indicator T_i(Z) = product_{k in N_i(G_n)} Z_k.",
+      "role": "exposure_indicator",
+      "refs": [
+        "N_i(G_n)",
+        "Z"
+      ]
+    },
+    {
+      "name": "C_i(Z)",
+      "type": "all_control_exposure_indicator",
+      "space": "{0,1}",
+      "def": "All-control exposure indicator C_i(Z) = product_{k in N_i(G_n)} (1-Z_k).",
+      "role": "exposure_indicator",
+      "refs": [
+        "N_i(G_n)",
+        "Z"
+      ]
+    },
+    {
+      "name": "pi_i^1(p)",
+      "type": "all_treated_exposure_probability",
+      "space": "(0,1]",
+      "def": "All-treated exposure probability pi_i^1(p) = product_{k in N_i(G_n)} p_k.",
+      "role": "known_design_probability",
+      "refs": [
+        "N_i(G_n)",
+        "p"
+      ]
+    },
+    {
+      "name": "pi_i^0(p)",
+      "type": "all_control_exposure_probability",
+      "space": "(0,1]",
+      "def": "All-control exposure probability pi_i^0(p) = product_{k in N_i(G_n)} (1-p_k).",
+      "role": "known_design_probability",
+      "refs": [
+        "N_i(G_n)",
+        "p"
+      ]
+    },
+    {
+      "name": "D_1(p,Z)",
+      "type": "treated_hajek_denominator",
+      "space": "[0,infty)",
+      "def": "Exposure-weighted treated denominator D_1(p,Z) = sum_{i in O_n} T_i(Z) / pi_i^1(p).",
+      "role": "estimator_component",
+      "refs": [
+        "O_n",
+        "T_i(Z)",
+        "pi_i^1(p)"
+      ]
+    },
+    {
+      "name": "D_0(p,Z)",
+      "type": "control_hajek_denominator",
+      "space": "[0,infty)",
+      "def": "Exposure-weighted control denominator D_0(p,Z) = sum_{i in O_n} C_i(Z) / pi_i^0(p).",
+      "role": "estimator_component",
+      "refs": [
+        "O_n",
+        "C_i(Z)",
+        "pi_i^0(p)"
+      ]
+    },
+    {
+      "name": "hat_tau_H(p)",
+      "type": "heterogeneous_hajek_estimator",
+      "space": "R",
+      "def": "Hajek estimator defined by def:hetero-hajek-estimator.",
+      "role": "design_based_estimator"
+    },
+    {
+      "name": "r_{ij}^1(G_n,p)",
+      "type": "treated_overlap_load",
+      "space": "[0,infty)",
+      "def": "Treated overlap load r_{ij}^1(G_n,p) = 1{S_{ij}(G_n) != emptyset}(product_{k in S_{ij}(G_n)} p_k^(-1) - 1).",
+      "role": "graph_only_variance_load",
+      "refs": [
+        "S_{ij}(G_n)",
+        "p"
+      ]
+    },
+    {
+      "name": "r_{ij}^0(G_n,p)",
+      "type": "control_overlap_load",
+      "space": "[0,infty)",
+      "def": "Control overlap load r_{ij}^0(G_n,p) = 1{S_{ij}(G_n) != emptyset}(product_{k in S_{ij}(G_n)} (1-p_k)^(-1) - 1).",
+      "role": "graph_only_variance_load",
+      "refs": [
+        "S_{ij}(G_n)",
+        "p"
+      ]
+    },
+    {
+      "name": "r_{ij}^{10}(G_n)",
+      "type": "cross_arm_overlap_load",
+      "space": "{0,1}",
+      "def": "Cross-arm overlap load r_{ij}^{10}(G_n) = 1{S_{ij}(G_n) != emptyset}.",
+      "role": "graph_only_variance_load",
+      "refs": [
+        "S_{ij}(G_n)"
+      ]
+    },
+    {
+      "name": "eta_i(p,Z)",
+      "type": "first_order_linearization_term",
+      "space": "R",
+      "def": "First-order heterogeneous Hajek linearization term eta_i(p,Z) = (T_i(Z)/pi_i^1(p) - 1)(Y_i^1-mu_1) - (C_i(Z)/pi_i^0(p) - 1)(Y_i^0-mu_0).",
+      "role": "limit_theory_score",
+      "refs": [
+        "T_i(Z)",
+        "C_i(Z)",
+        "pi_i^1(p)",
+        "pi_i^0(p)",
+        "Y_i^1",
+        "Y_i^0",
+        "mu_1",
+        "mu_0"
+      ]
+    },
+    {
+      "name": "sigma_{G_n,p}^2(Y)",
+      "type": "asymptotic_variance_scale",
+      "space": "[0,infty)",
+      "def": "Asymptotic variance scale of sqrt(n){hat_tau_H(p)-tau_n}.",
+      "role": "precision_object"
+    },
+    {
+      "name": "V_env(G_n,p)",
+      "type": "graph_only_conservative_variance_envelope",
+      "space": "[0,infty)",
+      "def": "Observable graph-only conservative envelope for the asymptotic variance scale under bounded potential outcomes.",
+      "role": "design_objective"
+    },
+    {
+      "name": "g_k(G_n,p)",
+      "type": "design_gradient_component",
+      "space": "R",
+      "def": "Envelope gradient component defined by def:kkt-gradient.",
+      "role": "optimality_certificate"
+    },
+    {
+      "name": "P_{n,B_n,epsilon}",
+      "type": "feasible_design_class",
+      "space": "subsets of [0,1]^{m_n}",
+      "def": "Feasible heterogeneous Bernoulli designs with budget B_n and positivity floor epsilon.",
+      "role": "design_class"
+    },
+    {
+      "name": "p_n^*(G_n)",
+      "type": "envelope_optimal_heterogeneous_design",
+      "space": "P_{n,B_n,epsilon}",
+      "def": "Envelope-optimal design selector defined by def:optimal-design.",
+      "role": "optimal_design"
+    },
+    {
+      "name": "lambda_n",
+      "type": "budget_kkt_multiplier",
+      "space": "R",
+      "def": "Lagrange multiplier on the budget constraint.",
+      "role": "optimality_certificate"
+    },
+    {
+      "name": "nu_{k,n}^+",
+      "type": "upper_box_multiplier",
+      "space": "[0,infty)",
+      "def": "Complementary-slackness multiplier for p_k <= 1-epsilon.",
+      "role": "optimality_certificate"
+    },
+    {
+      "name": "nu_{k,n}^-",
+      "type": "lower_box_multiplier",
+      "space": "[0,infty)",
+      "def": "Complementary-slackness multiplier for epsilon <= p_k.",
+      "role": "optimality_certificate"
+    },
+    {
+      "name": "hat_V_cons(G_n,p)",
+      "type": "conservative_variance_scale_estimator",
+      "space": "[0,infty)",
+      "def": "Conservative observable estimator of the asymptotic variance scale.",
+      "role": "inference_object"
+    },
+    {
+      "name": "alpha_cov",
+      "type": "coverage_level",
+      "space": "(0,1)",
+      "def": "Nominal miscoverage level used in the Wald interval.",
+      "role": "inference_index"
+    },
+    {
+      "name": "z_{1-alpha_cov/2}",
+      "type": "normal_quantile",
+      "space": "R",
+      "def": "Upper 1-alpha_cov/2 quantile of the standard normal distribution.",
+      "role": "inference_constant",
+      "refs": [
+        "alpha_cov"
+      ]
+    },
+    {
+      "name": "h_k(G_n)",
+      "type": "degree_dispersion_weight",
+      "space": "[0,infty)",
+      "def": "Observable overlap weight h_k(G_n) = n^(-1) sum_{i,j in O_n : k in S_{ij}(G_n)} |S_{ij}(G_n)|^(-1).",
+      "role": "certificate_surrogate_load",
+      "refs": [
+        "n",
+        "O_n",
+        "S_{ij}(G_n)"
+      ]
+    },
+    {
+      "name": "p_n^{deg}(G_n)",
+      "type": "degree_surrogate_design",
+      "space": "P_{n,B_n,epsilon}",
+      "def": "Surrogate-design selector defined by def:surrogate-design.",
+      "role": "certificate_candidate"
+    },
+    {
+      "name": "alpha_cert(G_n)",
+      "type": "observable_approximation_ratio",
+      "space": "[1,infty)",
+      "def": "Relative envelope loss of the surrogate design against the exact optimum of the conservative envelope.",
+      "role": "certificate_target"
+    },
+    {
+      "name": "dbar",
+      "type": "degree_bound_constant",
+      "space": "(0,infty)",
+      "def": "Uniform upper bound on outcome-side degree.",
+      "role": "regularity_constant"
+    },
+    {
+      "name": "Dbar",
+      "type": "dependency_bound_constant",
+      "space": "(0,infty)",
+      "def": "Uniform upper bound on the overlap dependency degree.",
+      "role": "regularity_constant"
+    },
+    {
+      "name": "c_disp",
+      "type": "degree_dispersion_constant",
+      "space": "(0,infty)",
+      "def": "Constant controlling intervention-side degree dispersion.",
+      "role": "regime_constant"
+    },
+    {
+      "name": "C_disp",
+      "type": "surrogate_weight_dispersion_constant",
+      "space": "(0,infty)",
+      "def": "Constant controlling dispersion of the observable surrogate weights.",
+      "role": "regime_constant"
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:bipartite-interference",
+      "kind": "structural",
+      "condition": "For every i in O_n and every z,z' in {0,1}^{m_n}, z_{N_i(G_n)} = z'_{N_i(G_n)} implies Y_i(z_{N_i}) = Y_i(z'_{N_i}).",
+      "free_symbols": [
+        "O_n",
+        "m_n",
+        "N_i(G_n)",
+        "Y_i(z_{N_i})"
+      ],
+      "standard": {
+        "name": "bipartite interference / neighborhood SUTVA",
+        "cite": "LuShiFangZhangDing2025BipartiteDesign"
+      },
+      "used_by": [
+        "thm:hetero-envelope",
+        "thm:hetero-clt",
+        "thm:postdesign-wald",
+        "prop:homogeneous-reduction"
+      ]
+    },
+    {
+      "id": "ass:independent-heterogeneous-bernoulli",
+      "kind": "design",
+      "condition": "For every k in I_n, Z_k is Bernoulli(p_k), and the collection {Z_k : k in I_n} is mutually independent.",
+      "free_symbols": [
+        "I_n",
+        "Z_k",
+        "p"
+      ],
+      "standard": {
+        "name": "independent non-identical Bernoulli randomization",
+        "cite": "Leung2019ApproxNeighborhoodInterference"
+      },
+      "used_by": [
+        "thm:hetero-envelope",
+        "thm:convex-design",
+        "lem:denominator-positivity",
+        "thm:hetero-clt",
+        "prop:homogeneous-reduction"
+      ]
+    },
+    {
+      "id": "ass:positivity-floor",
+      "kind": "overlap",
+      "condition": "For every k in I_n, epsilon <= p_k <= 1-epsilon.",
+      "free_symbols": [
+        "I_n",
+        "epsilon",
+        "p"
+      ],
+      "standard": {
+        "name": "uniform overlap for heterogeneous Bernoulli exposure probabilities",
+        "cite": "Leung2019ApproxNeighborhoodInterference"
+      },
+      "used_by": [
+        "def:feasible-designs",
+        "thm:convex-design",
+        "lem:denominator-positivity",
+        "thm:hetero-clt",
+        "oeq:dispersion-certificate"
+      ]
+    },
+    {
+      "id": "ass:budget-balance",
+      "kind": "design",
+      "condition": "sum_{k in I_n} p_k = B_n.",
+      "free_symbols": [
+        "I_n",
+        "p",
+        "B_n"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "Graph experiments often face ex ante capacity or compliance constraints on the expected number of treated intervention units. A fixed expected-treatment budget is the natural finite-population formulation of those rollout constraints."
+      },
+      "used_by": [
+        "def:feasible-designs",
+        "thm:convex-design",
+        "oeq:dispersion-certificate"
+      ]
+    },
+    {
+      "id": "ass:bounded-outcomes",
+      "kind": "regularity",
+      "condition": "For every i in O_n, |Y_i^1| <= 1 and |Y_i^0| <= 1.",
+      "free_symbols": [
+        "O_n",
+        "Y_i^1",
+        "Y_i^0"
+      ],
+      "standard": {
+        "name": "bounded finite-population potential outcomes",
+        "cite": "LuShiFangZhangDing2025BipartiteDesign"
+      },
+      "used_by": [
+        "thm:hetero-envelope",
+        "thm:hetero-clt",
+        "thm:postdesign-wald"
+      ]
+    },
+    {
+      "id": "ass:bounded-outcome-degree",
+      "kind": "graph",
+      "condition": "max_{i in O_n} d_i <= dbar.",
+      "free_symbols": [
+        "O_n",
+        "d_i"
+      ],
+      "constants": [
+        "dbar"
+      ],
+      "standard": {
+        "name": "bounded outcome-side degree in sparse bipartite graphs",
+        "cite": "LuShiFangZhangDing2025BipartiteDesign"
+      },
+      "used_by": [
+        "thm:hetero-envelope",
+        "lem:denominator-positivity",
+        "thm:hetero-clt",
+        "prop:homogeneous-reduction"
+      ]
+    },
+    {
+      "id": "ass:bounded-overlap-dependency",
+      "kind": "graph",
+      "condition": "Delta_n <= Dbar.",
+      "free_symbols": [
+        "Delta_n"
+      ],
+      "constants": [
+        "Dbar"
+      ],
+      "standard": {
+        "name": "bounded dependency-graph degree",
+        "cite": "AronowSamii2017GeneralInterference"
+      },
+      "used_by": [
+        "lem:denominator-positivity",
+        "thm:hetero-clt",
+        "thm:postdesign-wald"
+      ]
+    },
+    {
+      "id": "ass:variance-nondegenerate",
+      "kind": "regularity",
+      "condition": "liminf_{n -> infty} sigma_{G_n,p_n^*(G_n)}^2(Y) > 0.",
+      "free_symbols": [
+        "sigma_{G_n,p}^2(Y)",
+        "p_n^*(G_n)"
+      ],
+      "standard": {
+        "name": "nondegenerate asymptotic design variance",
+        "cite": "LuShiFangZhangDing2025BipartiteDesign"
+      },
+      "used_by": [
+        "thm:hetero-clt",
+        "thm:postdesign-wald"
+      ]
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:feasible-designs",
+      "name": "Feasible heterogeneous Bernoulli designs",
+      "construction": "P_{n,B_n,epsilon} = {p in [0,1]^{m_n} : epsilon <= p_k <= 1-epsilon for every k in I_n, and sum_{k in I_n} p_k = B_n}",
+      "by_member_properties": [
+        "ass:positivity-floor",
+        "ass:budget-balance"
+      ]
+    },
+    {
+      "id": "def:hajek-denominators",
+      "name": "Exposure-weighted Hajek denominators",
+      "construction": "D_1(p,Z) = sum_{i in O_n} T_i(Z) / pi_i^1(p), D_0(p,Z) = sum_{i in O_n} C_i(Z) / pi_i^0(p)",
+      "inputs": [
+        "O_n",
+        "T_i(Z)",
+        "C_i(Z)",
+        "pi_i^1(p)",
+        "pi_i^0(p)"
+      ]
+    },
+    {
+      "id": "def:hetero-hajek-estimator",
+      "name": "Heterogeneous Bernoulli Hajek estimator",
+      "construction": "hat_tau_H(p) = 1{D_1(p,Z) > 0}{sum_{i in O_n} T_i(Z) Y_i^obs / pi_i^1(p)} / D_1(p,Z) - 1{D_0(p,Z) > 0}{sum_{i in O_n} C_i(Z) Y_i^obs / pi_i^0(p)} / D_0(p,Z)",
+      "inputs": [
+        "O_n",
+        "T_i(Z)",
+        "C_i(Z)",
+        "Y_i^obs",
+        "pi_i^1(p)",
+        "pi_i^0(p)",
+        "D_1(p,Z)",
+        "D_0(p,Z)"
+      ]
+    },
+    {
+      "id": "def:first-order-linearization",
+      "name": "First-order heterogeneous Hajek linearization",
+      "construction": "eta_i(p,Z) = (T_i(Z)/pi_i^1(p) - 1)(Y_i^1-mu_1) - (C_i(Z)/pi_i^0(p) - 1)(Y_i^0-mu_0)",
+      "inputs": [
+        "T_i(Z)",
+        "C_i(Z)",
+        "pi_i^1(p)",
+        "pi_i^0(p)",
+        "Y_i^1",
+        "Y_i^0",
+        "mu_1",
+        "mu_0"
+      ]
+    },
+    {
+      "id": "def:variance-scale",
+      "name": "Asymptotic variance scale",
+      "construction": "sigma_{G_n,p}^2(Y) = n Var_p(n^(-1) sum_{i in O_n} eta_i(p,Z)) = n^(-1) sum_{i,j in O_n} E_p[eta_i(p,Z) eta_j(p,Z)]",
+      "inputs": [
+        "n",
+        "O_n",
+        "eta_i(p,Z)"
+      ]
+    },
+    {
+      "id": "def:graph-envelope",
+      "name": "Graph-only conservative variance envelope",
+      "construction": "V_env(G_n,p) = 4 n^(-1) sum_{i,j in O_n} {r_{ij}^1(G_n,p) + r_{ij}^0(G_n,p) + 2 r_{ij}^{10}(G_n)}",
+      "inputs": [
+        "n",
+        "O_n",
+        "r_{ij}^1(G_n,p)",
+        "r_{ij}^0(G_n,p)",
+        "r_{ij}^{10}(G_n)"
+      ]
+    },
+    {
+      "id": "def:optimal-design",
+      "name": "Envelope-optimal heterogeneous Bernoulli design",
+      "construction": "p_n^*(G_n) in argmin_{p in P_{n,B_n,epsilon}} V_env(G_n,p), whenever the argmin set is nonempty",
+      "inputs": [
+        "G_n",
+        "P_{n,B_n,epsilon}",
+        "V_env(G_n,p)"
+      ]
+    },
+    {
+      "id": "def:kkt-gradient",
+      "name": "Gradient of the normalized graph-only envelope (V_env/4)",
+      "construction": "g_k(G_n,p) = partial_{p_k}(V_env(G_n,p)/4) = n^(-1) sum_{i,j in O_n : k in S_{ij}(G_n)} {-(product_{ell in S_{ij}(G_n)} p_ell^(-1)) p_k^(-1) + (product_{ell in S_{ij}(G_n)} (1-p_ell)^(-1)) (1-p_k)^(-1)}",
+      "inputs": [
+        "n",
+        "O_n",
+        "S_{ij}(G_n)",
+        "p"
+      ]
+    },
+    {
+      "id": "def:conservative-variance-estimator",
+      "name": "Graph-only conservative variance-scale estimator",
+      "construction": "hat_V_cons(G_n,p) = V_env(G_n,p)",
+      "inputs": [
+        "G_n",
+        "p",
+        "V_env(G_n,p)"
+      ]
+    },
+    {
+      "id": "def:surrogate-design",
+      "name": "Degree-dispersion surrogate design",
+      "construction": "p_n^{deg}(G_n) in argmin_{p in P_{n,B_n,epsilon}} sum_{k in I_n} h_k(G_n){p_k^(-1) + (1-p_k)^(-1)}, whenever the argmin set is nonempty",
+      "inputs": [
+        "P_{n,B_n,epsilon}",
+        "I_n",
+        "h_k(G_n)"
+      ]
+    },
+    {
+      "id": "def:approximation-ratio",
+      "name": "Observable approximation ratio",
+      "construction": "alpha_cert(G_n) = V_env(G_n,p_n^{deg}(G_n)) / min_{p in P_{n,B_n,epsilon}} V_env(G_n,p) when min_{p in P_{n,B_n,epsilon}} V_env(G_n,p) > 0, and alpha_cert(G_n) = 1 when min_{p in P_{n,B_n,epsilon}} V_env(G_n,p) = 0 (no-loss convention: a zero envelope minimum forces V_env(G_n,p_n^{deg}(G_n))=0 as well, since V_env is a nonnegative sum over shared-neighborhood pairs that vanishes for every feasible design precisely when there are no such pairs, so there is no relative loss). Thus alpha_cert(G_n) is a total, [1,infty)-valued observable on the admitted bounded-degree graph class.",
+      "inputs": [
+        "G_n",
+        "V_env(G_n,p)",
+        "p_n^{deg}(G_n)",
+        "P_{n,B_n,epsilon}"
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "prop:homogeneous-reduction",
+      "kind": "proposition",
+      "statement": "Under ass:independent-heterogeneous-bernoulli, if p_k = p for every k in I_n for a common scalar p in (0,1), then r_{ij}^1(G_n,p) = 1{S_{ij}(G_n) != emptyset}(p^(-|S_{ij}(G_n)|) - 1), r_{ij}^0(G_n,p) = 1{S_{ij}(G_n) != emptyset}((1-p)^(-|S_{ij}(G_n)|) - 1), r_{ij}^{10}(G_n) = 1{S_{ij}(G_n) != emptyset}, and sigma_{G_n,p}^2(Y) = n^(-1) sum_{i,j in O_n} [r_{ij}^1(G_n,p)(Y_i^1-mu_1)(Y_j^1-mu_1) + r_{ij}^0(G_n,p)(Y_i^0-mu_0)(Y_j^0-mu_0) + 2 r_{ij}^{10}(G_n)(Y_i^1-mu_1)(Y_j^0-mu_0)], which is the homogeneous Bernoulli Hajek overlap formula of Lu, Shi, Fang, Zhang, and Ding (2025).",
+      "depends_on": [
+        "ass:independent-heterogeneous-bernoulli",
+        "def:first-order-linearization",
+        "def:variance-scale"
+      ],
+      "status": "to-prove",
+      "justification": "The heterogeneous construction must collapse algebraically to the published scalar-p object in the benchmark special case.",
+      "gap": "LuShiFangZhangDing2025BipartiteDesign study only the common-p design. This proposition is the corrected sanity reduction showing the rewritten overlap algebra matches that benchmark, including the positive cross-arm overlap block after centering.",
+      "consumer": "It certifies that every downstream theorem is a strict extension of the anchor rather than a parallel reparameterization."
+    },
+    {
+      "id": "thm:hetero-envelope",
+      "kind": "theorem",
+      "statement": "Under ass:independent-heterogeneous-bernoulli and ass:bounded-outcomes, for every p in (0,1)^{m_n}, E_p[eta_i(p,Z) eta_j(p,Z)] = r_{ij}^1(G_n,p)(Y_i^1-mu_1)(Y_j^1-mu_1) + r_{ij}^0(G_n,p)(Y_i^0-mu_0)(Y_j^0-mu_0) + r_{ij}^{10}(G_n){(Y_i^1-mu_1)(Y_j^0-mu_0) + (Y_i^0-mu_0)(Y_j^1-mu_1)} for every i,j in O_n. Consequently sigma_{G_n,p}^2(Y) = n^(-1) sum_{i,j in O_n} [r_{ij}^1(G_n,p)(Y_i^1-mu_1)(Y_j^1-mu_1) + r_{ij}^0(G_n,p)(Y_i^0-mu_0)(Y_j^0-mu_0) + r_{ij}^{10}(G_n){(Y_i^1-mu_1)(Y_j^0-mu_0) + (Y_i^0-mu_0)(Y_j^1-mu_1)}] <= V_env(G_n,p).",
+      "depends_on": [
+        "ass:independent-heterogeneous-bernoulli",
+        "ass:bounded-outcomes",
+        "def:first-order-linearization",
+        "def:variance-scale",
+        "def:graph-envelope"
+      ],
+      "status": "to-prove",
+      "justification": "This is the kernel that turns the heterogeneous Hajek variance into a graph-only conservative objective with corrected sign and normalization.",
+      "gap": "LuShiFangZhangDing2025BipartiteDesign derive the homogeneous scalar-p Hajek variance but do not produce a heterogeneous graph-only conservative envelope. HarshawSavjeEisenstatMirrokniPougetAbadie2021BipartiteERL is graph-aware only under a linear exposure-response model.",
+      "consumer": "It supplies a model-agnostic graph-only criterion for choosing intervention-unit treatment probabilities before any outcomes are observed."
+    },
+    {
+      "id": "thm:convex-design",
+      "kind": "theorem",
+      "statement": "The feasible set P_{n,B_n,epsilon} is a nonempty compact convex subset of [0,1]^{m_n}, the map p -> V_env(G_n,p) is convex on P_{n,B_n,epsilon}, and therefore the argmin set in def:optimal-design is nonempty. For every minimizer p_n^*(G_n) there exist lambda_n in R and box multipliers nu_{k,n}^+ >= 0, nu_{k,n}^- >= 0 (k in I_n) such that the observable KKT system g_k(G_n,p_n^*(G_n)) = lambda_n - nu_{k,n}^+ + nu_{k,n}^- holds for each k in I_n, together with nu_{k,n}^+((p_n^*(G_n))_k-(1-epsilon)) = 0 and nu_{k,n}^-(epsilon-(p_n^*(G_n))_k) = 0.",
+      "depends_on": [
+        "def:feasible-designs",
+        "def:graph-envelope",
+        "def:optimal-design",
+        "def:kkt-gradient"
+      ],
+      "status": "to-prove",
+      "justification": "The proposal needs an explicit envelope-optimal design object and an observable certificate for that object, not only a variance representation.",
+      "gap": "Prior graph-aware and bipartite design work spans four distinct approaches, none of which delivers this object. (i) LuShiFangZhangDing2025BipartiteDesign study only the HOMOGENEOUS Bernoulli(p) bipartite design and do not optimize the design. (ii) HarshawSavjeEisenstatMirrokniPougetAbadie2021BipartiteERL and DoudchenkoEtAl2020BipartiteDesign design bipartite experiments through a LINEAR exposure-response MSE objective for linear estimators, not a design-based conservative Hajek-variance envelope. (iii) BrennanMirrokniPougetAbadie2022ClusterBipartite choose CLUSTER-randomized bipartite designs minimizing a linear-model bias/variance proxy, not a heterogeneous-Bernoulli propensity vector and not a KKT-certified convex program. (iv) Viviano2026NetworkDesign optimizes pilot-based ONE-MODE network precision. No checked result solves the graph-only bipartite heterogeneous-Bernoulli minimization of a conservative Hajek variance envelope under bounded potential outcomes with an observable GLOBAL KKT optimality certificate, which is exactly what this theorem provides.",
+      "consumer": "It yields the intervention-unit propensity vector a platform or field experiment should implement when it can target treatment probabilities unit by unit."
+    },
+    {
+      "id": "lem:denominator-positivity",
+      "kind": "lemma",
+      "statement": "Under ass:independent-heterogeneous-bernoulli, ass:bounded-outcome-degree, and ass:bounded-overlap-dependency, sup_{p in P_{n,B_n,epsilon}} P_p(D_1(p,Z) = 0 or D_0(p,Z) = 0) = O(n^{-1}).",
+      "depends_on": [
+        "ass:independent-heterogeneous-bernoulli",
+        "ass:bounded-outcome-degree",
+        "ass:bounded-overlap-dependency",
+        "def:feasible-designs",
+        "def:hajek-denominators"
+      ],
+      "status": "to-prove",
+      "justification": "The heterogeneous Hajek estimator must be well-defined at finite n before any asymptotic expansion can be meaningful.",
+      "gap": "The homogeneous anchor and adjacent one-mode CLTs do not isolate the zero-denominator issue created by unit-specific exposure probabilities inside bipartite Hajek ratios. This lemma makes that obstruction explicit and shows the convention is asymptotically negligible in the sparse regime.",
+      "consumer": "It licenses the explicit zero-denominator convention in def:hetero-hajek-estimator without changing first-order inference."
+    },
+    {
+      "id": "thm:hetero-clt",
+      "kind": "theorem",
+      "statement": "Under ass:bipartite-interference, ass:independent-heterogeneous-bernoulli, ass:bounded-outcomes, ass:bounded-outcome-degree, ass:bounded-overlap-dependency, and ass:variance-nondegenerate, sqrt(n){hat_tau_H(p_n^*(G_n)) - tau_n} = n^(-1/2) sum_{i in O_n} eta_i(p_n^*(G_n),Z) + o_p(1), and sqrt(n){hat_tau_H(p_n^*(G_n)) - tau_n} / sqrt(sigma_{G_n,p_n^*(G_n)}^2(Y)) ->d N(0,1).",
+      "depends_on": [
+        "ass:bipartite-interference",
+        "ass:independent-heterogeneous-bernoulli",
+        "ass:bounded-outcomes",
+        "ass:bounded-outcome-degree",
+        "ass:bounded-overlap-dependency",
+        "ass:variance-nondegenerate",
+        "def:hajek-denominators",
+        "def:hetero-hajek-estimator",
+        "def:first-order-linearization",
+        "def:variance-scale",
+        "thm:convex-design",
+        "lem:denominator-positivity"
+      ],
+      "status": "to-prove",
+      "justification": "The design problem matters only if valid large-sample design-based inference survives the optimized heterogeneous probabilities.",
+      "gap": "LuShiFangZhangDing2025BipartiteDesign prove a CLT only for homogeneous Bernoulli(p), while Leung2019ApproxNeighborhoodInterference allows non-identical Bernoulli assignment in one-mode IPW settings but not bipartite all-treated/all-control Hajek ratios with product exposures and random denominators.",
+      "consumer": "It turns the envelope-optimal design from a precision criterion into an assignment rule that still supports asymptotically valid Wald inference."
+    },
+    {
+      "id": "thm:postdesign-wald",
+      "kind": "theorem",
+      "statement": "Under the assumptions of thm:hetero-clt, hat_V_cons(G_n,p_n^*(G_n)) = V_env(G_n,p_n^*(G_n)) is conservative for sigma_{G_n,p_n^*(G_n)}^2(Y), and for every sequence of potential-outcome schedules satisfying those assumptions, liminf_{n -> infty} P_{p_n^*(G_n)}(tau_n in [hat_tau_H(p_n^*(G_n)) - z_{1-alpha_cov/2} sqrt{hat_V_cons(G_n,p_n^*(G_n)) / n}, hat_tau_H(p_n^*(G_n)) + z_{1-alpha_cov/2} sqrt{hat_V_cons(G_n,p_n^*(G_n)) / n}]) >= 1-alpha_cov.",
+      "depends_on": [
+        "thm:hetero-envelope",
+        "lem:denominator-positivity",
+        "thm:hetero-clt",
+        "def:conservative-variance-estimator",
+        "def:optimal-design"
+      ],
+      "status": "to-prove",
+      "justification": "A graph-optimized design is only usable if it comes with a feasible conservative standard error after the design is chosen.",
+      "gap": "LuShiFangZhangDing2025BipartiteDesign provide homogeneous conservative variance theory, while ParkWager2026NeymanJackknife and HarshawMiddletonSavje2021OptimizedVariance are adjacent general frameworks rather than this bipartite heterogeneous-p post-design result.",
+      "consumer": "It gives a directly reportable asymptotically conservative Wald interval for experiments that implement the graph-optimal heterogeneous assignment rule along nondegenerate sequences."
+    },
+    {
+      "id": "oeq:dispersion-certificate",
+      "kind": "openendedquestion",
+      "statement": "Does alpha_cert(G_n) remain uniformly bounded whenever sum_{ell in I_n} s_ell^2 > 0, max_{k in I_n} s_k^2 / sum_{ell in I_n} s_ell^2 <= c_disp, and max_{k in I_n} h_k(G_n) / min_{k in I_n : h_k(G_n) > 0} h_k(G_n) <= C_disp?",
+      "depends_on": [
+        "def:feasible-designs",
+        "def:graph-envelope",
+        "def:surrogate-design",
+        "def:approximation-ratio"
+      ],
+      "status": "to-prove",
+      "justification": "The exact convex optimum may still be too costly to solve repeatedly at platform scale, so the honest unresolved frontier is an observable constant-factor surrogate guarantee.",
+      "gap": "UganderKarrerBackstromKleinberg2013GraphClusterRandomization and UganderYin2020RandomizedGCR prove graph-regime variance control for cluster designs, but no published result gives a constant-factor observable certificate for graph-only heterogeneous Bernoulli envelope design in bipartite experiments.",
+      "consumer": "A positive answer would justify a fast degree-summary design rule in large marketplace or recommender experiments where solving the full overlap program is operationally expensive."
+    },
+    {
+      "id": "thm:heterogeneity-separation",
+      "kind": "theorem",
+      "statement": "Set rho = B_n / m_n and let p^hom denote the homogeneous feasible design with (p^hom)_k = rho for every k in I_n; assume rho in (epsilon, 1-epsilon) and rho != 1/2. If the homogeneous-point envelope-gradient scores {g_k(G_n, p^hom) : k in I_n} of def:kkt-gradient are not all equal, then p^hom is not a minimizer of p -> V_env(G_n,p) over P_{n,B_n,epsilon}; consequently every envelope-optimal design p_n^*(G_n) of def:optimal-design is non-homogeneous and satisfies the strict inequality V_env(G_n, p_n^*(G_n)) < V_env(G_n, p^hom), and the gap admits the explicit observable lower bound V_env(G_n,p^hom) - V_env(G_n,p_n^*(G_n)) >= 2 Delta_g min{eta_box, Delta_g / L_ab}, where Delta_g = max_{k in I_n} g_k(G_n,p^hom) - min_{k in I_n} g_k(G_n,p^hom) > 0 is the gradient-score spread, eta_box = min{rho - epsilon, 1 - epsilon - rho} > 0, a in argmax_{k in I_n} g_k(G_n,p^hom), b in argmin_{k in I_n} g_k(G_n,p^hom), and L_ab = sup_{q in P_{n,B_n,epsilon}} (e_b - e_a)^T Hess(V_env(G_n,cdot)/4)(q) (e_b - e_a) is the directional second-order modulus of the graph-only envelope along the budget-feasible direction e_b - e_a (all four quantities being observable functions of G_n, epsilon, and B_n), with the bound read as 2 Delta_g eta_box when L_ab = 0. In particular, for singleton-exposure graphs, in which each outcome unit's neighborhood is a single intervention unit so that every nonempty S_{ij}(G_n) is a singleton, the gradient scores reduce to observable per-unit degree summaries, and the hypothesis (hence the strict improvement of the optimal heterogeneous design over the homogeneous design) holds whenever those summaries are not all equal.",
+      "depends_on": [
+        "def:feasible-designs",
+        "def:graph-envelope",
+        "def:optimal-design",
+        "def:kkt-gradient",
+        "thm:convex-design"
+      ],
+      "status": "to-prove",
+      "justification": "The promised contribution is an optimal HETEROGENEOUS design; without a theorem exhibiting a regime where the optimum strictly departs from and improves on the homogeneous design, heterogeneity might buy nothing.",
+      "gap": "LuShiFangZhangDing2025BipartiteDesign study only homogeneous Bernoulli(p); thm:convex-design gives existence and an observable certificate but not that the optimum is non-homogeneous or strictly better.",
+      "consumer": "It tells a platform WHEN unit-level probability targeting strictly improves design-based precision over a single common probability — the observable degree-dispersion trigger for adopting the heterogeneous design."
+    },
+    {
+      "id": "thm:surrogate-certificate",
+      "kind": "theorem",
+      "statement": "Under ass:bounded-outcome-degree, which forces max_{i,j in O_n} |S_{ij}(G_n)| <= dbar, with the explicit constant C(epsilon, dbar) = max{1, epsilon^{-(dbar-1)}} depending only on epsilon and dbar, the observable approximation ratio of def:approximation-ratio satisfies alpha_cert(G_n) <= C(epsilon, dbar). The bound follows from a uniform sandwich, valid for every feasible p in P_{n,B_n,epsilon}, between the graph-only envelope V_env(G_n,p) of def:graph-envelope and the additive degree-surrogate objective sum_{k in I_n} h_k(G_n){p_k^{-1} + (1-p_k)^{-1}} minimized in def:surrogate-design, in which the per-pair product loads over the shared-neighborhood sets S_{ij}(G_n) are comparable to their additive per-coordinate counterparts up to a multiplicative factor controlled by the bounded shared-neighborhood size dbar and the positivity floor epsilon. This is the positive counterpart, in the paper's own sparse bounded-degree regime, of the negative first-order-summary answer proved in oeq:dispersion-certificate.",
+      "depends_on": [
+        "ass:bounded-outcome-degree",
+        "def:feasible-designs",
+        "def:graph-envelope",
+        "def:surrogate-design",
+        "def:approximation-ratio"
+      ],
+      "status": "to-prove",
+      "justification": "oeq:dispersion-certificate proves first-order dispersion summaries alone cannot bound the approximation ratio; the honest complementary question is whether the paper's own sparse bounded-degree regime yields a positive observable certificate.",
+      "gap": "No published result gives a constant-factor observable certificate for graph-only heterogeneous Bernoulli envelope design in bipartite experiments; oeq:dispersion-certificate settles only the negative first-order-summary direction.",
+      "consumer": "It licenses the fast additive degree-surrogate design rule, with a computable worst-case efficiency-loss factor, in the bounded-degree regime typical of large marketplace or recommender experiments."
+    },
+    {
+      "id": "lem:eta-local-dependence-and-bound",
+      "kind": "lemma",
+      "statement": "Under ass:independent-heterogeneous-bernoulli, ass:bounded-outcomes, ass:bounded-outcome-degree, and ass:bounded-overlap-dependency, for every p in P_{n,B_n,epsilon}, the variables eta_i(p,Z) are centered, uniformly bounded by 4 epsilon^{-dbar}, have dependency graph {i~j:S_{ij}(G_n)!=emptyset} of maximum degree at most Dbar, and Var_p(n^{-1/2} sum_i eta_i(p,Z)) = sigma_{G_n,p}^2(Y).",
+      "depends_on": [
+        "ass:independent-heterogeneous-bernoulli",
+        "ass:bounded-outcomes",
+        "ass:bounded-outcome-degree",
+        "ass:bounded-overlap-dependency",
+        "def:feasible-designs",
+        "def:first-order-linearization",
+        "def:variance-scale",
+        "lem:centered-potential-outcome-bound"
+      ],
+      "status": "to-prove",
+      "justification": "Supplies the centering, uniform bound, bounded-degree dependency graph, and variance scale that the dependency-graph CLT (thm:hetero-clt) consumes; the epsilon floor comes from p in P_{n,B_n,epsilon}, not a separate positivity assumption.",
+      "gap": "Supporting lemma for the heterogeneous Hajek CLT.",
+      "consumer": "thm:hetero-clt."
+    },
+    {
+      "id": "lem:hajek-denominator-concentration",
+      "kind": "lemma",
+      "statement": "Under ass:independent-heterogeneous-bernoulli, ass:bounded-outcome-degree, and ass:bounded-overlap-dependency, uniformly over p in P_{n,B_n,epsilon}, E_p[D_1(p,Z)] = E_p[D_0(p,Z)] = n, Var_p(D_1(p,Z)) = O(n), Var_p(D_0(p,Z)) = O(n), and D_1(p,Z)/n = 1 + O_p(n^{-1/2}), D_0(p,Z)/n = 1 + O_p(n^{-1/2}).",
+      "depends_on": [
+        "ass:independent-heterogeneous-bernoulli",
+        "ass:bounded-outcome-degree",
+        "ass:bounded-overlap-dependency",
+        "def:feasible-designs",
+        "def:hajek-denominators"
+      ],
+      "status": "to-prove",
+      "justification": "Denominator concentration for the heterogeneous Hajek ratio; the epsilon floor comes from p in P_{n,B_n,epsilon}.",
+      "gap": "Supporting lemma for the Hajek linearization.",
+      "consumer": "lem:hajek-linearization, thm:hetero-clt."
+    }
+  ],
+  "target_estimand": "tau_n = n^{-1} sum_{i in O_n} {Y_i(1_{N_i(G_n)}) - Y_i(0_{N_i(G_n)})}",
+  "estimand_functional": "hat_tau_H(p) = 1{D_1(p,Z) > 0}{sum_{i in O_n} T_i(Z) Y_i^obs / pi_i^1(p)} / D_1(p,Z) - 1{D_0(p,Z) > 0}{sum_{i in O_n} C_i(Z) Y_i^obs / pi_i^0(p)} / D_0(p,Z)",
+  "sampling_model": {
+    "design": "The graph G_n is observed before randomization. The researcher chooses p in P_{n,B_n,epsilon} using only G_n, then assigns Z_k independently as Bernoulli(p_k).",
+    "units": "Finite population with m_n intervention units and n outcome units linked by the known bipartite graph G_n.",
+    "treatment": "Binary intervention-unit treatment with heterogeneous Bernoulli probabilities p_k.",
+    "overlap": "The floor epsilon <= p_k <= 1-epsilon implies positive all-treated and all-control exposure probabilities for every outcome unit because max_{i in O_n} d_i <= dbar.",
+    "nuisance_estimation": "None. All randomness is from the assignment, every object entering the design criterion is observable from G_n before outcomes are realized, and the estimator uses the zero-denominator convention in def:hetero-hajek-estimator."
+  },
+  "bibliography": [
+    {
+      "key": "LuShiFangZhangDing2025BipartiteDesign",
+      "citation": "Lu, S., Shi, L., Fang, Y., Zhang, W., and Ding, P. (2025). Design-based causal inference in bipartite experiments. arXiv:2501.09844."
+    },
+    {
+      "key": "HarshawSavjeEisenstatMirrokniPougetAbadie2021BipartiteERL",
+      "citation": "Harshaw, C., Savje, F., Eisenstat, D., Mirrokni, V., and Pouget-Abadie, J. (2021). Design and analysis of bipartite experiments under a linear exposure-response model. arXiv:2103.06392."
+    },
+    {
+      "key": "Viviano2026NetworkDesign",
+      "citation": "Viviano, D. (2026). Experimental design under network interference. arXiv:2003.08421."
+    },
+    {
+      "key": "HarshawMiddletonSavje2021OptimizedVariance",
+      "citation": "Harshaw, C., Middleton, J. A., and Savje, F. (2024). Optimized variance estimation under interference and complex experimental designs. arXiv:2112.01709."
+    },
+    {
+      "key": "Leung2019ApproxNeighborhoodInterference",
+      "citation": "Leung, M. P. (2021). Causal inference under approximate neighborhood interference. arXiv:1911.07085."
+    },
+    {
+      "key": "AronowSamii2017GeneralInterference",
+      "citation": "Aronow, P. M. and Samii, C. (2017). Estimating average causal effects under general interference, with application to a social network experiment. Annals of Applied Statistics, 11(4), 1912-1947."
+    },
+    {
+      "key": "UganderKarrerBackstromKleinberg2013GraphClusterRandomization",
+      "citation": "Ugander, J., Karrer, B., Backstrom, L., and Kleinberg, J. (2013). Graph cluster randomization: network exposure to multiple universes. KDD / arXiv:1305.6979."
+    },
+    {
+      "key": "UganderYin2020RandomizedGCR",
+      "citation": "Ugander, J. and Yin, H. (2020). Randomized graph cluster randomization. arXiv:2009.02297."
+    },
+    {
+      "key": "ParkWager2026NeymanJackknife",
+      "citation": "Park, B. and Wager, S. (2026). Neyman Jackknife: design-based variance estimation for causal inference under interference. arXiv:2604.24017."
+    },
+    {
+      "key": "GaoDing2023NetworkRegression",
+      "citation": "Gao, M. and Ding, P. (2023). Regression adjustment for causal inference with network data. arXiv:2309.07476."
+    },
+    {
+      "key": "EichhornKhanUganderYu2024LowOrderClusteredDesigns",
+      "citation": "Eichhorn, M., Khan, S., Ugander, J., and Yu, C. L. (2024). A low-order characterization of optimal clustered experimental designs under interference. arXiv:2405.07979."
+    },
+    {
+      "key": "ChattopadhyayImaiZubizarreta2023GeneralizedNetwork",
+      "citation": "Chattopadhyay, A., Imai, K., and Zubizarreta, J. R. (2023). Design-based inference for generalized network experiments with stochastic interventions. arXiv:2312.03268."
+    },
+    {
+      "key": "DoudchenkoEtAl2020BipartiteDesign",
+      "citation": "Doudchenko, N., et al. (2020). Causal inference with bipartite designs. arXiv:2010.02108."
+    },
+    {
+      "key": "BrennanMirrokniPougetAbadie2022ClusterBipartite",
+      "citation": "Brennan, J., Mirrokni, V., and Pouget-Abadie, J. (2022). Cluster randomized designs for bipartite experiments. Advances in Neural Information Processing Systems (NeurIPS) 35."
+    }
+  ],
+  "comparator_promise_table": [
+    {
+      "comparator_bibkey": "LuShiFangZhangDing2025BipartiteDesign",
+      "comparator_claim": "Homogeneous Bernoulli(p) bipartite Hajek estimation, CLT, and conservative variance are established under sparse graph conditions.",
+      "matched_by": "thm:hetero-clt",
+      "match_kind": "strict_tightening"
+    },
+    {
+      "comparator_bibkey": "HarshawSavjeEisenstatMirrokniPougetAbadie2021BipartiteERL",
+      "comparator_claim": "A model-based ERL estimator and Exposure-Design heuristic are analyzed under a linear exposure-response model for bipartite experiments.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "Viviano2026NetworkDesign",
+      "comparator_claim": "A pilot-based one-mode network experiment is designed to minimize estimator variance and admits regret guarantees relative to an oracle design.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "HarshawMiddletonSavje2021OptimizedVariance",
+      "comparator_claim": "Conservative variance estimation under interference is formulated as a convex optimization over admissible quadratic upper bounds.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "Leung2019ApproxNeighborhoodInterference",
+      "comparator_claim": "Independent non-identical Bernoulli assignment can support IPW asymptotic normality under approximate neighborhood interference.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "AronowSamii2017GeneralInterference",
+      "comparator_claim": "Exposure-mapping IPW estimators, conservative variance formulas, and local-dependence asymptotics are available under general interference.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "UganderKarrerBackstromKleinberg2013GraphClusterRandomization",
+      "comparator_claim": "Graph-aware randomization can avoid interference variance blowups under explicit graph regimes for cluster-based designs.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "ParkWager2026NeymanJackknife",
+      "comparator_claim": "Conservative design-based variance estimation under interference can be built from recomputation-based rules across designs.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "ChattopadhyayImaiZubizarreta2023GeneralizedNetwork",
+      "comparator_claim": "Design-based inference is developed for generalized network experiments with stochastic interventions.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    }
+  ],
+  "tldr": "The proposal studies a bipartite experiment in which intervention units are independently assigned with heterogeneous Bernoulli probabilities chosen before outcomes are observed. The central object is an observable graph-only conservative asymptotic-variance envelope for the bipartite Hajek estimator under bounded all-treated and all-control potential outcomes. The rewritten construction uses the centered first-order Hajek linearization, fixes the cross-arm overlap sign, adds an explicit zero-denominator convention with a vanishing exceptional-event lemma, and rescales the variance object so the CLT has the correct sqrt(n) normalization. That repair yields an observable convex envelope-optimal design criterion under a budget and positivity floor, a correctly normalized non-identical-Bernoulli Hajek CLT, a pointwise conservative graph-only Wald procedure along nondegenerate sequences, and an honest open question on whether a low-dimensional observable surrogate design admits a constant-factor certificate under degree-dispersion conditions.",
+  "project_justification": {
+    "gap": "The direct anchor proves design-based bipartite Hajek inference only for a common Bernoulli(p), and it explicitly leaves richer assignment mechanisms to future work. Existing design papers under interference either optimize pilot-estimated precision in one-mode networks, rely on structural outcome models in bipartite settings, or optimize conservative variance bounds rather than the heterogeneous assignment law itself.",
+    "niche": "The open niche is a model-agnostic design theory for bipartite interference in which the graph is known ex ante, potential outcomes remain fixed apart from boundedness, and the intervention-unit propensity vector is the decision variable for a conservative precision envelope.",
+    "fill": "This project fills that niche by making the heterogeneous Bernoulli probability vector a first-class envelope-optimal design object, deriving a graph-only conservative variance envelope and its convex optimality conditions, and extending the Hajek CLT and conservative Wald theory to the optimized heterogeneous design."
+  },
+  "related_work": "Lu, Shi, Fang, Zhang, and Ding (2025) are the direct anchor: they formulate design-based bipartite Hajek inference under homogeneous Bernoulli randomization and explicitly identify richer assignment mechanisms as future work. Harshaw, Savje, Eisenstat, Mirrokni, and Pouget-Abadie (2021) study bipartite design and estimation under a linear exposure-response model, so their design problem is graph-aware but outcome-model dependent. Viviano (2026) optimizes one-mode network experiments using pilot-estimated variance and proves regret guarantees, which is the closest design-side proof template but for a different estimand, different randomization geometry, and a pilot-based rather than graph-only criterion. Harshaw, Middleton, and Savje (2024) show that conservative variance estimation under interference can be cast as a convex program over quadratic bounds, offering the right estimator-class perspective for the post-design standard-error problem but not an assignment-design result. Leung (2021) proves that independent non-identical Bernoulli assignment can coexist with asymptotically normal network IPW estimators under approximate neighborhood interference, which suggests feasibility of heterogeneous-probability inference but does not cover bipartite all-treated/all-control product exposures, Hajek denominators, or graph-chosen propensity vectors. Aronow and Samii (2017) provide the exposure-probability calculus and conservative design-based variance logic that underlies the overlap algebra here. Ugander et al. (2013), Ugander and Yin (2020), and Eichhorn et al. (2024) motivate the search for graph-observable tractability certificates by showing that graph structure can sharply alter interference precision under graph-aware designs. Park and Wager (2026) and Gao and Ding (2023) reinforce that interference-robust standard-error construction is design-specific and coverage can fail for convenient generic alternatives. Chattopadhyay, Imai, and Zubizarreta (2023) broaden design-based network inference to stochastic interventions, but they do not solve the envelope-optimal choice of intervention-unit probability vectors for the all-treated versus all-control bipartite effect.",
+  "honest_scope": "The heterogeneous conservative envelope, envelope-optimal design, corrected CLT normalization, explicit denominator convention with vanishing exceptional event, and pointwise conservative graph-only Wald theorem are posed as theorem-level targets. The observable constant-factor certificate for the low-dimensional surrogate remains the open-ended question.",
+  "novelty_justification": {
+    "repo_axis": "The closest in-catalogue comparator is exp_design_pm1_exactness_boundary_v1, which studies when a plus-minus-one covariance design attains an SDP relaxation optimum for a one-mode interference objective. Its focal object is implementability of a covariance matrix, not heterogeneous Bernoulli treatment probabilities in a bipartite Hajek problem. The other nearby repo object is the downgraded exp_ego_cluster_exposure_clt kernel, which the bank explicitly marks as subfield because it routed an exposure construction into an existing dependency-graph CLT without creating a new design object. The present kernel is different on both axes: the headline object is the envelope-optimal probability vector p_n^*(G_n), and the CLT is supporting theory for a new design criterion rather than the headline itself.",
+    "published_axis": "The closest published result is LuShiFangZhangDing2025BipartiteDesign, which proves homogeneous Bernoulli(p) bipartite Hajek inference and names heterogeneous probabilities as future work. The precise gap is the absence of any graph-only conservative envelope and any envelope-optimal heterogeneous assignment rule under bounded potential outcomes. Viviano2026NetworkDesign is the closest design analogue, but its oracle criterion is pilot-estimated one-mode variance for a different class of estimators and therefore does not subsume the model-agnostic bipartite all-treated/all-control envelope-design problem. HarshawSavjeEisenstatMirrokniPougetAbadie2021BipartiteERL and ChattopadhyayImaiZubizarreta2023GeneralizedNetwork broaden the bipartite toolkit, but neither supplies the design-based heterogeneous-Hajek envelope-optimal-design-plus-Wald package targeted here."
+  },
+  "literature_checklist": [
+    {
+      "author": "Lu et al.",
+      "year": 2025,
+      "venue": "arXiv",
+      "bibkey": "LuShiFangZhangDing2025BipartiteDesign",
+      "one_line": "Homogeneous Bernoulli bipartite Hajek estimation, CLT, conservative variance, and covariate adjustment are established under sparse graph conditions.",
+      "relevant_to": "thm:hetero-clt"
+    },
+    {
+      "author": "Viviano",
+      "year": 2026,
+      "venue": "arXiv",
+      "bibkey": "Viviano2026NetworkDesign",
+      "one_line": "A two-wave network experiment can be designed to minimize estimator variance using pilot information, with regret guarantees relative to an oracle design.",
+      "relevant_to": "thm:convex-design"
+    },
+    {
+      "author": "Harshaw et al.",
+      "year": 2021,
+      "venue": "arXiv",
+      "bibkey": "HarshawSavjeEisenstatMirrokniPougetAbadie2021BipartiteERL",
+      "one_line": "Bipartite ERL estimation and Exposure-Design are analyzed under a linear exposure-response model.",
+      "relevant_to": "thm:hetero-envelope"
+    },
+    {
+      "author": "Harshaw et al.",
+      "year": 2024,
+      "venue": "arXiv",
+      "bibkey": "HarshawMiddletonSavje2021OptimizedVariance",
+      "one_line": "Conservative variance estimation under interference can be optimized over admissible quadratic bounds via convex programming.",
+      "relevant_to": "thm:postdesign-wald"
+    },
+    {
+      "author": "Leung",
+      "year": 2021,
+      "venue": "arXiv",
+      "bibkey": "Leung2019ApproxNeighborhoodInterference",
+      "one_line": "Independent non-identical Bernoulli assignment supports IPW consistency and asymptotic normality under approximate neighborhood interference.",
+      "relevant_to": "thm:hetero-clt"
+    },
+    {
+      "author": "Aronow and Samii",
+      "year": 2017,
+      "venue": "AoAS",
+      "bibkey": "AronowSamii2017GeneralInterference",
+      "one_line": "Exposure mappings, joint exposure probabilities, conservative design-based variance estimation, and local-dependence asymptotics are available under general interference.",
+      "relevant_to": "thm:hetero-envelope"
+    },
+    {
+      "author": "Ugander et al.",
+      "year": 2013,
+      "venue": "KDD",
+      "bibkey": "UganderKarrerBackstromKleinberg2013GraphClusterRandomization",
+      "one_line": "Graph-aware cluster randomization can reduce interference variance and motivates graph-regime tractability conditions.",
+      "relevant_to": "oeq:dispersion-certificate"
+    },
+    {
+      "author": "Park and Wager",
+      "year": 2026,
+      "venue": "arXiv",
+      "bibkey": "ParkWager2026NeymanJackknife",
+      "one_line": "Conservative design-based variance estimation under interference can be built from estimator recomputation rules.",
+      "relevant_to": "thm:postdesign-wald"
+    }
+  ]
+}

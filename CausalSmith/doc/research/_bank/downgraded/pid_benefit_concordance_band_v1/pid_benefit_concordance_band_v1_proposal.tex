@@ -1,0 +1,403 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_benefit\_concordance\_band, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_core.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_benefit\_concordance\_band} / \texttt{v1}%
+  \\ \large\textit{Sharp Spearman-band bounds and majority-sign thresholds for the probability of benefit}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Partial-identification anchor.  The locked tuple is
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\mathcal R_{\rho},\mathcal B_{\rho}(P)).
+\]
+Here \(\texttt{qid}=\texttt{pid\_benefit\_concordance\_band}\) and \(\texttt{specialization}=\texttt{v1}\).  \(P\) is the observed law of \((Y,D,X)\) from a randomized or unconfounded binary-treatment design, with continuously distributed potential-outcome marginals \(F_1(\cdot\mid X=x)\) and \(F_0(\cdot\mid X=x)\) identified from \(P\).  The target parameter is the unconditional probability of benefit
+\[
+\theta=\Pr(Y_1>Y_0)=\E\{\Pr(Y_1>Y_0\mid X)\}.
+\]
+The identifying restrictions are consistency, positivity, unconfoundedness conditional on \(X\), continuity of the potential-outcome marginals, and a rank-concordance band on the conditional potential-outcome copula: for almost every \(x\), the Spearman concordance \(\rho_S(C_x)\) lies in \(\mathcal R_{\rho}=[\rho_-,\rho_+]\subset[-1,1]\).  The bounding functional \(\mathcal B_{\rho}(P)=[L_{\rho}(P),U_{\rho}(P)]\) is obtained by taking the conditional infimum and supremum of \(\int \one\{Q_1(u\mid x)>Q_0(v\mid x)\}\,dC_x(u,v)\) over all copulas \(C_x\) with uniform margins and \(\rho_S(C_x)\in[\rho_-,\rho_+]\), then integrating over \(X\).  The sharp object is the closure of the integrated feasible value set; no parametric copula family, ordinal threshold model, regression specification, or endpoint-attaining selector is locked.
+
+\begin{abstract}
+The probability that a treatment benefits an individual, \(\Pr(Y_1>Y_0)\), is not identified from the marginal potential-outcome distributions.  Fan and Park's Makarov bounds solve the copula-free continuous-outcome problem, and their earlier confidence-set paper treats randomized experiments with a known dependence measure.  Recent rank-based and ordinal copula work obtains point identification by imposing a Bregman--Sinkhorn rank-stickiness construction or by fixing a parametric ordinal copula family.  This proposal asks for the closure-sharp continuous-outcome value set when the researcher supplies an interpretable Spearman rank-concordance band, \(\rho_S(C)\in[\rho_-,\rho_+]\), rather than a point-identifying rank-stickiness rule, a single known dependence value, or a copula family.  The kernel is the primitive closure envelope for the strict benefit functional and a computable weak-duality outer bound; the remaining open step is the no-gap constrained-transport duality for the strict indicator.  The proposal also records the outer-envelope majority-sign diagnostic and plug-in endpoint estimators needed for Imbens--Manski and Stoye interval inference.
+\end{abstract}
+
+\section{Introduction}
+Many biomedical and social-science evaluations ask whether treatment benefits most individuals, not only whether it raises the mean.  For continuous outcomes this question is the inequality probability \(\Pr(Y_1>Y_0)\), a functional of the joint distribution of the two potential outcomes.  The marginal distributions are identified in randomized or unconfounded designs, but the copula is not.  A rank-concordance band is a natural sensitivity primitive because it fixes the scale of dependence without fixing the copula family.
+
+The closest published continuous-outcome benchmarks are \citet[pp.~3--70]{FanPark2009DTEConfidenceSets}, who study DTE bounds and confidence sets when a randomized experiment supplies a known dependence measure, and \citet[pp.~931--951]{FanPark2010DTEBounds}, who give sharp Makarov bounds when the copula is unrestricted.  The closest rank-based point-identification benchmark is \citet{Liang2026RankStickiness}, who identifies continuous treatment-effect distributions through a Bregman--Sinkhorn copula pinned down by rank stickiness; the closest benefit-probability copula benchmark is \citet{HeLi2026OrdinalCopula}, who identify ordinal benefit estimands by fixing a parametric copula and varying a one-dimensional association parameter.  The gap is a partial-identification theorem for the threshold-zero benefit functional under a nonparametric Spearman band, with the closure of the integrated feasible value set and its weak-duality envelope written as constrained transport objects rather than as a fixed dependence value, a rank-stickiness point-identifying construction, or a family curve.  The kernel lives in PartialID: it is the closure-sharp identified set for \(\theta=\Pr(Y_1>Y_0)\) over all Spearman-rank-constrained copulas, together with the no-gap duality conjecture needed to turn the weak envelope into computable exact endpoints.
+
+The immediate consumer is Mullahy's inequality-probability analysis of health-outcome treatment effects \citep{Mullahy2018InequalityProbability}.  Those applications can report whether the majority-benefit conclusion is certified by every copula in a prespecified Spearman range, rather than comparing only the marginal-only interval with a few parametric copula curves.  A reader would replace a family-indexed sensitivity curve by a concordance-band endpoint report and an explicit statement of whether the majority sign is certified or only outer-envelope indeterminate.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: The sharp identified set is the closure of the integrated feasible value set; \(L_\rho(P)\) and \(U_\rho(P)\) are primal infimum and supremum envelope values, and the transport duals give weak-duality outer bounds without asserting endpoint attainment.  Gap: \citet{FanPark2009DTEConfidenceSets} uses a known dependence measure, \citet{FanPark2010DTEBounds} is copula-free, \citet{Liang2026RankStickiness} gives point identification through a Bregman--Sinkhorn rank-stickiness copula, \citet{HeLi2026OrdinalCopula} is parametric-copula, and \citet{BartlKupperLuxPapapantoleon2022Dependence} studies non-causal dependence uncertainty; none states the causal closure envelope for a strict benefit event over a Spearman band.  Consumer: health-outcome inequality probabilities in \citet{Mullahy2018InequalityProbability}.
+\item Conjecture 1: The weak-duality bounds in Theorem 1 have no gap for bounded Borel strict-indicator benefit costs under the Spearman moment band.  Gap: \citet{Kellerer1984Duality} supplies the marginal-problem template, but the strict-indicator causal benefit functional with a rank-moment inequality needs its own strong-duality verification.  Consumer: computable concordance-band endpoint reports for \citet{Mullahy2018InequalityProbability}.
+\item Theorem 2: The benefit-majority sign is certified when \(1/2\) is outside the Spearman-band outer envelope and is outer-envelope indeterminate when the envelope straddles \(1/2\).  Gap: \citet{FirpoRidder2019Functionals} warns that functionals need direct bounds, but gives no concordance-band majority diagnostic.  Consumer: the incidence-of-benefit health-evaluation reports in \citet{Mullahy2018InequalityProbability}.
+\item Theorem 3: For finite covariate support, cellwise quantile-grid plug-in transport estimators converge to the Spearman-band endpoints under an explicit grid-bias and quantile-rate regime.  Gap: \citet{FanPark2010DTEBounds} estimates closed-form Makarov endpoints; the rank-moment transport endpoint needs a sieve approximation argument.  Consumer: randomized health-outcome fraction-who-benefit analyses of the kind studied by \citet{HuangFangHanleyRosenblum2019FractionBenefit}.
+\item Conjecture 2: An \(m\)-out-of-\(n\) bootstrap consistently estimates the directional endpoint law under stable dual faces and a root-\(n\) local sieve-remainder condition, giving the input needed for Imbens--Manski/Stoye intervals.  Gap: \citet{ImbensManski2004PartialCI} and \citet{Stoye2009MoreCI} require endpoint limit theory as input.  Consumer: interval-identified treatment-effect reporting in \citet{Mullahy2018InequalityProbability} and the uniform interval workflow of \citet{Stoye2009MoreCI}.
+\end{itemize}
+
+\section{Related work}
+\citet{FanPark2009DTEConfidenceSets} is the closest dependence-measure benchmark: it studies DTE bounds and confidence sets for randomized experiments when a dependence measure is known, whereas this proposal treats a Spearman interval and the threshold-zero benefit functional.  \citet{FanPark2010DTEBounds} is the main copula-free continuous-outcome benchmark because it gives sharp Makarov bounds for the treatment-effect distribution from identified marginals and develops nonparametric endpoint inference.  \citet{Liang2026RankStickiness} is the closest rank-based continuous-DTE comparator because it point-identifies the joint potential-outcome law through rank stickiness and a Bregman--Sinkhorn copula; this proposal instead leaves the copula set-valued and asks for the closure envelope over a Spearman band.  \citet{ZhangRichardson2025Kolmogorov} revisits the Kolmogorov--Makarov problem and shows that sharpness and achievability are delicate even before adding rank restrictions.  \citet{FirpoRidder2019Functionals} shows that pointwise treatment-effect CDF bounds do not automatically deliver sharp bounds for functionals, which is why \(\Pr(Y_1>Y_0)\) is bounded directly here.  \citet{HeLi2026OrdinalCopula} is the closest modern probability-of-benefit copula paper, but it fixes a parametric copula for ordinal outcomes instead of optimizing over continuous-outcome copulas satisfying a Spearman band.  \citet{Mullahy2018InequalityProbability} motivates the applied target by framing probabilities such as \(Y_1>Y_0\) as directly interpretable health-evaluation parameters.  \citet{HuangFangHanleyRosenblum2019FractionBenefit} gives a finite ordinal or binary fraction-who-benefit inference target that would use continuous Spearman-band endpoint reports when outcomes are measured on a finer scale.  \citet{FanGuerreZhu2017POFunctionals} studies broader functionals of the joint potential-outcome distribution and shows how covariates can shrink identified sets.  \citet{FrandsenLefgren2021KIPP} is the closest econometric use of nonparametric dependence restrictions to sharpen treatment-effect distribution bounds.  \citet{Kellerer1984Duality} supplies the transport-duality template for optimizing a linear functional over couplings with marginal and moment constraints.  \citet{BartlKupperLuxPapapantoleon2022Dependence} is the closest non-causal dependence-uncertainty comparator because it studies Frechet classes with additional joint information through optimal transport duality; the present proposal fixes causal potential-outcome marginals and targets the benefit event under a Spearman rank moment.  \citet{ImbensManski2004PartialCI} and \citet{Stoye2009MoreCI} give the interval-identification inference logic that becomes applicable after endpoint limit theory is available.
+
+The closest in-repository prior art is \texttt{pid\_gpn\_continuous\_rho}, which introduced fixed-rho continuous GPN envelope notation and an inverse \(\rho_\star\) language but recorded that sharpness was not proved.  The failed \texttt{pid\_ot\_dte\_marginal} run is useful as a warning that local support-function reports can fail to paste into one sharp joint law.  The failed \texttt{pid\_bound\_intersection\_inference} run warns against generic bootstrap or active-set claims unless a concrete calibration rule is tied to the endpoint map.  The catalogue note in \texttt{doc/API.md} places new \texttt{pid\_*} work in \texttt{CausalSmith/PartialID/} until promoted.
+
+\paragraph{Exemplars.}
+Writing exemplar: \citet{HeLi2026OrdinalCopula}, arXiv:2605.11415; the introduction mirrors its arc from probability of benefit, to unidentified joint potential outcomes, to copula sensitivity, then pivots from fixed parametric copulas to a nonparametric Spearman band.  Conjecture 1 and Theorem 1: \citet{FanPark2009DTEConfidenceSets} (dependence-measure benchmark, DOI 10.1108/S0731-9053(2009)0000025004), \citet{FanPark2010DTEBounds} (identification, DOI 10.1017/S0266466609990168), \citet{Liang2026RankStickiness} (rank-based point identification, DOI 10.48550/arXiv.2604.21548), \citet{Kellerer1984Duality} (identification, DOI 10.1007/BF00532047), and \citet{BartlKupperLuxPapapantoleon2022Dependence} (dependence uncertainty, DOI 10.1137/21M144709X) -- the Makarov endpoint and coupling-duality arguments are adapted by replacing a known dependence value or Bregman--Sinkhorn point-identifying copula with a Spearman band and by targeting the causal benefit event.  Theorem 2: \citet{FirpoRidder2019Functionals} (identification, DOI 10.1016/j.jeconom.2019.04.012) -- the direct-functional bounding discipline is carried over to a majority-sign threshold.  Theorem 3 and Conjecture 2: \citet{FanPark2010DTEBounds} and \citet{Stoye2009MoreCI} (estimation/inference, DOI 10.3982/ECTA7347) -- plug-in endpoint asymptotics and interval-width-aware confidence intervals are adapted to the constrained transport endpoint.
+
+\section{Formal setup}
+Let \(D\in\{0,1\}\), let \(Y=DY_1+(1-D)Y_0\), and let \(X\) be a vector of pretreatment covariates.  Under the assumptions in Section~\ref{sec:assumptions}, the conditional marginal laws \(F_d(y\mid x)=\Pr(Y_d\le y\mid X=x)\) are identified by the observed law \(P\).  Write \(Q_d(u\mid x)=\inf\{y:F_d(y\mid x)\ge u\}\) for \(u\in(0,1)\).  A conditional copula \(C_x\) is represented equivalently by a probability measure \(\gamma_x\) on \([0,1]^2\) with uniform margins; drawing \((U,V)\sim\gamma_x\) gives \((Y_1,Y_0)=(Q_1(U\mid x),Q_0(V\mid x))\).
+
+For a copula measure \(\gamma\), define
+\[
+\rho_S(\gamma)=12\int_{[0,1]^2}uv\,d\gamma(u,v)-3.
+\]
+Let \(a_-=(\rho_-+3)/12\) and \(a_+=(\rho_++3)/12\).  For each \(x\), define the benefit kernel
+\[
+h_x(u,v)=\one\{Q_1(u\mid x)>Q_0(v\mid x)\}.
+\]
+The conditional feasible set is
+\[
+\Gamma_x(\rho_-,\rho_+)=\left\{\gamma\in\Pi(\lambda,\lambda):a_-\le \int uv\,d\gamma(u,v)\le a_+\right\},
+\]
+where \(\Pi(\lambda,\lambda)\) is the set of probability measures on \([0,1]^2\) with both margins equal to Lebesgue measure.  The conditional primal envelope values are
+\[
+L_x(P)=\inf_{\gamma\in\Gamma_x(\rho_-,\rho_+)}\int h_x\,d\gamma,\qquad
+U_x(P)=\sup_{\gamma\in\Gamma_x(\rho_-,\rho_+)}\int h_x\,d\gamma,
+\]
+and the unconditional envelope functional is \(\mathcal B_\rho(P)=[L_\rho(P),U_\rho(P)]\) with \(L_\rho(P)=\E\{L_X(P)\}\) and \(U_\rho(P)=\E\{U_X(P)\}\).  The sharp identified object is the closure of the integrated feasible value set
+\[
+\Theta_I(P)=\operatorname{cl}\left\{\int\left(\int h_x\,d\gamma_x\right)dP_X(x):
+x\mapsto\gamma_x\in\Gamma_x(\rho_-,\rho_+)\text{ is an admissible measurable selection}\right\}.
+\]
+Theorem~\ref{thm:k-sharp-dual-confirmed} records the closure envelope and the weak-duality outer bound; Conjecture~\ref{conj:sharp-dual} is the no-gap duality step.  In the no-covariate specialization, \(X\) is degenerate and the expectation over \(X\) is suppressed.
+
+For a bounded Borel cost \(c\), define the lower transport dual value
+\[
+D_x(c)=\sup_{\alpha,\beta,\lambda_-,\lambda_+}
+\left\{\int_0^1\alpha(u)\,du+\int_0^1\beta(v)\,dv+\lambda_-a_- - \lambda_+a_+\right\},
+\]
+where \(\lambda_-,\lambda_+\ge0\) and
+\[
+\alpha(u)+\beta(v)\le c(u,v)+(\lambda_+-\lambda_-)uv
+\quad\text{for all }(u,v)\in[0,1]^2.
+\]
+Weak duality gives \(D_x(h_x)\le L_x(P)\) and \(U_x(P)\le -D_x(-h_x)\).  Equality is not asserted without the no-gap conjecture.
+
+For a scalar \(\rho\), write \(L_x(\rho;P)\) and \(U_x(\rho;P)\) for the conditional envelope values with \(a_- = a_+ =(\rho+3)/12\), and write \(L(\rho;P)=\E\{L_X(\rho;P)\}\), \(U(\rho;P)=\E\{U_X(\rho;P)\}\).  The pointwise common-rho critical majority set is
+\[
+\mathcal R_{1/2}(P)=\{\rho\in[-1,1]:L(\rho;P)\le 1/2\le U(\rho;P)\}.
+\]
+For a band \(R\subset[-1,1]\), define the band envelopes
+\[
+L_R(P)=\E\left\{\inf_{\rho\in R}L_X(\rho;P)\right\},\qquad
+U_R(P)=\E\left\{\sup_{\rho\in R}U_X(\rho;P)\right\},
+\]
+and the band-critical collection
+\[
+\mathcal A_{1/2}(P)=\{R\subset[-1,1]:L_R(P)\le 1/2\le U_R(P)\}.
+\]
+The sign of the majority-benefit claim is certified on \(R\) if either \(L_R(P)>1/2\) or \(U_R(P)<1/2\).  If \(L_R(P)\le1/2\le U_R(P)\), the sign is indeterminate at the outer-envelope level; this statement does not assert feasible laws on both sides of the boundary.  The pointwise set \(\mathcal R_{1/2}(P)\) need not characterize band-level ambiguity because the lower and upper envelope crossings may occur at different \(\rho\)'s or in different covariate cells.  When \(X\) is degenerate, \(L_R(P)=\inf_{\rho\in R}L(\rho;P)\) and \(U_R(P)=\sup_{\rho\in R}U(\rho;P)\).
+
+For inference, let \(\eta(P)\) collect the finite-cell marginal probabilities, conditional quantile functions, and cell masses, and let \(\Phi_\rho(\eta)=(L_\rho(\eta),U_\rho(\eta))\).  Let \(\Phi_{\rho,K}(\eta)=(L_{\rho,K}(\eta),U_{\rho,K}(\eta))\) denote the checkerboard rank-grid version.
+
+\begin{quote}
+\begin{verbatim}
+Locked parameters.
+Partial-identification anchor:
+(qid, specialization, P, theta, R_rho, B_rho(P)).
+qid = pid_benefit_concordance_band.
+specialization = v1.
+P = observed law of (Y,D,X) identifying continuous potential-outcome marginals.
+theta = Pr(Y1 > Y0).
+R_rho = [rho_minus,rho_plus] subset [-1,1], a Spearman copula band.
+B_rho(P) = [L_rho(P), U_rho(P)], the primal infimum/supremum envelope
+over all copulas with uniform margins and Spearman rho in R_rho; the sharp
+object is the closure of the integrated feasible value set, and no endpoint
+attaining selector or parametric copula family is locked.
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}\label{sec:assumptions}
+\begin{assumption}[Sampling and consistency]\label{ass:sampling}
+The observed data are i.i.d. draws of \(O=(Y,D,X)\), \(Y=DY_1+(1-D)Y_0\), and SUTVA holds.  This is the standard potential-outcome setup used by \citet{FanPark2010DTEBounds} and \citet{HeLi2026OrdinalCopula}.
+\end{assumption}
+
+\begin{assumption}[Unconfoundedness and overlap]\label{ass:unconf}
+\((Y_1,Y_0)\perp D\mid X\) and \(0<\Pr(D=1\mid X=x)<1\) for almost every \(x\).  This is the Rosenbaum--Rubin condition used in \citet{FanPark2010DTEBounds} for covariate-adjusted DTE bounds and in \citet{HeLi2026OrdinalCopula} for copula-based benefit estimands.
+\end{assumption}
+
+\begin{assumption}[Continuous marginals]\label{ass:continuous}
+For almost every \(x\), \(F_1(\cdot\mid x)\) and \(F_0(\cdot\mid x)\) are continuous and strictly increasing on compact supports, with densities bounded above and below on their supports.  This specializes the continuous-outcome convention in \citet{FanPark2010DTEBounds}; it avoids the tie and subcopula nonuniqueness emphasized by \citet{ZhangRichardson2025Kolmogorov}.
+\end{assumption}
+
+\begin{assumption}[Spearman band]\label{ass:band}
+For almost every \(x\), the conditional copula measure \(\gamma_x\) of \((Y_1,Y_0)\mid X=x\) has uniform margins and satisfies \(\rho_S(\gamma_x)\in[\rho_-,\rho_+]\), where \(-1<\rho_-\le\rho_+<1\).  This replaces the fixed parametric copula condition in \citet{HeLi2026OrdinalCopula} with a nonparametric rank-moment restriction.
+\end{assumption}
+
+\begin{assumption}[Endpoint regularity]\label{ass:regular}
+For almost every \(x\), the set \(\{(u,v):Q_1(u\mid x)=Q_0(v\mid x)\}\) has zero Lebesgue measure and no horizontal or vertical segment of positive length.  The normalized dual feasible classes for the lower and upper Spearman-band programs are uniformly bounded after the usual additive-location normalization.  This is a primitive stability variant of the active-set regularity used for nonregular bound estimators in \citet{FanPark2010DTEBounds} and \citet{Stoye2009MoreCI}.
+\end{assumption}
+
+\begin{assumption}[Stable dual faces for endpoint inference]\label{ass:stable-dual}
+For Conjecture~\ref{conj:inference}, the normalized dual optimizer set for each endpoint is locally constant along \(n^{-1/2}\)-neighborhoods of the marginal quantile laws and the Spearman-band endpoints are directionally Hadamard differentiable tangentially to the empirical quantile process.  Equivalently, the active dual inequalities and the binding status of the two Spearman moment constraints do not change under local alternatives in the stated finite-cell regime.  This is the stable-face condition used in directional delta-method analyses of convex-program values, adapted to the nonregular endpoint setting of \citet{FanPark2010DTEBounds} and the interval-width calibration of \citet{Stoye2009MoreCI}.
+\end{assumption}
+
+\begin{assumption}[Finite-cell estimation regime]\label{ass:finite-cell}
+For Theorem~\ref{thm:sieve-consistency}, \(X\) has finite support \(\mathcal X=\{x_1,\ldots,x_J\}\), \(\Pr(X=x_j)>0\), and treatment propensities in every cell are bounded away from zero and one.  Cellwise empirical quantiles satisfy
+\[
+\max_{d\in\{0,1\}}\max_{j\le J}\max_{\ell\le K_n}
+\left|\widehat Q_d(u_\ell\mid x_j)-Q_d(u_\ell\mid x_j)\right|=o_p(1),
+\quad u_\ell=\ell/(K_n+1),
+\]
+with \(\log K_n/n\to0\).  The deterministic checkerboard endpoints \(L_{\rho,K}(P),U_{\rho,K}(P)\) defined by replacing \([0,1]^2\) with the \(K\times K\) rank grid satisfy \(|L_{\rho,K}(P)-L_\rho(P)|+|U_{\rho,K}(P)-U_\rho(P)|=b_K\to0\).  For Conjecture~\ref{conj:inference}, the same checkerboard approximation satisfies the root-\(n\) local remainder condition
+\[
+\sup_{\|\eta-\eta(P)\|\le M n^{-1/2}}
+\|\{\Phi_{\rho,K_n}(\eta)-\Phi_\rho(\eta)\}
+-\{\Phi_{\rho,K_n}(\eta(P))-\Phi_\rho(\eta(P))\}\|=o(n^{-1/2})
+\]
+for every fixed \(M<\infty\).  This is the finite-cell analogue of the empirical endpoint and sieve-approximation conditions used by \citet{FanPark2010DTEBounds}, strengthened locally for the directional delta method.
+\end{assumption}
+
+\section{Main results}
+\begin{definition}[Spearman-band transport envelope]\label{def:endpoints}
+Under Assumptions~\ref{ass:sampling}--\ref{ass:band}, \(L_\rho(P)\) and \(U_\rho(P)\) are the integrated envelope values in Section~6.  A feasible latent law is any regular conditional distribution of \((Y_1,Y_0)\mid X=x\) generated by an admissible measurable selection \(x\mapsto \gamma_x\in\Gamma_x(\rho_-,\rho_+)\).
+\end{definition}
+
+\begin{theorem}[Theorem 1: closure-sharp primal envelope]\label{thm:k-sharp-dual-confirmed}
+Under Assumptions~\ref{ass:sampling}--\ref{ass:band}, for each \(x\) define \(L_x(P)\) and \(U_x(P)\) over \(\Gamma_x(\rho_-,\rho_+)\) as in Section~6, and let \(L_\rho(P)=\int L_x(P)\,dP_X(x)\), \(U_\rho(P)=\int U_x(P)\,dP_X(x)\).  Then the sharp identified set is the closure of the integrated feasible value set,
+\[
+\Theta_I(P)=\operatorname{cl}\left\{\int\left(\int h_x\,d\gamma_x\right)dP_X(x):
+x\mapsto\gamma_x\in\Gamma_x(\rho_-,\rho_+)\text{ is an admissible measurable selection}\right\},
+\]
+and \(\Theta_I(P)\subseteq[L_\rho(P),U_\rho(P)]\).  The values \(L_x(P)\) and \(U_x(P)\) are infima and suprema that need not be attained.  No measurable argmax or argmin selector is asserted.  The dual functionals furnish the weak-duality outer bounds
+\[
+D_x(h_x)\le L_x(P),\qquad U_x(P)\le -D_x(-h_x),
+\]
+with the corresponding integrated inequalities for \(\Theta_I(P)\).
+\end{theorem}
+This is supporting field-tier content: it is the canonical partial-identification statement for the same focal object and cannot be promoted to the no-gap computable endpoint claim without Conjecture~\ref{conj:sharp-dual}.  The proof is by Sklar representation, conditional feasible-set inclusion, closure under admissible measurable selections, and weak duality for the marginal problem with two Spearman moment multipliers.
+
+\begin{conjecture}[Conjecture 1: no-gap Spearman-band transport duality]\label{conj:sharp-dual}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:sampling}--\ref{ass:regular}, the weak-duality inequalities in Theorem~\ref{thm:k-sharp-dual-confirmed} are equalities:
+\[
+L_x(P)=D_x(h_x),\qquad U_x(P)=-D_x(-h_x)
+\]
+for almost every \(x\), and hence the integrated dual values equal \(L_\rho(P)\) and \(U_\rho(P)\).  The conjecture does not assert endpoint attainment; it asserts strong duality for the bounded Borel strict-indicator cost \(h_x\) under the uniform-margin and Spearman-band constraints.
+\end{conjecture}
+The intended proof is a constrained-transport no-gap theorem for bounded Borel strict-indicator costs, using Kellerer-style marginal duality with moment-inequality multipliers and lower/upper semicontinuous envelopes of \(h_x\).
+
+\begin{theorem}[Theorem 2: majority sign as an outer-envelope diagnostic]\label{thm:critical-set}
+Under Assumptions~\ref{ass:sampling}--\ref{ass:band}, a band \(R=[\rho_-,\rho_+]\) certifies a strict benefit majority if \(L_R(P)>1/2\), and certifies a strict nonmajority if \(U_R(P)<1/2\).  If
+\[
+L_R(P)\le 1/2\le U_R(P),
+\]
+then the majority-benefit sign is indeterminate at the outer-envelope level.
+\end{theorem}
+The one-sided certification follows because \(\Theta_I(P)\subseteq[L_R(P),U_R(P)]\).  The straddling case is only an outer-envelope statement; it does not claim a feasible selector at or across \(1/2\).
+
+\begin{definition}[Quantile-grid endpoint estimator]\label{def:estimator}
+In the finite-cell regime of Assumption~\ref{ass:finite-cell}, let \(\widehat p_j=n^{-1}\sum_i\one\{X_i=x_j\}\) and let \(\widehat Q_d(u_\ell\mid x_j)\) be the empirical \(u_\ell\)-quantile among observations with \(D=d,X=x_j\).  For each cell \(x_j\), define \(\widehat L_{j,K}\) as the value of the finite program
+\[
+\min_{\pi\in\R_+^{K\times K}}\sum_{\ell,m=1}^K
+\one\{\widehat Q_1(u_\ell\mid x_j)>\widehat Q_0(u_m\mid x_j)\}\pi_{\ell m}
+\]
+subject to
+\[
+\sum_m\pi_{\ell m}=1/K,\quad \sum_\ell\pi_{\ell m}=1/K,\quad
+a_-\le\sum_{\ell,m}u_\ell u_m\pi_{\ell m}\le a_+ .
+\]
+Define \(\widehat U_{j,K}\) by replacing the minimum with a maximum and set
+\[
+\widehat L_\rho=\sum_{j=1}^J\widehat p_j\widehat L_{j,K_n},\qquad
+\widehat U_\rho=\sum_{j=1}^J\widehat p_j\widehat U_{j,K_n}.
+\]
+\end{definition}
+
+\begin{theorem}[Theorem 3: sieve consistency of endpoint estimators]\label{thm:sieve-consistency}
+Under Assumptions~\ref{ass:sampling}--\ref{ass:regular} and \ref{ass:finite-cell}, if \(K_n\to\infty\), then \((\widehat L_\rho,\widehat U_\rho)\to_p(L_\rho(P),U_\rho(P))\).
+\end{theorem}
+The proof first shows \((\widehat L_\rho,\widehat U_\rho)-(L_{\rho,K_n}(P),U_{\rho,K_n}(P))=o_p(1)\) by finite-cell empirical quantile consistency and continuity of finite LP values away from the zero-boundary-mass set.  The deterministic checkerboard bias \(b_{K_n}\to0\) then closes the argument, and the rank-moment constraint is continuous because \(uv\) is bounded.
+
+\begin{conjecture}[Conjecture 2: plug-in endpoint law]\label{conj:inference}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:sampling}--\ref{ass:regular}, \ref{ass:stable-dual}, and \ref{ass:finite-cell}, if \(b_{K_n}=o(n^{-1/2})\), the root-\(n\) local sieve remainder in Assumption~\ref{ass:finite-cell} holds, \(\log K_n/n\to0\), and \(m_n\to\infty\) with \(m_n/n\to0\), then \(\sqrt n(\widehat L_\rho-L_\rho(P),\widehat U_\rho-U_\rho(P))\) converges to a directional endpoint limit law and the \(m_n\)-out-of-\(n\) bootstrap estimates it consistently.
+\end{conjecture}
+This law is the input needed to run the Imbens--Manski/Stoye critical-value equation for a confidence interval for the true \(\theta\).
+
+\section{Sanity-check corollaries}
+If the closed limiting band is \([\rho_-,\rho_+]=[-1,1]\), then the moment constraint is vacuous and Theorem~\ref{thm:k-sharp-dual-confirmed} reduces to the closure form of the Fan--Park/Makarov copula-free benefit envelope at threshold zero:
+\[
+L_\rho(P)=\inf_{\gamma\in\Pi(\lambda,\lambda)}\int h\,d\gamma,\qquad
+U_\rho(P)=\sup_{\gamma\in\Pi(\lambda,\lambda)}\int h\,d\gamma.
+\]
+The arithmetic is explicit.  For the countermonotone copula \(V=1-U\),
+\[
+\E[UV]=\int_0^1u(1-u)\,du=\frac12-\frac13=\frac16,\qquad
+\rho_S=12\cdot\frac16-3=-1.
+\]
+For the comonotone copula \(V=U\),
+\[
+\E[UV]=\int_0^1u^2\,du=\frac13,\qquad
+\rho_S=12\cdot\frac13-3=1.
+\]
+Thus every copula has \(\int uv\,d\gamma\in[1/6,1/3]\), so the band \([-1,1]\) imposes \(a_-=1/6\) and \(a_+=1/3\), the full feasible range.  The standing Assumption~\ref{ass:band} uses interior bands; the unrestricted benchmark is the limit as \(\rho_-\downarrow-1\) and \(\rho_+\uparrow1\).  Under the product copula, \(\E[UV]=1/4\) and \(\rho_S=0\), so a singleton band \([0,0]\) contains the independent-rank law and the endpoint program brackets \(\int_0^1\int_0^1 h(u,v)\,du\,dv\).  Under a degenerate positive shift \(Y_1=Y_0+\Delta\) with \(\Delta>0\), the comonotone coupling has \(h(u,u)=1\) for all \(u\), so \(U_\rho(P)=1\) whenever \(\rho_+=1\) is allowed and the supremum is approached by the comonotone law; the negative-shift case gives the symmetric lower-corner check.
+
+\section{Proof-sketch route}
+The proof route for Theorem~\ref{thm:k-sharp-dual-confirmed} starts from Sklar's theorem and rewrites every feasible latent law as a measurable family of copula measures with uniform margins.  The closure statement follows by taking the closure of the integrated feasible values and bounding each conditional value between its infimum and supremum; the dual inequalities are weak duality with two nonnegative multipliers for the lower and upper Spearman moment constraints.  Conjecture~\ref{conj:sharp-dual} is the only strong-duality step: the route approximates the strict indicator \(h_x\) by lower and upper semicontinuous envelopes, proves no duality gap for the moment-constrained marginal problem, and integrates the resulting no-gap values over \(X\) without claiming optimizing selectors.  Theorem~\ref{thm:critical-set} gives one-sided sign certification from \(\Theta_I(P)\subseteq[L_R(P),U_R(P)]\) and treats envelope straddling as outer-bound indeterminacy.  Theorem~\ref{thm:sieve-consistency} is confined to finite covariate support: empirical cell quantiles perturb a finite LP by \(o_p(1)\), and the deterministic checkerboard bias then links the grid endpoint to the continuous endpoint.  Conjecture~\ref{conj:inference} follows Fan--Park's plug-in endpoint route: the root-\(n\) empirical term is separated from the local checkerboard error
+\[
+\sqrt n\left(\{\Phi_{\rho,K_n}(\widehat\eta_n)-\Phi_\rho(\widehat\eta_n)\}
+-\{\Phi_{\rho,K_n}(\eta(P))-\Phi_\rho(\eta(P))\}\right),
+\]
+Assumption~\ref{ass:finite-cell} makes that local error \(o_p(1)\), stable dual faces give a directional endpoint law, and Stoye's interval-width calibration converts it into coverage for \(\theta\).
+
+\section{Honest scope flags}
+Theorem~\ref{thm:k-sharp-dual-confirmed} is proved only as a closure envelope and weak-duality outer bound.  It does not claim endpoint attainment, a closed conditional value interval, measurable optimizing selectors, or primal-dual equality.  Conjecture~\ref{conj:sharp-dual} is the main open identification claim: the nontrivial point is no-gap constrained transport for the strict benefit event under a global rank-moment band.  Theorem~\ref{thm:critical-set} is an outer-envelope diagnostic; straddling \(1/2\) is not claimed to construct feasible laws on both sides of the majority boundary.  Conjecture~\ref{conj:inference} is open because endpoint active sets may change when the Spearman moment binds or when the benefit boundary is nearly tangent to an optimizer; Assumptions~\ref{ass:stable-dual} and \ref{ass:finite-cell} scope the directional-law version and include the root-\(n\) local sieve-remainder condition.  The estimator theorem is scoped to finite covariate support; continuous-\(X\) nuisance smoothing is left for a later version.  This draft does not claim mixed discrete outcomes, covariate-dependent rho budgets, or a scalar monotone \(\rho^\star\) without additional single-crossing conditions.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial field-tier draft centered on sharp Spearman-band transport endpoints, a critical majority set, and plug-in endpoint inference; prior verdict: none.
+\item v2 (draft-rebuild) -- rewrote the majority-sign criterion, Spearman arithmetic exhibit, and finite-cell estimator construction to fix C-sanity and C-wellposed flags; kernel unchanged; prior verdict: REJECT.
+\item v3 (revise) -- added Fan--Park 2009 dependence-measure prior art, named consumers for the three generic implication clauses, and an explicit stable-dual-face assumption for endpoint inference; prior verdict: REVISE.
+\item v4 (revise) -- added Liang 2026 rank-stickiness as the closest rank-based continuous-DTE comparator, propagated the Conjecture 1 gap language, and corrected Kellerer DOI metadata; prior verdict: REVISE.
+\item v5 (revise) -- carried the accepted field-tier draft into Stage 0.5 with accepted caveats around endpoint attainment and inference regularity; prior verdict: ACCEPT.
+\item v6 (revise) -- restated the sharpness result as a closure envelope with weak-duality bounds, weakened the majority-sign theorem to an outer-envelope diagnostic, and added the root-\(n\) local sieve-remainder condition; prior verdict: ACCEPT.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Fan and Park(2009)]{FanPark2009DTEConfidenceSets}
+Fan, Y. and S. S. Park (2009).
+Partial identification of the distribution of treatment effects and its confidence sets.
+\textit{Advances in Econometrics} 25, 3--70.
+
+\bibitem[Fan and Park(2010)]{FanPark2010DTEBounds}
+Fan, Y. and S. S. Park (2010).
+Sharp bounds on the distribution of treatment effects and their statistical inference.
+\textit{Econometric Theory} 26(3), 931--951.
+
+\bibitem[Liang(2026)]{Liang2026RankStickiness}
+Liang, T. (2026).
+Nonparametric point identification of treatment effect distributions via rank stickiness.
+arXiv:2604.21548.
+doi:10.48550/arXiv.2604.21548.
+
+\bibitem[Zhang and Richardson(2025)]{ZhangRichardson2025Kolmogorov}
+Zhang, Z. and T. S. Richardson (2025).
+Bounds on the distribution of a sum of two random variables: Revisiting a problem of Kolmogorov with application to individual treatment effects.
+arXiv:2405.08806.
+
+\bibitem[Firpo and Ridder(2019)]{FirpoRidder2019Functionals}
+Firpo, S. and G. Ridder (2019).
+Partial identification of the treatment effect distribution and its functionals.
+\textit{Journal of Econometrics} 213(1), 210--234.
+
+\bibitem[He and Li(2026)]{HeLi2026OrdinalCopula}
+He, P. and F. Li (2026).
+Causal inference with ordinal outcomes: copula-based identification, estimation and sensitivity analysis.
+arXiv:2605.11415.
+
+\bibitem[Mullahy(2018)]{Mullahy2018InequalityProbability}
+Mullahy, J. (2018).
+Individual results may vary: Elementary analytics of inequality-probability bounds, with applications to health-outcome treatment effects.
+\textit{Journal of Health Economics} 61, 151--162.
+
+\bibitem[Huang et~al.(2019)]{HuangFangHanleyRosenblum2019FractionBenefit}
+Huang, E. J., E. X. Fang, D. F. Hanley, and M. Rosenblum (2019).
+Constructing a confidence interval for the fraction who benefit from treatment, using randomized trial data.
+\textit{Biometrics} 75(4), 1228--1239.
+
+\bibitem[Fan, Guerre, and Zhu(2017)]{FanGuerreZhu2017POFunctionals}
+Fan, Y., E. Guerre, and D. Zhu (2017).
+Partial identification of functionals of the joint distribution of potential outcomes.
+\textit{Journal of Econometrics} 197(1), 42--59.
+
+\bibitem[Frandsen and Lefgren(2021)]{FrandsenLefgren2021KIPP}
+Frandsen, B. R. and L. J. Lefgren (2021).
+Partial identification of the distribution of treatment effects with an application to the Knowledge is Power Program (KIPP).
+\textit{Quantitative Economics} 12(1), 143--171.
+
+\bibitem[Kellerer(1984)]{Kellerer1984Duality}
+Kellerer, H. G. (1984).
+Duality theorems for marginal problems.
+\textit{Zeitschrift f{\"u}r Wahrscheinlichkeitstheorie und Verwandte Gebiete} 67, 399--432.
+doi:10.1007/BF00532047.
+
+\bibitem[Bartl et~al.(2022)]{BartlKupperLuxPapapantoleon2022Dependence}
+Bartl, D., M. Kupper, T. Lux, A. Papapantoleon, and S. Eckstein (2022).
+Marginal and dependence uncertainty: Bounds, optimal transport, and sharpness.
+\textit{SIAM Journal on Control and Optimization} 60(1), 410--434.
+
+\bibitem[Imbens and Manski(2004)]{ImbensManski2004PartialCI}
+Imbens, G. W. and C. F. Manski (2004).
+Confidence intervals for partially identified parameters.
+\textit{Econometrica} 72(6), 1845--1857.
+
+\bibitem[Stoye(2009)]{Stoye2009MoreCI}
+Stoye, J. (2009).
+More on confidence intervals for partially identified parameters.
+\textit{Econometrica} 77(4), 1299--1315.
+\end{thebibliography}
+
+\end{document}

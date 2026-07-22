@@ -1,0 +1,307 @@
+---
+import {
+  isTier1,
+  naturalLanguageDoc,
+  reviewStatus,
+  unreviewedCount,
+  flagsOf,
+  linkifyStatement,
+  firstSentence,
+  declArea,
+  declPagePath,
+  treeModules,
+  stripLeadingDoc,
+  sourceKind,
+  publicAxioms,
+  displayModuleSegment,
+  type LibDecl,
+  type Library,
+  type ModTree,
+} from "../lib/library.js";
+import { structureAndLinkify, findProofStart, type StructuredStatement } from "../lib/leanStatement.js";
+import { renderDoc, nlOf, nlPlain } from "../lib/docmd.js";
+import { GITHUB_REPO } from "../lib/config.js";
+import LeanStatement from "./LeanStatement.astro";
+
+interface Props {
+  node: ModTree;
+  lib: Library;
+  area: string;
+  base: string;
+  depth: number;
+  /** Render the module <details> expanded (used to auto-open a page's sole file). */
+  open?: boolean;
+}
+const { node, lib, area, base, depth, open = false } = Astro.props as Props;
+
+// Split a fully-qualified Lean name into its enclosing namespace and leaf, so a
+// decl card can show the leaf prominently while still exposing where the name
+// lives (e.g. `Causalean.PartialID.` · `IdentifiedInterval`).
+const leafOf = (n: string) => n.split(".").pop()!;
+const nsOf = (n: string) => {
+  const i = n.lastIndexOf(".");
+  return i >= 0 ? n.slice(0, i) : "";
+};
+
+// source order = dependency order (Lean enforces define-before-use)
+const fileDecls = node.module
+  ? lib.entries.filter((e) => e.module === node.module).sort((a, b) => a.line - b.line)
+  : [];
+const tier1 = fileDecls.filter((d) => isTier1(d, lib.sidecars));
+const tier2 = fileDecls.filter((d) => !isTier1(d, lib.sidecars));
+
+// Headline theorems in THIS file — shown as ★ chips in the collapsed summary so a
+// reader can judge whether to open the file without clicking (information scent).
+const headlineNames = new Set(lib.sidecars[area]?.headline_theorems ?? []);
+const headlinesHere = fileDecls.filter((d) => headlineNames.has(d.name));
+const modDoc = node.module ? (lib.modules[node.module] ?? null) : null;
+
+// Description: a file's own module docstring, else the curated namespace intro.
+const nsIntro = lib.sidecars[area]?.namespace_intros?.[node.path] ?? null;
+const brief = firstSentence(modDoc) ?? nsIntro;
+
+// Aggregate counts over the whole subtree for the summary line.
+const subModules = new Set(treeModules(node));
+const subDecls = lib.entries.filter((e) => subModules.has(e.module));
+const nT1 = subDecls.filter((d) => isTier1(d, lib.sidecars)).length;
+const nT2 = subDecls.length - nT1;
+const nUnrev = unreviewedCount(subDecls, lib.sidecars);
+
+const srcLink = (d: LibDecl) =>
+  GITHUB_REPO ? `https://github.com/${GITHUB_REPO}/blob/${lib.commit}/${d.file}#L${d.line}` : null;
+
+// Short statements are easier to scan when they wrap with the card.  Preserve
+// horizontal scrolling for genuinely multi-line Lean blocks, whose indentation
+// and aligned hypotheses are more useful than a narrow wrapped rendering.
+const stmtClass = (text: string) =>
+  `decl-stmt ${text.split("\n").length < 5 ? "decl-stmt-wrap" : "decl-stmt-scrollable"}`;
+
+// The generated index may put a very long theorem signature on one line.  For
+// its formal-statement card, use the authored declaration up to its proof so
+// the threshold matches the reader-visible Lean layout. A structure/class's
+// `d.source` is already scoped to just the declaration (no `:=`/proof to
+// find), so it needs no truncation.
+const declSignature = (d: LibDecl): string | null => {
+  if (!d.source) return null;
+  const source = stripLeadingDoc(d.source);
+  if (d.kind !== "theorem") return source;
+  // Depth-aware: a naive `/\s:=/` can match a named-argument application
+  // inside the signature itself (`H_ε (γ := γ) ε`) and truncate mid-binder.
+  const proofStart = findProofStart(source);
+  return proofStart < 0 ? source : source.slice(0, proofStart);
+};
+const theoremStmtClass = (d: LibDecl) => stmtClass(declSignature(d) ?? d.statement);
+
+// Restructures a theorem's hypotheses or a structure/class's fields into one
+// row each instead of a single shared-scroll block, including any inline
+// `-- comment`/`/-- doc -/` the author placed between them. Falls back to
+// `null` — same as the plain rendering — for anything the parser isn't
+// confident it understood correctly.
+const structuredStatement = (d: LibDecl): StructuredStatement | null => {
+  const sig = declSignature(d);
+  if (!sig) return null;
+  return structureAndLinkify(sig, lib, base, d.kind);
+};
+const structurable = (d: LibDecl) => d.kind === "theorem" || d.kind === "structure" || d.kind === "class";
+const sectionLabel = (d: LibDecl) => (d.kind === "theorem" ? "hypotheses" : "fields");
+---
+
+<details class={`module-block depth-${Math.min(depth, 3)}`} id={node.module ?? `ns-${area}.${node.path}`} open={open}>
+  <summary>
+    <span class="module-name">{displayModuleSegment(node.seg)}</span>
+    <span class="module-counts">
+      {nT1} core · {nT2} supporting{node.children.length > 0 && ` · ${node.children.length} submodule${node.children.length === 1 ? "" : "s"}`}
+    </span>
+    {nUnrev > 0 && (
+      <span class="review-tag" title={`${nUnrev} core declaration${nUnrev === 1 ? "" : "s"} not yet reviewed`}>
+        {nUnrev} to review
+      </span>
+    )}
+    {brief && <span class="module-brief">{brief}</span>}
+    {headlinesHere.length > 0 && (
+      <span class="module-headlines">
+        {headlinesHere.map((d, i) => (
+          <span class={`hl-chip${i >= 3 ? " hl-extra" : ""}`}>★ {leafOf(d.name)}</span>
+        ))}
+        {headlinesHere.length > 3 && (
+          <button type="button" class="hl-more" data-hl-more>+{headlinesHere.length - 3} more</button>
+        )}
+      </span>
+    )}
+  </summary>
+  {modDoc && <div class="module-doc" set:html={renderDoc(modDoc)} />}
+  {!modDoc && nsIntro && <div class="module-doc"><p>{nsIntro}</p></div>}
+  {
+    tier1.map((d) => {
+      const st = reviewStatus(d, lib.sidecars);
+      const flags = flagsOf(d, lib.sidecars);
+      const nl = nlOf(naturalLanguageDoc(d));
+      const realAxioms = publicAxioms(d.axioms);
+      const structured = structurable(d) ? structuredStatement(d) : null;
+      return (
+        <div class={`decl-card kind-${d.kind}`} id={d.name}>
+          <div class="decl-head">
+            <span class="decl-kind">{sourceKind(d)}</span>
+            <span class="decl-name">{leafOf(d.name)}</span>
+            <span class={`badge badge-${st}`} data-review-badge={d.name}>{st}</span>
+            {d.usesSorry && <span class="badge badge-sorry">sorry</span>}
+            {realAxioms.length > 0 && <span class="badge badge-axiom">axioms</span>}
+            <span class="badge badge-flagged" data-flag-badge={d.name} hidden={flags.length === 0}>
+              ⚑ {flags.length || ""} flagged
+            </span>
+            <span class="review-controls">
+              <button data-review={d.name} data-current={st}>
+                {st === "reviewed" ? "↺ unreview" : "✓ mark reviewed"}
+              </button>
+              <button data-flag={d.name}>{flags.length ? "⚑ add flag" : "⚑ flag problem"}</button>
+            </span>
+          </div>
+          {nsOf(d.name) && <div class="decl-ns">{nsOf(d.name)}</div>}
+          {flags.length > 0 && (
+            <ul class="flag-notes" data-flag-notes={d.name}>
+              {flags.map((n) => (
+                <li>
+                  <span class="flag-note-text">⚑ {n}</span>
+                  <button class="flag-remove" data-unflag={d.name} data-note={n} title="Remove this flag" aria-label="Remove this flag">✕</button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {nl ? (
+            <div class="decl-nl" set:html={renderDoc(nl)} />
+          ) : (
+            <div class="decl-nl nl-missing">No natural-language translation yet.</div>
+          )}
+          {d.kind === "theorem" ? (
+            <>
+              <details>
+                <summary>Formal statement</summary>
+                {structured ? (
+                  <LeanStatement structured={structured} copyText={declSignature(d) ?? d.statement} sectionLabel={sectionLabel(d)} />
+                ) : (
+                  <div class={theoremStmtClass(d)} set:html={linkifyStatement(d.statement, lib, base)} />
+                )}
+              </details>
+              {d.source && (
+                <details>
+                  <summary>Proof (Lean source)</summary>
+                  <div
+                    class={stmtClass(stripLeadingDoc(d.source))}
+                    set:html={linkifyStatement(stripLeadingDoc(d.source), lib, base)}
+                  />
+                </details>
+              )}
+            </>
+          ) : (
+            <details>
+              <summary>{d.source ? "Definition (Lean source)" : "Formal statement"}</summary>
+              {structured ? (
+                <LeanStatement structured={structured} copyText={declSignature(d) ?? d.statement} sectionLabel={sectionLabel(d)} />
+              ) : (
+              <div
+                class={stmtClass(d.source ? stripLeadingDoc(d.source) : d.statement)}
+                set:html={linkifyStatement(
+                  d.source ? stripLeadingDoc(d.source) : d.statement,
+                  lib,
+                  base,
+                )}
+              />
+              )}
+            </details>
+          )}
+          <div class="decl-meta">
+            <code>{d.name}</code> ·{" "}
+            {srcLink(d) ? (
+              <a href={srcLink(d)}>
+                {d.file}:{d.line}
+              </a>
+            ) : (
+              <span>
+                {d.file}:{d.line}
+              </span>
+            )}
+            {d.refs.length > 0 && (
+              <>
+                {" · uses "}
+                {d.refs.map((r, i) => {
+                  const t = lib.entries.find((e) => e.name === r);
+                  return (
+                    <>
+                      {i > 0 && ", "}
+                      {t ? (
+                        <a href={`${base}/library/${declPagePath(t, lib)}#${r}`}>
+                          <code>{r.split(".").pop()}</code>
+                        </a>
+                      ) : (
+                        <code>{r.split(".").pop()}</code>
+                      )}
+                    </>
+                  );
+                })}
+              </>
+            )}
+          </div>
+        </div>
+      );
+    })
+  }
+  {
+    tier2.length > 0 && (
+      <details class="helper-block">
+        <summary>
+          {tier2.length} supporting declaration{tier2.length === 1 ? "" : "s"} (lemmas, instances)
+        </summary>
+        <ul class="helper-list">
+          {tier2.map((d) => {
+            const structured2 = structurable(d) ? structuredStatement(d) : null;
+            return (
+            <li id={d.name}>
+              <details class="helper-item">
+                <summary>
+                  <code>{leafOf(d.name)}</code>
+                  <span class="helper-kind">{sourceKind(d)}</span>
+                  {d.usesSorry && <span class="badge badge-sorry">sorry</span>}
+                  {nlPlain(d.doc) ? <span class="helper-nl"> — {nlPlain(d.doc)}</span> : null}
+                </summary>
+                {structured2 ? (
+                  <LeanStatement structured={structured2} copyText={declSignature(d) ?? d.statement} sectionLabel={sectionLabel(d)} />
+                ) : (
+                  <div
+                    class={stmtClass(d.kind !== "theorem" && d.source ? stripLeadingDoc(d.source) : d.statement)}
+                    set:html={linkifyStatement(
+                      d.kind !== "theorem" && d.source ? stripLeadingDoc(d.source) : d.statement,
+                      lib,
+                      base,
+                    )}
+                  />
+                )}
+                {d.kind === "theorem" && d.source && (
+                  <details class="proof-details">
+                    <summary>Proof (Lean source)</summary>
+                    <div
+                      class={stmtClass(stripLeadingDoc(d.source))}
+                      set:html={linkifyStatement(stripLeadingDoc(d.source), lib, base)}
+                    />
+                  </details>
+                )}
+                <div class="decl-meta">
+                  <code>{d.name}</code> ·{" "}
+                  {srcLink(d) ? (
+                    <a href={srcLink(d)}>
+                      {d.file}:{d.line}
+                    </a>
+                  ) : (
+                    <span>
+                      {d.file}:{d.line}
+                    </span>
+                  )}
+                </div>
+              </details>
+            </li>
+            );
+          })}
+        </ul>
+      </details>
+    )
+  }
+  </details>

@@ -1,0 +1,953 @@
+{
+  "qid": "exp_interference_nonasymp_effcount",
+  "specialization": "holder_fractional_coloring_bernstein_eprocess",
+  "cluster": "experimentation",
+  "symbols": [
+    {
+      "name": "n",
+      "type": "finite_population_size",
+      "space": "N",
+      "def": "Number of experimental units.",
+      "role": "index"
+    },
+    {
+      "name": "U_n",
+      "type": "finite_population",
+      "space": "{1,...,n}",
+      "def": "Index set of the fixed finite population.",
+      "role": "index",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "Z",
+      "type": "assignment_vector",
+      "space": "{0,1}^n",
+      "def": "Random treatment-assignment vector.",
+      "role": "randomization",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "p_i",
+      "type": "assignment_probability",
+      "space": "(0,1)",
+      "def": "Known Bernoulli probability P_Z(Z_i=1).",
+      "role": "design_parameter",
+      "refs": [
+        "Z",
+        "U_n"
+      ]
+    },
+    {
+      "name": "P_Z",
+      "type": "randomization_law",
+      "space": "probability laws on {0,1}^n",
+      "def": "Known law of Z induced by the experimental design.",
+      "role": "randomization_law",
+      "refs": [
+        "Z",
+        "p_i"
+      ]
+    },
+    {
+      "name": "N_i",
+      "type": "exposure_neighborhood",
+      "space": "subsets of U_n",
+      "def": "Known assignment neighborhood used by unit i's exposure mapping.",
+      "role": "exposure_primitive",
+      "refs": [
+        "U_n"
+      ]
+    },
+    {
+      "name": "E_n",
+      "type": "exposure_label_set",
+      "space": "finite set",
+      "def": "Set of analyst-specified exposure labels.",
+      "role": "exposure_codomain",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "a",
+      "type": "target_exposure_label",
+      "space": "E_n",
+      "def": "First exposure label defining the causal contrast.",
+      "role": "target_label",
+      "refs": [
+        "E_n"
+      ]
+    },
+    {
+      "name": "b",
+      "type": "target_exposure_label",
+      "space": "E_n",
+      "def": "Second exposure label defining the causal contrast, with b not equal to a.",
+      "role": "target_label",
+      "refs": [
+        "E_n",
+        "a"
+      ]
+    },
+    {
+      "name": "c_i",
+      "type": "exposure_mapping",
+      "sig": "{0,1}^{N_i} -> E_n",
+      "def": "Known map from assignments in N_i to unit i's exposure label.",
+      "role": "exposure_mapping",
+      "refs": [
+        "N_i",
+        "E_n"
+      ]
+    },
+    {
+      "name": "Y_i(z)",
+      "type": "assignment_indexed_potential_outcome",
+      "space": "[0,1]",
+      "def": "Fixed potential outcome of unit i under full assignment z.",
+      "role": "causal_primitive",
+      "refs": [
+        "U_n",
+        "Z"
+      ]
+    },
+    {
+      "name": "Y_i(e)",
+      "type": "exposure_indexed_potential_outcome",
+      "space": "[0,1]",
+      "def": "Fixed potential outcome of unit i under exposure label e.",
+      "role": "causal_primitive",
+      "refs": [
+        "U_n",
+        "E_n"
+      ]
+    },
+    {
+      "name": "Y_i^{obs}",
+      "type": "observed_outcome",
+      "space": "[0,1]",
+      "def": "Observed outcome Y_i(Z).",
+      "role": "observed_data",
+      "refs": [
+        "Y_i(z)",
+        "Z"
+      ]
+    },
+    {
+      "name": "I_i(e)",
+      "type": "exposure_indicator",
+      "space": "{0,1}",
+      "def": "Indicator 1{c_i(Z_{N_i})=e}.",
+      "role": "observed_data",
+      "refs": [
+        "c_i",
+        "Z",
+        "N_i",
+        "E_n"
+      ]
+    },
+    {
+      "name": "pi_i(e)",
+      "type": "exposure_probability",
+      "space": "(0,1]",
+      "def": "Known design probability P_Z[I_i(e)=1].",
+      "role": "design_parameter",
+      "refs": [
+        "I_i(e)",
+        "P_Z",
+        "E_n"
+      ]
+    },
+    {
+      "name": "pi_exp",
+      "type": "exposure_positivity_constant",
+      "space": "(0,1]",
+      "def": "Common lower bound for the two target exposure probabilities.",
+      "role": "overlap_constant",
+      "refs": [
+        "pi_i(e)",
+        "a",
+        "b"
+      ]
+    },
+    {
+      "name": "theta",
+      "type": "finite_population_exposure_effect",
+      "space": "[-1,1]",
+      "def": "Average fixed-potential-outcome contrast n^{-1} sum_{i in U_n}[Y_i(a)-Y_i(b)].",
+      "role": "target_estimand",
+      "refs": [
+        "n",
+        "U_n",
+        "Y_i(e)",
+        "a",
+        "b"
+      ]
+    },
+    {
+      "name": "theta_0",
+      "type": "candidate_exposure_effect",
+      "space": "R",
+      "def": "Candidate value of theta tested by an e-value.",
+      "role": "null_value",
+      "refs": [
+        "theta"
+      ]
+    },
+    {
+      "name": "X_i",
+      "type": "HT_contrast_summand",
+      "space": "R",
+      "def": "I_i(a)Y_i^{obs}/pi_i(a)-I_i(b)Y_i^{obs}/pi_i(b).",
+      "role": "estimator_summand",
+      "refs": [
+        "I_i(e)",
+        "Y_i^{obs}",
+        "pi_i(e)",
+        "a",
+        "b"
+      ]
+    },
+    {
+      "name": "theta_hat",
+      "type": "Horvitz_Thompson_estimator",
+      "space": "R",
+      "def": "n^{-1} sum_{i in U_n} X_i.",
+      "role": "estimator",
+      "refs": [
+        "n",
+        "U_n",
+        "X_i"
+      ]
+    },
+    {
+      "name": "D_n",
+      "type": "exposure_dependency_graph",
+      "space": "finite undirected graphs on U_n",
+      "def": "Graph with edge {i,j} exactly when i!=j and N_i intersect N_j is nonempty.",
+      "role": "dependence_object",
+      "refs": [
+        "U_n",
+        "N_i"
+      ]
+    },
+    {
+      "name": "chi_f(D_n)",
+      "type": "fractional_chromatic_number",
+      "space": "[1,n]",
+      "def": "inf_{r>=1} chi_r(D_n)/r, where chi_r(D_n) is the least number of colors in an r-fold proper coloring of D_n.",
+      "role": "effective_dependence",
+      "refs": [
+        "D_n",
+        "n"
+      ]
+    },
+    {
+      "name": "kappa_n",
+      "type": "fractional_color_penalty",
+      "space": "[1,n]",
+      "def": "kappa_n=chi_f(D_n).",
+      "role": "effective_dependence",
+      "refs": [
+        "chi_f(D_n)"
+      ]
+    },
+    {
+      "name": "Vbar_n",
+      "type": "propensity_variance_envelope",
+      "space": "R_+",
+      "def": "Vbar_n=n^{-1}sum_{i in U_n}[1/pi_i(a)+1/pi_i(b)].",
+      "role": "observable_envelope",
+      "refs": [
+        "n",
+        "U_n",
+        "pi_i(e)",
+        "a",
+        "b"
+      ]
+    },
+    {
+      "name": "lambda",
+      "type": "exponential_tilt",
+      "space": "(0,3 pi_exp/kappa_n)",
+      "def": "Positive tuning parameter for a fixed-time exponential test.",
+      "role": "test_tuning",
+      "refs": [
+        "pi_exp",
+        "kappa_n"
+      ]
+    },
+    {
+      "name": "s",
+      "type": "tail_sign",
+      "space": "{-1,1}",
+      "def": "Sign indexing an upper or lower tail exponential test.",
+      "role": "test_index"
+    },
+    {
+      "name": "mathcal E_lambda^s(theta_0)",
+      "type": "fractional_coloring_e_value",
+      "space": "R_+",
+      "def": "Exponential test statistic indexed by a candidate contrast theta_0.",
+      "role": "e_value",
+      "refs": [
+        "lambda",
+        "s",
+        "theta_hat",
+        "n",
+        "kappa_n",
+        "Vbar_n",
+        "pi_exp"
+      ]
+    },
+    {
+      "name": "alpha",
+      "type": "miscoverage_level",
+      "space": "(0,1)",
+      "def": "Target randomization miscoverage probability.",
+      "role": "inference_level"
+    },
+    {
+      "name": "C_alpha",
+      "type": "confidence_interval",
+      "space": "subsets of R",
+      "def": "Two-sided interval centered at theta_hat with the Bernstein half-width defined in def:confidence-interval.",
+      "role": "confidence_set",
+      "refs": [
+        "alpha",
+        "theta_hat",
+        "kappa_n",
+        "Vbar_n",
+        "n",
+        "pi_exp"
+      ]
+    },
+    {
+      "name": "w_alpha",
+      "type": "Bernstein_half_width",
+      "space": "R_+",
+      "def": "Half-width sqrt{2 kappa_n Vbar_n log(2/alpha)/n}+kappa_n log(2/alpha)/(3n pi_exp).",
+      "role": "confidence_radius",
+      "refs": [
+        "alpha",
+        "kappa_n",
+        "Vbar_n",
+        "n",
+        "pi_exp"
+      ]
+    },
+    {
+      "name": "r",
+      "type": "block_size",
+      "space": "{1,...,n}",
+      "def": "Common number of units in each block of the canonical clique-block benchmark.",
+      "role": "benchmark_index",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "B",
+      "type": "number_of_blocks",
+      "space": "N",
+      "def": "Number of blocks B=n/r in the canonical clique-block benchmark.",
+      "role": "benchmark_index",
+      "refs": [
+        "n",
+        "r"
+      ]
+    },
+    {
+      "name": "mathcal B_n",
+      "type": "block_partition",
+      "space": "ordered partitions of U_n",
+      "def": "Known partition of U_n into B labeled blocks of size r in the canonical clique-block benchmark.",
+      "role": "benchmark_network_primitive",
+      "refs": [
+        "U_n",
+        "B",
+        "r"
+      ]
+    },
+    {
+      "name": "B_l",
+      "type": "block",
+      "space": "subsets of U_n",
+      "def": "The l-th block in the known benchmark partition mathcal B_n.",
+      "role": "benchmark_network_primitive",
+      "refs": [
+        "U_n",
+        "B",
+        "mathcal B_n"
+      ]
+    },
+    {
+      "name": "h",
+      "type": "non_target_exposure_label",
+      "space": "E_n\\{a,b}",
+      "def": "Exposure label assigned when a block is neither all treated nor all control.",
+      "role": "exposure_primitive",
+      "refs": [
+        "E_n",
+        "a",
+        "b"
+      ]
+    },
+    {
+      "name": "pi_star",
+      "type": "benchmark_block_exposure_probability",
+      "space": "(0,1/2]",
+      "def": "Known common target-exposure probability pi_star=2^{-r} in the balanced canonical clique-block benchmark.",
+      "role": "benchmark_design_parameter",
+      "refs": [
+        "r"
+      ]
+    },
+    {
+      "name": "c_0",
+      "type": "universal_regime_constant",
+      "space": "R_+",
+      "def": "Universal constant c_0=1/4096 in the proved moderate-deviation condition.",
+      "role": "theorem_constant"
+    },
+    {
+      "name": "c_1",
+      "type": "universal_lower_bound_constant",
+      "space": "R_+",
+      "def": "Universal constant c_1=1/(256 sqrt(2)) in the proved confidence-length lower bound.",
+      "role": "theorem_constant"
+    },
+    {
+      "name": "alpha_0",
+      "type": "universal_confidence_cutoff",
+      "space": "(0,1/4]",
+      "def": "Universal cutoff alpha_0=exp(-1024) in the proved confidence-length comparison.",
+      "role": "theorem_constant"
+    },
+    {
+      "name": "mathcal M_n",
+      "type": "finite_population_experiment_class",
+      "space": "sets of design-and-potential-outcome tuples",
+      "def": "Class of n-unit Bernoulli exposure experiments satisfying the listed member properties.",
+      "role": "model_class",
+      "refs": [
+        "n",
+        "U_n",
+        "P_Z",
+        "c_i",
+        "Y_i(e)"
+      ]
+    },
+    {
+      "name": "mathcal M_{n,r}^{block}",
+      "type": "canonical_clique_block_benchmark_class",
+      "space": "sets of design-and-potential-outcome tuples",
+      "def": "Nonhomogeneous subclass of mathcal M_n satisfying the equal block partition, balanced Bernoulli assignment, unanimous target-exposure map, and exact positivity calibration; block-homogeneous target schedules form only a lower-bound witness subclass.",
+      "role": "benchmark_model_class",
+      "ref": "def:block-class",
+      "refs": [
+        "mathcal M_n",
+        "n",
+        "r",
+        "mathcal B_n",
+        "pi_star"
+      ]
+    },
+    {
+      "name": "mathfrak C_alpha",
+      "type": "uniformly_valid_interval_procedures",
+      "space": "maps from observed data to intervals",
+      "def": "Procedures C with inf_{m in mathcal M_{n,r}^{block}} P_{Z,m}{theta(m) in C(Z,Y^{obs})} >= 1-alpha for the canonical nonhomogeneous block class.",
+      "role": "decision_class",
+      "refs": [
+        "mathcal M_{n,r}^{block}",
+        "theta",
+        "alpha",
+        "Z",
+        "Y_i^{obs}"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:bernoulli-design",
+      "kind": "design",
+      "condition": "P_Z=product_{i in U_n} Bernoulli(p_i).",
+      "free_symbols": [
+        "P_Z",
+        "U_n",
+        "p_i"
+      ],
+      "standard": {
+        "name": "independent Bernoulli randomization",
+        "cite": "AronowSamii2017"
+      },
+      "used_by": [
+        "def:block-class",
+        "def:experiment-class"
+      ]
+    },
+    {
+      "id": "ass:exposure-sufficiency",
+      "kind": "causal",
+      "condition": "For every i in U_n and z in {0,1}^n, Y_i(z)=Y_i(c_i(z_{N_i})).",
+      "free_symbols": [
+        "U_n",
+        "Y_i(z)",
+        "c_i",
+        "N_i",
+        "E_n"
+      ],
+      "standard": {
+        "name": "correct exposure mapping",
+        "cite": "AronowSamii2017"
+      },
+      "used_by": [
+        "def:block-class",
+        "def:experiment-class"
+      ]
+    },
+    {
+      "id": "ass:fixed-schedule",
+      "kind": "finite_population",
+      "condition": "The array (Y_i(e): i in U_n, e in E_n) is nonrandom under P_Z.",
+      "free_symbols": [
+        "Y_i(e)",
+        "U_n",
+        "E_n",
+        "P_Z"
+      ],
+      "standard": {
+        "name": "design-based fixed potential outcomes",
+        "cite": "AronowSamii2017"
+      },
+      "used_by": [
+        "def:block-class",
+        "def:experiment-class"
+      ]
+    },
+    {
+      "id": "ass:bounded-outcomes",
+      "kind": "outcome",
+      "condition": "For every i in U_n and e in E_n, 0<=Y_i(e)<=1.",
+      "free_symbols": [
+        "U_n",
+        "E_n",
+        "Y_i(e)"
+      ],
+      "standard": {
+        "name": "bounded potential outcomes",
+        "cite": "AronowSamii2017"
+      },
+      "used_by": [
+        "def:block-class",
+        "def:experiment-class",
+        "lem:block-geometry"
+      ]
+    },
+    {
+      "id": "ass:target-positivity",
+      "kind": "overlap",
+      "condition": "min_{i in U_n}{pi_i(a),pi_i(b)}>=pi_exp>0.",
+      "free_symbols": [
+        "U_n",
+        "pi_i(e)",
+        "a",
+        "b",
+        "pi_exp"
+      ],
+      "standard": {
+        "name": "exposure positivity",
+        "cite": "AronowSamii2017"
+      },
+      "used_by": [
+        "def:block-class",
+        "def:experiment-class"
+      ]
+    },
+    {
+      "id": "ass:block-partition",
+      "kind": "network",
+      "condition": "r divides n and mathcal B_n=(B_1,...,B_B) is a partition of U_n with |B_l|=r for every l in {1,...,B}.",
+      "free_symbols": [
+        "r",
+        "n",
+        "B",
+        "mathcal B_n",
+        "B_l",
+        "U_n"
+      ],
+      "standard": {
+        "name": "equal-sized partial-interference block structure",
+        "cite": "TchetgenTchetgenVanderWeele2012"
+      },
+      "used_by": [
+        "def:block-class"
+      ]
+    },
+    {
+      "id": "ass:balanced-block-assignment",
+      "kind": "design",
+      "condition": "p_i=1/2 for every i in U_n.",
+      "free_symbols": [
+        "p_i",
+        "U_n"
+      ],
+      "standard": {
+        "name": "balanced Bernoulli randomization",
+        "cite": "AronowSamii2017"
+      },
+      "used_by": [
+        "def:block-class"
+      ]
+    },
+    {
+      "id": "ass:hard-block-exposure",
+      "kind": "exposure",
+      "condition": "For every l in {1,...,B} and i in B_l, N_i=B_l and c_i(z_{B_l}) equals a if z_j=1 for every j in B_l, equals b if z_j=0 for every j in B_l, and equals h otherwise.",
+      "free_symbols": [
+        "B",
+        "B_l",
+        "U_n",
+        "N_i",
+        "c_i",
+        "a",
+        "b",
+        "h"
+      ],
+      "standard": {
+        "name": "analyst-specified neighborhood exposure mapping",
+        "cite": "AronowSamii2017"
+      },
+      "used_by": [
+        "def:block-class"
+      ]
+    },
+    {
+      "id": "ass:block-homogeneous-target-schedule",
+      "kind": "outcome",
+      "condition": "For every l in {1,...,B}, i,j in B_l, and e in {a,b}, Y_i(e)=Y_j(e).",
+      "free_symbols": [
+        "B",
+        "B_l",
+        "U_n",
+        "Y_i(e)",
+        "a",
+        "b"
+      ],
+      "standard": {
+        "name": "block-level potential-outcome restriction",
+        "cite": "TchetgenTchetgenVanderWeele2012"
+      }
+    },
+    {
+      "id": "ass:block-positivity-calibration",
+      "kind": "overlap",
+      "condition": "pi_exp=pi_star.",
+      "free_symbols": [
+        "pi_exp",
+        "pi_star"
+      ],
+      "standard": {
+        "name": "known exposure-probability calibration",
+        "cite": "AronowSamii2017"
+      },
+      "used_by": [
+        "def:block-class"
+      ]
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:experiment-class",
+      "name": "General bounded Bernoulli exposure-experiment class",
+      "construction": "mathcal M_n={m=(P_Z,(N_i,c_i,(Y_i(e))_{e in E_n})_{i in U_n}) : m satisfies ass:bernoulli-design, ass:exposure-sufficiency, ass:fixed-schedule, ass:bounded-outcomes, and ass:target-positivity for this n}",
+      "by_member_properties": [
+        "ass:bernoulli-design",
+        "ass:exposure-sufficiency",
+        "ass:fixed-schedule",
+        "ass:bounded-outcomes",
+        "ass:target-positivity"
+      ]
+    },
+    {
+      "id": "def:ht-estimator",
+      "name": "Exposure Horvitz-Thompson contrast",
+      "construction": "X_i=I_i(a)Y_i^{obs}/pi_i(a)-I_i(b)Y_i^{obs}/pi_i(b), theta_hat=n^{-1}sum_{i in U_n}X_i",
+      "inputs": [
+        "I_i(e)",
+        "Y_i^{obs}",
+        "pi_i(e)",
+        "a",
+        "b",
+        "n"
+      ]
+    },
+    {
+      "id": "def:dependency-graph",
+      "name": "Exposure-dependency graph",
+      "construction": "D_n=(U_n,{{i,j}:i!=j and N_i intersect N_j is nonempty})",
+      "inputs": [
+        "U_n",
+        "N_i"
+      ]
+    },
+    {
+      "id": "def:fractional-coloring",
+      "name": "Exact fractional-color representation",
+      "construction": "kappa_n=chi_f(D_n)=min_{r>=1}chi_r(D_n)/r, where chi_r(D_n)=min{q: there exist independent sets S_1,...,S_q of D_n with each i in U_n belonging to exactly r of them}",
+      "inputs": [
+        "D_n",
+        "U_n"
+      ]
+    },
+    {
+      "id": "def:propensity-envelope",
+      "name": "Propensity-only variance envelope",
+      "construction": "Vbar_n=n^{-1}sum_{i in U_n}[pi_i(a)^{-1}+pi_i(b)^{-1}]",
+      "inputs": [
+        "n",
+        "U_n",
+        "pi_i(e)",
+        "a",
+        "b"
+      ]
+    },
+    {
+      "id": "def:e-value",
+      "name": "Fractional-coloring Bernstein e-value",
+      "construction": "mathcal E_lambda^s(theta_0)=exp{s lambda n(theta_hat-theta_0)-lambda^2 kappa_n n Vbar_n/[2(1-lambda kappa_n/(3 pi_exp))]}",
+      "inputs": [
+        "lambda",
+        "s",
+        "theta_hat",
+        "theta_0",
+        "n",
+        "kappa_n",
+        "Vbar_n",
+        "pi_exp"
+      ]
+    },
+    {
+      "id": "def:confidence-interval",
+      "name": "Fractional-coloring Bernstein interval",
+      "construction": "C_alpha=[theta_hat-w_alpha,theta_hat+w_alpha], where w_alpha=sqrt{2 kappa_n Vbar_n log(2/alpha)/n}+kappa_n log(2/alpha)/(3n pi_exp)",
+      "inputs": [
+        "theta_hat",
+        "alpha",
+        "kappa_n",
+        "Vbar_n",
+        "n",
+        "pi_exp"
+      ]
+    },
+    {
+      "id": "def:block-class",
+      "name": "Canonical nonhomogeneous clique-block benchmark class",
+      "construction": "mathcal M_{n,r}^{block}={m in mathcal M_n : m satisfies ass:block-partition, ass:balanced-block-assignment, ass:hard-block-exposure, and ass:block-positivity-calibration for this n and r}",
+      "by_member_properties": [
+        "ass:bernoulli-design",
+        "ass:exposure-sufficiency",
+        "ass:fixed-schedule",
+        "ass:bounded-outcomes",
+        "ass:target-positivity",
+        "ass:block-partition",
+        "ass:balanced-block-assignment",
+        "ass:hard-block-exposure",
+        "ass:block-positivity-calibration"
+      ]
+    },
+    {
+      "id": "def:uniform-intervals",
+      "name": "Uniformly valid intervals over the canonical clique-block class",
+      "construction": "mathfrak C_alpha={C:(Z,(Y_i^{obs})_{i in U_n})->intervals in R : inf_{m in mathcal M_{n,r}^{block}}P_{Z,m}[theta(m) in C(Z,Y^{obs})]>=1-alpha}",
+      "inputs": [
+        "Z",
+        "Y_i^{obs}",
+        "theta",
+        "mathcal M_{n,r}^{block}",
+        "alpha"
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "lem:local-dependency",
+      "kind": "lemma",
+      "statement": "For every \\(m\\in\\mathcal M_n\\) and \\(i\\in U_n\\), define \\(W_i=X_i-\\{Y_i(a)-Y_i(b)\\}\\). Then \\(\\mathbb E_{P_Z}[\\widehat{\\theta}]=\\theta\\), \\(\\mathbb E_{P_Z}[W_i]=0\\), and \\[\\sum_{i\\in U_n}W_i=n(\\widehat{\\theta}-\\theta).\\] The graph \\(D_n\\) is a dependency graph for both \\((W_i)_{i\\in U_n}\\) and \\((X_i)_{i\\in U_n}\\). Moreover, for every \\(i\\in U_n\\), \\[|W_i|\\le\\pi_{\\exp}^{-1},\\qquad \\mathbb E_{P_Z}[W_i^2]\\le\\pi_i(a)^{-1}+\\pi_i(b)^{-1},\\] and \\[\\sum_{i\\in U_n}\\mathbb E_{P_Z}[W_i^2]\\le n\\overline V_n.\\]",
+      "depends_on": [
+        "def:experiment-class",
+        "def:ht-estimator",
+        "def:dependency-graph",
+        "def:propensity-envelope"
+      ],
+      "status": "proved",
+      "justification": "This lemma establishes exact design-unbiasedness and exposes the centered summands' dependency graph, range, and second-moment envelope. It is foundational exposure-HT algebra in the Aronow--Samii framework and carries no novelty claim.",
+      "gap": "The lemma closes bookkeeping needed to specialize established fractional-color concentration to the causal exposure contrast; it is not a confidence-length lower bound, rare-reveal reduction, or same-class minimax comparison.",
+      "consumer": "The Holder--Bernstein step consumes these explicit local bounds. In the paper-wide comparator map, Pelekis--Ramon--Wang and Janson supply concentration substrate, while the new contribution lies downstream in exact homogeneous-witness transport and the attained same-class interval-length sandwich. The interval remains valid over the larger nonhomogeneous clique-block class, while exact compression and lower-bound witnessing occur only on the homogeneous subclass.",
+      "proof_tex": "Fix \\(m\\in\\mathcal M_n\\). For \\(i\\in U_n\\), abbreviate \\(A_i=Y_i(a)\\), \\(B_i=Y_i(b)\\), \\(p_i^a=\\pi_i(a)\\), and \\(p_i^b=\\pi_i(b)\\). Exposure sufficiency and the fixed-schedule condition imply that the observed outcome equals \\(A_i\\) on \\(\\{I_i(a)=1\\}\\) and equals \\(B_i\\) on \\(\\{I_i(b)=1\\}\\). Hence\n\\[\nX_i=\\frac{I_i(a)A_i}{p_i^a}-\\frac{I_i(b)B_i}{p_i^b}.\n\\]\nBecause \\(a\\ne b\\), the two indicators are mutually exclusive. By the definition of the known exposure probabilities,\n\\[\n\\mathbb E_{P_Z}[X_i]\n=\\frac{p_i^a A_i}{p_i^a}-\\frac{p_i^b B_i}{p_i^b}\n=A_i-B_i.\n\\]\nTarget positivity justifies both divisions. Therefore \\(W_i=X_i-(A_i-B_i)\\) has mean zero. Summing the preceding identity and using the definitions of \\(\\widehat\\theta\\) and \\(\\theta\\) gives\n\\[\n\\mathbb E_{P_Z}[\\widehat\\theta]\n=\\frac1n\\sum_{i\\in U_n}(A_i-B_i)=\\theta,\n\\qquad\n\\sum_{i\\in U_n}W_i\n=\\sum_{i\\in U_n}X_i-\\sum_{i\\in U_n}(A_i-B_i)\n=n(\\widehat\\theta-\\theta).\n\\]\n\nWe next verify the dependency claim from the design primitives. For each \\(i\\), the variable \\(X_i\\) is measurable with respect to \\(\\sigma(Z_j:j\\in N_i)\\): the exposure indicator is determined by \\(c_i(Z_{N_i})\\), and exposure sufficiency makes the relevant observed outcome a fixed function of that exposure. Let \\(H,K\\subseteq U_n\\) be disjoint vertex sets with no edge of \\(D_n\\) between them. By the definition of \\(D_n\\),\n\\[\n\\left(\\bigcup_{i\\in H}N_i\\right)\\cap\n\\left(\\bigcup_{j\\in K}N_j\\right)=\\varnothing.\n\\]\nThe Bernoulli design makes assignment coordinates indexed by these two disjoint unions independent. Thus \\((X_i)_{i\\in H}\\) and \\((X_j)_{j\\in K}\\) are independent. This is precisely the dependency-graph property for \\((X_i)_{i\\in U_n}\\). Since each \\(W_i\\) differs from \\(X_i\\) by the fixed constant \\(A_i-B_i\\), the same property holds for \\((W_i)_{i\\in U_n}\\).\n\nIt remains to establish the pointwise and second-moment bounds. On \\(\\{I_i(a)=1\\}\\),\n\\[\nW_i=A_i\\{(p_i^a)^{-1}-1\\}+B_i\\in[0,(p_i^a)^{-1}],\n\\]\nwhereas on \\(\\{I_i(b)=1\\}\\),\n\\[\nW_i=-\\left[A_i+B_i\\{(p_i^b)^{-1}-1\\}\\right]\n\\in[-(p_i^b)^{-1},0].\n\\]\nOn every remaining exposure event, \\(W_i=B_i-A_i\\in[-1,1]\\). Bounded outcomes, \\(p_i^a,p_i^b\\ge\\pi_{\\exp}\\), and \\(\\pi_{\\exp}\\le1\\) consequently give\n\\[\n|W_i|\\le\\pi_{\\exp}^{-1}.\n\\]\nFinally, centering and mutual exclusivity yield\n\\[\n\\mathbb E_{P_Z}[W_i^2]\n=\\operatorname{Var}_{P_Z}(X_i)\n\\le \\mathbb E_{P_Z}[X_i^2]\n=\\frac{A_i^2}{p_i^a}+\\frac{B_i^2}{p_i^b}\n\\le\\frac1{\\pi_i(a)}+\\frac1{\\pi_i(b)}.\n\\]\nSumming over \\(i\\) and applying \\(\\texttt{def:propensity-envelope}\\) proves\n\\[\n\\sum_{i\\in U_n}\\mathbb E_{P_Z}[W_i^2]\n\\le\\sum_{i\\in U_n}\\left\\{\\frac1{\\pi_i(a)}+\\frac1{\\pi_i(b)}\\right\\}\n=n\\overline V_n.\n\\]"
+    },
+    {
+      "id": "lem:known-holder-mgf",
+      "kind": "lemma",
+      "statement": "For every m in mathcal M_n, every s in {-1,1}, and every 0<lambda<3 pi_exp/kappa_n, E_{P_Z}[mathcal E_lambda^s(theta)]<=1.",
+      "depends_on": [
+        "lem:local-dependency",
+        "def:fractional-coloring",
+        "def:propensity-envelope",
+        "def:e-value"
+      ],
+      "status": "proved",
+      "justification": "This lemma specializes exact-fold Holder aggregation to the exposure-HT summands. Pelekis--Ramon--Wang supplies that aggregation mechanism, and Janson (2004, Theorem 2.3) supplies closely related generic fractional-chromatic Bernstein concentration, so no novelty is claimed for the exponential mechanism itself.",
+      "gap": "The lemma is not an exposure-class confidence-length lower bound. Aronow--Samii supplies the causal HT setting; Sandoval--Balakrishnan--Feller--Jordan--Waudby-Smith supplies aligned effective-count intuition under SUTVA; the paper's added step is the later exact rare-reveal witness and same-class sandwich.",
+      "consumer": "It supplies the finite-sample upper benchmark. That role is distinct from Leung's asymptotic approximate-interference inference, Harshaw--Middleton--Savje's variance optimization, Ham et al.'s confidence sequences, Kandiros et al.'s conflict-graph design, Tchetgen Tchetgen--VanderWeele's partial-interference benchmarks, and Rigdon--Hudgens's exact two-stage binary intervals. The resulting upper validity extends over nonhomogeneous schedules; only the later exact reduction and lower-bound witness impose block homogeneity.",
+      "proof_tex": "Fix \\(m\\in\\mathcal M_n\\), \\(s\\in\\{-1,1\\}\\), and \\(0<\\lambda<3\\pi_{\\exp}/\\kappa_n\\). We first record the scalar moment calculation that will be used below. If \\(W\\) is centered, \\(|W|\\le M\\), and \\(0<t<3/M\\), then the exponential power series, \\(k!\\ge 2\\,3^{k-2}\\) for every integer \\(k\\ge2\\), and \\(1+u\\le e^u\\) give\n\\[\n\\begin{aligned}\n\\mathbb E[e^{tsW}]\n&=1+\\sum_{k=2}^{\\infty}\\frac{t^k\\mathbb E[(sW)^k]}{k!}\\\\\\\\\\\n&\\le 1+\\sum_{k=2}^{\\infty}\\frac{t^k\\mathbb E[|W|^k]}{k!}\\\\\\\\\\\n&\\le 1+\\frac{t^2\\mathbb E[W^2]}2\n\\sum_{k=2}^{\\infty}\\left(\\frac{tM}{3}\\right)^{k-2}\\\\\\\\\\\n&\\le \\exp\\left\\{\\frac{t^2\\mathbb E[W^2]}{2(1-tM/3)}\\right\\}.\n\\end{aligned}\n\\]\n\nBy the exact fractional-color representation, choose an integer \\(r_0\\ge1\\), let \\(q=\\chi_{r_0}(D_n)\\), and choose independent vertex sets \\(S_1,\\ldots,S_q\\) such that every vertex belongs to exactly \\(r_0\\) sets and\n\\[\n\\frac q{r_0}=\\kappa_n.\n\\]\nThe centered-sum identity in \\(\\mathrm{lem{:}local\\mbox{-}dependency}\\) and the exact covering multiplicity imply\n\\[\n\\exp\\left\\{s\\lambda n(\\widehat\\theta-\\theta)\\right\\}\n=\\prod_{j=1}^q\n\\exp\\left\\{\\frac{s\\lambda}{r_0}\\sum_{i\\in S_j}W_i\\right\\}.\n\\]\nWe use the equal-exponent H\\\"older inequality in a self-contained form. For nonnegative \\(A_1,\\ldots,A_q\\), the claim is trivial if some \\(\\mathbb E[A_j^q]=0\\). Otherwise set \\(B_j=A_j/\\{\\mathbb E[A_j^q]\\}^{1/q}\\). The arithmetic--geometric mean inequality gives \\(\\prod_{j=1}^q B_j\\le q^{-1}\\sum_{j=1}^q B_j^q\\) pointwise, so expectation and rescaling give \\(\\mathbb E[\\prod_j A_j]\\le\\prod_j\\{\\mathbb E[A_j^q]\\}^{1/q}\\). Applying this inequality to the preceding product gives\n\\[\n\\mathbb E_{P_Z}\\!\\left[e^{s\\lambda n(\\widehat\\theta-\\theta)}\\right]\n\\le\\prod_{j=1}^q\n\\left[\n\\mathbb E_{P_Z}\\!\\left\\{\n\\exp\\left(s\\lambda\\frac q{r_0}\\sum_{i\\in S_j}W_i\\right)\n\\right\\}\n\\right]^{1/q}.\n\\]\nEach \\(S_j\\) is an independent set in the dependency graph, so the variables \\((W_i)_{i\\in S_j}\\) are jointly independent. Apply the scalar bound with \\(M=\\pi_{\\exp}^{-1}\\) and \\(t=\\lambda q/r_0=\\lambda\\kappa_n\\). The imposed range of \\(\\lambda\\) ensures \\(tM<3\\). Thus\n\\[\n\\log\\mathbb E_{P_Z}\\!\\left[\n\\exp\\left(s\\lambda\\kappa_n\\sum_{i\\in S_j}W_i\\right)\n\\right]\n\\le\n\\frac{\\lambda^2\\kappa_n^2}{2\\{1-\\lambda\\kappa_n/(3\\pi_{\\exp})\\}}\n\\sum_{i\\in S_j}\\mathbb E_{P_Z}[W_i^2].\n\\]\nTaking logarithms in the H\\\"older bound, summing over color classes, and using that every vertex occurs exactly \\(r_0\\) times yield\n\\[\n\\begin{aligned}\n\\log\\mathbb E_{P_Z}\\!\\left[e^{s\\lambda n(\\widehat\\theta-\\theta)}\\right]\n&\\le\n\\frac{\\lambda^2\\kappa_n^2}{2q\\{1-\\lambda\\kappa_n/(3\\pi_{\\exp})\\}}\n\\sum_{j=1}^q\\sum_{i\\in S_j}\\mathbb E_{P_Z}[W_i^2]\\\\\\\\\\\n&=\n\\frac{\\lambda^2\\kappa_n^2r_0}{2q\\{1-\\lambda\\kappa_n/(3\\pi_{\\exp})\\}}\n\\sum_{i\\in U_n}\\mathbb E_{P_Z}[W_i^2]\\\\\\\\\\\n&=\n\\frac{\\lambda^2\\kappa_n}{2\\{1-\\lambda\\kappa_n/(3\\pi_{\\exp})\\}}\n\\sum_{i\\in U_n}\\mathbb E_{P_Z}[W_i^2]\\\\\\\\\\\n&\\le\n\\frac{\\lambda^2\\kappa_n n\\overline V_n}{2\\{1-\\lambda\\kappa_n/(3\\pi_{\\exp})\\}}.\n\\end{aligned}\n\\]\nThe last inequality is the total second-moment bound from \\(\\mathrm{lem{:}local\\mbox{-}dependency}\\). Subtracting the final deterministic upper bound inside the exponential is exactly the definition of \\(\\mathcal E_\\lambda^s(\\theta)\\). Therefore\n\\[\n\\mathbb E_{P_Z}[\\mathcal E_\\lambda^s(\\theta)]\\le1.\n\\]"
+    },
+    {
+      "id": "prop:known-holder-bernstein-ci",
+      "kind": "proposition",
+      "statement": "For every m in mathcal M_n, P_{Z,m}{theta in C_alpha}>=1-alpha; equivalently, P_{Z,m}{|theta_hat-theta|>sqrt{2 kappa_n Vbar_n log(2/alpha)/n}+kappa_n log(2/alpha)/(3n pi_exp)}<=alpha.",
+      "depends_on": [
+        "lem:known-holder-mgf",
+        "def:confidence-interval"
+      ],
+      "status": "proved",
+      "justification": "Chernoff inversion gives a computable randomization-valid interval over the full nonhomogeneous exposure class. Its upper validity is useful, but the fractional-color Bernstein form is established substrate in light of Pelekis--Ramon--Wang and Janson (2004, Theorem 2.3), not the paper's priority claim.",
+      "gap": "Aronow--Samii provides exposure-HT inference but not the later confidence-length lower bound. Sandoval--Balakrishnan--Feller--Jordan--Waudby-Smith proves SUTVA minimax RMSE rates, not uniformly valid expected interval length with \\(\\sqrt{\\log(1/\\alpha)}\\), network exposures, or exact rare-reveal transport. Leung, Harshaw--Middleton--Savje, Ham et al., Kandiros et al., Tchetgen Tchetgen--VanderWeele, and Rigdon--Hudgens likewise address different asymptotic, variance, sequential, design, concentration, or exact-interval questions.",
+      "consumer": "After restriction to the clique-block class and intersection with the causal parameter range, this proposition supplies the attainable upper endpoint. The matching lower endpoint uses only homogeneous witnesses inside the larger nonhomogeneous class, so the eventual novelty is the exact witness transport and same-class sandwich, not a general-network minimax claim or separate necessity of both penalties.",
+      "proof_tex": "Fix \\(m\\in\\mathcal M_n\\) and set\n\\[\nx=\\log(2/\\alpha),\\qquad\nv=\\kappa_n n\\overline V_n,\n\\qquad c=\\frac{\\kappa_n}{3\\pi_{\\exp}}.\n\\]\nAll three quantities are positive. The e-value inequality in \\(\\mathrm{lem{:}known\\mbox{-}holder\\mbox{-}mgf}\\), together with its definition, is equivalent to\n\\[\n\\mathbb E_{P_Z}\\!\\left[\ne^{s\\lambda n(\\widehat\\theta-\\theta)}\n\\right]\n\\le \\exp\\left\\{\\frac{\\lambda^2v}{2(1-c\\lambda)}\\right\\},\n\\qquad s\\in\\{-1,1\\},\\quad 0<\\lambda<c^{-1}.\n\\]\nLet \\(u=\\sqrt{2x/v}\\) and choose\n\\[\n\\lambda_x=\\frac{u}{1+cu}.\n\\]\nThen \\(0<\\lambda_x<c^{-1}\\) and \\(1-c\\lambda_x=(1+cu)^{-1}\\). Markov's inequality applied to either sign, with\n\\[\nt=\\sqrt{2vx}+cx=vu+\\frac{cvu^2}{2},\n\\]\ntherefore gives\n\\[\n\\begin{aligned}\n\\mathbb P_{Z,m}\\!\\left\\{s n(\\widehat\\theta-\\theta)\\ge t\\right\\}\n&\\le\n\\exp\\left\\{-\\lambda_xt+\n\\frac{\\lambda_x^2v}{2(1-c\\lambda_x)}\\right\\}\\\\\\\\\\\n&=\\exp\\left\\{-\\frac{x(2+cu)}{1+cu}\n+\\frac{x}{1+cu}\\right\\}\n=e^{-x}.\n\\end{aligned}\n\\]\nTaking a union bound over \\(s=1\\) and \\(s=-1\\) yields\n\\[\n\\mathbb P_{Z,m}\\!\\left\\{\n|\\widehat\\theta-\\theta|>\n\\sqrt{\\frac{2\\kappa_n\\overline V_n x}{n}}\n+\\frac{\\kappa_n x}{3n\\pi_{\\exp}}\n\\right\\}\n\\le 2e^{-x}=\\alpha.\n\\]\nSubstitution of \\(x=\\log(2/\\alpha)\\) gives the displayed probability bound in the proposition. By the definition of \\(C_\\alpha\\), its complement event \\(\\{\\theta\\notin C_\\alpha\\}\\) is exactly the strict-deviation event in the last display. Hence \\(\\mathbb P_{Z,m}\\{\\theta\\in C_\\alpha\\}\\ge1-\\alpha\\)."
+    },
+    {
+      "id": "prop:edgeless-reduction",
+      "kind": "proposition",
+      "statement": "If D_n has no edges, then kappa_n=1 and the interval in prop:known-holder-bernstein-ci is the ordinary independent-summand Bernstein interval for the exposure-HT contrast with variance envelope Vbar_n and range bound pi_exp^{-1}.",
+      "depends_on": [
+        "prop:known-holder-bernstein-ci",
+        "def:dependency-graph",
+        "def:fractional-coloring",
+        "lem:local-dependency"
+      ],
+      "status": "proved",
+      "justification": "This boundary check shows exact reduction to ordinary independent-summand Bernstein inference when \\(\\chi_f(D_n)=1\\). It has no priority claim.",
+      "gap": "The proposition verifies constants and dependence normalization only; it does not extend Aronow--Samii, Pelekis--Ramon--Wang, Janson, Sandoval--Balakrishnan--Feller--Jordan--Waudby-Smith, Leung, Harshaw--Middleton--Savje, Ham et al., Kandiros et al., Tchetgen Tchetgen--VanderWeele, or Rigdon--Hudgens on their respective causal, concentration, RMSE, asymptotic, variance, sequential, design, partial-interference, or exact-interval results.",
+      "consumer": "It supports interpretation of the upper benchmark only. The paper's substantive addition remains the homogeneous-witness rare-reveal transport that certifies a lower bound against procedures valid on the larger nonhomogeneous class and thereby yields the attained same-class expected-length sandwich.",
+      "proof_tex": "Suppose \\(D_n\\) has no edges. Then \\(U_n\\) itself is an independent set, so the one-fold coloring consisting only of \\(S_1=U_n\\) has \\(q=r_0=1\\). Hence \\(\\kappa_n\\le1\\). Conversely, in every exact \\(r_0\\)-fold coloring, any fixed vertex must belong to \\(r_0\\) sets among the \\(q\\) color classes, which forces \\(q\\ge r_0\\). Thus every ratio \\(q/r_0\\) is at least one, and\n\\[\n\\kappa_n=\\chi_f(D_n)=1.\n\\]\n\nThe public statement of \\(\\texttt{lem:local-dependency}\\) says that \\(D_n\\) is a dependency graph for the centered exposure-HT summands. Since the whole vertex set is independent when \\(D_n\\) is edgeless, those summands are mutually independent. The same statement supplies \\(\\mathbb E_{P_Z}[W_i]=0\\), \\(|W_i|\\le\\pi_{\\exp}^{-1}\\), \\(\\sum_i\\mathbb E_{P_Z}[W_i^2]\\le n\\overline V_n\\), and \\(\\sum_iW_i=n(\\widehat\\theta-\\theta)\\). Substituting \\(\\kappa_n=1\\) into \\(\\mathrm{prop{:}known\\mbox{-}holder\\mbox{-}bernstein\\mbox{-}ci}\\) gives\n\\[\n\\mathbb P_{Z,m}\\!\\left\\{\n|\\widehat\\theta-\\theta|>\n\\sqrt{\\frac{2\\overline V_n\\log(2/\\alpha)}{n}}\n+\\frac{\\log(2/\\alpha)}{3n\\pi_{\\exp}}\n\\right\\}\\le\\alpha.\n\\]\nThe generic independent-summand Bernstein radius for an average of centered summands with total variance envelope \\(n\\overline V_n\\) and absolute range bound \\(\\pi_{\\exp}^{-1}\\) is exactly the radius in this display. Therefore the fractional-coloring interval reduces to the ordinary independent-summand Bernstein interval claimed."
+    },
+    {
+      "id": "lem:block-geometry",
+      "kind": "lemma",
+      "statement": "The subclass relation \\(\\mathcal M_{n,r}^{\\mathrm{block}}\\subseteq\\mathcal M_n\\) holds, and \\(\\theta(m)\\in[-1,1]\\) for every \\(m\\in\\mathcal M_{n,r}^{\\mathrm{block}}\\). Moreover, for every \\(m\\in\\mathcal M_{n,r}^{\\mathrm{block}}\\), \\(D_n\\) is the disjoint union of \\(B=n/r\\) cliques of size \\(r\\), \\(\\kappa_n=r\\), \\(\\pi_i(a)=\\pi_i(b)=\\pi_\\star=2^{-r}\\) for every \\(i\\in U_n\\), \\(\\pi_{\\exp}=2^{-r}\\), and \\(\\overline V_n=2^{r+1}\\).",
+      "depends_on": [
+        "def:block-class",
+        "def:dependency-graph",
+        "def:fractional-coloring",
+        "def:propensity-envelope",
+        "ass:bounded-outcomes"
+      ],
+      "status": "proved",
+      "justification": "The strengthened geometry lemma records the ambient subclass relation, bounded target, clique-block dependency geometry, exposure probabilities, and propensity envelope for every member of the nonhomogeneous class.",
+      "gap": "Its conclusions require no block-homogeneous outcome restriction; homogeneity belongs only to the lower-bound witness.",
+      "consumer": "It is the public interface supplying every class, clipping, graph, and propensity substitution used by the comparison theorem's upper construction.",
+      "proof_tex": "Fix \\(m\\in\\mathcal M_{n,r}^{\\mathrm{block}}\\). By the definition of \\(\\mathcal M_{n,r}^{\\mathrm{block}}\\), one has \\(m\\in\\mathcal M_n\\); hence \\(\\mathcal M_{n,r}^{\\mathrm{block}}\\subseteq\\mathcal M_n\\). By \\(\\texttt{ass:bounded-outcomes}\\), \\(-1\\le Y_i(a)-Y_i(b)\\le 1\\) for every \\(i\\in U_n\\). Averaging these inequalities yields \\(\\theta(m)\\in[-1,1]\\).\n\nWe next determine the dependency graph. If distinct units \\(i\\) and \\(j\\) belong to the same block \\(B_\\ell\\), the hard block-exposure condition gives \\(N_i=N_j=B_\\ell\\), so \\(N_i\\cap N_j=B_\\ell\\ne\\varnothing\\). Thus \\(\\{i,j\\}\\) is an edge of \\(D_n\\). If \\(i\\in B_\\ell\\) and \\(j\\in B_{\\ell'}\\) with \\(\\ell\\ne\\ell'\\), then the partition condition and the hard block-exposure condition give \\(N_i\\cap N_j=B_\\ell\\cap B_{\\ell'}=\\varnothing\\), so there is no edge between them. Consequently, \\(D_n\\) is the disjoint union of the \\(B=n/r\\) complete graphs induced by the blocks, each of order \\(r\\).\n\nTo compute its fractional chromatic number without overloading \\(r\\), let \\(t\\ge1\\) be a fold multiplicity and let \\(S_1,\\ldots,S_q\\) be a \\(t\\)-fold proper coloring by independent sets. In any fixed block, the total number of vertex--set incidences is \\(rt\\), while each independent set contains at most one vertex from that block. Hence \\(q\\ge rt\\), and therefore \\(\\chi_t(D_n)/t\\ge r\\). Conversely, color the vertices in every block with the same \\(r\\) colors, using each color once in each block. Every color class is independent, so \\(\\chi_1(D_n)\\le r\\). The clique lower bound gives the reverse inequality, and the exact fractional-color representation therefore implies\n\\[\n\\kappa_n=\\chi_f(D_n)=r.\n\\]\n\nFor any \\(i\\in B_\\ell\\), the event \\(I_i(a)=1\\) is exactly the event that all \\(r\\) assignments in \\(B_\\ell\\) equal one, and \\(I_i(b)=1\\) is exactly the event that all of them equal zero. Independent balanced Bernoulli assignment therefore gives\n\\[\n\\pi_i(a)=\\left(\\frac12\\right)^r=2^{-r}=\\pi_\\star,\\qquad \\pi_i(b)=\\left(\\frac12\\right)^r=2^{-r}=\\pi_\\star.\n\\]\nThe block positivity calibration now gives \\(\\pi_{\\exp}=\\pi_\\star=2^{-r}\\). Finally, substituting the two exposure probabilities into the propensity envelope gives\n\\[\n\\overline V_n=\\frac1n\\sum_{i\\in U_n}\\left\\{\\pi_i(a)^{-1}+\\pi_i(b)^{-1}\\right\\}=\\frac1n\\sum_{i\\in U_n}2^{r+1}=2^{r+1}.\n\\]\nAll conclusions hold for the originally arbitrary \\(m\\in\\mathcal M_{n,r}^{\\mathrm{block}}\\), and none used block homogeneity of the potential outcomes."
+    },
+    {
+      "id": "lem:rare-exposure-block-reduction",
+      "kind": "lemma",
+      "statement": "For the canonical block design, let \\(q=2^{-r}\\) and \\(B=n/r\\). There is a hierarchical prior supported on a block-homogeneous witness subclass of \\(\\mathcal M_{n,r}^{\\mathrm{block}}\\) such that \\(P\\) is uniform on \\([1/4,3/4]\\), conditional on \\(P\\) the variables \\(U_1,\\ldots,U_B\\) are independent \\(\\operatorname{Bernoulli}(P)\\), \\(\\theta=B^{-1}\\sum_{\\ell=1}^B U_\\ell\\), and the design-based observed data are equivalent to \\((R_\\ell,R_\\ell U_\\ell)_{\\ell=1}^B\\), together with an ancillary variable \\(A\\) whose conditional law given \\(R\\) is independent of \\((P,U_1,\\ldots,U_B)\\), where \\(R_1,\\ldots,R_B\\) are independent \\(\\operatorname{Bernoulli}(q)\\) and independent of \\((P,U_1,\\ldots,U_B)\\).",
+      "depends_on": [
+        "def:block-class"
+      ],
+      "proof_tex": "Fix the benchmark partition and design. For every \\(u=(u_1,\\ldots,u_B)\\in\\{0,1\\}^B\\), define a fixed potential-outcome schedule \\(m_u\\) by\n\\[\nY_i^{(u)}(a)=u_\\ell,\n\\qquad\nY_i^{(u)}(e)=0\\quad\\text{for every }e\\ne a,\n\\qquad i\\in B_\\ell,\n\\tag{12}\n\\]\nand set \\(Y_i^{(u)}(z)=Y_i^{(u)}(c_i(z_{N_i}))\\). This schedule is fixed, takes values in \\([0,1]\\), and satisfies exposure sufficiency by construction. Together with the balanced Bernoulli design, block partition, hard block exposure map, and positivity calibration, \\(\\texttt{def:block-class}\\) implies \\(m_u\\in\\mathcal M_{n,r}^{\\mathrm{block}}\\). The schedule is block homogeneous only within this witness subclass. Its target is\n\\[\n\\theta(m_u)\n=\\frac1n\\sum_{\\ell=1}^B\\sum_{i\\in B_\\ell}(u_\\ell-0)\n=\\frac1B\\sum_{\\ell=1}^B u_\\ell.\n\\tag{13}\n\\]\nDraw \\(P\\) uniformly on \\([1/4,3/4]\\), then draw \\(U_1,\\ldots,U_B\\) conditionally independently as \\(\\operatorname{Bernoulli}(P)\\), and select the fixed schedule \\(m_U\\). Conditional on \\(U\\), all potential outcomes remain fixed and assignment is the experiment's only randomness. Define\n\\[\nR_\\ell=\\mathbf 1\\{Z_j=1\\text{ for every }j\\in B_\\ell\\}.\n\\tag{14}\n\\]\nAssignments are independent across disjoint blocks and balanced within each block, so \\(R_1,\\ldots,R_B\\) are independent \\(\\operatorname{Bernoulli}(q)\\) with \\(q=2^{-r}\\). Randomization is independent of the prior, hence \\(R\\) is independent of \\((P,U)\\). If \\(R_\\ell=1\\), every observed outcome in block \\(\\ell\\) equals \\(U_\\ell\\). If \\(R_\\ell=0\\), the exposure is either \\(b\\) or \\(h\\), and every observed outcome in that block equals zero. Therefore, assignment by assignment,\n\\[\n\\bigl(Y_i^{\\mathrm{obs}}:i\\in B_\\ell\\bigr)\n=\\bigl(R_\\ell U_\\ell,\\ldots,R_\\ell U_\\ell\\bigr).\n\\tag{15}\n\\]\nTake \\(A=Z\\). Since \\(R\\) is a function of \\(Z\\), the pair \\((Z,Y^{\\mathrm{obs}})\\) determines \\((R,RU,A)\\) by \\((14)\\)--\\((15)\\), and conversely \\((R,RU,A)\\) determines \\((Z,Y^{\\mathrm{obs}})\\). Thus the observed-data sigma-fields coincide. Finally, the conditional law of \\(A=Z\\) given \\(R\\) is fixed by the known design and is independent of \\((P,U)\\). Equations \\((13)\\)--\\((15)\\) prove the asserted reduction.",
+      "status": "proved"
+    },
+    {
+      "id": "lem:bayesian-missing-exposure-width",
+      "kind": "lemma",
+      "statement": "Let \\(B\\) be a positive integer and let \\(q\\in(0,1/2]\\). Draw \\(P\\) uniformly on \\([1/4,3/4]\\), conditionally draw \\(U_1,\\ldots,U_B\\) independently as \\(\\operatorname{Bernoulli}(P)\\), and independently draw \\(R_1,\\ldots,R_B\\) as \\(\\operatorname{Bernoulli}(q)\\). Let \\(T=B^{-1}\\sum_{\\ell=1}^B U_\\ell\\). The observed data are \\((R_\\ell,R_\\ell U_\\ell)_{\\ell=1}^B\\), together with any ancillary variable \\(A\\) whose conditional law given \\((R_\\ell)_{\\ell=1}^B\\) is independent of \\((P,U_1,\\ldots,U_B)\\). If \\(0<\\alpha<\\exp(-1024)\\), \\(Bq\\ge4096\\log(1/\\alpha)\\), and \\(J\\) is any observed-data-measurable interval satisfying \\(\\mathbb P(T\\in J)\\ge1-\\alpha\\), then\n\\[\n\\mathbb E[\\operatorname{length}(J)]\\ge\\frac{1}{256\\sqrt{2}}\\sqrt{\\frac{\\log(1/\\alpha)}{Bq}}.\n\\]",
+      "depends_on": [],
+      "proof_tex": "Write\n\\[\n\\mu=Bq,\\qquad L=\\log(1/\\alpha),\\qquad K=\\sum_{\\ell=1}^B R_\\ell,\\qquad S=\\sum_{\\ell=1}^B R_\\ell U_\\ell,\n\\]\nand, on \\(K>0\\), put \\(x=S/K\\). The stipulated conditional independence makes \\(A\\) ancillary for the posterior distribution of \\((P,U)\\) once \\(R\\) is known. Define\n\\[\nG=\\left\\{\\frac\\mu2\\le K\\le2\\mu,\\ K\\le\\frac{3B}{4},\\ \\frac5{16}\\le x\\le\\frac{11}{16}\\right\\}.\n\\tag{16}\n\\]\nThe binomial moment-generating function and \\(1+u\\le e^u\\) give, for every real \\(t\\),\n\\[\n\\mathbb E[e^{tK}]=(1-q+qe^t)^B\\le\\exp\\{\\mu(e^t-1)\\}.\n\\tag{17}\n\\]\nExponential Markov inequality in \\((17)\\), first with \\(t=-\\log2\\) and then with \\(t=\\log2\\), gives\n\\[\n\\mathbb P(K<\\mu/2)\\le e^{-\\mu/8},\n\\qquad\n\\mathbb P(K>2\\mu)\\le e^{-\\mu/3}.\n\\tag{18}\n\\]\nBecause \\(q\\le1/2\\), the event \\(K>3B/4\\) implies \\(K>3\\mu/2\\). Taking \\(t=\\log(3/2)\\) in \\((17)\\) gives\n\\[\n\\mathbb P(K>3B/4)\\le e^{-\\mu/12}.\n\\tag{19}\n\\]\nFor a Bernoulli variable \\(H\\), the centered log-moment-generating function \\(g(t)=\\log\\mathbb E[e^{t(H-\\mathbb EH)}]\\) satisfies \\(g(0)=g'(0)=0\\) and \\(g''(t)\\le1/4\\), because every exponential tilt remains Bernoulli. Taylor's formula gives \\(g(t)\\le t^2/8\\). Conditional on \\((P,K)\\), the \\(K\\) revealed outcomes are independent \\(\\operatorname{Bernoulli}(P)\\); exponential Markov inequality at \\(t=4u\\) consequently yields\n\\[\n\\mathbb P(|S/K-P|\\ge u\\mid P,K)\\le2e^{-2Ku^2}.\n\\tag{20}\n\\]\nThe prior event \\(\\{3/8\\le P\\le5/8\\}\\) has probability \\(1/2\\). On this event, failure of \\(5/16\\le x\\le11/16\\) implies \\(|x-P|\\ge1/16\\). Combining \\((18)\\)--\\((20)\\), with \\(K\\ge\\mu/2\\) in \\((20)\\), gives\n\\[\n\\mathbb P(G)\n\\ge\\frac12-e^{-\\mu/8}-e^{-\\mu/3}-e^{-\\mu/12}-2e^{-\\mu/256}\n>\\frac38.\n\\tag{21}\n\\]\nThe last inequality follows from \\(\\mu\\ge4096L\\) and \\(L>1024\\).\n\nWe next lower-bound the posterior spread on \\(G\\). Given the observations, the posterior density of \\(P\\) on \\(I=[1/4,3/4]\\) is proportional to \\(e^{\\ell(p)}\\), where\n\\[\n\\ell(p)=K\\{x\\log p+(1-x)\\log(1-p)\\}.\n\\tag{22}\n\\]\nOnly the \\(K\\) revealed outcomes enter this likelihood. Moreover,\n\\[\n\\ell(p)-\\ell(x)=-K D(x\\mathbin\\Vert p),\n\\qquad\n\\frac{\\mathrm d^2}{\\mathrm dp^2}D(x\\mathbin\\Vert p)=\\frac{x}{p^2}+\\frac{1-x}{(1-p)^2}.\n\\tag{23}\n\\]\nOn \\(G\\), \\(x\\in[5/16,11/16]\\). For \\(p\\in I\\), the second derivative in \\((23)\\) lies between \\(10/9\\) and \\(16\\). Taylor's formula around \\(p=x\\) thus gives\n\\[\n\\frac59(p-x)^2\\le D(x\\mathbin\\Vert p)\\le8(p-x)^2.\n\\tag{24}\n\\]\nThe lower bound in \\((24)\\), after enlarging the integration domain from \\(I\\) to \\(\\mathbb R\\), bounds the posterior normalizer by\n\\[\nZ\\le e^{\\ell(x)}\\sqrt{\\frac{9\\pi}{5K}}=:\\frac{C_0e^{\\ell(x)}}{\\sqrt K},\n\\qquad C_0=\\sqrt{\\frac{9\\pi}{5}}.\n\\tag{25}\n\\]\nSet\n\\[\nt=\\frac18\\sqrt{\\frac{L}{K}}.\n\\tag{26}\n\\]\nOn \\(G\\), \\(K\\ge\\mu/2\\ge2048L\\), so \\(2t\\le1/16\\). Hence both \\([x+t,x+2t]\\) and \\([x-2t,x-t]\\) lie in \\(I\\). Integrating \\((22)\\) over either interval and applying \\((24)\\)--\\((25)\\) shows that each interval has posterior probability at least\n\\[\n\\frac{\\sqrt Kt}{C_0}e^{-32Kt^2}=\\frac{\\sqrt L}{8C_0}e^{-L/2}>8\\alpha.\n\\tag{27}\n\\]\nThe final inequality holds because \\(L>1024\\).\n\nLet \\(M=B-K\\). On \\(G\\), \\(M/B\\ge1/4\\) and \\(M/K\\ge1/3\\). Conditional on \\(P=p\\) and the observations, the unrevealed sum \\(W=\\sum_{\\ell:R_\\ell=0}U_\\ell\\) has distribution \\(\\operatorname{Binomial}(M,p)\\), while\n\\[\nT=\\frac{S+W}{B}.\n\\tag{28}\n\\]\nFor \\(p\\in[x+t,x+2t]\\), the Bernoulli bound used in \\((20)\\) gives\n\\[\n\\mathbb P(W/M\\ge x+t/2\\mid p,\\text{ observations})\n\\ge1-e^{-Mt^2/2}\n\\ge\\frac12,\n\\tag{29}\n\\]\nbecause \\(Mt^2/2=(M/K)L/128\\ge L/384>\\log2\\). The symmetric lower-tail statement holds for \\(p\\in[x-2t,x-t]\\). Integrating \\((29)\\) over the two posterior regions from \\((27)\\) gives\n\\[\n\\mathbb P\\left(T\\ge x+\\frac{Mt}{2B}\\mid\\text{observations}\\right)>4\\alpha,\n\\qquad\n\\mathbb P\\left(T\\le x-\\frac{Mt}{2B}\\mid\\text{observations}\\right)>4\\alpha.\n\\tag{30}\n\\]\nAny interval having conditional posterior probability at least \\(1-4\\alpha\\) must span the two thresholds in \\((30)\\). Its length is therefore at least\n\\[\n\\frac{Mt}{B}\\ge\\frac{t}{4}\\ge\\frac{1}{32\\sqrt2}\\sqrt{\\frac{L}{\\mu}},\n\\tag{31}\n\\]\nwhere the last inequality uses \\(K\\le2\\mu\\).\n\nLet \\(Q_O\\) denote the posterior law given all observations. Bayes' identity and the assumed marginal coverage give\n\\[\n\\mathbb E[Q_O(T\\notin J)]=\\mathbb P(T\\notin J)\\le\\alpha.\n\\tag{32}\n\\]\nBy Markov's inequality, the event \\(\\mathcal H=\\{Q_O(T\\in J)\\ge1-4\\alpha\\}\\) has probability at least \\(3/4\\). Equation \\((21)\\) implies \\(\\mathbb P(G\\cap\\mathcal H)>1/8\\). Applying \\((31)\\) on this event and averaging yields\n\\[\n\\mathbb E[\\operatorname{length}(J)]\n\\ge\\frac18\\frac{1}{32\\sqrt2}\\sqrt{\\frac{L}{\\mu}}\n=\\frac{1}{256\\sqrt2}\\sqrt{\\frac{\\log(1/\\alpha)}{Bq}}.\n\\]\nIf \\(J\\) has infinite length with positive probability, the conclusion is immediate.",
+      "status": "proved"
+    },
+    {
+      "id": "thm:clique-block-minimax-comparison",
+      "kind": "theorem",
+      "statement": "Let \\(\\mathcal M_{n,r}^{\\mathrm{block}}\\) be the canonical nonhomogeneous block class: the members of \\(\\mathcal M_n\\) satisfying ass:block-partition, ass:balanced-block-assignment, ass:hard-block-exposure, and ass:block-positivity-calibration, without imposing ass:block-homogeneous-target-schedule; let \\(\\mathfrak C_\\alpha\\) be its uniformly randomization-valid interval class from def:uniform-intervals. Define the explicit homogeneous lower-bound witness subclass \\(\\mathcal H_{n,r}^{\\mathrm{block}}=\\{m\\in\\mathcal M_{n,r}^{\\mathrm{block}}:m\\text{ satisfies ass:block-homogeneous-target-schedule}\\}\\). With universal constants \\(c_0=1/4096\\), \\(c_1=1/(256\\sqrt2)\\), and \\(\\alpha_0=e^{-1024}\\), for every \\(0<\\alpha<\\alpha_0\\) and every \\(n,r\\) such that \\(r\\mid n\\) and \\(r2^r\\log(1/\\alpha)\\le c_0n\\),\n\\[\nc_1\\sqrt{\\frac{r2^r\\log(1/\\alpha)}n}\n\\le \\inf_{C\\in\\mathfrak C_\\alpha}\\sup_{m\\in\\mathcal M_{n,r}^{\\mathrm{block}}}\\mathbb E_{Z,m}[\\operatorname{length}(C)]\n\\le \\min\\left\\{2,\\ 4\\sqrt{\\frac{r2^r\\log(2/\\alpha)}n}+\\frac{2r2^r\\log(2/\\alpha)}{3n}\\right\\}.\n\\]\nIn particular, every \\(C\\in\\mathfrak C_\\alpha\\) obeys the lower bound asked in the OEQ. The upper inequality is witnessed by coordinatewise clipping of the Bernstein interval \\(C_\\alpha\\) to \\([-1,1]\\). The lower bound is witnessed entirely inside \\(\\mathcal H_{n,r}^{\\mathrm{block}}\\): conditional on a fixed schedule from the prior-supported witness, its \\(B=n/r\\) blockwise observation channels are independent and each fixed block outcome is revealed with probability \\(q=2^{-r}\\). Thus the exact one-datum-per-block compression applies only to that homogeneous witness subclass. For the nonhomogeneous ambient class, the claims are only that the Bernstein interval is uniformly valid and that the witness remains a subclass. The comparison establishes the joint effective count \\(Bq=n/(r2^r)\\), not separate necessity of graph dependence, within-block replication, and rare exposure as three distinct penalties.",
+      "depends_on": [
+        "lem:block-geometry",
+        "prop:known-holder-bernstein-ci",
+        "lem:rare-exposure-block-reduction",
+        "lem:bayesian-missing-exposure-width"
+      ],
+      "proof_tex": "Put \\(q=2^{-r}\\), \\(B=n/r\\), \\(\\mu=Bq=n/(r2^r)\\), and \\(L=\\log(1/\\alpha)\\). The moderate-deviation condition with \\(c_0=1/4096\\) is exactly \\(\\mu\\ge4096L\\); moreover, \\(q\\le1/2\\) because \\(r\\ge1\\).\n\nWe first prove the lower inequality. Fix \\(C\\in\\mathfrak C_\\alpha\\). Apply lem:rare-exposure-block-reduction. Every schedule in the support of that lemma's prior lies in the homogeneous witness subclass \\(\\mathcal H_{n,r}^{\\mathrm{block}}\\), hence in the canonical ambient class \\(\\mathcal M_{n,r}^{\\mathrm{block}}\\). Conditional on the realized binary block schedule \\(U=(U_1,\\ldots,U_B)\\), the causal target is\n\\[\nT=\\frac1B\\sum_{\\ell=1}^B U_\\ell. \\tag{1}\n\\]\nUniform design validity of \\(C\\), applied separately to every fixed schedule and then averaged over the hierarchical prior, gives\n\\[\n\\Pr\\{T\\in C(Z,Y^{\\mathrm{obs}})\\}\\ge1-\\alpha. \\tag{2}\n\\]\nOnly on this homogeneous witness, lem:rare-exposure-block-reduction identifies the outcome-bearing data with \\((R_\\ell,R_\\ell U_\\ell)_{\\ell=1}^B\\), where the revelation indicators are independent \\(\\operatorname{Bernoulli}(q)\\), plus an ancillary assignment variable satisfying the conditional-independence condition in lem:bayesian-missing-exposure-width. The hypotheses \\(\\alpha<e^{-1024}\\) and \\(Bq=\\mu\\ge4096L\\), together with (2), therefore imply\n\\[\n\\mathbb E_{P,U,Z}[\\operatorname{length}(C)]\\ge\\frac1{256\\sqrt2}\\sqrt{\\frac{L}{Bq}}. \\tag{3}\n\\]\nThe expectation on the left of (3) is an average of design-based expected lengths over fixed schedules in \\(\\mathcal H_{n,r}^{\\mathrm{block}}\\). It is at most\n\\[\n\\sup_{m\\in\\mathcal H_{n,r}^{\\mathrm{block}}}\\mathbb E_{Z,m}[\\operatorname{length}(C)]\\le\\sup_{m\\in\\mathcal M_{n,r}^{\\mathrm{block}}}\\mathbb E_{Z,m}[\\operatorname{length}(C)]. \\tag{4}\n\\]\nSince \\(Bq=n/(r2^r)\\), (3)--(4) give the claimed lower bound for this arbitrary \\(C\\); taking the infimum over \\(\\mathfrak C_\\alpha\\) proves the first inequality. This argument uses block homogeneity only to construct \\(\\mathcal H_{n,r}^{\\mathrm{block}}\\), not as a restriction on the ambient class.\n\nFor the upper inequality, lem:block-geometry applies throughout the canonical ambient block class and yields\n\\[\n\\kappa_n=r,\\qquad \\overline V_n=2^{r+1},\\qquad \\pi_{\\exp}=2^{-r}. \\tag{5}\n\\]\nThe public conclusion of \\(\\texttt{lem:block-geometry}\\) gives both \\(\\mathcal M_{n,r}^{\\mathrm{block}}\\subseteq\\mathcal M_n\\) and \\(\\theta(m)\\in[-1,1]\\) throughout the block class. Applying \\(\\texttt{prop:known-holder-bernstein-ci}\\) therefore gives coverage at least \\(1-\\alpha\\) for \\(C_\\alpha=[\\widehat\\theta-w_\\alpha,\\widehat\\theta+w_\\alpha]\\). Let \\(\\Pi(x)=\\min\\{1,\\max\\{-1,x\\}\\}\\) and define the interval\n\\[\nC_\\alpha^{\\mathrm{clip}}=[\\Pi(\\widehat\\theta-w_\\alpha),\\Pi(\\widehat\\theta+w_\\alpha)]. \\tag{6}\n\\]\nMonotonicity and the one-Lipschitz property of \\(\\Pi\\) show that (6) preserves every coverage event and satisfies deterministically\n\\[\n\\operatorname{length}(C_\\alpha^{\\mathrm{clip}})\\le\\min\\{2,2w_\\alpha\\}. \\tag{7}\n\\]\nConsequently \\(C_\\alpha^{\\mathrm{clip}}\\in\\mathfrak C_\\alpha\\). Substitution of (5) into the half-width stated by \\(\\texttt{prop:known-holder-bernstein-ci}\\) gives\n\\[\n2w_\\alpha=4\\sqrt{\\frac{r2^r\\log(2/\\alpha)}n}+\\frac{2r2^r\\log(2/\\alpha)}{3n}. \\tag{8}\n\\]\nTaking expectations and the supremum in (7), and then using this single procedure as a witness for the infimum, proves the upper inequality. Equations (3) and (8) have the same square-root order \\(\\sqrt{\\log(1/\\alpha)/(Bq)}\\), up to universal constants and replacing \\(\\log(1/\\alpha)\\) by \\(\\log(2/\\alpha)\\). The exact reduction used to obtain (3) was asserted only for the homogeneous witness; the upper argument used no homogeneity.",
+      "status": "proved",
+      "justification": "The theorem combines an explicit lower-bound witness with the clipped Bernstein procedure to obtain a full same-class confidence-length sandwich.",
+      "gap": "The result establishes the joint effective count \\(n/(r2^r)\\) only on the canonical clique-block class and in the stated moderate-deviation regime.",
+      "consumer": "A downstream reader can use the displayed endpoints to assess attainable confidence length for the canonical nonhomogeneous block experiment."
+    }
+  ],
+  "sampling_model": {
+    "design": "Known independent Bernoulli assignment P_Z=product_i Bernoulli(p_i).",
+    "units": "A fixed finite population U_n with fixed bounded exposure-indexed potential outcomes.",
+    "treatment": "Binary assignment Z_i and known local exposure c_i(Z_{N_i}).",
+    "overlap": "Known target exposure probabilities pi_i(a),pi_i(b)>=pi_exp>0.",
+    "nuisance_estimation": "None; the interval uses only known design probabilities and observed outcomes."
+  },
+  "estimand_functional": "theta_hat=n^{-1}sum_{i in U_n}[I_i(a)Y_i^{obs}/pi_i(a)-I_i(b)Y_i^{obs}/pi_i(b)], with |theta_hat-theta|<=sqrt{2 kappa_n Vbar_n log(2/alpha)/n}+kappa_n log(2/alpha)/(3n pi_exp)",
+  "target_estimand": "theta=n^{-1}sum_{i in U_n}[Y_i(a)-Y_i(b)]",
+  "bibliography": [
+    {
+      "key": "AronowSamii2017",
+      "citation": "Aronow, P. M. and C. Samii (2017). Estimating average causal effects under general interference, with application to a social network experiment. Annals of Applied Statistics 11, 1912-1947."
+    },
+    {
+      "key": "RigdonHudgens2015",
+      "citation": "Rigdon, J. and M. G. Hudgens (2015). Exact confidence intervals in the presence of interference. Statistics & Probability Letters 105, 130-135."
+    },
+    {
+      "key": "TchetgenTchetgenVanderWeele2012",
+      "citation": "Tchetgen Tchetgen, E. J. and T. J. VanderWeele (2012). On causal inference in the presence of interference. Statistical Methods in Medical Research 21, 55-75."
+    },
+    {
+      "key": "PelekisRamonWang2017",
+      "citation": "Pelekis, C., J. Ramon, and Y. Wang (2017). Hölder-type inequalities and their applications to concentration and correlation bounds. Indagationes Mathematicae 28, 170--182."
+    },
+    {
+      "key": "Janson2004",
+      "citation": "Janson, S. (2004). Large deviations for sums of partly dependent random variables. Random Structures & Algorithms 24, 234-248."
+    },
+    {
+      "key": "SandovalEtAl2026",
+      "citation": "Sandoval, R. J., S. Balakrishnan, A. Feller, M. I. Jordan, and I. Waudby-Smith (2026). On nonasymptotic confidence intervals for treatment effects in randomized experiments. arXiv:2601.11744."
+    },
+    {
+      "key": "Leung2022",
+      "citation": "Leung, M. P. (2022). Causal inference under approximate neighborhood interference. Econometrica 90, 267-293."
+    },
+    {
+      "key": "HarshawMiddletonSavje2026",
+      "citation": "Harshaw, C., J. A. Middleton, and F. Sävje (2026). Optimized variance estimation under interference and complex experimental designs. Journal of the American Statistical Association."
+    },
+    {
+      "key": "HamEtAl2022",
+      "citation": "Ham, D. W., I. Bojinov, M. Lindon, and M. Tingley (2022). Design-based confidence sequences for causal inference. arXiv:2210.08639."
+    },
+    {
+      "key": "KandirosEtAl2024",
+      "citation": "Kandiros, V., C. Pipis, C. Daskalakis, and C. Harshaw (2024). The conflict graph design: Estimating causal effects under arbitrary neighborhood interference. arXiv:2411.10908."
+    }
+  ],
+  "tldr": "For design-based exposure effects under Bernoulli network experiments, the paper pairs a computable fractional-chromatic Bernstein interval, valid over the full nonhomogeneous exposure class, with an exact homogeneous-witness transport that attains the effective rare-exposure count and yields a same-class expected-length sandwich; the concentration mechanism itself is established substrate, not the novelty claim.",
+  "project_justification": {
+    "gap": "The unresolved comparison is confidence-interval length for rare network exposures, not the existence of exposure-HT or dependency-graph concentration. Aronow--Samii provides the design-based exposure framework, exposure-HT estimation, and variance-based interference inference, but not this expected-length lower bound or same-class sandwich. Pelekis--Ramon--Wang provides the exact-fold Holder aggregation used on the upper side, and Janson (2004, Theorem 2.3) provides generic fractional-chromatic Bernstein-type large deviations for bounded partly dependent sums in terms of \\(\\chi^*\\), summed variances, and a summand bound; neither supplies an exposure-HT causal interval, an e-value, the exact rare-revelation reduction, or the confidence-length comparison. Sandoval--Balakrishnan--Feller--Jordan--Waudby-Smith assumes SUTVA and ordinary direct two-arm outcomes under Bernoulli or complete randomization and proves information-theoretic minimax RMSE rates of order \\(1/\\sqrt{n\\pi}\\), rather than uniformly valid interval expected-length lower bounds carrying \\(\\sqrt{\\log(1/\\alpha)}\\); it has neither network-exposure modeling nor the exact transport to independent rare reveals, although its effective-count intuition is consistent with \\(B=n/r\\), \\(q=2^{-r}\\), and rate \\(1/\\sqrt{Bq}\\) after the present homogeneous-witness reduction. Leung (2022) studies approximate neighborhood interference and asymptotic inference; Harshaw--Middleton--Savje (2026) optimizes variance estimation under interference and complex designs; Ham et al. (2022) develops design-based confidence sequences; Kandiros et al. (2024) studies conflict-graph design and estimation under arbitrary neighborhood interference; Tchetgen Tchetgen--VanderWeele gives partial-interference benchmarks, including finite-sample concentration-based inference; and Rigdon--Hudgens gives exact binary-outcome intervals under two-stage partial interference. None of those results establishes the present fixed-confidence, balanced-Bernoulli clique-block, rare-exposure expected-length lower bound and attained same-class comparison. The scope distinction is essential: upper validity is over the larger nonhomogeneous clique-block class, whereas exact compression and the lower bound use only the homogeneous witness subclass.",
+    "niche": "The paper occupies the narrow junction between an established upper concentration mechanism and a new decision-theoretic witness argument. Aronow--Samii supplies the causal exposure and exposure-HT setting; exact-fold Holder aggregation from Pelekis--Ramon--Wang and generic \\(\\chi^*\\)-Bernstein concentration from Janson (2004, Theorem 2.3) explain the upper tail substrate, for which no novelty is claimed. Sandoval--Balakrishnan--Feller--Jordan--Waudby-Smith supplies compatible \\(1/\\sqrt{n\\pi}\\) effective-count intuition under no interference, but its stated RMSE theorems do not imply a uniformly valid interval-length lower bound with \\(\\sqrt{\\log(1/\\alpha)}\\), network exposures, or the exact rare-reveal transport; in the witness, \\(B=n/r\\) and \\(q=2^{-r}\\) recover the aligned scale \\(1/\\sqrt{Bq}\\). The niche also differs from Leung's approximate-interference asymptotics, Harshaw--Middleton--Savje's variance-estimation optimization, Ham et al.'s confidence sequences, Kandiros et al.'s conflict-graph design problem, Tchetgen Tchetgen--VanderWeele's partial-interference concentration benchmarks, and Rigdon--Hudgens's exact two-stage binary-outcome intervals. Thus the niche is not a new fractional-color Bernstein theorem, a general-network minimax result, or separate necessity of graph and positivity penalties. Throughout this positioning, upper validity remains nonhomogeneous, while exact compression and lower-bound witnessing are homogeneous-subclass arguments.",
+    "fill": "The paper fills that niche by transporting a block-homogeneous witness exactly to independent rare revelations and using it to certify the lower endpoint of an attained expected-length sandwich, while the fractional-color interval supplies the upper endpoint over the larger nonhomogeneous clique-block class. The lower witness is a subclass argument: upper validity is genuinely nonhomogeneous, whereas exact compression and the lower bound use only homogeneous target schedules. Relative to Aronow--Samii, the added object is the lower bound and same-class comparison, not the exposure-HT framework. Relative to Pelekis--Ramon--Wang and Janson (2004, Theorem 2.3), the addition is the causal specialization together with exact witness transport and decision-theoretic interval-length analysis, not Holder or fractional-chromatic Bernstein concentration. Relative to Sandoval--Balakrishnan--Feller--Jordan--Waudby-Smith, the result is aligned with effective count \\(Bq\\) but is not a corollary because their SUTVA RMSE theorems do not furnish network-exposure interval-length risk or its \\(\\sqrt{\\log(1/\\alpha)}\\) dependence. Relative to Leung, Harshaw--Middleton--Savje, Ham et al., Kandiros et al., Tchetgen Tchetgen--VanderWeele, and Rigdon--Hudgens, it adds the fixed balanced-Bernoulli rare-exposure lower-bound transport and same-class sandwich, rather than asymptotic approximate-interference inference, optimal variance estimation, confidence sequences, conflict-graph design, partial-interference concentration alone, or exact two-stage binary intervals."
+  },
+  "related_work": "Aronow--Samii is the foundation for design-based exposure mappings, exposure-HT estimators, and variance-based inference under interference; it does not prove the present confidence-length lower bound or attained same-class sandwich. The exact-fold Holder aggregation used for the upper bound comes from Pelekis--Ramon--Wang, and no novelty is claimed for that mechanism. Janson (2004), especially Theorem 2.3, gives generic Bernstein-type large-deviation bounds for bounded partly dependent sums using the fractional chromatic number \\(\\chi^*\\), summed variances, and a uniform summand bound. Janson's theorem is therefore close upper-concentration substrate, but it is not an exposure-HT causal interval or e-value and contains neither the exact rare-revelation reduction nor a confidence-length lower or minimax comparison. Sandoval--Balakrishnan--Feller--Jordan--Waudby-Smith assumes SUTVA, with ordinary direct two-arm outcomes under Bernoulli or complete randomization, and proves information-theoretic minimax RMSE estimation rates of order \\(1/\\sqrt{n\\pi}\\). It does not prove uniformly valid confidence-interval expected-length lower bounds with the factor \\(\\sqrt{\\log(1/\\alpha)}\\), and its stated model and theorems provide neither network-exposure modeling nor the exact transport to independent rare reveals. Nevertheless, after the homogeneous-witness reduction here, \\(B=n/r\\) and \\(q=2^{-r}\\) make its \\(1/\\sqrt{Bq}\\) effective-count intuition fully consistent with the present scale; the present result is aligned with that intuition, not a corollary of its stated theorems. Leung (2022) treats approximate neighborhood interference and asymptotic inference, rather than a finite-sample rare-exposure expected-length sandwich. Harshaw--Middleton--Savje (2026) optimizes variance estimation under interference and complex designs, not confidence-length minimax risk or an exact rare-revelation reduction. Ham et al. (2022) develops design-based confidence sequences, not the fixed-confidence interference-class expected-length lower bound and same-class comparison here. Kandiros et al. (2024) studies conflict-graph experimental design and estimation under arbitrary neighborhood interference, rather than uniformly valid confidence-length risk for the fixed balanced-Bernoulli clique-block experiment. Tchetgen Tchetgen--VanderWeele supplies partial-interference causal benchmarks, including finite-sample concentration-based inference, but not this rare-exposure expected-length lower bound. Rigdon--Hudgens supplies exact binary-outcome intervals under two-stage partial interference, but not this lower bound or sandwich. Throughout, upper validity ranges over the larger nonhomogeneous clique-block class, while exact compression and the lower bound use only the homogeneous witness subclass. The contribution is the exact witness transport plus the attained same-class confidence-length sandwich, not fractional-color Bernstein concentration, a general-network minimax theorem, separate necessity of graph and exposure penalties, or a claim that prior effective-count intuition is inapplicable.",
+  "interpretation": "The fractional-chromatic radius behaves as though the experiment had an effective number of independent exposure opportunities, but the paper's novelty claim is deliberately narrower than that heuristic. Aronow--Samii already supplies the exposure-HT causal framework and variance-based interference inference. Pelekis--Ramon--Wang supplies exact-fold Holder aggregation, and Janson (2004, Theorem 2.3) supplies generic \\(\\chi^*\\)-adaptive Bernstein large deviations for bounded partly dependent sums; these are upper-bound substrates, not claimed discoveries. Sandoval--Balakrishnan--Feller--Jordan--Waudby-Smith proves \\(1/\\sqrt{n\\pi}\\) minimax RMSE behavior under SUTVA and ordinary two-arm Bernoulli or complete randomization. Its theorems do not directly yield network-exposure confidence-length risk with \\(\\sqrt{\\log(1/\\alpha)}\\) or the exact independent-rare-reveal transport, even though substituting \\(B=n/r\\) and \\(q=2^{-r}\\) after the homogeneous-witness reduction gives the same effective-count intuition \\(1/\\sqrt{Bq}\\). Leung's approximate-interference asymptotics, Harshaw--Middleton--Savje's optimal variance estimation, Ham et al.'s confidence sequences, Kandiros et al.'s conflict-graph design and estimation, Tchetgen Tchetgen--VanderWeele's partial-interference concentration benchmarks, and Rigdon--Hudgens's exact two-stage binary intervals address different inferential or design objects. The correct reading is therefore: the interval is valid on the full nonhomogeneous clique-block class, exact compression and the lower bound are established on its homogeneous witness subclass, and that witness certifies an attained same-class expected-length sandwich. It is not a new Holder--Bernstein mechanism, not a general-network minimax theorem, not proof that graph and exposure penalties are separately necessary, and not a rejection of earlier effective-count intuition.",
+  "technical_internal_limitation": "The observable envelope replaces the schedule-specific design variance and can be conservative, while the generic upper radius combines fractional coloring and exposure positivity without proving that those two penalties are separately necessary on every network. The decision-theoretic lower analysis is certified through a balanced clique-block construction: the interval is valid over the larger nonhomogeneous block class, but exact data compression and the lower bound use only a block-homogeneous witness subclass. Consequently the sandwich is a same-class result by subclass witnessing, not a general-network minimax characterization. This boundary is compatible with the comparator map: Aronow--Samii covers exposure-HT foundations; Pelekis--Ramon--Wang and Janson cover the upper concentration substrate; Sandoval--Balakrishnan--Feller--Jordan--Waudby-Smith supplies aligned effective-count intuition under SUTVA but not the stated interval-length theorem; and Leung, Harshaw--Middleton--Savje, Ham et al., Kandiros et al., Tchetgen Tchetgen--VanderWeele, and Rigdon--Hudgens study, respectively, approximate-interference asymptotics, variance-estimation optimization, confidence sequences, conflict-graph design, partial-interference concentration, and exact two-stage binary intervals rather than this rare-reveal expected-length sandwich.",
+  "honest_scope": "The finite-sample upper interval applies to bounded outcomes under known Bernoulli assignment, correct neighborhood exposure mappings, target-exposure positivity, and the stated exposure-dependency graph. The confidence-length comparison specializes to the canonical balanced clique-block class. Its upper validity covers nonhomogeneous schedules, whereas its exact reduction and lower bound deliberately use only homogeneous target schedules as witnesses. Aronow--Samii, Pelekis--Ramon--Wang, and Janson (2004, Theorem 2.3) already cover, respectively, the causal exposure-HT framework, exact-fold Holder aggregation, and generic fractional-chromatic Bernstein concentration. Sandoval--Balakrishnan--Feller--Jordan--Waudby-Smith gives aligned \\(1/\\sqrt{n\\pi}\\) effective-count RMSE intuition under SUTVA, but not this network-exposure interval-length result or its \\(\\sqrt{\\log(1/\\alpha)}\\) factor. Leung (2022), Harshaw--Middleton--Savje (2026), Ham et al. (2022), Kandiros et al. (2024), Tchetgen Tchetgen--VanderWeele, and Rigdon--Hudgens do not state this fixed balanced-Bernoulli rare-revelation lower bound and same-class comparison. Accordingly, the claimed contribution is only the exact witness transport and the attained same-class expected-length sandwich; it excludes novelty for fractional-color Bernstein concentration, a general-network minimax theorem, separate necessity of graph and positivity penalties, and any assertion that prior effective-count intuition cannot apply conceptually."
+}

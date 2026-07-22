@@ -1,0 +1,571 @@
+% =====================================================================
+%  thmsmith Stage 0 derivation skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=eid\_dist\_synth\_control, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage 0 derivation: \texttt{eid\_dist\_synth\_control} / \texttt{v1}%
+  \\ \large\textit{Sharp and nonsharp identification for distributional synthetic control under rank-invariant quantile factors}}
+\author{thmsmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+The estimand-defining object is the observable finite-donor quantile-panel compatibility functional obtained from the rank-wise systems \(\bar X(u)w=\bar x_0(u)\) and the post-period donor linear functional \(z(u)^\transpose w\).  The causal target is the treated unit's untreated post-period counterfactual quantile function \(Q^0_{0s}\) and its induced CDF \(F^0_{0s}\).  The setup treats the proposal as an exact-identification problem with a partial-identification boundary: compatible laws are rank-invariant interactive quantile-factor systems that match the observed donor and pre-treatment quantile panel, while donor-weight restrictions produce computable affine or convex linear programs.  The per-conjecture stages will verify whether the row-span diagnostic, monotone envelope, and open-set escape statements in the motivating conjectures are valid under the named assumptions.
+\end{abstract}
+
+\section{Introduction}
+Distributional synthetic control asks whether a finite donor panel identifies the full untreated post-treatment distribution of a treated unit, not just an average counterfactual.  This distinction matters when policy conclusions depend on lower tails, upper tails, stochastic dominance, or other features of the marginal distribution.  A synthetic-control weight vector can produce a plausible counterfactual quantile curve, but the causal question is whether every rank-invariant finite-donor law compatible with the observed panel gives the same curve.
+
+The note works with a rank-invariant interactive quantile-factor model.  At each rank \(u\), observed donor pre-period quantiles and treated pre-period quantiles define a finite affine system.  Observed donor post-period quantiles define a linear functional on the compatible set.  The finite-dimensional algebra is transparent, but the global quantile problem also imposes measurability, monotonicity, and left-continuity across ranks.
+
+Before this note, mean synthetic-control and interactive-fixed-effect work gave finite-donor or factor-model intuition for averages, while distributional synthetic-control and quantile-factor work supplied methods for constructing or estimating counterfactual distributions.  The targeted contribution here is narrower and structural: it records the shared setup needed to evaluate whether the proposal's conjectures give a sharp finite-donor identification boundary for \(Q^0_{0s}\).  If confirmed, Conjecture 1 would provide a point-identification boundary and a sharp monotone LP envelope in the donor-weight submodel.  If confirmed, Conjecture 2 would provide an open-set nonidentification certificate when an augmented affine null direction moves the post-period functional despite exact convex pre-period fit.
+
+The downstream use is diagnostic.  A researcher applying distributional synthetic control would be able to distinguish a point-identified counterfactual quantile curve from a merely selected donor-weight curve, and would know which finite-dimensional row-span or null-direction calculation must be reported before giving a causal interpretation.
+
+\paragraph{Motivating conjecture(s).}
+\paragraph{Conjecture 1.}\phantomsection\label{conj:point-boundary}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:exactfit}, \(Q^0_{0s}\) is point identified by \(P\) if and only if Assumption~\ref{ass:postconstant} holds a.e. in \(u\).  In the donor-weight submodel of Definition~\ref{def:donorweight}, this is equivalent to \(z(u)\in\operatorname{rowspan}\bar X(u)\) a.e.; under Assumption~\ref{ass:convexfit}, in the convex donor-weight submodel, the sharp quantile identified set is exactly the monotone LP envelope generated by the rankwise programs \(\underline q_C(u)\) and \(\overline q_C(u)\), and the sharp CDF bounds are
+\[
+\underline F_{DW,C}(y)=\inf_{q\in\mathcal{Q}_{DW,C}(P)}\int_0^1\one\{q(u)\le y\}\,du,\qquad
+\overline F_{DW,C}(y)=\sup_{q\in\mathcal{Q}_{DW,C}(P)}\int_0^1\one\{q(u)\le y\}\,du.
+\]
+If \(z(u)\notin\operatorname{rowspan}\bar X(u)\) on a positive-measure set and Assumptions~\ref{ass:rank} and \ref{ass:affineinterior} hold, then \(\mathcal{Q}_{DW}(P)\) contains at least two distinct monotone compatible quantile functions and \(\mathcal{F}_{DW}(P)\) is non-singleton.  The stable convex-loading class in Theorem~\ref{thm:convex-sufficient} is therefore a strict point-identified subclass of the rank-invariant finite-donor quantile-factor class whenever the global post-period functional is not invariant; in the donor-weight submodel, augmented row-span failure is the observable certificate for that noninvariance.
+
+\paragraph{Conjecture 2.}\phantomsection\label{conj:escape}
+Under Assumptions~\ref{ass:consistency}, \ref{ass:monotone}, \ref{ass:qif}, \ref{ass:topology}, \ref{ass:rank}, \ref{ass:exactfit}, \ref{ass:convexfit}, and \ref{ass:affineinterior}, there is a nonempty relatively \(d_\infty\)-open set of observable donor/pre-period/post-donor quantile panels \(P\) for which the post-period donor quantile vector \(z(u)\notin\operatorname{rowspan}\bar X(u)\) on a positive-measure set of ranks.  Equivalently, there is an affine null direction \(h(u)\) with \(\one^\transpose h(u)=0\), \(X(u)h(u)=0\), and \(z(u)^\transpose h(u)\ne0\).  On this relative open set, two convex-compatible donor-weight systems that admit global rank-invariant quantile-factor representations agree on \(P\) but imply different monotone \(Q^0_{0s}\), so point identification fails even when a convex distributional synthetic-control weight vector fits all pre-period quantiles.
+
+\section{Related work and positioning}
+\cite{AbadieGardeazabal2003} and \cite{AbadieDiamondHainmueller2010} introduced the aggregate mean synthetic-control design in which donor weights construct a counterfactual mean path.  Their framework motivates the finite-donor affine-hull question here, but the present target is a post-treatment quantile function rather than a mean outcome.  \cite{Bai2009IFE} developed panel models with interactive fixed effects, giving the mean-factor ancestor of the interactive quantile-factor law used below.  \cite{Xu2017GSC} connected generalized synthetic control with interactive fixed effects for average effects; the present note instead asks for identification of an entire untreated counterfactual distribution.  \cite{AtheyBayatiDoudchenkoImbensKhosravi2021MC} studied matrix-completion methods for mean counterfactual prediction, which is adjacent through low-rank structure but does not characterize finite-donor quantile identified sets.
+
+\cite{AtheyImbens2006CIC} identified counterfactual distributions under a monotone changes-in-changes structure, showing that rank restrictions can identify marginal distributions without identifying treatment-effect distributions.  \cite{ChernozhukovFernandezValMelly2013} supplied a general counterfactual-distribution framework, but not a finite-donor synthetic-control row-span boundary.  \cite{FanYu2012PartialDID}, \cite{CallawayLi2019QTEDID}, and \cite{Callaway2021BoundsDTEPanel} clarify that treatment-effect distributions require dependence information beyond marginal counterfactual distributions; this note therefore targets \(Q^0_{0s}\) and \(F^0_{0s}\), not the law of \(Y_{0s}(1)-Y_{0s}(0)\).
+
+\cite{ChenDoladoGonzalo2021QFM} introduced quantile factor models for high-dimensional panels; the present setup uses the rank-factor motivation but studies a missing causal post-period cell with finitely many donors.  \cite{Chen2020DistributionalSC} proposed a distributional synthetic-control method allowing imperfect pre-treatment fit; the current setup instead focuses on exact finite-donor population compatibility.  \cite{Gunsilius2023DiSCo} is the closest distributional-synthetic-control comparator because it constructs a weighted donor quantile curve in Wasserstein space.  The distinction is that uniqueness of a chosen weighted quantile curve is not, by itself, a necessary-and-sufficient statement over all rank-invariant finite-donor quantile-factor laws compatible with the observed panel.  \cite{Masini2025DCA} gives high-dimensional conditional-quantile estimation guarantees for distributional counterfactual analysis; those guarantees concern estimation error rather than the population identification boundary studied here.
+
+The available exact-identification catalogue is built around standard observables such as treatment effects, adjustment, instruments, dynamic regimes, and graphical separation.  The present object is different in abstraction: the active mathematical work is deterministic rank-wise linear algebra plus global quantile admissibility.  This is the reason the setup below treats the standard exact-identification primitives as bypassed rather than as the main substrate.
+
+\section{Formal setup}
+There is one treated aggregate unit \(i=0\), \(J\ge2\) donor units \(j=1,\ldots,J\), pre-treatment periods \(t=1,\ldots,T_0\), and one post-treatment period \(s=T_0+1\).  Treatment is deterministic: \(D_{0t}=0\) for \(t\le T_0\), \(D_{0s}=1\), and \(D_{jt}=0\) for every donor and every \(t\le s\).  The observed donor distributions and treated pre-period distributions are untreated potential-outcome distributions.  The observed treated post-period distribution is allowed to differ from the untreated counterfactual distribution and is not used to define the counterfactual quantile panel.
+
+For every untreated unit-period cell, let \(F^0_{it}\) be the untreated potential-outcome CDF and
+\[
+Q^0_{it}(u)=\inf\{y:F^0_{it}(y)\ge u\},\qquad u\in(0,1),
+\]
+be its left-continuous quantile function.  The observed law \(P\) contains the exact treated pre-period quantiles \((Q^0_{0t})_{t\le T_0}\), the exact donor quantiles \((Q^0_{jt})_{1\le j\le J,t\le s}\), and the treated post-treatment distribution \(F^1_{0s}\).  The unobserved causal object is \(Q^0_{0s}\).
+
+The rank-invariant interactive quantile-factor law is imposed pointwise in rank.  There is a finite factor dimension \(R\), unit loadings \(b_i\in\R^R\), period-rank factors \(\ell_t(u)\in\R^R\), and intercepts \(m_t(u)\in\R\) such that
+\[
+Q^0_{it}(u)=m_t(u)+\ell_t(u)^\transpose b_i
+\]
+for all untreated unit-period cells and a.e. \(u\).  The unit loading \(b_i\) is fixed across periods and ranks; all rank variation enters through \(m_t(u)\) and \(\ell_t(u)\).  Rank invariance uses the same rank coordinate \(u\) across the untreated potential-outcome path and does not restrict the copula of treated and untreated potential outcomes at \(s\).
+
+For each rank \(u\), define
+\[
+X_{tj}(u)=Q^0_{jt}(u),\qquad x_{0,t}(u)=Q^0_{0t}(u),\qquad z_j(u)=Q^0_{js}(u),
+\]
+where \(X(u)\in\R^{T_0\times J}\), \(x_0(u)\in\R^{T_0}\), and \(z(u)\in\R^J\).  Let
+\[
+\bar X(u)=\begin{pmatrix}\one^\transpose\\ X(u)\end{pmatrix},\qquad
+\bar x_0(u)=\begin{pmatrix}1\\ x_0(u)\end{pmatrix},\qquad
+\Delta^{J-1}=\{w\in\R^J:w_j\ge0,\ \sum_{j=1}^J w_j=1\}.
+\]
+The affine and convex rank-wise donor-weight compatibility sets are
+\[
+\mathcal{W}_A(P,u)=\{w\in\R^J:\bar X(u)w=\bar x_0(u)\},\qquad
+\mathcal{W}_C(P,u)=\mathcal{W}_A(P,u)\cap\Delta^{J-1}.
+\]
+The augmented row-span certificate is \(z(u)\in\operatorname{rowspan}\bar X(u)\), equivalently \(z(u)^\transpose h=0\) for every \(h\) satisfying \(\bar X(u)h=0\).
+
+Let \(\mathfrak{P}\) be the space of observable quantile panels
+\[
+P=\big((Q^0_{0t})_{t\le T_0},(Q^0_{jt})_{1\le j\le J,t\le s}\big)
+\]
+whose coordinates are finite a.e., left-continuous, and nondecreasing, modulo a.e. equality.  Equip \(\mathfrak{P}\) with the product \(L^\infty\) metric \(d_\infty\) given by the maximum essential-supremum distance across all observable coordinate quantile functions.
+
+Let \(\mathcal{B}(P)\) be the set of global compatible quantile-factor systems
+\[
+B=\big((b_i)_{i=0}^J,(m_t,\ell_t)_{t\le s}\big)
+\]
+such that \(b_i\in\R^R\) is common across ranks and periods, \(m_t\) and \(\ell_t\) are measurable in \(u\), all observed donor equations hold for \(j=1,\ldots,J\) and \(t\le s\), and all observed treated pre-period equations hold for \(t\le T_0\), a.e. in \(u\).  For \(B\in\mathcal{B}(P)\), write
+\[
+q_B(u)=m_s(u)+\ell_s(u)^\transpose b_0.
+\]
+Let \(\mathcal{B}^m(P)=\{B\in\mathcal{B}(P):q_B\text{ is finite a.e., nondecreasing, and left-continuous}\}\), and define
+\[
+\mathcal{Q}_I(P)=\{q_B:B\in\mathcal{B}^m(P)\},\qquad
+\mathcal{F}_I(P)=\{F_q:q\in\mathcal{Q}_I(P)\},
+\]
+where \(F_q(y)=\int_0^1\one\{q(u)\le y\}\,du\).  Compatibility is imposed at the same rank \(u\); no rearrangement across ranks is built into the definition.
+
+\begin{definition}[Donor-weight submodel]\label{def:donorweight}
+The donor-weight submodel is the additional finite-donor model class in which admissible treated post-period quantile values are generated by measurable affine donor-weight selections \(w(u)\in\mathcal{W}_A(P,u)\), with \(q(u)=z(u)^\transpose w(u)\) a.e.  The convex donor-weight submodel further restricts \(w(u)\in\mathcal{W}_C(P,u)\).  Let \(\mathcal{Q}_{DW}(P)\) and \(\mathcal{F}_{DW}(P)\) denote the resulting monotone quantile and CDF identified sets, and let \(\mathcal{Q}_{DW,C}(P)\) and \(\mathcal{F}_{DW,C}(P)\) denote their convex-weight analogues.  In this submodel, rank-wise point identification means that \(z(u)^\transpose w\) is constant over all feasible donor weights at rank \(u\).
+\end{definition}
+
+\paragraph{Locked parameters.}
+\begin{itemize}[leftmargin=*]
+\item qid: \texttt{eid\_dist\_synth\_control}
+\item specialization: \texttt{v1}
+\item graph/SWIG: single-treated-unit panel with donors \(j=1,\ldots,J\), pre periods \(t\le T_0\), and post period \(s\)
+\item treatment: \(D_{0s}=1\), \(D_{jt}=0\) for all donor-period cells and \(D_{0t}=0\) for \(t\le T_0\)
+\item target estimand: \(Q^0_{0s}(\cdot)\) and \(F^0_{0s}(\cdot)\), the untreated counterfactual quantile function and CDF for the treated unit at \(s\)
+\item identifying assumptions: consistency/no anticipation, donor untreated observation, rank-invariant interactive quantile factor law, finite-donor/pre-period observability, monotone quantile regularity, and finite-donor span/hull restrictions as stated below
+\end{itemize}
+
+\section{Assumptions}
+\begin{assumption}[Consistency, no anticipation, and donor validity]\label{ass:consistency}
+For \(t\le T_0\), the observed treated distribution equals \(F^0_{0t}\).  For every donor \(j\) and every \(t\le s\), the observed donor distribution equals \(F^0_{jt}\).  The treated post-period observed distribution may differ from \(F^0_{0s}\), and no donor unit is affected by the treated unit's intervention.
+\end{assumption}
+
+\begin{assumption}[Monotone quantile regularity]\label{ass:monotone}
+For every unit-period untreated cell, \(Q^0_{it}\) is finite a.e., left-continuous, and nondecreasing in \(u\).  Candidate counterfactual quantile functions must themselves be finite a.e., left-continuous, and nondecreasing in \(u\); pointwise compatible selections that violate monotonicity are not admissible members of \(\mathcal{Q}_I(P)\).
+\end{assumption}
+
+\begin{assumption}[Rank-invariant interactive quantile factors]\label{ass:qif}
+There is a finite \(R\) such that for a.e. \(u\in(0,1)\), \(Q^0_{it}(u)=m_t(u)+\ell_t(u)^\transpose b_i\) for all untreated unit-period cells, with unit loading \(b_i\) fixed across both periods and ranks.  The rank index \(u\) is common across the untreated potential-outcome path; no restriction is imposed on the copula between \(Y_{0s}(1)\) and \(Y_{0s}(0)\).
+\end{assumption}
+
+\begin{assumption}[Finite-donor observability]\label{ass:finiteobs}
+The observed law \(P\) contains the exact donor quantile functions \(Q^0_{jt}\) for \(j=1,\ldots,J\) and \(t\le s\), and the exact treated pre-period quantile functions \(Q^0_{0t}\) for \(t\le T_0\).  Sampling error and estimated quantile error are outside this note.
+\end{assumption}
+
+\begin{assumption}[Nondegenerate donor rank]\label{ass:rank}
+For a.e. \(u\), the donor loading matrix has affine rank at least \(\min(R,J-1)\), and the donor pre-period quantile matrix is not collapsed to a constant vector.  This excludes degenerate observable laws where every donor has the same quantile path.
+\end{assumption}
+
+\begin{assumption}[Global exact finite-donor fit]\label{ass:exactfit}
+The treated pre-period vector \(x_0(u)\) belongs to the affine hull of the donor pre-period vectors generated by the same rank-\(u\) factor law for a.e. \(u\), and these rank-wise fits admit a common set of unit loadings across ranks.  Equivalently, the global compatibility set \(\mathcal{B}(P)\) is nonempty.
+\end{assumption}
+
+\begin{assumption}[Convex distributional synthetic-control fit]\label{ass:convexfit}
+For a.e. \(u\), there exists at least one weight vector \(w(u)\in\Delta^{J-1}\) such that \(x_0(u)=X(u)w(u)\).  This is stronger than Assumption~\ref{ass:exactfit} and is used for convex donor-weight claims.
+\end{assumption}
+
+\begin{assumption}[Post-period functional invariance]\label{ass:postconstant}
+For a.e. \(u\), the value \(q_B(u)=m_s(u)+\ell_s(u)^\transpose b_0\) is constant over all monotone-admissible global compatible systems \(B\in\mathcal{B}^m(P)\).  Systems in \(\mathcal{B}(P)\) whose post-period path is not a valid finite left-continuous nondecreasing quantile function are excluded from this invariance condition.
+\end{assumption}
+
+\begin{assumption}[Affine interior for convex perturbations]\label{ass:affineinterior}
+On a positive-measure set of ranks, \(\mathcal{W}_C(P,u)\) has nonempty relative interior inside \(\mathcal{W}_A(P,u)\).  This condition rules out boundary-only convex fits where every feasible perturbation immediately leaves the donor simplex.
+\end{assumption}
+
+\begin{assumption}[Observable-panel topology]\label{ass:topology}
+All open-set claims for observable panels are stated in the product \(L^\infty\) topology \(d_\infty\) on \(\mathfrak{P}\), relative to the subspace of panels satisfying the finite-donor observability, nondegenerate-rank, exact-fit, convex-fit, and affine-interior restrictions.  Equality restrictions such as exact pre-period fit define the ambient subspace for relative openness.
+\end{assumption}
+
+\begin{assumption}[Common-shape integrable mean corner]\label{ass:mean-shape}
+There is an integrable nondecreasing base quantile function \(H:(0,1)\to\R\), constants \(\alpha_i\), and period shifts \(\lambda_t\) such that \(Q^0_{it}(u)=H(u)+\alpha_i+\lambda_t\) for all untreated unit-period cells and a.e. \(u\).
+\end{assumption}
+
+\section{Estimand-defining functional}
+The observed-population inputs are \(X(u)\), \(x_0(u)\), \(\bar X(u)\), \(\bar x_0(u)\), and \(z(u)\), all obtained from the exact observable quantile panel \(P\).  The full factor-law identified-set functional is
+\[
+P\mapsto \mathcal{Q}_I(P)=\{q_B:B\in\mathcal{B}^m(P)\},\qquad
+P\mapsto \mathcal{F}_I(P)=\{F_q:q\in\mathcal{Q}_I(P)\}.
+\]
+It is computable from the observed panel by enumerating compatible global factor systems \(B\) satisfying the displayed algebraic equations, the common-loading restriction, and the monotone-admissibility restriction.  The per-conjecture stages will decide whether the proposal's donor-weight row-span and LP reductions exactly characterize this full set under the named assumptions.
+
+In the donor-weight submodel, the rank-wise affine endpoints are
+\[
+\underline q_A(u)=\inf\{z(u)^\transpose w:\bar X(u)w=\bar x_0(u)\},\qquad
+\overline q_A(u)=\sup\{z(u)^\transpose w:\bar X(u)w=\bar x_0(u)\}.
+\]
+The convex endpoints are the finite linear programs
+\[
+\underline q_C(u)=\min_{w\in\R^J}z(u)^\transpose w,
+\qquad
+\overline q_C(u)=\max_{w\in\R^J}z(u)^\transpose w
+\]
+subject to
+\[
+\bar X(u)w=\bar x_0(u),\qquad w_j\ge0\quad(j=1,\ldots,J).
+\]
+These convex programs have \(J\) decision variables, \(T_0+1\) equality constraints, and \(J\) nonnegativity constraints.  They are finite-dimensional linear programs; vertex enumeration checks basic feasible solutions formed from the equality system and active nonnegativity constraints, and standard LP algorithms evaluate them in time polynomial in \(J\) and \(T_0\).
+
+The row-span functional is evaluated by solving
+\[
+\bar X(u)^\transpose a(u)=z(u)
+\]
+for \(a(u)\in\R^{T_0+1}\).  If a solution exists and \(\mathcal{W}_A(P,u)\ne\emptyset\), then every feasible \(w\) obeys
+\[
+z(u)^\transpose w=a(u)^\transpose\bar X(u)w=a(u)^\transpose\bar x_0(u),
+\]
+so the pointwise donor-weight value is \(\Phi_Q(P)(u)=a(u)^\transpose\bar x_0(u)\).  When \(\Phi_Q(P)\) is finite a.e., nondecreasing, and left-continuous, its CDF functional is
+\[
+\Phi_F(P)(y)=\int_0^1\one\{\Phi_Q(P)(u)\le y\}\,du.
+\]
+If the row-span equation has no solution, the computable donor-weight output is the rank-wise envelope \([\underline q_C(u),\overline q_C(u)]\) together with the global monotone selection requirement defining \(\mathcal{Q}_{DW,C}(P)\).
+
+\section{Target causal estimand}
+The target causal estimand is the untreated counterfactual distribution of the treated unit at the post-treatment period \(s\).  Its quantile representation is
+\[
+Q^0_{0s}(u)=\inf\{y:F^0_{0s}(y)\ge u\},\qquad u\in(0,1),
+\]
+and its CDF representation is \(F^0_{0s}(y)=\Pr(Y^0_{0s}\le y)\).  The target is marginal: it does not include the treatment-effect distribution because the maintained assumptions do not identify the joint law of \(Y_{0s}(1)\) and \(Y_{0s}(0)\).  Once \(F^0_{0s}\) is identified or bounded, marginal distributional effects such as \(F^1_{0s}(y)-F^0_{0s}(y)\) are downstream contrasts rather than part of the locked target.
+
+\section{Main theorems}
+\paragraph{Refutation note (Conjecture 1).}
+Refuted: the three-rank finite-support panel in \(\S13\) satisfies Assumptions~\ref{ass:consistency}--\ref{ass:exactfit}, \ref{ass:convexfit}, \ref{ass:rank}, and \ref{ass:affineinterior}, has \(z(u)\notin\operatorname{rowspan}\bar X(u)\) on \((1/3,2/3]\), but \(\mathcal{Q}_{DW}(P)=\{0\}\) and \(\mathcal{F}_{DW}(P)\) is singleton.  The counterexample is given in \S13.
+
+\begin{proposition}[Partial result for Conjecture 2: explicit augmented-affine escape]\label{prop:escape-partial}
+Partial verdict for Conjecture 2: the finite-dimensional augmented-affine escape is witnessed by an explicit \(J=3,T_0=1,R=2\) quantile panel with two convex-compatible global rank-invariant representations, but the full relatively \(d_\infty\)-open global monotone-selection claim is not proved under the stated assumptions.
+\end{proposition}
+
+The calculation isolates the mechanism behind the conjecture.  Exact convex pre-period distributional fit says that the treated pre-period quantile can be written as a convex donor combination at each rank.  It does not by itself say that the donor post-period linear functional \(z(u)^\transpose w\) is constant on the same feasible set.  The graphical rule trace is vacuous here: the identifying question is not a back-door, front-door, or instrument adjustment step, but whether the observed quantile panel fixes the missing post-period loading functional.
+
+\section{Interpretation}
+For Conjecture 1, the pointwise post-period functional is genuinely noninvariant on \(I_M\), but global monotonicity and the fixed values on \(I_L\cup I_H\) collapse all admissible monotone selections to the same quantile curve.  Thus augmented row-span failure is not, by itself, an observable certificate for global noninvariance in the donor-weight submodel.
+
+For Conjecture 2, if a null direction \(h\) preserves the affine pre-period constraints but changes \(z(u)^\transpose w\), then two observationally equivalent donor-weight systems can agree on every observed donor cell and on every treated pre-period cell while assigning different untreated post-period quantiles to the treated unit.  The explicit witness below verifies that this failure is not a boundary artifact of the donor simplex.  Both weights used in the construction are strictly inside the feasible convex segment, and both induced post-period curves are valid quantile functions.
+
+What remains only partial is the conjecture's openness claim after imposing the full global common-loading and monotone-selection restrictions.  Assumption~\ref{ass:exactfit} gives at least one global compatible system, Assumption~\ref{ass:convexfit} gives rank-wise convex feasibility, and Assumption~\ref{ass:affineinterior} gives rank-wise perturbation room.  None of those assumptions, as written, states that the perturbation can be selected across ranks as two finite, left-continuous, nondecreasing post-period quantile functions while also preserving common unit loadings.  This connects back to the motivating conjectures by separating the finite-dimensional row-span calculation from the global quantile-admissibility condition.
+
+\section{Step-by-step proof}
+\subsection*{Supporting lemmas}
+\begin{theorem}[Theorem 1: Sharp factor-law identified set]\label{thm:sharp-set}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:exactfit}, any \(q\in\mathcal{Q}_I(P)\) is attainable as \(Q^0_{0s}\) by some data-generating process satisfying the rank-invariant interactive quantile-factor law and matching the observed law \(P\).  Conversely, every data-generating process satisfying those assumptions and matching \(P\) has \(Q^0_{0s}\in\mathcal{Q}_I(P)\).  Therefore \(\mathcal{Q}_I(P)\) and \(\mathcal{F}_I(P)\) are the sharp identified sets for the treated unit's untreated post-period quantile function and CDF.
+\end{theorem}
+\begin{proof}
+Take first any \(q\in\mathcal{Q}_I(P)\).  By definition of \(\mathcal{Q}_I(P)\), there is a monotone-admissible compatible system \(B\in\mathcal{B}^m(P)\) such that \(q=q_B\) a.e.  Construct untreated potential-outcome distributions whose donor quantile functions are the observed donor quantile functions, whose treated pre-period quantile functions are the observed treated pre-period quantile functions, and whose treated untreated post-period quantile function is \(q\).  Consistency and donor validity are imposed by setting the observed untreated cells equal to these untreated potential-outcome distributions.  Assumption~\ref{ass:monotone} holds because \(q\) is finite a.e., nondecreasing, and left-continuous, and the observed quantile panel has the same regularity.  The rank-invariant factor law and global exact fit hold because \(B\in\mathcal{B}^m(P)\) supplies common unit loadings and measurable period-rank factors matching every observed donor cell and every treated pre-period cell.  Hence the constructed data-generating process matches \(P\) and attains \(Q^0_{0s}=q\).
+
+Conversely, let a data-generating process satisfy Assumptions~\ref{ass:consistency}--\ref{ass:exactfit} and match \(P\).  The factor law supplies a compatible tuple \(B\in\mathcal{B}(P)\), because donor validity and finite observability identify all donor quantile functions and treated pre-period quantile functions that enter the compatibility equations.  The untreated treated post-period quantile is \(q_B(u)=m_s(u)+\ell_s(u)^\transpose b_0\).  Monotone quantile regularity makes \(q_B\) finite a.e., nondecreasing, and left-continuous, so \(B\in\mathcal{B}^m(P)\) and \(Q^0_{0s}=q_B\in\mathcal{Q}_I(P)\).
+
+The CDF identified set follows by applying the quantile-to-CDF map \(F_q(y)=\int_0^1\one\{q(u)\le y\}\,du\) to each sharp quantile element.  The two inclusions above show both outer validity and attainability, so the quantile and CDF sets are sharp.
+\end{proof}
+
+\begin{theorem}[Theorem 2: Stable convex-loading sufficient condition]\label{thm:convex-sufficient}
+Under Assumptions~\ref{ass:consistency}--\ref{ass:rank} and Assumption~\ref{ass:convexfit}, suppose there is a single weight vector \(w\in\Delta^{J-1}\), independent of \(u\), such that \(Q^0_{0t}(u)=\sum_{j=1}^J w_jQ^0_{jt}(u)\) for all pre-periods and a.e. \(u\), and suppose this same \(w\) represents the treated loading \(b_0=\sum_j w_jb_j\) in every compatible factorization.  Then Assumption~\ref{ass:postconstant} holds and \(Q^0_{0s}(u)=\sum_j w_jQ^0_{js}(u)\) a.e.
+\end{theorem}
+\begin{proof}
+Fix any compatible factorization and any rank \(u\) outside the null set on which the factor equations may fail.  The stable-loading clause gives \(b_0=\sum_{j=1}^J w_jb_j\) with \(w\in\Delta^{J-1}\), so \(\sum_jw_j=1\).  By the rank-invariant factor law,
+\[
+Q^0_{0s}(u)=m_s(u)+\ell_s(u)^\transpose b_0
+=m_s(u)+\ell_s(u)^\transpose\sum_{j=1}^Jw_jb_j.
+\]
+Linearity of the inner product and \(\sum_jw_j=1\) give
+\[
+Q^0_{0s}(u)=\sum_{j=1}^Jw_j\{m_s(u)+\ell_s(u)^\transpose b_j\}
+=\sum_{j=1}^Jw_jQ^0_{js}(u).
+\]
+The same calculation applies in every compatible factorization because the same weight vector represents the treated loading in every such factorization.  Therefore the post-period functional is invariant over compatible systems, which is exactly Assumption~\ref{ass:postconstant}, and the displayed donor-weight formula holds a.e.
+\end{proof}
+
+\subsubsection*{Refutation of Conjecture 1}
+See \S13 Counterexample for the refutation.
+
+\subsubsection*{Proof of Conjecture 2}
+\begin{proof}[Proof of the partial result]
+Let \(H(u)=u\) on \((0,1)\).  Define donor loadings
+\[
+b_1=(0,0)^\transpose,\qquad b_2=(1,0)^\transpose,\qquad b_3=(2,1)^\transpose,
+\]
+and period-rank factors
+\[
+m_1(u)=m_s(u)=H(u),\qquad \ell_1(u)=(1,0)^\transpose,\qquad \ell_s(u)=(0,1)^\transpose .
+\]
+For donor \(j\), the rank-invariant quantile-factor equations give
+\[
+Q^0_{j1}(u)=H(u)+\ell_1(u)^\transpose b_j,\qquad
+Q^0_{js}(u)=H(u)+\ell_s(u)^\transpose b_j.
+\]
+Hence the observed donor pre-period vector and donor post-period vector are exactly
+\[
+X(u)=\begin{pmatrix}H(u)&H(u)+1&H(u)+2\end{pmatrix},\qquad
+z(u)=\begin{pmatrix}H(u)&H(u)&H(u)+1\end{pmatrix}^\transpose .
+\]
+
+For each \(r\in[0,1/2]\), set
+\[
+w(r)=\begin{pmatrix}r\\ 1-2r\\ r\end{pmatrix},\qquad b_0(r)=\sum_{j=1}^3 w_j(r)b_j=(1,r)^\transpose .
+\]
+The weights are convex because their coordinates are nonnegative and sum to one.  The treated pre-period quantile generated by \(b_0(r)\) is
+\[
+m_1(u)+\ell_1(u)^\transpose b_0(r)=H(u)+1,
+\]
+which is independent of \(r\).  Thus the same observed treated pre-period quantile \(x_0(u)=H(u)+1\) is matched by every \(w(r)\).  The corresponding untreated treated post-period quantile is
+\[
+q_r(u)=m_s(u)+\ell_s(u)^\transpose b_0(r)=H(u)+r=z(u)^\transpose w(r).
+\]
+Each \(q_r\) is finite, continuous, and nondecreasing, so it is admissible under Assumption~\ref{ass:monotone}.
+
+Choose \(r_- =1/8\) and \(r_+=3/8\).  Then
+\[
+w^-=\begin{pmatrix}1/8\\3/4\\1/8\end{pmatrix},\qquad
+w^+=\begin{pmatrix}3/8\\1/4\\3/8\end{pmatrix}
+\]
+are both in the relative interior of the convex feasible segment
+\[
+\mathcal{W}_C(P,u)=\{w(r):0\le r\le 1/2\}
+\]
+for every \(u\).  They produce the two monotone post-period quantile curves
+\[
+q_-(u)=H(u)+1/8,\qquad q_+(u)=H(u)+3/8,
+\]
+which differ by \(1/4\) at every rank.  The two systems have the same donor loadings, the same period-rank factors, the same observed donor quantile panel, and the same treated pre-period quantile panel.  They differ only in the unobserved treated post-period loading coordinate.  By Theorem~\ref{thm:sharp-set}, both \(q_-\) and \(q_+\) are attainable untreated post-period quantile functions for data-generating processes matching the same observed law \(P\).  Therefore \(Q^0_{0s}\) is not point identified at this panel.
+
+The row-span certificate is the displayed null-vector calculation.  Equivalently,
+\[
+\det\begin{pmatrix}
+1&1&1\\
+H(u)&H(u)+1&H(u)+2\\
+H(u)&H(u)&H(u)+1
+\end{pmatrix}
+=z(u)^\transpose h=1
+\]
+for every \(u\in(0,1)\).  Since the determinant is a continuous polynomial in the three donor pre-period coordinates and the three donor post-period coordinates, there is an \(\varepsilon>0\) such that every admissible panel \(P'\) within \(d_\infty\)-distance \(\varepsilon\) of this panel and with the same \(J=3,T_0=1\) coordinate layout satisfies
+\[
+\operatorname*{ess\,inf}_{u\in(0,1)}
+\left|
+\det\begin{pmatrix}
+1&1&1\\
+X'_1(u)&X'_2(u)&X'_3(u)\\
+z'_1(u)&z'_2(u)&z'_3(u)
+\end{pmatrix}
+\right|>0.
+\]
+On that relatively open neighborhood, \(z'(u)\notin\operatorname{rowspan}\bar X'(u)\) for a.e. \(u\), and hence an affine null direction \(h'(u)\) with \(z'(u)^\transpose h'(u)\ne0\) exists rank by rank.
+
+This proves the finite-dimensional and determinant-stable part of the conjecture.  It does not prove the final sentence of the conjecture for the whole neighborhood.  The proof above uses a fixed loading direction that is invisible to the single pre-period factor and visible to the post-period factor.  A general \(d_\infty\)-small perturbation inside the admissible observable-panel subspace may preserve rank-wise row-span failure while changing the global common-loading equations or the cross-rank monotonicity of separated selections.  The stated assumptions do not contain a separate stability condition that rules out that possibility.  The honest verdict is therefore partial, not confirmed.
+\end{proof}
+
+\section{Sanity checks}
+In the common-shape mean corner, if the same convex loading represents the treated unit in every compatible factorization as in Theorem~\ref{thm:convex-sufficient}, the escape disappears.  Algebraically, the post-period donor vector is then affine in the same loading coordinate used by the pre-period fit, so every \(h\) with \(\one^\transpose h=0\) and \(X(u)h=0\) also satisfies \(z(u)^\transpose h=0\).  In the explicit witness, the opposite happens: the post-period factor uses a second loading coordinate that the pre-period factor does not see.  Integrating the two valid quantile curves gives
+\[
+\int_0^1 q_+(u)\,du-\int_0^1 q_-(u)\,du
+=\int_0^1\{H(u)+3/8-H(u)-1/8\}\,du
+=1/4,
+\]
+so the distributional nonidentification also produces mean nonidentification in this deliberately non-stable-loading corner.
+
+\section{Counterexample or minimality check}
+\subsubsection*{Counterexample for Conjecture 1}
+\paragraph{Primitive: finite-support row-span witness.}
+The relevant exact-identification refutation primitive is the finite-support witness: shrink the observable rank support to finitely many strata and check whether the conjectured observable certificate, \(z(u)\notin\operatorname{rowspan}\bar X(u)\), really forces two globally monotone donor-weight counterfactual quantile functions.
+A first attempt with \(X(u)\) constant across ranks does not refute the claim, because then the convex rank-wise endpoints inherit monotonicity from the donor post-period quantiles.
+The obstruction must therefore use the part of Definition~\ref{def:donorweight} that is global in rank: feasible pointwise perturbations can be squeezed by monotonicity at neighboring ranks.
+
+Take \(J=3\), \(T_0=1\), and split the rank interval into
+\[
+I_L=(0,1/3],\qquad I_M=(1/3,2/3],\qquad I_H=(2/3,1).
+\]
+Set the treated pre-period quantile to \(x_0(u)=0\) on all three blocks, and define the donor pre-period vector \(X(u)\) and donor post-period vector \(z(u)\) by
+\[
+\begin{array}{c|ccc}
+u & I_L & I_M & I_H\\ \hline
+X(u) & (-2,-1,0)^\transpose & (-1,0,1)^\transpose & (0,1,2)^\transpose\\
+z(u) & (-2,-1,0)^\transpose & (0,0,1)^\transpose & (0,1,2)^\transpose .
+\end{array}
+\]
+Choose the endpoint values at \(1/3\) and \(2/3\) by left-continuous convention; all following statements are unchanged a.e.
+For each donor \(j\), both \(Q^0_{j1}(u)=X_j(u)\) and \(Q^0_{js}(u)=z_j(u)\) are finite, left-continuous, and nondecreasing in \(u\), and \(x_0(u)=0\) is also a valid treated pre-period quantile.
+
+The panel satisfies the stated factor-law assumptions.
+Let \(R=3\), take donor loadings \(b_1=e_1\), \(b_2=e_2\), \(b_3=e_3\), take the treated loading \(b_0=0\), set \(m_1(u)=m_s(u)=0\), set \(\ell_1(u)=X(u)\), and set \(\ell_s(u)=z(u)\).
+Then the rank-invariant quantile-factor equations match all donor cells and the treated pre-period cell, while the compatible untreated treated post-period quantile \(q(u)=0\) is finite, left-continuous, and nondecreasing.
+The donor loading matrix has affine rank two, so Assumption~\ref{ass:rank} holds for \(J=3\).
+Convex pre-period fit holds at every rank: \(w=(0,0,1)^\transpose\) fits \(I_L\), \(w=(0,1,0)^\transpose\) fits \(I_M\), and \(w=(1,0,0)^\transpose\) fits \(I_H\).
+Thus Assumptions~\ref{ass:consistency}--\ref{ass:exactfit} can be imposed by the usual deterministic observation convention, and Assumption~\ref{ass:convexfit} also holds.
+
+On the middle block,
+\[
+\mathcal{W}_A(P,u)=\{(a,1-2a,a)^\transpose:a\in\mathbb R\},
+\qquad
+\mathcal{W}_C(P,u)=\{(a,1-2a,a)^\transpose:0\le a\le 1/2\}.
+\]
+Hence \(\mathcal{W}_C(P,u)\) has nonempty relative interior in \(\mathcal{W}_A(P,u)\) for every \(u\in I_M\), a positive-measure set, so Assumption~\ref{ass:affineinterior} holds.
+The augmented row-span condition fails on this same block: for \(X(u)=(-1,0,1)^\transpose\),
+\[
+\operatorname{rowspan}\bar X(u)
+=\{(\alpha-\beta,\alpha,\alpha+\beta):\alpha,\beta\in\mathbb R\},
+\]
+but \(z(u)=(0,0,1)^\transpose\) is not of this form because \(z_1+z_3\ne 2z_2\).
+Equivalently, the affine null vector \(h=(1,-2,1)^\transpose\) satisfies \(\bar X(u)h=0\) and \(z(u)^\transpose h=1\).
+
+Despite this positive-measure row-span failure, the global monotone donor-weight identified set is a singleton.
+On \(I_L\), \(z(u)=X(u)\), so every affine feasible weight satisfies
+\[
+z(u)^\transpose w=X(u)^\transpose w=x_0(u)=0.
+\]
+On \(I_H\), the same identity \(z(u)=X(u)\) again gives \(z(u)^\transpose w=0\) for every affine feasible weight.
+On \(I_M\), the feasible affine weights above give \(z(u)^\transpose w=a\), so the pointwise donor-weight value can move.
+However any \(q\in\mathcal{Q}_{DW}(P)\) must be nondecreasing and must equal \(0\) a.e. on both \(I_L\) and \(I_H\).
+For \(v\in I_L\), \(u\in I_M\), and \(r\in I_H\), monotonicity gives
+\[
+0=q(v)\le q(u)\le q(r)=0,
+\]
+so \(q(u)=0\) for a.e. \(u\in I_M\).
+Therefore
+\[
+\mathcal{Q}_{DW}(P)=\{q:q(u)=0\ \text{a.e.}\},
+\qquad
+\mathcal{F}_{DW}(P)=\{F_0\},
+\]
+where \(F_0(y)=\int_0^1\one\{0\le y\}\,du\).
+
+This contradicts the conjecture's assertion that row-span failure on a positive-measure set, together with Assumptions~\ref{ass:rank} and \ref{ass:affineinterior}, forces \(\mathcal{Q}_{DW}(P)\) to contain at least two distinct monotone compatible quantile functions and forces \(\mathcal{F}_{DW}(P)\) to be non-singleton.
+The failure is not a sampling or support artifact: the pointwise post-period functional is genuinely noninvariant on \(I_M\), but global monotonicity and the fixed values on \(I_L\cup I_H\) collapse all admissible monotone selections to the same quantile curve.
+Thus augmented row-span failure is not, by itself, an observable certificate for global noninvariance in the donor-weight submodel.
+
+\subsubsection*{Counterexample and minimality check for Conjecture 2}
+The affine null dimension is necessary.  If \(J=2\) and \(T_0=1\) with noncollapsed donor pre-period quantiles, then
+\[
+\bar X(u)=\begin{pmatrix}1&1\\ X_1(u)&X_2(u)\end{pmatrix}
+\]
+has full column rank for a.e. \(u\).  Its row span is all of \(\R^2\), so every donor post vector \(z(u)\in\R^2\) lies in \(\operatorname{rowspan}\bar X(u)\), the affine feasible set is a singleton, and there is no nonzero \(h\) with \(\bar X(u)h=0\).  Thus exact convex pre-period fit alone cannot generate the escape; one needs an affine feasible face with a post-period functional that is nonconstant on that face.
+
+The row-span failure is also necessary for the donor-weight obstruction.  If \(z(u)=\bar X(u)^\transpose a(u)\) for some \(a(u)\), then every feasible \(w\) obeys
+\[
+z(u)^\transpose w=a(u)^\transpose\bar X(u)w=a(u)^\transpose\bar x_0(u),
+\]
+so changing weights within \(\mathcal{W}_C(P,u)\) cannot change the post-period donor-weight value.  This is exactly the condition that fails in the explicit witness.  The unresolved minimality issue is global rather than rank-wise: an additional theorem would be needed to show that rank-wise separated convex weights can always be lifted, on a relatively open set, to two monotone-admissible global common-loading systems.
+
+\section{Formalization checklist}
+\begin{itemize}[leftmargin=*]
+\item Observable quantile panel \(P\): typed as a finite tuple of functions \((0,1)\to\R\) modulo a.e. equality; role is the observed-population input for every functional; dependencies are Assumptions~\ref{ass:consistency}, \ref{ass:monotone}, and \ref{ass:finiteobs}.
+\item Quantile regularity predicate: typed as ``finite a.e., left-continuous, nondecreasing'' for functions \((0,1)\to\R\); role is global admissibility for \(Q^0_{0s}\), \(\mathcal{Q}_I(P)\), and \(\mathcal{Q}_{DW}(P)\); dependency is Assumption~\ref{ass:monotone}.
+\item Rank-wise matrices \(X(u)\), \(\bar X(u)\), \(\bar x_0(u)\), and \(z(u)\): typed as \(X(u)\in\R^{T_0\times J}\), \(\bar X(u)\in\R^{(T_0+1)\times J}\), \(\bar x_0(u)\in\R^{T_0+1}\), and \(z(u)\in\R^J\); role is the finite-dimensional affine feasibility system; dependencies are the observed panel and the definition of donor weights.
+\item Affine feasible set \(\mathcal{W}_A(P,u)\): typed as a subset of \(\R^J\) satisfying \(\bar X(u)w=\bar x_0(u)\); role is the donor-weight compatibility set; dependencies are \(X,x_0\), and the simplex-sum row.
+\item Convex feasible set \(\mathcal{W}_C(P,u)\): typed as \(\mathcal{W}_A(P,u)\cap\Delta^{J-1}\); role is the convex synthetic-control restriction; dependencies are \(\mathcal{W}_A(P,u)\), nonnegativity, and Assumption~\ref{ass:convexfit}.
+\item Row-span certificate: typed as the predicate \(z(u)\in\operatorname{rowspan}\bar X(u)\), equivalently \(z(u)^\transpose h=0\) for all \(h\in\ker \bar X(u)\); role is pointwise constancy of \(z(u)^\transpose w\) over affine feasible weights; dependencies are finite-dimensional linear algebra.
+\item Rank-invariant quantile-factor system \(B\): typed as loadings \(b_i\in\R^R\), measurable intercepts \(m_t:(0,1)\to\R\), and measurable factors \(\ell_t:(0,1)\to\R^R\); role is the full exact-ID compatible law; dependencies are Assumptions~\ref{ass:qif} and \ref{ass:exactfit}.
+\item Sharp identified set \(\mathcal{Q}_I(P)\): typed as a set of admissible quantile functions \(q:(0,1)\to\R\); role is the full factor-law identified set for the causal target; dependencies are \(B\), \(q_B(u)=m_s(u)+\ell_s(u)^\transpose b_0\), and monotone admissibility.
+\item Quantile-to-CDF map \(q\mapsto F_q\): typed as \(F_q:\R\to[0,1]\) with \(F_q(y)=\int_0^1\one\{q(u)\le y\}\,du\); role is passing from quantile identified sets to CDF identified sets; dependencies are measurability and quantile regularity.
+\item Three-block Conjecture 1 witness: typed by \(J=3\), \(T_0=1\), blocks \(I_L,I_M,I_H\), piecewise-constant \(X,z\), and \(x_0=0\); role is the explicit refuting observable law; dependencies are finite-support quantile regularity, affine feasibility, and monotonicity.
+\item Conjecture 2 escape witness: typed by \(J=3\), \(T_0=1\), \(R=2\), \(H(u)=u\), donor loadings \(b_1,b_2,b_3\), factors \(\ell_1,\ell_s\), weights \(w^-,w^+\), and quantiles \(q_-,q_+\); role is the explicit partial positive witness; dependencies are convex feasibility and Theorem~\ref{thm:sharp-set}.
+\item Determinant stability predicate: typed as the nonvanishing determinant of the \(3\times3\) matrix with rows \(\one^\transpose\), \(X(u)\), and \(z(u)^\transpose\); role is the rank-wise row-span failure neighborhood for Conjecture 2; dependencies are continuity of finite-dimensional determinants and the \(d_\infty\) topology.
+\item Substrate-survey record: bypass-justified.  The available exact-ID primitives are at a different abstraction level than this deterministic rank-wise quantile-panel algebra, and the local primitive audit did not surface a reusable object matching the finite-dimensional donor-weight compatibility sets used here.
+\end{itemize}
+
+\section{Conclusion and references}
+Conjecture 1 (point-boundary) is refuted; Refuted: the three-rank finite-support panel in \(\S13\) satisfies Assumptions~\ref{ass:consistency}--\ref{ass:exactfit}, \ref{ass:convexfit}, \ref{ass:rank}, and \ref{ass:affineinterior}, has \(z(u)\notin\operatorname{rowspan}\bar X(u)\) on \((1/3,2/3]\), but \(\mathcal{Q}_{DW}(P)=\{0\}\) and \(\mathcal{F}_{DW}(P)\) is singleton.
+
+Conjecture 2 (escape) is partial; Partial verdict for Conjecture 2: the finite-dimensional augmented-affine escape is witnessed by an explicit \(J=3,T_0=1,R=2\) quantile panel with two convex-compatible global rank-invariant representations, but the full relatively \(d_\infty\)-open global monotone-selection claim is not proved under the stated assumptions.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem{AbadieGardeazabal2003}
+Abadie, A. and Gardeazabal, J. (2003).
+The economic costs of conflict: A case study of the Basque Country.
+\emph{American Economic Review} 93(1), 113--132.
+
+\bibitem{AbadieDiamondHainmueller2010}
+Abadie, A., Diamond, A., and Hainmueller, J. (2010).
+Synthetic control methods for comparative case studies: Estimating the effect of California's tobacco control program.
+\emph{Journal of the American Statistical Association} 105(490), 493--505.
+
+\bibitem{AtheyBayatiDoudchenkoImbensKhosravi2021MC}
+Athey, S., Bayati, M., Doudchenko, N., Imbens, G., and Khosravi, K. (2021).
+Matrix completion methods for causal panel data models.
+\emph{Journal of the American Statistical Association} 116(536), 1716--1730.
+
+\bibitem{AtheyImbens2006CIC}
+Athey, S. and Imbens, G. W. (2006).
+Identification and inference in nonlinear difference-in-differences models.
+\emph{Econometrica} 74(2), 431--497.
+
+\bibitem{Bai2009IFE}
+Bai, J. (2009).
+Panel data models with interactive fixed effects.
+\emph{Econometrica} 77(4), 1229--1279.
+
+\bibitem{CallawayLi2019QTEDID}
+Callaway, B. and Li, T. (2019).
+Quantile treatment effects in difference in differences models with panel data.
+\emph{Quantitative Economics} 10(4), 1579--1618.
+
+\bibitem{Callaway2021BoundsDTEPanel}
+Callaway, B. (2021).
+Distributional treatment effect bounds with panel data and an application to job displacement.
+\emph{Journal of Business \& Economic Statistics} 39(3), 705--721.
+
+\bibitem{Chen2020DistributionalSC}
+Chen, Y. (2020).
+Distributional synthetic controls.
+\emph{Working paper}.
+
+\bibitem{ChenDoladoGonzalo2021QFM}
+Chen, L., Dolado, J. J., and Gonzalo, J. (2021).
+Quantile factor models.
+\emph{Econometrica} 89(2), 875--910.
+
+\bibitem{ChernozhukovFernandezValMelly2013}
+Chernozhukov, V., Fernandez-Val, I., and Melly, B. (2013).
+Inference on counterfactual distributions.
+\emph{Econometrica} 81(6), 2205--2268.
+
+\bibitem{FanYu2012PartialDID}
+Fan, Y. and Yu, Z. (2012).
+Partial identification of distributional and quantile treatment effects in difference-in-differences models.
+\emph{Economics Letters} 115(3), 511--515.
+
+\bibitem{Gunsilius2023DiSCo}
+Gunsilius, F. F. (2023).
+Distributional synthetic controls.
+\emph{Econometrica} 91(3), 1105--1117.
+
+\bibitem{Masini2025DCA}
+Masini, R. (2025).
+Distributional counterfactual analysis with high-dimensional conditional quantiles.
+\emph{Working paper}.
+
+\bibitem{Xu2017GSC}
+Xu, Y. (2017).
+Generalized synthetic control method: Causal inference with interactive fixed effects models.
+\emph{Political Analysis} 25(1), 57--76.
+\end{thebibliography}
+
+\end{document}

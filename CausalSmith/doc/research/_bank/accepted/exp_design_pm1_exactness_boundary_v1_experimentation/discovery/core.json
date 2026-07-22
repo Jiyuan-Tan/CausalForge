@@ -1,0 +1,806 @@
+{
+  "qid": "exp_design_pm1_exactness_boundary_v1",
+  "specialization": "experimentation",
+  "cluster": "experimentation",
+  "symbols": [
+    {
+      "name": "m",
+      "type": "community_size",
+      "space": "N",
+      "def": "Number of units in each of the two equal-sized communities.",
+      "role": "design_size"
+    },
+    {
+      "name": "n",
+      "type": "population_size",
+      "space": "N",
+      "def": "Total number of units, n = 2m.",
+      "role": "design_size",
+      "refs": [
+        "m"
+      ]
+    },
+    {
+      "name": "a",
+      "type": "within_block_weight",
+      "space": "(0,infty)",
+      "def": "Normalized within-community edge weight in the two-block homophily mean graph.",
+      "role": "graph_parameter"
+    },
+    {
+      "name": "b",
+      "type": "cross_block_weight",
+      "space": "(0,infty)",
+      "def": "Normalized cross-community edge weight in the two-block homophily mean graph.",
+      "role": "graph_parameter"
+    },
+    {
+      "name": "A_m, B_m",
+      "type": "community_partition",
+      "space": "subsets of {1,...,n}",
+      "def": "The two communities, each of cardinality m, forming a partition of the n units.",
+      "role": "graph_partition",
+      "refs": [
+        "m",
+        "n"
+      ]
+    },
+    {
+      "name": "1_n",
+      "type": "all_ones_vector",
+      "space": "R^n",
+      "def": "The n-vector of ones.",
+      "role": "linear_algebra_primitive",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "I_n",
+      "type": "identity_matrix",
+      "space": "R^{n x n}",
+      "def": "The n x n identity matrix.",
+      "role": "linear_algebra_primitive",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "J_n",
+      "type": "all_ones_matrix",
+      "space": "R^{n x n}",
+      "def": "The rank-one matrix J_n = 1_n 1_n'.",
+      "role": "balance_penalty_matrix",
+      "refs": [
+        "1_n"
+      ]
+    },
+    {
+      "name": "s_m",
+      "type": "community_sign_vector",
+      "space": "{-1,1}^n",
+      "def": "The vector taking value 1 on A_m and -1 on B_m.",
+      "role": "cut_direction",
+      "refs": [
+        "A_m, B_m",
+        "n"
+      ]
+    },
+    {
+      "name": "G_m(a,b)",
+      "type": "weighted_graph",
+      "space": "graphs on n labeled vertices",
+      "def": "The balanced two-community homophily mean graph with weights a/m within blocks and b/m across blocks.",
+      "role": "design_graph",
+      "refs": [
+        "m",
+        "n",
+        "a",
+        "b",
+        "A_m, B_m"
+      ]
+    },
+    {
+      "name": "L_m",
+      "type": "graph_laplacian",
+      "space": "R^{n x n}",
+      "def": "The Laplacian matrix of G_m(a,b).",
+      "role": "interference_operator",
+      "refs": [
+        "G_m(a,b)"
+      ]
+    },
+    {
+      "name": "L_m^dagger",
+      "type": "moore_penrose_inverse",
+      "space": "R^{n x n}",
+      "def": "The Moore-Penrose pseudoinverse of L_m.",
+      "role": "homophily_operator",
+      "refs": [
+        "L_m"
+      ]
+    },
+    {
+      "name": "Z",
+      "type": "assignment_vector",
+      "space": "{-1,1}^n",
+      "def": "The realized binary treatment vector encoded in plus-minus-one form.",
+      "role": "randomization",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "Y_i(z)",
+      "type": "potential_outcome",
+      "space": "R",
+      "def": "The fixed potential outcome of unit i under assignment vector z in {-1,1}^n.",
+      "role": "causal_primitive",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "P",
+      "type": "assignment_law",
+      "space": "probability laws on {-1,1}^n",
+      "def": "A randomized experimental design law for Z.",
+      "role": "design_variable",
+      "refs": [
+        "Z"
+      ]
+    },
+    {
+      "name": "X(P)",
+      "type": "second_moment_matrix",
+      "sig": "P -> R^{n x n}",
+      "def": "The assignment covariance proxy X(P) = E_P[ Z Z' ].",
+      "role": "SDP_decision_object",
+      "refs": [
+        "P",
+        "Z"
+      ]
+    },
+    {
+      "name": "tau",
+      "type": "causal_estimand",
+      "space": "R",
+      "def": "The finite-population global average treatment effect comparing the all-treated and all-control assignments.",
+      "role": "target_estimand",
+      "refs": [
+        "Y_i(z)",
+        "n"
+      ]
+    },
+    {
+      "name": "r",
+      "type": "tradeoff_ratio",
+      "space": "[0,infty)",
+      "def": "For nonnegative objective weights eta,gamma with gamma>0, the homophily-to-interference ratio r = eta/gamma; hence r>=0 is definitional, not a separate proof hypothesis.",
+      "role": "phase_parameter"
+    },
+    {
+      "name": "kappa",
+      "type": "robustness_parameter",
+      "space": "[0,infty)",
+      "def": "The weight on the Schatten-2 robustness penalty in the normalized design objective.",
+      "role": "phase_parameter"
+    },
+    {
+      "name": "X(u,v)",
+      "type": "block_symmetric_matrix",
+      "space": "R^{n x n}",
+      "def": "The matrix with diagonal 1, common within-block off-diagonal entry u, and common across-block entry v.",
+      "role": "symmetry_reduced_covariance",
+      "refs": [
+        "n",
+        "A_m, B_m"
+      ]
+    },
+    {
+      "name": "E_m^blk",
+      "type": "block_symmetric_elliptope_slice",
+      "space": "subsets of R^{n x n}",
+      "def": "The set of block-symmetric correlation matrices X(u,v) that are positive semidefinite.",
+      "role": "relaxed_feasible_set",
+      "refs": [
+        "X(u,v)"
+      ]
+    },
+    {
+      "name": "P_m^bal",
+      "type": "balanced_design_class",
+      "space": "subsets of laws on {-1,1}^n",
+      "def": "Admissible plus-minus-one assignment laws with global sign symmetry; this implies zero unit-level first moments.",
+      "role": "implementable_design_class",
+      "refs": [
+        "P",
+        "Z"
+      ]
+    },
+    {
+      "name": "P_m^sym",
+      "type": "block_exchangeable_design_class",
+      "space": "subsets of laws on {-1,1}^n",
+      "def": "Laws in P_m^bal that are invariant under permutations within A_m, within B_m, and under swapping the two equal communities.",
+      "role": "symmetry_reduced_design_class",
+      "refs": [
+        "P_m^bal",
+        "A_m, B_m"
+      ]
+    },
+    {
+      "name": "C_m^pm",
+      "type": "implementable_covariance_slice",
+      "space": "subsets of R^{n x n}",
+      "def": "The set { X(P) : P in P_m^sym } of fully two-block-symmetric realizable plus-minus-one second moments.",
+      "role": "implementable_feasible_set",
+      "refs": [
+        "X(P)",
+        "P_m^sym"
+      ]
+    },
+    {
+      "name": "F_{r,kappa}(X)",
+      "type": "normalized_design_objective",
+      "sig": "R^{n x n} -> R",
+      "def": "F_{r,kappa}(X) = Tr(L_m X) + r Tr(L_m^dagger X) + kappa ||X||_{S_2} + Tr(J_n X).",
+      "role": "optimization_target",
+      "refs": [
+        "L_m",
+        "L_m^dagger",
+        "r",
+        "kappa",
+        "J_n"
+      ]
+    },
+    {
+      "name": "P_cut",
+      "type": "cut_aligned_design_law",
+      "space": "laws on {-1,1}^n",
+      "def": "The law assigning probability 1/2 to s_m and 1/2 to -s_m.",
+      "role": "corner_design",
+      "refs": [
+        "s_m"
+      ]
+    },
+    {
+      "name": "X_cut",
+      "type": "cut_covariance",
+      "space": "R^{n x n}",
+      "def": "The covariance matrix X_cut = X(P_cut) = s_m s_m'.",
+      "role": "corner_covariance",
+      "refs": [
+        "X(P)",
+        "P_cut",
+        "s_m"
+      ]
+    },
+    {
+      "name": "P_iid",
+      "type": "iid_rademacher_design_law",
+      "space": "laws on {-1,1}^n",
+      "def": "The independent Rademacher design with P_iid(Z_i=1)=P_iid(Z_i=-1)=1/2.",
+      "role": "corner_design",
+      "refs": [
+        "Z"
+      ]
+    },
+    {
+      "name": "Delta_m^pm(r,kappa)",
+      "type": "implementability_gap",
+      "space": "[0,infty)",
+      "def": "Delta_m^pm(r,kappa) = inf_{P in P_m^sym} F_{r,kappa}(X(P)) - inf_{X in E_m^blk} F_{r,kappa}(X).",
+      "role": "phase_gap_object",
+      "refs": [
+        "P_m^sym",
+        "F_{r,kappa}(X)",
+        "X(P)",
+        "E_m^blk",
+        "r",
+        "kappa"
+      ]
+    },
+    {
+      "name": "kappa_cut(m,a,b)",
+      "type": "low_robustness_cut_frontier",
+      "space": "[0,infty)",
+      "def": "The largest robustness weight below which a nontrivial cut-exactness region can persist on the block-symmetric slice.",
+      "role": "derived_phase_boundary",
+      "refs": [
+        "m",
+        "a",
+        "b"
+      ]
+    },
+    {
+      "name": "r_cut(m,a,b,kappa)",
+      "type": "cut_exactness_frontier",
+      "space": "[0,infty)",
+      "def": "For 0 <= kappa < kappa_cut(m,a,b), the largest ratio value up to which the cut covariance remains optimal on the block-symmetric elliptope slice.",
+      "role": "derived_phase_boundary",
+      "refs": [
+        "m",
+        "a",
+        "b",
+        "kappa",
+        "kappa_cut(m,a,b)"
+      ]
+    },
+    {
+      "name": "kappa_iid(m,a,b,r)",
+      "type": "iid_exactness_frontier",
+      "space": "[0,infty)",
+      "def": "The smallest robustness weight from which the iid covariance remains optimal on the block-symmetric elliptope slice, with kappa_iid(m,a,b,r) >= kappa_cut(m,a,b).",
+      "role": "derived_phase_boundary",
+      "refs": [
+        "m",
+        "a",
+        "b",
+        "r",
+        "kappa_cut(m,a,b)"
+      ]
+    },
+    {
+      "name": "r_gap^-(m,a,b,kappa), r_gap^+(m,a,b,kappa)",
+      "type": "gap_window_frontiers",
+      "space": "[0,infty)^2",
+      "def": "For 0 <= kappa < kappa_cut(m,a,b), the lower and upper ratio frontiers delimiting a proven positive implementability-gap window.",
+      "role": "derived_phase_boundary",
+      "refs": [
+        "m",
+        "a",
+        "b",
+        "kappa",
+        "kappa_cut(m,a,b)"
+      ]
+    },
+    {
+      "name": "r_star(m,a,b,kappa)",
+      "type": "sharp_exactness_boundary",
+      "space": "[0,infty)",
+      "def": "The exact cut-break ratio separating zero implementability loss from positive loss along each low-robustness slice and connecting to the high-kappa iid exactness region.",
+      "role": "open_phase_boundary",
+      "refs": [
+        "m",
+        "a",
+        "b",
+        "kappa",
+        "kappa_cut(m,a,b)"
+      ]
+    },
+    {
+      "name": "rho_star(m,a,b,r,kappa)",
+      "type": "tight_rounding_loss_certificate",
+      "space": "[0,infty)",
+      "def": "The tight causal-MSE price of restricting the SDP optimum to implementable plus-minus-one designs.",
+      "role": "open_gap_certificate",
+      "refs": [
+        "m",
+        "a",
+        "b",
+        "r",
+        "kappa"
+      ]
+    },
+    {
+      "name": "B(P)",
+      "type": "block_sum_law",
+      "space": "laws on {-m,-m+2,...,m}^2",
+      "def": "The joint law of the two community sums (sum_{i in A_m} Z_i, sum_{i in B_m} Z_i) under P.",
+      "role": "OEQ_handle_object",
+      "refs": [
+        "P",
+        "A_m, B_m",
+        "Z",
+        "m"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:two-block-homophily",
+      "kind": "graph",
+      "condition": "m >= 2 and a > b > 0.",
+      "free_symbols": [
+        "m",
+        "a",
+        "b"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This family is the deterministic mean graph of the balanced two-community SBM and the canonical finite-population benchmark for homophily-driven cluster design."
+      },
+      "used_by": [
+        "prop:symmetry-reduction",
+        "thm:cut-corner-exactness",
+        "thm:robust-corner-exactness",
+        "thm:gap-window",
+        "oeq:sharp-phase-boundary"
+      ]
+    },
+    {
+      "id": "ass:balanced-sign-design",
+      "kind": "design",
+      "condition": "P(Z = z) = P(Z = -z) for all z in {-1,1}^n.",
+      "free_symbols": [
+        "P",
+        "Z"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This proposal-specific restriction keeps the admissible design class centered at half-treatment margins while still containing the main implementable candidates of interest, including the iid Rademacher law and the symmetric two-point cut law P_cut."
+      },
+      "used_by": [
+        "prop:symmetry-reduction",
+        "thm:cut-corner-exactness",
+        "thm:robust-corner-exactness",
+        "thm:gap-window",
+        "oeq:sharp-phase-boundary"
+      ]
+    },
+    {
+      "id": "ass:low-scale-two-block",
+      "condition": "a+3b<2m.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "novel: finite-family scale normalization for the chosen objective with unit balance penalty"
+      }
+    },
+    {
+      "id": "ass:odd-community-size",
+      "condition": "m is odd.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: parity feasibility condition for sums of m Rademacher signs"
+      }
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:two-block-graph",
+      "name": "G_m(a,b)",
+      "construction": "Vertex set A_m union B_m with |A_m|=|B_m|=m; for i != j in the same block set W_ij = a/m, for i and j in opposite blocks set W_ij = b/m, and set W_ii = 0.",
+      "inputs": [
+        "m",
+        "a",
+        "b",
+        "A_m, B_m"
+      ]
+    },
+    {
+      "id": "def:block-elliptope",
+      "name": "E_m^blk",
+      "construction": "{ X(u,v) : 1-u >= 0, 1 + (m-1)u - m v >= 0, 1 + (m-1)u + m v >= 0 }",
+      "by_member_properties": [
+        "ass:two-block-homophily"
+      ]
+    },
+    {
+      "id": "def:balanced-design-class",
+      "name": "P_m^bal",
+      "construction": "{ P on {-1,1}^n : P(Z=z)=P(Z=-z) for every z }",
+      "by_member_properties": [
+        "ass:balanced-sign-design"
+      ]
+    },
+    {
+      "id": "def:block-exchangeable-design-class",
+      "name": "P_m^sym",
+      "construction": "{ P in P_m^bal : P is invariant under permutations within A_m, within B_m, and under swapping the two equal communities }",
+      "inputs": [
+        "P_m^bal",
+        "A_m, B_m"
+      ]
+    },
+    {
+      "id": "def:implementable-covariance-class",
+      "name": "C_m^pm",
+      "construction": "{ X(P) : P in P_m^sym }",
+      "inputs": [
+        "X(P)",
+        "P_m^sym"
+      ]
+    },
+    {
+      "id": "def:design-objective",
+      "name": "F_{r,kappa}(X)",
+      "construction": "Tr(L_m X) + r Tr(L_m^dagger X) + kappa ||X||_{S_2} + Tr(J_n X)",
+      "inputs": [
+        "L_m",
+        "L_m^dagger",
+        "J_n",
+        "r",
+        "kappa"
+      ]
+    },
+    {
+      "id": "def:implementability-gap",
+      "name": "Delta_m^pm(r,kappa)",
+      "construction": "inf_{P in P_m^sym} F_{r,kappa}(X(P)) - inf_{X in E_m^blk} F_{r,kappa}(X)",
+      "inputs": [
+        "P_m^sym",
+        "X(P)",
+        "E_m^blk",
+        "F_{r,kappa}(X)",
+        "r",
+        "kappa"
+      ]
+    },
+    {
+      "id": "def:block-sum-handle",
+      "name": "B(P)",
+      "construction": "Law of (sum_{i in A_m} Z_i, sum_{i in B_m} Z_i) under P.",
+      "inputs": [
+        "P",
+        "A_m, B_m",
+        "Z"
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "prop:symmetry-reduction",
+      "kind": "proposition",
+      "statement": "Assume ass:two-block-homophily, with r in [0,infty) and kappa in [0,infty) by their definitional domains. Orbit-averaging over the full two-block automorphism group generated by permutations within A_m, permutations within B_m, and the swap of the two equal communities maps each elliptope point X with diag(X)=1 to a point in E_m^blk with weakly smaller F_{r,kappa}. The same averaging maps each law P in P_m^bal to a block-exchangeable law with the same zero one-point margins and weakly smaller F_{r,kappa}(X(P)). Consequently inf_{X : X is positive semidefinite and diag(X)=1} F_{r,kappa}(X) = inf_{X in E_m^blk} F_{r,kappa}(X) and inf_{P in P_m^bal} F_{r,kappa}(X(P)) = inf_{P in P_m^sym} F_{r,kappa}(X(P)).",
+      "depends_on": [
+        "ass:two-block-homophily",
+        "def:block-elliptope",
+        "def:balanced-design-class",
+        "def:block-exchangeable-design-class",
+        "def:design-objective",
+        "def:two-block-graph",
+        "lem:block-spectral-coordinates"
+      ],
+      "status": "proved",
+      "justification": "The proposal only becomes sharp once the geometry reduces to a two-parameter covariance slice rather than the full n x n elliptope.",
+      "gap": "ThiyageswaranKokotBrennanMeilaYuFazel2026 and ChenLiDengWang2024 optimize over X but do not prove a family-specific exact symmetrization for implementable laws and relaxed covariances simultaneously.",
+      "consumer": "Every downstream threshold and gap statement can then be expressed in the block parameters (u,v) instead of an intractable ambient covariance.",
+      "proof_tex": "Proof. Let H be the finite group generated by permutations inside A_m, permutations inside B_m, and the swap of the two equal communities. For h in H let Pi_h be the associated permutation matrix. By def:two-block-graph and ass:two-block-homophily, the weighted graph is invariant under H: Pi_h L_m Pi_h' = L_m for every h. Since the Moore-Penrose inverse is equivariant under orthogonal conjugation, Pi_h L_m^dagger Pi_h' = L_m^dagger. Also Pi_h J_n Pi_h' = J_n.\n\nFirst take any elliptope point X with X positive semidefinite and diag(X)=1. Define the orbit average Xbar = |H|^{-1} sum_{h in H} Pi_h X Pi_h'. Convexity of the positive semidefinite cone and preservation of the diagonal give Xbar positive semidefinite with diagonal one. The H-orbits on off-diagonal ordered pairs are exactly the same-community pairs and the cross-community pairs, so Xbar has the form X(u,v) with one common within-block off-diagonal value and one common across-block value. By lem:block-spectral-coordinates, this is precisely a point of E_m^blk. The linear trace terms are unchanged by cyclicity of trace and H-invariance: Tr(L_m Xbar)=Tr(L_m X), Tr(L_m^dagger Xbar)=Tr(L_m^dagger X), and Tr(J_n Xbar)=Tr(J_n X). The Schatten-2 norm here is the Frobenius norm, hence is convex and invariant under orthogonal conjugation, so ||Xbar||_{S_2} <= |H|^{-1} sum_h ||Pi_h X Pi_h'||_{S_2}=||X||_{S_2}. Since kappa>=0, F_{r,kappa}(Xbar)<=F_{r,kappa}(X). Because E_m^blk is a subset of the full elliptope and every full elliptope point has a no-worse orbit average in E_m^blk, the relaxed infima are equal.\n\nNow let P be in P_m^bal. Let hP be the push-forward law of hZ, and set Pbar=|H|^{-1} sum_{h in H} hP. Sign symmetry is preserved because h(-z)=-hz, so Pbar(Z=z)=Pbar(Z=-z) and all one-point margins remain zero. By construction Pbar is H-invariant, hence invariant under permutations within each block and under the community swap, so Pbar belongs to P_m^sym by def:block-exchangeable-design-class. Its second moment is X(Pbar)=|H|^{-1} sum_h Pi_h X(P) Pi_h'. The same trace-invariance and Frobenius-convexity calculation gives F_{r,kappa}(X(Pbar))<=F_{r,kappa}(X(P)). Since P_m^sym is contained in P_m^bal and every law in P_m^bal admits a no-worse H-symmetrized law in P_m^sym, the implementable infima are equal."
+    },
+    {
+      "id": "thm:cut-corner-exactness",
+      "kind": "theorem",
+      "statement": "Assume ass:two-block-homophily. Set r_cut(m,a,b,kappa)=min{2b(a+b)(1-kappa/(a-b)), 2b(2m-2b-kappa)}. If 0<=r<r_cut(m,a,b,kappa), then X_cut is the unique minimizer of F_{r,kappa} over E_m^blk. Hence Delta_m^pm(r,kappa)=0, X_cut is the unique minimizer over C_m^pm, and P_cut attains that implementable optimum. (The range 0<=r<r_cut(m,a,b,kappa) is nonempty exactly when 0<=kappa<min{a-b,2(m-b)}, which in particular requires b<m; this is a non-vacuity remark, not a hypothesis.) At the boundary r=r_cut uniqueness can fail already when kappa=0, so the theorem uses the strict inequality r<r_cut.",
+      "depends_on": [
+        "ass:two-block-homophily",
+        "ass:balanced-sign-design",
+        "prop:symmetry-reduction",
+        "def:block-elliptope",
+        "def:implementable-covariance-class",
+        "def:design-objective",
+        "def:implementability-gap",
+        "def:block-exchangeable-design-class",
+        "lem:block-spectral-coordinates",
+        "lem:cut-vertex-certificate"
+      ],
+      "status": "proved",
+      "justification": "This is the sharp pure-cut corner promised by the topic: the SDP optimum is not merely rounded well but exactly realized by a feasible randomized design.",
+      "gap": "ThiyageswaranKokotBrennanMeilaYuFazel2026 gives Gaussian rounding but no zero-loss exactness theorem, and VivianoLeiImbensKarrerSchrijversShi2026 identifies cut-like causal cluster designs without a covariance-implementability boundary.",
+      "consumer": "Experimenters on homophilous two-block networks can certify when community-aligned randomization already attains the relaxed optimum, so no rounding or walk-based substitute is needed.",
+      "proof_tex": "Proof. Work in the spectral coordinates of lem:block-spectral-coordinates. Put q=2(m-1), M=2m, alpha_x=c_x/q=(a+b)+r/(a+b), alpha_y=c_y=2b+r/(2b), and alpha_z=c_z=2m. The cut covariance X_cut has coordinates (x,y,z)=(0,M,0). The two strict inequalities in lem:cut-vertex-certificate are alpha_x>alpha_y+kappa and alpha_z>alpha_y+kappa. Direct algebra gives alpha_x-alpha_y=(a-b)(1-r/(2b(a+b))) and alpha_z-alpha_y=2m-2b-r/(2b). Hence alpha_x>alpha_y+kappa is equivalent to r<2b(a+b)(1-kappa/(a-b)), while alpha_z>alpha_y+kappa is equivalent to r<2b(2m-2b-kappa). The assumed inequality 0<=r<r_cut(m,a,b,kappa), with r_cut equal to the minimum of these two right-hand sides, gives both strict inequalities. Therefore lem:cut-vertex-certificate implies that (0,M,0), equivalently X_cut, is the unique minimizer of F_{r,kappa} over E_m^blk. The law P_cut assigns mass 1/2 to s_m and 1/2 to -s_m. It is globally sign-symmetric, invariant under permutations within each block, and invariant under the community swap because that swap sends s_m to -s_m and P_cut gives s_m and -s_m equal mass. Hence P_cut belongs to P_m^sym by def:block-exchangeable-design-class, and its covariance is X(P_cut)=s_m s_m'=X_cut. Thus X_cut lies in C_m^pm. More generally, if P belongs to P_m^sym then its second moment is fixed by conjugation under the full two-block automorphism group, so its diagonal entries are one and its off-diagonal entries are constant on the same-community and cross-community orbits. Therefore X(P)=X(u,v) for some u and v, and positive semidefiniteness gives X(P) in E_m^blk. Hence C_m^pm is a subset of E_m^blk. Since the relaxed minimizer over E_m^blk is unique and belongs to C_m^pm, the implementable infimum equals the relaxed infimum, the implementability gap Delta_m^pm(r,kappa) is zero, and X_cut is also the unique minimizer over C_m^pm. The design P_cut attains that implementable optimum by construction. The non-vacuity remark follows because r_cut>0 exactly when both branches of the minimum are positive, i.e. 0<=kappa<a-b and 0<=kappa<2(m-b); the second condition forces b<m. At kappa=0 and r equal to whichever branch supports the minimum, one of the inequalities in the cut-vertex certificate becomes equality, so the linear part is tied along the corresponding edge and uniqueness can fail. This is why the theorem is stated with strict r<r_cut."
+    },
+    {
+      "id": "thm:robust-corner-exactness",
+      "kind": "theorem",
+      "statement": "Assume ass:two-block-homophily. Finite-kappa iid exactness holds only on the affine-balanced locus. More precisely, I_n is a minimizer of F_{r,kappa} over E_m^blk for some finite kappa if and only if a+3b=2m and r=2b(a+b), equivalently r=4b(m-b). On this locus, for every kappa>0, I_n is the unique relaxed minimizer and the implementable optimum is attained by P_iid, with P_iid in P_m^sym by def:block-exchangeable-design-class and X(P_iid)=I_n. Off this locus, I_n is not a minimizer for any finite kappa, although minimizers converge to I_n as kappa tends to infinity.",
+      "depends_on": [
+        "ass:two-block-homophily",
+        "def:design-objective",
+        "def:balanced-design-class",
+        "def:block-exchangeable-design-class",
+        "def:implementable-covariance-class",
+        "lem:block-spectral-coordinates",
+        "lem:frobenius-center-certificate"
+      ],
+      "status": "proved",
+      "justification": "A genuine phase diagram needs the opposite exact corner as well, not just the cut side.",
+      "gap": "ThiyageswaranKokotBrennanMeilaYuFazel2026 Proposition 7 shows that increasing the robustness penalty drives the relaxed solution toward Bernoulli randomization, but it does not give a finite family-specific threshold at which the iid covariance becomes exactly optimal.",
+      "consumer": "This gives a rigorous certificate for when robustness concerns dominate community alignment, making the simplest spread-out randomized design optimal.",
+      "proof_tex": "Proof. Work in the spectral coordinates of lem:block-spectral-coordinates and set t_x=qx, t_y=y, t_z=z, so t_x+t_y+t_z=2m. The identity covariance I_n corresponds to (x,y,z)=(1,1,1), i.e. t=(q,1,1). Equivalently, in the original (x,y,z) coordinates it is the unique minimizer of the Frobenius term sqrt(qx^2+y^2+z^2) on T_m by lem:frobenius-center-certificate.\n\nLet alpha_x=c_x/q=(a+b)+r/(a+b), alpha_y=c_y=2b+r/(2b), and alpha_z=c_z=2m. The linear part is alpha_x(qx)+alpha_y y+alpha_z z. By lem:frobenius-center-certificate, I_n can be a minimizer of the full objective for a finite kappa only if alpha_x=alpha_y=alpha_z. The equality alpha_x=alpha_y gives\n(a+b)+r/(a+b)=2b+r/(2b),\nwhich, since a>b, is equivalent to r=2b(a+b). Substituting this into alpha_y=alpha_z gives a+3b=2m. On this locus r=2b(a+b)=2b(2m-2b)=4b(m-b). This proves necessity.\n\nConversely, if a+3b=2m and r=2b(a+b), then alpha_x=alpha_y=alpha_z. Hence the linear part is constant on T_m, because qx+y+z=2m. For every kappa>0 the objective is this constant plus kappa times the Frobenius term, so lem:frobenius-center-certificate makes I_n the unique relaxed minimizer. For kappa=0 the whole triangle is minimizing, so I_n is a minimizer but not necessarily unique; this is enough for the stated if-and-only-if assertion with some finite kappa.\n\nThe iid Rademacher law P_iid is globally sign-symmetric and invariant under all coordinate permutations, hence in particular belongs to P_m^sym by def:block-exchangeable-design-class. Its second moment has diagonal entries one and off-diagonal entries zero, so X(P_iid)=I_n. Therefore, on the affine-balanced locus and for every kappa>0, the unique relaxed optimum is implementable and the implementable optimum is attained by P_iid.\n\nOff the affine-balanced locus the equality alpha_x=alpha_y=alpha_z fails, so the necessary condition from lem:frobenius-center-certificate fails and I_n is not a minimizer for any finite kappa. It remains to prove the convergence statement. Let T_m be compact and let l(x,y,z)=c_x x+c_y y+c_z z and h(x,y,z)=sqrt(qx^2+y^2+z^2). For any sequence kappa_j tending to infinity and any relaxed minimizer t_j in T_m at kappa_j, compare t_j with e=(1,1,1):\nl(t_j)+kappa_j h(t_j)<=l(e)+kappa_j h(e).\nAfter division by kappa_j, the boundedness of l on compact T_m gives limsup h(t_j)<=h(e). Every subsequential limit t_* therefore minimizes h on T_m. Since h has the unique minimizer e by lem:frobenius-center-certificate, every subsequential limit is e, and hence the whole minimizer set converges to I_n as kappa tends to infinity."
+    },
+    {
+      "id": "thm:gap-window",
+      "kind": "theorem",
+      "statement": "Assume ass:two-block-homophily, ass:low-scale-two-block, and ass:odd-community-size. With q=2(m-1), define kappa_gap(m,a,b):=((2m-a-3b)(a-b)sqrt(q))/(a+b) and r_cut_gap(m,a,b,kappa):=2b(a+b)(1-kappa/(a-b)). Define R_x^-(m,a,b,kappa)=2b(a+b)(1+kappa/((a-b)sqrt(q))) and R_x^+(m,a,b,kappa)=(a+b)(2m-a-b-kappa/sqrt(q)). Define r_gap^-(m,a,b,kappa)=(R_x^-(m,a,b,kappa)+R_x^+(m,a,b,kappa))/2 and r_gap^+(m,a,b,kappa)=R_x^+(m,a,b,kappa). Then for every 0 <= kappa < kappa_gap(m,a,b), r_cut_gap(m,a,b,kappa) < r_gap^-(m,a,b,kappa) < r_gap^+(m,a,b,kappa), and for every r in (r_gap^-,r_gap^+) the spread vertex X_spread in E_m^blk with spectral coordinates (m/(m-1),0,0) is the unique relaxed minimizer but is not plus-minus-one implementable. Consequently Delta_m^pm(r,kappa)>0 throughout that interval. The oddness restriction is necessary: if m is even, the whole block elliptope slice is implementable and the claimed positive gap is false.",
+      "depends_on": [
+        "ass:two-block-homophily",
+        "prop:symmetry-reduction",
+        "def:block-elliptope",
+        "def:block-exchangeable-design-class",
+        "def:implementable-covariance-class",
+        "def:design-objective",
+        "def:implementability-gap",
+        "ass:low-scale-two-block",
+        "ass:odd-community-size",
+        "lem:block-spectral-coordinates",
+        "lem:spread-vertex-certificate",
+        "lem:pm-reduced-slice-characterization"
+      ],
+      "status": "proved",
+      "justification": "This is the nontrivial content that turns the proposal from a corner-case study into an implementability-gap paper.",
+      "gap": "Neither the anchor nor ChenLiDengWang2024 proves a family-specific positive loss from implementability; they only note feasibility concerns or provide one-sided approximation control.",
+      "consumer": "A strictly positive Delta_m^pm tells the user when any feasible randomized design must pay a causal-MSE tax relative to the relaxed covariance benchmark.",
+      "proof_tex": "Proof. Let q=2(m-1), A=a+b, and D=2m-a-3b. By ass:two-block-homophily and ass:low-scale-two-block, A>0, a-b>0, and D>0, so kappa_gap=D(a-b)sqrt(q)/A is positive. For 0<=kappa<kappa_gap, compute R_x^+-R_x^- = A(2m-a-b-kappa/sqrt(q))-2bA(1+kappa/((a-b)sqrt(q))) = A(D-kappa A/((a-b)sqrt(q))). This is strictly positive exactly under kappa<kappa_gap. Hence r_gap^-=(R_x^-+R_x^+)/2 is strictly below r_gap^+=R_x^+ and strictly above R_x^-. Also R_x^- - r_cut_gap = 2bA kappa(a-b)^{-1}(1+q^{-1/2}) >= 0, with equality only when kappa=0; when kappa=0 the already shown strict inequality R_x^-<R_x^+ gives r_cut_gap=R_x^-<r_gap^-. Thus r_cut_gap<r_gap^-<r_gap^+. Now take r in (r_gap^-,r_gap^+). The preceding inequalities imply r>R_x^- and r<R_x^+. In the notation alpha_x=c_x/q, alpha_y=c_y, alpha_z=c_z, direct algebra gives alpha_y-alpha_x=(a-b)(r/(2bA)-1) and alpha_z-alpha_x=2m-a-b-r/A. Therefore r>R_x^- is equivalent to alpha_y>alpha_x+kappa/sqrt(q), and r<R_x^+ is equivalent to alpha_z>alpha_x+kappa/sqrt(q). Lem:spread-vertex-certificate then gives that the spread vertex (x,y,z)=(2m/q,0,0) is the unique relaxed minimizer over T_m, hence X_spread is the unique minimizer over E_m^blk. By lem:pm-reduced-slice-characterization, ass:odd-community-size implies that every covariance in the implementable class C_m^pm satisfies y+z>=2/m; the spread vertex has y+z=0 and is not implementable. The implementable slice is compact and the objective is continuous. Since the relaxed minimizer is unique and outside the implementable slice, the constrained implementable value is strictly larger than the relaxed value. Thus Delta_m^pm(r,kappa)>0 on the asserted interval. Finally, if m is even, lem:pm-reduced-slice-characterization says that the whole block elliptope slice is implementable. Then the implementable and relaxed infima agree for every r and kappa, so the asserted positive-gap conclusion would be false. This proves the necessity of the oddness restriction for this gap-window claim."
+    },
+    {
+      "id": "thm:sharp-rho-star",
+      "kind": "theorem",
+      "statement": "Assume ass:two-block-homophily, with r and kappa in their definitional domains. Then rho_star(m,a,b,r,kappa)=Delta_m^pm(r,kappa). Let q=2(m-1), T_m={(x,y,z): x,y,z>=0 and qx+y+z=2m}, phi_{r,kappa}(x,y,z)=c_x x+c_y y+c_z z+kappa*sqrt(qx^2+y^2+z^2), c_x=q((a+b)+r/(a+b)), c_y=2b+r/(2b), c_z=2m, alpha=(c_x/q,c_y,c_z), beta=(1/q,1,1), and d_m=0 for even m and d_m=2/m for odd m. The relaxed value is min_{T_m} phi_{r,kappa}, and the plus-minus-one implementable value is min_{(x,y,z) in T_m, y+z>=d_m} phi_{r,kappa}. For kappa>0 the relaxed minimizer X_rel(r,kappa) is unique and is computed by lem:weighted-simplex-active-set: among the seven nonempty supports S subset {x,y,z}, the admissible support has multiplier lambda satisfying sum_{i in S} (lambda-alpha_i)^2/beta_i=kappa^2, lambda>max_{i in S} alpha_i, and alpha_j>=lambda for j notin S, with coordinates t_i=2m*((lambda-alpha_i)/beta_i)/sum_{h in S}((lambda-alpha_h)/beta_h) on S and zero off S after the change of variables t_x=qx, t_y=y, t_z=z. Singleton, two-point, and three-point supports give respectively the vertex, edge, and interior relaxed cases. For kappa=0 the relaxed argmin set is the exposed face on the alpha-minimizing coordinates. If the relaxed argmin set intersects {y+z>=d_m}, then rho_star=0; otherwise Delta_m^pm(r,kappa) is computed by minimizing the same objective on the truncation segment {(x,y,z) in T_m: y+z=d_m}, using the endpoint/interior formula of lem:weighted-simplex-truncation. Consequently rho_star is given by this finite active-set case split (the seven relaxed active-set cases together with the truncation-segment endpoint/interior cases), and rho_star=0 if and only if the relaxed argmin set intersects {y+z>=d_m}; when kappa>0 this is equivalent to y(X_rel(r,kappa))+z(X_rel(r,kappa))>=d_m. If m is even, d_m=0, so rho_star(m,a,b,r,kappa)=0 throughout the definitional domain. If m is odd, d_m=2/m, so positive loss occurs exactly when the relaxed argmin set is disjoint from {y+z>=2/m}; for kappa>0, equivalently y(X_rel(r,kappa))+z(X_rel(r,kappa))<2/m. The cut corner (thm:cut-corner-exactness) and iid corner (thm:robust-corner-exactness) are recovered by specializing this active-set formula to the cut-vertex and iid-center regimes; the odd-m positive-gap window (thm:gap-window) is a SEPARATE result that additionally assumes the low-scale and oddness hypotheses and is not derived from this node alone. No exact frontier or boundary characterization for r_star is asserted in this theorem.",
+      "depends_on": [
+        "ass:two-block-homophily",
+        "prop:symmetry-reduction",
+        "thm:cut-corner-exactness",
+        "thm:robust-corner-exactness",
+        "thm:gap-window",
+        "def:block-sum-handle",
+        "def:implementable-covariance-class",
+        "def:implementability-gap",
+        "lem:rounding-gap-reduction",
+        "lem:weighted-simplex-active-set",
+        "lem:weighted-simplex-truncation"
+      ],
+      "status": "proved",
+      "justification": "The contribution is the objective-specific finite closed-form implementability-gap certificate rho_star=Delta_m^pm, computed by the active-set SOCP over the reduced triangle (seven relaxed cases plus the truncation-segment cases), with the exact zero-loss criterion rho_star=0 iff the relaxed argmin meets the implementable slice y+z>=d_m. The exact zero/positive-loss frontier r_star is deliberately left as the honest open object (see honest scope); this node asserts no frontier/boundary characterization.",
+      "gap": "Positioned at FIELD level as an objective-specific implementability-gap CERTIFICATE, not a full phase-boundary resolution: the exact frontier r_star is left open (honest scope). Comparators: GoemansWilliamson1995 gives only a one-sided Gaussian-rounding approximation ratio (no exact zero/positive-loss equality); HuberMaric2017 gives abstract +-1 cut-polytope realizability with no objective-coupled certificate; OIHR/ThiyageswaranKokotBrennanMeilaYuFazel2026 exhibits the cut-vs-spread transition only numerically. Against these, thm:sharp-rho-star delivers the objective-specific finite closed-form equality rho_star=Delta_m^pm (seven active-set cases + truncation) and the exact zero-loss criterion rho_star=0 iff the relaxed argmin meets the implementable slice y+z>=d_m -- a field-level advance, NOT a claim to classify the scalar frontier r_star.",
+      "consumer": "A closed rho_star would convert the current ex-post heuristic choice between SDP rounding and implementable designs into an ex-ante optimality certificate.",
+      "proof_tex": "Proof. Put M=2m and q=2(m-1). Use the linear change of variables t_x=qx, t_y=y, and t_z=z. This is a bijection between T_m={x,y,z>=0: qx+y+z=M} and the simplex Delta_M={t_i>=0: t_x+t_y+t_z=M}. With beta_x=1/q and beta_y=beta_z=1, and with alpha=(c_x/q,c_y,c_z), the objective becomes phi_{r,kappa}(x,y,z)=sum_i alpha_i t_i+kappa sqrt(sum_i beta_i t_i^2). Indeed beta_x t_x^2=(1/q)(qx)^2=qx^2, while beta_y t_y^2=y^2 and beta_z t_z^2=z^2. The parity constraint y+z>=d_m is exactly t_y+t_z>=d_m.\n\nBy lem:rounding-gap-reduction, which identifies the exact covariance image of the corrected class P_m^sym with the parity-truncated reduced slice, the relaxed SDP value is min_{(x,y,z) in T_m} phi_{r,kappa}(x,y,z), the plus-minus-one implementable value is min_{(x,y,z) in T_m, y+z>=d_m} phi_{r,kappa}(x,y,z), and Delta_m^pm(r,kappa) is the implementable value minus the relaxed value. Thus the certificate rho_star, defined in this theorem as the tight price of replacing the relaxed block elliptope optimum by the implementable plus-minus-one covariance slice, is exactly this constrained-minus-unconstrained difference. Hence rho_star(m,a,b,r,kappa)=Delta_m^pm(r,kappa).\n\nIt remains to justify the displayed finite computation of the two values. For kappa>0, apply lem:weighted-simplex-active-set to the simplex objective in the t variables. The lemma gives a unique relaxed minimizer. For its support S, the KKT multiplier lambda satisfies sum_{i in S}(lambda-alpha_i)^2/beta_i=kappa^2, lambda>max_{i in S} alpha_i, and alpha_j>=lambda for inactive j. The coordinates are t_i=M*((lambda-alpha_i)/beta_i)/sum_{h in S}((lambda-alpha_h)/beta_h) for i in S and t_j=0 otherwise. Translating back by x=t_x/q, y=t_y, and z=t_z gives the stated relaxed matrix X_rel(r,kappa). The seven nonempty supports of {x,y,z} give exactly the three singleton vertex cases, the three two-point edge cases, and the three-point interior case. For kappa=0, the same lemma says that the relaxed argmin set is the exposed face spanned by the alpha-minimizing coordinates, which is precisely the statement's kappa=0 clause.\n\nNow impose implementability. In t coordinates the implementable set is K_{d_m}={t in Delta_M: t_y+t_z>=d_m}. If the relaxed argmin set intersects K_{d_m}, an intersecting relaxed minimizer is feasible for the constrained problem, so the constrained and unconstrained values coincide. Therefore Delta_m^pm(r,kappa)=rho_star(m,a,b,r,kappa)=0. Conversely, if the relaxed argmin set is disjoint from K_{d_m}, then the constrained value is strictly larger than the relaxed value: otherwise a constrained minimizer would also be a relaxed minimizer and would lie in the intersection. Lemma lem:weighted-simplex-truncation identifies the constrained optimum in this case. It lies on the boundary segment H_{d_m}={t_x=M-d_m, t_y=s, t_z=d_m-s, 0<=s<=d_m}, equivalently {(x,y,z) in T_m: y+z=d_m}. On this segment the objective is g_{d_m}(s)=alpha_x(M-d_m)+alpha_z d_m+(alpha_y-alpha_z)s+kappa sqrt((M-d_m)^2/q+s^2+(d_m-s)^2), and the lemma gives the endpoint or interior minimizer explicitly. Hence rho_star is given by the finite active-set case split consisting of the seven relaxed supports and, only when the relaxed optimum violates y+z>=d_m, the endpoint/interior truncation cases.\n\nThe zero-loss criterion follows immediately from the same argument: rho_star=0 if and only if the relaxed argmin set meets {y+z>=d_m}. When kappa>0 the relaxed minimizer is unique by lem:weighted-simplex-active-set, so this is equivalent to y(X_rel(r,kappa))+z(X_rel(r,kappa))>=d_m. If m is even, d_m=0 and every point of T_m satisfies y+z>=0; hence the relaxed and implementable feasible sets coincide in the reduced coordinates and rho_star is identically zero. If m is odd, d_m=2/m, so positive loss occurs exactly when the relaxed argmin set is disjoint from {y+z>=2/m}; for kappa>0, by uniqueness, this is exactly the strict inequality y(X_rel(r,kappa))+z(X_rel(r,kappa))<2/m.\n\nFinally, the two named corner specializations are consistent with the previously proved corner theorems. If the active support is the singleton {y}, the active-set conditions reduce to alpha_x>alpha_y+kappa and alpha_z>alpha_y+kappa, which are the cut-vertex inequalities used in thm:cut-corner-exactness, and the minimizer is (x,y,z)=(0,M,0)=X_cut. On the affine-balanced locus of thm:robust-corner-exactness, alpha_x=alpha_y=alpha_z; for kappa>0 the linear part is constant on T_m and the Frobenius term is uniquely minimized at (x,y,z)=(1,1,1), the covariance I_n implemented by P_iid. The odd-m positive-gap window is supplied separately by thm:gap-window under the additional low-scale and oddness assumptions; this theorem uses it only as contextual corner inventory and does not assert an exact r_star frontier or boundary characterization."
+    },
+    {
+      "id": "lem:block-spectral-coordinates",
+      "kind": "lemma",
+      "statement": "Let q=2(m-1). For X(u,v), define x=1-u, y=1+(m-1)u-mv, and z=1+(m-1)u+mv. Then X(u,v) belongs to E_m^blk if and only if x,y,z>=0 and qx+y+z=2m. In these coordinates X_cut=(0,2m,0), I_n=(1,1,1), and F_{r,kappa}(X(u,v))=c_x x+c_y y+c_z z+kappa sqrt(qx^2+y^2+z^2), where c_x=q((a+b)+r/(a+b)), c_y=2b+r/(2b), and c_z=2m.",
+      "depends_on": [
+        "ass:two-block-homophily",
+        "def:two-block-graph",
+        "def:block-elliptope",
+        "def:design-objective"
+      ],
+      "status": "proved",
+      "proof_tex": "The subspace R^n decomposes orthogonally into four invariant pieces: the span of 1_n, the span of s_m, the (m-1)-dimensional within-A contrast subspace, and the (m-1)-dimensional within-B contrast subspace. For X(u,v), the eigenvalue on each within-block contrast vector is x=1-u. The eigenvalue on s_m is y=1+(m-1)u-mv, and the eigenvalue on 1_n is z=1+(m-1)u+mv. Thus X(u,v) is positive semidefinite exactly when x,y,z are nonnegative. Since trace X=n=2m, the eigenvalues also satisfy qx+y+z=2m with q=2(m-1), and this relation is equivalent to the diagonal-one constraint after the displayed change of variables.\n\nFor the graph Laplacian, a within-block contrast vector has eigenvalue a+b: the within-block complete graph contributes a and the cross-block edges contribute b. The vector s_m has eigenvalue 2b, and 1_n has eigenvalue zero. The Moore-Penrose inverse has reciprocal eigenvalues 1/(a+b) on the within-block contrast subspace, 1/(2b) on span{s_m}, and zero on span{1_n}. The matrix J_n has eigenvalue 2m on span{1_n} and zero on its orthogonal complement. Therefore Tr(L_m X)=q(a+b)x+2b y, Tr(L_m^dagger X)=q x/(a+b)+y/(2b), and Tr(J_n X)=2m z. The Schatten-2 norm is the Frobenius norm, equal to sqrt(qx^2+y^2+z^2) from the same eigenvalue decomposition. Substitution into def:design-objective gives the formula. Finally X_cut=s_m s_m' has eigenvalue 2m on span{s_m} and zero elsewhere, while I_n has all eigenvalues equal to one."
+    },
+    {
+      "id": "lem:cut-vertex-certificate",
+      "kind": "lemma",
+      "statement": "On T_m={x,y,z>=0: qx+y+z=2m}, if c_x/q>c_y+kappa and c_z>c_y+kappa, then (0,2m,0) is the unique minimizer of c_x x+c_y y+c_z z+kappa sqrt(qx^2+y^2+z^2).",
+      "depends_on": [
+        "def:block-elliptope",
+        "def:design-objective",
+        "lem:block-spectral-coordinates"
+      ],
+      "status": "proved",
+      "proof_tex": "Let N(x,y,z)=sqrt(qx^2+y^2+z^2). At the cut vertex p_c=(0,2m,0), N(p_c)=2m. For any (x,y,z) in T_m, y=2m-qx-z and N(x,y,z)>=y because all coordinates in the square root are nonnegative. Hence N(x,y,z)-N(p_c)>=-qx-z. The objective difference from p_c is\n(c_x-qc_y)x+(c_z-c_y)z+kappa(N(x,y,z)-2m)\n>= q(c_x/q-c_y-kappa)x+(c_z-c_y-kappa)z.\nThe two coefficients are strictly positive by hypothesis. If (x,y,z) is not p_c, then x>0 or z>0, so the difference is strictly positive. Thus p_c is the unique minimizer."
+    },
+    {
+      "id": "lem:spread-vertex-certificate",
+      "kind": "lemma",
+      "statement": "On T_m={x,y,z>=0: qx+y+z=2m}, if c_y>c_x/q+kappa/sqrt(q) and c_z>c_x/q+kappa/sqrt(q), then (2m/q,0,0) is the unique minimizer of c_x x+c_y y+c_z z+kappa sqrt(qx^2+y^2+z^2).",
+      "depends_on": [
+        "def:block-elliptope",
+        "def:design-objective",
+        "lem:block-spectral-coordinates"
+      ],
+      "status": "proved",
+      "proof_tex": "Let p_x=(2m/q,0,0) and N(x,y,z)=sqrt(qx^2+y^2+z^2). For (x,y,z) in T_m, x=2m/q-(y+z)/q and N(x,y,z)>=sqrt(q)x. Since N(p_x)=sqrt(q)(2m/q), we have N(x,y,z)-N(p_x)>=-(y+z)/sqrt(q). The objective difference from p_x is\n(c_y-c_x/q)y+(c_z-c_x/q)z+kappa(N(x,y,z)-N(p_x))\n>= (c_y-c_x/q-kappa/sqrt(q))y+(c_z-c_x/q-kappa/sqrt(q))z.\nThe coefficients are strictly positive. If (x,y,z) is not p_x, then y>0 or z>0, and the difference is strictly positive. Hence p_x is the unique minimizer."
+    },
+    {
+      "id": "lem:frobenius-center-certificate",
+      "kind": "lemma",
+      "statement": "On T_m, the point (1,1,1) is the unique minimizer of sqrt(qx^2+y^2+z^2). It is a minimizer of c_x x+c_y y+c_z z+kappa sqrt(qx^2+y^2+z^2) for finite kappa only if c_x/q=c_y=c_z; under this equality and kappa>0 it is the unique minimizer.",
+      "depends_on": [
+        "def:block-elliptope",
+        "def:design-objective",
+        "lem:block-spectral-coordinates"
+      ],
+      "status": "proved",
+      "proof_tex": "Cauchy's inequality with weights q,1,1 gives qx^2+y^2+z^2 >= (qx+y+z)^2/(q+2). On T_m the numerator is (2m)^2 and q+2=2m, so the lower bound is 2m. Equality in Cauchy's inequality holds exactly when x=y=z, hence, under qx+y+z=2m, exactly at (1,1,1). Thus (1,1,1) uniquely minimizes the Frobenius norm on T_m.\n\nThe point (1,1,1) is interior to T_m. The tangent space is {h: qh_x+h_y+h_z=0}. The gradient of the Frobenius norm at (1,1,1) is (q,1,1)/sqrt(2m), which annihilates every tangent direction. Therefore first-order optimality of the full convex objective at this interior point requires c_x h_x+c_y h_y+c_z h_z=0 for every tangent h. This is equivalent to (c_x,c_y,c_z) being proportional to (q,1,1), i.e. c_x/q=c_y=c_z. If the equality fails, some tangent has nonzero linear derivative and one of its two signs decreases the objective locally, so (1,1,1) cannot be a minimizer. If the equality holds, the linear part is constant on T_m, and for kappa>0 uniqueness follows from the unique Frobenius minimizer just proved."
+    },
+    {
+      "id": "lem:pm-reduced-slice-characterization",
+      "kind": "lemma",
+      "statement": "After full two-block symmetrization, the plus-minus-one covariance image in spectral coordinates is T_m when m is even and is T_m intersect {y+z>=2/m} when m is odd. In particular, for odd m the spread vertex (m/(m-1),0,0) is not implementable, while for even m every point of E_m^blk is implementable.",
+      "depends_on": [
+        "ass:balanced-sign-design",
+        "def:balanced-design-class",
+        "def:block-exchangeable-design-class",
+        "def:block-sum-handle",
+        "def:implementable-covariance-class",
+        "lem:block-spectral-coordinates"
+      ],
+      "status": "proved",
+      "proof_tex": "Proof. Let P belong to P_m^sym. By def:block-exchangeable-design-class, P is already invariant under permutations within each block and under swapping the two equal communities, so X(P) is fixed by conjugation under the full two-block automorphism group. Hence X(P) has diagonal one, a common within-community off-diagonal entry, and a common across-community entry; equivalently X(P)=X(u,v) for some u and v. Let S_A=sum_{i in A_m} Z_i and S_B=sum_{i in B_m} Z_i. Since y and z are the eigenvalues of X(P) on s_m and 1_n,\ny=(1/(2m)) E[(S_A-S_B)^2], and z=(1/(2m)) E[(S_A+S_B)^2].\nConsequently y+z=(1/m)E[S_A^2+S_B^2]. The possible values of each community sum are -m,-m+2,...,m. If m is odd, both S_A and S_B are odd, so S_A^2>=1 and S_B^2>=1 for every assignment; hence y+z>=2/m for every implementable covariance and therefore for every mixture. If m is even, assignments with S_A=S_B=0 exist.\n\nConversely, the relevant vertices are implementable by laws in P_m^sym. The cut assignment with (S_A,S_B)=(m,-m), together with sign symmetrization and the community swap, gives (y,z)=(2m,0). The all-one assignment with (S_A,S_B)=(m,m), together with sign symmetrization, gives (y,z)=(0,2m). If m is even, assignments with S_A=S_B=0 give (y,z)=(0,0), the spread vertex; mixtures of these symmetrized orbit laws generate the full triangle T_m. If m is odd, assignments with (S_A,S_B)=(1,-1) and (1,1), again symmetrized over signs and the full block automorphism group, give (y,z)=(2/m,0) and (0,2/m). Together with the cut and all-one vertices, their convex hull is exactly the truncated triangle {y>=0,z>=0,y+z<=2m,y+z>=2/m}. Translating back through qx+y+z=2m proves the statement."
+    },
+    {
+      "id": "lem:weighted-simplex-active-set",
+      "kind": "lemma",
+      "statement": "Let I={x,y,z}, M=2m, beta_x=1/q, beta_y=beta_z=1, and alpha=(alpha_x,alpha_y,alpha_z). On Delta_M={t_i>=0: sum_i t_i=M}, minimize Phi(t)=sum_i alpha_i t_i+kappa sqrt(sum_i beta_i t_i^2). If kappa>0, the minimizer is unique and is obtained by the following active-set formula. For each nonempty S subset I set A_S=sum_{i in S} beta_i^{-1}, mu_S=A_S^{-1} sum_{i in S} alpha_i beta_i^{-1}, and V_S=sum_{i in S}(alpha_i-mu_S)^2 beta_i^{-1}. If lambda_S=mu_S+sqrt((kappa^2-V_S)/A_S) is real, lambda_S>max_{i in S} alpha_i, and alpha_j>=lambda_S for every j notin S, then t_i=M((lambda_S-alpha_i)/beta_i)/sum_{h in S}((lambda_S-alpha_h)/beta_h) for i in S and t_j=0 for j notin S. Exactly one S satisfies these conditions, and the displayed point is the unique minimizer with value M lambda_S. Singleton S gives a vertex, two-point S gives an edge minimizer, and S=I gives the interior minimizer. If kappa=0, the minimizer set is the exposed face conv{M e_i: alpha_i=min_j alpha_j}; a closed-form selector may be chosen from that face without changing the value.",
+      "depends_on": [],
+      "status": "proved",
+      "proof_tex": "Proof. The set Delta_M is compact and convex, and Phi is continuous, so a minimizer exists. When kappa>0, the weighted norm N(t)=sqrt(sum_i beta_i t_i^2) is strictly convex on Delta_M: equality in the triangle inequality for two distinct points would force them to be positive multiples, impossible because both have coordinate sum M unless they are equal. Hence Phi has a unique minimizer. Since M>0, N(t)>0 on Delta_M. The KKT conditions for a point with support S are necessary and sufficient because the problem is convex and Slater holds on each face. With multiplier lambda for sum_i t_i=M and nonnegative multipliers for t_i>=0, stationarity on active coordinates gives alpha_i+kappa beta_i t_i/N(t)=lambda, i in S, hence t_i=N(t)(lambda-alpha_i)/(kappa beta_i), so lambda>alpha_i on S. For inactive j the KKT inequality is alpha_j>=lambda. Squaring the active equations and summing with weights beta_i gives N(t)^2=N(t)^2 kappa^{-2} sum_{i in S}(lambda-alpha_i)^2/beta_i, hence sum_{i in S}(lambda-alpha_i)^2/beta_i=kappa^2. The root compatible with lambda>max_{i in S} alpha_i is the upper root lambda_S=mu_S+sqrt((kappa^2-V_S)/A_S), where the displayed A_S, mu_S, and V_S are obtained by completing the square. The constraint sum_i t_i=M then yields the formula for t_i. Conversely, if a subset S satisfies these displayed inequalities, the constructed point satisfies primal feasibility, complementary slackness, and all KKT inequalities, so it is the minimizer. Uniqueness of the minimizer implies that exactly one support can satisfy the strict active conditions, up to harmless boundary representations with zero inactive derivative. Multiplying the active stationarity equations by t_i and summing gives sum_i alpha_i t_i+kappa N(t)=lambda sum_i t_i=M lambda, proving the value formula. For kappa=0 the objective is linear on Delta_M, so its minimizers are exactly the convex hull of the vertices whose alpha coordinate is minimal."
+    },
+    {
+      "id": "lem:weighted-simplex-truncation",
+      "kind": "lemma",
+      "statement": "In the notation of lem:weighted-simplex-active-set, let K_d={t in Delta_M: t_y+t_z>=d} with 0<=d<=M. Use the kappa=0 tie convention that the relaxed selector is chosen in K_d when the relaxed argmin face meets K_d. If the selected relaxed minimizer t_rel belongs to K_d, it is also a minimizer over K_d. If t_rel is not in K_d, then every constrained optimum may be chosen on the segment H_d={t_x=M-d, t_y=s, t_z=d-s, 0<=s<=d}. On H_d the objective is g_d(s)=alpha_x(M-d)+alpha_z d+(alpha_y-alpha_z)s+kappa sqrt((M-d)^2/q+s^2+(d-s)^2). For kappa>0, writing A_d=(M-d)^2/q and delta=alpha_y-alpha_z, the minimizer is s=0 if delta>=kappa d/sqrt(A_d+d^2), s=d if delta<=-kappa d/sqrt(A_d+d^2), and otherwise s=(d-delta sqrt((A_d+d^2/2)/(kappa^2-delta^2/2)))/2. For kappa=0, any endpoint minimizing the linear function is selected: s=0 if delta>=0 and s=d if delta<=0.",
+      "depends_on": [
+        "lem:weighted-simplex-active-set"
+      ],
+      "status": "proved",
+      "proof_tex": "Proof. If t_rel lies in K_d, it minimizes over the larger simplex and therefore over K_d. Suppose t_rel is not in K_d. By the stated tie convention, no relaxed minimizer is feasible. For any feasible t with t_y+t_z>d, the segment from t to t_rel crosses the boundary t_y+t_z=d at some point t_b=(1-theta)t+theta t_rel with 0<theta<1. Convexity gives Phi(t_b)<= (1-theta)Phi(t)+theta Phi(t_rel)<=Phi(t), and the inequality is strict unless t itself is also a relaxed minimizer, which has been excluded. Thus the constrained value is attained on the boundary H_d. On H_d the simplex equation gives t_x=M-d, t_y=s, t_z=d-s, producing the displayed one-dimensional function g_d. This function is convex. For kappa=0 it is linear, so the endpoint rule is immediate. Let kappa>0. Its derivative is g_d'(s)=delta+kappa(2s-d)/sqrt(A_d+s^2+(d-s)^2). At s=0 this is delta-kappa d/sqrt(A_d+d^2), and at s=d it is delta+kappa d/sqrt(A_d+d^2). Convexity gives the two endpoint cases. In the remaining case the derivative vanishes at an interior point. With w=2s-d, the equation g_d'(s)=0 is w/sqrt(A_d+d^2/2+w^2/2)=-delta/kappa. Solving gives w=-delta sqrt((A_d+d^2/2)/(kappa^2-delta^2/2)), which lies in (-d,d) precisely in the interior case. Therefore s=(d+w)/2 is the displayed minimizer."
+    },
+    {
+      "id": "lem:rounding-gap-reduction",
+      "kind": "lemma",
+      "statement": "Let q=2(m-1), T_m={x,y,z>=0: qx+y+z=2m}, phi_{r,kappa}(x,y,z)=c_x x+c_y y+c_z z+kappa sqrt(qx^2+y^2+z^2), and d_m=0 if m is even and d_m=2/m if m is odd. Then Delta_m^pm(r,kappa)=min_{(x,y,z) in T_m, y+z>=d_m} phi_{r,kappa}(x,y,z)-min_{(x,y,z) in T_m} phi_{r,kappa}(x,y,z).",
+      "depends_on": [
+        "ass:two-block-homophily",
+        "prop:symmetry-reduction",
+        "def:block-elliptope",
+        "def:block-exchangeable-design-class",
+        "def:implementable-covariance-class",
+        "def:implementability-gap",
+        "lem:block-spectral-coordinates",
+        "lem:pm-reduced-slice-characterization"
+      ],
+      "status": "proved",
+      "proof_tex": "Proof. By prop:symmetry-reduction, the relaxed elliptope infimum equals the infimum over the block-symmetric slice. By lem:block-spectral-coordinates, that slice is exactly T_m in the displayed coordinates and the objective is phi_{r,kappa}. Thus the relaxed value is min_{T_m} phi_{r,kappa}. For the implementable value, the same symmetry reduction says that it suffices to minimize over P_m^sym. Because def:block-exchangeable-design-class now makes P_m^sym fully two-block symmetric, lemma lem:pm-reduced-slice-characterization identifies the exact covariance image of this implementable class in spectral coordinates: all of T_m when m is even and T_m intersect {y+z>=2/m} when m is odd. This is the single condition y+z>=d_m. Since def:implementability-gap defines Delta_m^pm as implementable value minus relaxed value, the displayed identity follows."
+    }
+  ],
+  "sampling_model": {
+    "design": "Finite population of n=2m units on the known graph G_m(a,b); the only randomness is the chosen assignment law P over Z in {-1,1}^n.",
+    "units": "Potential outcomes are fixed finite-population objects; the design problem chooses P before outcomes are revealed.",
+    "treatment": "Binary treatment is encoded by Z_i in {-1,1}; admissible exact designs use sign-symmetric randomization laws in P_m^bal.",
+    "overlap": "Unit-level half-treatment margins P(Z_i=1)=P(Z_i=-1)=1/2 follow from the sign symmetry restriction defining P_m^bal.",
+    "nuisance_estimation": "None; the proposal studies the worst-case HT-GATE MSE design objective through X(P)=E_P[ZZ']."
+  },
+  "estimand_functional": "M(P) = Tr(L_m X(P)) + r Tr(L_m^dagger X(P)) + kappa ||X(P)||_{S_2} + Tr(J_n X(P))",
+  "target_estimand": "tau = n^(-1) sum_{i=1}^n [Y_i(1_n) - Y_i(-1_n)]",
+  "bibliography": [
+    {
+      "key": "ThiyageswaranKokotBrennanMeilaYuFazel2026",
+      "citation": "Thiyageswaran, V., A. Kokot, J. Brennan, M. Meila, C. L. Yu, and M. Fazel (2026). Optimal Design under Interference, Homophily, and Robustness Trade-offs. arXiv:2601.17145."
+    },
+    {
+      "key": "ChenLiDengWang2024",
+      "citation": "Chen, Q., B. Li, L. Deng, and Y. Wang (2024). Optimized Covariance Design for AB Test on Social Network under Interference. NeurIPS 2024 / arXiv:2311.14042."
+    },
+    {
+      "key": "VivianoLeiImbensKarrerSchrijversShi2026",
+      "citation": "Viviano, D., L. Lei, G. Imbens, B. Karrer, O. Schrijvers, and L. Shi (2026). Causal Clustering: Design of Cluster Experiments under Network Interference. arXiv:2310.14983."
+    },
+    {
+      "key": "HarshawSavjeSpielmanZhang2024",
+      "citation": "Harshaw, C., F. Savje, D. Spielman, and P. Zhang (2024). Balancing Covariates in Randomized Experiments with the Gram-Schmidt Walk Design. Annals of Statistics; arXiv:1911.03071."
+    },
+    {
+      "key": "HuberMaric2017",
+      "citation": "Huber, M. and N. Maric (2017). Bernoulli Correlations and Cut Polytopes. arXiv:1706.06182."
+    },
+    {
+      "key": "BandeiraKunisky2018",
+      "citation": "Bandeira, A. S. and D. Kunisky (2018). A Gramian Description of the Degree 4 Generalized Elliptope. arXiv:1812.11583."
+    },
+    {
+      "key": "LaurentMascarinTelen2026",
+      "citation": "Laurent, M., F. M. Mascarin, and S. Telen (2026). The Algebraic Boundary of Graph Elliptopes. arXiv:2605.02484."
+    },
+    {
+      "key": "GoemansWilliamson1995",
+      "citation": "Goemans, M. X. and D. P. Williamson (1995). Improved Approximation Algorithms for Maximum Cut and Satisfiability Problems Using Semidefinite Programming. Journal of the ACM 42(6):1115-1145."
+    },
+    {
+      "key": "RaghavendraTan2012",
+      "citation": "Raghavendra, P. and N. Tan (2012). Approximating CSPs with Global Cardinality Constraints Using SDP Hierarchies. SODA 2012; arXiv:1110.1064."
+    }
+  ],
+  "tldr": "The paper resolves when the interference-homophily worst-case-MSE covariance SDP is EXACTLY implementable by a randomized plus-minus-one design rather than only approximately reachable by Gaussian rounding. On the balanced two-community homophily mean-graph family, the design problem reduces (prop:symmetry-reduction, lem:block-spectral-coordinates) to a block-symmetric two-parameter elliptope slice T_m and a matching fully two-block-symmetric sign-covariance slice; the exact plus-minus-one image is T_m truncated by the parity threshold y+z>=d_m (d_m=0 even m, d_m=2/m odd m). The delivered kernel is a field-level implementability-gap certificate in the ratio r=eta/gamma and robustness weight kappa: thm:sharp-rho-star gives the tight rounding-loss certificate rho_star = Delta_m^pm in explicit finite active-set form via an active-set SOCP solution over T_m (lem:weighted-simplex-active-set / lem:weighted-simplex-truncation), together with the exact zero-loss criterion rho_star=0 iff the relaxed argmin meets the implementable slice. The delivered kernel is the rho_star=Delta_m^pm certificate plus the cut/iid corners, the odd-m positive-gap window, and parity necessity; the exact zero/positive-loss frontier r_star is left as the honest open object.",
+  "project_justification": {
+    "gap": "The current literature has the causal design objective and it has the abstract cut-versus-elliptope geometry, but it does not connect them to say when the relaxed optimum is exactly realizable by a randomized assignment law.",
+    "niche": "The two-block homophily family is small enough to admit explicit spectral and polyhedral analysis, but rich enough to exhibit both cut-aligned and spread-out design incentives across disjoint robustness cells.",
+    "fill": "The project fills the gap by turning implementability into a theorem object: symmetry reduction, exact low-kappa and high-kappa corner cells, a strict positive-gap window, and an objective-specific certificate for the exact loss of restricting to implementable designs while leaving the sharp frontier itself honestly open."
+  },
+  "related_work": "ThiyageswaranKokotBrennanMeilaYuFazel2026 is the direct anchor: it formulates the same worst-case HT-GATE design objective over assignment covariances, and its Proposition 7 shows that increasing robustness pushes the relaxed optimizer toward Bernoulli randomization, but it leaves finite exact attainability and positive implementability loss open. ChenLiDengWang2024 is the closest pre-anchor covariance-design paper and explicitly identifies the feasibility obstruction for optimized covariances, without a family-specific exactness theorem. VivianoLeiImbensKarrerSchrijversShi2026 provides the causal-design benchmark on the graph side by choosing cluster structure to minimize finite-sample worst-case MSE, but does not ask whether a relaxed covariance optimum is exactly implementable. HarshawSavjeSpielmanZhang2024 supplies the robustness-vs-balance design benchmark that motivates the high-kappa Bernoulli corner. HuberMaric2017 gives the realizable symmetric Bernoulli correlation set as a cut polytope, which is the right implementability substrate but not tied to a causal design objective. BandeiraKunisky2018 and LaurentMascarinTelen2026 provide the elliptope-boundary machinery indicating why objective-exposed non-cut points, rather than generic PSD feasibility, should drive exactness failure.",
+  "honest_scope": "The two-block homophily family reduces (prop:symmetry-reduction, lem:block-spectral-coordinates) to a three-coordinate active-set SOCP, giving the closed-form rho_star=Delta_m^pm certificate (thm:sharp-rho-star) with the cut-exact corner (thm:cut-corner-exactness), affine-balanced iid-exact locus (thm:robust-corner-exactness), and the odd-m positive-gap window + parity necessity (thm:gap-window). The EXACT zero/positive-loss frontier r_star -- which supportwise contact strata y+z=2/m are genuine transition points -- is left as the honest OPEN object: at fixed kappa it is a set-valued transition subset of the r-line whose clean closed-form is not settled here. Scoped out of v1: graph families beyond two-block, the fixed-treatment-count design class (RaghavendraTan2012 different geometry), and a variance estimator / Wald inference for the chosen design."
+}

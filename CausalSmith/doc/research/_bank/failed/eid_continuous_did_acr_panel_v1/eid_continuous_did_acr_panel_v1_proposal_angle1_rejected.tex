@@ -1,0 +1,306 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_continuous\_did\_acr\_panel, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{eid\_continuous\_did\_acr\_panel} / \texttt{v1}%
+  \\ \large\textit{Sharp support-gap bounds for continuous-treatment DID ACR curves without stayers}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+(\texttt{eid\_continuous\_did\_acr\_panel},\texttt{v1},
+observable distribution \(P=\mathcal L(Y_0,Y_1,D_0,D_1,X)\) for a two-period panel with continuous doses \(D_t\in\mathcal D\subset\mathbb R\), bounded outcomes, and covariates \(X\);
+parameter \(\theta(d)=\mu'(d)\), where \(\mu(d)=\E[Y_1(d)-Y_1(0)\mid X\in\mathcal X_0]\) is the target dose-response contrast on a fixed target covariate set and \(d\) is an interior dose;
+identifying restrictions=consistency, positivity on the observed dose-transition support, generalized parallel trends for untreated potential outcomes, monotone dose response, a known local smoothness radius \((L,B)\) for \(\mu\), and no exact-stayer or near-zero-control requirement inside support gaps;
+bounding functional=the sharp support-function interval \(B_{\mathrm{gap}}(P,d;L,B)\) obtained by projecting the smooth monotone dose-response class onto the derivative coordinate \(\mu'(d)\) after imposing all pointwise continuous-DID moment restrictions available at observed support points.)
+
+\begin{abstract}
+Continuous-treatment difference-in-differences methods point identify local average slopes when the design supplies stayers, crossing dose distributions, or usable near-zero-dose controls, but many empirical panels have support gaps exactly where the ACR curve is wanted.  This proposal asks for the sharp partial-identification analogue: what is the identified interval for \(\theta(d)=\mu'(d)\) when the nonparametric dCDH no-stayer strategy cannot borrow a valid local control at dose \(d\)?  The routine result is a finite-grid Whitney support-function representation of all continuous-DID restrictions that survive without exact stayers.  The flagship conjecture is that, under monotonicity and a known first/second-derivative smoothness radius, the support-gap derivative interval equals a necessary-and-sufficient Whitney modulus whose rows are the DID moment intervals, the endpoint gap geometry, and the derivative coordinate \(z_d=m'(d)\).  Resolving the conjecture would turn the no-stayer/near-zero-control failure case in \citet{deChaisemartinDHaultfoeuilleVazquezBare2024} and \citet{deChaisemartinCicciaDHaultfoeuilleKnau2024} into a reportable ACR sensitivity band instead of a parametric fallback.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Continuous doses such as temperature, tax rates, prices, pollution, and benefit generosity rarely provide exact stayers at every dose.  The applied question is still local: researchers want to know the marginal effect of one more degree, one more tax point, or one more dollar at a specific dose.  If the dose support has a gap around that dose, exact nonparametric DID point identification is unavailable, while a global linear TWFE coefficient answers a different and often contaminated question.
+
+\paragraph{The main finding (proposed).}
+The proposed kernel is Conjecture~\ref{conj:sharp-gap-envelope}: for an interior dose \(d\) inside an observable support gap, the sharp identified set for the ACR \(\theta(d)=\mu'(d)\) is the projection of an explicit monotone \(C^{1,1}\) Whitney feasibility system onto the named derivative coordinate \(z_d=m'(d)\).  Theorem~\ref{thm:finite-grid-support} records the finite-grid version with the missing value-derivative compatibility inequalities made explicit, and Theorem~\ref{thm:zero-gap-recovery} checks that the interval collapses to the standard point-ID ACR when a valid local control sequence reaches \(d\).
+
+\paragraph{What is new.}
+The closest published papers either point identify continuous-treatment DID effects under crossing/stayer support \citep{DHaultfoeuilleHoderleinSasaki2023,deChaisemartinDHaultfoeuillePasquierSowVazquezBare2022} or propose no-stayer alternatives and parametric repairs when nonparametric support is thin \citep{deChaisemartinDHaultfoeuilleVazquezBare2024,deChaisemartinCicciaDHaultfoeuilleKnau2024}.  The smoothness partial-identification paper \citet{KimKwonKwonLee2018} is now the closest shape-restriction comparator: it bounds average counterfactual outcomes under treatment-response smoothness, while this proposal targets a DID-generated derivative \(\mu'(d)\) and uses multiple continuous-DID moment rows rather than only realized-treatment outcome rows.  The epsilon gap is a sharp, nonparametric, curve-level derivative bound whose feasibility rows jointly encode DID moment source, support-gap geometry, and the named coordinate \(z_d\), rather than an estimator choice or a parametric extrapolation.
+
+\paragraph{How it positions in the literature.}
+This is a partial-identification proposal at the boundary of continuous-treatment DID and shape-restricted bounds.  It uses the panel DID primitives only to create the pointwise moment restrictions; the novelty-bearing object is the identified set \(B_{\mathrm{gap}}(P,d;L,B)\), a support-function envelope for an unobserved derivative.  It is therefore closer to Manski-style and smoothness/shape-restricted partial identification than to the Q1 panel regression catalogue.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the no-stayer continuous-DID workflow of \citet{deChaisemartinDHaultfoeuilleVazquezBare2024}: their AEA paper says a parametric route is used to overcome limitations of the nonparametric approach, and the proposed theorem would instead specify the exact ACR interval when the local comparison window is empty.  A second consumer is the heterogeneous-adoption workflow of \citet{deChaisemartinCicciaDHaultfoeuilleKnau2024}, whose no-near-zero-control case explicitly turns to nonparametric bounds or parametric treatment-effect heterogeneity.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers would report a support-gap ACR band at each dose where local controls are missing, and reserve point estimates for doses where the zero-gap condition actually holds.
+
+\section{Related work}
+\citet{AtheyImbens2006} provide the nonlinear change-in-changes benchmark in which distributional counterfactuals replace additive parallel trends; the present proposal inherits the warning that dose support, not just a mean trend, determines what is identified.  \citet{DHaultfoeuilleHoderleinSasaki2023} identify continuous-treatment effects in repeated cross sections using crossing treatment CDFs, stationarity of unobservables, and rank-invariance restrictions; the present proposal asks what remains when the relevant crossing/local support for \(d\) is absent.  \citet{deChaisemartinDHaultfoeuillePasquierSowVazquezBare2022} identify average slopes in panel settings by comparing switchers and stayers with the same baseline treatment; the support-gap bound is triggered precisely when those same-baseline local comparisons do not cover the target dose.  \citet{DCDH2020} is the heterogeneous-effects TWFE warning behind the modern dCDH estimator line, and it motivates treating linear projection repairs as a separate estimand rather than as an ACR bound.  \citet{deChaisemartinDHaultfoeuilleVazquezBare2024} develop continuous-treatment DID estimators without stayers and present a parametric approach for limitations of their nonparametric approach; this proposal replaces that fallback by a sharp partial-ID derivative interval.  \citet{deChaisemartinCicciaDHaultfoeuilleKnau2024} discuss heterogeneous adoption designs without true controls and turn to near-zero-dose controls, nonparametric bounds, or parametric treatment-effect heterogeneity depending on support; the proposed theorem makes the no-near-zero ``bounds'' branch explicit for the full ACR curve.  \citet{CallawayGoodmanBaconSantAnna2024} show that generalized parallel trends can identify treated-type continuous-dose parameters while dose comparisons and TWFE interpretations remain difficult; this motivates separating point-ID local comparisons from derivative bounds.  \citet{GoodmanBacon2021} is relevant as the canonical signed-weight decomposition for binary staggered TWFE, but the present proposal is not a TWFE decomposition: its object is a support-gap derivative envelope.  \citet{Manski1997} and \citet{Manski2003} provide the shape-restricted and partial-identification tradition behind replacing unavailable point identification with sharp bounds.  \citet{KimKwonKwonLee2018} is the closest smoothness-bound comparator because it studies the identification power of smoothness assumptions for average counterfactual outcomes and treatment effects; the present proposal differs by making the derivative \(m'(d)\) the target and by letting continuous-DID moment intervals, not realized-treatment cells alone, supply the finite rows.  \citet{RambachanRoth2023} supply support-function reasoning for structured deviations from parallel trends; the present proposal uses support functions for missing dose support rather than for trend-deviation sensitivity.
+
+In-repository prior art does not duplicate this kernel.  \texttt{doc/API.md} Section 1 records Q1 panel-regression theorems about finite-memory switch-on coefficients, contamination weights, sign flips, and Markov spectral-threshold refutations; those results concern binary-history regression bases rather than continuous-dose ACR support gaps.  \texttt{doc/API.md} Section 3 records the ThmSmith ExactID and PartialID catalogues as empty seed catalogues at this stage, so there is no mature in-catalogue continuous-dose partial-ID bound.  The banked proposal \texttt{pid\_did\_anticipation\_bounded\_v1} is closest in structure because it uses a support-function interval for DID under bounded anticipation, but its hidden coordinates are anticipation distortions across cohort-period cells, not a smooth derivative curve over continuous doses.  The banked \texttt{pid\_dose\_response\_iv\_v1} and downgraded \texttt{pid\_dose\_response\_shape\_v1} proposals are closest on continuous-dose partial identification, but they study IV/rank-slice and hidden-confounding shape restrictions rather than DID moment restrictions generated by no-stayer support gaps.
+
+\section{Formal setup}
+Let \(P=\mathcal L(Y_0,Y_1,D_0,D_1,X)\), where \(D_t\in\mathcal D\subset\mathbb R\) is a continuous dose, \(Y_t\in[\underline y,\overline y]\), and \(X\in\mathcal X\) has finite support.  For \(a\in\mathcal D\), let \(Y_1(a)\) be the period-one potential outcome under dose \(a\), and let \(Y_0(0)\) be the baseline untreated potential outcome.  The target dose-response contrast on a fixed covariate target set \(\mathcal X_0\) is
+\[
+  \mu(a)=\E[Y_1(a)-Y_1(0)\mid X\in\mathcal X_0],
+  \qquad
+  \theta(d)=\mu'(d).
+\]
+The observable DID moment information is summarized by a finite or countable support grid \(\mathcal S(P)\subset\mathcal D\).  At each \(s\in\mathcal S(P)\), continuous-DID comparisons that satisfy the overlap and local-comparison conditions produce an interval
+\[
+  I_s(P)=[\ell_s(P),u_s(P)]
+\]
+for \(\mu(s)\).  In point-identified cells this interval is a singleton; in no-stayer cells it may already incorporate a local comparison bandwidth or a first-stage DID interval.  For a target interior dose \(d\), let \(g_-(d)=\sup\{s\in\mathcal S(P):s<d\}\) and \(g_+(d)=\inf\{s\in\mathcal S(P):s>d\}\), with gap length \(\Delta(d)=g_+(d)-g_-(d)\) when both endpoints exist.
+
+The identifying restrictions define the admissible curve class
+\[
+  \mathcal M(P;L,B)=
+  \left\{m:\mathcal D\to\mathbb R:
+  m(s)\in I_s(P)\ \forall s\in\mathcal S(P),\
+  0\le m'(a)\le L,\
+  |m'(a)-m'(b)|\le B|a-b|\ \forall a,b
+  \right\}.
+\]
+The identified set for \(\theta(d)\) is
+\[
+  \Theta_I(P,d;L,B)=\{m'(d):m\in\mathcal M(P;L,B)\},
+\]
+and the bounding functional is the interval hull
+\[
+  B_{\mathrm{gap}}(P,d;L,B)=
+  [\inf\Theta_I(P,d;L,B),\sup\Theta_I(P,d;L,B)].
+\]
+For any finite grid \(T=\{x_0<\cdots<x_J\}\subset\mathcal D\) that contains \(d\) and the support points used in the bound, write \(m_j=m(x_j)\), \(v_j=m'(x_j)\), and let \(j(d)\) be the index with \(x_{j(d)}=d\).  The named derivative coordinate is
+\[
+  z_d=v_{j(d)}.
+\]
+The finite Whitney feasible set \(\mathcal W_T(P,d;L,B)\) consists of all \((m_j,v_j)_{j=0}^J\) such that \(m_j\in I_{x_j}(P)\) whenever \(x_j\in\mathcal S(P)\), \(0\le v_j\le L\), \(|v_j-v_k|\le B|x_j-x_k|\), and
+\[
+  \left|m_k-m_j-v_j(x_k-x_j)\right|
+  \le \frac{B}{2}(x_k-x_j)^2
+  \qquad\text{for every }j,k.
+\]
+The projected grid interval is
+\[
+  B_T(P,d;L,B)=
+  \left[\inf_{(m,v)\in\mathcal W_T} z_d,\,
+        \sup_{(m,v)\in\mathcal W_T} z_d\right].
+\]
+
+\begin{verbatim}
+qid=eid_continuous_did_acr_panel
+specialization=v1
+observable distribution P=law(Y0,Y1,D0,D1,X), with bounded outcomes,
+  continuous doses D_t in D subset R, and finite covariate support X
+parameter theta(d)=mu'(d), where mu(d)=E[Y1(d)-Y1(0) | X in X0]
+identifying restrictions=consistency, positivity on the observed
+  dose-transition support, generalized parallel trends for untreated
+  potential outcomes, monotone dose response, and known C^{1,1}
+  smoothness constants (L,B) for the target curve mu
+bounding functional=B_gap(P,d;L,B), the sharp lower/upper envelope of
+  the named derivative coordinate z_d=m'(d) over all monotone C^{1,1}
+  curves m that pass through every continuous-DID moment interval I_s(P)
+  generated by observable support; finite-grid relaxations use the
+  Whitney constraints defining W_T(P,d;L,B)
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Observed support and bounded outcomes]\label{ass:observed-support}
+The observable law \(P=\mathcal L(Y_0,Y_1,D_0,D_1,X)\) has \(Y_t\in[\underline y,\overline y]\), \(D_t\in\mathcal D\subset\mathbb R\), and finite covariate support.  The target dose \(d\) is an interior point of \(\mathcal D\), and the adjacent support endpoints \(g_-(d)\) and \(g_+(d)\) exist when a support-gap statement is invoked.
+\end{assumption}
+
+\begin{assumption}[Continuous-DID moment validity]\label{ass:did-moments}
+For every \(s\in\mathcal S(P)\), the interval \(I_s(P)=[\ell_s(P),u_s(P)]\) is a valid identified interval for \(\mu(s)\) under the available continuous-DID comparison at support point \(s\).  This comparison uses consistency, positivity on the relevant dose-transition cells, and generalized parallel trends for untreated potential outcomes.
+\end{assumption}
+
+\begin{assumption}[Monotone smooth ACR curve]\label{ass:smooth-monotone}
+The target curve \(\mu\) belongs to \(C^{1,1}(\mathcal D)\), satisfies \(0\le\mu'(a)\le L\) for all \(a\in\mathcal D\), and has \(B\)-Lipschitz derivative: \(|\mu'(a)-\mu'(b)|\le B|a-b|\) for all \(a,b\in\mathcal D\).
+\end{assumption}
+
+\begin{assumption}[Nonempty compatibility]\label{ass:nonempty}
+The admissible curve class \(\mathcal M(P;L,B)\) is nonempty.
+\end{assumption}
+
+\begin{assumption}[Zero-gap local identification]\label{ass:zero-gap}
+There exists a sequence \(s_n\in\mathcal S(P)\) with \(s_n\to d\), the intervals \(I_{s_n}(P)\) shrink to the point \(\mu(s_n)\), and the continuous-DID local comparison defining \(I_{s_n}(P)\) satisfies the identifying conditions of the relevant point-ID benchmark.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: finite-grid Whitney support-function representation]\label{thm:finite-grid-support}
+Under Assumptions~\ref{ass:observed-support}--\ref{ass:nonempty}, fix a finite grid \(T=\{x_0<\cdots<x_J\}\) containing \(d\) and every support point used to bound \(d\).  If \(\mathcal W_T(P,d;L,B)\) is the Whitney feasible set defined in the formal setup, then the finite-grid identified interval for the named derivative coordinate \(z_d=m'(d)\) is exactly \(B_T(P,d;L,B)\).  Equivalently, the lower and upper finite-grid endpoints are the support-function optima of the compact convex set \(\mathcal W_T(P,d;L,B)\) in the coordinate direction \(z_d\).  The value-derivative Taylor inequalities in \(\mathcal W_T\) are part of the statement; without them \(B_T\) is only a generally loose relaxation.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) The closest smoothness-bound paper \citet{KimKwonKwonLee2018} gives sharp smoothness bounds for average counterfactual levels, and \citet{RambachanRoth2023} uses support functions for trend-deviation sensitivity; neither has the continuous-DID moment rows \(I_s(P)\) nor the derivative coordinate \(z_d\).  The epsilon gap is the Whitney-compatible projection \(B_T\), not a generic smoothness interpolation bound.  (b) The concrete consumer is the no-stayer continuous-DID application workflow in \citet{deChaisemartinDHaultfoeuilleVazquezBare2024}: Theorem~\ref{thm:finite-grid-support} tells the analyst which grid moments, derivative variables, and Taylor compatibility rows enter an auditable ACR interval.
+
+\begin{conjecture}[Conjecture 1: sharp support-gap ACR envelope (NOT YET PROVED)]\label{conj:sharp-gap-envelope}
+Under Assumptions~\ref{ass:observed-support}--\ref{ass:nonempty}, the interval \(B_{\mathrm{gap}}(P,d;L,B)\) is the sharp identified set for \(\theta(d)=\mu'(d)\).  More precisely, let \(T_n\) be any increasing finite grids whose union is dense in \(\mathcal D\) and that all contain \(d\), \(g_-(d)\), \(g_+(d)\), and the observed support points used by the DID moments.  Then
+\[
+  B_{\mathrm{gap}}(P,d;L,B)=
+  \bigcap_{n\ge 1} B_{T_n}(P,d;L,B).
+\]
+In the single-gap case with no interior support points between \(g_-(d)\) and \(g_+(d)\), this intersection reduces to the two-endpoint Whitney modulus obtained from the rows involving \(I_{g_-(d)}(P)\), \(I_{g_+(d)}(P)\), \(z_d\), the two distances \(d-g_-(d)\) and \(g_+(d)-d\), and \((L,B)\).  The interval is nondegenerate on an open set of observable laws whenever that two-endpoint modulus admits two feasible values of \(z_d\) after all outside-gap DID rows are imposed.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{DHaultfoeuilleHoderleinSasaki2023} and \citet{deChaisemartinDHaultfoeuillePasquierSowVazquezBare2022} provide point-ID routes when their rank/stayer support primitives hold, while \citet{deChaisemartinDHaultfoeuilleVazquezBare2024} and \citet{deChaisemartinCicciaDHaultfoeuilleKnau2024} acknowledge the no-stayer/no-near-zero-control limitation without a sharp curve-level derivative envelope.  Relative to \citet{KimKwonKwonLee2018}, the epsilon gap is not smoothness alone: it is necessary-and-sufficient sharpness for a DID-sourced derivative interval whose rows are \(I_s(P)\) and whose limit coordinate is \(z_d\).  (b) The concrete consumer is the weather-dose setting of \citet{DeschenesGreenstone2012}, revisited by \citet{deChaisemartinDHaultfoeuilleVazquezBare2024}: resolving the conjecture would say exactly what can be concluded about marginal temperature effects at doses lacking local controls instead of switching to a global parametric dose response.
+
+\begin{theorem}[Theorem 2: zero-gap recovery of point-identified continuous DID]\label{thm:zero-gap-recovery}
+Under Assumptions~\ref{ass:observed-support}--\ref{ass:zero-gap}, if \(d\) is reached by valid local comparison support and the moment intervals shrink along \(s_n\to d\), then \(B_{\mathrm{gap}}(P,d;L,B)\) collapses to the singleton \(\{\mu'(d)\}\) whenever \(\mu'\) is continuous at \(d\).  In that case the recovered derivative is the same ACR limit targeted by the relevant point-ID continuous-DID formula.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This theorem is a sanity reduction, not the novelty kernel: it recovers the point-ID corner of \citet{DHaultfoeuilleHoderleinSasaki2023} or \citet{deChaisemartinDHaultfoeuillePasquierSowVazquezBare2022} when the local support conditions behind those papers are present.  (b) The concrete consumer is the continuous-treatment DID estimator comparison in \citet{CallawayGoodmanBaconSantAnna2024}: the theorem separates genuine support-gap partial identification from cases where an ACR point estimator is justified.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Zero-curvature affine boundary]\label{cor:linear}
+Under Assumptions~\ref{ass:observed-support}--\ref{ass:nonempty}, impose the boundary value \(B=0\).  If two support points \(s<r\) have singleton intervals \(I_s(P)=\{a_s\}\) and \(I_r(P)=\{a_r\}\), with \(\beta=(a_r-a_s)/(r-s)\in[0,L]\), then every admissible curve is affine on \([s,r]\) and \(B_{\mathrm{gap}}(P,d;L,0)=\{\beta\}\) for every \(d\in(s,r)\).
+\end{corollary}
+
+\begin{corollary}[No-smoothness warning]\label{cor:no-smoothness}
+Under Assumptions~\ref{ass:observed-support} and \ref{ass:did-moments}, replace Assumption~\ref{ass:smooth-monotone} by the weaker slope-only restriction \(0\le m'(a)\le L\), with no Lipschitz bound on \(m'\).  If \(d\) lies in a strict support gap, then point intervals at the two gap endpoints do not by themselves determine \(\mu'(d)\).  The derivative can vary within the monotone slope range while preserving the same endpoint values by redistributing slope mass inside the gap.
+\end{corollary}
+
+\section{Proof-sketch route}
+The mathematical route is convex analysis for \(C^{1,1}\) functions plus DID moment bookkeeping.  Theorem~\ref{thm:finite-grid-support} follows by putting \(d\) on the finite grid, introducing the named coordinate \(z_d=v_{j(d)}\), and writing monotonicity, derivative bounds, Lipschitz-derivative restrictions, and the Taylor inequalities \(|m_k-m_j-v_j(x_k-x_j)|\le B(x_k-x_j)^2/2\) as finite convex constraints; compactness gives attained support-function endpoints.  For Conjecture~\ref{conj:sharp-gap-envelope}, the key step is a Whitney-extension-style interpolation theorem: any finite endpoint values and endpoint derivative choices satisfying the monotone \(C^{1,1}\) compatibility inequalities can be extended to a global admissible curve without changing observed DID moments.  The smallest boundary case is a three-dose configuration \(g_-<d<g_+\), where the lower and upper derivative endpoints should be computable by saturating either the slope cap \(L\), the curvature cap \(B\), or the chord constraint between \(I_{g_-}\) and \(I_{g_+}\).  The zero-curvature corollary follows because \(B=0\) forces \(m'\) to be constant on \([s,r]\), and the zero-gap theorem follows by continuity of \(\mu'\) and shrinking identified intervals along a valid local comparison sequence.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:finite-grid-support} and Theorem~\ref{thm:zero-gap-recovery} are intended as routine mathematical statements once the DID moment intervals \(I_s(P)\) are accepted as inputs.  Conjecture~\ref{conj:sharp-gap-envelope} is the open research kernel: sharpness depends on proving that the finite Whitney witnesses can be pasted into one full potential-outcome law whose DID moments match \(P\).  The proposal deliberately does not claim semiparametric efficiency, estimator construction, inference, or equality with TWFE.  The smoothness constants \((L,B)\) are treated as externally specified sensitivity parameters; estimating or calibrating them is outside this proposal.  The v1 finite-grid theorem has been tightened by adding the missing value-derivative compatibility constraints, and the v1 homogeneous-linear corollary has been withdrawn in favor of the valid \(B=0\) affine boundary case.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) --- initial draft for the structurally different no-stayer support-gap partial-ID angle; prior verdict: none.
+\item v2 (revise) --- added Whitney value-derivative compatibility, replaced the invalid linear-response sanity check by the \(B=0\) affine boundary, and sharpened the smoothness/no-stayer literature comparison; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Athey and Imbens(2006)]{AtheyImbens2006}
+Athey, S. and G. W. Imbens (2006).
+\newblock Identification and inference in nonlinear difference-in-differences models.
+\newblock \emph{Econometrica} 74(2), 431--497.
+
+\bibitem[Callaway, Goodman-Bacon, and Sant'Anna(2024)]{CallawayGoodmanBaconSantAnna2024}
+Callaway, B., A. Goodman-Bacon, and P. H. C. Sant'Anna (2024).
+\newblock Difference-in-differences with a continuous treatment.
+\newblock NBER Working Paper 32117.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{DCDH2020}
+de Chaisemartin, C. and X. D'Haultfoeuille (2020).
+\newblock Two-way fixed effects estimators with heterogeneous treatment effects.
+\newblock \emph{American Economic Review} 110(9), 2964--2996.
+
+\bibitem[de Chaisemartin, D'Haultfoeuille, Pasquier, Sow, and Vazquez-Bare(2022)]{deChaisemartinDHaultfoeuillePasquierSowVazquezBare2022}
+de Chaisemartin, C., X. D'Haultfoeuille, F. Pasquier, D. Sow, and G. Vazquez-Bare (2022).
+\newblock Difference-in-differences estimators for treatments continuously distributed at every period.
+\newblock arXiv:2201.06898.
+
+\bibitem[de Chaisemartin, D'Haultfoeuille, and Vazquez-Bare(2024)]{deChaisemartinDHaultfoeuilleVazquezBare2024}
+de Chaisemartin, C., X. D'Haultfoeuille, and G. Vazquez-Bare (2024).
+\newblock Difference-in-difference estimators with continuous treatments and no stayers.
+\newblock \emph{AEA Papers and Proceedings} 114, 610--613.
+
+\bibitem[de Chaisemartin, Ciccia, D'Haultfoeuille, and Knau(2024)]{deChaisemartinCicciaDHaultfoeuilleKnau2024}
+de Chaisemartin, C., D. Ciccia, X. D'Haultfoeuille, and F. Knau (2024).
+\newblock Difference-in-differences in heterogeneous adoption designs without stayers.
+\newblock CREST Working Paper.
+
+\bibitem[Deschenes and Greenstone(2012)]{DeschenesGreenstone2012}
+Deschenes, O. and M. Greenstone (2012).
+\newblock The economic impacts of climate change: Evidence from agricultural output and random fluctuations in weather.
+\newblock \emph{American Economic Review} 102(1), 376--419.
+
+\bibitem[D'Haultfoeuille, Hoderlein, and Sasaki(2023)]{DHaultfoeuilleHoderleinSasaki2023}
+D'Haultfoeuille, X., S. Hoderlein, and Y. Sasaki (2023).
+\newblock Nonparametric difference-in-differences in repeated cross-sections with continuous treatments.
+\newblock \emph{Journal of Econometrics} 234(2), 664--690.
+
+\bibitem[Goodman-Bacon(2021)]{GoodmanBacon2021}
+Goodman-Bacon, A. (2021).
+\newblock Difference-in-differences with variation in treatment timing.
+\newblock \emph{Journal of Econometrics} 225(2), 254--277.
+
+\bibitem[Kim, Kwon, Kwon, and Lee(2018)]{KimKwonKwonLee2018}
+Kim, W., K. Kwon, S. Kwon, and S. Lee (2018).
+\newblock The identification power of smoothness assumptions in models with counterfactual outcomes.
+\newblock \emph{Quantitative Economics} 9(2), 617--642.
+
+\bibitem[Manski(1997)]{Manski1997}
+Manski, C. F. (1997).
+\newblock Monotone treatment response.
+\newblock \emph{Econometrica} 65(6), 1311--1334.
+
+\bibitem[Manski(2003)]{Manski2003}
+Manski, C. F. (2003).
+\newblock \emph{Partial Identification of Probability Distributions}.
+\newblock Springer.
+
+\bibitem[Rambachan and Roth(2023)]{RambachanRoth2023}
+Rambachan, A. and J. Roth (2023).
+\newblock A more credible approach to parallel trends.
+\newblock \emph{Review of Economic Studies} 90(5), 2555--2591.
+\end{thebibliography}
+
+\end{document}

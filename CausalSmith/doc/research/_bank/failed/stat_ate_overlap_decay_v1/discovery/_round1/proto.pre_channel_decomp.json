@@ -1,0 +1,1177 @@
+{
+  "qid": "stat_ate_overlap_decay",
+  "specialization": "v1",
+  "cluster": "stat",
+  "symbols": [
+    {
+      "name": "n",
+      "type": "sample_size",
+      "space": "N",
+      "def": "Sample size.",
+      "role": "index"
+    },
+    {
+      "name": "O",
+      "type": "random_vector",
+      "space": "{(Y,D,X): Y in R, D in {0,1}, X in X}",
+      "def": "Observed unit O = (Y, D, X).",
+      "role": "data_unit"
+    },
+    {
+      "name": "O_1, ..., O_n",
+      "type": "sample",
+      "space": "({(Y,D,X): Y in R, D in {0,1}, X in X})^n",
+      "def": "Observed sample of n units.",
+      "role": "data"
+    },
+    {
+      "name": "Y",
+      "type": "outcome",
+      "space": "R",
+      "def": "Observed outcome component of O.",
+      "role": "data_component",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "D",
+      "type": "treatment",
+      "space": "{0,1}",
+      "def": "Observed treatment indicator component of O.",
+      "role": "data_component",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "X",
+      "type": "covariate",
+      "space": "X",
+      "def": "Observed covariate component of O.",
+      "role": "data_component",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "P",
+      "type": "law",
+      "space": "laws of O",
+      "def": "Observed-data law of O at sample size n.",
+      "role": "model",
+      "refs": [
+        "O",
+        "n"
+      ]
+    },
+    {
+      "name": "P_X",
+      "type": "marginal_law",
+      "space": "laws of X",
+      "def": "Marginal law of X induced by P.",
+      "role": "design_measure",
+      "refs": [
+        "P",
+        "X"
+      ]
+    },
+    {
+      "name": "Y(1), Y(0)",
+      "type": "potential_outcomes",
+      "space": "R^2",
+      "def": "Potential outcomes under treatment and control.",
+      "role": "causal_primitives"
+    },
+    {
+      "name": "e",
+      "type": "propensity_score",
+      "sig": "X -> (0,1)",
+      "def": "e(x) = P(D = 1 | X = x).",
+      "role": "nuisance",
+      "refs": [
+        "P"
+      ]
+    },
+    {
+      "name": "g_1",
+      "type": "outcome_regression",
+      "sig": "X -> R",
+      "def": "g_1(x) = E[Y | D = 1, X = x].",
+      "role": "nuisance",
+      "refs": [
+        "P"
+      ]
+    },
+    {
+      "name": "g_0",
+      "type": "outcome_regression",
+      "sig": "X -> R",
+      "def": "g_0(x) = E[Y | D = 0, X = x].",
+      "role": "nuisance",
+      "refs": [
+        "P"
+      ]
+    },
+    {
+      "name": "tau",
+      "type": "causal_parameter",
+      "space": "R",
+      "def": "tau = E[Y(1) - Y(0)].",
+      "role": "target_estimand",
+      "refs": [
+        "P",
+        "Y(1), Y(0)"
+      ]
+    },
+    {
+      "name": "kappa",
+      "type": "tail_exponent",
+      "space": "(0, infinity)",
+      "def": "One-sided overlap-decay exponent governing shell probabilities near e(X) = 0.",
+      "role": "regime_parameter",
+      "refs": [
+        "e",
+        "P"
+      ]
+    },
+    {
+      "name": "eta_plus",
+      "type": "overlap_margin",
+      "space": "(0,1)",
+      "def": "Right-overlap margin satisfying e(X) <= 1 - eta_plus almost surely.",
+      "role": "regime_parameter",
+      "refs": [
+        "e"
+      ]
+    },
+    {
+      "name": "eta_minus",
+      "type": "overlap_margin",
+      "space": "(0,1)",
+      "def": "Left-overlap margin for the strict-overlap sanity reduction.",
+      "role": "sanity_parameter",
+      "refs": [
+        "e"
+      ]
+    },
+    {
+      "name": "lambda_0",
+      "type": "tail_scale_cap",
+      "space": "(0,1)",
+      "def": "Fixed upper cap for the clipping grid, chosen inside the tail region where the shell law is imposed.",
+      "role": "tuning_parameter"
+    },
+    {
+      "name": "r_1n",
+      "type": "rate_sequence",
+      "space": "(0, infinity)^N",
+      "def": "Oracle L2(P_X) estimability rate for the treated regression nuisance g_1.",
+      "role": "nuisance_rate"
+    },
+    {
+      "name": "r_0n",
+      "type": "rate_sequence",
+      "space": "(0, infinity)^N",
+      "def": "Oracle L2(P_X) estimability rate for the control regression nuisance g_0.",
+      "role": "nuisance_rate"
+    },
+    {
+      "name": "r_en",
+      "type": "rate_sequence",
+      "space": "(0, infinity)^N",
+      "def": "Oracle L2(P_X) estimability rate for the propensity nuisance e.",
+      "role": "nuisance_rate"
+    },
+    {
+      "name": "hat_g_1n",
+      "type": "estimator_sequence",
+      "sig": "data -> functions X -> R",
+      "def": "Cross-fitted witness estimator chosen for the upper theorem to attain the treated-regression estimability rate.",
+      "role": "nuisance_estimator",
+      "refs": [
+        "g_1",
+        "n"
+      ]
+    },
+    {
+      "name": "hat_g_0n",
+      "type": "estimator_sequence",
+      "sig": "data -> functions X -> R",
+      "def": "Cross-fitted witness estimator chosen for the upper theorem to attain the control-regression estimability rate.",
+      "role": "nuisance_estimator",
+      "refs": [
+        "g_0",
+        "n"
+      ]
+    },
+    {
+      "name": "hat_e_n",
+      "type": "estimator_sequence",
+      "sig": "data -> functions X -> R",
+      "def": "Cross-fitted witness estimator chosen for the upper theorem to attain the propensity estimability rate before clipping and right-side stabilization.",
+      "role": "nuisance_estimator",
+      "refs": [
+        "e",
+        "n"
+      ]
+    },
+    {
+      "name": "lambda",
+      "type": "threshold",
+      "space": "(0,1]",
+      "def": "Lower clipping threshold for the treated inverse-propensity factor.",
+      "role": "tuning_parameter"
+    },
+    {
+      "name": "lambda_dagger_n",
+      "type": "threshold_sequence",
+      "space": "(0,1]^N",
+      "def": "Deterministic near-minimizing clipping threshold used by the converse, chosen so that R_n(lambda_dagger_n) <= 2 R_n^*.",
+      "role": "lower_bound_selection"
+    },
+    {
+      "name": "tbar_n",
+      "type": "rate_sequence",
+      "space": "[0, infinity)^N",
+      "def": "Largest polynomial clipping exponent with tbar_n -> infinity.",
+      "role": "tuning_parameter"
+    },
+    {
+      "name": "a_0",
+      "type": "rate_exponent",
+      "space": "(0, infinity)",
+      "def": "Exponent satisfying r_0n = n^(-a_0) in the rate-specialized subclass.",
+      "role": "smoothness_oracle_index",
+      "refs": [
+        "r_0n",
+        "n"
+      ]
+    },
+    {
+      "name": "a_1",
+      "type": "rate_exponent",
+      "space": "(0, infinity)",
+      "def": "Exponent satisfying r_1n = n^(-a_1) in the rate-specialized subclass.",
+      "role": "smoothness_oracle_index",
+      "refs": [
+        "r_1n",
+        "n"
+      ]
+    },
+    {
+      "name": "a_e",
+      "type": "rate_exponent",
+      "space": "(0, infinity)",
+      "def": "Exponent satisfying r_en = n^(-a_e) in the rate-specialized subclass.",
+      "role": "smoothness_oracle_index",
+      "refs": [
+        "r_en",
+        "n"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:iid",
+      "kind": "sampling",
+      "condition": "O_1, ..., O_n are i.i.d. draws from P.",
+      "free_symbols": [
+        "O_1, ..., O_n",
+        "P",
+        "n"
+      ],
+      "standard": {
+        "name": "i.i.d. sampling",
+        "cite": "ChernozhukovEtAl2018DML"
+      },
+      "used_by": [
+        "thm:clipped-upper",
+        "conj:tail-lower-bound",
+        "conj:minimax-frontier"
+      ]
+    },
+    {
+      "id": "ass:consistency",
+      "kind": "causal",
+      "condition": "Y = D Y(1) + (1 - D) Y(0) almost surely.",
+      "free_symbols": [
+        "Y",
+        "D",
+        "Y(1), Y(0)"
+      ],
+      "standard": {
+        "name": "consistency",
+        "cite": "HiranoImbensRidder2003EfficientATE"
+      },
+      "used_by": [
+        "thm:clipped-upper",
+        "conj:tail-lower-bound",
+        "conj:minimax-frontier"
+      ]
+    },
+    {
+      "id": "ass:ignorability",
+      "kind": "causal",
+      "condition": "(Y(1), Y(0)) is independent of D conditional on X.",
+      "free_symbols": [
+        "Y(1), Y(0)",
+        "D",
+        "X"
+      ],
+      "standard": {
+        "name": "conditional ignorability",
+        "cite": "HiranoImbensRidder2003EfficientATE"
+      },
+      "used_by": [
+        "thm:clipped-upper",
+        "conj:tail-lower-bound",
+        "conj:minimax-frontier"
+      ]
+    },
+    {
+      "id": "ass:tail-shell",
+      "kind": "overlap",
+      "condition": "There exist c_shell_minus > 0, c_shell_plus > 0, and lambda_0 in (0,1) such that c_shell_minus lambda^kappa <= P(lambda / 2 < e(X) <= lambda) <= c_shell_plus lambda^kappa for every lambda in (0, lambda_0].",
+      "free_symbols": [
+        "P",
+        "e",
+        "X",
+        "kappa",
+        "lambda_0",
+        "lambda"
+      ],
+      "constants": [
+        "c_shell_minus",
+        "c_shell_plus"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This is realistic when the propensity score has a density f_e(u) comparable to u^(kappa - 1) near zero, because then each dyadic shell (lambda / 2, lambda] has mass of order lambda^kappa. That class includes Beta-type boundary behavior and monotone single-index selection rules with regularly varying latent-index density at the participation cutoff."
+      },
+      "used_by": [
+        "prop:tail-order-reduction",
+        "conj:tail-lower-bound",
+        "conj:minimax-frontier",
+        "prop:phase-diagram"
+      ]
+    },
+    {
+      "id": "ass:right-overlap",
+      "kind": "overlap",
+      "condition": "e(X) <= 1 - eta_plus almost surely.",
+      "free_symbols": [
+        "e",
+        "X",
+        "eta_plus"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This is realistic in one-sided weak-overlap designs where treatment scarcity occurs only near e(X) = 0 while the control arm stays uniformly represented. Examples include eligibility rules with a rare-treatment tail but a control take-up rate bounded away from zero, and Beta-type propensity laws that are singular only at the left boundary."
+      },
+      "used_by": [
+        "thm:clipped-upper",
+        "prop:tail-order-reduction",
+        "conj:tail-lower-bound",
+        "conj:minimax-frontier"
+      ]
+    },
+    {
+      "id": "ass:region-compatibility",
+      "kind": "overlap",
+      "condition": "2 lambda_0 < 1 - eta_plus.",
+      "free_symbols": [
+        "lambda_0",
+        "eta_plus"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This is realistic in one-sided weak-overlap designs that separate the rare-treatment boundary region from a regular interior region. Any design with left-tail irregularity confined below lambda_0 and a control-rich interior beginning strictly above 2 lambda_0 satisfies it, including Beta-type tails spliced to an interior propensity band."
+      },
+      "used_by": [
+        "thm:clipped-upper",
+        "prop:tail-order-reduction",
+        "conj:tail-lower-bound",
+        "conj:minimax-frontier",
+        "prop:phase-diagram",
+        "prop:comparator-separation"
+      ]
+    },
+    {
+      "id": "ass:resid-treated",
+      "kind": "moment",
+      "condition": "sup_{x in X} E[(Y - g_1(X))^2 | D = 1, X = x] <= sigma_1_sq for some finite sigma_1_sq.",
+      "free_symbols": [
+        "Y",
+        "g_1",
+        "D",
+        "X"
+      ],
+      "constants": [
+        "sigma_1_sq"
+      ],
+      "standard": {
+        "name": "uniform treated residual second-moment envelope",
+        "cite": "Dorn2025WeakOverlapDRTStats"
+      },
+      "used_by": [
+        "thm:clipped-upper",
+        "conj:tail-lower-bound",
+        "conj:minimax-frontier"
+      ]
+    },
+    {
+      "id": "ass:resid-control",
+      "kind": "moment",
+      "condition": "sup_{x in X} E[(Y - g_0(X))^2 | D = 0, X = x] <= sigma_0_sq for some finite sigma_0_sq.",
+      "free_symbols": [
+        "Y",
+        "g_0",
+        "D",
+        "X"
+      ],
+      "constants": [
+        "sigma_0_sq"
+      ],
+      "standard": {
+        "name": "uniform control residual second-moment envelope",
+        "cite": "Dorn2025WeakOverlapDRTStats"
+      },
+      "used_by": [
+        "thm:clipped-upper",
+        "conj:tail-lower-bound",
+        "conj:minimax-frontier"
+      ]
+    },
+    {
+      "id": "ass:estimable-g1",
+      "kind": "nuisance_rate",
+      "condition": "The nuisance g_1 is L2(P_X)-estimable at rate r_1n from an i.i.d. sample of O.",
+      "free_symbols": [
+        "g_1",
+        "P_X",
+        "r_1n",
+        "O"
+      ],
+      "standard": {
+        "name": "structure-agnostic treated-regression estimability at rate r_1n",
+        "cite": "JinSyrgkanis2024StructureAgnosticDR"
+      },
+      "used_by": [
+        "thm:clipped-upper",
+        "conj:tail-lower-bound",
+        "conj:minimax-frontier"
+      ]
+    },
+    {
+      "id": "ass:estimable-g0",
+      "kind": "nuisance_rate",
+      "condition": "The nuisance g_0 is L2(P_X)-estimable at rate r_0n from an i.i.d. sample of O.",
+      "free_symbols": [
+        "g_0",
+        "P_X",
+        "r_0n",
+        "O"
+      ],
+      "standard": {
+        "name": "structure-agnostic control-regression estimability at rate r_0n",
+        "cite": "JinSyrgkanis2024StructureAgnosticDR"
+      },
+      "used_by": [
+        "thm:clipped-upper",
+        "conj:tail-lower-bound",
+        "conj:minimax-frontier"
+      ]
+    },
+    {
+      "id": "ass:estimable-e",
+      "kind": "nuisance_rate",
+      "condition": "The nuisance e is L2(P_X)-estimable at rate r_en from an i.i.d. sample of O.",
+      "free_symbols": [
+        "e",
+        "P_X",
+        "r_en",
+        "O"
+      ],
+      "standard": {
+        "name": "structure-agnostic propensity estimability at rate r_en",
+        "cite": "BonviniKennedyDukesBalakrishnan2024StructureAgnosticATE"
+      },
+      "used_by": [
+        "thm:clipped-upper",
+        "conj:tail-lower-bound",
+        "conj:minimax-frontier"
+      ]
+    },
+    {
+      "id": "ass:regular-cell-mass",
+      "kind": "overlap",
+      "condition": "There exists c_reg > 0 such that P(2 lambda_0 < e(X) <= 1 - eta_plus) >= c_reg.",
+      "free_symbols": [
+        "P",
+        "e",
+        "X",
+        "lambda_0",
+        "eta_plus"
+      ],
+      "constants": [
+        "c_reg"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This is realistic when the design is one-sidedly weak only near e(X) = 0 and retains a nonvanishing interior stratum with treatment propensity bounded away from both 0 and 1. Mixture designs with a rare-treatment tail plus a regular eligibility stratum satisfy this directly once the tail cap lambda_0 is chosen below the interior onset."
+      },
+      "used_by": [
+        "conj:tail-lower-bound"
+      ]
+    },
+    {
+      "id": "ass:strict-left-overlap-sanity",
+      "kind": "overlap",
+      "condition": "e(X) >= eta_minus almost surely.",
+      "free_symbols": [
+        "e",
+        "X",
+        "eta_minus"
+      ],
+      "standard": {
+        "name": "positivity away from zero",
+        "cite": "HiranoImbensRidder2003EfficientATE"
+      },
+      "used_by": [
+        "prop:strict-overlap-sanity",
+        "prop:comparator-separation"
+      ]
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:weak-overlap-class",
+      "name": "W_n(kappa, r_0n, r_1n, r_en)",
+      "construction": "{ P : P admits potential outcomes (Y(1), Y(0)) and satisfies ass:consistency, ass:ignorability, ass:tail-shell, ass:right-overlap, ass:region-compatibility, ass:resid-treated, ass:resid-control, ass:estimable-g1, ass:estimable-g0, and ass:estimable-e at sample size n }",
+      "by_member_properties": [
+        "ass:consistency",
+        "ass:ignorability",
+        "ass:tail-shell",
+        "ass:right-overlap",
+        "ass:region-compatibility",
+        "ass:resid-treated",
+        "ass:resid-control",
+        "ass:estimable-g1",
+        "ass:estimable-g0",
+        "ass:estimable-e"
+      ]
+    },
+    {
+      "id": "def:regular-overlap-class",
+      "name": "W_n^reg(r_0n, r_1n, r_en)",
+      "construction": "{ P : P admits potential outcomes (Y(1), Y(0)) and satisfies ass:consistency, ass:ignorability, ass:strict-left-overlap-sanity, ass:right-overlap, ass:resid-treated, ass:resid-control, ass:estimable-g1, ass:estimable-g0, and ass:estimable-e at sample size n }",
+      "by_member_properties": [
+        "ass:consistency",
+        "ass:ignorability",
+        "ass:strict-left-overlap-sanity",
+        "ass:right-overlap",
+        "ass:resid-treated",
+        "ass:resid-control",
+        "ass:estimable-g1",
+        "ass:estimable-g0",
+        "ass:estimable-e"
+      ]
+    },
+    {
+      "id": "def:lower-bound-subclass",
+      "name": "W_n^lb(kappa, r_0n, r_1n, r_en)",
+      "construction": "{ P : P satisfies ass:consistency, ass:ignorability, ass:tail-shell, ass:right-overlap, ass:region-compatibility, ass:resid-treated, ass:resid-control, ass:estimable-g1, ass:estimable-g0, ass:estimable-e, and ass:regular-cell-mass at sample size n }",
+      "by_member_properties": [
+        "ass:consistency",
+        "ass:ignorability",
+        "ass:tail-shell",
+        "ass:right-overlap",
+        "ass:region-compatibility",
+        "ass:resid-treated",
+        "ass:resid-control",
+        "ass:estimable-g1",
+        "ass:estimable-g0",
+        "ass:estimable-e",
+        "ass:regular-cell-mass"
+      ]
+    },
+    {
+      "id": "def:tail-shell",
+      "name": "S_lambda",
+      "construction": "S_lambda = { x in X : lambda / 2 < e(x) <= lambda }",
+      "inputs": [
+        "X",
+        "e",
+        "lambda"
+      ]
+    },
+    {
+      "id": "def:regular-cell",
+      "name": "B_lambda",
+      "construction": "B_lambda = { x in X : 2 lambda < e(x) <= 1 - eta_plus }",
+      "inputs": [
+        "X",
+        "e",
+        "lambda",
+        "eta_plus"
+      ]
+    },
+    {
+      "id": "def:true-clipped-propensity",
+      "name": "e_lambda",
+      "construction": "e_lambda(x) = max{e(x), lambda}",
+      "inputs": [
+        "e",
+        "lambda"
+      ]
+    },
+    {
+      "id": "def:estimated-clipped-propensity",
+      "name": "hat_e_lambda",
+      "construction": "hat_e_lambda(x) = min{1 - eta_plus / 2, max{hat_e_n(x), lambda}}",
+      "inputs": [
+        "hat_e_n",
+        "lambda",
+        "eta_plus"
+      ]
+    },
+    {
+      "id": "def:oracle-clipped-score",
+      "name": "psi_lambda",
+      "construction": "psi_lambda(O; g_0, g_1, e) = g_1(X) - g_0(X) + D (Y - g_1(X)) / e_lambda(X) - (1 - D) (Y - g_0(X)) / (1 - e(X))",
+      "inputs": [
+        "O",
+        "g_0",
+        "g_1",
+        "e",
+        "lambda"
+      ]
+    },
+    {
+      "id": "def:plugin-score",
+      "name": "hat_psi_lambda",
+      "construction": "hat_psi_lambda(O) = hat_g_1n(X) - hat_g_0n(X) + D (Y - hat_g_1n(X)) / hat_e_lambda(X) - (1 - D) (Y - hat_g_0n(X)) / (1 - min{hat_e_n(X), 1 - eta_plus / 2})",
+      "inputs": [
+        "O",
+        "hat_g_0n",
+        "hat_g_1n",
+        "hat_e_n",
+        "eta_plus",
+        "lambda"
+      ]
+    },
+    {
+      "id": "def:crossfit-estimator",
+      "name": "hat_tau_lambda",
+      "construction": "hat_tau_lambda = n^(-1) sum_{i=1}^n hat_psi_lambda(O_i; hat_g_0n^(-i), hat_g_1n^(-i), hat_e_n^(-i), eta_plus, lambda)",
+      "inputs": [
+        "O_1, ..., O_n",
+        "hat_g_0n",
+        "hat_g_1n",
+        "hat_e_n",
+        "eta_plus",
+        "lambda",
+        "n"
+      ]
+    },
+    {
+      "id": "def:tail-mass-functional",
+      "name": "pi(lambda)",
+      "construction": "pi(lambda) = P(e(X) <= lambda)",
+      "inputs": [
+        "P",
+        "e",
+        "X",
+        "lambda"
+      ]
+    },
+    {
+      "id": "def:variance-scale",
+      "name": "v_kappa(lambda)",
+      "construction": "v_kappa(lambda) = lambda^(-(1 - kappa) / 2) if 0 < kappa < 1, v_kappa(lambda) = (1 + log(lambda_0 / lambda))^(1/2) if kappa = 1, and v_kappa(lambda) = 1 if kappa > 1",
+      "inputs": [
+        "kappa",
+        "lambda",
+        "lambda_0"
+      ]
+    },
+    {
+      "id": "def:exact-frontier-functional",
+      "name": "U_n(lambda)",
+      "construction": "U_n(lambda) = n^(-1/2) (E[e_lambda(X)^(-1)])^(1/2) + n^(-1/2) (lambda^(-1) r_1n + r_0n + lambda^(-3/2) r_en + r_en) + pi(lambda)^(1/2) r_1n + lambda^(-1) r_1n r_en + r_0n r_en",
+      "inputs": [
+        "n",
+        "lambda",
+        "e",
+        "r_1n",
+        "r_0n",
+        "r_en"
+      ]
+    },
+    {
+      "id": "def:frontier-functional",
+      "name": "R_n(lambda)",
+      "construction": "R_n(lambda) = n^(-1/2) v_kappa(lambda) + n^(-1/2) (lambda^(-1) r_1n + r_0n + lambda^(-3/2) r_en + r_en) + lambda^(kappa / 2) r_1n + lambda^(-1) r_1n r_en + r_0n r_en",
+      "inputs": [
+        "n",
+        "lambda",
+        "kappa",
+        "r_1n",
+        "r_0n",
+        "r_en",
+        "lambda_0"
+      ]
+    },
+    {
+      "id": "def:optimal-frontier",
+      "name": "R_n^*",
+      "construction": "R_n^* = inf_{lambda in Lambda_n} R_n(lambda)",
+      "inputs": [
+        "Lambda_n",
+        "lambda"
+      ]
+    },
+    {
+      "id": "def:near-optimal-threshold",
+      "name": "lambda_dagger_n",
+      "construction": "lambda_dagger_n in { lambda in Lambda_n : R_n(lambda) <= 2 R_n^* }",
+      "inputs": [
+        "Lambda_n",
+        "n",
+        "kappa",
+        "r_1n",
+        "r_0n",
+        "r_en",
+        "lambda_0"
+      ]
+    },
+    {
+      "id": "def:clipping-grid",
+      "name": "Lambda_n",
+      "construction": "Lambda_n = { lambda_0 n^(-t) : 0 <= t <= tbar_n }",
+      "inputs": [
+        "lambda_0",
+        "n",
+        "tbar_n"
+      ]
+    },
+    {
+      "id": "def:treated-mean-perturbation",
+      "name": "delta_1n(lambda)",
+      "construction": "delta_1n(lambda) = r_1n / (16 P_X(S_lambda)^(1/2))",
+      "inputs": [
+        "r_1n",
+        "P_X",
+        "S_lambda"
+      ]
+    },
+    {
+      "id": "def:control-mean-perturbation",
+      "name": "delta_0n(lambda)",
+      "construction": "delta_0n(lambda) = r_0n / (16 P_X(B_lambda)^(1/2))",
+      "inputs": [
+        "r_0n",
+        "P_X",
+        "B_lambda"
+      ]
+    },
+    {
+      "id": "def:tail-logit-perturbation",
+      "name": "u_1n(lambda)",
+      "construction": "u_1n(lambda) = r_en / (16 || e(X) (1 - e(X)) 1_{S_lambda}(X) ||_{L2(P_X)})",
+      "inputs": [
+        "r_en",
+        "e",
+        "X",
+        "P_X",
+        "S_lambda"
+      ]
+    },
+    {
+      "id": "def:regular-logit-perturbation",
+      "name": "u_0n(lambda)",
+      "construction": "u_0n(lambda) = r_en / (16 || e(X) (1 - e(X)) 1_{B_lambda}(X) ||_{L2(P_X)})",
+      "inputs": [
+        "r_en",
+        "e",
+        "X",
+        "P_X",
+        "B_lambda"
+      ]
+    },
+    {
+      "id": "def:least-favorable-family",
+      "name": "H_{n,lambda}",
+      "construction": "Handle for a lower-bound family: start from a base law P in W_n^lb(kappa, r_0n, r_1n, r_en); for each (s,t) in {-1,1}^2 define g_{1,s,t}(x) = g_1(x) + s delta_1n(lambda) 1_{S_lambda}(x), g_{0,s,t}(x) = g_0(x) + t delta_0n(lambda) 1_{B_lambda}(x), h_{s,t,lambda}(x) = s min{u_1n(lambda), log((1 - eta_plus / 2) / (eta_plus / 2)) - log(e(x) / (1 - e(x)))} 1_{S_lambda}(x) + t min{u_0n(lambda), log((1 - eta_plus / 2) / (eta_plus / 2)) - log(e(x) / (1 - e(x)))} 1_{B_lambda}(x), and e_{s,t}(x) = expit(log(e(x) / (1 - e(x))) + h_{s,t,lambda}(x)). This clipping map keeps e_{s,t}(x) <= 1 - eta_plus / 2 pointwise; the remaining open task is to verify bounded pairwise chi-square distance while keeping P_X and the centered residual laws fixed.",
+      "inputs": [
+        "P_X",
+        "g_1",
+        "g_0",
+        "e",
+        "r_1n",
+        "r_0n",
+        "r_en",
+        "lambda",
+        "eta_plus",
+        "S_lambda",
+        "B_lambda"
+      ]
+    },
+    {
+      "id": "def:rate-exponent-subclass",
+      "name": "E_n(a_0, a_1, a_e, kappa)",
+      "construction": "{ P in W_n(kappa, r_0n, r_1n, r_en) : r_0n = n^(-a_0), r_1n = n^(-a_1), and r_en = n^(-a_e) }",
+      "by_member_properties": [
+        "ass:consistency",
+        "ass:ignorability",
+        "ass:tail-shell",
+        "ass:right-overlap",
+        "ass:region-compatibility",
+        "ass:resid-treated",
+        "ass:resid-control",
+        "ass:estimable-g1",
+        "ass:estimable-g0",
+        "ass:estimable-e"
+      ]
+    },
+    {
+      "id": "def:regular-rate-exponent-subclass",
+      "name": "E_n^reg(a_0, a_1, a_e)",
+      "construction": "{ P in W_n^reg(r_0n, r_1n, r_en) : r_0n = n^(-a_0), r_1n = n^(-a_1), and r_en = n^(-a_e) }",
+      "by_member_properties": [
+        "ass:consistency",
+        "ass:ignorability",
+        "ass:strict-left-overlap-sanity",
+        "ass:right-overlap",
+        "ass:resid-treated",
+        "ass:resid-control",
+        "ass:estimable-g1",
+        "ass:estimable-g0",
+        "ass:estimable-e"
+      ]
+    },
+    {
+      "id": "def:phase-exponent",
+      "name": "nu(a_0, a_1, a_e, kappa)",
+      "construction": "nu(a_0, a_1, a_e, kappa) = sup_{t >= 0} min{ 1/2 - t (1 - kappa) / 2, a_1 + t kappa / 2, 1/2 + a_1 - t, 1/2 + a_e - 3 t / 2, a_1 + a_e - t, a_0 + a_e } if 0 < kappa < 1, and nu(a_0, a_1, a_e, kappa) = sup_{t >= 0} min{ 1/2, a_1 + t kappa / 2, 1/2 + a_1 - t, 1/2 + a_e - 3 t / 2, a_1 + a_e - t, a_0 + a_e } if kappa >= 1",
+      "inputs": [
+        "a_0",
+        "a_1",
+        "a_e",
+        "kappa"
+      ]
+    },
+    {
+      "id": "def:critical-exponent",
+      "name": "kappa^*(a_0, a_1, a_e)",
+      "construction": "kappa^*(a_0, a_1, a_e) = inf(({ kappa > 0 : nu(a_0, a_1, a_e, kappa) = B(a_0, a_1, a_e) } union {+infinity})), where B(a_0, a_1, a_e) = min{1/2, a_1 + a_e, a_0 + a_e} and nu is the corrected phase exponent from def:phase-exponent",
+      "inputs": [
+        "a_0",
+        "a_1",
+        "a_e",
+        "kappa"
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "thm:clipped-upper",
+      "kind": "theorem",
+      "statement": "Choose cross-fitted witness estimators hat_g_1n, hat_g_0n, and hat_e_n attaining the rates in ass:estimable-g1, ass:estimable-g0, and ass:estimable-e. Then for every law P satisfying ass:consistency, ass:ignorability, ass:right-overlap, ass:resid-treated, ass:resid-control, ass:estimable-g1, ass:estimable-g0, and ass:estimable-e, and in particular for every P in W_n(kappa, r_0n, r_1n, r_en) or P in W_n^reg(r_0n, r_1n, r_en), and every deterministic lambda in Lambda_n, E_P[psi_lambda(O; g_0, g_1, e)] = tau and |hat_tau_lambda - tau| = O_P(U_n(lambda)).",
+      "depends_on": [
+        "ass:iid",
+        "ass:consistency",
+        "ass:ignorability",
+        "ass:right-overlap",
+        "ass:resid-treated",
+        "ass:resid-control",
+        "ass:estimable-g1",
+        "ass:estimable-g0",
+        "ass:estimable-e",
+        "def:weak-overlap-class",
+        "def:regular-overlap-class",
+        "def:clipping-grid",
+        "def:true-clipped-propensity",
+        "def:estimated-clipped-propensity",
+        "def:oracle-clipped-score",
+        "def:plugin-score",
+        "def:crossfit-estimator",
+        "def:tail-mass-functional",
+        "def:exact-frontier-functional"
+      ],
+      "status": "to-prove",
+      "justification": "This theorem isolates the estimator-side object that must be matched by any minimax frontier claim: an exact clipped-score absolute-risk envelope before any tail-order simplification.",
+      "gap": "Relative to Dorn2025WeakOverlapDRTStats and MaSantAnnaSasakiUra2023DRWeakOverlap, this is an estimator-side refinement rather than a new causal target: Dorn's abstract studies weak-overlap Wald inference for a thresholded doubly robust estimator, and Ma-Sant'Anna-Sasaki-Ura study bias-corrected trimming for the original ATE. This statement instead extracts the structure-agnostic absolute-risk envelope U_n(lambda) that a minimax theorem would optimize.",
+      "consumer": "This is the upper benchmark needed to compare one-sided weak-overlap difficulty directly to the regular-overlap Jin-Syrgkanis and Bonvini-Kennedy-Dukes-Balakrishnan frontiers."
+    },
+    {
+      "id": "prop:tail-order-reduction",
+      "kind": "proposition",
+      "statement": "For every P in W_n(kappa, r_0n, r_1n, r_en) and every lambda in Lambda_n there exist constants 0 < c_1 <= c_2 < infinity, depending only on the class constants, such that c_1 lambda^kappa <= pi(lambda) <= c_2 lambda^kappa, c_1 v_kappa(lambda)^2 <= E[e_lambda(X)^(-1)] <= c_2 v_kappa(lambda)^2, and c_1 R_n(lambda) <= U_n(lambda) <= c_2 R_n(lambda).",
+      "depends_on": [
+        "ass:tail-shell",
+        "ass:right-overlap",
+        "ass:region-compatibility",
+        "def:weak-overlap-class",
+        "def:clipping-grid",
+        "def:tail-mass-functional",
+        "def:true-clipped-propensity",
+        "def:variance-scale",
+        "def:exact-frontier-functional",
+        "def:frontier-functional"
+      ],
+      "status": "to-prove",
+      "justification": "This is the algebraic bridge from primitive clipped-score quantities to the clean kappa-indexed rate functional that the phase diagram uses.",
+      "gap": "KhanTamer2010IrregularIdentification and the weak-overlap bookkeeping summarized in Dorn2025WeakOverlapDRTStats explain why inverse weights alter rate calculations, but they do not give this exact-to-order reduction for a clipped orthogonal ATE score with separate treated and control nuisance-product channels and the kappa = 1 normalization built into v_kappa(lambda).",
+      "consumer": "It makes the conjectured frontier directly comparable to published bounded-overlap rates by collapsing the primitive envelope to a single tail-order functional."
+    },
+    {
+      "id": "prop:strict-overlap-sanity",
+      "kind": "proposition",
+      "statement": "For every P in W_n^reg(r_0n, r_1n, r_en), if lambda in Lambda_n satisfies lambda < eta_minus, then e_lambda(x) = e(x) for all x in X and pi(lambda) = 0, so U_n(lambda) = n^(-1/2) (E[e(X)^(-1)])^(1/2) + n^(-1/2)(lambda^(-1) r_1n + r_0n + lambda^(-3/2) r_en + r_en) + lambda^(-1) r_1n r_en + r_0n r_en. In particular, if lambda_0 < eta_minus then choosing the fixed grid point lambda = lambda_0 yields |hat_tau_lambda - tau| = O_P(U_n(lambda_0)).",
+      "depends_on": [
+        "ass:strict-left-overlap-sanity",
+        "def:regular-overlap-class",
+        "def:clipping-grid",
+        "def:true-clipped-propensity",
+        "def:tail-mass-functional",
+        "def:exact-frontier-functional",
+        "thm:clipped-upper"
+      ],
+      "status": "to-prove",
+      "justification": "The proposal needs a concrete reduction showing that the weak-overlap machinery collapses to the regular-overlap benchmark when the left tail is ruled out.",
+      "gap": "JinSyrgkanis2024StructureAgnosticDR sets up ATE and ATT in Introduction equation (1), identifies ATE and weighted ATE under bounded overlap in equations (5)-(7), and states the bounded-overlap structure-agnostic rate benchmark in equation (8). This proposition is the exact reduction from the present one-sided shell model back to that same bounded-overlap benchmark.",
+      "consumer": "It certifies that any deterioration in the phase diagram is genuinely driven by one-sided overlap decay rather than by a relabeling of the regular-overlap problem."
+    },
+    {
+      "id": "conj:tail-lower-bound",
+      "kind": "conjecture",
+      "statement": "Let lambda_dagger_n be any deterministic selection satisfying def:near-optimal-threshold. For every base law P in W_n^lb(kappa, r_0n, r_1n, r_en), any completion of the handle H_{n,lambda_dagger_n} that preserves P_X and the centered residual laws and under which ass:consistency and ass:ignorability continue to hold has tau(P_{s,t}) = tau(P) + s delta_1n(lambda_dagger_n) P_X(S_{lambda_dagger_n}) - t delta_0n(lambda_dagger_n) P_X(B_{lambda_dagger_n}), hence ATE-diameter at least c_sep(lambda_dagger_n^(kappa/2) r_1n + r_0n) for some class-dependent c_sep > 0. The remaining converse task is to construct a completion that stays inside W_n^lb(kappa, r_0n, r_1n, r_en) and has uniformly bounded pairwise n-sample chi-square distances.",
+      "depends_on": [
+        "ass:iid",
+        "ass:consistency",
+        "ass:ignorability",
+        "ass:tail-shell",
+        "ass:right-overlap",
+        "ass:region-compatibility",
+        "ass:resid-treated",
+        "ass:resid-control",
+        "ass:estimable-g1",
+        "ass:estimable-g0",
+        "ass:estimable-e",
+        "ass:regular-cell-mass",
+        "def:lower-bound-subclass",
+        "def:clipping-grid",
+        "def:optimal-frontier",
+        "def:near-optimal-threshold",
+        "def:tail-shell",
+        "def:regular-cell",
+        "def:treated-mean-perturbation",
+        "def:control-mean-perturbation",
+        "def:tail-logit-perturbation",
+        "def:regular-logit-perturbation",
+        "def:least-favorable-family"
+      ],
+      "status": "to-prove",
+      "justification": "The open converse is aligned to the frontier object itself: the handle is asked to realize a bounded-divergence family at a deterministic near-minimizing shell, so the lower bound targets R_n^* rather than a looser sup_lambda scale.",
+      "gap": "KennedyBalakrishnanRobinsWasserman2024MinimaxCATE states in the abstract that its minimax lower bound for pointwise CATE is obtained by a localized fuzzy-hypotheses construction, and JinSyrgkanis2025GeneralLinearFunctionalLowerBounds states in the abstract that it extends ATE lower bounds to a general class of functionals and two debiasing regimes. Neither paper localizes the experiment at a one-sided propensity shell or builds the treated/control asymmetric global-ATE family encoded by H_{n,lambda_dagger_n} and R_n^*.",
+      "consumer": "A completed converse would turn the upper envelope into a genuine equivalence frontier and would identify whether weak overlap changes the ATE difficulty class through variance, treated-regression, or nuisance-product channels."
+    },
+    {
+      "id": "conj:minimax-frontier",
+      "kind": "conjecture",
+      "statement": "Assume additionally that prop:tail-order-reduction holds with comparison constants c_1 and c_2 that are uniform over all P in W_n(kappa, r_0n, r_1n, r_en) and all lambda in Lambda_n, so that c_1 R_n(lambda) <= U_n(lambda) <= c_2 R_n(lambda) class-uniformly. If there exist a universal constant C > 0 and a deterministic sequence lambda_n in Lambda_n with R_n(lambda_n) <= 2 R_n^* such that sup_{P in W_n(kappa, r_0n, r_1n, r_en)} E_P |hat_tau_{lambda_n} - tau(P)| <= C U_n(lambda_n), then inf_{hat_tau} sup_{P in W_n(kappa, r_0n, r_1n, r_en)} E_P |hat_tau - tau(P)| <= C' R_n^* for a universal constant C' > 0. Consequently, if an independent lower bound inf_{hat_tau} sup_{P in W_n(kappa, r_0n, r_1n, r_en)} E_P |hat_tau - tau(P)| >= c R_n^* is available, then the minimax absolute risk over W_n(kappa, r_0n, r_1n, r_en) is equivalent, up to universal constants, to R_n^*.",
+      "depends_on": [
+        "def:weak-overlap-class",
+        "def:clipping-grid",
+        "def:frontier-functional",
+        "def:optimal-frontier",
+        "thm:clipped-upper",
+        "prop:tail-order-reduction",
+        "conj:tail-lower-bound"
+      ],
+      "status": "to-prove",
+      "justification": "This is the flagship equivalence frontier: same full-population ATE and same structure-agnostic nuisance-rate inputs as the regular-overlap literature, but with the overlap axis made explicit through kappa.",
+      "gap": "JinSyrgkanis2024StructureAgnosticDR introduces the bounded-overlap ATE, ATT, and weighted-ATE targets in Introduction equations (1) and (5)-(7) under m_0(X) in [c, 1 - c] almost surely and states the corresponding structure-agnostic benchmark in equation (8). BonviniKennedyDukesBalakrishnan2024StructureAgnosticATE states in the abstract that it derives ATE minimax lower bounds in pure structure-agnostic and hybrid smoothness classes. JinSyrgkanis2025GeneralLinearFunctionalLowerBounds states in the abstract that it generalizes the ATE lower bound to general functionals and proves DML optimality in two regimes. None of those paper-level statements is a one-sided shell-calibrated ATE frontier with overlap decay indexed by kappa and rate functional R_n^*.",
+      "consumer": "It would decide exactly when one-sided overlap decay preserves the published bounded-overlap frontier and when it forces a slower full-ATE rate."
+    },
+    {
+      "id": "prop:phase-diagram",
+      "kind": "proposition",
+      "statement": "Assume the corrected upper-equivalence half of conj:minimax-frontier, including the class-uniform comparison constants between U_n and R_n, and correct def:critical-exponent by the convention kappa^*(a_0, a_1, a_e) = inf(({kappa > 0 : nu(a_0, a_1, a_e, kappa) = B(a_0, a_1, a_e)} union {+infinity})) with B(a_0, a_1, a_e) = min{1/2, a_1 + a_e, a_0 + a_e}. Then the conjectured minimax absolute rate over E_n(a_0, a_1, a_e, kappa) is n^(-nu(a_0, a_1, a_e, kappa)) when kappa != 1. When kappa = 1, the conjectured rate is n^(-nu(a_0, a_1, a_e, 1)) if nu(a_0, a_1, a_e, 1) < 1/2. If nu(a_0, a_1, a_e, 1) = 1/2, then the rate is n^(-1/2) when the fixed-threshold choice t = 0 attains the supremum in def:phase-exponent, and it is n^(-1/2) (log n)^(1/2) when every maximizer of def:phase-exponent is strictly positive. One-sided overlap decay strictly changes the bounded-overlap polynomial benchmark exponent B(a_0, a_1, a_e) exactly when 0 < kappa < kappa^*(a_0, a_1, a_e). When kappa >= kappa^*(a_0, a_1, a_e), the polynomial exponent matches B(a_0, a_1, a_e); at the root-n boundary kappa = 1 with B(a_0, a_1, a_e) = 1/2, a residual (log n)^(1/2) factor remains exactly when every maximizer is strictly positive.",
+      "depends_on": [
+        "def:rate-exponent-subclass",
+        "def:phase-exponent",
+        "def:critical-exponent",
+        "conj:minimax-frontier"
+      ],
+      "status": "to-prove",
+      "justification": "The rate exponent map is the observable deliverable of the frontier claim: it shows where weak overlap is first-order and where it is only logarithmic or absent.",
+      "gap": "HongLeungLi2020FinitePopulationLimitedOverlap and HeilerKazak2021ExtremePropensity show that limited overlap changes rates or limit laws, but not this strict-deterioration map against the Jin-Syrgkanis / Bonvini-Kennedy-Dukes-Balakrishnan bounded-overlap benchmark with the kappa = 1 logarithm attached only when the variance channel is rate-determining.",
+      "consumer": "It gives a concrete phase diagram for deciding whether clipping or richer estimators are first-order necessary at a given nuisance smoothness profile."
+    },
+    {
+      "id": "prop:comparator-separation",
+      "kind": "proposition",
+      "statement": "Assume conj:minimax-frontier. On E_n^reg(a_0, a_1, a_e), if lambda_0 < eta_minus then prop:strict-overlap-sanity yields an estimator whose estimation error satisfies |hat_tau_{lambda_0} - tau| = O_P(n^(-min{1/2, a_1 + a_e, a_0 + a_e})). If instead 0 < kappa < kappa^*(a_0, a_1, a_e), then n^(min{1/2, a_1 + a_e, a_0 + a_e}) inf_{hat_tau} sup_{P in E_n(a_0, a_1, a_e, kappa)} E_P |hat_tau - tau(P)| -> infinity.",
+      "depends_on": [
+        "def:rate-exponent-subclass",
+        "def:regular-rate-exponent-subclass",
+        "def:critical-exponent",
+        "conj:minimax-frontier",
+        "prop:strict-overlap-sanity",
+        "prop:phase-diagram"
+      ],
+      "status": "to-prove",
+      "justification": "This is the formal strict-extension certificate requested by the reviewer: it separates the bounded-overlap comparator class from the weak-tail class, then pairs the benchmark-rate upper bound on the former with strict deterioration on a named weak-overlap subclass.",
+      "gap": "JinSyrgkanis2024StructureAgnosticDR and BonviniKennedyDukesBalakrishnan2024StructureAgnosticATE give bounded-overlap ATE benchmarks, but neither paper states a theorem that juxtaposes that benchmark with a one-sided overlap-decay subclass under the same full-population ATE target and black-box nuisance-rate inputs. This proposition is the explicit comparator-tightening statement.",
+      "consumer": "It supplies the referee-facing theorem that the present kernel is not a relabeling of published bounded-overlap ATE theory."
+    }
+  ],
+  "target_estimand": "tau = E[Y(1) - Y(0)]",
+  "estimand_functional": "R_n^* = inf_{lambda in Lambda_n}{ n^(-1/2) v_kappa(lambda) + lambda^(kappa / 2) r_1n + lambda^(-1) r_1n r_en + r_0n r_en }",
+  "sampling_model": {
+    "design": "i.i.d. observational study under unconfoundedness with one-sided overlap decay at e(X) = 0 and right overlap bounded away from one",
+    "units": "O_i = (Y_i, D_i, X_i), i = 1, ..., n",
+    "treatment": "binary treatment D_i in {0,1}",
+    "overlap": "The main class W_n is indexed by dyadic-shell tail mass P(lambda / 2 < e(X) <= lambda) of order lambda^kappa on (0, lambda_0], with e(X) <= 1 - eta_plus almost surely, 2 lambda_0 < 1 - eta_plus, and clipping thresholds restricted to Lambda_n = {lambda_0 n^(-t) : 0 <= t <= tbar_n}. The lower-bound route uses the subclass W_n^lb that also retains a fixed interior regular cell P(2 lambda_0 < e(X) <= 1 - eta_plus) >= c_reg. The bounded-overlap sanity branch is carried by the separate comparator class W_n^reg with e(X) >= eta_minus and e(X) <= 1 - eta_plus almost surely.",
+    "nuisance_estimation": "Both W_n and W_n^reg are defined by existence of L2(P_X)-rate-optimal nuisance learners at rates r_1n, r_0n, and r_en; the upper theorem uses cross-fitted witness estimators and a one-sided clipped doubly robust score whose exact risk envelope is U_n(lambda)."
+  },
+  "bibliography": [
+    {
+      "key": "HiranoImbensRidder2003EfficientATE",
+      "citation": "Hirano, K., Imbens, G. W., and Ridder, G. (2003). Efficient estimation of average treatment effects using the estimated propensity score. Econometrica."
+    },
+    {
+      "key": "KhanTamer2010IrregularIdentification",
+      "citation": "Khan, S., and Tamer, E. (2010). Irregular identification, support conditions, and inverse-weight treatment-effect problems. Econometrica."
+    },
+    {
+      "key": "HongLeungLi2020FinitePopulationLimitedOverlap",
+      "citation": "Hong, H., Leung, M. P., and Li, J. (2020). Finite-population limited overlap in estimating average treatment effects. The Econometrics Journal."
+    },
+    {
+      "key": "HeilerKazak2021ExtremePropensity",
+      "citation": "Heiler, P., and Kazak, E. (2021). Extreme propensity scores and non-Gaussian limits for IPW and doubly robust estimators. Journal of Econometrics."
+    },
+    {
+      "key": "MaWang2020RobustIPW",
+      "citation": "Ma, X., and Wang, J. (2020). Robust inference for inverse probability weighting with small denominators. Journal of the American Statistical Association."
+    },
+    {
+      "key": "MaSantAnnaSasakiUra2023DRWeakOverlap",
+      "citation": "Ma, Y., Sant'Anna, P. H. C., Sasaki, Y., and Ura, T. (2023). Doubly robust estimators with weak overlap. arXiv:2304.08974."
+    },
+    {
+      "key": "ChernozhukovEtAl2018DML",
+      "citation": "Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C., Newey, W., and Robins, J. (2018). Double/debiased machine learning for treatment and structural parameters. The Econometrics Journal."
+    },
+    {
+      "key": "ArmstrongKolesar2021FiniteSampleATE",
+      "citation": "Armstrong, T. B., and Kolesar, M. (2021). Finite-sample optimal estimation and inference on average treatment effects under unconfoundedness. Econometrica 89(3), 1141-1177."
+    },
+    {
+      "key": "JinSyrgkanis2024StructureAgnosticDR",
+      "citation": "Jin, J., and Syrgkanis, V. (2024). Structure-agnostic optimality of doubly robust learning for treatment effect estimation. arXiv:2402.14264."
+    },
+    {
+      "key": "BonviniKennedyDukesBalakrishnan2024StructureAgnosticATE",
+      "citation": "Bonvini, M., Kennedy, E. H., Dukes, O., and Balakrishnan, S. (2024). Doubly-robust inference and optimality in structure-agnostic models with smoothness. arXiv:2405.08525."
+    },
+    {
+      "key": "KennedyBalakrishnanRobinsWasserman2024MinimaxCATE",
+      "citation": "Kennedy, E. H., Balakrishnan, S., Robins, J. M., and Wasserman, L. (2024). Minimax rates for heterogeneous causal effect estimation. Annals of Statistics."
+    },
+    {
+      "key": "RobinsLiMukherjeeTchetgenVanDerVaart2017MinimaxHOIF",
+      "citation": "Robins, J. M., Li, L., Mukherjee, R., Tchetgen Tchetgen, E., and van der Vaart, A. (2017). Minimax estimation of a functional on a structured high-dimensional model. Annals of Statistics."
+    },
+    {
+      "key": "Dorn2025WeakOverlapDRTStats",
+      "citation": "Dorn, J. (2025). How much weak overlap can doubly robust t-statistics handle? arXiv:2504.13273."
+    },
+    {
+      "key": "JinSyrgkanis2025GeneralLinearFunctionalLowerBounds",
+      "citation": "Jin, J., and Syrgkanis, V. (2025). Sharp structure-agnostic lower bounds for general functional estimation. arXiv:2512.17341."
+    },
+    {
+      "key": "ChaudhuriHill2024HeavyTailRobustATE",
+      "citation": "Chaudhuri and Hill (2024). Heavy tail robust estimation and inference for average treatment effects. Working paper."
+    }
+  ],
+  "comparator_promise_table": [
+    {
+      "comparator_bibkey": "JinSyrgkanis2024StructureAgnosticDR",
+      "anchor": "Introduction equation (1) for ATE/ATT, equations (5)-(7) for bounded-overlap identification of ATE/WATE, equation (8) for the structure-agnostic rate benchmark, and the overlap display m_0(X) in [c, 1 - c] almost surely.",
+      "comparator_claim": "Regular-overlap structure-agnostic optimality for ATE, ATT, and weighted ATE with black-box nuisance rates.",
+      "matched_by": "prop:strict-overlap-sanity, prop:comparator-separation, and conj:minimax-frontier",
+      "match_kind": "strict_extension_along_overlap_axis",
+      "frontier_gap": "The proposal preserves the same full-population ATE target and nuisance-rate language, then replaces bounded overlap by one-sided shell decay near e(X) = 0 and asks for the phase functional R_n^*."
+    },
+    {
+      "comparator_bibkey": "BonviniKennedyDukesBalakrishnan2024StructureAgnosticATE",
+      "anchor": "Abstract contribution summary: minimax lower bounds for estimating the ATE in the pure structure-agnostic class and in a hybrid smoothness class.",
+      "comparator_claim": "Structure-agnostic ATE optimality with smoothness under a bounded-overlap baseline.",
+      "matched_by": "prop:comparator-separation and conj:minimax-frontier",
+      "match_kind": "strict_extension_along_overlap_axis",
+      "frontier_gap": "The proposal changes only the overlap axis, not the estimand, and asks when the bounded-overlap ATE rate survives or fails under one-sided decay."
+    },
+    {
+      "comparator_bibkey": "Dorn2025WeakOverlapDRTStats",
+      "anchor": "Abstract sentences on thresholded doubly robust asymptotic normality, weak-overlap nuisance-rate costs, and thresholding rules of thumb.",
+      "comparator_claim": "Weak-overlap thresholded AIPW inference with nuisance-rate and tail bookkeeping.",
+      "matched_by": "thm:clipped-upper and conj:minimax-frontier",
+      "match_kind": "criterion_shift_from_inference_to_minimax_risk_frontier",
+      "frontier_gap": "The proposal extracts the absolute-risk envelope optimized over lambda and pairs it with a converse, rather than stopping at sufficient t-statistic validity."
+    },
+    {
+      "comparator_bibkey": "MaWang2020RobustIPW",
+      "anchor": "Small-denominator robust-inference setup for IPW under trimming sensitivity.",
+      "comparator_claim": "Robust IPW inference under small denominators and trimming sensitivity.",
+      "matched_by": "thm:clipped-upper",
+      "match_kind": "criterion_shift_from_robust_inference_to_absolute_risk",
+      "frontier_gap": "The proposal keeps the original ATE target and asks for the rate-optimal clipping frontier rather than robust Gaussian approximation across trimming rules."
+    },
+    {
+      "comparator_bibkey": "MaSantAnnaSasakiUra2023DRWeakOverlap",
+      "anchor": "Bias-corrected trimmed doubly robust construction that preserves the original treatment-effect target under weak overlap.",
+      "comparator_claim": "Bias-corrected trimmed doubly robust estimation preserving the original ATE under weak overlap.",
+      "matched_by": "thm:clipped-upper",
+      "match_kind": "criterion_shift_from_bias-corrected_trimming_to_rate_frontier",
+      "frontier_gap": "The proposal studies the same original ATE target but replaces threshold-specific bias correction by a black-box upper envelope meant to be matched by a minimax converse."
+    },
+    {
+      "comparator_bibkey": "ArmstrongKolesar2021FiniteSampleATE",
+      "anchor": "Introduction pp. 2-4 of the arXiv version: finite-sample optimal ATE estimators and confidence intervals under fixed design, no overlap assumptions, and researcher-imposed smoothness classes, together with the minimum smoothness threshold for root-n inference.",
+      "comparator_claim": "Finite-sample optimal ATE estimation and inference under unconfoundedness with lack of overlap handled through fixed-design bias-variance optimization over smoothness classes.",
+      "matched_by": "prop:strict-overlap-sanity and prop:comparator-separation",
+      "match_kind": "criterion_shift_from_fixed_design_finite_sample_optimality_to_structure_agnostic_random_design_frontier",
+      "frontier_gap": "That paper conditions on the realized design and solves a finite-sample linear-estimator problem under explicit smoothness classes, whereas the present kernel keeps random-design black-box nuisance rates fixed and asks for the sharp one-sided kappa-shell minimax frontier for the full-population ATE."
+    },
+    {
+      "comparator_bibkey": "KennedyBalakrishnanRobinsWasserman2024MinimaxCATE",
+      "anchor": "Abstract sentence that the minimax lower bound is derived via a localized version of the method of fuzzy hypotheses, together with the abstract statement that the target is CATE estimation in a Holder-smooth model.",
+      "comparator_claim": "Localized CATE minimax lower-bound geometry in a Holder-smooth pointwise problem.",
+      "matched_by": "conj:tail-lower-bound",
+      "match_kind": "strict_extension_of_lower_bound_geometry",
+      "frontier_gap": "The proposal moves the localization from a fixed covariate point to a one-sided propensity shell and targets a global ATE converse at the near-optimizer lambda_dagger_n."
+    },
+    {
+      "comparator_bibkey": "JinSyrgkanis2025GeneralLinearFunctionalLowerBounds",
+      "anchor": "Abstract sentences stating that the paper first proves optimal ATE structure-agnostic rates, then extends to a general class of functionals, and distinguishes two debiasing regimes.",
+      "comparator_claim": "Sharp structure-agnostic lower bounds for general functional estimation.",
+      "matched_by": "conj:tail-lower-bound and conj:minimax-frontier",
+      "match_kind": "strict_specialization_to_one_sided_overlap_experiment",
+      "frontier_gap": "The proposal specializes the general functional lower-bound agenda to a one-sided overlap-shell experiment for the full-population ATE, where the rate depends explicitly on kappa and the treated/control asymmetry of the inverse-weight score."
+    }
+  ],
+  "tldr": "Full-population ATE estimation is studied over one-sided weak-overlap classes where the left propensity tail satisfies P(e(X) <= lambda) of order lambda^kappa, the right tail stays regular, and the tail cap obeys 2 lambda_0 < 1 - eta_plus so the lower-bound regular cell is nonvacuous. The formal objects are an exact clipped-score upper envelope U_n(lambda), its tail-order surrogate R_n(lambda) with the kappa = 1 variance scale normalized as (1 + log(lambda_0 / lambda))^(1/2), a separate regular-overlap comparator class W_n^reg recovering the Jin-Syrgkanis and Bonvini-Kennedy-Dukes-Balakrishnan bounded-overlap benchmark, a comparator-separation proposition that formally states strict deterioration on the subclass kappa < kappa^*(a_0, a_1, a_e), and a lower-bound handle based on a clipped expit-logit propensity perturbation evaluated at a deterministic near-minimizer lambda_dagger_n. The flagship conjecture is that the minimax absolute ATE risk is equivalent to R_n^* = inf_lambda R_n(lambda), with the kappa = 1 logarithm appearing only in the root-n regime.",
+  "project_justification": {
+    "gap": "The closest regular-overlap comparators, JinSyrgkanis2024StructureAgnosticDR and BonviniKennedyDukesBalakrishnan2024StructureAgnosticATE, hold nuisance difficulty fixed but leave the overlap axis regular; ArmstrongKolesar2021FiniteSampleATE handles lack of overlap through fixed-design finite-sample optimality under explicit smoothness classes rather than a random-design structure-agnostic nuisance frontier; the closest weak-overlap comparators, Dorn2025WeakOverlapDRTStats, MaSantAnnaSasakiUra2023DRWeakOverlap, and MaWang2020RobustIPW, study thresholding, trimming, or inference rather than a matched minimax risk frontier for the original ATE; and the closest general converse comparator, JinSyrgkanis2025GeneralLinearFunctionalLowerBounds, is not specialized to a one-sided overlap-shell experiment.",
+    "niche": "The niche is the asymmetric regime where only e(X) -> 0 is irregular. In that regime the treated-score variance term and the treated-side nuisance-product term become tail-sensitive, while the control-side product channel remains regular-overlap-like and the regular-cell lower-bound geometry can be separated from the tail shell by 2 lambda_0 < 1 - eta_plus.",
+    "fill": "The project fills that niche with a comparator-tightened frontier: same full-population ATE and same structure-agnostic nuisance-rate inputs as the published bounded-overlap theory, but with a one-sided overlap-decay index kappa, an exact clipped-score upper envelope, a separate regular-overlap comparator class for the sanity reduction, and a Le Cam / Assouad lower-bound handle targeted at a deterministic near-minimizing shell so the converse speaks directly to R_n^*."
+  },
+  "related_work": "JinSyrgkanis2024StructureAgnosticDR is the exact bounded-overlap comparator. Its Introduction equation (1) defines ATE and ATT, equations (5)-(7) identify ATE and weighted ATE under m_0(X) in [c, 1 - c] almost surely, and equation (8) states the bounded-overlap structure-agnostic benchmark. Prop:strict-overlap-sanity uses the separate regular-overlap class W_n^reg to reduce back to that benchmark, while prop:comparator-separation is the formal statement that the one-sided shell model is a strict extension rather than a prose-level analogy. BonviniKennedyDukesBalakrishnan2024StructureAgnosticATE is the closest smoothness-aware ATE comparator because the abstract explicitly lists minimax lower bounds for the pure structure-agnostic class and for a hybrid smoothness class; the present kernel keeps the same full-population ATE and black-box nuisance language but replaces regular overlap by one-sided shell decay. ArmstrongKolesar2021FiniteSampleATE is a close lack-of-overlap comparator because its introduction studies finite-sample optimal ATE estimation and confidence intervals without overlap assumptions and derives minimum smoothness thresholds for root-n inference, but it conditions on the realized design and optimizes linear estimators over explicit smoothness classes rather than deriving a random-design structure-agnostic kappa-shell minimax frontier. Dorn2025WeakOverlapDRTStats is the nearest weak-overlap estimator comparator because its abstract gives thresholded doubly robust asymptotic normality together with nuisance-rate and outcome-smoothness costs under weak overlap; thm:clipped-upper converts that style of bookkeeping into an absolute-risk envelope rather than an inference theorem. MaSantAnnaSasakiUra2023DRWeakOverlap and MaWang2020RobustIPW remain trimming comparators because they preserve the original ATE or robustify inference under small denominators without supplying matched upper and lower absolute-risk laws. KennedyBalakrishnanRobinsWasserman2024MinimaxCATE is the closest converse template because its abstract says the lower bound is built by a localized fuzzy-hypotheses argument for pointwise CATE; conj:tail-lower-bound moves that localization from a covariate point to the propensity boundary for a global ATE. JinSyrgkanis2025GeneralLinearFunctionalLowerBounds is the closest newer converse comparator because its abstract first recovers the ATE case and then extends to general functionals in two debiasing regimes; conj:minimax-frontier asks for the one-sided overlap-shell specialization that is still absent at that paper-level scope. KhanTamer2010IrregularIdentification, HongLeungLi2020FinitePopulationLimitedOverlap, and HeilerKazak2021ExtremePropensity remain the irregularity background: they explain why inverse-weight tails alter rates or limit laws, but they do not produce the one-sided treated/control phase diagram or the strict comparator theorem encoded here. RobinsLiMukherjeeTchetgenVanDerVaart2017MinimaxHOIF remains the higher-order comparator because it leaves open whether smoothness gains survive one-sided overlap decay.",
+  "honest_scope": "The exact clipped-score upper envelope U_n(lambda), the tail-order reduction comparing U_n(lambda) and R_n(lambda), the compatibility condition 2 lambda_0 < 1 - eta_plus, the separate regular-overlap comparator class W_n^reg, and the strict-overlap reduction to the bounded-overlap benchmark are the settled formal objects in the proposal. The open object is the converse: complete the Le Cam / Assouad handle on W_n^lb into a bounded-divergence family at a deterministic near-minimizer lambda_dagger_n and then prove the lower bound c R_n^*. The minimax-frontier conjecture, the phase diagram, and the weak-tail strict-deterioration half of prop:comparator-separation are conditional on that converse rather than assumed as class conditions."
+}

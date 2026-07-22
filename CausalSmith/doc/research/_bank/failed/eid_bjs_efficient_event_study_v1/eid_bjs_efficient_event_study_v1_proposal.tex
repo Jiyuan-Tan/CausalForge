@@ -1,0 +1,622 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_bjs\_efficient\_event\_study, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{eid\_bjs\_efficient\_event\_study} / \texttt{v1}%
+  \\ \large\textit{Aggregation-equivalent staggered DiD estimators need not be influence-function equivalent}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a free-form panel / linear-projection proposal, not a Q1 pool-mode instance.
+The locked tuple is
+\[
+  (\texttt{qid},\texttt{specialization},p,\texttt{assignment},\texttt{target},\texttt{regression})
+\]
+with \texttt{qid}=\texttt{eid\_bjs\_efficient\_event\_study}, \texttt{specialization}=\texttt{v1},
+\(p=0\) (absorbing staggered adoption with no carry-over beyond exposure status), assignment
+given by first-treatment cohort \(G_i\in\mathcal G\cup\{\infty\}\) and event time \(e=t-G_i\),
+target \(\theta_a=\sum_{(g,t)\in\mathcal C} a_{gt}\operatorname{ATT}(g,t)\) for a fixed known
+aggregation vector \(a\) over treated cohort-time cells \(\mathcal C=\{(g,t):t\ge g,\ g<\infty\}\),
+and regression/estimation class equal to the four named staggered-DiD implementations:
+Borusyak--Jaravel--Spiess imputation, Sun--Abraham interaction-weighted event study,
+Callaway--Sant'Anna group-time doubly robust aggregation, and Wooldridge cohort-time-saturated
+TWFE/Mundlak regression.  Untreated potential outcomes satisfy
+\(\E[Y_{it}(0)\mid G_i]=\alpha_{G_i}+\lambda_t\) after conditioning on the cohort cells used by the
+estimators.  Residual coordinates are embedded in the fixed coordinate set
+\(\mathcal P=\{(h,s):h\in\mathcal G\cup\{\infty\},\ s\in\mathcal T_0(h)\}\), where
+\(\mathcal T_0(h)=\{s:s<h\}\) for treated cohorts and \(\mathcal T_0(\infty)=\{1,\ldots,T\}\) for
+never-treated cohorts, with finite covariance matrix \(\Sigma=\operatorname{Var}(R_i)\) for the
+common vector \(R_i=(\one\{G_i=h\}(Y_{is}(0)-\alpha_h-\lambda_s))_{(h,s)\in\mathcal P}\).
+
+\begin{abstract}
+Modern staggered DiD papers give several estimators that can be written as targeting the same
+aggregate ATT, but equality of the written estimand does not settle equality of their first-order
+influence functions.  This proposal asks for a sharp finite-dimensional frontier separating
+aggregation-equivalence from influence-function-equivalence for BJS imputation, Sun--Abraham
+interaction-weighting, Callaway--Sant'Anna group-time aggregation, and Wooldridge saturated TWFE.
+The kernel conjecture is that the boundary is a quotient row-space condition: after removing the
+null directions of the target aggregation \(a\), the estimator-specific nuisance projection operators
+must agree on the BJS efficient influence function, i.e. the canonical gradient.  The diagnostic is
+not design-only: the operator
+\(\Gamma_m(\pi,\Sigma,a)\) is built from observable design and covariance objects, while the boundary
+condition also uses the identified population ATT vector \(\tau\).  Off this quotient-zero set, two
+estimators can report the same \(\theta_a\) while having strictly different canonical influence
+functions and asymptotic variances.  Resolving the conjecture would turn the current estimator-choice
+discussion in staggered DiD into a computable plug-in diagnostic for when point-identification-equivalent
+procedures are also efficiency-equivalent.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Applied researchers increasingly choose among robust staggered-DiD estimators by asking whether they
+target the same ATT aggregation, but first-order inference depends on the influence function, not only
+on the estimand label.  If two implementations agree on \(\theta_a\) while using different nuisance
+projections, then equal point identification can mask unequal precision and different standard-error
+behavior.
+
+\paragraph{The main finding (proposed).}
+The headline result is Conjecture~\ref{conj:quotient-frontier}: BJS, SA, CS, and Wooldridge are
+influence-function equivalent for a fixed aggregate ATT if and only if their covariance-weighted
+nuisance-loading differences vanish in the quotient by the target null space.  The proposal also
+contains the routine linear-algebra theorem that aggregation equality alone is insufficient whenever
+one of those quotient loadings is nonzero.
+
+\paragraph{What is new.}
+The novelty kernel is not another proof that the four estimators can identify interpretable
+cohort-time ATTs.  The proposed advance is the missing \(\varepsilon\)-gap left by the restricted
+equivalence statements already surrounding \citet{BorusyakJaravelSpiess2024}: BJS relates imputation
+to familiar robust event-study, group-time, and regression implementations in special aligned designs,
+while \citet{CallawaySantAnna2021} separates identification of \(\operatorname{ATT}(g,t)\) from
+aggregation.  The new claim is that those boundary cases are shadows of a single quotient-IF
+frontier: even when the aggregation vector \(a\) is fixed and all procedures target the same
+\(\theta_a\), their canonical gradients coincide only under an additional identified row-space
+restriction.
+
+\paragraph{How it positions in the literature.}
+This is a panel / linear-projection methods proposal in the modern staggered-DiD cluster.  It uses the
+contamination and interaction-weighted estimand analysis of \citet{SunAbraham2021}, the group-time
+ATT aggregation framework of \citet{CallawaySantAnna2021}, the imputation efficiency benchmark of
+\citet{BorusyakJaravelSpiess2024}, and the cohort-time saturated regression implementation route of
+\citet{Wooldridge2021}.  It is adjacent to recent semiparametric efficiency work by
+\citet{SantAnnaZhao2020}, \citet{RothSantAnna2021Efficient}, and
+\citet{ChenSantAnnaXie2025}, but asks a different comparison question: when do named estimators
+for the same aggregate parameter share the same canonical influence function under the parallel-trends
+staggered-DiD model rather than the randomized-rollout model?
+
+\paragraph{Implications for the community.}
+The direct consumer is the estimator-choice guidance synthesized by
+\citet{RothSantAnnaBilinskiPoe2023}: their practitioner-facing distinction between assumptions,
+estimands, and implementation would gain a fourth diagnostic, namely whether a chosen implementation
+keeps or discards tangent-space directions that affect the variance of the reported aggregate ATT.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report a quotient-projection diagnostic before treating BJS, SA, CS, and saturated
+TWFE estimates for the same aggregate ATT as inferentially interchangeable.
+
+\section{Related work}
+\citet{BorusyakJaravelSpiess2024} derive a robust and efficient imputation estimator for staggered
+event-study designs with unrestricted treatment-effect heterogeneity and discuss restricted
+connections to other modern event-study implementations; they are the closest boundary-case anchor,
+but they do not give necessary and sufficient conditions for BJS, Sun--Abraham, Callaway--Sant'Anna,
+and Wooldridge influence functions to coincide for an arbitrary fixed aggregate ATT.
+\citet{SunAbraham2021} show that conventional event-study TWFE coefficients can be contaminated by
+effects from other relative periods and propose interaction-weighted estimands; their contribution
+settles a point-identification and weighting problem rather than the IF-equivalence problem here.
+\citet{CallawaySantAnna2021} identify group-time average treatment effects and aggregate them into
+policy-relevant summaries; this proposal starts from their separation of \(\operatorname{ATT}(g,t)\)
+and aggregation and asks whether equal aggregation implies equal canonical gradients.
+\citet{Wooldridge2021} establishes saturated TWFE/Mundlak/pooled-OLS implementation equivalences for
+staggered-entry designs; together with BJS's restricted regression equivalence discussion, it marks
+the closest published implementation boundary, while the proposed theorem tests when such regression
+equivalence is also influence-function equivalence.
+\citet{AguilarLoyo2025} gives the most direct recent estimator-comparison paper: it connects the
+extended TWFE estimand introduced by BJS and Wooldridge to a difference-in-differences estimand and
+decomposes its meaningful-comparison and residual components.  That closes part of the estimand and
+implementation comparison gap, but it does not derive equality of canonical gradients or a
+semiparametric variance frontier across BJS, SA, CS, and Wooldridge for a fixed aggregate ATT.
+\citet{GoodmanBacon2021} and \citet{deChaisemartinDHaultfoeuille2020} explain why ordinary TWFE can
+use nonconvex or negative comparisons under heterogeneous effects; their weight-decomposition
+warnings motivate, but do not subsume, a variance-frontier theorem for robust estimators.
+\citet{SantAnnaZhao2020} derive semiparametric efficiency bounds for two-period DiD ATTs and show
+when doubly robust estimators attain them; their two-period benchmark is a required sanity reduction
+for the present staggered-panel proposal.
+\citet{RothSantAnna2021Efficient} derive efficient estimators for staggered rollout designs under
+as-if random treatment timing and show efficiency gains over popular alternatives; they are a close
+efficiency-frontier comparator, but their rollout assignment model and estimator class do not give
+the parallel-trends four-estimator quotient IF boundary proposed here.
+\citet{ChenSantAnnaXie2025} derive closed-form efficient influence functions for modern DiD and
+event-study parameters under sequential moment restrictions; their overidentification insight is the
+closest published efficiency thread, but they do not compare BJS, SA, CS, and Wooldridge quotient
+canonical-gradient subspaces for a fixed \(\theta_a\).
+\citet{RothSantAnnaBilinskiPoe2023} synthesize modern DiD practice and highlight unresolved
+implementation choices; this proposal supplies a candidate algebraic rule for one such choice.
+\citet{Roth2026Interpreting} shows that modern DiD event-study plots can have different
+pre-treatment visual behavior from traditional TWFE plots even in non-staggered timing; that plot
+interpretation issue is separate from the canonical-gradient equality frontier, but it reinforces
+that modern DiD procedures are not automatically interchangeable because their reported objects look
+similar.
+\citet{BellegoBenatiaDortetBernadet2025} study chained DiD in unbalanced panels and emphasize
+efficiency gains from available comparison information; their setting is not the balanced-panel
+kernel here, but it is a natural downstream stress test for the quotient-IF frontier.
+
+In the ThmSmith catalogue, the Stage -1.1 gap scan reports no active proposal for
+\texttt{eid\_bjs\_efficient\_event\_study}.  The closest in-repo prior proposal is
+\texttt{panel\_honest\_did\_phase}, whose rejected angle asked for rank-phase and operator-certificate
+frontiers for cohort-vs-aggregate sensitivity rather than for named estimator influence functions.
+The downgraded \texttt{q1\_spectral\_phase\_transition} proposal gives a spectral row-space template
+for event-window visibility, but it does not formulate a semiparametric efficiency or IF-equivalence
+claim.  The \texttt{doc/API.md} panel entries therefore provide catalogue context, not a duplicate of
+the proposed quotient-IF theorem.
+
+\section{Formal setup}
+Let \(i=1,\ldots,n\) index units and \(t=1,\ldots,T\) index periods.  Treatment is absorbing:
+\(D_{it}=\one\{t\ge G_i\}\) for first-treatment cohort \(G_i\in\mathcal G\cup\{\infty\}\), where
+\(\infty\) denotes never-treated units.  For treated cohort-time cells
+\(\mathcal C=\{(g,t):g\in\mathcal G,\ t\ge g\}\), define
+\[
+  \tau_{gt}=\operatorname{ATT}(g,t)=\E[Y_{it}(1)-Y_{it}(0)\mid G_i=g],
+  \qquad
+  \theta_a=\sum_{(g,t)\in\mathcal C}a_{gt}\tau_{gt}.
+\]
+Write \(\tau\in\R^{|\mathcal C|}\) for the stacked heterogeneity vector and
+\(\pi_g=\Pr(G_i=g)\) for cohort shares.  The untreated response surface is
+\(\E[Y_{it}(0)\mid G_i=g]=\alpha_g+\lambda_t\).  To make cohort-specific pre-period lengths
+comparable, define the fixed residual coordinate set
+\[
+  \mathcal P=\{(h,s):h\in\mathcal G\cup\{\infty\},\ s\in\mathcal T_0(h)\},
+  \qquad
+  \mathcal T_0(h)=\{s:s<h\},\quad
+  \mathcal T_0(\infty)=\{1,\ldots,T\}.
+\]
+The common residual vector is
+\[
+  R_i=\bigl(\one\{G_i=h\}(Y_{is}(0)-\alpha_h-\lambda_s)\bigr)_{(h,s)\in\mathcal P}
+  \in\R^{|\mathcal P|},
+\]
+so never-treated and not-yet-treated comparison residuals occupy named coordinates and unavailable
+cohort-period cells are absent rather than padded ambiguously.  Let
+\(\Sigma=\operatorname{Var}(R_i)\), interpreted on its active pre-period residual span.  Each estimator
+\(m\in\mathcal M=\{\mathrm{BJS},\mathrm{SA},\mathrm{CS},\mathrm{W}\}\) is represented by an
+asymptotically linear influence function
+\[
+  \psi_m(W_i;\theta_a)
+    = \psi_{\mathrm{BJS}}(W_i;\theta_a)
+      + \langle \Gamma_m(\pi,\Sigma,a),\,\tau\rangle_{\Sigma^{-1}}(R_i),
+\]
+where \(\Gamma_{\mathrm{BJS}}=0\), and
+\(\Gamma_m(\pi,\Sigma,a)\in\R^{|\mathcal P|\times|\mathcal C|}\) is the design-and-covariance
+nuisance-loading contrast between estimator \(m\)'s canonical gradient and the BJS canonical gradient
+after quotienting
+by the null space of the target aggregation \(a\) and projecting onto the active residual span.  The
+proposal uses a raw-loading convention: \(\Gamma_m\tau\) is expressed in the same coordinates as
+\(R_i\), and all covariance weighting enters through \(\Sigma^{+}\), not through a transformed
+version of \(\Gamma_m\).  Here
+\(\langle \Gamma_m,\tau\rangle_{\Sigma^{-1}}(R_i)\) denotes the scalar residual loading
+\((\Gamma_m\tau)^\transpose \Sigma^{+}R_i\), where \(\Sigma^{+}\) is the inverse on the active span
+and zero on its orthogonal complement.  Let
+\(\mathcal V_m=\operatorname{Var}(\psi_m(W_i;\theta_a))\).  The exact construction of
+\(\Gamma_m\) is the conjectural object of the proposal: it should be computable from cohort shares,
+pre-period covariance blocks, the aggregation vector, and the published estimator comparison sets.
+The intended Stage~0 recipe is concrete.  Form the comparison-set incidence matrix \(B_m\) for
+estimator \(m\), residualize \(B_m\) against unit, time, cohort, and event-time nuisance columns using
+the FWL projection \(M_m\), pass the treated-cell loadings through the target quotient
+\(Q_a=I-a(a^\transpose a)^{+}a^\transpose\), project the resulting residual loading onto the active
+span of \(R_i\), and set \(\Gamma_m\) to that raw loading difference relative to BJS.  No additional
+covariance transform is folded into \(\Gamma_m\); the IF scalar is always
+\((\Gamma_m\tau)^\transpose\Sigma^{+}R_i\) and the variance norm is
+\((\Gamma_m\tau)^\transpose\Sigma^{+}(\Gamma_m\tau)\).
+The smallest worked check is the three-period, two-treated-cohort design, where the single
+post-treatment late-cohort cell produces one nontrivial FWL residual column and the condition
+\(\Gamma_m\tau=0\) can be verified by direct \(2\times 2\) block algebra.
+The frontier condition \(\Gamma_m(\pi,\Sigma,a)\tau=0\) is therefore an identified population
+condition, using the ATT vector \(\tau\) identified under the DiD assumptions; empirical use would
+replace \((\pi,\Sigma,\tau)\) by consistent plug-in estimates.  For later reductions,
+define the active column support
+\[
+  \mathcal C_\Gamma=\{c\in\mathcal C:\text{some entry of the \(c\)-th column of }
+  \Gamma_m(\pi,\Sigma,a)\text{ is nonzero for some }m\}.
+\]
+
+\begin{quote}
+\begin{verbatim}
+Locked tuple:
+qid = eid_bjs_efficient_event_study
+specialization = v1
+p = 0
+assignment = absorbing staggered adoption by cohort G_i and event time e=t-G_i
+target = theta_a = sum_(g,t in C) a_gt ATT(g,t), fixed known aggregation a
+regression = BJS imputation, SA interaction-weighted, CS group-time DR aggregation,
+             and Wooldridge cohort-time-saturated TWFE/Mundlak regression
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Absorbing staggered adoption]\label{ass:absorbing}
+For each unit \(i\), \(D_{it}=\one\{t\ge G_i\}\) with \(G_i\in\mathcal G\cup\{\infty\}\), and every
+treated cohort \(g\in\mathcal G\) has \(\pi_g=\Pr(G_i=g)>0\).
+\end{assumption}
+
+\begin{assumption}[No anticipation]\label{ass:no-anticipation}
+For all \(g\in\mathcal G\) and \(t<g\), \(Y_{it}=Y_{it}(0)\) for units with \(G_i=g\).
+\end{assumption}
+
+\begin{assumption}[Cohort parallel trends]\label{ass:parallel}
+There exist \((\alpha_g)_{g\in\mathcal G\cup\{\infty\}}\) and \((\lambda_t)_{t=1}^T\) such that
+\(\E[Y_{it}(0)\mid G_i=g]=\alpha_g+\lambda_t\) for all cohorts and periods used in the four
+estimators.
+\end{assumption}
+
+\begin{assumption}[Overlap for comparison cells]\label{ass:overlap}
+Every cohort-time contrast used by BJS, SA, CS, or Wooldridge has a comparison cohort with positive
+probability and well-defined untreated potential-outcome mean under Assumptions~\ref{ass:no-anticipation}
+and~\ref{ass:parallel}.
+\end{assumption}
+
+\begin{assumption}[Regular covariance]\label{ass:regular-covariance}
+The fixed-coordinate residual vector \(R_i\in\R^{|\mathcal P|}\) has finite second moments, and
+\(\Sigma=\operatorname{Var}(R_i)\) is positive definite on the active residual span generated by the
+comparison cells used by BJS, SA, CS, and Wooldridge.  All products
+\(\Gamma_m(\pi,\Sigma,a)\tau\) are elements of this same coordinate space.
+\end{assumption}
+
+\begin{assumption}[Common target aggregation]\label{ass:common-target}
+The four estimator implementations are normalized to the same fixed aggregation vector
+\(a\in\R^{|\mathcal C|}\), so their probability limits equal \(\theta_a\) whenever the identifying
+assumptions hold.
+\end{assumption}
+
+\begin{assumption}[Canonical asymptotic linearity]\label{ass:asym-linear}
+For each \(m\in\mathcal M\), the estimator admits a first-order influence function
+\(\psi_m(W_i;\theta_a)\) in the finite-dimensional panel model above.  The representative is fixed
+by the canonical quotient normalization used in the setup: residual-loading components are projected
+onto the active span of \(R_i\), target-null directions are removed, and no additional mean-zero null
+component may be added after this normalization.  Two estimators are influence-function equivalent when
+these canonical representatives are equal in \(L_2(P)\).
+\end{assumption}
+
+\begin{assumption}[BJS canonical-gradient orthogonality]\label{ass:bjs-orthogonality}
+The BJS influence function \(\psi_{\mathrm{BJS}}(W_i;\theta_a)\) is the efficient influence
+function, equivalently the canonical gradient, for \(\theta_a\) in the tangent space of the model
+under consideration.  Its residual component is the tangent-space projection orthogonal in \(L_2(P)\)
+to the quotient nuisance-loading contrasts
+\(\langle \Gamma_m(\pi,\Sigma,a),\tau\rangle_{\Sigma^{-1}}(R_i)\) for
+\(m\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}\).
+\end{assumption}
+
+\begin{assumption}[Active-column homogeneous corner]\label{ass:active-column-homogeneous}
+For each \(m\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}\),
+\(\Gamma_m(\pi,\Sigma,a)\mathbf 1_{\mathcal C}=0\), where
+\(\mathbf 1_{\mathcal C}\in\R^{|\mathcal C|}\) is the constant-effect vector over all cohort-time
+effect cells.  Zero-weight cells with \(a_{gt}=0\) are not silently ignored: if such a cell has a
+nonzero column in any \(\Gamma_m\), it is part of the active homogeneous-effect support.
+\end{assumption}
+
+\begin{assumption}[Homogeneous active effects]\label{ass:homogeneous-active-effects}
+For the homogeneous-effect reduction only, there exists a scalar \(\theta\) such that
+\(\tau_{gt}=\theta\) for every \((g,t)\in\mathcal C_\Gamma\), and the common target aggregation is
+normalized by \(\sum_{(g,t)\in\mathcal C}a_{gt}=1\).
+\end{assumption}
+
+\begin{assumption}[Two-period canonical reduction]\label{ass:two-period-canonical}
+For the two-period sanity reduction only, \(T=2\), each treated group has one post-treatment cell,
+and the four implementations reduce to the same two-period ATT contrast under no anticipation and
+parallel trends.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Aggregation equality is not an IF equality certificate]\label{thm:aggregation-not-if}
+Under Assumptions~\ref{ass:absorbing}--\ref{ass:bjs-orthogonality}, suppose two estimators
+\(m,m'\in\mathcal M\) have the same probability limit \(\theta_a\).  Define
+\[
+  \delta_m(W_i)=\langle \Gamma_m(\pi,\Sigma,a),\tau\rangle_{\Sigma^{-1}}(R_i),
+  \qquad
+  \delta_{m'}(W_i)=\langle \Gamma_{m'}(\pi,\Sigma,a),\tau\rangle_{\Sigma^{-1}}(R_i).
+\]
+If
+\[
+  \operatorname{Var}\!\left(
+    \delta_m(W_i)-\delta_{m'}(W_i)
+  \right)>0,
+\]
+then the canonical representatives fixed by Assumption~\ref{ass:asym-linear} are not equal in
+\(L_2(P)\), so \(m\) and \(m'\) are not influence-function equivalent.  Their variance difference is exactly
+\[
+  \mathcal V_m-\mathcal V_{m'}
+    =\operatorname{Var}(\delta_m)-\operatorname{Var}(\delta_{m'})
+      +2\operatorname{Cov}\!\left(\psi_{\mathrm{BJS}},\delta_m-\delta_{m'}\right),
+\]
+so strict variance inequality holds if and only if the right-hand side is nonzero.  In the special
+comparison \(m'=\mathrm{BJS}\), Assumption~\ref{ass:bjs-orthogonality} gives
+\(\mathcal V_m-\mathcal V_{\mathrm{BJS}}=\operatorname{Var}(\delta_m)>0\).
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) The closest published paper is \citet{BorusyakJaravelSpiess2024}, which directly motivates
+efficient imputation and gives restricted equivalence and precision comparisons against familiar
+robust event-study and regression alternatives, but does not state an exact canonical
+variance-difference identity for BJS, SA, CS, and Wooldridge after a common \(\theta_a\)
+normalization.  The \(\varepsilon\)-gap is that BJS establishes an efficiency benchmark and special
+implementation coincidences, whereas this result isolates the quotient-IF term that makes
+aggregation-equivalent estimators first-order different outside those coincidences.  (b) Resolving
+and using this theorem gives the
+\citet{RothSantAnnaBilinskiPoe2023} estimator-choice synthesis a concrete warning: identical reported
+ATT weights do not by themselves justify treating robust staggered-DiD standard errors as
+interchangeable.
+
+\begin{conjecture}[Quotient row-space IF frontier (NOT YET PROVED)]\label{conj:quotient-frontier}
+Under Assumptions~\ref{ass:absorbing}--\ref{ass:bjs-orthogonality}, there exist explicit
+design-and-covariance matrices
+\[
+  \Gamma_m(\pi,\Sigma,a),\qquad m\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\},
+\]
+constructed from cohort shares, pre-period covariance blocks, comparison-set incidence matrices, and
+the aggregation vector \(a\).  For the identified population ATT vector \(\tau\), BJS and estimator
+\(m\) are influence-function equivalent for \(\theta_a\) if and only if
+\[
+  \Gamma_m(\pi,\Sigma,a)\tau=0.
+\]
+All four estimators are influence-function equivalent if and only if
+\[
+  \tau\in
+  \bigcap_{m\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}}\ker \Gamma_m(\pi,\Sigma,a).
+\]
+When this condition fails for at least one \(m\), the asymptotic variance gap relative to BJS is the
+raw-loading covariance squared quotient norm
+\[
+  \mathcal V_m-\mathcal V_{\mathrm{BJS}}
+    =
+    \|\Gamma_m(\pi,\Sigma,a)\tau\|_{\Sigma^{-1}}^2
+    + 2\,\operatorname{Cov}\!\left(\psi_{\mathrm{BJS}},
+      \langle \Gamma_m(\pi,\Sigma,a),\tau\rangle_{\Sigma^{-1}}(R_i)\right),
+\]
+with the covariance term vanishing under the canonical-gradient orthogonality normalization.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest published efficiency and comparison anchors are \citet{BorusyakJaravelSpiess2024},
+\citet{AguilarLoyo2025}, \citet{RothSantAnna2021Efficient}, and \citet{ChenSantAnnaXie2025}.
+BJS gives an efficient imputation estimator and restricted equivalence statements tying imputation to
+other implementations in special cases; Aguilar-Loyo gives a direct extended-TWFE versus DiD
+estimand decomposition, but not a canonical-gradient comparison; Roth--Sant'Anna derive efficient
+staggered-rollout estimators under as-if random timing; and Chen--Sant'Anna--Xie derive closed-form
+EIFs for modern DiD/event-study parameters.  None states the necessary and sufficient identified
+quotient row-space condition under which SA, CS, and Wooldridge share BJS's canonical influence
+function for the same parallel-trends aggregate \(\theta_a\).  The \(\varepsilon\)-gap is the
+cross-estimator IF-equivalence frontier beyond BJS's restricted equivalence cases and
+Aguilar-Loyo's estimand decomposition, not another derivation of a single estimator's EIF, a
+randomized-rollout efficiency bound, or an implementation-equivalence formula.  (b) The concrete
+consumer is empirical staggered-DiD practice in the style surveyed by
+\citet{RothSantAnnaBilinskiPoe2023}: the matrices \(\Gamma_m\) would let applied researchers diagnose
+whether switching among BJS, SA, CS, and saturated TWFE is merely a weighting convention or an
+efficiency-relevant change.
+
+\begin{theorem}[Homogeneous-effect reduction]\label{thm:homogeneous-reduction}
+Under Assumptions~\ref{ass:absorbing}--\ref{ass:bjs-orthogonality},
+Assumption~\ref{ass:active-column-homogeneous}, and
+Assumption~\ref{ass:homogeneous-active-effects}, every
+quotient-loading contrast annihilates the heterogeneity vector:
+\[
+  \Gamma_m(\pi,\Sigma,a)\tau=0\quad\text{for all }m\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}.
+\]
+Consequently, Conjecture~\ref{conj:quotient-frontier} recovers the standard homogeneous-effects
+equivalence corner case.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) Homogeneous-effect equivalence is not new; it is the sanity corner implicit in
+\citet{SunAbraham2021}, \citet{CallawaySantAnna2021}, and \citet{Wooldridge2021}.  Its role here is to
+pin the quotient operator so that the proposed frontier does not create artificial non-equivalence
+when no heterogeneity direction exists.  (b) The concrete consumer is the
+\citet{GoodmanBacon2021} and \citet{deChaisemartinDHaultfoeuille2020} warning literature: the theorem
+shows that the proposed diagnostic switches on only when heterogeneous-effect tangent-space directions are
+actually present.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Homogeneous-effects corner]\label{cor:homogeneous}
+Under Assumptions~\ref{ass:absorbing}--\ref{ass:bjs-orthogonality},
+Assumption~\ref{ass:active-column-homogeneous}, and
+Assumption~\ref{ass:homogeneous-active-effects}, Conjecture~\ref{conj:quotient-frontier} reduces to
+equality of the four IFs because \(\tau=\theta\mathbf 1_{\mathcal C}\) on
+\(\mathcal C_\Gamma\) and \(\Gamma_m(\pi,\Sigma,a)\mathbf 1_{\mathcal C}=0\).
+\end{corollary}
+
+\begin{corollary}[Two-period DiD corner]\label{cor:two-period}
+Under Assumptions~\ref{ass:no-anticipation}, \ref{ass:parallel}, \ref{ass:asym-linear}, and
+\ref{ass:two-period-canonical}, the fixed residual coordinate set \(\mathcal P\) can still be nonempty,
+but the active quotient-loading columns vanish: \(\Gamma_m(\pi,\Sigma,a)\tau=0\) for every
+\(m\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}\).  In the one-post-cell quotient, each implementation
+places the same canonical coefficient on the treated-minus-comparison change, and the remaining
+pre-period residual direction is target-null and removed by Assumption~\ref{ass:asym-linear}.  The
+remaining canonical gradient is the usual two-period ATT influence function, so the frontier collapses to the
+\citet{SantAnnaZhao2020} two-period ATT efficiency comparison.
+\end{corollary}
+
+\section{Proof-sketch route}
+The mathematical route is finite-dimensional Hilbert-space projection algebra.  First write each
+published estimator's first-order expansion as a common cohort-time ATT influence function plus an
+estimator-specific projection of the pre-period residual coordinates.  Then quotient the tangent
+space by the null space of the
+fixed aggregation \(a\), apply the \(\Sigma^{+}\) inner product on the fixed residual coordinates,
+and identify the loading contrasts
+\(\Gamma_m\) by FWL residualization of the comparison-set incidence matrices.  The non-equivalence
+part follows from positive definiteness of the covariance inner product, while the sharp frontier
+requires checking that the constructed quotient loadings are not merely sufficient but necessary for
+IF equality.  The boundary cases needing explicit algebra are the smallest nontrivial staggered design
+with three periods and two treated cohorts, the homogeneous-effect rank-zero corner, and the two-period
+collapse to the classical ATT DiD influence function.
+
+\section{Honest scope flags}
+Conjecture~\ref{conj:quotient-frontier} is not yet proved; the main open issue is necessity of the
+specific \(\Gamma_m(\pi,\Sigma,a)\) construction for all three non-BJS estimators.  The diagnostic is
+identified-plug-in rather than design-only: \(\Gamma_m\) uses design and covariance inputs, while
+membership in \(\ker\Gamma_m\) also requires the identified ATT vector \(\tau\).  Theorem~\ref{thm:aggregation-not-if}
+is routine once the canonical influence-function representation is accepted, and
+Theorem~\ref{thm:homogeneous-reduction} is a normalization sanity check rather than a new published
+claim.  This pivot deliberately withdraws the earlier spectral-threshold-only \(K_\star\) framing:
+a bare singular-value boundary risks duplicating generic trust-region or row-space geometry unless it
+is tied to named estimator influence functions.  The proposal assumes balanced panels and known
+aggregation weights; unbalanced panels and estimated data-adaptive weights are left for a separate
+frontier, with \citet{BellegoBenatiaDortetBernadet2025} as the natural stress test.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for seed index 2, reframing the angle around aggregation-equivalent
+but IF-non-equivalent staggered-DiD estimators; prior verdict: none.
+\item v2 (revise) -- patched fixed residual coordinates, exact variance-difference identity,
+active-column homogeneous reduction, and Roth--Sant'Anna efficiency-frontier comparison; prior
+verdict: REVISE.
+\item v3 (revise) -- fixed canonical IF equivalence modulo null components, foregrounded BJS restricted
+equivalence as closest prior art, clarified the identified plug-in status of the \(\Gamma_m\tau\)
+frontier, and replaced the two-period zero-row claim by a zero-active-loading reduction; prior
+verdict: REVISE.
+\item v4 (revise) -- added Aguilar-Loyo's 2025 TWFE comparison and Roth's 2026 event-study
+interpretation note to the literature separation, replaced efficient-influence-function language with
+canonical-gradient / tangent-space projection language, and made the \(\Gamma_m\) recipe more
+concrete; prior verdict: REVISE.
+\item v5 (revise) -- fixed the \(\Gamma_m\) scaling convention by choosing raw residual loadings with
+all covariance weighting carried by \(\Sigma^{+}\), so the IF scalar and variance norm use the same
+coordinate system, and made the sanity-reduction hypotheses explicit in §7; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Borusyak, Jaravel, and Spiess(2024)]{BorusyakJaravelSpiess2024}
+Borusyak, K., Jaravel, X., and Spiess, J. (2024).
+Revisiting event-study designs: Robust and efficient estimation.
+\emph{Review of Economic Studies}, 91(6):3253--3285.
+\url{https://doi.org/10.1093/restud/rdae007}.
+
+\bibitem[Sun and Abraham(2021)]{SunAbraham2021}
+Sun, L. and Abraham, S. (2021).
+Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\emph{Journal of Econometrics}, 225(2):175--199.
+\url{https://doi.org/10.1016/j.jeconom.2020.09.006}.
+
+\bibitem[Callaway and Sant'Anna(2021)]{CallawaySantAnna2021}
+Callaway, B. and Sant'Anna, P. H. C. (2021).
+Difference-in-differences with multiple time periods.
+\emph{Journal of Econometrics}, 225(2):200--230.
+\url{https://doi.org/10.1016/j.jeconom.2020.12.001}.
+
+\bibitem[Wooldridge(2021)]{Wooldridge2021}
+Wooldridge, J. M. (2021).
+Two-way fixed effects, the two-way Mundlak regression, and difference-in-differences estimators.
+SSRN working paper.
+\url{https://doi.org/10.2139/ssrn.3906345}.
+
+\bibitem[Aguilar-Loyo(2025)]{AguilarLoyo2025}
+Aguilar-Loyo, J. (2025).
+A comparative analysis of two-way fixed effects estimators in staggered treatment designs.
+\emph{Journal of Econometrics}, 251:106059.
+\url{https://doi.org/10.1016/j.jeconom.2025.106059}.
+
+\bibitem[Goodman-Bacon(2021)]{GoodmanBacon2021}
+Goodman-Bacon, A. (2021).
+Difference-in-differences with variation in treatment timing.
+\emph{Journal of Econometrics}, 225(2):254--277.
+\url{https://doi.org/10.1016/j.jeconom.2021.03.014}.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{deChaisemartinDHaultfoeuille2020}
+de Chaisemartin, C. and D'Haultfoeuille, X. (2020).
+Two-way fixed effects estimators with heterogeneous treatment effects.
+\emph{American Economic Review}, 110(9):2964--2996.
+\url{https://doi.org/10.1257/aer.20181169}.
+
+\bibitem[Sant'Anna and Zhao(2020)]{SantAnnaZhao2020}
+Sant'Anna, P. H. C. and Zhao, J. (2020).
+Doubly robust difference-in-differences estimators.
+\emph{Journal of Econometrics}, 219(1):101--122.
+\url{https://doi.org/10.1016/j.jeconom.2020.06.003}.
+
+\bibitem[Roth and Sant'Anna(2023)]{RothSantAnna2021Efficient}
+Roth, J. and Sant'Anna, P. H. C. (2023).
+Efficient estimation for staggered rollout designs.
+\emph{Journal of Political Economy Microeconomics}, 1(4):669--709.
+\url{https://doi.org/10.1086/726581}.
+
+\bibitem[Chen, Sant'Anna, and Xie(2025)]{ChenSantAnnaXie2025}
+Chen, X., Sant'Anna, P. H. C., and Xie, H. (2025).
+Efficient difference-in-differences and event study estimators.
+arXiv:2506.17729.
+\url{https://arxiv.org/abs/2506.17729}.
+
+\bibitem[Roth, Sant'Anna, Bilinski, and Poe(2023)]{RothSantAnnaBilinskiPoe2023}
+Roth, J., Sant'Anna, P. H. C., Bilinski, A., and Poe, J. (2023).
+What's trending in difference-in-differences? A synthesis of the recent econometrics literature.
+\emph{Journal of Econometrics}, 235(2):2218--2244.
+\url{https://doi.org/10.1016/j.jeconom.2023.03.008}.
+
+\bibitem[Roth(2026)]{Roth2026Interpreting}
+Roth, J. (2026).
+Interpreting event-studies from recent difference-in-differences methods.
+\emph{The Japanese Economic Review}, 77(2):275--288.
+\url{https://doi.org/10.1007/s42973-026-00235-x}.
+
+\bibitem[Bellego, Benatia, and Dortet-Bernadet(2025)]{BellegoBenatiaDortetBernadet2025}
+Bellego, C., Benatia, D., and Dortet-Bernadet, V. (2025).
+The chained difference-in-differences.
+\emph{Journal of Econometrics}, 247:105783.
+\url{https://doi.org/10.1016/j.jeconom.2024.105783}.
+\end{thebibliography}
+
+\end{document}

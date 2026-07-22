@@ -1,0 +1,1084 @@
+% =====================================================================
+%  ThmSmith Stage 0 derivation skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=eid\_lp\_svar\_nonequiv, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage 0 derivation: \texttt{eid\_lp\_svar\_nonequiv} / \texttt{v1}%
+  \\ \large\textit{LP/Sign versus Non-Gaussian SVAR Support-Function Boundary}}
+\author{ThmSmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note studies a partial-identification problem for structural impulse
+responses when the observable population input consists of finite-order
+LP/VAR response rows, the reduced-form innovation covariance, and the
+reduced-form fourth cumulant tensor.  The target is the horizon vector
+\(\theta=\psi_j(B)=(e_y^\transpose\Gamma_h b_j)_{h=0}^H\) for a labelled
+structural shock \(j\).  The estimand-defining functional is the pair of
+directional support functions \(h_{\mathrm{LP}}(w;P)\) and
+\(h_{\mathrm{SVAR}}(w;P)\), computed by explicit finite polynomial programs
+over rotations and, on the SVAR side, admissible fourth cumulants.  The main
+result is conditional: under the user-approved quantitative margin assumption
+\textup{A-quant-margin}, the LP support bound is a strict outer bound for the
+non-Gaussian SVAR/sign support in every admissible report direction.  The
+primitive claim that this strict margin follows generically from fourth
+cumulant geometry is not proved here and is recorded as an open conjecture.
+A two-shock planar specialization gives a closed-form witness: the gap is at
+least \(\rho_w(1-\cos d_w)\) when the LP sign optimizer is not one of the
+cumulant-diagonalizing angles.
+\end{abstract}
+
+\section{Introduction}
+Local projections and VARs both report population impulse-response rows, and
+the equivalence result of Plagborg-M{\o}ller and Wolf \cite{PlagborgMollerWolf2021}
+justifies moving many second-moment identifying restrictions between the two
+languages.  Non-Gaussian SVAR identification changes the object being
+transported: the shock label is not only a response-sign convention, but a
+property of one joint reduced-form innovation law whose fourth cumulant tensor
+must be diagonalized by the same impact rotation.  The econometric question is
+therefore whether an LP implementation that keeps only sign and zero response
+restrictions remains sharp for the same non-Gaussian structural shock.
+
+Before this note, the closest pieces were known separately.  LP/VAR
+equivalence gives a common reduced-form impulse-response object under common
+identifying restrictions.  Sign-restricted SVAR geometry gives rotation
+inequalities for impact matrices.  Non-Gaussian SVAR identification uses higher
+unconditional moments to choose, or at least restrict, the structural mixing
+matrix.  What was missing is a population-level comparison between the LP/sign
+relaxation and the non-Gaussian SVAR/sign set when the LP object does not impose
+the common fourth-cumulant diagonalization restriction.
+
+The new contribution is a support-function boundary, not a refutation of a
+named published LP or SVAR estimator.  For every report
+direction \(w\), the note writes \(h_{\mathrm{LP}}(w;P)\) and
+\(h_{\mathrm{SVAR}}(w;P)\) as computable maps of the observed population
+objects \((\Gamma_0,\ldots,\Gamma_H,\Sigma_u,K_u)\).  It then proves
+\(\mathcal R_{\mathrm{SVAR}}(P)\subseteq \mathcal R_{\mathrm{LP}}(P)\),
+identifies exactly when the directional support gap is zero, and proves a
+closed-form two-shock witness with a strictly positive gap.  This is useful for
+formula design because it says when LP sign restrictions are a valid sharp
+report for the same structural shock and when they are only a conservative
+outer relaxation of the non-Gaussian SVAR object.
+
+\paragraph{Motivating conjecture(s).}
+\begin{conjecture}[Conjecture 1: primitive generic strict non-equivalence under fourth cumulants (NOT YET PROVED)]\label{conj:primitive-strict-gap}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:bounded-gap} and \ref{ass:generic-report}, suppose Assumption~\ref{ass:cumulant-matching} is not imposed on the LP/sign side and Assumption~\ref{ass:sign-zero} leaves a positive-dimensional feasible rotation component.  There exists a nonempty open semi-algebraic class \(\mathcal O_{\mathrm{prim}}\) of observable objects \((\Gamma_0,\ldots,\Gamma_H,\Sigma_u,K_u,A,Z,w)\), with nonempty \(\mathcal Q_{\mathrm{SVAR}}(P)\), such that for every \((P,w)\in\mathcal O_{\mathrm{prim}}\)
+\[
+\Delta_w(P)=h_{\mathrm{LP}}(w;P)-h_{\mathrm{SVAR}}(w;P)>0.
+\]
+Moreover, the strict gap is generated by primitive separation between the LP support maximizers and the cumulant-diagonalizing locus:
+\[
+\inf_{Q\in\arg\max_{\mathcal Q_{\mathrm{LP}}(P)} w^\transpose\psi_j(Q)}
+m_{\delta_4}(Q;P)>0,
+\]
+with the response-flat exceptional set removed by Assumption~\ref{ass:generic-report}.  Equivalently, Conjecture~1 asks to prove Assumption~\ref{ass:quant-margin} from the primitive fourth-cumulant geometry on an open class, not to assume it.
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: closed-form two-shock witness (NOT YET PROVED)]\label{conj:two-shock-witness}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:bounded-gap}, \ref{ass:generic-report}, and \ref{ass:two-shock}, let \(Q(\varphi)\) be the planar impact rotation and let the LP/sign restrictions define an interval \(I_{\mathrm{LP}}\subset S^1\).  The non-Gaussian SVAR/sign set reduces to the nonempty finite subset \(I_{\mathrm{SVAR}}=I_{\mathrm{LP}}\cap\{\varphi_\star,\varphi_\star+\pi/2,\varphi_\star+\pi,\varphi_\star+3\pi/2\}\), where \(\varphi_\star\) diagonalizes \(K_u\).  Write the report objective as \(w^\transpose\psi_j(Q(\varphi))=a_w\cos\varphi+b_w\sin\varphi=\rho_w\cos(\varphi-\varphi_w)\), with response-row amplitude \(\rho_w=(a_w^2+b_w^2)^{1/2}>0\), and let \(d_w=\operatorname{dist}_{S^1}(\varphi_w,I_{\mathrm{SVAR}})\).  For a nonempty open set of \((\Gamma_0,\ldots,\Gamma_H,K_u,A,Z,w)\) in which \(\varphi_w\) is an interior LP/sign optimizer and \(\varphi_w\notin I_{\mathrm{SVAR}}\),
+\[
+\max_{\varphi\in I_{\mathrm{LP}}}w^\transpose\psi_j(Q(\varphi))
+>
+\max_{\varphi\in I_{\mathrm{SVAR}}}w^\transpose\psi_j(Q(\varphi)),
+\]
+with the auditable lower bound
+\[
+\max_{\varphi\in I_{\mathrm{LP}}}w^\transpose\psi_j(Q(\varphi))
+-
+\max_{\varphi\in I_{\mathrm{SVAR}}}w^\transpose\psi_j(Q(\varphi))
+\ge \rho_w(1-\cos d_w)>0.
+\]
+\end{conjecture}
+
+\section{Related work and positioning}
+Jorda \cite{Jorda2005} introduced local projections as direct regressions for
+impulse responses, which is why the observable rows \(\Gamma_h\) are treated
+here as population objects.  Plagborg-M{\o}ller and Wolf
+\cite{PlagborgMollerWolf2021} show that LPs and VARs estimate the same
+population impulse responses when the same identifying restrictions are
+imposed; the present note differs by comparing a sign-only LP relaxation with
+an SVAR restriction that also uses fourth cumulants.  Montiel Olea and
+Plagborg-M{\o}ller \cite{MontielOleaPlagborgMoller2021} and Montiel Olea,
+Plagborg-M{\o}ller, Qian, and Wolf
+\cite{MontielOleaPlagborgMollerQianWolf2024} study robust LP inference and
+local VAR misspecification, motivating LP rows as useful empirical summaries
+but not changing the population identified set.  Li, Plagborg-M{\o}ller, and
+Wolf \cite{LiPlagborgMollerWolf2024} compare LP and VAR estimators across many
+DGPs; their contrast is statistical rather than a fourth-cumulant
+identified-set separation.
+
+Rubio-Ramirez, Waggoner, and Zha \cite{RubioRamirezWaggonerZha2010} and Arias,
+Rubio-Ramirez, and Waggoner \cite{AriasRubioRamirezWaggoner2018} give the
+standard rotation geometry for sign and zero restrictions in SVARs.  Baumeister
+and Hamilton \cite{BaumeisterHamilton2015} emphasize the sensitivity of
+underidentified sign-restricted SVAR conclusions, which is one reason a
+support-function boundary is the right population object.  Read
+\cite{Read2022} supplies algorithms for sign and zero restrictions; this note
+uses the same finite rotation-constraint language but adds a cumulant tensor
+constraint.
+
+Gourieroux, Monfort, and Renne \cite{GourierouxMonfortRenne2017} and Lanne,
+Meitz, and Saikkonen \cite{LanneMeitzSaikkonen2017} identify non-Gaussian SVAR
+mixing matrices using independent components.  Guay \cite{Guay2021} gives
+rank-style identification conditions from higher unconditional moments, which
+is the closest moment-identification ingredient to the tensor diagonalization
+used below.  Lanne and Luoto \cite{LanneLuoto2021} study GMM estimation of
+non-Gaussian SVARs, relevant as an estimation counterpart but not as a
+population LP/SVAR equivalence result.  Drautzburg and Wright
+\cite{DrautzburgWright2023} are closest in partial-identification spirit:
+independence refines sign-restricted VAR sets, while the present note asks
+when a sign-restricted LP set can be pasted into that same independence-based
+shock law.  The comparison is deliberately one-sided.  No cited paper is
+attributed the claim that a sign-only LP set is already the sharp set for a
+labelled non-Gaussian SVAR shock; the theorem is framed instead as a positive
+population bound and diagnostic for any workflow that wants to use LP sign
+restrictions as a robustness report for such a shock.  Lanne, Liu, and Luoto
+\cite{LanneLiuLuoto2026} relax independence
+toward dependent non-Gaussian shocks, underscoring that the common shock-law
+restriction is substantive rather than cosmetic.
+
+The Stage -1 proposal for this qid posed the comparison as two conjectures:
+a primitive open-class support-function gap and a two-shock witness.  This
+note does not prove the primitive open-class claim in
+Conjecture~\ref{conj:primitive-strict-gap}; it proves the conditional
+support-gap theorem obtained by adding the user-approved quantitative margin
+assumption, and it proves the two-shock witness in closed form.  Accordingly,
+the theorem-level novelty claimed here is the conditional sharp-bound
+comparison and the special-case certificate, not an unconditional generic
+negative-result theorem.  No repository theorem is used as a premise; the
+contribution is the standalone algebraic comparison between two population
+response sets plus the explicit conditional margin bookkeeping.
+
+\section{Formal setup}
+The locked parameters define a partial-identification problem for structural
+impulse-response sets.  Let \(Y_t\in\R^n\) be covariance stationary with
+reduced-form innovation \(u_t\), innovation covariance
+\(\Sigma_u=\E[u_tu_t^\transpose]\succ0\), and finite fourth cumulant tensor
+\(K_u=\operatorname{cum}_4(u_t)\).  The observed population law \(P\) is
+summarized, for this theorem, by
+\[
+(\Gamma_0,\ldots,\Gamma_H,\Sigma_u,K_u),\qquad
+\Gamma_h=\E[Y_{t+h}u_t^\transpose]\Sigma_u^{-1},\quad h=0,\ldots,H.
+\]
+
+A structural completion writes
+\[
+u_t=B\varepsilon_t,\qquad \E[\varepsilon_t\varepsilon_t^\transpose]=I_n,
+\qquad BB^\transpose=\Sigma_u.
+\]
+Fix the symmetric square root \(\Sigma_u^{1/2}\).  Every such \(B\) can be
+written as \(B(Q)=\Sigma_u^{1/2}Q\) for a rotation or reflection
+\(Q\in O(n)=\{Q\in\R^{n\times n}:Q^\transpose Q=I_n\}\).  For a labelled shock
+index \(j\), set \(b_j(Q)=B(Q)e_j\) and define
+\[
+\psi_j(Q)=\bigl(e_y^\transpose\Gamma_h b_j(Q)\bigr)_{h=0}^H
+        \in\R^{H+1}.
+\]
+The maintained sign and zero restrictions are \(A\psi_j(Q)\ge0\) and
+\(Z\psi_j(Q)=0\), where inequalities are componentwise.
+
+The non-Gaussian SVAR restriction says that the same rotation also diagonalizes
+the observed fourth cumulant tensor:
+\[
+K_u=\sum_{k=1}^n \kappa_k\, b_k(Q)^{\otimes4},
+\qquad b_k(Q)=\Sigma_u^{1/2}Qe_k,
+\]
+for an admissible cumulant vector \(\kappa=(\kappa_1,\ldots,\kappa_n)\) with
+the target component separated by \(\delta_4>0\):
+\[
+\mathcal K_{\delta_4}(j)=
+\{\kappa\in\R^n: |\kappa_j|\ge\delta_4,\ 
+|\kappa_\ell-\kappa_j|\ge\delta_4\ \text{for every }\ell\ne j\}.
+\]
+The LP/sign response set and the non-Gaussian SVAR/sign response set are
+\[
+\mathcal R_{\mathrm{LP}}(P)=
+\{\psi_j(Q):Q\in O(n),\ A\psi_j(Q)\ge0,\ Z\psi_j(Q)=0\},
+\]
+\[
+\mathcal R_{\mathrm{SVAR}}(P)=
+\{\psi_j(Q):Q\in O(n),\ A\psi_j(Q)\ge0,\ Z\psi_j(Q)=0,\ 
+K_u=\sum_{k=1}^n\kappa_k b_k(Q)^{\otimes4}
+\text{ for some }\kappa\in\mathcal K_{\delta_4}(j)\}.
+\]
+The vector identified set for the structural response is
+\(\Theta_I(P)=\mathcal R_{\mathrm{SVAR}}(P)\).  The LP/sign set is an outer
+relaxation, not the causal or structural target itself.
+It is useful to name the corresponding feasible rotation sets:
+\[
+\mathcal Q_{\mathrm{LP}}(P)=
+\{Q\in O(n):A\psi_j(Q)\ge0,\ Z\psi_j(Q)=0\},
+\]
+\[
+\mathcal Q_{\mathrm{SVAR}}(P)=
+\{Q\in\mathcal Q_{\mathrm{LP}}(P):
+K_u=\sum_{k=1}^n\kappa_k b_k(Q)^{\otimes4}
+\text{ for some }\kappa\in\mathcal K_{\delta_4}(j)\}.
+\]
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+qid = eid_lp_svar_nonequiv
+specialization = v1
+anchor_cluster = partial identification / linear-projection IRF methods
+observable distribution P = the population law of a covariance-stationary
+  finite-order VAR(p) process Y_t, summarized by reduced-form LP/VAR response
+  rows Gamma_h = E[Y_{t+h} u_t'] Sigma_u^{-1} for h=0,...,H, innovation
+  covariance Sigma_u, and fourth cumulant tensor K_u = cum4(u_t)
+parameter theta = the H+1 horizon structural impulse-response vector
+  psi_j(B) = (e_y' Gamma_h b_j)_{h=0}^H for a labelled structural shock j,
+  with u_t = B epsilon_t, E[epsilon_t epsilon_t'] = I, and b_j = B e_j
+identifying restrictions = (i) finite-order linear VAR/LP population rows,
+  (ii) unit-variance structural shocks, (iii) a partial sign/zero pattern
+  A psi_j(B) >= 0 and Z psi_j(B) = 0, (iv) observed fourth cumulant tensor
+  K_u generated by independent non-Gaussian shocks with an admissible
+  cumulant vector kappa in K_delta4(j), where |kappa_j| >= delta_4 and
+  |kappa_l-kappa_j| >= delta_4 for every l != j after the target label is
+  fixed, and (v) an optional common cumulant-matching restriction requiring
+  the same rotation to satisfy the LP sign rows and diagonalize K_u
+bounding functional = for any report direction w in R^{H+1}, compare support
+  functions h_LP(w;P) over the LP/sign relaxation and h_SVAR(w;P) over the
+  non-Gaussian SVAR/sign feasible set; the non-equivalence gap is
+  Delta_w(P)=h_LP(w;P)-h_SVAR(w;P)
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite-order linear projection environment]\label{ass:finite-var}
+The population law \(P\) is covariance stationary and generated by a finite
+order VAR(p) with innovation \(u_t\), positive definite innovation covariance
+\(\Sigma_u\succ0\), and finite fourth moments.  For each reported horizon
+\(h=0,\ldots,H\), the row \(\Gamma_h=\E[Y_{t+h}u_t^\transpose]\Sigma_u^{-1}\)
+exists and equals the corresponding unrestricted population VAR response row.
+\end{assumption}
+
+\begin{assumption}[Rotation normalization and labelled target shock]\label{ass:normalization}
+Structural shocks have identity covariance and every impact matrix is
+parameterized as \(B(Q)=\Sigma_u^{1/2}Q\) with \(Q\in O(n)\).  The target shock
+index \(j\) is fixed after the usual sign and permutation normalization; all
+sets below are for this fixed label.
+\end{assumption}
+
+\begin{assumption}[Partial sign and zero restrictions]\label{ass:sign-zero}
+Known matrices \(A\in\R^{m_A\times(H+1)}\) and
+\(Z\in\R^{m_Z\times(H+1)}\) encode the maintained restrictions
+\(A\psi_j(Q)\ge0\) and \(Z\psi_j(Q)=0\).  The LP/sign feasible rotation set is
+nonempty.  In strict-gap statements, the restrictions leave a
+positive-dimensional feasible component rather than pinning the labelled shock
+direction to a finite signed-permutation orbit.
+\end{assumption}
+
+\begin{assumption}[Observed fourth-cumulant tensor]\label{ass:cumulant-tensor}
+The fourth cumulant tensor \(K_u=\operatorname{cum}_4(u_t)\) is finite and
+observed at the population level.  A non-Gaussian SVAR completion requires
+\[
+K_u=\sum_{k=1}^n\kappa_k b_k(Q)^{\otimes4},
+\qquad b_k(Q)=\Sigma_u^{1/2}Qe_k,
+\]
+where \(\kappa_k\) is the fourth cumulant of the \(k\)-th independent
+unit-variance structural shock.  Admissible cumulant vectors are understood to
+be moment-realizable by such univariate shocks.
+\end{assumption}
+
+\begin{assumption}[Bounded target fourth-cumulant gap]\label{ass:bounded-gap}
+For the labelled target component, the admissible structural fourth-cumulant
+vector belongs to
+\[
+\mathcal K_{\delta_4}(j)=
+\{\kappa\in\R^n:|\kappa_j|\ge\delta_4,\ 
+|\kappa_\ell-\kappa_j|\ge\delta_4\ \text{for every }\ell\ne j\}
+\]
+for a fixed \(\delta_4>0\).  Gaussian shocks and equal-target-kurtosis
+boundaries are therefore outside the strict-gap specialization.
+\end{assumption}
+
+\begin{assumption}[Nonempty non-Gaussian SVAR feasible set]\label{ass:svar-nonempty}
+There exists at least one \(Q\in O(n)\) and at least one
+\(\kappa\in\mathcal K_{\delta_4}(j)\) satisfying the sign/zero restrictions
+and the fourth-cumulant diagonalization equation.  This assumption is used for
+finite-valued support-function comparisons; if it fails, the SVAR support is
+\(-\infty\) by convention.
+\end{assumption}
+
+\begin{assumption}[Common cumulant-matching restriction]\label{ass:cumulant-matching}
+The same rotation \(Q\) that generates a reported LP response vector
+\(\psi_j(Q)\) is required to diagonalize \(K_u\) as in
+Assumption~\ref{ass:cumulant-tensor}.  Equivalently, the LP/sign candidate is
+restricted to the non-Gaussian SVAR feasible rotation set.
+\end{assumption}
+
+\begin{assumption}[Generic report direction]\label{ass:generic-report}
+The report direction \(w\in\R^{H+1}\) is such that
+\(w^\transpose\psi_j(Q)\) is not constant on any positive-dimensional
+connected component of the LP/sign feasible set that contains a
+non-cumulant-matching rotation.
+\end{assumption}
+
+\begin{assumption}[A-quant-margin: user-approved quantitative margin]\label{ass:A-quant-margin}\label{ass:quant-margin}
+\begin{verbatim}
+(Quantitative margin, §7.) For every observable law P in the open class O and every admissible direction w, the cumulant-envelope support loss chi_w(P) := h_{R_LP(P)}(w) - sup_{Sigma in R_LP(P) cap C_eps(P)} <w, Sigma> is strictly positive, i.e. chi_w(P) > 0.
+\end{verbatim}
+This is a locked-parameter addition approved for this correction round.  It is
+invoked only as a hypothesis; the proof below does not derive this strict
+margin from primitive fourth-cumulant geometry.  The symbols
+\(\mathcal O\), \(\mathcal C_\varepsilon(P)\), and \(\chi_w(P)\) are the
+open class, cumulant-envelope set, and support loss formalized in the next
+section.
+\end{assumption}
+
+\begin{assumption}[Minimal two-shock witness design]\label{ass:two-shock}
+For the finite witness, \(n=2\), \(p=1\), \(H\ge1\), the relevant component of
+\(O(2)\) is parameterized by a planar angle \(Q(\varphi)\), and the sign
+restrictions leave a nondegenerate interval \(I_{\mathrm{LP}}\subset S^1\).
+The fourth cumulant tensor has two distinct structural excess kurtoses with
+gap at least \(\delta_4\), and at least one fourth-cumulant diagonalizing angle
+lies in the LP/sign interval.
+\end{assumption}
+
+\section{Estimand-defining functional}
+For \(h=0,\ldots,H\), set
+\[
+g_h(P)=e_y^\transpose\Gamma_h\Sigma_u^{1/2}\in\R^{1\times n},
+\qquad
+\Psi_j(Q)=\bigl(g_0(P)Qe_j,\ldots,g_H(P)Qe_j\bigr).
+\]
+Then \(\Psi_j(Q)=\psi_j(Q)\).  For a report direction
+\(w=(w_0,\ldots,w_H)^\transpose\), define
+\[
+g_w(P)=\sum_{h=0}^H w_h g_h(P),\qquad
+w^\transpose\Psi_j(Q)=g_w(P)Qe_j.
+\]
+
+The LP/sign support functional is the value of the following finite polynomial
+program in the \(n^2\) real entries of \(Q\):
+\[
+h_{\mathrm{LP}}(w;P)=
+\max_Q\ g_w(P)Qe_j
+\]
+subject to
+\[
+Q^\transpose Q=I_n,\qquad A\Psi_j(Q)\ge0,\qquad Z\Psi_j(Q)=0.
+\]
+There are \(n(n+1)/2\) orthogonality equations, \(m_A\) linear inequalities in
+\(\Psi_j(Q)\), and \(m_Z\) linear equations in \(\Psi_j(Q)\).  The feasible set
+is closed inside the compact group \(O(n)\), so the maximum exists whenever the
+LP/sign set is nonempty.
+
+The SVAR/sign support functional is computed by adding \(n\) cumulant variables
+\(\kappa=(\kappa_1,\ldots,\kappa_n)\) and the fourth-cumulant equations.  A
+redundant population bound makes the optimization compact:
+\[
+\kappa_{\max}(P)=\|K_u\|_F\,\|\Sigma_u^{-1/2}\|_{\mathrm{op}}^4.
+\]
+For every exact cumulant decomposition,
+\(|\kappa_k|\le\kappa_{\max}(P)\) because \(\kappa_k\) is the contraction of
+\(K_u\) with the \(k\)-th dual impact vector four times.  The SVAR support is
+the maximum over the finite union of sign cases \(s=(s_0,s_\ell:\ell\ne j)\in
+\{-1,1\}^{n}\) of the polynomial program
+\[
+h_{\mathrm{SVAR}}(w;P)=\max_{Q,\kappa}\ g_w(P)Qe_j
+\]
+subject to
+\[
+Q^\transpose Q=I_n,\qquad A\Psi_j(Q)\ge0,\qquad Z\Psi_j(Q)=0,
+\]
+\[
+K_u=\sum_{k=1}^n\kappa_k(\Sigma_u^{1/2}Qe_k)^{\otimes4},
+\qquad -\kappa_{\max}(P)\le\kappa_k\le\kappa_{\max}(P)\quad(k=1,\ldots,n),
+\]
+\[
+s_0\kappa_j\ge\delta_4,\qquad
+s_\ell(\kappa_\ell-\kappa_j)\ge\delta_4\quad(\ell\ne j).
+\]
+The tensor equation is a finite list of \(n^4\) scalar polynomial equations
+(or the equivalent reduced symmetric list).  Thus \(h_{\mathrm{SVAR}}\) is a
+computable map from \(P\): evaluate \(2^n\) compact semialgebraic global
+optimization problems with \(n^2+n\) real decision variables and take the
+largest value.  Equivalently, exact evaluation can be reduced to real
+quantifier elimination over this displayed constraint list.
+
+The cumulant-envelope objects used by
+Assumption~\ref{ass:A-quant-margin} are also computable from \(P\).  Define
+\[
+m_{\delta_4}(Q;P)=
+\inf_{\kappa\in\mathcal K_{\delta_4}(j)}
+\left\|K_u-\sum_{k=1}^n\kappa_k(\Sigma_u^{1/2}Qe_k)^{\otimes4}\right\|_F
+\]
+and, for the envelope tolerance \(\varepsilon\ge0\) fixed by the open-class
+certificate in Assumption~\ref{ass:A-quant-margin},
+\[
+\mathcal C_\varepsilon(P)=
+\{\Psi_j(Q):Q\in\mathcal Q_{\mathrm{LP}}(P),\
+m_{\delta_4}(Q;P)\le\varepsilon\}.
+\]
+The support loss named in the approved assumption is therefore
+\[
+\chi_w(P)=
+h_{\mathcal R_{\mathrm{LP}}(P)}(w)
+-
+\sup_{\Sigma\in\mathcal R_{\mathrm{LP}}(P)\cap\mathcal C_\varepsilon(P)}
+\langle w,\Sigma\rangle,
+\]
+where \(h_{\mathcal R_{\mathrm{LP}}(P)}(w)=h_{\mathrm{LP}}(w;P)\).  This
+quantity is an assumed strict margin, not a derived primitive genericity
+claim.
+
+For scalar reports \(\theta_w=w^\transpose\theta\), define the sharp SVAR
+directional endpoint functionals
+\[
+\theta_U^{\mathrm{SVAR}}(w;P)=h_{\mathrm{SVAR}}(w;P),\qquad
+\theta_L^{\mathrm{SVAR}}(w;P)=-h_{\mathrm{SVAR}}(-w;P).
+\]
+The LP/sign outer endpoints are defined analogously by replacing
+\(h_{\mathrm{SVAR}}\) with \(h_{\mathrm{LP}}\).  The interval
+\([\theta_L^{\mathrm{SVAR}},\theta_U^{\mathrm{SVAR}}]\) gives sharp extrema
+for the scalar report, although the interior of the interval need not be sharp
+when the feasible response set is disconnected.  The Stage -1 conjecture
+verdict is: Conjecture~\ref{conj:primitive-strict-gap} remains open as a
+primitive generic-class statement; Theorem~\ref{thm:conditional-margin} below
+proves the conditional strict support gap only after invoking
+Assumption~\ref{ass:A-quant-margin}.  Conjecture~\ref{conj:two-shock-witness}
+is confirmed by the planar calculation in Proposition~\ref{prop:two-shock},
+which is a special-case certificate and not a substitute for the open generic
+obstruction in Conjecture~\ref{conj:primitive-strict-gap}.
+
+\section{Target causal estimand}
+The structural target is not defined as a support function.  It is the
+response vector generated by the true labelled structural shock:
+\[
+\theta=\psi_j(B_0)=
+\bigl(e_y^\transpose\Gamma_h b_{0j}\bigr)_{h=0}^H,
+\qquad b_{0j}=B_0e_j,
+\]
+where \(B_0=\Sigma_u^{1/2}Q_0\) for the true rotation \(Q_0\).  Under the
+maintained non-Gaussian SVAR restrictions, \(Q_0\) satisfies the sign/zero
+restrictions and the fourth-cumulant diagonalization equation for some
+\(\kappa_0\in\mathcal K_{\delta_4}(j)\).  Hence the vector identified set is
+\[
+\Theta_I(P)=\mathcal R_{\mathrm{SVAR}}(P),
+\]
+and, for any report direction \(w\), the scalar target is
+\(\theta_w=w^\transpose\theta\).  The conclusion below is a containment and
+sharp-extrema statement for \(\theta_w\), plus a comparison to the larger
+LP/sign relaxation; it is not a point-identification claim unless the SVAR
+response set is a singleton or the two directional endpoints coincide.
+
+\section{Main theorems}
+\begin{theorem}[Theorem 1: conditional support gap under A-quant-margin]\label{thm:conditional-margin}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:svar-nonempty},
+\ref{ass:generic-report}, and \ref{ass:A-quant-margin}, for every observable
+law \(P\in\mathcal O\) and every admissible report direction
+\(w\in\R^{H+1}\),
+\[
+\Theta_I(P)=\mathcal R_{\mathrm{SVAR}}(P)
+\subseteq \mathcal R_{\mathrm{LP}}(P),
+\]
+and the scalar report satisfies
+\[
+\theta_w\in
+\bigl[-h_{\mathrm{SVAR}}(-w;P),\,h_{\mathrm{SVAR}}(w;P)\bigr]
+\subseteq
+\bigl[-h_{\mathrm{LP}}(-w;P),\,h_{\mathrm{LP}}(w;P)\bigr].
+\]
+The displayed SVAR endpoints are sharp extrema over the maintained
+second-and-fourth-moment structural restrictions; the LP endpoints are outer
+endpoints and are sharp only for the relaxation that drops common cumulant
+matching.  Moreover,
+\[
+\Delta_w(P)=h_{\mathrm{LP}}(w;P)-h_{\mathrm{SVAR}}(w;P)\ge0,
+\]
+and the approved cumulant-envelope margin gives the strict lower bound
+\[
+\Delta_w(P)\ge \chi_w(P)>0.
+\]
+\end{theorem}
+
+Theorem~\ref{thm:conditional-margin} is the main result of this corrected
+note.  It is intentionally conditional on
+Assumption~\ref{ass:A-quant-margin}; it does not confirm
+Conjecture~\ref{conj:primitive-strict-gap}.  Its value is that, once the
+approved cumulant-envelope support loss is part of the locked-parameter
+environment, the reported LP/sign support function is a computable strict
+outer bound for the non-Gaussian SVAR/sign structural support.  The theorem
+does not assert that any cited estimator or workflow made the omitted-cumulant
+shortcut; it supplies the population diagnostic needed before such a shortcut
+could be used.
+
+\begin{proposition}[Computable support bounds and equality boundary]\label{prop:support-boundary}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:svar-nonempty}, for every
+report direction \(w\in\R^{H+1}\),
+\[
+\Theta_I(P)=\mathcal R_{\mathrm{SVAR}}(P)
+\subseteq \mathcal R_{\mathrm{LP}}(P),
+\]
+and the scalar report satisfies
+\[
+\theta_w\in
+\bigl[-h_{\mathrm{SVAR}}(-w;P),\,h_{\mathrm{SVAR}}(w;P)\bigr]
+\subseteq
+\bigl[-h_{\mathrm{LP}}(-w;P),\,h_{\mathrm{LP}}(w;P)\bigr].
+\]
+The displayed SVAR endpoints are sharp extrema over the maintained
+second-and-fourth-moment structural restrictions; the LP endpoints are outer
+endpoints and are sharp only for the relaxation that drops common cumulant
+matching.  Moreover,
+\[
+\Delta_w(P)=h_{\mathrm{LP}}(w;P)-h_{\mathrm{SVAR}}(w;P)\ge0,
+\]
+with equality if and only if at least one LP/sign maximizer of
+\(Q\mapsto w^\transpose\psi_j(Q)\) also satisfies the non-Gaussian cumulant
+diagonalization restriction.  If Assumption~\ref{ass:cumulant-matching} is
+imposed on the LP/sign side, then \(\mathcal R_{\mathrm{LP}}(P)\) is replaced
+by \(\mathcal R_{\mathrm{SVAR}}(P)\) and all support functions agree.
+\end{proposition}
+
+This proposition is the deterministic support-function boundary underneath
+Theorem~\ref{thm:conditional-margin}.  Compared with Plagborg-M{\o}ller and Wolf
+\cite{PlagborgMollerWolf2021}, the difference is not LPs versus VARs as
+estimators; it is the omitted fourth-cumulant identifying restriction.  Compared
+with non-Gaussian SVAR identification results such as
+\cite{GourierouxMonfortRenne2017,LanneMeitzSaikkonen2017,Guay2021}, the new
+object is the explicit gap between a sign-only LP relaxation and the
+cumulant-matching structural set.
+
+\begin{proposition}[Closed-form two-shock witness]\label{prop:two-shock}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:bounded-gap},
+\ref{ass:generic-report}, and \ref{ass:two-shock}, restrict attention to the
+connected planar component \(Q(\varphi)\).  Suppose the LP/sign restrictions
+define a nondegenerate interval \(I_{\mathrm{LP}}\subset S^1\), the
+non-Gaussian SVAR angles are
+\[
+I_{\mathrm{SVAR}}=
+I_{\mathrm{LP}}\cap
+\{\varphi_\star,\varphi_\star+\pi/2,\varphi_\star+\pi,
+\varphi_\star+3\pi/2\},
+\]
+and \(I_{\mathrm{SVAR}}\ne\emptyset\).  If
+\[
+w^\transpose\psi_j(Q(\varphi))
+=a_w\cos\varphi+b_w\sin\varphi
+=\rho_w\cos(\varphi-\varphi_w),\qquad \rho_w>0,
+\]
+with \(\varphi_w\) an interior point of \(I_{\mathrm{LP}}\) and
+\(\varphi_w\notin I_{\mathrm{SVAR}}\), then
+\[
+h_{\mathrm{LP}}(w;P)-h_{\mathrm{SVAR}}(w;P)
+\ge \rho_w(1-\cos d_w)>0,
+\qquad d_w=\operatorname{dist}_{S^1}(\varphi_w,I_{\mathrm{SVAR}}).
+\]
+For the open class in which the nearest SVAR angle is the SVAR maximizer, the
+inequality is an equality.
+\end{proposition}
+
+This proposition confirms Conjecture~\ref{conj:two-shock-witness}.  Its value
+is that the support separation is visible in the smallest nontrivial rotation
+geometry: a sign interval can contain both a valid non-Gaussian structural
+angle and a different LP-sign angle with a larger reported response.  It is
+only a planar witness, not a proof of the generic open-class obstruction in
+Conjecture~\ref{conj:primitive-strict-gap}.  The closest sign/SVAR algorithms
+enumerate feasible rotations, while the formula above gives the gap itself.
+
+\section{Interpretation}
+The LP/sign set answers the question, ``which response paths can be produced by
+some orthogonal impact rotation satisfying the reported response signs and
+zeros?''  The non-Gaussian SVAR/sign set answers the stricter question, ``which
+of those paths can be produced by the same rotation that diagonalizes the
+observed fourth cumulant tensor with a separated labelled shock?''  The only
+tightening restriction in Proposition~\ref{prop:support-boundary} is this
+common cumulant-matching requirement.
+
+The bound collapses to point identification for a report direction \(w\) when
+\(h_{\mathrm{SVAR}}(w;P)=-h_{\mathrm{SVAR}}(-w;P)\).  At the vector level this
+requires \(\mathcal R_{\mathrm{SVAR}}(P)\) to be a singleton in the reported
+coordinates.  The LP and SVAR bounds coincide in direction \(w\) exactly when a
+support-exposed LP optimizer is also cumulant matching.  They differ when the
+best LP-sign response is generated by a rotation that cannot be part of any
+independent non-Gaussian shock law producing the observed \(K_u\).
+
+If the cumulant restriction is removed, or if \(K_u\) carries no usable label
+information, the comparison widens back to the familiar sign-restricted
+LP/VAR object.  If the sign and zero restrictions already pin down the same
+signed-permutation orbit selected by the fourth cumulants, there is no room for
+a gap.  The conditional strict-gap theorem applies in the genuinely
+partial-sign region only after Assumption~\ref{ass:A-quant-margin} supplies a
+positive support loss.  Proving that this positive support loss holds
+generically from the primitive fourth-cumulant geometry is exactly the open
+content of Conjecture~\ref{conj:primitive-strict-gap}.
+
+\section{Step-by-step proof}
+\begin{lemma}[Rotation parameterization]\label{lem:rotation}
+Under Assumptions~\ref{ass:finite-var} and \ref{ass:normalization}, the set of
+impact matrices with identity structural covariance and reduced-form
+covariance \(\Sigma_u\) is exactly
+\(\{\Sigma_u^{1/2}Q:Q\in O(n)\}\).
+\end{lemma}
+
+\begin{proof}
+If \(B=\Sigma_u^{1/2}Q\) and \(Q^\transpose Q=I_n\), then
+\(BB^\transpose=\Sigma_u^{1/2}QQ^\transpose\Sigma_u^{1/2}=\Sigma_u\).  Conversely,
+if \(BB^\transpose=\Sigma_u\), set \(Q=\Sigma_u^{-1/2}B\).  Then
+\[
+QQ^\transpose=\Sigma_u^{-1/2}BB^\transpose\Sigma_u^{-1/2}=I_n.
+\]
+Since \(Q\) is square, \(QQ^\transpose=I_n\) implies \(Q^\transpose Q=I_n\).
+Thus \(B=\Sigma_u^{1/2}Q\) with \(Q\in O(n)\).
+\end{proof}
+
+\begin{lemma}[SVAR feasibility is LP feasibility plus cumulant matching]\label{lem:constraint-inclusion}
+Under Assumptions~\ref{ass:sign-zero}--\ref{ass:bounded-gap}, every
+non-Gaussian SVAR/sign feasible rotation is LP/sign feasible.
+\end{lemma}
+
+\begin{proof}
+An SVAR/sign feasible pair \((Q,\kappa)\) must satisfy
+\(Q\in O(n)\), \(A\psi_j(Q)\ge0\), and \(Z\psi_j(Q)=0\) by the definition of
+the SVAR/sign set.  These are exactly the LP/sign feasibility constraints.
+The additional equations
+\[
+K_u=\sum_{k=1}^n\kappa_k b_k(Q)^{\otimes4},
+\qquad \kappa\in\mathcal K_{\delta_4}(j),
+\]
+are extra restrictions and remove rotations; they add no LP-feasible rotations.
+\end{proof}
+
+\begin{lemma}[Cumulant-filtered envelope]\label{lem:envelope}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:svar-nonempty}, let
+\[
+h_\varepsilon(w;P)=
+\sup\{w^\transpose\psi_j(Q):Q\in\mathcal Q_{\mathrm{LP}}(P),
+m_{\delta_4}(Q;P)\le\varepsilon\}.
+\]
+Then \(h_\varepsilon(w;P)\downarrow h_{\mathrm{SVAR}}(w;P)\) as
+\(\varepsilon\downarrow0\).
+\end{lemma}
+
+\begin{proof}
+The LP feasible rotation set is closed in \(O(n)\), hence compact.  The
+function \(Q\mapsto w^\transpose\psi_j(Q)\) is continuous because it is linear
+in \(Q\).  The mismatch function \(m_{\delta_4}(Q;P)\) is continuous.  To see
+this, write the tensor map as
+\(L_Q\kappa=\sum_k\kappa_kb_k(Q)^{\otimes4}\).  For each \(Q\), the tensors
+\(\{b_k(Q)^{\otimes4}\}_{k=1}^n\) are linearly independent because
+\(\{b_k(Q)\}_{k=1}^n\) is a basis; by compactness of \(O(n)\), the smallest
+singular value of \(L_Q\) is bounded away from zero uniformly in \(Q\).  Hence
+the distance from \(K_u\) to the closed set \(L_Q\mathcal K_{\delta_4}(j)\)
+can be computed over a compact \(\kappa\)-ball depending only on \(P\), and
+a standard compact-minimum argument gives continuity.  The sets
+\(\mathcal Q_\varepsilon(P)\) are nested closed subsets of a compact set and
+their intersection is exactly the cumulant-matching rotation set
+\(\mathcal Q_0(P)\).  Since \(\mathcal Q_0(P)\) is nonempty by
+Assumption~\ref{ass:svar-nonempty}, compactness gives maximizers
+\(Q_\varepsilon\) along any sequence \(\varepsilon\downarrow0\).  Every
+convergent subsequence has a limit in \(\mathcal Q_0(P)\), so every limit point
+of \(h_\varepsilon(w;P)\) is at most \(h_{\mathrm{SVAR}}(w;P)\).  The reverse
+inequality holds because \(\mathcal Q_0(P)\subseteq\mathcal Q_\varepsilon(P)\)
+for all \(\varepsilon>0\).  Hence the decreasing limit equals
+\(h_{\mathrm{SVAR}}(w;P)\).
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:support-boundary}]
+By Lemma~\ref{lem:rotation}, all admissible structural impact matrices are
+indexed by rotations \(Q\).  By Lemma~\ref{lem:constraint-inclusion}, every
+rotation satisfying the SVAR/sign restrictions also satisfies the LP/sign
+restrictions.  Applying the response map \(\psi_j\) to both feasible rotation
+sets gives
+\[
+\mathcal R_{\mathrm{SVAR}}(P)\subseteq \mathcal R_{\mathrm{LP}}(P).
+\]
+The true target \(\theta\) belongs to \(\mathcal R_{\mathrm{SVAR}}(P)\) by the
+maintained structural restrictions in Assumptions~\ref{ass:normalization},
+\ref{ass:sign-zero}, \ref{ass:cumulant-tensor}, and \ref{ass:bounded-gap}.
+Therefore, for every \(w\),
+\[
+w^\transpose\theta
+\le \sup_{r\in\mathcal R_{\mathrm{SVAR}}(P)}w^\transpose r
+=h_{\mathrm{SVAR}}(w;P),
+\]
+and applying the same inequality to \(-w\) gives
+\[
+w^\transpose\theta\ge -h_{\mathrm{SVAR}}(-w;P).
+\]
+Set inclusion gives the LP outer interval because the supremum of a linear
+functional cannot decrease when the feasible set is enlarged.
+
+The nonnegativity of \(\Delta_w(P)\) is the same support-function monotonicity:
+\[
+h_{\mathrm{SVAR}}(w;P)
+=\sup_{r\in\mathcal R_{\mathrm{SVAR}}(P)}w^\transpose r
+\le
+\sup_{r\in\mathcal R_{\mathrm{LP}}(P)}w^\transpose r
+=h_{\mathrm{LP}}(w;P).
+\]
+Equality holds if an LP/sign maximizer is cumulant matching, because that
+maximizer is also SVAR feasible and attains both support values.  Conversely,
+if the two support values are equal, compactness of the LP/sign feasible set
+gives an LP maximizer \(Q^\star\).  The equal value must also be attained by
+some SVAR feasible rotation \(Q^0\); \(Q^0\) is therefore an LP maximizer that
+satisfies cumulant matching.  This proves the argmax-intersection boundary.
+
+If Assumption~\ref{ass:cumulant-matching} is imposed on the LP/sign side, the
+LP feasible rotations are, by definition, restricted to the SVAR feasible
+rotations; hence the two response sets and all support functions coincide.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:conditional-margin}]
+The containment and scalar endpoint statements are exactly the first part of
+Proposition~\ref{prop:support-boundary}.  It remains to prove the strict
+lower bound.  Every SVAR/sign feasible response is generated by a rotation
+with \(m_{\delta_4}(Q;P)=0\).  Since \(0\le\varepsilon\), this response belongs
+to the cumulant-envelope set \(\mathcal C_\varepsilon(P)\) used in
+Assumption~\ref{ass:A-quant-margin}.  Hence
+\[
+\mathcal R_{\mathrm{SVAR}}(P)
+\subseteq
+\mathcal R_{\mathrm{LP}}(P)\cap\mathcal C_\varepsilon(P),
+\]
+and support monotonicity gives
+\[
+h_{\mathrm{SVAR}}(w;P)
+\le
+\sup_{\Sigma\in\mathcal R_{\mathrm{LP}}(P)\cap\mathcal C_\varepsilon(P)}
+\langle w,\Sigma\rangle.
+\]
+Subtracting this inequality from \(h_{\mathrm{LP}}(w;P)\) yields
+\[
+\Delta_w(P)
+=h_{\mathrm{LP}}(w;P)-h_{\mathrm{SVAR}}(w;P)
+\ge
+h_{\mathcal R_{\mathrm{LP}}(P)}(w)
+-
+\sup_{\Sigma\in\mathcal R_{\mathrm{LP}}(P)\cap\mathcal C_\varepsilon(P)}
+\langle w,\Sigma\rangle
+=\chi_w(P).
+\]
+Assumption~\ref{ass:A-quant-margin} states \(\chi_w(P)>0\) for every
+observable law \(P\in\mathcal O\) and every admissible direction \(w\).  Thus
+\(\Delta_w(P)\ge\chi_w(P)>0\).  This is a conditional implication from the
+approved margin assumption, not a proof of
+Conjecture~\ref{conj:primitive-strict-gap}.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:two-shock}]
+On the relevant component of \(O(2)\), write the labelled shock direction as
+\((\cos\varphi,\sin\varphi)^\transpose\).  Since \(w^\transpose\psi_j(Q)\) is
+linear in this direction, there exist \(a_w,b_w\) such that
+\[
+w^\transpose\psi_j(Q(\varphi))=a_w\cos\varphi+b_w\sin\varphi.
+\]
+With \(\rho_w=(a_w^2+b_w^2)^{1/2}>0\), choose \(\varphi_w\) satisfying
+\((a_w,b_w)=\rho_w(\cos\varphi_w,\sin\varphi_w)\).  Then the objective is
+\(\rho_w\cos(\varphi-\varphi_w)\).
+
+Assumption~\ref{ass:two-shock} and the distinct fourth cumulants imply that
+the fourth-cumulant tensor has exactly the signed and permuted diagonalizing
+directions
+\[
+\{\varphi_\star,\varphi_\star+\pi/2,\varphi_\star+\pi,
+\varphi_\star+3\pi/2\}
+\]
+on the circle for the labelled column convention.  Intersecting this finite
+set with \(I_{\mathrm{LP}}\) gives \(I_{\mathrm{SVAR}}\).  Since \(\varphi_w\)
+is an interior point of \(I_{\mathrm{LP}}\), the LP maximum is
+\[
+\max_{\varphi\in I_{\mathrm{LP}}}\rho_w\cos(\varphi-\varphi_w)=\rho_w.
+\]
+For any \(\varphi\in I_{\mathrm{SVAR}}\),
+\[
+\rho_w\cos(\varphi-\varphi_w)\le
+\rho_w\cos d_w,
+\qquad d_w=\operatorname{dist}_{S^1}(\varphi_w,I_{\mathrm{SVAR}}),
+\]
+because cosine decreases with angular distance on the nearest-arc range
+selected by the finite maximizer.  Therefore
+\[
+h_{\mathrm{LP}}(w;P)-h_{\mathrm{SVAR}}(w;P)
+\ge \rho_w-\rho_w\cos d_w
+=\rho_w(1-\cos d_w).
+\]
+The condition \(\varphi_w\notin I_{\mathrm{SVAR}}\) gives \(d_w>0\), hence the
+gap is strictly positive.  When the nearest SVAR angle attains the SVAR maximum
+over the finite set, the displayed inequality is equality.  The strict
+inequalities defining interiority, nonzero amplitude, distinct cumulants, and
+nonmembership in the finite SVAR set are stable under small perturbations, so
+the witness describes a nonempty open class.
+\end{proof}
+
+\section{Sanity checks}
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Common restrictions recover LP/VAR equivalence.}  If the
+fourth-cumulant restriction is removed from the SVAR side, both feasible sets
+are the same sign/zero-restricted rotation set.  Thus
+\(h_{\mathrm{LP}}(w;P)=h_{\mathrm{SVAR}}(w;P)\), matching the common-restriction
+population equivalence in \cite{PlagborgMollerWolf2021}.
+
+\item \textbf{Gaussian or equal-kurtosis boundary.}  If \(K_u=0\), or if the
+target cumulant is not separated from another structural cumulant, then
+Assumption~\ref{ass:bounded-gap} fails.  The conditional strict-gap theorem
+therefore makes no claim there unless a separate approved margin assumption is
+supplied; the non-Gaussian label has disappeared or become ambiguous.
+
+\item \textbf{Full sign/zero labeling.}  If \(A\psi_j(Q)\ge0\) and
+\(Z\psi_j(Q)=0\) already restrict the labelled column \(Qe_j\) to the same
+finite signed-permutation orbit selected by \(K_u\), every LP support maximizer
+is cumulant matching.  Proposition~\ref{prop:support-boundary} then gives
+\(\Delta_w(P)=0\) for all \(w\).
+
+\item \textbf{Point-identification special case.}  If the cumulant tensor and
+sign normalization select a unique reported response vector \(r^\star\), then
+\(\mathcal R_{\mathrm{SVAR}}(P)=\{r^\star\}\).  For every \(w\),
+\(-h_{\mathrm{SVAR}}(-w;P)=h_{\mathrm{SVAR}}(w;P)=w^\transpose r^\star\).
+
+\item \textbf{No-restriction LP outer envelope.}  If \(A\) and \(Z\) are empty,
+the LP support reduces to
+\[
+h_{\mathrm{LP}}(w;P)=\max_{\|q\|=1} g_w(P)q=\|g_w(P)\|_2,
+\]
+because the labelled column \(q=Qe_j\) can be any unit vector.  The SVAR
+support is no larger and can be strictly smaller when the cumulant tensor
+admits only a finite diagonalizing set.
+\end{enumerate}
+
+\section{Counterexample or minimality check}
+The common cumulant-matching condition is minimal for sharpness of the
+non-Gaussian structural interpretation.  Consider \(n=2\), \(\Sigma_u=I_2\),
+and a reduced-form cumulant tensor generated by independent components in the
+standard basis with distinct fourth cumulants
+\(\kappa_1\ne\kappa_2\), both satisfying the \(\delta_4\) separation.  Then the
+cumulant-diagonalizing target angles are \(0,\pi/2,\pi,3\pi/2\).
+
+Let the LP/sign restrictions on the labelled direction
+\((\cos\varphi,\sin\varphi)\) define the interval
+\[
+I_{\mathrm{LP}}=[0,\pi/3]
+\]
+through the two linear inequalities
+\(\sin\varphi\ge0\) and
+\((\sqrt3/2)\cos\varphi-(1/2)\sin\varphi\ge0\).  The SVAR/sign target set is
+nonempty because \(0\in I_{\mathrm{LP}}\), and within this interval the only
+cumulant-diagonalizing target angle is \(0\).  Choose response rows and report
+direction such that
+\[
+w^\transpose\psi_j(Q(\varphi))
+=\cos(\varphi-\pi/4).
+\]
+Then the LP/sign support is attained at the interior nonmatching angle
+\(\varphi=\pi/4\), with value \(1\), while the SVAR/sign support is attained at
+\(\varphi=0\), with value \(\cos(\pi/4)=\sqrt2/2\).  Thus
+\[
+\Delta_w(P)=1-\sqrt2/2>0.
+\]
+Dropping cumulant matching would report the infeasible angle \(\pi/4\) as if
+it were a valid non-Gaussian structural shock.  The nearest correct repair is
+exactly the restriction in Assumption~\ref{ass:cumulant-matching}: filter LP
+rotations through the fourth-cumulant diagonalization equation before
+interpreting the response as a labelled non-Gaussian SVAR impulse response.
+
+\section{Formalization checklist}
+\begin{itemize}[leftmargin=*]
+\item \textbf{Observed population objects.}  Natural numbers \(n,H\); matrices
+\(\Gamma_h\in\R^{n\times n}\), \(\Sigma_u\in\R^{n\times n}\) with
+\(\Sigma_u\succ0\), fourth cumulant tensor \(K_u\in(\R^n)^{\otimes4}\), and
+restriction matrices \(A\in\R^{m_A\times(H+1)}\),
+\(Z\in\R^{m_Z\times(H+1)}\).
+
+\item \textbf{Deterministic maps.}  Orthogonal group
+\(O(n)=\{Q:Q^\transpose Q=I_n\}\); impact map \(B(Q)=\Sigma_u^{1/2}Q\);
+column map \(b_k(Q)=B(Q)e_k\); response map
+\(\psi_j(Q)=(e_y^\transpose\Gamma_h b_j(Q))_{h=0}^H\); report objective
+\(Q\mapsto w^\transpose\psi_j(Q)\).
+
+\item \textbf{Probabilistic restrictions.}  Finite VAR/LP response rows;
+identity covariance structural shocks; independent non-Gaussian shocks whose
+fourth cumulants form \(\kappa\in\mathcal K_{\delta_4}(j)\); tensor equation
+\(K_u=\sum_k\kappa_kb_k(Q)^{\otimes4}\); nonempty SVAR feasible set.
+
+\item \textbf{Feasible sets.}  LP rotation set defined by orthogonality,
+\(A\psi_j(Q)\ge0\), and \(Z\psi_j(Q)=0\).  SVAR rotation set defined by the
+same constraints plus existential \(\kappa\) satisfying the tensor equation
+and the separated-cumulant inequalities.
+
+\item \textbf{Optimization functionals.}  \(h_{\mathrm{LP}}(w;P)\) as a compact
+polynomial optimization in \(n^2\) variables.  \(h_{\mathrm{SVAR}}(w;P)\) as
+the maximum over \(2^n\) compact semialgebraic programs in \(n^2+n\) variables
+with explicit orthogonality, sign/zero, tensor, box, and gap constraints.
+The cumulant-envelope set \(\mathcal C_\varepsilon(P)\) and support loss
+\(\chi_w(P)\) used by Assumption~\ref{ass:A-quant-margin}.
+
+\item \textbf{Deterministic identities.}  Polar/rotation identity
+\(\{B:BB^\transpose=\Sigma_u\}=\{\Sigma_u^{1/2}Q:Q\in O(n)\}\).  Set inclusion
+identity: adding cumulant equations to LP constraints yields a subset.
+Support monotonicity: \(S_1\subseteq S_2\Rightarrow h_{S_1}(w)\le h_{S_2}(w)\).
+Envelope inclusion for the conditional theorem:
+\(\mathcal R_{\mathrm{SVAR}}(P)\subseteq
+\mathcal R_{\mathrm{LP}}(P)\cap\mathcal C_\varepsilon(P)\).  Envelope
+convergence for nested compact level sets of a continuous mismatch function,
+used only as a deterministic continuity fact and not as a source of the
+positive margin.
+
+\item \textbf{Two-shock trigonometry.}  Parameterization
+\(q(\varphi)=(\cos\varphi,\sin\varphi)\); linear report objective
+\(a_w\cos\varphi+b_w\sin\varphi=\rho_w\cos(\varphi-\varphi_w)\); distinct
+fourth cumulants imply a finite diagonalizing orbit; angular-distance gap
+\(\rho_w(1-\cos d_w)\).
+\end{itemize}
+
+\section{Conclusion and references}
+The theorem-level contribution is a computable partial-identification boundary
+between two population response objects.  The LP/sign support function is an
+outer relaxation; the non-Gaussian SVAR/sign support function is obtained by
+requiring the same impact rotation to diagonalize the observed fourth cumulant
+tensor with a separated labelled shock.  This common cumulant-matching
+restriction is exactly what tightens the bound.  The gap is zero when a
+support-exposed LP optimizer is cumulant matching and becomes strictly positive
+under the approved A-quant-margin hypothesis.  The two-shock witness supplies a
+separate closed-form positive-gap certificate, but it is not a generic-class
+obstruction.  The note is therefore a conditional bound and diagnostic rather
+than a negative refutation of a specific published estimator.  The primitive
+generic claim that the A-quant-margin condition follows from fourth-cumulant
+geometry remains open as Conjecture~\ref{conj:primitive-strict-gap}; no
+unconditional strict-gap theorem is claimed here.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+
+\bibitem{AriasRubioRamirezWaggoner2018}
+Arias, J.~E., J.~F. Rubio-Ramirez, and D.~F. Waggoner (2018).
+Inference based on structural vector autoregressions identified with sign and
+zero restrictions: Theory and applications.
+\emph{Econometrica} 86(2), 685--720.
+
+\bibitem{BaumeisterHamilton2015}
+Baumeister, C. and J.~D. Hamilton (2015).
+Sign restrictions, structural vector autoregressions, and useful prior
+information.
+\emph{Econometrica} 83(5), 1963--1999.
+
+\bibitem{DrautzburgWright2023}
+Drautzburg, T. and J.~H. Wright (2023).
+Refining set-identification in VARs through independence.
+\emph{Journal of Econometrics} 235(2), 1827--1847.
+
+\bibitem{GourierouxMonfortRenne2017}
+Gourieroux, C., A. Monfort, and J.-P. Renne (2017).
+Statistical inference for independent component analysis: Application to
+structural VAR models.
+\emph{Journal of Econometrics} 196(1), 111--126.
+
+\bibitem{Guay2021}
+Guay, A. (2021).
+Identification of structural vector autoregressions through higher
+unconditional moments.
+\emph{Journal of Econometrics} 225(1), 27--46.
+
+\bibitem{Jorda2005}
+Jorda, O. (2005).
+Estimation and inference of impulse responses by local projections.
+\emph{American Economic Review} 95(1), 161--182.
+
+\bibitem{LanneLuoto2021}
+Lanne, M. and J. Luoto (2021).
+GMM estimation of non-Gaussian structural vector autoregression.
+\emph{Journal of Business \& Economic Statistics} 39(1), 69--81.
+
+\bibitem{LanneLiuLuoto2026}
+Lanne, M., K. Liu, and J. Luoto (2026).
+Identifying structural vector autoregressions via non-Gaussianity of
+potentially dependent shocks.
+\emph{The Econometrics Journal}, utag002.
+
+\bibitem{LanneMeitzSaikkonen2017}
+Lanne, M., M. Meitz, and P. Saikkonen (2017).
+Identification and estimation of non-Gaussian structural vector
+autoregressions.
+\emph{Journal of Econometrics} 196(2), 288--304.
+
+\bibitem{LiPlagborgMollerWolf2024}
+Li, D., M. Plagborg-M{\o}ller, and C.~K. Wolf (2024).
+Local projections vs. VARs: Lessons from thousands of DGPs.
+\emph{Journal of Econometrics} 244, 105722.
+
+\bibitem{MontielOleaPlagborgMoller2021}
+Montiel Olea, J.~L. and M. Plagborg-M{\o}ller (2021).
+Local projection inference is simpler and more robust than you think.
+\emph{Econometrica} 89(4), 1789--1823.
+
+\bibitem{MontielOleaPlagborgMollerQianWolf2024}
+Montiel Olea, J.~L., M. Plagborg-M{\o}ller, E. Qian, and C.~K. Wolf (2024).
+Double robustness of local projections and some unpleasant VARithmetic.
+NBER Working Paper 32495; \emph{Econometrica}, forthcoming.
+
+\bibitem{PlagborgMollerWolf2021}
+Plagborg-M{\o}ller, M. and C.~K. Wolf (2021).
+Local projections and VARs estimate the same impulse responses.
+\emph{Econometrica} 89(2), 955--980.
+
+\bibitem{Read2022}
+Read, M. (2022).
+Algorithms for inference in SVARs identified with sign and zero restrictions.
+\emph{The Econometrics Journal} 25(3), 699--718.
+
+\bibitem{RubioRamirezWaggonerZha2010}
+Rubio-Ramirez, J.~F., D.~F. Waggoner, and T. Zha (2010).
+Structural vector autoregressions: Theory of identification and algorithms for
+inference.
+\emph{Review of Economic Studies} 77(2), 665--696.
+
+\end{thebibliography}
+
+\end{document}

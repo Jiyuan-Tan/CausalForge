@@ -1,0 +1,500 @@
+{
+  "qid": "stat_discrete_ate_minimax_loggap",
+  "specialization": "polynomial_upper_match",
+  "status": "needs-new-infrastructure",
+  "target_subdir": "CausalSmith/Stat/STAT_DiscreteAteMinimaxLoggap_Research",
+  "decisions": {
+    "paper_scoped": "state.theorems absent/empty -> the paper-scoped preamble is inert; no theorem_local_id manifest is emitted and no `local_id` is set on statement nodes.",
+    "oeq_residual_absent_from_core": "design_decisions.d0_open_oeq_residuals names oeq:overlap-adaptive-hybrid as the note's acknowledged open problem, but the typed core carries NO node with that id and no `openendedquestion`-kind statement. The core instead records the residual inside thm:overlap-adaptive-universal-hybrid clause (v) ('these conclusions do NOT assert a matching lower envelope for triangular arrays epsilon = epsilon_n'), which is a negative scope clause of a proved theorem, not a separate node. Decision: map exactly the 23 nodes in coreNodeIds; do NOT invent an oeq node. Clause (v) is realized inside T_OverlapAdaptiveUniversalHybrid.lean as a scope docstring plus the pointwise-in-epsilon quantifier structure of clauses (i)-(iv) (the constants C_eps, rho_eps, N_eps are bound AFTER a fixed epsilon), never as a Prop asserting the open triangular-array question.",
+    "cited_lower_bound_is_a_gate": "lem:zeng-one-arm-minimax-lower carries status:'cited' with a source.{cite,locator} block. Per the gate-class-is-fixed-by-D0-provenance rule this is unconditionally gate:true / gate_class:'cited' / lean_kind:'assumption', regardless of it being the ENGINE of the paper's converse. It is minted as cite:zeng-balakrishnan-han-kennedy-2024, encoded as a named Prop, and threaded into its single consumer lem:ate-lower-bound-transfer. The delivered headline thm:sharp-minimax-fixed-interior is therefore honestly CONDITIONAL on that cited one-arm minimax interface. Its proof is NEVER reconstructed as sub-lemmas.",
+    "gate_consumer_in_scope": "lem:ate-lower-bound-transfer, thm:sharp-minimax-fixed-interior and thm:overlap-adaptive-universal-hybrid have NO un-gated open content of their own once the cited one-arm converse is gated: the transfer is a two-line restriction argument (mu_{0k}=0 => tau = psi_1 on the control-zero subclass), and the theorems are assemblies. Per the gate-consumer rule all three stay defer_tier:false and are PROVED CONDITIONAL on the gate. Deferring them would strand the paper's own result behind an external citation.",
+    "light_cell_is_crux_build_inline": "lem:light-cell-polynomial is the paper's OWN novel content (the exact A=6 Chebyshev cone certificate + fixed-multinomial factorial-moment normalization). It is large in LINE COUNT but contains no open math and no infeasible formalization: every technique is elementary and present as Mathlib primitives (Polynomial.Chebyshev.T, Nat.descFactorial, finite multinomial counting) or Causalean primitives (Concentration.hoeffding_ge/bernstein_ge). Per 'default to crux for the paper's OWN content' and 'a piece whose technique exists is build-inline, not Defer', it is defer_tier:false / defer_tag:'crux', SPLIT ACROSS FOUR Helpers files by subsystem (ChebyshevCertificate / FactorialMoments / PilotSandwich / LightCell) rather than deferred. Tagging it a gate would be laundering; deferring it would drop the whole note.",
+    "witness_prop_hyps_are_conclusions": "prop:two-category-confounding depends_on ass:consistency / ass:conditional-exchangeability / ass:overlap, but in the NOTE these three atoms are CONCLUSIONS the proposition verifies of the constructed witness law, not antecedents. P4 requires every assumption in depends_on to surface in hyps, so they are listed there for dependency coverage. F2 MUST realize them as CONCLUSION conjuncts instantiated at twoCategoryWitness (Consistency witnessLaw AND ConditionalExchangeability witnessLaw AND Overlap witnessLaw eps AND tau = 1/2 AND naive contrast = eps); threading them as antecedents would make the first three conjuncts vacuous. See the node's notes.",
+    "iid_world_is_finite_product_with_infinite_ambient_view": "*** ROUND-2 CORRECTION (FLAG-IIDSample-world), the world decision that moved. *** The prior plan asserted that S1 'exposes an IIDSample view of the product law'. That is FALSE as stated: Causalean.Stat.IIDSample (Stat/Sample.lean:42-48) is a structure over an AMBIENT measure `μ : Measure Ω` carrying an ℕ-INDEXED process `Z : ℕ → Ω → X` with `iIndepFun Z μ`; the finite coordinate process of `Measure.pi (fun _ : Fin n => P)` is Fin n-indexed and cannot itself be an IIDSample. Causalean.Stat.Sample.PiTransport goes only the OTHER way (iidSample_finN_pushforward : μ.map (fun ω k => S.Z k ω) = Measure.pi (fun _ : Fin n => P), i.e. it transports an ALREADY-GIVEN IIDSample to a finite product); it does not supply the missing finite-to-infinite view. RESOLUTION (the second branch the correction offers): the CANONICAL n-sample law for every STATEMENT stays the finite product Measure.pi (fun _ : Fin n => P) (estimators are measurable functions of Fin n → Obs and the minimax inf/sup is taken there -- unchanged), and S1 ADDITIONALLY carries an EXPLICIT infinite i.i.d. ambient product world Omega_inf = (ℕ → Obs), mu_inf = MeasureTheory.Measure.infinitePi (fun _ : ℕ => P), whose coordinate process Z i omega = omega i IS a genuine IIDSample; iidSample_finN_pushforward then transports its first n coordinates onto Measure.pi (fun _ : Fin n => P), so IIDSample-typed Causalean declarations (Concentration.hoeffding_ge/bernstein_ge, IIDSample.map_tuple_eq/integral_comp_eq) apply on Omega_inf and their conclusions are pulled back to the finite product law. VERIFIED, NOT CONJECTURED: the canonical coordinate sample `iidOfInfinitePi : IIDSample (ℕ → X) X (Measure.infinitePi (fun _ : ℕ => P)) P` was COMPILED 0-sorry against this repo's pinned Mathlib (Z := fun i ω => ω i; meas := measurable_pi_apply; indep := ProbabilityTheory.iIndepFun_infinitePi (fun _ => measurable_id); identDist and law := MeasureTheory.Measure.infinitePi_map_eval), and all four cited decls (Measure.infinitePi, iIndepFun_infinitePi, infinitePi_map_eval, Causalean.Stat.iidSample_finN_pushforward) type-check as used. The bridge is a ~10-line def plus a transport lemma in Basic.lean, build-inline for ARBITRARY P -- it is NOT an assumption on P and adds NO hypothesis to any statement. Affected nodes patched in this round: env S1, ass:iid-sampling, lem:pilot-sandwich, lem:light-cell-polynomial, lem:universal-heavy-cell-rate, lem:near-randomization-linear-upper (the four IIDSample-consuming statements), plus infrastructure_needed I-3 and feasibility_notes. NOT affected: lem:one-category-bernoulli-lower and the whole Minimax two-point layer (Causalean.Stat.iid_two_point_lower_bound / pinskerBound_pi_iid are stated DIRECTLY over Measure.pi (fun _ : Fin n => P) -- verified at Stat/Minimax/MinimaxRisk.lean:78-86 -- so they need no ambient world at all); def:minimax-risk, S3 and the estimator layer S4 (all already stated on Fin n → Obs).",
+    "no_assumption_discharged": "All four ass: nodes (iid-sampling, overlap, consistency, conditional-exchangeability) are MODELING assumptions (restrictions on the data law / design), not substrate facts. None is discharged and none is escalated: each is one threaded Prop def, consumed inline (iid-sampling) or bundled (overlap, via def:experiment-class).",
+    "d0_consistency_heals": "design_decisions.d0_consistency_heals='1' is recorded; it forces no plan change (ass:consistency remains a modeling Prop used only by prop:two-category-confounding, matching the core's used_by)."
+  },
+  "env": [
+    {
+      "id": "S1",
+      "world": "Finite-alphabet i.i.d. observational world, in TWO explicitly bridged views. (a) CANONICAL / statement view: one observed unit is O = (X, A, Y) : Fin d x Bool x Bool; the single-observation law P is a probability Measure (built from a PMF) on that finite type with ARBITRARY cell masses; the n-sample law is the finite i.i.d. product Measure.pi (fun _ : Fin n => P), and every statement, estimator (a measurable Fin n -> Obs -> R) and the minimax inf/sup live HERE. (b) AMBIENT view, used only to import IIDSample-typed Causalean declarations: the infinite i.i.d. product Omega_inf = (ℕ -> Obs) with mu_inf = MeasureTheory.Measure.infinitePi (fun _ : ℕ => P), whose coordinate process Z i omega = omega i is a genuine Causalean.Stat.IIDSample (ℕ -> Obs) Obs mu_inf P. BRIDGE (both directions available, in scope, for arbitrary P): Causalean.Stat.iidSample_finN_pushforward pushes mu_inf forward along the first-n-coordinates map onto Measure.pi (fun _ : Fin n => P), so any event/integral of the first n coordinates has equal mass in the two views. Primitives p_k = P(X=k), pi_k = P(A=1|X=k), mu_{ak} = E[Y|A=a,X=k], q_{aky} = P(X=k,A=a,Y=y) and the four-cell vector q_k are DERIVED real-valued readouts of the single-observation law P (finite sums over atoms), not independent fields. Scalars epsilon in (0,1/2], c in (0,inf) are plain reals.",
+      "binds_symbols": [
+        "\\(n\\)",
+        "\\(d\\)",
+        "\\(\\epsilon\\)",
+        "\\(c\\)",
+        "\\(k\\)",
+        "\\(O_i\\)",
+        "\\(X\\)",
+        "\\(A\\)",
+        "\\(Y\\)",
+        "\\(P\\)",
+        "\\(p_k\\)",
+        "\\(\\pi_k\\)",
+        "\\(\\mu_{ak}\\)",
+        "\\(q_{aky}\\)",
+        "\\(q_k\\)"
+      ],
+      "binds_sampling_model": true,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic",
+        "Causalean.Estimation.MinimaxATE.Model",
+        "Causalean.Stat.Sample",
+        "Causalean.Stat.Sample.PiTransport",
+        "Causalean.Stat.Minimax.MinimaxRisk",
+        "Mathlib.Probability.ProductMeasure",
+        "Mathlib.Probability.Independence.InfinitePi"
+      ],
+      "notes": "HIGHEST-LEVERAGE REUSE DECISION, and the closest analogue in the library. Causalean.Estimation.MinimaxATE.Model realizes ALMOST exactly this world: Obs C = C x Bool x Bool over a Fintype C, binary treatment and binary outcome, obsReal/obsPMF/obsLaw the single-observation law, productLaw = Measure.pi over Fin n, nMSE the n-sample MSE, minimaxMiss the sup-over-class miss, plus the Chebyshev/Markov bridge nMiss_sq_le_nMSE. BLOCKING MISMATCH (verified by reading Causalean/Estimation/MinimaxATE/Model.lean lines 87-89 and 137-138): obsReal HARDCODES a UNIFORM covariate marginal (Fintype.card C)^{-1}, and `ate g` averages with the same uniform weights. This note's entire d^2/(n^2 log^2 n) rate is driven by ARBITRARY, in particular rare, cell masses p_k, so the uniform-P_X model is a strictly different (and for this result degenerate) world -> NOT a verbatim reuse; define-local a p_k-parameterized law in Basic.lean, keeping the Obs/productLaw/nMSE naming and construction pattern one-to-one so F3 can port MinimaxATE proof idioms. *** IIDSample BRIDGE (round-2 correction FLAG-IIDSample-world; see decisions.iid_world_is_finite_product_with_infinite_ambient_view). *** Causalean.Stat.IIDSample is the sampling primitive the concentration engines are typed over (Concentration.hoeffding_ge : (S : IIDSample Omega X mu P) -> ... -> mu.real {omega | eps <= S.sampleMean f n omega - integral f} <= exp(...), verified at Stat/Concentration/TailBounds/Hoeffding.lean:87-91), but it is a structure over an AMBIENT mu carrying an ℕ-INDEXED process Z : ℕ -> Omega -> X with iIndepFun Z mu (Stat/Sample.lean:42-48). The finite coordinate process of Measure.pi (fun _ : Fin n => P) is Fin n-indexed and therefore CANNOT itself be an IIDSample -- the prior plan's claim that this world 'exposes an IIDSample view of the product law' was wrong, and PiTransport does not repair it (iidSample_finN_pushforward CONSUMES an IIDSample to produce the finite product, it does not produce one). The world therefore carries view (b) EXPLICITLY: Basic.lean defines `iidOfInfinitePi (P) : IIDSample (ℕ -> Obs) Obs (Measure.infinitePi (fun _ : ℕ => P)) P` with Z := fun i omega => omega i, meas := measurable_pi_apply, indep := ProbabilityTheory.iIndepFun_infinitePi (fun _ => measurable_id), identDist/law := MeasureTheory.Measure.infinitePi_map_eval -- COMPILED 0-sorry against this repo's pinned Mathlib, so this is a verified ~10-line def, not a conjecture -- together with the transport corollary `finProductLaw_eq_map` : (Measure.infinitePi (fun _ : ℕ => P)).map (fun omega (k : Fin n) => omega k) = Measure.pi (fun _ : Fin n => P), which is Causalean.Stat.iidSample_finN_pushforward APPLIED to iidOfInfinitePi (its Z k omega = omega k reduces definitionally). F3's usage pattern for every IIDSample-typed engine: state the target event as a measurable set E in Set (Fin n -> Obs), apply the engine on Omega_inf, then move the bound across with Causalean.Stat.event_pullback_along_iidSample / Measure.map_apply. This holds for ARBITRARY P (infinitePi needs only IsProbabilityMeasure P, which the PMF construction supplies), so it adds NO hypothesis to any statement and imposes no restriction on the cell masses -- exactly the point of keeping the finite product as the canonical statement world. Search trace for the bridge: loogle 'MeasureTheory.Measure.infinitePi' and 'ProbabilityTheory.iIndepFun _ (MeasureTheory.Measure.infinitePi _)' -> Measure.infinitePi / infinitePi_map_eval / measurePreserving_eval_infinitePi (Mathlib.Probability.ProductMeasure) and iIndepFun_infinitePi (Mathlib.Probability.Independence.InfinitePi), all four #check-confirmed present in the pinned toolchain; globbed Causalean/**/Sample/**/*.lean -> PiTransport.lean is the ONLY Sample bridge file and carries only the IIDSample -> Measure.pi direction (read in full, 93 lines) -> the finite-to-infinite view is absent from Causalean and is built here. Search trace: read ../doc/API.md sections '## 13sa. Estimation/MinimaxATE/' and '## 12. Stat/' + '### 12a. Stat/Sample.lean'; grepped Causalean/Estimation/MinimaxATE/Model.lean for structure/def/theorem; grepped Causalean for 'alphabet' -> no large-alphabet / arbitrary-discrete-mass observational model found."
+    },
+    {
+      "id": "S2",
+      "world": "Potential-outcome overlay on S1: binary potential outcomes Y(0), Y(1) : Omega -> Bool on the same finite probability space as (X, A, Y), with consistency (Y = Y(A) a.s.) and conditional exchangeability ((Y(0),Y(1)) indep A | X). Used only by the witness cluster; the estimation/minimax cluster is stated on the observed-data law alone.",
+      "binds_symbols": [
+        "\\(Y(a)\\)"
+      ],
+      "binds_sampling_model": false,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic",
+        "Causalean.PO.Core.System",
+        "Causalean.PO.Assumptions.Consistency"
+      ],
+      "notes": "Causalean.PO (POSystem, PO.Assumptions.Consistency, PO.Assumptions.IndepCF) is the framework analogue but is regime/graph-indexed over general measurable outcome spaces -- far heavier than the two-point binary overlay needed here, where def:two-category-witness supplies its OWN explicit full-data coupling ((Y(0),Y(1)) = (0, 1{X=1}), then A | X=k ~ Bernoulli(pi_k)) and prop:two-category-confounding VERIFIES consistency/exchangeability on it directly. Define-local over Mathlib with naming aligned to Causalean.PO. Search trace: read ../doc/API.md '## 8h. PO/' index (PO/Core/Regime, PO/Core/System, PO/Assumptions/Consistency, PO/Assumptions/IndepCF, PO/ID/Exact/ATE); no finite-alphabet binary PO overlay to reuse verbatim -> not found."
+    },
+    {
+      "id": "S3",
+      "world": "Functional / experiment-class / risk layer over S1: the overlap-restricted four-cell cone C_eps as a Set of four-vectors, the homogeneous cell contribution phi, the ATE functional tau(P) = sum_k phi(q_k), the experiment class E_{n,d,eps} of overlap-satisfying product laws, and the minimax risk R_{n,d,eps} = inf over measurable estimators of the sup-over-class MSE.",
+      "binds_symbols": [
+        "\\(\\mathcal C_\\epsilon\\)",
+        "\\(\\phi\\)",
+        "\\(\\tau(P)\\)",
+        "\\(\\mathcal E_{n,d,\\epsilon}\\)",
+        "\\(\\mathsf R_{n,d,\\epsilon}\\)"
+      ],
+      "binds_sampling_model": false,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic",
+        "Causalean.Estimation.MinimaxATE.Model",
+        "Causalean.Stat.Minimax.MinimaxRisk"
+      ],
+      "notes": "The risk shape (inf over measurable estimators of sup over a class of the n-sample MSE) is exactly Causalean.Estimation.MinimaxATE.Model's minimaxMiss/nMSE pattern, but over the p_k-parameterized class of S1 rather than the uniform-P_X structure-agnostic class, and in MSE (not miss-probability) form -> define-local, importing nMiss_sq_le_nMSE's Markov-bridge idiom. Search trace: grepped ../doc/API.md for 'Minimax' -> Stat/Minimax/{TotalVariation,LeCam,Pinsker,Scheffe,ChiSquared,ChiSquaredFinite,MinimaxRisk,Fano,Assouad,Mixture} and Estimation/MinimaxATE; Stat/Minimax/MinimaxRisk.lean supplies the two-point REDUCTIONS (reused by lem:one-category-bernoulli-lower) but carries no packaged inf-sup minimax-risk DEFINITION over a law class -> the risk def is not found and is build-inline."
+    },
+    {
+      "id": "S4",
+      "world": "Estimator layer over S1: the balanced deterministic split I_0 = {1..floor(n/2)}, I_1 = the rest; split cell counts N^{(j)}_{aky}; four-cell exponent multi-indices r in N_0^4 with |r| = sum r_{ay}; the falling factorial z_r; the pilot-certified heavy/light partition (Hhat_n, Lhat_n); the light-cell factorial-moment polynomial contribution That_L; and the truncated hybrid tauhat_n^hyb.",
+      "binds_symbols": [
+        "\\(I_0,I_1\\)",
+        "\\(N^{(j)}_{aky}\\)",
+        "\\(r=(r_{ay})_{a,y\\in\\{0,1\\}}\\)",
+        "\\(z_r\\)",
+        "\\(\\widehat{\\mathcal H}_n,\\widehat{\\mathcal L}_n\\)",
+        "\\(\\widehat T_{\\mathcal L}\\)",
+        "\\(\\widehat\\tau_n^{\\mathrm{hyb}}\\)"
+      ],
+      "binds_sampling_model": false,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.Estimator",
+        "Causalean.Stat.UStatistic.OrderM.Basic",
+        "Causalean.Stat.SampleSplit"
+      ],
+      "notes": "z_r is Mathlib's Nat.descFactorial (z_r = z.descFactorial r, with z_0 = 1 definitional) -- REUSED, not redefined; Causalean.Stat.injectiveTupleCount_eq_descFactorial (Stat/UStatistic/OrderM/Basic.lean) is the exact combinatorial bridge 'ordered injective tuple count = falling factorial' that the note's eq (9) unbiasedness E[U_{k,r}] = q_k^r rests on, and is reused as the counting engine in Helpers/FactorialMoments.lean. Causalean.Stat.SampleSplit / OneShotSplit is the analogue for the two-fold split but is a RANDOM cross-fitting split over a growing index family; the note fixes a DETERMINISTIC balanced split I_0/I_1 of Fin n, so the split itself is a two-line Finset definition -> build-inline. Search trace: grepped ../doc/API.md for 'descFactorial|fallingFactorial' -> Stat/UStatistic/OrderM/Basic.lean only; grepped ../doc/API.md and Causalean/ for 'factorial moment' -> not found (no factorial-moment unbiased-lift estimator layer exists); grepped Causalean for 'Chebyshev' (case-insensitive) -> all 15 hits are Chebyshev's INEQUALITY (Experimentation/DesignBased/Chebyshev.lean, Stat/Concentration, Mathlib/InformationTheory/Fano), none is the Chebyshev POLYNOMIAL; Mathlib's Polynomial.Chebyshev.T (Mathlib.RingTheory.Polynomial.Chebyshev, confirmed via loogle with T_one/T_mul/T_natAbs) is the reused primitive for T_M."
+    }
+  ],
+  "nodes": {
+    "ass:iid-sampling": {
+      "lean_kind": "assumption",
+      "lean_name": "IidSampling",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic",
+        "Causalean.Stat.Sample",
+        "Causalean.Stat.Sample.PiTransport",
+        "Mathlib.Probability.ProductMeasure"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "classification": "modeling-assumption",
+      "notes": "MODELING ASSUMPTION (sampling design): O_1,...,O_n iid ~ P. *** PATCHED IN ROUND 2 (FLAG-IIDSample-world). *** The Prop is realized SOLELY as the n-sample law being the finite product Measure.pi (fun _ : Fin n => P) -- i.e. `IidSampling n P (mu_n) : Prop := mu_n = Measure.pi (fun _ : Fin n => P)`, or equivalently discharged by construction where the n-sample law is defined as that product. The prior wording bundled 'together with an IIDSample view of the coordinate process' into this atom; that conjunct is REMOVED, because (i) it is false as stated for the Fin n-indexed finite coordinate process (Causalean.Stat.IIDSample is ℕ-indexed over an ambient measure, Stat/Sample.lean:42-48), and (ii) an IIDSample view is NOT part of what the note assumes -- it is a proof-side convenience. One named Prop, threaded inline into the seven consumers in the core's used_by, unchanged. Never discharged, never escalated (the author declared it an assumption). HOW THE CONCENTRATION ENGINES STILL APPLY: not by this Prop, but by the S1 world's separately-built ambient bridge (`iidOfInfinitePi` : IIDSample (ℕ -> Obs) Obs (Measure.infinitePi (fun _ : ℕ => P)) P, plus Causalean.Stat.iidSample_finN_pushforward transporting its first n coordinates onto Measure.pi (fun _ : Fin n => P)) -- available for arbitrary P, adding no hypothesis here. See decisions.iid_world_is_finite_product_with_infinite_ambient_view and the S1 notes. Search trace: read ../doc/API.md '### 12a. Stat/Sample.lean' and Causalean/Stat/Sample.lean:42-67 in full -> IIDSample (Z : ℕ -> Omega -> X, iIndepFun + IdentDistrib + law-match) is a STRUCTURE over an ambient measure, not a Prop over a finite product law; read Causalean/Stat/Sample/PiTransport.lean in full (93 lines) -> only the IIDSample -> Measure.pi direction. The Prop packaging is one line, build-inline."
+    },
+    "ass:overlap": {
+      "lean_kind": "assumption",
+      "lean_name": "Overlap",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "classification": "modeling-assumption",
+      "notes": "MODELING ASSUMPTION (identification / design restriction on P): eps <= pi_k <= 1 - eps for every k with p_k > 0. One named Prop on the S1 law; it is the SOLE member of the class def:experiment-class and also enters def:overlap-cone / def:cell-functional as a construction input. Shared atom -> still exactly one def; the class membership and the inline construction-input uses are captured by those references. Never discharged. Search trace: grepped Causalean/Estimation/ATE for 'overlap|Overlap' -> Setup/PlugIn/Remainder/Score hits, all the CONTINUOUS AIPW/DML backdoor nuisance world (a bounded-propensity regularity condition inside a DML setup), not a finite-alphabet two-sided propensity band; read ../doc/API.md '## 9a. SCM/ID/Overlap.lean' -> a Rule-2/backdoor GRAPHICAL overlap predicate over an SCM, wrong abstraction. Not found at this abstraction -> build-inline (one inequality Prop)."
+    },
+    "ass:consistency": {
+      "lean_kind": "assumption",
+      "lean_name": "Consistency",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic",
+        "Causalean.PO.Assumptions.Consistency"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "classification": "modeling-assumption",
+      "notes": "MODELING ASSUMPTION (causal link): Y = Y(A) a.s. on the S2 overlay. One named Prop; used only by prop:two-category-confounding (per the core's used_by), where it appears as a CONCLUSION verified of the witness law. Causalean.PO.Assumptions.Consistency is the framework analogue but is regime-indexed over general PO systems; the binary two-point overlay here is a one-line a.s. equality -> build-inline with aligned naming. Search trace: read ../doc/API.md '### PO/Assumptions/Consistency.lean' and '### PO/Assumptions/ConsistencyLemmas.lean' -> regime/POVar-indexed, not a finite binary overlay -> not reusable verbatim."
+    },
+    "ass:conditional-exchangeability": {
+      "lean_kind": "assumption",
+      "lean_name": "ConditionalExchangeability",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic",
+        "Causalean.PO.Assumptions.IndepCF"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "classification": "modeling-assumption",
+      "notes": "MODELING ASSUMPTION (causal identification): (Y(0), Y(1)) indep A | X on the S2 overlay. One named Prop; used only by prop:two-category-confounding, where it too is a CONCLUSION verified of the witness. Causalean.PO.Assumptions.IndepCF (independence of PO counterfactual bundles) is the analogue but is bundle/regime-indexed over general spaces; on the finite alphabet the conditional independence is a finite product identity of atom masses -> build-inline. Search trace: read ../doc/API.md '### PO/Assumptions/IndepCF.lean' + '## 10c. Mathlib/CondIndep.lean' + '## 10d. Mathlib/Indep.lean' -> CondIndepFun plumbing over general measurable spaces; no finite-alphabet conditional-exchangeability Prop -> not found at this abstraction."
+    },
+    "def:experiment-class": {
+      "lean_kind": "structure",
+      "lean_name": "ExperimentClass",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic",
+        "Causalean.Estimation.MinimaxATE.Model"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "members": [
+        "ass:iid-sampling",
+        "ass:overlap"
+      ],
+      "notes": "REDIRECT-SYNC. The experiment class is a relation over (n, d, epsilon, P, mu_n). Its fields enforce 0 < epsilon, epsilon <= 1/2, IidSampling P mu_n (definitionally mu_n = productLaw P n), and Overlap epsilon P. Thus membership is membership of the product law, not merely overlap of a supplied base law; consumers use this bundle instead of a duplicate IidSampling premise. Architectural analogue: Causalean.Estimation.MinimaxATE.InClass / ValidDGP has the same Prop-bundle shape but different uniform-covariate content."
+    },
+    "def:overlap-cone": {
+      "lean_kind": "def",
+      "lean_name": "overlapCone",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "CONSTRUCTION: C_eps = {u : Fin 2 x Fin 2 -> R (equivalently a four-tuple indexed by (A,Y)) | 0 <= u AND eps * s(u) <= s_1(u) <= (1-eps) * s(u)}, where s_a(u) = u_{a0}+u_{a1} and s(u) = s_0(u)+s_1(u). A plain Set of four-vectors. Inputs per the core: eps and ass:overlap (the cone is the pointwise image of the overlap band on a single cell's four masses). Search trace: grepped ../doc/API.md for 'cone|Cone' and Causalean/ for 'overlap' -> only SCM/ID/Overlap.lean (graphical Rule-2 predicate) and Estimation/ATE (DML propensity regularity); no four-cell overlap-restricted cone -> not found; three-line Set definition, build-inline."
+    },
+    "def:cell-functional": {
+      "lean_kind": "def",
+      "lean_name": "cellPhiOnCone",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "CONSTRUCTION: phi(u) = s(u) * (u_{11}/s_1(u) - u_{01}/s_0(u)) for u in C_eps, u != 0, and phi(0) = 0. The paper-facing `cellPhiOnCone` has the exact subtype domain `overlapCone epsilon`; it restricts the internal total arithmetic helper `cellPhi`, whose junk-value division (x/0 = 0) and explicit origin guard implement the displayed formula. Inputs per the core: C_eps, q_k, ass:overlap (overlap is what makes s_0, s_1 > 0 off the origin, hence the ratios meaningful). Search trace: grepped Causalean/ for 'cellPhi|four-cell|cell functional' and read ../doc/API.md '## 13. Estimation/ATE/' -> Causalean's ATE functional (Estimation.MinimaxATE.ate, Estimation/ATE/Setup) is the uniform-weight / continuous-nuisance form, not a homogeneous four-cell ratio contribution -> not found; build-inline."
+    },
+    "def:ate-functional": {
+      "lean_kind": "def",
+      "lean_name": "ateFunctional",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic",
+        "Causalean.Estimation.MinimaxATE.Model"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "CONSTRUCTION: tau(P) = sum_{k : Fin d} p_k * (mu_{1k} - mu_{0k}) = sum_{k : Fin d} phi(q_k). BOTH forms are defined (the phi-form is the definition; the p_k(mu_{1k}-mu_{0k}) form is an immediately-proved algebraic identity used by prop:two-category-confounding and lem:near-randomization-linear-upper). Inputs per the core: p_k, mu_{ak}, phi, q_k, ass:consistency, ass:conditional-exchangeability, ass:overlap (the causal reading tau = E[Y(1)-Y(0)] is what those three atoms underwrite; the observed-data functional itself is unconditional). Analogue Causalean.Estimation.MinimaxATE.ate = (card C)^{-1} * sum_x (g true x - g false x) -- the SAME g-contrast shape but with uniform weights (card C)^{-1} in place of the note's arbitrary p_k -> cannot be reused; define-local following its naming. Search trace: read Causalean/Estimation/MinimaxATE/Model.lean lines 137-143 (ate, l2sq) and ../doc/API.md '## 13. Estimation/ATE/' (Setup/PlugIn/InfluenceFunction, continuous backdoor AIPW) -> no arbitrary-discrete-mass ATE functional."
+    },
+    "def:hybrid-estimator-handle": {
+      "lean_kind": "def",
+      "lean_name": "hybridEstimator",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.Estimator",
+        "Causalean.Stat.UStatistic.OrderM.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "CONSTRUCTION, the note's central object and the largest def. Own file (Helpers/Estimator.lean, projected ~450 lines). Layers: (1) the deterministic balanced split I_0/I_1 of Fin n and the split cell counts N^{(j)}_{aky} (Finset.card of an indicator filter); (2) the NUMERICAL calibration A=6, lambda_0=256, b_0=4096, D_A = 8*log(27/4), alpha_0 = min{1, 1/(32 log 6), 1/(256 D_A)}, L = log(e*n), M(n) = max{2, floor(alpha_0 L)}, B(n) = b_0 L / m_1, and N_0 the least cutoff satisfying the three stated inequalities (realized as a Nat.find over the decidable-in-principle conjunction, or an explicit numeral discharged once -- F2 chooses; either way it is n-uniform and eps-FREE, which is the content of thm:overlap-adaptive-universal-hybrid clause (i)); (3) H_M(x) = (1 - T_M(1-2x))/(2M^2), E_M = H_M/x, G_M = (1-E_M)/x via the note's eq (2) CLOSED FORM (the explicit alternating binomial series), NOT via a division-with-continuation, so the polynomial continuation at 0 is definitional rather than a removable-singularity obligation; (4) P_{M,B}(u) and its four-cell monomial coefficients c_r; (5) Phat_k, hhat_k, That_H, That_L, and tauhat^hyb = max(-1, min(1, That_H + That_L)); the n < N_0 branch sets Lhat_n = empty. REUSED PRIMITIVES: Mathlib Polynomial.Chebyshev.T (Mathlib.RingTheory.Polynomial.Chebyshev) for T_M; Mathlib Nat.descFactorial for z_r; Causalean.Stat.injectiveTupleCount_eq_descFactorial for the ordered-selection count. Search trace: grepped Causalean/ for 'Chebyshev' (case-insensitive, 15 files) -> every hit is Chebyshev's INEQUALITY; grepped ../doc/API.md for 'bestApprox|polynomial approximation|factorial moment|alphabet' -> not found; the closest large-alphabet architecture (Jiao-Venkat-Han-Weissman / Wu-Yang best-polynomial-approximation with factorial-moment lifting, cited in the note's related_work) has NO Lean realization in Causalean or Mathlib. Build-inline."
+    },
+    "def:minimax-risk": {
+      "lean_kind": "def",
+      "lean_name": "minimaxRisk",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic",
+        "Causalean.Estimation.MinimaxATE.Model"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "CONSTRUCTION: R_{n,d,eps} = iInf over measurable estimators tauhat : (Fin n -> Obs) -> R of the iSup over {P in E_{n,d,eps}} of the n-sample MSE E_P[(tauhat - tau(P))^2]. Follows Causalean.Estimation.MinimaxATE.Model's minimaxMiss idiom (a ciSup over an in-class subtype, with the BddAbove side-lemma proved from the [0,1]-boundedness of the estimand and the [-1,1] truncation of any competitor -- the note's tau(P) in [-1,1] makes the sup finite, mirroring bddAbove_nMiss_range) but in MSE rather than miss-probability form and over the p_k-parameterized class. Inputs per the core: E_{n,d,eps}, tau(P). Search trace: read ../doc/API.md '#### 12w.6. Stat/Minimax/MinimaxRisk.lean' -> it packages the two-point REDUCTIONS (real_two_point_lower_bound, iid_two_point_lower_bound), NOT an inf-sup risk definition; read Causalean/Estimation/MinimaxATE/Model.lean lines 172-231 -> minimaxMiss is the sup half only, over the uniform-P_X structure-agnostic class. Not found -> build-inline."
+    },
+    "def:two-category-witness": {
+      "lean_kind": "def",
+      "lean_name": "twoCategoryWitness",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "CONSTRUCTION: the explicit d=2 full-data law -- p_1=p_2=1/2, pi_1=eps, pi_2=1-eps, mu_{01}=mu_{02}=0, mu_{11}=1, mu_{12}=0, with the full-data extension (Y(0),Y(1)) = (0, 1{X=1}) drawn first, then A | X=k ~ Bernoulli(pi_k), then Y := Y(A). A finite PMF on Fin 2 x Bool x Bool x Bool (the last coordinate carrying Y(1); Y(0) is identically 0 and Y is determined). Inputs per the core: eps, p_k, pi_k, mu_{ak}, X, A, Y(a). Search trace: grepped Causalean/Estimation/MinimaxATE for the explicit witness cluster -> Causal/Construction.lean + Reduction/ExplicitWitness exist but construct a Rademacher-bump structure-agnostic two-point pair over a uniform covariate, an entirely different construction; not a confounding witness -> not found; ~40-line explicit PMF, build-inline."
+    },
+    "prop:two-category-confounding": {
+      "lean_kind": "theorem",
+      "lean_name": "two_category_confounding",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.T_TwoCategoryConfounding"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_TwoCategoryConfounding.lean",
+      "hyps": [
+        "ass:consistency",
+        "ass:conditional-exchangeability",
+        "ass:overlap"
+      ],
+      "notes": "CERTIFIED WITNESS (build-inline; a core `proposition` node maps to lean_kind 'theorem' -- there is no 'proposition' lean_kind). *** CRITICAL ENCODING NOTE FOR F2 ***: the three assumption atoms listed in `hyps` are CONCLUSIONS in the note, not antecedents. They appear here ONLY because P4 requires every assumption in depends_on to be covered by hyps. The Lean statement MUST be, for 0 < eps <= 1/2: `Consistency (twoCategoryWitness eps) AND ConditionalExchangeability (twoCategoryWitness eps) AND Overlap 2 eps (obsLaw (twoCategoryWitness eps)) AND ateFunctional (twoCategoryWitness eps) = 1/2 AND naiveContrast (twoCategoryWitness eps) = eps` -- i.e. each atom INSTANTIATED at the witness in the CONCLUSION. Threading them as antecedents would make the first three conjuncts vacuous and is forbidden. Proof: finite atom-mass arithmetic on the explicit PMF (Y(0)=0 and Y(1)=1{X=1} are deterministic functions of X so the PO bundle is X-measurable, giving exchangeability; Y = Y(A) by construction; pi in {eps, 1-eps} gives overlap; tau = P(X=1) = 1/2; P(A=1)=1/2 and P(A=1,Y=1)=eps/2 give E[Y|A=1]=eps while E[Y|A=0]=0). Pure `Fin`/`Bool` `decide`/`norm_num` + Finset.sum computation; ~150 lines. Its own file: an independent causal-interpretation topic with no shared proof chain with the minimax cluster."
+    },
+    "lem:pilot-sandwich": {
+      "lean_kind": "lemma",
+      "lean_name": "pilot_sandwich",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.PilotSandwich",
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic",
+        "Causalean.Stat.Concentration.TailBounds.Bernstein",
+        "Causalean.Stat.Concentration.TailBounds.Hoeffding",
+        "Causalean.Stat.Sample.PiTransport"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/PilotSandwich.lean",
+      "hyps": [
+        "ass:iid-sampling"
+      ],
+      "notes": "BUILD-INLINE, small/medium (~300 lines, own file: the binomial-tail subsystem, consumed by both LightCell and HeavyCell). Content: two multiplicative binomial tails for N ~ Binomial(m_0, p) -- the upper tail P(N > tL) <= exp(-tL(log 2 - 1/2)) when m_0 p < tL/2 (exponential Markov at exponent log 2) and the lower tail P(N <= tL) <= exp(-m_0 p / 8) <= exp(-tL/4) when m_0 p > 2tL -- then a union bound over at most c n L cells. ENGINE REUSE: Causalean.Stat.Concentration.bernstein_ge / hoeffding_ge (Causalean/Stat/Concentration/TailBounds/{Bernstein,Hoeffding}.lean, namespace Causalean.Stat.Concentration, stated over an IIDSample sample mean of a bounded measurable f) apply to N_k^{(0)}/m_0 = the sample mean of the cell indicator over the first m_0 draws, and Causalean.Stat.Concentration.bounded_hasSubexponentialMGF + HasSubexponentialMGF.measure_ge_le give the sub-exponential Chernoff optimization directly. *** WORLD GAP F3 MUST BRIDGE FIRST (round-2 correction FLAG-IIDSample-world). *** Those engines are typed over `S : IIDSample Omega X mu P` and conclude about the AMBIENT `mu.real {omega | ...}` (verified at Hoeffding.lean:87-91); the finite coordinate process of Measure.pi (fun _ : Fin n => P) is NOT an IIDSample (IIDSample is ℕ-indexed over an ambient measure), so they do NOT apply directly to this node's finite-product statement world. F3 applies them on S1's ambient view instead -- instantiate at `iidOfInfinitePi P : IIDSample (ℕ -> Obs) Obs (Measure.infinitePi (fun _ : ℕ => P)) P` (Basic.lean; verified 0-sorry), note that the pilot count N_k^{(0)} is a function of the first m_0 coordinates ONLY, hence the tail event is the preimage of a measurable E in Set (Fin m_0 -> Obs) under the coordinate map, then pull the bound back to Measure.pi (fun _ : Fin m_0 => P) with Causalean.Stat.iidSample_finN_pushforward / event_pullback_along_iidSample (PiTransport.lean:43,70) and embed Fin m_0 into Fin n along I_0. This is measure-transport plumbing on an available bridge, not new math, and it costs no hypothesis (infinitePi needs only IsProbabilityMeasure P). SECOND GAP F3 MUST BRIDGE: those wrappers deliver ADDITIVE-deviation constants (exp(-n eps^2/(2(2 sigma^2 + c eps)))), whereas the note needs the MULTIPLICATIVE binomial constants (log 2 - 1/2) and 1/8; the note's own proof supplies both exponential-Markov optimizations explicitly, so F3 derives them from the same bounded-MGF core (Concentration.bounded_mgf_le_exp_sq) rather than from the additive wrapper. This is a strictly analogous-module adaptation, not new math. Search trace: globbed Causalean/Stat/Concentration/**/*.lean (38 files: TailBounds/{Hoeffding,Bernstein,McDiarmid,EmpiricalBernstein,Massart,MaximalInequality,SubExponential}, Rademacher/, Covering/, Matrix/, UniformDeviation/) and grepped Causalean/ for 'binomial|Binomial' (case-insensitive) -> 8 files, ALL binomial-COEFFICIENT algebra (Vandermonde, VCCovering's sum_choose bound, U-statistic counting), NONE a Binomial-DISTRIBUTION tail; no multiplicative Chernoff for a binomial count exists -> build-inline. depends_on is exactly [ass:iid-sampling]."
+    },
+    "lem:light-cell-polynomial": {
+      "lean_kind": "lemma",
+      "lean_name": "light_cell_polynomial",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.LightCell",
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.ChebyshevCertificate",
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.FactorialMoments",
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.PilotSandwich",
+        "Causalean.Stat.UStatistic.OrderM.Basic"
+      ],
+      "defer_tier": false,
+      "defer_tag": "crux",
+      "gate": false,
+      "target_file": "Helpers/LightCell.lean",
+      "hyps": [
+        "def:experiment-class"
+      ],
+      "notes": "CRUX (build, never assume, never gate). The paper's OWN novel kernel and by far the largest node -- LAID OUT FROM THE START as a three-file dependency chain plus the shared PilotSandwich file, none exceeding ~600 projected lines: (a) Helpers/ChebyshevCertificate.lean (~550) = eqs (1)-(7), the shifted-Chebyshev expansion T_M(1-2x) = 1 + sum_j (-1)^j (M/(M+j)) C(M+j, 2j) 4^j x^j, the G_M closed form (2), the uniform bound x|1 - x G_M(x)| = H_M(x) <= M^{-2} on [0,1] from |T_M(1-2x)| <= 1, the cone approximation bound (4) |P_{M,B}(u) - phi(u)| <= 2B/(eps M^2), the reflected series G_M^+(z) = G_M(-z) with nonnegative coefficients (5), the coefficientwise domination (6) of the absolute-coefficient envelope, and the A=6 numerical certificate (7) via T_M(t) = ((t+sqrt(t^2-1))^M + (t-sqrt(t^2-1))^M)/2 for t >= 1 giving G_M^+(1) <= T_M(3) <= 6^M; (b) Helpers/FactorialMoments.lean (~550) = eqs (8)-(16), the normalized falling-factorial monomial U_{k,r}, unbiasedness E[U_{k,r}] = q_k^r (9) by ordered-selection counting, the falling-factorial product identity (10), the ratio bound (11), the within-cell product bound (12), the exact cross-cell identity (13) and its ratio deviation (14), and the covariance bounds (16); (c) Helpers/LightCell.lean (~500) = eqs (17)-(25), the variance aggregation (17), the rate algebra (18) with kappa = 2 alpha_0 log 6 <= 1/16, the bias step (19), the false-light control (20)-(24) via lem:pilot-sandwich, and the conditioning-on-the-pilot assembly (25). REUSED: Mathlib Polynomial.Chebyshev.T + Nat.descFactorial + Nat.choose algebra; Causalean.Stat.injectiveTupleCount_eq_descFactorial / injectiveTuples_card_eq_descFactorial (Stat/UStatistic/OrderM/Basic.lean) is the exact ordered-injective-tuple <-> falling-factorial counting bridge underneath eq (9), and Causalean.Stat.IIDSample.map_tuple_eq (Stat/UStatistic/OrderM/Variance.lean, 'the joint law of an injectively indexed order-m sample tuple is P^m') is the analogous-module transport F3 should adapt for the fixed-multinomial moment computation -- the technique (unbiased U-statistic lifts over injective tuples) is fully present in Causalean, only specialized to a different kernel. *** WORLD NOTE (round-2 correction FLAG-IIDSample-world). *** map_tuple_eq is an IIDSample.-namespaced decl, so like the concentration engines it is typed over an ℕ-indexed process on an ambient measure and does NOT apply directly to this node's finite-product statement world (the Fin n coordinate process of Measure.pi is not an IIDSample). F3 reaches it through S1's ambient view: instantiate at `iidOfInfinitePi P` (Basic.lean, verified 0-sorry), where every U_{k,r} is a function of the first m_1 coordinates, and transport with Causalean.Stat.iidSample_finN_pushforward (PiTransport.lean:43). Alternatively -- and F3 should prefer this where it is cheaper -- eqs (9)/(13) are ordered-selection identities for the FIXED multinomial that can be proved directly on Measure.pi (fun _ : Fin m_1 => P) by Finset counting, with no ambient world at all; the note's own proof is a counting argument, not a sample-process argument. Either route is in scope and adds no hypothesis. See decisions.iid_world_is_finite_product_with_infinite_ambient_view. ANALOGOUS MODULE for the covariance normalization: Causalean/Stat/UStatistic/OrderM/{Variance,RemainderSecondMoment}.lean (degenerate-kernel second-moment transport); abstraction gap to bridge = the note works with a FIXED-multinomial (dependent cell counts) rather than an i.i.d. product tuple, so eq (13)'s cross-cell exactness must be re-derived from disjoint label supports. NOT DEFERRED: no open math, no infeasible formalization step, every ingredient is an elementary Mathlib/Causalean primitive; the note's proof_tex supplies every constant. Deferring it would drop both headline theorems. hyps: def:experiment-class bundles ass:overlap; ass:iid-sampling inline. (def:cell-functional and def:hybrid-estimator-handle are constructions -- USED, not assumed -> correctly absent from hyps.)"
+    },
+    "lem:universal-heavy-cell-rate": {
+      "lean_kind": "lemma",
+      "lean_name": "universal_heavy_cell_rate",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.HeavyCell",
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.PilotSandwich"
+      ],
+      "defer_tier": false,
+      "defer_tag": "crux",
+      "gate": false,
+      "target_file": "Helpers/HeavyCell.lean",
+      "hyps": [
+        "def:experiment-class"
+      ],
+      "notes": "CRUX, build-inline; own file (~500 projected lines, an independent proof chain from the light-cell chain -- it shares only lem:pilot-sandwich). Content: conditioning on the pilot event G = {Hhat_n subseteq {p_k >= B_-}} (lem:pilot-sandwich gives P(G^c) <= C n^{-4}); the inverse-binomial mean bound (2) E[1{D>0}/D] <= 2 E[(D+1)^{-1}] = 2(1-(1-rho)^{t+1})/((t+1) rho) <= 2/((t+1) rho); the aggregate outcome-noise variance bound C/(eps m_1); the exact multinomial missing-arm second moments (4) E[C_k^2 1{N_{ak}=0}] and E[C_k C_l 1{N_{ak}=N_{al}=0}]; the Q_a bound (5) with the sup_{u >= c_0 L} L u e^{-c eps u} < infinity decay step; and the off-G bound |That_H| <= 1 from the cell weights summing to at most one. REUSE: Mathlib's Nat.choose / binomial-mean identities for (2) -- the E[(D+1)^{-1}] closed form is a finite-sum identity; Causalean.Stat.Concentration engines as in lem:pilot-sandwich, reached through the SAME ambient-world bridge (round-2 correction FLAG-IIDSample-world): those engines are IIDSample-typed and so are applied at `iidOfInfinitePi P` and pulled back to Measure.pi (fun _ : Fin n => P) via Causalean.Stat.iidSample_finN_pushforward -- see the lem:pilot-sandwich notes and decisions.iid_world_is_finite_product_with_infinite_ambient_view. The node's OWN content (the inverse-binomial mean bound (2), the exact multinomial missing-arm moments (4), the Q_a bound (5)) is finite-sum/multinomial computation stated directly on the finite product law and needs no ambient world. Search trace: grepped ../doc/API.md for 'inverse-binomial|inverse moment' -> '## 12wo. Stat/PolynomialTail/ -- Polynomial lower-tail inverse-moment asymptotics' is the nearest analogue, but it is an ASYMPTOTIC inverse-moment statement for a polynomial lower-tail family, not the exact finite E[1{D>0}/D] binomial identity, and the note needs the exact nonasymptotic constant -> partial fit, NOT reused as a discharge; the exact identity is a two-line Finset.sum computation, build-inline. Analogous-module reference for the missing-arm multinomial moments: Causalean/Stat/UStatistic/OrderM/Variance.lean (exact tuple-law transport). hyps: def:experiment-class bundles ass:overlap; ass:iid-sampling inline; lem:pilot-sandwich and the two defs are USED, not assumed."
+    },
+    "lem:zeng-one-arm-minimax-lower": {
+      "lean_kind": "assumption",
+      "lean_name": "ZengOneArmMinimaxLower",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.LowerBound"
+      ],
+      "defer_tier": true,
+      "gate": true,
+      "gate_class": "cited",
+      "source": "cite:zeng-balakrishnan-han-kennedy-2024",
+      "target_file": "Helpers/LowerBound.lean",
+      "notes": "ROOT-ADJUDICATED REDIRECT-SYNC. The cited gate is the documented fixed-sample control-zero one-arm interface over ControlZeroLaw and oneArmMinimaxRisk. For fixed strict-interior epsilon there are positive a_epsilon,b_epsilon and a cutoff N_epsilon such that, for every n and every positive alphabet size d with n >= N_epsilon and d <= b_epsilon n log n, a_epsilon * minimaxRate n d <= oneArmMinimaxRisk n d epsilon. It does NOT assume worstCaseMSE or minimaxRisk over the unrestricted ATE class. Preserve the D0.5-attested source map rather than demanding a verbatim standalone source theorem: Zeng, Balakrishnan, Han, Kennedy (2026), Theorem 2 and Appendix C.5, with Lemma 4 / Appendix D.2 for fixed-sample transfer."
+    },
+    "lem:ate-lower-bound-transfer": {
+      "lean_kind": "lemma",
+      "lean_name": "ate_lower_bound_transfer",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.LowerBound"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/LowerBound.lean",
+      "hyps": [
+        "lem:zeng-one-arm-minimax-lower"
+      ],
+      "notes": "ROOT-ADJUDICATED REDIRECT-SYNC. The transfer is explicitly conditional on the control-zero hZeng gate and carries the intrinsic 0 < d domain. It proves ateFunctional P = treatedFunctional P law-by-law from mu_0k = 0 on every ControlZeroLaw, compares the control-zero subclass supremum and the common estimator infimum with the unrestricted ATE minimax problem, and only then derives the global minimaxRisk lower bound. hZeng itself contains no unrestricted worstCaseMSE or minimaxRisk premise."
+    },
+    "lem:near-randomization-linear-upper": {
+      "lean_kind": "lemma",
+      "lean_name": "near_randomization_linear_upper",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.Endpoint"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/Endpoint.lean",
+      "hyps": [
+        "def:experiment-class"
+      ],
+      "notes": "BUILD-INLINE, small (~180 lines; shares Helpers/Endpoint.lean with the other two endpoint lemmas, one self-contained near-randomization topic). Defines tauhat_ctr = (2/n) sum_i (2A_i - 1)(Y_i - 1/2) and proves E_P[(tauhat_ctr - tau(P))^2] <= 1/n + 4(1/2 - eps)^2 for EVERY n, d, 0 < eps <= 1/2. Proof: W_i = 2(2A_i-1)(Y_i-1/2) has |W_i| = 1 (Bool case split); the exact conditional-bias identity (2) E[W|X=k] - (mu_{1k} - mu_{0k}) = 2(pi_k - 1/2)(mu_{1k} + mu_{0k} - 1); overlap bounds |pi_k - 1/2| <= 1/2 - eps giving squared bias <= 4(1/2-eps)^2; independence and |W_1| = 1 give Var <= 1/n; bias-variance identity. REUSE: Mathlib Var/integral algebra. *** WORLD NOTE (round-2 correction FLAG-IIDSample-world). *** The prior plan named Causalean.Stat.IIDSample.integral_comp_eq / iIndepFun_comp (Stat/Concentration/TailBounds/Hoeffding.lean:49-58) for the i.i.d. sample-mean variance step; those are IIDSample.-namespaced and hence ℕ-indexed over an ambient measure, so they do NOT apply directly to the Fin n coordinate process of Measure.pi (fun _ : Fin n => P). Two in-scope routes, F3 picks the cheaper: (a) PREFERRED -- prove Var(n^{-1} sum_i W_i) <= 1/n directly on the finite product law from Mathlib's coordinate independence under Measure.pi (the W_i are bounded, |W_i| = 1, so the variance-of-a-sum-of-independent-terms identity applies with no ambient world; this is the note's own two-line argument); (b) instantiate at `iidOfInfinitePi P` (Basic.lean, verified 0-sorry) and pull back with Causalean.Stat.iidSample_finN_pushforward. Route (a) is expected to be shorter here since the whole node is a bias-variance computation. See decisions.iid_world_is_finite_product_with_infinite_ambient_view. Search trace: grepped ../doc/API.md for 'centered estimator|near-randomization|bias-variance' -> not found; elementary, build-inline. hyps: def:experiment-class bundles ass:overlap; ass:iid-sampling inline."
+    },
+    "lem:one-category-bernoulli-lower": {
+      "lean_kind": "lemma",
+      "lean_name": "one_category_bernoulli_lower",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.Endpoint",
+        "Causalean.Stat.Minimax.MinimaxRisk",
+        "Causalean.Stat.Minimax.Pinsker",
+        "Causalean.Stat.Minimax.TotalVariation"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/Endpoint.lean",
+      "hyps": [],
+      "notes": "BUILD-INLINE, small/medium (~250 lines, Helpers/Endpoint.lean). Proves R_{n,d,1/2} >= 1/(100 n) for every n, d via the explicit one-category two-point pair (h = 2/5; both laws put all mass on X=1, A ~ Bernoulli(1/2), Y=0 when A=0, Y|A=1 ~ Bernoulli(1/2 + j h / sqrt n)), separation Delta_n = h/sqrt n, KL(P_0^n || P_1^n) = -(n/4) log(1 - 4h^2/n) <= 4/9, then a Le Cam testing step. HEAVY REUSE (the note re-derives what Causalean already proves): Causalean.Stat.klForm_two_point_lower_bound (Stat/Minimax/Pinsker.lean line 483 -- UNCONDITIONAL: P_0 << P_1 + klDiv P_0 P_1 != top + 2s-separation ==> worst-case error >= (1 - sqrt(KL/2))/2) subsumes the note's hand-rolled log-sum/Pinsker chain (eq 3); Causalean.Stat.pinskerBound_pi_iid (Pinsker.lean line 442) supplies the i.i.d.-product Pinsker; Causalean.Stat.real_two_point_lower_bound and Causalean.Stat.iid_two_point_lower_bound (Stat/Minimax/MinimaxRisk.lean lines 55/78, namespace Causalean.Stat) supply the Theta = R n-sample reduction; the miss-probability -> MSE step is Causalean.Estimation.MinimaxATE.Model.nMiss_sq_le_nMSE's Markov idiom (re-proved on this note's law type since that decl is typed to the uniform-P_X model). WHY NOT A NODE-LEVEL REUSE DISCHARGE: those decls are the ENGINE, not the statement -- the node's own content (the explicit Bernoulli pair, its membership in E_{n,d,1/2}, the KL computation, and the numerical constant 1/100) is new and built here. Search trace: grepped Causalean/Stat/Minimax/*.lean for the exact decl names above -> all confirmed present (namespace Causalean.Stat). hyps: def:experiment-class bundles ass:overlap (at eps=1/2 overlap forces pi_k = 1/2); ass:iid-sampling inline."
+    },
+    "lem:randomized-endpoint-minimax": {
+      "lean_kind": "lemma",
+      "lean_name": "randomized_endpoint_minimax",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.Endpoint"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/Endpoint.lean",
+      "hyps": [],
+      "notes": "BUILD-INLINE, small (~60 lines, Helpers/Endpoint.lean -- the assembly of the endpoint topic). 1/(100 n) <= R_{n,d,1/2} <= 1/n for every n, d: at eps = 1/2 overlap forces pi_k = 1/2 on every positive-mass category, so lem:near-randomization-linear-upper's bound collapses to 1/n and tauhat_ctr witnesses the inf; lem:one-category-bernoulli-lower gives the lower constant. hyps = [] : depends_on = [lem:near-randomization-linear-upper, lem:one-category-bernoulli-lower, def:minimax-risk] contains no assumption and no class -> P4's coverage obligation is vacuous."
+    },
+    "lem:combined-upper-envelope": {
+      "lean_kind": "lemma",
+      "lean_name": "combined_upper_envelope",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.CombinedEnvelope"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/CombinedEnvelope.lean",
+      "hyps": [],
+      "notes": "BUILD-INLINE, small (~150 lines, own small file downstream of T_SharpMinimaxFixedInterior in the dependency chain -- it consumes the theorem, so it cannot sit in Basic/Endpoint). Pure min/max real algebra: with a = 1/n, u = d^2/(n^2 log^2 n), v = (1/2 - eps)^2, the deterministic selection rule attains min{C_eps (a+u), a + 4v} <= K_eps (a + min(u,v)) for K_eps = max{C_eps, 4}. hyps: def:experiment-class (a class in depends_on); thm:sharp-minimax-fixed-interior and lem:near-randomization-linear-upper are lemmas/theorems -> USED, not assumed. depends_on carries no ass: node."
+    },
+    "thm:sharp-minimax-fixed-interior": {
+      "lean_kind": "theorem",
+      "lean_name": "sharp_minimax_fixed_interior",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.T_SharpMinimaxFixedInterior"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_SharpMinimaxFixedInterior.lean",
+      "hyps": [
+        "def:experiment-class"
+      ],
+      "notes": "HEADLINE, build-inline assembly (~300 lines, own file). CONDITIONAL on the cited gate lem:zeng-one-arm-minimax-lower, which reaches it through lem:ate-lower-bound-transfer and MUST be threaded as an explicit hypothesis of this theorem too (so the delivered statement is honestly conditional on the source's one-arm converse -- the lower half is the ONLY gated half; the upper half is fully certified). The intrinsic positive-alphabet domain 0 < d is threaded through the three-sided display, the parametric corollary, and eventually along the sequence corollary. Proof per the note: with r_{n,d} = 1/n + d^2/(n^2 log^2 n), lem:light-cell-polynomial + lem:universal-heavy-cell-rate give the two branch bounds (1) after taking the smaller range constant rho_eps and the larger cutoff N_eps; the pilot sets partition Fin d so sum_{Hhat} phi(q_k) + sum_{Lhat} phi(q_k) = tau(P) (2); (x+y)^2 <= 2x^2 + 2y^2 gives the untruncated MSE <= 4 C_eps r_{n,d}; tau(P) in [-1,1] makes the [-1,1] projection nonexpansive toward tau(P), so tauhat^hyb inherits the bound; the hybrid is one measurable estimator in the inf defining R_{n,d,eps}, giving the middle and upper inequalities; lem:ate-lower-bound-transfer gives (3). The two corollary clauses (parametric order for d = O(sqrt n log n); consistency iff d = o(n log n) along sequences in range) are real-rate algebra on r_{n,d}. hyps: def:experiment-class bundles ass:overlap; ass:iid-sampling inline; every other depends_on entry is a def or lemma -> USED, not assumed."
+    },
+    "thm:overlap-adaptive-universal-hybrid": {
+      "lean_kind": "theorem",
+      "lean_name": "overlap_adaptive_universal_hybrid",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.T_OverlapAdaptiveUniversalHybrid"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_OverlapAdaptiveUniversalHybrid.lean",
+      "hyps": [
+        "def:experiment-class"
+      ],
+      "notes": "REDIRECT-SYNC. HEADLINE (collection theorem), build-inline assembly (~250 lines, own file). Five clauses. (i) universal fixed-class tuning: the upper half of thm:sharp-minimax-fixed-interior, PLUS eps-freeness and an explicit computability realization. hybridEstimator's signature (Helpers/Estimator.lean) does not take eps as an argument, so 'does not take eps as input' is a type-level fact and the per-eps constants C_eps, rho_eps, N_eps are bound AFTER a fixed eps. Helpers/Estimator.lean also defines a finite real-arithmetic program language, its operation count, the split-count input vector, and HybridEstimatorComputable: a universal K bounds an exact program for the stated hybrid by K*d*M(n)^4 arithmetic/comparison operations. The theorem asserts this certificate as a conclusion, rather than leaving computability in a docstring. (ii) is quantified in a separate conjunct for every 0 < eps <= 1/2, so it includes the endpoint eps=1/2 independently of clause (i)'s strict-interior quantifier. (iii) is lem:randomized-endpoint-minimax and carries the intrinsic positive-alphabet domain 0 < d. (iv) states the prescribed selectedEstimator's full sandwich minimaxRisk <= worstCaseMSE(selectedEstimator) <= K_eps * combinedRate, sharing the fixed-interior constants from clause (i), rather than recording only the derived minimax upper bound. (v) IS A NEGATIVE SCOPE CLAUSE, NOT A PROP TO PROVE: 'these conclusions do not assert a matching lower envelope for triangular arrays eps = eps_n'. F2 realizes it as a file docstring plus the quantifier structure of (i)-(iv) (constants pointwise in a FIXED eps); it must NOT be encoded as a theorem or as an existential asserting the open triangular-array question. This is the design_decisions d0_open_oeq_residuals residual; see decisions.oeq_residual_absent_from_core. Like thm:sharp-minimax-fixed-interior, clause (i)'s companion lower bound is unused here, so this theorem is NOT gated (it makes no lower-bound claim except through (iii), which is fully certified). hyps: def:experiment-class bundles ass:overlap; ass:iid-sampling inline."
+    }
+  },
+  "infrastructure_needed": [
+    {
+      "id": "I-1",
+      "kind": "autoid-lemma",
+      "description": "SUBSTRATE-GATE (cited leaf, node lem:zeng-one-arm-minimax-lower): the fixed-sample control-zero one-arm minimax lower bound inf_psihat sup_{D_0^{(n,d)}(eps)} E_P[(psihat - psi_1)^2] >= a_eps (1/n + d^2/(n^2 log^2 n)) for d <= b_eps n log n (Zeng-Balakrishnan-Han-Kennedy 2026, Theorem 2 + Appendix C.5 construction + Lemma 4 / Appendix D.2 Poisson-to-fixed-sample transfer). Absent from Causalean: Stat/Minimax/ carries the Le Cam / Fano / Assouad reductions and the TV/KL/chi^2 divergence layer, but no large-alphabet moment-matched (best-polynomial-approximation duality) converse and no Poisson-relaxation transfer. Assumed visibly as a threaded Prop; the headline thm:sharp-minimax-fixed-interior's lower half is conditional on it until it is built upstream.",
+      "effort": "large"
+    },
+    {
+      "id": "I-2",
+      "kind": "causalsmith-helper",
+      "description": "NON-BLOCKING upstream candidate (not a gate, not assumed): multiplicative binomial-count Chernoff tails -- P(N > tL) <= exp(-tL(log 2 - 1/2)) when m p < tL/2, and P(N <= tL) <= exp(-mp/8) when m p > 2tL, for N ~ Binomial(m, p). Causalean's Stat/Concentration/TailBounds/{Hoeffding,Bernstein}.lean give only ADDITIVE-deviation constants over an IIDSample sample mean; the multiplicative binomial form is derived in scope (lem:pilot-sandwich) from the same bounded-MGF core (Concentration.bounded_mgf_le_exp_sq) and is a clean promotion candidate for Causalean.Stat.Concentration afterwards. Does NOT block this run.",
+      "effort": "small"
+    },
+    {
+      "id": "I-3",
+      "kind": "causalsmith-helper",
+      "description": "NON-BLOCKING upstream candidate (not a gate, not assumed; built in scope in Basic.lean this run): the FINITE-TO-INFINITE i.i.d. sample view missing from Causalean.Stat.Sample.PiTransport. Causalean.Stat.IIDSample is ℕ-indexed over an ambient measure (Stat/Sample.lean:42-48) and PiTransport carries only the IIDSample -> Measure.pi direction (iidSample_finN_pushforward, PiTransport.lean:43), so a result stated on the finite product law Measure.pi (fun _ : Fin n => P) has no IIDSample view and cannot invoke IIDSample-typed engines (Concentration.hoeffding_ge/bernstein_ge, IIDSample.map_tuple_eq/integral_comp_eq) without one. Missing piece: the canonical coordinate sample `iidOfInfinitePi (P) [IsProbabilityMeasure P] : IIDSample (ℕ -> X) X (MeasureTheory.Measure.infinitePi (fun _ : ℕ => P)) P` (Z := fun i omega => omega i; indep := ProbabilityTheory.iIndepFun_infinitePi; law/identDist := MeasureTheory.Measure.infinitePi_map_eval) plus the transport corollary specialising iidSample_finN_pushforward to it. VERIFIED BUILDABLE: compiled 0-sorry against this repo's pinned Mathlib during this planning round (~10 lines). Holds for arbitrary P, so it adds no hypothesis to any node. Built locally in Basic.lean; a clean promotion candidate for Causalean.Stat.Sample.PiTransport afterwards, where it would complete that file's round trip for every downstream finite-product consumer. Does NOT block this run.",
+      "effort": "small"
+    }
+  ],
+  "feasibility_notes": "STATUS needs-new-infrastructure, driven by exactly ONE Defer node: the cited substrate-gate lem:zeng-one-arm-minimax-lower (I-1). No crux is deferred and no statement is dropped, so there is no deferred_conjecture -- the gate is a substrate-gate, so its consumers stay planned CONDITIONALLY. CONFIRMED REUSABLE (decl names verified by grepping the Causalean sources, namespaces confirmed): the Le Cam / two-point layer Causalean.Stat.{real_two_point_lower_bound, two_point_lower_bound_of_tvDist_le, iid_two_point_lower_bound} (Stat/Minimax/MinimaxRisk.lean:55/65/78), the unconditional KL bridge Causalean.Stat.{klForm_two_point_lower_bound, klForm_two_point_lower_bound_of_pinsker, pinskerBound_pi_iid, PinskerBound} (Stat/Minimax/Pinsker.lean:483/466/442/251), Causalean.Stat.{tvDist, one_sub_tvDist_le_test, half_one_sub_tvDist_le_max_error} (TotalVariation.lean:49/104, LeCam.lean:75) -- these are the engine of lem:one-category-bernoulli-lower; the concentration engines Causalean.Stat.Concentration.{hoeffding_ge, bernstein_ge, bounded_mgf_le_exp_sq, bounded_hasSubexponentialMGF} (Stat/Concentration/TailBounds/{Hoeffding.lean:87, Bernstein.lean:158/82/135}) plus Causalean.Stat.IIDSample.{integral_comp_eq, iIndepFun_comp} -- the engine of lem:pilot-sandwich and the variance steps, reached through the S1 ambient bridge below rather than directly (these are IIDSample-typed); the counting bridges Causalean.Stat.{injectiveTuples_card_eq_descFactorial, injectiveTupleCount_eq_descFactorial} and Causalean.Stat.IIDSample.map_tuple_eq (Stat/UStatistic/OrderM/{Basic,Variance}.lean) -- the engine of the factorial-moment unbiasedness eq (9); Mathlib's Polynomial.Chebyshev.T (Mathlib.RingTheory.Polynomial.Chebyshev, confirmed via loogle) and Nat.descFactorial -- the T_M and z_r primitives. ARCHITECTURAL TEMPLATE (not verbatim reuse): Causalean.Estimation.MinimaxATE.Model realizes the same finite Obs = C x Bool x Bool i.i.d. minimax world (obsReal/obsPMF/obsLaw/productLaw/nMSE/minimaxMiss/nMiss_sq_le_nMSE/bddAbove_nMiss_range), but hardcodes a UNIFORM covariate marginal (card C)^{-1} in obsReal and in `ate` (verified at Model.lean:87-89 and 137-138), whereas this note's whole d^2/(n^2 log^2 n) rate lives on ARBITRARY rare cell masses p_k -> S1/S3 are define-local over Mathlib following its naming and idioms one-to-one. ROUND-2 WORLD CORRECTION (FLAG-IIDSample-world), the only substrate re-survey this round: the prior plan claimed S1 'exposes an IIDSample view of the product law'. It cannot -- Causalean.Stat.IIDSample is a structure over an AMBIENT measure carrying an ℕ-INDEXED process (Z : ℕ -> Omega -> X, iIndepFun Z mu; read at Stat/Sample.lean:42-48), whereas S1 supplies only the finite law Measure.pi (fun _ : Fin n => P), whose Fin n-indexed coordinate process is not an IIDSample for arbitrary P; and Causalean.Stat.Sample.PiTransport (read in full, 93 lines) carries only the CONSUMING direction iidSample_finN_pushforward : IIDSample -> Measure.pi, so it does not supply the missing finite-to-infinite view. RESOLVED by the correction's second branch: the finite product REMAINS the canonical statement world (estimators, MSE, the minimax inf/sup are unchanged on Fin n -> Obs), and S1 now ADDITIONALLY builds the ambient world explicitly -- Omega_inf = (ℕ -> Obs), mu_inf = MeasureTheory.Measure.infinitePi (fun _ : ℕ => P), with the canonical coordinate sample `iidOfInfinitePi : IIDSample (ℕ -> Obs) Obs mu_inf P` (indep := ProbabilityTheory.iIndepFun_infinitePi, law := Measure.infinitePi_map_eval) COMPILED 0-sorry against this repo's pinned Mathlib during this round, so IIDSample-typed declarations are applied there and pulled back to Measure.pi (fun _ : Fin n => P) along iidSample_finN_pushforward. The bridge needs only IsProbabilityMeasure P, so it adds NO hypothesis and no restriction on the cell masses; it is ~10 lines in Basic.lean (I-3, non-blocking, a promotion candidate for PiTransport). Patched nodes: S1, ass:iid-sampling (the false 'IIDSample view' conjunct removed from the atom -- it was never part of what the note assumes), and the four IIDSample-consuming statements lem:pilot-sandwich / lem:light-cell-polynomial / lem:universal-heavy-cell-rate / lem:near-randomization-linear-upper, each of which now names its transport route (and, where cheaper, the direct finite-product route: the factorial-moment identities (9)/(13) are Finset counting and the centered-estimator variance is a bounded-independent-sum computation, neither needing an ambient world). NOT affected, re-verified this round: lem:one-category-bernoulli-lower and the whole two-point layer -- Causalean.Stat.iid_two_point_lower_bound is stated DIRECTLY over Measure.pi (fun _ : Fin n => P) (Stat/Minimax/MinimaxRisk.lean:78-86), needing no ambient world; def:minimax-risk, S3, S4. No disposition, defer_tier, gate_class or theorem mapping moved as a result of this correction. BUILD-INLINE (all formalizable-now): the 4 modeling assumption Props, the S1 ambient-world bridge, the ExperimentClass structure, overlapCone / cellPhi / ateFunctional / minimaxRisk / twoCategoryWitness, the hybridEstimator handle (own file), the crux light-cell chain (ChebyshevCertificate -> FactorialMoments -> PilotSandwich -> LightCell, four files, each projected <= ~600 lines), the crux heavy-cell chain (HeavyCell, own file, sharing only PilotSandwich), the endpoint cluster (Endpoint), the gate consumer lem:ate-lower-bound-transfer, lem:combined-upper-envelope, and all three certified theorems. The two crux nodes (lem:light-cell-polynomial, lem:universal-heavy-cell-rate) are large in LINE COUNT but contain no open math and no infeasible formalization step -- every technique is present as a Mathlib or Causalean primitive and the note's proof_tex supplies every constant -- so per 'default to crux for the paper's OWN content' and 'a piece whose technique exists elsewhere is build-inline, not Defer' they are built, never gated (gating them would launder the paper's novel content) and never deferred (deferring them would drop both headlines). SEARCHED-AND-ABSENT (each node carries its own re-runnable trace): no Chebyshev POLYNOMIAL best-approximation layer (all 15 case-insensitive 'Chebyshev' hits in Causalean are Chebyshev's INEQUALITY), no factorial-moment unbiased-lift estimator layer, no binomial-DISTRIBUTION tail (all 8 'binomial' hits are binomial-COEFFICIENT algebra), no four-cell overlap cone, no arbitrary-discrete-mass ATE functional or inf-sup minimax-risk definition, no large-alphabet moment-matched converse. No ass: node is discharged (all four are modeling assumptions -- restrictions on the data law/design -- so they stay threaded Props) and none is escalated.",
+  "citations": [
+    {
+      "id": "cite:zeng-balakrishnan-han-kennedy-2024",
+      "title": "Causal inference with high-dimensional discrete covariates",
+      "authors": "Zeng, Zhenghao and Balakrishnan, Sivaraman and Han, Yanjun and Kennedy, Edward H.",
+      "year": 2026,
+      "arxiv": "2405.00118v3",
+      "url": "https://arxiv.org/abs/2405.00118v3",
+      "locator": "Theorem 2; Appendix C.5; Lemma 4; Appendix D.2",
+      "verbatim_statement": "SOURCE MAP, NOT A VERBATIM TRANSCRIPTION (carried forward from the core node's d0-agent attestation): Theorem 2 supplies the fixed-sample psi_1 minimax scale n^{-1} + d^2/(n^2 log^2 n) over the ambient model for fixed strict-interior overlap; Appendix C.5 gives the control-zero moment-matched construction and the d <~ n log n range; Lemma 4 and Appendix D.2 transfer the relaxed Poisson experiment back to fixed sample size. The subclass wording of lem:zeng-one-arm-minimax-lower is the note's faithful specialization of those source components.",
+      "attestation": {
+        "by": "d0-agent",
+        "note": "Source map, not a verbatim transcription: Theorem 2 supplies the fixed-sample \\(\\psi_1\\) minimax scale over the ambient model; Appendix C.5 gives the control-zero moment-matched construction and the \\(d\\lesssim n\\log n\\) range; Lemma 4 and Appendix D.2 transfer the relaxed Poisson experiment back to fixed sample size. The displayed subclass wording is the note's faithful specialization of those source components."
+      }
+    }
+  ]
+}

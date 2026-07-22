@@ -1,0 +1,521 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_rdd\_flow\_manipulation} / \texttt{v1}%
+  \\ \large\textit{Nested-window flow certificates for bounded-manipulation RD intervals}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a free-form PartialID proposal.
+The locked tuple is
+\[
+  (\texttt{qid}, \texttt{specialization}, P, \theta, \text{identifying restrictions},
+  \text{bounding functional}).
+\]
+The convention is as follows.
+\(\texttt{qid}=\texttt{pid\_rdd\_flow\_manipulation}\) and
+\(\texttt{specialization}=\texttt{v1}\).
+The observable distribution \(P\) is a finite nested-neighborhood sharp-RD array
+\[
+  P=\bigl\{(p_{bwr},\pi_{j,-}(w),\mu^-_j(w),\bar\rho_j,\bar s_{jw},\omega_j):
+  1\le b\le j\le J,\ 1\le w\le K,\ 1\le r\le R_{bw}\bigr\},
+\]
+where \(H_1\subset \cdots \subset H_J\) are prespecified right-side cutoff neighborhoods,
+\(b\) indexes the shell \(H_b\setminus H_{b-1}\) with \(H_0=\varnothing\),
+\(p_{bwr}\) is the observed right-side mass of atom \(r\) in shell \(b\), covariate cell \(w\),
+and outcome value \(y_{bwr}\in[\underline y,\overline y]\),
+\(\pi_{j,-}(w)\) and \(\mu^-_j(w)\) are the left-limit covariate law and left-limit outcome mean
+in neighborhood \(j\),
+\(\bar\rho_j\in[0,1)\) is the neighborhood-\(j\) manipulation envelope,
+\(\bar s_{jw}\in[0,1)\) is the cell cap, and \(\omega_j\ge0\) with \(\sum_{j=1}^J\omega_j=1\)
+are fixed pooling weights.
+The parameter is the vector \(\theta=(\theta_1,\ldots,\theta_J)\) of neighborhood-specific
+nonmanipulator sharp-RD effects,
+\[
+  \theta_j=\mu^+_{j,0}-\sum_{w=1}^K \pi_{j,-}(w)\mu^-_j(w),
+\]
+where \(\mu^+_{j,0}\) is the unobserved retained right-side nonmanipulator mean in neighborhood \(j\).
+The identifying restrictions are: one-sided upward manipulation, sharp RD on the treated side,
+finite predetermined-covariate cells, bounded outcomes, left-limit continuity for nonmanipulators,
+global envelopes \(\bar\rho_j\), cell caps \(\bar s_{jw}\), and nested-window compatibility induced by
+one common retained right-side plan on shell atoms.
+The bounding functional is the pooled upper and lower endpoint pair
+\[
+  B_U^{\mathrm{flow}}(P,\omega)=\sup_{x\in\calA(P,\bar\rho,\bar s)}
+  \sum_{j=1}^J \omega_j\!\left\{\frac{S_j(x)}{m_j(x)}-\bar\mu^-_j\right\},
+  \qquad
+  B_L^{\mathrm{flow}}(P,\omega)=\inf_{x\in\calA(P,\bar\rho,\bar s)}
+  \sum_{j=1}^J \omega_j\!\left\{\frac{S_j(x)}{m_j(x)}-\bar\mu^-_j\right\},
+\]
+where \(x\) is a shell-atom retained-mass plan, \(m_j(x)\) is retained mass in neighborhood \(j\),
+\(S_j(x)\) is retained right-side outcome mass in neighborhood \(j\), and
+\(\bar\mu^-_j=\sum_w \pi_{j,-}(w)\mu^-_j(w)\).
+When \(J=1\) and \(\omega_1=1\), these are the parent sharp-RD endpoints.
+
+\begin{abstract}
+The banked parent proposal \texttt{pid\_rdd\_manipulation\_bounded/v1} gives a sharp interval for one
+cutoff neighborhood under bounded manipulation.  This upgrade asks for one computational object that
+evaluates manipulation-robust bounds across a prespecified nested class of neighborhoods.  The fixed
+retained-mass problem is the key step: once the admissible retained masses are pinned down, the pooled
+upper endpoint becomes a finite transportation problem over shell atoms and neighborhood-cell demands.
+The flagship open claim is that the outer optimization over retained masses can be absorbed into an
+expanded min-cost-flow network with a totally unimodular constraint matrix and an explicit dual
+certificate.  If correct, the parent scalar interval becomes the \(J=1\) face of a strongly-polynomial
+algorithm for many-neighborhood RD sensitivity analysis.
+\end{abstract}
+
+\section{Introduction}
+The question is computational.  The parent result identifies a sharp interval for one RD neighborhood under
+one-sided manipulation, but empirical work often reports several windows around the same cutoff and then
+pools them informally.  This draft asks for one sharp pooled endpoint across a prespecified nested class of
+windows, with the same retained right-side plan governing every window.
+
+The upgrade delta is against the parent and then against the literature.  The parent proof route says
+endpoint evaluation reduces to ``linear programs indexed by a candidate ratio lambda.''  Gerard, Rokkanen,
+and Rothe write in the abstract, at the article's opening page, that under manipulation ``one can derive
+sharp bounds under a general model'' \citep[p.~839]{GerardRokkanenRothe2020}; Rosenman, Rajkumar, Gauriot,
+and Slonim write in their abstract that their discrete-RD procedure ``relies on two stages'' and then
+uses ``a sequential convex programming approach'' \citep[p.~1]{RosenmanRajkumarGauriotSlonim2019}.  The
+gap here is narrower: nested-window sharp-RD bounds with external cell caps, one common retained plan, and
+an explicit transport dual that reduces to the parent one-window interval.
+
+The consumer is many-window RD practice.  \citet{Bertanha2020} shows that pooling across thresholds is part
+of the estimand under point identification, while \citet{CattaneoJanssonMa2020} gives the density tool that
+empirical work already uses to calibrate manipulation envelopes.  A reader would stop reporting an
+unstructured stack of window-by-window sensitivity intervals and instead report one pooled
+manipulation-robust envelope with a dual certificate showing which shells and covariate cells bind.
+
+\begin{itemize}[leftmargin=*]
+  \item Theorem 1: for any admissible retained-mass profile, the pooled upper endpoint is a finite
+  transportation LP on shell atoms and neighborhood-cell demands. Gap: the parent gives a one-window
+  scalar program; \citet{RosenmanRajkumarGauriotSlonim2019} gives sequential convex programming rather
+  than an explicit transport LP. Consumer: pooled many-window RD summaries in \citet{Bertanha2020}.
+  \item Conjecture 1: the outer optimization over retained masses is itself an expanded min-cost-flow
+  problem with a totally unimodular matrix and a dual node-potential certificate. Gap:
+  \citet{GerardRokkanenRothe2020} gives sharp one-window bounds, not a many-window flow certificate.
+  Consumer: auditable computation of manipulation-robust pooled RD endpoints.
+  \item Theorem 2: when \(J=1\), the flow formulation collapses to the parent sharp-RD interval. Gap:
+  the parent proves the scalar interval but does not expose it as the one-window face of a many-window
+  transport problem. Consumer: direct reuse of the banked parent as the corner case.
+\end{itemize}
+
+\section{Related work}
+\citet{HahnToddVanDerKlaauw2001} is the classical sharp- and fuzzy-RD benchmark.  \citet{Lee2008} explains
+the local-randomization interpretation behind continuity of predetermined covariates at the cutoff.
+\citet{McCrary2008} develops the density-discontinuity diagnostic and writes in the abstract that the
+continuity assumptions ``may not be plausible if agents can precisely manipulate the assignment variable''
+\citep[p.~698]{McCrary2008}; that diagnostic is reused from the parent as the source of the envelope
+\(\bar\rho_j\).  \citet{CattaneoJanssonMa2020} provide a boundary-adaptive density procedure and state in
+their abstract that they ``develop a novel discontinuity in density testing procedure'' \citep[p.~1449]
+{CattaneoJanssonMa2020}; this is also reused from the parent.
+
+\citet{GerardRokkanenRothe2020} is the main identification anchor.  Their paper derives sharp manipulated-RD
+bounds neighborhood by neighborhood and is the direct published comparator for the banked parent.  This
+upgrade does not claim a new one-window identified set.  It claims a new computational representation for a
+nested class of windows under one common retained plan.  \citet{RosenmanRajkumarGauriotSlonim2019} is the
+new computation anchor: they obtain discrete manipulated-RD bounds with a sequential convex program, which
+shows the computational frontier is active but does not furnish a many-window flow certificate.
+
+\citet{Bertanha2020} studies RD with many thresholds under point-identification conditions and emphasizes
+that the pooled estimand depends on the weighting scheme.  That is the natural consumer here: once each
+window is only partially identified, the pooling map belongs inside the bound itself.  The proposal stays in
+the PartialID theorem cluster and does not claim new SCM infrastructure.
+
+In repository terms, \texttt{doc/API.md} \S3 still records no competing manipulated-RD PartialID entry
+beyond the banked parent line of work.  The immediate in-repo comparator is
+\texttt{doc/research/\_bank/candidates/pid\_rdd\_manipulation\_bounded\_v1/}
+\texttt{pid\_rdd\_manipulation\_bounded\_v1\_proposal.tex}, especially its \S10 proof route and \S11 scope
+flags.  No separate in-repo proposal already states a many-window transport or flow certificate for bounded
+RDD manipulation.
+
+\section{Formal setup}
+Fix one cutoff and a prespecified nested right-side neighborhood class
+\[
+  H_1\subset H_2\subset\cdots\subset H_J,
+  \qquad H_0=\varnothing.
+\]
+Write shell \(b\) for \(H_b\setminus H_{b-1}\).  The proposal works on the sharp-RD face, so treatment is
+the cutoff assignment on the right and the target is the retained right-side outcome mean minus the observed
+left-side outcome mean.  Let \(W\in\{1,\ldots,K\}\) be a finite predetermined-covariate cell and let
+\(y_{bwr}\in[\underline y,\overline y]\) be the outcome value of atom \(r\) in shell \(b\) and cell \(w\),
+with observed right-side mass \(p_{bwr}>0\).  For neighborhood \(j\), define cumulative observed masses
+\[
+  p_{j,+}=\sum_{b\le j}\sum_{w=1}^K\sum_{r=1}^{R_{bw}} p_{bwr},
+  \qquad
+  p_{j,w,+}=\sum_{b\le j}\sum_{r=1}^{R_{bw}} p_{bwr}.
+\]
+Let \(\pi_{j,-}(w)\) be the left-limit covariate law in neighborhood \(j\), let \(\mu^-_j(w)\) be the
+left-limit outcome mean in cell \(w\), and let
+\[
+  \bar\mu^-_j=\sum_{w=1}^K \pi_{j,-}(w)\mu^-_j(w).
+\]
+
+A retained plan is a family \(x=(x_{bwr})\) with \(0\le x_{bwr}\le p_{bwr}\).  It induces cumulative
+retained masses
+\[
+  m_j(x)=\sum_{b\le j}\sum_w\sum_r x_{bwr},
+  \qquad
+  m_{jw}(x)=\sum_{b\le j}\sum_r x_{bwr},
+  \qquad
+  S_j(x)=\sum_{b\le j}\sum_w\sum_r y_{bwr}x_{bwr}.
+\]
+The neighborhood-\(j\) sharp-RD value generated by \(x\) is
+\[
+  \theta_j(x)=\frac{S_j(x)}{m_j(x)}-\bar\mu^-_j.
+\]
+The pooled upper endpoint is
+\[
+  B_U^{\mathrm{flow}}(P,\omega)=
+  \sup_{x\in\calA(P,\bar\rho,\bar s)}
+  \sum_{j=1}^J \omega_j\theta_j(x),
+\]
+and \(B_L^{\mathrm{flow}}(P,\omega)\) is defined by replacing \(\sup\) with \(\inf\).
+When \(J=1\), write \(B_U^{\mathrm{parent,sharp}}(P,\bar\rho,\bar s)\) and
+\(B_L^{\mathrm{parent,sharp}}(P,\bar\rho,\bar s)\) for the corresponding sharp-RD endpoints from the
+banked parent proposal.
+
+The feasible set \(\calA(P,\bar\rho,\bar s)\) consists of retained plans satisfying, for every \(j\) and
+\(w\),
+\[
+  m_j(x)\ge (1-\bar\rho_j)p_{j,+},
+  \qquad
+  m_{jw}(x)\ge (1-\bar s_{jw})p_{j,w,+},
+  \qquad
+  m_{jw}(x)=m_j(x)\pi_{j,-}(w).
+\]
+For a retained-mass profile \(m=(m_1,\ldots,m_J)\), define
+\[
+  q_{jw}(m)=m_j\pi_{j,-}(w)-m_{j-1}\pi_{j-1,-}(w),
+  \qquad m_0=0,\quad \pi_{0,-}\equiv 0.
+\]
+The admissible profile set is
+\[
+  \calM(P,\bar\rho,\bar s)=
+  \left\{
+  m\in\R^J:
+  0<m_1\le\cdots\le m_J,\,
+  m_j\ge (1-\bar\rho_j)p_{j,+},\,
+  m_j\pi_{j,-}(w)\ge (1-\bar s_{jw})p_{j,w,+},\,
+  m_j\pi_{j,-}(w)\le p_{j,w,+},\,
+  q_{jw}(m)\ge0
+  \right\}.
+\]
+For fixed \(m\in\calM(P,\bar\rho,\bar s)\), let \(\calF(m)\) be the set of nonnegative flows
+\(f_{bwr,j}\) defined on arcs \((b,w,r)\to(j,w)\) with \(b\le j\), satisfying
+\[
+  \sum_{j\ge b} f_{bwr,j}\le p_{bwr},
+  \qquad
+  \sum_{b\le j}\sum_r f_{bwr,j}=q_{jw}(m).
+\]
+The cumulative right-side outcome in neighborhood \(j\) is then
+\[
+  S_j(f)=\sum_{\ell\le j}\sum_{b\le \ell}\sum_w\sum_r y_{bwr}f_{bwr,\ell}.
+\]
+Write
+\[
+  c_j(m)=\sum_{\ell=j}^J \frac{\omega_\ell}{m_\ell}.
+\]
+Then the fixed-profile pooled value is
+\[
+  U_\omega(m)=
+  \sup_{f\in\calF(m)}
+  \left[
+  \sum_{j=1}^J \omega_j\!\left\{\frac{S_j(f)}{m_j}-\bar\mu^-_j\right\}
+  \right].
+\]
+
+\begin{verbatim}
+Locked parameters.
+qid = pid_rdd_flow_manipulation
+specialization = v1
+observable distribution P = finite nested-neighborhood sharp-RD shell array
+parameter theta = vector of neighborhood-specific nonmanipulator sharp-RD effects
+identifying restrictions = one-sided manipulation; sharp RD; bounded outcomes;
+  finite covariate cells; left-limit continuity for nonmanipulators; global
+  neighborhood envelopes rho_bar_j; cell caps s_bar_jw; one common retained
+  shell plan across all nested neighborhoods
+bounding functional = pooled endpoint pair
+  (B_U^flow(P,omega), B_L^flow(P,omega))
+  with one-window corner equal to the parent sharp-RD interval
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Nested finite neighborhood class]\label{ass:nested-class}
+The neighborhood class \(\calH=\{H_1,\ldots,H_J\}\) is finite and nested, and the pooling weights satisfy
+\(\omega_j\ge0\) and \(\sum_{j=1}^J \omega_j=1\).
+\end{assumption}
+
+\begin{assumption}[Finite shell support]\label{ass:finite-support}
+For every shell \(b\) and covariate cell \(w\), the right-side outcome distribution has finite support
+\(\{y_{bwr}:1\le r\le R_{bw}\}\subset[\underline y,\overline y]\).
+\end{assumption}
+
+\begin{assumption}[One-sided manipulation and sharp RD]\label{ass:sharp-rd}
+Manipulation can only add mass to the treated-side law, and treatment receipt equals cutoff assignment on
+the sharp-RD face analyzed here.
+\end{assumption}
+
+\begin{assumption}[Left-limit continuity for nonmanipulators]\label{ass:left-continuity}
+After removing manipulators, the retained right-side covariate law in neighborhood \(j\) equals
+\(\pi_{j,-}\), and the left-side means \(\mu^-_j(w)\) are the correct untreated comparison means.
+\end{assumption}
+
+\begin{assumption}[Envelope and cell-cap calibration]\label{ass:budgets}
+The neighborhood-specific envelopes \(\bar\rho_j\) and cell caps \(\bar s_{jw}\) are fixed numbers in
+\([0,1)\), and the feasible retained-plan set \(\calA(P,\bar\rho,\bar s)\) is nonempty.
+\end{assumption}
+
+\begin{assumption}[Admissible retained-mass profile]\label{ass:profile}
+Whenever a result invokes a profile \(m\), that profile lies in \(\calM(P,\bar\rho,\bar s)\).
+\end{assumption}
+
+\begin{assumption}[Parent reduction face]\label{ass:parent-face}
+For the one-window reduction result, \(J=1\), \(\omega_1=1\), and the right-side law is the parent
+one-neighborhood sharp-RD specialization.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: explicit transportation LP for fixed retained masses]\label{thm:transport}
+Under Assumptions~\ref{ass:nested-class}--\ref{ass:budgets} and Assumption~\ref{ass:profile}, the fixed
+profile pooled upper endpoint satisfies
+\[
+  U_\omega(m)=
+  \max_{f\in\calF(m)}
+  \left[
+  \sum_{b=1}^J\sum_{w=1}^K\sum_{r=1}^{R_{bw}}\sum_{j=b}^J
+  c_j(m)\,y_{bwr}\,f_{bwr,j}
+  -\sum_{j=1}^J \omega_j\bar\mu^-_j
+  \right].
+\]
+Equivalently, for fixed \(m\), the pooled upper endpoint is a finite transportation LP with supply nodes
+\((b,w,r)\), demand nodes \((j,w)\), capacities \(p_{bwr}\), demands \(q_{jw}(m)\), and arc payoffs
+\(c_j(m)y_{bwr}\).
+\end{theorem}
+
+Proof sketch.  For fixed \(m\), each denominator \(m_j\) is constant, so the pooled objective is linear in
+the shell masses assigned to each neighborhood increment.  Re-indexing retained shell masses by increment
+\((j,w)\) produces the displayed transportation constraints.
+
+\begin{conjecture}[Conjecture 1: totally unimodular flow certificate for the sharp envelope]\label{conj:flow}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:nested-class}--\ref{ass:budgets}, the sharp upper endpoint
+\[
+  B_U^{\mathrm{flow}}(P,\omega)=\sup_{m\in\calM(P,\bar\rho,\bar s)} U_\omega(m)
+\]
+and the analogous lower endpoint are the values of one expanded min-cost-flow problem whose arc set contains
+the transportation arcs of Theorem~\ref{thm:transport} together with a mass-profile chain enforcing
+\(m\in\calM(P,\bar\rho,\bar s)\).  The full constraint matrix is the node-arc incidence matrix of that
+expanded network and is therefore totally unimodular.  Consequently a strongly polynomial min-cost-flow
+algorithm returns the sharp endpoint together with dual node potentials
+\((a_{bwr},b_{jw},u_j)\) certifying optimality.  When \(J=1\), the dual certificate collapses to the parent
+one-neighborhood sharp-RD endpoint certificate.
+\end{conjecture}
+
+\begin{theorem}[Theorem 2: one-window parent reduction]\label{thm:parent}
+Under Assumptions~\ref{ass:nested-class}--\ref{ass:budgets} and Assumption~\ref{ass:parent-face},
+\[
+  B_U^{\mathrm{flow}}(P,\omega)=B_U^{\mathrm{parent,sharp}}(P,\bar\rho,\bar s),
+  \qquad
+  B_L^{\mathrm{flow}}(P,\omega)=B_L^{\mathrm{parent,sharp}}(P,\bar\rho,\bar s),
+\]
+where \(B_U^{\mathrm{parent,sharp}}\) and \(B_L^{\mathrm{parent,sharp}}\) denote the parent sharp-RD
+endpoints from \texttt{pid\_rdd\_manipulation\_bounded/v1}.
+\end{theorem}
+
+Proof sketch.  When \(J=1\), there is one demand node per covariate cell and
+\(c_1(m)=1/m_1\), so Theorem~\ref{thm:transport} reduces to the parent one-neighborhood retained-mass
+problem on the sharp-RD face.  The lower endpoint is the same reduction with outcomes negated.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No-manipulation corner]\label{cor:no-manip}
+Under Assumptions~\ref{ass:nested-class}--\ref{ass:budgets}, if \(\bar\rho_j=0\),
+\(\bar s_{jw}=0\), and \(p_{j,w,+}=p_{j,+}\pi_{j,-}(w)\) for every \((j,w)\), then the only feasible plan
+retains all shell mass and
+\[
+  B_U^{\mathrm{flow}}(P,\omega)=B_L^{\mathrm{flow}}(P,\omega)=
+  \sum_{j=1}^J \omega_j\left\{\frac{\sum_{b\le j}\sum_w\sum_r y_{bwr}p_{bwr}}{p_{j,+}}-\bar\mu^-_j\right\}.
+\]
+This reduces to the ordinary weighted sharp-RD contrast because every neighborhood retains its full
+right-side distribution.
+\end{corollary}
+
+\begin{corollary}[Parent reduction corner]\label{cor:parent}
+Under Assumptions~\ref{ass:nested-class}--\ref{ass:budgets} and Assumption~\ref{ass:parent-face},
+Theorem~\ref{thm:parent} reduces the upgrade to the banked parent.  The reduction holds because the
+increment demand system has one neighborhood only, so the nested transport graph has exactly the same
+feasible retained masses as the parent sharp-RD retained-mass problem.
+\end{corollary}
+
+\paragraph{Exhibit 9.1.}
+Take \(J=2\), \(K=1\), \(\omega_1=\omega_2=1/2\), and left means \(\bar\mu^-_1=\bar\mu^-_2=0\).  Let shell 1
+contain one atom with \(y_{111}=1\) and supply \(p_{111}=1/2\), and let shell 2 contain one atom with
+\(y_{211}=0\) and supply \(p_{211}=1/2\).  Fix the admissible retained-mass profile \(m_1=1/2\), \(m_2=1\).
+Then \(q_{11}(m)=1/2\) and \(q_{21}(m)=1/2\), and the arc coefficients are
+\[
+  c_1(m)=\frac{\omega_1}{m_1}+\frac{\omega_2}{m_2}=1+\frac12=\frac32,
+  \qquad
+  c_2(m)=\frac{\omega_2}{m_2}=\frac12.
+\]
+The primal transport LP is
+\[
+  \max_{f\ge0}\ \frac32 f_{111,1}+\frac12 f_{111,2}
+\]
+subject to
+\[
+  f_{111,1}+f_{111,2}\le \frac12,\qquad
+  f_{211,2}\le\frac12,\qquad
+  f_{111,1}=\frac12,\qquad
+  f_{111,2}+f_{211,2}=\frac12.
+\]
+Its unique optimizer is \(f_{111,1}=1/2\), \(f_{111,2}=0\), \(f_{211,2}=1/2\), which yields
+\[
+  U_\omega(m)=\frac32\cdot\frac12=\frac34.
+\]
+The dual is
+\[
+  \min_{a_1,a_2,b_1,b_2}
+  \frac12 a_1+\frac12 a_2+\frac12 b_1+\frac12 b_2
+\]
+subject to
+\[
+  a_1+b_1\ge\frac32,\qquad
+  a_1+b_2\ge\frac12,\qquad
+  a_2+b_2\ge 0.
+\]
+One feasible optimal certificate is
+\[
+  a_1=\frac12,\qquad a_2=0,\qquad b_1=1,\qquad b_2=0,\qquad u_1=u_2=0,
+\]
+whose objective value is also \(3/4\).  The internal check is exact: shell 1 uses its full supply, shell 2
+uses its full supply, all demands are met, the mass-profile chain is slack so \(u_1=u_2=0\), and
+complementary slackness holds on the binding arcs.
+
+\paragraph{Exhibit 9.2.}
+Set \(J=1\), \(\omega_1=1\), and keep the shell-1 atom from Exhibit 9.1.  Then \(q_{11}(m)=m_1\pi_{1,-}(1)\),
+the transport graph has one demand node, and Theorem~\ref{thm:transport} becomes the parent sharp-RD
+retained-mass problem.  The dual node potentials reduce to one supply potential and one cell-balance
+potential, which is the one-window certificate promised in Theorem~\ref{thm:parent}.
+
+\section{Proof-sketch route}
+The verification route is:
+\[
+  \text{pooled endpoint}
+  \leftarrow
+  \text{nested retained plan}
+  \leftarrow
+  \text{increment-demand decomposition}
+  \leftarrow
+  \text{transport LP for fixed }m
+  \leftarrow
+  \text{expanded flow over }m
+  \leftarrow
+  \text{network dual certificate}.
+\]
+The substantive steps are four.  First, rewrite one common retained shell plan as incremental demands
+\(q_{jw}(m)\) for each neighborhood-cell pair.  Second, prove the identity in
+Theorem~\ref{thm:transport} by summing each retained atom's contribution across all later neighborhoods.
+Third, show the admissible mass-profile constraints can be represented by chain arcs and balance nodes so
+that the expanded matrix is a node-arc incidence matrix.  Fourth, read the dual node potentials as the
+global envelope, cell-balance, and shell-scarcity certificate, and check the \(J=1\) corner against the
+parent interval.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:transport} and Theorem~\ref{thm:parent} are intended as routine but nontrivial finite
+dimensional reductions.  Conjecture~\ref{conj:flow} is the flagship open claim: the transport LP is
+explicit, but total unimodularity and strong polynomiality for the outer mass-profile optimization are not
+yet proved.  The draft works on the sharp-RD face only.  It does not solve the parent fuzzy-Wald coupling
+problem, where outcome and treatment retention move together.  Continuous covariates are also outside scope;
+the finite-cell convention is inherited from the parent.  The nested-window restriction is deliberate: a
+general many-cutoff design with unrelated supports is a different computation problem.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+  \item v1 (pivot) --- initial draft of the support-function upgrade from the banked parent; prior verdict:
+  none.
+  \item v2 (revise) --- replaced the schematic support-function shell with an explicit nested-window
+  transportation LP, added a worked primal-dual exhibit, removed the unsupported inference conjecture, and
+  narrowed the flagship claim to a concrete TU/min-cost-flow conjecture; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+
+\bibitem[Bertanha(2020)]{Bertanha2020}
+Bertanha, Marinho.
+2020.
+Regression discontinuity design with many thresholds.
+\emph{Journal of Econometrics} 218(1): 216--241.
+
+\bibitem[Cattaneo, Jansson, and Ma(2020)]{CattaneoJanssonMa2020}
+Cattaneo, Matias D., Michael Jansson, and Xinwei Ma.
+2020.
+Simple local polynomial density estimators.
+\emph{Journal of the American Statistical Association} 115(531): 1449--1455.
+
+\bibitem[Gerard, Rokkanen, and Rothe(2020)]{GerardRokkanenRothe2020}
+Gerard, Francois, Miikka Rokkanen, and Christoph Rothe.
+2020.
+Bounds on treatment effects in regression discontinuity designs with a manipulated running variable.
+\emph{Quantitative Economics} 11(3): 839--870.
+
+\bibitem[Hahn, Todd, and van der Klaauw(2001)]{HahnToddVanDerKlaauw2001}
+Hahn, Jinyong, Petra Todd, and Wilbert van der Klaauw.
+2001.
+Identification and estimation of treatment effects with a regression-discontinuity design.
+\emph{Econometrica} 69(1): 201--209.
+
+\bibitem[Lee(2008)]{Lee2008}
+Lee, David S.
+2008.
+Randomized experiments from non-random selection in U.S. House elections.
+\emph{Journal of Econometrics} 142(2): 675--697.
+
+\bibitem[McCrary(2008)]{McCrary2008}
+McCrary, Justin.
+2008.
+Manipulation of the running variable in the regression discontinuity design: A density test.
+\emph{Journal of Econometrics} 142(2): 698--714.
+
+\bibitem[Rosenman et~al.(2019)]{RosenmanRajkumarGauriotSlonim2019}
+Rosenman, Evan, Karthik Rajkumar, Romain Gauriot, and Robert Slonim.
+2019.
+Optimized partial identification bounds for regression discontinuity designs with manipulation.
+arXiv:1910.02170.
+
+\end{thebibliography}
+
+\end{document}

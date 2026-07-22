@@ -1,0 +1,558 @@
+{
+  "qid": "exp_bipartite_minimax_design",
+  "specialization": "v1",
+  "target_subdir": "CausalSmith/Experimentation/EXP_BipartiteMinimaxDesign_Research",
+  "status": "formalizable-now",
+  "env": [
+    {
+      "id": "S1",
+      "world": "Finite-population Bernoulli randomization design (assignment world): probability comes from the experimenter's independent heterogeneous Bernoulli coin flips over the finite assignment space Ω = (I_n → Bool); the design variable p and its feasible class are the decision objects.",
+      "binds_symbols": [
+        "m_n",
+        "I_n",
+        "Z_k",
+        "Z",
+        "p",
+        "epsilon",
+        "B_n",
+        "pi_i^1(p)",
+        "pi_i^0(p)",
+        "T_i(Z)",
+        "C_i(Z)",
+        "P_{n,B_n,epsilon}",
+        "p_n^*(G_n)",
+        "p_n^{deg}(G_n)",
+        "lambda_n",
+        "nu_{k,n}^+",
+        "nu_{k,n}^-",
+        "alpha_cov",
+        "z_{1-alpha_cov/2}"
+      ],
+      "binds_sampling_model": true,
+      "disposition": "reuse",
+      "reuse": "Causalean.Experimentation.UnknownInterference.bernoulliDesign",
+      "modules": [
+        "Causalean.Experimentation.DesignBased.DesignCore",
+        "Causalean.Experimentation.UnknownInterference.Bernoulli"
+      ],
+      "notes": "Reuse the finite-sum design layer FiniteDesign (E/Var/Cov as Finset algebra) and the product Bernoulli design bernoulliDesign p (per-unit coin flips, cross-unit independence STRUCTURAL via prodDesign). This directly realizes ass:independent-heterogeneous-bernoulli. bernoulliDesign_E_treat/_E_ctrl give the marginal treatment/control expectations feeding pi_i^1/pi_i^0. The positivity floor epsilon and budget B_n restrict p but do not change the world. Verified signatures: bernoulliDesign (Bernoulli.lean:60), FiniteDesign (Design.lean)."
+    },
+    {
+      "id": "S2",
+      "world": "Bipartite interference graph + fixed finite-population potential-outcome schedule: known bipartite graph G_n over I_n × O_n, outcome neighborhoods N_i(G_n), fixed bounded potential outcomes Y_i(z_{N_i}), Hajek exposure estimator and its graph-only conservative variance objects.",
+      "binds_symbols": [
+        "n",
+        "O_n",
+        "G_n",
+        "N_i(G_n)",
+        "M_k(G_n)",
+        "d_i",
+        "s_k",
+        "S_{ij}(G_n)",
+        "Delta_n",
+        "Y_i(z_{N_i})",
+        "Y_i^1",
+        "Y_i^0",
+        "Y_i^obs",
+        "Y_obs",
+        "Y",
+        "mu_1",
+        "mu_0",
+        "tau_n",
+        "D_1(p,Z)",
+        "D_0(p,Z)",
+        "hat_tau_H(p)",
+        "r_{ij}^1(G_n,p)",
+        "r_{ij}^0(G_n,p)",
+        "r_{ij}^{10}(G_n)",
+        "eta_i(p,Z)",
+        "sigma_{G_n,p}^2(Y)",
+        "V_env(G_n,p)",
+        "g_k(G_n,p)",
+        "hat_V_cons(G_n,p)",
+        "h_k(G_n)",
+        "alpha_cert(G_n)",
+        "dbar",
+        "Dbar",
+        "c_disp",
+        "C_disp"
+      ],
+      "binds_sampling_model": false,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Basic"
+      ],
+      "notes": "Search trace: grepped '## Experimentation' in ../doc/API.md + scanned Causalean/Experimentation/{DesignBased,UnknownInterference}; no BipartiteDesign / bipartite-graph structure exists (all interference substrate is one-mode: ExposureMappingInterference, UnknownInterference.Interferes/InterfDep). So the bipartite graph layer (I_n, O_n, G_n, N_i, M_k, degrees, shared sets S_ij) is new local scaffolding. It nonetheless SITS INSIDE the S1 FiniteDesign world: fixed potential outcomes Y_i as functions of the treatment subvector on N_i mirror UnknownInterference.y / y_eq_of_agree_on_interferers (analogue F3 should follow for the interference-restriction algebra), and the all-treated/all-control exposure indicators T_i/C_i are products over N_i (compare Exposure.expoInd). Define a local BipartiteExperiment structure bundling G_n and the neighborhood accessors."
+    }
+  ],
+  "nodes": {
+    "ass:bipartite-interference": {
+      "lean_kind": "assumption",
+      "lean_name": "BipartiteInterference",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Modeling (structural) assumption — neighborhood SUTVA: Y_i depends on z only through z_{N_i(G_n)}. Legitimate threaded hypothesis, never discharged. Analogous decl: Causalean.Experimentation.UnknownInterference.y_eq_of_agree_on_interferers (same 'agree-on-interferers ⇒ equal outcome' shape, one-mode) — F3 adapts the predicate to the bipartite neighborhood N_i. Search trace: grepped 'ProperlySpecified','agree_on_interferers' in Causalean/Experimentation; found only one-mode versions, none bipartite."
+    },
+    "ass:independent-heterogeneous-bernoulli": {
+      "lean_kind": "assumption",
+      "lean_name": "IndepHeteroBernoulli",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Design assumption: the assignment law is bernoulliDesign p (Z_k independent Bernoulli(p_k)). Encoded as a Prop asserting the working FiniteDesign equals bernoulliDesign p hp0 hp1; the mutual independence is then STRUCTURAL from prodDesign, so downstream covariance-factorization reuses bernoulliDesign_E_eval / Cov_prod_disjoint_zero. Kept as a threaded hypothesis per author atomization (not discharged). Search trace: reuse candidate bernoulliDesign confirmed at UnknownInterference/Bernoulli.lean:60."
+    },
+    "ass:positivity-floor": {
+      "lean_kind": "assumption",
+      "lean_name": "PositivityFloor",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Modeling/overlap assumption: ε ≤ p_k ≤ 1-ε for every k. Member atom of the class def:feasible-designs. Threaded hypothesis; supplies the uniform exposure-probability lower bounds ε^{dbar}. No library discharge (regime restriction on the design variable). SCAFFOLD REDIRECT attempt 5: PositivityFloor's Prop body is UNCHANGED (the core condition is exactly eps<=p_k<=1-eps); its range-pinning force for pi_i^1,pi_i^0,V_env,hat_V_cons is only released in CONJUNCTION with EpsilonAdmissible eps, which is now a field of FeasibleDesign and a tagged co-realizer of those four symbols."
+    },
+    "ass:budget-balance": {
+      "lean_kind": "assumption",
+      "lean_name": "BudgetBalance",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Design assumption (flagged novel): sum_{k} p_k = B_n. Member atom of def:feasible-designs. Threaded hypothesis defining the affine budget hyperplane. No library analogue (novel finite-population expected-treatment budget)."
+    },
+    "ass:bounded-outcomes": {
+      "lean_kind": "assumption",
+      "lean_name": "BoundedOutcomes",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Regularity assumption: |Y_i^1| ≤ 1 and |Y_i^0| ≤ 1. Threaded hypothesis giving |Y-mu| ≤ 2, the source of the envelope factor 4 and of the CLT uniform boundedness. Standard modeling restriction; not discharged."
+    },
+    "ass:bounded-outcome-degree": {
+      "lean_kind": "assumption",
+      "lean_name": "BoundedOutcomeDegree",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Graph regularity: max_i d_i ≤ dbar (also forces |S_ij| ≤ dbar). Threaded hypothesis; sparse-graph analogue of the degree/neighborhood bound in UnknownInterference (dbar / degDep). Not discharged."
+    },
+    "ass:bounded-overlap-dependency": {
+      "lean_kind": "assumption",
+      "lean_name": "BoundedOverlapDependency",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Graph regularity: Delta_n ≤ Dbar — the dependency-graph max degree. Threaded hypothesis; matches the DepGraph max-degree m fed to stein_cdf_clt_of_depGraph and the degree bound in FiniteDesign.var_edge_sum_le / var_htEst_le. Not discharged."
+    },
+    "ass:variance-nondegenerate": {
+      "lean_kind": "assumption",
+      "lean_name": "VarianceNondegenerate",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Regularity: liminf_n sigma^2_{G_n,p_n^*}(Y) > 0. Threaded hypothesis giving v_n ≥ c n eventually (the CLT denominator non-degeneracy). Standard nondegenerate-variance modeling condition; not discharged."
+    },
+    "def:feasible-designs": {
+      "lean_kind": "structure",
+      "lean_name": "FeasibleDesign",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "members": [
+        "ass:positivity-floor",
+        "ass:budget-balance"
+      ],
+      "target_file": "Basic.lean",
+      "notes": "CLASS bundling the two member atoms (positivity floor + budget balance) over a probability vector p : I_n → ℝ. One structure field per member, each typed by the member's Prop def. D0.R made a PROVISIONAL (pending-approval) change to this definition — F2 should encode the currently-recorded construction. Nonempty/compact/convex facts about the underlying set are proved as part of thm:convex-design. Search trace: no feasible-Bernoulli-design class in Causalean (only bernoulliDesign has no budget/floor constraints); new local structure. SCAFFOLD REDIRECT attempt 5 (sym:pi_i^1 / sym:pi_i^0 / sym:V_env / sym:hat_V_cons space enforcement): the tagged realization clusters carried only PositivityFloor, which permits eps<=0 (e.g. eps=-1, p=-1/2) and so does NOT pin pi_i^1(p),pi_i^0(p) to (0,1] nor V_env,hat_V_cons to [0,infty). Fixed STRUCTURALLY, not by comment: FeasibleDesign gains a field 'admissible : EpsilonAdmissible eps' (the note's declared symbol space eps in (0,1/2)), so every member of the design class P_{n,B_n,eps} now carries 0<eps<1/2 CONJOINED with the floor eps<=p_k<=1-eps, forcing p_k in (0,1). EpsilonAdmissible and the FeasibleDesign.admissible field are tagged @realizes pi_i^1(p)/pi_i^0(p)/V_env(G_n,p)/hat_V_cons(G_n,p) as co-realizers. Forced ripple (recompiles, no new sorry): feasibleSet_nonempty and feasible_of_optFeasPoint gain heps2 : eps<1/2 (supplied at both call sites from convex_design's existing heps2); feasibleSet_isClosed case-splits on EpsilonAdmissible eps (empty branch closed); feasibleSet_convex carries the admissibility field through; homogeneous_feasible / homogeneous_pair_segment_feasible / linScore_abs_le_uniform_floor supply their existing EpsilonAdmissible hypothesis to the new field."
+    },
+    "def:hajek-denominators": {
+      "lean_kind": "def",
+      "lean_name": "hajekDenominators",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Construction: D_1 = ∑_i T_i/pi_i^1, D_0 = ∑_i C_i/pi_i^0 (realized inverse-propensity exposure counts). Analogous to the Hajek normalizers B̂_t in Causalean.Experimentation.UnknownInterference.hajekEst — F3 reuses that ratio-normalizer pattern; here indices are outcome units and weights are all-treated/all-control product exposures. Search trace: grepped 'hajek','denominator' in UnknownInterference/Hajek.lean; B̂_t exists but one-mode single-coordinate, not bipartite product exposure, so local."
+    },
+    "def:hetero-hajek-estimator": {
+      "lean_kind": "def",
+      "lean_name": "hajekEstimator",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Construction: hat_tau_H = 1{D_1>0}(∑ T_i Y_i^obs/pi_i^1)/D_1 - 1{D_0>0}(∑ C_i Y_i^obs/pi_i^0)/D_0, with the explicit zero-denominator convention. Bipartite two-arm analogue of UnknownInterference.hajekEst (Â₁/B̂₁ - Â₀/B̂₀). Local (bipartite product exposures + Y^obs = Y under ass:bipartite-interference)."
+    },
+    "def:first-order-linearization": {
+      "lean_kind": "def",
+      "lean_name": "linScore",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Construction: eta_i = (T_i/pi_i^1 - 1)(Y_i^1-mu_1) - (C_i/pi_i^0 - 1)(Y_i^0-mu_0), the centered per-unit influence score. New local def (specific centered Hajek linearization); no library analogue at this abstraction."
+    },
+    "def:variance-scale": {
+      "lean_kind": "def",
+      "lean_name": "varScale",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "Construction: sigma^2_{G_n,p}(Y) = n·Var_p(n^{-1} ∑_i eta_i) = n^{-1} ∑_{i,j} E_p[eta_i eta_j]. Built over FiniteDesign.Var/Cov (reused algebra: Var_linear_comb). Local scaling object; the double-sum-of-covariances form is exactly FiniteDesign.Var_htTotal_cov's shape."
+    },
+    "def:graph-envelope": {
+      "lean_kind": "def",
+      "lean_name": "varEnvelope",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Envelope"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Envelope.lean",
+      "notes": "Construction: V_env = 4 n^{-1} ∑_{i,j}{r_ij^1 + r_ij^0 + 2 r_ij^{10}}, the observable graph-only conservative variance objective (depends only on G_n and p). New local design objective; the paper's central novel object, no library analogue. Search trace: grepped 'envelope','conservative variance' in Experimentation; only per-estimator htVarEst (data-dependent), not a graph-only design objective."
+    },
+    "def:optimal-design": {
+      "lean_kind": "def",
+      "lean_name": "optimalDesign",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Envelope"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Envelope.lean",
+      "notes": "Construction: p_n^*(G_n) ∈ argmin_{p ∈ P} V_env(G_n,p) (a selector; well-posed via the nonempty-compact-convex argmin established in thm:convex-design). Encode as a choice from the argmin set (Classical.choose over the nonempty argmin). Local."
+    },
+    "def:kkt-gradient": {
+      "lean_kind": "def",
+      "lean_name": "envelopeGrad",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Envelope"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Envelope.lean",
+      "notes": "Construction: g_k = ∂_{p_k}(V_env/4), the observable per-coordinate envelope-gradient score. D0.R made a PROVISIONAL (pending-approval) change to this definition — F2 encodes the currently-recorded construction. New local def (closed-form gradient of the reciprocal-product envelope); no library analogue."
+    },
+    "def:conservative-variance-estimator": {
+      "lean_kind": "def",
+      "lean_name": "varEstCons",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Envelope"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Envelope.lean",
+      "notes": "Construction: hat_V_cons(G_n,p) = V_env(G_n,p) (the envelope IS the observable conservative estimator, no separate randomness). Trivial local wrapper of varEnvelope."
+    },
+    "def:surrogate-design": {
+      "lean_kind": "def",
+      "lean_name": "surrogateDesign",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Envelope"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Envelope.lean",
+      "notes": "Construction: p_n^{deg}(G_n) ∈ argmin_{p ∈ P} ∑_k h_k(G_n){p_k^{-1}+(1-p_k)^{-1}}, the additive degree-dispersion surrogate selector. Local (Classical.choose over the nonempty argmin of the continuous additive surrogate). New."
+    },
+    "def:approximation-ratio": {
+      "lean_kind": "def",
+      "lean_name": "approxRatio",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Envelope"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Envelope.lean",
+      "notes": "Construction: alpha_cert(G_n) = V_env(G_n,p^deg)/min_p V_env, with the no-loss convention (=1) on the zero-minimum branch, hence a total [1,∞)-valued observable. Local; the branch-total definition is a plain if-then-else over the (decidable) positivity of the envelope minimum."
+    },
+    "prop:homogeneous-reduction": {
+      "lean_kind": "theorem",
+      "lean_name": "homogeneous_reduction",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.THomogeneousReduction"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "hyps": [
+        "ass:independent-heterogeneous-bernoulli"
+      ],
+      "target_file": "THomogeneousReduction.lean",
+      "local_id": "prop:homogeneous-reduction",
+      "notes": "Crux, build-inline. Specialize the heterogeneous overlap loads to a common scalar p and recover the published homogeneous Hajek overlap variance formula. Pure Finset/product algebra + the covariance identities E[A_iA_j]=∏_S p_k^{-1}-1 etc., which reuse bernoulliDesign_E_eval and Cov_prod_disjoint_zero (S=∅ ⇒ Cov=0) from the S1 world. Sanity-reduction; small once thm:hetero-envelope's covariance lemma is factored (share the covariance-identity helper)."
+    },
+    "thm:hetero-envelope": {
+      "lean_kind": "theorem",
+      "lean_name": "hetero_envelope",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.THeteroEnvelope"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "hyps": [
+        "ass:independent-heterogeneous-bernoulli",
+        "ass:bounded-outcomes"
+      ],
+      "target_file": "THeteroEnvelope.lean",
+      "local_id": "thm:hetero-envelope",
+      "notes": "Crux, build-inline — the paper's kernel. Two parts: (1) the exact covariance identity E_p[eta_i eta_j] = r_ij^1 a_i a_j + r_ij^0 b_i b_j + r_ij^{10}(a_i b_j + b_i a_j), proved from bernoulliDesign product-expectation factorization (E[T_iT_j]=∏ p over N_i∪N_j; T_iC_j≡0 when S_ij≠∅) — reuse bernoulliDesign_E_eval, E_prod_block_mul, Cov_prod_disjoint_zero (DesignBased.ProductBlock); (2) envelope bound σ² ≤ V_env via |Y-mu|≤2 (ass:bounded-outcomes) and nonnegativity of the loads. Factor a shared covariance-identity helper (used by prop:homogeneous-reduction)."
+    },
+    "thm:convex-design": {
+      "lean_kind": "theorem",
+      "lean_name": "convex_design",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.TConvexDesign"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "hyps": [
+        "def:feasible-designs"
+      ],
+      "target_file": "TConvexDesign.lean",
+      "local_id": "thm:convex-design",
+      "notes": "Crux, build-inline — heaviest node but the paper's OWN convex-analysis content, formalizable in Mathlib (finite-dimensional; no infeasible external engine → not a gate). Three parts: (a) P nonempty compact convex = closed box ∩ affine hyperplane (Mathlib: convex_...inter, isCompact_...Icc, the constant B_n/m_n witness); (b) convexity of V_env — each ∏_{k∈S} p_k^{-1} is log-convex hence convex on the positive orthant (Mathlib convexity of x↦x⁻¹ / log-convexity, or ConvexOn.prod-of-log-convex), likewise for 1-p_k; (c) global KKT certificate from convex first-order optimality: -grad F(p*) ∈ normal cone of the polyhedron, decomposed into the budget normal 1 + active box normals, yielding lambda_n, nu^±. Search trace: grepped 'KKT','normalCone','convexOn' in ../doc/API.md + Causalean/Mathlib; no packaged polyhedral-KKT lemma, so (c) is built from Mathlib convex analysis (InnerDualCone / first-order optimality on Icc∩hyperplane) — the main formalization effort, tractable finite-dim convex analysis. Keep in scope."
+    },
+    "lem:denominator-positivity": {
+      "lean_kind": "lemma",
+      "lean_name": "denominator_positivity",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.Denominator"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "hyps": [
+        "ass:independent-heterogeneous-bernoulli",
+        "ass:bounded-outcome-degree",
+        "ass:bounded-overlap-dependency",
+        "def:feasible-designs"
+      ],
+      "target_file": "Helpers/Denominator.lean",
+      "local_id": "lem:denominator-positivity",
+      "notes": "Small, build-inline. sup_p P_p(D_1=0 or D_0=0) = O(n^{-1}) via Chebyshev: E[D_a]=n, Var[D_a] ≤ n·Dbar(ε^{-2dbar}+1) from the bounded-degree covariance count. Directly reuses FiniteDesign.chebyshev (Chebyshev.lean), Cov_prod_disjoint_zero / E_prod_block_mul (ProductBlock.lean) for the disjoint-neighborhood zero-covariance, exactly the mechanism of UnknownInterference.var_htEst_le. Search trace: chebyshev + var_edge_sum_le / var_htEst_le confirmed reusable in API.md §18. SCAFFOLD REDIRECT (dir-of-truth correct): the note's uniform O(n^-1) asymptotic denominator-positivity claim is realized as a per-stage EXISTENTIAL-CONSTANT bound — `∃ C ≥ 0` (depending only on ε, d̄, D̄, quantified OUTERMOST, before the experiment) with `P_q(D_1=0 ∨ D_0=0) ≤ C / card O` for every finite experiment (I,O,E,B,q) under the degree/overlap bounds. The universal-C-outermost order avoids the vacuous per-fixed-E constant (junk C=n); statement/signature unchanged in disposition, no downstream signature ripple. SCAFFOLD REDIRECT attempt 2 (B_n space enforcement): the budget `B` bound in this lemma now carries `BudgetAdmissible (I:=I) ε B` (the declared B_n interval [card I·ε, card I·(1−ε)]) as an explicit signature hypothesis — previously the cluster constrained B only via FeasibleDesign's hyperplane ∑q_k=B, leaving the B_n space unenforced by this member of the B_n realization cluster. The hypothesis is threaded before FeasibleDesign and tagged `@realizes B_n`; no call sites (only sorry-bodied downstream), so no ripple. SCAFFOLD REDIRECT attempt (positive-stage qualifier): the note's supremum is an ASYMPTOTIC positive-stage O(n^-1) claim, but the Lean bound `≤ C / card O` held for EVERY finite O with no `0 < card O`/eventual qualifier — for O empty the zero-denominator event has probability 1 while C / card O = C / 0 = 0, making the raw bound false. Restored: a `0 < Fintype.card O` hypothesis is threaded (innermost, before the degree bounds) and tagged `@realizes P_{n,B_n,epsilon}` (positive-stage of the outcome population n = card O > 0), excluding the vacuous empty-O stage. No call sites (only sorry-bodied downstream), so no ripple. SCAFFOLD REDIRECT attempt 3 (fixed budget sequence): the note's supremum is over the class P_{n,B_n,ε} at a FIXED budget sequence B_n, but the Lean put \\`∀ B, BudgetAdmissible ε B → …\\` INSIDE the ∃ C, asserting one rate constant uniformly over every admissible budget. Fixed: an admissible budget sequence (B : ℕ → ℝ) with (∀ n, BudgetAdmissible ε (B n)) is now bound on the signature BEFORE the ∃ C, and the conclusion quantifies only over q with FeasibleDesign ε (B n) q — uniformity retained over the design class only, as the note states. Proof body preserved (B ↦ B n at both helper call sites); no sorry introduced. No call sites, so no ripple. SCAFFOLD REDIRECT attempt 4 (stage-size identification): the core defines O_n={1,…,n}, but the Lean assumed only card(Ox n)→atTop and concluded ≤ C / card(Ox n), permitting sequences with card(Ox n)≠n so neither rate equals the paper's O(n^{-1}). Fixed: the Tendsto binder is replaced by `hcard : ∀ n, Fintype.card (Ox n) = n` (tagged @realizes O_n / n) and the conclusion is restated in the paper's stage-size variable as `≤ C / (n : ℝ)`. Proof preserved: eventually_ge_atTop 1 supplies 0 < card (Ox n) via hcard, and a final calc step rewrites card (Ox n) = n. No sorry introduced; no call sites, so no ripple."
+    },
+    "thm:hetero-clt": {
+      "lean_kind": "theorem",
+      "lean_name": "hetero_clt",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.THeteroClt"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "hyps": [
+        "ass:bipartite-interference",
+        "ass:independent-heterogeneous-bernoulli",
+        "ass:bounded-outcomes",
+        "ass:bounded-outcome-degree",
+        "ass:bounded-overlap-dependency",
+        "ass:variance-nondegenerate",
+        "def:feasible-designs"
+      ],
+      "target_file": "THeteroClt.lean",
+      "local_id": "thm:hetero-clt",
+      "notes": "Crux, build-inline — assembles reused pieces. (1) Linearization: √n{hat_tau_H - tau_n} = n^{-1/2}∑ eta_i + o_p(1), from D_a/n = 1 + O_p(n^{-1/2}) and 1/(1+x)=1+O_p(x); reuse the Slutsky/ratio step FiniteDesign.tendstoInProb_div_one and the Chebyshev consistency engine tendstoInProb_of_var (DesignBased.InProb), plus lem:denominator-positivity for the negligible zero-denominator event and ass:bipartite-interference for T_iY^obs=T_iY^1. (2) Asymptotic normality of the linear term: apply lem:bounded-degree-dependency-clt to eta_i (centered, |eta_i|≤4ε^{-dbar}, dependency graph of degree ≤ Dbar via S_ij, v_n=n·sigma^2 ≥ cn by ass:variance-nondegenerate). Uses p*=optimalDesign feasibility from thm:convex-design. SCAFFOLD REDIRECT attempt 3 (de-strengthen, per reviewer): the Lean theorem additionally assumed `hdenomKernel` and `HeteroDenominatorTightnessInput`, which directly supply the denominator/ratio-remainder tightness used to obtain the first linearization conjunct. The paper states the CLT under its six listed assumptions at p_n^*(G_n) and DERIVES that tightness from bounded degree / overlap / Bernoulli + the ε-floor. Fixed: both binders dropped from the signature and re-introduced as in-proof obligations (`have ... := by sorry`); the surviving assembly proof (hetero_linearization_of_denominator_tightness + hetero_linscore_clt_of_depgraph + hetero_studentized_slutsky) is preserved verbatim. The two `def`s (denominatorKernelBound rate, HeteroDenominatorTightnessInput) remain declared substrate-debt Props consumed only inside the proof. Forced ripple: thm:postdesign-wald (the only caller) drops the same two binders. SCAFFOLD REDIRECT attempt 9: the paper fixes one global epsilon in (0,1/2), so `hetero_clt` now binds `ε : ℝ`; every stage uses `FeasibleDesign ε (B n) (p n)` and `optimalDesign (E n) ε (B n)`, and the redundant theorem premise `hεfloor` is removed. Existing more-general analytic helpers are reused at the constant sequence `(fun _ => ε)`, with their uniform-floor witness derived in-proof from `EpsilonAdmissible ε`. Forced ripple: `postdesign_wald`, which invokes `hetero_clt` under the same assumptions, receives the same fixed-epsilon signature."
+    },
+    "thm:postdesign-wald": {
+      "lean_kind": "theorem",
+      "lean_name": "postdesign_wald",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.TPostdesignWald"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "hyps": [
+        "ass:variance-nondegenerate"
+      ],
+      "target_file": "TPostdesignWald.lean",
+      "local_id": "thm:postdesign-wald",
+      "notes": "Crux, build-inline. Conservativeness hat_V_cons = V_env ≥ sigma^2 is thm:hetero-envelope at p*. Coverage: with T_n ⟶d N(0,1) (thm:hetero-clt) and inflation factor c_n = √(V_env/sigma^2) ≥ 1, the wider Wald event contains {|T_n|≤z}, and P(|T_n|≤z)→1-alpha by continuity of the standard-normal CDF. Directly reuses GaussianCDF: stdNormalCdf, stdNormalCdf_neg (symmetry), continuous_stdNormalCdf — this is the transplant of ExposureMappingInterference.wald_coverage / wald_coverage_feasible (analogous module F3 adapts). Full hetero-clt assumption bundle threaded via the used theorem (only ass:variance-nondegenerate is in this node's depends_on). SCAFFOLD REDIRECT (dir-of-truth correct): the note states coverage holds under the assumptions of thm:hetero-clt, but the Lean statement had DROPPED the CLT's outcome-cardinality divergence hypothesis. Restored: postdesign_wald now carries hcardO : Tendsto (fun n => Fintype.card (Ox n)) atTop atTop verbatim from hetero_clt (added on the signature before hBern); without it the √n normalization and the applied CLT do not fire. No downstream signature ripple (no callers). SCAFFOLD REDIRECT attempt 3 (forced ripple): hetero_clt dropped hdenomKernel and hDenomTightness from its signature, so postdesign_wald (which states coverage 'under the assumptions of thm:hetero-clt') drops the same two binders and applies hetero_clt with the reduced argument list. Proof body otherwise unchanged; no sorry introduced here."
+    },
+    "thm:heterogeneity-separation": {
+      "lean_kind": "theorem",
+      "lean_name": "heterogeneity_separation",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.THeterogeneitySeparation"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "hyps": [
+        "def:feasible-designs"
+      ],
+      "target_file": "THeterogeneitySeparation.lean",
+      "local_id": "thm:heterogeneity-separation",
+      "notes": "Crux, build-inline. First-order argument: at the homogeneous p^hom, the budget-feasible direction d=e_b-e_a has grad F·d = -Delta_g < 0, so p^hom is not a minimizer (uses the convex first-order optimality machinery of thm:convex-design); every optimal p* is non-homogeneous and strictly better, with the explicit Taylor gap bound 2 Delta_g min{eta_box, Delta_g/L_ab}. Singleton-exposure corollary reduces g_k(p^hom) to the observable degree summary s_k^2·{(1-rho)^{-2}-rho^{-2}}. Reuses def:kkt-gradient + thm:convex-design; medium algebra + a 1-D Taylor bound."
+    },
+    "thm:surrogate-certificate": {
+      "lean_kind": "theorem",
+      "lean_name": "surrogate_certificate",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.TSurrogateCertificate"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "hyps": [
+        "ass:bounded-outcome-degree",
+        "def:feasible-designs"
+      ],
+      "target_file": "TSurrogateCertificate.lean",
+      "local_id": "thm:surrogate-certificate",
+      "notes": "Crux, build-inline. Uniform sandwich A(p) ≤ F(p) ≤ C(ε,dbar)·A(p) for every feasible p, where F=V_env/4 and A is the additive surrogate, C(ε,dbar)=max{1,ε^{-(dbar-1)}}. From 1 ≤ a_k,b_k ≤ ε^{-1}: ∏_S a_k ≥ a_l gives the lower bound; ∏_S a_k ≤ ε^{-(s-1)} a_l with s ≤ dbar (ass:bounded-outcome-degree) gives the upper bound. Then alpha_cert = F(p^deg)/F(p^V) ≤ C via the surrogate's minimality. Elementary Finset product/positivity algebra; bounded-degree positive complement to thm:dispersion-certificate-unbounded. Medium."
+    },
+    "lem:bounded-degree-dependency-clt": {
+      "lean_kind": "lemma",
+      "lean_name": "bounded_degree_dependency_clt",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Mathlib.Probability.SteinMethod.StandardizedDepGraphCLT"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "hyps": [],
+      "target_file": "Helpers/DependencyCLT.lean",
+      "local_id": "lem:bounded-degree-dependency-clt",
+      "notes": "SCAFFOLD REDIRECT attempt 8: the triangular-array row is indexed by exactly n variables via ∀ n, card(ι n) = n, and the eventual variance floor is stated against the paper's stage index n as v_n ≥ c n. This replaces the rejected broader shape with arbitrary divergent row cardinalities. The statement otherwise retains centered uniformly bounded arrays, a fixed maximum dependency degree, the raw second-moment/variance sequence, and standardized CDF convergence to N(0,1). The promoted Causalean theorem remains imported as proof substrate."
+    },
+    "input:hetero-clt-denominator-tightness": {
+      "lean_kind": "assumption",
+      "lean_name": "HeteroDenominatorTightnessInput",
+      "disposition": "define-local"
+    },
+    "thm:dispersion-certificate-unbounded": {
+      "lean_kind": "theorem",
+      "lean_name": "dispersionCertificateUnbounded",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.TDispersionCertificate"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "hyps": [],
+      "target_file": "TDispersionCertificate.lean",
+      "local_id": "thm:dispersion-certificate-unbounded",
+      "notes": "MANUAL D0 SALVAGE: oeq:dispersion-certificate was proved in place by the legacy solver. It is replaced by thm:dispersion-certificate-unbounded; formalize the proved answer in core.json, not the obsolete interrogative proposition."
+    }
+  },
+  "theorems": [
+    {
+      "theorem_local_id": "prop:homogeneous-reduction"
+    },
+    {
+      "theorem_local_id": "thm:hetero-envelope"
+    },
+    {
+      "theorem_local_id": "thm:convex-design"
+    },
+    {
+      "theorem_local_id": "lem:denominator-positivity"
+    },
+    {
+      "theorem_local_id": "thm:hetero-clt"
+    },
+    {
+      "theorem_local_id": "thm:postdesign-wald"
+    },
+    {
+      "theorem_local_id": "thm:heterogeneity-separation"
+    },
+    {
+      "theorem_local_id": "thm:surrogate-certificate"
+    },
+    {
+      "theorem_local_id": "lem:bounded-degree-dependency-clt"
+    },
+    {
+      "theorem_local_id": "thm:dispersion-certificate-unbounded"
+    }
+  ],
+  "infrastructure_needed": [],
+  "feasibility_notes": "Formalizable-now, no Defer nodes. The ambient world reuses the finite-population design substrate: FiniteDesign (DesignBased.Design) for E/Var/Cov Finset algebra and bernoulliDesign (UnknownInterference.Bernoulli) for the independent heterogeneous Bernoulli product design (cross-unit independence structural) — directly realizing ass:independent-heterogeneous-bernoulli. Confirmed reusable decls: bernoulliDesign_E_eval/_E_treat/_E_ctrl (marginal expectations feeding pi_i^1/pi_i^0), Cov_prod_disjoint_zero + E_prod_block_mul (DesignBased.ProductBlock) for disjoint-neighborhood zero covariance (S_ij=∅), FiniteDesign.chebyshev (Chebyshev.lean) + the var_edge_sum_le/var_htEst_le counting pattern for lem:denominator-positivity, FiniteDesign.tendstoInProb_div_one / tendstoInProb_of_var (DesignBased.InProb) for the CLT Slutsky/linearization, GaussianCDF stdNormalCdf/stdNormalCdf_neg/continuous_stdNormalCdf for thm:postdesign-wald (transplant of ExposureMappingInterference.wald_coverage), and — the key reuse — stein_cdf_clt_of_depGraph (SteinMethod.DepGraphCLT:363), the abstract bounded-degree dependency-graph CLT that lem:bounded-degree-dependency-clt wraps (standardization bridge only). The bipartite graph layer (I_n/O_n/G_n/neighborhoods/shared sets), the estimator/linearization/variance-scale defs, and the envelope/gradient/optimal/surrogate/approx-ratio design objects have no Causalean analogue (all interference substrate is one-mode) and are new local scaffolding; F3 adapts UnknownInterference.y_eq_of_agree_on_interferers for ass:bipartite-interference and UnknownInterference.hajekEst for the estimator. Build-inline crux theorems: prop:homogeneous-reduction and thm:hetero-envelope (product-expectation covariance algebra), thm:convex-design (the heaviest — finite-dimensional convex analysis + polyhedral KKT built from Mathlib convex-analysis primitives, no packaged lemma but tractable, not a gate), thm:hetero-clt (assembles the reused CLT + Slutsky pieces), thm:postdesign-wald, thm:heterogeneity-separation, thm:surrogate-certificate (sandwich algebra), lem:denominator-positivity, and the resolved negative theorem thm:dispersion-certificate-unbounded. The removed oeq:dispersion-certificate is not recreated. No node needs machinery outside Lean/Mathlib reach; no substrate-gates or citations are load-bearing."
+}

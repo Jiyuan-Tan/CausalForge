@@ -1,0 +1,506 @@
+{
+  "qid": "exp_ego_cluster_exposure_clt",
+  "specialization": "ego_cluster_polynomial_clt",
+  "cluster": "experimentation",
+  "lean_target_subdir": "CausalSmith/Experimentation/EXP_EgoClusterExposureClt_Research",
+  "namespace": "CausalSmith.Experimentation.EgoClusterExposureClt",
+  "status": "needs-new-infrastructure",
+
+  "env": [
+    {
+      "id": "S1",
+      "world": "Finite-population Bernoulli ego-cluster randomization design: a `FiniteDesign` over the cluster-assignment space {0,1}^{m_n}, with fixed exposure-indexed potential outcomes y i h and a design probability functional Pr/E/Var/Cov. The ambient world is the design-based `Experiment` substrate (Aronow-Samii architecture) specialized so the assignment vector is the ego-cluster Bernoulli product design.",
+      "binds_symbols": [
+        "n", "m_n", "U_n", "W_n", "p_n", "H_n", "h_n^+", "h_n^-",
+        "Y_in(h)", "Y_in^obs", "M_ihn", "P_ihn(W_n)", "E_ihn",
+        "pi_ihn", "pi_ij(h,h',n)", "B_ihn", "B_in", "chi(A)", "u(A)", "v(A)",
+        "q_n", "kappa_n", "omega_n", "b_n", "M_Y", "pi_min", "c_sigma",
+        "tau_n", "hat_tau_HT_n", "psi_in", "G_n^dep", "Delta_n", "sigma_n^2",
+        "alpha", "CI_n^orc(1-alpha)"
+      ],
+      "binds_sampling_model": true,
+      "disposition": "reuse",
+      "reuse": "Causalean.Experimentation.DesignBased.FiniteDesign",
+      "modules": [
+        "Causalean.Experimentation.DesignBased.Design",
+        "Causalean.Experimentation.DesignBased.Designs.Bernoulli",
+        "Causalean.Experimentation.DesignBased.Exposure",
+        "Causalean.Experimentation.DesignBased.PotentialOutcome",
+        "Causalean.Experimentation.DesignBased.HT.Estimator",
+        "Causalean.Experimentation.DesignBased.HT.Unbiased",
+        "Causalean.Experimentation.DesignBased.HT.Variance",
+        "Causalean.Experimentation.DesignBased.GaussianCDF"
+      ],
+      "notes": "Confirmed by reading Design.lean (FiniteDesign: E/Var/Cov/Pr, Var_linear_comb, Cov_linear_comb, indicator facts), Exposure.lean (prop = generalized exposure probability = D.Pr, expoInd, propPairSame/propPairCross, Cov_expoInd_same/cross), HT/Estimator.lean (htTotal/htMean/htEffect/tauTrue/muTrue), Designs/Bernoulli.lean (bernoulliDesign with bernoulliDesign_E/Var/Cov_treatInd, independent Bernoulli cluster indicators). The cluster-assignment vector W_n is exactly the Bernoulli product design; the design-probability algebra (E/Var/Cov) is reused verbatim. The signed-incidence exposure EVENT E_ihn = 1{P_ihn>=1} is a polynomial-threshold indicator (not a single-valued exposure map f z (theta i) = h), so the exposure-event/polynomial layer is built locally over this world rather than reusing `expo`/`expoInd` definitionally; pi_ihn is reused as `FiniteDesign.Pr` of the polynomial event. One S-block binds all 35 symbols: the combinatorial probability-algebra symbols (chi/u/v, monomials, supports) live in the same finite Bernoulli world."
+    }
+  ],
+
+  "nodes": {
+    "ass:bernoulli-ego-design": {
+      "lean_kind": "assumption",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.BernoulliEgoDesign",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "assumption_kind": "modeling",
+      "notes": "Modeling/design assumption: W_1n..W_{m_n}n mutually independent Bernoulli(p_n). Kept as a threaded Prop hypothesis. The construction it asserts is realized by `bernoulliDesign` (Designs/Bernoulli.lean, gives independent treatInd with Cov=0); the Prop encodes that the ambient design IS this product. Not a substrate fact, not discharged."
+    },
+    "ass:exposure-consistency": {
+      "lean_kind": "assumption",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.ExposureConsistency",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "assumption_kind": "modeling",
+      "notes": "Causal modeling assumption: Y_in^obs = sum_h 1{E_ihn} Y_in(h) with at most one active label. Threaded Prop hypothesis. Analogous to the consistency baked into Causalean `Yobs`/`expoInd_mul_self_of_ne` (Exposure.lean), but stated for the polynomial exposure events; not discharged."
+    },
+    "ass:bounded-outcomes": {
+      "lean_kind": "assumption",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.BoundedOutcomes",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "assumption_kind": "modeling",
+      "notes": "Regularity modeling assumption max_{i,h}|Y_in(h)| <= M_Y. Threaded Prop hypothesis (mirrors the c1 outcome bound in `abs_effRaw_le`, SteinInstance.lean)."
+    },
+    "ass:positivity": {
+      "lean_kind": "assumption",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.Positivity",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "assumption_kind": "modeling",
+      "notes": "Design positivity min_i {pi_ih+, pi_ih-} >= pi_min. Threaded Prop hypothesis (mirrors the 1/c2 propensity bound in SteinInstance.lean `abs_effTerm_le`)."
+    },
+    "ass:variance-nondegenerate": {
+      "lean_kind": "assumption",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.VarianceNondegenerate",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "assumption_kind": "modeling",
+      "notes": "Regularity assumption sigma_n^2 >= c_sigma/n (nondegenerate normalized design variance). Threaded Prop hypothesis; the analogue in Causalean is the `0 < Var` / `card*Var -> cVar > 0` conditions (SteinInstance.lean `localDependenceCLT_of_paper_conditions`). Not discharged."
+    },
+    "ass:primitive-degree-rate": {
+      "lean_kind": "assumption",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.PrimitiveDegreeRate",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "assumption_kind": "modeling",
+      "notes": "Novel asymptotic sparsity frontier 2 q_n kappa_n (omega_n - 1) = o(n^{1/4}) (Tendsto of the ratio to 0). Threaded Prop hypothesis. This is the paper's primitive overlap condition (a Tendsto statement), not a substrate fact."
+    },
+    "ass:uniform-primitive-degree-rate": {
+      "lean_kind": "assumption",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.UniformPrimitiveDegreeRate",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "assumption_kind": "modeling",
+      "notes": "Uniform version of the sparsity frontier over a subclass C (rho_n(C) -> 0). Threaded Prop hypothesis consumed by lem:uniform-oracle-wald-coverage and thm:feasible-conservative-wald."
+    },
+
+    "def:ego-incidence-array-class": {
+      "lean_kind": "structure",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.EgoIncidenceArray",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "members": [
+        "ass:bernoulli-ego-design",
+        "ass:exposure-consistency",
+        "ass:bounded-outcomes",
+        "ass:positivity"
+      ],
+      "notes": "Class structure bundling the four admissibility assumptions (one field per member, each typed by its Prop def). Built over the reused FiniteDesign/Bernoulli world (S1). Concept-grep `class`/`structure Experiment` in Causalean found `Experiment` (Consistency.lean) as the data carrier; this structure is the predicate/admissibility bundle on top of it, paper-specific."
+    },
+    "def:clt-qualified-ego-incidence-array-class": {
+      "lean_kind": "structure",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.CltQualifiedEgoIncidenceArray",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "members": [
+        "ass:bernoulli-ego-design",
+        "ass:exposure-consistency",
+        "ass:bounded-outcomes",
+        "ass:positivity",
+        "ass:variance-nondegenerate",
+        "ass:primitive-degree-rate"
+      ],
+      "notes": "Class structure adding the variance-nondegeneracy and primitive-degree-rate assumptions to the admissibility bundle (one field per member). Paper-specific CLT-qualified class."
+    },
+    "def:literal-map": {
+      "lean_kind": "def",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.signedLiteral",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Signed cluster literal L_{c,sigma}(W) = W_c if sigma=+1 else 1-W_c. Novel combinatorial primitive over the Bernoulli cluster indicators (treatInd). Search trace: grepped `literal`, `incidence`, `monomial`, `signed` across Causalean/Experimentation and Causalean/PO -> not found; no signed-incidence-polynomial algebra in the library. Build-inline."
+    },
+    "def:incidence-polynomial": {
+      "lean_kind": "def",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.incidencePolynomial",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "P_ihn(W) = sum_{A in M_ihn} prod_{(c,sigma) in A} L_{c,sigma}(W). Built on def:literal-map. Search trace: grepped `incidence`/`polynomial`/`exposure` in DesignBased + ExposureMappingInterference -> not found. Build-inline."
+    },
+    "def:exposure-event": {
+      "lean_kind": "def",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.exposureEvent",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "E_ihn = 1{P_ihn(W) >= 1}. Analogous module to adapt: Causalean `expoInd` (DesignBased/Exposure.lean) is the indicator 1{expo f theta i z = d}; here the exposure is a polynomial-threshold event, not a single-valued map, so build a fresh indicator (FiniteDesign.ind of {P_ihn >= 1}) rather than reuse `expoInd` definitionally. pi_ihn := FiniteDesign.Pr of this event reuses `prop`'s role."
+    },
+    "def:consistency-indicator": {
+      "lean_kind": "def",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.chiConsistent",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "chi(A) = 1 iff no cluster index appears with both signs in the union of A. Combinatorial; build-inline (search trace as in def:literal-map)."
+    },
+    "def:treated-literal-count": {
+      "lean_kind": "def",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.treatedCount",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "u(A) = #distinct clusters appearing with sign +1 (and not -1) in the union of A. Combinatorial Finset.card; build-inline."
+    },
+    "def:control-literal-count": {
+      "lean_kind": "def",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.controlCount",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "v(A) = #distinct clusters appearing with sign -1 (and not +1) in the union of A. Combinatorial Finset.card; build-inline."
+    },
+    "def:ht-contrast": {
+      "lean_kind": "def",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.htContrast",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic",
+        "Causalean.Experimentation.DesignBased.HT.Estimator"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "hat_tau_HT_n = n^{-1} sum_i [1{E_ih+}Yobs/pi_ih+ - 1{E_ih-}Yobs/pi_ih-]. Analogous module to adapt: Causalean `htEffect = htMean dk - htMean dl` (HT/Estimator.lean) has identical shape with expoInd<->E_ihn, prop<->pi_ihn. Built locally (not a definitional reuse) because the exposure events are polynomial-threshold; reference htEffect/htTotal for the algebra and E_htEffect for unbiasedness."
+    },
+    "def:dependency-graph": {
+      "lean_kind": "def",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.depGraph",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic",
+        "Causalean.Mathlib.Probability.SteinMethod.DepGraphCLT"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "G_n^dep: vertices U_n, edge {i,j} iff B_in cap B_jn nonempty. Analogous module: Causalean `SteinMethod.DepGraph` (DepGraphCLT.lean) is the abstract dependency-graph structure (G reflexive/symmetric + independence field) and `Experiment.gdep` (Consistency.lean) is the covariance-based dependency indicator. Build the support-overlap graph locally; it instantiates `DepGraph` for the standardized summands in prop:dependency-degree / thm:ego-overlap-clt."
+    },
+    "def:oracle-ci": {
+      "lean_kind": "def",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.oracleCI",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic",
+        "Causalean.Experimentation.DesignBased.GaussianCDF"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "CI_n^orc(1-alpha) = [hat_tau_HT_n +/- z_{1-alpha/2} sigma_n]. Analogous: the Wald interval event in `wald_coverage` (Intervals.lean) uses |htEffect - tauTrue| <= zq*sqrt(Var); z_{1-alpha/2} is characterized via `stdNormalCdf zq = 1 - alpha/2` (GaussianCDF.lean). Build-inline as the interval/coverage predicate."
+    },
+    "def:variance-envelope-handle": {
+      "lean_kind": "def",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.varEnvelope",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Basic",
+        "Causalean.Experimentation.DesignBased.Exposure"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Vbar_n = max_{y in F_n^obs} Q_n(y), the dual upper-envelope variance handle: Q_n quadratic in y with coefficients Gamma_{ij}^{rs} = pi_ij^{rs}/(pi_ir pi_js) - 1 from the exact joint probabilities; F_n^obs the bounded box [-M_Y,M_Y]^{2n} with equality constraints y_ir = Yobs on realized labels. NOVEL construction (completion-sharp envelope). Search trace: grepped `conservative`/`variance`/`envelope` in ExposureMappingInterference/Variance and DesignBased/Variance -> found `htEffectVarEst`/`htEffectVarEstA` (Conservative.lean, Aronow-Samii sec5 plug-in conservative estimator) which is a DIFFERENT object (an unbiased/nonpositively-biased plug-in, not a max-over-completions envelope). Build-inline; Gamma uses reused `prop`/`propPairSame`/`propPairCross` and `Cov_expoInd_*`."
+    },
+
+    "prop:incidence-probabilities": {
+      "lean_kind": "theorem",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.incidence_probabilities",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Helpers.IncidenceProbability"],
+      "defer_tier": false,
+      "gate": false,
+      "crux": true,
+      "local_id": "t1",
+      "hyps": ["ass:bernoulli-ego-design"],
+      "target_file": "Helpers/IncidenceProbability.lean",
+      "notes": "Exact inclusion-exclusion formulas for pi_ihn and pi_ij(h,h',n) over the signed monomial families. Crux (paper's own algebra). Proof: finite inclusion-exclusion (Finset; Mathlib `Finset.prod_inclusion_exclusion`/`Finset.inclusion_exclusion` family) + lem:literal-conjunction-probability. Search trace: grepped `inclusion`/`incidence`/`UganderKarrer` -> no closed signed-incidence formula in library. Build-inline over reused Bernoulli design."
+    },
+    "prop:dependency-degree": {
+      "lean_kind": "theorem",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.dependency_degree",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Helpers.DependencyGraph",
+        "Causalean.Mathlib.Probability.SteinMethod.DepGraphCLT"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "crux": true,
+      "local_id": "t2",
+      "hyps": ["ass:bernoulli-ego-design", "ass:exposure-consistency"],
+      "target_file": "Helpers/DependencyGraph.lean",
+      "notes": "The centered summands psi_in - E[psi_in] admit G_n^dep as a dependency graph (instantiate Causalean `SteinMethod.DepGraph` via disjoint cluster-support blocks + Bernoulli block-independence `indepFun_prodDesign_apply_blocks` / `bernoulliDesign_Cov_treatInd=0`), and Delta_n <= b_n(omega_n-1) <= 2 q_n kappa_n (omega_n-1) (union-bound + Finset.card). Crux. Analogous: diagDepGraph (IndepSummandsCLT.lean) shows the DepGraph-instantiation pattern."
+    },
+    "thm:ego-overlap-clt": {
+      "lean_kind": "theorem",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.ego_overlap_clt",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.EgoOverlapClt",
+        "Causalean.Mathlib.Probability.SteinMethod.DepGraphCLT",
+        "Causalean.Experimentation.DesignBased.GaussianCDF"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "crux": true,
+      "local_id": "t3",
+      "hyps": [
+        "ass:bernoulli-ego-design",
+        "ass:exposure-consistency",
+        "ass:bounded-outcomes",
+        "ass:positivity",
+        "ass:variance-nondegenerate",
+        "ass:primitive-degree-rate",
+        "lem:dependency-graph-normal-bound"
+      ],
+      "target_file": "EgoOverlapClt.lean",
+      "notes": "Design-based CLT: (hat_tau_HT_n - tau_n)/sigma_n -> N(0,1) and oracle Wald coverage -> 1-alpha. GATE-CONSUMER: the only Defer-tier difficulty is the growing-degree Stein bound lem:dependency-graph-normal-bound, which is threaded as a hypothesis; given the gate, this theorem is IN-SCOPE (defer_tier:false) as an application/reduction proof. Proof skeleton: set X_in = n^{-1}(psi_in-E[psi_in]) (lem:ht-unbiased-bounded gives mean and |.| <= 4 M_Y/pi_min), Var(S_n)=sigma_n^2, dependency graph + degree Delta_n (prop:dependency-degree), moment bounds sum E[X^4] <= C^4 n^{-3}, sum E[|X|^3] <= C^3 n^{-2}, ass:variance-nondegenerate gives sigma^{-2} <= n/c_sigma; feed the gate to get d_W(S_n/sigma_n,Z) <= K(Delta^{3/2}+Delta^2) n^{-1/2} -> 0 under ass:primitive-degree-rate; then d_W -> 0 => CDF convergence => coverage (test-function/Lipschitz argument, cf. wald_coverage in Intervals.lean and stdNormalCdf_neg, no-atom facts in GaussianCDF.lean). NOTE: Causalean's `localDependenceCLT_of_conditions` (SteinInstance.lean) gives CDF convergence but only for CONSTANT degree m; it cannot be reused directly here because Delta_n grows, which is exactly why the sharp Wasserstein bound is gated."
+    },
+    "thm:feasible-conservative-wald": {
+      "lean_kind": "theorem",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.feasible_conservative_wald",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.FeasibleConservativeWald",
+        "Causalean.Experimentation.DesignBased.GaussianCDF"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "crux": true,
+      "local_id": "t4",
+      "hyps": [
+        "ass:exposure-consistency",
+        "ass:bounded-outcomes",
+        "ass:positivity",
+        "ass:variance-nondegenerate",
+        "ass:primitive-degree-rate",
+        "ass:uniform-primitive-degree-rate"
+      ],
+      "target_file": "FeasibleConservativeWald.lean",
+      "notes": "Feasible (non-oracle) Wald interval from the variance envelope Vbar_n: liminf coverage >= 1-alpha pointwise and uniformly, plus pointwise-shortest sharpness within the completion-wise envelope Wald family. Crux. Proof: lem:variance-envelope-dominates gives Vbar_n >= sigma_n^2 pathwise => O_n subseteq F_n => coverage transfers from thm:ego-overlap-clt (monotonicity); uniform part from lem:uniform-oracle-wald-coverage; operationality from prop:incidence-probabilities + lem:variance-envelope-computable-attained; sharpness from lem:variance-envelope-sharp. The Stein gate is inherited transitively through thm:ego-overlap-clt and lem:uniform-oracle-wald-coverage (both carry lem:dependency-graph-normal-bound as a hypothesis in their statements), so no extra hyp added here beyond what depends_on permits (lem:dependency-graph-normal-bound is not in this node's depends_on). Analogous: Causalean `wald_coverage_feasible` (Intervals.lean) and the conservative variance machinery (Conservative.lean) show the oracle->feasible monotone-containment transfer pattern."
+    },
+    "lem:literal-conjunction-probability": {
+      "lean_kind": "lemma",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.literal_conjunction_probability",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Helpers.IncidenceProbability"],
+      "defer_tier": false,
+      "gate": false,
+      "crux": true,
+      "local_id": "t5",
+      "hyps": ["ass:bernoulli-ego-design"],
+      "target_file": "Helpers/IncidenceProbability.lean",
+      "notes": "Pr(all literals in union of C satisfied) = chi(C) p_n^{u(C)} (1-p_n)^{v(C)}. Crux (small). Proof: case split on consistency; consistent case uses Bernoulli mutual independence over distinct clusters (`bernoulliDesign_E_treatInd`, product over treated/control clusters). Build-inline over the reused Bernoulli design."
+    },
+    "lem:ht-unbiased-bounded": {
+      "lean_kind": "lemma",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.ht_unbiased_bounded",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Helpers.DependencyGraph",
+        "Causalean.Experimentation.DesignBased.HT.Unbiased"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "crux": true,
+      "local_id": "t6",
+      "hyps": ["ass:exposure-consistency", "ass:bounded-outcomes", "ass:positivity"],
+      "target_file": "Helpers/DependencyGraph.lean",
+      "notes": "E[psi_in] = Y_in(h+)-Y_in(h-), hat_tau_HT unbiased for tau_n, |psi_in - E[psi_in]| <= 4 M_Y/pi_min. Crux (small). Analogous modules to adapt: Causalean `E_htEffect` (HT/Unbiased.lean) for unbiasedness and `abs_effRaw_le`/`abs_effTerm_le`/`abs_E_le` (SteinInstance.lean) for the 4 M_Y/pi_min bound; same structure with expoInd<->E_ihn, prop<->pi_ihn."
+    },
+    "lem:dependency-graph-normal-bound": {
+      "lean_kind": "assumption",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.DependencyGraphNormalBound",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Helpers.SteinGate",
+        "Causalean.Mathlib.Probability.SteinMethod.DepGraphCLT",
+        "Causalean.Mathlib.Probability.SteinMethod.CLT"
+      ],
+      "defer_tier": true,
+      "gate": true,
+      "gate_class": "gated",
+      "crux": false,
+      "hyps": [],
+      "target_file": "Helpers/SteinGate.lean",
+      "notes": "SUBSTRATE-GATE. Quantitative Stein/Wasserstein dependency-graph normal-approximation bound: d_W(S/sigma, Z) <= C1 d^{3/2} sigma^{-2} (sum E[X_i^4])^{1/2} + C2 d^2 sigma^{-3} sum E[|X_i|^3]. Core node is status:cited (Chin2018 Lemma 1, citing Ross 2011 Thm 3.6) and is HEADLINE-LOAD-BEARING (feeds thm:ego-overlap-clt, the main CLT) -> by the headline carve-out it must NOT stay `cited`; routed through triage -> gated (a classical, named, externally-established Stein's-method fact NOT original to this paper, genuinely hard to formalize: Mathlib has NO Stein's method). REUSE CHECK (search trace): read DepGraphCLT.lean (`stein_cdf_clt_of_depGraph`, `var_nbhd_prod_le` bound 2 m^5 N B^4, `sum_E_nbhd_sq_le` bound m^2 N B^3) and CLT.lean (`stein_cdf_clt`) and SteinInstance.lean (`localDependenceCLT_of_conditions/_of_paper_conditions`); ALL require CONSTANT degree m and deliver CDF convergence, NOT the sharp d^{3/2}/d^2 Wasserstein bound. With GROWING degree Delta_n = o(n^{1/4}) the library's m^5 variance bound does NOT vanish (Delta_n^5 N B^4 ~ Delta_n^5/n -> infinity), so the existing Stein CLT cannot be reused and the sharper Wasserstein constants are genuinely needed. Stated as an abstract Prop over centered RVs with a DepGraph of max degree d, threaded into thm:ego-overlap-clt and lem:uniform-oracle-wald-coverage. SUBSTRATE_DEBT: discharge before banking (build a sharp-constant dependency-graph Wasserstein/Berry-Esseen bound via Stein's method, reusing DepGraphCLT's covariance-vanishing and leave-out-independence infrastructure). Excluded from `theorems` manifest; no consumer proof reconstructs its proof."
+    },
+    "lem:variance-quadratic-exact": {
+      "lean_kind": "lemma",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.variance_quadratic_exact",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Helpers.VarianceEnvelope",
+        "Causalean.Experimentation.DesignBased.Design",
+        "Causalean.Experimentation.DesignBased.Exposure"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "crux": true,
+      "local_id": "t7",
+      "hyps": ["ass:exposure-consistency", "ass:positivity"],
+      "target_file": "Helpers/VarianceEnvelope.lean",
+      "notes": "Var_pi(T_n(y)) = Q_n(y) for all y, and at the true target Q_n(y^0)=sigma_n^2, T_n(y^0)=hat_tau_HT_n. Crux. Proof: covariance bilinearity expansion using reused `FiniteDesign.Var_linear_comb`/`Cov_linear_comb` and the exposure-indicator covariances `Cov_expoInd_same`/`Cov_expoInd_cross` (Exposure.lean); Gamma_{ij}^{rs} = Cov(E_ir/pi_ir, E_js/pi_js)."
+    },
+    "lem:variance-envelope-computable-attained": {
+      "lean_kind": "lemma",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.variance_envelope_computable_attained",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Helpers.VarianceEnvelope"],
+      "defer_tier": false,
+      "gate": false,
+      "crux": true,
+      "local_id": "t8",
+      "hyps": ["ass:exposure-consistency", "ass:bounded-outcomes"],
+      "target_file": "Helpers/VarianceEnvelope.lean",
+      "notes": "F_n^obs is a nonempty compact box (closed subset of [-M_Y,M_Y]^{2n}) and Q_n continuous (polynomial) => Vbar_n = max attained. Crux (small). Proof: Mathlib `IsCompact.exists_isMaxOn` / Weierstrass; nonempty because y^0 in F_n^obs by ass:exposure-consistency + ass:bounded-outcomes. Search trace: grepped `exists_isMaxOn`/`IsCompact` -> Mathlib provides; no Causalean wrapper needed."
+    },
+    "lem:variance-envelope-dominates": {
+      "lean_kind": "lemma",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.variance_envelope_dominates",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Helpers.VarianceEnvelope"],
+      "defer_tier": false,
+      "gate": false,
+      "crux": true,
+      "local_id": "t9",
+      "hyps": ["ass:exposure-consistency", "ass:bounded-outcomes"],
+      "target_file": "Helpers/VarianceEnvelope.lean",
+      "notes": "Vbar_n >= sigma_n^2 on every realized dataset. Crux (small). Proof: y^0 in F_n^obs (ass:bounded-outcomes + ass:exposure-consistency), lem:variance-quadratic-exact gives Q_n(y^0)=sigma_n^2, Vbar_n is the max over a set containing y^0."
+    },
+    "lem:variance-envelope-sharp": {
+      "lean_kind": "lemma",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.variance_envelope_sharp",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.Helpers.VarianceEnvelope"],
+      "defer_tier": false,
+      "gate": false,
+      "crux": true,
+      "local_id": "t10",
+      "hyps": ["ass:bounded-outcomes", "ass:exposure-consistency"],
+      "target_file": "Helpers/VarianceEnvelope.lean",
+      "notes": "Vbar_n is the pointwise-smallest observed-data upper envelope for sigma_n^2 over bounded completions consistent with realized data. Crux. Proof: the maximizer y^* (lem:variance-envelope-computable-attained) extends to a bounded exposure-consistent completion whose exact HT variance equals Vbar_n (lem:variance-quadratic-exact), so any envelope < Vbar_n fails to dominate; lem:variance-envelope-dominates gives the converse."
+    },
+    "lem:uniform-oracle-wald-coverage": {
+      "lean_kind": "lemma",
+      "lean_name": "CausalSmith.Experimentation.EgoClusterExposureClt.uniform_oracle_wald_coverage",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Experimentation.EXP_EgoClusterExposureClt_Research.FeasibleConservativeWald",
+        "Causalean.Mathlib.Probability.SteinMethod.DepGraphCLT",
+        "Causalean.Experimentation.DesignBased.GaussianCDF"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "crux": true,
+      "local_id": "t11",
+      "hyps": [
+        "ass:bernoulli-ego-design",
+        "ass:exposure-consistency",
+        "ass:bounded-outcomes",
+        "ass:positivity",
+        "ass:variance-nondegenerate",
+        "ass:uniform-primitive-degree-rate",
+        "lem:dependency-graph-normal-bound"
+      ],
+      "target_file": "FeasibleConservativeWald.lean",
+      "notes": "Uniform oracle Wald coverage over a subclass C satisfying ass:uniform-primitive-degree-rate: liminf_n inf_{A in C} Pr{tau_n in CI_n^orc} >= 1-alpha. GATE-CONSUMER (gate threaded into hyps), defer_tier:false. Proof: uniform Wasserstein bound from the gate (rho_n(C)->0 kills Delta^{3/2}/Delta^2 terms uniformly), then a Lipschitz test-function argument g_epsilon converts uniform d_W convergence to a uniform coverage liminf (no-atom of standard normal via GaussianCDF facts). Analogous: the single-sequence test-function step in `wald_coverage` (Intervals.lean)."
+    }
+  },
+
+  "theorems": [
+    {"theorem_local_id": "t1"},
+    {"theorem_local_id": "t2"},
+    {"theorem_local_id": "t3"},
+    {"theorem_local_id": "t4"},
+    {"theorem_local_id": "t5"},
+    {"theorem_local_id": "t6"},
+    {"theorem_local_id": "t7"},
+    {"theorem_local_id": "t8"},
+    {"theorem_local_id": "t9"},
+    {"theorem_local_id": "t10"},
+    {"theorem_local_id": "t11"}
+  ],
+
+  "infrastructure_needed": [
+    {
+      "id": "lem:dependency-graph-normal-bound",
+      "kind": "autoid-lemma",
+      "description": "Sharp-constant Stein/Wasserstein dependency-graph normal-approximation bound d_W(S/sigma,Z) <= C1 d^{3/2} sigma^{-2}(sum E X^4)^{1/2} + C2 d^2 sigma^{-3} sum E|X|^3 (Ross 2011 Thm 3.6 / Chin 2018 Lemma 1). Needed because the existing Causalean dependency-graph Stein CLT (stein_cdf_clt_of_depGraph) only handles CONSTANT degree, whereas this paper needs GROWING degree Delta_n = o(n^{1/4}). Substrate-gate (gated): assumed visibly to validate the rest, discharged before banking.",
+      "effort": "large"
+    }
+  ],
+
+  "feasibility_notes": "REUSE (confirmed by reading source): the entire design-probability world is reused via S1 -- FiniteDesign + E/Var/Cov/Pr algebra (Design.lean), Var_linear_comb/Cov_linear_comb, the Bernoulli ego-cluster product design (Designs/Bernoulli.lean: bernoulliDesign with independent treatInd), generalized exposure probabilities prop/propPairSame/propPairCross and indicator covariances Cov_expoInd_same/cross (Exposure.lean), Yobs (PotentialOutcome.lean), htTotal/htMean/htEffect/tauTrue and unbiasedness E_htEffect (HT/Estimator.lean, HT/Unbiased.lean), stdNormalCdf and no-atom/symmetry facts (GaussianCDF.lean), the abstract DepGraph structure + covariance-vanishing/leave-out-independence + var_nbhd_prod_le/sum_E_nbhd_sq_le (SteinMethod/DepGraphCLT.lean), and the oracle->feasible monotone-coverage transfer pattern (Intervals.lean wald_coverage/wald_coverage_feasible). BUILD-INLINE (crux, in scope): the novel signed-incidence-polynomial layer (literal-map, incidence-polynomial, exposure-event, chi/treated/control counts) and its exact inclusion-exclusion probabilities (prop:incidence-probabilities, lem:literal-conjunction-probability); the support-overlap dependency graph and its degree bound (prop:dependency-degree, lem:ht-unbiased-bounded); the completion-sharp variance envelope and its four lemmas (def:variance-envelope-handle, lem:variance-quadratic-exact/computable-attained/dominates/sharp); the design-based CLT and feasible/uniform Wald results as application/reduction proofs (thm:ego-overlap-clt, thm:feasible-conservative-wald, lem:uniform-oracle-wald-coverage); the two class structures and seven modeling/regularity/asymptotic assumption Props. DEFER (substrate-gate, gated): lem:dependency-graph-normal-bound -- the sharp-constant Stein Wasserstein dependency-graph bound, which is classical/external (Ross 2011, Chin 2018) and headline-load-bearing; the existing Causalean Stein CLT cannot be reused because it only handles constant degree while this paper needs growing degree o(n^{1/4}). Gating this engine leaves all of the paper's OWN content (incidence algebra, dependency-degree derivation, variance envelope, CLT/Wald reductions) in scope and provable conditional on the gate; no statement is dropped. Verdict: needs-new-infrastructure."
+}

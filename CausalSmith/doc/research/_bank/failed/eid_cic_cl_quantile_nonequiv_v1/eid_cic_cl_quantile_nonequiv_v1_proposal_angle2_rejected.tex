@@ -1,0 +1,325 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_cic\_cl\_quantile\_nonequiv, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_cic\_cl\_quantile\_nonequiv} / \texttt{v1}%
+  \\ \large\textit{Sharp staggered rank-path bounds for group-time quantile treatment effects without copula restrictions}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a free-form partial-identification proposal with locked tuple
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},\text{bounding functional}).
+\]
+\begin{verbatim}
+qid = eid_cic_cl_quantile_nonequiv
+specialization = v1
+observable distribution P = the finite-support staggered-adoption panel law of
+    (Y_it,D_it,G_i) for periods t=0,...,T, absorbing treatment D_it=1{t>=G_i},
+    cohort labels G_i in {1,...,T,infty}, and positive observed cohort-period
+    outcome cell probabilities.
+parameter theta = the vector of group-time quantile treatment effects
+    theta_{g,t}(tau)=Q_{Y_t(1)-Y_t(0)|G=g}^{-1}(tau), for treated cells t>=g,
+    together with weighted cohort aggregates A_w(theta) over named weights w.
+identifying restrictions = consistency, no anticipation, absorbing staggered
+    adoption, and marginal distributional DID restrictions sufficient to identify
+    for each treated cell (g,t) the two marginal laws
+    F^1_{g,t}=Law(Y_t(1)|G=g) and F^0_{g,t}=Law(Y_t(0)|G=g).
+    No group-invariance or time-invariance copula restriction is imposed unless
+    explicitly added as a corner case.
+bounding functional = the staggered rank-path transport polytope R_stag(P),
+    whose support function h_stag(a;P) optimizes linear threshold functionals of
+    the latent treatment-effect CDFs over one joint latent rank process consistent
+    with all identified marginals and shared not-yet-treated risk-set mixtures.
+\end{verbatim}
+
+\begin{abstract}
+This proposal asks for sharp bounds on staggered-adoption group-time QTTs when the marginal counterfactual distributions are identified but the Callaway--Li style copula restrictions are not maintained.  The kernel conjecture is that the correct identified set is not the Cartesian product of two-period Fan--Yu or Makarov bounds: changing risk sets force a single latent rank-path transport polytope whose support function can be strictly smaller than the product bound for cohort aggregates.  The proposed flagship object is the staggered rank-path width \(W_{\mathrm{stag}}(a;P)\), a computable finite LP gap for a named aggregate threshold direction \(a\).  Under timing-homogeneous risk-set composition, the same LP is conjectured to collapse to the Callaway--Li point-identified QTT vector, recovering joint point identification as a corollary.  If resolved, the result would give Li--Lin style staggered QTT analyses a sharp fallback when copula invariance is not credible: report \(R_{\mathrm{stag}}(P)\) and its width before claiming point-identified distributional treatment effects.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Staggered adoption is now the default empirical setting for difference-in-differences, but distributional treatment effects are still usually interpreted through point-identifying copula restrictions.  Mean DID can survive with group-time ATT building blocks; QTT for treatment-effect distributions cannot, because it asks about the joint law of treated and untreated potential outcomes for the same cohort.  Applied researchers therefore need to know what remains sharply identified when the marginal distributional DID step is accepted but the group-invariance or time-invariance copula step is not.
+
+\paragraph{The main finding (proposed).}
+The headline conjecture is Conjecture~\ref{conj:rankpath-sharp}: for finite-support staggered panels, the sharp identified set for the whole vector of group-time QTT CDF values is the projection of one staggered rank-path transport polytope \(R_{\mathrm{stag}}(P)\).  Theorem~\ref{thm:cell-makarov} records the known single-cell Makarov/Fan--Yu envelope as a baseline, while Conjecture~\ref{conj:nonrectangularity} states the novel separation: for an open finite-support class, the product of those cellwise envelopes is conservative for aggregate QTT claims because the same not-yet-treated risk-set mixtures must rationalize multiple cells.  Conjecture~\ref{conj:timing-homogeneity} adds the positive corner: when timing homogeneity makes the risk-set mixture invariant across treated cohorts, the polytope collapses to the Callaway--Li copula-stable point-ID formula jointly over cells.
+
+\paragraph{What is new.}
+\citet{FanYu2012} provide two-period partial-identification logic for distributional and quantile DID, and \citet{CallawayLiOka2018}, \citet{CallawayLi2019}, and \citet{LiLin2024} provide point-identification routes under copula restrictions.  The epsilon-gap is the named operational object \(W_{\mathrm{stag}}(a;P)=h_{\mathrm{prod}}(a;P)-h_{\mathrm{stag}}(a;P)\): a finite staggered support-function gap showing when cellwise QTT bounds fail to paste into a jointly sharp aggregate bound.  This is not a routine two-period-to-staggered extension, because the conjectured obstruction is non-rectangularity of the feasible latent rank process induced by changing risk sets before quantile inversion.
+
+\paragraph{How it positions in the literature.}
+The proposal is in the partial-identification cluster, with exact-identification DID results used only as identified-marginal inputs and timing-homogeneity corner cases.  It connects Fan--Yu style quantile DID bounds to the Callaway--Li panel QTT copula program and to Li--Lin's staggered QTT agenda, while remaining distinct from Goodman--Bacon or Sun--Abraham mean-decomposition work because the mathematical object is a coupling polytope rather than a linear regression weight decomposition.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is \citet{LiLin2024}: their staggered QTT program would gain a sharp partial-ID fallback and a diagnostic width \(W_{\mathrm{stag}}\) for the cases where the time-invariance copula route is acknowledged to be challenging.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report the staggered rank-path width \(W_{\mathrm{stag}}(a;P)\) for aggregate QTT claims whenever the Callaway--Li copula is not substantively defended.
+
+\section{Related work}
+\citet{AtheyImbens2006} identify counterfactual distributions in nonlinear DID under stable rank and scale-invariant structure; this is the positive exact-ID benchmark that motivates, but does not supply, the missing staggered copula.  \citet{FanYu2012} derive partial-identification bounds for distributional and quantile DID in a simpler two-period setting; their bounds are the closest published cellwise comparator for Theorem~\ref{thm:cell-makarov}.  \citet{CallawayLiOka2018} identify conditional QTT in two-period DID using distributional DID plus a copula restriction, clarifying why marginal counterfactual identification alone does not identify treatment-effect quantiles.  \citet{CallawayLi2019} identify panel-data QTT under distributional DID and a time-invariance copula restriction; Conjecture~\ref{conj:timing-homogeneity} is framed as a staggered timing-homogeneity corner that recovers this type of point-ID logic.  \citet{CallawaySantAnna2021} provide the group-time treatment-effect architecture for staggered adoption, which fixes the cohort-period indexing used here.  \citet{LiLin2024} extend QTT reasoning to staggered adoption and explicitly flag difficulties around the Callaway--Li copula route; this is the closest open-problem anchor for the proposed partial-ID fallback.  \citet{FanPark2010} and \citet{FirpoRidder2019} give sharp bounds for treatment-effect distributions and functionals from marginal potential-outcome distributions, supplying the classical optimal-transport comparator for a single cell.  \citet{GoodmanBacon2021}, \citet{SunAbraham2021}, and \citet{deChaisemartinDHaultfoeuille2020} show that staggered timing creates nontrivial aggregation pathologies for mean DID; they are relevant only as motivation for why staggered risk-set composition should not be ignored.
+
+Within the CausalSmith catalogue, \texttt{doc/API.md} Section~3 records a sparse ExactID/PartialID catalogue, with only a Manski-style bounded-outcome partial-ID study currently documented.  The closest banked proposal is \texttt{eid\_dist\_synth\_control\_v1}, whose rejected Conjecture~2 was criticized for relying on a plug-in quantile-difference formula rather than a computable equality or separation test; the present proposal supplies the missing finite LP support-function object \(W_{\mathrm{stag}}\) in a staggered QTT setting.  The failed \texttt{pid\_qte\_marginal\_sensitivity\_v1} proposal is adjacent because it studies quantile partial-ID certificates, but its Tukey-factor sensitivity quotient is unrelated to staggered risk-set rank paths.
+
+\section{Formal setup}
+Let \(t=0,\ldots,T\), let \(G_i\in\{1,\ldots,T,\infty\}\) be the adoption cohort, and let \(D_{it}=\one\{t\ge G_i\}\).  For \(t\ge g\), write \(Y_{it}(1)\) and \(Y_{it}(0)\) for treated and untreated potential outcomes for cohort \(g\).  The observable law \(P\) is finite support and contains the joint distribution of \((Y_{it},D_{it},G_i)\), with positive mass in every cohort-period cell used below.  No anticipation and consistency give \(Y_{it}=Y_{it}(0)\) when \(t<G_i\) and \(Y_{it}=Y_{it}(1)\) when \(t\ge G_i\).
+
+For each treated cell \((g,t)\), assume the marginal distributional DID step identifies two marginal laws:
+\[
+F^1_{g,t}(y)=\Pr(Y_t(1)\le y\mid G=g),\qquad
+F^0_{g,t}(y)=\Pr(Y_t(0)\le y\mid G=g).
+\]
+The treatment-effect random variable is \(\Delta_{g,t}=Y_t(1)-Y_t(0)\mid G=g\), with CDF \(H_{g,t}(d)=\Pr(\Delta_{g,t}\le d\mid G=g)\) and QTT \(\theta_{g,t}(\tau)=\inf\{d:H_{g,t}(d)\ge\tau\}\).  For a finite set of threshold claims indexed by \(k\), let \(z_k=H_{g_k,t_k}(d_k)\) and let \(a\cdot z\) denote a weighted aggregate threshold functional.
+
+For each cell \((g,t)\), \(\Pi_{g,t}(P)\) is the set of couplings of \(F^1_{g,t}\) and \(F^0_{g,t}\).  The product relaxation is \(\Pi_{\mathrm{prod}}(P)=\prod_{g,t}\Pi_{g,t}(P)\), giving support function
+\[
+h_{\mathrm{prod}}(a;P)=\sup_{\pi\in\Pi_{\mathrm{prod}}(P)}\sum_k a_k\,\pi_{g_k,t_k}\{y_1-y_0\le d_k\}.
+\]
+The proposed staggered rank-path transport polytope \(R_{\mathrm{stag}}(P)\) is the subset of \(\Pi_{\mathrm{prod}}(P)\) generated by one finite latent rank path \(U_i=(U_{i0},\ldots,U_{iT})\), cohort-specific potential-outcome maps, and not-yet-treated risk-set mixture equations that reproduce all identified marginals \(F^0_{g,t}\) from the observed untreated risk sets at each calendar time.  Its support function is
+\[
+h_{\mathrm{stag}}(a;P)=\sup_{\pi\in R_{\mathrm{stag}}(P)}\sum_k a_k\,\pi_{g_k,t_k}\{y_1-y_0\le d_k\},
+\]
+and the named operational gap is
+\[
+W_{\mathrm{stag}}(a;P)=h_{\mathrm{prod}}(a;P)-h_{\mathrm{stag}}(a;P)\ge 0.
+\]
+Timing homogeneity means the not-yet-treated risk-set mixture weights and the untreated rank-path law are invariant in \(g\) among cohorts not yet treated at each calendar time, so a single copula can be pasted across the group-time cells.
+
+The locked parameters are reproduced here for downstream quoting:
+\begin{verbatim}
+qid = eid_cic_cl_quantile_nonequiv
+specialization = v1
+observable distribution P = the finite-support staggered-adoption panel law of
+    (Y_it,D_it,G_i) for periods t=0,...,T, absorbing treatment D_it=1{t>=G_i},
+    cohort labels G_i in {1,...,T,infty}, and positive observed cohort-period
+    outcome cell probabilities.
+parameter theta = the vector of group-time quantile treatment effects
+    theta_{g,t}(tau)=Q_{Y_t(1)-Y_t(0)|G=g}^{-1}(tau), for treated cells t>=g,
+    together with weighted cohort aggregates A_w(theta) over named weights w.
+identifying restrictions = consistency, no anticipation, absorbing staggered
+    adoption, and marginal distributional DID restrictions sufficient to identify
+    for each treated cell (g,t) the two marginal laws
+    F^1_{g,t}=Law(Y_t(1)|G=g) and F^0_{g,t}=Law(Y_t(0)|G=g).
+    No group-invariance or time-invariance copula restriction is imposed unless
+    explicitly added as a corner case.
+bounding functional = the staggered rank-path transport polytope R_stag(P),
+    whose support function h_stag(a;P) optimizes linear threshold functionals of
+    the latent treatment-effect CDFs over one joint latent rank process consistent
+    with all identified marginals and shared not-yet-treated risk-set mixtures.
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite positive staggered panel]\label{ass:finite-panel}
+The observable law \(P\) has finite outcome support in every cohort-period cell, absorbing treatment \(D_{it}=\one\{t\ge G_i\}\), and strictly positive probability for every cohort-period cell used in the threshold vector \(a\).
+\end{assumption}
+
+\begin{assumption}[Consistency and no anticipation]\label{ass:consistency}
+For every unit and period, \(Y_{it}=Y_{it}(0)\) when \(t<G_i\) and \(Y_{it}=Y_{it}(1)\) when \(t\ge G_i\); the untreated potential \(Y_{it}(0)\) is unaffected by future adoption before \(G_i\).
+\end{assumption}
+
+\begin{assumption}[Identified marginal distributional DID]\label{ass:marginal-did}
+For each treated cell \((g,t)\) considered, the observable law and distributional DID restrictions identify the marginal laws \(F^1_{g,t}\) and \(F^0_{g,t}\) at all finite support points.
+\end{assumption}
+
+\begin{assumption}[No unrestricted copula]\label{ass:no-copula}
+No group-invariance copula, time-invariance copula, rank invariance, or rank similarity restriction is imposed on \((Y_t(1),Y_t(0))\mid G=g\) unless a theorem explicitly adds the timing-homogeneity corner.
+\end{assumption}
+
+\begin{assumption}[Staggered rank-path compatibility]\label{ass:rankpath}
+The admissible latent laws must be generated by one finite rank path \(U_i=(U_{i0},\ldots,U_{iT})\) and potential-outcome maps that reproduce all identified marginals while satisfying the not-yet-treated risk-set mixture equations observed at each calendar time.
+\end{assumption}
+
+\begin{assumption}[Nondegenerate aggregate threshold direction]\label{ass:threshold}
+The vector \(a\) has at least two nonzero components from distinct treated cells, and each threshold \(d_k\) lies strictly between two attainable support differences for its cell, so the corresponding treatment-effect CDF value is not forced to be \(0\) or \(1\).
+\end{assumption}
+
+\begin{assumption}[Timing homogeneity corner]\label{ass:timing-homogeneity}
+For the point-ID corner, not-yet-treated risk-set mixture weights and the untreated rank-path law are invariant across eligible cohorts at each calendar time, and the Callaway--Li copula restriction holds with the same copula for every treated cell in the aggregate.
+\end{assumption}
+
+\begin{assumption}[Concrete open witness class]\label{ass:witness-class}
+The witness class consists of three-period panels with cohorts \(G=1,2,\infty\), two-point treated and untreated marginals in each treated cell, positive cohort shares, and a scalar timing-skew moment \(\mu_{\mathrm{skew}}=p_{G=1}-p_{G=2}\) bounded away from zero.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: cellwise Makarov envelope]\label{thm:cell-makarov}
+Under Assumptions~\ref{ass:finite-panel}--\ref{ass:marginal-did}, for a fixed treated cell \((g,t)\) and threshold \(d\), the sharp cellwise interval for \(H_{g,t}(d)=\Pr(Y_t(1)-Y_t(0)\le d\mid G=g)\), ignoring cross-cell rank-path restrictions, is
+\[
+\underline H_{g,t}(d)=\sup_y\max\{0,F^1_{g,t}(y)-F^0_{g,t}(y-d)\},
+\]
+\[
+\overline H_{g,t}(d)=1+\inf_y\min\{0,F^1_{g,t}(y)-F^0_{g,t}(y-d)\}.
+\]
+For finite support this interval is equivalently the minimum and maximum of a transport LP over \(\Pi_{g,t}(P)\).
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This theorem is not the novelty claim; it records the Fan--Yu/Makarov single-cell comparator in the notation needed for the staggered proposal.  (b) Its consumer is Conjecture~\ref{conj:nonrectangularity}: without the cellwise envelope, the support-function gap \(W_{\mathrm{stag}}\) has no baseline from which to measure the extra staggered restriction.
+
+\begin{conjecture}[Conjecture 1: sharp staggered rank-path polytope (NOT YET PROVED)]\label{conj:rankpath-sharp}
+Under Assumptions~\ref{ass:finite-panel}--\ref{ass:rankpath}, the sharp identified set for every finite vector of group-time treatment-effect CDF values \(z_k=H_{g_k,t_k}(d_k)\) is the projection of \(R_{\mathrm{stag}}(P)\).  Equivalently, for every linear threshold direction \(a\), the sharp upper support value is \(h_{\mathrm{stag}}(a;P)\), and the sharp lower support value is \(-h_{\mathrm{stag}}(-a;P)\).  In finite support, both values are attained by solutions of a finite transport LP whose variables are latent rank-path masses, not independent cellwise coupling masses.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{FanYu2012} and \citet{FanPark2010} give two-period or single-pair sharp coupling bounds, while \citet{LiLin2024} focuses on staggered QTT point identification under copula restrictions; none states a joint staggered latent rank-path LP for QTT CDF vectors when copulas are not imposed.  The epsilon-gap is the replacement of independent cellwise couplings by one risk-set-compatible transport polytope \(R_{\mathrm{stag}}(P)\).  (b) Resolving this would give \citet{LiLin2024} a concrete partial-ID fallback and would let applied staggered QTT studies report support functions rather than switching from point ID to informal robustness language.
+
+\begin{conjecture}[Conjecture 2: non-rectangular aggregate gap and timing-skew witness (NOT YET PROVED)]\label{conj:nonrectangularity}
+Under Assumptions~\ref{ass:finite-panel}--\ref{ass:threshold} and the concrete witness class in Assumption~\ref{ass:witness-class}, there is an open set of finite-support laws for which
+\[
+W_{\mathrm{stag}}(a;P)=h_{\mathrm{prod}}(a;P)-h_{\mathrm{stag}}(a;P)>0.
+\]
+Moreover, for the two-cell aggregate direction comparing \((g,t)=(1,2)\) and \((2,2)\), the sign of the support-function correction is indexed by the timing-skew moment \(\mu_{\mathrm{skew}}\): changing \(\mu_{\mathrm{skew}}\) through zero while holding the identified cellwise Makarov envelopes fixed reverses the sign of the aggregate endpoint correction.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest staggered-DID papers, \citet{GoodmanBacon2021} and \citet{SunAbraham2021}, expose aggregation pathologies for linear mean estimands, while \citet{FanYu2012} exposes partial-ID for two-period quantile DID; neither predicts a sign-changing support-function correction caused by risk-set mixing before quantile inversion.  The epsilon-gap is the operational scalar \(W_{\mathrm{stag}}(a;P)\) and the concrete timing moment \(\mu_{\mathrm{skew}}\), not a general warning that staggered timing is hard.  (b) The consumer is a Li--Lin style staggered QTT empirical design: a positive \(W_{\mathrm{stag}}\) warns that reporting independent group-time QTT intervals can overstate the feasible aggregate endpoint.
+
+\begin{conjecture}[Conjecture 3: timing homogeneity recovers joint point identification (NOT YET PROVED)]\label{conj:timing-homogeneity}
+Under Assumptions~\ref{ass:finite-panel}--\ref{ass:marginal-did} plus Assumption~\ref{ass:timing-homogeneity}, \(R_{\mathrm{stag}}(P)\) is a singleton in every treatment-effect CDF coordinate used by the aggregate.  The resulting QTT vector equals the Callaway--Li copula-stable formula applied cell by cell and then aggregated with the declared weights \(w\); hence \(W_{\mathrm{stag}}(a;P)=0\) for every aggregate threshold direction \(a\).
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{CallawayLi2019} supplies the panel-data QTT point-ID logic under a time-invariance copula, and \citet{LiLin2024} studies staggered QTT under copula assumptions; the gap is a necessary collapse statement showing exactly when the partial-ID rank-path polytope degenerates to their point-ID object for all group-time cells jointly.  (b) This gives users of \citet{CallawayLi2019} and \citet{LiLin2024} a diagnostic interpretation: timing homogeneity is not cosmetic, it is the condition under which the partial-ID fallback loses width and point identification becomes a valid joint conclusion.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Two-period reduction]\label{cor:twoperiod}
+Under Assumptions~\ref{ass:finite-panel}--\ref{ass:marginal-did}, if there is only one treated cell and no aggregate direction involving another cell, \(R_{\mathrm{stag}}(P)\) reduces to \(\Pi_{g,t}(P)\).  Conjecture~\ref{conj:rankpath-sharp} then collapses to Theorem~\ref{thm:cell-makarov} because there is no cross-cell rank-path compatibility condition left to impose.
+\end{corollary}
+
+\begin{corollary}[Callaway--Li corner]\label{cor:clcorner}
+Under Assumptions~\ref{ass:finite-panel}--\ref{ass:marginal-did} plus Assumption~\ref{ass:timing-homogeneity}, Conjecture~\ref{conj:timing-homogeneity} reduces the identified set to the Callaway--Li copula-stable QTT vector.  The reduction is clean because the common copula fixes each joint law \((Y_t(1),Y_t(0))\mid G=g\), leaving no transport width to optimize.
+\end{corollary}
+
+\begin{example}[Concrete non-corner witness target]\label{ex:witness}
+Take \(T=2\), cohorts \(G=1,2,\infty\), positive shares \(p_1,p_2,p_\infty\), and two-point marginals \(F^1_{1,2},F^0_{1,2},F^1_{2,2},F^0_{2,2}\) supported on \(\{0,2\}\) and \(\{0,1\}\) with all atom probabilities in \((1/4,3/4)\).  Let \(a=(1,-1)\) compare the two threshold values at \(d=0\).  The proof route for Conjecture~\ref{conj:nonrectangularity} should verify an open neighborhood where the product LP can choose opposite extreme couplings in the two cells, while the rank-path LP cannot when the not-yet-treated risk-set mixture has \(\mu_{\mathrm{skew}}=p_1-p_2\ne0\).
+\end{example}
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:cell-makarov} follows from the classical Frechet--Makarov bounds for the distribution of a difference, with finite-support equivalence obtained by the transportation LP over the two identified marginals.  Conjecture~\ref{conj:rankpath-sharp} should be proved by writing one master finite LP over atoms of \((G,U_0,\ldots,U_T,Y_0(0),\ldots,Y_T(0),Y_0(1),\ldots,Y_T(1))\), projecting it onto the threshold coordinates \(z_k\), and then eliminating variables that only encode already-identified marginals.  The key non-routine step is to show that the remaining constraints are exactly the not-yet-treated risk-set mixture equations defining \(R_{\mathrm{stag}}(P)\), so the support function of the projection is \(h_{\mathrm{stag}}\).  Conjecture~\ref{conj:nonrectangularity} then reduces to a small-support enumeration for the \(G=1,2,\infty\), \(T=2\) witness: compute the independent product optimum, impose the shared rank-path mixture equation, and check that the endpoint correction changes sign with \(\mu_{\mathrm{skew}}\).  Conjecture~\ref{conj:timing-homogeneity} is a collapse argument: the common timing-homogeneous copula turns every feasible cell coupling into the same copula-stable pushforward, so all support functions have zero width.  Boundary cases requiring explicit algebra are ties in quantile inversion, zero atom probabilities, thresholds at support differences, and the one-cell two-period reduction.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:cell-makarov} is a background theorem from classical coupling algebra, not a novelty claim.  Conjectures~\ref{conj:rankpath-sharp}, \ref{conj:nonrectangularity}, and \ref{conj:timing-homogeneity} are not yet proved and are the proposal's kernel.  The proposal intentionally withdraws the prior burned CIC-versus-Callaway--Li point-ID sign-wedge angle and does not claim that QTT point identification fails under the published Callaway--Li assumptions.  The uncertain step is the exact form of the rank-path mixture equations: if they reduce to independent cellwise couplings in all nondegenerate staggered panels, Conjecture~\ref{conj:nonrectangularity} fails and the contribution becomes only a clean Fan--Yu staggered restatement.  The proposal also restricts attention to finite support and finite threshold vectors; continuous-outcome process bounds would be a later extension.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for the partial-ID staggered rank-path bounds angle after two CIC/Callaway--Li point-ID sign-wedge seeds were exhausted; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Athey and Imbens(2006)]{AtheyImbens2006}
+Athey, S. and G. W. Imbens (2006).
+\newblock Identification and inference in nonlinear difference-in-differences models.
+\newblock \emph{Econometrica} 74(2), 431--497.
+
+\bibitem[Callaway, Li, and Oka(2018)]{CallawayLiOka2018}
+Callaway, B., Li, T., and Oka, T. (2018).
+\newblock Quantile treatment effects in difference in differences models under dependence restrictions and with only two time periods.
+\newblock \emph{Journal of Econometrics} 206(2), 395--413.
+
+\bibitem[Callaway and Li(2019)]{CallawayLi2019}
+Callaway, B. and Li, T. (2019).
+\newblock Quantile treatment effects in difference in differences models with panel data.
+\newblock \emph{Quantitative Economics} 10(4), 1579--1618.
+
+\bibitem[Callaway and Sant'Anna(2021)]{CallawaySantAnna2021}
+Callaway, B. and Sant'Anna, P. H. C. (2021).
+\newblock Difference-in-differences with multiple time periods.
+\newblock \emph{Journal of Econometrics} 225(2), 200--230.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{deChaisemartinDHaultfoeuille2020}
+de Chaisemartin, C. and D'Haultfoeuille, X. (2020).
+\newblock Two-way fixed effects estimators with heterogeneous treatment effects.
+\newblock \emph{American Economic Review} 110(9), 2964--2996.
+
+\bibitem[Fan and Park(2010)]{FanPark2010}
+Fan, Y. and Park, S. S. (2010).
+\newblock Sharp bounds on the distribution of treatment effects and their statistical inference.
+\newblock \emph{Econometric Theory} 26(3), 931--951.
+
+\bibitem[Fan and Yu(2012)]{FanYu2012}
+Fan, Y. and Yu, Z. (2012).
+\newblock Partial identification of distributional and quantile treatment effects in difference-in-differences models.
+\newblock \emph{Economics Letters} 115(3), 511--515.
+
+\bibitem[Firpo and Ridder(2019)]{FirpoRidder2019}
+Firpo, S. and Ridder, G. (2019).
+\newblock Sharp bounds on functionals of the joint distribution in the analysis of treatment effects.
+\newblock \emph{Journal of Business \& Economic Statistics} 39(2), 532--546.
+
+\bibitem[Goodman-Bacon(2021)]{GoodmanBacon2021}
+Goodman-Bacon, A. (2021).
+\newblock Difference-in-differences with variation in treatment timing.
+\newblock \emph{Journal of Econometrics} 225(2), 254--277.
+
+\bibitem[Li and Lin(2024)]{LiLin2024}
+Li, T. and Lin, Y. (2024).
+\newblock Quantile treatment effects in difference-in-differences with staggered adoption.
+\newblock \emph{Economics Letters} 242, 111792.
+
+\bibitem[Sun and Abraham(2021)]{SunAbraham2021}
+Sun, L. and Abraham, S. (2021).
+\newblock Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\newblock \emph{Journal of Econometrics} 225(2), 175--199.
+\end{thebibliography}
+
+\end{document}

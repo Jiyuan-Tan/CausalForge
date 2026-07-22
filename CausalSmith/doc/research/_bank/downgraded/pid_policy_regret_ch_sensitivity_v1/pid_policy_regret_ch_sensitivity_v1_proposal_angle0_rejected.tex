@@ -1,0 +1,577 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_policy\_regret\_ch\_sensitivity, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_policy\_regret\_ch\_sensitivity} / \texttt{v1}%
+  \\ \large\textit{Sharp CH--R-squared minimax policy regret with Tikhonov inverse-propensity rule}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{quote}\small
+\begin{verbatim}
+(qid, specialization) =
+  (pid_policy_regret_ch_sensitivity, v1)
+anchor cluster = PartialID
+observable distribution P =
+  law of (X,A,Y) with binary A in {0,1}, bounded outcome Y in [lo,hi],
+  calibrated observed propensity e0(x)=P(A=1|X=x) in (eps,1-eps),
+  calibrated observed conditional outcome regressions
+  m0(a,x)=E_P[Y|A=a,X=x], policy feature map psi(x) in R^d, and an
+  ellipsoidal local stochastic-policy class Pi_B = {pi_beta: beta' S beta <= 1,
+  pi_beta(1|x)=e0(x)+psi(x)' beta is in [eps,1-eps] P_X-a.s.}
+parameter theta =
+  worst-case shifted regret R_CH,delta(beta) obtained by first ranging over
+  latent laws Q in Q_CH(P;r_y,r_w) that match the observed law P, then adding
+  the external target-X shift support C_delta to each local policy contrast
+identifying restrictions =
+  consistency Y=Y(A); bounded potential outcomes lo <= Y(a) <= hi;
+  observed overlap eps <= e0(X) <= 1-eps and Pi_B overlap; a Cinelli-Hazlett--
+  Riesz potential-outcome bias budget in variance-ratio form: with
+  rho_y^2=r_y/(1-r_y), rho_w^2=r_w/(1-r_w), sigma_Y^2(P)=E[(Y-m0(A,X))^2],
+  every admissible latent law has mean-zero arm-indexed potential-outcome
+  increments eta_Y(a) and arm-indexed Riesz increments eta_R,h(a), a in {0,1},
+  with ||eta_Y||_Q,e0^2 <= rho_y^2 sigma_Y^2(P) and
+  ||eta_R,h||_Q,e0^2 <= rho_w^2 h' Sigma_ipw h for every contrast h;
+  target-population covariate shift is not part of latent-law matching, but an
+  external ambiguity set over X-marginals with support C_delta(h)
+bounding functional =
+  lower/upper regret endpoints obtained by optimizing policy regret over all
+  latent laws Q=(X,U,A,Y(0),Y(1)) matching P and satisfying the CH--Riesz
+  restrictions, plus the target-shift support C_delta(h); the conjectural
+  closed-form policy is the
+  Tikhonov inverse-propensity score beta_{r,delta} = kappa
+  (Sigma_ipw + lambda_CH(r_y,r_w,delta) I + delta Sigma_x)^{-1} b, where
+  lambda_CH is the smallest minimizer of the explicit one-dimensional
+  support-function profile J_{r,delta}(lambda) defined in Section 6 and kappa
+  puts beta in B or on the active ellipsoid boundary
+\end{verbatim}
+\end{quote}
+
+\begin{abstract}
+Cinelli and Hazlett's partial-$R^2$ sensitivity language is widely used to report how strong omitted confounding would have to be to overturn a regression effect, but it does not yet give a sharp regret theory for offline policy learning. This proposal asks whether a local stochastic policy class has a closed-form minimax-regret rule when hidden confounding is bounded by a Cinelli--Hazlett--Riesz potential-outcome bias budget rather than by a marginal odds-ratio sensitivity model. The flagship conjecture is that this CH--Riesz budget yields a sharp population regret envelope whose minimizer is a Tikhonov-regularized inverse-propensity score, with the regularization parameter determined by an explicit one-dimensional profile. A second conjecture states an iff compatibility frontier: the support bound is sharp exactly when the latent outcome increment and latent Riesz increment can be pasted into one observed-law-preserving potential-outcome environment; in that sharp regime, two boundary environments attain the endpoints and yield bridge limits to Kallus--Zhou marginal-sensitivity regret and Adjaho--Christensen covariate-shift policy evaluation. If true, the result would turn CH robustness values from post-estimation diagnostics into sharp policy-regret guarantees.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Offline policy learning from observational logs is most useful when randomized deployment is expensive or risky, but those are also the settings where hidden assignment factors and transportability concerns are hard to dismiss. \citet{KallusZhou2021} show that minimax regret is the right decision-theoretic object when policy value is not point identified under hidden confounding, while \citet{CinelliHazlett2020} give practitioners an interpretable partial-$R^2$ scale for omitted-variable strength. The methodological question is whether these two languages can be joined sharply: can a researcher report a policy, not just a point effect, whose worst-case regret is calibrated by CH--Riesz potential-outcome bias parameters?
+
+\paragraph{The main finding (proposed).}
+The flagship statement is Conjecture 1: in a finite-dimensional local stochastic-policy class, the CH--Riesz identified regret set has an ellipsoidal support function, and the minimax-regret policy is the Tikhonov inverse-propensity rule
+\[
+  \beta_{r,\delta}=\kappa_{r,\delta}
+  \bigl(\Sigma_{\mathrm{ipw}}+\lambda_{\mathrm{CH}}(r_y,r_w,\delta)I+\delta\Sigma_X\bigr)^{-1}b.
+\]
+Here $b$ is the calibrated observed welfare gradient, $\Sigma_{\mathrm{ipw}}$ is the covariance of the observed Riesz representer for the local policy contrast, $\Sigma_X$ is the covariate-shift feature covariance, and $\lambda_{\mathrm{CH}}(r_y,r_w,\delta)$ is the smallest minimizer of an explicit one-dimensional support-function profile. Proposition 1 is now only a calibration lemma: it records the known Chernozhukov--Cinelli--Newey--Sharma--Syrgkanis Riesz omitted-variable-bias support bound specialized to the local policy score. The novel load-bearing claims are Conjecture 1's minimax Tikhonov policy formula and Conjecture 2's iff compatibility/sharpness frontier.
+
+\paragraph{What is new.}
+The novelty kernel is not another odds-ratio marginal sensitivity model and not the Riesz OVB support bound itself. It is the conjectured iff frontier saying that the CH--Riesz bound is exactly the sharp policy-regret envelope precisely when the arm-indexed latent potential-outcome regression increment and arm-indexed policy Riesz increment can be pasted into a common potential-outcome law, and that in this sharp regime the minimax rule is the displayed Tikhonov inverse-propensity policy. \citet{ChernozhukovCinelliNeweySharmaSyrgkanis2022} already give the sharp CH/Riesz bias support for linear causal functionals; \citet{KallusZhou2021} optimize worst-case regret over propensity-weight uncertainty sets; \citet{Tan2006}, \citet{ZhaoSmallBhattacharya2019}, \citet{DornGuo2023}, \citet{YadlowskyNamkoongBasuDuchiTian2022}, and \citet{DornGuoKallus2025} sharpen marginal-sensitivity effect or IPW bounds; \citet{HessFrauenMelnychukFeuerriegel2026} study sharp off-policy learning under unobserved confounding; and \citet{AdjahoChristensen2025} study externally valid policy choice under target-population shifts. None of these states the policy-regret compatibility frontier, the closed-form CH-to-Tikhonov minimax policy, or the two boundary potential-outcome environments needed to make the regret envelope sharp rather than conservative.
+
+\paragraph{How it positions in the literature.}
+This is a partial-identification and sensitivity-analysis proposal. It sits between Manski-style treatment choice under ambiguity \citep{Manski2004,Stoye2012}, CH-style omitted-variable sensitivity \citep{CinelliHazlett2020}, marginal-sensitivity policy learning \citep{KallusZhou2021,JinXuZhengZhou2025}, and external-validity policy choice \citep{AdjahoChristensen2025}. The object is a population regret bound and the policy attaining it, not a finite-sample estimator; estimation and inference would be downstream once the sharp population functional is established.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the robust policy-learning workflow of \citet{JinXuZhengZhou2025}: if the conjecture is true, their marginal-sensitivity robust welfare criteria could be supplemented with a CH-calibrated regret curve that practitioners can benchmark using observed covariates as in \citet{CinelliHazlett2020}. In applied health-policy logs, this would give an analyst a named check before deploying a learned rule: report the smallest CH partial-$R^2$ product at which the learned policy no longer improves on the status quo.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should choose and report the CH-regularized inverse-propensity policy when hidden-confounding strength is calibrated on the partial-$R^2$ scale, rather than translating CH diagnostics informally into an odds-ratio sensitivity parameter.
+
+\section{Related work}
+\citet{CinelliHazlett2020} introduce partial-$R^2$ robustness values for omitted-variable bias in regression, providing the sensitivity scale used here; their object is a point-estimated regression coefficient, not a policy-regret functional. \citet{ChernozhukovCinelliNeweySharmaSyrgkanis2022} give the closest published support-function comparator: a sharp Riesz-representer omitted-variable-bias bound for broad linear causal functionals, including policy-effect functionals, so Proposition \ref{prop:support} is treated below as a calibration lemma rather than as the novelty claim. \citet{KallusZhou2018} and \citet{KallusZhou2021} formulate confounding-robust policy improvement and minimax-optimal policy learning over nominal propensity-weight uncertainty sets; they are the closest policy-regret comparators but use odds-ratio/weight uncertainty rather than CH--Riesz potential-outcome bias geometry. \citet{Tan2006} is the standard odds-ratio marginal-sensitivity anchor, and \citet{ZhaoSmallBhattacharya2019} develop IPW sensitivity methods in that marginal-sensitivity language; together they define the limiting face that the proposed CH bridge must recover. \citet{DornGuo2023} give sharp IPW sensitivity analysis through quantile balancing, making them a close comparator for the MSM face; the proposed gap is a policy-regret compatibility frontier under CH--Riesz potential-outcome bias rather than an MSM IPW bound. \citet{YadlowskyNamkoongBasuDuchiTian2022} give scalable CATE and ATE bounds under odds-ratio hidden-confounding restrictions, showing how sharp sensitivity bounds can be made statistical but not addressing policy-regret minimaxity under CH budgets. \citet{DornGuoKallus2025} prove doubly valid and doubly sharp ATE sensitivity estimators under the marginal sensitivity model; their sharpness target is an average effect bound, not a local policy-regret envelope.
+
+\citet{JinXuZhengZhou2025} develop robust policy learning under the marginal sensitivity model with closed-form robust welfare criteria and asymptotic regret bounds, making their workflow the most direct consumer of a CH-calibrated regret formula. \citet{HessFrauenMelnychukFeuerriegel2026} study efficient and sharp off-policy learning under unobserved confounding, so Conjecture \ref{conj:tikhonov} must be separated from their sharp off-policy bounds by the CH--Riesz potential-outcome bias geometry and the Tikhonov inverse-propensity formula. \citet{AdjahoChristensen2025} study personalized policies that remain externally valid across target populations and motivate the $\delta\Sigma_X$ covariate-shift component in the proposed bridge limit. \citet{ChristensenConnault2023} recast counterfactual robustness over latent distributions as a finite-dimensional convex program, which is a useful analogue for reducing infinite-dimensional latent-environment sensitivity to a support function. \citet{KitagawaTetenov2018} and \citet{AtheyWager2021} are point-identified policy-learning baselines; the proposed question begins where their identifying assumptions fail. \citet{Manski2004} and \citet{Stoye2012} anchor minimax-regret treatment choice under partial identification and limited external validity, but do not study CH-calibrated inverse-propensity policy formulas.
+
+The in-repo prior-art substrate comes from the Stage -1.1 gap payload and not from a new catalogue scan. The closest CausalSmith prior proposal is \texttt{pid\_offline\_policy\_joint\_misspec\_v1}, whose \S8 flags a ``sharp joint-misspecification variational interval'' and a ``non-rectangular phase transition'' for offline policy value. Its reviewer also requested a finite-grid compatibility lemma proving that the $q_a(c\mid x)$ constraints are exactly equivalent to a factual-law compatibility statement. This proposal differs by replacing that finite-grid joint propensity/outcome-misspecification interval with a CH--Riesz potential-outcome bias budget, a policy-regret compatibility frontier, and a Tikhonov policy formula; the earlier proposal is therefore a nearby warning about compatibility, not the same kernel.
+
+\section{Formal setup}
+The observed law $P$ is the law of $(X,A,Y)$, where $A\in\{0,1\}$ and $Y\in[\ell,u]$. The calibrated nuisance functions are
+$e_0(x)=P(A=1\mid X=x)$ and $m_0(a,x)=\E_P[Y\mid A=a,X=x]$; the word ``calibrated'' means these are population objects of the observed law for the proposal, not estimated or misspecified nuisance fits. The analyst supplies a status-quo policy $\pi_0(1\mid x)=e_0(x)$ and a finite-dimensional feature vector $\psi(x)\in\R^d$. A local stochastic policy is indexed by $\beta\in\R^d$:
+\[
+  \pi_\beta(1\mid x)=e_0(x)+\psi(x)^\transpose\beta,\qquad
+  \pi_\beta(0\mid x)=1-\pi_\beta(1\mid x),
+\]
+with $\beta$ restricted to an ellipsoid $B=\{\beta:\beta^\transpose S\beta\le1\}$ and to the overlap face $\pi_\beta(1\mid x)\in[\epsilon,1-\epsilon]$ almost surely. The target value under a compatible latent law $Q$ is
+\[
+  V_Q(\beta)=\E_Q[\pi_\beta(1\mid X)Y(1)+\pi_\beta(0\mid X)Y(0)].
+\]
+The regret of $\beta$ under $Q$ is
+\[
+  \operatorname{Reg}_Q(\beta)=\sup_{\alpha\in B} V_Q(\alpha)-V_Q(\beta).
+\]
+
+For each policy contrast $h=\alpha-\beta$, define the residualized inverse-propensity score
+\[
+  W_h(X,A)=h^\transpose\psi(X)\frac{A-e_0(X)}{e_0(X)(1-e_0(X))}.
+\]
+For a full latent law $Q$, let
+\[
+  \mu_Q(a,X,U)=\E_Q[Y(a)\mid X,U],\qquad a\in\{0,1\},
+\]
+be the arm-indexed potential-outcome regression. For each contrast $h$, define the full-data policy-value regression functional
+\[
+  \mathcal L_{h,Q}(\mu)=
+  \E_Q\!\left[h^\transpose\psi(X)\{\mu(1,X,U)-\mu(0,X,U)\}\right].
+\]
+The tangent space is the Hilbert space of arm-indexed square-integrable perturbations
+$g=(g_0,g_1)$ with inner product
+\[
+  \langle f,g\rangle_{Q,e_0}
+  =
+  \E_Q\!\left[
+    e_0(X)f_1(X,U)g_1(X,U)
+    +(1-e_0(X))f_0(X,U)g_0(X,U)
+  \right].
+\]
+Write $\|f\|_{Q,e_0}^2=\langle f,f\rangle_{Q,e_0}$ for the induced arm-weighted norm.
+Let $a_{h,Q}(a,X,U)$ be the Riesz representer of $\mathcal L_{h,Q}$ in this arm-indexed tangent space. Its observed-law representer on the no-hidden-confounding face is
+\[
+  a^0_h(1,X)=\frac{h^\transpose\psi(X)}{e_0(X)},\qquad
+  a^0_h(0,X)=-\frac{h^\transpose\psi(X)}{1-e_0(X)},
+\]
+whose observed-action realization $a^0_h(A,X)$ equals $W_h(X,A)$. In v5 the CH--Riesz budget is therefore defined on potential-outcome regressions over both arms rather than on the factual observed-action regression. Let
+\[
+  \eta^Y_{a,Q}=\mu_Q(a,X,U)-m_0(a,X),\qquad
+  \eta^R_{a,h,Q}=a_{h,Q}(a,X,U)-a^0_h(a,X),
+  \qquad a\in\{0,1\},
+\]
+with the observed-action projection restrictions
+$\E_Q[\eta^Y_{A,Q}\mid X,A]=0$ and
+$\E_Q[\eta^R_{A,h,Q}\mid X,A]=0$ imposed by observed-law matching. Define the observed outcome scale
+\[
+  \sigma_Y^2(P)=\E_P[\{Y-m_0(A,X)\}^2]
+\]
+and the observed Riesz scale
+\[
+  \sigma_R^2(h;P)=\E_P[W_h(X,A)^2]=h^\transpose\Sigma_{\mathrm{ipw}}h.
+\]
+For $r_y,r_w\in[0,1)$ write
+$\rho_y^2=r_y/(1-r_y)$ and $\rho_w^2=r_w/(1-r_w)$. The CH--Riesz potential-outcome budget is the pair of inequalities
+\[
+  \|\eta^Y_Q\|_{Q,e_0}^2\le \rho_y^2\sigma_Y^2(P),\qquad
+  \|\eta^R_{h,Q}\|_{Q,e_0}^2\le \rho_w^2\sigma_R^2(h;P)
+  \quad\text{for every }h\in B-B.
+\]
+Equivalently, $r_y$ and $r_w$ are the CH partial-$R^2$ ratios after the observed residual and observed Riesz scales have been fixed. The omitted-variable-bias contribution to the policy contrast is the Riesz covariance
+\[
+  B_Q(h)=\langle \eta^Y_Q,\eta^R_{h,Q}\rangle_{Q,e_0},
+\]
+which directly controls $V_Q(\alpha)-V_Q(\beta)-b^\transpose h$ rather than only the factual residual distribution. A pair $(\eta_Y,\eta_{R,h})$ is called $P$-compatible when there exists a latent law $Q$ matching the observed law $P$, satisfying consistency and bounded potential outcomes, for which these are the two increments above.
+Write
+\[
+  \Gamma(r_y,r_w)=
+  \sqrt{\frac{r_y}{1-r_y}}\sqrt{\frac{r_w}{1-r_w}},
+\]
+for $r_y,r_w\in[0,1)$; the limiting face $r_y r_w\uparrow1$ means $\Gamma(r_y,r_w)\to\infty$. The calibrated observed welfare gradient and IPW covariance are
+\[
+  b=\E_P\!\left[\psi(X)\{m_0(1,X)-m_0(0,X)\}\right],\qquad
+  \Sigma_{\mathrm{ipw}}=\E_P\!\left[
+    \psi(X)\psi(X)^\transpose \{e_0(X)(1-e_0(X))\}^{-1}\right].
+\]
+Set $\sigma_{\mathrm{CH}}=\sigma_Y(P)$ throughout this proposal; there is no separate unobserved scale parameter. The covariate-shift component is represented by a positive semidefinite matrix $\Sigma_X$ and a radius $\delta\ge0$, with support function
+$C_\delta(h)=\delta\sqrt{h^\transpose\Sigma_Xh}$ for shifts in $P_X$ over the policy-feature mean. This target-X shift is an external support-function add-on, not a latent-law matching condition. Formally, let $\mathcal N_\delta(P_X)$ be the class of target covariate laws $\nu$ whose local feature-mean support over contrasts is bounded by $C_\delta$, and define shifted local regret by adding $\sup_{\nu\in\mathcal N_\delta(P_X)}\{E_\nu-E_{P_X}\}$ on the contrast feature score. Let $\mathcal Q_{\mathrm{CH}}(P;r_y,r_w)$ be the set of all latent laws $Q$ over $(X,U,A,Y(0),Y(1))$ that match the observed law $P$, satisfy consistency $Y=Y(A)$, the bounded-outcome and overlap restrictions, and the CH--Riesz potential-outcome bias restrictions above. The identified shifted-regret interval for policy $\beta$ is
+\[
+  \Theta_I^\delta(\beta;P,r_y,r_w)
+  =
+  \left\{
+  \sup_{\alpha\in B}\left[
+    V_Q(\alpha)-V_Q(\beta)+C_\delta(\alpha-\beta)
+  \right]
+  :Q\in\mathcal Q_{\mathrm{CH}}(P;r_y,r_w)
+  \right\}.
+\]
+Its upper endpoint is the bounding functional
+\[
+  R_{\mathrm{CH},\delta}(\beta;P,r_y,r_w)
+  =\sup \Theta_I^\delta(\beta;P,r_y,r_w).
+\]
+For later comparison define the feature-shift support-function regret
+\[
+  R_{\mathrm{AC}}(\beta;\delta)=
+  \sup_{\alpha\in B}\left[
+    b^\transpose(\alpha-\beta)+C_\delta(\alpha-\beta)
+  \right],
+\]
+the Adjaho--Christensen face of this local policy class. For a calibrated marginal-sensitivity radius $\Lambda$, define
+\[
+  R_{\mathrm{KZ}}(\beta;\Lambda)=
+  \sup_{\alpha\in B}\left[
+    b^\transpose(\alpha-\beta)+
+    \mathcal S_{\mathrm{KZ}}(\alpha-\beta;\Lambda)
+  \right],
+\]
+where $\mathcal S_{\mathrm{KZ}}(h;\Lambda)$ is the Kallus--Zhou one-dimensional marginal-sensitivity support function for the same residualized score $W_h$ after the odds-ratio weights are normalized to have conditional mean one under $P$. The bridge comparison in Conjecture \ref{conj:sharp-bridge} is stated only after choosing a calibration map $\Lambda=\Lambda_{\mathrm{CH}}(r_y,r_w)$ such that
+$\mathcal S_{\mathrm{KZ}}(h;\Lambda_{\mathrm{CH}})$ and
+$\Gamma(r_y,r_w)\sigma_{\mathrm{CH}}\sqrt{h^\transpose\Sigma_{\mathrm{ipw}}h}$
+agree on standardized one-dimensional score contrasts.
+Write $\beta_{\mathrm{KZ}}\in\arg\min_{\beta\in B}R_{\mathrm{KZ}}(\beta;\Lambda)$ for the Kallus--Zhou local minimax policy and $\beta_{0,\delta}\in\arg\min_{\beta\in B}R_{\mathrm{AC}}(\beta;\delta)$ for the zero-hidden-confounding covariate-shift minimax policy.
+
+For each $\lambda\ge0$, let
+\[
+  M_{\lambda,\delta}
+  =\Sigma_{\mathrm{ipw}}+\lambda I+\delta\Sigma_X,\qquad
+  \widetilde\beta_{\lambda,\delta}=M_{\lambda,\delta}^{-1}b,
+\]
+and choose $\kappa_{\lambda,\delta}>0$ as the largest scale for which
+$\kappa_{\lambda,\delta}\widetilde\beta_{\lambda,\delta}\in B$ and the overlap face holds. Define the scalar profile
+\[
+  J_{r,\delta}(\lambda)=
+  \sup_{\alpha\in B}\left[
+    b^\transpose(\alpha-\kappa_{\lambda,\delta}\widetilde\beta_{\lambda,\delta})
+    +\Gamma(r_y,r_w)\sigma_{\mathrm{CH}}
+      \sqrt{(\alpha-\kappa_{\lambda,\delta}\widetilde\beta_{\lambda,\delta})^\transpose
+        \Sigma_{\mathrm{ipw}}
+        (\alpha-\kappa_{\lambda,\delta}\widetilde\beta_{\lambda,\delta})}
+    +\delta\sqrt{(\alpha-\kappa_{\lambda,\delta}\widetilde\beta_{\lambda,\delta})^\transpose
+        \Sigma_X
+        (\alpha-\kappa_{\lambda,\delta}\widetilde\beta_{\lambda,\delta})}
+  \right].
+\]
+The Tikhonov scalar is
+$\lambda_{\mathrm{CH}}(r_y,r_w,\delta)=\min\arg\min_{\lambda\ge0}J_{r,\delta}(\lambda)$ whenever the argmin is nonempty; in the smooth interior case it equivalently solves the one-dimensional dual equation $J'_{r,\delta}(\lambda)=0$.
+
+\begin{quote}\small
+\begin{verbatim}
+(qid, specialization) =
+  (pid_policy_regret_ch_sensitivity, v1)
+anchor cluster = PartialID
+observable distribution P =
+  law of (X,A,Y) with binary A in {0,1}, bounded outcome Y in [lo,hi],
+  calibrated observed propensity e0(x)=P(A=1|X=x) in (eps,1-eps),
+  calibrated observed conditional outcome regressions
+  m0(a,x)=E_P[Y|A=a,X=x], policy feature map psi(x) in R^d, and an
+  ellipsoidal local stochastic-policy class Pi_B = {pi_beta: beta' S beta <= 1,
+  pi_beta(1|x)=e0(x)+psi(x)' beta is in [eps,1-eps] P_X-a.s.}
+parameter theta =
+  worst-case shifted regret R_CH,delta(beta) obtained by first ranging over
+  latent laws Q in Q_CH(P;r_y,r_w) that match the observed law P, then adding
+  the external target-X shift support C_delta to each local policy contrast
+identifying restrictions =
+  consistency Y=Y(A); bounded potential outcomes lo <= Y(a) <= hi;
+  observed overlap eps <= e0(X) <= 1-eps and Pi_B overlap; a Cinelli-Hazlett--
+  Riesz potential-outcome bias budget in variance-ratio form: with
+  rho_y^2=r_y/(1-r_y), rho_w^2=r_w/(1-r_w), sigma_Y^2(P)=E[(Y-m0(A,X))^2],
+  every admissible latent law has mean-zero arm-indexed potential-outcome
+  increments eta_Y(a) and arm-indexed Riesz increments eta_R,h(a), a in {0,1},
+  with ||eta_Y||_Q,e0^2 <= rho_y^2 sigma_Y^2(P) and
+  ||eta_R,h||_Q,e0^2 <= rho_w^2 h' Sigma_ipw h for every contrast h;
+  target-population covariate shift is not part of latent-law matching, but an
+  external ambiguity set over X-marginals with support C_delta(h)
+bounding functional =
+  lower/upper regret endpoints obtained by optimizing policy regret over all
+  latent laws Q=(X,U,A,Y(0),Y(1)) matching P and satisfying the CH--Riesz
+  restrictions, plus the target-shift support C_delta(h); the conjectural
+  closed-form policy is the
+  Tikhonov inverse-propensity score beta_{r,delta} = kappa
+  (Sigma_ipw + lambda_CH(r_y,r_w,delta) I + delta Sigma_x)^{-1} b, where
+  lambda_CH is the smallest minimizer of the explicit one-dimensional
+  support-function profile J_{r,delta}(lambda) defined in Section 6 and kappa
+  puts beta in B or on the active ellipsoid boundary
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Binary observed law and consistency]\label{ass:observed-consistency}
+The observed law $P$ is the law of $(X,A,Y)$ with $A\in\{0,1\}$, $Y\in[\ell,u]$, $e_0(X)=P(A=1\mid X)$, and $m_0(a,X)=\E_P[Y\mid A=a,X]$ square integrable for $a\in\{0,1\}$. Every admissible latent law $Q$ satisfies $Y=Y(A)$ and has the same marginal law $P$ for $(X,A,Y(A))$.
+\end{assumption}
+
+\begin{assumption}[Observed and policy overlap]\label{ass:overlap}
+There is $\epsilon\in(0,1/2)$ such that $\epsilon\le e_0(X)\le1-\epsilon$ almost surely, and every $\beta\in B$ considered in the proposal satisfies $\pi_\beta(1\mid X)\in[\epsilon,1-\epsilon]$ almost surely.
+\end{assumption}
+
+\begin{assumption}[Local ellipsoidal policy class]\label{ass:policy-class}
+The feature vector $\psi(X)\in\R^d$ has finite second moment, $S$ is positive definite, and $B=\{\beta\in\R^d:\beta^\transpose S\beta\le1\}$. The interior formula in Conjecture \ref{conj:tikhonov} is asserted only when the displayed $\beta_{r,\delta}$ belongs to the overlap face; otherwise the conjectural rule is its $S$-ellipsoid projection onto the feasible face.
+\end{assumption}
+
+\begin{assumption}[Cinelli--Hazlett--Riesz potential-outcome budget]\label{ass:ch-budget}
+For fixed $r_y,r_w\in[0,1)$, every admissible latent law $Q$ admits the arm-indexed potential-outcome regression increments
+$\eta^Y_{a,Q}=\mu_Q(a,X,U)-m_0(a,X)$ and arm-indexed full-data Riesz-representer increments
+$\eta^R_{a,h,Q}=a_{h,Q}(a,X,U)-a^0_h(a,X)$ defined in \S6. Their observed-action realizations have observed-sigma-field projections zero and the arm-indexed increments satisfy the variance-ratio restrictions
+\[
+  \|\eta^Y_Q\|_{Q,e_0}^2\le \rho_y^2\sigma_Y^2(P),
+  \qquad
+  \|\eta^R_{h,Q}\|_{Q,e_0}^2\le \rho_w^2 h^\transpose\Sigma_{\mathrm{ipw}}h
+  \quad\text{for every } h\in B-B,
+\]
+where $\rho_y^2=r_y/(1-r_y)$ and $\rho_w^2=r_w/(1-r_w)$. The policy-value bias is the Riesz covariance
+$B_Q(h)=\langle\eta^Y_Q,\eta^R_{h,Q}\rangle_{Q,e_0}$, so the restriction applies to the counterfactual policy-value functional over both potential-outcome arms rather than only to the factual residual $Y(A)-m_0(A,X)$.
+\end{assumption}
+
+\begin{assumption}[Covariate-shift support function]\label{ass:cov-shift}
+The target-population ambiguity component is represented by a positive semidefinite matrix $\Sigma_X$ and radius $\delta\ge0$ whose contribution to any policy contrast $h$ is
+$C_\delta(h)=\delta\sqrt{h^\transpose\Sigma_Xh}$. This component is imposed as an external support function over target $X$-marginals and is not part of the latent-law matching condition $Q\mapsto P$. When $\delta=0$, no target-population covariate shift is imposed.
+\end{assumption}
+
+\begin{assumption}[Nondegenerate covariance]\label{ass:nondegenerate}
+The matrix $\Sigma_{\mathrm{ipw}}+\delta\Sigma_X$ is positive definite on the span of feasible policy contrasts, and $b\ne0$. The boundary-environment sharpness claim in Conjecture \ref{conj:sharp-bridge} is restricted to laws for which $\sigma_{\mathrm{CH}}^2>0$ and the optimal contrast is not orthogonal to the observed policy Riesz covariance.
+The division-based collinearity frontier is asserted only on the positive-budget domain $r_y,r_w\in(0,1)$; the case $r_y=0$ or $r_w=0$ is governed by Assumption \ref{ass:zero-budget-face}.
+\end{assumption}
+
+\begin{assumption}[Smooth exposed minimax face]\label{ass:smooth-face}
+For the flagship policy formula, the scalar profile $J_{r,\delta}$ has a nonempty argmin, the relevant support-function maximizer over $B$ is unique, and the minimax-regret policy lies on a smooth exposed face of $B$ satisfying the overlap restriction. Sharpness of the support bound is not assumed here; it is the content of Conjecture \ref{conj:sharp-bridge}.
+\end{assumption}
+
+\begin{assumption}[Bridge normalization]\label{ass:bridge-normalization}
+The marginal-sensitivity bridge uses a calibration map $\Lambda_{\mathrm{CH}}(r_y,r_w)$ such that the Kallus--Zhou support $\mathcal S_{\mathrm{KZ}}(h;\Lambda_{\mathrm{CH}})$ is compared to the CH support on the same standardized residualized score $W_h$. The Tikhonov scalar $\lambda_{\mathrm{CH}}(r_y,r_w,\delta)$ is defined as the smallest minimizer of $J_{r,\delta}$ from \S6; the conjectural limiting claims require this minimizer to be unique and continuous along the relevant paths. The Kallus--Zhou limiting path is normalized so that $\lambda_{\mathrm{CH}}(r_y,r_w,0)\downarrow0$ as $\Gamma(r_y,r_w)\to\infty$.
+\end{assumption}
+
+\begin{assumption}[Zero-budget point-identification face]\label{ass:zero-budget-face}
+When $\Gamma(r_y,r_w)=0$, admissible laws in $\mathcal Q_{\mathrm{CH}}(P;r_y,r_w)$ satisfy the no-hidden-confounding face
+$\E_Q[Y(a)\mid X]=m_0(a,X)$ for $a\in\{0,1\}$. Thus, at $\delta=0$ and $\Gamma(r_y,r_w)=0$, the local policy value contrast is point identified by $b^\transpose(\alpha-\beta)$.
+\end{assumption}
+
+\section{Main results}
+\begin{proposition}[Proposition 1: CH--Riesz calibration support bound]\label{prop:support}
+Under Assumptions \ref{ass:observed-consistency}--\ref{ass:cov-shift}, every feasible policy contrast $h=\alpha-\beta$ satisfies
+\[
+  \sup_{Q\in\mathcal Q_{\mathrm{CH}}(P;r_y,r_w)}
+  \{V_Q(\alpha)-V_Q(\beta)+C_\delta(h)\}
+  \le
+  b^\transpose h
+  +\Gamma(r_y,r_w)\,\sigma_{\mathrm{CH}}
+    \sqrt{h^\transpose\Sigma_{\mathrm{ipw}}h}
+  +\delta\sqrt{h^\transpose\Sigma_Xh},
+\]
+where $\sigma_{\mathrm{CH}}^2=\sigma_Y^2(P)$ is the observed CH--Riesz outcome-variation scale from \S6 and the calibrated nuisance convention implies that $W_h$ is the observed Riesz representer on the no-hidden-confounding face. Consequently
+\[
+  R_{\mathrm{CH},\delta}(\beta;P,r_y,r_w)
+  \le
+  \sup_{\alpha\in B}\left[
+  b^\transpose(\alpha-\beta)
+  +\Gamma(r_y,r_w)\sigma_{\mathrm{CH}}
+    \sqrt{(\alpha-\beta)^\transpose\Sigma_{\mathrm{ipw}}(\alpha-\beta)}
+  +\delta\sqrt{(\alpha-\beta)^\transpose\Sigma_X(\alpha-\beta)}
+  \right].
+\]
+\end{proposition}
+\paragraph{Why this is new and worth studying.}
+This proposition is not presented as flagship novelty after v4: the closest published result is \citet{ChernozhukovCinelliNeweySharmaSyrgkanis2022}, whose Riesz-representer omitted-variable-bias theorem already supplies the sharp support-bound algebra for linear causal functionals. The $\epsilon$-gap is only the calibration to the local policy-regret notation and the external covariate-shift support add-on used by Conjectures \ref{conj:tikhonov}--\ref{conj:sharp-bridge}; the new question is whether this known support bound is an exact minimax regret frontier and yields the Tikhonov policy. The concrete consumer is \citet{JinXuZhengZhou2025}: their robust policy score could use this lemma as the CH-scale certificate if the two conjectures prove sharpness.
+
+\begin{conjecture}[Conjecture 1: Tikhonov minimax policy formula (NOT YET PROVED)]\label{conj:tikhonov}
+Under Assumptions \ref{ass:observed-consistency}--\ref{ass:bridge-normalization}, the unique minimax-regret policy is
+\[
+  \beta_{r,\delta}
+  =
+  \kappa_{r,\delta}
+  \bigl(\Sigma_{\mathrm{ipw}}+\lambda_{\mathrm{CH}}(r_y,r_w,\delta)I+\delta\Sigma_X\bigr)^{-1}b,
+\]
+where $\lambda_{\mathrm{CH}}(r_y,r_w,\delta)=\min\arg\min_{\lambda\ge0}J_{r,\delta}(\lambda)$ and $\kappa_{r,\delta}=\kappa_{\lambda_{\mathrm{CH}},\delta}$ are defined in \S6. In the smooth interior case, $\lambda_{\mathrm{CH}}$ is equivalently the unique solution of the one-dimensional dual equation $J'_{r,\delta}(\lambda)=0$. Its sharp worst-case regret is $J_{r,\delta}(\lambda_{\mathrm{CH}})$.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+The closest results are \citet{ChernozhukovCinelliNeweySharmaSyrgkanis2022}, which gives the Riesz OVB support bound but no policy minimax rule, \citet{KallusZhou2021}, which computes minimax policies under marginal-sensitivity propensity-weight uncertainty, \citet{HessFrauenMelnychukFeuerriegel2026}, which studies efficient and sharp off-policy learning under unobserved confounding, and \citet{AdjahoChristensen2025}, which optimizes external validity under target-population shifts. The flagship $\epsilon$-gap is the closed-form CH-to-Tikhonov minimax frontier: the scalar regularizer is the minimizer of the CH--Riesz support-function profile $J_{r,\delta}$ and is asserted to be optimal for regret, not merely to bound one fixed linear functional. Resolving it would give applied CH users a directly deployable policy rule and would make the Kallus--Zhou robust-policy workflow reportable on the CH robustness-value scale.
+
+\begin{conjecture}[Conjecture 2: iff compatibility frontier, boundary environments, and bridge limits (NOT YET PROVED)]\label{conj:sharp-bridge}
+Under Assumptions \ref{ass:observed-consistency}--\ref{ass:bridge-normalization}, for positive CH budgets $r_y,r_w\in(0,1)$ and every nondegenerate interior policy contrast $h$, the upper support bound in Proposition \ref{prop:support} is the sharp endpoint of the identified regret set if and only if there exists a $P$-compatible arm-indexed increment pair $(\eta_Y,\eta_{R,h})$ satisfying Assumption \ref{ass:ch-budget}, the bounded-potential-outcome restriction in Assumption \ref{ass:observed-consistency}, and the exposed-face collinearity condition
+\[
+  \eta^Y_{a,Q}/\{\rho_y\sigma_Y(P)\}
+  =
+  \eta^R_{a,h,Q}/\{\rho_w\sqrt{h^\transpose\Sigma_{\mathrm{ipw}}h}\},
+  \qquad a\in\{0,1\},
+  \quad Q\text{-a.s. under the arm-weighted tangent measure}
+\]
+with the sign reversed for the lower endpoint. Equivalently, there exist two observationally compatible latent laws $Q_h^+$ and $Q_h^-$ that paste the same observed law $P$, saturate the two positive-budget CH--Riesz variance-ratio inequalities, and attain the positive and negative endpoints of the support function. When $r_y=0$ or $r_w=0$, this division-based collinearity condition is not asserted; the zero-budget endpoint is defined separately by Assumption \ref{ass:zero-budget-face} and the sanity-check corollaries. Moreover, after the bridge normalization in Assumption \ref{ass:bridge-normalization}, the policy and regret formula in Conjecture \ref{conj:tikhonov} have the following limits:
+\[
+  \Gamma(r_y,r_w)\to\infty,\ \delta=0
+  \quad\Longrightarrow\quad
+  R_{\mathrm{CH},0}(\beta_{r,0};P,r_y,r_w)
+  -R_{\mathrm{KZ}}(\beta_{\mathrm{KZ}};\Lambda_{\mathrm{CH}}(r_y,r_w))
+  \to0,
+\]
+where $R_{\mathrm{KZ}}$ and $\Lambda_{\mathrm{CH}}$ are defined in \S6 on the same local score class, and
+\[
+  \Gamma(r_y,r_w)\downarrow0
+  \quad\Longrightarrow\quad
+  R_{\mathrm{CH},\delta}(\beta_{r,\delta};P,r_y,r_w)
+  -R_{\mathrm{AC}}(\beta_{0,\delta};\delta)
+  \to0,
+\]
+where $R_{\mathrm{AC}}$ is the Adjaho--Christensen covariate-shift support function restricted to the feature-mean ambiguity $C_\delta$ as defined in \S6.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+The closest published comparisons are \citet{Tan2006}, \citet{ZhaoSmallBhattacharya2019}, and \citet{KallusZhou2021} for the marginal-sensitivity face, \citet{ChernozhukovCinelliNeweySharmaSyrgkanis2022} for the Riesz support-function face, and \citet{AdjahoChristensen2025} for the covariate-shift face. The $\epsilon$-gap is compatibility and sharpness: the conjecture says the CH--Riesz model has two actual boundary potential-outcome environments that attain the regret bound and that the two policy-learning languages are limits of one population functional, not merely heuristically calibrated sensitivity parameters. The concrete consumer is CH-style robustness-value reporting for observational health-policy logs: the boundary environments would justify reporting the displayed regret curve as sharp rather than conservative.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Zero hidden-confounding face]\label{cor:zero}
+Under Assumptions \ref{ass:observed-consistency}--\ref{ass:cov-shift} and \ref{ass:zero-budget-face}, if $r_y=0$ or $r_w=0$, then $\Gamma(r_y,r_w)=0$ and Proposition \ref{prop:support} reduces to
+\[
+  V_Q(\alpha)-V_Q(\beta)+C_\delta(\alpha-\beta)
+  \le b^\transpose(\alpha-\beta)
+  +C_\delta(\alpha-\beta).
+\]
+Thus the CH component vanishes and the remaining bound is exactly the feature-mean covariate-shift support function used to represent the Adjaho--Christensen face of the locked convention.
+\end{corollary}
+
+\begin{corollary}[No-shift, no-confounding point-identified face]\label{cor:point}
+Under Assumptions \ref{ass:observed-consistency}--\ref{ass:cov-shift} and \ref{ass:zero-budget-face}, if $\delta=0$ and $(r_y=0$ or $r_w=0)$, then the regret bound reduces to
+$\sup_{\alpha\in B} b^\transpose(\alpha-\beta)$, the calibrated local welfare-regret criterion. This is the point-identified local policy-learning corner of \citet{KitagawaTetenov2018} and \citet{AtheyWager2021}.
+\end{corollary}
+
+\begin{corollary}[Marginal-sensitivity limiting check]\label{cor:kz}
+Under Assumption \ref{ass:bridge-normalization}, as $\Gamma(r_y,r_w)\to\infty$ with $\delta=0$, the conjectural Tikhonov regularizer $\lambda_{\mathrm{CH}}(r_y,r_w,0)$ tends to zero. The formula in Conjecture \ref{conj:tikhonov} therefore collapses to the unregularized inverse-propensity direction on the same score class, the face that Conjecture \ref{conj:sharp-bridge} identifies with the Kallus--Zhou marginal-sensitivity regret support function.
+\end{corollary}
+
+\section{Proof-sketch route}
+Proposition \ref{prop:support} should follow by specializing the Chernozhukov--Cinelli--Newey--Sharma--Syrgkanis Riesz omitted-variable-bias covariance identity to the arm-indexed potential-outcome policy-value functional, followed by Cauchy--Schwarz in the $\langle\cdot,\cdot\rangle_{Q,e_0}$ tangent inner product and the variance-ratio form of the CH calibration for $\eta^Y_{a,Q}$ and $\eta^R_{a,h,Q}$. Conjecture \ref{conj:tikhonov} reduces to solving the scalar profile $J_{r,\delta}(\lambda)$ from \S6: prove existence of a smallest minimizer, differentiate the support-function objective on smooth faces of the policy ellipsoid, and verify that the first-order condition is equivalent to the Tikhonov inverse with matrix $\Sigma_{\mathrm{ipw}}+\lambda_{\mathrm{CH}}I+\delta\Sigma_X$. The nontrivial step is the positive-budget iff sharpness frontier: prove that equality in Cauchy--Schwarz is attainable exactly when the normalized arm-indexed increments are collinear and $P$-compatible, then construct latent variables $U_h^+$ and $U_h^-$ that paste those increments into a common potential-outcome law, bind both CH--Riesz variance-ratio inequalities, and preserve the observed law of $(X,A,Y)$. The zero-budget frontier should be handled by a separate limiting argument using Assumption \ref{ass:zero-budget-face}, not by dividing through by $\rho_y$ or $\rho_w$. The bridge limits require explicit algebra for the one-dimensional support functions $\mathcal S_{\mathrm{KZ}}$ and $C_\delta$ on each contrast $h$, showing that the CH--Riesz support converges to the calibrated odds-ratio support in the Kallus--Zhou face and to the covariate-feature support in the Adjaho--Christensen face.
+
+\section{Honest scope flags}
+Proposition \ref{prop:support} is a specialization of the published Riesz OVB covariance-bound calculation of \citet{ChernozhukovCinelliNeweySharmaSyrgkanis2022}; it is a calibration lemma, not a flagship novelty claim. Conjectures \ref{conj:tikhonov} and \ref{conj:sharp-bridge} are the novel kernel and are not yet proved. The strongest possible claim in the topic statement, a fully global policy formula for arbitrary policy classes, is deliberately not claimed; this v5 locks a finite-dimensional local stochastic-policy class, an explicit arm-indexed variance-ratio CH--Riesz potential-outcome bias convention, and a separate target-X support-function convention. The positive-budget compatibility frontier in Conjecture \ref{conj:sharp-bridge} is deliberately separated from the zero-budget limit to avoid dividing by $\rho_y$ or $\rho_w$. The Kallus--Zhou and Adjaho--Christensen reductions are stated under an explicit bridge-normalization assumption because a raw CH partial-$R^2$ parameter and an odds-ratio or covariate-shift radius are not the same primitive object.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft from Stage -1.1 gaps, choosing the CH--R-squared policy-regret bridge as the flagship kernel; prior verdict: none.
+\item v2 (revise) -- patched calibrated nuisance definitions, explicit $\lambda_{\mathrm{CH}}$ and bridge support functions, zero-budget point-identification face, and missing sharp IPW/off-policy comparators; prior verdict: REVISE.
+\item v3 (revise) -- added Chernozhukov--Cinelli--Newey--Sharma--Syrgkanis as the primary Riesz OVB comparator, replaced the factual-residual CH condition with a CH--Riesz potential-outcome bias restriction, moved sharpness out of assumptions into Conjecture \ref{conj:sharp-bridge}, and corrected the MSM attribution to Tan; prior verdict: REVISE.
+\item v4 (revise) -- replaced the ambiguous CH--Riesz budget with explicit variance-ratio equations, separated target-X covariate shift from latent-law matching, demoted the already-known support bound to Proposition \ref{prop:support}, and restated Conjecture \ref{conj:sharp-bridge} as the advertised iff compatibility frontier; prior verdict: REVISE.
+\item v5 (revise) -- replaced the factual observed-action regression notation with arm-indexed potential-outcome regressions and Riesz increments, and restricted the Conjecture \ref{conj:sharp-bridge} collinearity frontier to positive CH budgets with a separate zero-budget limit; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Adjaho and Christensen(2025)]{AdjahoChristensen2025}
+Adjaho, C. and T. Christensen (2025).
+\newblock Externally valid policy choice.
+\newblock \emph{arXiv:2205.05561}.
+
+\bibitem[Athey and Wager(2021)]{AtheyWager2021}
+Athey, S. and S. Wager (2021).
+\newblock Policy learning with observational data.
+\newblock \emph{Econometrica} 89(1), 133--161.
+
+\bibitem[Christensen and Connault(2023)]{ChristensenConnault2023}
+Christensen, T. and B. Connault (2023).
+\newblock Counterfactual sensitivity and robustness.
+\newblock \emph{Econometrica} 91(1), 263--298.
+
+\bibitem[Cinelli and Hazlett(2020)]{CinelliHazlett2020}
+Cinelli, C. and C. Hazlett (2020).
+\newblock Making sense of sensitivity: Extending omitted variable bias.
+\newblock \emph{Journal of the Royal Statistical Society: Series B} 82(1), 39--67.
+
+\bibitem[Chernozhukov et~al.(2022)]{ChernozhukovCinelliNeweySharmaSyrgkanis2022}
+Chernozhukov, V., C. Cinelli, W. K. Newey, A. Sharma, and V. Syrgkanis (2022).
+\newblock Long story short: Omitted variable bias in causal machine learning.
+\newblock \emph{NBER Working Paper} No. 30302.
+
+\bibitem[Dorn, Guo, and Kallus(2025)]{DornGuoKallus2025}
+Dorn, J., K. Guo, and N. Kallus (2025).
+\newblock Doubly-valid/doubly-sharp sensitivity analysis for causal inference with unmeasured confounding.
+\newblock \emph{Journal of the American Statistical Association}.
+
+\bibitem[Dorn and Guo(2023)]{DornGuo2023}
+Dorn, J. and K. Guo (2023).
+\newblock Sharp sensitivity analysis for inverse propensity weighting via quantile balancing.
+\newblock \emph{Journal of the American Statistical Association}.
+
+\bibitem[Hess et~al.(2026)]{HessFrauenMelnychukFeuerriegel2026}
+Hess, L., T. Frauen, V. Melnychuk, and S. Feuerriegel (2026).
+\newblock Efficient and sharp off-policy learning under unobserved confounding.
+\newblock \emph{International Conference on Learning Representations}.
+
+\bibitem[Jin, Xu, Zheng, and Zhou(2025)]{JinXuZhengZhou2025}
+Jin, Z., G. Xu, X. Zheng, and Y. Zhou (2025).
+\newblock Policy learning under unobserved confounding: A robust and efficient approach.
+\newblock \emph{arXiv:2507.20550}.
+
+\bibitem[Kallus and Zhou(2018)]{KallusZhou2018}
+Kallus, N. and A. Zhou (2018).
+\newblock Confounding-robust policy improvement.
+\newblock \emph{Advances in Neural Information Processing Systems}.
+
+\bibitem[Kallus and Zhou(2021)]{KallusZhou2021}
+Kallus, N. and A. Zhou (2021).
+\newblock Minimax-optimal policy learning under unobserved confounding.
+\newblock \emph{Management Science} 67(5), 2870--2890.
+
+\bibitem[Kitagawa and Tetenov(2018)]{KitagawaTetenov2018}
+Kitagawa, T. and A. Tetenov (2018).
+\newblock Who should be treated? Empirical welfare maximization methods for treatment choice.
+\newblock \emph{Econometrica} 86(2), 591--616.
+
+\bibitem[Manski(2004)]{Manski2004}
+Manski, C. F. (2004).
+\newblock Statistical treatment rules for heterogeneous populations.
+\newblock \emph{Econometrica} 72(4), 1221--1246.
+
+\bibitem[Stoye(2012)]{Stoye2012}
+Stoye, J. (2012).
+\newblock Minimax regret treatment choice with covariates or with limited validity of experiments.
+\newblock \emph{Journal of Econometrics} 166(1), 138--156.
+
+\bibitem[Tan(2006)]{Tan2006}
+Tan, Z. (2006).
+\newblock A distributional approach for causal inference using propensity scores.
+\newblock \emph{Journal of the American Statistical Association} 101(476), 1619--1637.
+
+\bibitem[Yadlowsky et~al.(2022)]{YadlowskyNamkoongBasuDuchiTian2022}
+Yadlowsky, S., H. Namkoong, S. Basu, J. Duchi, and L. Tian (2022).
+\newblock Bounds on the conditional and average treatment effect with unobserved confounding factors.
+\newblock \emph{Annals of Statistics} 50(5), 2587--2615.
+
+\bibitem[Zhao, Small, and Bhattacharya(2019)]{ZhaoSmallBhattacharya2019}
+Zhao, Q., D. S. Small, and B. B. Bhattacharya (2019).
+\newblock Sensitivity analysis for inverse probability weighting estimators via the percentile bootstrap.
+\newblock \emph{Journal of the Royal Statistical Society: Series B} 81(4), 735--761.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,926 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=panel\_mc\_estimation\_duality, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{panel\_mc\_estimation\_duality} / \texttt{v1}%
+  \\ \large\textit{A balanced low-rank Neyman moment for staggered adoption panels with estimator duality between SDiD weights and matrix-completion nuisances}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\textbf{Tuple:} $(qid,\ specialization,\ p,\ assignment,\ target,\ regression)$.
+Here $qid=\texttt{panel\_mc\_estimation\_duality}$ and
+$specialization=\texttt{v1}$. The memory length is $p=0$: treatment is
+absorbing staggered adoption with $D_{it}=\one\{t\ge G_i\}$ and untreated
+potential outcomes $Y_{it}(0)$. The assignment is a finite set of adoption
+cohorts $G_i\in\mathcal G\subseteq\{2,\ldots,T,\infty\}$ with at least two
+post-adoption cohort-time cells and nonempty not-yet-treated risk sets whenever
+a cohort-time effect is targeted. The target is the weighted cohort-time ATT
+\[
+  \theta_0=\sum_{(g,t)\in\mathcal A} q_{gt}\,
+  \E\{Y_{it}(1)-Y_{it}(0)\mid G_i=g\},
+  \qquad q_{gt}\ge 0,\quad \sum_{(g,t)\in\mathcal A}q_{gt}=1,
+\]
+where $\mathcal A=\{(g,t):g\in\mathcal G,\ t\ge g\}$ is fixed by the design.
+The regression convention is a low-rank untreated mean surface
+$M^0_{it}=\alpha_i+\lambda_t+L^0_{it}$, $\operatorname{rank}(L^0)\le r$, with
+cohort/time additive effects removed before low-rank estimation. The proposed
+estimator is the balanced low-rank Neyman moment
+$\widehat\theta_{\mathrm{BLR}}$ defined in Section~\ref{sec:setup}: SDiD-style
+cohort-time balancing weights estimate the treatment residual, while a rank-$r$
+matrix-completion nuisance estimates $M^0$; the moment is required to be
+Neyman-orthogonal to first-order perturbations in both nuisance components.
+
+\begin{abstract}
+This proposal asks whether staggered synthetic-DiD balancing and low-rank
+matrix-completion imputation can be joined into one estimand-level score rather
+than reported as two unrelated robustness checks. The proposed object is the
+balanced low-rank Neyman moment $\Psi_{\mathrm{BLR}}$, a closed-form
+cohort-time moment whose first derivative vanishes along both the SDiD balance-error tangent
+and the rank-$r$ matrix-completion tangent. The flagship conjecture is that
+the plug-in estimator $\widehat\theta_{\mathrm{BLR}}$ is root-$n$ and
+asymptotically normal if either the SDiD balancing restrictions are correct or
+the low-rank recovery restrictions are correct, with a second-order remainder
+controlled by an observed eigen-gap/mask-leverage constant. If resolved, the
+result would convert the current SDiD-versus-matrix-completion comparison into
+a reportable orthogonal estimator for staggered adoption panels. It is proposed
+as a strict staggered-risk-set extension of the doubly robust panel
+identification route in \citet{ArkhangelskyImbens2022}, the design-robust TWFE
+route in \citet{ArkhangelskyImbensLeiLuo2024}, the causal latent-factor
+inference route in \citet{AbadieAgarwalDwivediShah2024}, and the TROP
+low-rank/unit-weight/time-weight route in \citet{AtheyImbensQuViviano2025},
+with \citet{BenMichaelFellerRothstein2021} and
+\citet{BenMichaelFellerRothstein2022} as the augmented and staggered synthetic
+control comparators. The strict addition is replacing generic assignment,
+outcome-augmentation, or simulation-selected weighting components by an SDiD
+risk-set balance residual and a full rank-$r$ completion residual under a
+deterministic adoption mask.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Staggered adoption panels increasingly combine two ideas: balancing weights
+from synthetic DiD or augmented synthetic controls, and latent-factor
+imputation from matrix completion. These procedures answer the same
+counterfactual question but fail for different reasons: balancing can miss
+unobserved low-rank time variation, while matrix completion can absorb
+treatment-effect patterns or become unstable under weak factors. A single
+orthogonal moment would let empirical researchers ask whether the target ATT is
+identified by either route and would turn disagreement between routes into a
+diagnosable nuisance failure.
+
+\paragraph{The main finding (proposed).}
+The headline result is Conjecture~\ref{conj:double-robust-rate}: under
+staggered overlap, finite-rank untreated means, and an observed spectral
+margin $\Gamma_r(P,D)$, the balanced low-rank Neyman moment
+$\Psi_{\mathrm{BLR}}$ yields a root-$n$ asymptotically normal estimator whose
+first-order law is invariant to first-order misspecification of either the
+balancing weights or the low-rank nuisance. Theorem~\ref{thm:score-orthogonal}
+is the algebraic layer: it defines the moment and proves the two tangent
+orthogonality equations. Conjecture~\ref{conj:comparator-extension} states the
+comparator-specific extension against staggered SCM and nuclear-norm matrix
+completion. Conjecture~\ref{conj:efficiency-frontier} asks for the efficiency
+frontier: above the same spectral margin, the moment attains the semiparametric
+variance bound among regular estimators that use the same staggered-risk-set
+information.
+
+\paragraph{What is new.}
+The closest paper chain is \citet{ArkhangelskyImbens2022} for doubly robust
+panel identification, \citet{ArkhangelskyImbensLeiLuo2024} for design-robust
+TWFE weights, \citet{AbadieAgarwalDwivediShah2024} for doubly robust causal
+latent-factor inference, \citet{AtheyImbensQuViviano2025} for the TROP
+low-rank-plus-unit/time-weight estimator, \citet{ArkhangelskyAtheyHirshbergImbensWager2021}
+for SDiD balancing, \citet{AtheyBayatiDoudchenkoImbensKhosravi2021} for
+causal-panel matrix completion, \citet{BenMichaelFellerRothstein2021} for
+augmented synthetic control, and \citet{BenMichaelFellerRothstein2022} for
+staggered synthetic controls. The precise gap is that none of these papers
+defines a single staggered-risk-set moment whose Gateaux derivative is zero
+along both the SDiD balance-error tangent and the rank-$r$ completion tangent,
+and none states a double-robust root-$n$ law with constants tied to an observed
+eigen-gap/mask-leverage margin. The strictness against TROP is not that BLR
+adds a fourth ingredient, but that BLR replaces TROP's simulation-guided
+regularization path by a theorem-level residual product bound
+$\Gamma_r(P,D)^{-1}a_nb_n$ and a risk-set balance condition that can be checked
+cell by cell. The named focal object is the aggregate moment
+$\Psi_{\mathrm{BLR}}$, with unit influence function $\phi_{\mathrm{BLR},i}$,
+not a new tuning recipe for an existing estimator.
+
+\paragraph{How it positions in the literature.}
+The proposal sits in the panel / linear-projection methods cluster. It uses
+modern staggered-DID target notation from \citet{CallawaySantAnna2021} and
+\citet{BorusyakJaravelSpiess2024}, the SDiD balancing geometry of
+\citet{ArkhangelskyAtheyHirshbergImbensWager2021}, and low-rank panel
+counterfactual theory from \citet{AtheyBayatiDoudchenkoImbensKhosravi2021},
+\citet{BaiNg2021}, and \citet{ChoiKwonLiao2024}. It also uses
+\citet{ArkhangelskyImbens2022}, \citet{ArkhangelskyImbensLeiLuo2024},
+\citet{AbadieAgarwalDwivediShah2024},
+\citet{QiuShiMiaoDobribanTchetgenTchetgen2024},
+\citet{AgarwalDahlehShahShen2023}, and
+\citet{AtheyImbensQuViviano2025} as the closest robust panel comparators. It is not a generic
+``matrix completion works for staggered panels'' claim; the estimator-level
+claim is the orthogonality and first-order equivalence frontier for a named
+moment.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the staggered synthetic-control workflow
+of \citet{BenMichaelFellerRothstein2022}: when pooled and individual
+imbalance are both material, $\widehat\theta_{\mathrm{BLR}}$ would supply a
+moment that remains first-order valid if the low-rank counterfactual is right
+even when exact balance is not, and vice versa. It also gives users of
+\citet{AtheyBayatiDoudchenkoImbensKhosravi2021} a balancing-based diagnostic
+for whether matrix-completion imputation is driving the ATT.
+
+\paragraph{How research benefits from the conclusion.}
+Readers should report the BLR moment, its eigen-gap/mask-leverage diagnostic,
+and the two nuisance residuals before interpreting SDiD and matrix-completion
+estimates as independent robustness checks.
+
+\section{Related work}
+\citet{ArkhangelskyAtheyHirshbergImbensWager2021} introduce synthetic DiD,
+combining unit and time weights under latent factor structure; this is the
+balancing comparator that supplies one nuisance tangent of
+$\Psi_{\mathrm{BLR}}$.
+\citet{AtheyBayatiDoudchenkoImbensKhosravi2021} propose nuclear-norm matrix
+completion for causal panel counterfactuals and distinguish regularized
+low-rank recovery from hard restrictions; this supplies the second nuisance
+tangent.
+\citet{BenMichaelFellerRothstein2022} extend synthetic controls to staggered
+adoption and show that both individual and pooled treated-unit imbalance
+matter; this is the staggered-design consumer of the proposed moment.
+\citet{BenMichaelFellerRothstein2021} introduce augmented synthetic control by
+combining a synthetic-control balancing fit with an outcome-model correction;
+this is the closest balancing-plus-outcome-model precursor, but its augmentation
+is not the staggered risk-set BLR score and it does not use a rank-$r$
+matrix-completion tangent with a $\Gamma_r(P,D)$ remainder.
+\citet{ArkhangelskyImbens2022} develop doubly robust identification for causal
+panel data models through outcome and assignment routes; the proposed BLR
+moment is narrower in design but sharper about SDiD risk-set balancing and
+low-rank completion as the two nuisance routes.
+\citet{ArkhangelskyImbensLeiLuo2024} develop design-robust TWFE weights for
+general panel treatment patterns, including staggered adoption; this is the
+closest assignment-weight comparator, but its robustness route is a weighted
+TWFE regression rather than a joint low-rank completion and SDiD-balance
+orthogonal moment.
+\citet{AbadieAgarwalDwivediShah2024} give doubly robust inference in causal
+latent-factor models using outcome imputation, inverse-probability weighting,
+cross-fitting, and matrix completion; this is the closest double-robust
+matrix-completion comparator, but it does not state a staggered-SDiD
+risk-set-balancing moment or an observed mask/eigen-gap remainder.
+\citet{QiuShiMiaoDobribanTchetgenTchetgen2024} develop doubly robust proximal
+synthetic controls using confounding bridges; this is a close synthetic-control
+double-robust comparator, but its bridge-function route is proximal rather
+than a staggered risk-set balance plus rank-$r$ completion tangent.
+\citet{AgarwalDahlehShahShen2023} formalize causal matrix completion under
+potential outcomes and latent-confounded missingness; this is a close
+identification comparator for matrix completion, but it does not give the BLR
+orthogonal score or the deterministic staggered-mask spectral margin.
+\citet{AtheyImbensQuViviano2025} introduce the Triply RObust Panel estimator,
+combining low-rank outcome modeling with unit and time weights; this is the
+closest current combined-estimator comparator, but it is presented as a robust
+panel estimator and simulation recommendation rather than a necessary
+cellwise SDiD-balance / rank-tangent Neyman moment with a deterministic
+eigen-gap recovery certificate.
+\citet{RothSantAnna2021} derive efficient estimators for staggered rollout
+designs under design-style timing assumptions; their efficiency target is the
+closest comparator for Conjecture~\ref{conj:efficiency-frontier}, but their
+score does not include a low-rank matrix-completion nuisance.
+\citet{CallawaySantAnna2021} identify and aggregate group-time ATT parameters
+under staggered adoption; this paper fixes the cohort-time estimand notation
+used here.
+\citet{BorusyakJaravelSpiess2024} give an imputation estimator for staggered
+event studies; the present proposal differs by letting the imputation surface
+be a low-rank nuisance inside an orthogonal score.
+\citet{BaiNg2021} develop factor-imputation theory for counterfactuals under
+strong factor structure; their rates motivate the eigen-gap requirement in
+Assumption~\ref{ass:spectral-margin}.
+\citet{ChoiKwonLiao2024} develop inference after low-rank completion and ATE
+estimation; their debiasing target is adjacent but not staggered-SDiD
+balancing-orthogonal.
+\citet{YanWainwright2024} give entrywise inference for missing panels induced
+by staggered adoption; their confidence intervals motivate using observable
+spectral and design constants in the remainder bound.
+\citet{ChernozhukovChetverikovDemirerDufloHansenNeweyRobins2018} formalize
+Neyman-orthogonal double/debiased machine learning; the present proposal is a
+panel-specific identification and efficiency conjecture, not a generic DML
+application.
+
+In-catalogue prior art is adjacent but not duplicative. \texttt{doc/API.md}
+Section 1.2 records Q1 staggered-minimal-basis results for FWL coefficients
+under absorbing adoption; those results decompose regression weights, while
+this proposal targets a low-rank-imputation nuisance and an orthogonal ATT
+moment. The failed prior proposal \texttt{panel\_sdid\_mc\_id\_v1} pursued a
+spectral equality frontier and strict estimator span lattice; this pivot keeps
+the same paper neighborhood but changes the kernel to a positive estimator
+with double-robust first-order behavior. The banked
+\texttt{pid\_synth\_control\_factor\_misspec\_v1} proposal studied scalar
+partial-identification bounds under bounded factor misspecification; the
+present kernel is exact first-order inference for a named moment rather than a
+misspecification interval.
+
+\section{Formal setup}\label{sec:setup}
+There are $n$ independent units observed for $T$ fixed periods. Unit $i$ adopts
+at $G_i\in\mathcal G\subseteq\{2,\ldots,T,\infty\}$ and
+$D_{it}=\one\{t\ge G_i\}$. For untreated potential outcomes,
+\[
+  Y_{it}(0)=\alpha_i+\lambda_t+L^0_{it}+\varepsilon_{it},
+  \qquad \operatorname{rank}(L^0)\le r,\qquad
+  \E(\varepsilon_{it}\mid G_i,\alpha_i,L^0)=0.
+\]
+For each target cell $a=(g,t)\in\mathcal A$, let $R_a=\{i:G_i=g\}$ and
+$C_a=\{i:G_i>t\}$ be its risk set of not-yet-treated controls. Let
+$q_a$ be fixed nonnegative aggregation weights. The observed law $P$ contains
+the joint distribution of $(G_i,Y_{i1},\ldots,Y_{iT})$ and the deterministic
+staggered mask $D$.
+
+Let $m=(m_{it})$ denote a candidate untreated mean matrix and let
+$\omega=\{\omega_{a,i},\nu_{a,s}\}$ denote SDiD-style unit and time weights for
+target cell $a$. For pre-period $s<t$, define the finite-sample pre-period
+residual contrast
+\[
+  \Delta_{a,s,n}(Y,m,\omega)=
+  |R_a|^{-1}\sum_{i\in R_a}\{Y_{is}-m_{is}\}
+  -\sum_{i\in C_a}\omega_{a,i}\{Y_{is}-m_{is}\}.
+\]
+Define the finite-sample target-cell contrast
+\[
+  B_{a,n}(Y,m,\omega)=
+  |R_a|^{-1}\sum_{i\in R_a}\{Y_{it}-m_{it}\}
+  -\sum_{i\in C_a}\omega_{a,i}\{Y_{it}-m_{it}\}
+  -\sum_{s<t}\nu_{a,s}\Delta_{a,s,n}(Y,m,\omega).
+\]
+Let $\Delta_{a,s}(Y(0),m,\omega)$ denote the population analog of
+$\Delta_{a,s,n}$, replacing treated-cohort and risk-set averages by the
+corresponding conditional expectations. For any array $X_i$,
+$\E_{\omega_a}\{X_i\mid G_i>t\}$ denotes the $\omega_a$-weighted population
+risk-set mean.
+The aggregate balanced low-rank Neyman moment is
+\[
+  \Psi_{\mathrm{BLR},n}(\theta,m,\omega)
+  =\sum_{a\in\mathcal A}q_a\,B_{a,n}(Y,m,\omega)-\theta,
+\]
+with population analog $\Psi_{\mathrm{BLR}}(\theta,m,\omega)=
+\E\{\Psi_{\mathrm{BLR},n}(\theta,m,\omega)\}$. The plug-in estimator
+$\widehat\theta_{\mathrm{BLR}}$ solves
+\[
+  \Psi_{\mathrm{BLR},n}(\theta,\widehat m,\widehat\omega)=0,
+\]
+where $\widehat m$ is a rank-$r$ matrix-completion estimator and
+$\widehat\omega$ solves the finite SDiD balance equations over the risk sets.
+The unit influence function $\phi_{\mathrm{BLR},i}(\theta_0,M^0,\omega^\star)$
+is the linearization summand of
+$\Psi_{\mathrm{BLR},n}(\theta_0,M^0,\omega^\star)-
+\Psi_{\mathrm{BLR}}(\theta_0,M^0,\omega^\star)$; it is not defined by
+duplicating the whole-sample contrast inside each unit.
+
+For later comparison, fix five named first-order score functionals on the same
+weighted cohort-time target. Let $\psi^{\mathrm{BMF}}_a$ be the linear
+pooled-balance score induced by the partially pooled staggered-SCM weights of
+\citet{BenMichaelFellerRothstein2022}; in this notation
+\[
+  \psi^{\mathrm{BMF}}_a(e)=
+  |R_a|^{-1}\sum_{i\in R_a}e_{it}
+  -\sum_{i\in C_a}\omega^{\mathrm{BMF}}_{a,i}e_{it}
+  -\sum_{s<t}\nu^{\mathrm{BMF}}_{a,s}\Delta_{a,s,n}(e,0,\omega^{\mathrm{BMF}}_a).
+\]
+Let $\psi^{\mathrm{ASCM}}_a(e)$ be the corresponding augmented synthetic-control
+linear score from \citet{BenMichaelFellerRothstein2021}, i.e. the BMF balancing
+score plus its outcome-regression correction evaluated on the same target cell.
+Let $\psi^{\mathrm{TWFE}}_a(e)=\sum_{i,s}\kappa^{\mathrm{TWFE}}_{a,is}e_{is}$
+be the design-robust TWFE linear score of
+\citet{ArkhangelskyImbensLeiLuo2024} for cell $a$. Let
+$\psi^{\mathrm{TROP}}_a(e)=\sum_{i,s}\kappa^{\mathrm{TROP}}_{a,is}e_{is}$
+be the first-order linearization of the TROP unit/time/low-rank estimator of
+\citet{AtheyImbensQuViviano2025}. Let
+$\psi^{\mathrm{MC}}_a(e)=|R_a|^{-1}\sum_{i\in R_a}\{e_{it}-\dot m^{\mathrm{MC}}_{a,it}(e)\}$
+be the nuclear-norm matrix-completion score induced by
+\citet{AtheyBayatiDoudchenkoImbensKhosravi2021}, where
+$\dot m^{\mathrm{MC}}_{a}$ is the rank-$r$ completion derivative on
+$\mathcal O_a$. The aggregated comparator scores are
+$\psi^k=\sum_a q_a\psi^k_a$ for
+$k\in\{\mathrm{BMF},\mathrm{ASCM},\mathrm{TWFE},\mathrm{TROP},\mathrm{MC}\}$.
+Let $\mathcal N_{\mathrm{bal}}$ be the span of balance-error directions,
+let $\mathcal N_{\mathrm{lr}}$ be the rank-$r$ completion tangent, and let
+$\mathsf P_{\perp(\mathrm{bal}+\mathrm{lr})}$ be the $L^2(P)$ projection onto
+the orthocomplement of
+$\mathcal N_{\mathrm{bal}}+\mathcal N_{\mathrm{lr}}$. Let
+$\psi^{\mathrm{BLR}}$ be the first-order linear score generated by
+$\phi_{\mathrm{BLR},i}(\theta_0,M^0,\omega^\star)$, and define the BLR
+projected score independently by
+\[
+  \psi^{\mathrm{proj}}
+  =\mathsf P_{\perp(\mathrm{bal}+\mathrm{lr})}\psi^{\mathrm{BLR}}.
+\]
+Conjecture~\ref{conj:comparator-extension} claims, rather than defines, when
+the projected comparator scores equal this BLR projection.
+
+For target cell $a=(g,t)$, let
+$\mathcal O_a=\{(i,s):G_i>s,\ s<t\}$ be the observed untreated pre-target
+submatrix used to learn $Y_{it}(0)$. Let
+$\Pi_{\mathrm{add},a}$ be the orthogonal projection onto cohort and time
+additive effects on $\mathcal O_a$. Write the oracle residualized block as
+\[
+  Z_a=(I-\Pi_{\mathrm{add},a})\,M^0_{\mathcal O_a}.
+\]
+The corresponding sample-observable block is
+\[
+  \widehat Z_a=(I-\Pi_{\mathrm{add},a})\,Y_{\mathcal O_a},
+\]
+using only untreated observed entries. Let
+$\widehat U_{r,a}\widehat\Sigma_{r,a}\widehat V_{r,a}^{\transpose}$ be its
+rank-$r$ truncated SVD and let $\widehat{\mathcal T}_{r,a}$ be the tangent
+space at that truncated SVD. Define the target-contrast row vector
+$h_a(\omega,\nu)$ as follows. Let $P^r_a$ be the least-squares rank-$r$
+tangent prediction operator that maps a perturbation $x_{\mathcal O_a}$ on
+the observed untreated block to its implied full-block perturbation
+$\widetilde x=P^r_a x_{\mathcal O_a}$ on the rows and periods entering
+$B_{a,n}$. Then
+\[
+  h_a(\omega,\nu)^\transpose x_{\mathcal O_a}
+  =
+  |R_a|^{-1}\sum_{i\in R_a}\widetilde x_{it}
+  -\sum_{i\in C_a}\omega_{a,i}\widetilde x_{it}
+  -\sum_{s<t}\nu_{a,s}
+  \left\{|R_a|^{-1}\sum_{i\in R_a}\widetilde x_{is}
+  -\sum_{i\in C_a}\omega_{a,i}\widetilde x_{is}\right\},
+\]
+so unobserved target-cell entries are never direct inputs to $h_a$. Let $E_a$ be the matrix
+embedding a perturbation on $\mathcal O_a$ into the full residualized block and
+set
+\[
+  \widehat H_a=h_a(\widehat\omega_a,\widehat\nu_a)^\transpose E_a,
+  \qquad
+  H^{0}_a=h_a(\omega^\star_a,\nu^\star_a)^\transpose E_a .
+\]
+Thus $\widehat H_a$ is a finite sample matrix determined by observed untreated
+entries and fitted weights, while $H^0_a$ is the population oracle matrix used
+only in the proof route.
+Let
+\[
+  \operatorname{gap}_{r,a}(P,D)=
+  \begin{cases}
+    \sigma_r(Z_a)-\sigma_{r+1}(Z_a), & r\ge 1,\\
+    1, & r=0,
+  \end{cases}
+\]
+with $\sigma_{r+1}(Z_a)=0$ when $\operatorname{rank}(Z_a)\le r$. Let
+$\mathcal T^0_{r,a}$ be the rank-$r$ tangent space at $Z_a$, and define the
+oracle population mask leverage
+\[
+  \ell^0_{r,a}(P,D)=
+  \lambda_{\min}^{+}\!\left(
+  H^0_a\Pi_{\mathcal T^0_{r,a}}(H^0_a)^{\transpose}\right).
+\]
+The oracle spectral margin used in the population statements is
+\[
+  \Gamma^0_r(P,D)=\min_{a\in\mathcal A}
+  \operatorname{gap}_{r,a}(P,D)\,\ell^0_{r,a}(P,D).
+\]
+The sample diagnostic reported with the estimator is the observed finite
+matrix functional
+\[
+  \widehat\Gamma_{r,n}(D)=\min_{a\in\mathcal A}
+  \{\widehat\sigma_{r,a}-\widehat\sigma_{r+1,a}\}\,
+  \lambda_{\min}^{+}\!\left(
+  \widehat H_a\Pi_{\widehat{\mathcal T}_{r,a}}\widehat H_a^{\transpose}\right),
+\]
+where $\widehat\sigma_{k,a}$ are singular values of $\widehat Z_a$. The
+proposal writes $\Gamma_r(P,D)$ for $\Gamma^0_r(P,D)$ in population
+conjectures and $\widehat\Gamma_{r,n}(D)$ for the observable diagnostic; the
+link required in Conjecture~\ref{conj:double-robust-rate} is uniform
+consistency
+$|\widehat\Gamma_{r,n}(D)-\Gamma^0_r(P,D)|=o_p(1)$. Thus
+$\Gamma^0_r(P,D)=0$ exactly when some target cell has either no rank-$r$
+singular separation after additive residualization or zero oracle leverage for
+the rank tangent through the staggered mask.
+
+\[
+\begin{array}{ll}
+qid & =\texttt{panel\_mc\_estimation\_duality},\\
+specialization & =\texttt{v1},\\
+p & =0,\\
+assignment & =\text{absorbing staggered adoption }D_{it}=\one\{t\ge G_i\},\\
+target & =\theta_0=\sum_{(g,t)\in\mathcal A}q_{gt}\E\{Y_{it}(1)-Y_{it}(0)\mid G_i=g\},\\
+regression & =M^0_{it}=\alpha_i+\lambda_t+L^0_{it},\ \operatorname{rank}(L^0)\le r,
+\text{ with BLR moment }\Psi_{\mathrm{BLR},n}.
+\end{array}
+\]
+
+\section{Assumptions}
+\begin{assumption}[Staggered overlap and fixed target]\label{ass:staggered-overlap}
+The cohort set $\mathcal G$, period count $T$, rank $r$, target set
+$\mathcal A$, and weights $q_a$ are fixed. For every $a=(g,t)\in\mathcal A$,
+$\Pr(G=g)>0$ and $\Pr(G>t)>0$.
+\end{assumption}
+
+\begin{assumption}[Low-rank untreated surface]\label{ass:low-rank}
+The untreated conditional mean satisfies
+$\E\{Y_{it}(0)\mid G_i,\alpha_i,L^0\}=\alpha_i+\lambda_t+L^0_{it}$ with
+$\operatorname{rank}(L^0)\le r$ after removing additive cohort and time
+components.
+\end{assumption}
+
+\begin{assumption}[Balance equations]\label{ass:balance}
+For each target cell $a$, the population weights $\omega_a$ and $\nu_a$ solve
+the SDiD balancing equations for cohort shares and pre-period untreated means
+over $C_a$, with bounded $\ell_2$ norm and nonzero denominators.
+\end{assumption}
+
+\begin{assumption}[Consistency and no anticipation]\label{ass:consistency-noanticipation}
+For every unit and period, the observed outcome satisfies
+$Y_{it}=Y_{it}(0)$ when $t<G_i$ and $Y_{it}=Y_{it}(1)$ when $t\ge G_i<\infty$.
+For every target cell $a=(g,t)$, all controls in $C_a=\{i:G_i>t\}$ are
+untreated at $t$ and at every pre-period entering $B_{a,n}$, so their observed
+outcomes equal the corresponding untreated potential outcomes. There is no
+anticipation: $Y_{is}(d)=Y_{is}(0)$ for $s<G_i$ under any future adoption path.
+\end{assumption}
+
+\begin{assumption}[Route-correctness residuals]\label{ass:route-residuals}
+For each target cell $a$, define the SDiD route residual
+\[
+  \rho^{\mathrm{bal}}_a(P,D)=
+  \E\{Y_{it}(0)-m^\star_{it}\mid G_i=g\}
+  -\E_{\omega_a}\{Y_{it}(0)-m^\star_{it}\mid G_i>t\}
+  -\sum_{s<t}\nu_{a,s}\Delta_{a,s}(Y(0),m^\star,\omega_a),
+\]
+and the low-rank route residual
+\[
+  \rho^{\mathrm{lr}}_a(P,D)=
+  \E\{m^\star_{it}-M^0_{it}\mid G_i=g\}
+  -\E_{\omega_a}\{m^\star_{it}-M^0_{it}\mid G_i>t\}
+  -\sum_{s<t}\nu_{a,s}
+  \left[
+  \E\{m^\star_{is}-M^0_{is}\mid G_i=g\}
+  -\E_{\omega_a}\{m^\star_{is}-M^0_{is}\mid G_i>t\}
+  \right].
+\]
+The SDiD route is correct when $\rho^{\mathrm{bal}}_a(P,D)=0$ for all $a$;
+the low-rank route is correct when $\rho^{\mathrm{lr}}_a(P,D)=0$ for all $a$.
+Single-route misspecification is quantified by
+$R_{\mathrm{bal}}=\sum_a q_a\rho^{\mathrm{bal}}_a(P,D)$ and
+$R_{\mathrm{lr}}=\sum_a q_a\rho^{\mathrm{lr}}_a(P,D)$.
+\end{assumption}
+
+\begin{assumption}[Observed spectral margin]\label{ass:spectral-margin}
+The oracle population margin $\Gamma_r(P,D)=\Gamma^0_r(P,D)$ defined in
+Section~\ref{sec:setup} satisfies
+$\Gamma_r(P,D)\ge \gamma>0$, and the tuning constants obey
+$0<\eta_n\le c_\eta\gamma$ for the nuclear-norm penalty and
+$0<\lambda_n\le c_\lambda\gamma$ for the balance regularizer, where
+$c_\eta,c_\lambda$ are fixed known constants. The observable diagnostic
+$\widehat\Gamma_{r,n}(D)$ satisfies
+$|\widehat\Gamma_{r,n}(D)-\Gamma_r(P,D)|=o_p(1)$ under the same rank and
+shock primitives.
+\end{assumption}
+
+\begin{assumption}[Primitive nuisance rates]\label{ass:nuisance-rates}
+There are deterministic sequences $a_n,b_n\downarrow 0$ such that the
+balance residual and low-rank recovery error satisfy
+\[
+  \|\widehat\omega-\omega^\star\|_{2,D}=O_p(a_n),\qquad
+  \|\widehat m-m^\star\|_{F,D}/\sqrt n=O_p(b_n),
+\]
+and the second-order product obeys
+$\Gamma_r(P,D)^{-1}a_nb_n=o(n^{-1/2})$. The route-correctness clauses are
+those in Assumption~\ref{ass:route-residuals}, not consequences of the rate
+bound.
+\end{assumption}
+
+\begin{assumption}[Regular shocks]\label{ass:regular-shocks}
+The idiosyncratic shocks have uniformly bounded fourth moments, are independent
+across units conditional on adoption cohorts, and have a nondegenerate
+long-run variance for the aggregated influence summand.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: algebraic orthogonality of the BLR moment]\label{thm:score-orthogonal}
+Under Assumptions~\ref{ass:staggered-overlap}--\ref{ass:consistency-noanticipation}, the moment
+$\Psi_{\mathrm{BLR}}$ is unbiased for $\theta_0$ when both $m=M^0$ and
+$\omega=\omega^\star$. Its Gateaux derivative with respect to $m$ vanishes
+along the finite-dimensional low-rank tangent directions balanced by
+$\omega^\star$, and its Gateaux derivative with respect to $\omega$ vanishes
+along the SDiD balance tangent directions when $m=M^0$.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This is the routine algebra below the flagship claim, but the closest
+published components are split across \citet{ArkhangelskyAtheyHirshbergImbensWager2021},
+Section 3, for SDiD balance and
+\citet{AtheyBayatiDoudchenkoImbensKhosravi2021}, Sections 2--3, for
+low-rank matrix completion. The gap is the named aggregate moment
+$\Psi_{\mathrm{BLR}}$, which puts both tangents in the same moment equation.
+(b) The concrete consumer is \citet{BenMichaelFellerRothstein2022}: the theorem
+defines which residuals a staggered-SCM analysis should report before relying
+on pooled balance.
+
+\begin{conjecture}[Conjecture 1: double-robust root-\(n\) law for \(\widehat\theta_{\mathrm{BLR}}\) (NOT YET PROVED)]\label{conj:double-robust-rate}
+Under Assumptions~\ref{ass:staggered-overlap}--\ref{ass:regular-shocks}, if
+either the SDiD route residuals vanish or the low-rank route residuals vanish
+in Assumption~\ref{ass:route-residuals}, and the corresponding nuisance is
+estimated at the rate in Assumption~\ref{ass:nuisance-rates},
+then
+\[
+  \sqrt n(\widehat\theta_{\mathrm{BLR}}-\theta_0)
+  \Rightarrow N(0,V_{\mathrm{BLR}}),
+\]
+with a normalized remainder bounded by
+$O_p\{\Gamma_r(P,D)^{-1}a_nb_n\}$ plus the empirical-process term from
+$\phi_{\mathrm{BLR},i}$. If both nuisance models are correct, the first-order
+influence function equals
+$\phi_{\mathrm{BLR},i}(\theta_0,M^0,\omega^\star)$.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest comparator chain is
+\citet{ArkhangelskyImbens2022}, Sections 2--4, and
+\citet{ArkhangelskyImbensLeiLuo2024}, Sections 2--4,
+\citet{AbadieAgarwalDwivediShah2024}, Sections 2--3, and
+\citet{QiuShiMiaoDobribanTchetgenTchetgen2024}, Sections 2--4,
+\citet{AgarwalDahlehShahShen2023}, Sections 2--3, and
+\citet{AtheyImbensQuViviano2025}, Sections 2--3, with
+\citet{ArkhangelskyAtheyHirshbergImbensWager2021}, Section 3, and
+\citet{AtheyBayatiDoudchenkoImbensKhosravi2021}, Sections 3--4, supplying the
+two nuisance geometries. The epsilon-gap is a staggered-panel moment whose
+first-order law survives failure of either SDiD risk-set balance or rank-$r$
+completion, with the second-order term explicitly scaled by the observed
+spectral margin $\Gamma_r(P,D)$ rather than by an abstract nuisance norm, a
+generic IPW route, proximal bridge functions, latent-confounded missingness
+identification, design-robust TWFE unit weights alone, or TROP's
+simulation-chosen unit/time/low-rank components. (b) Resolving it would give
+users of \citet{BenMichaelFellerRothstein2022} a single estimator to report
+when pooled imbalance and factor imputation are both plausible but neither is
+trusted alone, while clarifying for users of
+\citet{QiuShiMiaoDobribanTchetgenTchetgen2024} when proximal bridge
+double-robustness is being replaced by staggered risk-set double-robustness.
+
+\begin{conjecture}[Conjecture 2: comparator-specific BLR strict extension (NOT YET PROVED)]\label{conj:comparator-extension}
+Under Assumptions~\ref{ass:staggered-overlap}--\ref{ass:regular-shocks}, fix a
+staggered design for which the partially pooled SCM estimand of
+\citet{BenMichaelFellerRothstein2022}, the augmented synthetic-control estimand
+of \citet{BenMichaelFellerRothstein2021}, the nuclear-norm imputation estimand
+of \citet{AtheyBayatiDoudchenkoImbensKhosravi2021}, the design-robust TWFE
+estimand of \citet{ArkhangelskyImbensLeiLuo2024}, and the TROP estimand of
+\citet{AtheyImbensQuViviano2025} are all well-defined for the same weighted
+cohort-time ATT $\theta_0$. If $\Gamma_r(P,D)\ge\gamma>0$,
+then $\widehat\theta_{\mathrm{BLR}}$ has the same first-order law as the
+correctly specified comparator when either comparator's route is correct, and
+has strictly smaller first-order bias than the misspecified single-route
+comparator on the witness class of Example~\ref{ex:strict-bias-witness} and on
+an open neighborhood of that class where one route is correct and the other has
+a nonzero residual. When both routes are correct, the BLR influence function
+equals the named projected linear functional $\psi^{\mathrm{proj}}$ in
+Section~\ref{sec:setup}. The conjectured equality conclusion is that
+\[
+  \psi^{\mathrm{proj}}
+  =\mathsf P_{\perp(\mathrm{bal}+\mathrm{lr})}\psi^{\mathrm{BMF}}
+  =\mathsf P_{\perp(\mathrm{bal}+\mathrm{lr})}\psi^{\mathrm{ASCM}}
+  =\mathsf P_{\perp(\mathrm{bal}+\mathrm{lr})}\psi^{\mathrm{TWFE}}
+  =\mathsf P_{\perp(\mathrm{bal}+\mathrm{lr})}\psi^{\mathrm{TROP}}
+  =\mathsf P_{\perp(\mathrm{bal}+\mathrm{lr})}\psi^{\mathrm{MC}},
+\]
+so comparator equality is a theorem-level claim to prove, not part of the
+definition of $\psi^{\mathrm{proj}}$.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) This statement delivers the comparator promise explicitly. The closest
+published objects are augmented synthetic control in
+\citet{BenMichaelFellerRothstein2021}, Sections 2--3, the partially pooled
+staggered-SCM objective in \citet{BenMichaelFellerRothstein2022}, Section 3,
+and the nuclear-norm counterfactual objective in \citet{AtheyBayatiDoudchenkoImbensKhosravi2021},
+Sections 2--4, plus the weighted TWFE objective in
+\citet{ArkhangelskyImbensLeiLuo2024}, Sections 2--4, and the TROP estimator in
+\citet{AtheyImbensQuViviano2025}, Sections 2--3. The gap is a strict
+first-order extension: BLR matches the correct single-route law and improves
+over the misspecified single-route law on a concrete residual class where TROP
+and design-robust TWFE still inherit a first-order residual from their
+weighting or low-rank component. (b) The consumer is
+\citet{AbadieAgarwalDwivediShah2024}: the conjecture identifies exactly what
+must change to turn a latent-factor DR score into a staggered-SDiD /
+matrix-completion DR score.
+
+\begin{conjecture}[Conjecture 3: BLR efficiency frontier above the spectral margin (NOT YET PROVED)]\label{conj:efficiency-frontier}
+Under Assumptions~\ref{ass:staggered-overlap}--\ref{ass:regular-shocks}, the
+positive-margin statement is that the variance
+$V_{\mathrm{BLR}}$ in Conjecture~\ref{conj:double-robust-rate} is the
+semiparametric efficiency bound for regular asymptotically linear estimators
+that observe the same staggered risk sets and restrict the untreated mean to
+the rank-$r$ tangent class. The boundary statement replaces
+Assumption~\ref{ass:spectral-margin} by $\Gamma_r(P,D)=0$ while retaining
+Assumptions~\ref{ass:staggered-overlap}--\ref{ass:balance} and
+\ref{ass:route-residuals}--\ref{ass:regular-shocks}: no regular estimator can
+be simultaneously first-order equivalent to SDiD balancing and rank-$r$
+matrix-completion imputation on an open neighborhood of $P$.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{RothSantAnna2021}, Section 3, study efficient staggered rollout
+estimation under timing-as-good-as-random assumptions, while
+\citet{ChoiKwonLiao2024}, Sections 2--4, study inference after low-rank
+completion. The gap is an efficiency frontier for the joint tangent space
+generated by staggered balance and rank-$r$ completion; neither comparator
+contains the other tangent space, and \citet{AtheyImbensQuViviano2025} does
+not state the boundary nonregularity claim at $\Gamma_r(P,D)=0$. (b) The
+consumer is
+\citet{YanWainwright2024}: the conjecture would identify when entrywise
+low-rank inference constants can be lifted to cohort-time ATT aggregates
+without losing the SDiD balance component.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Two-period no-factor reduction]\label{cor:two-period}
+Under Assumptions~\ref{ass:staggered-overlap},
+\ref{ass:low-rank}, \ref{ass:balance}, \ref{ass:consistency-noanticipation},
+and \ref{ass:regular-shocks}, if
+$T=2$, $r=0$, there is one treated cohort and one never-treated cohort, and
+the only balance equations are the pre-period mean and intercept equations,
+then $\Psi_{\mathrm{BLR}}$ reduces to the ordinary two-period DID moment and
+$\widehat\theta_{\mathrm{BLR}}$ reduces to the standard DID estimator.
+\end{corollary}
+
+\begin{corollary}[Exact-balance SDiD corner]\label{cor:sdid-corner}
+If Assumption~\ref{ass:balance} holds with zero balance residuals and
+$\widehat m$ is set to the additive fixed-effect baseline under
+Assumptions~\ref{ass:staggered-overlap} and
+\ref{ass:consistency-noanticipation}, then the BLR moment has the same
+first-order influence function as the population SDiD score in
+\citet{ArkhangelskyAtheyHirshbergImbensWager2021}.
+\end{corollary}
+
+\begin{example}[Concrete non-corner witness]\label{ex:witness}
+Take $T=4$, two treated cohorts $G\in\{3,4\}$ and one never-treated cohort,
+rank $r=1$, and $L^0_{it}=u_i f_t$ with
+$f=(0,1,2,3)$ and distinct cohort means of $u_i$. The not-yet-treated submatrix
+has a positive first singular gap and nonzero risk-set leverage for the
+$(G=3,t=4)$ target, so $\Gamma_1(P,D)>0$ while both the balance and low-rank
+tangents are nontrivial.
+\end{example}
+
+\begin{example}[Concrete strict-bias witness]\label{ex:strict-bias-witness}
+In the design of Example~\ref{ex:witness}, set the true untreated surface to
+rank one and choose cohort means of $u_i$ so that the rank-one completion is
+correct. Add a pre-period shock pattern with
+$\rho^{\mathrm{bal}}_{(3,4)}(P,D)=\delta\neq 0$ but
+$\rho^{\mathrm{lr}}_{(3,4)}(P,D)=0$, and choose unit/time weights satisfying
+TROP's distance-decay rule with finite penalties. Then the BMF and
+design-robust/TROP weighting routes retain first-order residual $\delta$ in
+the $(3,4)$ ATT, while the BLR residual is second order in
+$a_nb_n/\Gamma_1(P,D)$. The symmetric witness sets
+$\rho^{\mathrm{bal}}_{(3,4)}(P,D)=0$ and
+$\rho^{\mathrm{lr}}_{(3,4)}(P,D)=\delta$.
+\end{example}
+
+\begin{example}[Boundary witness at zero margin]\label{ex:boundary-witness}
+Keep $T=4$ and the same cohorts but set $f=(0,1,2,2)$ after additive
+residualization, so the residualized not-yet-treated submatrix has
+$\sigma_1(Z_{(3,4)})=\sigma_2(Z_{(3,4)})$ or zero target leverage through
+$H^0_{(3,4)}\Pi_{\mathcal T^0_{1,(3,4)}}(H^0_{(3,4)})^\transpose$. Then
+$\Gamma_1(P,D)=0$: a rank-one tangent perturbation changes the target-cell
+counterfactual while leaving the observed untreated submatrix and the SDiD
+pre-period balance equations unchanged to first order. This is the concrete
+boundary instance for Conjecture~\ref{conj:efficiency-frontier}.
+\end{example}
+
+\section{Proof-sketch route}
+The mathematical route is to write the SDiD weights as the solution to a finite
+quadratic program and the rank-$r$ completion tangent as the usual tangent
+space at $L^0=U\Sigma V^\transpose$. Theorem~\ref{thm:score-orthogonal}
+then follows by differentiating the residualized cohort-time contrast and
+using the balance normal equations plus orthogonal projection onto the rank
+tangent. Conjecture~\ref{conj:double-robust-rate} should follow from a
+von Mises expansion in the two nuisance components, with the cross-product
+remainder bounded by Davis--Kahan/Wedin perturbation inequalities and the
+finite-dimensional SDiD leverage bound defining $\Gamma_r(P,D)$; the positive
+case to compute explicitly is the $T=4$, two-treated-cohort, rank-one witness
+in Example~\ref{ex:witness}. Conjecture~\ref{conj:comparator-extension} then
+requires comparing the resulting influence function with the BMF pooled-balance
+score, the augmented synthetic-control score, the design-robust TWFE score, the
+TROP first-order score, and the Athey et al. nuclear-norm imputation score on
+the same target cells; the first
+explicit algebraic check is Example~\ref{ex:strict-bias-witness}, where the
+displayed identity to verify is
+\[
+  \mathrm{Bias}\{\psi^{\mathrm{BMF}}\}
+  =\mathrm{Bias}\{\psi^{\mathrm{ASCM}}\}
+  =\mathrm{Bias}\{\psi^{\mathrm{TWFE}}\}
+  =\mathrm{Bias}\{\psi^{\mathrm{TROP}}\}
+  =q_{(3,4)}\delta+o(\delta),
+  \qquad
+  \mathrm{Bias}\{\psi^{\mathrm{BLR}}\}
+  =O\{a_nb_n/\Gamma_1(P,D)\},
+\]
+with the symmetric identity obtained by swapping
+$\rho^{\mathrm{bal}}_{(3,4)}$ and $\rho^{\mathrm{lr}}_{(3,4)}$. The shock
+pattern in Example~\ref{ex:strict-bias-witness} preserves mean-zero residuals
+because it is imposed as a cohort-time conditional-mean perturbation orthogonal
+to the idiosyncratic shocks in Assumption~\ref{ass:regular-shocks}.
+Conjecture~\ref{conj:efficiency-frontier} would
+project the raw cohort-time ATT score onto the direct sum of the balance and
+rank-$r$ nuisance tangent spaces and compare the resulting variance to the
+influence function in Conjecture~\ref{conj:double-robust-rate}; the
+nonregular boundary calculation is Example~\ref{ex:boundary-witness}, where
+$\Gamma_1(P,D)=0$ because the target tangent has zero observed leverage.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:score-orthogonal} is intended as routine algebra once the
+moment and tangent spaces are fixed. Conjectures~\ref{conj:double-robust-rate},
+\ref{conj:comparator-extension}, and~\ref{conj:efficiency-frontier} are not
+proved: the hard parts are the uniform perturbation bound for deterministic
+staggered masks, the comparator-specific first-order bias comparison, and the
+exact efficiency calculation for the joint tangent space. This pivot deliberately
+withdraws the exhausted angle-0 claim that SDiD, ASCM, and matrix completion
+have a sharp equality phase transition; equality may occur as a corollary, but
+it is not the flagship claim here. The most delicate assumption is the
+observability and stability of $\Gamma_r(P,D)$ because finite-sample singular
+gaps can be weak in the same empirical settings where matrix completion is
+most attractive. The comparison against \citet{AtheyImbensQuViviano2025} is
+also conjectural: BLR is intended to be stricter in its residual-product
+guarantee, not a claim that TROP is uniformly dominated as a finite-sample
+algorithm.
+
+The v5 revision adds Assumption~\ref{ass:consistency-noanticipation}, redefines
+the low-rank route residual as the full $B_a$ residual contrast including the
+$\nu$-weighted pre-period terms, and defines $\psi^{\mathrm{proj}}$ from the
+BLR score before stating comparator equality as a conjectured conclusion.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) --- initial pivot draft replacing the exhausted spectral
+equality frontier with a balanced low-rank Neyman-moment estimator and
+double-robust first-order conjectures; prior verdict: none.
+\item v2 (revise) --- added the Arkhangelsky--Imbens and Abadie--Agarwal--
+Dwivedi--Shah double-robust comparators, pinned the BLR moment as an aggregate
+sample/population object, split primitive nuisance rates, and added an explicit
+comparator-extension conjecture; prior verdict: REVISE.
+\item v3 (revise) --- added the missed TROP and design-robust TWFE comparators,
+replaced the prose spectral margin by a displayed finite-dimensional
+$\Gamma_r(P,D)$ formula, stated route residuals, and added concrete strict-bias
+and zero-margin witnesses; prior verdict: REVISE.
+\item v4 (revise) --- added the missed proximal synthetic-control and causal
+matrix-completion comparators, separated oracle $\Gamma_r(P,D)$ from the
+observable diagnostic $\widehat\Gamma_{r,n}(D)$, defined the comparator scores
+and projection functional, and displayed the strict-bias algebraic identity;
+prior verdict: REVISE.
+\item v5 (revise) --- added consistency/no-anticipation, repaired the full
+low-rank residual contrast, added the augmented synthetic-control comparator,
+and made projected-score equality a conclusion rather than a definition; prior
+verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Abadie et~al.(2024)]{AbadieAgarwalDwivediShah2024}
+Abadie, A., Agarwal, A., Dwivedi, R., and Shah, A. (2024).
+\newblock Doubly robust inference in causal latent factor models.
+\newblock arXiv:2402.11652.
+
+\bibitem[Arkhangelsky et~al.(2021)]{ArkhangelskyAtheyHirshbergImbensWager2021}
+Arkhangelsky, D., Athey, S., Hirshberg, D.~A., Imbens, G.~W., and Wager, S.
+(2021).
+\newblock Synthetic difference-in-differences.
+\newblock \emph{American Economic Review}, 111(12):4088--4118.
+
+\bibitem[Arkhangelsky and Imbens(2022)]{ArkhangelskyImbens2022}
+Arkhangelsky, D. and Imbens, G.~W. (2022).
+\newblock Doubly robust identification for causal panel data models.
+\newblock \emph{The Econometrics Journal}, 25(3):649--674.
+
+\bibitem[Arkhangelsky et~al.(2024)]{ArkhangelskyImbensLeiLuo2024}
+Arkhangelsky, D., Imbens, G.~W., Lei, L., and Luo, X. (2024).
+\newblock Design-robust two-way-fixed-effects regression for panel data.
+\newblock \emph{Quantitative Economics}, 15(4):999--1034.
+
+\bibitem[Athey et~al.(2021)]{AtheyBayatiDoudchenkoImbensKhosravi2021}
+Athey, S., Bayati, M., Doudchenko, N., Imbens, G., and Khosravi, K. (2021).
+\newblock Matrix completion methods for causal panel data models.
+\newblock \emph{Journal of the American Statistical Association},
+116(536):1716--1730.
+
+\bibitem[Agarwal et~al.(2023)]{AgarwalDahlehShahShen2023}
+Agarwal, A., Dahleh, M., Shah, D., and Shen, D. (2023).
+\newblock Causal matrix completion.
+\newblock In \emph{Proceedings of the Thirty Sixth Conference on Learning
+Theory}, volume 195 of \emph{Proceedings of Machine Learning Research},
+3821--3826.
+
+\bibitem[Athey et~al.(2025)]{AtheyImbensQuViviano2025}
+Athey, S., Imbens, G., Qu, Z., and Viviano, D. (2025).
+\newblock Triply robust panel estimators.
+\newblock arXiv:2508.21536.
+
+\bibitem[Bai and Ng(2021)]{BaiNg2021}
+Bai, J. and Ng, S. (2021).
+\newblock Matrix completion, counterfactuals, and factor analysis of missing
+data.
+\newblock \emph{Journal of the American Statistical Association},
+116(536):1746--1763.
+
+\bibitem[Ben-Michael et~al.(2022)]{BenMichaelFellerRothstein2022}
+Ben-Michael, E., Feller, A., and Rothstein, J. (2022).
+\newblock Synthetic controls with staggered adoption.
+\newblock \emph{Journal of the Royal Statistical Society: Series B},
+84(2):351--381.
+
+\bibitem[Ben-Michael et~al.(2021)]{BenMichaelFellerRothstein2021}
+Ben-Michael, E., Feller, A., and Rothstein, J. (2021).
+\newblock The augmented synthetic control method.
+\newblock \emph{Journal of the American Statistical Association},
+116(536):1789--1803.
+
+\bibitem[Borusyak et~al.(2024)]{BorusyakJaravelSpiess2024}
+Borusyak, K., Jaravel, X., and Spiess, J. (2024).
+\newblock Revisiting event-study designs: Robust and efficient estimation.
+\newblock \emph{Review of Economic Studies}, 91(6):3253--3285.
+
+\bibitem[Callaway and Sant'Anna(2021)]{CallawaySantAnna2021}
+Callaway, B. and Sant'Anna, P.~H.~C. (2021).
+\newblock Difference-in-differences with multiple time periods.
+\newblock \emph{Journal of Econometrics}, 225(2):200--230.
+
+\bibitem[Chernozhukov et~al.(2018)]{ChernozhukovChetverikovDemirerDufloHansenNeweyRobins2018}
+Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C.,
+Newey, W., and Robins, J. (2018).
+\newblock Double/debiased machine learning for treatment and structural
+parameters.
+\newblock \emph{The Econometrics Journal}, 21(1):C1--C68.
+
+\bibitem[Choi et~al.(2024)]{ChoiKwonLiao2024}
+Choi, J., Kwon, S., and Liao, Y. (2024).
+\newblock Inference for low-rank completion without sample splitting with
+application to treatment effect estimation.
+\newblock \emph{Journal of Econometrics}, 240(2):105682.
+
+\bibitem[Qiu et~al.(2024)]{QiuShiMiaoDobribanTchetgenTchetgen2024}
+Qiu, H., Shi, X., Miao, W., Dobriban, E., and Tchetgen Tchetgen, E. (2024).
+\newblock Doubly robust proximal synthetic controls.
+\newblock \emph{Biometrics}, 80(2):ujae055.
+
+\bibitem[Roth and Sant'Anna(2021)]{RothSantAnna2021}
+Roth, J. and Sant'Anna, P.~H.~C. (2021).
+\newblock Efficient estimation for staggered rollout designs.
+\newblock arXiv:2102.01291.
+
+\bibitem[Yan and Wainwright(2024)]{YanWainwright2024}
+Yan, Y. and Wainwright, M.~J. (2024).
+\newblock Entrywise inference for missing panel data: A simple and
+instance-optimal approach.
+\newblock arXiv:2401.13665.
+\end{thebibliography}
+
+\end{document}

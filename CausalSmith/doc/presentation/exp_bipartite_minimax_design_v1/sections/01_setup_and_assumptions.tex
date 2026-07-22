@@ -1,0 +1,306 @@
+\section{Setup and assumptions}\label{sec:setup-and-assumptions}
+
+At stage \(n\), the experiment assigns interventions to a finite set \(I_n\), with \(\lvert I_n\rvert=m_n\), and records outcomes for the \leanref{sym:O_n}{outcome-unit set \(O_n\)} of size \leanref{sym:n}{\(n\)}. A known bipartite graph \(G_n\) links intervention units to outcome units. For outcome unit \(i\), its \leanref{sym:N_i(G_n)}{intervention neighborhood \(N_i(G_n)\)} collects adjacent intervention units and has \leanref{sym:d_i}{degree \(d_i\)}. Conversely, let \leanref{sym:M_k(G_n)}{\(M_k(G_n)\)} denote the outcome units adjacent to intervention unit \(k\), and write \leanref{sym:s_k}{\(s_k\)} for its cardinality. These two degree concepts can differ: \(d_i\) governs the number of assignments entering one outcome's exposure, whereas \(s_k\) summarizes the outcomes potentially affected by a given intervention.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[>=stealth, node distance=0.75cm and 1.65cm, every node/.style={font=\small}]
+\node[draw, circle, fill=gray!15] (k1) {\(k_1\)};
+\node[draw, circle, fill=gray!15, below=of k1] (k2) {\(k_2\)};
+\node[draw, circle, fill=gray!15, below=of k2] (k3) {\(k_3\)};
+\node[left=0.45cm of k2] {\(I_n\)};
+
+\node[draw, circle, fill=blue!10, right=of k1] (i1) {\(i_1\)};
+\node[draw, circle, fill=blue!10, right=of k2] (i2) {\(i_2\)};
+\node[draw, circle, fill=blue!10, right=of k3] (i3) {\(i_3\)};
+\node[right=0.45cm of i2] {\(O_n\)};
+
+\draw (k1)--(i1);
+\draw (k2)--(i1);
+\draw (k2)--(i2);
+\draw (k3)--(i2);
+\draw (k3)--(i3);
+
+\node[draw, circle, fill=blue!10, right=3.25cm of i1] (j1) {\(i_1\)};
+\node[draw, circle, fill=blue!10, below=of j1] (j2) {\(i_2\)};
+\node[draw, circle, fill=blue!10, below=of j2] (j3) {\(i_3\)};
+\draw (j1)--(j2);
+\draw (j2)--(j3);
+\node[align=center, right=0.45cm of j2] {outcome-overlap\\graph};
+\end{tikzpicture}
+\caption{The bipartite graph \(G_n\) and its loop-free outcome-overlap graph. Two distinct outcome units are adjacent in the latter exactly when their intervention neighborhoods overlap. The formal dependence bound uses the corresponding closed overlap-neighborhood cardinality, which also counts the outcome itself.}
+\end{figure}
+
+For \(i,j\in O_n\), the \leanref{sym:S_{ij}(G_n)}{shared neighborhood \(S_{ij}(G_n)\)} equals \(N_i(G_n)\cap N_j(G_n)\). Distinct outcomes are adjacent in the usual loop-free overlap graph when this set is nonempty. The formal quantity \leanref{sym:Delta_n}{\(\Delta_n\)} is instead the maximum cardinality of the closed overlap neighborhood
+\[
+\{j\in O_n:S_{ij}(G_n)\neq\varnothing\},
+\]
+so it includes \(i\) whenever \(N_i(G_n)\neq\varnothing\). In the nonempty-neighborhood case it is the conventional overlap-graph degree plus one. Thus, \(s_k\) measures intervention-side incidence, while \(\Delta_n\) bounds the number of outcome-level exposure terms that can depend on a given term.
+
+We work with a fixed finite-population potential-outcome schedule \leanref{sym:Y}{\(Y\)}. Specifically, \(Y_i(z_{N_i})\) is the potential outcome induced by a neighborhood assignment vector, and the all-treated and all-control potential outcomes are \leanref{sym:Y_i^1}{\(Y_i^1\)} and \leanref{sym:Y_i^0}{\(Y_i^0\)}, respectively. The observed outcome is \(Y_i^{\mathrm{obs}}=Y_i(Z_{N_i(G_n)})\). Let \(\mu_1=n^{-1}\sum_{i\in O_n}Y_i^1\) and \(\mu_0=n^{-1}\sum_{i\in O_n}Y_i^0\), so that the finite-population estimand is \leanref{sym:tau_n}{\(\tau_n=\mu_1-\mu_0\)}.
+
+The potential-outcome restriction is as follows.
+
+\begin{assumptionv}{ass:bipartite-interference}[Bipartite interference restriction]
+For every $i\in O_n$ and every $z,z'\in\{0,1\}^{m_n}$,
+\[
+z_{N_i(G_n)}=z'_{N_i(G_n)}
+\quad\Longrightarrow\quad
+Y_i\!\left(z_{N_i(G_n)}\right)=Y_i\!\left(z'_{N_i(G_n)}\right).
+\]
+\end{assumptionv}
+
+\cref{obj:ass:bipartite-interference} is the usual neighborhood-interference restriction for a bipartite experiment: outcome \(i\) depends exclusively on assignments in \(N_i(G_n)\). It permits arbitrary interference within a neighborhood while making the exposure mapping graph-based and known to the researcher \citep{LuShiFangZhangDing2025BipartiteDesign}.
+
+Assignment follows a \leanref{S-1}{finite-population Bernoulli randomization design}. Write \leanref{sym:Z}{\(Z=(Z_k)_{k\in I_n}\)} for the assignment vector, with \leanref{sym:Z_k}{\(Z_k\)} denoting its coordinate for intervention unit \(k\), and let \leanref{sym:p}{\(p=(p_k)_{k\in I_n}\)} denote the probability vector.
+
+\begin{assumptionv}{ass:independent-heterogeneous-bernoulli}[Independent heterogeneous Bernoulli assignment]
+For every $k\in I_n$, $Z_k$ is Bernoulli with success probability $p_k$, and the collection $\{Z_k:k\in I_n\}$ is mutually independent.
+\end{assumptionv}
+
+\cref{obj:ass:independent-heterogeneous-bernoulli} allows assignment probabilities to vary across intervention units while retaining independent randomization. This is the design feature that permits adaptation to the observed graph, in the spirit of heterogeneous exposure-based designs \citep{Leung2019ApproxNeighborhoodInterference}.
+
+Fix a common \leanref{sym:epsilon}{positivity margin \(0<\epsilon<1/2\)} and an \leanref{sym:B_n}{expected-treatment budget \(B_n\)}. The design is subject to both restrictions.
+
+\begin{assumptionv}{ass:positivity-floor}[Assignment positivity]
+For every $k\in I_n$,
+\[
+\epsilon\leq p_k\leq 1-\epsilon.
+\]
+\end{assumptionv}
+
+\cref{obj:ass:positivity-floor} imposes uniform overlap through the \leanref{sym:epsilon}{positivity floor \(\epsilon\)}. It keeps every relevant exposure probability away from zero once outcome degrees are bounded, preventing unstable inverse-probability weights \citep{Leung2019ApproxNeighborhoodInterference}.
+
+\begin{assumptionv}{ass:budget-balance}[Assignment budget balance]
+\[
+\sum_{k\in I_n}p_k=B_n.
+\]
+\end{assumptionv}
+
+\cref{obj:ass:budget-balance} fixes the expected number of treated intervention units through the budget \leanref{sym:B_n}{\(B_n\)}. This restriction is specific to the present design problem: heterogeneous probabilities may be reallocated across intervention units, but their total must remain fixed.
+
+Together, \cref{obj:ass:positivity-floor} and~\cref{obj:ass:budget-balance} define the admissible design set.
+
+\begin{definitionv}{def:feasible-designs}[Feasible design class $\mathcal P_{n,B_n,\epsilon}$]
+Under \cref{obj:ass:positivity-floor} and~\cref{obj:ass:budget-balance}, with \(0<\epsilon<1/2\), define
+\[
+\mathcal P_{n,B_n,\epsilon}
+=
+\left\{
+p\in[0,1]^{m_n}:
+\epsilon\le p_k\le 1-\epsilon\ \text{for every } k\in I_n,
+\quad
+\sum_{k\in I_n}p_k=B_n
+\right\}.
+\]
+\end{definitionv}
+
+The class in \cref{obj:def:feasible-designs} is the intersection of a probability box and a budget hyperplane. It therefore isolates the design trade-off of interest: probabilities can respond to graph structure while preserving the experiment's expected treatment intensity.
+
+For each outcome unit, define the treated exposure indicator \leanref{sym:T_i(Z)}{\(T_i(Z)\)} as the indicator that every intervention in \(N_i(G_n)\) is treated, and define the control exposure indicator \leanref{sym:C_i(Z)}{\(C_i(Z)\)} analogously. Their design probabilities are \leanref{sym:pi_i^1(p)}{\(\pi_i^1(p)\)} and \leanref{sym:pi_i^0(p)}{\(\pi_i^0(p)\)}. The inverse-probability denominators are
+
+\begin{definitionv}{def:hajek-denominators}[Hájek denominators $D_1(p,Z)$ and $D_0(p,Z)$]
+Define
+\[
+D_1(p,Z)=\sum_{i\in O_n}\frac{T_i(Z)}{\pi_i^1(p)},
+\qquad
+D_0(p,Z)=\sum_{i\in O_n}\frac{C_i(Z)}{\pi_i^0(p)}.
+\]
+\end{definitionv}
+
+Here, \leanref{sym:D_1(p,Z)}{\(D_1(p,Z)\)} and \leanref{sym:D_0(p,Z)}{\(D_0(p,Z)\)} normalize the treated- and control-exposure weighted sums. The indicator convention in the next definition assigns value zero to a ratio whose corresponding exposure denominator is zero.
+
+\begin{definitionv}{def:hetero-hajek-estimator}[Hájek estimator $\widehat\tau_H(p)$]
+Define
+\[
+\widehat\tau_H(p)
+=
+\mathbf 1\{D_1(p,Z)>0\}
+\frac{\displaystyle\sum_{i\in O_n}\frac{T_i(Z)Y_i^{obs}}{\pi_i^1(p)}}{D_1(p,Z)}
+-
+\mathbf 1\{D_0(p,Z)>0\}
+\frac{\displaystyle\sum_{i\in O_n}\frac{C_i(Z)Y_i^{obs}}{\pi_i^0(p)}}{D_0(p,Z)}.
+\]
+\end{definitionv}
+
+\cref{obj:def:hetero-hajek-estimator} is the exposure-weighted Hájek estimator. Normalization makes the estimator less sensitive to random fluctuations in the number of realized all-treated and all-control exposures than its unnormalized counterpart.
+
+Its first-order behavior is described by the following centered summands.
+
+\begin{definitionv}{def:first-order-linearization}[Linearization summand $\eta_i(p,Z)$]
+For each \(i\in O_n\), define
+\[
+\eta_i(p,Z)
+=
+\left(\frac{T_i(Z)}{\pi_i^1(p)}-1\right)(Y_i^1-\mu_1)
+-
+\left(\frac{C_i(Z)}{\pi_i^0(p)}-1\right)(Y_i^0-\mu_0).
+\]
+\end{definitionv}
+
+The summands in \cref{obj:def:first-order-linearization} inherit a dependency graph from outcome-neighborhood overlap. Their scaled average has variance
+
+\begin{definitionv}{def:variance-scale}[Variance scale $\sigma^2_{G_n,p}(Y)$]
+For a working finite design $D$, define
+\[
+\sigma^2_{G_n,D,p}(Y)
+=
+n\,\operatorname{Var}_D\!\left(
+\frac{1}{n}\sum_{i\in O_n}\eta_i(p,Z)
+\right).
+\]
+When $D$ is the heterogeneous Bernoulli design indexed by $p$, abbreviate this quantity as $\sigma^2_{G_n,p}(Y)$.
+\end{definitionv}
+
+The variance scale \leanref{sym:sigma_{G_n,p}^2(Y)}{\(\sigma^2_{G_n,p}(Y)\)} is design based: potential outcomes are held fixed and variation is taken only over the assignment mechanism.
+
+We next construct a graph-only upper envelope for this scale. The treated and control covariance loads, \leanref{sym:r_{ij}^1(G_n,p)}{\(r_{ij}^1(G_n,p)\)} and \leanref{sym:r_{ij}^0(G_n,p)}{\(r_{ij}^0(G_n,p)\)}, quantify the inverse-probability amplification arising from the shared neighborhood of \(i\) and \(j\). The cross-exposure load \leanref{sym:r_{ij}^{10}(G_n)}{\(r_{ij}^{10}(G_n)\)} records whether that shared neighborhood is nonempty. These quantities depend only on \(G_n\) and, for the same-exposure loads, on \(p\).
+
+\begin{definitionv}{def:graph-envelope}[Graph envelope $V_{\mathrm{env}}(G_n,p)$]
+Define
+\[
+V_{\mathrm{env}}(G_n,p)
+=
+\frac{4}{n}\sum_{i,j\in O_n}
+\left\{
+r_{ij}^1(G_n,p)
++
+r_{ij}^0(G_n,p)
++
+2r_{ij}^{10}(G_n)
+\right\}.
+\]
+\end{definitionv}
+
+The graph envelope \leanref{sym:V_env(G_n,p)}{\(V_{\mathrm{env}}(G_n,p)\)} replaces unknown outcome contrasts by a uniform bound, thereby making the design criterion observable before randomization. The envelope-optimal design is
+
+\begin{definitionv}{def:optimal-design}[Envelope-optimal design $p_n^*(G_n)$]
+Whenever the minimizer set is nonempty, define
+\[
+p_n^*(G_n)
+\in
+\operatorname{argmin}_{p\in\mathcal P_{n,B_n,\epsilon}}
+V_{\mathrm{env}}(G_n,p).
+\]
+\end{definitionv}
+
+\cref{obj:def:optimal-design} selects \leanref{sym:p_n^*(G_n)}{\(p_n^*(G_n)\)} from the feasible envelope minimizers. To characterize its allocation of probability mass, we use the coordinatewise envelope score.
+
+\begin{definitionv}{def:kkt-gradient}[Envelope gradient score $g_k(G_n,p)$]
+Define
+\[
+g_k(G_n,p)
+=
+\frac{1}{n}
+\sum_{\substack{i,j\in O_n:\ k\in S_{ij}(G_n)}}
+\left\{
+-
+\left(\prod_{\ell\in S_{ij}(G_n)}p_\ell^{-1}\right)p_k^{-1}
++
+\left(\prod_{\ell\in S_{ij}(G_n)}(1-p_\ell)^{-1}\right)(1-p_k)^{-1}
+\right\}.
+\]
+\end{definitionv}
+
+On the strict positivity domain \(p_k\in(0,1)\), \cref{obj:def:kkt-gradient} gives the partial derivative of one quarter of the envelope. Its dependence on all pairs sharing intervention unit \(k\) shows that design value incorporates the full overlap pattern beyond direct degree.
+
+For implementation, we also consider a separable surrogate. Define the overlap-derived first-order weight
+\[
+\leanref{sym:h_k(G_n)}{h_k(G_n)}
+=
+\frac{1}{n}\sum_{\substack{i,j\in O_n:\\ k\in S_{ij}(G_n)}}
+\lvert S_{ij}(G_n)\rvert^{-1}.
+\]
+These weights average pairwise overlaps and reduce to degree-based summaries under additional graph structure.
+
+\begin{definitionv}{def:conservative-variance-estimator}[Conservative variance estimator $\widehat V_{\mathrm{cons}}(G_n,p)$]
+Define
+\[
+\widehat V_{\mathrm{cons}}(G_n,p)
+=
+V_{\mathrm{env}}(G_n,p).
+\]
+\end{definitionv}
+
+The retained notation \leanref{sym:hat_V_cons(G_n,p)}{\(\widehat V_{\mathrm{cons}}(G_n,p)\)} denotes a deterministic graph-and-design scale known before randomization.
+
+\begin{definitionv}{def:surrogate-design}[Surrogate design $p_n^{\deg}(G_n)$]
+Whenever the minimizer set is nonempty, define
+\[
+p_n^{\deg}(G_n)\in
+\operatorname{argmin}_{p\in\mathcal P_{n,B_n,\epsilon}}
+\sum_{k\in I_n} h_k(G_n)
+\left\{p_k^{-1}+(1-p_k)^{-1}\right\}.
+\]
+\end{definitionv}
+
+\cref{obj:def:surrogate-design} selects the computationally separable design \leanref{sym:p_n^{deg}(G_n)}{\(p_n^{\deg}(G_n)\)}. Its performance relative to the envelope optimum is measured by
+
+\begin{definitionv}{def:approximation-ratio}[Approximation ratio $\alpha_{\mathrm{cert}}(G_n)$]
+Define
+\[
+\alpha_{\mathrm{cert}}(G_n)=
+\begin{cases}
+\dfrac{V_{\mathrm{env}}\!\left(G_n,p_n^{\deg}(G_n)\right)}
+{V_{\mathrm{env}}\!\left(G_n,p_n^*(G_n)\right)},
+& \text{if }0<V_{\mathrm{env}}\!\left(G_n,p_n^*(G_n)\right),\\
+1,
+& \text{otherwise}.
+\end{cases}
+\]
+Here, each design selector equals its respective feasible minimizer when one exists, and equals the homogeneous budget vector otherwise.
+\end{definitionv}
+
+The approximation ratio \leanref{sym:alpha_cert(G_n)}{\(\alpha_{\mathrm{cert}}(G_n)\)} adopts a zero-loss convention when the optimal envelope is zero.
+
+For later comparison with homogeneous assignment, let \(\rho=B_n/m_n\) and set \(p_k^{\mathrm{hom}}=\rho\) for every \(k\in I_n\). Write \(\Delta_g\) for the difference between the largest and smallest values of \(g_k(G_n,p^{\mathrm{hom}})\), and let \(a\) and \(b\) index the corresponding extremal scores. The largest symmetric budget-feasible displacement from \(p^{\mathrm{hom}}\) in direction \(e_b-e_a\) is denoted by \(\eta_{\mathrm{box}}\), where \(e_k\) is the \(k\)th coordinate vector. The associated \leanref{sym:L_ab}{directional second-order modulus \(L_{ab}\)} is
+\[
+L_{ab}
+=
+\sup_{q\in\mathcal P_{n,B_n,\epsilon}}
+(e_b-e_a)^\top
+\operatorname{Hess}\!\left\{V_{\mathrm{env}}(G_n,q)/4\right\}
+(e_b-e_a).
+\]
+The supremum is explicitly over the feasible probability domain. Positivity therefore supplies a compact domain on which application-specific finite bounds on this directional curvature can be obtained.
+
+The large-sample results impose regularity on potential outcomes and graph dependence.
+
+\begin{assumptionv}{ass:bounded-outcomes}[Bounded potential outcomes]
+For every $i\in O_n$,
+\[
+\lvert Y_i^1\rvert\leq 1
+\qquad\text{and}\qquad
+\lvert Y_i^0\rvert\leq 1.
+\]
+\end{assumptionv}
+
+\cref{obj:ass:bounded-outcomes} is a standard bounded finite-population potential-outcome condition. It uniformly controls the magnitude of exposure-weighted summands in the design-based model \citep{LuShiFangZhangDing2025BipartiteDesign}.
+
+\begin{assumptionv}{ass:bounded-outcome-degree}[Bounded outcome degree]
+\[
+0 < \bar d
+\quad\text{and}\quad
+\max_{i\in O_n} d_i \leq \bar d.
+\]
+\end{assumptionv}
+
+\cref{obj:ass:bounded-outcome-degree} keeps every outcome neighborhood uniformly small through the positive constant \leanref{sym:dbar}{\(\bar d\)}. In sparse bipartite sequences, this condition bounds the inverse-probability amplification associated with all-treated and all-control exposure events \citep{LuShiFangZhangDing2025BipartiteDesign}.
+
+\begin{assumptionv}{ass:bounded-overlap-dependency}[Bounded overlap dependency]
+\[
+0 < \bar D \quad\text{and}\quad \Delta_n \le \bar D.
+\]
+\end{assumptionv}
+
+\cref{obj:ass:bounded-overlap-dependency} bounds outcome-level dependence by the positive constant \leanref{sym:Dbar}{\(\bar D\)}. It is the standard dependency-graph sparsity condition that permits a central-limit argument despite interference among overlapping neighborhoods \citep{AronowSamii2017GeneralInterference}.
+
+Finally, inference requires an asymptotically positive variance scale under the optimal design.
+
+\begin{assumptionv}{ass:variance-nondegenerate}[Nondegenerate variance scale]
+\[
+\liminf_{n\to\infty}\sigma^2_{G_n,p_n^*(G_n)}(Y)>0.
+\]
+\end{assumptionv}
+
+\cref{obj:ass:variance-nondegenerate} excludes sequences in which the design-based fluctuation of the linearized estimator degenerates. Such a lower-bound condition is standard for asymptotic normal approximation under interference \citep{LuShiFangZhangDing2025BipartiteDesign}.

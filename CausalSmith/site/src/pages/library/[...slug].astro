@@ -1,0 +1,367 @@
+---
+import {
+  loadLibrary,
+  loadSidecars,
+  libraryRoot,
+  declArea,
+  buildModuleTree,
+  treeModules,
+  orderByDependency,
+  isTier1,
+  unreviewedCount,
+  firstSentence,
+  displayModulePath,
+  displayModuleSegment,
+  type Library,
+  type ModTree,
+} from "../../lib/library.js";
+import ModuleNode from "../../components/ModuleNode.astro";
+import LibSearch from "../../components/LibSearch.astro";
+import { SERIES_NAME, SERIES_TAGLINE } from "../../lib/config.js";
+import "../../styles/library.css";
+
+/**
+ * One page per DIRECTORY level of the library (area root = the area's page).
+ * A page inlines the decl cards of the files directly in its directory and
+ * links each subdirectory to its own page — bounding every page's size, where
+ * the old one-page-per-area design rendered thousands of cards at once.
+ */
+export async function getStaticPaths() {
+  const lib = loadLibrary(libraryRoot());
+  const areas = [...new Set(lib.entries.map(declArea))].sort();
+  const paths: { params: { slug: string }; props: { lib: Library; area: string; dirPath: string } }[] = [];
+  const walk = (area: string, node: ModTree) => {
+    if (node.children.length === 0) return;
+    paths.push({
+      params: { slug: `${area}/${node.path.replace(/\./g, "/")}` },
+      props: { lib, area, dirPath: node.path },
+    });
+    node.children.forEach((c) => walk(area, c));
+  };
+  for (const area of areas) {
+    paths.push({ params: { slug: area }, props: { lib, area, dirPath: "" } });
+    const tree = buildModuleTree(
+      area,
+      [...new Set(lib.entries.filter((e) => declArea(e) === area).map((d) => d.module))],
+    );
+    tree.forEach((n) => walk(area, n));
+  }
+  return paths;
+}
+
+const { lib, area, dirPath } = Astro.props as { lib: Library; area: string; dirPath: string };
+// Dev only: getStaticPaths props are cached by the dev server, so review stamps
+// written through /api/review after server start would render as unreviewed.
+// Re-read the sidecars per request (in place — caches keyed on `lib` survive).
+if (import.meta.env.DEV) {
+  lib.sidecars = loadSidecars(libraryRoot(), new Set(lib.entries.map((e) => e.name)));
+}
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const decls = lib.entries.filter((e) => declArea(e) === area);
+const tree = buildModuleTree(area, [...new Set(decls.map((d) => d.module))]);
+
+// Locate this page's node ('' = area root, whose children are the top-level tree).
+function findNode(nodes: ModTree[], path: string): ModTree | null {
+  for (const n of nodes) {
+    if (n.path === path) return n;
+    if (path.startsWith(n.path + ".")) return findNode(n.children, path);
+  }
+  return null;
+}
+const node = dirPath === "" ? null : findNode(tree, dirPath);
+const children = node ? node.children : tree;
+
+// Files directly here render inline; subdirectories become link cards.
+const ordered = orderByDependency(children, lib);
+const fileChildren = ordered.filter((c) => c.children.length === 0);
+const dirChildren = ordered.filter((c) => c.children.length > 0);
+
+const counts = (n: ModTree) => {
+  const mods = new Set(treeModules(n));
+  const sub = lib.entries.filter((e) => mods.has(e.module));
+  const t1 = sub.filter((d) => isTier1(d, lib.sidecars)).length;
+  return { t1, t2: sub.length - t1, unrev: unreviewedCount(sub, lib.sidecars) };
+};
+// A directory's description: prefer the module docstring of a file living
+// exactly at that path — including decl-free roll-up files (e.g. `ML/Binary.lean`),
+// whose node carries no `.module` because the tree is built from entry modules, so
+// look them up by path too — then fall back to the curated namespace intro.
+const moduleDocAt = (n: ModTree) =>
+  lib.modules[n.module ?? `Causalean.${area}.${n.path}`] ?? null;
+const briefOf = (n: ModTree) =>
+  firstSentence(moduleDocAt(n)) ??
+  lib.sidecars[area]?.namespace_intros?.[n.path] ??
+  null;
+
+const crumbs = dirPath === "" ? [] : dirPath.split(".");
+const intro =
+  dirPath === ""
+    ? (lib.sidecars[area]?.intro ?? null)
+    : (lib.sidecars[area]?.namespace_intros?.[dirPath]
+        ?? firstSentence(lib.modules[`Causalean.${area}.${dirPath}`] ?? null)
+        ?? null);
+const title = dirPath === "" ? area : `${area}.${dirPath}`;
+const displayTitle = dirPath === "" ? area : `${area}.${displayModulePath(dirPath)}`;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{displayTitle} · Causalean Library · {SERIES_NAME}</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css"
+    />
+  </head>
+  <body>
+    <article class="library">
+      <nav class="site-nav">
+        <span class="site-nav-kicker">{SERIES_NAME} · {SERIES_TAGLINE}</span>
+        <a href={`${base}/`}>CausalSmith Working Papers</a>
+        <a href={`${base}/library/`}>Causalean Library</a>
+        {dirPath === "" ? (
+          <span class="site-nav-current">{area}</span>
+        ) : (
+          <a href={`${base}/library/${area}`}>{area}</a>
+        )}
+        {crumbs.map((seg, i) =>
+          i === crumbs.length - 1 ? (
+            <span class="site-nav-current">{displayModuleSegment(seg)}</span>
+          ) : (
+            <a href={`${base}/library/${area}/${crumbs.slice(0, i + 1).join("/")}`}>{displayModuleSegment(seg)}</a>
+          ),
+        )}
+        <a href={`${base}/library/?area=${area}#graph`}>Dependency graph</a>
+        <span class="site-nav-commit">commit <code>{lib.commit.slice(0, 7)}</code></span>
+      </nav>
+      <LibSearch base={base} />
+      <h1>{displayTitle}</h1>
+      {intro && <p class="lib-intro">{intro}</p>}
+
+      {(node?.module || fileChildren.length > 0) && (
+        <div class="lib-tools">
+          <button type="button" data-foldall="open">Expand all</button>
+          <button type="button" data-foldall="close">Collapse all</button>
+        </div>
+      )}
+
+      {/* a Foo.lean living exactly at this directory path: its cards belong here */}
+      {node?.module && (
+        <ModuleNode node={{ ...node, children: [] }} lib={lib} area={area} base={base} depth={0} open={true} />
+      )}
+
+      {dirChildren.length > 0 && (
+        <div class={`dir-list ${fileChildren.length === 0 ? "stack" : "grid"}`}>
+          {dirChildren.map((c) => {
+            const { t1, t2, unrev } = counts(c);
+            return (
+              <a
+                class="dir-card"
+                href={`${base}/library/${area}/${c.path.replace(/\./g, "/")}`}
+                title={briefOf(c) ?? undefined}
+              >
+                <span class="module-name">
+                  {displayModuleSegment(c.seg)}
+                  {unrev > 0 && (
+                    <span class="review-tag" title={`${unrev} core declaration${unrev === 1 ? "" : "s"} not yet reviewed`}>
+                      {unrev} to review
+                    </span>
+                  )}
+                </span>
+                <span class="module-counts">
+                  {t1} core · {t2} supporting · {c.children.length} submodule{c.children.length === 1 ? "" : "s"}
+                </span>
+                {briefOf(c) && <span class="module-brief">{briefOf(c)}</span>}
+              </a>
+            );
+          })}
+        </div>
+      )}
+
+      {fileChildren.map((c) => (
+        <ModuleNode node={c} lib={lib} area={area} base={base} depth={0} open={fileChildren.length === 1 && dirChildren.length === 0} />
+      ))}
+    </article>
+    <button type="button" class="back-to-top" aria-label="Back to top">↑ Top</button>
+
+    <script>
+      // Inject a "copy" button into every Lean source block. The block's
+      // textContent reconstructs the raw source verbatim (linkifyStatement only
+      // wraps identifiers in <a><code>…</code></a>, so the text nodes are intact)
+      // — EXCEPT for a structured statement (one-row-per-hypothesis), whose DOM
+      // carries extra chrome (tag labels, per-row layout) that textContent would
+      // fold in as stray words. Those blocks carry the original signature verbatim
+      // in `data-copy-text` instead; prefer it when present.
+      for (const block of document.querySelectorAll<HTMLElement>(".decl-stmt")) {
+        // Capture the source BEFORE appending the button, so the button's own
+        // label never leaks into the copied text.
+        const source = (block.dataset.copyText ?? block.textContent ?? "").replace(/\n+$/, "");
+        // Only multi-line Lean blocks use an inner scroller. Short statements
+        // stay in the card and wrap naturally for easier reading.
+        if (block.classList.contains("decl-stmt-scrollable")) {
+          const scroller = document.createElement("div");
+          scroller.className = "decl-stmt-scroll";
+          while (block.firstChild) scroller.appendChild(block.firstChild);
+          block.appendChild(scroller);
+        }
+        block.classList.add("has-copy");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "copy-btn";
+        btn.textContent = "copy";
+        btn.setAttribute("aria-label", "Copy Lean source");
+        let resetTimer: number | undefined;
+        btn.addEventListener("click", async (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          const text = source;
+          try {
+            await navigator.clipboard.writeText(text);
+          } catch {
+            // Fallback for non-secure contexts where the Clipboard API is blocked.
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand("copy"); } catch { /* give up */ }
+            ta.remove();
+          }
+          btn.textContent = "copied";
+          btn.classList.add("copied");
+          window.clearTimeout(resetTimer);
+          resetTimer = window.setTimeout(() => {
+            btn.textContent = "copy";
+            btn.classList.remove("copied");
+          }, 1400);
+        });
+        block.appendChild(btn);
+      }
+    </script>
+
+    <script>
+      // Modules are collapsed by default; a #hash deep link (search hit, "uses" link,
+      // statement identifier) must open every <details> ancestor of its target.
+      let flashed: Element | null = null;
+      const clearFlash = () => {
+        flashed?.classList.remove("flash-target");
+        flashed = null;
+      };
+      function openHashTarget() {
+        const id = decodeURIComponent(location.hash.slice(1));
+        if (!id) return;
+        const el = document.getElementById(id);
+        if (!el) return;
+        let p: Element | null = el;
+        while (p) {
+          if (p instanceof HTMLDetailsElement) p.open = true;
+          p = p.parentElement;
+        }
+        el.scrollIntoView({ block: "center" });
+        clearFlash();
+        el.classList.add("flash-target");
+        flashed = el;
+      }
+      window.addEventListener("hashchange", openHashTarget);
+      // any click outside the flashed card clears the highlight
+      document.addEventListener("click", (ev) => {
+        if (flashed && !flashed.contains(ev.target as Node)) clearFlash();
+      });
+
+      // Fold state persists per page (sessionStorage, keyed by index — the
+      // rendered list is static), so back/forward returns to the page as the
+      // reader left it instead of the collapsed default + stale hash target.
+      const folds = [...document.querySelectorAll("details.module-block")];
+      const KEY = `lib-folds:${location.pathname}`;
+      const saved = sessionStorage.getItem(KEY);
+      const navEntry = performance.getEntriesByType("navigation")[0] as
+        | PerformanceNavigationTiming
+        | undefined;
+      const isBack = navEntry?.type === "back_forward";
+      if (saved && isBack) {
+        try {
+          const open = new Set(JSON.parse(saved) as number[]);
+          folds.forEach((d, i) => ((d as HTMLDetailsElement).open = open.has(i)));
+        } catch {
+          /* corrupted state: keep defaults */
+        }
+      }
+      const save = () =>
+        sessionStorage.setItem(
+          KEY,
+          JSON.stringify(folds.flatMap((d, i) => ((d as HTMLDetailsElement).open ? [i] : []))),
+        );
+      folds.forEach((d) => d.addEventListener("toggle", save));
+
+      if (!(saved && isBack)) openHashTarget();
+
+      // "+N more" headline chips: reveal the remaining names IN PLACE without
+      // opening the file. The chips live inside the module <summary>, so the click
+      // must be stopped from triggering the summary's default open/close toggle.
+      for (const btn of document.querySelectorAll<HTMLButtonElement>("[data-hl-more]")) {
+        btn.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          btn.parentElement?.classList.add("show-all");
+          btn.remove();
+        });
+      }
+
+      // Expand / collapse all: a cheap scan escape-hatch for readers who want to
+      // Ctrl-F the whole page instead of opening modules one at a time.
+      for (const btn of document.querySelectorAll<HTMLButtonElement>("[data-foldall]")) {
+        btn.addEventListener("click", () => {
+          const wantOpen = btn.dataset.foldall === "open";
+          folds.forEach((d) => ((d as HTMLDetailsElement).open = wantOpen));
+          save();
+        });
+      }
+
+      // Directory-grid cards are equal-height, but shorter titles leave extra
+      // room. Fill only that already-available room with more brief text.
+      const fitDirectoryCardBriefs = () => {
+        const cards = [...document.querySelectorAll<HTMLElement>(".dir-list.grid .dir-card")];
+        for (const card of cards) {
+          card.querySelector<HTMLElement>(".module-brief")?.style.setProperty("--dir-brief-lines", "3");
+        }
+        requestAnimationFrame(() => {
+          for (const card of cards) {
+            const brief = card.querySelector<HTMLElement>(".module-brief");
+            if (!brief) continue;
+            const briefStyle = window.getComputedStyle(brief);
+            const cardStyle = window.getComputedStyle(card);
+            const lineHeight = Number.parseFloat(briefStyle.lineHeight);
+            if (!Number.isFinite(lineHeight) || lineHeight <= 0) continue;
+            const cardRect = card.getBoundingClientRect();
+            const briefRect = brief.getBoundingClientRect();
+            const bottomPadding = Number.parseFloat(cardStyle.paddingBottom) || 0;
+            const available = Math.max(0, cardRect.bottom - bottomPadding - briefRect.top);
+            const lines = Math.max(3, Math.floor(available / lineHeight));
+            brief.style.setProperty("--dir-brief-lines", String(Math.min(lines, 6)));
+          }
+        });
+      };
+      fitDirectoryCardBriefs();
+      let fitDirectoryTimer: number | undefined;
+      window.addEventListener("resize", () => {
+        window.clearTimeout(fitDirectoryTimer);
+        fitDirectoryTimer = window.setTimeout(fitDirectoryCardBriefs, 80);
+      });
+
+      // Back-to-top: reveal once the reader is a screenful down, jump to top on click.
+      const toTop = document.querySelector<HTMLButtonElement>(".back-to-top");
+      if (toTop) {
+        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const onScroll = () =>
+          toTop.classList.toggle("visible", window.scrollY > window.innerHeight * 0.6);
+        onScroll();
+        window.addEventListener("scroll", onScroll, { passive: true });
+        toTop.addEventListener("click", () =>
+          window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" }),
+        );
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,438 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_network\_iv\_exposure} / \texttt{v3}%
+  \\ \large\textit{Sharp finite-network complier direct and spillover bounds under dual exposure-map misspecification}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---
+
+\paragraph{Locked parameters.}
+This is a partial-identification anchor, not a panel pool-mode. The locked tuple is
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},
+\text{bounding functional})\\
+=
+(\texttt{pid\_network\_iv\_exposure},\texttt{v3},
+P_{I,Z,D,T,S,Y;\,\pi,\mathcal L},\
+\theta_{\mathrm{CDS}}(s,t),\
+\mathcal{R}_{\mathrm{shared\ completion+stable\ compliance}},\
+[\underline\theta_{\mathrm{IV,joint}}(P;s,t),\overline\theta_{\mathrm{IV,joint}}(P;s,t)]) .
+\end{gathered}
+\]
+Here \(I\) indexes a uniformly sampled unit from a finite population, \(Z=(Z_1,\ldots,Z_n)\in\{0,1\}^n\) is a known randomized encouragement design \(\pi\), \(D=(D_1,\ldots,D_n)\in\{0,1\}^n\) is realized take-up, \(\mathcal L\) is the observed local graph, \(T_i=t_i(Z,\mathcal L)\) is the observed instrumental exposure label, \(S_i=s_i(D,\mathcal L)\) is the observed treatment exposure label, and \(Y_i\in[0,1]\) is the observed outcome. The target \(\theta_{\mathrm{CDS}}(s,t)\) is the stable-complier direct-and-spillover contrast comparing \(D_i=1\) to \(D_i=0\) at fixed observed labels \((S_i,T_i)=(s,t)\), averaging over hidden instrument exposure and hidden treatment exposure induced by one shared graph completion. The restrictions \(\mathcal{R}_{\mathrm{shared\ completion+stable\ compliance}}\) are finite support, consistency, bounded outcomes, randomized encouragement, local positivity, monotone own-instrument take-up, a shared graph-completion class \(\mathfrak G(\mathcal L,\mathcal C,K)\), and exposure sufficiency for \((T_i,R_i^Z(G,Z),S_i,R_i^D(G,D))\). The bounding functional is the sharp finite LP projection over one shared completion, latent stable-complier strata, bounded potential outcomes, and observed take-up and outcome moments; it is not the stitched product relaxation that lets the instrument-exposure kernel, treatment-exposure kernel, and complier kernel vary unitwise without one common completion.
+
+\begin{abstract}
+The parent proposal \texttt{pid\_network\_exposure/v1} gives sharp finite-network bounds for average direct effects under treatment-exposure misspecification when hidden exposure errors arise from one shared graph completion. This upgrade asks for the corresponding partial-identification object when take-up is instrumented, so both the treatment exposure mapping and the instrumental exposure mapping may be misspecified. The routine result is a finite LP representation of the sharp identified set for a stable-complier direct-and-spillover effect under one shared completion and monotone take-up. The flagship claim is that the natural stitched relaxation, which combines unitwise hidden-instrument kernels, hidden-treatment kernels, and stable-complier kernels, is generally strictly nonsharp because the same hidden edge constrains take-up and outcome exposure channels jointly. If true, the result bridges the network-IV literature of \citet{hoshino_yanagi_2024_noncompliance_unknown_interference} with exposure-map robustness results such as \citet{schroder_oprescu_feuerriegel_kallus_2026_networks_partialid}. A resolution would produce a computable sharp finite-network bound, a worked witness, and a precise parent-corner reduction to \texttt{pid\_network\_exposure/v1}.
+\end{abstract}
+
+\section{Introduction}
+The question is whether network-IV complier direct and spillover effects remain sharply partially identified when both the treatment exposure mapping for outcomes and the instrumental exposure mapping for take-up may be wrong. The headline claim is that one shared hidden graph completion still yields a finite sharp LP, but the corresponding stitched product relaxation is generically too wide because the same hidden edge enters both the take-up channel and the outcome-exposure channel.
+
+Relative to the parent \texttt{pid\_network\_exposure/v1}, the upgrade axis is a strict generalization: the parent has one latent exposure channel and no compliance strata, while the present kernel adds monotone own-instrument take-up, a second hidden exposure channel, and a shared-completion restriction that links the two. Relative to the published literature, the closest comparators are \citet{hoshino_yanagi_2024_noncompliance_unknown_interference}, whose abstract states that the paper will ``investigate identification conditions for ... the average treatment effects for compliers'' while introducing an instrumental exposure mapping (abstract, JASA 119(548):2869--2880), and \citet{schroder_oprescu_feuerriegel_kallus_2026_networks_partialid}, whose abstract states that the paper will ``derive sharp upper and lower bounds on direct and spillover effects'' under misspecified exposure mappings (abstract, arXiv:2602.03459, lines 38--40). The gap here is narrower and different: neither paper gives a finite-network nonrepresentability result for stitched dual-map complier bounds under one shared completion. \citet[pp.~1--3]{savje_2024_misspecified_exposure_mappings} is the conceptual anchor for treating exposure labels as estimands and assumptions separately. The kernel lives in PartialID, with a network-IV frontier defined by the intersection of interference, misspecified exposure mappings, and latent compliance.
+
+The concrete consumer is the open problem recorded in the Stage -1.1 gaps file: a finite-network sharp identified interval for complier direct and spillover effects under joint treatment- and instrument-exposure misspecification. It also supplies a theorem-level bridge between \citet{imai_jiang_malani_2021_interference_noncompliance}, \citet{hoshino_yanagi_2024_noncompliance_unknown_interference}, and the exposure-robustness line culminating in \citet{schroder_oprescu_feuerriegel_kallus_2026_networks_partialid}. A reader who currently reports only unitwise stitched sensitivity bounds would instead solve one shared-completion LP and inspect the gap between that value and the stitched outer bound.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: The sharp identified set for \(\theta_{\mathrm{CDS}}(s,t)\) is a finite LP projection over one shared graph completion, latent stable-complier strata, and bounded potential outcomes. Gap: \texttt{pid\_network\_exposure/v1} has only treatment-exposure misspecification; \citet{hoshino_yanagi_2024_noncompliance_unknown_interference} and \citet{schroder_oprescu_feuerriegel_kallus_2026_networks_partialid} do not give this joint finite-network projection. Consumer: the Stage -1.1 flagship gap on joint treatment/instrument exposure misspecification.
+\item Conjecture 1: The shared-completion identified set is strictly contained in the stitched relaxation \(\Theta_{\mathrm{C}}^{\mathrm{stitch}}(P;s,t)\) on an open class of finite designs. Gap: the parent strict-containment phenomenon is ADE-only, and the published chain has no nonrepresentability result for stitched dual-map complier bounds. Consumer: \citet{hoshino_yanagi_2024_noncompliance_unknown_interference}, because it isolates when exposure-robust IV analyses lose information by dropping shared feasibility.
+\end{itemize}
+
+\section{Related work}
+\citet{manski_1990_nonparametric_bounds} is the bounded-outcome partial-identification anchor: the LPs below use the same worst-case logic for latent potential outcomes. \citet{hudgens_halloran_2008_interference} and \citet{aronow_samii_2017_general_interference} are the interference baseline for direct and spillover estimands under exposure mappings [reused from parent]. \citet{savje_2024_misspecified_exposure_mappings} is the central conceptual comparator [reused from parent]: it separates exposure mappings as estimands from exposure mappings as assumptions, which is exactly the distinction this proposal operationalizes with two misspecifiable exposure channels.
+
+\citet{imai_jiang_malani_2021_interference_noncompliance} identify complier direct and spillover effects in two-stage randomized experiments under stratified interference. Their relevance is the complier target, but the design is cluster-stratified and the theorem is point identification rather than finite sharp bounds. \citet{hoshino_yanagi_2024_noncompliance_unknown_interference} allow unknown network interference through instrumental exposure mappings and monotone take-up. Their relevance is that they already separate own encouragement from peer encouragement in take-up, but they work through identification and IPW estimation rather than sharp finite-network bounds under joint exposure-map misspecification. \citet{vazquez_bare_2023_iv_spillovers} shows that naive IV rescaling mixes direct and spillover complier effects across compliance types. Its relevance is the warning that the IV target itself is delicate once peer effects enter take-up or outcomes.
+
+\citet{schroder_oprescu_feuerriegel_kallus_2026_networks_partialid} is the closest exposure-robustness comparator [reused from parent]. It gives sharp bounds for direct and spillover effects under misspecified treatment exposure mappings, plus estimators for those bounds, but it does not have latent compliance strata or an instrumental exposure channel. \citet{weinstein_nevo_2026_misspecified_networks} is the closest network-misspecification comparator [reused from parent]. It studies bias and robust estimation across candidate networks, not the sharp partial-identification polytope generated by one local completion. \citet{acerenza_martinez_iriarte_sanchez_becerra_spini_2025_household_bounds} is the closest finite sharp-bound IV interference paper beyond the network-IV line. Its relevance is that it proves sharpness with latent strategic response types in a two-person encouragement design, but it does not address many-peer exposure mappings or joint misspecification of treatment and instrument exposure labels.
+
+\citet{imbens_angrist_1994_late} is the classical monotonicity anchor for complier effects. \citet{imbens_manski_2004_ci_partial_id} and \citet{chernozhukov_hong_tamer_2007_parameter_sets} are the downstream inference anchors if the finite sharp bound is later estimated. The project-level prior art is the banked parent [\texttt{CausalSmith/doc/research/\_bank/candidates/pid\_network\_exposure\_v1/pid\_network\_exposure\_v1\_proposal.tex}], whose \S2 and \S8 give shared-completion ADE bounds without IV noncompliance, and the PartialID cluster summary in \texttt{CausalSmith/doc/API.md}. No non-parent catalogue entry records a network-IV shared-completion theorem combining latent compliance, dual exposure channels, and a finite sharp LP.
+
+\section{Formal setup}
+There are \(n<\infty\) units. The encouragement vector is \(Z\in\{0,1\}^n\), drawn from a known randomized design \(\pi\) with finite support \(\Omega_\pi=\{z:\pi(z)>0\}\). The observed local graph is \(\mathcal L\), the candidate hidden-edge set is \(\mathcal C\), and a feasible true graph completion \(G\in\mathfrak G(\mathcal L,\mathcal C,K)\) satisfies
+\[
+G=\mathcal L\cup\{e\in\mathcal C:x_e=1\}, \qquad x_e\in\{0,1\}, \qquad \sum_{e\in\mathcal C}B_{ie}x_e\le K_i \ \text{for all } i,
+\]
+where \(B_{ie}=\one\{i\in e\}\).
+
+The observed instrument exposure is \(T_i=t_i(Z,\mathcal L)\in\mathcal T\), and the observed treatment exposure is \(S_i=s_i(D,\mathcal L)\in\mathcal S\). For a completion \(G\), define hidden exposure channels
+\[
+R_i^Z(G,Z)=\one\{\exists j:\{i,j\}\in G\setminus\mathcal L,\ Z_j=1\}, \qquad
+R_i^D(G,D)=\one\{\exists j:\{i,j\}\in G\setminus\mathcal L,\ D_j=1\}.
+\]
+Take-up obeys a latent response surface \(D_i(z_i,t,r^Z)\in\{0,1\}\), and outcomes obey a latent response surface \(Y_i(d,s,r^D)\in[0,1]\). The observed variables satisfy
+\[
+D_i = D_i(Z_i,T_i,R_i^Z(G,Z)), \qquad Y_i = Y_i(D_i,S_i,R_i^D(G,D)).
+\]
+The stable-complier indicator at observed instrument exposure \(t\) and hidden instrument exposure \(r^Z\) is
+\[
+C_i(t,r^Z)=\one\{D_i(1,t,r^Z)-D_i(0,t,r^Z)=1\}.
+\]
+\noindent Let
+\[
+\omega_{i,s,t,r^Z,r^D}(G,\lambda)
+=
+\Pr_\pi\!\bigl(Z_i=0,T_i=t,S_i=s,R_i^Z(G,Z)=r^Z,R_i^D(G,D)=r^D\bigr)\lambda_{i,t,r^Z},
+\]
+\[
+\Omega^{\mathrm C}_{s,t}(G,\lambda)
+=
+\sum_{i=1}^n\sum_{r^Z,r^D\in\{0,1\}}
+\omega_{i,s,t,r^Z,r^D}(G,\lambda).
+\]
+The target is the stable-complier direct-and-spillover effect
+\[
+\theta_{\mathrm{CDS}}(s,t;G,\mu,\lambda)
+=
+\frac{1}{\Omega^{\mathrm C}_{s,t}(G,\lambda)}
+\sum_{i=1}^n \sum_{r^Z,r^D\in\{0,1\}}
+\omega_{i,s,t,r^Z,r^D}(G,\lambda)
+\{\mu_i(1,s,r^D)-\mu_i(0,s,r^D)\},
+\]
+where \(\lambda_{i,t,r^Z}\in[0,1]\) is the unit-\(i\) stable-complier mass at \((t,r^Z)\), and \(\mu_i(d,s,r^D)=Y_i(d,s,r^D)\) is the bounded latent outcome mean. Thus the reference weights are derived from the primitive design, shared completion, and complier masses; there is no free \(q\)-variable and no free denominator.
+
+The observable law is \(P_{I,Z,D,T,S,Y;\pi,\mathcal L}\). For cells with positive probability under \(\pi\), let
+\[
+p_{i,z,d,t,s}(P)=\Pr_P(I=i,Z_i=z,D_i=d,T_i=t,S_i=s),
+\]
+\[
+m_{i,z,d,t,s}(P)=\E_P(Y_I\mid I=i,Z_i=z,D_i=d,T_i=t,S_i=s).
+\]
+The shared-completion identified set \(\Theta_{\mathrm{IV,joint}}(P;s,t)\) is the set of all values of \(\theta_{\mathrm{CDS}}(s,t;G,\mu,\lambda)\) generated by one completion \(G\), bounded outcome means \(\mu_i(d,s,r^D)\), and complier masses \(\lambda_{i,t,r^Z}\) satisfying the assumptions below and matching the observed take-up and outcome cells.
+
+\begin{definition}[Stitched relaxation]\label{def:stitched}
+Fix \((s,t)\). The stitched comparator \(\Theta_{\mathrm{C}}^{\mathrm{stitch}}(P;s,t)\) is the set of all scalars
+\[
+\theta_{\mathrm{stitch}}(s,t;Q^Z,Q^D,\lambda,U)
+=
+\frac{1}{\Omega^{\mathrm C}_{s,t}(Q^Z,Q^D,\lambda)}
+\sum_{i=1}^n \sum_{r^Z,r^D\in\{0,1\}}
+\omega^{\mathrm{st}}_{i,s,t,r^Z,r^D}(Q^Z,Q^D,\lambda)
+\{U_i(1,s,r^D)-U_i(0,s,r^D)\},
+\]
+where the decision objects satisfy all of the following.
+\[
+\omega^{\mathrm{st}}_{i,s,t,r^Z,r^D}(Q^Z,Q^D,\lambda)
+=
+\Pr_\pi(Z_i=0,T_i=t,S_i=s)\,
+Q_i^Z(r^Z\mid 0,t)\,Q_i^D(r^D\mid 0,s)\,\lambda_{i,t,r^Z},
+\]
+\[
+\Omega^{\mathrm C}_{s,t}(Q^Z,Q^D,\lambda)
+=
+\sum_{i=1}^n\sum_{r^Z,r^D\in\{0,1\}}
+\omega^{\mathrm{st}}_{i,s,t,r^Z,r^D}(Q^Z,Q^D,\lambda).
+\]
+\begin{enumerate}[leftmargin=*]
+\item \(Q_i^Z(r^Z\mid z,t)\) is a unitwise hidden-instrument kernel on \(\{0,1\}\), and \(Q_i^D(r^D\mid d,s)\) is a unitwise hidden-treatment kernel on \(\{0,1\}\).
+\item \(\lambda_{i,t,r^Z}\in[0,1]\) is a unitwise stable-complier mass indexed by \((t,r^Z)\), with \(\lambda_{i,t,r^Z}=0\) forbidden only when monotonicity or the observed take-up cells force zero.
+\item \(U_i(d,s,r^D)\in[0,1]\) is a bounded latent outcome surface.
+\item For each \(i\), the kernels \(Q_i^Z\) and \(Q_i^D\) must each lie in the unitwise support-and-range envelope generated by some feasible completion in \(\mathfrak G(\mathcal L,\mathcal C,K)\) when that unit is considered in isolation. The \emph{same} completion need not generate both kernels, and no cross-unit compatibility is imposed.
+\item The observed take-up cells are matched by the mixture equations
+\[
+\Pr_P(D_i=1\mid I=i,Z_i=z,T_i=t)
+=
+\sum_{r^Z\in\{0,1\}} Q_i^Z(r^Z\mid z,t)
+\bigl[\lambda_{i,t,r^Z} z + \eta_{i,t,r^Z}\bigr],
+\]
+for auxiliary always-taker masses \(\eta_{i,t,r^Z}\in[0,1-\lambda_{i,t,r^Z}]\).
+\item The observed outcome cells are matched by
+\[
+m_{i,z,d,t,s}(P)
+=
+\sum_{r^D\in\{0,1\}} Q_i^D(r^D\mid d,s)\, U_i(d,s,r^D)
+\]
+for every observed cell \((i,z,d,t,s)\) with positive probability.
+\end{enumerate}
+The set \(\Theta_{\mathrm{C}}^{\mathrm{stitch}}(P;s,t)\) is the projection of this finite system onto \(\theta_{\mathrm{stitch}}(s,t;Q^Z,Q^D,\lambda,U)\). It forgets the requirement that one shared edge vector \(x\) jointly generate both hidden exposure channels and all units' kernels.
+\end{definition}
+
+\begin{quote}\small
+This is a partial-identification anchor, not a panel pool-mode. The locked tuple is
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},
+\text{bounding functional})\\
+=
+(\texttt{pid\_network\_iv\_exposure},\texttt{v3},
+P_{I,Z,D,T,S,Y;\,\pi,\mathcal L},\
+\theta_{\mathrm{CDS}}(s,t),\
+\mathcal{R}_{\mathrm{shared\ completion+stable\ compliance}},\
+[\underline\theta_{\mathrm{IV,joint}}(P;s,t),\overline\theta_{\mathrm{IV,joint}}(P;s,t)]) .
+\end{gathered}
+\]
+Here \(I\) indexes a uniformly sampled unit from a finite population, \(Z=(Z_1,\ldots,Z_n)\in\{0,1\}^n\) is a known randomized encouragement design \(\pi\), \(D=(D_1,\ldots,D_n)\in\{0,1\}^n\) is realized take-up, \(\mathcal L\) is the observed local graph, \(T_i=t_i(Z,\mathcal L)\) is the observed instrumental exposure label, \(S_i=s_i(D,\mathcal L)\) is the observed treatment exposure label, and \(Y_i\in[0,1]\) is the observed outcome. The target \(\theta_{\mathrm{CDS}}(s,t)\) is the stable-complier direct-and-spillover contrast comparing \(D_i=1\) to \(D_i=0\) at fixed observed labels \((S_i,T_i)=(s,t)\), averaging over hidden instrument exposure and hidden treatment exposure induced by one shared graph completion. The restrictions \(\mathcal{R}_{\mathrm{shared\ completion+stable\ compliance}}\) are finite support, consistency, bounded outcomes, randomized encouragement, local positivity, monotone own-instrument take-up, a shared graph-completion class \(\mathfrak G(\mathcal L,\mathcal C,K)\), and exposure sufficiency for \((T_i,R_i^Z(G,Z),S_i,R_i^D(G,D))\). The bounding functional is the sharp finite LP projection over one shared completion, latent stable-complier strata, bounded potential outcomes, and observed take-up and outcome moments; it is not the stitched product relaxation that lets the instrument-exposure kernel, treatment-exposure kernel, and complier kernel vary unitwise without one common completion.
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite randomized encouragement design]\label{ass:finite}
+The population size \(n\), assignment support \(\Omega_\pi\), design probabilities \(\pi(z)\), local graph \(\mathcal L\), hidden candidate-edge set \(\mathcal C\), degree caps \(K_i\), and exposure maps \(t_i(\cdot,\mathcal L)\) and \(s_i(\cdot,\mathcal L)\) are finite and known.
+\end{assumption}
+
+\begin{assumption}[Bounded outcome surface]\label{ass:bounded}
+For every unit \(i\), treatment status \(d\in\{0,1\}\), observed treatment exposure \(s\in\mathcal S\), and hidden treatment exposure \(r^D\in\{0,1\}\), \(0\le Y_i(d,s,r^D)\le1\).
+\end{assumption}
+
+\begin{assumption}[Shared graph completion]\label{ass:shared}
+There exists one graph completion \(G\in\mathfrak G(\mathcal L,\mathcal C,K)\) that determines \(R_i^Z(G,Z)\) for all encouragement assignments and \(R_i^D(G,D)\) for all realized take-up vectors. Hidden edges are not unit-specific nuisance variables.
+\end{assumption}
+
+\begin{assumption}[Exposure sufficiency and consistency]\label{ass:consistency}
+For the true completion \(G\), take-up satisfies \(D_i=D_i(Z_i,T_i,R_i^Z(G,Z))\), and outcomes satisfy \(Y_i=Y_i(D_i,S_i,R_i^D(G,D))\). Other units' encouragements and treatments matter only through \((T_i,R_i^Z(G,Z),S_i,R_i^D(G,D))\).
+\end{assumption}
+
+\begin{assumption}[Monotone own-instrument take-up]\label{ass:monotone}
+For every unit \(i\), observed instrument exposure \(t\), and hidden instrument exposure \(r^Z\), \(D_i(1,t,r^Z)\ge D_i(0,t,r^Z)\). The stable-complier indicator \(C_i(t,r^Z)\) is defined by this monotone response pair.
+\end{assumption}
+
+\begin{assumption}[Local positivity]\label{ass:positivity}
+For every unit contributing to \(\theta_{\mathrm{CDS}}(s,t)\), the cells \((Z_i,T_i,S_i)=(0,t,s)\) and \((1,t,s)\) have positive design probability, and every observable cell \((i,z,d,t,s)\) used in the matching equations has positive probability under \(P\).
+\end{assumption}
+
+\begin{assumption}[Observed take-up and outcome matching]\label{ass:matching}
+A feasible shared-completion structure \((G,\lambda,\mu)\) must match the observed take-up and outcome cells. For every observed cell with positive probability,
+\[
+\Pr_P(D_i=1\mid I=i,Z_i=z,T_i=t)
+=
+\sum_{r^Z\in\{0,1\}} w_{i,z,t,r^Z}^G \bigl[\lambda_{i,t,r^Z} z + \eta_{i,t,r^Z}\bigr],
+\]
+for some always-taker masses \(\eta_{i,t,r^Z}\in[0,1-\lambda_{i,t,r^Z}]\), and
+\[
+m_{i,z,d,t,s}(P)
+=
+\sum_{r^D\in\{0,1\}} v_{i,z,d,t,s,r^D}^G \mu_i(d,s,r^D),
+\]
+where \(w_{i,z,t,r^Z}^G=\Pr_\pi(R_i^Z(G,Z)=r^Z\mid Z_i=z,T_i=t)\), \(v_{i,z,d,t,s,r^D}^G=\Pr_\pi(R_i^D(G,D)=r^D\mid Z_i=z,D_i=d,T_i=t,S_i=s)\), and \(\mu_i(d,s,r^D)=Y_i(d,s,r^D)\).
+\end{assumption}
+
+\begin{assumption}[Positive stable-complier denominator]\label{ass:positive-complier}
+There exists a known constant \(\kappa_{\mathrm C}>0\) such that every feasible shared-completion structure contributing to the target satisfies
+\[
+\Omega^{\mathrm C}_{s,t}(G,\lambda)\ge \kappa_{\mathrm C},
+\]
+and every feasible stitched structure satisfies
+\[
+\Omega^{\mathrm C}_{s,t}(Q^Z,Q^D,\lambda)\ge \kappa_{\mathrm C}.
+\]
+This rules out the undefined case of zero target-cell stable-complier mass.
+\end{assumption}
+
+\begin{assumption}[Stitched relaxation comparator]\label{ass:stitch}
+The comparator \(\Theta_{\mathrm{C}}^{\mathrm{stitch}}(P;s,t)\) is the finite projection defined in Definition~\ref{def:stitched}. It preserves Assumptions~\ref{ass:finite}, \ref{ass:bounded}, \ref{ass:monotone}, and \ref{ass:positivity}, but replaces Assumptions~\ref{ass:shared} and \ref{ass:consistency} by unitwise hidden-instrument kernels \(Q_i^Z\), unitwise hidden-treatment kernels \(Q_i^D\), unitwise stable-complier masses \(\lambda_{i,t,r^Z}\), auxiliary always-taker masses \(\eta_{i,t,r^Z}\), and the mixture equations in Definition~\ref{def:stitched}. No single completion \(G\), no shared edge vector \(x\), and no cross-unit compatibility relation is imposed inside \(\Theta_{\mathrm{C}}^{\mathrm{stitch}}(P;s,t)\).
+\end{assumption}
+
+\begin{assumption}[Parent-corner restriction]\label{ass:parent-corner}
+For the reduction to the parent, impose \(D_i(z_i,t,r^Z)=z_i\) for all \(i,z_i,t,r^Z\), \(T_i=t_i(Z,\mathcal L)=S_i=s_i(Z,\mathcal L)\), and \(R_i^Z(G,Z)=R_i^D(G,Z)\). Then the stable-complier mass is one for every target unit, and the IV problem collapses to the parent ADE problem.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: sharp finite shared-completion LP]\label{thm:lp}
+Under Assumptions~\ref{ass:finite}--\ref{ass:matching} and \ref{ass:positive-complier}, the identified set
+\(\Theta_{\mathrm{IV,joint}}(P;s,t)\) equals the projection of the finite feasible set
+\[
+\calF_{\mathrm{joint}}(P;s,t)
+=
+\left\{
+(G,\lambda,\eta,\mu):
+G\in\mathfrak G(\mathcal L,\mathcal C,K),\
+0\le\lambda_{i,t,r^Z}\le1,\
+0\le\eta_{i,t,r^Z}\le1-\lambda_{i,t,r^Z},\
+0\le\mu_i(d,s,r^D)\le1,
+\text{ and Assumptions~\ref{ass:matching}--\ref{ass:positive-complier} hold}
+\right\}
+\]
+through the linear-fractional functional \(\theta_{\mathrm{CDS}}(s,t;G,\mu,\lambda)\). Consequently,
+\[
+\underline\theta_{\mathrm{IV,joint}}(P;s,t)
+=
+\min_{(G,\lambda,\eta,\mu)\in\calF_{\mathrm{joint}}(P;s,t)}
+\theta_{\mathrm{CDS}}(s,t;G,\mu,\lambda),
+\qquad
+\overline\theta_{\mathrm{IV,joint}}(P;s,t)
+=
+\max_{(G,\lambda,\eta,\mu)\in\calF_{\mathrm{joint}}(P;s,t)}
+\theta_{\mathrm{CDS}}(s,t;G,\mu,\lambda)
+\]
+are sharp finite-network bound endpoints, and each endpoint is computable by a finite LP after the standard Charnes--Cooper transformation.
+\end{theorem}
+For fixed \(G\), the feasible set is a compact polytope cut out by boundedness and observed-cell mixture equalities, while Assumption~\ref{ass:positive-complier} keeps the denominator bounded away from zero. The result is routine once the target is written as a linear-fractional projection and converted to LP form.
+
+\begin{conjecture}[Conjecture 1: strict nonsharpness of the stitched relaxation]\label{conj:strict}
+(NOT YET PROVED.) Under Assumptions~\ref{ass:finite}--\ref{ass:stitch}, there exists an open class of finite experiments such that
+\[
+\Theta_{\mathrm{IV,joint}}(P;s,t)\subsetneq \Theta_{\mathrm{C}}^{\mathrm{stitch}}(P;s,t).
+\]
+The strict gap persists even when each unitwise hidden-instrument kernel \(Q_i^Z\), each hidden-treatment kernel \(Q_i^D\), and each stable-complier mass \(\lambda_{i,t,r^Z}\) appearing in the stitched optimizer is separately generated by some feasible completion in isolation. The obstruction is joint: one shared hidden edge simultaneously enters the take-up channel \(R_i^Z(G,Z)\), the outcome-exposure channel \(R_i^D(G,D)\), and the endpoint's complier weighting, so the stitched optimizer can paste together unitwise feasible pieces that no single \(G\) can realize.
+\end{conjecture}
+The closest published chain is \citet{hoshino_yanagi_2024_noncompliance_unknown_interference} plus \citet{schroder_oprescu_feuerriegel_kallus_2026_networks_partialid}. The conjecture's epsilon-gap is a nonrepresentability statement for the stitched finite-network outer bound, not a new estimator or a point-identification extension.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Parent reduction]\label{cor:parent}
+Under Assumptions~\ref{ass:finite}--\ref{ass:positive-complier} and \ref{ass:parent-corner}, Theorem~\ref{thm:lp} reduces to the parent theorem in \texttt{pid\_network\_exposure/v1}: the sharp identified set for the average direct effect under treatment-exposure misspecification and one shared hidden completion.
+\end{corollary}
+Under Assumption~\ref{ass:parent-corner}, \(D=Z\), the stable-complier mass is one, the two hidden exposure channels coincide, and the take-up-matching equations collapse to identities. The remaining outcome LP is exactly the parent shared-completion program.
+
+\paragraph{Exhibit 9.1.} Consider five units, with target set \(\{1,2,3,4\}\), center node \(5\), observed local graph \(\mathcal L=\emptyset\), candidate hidden edges \(\mathcal C=\{\{1,5\},\{2,5\},\{3,5\},\{4,5\}\}\), degree caps \(K_5=2\) and \(K_i=1\) for \(i\le4\), and encouragement design \(\pi\) uniform on assignments with exactly one encouraged unit. Let \(T_i\equiv t\) and \(S_i\equiv s\). For every target unit \(i\le4\), take the observed take-up cells to be
+\[
+\Pr_P(D_i=1\mid I=i,Z_i=1,T_i=t)=\tfrac12,
+\qquad
+\Pr_P(D_i=1\mid I=i,Z_i=0,T_i=t)=\tfrac14,
+\]
+matched by \(\lambda_{i,t,0}=\tfrac14\), \(\lambda_{i,t,1}=0\), and \(\eta_{i,t,0}=\eta_{i,t,1}=\tfrac14\). For outcomes, take
+\[
+m_{i,z,1,t,s}(P)=\tfrac12,
+\qquad
+m_{i,z,0,t,s}(P)=\tfrac12
+\]
+for every observed target-unit cell, and \(Y_i(d,s,r^D)\in[0,1]\). A unitwise ``connected'' stitched kernel is feasible in isolation for any leaf \(i\): choose one partner leaf \(j\neq i\), take the two-edge completion \(\{\{i,5\},\{j,5\}\}\), and set
+\[
+Q_i^Z(0\mid 0,t)=1,\qquad
+Q_i^D(1\mid 0,s)=\tfrac13,\qquad
+Q_i^D(1\mid 1,s)=1.
+\]
+One concrete generator is a monotone take-up rule in which the center is treated whenever one of its two connected leaves is treated, so a control-arm target leaf sees a treated hidden neighbor exactly when the partner leaf is the unique encouraged unit.
+The treated-cell equation fixes \(U_i(1,s,1)=\tfrac12\), the control-cell equation fixes
+\[
+\tfrac13 U_i(0,s,1)+\tfrac23 U_i(0,s,0)=\tfrac12,
+\]
+and the stitched upper endpoint then sets \(U_i(1,s,0)=1\), giving
+\[
+\theta_i^{\mathrm{conn}}
+\le
+\tfrac13\!\left(\tfrac12-U_i(0,s,1)\right)
+\,+\,
+\tfrac23\!\left(1-U_i(0,s,0)\right)
+=
+\tfrac13.
+\]
+An ``unconnected'' unitwise kernel has \(Q_i^Z(0\mid0,t)=1\), \(Q_i^D(1\mid0,s)=0\), and \(Q_i^D(1\mid1,s)=0\), so the same observed cells force \(U_i(1,s,0)=U_i(0,s,0)=\tfrac12\) and hence \(\theta_i^{\mathrm{unconn}}=0\). Let \(c=\Pr_\pi(Z_i=0,T_i=t,S_i=s)=\tfrac45\). Because \(Q_i^Z(0\mid0,t)=1\) and \(\lambda_{i,t,0}=\tfrac14\) for every target unit, each unit contributes the common denominator factor \(c/4\). Therefore the stitched program can assign the connected kernel to each of the four target units separately and attain
+\[
+\overline\theta_{\mathrm{C}}^{\mathrm{stitch}}(P;s,t)=\frac{4\cdot(c/4)\cdot(1/3)}{4\cdot(c/4)}=\tfrac13.
+\]
+By contrast, any shared completion under \(K_5=2\) can connect the center to at most two leaves, so at most two target units can carry the connected kernel in one common \(G\). Hence
+\[
+\overline\theta_{\mathrm{IV,joint}}(P;s,t)\le \frac{2\cdot(c/4)\cdot(1/3)}{4\cdot(c/4)}=\tfrac16,
+\]
+which yields the numeric strict gap
+\[
+\overline\theta_{\mathrm{C}}^{\mathrm{stitch}}(P;s,t)-\overline\theta_{\mathrm{IV,joint}}(P;s,t)\ge\tfrac16.
+\]
+Internal consistency is immediate: the support uses exactly four candidate edges, the cap \(K_5=2\) permits two but not three or four center incidences, the denominator is \(4\cdot(c/4)=c>0\), and every displayed kernel is within \([0,1]\). The open-class conjecture is that small perturbations of the displayed take-up and outcome cells preserve the sign of this stitched-minus-shared gap.
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:lp} reduces by four substantive steps beyond definitions. First, condition on a fixed completion \(G\) and rewrite the observed take-up cells as linear restrictions on stable-complier and always-taker masses under monotonicity. Second, condition on \(G\) and the matched take-up cells to rewrite the observed outcome cells as linear restrictions on bounded latent outcome means \(\mu_i(d,s,r^D)\). Third, write \(\theta_{\mathrm{CDS}}(s,t;G,\mu,\lambda)\) as a linear-fractional functional whose denominator is bounded below by Assumption~\ref{ass:positive-complier}, and apply the Charnes--Cooper transformation to obtain an LP for each fixed \(G\). Fourth, take the finite union over completions and show that the sharp endpoints are attained by compactness. Conjecture~\ref{conj:strict} should be attacked by the Exhibit~9.1 family, first verifying the displayed \(\tfrac13\) stitched endpoint and \(\tfrac16\) shared-completion bound on the five-unit instance and then promoting the calculation from the worked witness to an open class.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:lp} is routine finite-dimensional partial-identification algebra once the shared-completion variables are fixed. Conjecture~\ref{conj:strict} is the flagship delta and remains open at the statement level. Earlier drafts experimented with looser prose definitions of the stitched comparator; those were withdrawn in favor of Definition~\ref{def:stitched}. The proposal does not claim inference, efficiency, or a closed-form certificate basis for the stitched gap. The witness currently targets a stable-complier direct-and-spillover effect under monotone own-instrument take-up; two-sided noncompliance and defier sensitivity are outside scope.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft for the network-IV shared-completion upgrade; prior verdict: none.
+\item v2 (revise) -- sharpened the published-axis comparator chain and parent-corner reduction; prior verdict: REVISE.
+\item v3 (revise) -- added the worked finite-network witness and clarified the flagship delta versus the parent; prior verdict: REVISE.
+\item v4 (revise) -- replaced the prose-only stitched comparator with Definition~\ref{def:stitched}, added the open-class continuity sentence after Exhibit 9.1, and anchored Savje at a location-level conceptual comparison; prior verdict: REVISE.
+\item v5 (revise) -- derived the target denominator and reference weights from primitive shared-completion objects, replaced Exhibit~9.1 with a computed five-unit witness, added location-level comparator anchors, and corrected bibliography metadata; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Acerenza et al.(2025)]{acerenza_martinez_iriarte_sanchez_becerra_spini_2025_household_bounds}
+Acerenza, S., Martinez-Iriarte, J., Sanchez-Becerra, P., and Spini, J. (2025).
+Sharp bounds for direct and spillover effects in household encouragement designs with strategic interaction.
+arXiv:2503.14314.
+
+\bibitem[Aronow and Samii(2017)]{aronow_samii_2017_general_interference}
+Aronow, P. M. and Samii, C. (2017).
+Estimating average causal effects under general interference, with application to a social network experiment.
+\emph{The Annals of Applied Statistics} 11(4), 1912--1947.
+
+\bibitem[Chernozhukov, Hong, and Tamer(2007)]{chernozhukov_hong_tamer_2007_parameter_sets}
+Chernozhukov, V., Hong, H., and Tamer, E. (2007).
+Estimation and confidence regions for parameter sets in econometric models.
+\emph{Econometrica} 75(5), 1243--1284.
+
+\bibitem[Hoshino and Yanagi(2024)]{hoshino_yanagi_2024_noncompliance_unknown_interference}
+Hoshino, T. and Yanagi, T. (2024).
+Causal inference with noncompliance and unknown interference.
+\emph{Journal of the American Statistical Association}. doi:10.1080/01621459.2023.2284413.
+
+\bibitem[Hudgens and Halloran(2008)]{hudgens_halloran_2008_interference}
+Hudgens, M. G. and Halloran, M. E. (2008).
+Toward causal inference with interference.
+\emph{Journal of the American Statistical Association} 103(482), 832--842.
+
+\bibitem[Imai, Jiang, and Malani(2021)]{imai_jiang_malani_2021_interference_noncompliance}
+Imai, K., Jiang, Z., and Malani, A. (2021).
+Causal inference with interference and noncompliance in two-stage randomized experiments.
+\emph{Journal of the American Statistical Association} 116(534), 632--644.
+
+\bibitem[Imbens and Angrist(1994)]{imbens_angrist_1994_late}
+Imbens, G. W. and Angrist, J. D. (1994).
+Identification and estimation of local average treatment effects.
+\emph{Econometrica} 62(2), 467--475.
+
+\bibitem[Imbens and Manski(2004)]{imbens_manski_2004_ci_partial_id}
+Imbens, G. W. and Manski, C. F. (2004).
+Confidence intervals for partially identified parameters.
+\emph{Econometrica} 72(6), 1845--1857.
+
+\bibitem[Manski(1990)]{manski_1990_nonparametric_bounds}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review} 80(2), 319--323.
+
+\bibitem[Savje(2024)]{savje_2024_misspecified_exposure_mappings}
+Savje, F. (2024).
+Causal inference with misspecified exposure mappings: separating definitions and assumptions.
+\emph{Biometrika} 111(1), 1--15.
+
+\bibitem[Schroder et al.(2026)]{schroder_oprescu_feuerriegel_kallus_2026_networks_partialid}
+Schroder, M., Oprescu, M., Feuerriegel, S., and Kallus, N. (2026).
+Causal inference on networks under misspecified exposure mappings: A partial identification framework.
+arXiv:2602.03459.
+
+\bibitem[Vazquez-Bare(2023)]{vazquez_bare_2023_iv_spillovers}
+Vazquez-Bare, G. (2023).
+Causal spillover effects using instrumental variables.
+\emph{Journal of the American Statistical Association} 118(543), 1911--1922.
+
+\bibitem[Weinstein and Nevo(2026)]{weinstein_nevo_2026_misspecified_networks}
+Weinstein, B. and Nevo, D. (2026).
+Causal inference with misspecified network interference structure.
+\emph{Biometrics} 82(1), ujag023.
+\end{thebibliography}
+
+\end{document}

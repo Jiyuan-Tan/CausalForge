@@ -1,0 +1,539 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_proximal\_completeness, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_proximal\_completeness} / \texttt{v1}%
+  \\ \large\textit{A common-kernel bridge-compatibility threshold for long-term proximal ATE identification}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a free-form ExactID/PartialID proposal with locked tuple
+\[
+(\texttt{qid},\texttt{specialization}, P, \theta_{\mathrm{LT}},
+\text{identifying restrictions},\text{bounding functional}).
+\]
+Here \(\texttt{qid}=\texttt{eid\_proximal\_completeness}\) and
+\(\texttt{specialization}=\texttt{v1}\).  The observable distribution \(P\)
+is the finite-support law of two samples \(G\in\{E,B\}\): a short-run
+experimental sample \(E\), in which \(A\in\{0,1\}\), \(X\), and proxy panels
+\((W,Z)\) are observed but the terminal outcome \(Y\) is not; and a long-run
+observational sample \(B\), in which \((Y,A,X,W,Z)\) are observed but
+treatment assignment may be persistently confounded.  The target estimand is
+\[
+\theta_{\mathrm{LT}}=\E\{Y(1)-Y(0)\}
+\]
+for the experimental target population.  The identifying restrictions are
+finite-support consistency, experimental random assignment in sample \(E\),
+proxy transport stability between \(E\) and \(B\), negative-control exclusion
+restrictions, existence of at least one bounded observational outcome bridge
+\(h(W,A,X)\), and the finite bridge-realization condition in
+Assumption~\ref{ass:realization}.  The observational bridge operator is the
+matrix \(T_B(P):\R^d\to\R^r\) with
+\[
+(T_Bh)(z,a,x)=\E_B\{h(W,a,x)\mid Z=z,A=a,X=x\},
+\qquad
+m_B(z,a,x)=\E_B(Y\mid Z=z,A=a,X=x),
+\]
+and the bridge fiber is \(\calH_B(P)=\{h\in[0,1]^d:T_B(P)h=m_B(P)\}\).
+The experimental long-term loading is the observable vector
+\(\lambda_E(P)\in\R^d\) satisfying
+\[
+\lambda_E(P)^\transpose h
+=\E_E\{h(W,1,X)\mid A=1\}-\E_E\{h(W,0,X)\mid A=0\}.
+\]
+The named focal object is the common-kernel bridge-compatibility index
+\[
+\Delta_{\mathrm{CK}}(P)=
+\left\|\Pi_{\ker T_B(P)}\lambda_E(P)\right\|_2,
+\]
+where the projection uses the Euclidean inner product on the finite bridge
+coordinates.  The bounding functional is the bridge-fiber support width
+\[
+W_{\mathrm{LT}}(P)
+=\sup_{h\in\calH_B(P)}\lambda_E(P)^\transpose h
+-\inf_{h\in\calH_B(P)}\lambda_E(P)^\transpose h.
+\]
+The novelty question is whether \(\Delta_{\mathrm{CK}}(P)=0\) is the sharp
+observable iff frontier for long-term proximal ATE point identification, and
+whether \(\Delta_{\mathrm{CK}}(P)>0\) forces a non-singleton sharp bridge
+envelope rather than merely nonunique nuisance bridges.
+
+\begin{abstract}
+Long-term causal inference increasingly uses short-run experimental proxies
+and long-run observational outcomes to identify terminal treatment effects
+under persistent unobserved confounding.  Existing proximal and surrogate-index
+results give sufficient bridge, surrogacy, or sequential proxy conditions, but
+do not state a sharp observable frontier for when the early experimental proxy
+panel spans exactly the confounding direction needed for the terminal outcome.
+This proposal introduces the common-kernel bridge-compatibility index
+\(\Delta_{\mathrm{CK}}(P)\), the norm of the experimental ATE loading projected
+onto the observational bridge null space.  The flagship conjecture is that,
+under finite bridge realization, \(\Delta_{\mathrm{CK}}(P)=0\) is necessary and
+sufficient for point identification of the long-term ATE, while positive
+\(\Delta_{\mathrm{CK}}(P)\) produces a sharp non-singleton bridge envelope.
+Resolving the conjecture would turn completeness from an untestable global
+condition into a target-specific compatibility report for proximal surrogate
+analyses.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Short-run experiments are often too short to observe the outcome that policy
+makers care about, while long-run observational data often contain persistent
+unmeasured confounding.  Surrogate-index methods and newer persistent-confounding
+methods use short-term outcomes or proxies to bridge the two data sources.
+Their practical weak point is that a global completeness or surrogacy condition
+can fail in directions irrelevant to the terminal ATE, and can also hold for
+bridge uniqueness without revealing whether the experimental target loading is
+compatible with the observational bridge equation.
+
+\paragraph{The main finding (proposed).}
+The proposed main result is Conjecture~\ref{conj:ck-frontier}.  It states that
+the common-kernel bridge-compatibility index
+\(\Delta_{\mathrm{CK}}(P)\) is the exact threshold for long-term proximal ATE
+point identification in the finite two-sample setting: zero iff the experimental
+loading annihilates every observationally invisible bridge perturbation, and
+positive iff the same observed law admits at least two latent negative-control
+models with different long-term ATEs.  Theorem~\ref{thm:fiber-algebra} is a
+support theorem giving the bridge-fiber algebra, and
+Conjecture~\ref{conj:positive-width} promotes the positive-threshold side to a
+sharp-width statement with a concrete minimal noisy-panel witness.
+
+\paragraph{What is new.}
+The closest proximal papers separate bridge existence, bridge uniqueness, and
+target-functional identification: \citet{MiaoGengTchetgen2018} use proxy
+rank/completeness for point identification, \citet{YingMiaoShiTchetgen2023}
+extend bridge ideas longitudinally, and \citet{ZhangLiMiaoTchetgen2023} show
+that a target mean can remain identified without unique bridge functions.  The
+closest long-term papers, \citet{AtheyChettyImbensKang2019} and
+\citet{ImbensKallusMaoWang2025}, use surrogate or sequential proxy structure
+to identify terminal effects.  The epsilon gap is that none of these papers
+names the cross-sample row-space object \(\Delta_{\mathrm{CK}}(P)\), nor proves
+that the experimental proxy loading lies in the observational bridge row space
+iff the long-term ATE is point identified.  This proposal is therefore not a
+new bridge estimator and not another sufficient completeness assumption; it is
+a target-specific necessary-and-sufficient compatibility frontier.
+
+\paragraph{How it positions in the literature.}
+The kernel lives between exact identification and partial identification.  On
+the exact-ID side, \(\Delta_{\mathrm{CK}}(P)=0\) gives a bridge formula for the
+long-term ATE even when \(T_B(P)\) has a nontrivial null space.  On the
+partial-ID side, \(\Delta_{\mathrm{CK}}(P)>0\) makes the identified set a
+support interval over the observational bridge fiber.  The proposal uses
+proximal causal inference as the identification language and long-term
+surrogate-index work as the applied data-combination motivation.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the persistent-confounding long-term ATE
+design of \citet{ImbensKallusMaoWang2025}: before treating the sequential proxy
+conditions as sufficient for a terminal effect, analysts could compute the
+common-kernel compatibility index for the finite proxy basis actually used.
+The same diagnostic also tells users of the surrogate-index design in
+\citet{AtheyChettyImbensKang2019} when additional short-term proxy waves span
+the terminal bridge loading rather than merely improving prediction.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report \(\Delta_{\mathrm{CK}}(P)\) and
+\(W_{\mathrm{LT}}(P)\) as the target-specific proxy-richness diagnostic before
+claiming point identification of a long-term proximal ATE.
+
+\section{Related work}
+\citet{AtheyChettyImbensKang2019} develop the surrogate-index approach for
+estimating long-term treatment effects from multiple short-term proxies under
+surrogacy; this proposal replaces global surrogacy with a proximal row-space
+compatibility condition for the terminal ATE loading.  \citet{ImbensKallusMaoWang2025}
+study long-term causal inference under persistent confounding by combining
+short-run experiments and long-run observational data; their sequential proxy
+structure motivates the two-sample setup, but they do not state a sharp
+bridge-null threshold.  \citet{MiaoGengTchetgen2018} establish negative-control
+proximal point identification through outcome bridge functions and
+rank/completeness conditions; the proposed index asks which rank failures are
+irrelevant to the target.  \citet{YingMiaoShiTchetgen2023} extend proximal
+bridge identification to complex longitudinal studies, making clear that
+time-ordered proxy panels are natural bridge variables but leaving the
+finite target-specific row-space boundary implicit.  \citet{CuiPuShiMiaoTchetgen2024}
+develop semiparametric proximal OR/IPW/DR inference under bridge conditions;
+the present proposal is a population identification question that precedes
+their regular asymptotics.  \citet{ZhangLiMiaoTchetgen2023} show that
+counterfactual means can be identified without unique bridge functions; the
+present conjecture specializes that insight to a two-sample long-term ATE and
+names the observable common-kernel index.  \citet{GhassamiShpitserTchetgen2023}
+derive proxy-based partial-identification bounds when completeness fails; the
+positive-\(\Delta_{\mathrm{CK}}\) side here is a sharper bridge-fiber support
+width for the long-term ATE.  \citet{CanaySantosShaikh2013} show that
+completeness-type identifying hypotheses can be empirically untestable in
+nonparametric endogenous models, which motivates reporting a target-specific
+sensitivity frontier rather than pretesting global completeness.
+
+In-catalogue CausalSmith prior art does not already contain this kernel.
+\texttt{doc/API.md} records the promoted ExactID and PartialID catalogues as
+empty seed areas, while the populated Q1 entries are panel/FWL theorems rather
+than proximal identification results.  The banked \texttt{eid\_proximal\_phase}
+proposal studied finite OR/DR-versus-minimax bridge-selector equivalence near
+nonunique bridges; it did not address two-sample long-term ATE compatibility or
+an experimental loading versus observational bridge row-space threshold.  The
+failed \texttt{pid\_long\_term\_surrogate} proposal collapsed to generic
+surrogate-panel partial identification; the reviewer explicitly named a
+common-kernel bridge-compatibility statement as the missing non-generic repair
+direction.
+
+\section{Formal setup}
+All variables have finite support.  Let \(G=E\) denote the short-run
+experimental sample and \(G=B\) the long-run observational sample.  In the
+experimental sample, treatment \(A\) is randomized conditional on \(X\), the
+proxy panel \((W,Z)\) is observed after treatment, and the long-term outcome
+\(Y\) is missing.  In the observational sample, \((Y,A,X,W,Z)\) are observed
+and \(A\) may be confounded by an unobserved \(U\).  The negative-control
+interpretation is that \(Z\) carries treatment-confounding information and
+\(W\) carries outcome-confounding information, with the exclusion restrictions
+specified in Assumption~\ref{ass:proximal-structure}.
+
+Index the finite bridge coordinates by \(j=(w,a,x)\), so \(h\in\R^d\) is the
+array \(h(w,a,x)\).  Index the observational bridge equations by
+\(k=(z,a,x)\), so \(T_B(P)\in\R^{r\times d}\) and \(m_B(P)\in\R^r\).  The
+observable bridge fiber is
+\[
+\calH_B(P)=\{h\in[0,1]^d:T_B(P)h=m_B(P)\}.
+\]
+The experimental loading \(\lambda_E(P)\in\R^d\) is defined by
+\[
+\lambda_{E,(w,a,x)}(P)=
+\one\{a=1\}\Pr_E(W=w,X=x\mid A=1)
+-\one\{a=0\}\Pr_E(W=w,X=x\mid A=0).
+\]
+For any bridge \(h\), the candidate long-term ATE value is
+\(\theta(h)=\lambda_E(P)^\transpose h\), and the bridge-fiber identified set
+is
+\[
+\Theta_I(P)=\{\theta(h):h\in\calH_B(P)\}
+=[\underline\theta(P),\overline\theta(P)].
+\]
+The common-kernel bridge-compatibility index and support width are
+\[
+\Delta_{\mathrm{CK}}(P)=
+\left\|\Pi_{\ker T_B(P)}\lambda_E(P)\right\|_2,\qquad
+W_{\mathrm{LT}}(P)=\overline\theta(P)-\underline\theta(P).
+\]
+Let \(r_{\mathrm{int}}(P)>0\) denote the bridge-interior radius in
+Assumption~\ref{ass:interior-radius}; it bounds how far a bridge can move in
+any unit null direction while remaining in the bounded bridge cube.
+
+\begin{quote}
+Locked parameters: \((\texttt{qid},\texttt{specialization}, P,
+\theta_{\mathrm{LT}},\text{identifying restrictions},\text{bounding
+functional})\) with \(\texttt{qid}=\texttt{eid\_proximal\_completeness}\),
+\(\texttt{specialization}=\texttt{v1}\), \(P\) the finite two-sample law of
+\((G,Y,A,X,W,Z)\), \(\theta_{\mathrm{LT}}=\E\{Y(1)-Y(0)\}\), identifying
+restrictions given by Assumptions~\ref{ass:sampling}--\ref{ass:realization},
+and bounding functional \(W_{\mathrm{LT}}(P)\) over \(\calH_B(P)\).
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite two-sample support and overlap]\label{ass:sampling}
+The observed law \(P\) has finite support.  In sample \(E\), treatment
+\(A\in\{0,1\}\) is randomized conditional on \(X\), and
+\(0<\Pr_E(A=a\mid X=x)<1\) for every \(a,x\) used by the target population.
+The proxy cells entering \(T_B(P)\) and \(\lambda_E(P)\) have positive
+probability whenever their corresponding rows or columns are retained.
+\end{assumption}
+
+\begin{assumption}[Proximal negative-control structure]\label{ass:proximal-structure}
+There exists a latent variable \(U\) such that consistency holds, the
+experimental target population and the observational bridge population share
+the same terminal outcome bridge after conditioning on \((A,X,U)\), \(Z\) has
+no direct effect on \(Y\) given \((A,X,U)\), and \(W\) is excluded from the
+treatment assignment mechanism given \((X,U,Z)\).  These restrictions are
+only used to interpret a realized bridge-fiber value as a causal long-term ATE.
+\end{assumption}
+
+\begin{assumption}[Bounded observational outcome bridge]\label{ass:bridge-existence}
+The bridge fiber \(\calH_B(P)=\{h\in[0,1]^d:T_B(P)h=m_B(P)\}\) is nonempty.
+Every \(h\in\calH_B(P)\) is an admissible bounded outcome bridge for the
+observational terminal outcome equation.
+\end{assumption}
+
+\begin{assumption}[Proxy transport stability]\label{ass:transport}
+For each \(a\in\{0,1\}\), the experimental proxy distribution
+\(\Pr_E(W=w,X=x\mid A=a)\) equals the target-population distribution of the
+outcome-inducing proxy \(W(a)\) and covariates \(X\) under intervention \(A=a\).
+Consequently \(\lambda_E(P)^\transpose h\) is the long-term ATE implied by
+bridge \(h\).
+\end{assumption}
+
+\begin{assumption}[Finite latent law class]\label{ass:realization}
+The admissible causal model class consists of finite latent
+negative-control laws for \((Y(0),Y(1),A,X,W(0),W(1),Z,U,G)\) satisfying
+Assumptions~\ref{ass:sampling}, \ref{ass:proximal-structure}, and
+\ref{ass:transport} and inducing the observed law \(P\).  No sharpness or
+endpoint-attainability property of \(\calH_B(P)\) is assumed here; proving
+which bridge-fiber values are realized by this finite law class is the open
+content of Conjecture~\ref{conj:ck-frontier}.
+\end{assumption}
+
+\begin{assumption}[Interior bridge radius]\label{ass:interior-radius}
+There exists \(h^\circ\in\calH_B(P)\) and a known structural radius
+\(r_{\mathrm{int}}(P)>0\) such that
+\(h^\circ+t v\in[0,1]^d\) for every \(v\in\ker T_B(P)\) with
+\(\|v\|_2=1\) and every \(|t|\le r_{\mathrm{int}}(P)\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: bridge-fiber algebra]\label{thm:fiber-algebra}
+Under Assumptions~\ref{ass:sampling}, \ref{ass:bridge-existence}, and
+\ref{ass:transport}, the bridge-fiber values satisfy
+\[
+\Theta_I(P)=
+\{\lambda_E(P)^\transpose h:h\in\calH_B(P)\}.
+\]
+Moreover \(\Theta_I(P)\) is a singleton iff
+\(\lambda_E(P)\in\operatorname{row}(T_B(P))\), equivalently iff
+\(\Delta_{\mathrm{CK}}(P)=0\).  If \(\Delta_{\mathrm{CK}}(P)=0\) and
+\(\lambda_E(P)=T_B(P)^\transpose q\), then every bridge in \(\calH_B(P)\)
+gives the same formula \(\theta_{\mathrm{LT}}=q^\transpose m_B(P)\).
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) As linear algebra, this is routine and deliberately labeled a theorem,
+but the precise cross-sample loading \(\lambda_E(P)\) is not named in
+\citet{AtheyChettyImbensKang2019}, \citet{ImbensKallusMaoWang2025}, or
+\citet{ZhangLiMiaoTchetgen2023}.  The gap is that those papers do not state
+the row-space equality between an experimental long-term loading and an
+observational proximal bridge operator.  (b) This theorem gives users of
+\citet{ImbensKallusMaoWang2025} a computable finite diagnostic for whether a
+chosen proxy panel can identify the terminal ATE before any asymptotic
+estimator is discussed.
+
+\begin{conjecture}[Conjecture 1: common-kernel frontier (NOT YET PROVED)]\label{conj:ck-frontier}
+Under Assumptions~\ref{ass:sampling}--\ref{ass:realization}, the terminal
+long-term ATE is point identified from \(P\) if and only if
+\[
+\Delta_{\mathrm{CK}}(P)=0.
+\]
+If \(\Delta_{\mathrm{CK}}(P)>0\), then there exist two finite latent
+negative-control causal laws inducing the same observable \(P\) and satisfying
+the same proxy transport restrictions but yielding distinct terminal ATEs.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest comparator chain is
+\citet{MiaoGengTchetgen2018} for sufficient proxy rank/completeness,
+\citet{ZhangLiMiaoTchetgen2023} for target identification without unique
+bridges, and \citet{ImbensKallusMaoWang2025} for long-term ATE identification
+under persistent confounding.  None proves the iff statement that the
+experimental loading must annihilate the observational bridge null space; the
+epsilon gap is the independent focal object
+\(\Delta_{\mathrm{CK}}(P)\), which can be positive even when bridges exist and
+can be zero even when bridges are nonunique.  (b) Resolving it would directly
+close the reviewer-identified gap in the banked
+\texttt{pid\_long\_term\_surrogate} run: a common-kernel bridge compatibility
+theorem coupling the experimental measurement kernel to the long-run
+observational bridge law.
+
+\begin{conjecture}[Conjecture 2: positive-threshold sharp width (NOT YET PROVED)]\label{conj:positive-width}
+Under Assumptions~\ref{ass:sampling}--\ref{ass:interior-radius}, if
+\(\Delta_{\mathrm{CK}}(P)>0\), then the bridge-fiber support width obeys
+\[
+W_{\mathrm{LT}}(P)\ge 2\,r_{\mathrm{int}}(P)\,\Delta_{\mathrm{CK}}(P).
+\]
+On an open finite-support class containing the two-wave binary noisy-panel
+witness in Corollary~\ref{cor:witness}, this lower bound is strict whenever
+the earlier proxy wave loads on a terminal-confounding direction not spanned by
+the later wave alone.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{GhassamiShpitserTchetgen2023} study proxy partial-identification
+bounds after completeness fails, but do not give this target-specific
+long-term bridge-width modulus.  The prior
+\texttt{pid\_long\_term\_surrogate} reviewer rejected generic LP containment
+and requested a minimal \(K=2,J=1\) noisy-panel theorem; this conjecture names
+the width modulus and the non-corner witness class.  (b) Resolving it would
+give analysts using the surrogate-index design of
+\citet{AtheyChettyImbensKang2019} a reason to collect an additional early
+proxy wave: it can shrink \(W_{\mathrm{LT}}(P)\) exactly when it reduces
+\(\Delta_{\mathrm{CK}}(P)\), not merely when it improves prediction of \(Y\).
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Full-rank proximal completeness corner]\label{cor:full-rank}
+If Assumptions~\ref{ass:sampling}--\ref{ass:transport} hold and
+\(\ker T_B(P)=\{0\}\), then \(\Delta_{\mathrm{CK}}(P)=0\),
+\(W_{\mathrm{LT}}(P)=0\), and Theorem~\ref{thm:fiber-algebra} reduces to the
+usual finite proximal bridge formula.  This is the
+\citet{MiaoGengTchetgen2018} completeness corner because no invisible bridge
+direction remains for \(\lambda_E(P)\) to load on.
+\end{corollary}
+
+\begin{corollary}[Surrogacy corner]\label{cor:surrogacy}
+If the short-term proxy panel is a sufficient surrogate in the sense that the
+terminal conditional mean is an observed function \(g(W,A,X)\) common to both
+samples, then \(g\in\calH_B(P)\) and \(\lambda_E(P)^\transpose g\) is the
+surrogate-index long-term ATE.  Under Assumption~\ref{ass:transport}, if every
+other bridge differs from \(g\) only by directions orthogonal to
+\(\lambda_E(P)\), then \(\Delta_{\mathrm{CK}}(P)=0\) and the proposal reduces
+to the \citet{AtheyChettyImbensKang2019} point-ID logic.
+\end{corollary}
+
+\begin{corollary}[Concrete two-wave noisy-panel witness]\label{cor:witness}
+Consider \(X\) absent, \(A\in\{0,1\}\), binary \(W_1,W_2,Z\), and a bridge
+dictionary \(h(W_1,W_2,A)\) with one observational null vector
+\(v(W_1,W_2,A)=(-1)^{W_1}\one\{A=1\}\) generated by symmetric measurement
+noise in \(W_1\) conditional on \((Z,A)\).  If the experimental loading has
+\(\lambda_E^\transpose v\ne0\), then
+\(\Delta_{\mathrm{CK}}(P)>0\) and Conjecture~\ref{conj:positive-width}
+predicts a nonzero long-term ATE width; if the earlier wave \(W_1\) is added
+to the observational bridge rows so that \(v\notin\ker T_B(P)\), then the
+same target loading can have \(\Delta_{\mathrm{CK}}(P)=0\).  This is the
+minimal non-corner \(K=2,J=1\) proxy-panel reduction requested by the prior
+reviewer.
+\end{corollary}
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:fiber-algebra} reduces to the fundamental theorem of linear
+algebra: an affine fiber \(h_0+\ker T_B\) has constant value under
+\(\lambda_E^\transpose h\) exactly when \(\lambda_E\) is orthogonal to
+\(\ker T_B\), equivalently lies in \(\operatorname{row}(T_B)\).  The hard part
+of Conjecture~\ref{conj:ck-frontier} is the finite causal-realization step:
+given two bounded bridges in the same observable fiber, construct finite
+latent response-type laws that preserve the observed \((Y,A,X,W,Z,G)\) law and
+negative-control exclusions while assigning the two bridge-implied terminal
+means.  Conjecture~\ref{conj:positive-width} then follows by moving from an
+interior bridge \(h^\circ\) in the normalized null direction
+\(\Pi_{\ker T_B}\lambda_E/\Delta_{\mathrm{CK}}\), plus an explicit
+small-support enumeration for the binary two-wave witness in
+Corollary~\ref{cor:witness}.  Boundary cases needing algebra are rows of
+\(T_B\) with zero proxy support, non-interior bridge fibers where the lower
+bound becomes one-sided, and the comparison between the \(W_2\)-only and
+\((W_1,W_2)\)-row operators in the witness.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:fiber-algebra} is routine finite-dimensional algebra once the
+bridge-fiber convention is accepted.  Conjecture~\ref{conj:ck-frontier} is the
+novel kernel and is not yet proved because Assumption~\ref{ass:realization}
+may fail for some negative-control exclusion graphs; a counterexample would
+turn the proposal into a characterization of which bridge fibers are causally
+realizable.  Conjecture~\ref{conj:positive-width} is also open: the lower
+bound is plausible under the interior-radius assumption, but sharpness at the
+boundary of the bounded bridge cube may require replacing the Euclidean
+projection norm by a polyhedral gauge.  The pivot intentionally withdraws the
+archived scalar singular-value threshold from the previous angle and does not
+claim any OR/DR-versus-minimax selector-equivalence result.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for the common-kernel bridge-compatibility
+angle after exhausting the target-active null-score angle; prior verdict:
+none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Athey et~al.(2019)]{AtheyChettyImbensKang2019}
+Athey, S., Chetty, R., Imbens, G.~W., and Kang, H. (2019).
+\newblock The surrogate index: Combining short-term proxies to estimate
+long-term treatment effects more rapidly and precisely.
+\newblock \emph{NBER Working Paper} 26463. doi:10.3386/w26463.
+
+\bibitem[Canay et~al.(2013)]{CanaySantosShaikh2013}
+Canay, I.~A., Santos, A., and Shaikh, A.~M. (2013).
+\newblock On the testability of identification in some nonparametric models
+with endogeneity.
+\newblock \emph{Econometrica} 81(6), 2535--2559. doi:10.3982/ECTA10851.
+
+\bibitem[Cui et~al.(2024)]{CuiPuShiMiaoTchetgen2024}
+Cui, Y., Pu, H., Shi, X., Miao, W., and Tchetgen Tchetgen, E. (2024).
+\newblock Semiparametric proximal causal inference.
+\newblock \emph{Journal of the American Statistical Association} 119(546),
+1348--1359. doi:10.1080/01621459.2023.2191817.
+
+\bibitem[Ghassami et~al.(2023)]{GhassamiShpitserTchetgen2023}
+Ghassami, A., Shpitser, I., and Tchetgen Tchetgen, E. (2023).
+\newblock Partial identification of causal effects using proxy variables.
+\newblock \emph{arXiv preprint} arXiv:2304.04374.
+
+\bibitem[Imbens et~al.(2025)]{ImbensKallusMaoWang2025}
+Imbens, G., Kallus, N., Mao, X., and Wang, Y. (2025).
+\newblock Long-term causal inference under persistent confounding via data
+combination.
+\newblock \emph{Journal of the Royal Statistical Society: Series B} 87(2),
+362--388. doi:10.1093/jrsssb/qkae095.
+
+\bibitem[Miao et~al.(2018)]{MiaoGengTchetgen2018}
+Miao, W., Geng, Z., and Tchetgen Tchetgen, E. (2018).
+\newblock Identifying causal effects with proxy variables of an unmeasured
+confounder.
+\newblock \emph{Biometrika} 105(4), 987--993. doi:10.1093/biomet/asy038.
+
+\bibitem[Ying et~al.(2023)]{YingMiaoShiTchetgen2023}
+Ying, A., Miao, W., Shi, X., and Tchetgen Tchetgen, E.~J. (2023).
+\newblock Proximal causal inference for complex longitudinal studies.
+\newblock \emph{Journal of the Royal Statistical Society: Series B} 85(3),
+684--704. doi:10.1093/jrsssb/qkad020.
+
+\bibitem[Zhang et~al.(2024)]{ZhangLiMiaoTchetgen2023}
+Zhang, J., Li, W., Miao, W., and Tchetgen Tchetgen, E. (2024).
+\newblock Proximal causal inference without uniqueness assumptions.
+\newblock \emph{Statistics and Probability Letters} 204, 109836.
+doi:10.1016/j.spl.2023.109836.
+\end{thebibliography}
+
+\end{document}

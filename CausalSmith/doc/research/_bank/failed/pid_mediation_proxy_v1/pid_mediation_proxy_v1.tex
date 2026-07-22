@@ -1,0 +1,834 @@
+% =====================================================================
+%  ThmSmith Stage 0 derivation skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_mediation\_proxy, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to a Q1..Q6
+%    pool-mode, fill it VERBATIM from the question-specific block of
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    For free-form panel / ExactID / PartialID anchors, reproduce the
+%    locked-parameter block from the Stage -1 proposal verbatim. Do not
+%    rephrase locked parameters; Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage 0 derivation: \texttt{pid\_mediation\_proxy} / \texttt{v1}%
+  \\ \large\textit{Shared Proxy-Null Mediation Bounds and Sharpness Criterion}}
+\author{ThmSmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note studies a partial-identification problem for the joint natural-effect
+target \(\theta=(\mathrm{PNDE}(1,0),\mathrm{TNIE}(1,0))\) in a binary mediation
+design with binary negative-control proxies.  There is no regression estimator
+in this anchor; the estimand-defining object is the affine bridge-fiber bound
+\[
+  B(P)=\{(\theta_D^0+\beta_D\eta,\theta_I^0+\beta_I\eta):
+       \eta\in[\ell(P),u(P)]\}.
+\]
+The main conclusion is an outer-bound and sharpness characterization:
+\(\Theta_I(P)\subseteq B(P)\), while equality holds if and only if the primitive
+mean-kernel projection fills the whole observable interval.  Thus Stage -1
+Conjecture 1 is confirmed for containment but refuted as a sharpness theorem
+under the named assumptions alone.  The corrected sharp object is the affine
+image of the attainable scalar set \(E(P)\), not necessarily the whole line
+segment \(B(P)\).
+\end{abstract}
+
+\section{Introduction}
+Natural direct and indirect effects are used to separate a treatment effect into
+the part acting outside a mediator and the part transmitted through that
+mediator.  The decomposition is most delicate when the mediator-outcome
+relationship is confounded by post-treatment latent states.  Negative-control
+or proximal methods try to use observed proxies to learn enough about the latent
+state to recover a bridge function, but weak or redundant proxies can make the
+bridge equations rank deficient.
+
+The Stage -1 proposal asks whether that rank deficiency has a clean joint
+geometry.  Its locked setup is a binary proxy mediation problem in which all
+admissible bridge solutions relevant for the PNDE and TNIE share one scalar
+null coordinate \(\eta\).  The proposed bounding functional is the line segment
+\(B(P)\), the affine image of the observable interval \([\ell(P),u(P)]\) induced
+by rank-deficient bridge equations and outcome-range constraints.
+
+This note proves the exact algebra behind that proposal and separates the part
+that is a theorem from the part that is an additional sharpness requirement.
+Under the named bridge-fiber assumptions, every compatible primitive
+mean-kernel model has a coordinate \(\eta(Q)\in[\ell(P),u(P)]\), so its
+natural-effect vector lies in \(B(P)\).  However, the assumptions do not imply
+that every observable bridge coordinate is attainable by a primitive latent
+mean-kernel model.  The sharp joint identified set is the affine image of
+\[
+  E(P)=\{\eta(Q):Q\in\mathcal L(P)\},
+\]
+and \(B(P)\) is sharp exactly when \(E(P)=[\ell(P),u(P)]\).
+
+The result is useful for downstream formula design because it gives a precise
+diagnostic for proxy-null mediation bounds.  Reporting the whole shared-null
+segment is justified as an outer bound.  Reporting it as a sharp bound requires
+a separate endpoint and interior realisability argument, or equivalently a
+finite linear-programming projection proof.
+
+\section{Related work and positioning}
+Robins and Greenland \cite{RobinsGreenland1992} and Pearl \cite{Pearl2001}
+introduced the counterfactual direct and indirect effects that motivate the
+PNDE and TNIE coordinates.  Avin, Shpitser, and Pearl
+\cite{AvinShpitserPearl2005} showed that path-specific effects can fail to be
+identified in graphs with intermediate confounding, which is the
+nonidentification regime studied here.  Imai, Keele, and Yamamoto
+\cite{ImaiKeeleYamamoto2010} give the standard mediation formula under
+sequential ignorability; the present note replaces mediator-outcome
+ignorability by negative-control bridge restrictions.
+
+Dukes, Shpitser, and Tchetgen Tchetgen \cite{DukesShpitserTchetgen2023} develop
+proximal mediation identification using bridge functions, and their work is the
+closest point-identification comparator.  Zhang, Li, Miao, and Tchetgen
+Tchetgen \cite{ZhangLiMiaoTchetgen2023} show that bridge nonuniqueness does not
+always destroy identification when the target is invariant across bridge
+solutions.  Ghassami, Shpitser, and Tchetgen Tchetgen
+\cite{GhassamiShpitserTchetgen2023} study partial identification using proxies
+when proximal point-identification conditions fail.  This note differs from all
+three by targeting the joint PNDE/TNIE geometry generated by a shared
+one-dimensional bridge-null coordinate.
+
+Manski \cite{Manski1990} and Balke and Pearl \cite{BalkePearl1997} provide the
+finite linear-programming template for sharp partial-identification bounds:
+write all observational and structural restrictions as linear constraints and
+project the feasible polytope onto the target.  Cai, Kuroki, Pearl, and Tian
+\cite{CaiKurokiPearlTian2008} use related symbolic bounding ideas for direct
+effects with confounded intermediate variables.  Miles, Kanki, Meloni, and
+Tchetgen Tchetgen \cite{MilesKankiMeloniTchetgen2015} bound the pure natural
+direct effect, while Miles, Kanki, Meloni, and Tchetgen Tchetgen
+\cite{MilesKankiMeloniTchetgen2017} bound the natural indirect effect.  Gabriel,
+Sachs, and Sjolander \cite{GabrielSachsSjolander2023} emphasize that separately
+sharp bounds for decomposition components need not combine sharply; the present
+line-segment analysis gives a proxy-null version of that joint-attainability
+issue.
+
+\section{Formal setup}
+Let \(P\) denote the observable law of
+\[
+  O=(X,A,M,Y,W,Z),
+\]
+where \(A,M,W,Z\in\{0,1\}\), \(Y\in[0,1]\), and \(X\) has finite support
+\(\mathcal X\).  The latent causal law is represented by an element
+\(Q\) of a finite mean-kernel model.  It contains mediator potential outcomes
+\(M(a)\), outcome potential outcomes \(Y(a,m)\), history-indexed latent
+mediator-outcome confounder states \(U(a,m)\), and proxy response variables
+\(W(a,m)\) and \(Z(a,m)\).  Factual variables are generated by the consistency
+relations
+\[
+  M=M(A),\qquad Y=Y(A,M(A)),\qquad
+  W=W(A,M(A)),\qquad Z=Z(A,M(A)).
+\]
+
+The causal target attached to \(Q\) is
+\[
+  \theta(Q)=(\theta_D(Q),\theta_I(Q)),
+\]
+with
+\[
+  \theta_D(Q)=\E_Q\{Y(1,M(0))-Y(0,M(0))\},
+  \qquad
+  \theta_I(Q)=\E_Q\{Y(1,M(1))-Y(1,M(0))\}.
+\]
+The identified set is the set of all target values attainable by primitive
+models that reproduce \(P\) and satisfy the maintained restrictions:
+\[
+  \Theta_I(P)=\{\theta(Q):Q\in\mathcal L(P)\}.
+\]
+Here \(\mathcal L(P)\) is the finite mean-kernel latent polytope defined by
+matching the observable law of \((X,A,M,W,Z)\), matching the conditional
+outcome means \(r_c(z)=\E[Y\mid X=x,A=a,M=m,Z=z]\), and imposing the
+consistency, positivity, negative-control, and shared-null bridge restrictions
+listed in Section 4.
+
+For each stratum \(c=(x,a,m)\), define the observable proxy matrix
+\[
+  K_c(z,w)=P(W=w\mid X=x,A=a,M=m,Z=z),
+\]
+and the observable outcome-mean vector
+\[
+  r_c(z)=\E[Y\mid X=x,A=a,M=m,Z=z].
+\]
+The bridge equation is \(K_ch_c=r_c\), where \(h_c\in[0,1]^2\) is indexed by
+\(w\in\{0,1\}\).  In a rank-deficient binary bridge cell, the solution set has
+the form
+\[
+  h_c=h_c^0+\eta_c n_c,
+\]
+where \(n_c\ne0\) spans the null space of \(K_c\).  The shared-null restriction
+reparameterizes these stratum coordinates as
+\[
+  \eta_c=s_c\eta+t_c
+\]
+for observable signs and scales \(s_c,t_c\).  The interval
+\([\ell(P),u(P)]\) is the intersection of all outcome-range constraints
+\[
+  0\le h_c^0(w)+(s_c\eta+t_c)n_c(w)\le1
+\]
+over all \(c,w\) used by the bridge formulas.
+
+The Stage -1 bridge loading assumption states that the PNDE and TNIE induced by
+this bridge family are affine in the same scalar:
+\[
+  \theta_D(\eta)=\theta_D^0+\beta_D\eta,\qquad
+  \theta_I(\eta)=\theta_I^0+\beta_I\eta,
+\]
+with \((\beta_D,\beta_I)\ne(0,0)\).  For a primitive model
+\(Q\in\mathcal L(P)\), let \(\eta(Q)\) be its induced shared-null coordinate
+and define
+\[
+  E(P)=\{\eta(Q):Q\in\mathcal L(P)\}.
+\]
+Assumption \ref{ass:latent-polytope} gives \(E(P)\subseteq[\ell(P),u(P)]\).
+
+\paragraph{Locked parameters.}
+\begin{quote}
+\textbf{Partial identification tuple.}
+\texttt{qid = pid\_mediation\_proxy};
+\texttt{specialization = v1};
+observable distribution \(P\) is the law of \(O=(X,A,M,Y,W,Z)\), where
+\(A\in\{0,1\}\) is a single binary treatment, \(M\in\{0,1\}\) is a mediator,
+\(Y\in[0,1]\) is an outcome, and \(W,Z\in\{0,1\}\) are negative-control
+proxies for treatment- and mediator-history-indexed unobserved
+mediator--outcome confounders \(U(a,m)\);
+parameter \(\theta=(\theta_D,\theta_I)\), where
+\(\theta_D=\mathrm{PNDE}(1,0)\) and \(\theta_I=\mathrm{TNIE}(1,0)\);
+identifying restrictions are consistency, treatment ignorability conditional
+on \(X\), mediator/proxy positivity, negative-control exclusion and relevance,
+and the one-dimensional shared proxy-null bridge-fiber restriction in
+Assumption~\ref{ass:shared-null};
+the bounding functional is the affine image
+\[
+  B(P)=\{(\theta_D^0+\beta_D\eta,\theta_I^0+\beta_I\eta):
+       \eta\in[\ell(P),u(P)]\},
+\]
+where \([\ell(P),u(P)]\) is the observable feasibility interval induced by
+the rank-deficient bridge equations and the outcome-range constraints.
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite binary mediation system]\label{ass:finite}
+The variables satisfy \(A,M,W,Z\in\{0,1\}\), \(Y\in[0,1]\), and \(X\) has finite
+support.  Every cell used to define a conditional probability, conditional
+expectation, bridge matrix, mediator law, or proxy law has strictly positive
+probability.  The interval endpoints \(\ell(P)\) and \(u(P)\) are finite and
+obey \(\ell(P)\le u(P)\).
+\end{assumption}
+
+\begin{assumption}[Consistency and treatment ignorability]\label{ass:consistency}
+Observed \(M\) and \(Y\) equal their corresponding factual potential outcomes,
+and \(A\) is conditionally independent of the relevant treatment-indexed
+potential outcomes, treatment- and mediator-history-indexed latent confounder
+states, and proxy response types given \(X\).  Factual consistency also sets
+\(U=U(A,M(A))\), \(W=W(A,M(A))\), and \(Z=Z(A,M(A))\).
+\end{assumption}
+
+\begin{assumption}[Negative-control exclusion]\label{ass:negative-control}
+For each realised history \(c=(x,a,m)\), conditional on
+\((X=x,A=a,M=m,U(a,m))\), \(Z(a,m)\) carries no direct information about the
+outcome bridge other than through \(U(a,m)\), and \(W(a,m)\) is an
+outcome-inducing proxy for \(U(a,m)\) with no direct treatment or mediator
+effect except through the history-indexed bridge relation encoded by
+\(K_ch_c=r_c\).  Relevance means the proxy law supplies the bridge matrices
+appearing in Assumption \ref{ass:rank-def}.
+\end{assumption}
+
+\begin{assumption}[Rank-deficient binary bridge]\label{ass:rank-def}
+For each \(c=(x,a,m)\), the observed \(2\times2\) matrix
+\(K_c(z,w)=P(W=w\mid X=x,A=a,M=m,Z=z)\) has rank one, the equation
+\(K_ch_c=r_c\) is feasible, and its solution set is
+\(\{h_c^0+\eta_c n_c:\eta_c\in I_c(P)\}\) for a nonzero null vector \(n_c\).
+\end{assumption}
+
+\begin{assumption}[Shared proxy-null coordinate]\label{ass:shared-null}
+The feasible bridge solutions relevant to \(\theta_D\) and \(\theta_I\) are
+indexed by a single scalar \(\eta\), so \(\eta_c=s_c\eta+t_c\) for known
+observable signs/scales \(s_c,t_c\).  The common feasible interval
+\([\ell(P),u(P)]\) is the intersection of the stratum intervals after this
+reparameterisation.
+\end{assumption}
+
+\begin{assumption}[Affine natural-effect loading]\label{ass:affine-loading}
+The PNDE and TNIE functionals induced by the bridge family are
+\(\theta_D(\eta)=\theta_D^0+\beta_D\eta\) and
+\(\theta_I(\eta)=\theta_I^0+\beta_I\eta\), with
+\((\beta_D,\beta_I)\neq(0,0)\).  The constants
+\(\theta_D^0,\theta_I^0,\beta_D,\beta_I,\ell(P),u(P)\) are observable
+functionals of \(P\) under Assumptions~\ref{ass:finite}--\ref{ass:shared-null}.
+\end{assumption}
+
+\begin{assumption}[Primitive mean-kernel feasibility]\label{ass:latent-polytope}
+The finite mean-kernel latent polytope \(\mathcal L(P)\) defined in the formal
+setup is nonempty.  Every \(Q\in\mathcal L(P)\) reproduces
+\(P_{X,A,M,W,Z}\) and the observable conditional outcome means \(r_c(z)\),
+satisfies Assumptions~\ref{ass:finite}--\ref{ass:affine-loading}, indexes all
+latent confounder and proxy response types by \((a,m)\), and induces a
+well-defined shared-null scalar \(\eta(Q)\in[\ell(P),u(P)]\).  This assumption
+does not assert that every \(\eta\in[\ell(P),u(P)]\) is attainable.
+\end{assumption}
+
+\begin{assumption}[Total-effect bridge compatibility]\label{ass:total-effect}
+The total effect \(\theta_T=\E\{Y(1,M(1))-Y(0,M(0))\}\) is identified from
+\(P\) under the same consistency and treatment-ignorability conditions, and for
+every primitive mean-kernel model \(Q\in\mathcal L(P)\) the natural-effect
+decomposition holds:
+\[
+  \theta_D(Q)+\theta_I(Q)=\theta_T.
+\]
+This assumption fixes the total effect but does not separately impose any
+value on the affine loading \(\beta_D+\beta_I\).
+\end{assumption}
+
+\section{Regression estimator}
+This section title is fixed by the skeleton.  In this partial-identification
+anchor there is no regression estimator; the estimand-defining functional is
+the bounding functional \(B(P)\) and its coordinate projections.
+
+\begin{definition}[Shared-null bounding functional]\label{def:bound}
+Under Assumptions \ref{ass:rank-def}--\ref{ass:affine-loading}, define
+\[
+  B(P)=\{(\theta_D^0+\beta_D\eta,\theta_I^0+\beta_I\eta):
+       \eta\in[\ell(P),u(P)]\}.
+\]
+The coordinate lower and upper functionals are
+\[
+  \theta_D^L(P)=\min_{\eta\in[\ell(P),u(P)]}
+       \{\theta_D^0+\beta_D\eta\},
+  \qquad
+  \theta_D^U(P)=\max_{\eta\in[\ell(P),u(P)]}
+       \{\theta_D^0+\beta_D\eta\},
+\]
+and
+\[
+  \theta_I^L(P)=\min_{\eta\in[\ell(P),u(P)]}
+       \{\theta_I^0+\beta_I\eta\},
+  \qquad
+  \theta_I^U(P)=\max_{\eta\in[\ell(P),u(P)]}
+       \{\theta_I^0+\beta_I\eta\}.
+\]
+These are observable functionals of \(P\).  The set \(B(P)\) is an outer bound
+unless every point on the line segment is attainable by a primitive model.
+\end{definition}
+
+\begin{definition}[Primitive projection functional]\label{def:primitive-proj}
+The sharp primitive shared-null set is
+\[
+  B_{\mathrm{sh}}(P)=
+  \{(\theta_D^0+\beta_D\eta,\theta_I^0+\beta_I\eta):\eta\in E(P)\},
+\]
+where \(E(P)=\{\eta(Q):Q\in\mathcal L(P)\}\).  Equivalently, a finite
+linear-programming representation of \(\mathcal L(P)\) gives the sharp set by
+projecting that polytope onto \((\theta_D,\theta_I)\).  The interval
+\([\ell(P),u(P)]\) uses only observable bridge feasibility and outcome range;
+the set \(E(P)\) additionally uses primitive latent mean-kernel feasibility.
+\end{definition}
+
+\section{Target causal estimand}
+The intended causal target is the vector
+\[
+  \theta(Q)=
+  \bigl(
+  \E_Q\{Y(1,M(0))-Y(0,M(0))\},
+  \E_Q\{Y(1,M(1))-Y(1,M(0))\}
+  \bigr).
+\]
+The first coordinate is \(\mathrm{PNDE}(1,0)\): it compares treatment levels
+while holding the mediator at the value it would have taken under \(A=0\).  The
+second coordinate is \(\mathrm{TNIE}(1,0)\): it compares the mediator under
+\(A=1\) to the mediator under \(A=0\), holding the outcome treatment level at
+\(A=1\).  The target is not defined to be the bridge formula.  The bridge
+formula supplies a bound, and the proof must show which target values are
+compatible with the observed law and restrictions.
+
+\section{Main theorems}
+\begin{proposition}[Outer bound and exact sharpness criterion]\label{thm:outer-sharp}
+Under Assumptions \ref{ass:finite}--\ref{ass:latent-polytope},
+\[
+  \Theta_I(P)=B_{\mathrm{sh}}(P)
+  =\{(\theta_D^0+\beta_D\eta,\theta_I^0+\beta_I\eta):\eta\in E(P)\}
+  \subseteq B(P).
+\]
+Consequently,
+\[
+  \Theta_I(P)\subseteq
+  [\theta_D^L(P),\theta_D^U(P)]\times
+  [\theta_I^L(P),\theta_I^U(P)].
+\]
+Because \((\beta_D,\beta_I)\ne(0,0)\), the affine map
+\(\eta\mapsto(\theta_D^0+\beta_D\eta,\theta_I^0+\beta_I\eta)\) is injective.
+Therefore \(B(P)\) is the sharp joint identified set if and only if
+\[
+  E(P)=[\ell(P),u(P)].
+\]
+\end{proposition}
+
+This proposition is the central contribution.  It confirms the containment part
+of the Stage -1 proposal and gives the exact missing condition for sharpness.
+It also explains why marginal PNDE and TNIE intervals should not be multiplied
+into a rectangle: the joint outer bound is a line segment, and the sharp joint
+set is a possibly smaller subset of that same line.
+
+\paragraph{Verdict on Stage -1 Conjecture 1.}
+Conjecture 1 is \emph{partial}.  The theorem confirms the outer-bound claim
+\(\Theta_I(P)\subseteq B(P)\).  The theorem refutes the claim that the named
+assumptions alone imply sharpness: sharpness is equivalent to the extra
+realisability statement \(E(P)=[\ell(P),u(P)]\), which is not contained in
+Assumption \ref{ass:latent-polytope}.
+
+\begin{proposition}[Failure of sharpness without full-fiber realisability]\label{thm:sharp-fails}
+There are finite shared-null bridge instances satisfying Assumptions
+\ref{ass:finite}--\ref{ass:latent-polytope} for which
+\[
+  E(P)\subsetneq[\ell(P),u(P)].
+\]
+In such instances \(B(P)\) is a valid outer bound but is not sharp.  In
+particular, if \(E(P)=\{0\}\), \([\ell(P),u(P)]=[-1,1]\),
+\(\theta_D^0=\theta_I^0=0\), \(\beta_D=1\), and \(\beta_I=-1\), then
+\[
+  \Theta_I(P)=\{(0,0)\}
+  \quad\text{while}\quad
+  B(P)=\{(\eta,-\eta):\eta\in[-1,1]\}.
+\]
+\end{proposition}
+
+This proposition is not a new causal model for mediation; it is the minimal
+logical counterexample to the sharpness inference.  The nearest correct
+statement is Proposition \ref{thm:outer-sharp}: the primitive projection \(E(P)\)
+must be computed or proved full before the observable bridge interval can be
+reported as sharp.
+
+\begin{proposition}[Total-effect compatibility]\label{thm:total-effect}
+Assume Assumptions \ref{ass:finite}--\ref{ass:total-effect}.  If \(E(P)\)
+contains at least two distinct values, then
+\[
+  \beta_D+\beta_I=0
+  \quad\text{and}\quad
+  \theta_D^0+\theta_I^0=\theta_T.
+\]
+Consequently,
+\[
+  \theta_D(\eta)+\theta_I(\eta)=\theta_T
+\]
+for every \(\eta\in E(P)\).  If the Stage -1 sharpness conclusion
+\(E(P)=[\ell(P),u(P)]\) also holds and \(\ell(P)<u(P)\), then the entire
+segment \(B(P)\) lies in the hyperplane \(\theta_D+\theta_I=\theta_T\).
+\end{proposition}
+
+This is the corrected version of the Stage -1 total-effect theorem.  The
+decomposition restriction need only be checked on attainable primitive points;
+two attainable shared-null values are enough to force the slope restriction.
+If the full observable interval is attainable, the same algebra holds on the
+whole line segment.
+
+\section{Interpretation}
+The line segment \(B(P)\) is an observable sensitivity curve indexed by the
+shared proxy-null coordinate.  It is narrower than the coordinate rectangle
+whenever \(\ell(P)<u(P)\) and both loadings are nonzero, because direct and
+indirect effects must move together along the same scalar coordinate.  This is
+the sense in which the shared-null restriction does real tightening work.
+
+The bound collapses to point identification when the affine image is a
+singleton.  This happens if \(\ell(P)=u(P)\), or more generally if the primitive
+projection \(E(P)\) is a singleton.  If one loading vanishes but the other does
+not, one component is point identified along the shared-null fiber while the
+other remains partially identified.  If both loadings vanished, the bridge
+fiber would be irrelevant for this target, but Assumption \ref{ass:affine-loading}
+rules out that degenerate case.
+
+The bound widens toward a Manski-style no-restriction bound when the proxy,
+negative-control, and bridge restrictions are removed.  In that case the finite
+mean-kernel polytope permits all bounded counterfactual completions consistent
+with the observed factual distribution, and the sharp set is obtained by a
+generic response-type linear program.  The proxy restrictions tighten the bound
+only through constraints on feasible bridge coordinates and through any
+additional primitive feasibility restrictions that shrink \(E(P)\).
+
+The main caution is sharpness.  Outcome-range constraints on observable bridge
+solutions produce \([\ell(P),u(P)]\), but primitive latent feasibility can
+exclude some of those bridge coordinates.  Therefore a published formula should
+label \(B(P)\) as an outer bound unless it also proves
+\(E(P)=[\ell(P),u(P)]\) by an endpoint and mixture construction or by a finite
+linear-programming projection argument.
+
+\section{Step-by-step proof}
+\paragraph{Proof of Proposition \ref{thm:outer-sharp}.}
+By definition of the identified set,
+\[
+  \Theta_I(P)=\{\theta(Q):Q\in\mathcal L(P)\}.
+\]
+Assumption \ref{ass:latent-polytope} says that every \(Q\in\mathcal L(P)\)
+induces a scalar \(\eta(Q)\in[\ell(P),u(P)]\).  Assumption
+\ref{ass:affine-loading} says that the PNDE and TNIE attached to that bridge
+coordinate are
+\[
+  \theta_D(Q)=\theta_D^0+\beta_D\eta(Q),
+  \qquad
+  \theta_I(Q)=\theta_I^0+\beta_I\eta(Q).
+\]
+Substituting these two equalities into the definition of \(\Theta_I(P)\) gives
+\[
+  \Theta_I(P)
+  =\{(\theta_D^0+\beta_D\eta(Q),\theta_I^0+\beta_I\eta(Q)):
+       Q\in\mathcal L(P)\}.
+\]
+Replacing the image of \(Q\) by the set of all induced scalars gives
+\[
+  \Theta_I(P)
+  =\{(\theta_D^0+\beta_D\eta,\theta_I^0+\beta_I\eta):\eta\in E(P)\}
+  =B_{\mathrm{sh}}(P).
+\]
+Since \(E(P)\subseteq[\ell(P),u(P)]\), the displayed set is contained in
+\[
+  B(P)=\{(\theta_D^0+\beta_D\eta,\theta_I^0+\beta_I\eta):
+       \eta\in[\ell(P),u(P)]\}.
+\]
+This proves \(\Theta_I(P)\subseteq B(P)\).
+
+The coordinate rectangle follows by projecting the same containment onto the
+two axes.  For example,
+\[
+  \theta_D^0+\beta_D\eta\in
+  [\theta_D^L(P),\theta_D^U(P)]
+\]
+for every \(\eta\in[\ell(P),u(P)]\), and the same argument applies to the
+indirect coordinate.
+
+It remains to characterize sharpness of the full line segment.  The affine map
+\[
+  f(\eta)=(\theta_D^0+\beta_D\eta,\theta_I^0+\beta_I\eta)
+\]
+is injective because \((\beta_D,\beta_I)\ne(0,0)\): if
+\(f(\eta_1)=f(\eta_2)\), then
+\[
+  (\beta_D,\beta_I)(\eta_1-\eta_2)=(0,0),
+\]
+which forces \(\eta_1=\eta_2\).  Hence
+\[
+  f(E(P))=f([\ell(P),u(P)])
+\]
+if and only if \(E(P)=[\ell(P),u(P)]\).  Since
+\(\Theta_I(P)=f(E(P))\) and \(B(P)=f([\ell(P),u(P)])\), the outer bound is sharp
+if and only if the primitive projection fills the whole observable interval.
+
+\paragraph{Proof of Proposition \ref{thm:sharp-fails}.}
+The proof uses the extreme-point view of a finite mean-kernel model.  Consider
+a finite instance with one baseline stratum and bridge equations whose
+observable feasibility interval is \([-1,1]\).  Let the affine natural-effect
+loading be
+\[
+  f(\eta)=(\eta,-\eta).
+\]
+Let the primitive mean-kernel polytope be nonempty but have the additional
+observable-matching linear restriction that its bridge representative has
+\(\eta(Q)=0\).  Equivalently, the polytope projection onto the shared-null
+coordinate is the singleton
+\[
+  E(P)=\{0\}.
+\]
+This satisfies Assumption \ref{ass:latent-polytope}, which only requires
+nonemptiness and \(E(P)\subseteq[\ell(P),u(P)]\), not the reverse inclusion.
+All bridge, shared-null, and affine-loading assumptions are satisfied by
+construction.  Proposition \ref{thm:outer-sharp} then yields
+\[
+  \Theta_I(P)=f(E(P))=\{(0,0)\}
+\]
+while
+\[
+  B(P)=f([-1,1])=\{(\eta,-\eta):\eta\in[-1,1]\}.
+\]
+Thus the observable line segment is an outer bound but is not sharp.  The only
+missing step is full-fiber realisability, exactly the equality
+\(E(P)=[\ell(P),u(P)]\).
+
+\paragraph{Proof of Proposition \ref{thm:total-effect}.}
+By Assumption \ref{ass:total-effect}, for every \(Q\in\mathcal L(P)\),
+\[
+  \theta_D(Q)+\theta_I(Q)=\theta_T.
+\]
+Using Assumption \ref{ass:affine-loading}, this is
+\[
+  \theta_D^0+\theta_I^0+(\beta_D+\beta_I)\eta(Q)=\theta_T
+\]
+for every \(\eta(Q)\in E(P)\).  If \(E(P)\) contains two distinct values
+\(\eta_1\ne\eta_2\), subtracting the two equalities gives
+\[
+  (\beta_D+\beta_I)(\eta_1-\eta_2)=0.
+\]
+Therefore \(\beta_D+\beta_I=0\).  Substituting this back into the equality at
+any attainable point gives
+\[
+  \theta_D^0+\theta_I^0=\theta_T.
+\]
+Consequently \(\theta_D(\eta)+\theta_I(\eta)=\theta_T\) for every
+\(\eta\in E(P)\).  If \(E(P)=[\ell(P),u(P)]\), the same identity holds on the
+whole segment \(B(P)\).
+
+\section{Sanity checks}
+\paragraph{No-proxy fallback.}
+If the proxy variables and bridge restrictions are removed, the sharp object is
+the projection of the finite response-type polytope that matches only the
+observable law of \((X,A,M,Y)\).  With \(Y\in[0,1]\), each natural-effect
+coordinate lies within the natural Manski range \([-1,1]\), with sharper
+endpoints obtained by the finite linear program when the factual distribution
+imposes additional constraints.
+
+\paragraph{Zero-width and point-identification corners.}
+If \(\ell(P)=u(P)\), then \(B(P)\) is a singleton and the shared-null bridge
+fiber gives point identification for the two coordinates under the affine
+loading.  The same collapse occurs when \(E(P)\) is a singleton, even if the
+observable interval is wider.  Full-rank proximal bridge conditions are one
+standard route to this kind of collapse, as in proximal mediation
+identification \cite{DukesShpitserTchetgen2023}.
+
+\paragraph{Monotone-treatment-response specialization.}
+Monotone treatment response is not part of the locked parameter block.  If it
+were added as a new restriction, it would enter the primitive finite program as
+linear inequalities such as \(Y(1,m)\ge Y(0,m)\).  Such inequalities can only
+shrink \(E(P)\) and the resulting sharp set, so they tighten rather than
+invalidate the outer-bound argument.
+
+\paragraph{Total-effect sanity check.}
+When the total effect is fixed and at least two shared-null values are
+attainable, Proposition \ref{thm:total-effect} forces
+\(\beta_D+\beta_I=0\).  Hence variation along the line segment reallocates
+effect between the direct and indirect components without changing the total
+effect.
+
+\paragraph{Balke--Pearl finite-LP special case.}
+If the mediation target is replaced by a binary treatment effect with a binary
+instrument and finite response types, the primitive polytope projection reduces
+to the Balke--Pearl linear-programming construction \cite{BalkePearl1997}.  The
+same extreme-point logic underlies the present sharpness criterion, but the
+coordinates here are PNDE and TNIE rather than a single treatment effect.
+
+\section{Counterexample or minimality check}
+The minimality issue is full-fiber realisability.  The named assumptions imply
+\[
+  E(P)\subseteq[\ell(P),u(P)],
+\]
+but they do not imply the reverse inclusion.  Proposition
+\ref{thm:sharp-fails} gives the simplest possible counterexample: the
+observable bridge equations allow \(\eta\in[-1,1]\), but the primitive
+mean-kernel polytope projects only to \(\eta=0\).  Then the sharp set is the
+single point \((0,0)\), while the proposed line segment contains many
+unattainable values.
+
+The nearest correct statement is therefore
+\[
+  \Theta_I(P)=
+  \{(\theta_D^0+\beta_D\eta,\theta_I^0+\beta_I\eta):\eta\in E(P)\}.
+\]
+The Stage -1 formula \(B(P)\) becomes sharp only after proving
+\[
+  E(P)=[\ell(P),u(P)].
+\]
+That equality can be established by an endpoint construction plus convex
+mixture argument, or by solving the finite latent mean-kernel linear program and
+showing that its projection onto \(\eta\) is the whole interval.  Without that
+step, the interval endpoints \(\ell(P)\) and \(u(P)\) are boundary conditions
+for bridge functions, not automatically attainable causal models.
+
+\section{Formalization checklist}
+\paragraph{Probabilistic assumptions and objects.}
+\begin{itemize}[leftmargin=*]
+\item Observable law \(P\) of \(O=(X,A,M,Y,W,Z)\), with \(A,M,W,Z\) binary,
+\(Y\in[0,1]\), and finite \(\mathcal X\).  Role: supplies bridge matrices,
+conditional means, mediator laws, and all observable constants.
+\item Primitive finite mean-kernel polytope \(\mathcal L(P)\).  Type:
+nonempty compact convex set of finite latent response-type and outcome-mean
+kernels matching \(P\).  Dependencies: Assumptions \ref{ass:finite},
+\ref{ass:consistency}, \ref{ass:negative-control}, and
+\ref{ass:latent-polytope}.  Role: defines the sharp identified set.
+\item Potential-outcome target maps
+\[
+  \theta_D(Q)=\E_Q\{Y(1,M(0))-Y(0,M(0))\},
+  \quad
+  \theta_I(Q)=\E_Q\{Y(1,M(1))-Y(1,M(0))\}.
+\]
+Role: causal estimand coordinates.
+\item Shared-null coordinate map \(Q\mapsto\eta(Q)\).  Dependencies:
+Assumptions \ref{ass:rank-def}, \ref{ass:shared-null}, and
+\ref{ass:latent-polytope}.  Role: projects primitive models onto the bridge
+fiber.
+\end{itemize}
+
+\paragraph{Deterministic identities and convex arguments.}
+\begin{itemize}[leftmargin=*]
+\item Bridge equation \(K_ch_c=r_c\), rank-one solution representation
+\(h_c=h_c^0+\eta_cn_c\), and shared reparameterisation
+\(\eta_c=s_c\eta+t_c\).  Role: constructs the observable interval
+\([\ell(P),u(P)]\).
+\item Outcome-range interval identity:
+\[
+  [\ell(P),u(P)]
+  =\{\eta:0\le h_c^0(w)+(s_c\eta+t_c)n_c(w)\le1
+       \text{ for all used }c,w\}.
+\]
+Role: boundary condition for the outer bound.
+\item Affine loading map
+\[
+  f(\eta)=(\theta_D^0+\beta_D\eta,\theta_I^0+\beta_I\eta).
+\]
+Dependencies: Assumption \ref{ass:affine-loading}.  Role: maps scalar bridge
+coordinates to natural-effect coordinates.
+\item Primitive projection \(E(P)=\{\eta(Q):Q\in\mathcal L(P)\}\).  Role:
+distinguishes sharp attainable coordinates from observable bridge coordinates.
+\item Containment identity:
+\[
+  \Theta_I(P)=f(E(P))\subseteq f([\ell(P),u(P)])=B(P).
+\]
+Dependencies: definitions of \(\Theta_I(P)\), \(E(P)\), and Assumptions
+\ref{ass:affine-loading}--\ref{ass:latent-polytope}.  Role: main outer-bound
+proof.
+\item Injectivity lemma for \(f\): if \((\beta_D,\beta_I)\ne(0,0)\), then
+\(f(\eta_1)=f(\eta_2)\) implies \(\eta_1=\eta_2\).  Role: proves that
+sharpness of \(B(P)\) is equivalent to \(E(P)=[\ell(P),u(P)]\).
+\item Total-effect slope identity:
+\[
+  \theta_D^0+\theta_I^0+(\beta_D+\beta_I)\eta=\theta_T
+\]
+on attainable \(\eta\).  Role: derives \(\beta_D+\beta_I=0\) when at least two
+attainable coordinates exist.
+\item Finite LP projection principle: a compact finite mean-kernel polytope
+projected by a linear map has a compact sharp identified set with endpoints
+attained at faces.  Role: supplies the standard route for proving or refuting
+full-fiber realisability.
+\end{itemize}
+
+\section{Conclusion and references}
+The theorem-level contribution is a corrected joint partial-identification
+statement for the Stage -1 shared proxy-null proposal.  The affine segment
+\(B(P)\) is a valid observable outer bound for the joint PNDE/TNIE target, and
+it is sharper than the naive coordinate rectangle because both effects move
+with the same scalar.  It is sharp exactly when the primitive mean-kernel
+projection fills the entire observable bridge interval.  The main source of
+non-sharpness is failure of full-fiber realisability: bridge functions may
+satisfy the outcome-range constraints at values of \(\eta\) that no compatible
+latent mean-kernel model attains.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem[Avin, Shpitser, and Pearl(2005)]{AvinShpitserPearl2005}
+Avin, C., Shpitser, I., and Pearl, J. (2005).
+Identifiability of path-specific effects.
+In \emph{Proceedings of the Nineteenth International Joint Conference on Artificial Intelligence},
+357--363.
+
+\bibitem[Balke and Pearl(1997)]{BalkePearl1997}
+Balke, A. and Pearl, J. (1997).
+Bounds on treatment effects from studies with imperfect compliance.
+\emph{Journal of the American Statistical Association}, 92(439), 1171--1176.
+
+\bibitem[Cai, Kuroki, Pearl, and Tian(2008)]{CaiKurokiPearlTian2008}
+Cai, Z., Kuroki, M., Pearl, J., and Tian, J. (2008).
+Bounds on direct effects in the presence of confounded intermediate variables.
+\emph{Biometrics}, 64(3), 695--701.
+
+\bibitem[Ding and VanderWeele(2016)]{DingVanderWeele2016}
+Ding, P. and VanderWeele, T. J. (2016).
+Sharp sensitivity bounds for mediation under unmeasured mediator-outcome
+confounding.
+\emph{Biometrika}, 103(2), 483--490.
+
+\bibitem[Dukes, Shpitser, and Tchetgen Tchetgen(2023)]{DukesShpitserTchetgen2023}
+Dukes, O., Shpitser, I., and Tchetgen Tchetgen, E. J. (2023).
+Proximal mediation analysis.
+\emph{Biometrika}, 110(4), 973--987.
+
+\bibitem[Gabriel, Sachs, and Sjolander(2023)]{GabrielSachsSjolander2023}
+Gabriel, E. E., Sachs, M. C., and Sjolander, A. (2023).
+Sharp nonparametric bounds for decomposition effects with two binary mediators.
+\emph{Journal of the American Statistical Association}, 118(544), 2446--2453.
+
+\bibitem[Ghassami, Shpitser, and Tchetgen Tchetgen(2023)]{GhassamiShpitserTchetgen2023}
+Ghassami, A., Shpitser, I., and Tchetgen Tchetgen, E. (2023).
+Partial identification of causal effects using proxy variables.
+arXiv:2304.04374.
+
+\bibitem[Imai, Keele, and Yamamoto(2010)]{ImaiKeeleYamamoto2010}
+Imai, K., Keele, L., and Yamamoto, T. (2010).
+Identification, inference and sensitivity analysis for causal mediation effects.
+\emph{Statistical Science}, 25(1), 51--71.
+
+\bibitem[Manski(1990)]{Manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{The American Economic Review}, 80(2), 319--323.
+
+\bibitem[Miles, Kanki, Meloni, and Tchetgen Tchetgen(2015)]{MilesKankiMeloniTchetgen2015}
+Miles, C. H., Kanki, P., Meloni, S., and Tchetgen Tchetgen, E. J. (2015).
+On partial identification of the pure direct effect.
+\emph{Harvard University Biostatistics Working Paper Series}, Working Paper 196.
+
+\bibitem[Miles, Kanki, Meloni, and Tchetgen Tchetgen(2017)]{MilesKankiMeloniTchetgen2017}
+Miles, C. H., Kanki, P., Meloni, S., and Tchetgen Tchetgen, E. J. (2017).
+On partial identification of the natural indirect effect.
+\emph{Journal of Causal Inference}, 5(2).
+
+\bibitem[Pearl(2001)]{Pearl2001}
+Pearl, J. (2001).
+Direct and indirect effects.
+In \emph{Proceedings of the Seventeenth Conference on Uncertainty in Artificial Intelligence},
+411--420.
+
+\bibitem[Robins and Greenland(1992)]{RobinsGreenland1992}
+Robins, J. M. and Greenland, S. (1992).
+Identifiability and exchangeability for direct and indirect effects.
+\emph{Epidemiology}, 3(2), 143--155.
+
+\bibitem[Zhang, Li, Miao, and Tchetgen Tchetgen(2023)]{ZhangLiMiaoTchetgen2023}
+Zhang, J., Li, W., Miao, W., and Tchetgen Tchetgen, E. (2023).
+Proximal causal inference without uniqueness assumptions.
+\emph{Statistics \& Probability Letters}, 198, 109836.
+\end{thebibliography}
+
+\end{document}

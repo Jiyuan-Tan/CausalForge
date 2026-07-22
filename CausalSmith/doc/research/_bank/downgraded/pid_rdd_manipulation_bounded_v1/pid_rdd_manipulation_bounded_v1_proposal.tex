@@ -1,0 +1,731 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_rdd\_manipulation\_bounded, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to a Q1..Q6 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    If it is a free-form `(qid, specialization)`, define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_rdd\_manipulation\_bounded} / \texttt{v1}%
+  \\ \large\textit{Sharp RD manipulation bounds from a McCrary envelope and covariate-share caps}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a free-form PartialID proposal, not a Q1--Q6 panel pool-mode instance.
+The locked tuple is
+\[
+  (\texttt{qid}, \texttt{specialization}, P, \theta, \text{identifying restrictions},
+    \text{bounding functional})
+\]
+with the following convention.  \(\texttt{qid}=\texttt{pid\_rdd\_manipulation\_bounded}\) and
+\(\texttt{specialization}=\texttt{v1}\).  The observable distribution \(P\) consists of the two
+cutoff-side weak limits \(P_-\) and \(P_+\) of \((Y,D,W)\) given the running variable
+approaches the cutoff from below and above, where \(Y\in[\underline y,\overline y]\),
+\(D\in\{0,1\}\), and \(W\in\{1,\ldots,K\}\) is a finite predetermined-covariate cell.
+The parameter \(\theta\) is the local Wald effect for the nonmanipulating cutoff population,
+\[
+  \theta =
+  \frac{\sum_w \pi_-(w)\{\mu^Y_{+,0}(w)-\mu^Y_-(w)\}}
+       {\sum_w \pi_-(w)\{\mu^D_{+,0}(w)-\mu^D_-(w)\}},
+\]
+where \(\pi_-(w)=P_-(W=w)\), \(\mu^-_V(w)=\E_{P_-}[V\mid W=w]\), and
+\(\mu^V_{+,0}(w)\) denotes the right-limit nonmanipulator mean of \(V\in\{Y,D\}\)
+in covariate cell \(w\).  The identifying restrictions are: one-sided upward manipulation
+at the cutoff, local continuity of the nonmanipulator potential-outcome and compliance
+law conditional on \(W\), a McCrary-style global manipulation-share envelope
+\(\bar\rho\in[0,1)\), covariate-cell manipulation-share caps \(\bar s_w\in[0,1)\),
+bounded outcomes, positive retained mass, and a positive nonmanipulator first-stage
+denominator.  The bounding functional is the sharp fractional trimming program over
+retention weights \(a(y,d,w)\in[0,1]\):
+\[
+  B_L(P,\bar\rho,\bar s)=\inf_{a\in\mathcal A(P,\bar\rho,\bar s)} \Theta(a),
+  \qquad
+  B_U(P,\bar\rho,\bar s)=\sup_{a\in\mathcal A(P,\bar\rho,\bar s)} \Theta(a),
+\]
+where \(\mathcal A(P,\bar\rho,\bar s)\) enforces the global and cellwise removal budgets
+and the retained right-side covariate distribution \(\pi_-\), and \(\Theta(a)\) is the Wald
+ratio formed from the retained right-side means and the observed left-side means.
+
+\begin{abstract}
+Regression discontinuity analyses often treat a McCrary density jump as a binary diagnostic:
+either the design is kept as a point-identified Lee-style RD or discarded as manipulated.
+Gerard, Rokkanen, and Rothe give sharp bounds when one-sided manipulation identifies an
+exact manipulator share, while covariate-adjusted Lee-bound work shows that conditional
+trimming can be much sharper than unconditional trimming.  This proposal asks for the sharp
+identified interval for the RD local Wald effect when the density jump is used only as an
+upper envelope on total manipulation and predetermined covariates impose cellwise upper
+bounds on the manipulator share.  The proposed kernel is that the tight interval is a
+budgeted conditional trimming problem whose endpoint allocation couples outcome tails,
+first-stage tails, and covariate cells; it is not obtained by plugging the largest allowed
+share into the cell-cap-free exact-share formula.  Resolving this would turn manipulation
+tests into a sensitivity-analysis object with a sharp no-manipulation face that recovers
+the Lee RD point estimand.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+RD validity checks have become routine, but the empirical decision rule remains coarse:
+researchers report a density-continuity or covariate-balance diagnostic, and then either
+proceed with point identification or abandon the design.  In many applied settings, such as
+school admissions, benefit thresholds, ratings cutoffs, and elections, a small density or
+covariate discontinuity is more naturally evidence about the possible magnitude and location
+of manipulation than proof that all RD information is unusable.  A sharp partial-identification
+formula would let applied researchers report the local effect compatible with a stated
+manipulation envelope rather than choosing between exact RD and no RD.
+
+\paragraph{The main finding (proposed).}
+The flagship statement is Conjecture~\ref{conj:sharp-budgeted-trim}: under one-sided
+manipulation and local continuity for nonmanipulators, the sharp identified set for the RD
+local Wald effect is the image of a finite-dimensional retention-weight program.  The
+program removes at most \(\bar\rho\) total right-side mass and at most \(\bar s_w\) mass in
+each covariate cell, forces the retained right-side covariate law to equal the left-side
+law, and forms the Wald ratio using the retained right-side outcome and treatment means.
+
+\paragraph{What is new.}
+The novelty kernel is the sharp \emph{envelope} version of covariate-conditional RD
+manipulation bounds.  Gerard, Rokkanen, and Rothe already optimize over partially identified
+shares in fuzzy RD and give covariate-conditioned sharp bounds; this proposal does not claim
+that share optimization or covariate trimming is absent from their paper.  The gap is more
+specific: their feasible share sets come from the exact one-sided manipulation model and
+conditional density ratios, whereas the proposed object intersects a McCrary-style upper
+confidence envelope with external covariate-cell caps and the retained-covariate-law
+restriction.  That intersection creates a coupled set of fixed-share faces: one cell cap
+can force extra right-side retention in every cell through the retained-\(W\) equation, so
+the endpoint can be strictly narrower than the cell-cap-free GRR envelope and can kink at a
+cell-cap boundary.  Semenova generalizes Lee bounds using covariates in
+sample-selection problems, but not in RD with this global-plus-cell manipulation envelope.
+
+\paragraph{How it positions in the literature.}
+This is a partial-identification proposal in the RD manipulation and Lee-bounds cluster.
+It consumes the exact RD identification benchmark of Hahn, Todd, and van der Klaauw and
+Lee, the density-discontinuity diagnostic of McCrary and Cattaneo--Jansson--Ma, the
+manipulated-running-variable bounds of Gerard--Rokkanen--Rothe, and the covariate-sharpened
+Lee-bound logic of Semenova.  It is not a panel or linear-projection theorem, and it does
+not add new SCM or do-calculus infrastructure.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is applied RD work that reports the McCrary density test
+implemented through \citet{CattaneoJanssonMa2020} and then faces a small but nonzero density
+or covariate discontinuity.  A verified version would give those studies a sharp sensitivity
+interval indexed by \((\bar\rho,\bar s)\), rather than a binary ``pass/fail'' diagnostic.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report a manipulation-envelope curve for the RD local effect, and should
+check which covariate cell binds, instead of treating a density discontinuity as an automatic
+design failure.
+
+\section{Related work}
+\citet{HahnToddVanDerKlaauw2001} give the classical continuity-based identification result
+for RD treatment effects and fuzzy RD Wald estimands; Theorem~\ref{thm:no-manipulation-face}
+uses this as the point-identification face.  \citet{Lee2008} supplies the behavioral
+``imprecise control'' interpretation under which treatment status is locally as good as
+randomized and baseline covariates should be continuous at the cutoff; this is the sharp
+RD benchmark recovered when the manipulation envelope is zero.  \citet{ImbensLemieux2008}
+and \citet{LeeLemieux2010} are the standard RD practice references explaining why density
+and predetermined-covariate checks are central validity diagnostics.  \citet{CattaneoTitiunik2022}
+survey the modern RD literature and motivate treating validation and falsification as
+first-order parts of the design rather than auxiliary reporting.
+
+\citet{McCrary2008} develops the density-discontinuity test for manipulation of the running
+variable; the proposed \(\bar\rho\) parameter interprets such a discontinuity as an upper
+envelope rather than a binary rejection.  \citet{CattaneoJanssonMa2020} provide modern
+local-polynomial density estimators that underlie common implementations of McCrary-style
+tests, making them the practical source of the global manipulation envelope.  \citet{BugniCanay2021}
+develop an alternative density-continuity testing approach, reinforcing that density
+diagnostics are testing objects rather than sharp causal estimands by themselves.
+\citet{CanayKamat2018} formalize covariate-distribution continuity tests implied by Lee's
+local-randomization condition; the proposed covariate-share caps convert such failures into
+cellwise sensitivity parameters.
+
+\citet{GerardRokkanenRothe2020} are the closest prior art: they derive sharp RD treatment-effect
+bounds with a manipulated running variable, use the density jump to infer the extent of
+one-sided manipulation, give covariate-conditioned sharp bounds in their Corollary~3, and
+optimize over partially identified fuzzy-RD share functions in their Corollary~4 and
+appendix Corollary~9.  This proposal does not claim covariate trimming or share-set
+optimization itself is new.  It differs by replacing the exact density-ratio share set with
+a sensitivity envelope: the analyst supplies a global density-discontinuity upper bound
+and covariate-cell manipulation-share caps, while the retained right-side covariate law must
+still equal the left-side law.  These three restrictions produce a coupled feasible set
+that is generally a proper subset of the cell-cap-free GRR fixed-share envelope because a
+binding cap in one cell changes the admissible retained mass for all cells.  \citet{Lee2009}
+and \citet{HorowitzManski1995} provide the trimming and contaminated-distribution logic that
+the proof route should reduce to in one-covariate-cell or exact-share faces.  \citet{Semenova2025}
+generalizes Lee bounds with covariate-conditional monotonicity; this proposal borrows the
+lesson that covariate conditioning can sharpen trimming bounds but places it inside an RD
+manipulation model with a density budget.  \citet{ChoiLee2023} argue that density continuity
+is neither necessary nor sufficient for RD validity and call for more attention to how units
+react around the threshold; the proposed sensitivity curve is a formal response to that
+critique.  \citet{IshiharaSawada2024} give low-level conditions for manipulation-robust RD
+identification; their point-identification focus is adjacent but does not characterize the
+sharp bounded-manipulation interval.  \citet{AraiHsuKitagawaMourifieWan2022} and
+\citet{HsuShiuWan2024} test fuzzy RD identifying assumptions, which motivates keeping the
+first-stage denominator explicit in the local Wald target.
+
+In-repository, \texttt{ThmSmith/doc/API.md} \S3 states that the ThmSmith PartialID catalogue
+is empty at seed time and will be populated by \texttt{pid\_*} qids for Manski-family,
+Balke--Pearl, IV-bound, sensitivity, shape-restriction, and missing-data results.  Thus
+there is no in-catalogue RDD manipulation-bounds proposal whose kernel coincides with this
+one.  The reusable banked dynamic-IV PartialID proposals are finite latent-type sharpness
+comparators, but their kernels concern dynamic compliance histories rather than RD
+manipulation envelopes or covariate-conditional trimming.
+
+\section{Formal setup}
+Let \(R\) be the running variable with cutoff \(c\), \(Z=\one\{R\ge c\}\) the threshold
+assignment indicator, \(D\in\{0,1\}\) the received treatment, \(Y\in[\underline y,\overline y]\)
+the observed outcome, and \(W\in\mathcal W=\{1,\ldots,K\}\) a finite predetermined-covariate
+cell.  Write \(\mathcal Y=[\underline y,\overline y]\).  The observable input is the pair of local weak limits
+\[
+  P_-=\lim_{r\uparrow c}\mathcal L(Y,D,W\mid R=r), \qquad
+  P_+=\lim_{r\downarrow c}\mathcal L(Y,D,W\mid R=r),
+\]
+plus two sensitivity parameters: a global manipulation-share bound \(\bar\rho\in[0,1)\)
+and covariate-cell bounds \(\bar s_w\in[0,1)\).  Write \(\pi_-(w)=P_-(W=w)\) and
+\(\mu^-_V(w)=\E_{P_-}[V\mid W=w]\) for \(V\in\{Y,D\}\).  When the running-variable
+density has cutoff-side limits, write them as \(f_-(c)\) and \(f_+(c)\).
+
+A candidate right-side nonmanipulator distribution is represented by a measurable retention
+weight \(a:\mathcal Y\times\{0,1\}\times\mathcal W\to[0,1]\) applied to \(P_+\).  Let
+\[
+  M_a=\E_{P_+}[a(Y,D,W)],\qquad
+  Q_a(B,w)=M_a^{-1}\E_{P_+}[a(Y,D,W)\one\{(Y,D)\in B,W=w\}].
+\]
+The feasible set \(\mathcal A(P,\bar\rho,\bar s)\) contains those \(a\) satisfying
+\[
+  1-M_a\le \bar\rho,\qquad
+  1-\E_{P_+}[a(Y,D,W)\mid W=w]\le \bar s_w \ \text{for every }w,
+  \qquad
+  Q_a(W=w)=\pi_-(w).
+\]
+For a retained mass \(m\in(0,1]\), write
+\[
+  \mathcal A_m(P,\bar s)=
+  \{a:0\le a\le1,\ M_a=m,\ Q_a(W=w)=\pi_-(w),\
+    1-\E_{P_+}[a(Y,D,W)\mid W=w]\le\bar s_w\ \forall w\},
+  \qquad
+  \mathcal A_m^0(P)=
+  \{a:0\le a\le1,\ M_a=m,\ Q_a(W=w)=\pi_-(w)\},
+\]
+and
+\[
+  I(P,\bar\rho,\bar s)=\{m:\mathcal A_m(P,\bar s)\neq\varnothing,\ 1-m\le\bar\rho\}.
+\]
+For an exact-share sensitivity face with removed share \(\tau\), define the equality-budget
+feasible set
+\[
+  \mathcal A^{=}_\tau(P,\bar s)=
+  \{a:0\le a\le1,\ M_a=1-\tau,\ Q_a(W=w)=\pi_-(w),\
+    1-\E_{P_+}[a(Y,D,W)\mid W=w]\le\bar s_w\ \forall w\}.
+\]
+This face is compatible with the global upper envelope only when \(\tau\le\bar\rho\).
+When \(K=1\) and \(\bar s_1\ge\tau\), it is exactly the ordinary class of right-side
+subdistributions obtained by trimming the fraction \(\tau\) of the right-side law.
+The cell-removal fraction forced by retaining mass \(m\) and matching the left-side
+covariate law is
+\[
+  \phi_w(m)=1-\frac{m\,\pi_-(w)}{P_+(W=w)}
+\]
+whenever \(P_+(W=w)>0\).  Thus cell caps require \(\phi_w(m)\le\bar s_w\).
+For \(a\in\mathcal A(P,\bar\rho,\bar s)\), define
+\[
+  \Theta(a)=
+  \frac{\sum_w \pi_-(w)\{\E_{Q_a}[Y\mid W=w]-\mu^-_Y(w)\}}
+       {\sum_w \pi_-(w)\{\E_{Q_a}[D\mid W=w]-\mu^-_D(w)\}}.
+\]
+Define the capped fixed-mass upper endpoint
+\(U(m)=\sup\{\Theta(a):a\in\mathcal A_m(P,\bar s)\}\), the uncapped fixed-mass upper
+endpoint \(U^0(m)=\sup\{\Theta(a):a\in\mathcal A_m^0(P)\}\), and the uncapped envelope
+endpoint \(U^0_{\mathrm{env}}(\bar\rho)=\sup\{U^0(m):1-m\le\bar\rho\}\).
+The identified set \(\Theta_I(P,\bar\rho,\bar s)\) is the set of values of the nonmanipulator
+local Wald parameter compatible with \(P\), one-sided manipulation, local continuity for the
+nonmanipulator law conditional on \(W\), and the two manipulation budgets.
+
+\begin{verbatim}
+Locked parameters.
+qid = pid_rdd_manipulation_bounded
+specialization = v1
+observable distribution P = cutoff-side limits P_- and P_+ of (Y,D,W)
+parameter theta = nonmanipulator local Wald effect at the RD cutoff
+identifying restrictions = one-sided upward manipulation; local continuity of the
+  nonmanipulator potential-outcome/compliance law conditional on finite W; global
+  McCrary-style bound rho_bar; covariate-cell manipulation-share caps s_bar_w;
+  bounded outcomes; positive retained mass; positive nonmanipulator first stage
+bounding functional = sharp fractional trimming interval
+  [inf_{a in A(P,rho_bar,s_bar)} Theta(a),
+   sup_{a in A(P,rho_bar,s_bar)} Theta(a)]
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Cutoff limits and finite covariate cells]\label{ass:cutoff-limits}
+The side limits \(P_-\) and \(P_+\) exist as probability laws on
+\([\underline y,\overline y]\times\{0,1\}\times\{1,\ldots,K\}\), and
+\(P_-(W=w)>0\) for every \(w\).
+\end{assumption}
+
+\begin{assumption}[One-sided upward manipulation]\label{ass:one-sided}
+Near the cutoff, manipulators can only add mass to the right side \(R\ge c\).
+The left-side limit \(P_-\) is the nonmanipulator limit, while \(P_+\) is a mixture of
+nonmanipulators and right-side manipulators.
+\end{assumption}
+
+\begin{assumption}[Conditional nonmanipulator continuity]\label{ass:conditional-continuity}
+For nonmanipulators, the conditional law of the potential outcomes and treatment-receipt
+types relevant for the local Wald numerator and denominator is continuous at \(c\) within
+each covariate cell \(W=w\).  Equivalently for this proposal, after removing right-side
+manipulators, the retained right-side covariate law equals the left-side law \(\pi_-\), and
+the retained right-side observed means identify the right-limit nonmanipulator means.
+\end{assumption}
+
+\begin{assumption}[McCrary-style global manipulation envelope]\label{ass:global-envelope}
+The total removed right-side mass is bounded by \(\bar\rho\in[0,1)\):
+\[
+  1-\E_{P_+}[a(Y,D,W)] \le \bar\rho .
+\]
+The number \(\bar\rho\) may be set from a density-discontinuity confidence envelope rather
+than treated as an exactly identified manipulator share.
+\end{assumption}
+
+\begin{assumption}[Covariate-cell manipulation-share caps]\label{ass:cell-caps}
+For each covariate cell \(w\), the right-side fraction removed inside that cell is bounded
+by \(\bar s_w\in[0,1)\):
+\[
+  1-\E_{P_+}[a(Y,D,W)\mid W=w]\le \bar s_w .
+\]
+\end{assumption}
+
+\begin{assumption}[Positive retained mass]\label{ass:positive-retained}
+Every feasible retention rule has \(M_a=\E_{P_+}[a(Y,D,W)]>0\), and the feasible set
+\(\mathcal A(P,\bar\rho,\bar s)\) is nonempty.
+\end{assumption}
+
+\begin{assumption}[Positive nonmanipulator first stage]\label{ass:positive-first-stage}
+There exists \(\kappa>0\) such that for every feasible \(a\in\mathcal A(P,\bar\rho,\bar s)\),
+\[
+  \sum_w \pi_-(w)\{\E_{Q_a}[D\mid W=w]-\mu^-_D(w)\}\ge \kappa .
+\]
+In a sharp RD specialization \(D=Z\), this denominator is equal to one.
+\end{assumption}
+
+\begin{assumption}[Sharp RD specialization]\label{ass:sharp-rd-specialization}
+For results that explicitly invoke the sharp RD face, \(D=Z\) almost surely in the
+left- and right-cutoff limits, so treatment receipt is the threshold assignment indicator.
+\end{assumption}
+
+\begin{assumption}[Finite-support endpoint geometry]\label{ass:finite-support-geometry}
+For results that explicitly invoke endpoint geometry, \(Y\) has finite support in each
+covariate cell \(W=w\).
+\end{assumption}
+
+\begin{assumption}[Exact-share one-cell face]\label{ass:exact-share-one-cell}
+For results that explicitly invoke the one-cell exact-share face, \(K=1\), the removed share
+is fixed at \(\tau\in[0,1)\), \(\tau\le\bar\rho\), the endpoint is evaluated on the
+restricted equality-budget set \(\mathcal A^{=}_\tau(P,\bar s)\) rather than on the full
+upper-envelope set \(\mathcal A(P,\bar\rho,\bar s)\), and the cell cap is inactive or
+satisfies \(\bar s_1\ge\tau\).
+\end{assumption}
+
+\begin{assumption}[Two-cell cap-separation design]\label{ass:cap-separation}
+For results that explicitly invoke cap-envelope separation, \(K=2\), \(P_+(W=w)>0\) for
+both cells, \(Y\) has finite support in each cell, \(D=Z\), and the fixed-mass upper endpoint
+\(U(m)\) is finite and locally single-valued on a nonempty interval of retained masses.
+There is an uncapped maximizer \(m^0=1-\bar\rho\) for \(U^0_{\mathrm{env}}(\bar\rho)\), a unique capped
+minimum feasible mass
+\[
+  m^c=\max\left\{1-\bar\rho,\,
+    \frac{(1-\bar s_1)P_+(W=1)}{\pi_-(1)},\,
+    \frac{(1-\bar s_2)P_+(W=2)}{\pi_-(2)}
+  \right\},
+\]
+with \(m^c>m^0\), and \(U(m)\) is strictly decreasing on a neighborhood of
+\([m^0,m^c]\).  The binding cell at \(m^c\) is unique.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: no-manipulation face]\label{thm:no-manipulation-face}
+Under Assumptions~\ref{ass:cutoff-limits}--\ref{ass:positive-first-stage}, if
+\(\bar\rho=0\), \(\bar s_w=0\) for every \(w\), and \(P_+(W=w)=P_-(W=w)\) for every \(w\),
+then \(\mathcal A(P,0,0)=\{a\equiv1\}\) and
+\[
+  \Theta_I(P,0,0)=
+  \left\{
+  \frac{\E_{P_+}[Y]-\E_{P_-}[Y]}{\E_{P_+}[D]-\E_{P_-}[D]}
+  \right\}.
+\]
+For sharp RD with \(D=Z\), this singleton is \(\E_{P_+}[Y]-\E_{P_-}[Y]\).
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) This theorem is not the novelty claim; it records the exact face where the proposal
+reduces to \citet{HahnToddVanDerKlaauw2001} and \citet{Lee2008}.  The gap is that those
+papers do not define the surrounding bounded-manipulation sensitivity set.  (b) The
+consumer is the applied RD workflow in \citet{CattaneoIdroboTitiunik2020}: the sensitivity
+curve must pass through the conventional RD point estimate when the manipulation budget is
+set to zero.
+
+\begin{conjecture}[Conjecture 1: sharp budgeted conditional trimming]\label{conj:sharp-budgeted-trim}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:cutoff-limits}--\ref{ass:positive-first-stage},
+the sharp identified set for the nonmanipulator local Wald parameter is exactly
+\[
+  \Theta_I(P,\bar\rho,\bar s)
+  =
+  \{\Theta(a):a\in\mathcal A(P,\bar\rho,\bar s)\}.
+\]
+Equivalently, the tightest sharp interval is
+\[
+  [B_L(P,\bar\rho,\bar s),B_U(P,\bar\rho,\bar s)]
+  =
+  \left[
+  \inf_{a\in\mathcal A(P,\bar\rho,\bar s)}\Theta(a),
+  \sup_{a\in\mathcal A(P,\bar\rho,\bar s)}\Theta(a)
+  \right].
+\]
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{GerardRokkanenRothe2020} give sharp RD manipulation bounds when the relevant
+manipulation share is inferred from the density ratio, including covariate-conditioned
+tightening based on identified covariate distributions, and their fuzzy-RD results optimize
+over partially identified share values.  The precise gap is therefore not ``GRR has no
+optimization.''  It is that this conjecture treats the density jump as an upper envelope
+and adds external cell caps while still forcing \(Q_a(W)=\pi_-\).  The feasible set is the
+intersection of fixed-share GRR faces indexed by \(m\in I(P,\bar\rho,\bar s)\), with the
+admissible index set itself changed by the external cell caps and retained-\(W\) equation
+rather than by the exact conditional density-ratio face alone.  \citet{Semenova2025} gives covariate Lee bounds
+in sample-selection settings, but not the RD density-envelope restriction
+\(1-M_a\le\bar\rho\) or the retained-covariate-law condition \(Q_a(W)=\pi_-\).  (b) The
+consumer is RD studies with small density discontinuities, such as the manipulation-sensitive
+applications discussed by \citet{ChoiLee2023}; they would get a sharp interval instead of
+a binary validity decision.
+
+\begin{conjecture}[Conjecture 2: active-budget endpoint geometry]\label{conj:endpoint-geometry}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:cutoff-limits}--\ref{ass:positive-first-stage}
+and Assumption~\ref{ass:finite-support-geometry}, the endpoint functions
+\((\bar\rho,\bar s)\mapsto B_L(P,\bar\rho,\bar s)\) and
+\((\bar\rho,\bar s)\mapsto B_U(P,\bar\rho,\bar s)\) are attained by threshold-retention
+rules that order observations by an affine score
+\[
+  y-\lambda d+\eta_w+\nu
+\]
+for a scalar fractional-program multiplier \(\lambda\), cell multipliers \(\eta_w\), and
+a global density-budget multiplier \(\nu\).  Consequently the endpoints are continuous
+and piecewise rational in \((\bar\rho,\bar s)\), with kinks when the binding constraint
+switches between the McCrary envelope and one or more covariate-share caps.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) The closest known formulas are Lee-style trimming quantiles in \citet{Lee2009} and the
+exact-share RD trimming in \citet{GerardRokkanenRothe2020}; neither has a two-level budget
+whose active constraint changes across covariate cells.  (b) The concrete consumer is
+software based on \citet{CattaneoJanssonMa2020}: a verified endpoint geometry would let
+implementations report which covariate cell or global density envelope determines the
+manipulation-robust RD interval.
+
+\begin{conjecture}[Conjecture 3: positive cap-envelope separation]\label{conj:cap-separation}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:cutoff-limits}--\ref{ass:positive-first-stage}
+and Assumption~\ref{ass:cap-separation}, the capped upper endpoint is
+\[
+  B_U(P,\bar\rho,\bar s)=U(m^c)<U^0(m^0)=U^0_{\mathrm{env}}(\bar\rho).
+\]
+Moreover this strict inequality is locally stable under small perturbations of \(P\),
+\(\bar\rho\), and \(\bar s\) that preserve the unique binding cell.  Thus the external
+cell-cap restriction changes the sharp upper envelope on an open class of observable laws:
+the endpoint is not merely a different maximizer within the cell-cap-free GRR exact-share
+family, but a strictly smaller value forced by the retained-\(W\) equality
+\(\phi_w(m)=1-m\pi_-(w)/P_+(W=w)\) and the binding cap.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{GerardRokkanenRothe2020} already cover exact-share and partially identified
+share optimization; this conjecture isolates the additional field-level claim needed here:
+cell caps plus the retained-\(W\) equation can remove the GRR worst-case fixed-share face
+from the feasible set on an open class of observable laws.  The gap is a positive sharpness
+separation between the proposed global-plus-cell envelope and the cell-cap-free GRR
+fixed-share envelope, not a refutation of any named estimator or software implementation.
+(b) The consumer is the empirical RD validation workflow in
+\citet{CattaneoIdroboTitiunik2020}: a practitioner who observes one problematic covariate
+cell would know that the correct sensitivity interval may be driven by that cell cap rather
+than by the largest density-discontinuity share.
+
+\begin{theorem}[Theorem 2: sharp-RD exact-share one-cell reduction]\label{thm:exact-share-face}
+Under Assumptions~\ref{ass:cutoff-limits}--\ref{ass:positive-first-stage},
+\ref{ass:sharp-rd-specialization}, and~\ref{ass:exact-share-one-cell}, the restricted
+equality-budget face
+\[
+  \{\Theta(a):a\in\mathcal A^{=}_\tau(P,\bar s)\}
+\]
+reduces to the ordinary Lee outcome-tail trimming bounds for the right-side distribution.
+This is the sharp-design exact-share face of \citet{GerardRokkanenRothe2020}.  The theorem
+does not assert that the full upper-envelope bounds in
+Conjecture~\ref{conj:sharp-budgeted-trim} equal exact-share Lee trimming unless the
+upper-envelope feasible set is explicitly replaced by this equality-budget face.  No
+ordinary-outcome-trimming reduction is asserted here for fuzzy RD, where the Wald endpoint
+couples outcome and treatment-retention margins.
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) This theorem is a required sanity face rather than the new kernel: in sharp RD it
+matches \citet{Lee2009} and the sharp-design specialization of
+\citet{GerardRokkanenRothe2020} when the proposed upper-envelope uncertainty is replaced
+by the equality-budget constraint \(1-M_a=\tau\).  The compatibility condition
+\(\tau\le\bar\rho\) and the cap condition \(\bar s_1\ge\tau\), or explicit deactivation of
+the one cell cap, are needed because otherwise the exact-share restricted feasible set is
+outside the upper envelope or empty.
+The fuzzy exact-share face is intentionally left to the full Wald program because GRR's
+fuzzy bounds optimize over treatment-status-specific manipulator shares rather than a
+single ordinary outcome tail.  (b) The consumer is \citet{GerardRokkanenRothe2020} itself:
+the proposed envelope result must contain their sharp-design exact-share formula as a clean
+corollary before the bounded-share extension is credible.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Sharp RD point-identification corner]\label{cor:sharp-rd-corner}
+Under Assumptions~\ref{ass:cutoff-limits}--\ref{ass:positive-first-stage} and
+Assumption~\ref{ass:sharp-rd-specialization}, if \(\bar\rho=0\), \(\bar s_w=0\) for every
+\(w\), and \(P_+(W)=P_-(W)\), then
+Theorem~\ref{thm:no-manipulation-face} collapses to the Lee sharp RD estimand
+\(\E[Y\mid R=c+]-\E[Y\mid R=c-]\).  The reduction is immediate because no right-side mass
+can be removed and the sharp RD first stage is one.
+\end{corollary}
+
+\begin{corollary}[Sharp-RD exact density-ratio corner]\label{cor:grr-corner}
+Under Assumptions~\ref{ass:cutoff-limits}--\ref{ass:positive-first-stage},
+\ref{ass:sharp-rd-specialization}, and~\ref{ass:exact-share-one-cell}, if the
+density jump point-identifies \(\tau=1-f_-(c)/f_+(c)\), then the restricted exact-share version of
+Theorem~\ref{thm:exact-share-face} gives the Gerard--Rokkanen--Rothe sharp-design
+manipulation bounds.  The reduction holds because
+\(\mathcal A^{=}_\tau(P,\bar s)\) is nonempty, \(\tau\le\bar\rho\) makes it compatible
+with the global envelope, and \(K=1\) with \(\bar s_1\ge\tau\) makes the cell cap inactive;
+therefore the feasible set is the class of subdistributions obtained by trimming exactly
+the fraction \(\tau\) from the right-side outcome law, and the first-stage denominator is
+fixed at one.
+\end{corollary}
+
+\begin{corollary}[Vacuous upper-envelope corner]\label{cor:manski-corner}
+If the global and cellwise envelopes allow removing all but an arbitrarily small retained
+right-side mass in every covariate cell while preserving Assumption~\ref{ass:positive-first-stage},
+then the endpoint problem approaches the bounded-outcome Manski/Horowitz--Manski fill-in
+face for the right-side nonmanipulator means.  This checks that the proposal becomes
+conservative when the manipulation envelope carries essentially no information.
+\end{corollary}
+
+\section{Proof-sketch route}
+The verification route is finite-dimensional after discretizing \(W\) and, for the endpoint
+geometry theorem, taking \(Y\) to have finite support.  Sharpness should follow from the
+standard contaminated-distribution construction: any feasible retention rule decomposes the
+observed right-side law into retained nonmanipulator mass plus removed manipulator mass, and
+conversely any structural model satisfying one-sided manipulation and the budgets induces
+such a retention rule.  The fractional Wald objective can be handled by a Charnes--Cooper
+or support-function transform, reducing endpoint evaluation to linear programs indexed by
+a candidate ratio \(\lambda\).  The boundary checks are the zero-budget singleton, the
+sharp-RD one-cell equality-budget Lee trimming formula with \(\tau\le\bar\rho\) and
+\(\bar s_1\ge\tau\), and a two-cell example where the global density budget and one
+covariate cap alternately bind.  The
+separation conjecture should reduce to computing the fixed-mass tail derivative \(U'(m)\)
+on that two-cell example and checking that excluding the uncapped minimum-mass optimizer \(m^0\) forces
+the endpoint to the capped boundary \(m^c\).
+
+\section{Honest scope flags}
+Theorem~\ref{thm:no-manipulation-face} is intended as a routine reduction, and
+Theorem~\ref{thm:exact-share-face} is only the sharp-RD equality-budget exact-share sanity
+face, not a claim about the full upper-envelope program.  The fuzzy
+exact-share reduction is not claimed to be ordinary Lee trimming; it remains part of the
+full Wald endpoint program because outcome and treatment retention are coupled.
+Conjectures~\ref{conj:sharp-budgeted-trim}
+and~\ref{conj:endpoint-geometry} and the separation
+Conjecture~\ref{conj:cap-separation} are the novel kernels and are not yet proved.  The finite
+covariate-cell convention is deliberate; continuous covariates would require an additional
+measurability and regularization layer and are outside this proposal.  The proposal assumes
+one-sided upward manipulation; two-sided manipulation can mask density jumps and would need
+a different sensitivity parameter.  The first-stage positivity assumption is strong but
+keeps the target a well-posed local Wald effect rather than a weak-instrument RD problem.
+No v1 flagship conjecture has been withdrawn; the v1 exact-share reduction was narrowed to
+the sharp-RD face and no longer claims ordinary outcome-tail trimming for fuzzy RD.  The
+v3 draft concedes that GRR already has partially identified share optimization and therefore
+promotes the cell-cap/nonrectangular-feasible-set separation to an explicit conjecture.  The
+v4 draft reframes this separation as a positive open-set sharpness claim rather than a
+shortcut refutation, and restricts Theorem~\ref{thm:exact-share-face} to the equality-budget
+face \(\mathcal A^{=}_\tau(P,\bar s)\).
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) --- initial draft of the bounded RD manipulation-envelope proposal;
+prior verdict: none.
+\item v2 (revise) --- sharpened the GRR comparison around upper-envelope and cell-cap
+uncertainty, renamed the generic mean index to avoid collision with threshold assignment,
+and narrowed the exact-share sanity reduction to sharp RD; prior verdict: REVISE.
+\item v3 (revise) --- corrected the GRR comparison, added a nonrectangular cap-envelope
+separation conjecture, and required \(\bar s_1\ge\tau\) for the exact-share one-cell sanity
+face; prior verdict: REVISE.
+\item v4 (revise) --- reframed Conjecture~\ref{conj:cap-separation} as a positive
+open-set separation from the cell-cap-free GRR envelope and defined the equality-budget
+face used by Theorem~\ref{thm:exact-share-face}; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Arai et~al.(2022)]{AraiHsuKitagawaMourifieWan2022}
+Arai, Yoichi, Yu-Chin Hsu, Toru Kitagawa, Ismael Mourifie, and Yuanyuan Wan.
+2022.
+Testing identifying assumptions in fuzzy regression discontinuity designs.
+\emph{Quantitative Economics} 13(1): 1--28.
+
+\bibitem[Bugni and Canay(2021)]{BugniCanay2021}
+Bugni, Federico A., and Ivan A. Canay.
+2021.
+Testing continuity of a density via \(g\)-order statistics in the regression discontinuity design.
+\emph{Journal of Econometrics} 221(1): 138--159.
+
+\bibitem[Canay and Kamat(2018)]{CanayKamat2018}
+Canay, Ivan A., and Vishal Kamat.
+2018.
+Approximate permutation tests and induced order statistics in the regression discontinuity design.
+\emph{Review of Economic Studies} 85(3): 1577--1608.
+
+\bibitem[Cattaneo, Idrobo, and Titiunik(2020)]{CattaneoIdroboTitiunik2020}
+Cattaneo, Matias D., Nicolas Idrobo, and Rocio Titiunik.
+2020.
+\emph{A Practical Introduction to Regression Discontinuity Designs: Foundations}.
+Cambridge University Press.
+
+\bibitem[Cattaneo, Jansson, and Ma(2020)]{CattaneoJanssonMa2020}
+Cattaneo, Matias D., Michael Jansson, and Xinwei Ma.
+2020.
+Simple local polynomial density estimators.
+\emph{Journal of the American Statistical Association} 115(531): 1449--1455.
+
+\bibitem[Cattaneo and Titiunik(2022)]{CattaneoTitiunik2022}
+Cattaneo, Matias D., and Rocio Titiunik.
+2022.
+Regression discontinuity designs.
+\emph{Annual Review of Economics} 14: 821--851.
+
+\bibitem[Choi and Lee(2023)]{ChoiLee2023}
+Choi, Jin-young, and Myoung-jae Lee.
+2023.
+Score manipulation, density continuity and intent-to-treat effect for regression discontinuity.
+\emph{Pacific Economic Review} 28(4): 552--569.
+
+\bibitem[Gerard, Rokkanen, and Rothe(2020)]{GerardRokkanenRothe2020}
+Gerard, Francois, Miikka Rokkanen, and Christoph Rothe.
+2020.
+Bounds on treatment effects in regression discontinuity designs with a manipulated running variable.
+\emph{Quantitative Economics} 11(3): 839--870.
+
+\bibitem[Hahn, Todd, and van der Klaauw(2001)]{HahnToddVanDerKlaauw2001}
+Hahn, Jinyong, Petra Todd, and Wilbert van der Klaauw.
+2001.
+Identification and estimation of treatment effects with a regression-discontinuity design.
+\emph{Econometrica} 69(1): 201--209.
+
+\bibitem[Horowitz and Manski(1995)]{HorowitzManski1995}
+Horowitz, Joel L., and Charles F. Manski.
+1995.
+Identification and robustness with contaminated and corrupted data.
+\emph{Econometrica} 63(2): 281--302.
+
+\bibitem[Hsu, Shiu, and Wan(2024)]{HsuShiuWan2024}
+Hsu, Yu-Chin, Ji-Liang Shiu, and Yuanyuan Wan.
+2024.
+Testing identification conditions of LATE in fuzzy regression discontinuity designs.
+\emph{Journal of Econometrics} 241(1).
+
+\bibitem[Imbens and Lemieux(2008)]{ImbensLemieux2008}
+Imbens, Guido W., and Thomas Lemieux.
+2008.
+Regression discontinuity designs: A guide to practice.
+\emph{Journal of Econometrics} 142(2): 615--635.
+
+\bibitem[Ishihara and Sawada(2024)]{IshiharaSawada2024}
+Ishihara, Takuya, and Masayuki Sawada.
+2024.
+Manipulation-robust regression discontinuity designs.
+arXiv:2009.07551, version 7.
+
+\bibitem[Lee(2008)]{Lee2008}
+Lee, David S.
+2008.
+Randomized experiments from non-random selection in U.S. House elections.
+\emph{Journal of Econometrics} 142(2): 675--697.
+
+\bibitem[Lee(2009)]{Lee2009}
+Lee, David S.
+2009.
+Training, wages, and sample selection: Estimating sharp bounds on treatment effects.
+\emph{Review of Economic Studies} 76(3): 1071--1102.
+
+\bibitem[Lee and Lemieux(2010)]{LeeLemieux2010}
+Lee, David S., and Thomas Lemieux.
+2010.
+Regression discontinuity designs in economics.
+\emph{Journal of Economic Literature} 48(2): 281--355.
+
+\bibitem[McCrary(2008)]{McCrary2008}
+McCrary, Justin.
+2008.
+Manipulation of the running variable in the regression discontinuity design: A density test.
+\emph{Journal of Econometrics} 142(2): 698--714.
+
+\bibitem[Semenova(2025)]{Semenova2025}
+Semenova, Vira.
+2025.
+Generalized Lee bounds.
+\emph{Journal of Econometrics} 251: 106055.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,303 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_lp\_svar\_channel\_frontier, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` -- the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_lp\_svar\_channel\_frontier} / \texttt{v1}%
+  \\ \large\textit{Canonical support-loss constant for LP/SVAR cumulant-label separation}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Exact-identification anchor. The locked tuple is
+\[
+(\texttt{qid},\texttt{specialization},\text{graph/SWIG},\text{treatment},\text{target estimand},\text{identifying assumptions}).
+\]
+Here \(\texttt{qid}=\texttt{eid\_lp\_svar\_channel\_frontier}\) and \(\texttt{specialization}=\texttt{v1}\). The graph/SWIG is the linear structural time-series law
+\[
+y_t=\sum_{\ell=1}^p A_\ell y_{t-\ell}+u_t,\qquad u_t=B\varepsilon_t,\qquad B=\Sigma_u^{1/2}Q,\quad Q\in O(2),
+\]
+with mean-zero, serially independent structural shocks, identity shock covariance, and observed reduced-form objects \(P=(\Sigma_u,\Gamma_0,\ldots,\Gamma_H,K_u,A,Z,w)\). The treatment is a labelled structural innovation \(j=1\). The target estimand is the support function \(h_{\mathrm{SVAR}}(w;P)\) of the impulse-response vector \(\psi_1(Q)=(e_{r_0}'\Gamma_0\Sigma_u^{-1/2}Qe_1,\ldots,e_{r_H}'\Gamma_H\Sigma_u^{-1/2}Qe_1)\) under common sign, zero, and fourth-cumulant label restrictions. The comparator is \(h_{\mathrm{LP}}(w;P)\), the support function over horizonwise LP rows satisfying the same sign and zero rows before common-rotation and cumulant-label compatibility are imposed. The identifying assumptions are finite reduced-form moments through order four, nonempty sign/zero feasible set, common impact normalization through \(Q\in O(2)\), labelled fourth-cumulant diagonalization \(K_u=\sum_{k=1}^2 \kappa_k b_k(Q)^{\otimes 4}\) with \(|\kappa_1-\kappa_2|\ge \delta_4>0\), and compact local comparison set \(\mathcal C_w(P)\) defined in Section 6.
+
+\begin{abstract}
+Local projections and structural VARs estimate the same population impulse responses when the identifying restrictions are held fixed, but non-Gaussian shock labels impose a single-law restriction that horizonwise LP rows need not share. This proposal isolates the missing primitive object in that comparison: a canonical extremal constant \(c_w(P)\) equal to the worst local support loss per unit product of independently measured sign, pasting, and cumulant-label distances. The flagship conjecture states that, on a nonempty open class of two-shock reduced forms, \(c_w(P)\) is positive and finite and yields an iff frontier for strict LP/SVAR support separation under common cumulant labels. The proposal also records the common-restriction Plagborg-Moller--Wolf sanity reduction as a theorem, so the comparison is not driven by unequal restriction sets. A two-shock trigonometric exhibit computes all channel values and the parent \(\chi_w(P)\) corner from primitives.
+\end{abstract}
+
+\section{Introduction}
+LP/SVAR equivalence is a restriction discipline, not a licence to compare an LP sign relaxation with an SVAR object carrying a higher-moment label. The main claim is that strict separation is governed by a canonical local constant \(c_w(P)\), not by a chosen normalization of the support gap.
+
+\citet[Sections 2--3]{PlagborgMollerWolf2021} show that LP and VAR estimands agree when the same structural restrictions are imposed, while \citet[Section 2]{GourierouxMonfortRenne2017} and \citet[Section 3]{LanneMeitzSaikkonen2017} use non-Gaussianity to select one mixing matrix up to label conventions. The gap closed here is the finite-dimensional bridge between those claims: \(c_w(P)\) is computed from support loss and three independent distance channels before any gap threshold is declared. The kernel is an exact-identification theorem for structural impulse-response sets with a partial-identification support-function comparison.
+
+The downstream consumer is the independence-refined sign-restriction workflow of \citet{DrautzburgWright2023}. A reader who reports sign-restricted LPs beside a non-Gaussian SVAR would check whether the channel constant is zero, positive, or undefined before treating the LP band as evidence about the same labelled shock.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: common-restriction LP and SVAR support functions agree when the LP set is restricted by the same common rotation and cumulant label. Gap: \citet{PlagborgMollerWolf2021}; this repairs the unequal-restriction comparison in the banked \texttt{eid\_lp\_svar\_nonequiv} drafts. Consumer: LP/SVAR robustness practice in applied macro.
+\item Conjecture 1: \(c_w(P)\) is positive and finite on an open two-shock class and characterizes strict support separation through three non-normalized channels. Gap: \citet{Wolf2022}, \citet{Read2022UnitEffect}, and \citet{DrautzburgWright2023}; those papers identify failure modes but do not give this extremal constant. Consumer: independence-refined sign sets in \citet{DrautzburgWright2023}.
+\item Conjecture 2: the two-shock trigonometric witness has explicit rotation and reflection residuals whose dominance inequalities compute \(c_w(P)\) and collapse algebraically to the parent \(\chi_w(P)\) corner. Gap: \citet{Read2022SignZero} and \citet{GafarovMeierMontielOlea2018}; they supply rotation algorithms and support extrema but not the cumulant-label LP/SVAR certificate. Consumer: the Plagborg-Moller--Wolf common-restriction sanity check.
+\end{itemize}
+
+\section{Related work}
+\citet{PlagborgMollerWolf2021} is the sanity anchor because it proves LP and VAR population IRFs coincide under unrestricted lag structures and common identifying restrictions. \citet{Jorda2005} supplies the local-projection empirical object that makes horizonwise response rows a natural comparator. \citet{AriasRubioRamirezWaggoner2018} and \citet{Read2022SignZero} give the rotation-based sign/zero geometry used to write feasible impulse-response sets. \citet{GafarovMeierMontielOlea2018} computes extrema over set-identified SVAR impulse-response sets, making support functions the natural population object. \citet{Wolf2022} names the shock-masquerading problem that motivates a non-normalized sign-exposure channel. \citet{Read2022UnitEffect} shows why unit-effect normalization can make identified sets unbounded, so sign exposure cannot be defined by setting an exposure equal to one. \citet{GourierouxMonfortRenne2017} and \citet{LanneMeitzSaikkonen2017} establish non-Gaussian SVAR labeling through independent components, but their labels remain subject to sign and permutation conventions. \citet{LanneLuoto2021} emphasizes that statistical identification by non-Gaussianity does not itself deliver economic interpretation. \citet{MontielOleaPlagborgMollerQian2022} and \citet{HoeschLeeMesters2024} warn that higher-moment information can be weak near Gaussianity. \citet{DrautzburgWright2023} combine sign restrictions with independence information and document nonconvex or disjoint confidence sets, but do not characterize a canonical LP/SVAR support-loss constant.
+
+The in-catalogue prior work is adjacent rather than duplicative. The \texttt{doc/API.md} ExactID and PartialID catalogues are empty for populated LP/SVAR entries at seed time, and the closest banked qid is \texttt{eid\_lp\_svar\_nonequiv}, whose reviewers rejected the upgrade because \(c_w(P)\) was not canonical, sign exposure was normalized into a tautology, and the PMW sanity reduction compared unequal restriction sets. The current statement consumes those reviewer signals as prior art: \(c_w(P)\) is an extremal functional, sign exposure is a slack distance, and PMW equality is claimed only after identical restrictions are imposed.
+
+\section{Formal setup}
+Let \(P=(\Sigma_u,\Gamma_0,\ldots,\Gamma_H,K_u,A,Z,w)\) be the population reduced form. The orthogonal impact rotation is \(Q\in O(2)\), \(b_k(Q)=\Sigma_u^{1/2}Qe_k\), and the labelled response is
+\[
+\psi(Q)=\psi_1(Q)=(e_{r_0}'\Gamma_0\Sigma_u^{-1/2}Qe_1,\ldots,e_{r_H}'\Gamma_H\Sigma_u^{-1/2}Qe_1)\in\R^{H+1}.
+\]
+The sign/zero rotation set is
+\[
+\mathcal Q_S(P)=\{Q\in O(2): A\psi(Q)\ge 0,\; Z\psi(Q)=0\}.
+\]
+The cumulant-label residual is
+\[
+r_K(Q,\kappa;P)=\left\|K_u-\sum_{k=1}^2\kappa_k b_k(Q)^{\otimes 4}\right\|_F,\qquad
+d_K(Q;P)=\inf_{\substack{\kappa\in\R^2\\|\kappa_1-\kappa_2|\ge\delta_4}}r_K(Q,\kappa;P).
+\]
+The common SVAR rotation set is \(\mathcal Q_C(P)=\{Q\in\mathcal Q_S(P):d_K(Q;P)=0\}\). The common-restriction response set is \(\mathcal R_C(P)=\{\psi(Q):Q\in\mathcal Q_C(P)\}\), and \(h_C(w;P)=\sup_{r\in\mathcal R_C(P)}w'r\).
+
+The horizonwise LP relaxation uses one row rotation \(Q_h\in \mathcal Q_S(P)\) for each horizon:
+\[
+\mathcal R_L(P)=\{(\psi_0(Q_0),\ldots,\psi_H(Q_H)):Q_h\in\mathcal Q_S(P)\},\qquad h_L(w;P)=\sup_{r\in\mathcal R_L(P)}w'r.
+\]
+For \(r\in\mathcal R_L(P)\), let \(d_P(r;P)=\inf_{Q\in O(2)}\sum_{h=0}^H|\psi_h(Q)-r_h|\) be the common-rotation pasting defect. Let \(I_+(r;P)\) be the nonredundant sign rows \(a_m\) whose inequality is strict at \(r\), and define the non-normalized sign-exposure channel
+\[
+e_S(r;P)=
+\begin{cases}
+\min_{m\in I_+(r;P)} a_m'r/\|a_m\|_2, & I_+(r;P)\ne\emptyset,\\
+0, & I_+(r;P)=\emptyset.
+\end{cases}
+\]
+Let
+\[
+d_C(r;P)=\inf_{Q:\psi(Q)=r}d_K(Q;P),
+\]
+with \(d_C(r;P)=+\infty\) if no common \(Q\) maps to \(r\). For a compact local comparison set \(\mathcal C_w(P)\subset\mathcal R_L(P)\setminus\mathcal R_C(P)\), define
+\[
+c_w(P)=\inf_{r\in\mathcal C_w(P)}
+\frac{h_L(w;P)-w'r}{(e_S(r;P)+d_P(r;P))(d_C(r;P)+d_P(r;P))}.
+\]
+The denominator is not a normalization of the support gap. It is a product of slack-distance channels measured before the support loss is evaluated.
+
+\[
+\begin{array}{ll}
+\texttt{qid} & \texttt{eid\_lp\_svar\_channel\_frontier}\\
+\texttt{specialization} & \texttt{v1}\\
+\text{graph/SWIG} & y_t=\sum_{\ell=1}^p A_\ell y_{t-\ell}+u_t,\ u_t=\Sigma_u^{1/2}Q\varepsilon_t,\ Q\in O(2)\\
+\text{treatment} & \text{labelled structural innovation }j=1\\
+\text{target estimand} & h_{\mathrm{SVAR}}(w;P)=h_C(w;P)\\
+\text{identifying assumptions} & \text{finite fourth moments, sign/zero restrictions, common rotation, cumulant label, compact }\mathcal C_w(P)
+\end{array}
+\]
+
+\section{Assumptions}
+\begin{assumption}[Finite two-shock reduced form]\label{ass:finite-two}
+\(\Sigma_u\) is positive definite, \(\Gamma_h\) is finite for \(0\le h\le H\), and \(K_u=\operatorname{cum}_4(u_t)\) exists as a finite symmetric fourth-order tensor.
+\end{assumption}
+
+\begin{assumption}[Nonempty sign/zero set]\label{ass:sign-zero}
+\(\mathcal Q_S(P)\) is nonempty, \(A\psi(Q)\ge0\) and \(Z\psi(Q)=0\) encode the maintained economic restrictions, and \(\mathcal Q_S(P)\) contains a nondegenerate arc in at least one component of \(O(2)\).
+\end{assumption}
+
+\begin{assumption}[Separated cumulant label]\label{ass:cumulant-label}
+There exists \(Q_\star\in\mathcal Q_S(P)\) and \(\kappa_\star\in\R^2\) such that \(r_K(Q_\star,\kappa_\star;P)=0\) and \(|\kappa_{\star1}-\kappa_{\star2}|\ge\delta_4>0\). Thus \(\mathcal Q_C(P)\) is nonempty.
+\end{assumption}
+
+\begin{assumption}[Compact local comparison set]\label{ass:compact-comparison}
+\(\mathcal C_w(P)\) is a nonempty compact subset of \(\mathcal R_L(P)\setminus\mathcal R_C(P)\) that contains all LP support maximizers not representable by a cumulant-compatible common rotation and excludes points with infinite \(d_C\).
+\end{assumption}
+
+\begin{assumption}[Nondegenerate channel product]\label{ass:channel-product}
+On \(\mathcal C_w(P)\), \((e_S+d_P)(d_C+d_P)\) is finite and strictly positive, and the map \(r\mapsto h_L(w;P)-w'r\) is continuous.
+\end{assumption}
+
+\begin{assumption}[Two-shock trigonometric witness]\label{ass:trig-witness}
+For the witness, \(H=1\), \(w=(1,0)\), \(\Sigma_u=I_2\), \(\Gamma_0=I_2\), and the target response under a rotation component is \(\psi(Q(\varphi))=(\cos\varphi,\sin\varphi)\). The sign set is \(I=[0,\pi/3]\), the cumulant-compatible angles are \(\{0,\pi/2,\pi,3\pi/2\}\), and the local comparison set is the closed arc \([\eta,\pi/3]\) for fixed \(0<\eta<\pi/3\) with the common-compatible endpoint removed from the denominator by the displayed lower bound.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: common-restriction PMW reduction]\label{thm:pmw-common}
+Under Assumptions~\ref{ass:finite-two}--\ref{ass:cumulant-label}, if the LP comparator is restricted to \(\mathcal R_C(P)\), then \(h_L^{\mathrm{common}}(w;P)=h_C(w;P)\) for every \(w\in\R^{H+1}\).
+\end{theorem}
+Proof sketch. Both support functions optimize the same linear functional over the same response set \(\mathcal R_C(P)\). This is the population common-restriction case covered by the Plagborg-Moller--Wolf equivalence discipline, not a comparison between unequal LP and SVAR feasible sets.
+
+\begin{conjecture}[Conjecture 1: canonical channel constant frontier (NOT YET PROVED)]\label{conj:cw-frontier}
+Under Assumptions~\ref{ass:finite-two}--\ref{ass:channel-product}, there is a nonempty open semi-algebraic class \(\mathcal O_w\) of reduced forms for which \(0<c_w(P)<\infty\). On \(\mathcal O_w\),
+\[
+h_L(w;P)>h_C(w;P)
+\quad\Longleftrightarrow\quad
+c_w(P)>0\text{ and }\mathcal C_w(P)\cap\arg\max_{\mathcal R_L(P)}w'r\ne\emptyset .
+\]
+Moreover, the lower bound
+\[
+h_L(w;P)-h_C(w;P)\ge c_w(P)\,
+\inf_{r\in\mathcal C_w(P)}(e_S(r;P)+d_P(r;P))(d_C(r;P)+d_P(r;P))
+\]
+is sharp on a two-shock arc witness.
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: two-shock O(2) certificate (NOT YET PROVED)]\label{conj:o2-certificate}
+Under Assumption~\ref{ass:trig-witness}, the rotation and reflection components of \(O(2)\) produce a finite candidate list for the support maximizer and cumulant residual. The rotation residual is \(d_K(Q(\varphi);P)=|\sin(2\varphi)|\), the reflected residual is \(d_K(Q(\varphi)\operatorname{diag}(1,-1);P)=|\sin(2\varphi)|\), the sign exposure is \(e_S(\varphi)=\varphi\), and the pasting defect is \(d_P(\varphi_0,\varphi_1)=2|\sin((\varphi_0-\varphi_1)/2)|\). For \(\eta\le\varphi\le\pi/3\), the support loss \(1-\cos\varphi\) and channel product compute
+\[
+c_w(P)=
+\inf_{\varphi\in[\eta,\pi/3]}
+\frac{1-\cos\varphi}{(2\varphi)(|\sin(2\varphi)|+\varphi)}
+\]
+after the small-arc distance convention \(d_P(\varphi,0)=\varphi\), and the parent corner collapses to
+\[
+\chi_w(P)=1-\max_{\varphi\in\{0\}\cap I}\cos\varphi=0
+\]
+when the sign and pasting channels vanish.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Gaussian or common-label corner]\label{cor:pmw-corner}
+Under Assumptions~\ref{ass:finite-two} and \ref{ass:sign-zero}, if the cumulant label is removed or imposed identically on the LP and SVAR sides, then \(\mathcal R_L^{\mathrm{common}}(P)=\mathcal R_C(P)\) and Theorem~\ref{thm:pmw-common} gives \(h_L^{\mathrm{common}}(w;P)=h_C(w;P)\).
+\end{corollary}
+The reduction uses the same feasible rotations on both sides. It therefore recovers \citet{PlagborgMollerWolf2021} only after identical restrictions are imposed.
+
+\paragraph{Exhibit 9.1: two-shock channel computation.}
+Let \(I=[0,\pi/3]\), \(w=(1,0)\), and \(\psi(Q(\varphi))=(\cos\varphi,\sin\varphi)\). The LP support over \(I\) is \(h_L=1\) at \(\varphi=0\). If the cumulant-compatible set is instead the finite orbit \(\{0,\pi/2,\pi,3\pi/2\}\), the common-restriction support is also one, so the PMW sanity corner has no gap. For the local comparison arc \([\eta,\pi/3]\), the primitive support loss is \(1-\cos\varphi\), the common-rotation distance to the cumulant orbit is \(d_P(\varphi,0)=2\sin(\varphi/2)\), the cumulant residual is \(|\sin(2\varphi)|\), and the active-row sign exposure is \(e_S(\varphi)=\varphi\). The displayed finite ratio follows from these primitive quantities; no denominator is zero because \(0<\eta<\varphi\le\pi/3\). The internal check is that both \(Q(\varphi)\) and \(Q(\varphi)\operatorname{diag}(1,-1)\) have the same quartic residual, so no reflected \(O(2)\) component gives a lower-residual non-support angle.
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:pmw-common} follows by the chain \(h_L^{\mathrm{common}}=h_C \leftarrow\) unfold the common response set \(\leftarrow\) substitute Assumptions~\ref{ass:finite-two}--\ref{ass:cumulant-label} \(\leftarrow\) equality of support functions over identical compact feasible sets. Conjecture~\ref{conj:cw-frontier} follows by the chain \(h_L>h_C \leftarrow\) unfold \(\mathcal C_w\) and \(c_w\) \(\leftarrow\) substitute Assumptions~\ref{ass:compact-comparison}--\ref{ass:channel-product} \(\leftarrow\) prove compact attainment for the ratio \(\leftarrow\) prove a Lojasiewicz-type comparison between support loss and the product of channel distances \(\leftarrow\) classify zero sets for sign slack, pasting, and cumulant residual \(\leftarrow\) exclude reflected-component stationary points by finite trigonometric dominance. Thus \(k=4\) substantive steps beyond definition unfolding. Conjecture~\ref{conj:o2-certificate} follows by the chain certificate \(\leftarrow\) parameterize \(O(2)\) by rotations and reflected rotations \(\leftarrow\) compute the fourth-cumulant off-diagonal residual as \(\sin(2\varphi)\) \(\leftarrow\) enumerate support stationary points \(\leftarrow\) verify dominance inequalities on \([\eta,\pi/3]\) and its reflected component; here \(k=3\).
+
+\section{Honest scope flags}
+Theorem~\ref{thm:pmw-common} is a bookkeeping sanity theorem, not the flagship claim. Conjectures~\ref{conj:cw-frontier} and \ref{conj:o2-certificate} are open; the proof obligations are positivity and finiteness of \(c_w(P)\), reflected-component dominance, and a non-tautological channel-product lower bound. The current draft withdraws the older claim that a scalar curvature assumption alone proves a gap.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for the canonical \(c_w(P)\) extremal-constant angle; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Arias, Rubio-Ramirez, and Waggoner(2018)]{AriasRubioRamirezWaggoner2018}
+Arias, J. E., J. F. Rubio-Ramirez, and D. F. Waggoner (2018).
+Inference based on structural vector autoregressions identified with sign and zero restrictions: Theory and applications.
+\emph{Econometrica} 86(2), 685--720.
+
+\bibitem[Drautzburg and Wright(2023)]{DrautzburgWright2023}
+Drautzburg, T. and J. H. Wright (2023).
+Refining set-identification in VARs through independence.
+\emph{Journal of Econometrics} 236(2), 105475.
+
+\bibitem[Gafarov, Meier, and Montiel Olea(2018)]{GafarovMeierMontielOlea2018}
+Gafarov, B., M. Meier, and J. L. Montiel Olea (2018).
+Delta-method inference for a class of set-identified SVARs.
+\emph{Journal of Econometrics} 203(2), 316--327.
+
+\bibitem[Gourieroux, Monfort, and Renne(2017)]{GourierouxMonfortRenne2017}
+Gourieroux, C., A. Monfort, and J.-P. Renne (2017).
+Statistical inference for independent component analysis: Application to structural VAR models.
+\emph{Journal of Econometrics} 196(1), 111--126.
+
+\bibitem[Hoesch, Lee, and Mesters(2024)]{HoeschLeeMesters2024}
+Hoesch, L., S. Lee, and G. Mesters (2024).
+Robust inference for non-Gaussian structural vector autoregressions.
+\emph{Quantitative Economics} 15, 235--276.
+
+\bibitem[Jorda(2005)]{Jorda2005}
+Jorda, O. (2005).
+Estimation and inference of impulse responses by local projections.
+\emph{American Economic Review} 95(1), 161--182.
+
+\bibitem[Lanne, Meitz, and Saikkonen(2017)]{LanneMeitzSaikkonen2017}
+Lanne, M., M. Meitz, and P. Saikkonen (2017).
+Identification and estimation of non-Gaussian structural vector autoregressions.
+\emph{Journal of Econometrics} 196(2), 288--304.
+
+\bibitem[Lanne and Luoto(2021)]{LanneLuoto2021}
+Lanne, M. and J. Luoto (2021).
+GMM estimation of non-Gaussian structural vector autoregression.
+\emph{Journal of Business and Economic Statistics} 39(1), 69--81.
+
+\bibitem[Montiel Olea, Plagborg-Moller, and Qian(2022)]{MontielOleaPlagborgMollerQian2022}
+Montiel Olea, J. L., M. Plagborg-Moller, and E. Qian (2022).
+SVAR identification from higher moments: Has the simultaneous causality problem been solved?
+\emph{AEA Papers and Proceedings} 112, 481--485.
+
+\bibitem[Plagborg-Moller and Wolf(2021)]{PlagborgMollerWolf2021}
+Plagborg-Moller, M. and C. K. Wolf (2021).
+Local projections and VARs estimate the same impulse responses.
+\emph{Econometrica} 89(2), 955--980.
+
+\bibitem[Read(2022a)]{Read2022SignZero}
+Read, M. (2022a).
+Algorithms for inference in SVARs identified with sign and zero restrictions.
+\emph{The Econometrics Journal} 25(3), 699--718.
+
+\bibitem[Read(2022b)]{Read2022UnitEffect}
+Read, M. (2022b).
+Unit-effect normalisation and the interpretation of impulse responses.
+Reserve Bank of Australia Research Discussion Paper 2022-04.
+
+\bibitem[Wolf(2022)]{Wolf2022}
+Wolf, C. K. (2022).
+What can we learn from sign-restricted VARs?
+\emph{AEA Papers and Proceedings} 112, 471--475.
+\end{thebibliography}
+
+\end{document}

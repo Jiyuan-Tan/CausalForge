@@ -1,0 +1,782 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_proximal\_completeness, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_proximal\_completeness} / \texttt{v1}%
+  \\ \large\textit{A target-relevant weak-proxy index for local-to-incomplete proximal ATE inference}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Free-form ExactID proposal with tuple
+\[
+(\texttt{qid},\texttt{specialization},\text{graph/SWIG},\text{treatment},
+\text{target estimand},\text{identifying assumptions}).
+\]
+Here \texttt{qid} is \texttt{eid\_proximal\_completeness} and
+\texttt{specialization} is \texttt{v1}.  The graph/SWIG is the standard
+single-time proximal negative-control graph with binary treatment
+$A\in\{0,1\}$, outcome $Y$, observed covariates $X$, unobserved confounder
+$U$, treatment-inducing proxy $Z$, and outcome-inducing proxy $W$, with
+$Z\perp Y(a)\mid(U,X)$ and $W\perp A\mid(U,X)$ in the usual negative-control
+sense.  The treatment is the contrast $A=1$ versus $A=0$.  The target
+estimand is the long-term average treatment effect
+\[
+\psi(P)=\E\{Y(1)-Y(0)\},
+\]
+identified, when possible, through outcome bridge functions
+$h_a(W,X)$ satisfying
+\[
+\E\{Y\mid A=a,Z,X\}=\E\{h_a(W,X)\mid A=a,Z,X\},\qquad a\in\{0,1\}.
+\]
+The identifying assumptions are consistency, positivity, proxy exclusion,
+existence of square-integrable bridge solutions, and target-relevant bridge
+regularity as stated in Assumptions \ref{ass:proximal-law}--\ref{ass:local-array};
+full bridge uniqueness/completeness is not assumed.
+
+\begin{abstract}
+Completeness conditions in proximal causal inference are known to be strong,
+often untestable, and sometimes stronger than what identification of the ATE
+itself requires.  This proposal asks for the local-to-incomplete analogue of
+weak-instrument theory: when the outcome-bridge operator remains point
+identifying at each $n$ but its target-relevant singular directions shrink,
+what is the exact inferential boundary for the long-term ATE?  The proposed
+kernel is the target-relevant weak-proxy index $\rho_n(P)$, an observed-law
+functional built from the minimal-norm Riesz certificate for the ATE loading.
+The flagship conjecture is a three-region phase diagram: $\rho_n\to\infty$
+gives ordinary proximal root-$n$ inference, $\rho_n\to\rho\in(0,\infty)$ gives
+a weak-proxy nonregular limit with nonvanishing uncertainty, and $\rho_n\to0$
+forces projection confidence sets to behave like partial-identification
+regions.  If resolved, this would add a proximal weak-completeness analogue to
+\cite{BennettKallusMaoNeweySyrgkanisUehara2023}'s strongly identified
+functional theory and \cite{SmuclerRobinsRotnitzky2025}'s confidence-set
+warnings for integral equations, while isolating the proximal strength
+parameter that \cite{AndrewsCheng2012}'s general weak-identification framework
+treats abstractly.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Proximal causal inference promises identification with unmeasured confounding
+when negative-control proxies carry enough information about the hidden
+confounder.  In applications with long-term outcomes, the proxies are often
+short-term or noisy measurements; the relevant question is not whether a
+complete bridge operator exists in an ideal population, but whether the proxy
+directions that identify the terminal ATE are strong enough for useful
+inference.  A theory that jumps directly from full completeness to failed
+identification leaves empirical researchers with no analogue of weak-IV
+robust inference.
+
+\paragraph{The main finding (proposed).}
+The headline conjecture is that a single observed-law scalar,
+\[
+\rho_n(P)=\sqrt{n}\,\Big\{\lambda(P)^\transpose
+[T(P)^\transpose\Omega(P)^{-1}T(P)]^+\lambda(P)\Big\}^{-1/2},
+\]
+is the sharp local-to-incomplete index for finite-dimensional proximal ATE
+inference.  Here $T(P)$ is the conditional-expectation bridge matrix,
+$\lambda(P)$ is the ATE loading on bridge coefficients, $\Omega(P)$ is the
+minimum-norm bridge-selector covariance, and $+$ denotes the Moore--Penrose
+inverse.
+The proposal conjectures that the regimes $\rho_n\to\infty$,
+$\rho_n\to\rho\in(0,\infty)$, and $\rho_n\to0$ exactly separate regular
+root-$n$ proximal inference, weak-proxy inference, and partial-identification
+behavior.
+
+\paragraph{What is new.}
+\cite{CuiPuShiMiaoTchetgen2024} give semiparametric proximal efficiency and
+double robustness under regularity, and \cite{ZhangLiMiaoTchetgen2023} show
+that nonunique bridge functions need not destroy ATE identification.  The
+proposed epsilon-gap is different: it asks for the local rate at which
+target-relevant bridge directions may approach the null space before the ATE
+ceases to admit shrinking confidence sets.  Relative to
+\cite{Freyberger2015}, \cite{CarrascoFlorensRenault2007}, and
+\cite{ChenReiss2011}, the novelty is not another NPIV completeness or rate
+condition for a structural function; it is a target-functional index for the
+proximal ATE, with the target loading $\lambda(P)$ entering the singular-value
+boundary.  Relative to
+\cite[Abstract and Section 2]{BennettKallusMaoNeweySyrgkanisUehara2023}, the
+proposed gap is a strict local-to-incomplete extension: it replaces a fixed
+strongly identified functional condition with a necessary-and-sufficient
+Riesz-certificate rate for when proximal ATE intervals shrink.  Relative to
+\cite[Sections 2--3]{SmuclerRobinsRotnitzky2025}, the gap is a finite
+negative-control residual projection rule indexed by $\rho_n(P)$, not a
+general warning about score inversion for integral equations.  Relative to
+\cite[Sections 2--3]{Santos2012} and \cite[Section 2]{Hong2017}, the gap is
+that the projected object is a proximal bridge fiber with a computable
+negative-control strength index, rather than an NPIV or conditional-moment
+identified set tested by a generic sieve-minimum statistic.  Relative to
+\cite[Section 2]{AndrewsCheng2012}, the gap is that the identification-strength
+parameter is not primitive or exogenous; it is the computable proximal object
+formed jointly from the bridge operator, ATE loading, and minimum-norm
+bridge-residual covariance.
+
+\paragraph{How it positions in the literature.}
+The proposal lives in the ExactID cluster, specifically negative-control and
+proximal bridge identification.  Its bridge equations follow the line from
+\cite{MiaoGengTchetgen2018} to \cite{CuiPuShiMiaoTchetgen2024}, but its
+asymptotic question is closer to weak identification and inverse-problem
+econometrics.  It also borders partial identification because the
+$\rho_n\to0$ region should match the proxy-bounds perspective of
+\cite{GhassamiShpitserTchetgen2023}, rather than a falsely precise point
+estimate.
+
+\paragraph{Implications for the community.}
+The concrete consumer is applied long-term ATE work that combines short-term
+proxy measurements with long-term outcomes, including the long-term-effect
+designs in \cite{AtheyChettyImbensKang2019} and
+\cite{ImbensKallusMaoWang2025}: those analyses would gain a diagnostic telling
+whether their proxy span supports Wald inference or requires projection
+confidence sets.
+
+\paragraph{How research benefits from the conclusion.}
+If a reader takes only the conclusion away, their research practice changes by
+reporting $\rho_n(P)$ and using projection/AR-style proximal confidence sets
+whenever $\rho_n(P)$ is not asymptotically large.
+
+\section{Related work}
+\cite{MiaoGengTchetgen2018} identify causal effects with proxy variables under
+rank/completeness-style conditions and motivate bridge equations as the
+proximal identification object.  \cite{CuiPuShiMiaoTchetgen2024} develop
+semiparametric proximal efficiency and double robustness, while noting that
+uniqueness of a bridge is stronger than unbiasedness of the efficient moment.
+\cite{ZhangLiMiaoTchetgen2023} prove that proximal counterfactual means can be
+identified without unique bridge functions, which is the closest published
+static identification result to the null-space part of this proposal.
+\cite{GhassamiShpitserTchetgen2023} study partial identification with proxy
+variables when completeness fails, providing the natural endpoint that the
+$\rho_n\to0$ region should recover.  \cite{CanaySantosShaikh2013} show that
+completeness-type identification hypotheses can be empirically untestable in
+nonparametric endogenous models, motivating sensitivity and robust inference
+rather than completeness pretesting.  \cite{Freyberger2015} links weak
+instruments in NPIV to restricted completeness failure; this proposal imports
+the weak-completeness idea but targets proximal ATE functionals rather than a
+full structural function.  \cite{CarrascoFlorensRenault2007} and
+\cite{ChenReiss2011} provide the inverse-problem and minimax-rate background
+for singular-value regularization, but they do not give a proximal
+negative-control phase diagram for an ATE loading.
+\cite[Abstract and Section 2]{BennettKallusMaoNeweySyrgkanisUehara2023} show
+that linear functionals can be strongly identified and root-$n$ estimable even
+when the underlying function is weakly identified; this is the closest
+published fixed-$P$ functional comparator for Conjecture
+\ref{conj:phase}.  \cite[Sections 2--3]{SmuclerRobinsRotnitzky2025} study
+confidence sets for linear functionals of integral-equation solutions and
+emphasize failures of score-inversion confidence sets; this is the closest
+published confidence-set comparator for Conjecture \ref{conj:projection}.
+\cite[Sections 2--3]{Santos2012} develops hypothesis testing and confidence
+regions for NPIV models under partial identification, and is the closest
+Econometrica partial-ID inference comparator for the projection endpoint.
+\cite[Section 2]{Hong2017} develops sieve-minimum Kolmogorov--Smirnov inference
+for semiparametric conditional moment models with partial identification, which
+is the closest conditional-moment testing comparator to the proposed
+bridge-fiber statistic.
+\cite[Section 2]{AndrewsCheng2012} give a general Econometrica framework for
+weak, semi-strong, and strong identification in extremum estimators whose
+criterion functions have stochastic quadratic expansions and depend on a
+parameter that controls identification strength; this is the closest general
+weak-identification comparator, but it does not identify the proximal
+negative-control strength parameter from $(T,\lambda,\Omega^\dagger)$ or the
+bridge-fiber projection set.
+\cite[Sections 2--3]{AntoineLavergne2014} study conditional moment models
+under semi-strong identification where conditional moments flatten along a
+triangular array, and propose a robust minimum-distance estimator; this is the
+closest conditional-moment semi-strong identification comparator for
+Conjecture \ref{conj:phase}, but it does not construct a proximal
+target-loading certificate, bridge-envelope endpoint, or negative-control
+residual projection frontier.
+\cite{StockWrightYogo2002}
+and \cite{AndrewsStockSun2019} survey weak-IV robust confidence sets; their
+projection-test logic is the comparator for the proposed proximal residual
+projection set.  \cite{KallusMaoUehara2021} and
+\cite{MastouriZhuGultchinEtAl2021} study minimax and kernel bridge learning,
+respectively, and show why regularized bridge estimation needs an inferential
+boundary near weak proxy directions.  In-repo prior art is the downgraded
+\texttt{eid\_proximal\_phase} proposal, whose reviewers requested a
+generic-class obstruction or theorem rather than a finite diagnostic taxonomy;
+the current proposal changes the kernel from a static bridge-envelope
+threshold to a local asymptotic weak-proxy index.
+
+\section{Formal setup}
+Let $O=(Y,A,Z,W,X)$ have observed law $P$, with $A\in\{0,1\}$ and long-term
+outcome $Y$.  For each treatment arm $a$, let $m_a(P)$ denote the finite vector
+of conditional outcome moments
+\[
+m_a(P)=\E_P\{Y\,g_a(Z,X)\mid A=a\},
+\]
+where $g_a$ is a fixed $r_a$-dimensional dictionary of proxy instruments.  Let
+$b_a(W,X)$ be a fixed $k_a$-dimensional bridge dictionary and let
+$\beta_a\in\R^{k_a}$ index the sieve bridge $h_a(W,X)=b_a(W,X)^\transpose
+\beta_a$.  The finite bridge operator is
+\[
+T_a(P)=\E_P\{g_a(Z,X)b_a(W,X)^\transpose\mid A=a\}\in\R^{r_a\times k_a}.
+\]
+The bridge equation is $T_a(P)\beta_a=m_a(P)$.  The ATE loading is
+\[
+\lambda(P)^\transpose\beta
+=\sum_{a\in\{0,1\}}s_a\,\E_P\{b_a(W,X)\}^\transpose\beta_a,\qquad
+s_1=1,\ s_0=-1,
+\]
+with block vector $\beta=(\beta_1^\transpose,\beta_0^\transpose)^\transpose$.
+Write $T(P)=\operatorname{diag}\{T_1(P),T_0(P)\}$ and
+$m(P)=(m_1(P)^\transpose,m_0(P)^\transpose)^\transpose$.  Let
+$\beta^\dagger(P)=T(P)^+m(P)$ be the Euclidean minimum-norm bridge solution
+in the stacked finite sieve.  Define the block moment influence vector
+$\phi^\dagger(O;P)$ by the sample analog of $m(P)-T(P)\beta^\dagger(P)$:
+in arm $a$, its component is the centered vector
+\[
+\one\{A=a\}\,g_a(Z,X)\{Y-b_a(W,X)^\transpose\beta_a^\dagger(P)\}
+ - \E_P[\one\{A=a\}\,g_a(Z,X)\{Y-b_a(W,X)^\transpose\beta_a^\dagger(P)\}].
+\]
+The covariance used throughout is the named selector covariance
+\[
+\Omega^\dagger(P)=\operatorname{Var}_P\{\phi^\dagger(O;P)\}.
+\]
+Every occurrence of $\Omega(P)$ below means this pinned
+$\Omega^\dagger(P)$; the dagger is suppressed only to reduce notation.  Under
+Assumption \ref{ass:finite-bridge}, $\Omega^\dagger(P)$ is positive definite on
+the full stacked moment coordinate space, so $\Omega^{-1}$ and
+$\Omega^{-1/2}$ are ordinary matrix inverses.  Singular moment-covariance
+limits would require replacing these by Moore--Penrose inverses, but that is
+outside this finite-dictionary proposal.
+
+\begin{definition}[Target-relevant weak-proxy index]
+If $\lambda(P)$ lies in the row space of $T(P)$, define
+\[
+q(P)=\Omega(P)^{-1/2}T(P)
+\{T(P)^\transpose\Omega(P)^{-1}T(P)\}^+\lambda(P)
+\]
+and
+\[
+\rho_n(P)=\sqrt{n}\,
+\Big\{\lambda(P)^\transpose
+[T(P)^\transpose\Omega(P)^{-1}T(P)]^+\lambda(P)\Big\}^{-1/2}.
+\]
+If $\lambda(P)$ is not in the row space of $T(P)$, set $\rho_n(P)=0$.
+\end{definition}
+
+The optimally weighted finite bridge estimator is
+\[
+\widehat\beta=
+\arg\min_{\beta}
+(\widehat m-\widehat T\beta)^\transpose\widehat\Omega^{-1}
+(\widehat m-\widehat T\beta),
+\qquad
+\widehat\psi=\widehat\lambda^\transpose\widehat\beta,
+\]
+with the minimum-norm solution used when the minimizer is not unique.  Its
+weight matrix is the sample analog $\widehat\Omega=\widehat\Omega^\dagger$
+computed at $\widehat\beta^\dagger=\widehat T^+\widehat m$, so the covariance
+entering $q(P)$, $\rho_n(P)$, and $Q_n(\psi_0)$ is tied to the same named
+selector.  For a radius $c\ge0$, define the local bridge envelope
+\[
+\mathcal E_c(P_n)=
+\{\lambda(P_n)^\transpose\beta:
+n(m(P_n)-T(P_n)\beta)^\transpose\Omega(P_n)^{-1}
+(m(P_n)-T(P_n)\beta)\le c\},
+\]
+and let $w_c(P_n)=\sup\mathcal E_c(P_n)-\inf\mathcal E_c(P_n)$ be its width.
+For a candidate value $\psi_0$, define the constrained bridge subspace
+\[
+\mathcal N_{\lambda,n}=\{v:\lambda(P_n)^\transpose v=0\},\qquad
+\mathcal R_{\lambda,n}=T(P_n)\mathcal N_{\lambda,n},
+\]
+and let $\Pi_{\lambda,n}$ be the $\Omega(P_n)^{-1}$-orthogonal projection onto
+the complement of $\mathcal R_{\lambda,n}$ inside the moment span.  Let
+$d_{\lambda,n}=\operatorname{rank}(\Pi_{\lambda,n})$ and
+\[
+c_{1-\alpha}(P_n)
+=\inf\{c:\Pr(\|\Pi_{\lambda,n}G\|_{\Omega(P_n)^{-1}}^2\le c)\ge 1-\alpha\},
+\qquad G\sim N(0,\Omega(P_n)).
+\]
+When $d_{\lambda,n}$ is locally constant this is the
+$1-\alpha$ quantile of $\chi^2_{d_{\lambda,n}}$; at rank boundaries it is
+interpreted conservatively as the supremum of this quantile over ranks
+attainable in an $n^{-1/2}$ neighborhood of $P_n$.
+
+The locked parameters are reproduced here:
+\begin{quote}\small
+\texttt{qid=eid\_proximal\_completeness; specialization=v1; graph/SWIG=single-time proximal negative-control graph with (Y,A,Z,W,X,U); treatment=A=1 vs A=0; target=long-term ATE E[Y(1)-Y(0)]; assumptions=consistency, positivity, proxy exclusion, bridge existence, and target-relevant bridge regularity without full uniqueness/completeness.}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Proximal law and exclusions]\label{ass:proximal-law}
+The observed law $P$ is induced by a proximal negative-control causal model
+with consistency for $Y(a)$, positivity $\Pr(A=a\mid Z,W,X)>0$ on the relevant
+support, and the proxy exclusions $Z\perp Y(a)\mid(U,X)$ and
+$W\perp A\mid(U,X)$.
+\end{assumption}
+
+\begin{assumption}[Finite bridge sieve]\label{ass:finite-bridge}
+For each $a\in\{0,1\}$, the dictionaries $g_a$ and $b_a$ are fixed and finite,
+the selector covariance matrix $\Omega^\dagger(P)$ is positive definite on the
+full stacked moment coordinate space,
+and at least one coefficient vector $\beta_a^\star$ satisfies
+$T_a(P)\beta_a^\star=m_a(P)$.
+\end{assumption}
+
+\begin{assumption}[Target row-space regularity]\label{ass:target-rowspace}
+For the finite-dimensional point-identification statements,
+$\lambda(P)$ lies in the row space of $T(P)$; when it does not, the identified
+set for $\psi$ is the image of the bridge solution fiber
+$\{\beta:T(P)\beta=m(P)\}$ under $\lambda(P)^\transpose\beta$.
+\end{assumption}
+
+\begin{assumption}[Local triangular array]\label{ass:local-array}
+For the weak-proxy conjectures, $P=P_n$ is a triangular array satisfying
+Assumptions \ref{ass:proximal-law}--\ref{ass:target-rowspace} for each $n$,
+the dimensions of $T(P_n)$ are fixed, the moment central limit theorem holds
+with pinned selector covariance $\Omega^\dagger(P_n)\to\Omega_0$ for a positive
+definite $\Omega_0$, and the nonzero target-relevant singular directions of
+$\Omega(P_n)^{-1/2}T(P_n)$ may shrink with $n$.
+\end{assumption}
+
+\begin{assumption}[Regular nuisance estimation]\label{ass:regular-nuisance}
+Sample analogs $\widehat T$, $\widehat m$, $\widehat\lambda$, and
+$\widehat\Omega$ admit an asymptotically linear expansion uniformly over the
+local array in Assumption \ref{ass:local-array}; nuisance remainder terms are
+$o_p(\rho_n(P_n)^{-1})$ in the strong and weak-proxy regimes.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Finite target row-space frontier]\label{thm:rowspace}
+Under Assumptions \ref{ass:proximal-law}--\ref{ass:finite-bridge}, the finite
+sieve ATE $\psi(P)=\lambda(P)^\transpose\beta$ is invariant over all bridge
+solutions $\{\beta:T(P)\beta=m(P)\}$ if and only if
+\[
+\lambda(P)\perp\ker T(P),
+\]
+equivalently $\lambda(P)$ lies in the row space of $T(P)$.  When the condition
+holds, $\psi(P)=q(P)^\transpose\Omega(P)^{-1/2}m(P)$ for the minimal-norm
+certificate $q(P)$ in the target-relevant weak-proxy index.  When it fails,
+the finite bridge solution fiber contains two observationally equivalent
+bridges with different ATE values.
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) This is not claimed as the flagship novelty: it is the finite algebraic
+scaffold already implicit in the downgraded \texttt{eid\_proximal\_phase}
+row-space criterion and in \cite[Section 2]{ZhangLiMiaoTchetgen2023}'s
+distinction between bridge uniqueness and target-functional uniqueness.  Its
+role here is to define the row-space certificate that enters the new
+local-to-incomplete conjectures.  (b) The consumer is
+\cite{GhassamiShpitserTchetgen2023}: when the row-space condition fails, their
+proxy partial-identification endpoint becomes the correct target rather than a
+regular proximal point estimator.
+
+\begin{conjecture}[Strict proximal extension of strong-functional weak-ID theory (NOT YET PROVED)]\label{conj:phase}
+Under Assumptions \ref{ass:proximal-law}--\ref{ass:regular-nuisance}, the
+target-relevant weak-proxy index $\rho_n(P_n)$ is the sharp proximal
+identification-strength variable: after profiling the bridge coefficient
+$\beta$ as nuisance, proximal ATE confidence sets with diameter $o_p(1)$ exist
+uniformly over a local triangular array if and only if
+$\rho_n(P_n)\to\infty$.  More precisely:
+\begin{enumerate}[label=(\roman*)]
+\item If $\rho_n(P_n)\to\infty$, the optimally weighted finite bridge
+estimator $\widehat\psi$ is consistent and asymptotically normal after scaling by
+$\rho_n(P_n)$, and the usual root-$n$ Wald normalization is valid exactly when
+$\lambda(P_n)^\transpose[T(P_n)^\transpose\Omega(P_n)^{-1}T(P_n)]^+
+\lambda(P_n)=O(1)$.
+\item If $\rho_n(P_n)\to\rho\in(0,\infty)$, the estimator has a nondegenerate
+weak-proxy limit whose dispersion is bounded away from zero; no confidence
+interval with diameter $o_p(1)$ can have uniform coverage over local
+perturbations preserving the same limit $\rho$.
+\item If $\rho_n(P_n)\to0$, any uniformly valid confidence set for
+$\psi(P_n)$ has asymptotic diameter equal to the local bridge-envelope width
+$w_{c_{1-\alpha}}(P_n)$, so the experiment behaves like the proxy
+partial-identification problem.
+\end{enumerate}
+The weak middle region is conjectured to be realized not only by abstract
+matrices, but on the open finite-support proximal-law neighborhood generated
+by Example \ref{ex:witness}: perturbing the strictly positive atom
+probabilities while keeping the second target-relevant singular value in a
+constant multiple of $n^{-1/2}$ leaves $\rho_n(P_n)$ bounded away from both
+zero and infinity.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) The closest comparators are \cite[Theorem 3.1]{CuiPuShiMiaoTchetgen2024}
+for regular proximal inference,
+\cite[Abstract and Section 2]{BennettKallusMaoNeweySyrgkanisUehara2023} for
+strongly identified linear functionals of weakly identified functions,
+\cite[Sections 2--3]{SmuclerRobinsRotnitzky2025} for confidence sets in
+integral equations, \cite[Section 2]{AndrewsCheng2012} for general extremum
+weak/semi-strong/strong identification, \cite[Section 2]{Freyberger2015} for
+weak restricted completeness in NPIV,
+\cite[Sections 2--3]{AntoineLavergne2014} for semi-strong identification in
+conditional moment models with flattening moments, and
+\cite[Theorems 2.1--2.2]{ChenReiss2011} for inverse-problem rates.  The
+epsilon-gap is a strict proximal extension: none of these results states the
+iff frontier in terms of the observable negative-control triple
+$(T(P_n),\lambda(P_n),\Omega^\dagger(P_n))$ after bridge profiling, and none
+connects that frontier to the bridge-envelope partial-ID endpoint.  (b)
+Resolving the conjecture
+would give the long-term-effect designs of \cite{AtheyChettyImbensKang2019}
+and \cite{ImbensKallusMaoWang2025} a rule for when short-term proxy panels are
+strong enough for ordinary inference on terminal effects.
+
+\begin{conjecture}[Proximal projection frontier for integral-equation confidence sets (NOT YET PROVED)]\label{conj:projection}
+Define the residual projection statistic
+\[
+Q_n(\psi_0)=
+\inf_{\beta:\widehat\lambda^\transpose\beta=\psi_0}
+n\,(\widehat m-\widehat T\beta)^\transpose
+\widehat\Omega^{-1}(\widehat m-\widehat T\beta)
+\]
+and the confidence set
+\[
+\mathcal C_n(1-\alpha)=
+\{\psi_0:Q_n(\psi_0)\le c_{1-\alpha}\},
+\]
+where $c_{1-\alpha}=c_{1-\alpha}(P_n)$ is the Gaussian-projection critical
+value defined in Section 6 from $\Pi_{\lambda,n}$ and $d_{\lambda,n}$, with the
+rank-boundary supremum rule used when $d_{\lambda,n}$ is not locally stable.
+Under Assumptions \ref{ass:proximal-law}--\ref{ass:regular-nuisance},
+$\mathcal C_n(1-\alpha)$ has uniform asymptotic coverage over arrays with
+$0\le\liminf\rho_n(P_n)\le\limsup\rho_n(P_n)\le\infty$, has diameter
+$O_p(\rho_n(P_n)^{-1})$ when $\rho_n(P_n)\to\infty$, has nonshrinking but
+bounded diameter when $\rho_n(P_n)\to\rho\in(0,\infty)$, and converges to the
+local bridge-envelope set when $\rho_n(P_n)\to0$.  This gives a finite
+proximal iff frontier against score inversion: the residual-projection set is
+shrinking if and only if the certificate index diverges.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) \cite[Sections 2--3]{SmuclerRobinsRotnitzky2025} are the closest
+confidence-set comparator: they analyze linear functionals of
+integral-equation solutions and show why score-inversion confidence sets can
+fail.  Conjecture \ref{conj:projection} does not contradict that warning; it
+proposes a residual-projection set in a finite proximal negative-control
+experiment, with the exact critical value determined by the rank of
+$\Pi_{\lambda,n}$ and the weak-proxy width governed by $\rho_n(P_n)$.
+\cite[Section 2]{AndrewsCheng2012} gives the general extremum weak-ID
+umbrella; the proximal epsilon-gap is the closed-form bridge-fiber projection
+statistic $Q_n(\psi_0)$ and rank correction built from
+$(T,\lambda,\Omega^\dagger)$, rather than a generic criterion-dependent
+identification-strength parameter.
+\cite[Sections 2--3]{Santos2012} gives NPIV partial-identification tests and
+confidence regions based on whether some element of an identified set satisfies
+a restriction; \cite[Section 2]{Hong2017} gives a sieve-minimum
+Kolmogorov--Smirnov statistic for conditional moment models with partial
+identification.  The present conjecture is not subsumed by either because
+$Q_n(\psi_0)$ profiles a finite proximal bridge equation with a rank-corrected
+Gaussian projection critical value and a shrinkage frontier governed by the
+negative-control certificate $\rho_n(P_n)$.
+\cite[Sections 3--4]{StockWrightYogo2002} and
+\cite[Section 4]{AndrewsStockSun2019} supply the weak-IV projection analogy,
+while \cite{KallusMaoUehara2021} and \cite{MastouriZhuGultchinEtAl2021}
+motivate regularized bridge learning.  (b) The named consumer is
+\cite{CuiPuShiMiaoTchetgen2024}: their proximal DR estimating equations would
+gain a weak-proxy robust reporting rule instead of relying only on the
+strong-regularity regime.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Strong-proxy reduction]\label{cor:strong}
+If there exist constants $0<c<C<\infty$ such that the target-certificate norm
+satisfies
+\[
+c\le
+\lambda(P_n)^\transpose[T(P_n)^\transpose\Omega(P_n)^{-1}T(P_n)]^+
+\lambda(P_n)
+\le C
+\]
+eventually along the array, then
+$\sqrt{n/C}\le\rho_n(P_n)\le\sqrt{n/c}$, so
+$\rho_n(P_n)\asymp\sqrt n$ and Conjectures
+\ref{conj:phase}--\ref{conj:projection} reduce to ordinary proximal Wald
+inference.  This certificate condition rules out both weak proxy directions
+and a vanishing target loading.
+\end{corollary}
+
+\begin{corollary}[Nonunique-bridge static reduction]\label{cor:nonunique}
+If $\ker T(P)$ is nontrivial but $\lambda(P)\perp\ker T(P)$, Theorem
+\ref{thm:rowspace} recovers the \cite{ZhangLiMiaoTchetgen2023} phenomenon:
+bridge functions may be nonunique while the ATE remains point identified.
+\end{corollary}
+
+\begin{example}[Concrete weak-proxy witness]\label{ex:witness}
+Fix $c>0$ and $n>c^2$.  Let $X=x_0$ be constant, let
+$U=(U_1,U_2)$ with $U_1,U_2$ independent Rademacher variables, let
+$R_n\in\{-1,1\}$ be independent with
+$\Pr(R_n=1)=(1+c/\sqrt n)/2$, and let $A$ be an independent Bernoulli$(1/2)$
+treatment.  Set $W=(U_1,U_2)$ and $Z=(U_1,R_nU_2)$.  Let
+$E_0,E_1$ be independent Rademacher variables scaled by $\sqrt 2$, and define
+potential outcomes
+\[
+Y(a)=\beta_{a1}^\star U_1+\beta_{a2}^\star(1+U_2)+E_a,\qquad a\in\{0,1\},
+\]
+with observed $Y=Y(A)$.  The observed finite-support atoms are indexed by
+$(a,u_1,u_2,r,e_0,e_1)$ and have probability
+\[
+\frac12\cdot\frac14\cdot\frac{1+r c/\sqrt n}{2}\cdot\frac14,
+\]
+with $Y=\beta_{a1}^\star u_1+\beta_{a2}^\star(1+u_2)+e_a$,
+$Z=(u_1,ru_2)$, $W=(u_1,u_2)$, and $X=x_0$.
+Given $U$, $Z$ is independent of $(Y(0),Y(1))$ because $R_n$ is independent of
+$(E_0,E_1)$, and $W$ is independent of $A$ because $A$ is independent of $U$.
+For the dictionaries $g(Z)=(Z_1,Z_2)^\transpose$ and
+$b(W)=(W_1,1+W_2)^\transpose$, each treatment arm has
+\[
+T_a(P_n)=\E\{g(Z)b(W)^\transpose\mid A=a\}
+=\begin{pmatrix}1&0\\0&c/\sqrt n\end{pmatrix},
+\qquad
+m_a(P_n)=T_a(P_n)\beta_a^\star .
+\]
+The stacked ATE loading is
+$\lambda=(0,1,0,-1)^\transpose$, since
+$\E b(W)=(0,1)^\transpose$, and the selector covariance is
+$\Omega^\dagger(P_n)=I_4$ because
+$\operatorname{Var}\{1(A=a)g(Z)E_a\}=I_2$ in each arm with zero cross-arm
+covariance.  Therefore
+\[
+\lambda^\transpose[T^\transpose T]^+\lambda=2n/c^2,\qquad
+\rho_n(P_n)=c/\sqrt2.
+\]
+The target is point identified for every finite $n$, but its uncertainty does
+not shrink.  Profiling over the two weak bridge coordinates leaves the same
+Gaussian-shift geometry as
+$Q_n(\psi_0)=n\{\widehat m_{\Delta,2}-(c/\sqrt n)\psi_0\}^2/2$ after the
+strong coordinates are eliminated, so the limiting projection interval has
+positive diameter proportional to $1/c$ and becomes the bridge-envelope
+projection as $c\downarrow0$.
+\end{example}
+
+\section{Proof-sketch route}
+Theorem \ref{thm:rowspace} is finite-dimensional linear algebra: the ATE is
+constant on an affine solution fiber exactly when the loading annihilates the
+fiber direction $\ker T$, and the minimal-norm certificate follows from the
+weighted Moore--Penrose inverse.  Conjecture \ref{conj:phase} should reduce to
+a triangular-array Gaussian shift experiment for the sample bridge moments,
+followed by singular-value decomposition of
+$\Omega(P_n)^{-1/2}T(P_n)$ and a convolution or local asymptotic minimax
+argument for the target loading.  The main boundary algebra is the one- and
+two-target-direction case where the target loading lies entirely on a singular
+vector with $\sigma_n\asymp n^{-1/2}$, because that calculation fixes the
+constant in $\rho_n(P_n)$; Example \ref{ex:witness} gives the finite-support
+proximal law for that calculation by reducing the conditional-expectation
+operator to the diagonal matrix generated by $(U_1,R_nU_2)$ and
+$(U_1,1+U_2)$.  Conjecture \ref{conj:projection} should follow by
+inverting the quadratic residual statistic, deriving its profile form in
+$\psi_0$, computing the Gaussian projection quantile from
+$\Pi_{\lambda,n}G$, and proving uniform stochastic equicontinuity across the
+strong, weak, and failed-completeness regions.
+
+\section{Honest scope flags}
+The finite row-space frontier is labelled as a theorem because it is routine
+linear algebra once the finite bridge dictionary is fixed.  The phase diagram
+and projection confidence set are conjectures: the proposed novelty is the
+uniform local asymptotic claim, not the static bridge algebra.  The current
+proposal deliberately withdraws the earlier scalar static ``phase''
+formulation from the downgraded \texttt{eid\_proximal\_phase} banked run; the
+new scalar is not defined as the threshold where identification holds, but as
+the independently computable norm of the minimal target certificate.  The
+largest risk is whether Assumption \ref{ass:regular-nuisance} can be made
+primitive enough for nonparametric bridge learners; a first proof should fix
+finite dictionaries before claiming RKHS or sieve generality.  The
+finite-support witness in Example \ref{ex:witness} is meant only to establish a
+non-corner proximal law for the weak region; the open-neighborhood stability of
+the full three-region phase diagram remains part of Conjecture
+\ref{conj:phase}.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for surviving seed 4, replacing the static
+bridge-threshold angle with a local-to-incomplete weak-proxy phase diagram;
+prior verdict: none.
+\item v2 (revise) -- separated the sixth introduction paragraph, added
+Bennett--Kallus--Mao--Newey--Syrgkanis--Uehara and
+Smucler--Robins--Rotnitzky as close comparators, downgraded
+Canay--Santos--Shaikh to motivation, and pinned the residual-projection
+critical value; prior verdict: REVISE.
+\item v3 (revise) -- pinned $\Omega(P)$ to the minimum-norm bridge selector,
+added Andrews--Cheng as the closest general weak-ID comparator, and rewrote
+Conjectures 1--2 as comparator-facing proximal iff frontiers; prior verdict:
+REVISE.
+\item v4 (revise) -- replaced the matrix-only weak-proxy witness by an
+explicit finite-support proximal law, required full-rank selector covariance
+for ordinary $\Omega^{-1}$ notation, and added Santos (2012) plus Hong (2017)
+as partial-identification inference comparators; prior verdict: REVISE.
+\item v5 (revise) -- added Antoine--Lavergne (2014) as the closest
+conditional-moment semi-strong identification comparator and strengthened the
+strong-proxy reduction to require a certificate norm bounded away from both
+zero and infinity; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Antoine and Lavergne(2014)]{AntoineLavergne2014}
+Antoine, B. and Lavergne, P. (2014).
+Conditional moment models under semi-strong identification.
+\textit{Journal of Econometrics} 182(1), 59--69.
+
+\bibitem[Andrews and Cheng(2012)]{AndrewsCheng2012}
+Andrews, D. W. K. and Cheng, X. (2012).
+Estimation and inference with weak, semi-strong, and strong identification.
+\textit{Econometrica} 80(5), 2153--2211.
+
+\bibitem[Andrews, Stock, and Sun(2019)]{AndrewsStockSun2019}
+Andrews, I., Stock, J. H., and Sun, L. (2019).
+Weak instruments in instrumental variables regression: theory and practice.
+\textit{Annual Review of Economics} 11, 727--753.
+
+\bibitem[Athey, Chetty, Imbens, and Kang(2019)]{AtheyChettyImbensKang2019}
+Athey, S., Chetty, R., Imbens, G., and Kang, H. (2019).
+The surrogate index: combining short-term proxies to estimate long-term
+treatment effects more rapidly and precisely.
+\textit{NBER Working Paper} 26463.
+
+\bibitem[Bennett et al.(2023)]{BennettKallusMaoNeweySyrgkanisUehara2023}
+Bennett, A., Kallus, N., Mao, X., Newey, W., Syrgkanis, V., and Uehara, M.
+(2023).
+Inference on strongly identified functionals of weakly identified functions.
+\textit{Proceedings of the 36th Annual Conference on Learning Theory},
+PMLR 195, 2117--2188.
+
+\bibitem[Canay, Santos, and Shaikh(2013)]{CanaySantosShaikh2013}
+Canay, I. A., Santos, A., and Shaikh, A. M. (2013).
+On the testability of identification in some nonparametric models with
+endogeneity.
+\textit{Econometrica} 81(6), 2535--2559.
+
+\bibitem[Carrasco, Florens, and Renault(2007)]{CarrascoFlorensRenault2007}
+Carrasco, M., Florens, J.-P., and Renault, E. (2007).
+Linear inverse problems in structural econometrics: estimation based on
+spectral decomposition and regularization.
+In J. J. Heckman and E. E. Leamer, editors,
+\textit{Handbook of Econometrics}, volume 6B, chapter 77, 5633--5751.
+
+\bibitem[Chen and Reiss(2011)]{ChenReiss2011}
+Chen, X. and Reiss, M. (2011).
+On rate optimality for ill-posed inverse problems in econometrics.
+\textit{Econometric Theory} 27(3), 497--521.
+
+\bibitem[Cui, Pu, Shi, Miao, and Tchetgen Tchetgen(2024)]{CuiPuShiMiaoTchetgen2024}
+Cui, Y., Pu, H., Shi, X., Miao, W., and Tchetgen Tchetgen, E. (2024).
+Semiparametric proximal causal inference.
+\textit{Journal of the American Statistical Association} 119(546), 1348--1359.
+
+\bibitem[Freyberger(2015)]{Freyberger2015}
+Freyberger, J. (2015).
+On completeness and consistency in nonparametric instrumental variable models.
+SSRN Working Paper 2566043.
+
+\bibitem[Ghassami, Shpitser, and Tchetgen Tchetgen(2023)]{GhassamiShpitserTchetgen2023}
+Ghassami, A., Shpitser, I., and Tchetgen Tchetgen, E. (2023).
+Partial identification of causal effects using proxy variables.
+\textit{arXiv preprint} arXiv:2304.04374.
+
+\bibitem[Hong(2017)]{Hong2017}
+Hong, S. (2017).
+Inference in semiparametric conditional moment models with partial
+identification.
+\textit{Journal of Econometrics} 196(1), 156--179.
+
+\bibitem[Imbens, Kallus, Mao, and Wang(2025)]{ImbensKallusMaoWang2025}
+Imbens, G., Kallus, N., Mao, X., and Wang, Y. (2025).
+Long-term causal inference under persistent confounding via data combination.
+\textit{Journal of the Royal Statistical Society: Series B}.
+
+\bibitem[Kallus, Mao, and Uehara(2021)]{KallusMaoUehara2021}
+Kallus, N., Mao, X., and Uehara, M. (2021).
+Causal inference under unmeasured confounding with negative controls: a
+minimax learning approach.
+\textit{arXiv preprint} arXiv:2103.14029.
+
+\bibitem[Mastouri et al.(2021)]{MastouriZhuGultchinEtAl2021}
+Mastouri, A., Zhu, Y., Gultchin, L., Korba, A., Silva, R., Kusner, M. J.,
+Gretton, A., and Muandet, K. (2021).
+Proximal causal learning with kernels: two-stage estimation and moment
+restriction.
+\textit{Proceedings of the 38th International Conference on Machine Learning},
+PMLR 139, 7512--7523.
+
+\bibitem[Miao, Geng, and Tchetgen Tchetgen(2018)]{MiaoGengTchetgen2018}
+Miao, W., Geng, Z., and Tchetgen Tchetgen, E. (2018).
+Identifying causal effects with proxy variables of an unmeasured confounder.
+\textit{Biometrika} 105(4), 987--993.
+
+\bibitem[Santos(2012)]{Santos2012}
+Santos, A. (2012).
+Inference in nonparametric instrumental variables with partial identification.
+\textit{Econometrica} 80(1), 213--275.
+
+\bibitem[Smucler, Robins, and Rotnitzky(2025)]{SmuclerRobinsRotnitzky2025}
+Smucler, E., Robins, J. M., and Rotnitzky, A. (2025).
+Confidence sets for linear functionals of solutions to integral equations.
+\textit{Biometrika}.
+
+\bibitem[Stock, Wright, and Yogo(2002)]{StockWrightYogo2002}
+Stock, J. H., Wright, J. H., and Yogo, M. (2002).
+A survey of weak instruments and weak identification in generalized method of
+moments.
+\textit{Journal of Business and Economic Statistics} 20(4), 518--529.
+
+\bibitem[Zhang, Li, Miao, and Tchetgen Tchetgen(2023)]{ZhangLiMiaoTchetgen2023}
+Zhang, J., Li, W., Miao, W., and Tchetgen Tchetgen, E. (2023).
+Proximal causal inference without uniqueness assumptions.
+\textit{Statistics and Probability Letters} 198, 109836; corrigendum 208,
+110055.
+\end{thebibliography}
+
+\end{document}

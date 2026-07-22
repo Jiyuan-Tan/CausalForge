@@ -1,0 +1,420 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_tv\_pretrend\_atet} / \texttt{v1}%
+  \\ \large\textit{Two critical TV frontiers for staggered-ATET sensitivity under cohort trimming}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+(qid, specialization) =
+  (pid_tv_pretrend_atet, v1)
+anchor cluster = PartialID
+observable distribution P =
+  for each trimming rule tau in a finite nested family T, P supplies the
+  trimmed staggered-adoption event-study estimand hat theta_tau, the
+  pre-treatment discrepancy path d_tau, the post-treatment bias-weight
+  vector omega_tau, and an ATET support bound B_tau induced by the
+  maintained outcome range
+parameter theta =
+  theta_tau = trimmed staggered-adoption ATET under rule tau
+identifying restrictions =
+  (i) staggered-adoption ATET admits a linear post-bias representation
+      theta_tau = hat theta_tau - omega_tau' u_tau for some post-treatment
+      discrepancy path u_tau;
+  (ii) anchored TV restriction
+      |u_tau,1 - d_tau,-1| + sum_{h=2}^{H_tau} |u_tau,h - u_tau,h-1|
+      <= kappa * D_pre(tau),
+      where D_pre(tau) = sum_{j=-L_tau+1}^{-1} |d_tau,j - d_tau,j-1|;
+  (iii) theta_tau lies in [-B_tau,B_tau]
+bounding functional =
+  the sharp identified interval I_tau(kappa) for theta_tau obtained by
+  optimizing omega_tau' u_tau over the anchored-TV class above; the focal
+  objects are the first TV radius kappa_zero(tau) at which 0 enters
+  I_tau(kappa), and the first TV radius kappa_vac(tau) at which
+  I_tau(kappa) = [-B_tau,B_tau]
+\end{verbatim}
+
+\begin{abstract}
+The question is whether a staggered-adoption ATET under relaxed parallel trends has one natural TV breakdown value or two distinct ones. The proposal fixes an anchored total-variation class for the post-treatment discrepancy path, indexed by the observed pre-treatment discrepancy path and a trimming rule on cohorts, and asks for the sharp identified interval for the trimmed ATET. The routine algebraic part gives closed forms for the two one-sided TV supports and for the two critical radii at which zero first enters the interval and the interval first becomes vacuous over the maintained outcome range. The novelty-bearing claim is that, along a nested cohort-trimming path, those two radii need not move together: they are governed by different active dual faces and can jump at different trimming thresholds. If correct, the result would replace a single numerical Honest-DiD breakdown report by a trimming-sensitive phase diagram with separate sign-loss and vacuity frontiers.
+\end{abstract}
+
+\section{Introduction}
+Researchers now routinely report how large a violation of parallel trends must be to overturn a staggered-DiD conclusion. The present question is whether, under an anchored total-variation restriction calibrated from the observed pre-treatment discrepancy path, the first radius at which zero becomes feasible is the same object as the first radius at which the ATET interval loses all information. The headline claim is that these are generally different frontiers once one allows cohort trimming: one is sign-specific, the other is range-saturating, and the two can jump at different trimming thresholds.
+
+\citet{RambachanRoth2023CrediblePT} define sensitivity analysis by imposing restrictions on ``how different'' post-treatment violations may be from pre-trends (Abstract, p.~2555), and \citet{RothSantAnnaBilinskiPoe2023TrendingDiD} illustrate the practice by saying that a researcher may report that a positive conclusion is ``robust up to the value $\bar M = 2$'' (p.~2234). The gap is that neither paper isolates, for a TV class and a staggered-adoption trimming path, the pair of analytic frontiers separating zero-entry from full vacuity or the jump set at which those frontiers move discontinuously. The kernel lives in partial identification, with staggered-panel weighting entering through the observable bias-weight vector \(\omega_\tau\).
+
+The direct consumer is the sensitivity-analysis workflow recommended in \citet{RothSantAnnaBilinskiPoe2023TrendingDiD} for designs with questionable parallel trends and staggered timing. A reader who trims cohorts for leverage, anticipation, or support reasons would no longer report a single robustness number; they would report a pair \((\kappa_{\mathrm{zero}}(\tau),\kappa_{\mathrm{vac}}(\tau))\) and check whether either one jumps at the chosen trimming threshold.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: the anchored-TV identified set for a trimmed staggered ATET is an interval whose endpoints are determined by two one-sided support numbers \(\bar h_\tau^{-}\) and \(\bar h_\tau^{+}\). Gap: \citet{RambachanRoth2023CrediblePT} allow user-supplied restriction classes but do not derive this TV-specific two-sided closed form for a trimmed ATET target. Consumer: \citet{RothSantAnnaBilinskiPoe2023TrendingDiD}.
+\item Theorem 2: the sign-loss frontier \(\kappa_{\mathrm{zero}}(\tau)\) and the vacuity frontier \(\kappa_{\mathrm{vac}}(\tau)\) admit distinct analytic formulas, with \(\kappa_{\mathrm{zero}}(\tau)\le \kappa_{\mathrm{vac}}(\tau)\). Gap: \citet{RambachanRoth2023CrediblePT} and \citet{ManskiPepper2018BoundedVariation} motivate sensitivity classes but do not separate these two frontiers for staggered-adoption ATETs. Consumer: \citet{CallawaySantAnna2021MultiplePeriods}.
+\item Conjecture 1: along a nested trimming path, \(\kappa_{\mathrm{zero}}(\tau)\) and \(\kappa_{\mathrm{vac}}(\tau)\) are piecewise-rational in the trimming threshold and can jump on different dual-face boundaries. Gap: the archived \texttt{panel\_honest\_did\_phase} proposal already isolated trimming discontinuities, but no published paper gives a TV-specific frontier-jump theorem for trimmed staggered ATETs. Consumer: cohort-trimmed event-study practice built on \citet{BorusyakJaravelSpiess2024EventStudies}.
+\end{itemize}
+
+\section{Related work}
+\citet{RambachanRoth2023CrediblePT} are the main published anchor because they cast violations of parallel trends as a partially identified event-study problem under analyst-chosen restriction classes. The current proposal keeps that sensitivity-analysis stance but replaces their worked relative-magnitude and smoothness examples by an anchored TV class and asks for two frontiers rather than one generic breakdown report.
+
+\citet{ManskiPepper2018BoundedVariation} are the partial-identification precedent for replacing exact assumptions by bounded-variation restrictions. Their paper motivates the use of variation budgets, but it does not study staggered-adoption trimming paths or an ATET-specific frontier split.
+
+\citet{RothSantAnnaBilinskiPoe2023TrendingDiD} are the closest workflow comparator because they recommend sensitivity analysis and explicit robustness reporting in DiD practice. The present proposal turns that recommendation into a theorem-level claim about which robustness numbers exist and when trimming makes them discontinuous.
+
+\citet{CallawaySantAnna2021MultiplePeriods} provide the canonical staggered-adoption ATET and aggregation framework. Their relevance here is that the target \(\hat\theta_\tau\) and the bias-weight vector \(\omega_\tau\) are defined on that estimand family, even though their results are point-identifying under parallel trends.
+
+\citet{SunAbraham2021DynamicEffects} show that staggered event-study coefficients can be contaminated by treatment-effect heterogeneity. That paper matters because trimming and event-time aggregation can change the causal meaning of the target before any sensitivity analysis is layered on top.
+
+\citet{BorusyakJaravelSpiess2024EventStudies} clarify the efficient imputation-based target and its event-time weights in staggered designs. Their estimand map is a natural empirical consumer of any trimming-sensitive TV frontier theorem.
+
+The in-repo prior art is close but not duplicative. The archived \texttt{q1\_partial\_did\_unobserved\_trends} entry records the general problem of sharp partial identification under partially observed pre-trends, but it does not isolate a TV frontier split. The failed \texttt{panel\_honest\_did\_phase} proposal is the closest banked kernel: it asked for a support-function phase diagram and left trimming discontinuities open. The downgraded \texttt{pid\_synth\_control\_factor\_misspec} and \texttt{pid\_offline\_policy\_joint\_misspec} proposals matter only for the generic lesson that signed pre-period information and joint support geometry can beat rectangular outer envelopes.
+
+\section{Formal setup}
+Fix a finite nested family of trimming rules \(\mathcal T\), ordered so that moving forward in the index removes cohorts or cohort-period cells. For each \(\tau\in\mathcal T\), let \(d_\tau=(d_{\tau,-L_\tau},\ldots,d_{\tau,-1})\in\R^{L_\tau}\) be the observed pre-treatment discrepancy path, let \(u_\tau=(u_{\tau,1},\ldots,u_{\tau,H_\tau})\in\R^{H_\tau}\) be the latent post-treatment discrepancy path, and let \(\omega_\tau=(\omega_{\tau,1},\ldots,\omega_{\tau,H_\tau})\in\R^{H_\tau}\) be the trimmed staggered-adoption bias-weight vector for the ATET target. The observed trimmed estimand is \(\hat\theta_\tau\in\R\), and the latent population ATET is
+\[
+  \theta_\tau = \hat\theta_\tau - \omega_\tau^\transpose u_\tau .
+\]
+
+Define the pre-treatment variation scale
+\[
+  D_{\mathrm{pre}}(\tau)
+  =
+  \sum_{j=-L_\tau+1}^{-1}\big|d_{\tau,j}-d_{\tau,j-1}\big|.
+\]
+The anchored TV class at radius \(\kappa\ge 0\) is
+\[
+  \calU_\tau(\kappa)
+  =
+  \left\{
+    u\in\R^{H_\tau}:
+    |u_1-d_{\tau,-1}| + \sum_{h=2}^{H_\tau}|u_h-u_{h-1}|
+    \le \kappa D_{\mathrm{pre}}(\tau)
+  \right\}.
+\]
+Let \(B_\tau>0\) be a maintained support bound for \(\theta_\tau\), induced by the outcome range and the trimming rule. The identified set is
+\[
+  I_\tau(\kappa)
+  =
+  \left\{
+    \hat\theta_\tau-\omega_\tau^\transpose u:
+    u\in\calU_\tau(\kappa)
+  \right\}
+  \cap [-B_\tau,B_\tau].
+\]
+
+For each sign \(\sigma\in\{+1,-1\}\), write
+\[
+  C_{\tau,h}^{\sigma}
+  =
+  \sum_{m=h}^{H_\tau}\sigma\omega_{\tau,m},
+  \qquad
+  M_\tau^\sigma
+  =
+  \max_{1\le h\le H_\tau}|C_{\tau,h}^{\sigma}|,
+\]
+and define the one-sided unit-budget support numbers
+\[
+  \bar h_\tau^\sigma
+  =
+  \sigma d_{\tau,-1}\sum_{m=1}^{H_\tau}\omega_{\tau,m}
+  +
+  D_{\mathrm{pre}}(\tau) M_\tau^\sigma .
+\]
+Thus
+\[
+  \sup_{u\in\calU_\tau(1)}\omega_\tau^\transpose u=\bar h_\tau^{+},
+  \qquad
+  \sup_{u\in\calU_\tau(1)}(-\omega_\tau^\transpose u)=\bar h_\tau^{-},
+\]
+so \(\bar h_\tau^{+}\) and \(\bar h_\tau^{-}\) are the upper and lower one-sided bias supports per unit TV radius.
+
+The two focal frontiers are
+\[
+  \kappa_{\mathrm{zero}}(\tau)
+  =
+  \inf\{\kappa\ge 0: 0\in I_\tau(\kappa)\},
+  \qquad
+  \kappa_{\mathrm{vac}}(\tau)
+  =
+  \inf\{\kappa\ge 0: I_\tau(\kappa)=[-B_\tau,B_\tau]\}.
+\]
+When the infimum set is empty, the convention is \(+\infty\).
+
+\begin{verbatim}
+(qid, specialization) =
+  (pid_tv_pretrend_atet, v1)
+anchor cluster = PartialID
+observable distribution P =
+  for each trimming rule tau in a finite nested family T, P supplies the
+  trimmed staggered-adoption event-study estimand hat theta_tau, the
+  pre-treatment discrepancy path d_tau, the post-treatment bias-weight
+  vector omega_tau, and an ATET support bound B_tau induced by the
+  maintained outcome range
+parameter theta =
+  theta_tau = trimmed staggered-adoption ATET under rule tau
+identifying restrictions =
+  (i) staggered-adoption ATET admits a linear post-bias representation
+      theta_tau = hat theta_tau - omega_tau' u_tau for some post-treatment
+      discrepancy path u_tau;
+  (ii) anchored TV restriction
+      |u_tau,1 - d_tau,-1| + sum_{h=2}^{H_tau} |u_tau,h - u_tau,h-1|
+      <= kappa * D_pre(tau),
+      where D_pre(tau) = sum_{j=-L_tau+1}^{-1} |d_tau,j - d_tau,j-1|;
+  (iii) theta_tau lies in [-B_tau,B_tau]
+bounding functional =
+  the sharp identified interval I_tau(kappa) for theta_tau obtained by
+  optimizing omega_tau' u_tau over the anchored-TV class above; the focal
+  objects are the first TV radius kappa_zero(tau) at which 0 enters
+  I_tau(kappa), and the first TV radius kappa_vac(tau) at which
+  I_tau(kappa) = [-B_tau,B_tau]
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite trimmed design]\label{ass:finite}
+The trimming family \(\mathcal T\) is finite and nested. For each \(\tau\in\mathcal T\), the dimensions \(L_\tau\) and \(H_\tau\) are finite, and \((\hat\theta_\tau,d_\tau,\omega_\tau,B_\tau)\) are observable from \(P\).
+\end{assumption}
+
+\begin{assumption}[Linear bias representation]\label{ass:linear}
+For each \(\tau\in\mathcal T\), the ATET target satisfies \(\theta_\tau=\hat\theta_\tau-\omega_\tau^\transpose u_\tau\) for some post-treatment discrepancy path \(u_\tau\in\R^{H_\tau}\).
+\end{assumption}
+
+\begin{assumption}[Anchored TV class]\label{ass:tv}
+For each \(\tau\in\mathcal T\) and each radius \(\kappa\ge 0\), the admissible post-treatment discrepancy paths are exactly \(\calU_\tau(\kappa)\).
+\end{assumption}
+
+\begin{assumption}[Outcome-range cap]\label{ass:range}
+For each \(\tau\in\mathcal T\), the ATET target obeys \(\theta_\tau\in[-B_\tau,B_\tau]\) with \(B_\tau>0\).
+\end{assumption}
+
+\begin{assumption}[Nondegenerate one-sided supports]\label{ass:nonsat}
+Whenever a formula below divides by \(\bar h_\tau^{+}\) or \(\bar h_\tau^{-}\), the denominator is strictly positive. If the denominator is zero, the corresponding frontier is interpreted by the \(+\infty\) convention.
+\end{assumption}
+
+\begin{assumption}[Ordered trimming path]\label{ass:trimpath}
+There exists a scalar trimming index \(c\in\calC\subset\R\) and a map \(c\mapsto\tau(c)\in\mathcal T\) such that the retained cohort set changes only when \(c\) crosses one of finitely many observable trimming scores.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: sharp anchored-TV interval]\label{thm:interval}
+Under Assumptions~\ref{ass:finite}--\ref{ass:range}, for every \(\tau\in\mathcal T\) and every \(\kappa\ge 0\),
+\[
+  I_\tau(\kappa)
+  =
+  \left[
+    \max\{-B_\tau,\ \hat\theta_\tau-\kappa \bar h_\tau^{-}\},
+    \min\{ B_\tau,\ \hat\theta_\tau+\kappa \bar h_\tau^{+}\}
+  \right].
+\]
+Equivalently,
+\[
+  \sup_{u\in\calU_\tau(\kappa)}\omega_\tau^\transpose u
+  =
+  \kappa \bar h_\tau^{+},
+  \qquad
+  \inf_{u\in\calU_\tau(\kappa)}\omega_\tau^\transpose u
+  =
+  -\kappa \bar h_\tau^{-}.
+\]
+\end{theorem}
+The proof is a one-dimensional variation-budget calculation after writing \(u_h=d_{\tau,-1}+\sum_{j=1}^{h}\Delta_j\) and maximizing a linear functional over an \(\ell_1\) ball in the increments. The cap \([-B_\tau,B_\tau]\) is imposed only at the last step.
+
+\begin{theorem}[Theorem 2: two critical TV frontiers]\label{thm:frontiers}
+Under Assumptions~\ref{ass:finite}--\ref{ass:nonsat}, for every \(\tau\in\mathcal T\):
+\[
+  \kappa_{\mathrm{zero}}(\tau)
+  =
+  \begin{cases}
+    \hat\theta_\tau/\bar h_\tau^{-}, & \hat\theta_\tau>0\ \text{and}\ \bar h_\tau^{-}>0,\\[0.4em]
+    -\hat\theta_\tau/\bar h_\tau^{+}, & \hat\theta_\tau<0\ \text{and}\ \bar h_\tau^{+}>0,\\[0.4em]
+    0, & \hat\theta_\tau=0,\\[0.4em]
+    +\infty, & \text{otherwise,}
+  \end{cases}
+\]
+and
+\[
+  \kappa_{\mathrm{vac}}(\tau)
+  =
+  \max\left\{
+    \frac{B_\tau-\hat\theta_\tau}{\bar h_\tau^{+}},
+    \frac{B_\tau+\hat\theta_\tau}{\bar h_\tau^{-}}
+  \right\},
+\]
+with the convention that division by a non-positive denominator yields \(+\infty\). In particular, \(\kappa_{\mathrm{zero}}(\tau)\le \kappa_{\mathrm{vac}}(\tau)\).
+\end{theorem}
+This follows by solving separately for the first \(\kappa\) at which the lower or upper endpoint in Theorem~\ref{thm:interval} crosses the relevant threshold. The sign-loss frontier depends on only one side of the support pair, whereas the vacuity frontier depends on both.
+
+\begin{conjecture}[Conjecture 1: trimming-phase jump theorem (NOT YET PROVED)]\label{conj:jumps}
+Under Assumptions~\ref{ass:finite}--\ref{ass:trimpath}, there exists a finite partition of the trimming-index set \(\calC\) into intervals on which
+\[
+  c\mapsto
+  \big(
+    \hat\theta_{\tau(c)},
+    \bar h_{\tau(c)}^{-},
+    \bar h_{\tau(c)}^{+},
+    B_{\tau(c)}
+  \big)
+\]
+is constant or rational in the trimming score, and therefore \(c\mapsto \kappa_{\mathrm{zero}}(\tau(c))\) and \(c\mapsto \kappa_{\mathrm{vac}}(\tau(c))\) are piecewise-rational. The jump set is exactly the union of three observable boundary types:
+\begin{enumerate}[label=(\roman*)]
+\item a change in the active cumulative-sum maximizer defining \(M_{\tau(c)}^{-}\);
+\item a change in the active cumulative-sum maximizer defining \(M_{\tau(c)}^{+}\);
+\item a change in the trimming rule that changes \(\hat\theta_{\tau(c)}\) or \(B_{\tau(c)}\) while leaving the active cumulative-sum face fixed.
+\end{enumerate}
+Moreover, there exist open sets of staggered-adoption designs for which type~(i) changes \(\kappa_{\mathrm{zero}}\) but not \(\kappa_{\mathrm{vac}}\), and open sets for which type~(ii) or type~(iii) changes \(\kappa_{\mathrm{vac}}\) but leaves \(\kappa_{\mathrm{zero}}\) unchanged.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Two-period corner]\label{cor:twoperiod}
+Under Assumptions~\ref{ass:finite}--\ref{ass:range}, if \(H_\tau=1\), then
+\[
+  \bar h_\tau^{+}=d_{\tau,-1}\omega_{\tau,1}+D_{\mathrm{pre}}(\tau)|\omega_{\tau,1}|,
+  \qquad
+  \bar h_\tau^{-}=-d_{\tau,-1}\omega_{\tau,1}+D_{\mathrm{pre}}(\tau)|\omega_{\tau,1}|,
+\]
+and \(I_\tau(\kappa)\) reduces to the usual one-dimensional capped sensitivity interval.
+\end{corollary}
+Under \(H_\tau=1\), the anchored TV class contains only the first jump away from the last pre-period discrepancy, so the cumulative-sum maximizer is unique and equal to \(|\omega_{\tau,1}|\).
+
+\begin{corollary}[Zero-variation corner]\label{cor:zerovar}
+Under Assumptions~\ref{ass:finite}--\ref{ass:range}, if \(D_{\mathrm{pre}}(\tau)=0\), then \(\calU_\tau(\kappa)=\{(d_{\tau,-1},\ldots,d_{\tau,-1})\}\) for every \(\kappa\), so \(I_\tau(\kappa)\) is constant in \(\kappa\) and both frontiers are either \(0\) or \(+\infty\).
+\end{corollary}
+This is the correct no-pretrend-dispersion reduction: the TV budget collapses the admissible post-treatment path to the flat continuation of the last pre-treatment discrepancy.
+
+\paragraph{Exhibit 9.1.}
+Take one trimming rule \(\tau_0\) with \(d_{\tau_0}= (0,1)\), so \(d_{\tau_0,-1}=1\) and \(D_{\mathrm{pre}}(\tau_0)=1\). Let \(H_{\tau_0}=2\), \(\omega_{\tau_0}=(1,-2)\), \(\hat\theta_{\tau_0}=1\), and \(B_{\tau_0}=3\). Then
+\[
+  C_{\tau_0}^{+}=(-1,-2),\qquad C_{\tau_0}^{-}=(1,2),
+\]
+so \(M_{\tau_0}^{+}=M_{\tau_0}^{-}=2\). Hence
+\[
+  \bar h_{\tau_0}^{+}
+  =
+  1\cdot(1-2)+1\cdot 2
+  =1,
+  \qquad
+  \bar h_{\tau_0}^{-}
+  =
+  (-1)\cdot(1-2)+1\cdot 2
+  =3.
+\]
+Therefore
+\[
+  I_{\tau_0}(\kappa)
+  =
+  [1-3\kappa,\ \min\{3,1+\kappa\}],
+\]
+so \(\kappa_{\mathrm{zero}}(\tau_0)=1/3\) and \(\kappa_{\mathrm{vac}}(\tau_0)=2\). The internal-consistency checks are immediate: there are two post-treatment cells and therefore two cumulative-sum coordinates, the TV budget is finite and nonzero, and both denominators used by Theorem~\ref{thm:frontiers} are strictly positive.
+
+\paragraph{Exhibit 9.2.}
+Now trim one high-leverage cohort, keeping the same \(d_{\tau_1}=(0,1)\), \(\hat\theta_{\tau_1}=1\), and \(B_{\tau_1}=3\), but changing the bias weights to \(\omega_{\tau_1}=(2,-1)\). Then
+\[
+  C_{\tau_1}^{+}=(1,-1),\qquad C_{\tau_1}^{-}=(-1,1),
+\]
+so \(M_{\tau_1}^{+}=M_{\tau_1}^{-}=1\), while
+\[
+  \bar h_{\tau_1}^{+}=1+1=2,
+  \qquad
+  \bar h_{\tau_1}^{-}=-1+1=0.
+\]
+Thus
+\[
+  I_{\tau_1}(\kappa)
+  =
+  [1,\ \min\{3,1+2\kappa\}],
+\]
+so \(\kappa_{\mathrm{zero}}(\tau_1)=+\infty\) and \(\kappa_{\mathrm{vac}}(\tau_1)=1\). Relative to Exhibit~9.1, trimming removes the lower-side support altogether, so sign identification never breaks under the maintained TV class even though the full-vacuity frontier moves inward.
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:interval} reduces to the increment representation \(u_h=d_{\tau,-1}+\sum_{j\le h}\Delta_j\), followed by Abel summation that converts \(\omega_\tau^\transpose u\) into a constant term plus cumulative sums times \(\Delta_j\), followed by \(\ell_1\)-duality on the anchored TV budget. Theorem~\ref{thm:frontiers} then follows by solving the endpoint crossing equations under the cap \([-B_\tau,B_\tau]\). For Conjecture~\ref{conj:jumps}, the intended chain is
+\[
+\text{headline}
+\leftarrow
+[\text{unfold \S6 definitions}]
+\leftarrow
+[\text{substitute \S7 assumptions}]
+\leftarrow
+[\text{express }\bar h_\tau^\sigma\text{ as an active cumulative-sum face}]
+\leftarrow
+[\text{show trimming changes only finitely many faces}]
+\leftarrow
+[\text{derive piecewise-rational frontier formulas on each face}]
+\leftarrow
+[\text{construct open-set witnesses where only one side changes}].
+\]
+The substantive step count is \(k=4\): active-face identification, finite face changes under trimming, piecewise-rational frontier reduction, and open-set witness construction. The boundary cases that need explicit algebra are the zero-variation corner \(D_{\mathrm{pre}}(\tau)=0\), the one-sided-degenerate cases \(\bar h_\tau^{+}\le0\) or \(\bar h_\tau^{-}\le0\), and the trim points where \(B_\tau\) changes with the retained support.
+
+\section{Honest scope flags}
+Theorems~\ref{thm:interval} and \ref{thm:frontiers} are intended as routine finite-dimensional statements. Conjecture~\ref{conj:jumps} is the novelty-bearing kernel and remains open. The worked exhibits compute the focal objects from the locked primitives, but they do not prove that the jump classification extends to an open neighborhood of trimming rules; that extension is exactly the conjectural step. No earlier version of this angle was written, so nothing has yet been withdrawn inside this angle beyond the general decision not to recycle the rejected global TV-norm or cohort-to-aggregate projection kernels.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) --- initial draft for the trimming-phase frontier angle; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem{BorusyakJaravelSpiess2024EventStudies}
+Borusyak, K., Jaravel, X., and Spiess, J. (2024).
+\newblock Revisiting event-study designs: Robust and efficient estimation.
+\newblock {\em Review of Economic Studies}, 91(6):3253--3285.
+
+\bibitem{CallawaySantAnna2021MultiplePeriods}
+Callaway, B. and Sant'Anna, P. H. C. (2021).
+\newblock Difference-in-differences with multiple time periods.
+\newblock {\em Journal of Econometrics}, 225(2):200--230.
+
+\bibitem{ManskiPepper2018BoundedVariation}
+Manski, C. F. and Pepper, J. V. (2018).
+\newblock How do right-to-carry laws affect crime rates? Coping with ambiguity using bounded-variation assumptions.
+\newblock {\em Review of Economics and Statistics}, 100(2):232--244.
+
+\bibitem{RambachanRoth2023CrediblePT}
+Rambachan, A. and Roth, J. (2023).
+\newblock A more credible approach to parallel trends.
+\newblock {\em Review of Economic Studies}, 90(5):2555--2591.
+
+\bibitem{RothSantAnnaBilinskiPoe2023TrendingDiD}
+Roth, J., Sant'Anna, P. H. C., Bilinski, A., and Poe, J. (2023).
+\newblock What's trending in difference-in-differences? A synthesis of the recent econometrics literature.
+\newblock {\em Journal of Econometrics}, 235(2):2218--2244.
+
+\bibitem{SunAbraham2021DynamicEffects}
+Sun, L. and Abraham, S. (2021).
+\newblock Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\newblock {\em Journal of Econometrics}, 225(2):175--199.
+\end{thebibliography}
+
+\end{document}

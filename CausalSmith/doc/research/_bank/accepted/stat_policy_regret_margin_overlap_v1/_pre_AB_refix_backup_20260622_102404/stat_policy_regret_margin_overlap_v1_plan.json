@@ -1,0 +1,769 @@
+{
+  "qid": "stat_policy_regret_margin_overlap",
+  "specialization": "v1",
+  "cluster": "stat",
+  "lean_namespace": "CausalSmith.Stat.PolicyRegretMarginOverlap",
+  "lean_target_subdir": "CausalSmith/Stat/STAT_PolicyRegretMarginOverlap_Research",
+  "status": "completed",
+  "feasibility": "formalizable-now",
+  "decisions": [
+    {
+      "id": "D-plan-1",
+      "decision": "World structure PolicyRegretLaw is define-local (Causalean PO framework is SCM/counterfactual measure-theoretic; this kernel needs a self-contained observed-law class carrying a covariate marginal P_X, a contrast function tau_P, and a propensity e_P as PRIMITIVES, not derived from an SCM). bypass-justified."
+    },
+    {
+      "id": "D-plan-2",
+      "decision": "The localized finite-VC empirical-process bounds (ass:vc-localized-envelope, ass:vc-localized-offset-envelope) are core ASSUMPTIONS (D0-approved standard BartlettBousquetMendelson2005 facts, cited), not lemmas-to-prove. They map to inline assumption Props. The available discharge substrate (CausalSmith.Mathlib.Concentration.finiteClass_rademacherUpperBound_linear + Causalean.Stat.Concentration.localized_uniform_deviation_sharp) is recorded in their notes for a future promotion, but is NOT load-bearing here. No Defer."
+    },
+    {
+      "id": "D-plan-3",
+      "decision": "lem:witness-membership PROVES that the witnesses satisfy the six member-properties of def:law-class; those six assumptions appear in its core depends_on. The P4 gate requires every assumption dependency to surface directly in hyps OR via a bundled class listed in hyps. Since ass:bounded-outcome/positivity/margin/zero-effect/overlap-decay/strict-overlap-endpoint are exactly the members of def:law-class, list def:law-class in hyps (the bundled-class coverage vehicle) alongside the genuine extra hypothesis ass:margin-window. hyps=[ass:margin-window, def:law-class]. (Realization note: the lemma constructs the PolicyRegretLawClass instance for the witnesses; def:law-class is listed in hyps solely to satisfy the deterministic P4 member-coverage check for the six depends_on assumptions.)"
+    },
+    {
+      "id": "D-plan-4",
+      "decision": "oeq:feasible-tight is an OPEN RESIDUAL node, not a closed theorem. Per F2.5 fix issue 1 it is mapped to lean_kind=def (a named Prop stating the strict-gap attainability question), NOT to a theorem; its local_id is removed and it is dropped from the theorems manifest (t7). The def may REFERENCE the already-stated lower bound (thm:minimax-lower/rStar) and the conditional upper branch (oeq:feasible-upper/rFeas), but it MUST NOT be emitted as a theorem, MUST NOT prove a lower+upper bracket, MUST NOT assert or prove that a feasible estimator attains r_star in the strict-gap branch, and MUST NOT state an iff that resolves the open question. No matched-rate theorem is required."
+    },
+    {
+      "id": "D-plan-5",
+      "decision": "A prior formalization of this QID (t1_thm..t6_thm, deleted in the current worktree, recorded in CausalSmith/doc/API.md §3.3) is NOT reused as code; only the model-agnostic CausalSmith/Mathlib substrate it deposited (OffsetPeeling, RpowArith, ProductChiSquared, FiniteClassRademacher) survives and is reused. local_ids t1..t7 follow the same paper-headline convention."
+    }
+  ],
+  "env": [
+    {
+      "id": "S1",
+      "world": "observed-law policy-learning class over a measurable covariate space: a probability law P on O=(X,A,Y) in 𝒳×{0,1}×[-1,1] with covariate marginal P_X, propensity e_P, overlap p_P, outcome regressions mu_0/mu_1, contrast tau_P, welfare V_P, regret R_P, optimal/comparator policies over a policy class Pi.",
+      "binds_symbols": [
+        "O",
+        "X",
+        "A",
+        "Y",
+        "P",
+        "P_X",
+        "e_P",
+        "p_P",
+        "mu_0",
+        "mu_1",
+        "tau_P",
+        "pi",
+        "Pi",
+        "pi_star",
+        "V_P",
+        "R_P",
+        "D_pi",
+        "alpha",
+        "gamma",
+        "d_Pi",
+        "C_m",
+        "u_0",
+        "C_o",
+        "c_o",
+        "beta_ag",
+        "D_ag",
+        "r_star",
+        "s_feas",
+        "r_feas",
+        "Gamma_q",
+        "pi_hat_n",
+        "qbar_n",
+        "hbar_n",
+        "L_n"
+      ],
+      "binds_sampling_model": false,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "lean_kind": "structure",
+      "lean_name": "PolicyRegretLaw",
+      "notes": "F2.5 redirect hard constraint: PolicyRegretLaw must be an observed-law substrate, not a thin covariate-only skeleton. Include an observation type O=(X,A,Y) and an observed probability law on observations, with covariate marginal P_X, propensity e_P, outcome regressions mu0/mu1, contrast tau, support/bounded-outcome semantics, welfare/regret, and policy class hooks tied to that law. It is acceptable to keep mu0/mu1/propensity as primitive fields, but do NOT omit observedLaw/sample semantics. Do NOT model the witness over Unit.\n\nbypass-justified. Searched API.md §8h (PO/) + §9g (ATE) + §13'''(CATE) for a reusable observed-law/welfare/policy primitive carrying a contrast function and covariate marginal: grep 'policy welfare regret contrast' over ../doc/API.md and doc/API.md → only deleted STAT_PolicyRegretMarginOverlap entries (doc/API.md §3.3) match; Causalean PO/CATE worlds are SCM/counterfactual measure spaces with potential-outcome kernels, a different abstraction (no tau_P/P_X/e_P as free primitives). Define-local structure PolicyRegretLaw 𝒳 bundling covariateMeasure (Measure 𝒳, IsProbabilityMeasure), contrast, propensity (and derived overlap), the policy type Policy 𝒳 := 𝒳→Bool, lawOptimalPolicy, lawWelfare, lawRegret. This is the highest-leverage reuse decision and is intentionally bespoke."
+    },
+    {
+      "id": "S2",
+      "world": "i.i.d. offline sampling + n-sample product experiment and minimax functional: O_1,...,O_n iid from P (Measure.pi), least-favorable two-point construction scales, minimax/feasible risk functionals over the product law.",
+      "binds_symbols": [
+        "n",
+        "M_n",
+        "U_n",
+        "h_n",
+        "q_n",
+        "B_n"
+      ],
+      "binds_sampling_model": true,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Minimax.MinimaxRisk",
+        "Causalean.Stat.Minimax.ChiSquared",
+        "Causalean.Stat.Minimax.TotalVariation",
+        "CausalSmith.Mathlib.InformationTheory.ProductChiSquared"
+      ],
+      "lean_kind": "world",
+      "lean_name": "Measure.pi (fun _ : Fin n => P)",
+      "notes": "F2.5 redirect hard constraint: the n-sample experiment is Measure.pi over the S1 observed law, and minimax/upper-risk functionals must quantify over measurable Pi-valued estimators, not arbitrary functions. Tie sampleLaw, lawClass, feasibleERM, q_n/u_n schedule, crossfit folds, and nuisance estimators together in the statements. Constants in asymptotic bounds must be chosen before n, with an all-large-n quantifier.\n\nEncode the i.i.d. n-sample experiment DIRECTLY as the product law Measure.pi (fun _ : Fin n => P) over the S1 single-observation world — no bespoke product-measure constructor and no reused world decl hosts it. The minimax/feasible regret functionals M_n (def:minimax-regret) and U_n (def:upper-risk), and the two-point construction scales h_n, q_n, B_n (def:two-point-witness), are all bespoke define-local objects over Measure.pi and the S1 PolicyRegretLaw; they are NOT supplied by any reused world. disposition=define-local accordingly (reuse=null). Causalean.Stat.iid_two_point_lower_bound is cited ONLY as ANALOGOUS minimax/Le-Cam substrate — the two-point lower-bound pattern thm:minimax-lower adapts (a packaged iid two-point reduction over Measure.pi), not the host of these functionals. The chi-square product layer is genuinely reused, but at the CHILD nodes that need it, not here: CausalSmith.Mathlib.InformationTheory.ProductChiSquared.{one_add_chiSqDiv_pi_iid_general, chiSqDiv_eq_sum_partition_of_restrict_eq_smul} and Causalean.Stat.{chiSqDiv, chiSqDiv_prod} at lem:two-point-divergence, and Causalean.Stat.{one_sub_tvDist_le_test, tvDist_le_half_sqrt_chiSqDiv} at lem:le-cam-two-point-chisq (../doc/API.md §12w.2-12w.6, §2c.3). Modules listed are the analogous/supporting layers those child reuses draw on."
+    }
+  ],
+  "nodes": {
+    "ass:iid": {
+      "lean_kind": "assumption",
+      "lean_name": "iidSample",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Inline assumption; the i.i.d. n-sample experiment is the product law Measure.pi (fun _:Fin n=>P). grep 'iid sampling predicate' ../doc/API.md → no standalone Prop; design encodes it structurally. Small define-local Prop wrapper."
+    },
+    "ass:consistency": {
+      "lean_kind": "assumption",
+      "lean_name": "consistencySUTVA",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Optional causal semantics (honest_scope: not load-bearing; no used_by edge). Define-local Prop Y = A·Y(1)+(1-A)·Y(0). grep 'consistency SUTVA' ../doc/API.md §8h PO → PO framework has potential-outcome consistency but over SCM kernels, different abstraction; bypass-justified, small inline Prop."
+    },
+    "ass:unconfoundedness": {
+      "lean_kind": "assumption",
+      "lean_name": "unconfoundedness",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Optional causal semantics (not load-bearing). Define-local Prop (Y(0),Y(1)) ⟂ A | X. grep 'unconfoundedness ignorability' ../doc/API.md §8h → SCM/CI abstraction, not over this observed-law world; bypass-justified, small inline Prop."
+    },
+    "ass:bounded-outcome": {
+      "lean_kind": "assumption",
+      "lean_name": "boundedOutcome",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Member of def:law-class and inline hyp of many statements. Small define-local Prop: outcome arms in [-1,1] hence |tau_P|≤2. No library Prop for this bespoke world (searched ../doc/API.md §12/§13)."
+    },
+    "ass:positivity": {
+      "lean_kind": "assumption",
+      "lean_name": "positivity",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Member of def:law-class. Small define-local Prop 0<e_P(X)<1 P_X-a.s. Searched ../doc/API.md §9a Overlap predicate (SCM backdoor overlap) — different abstraction; define-local."
+    },
+    "ass:margin": {
+      "lean_kind": "assumption",
+      "lean_name": "marginTail",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Member of def:law-class; Tsybakov margin tail P(0<|tau|≤u)≤C_m u^α. grep 'Tsybakov margin tail decision' ../doc/API.md + lean_local_search 'margin' → no Causalean Tsybakov-margin primitive; define-local Prop over PolicyRegretLaw."
+    },
+    "ass:zero-effect": {
+      "lean_kind": "assumption",
+      "lean_name": "zeroEffectAgreement",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Member of def:law-class. Define-local Prop: P_X{tau=0}=0 OR all pi∈Pi agree with pi_star on {tau=0}. Bespoke; no library analogue (searched ../doc/API.md §12)."
+    },
+    "ass:overlap-decay": {
+      "lean_kind": "assumption",
+      "lean_name": "overlapDecay",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "NOVEL class-defining joint margin/one-sided-overlap envelope; member of def:law-class. grep 'overlap decay margin envelope joint tail' ../doc/API.md §12wo WeakOverlap (inverse-moment asymptotics) — neighbouring but the joint coupling P{p≤v,0<|tau|≤u}≤C_o u^α v^(1/γ) is new; define-local Prop. This is the paper's contribution."
+    },
+    "ass:policy-class": {
+      "lean_kind": "assumption",
+      "lean_name": "pointwiseMeasurableVCClass",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Pointwise-measurable finite-VC class with countable pointwise-dense subclass Pi_0. lean_local_search 'vcDim' + ../doc/API.md §12'.e4 VCCovering (Boolean class vcDim) — provides VC machinery but not this packaged measurability+density Prop; reference VCCovering.vcDim for the VC clause. Define-local Prop bundling Pi_0 density + d_Pi<∞."
+    },
+    "ass:optimal-in-class": {
+      "lean_kind": "assumption",
+      "lean_name": "optimalInClass",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Define-local Prop pi_star ∈ Pi for every law in the class. Bespoke; no library analogue."
+    },
+    "ass:vc-localized-envelope": {
+      "lean_kind": "assumption",
+      "lean_name": "vcLocalizedEnvelope",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Core ASSUMPTION (standard BartlettBousquetMendelson2005 localized finite-VC fixed-radius bound), D0-approved as a stated hypothesis, NOT a lemma to prove. May remain an assumption, but per F2.5 fix issue 3 it must be OBJECT-BINDING, not an arbitrary real supremum: the Prop must quantify over the actual centered policy-indexed empirical process built from an i.i.d. sample of size n (the Measure.pi sample of the S1 law), with an explicit envelope B and an explicit conditional-second-moment premise E[g_pi^2] ≤ C B^2 P_X(D_pi), and conclude the fixed-radius localized supremum bound E sup_{R_P(pi)≤r} |(P_m−P)g_pi| ≤ C B m^-1/2 r^{α/(2+2α)}(log m)^p. The process object, its sample, its envelope, and its variance premise are formal inputs/fields — NOT a bare ∀ over abstract reals. Discharge route if later promoted: CausalSmith.Mathlib.Concentration.finiteClass_rademacherUpperBound_linear + Causalean.Stat.Concentration.localized_uniform_deviation_sharp (../doc/API.md §2b, §12''b 6094). Define-local Prop. Inline hyp of oeq:feasible-upper, lem:localized-vc-process-bound."
+    },
+    "ass:margin-window": {
+      "lean_kind": "assumption",
+      "lean_name": "marginWindow",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Small define-local Prop 0<u_0<2 (normalization so an off-block contrast tau_0∈(u_0,2) exists)."
+    },
+    "ass:nuisance-rate": {
+      "lean_kind": "assumption",
+      "lean_name": "crossfitNuisanceRate",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Define-local Prop, OBJECT-BINDING (F2.5 fix issue 3): NOT a scalar rate placeholder. The Prop must take the supplied cross-fitted estimators muhat0, muhat1, ehat (the SAME ones consumed by def:feasible-erm) and the law P, and assert genuine L2(P) error bounds against P's own nuisance functions: ‖muhat_a − P.mu_a‖_{L2(P_X)} ≤ r_mu_n for a∈{0,1}, ‖ehat − P.propensity‖_{L2(P_X)} ≤ r_e_n, with the product r_mu_n·r_e_n = O(n^-1/2). Encode the norms as actual eLpNorm/∫(·)^2 dP_X integrals over the PolicyRegretLaw fields P.mu0/P.mu1/P.propensity, not abstract reals r_mu_n,r_e_n standing alone. r_mu_n,r_e_n are existentially supplied sequences bound to these errors. Causalean DML (../doc/API.md §13plr/§13sa) carries rate hypotheses but over its own estimator setups; the L2(P)-error Prop here is define-local."
+    },
+    "ass:strict-overlap-endpoint": {
+      "lean_kind": "assumption",
+      "lean_name": "strictOverlapEndpoint",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Member of def:law-class. Define-local Prop: when gamma=0, p_P(X)≥underline_p P_X-a.s. Bespoke; define-local."
+    },
+    "ass:bounded-crossfit-nuisances": {
+      "lean_kind": "assumption",
+      "lean_name": "boundedCrossfitNuisances",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "D0-added faithful-refinement. Define-local Prop: muhat_0,muhat_1 ∈ [-1,1]. Small inline truncation Prop."
+    },
+    "ass:polynomial-nuisance-exponents": {
+      "lean_kind": "assumption",
+      "lean_name": "polynomialNuisanceExponents",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "D0-added faithful-refinement. Define-local Prop: ∃ a≥0,c≥1/2,C_mu,C_prod with r_mu_n≤C_mu n^-a and r_mu_n r_e_n≤C_prod n^-c. Small inline rate Prop."
+    },
+    "ass:fixed-crossfit-fold-count": {
+      "lean_kind": "assumption",
+      "lean_name": "fixedCrossfitFoldCount",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "D0-added faithful-refinement. Define-local Prop: K fixed finite, balanced deterministic partition (fold sizes floor/ceil n/K). Small inline Prop."
+    },
+    "ass:vc-localized-offset-envelope": {
+      "lean_kind": "assumption",
+      "lean_name": "vcLocalizedOffsetEnvelope",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Core ASSUMPTION (standard localized finite-VC offset/Rademacher bound, BartlettBousquetMendelson2005), D0 post-solve gate split; stated hypothesis, NOT a lemma. May remain an assumption, but per F2.5 fix issue 3 it must be OBJECT-BINDING, not an arbitrary real supremum: the Prop must quantify over the actual centered policy-indexed empirical process z_pi = (P_m−P)g_pi built from an i.i.d. sample of size n of the S1 law, with an explicit envelope B≥1 and an explicit conditional-second-moment premise E[g_pi^2] ≤ C B^2 P_X(D_pi), and conclude the offset positive-part bound E sup_{pi∈Pi}{2|z_pi|−R_P(pi)/4}_+ ≤ C(B^2/n)^{A_alpha}(log n)^p. The sample, envelope, and variance premise (and the fixed-K cross-fitted evaluation-fold averages conditional on training folds) are formal inputs — NOT a bare ∀ over abstract reals. Discharge route if promoted: Causalean.Stat.Concentration.localized_uniform_deviation_sharp + CausalSmith.Mathlib.Analysis.OffsetPeeling.offset_peeling (doc/API.md §2c.1, ../doc/API.md §12''b). Define-local Prop. Inline hyp of lem:crossfit-localized-offset-control, lem:crude-localized-master-bound."
+    },
+    "def:welfare-regret": {
+      "lean_kind": "def",
+      "lean_name": "lawRegret",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Construction defining lawWelfare V_P(pi)=∫ pi·tau dP_X, lawOptimalPolicy pi_star=1{tau≥0}, lawRegret R_P(pi)=V_P(pi_star)-V_P(pi) as defs on PolicyRegretLaw. grep 'welfare regret policy value' ../doc/API.md → only deleted §3.3 lawRegret; define-local on the new world."
+    },
+    "def:disagreement": {
+      "lean_kind": "def",
+      "lean_name": "disagreementSet",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Construction D_pi={x: pi(x)≠pi_star(x)} (and disagreementIndicator). Define-local def; bespoke."
+    },
+    "def:exponents": {
+      "lean_kind": "def",
+      "lean_name": "rStar",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Mathlib.Analysis.RpowArith"
+      ],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Construction of betaWeak (0 if γ=0 else αγ/(α+1)), Dag=2+α+betaWeak, rStar=(1+α)/Dag (inputs α,γ). Pure rpow algebra; reuse CausalSmith.Mathlib.Analysis.RpowArith for power identities. Define-local defs betaWeak/dAlphaGamma/rStar."
+    },
+    "def:feasible-rate": {
+      "lean_kind": "def",
+      "lean_name": "rFeas",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Mathlib.Analysis.RpowArith"
+      ],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Construction of (s_feas,r_feas): A_alpha=(1+α)/(2+α); for γ>0 phi(s,t)=min{A_alpha(1-2s),c-s,a+s/(2γ)+αt/2,2a-t} on compact {0≤s≤1/2,0≤t≤s/γ}, g_joint=max phi, r_feas=min{rStar,g_joint}; for γ=0 r_feas=min{A_alpha,c}. Define-local defs gJoint/rFeas; rpow algebra via RpowArith.\n\nF2.5 redirect hard constraint: Encode s_feas/t_feas/q_n/u_n feasibility and the gJoint/rFeas optimization, not only u_n = uBar*n^-t."
+    },
+    "def:clipped-propensity": {
+      "lean_kind": "def",
+      "lean_name": "clippedPropensity",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Construction e_q(x)=min{1-q,max{q,e(x)}} (inputs e,q). Trivial min/max def; define-local."
+    },
+    "def:clipped-aipw-score": {
+      "lean_kind": "def",
+      "lean_name": "clippedAIPWScore",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Construction Gamma_q(O;eta)=mu_1-mu_0+(A/e_q)(Y-mu_1)-((1-A)/(1-e_q))(Y-mu_0). grep 'AIPW score doubly robust influence' ../doc/API.md §13/§13sa — AIPW/DR scores exist for ATE estimators but not the clipped policy-contrast form; define-local def."
+    },
+    "def:feasible-erm": {
+      "lean_kind": "def",
+      "lean_name": "feasibleERM",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Concentration.ERMOracle"
+      ],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Construction: cross-fit clipped-AIPW Vhat_{n,q}(pi)=n^-1 Σ pi(X_i) Gamma_q(O_i;etahat^(-k(i))); pi_hat_n = first 1/n-near-maximizer index over countable Pi_0. Analogous: Causalean.Stat.Concentration.ERMOracle.erm_excess_le_two_uniformDeviation (deterministic ERM basic inequality) — different criterion (welfare value, not loss), adapt for measurability of the 1/n-argmax.\n\nF2.5 fix issue 5 — CONSTRUCTIVE NEAR-MAXIMIZER + PACKAGING: take Pi_0 = (pi_j)_{j≥1} the countable pointwise-dense subclass SUPPLIED by ass:policy-class (carry the Pi_0-from-policy-class relation as a parameter/field, not a fresh ad-hoc enumeration), and set j_n := the FIRST index j with Vhat_{n,q}(pi_j) ≥ (sup_k Vhat_{n,q}(pi_k)) − 1/n, using Nat.find on the (decidable-after-choice) near-max predicate. The def must PACKAGE: (i) Pi-valuedness — pi_hat_n = pi_{j_n} ∈ Pi_0 ⊆ Pi; (ii) the measurability proof in the exact shape def:minimax-regret's infimum domain requires (sample-measurable, Bool/Policy-codomain), from countability of Pi_0; (iii) the Pi_0/Pi relation from ass:policy-class. Fall back ONLY in a visibly harmless way when the near-max index set is empty (e.g. degenerate/empty Pi_0): return a fixed default policy (pi_0 or const) so the object is total, and note this branch is unreachable under ass:policy-class (Pi_0 nonempty) — the fallback must never be the source of a proved bound. Define-local def."
+    },
+    "def:minimax-regret": {
+      "lean_kind": "def",
+      "lean_name": "minimaxRegret",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Minimax.MinimaxRisk"
+      ],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Construction M_n = inf over measurable Pi-valued estimators of sup_{P∈P_class} E_P R_P(pihat). Mirrors Causalean.Stat minimaxMiss-style packaging (../doc/API.md §13sa.1 minimaxMiss / §12w.6 MinimaxRisk) but over regret risk and the policy law class; define-local def.\n\nF2.5 fix issue 4 — REAL MEASURABILITY: the infimum must range over genuinely measurable Pi-valued estimators. Do NOT use an opaque field `measurableRule : Prop`. Model an estimator as a function ruleHat : (Fin n → O) → Policy 𝒳 together with a real measurability predicate tied to the sample measurable space and the policy codomain: e.g. require, for the data σ-algebra on (Fin n → O) (the Measure.pi product space) and for each x : 𝒳, that the sample-map ω ↦ ruleHat ω x is Measurable into Bool (the {0,1} policy codomain), i.e. a jointly/pointwise-measurable Pi-valued rule (Measurable (fun ω => ruleHat ω x) for all x, equivalently measurability into the Policy subtype carved out by ass:policy-class). The inf is taken over the subtype {ruleHat // <this measurability proof>}. This is the SAME measurability shape feasibleERM (def:feasible-erm) is proved to satisfy, so pi_hat_n is a member of the infimum domain. Unrestricted sample→policy functions are not faithful."
+    },
+    "def:upper-risk": {
+      "lean_kind": "def",
+      "lean_name": "feasibleUpperRisk",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "Construction U_n = sup E_P R_P(pi_hat_n) over P∈def:law-class with ass:optimal-in-class and the explicit estimator-side/policy side-conditions (nuisance-rate, bounded-crossfit, polynomial-exponents, policy-class, vc-localized-envelope, vc-localized-offset-envelope, fixed-fold-count). Define-local def; bespoke side-condition domain.\n\nF2.5 fix issue 2 — SUPREMUM-CONSISTENCY: the supremum index set must be the set of (law P, supplied cross-fitted nuisances muhat0/muhat1/ehat, K-fold deterministic partition) triples for which ALL stated side conditions hold; the side-condition predicates are quantified over EACH P in the domain, never asserted once for a fixed P alongside the sup. The regime (a,c,C_mu,C_prod) and the q_n/u_n schedule are fixed FIRST (by def:feasible-rate), then U_n is the sup over the law/estimator domain compatible with that regime. Critically, the nuisances/folds/schedule appearing in the side conditions must be the SAME objects fed to feasibleERM (def:feasible-erm) and clippedAIPWScore (def:clipped-aipw-score) inside R_P(pi_hat_n) — pass them as shared parameters, not as independently re-quantified placeholders.\n\nF2.5 redirect: The risk is for the feasible clipped-AIPW ERM with the feasible q_n/u_n schedule and explicit cross-fitted nuisance/fold side conditions, not an arbitrary estimator."
+    },
+    "def:law-class": {
+      "lean_kind": "structure",
+      "lean_name": "PolicyRegretLawClass",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "members": [
+        "ass:bounded-outcome",
+        "ass:positivity",
+        "ass:margin",
+        "ass:zero-effect",
+        "ass:overlap-decay",
+        "ass:strict-overlap-endpoint"
+      ],
+      "notes": "CLASS structure (one field per member Prop): the observed-law class P_class(α,γ). members == core by_member_properties exactly (6). Define-local structure over PolicyRegretLaw with the constant/exponent parameters; bespoke."
+    },
+    "def:two-point-witness": {
+      "lean_kind": "def",
+      "lean_name": "twoPointWitness",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Mathlib.Analysis.RpowArith"
+      ],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "notes": "CRUX construction (inputs n,α,γ): explicit paired laws P_{n,±} on 𝒳=[0,1], P_X=Lebesgue, active block B_n=[0,c_B h_n^α], propensity q_n on B_n / 1/2 off, treated active cell {±1}-outcome with mean ±h_n. Analogous: Causalean.Stat MinimaxATE explicit Rademacher-bump witness (../doc/API.md §13sa.4 ExplicitWitness, §13sa.3 l2sq_bump) — same two-point/cell-charge pattern to adapt (covariate is here [0,1] Lebesgue rather than Fin M).\n\nF2.5 fix issue 6 — CONCRETE WITNESS LAWS, NO SEMANTIC PLACEHOLDERS: this node must NOT be a Dirac base law decorated with opaque Prop fields asserting the desired margin/overlap/contrast facts (that would let lem:witness-membership / lem:two-point-divergence / lem:regret-separation 'succeed' from unconstrained semantics). Two faithful options, pick one and record it: (W-A) build the two ACTUAL observed laws P_{n,σ} as PolicyRegretLaw instances — covariateMeasure = Lebesgue on [0,1] (volume restricted to the unit interval), propensity = (q_n on B_n, 1/2 off B_n) as a real measurable function, contrast tau = (σ·h_n on B_n, tau_0 off B_n), and the outcome/regression fields realizing E[Y|A,X] from the {−1,1}-supported cell laws — so all member-properties are DERIVABLE from the concrete construction; or (W-B) make twoPointWitness an honest witness-construction INTERFACE whose fields are the concrete laws (P_{n,+}, P_{n,-} : PolicyRegretLaw) PLUS the concrete equalities/facts the lower-bound lemmas actually consume (P_X equality, propensity/contrast pointwise equalities on/off B_n, the per-cell outcome probabilities (1±σh_n)/2, P_X(B_n)=c_B h_n^α), i.e. structural facts that PIN the laws — never bare semantic Props like `marginHolds : Prop`. Constants chosen with 8 C_B C_Q < log 5. Downstream lemmas must consume these concrete fields, not unconstrained placeholders. Do not collapse to Unit or everywhere-active witnesses. Define-local def/structure building the two Measure laws."
+    },
+    "thm:welfare-identity": {
+      "lean_kind": "theorem",
+      "lean_name": "welfareRegret_identity",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "T1.lean",
+      "local_id": "t1",
+      "hyps": [
+        "ass:bounded-outcome"
+      ],
+      "notes": "Build-inline (matches deleted t1_thm, doc/API.md §3.3). Pointwise sign algebra: R_P(pi)=∫|tau|·1{pi≠pi_star} dP_X. Pure population identity; no sampling premise."
+    },
+    "thm:margin-localization": {
+      "lean_kind": "theorem",
+      "lean_name": "margin_localization",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "T2.lean",
+      "local_id": "t2",
+      "hyps": [
+        "ass:margin",
+        "ass:zero-effect",
+        "ass:bounded-outcome"
+      ],
+      "notes": "Build-inline (matches deleted t2_thm). Tsybakov margin → disagreement-mass bound P_X(D_pi)≤C R_P(pi)^(α/(1+α)) via the welfare identity, corner case R=0, and the u=r^(1/(1+α)) balance. Standard real-analysis split."
+    },
+    "prop:overlap-envelope": {
+      "lean_kind": "theorem",
+      "lean_name": "overlap_envelope_admissibility",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Mathlib.Analysis.RpowArith"
+      ],
+      "defer_tier": false,
+      "target_file": "T3.lean",
+      "local_id": "t3",
+      "hyps": [
+        "ass:overlap-decay"
+      ],
+      "notes": "Build-inline (matches deleted t3_thm). Pure rpow algebra: u^α v^(1/γ)=h^((α+1)β/γ) at the tight window, ≥h^α iff β≤beta_ag. Reuse CausalSmith.Mathlib.Analysis.RpowArith. ass:overlap-decay listed in hyps per P4 (depends_on coverage), though the core identity is algebraic."
+    },
+    "lem:witness-membership": {
+      "lean_kind": "lemma",
+      "lean_name": "witness_membership",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Helpers.lean",
+      "hyps": [
+        "ass:margin-window",
+        "def:law-class"
+      ],
+      "notes": "Build-inline (component of deleted t5). PROVES the explicit witnesses satisfy the 6 member-properties of def:law-class. The six depends_on assumptions ass:bounded-outcome/positivity/margin/zero-effect/overlap-decay/strict-overlap-endpoint are exactly the members of def:law-class; per the P4 gate they are covered by listing the bundled class def:law-class in hyps, alongside the genuine extra hypothesis ass:margin-window (constants c_B chosen ≤ min{C_m,C_o,...}). Uses prop:overlap-envelope tight-window equality + def:exponents. See D-plan-3.\n\nF2.5 redirect hard constraint: No vacuous fixed-n ∃N, n≥N -> form. Use ∃N, ∀n≥N for actual active-block witnesses and prove membership in def:law-class."
+    },
+    "lem:two-point-divergence": {
+      "lean_kind": "lemma",
+      "lean_name": "twoPoint_chiSq_divergence",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Mathlib.InformationTheory.ProductChiSquared",
+        "Causalean.Stat.Minimax.ChiSquared"
+      ],
+      "defer_tier": false,
+      "target_file": "Helpers.lean",
+      "hyps": [],
+      "notes": "Build-inline. Per-obs Bernoulli χ²=4h^2/(1-h^2)≤8h^2 on the charged cell of mass m_n q_n; n-fold via tensorization. Reuse CausalSmith.Mathlib.ProductChiSquared.one_add_chiSqDiv_pi_iid_general (n-fold) + chiSqDiv_eq_sum_partition_of_restrict_eq_smul (per-cell finite formula) and Causalean.Stat.chiSqDiv_prod. Balance n h_n^D_ag~1.\n\nF2.5 redirect hard constraint: Bound the actual witness observed laws uniformly with per-observation and product chi-square scaling; do not quantify arbitrary Pplus/Pminus with constants chosen after them."
+    },
+    "lem:regret-separation": {
+      "lean_kind": "lemma",
+      "lean_name": "twoPoint_regret_separation",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Helpers.lean",
+      "hyps": [
+        "ass:bounded-outcome"
+      ],
+      "notes": "Build-inline (component of deleted t5). Opposite optimal labels on B_n ⇒ R_{P+}+R_{P-}≥h·P_X(B_n) via thm:welfare-identity ⇒ max_σ ≥ (c_B/2) h^(1+α). Elementary.\n\nF2.5 redirect hard constraint: State uniform inf-over-policies separation for the two opposite active-block optimal labels; do not use pointwise per-policy constants."
+    },
+    "lem:le-cam-two-point-chisq": {
+      "lean_kind": "lemma",
+      "lean_name": "two_point_testing_error_floor",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Minimax.TotalVariation",
+        "Causalean.Stat.Minimax.ChiSquared",
+        "CausalSmith.Mathlib.InformationTheory.ProductChiSquared"
+      ],
+      "defer_tier": false,
+      "target_file": "Helpers.lean",
+      "hyps": [],
+      "notes": "Build-inline GENUINE testing-error floor (per round-3 correction: the prior reuse of Causalean.Stat.two_point_lower_bound_of_chiSqDiv_le was DROPPED — that decl is the real-valued estimator MISS-PROBABILITY form half_one_sub_tvDist_le_max_error/real_two_point_lower_bound, concluding ½(1-TV) over an estimator's risk, NOT the per-test error-sum P_+(ψ≠+)+P_-(ψ≠-) floor this node needs). The required two-hypothesis testing lemma is realized by ASSEMBLING genuine in-substrate testing-error components (verified by Grep of ../Causalean source + ../doc/API.md §12w.2-12w.4): (1) Causalean.Stat.one_sub_tvDist_le_test (TotalVariation.lean:100, ../doc/API.md line 4873): for any measurable test region A, 1-tvDist μ ν ≤ μ.real A + ν.real Aᶜ — EXACTLY the minimal testing-error-sum ≥ 1-TV step the core proof_tex opens with; (2) Causalean.Stat.tvDist_le_half_sqrt_chiSqDiv (ChiSquared.lean:58, ../doc/API.md line 4917): tvDist μ ν ≤ ½√(chiSqDiv μ ν) under μ≪ν + sq-deviation integrability — the chi-square-to-TV bound, giving error-sum floor c(C_chi)=1-½√C_chi>0 for C_chi<4 (or the sharper t²≤C_chi(1-t) Cauchy-Schwarz of the core proof_tex if a smaller constant is wanted); (3) CausalSmith.Mathlib.InformationTheory.ProductChiSquared.one_add_chiSqDiv_pi_iid_general (doc/API.md §2c.3): 1+χ²(P_+^⊗n‖P_-^⊗n)=(1+χ²(P_+‖P_-))^n ⇒ ≤e^{c_0} from a per-obs χ²≤c_0/n bound. The node has depends_on=[] in the core and a full self-contained proof_tex; F3 PROVES the error-sum floor locally from these three reuse pieces (not by citing the estimator-risk decl). Analogous assembly pattern: Causalean.Stat.LeCam.one_sub_tvDist_le_error_sum (LeCam.lean:50) chains one_sub_tvDist_le_test with the triangle inequality for the ESTIMATOR reduction; adapt the same testing-bound→TV→χ² chain to the bare two-hypothesis test (no metric separation needed)."
+    },
+    "thm:minimax-lower": {
+      "lean_kind": "theorem",
+      "lean_name": "minimax_lower_bound",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Minimax.MinimaxRisk"
+      ],
+      "defer_tier": false,
+      "target_file": "T5.lean",
+      "local_id": "t5",
+      "hyps": [
+        "ass:iid",
+        "ass:margin-window"
+      ],
+      "notes": "Build-inline headline converse (matches deleted t5). Le Cam two-point reduction: witnesses in-class (lem:witness-membership), bounded n-fold χ² (lem:two-point-divergence), regret separation (lem:regret-separation), constant per-test error-sum floor (lem:le-cam-two-point-chisq, now the locally-proved two_point_testing_error_floor assembled from Causalean.Stat.one_sub_tvDist_le_test + tvDist_le_half_sqrt_chiSqDiv + product χ² — NOT the estimator-risk decl) ⇒ M_n ≥ c h_n^(1+α)=c n^-rStar. The reduction builds a test ψ from the realized Pi-valued rule via regret comparison (per core proof_tex), so the per-test error-sum floor is the correct shape (no estimator-risk/metric-separation premise). The novel sharp converse.\n\nF2.5 redirect hard constraint: Statement shape must be uniform asymptotic: ∃ c>0, ∃ N, ∀ n≥N, M_n(α,γ) ≥ c*n^(-rStar α γ), with c independent of n and tied to def:law-class via the witness membership lemma. Never use per-n existential c."
+    },
+    "oeq:feasible-upper": {
+      "lean_kind": "theorem",
+      "lean_name": "feasible_upper_rate",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "T4.lean",
+      "local_id": "t4",
+      "hyps": [
+        "def:law-class",
+        "ass:optimal-in-class",
+        "ass:nuisance-rate",
+        "ass:bounded-crossfit-nuisances",
+        "ass:polynomial-nuisance-exponents",
+        "ass:policy-class",
+        "ass:vc-localized-envelope",
+        "ass:vc-localized-offset-envelope",
+        "ass:fixed-crossfit-fold-count"
+      ],
+      "notes": "Build-inline conditional achievability (matches deleted t4/t6 upper half). Assembles lem:crude-localized-master-bound + lem:clip-balance-exponent over the def:upper-risk side-condition domain ⇒ U_n ≤ C n^-r_feas (log n)^p. def:law-class covers bounded-outcome/positivity/margin/zero-effect/overlap-decay/strict-overlap-endpoint; remaining estimator/policy side-conditions are inline. Crude q^-2 envelope only; no rate-buying premise.\n\nF2.5 fix issue 2 — SUPREMUM-CONSISTENCY (load-bearing for F2): the statement MUST NOT mix fixed-P hypotheses with a supremum over laws. Encode it in ONE of two faithful shapes, and record which: (S-A) LAWWISE for a fixed P — bound E_P R_P(pi_hat_n) ≤ C n^-rFeas (log n)^p where ALL of ass:nuisance-rate / ass:bounded-crossfit-nuisances / ass:polynomial-nuisance-exponents / ass:optimal-in-class / ass:policy-class / ass:vc-localized-envelope / ass:vc-localized-offset-envelope / ass:fixed-crossfit-fold-count are hypotheses on THAT P and its supplied estimator; or (S-B) SUPREMUM form bounding U_n from def:upper-risk where the side conditions are quantified for EVERY law in the supremum domain (i.e. they are part of the index set the sup ranges over), not asserted once for a single P. Prefer S-A as the proved core content; if S-B is stated, the side-condition predicates must be ∀-bound over the same P ranging in the sup. Either way the supplied muhat0/muhat1/ehat, the K-fold deterministic partition, the regime constants (a,c,C_mu,C_prod), the q_n/u_n schedule from def:feasible-rate, the Pi/Pi0 relation from ass:policy-class, and the VC/offset/bounded-nuisance premises must all bind the SAME concrete objects that feasibleERM (def:feasible-erm) and clippedAIPWScore consume — no free-floating placeholder nuisances.\n\nF2.5 redirect: Conditional achievability must be all-large-n with constants chosen before n; do not weaken to a smaller law class, and do not claim an unconditional minimax upper over bare def:law-class."
+    },
+    "thm:rate-characterization": {
+      "lean_kind": "theorem",
+      "lean_name": "rate_characterization_lower",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "T6.lean",
+      "local_id": "t6",
+      "hyps": [],
+      "notes": "Build-inline. Lower-bound-only headline: immediate corollary of thm:minimax-lower + def:exponents giving M_n ≥ c n^-rStar with rStar=(1+α)/(2+α+beta_ag). No feasible-upper/tightness dependency (per design d0_rate_cycle_repair).\n\nF2.5 redirect hard constraint: Lower-bound-only headline with the same uniform all-large-n constant discipline as thm:minimax-lower."
+    },
+    "oeq:feasible-tight": {
+      "lean_kind": "def",
+      "lean_name": "feasibleTightness_openQuestion",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Basic.lean",
+      "open_math": true,
+      "open_question": true,
+      "notes": "NON-THEOREM OPEN-RESIDUAL record (F2.5 fix issue 1). Map this openendedquestion to lean_kind=def: a named `def feasibleTightness_openQuestion (… params α γ a c …) : Prop` that STATES the strict-gap attainability question — namely, whether any genuinely feasible estimator under estimated cross-fitted nuisances can attain the converse exponent r_star(α,γ) in the strict-gap branch (the case gJoint(α,γ,a,c) < rStar(α,γ) of def:feasible-rate). The Prop body encodes the QUESTION (e.g. an existence statement of a feasible rule whose conditional upper risk matches n^-rStar), it does NOT assert it. It MAY reference the already-stated lower bound (thm:minimax-lower / rStar) and the conditional upper branch (oeq:feasible-upper / rFeas = min{rStar,gJoint}), but it MUST NOT: (a) be emitted as a theorem, (b) prove a lower+upper bracket, (c) assert attainability at r_star, or (d) state an iff resolving tightness. Accordingly: lean_kind changed theorem→def, local_id removed, and this node is REMOVED from the theorems manifest (t7 dropped). The strict-gap attainability resolution is acknowledged OPEN mathematics (design d0_open_oeq_residuals / d0_rate_cycle_repair), NOT a missing Lean lemma ⇒ defer_tier=false, no deferred_conjecture. See D-plan-4.\n\nF2.5 redirect: do not let any downstream theorem consume this node to close the residual; it is a standalone named question Prop only."
+    },
+    "lem:clip-bias": {
+      "lean_kind": "lemma",
+      "lean_name": "clip_bias_identity",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Helpers.lean",
+      "hyps": [
+        "ass:positivity"
+      ],
+      "notes": "Build-inline. Exact conditional-mean drift identity E[Gamma_q|X]-tau = (e_q-e)(Δ1/e_q+Δ0/(1-e_q)) by pure algebra from def:clipped-aipw-score + clipped denominators ≥q. This is the explicit replacement for the old conditionalBiasIdentityGate substrate-debt; now fully derived."
+    },
+    "lem:feasible-erm-basic-inequality": {
+      "lean_kind": "lemma",
+      "lean_name": "feasibleERM_basic_inequality",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Concentration.ERMOracle"
+      ],
+      "defer_tier": false,
+      "target_file": "Helpers.lean",
+      "hyps": [
+        "ass:policy-class",
+        "ass:optimal-in-class"
+      ],
+      "notes": "Build-inline. Measurable 1/n-ERM: sup over Pi reduces to sup over countable Pi_0, first 1/n-near-maximizer index is measurable; comparator inequality P_n[(pihat-pi^b)Gamma_q]≥-1/n. Analogous: Causalean.Stat.Concentration.ERMOracle.erm_excess_le_two_uniformDeviation (adapt: welfare criterion + 1/n slack, not exact argmax)."
+    },
+    "lem:localized-vc-self-bound": {
+      "lean_kind": "lemma",
+      "lean_name": "localized_vc_self_bound",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Helpers.lean",
+      "hyps": [],
+      "notes": "Build-inline. Deterministic/expectation algebra: R_P(pitilde)≤2|z|+δ_n with offset control (lem:crossfit-localized-offset-control) ⇒ E R_P ≤ C{ρ_n+δ_n}, δ_n≤1/n absorbed (A_alpha<1). Pure peeling; offset bound is the proved input (dependency direction offset-control → self-bound).\n\nF2.5 redirect hard constraint: Keep as algebra only if its hypotheses explicitly include the estimator/process risk, offset-control source, B≥1, and delta absorption needed by the master bound."
+    },
+    "lem:crude-localized-master-bound": {
+      "lean_kind": "lemma",
+      "lean_name": "crude_localized_master_bound",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Mathlib.Analysis.OffsetPeeling",
+        "CausalSmith.Mathlib.Analysis.RpowArith"
+      ],
+      "defer_tier": false,
+      "target_file": "Helpers.lean",
+      "hyps": [
+        "def:law-class",
+        "ass:optimal-in-class",
+        "ass:nuisance-rate",
+        "ass:bounded-crossfit-nuisances",
+        "ass:polynomial-nuisance-exponents",
+        "ass:policy-class",
+        "ass:vc-localized-envelope",
+        "ass:vc-localized-offset-envelope",
+        "ass:fixed-crossfit-fold-count"
+      ],
+      "notes": "Build-inline assembly (large but all inputs proved/assumed). One pooled centered process G_cf, basic inequality (lem:feasible-erm-basic-inequality), clip-bias drift (lem:clip-bias via lem:localized-clipped-drift-bound), Young absorption, offset control (lem:crossfit-localized-offset-control) + self-bound (lem:localized-vc-self-bound) ⇒ master 5-term bound (γ>0) / 2-term (γ=0). Reuse OffsetPeeling.offset_peeling for the Young/peeling step. def:law-class covers the 6 law members.\n\nF2.5 redirect hard constraint: Bound expected regret of the cross-fitted clipped-AIPW feasibleERM under lawClass and side conditions; do not state an arbitrary scalar risk inequality."
+    },
+    "lem:localized-vc-process-bound": {
+      "lean_kind": "lemma",
+      "lean_name": "localized_vc_process_bound",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Helpers.lean",
+      "hyps": [
+        "ass:vc-localized-envelope"
+      ],
+      "notes": "Build-inline thin wrapper. Combines thm:margin-localization (regret radius r → disagreement mass r^(α/(1+α))) with the assumed fixed-radius envelope ass:vc-localized-envelope ⇒ E Z_m(r) ≤ C B m^-1/2 r^κ (log m)^p, κ=α/(2+2α).\n\nF2.5 redirect hard constraint: Use actual centered empirical-process objects/assumption payload, not arbitrary scalar bound functions."
+    },
+    "lem:crossfit-localized-process-reduction": {
+      "lean_kind": "lemma",
+      "lean_name": "crossfit_localized_process_reduction",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Helpers.lean",
+      "hyps": [
+        "ass:vc-localized-envelope",
+        "ass:fixed-crossfit-fold-count",
+        "ass:iid"
+      ],
+      "notes": "Build-inline. Triangle-decompose pooled process into K balanced evaluation-fold processes; conditional on training folds each fold is i.i.d. (ass:iid), apply lem:localized-vc-process-bound foldwise; balanced fixed K (ass:fixed-crossfit-fold-count) collapses Σ w_k n_k^-1/2 back to n^-1/2.\n\nF2.5 redirect hard constraint: Encode foldwise training/evaluation separation and pooled cross-fit centered process, not a scalar pooledProcessBound."
+    },
+    "lem:crossfit-localized-offset-control": {
+      "lean_kind": "lemma",
+      "lean_name": "crossfit_localized_offset_control",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Mathlib.Analysis.OffsetPeeling"
+      ],
+      "defer_tier": false,
+      "target_file": "Helpers.lean",
+      "hyps": [
+        "ass:iid",
+        "ass:fixed-crossfit-fold-count",
+        "ass:vc-localized-offset-envelope",
+        "ass:bounded-outcome"
+      ],
+      "notes": "Build-inline. Apply the atomic i.i.d. offset assumption ass:vc-localized-offset-envelope foldwise (conditioning on training folds, ass:iid) and combine over fixed balanced folds (convexity of x_+) ⇒ E sup{2|G_cf|-R/4}_+ ≤ C(B^2/n)^A_alpha (log n)^p. INPUT to lem:localized-vc-self-bound (never depends on it). Reuse OffsetPeeling for the positive-part algebra.\n\nF2.5 redirect hard constraint: Encode the pooled centered process and offset positive-part supremum, not arbitrary offsetBound scalar."
+    },
+    "lem:localized-clipped-drift-bound": {
+      "lean_kind": "lemma",
+      "lean_name": "localized_clipped_drift_bound",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Helpers.lean",
+      "hyps": [
+        "ass:nuisance-rate",
+        "ass:strict-overlap-endpoint"
+      ],
+      "notes": "Build-inline. From lem:clip-bias |b_q|≤q^-1|e_q-e|(|Δ1|+|Δ0|), Cauchy-Schwarz + ass:nuisance-rate gives r_mu_n r_e_n/q; clipped-region localization (lem:clipped-region-localization) gives the u^α/2 q^(1/2γ) and (r/u)^1/2 terms (γ>0); strict-overlap-endpoint (γ=0) collapses to r_mu_n r_e_n.\n\nF2.5 redirect hard constraint: Define drift as P[(pi-pi_star)b_q] with pi∈Pi and include overlap/zero-effect/γ=0 branch hypotheses."
+    },
+    "lem:crude-clipped-score-envelope": {
+      "lean_kind": "lemma",
+      "lean_name": "crude_clipped_score_envelope",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Helpers.lean",
+      "hyps": [
+        "ass:bounded-outcome",
+        "ass:bounded-crossfit-nuisances"
+      ],
+      "notes": "Build-inline. Clipped denominators ≥q + bounded outcomes/nuisances ⇒ |Gamma_q|≤2+2/q≤C/q a.s., hence E[Gamma_q^2|X]≤C/q^2. The crude q^-2 second-moment scale. Elementary.\n\nF2.5 redirect hard constraint: Require q∈(0,1/2] and state the conditional/a.s. envelope appropriate for the clipped score."
+    },
+    "lem:clipped-region-localization": {
+      "lean_kind": "lemma",
+      "lean_name": "clipped_region_localization",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Helpers.lean",
+      "hyps": [
+        "ass:overlap-decay",
+        "ass:zero-effect",
+        "ass:bounded-outcome"
+      ],
+      "notes": "Build-inline. P_X(D_pi∩{p_P≤q}) ≤ C u^α q^(1/γ)+r/u (γ>0): split via zero-effect null set, overlap-decay envelope on {p≤q,0<|tau|≤u}, and welfare identity r=∫_D|tau| for the {|tau|>u} tail. Elementary measure split.\n\nF2.5 redirect hard constraint: Require pi∈Pi, r=R_P(pi), and 0<u≤u0."
+    },
+    "lem:clip-balance-exponent": {
+      "lean_kind": "lemma",
+      "lean_name": "clip_balance_exponent",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Mathlib.Analysis.RpowArith"
+      ],
+      "defer_tier": false,
+      "target_file": "Helpers.lean",
+      "hyps": [
+        "ass:polynomial-nuisance-exponents"
+      ],
+      "notes": "Build-inline. Substitute q_n=q_0 n^-s, u_n=ubar n^-t and ass:polynomial-nuisance-exponents into the master-bound terms ⇒ each term n^-{exponent}; min over the four = phi(s,t), max over compact feasible set = g_joint, r_up=min{rStar,g_joint} (γ>0) / min{A_alpha,c} (γ=0). Continuity ⇒ maximizer exists. Reuse RpowArith for the power bookkeeping.\n\nF2.5 redirect hard constraint: State the deterministic schedule/maximizer and feasibility constraints, including γ=0 schedule details; not only phi≤gJoint."
+    }
+  },
+  "infrastructure_needed": [],
+  "theorems": [
+    {
+      "theorem_local_id": "t1"
+    },
+    {
+      "theorem_local_id": "t2"
+    },
+    {
+      "theorem_local_id": "t3"
+    },
+    {
+      "theorem_local_id": "t4"
+    },
+    {
+      "theorem_local_id": "t5"
+    },
+    {
+      "theorem_local_id": "t6"
+    }
+  ],
+  "feasibility_notes": "formalizable-now: no node is Defer-tier. lem:le-cam-two-point-chisq is now BUILD-INLINE (round-3 correction): the prior reuse of Causalean.Stat.two_point_lower_bound_of_chiSqDiv_le was dropped because that decl is the estimator MISS-PROBABILITY form (½(1-TV) over an estimator's risk), not the per-test error-sum floor P_+(ψ≠+)+P_-(ψ≠-)≥c the core node states; the local two_point_testing_error_floor is assembled from the GENUINE testing-error components Causalean.Stat.one_sub_tvDist_le_test (TotalVariation.lean:100; 1-TV ≤ μ.real A + ν.real Aᶜ, any test) + Causalean.Stat.tvDist_le_half_sqrt_chiSqDiv (ChiSquared.lean:58) + CausalSmith.Mathlib.InformationTheory.ProductChiSquared.one_add_chiSqDiv_pi_iid_general. The S2 i.i.d. world is now define-local (reuse=null): the n-sample experiment is encoded directly as Measure.pi (fun _ : Fin n => P), and the bespoke functionals M_n, U_n and scales h_n, q_n, B_n live over it; Causalean.Stat.iid_two_point_lower_bound is cited ONLY as analogous Le-Cam/minimax substrate for thm:minimax-lower, NOT as the host world. Other confirmed-reusable decls (signatures checked): Causalean.Stat.{chiSqDiv, chiSqDiv_prod, one_sub_tvDist_le_test, tvDist_le_half_sqrt_chiSqDiv} (genuinely reused at lem:two-point-divergence / lem:le-cam-two-point-chisq), CausalSmith.Mathlib.InformationTheory.ProductChiSquared.{one_add_chiSqDiv_pi_iid_general, chiSqDiv_eq_sum_partition_of_restrict_eq_smul} (lem:two-point-divergence), CausalSmith.Mathlib.Analysis.OffsetPeeling.{offset_peeling, offset_peeling_coeff} and RpowArith.* (master-bound / exponent algebra), CausalSmith.Mathlib.Concentration.finiteClass_rademacherUpperBound_linear + Causalean.Stat.Concentration.localized_uniform_deviation_sharp (recorded discharge route for the two empirical-process ASSUMPTIONS, not load-bearing). Build-inline: the world structure PolicyRegretLaw and class PolicyRegretLawClass, all 18 assumption Props, all 11 defs, and all 22 statements — the two headline theorems (thm:minimax-lower converse, oeq:feasible-upper achievability) plus the welfare-identity/margin-localization/overlap-envelope theorems and the ~15 supporting lemmas, all reduce to elementary algebra, measure splits, χ²/Le Cam reuse, or assembly over the offset/self-bound chain. The localized finite-VC empirical-process bounds are core ASSUMPTIONS (D0-approved standard BartlettBousquetMendelson2005 facts), now made OBJECT-BINDING per F2.5 issue 3 (they bind actual centered empirical processes/samples/envelopes/second-moment premises, not arbitrary real suprema), and ass:nuisance-rate binds genuine L2(P) errors against P.mu0/P.mu1/P.propensity — so the achievability theorem oeq:feasible-upper is conditional but in-scope, and is stated supremum-consistently (issue 2: either lawwise for fixed P or with side conditions ∀-quantified over the sup domain, with all nuisances/folds/schedule bound to the feasibleERM objects). def:minimax-regret quantifies over a real measurability predicate over the sample space (issue 4, no opaque measurableRule:Prop); def:feasible-erm is the constructive first-1/n-near-maximizer over the supplied countable Pi_0 with packaged Pi-valuedness/measurability and a harmless unreachable fallback (issue 5); def:two-point-witness builds concrete active-block/off-block observed laws (or an honest interface of concrete laws + pinning equalities), never Dirac+semantic Props (issue 6). oeq:feasible-tight is NOT a theorem: it is mapped to a non-theorem named open-question def (issue 1) — dropped from the theorems manifest (t1..t6 remain), with the strict-gap attainability resolution acknowledged OPEN mathematics, not a Lean-infrastructure gap. No Defer node ⇒ empty infrastructure_needed, no deferred_conjecture."
+}

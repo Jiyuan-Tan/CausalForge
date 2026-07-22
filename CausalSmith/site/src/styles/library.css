@@ -1,0 +1,826 @@
+/* Library explorer pages: NL-first decl cards in the paper aesthetic. */
+@import "./tokens.css";
+@import "./fonts.css";
+
+article.library {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 6rem;
+  font-family: Charter, Georgia, "Times New Roman", serif;
+  line-height: 1.6;
+}
+article.library h1 { font-weight: normal; font-size: 1.9rem; }
+
+/* Scholarly links: warm ink, no default blue/underline. */
+article.library a {
+  color: #820000;
+  text-decoration: none;
+  border-bottom: 1px dotted #C58A8A;
+}
+article.library a:hover { border-bottom-style: solid; }
+
+/* top navigation: the two equal modules of the site. Sticky so the breadcrumb
+   chain never scrolls away on long, deep module pages (the key wayfinding fix). */
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  font-size: var(--fs-sm);
+  color: var(--accent);
+  margin: 0 0 1.4rem;
+  padding: 0.6rem 0;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem 0.9rem;
+  flex-wrap: wrap;
+}
+/* Header layout: the brand kicker gets its own line (flex-basis:100%); the commit
+   hash is pinned to that brand row's right corner (absolute, out of the flex flow);
+   the breadcrumb chain flows on the line(s) below and wraps freely. Because the
+   commit is out of flow, it NEVER orphans onto a lonely third line no matter how
+   deep the path — the header is always "brand · commit" over "breadcrumb". */
+.site-nav .site-nav-kicker {
+  flex: 0 0 100%;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  padding-right: 9rem; /* reserve room so a long tagline can't collide with the commit */
+}
+.site-nav .site-nav-commit {
+  position: absolute;
+  top: 0.6rem;
+  right: 0;
+  white-space: nowrap;
+}
+.site-nav a { border-bottom: 1px dotted #C58A8A; }
+.site-nav .site-nav-current { color: #2E2D29; font-weight: 600; }
+
+/* search */
+.lib-search { position: relative; margin: 1.4rem 0 0.6rem; }
+.lib-search input {
+  width: 100%;
+  font-family: var(--code-font);
+  font-size: 0.85rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid #D8D0C5;
+  border-radius: 6px;
+  background: #FDFCFA;
+  color: #36342F;
+}
+.lib-search input:focus { outline: 2px solid var(--lean); border-color: var(--lean); }
+#lib-search-results {
+  position: absolute;
+  z-index: 30;
+  left: 0;
+  right: 0;
+  top: 100%;
+  max-height: 24rem;
+  overflow-y: auto;
+  background: #FDFCFA;
+  border: 1px solid #D8D0C5;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 10px 24px rgba(80, 65, 30, 0.15);
+}
+#lib-search-results .hit {
+  display: grid;
+  grid-template-columns: 4.6rem 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 0.6rem;
+  padding: 0.45rem 0.7rem;
+  border-bottom: 1px solid #EFEBE3;
+  border-radius: 0;
+}
+#lib-search-results .hit:hover { background: #F7F5F0; }
+#lib-search-results .hit-kind {
+  grid-row: 1 / 3;
+  font-size: 0.68rem;
+  color: #A0151D;
+  text-transform: uppercase;
+  align-self: start;
+  padding-top: 0.15rem;
+}
+#lib-search-results .hit-name { font-family: var(--code-font); font-size: 0.82rem; font-weight: 600; }
+#lib-search-results .hit-mod { font-size: 0.7rem; color: #8C1515; margin-left: 0.5rem; }
+#lib-search-results .hit-nl { grid-column: 2; font-size: 0.78rem; color: #544F4A; }
+#lib-search-results .no-hit { padding: 0.6rem 0.8rem; color: #8C1515; font-style: italic; }
+.lib-footnote { font-size: 0.78rem; color: #8C1515; }
+
+/* collapsed module sections */
+.module-block {
+  border-top: 1px solid #E0DAD0;
+  padding: 0.4rem 0;
+  margin: 0;
+}
+.module-block > summary {
+  cursor: pointer;
+  list-style-position: outside;
+  padding: 0.55rem 0.2rem;
+}
+.module-block > summary:hover { background: #FDFCFA; }
+.module-block .module-name { font-size: 1.15rem; color: #2E2D29; }
+.module-block .module-counts {
+  font-size: 0.72rem;
+  color: #A0151D;
+  margin-left: 0.7rem;
+  white-space: nowrap;
+}
+.module-block .module-brief {
+  display: block;
+  font-size: 0.88rem;
+  color: #544F4A;
+  margin: 0.15rem 0 0 1.05rem;
+}
+/* Headline-theorem scent chips in the (collapsed) summary: the file's ★ curated
+   results named up front, so the reader knows what's inside before opening. */
+.module-block .module-headlines {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.35rem 0 0 1.05rem;
+}
+.module-block .hl-chip {
+  font-family: var(--code-font);
+  font-size: var(--fs-2xs);
+  color: var(--accent);
+  background: var(--accent-wash);
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--r-badge);
+  white-space: nowrap;
+}
+/* "+N more" reveals the remaining headline names in place (no file expansion);
+   the extras are rendered but hidden until it is clicked. */
+.module-block .hl-extra { display: none; }
+.module-block .module-headlines.show-all .hl-extra { display: inline-block; }
+.module-block .hl-more {
+  font: inherit;
+  font-size: var(--fs-2xs);
+  color: var(--ink-faint);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  align-self: center;
+  border-bottom: 1px dotted var(--accent-muted);
+}
+.module-block .hl-more:hover { color: var(--accent); }
+
+/* expand / collapse-all control — quiet pill buttons, not stray links */
+.lib-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0.4rem;
+}
+.lib-tools button {
+  font: inherit;
+  font-size: var(--fs-2xs);
+  color: var(--ink-soft);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-pill);
+  padding: 0.15rem 0.7rem;
+  cursor: pointer;
+}
+.lib-tools button:hover { background: var(--parchment-deep); color: var(--ink); }
+
+/* Floating "back to top" — hidden until the reader scrolls down a screenful. */
+.back-to-top {
+  position: fixed;
+  left: 1.4rem;
+  bottom: 1.4rem;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font: inherit;
+  font-size: var(--fs-2xs);
+  color: var(--ink-soft);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-pill);
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(0.5rem);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+}
+.back-to-top.visible { opacity: 1; visibility: visible; transform: translateY(0); }
+.back-to-top:hover { background: var(--parchment-deep); color: var(--ink); }
+@media (prefers-reduced-motion: reduce) {
+  .back-to-top { transition: opacity 0.18s ease, visibility 0.18s; transform: none; }
+  .back-to-top.visible { transform: none; }
+}
+.module-block .module-doc {
+  font-size: 0.92rem;
+  color: #43403B;
+  margin: 0.4rem 0 0.6rem;
+  padding-left: 1.05rem;
+}
+.module-block .module-doc h1 { display: none; } /* title already in the summary */
+
+/* nested submodule levels: indented, hairline-guided */
+.module-block:not(.depth-0) {
+  border-top: none;
+  border-left: 2px solid #E8E2D8;
+  margin-left: 0.55rem;
+  padding-left: 0.7rem;
+}
+.module-block.depth-1 .module-name { font-size: 1.02rem; }
+.module-block.depth-2 .module-name,
+.module-block.depth-3 .module-name { font-size: 0.95rem; }
+.module-block:not(.depth-0) > summary { padding: 0.4rem 0.2rem; }
+article.library h2 {
+  font-weight: normal;
+  font-size: 1.35rem;
+  margin-top: 2.4rem;
+  border-bottom: 1px solid #E0DAD0;
+  padding-bottom: 0.3rem;
+}
+article.library .lib-byline { color: #8C1515; font-size: 0.85rem; margin-bottom: 2rem; }
+article.library .lib-byline a { color: inherit; }
+article.library .lib-intro { font-size: 0.95rem; }
+
+/* library-index hero: whole-library figures, before the area map */
+.lib-hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0.6rem 0 1.2rem;
+}
+.lib-hero-stats > div {
+  padding: 0 var(--sp-6);
+  border-left: 1px solid var(--rule);
+}
+.lib-hero-stats > div:first-child { padding-left: 0; border-left: none; }
+.lib-hero-stats dt {
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 0.15rem;
+}
+.lib-hero-stats dd {
+  margin: 0;
+  font-size: 1.6rem;
+  line-height: 1.1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.lib-hero-stats dd .unit { font-size: 1rem; margin-left: 0.05rem; }
+.lib-hero-stats dd.clean { color: var(--verified); }
+.lib-hero-stats dd.warn { color: var(--sorry); }
+
+/* area overview table */
+.area-table { width: 100%; border-collapse: collapse; font-size: var(--fs-body-s); margin-top: 1.4rem; }
+.area-table th, .area-table td {
+  text-align: left;
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px solid var(--rule-soft);
+  vertical-align: middle;
+}
+.area-table th {
+  font-weight: 600;
+  color: var(--ink-faint);
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.area-table tbody tr { --cell-bg: var(--paper); }
+.area-table tbody tr:hover { background: var(--parchment); --cell-bg: var(--parchment); }
+/* Module column shrinks to its (short) area name; the intro column takes the rest
+   and is the widest, with the stat columns kept tight so they don't waste space. */
+.area-table th:first-child, .area-table td:first-child { white-space: nowrap; width: 1%; }
+.area-table td:first-child a { font-weight: 600; }
+.area-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.area-table td.intro-cell { color: var(--ink-soft); position: relative; }
+/* Fold the description to its first four lines (full text on the cell `title`),
+   so rows stay a uniform, scannable height instead of ballooning. */
+.area-table .intro-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.area-table .intro-clamp.expanded {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
+}
+/* "more/less" toggle (injected client-side only when the intro is actually
+   clamped): sits at the END of the last visible line, with a fade over the text
+   it covers so it reads as "…text more" rather than starting a new line. */
+.area-table .intro-toggle {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.55rem;
+  font: inherit;
+  font-size: var(--fs-2xs);
+  color: var(--accent-deep);
+  border: none;
+  cursor: pointer;
+  padding: 0 0 0 2rem;
+  background: linear-gradient(to right, transparent, var(--cell-bg) 1.6rem);
+}
+.area-table .intro-toggle:hover { text-decoration: underline; }
+
+/* stat cells: a right-aligned number with an inline horizontal bar beneath it,
+   so "how big" and "how healthy" read at a glance instead of as bare integers. */
+.size-cell, .review-cell { width: 7.5rem; }
+.area-table .stat-n { display: block; }
+.area-table .stat-of { color: var(--ink-ghost); }
+.bar {
+  display: block;
+  height: 5px;
+  margin-top: 0.28rem;
+  background: var(--parchment-deep);
+  border-radius: var(--r-badge);
+  overflow: hidden;
+}
+.bar-fill { display: block; height: 100%; border-radius: var(--r-badge); }
+.bar-review { background: var(--verified); }
+
+/* sorried column: 0 is a quiet dash (exceptions should be the only thing that pops) */
+.glyph-clean { color: var(--ink-ghost); }
+.badge-sorried {
+  background: var(--sorry-wash);
+  color: var(--sorry);
+  font-size: var(--fs-2xs);
+  padding: 0.08rem 0.45rem;
+  border-radius: var(--r-badge);
+  font-variant-numeric: tabular-nums;
+}
+
+/* decl cards */
+.decl-card {
+  border: 1px solid var(--rule-soft);
+  border-left: 3px solid var(--accent-bright);
+  border-radius: var(--r-card);
+  background: var(--paper);
+  padding: 0.7rem 1rem 0.6rem;
+  margin: 1.1rem 0;
+}
+.decl-card.kind-theorem { border-left-color: #8C1515; }
+.decl-card.kind-structure,
+.decl-card.kind-class,
+.decl-card.kind-inductive { border-left-color: #888; background: #f6f6f4; }
+.decl-card.kind-axiom { border-left-color: #b45309; background: #F7F5F0; }
+.decl-head { display: flex; align-items: baseline; gap: 0.55rem; flex-wrap: wrap; }
+.decl-name {
+  font-family: var(--code-font);
+  font-size: 0.95rem;
+  font-weight: 600;
+  /* Long single-token Lean identifiers (e.g. BorusyakJaravelSpiess…) must wrap
+     inside the card rather than overflow it. min-width:0 lets this flex item
+     shrink below its max-content size; overflow-wrap:anywhere supplies the
+     break opportunity the flex sizer then respects. */
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+/* Muted namespace qualifier shown on its own line beneath a decl's leaf name,
+   so the name reads first and where it lives sits as a subtitle that does not
+   compete with the leaf. */
+.decl-ns {
+  font-family: var(--code-font);
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--ink-ghost);
+  margin-top: 0.1rem;
+}
+.decl-kind {
+  font-size: 0.72rem;
+  color: #fff;
+  background: #A0151D;
+  border-radius: 3px;
+  padding: 0.08rem 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.badge { font-size: 0.72rem; border-radius: 3px; padding: 0.08rem 0.45rem; }
+.badge-reviewed { background: #dcefdc; color: #2e6b2e; }
+.badge-stale { background: #F6E9E8; color: #8C1515; }
+.badge-unreviewed { background: #eee; color: #777; }
+.badge-sorry { background: #f6d6d6; color: #a33; }
+.badge-axiom { background: #F6E9E8; color: #A0151D; }
+.badge-flagged { background: #fbe3c4; color: #8a5300; }
+.flag-notes { margin: 0.3rem 0 0.4rem 0; padding-left: 1.2rem; list-style: none; }
+.flag-notes li { font-size: 0.85rem; color: #8a5300; display: flex; gap: 0.5rem; align-items: flex-start; }
+.flag-note-text { flex: 1; min-width: 0; }
+.flag-remove { display: none; flex: none; margin-top: 0.1rem; font-size: 0.7rem; line-height: 1; background: none; border: none; color: #b89a6a; cursor: pointer; padding: 0; opacity: 0.6; }
+.flag-remove:hover { color: #8C1515; opacity: 1; }
+body.review-mode .flag-remove { display: inline; }
+.flag-remove:hover { background: #8C1515; color: #fff; border-color: #8C1515; }
+.badge-paper { background: #F6E9E8; color: #8C1515; text-decoration: none; }
+.badge-paper:hover { background: #C58A8A; color: #fff; }
+
+/* ── Review-process chrome ──────────────────────────────────────────────
+   The per-file/per-submodule "to review" tag, the per-decl review-status and
+   flagged badges, the flag notes, and the action controls are all internal
+   curation aids. They show ONLY in review mode (dev endpoint present and the
+   toggle on); published / static mode hides them so public readers see just
+   the library content. Real correctness signals (sorry/axioms) are NOT gated. */
+.review-tag {
+  display: none;
+  font-size: 0.7rem;
+  border-radius: 3px;
+  padding: 0.05rem 0.4rem;
+  margin-left: 0.5rem;
+  background: #fbe3c4;
+  color: #8a5300;
+  font-weight: 600;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.badge-reviewed, .badge-stale, .badge-unreviewed, .badge-flagged { display: none; }
+body.review-mode .review-tag { display: inline-block; }
+body.review-mode .badge-reviewed,
+body.review-mode .badge-stale,
+body.review-mode .badge-unreviewed { display: inline; }
+body.review-mode .badge-flagged:not([hidden]) { display: inline; }
+.flag-notes { display: none; }
+body.review-mode .flag-notes { display: block; }
+
+/* Review/Published mode toggle (only revealed when the dev endpoint responds). */
+#review-mode-toggle {
+  position: fixed;
+  right: 0.9rem;
+  bottom: 0.9rem;
+  z-index: 50;
+  font-size: 0.78rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 4px;
+  border: 1px solid #D8CFBE;
+  background: #FBF8F1;
+  color: #4D4F53;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+#review-mode-toggle:hover { background: #F1EEE7; color: #2E2D29; }
+/* NL translation is the star content of each card — full body ink, not muted. */
+.decl-nl { margin: 0.45rem 0 0.2rem; font-size: var(--fs-body); color: var(--ink); }
+.decl-nl p { margin: 0.3rem 0; }
+.decl-nl.nl-missing { color: #999; font-style: italic; }
+.decl-card details { margin-top: 0.35rem; }
+.decl-card summary { cursor: pointer; font-size: 0.8rem; color: #4D4F53; }
+.decl-stmt {
+  position: relative;
+  font-family: var(--code-font);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  background: #F1EEE7;
+  border-radius: 4px;
+  padding: 0.6rem 0.8rem;
+  margin: 0.4rem 0;
+}
+.decl-stmt-wrap {
+  /* Short statements are easier to read in the available card width. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.decl-stmt-scrollable {
+  /* Keep multi-line Lean layout intact instead of reflowing its indentation. */
+  white-space: pre;
+  overflow-x: auto;
+}
+/* On the library page a copy button is injected as an overlay child. There, the
+   outer card stops scrolling and an inner wrapper carries the horizontal scroll,
+   so the button stays pinned to the visible top-right while the statement scrolls. */
+.decl-stmt-scrollable.has-copy { overflow: visible; }
+.decl-stmt-scroll { overflow-x: auto; white-space: pre; }
+/* Per-block "copy Lean source" button (injected client-side). */
+.copy-btn {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  font-family: inherit;
+  font-size: 0.68rem;
+  line-height: 1;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid #D8CFBE;
+  border-radius: 3px;
+  background: #FBF8F1;
+  color: #6B655D;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+.decl-stmt:hover .copy-btn,
+.copy-btn:focus-visible { opacity: 1; }
+.copy-btn:hover { background: #F1EEE7; color: #2E2D29; }
+.copy-btn.copied { opacity: 1; background: #dcefdc; color: #2e6b2e; border-color: #bcdcbc; }
+/* Touch / no-hover devices: keep the button discoverable. */
+@media (hover: none) { .copy-btn { opacity: 0.55; } }
+.decl-stmt a { color: #8C1515; font-weight: 600; border-bottom: none; }
+.decl-stmt a:hover { border-bottom: 1px solid #C58A8A; }
+/* Mathlib/core identifiers: same register, slightly muted, external-doc cue on hover */
+.decl-stmt a.ext-link { color: #5E5953; font-weight: 500; }
+.decl-stmt a.ext-link:hover { border-bottom: 1px dashed #9A938C; }
+
+/* ── structured Lean statement: one row per hypothesis ──────────────────
+   Companion to the plain .decl-stmt <pre> block above: same background,
+   padding, link colours and copy-button hookup (still a .decl-stmt), but the
+   content is DOM rows instead of one flat blob, so a hypothesis's name can
+   never be scrolled out of view while reading its own (possibly long) type. */
+.decl-stmt.stmt-structured { white-space: normal; }
+/* Same cardinal the site already reserves for kickers/nav (site-nav,
+   headline-theorem chips) — a section label is exactly that role, so this
+   reuses the existing "kicker" hue rather than adding a new one. */
+.stmt-section-label {
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--accent);
+  margin-bottom: 0.15rem;
+}
+/* Rows separate with a table-style hairline, not whitespace — a `gap` here
+   plus each row's own padding compounds into visibly airy space once you
+   also count the code font's line-height, so density comes from the border
+   instead: tighter padding, no inter-row gap, thin rule between rows. */
+.stmt-rows { display: flex; flex-direction: column; }
+.stmt-row {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 0.6rem;
+  align-items: start;
+  padding: 0.15rem 0 0.15rem 0.6rem;
+  border-left: 2px solid var(--rule);
+  border-bottom: 1px solid var(--rule-soft);
+  line-height: 1.25;
+}
+.stmt-rows .stmt-row:last-child { border-bottom: none; }
+.stmt-row:hover { background: var(--parchment); }
+/* Hypotheses (the logically load-bearing rows) get the one hue the site
+   already reserves for "clickable/interactive Lean content"; bookkeeping
+   binders (types, instances, plain values) stay on the quiet neutral rule. */
+.stmt-row.hyp { border-left-color: var(--lean); }
+/* A `-- section comment` the author placed between binder groups to label a
+   cluster of hypotheses — shown as a quiet divider, not a row, since it isn't
+   itself a binder. */
+.stmt-comment {
+  font-style: italic;
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  padding: 0.3rem 0 0.05rem 0.6rem;
+}
+.stmt-row-label { display: flex; gap: 0.3rem; font-weight: 600; white-space: nowrap; }
+.stmt-row-colon { font-weight: 400; color: var(--ink-faint); }
+.stmt-body-span { grid-column: 1 / -1; }
+.stmt-body { min-width: 0; }
+.stmt-line {
+  overflow-x: auto;
+  white-space: pre;
+  padding-bottom: 1px;
+}
+.stmt-line + .stmt-line { margin-top: 0.02rem; }
+/* A structured statement can have dozens of independently-scrollable lines
+   (each hypothesis/relation-side scrolls on its own — see StmtBodyView), so
+   the OS-default scrollbar (thick, bordered, sometimes with stepper arrows)
+   reads as UI chrome bolted onto the page rather than a quiet affordance.
+   Thin + low-contrast + rounded, in the same hairline tone as the rest of
+   the chrome; darkens slightly on hover so it's still easy to grab. Also
+   applied to the plain (unstructured) scrollable statement/proof blocks for
+   consistency. */
+.stmt-line,
+.decl-stmt-scroll,
+.decl-stmt-scrollable {
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule) transparent;
+}
+.stmt-line::-webkit-scrollbar,
+.decl-stmt-scroll::-webkit-scrollbar,
+.decl-stmt-scrollable::-webkit-scrollbar {
+  height: 6px;
+}
+.stmt-line::-webkit-scrollbar-track,
+.decl-stmt-scroll::-webkit-scrollbar-track,
+.decl-stmt-scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+.stmt-line::-webkit-scrollbar-thumb,
+.decl-stmt-scroll::-webkit-scrollbar-thumb,
+.decl-stmt-scrollable::-webkit-scrollbar-thumb {
+  background: var(--rule);
+  border-radius: 3px;
+}
+.stmt-line:hover::-webkit-scrollbar-thumb,
+.decl-stmt-scroll:hover::-webkit-scrollbar-thumb,
+.decl-stmt-scrollable:hover::-webkit-scrollbar-thumb {
+  background: var(--ink-ghost);
+}
+.stmt-concl {
+  margin-top: 0.35rem;
+  padding: 0.3rem 0 0.05rem 0.6rem;
+  border-top: 1px solid var(--rule-soft);
+  line-height: 1.25;
+}
+.stmt-concl .stmt-section-label { margin-bottom: 0.15rem; }
+/* A structure/class's fields, separated from its parameter telescope above —
+   same divider treatment as .stmt-concl, but only when params actually
+   rendered above it (a structure with no telescope, e.g. `POSystem`, has
+   fields as the first thing in the card and needs no leading rule). */
+.stmt-fields.bordered {
+  margin-top: 0.35rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid var(--rule-soft);
+}
+.stmt-fields .stmt-section-label { margin-bottom: 0.15rem; }
+/* Chain: premises stacked above a rule, conclusion below — for a hypothesis
+   shaped `∀ …, P → Q → R`. No arrow here introduces a new bound variable the
+   way ∀/∃ does, so the premises deliberately do NOT stair-step deeper; they
+   read as a flat list feeding one conclusion, the same shape a
+   natural-deduction inference rule uses. */
+.chain { margin: 0.15rem 0 0.05rem; }
+.chain-line { display: flex; gap: 0.5rem; align-items: baseline; }
+.chain-tag {
+  flex: 0 0 auto;
+  width: 2.1rem;
+  font-family: Charter, Georgia, serif;
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--ink-faint);
+}
+.chain-lines { flex: 1 1 auto; min-width: 0; }
+.chain-rule { border-top: 1px solid var(--rule); margin: 0.15rem 0 0.15rem 2.6rem; }
+
+.decl-meta { font-size: 0.75rem; color: #8C1515; margin-top: 0.3rem; }
+.decl-meta a { color: inherit; }
+.decl-meta code { font-size: 0.72rem; }
+
+/* tier-2 collapsed list */
+.helper-block > summary { cursor: pointer; font-size: 0.85rem; color: #4D4F53; margin-top: 0.8rem; }
+.helper-list { font-size: 0.85rem; list-style: none; padding-left: 0.4rem; }
+.helper-list li { margin: 0.25rem 0; }
+.helper-list code { font-size: 0.82rem; }
+.helper-item > summary { cursor: pointer; }
+.helper-item > summary:hover code { color: #820000; }
+.helper-item .helper-kind {
+  font-size: 0.68rem;
+  color: #A0151D;
+  text-transform: uppercase;
+  margin-left: 0.45rem;
+}
+.helper-item .helper-nl { color: #544F4A; }
+.helper-item .decl-stmt { font-size: 0.76rem; margin: 0.35rem 0 0.2rem; }
+.helper-item .decl-meta { margin-bottom: 0.45rem; }
+
+/* deep-link flash so #Causalean.X.Y jumps are findable (transient: JS adds the
+   class on a real jump and clears it on the next click — not the CSS :target,
+   which lingers as long as the hash stays in the URL). */
+.decl-card.flash-target { outline: 2px solid #B1040E; background: #F6E9E8; }
+
+/* review mode (visible only when the local dev write endpoint answers) */
+.review-controls { display: none; margin-left: auto; gap: 0.4rem; }
+body.review-mode .review-controls { display: inline-flex; }
+.review-controls button {
+  font-family: Charter, Georgia, serif;
+  font-size: 0.72rem;
+  color: #4D4F53;
+  background: #FDFCFA;
+  border: 1px solid #D8D0C5;
+  border-radius: 4px;
+  padding: 0.1rem 0.5rem;
+  cursor: pointer;
+}
+.review-controls button:hover { background: #F1EEE7; color: #2E2D29; }
+
+/* dependency graph section */
+.graph-placeholder {
+  margin: 0.6rem 0;
+  padding: 2.4rem 1rem;
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 0.9rem;
+  border: 1px dashed var(--rule);
+  border-radius: var(--r-frame);
+}
+.graph-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 0.6rem 0 0.4rem;
+  font-size: 0.85rem;
+  color: #4D4F53;
+}
+.graph-toolbar button {
+  font: inherit;
+  color: #820000;
+  background: #FDFCFA;
+  border: 1px solid #D8D0C5;
+  border-radius: 5px;
+  padding: 0.2rem 0.7rem;
+  cursor: pointer;
+  /* Keep the buttons intact when a long title competes for width: never let
+     them shrink or wrap their own label into two lines. The title absorbs the
+     slack instead. */
+  white-space: nowrap;
+  flex: none;
+}
+.graph-toolbar button:hover { background: #F1EEE7; }
+/* Title takes the remaining row and wraps within it; min-width:0 lets it
+   shrink past its content width instead of squeezing the buttons. */
+#graph-title { flex: 1 1 auto; min-width: 0; }
+#graph-title { font-weight: 600; color: #2E2D29; }
+.graph-legend[hidden] {
+  display: none;
+}
+.graph-legend {
+  margin-left: auto;
+  display: flex;
+  gap: 0.8rem;
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+}
+.graph-legend .lg-group {
+  display: flex;
+  gap: 0.8rem;
+}
+.graph-legend .lg-group + .lg-group {
+  padding-left: 0.8rem;
+  border-left: 1px solid var(--rule);
+}
+.graph-legend .lg::before,
+.graph-legend .lg-ring::before {
+  margin-right: 0.25rem;
+}
+/* fill = declaration kind: solid dot */
+.graph-legend .lg::before { content: "●"; }
+.graph-legend .lg-def::before { color: var(--accent-bright); }
+.graph-legend .lg-structure::before { color: var(--ink-ghost); }
+.graph-legend .lg-theorem::before { color: var(--lean); }
+/* warning-only ring: sorry-tainted flag */
+.graph-legend .lg-ring::before { content: "◯"; font-weight: 700; }
+.graph-legend .lg-sorry::before { color: var(--warning); }
+#graph-canvas {
+  border: 1px solid var(--rule);
+  border-radius: var(--r-frame);
+  background: var(--paper);
+}
+
+/* directory link cards (nested library pages) */
+/* Subdirectory tiles. Two layouts, chosen by context:
+   - `.grid`  (page ALSO has file modules below): a compact responsive grid with
+     2-line-clamped descriptions, so the folders read as a tight "map of this
+     area" and don't dominate the page above the file content.
+   - `.stack` (folder-ONLY page, e.g. the PO/Stat area roots): a full-width
+     vertical list with the FULL description, because here the folders ARE the
+     content — the compact grid would leave the page looking empty. */
+.dir-list { margin: 0.8rem 0; }
+.dir-list.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 0.55rem;
+  align-items: stretch;
+}
+.dir-list.stack { display: flex; flex-direction: column; gap: 0.45rem; }
+.dir-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--rule, #DBD4C9);
+  border-radius: 6px;
+  text-decoration: none;
+  color: inherit;
+  background: var(--parchment, #FDFCFA);
+}
+.dir-list.grid .dir-card { height: 100%; }
+.dir-card:hover { background: var(--parchment-deep, #F4F1EA); }
+.dir-card .module-name {
+  font-weight: 600;
+  line-height: 1.15;
+  hyphens: manual;
+  overflow-wrap: anywhere;
+}
+.dir-card .module-counts { font-size: 0.74rem; }
+.dir-card .module-brief {
+  --dir-brief-lines: 3;
+  margin-top: 0.1rem;
+  color: var(--ink-soft, #5C5853);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+/* In grid mode the default clamp is 3 lines (full text on the tile `title`).
+   A tiny page script raises --dir-brief-lines only for cards that already have
+   vertical room after equal-height row stretching, so the row size does not grow. */
+.dir-list.grid .dir-card .module-brief {
+  display: -webkit-box;
+  -webkit-line-clamp: var(--dir-brief-lines);
+  line-clamp: var(--dir-brief-lines);
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.module-doc .doc-h { margin: 0.6rem 0 0.2rem; font-size: 0.9rem; color: var(--ink-soft, #5C5853); font-variant: small-caps; letter-spacing: 0.04em; }

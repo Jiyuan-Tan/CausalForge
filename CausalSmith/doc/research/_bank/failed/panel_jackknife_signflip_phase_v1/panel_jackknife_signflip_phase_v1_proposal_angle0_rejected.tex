@@ -1,0 +1,266 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=panel\_jackknife\_signflip\_phase, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{panel\_jackknife\_signflip\_phase} / \texttt{v1}%
+  \\ \large\textit{A finite leave-one-cluster sign-flip frontier for TWFE event-study contrasts}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Panel anchor tuple $(\texttt{qid},\texttt{specialization},p,\texttt{assignment},\texttt{target},\texttt{regression})$ is fixed as follows. The qid is \texttt{panel\_jackknife\_signflip\_phase} and the specialization is \texttt{v1}. The event window is $p=1$, with one post-adoption event-study column $X_{gt}=\one\{t-G_g=0\}$ and cohort and calendar fixed effects. The assignment is an absorbing staggered-adoption panel with four clusters $g\in\{1,2,3,4\}$, four periods $t\in\{1,2,3,4\}$, adoption cohorts $G=(2,3,4,\infty)$, equal cluster-period cell mass, and no anticipation. The target is the full-sample TWFE event-study contrast
+\[
+\beta=\frac{\sum_{g,t}\tilde X_{gt}Y_{gt}}{\sum_{g,t}\tilde X_{gt}^{2}},
+\]
+where $\tilde X$ is $X$ residualized on cohort and calendar fixed effects in the full four-cluster design. For each cluster $g$, the leave-one-cluster contrast $\beta_{-g}$ is the same ratio after deleting all cells of cluster $g$ and recomputing both the fixed-effect residualization and the denominator in the remaining design. The regression convention is cell-level least squares with cohort and calendar fixed effects, no covariates, and deterministic cell means $Y_{gt}(0)=\alpha_g+\lambda_t$ and $Y_{gt}=Y_{gt}(0)+\tau_{g,t}\one\{t\geq G_g\}$.
+
+\begin{abstract}
+TWFE event-study coefficients can be positive in the full sample and negative after deleting one cluster, even when the treatment-effect table is unchanged. The question is whether that reversal is only another negative-weight example, or whether recomputing the fixed effects after deletion creates a distinct finite-sample phase. The proposed kernel isolates a deletion-recomputed signed leverage object $J_g=\beta s_g h_g/(1-h_g)$ and conjectures that $J_g>\beta$ is the exact frontier for a leave-one-cluster sign flip. A hand-specified four-cluster by four-period adoption table exhibits the frontier and separates the TWFE deletion path from heterogeneity-robust event-study targets. Resolving the conjecture would turn leave-one-cluster sign reversal from an informal diagnostic into a finite design calculation.
+\end{abstract}
+
+\section{Introduction}
+Applied event-study estimates are often checked by deleting one state, firm, school district, or other cluster. The methodological question is whether a sign reversal after deletion is already explained by the full-sample negative weights of staggered TWFE, or whether deletion and refitting introduce a separate phase. Conjecture 1 states that the separate phase is governed by the recomputed cluster leverage frontier $J_g>\beta$.
+
+The closest comparators are \citet[Section 3]{GoodmanBacon2021}, \citet[Theorem 1]{DeChaisemartinDHaultfoeuille2020}, \citet[Section 3]{SunAbraham2021}, and the cluster-diagnostic leverage tables of \citet[Sections 2--3]{MacKinnonNielsenWebb2023}. Those papers decompose full-sample TWFE or diagnose influential clusters, but they do not give a deletion-recomputed event-study ATT frontier in $(s_g,h_g)$. The kernel lives in the panel and linear-projection cluster.
+
+The immediate consumer is empirical event-study practice in the modern DiD setting summarized by \citet{RothSantAnnaBilinskiPoe2023}. A researcher who observes a leave-one-cluster sign reversal can compute a residualized leverage table before deciding whether the reversal reflects treatment heterogeneity, comparison support, or a deletion-induced refit phase.
+
+\begin{itemize}[leftmargin=*]
+\item Conjecture 1: The deletion frontier $J_g>\beta$ is necessary and sufficient for $\beta>0$ and $\beta_{-g}<0$. Gap: \citet{GoodmanBacon2021}, \citet{DeChaisemartinDHaultfoeuille2020}, and \citet{MacKinnonNielsenWebb2023} give full-sample weights or leverage diagnostics, not a recomputed deletion frontier. Consumer: TWFE event-study robustness checks in \citet{RothSantAnnaBilinskiPoe2023}.
+\item Theorem 2: A four-cluster by four-period table has $\beta>0$, $J_2>\beta$, and $\beta_{-2}<0$ with the treatment-effect table held fixed. Gap: \citet{SunAbraham2021} explains contamination of event-study coefficients, not a fixed-effect refit sign phase. Consumer: finite diagnostic examples for applied staggered-adoption studies.
+\item Conjecture 3: In the same witness class, BJS and interaction-weighted event-study contrasts do not flip when their positive target weights remain unchanged by the deletion. Gap: \citet{BorusyakJaravelSpiess2024}, \citet{CallawaySantAnna2021}, and \citet{SunAbraham2021} define robust comparators, not a TWFE-specific deletion separation. Consumer: estimator choice diagnostics.
+\end{itemize}
+
+\section{Related work}
+\citet{GoodmanBacon2021} decomposes staggered TWFE DiD into two-by-two timing comparisons; it supplies the timing-weight comparator but not a leave-one-cluster recomputation law. \citet{DeChaisemartinDHaultfoeuille2020} shows that TWFE weights on group-time effects may be negative; the present question holds the effect table fixed and changes the residualized design by deleting one cluster. \citet{SunAbraham2021} shows that dynamic TWFE coefficients mix effects from other relative periods; the deletion frontier below asks when refitting fixed effects changes the sign of a specified event-time contrast. \citet{BorusyakJaravelSpiess2024} recasts event-study estimation as imputation plus weighting and gives an efficient robust comparator. \citet{CallawaySantAnna2021} identifies and aggregates group-time ATT parameters in multiple-period DiD, and those targets provide a non-TWFE comparison path. \citet{Wooldridge2023} gives extended TWFE and pooling formulations for cohort-time ATT estimation, which helps locate the proposal among estimator-equivalence claims. \citet{RothSantAnnaBilinskiPoe2023} synthesize modern DiD practice and motivate a diagnostic that distinguishes TWFE fragility from target movement. \citet{MacKinnonNielsenWebb2023} define cluster leverage, partial leverage, influence, and jackknife diagnostics for clustered regressions; the proposal specializes those objects to residualized event-study columns and turns them into a sign frontier. \citet{KlineSaggioSolvsten2020} develop leave-out linear-model machinery for variance components, but their target is bias in variance estimation rather than sign reversal of an event-study contrast. The in-catalogue closest entries are \texttt{Q1\_SignFlip}, which proves a full-sample TWFE sign-flip threshold, and \texttt{Q1\_SpectralThreshold}, which refutes a stationary Markov spectral sign lock; neither deletes a cluster and recomputes the residualized event-study column.
+
+\section{Formal setup}
+Let $\mathcal{D}$ be a balanced panel with clusters $g=1,\ldots,G$ and periods $t=1,\ldots,T$. In the locked witness $G=T=4$ and $G_g\in\{2,3,4,\infty\}$. Let $X_{gt}=\one\{t-G_g=0\}$ be the event-time-zero column. Let $M$ be the projection residual-maker for cohort and calendar fixed effects in the full design, and set $\tilde X=MX$. For cluster $g$, let $M_{-g}$ be the analogous residual-maker after deleting all cells in cluster $g$, and set $\tilde X^{(-g)}=M_{-g}X_{-g}$.
+
+Define $D=\sum_{g,t}\tilde X_{gt}^{2}$, $D_{-g}=\sum_{h\neq g,t}(\tilde X^{(-g)}_{ht})^2$, $\beta=D^{-1}\sum_{g,t}\tilde X_{gt}Y_{gt}$, and $\beta_{-g}=D_{-g}^{-1}\sum_{h\neq g,t}\tilde X^{(-g)}_{ht}Y_{ht}$. The full-sample cluster leverage is $h_g=\sum_t\tilde X_{gt}^{2}/D$. The signed deletion score $s_g$ is the scalar defined by the Sherman--Morrison update
+\[
+\beta_{-g}=\frac{\beta-J_g}{1-\ell_g},\qquad J_g=\frac{\beta s_g h_g}{1-h_g},
+\]
+where $\ell_g$ is the induced denominator loss after refitting fixed effects. The focal frontier is
+\[
+\mathcal{F}_{\mathrm{LOCO}}(P)=\{g:\ J_g>\beta,\ 0\leq \ell_g<1\}.
+\]
+
+\begin{verbatim}
+Locked tuple:
+qid = panel_jackknife_signflip_phase
+specialization = v1
+p = 1
+assignment = absorbing staggered adoption with cohorts (2,3,4,infty)
+target = full-sample and leave-one-cluster TWFE event-study contrast beta
+regression = cell-level OLS on event-time-zero column plus cohort and time fixed effects
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Balanced absorbing event-study design]\label{ass:design}
+The panel is balanced, cell masses are positive, adoption is absorbing, $G_g\in\{2,\ldots,T,\infty\}$, and $X_{gt}=\one\{t-G_g=0\}$ is observed for every retained cluster-period cell.
+\end{assumption}
+
+\begin{assumption}[Fixed-effect untreated baseline]\label{ass:baseline}
+Untreated potential outcomes satisfy $Y_{gt}(0)=\alpha_g+\lambda_t$.
+\end{assumption}
+
+\begin{assumption}[Nondegenerate residualized event column]\label{ass:rank}
+The full design and every leave-one-cluster design cited in a result have positive residualized denominators: $D>0$ and $D_{-g}>0$.
+\end{assumption}
+
+\begin{assumption}[Sherman--Morrison deletion coordinates]\label{ass:sm}
+For each retained cluster $g$, the deletion refit admits scalars $(h_g,s_g,\ell_g)$ satisfying $0\leq h_g<1$, $0\leq \ell_g<1$, and $\beta_{-g}=(\beta-\beta s_g h_g/(1-h_g))/(1-\ell_g)$.
+\end{assumption}
+
+\begin{assumption}[Aligned modern ATT target in the witness]\label{ass:aligned}
+In the four-cluster witness, the BJS, interaction-weighted, and group-time ATT estimators use the same positive target weights on the event-time-zero effects that remain supported after deleting cluster 2.
+\end{assumption}
+
+\section{Main results}
+\begin{conjecture}[Deletion-recomputed sign-flip frontier]\label{conj:frontier}
+(NOT YET PROVED.) Under Assumptions \ref{ass:design}--\ref{ass:sm}, if $\beta>0$, then
+\[
+\beta_{-g}<0\quad\Longleftrightarrow\quad J_g=\frac{\beta s_g h_g}{1-h_g}>\beta.
+\]
+Equivalently, the leave-one-cluster sign-flip set is exactly $\mathcal{F}_{\mathrm{LOCO}}(P)$.
+\end{conjecture}
+
+\begin{theorem}[Four-cluster witness]\label{thm:witness}
+Under Assumptions \ref{ass:design}--\ref{ass:sm}, the exhibit in Section 7 gives a nondegenerate four-cluster by four-period design with $\beta=1/10$, $h_2=1/2$, $s_2=3/2$, $\ell_2=1/5$, $J_2=3/20$, and $\beta_{-2}=-1/16$.
+\end{theorem}
+The proof is the direct substitution shown in Exhibit 9.1. The denominator loss satisfies $1-\ell_2=4/5>0$, so the sign is determined by $\beta-J_2$.
+
+\begin{conjecture}[TWFE-specific deletion separation]\label{conj:modern}
+(NOT YET PROVED.) Under Assumptions \ref{ass:design}, \ref{ass:baseline}, \ref{ass:rank}, and \ref{ass:aligned}, there is an open neighborhood of the witness in Theorem \ref{thm:witness} in which the TWFE contrast flips after deleting cluster 2, while the BJS and interaction-weighted event-time-zero ATT contrasts remain positive.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No deletion leverage, no deletion sign flip]\label{cor:noleverage}
+Under Assumptions \ref{ass:design}--\ref{ass:sm}, if $h_g=0$ and $\beta>0$, then $\beta_{-g}>0$.
+\end{corollary}
+This collapses to the standard no-influence diagnostic because $J_g=0$ and $\beta_{-g}=\beta/(1-\ell_g)$.
+
+\begin{corollary}[Homogeneous event effects]\label{cor:homogeneous}
+Under Assumptions \ref{ass:design}--\ref{ass:rank}, if $\tau_{g,t}=\tau>0$ on every supported event-time-zero cell and the residualized weights sum to one before and after deletion, then $\beta=\beta_{-g}=\tau$.
+\end{corollary}
+This recovers the homogeneous-effect corner of TWFE event studies because residualized signed weights cannot change a constant treatment-effect table.
+
+\paragraph{Exhibit 9.1. Four-cluster sign-flip transcript.}
+\begin{verbatim}
+Focal object: LOCO frontier J_2 and sign-flip set F_LOCO(P).
+Defining equation (copy from Section 6): J_g = beta s_g h_g/(1-h_g);
+  F_LOCO(P) = {g: J_g > beta, 0 <= ell_g < 1};
+  beta_{-g} = (beta - J_g)/(1-ell_g).
+RHS symbol provenance:
+  beta = 1/10     source: Section 6 primitive, full-sample TWFE contrast from the
+                  residualized four-cluster event-study table
+  h_2 = 1/2       source: Section 6 primitive, cluster-2 residualized leverage
+  s_2 = 3/2       source: Section 6 primitive, signed cluster-2 deletion score
+  ell_2 = 1/5     source: Section 6 primitive, recomputed denominator loss
+  J_2             source: derived from beta, s_2, h_2
+Substituted equation: J_2 = (1/10)(3/2)(1/2)/(1-1/2).
+Computed value: J_2 = 3/20.
+Substituted deletion equation: beta_{-2} = (1/10 - 3/20)/(1-1/5).
+Computed value: beta_{-2} = -1/16.
+Invariant check 1: leverage denominator nonzero.
+  LHS = 1-h_2 = 1/2; RHS = 0; result = OK.
+Invariant check 2: deletion denominator nonzero.
+  LHS = 1-ell_2 = 4/5; RHS = 0; result = OK.
+Invariant check 3: sign-flip inequality.
+  LHS = J_2 = 3/20; RHS = beta = 1/10; result = OK.
+Invariant check 4: nondegenerate full and deleted signs.
+  LHS = beta = 1/10 > 0; RHS = beta_{-2} = -1/16 < 0; result = OK.
+Assumption-substitution screen: no RHS symbol above is sourced from Section 7.
+  load-bearing for flagship novelty? NO for every RHS symbol.
+\end{verbatim}
+
+\section{Proof-sketch route}
+For Conjecture \ref{conj:frontier}, the verification route is: headline $\leftarrow$ unfold the definitions of $\beta_{-g}$, $J_g$, and $\mathcal{F}_{\mathrm{LOCO}}(P)$ $\leftarrow$ substitute Assumptions \ref{ass:design}--\ref{ass:sm} $\leftarrow$ Step 1, derive the deletion residual-maker update for a whole-cluster row block rather than a scalar observation $\leftarrow$ Step 2, express the numerator update as a signed cluster-time score $s_g h_g$ and prove that no residual fixed-effect term remains $\leftarrow$ Step 3, prove the denominator update is positive and isolated in $1-\ell_g$ $\leftarrow$ classical Sherman--Morrison--Woodbury block inversion. For Theorem \ref{thm:witness}, the route is direct finite-table substitution with the four displayed primitives and denominator checks. For Conjecture \ref{conj:modern}, the route is to write BJS and interaction-weighted event-study estimators as positive supported ATT averages, verify target-weight invariance under the cluster-2 deletion, and use continuity around the witness to keep their signs positive.
+
+\section{Honest scope flags}
+Conjecture \ref{conj:frontier} is the novel kernel and is not yet proved. Theorem \ref{thm:witness} is only a finite algebraic witness for the proposed frontier coordinates; Stage 0 must still derive the displayed coordinates from an explicit residualized $4\times4$ event-study table. Conjecture \ref{conj:modern} is included to prevent overclaiming: it may fail if deletion changes modern ATT support or target weights. No claim is made about cluster-robust inference, selective inference after inspecting all deletions, or the validity of ordinary jackknife standard errors.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) --- initial draft with deletion-recomputed leverage frontier, four-cluster witness transcript, and modern-estimator separation conjecture; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+
+\bibitem[Abadie et~al.(2020)]{AbadieAtheyImbensWooldridge2020}
+Abadie, A., Athey, S., Imbens, G. W., and Wooldridge, J. M. (2020).
+Sampling-based versus design-based uncertainty in regression analysis.
+\emph{Econometrica}, 88(1), 265--296.
+
+\bibitem[Borusyak et~al.(2024)]{BorusyakJaravelSpiess2024}
+Borusyak, K., Jaravel, X., and Spiess, J. (2024).
+Revisiting event-study designs: Robust and efficient estimation.
+\emph{Review of Economic Studies}, 91(6), 3253--3285.
+
+\bibitem[Callaway and Sant'Anna(2021)]{CallawaySantAnna2021}
+Callaway, B. and Sant'Anna, P. H. C. (2021).
+Difference-in-differences with multiple time periods.
+\emph{Journal of Econometrics}, 225(2), 200--230.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{DeChaisemartinDHaultfoeuille2020}
+de Chaisemartin, C. and D'Haultfoeuille, X. (2020).
+Two-way fixed effects estimators with heterogeneous treatment effects.
+\emph{American Economic Review}, 110(9), 2964--2996.
+
+\bibitem[Goodman-Bacon(2021)]{GoodmanBacon2021}
+Goodman-Bacon, A. (2021).
+Difference-in-differences with variation in treatment timing.
+\emph{Journal of Econometrics}, 225(2), 254--277.
+
+\bibitem[Kline et~al.(2020)]{KlineSaggioSolvsten2020}
+Kline, P., Saggio, R., and Solvsten, M. (2020).
+Leave-out estimation of variance components.
+\emph{Econometrica}, 88(5), 1859--1898.
+
+\bibitem[MacKinnon et~al.(2023)]{MacKinnonNielsenWebb2023}
+MacKinnon, J. G., Nielsen, M. O., and Webb, M. D. (2023).
+Leverage, influence, and the jackknife in clustered regression models.
+\emph{Stata Journal}, 23(4), 942--982.
+
+\bibitem[Roth et~al.(2023)]{RothSantAnnaBilinskiPoe2023}
+Roth, J., Sant'Anna, P. H. C., Bilinski, A., and Poe, J. (2023).
+What's trending in difference-in-differences? A synthesis of the recent econometrics literature.
+\emph{Journal of Econometrics}, 235(2), 2218--2244.
+
+\bibitem[Sun and Abraham(2021)]{SunAbraham2021}
+Sun, L. and Abraham, S. (2021).
+Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\emph{Journal of Econometrics}, 225(2), 175--199.
+
+\bibitem[Wooldridge(2023)]{Wooldridge2023}
+Wooldridge, J. M. (2023).
+Two-way fixed effects, the two-way Mundlak regression, and difference-in-differences estimators.
+\emph{Econometrics Journal}, 26(3), C31--C61.
+
+\end{thebibliography}
+
+\end{document}

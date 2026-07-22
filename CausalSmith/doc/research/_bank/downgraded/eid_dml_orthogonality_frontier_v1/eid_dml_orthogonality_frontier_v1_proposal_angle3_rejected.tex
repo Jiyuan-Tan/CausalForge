@@ -1,0 +1,547 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_dml\_orthogonality\_frontier, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_dml\_orthogonality\_frontier} / \texttt{v1}%
+  \\ \large\textit{Orthogonal excess risk does not buy Gaussian HTE bands: an entropy--remainder counterfrontier}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a free-form ExactID proposal.  The locked tuple is
+\[
+(\texttt{qid},\texttt{specialization},\text{graph/SWIG},\text{treatment},
+\text{target estimand},\text{identifying assumptions}).
+\]
+Here \(\texttt{qid}=\texttt{eid\_dml\_orthogonality\_frontier}\) and
+\(\texttt{specialization}=\texttt{v1}\).  The graph/SWIG has observed
+\((X,D,Y)\), binary treatment \(D\in\{0,1\}\), potential outcomes
+\((Y(1),Y(0))\), and observed outcome \(Y=DY(1)+(1-D)Y(0)\).  The treatment is
+the binary intervention \(D\leftarrow d\).  The target estimands are the
+heterogeneous-treatment-effect reports
+\[
+\theta_h(P)=\E_P[h(X)\tau_0(X)],\qquad
+\tau_0(x)=\E_P[Y(1)-Y(0)\mid X=x],\qquad h\in\calH_n,
+\]
+with simultaneous inference over an entropy-indexed report class \(\calH_n\).
+The identifying assumptions are consistency, conditional unconfoundedness
+\((Y(1),Y(0))\perp D\mid X\), overlap \(\varepsilon\leq e_0(X)\leq 1-\varepsilon\),
+and finite second moments.  The proposed estimator is the cross-fitted
+first-order AIPW/DML report process based on nuisances
+\(\eta=(m_1,m_0,e)\), where \(m_d(x)=\E[Y\mid D=d,X=x]\) and
+\(e(x)=\Pr(D=1\mid X=x)\).
+
+\begin{abstract}
+Orthogonal statistical learning shows that Neyman-orthogonal losses can retain
+second-order excess-risk behavior even when nuisance functions are learned by
+complex methods.  This proposal asks whether those excess-risk guarantees are
+enough to justify simultaneous Gaussian confidence bands for heterogeneous
+treatment-effect DML reports over growing report classes.  The proposed kernel
+is a counterfrontier: the named Gaussian-band gap index
+\(\Lambda_n\), combining report entropy and second-order nuisance drift, is
+conjectured to be the sharp obstruction separating excess-risk-valid
+orthogonal learning from honest Gaussian bands.  The flagship conjecture is not
+that first-order DML always fails; it is that \citet{FosterSyrgkanis2023OSL}'s
+excess-risk conclusion can hold while \citet{SemenovaChernozhukov2021DMLCATE}
+style multiplier bands undercover whenever \(\Lambda_n\) stays bounded away
+from zero.  Resolving this would tell empirical HTE users when an orthogonal
+learner must report a report-class entropy diagnostic before using simultaneous
+bands.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Modern HTE work often estimates rich CATE objects and then displays many
+subgroup, basis, or function-valued reports with simultaneous bands.  Neyman
+orthogonality makes this plausible by killing first-order nuisance bias, but
+orthogonal excess-risk control is a prediction guarantee, not automatically a
+Gaussian approximation for a supremum of many debiased reports.  The scientific
+question is whether a learner that is good enough for orthogonal risk is also
+good enough for honest simultaneous causal inference.
+
+\paragraph{The main finding (proposed).}
+The headline result is Conjecture~\ref{conj:gap-counterfrontier}: for a
+finite-packing Holder witness class and its open perturbations, there are
+orthogonal HTE learners satisfying the excess-risk conclusion of
+\citet{FosterSyrgkanis2023OSL} but whose DML multiplier bands have non-vanishing
+undercoverage when the Gaussian-band gap index
+\(\Lambda_n=\sqrt{2\log M_n}\,|b_n|/\sigma_n\) has a positive limit.  The same
+conjecture includes the positive edge: when \(\Lambda_n\to0\) and the usual
+high-dimensional Gaussian approximation remainder is negligible, the same
+first-order reports recover valid simultaneous bands.  Theorem~\ref{thm:id}
+records the standard ExactID AIPW identity so the proposed frontier is about
+inference, not identification.
+
+\paragraph{What is new.}
+The novelty kernel is the \emph{Gaussian-band gap index}
+\(\Lambda_n\), a focal scalar whose factors are independently meaningful:
+\(\sqrt{2\log M_n}\) is the extreme-value inflation of a report-class packing,
+\(b_n\) is the common second-order orthogonal nuisance drift left invisible to
+excess-risk control, and \(\sigma_n\) is the report standard deviation.  The
+proposal is informed by the sufficient product-rate conditions in
+\citet{ChernozhukovEtAl2018DML}, but the delivered comparator promise is
+against the BLP/group-average simultaneous inference conditions in
+\citet{SemenovaChernozhukov2021DMLCATE} and the orthogonal excess-risk theorem
+of \citet{FosterSyrgkanis2023OSL}.  It targets a strict
+non-implication: second-order orthogonal excess risk may hold while Gaussian
+HTE bands fail by a quantifiable entropy-amplified mean shift.
+
+\paragraph{How it positions in the literature.}
+This is an ExactID / causal-ML proposal.  The identification object is the
+standard unconfoundedness AIPW functional for weighted CATE reports.  The
+frontier itself sits between DML inference, high-dimensional Gaussian
+approximation, and orthogonal statistical learning: \citet{ChernozhukovEtAl2018DML}
+give orthogonal scores and cross-fitting, \citet{ChernozhukovChetverikovKato2017EmpiricalBootstrap}
+give Gaussian and multiplier bootstrap tools for growing empirical processes,
+\citet{SemenovaChernozhukov2021DMLCATE} use such tools for CATE reports, and
+\citet{FosterSyrgkanis2023OSL} prove entropy-aware orthogonal excess-risk
+oracle inequalities.  The proposal asks for the missing bridge theorem, and a
+matching counterexample, between the last two claims.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is simultaneous HTE reporting in
+\citet{SemenovaChernozhukov2021DMLCATE}: if the conjecture resolves favorably,
+those reports gain a necessary entropy--remainder diagnostic rather than only a
+list of sufficient nuisance-rate assumptions.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers using orthogonal HTE learners should check or estimate a
+report-class entropy times nuisance-drift diagnostic before treating an
+orthogonal excess-risk guarantee as permission to draw simultaneous Gaussian
+bands.
+
+\section{Related work}
+\citet{ChernozhukovEtAl2018DML} is the canonical DML anchor: it introduces
+orthogonal scores and cross-fitting and states sufficient nuisance product-rate
+conditions for asymptotically linear treatment-effect estimators.  The present
+proposal keeps the same first-order AIPW score but asks for a necessary
+entropy-amplified obstruction to simultaneous HTE bands.
+
+\citet{SemenovaChernozhukov2021DMLCATE} develops debiased ML for CATE and
+other causal functions, including simultaneous inference for best linear
+predictors and group averages using Gaussian bootstrap.  The proposed
+counterfrontier is directly relevant to their simultaneous-inference consumer:
+it identifies a drift regime where orthogonal reports can be risk-valid but
+band-invalid.
+
+\citet{FosterSyrgkanis2023OSL} gives nonasymptotic orthogonal statistical
+learning bounds under metric entropy, with nuisance error entering at second
+order.  This paper is the main comparator: Conjecture~\ref{conj:gap-counterfrontier}
+is a non-representability result showing that those excess-risk guarantees do
+not, by themselves, imply Gaussian HTE bands.
+
+\citet{ChernozhukovChetverikovKato2017HDCLT} and
+\citet{ChernozhukovChetverikovKato2017EmpiricalBootstrap} provide
+high-dimensional Gaussian approximation and multiplier-bootstrap theory for
+maxima and suprema of empirical processes.  The proposal uses their
+anti-concentration logic to explain why a coordinatewise second-order drift can
+be magnified by \(\sqrt{\log M_n}\) in a simultaneous band.
+
+\citet{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE} derives minimax CATE
+rates and nuisance-smoothness elbows using higher-order ideas.  Their result is
+adjacent because it shows that first-order orthogonality has smoothness
+boundaries, while this proposal isolates a distinct simultaneous-inference
+boundary driven by entropy-amplified second-order drift.
+
+\citet{ChernozhukovNeweySingh2022Riesz} study debiased ML for global and local
+linear functionals using regularized Riesz representers, including nonregular
+local objects.  Their local-functional instability motivates the present
+proposal's focus on report classes whose effective dimension grows.
+
+\citet{ArmstrongKolesar2021FiniteSampleATE} show that honest ATE inference
+under unconfoundedness depends sharply on smoothness, shape, and overlap
+restrictions.  Their finite-sample necessity perspective supports the proposal
+strategy: inferential validity should be characterized by necessity frontiers,
+not only sufficient DML rate conditions.
+
+In-repository prior art does not contain this kernel.  The \texttt{doc/API.md}
+ExactID / PartialID catalogue reports that new \texttt{eid\_*} qids are seeded
+through CausalSmith and that the current ExactID catalogue has no documented
+Holder/entropy DML theorem.  The failed bank entry
+\texttt{eid\_dml\_orth\_uniform/v2} targeted a two-channel DML/LRO/ADML
+studentization frontier, but Stage~0.5 rejected it because the advertised
+frontier was encoded in high-level assumptions; the present pivot instead
+targets the structurally different Foster--Syrgkanis excess-risk-to-band
+non-implication and names the concrete scalar \(\Lambda_n\) as the focal object.
+
+\section{Formal setup}
+Let \(O=(X,D,Y)\sim P\), \(D\in\{0,1\}\), and \(Y=DY(1)+(1-D)Y(0)\).  Write
+\[
+m_d(x)=\E_P[Y\mid D=d,X=x],\qquad e(x)=\Pr_P(D=1\mid X=x),
+\qquad \tau_0(x)=m_1(x)-m_0(x).
+\]
+For a report function \(h\in\calH_n\), the target is
+\(\theta_h(P)=\E_P[h(X)\tau_0(X)]\).  The AIPW signal is
+\[
+\psi_h(O;\eta)=h(X)\left[
+m_1(X)-m_0(X)+\frac{D\{Y-m_1(X)\}}{e(X)}
+-\frac{(1-D)\{Y-m_0(X)\}}{1-e(X)}
+\right],
+\]
+where \(\eta=(m_1,m_0,e)\).  The cross-fitted DML report is
+\(\widehat\theta_h=n^{-1}\sum_{i=1}^n \psi_h(O_i;\widehat\eta_{-k(i)})\).
+Let
+\[
+Z_{n,h}=\frac{\sqrt n(\widehat\theta_h-\theta_h(P))}{\sigma_h(P)},\qquad
+\sigma_h^2(P)=\operatorname{Var}_P(\psi_h(O;\eta_0)).
+\]
+
+The proposal studies a finite-packing subclass
+\(\calH_n^\circ=\{h_1,\ldots,h_{M_n}\}\subseteq\calH_n\).  Let \(b_{n,j}(P)\)
+denote the second-order mean drift
+\[
+b_{n,j}(P)=\E_P[\psi_{h_j}(O;\widehat\eta)-\psi_{h_j}(O;\eta_0)
++\theta_{h_j}(P)-\theta_{h_j}(P_{\widehat\eta})],
+\]
+with \(b_n=\max_{1\leq j\leq M_n}|b_{n,j}(P)|\) and
+\(\sigma_n=\min_{1\leq j\leq M_n}\sigma_{h_j}(P)\).  The named focal object is
+the \emph{Gaussian-band gap index}
+\[
+\Lambda_n(P,\widehat\eta,\calH_n^\circ)
+=\sqrt{2\log M_n}\,\frac{b_n}{\sigma_n}.
+\]
+The companion high-dimensional Gaussian approximation remainder is
+\[
+G_n(P,\calH_n^\circ)=
+\sup_t\left|\Pr\left(\max_{j\leq M_n} Z^0_{n,h_j}\leq t\right)
+-\Pr\left(\max_{j\leq M_n} G_{n,j}\leq t\right)\right|,
+\]
+where \(Z^0_{n,h_j}\) is the oracle centered score process and
+\((G_{n,1},\ldots,G_{n,M_n})\) is a centered Gaussian vector with the same
+covariance.
+
+\begin{center}
+\fbox{\begin{minipage}{0.92\linewidth}
+This proposal uses the ExactID/free-form convention
+\[
+(\texttt{qid},\texttt{specialization},\text{graph/SWIG},\text{treatment},
+\text{target estimand},\text{identifying assumptions}).
+\]
+The entries are
+\(\texttt{qid}=\texttt{eid\_dml\_orthogonality\_frontier}\),
+\(\texttt{specialization}=\texttt{v1}\), graph/SWIG
+\((X,D,Y(1),Y(0),Y)\) with \(Y=DY(1)+(1-D)Y(0)\), treatment \(D\leftarrow d\),
+target \(\{\theta_h(P):h\in\calH_n\}\), and assumptions consistency,
+conditional unconfoundedness, overlap, finite second moments, and the
+report-class / nuisance-class restrictions listed in Section~\ref{sec:assumptions}.
+\end{minipage}}
+\end{center}
+
+\section{Assumptions}\label{sec:assumptions}
+\begin{assumption}[ExactID sampling and overlap]\label{ass:exactid}
+The observations \(O_i=(X_i,D_i,Y_i)\) are i.i.d.; consistency holds; \((Y(1),Y(0))\perp D\mid X\); \(\varepsilon\leq e(X)\leq 1-\varepsilon\) almost surely for a fixed \(\varepsilon>0\); and \(\E[Y(d)^2]<\infty\) for \(d\in\{0,1\}\).
+\end{assumption}
+
+\begin{assumption}[Report entropy and variance]\label{ass:entropy}
+For each \(n\), \(\calH_n\) has envelope \(B_{h,n}<\infty\), contains a finite
+\(L_2(P)\)-separated packing
+\(\calH_n^\circ=\{h_1,\ldots,h_{M_n}\}\), and
+\(0<\underline\sigma\leq\sigma_{h_j}(P)\leq\overline\sigma<\infty\) for all
+\(j\leq M_n\).  The entropy scale is \(H_n=\log M_n\).
+\end{assumption}
+
+\begin{assumption}[Cross-fitted first-order orthogonal reports]\label{ass:dml}
+The estimator \(\widehat\theta_h\) is the sample average of the AIPW signal
+\(\psi_h(O;\widehat\eta_{-k(i)})\) with folds independent of their nuisance
+training samples.  The nuisance errors satisfy
+\(\|\widehat m_d-m_d\|_{2,P}\leq a_{d,n}\) and
+\(\|\widehat e-e\|_{2,P}\leq c_n\), and the second-order drift vector
+\((b_{n,1},\ldots,b_{n,M_n})\) is well-defined.
+\end{assumption}
+
+\begin{assumption}[Orthogonal excess-risk benchmark]\label{ass:osl}
+The learner also satisfies an orthogonal statistical learning excess-risk
+bound of the Foster--Syrgkanis type:
+\[
+\mathcal E_{\mathrm{OSL},n}
+\leq C_{\mathrm{OSL}}\{r_{\theta,n}^2+a_{1,n}^2+a_{0,n}^2+c_n^2\}
+\]
+up to logarithmic factors, where \(r_{\theta,n}\) is the target-class
+approximation radius.  This is a benchmark condition, not a Gaussian-band
+validity assumption.
+\end{assumption}
+
+\begin{assumption}[Finite-packing Holder witness]\label{ass:witness}
+There is a sequence of DGPs with \(X\in[0,1]^d\), \(M_n\) disjoint cubes
+\((B_{n,j})_{j\leq M_n}\) of side length \(\ell_n\), report functions
+\[
+h_j(x)=\Pr(X\in B_{n,j})^{-1/2}\one\{x\in B_{n,j}\},
+\]
+and Holder-smooth nuisance perturbations supported on the same cubes with
+amplitudes \(\alpha_n\) and \(\gamma_n\).  These primitives imply
+\(b_{n,j}=b_n=\kappa_0\alpha_n\gamma_n\Pr(X\in B_{n,j})^{1/2}\) for all
+\(j\leq M_n\), with \(0<\kappa_0<\infty\), while preserving
+Assumptions~\ref{ass:exactid}--\ref{ass:osl}.
+\end{assumption}
+
+\begin{assumption}[Gaussian approximation edge]\label{ass:gaussianedge}
+The oracle centered score process over \(\calH_n^\circ\) has
+\(G_n(P,\calH_n^\circ)\to0\), and the multiplier bootstrap consistently
+estimates the oracle Gaussian quantile when the drift vector is removed.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: ExactID AIPW report identity]\label{thm:id}
+Under Assumption~\ref{ass:exactid}, for every bounded report
+\(h\in\calH_n\),
+\[
+\E_P[\psi_h(O;\eta_0)]=\theta_h(P).
+\]
+Moreover, the Gateaux derivative of
+\(\eta\mapsto \E_P[\psi_h(O;\eta)]\) at \(\eta_0=(m_1,m_0,e)\) is zero in each
+nuisance direction with finite \(L_2(P)\) norm.
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) This statement is not the novelty claim; it records the standard
+\citet{ChernozhukovEtAl2018DML} AIPW orthogonality identity in the report
+notation used by the proposal.  (b) It is worth including because it pins the
+ExactID estimand consumed by \citet{SemenovaChernozhukov2021DMLCATE}; the new
+question is whether the resulting report process has honest simultaneous
+bands.
+
+\begin{conjecture}[Conjecture 1: Gaussian-band gap counterfrontier (NOT YET PROVED)]\label{conj:gap-counterfrontier}
+Under Assumptions~\ref{ass:exactid}--\ref{ass:gaussianedge}, the Gaussian-band
+gap index \(\Lambda_n=\sqrt{2\log M_n}\,b_n/\sigma_n\) is the sharp
+counterfrontier for converting orthogonal excess-risk control into
+simultaneous HTE bands over the finite packing \(\calH_n^\circ\):
+\begin{enumerate}[label=(\roman*)]
+\item If \(\Lambda_n\to0\) and \(G_n(P,\calH_n^\circ)\to0\), the centered
+first-order DML process and its multiplier bootstrap band have asymptotically
+correct simultaneous coverage over \(\calH_n^\circ\).
+\item If \(\liminf_n \Lambda_n>\lambda>0\), then there are DGPs and nuisance
+learners satisfying Assumption~\ref{ass:osl} for which the nominal
+\((1-\alpha)\) multiplier band undercovers by at least
+\(\Phi(\lambda/2)-1/2-o(1)\) along a subsequence.
+\end{enumerate}
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) The closest comparator is \citet[\S3]{FosterSyrgkanis2023OSL}, which gives
+second-order orthogonal excess-risk bounds under entropy restrictions but does
+not claim a necessary and sufficient Gaussian-band frontier.  The
+\(\varepsilon\)-gap is the entropy-amplified drift
+\(\sqrt{2\log M_n}b_n/\sigma_n\): it can be \(O(1)\) while the second-order
+excess-risk term in Assumption~\ref{ass:osl} still vanishes.  The second
+comparator is \citet[\S3]{SemenovaChernozhukov2021DMLCATE}, whose simultaneous
+inference theory supplies sufficient high-level conditions but not a lower
+bound showing that orthogonal excess-risk control alone is insufficient.  (b)
+Resolving this conjecture gives Semenova--Chernozhukov style CATE reports a
+concrete diagnostic: report \(\Lambda_n\), or a conservative upper bound for it,
+before using a simultaneous Gaussian band.
+
+\begin{theorem}[Theorem 2: Max-shift coverage loss calculation]\label{thm:maxshift}
+Assume Assumptions~\ref{ass:entropy} and \ref{ass:gaussianedge}.  If the
+centered oracle process over \(\calH_n^\circ\) is approximated by independent
+standard Gaussian coordinates \(G_1,\ldots,G_{M_n}\), and the feasible DML
+process adds a common nonnegative mean shift \(b_n/\sigma_n\), then any
+bootstrap band calibrated to the centered oracle quantile has coverage loss at
+least \(\Phi(\Lambda_n/2)-1/2-o(1)\) when
+\(\Lambda_n=\sqrt{2\log M_n}b_n/\sigma_n\) has a positive limit.
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) This is a routine extreme-value calculation rather than the flagship
+conjecture; its purpose is to make the obstruction in
+Conjecture~\ref{conj:gap-counterfrontier} non-tautological.  The closest
+published tools are \citet{ChernozhukovChetverikovKato2017HDCLT} and
+\citet{ChernozhukovChetverikovKato2017EmpiricalBootstrap}, which justify
+centered Gaussian approximations but do not analyze the nuisance-drift
+counterexample.  (b) The consumer is again simultaneous CATE inference: the
+calculation shows exactly why a small coordinatewise second-order bias can be
+large at the band maximum.
+
+\begin{conjecture}[Conjecture 2: Open-class Holder witness (NOT YET PROVED)]\label{conj:holder-witness}
+The finite-packing construction in Assumption~\ref{ass:witness} can be promoted
+to an open \(L_2(P)\)-neighborhood of Holder-smooth nuisance pairs and report
+classes: for every sufficiently small perturbation preserving cube separation,
+overlap, and variance lower bounds, Assumptions~\ref{ass:exactid}--\ref{ass:gaussianedge}
+continue to hold and the lower-bound half of
+Conjecture~\ref{conj:gap-counterfrontier} remains valid with constants reduced
+by at most a fixed factor.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE} give smoothness
+elbows for CATE rates, and \citet{ArmstrongKolesar2021FiniteSampleATE} give
+finite-sample necessity logic for ATE inference, but neither paper supplies an
+open-class lower bound for simultaneous HTE bands under orthogonal excess-risk
+control.  The \(\varepsilon\)-gap is genericity: the obstruction is not a
+single hand-tuned distribution but a neighborhood of Holder nuisance systems.
+(b) This would unblock a clean negative result for Foster--Syrgkanis style
+orthogonal learning: a user can satisfy their excess-risk benchmark on an open
+class and still fail Semenova--Chernozhukov simultaneous bands.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No entropy amplification]\label{cor:no-entropy}
+Under Assumptions~\ref{ass:exactid}--\ref{ass:gaussianedge}, if \(M_n\) is
+bounded and \(b_n\to0\), then \(\Lambda_n\to0\), so
+Conjecture~\ref{conj:gap-counterfrontier}(i) reduces to ordinary pointwise or
+fixed-dimensional DML Gaussian inference.
+\end{corollary}
+
+\begin{corollary}[Oracle nuisance corner]\label{cor:oracle}
+Under Assumptions~\ref{ass:exactid}, \ref{ass:entropy}, and
+\ref{ass:gaussianedge}, if \(\widehat\eta=\eta_0\), then \(b_n=0\),
+\(\Lambda_n=0\), and the proposal collapses to the centered high-dimensional
+Gaussian approximation problem studied by
+\citet{ChernozhukovChetverikovKato2017HDCLT}.
+\end{corollary}
+
+\begin{example}[Concrete non-corner witness]\label{ex:concrete-witness}
+Take \(X\sim\operatorname{Unif}([0,1]^d)\), let \(B_{n,j}\) be \(M_n\) disjoint
+cubes of side length \(\ell_n\), set \(e_0(x)=1/2\), and let the nuisance
+learners have independent cross-fit perturbations
+\(\widehat m_1-m_1=\alpha_n\sum_j q_j(x)\) and
+\(\widehat e-e_0=\gamma_n\sum_j q_j(x)\), where each \(q_j\) is a smooth bump
+supported in \(B_{n,j}\).  Choosing
+\(\alpha_n\gamma_n\ell_n^{d/2}\sqrt{2\log M_n}\to\lambda>0\) gives
+\(\Lambda_n\to\lambda/\sigma\) while the coordinatewise drift is \(o(1)\);
+this is the explicit witness Conjecture~\ref{conj:holder-witness} must verify,
+not a Gaussian or oracle corner.
+\end{example}
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:id} follows by conditioning on \(X\), substituting
+consistency and unconfoundedness, and differentiating the AIPW expectation in
+the \(m_1\), \(m_0\), and \(e\) directions.  Theorem~\ref{thm:maxshift} reduces
+to the extreme-value expansion for \(\max_{j\leq M_n}G_j\): a common mean shift
+of size \(b_n/\sigma_n\) moves the maximum by the product
+\(\sqrt{2\log M_n}b_n/\sigma_n\), and Gaussian anti-concentration converts that
+movement into coverage loss.  Conjecture~\ref{conj:gap-counterfrontier} then
+requires two non-routine mathematical steps: construct cross-fitted nuisance
+learners on the bump class whose orthogonal excess-risk bound remains
+second-order while their AIPW report drift equals the displayed \(b_n\), and
+couple the drifted report process to the centered Gaussian maximum uniformly
+over the open Holder neighborhood.  Conjecture~\ref{conj:holder-witness} should
+be attacked by explicit bump algebra, small-cube packing estimates, and
+stability of Holder norms, overlap, and covariance eigenvalues under small
+\(L_2\) perturbations.
+
+\section{Honest scope flags}
+The exact-identification identity and max-shift calculation are labelled
+Theorem because they are standard conditioning and Gaussian-maximum algebra.
+The counterfrontier and open-class witness are Conjectures: the difficult
+construction of nuisance learners satisfying orthogonal excess-risk control
+while producing aligned report drift is not proved here.  This pivot
+intentionally withdraws the previously rejected two-channel ``necessary and
+sufficient DML frontier'' framing; the new proposal is a narrower
+non-implication / counterfrontier against the excess-risk-to-band inference
+shortcut.  The uncertain technical point is whether the open-neighborhood
+promotion in Conjecture~\ref{conj:holder-witness} can preserve the common-drift
+geometry without imposing an artificial alignment condition that would weaken
+the novelty claim.
+
+\section{Iteration trail}
+\begin{itemize}
+\item v1 (pivot) -- initial draft for angle 3 after exhausting the prior DML
+frontier, higher-order CATE elbow, and LRO/ADML report-equivalence angles;
+prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Armstrong and Kolesar(2021)]{ArmstrongKolesar2021FiniteSampleATE}
+Armstrong, T. B. and M. Kolesar (2021).
+\newblock Finite-sample optimal estimation and inference on average treatment effects under unconfoundedness.
+\newblock \emph{Econometrica} 89(3), 1141--1177.
+
+\bibitem[Chernozhukov, Chetverikov, and Kato(2017)]{ChernozhukovChetverikovKato2017HDCLT}
+Chernozhukov, V., D. Chetverikov, and K. Kato (2017).
+\newblock Central limit theorems and bootstrap in high dimensions.
+\newblock \emph{Annals of Probability} 45(4), 2309--2352.
+
+\bibitem[Chernozhukov, Chetverikov, and Kato(2017)]{ChernozhukovChetverikovKato2017EmpiricalBootstrap}
+Chernozhukov, V., D. Chetverikov, and K. Kato (2017).
+\newblock Empirical and multiplier bootstraps for suprema of empirical processes of increasing complexity, and related Gaussian couplings.
+\newblock \emph{Stochastic Processes and their Applications} 126(12), 3632--3651.
+
+\bibitem[Chernozhukov et~al.(2018)]{ChernozhukovEtAl2018DML}
+Chernozhukov, V., D. Chetverikov, M. Demirer, E. Duflo, C. Hansen, W. Newey, and J. Robins (2018).
+\newblock Double/debiased machine learning for treatment and structural parameters.
+\newblock \emph{The Econometrics Journal} 21(1), C1--C68.
+
+\bibitem[Chernozhukov, Newey, and Singh(2022)]{ChernozhukovNeweySingh2022Riesz}
+Chernozhukov, V., W. K. Newey, and R. Singh (2022).
+\newblock Debiased machine learning of global and local parameters using regularized Riesz representers.
+\newblock \emph{The Econometrics Journal} 25(3), 576--601.
+
+\bibitem[Foster and Syrgkanis(2023)]{FosterSyrgkanis2023OSL}
+Foster, D. J. and V. Syrgkanis (2023).
+\newblock Orthogonal statistical learning.
+\newblock \emph{Annals of Statistics} 51(3), 879--908.
+
+\bibitem[Kennedy et~al.(2024)]{KennedyBalakrishnanRobinsWasserman2024MinimaxCATE}
+Kennedy, E. H., S. Balakrishnan, J. M. Robins, and L. Wasserman (2024).
+\newblock Minimax rates for heterogeneous causal effect estimation.
+\newblock \emph{Annals of Statistics} 52(2), 793--817.
+
+\bibitem[Semenova and Chernozhukov(2021)]{SemenovaChernozhukov2021DMLCATE}
+Semenova, V. and V. Chernozhukov (2021).
+\newblock Debiased machine learning of conditional average treatment effects and other causal functions.
+\newblock \emph{The Econometrics Journal} 24(2), 264--289.
+\end{thebibliography}
+
+\end{document}

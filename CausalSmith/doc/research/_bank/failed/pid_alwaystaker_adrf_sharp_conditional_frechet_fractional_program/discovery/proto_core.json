@@ -1,0 +1,1145 @@
+{
+  "qid": "pid_alwaystaker_adrf_sharp_conditional",
+  "specialization": "frechet_fractional_program",
+  "cluster": "partialid",
+  "tldr": "The unresolved sufficient-set case in Lee and Liu's continuous-treatment Lee bounds is a law-level aggregation problem, not a pointwise trimming problem. For a fixed dose d, the always-takers average dose-response function is interval identified because the sufficient-set restriction implies an observable Frechet band [underline_pi_d(X), overline_pi_d(X)] for the conditional always-taker mass, while the endpoint averages are ratios with the common denominator E[pi(X)]. The proposal characterizes each sharp endpoint as the value of a global support-function problem over measurable selector functions pi in Pi_d(P), reduces that linear-fractional program to a scalar Dinkelbach root, and isolates a root-normalized common-threshold condition under which the naive pointwise Frechet plug-in is exactly sharp. A kernel-localized doubly robust endpoint handle then targets the smooth-root submodel where the finite-bandwidth transformed score equals the population transform up to an explicit O(h_n^2) bias under local dose smoothness, the root derivative is fixed at -E[pi_sigma^*(X)], and honest coverage at tie and boundary laws remains the explicit open question.",
+  "project_justification": {
+    "gap": "LeeLiu2025ContinuousLee identifies the continuous-treatment always-takers ADRF under sufficient values, but in the sufficient-set covariate case the conditional always-taker share is only constrained by an observable Frechet band and the paper leaves the covariate-aggregated sharp identified set unresolved.",
+    "niche": "The missing object is a globally compatible selector process, not another conditional trimming formula. JonzonGabrielSjolanderSachs2025CovariatesBounds makes clear that pointwise sharp conditional bounds need not aggregate to a uniformly sharp marginal bound, and BenMichael2025ConditionalLP does not cover the denominator-coupled ratio structure here.",
+    "fill": "The project fills that gap with a measurable-selector support-function characterization, a scalar Dinkelbach threshold representation, a primitive collapse criterion for exact pointwise plug-in sharpness, and a regular-regime endpoint estimator whose expansion keeps the finite-bandwidth kernel bias explicit and uses the h_n-scaled variance normalization implied by local dose localization."
+  },
+  "related_work": "LeeLiu2025ContinuousLee is the direct anchor: it extends Lee bounds to continuous or multivalued treatments and leaves the sufficient-set covariate case with only conditional Frechet information on the always-taker share. Lee2009SharpBounds is the binary-treatment benchmark showing how sharp trimming follows once the always-taker share is identified. Semenova2024GeneralizedLee provides the closest support-function and orthogonal-moment template for Lee-type bounds with covariates, but there the relevant always-taker covariate law is identified rather than chosen from a denominator-coupled band. JonzonGabrielSjolanderSachs2025CovariatesBounds formalizes the pointwise-versus-uniform sharpness distinction that drives the present obstruction. BenMichael2025ConditionalLP gives de-biased inference for bounds that are expectations of conditional linear-program optima, but the present target is a global linear-fractional program over measurable selectors with one shared denominator. ColangeloLee2025ContinuousDML supplies the local-dose kernel localization, orthogonalization, and bias-control template for continuous-treatment ADRF inference before the nonsmooth support-function step. FangSantos2019DirectionalInference is the natural template once tie and boundary laws make the Dinkelbach root map only directionally differentiable.",
+  "symbols": [
+    {
+      "name": "y_min",
+      "type": "outcome_lower_endpoint",
+      "space": "R",
+      "def": "Known finite lower endpoint of the outcome support.",
+      "role": "support_constant"
+    },
+    {
+      "name": "y_max",
+      "type": "outcome_upper_endpoint",
+      "space": "R",
+      "def": "Known finite upper endpoint of the outcome support.",
+      "role": "support_constant"
+    },
+    {
+      "name": "X_space",
+      "type": "covariate_space",
+      "space": "measurable_space",
+      "def": "Support of the pretreatment covariate vector X.",
+      "role": "primitive_space"
+    },
+    {
+      "name": "O",
+      "type": "observed_unit",
+      "space": "{(Y,S,D,X): Y in [y_min,y_max], S in {0,1}, D in supp(D), X in X_space}",
+      "def": "Observed unit O = (Y,S,D,X).",
+      "role": "data_unit",
+      "refs": [
+        "y_min",
+        "y_max",
+        "X_space"
+      ]
+    },
+    {
+      "name": "O_i",
+      "type": "sample_observation",
+      "space": "{(Y,S,D,X): Y in [y_min,y_max], S in {0,1}, D in supp(D), X in X_space}",
+      "def": "One observed replicate of O in the sample.",
+      "role": "sample_observation",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "Y",
+      "type": "observed_outcome",
+      "space": "[y_min,y_max]",
+      "def": "Observed outcome component of O.",
+      "role": "data_component",
+      "refs": [
+        "O",
+        "y_min",
+        "y_max"
+      ]
+    },
+    {
+      "name": "S",
+      "type": "observed_selection",
+      "space": "{0,1}",
+      "def": "Observed selection indicator component of O.",
+      "role": "data_component",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "D",
+      "type": "observed_treatment",
+      "space": "supp(D)",
+      "def": "Observed continuous or multivalued treatment component of O.",
+      "role": "data_component",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "X",
+      "type": "covariate",
+      "space": "X_space",
+      "def": "Observed pretreatment covariate vector.",
+      "role": "data_component",
+      "refs": [
+        "O",
+        "X_space"
+      ]
+    },
+    {
+      "name": "P",
+      "type": "observed_law",
+      "space": "laws of O",
+      "def": "Observed-data law of O under the Lee-Liu sufficient-set sample-selection model.",
+      "role": "model",
+      "refs": [
+        "O"
+      ]
+    },
+    {
+      "name": "P_X",
+      "type": "covariate_marginal",
+      "space": "laws on X_space",
+      "def": "Marginal law of X induced by P.",
+      "role": "primitive_measure",
+      "refs": [
+        "P",
+        "X",
+        "X_space"
+      ]
+    },
+    {
+      "name": "d",
+      "type": "treatment_value",
+      "space": "int(supp(D))",
+      "def": "Fixed interior treatment value at which the always-takers ADRF is evaluated.",
+      "role": "index",
+      "refs": [
+        "D"
+      ]
+    },
+    {
+      "name": "a",
+      "type": "generic_treatment_value",
+      "space": "supp(D)",
+      "def": "Generic treatment value used to state local smoothness in the treatment coordinate around d.",
+      "role": "index",
+      "refs": [
+        "D",
+        "d"
+      ]
+    },
+    {
+      "name": "Y(d)",
+      "type": "potential_outcome",
+      "space": "[y_min,y_max]",
+      "def": "Potential outcome under treatment value d.",
+      "role": "causal_primitive",
+      "refs": [
+        "y_min",
+        "y_max",
+        "d"
+      ]
+    },
+    {
+      "name": "S(d)",
+      "type": "potential_selection",
+      "space": "{0,1}",
+      "def": "Potential selection indicator under treatment value d.",
+      "role": "causal_primitive",
+      "refs": [
+        "d"
+      ]
+    },
+    {
+      "name": "AT",
+      "type": "principal_stratum_indicator",
+      "space": "{0,1}",
+      "def": "Always-taker indicator for the Lee-Liu sufficient-set principal stratum anchored at dose d.",
+      "role": "latent_target_stratum",
+      "refs": [
+        "d"
+      ]
+    },
+    {
+      "name": "n",
+      "type": "sample_size",
+      "space": "N",
+      "def": "Observed sample size.",
+      "role": "index"
+    },
+    {
+      "name": "h_n",
+      "type": "bandwidth_sequence",
+      "space": "(0,infinity)",
+      "def": "Kernel localization bandwidth at sample size n for target dose d.",
+      "role": "tuning_parameter",
+      "refs": [
+        "n",
+        "d"
+      ]
+    },
+    {
+      "name": "r_n",
+      "type": "nuisance_rate_sequence",
+      "space": "(0,infinity)",
+      "def": "Common nuisance-rate sequence used in the regular-regime expansion.",
+      "role": "rate_object",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "K",
+      "type": "kernel_function",
+      "sig": "R -> R",
+      "def": "Kernel used to localize observations around the target dose d.",
+      "role": "smoothing_primitive",
+      "refs": [
+        "d"
+      ]
+    },
+    {
+      "name": "s_a",
+      "type": "selected_mass_function_family",
+      "sig": "supp(D) x X_space -> (0,1]",
+      "def": "Selected mass family s_a(x) = P(S=1 | D=a, X=x).",
+      "role": "identified_primitive",
+      "refs": [
+        "P",
+        "D",
+        "X",
+        "X_space"
+      ]
+    },
+    {
+      "name": "f_a",
+      "type": "local_treatment_density_family",
+      "sig": "supp(D) x X_space -> (0,infinity)",
+      "def": "Conditional density family f_a(x) = f_{D|X}(a|x).",
+      "role": "identified_primitive",
+      "refs": [
+        "P",
+        "D",
+        "X",
+        "X_space"
+      ]
+    },
+    {
+      "name": "Q_a",
+      "type": "selected_outcome_quantile_family",
+      "sig": "supp(D) x [0,1] x X_space -> [y_min,y_max]",
+      "def": "Conditional quantile family of Y given S=1, D=a, X=x.",
+      "role": "identified_primitive",
+      "refs": [
+        "P",
+        "D",
+        "X",
+        "X_space",
+        "y_min",
+        "y_max"
+      ]
+    },
+    {
+      "name": "s_d",
+      "type": "selected_mass_function",
+      "sig": "X_space -> (0,1]",
+      "def": "Selected mass at dose d, s_d(x) = s_a(x) evaluated at a = d.",
+      "role": "identified_primitive",
+      "refs": [
+        "s_a",
+        "d",
+        "X_space"
+      ]
+    },
+    {
+      "name": "f_d",
+      "type": "local_treatment_density",
+      "sig": "X_space -> (0,infinity)",
+      "def": "Conditional density of D at the target dose, f_d(x) = f_a(x) evaluated at a = d.",
+      "role": "identified_primitive",
+      "refs": [
+        "f_a",
+        "d",
+        "X_space"
+      ]
+    },
+    {
+      "name": "Q_d",
+      "type": "selected_outcome_quantile",
+      "sig": "[0,1] x X_space -> [y_min,y_max]",
+      "def": "Conditional quantile function of Y given S=1, D=d, X=x, equal to Q_a(u,x) evaluated at a = d.",
+      "role": "identified_primitive",
+      "refs": [
+        "Q_a",
+        "d",
+        "X_space",
+        "y_min",
+        "y_max"
+      ]
+    },
+    {
+      "name": "underline_pi_d",
+      "type": "frechet_lower_band",
+      "sig": "X_space -> [0,1]",
+      "def": "Lee-Liu lower Frechet bound for the conditional always-taker mass at dose d.",
+      "role": "identified_primitive",
+      "refs": [
+        "P",
+        "d",
+        "X",
+        "X_space"
+      ]
+    },
+    {
+      "name": "overline_pi_d",
+      "type": "frechet_upper_band",
+      "sig": "X_space -> [0,1]",
+      "def": "Lee-Liu upper Frechet bound for the conditional always-taker mass at dose d.",
+      "role": "identified_primitive",
+      "refs": [
+        "P",
+        "d",
+        "X",
+        "X_space"
+      ]
+    },
+    {
+      "name": "pi",
+      "type": "selector_function",
+      "sig": "X_space -> [0,1]",
+      "def": "Candidate conditional always-taker mass selector.",
+      "role": "optimization_variable",
+      "refs": [
+        "X_space"
+      ]
+    },
+    {
+      "name": "Psi_d^L",
+      "type": "trimmed_lower_numerator",
+      "sig": "X_space x [0,1] -> R",
+      "def": "Lower-tail trimmed numerator contribution at dose d.",
+      "role": "identified_object",
+      "refs": [
+        "s_d",
+        "Q_d",
+        "d",
+        "X_space"
+      ]
+    },
+    {
+      "name": "Psi_d^U",
+      "type": "trimmed_upper_numerator",
+      "sig": "X_space x [0,1] -> R",
+      "def": "Upper-tail trimmed numerator contribution at dose d.",
+      "role": "identified_object",
+      "refs": [
+        "s_d",
+        "Q_d",
+        "d",
+        "X_space"
+      ]
+    },
+    {
+      "name": "Pi_d(P)",
+      "type": "feasible_selector_class",
+      "space": "{measurable pi : X_space -> [0,1]}",
+      "def": "Feasible class of measurable selector functions compatible with the Frechet band at dose d.",
+      "role": "identified_set_component",
+      "refs": [
+        "pi",
+        "P",
+        "d",
+        "underline_pi_d",
+        "overline_pi_d",
+        "X_space"
+      ]
+    },
+    {
+      "name": "sigma",
+      "type": "support_direction",
+      "space": "{-1,+1}",
+      "def": "Support-function direction indexing lower and upper endpoint problems.",
+      "role": "index"
+    },
+    {
+      "name": "N_sigma",
+      "type": "directional_numerator_map",
+      "sig": "{-1,+1} x X_space x [0,1] -> R",
+      "def": "Directional numerator map with N_{+1}(x,t) = Psi_d^U(x,t) and N_{-1}(x,t) = -Psi_d^L(x,t).",
+      "role": "objective_component",
+      "refs": [
+        "sigma",
+        "Psi_d^L",
+        "Psi_d^U",
+        "X_space"
+      ]
+    },
+    {
+      "name": "mu_AT(d)",
+      "type": "target_parameter",
+      "space": "R",
+      "def": "Always-takers mean potential outcome at dose d, E[Y(d) | AT=1].",
+      "role": "target_estimand",
+      "refs": [
+        "Y(d)",
+        "AT",
+        "d"
+      ]
+    },
+    {
+      "name": "Theta_d(P)",
+      "type": "identified_set",
+      "space": "closed intervals in R",
+      "def": "Sharp identified set for mu_AT(d) under the sufficient-set model.",
+      "role": "target_set",
+      "refs": [
+        "mu_AT(d)",
+        "P",
+        "d"
+      ]
+    },
+    {
+      "name": "H_sigma(d;P)",
+      "type": "support_function_value",
+      "space": "R",
+      "def": "Support-function value of Theta_d(P) in direction sigma.",
+      "role": "headline_object",
+      "refs": [
+        "Theta_d(P)",
+        "sigma",
+        "d",
+        "P"
+      ]
+    },
+    {
+      "name": "lambda",
+      "type": "scalar_threshold_argument",
+      "space": "R",
+      "def": "Scalar argument of the Dinkelbach transform.",
+      "role": "optimization_parameter"
+    },
+    {
+      "name": "Phi_sigma(lambda;P)",
+      "type": "dinkelbach_transform",
+      "sig": "R -> R",
+      "def": "Dinkelbach transform for the sigma-direction endpoint problem at dose d.",
+      "role": "headline_object",
+      "refs": [
+        "sigma",
+        "lambda",
+        "P",
+        "N_sigma",
+        "underline_pi_d",
+        "overline_pi_d"
+      ]
+    },
+    {
+      "name": "pi_{sigma,lambda}",
+      "type": "transformed_argmax_selector",
+      "sig": "X_space -> [0,1]",
+      "def": "Measurable selector attaining the pointwise transformed optimum argmax_{t in [underline_pi_d(X), overline_pi_d(X)]} {N_sigma(X,t) - lambda t}.",
+      "role": "estimation_object",
+      "refs": [
+        "sigma",
+        "lambda",
+        "underline_pi_d",
+        "overline_pi_d",
+        "N_sigma",
+        "X_space"
+      ]
+    },
+    {
+      "name": "m_{sigma,lambda}",
+      "type": "transformed_conditional_value",
+      "sig": "X_space -> R",
+      "def": "Conditional transformed value m_{sigma,lambda}(x) = sup_{t in [underline_pi_d(x), overline_pi_d(x)]} {N_sigma(x,t) - lambda t}.",
+      "role": "estimation_object",
+      "refs": [
+        "sigma",
+        "lambda",
+        "underline_pi_d",
+        "overline_pi_d",
+        "N_sigma",
+        "X_space"
+      ]
+    },
+    {
+      "name": "Z_{sigma,n}(O,t;P)",
+      "type": "localized_trimmed_signal",
+      "sig": "{-1,+1} x O x [0,1] -> R",
+      "def": "Finite-bandwidth kernel-localized doubly robust signal at sample size n for the sigma-direction trimmed numerator contribution.",
+      "role": "estimation_object",
+      "refs": [
+        "sigma",
+        "O",
+        "K",
+        "h_n",
+        "D",
+        "d",
+        "f_d",
+        "S",
+        "Y",
+        "Q_d",
+        "s_d"
+      ]
+    },
+    {
+      "name": "psi_{sigma,lambda,n}(O;P)",
+      "type": "finite_bandwidth_transform_score",
+      "space": "R",
+      "def": "Finite-bandwidth orthogonal score for Phi_sigma(lambda;P) obtained by evaluating the localized trimmed signal at the transformed argmax selector and subtracting the population transformed numerator.",
+      "role": "estimation_object",
+      "refs": [
+        "sigma",
+        "lambda",
+        "n",
+        "O",
+        "P",
+        "m_{sigma,lambda}",
+        "Z_{sigma,n}(O,t;P)",
+        "pi_{sigma,lambda}",
+        "N_sigma"
+      ]
+    },
+    {
+      "name": "B_{sigma,lambda,n}(P)",
+      "type": "finite_bandwidth_bias",
+      "space": "R",
+      "def": "Finite-bandwidth bias B_{sigma,lambda,n}(P) = E[psi_{sigma,lambda,n}(O;P)] - Phi_sigma(lambda;P).",
+      "role": "bias_object",
+      "refs": [
+        "psi_{sigma,lambda,n}(O;P)",
+        "Phi_sigma(lambda;P)",
+        "sigma",
+        "lambda",
+        "n",
+        "P"
+      ]
+    },
+    {
+      "name": "lambda_sigma^*",
+      "type": "optimal_threshold",
+      "space": "R",
+      "def": "Unique root of Phi_sigma(lambda;P) = 0 in direction sigma.",
+      "role": "headline_object",
+      "refs": [
+        "Phi_sigma(lambda;P)",
+        "sigma",
+        "P"
+      ]
+    },
+    {
+      "name": "dot_Phi_sigma(P)",
+      "type": "root_derivative",
+      "space": "R",
+      "def": "Population derivative partial_lambda Phi_sigma(lambda;P) evaluated at lambda = lambda_sigma^*.",
+      "role": "headline_object",
+      "refs": [
+        "Phi_sigma(lambda;P)",
+        "lambda_sigma^*",
+        "sigma",
+        "P"
+      ]
+    },
+    {
+      "name": "pi_sigma^*",
+      "type": "optimal_selector",
+      "sig": "X_space -> [0,1]",
+      "def": "Measurable selector attaining the sigma-direction transformed pointwise optimum at lambda_sigma^*.",
+      "role": "headline_object",
+      "refs": [
+        "Pi_d(P)",
+        "sigma",
+        "lambda_sigma^*",
+        "X_space"
+      ]
+    },
+    {
+      "name": "pi_sigma^PF",
+      "type": "pointwise_plugin_selector",
+      "sig": "X_space -> [0,1]",
+      "def": "Pointwise Frechet selector solving the local ratio problem t -> N_sigma(X,t) / t on the Lee-Liu band.",
+      "role": "comparator_object",
+      "refs": [
+        "N_sigma",
+        "underline_pi_d",
+        "overline_pi_d",
+        "sigma",
+        "X_space"
+      ]
+    },
+    {
+      "name": "C_sigma(d;P)",
+      "type": "common_threshold_condition",
+      "space": "{true,false}",
+      "def": "Indicator that the pointwise ratio optimizer also solves a common-threshold transformed problem with one scalar lambda across X.",
+      "role": "collapse_certificate",
+      "refs": [
+        "pi_sigma^PF",
+        "sigma",
+        "d",
+        "P"
+      ]
+    },
+    {
+      "name": "hat_Phi_{sigma,n}",
+      "type": "sample_transform",
+      "sig": "R -> R",
+      "def": "Cross-fitted sample analog hat_Phi_{sigma,n}(lambda) obtained by averaging the plug-in version of psi_{sigma,lambda,n}(O;P) over i = 1,...,n.",
+      "role": "estimation_object",
+      "refs": [
+        "sigma",
+        "n",
+        "O_i",
+        "Phi_sigma(lambda;P)",
+        "psi_{sigma,lambda,n}(O;P)"
+      ]
+    },
+    {
+      "name": "hat_lambda_{sigma,n}",
+      "type": "endpoint_estimator",
+      "space": "R",
+      "def": "Approximate root of hat_Phi_{sigma,n}(lambda) = 0.",
+      "role": "estimator",
+      "refs": [
+        "hat_Phi_{sigma,n}",
+        "sigma",
+        "n"
+      ]
+    },
+    {
+      "name": "varphi_{sigma,n}(O;P)",
+      "type": "centered_triangular_array_score",
+      "space": "R",
+      "def": "Centered finite-bandwidth score varphi_{sigma,n}(O;P) = psi_{sigma,lambda_sigma^*,n}(O;P) - E[psi_{sigma,lambda_sigma^*,n}(O;P)].",
+      "role": "estimation_object",
+      "refs": [
+        "O",
+        "P",
+        "sigma",
+        "n",
+        "psi_{sigma,lambda,n}(O;P)",
+        "lambda_sigma^*"
+      ]
+    },
+    {
+      "name": "V_sigma(P)",
+      "type": "asymptotic_variance_constant",
+      "space": "[0,infinity)",
+      "def": "Asymptotic variance constant V_sigma(P) = lim_{n -> infinity} h_n Var[varphi_{sigma,n}(O;P)] when the limit exists.",
+      "role": "headline_object",
+      "refs": [
+        "h_n",
+        "varphi_{sigma,n}(O;P)",
+        "sigma",
+        "P"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:bounded-outcome",
+      "kind": "regularity",
+      "condition": "y_min < y_max and P(y_min <= Y <= y_max) = 1.",
+      "free_symbols": [
+        "P",
+        "Y",
+        "y_min",
+        "y_max"
+      ],
+      "standard": {
+        "name": "bounded outcome support",
+        "cite": "LeeLiu2025ContinuousLee"
+      },
+      "used_by": [
+        "thm:global-support-function",
+        "thm:pointwise-plugin-sharpness",
+        "prop:regular-dr-endpoint"
+      ]
+    },
+    {
+      "id": "ass:frechet-band-compatibility",
+      "kind": "identification",
+      "condition": "underline_pi_d(X) <= P(AT=1 | X) <= overline_pi_d(X) for P_X-almost every X.",
+      "free_symbols": [
+        "underline_pi_d",
+        "overline_pi_d",
+        "P",
+        "AT",
+        "X",
+        "P_X"
+      ],
+      "standard": {
+        "name": "Lee-Liu sufficient-set Frechet-band implication",
+        "cite": "LeeLiu2025ContinuousLee"
+      },
+      "used_by": [
+        "def:feasible-selector-class",
+        "thm:global-support-function",
+        "thm:pointwise-plugin-sharpness",
+        "prop:sufficient-value-reduction"
+      ]
+    },
+    {
+      "id": "ass:selected-mass-overlap",
+      "kind": "overlap",
+      "condition": "0 < underline_pi_d(X) <= overline_pi_d(X) < s_d(X) for P_X-almost every X.",
+      "free_symbols": [
+        "underline_pi_d",
+        "overline_pi_d",
+        "s_d",
+        "X",
+        "P_X"
+      ],
+      "standard": {
+        "name": "strict selected-mass overlap",
+        "cite": "LeeLiu2025ContinuousLee"
+      },
+      "used_by": [
+        "def:tail-integrals",
+        "def:feasible-selector-class",
+        "thm:global-support-function",
+        "thm:pointwise-plugin-sharpness",
+        "prop:regular-dr-endpoint"
+      ]
+    },
+    {
+      "id": "ass:local-dose-density",
+      "kind": "overlap",
+      "condition": "There exist constants 0 < c_f < C_f < infinity such that c_f <= f_d(X) <= C_f for P_X-almost every X.",
+      "free_symbols": [
+        "f_d",
+        "X",
+        "P_X"
+      ],
+      "constants": [
+        "c_f",
+        "C_f"
+      ],
+      "standard": {
+        "name": "positive local treatment density at the target dose",
+        "cite": "ColangeloLee2025ContinuousDML"
+      },
+      "used_by": [
+        "prop:regular-dr-endpoint",
+        "oeq:boundary-uniform-inference"
+      ]
+    },
+    {
+      "id": "ass:local-dose-smoothness",
+      "kind": "smoothness",
+      "condition": "There exists delta_d > 0 such that, for P_X-almost every X and every u in [underline_pi_d(X) / s_d(X), 1 - overline_pi_d(X) / s_d(X)], the maps a -> s_a(X), a -> f_a(X), and a -> Q_a(u,X) are twice continuously differentiable on [d - delta_d, d + delta_d] intersect supp(D), with second derivatives uniformly bounded in absolute value by a finite constant.",
+      "free_symbols": [
+        "a",
+        "d",
+        "s_a",
+        "f_a",
+        "Q_a",
+        "underline_pi_d",
+        "overline_pi_d",
+        "s_d",
+        "X",
+        "P_X",
+        "D"
+      ],
+      "constants": [
+        "delta_d"
+      ],
+      "standard": {
+        "name": "second-order local smoothness in the treatment coordinate",
+        "cite": "ColangeloLee2025ContinuousDML"
+      },
+      "used_by": [
+        "prop:regular-dr-endpoint",
+        "oeq:boundary-uniform-inference"
+      ]
+    },
+    {
+      "id": "ass:quantile-regularity",
+      "kind": "smoothness",
+      "condition": "For P_X-almost every x, the conditional law of Y given S=1, D=d, X=x has a density on [y_min,y_max] that is continuous and bounded away from 0 on neighborhoods of Q_d(underline_pi_d(x) / s_d(x), x) and Q_d(1 - overline_pi_d(x) / s_d(x), x).",
+      "free_symbols": [
+        "P_X",
+        "Y",
+        "S",
+        "D",
+        "d",
+        "X",
+        "y_min",
+        "y_max",
+        "Q_d",
+        "underline_pi_d",
+        "overline_pi_d",
+        "s_d"
+      ],
+      "standard": {
+        "name": "trimmed-quantile regularity for Lee-type bounds",
+        "cite": "LeeLiu2025ContinuousLee"
+      },
+      "used_by": [
+        "prop:regular-dr-endpoint",
+        "oeq:boundary-uniform-inference"
+      ]
+    },
+    {
+      "id": "ass:measurable-maximum-regularity",
+      "condition": "underline_pi_d and overline_pi_d are P_X-measurable, and for each sigma the map (x,t) -> N_sigma(x,t) is jointly measurable and continuous in t on [underline_pi_d(x),overline_pi_d(x)]; for every lambda, the argmax correspondences of t -> N_sigma(x,t)-lambda t and t -> N_sigma(x,t)/t over that interval admit P_X-measurable selections.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: measurable maximum/selection regularity for compact-valued correspondences"
+      }
+    },
+    {
+      "id": "ass:iid-sampling",
+      "condition": "The observations O_1,...,O_n are independent and identically distributed with common observed-data law P.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: iid sampling for triangular-array central limit theory"
+      }
+    },
+    {
+      "id": "ass:kernel-regularity",
+      "condition": "K is bounded, symmetric, compactly supported, integral K(u)du=1, integral u K(u)du=0, and integral u^2 |K(u)|du<infinity.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: second-order compactly supported kernel regularity for local constant continuous-treatment smoothing"
+      }
+    },
+    {
+      "id": "ass:kernel-bandwidth-consistency",
+      "condition": "h_n -> 0 and n h_n / log(1/h_n) -> infinity.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: uniform consistency bandwidth condition for compact-index kernel averages"
+      }
+    },
+    {
+      "id": "ass:oracle-transform-lambda-regularity",
+      "condition": "For each sigma and compact Lambda_sigma, the oracle localized score class {psi_{sigma,lambda,n}(.;P): lambda in Lambda_sigma} has measurable lambda-continuous versions, a scalar Lipschitz modulus in lambda, envelope |psi_{sigma,lambda,n}(O;P)| <= C{1+|K((D-d)/h_n)|/h_n}, variance sup_{lambda in Lambda_sigma} Var_P(psi_{sigma,lambda,n}(O;P)) <= C/h_n, and a residual conditional mean that is continuous at D=d uniformly in lambda.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: compact-parametric kernel empirical-process regularity and approximate-identity continuity"
+      }
+    },
+    {
+      "id": "ass:selected-quantile-kernel-measurability",
+      "condition": "s_d is P_X-measurable and the selected-outcome quantile map (u,x) -> Q_d(u,x) is jointly measurable on [0,1] x X_space.",
+      "free_symbols": [],
+      "novel": {
+        "flag": true,
+        "justification": "standard: regular conditional distributions and measurable quantile versions on standard Borel outcome spaces"
+      }
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:tail-integrals",
+      "name": "Trimmed numerator contributions",
+      "construction": "Psi_d^L(x,t) = s_d(x) * integral_0^{t / s_d(x)} Q_d(u,x) du and Psi_d^U(x,t) = s_d(x) * integral_{1 - t / s_d(x)}^1 Q_d(u,x) du for x in X_space and t in [underline_pi_d(x), overline_pi_d(x)].",
+      "inputs": [
+        "d",
+        "s_d",
+        "Q_d",
+        "underline_pi_d",
+        "overline_pi_d",
+        "X_space"
+      ]
+    },
+    {
+      "id": "def:feasible-selector-class",
+      "name": "Feasible selector class",
+      "construction": "Pi_d(P) = {pi : X_space -> [0,1] : pi is measurable and underline_pi_d(x) <= pi(x) <= overline_pi_d(x) for P_X-almost every x}.",
+      "by_member_properties": [
+        "ass:frechet-band-compatibility",
+        "ass:selected-mass-overlap"
+      ]
+    },
+    {
+      "id": "def:support-function",
+      "name": "Global support function",
+      "construction": "H_sigma(d;P) = sup_{pi in Pi_d(P)} E[N_sigma(X, pi(X))] / E[pi(X)].",
+      "inputs": [
+        "sigma",
+        "d",
+        "P",
+        "Pi_d(P)",
+        "N_sigma"
+      ]
+    },
+    {
+      "id": "def:dinkelbach-transform",
+      "name": "Dinkelbach transform",
+      "construction": "Phi_sigma(lambda;P) = E[sup_{t in [underline_pi_d(X), overline_pi_d(X)]} {N_sigma(X,t) - lambda t}].",
+      "inputs": [
+        "sigma",
+        "lambda",
+        "P",
+        "underline_pi_d",
+        "overline_pi_d",
+        "N_sigma"
+      ]
+    },
+    {
+      "id": "def:pointwise-plugin",
+      "name": "Pointwise Frechet plug-in selector",
+      "construction": "For P_X-almost every x, pi_sigma^PF(x) is any measurable selection from argmax_{t in [underline_pi_d(x), overline_pi_d(x)]} N_sigma(x,t) / t.",
+      "inputs": [
+        "sigma",
+        "underline_pi_d",
+        "overline_pi_d",
+        "N_sigma"
+      ]
+    },
+    {
+      "id": "def:common-threshold-condition",
+      "name": "Common-threshold condition",
+      "construction": "C_sigma(d;P) holds iff there exists lambda in R such that Phi_sigma(lambda;P) = 0 and, for P_X-almost every x, every t in argmax_{u in [underline_pi_d(x), overline_pi_d(x)]} N_sigma(x,u) / u also belongs to argmax_{u in [underline_pi_d(x), overline_pi_d(x)]} {N_sigma(x,u) - lambda u}.",
+      "inputs": [
+        "sigma",
+        "d",
+        "P",
+        "Phi_sigma(lambda;P)",
+        "underline_pi_d",
+        "overline_pi_d",
+        "N_sigma"
+      ]
+    },
+    {
+      "id": "def:regular-root-objects",
+      "name": "Regular root derivative, finite-bandwidth bias, and variance objects",
+      "construction": "Define the unlocalized trimmed bracket G_sigma(O,t;P) so that E[G_sigma(O,t;P)|D=d,X=x]=N_sigma(x,t). Set the localized residual signal to Z^{res}_{sigma,n}(O,t;P)=N_sigma(X,t)+K((D-d)/h_n){G_sigma(O,t;P)-N_sigma(X,t)}/(h_n f_d(X)), and define psi_{sigma,lambda,n}(O;P)=m_{sigma,lambda}(X)+Z^{res}_{sigma,n}(O,pi_{sigma,lambda}(X);P)-N_sigma(X,pi_{sigma,lambda}(X)). Equivalently, psi=m_{sigma,lambda}(X)+K((D-d)/h_n){G_sigma(O,pi_{sigma,lambda}(X);P)-N_sigma(X,pi_{sigma,lambda}(X))}/(h_n f_d(X)). Keep B, dot_Phi, varphi, and V defined from this corrected psi.",
+      "inputs": [
+        "sigma",
+        "P",
+        "K",
+        "h_n",
+        "D",
+        "d",
+        "S",
+        "Y",
+        "f_d",
+        "Q_d",
+        "s_d",
+        "pi_{sigma,lambda}",
+        "m_{sigma,lambda}",
+        "Z_{sigma,n}(O,t;P)",
+        "psi_{sigma,lambda,n}(O;P)",
+        "B_{sigma,lambda,n}(P)",
+        "N_sigma",
+        "underline_pi_d",
+        "overline_pi_d",
+        "Phi_sigma(lambda;P)",
+        "lambda_sigma^*",
+        "dot_Phi_sigma(P)",
+        "varphi_{sigma,n}(O;P)",
+        "V_sigma(P)"
+      ]
+    },
+    {
+      "id": "def:dr-endpoint-handle",
+      "name": "Kernel-localized doubly robust endpoint handle",
+      "construction": "For the proved regular endpoint module, use the oracle known-nuisance transform hat_Phi^or_{sigma,n}(lambda)=P_n psi_{sigma,lambda,n}(O;P), where psi is the population-nuisance score from def:regular-root-objects and all population nuisance functions and Frechet-band endpoints are held fixed. Let a_n=(n h_n)^(1/2), let B_{sigma,lambda,n}(P)=E_P psi_{sigma,lambda,n}(O;P)-Phi_sigma(lambda;P), and choose an oracle approximate root hat_lambda^or_{sigma,n} in Lambda_sigma satisfying a_n |hat_Phi^or_{sigma,n}(hat_lambda^or_{sigma,n})|=o_P(1). Feasible estimated-nuisance transforms, active-set slope estimators, multiplier critical values, and boundary-uniform confidence sets are not part of this positive definition and are deferred to oeq:boundary-uniform-inference.",
+      "inputs": [
+        "sigma",
+        "n",
+        "K",
+        "h_n",
+        "s_d",
+        "f_d",
+        "Q_d",
+        "Psi_d^L",
+        "Psi_d^U",
+        "underline_pi_d",
+        "overline_pi_d",
+        "psi_{sigma,lambda,n}(O;P)",
+        "hat_Phi_{sigma,n}",
+        "hat_lambda_{sigma,n}"
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "thm:global-support-function",
+      "kind": "theorem",
+      "statement": "Under ass:bounded-outcome, ass:frechet-band-compatibility, and ass:selected-mass-overlap, the sharp identified set Theta_d(P) for mu_AT(d) is the interval [ -H_{-1}(d;P), H_{+1}(d;P) ]. For each sigma in {-1,+1}, H_sigma(d;P) equals the unique scalar lambda_sigma^* satisfying Phi_sigma(lambda_sigma^*;P) = 0, and there exists a measurable selector pi_sigma^* in Pi_d(P) such that pi_sigma^*(X) belongs to argmax_{t in [underline_pi_d(X), overline_pi_d(X)]} {N_sigma(X,t) - lambda_sigma^* t} for P_X-almost every X.",
+      "depends_on": [
+        "ass:bounded-outcome",
+        "ass:frechet-band-compatibility",
+        "ass:selected-mass-overlap",
+        "def:tail-integrals",
+        "def:feasible-selector-class",
+        "def:support-function",
+        "def:dinkelbach-transform"
+      ],
+      "status": "to-prove",
+      "justification": "This is the theorem-level kernel that converts the deferred sufficient-set sharpness problem into a measurable-selection support function with a scalar threshold certificate.",
+      "gap": "LeeLiu2025ContinuousLee leaves the sufficient-set covariate case with conditional Frechet bands, and no cited paper gives the law-level global representation needed to aggregate those bands sharply when the denominator E[pi(X)] is unknown.",
+      "consumer": "It gives an exact endpoint formula that a later solver can compute or estimate without pretending that pointwise selector choices paste automatically into a globally sharp law."
+    },
+    {
+      "id": "thm:pointwise-plugin-sharpness",
+      "kind": "theorem",
+      "statement": "Fix sigma in {-1,+1}. Under thm:global-support-function, if C_sigma(d;P) holds, then the pointwise Frechet plug-in is globally sharp in direction sigma: H_sigma(d;P) = E[N_sigma(X, pi_sigma^PF(X))] / E[pi_sigma^PF(X)]. Conversely, if pi_sigma^PF is globally sharp and the argmax set in def:pointwise-plugin is P_X-almost surely singleton, then C_sigma(d;P) holds.",
+      "depends_on": [
+        "thm:global-support-function",
+        "def:pointwise-plugin",
+        "def:common-threshold-condition"
+      ],
+      "status": "to-prove",
+      "justification": "The practical question is when the easy pointwise rule is already law-level sharp; this theorem names the exact primitive certificate.",
+      "gap": "JonzonGabrielSjolanderSachs2025CovariatesBounds distinguishes pointwise and uniform sharpness abstractly, but it does not provide a model-specific if-and-only-if threshold criterion for a continuous-treatment Lee problem.",
+      "consumer": "It tells an empirical analyst when global optimization is unnecessary and when the gap between pointwise and global sharpness is a real identification issue."
+    },
+    {
+      "id": "prop:sufficient-value-reduction",
+      "kind": "proposition",
+      "statement": "If underline_pi_d(X) = overline_pi_d(X) for P_X-almost every X, then C_sigma(d;P) holds for sigma = -1 and sigma = +1, and Theta_d(P) collapses to the Lee-Liu sufficient-value functional obtained by plugging the identified always-taker mass into the trimmed selected-outcome formulas.",
+      "depends_on": [
+        "ass:frechet-band-compatibility",
+        "thm:pointwise-plugin-sharpness"
+      ],
+      "status": "to-prove",
+      "justification": "A correct proposal must reduce to the known sufficient-value case rather than quietly changing the target problem.",
+      "gap": "This is the required sanity reduction to LeeLiu2025ContinuousLee rather than a novelty claim.",
+      "consumer": "It gives the solver and the reviewer a clean benchmark special case where the new representation must agree with the published formula."
+    },
+    {
+      "id": "prop:regular-dr-endpoint",
+      "kind": "proposition",
+      "statement": "Fix sigma in {-1,+1}. Let Lambda_sigma be a compact scalar search set containing lambda_sigma^*(P) in its interior. Work with the known-population-nuisance Dinkelbach sample transform hat_Phi^or_{sigma,n}(lambda)=P_n psi_{sigma,lambda,n}(O;P) from def:regular-root-objects and def:dr-endpoint-handle, and let hat_lambda^or_{sigma,n} in Lambda_sigma be any measurable approximate zero satisfying |hat_Phi^or_{sigma,n}(hat_lambda^or_{sigma,n})|=o_P(1) (equivalently, an o_P(1)-minimizer of lambda -> |hat_Phi^or_{sigma,n}(lambda)| over Lambda_sigma). Under thm:global-support-function, ass:bounded-outcome, ass:selected-mass-overlap, ass:local-dose-density, ass:local-dose-smoothness, ass:kernel-regularity, ass:iid-sampling, ass:measurable-maximum-regularity, ass:kernel-bandwidth-consistency, ass:oracle-transform-lambda-regularity, def:regular-root-objects, def:dr-endpoint-handle, lem:regular-envelope-derivative, and lem:uniform-transform-ulln, hat_lambda^or_{sigma,n} ->p lambda_sigma^*(P). Consequently, applying the result for sigma=-1 and sigma=+1, the estimated endpoint pair (-hat_lambda^or_{-1,n}, hat_lambda^or_{+1,n}) converges in probability in R^2 to (-lambda_{-1}^*(P), lambda_{+1}^*(P)); equivalently, -hat_lambda^or_{-1,n} and hat_lambda^or_{+1,n} converge to the lower and upper endpoints of Theta_d(P)=[-lambda_{-1}^*(P), lambda_{+1}^*(P)], respectively. No (n h_n)^(1/2) limit law, finite-bandwidth bias expansion, variance estimation, derivative estimation, studentization, Wald coverage, feasible estimated-nuisance linearization, boundary law, tie-law, or uniform coverage conclusion is claimed.",
+      "depends_on": [
+        "thm:global-support-function",
+        "ass:bounded-outcome",
+        "ass:selected-mass-overlap",
+        "ass:local-dose-density",
+        "ass:local-dose-smoothness",
+        "ass:quantile-regularity",
+        "def:regular-root-objects",
+        "def:dr-endpoint-handle"
+      ],
+      "status": "to-prove",
+      "justification": "The identification result is materially more useful if the smooth-root submodel admits an endpoint estimator whose first-order law keeps the kernel bias explicit and uses the correct h_n-scaled variance normalization.",
+      "gap": "ColangeloLee2025ContinuousDML proves kernel-localized doubly robust inference for point-identified ADRFs, and BenMichael2025ConditionalLP treats expectation-of-conditional-LP bounds, but neither covers a denominator-coupled linear-fractional support function with an estimated selector root, explicit finite-bandwidth bias, and active-set-dependent variance scaling.",
+      "consumer": "It supplies the operational regular-regime endpoint estimator and Wald inference module that a later solver can turn into a concrete inferential procedure without conflating the finite-bandwidth score with its h_n -> 0 target."
+    },
+    {
+      "id": "oeq:boundary-uniform-inference",
+      "kind": "openendedquestion",
+      "statement": "Open problem (oracle and feasible distributional inference beyond plug-in consistency). The positive results establish the sharp support-function/Dinkelbach identification formula and plug-in consistency of the Dinkelbach endpoint roots only. It remains open to derive the (n h_n)^(1/2) limit law for kernel-localized Dinkelbach endpoint roots, both in the oracle known-nuisance experiment and with feasible estimated nuisances; to keep the finite-bandwidth bias term explicit and prove when it is negligible; to justify feasible cross-fitted or debiased linearization of hat_Phi^feas_{sigma,n}, including the plug-in transform drift term rather than dropping it; to estimate the variance and the ordinary or directional root derivative; to prove the associated oracle score process and multiplier process converge jointly; to estimate active-set denominator slopes uniformly; and to construct Wald or multiplier confidence sets with pointwise, boundary, tie-law, and uniform coverage for Theta_d(P). None of the Gaussian expansion, feasible Wald inference, variance estimation, derivative estimation, studentization, boundary-directional inference, or uniform coverage theory is established by the positive results.",
+      "depends_on": [
+        "thm:global-support-function",
+        "prop:regular-dr-endpoint",
+        "def:dr-endpoint-handle"
+      ],
+      "status": "to-prove",
+      "justification": "The hard statistical content is honest coverage when the selector hits a Frechet boundary or a tie law makes the root map only directionally differentiable.",
+      "gap": "FangSantos2019DirectionalInference gives the generic directional-delta template, but no current paper derives it for a kernel-localized Lee-type endpoint whose identified set comes from a denominator-coupled measurable-selector program.",
+      "consumer": "A positive answer upgrades regular Wald inference to honest identified-set inference that remains valid at threshold ties and boundary laws."
+    }
+  ],
+  "target_estimand": "mu_AT(d) = E[Y(d) | AT=1]",
+  "estimand_functional": "Theta_d(P) = [ inf_{pi in Pi_d(P)} E[Psi_d^L(X,pi(X))] / E[pi(X)], sup_{pi in Pi_d(P)} E[Psi_d^U(X,pi(X))] / E[pi(X)] ]",
+  "sampling_model": {
+    "design": "i.i.d. sampling from the observed law P of O = (Y,S,D,X) under the Lee-Liu sufficient-set model at a fixed interior dose d",
+    "units": "individual observations with pretreatment covariates X and outcomes observed only when S=1",
+    "treatment": "continuous or multivalued treatment D, localized at d with kernel K and bandwidth h_n for estimation",
+    "overlap": "strict selected-mass overlap on the Lee-Liu Frechet band together with positive conditional treatment density f_d(X) at the target dose",
+    "nuisance_estimation": "cross-fitted kernel-localized estimation of s_d, Psi_d^L, Psi_d^U, underline_pi_d, and overline_pi_d, combined with an orthogonal correction inside the transformed endpoint objective, explicit finite-bandwidth bias control via local dose smoothness, and undersmoothing so the O(h_n^2) kernel bias is second order"
+  },
+  "bibliography": [
+    {
+      "key": "Lee2009SharpBounds",
+      "citation": "Lee, D. S. (2009). Training, Wages, and Sample Selection: Estimating Sharp Bounds on Treatment Effects. Review of Economic Studies 76(3): 1071-1102."
+    },
+    {
+      "key": "LeeLiu2025ContinuousLee",
+      "citation": "Lee, Y.-Y., and C.-A. Liu (2025). Lee Bounds with a Continuous Treatment in Sample Selection. arXiv:2411.04312."
+    },
+    {
+      "key": "Semenova2024GeneralizedLee",
+      "citation": "Semenova, V. (2024). Generalized Lee Bounds. Journal of Econometrics, forthcoming; arXiv:2008.12720."
+    },
+    {
+      "key": "JonzonGabrielSjolanderSachs2025CovariatesBounds",
+      "citation": "Jonzon, G., E. E. Gabriel, A. Sjolander, and M. C. Sachs (2025). Adding covariates to bounds: What is the question? arXiv:2502.03156."
+    },
+    {
+      "key": "Dinkelbach1967FractionalProgramming",
+      "citation": "Dinkelbach, W. (1967). On Nonlinear Fractional Programming. Management Science 13(7): 492-498."
+    },
+    {
+      "key": "BenMichael2025ConditionalLP",
+      "citation": "Ben-Michael, E. (2025). Partial identification via conditional linear programs: estimation and policy learning. arXiv:2506.12215."
+    },
+    {
+      "key": "ColangeloLee2025ContinuousDML",
+      "citation": "Colangelo, K., and Y.-Y. Lee (2025). Double Debiased Machine Learning Nonparametric Inference with Continuous Treatments. arXiv:2004.03036."
+    },
+    {
+      "key": "FangSantos2019DirectionalInference",
+      "citation": "Fang, Z., and A. Santos (2019). Inference on Directionally Differentiable Functions. Review of Economic Studies 86(1): 377-412; arXiv:1404.3763."
+    },
+    {
+      "key": "vanDerVaart1998AsymptoticStatistics",
+      "title": "Asymptotic Statistics",
+      "author": "A. W. van der Vaart",
+      "year": 1998,
+      "publisher": "Cambridge University Press"
+    }
+  ],
+  "comparator_promise_table": [
+    {
+      "comparator_bibkey": "LeeLiu2025ContinuousLee",
+      "comparator_claim": "Continuous-treatment Lee bounds identify always-taker ADRFs under sufficient values and leave the covariate-conditional sufficient-set case with only conditional Frechet information on the always-taker share.",
+      "matched_by": "thm:global-support-function",
+      "match_kind": "strict_tightening"
+    },
+    {
+      "comparator_bibkey": "Semenova2024GeneralizedLee",
+      "comparator_claim": "Generalized Lee bounds with covariates admit a support-function representation and orthogonal inference when the always-taker covariate law is identified.",
+      "matched_by": "thm:global-support-function",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "JonzonGabrielSjolanderSachs2025CovariatesBounds",
+      "comparator_claim": "Pointwise sharpness of covariate-conditional bounds need not imply uniform sharpness after covariate averaging.",
+      "matched_by": "thm:pointwise-plugin-sharpness",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "BenMichael2025ConditionalLP",
+      "comparator_claim": "De-biased estimation and Wald inference are available for bounds that are expectations of conditional linear-program optima.",
+      "matched_by": "prop:regular-dr-endpoint",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "ColangeloLee2025ContinuousDML",
+      "comparator_claim": "Kernel-localized doubly robust inference is available for point-identified continuous-treatment ADRFs and partial-effect functionals.",
+      "matched_by": "prop:regular-dr-endpoint",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "FangSantos2019DirectionalInference",
+      "comparator_claim": "Directional delta methods deliver valid inference when the target map is directionally but not fully differentiable.",
+      "matched_by": "oeq:boundary-uniform-inference",
+      "match_kind": "downgraded_to_informed_by"
+    }
+  ],
+  "honest_scope": "The identification kernel is the global support-function and common-threshold collapse characterization. The inferential proposition is limited to the smooth-root interior-curvature submodel, where local treatment density, local smoothness in the treatment coordinate, undersmoothing, and explicit finite-bandwidth bias control support an h_n-scaled Gaussian limit. Honest coverage when the selector ties or hits a Frechet boundary remains the explicit open question. The sufficient-value reduction is included as a non-novel sanity check."
+}

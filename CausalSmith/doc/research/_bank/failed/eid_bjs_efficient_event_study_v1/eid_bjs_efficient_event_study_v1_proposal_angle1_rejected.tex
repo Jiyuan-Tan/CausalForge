@@ -1,0 +1,854 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_bjs\_efficient\_event\_study, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{eid\_bjs\_efficient\_event\_study} / \texttt{v1}%
+  \\ \large\textit{Estimator-specific score-certificate ranks as the efficiency boundary in staggered DiD event studies}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a free-form panel / linear-projection proposal, not a Q1 pool-mode
+instance.  The locked tuple is
+\[
+(\texttt{qid},\texttt{specialization},p,\texttt{assignment},\texttt{target},
+\texttt{regression})
+\]
+with the following meanings.  \texttt{qid} is
+\texttt{eid\_bjs\_efficient\_event\_study}; \texttt{specialization} is
+\texttt{v1}.  The memory parameter is \(p=T-1\): every pre-treatment outcome
+period available before a cohort's adoption date is admissible as a
+pre-period moment, and no post-treatment outcome is used to estimate untreated
+potential-outcome trends for treated cells.  The assignment is absorbing
+staggered adoption with cohort \(G_i\in\{2,\ldots,T,\infty\}\), fixed cohort
+share vector \(\pi=(\pi_g)_{g\in\mathcal G}\) with \(\pi_g>0\) on every
+treated cohort used by the target, and a nonempty not-yet-treated or
+never-treated comparison set for every target cell.  The target is the fixed
+known aggregation
+\[
+  \theta_a=\sum_{(g,t)\in\mathcal T_a} a_{gt}\tau_{gt},\qquad
+  \sum_{(g,t)\in\mathcal T_a}a_{gt}=1,
+\]
+where \(\tau_{gt}=\E[Y_{it}(g)-Y_{it}(\infty)\mid G_i=g]\) and
+\(\mathcal T_a=\{(g,t):t\ge g,\ a_{gt}\ne0\}\).  The regression convention is
+finite-dimensional semiparametric GMM / linear projection: BJS uses the full
+valid sequential pre-period moment block \(\mathcal M_{\mathrm{all}}\), while
+the canonical SA, CS, and Wooldridge implementations use estimator-specific
+comparison blocks
+\(\mathcal M_{\mathrm{SA}},\mathcal M_{\mathrm{CS}},\mathcal M_{\mathrm{W}}
+\subseteq\mathcal M_{\mathrm{all}}\) that identify the same \(\theta_a\) but
+need not optimally combine every pre-period covariance direction.  From v4
+onward the common-baseline shortcut is withdrawn: the three spans are defined separately
+by the finite contrast matrices
+\(B_{\mathrm{SA}},B_{\mathrm{CS}},B_{\mathrm{W}}\) in Section 6, and equality
+with BJS is tested estimator-by-estimator through the two-block score
+certificate \(K_e=(D_e;H_{\mathrm{pre},e})\) for
+\(e\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}\), where \(D_e\) records
+canonical/post-period score-loading differences not absorbed by the full BJS
+pre-period span.  The pre-period residual covariance matrix is
+\(\Sigma\succ0\), estimated from untreated observations and treated as the
+inner product defining efficiency projections.  The active-rank diagnostic is
+\(K_e(a,\pi,\Sigma)\), an observable population function of the target
+weights, cohort shares, estimator-specific comparison-support matrices, and
+pre-period covariance; \(\tau\) enters the estimand value but is not a
+primitive argument of the diagnostic.
+
+\begin{abstract}
+Modern staggered DiD estimators often agree on the group-time ATT target while
+using different pre-period information to remove untreated-outcome nuisance
+variation.  This proposal asks for the sharp boundary at which additional
+pre-treatment periods change the efficient influence function rather than
+serving only as diagnostics or finite-sample stabilizers.  The flagship
+conjecture is an estimator-specific active-score-rank theorem: after separating
+canonical post-period score-loading differences from residual pre-period
+projection differences, the BJS full-preperiod influence function equals that
+estimator's influence function if and only if the corresponding observable
+two-block score certificate \(K_e=(D_e;H_{\mathrm{pre},e})\) has rank zero.
+Off this rank-zero set, the variance gap is the squared \(\Sigma^{-1}\)-norm
+of the full score residual within the maintained sequential-moment model, so
+efficiency loss is a computable projection quantity rather than a vague
+estimator-choice warning.  A companion comparison theorem maps this diagnostic
+to the extra pre-period weight component in \citet{ChenSantAnnaXie2025}.
+Resolving the conjecture would turn the recent efficient-DiD literature into a
+diagnostic for when empirical researchers should exploit all pre-periods in an
+imputation score.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+The recent staggered-DiD literature has largely settled how to avoid forbidden
+comparisons and how to write interpretable group-time ATT aggregations.  It has
+not settled the more operational question of when two identification-equivalent
+procedures have the same first-order precision.  In applications with several
+pre-treatment periods, researchers must decide whether extra pre-periods should
+enter the estimating score, be reserved for pre-trend tests, or be ignored to
+match a simpler event-study implementation.
+
+\paragraph{The main finding (proposed).}
+The proposed flagship result is Conjecture 1, the estimator-specific active
+pre-period score-rank boundary.  Fixing the target \(\theta_a\), cohort shares
+\(\pi\), estimator comparison support, and pre-period covariance \(\Sigma\),
+form the BJS canonical score loading and full pre-period projection, then
+compare them separately with the SA, CS, and Wooldridge canonical score
+loadings and score projections.  The claim is that BJS and estimator \(e\)
+have the same first-order influence function exactly when the observable
+residualized score certificate \(K_e(a,\pi,\Sigma)\) has rank zero, and that
+the strict variance gap off that set is the projection norm of this same
+certificate.
+
+\paragraph{What is new.}
+The nearest published frontiers are \citet{EgamiYamauchi2023}, which show how
+multiple pre-treatment periods can improve DiD and staggered-adoption designs
+through GMM-style use of extra information, \citet{ChenSantAnnaXie2025}, which
+derive closed-form efficient influence functions and emphasize that modern DiD
+assumptions impose overidentifying restrictions, and
+\citet{RothSantAnna2023Efficient}, which builds feasible efficient estimators
+for staggered rollout designs under as-good-as-random rollout timing.  The
+epsilon-gap here is the necessary-and-sufficient observable classifier saying
+when those efficiency gains are score-changing for a particular
+parallel-trends staggered ATT aggregation and when they are redundant relative
+to each named estimator's actual comparison block.  The closest BJS result,
+\citet{BorusyakJaravelSpiess2024}, shows efficient imputation and documents
+large precision gains under its maintained error-structure conditions, but it
+does not give an if-and-only-if active-rank condition separating equality and
+strict non-equality of influence functions for the four named estimators.
+
+\paragraph{How it positions in the literature.}
+This is a panel / linear-projection proposal in the modern staggered-DiD and
+event-study cluster.  It consumes the ATT identification results of
+\citet{CallawaySantAnna2021}, the contamination-free event-study estimands of
+\citet{SunAbraham2021}, the imputation-efficiency benchmark of
+\citet{BorusyakJaravelSpiess2024}, and the semiparametric efficiency logic of
+\citet{SantAnnaZhao2020}, \citet{RothSantAnna2023Efficient}, and
+\citet{ChenSantAnnaXie2025}.  Its contribution is not a new estimand and not
+another implementation recipe; it is a row-space boundary for when additional
+pre-period moment restrictions alter a named estimator's influence function
+for a fixed estimand.
+
+\paragraph{Implications for the community.}
+The direct consumer is the efficient DiD / event-study program of
+\citet{ChenSantAnnaXie2025}: the conjecture would supply a transparent
+observable diagnostic for deciding whether their extra pre-period EIF weights
+are active for a given event-study aggregation or whether a named BJS, SA, CS,
+or Wooldridge implementation already has the same first-order score.
+
+\paragraph{How research benefits from the conclusion.}
+Empirical researchers should report the estimator-specific score-certificate
+ranks before treating extra pre-treatment periods as merely diagnostic rather
+than efficiency-relevant.
+
+\section{Related work}
+\citet{BorusyakJaravelSpiess2024} derive the robust and efficient imputation
+estimator for staggered event-study designs and show that alternative robust
+estimators can be less precise; this proposal tries to characterize exactly
+when that precision difference vanishes.  \citet{ChenSantAnnaXie2025} derive
+closed-form EIFs for DiD and event-study parameters under modern DiD
+assumptions; this proposal asks for the finite-dimensional rank certificate
+that decides whether the extra pre-period restrictions appearing in those EIFs
+are active.  \citet{SantAnnaZhao2020} derive the semiparametric efficiency
+bound for two-period ATT DiD; this proposal isolates the additional active-rank
+phenomenon that has no analogue when only one pre-period contrast is available.
+\citet{EgamiYamauchi2023} study how multiple pre-treatment periods can improve
+DiD and staggered-adoption designs through GMM; this proposal turns that
+intuition into an influence-function equality boundary rather than an
+estimator-specific efficiency comparison.
+\citet{RothSantAnna2023Efficient} is the closest efficient-staggered-rollout
+comparator: it derives feasible efficient estimators and optimal pre-treatment
+adjustments under as-good-as-random rollout timing, while the present proposal
+targets the separate parallel-trends question of when BJS and each of SA, CS,
+and Wooldridge have identical or strictly different first-order scores for a
+common ATT aggregation.
+
+\citet{CallawaySantAnna2021} identify and aggregate group-time ATTs in
+multi-period DiD and provide inference for those aggregations; this proposal
+holds the aggregation fixed and compares nuisance-score projections around it.
+\citet{SunAbraham2021} show that dynamic TWFE coefficients can be contaminated
+by other-period heterogeneous effects and propose interaction-weighted
+estimators; this proposal separates contamination-free point identification
+from efficiency equivalence.  \citet{Wooldridge2021} gives saturated
+regression and Mundlak-style implementation equivalences for staggered entry
+with heterogeneous effects; this proposal asks when such implementation
+equivalences also preserve the efficient influence-function subspace.
+\citet{RothSantAnnaBilinskiPoe2023} synthesize the modern DiD literature and
+highlight the difficulty of matching estimator choices to empirical designs;
+the active-rank diagnostic would be a concrete answer for the pre-period
+efficiency dimension.  \citet{BellegoBenatiaDortetBernadet2025} develop chained
+DiD for unbalanced panels and discuss efficiency gains from overlapping
+incomplete panels; their results are adjacent because missing pre-period
+directions change the same score geometry studied here.
+
+The in-catalogue prior art supplied by the Stage -1.1 scout is
+\texttt{panel\_honest\_did\_phase}, whose failed banked proposal and reviewer
+logs identify row-space and operator-certificate gaps for staggered-DiD
+sensitivity frontiers, and
+\texttt{q1\_spectral\_phase\_transition}/\texttt{p1\_markov}, which proposes
+singular values of event-window FWL Gram blocks as visibility diagnostics.
+Those artefacts are relevant as warnings: a bare spectral threshold can look
+like generic linear algebra unless it is tied to a named econometric score or
+frontier.  No active ThmSmith proposal in the Stage -1.1 prior-proposal map
+states an active pre-period EIF rank boundary for BJS, SA, CS, and Wooldridge
+around a common staggered ATT target.
+
+\section{Formal setup}
+There are \(n\) independent units observed for \(t=1,\ldots,T\).  Cohort
+\(G_i=g\) means unit \(i\) first receives treatment in period \(g\), with
+\(G_i=\infty\) for never-treated units, and \(D_{it}=\one\{t\ge G_i\}\).  The
+untreated potential-outcome mean has the additive panel form
+\[
+  \E[Y_{it}(\infty)\mid G_i=g]=\alpha_g+\lambda_t
+\]
+after conditioning on the finite cohort cells used in this proposal.  The
+group-time treatment effect is
+\(\tau_{gt}=\E[Y_{it}(g)-Y_{it}(\infty)\mid G_i=g]\) for \(t\ge g\), and the
+target is \(\theta_a=\sum_{(g,t)\in\mathcal T_a}a_{gt}\tau_{gt}\).
+
+Let
+\[
+  \mathcal J=\{(h,r): h\in\mathcal G,\ r<h\ \text{or}\ h=\infty\}
+\]
+be the set of observed untreated cohort-period cells, ordered once and for all,
+and write \(q=|\mathcal J|\).  For \(j=(h,r)\in\mathcal J\), \(U_j\) is the
+cohort-share normalized untreated residual cell score after removing cohort
+and calendar means; \(U=(U_j)_{j\in\mathcal J}\in\R^q\) and
+\(\Sigma=\operatorname{Var}(U)\succ0\).  For a closed linear subspace
+\(\mathcal L\subseteq\R^q\), \(P_{\mathcal L}^{\Sigma}\) denotes orthogonal
+projection under
+\(\langle x,y\rangle_{\Sigma}=x^{\transpose}\Sigma^{-1}y\).
+
+For each target cell \(k=(g,t)\in\mathcal T_a\), let
+\(\mathcal C^e_{gt}\subseteq\{c\in\mathcal G:c>t\ \text{or}\ c=\infty\}\)
+be the comparison cohorts used by estimator
+\(e\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}\), and let
+\(w^e_{gtc}\) be its population comparison weights, normalized to sum to one
+over \(c\in\mathcal C^e_{gt}\) for SA and CS.  SA uses the not-yet-treated
+cohorts entering the interaction-weighted cohort-by-event contrast, and CS
+uses the group-time ATT comparison set in its doubly-robust score.  The
+Wooldridge object in this proposal is the cohort-time-saturated
+Mundlak/TWFE implementation whose residual-regression comparison weights
+\(w^{\mathrm W}_{gtc}\) are induced by the population normal equations after
+excluding already-treated comparison outcomes; these weights may be signed
+residual-regression weights, but their contrast is normalized to have unit
+loading on the missing untreated mean for cell \((g,t)\).  The BJS comparison
+support \(\mathcal C^{\mathrm{BJS}}_{gt}\) is the full admissible
+not-yet-treated or never-treated support used by the efficient imputation
+score, with population imputation weights \(w^{\mathrm{BJS}}_{gtc}\).  For a
+pre-period edge \(2\le r<g\), define the elementary comparison column
+\(v^e_{gt,r}\in\R^q\) by
+\[
+  v^e_{gt,r}(h,s)=
+  \frac{\one\{h=g,s=r\}-\one\{h=g,s=r-1\}}{\sqrt{\pi_g}}
+  -\sum_{c\in\mathcal C^e_{gt}}w^e_{gtc}
+   \frac{\one\{h=c,s=r\}-\one\{h=c,s=r-1\}}{\sqrt{\pi_c}}.
+\]
+The finite matrix \(B_e\in\R^{q\times m_e}\) has columns
+\(\{v^e_{gt,r}:(g,t)\in\mathcal T_a,\ 2\le r<g\}\) after dropping duplicate
+or zero columns, and
+\[
+  \mathcal M_e=\operatorname{col}(B_e),\qquad
+  e\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}.
+\]
+The full BJS sequential-preperiod matrix
+\(B_{\mathrm{all}}\in\R^{q\times m_{\mathrm{all}}}\) contains the union of
+all such valid columns over every admissible comparison cohort and pre-period
+edge for the target cells, and
+\(\mathcal M_{\mathrm{all}}=\operatorname{col}(B_{\mathrm{all}})\).
+Thus \(\mathcal M_e\subseteq\mathcal M_{\mathrm{all}}\), but the three
+baseline spans need not coincide.
+
+The estimator-specific ATT score loadings \(b_a^e(a,\pi)\in\R^q\), for
+\(e\in\{\mathrm{BJS},\mathrm{SA},\mathrm{CS},\mathrm{W}\}\), are defined by
+the same indexed coordinates.  Let
+\[
+  \omega_{gt}^{e}(h,s)=
+  \frac{\one\{h=g,s=t\}}{\sqrt{\pi_g}}
+  -\sum_{c\in\mathcal C^e_{gt}}w^e_{gtc}
+   \frac{\one\{h=c,s=t\}}{\sqrt{\pi_c}}
+\]
+denote the post-period untreated counterfactual loading that would enter the
+first-order expansion of the \(gt\) ATT contrast if untreated outcomes at
+period \(t\) were observed for cohort \(g\).  Its restriction to the untreated
+score coordinates is the vector \(\omega_{gt}^e\in\R^q\), and
+\[
+  b_a^e(a,\pi)=\sum_{(g,t)\in\mathcal T_a}a_{gt}\omega_{gt}^{e}.
+\]
+For \(e=\mathrm{BJS}\) this formula uses
+\(\mathcal C^{\mathrm{BJS}}_{gt}\) and \(w^{\mathrm{BJS}}_{gtc}\).  The
+canonical score-loading residual for estimator \(e\) is
+\[
+  d_e(a,\pi)=b_a^{\mathrm{BJS}}(a,\pi)-b_a^e(a,\pi).
+\]
+These loadings are functions of \(a\), \(\pi\), and comparison support, not of
+the unknown treatment-effect vector \(\tau\).
+
+For each \(e\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}\), define the residual
+active pre-period score, canonical residual, and total score certificate
+\[
+  h_{\mathrm{pre},e}(a,\pi,\Sigma)=
+  \left(P_{\mathcal M_{\mathrm{all}}}^{\Sigma}
+       -P_{\mathcal M_e}^{\Sigma}\right)b_a^e(a,\pi),
+\]
+\[
+  D_e(a,\pi,\Sigma)=
+  \Sigma^{-1/2}(I-P_{\mathcal M_{\mathrm{all}}}^{\Sigma})d_e(a,\pi),\qquad
+  H_{\mathrm{pre},e}(a,\pi,\Sigma)
+  =\Sigma^{-1/2} h_{\mathrm{pre},e}(a,\pi,\Sigma).
+\]
+For scalar \(\theta_a\), \(D_e\) and \(H_{\mathrm{pre},e}\) are \(q\)-vectors.
+For an \(m\)-dimensional vector event-study target
+\(A=(a_1,\ldots,a_m)\), define
+\[
+  D_e(A,\pi,\Sigma)=
+  \begin{bmatrix}D_e(a_1,\pi,\Sigma)&\cdots&D_e(a_m,\pi,\Sigma)\end{bmatrix},
+\quad
+  H_{\mathrm{pre},e}(A,\pi,\Sigma)=
+  \begin{bmatrix}
+    H_{\mathrm{pre},e}(a_1,\pi,\Sigma)&\cdots&
+    H_{\mathrm{pre},e}(a_m,\pi,\Sigma)
+  \end{bmatrix}.
+\]
+The total whitened score certificate is the vertical block
+\[
+  K_e(a,\pi,\Sigma)=
+  \begin{bmatrix}
+    D_e(a,\pi,\Sigma)\\
+    H_{\mathrm{pre},e}(a,\pi,\Sigma)
+  \end{bmatrix},
+\]
+with the same vertical stacking applied columnwise to \(A\).
+Because \(H_{\mathrm{pre},e}\) lies in the whitened full-preperiod span and
+\(D_e\) lies in its \(\Sigma\)-orthogonal complement, \(\operatorname{rank}K_e=0\)
+is equivalent to both the unabsorbed canonical residual and the active
+pre-period residual being zero.  For scalar \(\theta_a\),
+\(\operatorname{rank}K_e\) is zero or positive; for a vector event-study target
+\(A=(a_1,\ldots,a_m)\), the target-dimensional variance-gap matrix is
+\[
+  \Delta_{\mathrm{EIF},e}(A,\pi,\Sigma)
+  =
+  D_e(A,\pi,\Sigma)^{\transpose}D_e(A,\pi,\Sigma)
+  +H_{\mathrm{pre},e}(A,\pi,\Sigma)^{\transpose}
+   H_{\mathrm{pre},e}(A,\pi,\Sigma)
+  =K_e(A,\pi,\Sigma)^{\transpose}K_e(A,\pi,\Sigma).
+\]
+These population objects are observable from the design matrices, \(a\), \(\pi\),
+the estimator-specific comparison weights, and \(\Sigma\).  Their sample
+analogues
+\(\widehat K_e=K_e(a,\widehat\pi,\widehat\Sigma)\) use cohort shares and
+untreated pre-period residual covariance estimated from the pre-treatment
+sample.
+
+\begin{quote}\small
+\begin{verbatim}
+Locked parameters:
+qid = eid_bjs_efficient_event_study
+specialization = v1
+p = T - 1
+assignment = absorbing staggered adoption with fixed positive cohort shares pi
+target = theta_a = sum_{(g,t) in T_a} a_gt tau_gt
+regression = finite-dimensional EIF/GMM projection:
+  BJS uses M_all;
+  canonical SA/CS/Wooldridge use estimator-specific spans
+    M_SA = col(B_SA), M_CS = col(B_CS), M_W = col(B_W);
+  no common-baseline or common-canonical-loading equality is assumed from v4 onward;
+  Sigma is the untreated pre-period residual covariance inner product;
+  d_e = b_BJS - b_e captures canonical/post-score loading differences;
+  K_e = [D_e; H_pre,e] is observable and does not depend on tau
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Absorbing staggered panel and support]\label{ass:panel-support}
+Treatment is absorbing, cohort shares \(\pi_g\) are fixed and strictly positive
+for every treated cohort entering \(\mathcal T_a\), and each target cell
+\((g,t)\in\mathcal T_a\) has at least one valid not-yet-treated or
+never-treated comparison cohort in each estimator-specific comparison support
+\(\mathcal C^{\mathrm{BJS}}_{gt}\), \(\mathcal C^{\mathrm{SA}}_{gt}\),
+\(\mathcal C^{\mathrm{CS}}_{gt}\), and \(\mathcal C^{\mathrm{W}}_{gt}\).
+\end{assumption}
+
+\begin{assumption}[No anticipation and additive untreated trends]\label{ass:pt-na}
+For every cohort \(g\) and period \(t<g\), observed outcomes equal untreated
+potential outcomes, and
+\(\E[Y_{it}(\infty)\mid G_i=g]=\alpha_g+\lambda_t\).  The implied sequential
+parallel-trend moment restrictions are exactly the finite-dimensional span
+\(\mathcal M_{\mathrm{all}}\) defined in Section 6.
+\end{assumption}
+
+\begin{assumption}[Pinned estimator-specific moment spans]\label{ass:nested-moments}
+The canonical SA, CS, and Wooldridge implementations being compared use the
+finite contrast matrices \(B_{\mathrm{SA}},B_{\mathrm{CS}},B_{\mathrm{W}}\)
+from Section 6, with
+\(\mathcal M_e=\operatorname{col}(B_e)\) for
+\(e\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}\).  The full BJS imputation score
+uses \(B_{\mathrm{all}}\) and \(\mathcal M_{\mathrm{all}}\), and each named
+baseline span is nested,
+\[
+  \mathcal M_e\subseteq\mathcal M_{\mathrm{all}}\subseteq\R^q.
+\]
+No equality among
+\(\mathcal M_{\mathrm{SA}},\mathcal M_{\mathrm{CS}},\mathcal M_{\mathrm{W}}\)
+is assumed.
+\end{assumption}
+
+\begin{assumption}[Regular covariance and fixed target]\label{ass:regular-covariance}
+The pre-period residual covariance \(\Sigma=\operatorname{Var}(U)\) is positive
+definite, the aggregation weights \(a\) are fixed and nonrandom, and
+\(\theta_a\), \(b_a^{\mathrm{BJS}}(a,\pi)\), \(b_a^e(a,\pi)\), \(d_e\),
+\(h_{\mathrm{pre},e}\), \(D_e\), \(H_{\mathrm{pre},e}\), and \(K_e\) are the
+objects defined in Section 6.
+\end{assumption}
+
+\begin{assumption}[Observable plug-in rank regularity]\label{ass:plugin-rank}
+The plug-in estimates \(\widehat\pi\) and \(\widehat\Sigma\) are
+\(\sqrt n\)-consistent for \(\pi\) and \(\Sigma\), the comparison weights
+\(w^e_{gtc}\), design matrices
+\(B_{\mathrm{all}},B_{\mathrm{SA}},B_{\mathrm{CS}},B_{\mathrm{W}}\), and
+target weights \(a\) are fixed, and the nonzero singular values of each
+\(K_e(a,\pi,\Sigma)\) are separated from zero by a population
+gap \(\gamma_e>0\).  The rank selector uses a deterministic threshold
+\(\lambda_n\downarrow0\) with \(\sqrt n\,\lambda_n\to\infty\).
+\end{assumption}
+
+\begin{assumption}[Regular asymptotic linearity]\label{ass:regular-if}
+The BJS, SA, CS, and Wooldridge implementations are evaluated under the common
+finite-cell convention of Section 6 and admit first-order asymptotic linear
+representations whose canonical score loadings are
+\(b_a^{\mathrm{BJS}}\) and \(b_a^e\), and whose nuisance-score components are
+the \(\Sigma\)-orthogonal projections onto their stated moment spans.
+\end{assumption}
+
+\begin{assumption}[BJS full-preperiod score correctness]\label{ass:bjs-full-score}
+The BJS implementation being compared is in the error-structure regime where
+its imputation score uses the full valid sequential pre-period span
+\(\mathcal M_{\mathrm{all}}\).  The resulting variance is the full-preperiod
+sequential-moment bound in this proposal, not a claim that BJS attains every
+arbitrary-\(\Sigma\) semiparametric bound outside its maintained efficient
+imputation setup.
+\end{assumption}
+
+\begin{assumption}[Single-preperiod sanity corner]\label{ass:single-preperiod}
+For the two-period sanity reduction, every target cell has only one usable
+pre-treatment contrast, so
+\(\mathcal M_{\mathrm{all}}=\mathcal M_{\mathrm{SA}}=\mathcal M_{\mathrm{CS}}
+=\mathcal M_{\mathrm{W}}\), and
+\((I-P_{\mathcal M_{\mathrm{all}}}^{\Sigma})d_e(a,\pi)=0\) for every
+\(e\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}\).
+\end{assumption}
+
+\begin{assumption}[Redundant-diagnostic sanity corner]\label{ass:redundant-diagnostic}
+For the redundant-diagnostics sanity reduction, every extra pre-period moment
+in \(\mathcal M_{\mathrm{all}}\ominus_{\Sigma}\mathcal M_e\), for each
+\(e\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}\), is \(\Sigma\)-orthogonal to
+\(b_a^e(a,\pi)\), and
+\((I-P_{\mathcal M_{\mathrm{all}}}^{\Sigma})d_e(a,\pi)=0\).
+\end{assumption}
+
+\begin{assumption}[Homogeneous treatment effects]\label{ass:homogeneous-effect}
+For the homogeneous-effect sanity reduction, treatment effects are constant on
+\(\mathcal T_a\), so the scalar target value is a common ATT across all
+treated cohort-period cells entering the aggregation.
+\end{assumption}
+
+\begin{assumption}[Common loading and span sanity corner]\label{ass:common-loading-span}
+For the homogeneous-effect sanity reduction, the common-ATT contrast design
+also makes the canonical score loading satisfy
+\(b_a^{\mathrm{BJS}}(a,\pi)=b_a^e(a,\pi)\in
+\mathcal M_{\mathrm{SA}}\cap\mathcal M_{\mathrm{CS}}\cap\mathcal M_{\mathrm{W}}\)
+for every \(e\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}\).
+\end{assumption}
+
+\section{Main results}
+\begin{conjecture}[Conjecture 1: estimator-specific active pre-period EIF boundary (NOT YET PROVED)]\label{conj:active-preperiod-boundary}
+Under Assumptions \ref{ass:panel-support}--\ref{ass:bjs-full-score}, fix
+\(e\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}\).  The full-preperiod BJS
+influence function obtained from \(\mathcal M_{\mathrm{all}}\) equals
+estimator \(e\)'s influence function obtained from its canonical loading
+\(b_a^e\) and moment span \(\mathcal M_e\) if and only if
+\[
+  \operatorname{rank}K_e(a,\pi,\Sigma)=0.
+\]
+Equivalently, both the unabsorbed canonical score residual \(D_e\) and the
+active pre-period residual \(H_{\mathrm{pre},e}\) vanish.  When
+\(\operatorname{rank}K_e>0\), the full-preperiod influence
+function has strictly smaller asymptotic variance than estimator \(e\)'s
+score within the maintained sequential-moment model, with variance improvement
+\[
+  \Delta_{\mathrm{EIF},e}(a,\pi,\Sigma)
+  =
+  \|(I-P_{\mathcal M_{\mathrm{all}}}^{\Sigma})d_e(a,\pi)\|_{\Sigma}^{2}
+  +\|h_{\mathrm{pre},e}(a,\pi,\Sigma)\|_{\Sigma}^{2}>0
+\]
+in the scalar target case, and the analogous positive semidefinite Loewner gap
+\[
+  D_e(A,\pi,\Sigma)^{\transpose}D_e(A,\pi,\Sigma)
+  +H_{\mathrm{pre},e}(A,\pi,\Sigma)^{\transpose}
+   H_{\mathrm{pre},e}(A,\pi,\Sigma)
+  =K_e(A,\pi,\Sigma)^{\transpose}K_e(A,\pi,\Sigma)
+\]
+for vector event-study targets \(A=(a_1,\ldots,a_m)\).  The four named
+implementations have a common influence function if
+and only if this rank-zero condition holds for all
+\(e\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}\).
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) The closest papers are \citet{EgamiYamauchi2023},
+\citet{ChenSantAnnaXie2025}, and \citet{RothSantAnna2023Efficient}.  Egami and
+Yamauchi show how multiple pre-treatment periods can improve DiD and
+staggered-adoption designs through GMM-style use of extra pre-period
+information, but they do not give an if-and-only-if condition under which BJS,
+SA, CS, and Wooldridge have the same influence function for a fixed target.
+Chen, Sant'Anna, and Xie give closed-form EIFs and overidentification
+restrictions, and Roth and Sant'Anna give feasible efficient
+staggered-rollout estimators, but neither paper states the observable
+rank-zero classifier relative to each named estimator's actual comparison
+block.  The epsilon gap is the equality frontier \(K_e=0\), including both
+canonical loading residuals and active pre-period GMM residuals; it is not the
+existence of GMM efficiency gains, an EIF, or an efficient estimator.  The v5
+statement also avoids the vector-target well-posedness gap by defining
+\(K_e\) as a vertical score block whose Gram is target-dimensional.  (b)
+Resolving this would give the
+\citet{ChenSantAnnaXie2025} efficient-estimation program and the
+\citet{RothSantAnnaBilinskiPoe2023} estimator-choice guidance a one-number
+score-certificate diagnostic for when all pre-periods must enter the score for
+each named implementation.
+
+\begin{theorem}[Theorem 1: relation to closed-form EIF weights]\label{thm:csx-comparison}
+Under Assumptions \ref{ass:panel-support}--\ref{ass:regular-if}, suppose a
+closed-form event-study EIF weight vector \(q_{\mathrm{EIF}}\in\R^q\) is
+written in the finite-cell coordinates \(\mathcal J\) of Section 6, and the
+score used by estimator \(e\) has nuisance weight
+\(q_e=P_{\mathcal M_e}^{\Sigma}b_a^e(a,\pi)\).  If the full-preperiod efficient
+weight is
+\(q_{\mathrm{EIF}}=P_{\mathcal M_{\mathrm{all}}}^{\Sigma}
+b_a^{\mathrm{BJS}}(a,\pi)\), then
+\[
+  q_{\mathrm{EIF}}-q_e
+  =P_{\mathcal M_{\mathrm{all}}}^{\Sigma}d_e(a,\pi)
+   +h_{\mathrm{pre},e}(a,\pi,\Sigma).
+\]
+If \(\varphi_{\mathrm{BJS}}\) and \(\varphi_e\) denote the corresponding
+finite-cell influence functions, their score-coordinate difference is
+\[
+  \varphi_{\mathrm{BJS}}-\varphi_e
+  =(I-P_{\mathcal M_{\mathrm{all}}}^{\Sigma})d_e(a,\pi)
+   -h_{\mathrm{pre},e}(a,\pi,\Sigma).
+\]
+Hence the difference between the full-preperiod EIF and estimator \(e\)'s
+influence function is zero exactly when
+\(\operatorname{rank}K_e(a,\pi,\Sigma)=0\).
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{ChenSantAnnaXie2025} give closed-form EIFs and identify
+overidentification restrictions, but they do not turn their extra pre-period
+weight vector into a named-estimator equality classifier for BJS, SA, CS, and
+Wooldridge.  This theorem states the precise algebraic bridge: their EIF
+weights correspond to the \(\mathcal M_{\mathrm{all}}\) projection, while the
+new object is the residual of that weight and the associated canonical
+post-period loading against each published estimator's finite comparison
+block.  (b) The concrete consumer is the empirical
+diagnostic implied by \citet{ChenSantAnnaXie2025}: researchers can ask whether
+the EIF's extra score component is zero for their chosen SA, CS, or Wooldridge
+implementation.
+
+\begin{theorem}[Theorem 2: plug-in rank selection]\label{thm:plugin-rank}
+Under Assumptions \ref{ass:panel-support}--\ref{ass:plugin-rank}, let
+\(\widehat r_{e,n}\) be the number of singular values of
+\(\widehat K_e=K_e(a,\widehat\pi,\widehat\Sigma)\)
+exceeding \(\lambda_n\).  Then, for each
+\(e\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}\),
+\[
+  \Pr\{\widehat r_{e,n}=\operatorname{rank}K_e(a,\pi,\Sigma)\}
+  \to 1.
+\]
+Consequently the equality region in Conjecture~\ref{conj:active-preperiod-boundary}
+is testable estimator-by-estimator at the population rank-selection level
+whenever the spectral gap condition in Assumption~\ref{ass:plugin-rank} holds.
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) This is a routine perturbation result once the observable object
+\(K_e(a,\pi,\Sigma)\) is defined, but it is absent from
+\citet{ChenSantAnnaXie2025}, \citet{RothSantAnna2023Efficient}, and
+\citet{BorusyakJaravelSpiess2024} because those papers do not define this
+four-estimator equality frontier.  The epsilon gap is not rank consistency by
+itself; it is rank consistency for the proposed equality/non-equality
+certificate.  (b) The concrete consumer is empirical work following
+\citet{RothSantAnnaBilinskiPoe2023}: the theorem says the proposed diagnostic
+can be reported from observable cohort shares and untreated covariance rather
+than from the unknown treatment-effect matrix.
+
+\begin{conjecture}[Conjecture 2: named-estimator implication (NOT YET PROVED)]\label{conj:named-estimator-implication}
+Under Assumptions \ref{ass:panel-support}--\ref{ass:bjs-full-score}, the BJS
+imputation estimator, SA interaction-weighted estimator, CS group-time
+doubly-robust estimator, and Wooldridge cohort-time-saturated regression have
+identical first-order influence functions for \(\theta_a\) if and only if
+\[
+  \operatorname{rank}K_{\mathrm{SA}}
+  =\operatorname{rank}K_{\mathrm{CS}}
+  =\operatorname{rank}K_{\mathrm{W}}=0.
+\]
+If the rank is positive for estimator \(e\), then BJS and estimator \(e\) have
+strictly different influence functions, and estimator \(e\)'s asymptotic
+variance exceeds the full-preperiod sequential-moment bound by
+\(\Delta_{\mathrm{EIF},e}\) for scalar targets.  This is a claim about the
+explicit finite matrices and canonical loadings in Section 6, not about
+stipulated common spans or common post-period loadings.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{BorusyakJaravelSpiess2024} prove efficient imputation and compare
+precision to other robust estimators, while \citet{SunAbraham2021},
+\citet{CallawaySantAnna2021}, and \citet{Wooldridge2021} provide
+contamination-free or saturated-regression routes to interpretable ATT
+parameters.  \citet{RothSantAnna2023Efficient} is a closer efficiency
+comparator, but its rollout-timing framework and optimal adjustment result do
+not give a necessary-and-sufficient score-certificate condition under which
+these four parallel-trends implementations have the same influence-function
+subspace for the same target, and \citet{ChenSantAnnaXie2025} does not assert
+that BJS
+attains their full bound outside the BJS error-structure regime.  (b)
+Resolving this would let users of the BJS,
+\texttt{did}, interaction-weighted, and saturated-regression workflows decide
+whether a reported standard-error difference is an implementation artifact or
+a genuine semiparametric efficiency gap.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Two-period collapse]\label{cor:two-period-collapse}
+Under Assumptions \ref{ass:panel-support}--\ref{ass:single-preperiod},
+\(\mathcal M_{\mathrm{all}}=\mathcal M_e\) for every
+\(e\in\{\mathrm{SA},\mathrm{CS},\mathrm{W}\}\), hence
+\(h_{\mathrm{pre},e}=0\), \(D_e=0\), \(\operatorname{rank}K_e=0\), and
+the proposal collapses to the two-period ATT efficiency comparison of
+\citet{SantAnnaZhao2020}.
+\end{corollary}
+
+\begin{corollary}[Redundant diagnostics]\label{cor:redundant-diagnostics}
+Under Assumptions \ref{ass:nested-moments} and
+\ref{ass:redundant-diagnostic}, \(K_e=0\) for every
+\(e\).  Thus additional pre-periods may remain useful for testing parallel
+trends without changing the first-order efficient score for \(\theta_a\).
+\end{corollary}
+
+\begin{corollary}[Homogeneous-effect corner]\label{cor:homogeneous-corner}
+Under Assumptions \ref{ass:nested-moments},
+\ref{ass:regular-covariance}, \ref{ass:homogeneous-effect}, and
+\ref{ass:common-loading-span}, the active score-certificate rank is zero for
+each named estimator.  Homogeneity supplies a common ATT value, while
+Assumption~\ref{ass:common-loading-span} supplies the additional design
+condition that makes the canonical loadings and pre-period spans coincide;
+together they recover the standard equivalence intuition that robust
+staggered-DiD implementations differ in presentation rather than first-order
+score for the common ATT.
+\end{corollary}
+
+\section{Proof-sketch route}
+The mathematical route is a finite-dimensional Hilbert-space projection
+argument.  First write each estimator's first-order expansion as an
+estimator-specific canonical ATT score plus a nuisance correction in the span
+of valid pre-period moments.  Second decompose the BJS-minus-estimator score
+difference into the \(\Sigma\)-orthogonal direct sum of the unabsorbed
+canonical residual \((I-P_{\mathcal M_{\mathrm{all}}}^{\Sigma})d_e\) and the
+active pre-period projection residual \(h_{\mathrm{pre},e}\).  Third apply the
+standard semiparametric projection identity: the variance drop from replacing
+estimator \(e\)'s score by the full-preperiod BJS score is the squared norm of
+that direct-sum residual.  The nonroutine algebra is to verify, for the SA,
+CS, and Wooldridge comparison conventions separately, that the indexed
+matrices \(B_{\mathrm{SA}},B_{\mathrm{CS}},B_{\mathrm{W}}\) and loadings
+\(b_a^e\) reproduce the published first-order scores and are nested in
+\(B_{\mathrm{all}}\).  The smallest nontrivial designs \(T=3\) and \(T=4\)
+should then be computed explicitly to confirm that \(D_e\) and
+\(H_{\mathrm{pre},e}\) separate post-period loading differences from
+residualized pre-period row-space differences.  The comparison with
+\citet{ChenSantAnnaXie2025} reduces to writing their closed-form EIF weights
+in the same \(\mathcal J\) coordinates and subtracting the estimator-specific
+projection \(P_{\mathcal M_e}^{\Sigma}b_a^e\).  The plug-in theorem follows by
+Davis--Kahan or Weyl singular value perturbation after \(\widehat\pi\) and
+\(\widehat\Sigma\) are substituted.  The boundary cases are singular
+comparison support, nearly collinear pre-period covariance, BJS error
+structures outside Assumption~\ref{ass:bjs-full-score}, and vector event-study
+targets where rank may exceed one.
+
+\section{Honest scope flags}
+Conjectures \ref{conj:active-preperiod-boundary} and
+\ref{conj:named-estimator-implication} are not yet proved.  Theorem
+\ref{thm:csx-comparison} is an algebraic positioning statement conditional on
+expressing \citet{ChenSantAnnaXie2025}'s EIF weights in the finite-cell
+coordinates of Section 6.  Theorem
+\ref{thm:plugin-rank} is intended as a routine perturbation result conditional
+on Assumption~\ref{ass:plugin-rank}, not as the flagship mathematical novelty.
+The projection-norm formula is routine once the estimator-specific first-order
+spans have been identified.  The v3 draft withdraws the v2 common-baseline
+shortcut and makes the named SA, CS, and Wooldridge implementations separate
+finite matrices \(B_{\mathrm{SA}},B_{\mathrm{CS}},B_{\mathrm{W}}\).  It also
+limits the BJS efficiency claim to the full-preperiod sequential-moment bound
+under Assumption~\ref{ass:bjs-full-score}, avoiding the stronger and
+unsupported claim that BJS attains every arbitrary-\(\Sigma\) bound.  The v4
+draft withdraws the v3 claim that \(H_{\mathrm{pre},e}\) alone classifies full
+influence-function equality; equality is now classified by the full two-block
+certificate \(K_e=(D_e;H_{\mathrm{pre},e})\).  The
+proposal deliberately withdraws the earlier angle's stronger claim that the
+four estimators are classified by a heterogeneity-matrix rank threshold alone;
+the present angle makes observable pre-period score activity, not
+treatment-effect rank by itself, the primitive.  The v5 draft separates
+homogeneity from the extra loading/span equality needed for the homogeneous
+sanity corner, and replaces the vector-target variance gap by the
+target-dimensional matrix \(D_e^{\transpose}D_e+
+H_{\mathrm{pre},e}^{\transpose}H_{\mathrm{pre},e}\).
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) --- initial draft for angle 1, replacing the exhausted
+four-estimator \(K_\star\) rank-threshold angle with an active pre-period
+score-rank frontier anchored to \citet{ChenSantAnnaXie2025}; prior verdict:
+none.
+\item v2 (revise) --- added \citet{RothSantAnna2023Efficient}, made
+\(H_{\mathrm{pre}}(a,\pi,\Sigma)\) observable with a plug-in rank-selection
+theorem, and pinned SA/CS/Wooldridge baseline spans by explicit matrices;
+prior verdict: REVISE.
+\item v3 (revise) --- replaced the common-baseline shortcut by
+estimator-specific matrices and \(H_{\mathrm{pre},e}\), added the
+\citet{ChenSantAnnaXie2025} EIF-weight comparison theorem, and restricted the
+BJS efficiency claim to the maintained full-preperiod score regime; prior
+verdict: REVISE.
+\item v4 (revise) --- added estimator-specific canonical score loadings
+\(b_a^e\), the unabsorbed loading residual \(D_e\), and the total certificate
+\(K_e=(D_e;H_{\mathrm{pre},e})\); clarified Wooldridge as signed
+residual-regression weights from the saturated normal equations; prior
+verdict: REVISE.
+\item v5 (revise) --- made the vector-target variance gap target-dimensional,
+added the load-bearing comparison to \citet{EgamiYamauchi2023}, and separated
+homogeneity from loading/span equality in the sanity corner; prior verdict:
+REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Belle'go et~al.(2025)]{BellegoBenatiaDortetBernadet2025}
+Belle'go, C., Benatia, D., and Dortet-Bernadet, V. (2025).
+The chained difference-in-differences.
+\emph{Journal of Econometrics}, 248, 105783.
+\url{https://doi.org/10.1016/j.jeconom.2024.105783}.
+
+\bibitem[Borusyak et~al.(2024)]{BorusyakJaravelSpiess2024}
+Borusyak, K., Jaravel, X., and Spiess, J. (2024).
+Revisiting event-study designs: robust and efficient estimation.
+\emph{Review of Economic Studies}, 91(6), 3253--3285.
+\url{https://doi.org/10.1093/restud/rdae007}.
+
+\bibitem[Callaway and Sant'Anna(2021)]{CallawaySantAnna2021}
+Callaway, B. and Sant'Anna, P. H. C. (2021).
+Difference-in-differences with multiple time periods.
+\emph{Journal of Econometrics}, 225(2), 200--230.
+\url{https://doi.org/10.1016/j.jeconom.2020.12.001}.
+
+\bibitem[Chen et~al.(2025)]{ChenSantAnnaXie2025}
+Chen, X., Sant'Anna, P. H. C., and Xie, H. (2025).
+Efficient difference-in-differences and event study estimators.
+arXiv:2506.17729.
+\url{https://arxiv.org/abs/2506.17729}.
+
+\bibitem[Egami and Yamauchi(2023)]{EgamiYamauchi2023}
+Egami, N. and Yamauchi, S. (2023).
+Using multiple pretreatment periods to improve difference-in-differences and
+staggered adoption designs.
+\emph{Political Analysis}, 31(2), 195--212.
+\url{https://doi.org/10.1017/pan.2022.8}.
+
+\bibitem[Roth et~al.(2023)]{RothSantAnnaBilinskiPoe2023}
+Roth, J., Sant'Anna, P. H. C., Bilinski, A., and Poe, J. (2023).
+What's trending in difference-in-differences? A synthesis of the recent
+econometrics literature.
+\emph{Journal of Econometrics}, 235(2), 2218--2244.
+\url{https://doi.org/10.1016/j.jeconom.2023.03.008}.
+
+\bibitem[Roth and Sant'Anna(2023)]{RothSantAnna2023Efficient}
+Roth, J. and Sant'Anna, P. H. C. (2023).
+Efficient estimation for staggered rollout designs.
+\emph{Journal of Political Economy Microeconomics}, 1(4), 669--709.
+\url{https://doi.org/10.1086/726581}.
+
+\bibitem[Sant'Anna and Zhao(2020)]{SantAnnaZhao2020}
+Sant'Anna, P. H. C. and Zhao, J. (2020).
+Doubly robust difference-in-differences estimators.
+\emph{Journal of Econometrics}, 219(1), 101--122.
+\url{https://doi.org/10.1016/j.jeconom.2020.06.003}.
+
+\bibitem[Sun and Abraham(2021)]{SunAbraham2021}
+Sun, L. and Abraham, S. (2021).
+Estimating dynamic treatment effects in event studies with heterogeneous
+treatment effects.
+\emph{Journal of Econometrics}, 225(2), 175--199.
+\url{https://doi.org/10.1016/j.jeconom.2020.09.006}.
+
+\bibitem[Wooldridge(2021)]{Wooldridge2021}
+Wooldridge, J. M. (2021).
+Two-way fixed effects, the two-way Mundlak regression, and difference-in-
+differences estimators.
+SSRN working paper 3906345.
+\url{https://doi.org/10.2139/ssrn.3906345}.
+\end{thebibliography}
+
+\end{document}

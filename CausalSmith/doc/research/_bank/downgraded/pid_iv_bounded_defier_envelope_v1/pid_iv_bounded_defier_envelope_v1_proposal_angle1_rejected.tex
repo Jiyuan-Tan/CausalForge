@@ -1,0 +1,751 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_iv\_bounded\_defier\_envelope, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_iv\_bounded\_defier\_envelope} / \texttt{v1}%
+  \\ \large\textit{Four-cell sharp ATE envelope for binary IV with simultaneous defier and never-taker caps}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a partial-identification anchor, not a panel pool-mode.  The locked tuple is
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},
+  \text{bounding functional})\\
+=
+(\texttt{pid\_iv\_bounded\_defier\_envelope},\texttt{v1},
+  P_{Y,D,Z},\ \theta_{\mathrm{ATE}},\
+  \calR_{\mathrm{IV+BDN}},\
+  [\underline\theta_{\mathrm{BDN}}(P,\bar\delta,\bar\nu),
+    \overline\theta_{\mathrm{BDN}}(P,\bar\delta,\bar\nu)]) .
+\end{gathered}
+\]
+Here \(Z,D\in\{0,1\}\), \(Y\in[0,1]\), and \(P_{Y,D,Z}\) is observed with
+\(0<\Pr(Z=1)<1\).  The target is the population average treatment effect
+\[
+\theta_{\mathrm{ATE}}=\E[Y(1)-Y(0)].
+\]
+The restrictions \(\calR_{\mathrm{IV+BDN}}\) are consistency, exclusion of \(Z\)
+except through \(D\), instrument independence
+\(Z\perp (Y(0),Y(1),D(0),D(1))\), bounded potential outcomes, observational
+compatibility with the binary-IV principal-strata mixture equations, a known
+one-sided defier cap
+\[
+\Pr(D(1)=0,D(0)=1)\le \bar\delta,
+\]
+and a known never-taker cap
+\[
+\Pr(D(1)=0,D(0)=0)\le \bar\nu.
+\]
+The convention is restricted to cap-compatible observed laws:
+\(\mathcal{P}_{\mathrm{BDN}}(P,\bar\delta,\bar\nu)\ne\varnothing\).
+The bounding functional is the projection of the resulting finite
+principal-strata polytope onto \(\theta_{\mathrm{ATE}}\), with endpoints proposed
+to equal the explicit max/min affine facet envelope in
+Conjecture~\ref{conj:facet-envelope}.
+
+\begin{abstract}
+This proposal asks for sharp ATE bounds in the binary-instrument model when
+monotonicity is relaxed by a defier-share cap and the never-taker share is also
+bounded above.  The kernel claim is not a new generic linear program: it is the
+conjecture that the full four-observed-cell principal-strata projection has a
+closed polytopal endpoint formula whose facets split into Balke--Pearl,
+defier-cap, never-taker-cap, joint-cap, and support-fill-in families.  The
+second conjecture asks for a boundary-distribution certificate attaining every
+facet, including cap-binding and zero-cell faces that defeated a prior
+CausalSmith proposal.  The proposal also records exact face reductions: the
+zero-defier face must recover the Imbens--Angrist complier LATE coordinate,
+while the pure never-taker face must collapse to Manski's outcome-support ATE
+interval.  If resolved, the result would turn monotonicity-violation sensitivity
+from a numerical IV-bounds exercise into a facet-auditable theorem.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Binary instruments are used precisely where treatment receipt is imperfect.
+The Imbens--Angrist LATE theorem gives a clean point estimand under no defiers,
+whereas Balke--Pearl bounds give sharp nonparametric intervals when compliance
+behavior is unrestricted.  Empirical researchers often want an intermediate
+sensitivity analysis: allow a small defier population, also limit the population
+share that can never take treatment, and report the sharp ATE region implied by
+those two primitive caps.
+
+\paragraph{The main finding (proposed).}
+The flagship result is Conjecture~\ref{conj:facet-envelope}: after encoding the
+four principal strata \(C,N,A,F\), their observed potential-outcome mixtures,
+and the caps \(\pi_F\le\bar\delta\), \(\pi_N\le\bar\nu\), the sharp ATE
+identified set is a single interval whose endpoints are max/mins over an
+explicit finite catalogue of affine functions of the four observed cells and
+the two caps.  Conjecture~\ref{conj:boundary-certificates} strengthens this by
+asking for endpoint-attaining latent laws for each exposed facet.  Theorem~\ref{thm:polytope-wellposed}
+and Theorem~\ref{thm:face-limits} are supporting
+statements: the first fixes the exact polytope, and the second states the
+required LATE and Manski face limits.
+
+\paragraph{What is new.}
+The closest published result is \citet{BalkePearl1997}, which gives tight
+binary-IV ATE bounds by symbolic linear programming but does not isolate a
+two-cap sensitivity envelope with independent restrictions on defiers and
+never-takers.  The closest defier-geometry precedent is
+\citet{RichardsonRobins2010}: if their fixed-defier bounds are available for
+each \(t=\pi_F\), then the two-cap endpoint value should be compared with
+optimizing those fixed-\(t\) bounds over
+\[
+\left[\max\{0,q_{10}-\bar\nu,q_{10}-q_{00}\},\
+\min\{q_{01},q_{10},\bar\delta\}\right].
+\]
+The flagship epsilon-gap is not generic finite-LP existence.  It is the
+eliminated observable frontier: explicit affine inequalities saying when
+\(\bar\nu\) is redundant, when it strictly shrinks an endpoint on an open set,
+and which active facet generates that shrinkage after all four observed
+\(Z,D\) cells are imposed.
+
+\paragraph{How it positions in the literature.}
+The proposal lives in the partial-identification cluster: Manski support
+bounds, Balke--Pearl IV bounds, LATE monotonicity, and recent monotonicity
+sensitivity analysis.  It is not a graphical-identification or do-calculus
+proposal.  It consumes the principal-strata IV setup as fixed and asks for a
+sharp projected identified set under economically interpretable caps.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is \citet{LevisBonviniZengKeeleKennedy2025}:
+their covariate-assisted IV-bounds inference problem is nonsmooth because the
+bound is a max/min functional, and an explicit two-cap facet catalogue would
+identify which inequalities drive local nonsmoothness under monotonicity
+relaxation.
+
+\paragraph{How research benefits from the conclusion.}
+A reader who takes only the conclusion away should report both the defier cap
+and the never-taker cap, then diagnose whether the active endpoint lies on a
+Balke--Pearl, defier-cap, never-taker-cap, or joint-cap facet instead of
+treating IV sensitivity as an opaque solver output.
+
+\section{Related work}
+\citet{Manski1990} supplies the bounded-outcome support-fill-in benchmark that
+the pure never-taker face of this proposal must recover.  \citet{ImbensAngrist1994}
+identifies the local average treatment effect for compliers under instrument
+independence and monotonicity; this proposal treats the zero-defier face as an
+exact coordinate reduction rather than as an informal limiting check.
+\citet{AngristImbensRubin1996} gives the principal-strata language
+\((C,N,A,F)\) used to define the latent polytope.  \citet{BalkePearl1997}
+derives sharp binary-IV ATE bounds through symbolic linear programming over
+latent response types; the present proposal asks for the strictly more
+structured two-cap envelope and its facet certificates.  Although the original
+Balke--Pearl formulas are often presented for binary \(Y\), the convention here
+uses bounded outcome-mass variables \(y_{ds}\in[0,\pi_s]\), so the no-cap
+sanity reduction is to the bounded-outcome IV support-envelope analogue rather
+than to a binary-response-type table.  \citet{RichardsonRobins2010}
+develops binary-IV geometry under restrictions including defier proportions,
+making it the closest geometry precedent for the defier cap but not for the
+simultaneous never-taker cap.  \citet{SwansonHernanMillerRobinsRichardson2018}
+reviews binary-IV partial-identification methods and motivates defier-proportion
+sensitivity, but it leaves closed-form cap-specific ATE facets as an open
+specialization.  \citet{ManskiPepper2000} shows how monotone restrictions can
+tighten nonparametric bounds; the present proposal instead tightens by
+principal-stratum mass restrictions.  \citet{MourifieWan2017} tests LATE
+independence and monotonicity through conditional moment inequalities, while
+this proposal quantifies the ATE set after monotonicity is allowed to fail by a
+bounded amount.  \citet{Noack2021} and \citet{Yap2022} parameterize
+monotonicity violations through defier shares or defier-to-complier ratios; the
+epsilon-gap is the independent never-taker-share cap and the resulting joint
+facet changes.  \citet{Picchetti2026} combines defier-share relaxation with IV
+independence relaxation for breakdown frontiers; the present proposal keeps IV
+independence but adds never-taker cap geometry.
+\citet{DeChaisemartin2017} shows that a LATE-type interpretation can survive
+defiers under compliers-defiers and stochastic-monotonicity conditions; this is
+an estimand-interpretation result, whereas the present proposal gives a sharp
+ATE identified set under primitive mass caps.  \citet{DahlHuberMellace2023}
+identify LATEs with or without defiers under local monotonicity and local
+compliers-defiers conditions; the proposed two-cap envelope is different
+because it does not require the local cancellation structure and instead asks
+when observed four-cell mixtures make a never-taker cap bind.
+\citet{SachsJonzonSjolanderGabriel2023} gives a general symbolic-bound method
+for causal effects that are linear in discrete latent distributions, and
+\citet{GabrielSachsSjolander2023} warns in the decomposition-effects setting
+that separately sharp componentwise bounds need not combine sharply.  Together
+they make the non-subsumption issue explicit: the two-cap IV problem must show
+joint sharpness and active-facet control, not only separate fixed-defier or
+fixed-never-taker bounds.  \citet{DuarteFinkelsteinKnoxMummoloShpitser2024}
+automates sharp or epsilon-sharp bounds for discrete causal problems through
+constrained optimization.
+These papers are closer generic precedents than a textbook LP
+argument: the present proposal must therefore deliver a hand-eliminated
+IV-specific facet catalogue and strict-shrinkage frontier, not merely a solver
+or symbolic-bound existence claim.  \citet{LevisBonviniZengKeeleKennedy2025}
+shows that covariate-assisted Balke--Pearl bounds produce nonsmooth max/min
+functionals, making explicit facet control valuable for inference.  \citet{BaiHuangMoonShaikhVytlacil2024}
+clarifies which generalized monotonicity restrictions identify ATE features,
+including no-power regions for treatment-response-only restrictions; this
+proposal complements that frontier by using compliance-stratum mass caps whose
+binding status is constrained by the four observed \(Z,D\) cells.
+
+In-catalogue prior art is thin but informative.  \texttt{doc/API.md} reports
+that CausalSmith's ExactID and PartialID catalogues are seed-time empty except
+for the Manski nonparametric-bounds study entries under
+\texttt{CausalSmith/PartialID/ManskiNonparametricBounds\_Study/}.  The accepted
+\texttt{manski\_nonparametric\_bounds} study supplies the support-bound face
+that Theorem~\ref{thm:face-limits} must match.  The accepted
+\texttt{imbens\_angrist\_late} study supplies the monotone LATE coordinate that
+the zero-defier face must recover.  The failed
+\texttt{pid\_late\_bounded\_defiers}/\texttt{one\_sided\_compliance} proposal is
+the nearest in-repo attempt; its reviewer explicitly rejected a formula that
+omitted the \(Z=1,D=0\) observed cell and recommended redrafting around the full
+four-cell mixture system.  The candidate
+\texttt{pid\_dynamic\_iv\_compliance\_v2} proposal supplies reusable language
+about never-taker mixture subtraction, but its target is dynamic and it does
+not solve the static two-cap binary-IV ATE envelope.
+
+\section{Formal setup}
+Let
+\[
+C=\{D(0)=0,D(1)=1\},\quad
+N=\{D(0)=0,D(1)=0\},\quad
+A=\{D(0)=1,D(1)=1\},\quad
+F=\{D(0)=1,D(1)=0\}
+\]
+denote compliers, never-takers, always-takers, and defiers.  Write
+\(\pi_s=\Pr(s)\) for \(s\in\{C,N,A,F\}\), and
+\(y_{ds}=\E[Y(d)\one\{s\}]\) for \(d\in\{0,1\}\).  Thus
+\(0\le y_{ds}\le \pi_s\).  Let
+\[
+q_{zd}=\Pr(D=d\mid Z=z),\qquad
+r_{zd}=q_{zd}\E[Y\mid Z=z,D=d],
+\]
+with \(r_{zd}=0\) when \(q_{zd}=0\).
+
+The observed first-stage and outcome-mixture equations are
+\[
+\begin{aligned}
+q_{11}&=\pi_C+\pi_A,& q_{10}&=\pi_N+\pi_F,\\
+q_{01}&=\pi_A+\pi_F,& q_{00}&=\pi_N+\pi_C,\\
+r_{11}&=y_{1C}+y_{1A},& r_{10}&=y_{0N}+y_{0F},\\
+r_{01}&=y_{1A}+y_{1F},& r_{00}&=y_{0N}+y_{0C}.
+\end{aligned}
+\]
+The parameter is
+\[
+\theta_{\mathrm{ATE}}
+=\sum_{s\in\{C,N,A,F\}}(y_{1s}-y_{0s}).
+\]
+The first-stage equations leave one scalar compliance-share degree of freedom:
+with \(t=\pi_F\),
+\[
+\pi_A=q_{01}-t,\qquad
+\pi_N=q_{10}-t,\qquad
+\pi_C=q_{00}-q_{10}+t.
+\]
+Define the cap-compatible first-stage interval
+\[
+I_{\pi}(P,\bar\delta,\bar\nu)=
+\left[
+\max\{0,q_{10}-\bar\nu,q_{10}-q_{00}\},\
+\min\{q_{01},q_{10},\bar\delta\}
+\right].
+\]
+Nonemptiness of this interval is the first-stage part of capped feasibility;
+the outcome equations and support inequalities then determine whether a
+candidate \(t\) admits hidden outcome means.  Define the outcome-feasible
+fixed-defier set
+\[
+I_{\pi}^{Y}(P,\bar\delta,\bar\nu)=
+\left\{t\in I_{\pi}(P,\bar\delta,\bar\nu):
+\begin{array}{l}
+\text{there exist }(y_{ds})_{d,s}\text{ satisfying the four observed outcome}\\
+\text{equations and }0\le y_{ds}\le\pi_s(t)\text{ for }
+\pi_A(t)=q_{01}-t,\\
+\pi_N(t)=q_{10}-t,\ \pi_C(t)=q_{00}-q_{10}+t,\ \pi_F(t)=t
+\end{array}\right\}.
+\]
+For \(t\in I_{\pi}^{Y}(P,\bar\delta,\bar\nu)\), write \(B_L(t)\) and
+\(B_U(t)\) for the sharp lower and upper ATE endpoints of the same four-cell
+latent-outcome system after imposing \(\pi_F=t\) and \(\pi_N=q_{10}-t\), but
+before optimizing over \(t\).  These are the fixed-defier endpoints used only
+for comparison with Richardson--Robins-style geometry.
+For observed \(P\) and caps \((\bar\delta,\bar\nu)\), define
+\(\mathcal{P}_{\mathrm{BDN}}(P,\bar\delta,\bar\nu)\) to be the set of all
+\((\pi_s,y_{ds})\) satisfying the display above, the simplex constraints
+\(\pi_s\ge0\), \(\sum_s\pi_s=1\), the support constraints
+\(0\le y_{ds}\le\pi_s\), and the cap constraints
+\(\pi_F\le\bar\delta\), \(\pi_N\le\bar\nu\).  The identified set is
+\[
+\Theta_I(P,\bar\delta,\bar\nu)
+=\{\theta_{\mathrm{ATE}}(\pi,y):(\pi,y)\in
+\mathcal{P}_{\mathrm{BDN}}(P,\bar\delta,\bar\nu)\}.
+\]
+The proposed lower and upper affine endpoint catalogues are denoted
+\(\mathfrak{L}_{\mathrm{BDN}}\) and \(\mathfrak{U}_{\mathrm{BDN}}\).  For an
+exposed affine form \(f\) in either catalogue, \(\Gamma_f\) denotes the
+candidate boundary-distribution map from observables and caps to a latent
+vector \((\pi_s,y_{ds})_{s,d}\) attaining facet \(f\).
+
+\begin{verbatim}
+qid = pid_iv_bounded_defier_envelope
+specialization = v1
+observable distribution P = law of (Y,D,Z), with Z,D binary and Y in [0,1]
+parameter theta = theta_ATE = E[Y(1)-Y(0)]
+identifying restrictions = consistency, exclusion, instrument independence,
+  bounded outcomes, four-cell principal-strata mixture equations,
+  pi_F <= delta_bar, pi_N <= nu_bar, and cap-compatible nonemptiness
+bounding functional = projection of P_BDN(P,delta_bar,nu_bar) onto theta_ATE;
+  proposed closed form is max/min over the finite two-cap facet catalogue
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Binary IV support and bounded outcomes]\label{ass:support}
+\(Z,D\in\{0,1\}\), \(0<\Pr(Z=1)<1\), and \(0\le Y(0),Y(1)\le1\) almost surely.
+\end{assumption}
+
+\begin{assumption}[IV independence, exclusion, and consistency]\label{ass:iv}
+\(Z\perp (Y(0),Y(1),D(0),D(1))\).  The instrument affects \(Y\) only through
+\(D\), and the realized variables satisfy \(D=D(Z)\) and \(Y=Y(D)\).
+\end{assumption}
+
+\begin{assumption}[Observed four-cell compatibility]\label{ass:compatibility}
+The observed law \(P\) admits at least one latent vector
+\((\pi_s,y_{ds})\) satisfying the mixture equations in Section 6, the support
+constraints \(0\le y_{ds}\le\pi_s\), and the simplex constraints.  Cell
+probabilities \(q_{zd}\) are allowed to be zero, with \(r_{zd}=0\) by convention.
+\end{assumption}
+
+\begin{assumption}[Defier and never-taker caps]\label{ass:caps}
+The known sensitivity parameters satisfy \(0\le\bar\delta,\bar\nu\le1\), and
+the maintained model imposes \(\pi_F\le\bar\delta\) and
+\(\pi_N\le\bar\nu\).
+\end{assumption}
+
+\begin{assumption}[Cap-compatible feasibility]\label{ass:capped-feasible}
+The capped polytope is nonempty:
+\(\mathcal{P}_{\mathrm{BDN}}(P,\bar\delta,\bar\nu)\ne\varnothing\).
+Equivalently, the outcome-feasible fixed-defier set
+\(I_{\pi}^{Y}(P,\bar\delta,\bar\nu)\) is nonempty.
+\end{assumption}
+
+\begin{assumption}[Face-limit regimes]\label{ass:faces}
+For the zero-defier face, impose \(\bar\delta=0\) and observational
+compatibility with \(\pi_F=0\).  For the pure never-taker face, impose
+\(\bar\nu=1\) and \(\pi_N=1\), equivalently \(q_{10}=q_{00}=1\) and
+\(q_{11}=q_{01}=0\), with the observed untreated mean
+\(m_0=\E[Y\mid D=0]\) defined.  On this face the never-taker cap is saturated,
+not imposed as a stricter bound.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Finite four-cell cap polytope]\label{thm:polytope-wellposed}
+Under Assumptions~\ref{ass:support}--\ref{ass:capped-feasible},
+\(\mathcal{P}_{\mathrm{BDN}}(P,\bar\delta,\bar\nu)\) is a closed bounded
+polytope, and \(\Theta_I(P,\bar\delta,\bar\nu)\) is the closed interval
+\[
+\left[
+\min_{(\pi,y)\in\mathcal{P}_{\mathrm{BDN}}(P,\bar\delta,\bar\nu)}
+\theta_{\mathrm{ATE}}(\pi,y),\quad
+\max_{(\pi,y)\in\mathcal{P}_{\mathrm{BDN}}(P,\bar\delta,\bar\nu)}
+\theta_{\mathrm{ATE}}(\pi,y)
+\right].
+\]
+Moreover each endpoint is attained at a vertex of
+\(\mathcal{P}_{\mathrm{BDN}}(P,\bar\delta,\bar\nu)\).
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This is the setup theorem, not the flagship novelty: \citet{BalkePearl1997}
+already teaches that binary-IV bounds are linear-program projections.  The
+epsilon-gap is the exact four-cell cap polytope with both
+\(\pi_F\le\bar\delta\) and \(\pi_N\le\bar\nu\), which corrects the failed
+CausalSmith one-sided-compliance proposal by including both \(Z=1,D=0\) and
+\(Z=0,D=0\) mixtures.  (b) The concrete consumer is
+\citet{MourifieWan2017}: their moment-inequality view of LATE violations gains
+a finite feasibility object whose active inequalities can be tested or reported.
+
+\begin{conjecture}[Closed-form simultaneous-cap facet envelope]\label{conj:facet-envelope}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:support}--\ref{ass:capped-feasible}, there
+exist two explicit finite catalogues
+\(\mathfrak{L}_{\mathrm{BDN}}\) and \(\mathfrak{U}_{\mathrm{BDN}}\) of affine
+forms in
+\[
+(q_{11},q_{10},q_{01},q_{00},r_{11},r_{10},r_{01},r_{00},
+  \bar\delta,\bar\nu)
+\]
+such that
+\[
+\underline\theta_{\mathrm{BDN}}(P,\bar\delta,\bar\nu)
+=\max_{\ell\in\mathfrak{L}_{\mathrm{BDN}}}\ell(P,\bar\delta,\bar\nu),
+\qquad
+\overline\theta_{\mathrm{BDN}}(P,\bar\delta,\bar\nu)
+=\min_{u\in\mathfrak{U}_{\mathrm{BDN}}}u(P,\bar\delta,\bar\nu).
+\]
+The catalogues can be partitioned into five nonredundant families:
+Balke--Pearl base facets, defier-cap facets, never-taker-cap facets,
+joint-cap facets where \(\pi_F=\bar\delta\) and \(\pi_N=\bar\nu\) both bind,
+and support-fill-in facets where a hidden \(y_{ds}\) equals \(0\) or \(\pi_s\).
+No additional facet family appears after projecting out the latent variables.
+
+The same catalogue also yields a strict-shrinkage frontier relative to the
+unrestricted Balke--Pearl endpoints: for each endpoint and each fixed
+\(\bar\delta\), there is a finite list of observable affine inequalities in
+\((q,r,\bar\nu)\) that is necessary and sufficient for lowering \(\bar\nu\) to
+strictly move the endpoint inward.  Outside those regions the never-taker cap
+is redundant after the four observed cells and the defier cap are imposed.
+Equivalently, if \(B_L(t)\) and \(B_U(t)\) denote the sharp fixed-defier lower
+and upper endpoints in the sense of Richardson--Robins, the conjectured
+endpoints agree with
+\[
+\min_{t\in I_{\pi}^{Y}(P,\bar\delta,\bar\nu)}B_L(t),
+\qquad
+\max_{t\in I_{\pi}^{Y}(P,\bar\delta,\bar\nu)}B_U(t)
+\]
+whenever those fixed-\(t\) functions are evaluated with the same four observed
+outcome equations.  The novel content is the closed-form elimination of \(t\)
+and the necessary-and-sufficient observable classification of the open regions
+where replacing \(I_{\pi}^{Y}(P,\bar\delta,1)\) by
+\(I_{\pi}^{Y}(P,\bar\delta,\bar\nu)\) changes the endpoint and the active
+normal.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest published results are \citet{BalkePearl1997},
+\citet{RichardsonRobins2010}, \citet{DeChaisemartin2017},
+\citet{DahlHuberMellace2023}, \citet{SachsJonzonSjolanderGabriel2023},
+\citet{GabrielSachsSjolander2023}, and
+\citet{DuarteFinkelsteinKnoxMummoloShpitser2024}.  Balke--Pearl and the
+symbolic/automated-bound papers imply that a finite LP or symbolic procedure
+can bound the model; Richardson--Robins makes the fixed-defier sensitivity
+comparison unavoidable because \(\pi_N=q_{10}-\pi_F\) turns a never-taker upper
+cap into a lower truncation on the feasible defier-share interval.  The
+de Chaisemartin and Dahl--Huber--Mellace comparisons are not subsuming because
+their defier-tolerant conclusions target LATE interpretation under cancellation
+or local monotonicity, while Conjecture~\ref{conj:facet-envelope} targets the
+sharp ATE support projection under caps alone.  Gabriel--Sachs--Sjolander is
+not subsuming because its warning is that separate sharp bounds need joint
+construction, exactly the point of the proposed two-cap facet catalogue.  The
+epsilon-gap is the observable strict-shrinkage frontier and active-facet
+equivalence table after eliminating \(t\): none of those papers state
+necessary and sufficient inequalities for when the never-taker cap is
+redundant, when it strictly improves the endpoint on an open set, or which
+joint-cap facet is responsible.  \citet{BaiHuangMoonShaikhVytlacil2024} is the
+flagship frontier comparison: their no-power regions concern generalized
+monotonicity restrictions on treatment response, whereas the proposed
+strict-shrinkage frontier asks when compliance-stratum mass caps have
+identifying power because the two untreated observed cells pin
+\(\pi_N+\pi_F\) and \(\pi_N+\pi_C\) in different ways.  (b) The concrete consumer is
+\citet{LevisBonviniZengKeeleKennedy2025}: resolving this conjecture would give
+their nonsmooth IV-bound inference problem an explicit active-facet map for
+monotonicity-violation sensitivity.
+
+\begin{example}[Nondegenerate strict-shrinkage witness target]\label{ex:strict-shrinkage-target}
+The Stage 0 endpoint catalogue should certify at least the following open-set
+pattern, not only a boundary case.  Let
+\[
+q_{11}=q_{00}=0.6,\quad q_{10}=q_{01}=0.4,\quad
+r_{11}=0.21,\quad r_{10}=0.14,\quad r_{01}=0.15,\quad r_{00}=0.24,
+\]
+so every observed \(Z,D\) cell has positive mass and an interior observed
+conditional outcome mean.  With \(\bar\delta=0.4\), the lower endpoint of the
+fixed-\(t\) outcome LP equals \(-0.43\) at the unconstrained lower face
+\(t=0\), but after lowering the never-taker cap to \(\bar\nu=0.2\) the
+first-stage interval is truncated to \(t\ge q_{10}-\bar\nu=0.2\), and the same
+fixed-\(t\) endpoint at the new truncation face is \(-0.37\).  The proposed
+facet catalogue must explain this inward movement by a never-taker lower
+truncation/joint-support facet, and the same inequality pattern should persist
+on a neighborhood of the displayed law.
+\end{example}
+
+\begin{conjecture}[Boundary-distribution sharpness certificate]\label{conj:boundary-certificates}
+(NOT YET PROVED.)  For every exposed affine form in
+\(\mathfrak{L}_{\mathrm{BDN}}\cup\mathfrak{U}_{\mathrm{BDN}}\), there is a
+constructive boundary map
+\[
+\Gamma_f:(P,\bar\delta,\bar\nu)\mapsto(\pi_s,y_{ds})_{s,d}
+\]
+defined on the corresponding feasibility region such that
+\(\Gamma_f(P,\bar\delta,\bar\nu)\in
+\mathcal{P}_{\mathrm{BDN}}(P,\bar\delta,\bar\nu)\) and attains the endpoint
+facet \(f\).  The maps cover zero observed cells, cap-binding faces, and the
+four-cell cases in which \(Z=1,D=0\) and \(Z=0,D=0\) impose distinct hidden
+untreated mixtures.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{RichardsonRobins2010} and \citet{BalkePearl1997} certify sharpness
+through latent response distributions, but the mined prior CausalSmith proposal
+asserted sharpness before correcting the four-cell feasible system.  This
+conjecture asks for primal certificates aligned with the two-cap facet list,
+not merely a dual LP value.  (b) The concrete consumer is the
+\texttt{oq\_defiers} open question in the study graph: it needs auditable
+bounds when monotonicity is relaxed to a limited defier share, and boundary
+laws are the evidence that the interval is sharp rather than conservative.
+
+\begin{theorem}[Exact face-limit reductions]\label{thm:face-limits}
+Under Assumptions~\ref{ass:support}--\ref{ass:faces}, the following reductions
+must hold for the polytope in Theorem~\ref{thm:polytope-wellposed}.
+\begin{enumerate}[label=(\roman*)]
+\item On the zero-defier face \(\bar\delta=0\), the complier-coordinate
+projection
+\[
+\theta_C=\E[Y(1)-Y(0)\mid C]
+\]
+is the Imbens--Angrist Wald/LATE estimand
+\[
+\frac{\E[Y\mid Z=1]-\E[Y\mid Z=0]}
+     {\E[D\mid Z=1]-\E[D\mid Z=0]},
+\]
+whenever the denominator is positive.  The population ATE projection remains
+an interval unless the always-taker and never-taker hidden counterfactual
+components are also fixed.
+\item On the pure never-taker face \(\bar\nu=1\) and \(\pi_N=1\), the ATE
+identified set is the Manski support-fill-in interval
+\[
+[0-m_0,\ 1-m_0],
+\qquad m_0=\E[Y\mid D=0].
+\]
+\end{enumerate}
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{ImbensAngrist1994} and \citet{Manski1990} are not new results, but
+the epsilon-gap is equality of the proposed two-cap projected endpoints with
+these two limiting objects.  This guards against a common false claim that
+\(\bar\delta=0\) point-identifies the population ATE; it point-identifies only
+the complier coordinate unless noncomplier counterfactuals are otherwise
+restricted.  (b) The concrete consumers are the accepted
+\texttt{imbens\_angrist\_late} and \texttt{manski\_nonparametric\_bounds}
+study artifacts, which become formal sanity faces of the new envelope rather
+than separate examples.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No-cap reduction]\label{cor:no-cap}
+If \(\bar\delta\ge1\) and \(\bar\nu\ge1\), then
+\(\mathcal{P}_{\mathrm{BDN}}(P,\bar\delta,\bar\nu)\) is the unrestricted
+binary-IV principal-strata polytope, so Conjecture~\ref{conj:facet-envelope}
+must reduce to the bounded-outcome Balke--Pearl IV ATE support envelope.
+\end{corollary}
+
+\begin{corollary}[Zero-defier LATE sanity]\label{cor:late}
+Under Assumption~\ref{ass:faces} with \(\bar\delta=0\), the \(F\)-stratum is
+removed from all four mixture equations.  The difference
+\(\E[Y\mid Z=1]-\E[Y\mid Z=0]\) cancels the always-taker and never-taker
+observed components, leaving \(\pi_C\theta_C\); the first-stage difference is
+\(\pi_C\).  Hence the complier-coordinate reduction in
+Theorem~\ref{thm:face-limits} is exactly the Wald ratio.
+\end{corollary}
+
+\begin{corollary}[Pure never-taker support sanity]\label{cor:never}
+Under Assumption~\ref{ass:faces} with \(\bar\nu=1\) and \(\pi_N=1\), all
+observed outcomes equal \(Y(0)\), so \(\E[Y(0)]=m_0\) and \(Y(1)\) is
+constrained only by \([0,1]\).  Therefore the ATE interval is
+\([0-m_0,1-m_0]\).
+\end{corollary}
+
+\section{Proof-sketch route}
+The mathematical route is finite-dimensional convex analysis.  First write the
+latent variables as the vector
+\((\pi_C,\pi_N,\pi_A,\pi_F,y_{0C},y_{1C},y_{0N},y_{1N},y_{0A},y_{1A},y_{0F},y_{1F})\)
+and assemble the equality constraints from the eight observed
+\((q_{zd},r_{zd})\) equations plus the simplex.  Theorem~\ref{thm:polytope-wellposed}
+then follows from compactness and linear projection.  The flagship work is to
+enumerate all nondegenerate active bases involving support constraints and the
+two caps, discard infeasible bases by sign conditions, and simplify the dual
+endpoint forms into the five facet families in
+Conjecture~\ref{conj:facet-envelope}.  Sharpness is checked by giving the
+corresponding primal vertex maps and verifying that every observed mixture
+equation is matched, including zero-cell limits.  The face reductions are
+ordinary cancellations in the principal-strata equations.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:polytope-wellposed} is routine once the setup is fixed.
+Theorem~\ref{thm:face-limits} is labelled as a theorem-level requirement
+because it is an algebraic face check, but the detailed equality with every
+facet in Conjecture~\ref{conj:facet-envelope} remains part of the open work.
+The genuinely novel kernel is Conjecture~\ref{conj:facet-envelope} together
+with Conjecture~\ref{conj:boundary-certificates}.  The proposal deliberately
+does not claim that zero defiers point-identify the population ATE.  It also
+does not yet fix the final count of affine facets; Stage 0 must compute and
+name the catalogue rather than hide behind a generic LP solver.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft around the full four-cell simultaneous
+defier-cap and never-taker-cap ATE polytope; prior verdict: none.
+\item v2 (revise) -- added the missing research-practice paragraph, a
+cap-compatible nonemptiness assumption, a saturated \(\bar\nu=1\) pure
+never-taker face, and a Bai-frontier strict-shrinkage clause for
+Conjecture~\ref{conj:facet-envelope}; prior verdict: REVISE.
+\item v3 (revise) -- added the Richardson--Robins fixed-defier optimization
+comparison, generic symbolic/automated-bound precedents, and recentered
+Conjecture~\ref{conj:facet-envelope} on the observable strict-shrinkage
+frontier needed for flagship novelty; prior verdict: REVISE.
+\item v4 (revise) -- restricted the Richardson--Robins fixed-defier comparison
+in Conjecture~\ref{conj:facet-envelope} to the outcome-feasible set
+\(I_{\pi}^{Y}(P,\bar\delta,\bar\nu)\); prior verdict: REVISE.
+\item v5 (revise) -- added the missed defier/monotonicity and symbolic-bound
+comparators, an explicit non-subsumption comparison for Conjecture~\ref{conj:facet-envelope},
+and a nondegenerate strict-shrinkage witness target; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Angrist, Imbens, and Rubin(1996)]{AngristImbensRubin1996}
+Angrist, J. D., G. W. Imbens, and D. B. Rubin (1996).
+Identification of causal effects using instrumental variables.
+\emph{Journal of the American Statistical Association} 91(434), 444--455.
+\url{https://doi.org/10.1080/01621459.1996.10476902}.
+
+\bibitem[Bai et al.(2024)]{BaiHuangMoonShaikhVytlacil2024}
+Bai, Y., M. Huang, H. R. Moon, A. M. Shaikh, and E. Vytlacil (2024).
+On the identifying power of generalized monotonicity restrictions.
+\emph{NBER Working Paper}.
+
+\bibitem[Balke and Pearl(1997)]{BalkePearl1997}
+Balke, A. and J. Pearl (1997).
+Bounds on treatment effects from studies with imperfect compliance.
+\emph{Journal of the American Statistical Association} 92(439), 1171--1176.
+\url{https://doi.org/10.1080/01621459.1997.10474074}.
+
+\bibitem[Duarte et al.(2024)]{DuarteFinkelsteinKnoxMummoloShpitser2024}
+Duarte, G., N. Finkelstein, D. Knox, J. Mummolo, and I. Shpitser (2024).
+An automated approach to causal inference in discrete settings.
+\emph{Journal of the American Statistical Association} 119(547), 1778--1793.
+\url{https://doi.org/10.1080/01621459.2023.2216909}.
+
+\bibitem[Dahl, Huber, and Mellace(2023)]{DahlHuberMellace2023}
+Dahl, C. M., M. Huber, and G. Mellace (2023).
+It is never too LATE: a new look at local average treatment effects with or
+without defiers.
+\emph{The Econometrics Journal} 26(3), 378--404.
+\url{https://doi.org/10.1093/ectj/utad013}.
+
+\bibitem[de Chaisemartin(2017)]{DeChaisemartin2017}
+de Chaisemartin, C. (2017).
+Tolerating defiance? Local average treatment effects without monotonicity.
+\emph{Quantitative Economics} 8(2), 367--396.
+\url{https://doi.org/10.3982/QE601}.
+
+\bibitem[Gabriel, Sachs, and Sjolander(2023)]{GabrielSachsSjolander2023}
+Gabriel, E. E., M. C. Sachs, and A. Sjolander (2023).
+Sharp nonparametric bounds for decomposition effects with two binary mediators.
+\emph{Journal of the American Statistical Association}.
+
+\bibitem[Imbens and Angrist(1994)]{ImbensAngrist1994}
+Imbens, G. W. and J. D. Angrist (1994).
+Identification and estimation of local average treatment effects.
+\emph{Econometrica} 62(2), 467--475.
+\url{https://www.jstor.org/stable/2951620}.
+
+\bibitem[Levis et al.(2025)]{LevisBonviniZengKeeleKennedy2025}
+Levis, A. W., M. Bonvini, J. Zeng, L. Keele, and E. H. Kennedy (2025).
+Covariate-assisted bounds on causal effects with instrumental variables.
+\emph{Journal of the Royal Statistical Society: Series B}.
+\url{https://doi.org/10.1093/jrsssb/qkaf028}.
+
+\bibitem[Manski(1990)]{Manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review} 80(2), 319--323.
+
+\bibitem[Manski and Pepper(2000)]{ManskiPepper2000}
+Manski, C. F. and J. V. Pepper (2000).
+Monotone instrumental variables: With an application to the returns to schooling.
+\emph{Econometrica} 68(4), 997--1010.
+
+\bibitem[Mourifie and Wan(2017)]{MourifieWan2017}
+Mourifie, I. and Y. Wan (2017).
+Testing local average treatment effect assumptions.
+\emph{Review of Economics and Statistics} 99(2), 305--313.
+
+\bibitem[Noack(2021)]{Noack2021}
+Noack, C. (2021).
+Sensitivity analysis without assumptions.
+\emph{arXiv:2106.06421}.
+\url{https://doi.org/10.48550/arXiv.2106.06421}.
+
+\bibitem[Picchetti(2026)]{Picchetti2026}
+Picchetti, F. (2026).
+Monotonicity and independence relaxations in instrumental-variable bounds.
+\emph{arXiv:2603.25529}.
+\url{https://doi.org/10.48550/arXiv.2603.25529}.
+
+\bibitem[Richardson and Robins(2010)]{RichardsonRobins2010}
+Richardson, T. S. and J. M. Robins (2010).
+Analysis of the binary instrumental variable model.
+\emph{Heuristics, Probability and Causality / University of Washington Working Paper}.
+\url{https://csss.uw.edu/files/working-papers/2010/wp99.pdf}.
+
+\bibitem[Sachs et al.(2023)]{SachsJonzonSjolanderGabriel2023}
+Sachs, M. C., G. Jonzon, A. Sjolander, and E. E. Gabriel (2023).
+A general method for deriving tight symbolic bounds on causal effects.
+\emph{Journal of Computational and Graphical Statistics} 32(2), 567--576.
+\url{https://doi.org/10.1080/10618600.2022.2071905}.
+
+\bibitem[Swanson et al.(2018)]{SwansonHernanMillerRobinsRichardson2018}
+Swanson, S. A., M. A. Hernan, M. Miller, J. M. Robins, and T. S. Richardson (2018).
+Partial identification of the average treatment effect using instrumental
+variables: Review of methods for binary instruments, treatments, and outcomes.
+\emph{Journal of the American Statistical Association} 113(522), 933--947.
+\url{https://doi.org/10.1080/01621459.2018.1434530}.
+
+\bibitem[Yap(2022)]{Yap2022}
+Yap, R. (2022).
+Bounds on policy relevant treatment effects without monotonicity.
+\emph{Princeton Industrial Relations Section Working Paper}.
+\url{http://arks.princeton.edu/ark:/88435/dsp015d86p341p}.
+\end{thebibliography}
+
+\end{document}

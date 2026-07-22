@@ -1,0 +1,176 @@
+\section{Appendix: proofs and auxiliary lemmas}
+
+This appendix records the auxiliary statements used to assemble the upper and lower risk bounds in \cref{obj:thm:sharp-minimax-fixed-interior} and~\cref{obj:thm:overlap-adaptive-universal-hybrid}. The organizing distinction is the one built into \cref{obj:def:hybrid-estimator-handle}: pilot-certified heavy categories are handled by empirical ratios, while pilot-certified light categories are handled by polynomial continuation and factorial moments. The statements below are given as mathematical inputs to the main theorems, with external approximation and minimax ingredients cited where they enter.
+
+The light-cell part is where the logarithmic factor enters the upper bound. Polynomial approximation of nonsmooth distribution functionals has long been used to improve over direct plug-in estimators in large-alphabet problems \citep{Paninski2003,Valiant2011,Valiant2017,Orlitsky2016,JiaoVenkatHanWeissman2015,WuYang2016,HanJiaoWeissman2015,HanJiaoWeissman2020,WuYang2019}. Here the same principle is applied to the homogeneous four-cell contribution in \cref{obj:def:cell-functional}. The factorial-moment representation in \cref{obj:def:hybrid-estimator-handle} turns the polynomial \(P_{M,B}\) into an estimable light-category contribution without dividing by the small empirical treatment counts that make naive ratios unstable.
+
+\begin{lemmav}{lem:light-cell-polynomial}[Light-Cell Polynomial Rate]
+Fix an overlap constant \(\epsilon\) with \(0<\epsilon\le 1/2\). The hybrid estimator is computable in the real-arithmetic model: there is a universal operation-count constant \(K>0\) such that, for every \(n\) and \(d\), a real-arithmetic program reading the hybrid count vector returns \(\widehat\tau_n^{\mathrm{hyb}}\) exactly and uses at most \(K d M(n)^4\) arithmetic and comparison operations.
+
+Moreover, there exist constants \(C_\epsilon,c_\epsilon>0\), depending only on \(\epsilon\), such that for every sample size \(n\), alphabet size \(d\), law \(P\) on \(\{1,\ldots,d\}\times\{0,1\}\times\{0,1\}\), and sample law \(P^{\otimes n}\in\mathcal E_{n,d,\epsilon}\) as in \cref{obj:def:experiment-class}, if
+\[
+d\le c_\epsilon n\log n,
+\]
+then the light-cell contribution satisfies
+\[
+E_{P^{\otimes n}}\left[\left\{\widehat T_{\mathcal L}-\sum_{k\in\widehat{\mathcal L}_n}\phi(q_k)\right\}^2\right]
+\le
+C_\epsilon\left\{\frac{1}{n}+\frac{d^2}{n^2(\log n)^2}\right\}.
+\]
+\end{lemmav}
+
+\cref{obj:lem:light-cell-polynomial} has two roles. Its computability clause gives an explicit finite algorithm whose operation count is polynomial in the approximation degree after the split counts are formed. Its risk clause controls the stochastic error and approximation bias of the light side at the target scale. The degree \(M(n)\asymp \log n\) is what produces the denominator \((\log n)^2\) in the squared nonparametric term.
+
+The pilot split must classify categories well enough that the two estimators are used on their intended mass ranges. The next statement gives the required sandwich: pilot-heavy categories have population mass above a lower threshold, while pilot-light categories have population mass below an upper threshold, except on an event whose probability is polynomially small.
+
+\begin{lemmav}{lem:pilot-sandwich}[Pilot Sandwich Bound]
+Let \(L=\log(en)\). For a sample satisfying \cref{obj:ass:iid-sampling} with single-observation law \(P\), let \(\widehat{\mathcal H}\) be the pilot heavy set at threshold \(t\), let \(\widehat{\mathcal L}=\widehat{\mathcal H}^{c}\), and write \(m_0=|I_0|\), \(B_-=tL/(2m_0)\), and \(B_+=2tL/m_0\).
+
+For every \(K>0\) and \(c>0\), there exist constants \(t_0>0\), \(C>0\), and an integer cutoff \(N\) such that the following holds. If
+\begin{itemize}
+\item \textbf{(Threshold.)} \(t\ge t_0\);
+\item \textbf{(Sample size.)} \(n\ge N\);
+\item \textbf{(Dimension.)} \(d\) is a nonnegative integer;
+\item \textbf{(Law.)} \(P\) is a law on the finite observation alphabet \(\{1,\ldots,d\}\times\{0,1\}\times\{0,1\}\);
+\item \textbf{(Growth.)} \(d\le c\,n\,L\);
+\item \textbf{(Sampling.)} the sample law satisfies \cref{obj:ass:iid-sampling} with single-observation law \(P\),
+\end{itemize}
+then
+\[
+\Pr\!\left(\widehat{\mathcal H}\not\subseteq\{k:p_k\ge B_-\}\ \text{or}\ \widehat{\mathcal L}\not\subseteq\{k:p_k\le B_+\}\right)
+\le C n^{-K}.
+\]
+
+Moreover, for every \(c>0\), there exist \(C>0\) and an integer cutoff \(N\) such that the following holds with \(t=256\). If
+\begin{itemize}
+\item \textbf{(Sample size.)} \(n\ge N\);
+\item \textbf{(Dimension.)} \(d\) is a nonnegative integer;
+\item \textbf{(Law.)} \(P\) is a law on the finite observation alphabet \(\{1,\ldots,d\}\times\{0,1\}\times\{0,1\}\);
+\item \textbf{(Growth.)} \(d\le c\,n\,L\);
+\item \textbf{(Sampling.)} the sample law satisfies \cref{obj:ass:iid-sampling} with single-observation law \(P\),
+\end{itemize}
+then
+\[
+\Pr\!\left(\widehat{\mathcal H}\not\subseteq\{k:p_k\ge 256L/(2m_0)\}\ \text{or}\ \widehat{\mathcal L}\not\subseteq\{k:p_k\le 512L/m_0\}\right)
+\le C n^{-4}.
+\]
+\end{lemmav}
+
+The constants in \cref{obj:lem:pilot-sandwich} are deliberately one-sided. The estimator uses the stated separation to justify ratio bounds on the heavy side and polynomial bounds on the light side. The special threshold \(t=256\) is the calibration used in \cref{obj:def:hybrid-estimator-handle}.
+
+Once the pilot split supplies that separation, the heavy categories can be treated by ordinary ratio estimation. Overlap controls the arm-specific denominators in population, and the pilot event keeps the selected category masses large enough for the second-split empirical ratios to have the required mean-squared error.
+
+\begin{lemmav}{lem:universal-heavy-cell-rate}[Heavy Cell Rate]
+For every \(0<\epsilon<1/2\), there exist constants \(C_\epsilon,\rho_\epsilon>0\) and an integer \(N_\epsilon<\infty\) such that the following holds.  For every \(n,d\in\mathbb N\), every single-observation law \(P\) on \(\{1,\ldots,d\}\times\{0,1\}\times\{0,1\}\), and every sample law \(\mu_n\), assume:
+\begin{itemize}
+\item \textbf{(Sample size.)} \(n\ge N_\epsilon\).
+\item \textbf{(Dimension growth.)} \(d\le \rho_\epsilon n\log n\).
+\item \textbf{(Experiment class.)} \(\mu_n=P^{\otimes n}\) belongs to \(\mathcal E_{n,d,\epsilon}\) in the sense of \cref{obj:def:experiment-class}.
+\end{itemize}
+Then
+\[
+\int \left(\widehat T_{\mathcal H}-\sum_{k\in\widehat{\mathcal H}_n}\phi(q_k)\right)^2\,d\mu_n
+\le
+C_\epsilon\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}.
+\]
+\end{lemmav}
+
+\cref{obj:lem:universal-heavy-cell-rate} matches the light-cell rate from \cref{obj:lem:light-cell-polynomial}. Combining the two controls the untruncated sum \(\widehat T_{\mathcal H}+\widehat T_{\mathcal L}\); the final truncation in \cref{obj:def:hybrid-estimator-handle} cannot increase squared error against an ATE lying in the binary-outcome range.
+
+The lower bound is transferred from the one-sided subclass in which only treated conditional means vary. This subclass is contained in the observational ATE experiment class and identifies the same hard functional through \(\tau(P)\). The external minimax input is the fixed-sample large-alphabet lower bound of \citet{ZengBalakrishnanHanKennedy2024}; standard lower-bound comparisons then pass it to \cref{obj:def:minimax-risk}, in the same spirit as classical minimax reductions \citep{Tsybakov2009,CaiLow2011}.
+
+\begin{lemmav}{lem:ate-lower-bound-transfer}[ATE Minimax Lower Bound]*
+For any \(0<\epsilon<1/2\), let \(\mathsf R_{n,d,\epsilon}\) denote the minimax mean-squared-error risk of \cref{obj:def:minimax-risk}. There exist constants \(a_\epsilon,b_\epsilon\in\mathbb R\) and a natural-number cutoff \(N_\epsilon\) such that \(a_\epsilon>0\), \(b_\epsilon>0\), and for every \(n,d\in\mathbb N\) with \(d>0\), \(n\ge N_\epsilon\), and
+\[
+d\le b_\epsilon n\log n,
+\]
+one has
+\[
+\mathsf R_{n,d,\epsilon}
+\ge
+a_\epsilon\left\{\frac{1}{n}+\frac{d^2}{n^2(\log n)^2}\right\}.
+\]
+\end{lemmav}
+% CAUSALSMITH-CITED-SCOPE-BEGIN lem:ate-lower-bound-transfer
+\verificationfootnote{\textbf{Formalization scope.} This result uses the published conclusion \citep{ZengBalakrishnanHanKennedy2024} (Theorem 2; Appendix C.5; Lemma 4; Appendix D.2). The cited source proof is not formalized here: Lean verifies its use and all remaining steps. If that cited conclusion is false, the portions of this result that depend on it are not certified.}
+% CAUSALSMITH-CITED-SCOPE-END lem:ate-lower-bound-transfer
+
+\cref{obj:lem:ate-lower-bound-transfer} is the only auxiliary statement in this section whose substantive lower-bound scale is imported from the published large-alphabet ATE construction \citep{ZengBalakrishnanHanKennedy2024}. Its conclusion is stated directly for the minimax risk in \cref{obj:def:minimax-risk}, so it can be paired with the hybrid upper bound without changing the experiment class.
+
+The remaining statements describe the randomized endpoint and the envelope near it. At exact randomization, treatment assignment carries no category-specific imbalance, and the centered linear estimator in \cref{obj:def:centered-estimator} becomes the natural comparison estimator.
+
+\begin{lemmav}{lem:near-randomization-linear-upper}[Centered Linear MSE Bound]
+For any \(n,d\in\mathbb N\), any \(\epsilon\in\mathbb R\), any single-observation law \(P\), and any sample law \(\mu_n\), suppose that
+\begin{itemize}
+\item \textbf{(Sample size.)} \(n>0\).
+\item \textbf{(Experiment class.)} \(\mu_n\) belongs to the experiment class \(\mathcal E_{n,d,\epsilon}\) generated by \(P\), as in \cref{obj:def:experiment-class}.
+\end{itemize}
+Define
+\[
+\widehat\tau_{\mathrm{ctr}}
+=
+\frac1n\sum_{i=1}^n
+2(2A_i-1)\left(Y_i-\frac12\right).
+\]
+Then, with \(\tau(P)\) as in \cref{obj:def:ate-functional},
+\[
+\mathbb E_{\mu_n}\left[\left(\widehat\tau_{\mathrm{ctr}}-\tau(P)\right)^2\right]
+\le
+\frac1n+4\left(\frac12-\epsilon\right)^2.
+\]
+\end{lemmav}
+
+\cref{obj:lem:near-randomization-linear-upper} quantifies the cost of using the centered estimator away from exact randomization. The variance term is parametric, while the bias term is controlled by the distance from \(\epsilon=1/2\). This bound complements the fixed-interior hybrid analysis in overlap classes close to randomized treatment.
+
+A matching parametric lower bound at the endpoint follows already from a one-category binary-outcome subproblem.
+
+\begin{lemmav}{lem:one-category-bernoulli-lower}[Bernoulli Randomization Lower Bound]
+For every \(n,d\in\mathbb N\) with \(n>0\) and \(d>0\), the minimax mean-squared-error risk \(\mathsf R_{n,d,1/2}\) of \cref{obj:def:minimax-risk} satisfies
+\[
+\mathsf R_{n,d,1/2}\ge \frac{1}{100n}.
+\]
+\end{lemmav}
+
+The one-category reduction in \cref{obj:lem:one-category-bernoulli-lower} removes the large-alphabet feature entirely, leaving the ordinary difficulty of estimating a Bernoulli mean contrast under randomized assignment. Combining it with the centered-estimator upper bound gives the endpoint bracket.
+
+\begin{lemmav}{lem:randomized-endpoint-minimax}[Randomized Endpoint Minimax Risk]
+For every \(n,d\in\mathbb N\) with \(n>0\) and \(d>0\), the minimax mean-squared-error risk of \cref{obj:def:minimax-risk} at exact randomization satisfies
+\[
+\frac{1}{100n}\le \mathsf R_{n,d,1/2}\le \frac{1}{n}.
+\]
+\end{lemmav}
+
+\cref{obj:lem:randomized-endpoint-minimax} shows that the endpoint \(\epsilon=1/2\) is qualitatively different from the fixed-interior large-alphabet problem: uniformly in \(d\), the risk remains of order \(n^{-1}\). The next lemma combines this observation with the hybrid upper bound through the oracle-calibrated selected estimator introduced in \cref{obj:def:selected-estimator}.
+
+\begin{lemmav}{lem:combined-upper-envelope}[Combined Upper Envelope]
+Fix constants \(\epsilon,C_\epsilon,\rho_\epsilon\in\mathbb R\) and \(N_\epsilon\in\mathbb N\). Assume:
+\begin{itemize}
+\item \textbf{(Interior overlap.)} \(0<\epsilon<1/2\).
+\item \textbf{(Positive constants.)} \(C_\epsilon>0\) and \(\rho_\epsilon>0\).
+\item \textbf{(Hybrid bound.)} For every \(n,d\in\mathbb N\), if \(0<n\), \(N_\epsilon\le n\), and \(d\le \rho_\epsilon n\log n\), then the hybrid estimator \(\widehat\tau_n^{\mathrm{hyb}}\) of \cref{obj:def:hybrid-estimator-handle} satisfies
+\[
+\sup_{P^{\otimes n}\in\mathcal E_{n,d,\epsilon}}
+\mathbb E_{P^{\otimes n}}\!\left[\left(\widehat\tau_n^{\mathrm{hyb}}-\tau(P)\right)^2\right]
+\le
+C_\epsilon\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}.
+\]
+\end{itemize}
+Then for every \(n,d\in\mathbb N\) with \(0<n\), \(N_\epsilon\le n\), and \(d\le \rho_\epsilon n\log n\), let \(K_\epsilon=\max\{C_\epsilon,4\}\). Define the \(C_\epsilon,\epsilon\)-dependent selected estimator \(\widehat\tau^{\mathrm{sel}}_{C_\epsilon,\epsilon}\) to be \(\widehat\tau_n^{\mathrm{hyb}}\) when
+\[
+C_\epsilon\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}
+\le
+\frac1n+4(1/2-\epsilon)^2
+\]
+and to be \(\widehat\tau_{\mathrm{ctr}}\) otherwise. This selected estimator satisfies
+\[
+\sup_{P^{\otimes n}\in\mathcal E_{n,d,\epsilon}}
+\mathbb E_{P^{\otimes n}}\!\left[\left(\widehat\tau^{\mathrm{sel}}_{C_\epsilon,\epsilon}-\tau(P)\right)^2\right]
+\le
+K_\epsilon\left[
+\frac1n+
+\min\left\{\frac{d^2}{n^2(\log n)^2},(1/2-\epsilon)^2\right\}
+\right].
+\]
+\end{lemmav}
+
+\cref{obj:lem:combined-upper-envelope} formalizes the oracle-calibrated deterministic upper-envelope comparison between the fixed-interior hybrid estimator and the centered near-randomization estimator. Consequently, \cref{obj:thm:overlap-adaptive-universal-hybrid} gives a theoretical risk guarantee near \(\epsilon=1/2\). Data-driven adaptation and the sharp triangular-array minimax transition are identified as future directions in the limitations section.

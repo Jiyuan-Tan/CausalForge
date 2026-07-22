@@ -1,0 +1,1517 @@
+{
+  "commit": "6e3ba5a09e998cb7c7b15f45d6a11634157a62aa",
+  "groups": [
+    {
+      "kind": "setup",
+      "items": [
+        {
+          "obj_id": "S1",
+          "kind": "setup",
+          "label": "Setup S-1",
+          "nl": "Deterministic triangular-array collapsed cohort-by-time Poisson-projection world: cohorts g in C encoded as WithTop (Fin T) (never-treated = top), calendar periods t in Fin T, cohort-time cells carry positive masses q_gt / q_gtN, untreated cohort means B_gt = bar_b_g*exp(gamma_t0), observed cohort means m_gt(delta) = B_gt*exp(D_gt*delta_gt), collapsed regressor r_gt in R^(|C|+T), and the Poisson pseudo-criteria L_Nc / L. This is the ambient world of every headline statement (all six operate on the limiting/finite-array collapsed quantities). — bypass-justified: Causalean has NO Poisson/PPML world (grep 'Poisson|PPML|expMean|multiplicative' over Causalean/ returns only unrelated concentration/minimax/ML modules; grep over Causalean/Panel/ returns 0). The nonlinear pseudo-likelihood criteria L_Nc/L, their unique maximizers, strict concavity/coercivity, and the fitted means mu_star are all bespoke finite-dimensional convex analysis built over Mathlib (Fin, WithTop, Real.exp, StrictConcaveOn, IsCompact.exists_isMaxOn). REUSED building blocks: the cohort/never-treated encoding is Causalean.Panel.AdoptionPath (WithTop (Fin T), le/lt/isNeverTreated, verified present); the mean-weighted-FWL residual layer (see def:weighted-fwl-residual) reuses Causalean.Panel.Weighted.WeightedSupport.{tildeX,Q_XX,thetaHat,RankCondition} (Subspace/FWL), and thm:sharp additionally reuses WeightedSupport.scalar_fwl_of_normalEqs (ScalarFWL.lean:74) for the normal-equation FWL coefficient ratio in the IFT derivative step. No single Causalean structure realizes this world, so the world skeleton itself is define-local with those helpers imported.",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "S2",
+          "kind": "setup",
+          "label": "Setup S-2",
+          "nl": "Finite-N unit-and-time fixed-effect Poisson panel with potential outcomes: units i in Fin N with deterministic cohort labels G_i in C (n_gN units per cohort), unit baselines b_iN>0, unit-time regressor v_itN in R^(N+T) (intercept, unit-FE, time-FE, treatment D_it), unit-time observed mean m_itN(delta)=b_iN*exp(gamma_t0+D_it*delta_{G_i,t}), the unit-FE Poisson criterion L_N and its beta coordinate beta_Nstar, and the extended-MLE sample coefficient hat_beta_N. Potential outcomes Y_it(d) and the array sampling law Pcal_N with expectation E_Pcal_N enter ONLY through the two mean-defining assumptions. — bypass-justified: honest_scope disclaims all sampling/inference content (no fixed-T consistency, influence function, variance, or coverage claim). The probability layer is therefore not needed at theorem level: the two PO assumptions (ass:unit-untreated-exponential-mean, ass:proportional-effects) pin E_Pcal_N[Y_it(d)] to the deterministic mean m_itN(delta), and every downstream statement consumes m_itN, not the law. E_Pcal_N is treated as an abstract linear expectation functional / the means as primitives over Mathlib (no MeasureTheory import required). REUSED: unit-time assignment/history from Causalean.Panel.PO.TreatmentPath and cohort encoding from Causalean.Panel.AdoptionPath. Causalean's PO probability spaces are at a heavier (measure-theoretic) abstraction than this purely-algebraic mean-level statement, so binding is define-local.",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        }
+      ]
+    },
+    {
+      "kind": "definition",
+      "items": [
+        {
+          "obj_id": "def:unit-fe-population-projection",
+          "kind": "definition",
+          "label": "Definition P-1",
+          "nl": "beta_Nstar(delta) is the last coordinate of argmax_{theta_N in R^(N+T)} L_N(theta_N;delta), where L_N(theta_N;delta)=(NT)^(-1)sum_{i=1}^Nsum_{t=1}^T[m_itN(delta)v_itN'theta_N-exp(v_itN'theta_N)].",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.betaNStar",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:collapsed-population-projection",
+          "kind": "definition",
+          "label": "Definition P-2",
+          "nl": "theta_star(delta)=argmax_{theta in R^(|C|+T)}L(theta;delta), L(theta;delta)=sum_{g in C}sum_{t=1}^Tq_gt[m_gt(delta)r_gt'theta-exp(r_gt'theta)], beta_star(delta)=the last coordinate of theta_star(delta), and mu_star_gt(delta)=exp(r_gt'theta_star(delta)).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.collapsedPopulationProjection",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:sample-unit-fe-ppml",
+          "kind": "definition",
+          "label": "Definition P-3",
+          "nl": "Let A_N be the argmax of sum_{i=1}^Nsum_{t=1}^T[Y_it v_itN'theta_N-exp(v_itN'theta_N)] over unit-effect coordinates in R union {-infinity}, time-effect coordinates in R with the period-1 normalization, and beta in R, using exp(-infinity)=0. If A_N contains a point with finite beta, hat_beta_N is its beta coordinate after choosing the finite (time-effect,beta) coordinates of smallest Euclidean norm; otherwise hat_beta_N=0.",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.hatBetaN",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:weighted-fwl-residual",
+          "kind": "definition",
+          "label": "Definition P-4",
+          "nl": "rho_star(delta)=argmin_{rho in R^(|C|+T-1)}sum_{g in C}sum_{t=1}^Tq_gt mu_star_gt(delta)[D_gt-X_gt'rho]^2 and Wtilde_gt(delta)=D_gt-X_gt'rho_star(delta).",
+          "lean": {
+            "file": "Helpers/WeightedFWL.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.weightedFWLResidual",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:global-sign-reversal-region",
+          "kind": "definition",
+          "label": "Definition P-5",
+          "nl": "R_T={((pi_g)_{g in C},(B_gt)_{g in C,1<=t<=T},(delta_gt)_{(g,t):D_gt=1}): C contains {2,3,4,infinity}; B_gt=bar_b_g exp(gamma_t0); delta_gt>0 whenever D_gt=1; sum_{g,t}q_gt r_gt r_gt' is positive definite; and beta_star(delta)<0}.",
+          "lean": {
+            "file": "Helpers/Frontier.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.signReversalRegion",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:four-cohort-witness",
+          "kind": "definition",
+          "label": "Definition P-6",
+          "nl": "W4 is the cofinal triangular subsequence indexed by N=4m, m=1,2,..., with T=4, C={2,3,4,infinity}, n_2N=n_3N=n_4N=n_infinityN=m, b_iN=1 for every i, gamma_t0=0 for every t, delta_gt=log(101/100) for every treated cell except delta_2,4=log(4).",
+          "lean": {
+            "file": "Helpers/Frontier.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.fourCohortWitness",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:frontier-elimination-handle",
+          "kind": "definition",
+          "label": "Definition P-7",
+          "nl": "Define the nuisance-free frontier-elimination polynomial Phi(delta) = M A - sum_{g,t} D_gt R_g C_t, where h_gt = pi_g B_gt exp(D_gt delta_gt), R_g = sum_t h_gt, C_t = sum_g h_gt, M = sum_g R_g, and A = sum_{g,t} D_gt h_gt. The relation between Phi and beta_star(delta) is stated separately by the primitive global frontier theorem.",
+          "lean": {
+            "file": "Helpers/Frontier.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.frontierEliminationHandle",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "assumption",
+      "items": [
+        {
+          "obj_id": "ass:cohort-share-limit",
+          "kind": "assumption",
+          "label": "Assumption A-1",
+          "nl": "For every N>=|C| and every g in C, n_gN is positive and n_gN/N converges to pi_g in (0,1).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.CohortShareLimit",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "ass:unit-untreated-exponential-mean",
+          "kind": "assumption",
+          "label": "Assumption A-2",
+          "nl": "E_Pcal_N[Y_it(0)]=b_iN exp(gamma_t0) for every i and t, with gamma_10=0.",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.UnitUntreatedExponentialMean",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "ass:within-cohort-baseline-limit",
+          "kind": "assumption",
+          "label": "Assumption A-3",
+          "nl": "For every g in C, the deterministic triangular-array average bar_b_gN=n_gN^(-1)sum_{i in I_gN}b_iN converges to bar_b_g in (0,infinity).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.WithinCohortBaselineLimit",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "ass:proportional-effects",
+          "kind": "assumption",
+          "label": "Assumption A-4",
+          "nl": "E_Pcal_N[Y_it(1)]=E_Pcal_N[Y_it(0)] exp(delta_{G_i,t}) for every i and t with D_it=1.",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.ProportionalEffects",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "ass:collapsed-design-rank",
+          "kind": "assumption",
+          "label": "Assumption A-5",
+          "nl": "sum_{g in C}sum_{t=1}^T q_gt r_gt r_gt' is positive definite.",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.CollapsedDesignRank",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "ass:multicohort-frontier-scope",
+          "kind": "assumption",
+          "label": "Assumption A-6",
+          "nl": "C contains {2,3,4,infinity}.",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.MulticohortFrontierScope",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "ass:strict-positive-effects",
+          "kind": "assumption",
+          "label": "Assumption A-7",
+          "nl": "delta_gt>0 for every (g,t) with D_gt=1.",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.StrictPositiveEffects",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "lemma",
+      "items": [
+        {
+          "obj_id": "lem:unit-fe-collapse",
+          "kind": "lemma",
+          "label": "Lemma L-1",
+          "nl": "For every N, the unit-and-time-FE population projection in def:unit-fe-population-projection has a unique beta_Nstar(delta). Its beta_Nstar(delta) equals the beta coordinate of the unique maximizer of L_Nc(theta;delta). Consequently, beta_Nstar(delta) converges to beta_star(delta). Thus within-cohort baseline heterogeneity (b_iN) enters the limiting unit-FE coefficient only through B_gtN=n_gN^(-1)sum_{i in I_gN}b_iN exp(gamma_t0).",
+          "lean": {
+            "file": "Collapse.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.unit_fe_collapse",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lem:pseudo-true-ppml-projection",
+          "kind": "lemma",
+          "label": "Lemma L-2",
+          "nl": "The limiting projection theta_star(delta) is unique and satisfies sum_{g in C}sum_{t=1}^Tq_gt r_gt[m_gt(delta)-mu_star_gt(delta)]=0.",
+          "lean": {
+            "file": "Projection.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.pseudo_true_ppml_projection",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "theorem",
+      "items": [
+        {
+          "obj_id": "thm:sharp-ppml-forbidden-sign",
+          "kind": "theorem",
+          "label": "Theorem T-1",
+          "nl": "For the limiting coefficient beta_star(delta) of the unit-and-time-FE Poisson projection, at every delta satisfying the assumptions and for every treated cell (k,s), beta_star(delta) is differentiable in delta_ks and d beta_star(delta)/d delta_ks=q_ks B_ks exp(delta_ks) Wtilde_ks(delta)/[sum_{g in C}sum_{t=1}^Tq_gt mu_star_gt(delta)Wtilde_gt(delta)^2]. The denominator is strictly positive. Hence sign{d beta_star(delta)/d delta_ks}=sign{Wtilde_ks(delta)}, and a treated cell is a forbidden comparison cell if and only if Wtilde_ks(delta)<0. Both Wtilde and its sign depend on delta through mu_star.",
+          "lean": {
+            "file": "ForbiddenSign.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.sharp_ppml_forbidden_sign",
+            "decl_kind": "theorem",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "prop:four-cohort-sign-reversal",
+          "kind": "theorem",
+          "label": "Theorem T-2",
+          "nl": "The explicitly constructed W4 belongs to R_4. In particular, every treated cell has a strictly positive proportional effect, the exceptional cell (2,4) has the largest effect, and beta_star(delta)<0. At b_iN=1 and delta_gt=0 for all treated cells, Wtilde_gt equals the matrix with rows g=2,3,4,infinity and columns t=1,2,3,4: [(-3,3,1,-1),(-1,-3,3,1),(1,-1,-3,3),(3,1,-1,-3)]/8. Thus Wtilde_2,4=-1/8 and d beta_star(delta)/d delta_2,4<0 at the homogeneous no-effect point; continuity gives an open positive-effect neighborhood in which increasing the late effect of the earliest cohort strictly lowers beta_star.",
+          "lean": {
+            "file": "FourCohort.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.four_cohort_sign_reversal",
+            "decl_kind": "theorem",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "prop:homogeneous-effect-reduction",
+          "kind": "theorem",
+          "label": "Theorem T-3",
+          "nl": "If delta_gt=delta_0 for every treated cell, then beta_star(delta)=delta_0 and mu_star_gt(delta)=B_gt exp(D_gt delta_0).",
+          "lean": {
+            "file": "Homogeneous.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.homogeneous_effect_reduction",
+            "decl_kind": "theorem",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "thm:primitive-global-frontier",
+          "kind": "theorem",
+          "label": "Theorem T-4",
+          "nl": "For h_gt=pi_g B_gt exp(D_gt delta_gt), define R_g=sum_{t=1}^T h_gt, C_t=sum_{g in C}h_gt, M=sum_{g in C}sum_{t=1}^T h_gt, A=sum_{g in C}sum_{t=1}^T D_gt h_gt, and Phi=M A-sum_{g in C}sum_{t=1}^T D_gt R_g C_t. Then sign{beta_star(delta)}=sign(Phi). In particular beta_star(delta)=0 if and only if Phi=0, so the requested zero-level set is the finite primitive system Phi>=0 and -Phi>=0, with no pseudo-true intercept, cohort, or time multiplier retained; subject to the defining positive-effect, baseline, share, and rank restrictions, R_T is exactly Phi<0. In the T=4, C={2,3,4,infinity}, equal-share, unit-baseline subfamily having treated multiplier x>1 outside (2,4) and multiplier y>1 at (2,4), Phi=(5x^2+12x-2y-15)/16, so beta_star<0 if and only if y>(5x^2+12x-15)/2; at x=101/100 the sharp cutoff is 4441/4000, and W4 has y=4. Operationally, let H={(g,t):D_gt=1}, Bobs_gt=m_g1 m_infinity,t/m_infinity,1, Z=sum_H q_gt Bobs_gt, omega_gt=q_gt Bobs_gt/Z, tau_gt=m_gt/Bobs_gt-1, and PTT=sum_H omega_gt tau_gt. Under the multiplicative-parallel-trends and proportional-effect assumptions, Bobs_gt=B_gt, tau_gt=exp(delta_gt)-1, every omega_gt is positive and the weights sum to one, and PTT=(sum_H q_gt m_gt)/(sum_H q_gt Bobs_gt)-1. Thus with positive effects, Phi<0 implies beta_star<0<PTT: Phi diagnoses the pooled PPML coefficient as an unsafe causal summary, while granular tau_gt and their counterfactual-share PTT form a distinct identified causal target, not a correction or reinterpretation of beta_star. This population result makes no fixed-T sampling or inference claim for hat_beta_N.",
+          "lean": {
+            "file": "PrimitiveFrontier.lean",
+            "decl": "CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.primitive_global_frontier",
+            "decl_kind": "theorem",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "auxiliary",
+      "items": [
+        {
+          "obj_id": "poissonCell_linear_coercive_bound",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.poissonCell_linear_coercive_bound",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "poissonCell_strictConcave_midpoint",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.poissonCell_strictConcave_midpoint",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "finitePoissonObjective",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.finitePoissonObjective",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "finitePoissonObjective_continuous",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.finitePoissonObjective_continuous",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "finitePoissonObjective_exists_unique_max",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.finitePoissonObjective_exists_unique_max",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "finitePoissonObjective_score",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.finitePoissonObjective_score",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "collapsedDesignMap",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.collapsedDesignMap",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "limitingCriterion_eq_finitePoissonObjective",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.limitingCriterion_eq_finitePoissonObjective",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "tendsto_argmax_of_eventually_mem_compact",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.tendsto_argmax_of_eventually_mem_compact",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "finitePoissonObjective_tendstoUniformlyOn",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.finitePoissonObjective_tendstoUniformlyOn",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "finitePoissonObjective_eventually_common_compact",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.finitePoissonObjective_eventually_common_compact",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "finitePoissonObjective_argmax_tendsto",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.finitePoissonObjective_argmax_tendsto",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "finiteCollapsedCriterion_eq_finitePoissonObjective",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.finiteCollapsedCriterion_eq_finitePoissonObjective",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "collapsedDesignMap_injective",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.collapsedDesignMap_injective",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "finiteCollapsedCriterion_exists_unique_max",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.finiteCollapsedCriterion_exists_unique_max",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "unitLevel",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.unitLevel",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "unitTimeLevel",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.unitTimeLevel",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "unitIndex_eq_levels",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.unitIndex_eq_levels",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "collapsedCohortLevel",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.collapsedCohortLevel",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "collapsedTimeLevel",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.collapsedTimeLevel",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "collapsedIndex_eq_levels",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.collapsedIndex_eq_levels",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "unitDesignMap",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.unitDesignMap",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "unitDesignMap_injective",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.unitDesignMap_injective",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "unitCriterion_eq_finitePoissonObjective",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.unitCriterion_eq_finitePoissonObjective",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "liftCollapsedParameter",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.liftCollapsedParameter",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "unitIndex_liftCollapsedParameter",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.unitIndex_liftCollapsedParameter",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sum_baselineRatio_within_cohort",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.sum_baselineRatio_within_cohort",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sum_baselineRatio_fiberwise",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.sum_baselineRatio_fiberwise",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sum_units_by_supported_cohort",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.sum_units_by_supported_cohort",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "aggregateUnitDirection",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.aggregateUnitDirection",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "collapsedIndex_aggregateUnitDirection",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.collapsedIndex_aggregateUnitDirection",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "unitResidual_liftCollapsedParameter",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.unitResidual_liftCollapsedParameter",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "unitScore_eq_collapsedScore",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.unitScore_eq_collapsedScore",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "uniqueGlobalMax_maximizerOrZero",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.uniqueGlobalMax_maximizerOrZero",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "finite_unit_and_collapsed_unique_beta",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.finite_unit_and_collapsed_unique_beta",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "selectedFiniteCollapsed_tendsto",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.selectedFiniteCollapsed_tendsto",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "finitePoissonObjective_isMax_of_score",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.finitePoissonObjective_isMax_of_score",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "fwlEnergy_pos_of_collapsedDesignRank",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.fwlEnergy_pos_of_collapsedDesignRank",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "expCellUpdatedMean",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.expCellUpdatedMean",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "finitePoissonObjective_expCell_argmax_snd_hasDerivAt",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.finitePoissonObjective_expCell_argmax_snd_hasDerivAt",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "betaStar_update_hasDerivAt",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.betaStar_update_hasDerivAt",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "linearizedScore_snd_eq_weightedFWL",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.linearizedScore_snd_eq_weightedFWL",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "frontierPrimitiveH_pos",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.frontierPrimitiveH_pos",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "frontierPrimitiveRow_pos",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.frontierPrimitiveRow_pos",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "frontierPrimitiveColumn_pos",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.frontierPrimitiveColumn_pos",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "frontierPrimitiveTotal_pos",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.frontierPrimitiveTotal_pos",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "frontierPrimitiveColumn_sum",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.frontierPrimitiveColumn_sum",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "frontierNuisanceParameter",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.frontierNuisanceParameter",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "frontierNuisanceParameter_index",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.frontierNuisanceParameter_index",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "frontierNuisanceParameter_exp",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.frontierNuisanceParameter_exp",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "frontierConditionalResidual",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.frontierConditionalResidual",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "frontierConditionalResidual_eq",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.frontierConditionalResidual_eq",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "frontierConditionalResidual_row_sum",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.frontierConditionalResidual_row_sum",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "frontierConditionalResidual_column_sum",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.frontierConditionalResidual_column_sum",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "frontierConditionalNuisanceScore",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.frontierConditionalNuisanceScore",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "frontierConditionalScalarScore",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.frontierConditionalScalarScore",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "betaStar_sign_frontierEliminationHandle",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.betaStar_sign_frontierEliminationHandle",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "primitiveLimitingCriterion_restrict",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.primitiveLimitingCriterion_restrict",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "primitiveBetaStar_restrict",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.primitiveBetaStar_restrict",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "cohortShareLimit_sum_eq_one",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.cohortShareLimit_sum_eq_one",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "finitePoissonObjective_snd_sign_of_nuisance_score",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.finitePoissonObjective_snd_sign_of_nuisance_score",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "finitePoissonObjective_argmax_continuousAt_mean",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.finitePoissonObjective_argmax_continuousAt_mean",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "weightedFWLResidual_continuousAt_effects",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Panel.PANEL_PpmlForbiddenComparison_Research.weightedFWLResidual_continuousAt_effects",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "symbol",
+      "items": [
+        {
+          "obj_id": "sym:j",
+          "kind": "symbol",
+          "label": "j",
+          "nl": "realized by UnitDummy",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:t",
+          "kind": "symbol",
+          "label": "t",
+          "nl": "realized by PeriodIndex, UnitParameter",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:s",
+          "kind": "symbol",
+          "label": "s",
+          "nl": "realized by PeriodIndex, UnitParameter",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:u",
+          "kind": "symbol",
+          "label": "u",
+          "nl": "realized by PeriodIndex",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:i",
+          "kind": "symbol",
+          "label": "i",
+          "nl": "realized by UnitIndex",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:T",
+          "kind": "symbol",
+          "label": "T",
+          "nl": "realized by UnitParameter, ValidPanelHorizon, unit_fe_collapse, primitive_global_frontier",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:C",
+          "kind": "symbol",
+          "label": "C",
+          "nl": "realized by UnitParameter, ValidCohortSupport, unit_fe_collapse, primitive_global_frontier",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:g",
+          "kind": "symbol",
+          "label": "g",
+          "nl": "realized by UnitParameter",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:k",
+          "kind": "symbol",
+          "label": "k",
+          "nl": "realized by UnitParameter",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:D_gt",
+          "kind": "symbol",
+          "label": "D_gt",
+          "nl": "realized by treatmentIndicator",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:n_gN",
+          "kind": "symbol",
+          "label": "n_gN",
+          "nl": "realized by cohortCount, CohortShareLimit, fourCohortCount, fourCohortCount_pos",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:I_gN",
+          "kind": "symbol",
+          "label": "I_gN",
+          "nl": "realized by cohortIndexSet",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:pi_gN",
+          "kind": "symbol",
+          "label": "pi_gN",
+          "nl": "realized by cohortShare, CohortShareLimit",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:pi_gN(positive-count and N>0 domain gives range (0,1])",
+          "kind": "symbol",
+          "label": "pi_gN(positive-count and N>0 domain gives range (0,1])",
+          "nl": "realized by cohortShare_mem_Ioc",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:q_gt",
+          "kind": "symbol",
+          "label": "q_gt",
+          "nl": "realized by limitingCellMass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:q_gtN",
+          "kind": "symbol",
+          "label": "q_gtN",
+          "nl": "realized by finiteCellMass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:bar_b_gN",
+          "kind": "symbol",
+          "label": "bar_b_gN",
+          "nl": "realized by withinCohortBaseline, withinCohortBaseline_pos",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:B_gtN",
+          "kind": "symbol",
+          "label": "B_gtN",
+          "nl": "realized by finiteUntreatedMean, finiteUntreatedMean_pos",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:B_gt",
+          "kind": "symbol",
+          "label": "B_gt",
+          "nl": "realized by untreatedMean, signReversalRegion",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:m_gtN(delta)",
+          "kind": "symbol",
+          "label": "m_gtN(delta)",
+          "nl": "realized by finiteObservedCohortMean, finiteObservedCohortMean_pos",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:m_gt(delta)",
+          "kind": "symbol",
+          "label": "m_gt(delta)",
+          "nl": "realized by observedCohortMean",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:X_gt",
+          "kind": "symbol",
+          "label": "X_gt",
+          "nl": "realized by collapsedNuisanceRegressor",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:r_gt",
+          "kind": "symbol",
+          "label": "r_gt",
+          "nl": "realized by collapsedRegressor",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:L(theta;delta)",
+          "kind": "symbol",
+          "label": "L(theta;delta)",
+          "nl": "realized by limitingCriterion",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:theta",
+          "kind": "symbol",
+          "label": "theta",
+          "nl": "realized by limitingCriterion",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:L_Nc(theta;delta)",
+          "kind": "symbol",
+          "label": "L_Nc(theta;delta)",
+          "nl": "realized by finiteCollapsedCriterion",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:theta_star(delta)",
+          "kind": "symbol",
+          "label": "theta_star(delta)",
+          "nl": "realized by collapsedPopulationProjection",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:beta_star(delta)",
+          "kind": "symbol",
+          "label": "beta_star(delta)",
+          "nl": "realized by betaStar",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:mu_star_gt(delta)",
+          "kind": "symbol",
+          "label": "mu_star_gt(delta)",
+          "nl": "realized by fittedMean",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Omega_N",
+          "kind": "symbol",
+          "label": "Omega_N",
+          "nl": "realized by SamplingLaw",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Pcal",
+          "kind": "symbol",
+          "label": "Pcal",
+          "nl": "realized by SamplingLaw",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:E_Pcal_N",
+          "kind": "symbol",
+          "label": "E_Pcal_N",
+          "nl": "realized by expectationUnder",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:N",
+          "kind": "symbol",
+          "label": "N",
+          "nl": "realized by expectationUnder, fourCohortCount",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:G_i",
+          "kind": "symbol",
+          "label": "G_i",
+          "nl": "realized by expectationUnder, unit_fe_collapse, primitive_global_frontier",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Pcal_N",
+          "kind": "symbol",
+          "label": "Pcal_N",
+          "nl": "realized by expectationUnder",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:D_it",
+          "kind": "symbol",
+          "label": "D_it",
+          "nl": "realized by unitTreatment",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:v_itN",
+          "kind": "symbol",
+          "label": "v_itN",
+          "nl": "realized by unitRegressor",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:theta_N",
+          "kind": "symbol",
+          "label": "theta_N",
+          "nl": "realized by unitIndex",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:b_iN",
+          "kind": "symbol",
+          "label": "b_iN",
+          "nl": "realized by unitObservedMean, fourCohortBaseline",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:gamma_t0",
+          "kind": "symbol",
+          "label": "gamma_t0",
+          "nl": "realized by unitObservedMean, fourCohortGamma",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:delta_gt",
+          "kind": "symbol",
+          "label": "delta_gt",
+          "nl": "realized by unitObservedMean, signReversalRegion, fourCohortDelta",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:m_itN(delta)",
+          "kind": "symbol",
+          "label": "m_itN(delta)",
+          "nl": "realized by unitObservedMean",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:L_N(theta_N;delta)",
+          "kind": "symbol",
+          "label": "L_N(theta_N;delta)",
+          "nl": "realized by unitCriterion",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:beta_Nstar(delta)",
+          "kind": "symbol",
+          "label": "beta_Nstar(delta)",
+          "nl": "realized by betaNStar",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:exp(-infty)",
+          "kind": "symbol",
+          "label": "exp(-infty)",
+          "nl": "realized by extendedExp",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Y_it",
+          "kind": "symbol",
+          "label": "Y_it",
+          "nl": "realized by hatBetaN",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:hat_beta_N",
+          "kind": "symbol",
+          "label": "hat_beta_N",
+          "nl": "realized by hatBetaN",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:pi_g",
+          "kind": "symbol",
+          "label": "pi_g",
+          "nl": "realized by CohortShareLimit, signReversalRegion, fourCohortShare",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Y_it(d)",
+          "kind": "symbol",
+          "label": "Y_it(d)",
+          "nl": "realized by UnitUntreatedExponentialMean",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:bar_b_g",
+          "kind": "symbol",
+          "label": "bar_b_g",
+          "nl": "realized by WithinCohortBaselineLimit, fourCohortLimitBaseline",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Ecal(delta)",
+          "kind": "symbol",
+          "label": "Ecal(delta)",
+          "nl": "realized by fwlEnergy",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:R_T",
+          "kind": "symbol",
+          "label": "R_T",
+          "nl": "realized by signReversalRegion",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Rcal_4",
+          "kind": "symbol",
+          "label": "Rcal_4",
+          "nl": "realized by signReversalRegion",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:W4",
+          "kind": "symbol",
+          "label": "W4",
+          "nl": "realized by fourCohortWitness",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:h_gt",
+          "kind": "symbol",
+          "label": "h_gt",
+          "nl": "realized by primitiveH",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:R_g",
+          "kind": "symbol",
+          "label": "R_g",
+          "nl": "realized by primitiveRow",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:C_t",
+          "kind": "symbol",
+          "label": "C_t",
+          "nl": "realized by primitiveColumn",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:M",
+          "kind": "symbol",
+          "label": "M",
+          "nl": "realized by primitiveTotal",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:A",
+          "kind": "symbol",
+          "label": "A",
+          "nl": "realized by primitiveTreatedTotal",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Phi(delta)",
+          "kind": "symbol",
+          "label": "Phi(delta)",
+          "nl": "realized by frontierEliminationHandle",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:rho_star(delta)",
+          "kind": "symbol",
+          "label": "rho_star(delta)",
+          "nl": "realized by rhoStar",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Wtilde_gt(delta)",
+          "kind": "symbol",
+          "label": "Wtilde_gt(delta)",
+          "nl": "realized by weightedFWLResidual",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:H",
+          "kind": "symbol",
+          "label": "H",
+          "nl": "realized by treatedCells",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Bobs_gt",
+          "kind": "symbol",
+          "label": "Bobs_gt",
+          "nl": "realized by observedCounterfactualBaseline",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:tau_gt",
+          "kind": "symbol",
+          "label": "tau_gt",
+          "nl": "realized by granularTau",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Z",
+          "kind": "symbol",
+          "label": "Z",
+          "nl": "realized by pttNormalizer",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:omega_gt",
+          "kind": "symbol",
+          "label": "omega_gt",
+          "nl": "realized by pttWeight",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:PTT",
+          "kind": "symbol",
+          "label": "PTT",
+          "nl": "realized by counterfactualSharePTT",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    }
+  ]
+}

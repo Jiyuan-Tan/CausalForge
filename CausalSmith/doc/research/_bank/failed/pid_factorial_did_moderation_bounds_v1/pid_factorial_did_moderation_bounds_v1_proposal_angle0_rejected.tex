@@ -1,0 +1,543 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_factorial\_did\_moderation\_bounds, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    (\"REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)\").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_factorial\_did\_moderation\_bounds} / \texttt{v1}%
+  \\ \large\textit{Sharp finite-cell bounds for causal moderation in factorial difference-in-differences under bounded moderator-trend imbalance}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+(qid, specialization) =
+  (pid_factorial_did_moderation_bounds, v1)
+observable distribution P =
+  a finite 2x2 factorial-DID table of observed outcome-change means
+    Delta_gz = E[Delta Y | G=g, Z=z] for g,z in {0,1},
+  with observed effect-modification contrast
+    tau_em(P) = (Delta_11 - Delta_10) - (Delta_01 - Delta_00).
+parameter theta =
+  theta_cm, the average causal moderation contrast, represented in a
+  latent completion by
+    theta_cm = tau_1 - tau_0
+             = tau_em(P) - [(u_11-u_10) - (u_01-u_00)],
+  where u_gz are latent untreated-trend means and tau_g is the latent
+  treatment increment in moderator stratum g.
+identifying restrictions =
+  there exists a completion gamma=(u_00,u_01,u_10,u_11,tau_0,tau_1) in R^6
+  such that
+    Delta_g0 = u_g0,
+    Delta_g1 = u_g1 + tau_g,
+  and the untreated-trend imbalance coordinates
+    eta_0 = u_01-u_00,
+    eta_1 = u_11-u_10
+  satisfy analyst-fixed budgets rho=(rho_0,rho_1,rho_*) with
+    |eta_0| <= rho_0,
+    |eta_1| <= rho_1,
+    |eta_1-eta_0| <= rho_*.
+bounding functional =
+  Theta_I(P; rho)
+    = { tau_em(P) + eta_0 - eta_1 :
+        |eta_0| <= rho_0,
+        |eta_1| <= rho_1,
+        |eta_1-eta_0| <= rho_* }.
+  The proposal studies
+    (a) whether Theta_I(P; rho) is the sharp projection of the full
+        completion set Gamma(P; rho),
+    (b) its primal LP and dual support representations,
+    (c) the positive-budget sign-reversal frontier for theta_cm.
+\end{verbatim}
+
+\begin{abstract}
+Factorial difference-in-differences separates effect modification from causal moderation, but the published point-identification result requires exact factorial parallel trends. This proposal asks what the identified set for average causal moderation becomes when moderator-stratum untreated trends are allowed to differ by a bounded finite-cell budget. The key decomposition writes causal moderation as the observed FDID effect-modification contrast minus the untreated-trend difference-in-differences formed by two latent imbalance coordinates. The open flagship claim is that the projection of the full six-coordinate completion problem onto causal moderation is exactly the two-coordinate LP interval induced by those imbalance budgets, with a matching dual certificate. In that quotient problem the support value is \(\min\{\rho_\ast,\rho_0+\rho_1\}\), so a positive observed FDID contrast can coexist with negative causal moderation once the pooled imbalance budget exceeds the observed contrast. Resolving the projection claim would turn the recent FDID distinction between associative and causal moderation into a computable partial-identification object.
+\end{abstract}
+
+\section{Introduction}
+Factorial DID identifies how the treatment effect varies across moderator strata, but not whether an intervention on the moderator would change the treatment effect. The question here is whether average causal moderation remains identified, or at least sharply bounded, once factorial parallel trends is replaced by a bounded untreated-trend imbalance budget. The headline claim is that, in a finite \(2\times 2\) FDID table, causal moderation equals the observed effect-modification contrast minus a latent untreated-trend difference-in-differences, so the target should admit an exact finite-cell LP interval. A second claim is that this same LP yields a sharp sign-reversal frontier at which positive observed effect modification no longer rules out negative causal moderation.
+
+The benchmark is \citet{XuZhaoDing2026FDID}, whose abstract states that ``the DID estimator identifies effect modification but not causal moderation'' and that identifying the latter requires ``an additional factorial parallel trends assumption'' (abstract, p.~1, lines 16--18 of the abstract block). The closest partial-ID comparator is \citet{RambachanRoth2023ParallelTrends}, whose abstract says that the target is ``partially identified under these restrictions'' once deviations from parallel trends are bounded (abstract, p.~2555), while \citet{BalkePearl1997Bounds} and \citet{Demuynck2015LPBounds} provide the finite LP technology. The gap is the FDID-specific quotient map from an observable \(2\times 2\) change table to a causal-moderation interval under shared moderator-stratum nuisance coordinates. The kernel therefore lives in partial identification, with FDID supplying the target and finite-discrete LP duality supplying the evaluation map.
+
+One concrete consumer is empirical FDID work that reports a positive moderation pattern and needs to know whether that conclusion survives small violations of factorial parallel trends. The proposal also sharpens the distinction emphasized by \citet{Bansak2021CausalModeration} and \citet{VanderWeele2009InteractionEffectModification}: observed heterogeneity across moderator strata does not by itself imply positive causal moderation under a moderator intervention. If the sharp interval is available, a reader no longer reports only \(\tau_{\mathrm{em}}(P)\); the reader also reports the smallest pooled imbalance budget that can overturn its sign.
+
+\begin{itemize}[leftmargin=*]
+\item Conjecture 1: the projection of the full six-coordinate FDID completion problem \(\Gamma(P;\rho)\) onto average causal moderation is exactly the two-coordinate LP interval \(\Theta_I(P;\rho)\), with primal and dual formulas that pool the moderator-stratum nuisance coordinates before support evaluation. Gap: \citet{RambachanRoth2023ParallelTrends}, \citet{BalkePearl1997Bounds}, and \citet{Demuynck2015LPBounds} supply the sensitivity and LP ingredients separately, but not the FDID-specific completion map or its sharp projection. Consumer: sensitivity analysis for factorial DID under bounded trend imbalance.
+\item Theorem 2: in the quotient imbalance polytope, the support number in the moderation direction is \(\min\{\rho_\ast,\rho_0+\rho_1\}\), so sign reversal is feasible exactly when that pooled budget exceeds \(\tau_{\mathrm{em}}(P)\). Gap: \citet{XuZhaoDing2026FDID}, \citet{Bansak2021CausalModeration}, and \citet{VanderWeele2009InteractionEffectModification} separate effect modification from causal moderation but do not provide an FDID finite-cell frontier or a worked opposite-sign witness. Consumer: moderation studies that need a sign-robustness diagnostic rather than a binary point estimate.
+\end{itemize}
+
+\section{Related work}
+\citet{XuZhaoDing2026FDID} is the anchor paper. It formalizes factorial DID, defines effect modification and causal moderation in that setting, and shows that point identification of causal moderation requires a stronger factorial parallel-trends condition than the one needed for effect modification.
+
+\citet{Bansak2021CausalModeration} is the conceptual moderation comparator. It explains why treatment-effect heterogeneity is not the same object as causal moderation when the moderator is not itself randomized.
+
+\citet{VanderWeele2009InteractionEffectModification} is the broader interaction/effect-modification comparator. It is relevant because the proposal needs a published source for the claim that associative heterogeneity and causal interaction are distinct objects.
+
+\citet{RambachanRoth2023ParallelTrends} is the closest DID sensitivity paper. Its abstract states that the causal parameter is partially identified once post-treatment trend violations are restricted by pre-trend information (abstract, p.~2555), but it does not target FDID causal moderation or a finite-cell pooled-coordinate support problem.
+
+\citet{ManskiPepper2018BoundedVariation} is the bounded-variation precedent. It matters because the proposal uses the same zero-budget-to-point-identification logic: exact invariance at budget zero, wider identified sets at positive budget.
+
+\citet{BalkePearl1997Bounds} and \citet{Demuynck2015LPBounds} are the LP technology anchors. \citet{BalkePearl1997Bounds} states in the abstract that the bounds are ``the tightest possible'' given the observable distribution (abstract, p.~1171), while \citet{Demuynck2015LPBounds} states in the abstract that mean treatment-effect bounds can be obtained ``by solving a simple linear programming problem'' and by adding linear restrictions (abstract, p.~75). Those results justify the LP template but do not instantiate the FDID moderation quotient.
+
+\citet{BanKedagni2023RobustDID} is the nearest adjacent robust-DID paper. It develops bounds for ATT under relaxed parallel-trends restrictions, but its target is standard DID treatment effects rather than FDID causal moderation and it does not isolate the moderator-stratum nuisance pooling at issue here.
+
+In-repo prior art is close enough to shape the proposal but not to duplicate it. `CausalSmith/doc/API.md` states that the live `CausalSmith/PartialID/` catalogue is empty at seed time, so there is no in-catalogue `pid_*` theorem with this FDID moderation kernel. The nearest banked partial-ID geometry is `pid_did_anticipation_bounded_v1`, which uses shared-coordinate support aggregation for staggered DID ATT bounds. The nearest banked warning about aggregation and sensitivity mismatch is `panel_honest_did_phase_v1`, and the nearest pooled-body partial-ID object is `pid_tv_pretrend_atet_v1`. None of these artefacts studies factorial DID or the effect-modification versus causal-moderation distinction.
+
+\section{Formal setup}
+Let
+\[
+\bar\Delta_{gz}(P)=\E[\Delta Y\mid G=g,Z=z],
+\qquad g,z\in\{0,1\},
+\]
+be the observed post-minus-pre outcome change in moderator stratum \(g\) and treatment arm \(z\). Define the observed FDID effect-modification contrast
+\[
+\tau_{\mathrm{em}}(P)=
+(\bar\Delta_{11}-\bar\Delta_{10})-(\bar\Delta_{01}-\bar\Delta_{00}).
+\]
+A latent completion is a vector
+\[
+\gamma=(u_{00},u_{01},u_{10},u_{11},\tau_0,\tau_1)\in\R^6,
+\]
+where \(u_{gz}\) is the untreated-trend mean that would prevail in cell \((g,z)\) absent treatment and \(\tau_g\) is the causal treatment increment in moderator stratum \(g\). The completion must preserve the observed table through
+\[
+\bar\Delta_{g0}=u_{g0},
+\qquad
+\bar\Delta_{g1}=u_{g1}+\tau_g,
+\qquad g\in\{0,1\}.
+\]
+The average causal moderation induced by \(\gamma\) is
+\[
+\theta_{\mathrm{cm}}(\gamma)=\tau_1-\tau_0.
+\]
+Substituting the observable equalities yields
+\[
+\theta_{\mathrm{cm}}(\gamma)=
+\tau_{\mathrm{em}}(P)-[(u_{11}-u_{10})-(u_{01}-u_{00})].
+\]
+Define the two imbalance coordinates
+\[
+\eta_0(\gamma)=u_{01}-u_{00},
+\qquad
+\eta_1(\gamma)=u_{11}-u_{10},
+\qquad
+d=(1,-1)^\transpose.
+\]
+Then
+\[
+\theta_{\mathrm{cm}}(\gamma)=\tau_{\mathrm{em}}(P)+d^\transpose \eta(\gamma),
+\qquad
+\eta(\gamma)=
+\begin{pmatrix}
+\eta_0(\gamma)\\
+\eta_1(\gamma)
+\end{pmatrix}.
+\]
+The full finite-cell completion set is
+\[
+\Gamma(P;\rho)=
+\left\{\gamma\in\R^6:
+\begin{array}{l}
+\bar\Delta_{g0}=u_{g0},\ \bar\Delta_{g1}=u_{g1}+\tau_g\ \text{for }g=0,1,\\
+|\eta_0(\gamma)|\le \rho_0,\ |\eta_1(\gamma)|\le \rho_1,\ |\eta_1(\gamma)-\eta_0(\gamma)|\le \rho_\ast
+\end{array}
+\right\}.
+\]
+The quotient imbalance polytope is
+\[
+\calE(P;\rho)=
+\left\{\eta\in\R^2:
+|\eta_0|\le \rho_0,\ |\eta_1|\le \rho_1,\ |\eta_1-\eta_0|\le \rho_\ast
+\right\}.
+\]
+Equivalently,
+\[
+\calE(P;\rho)=\{\eta\in\R^2:B\eta\le r_\rho\},
+\]
+where
+\[
+B=
+\begin{pmatrix}
+1 & 0\\
+-1 & 0\\
+0 & 1\\
+0 & -1\\
+-1 & 1\\
+1 & -1
+\end{pmatrix},
+\qquad
+r_\rho=
+\begin{pmatrix}
+\rho_0\\ \rho_0\\ \rho_1\\ \rho_1\\ \rho_\ast\\ \rho_\ast
+\end{pmatrix}.
+\]
+The candidate identified set is
+\[
+\Theta_I(P;\rho)=
+\{\tau_{\mathrm{em}}(P)+d^\transpose\eta:\eta\in\calE(P;\rho)\}.
+\]
+Define the quotient support functional
+\[
+h_\eta(v;\rho)=\sup\{v^\transpose\eta:\eta\in\calE(P;\rho)\},
+\qquad v\in\R^2.
+\]
+Then
+\[
+\underline\theta(P;\rho)=\tau_{\mathrm{em}}(P)-h_\eta(d;\rho),
+\qquad
+\overline\theta(P;\rho)=\tau_{\mathrm{em}}(P)+h_\eta(d;\rho),
+\]
+because \(\calE(P;\rho)\) is centrally symmetric. Finally, for a fixed ray \(\rho=\bar\rho\,\omega\) with \(\omega=(\omega_0,\omega_1,\omega_\ast)\in\R_+^3\) and \(\min\{\omega_\ast,\omega_0+\omega_1\}>0\), define
+\[
+\bar\rho^\dagger_\omega(P)=
+\frac{\tau_{\mathrm{em}}(P)}{\min\{\omega_\ast,\omega_0+\omega_1\}}.
+\]
+
+\begin{quote}
+\begin{verbatim}
+(qid, specialization) =
+  (pid_factorial_did_moderation_bounds, v1)
+observable distribution P =
+  a finite 2x2 factorial-DID table of observed outcome-change means
+    Delta_gz = E[Delta Y | G=g, Z=z] for g,z in {0,1},
+  with observed effect-modification contrast
+    tau_em(P) = (Delta_11 - Delta_10) - (Delta_01 - Delta_00).
+parameter theta =
+  theta_cm, the average causal moderation contrast, represented in a
+  latent completion by
+    theta_cm = tau_1 - tau_0
+             = tau_em(P) - [(u_11-u_10) - (u_01-u_00)],
+  where u_gz are latent untreated-trend means and tau_g is the latent
+  treatment increment in moderator stratum g.
+identifying restrictions =
+  there exists a completion gamma=(u_00,u_01,u_10,u_11,tau_0,tau_1) in R^6
+  such that
+    Delta_g0 = u_g0,
+    Delta_g1 = u_g1 + tau_g,
+  and the untreated-trend imbalance coordinates
+    eta_0 = u_01-u_00,
+    eta_1 = u_11-u_10
+  satisfy analyst-fixed budgets rho=(rho_0,rho_1,rho_*) with
+    |eta_0| <= rho_0,
+    |eta_1| <= rho_1,
+    |eta_1-eta_0| <= rho_*.
+bounding functional =
+  Theta_I(P; rho)
+    = { tau_em(P) + eta_0 - eta_1 :
+        |eta_0| <= rho_0,
+        |eta_1| <= rho_1,
+        |eta_1-eta_0| <= rho_* }.
+  The proposal studies
+    (a) whether Theta_I(P; rho) is the sharp projection of the full
+        completion set Gamma(P; rho),
+    (b) its primal LP and dual support representations,
+    (c) the positive-budget sign-reversal frontier for theta_cm.
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite \(2\times 2\) FDID table]\label{ass:finite-design}
+The observed law \(P\) is summarized by the four cell means \(\bar\Delta_{gz}(P)\), and all objects in \S6 are finite-dimensional.
+\end{assumption}
+
+\begin{assumption}[Additive completion map]\label{ass:completion}
+There exists a latent completion \(\gamma=(u_{00},u_{01},u_{10},u_{11},\tau_0,\tau_1)\) satisfying the four observable equalities \(\bar\Delta_{g0}=u_{g0}\) and \(\bar\Delta_{g1}=u_{g1}+\tau_g\) for \(g=0,1\), with causal moderation \(\theta_{\mathrm{cm}}(\gamma)=\tau_1-\tau_0\).
+\end{assumption}
+
+\begin{assumption}[Bounded moderator-stratum imbalance]\label{ass:budget}
+For the budget vector \(\rho=(\rho_0,\rho_1,\rho_\ast)\in\R_+^3\), the imbalance coordinates \(\eta_0=u_{01}-u_{00}\) and \(\eta_1=u_{11}-u_{10}\) satisfy \(|\eta_0|\le \rho_0\), \(|\eta_1|\le \rho_1\), and \(|\eta_1-\eta_0|\le \rho_\ast\).
+\end{assumption}
+
+\begin{assumption}[Nonempty completion polytope]\label{ass:nonempty}
+For the budget \(\rho\) under study, the completion set \(\Gamma(P;\rho)\) is nonempty; equivalently, the quotient polytope \(\calE(P;\rho)\) is nonempty.
+\end{assumption}
+
+\begin{assumption}[Ray normalization]\label{ass:ray}
+For the sign-loss calculation, the analyst varies budgets along a fixed ray \(\rho=\bar\rho\,\omega\) with \(\omega\in\R_+^3\) and \(\min\{\omega_\ast,\omega_0+\omega_1\}>0\).
+\end{assumption}
+
+\begin{assumption}[Dual attainability on the quotient LP]\label{ass:dual}
+For each \(P\) and \(\rho\), the support problem \(h_\eta(d;\rho)\) attains its optimum and satisfies strong duality with the inequality system \(B\eta\le r_\rho\).
+\end{assumption}
+
+\section{Main results}
+\begin{conjecture}[Conjecture 1: sharp primal--dual FDID moderation interval {\normalfont (NOT YET PROVED)}]\label{conj:lp-dual}
+Under Assumptions~\ref{ass:finite-design}--\ref{ass:dual}, the projection of the full completion problem \(\Gamma(P;\rho)\) onto the causal-moderation coordinate is exactly \(\Theta_I(P;\rho)\):
+\[
+\{\theta_{\mathrm{cm}}(\gamma):\gamma\in\Gamma(P;\rho)\}
+=
+\Theta_I(P;\rho).
+\]
+Equivalently, the sharp identified set has full-completion primal form
+\[
+\underline\theta(P;\rho)
+=
+\min_{\gamma\in\Gamma(P;\rho)}(\tau_1-\tau_0),
+\qquad
+\overline\theta(P;\rho)
+=
+\max_{\gamma\in\Gamma(P;\rho)}(\tau_1-\tau_0),
+\]
+and quotient-LP form
+\[
+\underline\theta(P;\rho)
+=
+\tau_{\mathrm{em}}(P)-h_\eta(d;\rho),
+\qquad
+\overline\theta(P;\rho)
+=
+\tau_{\mathrm{em}}(P)+h_\eta(d;\rho),
+\]
+where
+\[
+h_\eta(d;\rho)
+=
+\min_{y\in\R_+^6}\{r_\rho^\transpose y:B^\transpose y=d\}.
+\]
+The novelty-bearing step is the sharpness claim that every feasible imbalance pair \(\eta\in\calE(P;\rho)\) can be lifted to a full completion \(\gamma\in\Gamma(P;\rho)\) that preserves the observed FDID table, so no hidden untreated-trend coordinate outside \((\eta_0,\eta_1)\) enlarges or shrinks the interval.
+\end{conjecture}
+
+\begin{theorem}[Theorem 2: quotient support frontier and sign reversal]\label{thm:support}
+Under Assumptions~\ref{ass:finite-design}--\ref{ass:dual},
+\[
+h_\eta(d;\rho)=\min\{\rho_\ast,\rho_0+\rho_1\}.
+\]
+Therefore
+\[
+\Theta_I(P;\rho)=
+\Big[\tau_{\mathrm{em}}(P)-\min\{\rho_\ast,\rho_0+\rho_1\},\
+\tau_{\mathrm{em}}(P)+\min\{\rho_\ast,\rho_0+\rho_1\}\Big].
+\]
+If \(\tau_{\mathrm{em}}(P)>0\), then negative causal moderation is feasible in the reduced completion map if and only if
+\[
+\min\{\rho_\ast,\rho_0+\rho_1\}>\tau_{\mathrm{em}}(P).
+\]
+Along a fixed ray \(\rho=\bar\rho\,\omega\) from Assumption~\ref{ass:ray},
+\[
+\inf\Theta_I(P;\bar\rho\,\omega)<0
+\quad\Longleftrightarrow\quad
+\bar\rho>\bar\rho^\dagger_\omega(P)
+=
+\frac{\tau_{\mathrm{em}}(P)}{\min\{\omega_\ast,\omega_0+\omega_1\}}.
+\]
+\end{theorem}
+The upper bounds come from the dual certificates \(y^{(\ast)}=(0,0,0,0,0,1)^\transpose\) and \(y^{(+)}=(1,0,0,1,0,0)^\transpose\), which satisfy \(B^\transpose y=d\) with objectives \(\rho_\ast\) and \(\rho_0+\rho_1\). Matching primal witnesses are \(\eta=(\rho_0,-\rho_1)\) when \(\rho_0+\rho_1\le \rho_\ast\), and any \(\eta=(a,-b)\) with \(a\in[0,\rho_0]\), \(b\in[0,\rho_1]\), and \(a+b=\rho_\ast\) when \(\rho_\ast\le \rho_0+\rho_1\).
+
+\section{Sanity-check corollaries}
+\begin{corollary}[FDID point-identification corner]\label{cor:fdid-corner}
+Under Assumptions~\ref{ass:finite-design}--\ref{ass:nonempty}, if \(\rho=(0,0,0)\), then \(\Theta_I(P;0)=\{\tau_{\mathrm{em}}(P)\}\). Thus the proposal recovers the \citet{XuZhaoDing2026FDID} point-identification corner at zero imbalance.
+\end{corollary}
+When \(\rho=0\), the quotient constraints force \(\eta_0=\eta_1=0\), so \(\theta_{\mathrm{cm}}=\tau_{\mathrm{em}}(P)\). This is the required reduction to the published exact factorial-parallel-trends corner.
+
+\begin{corollary}[No-sign-reversal corner]\label{cor:no-reversal}
+Under Assumptions~\ref{ass:finite-design}--\ref{ass:ray}, if \(\bar\rho<\bar\rho^\dagger_\omega(P)\) then every \(\theta\in\Theta_I(P;\bar\rho\,\omega)\) has the same sign as \(\tau_{\mathrm{em}}(P)\).
+\end{corollary}
+Theorem~\ref{thm:support} gives \(\inf\Theta_I(P;\bar\rho\,\omega)>0\) whenever \(\bar\rho<\bar\rho^\dagger_\omega(P)\). This is the required sign-robustness reduction.
+
+\paragraph{Exhibit 9.1. A rational \(2\times 2\) full-completion witness.}
+Take
+\[
+(\bar\Delta_{00},\bar\Delta_{01},\bar\Delta_{10},\bar\Delta_{11})=\left(0,0,0,\tfrac16\right),
+\]
+so that
+\[
+\tau_{\mathrm{em}}(P)=\tfrac16.
+\]
+Fix budgets
+\[
+\rho_0=\tfrac18,\qquad \rho_1=\tfrac18,\qquad \rho_\ast=\tfrac12.
+\]
+Let
+\[
+\gamma^\star=
+\left(
+0,-\tfrac18,0,\tfrac18,\tfrac18,\tfrac1{24}
+\right)^\transpose.
+\]
+Then
+\[
+\bar\Delta_{00}=u_{00}=0,\qquad
+\bar\Delta_{01}=u_{01}+\tau_0=-\tfrac18+\tfrac18=0,
+\]
+\[
+\bar\Delta_{10}=u_{10}=0,\qquad
+\bar\Delta_{11}=u_{11}+\tau_1=\tfrac18+\tfrac1{24}=\tfrac16,
+\]
+so \(\gamma^\star\in\Gamma(P;\rho)\). Its imbalance coordinates are
+\[
+\eta(\gamma^\star)=
+\left(-\tfrac18,\tfrac18\right)^\transpose,
+\]
+and therefore
+\[
+|\eta_0(\gamma^\star)|=\tfrac18,\qquad
+|\eta_1(\gamma^\star)|=\tfrac18,\qquad
+|\eta_1(\gamma^\star)-\eta_0(\gamma^\star)|=\tfrac14\le \rho_\ast.
+\]
+The induced causal moderation is
+\[
+\theta_{\mathrm{cm}}(\gamma^\star)
+=
+\tau_1-\tau_0
+=
+\tfrac1{24}-\tfrac18
+=
+-\tfrac1{12}<0
+\]
+while \(\tau_{\mathrm{em}}(P)=\tfrac16>0\). The same instance computes the quotient support object from \S6 primitives:
+\[
+r_\rho=
+\left(\tfrac18,\tfrac18,\tfrac18,\tfrac18,\tfrac12,\tfrac12\right)^\transpose.
+\]
+Two dual certificates are
+\[
+y^{(\ast)}=(0,0,0,0,0,1)^\transpose,\qquad
+y^{(+)}=(1,0,0,1,0,0)^\transpose.
+\]
+Both satisfy \(B^\transpose y=d\), with objectives \(r_\rho^\transpose y^{(\ast)}=\tfrac12\) and \(r_\rho^\transpose y^{(+)}=\tfrac14\). Hence \(h_\eta(d;\rho)\le \tfrac14\). The primal point \(\eta=(\tfrac18,-\tfrac18)\) attains \(d^\transpose\eta=\tfrac14\), so \(h_\eta(d;\rho)=\tfrac14\), and therefore
+\[
+\Theta_I(P;\rho)=\left[-\tfrac1{12},\tfrac5{12}\right].
+\]
+The exhibit is internally consistent: the four observable equations and three budget inequalities are all satisfied, the dual system is feasible, there is no zero denominator, and the same primitives produce both the negative-moderation completion and the positive support endpoint.
+
+\section{Proof-sketch route}
+Conjecture~\ref{conj:lp-dual} should be attacked by the chain
+\[
+\text{sharp FDID interval}
+\leftarrow
+[\text{write the observable table as } \bar\Delta_{g0}=u_{g0},\ \bar\Delta_{g1}=u_{g1}+\tau_g]
+\leftarrow
+[\text{rewrite } \theta_{\mathrm{cm}}=\tau_{\mathrm{em}}(P)+\eta_0-\eta_1]
+\leftarrow
+[\text{project } \gamma \mapsto \eta(\gamma) \text{ and identify the quotient polytope } \calE(P;\rho)]
+\leftarrow
+[\text{prove every feasible } \eta \text{ lifts to some } \gamma \text{ preserving the observed table}]
+\leftarrow
+[\text{apply Balke--Pearl style LP duality to the quotient polytope}],
+\]
+so \(k=4\) substantive non-definitional steps remain after setup. For Theorem~\ref{thm:support}, the route is explicit dual certification:
+\[
+\text{support frontier}
+\leftarrow
+[\text{use the cross-stratum inequality as one dual certificate}]
+\leftarrow
+[\text{use the two within-stratum inequalities jointly as a second dual certificate}]
+\leftarrow
+[\text{match the smaller dual value with piecewise primal witnesses and the full witness in Exhibit 9.1}],
+\]
+so \(k=3\) substantive non-definitional steps remain after setup. The zero-budget corollary is the boundary reduction of the same map. The boundary algebra is concentrated in the lift from \(\calE(P;\rho)\) back to \(\Gamma(P;\rho)\) and the exact verification of the rational witness.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:support} is routine once the quotient LP in \S6 is fixed. Conjecture~\ref{conj:lp-dual} carries the novelty and the uncertainty: the open step is not LP duality, but whether the full FDID completion set \(\Gamma(P;\rho)\) projects exactly to the two-coordinate quotient body \(\calE(P;\rho)\) rather than to a smaller or larger set. The previous draft conflated observed and counterfactual cell means; this version separates the observed table \(\bar\Delta_{gz}\) from the latent untreated means \(u_{gz}\) and treatment increments \(\tau_g\). The zero-budget Xu--Zhao--Ding statement is now treated only as a sanity corollary, not as a novelty-bearing theorem.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) --- initial draft; prior verdict: none.
+\item v2 (revise) --- replaced the promissory completion notation by an explicit \(\nu_{gz}(m)\) map, added a worked primal--dual exhibit, and restricted the sign frontier to the derived pooled-budget object; prior verdict: REVISE.
+\item v3 (revise) --- rewrote the setup around observed FDID cell changes and a full \((u_{gz},\tau_g)\) completion, demoted the zero-budget Xu corner to a corollary, and made the main conjecture a projection/lift claim; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem{BalkePearl1997Bounds}
+Alexander Balke and Judea Pearl.
+\newblock Bounds on treatment effects from studies with imperfect compliance.
+\newblock \emph{Journal of the American Statistical Association}, 92(439):1171--1176, 1997.
+
+\bibitem{BanKedagni2023RobustDID}
+Kyunghoon Ban and D\'esir\'e K\'edagni.
+\newblock Generalized difference-in-differences models: Robust bounds.
+\newblock Working paper, 2023.
+
+\bibitem{Bansak2021CausalModeration}
+Kirk Bansak.
+\newblock Estimating causal moderation effects with randomized treatments and non-randomized moderators.
+\newblock \emph{Journal of the Royal Statistical Society: Series A}, 184(1):65--86, 2021.
+
+\bibitem{Demuynck2015LPBounds}
+Thomas Demuynck.
+\newblock Bounding average treatment effects: A linear programming approach.
+\newblock \emph{Economics Letters}, 137:75--77, 2015.
+
+\bibitem{ManskiPepper2018BoundedVariation}
+Charles F. Manski and John V. Pepper.
+\newblock How do right-to-carry laws affect crime rates? Coping with ambiguity using bounded-variation assumptions.
+\newblock \emph{Review of Economics and Statistics}, 100(2):232--244, 2018.
+
+\bibitem{RambachanRoth2023ParallelTrends}
+Ashesh Rambachan and Jonathan Roth.
+\newblock A more credible approach to parallel trends.
+\newblock \emph{Review of Economic Studies}, 90(5):2555--2591, 2023.
+
+\bibitem{VanderWeele2009InteractionEffectModification}
+Tyler J. VanderWeele.
+\newblock On the distinction between interaction and effect modification.
+\newblock \emph{Epidemiology}, 20(6):863--871, 2009.
+
+\bibitem{XuZhaoDing2026FDID}
+Yiqing Xu, Anqi Zhao, and Peng Ding.
+\newblock Factorial difference-in-differences.
+\newblock \emph{Journal of the American Statistical Association}, 2026.
+
+\end{thebibliography}
+
+\end{document}

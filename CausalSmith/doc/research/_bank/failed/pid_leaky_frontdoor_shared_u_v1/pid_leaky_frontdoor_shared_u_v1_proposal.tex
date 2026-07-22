@@ -1,0 +1,626 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_leaky\_frontdoor\_shared\_u, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_core.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_leaky\_frontdoor\_shared\_u} / \texttt{v1}%
+  \\ \large\textit{Sharp partial identification of the average causal effect in the leaky front-door model with a clean mediator and a single bounded shared-confounder direct leak}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\theoremstyle{definition}
+\newtheorem{openendedquestion}{Open-ended Question}
+
+\paragraph{Locked parameters.}
+This proposal anchors to the \emph{partial identification} cluster. The locked
+tuple is $(\textsf{qid},\textsf{specialization},P,\theta,\text{restrictions},\text{bounding functional})$:
+\begin{itemize}[leftmargin=1.5em,itemsep=1pt]
+  \item \textbf{qid} $=$ \texttt{pid\_leaky\_frontdoor\_shared\_u}; \textbf{specialization} $=$ \texttt{v1}.
+  \item \textbf{Observable distribution} $P$: the joint law of $(X,M,Y)$ with $X\in\{0,1\}$,
+        $M\in\{0,1\}$, $Y\in[0,1]$, summarized by the sufficient statistics
+        $p_x=\Pr(X=x)$, $q_{m\mid x}=\Pr(M=m\mid X=x)$, $r_{x,m}=\E[Y\mid X=x,M=m]$.
+  \item \textbf{Parameter} $\theta=\mathrm{ACE}=\E[Y(\mathrm{do}\,X=1)]-\E[Y(\mathrm{do}\,X=0)]$
+        in the graph $\mathcal G$ with edges $U\to X$, $U\to Y$, $X\to M$, $M\to Y$, $X\to Y$.
+  \item \textbf{Identifying restrictions}: $U$ has finite support with
+        $|\mathcal U|\le K:=|X|\,|M|+1=5$ (Carath\'eodory reduction); the mediator is
+        \emph{clean}, $U\perp M\mid X$; the outcome structural mean
+        $\varphi(m,x,u)=\E[Y\mid M=m,X=x,U=u]\in[0,1]$; the latent controlled direct
+        effect $d(m,u)=\varphi(m,1,u)-\varphi(m,0,u)$ obeys the single scalar
+        \emph{leak bound} $|d(m,u)|\le\lambda$, with $\lambda=0$ the Pearl exclusion restriction.
+  \item \textbf{Bounding functional}: the sharp identified set
+        $I(\lambda)=\{\,\mathrm{ACE}\;:\;\exists\,(\pi,w_0,w_1,\varphi)\text{ feasible}\,\}$
+        with endpoint map $\lambda\mapsto[L(\lambda),U(\lambda)]$, where $\pi=\Pr(U=\cdot)$,
+        $w_x=\Pr(U=\cdot\mid X=x)$, feasibility is the four clean-mediator compatibility
+        equations $r_{x,m}=\sum_u\varphi(m,x,u)\,w_x(u)$, the Bayes consistency
+        $\pi=\sum_x p_x w_x$, the box $\varphi\in[0,1]$, and $|d|\le\lambda$.
+\end{itemize}
+
+\begin{abstract}
+Pearl's front-door functional point-identifies the average causal effect (ACE) of $X$ on $Y$ when
+no direct $X\to Y$ path exists. We ask what set of ACE values is consistent with the data when the
+mediator $M$ stays clean ($U\perp M\mid X$) but the exclusion restriction is relaxed to a single
+bounded structural leak $|\varphi(m,1,u)-\varphi(m,0,u)|\le\lambda$, so that uncertainty arises
+purely from a bounded confounded direct path rather than from a non-identified sensitivity
+parameter. We characterize the sharp identified set $I(\lambda)$ and conjecture that it is strictly
+smaller than two natural relaxations---the per-mediator controlled-direct-effect box and the generic
+latent-confounding sensitivity interval---on the observable set where the front-door functional and the
+unadjusted treatment contrast disagree and the treatment changes the mediator law, because the same
+latent law couples all four clean-mediator compatibility equations and the effect itself. We pose, as a
+construction question, a finite-vertex
+characterization of the endpoints driven by a leak threshold $\lambda^\star$ at which the compatibility
+constraints switch from slack to binding, together with a cross-fitted estimator with
+$\sqrt n$ inference in the interior and a directional limit at the kink. Resolved, this gives applied
+mediation analyses with a suspected residual direct path a sharp, leak-indexed interval that collapses
+to Pearl's point estimate at $\lambda=0$.
+\end{abstract}
+
+\section{Introduction}
+The front-door criterion of \citet{Pearl1995CausalDiagrams} point-identifies the average causal effect
+of a treatment $X$ on an outcome $Y$ through a mediator $M$, by combining the $X\to M$ and $M\to Y$
+links while ruling out any direct $X\to Y$ path. The exclusion of that direct path is the single most
+demanding ingredient: in most applications a residual direct channel is plausible, and a binary
+"front-door holds / fails" verdict discards the design entirely the moment exclusion is doubted. We
+study the partial-identification problem that sits between these two regimes. The mediator stays clean
+in the front-door sense ($U\perp M\mid X$), but the direct path is reopened by a single scalar
+sensitivity radius: the latent controlled direct effect $d(m,u)=\varphi(m,1,u)-\varphi(m,0,u)$ is bounded
+by $|d(m,u)|\le\lambda$, with $\lambda=0$ recovering Pearl exclusion. The question is what set of ACE
+values, $I(\lambda)$, the observed law admits, and how that set behaves as $\lambda$ grows.
+
+The closest published anchors are Pearl's front-door functional \citep[\S3.3.2, eq.~(3.42)]{Pearl1995CausalDiagrams},
+which is the $\lambda=0$ corner of our set, and the generalized front-door of
+\citet{FulcherShpitserMarealleTchetgen2017GeneralizedFrontDoor}, which permits a direct path but
+re-targets the estimand to a population intervention indirect effect rather than delivering a sharp
+total-effect interval indexed by a leak radius. The mediation sensitivity bounds of
+\citet[\S2--3]{DingVanderWeele2016SharpMediationSensitivity} are a deliberate foil: they bound the
+natural direct and indirect effects under unmeasured \emph{mediator--outcome} confounding, treating the
+mediator as confounded with the outcome, whereas we keep the mediator clean ($U\perp M\mid X$) and bound
+only the direct $X\to Y$ structural contrast. The two violations reopen different arrows, and the
+resulting sets are generally incomparable. The
+kernel lives in partial identification: $I(\lambda)$ is a set-valued causal estimand carved by the four
+clean-mediator outcome-compatibility equations, the shared latent law, and the box-plus-leak
+restrictions. The central question is whether $I(\lambda)$ decomposes into a Pearl point plus an
+independent direct-effect band, or whether the shared latent law that appears in all four compatibility
+equations and in the effect itself binds them together.
+
+A concrete consumer is any front-door application where investigators currently abandon the design on
+suspicion of a small direct path; the multi-mediator front-door proposal \texttt{eid\_frontdoor\_multi\_mediator}
+flags the same non-rectangularity obstacle and asks for a sharp, non-decomposable set. A reader who takes
+only the conclusion away stops reporting "front-door fails" and instead reports a leak-indexed interval
+that contracts to Pearl's point estimate as the assumed direct path vanishes.
+
+\paragraph{Results at a glance.}
+\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
+  \item \textbf{Theorem 1} ($\lambda=0$ collapse): $I(0)$ is the singleton equal to Pearl's front-door
+        functional $\theta_{\mathrm{FD}}=\sum_m(q_{m\mid1}-q_{m\mid0})(p_1 r_{1,m}+p_0 r_{0,m})$.
+        \emph{Gap}: recovers \citet{Pearl1995CausalDiagrams} exactly at the exclusion corner, certifying
+        the relaxation is a strict generalization. \emph{Consumer}: any front-door application
+        (\texttt{eid\_frontdoor\_multi\_mediator}).
+  \item \textbf{Theorem 2} (interval structure): for every $\lambda\ge0$, $I(\lambda)$ is compact with
+        endpoints $L(\lambda)$ nonincreasing and $U(\lambda)$ nondecreasing, and the sets are nested in
+        $\lambda$. \emph{Gap}: organizes the leak radius as a monotone sensitivity scale absent from
+        \citet{Pearl1995CausalDiagrams}. \emph{Consumer}: sensitivity reporting in applied mediation.
+  \item \textbf{Conjecture 3} (non-decomposition / strict inclusion): $[L(\lambda),U(\lambda)]$ is
+        contained in the per-mediator controlled-direct-effect box $B_{\mathrm{box}}(\lambda)$ and in the
+        generic latent-confounding sensitivity interval $B_{\mathrm{sens}}(\lambda)$, with the inclusion
+        strict for small $\lambda>0$ on the observable set
+        $\{P:\kappa(P)\neq0,\ q_{\cdot\mid1}\neq q_{\cdot\mid0}\}$ where the unadjusted contrast and the
+        front-door functional disagree and the mediator channel is active. \emph{Gap}: neither
+        \citet{DingVanderWeele2016SharpMediationSensitivity} (mediator--outcome confounding, no
+        clean-mediator equations) nor a rectangular relaxation captures the shared-latent coupling identified
+        by \texttt{eid\_frontdoor\_multi\_mediator}. \emph{Consumer}: applied front-door analyses needing a
+        non-conservative leak interval.
+  \item \textbf{Open-ended Question 4} (finite-vertex endpoints with a kink): construct a finite family of
+        explicit rational functions of $(p_x,q_{m\mid x},r_{x,m},\lambda)$ whose min and max give
+        $L(\lambda),U(\lambda)$, indexed by active-set cells of a lifted polytope, with a closed-form
+        threshold $\lambda^\star$ where the compatibility constraints switch from slack to binding.
+        \emph{Gap}: extends the finite response-type LP geometry of \citet{BalkePearl1997Bounds} and
+        \citet{FinkelsteinAdamsSariaShpitser2020MeasurementError} to a bilinear shared-$U$ program with no
+        published vertex enumeration. \emph{Consumer}: software that reports front-door bounds.
+  \item \textbf{Open-ended Question 5} (estimation and inference): construct a cross-fitted estimator of
+        $(L(\lambda),U(\lambda))$ with $\sqrt n$ Gaussian inference in the interior of an active regime and
+        a directional limit at $\lambda^\star$. \emph{Gap}: the endpoint map is nonsmooth, so neither the
+        ordinary bootstrap \citep{FangSantos2019DirectionallyDifferentiable} nor pointwise plug-in suffices,
+        and set-level coverage \citep{ChernozhukovHongTamer2007ParameterSets} is required. \emph{Consumer}:
+        empirical mediation studies reporting confidence bands over $\lambda$.
+\end{itemize}
+
+\section{Related work}
+\citet{Pearl1995CausalDiagrams} introduces the front-door criterion and its identifying functional; this
+is the $\lambda=0$ face of $I(\lambda)$ and the result Theorem~1 must reproduce.
+\citet{FulcherShpitserMarealleTchetgen2017GeneralizedFrontDoor} generalize front-door identification to
+settings with a residual direct path, but their target is a population intervention indirect effect and
+they deliver point identification of that re-defined estimand, not a sharp total-effect interval indexed
+by a structural leak radius; our contribution is exactly the missing total-effect set.
+\citet{DingVanderWeele2016SharpMediationSensitivity} give sharp nonparametric sensitivity bounds for the
+natural direct and indirect effects under unmeasured mediator--outcome confounding; this is the closest
+sensitivity-analysis foil. Their sensitivity parameter perturbs the mediator--outcome relationship (a
+confounded mediator), whereas ours bounds the direct $X\to Y$ structural contrast under a clean mediator,
+so the two sensitivity scales index different model classes and the resulting sets are generally
+incomparable, as Conjecture~\ref{conj:nondecomp} makes precise.
+\citet{BalkePearl1997Bounds} establish the finite response-type linear-programming template for sharp
+discrete causal bounds, and \citet{FinkelsteinAdamsSariaShpitser2020MeasurementError} show that discrete
+latent and conditional-independence assumptions can be encoded as linear constraints; both are the method
+ancestors for the finite-vertex endpoint geometry of Open-ended Question~\ref{oeq:vertex}, with the caveat
+that the clean-mediator compatibility equations make our program bilinear rather than linear.
+\citet{GhassamiShpitserTchetgen2023ProxyPartialID} obtain partial-identification bounds from proxies
+without completeness; their setting recovers or bounds \emph{hidden} confounders or mediators through
+proxies, whereas we observe a clean mediator and bound only the direct structural contrast, so their
+intervals are a distinct object (the comparison is a natural follow-on, recorded in \S\ref{sec:scope}).
+\citet{ChernozhukovHongTamer2007ParameterSets} provide the criterion-based confidence-region framework
+for set-identified parameters that Open-ended Question~5 must instantiate, and
+\citet{FangSantos2019DirectionallyDifferentiable} supply the directional delta method needed at the kink
+$\lambda^\star$ where the endpoint map is only directionally differentiable.
+\citet{Manski1990NonparametricBounds} is the bounded-outcome partial-identification antecedent for the
+$[0,1]$ box on $\varphi$.
+
+\paragraph{In-repo prior art.} The downgraded proposal \texttt{eid\_frontdoor\_multi\_mediator} (front-door
+with multiple mediators) records the same non-rectangularity obstacle---shared latent coordinates make an
+outer product of marginal intervals nonsharp---and nearby records call for a rational small-instance
+witness; our Conjecture~3 supplies that witness shape for the single-clean-mediator leak model. The
+proximal-bridge proposals \texttt{pid\_proximal\_l2\_bridge} contribute the finite endpoint-formula and
+collapse-regime concerns and the nonsmooth endpoint-inference gap that Open-ended Question~5 targets. We do
+not draw kernel content from either; they are prior-art pointers.
+
+\paragraph{Exemplars.} Writing exemplar: \citet{DingVanderWeele2016SharpMediationSensitivity} (arXiv
+1601.05155) --- \S4 and \S6 mirror its arc from a familiar mediation estimand to sharp bounds under one
+explicitly named violation. Method exemplars, per result: Theorem~1 and Conjecture~3 adapt
+\citet{Pearl1995CausalDiagrams} (identification, DOI 10.1093/biomet/82.4.669), carrying over the front-door
+functional as the $\lambda=0$ face and tracking how the latent-completion constraints perturb it;
+Open-ended Question~4 adapts \citet{BalkePearl1997Bounds} (identification, DOI 10.1080/01621459.1997.10474074)
+and \citet{FinkelsteinAdamsSariaShpitser2020MeasurementError} (identification, arXiv 2012.12449), carrying over
+finite latent-type enumeration and the linear-constraint encoding, modified for the bilinear shared-$U$
+coupling; Open-ended Question~5 adapts \citet{FangSantos2019DirectionallyDifferentiable} (estimation
+/inference, arXiv 1404.3763) and \citet{ChernozhukovHongTamer2007ParameterSets} (estimation/inference, DOI
+10.1111/j.1468-0262.2007.00773.x), carrying over the directional delta method and criterion-based set
+coverage.
+
+\section{Formal setup}
+\label{sec:setup}
+\paragraph{Variables and graph.} Let $X\in\{0,1\}$ be the treatment, $M\in\{0,1\}$ the mediator,
+$Y\in[0,1]$ the bounded outcome, and $U$ a latent confounder with finite support $\mathcal U$. The causal
+diagram $\mathcal G$ has edges $U\to X$, $U\to Y$, $X\to M$, $M\to Y$, and the \emph{leak} $X\to Y$. The
+mediator is \emph{clean}: $U\perp M\mid X$, i.e.\ $U$ does not confound $X\to M$.
+
+\paragraph{Structural objects.} Write the outcome structural mean
+$\varphi(m,x,u)=\E[Y\mid M=m,X=x,U=u]\in[0,1]$ and the latent controlled direct effect
+$d(m,u)=\varphi(m,1,u)-\varphi(m,0,u)$. Let $\pi(u)=\Pr(U=u)$ and $w_x(u)=\Pr(U=u\mid X=x)$ be the latent
+marginal and treatment-arm-conditional laws, related by Bayes consistency $\pi(u)=\sum_x p_x\,w_x(u)$.
+
+\paragraph{Observable law.} The data identify $p_x=\Pr(X=x)$, $q_{m\mid x}=\Pr(M=m\mid X=x)$, and
+$r_{x,m}=\E[Y\mid X=x,M=m]$. Because $M$ is clean, $\Pr(U\mid X,M)=\Pr(U\mid X)$, which yields the four
+\emph{outcome-compatibility equations}
+\begin{equation}\label{eq:compat}
+  r_{x,m}=\sum_{u}\varphi(m,x,u)\,w_x(u),\qquad (x,m)\in\{0,1\}^2 .
+\end{equation}
+
+\paragraph{Target and identified set.} Intervening $\mathrm{do}(X=x)$ cuts $U\to X$, so
+\begin{equation}\label{eq:ace}
+  \mathrm{ACE}=\sum_{m}\sum_{u}\bigl[\,q_{m\mid1}\varphi(m,1,u)-q_{m\mid0}\varphi(m,0,u)\,\bigr]\pi(u).
+\end{equation}
+The sharp identified set is
+\begin{equation}\label{eq:idset}
+  I(\lambda)=\Bigl\{\mathrm{ACE}\text{ as in \eqref{eq:ace}}\;:\;
+   (\pi,w_0,w_1,\varphi)\text{ satisfy \eqref{eq:compat}, Bayes consistency, }
+   \varphi\in[0,1],\ |d|\le\lambda\Bigr\},
+\end{equation}
+a function of $(P,\lambda)$ alone. Carath\'eodory reduction (Assumption~\ref{ass:finite}) lets every point
+of $I(\lambda)$ be attained with $|\mathcal U|\le K=|X|\,|M|+1=5$. Note that \eqref{eq:compat} is
+\emph{bilinear} in $(\varphi,w_x)$ and \eqref{eq:ace} bilinear in $(\varphi,\pi)$; the same $\pi$ and
+$w_x$ appear in all four equations and in the target, which is the source of the non-decomposition in
+Conjecture~\ref{conj:nondecomp}.
+
+\paragraph{Observable confounding signature.} Let
+\begin{equation}\label{eq:kappa}
+  \kappa(P):=\Bigl(\E[Y\mid X{=}1]-\E[Y\mid X{=}0]\Bigr)-\theta_{\mathrm{FD}}(P)
+  =\sum_m\bigl(q_{m\mid1}r_{1,m}-q_{m\mid0}r_{0,m}\bigr)-\sum_m\bigl(q_{m\mid1}-q_{m\mid0}\bigr)\bigl(p_1 r_{1,m}+p_0 r_{0,m}\bigr),
+\end{equation}
+the gap between the unadjusted treatment contrast and the front-door functional. This is a function of
+observables alone. If the model were unconfounded ($U\perp X$, so $w_0=w_1$) at $\lambda=0$, then
+$r_{1,m}=r_{0,m}$ for each $m$ and a direct computation gives $\kappa(P)=0$; hence $\kappa(P)\neq0$ is an
+observable certificate that no unconfounded $\lambda=0$ completion explains $P$. The strict-inclusion
+regime also requires an active mediator channel,
+\begin{equation}\label{eq:active-mediator}
+  q_{\cdot\mid1}\neq q_{\cdot\mid0},
+\end{equation}
+because if $q_{\cdot\mid1}=q_{\cdot\mid0}$ the mediator contributes no treatment variation to
+\eqref{eq:ace} and the shared-$U$ constraints need not tighten the leak box.
+
+\paragraph{Comparison sets.} Define two relaxations used in Conjecture~\ref{conj:nondecomp} as explicit
+endpoint programs. Both are \emph{internal} comparison objects constructed here, not published estimators;
+$B_{\mathrm{sens}}$ instantiates the generic latent-confounding sensitivity family of
+\citet{FrauenMelnychukFeuerriegel2023SharpBounds}.
+
+The \emph{per-mediator box} $B_{\mathrm{box}}(\lambda)$ keeps the within-mediator structure of
+\eqref{eq:idset} but severs the latent law across mediators. For each $m$ introduce a separate arm-shared
+pair $w_0^{(m)},w_1^{(m)}\in\Delta(\mathcal U)$ with its own Bayes-tied marginal
+$\pi^{(m)}=p_1 w_1^{(m)}+p_0 w_0^{(m)}$, and set
+\[
+  B_{\mathrm{box}}(\lambda)=\Bigl[\min,\ \max\Bigr]\ \text{of}\
+  \sum_{m}\sum_{u}\bigl[q_{m\mid1}\varphi(m,1,u)-q_{m\mid0}\varphi(m,0,u)\bigr]\pi^{(m)}(u)
+\]
+over $\bigl(\varphi,\{w_0^{(m)},w_1^{(m)}\}_m\bigr)$ subject to the per-mediator compatibility
+$r_{x,m}=\sum_u\varphi(m,x,u)\,w_x^{(m)}(u)$, each $w_x^{(m)}\in\Delta(\mathcal U)$, $\varphi\in[0,1]$, and
+$|d(m,u)|\le\lambda$. Thus the marginal that weights mediator $m$ in the effect is pinned to that mediator's
+own Bayes-consistent latent law (there is no free $\pi$), and the only constraint dropped relative to
+\eqref{eq:idset} is that the two mediators must share one latent law $w_x$.
+
+The \emph{generic sensitivity interval} $B_{\mathrm{sens}}(\lambda)$ is the min/max of \eqref{eq:ace}
+when the clean-mediator equations \eqref{eq:compat} are deleted entirely, retaining one shared arm-pair
+$w_0,w_1$, the Bayes tie $\pi=\sum_x p_x w_x$, $\varphi\in[0,1]$, and $|d|\le\lambda$. Both programs drop
+constraints present in \eqref{eq:idset}, so $I(\lambda)\subseteq B_{\mathrm{box}}(\lambda)$ and
+$I(\lambda)\subseteq B_{\mathrm{sens}}(\lambda)$ by construction.
+
+\paragraph{Lifted active-set object.} For the endpoint geometry (Open-ended
+Question~\ref{oeq:vertex}), lift the bilinear monomials $g_{m,x,u}:=\varphi(m,x,u)\,w_x(u)\ge0$. Then
+\eqref{eq:compat} is linear, $r_{x,m}=\sum_u g_{m,x,u}$, the box $\varphi\in[0,1]$ becomes
+$0\le g_{m,x,u}\le w_x(u)$, and \eqref{eq:ace} is linear in $g$. Fix $(w_0,w_1)$ on the latent simplices
+under Assumption~\ref{ass:finite}. An \emph{active-set cell} is a choice, for each $(m,x,u)$, of whether
+the box bound is binding ($g_{m,x,u}\in\{0,w_x(u)\}$) or interior, together with which leak bounds
+$|d(m,u)|\le\lambda$ are binding; within a cell the feasible $g$-set is a polytope and \eqref{eq:ace} is
+linear, so its extremum is attained at a vertex of that polytope. The candidate endpoints $v_j(\lambda)$
+are the values of these vertices optimized over $(w_0,w_1)$.
+
+\begin{quote}\small\textbf{Locked parameters (reproduced).}
+$(\textsf{qid},\textsf{specialization})=(\texttt{pid\_leaky\_frontdoor\_shared\_u},\texttt{v1})$;
+$P=$ law of $(X,M,Y)$ with sufficient statistics $(p_x,q_{m\mid x},r_{x,m})$;
+$\theta=\mathrm{ACE}$ in $\mathcal G=\{U\to X,U\to Y,X\to M,M\to Y,X\to Y\}$;
+restrictions $=\{|\mathcal U|\le5,\ U\perp M\mid X,\ \varphi\in[0,1],\ |d(m,u)|\le\lambda\}$;
+bounding functional $=I(\lambda)$ with endpoint map $\lambda\mapsto[L(\lambda),U(\lambda)]$.
+\end{quote}
+
+\section{Assumptions}
+\label{sec:assumptions}
+\begin{assumption}[Finite-support latent confounder]\label{ass:finite}
+$U$ has finite support with $|\mathcal U|\le K=|X|\,|M|+1=5$. By a Carath\'eodory argument the bound is
+without loss for the endpoints of $I(\lambda)$. \emph{Precedent:} discrete latent partial identification
+\citep{FinkelsteinAdamsSariaShpitser2020MeasurementError}; response-type enumeration \citep{BalkePearl1997Bounds}.
+\end{assumption}
+\begin{assumption}[Clean mediator / front-door mediator exogeneity]\label{ass:clean}
+$U\perp M\mid X$, so $\Pr(U\mid X,M)=\Pr(U\mid X)$ and \eqref{eq:compat} holds. \emph{Precedent:} the
+mediator-isolation half of Pearl's front-door criterion \citep{Pearl1995CausalDiagrams}.
+\end{assumption}
+\begin{assumption}[Bounded outcome]\label{ass:bounded}
+$Y\in[0,1]$, hence $\varphi(m,x,u)\in[0,1]$. \emph{Precedent:} bounded-outcome partial identification
+\citep{Manski1990NonparametricBounds}.
+\end{assumption}
+\begin{assumption}[Bounded structural leak]\label{ass:leak}
+There is a known $\lambda\ge0$ with $|d(m,u)|=|\varphi(m,1,u)-\varphi(m,0,u)|\le\lambda$ for all $(m,u)$;
+$\lambda=0$ is Pearl exclusion. This is the scope/sensitivity parameter that indexes the model class.
+\emph{Precedent:} a bounded direct-effect sensitivity parameter in the spirit of the bounded mediation
+sensitivity radius of \citet{DingVanderWeele2016SharpMediationSensitivity}, here applied to the direct
+$X\to Y$ contrast rather than to mediator--outcome confounding.
+\end{assumption}
+\begin{assumption}[Overlap]\label{ass:overlap}
+$p_x>0$ and $q_{m\mid x}>0$ for all $(x,m)$, so all conditional means $r_{x,m}$ are well defined.
+\emph{Precedent:} standard positivity for identification of $\mathrm{ACE}$.
+\end{assumption}
+\begin{assumption}[Active mediator channel]\label{ass:mediator-shift}
+For strict-inclusion statements only, the treatment shifts the mediator law:
+$q_{\cdot\mid1}\neq q_{\cdot\mid0}$, equivalently $q_{m\mid1}\neq q_{m\mid0}$ for some $m$.
+\emph{Precedent:} the front-door relevance condition implicit in \citet{Pearl1995CausalDiagrams}; if the
+mediator law is treatment-invariant, the $X\to M\to Y$ channel carries no treatment variation.
+\end{assumption}
+\begin{assumption}[Endpoint-inference regularity]\label{ass:inference-regularity}
+For Open-ended Question~\ref{oeq:inference} only, $(X_i,M_i,Y_i)$ are i.i.d.; the four cell probabilities
+$\rho_{xm}=\Pr(X=x,M=m)$ lie in the relative interior of the simplex; and the endpoint maps admit the
+finite locally-$C^1$ active-branch representation constructed in Open-ended Question~\ref{oeq:vertex} on
+the fixed $\lambda$ regime under study. \emph{Precedent:} finite-cell smoothness and active-set regularity
+for set-identified endpoint inference in \citet{ChernozhukovHongTamer2007ParameterSets} and directional
+differentiability in \citet{FangSantos2019DirectionallyDifferentiable}.
+\end{assumption}
+\section{Main results}
+\label{sec:results}
+Throughout, Assumptions~\ref{ass:finite}--\ref{ass:overlap} hold and $I(\lambda)$ is the set
+\eqref{eq:idset}.
+
+\begin{theorem}[Exclusion collapse]\label{thm:collapse}
+At $\lambda=0$ the set $I(0)$ is the singleton
+\[
+  \theta_{\mathrm{FD}}=\sum_{m}\bigl(q_{m\mid1}-q_{m\mid0}\bigr)\bigl(p_1 r_{1,m}+p_0 r_{0,m}\bigr),
+\]
+Pearl's front-door functional.
+\end{theorem}
+\noindent\emph{Proof sketch.} At $\lambda=0$, Assumption~\ref{ass:leak} forces $\varphi(m,1,u)=\varphi(m,0,u)=:\varphi(m,u)$.
+Then \eqref{eq:compat} gives $\sum_u\varphi(m,u)w_x(u)=r_{x,m}$, and Bayes consistency yields
+$\sum_u\varphi(m,u)\pi(u)=p_1 r_{1,m}+p_0 r_{0,m}$. Substituting into \eqref{eq:ace} collapses the latent
+sum, leaving $\theta_{\mathrm{FD}}$ regardless of the (still unidentified) $\varphi,\pi$. \hfill$\square$
+
+\begin{theorem}[Interval structure and monotonicity]\label{thm:interval}
+For every $\lambda\ge0$, $I(\lambda)$ is nonempty and compact; writing $L(\lambda)=\min I(\lambda)$ and
+$U(\lambda)=\max I(\lambda)$, the map $\lambda\mapsto L(\lambda)$ is nonincreasing, $\lambda\mapsto U(\lambda)$
+is nondecreasing, and $I(\lambda)\subseteq I(\lambda')$ whenever $\lambda\le\lambda'$ in the sense
+$[L(\lambda),U(\lambda)]\subseteq[L(\lambda'),U(\lambda')]$. Moreover $L(0)=U(0)=\theta_{\mathrm{FD}}$.
+\end{theorem}
+\noindent\emph{Proof sketch.} The feasible $(\pi,w_0,w_1,\varphi)$ lie in a compact semialgebraic subset of a
+Euclidean space (products of simplices and boxes intersected with the continuous equalities
+\eqref{eq:compat}); \eqref{eq:ace} is continuous, so its image is compact and the extrema are attained
+(Weierstrass). Enlarging $\lambda$ enlarges the feasible set, giving monotone endpoints; the corner value
+follows from Theorem~\ref{thm:collapse}. \hfill$\square$
+
+\begin{conjecture}[Non-decomposition / strict inclusion]\label{conj:nondecomp}
+\textnormal{(NOT YET PROVED)} Let $\kappa(P)$ be the observable signature \eqref{eq:kappa}.
+\begin{enumerate}[label=(\alph*),leftmargin=2em,itemsep=1pt]
+  \item For all $\lambda\ge0$, $[L(\lambda),U(\lambda)]\subseteq B_{\mathrm{box}}(\lambda)\cap B_{\mathrm{sens}}(\lambda)$.
+  \item Under Assumption~\ref{ass:mediator-shift}, on the relatively open observable set
+        $\{P:\kappa(P)\neq0,\ q_{\cdot\mid1}\neq q_{\cdot\mid0}\}$, there is $\lambda_0(P)>0$ such that
+        for $0<\lambda<\lambda_0(P)$ the inclusion in (a) is \emph{strict} in both factors.
+  \item At the exclusion corner the per-mediator box closes:
+        $B_{\mathrm{box}}(0)=I(0)=\{\theta_{\mathrm{FD}}\}$, so the strict inclusion in (b) against
+        $B_{\mathrm{box}}$ is necessarily a strictly-positive-$\lambda$ phenomenon. In mediator-stationary
+        regimes $q_{\cdot\mid1}=q_{\cdot\mid0}$ the strict-inclusion assertion is not made.
+\end{enumerate}
+\end{conjecture}
+\noindent The mechanism is that one latent law $(\pi,w_0,w_1)$ must simultaneously reconcile the four
+equations \eqref{eq:compat} and weight the effect \eqref{eq:ace}; a relaxation that lets the two mediators
+carry different latent laws, or that discards \eqref{eq:compat} altogether, severs that coupling and admits
+ACE values no joint latent completion can realize. On
+$\{\kappa(P)\neq0,\ q_{\cdot\mid1}\neq q_{\cdot\mid0}\}$ the observed law has both a confounding signature
+and a live mediator channel, which is when the cross-mediator coupling can tighten the natural relaxations.
+
+\begin{openendedquestion}[Open-ended Question 4: finite-vertex endpoints with a kink]\label{oeq:vertex}
+Is there a finite family of rational functions $\{v_j(\lambda)\}_{j\in J}$ of $(p_x,q_{m\mid x},r_{x,m},\lambda)$,
+indexed by active-set cells of the lifted polytope of \S\ref{sec:setup}, with
+\[
+  L(\lambda)=\min_{j\in J}v_j(\lambda),\qquad U(\lambda)=\max_{j\in J}v_j(\lambda),
+\]
+and a closed-form threshold $\lambda^\star=\lambda^\star(P)>0$ at which the maximizing (resp.\ minimizing)
+cell changes, so that $U(\cdot)$ (resp.\ $L(\cdot)$) is piecewise-rational with a kink at $\lambda^\star$?
+
+\smallskip\noindent\textbf{No-kink convention.} Set
+$\lambda^\star(P):=\inf\{\lambda>0:\text{the maximizing cell at }\lambda\text{ differs from the cell active at }0^+\}$,
+with $\lambda^\star(P):=+\infty$ when no such switch occurs---a single cell is maximizing throughout, as on the
+degenerate support $|\mathcal U|=1$ (Corollary~\ref{cor:degenerate}) or wherever one branch dominates for all
+$\lambda$. The kink claim is scoped to the generic regime $\{P:0<\lambda^\star(P)<\infty\}$; on its complement
+$U(\cdot)$ is a single rational branch with no interior kink and the construction returns that branch. The
+symmetric convention defines the minimizing-cell threshold for $L(\cdot)$.
+
+\smallskip\noindent\textbf{Handle:} lift the bilinear program with $g_{m,x,u}=\varphi(m,x,u)w_x(u)$ so the
+compatibility equations \eqref{eq:compat} become linear; for fixed $(w_0,w_1)$ on the latent simplices,
+enumerate the active-set cells of \S\ref{sec:setup} (which box bounds $g_{m,x,u}\in\{0,w_x(u)\}$ and which
+leak bounds $|d(m,u)|\le\lambda$ bind), read each cell's vertex value of \eqref{eq:ace} as a rational
+function $v_j$ of the data and $(w_0,w_1)$, optimize over $(w_0,w_1)$, and locate $\lambda^\star$ as the
+smallest $\lambda$ solving the boundary equality $v_{j}(\lambda)=v_{j'}(\lambda)$ between the two adjacent
+maximizing cells. Start from $|\mathcal U|=2$, the smallest support allowing $w_0\neq w_1$.
+\textbf{Why it matters:} a closed-form vertex formula lets front-door software report the leak interval and
+its kink directly from $(p_x,q_{m\mid x},r_{x,m})$ without solving a nonconvex program at every $\lambda$.
+\end{openendedquestion}
+
+\begin{openendedquestion}[Open-ended Question 5: cross-fitted endpoint inference]\label{oeq:inference}
+Is there an estimator of $\bigl(L(\lambda),U(\lambda)\bigr)$ that is $\sqrt n$-consistent and asymptotically
+Gaussian for fixed $\lambda$ in the interior of an active regime, and whose limit at the kink $\lambda^\star$
+is the (non-Gaussian) directional law? Here $\lambda^\star=\lambda^\star(P)$ is the threshold of Open-ended
+Question~\ref{oeq:vertex} under its no-kink convention; on $\{P:\lambda^\star(P)=+\infty\}$ the kink regime is
+empty and only the interior Gaussian limit is in force.
+
+\smallskip\noindent\textbf{Handle:} cross-fit the nuisances $(\hat p_x,\hat q_{m\mid x},\hat r_{x,m})$ on
+held-out folds and plug them into the Open-ended Question~\ref{oeq:vertex} vertex map
+$v_j(\cdot)$, then apply the directional delta method of \citet{FangSantos2019DirectionallyDifferentiable} to
+the $\min/\max$ envelope; the active-set indicator at $\lambda^\star$ supplies the directional derivative
+along the binding face.
+\textbf{Case-split fallback:} if no single procedure is valid across regimes, deliver one per regime---(a)
+interior active set: regular $\sqrt n$ Gaussian inference on the selected vertex; (b) kink
+$\lambda=\lambda^\star$: a directional limit with a rescaled-bootstrap or numerical-derivative correction; (c)
+collapse $\lambda=0$: the degenerate point limit at $\theta_{\mathrm{FD}}$, coordinated with set-level
+coverage in the sense of \citet{ChernozhukovHongTamer2007ParameterSets}.
+\textbf{Why it matters:} it turns the leak-indexed interval into a reportable confidence band over
+$\lambda$ for empirical mediation studies, the inference object \citet{ChernozhukovHongTamer2007ParameterSets}
+calls for in set-identified models.
+\end{openendedquestion}
+
+\section{Sanity-check corollaries}
+\label{sec:sanity}
+\begin{corollary}[Exclusion corner]\label{cor:corner}
+Setting $\lambda=0$ in $I(\lambda)$ returns the singleton $\theta_{\mathrm{FD}}$ of
+Theorem~\ref{thm:collapse}; the interval has zero width. This is the reduction the relaxation must satisfy.
+\end{corollary}
+\begin{corollary}[No spurious strict inclusion at the corner]\label{cor:noshift}
+By Conjecture~\ref{conj:nondecomp}(c), $B_{\mathrm{box}}(0)=I(0)=\{\theta_{\mathrm{FD}}\}$, so the
+strict-inclusion claim against the per-mediator box cannot fire at $\lambda=0$; it is a
+strictly-positive-$\lambda$ phenomenon. This guards against reading the non-decomposition as an artifact of
+the exclusion corner.
+\end{corollary}
+\begin{corollary}[Mediator-stationary boundary]\label{cor:stationary-mediator}
+If $q_{\cdot\mid1}=q_{\cdot\mid0}$, then \eqref{eq:ace} reduces to
+$\sum_{m,u}q_{m\mid1}d(m,u)\pi(u)$. The leak bound gives
+$|\mathrm{ACE}|\le\lambda$ before any shared-$U$ tightening is considered. Thus
+Conjecture~\ref{conj:nondecomp}(b) is scoped away from the mediator-stationary regime; the strictness
+claim requires the active channel in Assumption~\ref{ass:mediator-shift}.
+\end{corollary}
+\begin{corollary}[Degenerate latent support]\label{cor:degenerate}
+If $|\mathcal U|=1$ (no latent confounding), the compatibility equations \eqref{eq:compat} force
+$\varphi(m,x)=r_{x,m}$, leaving no latent freedom. Then $I(\lambda)$ and $B_{\mathrm{box}}(\lambda)$ both
+collapse to the single value $\sum_m\bigl[q_{m\mid1}r_{1,m}-q_{m\mid0}r_{0,m}\bigr]$ (the unadjusted
+treatment contrast) whenever the leak bound $\max_m|r_{1,m}-r_{0,m}|\le\lambda$ holds, and are empty
+otherwise. The interval has zero width: the partial-identification width of $I(\lambda)$ is a
+latent-confounding phenomenon, not a product of the leak band alone. At $\lambda=0$ this forces
+$r_{1,m}=r_{0,m}$ and the value equals $\theta_{\mathrm{FD}}$, consistent with Theorem~\ref{thm:collapse}.
+\end{corollary}
+\begin{example}[A rational witness in the strict-inclusion regime]\label{ex:kappa}
+Take $p_1=p_0=\tfrac12$, $q_{1\mid1}=\tfrac23,\,q_{0\mid1}=\tfrac13$, $q_{1\mid0}=\tfrac13,\,q_{0\mid0}=\tfrac23$,
+and $r_{1,1}=\tfrac34,\,r_{1,0}=\tfrac12,\,r_{0,1}=\tfrac12,\,r_{0,0}=\tfrac14$. Then
+$\E[Y\mid X{=}1]-\E[Y\mid X{=}0]=\tfrac23-\tfrac13=\tfrac13$ and
+$\theta_{\mathrm{FD}}=\tfrac{5}{24}-\tfrac{3}{24}=\tfrac1{12}$, so the observable signature is
+$\kappa(P)=\tfrac13-\tfrac1{12}=\tfrac14\neq0$, and
+$q_{\cdot\mid1}\neq q_{\cdot\mid0}$. This $P$ lies in the open regime
+$\{\kappa(P)\neq0,\ q_{\cdot\mid1}\neq q_{\cdot\mid0}\}$ of
+Conjecture~\ref{conj:nondecomp}(b), where the conjecture predicts
+$I(\lambda)\subsetneq B_{\mathrm{box}}(\lambda)$ for small $\lambda>0$. A $\lambda=0$ front-door completion
+exists on $|\mathcal U|=2$ ($w_1=(1,0)$, $w_0=(0,1)$,
+$\varphi(m,u_1)=r_{1,m}$, $\varphi(m,u_2)=r_{0,m}$), so $I(\lambda)$ is nonempty and nested for all
+$\lambda\ge0$. We do not compute the endpoints; the witness certifies that the strict-inclusion regime is
+nonempty over rational data and makes the route of \S\ref{sec:route} concrete.
+\end{example}
+
+\section{Proof-sketch route}
+\label{sec:route}
+Theorem~\ref{thm:collapse} is the substitution computation in its proof sketch and reduces to Pearl's
+front-door derivation \citep{Pearl1995CausalDiagrams}. Theorem~\ref{thm:interval} reduces to the Weierstrass
+extreme-value theorem on the compact semialgebraic feasible set together with monotonicity of the feasible
+region in $\lambda$. For Conjecture~\ref{conj:nondecomp}, the inclusion (a) is definitional ($I(\lambda)$ adds
+constraints to both relaxations); strictness (b) is the substance. The route is: (i) on
+$\{\kappa(P)\neq0,\ q_{\cdot\mid1}\neq q_{\cdot\mid0}\}$, parametrize at fixed $\lambda$ the feasible set with $|\mathcal U|=2$ (the smallest
+support that admits $w_1\neq w_0$) and write the four equations \eqref{eq:compat} as a bilinear system in
+$(\varphi,w_0,w_1)$; (ii) exhibit, for the rational $P$ of Example~\ref{ex:kappa} (where $\kappa(P)=\tfrac14$), a point of
+$B_{\mathrm{box}}(\lambda)$ near its endpoint that requires the two mediators to carry different latent laws
+$w_x^{(1)}\neq w_x^{(2)}$, violating the single shared $w_x$ of \eqref{eq:idset}, and certify it is not
+attained by any feasible completion (a small finite enumeration, in the spirit of the rational $2\times2$
+witness requested for \texttt{eid\_frontdoor\_multi\_mediator}); (iii) propagate the gap to the relatively
+open set $\{\kappa(P)\neq0,\ q_{\cdot\mid1}\neq q_{\cdot\mid0}\}$ by continuity. Part (c) is the corner computation: at $\lambda=0$ the leak
+bound forces $\varphi(m,1,u)=\varphi(m,0,u)$, so the per-mediator box objective collapses to
+$\theta_{\mathrm{FD}}$ exactly as in Theorem~\ref{thm:collapse}, giving $B_{\mathrm{box}}(0)=I(0)$. For
+Open-ended Question~\ref{oeq:vertex}, the route adapts the finite response-type enumeration
+of \citet{BalkePearl1997Bounds} and the linear-constraint encoding of
+\citet{FinkelsteinAdamsSariaShpitser2020MeasurementError}: after the lift $g_{m,x,u}=\varphi(m,x,u)w_x(u)$
+the compatibility equations become linear, and for fixed $(w_0,w_1)$ the extrema lie at vertices of the
+active-set cells of \S\ref{sec:setup}; enumerating cells gives the finite family $\{v_j\}$, and the
+threshold $\lambda^\star$ is the smallest $\lambda$ at which the maximizing cell changes, found by solving
+the boundary equality of two adjacent branch formulas. The boundary algebra to check explicitly is the
+two-point-support case (closed-form $v_j$ and $\lambda^\star$) and the switch between the leak-band-binding
+and compatibility-binding branches. Open-ended Question~5 reduces the inference problem to the directional
+delta method for $\min/\max$ of smooth plug-in functionals \citep{FangSantos2019DirectionallyDifferentiable}
+over cross-fitted nuisances, with set-level coverage as in \citet{ChernozhukovHongTamer2007ParameterSets}.
+
+\section{Honest scope flags}
+\label{sec:scope}
+\textbf{Proved vs.\ open.} Theorems~\ref{thm:collapse}--\ref{thm:interval} are routine
+(substitution; Weierstrass plus monotonicity) and we treat them as established. Conjecture~\ref{conj:nondecomp}
+and Open-ended Questions~\ref{oeq:vertex} and \ref{oeq:inference} are open.
+
+\textbf{Known soft spots.} (i) The compatibility equations \eqref{eq:compat} are \emph{bilinear} in
+$(\varphi,w_x)$, so the program is not a linear program and standard LP-duality sharpness arguments do not
+apply directly; the finite-vertex characterization sought in Open-ended Question~\ref{oeq:vertex} rests on
+the active-set/vertex structure of the lifted feasible set after Carath\'eodory reduction, which is left
+open as a construction.
+(ii) Theorem~\ref{thm:interval} asserts compactness and monotone endpoints but not that $I(\lambda)$ is the
+\emph{full} interval $[L(\lambda),U(\lambda)]$; connectedness of $I(\lambda)$ is left open (plausible by a
+convex-combination homotopy of feasible completions) and folded into Open-ended Question~\ref{oeq:vertex}.
+(iii) The closed form for $\lambda^\star$ is sought only for $K\le5$; larger latent supports are reduced
+to this by Carath\'eodory but the reduction is left to be checked at the boundary.
+(iv) Strict non-decomposition is left open only on the active-mediator regime
+$\{\kappa(P)\neq0,\ q_{\cdot\mid1}\neq q_{\cdot\mid0}\}$; mediator-stationary laws are outside that claim.
+
+\textbf{Supplementary direction (not a numbered result).} The comparison with proxy/proximal partial-ID
+intervals \citep{GhassamiShpitserTchetgen2023ProxyPartialID,GhassamiYangShpitserTchetgen2021HiddenMediators}---
+necessary and sufficient conditions for equality, strict containment, or incomparability between those
+intervals and $I(\lambda)$---is orthogonal to the headline and left as future work; the obstacle is that
+their latent-information structure (hidden mediator measured by proxies) differs from our observed clean
+mediator, so the two sets need not be nested.
+
+\section{Iteration trail}
+\label{sec:trail}
+\begin{itemize}[leftmargin=1.5em,itemsep=1pt]
+  \item \textbf{v1} (cold-start) --- initial draft; prior verdict: none.
+  \item \textbf{v2} (revise) --- recast the non-decomposition regime on the observable signature
+        $\kappa(P)$ with an explicit unconfounded submodel; defined $B_{\mathrm{box}},B_{\mathrm{sens}}$ as
+        endpoint programs and a lifted active-set object; relabeled the finite-vertex endpoint claim as an
+        Open-ended Question with the enumeration as its Handle; corrected the Ding--VanderWeele
+        characterization; prior verdict: REVISE.
+  \item \textbf{v3} (revise) --- fully specified $B_{\mathrm{box}}$ as a per-mediator Bayes-tied endpoint
+        program (no free $\pi$) and labeled $B_{\mathrm{box}},B_{\mathrm{sens}}$ as internal relaxations with
+        $B_{\mathrm{sens}}$ anchored to \citet{FrauenMelnychukFeuerriegel2023SharpBounds}; added a no-kink
+        convention for $\lambda^\star$ (with $\lambda^\star=+\infty$ off the generic regime) and propagated it
+        to Open-ended Question~\ref{oeq:inference}; recast Conjecture~\ref{conj:nondecomp}(c) as the
+        provable corner collapse $B_{\mathrm{box}}(0)=I(0)$ and retired the unconfounded-submodel assumption;
+        fixed the degenerate-support corollary to a singleton; added the rational witness
+        Example~\ref{ex:kappa} with $\kappa(P)=\tfrac14$; corrected two Open-ended Question~4 mislabels;
+        prior verdict: REVISE.
+  \item \textbf{v4} (revise) --- split the strict non-decomposition regime by adding the active-mediator
+        condition $q_{\cdot\mid1}\neq q_{\cdot\mid0}$, added the mediator-stationary sanity check, and
+        propagated the regime through the abstract, P4, Conjecture~\ref{conj:nondecomp}, the witness, and
+        the proof route; prior verdict: REJECT.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem{Pearl1995CausalDiagrams} Pearl, J. (1995). Causal diagrams for empirical research.
+  \textit{Biometrika} 82(4), 669--688. DOI 10.1093/biomet/82.4.669.
+\bibitem{FulcherShpitserMarealleTchetgen2017GeneralizedFrontDoor} Fulcher, I., Shpitser, I., Marealle, S.,
+  and Tchetgen Tchetgen, E. (2017). Robust inference on indirect causal effects: a generalized front-door
+  criterion. arXiv:1711.03611.
+\bibitem{DingVanderWeele2016SharpMediationSensitivity} Ding, P., and VanderWeele, T.~J. (2016). Sharp
+  sensitivity bounds for mediation under unmeasured mediator--outcome confounding. \textit{Biometrika}
+  103(2), 483--490. arXiv:1601.05155.
+\bibitem{BalkePearl1997Bounds} Balke, A., and Pearl, J. (1997). Bounds on treatment effects from studies
+  with imperfect compliance. \textit{Journal of the American Statistical Association} 92(439), 1171--1176.
+  DOI 10.1080/01621459.1997.10474074.
+\bibitem{FinkelsteinAdamsSariaShpitser2020MeasurementError} Finkelstein, N., Adams, R., Saria, S., and
+  Shpitser, I. (2020). Partial identifiability in discrete data with measurement error. arXiv:2012.12449.
+\bibitem{GhassamiYangShpitserTchetgen2021HiddenMediators} Ghassami, A., Yang, A., Shpitser, I., and
+  Tchetgen Tchetgen, E. (2021). Causal inference with hidden mediators. arXiv:2111.02927.
+\bibitem{GhassamiShpitserTchetgen2023ProxyPartialID} Ghassami, A., Shpitser, I., and Tchetgen Tchetgen, E.
+  (2023). Partial identification of causal effects using proximal causal inference. arXiv:2304.04374.
+\bibitem{ChernozhukovHongTamer2007ParameterSets} Chernozhukov, V., Hong, H., and Tamer, E. (2007).
+  Estimation and confidence regions for parameter sets in econometric models. \textit{Econometrica} 75(5),
+  1243--1284. DOI 10.1111/j.1468-0262.2007.00773.x.
+\bibitem{FangSantos2019DirectionallyDifferentiable} Fang, Z., and Santos, A. (2019). Inference on
+  directionally differentiable functions. \textit{Review of Economic Studies} 86(1), 377--412.
+  arXiv:1404.3763.
+\bibitem{Manski1990NonparametricBounds} Manski, C.~F. (1990). Nonparametric bounds on treatment effects.
+  \textit{American Economic Review} 80(2), 319--323.
+\bibitem{FrauenMelnychukFeuerriegel2023SharpBounds} Frauen, D., Melnychuk, V., and Feuerriegel, S. (2023).
+  Sharp bounds for generalized causal sensitivity analysis. \textit{Advances in Neural Information
+  Processing Systems} 36, 19036--19071. arXiv:2305.16988.
+\end{thebibliography}
+
+\end{document}

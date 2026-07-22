@@ -1,0 +1,991 @@
+{
+ "qid": "exp_saturation_skew_threshold",
+ "specialization": "v1",
+ "status": "needs-new-infrastructure",
+ "target_subdir": "CausalSmith/Experimentation/EXP_SaturationSkewThreshold_Research",
+ "env": [
+  {
+   "id": "S1",
+   "world": "probability laws on the compact interval [0,1] (weak topology) — Mathlib measure-theoretic world",
+   "binds_symbols": [
+    "pbar",
+    "u",
+    "d",
+    "delta_x",
+    "nu",
+    "s",
+    "a, b, c",
+    "C_rd(nu)",
+    "Y_{ji}(z,u)",
+    "T_pbar",
+    "D_pbar",
+    "N(pbar)",
+    "N_s(pbar,s)",
+    "m_r(nu)",
+    "V(nu)",
+    "F(s)",
+    "Q_{a,b,c}(d)",
+    "G_{a,c}(s)",
+    "nu_w",
+    "V_0",
+    "V_1",
+    "V_3",
+    "V_4"
+   ],
+   "binds_sampling_model": false,
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure",
+    "Mathlib.MeasureTheory.Integral.Bochner",
+    "Mathlib.Topology.Algebra.Module.WeakDual",
+    "Mathlib.Analysis.Convex.Combination"
+   ],
+   "notes": "bypass-justified: the entire law program lives over P([0,1]) with weak convergence, moments, pushforwards and convex moment images. Surveyed Causalean/Experimentation/DesignBased {Design.lean, FiniteDesignMeasure.lean, Optimality.lean, TwoStage.lean}: Causalean's world is FiniteDesign (a probability over a finite assignment space) with E/Var/Cov and IsOptimalOn — the wrong abstraction (no P([0,1]) weak-topology / moment-set machinery, no continuous saturation law nu). Model nu as `MeasureTheory.ProbabilityMeasure ℝ` supported on Icc 0 1 (or a measure with IsProbabilityMeasure on Icc), delta_x as `MeasureTheory.Measure.dirac`, m_r/V as integrals of polynomials, D_pbar as Set.Icc (-pbar) (1-pbar)."
+  },
+  {
+   "id": "S2",
+   "world": "finite-population two-stage randomized saturation design on M equal clusters of size m (deterministic saturation vector on the 1/m grid)",
+   "binds_symbols": [
+    "M",
+    "m",
+    "N",
+    "C_1, ..., C_M",
+    "pi",
+    "hat_tau_DM",
+    "tau",
+    "Pi_{M,m}(pbar)",
+    "L_M(pi)",
+    "pi_rd"
+   ],
+   "binds_sampling_model": true,
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Data.Fintype.Basic",
+    "Mathlib.Algebra.BigOperators.Fin",
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "notes": "bypass-justified: the implementable design is a deterministic saturation vector pi : Fin M → ℝ on the grid {0,1/m,...,1} with mean pbar, and L_M(pi) is its empirical law (M^{-1} sum of diracs). The finite-attainability/rounding/empirical-law content is pure combinatorics over Fin M → ℝ and needs no probability structure on the assignment space. Surveyed Causalean/Experimentation/DesignBased {Design.lean (FiniteDesign, E/Var/Cov), TwoStage.lean (compound design), FiniteDesignMeasure.lean}: these model the randomization over assignments (a FiniteDesign over {0,1}^N), whereas our objects are the deterministic saturation vector and its empirical law — different abstraction. The estimator hat_tau_DM and its design variance enter ONLY through the gated Cai expansion (S-blocks do not re-derive them); tau is a fixed real estimand parameter. binds_sampling_model true: the two-stage saturation sampling model is named here but its variance is supplied by the Cai gate."
+  }
+ ],
+ "nodes": {
+  "ass:equal-cluster-size": {
+   "lean_kind": "assumption",
+   "lean_name": "EqualClusterSize",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Data.Fintype.Basic"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "classification": "modeling-assumption",
+   "target_file": "Basic.lean",
+   "notes": "Design restriction N = M*m with M clusters of common size m; modeling assumption (Prop on the design size data). Search trace: grepped Causalean DesignBased.Designs {ClusterRandomization.lean, Stratified.lean} for an equal-cluster-size predicate — found cluster-randomization designs but no reusable named Prop matching this exact partition restriction; build-inline as a one-line Prop."
+  },
+  "ass:budget-interior": {
+   "lean_kind": "assumption",
+   "lean_name": "BudgetInterior",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Data.Real.Basic"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "classification": "modeling-assumption",
+   "target_file": "Basic.lean",
+   "notes": "0 < pbar < 1; interior treatment budget, modeling assumption. Provisional D0.R add (pending approval) but treated as a faithful interior-budget hypothesis. One-line Prop."
+  },
+  "ass:isolated-partial-interference": {
+   "lean_kind": "assumption",
+   "lean_name": "IsolatedPartialInterference",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Data.Fintype.Basic"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "classification": "modeling-assumption",
+   "target_file": "Basic.lean",
+   "notes": "Partial-interference restriction (cluster j outcomes depend only on within-cluster assignments). Modeling assumption. Search trace: Causalean/Experimentation/HudgensHalloran {Basic.lean, Stratified.lean} models two-stage partial interference but at the FiniteDesign/exposure abstraction, not a reusable saturation-share Prop; build-inline."
+  },
+  "ass:anonymous-share-specialization": {
+   "lean_kind": "assumption",
+   "lean_name": "AnonymousShareSpecialization",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Data.Real.Basic"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "classification": "modeling-assumption",
+   "target_file": "Basic.lean",
+   "notes": "Within-cluster variance contribution depends on the assignment only through the saturation share u; novel modeling assumption. One-line Prop."
+  },
+  "ass:homogeneous-linear-share-working-model": {
+   "lean_kind": "assumption",
+   "lean_name": "HomogeneousLinearShareWorkingModel",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Data.Real.Basic"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "classification": "modeling-assumption",
+   "target_file": "Basic.lean",
+   "notes": "Affine-in-centered-share homogeneous outcome working model; novel modeling assumption (provisional D0.R add). One-line Prop."
+  },
+  "ass:cai-leading-expansion-domain": {
+   "lean_kind": "assumption",
+   "lean_name": "CaiLeadingExpansionDomain",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Data.Real.Basic"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "classification": "modeling-assumption",
+   "target_file": "Basic.lean",
+   "notes": "Cai-Pouget-Abadie-Airoldi (2022) Theorem 9 regularity regime (M,m -> infinity, bounded linear-interference parameters, block-fixed isolated-cluster specialization). This is the declared ass: node (a modeling restriction naming the asymptotic domain); kept as a threaded hypothesis. The Cai THEOREM itself is the separate node lem:cai-randomized-saturation-moment-expansion (substrate-gate). Do not discharge/escalate this ass: node. [F2 scaffold-redirect attempt6] Restored the dropped FULL Cai expansion domain: the prior Lean realization kept only `Mseq,mseq -> infinity`. Signature is now `CaiLeadingExpansionDomain (pbar) (Mseq mseq : N -> N) (Yseq : (n) -> Fin(Mseq n) -> Fin(mseq n) -> ... -> R)` with two added conjuncts the note states: (i) BOUNDED PARAMETERS `exists B, forall n j i z, |Yseq n j i z| <= B` (uniform boundedness of the linear-interference potential-outcome parameters), and (ii) REGULARITY in the homogeneous/block-fixed isolated-cluster specialization `forall n, IsolatedPartialInterference (Yseq n) /\\ AnonymousShareSpecialization (Yseq n) /\\ HomogeneousLinearShareWorkingModel pbar (Yseq n)`. Consumers (lem:variance-moment-reduction, prop:design-optimal-saturation) gain a `Yseq` parameter and pass `CaiLeadingExpansionDomain pbar Mseq mseq Yseq`; the gate def CaiRandomizedSaturationMomentExpansion threads `Yseq` into its `CaiLeadingExpansionDomain` antecedent."
+  },
+  "def:centering-map": {
+   "lean_kind": "def",
+   "lean_name": "centeringMap",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Data.Real.Basic"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "notes": "T_pbar(u) = u - pbar. Trivial construction; def : ℝ → ℝ."
+  },
+  "def:centered-support-domain": {
+   "lean_kind": "def",
+   "lean_name": "centeredSupportDomain",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Order.Interval.Set.Basic"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "notes": "D_pbar = Set.Icc (-pbar) (1-pbar). Construction with input pbar."
+  },
+  "def:admissible-law-class": {
+   "lean_kind": "structure",
+   "lean_name": "AdmissibleLaw",
+   "disposition": "define-local",
+   "reuse": null,
+   "members": [
+    "ass:budget-interior"
+   ],
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "notes": "CLASS (by_member_properties=[ass:budget-interior]) → structure bundling the budget-interior member Prop together with the defining mean-constraint field (integral u dnu = pbar) and support-in-[0,1]. N(pbar) realized as {nu // AdmissibleLaw pbar nu} or a membership predicate. P2: members == core by_member_properties."
+  },
+  "def:fixed-second-moment-slice": {
+   "lean_kind": "def",
+   "lean_name": "secondMomentSlice",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "notes": "N_s(pbar,s) = {nu in N(pbar) : m_2(nu) = s}. Construction (inputs pbar,s)."
+  },
+  "def:centered-moments": {
+   "lean_kind": "def",
+   "lean_name": "centeredMoment",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Integral.Bochner"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "notes": "m_r(nu) = ∫ (u - pbar)^r dnu, r ∈ {2,3,4}. Construction (inputs nu,pbar)."
+  },
+  "def:variance-functional": {
+   "lean_kind": "def",
+   "lean_name": "varianceFunctional",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Integral.Bochner"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "notes": "V(nu) = V_0 + V_1 m_2 + V_3 m_3 + V_4 (m_4 - m_2^2). Construction over centeredMoment."
+  },
+  "def:profile-value": {
+   "lean_kind": "def",
+   "lean_name": "profileValue",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Integral.Bochner",
+    "Mathlib.Order.CompleteLattice"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "notes": "F(s) = inf over N_s(pbar,s) of ∫ (V_1 d^2 + V_3 d^3 + V_4 d^4) dnu. Construction via sInf/iInf of the integral functional."
+  },
+  "def:quartic-dual-residual": {
+   "lean_kind": "def",
+   "lean_name": "quarticDualResidual",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Data.Real.Basic"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "notes": "Q_{a,b,c}(d) = V_1 d^2 + V_3 d^3 + V_4 d^4 - a - b d - c d^2. Polynomial construction."
+  },
+  "def:outer-certificate": {
+   "lean_kind": "def",
+   "lean_name": "outerCertificate",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Data.Real.Basic"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "notes": "H(s) = V_0 + F(s) - V_4 s^2 (the profiled outer value; the affine G^lin is only a sufficient lower-certificate). Construction over profileValue. G_{a,c} symbol also defined here as the affine certificate function."
+  },
+  "def:implementable-vector-class": {
+   "lean_kind": "structure",
+   "lean_name": "ImplementableVector",
+   "disposition": "define-local",
+   "reuse": null,
+   "members": [
+    "ass:equal-cluster-size",
+    "ass:budget-interior"
+   ],
+   "modules": [
+    "Mathlib.Data.Fintype.Basic",
+    "Mathlib.Algebra.BigOperators.Fin"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "notes": "CLASS (by_member_properties=[ass:equal-cluster-size, ass:budget-interior]) → structure bundling the equal-cluster-size and budget-interior member Props with the defining fields: pi : Fin M → ℝ, each coordinate in {0,1/m,...,1}, and M^{-1} Σ pi_j = pbar. Pi_{M,m}(pbar) realized as this structure's carrier set. P2 satisfied."
+  },
+  "def:empirical-law": {
+   "lean_kind": "def",
+   "lean_name": "empiricalLaw",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure",
+    "Mathlib.Algebra.BigOperators.Fin"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "notes": "L_M(pi) = M^{-1} Σ_j dirac(pi_j). Construction (inputs pi,M,delta_x) as a ProbabilityMeasure."
+  },
+  "def:grid-split-rounding": {
+   "lean_kind": "def",
+   "lean_name": "gridSplitRounding",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Algebra.BigOperators.Fin",
+    "Mathlib.Algebra.Order.Floor"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "notes": "Grid-split rounding handle: mass-round (largest-remainder), grid-snap each support point via floor, final unit-step balancing to enforce mean pbar. Construction producing pi_rd from a K-atomic nu (inputs nu,M,m,pbar). Concrete combinatorial def consumed by lem:finite-atomic-grid-split-rounding. [F2 scaffold-redirect attempt3] Restored the omitted construction content: `gridSplitRounding (M m : ℕ) (pbar) {K} (w u : Fin K → ℝ)` now builds π_rd from the atomic-law data via the three documented stages. [F2 scaffold-redirect attempt8] Corrected Stage 2/3 to the paper's grid-SPLIT handle: Stage 2 is now ADJACENT-GRID SPLITTING WITH MIXING WEIGHTS (error-feedback split of each atom value u_ℓ between the two adjacent grid units ⌊m·u_ℓ⌋ and ⌈m·u_ℓ⌉, with a frac(m·u_ℓ) mixing share to the upper point, preserving each atom's mean contribution up to 1/m), and Stage 3 is MULTI-COORDINATE unit-step BALANCING (the integer grid-unit deficit D=round(N·pbar)−∑unit spread as single ±1/m steps across the first |D| clusters) — replacing the prior floor-snap + one-coordinate (cluster 0) correction, which was not the paper's grid-split construction. Signature unchanged, so all consumers (lem:finite-atomic-grid-split-rounding, thm:rounding-loss, thm:finite-attainability, prop:design-optimal-saturation, thm:constructive-optimal-design-algorithm) keep their statements byte-for-byte."
+  },
+  "def:branch-map-contact-handle": {
+   "lean_kind": "def",
+   "lean_name": "branchContactSystem",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Data.Real.Basic",
+    "Mathlib.Algebra.BigOperators.Fin"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/Branches.lean",
+   "notes": "Notation-only handle: the finite support/contact families E_k(theta) (k=1,2,3) and branch objectives R_k^0 (S1 singleton {0}, S2 two-point {-b,a}, S3 three-point {-p,r,1-p}). Construction (inputs pbar,V_1,V_3,V_4). NOT a parameter-uniform partition. D0.R provisional definition change (def:branch-map-contact-handle); models the finite branch families used by thm:constructive-optimal-design-algorithm."
+  },
+  "lem:variance-moment-reduction": {
+   "lean_kind": "lemma",
+   "lean_name": "variance_moment_reduction",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "T_VarianceMomentReduction.lean",
+   "hyps": [
+    "ass:equal-cluster-size",
+    "ass:isolated-partial-interference",
+    "ass:anonymous-share-specialization",
+    "ass:homogeneous-linear-share-working-model",
+    "ass:cai-leading-expansion-domain",
+    "lem:cai-randomized-saturation-moment-expansion"
+   ],
+   "local_id": "lem:variance-moment-reduction",
+   "notes": "Optimizer-level bridge. IN-SCOPE conditional on the threaded Cai gate (lem:cai-randomized-saturation-moment-expansion supplies the o(N^{-1})-free expansion = V(L_M(pi))); the remainder (weak-convergence moment continuity, lower bound, boundary branch, rounding upper bound via thm:rounding-loss + prop:support-at-most-three) is built over Mathlib. Gate-consumer rule: difficulty is the gated Cai engine, so prove conditional on the gate, do not defer. [F2 scaffold-redirect] Restored the dropped FINITE leading-comparison equality clause: added a `designVar : (n) → (Fin (Mseq n) → ℝ) → ℝ` parameter and a leading conjunct `∃ rem, (rem·N → 0) ∧ ∀ n feasible π, designVar n π = V(empiricalLaw) + rem n` (the o(N^{-1})-free leading comparison equals exactly V(L_M(π))), provable from the threaded Cai gate. [F2 scaffold-redirect attempt3] Added `(V2 : ℝ)` and threaded the BOUND Cai gate `hcai : CaiRandomizedSaturationMomentExpansion Yfull pbar Mseq mseq designVar V0 V1 V2 V3 V4` so the coefficients used to build `V` are the same tuple the Cai specialization binds. [F2 scaffold-redirect attempt6] Added a `Yseq` design-sequence parameter and pass the FULL domain `hDom : CaiLeadingExpansionDomain pbar Mseq mseq Yseq` (now carrying bounded-parameters + regularity); `hcai` call site gains the `Yseq` argument."
+  },
+  "thm:global-certificate": {
+   "lean_kind": "theorem",
+   "lean_name": "global_certificate",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "T_GlobalCertificate.lean",
+   "hyps": [
+    "ass:budget-interior"
+   ],
+   "local_id": "thm:global-certificate",
+   "notes": "Necessary-and-sufficient global dual/KKT certificate for the nonconvex quartic moment program. Pure P([0,1]) statement; build-inline over lem:centered-pushforward-program, lem:profile-value-reduction, lem:bounded-moment-slice-duality, lem:second-moment-slices-nonempty. The paper's own crux content."
+  },
+  "prop:support-at-most-three": {
+   "lean_kind": "theorem",
+   "lean_name": "support_at_most_three",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "T_SupportAtMostThree.lean",
+   "hyps": [
+    "lem:extreme-moment-slice-support"
+   ],
+   "local_id": "prop:support-at-most-three",
+   "notes": "Finite-atomic (≤3 support) optimizer reduction. IN-SCOPE conditional on the threaded extreme-point gate (lem:extreme-moment-slice-support, Winkler-1988 extreme points of 3-moment slices). Gate-consumer rule: the only hard engine is the gated extreme-point geometry; the assembly (boundary branch via lem:boundary-admissible-law-singleton, slice reduction via lem:profile-value-reduction + lem:compact-convex-moment-slice + lem:centered-pushforward-program) is built over Mathlib. Prove conditional on the gate."
+  },
+  "prop:positive-penalty-threshold": {
+   "lean_kind": "theorem",
+   "lean_name": "positive_penalty_threshold",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "T_PositivePenaltyThreshold.lean",
+   "hyps": [
+    "ass:budget-interior"
+   ],
+   "local_id": "prop:positive-penalty-threshold",
+   "notes": "Closed iff threshold for delta_pbar global optimality. Build-inline over lem:pearson-centered-moment-bound, lem:two-point-centered-objective (and thm:global-certificate for the necessary direction). Pure algebra over moments."
+  },
+  "prop:skewed-witness": {
+   "lean_kind": "theorem",
+   "lean_name": "skewed_witness",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure",
+    "Mathlib.Tactic.NormNum"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "T_SkewedWitness.lean",
+   "hyps": [],
+   "local_id": "prop:skewed-witness",
+   "notes": "Concrete numerical witness nu_w=(2/3)delta_0+(1/3)delta_1 at pbar=1/3, V=(1,-10,1). Trivial: compute centered moments of a 2-atom law and norm_num. Build-inline."
+  },
+  "thm:finite-attainability": {
+   "lean_kind": "theorem",
+   "lean_name": "finite_attainability",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Algebra.BigOperators.Fin",
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "T_FiniteAttainability.lean",
+   "hyps": [
+    "ass:equal-cluster-size"
+   ],
+   "local_id": "thm:finite-attainability",
+   "notes": "Exact denominator-compatible realization L_M(pi)=nu and the Bernoulli/stratified specializations. Build-inline: list n_ell=M w_ell copies, check grid membership and mean. Combinatorics over Fin M → ℝ."
+  },
+  "thm:rounding-loss": {
+   "lean_kind": "theorem",
+   "lean_name": "rounding_loss",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "T_RoundingLoss.lean",
+   "hyps": [],
+   "local_id": "thm:rounding-loss",
+   "notes": "O(M^{-1}+m^{-1}) rounding loss bound. Build-inline by composing lem:finite-atomic-grid-split-rounding (coupling cost) with lem:quartic-variance-coupling-lipschitz (Lipschitz of V along couplings)."
+  },
+  "prop:sutva-corner": {
+   "lean_kind": "theorem",
+   "lean_name": "sutva_corner",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "T_SutvaCorner.lean",
+   "hyps": [],
+   "local_id": "prop:sutva-corner",
+   "notes": "SUTVA degeneration V_3=V_4=0. Build-inline over lem:centered-second-moment-extrema and thm:finite-attainability. (Core depends_on omits ass:budget-interior despite used_by; hyps follow depends_on per P4.)"
+  },
+  "oeq:full-branch-optimizer-map": {
+   "lean_kind": "def",
+   "lean_name": "FullBranchAtlasResidual",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Data.Real.Basic"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Basic.lean",
+   "hyps": [],
+   "notes": "OPEN-ENDED QUESTION (kind openendedquestion; d0_open_oeq_residuals marks it the acknowledged open atlas-compression problem). Mapped to a named Prop def STATING the residual (existence of a parameter-uniform human-readable symbolic atlas over Theta), NOT a theorem. EXCLUDED from the theorems manifest; no theorem depends_on it. The delivered constructive content lives in thm:constructive-optimal-design-algorithm / lem:explicit-profile-value / prop:explicit-two-point-cell; only the atlas-compression residual is stated here."
+  },
+  "prop:design-optimal-saturation": {
+   "lean_kind": "theorem",
+   "lean_name": "design_optimal_saturation",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "T_DesignOptimalSaturation.lean",
+   "hyps": [
+    "ass:equal-cluster-size",
+    "ass:isolated-partial-interference",
+    "ass:anonymous-share-specialization",
+    "ass:homogeneous-linear-share-working-model",
+    "ass:cai-leading-expansion-domain",
+    "lem:cai-randomized-saturation-moment-expansion",
+    "lem:extreme-moment-slice-support"
+   ],
+   "local_id": "prop:design-optimal-saturation",
+   "notes": "Design-level payoff: assembles lem:variance-moment-reduction (carries the Cai gate transitively), prop:support-at-most-three (carries the extreme-point gate transitively), thm:rounding-loss, thm:global-certificate, prop:positive-penalty-threshold, prop:sutva-corner, lem:boundary-admissible-law-singleton. IN-SCOPE conditional on the gates threaded through its dependencies; no own un-gated open content. [F2 sync-back] Gates CaiRandomizedSaturationMomentExpansion + ExtremeMomentSliceSupport threaded as inline Prop hypotheses (carried transitively from variance_moment_reduction / support_at_most_three); both consumers realize their gate nodes as threaded Prop defs, not discharged lemmas. [F2 scaffold-redirect attempt3] Added `designVar` and `(V2 : ℝ)` params; `hcai` now the BOUND gate form (carried transitively from variance_moment_reduction). [F2 scaffold-redirect attempt6] Added a `Yseq` parameter and pass the FULL `CaiLeadingExpansionDomain pbar Mseq mseq Yseq` (bounded-parameters + regularity); `hcai` call site gains the `Yseq` argument."
+  },
+  "lem:explicit-profile-value": {
+   "lean_kind": "lemma",
+   "lean_name": "explicit_profile_value",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure",
+    "Mathlib.Analysis.SpecialFunctions.Polynomials"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "T_ExplicitProfileValue.lean",
+   "hyps": [
+    "ass:budget-interior"
+   ],
+   "local_id": "lem:explicit-profile-value",
+   "notes": "Closed-form profile F(s)=min of two quadratic-interval minima (Phi_2 over I_2(s), Phi_3 over I_3(s)); H(s)=V_0+F(s)-V_4 s^2. Heavy but elementary: build-inline over lem:fixed-second-moment-envelope, lem:centered-pushforward-program, def:profile-value, def:outer-certificate. No gate. [F2 scaffold-redirect] Restored the dropped BRANCH-ATTAINER formulas: added two conjuncts over s∈Ioo(0,C). (i) first-min attainer at some t∈I_2(s) realized by the two-point centered law on the roots of x²-tx-s (pinned via cardSupportLe 2 ∧ m_3=s·t ∧ m_4=s²+s·t²); (ii) second-min attainer at some r∈I_3(s) realized by the endpoint-interior law on centered {-pbar,r,1-pbar} (decentered support {0,pbar+r,1}, pinned via cardSupportLe 3 ∧ support⊆{0,pbar+r,1} ∧ integral=Phi_3(s,r)). Each also asserts the corresponding iInf is attained at that t/r."
+  },
+  "thm:constructive-optimal-design-algorithm": {
+   "lean_kind": "theorem",
+   "lean_name": "constructive_optimal_design_algorithm",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "T_ConstructiveAlgorithm.lean",
+   "hyps": [
+    "lem:semialgebraic-optimization-algorithms"
+   ],
+   "local_id": "thm:constructive-optimal-design-algorithm",
+   "notes": "Existence of a globally optimal nu_alg in N(pbar) with certificate, reduced to the finite branch families S1/S2/S3. IN-SCOPE conditional on the threaded semialgebraic gate (lem:semialgebraic-optimization-algorithms supplies the terminating exact CAD/Thom solver over compact semialgebraic branch sets). Gate-consumer rule: the CAD/Tarski engine is the gated, genuinely-infeasible part; the paper's own content (branch enumeration + 'branch union contains a ≤3-support global minimizer' via prop:support-at-most-three + lem:explicit-profile-value + lem:two-point-endpoint-reduction, and certification via thm:global-certificate) is assembled conditional on the gate. State the minimizer-existence-with-certificate form; the literal 'terminating exact algebraic procedure' character is abstracted into the gate."
+  },
+  "prop:explicit-two-point-cell": {
+   "lean_kind": "theorem",
+   "lean_name": "explicit_two_point_cell",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure",
+    "Mathlib.Analysis.SpecialFunctions.Polynomials"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "T_ExplicitTwoPointCell.lean",
+   "hyps": [
+    "ass:budget-interior"
+   ],
+   "local_id": "prop:explicit-two-point-cell",
+   "notes": "Closed-form optimizer over the singleton/two-point class via the two endpoint cubic branches g_L,g_R and their finite stationary candidate list. Build-inline over lem:two-point-centered-objective, lem:two-point-endpoint-reduction. The two-vs-three comparison is delegated to thm:constructive-optimal-design-algorithm (not part of this node). No gate of its own."
+  },
+  "lem:finite-dimensional-supporting-hyperplane": {
+   "lean_kind": "lemma",
+   "lean_name": "finite_dim_supporting_hyperplane",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Analysis.Convex.SeparationHahnBanach"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/Convex.lean",
+   "hyps": [],
+   "local_id": "lem:finite-dimensional-supporting-hyperplane",
+   "notes": "Rockafellar finite-dim separation/supporting hyperplane. Build-inline as a thin wrapper around Mathlib `geometric_hahn_banach_open` / `geometric_hahn_banach_compact_closed` specialised to a compact convex set and a disjoint open convex ray in ℝ^4. Search trace: leansearch 'separating hyperplane compact convex disjoint open' → Mathlib.Analysis.Convex.SeparationHahnBanach family; adapt to the lower-boundary supporting functional."
+  },
+  "lem:compact-support-probability-laws-weakly-compact": {
+   "lean_kind": "lemma",
+   "lean_name": "probabilityMeasure_isCompact",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure",
+    "Mathlib.MeasureTheory.Measure.Portmanteau"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/MeasureWeak.lean",
+   "hyps": [],
+   "local_id": "lem:compact-support-probability-laws-weakly-compact",
+   "notes": "Prokhorov on a compact interval: P(I) is weakly compact. Build-inline over Mathlib's compactness of `ProbabilityMeasure` on a compact metric space (CompactSpace instance / Prokhorov). Search trace: grepped Mathlib for ProbabilityMeasure CompactSpace / Prokhorov — present as an instance; wrap for I = Icc 0 1. [F2 scaffold-redirect attempt3] Generalized from the fixed [0,1] set to an arbitrary compact interval: `probabilityMeasure_isCompact (a b : ℝ) : IsCompact {ν | ν (Icc a b)ᶜ = 0}`."
+  },
+  "lem:bounded-continuous-integrals-weakly-continuous": {
+   "lean_kind": "lemma",
+   "lean_name": "integral_weakly_continuous",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/MeasureWeak.lean",
+   "hyps": [],
+   "local_id": "lem:bounded-continuous-integrals-weakly-continuous",
+   "notes": "Portmanteau: mu ↦ ∫ g dmu is weakly continuous for bounded continuous g. Build-inline as a wrapper around Mathlib `MeasureTheory.ProbabilityMeasure.tendsto_iff_forall_integral_tendsto` (weak-convergence characterisation). Search trace: leansearch 'weak convergence iff integral bounded continuous' → tendsto_iff_forall_integral_tendsto. [F2 scaffold-redirect attempt4] Restored the dropped COMPACT-INTERVAL `I=[a,b]`: signature now `weaklyContinuous_integral_bddCont (a b : ℝ) (g) (hg : Continuous g) (hb : ∃ C, ∀ x ∈ Icc a b, |g x| ≤ C)` concluding `ContinuousOn (ν ↦ ∫ g dν) {ν | ν (Icc a b)ᶜ = 0}` (weak continuity on P(I)), instead of the prior global `Continuous` over ALL laws with a globally-bounded g — the note's `g:I→ℝ bounded continuous ⇒ weakly continuous on P(I)` form."
+  },
+  "lem:continuous-function-attains-minimum-on-compact-set": {
+   "lean_kind": "lemma",
+   "lean_name": "continuous_attains_min_on_compact",
+   "disposition": "reuse",
+   "reuse": "IsCompact.exists_isMinOn",
+   "modules": [
+    "Mathlib.Topology.Order.Compact"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/MeasureWeak.lean",
+   "hyps": [],
+   "local_id": "lem:continuous-function-attains-minimum-on-compact-set",
+   "notes": "Weierstrass extreme value theorem. REUSE Mathlib `IsCompact.exists_isMinOn` (a continuous function on a nonempty compact set attains its minimum). Used throughout the attainment lemmas."
+  },
+  "lem:moment-image-compact-convex": {
+   "lean_kind": "lemma",
+   "lean_name": "moment_image_compact_convex",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure",
+    "Mathlib.Analysis.Convex.Combination"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/Convex.lean",
+   "hyps": [],
+   "local_id": "lem:moment-image-compact-convex",
+   "notes": "Moment image C_f ⊂ ℝ^4 compact (continuous image of weakly compact P(D)) and convex (affinity of mu ↦ moments). Build-inline over lem:compact-support-probability-laws-weakly-compact + lem:bounded-continuous-integrals-weakly-continuous."
+  },
+  "lem:bounded-moment-slice-duality": {
+   "lean_kind": "lemma",
+   "lean_name": "bounded_moment_slice_duality",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Analysis.Convex.SeparationHahnBanach"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/Duality.lean",
+   "hyps": [],
+   "local_id": "lem:bounded-moment-slice-duality",
+   "notes": "Slice minimizer iff exists multipliers a,b,c with Q≥0 on D and Q=0 on supp. Build-inline over lem:finite-dimensional-supporting-hyperplane + lem:moment-image-compact-convex (separate (1,0,s,alpha) on the lower boundary from the open ray)."
+  },
+  "lem:extreme-moment-slice-support": {
+   "lean_kind": "assumption",
+   "lean_name": "ExtremeMomentSliceSupport",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": true,
+   "gate": true,
+   "tag": "substrate-gate",
+   "target_file": "Helpers/ExtremePoints.lean",
+   "hyps": [],
+   "notes": "SUBSTRATE-GATE (Winkler 1988 / Pinelis 2012: extreme points of a probability moment set with 3 generalized-moment constraints {1,d,d^2} are supported on ≤3 atoms, plus an extreme minimizer of a continuous affine functional). External classical result NOT original to this paper, not in Mathlib, and cannot make the consumers vacuous. Threaded as a named Prop into prop:support-at-most-three. Search trace: leansearch/local_search 'extreme point moment set probability measure finitely many constraints atoms' → no Mathlib decl; Krein-Milman + Choquet exist but not the finite-atom moment-set extreme-point bound. Future SUBSTRATE_DEBT to build before banking. [F2 sync-back] Realized as a threaded `def : Prop` (NOT a `lemma := by sorry`); taken inline by its consumer(s)."
+  },
+  "lem:centered-pushforward-program": {
+   "lean_kind": "lemma",
+   "lean_name": "centered_pushforward_program",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.Map"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/Pushforward.lean",
+   "hyps": [
+    "ass:budget-interior"
+   ],
+   "local_id": "lem:centered-pushforward-program",
+   "notes": "Pushforward by T_pbar is a mean-zero law on D_pbar with matching centered moments; converse; 0≤m_2≤pbar(1-pbar). Build-inline over Mathlib change-of-variables (`MeasureTheory.integral_map`)."
+  },
+  "lem:profile-value-reduction": {
+   "lean_kind": "lemma",
+   "lean_name": "profile_value_reduction",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/Profile.lean",
+   "hyps": [
+    "ass:budget-interior"
+   ],
+   "local_id": "lem:profile-value-reduction",
+   "notes": "On each slice, V = V_0 + ∫ f dmu - V_4 s^2 and H(s)=inf V. Build-inline over lem:centered-pushforward-program + def:profile-value/def:outer-certificate."
+  },
+  "lem:compact-moment-program-attains": {
+   "lean_kind": "lemma",
+   "lean_name": "compact_moment_program_attains",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/MeasureWeak.lean",
+   "hyps": [
+    "ass:budget-interior"
+   ],
+   "local_id": "lem:compact-moment-program-attains",
+   "notes": "V attains a minimum over N(pbar); F(s) attained on nonempty slices. Build-inline over lem:compact-support-probability-laws-weakly-compact, lem:bounded-continuous-integrals-weakly-continuous, lem:continuous-function-attains-minimum-on-compact-set."
+  },
+  "lem:pearson-centered-moment-bound": {
+   "lean_kind": "lemma",
+   "lean_name": "pearson_centered_moment_bound",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Integral.Bochner",
+    "Mathlib.Analysis.MeanInequalities"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/MomentAlgebra.lean",
+   "hyps": [],
+   "local_id": "lem:pearson-centered-moment-bound",
+   "notes": "t=m_3/s ∈ D_pbar and m_4 - s^2 ≥ m_3^2/s. Build-inline via Cauchy-Schwarz (Mathlib `inner_mul_le_norm_mul_norm` / `integral_mul_le`) and a reweighted probability law."
+  },
+  "lem:second-moment-slices-nonempty": {
+   "lean_kind": "lemma",
+   "lean_name": "second_moment_slices_nonempty",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/MomentAlgebra.lean",
+   "hyps": [
+    "ass:budget-interior"
+   ],
+   "local_id": "lem:second-moment-slices-nonempty",
+   "notes": "N_s(pbar,s) nonempty for s∈[0,pbar(1-pbar)] via the explicit mixture (1-λ)δ_0 + λ·(centered two-endpoint law). Build-inline (explicit witness)."
+  },
+  "lem:two-point-centered-objective": {
+   "lean_kind": "lemma",
+   "lean_name": "two_point_centered_objective",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure",
+    "Mathlib.Tactic.Ring"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/MomentAlgebra.lean",
+   "hyps": [],
+   "local_id": "lem:two-point-centered-objective",
+   "notes": "Centered moments and V-value of a two-point mean-zero law {a,-b}. Build-inline: direct 2-atom computation + ring. [F2 scaffold-redirect attempt4] De-existentialized the CONCRETE pushforward law: the note names ν as the pushforward under d↦pbar+d of the centered two-point law (mass b/(a+b) at a, a/(a+b) at -b). Signature now takes `(ν : Law)` PINNED by its defining identity `hν : (ν:Measure ℝ) = ENNReal.ofReal (b/(a+b)) • dirac (pbar+a) + ENNReal.ofReal (a/(a+b)) • dirac (pbar-b)` and concludes `IsAdmissible pbar ν ∧ m₂=ab ∧ m₃=ab(a-b) ∧ m₄-m₂²=ab(a-b)² ∧ V-V₀=ab(V₁+V₃(a-b)+V₄(a-b)²)`, instead of the prior `∃ ν : Law, …` which existentialized the concrete law."
+  },
+  "lem:cai-randomized-saturation-moment-expansion": {
+   "lean_kind": "assumption",
+   "lean_name": "CaiRandomizedSaturationMomentExpansion",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Data.Real.Basic"
+   ],
+   "defer_tier": true,
+   "gate": true,
+   "tag": "substrate-gate",
+   "target_file": "Helpers/Bridge/CaiExpansion.lean",
+   "hyps": [],
+   "notes": "SUBSTRATE-GATE (Cai-Pouget-Abadie-Airoldi 2022, Theorem 9 + Corollary 12): the randomized-saturation design variance of the difference-in-means estimator expands as V_0 + V_1 μ_2 + V_2 μ_2^2 + V_3 μ_3 + V_4(μ_4-μ_2^2) + o(N^{-1}), with V_2=0 in the isolated-cluster specialization. Deep external design-based result NOT original to this paper; cannot make consumers vacuous. Threaded as a named Prop into lem:variance-moment-reduction. Search trace: surveyed Causalean/Experimentation/DesignBased {Variance.lean, CompoundVariance.lean, ProductVariance.lean, EdgeVarianceBound.lean, Optimality/Neyman.lean} and HudgensHalloran/Variance* — design-based Var/Cov machinery exists but NO randomized-saturation third/fourth-centered-moment variance expansion under linear interference; not found. Future SUBSTRATE_DEBT. [F2 sync-back] Realized as a threaded `def : Prop` (NOT a `lemma := by sorry`); taken inline by its consumer(s). [F2 scaffold-redirect attempt3] Gate def re-parameterized to BIND the scoped coefficient tuple: `CaiRandomizedSaturationMomentExpansion Yfull pbar Mseq mseq designVar V0 V1 V2 V3 V4` now takes the coefficients explicitly, asserts the isolated-cluster simplification `V2 = 0`, and states the full centered-moment expansion `designVar n π = V0 + V1 μ₂ + V2 μ₂² + V3 μ₃ + V4(μ₄-μ₂²) + rem n` over feasible π (was an existential over free coefficients, leaving the consumers' coefficients unbound). [F2 scaffold-redirect attempt6] Added a `Yseq` design-sequence parameter and threaded it into the `CaiLeadingExpansionDomain pbar Mseq mseq Yseq` antecedent (which now carries bounded-parameters + regularity)."
+  },
+  "lem:empirical-centered-moment-continuity": {
+   "lean_kind": "lemma",
+   "lean_name": "empirical_centered_moment_continuity",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/Pushforward.lean",
+   "hyps": [],
+   "local_id": "lem:empirical-centered-moment-continuity",
+   "notes": "Weak convergence of empirical laws ⇒ convergence of centered moments r=2,3,4. Build-inline as a direct application of lem:bounded-continuous-integrals-weakly-continuous to φ_r(u)=(u-pbar)^r. [F2 scaffold-redirect attempt5] Restored the dropped paper [0,1]-support hypotheses: added `hpi : ∀ n j, piseq n j ∈ Icc 0 1` (empirical vectors in [0,1]^M) and `hνsupp : SupportedOn01 ν` (weak limit in P([0,1])), so the centered test functions (u-pbar)^r are bounded on the joint support per the note's `saturation vectors in [0,1]^M ⇒ nu in P([0,1])` form."
+  },
+  "lem:centered-second-moment-extrema": {
+   "lean_kind": "lemma",
+   "lean_name": "centered_second_moment_extrema",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Integral.Bochner"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/MomentAlgebra.lean",
+   "hyps": [],
+   "local_id": "lem:centered-second-moment-extrema",
+   "notes": "0≤m_2≤pbar(1-pbar) with equality characterizations (δ_pbar lower, Bernoulli vertex upper). Build-inline via U^2≤U on [0,1] and a.e.-equality arguments."
+  },
+  "lem:semialgebraic-optimization-algorithms": {
+   "lean_kind": "assumption",
+   "lean_name": "SemialgebraicOptimizationAlgorithms",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Data.Real.Basic"
+   ],
+   "defer_tier": true,
+   "gate": true,
+   "tag": "substrate-gate",
+   "target_file": "Helpers/Bridge/SemialgebraicSolver.lean",
+   "hyps": [],
+   "notes": "SUBSTRATE-GATE and INFEASIBLE-to-build here (Tarski-Seidenberg quantifier elimination, Collins cylindrical algebraic decomposition, Thom encodings, Sturm/root isolation): a terminating exact procedure for finite polynomial optimization over compact semialgebraic sets returning algebraic sample minimizers + certificates. Per the feasibility discriminator this is a famous hard formalization needing a major upstream Mathlib contribution → GATE, never crux, even though it is the engine of thm:constructive-optimal-design-algorithm. Threaded as a named Prop into that theorem. Search trace: leansearch/local_search 'cylindrical algebraic decomposition / Tarski-Seidenberg / real closed field quantifier elimination decision procedure' → Mathlib has IsAlgClosed and some real-closed-field algebra but NO CAD / general semialgebraic optimization decision procedure; not found. Future SUBSTRATE_DEBT (large, likely upstream). [F2 sync-back] Realized as a threaded `def : Prop` (NOT a `lemma := by sorry`); taken inline by its consumer(s)."
+  },
+  "lem:two-point-endpoint-reduction": {
+   "lean_kind": "lemma",
+   "lean_name": "two_point_endpoint_reduction",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Tactic.Ring",
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/MomentAlgebra.lean",
+   "hyps": [
+    "ass:budget-interior"
+   ],
+   "local_id": "lem:two-point-endpoint-reduction",
+   "notes": "Min over singleton/two-point laws = min of {0, g_L on [-p,A], g_R on [A,q]}. Build-inline over lem:two-point-centered-objective + monotonicity of the product ab on the feasible interval."
+  },
+  "lem:compact-convex-moment-slice": {
+   "lean_kind": "lemma",
+   "lean_name": "compact_convex_moment_slice",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/MeasureWeak.lean",
+   "hyps": [],
+   "local_id": "lem:compact-convex-moment-slice",
+   "notes": "Centered slice {mu : mean 0, second moment s} is weakly compact + convex; affine functionals attain min. Build-inline over lem:compact-support-probability-laws-weakly-compact, lem:bounded-continuous-integrals-weakly-continuous, lem:continuous-function-attains-minimum-on-compact-set."
+  },
+  "lem:fixed-second-moment-envelope": {
+   "lean_kind": "lemma",
+   "lean_name": "fixed_second_moment_envelope",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Integral.Bochner",
+    "Mathlib.Tactic.Positivity",
+    "Mathlib.Tactic.Ring"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/MomentAlgebra.lean",
+   "hyps": [
+    "ass:budget-interior"
+   ],
+   "local_id": "lem:fixed-second-moment-envelope",
+   "notes": "Lower/upper m_4 envelopes at fixed (mean 0, second moment s), attained by the two-root law and the {-p,r,q} endpoint-interior law, with the explicit weights. Build-inline via nonnegativity of (X^2-tX-s)^2 and (X+p)(q-X)(X-r)^2 integrated under mu; algebra/positivity heavy but elementary. [F2 scaffold-redirect attempt5] Restored the dropped EQUALITY cases: appended two conjuncts asserting attainment. (i) lower envelope m4=s²+s t² attained by a ≤2-atom centered law μ₂ (pinned via supp⊆D_pbar ∧ mean=0 ∧ m₂=s ∧ m₃=m₃(μ) ∧ cardSupportLe 2) — the two-root law on x²-tx-s=0; (ii) upper envelope attained by a ≤3-atom centered law μ₃ supported on the explicit {-pbar, r, 1-pbar} set with the same first three moments and the upper-envelope m₄ value (r=(m₃-(q-p)s)/(s-pq))."
+  },
+  "lem:finite-atomic-grid-split-rounding": {
+   "lean_kind": "lemma",
+   "lean_name": "finite_atomic_grid_split_rounding",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.Algebra.BigOperators.Fin",
+    "Mathlib.Algebra.Order.Floor"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/Rounding.lean",
+   "hyps": [],
+   "local_id": "lem:finite-atomic-grid-split-rounding",
+   "notes": "Run gridSplitRounding on a ≤3-atom nu to get pi_rd ∈ Pi_{M,m}(pbar) and a coupling with average displacement ≤ 2K/M + 2/m ≤ 6/M + 2/m. Build-inline: largest-remainder mass rounding + floor grid-snap + unit-step balancing; W1-style coupling cost bookkeeping over Fin M. [F2 scaffold-redirect attempt3] Bound to the def + atomic data: takes `{K} (hK : K ≤ 3) (w u) (ν) (hνeq : ν = ∑ w δ_u)`, concludes for `πrd = gridSplitRounding M m pbar w u` with coupling cost ≤ 2K/M + 2/m."
+  },
+  "lem:quartic-variance-coupling-lipschitz": {
+   "lean_kind": "lemma",
+   "lean_name": "quartic_variance_coupling_lipschitz",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Integral.Bochner",
+    "Mathlib.Tactic.Ring"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/Rounding.lean",
+   "hyps": [],
+   "local_id": "lem:quartic-variance-coupling-lipschitz",
+   "notes": "|V(eta)-V(nu)| ≤ (2|V_1|+3|V_3|+8|V_4|)·Δ for any coupling of transport cost ≤Δ. Build-inline via |g_r(u)-g_r(v)|≤r|u-v| on [0,1] and the m_2^2 bound."
+  },
+  "lem:boundary-admissible-law-singleton": {
+   "lean_kind": "lemma",
+   "lean_name": "boundary_admissible_law_singleton",
+   "disposition": "define-local",
+   "reuse": null,
+   "modules": [
+    "Mathlib.MeasureTheory.Measure.ProbabilityMeasure"
+   ],
+   "defer_tier": false,
+   "gate": false,
+   "target_file": "Helpers/MeasureWeak.lean",
+   "hyps": [],
+   "local_id": "lem:boundary-admissible-law-singleton",
+   "notes": "pbar∈{0,1} ⇒ N(pbar)={δ_pbar}. Build-inline: a nonneg r.v. with mean 0 is 0 a.e. (Mathlib `integral_eq_zero_iff_of_nonneg` style)."
+  }
+ },
+ "infrastructure_needed": [
+  {
+   "id": "lem:cai-randomized-saturation-moment-expansion",
+   "kind": "autoid-lemma",
+   "description": "Cai-Pouget-Abadie-Airoldi (2022) Thm 9 randomized-saturation design variance expansion in centered treatment-proportion moments (V_2=0 in the isolated-cluster specialization); substrate-gate threaded into lem:variance-moment-reduction.",
+   "effort": "large"
+  },
+  {
+   "id": "lem:extreme-moment-slice-support",
+   "kind": "mathlib-lemma",
+   "description": "Winkler (1988)/Pinelis (2012) extreme points of a probability moment set with constraints {1,d,d^2} are supported on at most 3 atoms, plus extreme affine minimizer; substrate-gate threaded into prop:support-at-most-three.",
+   "effort": "large"
+  },
+  {
+   "id": "lem:semialgebraic-optimization-algorithms",
+   "kind": "mathlib-lemma",
+   "description": "Tarski-Seidenberg / cylindrical algebraic decomposition / Thom-encoding terminating exact optimizer + certifier for finite polynomial optimization over compact semialgebraic sets; infeasible-to-build substrate-gate threaded into thm:constructive-optimal-design-algorithm.",
+   "effort": "large"
+  }
+ ],
+ "theorems": [
+  {
+   "theorem_local_id": "lem:variance-moment-reduction"
+  },
+  {
+   "theorem_local_id": "thm:global-certificate"
+  },
+  {
+   "theorem_local_id": "prop:support-at-most-three"
+  },
+  {
+   "theorem_local_id": "prop:positive-penalty-threshold"
+  },
+  {
+   "theorem_local_id": "prop:skewed-witness"
+  },
+  {
+   "theorem_local_id": "thm:finite-attainability"
+  },
+  {
+   "theorem_local_id": "thm:rounding-loss"
+  },
+  {
+   "theorem_local_id": "prop:sutva-corner"
+  },
+  {
+   "theorem_local_id": "prop:design-optimal-saturation"
+  },
+  {
+   "theorem_local_id": "lem:explicit-profile-value"
+  },
+  {
+   "theorem_local_id": "thm:constructive-optimal-design-algorithm"
+  },
+  {
+   "theorem_local_id": "prop:explicit-two-point-cell"
+  }
+ ],
+ "feasibility_notes": "The mathematical content is a quartic moment program over P([0,1]) — pure Mathlib measure theory / real analysis — so the env binds the law world to Mathlib `ProbabilityMeasure` (bypass-justified: Causalean's experimentation cluster is design-based — FiniteDesign/E/Var/Cov over finite assignment spaces, IsOptimalOn — the wrong abstraction for a continuous saturation law). I confirmed one direct reuse: lem:continuous-function-attains-minimum-on-compact-set -> `IsCompact.exists_isMinOn`; the remaining analysis primitives (Prokhorov compactness, Portmanteau, Hahn-Banach separation, change-of-variables) are thin Mathlib wrappers (build-inline). The bulk of the paper — global certificate, support-at-most-three reduction, positive-penalty threshold, skewed witness, finite attainability, rounding loss, SUTVA corner, explicit profile value, explicit two-point cell, and all moment-geometry/two-point/rounding helpers — is build-inline over Mathlib and is the paper's own crux content. THREE nodes are substrate-gates (defer_tier:true, gate:true, lean_kind:assumption, threaded as hypotheses, excluded from the theorems manifest): lem:cai-randomized-saturation-moment-expansion (Cai-2022 variance expansion, external), lem:extreme-moment-slice-support (Winkler/Pinelis extreme-point geometry, external), and lem:semialgebraic-optimization-algorithms (CAD/Tarski-Seidenberg, genuinely infeasible to formalize here, the explicitly-named gate-not-crux case). By the gate-consumer rule their three consumers (lem:variance-moment-reduction, prop:support-at-most-three, thm:constructive-optimal-design-algorithm) stay IN-SCOPE and are proved conditional on the threaded gates; prop:design-optimal-saturation inherits the gates transitively. No statement is dropped, so there is no deferred_conjecture. The open-ended oeq:full-branch-optimizer-map is mapped to a named Prop def (atlas-compression residual), not a theorem. Overall: formalizable now conditional on three threaded substrate-gates => needs-new-infrastructure."
+}

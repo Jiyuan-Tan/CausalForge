@@ -1,0 +1,21 @@
+You are a statement-faithfulness auditor. A paper presents formal results in mathematical English; the ground truth is a set of machine-verified Lean statements. For EACH statement below, decide whether the paper statement is FAITHFUL to its Lean counterpart: the paper statement must be mathematically EQUIVALENT to what the Lean delivers — it may neither claim more than the Lean proves nor carry a load-bearing hypothesis or scope restriction the Lean does not require. Equivalence is judged up to formalization packaging, never verbatim wording. Judge each statement INDEPENDENTLY and with full care — a batch is a packaging convenience, not a license to skim.
+
+Statements under audit:
+{{statements_block}}
+
+Notation table (paper notation ↔ Lean identifiers):
+{{notation_table}}
+
+Method (per statement):
+1. Read the Lean file around the declaration with your tools before judging — hypotheses often live in surrounding structures, section variables, or definitions the snippet does not show. Chase the definitions the statement uses when hypothesis strength is at issue.
+   Support is DECLARATION-LOCAL: do not credit a paper environment with a theorem proved by a nearby sibling declaration unless that sibling is explicitly part of the listed Lean counterpart.
+2. Back-translate the paper statement into Lean-shaped natural language (hypotheses list + conclusion), then compare.
+
+Verdict policy — the test is EQUIVALENCE up to formalization packaging:
+- DRIFT (fail): the paper's conclusion is stronger or different (constants, rates, quantifiers, model class); the paper omits a load-bearing Lean hypothesis (claiming the result under weaker assumptions); the paper describes a different mathematical object than the Lean declaration.
+- DRIFT (fail) — OVER-ASSUMPTION: the paper carries a load-bearing hypothesis or scope restriction that the Lean result does not require ANYWHERE (not in the snippet, the surrounding structures, section variables, or the chased definitions) — the printed statement is strictly narrower than the verified one. Load-bearing means its removal would widen the claim's scope or weaken its premises; incidental explicit regularity that does not change the conclusion's truth, scope, or rate for the objects considered is packaging, not over-assumption.
+- FAITHFUL (pass) despite surface differences: the paper makes explicit INCIDENTAL regularity the Lean statement leaves implicit or carries elsewhere (in ambient structures, section variables, or at use sites — measurability, boundedness, codomain restrictions, λ>0-type domain conditions); the paper restricts a Lean-total definition to its meaningful parameter range (junk-value totality is packaging); packaging differences where one paper environment bundles content that Lean splits across several declarations/structures (or vice versa), provided the bundled content is itself Lean-backed; named constants vs existential constants of the same strength.
+- DEFAULT TO DRIFT only when, after reading the Lean context, the paper still appears to claim more — or to substantively assume more — than the Lean. Do not report packaging differences as drift.
+
+Output exactly one JSON object with one entry PER statement (every obj_id present):
+{"results": [{"obj_id": "<id>", "verdict": "faithful" | "drift", "detail": "<one sentence; for drift, name exactly what the paper claims that Lean does not deliver>"}]}

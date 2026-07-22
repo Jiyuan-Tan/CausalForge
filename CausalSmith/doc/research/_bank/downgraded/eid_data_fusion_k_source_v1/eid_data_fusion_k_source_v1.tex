@@ -1,0 +1,1077 @@
+% =====================================================================
+%  thmsmith Stage 0 derivation skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=eid\_data\_fusion\_k\_source, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage 0 derivation: \texttt{eid\_data\_fusion\_k\_source} / \texttt{v1}%
+  \\ \large\textit{Chain-refined source-cover for observational data fusion}}
+\author{thmsmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+The exact-identification target is the target-population interventional law
+\(P^\star_x(Y)\) in a finite semi-Markovian selection-diagram model with
+\(k\) observational source laws \(P_j(O_j\mid S_j=1)\) and typed
+factor-local invariance clauses \(\mathcal C\).  The estimand-defining
+functional is the chain-refined source-cover functional
+\(\Phi^{\mathrm{cr}}_{\mathcal C}(Y,x;\{P_j\}_{j=1}^k)\), obtained by running
+ordinary ID and discharging each requested kernel either by an exact typed
+source extraction or, for ordinary multi-variable requests, by a finite
+chain-rule product of smaller source-supplied ordinary conditionals.  The main
+positive theorem proves that this functional is a computable finite
+sum-product map and equals \(P^\star_x(Y)\) whenever the chain-refined
+certificate succeeds and the stated source-specific positivity conditions
+hold.  A second theorem proves relative completeness for the finite
+chain-product certificate language and, under an explicit randomized-root
+treatment restriction, shows a strict infinite-family extension over exact
+source-cover: postintervention district chains are identified from
+source-supplied sequential conditionals even when no source covers the exact
+joint district request.  The claim is deliberately modest: its algebra is the
+ordinary finite chain rule plus assumed singleton source invariances, so this
+note does not establish a flagship-level separation from published
+systematic-selection, DoSearch, or gID frameworks.  Thus the Stage--1
+overlap-hedge conjecture is refuted only as an exact-cover necessity claim;
+the repaired theorem-level statement is a positive chain-refinement closure
+criterion for a typed observational factor-local subclass.
+\end{abstract}
+
+\section{Introduction}
+Modern causal data fusion often supplies several selected observational
+sources rather than one complete target-population law.  One source may
+measure treatment and a mediator, another may measure mediator and outcome,
+and selection mechanisms may differ across sources.  The mathematical
+question is whether these heterogeneous margins, together with explicit
+factor-local invariance clauses, determine the same target intervention
+\(P^\star_x(Y)\) in every compatible causal model.
+
+Ordinary ID gives a complete graphical criterion when the full target
+observational law is available.  Transportability, selection-bias recovery,
+general identifiability, and systematic-selection data fusion extend that
+program to richer collections of source distributions and regimes.  The
+source-cover proposal considered here is narrower: all sources are
+observational, every available equality is a typed local clause in
+\(\mathcal C\), and every requested source extraction must be read from a
+finite selected source law.
+
+This note keeps the Stage--1 target and assumptions fixed but changes the
+mathematical load-bearing statement.  Exact source-cover soundness is true,
+yet by itself it is only a substitution lemma: ordinary ID requests a target
+kernel and a typed clause replaces that kernel by a selected-source
+extraction.  The incremental contribution is a computable closure operation
+that permits ordinary multi-variable requests to be refined by the finite chain
+rule before source substitution.  The resulting certificate,
+\(\mathsf{CRCover}_{\mathcal C}\), remains an explicit source-law functional,
+is complete for a finite chain-product expression language, and strictly
+extends exact source-cover on an infinite family of randomized-root
+postintervention district chain problems.
+
+The result is useful because it identifies a concrete algebraic failure mode
+in the original source-cover frontier and repairs it without invoking an
+unbounded symbolic search.  If a district request \(q^\star(D\mid R)\) is not
+covered as an atom, the certificate checks whether the same kernel is
+recoverable as
+\[
+  \prod_{\ell=1}^{|D|}
+  P^\star(W_{\pi(\ell)}\mid R,W_{\pi(<\ell)})
+\]
+with every factor supplied by a typed source clause.  This is still a
+transparent observational fusion formula: the analyst can list the source
+law, conditioning variables, and positivity requirement for each factor.  The
+Stage--1 overlap-hedge converse is therefore not accepted as stated, but the
+nearest correct statement is not merely a counterexample; it is a positive
+chain-refined source-cover criterion with a randomized-root strict-extension
+class.  The note does not prove that this class is outside, sharper than, or
+an open subcase of the closest published general data-fusion algorithms.
+
+\paragraph{Motivating conjecture(s).}
+\begin{conjecture}[Conjecture 1: overlap-hedge completeness (NOT YET PROVED)]\label{conj:overlap-hedge-completeness}
+Under Assumptions~\ref{ass:finite-sm}--\ref{ass:binary-witness},
+\(\mathsf{Cover}_{\mathcal C}(G^\star,X,Y,\{O_j\})\) succeeds if and only if
+\(P^\star_x(Y)\) is identified from the collection
+\(\{P_j(O_j\mid S_j=1)\}_{j=1}^k\) and the constraint set \(\mathcal C\).
+Equivalently, if the source-cover recursion fails, then there exist two
+finite binary semi-Markovian SCMs \(M_0,M_1\) on the same
+\((G^\star,\{S_j,O_j\}_{j=1}^k,\mathcal C)\) such that
+\[
+  P^{M_0}_j(O_j\mid S_j=1)=P^{M_1}_j(O_j\mid S_j=1)
+  \quad\text{for all }j=1,\ldots,k,
+\]
+all \(\mathcal C\)-invariant kernels agree in \(M_0\) and \(M_1\), but
+\[
+  P^{M_0}_x(Y)\ne P^{M_1}_x(Y).
+\]
+The failed recursion node determines a multisource overlap hedge: a pair of
+districts together with the list of sources that observe each boundary
+variable, the invariant kernels that must be held fixed, and a source-minimal
+finite witness pair in the sense defined in Section~6.
+\end{conjecture}
+
+\section{Related work and positioning}
+\cite{ShpitserPearl2006ID} introduced the ordinary ID algorithm and hedge
+nonidentification witnesses for recursive semi-Markovian models; the positive
+part of this note substitutes source-supplied kernels into that ID recursion.
+\cite{ShpitserPearl2008CompleteID} developed the complete identification
+program for the causal hierarchy; the complete-source sanity check below
+reduces to that setting when one selected source is invariant for the whole
+target law.  \cite{BareinboimPearl2012TransportCompleteness} proved
+transportability completeness with selection diagrams, and
+\cite{BareinboimPearl2014MZTransport} extended transportability to multiple
+environments with limited experiments; the present setting is more restricted
+because all available source laws are observational and partially overlapping.
+\cite{BareinboimPearl2016DataFusion} framed the general data-fusion problem;
+this note studies one observational, factor-local fragment of that program.
+
+\cite{BareinboimTianPearl2014Selection} and
+\cite{CorreaTianBareinboim2019SelectionEffects} identify causal and
+statistical functionals under selection bias; they are relevant because each
+source law here is conditioned on a source-specific selection event.
+\cite{CorreaTianBareinboim2018Adjustment} studies generalized adjustment
+under confounding and selection, which is the closest adjustment-corner
+comparison for a single source that supplies \(P^\star(Y\mid X,Z)\) and
+\(P^\star(Z)\).  \cite{TikkaHyttinenKarvanen2021DoSearch} gives a
+search-based approach for multiple incomplete data sources, while
+\cite{LeeCorreaBareinboim2020GID} and
+\cite{KivvaMokhtarianEtesamiKiyavash2022RevisitGID} analyze
+g-identifiability from combinations of observational and experimental
+distributions; those frameworks allow richer inputs than the typed
+observational clauses considered here.
+
+\cite{LeeBareinboim2020PartialObservability} studies identifiability when
+different distributions measure different subsets of variables; this is close
+in spirit but does not impose selected source laws plus typed source-selection
+invariance clauses.  \cite{LeeGhassamiShpitser2024DataFusionSelection}
+provides the closest systematic-selection comparator, a general identification
+algorithm for data-fusion problems under systematic selection.  The present
+theorem is not a refutation of that algorithm, not a claim of general
+systematic-selection completeness, and not a theorem-level separation from
+DoSearch or gID.  It targets a named bookkeeping subproblem inside those
+broader published input classes: observational-only, factor-local, partially
+overlapping source laws for which the ordinary ID output is known but its
+requested ordinary kernels may be assembled from selected-source
+conditionals.  The technical content is a closed chain-product certificate
+language with a soundness proof, a finite dynamic-programming completeness
+proof for that language, and an infinite randomized-root family on which this
+certificate succeeds while exact source-cover fails.
+
+No stronger literature claim is made.  This note does not prove that the
+chain-product class lies outside the algorithm of
+\cite{LeeGhassamiShpitser2024DataFusionSelection}, is sharper than the
+search space of \cite{TikkaHyttinenKarvanen2021DoSearch}, or resolves an open
+gID subcase relative to \cite{LeeCorreaBareinboim2020GID} and
+\cite{KivvaMokhtarianEtesamiKiyavash2022RevisitGID}.  A flagship-level
+comparison would require a theorem mapping the chain-product certificate
+class against one of those published frameworks; the result here is a useful
+source-cover closure built from the finite chain rule and listed singleton
+source invariances.
+
+The Stage--1 proposal for this qid introduced an exact
+source-cover/overlap-hedge frontier.  The review-relevant correction made
+here is that the exact-cover converse is not the right frontier: the
+chain-refined closure strictly expands the identified regime before any
+nonidentification witness should be sought.  \cite{DegtiarRose2023Generalizability}
+and \cite{ColnetEtAl2024RCTObservationalReview} survey applied
+generalizability and trial-observational combination workflows; their
+estimation questions presuppose the nonparametric identification question
+answered or diagnosed by this note.
+
+\section{Formal setup}
+Let \(V\) be a finite set of observed target variables and \(U\) a finite set
+of latent variables.  The target population is represented by a recursive
+semi-Markovian SCM whose acyclic directed mixed graph is denoted
+\(G^\star=(V,E,U)\).  For disjoint \(X,Y\subseteq V\) and a fixed treatment
+value \(x\), \(P^\star_x(Y)\) denotes the target-population postintervention
+law of \(Y\) after replacing the structural equations for \(X\) by the
+constant \(x\).  All variables have finite support, all sums below are over
+finite support points, and every conditional probability used in a formula is
+only evaluated on a positive conditioning event.
+
+There are \(k\) observational sources.  Source \(j\) has a selection node
+\(S_j\), observes only \(O_j\subseteq V\), and contributes the selected
+observational law \(P_j(O_j\mid S_j=1)\).  No source contributes an
+experimental or postintervention distribution.  The only cross-population
+invariance information is the typed factor-local constraint set
+\[
+  \mathcal C=\mathcal C^{\mathrm{obs}}\cup\mathcal C^{\mathrm{fix}}.
+\]
+An ordinary clause \(c=(\mathrm{obs},j,A,B)\) with \(A\cup B\subseteq O_j\)
+asserts
+\[
+  P^\star(A\mid B)=E_j(c;P_j):=P_j(A\mid B,S_j=1)
+\]
+on the relevant positive support.  A nested clause
+\(c=(\mathrm{fix},j,H,D,R)\) with \(D\cup R\subseteq O_j\) asserts that the
+target district/fixing kernel requested at CADMG \(H\) equals
+\[
+  q^\star_H(D\mid R)=E_j(c;P_j)
+  :=\phi^j_{O_j\setminus(D\cup R)}
+        \{P_j(O_j\mid S_j=1)\}(D\mid R),
+\]
+where the fixing operation is assumed valid in the source projection.  The
+type is part of the input: an ordinary clause does not automatically discharge
+a nested/fixing request, and a nested clause discharges only the named
+\((H,D,R)\) request.  Compatibility of the source collection means that two
+clauses naming the same target kernel give the same numerical kernel on their
+common positive support.
+
+A district/fixing request is a tuple
+\(\rho=(H,D,R,\tau)\), where \(H\) is the current CADMG in the ID recursion,
+\(D\) is the requested random district, \(R\) is its fixed/parent set, and
+\(\tau\in\{\mathrm{obs},\mathrm{fix}\}\) records whether the request is an
+ordinary target conditional or a nested/fixing kernel.  It is
+\(\mathcal C\)-coverable if some source \(j\) has \(D\cup R\subseteq O_j\), a
+matching clause of the same type in \(\mathcal C\), a valid extraction
+\(E_j(c;P_j)\), the source-specific positivity needed to evaluate that
+extraction, and the overlap-ancestral condition stated in
+Assumption~\ref{ass:overlap-ancestral}.
+
+\paragraph{Locked parameters.}
+This is an exact-identification proposal with locked tuple
+\[
+(\texttt{qid},\texttt{specialization},\text{graph/selection diagram},
+\text{treatment},\text{target estimand},\text{identifying assumptions}).
+\]
+Here \(\texttt{qid}=\texttt{eid\_data\_fusion\_k\_source}\) and
+\(\texttt{specialization}=\texttt{v1}\).  The graph is a finite acyclic
+semi-Markovian target diagram \(G^\star=(V,E,U)\) augmented by \(k\) source
+selection nodes \(S_1,\ldots,S_k\), source-observation sets
+\(O_j\subseteq V\), and a typed factor-local constraint set
+\(\mathcal C=\mathcal C^{\mathrm{obs}}\cup\mathcal C^{\mathrm{fix}}\).
+An ordinary clause \(c=(\mathrm{obs},j,A,B)\in\mathcal C^{\mathrm{obs}}\)
+asserts that the target conditional kernel \(P^\star(A\mid B)\) equals the
+selected-source conditional read from \(P_j(O_j\mid S_j=1)\) whenever
+\(A\cup B\subseteq O_j\).  A nested clause
+\(c=(\mathrm{fix},j,H,D,R)\in\mathcal C^{\mathrm{fix}}\) asserts that, at
+ID-recursion CADMG \(H\), the requested target district/fixing kernel
+\(q^\star_H(D\mid R)\) equals the nested Markov kernel extracted from the
+selected source law by fixing \(O_j\setminus(D\cup R)\) in the source
+projection, with \(D\cup R\subseteq O_j\).  Source \(j\) contributes only the observational law
+\(P_j(O_j\mid S_j=1)\), with no experimental source law.  The treatment is a
+fixed intervention \(X=x\), with \(X\subset V\), and the target estimand is
+the interventional law \(P^\star_x(Y)\) for \(Y\subseteq V\setminus X\).
+The identifying assumptions are: consistency and acyclicity of the target
+SCM; the target nested Markov property for \(G^\star\); source-selection
+invariance only through the typed clauses in \(\mathcal C\);
+observed-source compatibility on overlaps; source-specific positivity for
+every ordinary conditional or nested/fixing kernel used by the fusion
+formula; and the overlap-ancestral restriction that each observed set
+\(O_j\) is ancestral, after deleting intervention arrows into \(X\), for the
+typed district factors it is used to supply.  The proposed decision object is the
+source-cover certificate \(\mathsf{Cover}_{\mathcal C}(G^\star,X,Y,\{O_j\})\)
+defined in Section~6; failure of this certificate is conjectured to be
+equivalent to a finite multisource overlap-hedge witness.
+
+\section{Assumptions}
+\begin{assumption}[Finite semi-Markovian target]\label{ass:finite-sm}
+The target population is generated by a recursive semi-Markovian SCM over
+finite observed variables \(V\) and finite latent variables \(U\), inducing
+the acyclic directed mixed graph \(G^\star\).  Consistency holds for the
+intervention \(X=x\): if \(X=x\) is observed, then the observed variables
+agree with their \(x\)-intervention counterfactuals wherever both are defined.
+The target law obeys the nested Markov/fixing factorization for
+\(G^\star\), so each ID-recursion CADMG \(H\) has well-defined district
+kernels \(q^\star_H(D\mid R)\).
+\end{assumption}
+
+\begin{assumption}[Observational \(k\)-source inputs]\label{ass:k-source-inputs}
+For each source \(j=1,\ldots,k\), the only available population object is the
+selected observational distribution \(P_j(O_j\mid S_j=1)\) on a finite
+observed set \(O_j\subseteq V\).  No source contributes an experimental,
+randomized, interventional, or regime-specific law.
+\end{assumption}
+
+\begin{assumption}[Typed factor-local invariance]\label{ass:factor-local-C}
+All source-selection invariance information is contained in
+\(\mathcal C=\mathcal C^{\mathrm{obs}}\cup\mathcal C^{\mathrm{fix}}\).
+Ordinary clauses equate one target ordinary conditional with one selected
+source conditional, and nested clauses equate one target district/fixing
+kernel with one selected source fixing extraction.  No unlisted
+cross-source, cross-factor, or cross-type equality is assumed.
+\end{assumption}
+
+\begin{assumption}[Observed-source compatibility]\label{ass:overlap-compat}
+If two clauses in \(\mathcal C\) name the same target kernel and their source
+conditioning events have positive probability, then the two selected-source
+extractions agree on the common positive support.  Thus the listed source
+constraints are mutually consistent.
+\end{assumption}
+
+\begin{assumption}[Source-specific positivity]\label{ass:source-positivity}
+Every ordinary conditional or nested/fixing kernel used by a displayed
+identifying formula has a positive denominator or fixing normalizer in the
+same source law from which that kernel is extracted.  Positivity is not
+borrowed across sources: if a formula reads a kernel from source \(j\), then
+the required support condition must hold under \(P_j(O_j\mid S_j=1)\).
+\end{assumption}
+
+\begin{assumption}[Overlap-ancestral source coverage]\label{ass:overlap-ancestral}
+Whenever source \(j\) is used to supply a request
+\(\rho=(H,D,R,\tau)\), \(D\cup R\subseteq O_j\), \(O_j\) is ancestral for the
+supplied factor in the graph at that recursion node after deleting arrows
+into the intervened variables \(X\), and \(\mathcal C\) contains a matching
+typed clause: \((\mathrm{obs},j,D,R)\) for an ordinary request or
+\((\mathrm{fix},j,H,D,R)\) for a nested/fixing request.
+\end{assumption}
+
+\begin{assumption}[Binary finite witness class]\label{ass:binary-witness}
+For the proposed nonidentification converse only, the witness class is
+restricted to finite binary observed variables and finite binary latent
+variables preserving the same ADMG adjacencies, source observation sets, and
+\(\mathcal C\)-clauses.  The positive soundness theorem does not require this
+binary restriction.
+\end{assumption}
+
+\section{Estimand-defining functional}
+The exact source-cover functional is the Stage--1 map: run the ordinary ID
+district recursion for \((G^\star,X,Y)\), and whenever the recursion requests
+\(\rho=(H,D,R,\tau)\), scan \(\mathcal C\) for an exact same-type source
+clause satisfying Assumptions~\ref{ass:factor-local-C},
+\ref{ass:source-positivity}, and \ref{ass:overlap-ancestral}.  If every
+request is discharged, the returned functional is the ordinary ID expression
+with each target kernel \(q^\star_H(D\mid R)\) replaced by its selected-source
+extraction \(E_j(c;P_j)\).  This exact functional is denoted
+\(\Phi_{\mathcal C}\).
+
+The repaired functional used in this note is the \emph{chain-refined
+source-cover} functional \(\Phi^{\mathrm{cr}}_{\mathcal C}\).  It uses the
+same ordinary ID recursion and the same exact matching rule, but it adds one
+closure operation for ordinary requests.  Suppose ID requests an ordinary
+kernel \(\rho=(H,D,R,\mathrm{obs})\) with finite
+\(D=\{W_1,\ldots,W_r\}\).  A chain certificate for \(\rho\) is an ordering
+\(\pi\) of \(D\) and ordinary clauses
+\[
+  c_\ell=
+  \bigl(\mathrm{obs},j_\ell,\{W_{\pi(\ell)}\},
+        R\cup\{W_{\pi(1)},\ldots,W_{\pi(\ell-1)}\}\bigr),
+  \qquad \ell=1,\ldots,r,
+\]
+with each conditioning event positive in its own source law.  The certified
+source kernel is
+\[
+  K^{\mathrm{cr}}_\rho(d\mid r)
+  =
+  \prod_{\ell=1}^{r}
+  E_{j_\ell}(c_\ell;P_{j_\ell})
+  \{w_{\pi(\ell)}\mid r,w_{\pi(1)},\ldots,w_{\pi(\ell-1)}\}.
+\]
+For nested/fixing requests, this note keeps the Stage--1 exact matching rule;
+no chain refinement for nested kernels is part of the theorem.
+
+The algorithm \(\mathsf{CRCover}_{\mathcal C}\) is:
+\begin{enumerate}[leftmargin=*]
+\item Run ordinary ID and record its finite list \(\mathcal R\) of requested
+target kernels in the returned sum-product expression.  If ordinary ID fails,
+return failure.
+\item For each \(\rho\in\mathcal R\), first try exact source-cover.  If exact
+cover succeeds, store that extraction.
+\item If exact cover fails and \(\rho\) is an ordinary request with
+\(|D|>1\), run a subset dynamic program.  A state is
+\(A\subseteq D\).  There is an edge \(A\to A\cup\{W\}\) when
+\(\mathcal C\) contains an ordinary clause for
+\((W,R\cup A)\) whose source observes all variables in \(R\cup A\cup\{W\}\)
+and whose source-specific positivity condition holds.  A path from
+\(\varnothing\) to \(D\) gives a chain certificate and its product kernel.
+\item If neither exact cover nor the chain dynamic program succeeds for a
+request, return failure.  Otherwise substitute all stored kernels into the
+ordinary ID expression.
+\end{enumerate}
+The returned expression is
+\[
+  \Phi^{\mathrm{cr}}_{\mathcal C}(Y,x;\{P_j\}_{j=1}^k)
+  =
+  \sum_{v\in\mathcal V_{\mathrm{sum}}}
+    \prod_{\rho\in\mathcal R}
+      K^{\mathrm{cr}}_\rho
+      \{d_\rho(v,y,x)\mid r_\rho(v,y,x)\},
+\]
+where exact-covered requests use their exact selected-source extraction and
+chain-covered requests use the product kernel above.  The map is computable:
+for a request with \(|D|=r\), the chain search has \(2^r\) states and at most
+\(r2^r|\mathcal C|\) typed-clause checks; checking a displayed certificate is
+linear in \(r|\mathcal C|\).  Thus the procedure is fixed-parameter
+tractable in the maximum ordinary request size and polynomial for bounded
+district size.
+
+The finite expression language \(\mathfrak G_{\mathrm{chain}}\) consists of
+all ordinary ID sum-product expressions whose target requests are replaced
+request-by-request by either exact typed source extractions or singleton
+chain products of the form just displayed.  Theorem~\ref{thm:cr-soundness}
+proves that every successful \(\mathsf{CRCover}_{\mathcal C}\) expression
+equals the causal target, and Theorem~\ref{thm:chain-completeness} proves that
+the subset dynamic program is complete for \(\mathfrak G_{\mathrm{chain}}\).
+The verdict on Conjecture~\ref{conj:overlap-hedge-completeness} is therefore
+split: exact source-cover success is sound, exact source-cover failure is not
+a nonidentification certificate, and the nearest correct positive replacement
+is chain-refined source-cover within the finite chain-product language.  This
+replacement is an identification closure, not a general nonidentification
+frontier for systematic-selection data fusion.
+
+\section{Target causal estimand}
+The target causal estimand is the target-population interventional law
+\[
+  \theta^\star(y;x)=P^\star_x(Y=y),
+  \qquad y\in\mathrm{supp}(Y),
+\]
+for a fixed intervention \(X=x\) and \(Y\subseteq V\setminus X\).  This is a
+causal object defined by the target SCM after intervention; it is not defined
+to be any source functional.  The identification statements below prove
+equality between this causal law and computable expressions in the selected
+source distributions.
+
+\begin{definition}[Randomized-root district-chain family]\label{def:chain-family}
+For the strict-extension theorem, use the following theorem-local subclass.
+For any integer \(r\ge 2\), let
+\[
+  V_r=\{X,W_1,\ldots,W_r\},\qquad Y=W_r,
+\]
+with \(X\) a directed root, no bidirected edge incident to \(X\), directed
+arrows from \(X\) to each \(W_\ell\), optional directed arrows from earlier
+\(W\)'s to later \(W\)'s respecting the order, and bidirected edges among
+\(W_1,\ldots,W_r\) connecting them into a single post-\(X\) district.  The
+``no bidirected edge incident to \(X\)'' condition is part of this
+strict-extension family; root status alone would not exclude latent
+confounding between treatment and post-treatment variables.  The target
+stratum \(X=x\) is on the positive support needed for the displayed
+conditionals, so the subclass satisfies randomized-treatment exchangeability
+\[
+  (W_1(x),\ldots,W_r(x))\perp X.
+\]
+The target estimand is still
+\(\theta^\star(y;x)=P^\star_x(W_r=y)\).  The chain-refined functional for
+this family is
+\[
+  \Psi_r(y;x)
+  =
+  \sum_{w_1,\ldots,w_{r-1}}
+  \prod_{\ell=1}^{r}
+  P_{j_\ell}\!\left(
+    W_\ell=w_\ell
+    \mid X=x,W_1=w_1,\ldots,W_{\ell-1}=w_{\ell-1},S_{j_\ell}=1
+  \right),
+\]
+with \(w_r=y\), where \(\mathcal C\) contains the corresponding ordinary
+clauses and the required source-specific positivity holds.  This is a causal
+target first and an observable functional second; the theorem proves their
+equality.
+\end{definition}
+
+\section{Main theorems}
+\begin{theorem}[Chain-refined source-cover soundness]\label{thm:cr-soundness}
+Under Assumptions~\ref{ass:finite-sm}--\ref{ass:overlap-ancestral}, if
+\(\mathsf{CRCover}_{\mathcal C}(G^\star,X,Y,\{O_j\})\) succeeds and returns
+\(\Phi^{\mathrm{cr}}_{\mathcal C}(Y,x;\{P_j\}_{j=1}^k)\), then for every
+target SCM and source collection compatible with \(G^\star\), the selected
+source laws, and the typed constraint set \(\mathcal C\),
+\[
+  P^\star_x(Y)=
+  \Phi^{\mathrm{cr}}_{\mathcal C}(Y,x;\{P_j\}_{j=1}^k).
+\]
+The right-hand side is a finite computable expression in the observed source
+laws: it consists only of selected-source conditioning, valid source fixing
+extractions, finite chain-rule products, and finite sums over explicitly
+stated support sets.  Exact source-cover is the special case in which every
+request is discharged by an exact typed source extraction, so the
+Stage--1 soundness direction is confirmed and strengthened.
+\end{theorem}
+
+\begin{theorem}[Relative completeness and strict extension of exact source-cover]\label{thm:chain-completeness}
+Fix the ordinary ID output for \((G^\star,X,Y)\).  Within the finite
+expression language \(\mathfrak G_{\mathrm{chain}}\), the subset dynamic
+program defined in the estimand-functional section is complete: if every ID
+request can be replaced by an exact typed source extraction, or, when the
+request is ordinary, by a singleton chain-product of typed source
+conditionals, then
+\(\mathsf{CRCover}_{\mathcal C}\) returns such an expression.  Consequently,
+Theorem~\ref{thm:cr-soundness} identifies every query in this source-typed
+chain-product class.
+
+The inclusion over exact source-cover is strict.  For every \(r\ge 2\), in
+the randomized-root district-chain family of Definition~\ref{def:chain-family},
+suppose the
+source
+collection contains sources \(j_1,\ldots,j_r\) with
+\[
+  \{X,W_1,\ldots,W_\ell\}\subseteq O_{j_\ell},
+  \qquad \ell=1,\ldots,r,
+\]
+and ordinary clauses
+\[
+  (\mathrm{obs},j_\ell,\{W_\ell\},
+    \{X,W_1,\ldots,W_{\ell-1}\}),
+  \qquad \ell=1,\ldots,r,
+\]
+with source-specific positivity for every displayed conditional.  Suppose
+also that \(\mathcal C\) contains no exact ordinary or nested/fixing clause
+for the joint district request
+\[
+  q^\star(W_1,\ldots,W_r\mid X).
+\]
+Then exact source-cover fails at that district request, but
+\(\mathsf{CRCover}_{\mathcal C}\) succeeds and returns
+\[
+  P^\star_x(W_r=y)
+  =
+  \sum_{w_1,\ldots,w_{r-1}}
+  \prod_{\ell=1}^{r}
+  P_{j_\ell}\!\left(
+    W_\ell=w_\ell
+    \mid X=x,W_1=w_1,\ldots,W_{\ell-1}=w_{\ell-1},S_{j_\ell}=1
+  \right),
+\]
+where \(w_r=y\).  Thus Conjecture~\ref{conj:overlap-hedge-completeness} is
+refuted as an exact source-cover necessity claim on this randomized-root
+subclass, while the positive replacement is a chain-refinement closure rather
+than a general overlap-hedge completeness theorem.
+\end{theorem}
+
+Theorem~\ref{thm:cr-soundness} is more than ordinary soundness-by-substitution
+because the substituted object may be a source-assembled chain product that
+no single source covers as a district factor.  Theorem~\ref{thm:chain-completeness}
+is the main technical claim of this note: it gives a computable certificate
+language, proves that the dynamic program finds every formula in that
+language, and exhibits an infinite randomized-root family on which the new
+certificate succeeds and exact source-cover fails.  Its novelty tier is
+modest.  The proof uses the ordinary finite chain rule plus the singleton
+source invariances already assumed in \(\mathcal C\); it does not prove that
+the class is outside, sharper than, or an open subcase of
+\cite{LeeGhassamiShpitser2024DataFusionSelection},
+\cite{TikkaHyttinenKarvanen2021DoSearch},
+\cite{LeeCorreaBareinboim2020GID}, or
+\cite{KivvaMokhtarianEtesamiKiyavash2022RevisitGID}.
+
+\begin{proposition}[Known-corner reductions]\label{prop:reductions}
+If some source \(j^\star\) observes \(O_{j^\star}=V\) and \(\mathcal C\)
+contains every ordinary or nested/fixing target kernel requested by ordinary
+ID, with \(P_{j^\star}(V\mid S_{j^\star}=1)=P^\star(V)\) on the needed
+support, then \(\Phi_{\mathcal C}\) is the ordinary ID functional.  If a
+source \(j\) supplies a valid adjustment set \(Z\) through ordinary clauses
+\((\mathrm{obs},j,Y,\{X,Z\})\) and \((\mathrm{obs},j,Z,\varnothing)\), then
+\[
+  P^\star_x(Y)
+  =
+  \sum_z P_j(Y\mid X=x,Z=z,S_j=1)P_j(Z=z\mid S_j=1).
+\]
+\end{proposition}
+
+This proposition is a sanity result, not the novel contribution.  It records
+that the source-cover formula collapses to ordinary ID or ordinary adjustment
+when the multisource problem degenerates to a complete target source or to a
+single source-valid adjustment formula.
+
+\section{Interpretation}
+The positive theorem says that a chain-refined source-cover certificate is a
+valid identifying formula, not just a graph label.  The assumptions doing the
+work are the factor-local invariance clauses and source-specific positivity.
+Factor-local invariance licenses replacing a target conditional or district
+kernel by a selected-source extraction.  Positivity makes the required
+conditionals and fixing normalizers defined in the same source where they are
+used.  Overlap compatibility prevents two listed sources from giving
+contradictory values for the same target kernel.
+
+The refinement changes what counts as a genuine source-overlap obstruction.
+Exact source-cover treats a requested district kernel as atomic.  But
+probability kernels can sometimes be reconstructed from smaller target
+conditionals by deterministic identities such as
+\[
+  P^\star(M,Y\mid X)=P^\star(Y\mid M,X)P^\star(M\mid X).
+\]
+If those smaller conditionals are separately invariant across sources, the
+effect may be identified even though no source supplies the exact district
+request.  Thus exact source-cover failure is not, by itself, an
+identification failure.  What Theorem~\ref{thm:chain-completeness} adds is a
+bounded repair: before looking for an overlap hedge, close ordinary requests
+under a specified chain-product language and check that every factor is
+explicitly supplied by \(\mathcal C\).
+
+In applied terms, the result sharpens the diagnostic promised by the proposal.
+A successful chain-refined certificate remains decisive: it gives a valid
+estimand.  A failed exact certificate is only a failure of that particular
+atomic decomposition.  A failed chain-refined certificate has a narrower
+meaning: no expression in \(\mathfrak G_{\mathrm{chain}}\) was found.  It is
+still not a general nonidentification theorem for the full
+systematic-selection problem.  A mis-specified formula would arise if one
+silently used an unlisted source conditional, ignored a zero denominator, or
+treated a source's full selected law as target-invariant when \(\mathcal C\)
+declares only selected factor-local kernels invariant.  In the
+strict-extension family, another mis-specification would be to use
+\(P^\star_x(W)=P^\star(W\mid X=x)\) from root status alone; the equality is
+licensed only after the no-bidirected-edge/randomized-treatment condition in
+Definition~\ref{def:chain-family}.
+
+\section{Step-by-step proof}
+\begin{proof}[Proof of Theorem~\ref{thm:cr-soundness}]
+By Assumption~\ref{ass:finite-sm}, the ordinary ID recursion supplies a
+target-kernel expression \(F_{\mathrm{ID}}\) for the target semi-Markovian
+graph.  The rule used here is the recursive c-factor identification theorem
+of \cite{ShpitserPearl2006ID}: after the intervention \(X=x\) is represented
+by the truncated graph, district factorization/fixing gives the relevant
+c-kernels, irrelevant variables are marginalized, and the returned finite
+sum-product expression equals \(P^\star_x(Y)\).  No source law is used in
+this first step; it is ordinary target-population ID soundness.
+
+Consider any request \(\rho=(H,D,R,\tau)\) appearing in that returned ID
+expression.  If \(\mathsf{CRCover}_{\mathcal C}\) exact-covers the request,
+there is a source \(j\) and a matching typed clause \(c\in\mathcal C\).  The
+rule used at this step is typed source-kernel substitution: a listed
+\(\mathcal C\)-clause is an exchangeability/invariance assertion equating one
+named target kernel with one named selected-source extraction.  If
+\(\tau=\mathrm{obs}\), Assumption~\ref{ass:factor-local-C} gives
+\[
+  q^\star_H(D\mid R)=P^\star(D\mid R)
+  =E_j(c;P_j)=P_j(D\mid R,S_j=1)
+\]
+on the positive support used in the formula.  If
+\(\tau=\mathrm{fix}\), the same typed source-substitution rule and the named
+nested clause give
+\[
+  q^\star_H(D\mid R)
+  =
+  E_j(c;P_j)
+  =
+  \phi^j_{O_j\setminus(D\cup R)}
+        \{P_j(O_j\mid S_j=1)\}(D\mid R).
+\]
+Assumption~\ref{ass:overlap-ancestral} ensures that the requested variables
+are present in the selected source and that the extraction has the same
+ancestral target meaning as the ID request.  Assumption~\ref{ass:source-positivity}
+ensures each displayed conditional or fixing normalizer is defined.
+
+If exact cover fails but the request is chain-covered, then
+\(\tau=\mathrm{obs}\), \(D=\{W_1,\ldots,W_r\}\), and the certificate supplies
+an order \(\pi\) plus clauses
+\[
+  c_\ell=
+  \bigl(\mathrm{obs},j_\ell,\{W_{\pi(\ell)}\},
+        R\cup\{W_{\pi(1)},\ldots,W_{\pi(\ell-1)}\}\bigr).
+\]
+The finite chain rule for the target ordinary conditional gives
+\[
+  P^\star(D=d\mid R=r_0)
+  =
+  \prod_{\ell=1}^{|D|}
+  P^\star\{W_{\pi(\ell)}=w_{\pi(\ell)}
+    \mid R=r_0,W_{\pi(1)}=w_{\pi(1)},\ldots,
+          W_{\pi(\ell-1)}=w_{\pi(\ell-1)}\},
+\]
+with zero-probability predecessor strata contributing zero to the enclosing
+ID sum by the usual finite-kernel convention.  For every positive stratum
+used by the product, the typed source-substitution rule from
+Assumption~\ref{ass:factor-local-C} and the listed ordinary clause
+\(c_\ell\) give
+\[
+  P^\star\{W_{\pi(\ell)}\mid R,W_{\pi(<\ell)}\}
+  =
+  E_{j_\ell}(c_\ell;P_{j_\ell})
+  \{W_{\pi(\ell)}\mid R,W_{\pi(<\ell)}\}.
+\]
+Source-specific positivity ensures that every source conditional in the
+product is defined, and Assumption~\ref{ass:overlap-ancestral} ensures that
+each source observation set is valid for the factor it supplies.  Multiplying
+these equalities yields
+\[
+  q^\star_H(D\mid R)=K^{\mathrm{cr}}_\rho(D\mid R)
+\]
+for the chain-refined kernel stored by the algorithm.
+
+Substitute the exact or chain equalities request by request into the ordinary
+ID expression.  Products and finite sums preserve equality.  If two matching
+clauses could have been chosen for the same target factor, Assumption~\ref{ass:overlap-compat}
+guarantees that the selected numerical kernel is invariant to that choice on
+the support used by the formula.  The resulting expression is precisely
+\(\Phi^{\mathrm{cr}}_{\mathcal C}(Y,x;\{P_j\}_{j=1}^k)\), so
+\[
+  P^\star_x(Y)=
+  \Phi^{\mathrm{cr}}_{\mathcal C}(Y,x;\{P_j\}_{j=1}^k).
+\]
+Every operation in the right-hand side is a finite source-law operation, so
+the functional is computable.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:chain-completeness}]
+First fix the finite language \(\mathfrak G_{\mathrm{chain}}\).  For an
+ordinary request \((H,D,R,\mathrm{obs})\), a singleton chain-product
+derivation is exactly an ordering \(W_{\pi(1)},\ldots,W_{\pi(r)}\) such that,
+for every prefix \(A_{\ell-1}=\{W_{\pi(1)},\ldots,W_{\pi(\ell-1)}\}\),
+\(\mathcal C\) contains an ordinary source clause for
+\((W_{\pi(\ell)},R\cup A_{\ell-1})\) with the required observation and
+positivity conditions.  The subset dynamic program has precisely these
+prefix sets as states and precisely these admissible clauses as edges.
+Therefore a derivation in \(\mathfrak G_{\mathrm{chain}}\) gives a path from
+\(\varnothing\) to \(D\), and any path from \(\varnothing\) to \(D\) gives the
+corresponding derivation.  Exact source extractions are checked before the
+dynamic program.  Thus, request by request, the algorithm succeeds exactly
+when a replacement allowed by \(\mathfrak G_{\mathrm{chain}}\) exists.  Since
+ordinary ID produces finitely many requests, the algorithm is complete for
+the whole finite expression language.
+
+Now consider the randomized-root district-chain family of
+Definition~\ref{def:chain-family}.  The theorem-local randomized-root
+condition licenses action-observation exchange:
+\(X\) is a directed root and no bidirected edge is incident to \(X\), so the
+SWIG/counterfactual separation statement is
+\((W_1(x),\ldots,W_r(x))\perp X\).  By consistency and Rule 2 of
+do-calculus, the action-observation exchange rule of
+\cite{Pearl1995CausalDiagrams}, on the positive stratum \(X=x\), we obtain
+\[
+  P^\star_x(W_1=w_1,\ldots,W_r=w_r)
+  =
+  P^\star(W_1=w_1,\ldots,W_r=w_r\mid X=x).
+\]
+The explicit no-bidirected-edge condition is essential here; directed-root
+status alone would not exclude latent confounding between \(X\) and the
+post-\(X\) variables.
+The post-\(X\) variables form one district, so ordinary ID requests the joint
+district kernel \(q^\star(W_1,\ldots,W_r\mid X=x)\).  By construction,
+\(\mathcal C\) has no exact ordinary clause and no nested/fixing clause for
+that joint request; exact source-cover therefore fails.
+
+The finite chain rule gives
+\[
+  P^\star(W_1=w_1,\ldots,W_r=w_r\mid X=x)
+  =
+  \prod_{\ell=1}^{r}
+  P^\star(W_\ell=w_\ell
+    \mid X=x,W_1=w_1,\ldots,W_{\ell-1}=w_{\ell-1})
+\]
+on positive predecessor strata, with zero-mass strata contributing zero to
+the marginal sum.  The ordinary clauses in the theorem and
+Assumption~\ref{ass:factor-local-C} replace each target factor by the
+corresponding selected-source conditional by typed source-kernel
+substitution.  Summing over
+\(w_1,\ldots,w_{r-1}\) and setting \(w_r=y\) yields the displayed
+\(\Psi_r(y;x)\).  Hence \(\mathsf{CRCover}_{\mathcal C}\) succeeds while
+exact source-cover fails for every \(r\ge 2\).  The \(r=2\) case is the
+minimal three-variable chain \(X,M,Y\); the theorem supplies the whole
+randomized-root class.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:reductions}]
+For the complete-source case, every target kernel requested by ordinary ID is
+matched by a typed clause from source \(j^\star\), and the selected source law
+equals the target observational law on the support used by ID.  The
+source-cover substitution in Theorem~\ref{thm:cr-soundness} is
+therefore the identity substitution into the ordinary ID expression.
+
+For the adjustment case, the graphical adjustment criterion gives the
+standard target equality by the back-door adjustment theorem of
+\cite{Pearl1995CausalDiagrams}: conditional
+exchangeability of \(Y(x)\) and \(X\) given \(Z\) licenses the
+action-observation replacement, consistency evaluates \(Y(x)\) among units
+with \(X=x\), and the law of total probability marginalizes over \(Z\):
+\[
+  P^\star_x(Y)=\sum_z P^\star(Y\mid X=x,Z=z)P^\star(Z=z).
+\]
+The two ordinary clauses in the proposition replace the first target kernel
+by \(P_j(Y\mid X=x,Z=z,S_j=1)\) and the second by
+\(P_j(Z=z\mid S_j=1)\).  Source-specific positivity makes the conditionals
+well-defined for all terms with positive mass.  Substitution gives the
+displayed source adjustment formula.
+\end{proof}
+
+\section{Sanity checks}
+\begin{itemize}[leftmargin=*]
+\item If \(X=\varnothing\), the target is the observational marginal
+\(P^\star(Y)\).  Source-cover succeeds exactly when \(\mathcal C\) supplies
+the target marginal or an ID-valid decomposition of it; the formula reduces
+to finite marginalization of the supplied source kernels.
+\item If \(X\) is randomized in the target graph and a source supplies
+\((\mathrm{obs},j,Y,X)\) with positivity at \(X=x\), then the formula reduces
+to \(P^\star_x(Y)=P_j(Y\mid X=x,S_j=1)\).  For a binary treatment and scalar
+mean outcome, the ATE corner is
+\[
+  \E[Y(1)-Y(0)]
+  =
+  \E_j[Y\mid X=1,S_j=1]-\E_j[Y\mid X=0,S_j=1].
+\]
+\item If the null-effect condition \(P^\star_x(Y)=P^\star_{x'}(Y)\) holds for
+two treatment values, then any two valid source-cover formulas for \(x\) and
+\(x'\) evaluate to the same target law.  The equality follows from the causal
+null condition, not from source overlap alone.
+\item In the complete-source corner of Proposition~\ref{prop:reductions},
+the formula is ordinary ID.  Thus the note agrees with the standard ID
+special case when one selected source is invariant for all target kernels
+needed by ID.
+\item In the \(r=2\) strict-extension family with \(W_1=M\) and \(W_2=Y\),
+the formula reduces to
+\[
+  P^\star_x(Y=y)
+  =
+  \sum_m
+    P_2(Y=y\mid X=x,M=m,S_2=1)
+    P_1(M=m\mid X=x,S_1=1).
+\]
+Adding the single extra clause \((\mathrm{obs},2,\{M,Y\},X)\) or a matching
+nested/fixing clause makes exact source-cover succeed, and the exact-cover
+functional equals the chain-refined functional by the ordinary chain rule.
+\end{itemize}
+
+\section{Counterexample or minimality check}
+The minimal strict-extension witness is the \(r=2\) member of
+Theorem~\ref{thm:chain-completeness}.  Take binary
+\(V=\{X,M,Y\}\), graph \(X\to M\), \(X\to Y\), \(M\to Y\),
+\(M\leftrightarrow Y\), no bidirected edge incident to \(X\), sources
+\(O_1=\{X,M\}\) and
+\(O_2=\{X,M,Y\}\), and clauses \((\mathrm{obs},1,M,X)\) and
+\((\mathrm{obs},2,Y,\{X,M\})\).  Exact source-cover fails because the joint
+district request \(q^\star(M,Y\mid X)\) is not listed as a typed source
+clause, but chain-refined source-cover succeeds through
+\[
+  P^\star(M,Y\mid X)=P^\star(Y\mid X,M)P^\star(M\mid X).
+\]
+This witness is included only to show strictness and minimality; the headline
+novelty is the generic chain-product closure theorem, not the isolated
+negative example.
+
+The nearest repair to Conjecture~\ref{conj:overlap-hedge-completeness} is
+therefore not to assert an overlap hedge after every exact-cover failure.  A
+correct first diagnostic is: run exact source-cover, then close ordinary
+requests under the chain-product dynamic program in the estimand-functional
+section, and only then
+interpret failure as failure of the explicit chain-product language.  A
+nonidentification theorem after this stronger failure would require an
+additional overlap-hedge construction and is not claimed here.
+
+The source-specific assumptions are also minimal in the ordinary exact-ID
+sense.  If \(c_1\) is removed, two compatible target models can have the same
+source 2 conditional \(Y\mid X,M\) but different target \(M\mid X=x\), changing
+\(P^\star_x(Y)\).  If \(c_2\) is removed, two compatible target models can
+have the same source 1 conditional \(M\mid X\) but different target
+\(Y\mid X,M\), again changing the effect.  If source positivity fails for an
+\(m\) with positive \(P_1(M=m\mid X=x,S_1=1)\), the displayed formula asks for
+a source 2 conditional that is not defined on a stratum used by the target
+sum.
+
+\section{Formalization checklist}
+\paragraph{Probabilistic objects.}
+\begin{itemize}[leftmargin=*]
+\item Finite target SCM: variables \(V\), latent variables \(U\), target graph
+\(G^\star\), observational law \(P^\star(V)\), and interventional law
+\(P^\star_x(Y)\).
+\item Selected source law: for each \(j\), a finite probability distribution
+\(P_j(O_j\mid S_j=1)\) with support predicates for all denominators used.
+\item Ordinary typed clause:
+\((\mathrm{obs},j,A,B)\mapsto P^\star(A\mid B)=P_j(A\mid B,S_j=1)\) on
+positive support.
+\item Nested/fixing typed clause:
+\((\mathrm{fix},j,H,D,R)\mapsto q^\star_H(D\mid R)=
+\phi^j_{O_j\setminus(D\cup R)}\{P_j(O_j\mid S_j=1)\}(D\mid R)\).
+\item Compatibility predicate: if two clauses name the same target kernel,
+their extracted source kernels agree on common positive support.
+\item Strict-extension graph family: finite variables
+\(\{X,W_1,\ldots,W_r\}\), randomized root treatment \(X\) with no bidirected
+edge incident to \(X\), ordered post-\(X\) variables forming one bidirected
+district, and target \(Y=W_r\).  The \(r=2\) member is the binary
+\(\{X,M,Y\}\) minimality witness.
+\end{itemize}
+
+\paragraph{Deterministic identities and lemmas.}
+\begin{itemize}[leftmargin=*]
+\item Ordinary ID soundness: the returned target-kernel expression equals
+\(P^\star_x(Y)\) under the finite semi-Markovian model assumptions.
+\item Exact source substitution lemma: if a request \(\rho\) is matched by a
+typed clause, replacing \(q^\star_H(D\mid R)\) by the selected source
+extraction preserves the value of the ID expression.
+\item Chain-refinement lemma: for an ordinary request \(P^\star(D\mid R)\)
+and an ordering of \(D\), the finite chain rule expresses the request as the
+product of singleton target conditionals given \(R\) and earlier variables;
+typed ordinary clauses may then replace each singleton conditional by its
+selected-source extraction.
+\item Subset dynamic-programming completeness: states are subsets of \(D\);
+an edge adds \(W\) when \(\mathcal C\) supplies the ordinary clause for
+\(W\mid R,A\); paths from \(\varnothing\) to \(D\) are exactly singleton
+chain-product certificates.
+\item Finite sum-product congruence: equality of each kernel factor implies
+equality of the full finite expression after multiplication and summation.
+\item Root-intervention identity for the strict-extension family:
+under Definition~\ref{def:chain-family}, consistency plus
+do-calculus Rule 2/action-observation exchange gives
+\(P^\star_x(W_1,\ldots,W_r)=P^\star(W_1,\ldots,W_r\mid X=x)\) on the
+positive stratum \(X=x\).  Root status without the no-bidirected-edge
+condition is not enough.
+\item Chain rule for finite conditionals:
+\(P^\star(M,Y\mid X)=P^\star(Y\mid X,M)P^\star(M\mid X)\) on positive
+support, and its ordered \(r\)-variable analogue, with zero-mass strata
+contributing zero to the marginal sum.
+\item Exact-cover failure predicate: a request fails when no same-type
+\(\mathcal C\) clause names the exact requested kernel and source support.
+\item bypass-justified: declaration-level substrate survey found no direct
+abstraction for this paper's typed \(k\)-source selected-law clauses; the
+available exact-ID primitives are at the level of standard identification
+and adjustment rather than source-indexed factor-local invariance.
+\item bypass-justified: conditional-probability primitives remain useful for
+downstream finite-kernel formalization, but the mathematical note needs a
+source-cover recursion, subset dynamic program, and chain-refined finite
+probability-kernel theorem rather than a single pre-existing identification
+theorem.
+\end{itemize}
+
+\section{Conclusion and references}
+The theorem-level contribution is a positive refinement of the Stage--1
+source-cover idea.  Chain-refined source-cover is a sound
+exact-identification certificate for observational \(k\)-source data fusion
+under typed factor-local selection invariance, source-specific positivity,
+compatibility on overlaps, and the overlap-ancestral coverage condition.  The
+subset dynamic program is complete for the finite chain-product certificate
+language, and the randomized-root district-chain family shows a strict
+extension over exact source-cover.  This is a useful source-cover closure, not
+a flagship-level frontier theorem relative to systematic-selection,
+DoSearch, or gID.  The identifying assumptions carrying the result are
+precisely the listed typed invariances, the support conditions needed to
+evaluate them, and, for the strict-extension family only, randomized-treatment
+exchangeability for \(X\).  Identification breaks if an unlisted source
+equality is used, if a required denominator is zero, if \(X\) is latently
+confounded with post-\(X\) variables in the chain family, or if
+chain-refined failure is mistaken for nonidentification in the full
+systematic-selection problem.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem{BareinboimPearl2012TransportCompleteness}
+Bareinboim, E. and Pearl, J. (2012).
+Transportability of causal effects: Completeness results.
+\emph{Proceedings of the AAAI Conference on Artificial Intelligence}, 26(1).
+
+\bibitem{BareinboimPearl2014MZTransport}
+Bareinboim, E. and Pearl, J. (2014).
+Transportability from multiple environments with limited experiments:
+Completeness results.
+\emph{Advances in Neural Information Processing Systems}, 27.
+
+\bibitem{BareinboimPearl2016DataFusion}
+Bareinboim, E. and Pearl, J. (2016).
+Causal inference and the data-fusion problem.
+\emph{Proceedings of the National Academy of Sciences}, 113(27):7345--7352.
+
+\bibitem{BareinboimTianPearl2014Selection}
+Bareinboim, E., Tian, J., and Pearl, J. (2014).
+Recovering from selection bias in causal and statistical inference.
+\emph{Proceedings of the AAAI Conference on Artificial Intelligence}, 28(1).
+
+\bibitem{ColnetEtAl2024RCTObservationalReview}
+Colnet, B., Mayer, I., Chen, G., Dieng, A., Li, R., Varoquaux, G.,
+Vert, J.-P., Josse, J., and Yang, S. (2024).
+Causal inference methods for combining randomized trials and observational
+studies: A review.
+\emph{Statistical Science}, 39(1):165--191.
+
+\bibitem{CorreaTianBareinboim2018Adjustment}
+Correa, J. D., Tian, J., and Bareinboim, E. (2018).
+Generalized adjustment under confounding and selection biases.
+\emph{Proceedings of the AAAI Conference on Artificial Intelligence}, 32(1).
+
+\bibitem{CorreaTianBareinboim2019SelectionEffects}
+Correa, J. D., Tian, J., and Bareinboim, E. (2019).
+Identification of causal effects in the presence of selection bias.
+\emph{Proceedings of the AAAI Conference on Artificial Intelligence},
+33(1):2744--2751.
+
+\bibitem{DegtiarRose2023Generalizability}
+Degtiar, I. and Rose, S. (2023).
+A review of generalizability and transportability.
+\emph{Annual Review of Statistics and Its Application}, 10:501--524.
+
+\bibitem{KivvaMokhtarianEtesamiKiyavash2022RevisitGID}
+Kivva, Y., Mokhtarian, E., Etesami, J., and Kiyavash, N. (2022).
+Revisiting the general identifiability problem.
+\emph{Proceedings of the Thirty-Eighth Conference on Uncertainty in
+Artificial Intelligence}, PMLR 180:1022--1030.
+
+\bibitem{LeeBareinboim2020PartialObservability}
+Lee, S. and Bareinboim, E. (2020).
+Causal effect identifiability under partial-observability.
+\emph{Proceedings of the 37th International Conference on Machine Learning},
+PMLR 119:5692--5701.
+
+\bibitem{LeeCorreaBareinboim2020GID}
+Lee, S., Correa, J. D., and Bareinboim, E. (2020).
+Identifiability from a combination of observations and experiments.
+\emph{Proceedings of the AAAI Conference on Artificial Intelligence},
+34(09):13677--13680.
+
+\bibitem{LeeGhassamiShpitser2024DataFusionSelection}
+Lee, J. J. R., Ghassami, A., and Shpitser, I. (2024).
+A general identification algorithm for data fusion problems under systematic
+selection.
+\emph{Proceedings of the Fortieth Conference on Uncertainty in Artificial
+Intelligence}, PMLR 244:2188--2204.
+
+\bibitem{Pearl1995CausalDiagrams}
+Pearl, J. (1995).
+Causal diagrams for empirical research.
+\emph{Biometrika}, 82(4):669--688.
+
+\bibitem{ShpitserPearl2006ID}
+Shpitser, I. and Pearl, J. (2006).
+Identification of joint interventional distributions in recursive
+semi-Markovian causal models.
+\emph{Proceedings of the AAAI Conference on Artificial Intelligence}, 21(1).
+
+\bibitem{ShpitserPearl2008CompleteID}
+Shpitser, I. and Pearl, J. (2008).
+Complete identification methods for the causal hierarchy.
+\emph{Journal of Machine Learning Research}, 9:1941--1979.
+
+\bibitem{TikkaHyttinenKarvanen2021DoSearch}
+Tikka, S., Hyttinen, A., and Karvanen, J. (2021).
+Causal effect identification from multiple incomplete data sources: A general
+search-based approach.
+\emph{Journal of Statistical Software}, 99(5):1--40.
+\end{thebibliography}
+
+\end{document}

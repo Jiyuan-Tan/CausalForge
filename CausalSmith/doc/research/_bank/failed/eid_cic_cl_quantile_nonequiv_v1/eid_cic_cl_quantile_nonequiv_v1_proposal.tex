@@ -1,0 +1,304 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_cic\_cl\_quantile\_nonequiv, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_cic\_cl\_quantile\_nonequiv} / \texttt{v1}%
+  \\ \large\textit{Gateaux-linearized Bacon weights for staggered QTT and CIC estimators}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\[
+\begin{array}{ll}
+qid &= \texttt{eid\_cic\_cl\_quantile\_nonequiv},\\
+specialization &= \texttt{v1},\\
+p &= \text{finite staggered-adoption panel with cohort law }\pi\text{ on }G\in\{2,\ldots,T,\infty\},\\
+assignment &= \text{absorbing treatment }D_{it}=\one\{G_i\le t\}\text{ with positive never-treated or not-yet-treated risk sets},\\
+target &= \theta_\tau(g,t)=Q_{Y_t(1)-Y_t(0)\mid G=g}(\tau)\text{ and its group-time counterfactual CDF input},\\
+regression &= \text{nonlinear plug-in maps }M_\tau^{CIC}\text{ and }M_\tau^{CL}\text{ plus their Gateaux-linear influence decompositions.}
+\end{array}
+\]
+All distribution and quantile statements are made at continuity points with strictly positive density at the relevant quantile.  The proposal is a panel/exact-identification kernel: it asks when nonlinear staggered distributional estimators admit a Bacon-style first-order decomposition, not whether a linear TWFE coefficient is identified.
+
+\begin{abstract}
+Modern staggered-DID diagnostics explain mean TWFE failures through linear two-by-two decompositions, but the analogous object for changes-in-changes and group-time quantile treatment effects is missing because counterfactual CDF construction and quantile inversion are nonlinear.  This proposal asks whether the correct diagnostic is the Gateaux derivative of the full estimator map rather than the estimator itself.  The flagship conjecture is that, under smooth finite-support staggered panels, the first-order wedge between a staggered CIC map and a Callaway--Li-style group-time QTT map decomposes into signed cohort-time influence components, and that a computable contamination index \(\mathcal B_\tau(P)\) detects an open class where the two estimator directions have opposite asymptotic sign.  A companion estimator conjecture proposes a plug-in estimator \(\widehat{\mathcal B}_\tau\) with root-\(n\) Gaussian limit, giving applied researchers a distributional analogue of Bacon/Sun--Abraham diagnostics.  If resolved, the result would let users of staggered QTT estimators report a signed nonlinear-contamination diagnostic before interpreting CIC and copula-stability estimates as interchangeable.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+The staggered-DID literature has made linear mean estimators auditable: researchers can ask which cohorts are compared, with what signs, and whether already-treated units contaminate the target.  Distributional DID and QTT estimators are now used for the same policy designs, but their counterfactuals are nonlinear maps from empirical CDFs to quantiles.  The methodological question is whether there is a sharp analogue of the Goodman--Bacon and Sun--Abraham decomposition for nonlinear CIC and Callaway--Li-style QTT maps, or whether sign conflicts between those estimators remain a purely numerical phenomenon.
+
+\paragraph{The main finding (proposed).}
+The proposed flagship result is Conjecture~\ref{conj:if-bacon}: after localizing the CIC and Callaway--Li group-time QTT maps around a smooth staggered law \(P\), their difference has a first-order representation as a signed sum of cohort-time score components.  The operational quantity is the \emph{quantile contamination index} \(\mathcal B_\tau(P)\), a finite weighted sum of derivative weights multiplying group-time CDF perturbation scores.  The conjecture predicts an open finite-support class on which the CIC direction and the Callaway--Li direction have opposite signs even though each primitive group-time distributional shift is positive in isolation.
+
+\paragraph{What is new.}
+The closest published comparators are \citet{GoodmanBacon2021}, Section 3, for the linear two-by-two TWFE decomposition; \citet{SunAbraham2021}, Sections 2--3, for contamination in event-study coefficients; \citet{CallawayLi2019}, Sections 2--3, for panel QTT under distributional DID and time-invariance copulas; and \citet{LiLin2024}, Section 3, for staggered QTT under distributional DID and group-invariance copulas.  The epsilon gap is not another point-identification formula: none of those papers gives the directional derivative object whose signs diagnose nonlinear quantile contamination under staggered timing.  This proposal therefore targets the derivative-level frontier \(\mathcal B_\tau(P)\), not the level equality of two counterfactual CDFs pursued in the exhausted earlier angles.
+
+\paragraph{How it positions in the literature.}
+The proposal sits in the panel and distributional-DID frontier.  It imports the audit logic of linear staggered-DID decompositions into the exact-identification objects used by CIC and QTT papers.  It does not claim that CIC or Callaway--Li QTT are unidentified under their own assumptions; instead it asks whether, when both are embedded in a common staggered panel law, their first-order behavior exposes signed contamination that the level formulas hide.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the staggered QTT workflow of \citet{LiLin2024}: if Conjecture~\ref{conj:if-bacon} resolves favorably, an applied staggered-QTT study can report \(\widehat{\mathcal B}_\tau\) as a nonlinear timing-contamination diagnostic before deciding whether a CIC-style robustness check and a Callaway--Li-style copula-stability estimate should be expected to agree.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should check the derivative-weight contamination index \(\mathcal B_\tau(P)\) before treating staggered CIC and group-time QTT estimates as mutually reinforcing evidence about the sign of a quantile treatment effect.
+
+\section{Related work}
+\citet{AtheyImbens2006} introduce changes-in-changes, with Sections 2--3 and Theorem 3.1 identifying counterfactual distributions under a monotone nonlinear DID structure; this is the CIC counterfactual map whose staggered derivative is audited here.  \citet{CallawayLi2019}, Sections 2--3 and Theorems 1--2, identify QTT in panel DID using distributional DID and a time-invariance copula restriction; this is the copula-stability route whose derivative is compared with CIC.  \citet{CallawayLiOka2018}, Sections 2--3, identify conditional QTT in two periods under distributional DID and a dependence restriction, making it the two-period precursor to the group-time map.  \citet{LiLin2024}, Section 3, extends QTT identification to staggered adoption using distributional DID and group-invariance copulas while noting difficulty for the Callaway--Li time-invariance route; this is the immediate staggered-adoption consumer.
+
+\citet{GoodmanBacon2021}, Section 3, decomposes linear TWFE DID with timing variation into weighted two-by-two comparisons; the present proposal asks for the nonlinear first-order analogue for quantile maps.  \citet{SunAbraham2021}, Sections 2--3, show that event-study coefficients can be contaminated by treatment effects from other periods; the proposed \(\mathcal B_\tau(P)\) is a distributional counterpart of that contamination logic.  \citet{deChaisemartinDHaultfoeuille2020}, Sections 1--3, show that TWFE estimators can attach misleading weights under heterogeneous effects, motivating an explicit sign diagnostic rather than a verbal robustness comparison.  \citet{CallawaySantAnna2021}, Sections 2--3, provide the group-time ATT architecture that motivates treating \((g,t)\) QTTs as the primitive target rather than a single pooled coefficient.
+
+\citet{FanYu2012}, Sections 1--2, show that distributional and quantile DID can be only partially identified under weaker restrictions; this proposal is complementary because it studies derivative non-equivalence between two point-ID routes when their assumptions are imposed.  \citet{RothSantAnna2023}, Sections 1--2, demonstrate functional-form sensitivity in mean DID; the present proposal isolates a different nonlinearity, namely CDF construction and quantile inversion under staggered timing.  \citet{Ciaccio2025}, Sections 2--3, studies distributional DID with multiple periods and staggered adoption, confirming that whole-counterfactual-distribution recovery is now an active empirical workflow.
+
+In-catalogue CausalSmith prior work is adjacent but not duplicative.  The \texttt{doc/API.md} Q1 and \texttt{Q1\_StaggeredMinimalBasis} entries formalize linear FWL and staggered switch-on coefficient decompositions, including contamination loadings for mean regressions, but they do not define distributional CDF maps, quantile inversion, or influence-function derivatives for QTT.  The failed \texttt{eid\_dist\_synth\_control\_v1} proposal studied marginal-versus-treatment-effect copula frontiers and reviewer notes flagged Athey--Imbens plus Callaway--Li as prior art; it did not propose a Bacon-style derivative decomposition for staggered quantile estimators.  The prior-proposal map also lists \texttt{q\_did\_drdid\_ipwdid\_frontier\_v1} and \texttt{panel\_sdid\_mc\_id\_v1} as estimator non-equivalence frontiers, but those are mean/regression frontiers rather than nonlinear distributional-QTT maps.
+
+\section{Formal setup}
+Let \(i=1,\ldots,n\) index independent units and \(t=1,\ldots,T\) fixed periods.  Each unit has first-treatment cohort \(G_i\in\mathcal G\subseteq\{2,\ldots,T\}\cup\{\infty\}\), with cohort shares \(\pi_g=\Pr(G_i=g)>0\) for all active cohorts and at least one valid comparison risk set for each target \((g,t)\).  Treatment is absorbing: \(D_{it}=\one\{G_i\le t\}\).  Potential outcomes are \(Y_{it}(d_{1:T})\), and for group-time QTT we write \(Y_t(1)\) and \(Y_t(0)\) for the treated and untreated potential outcomes at a post-treatment target cell after applying the usual no-anticipation and consistency reductions.
+
+For a target cohort-time pair \((g,t)\) with \(t\ge g\), define the treated CDF \(F^1_{gt}(y)=\Pr(Y_t(1)\le y\mid G=g)\), the untreated counterfactual CDFs \(F^{0,CIC}_{gt}\) and \(F^{0,CL}_{gt}\), and their quantile maps \(Q^1_{gt,\tau}\), \(Q^{0,CIC}_{gt,\tau}\), and \(Q^{0,CL}_{gt,\tau}\).  The two QTT maps are
+\[
+M_\tau^{CIC}(P;g,t)=Q^1_{gt,\tau}-Q^{0,CIC}_{gt,\tau},
+\qquad
+M_\tau^{CL}(P;g,t)=Q^1_{gt,\tau}-Q^{0,CL}_{gt,\tau}.
+\]
+Let \(\Psi_\tau(P;g,t)=M_\tau^{CIC}(P;g,t)-M_\tau^{CL}(P;g,t)\).  For a signed perturbation \(h\) in the tangent space of cohort-time empirical CDFs, write \(\dot\Psi_{\tau,P}[h]\) for the Gateaux derivative.  Let \(S_{ab}(y)\) denote the elementary score that perturbs the CDF in cohort-calendar cell \((a,b)\) at outcome threshold \(y\).  The derivative weights \(w^{CIC}_{ab,\tau}(P;g,t)\) and \(w^{CL}_{ab,\tau}(P;g,t)\) are the coefficients multiplying \(S_{ab}\) in the two derivative expansions.  The quantile contamination index is
+\[
+\mathcal B_\tau(P;g,t)=
+\sum_{(a,b)\in\mathcal R(g,t)}
+\left(w^{CIC}_{ab,\tau}(P;g,t)-w^{CL}_{ab,\tau}(P;g,t)\right)
+\sigma_{ab,\tau}(P),
+\]
+where \(\mathcal R(g,t)\) is the comparison-risk-set cell collection and \(\sigma_{ab,\tau}(P)\) is the signed primitive group-time CDF shift at the relevant counterfactual quantile.
+
+\[
+\begin{array}{ll}
+qid &= \texttt{eid\_cic\_cl\_quantile\_nonequiv},\\
+specialization &= \texttt{v1},\\
+p &= \text{finite staggered-adoption panel with cohort law }\pi\text{ on }G\in\{2,\ldots,T,\infty\},\\
+assignment &= \text{absorbing treatment }D_{it}=\one\{G_i\le t\}\text{ with positive never-treated or not-yet-treated risk sets},\\
+target &= \theta_\tau(g,t)=Q_{Y_t(1)-Y_t(0)\mid G=g}(\tau)\text{ and its group-time counterfactual CDF input},\\
+regression &= \text{nonlinear plug-in maps }M_\tau^{CIC}\text{ and }M_\tau^{CL}\text{ plus their Gateaux-linear influence decompositions.}
+\end{array}
+\]
+
+\section{Assumptions}
+\begin{assumption}[Absorbing staggered support]\label{ass:staggered-support}
+The panel has fixed \(T\), absorbing treatment \(D_{it}=\one\{G_i\le t\}\), positive cohort shares for every active \(g\in\mathcal G\), and nonempty comparison risk sets \(\mathcal R(g,t)\) for the target \((g,t)\).
+\end{assumption}
+
+\begin{assumption}[Consistency and no anticipation]\label{ass:consistency-noanticipation}
+Observed outcomes satisfy \(Y_{it}=Y_{it}(D_{i1:T})\), and for \(s<G_i\) the potential outcome at \(s\) depends only on the untreated path, so pre-treatment and not-yet-treated cells identify untreated marginal distributions.
+\end{assumption}
+
+\begin{assumption}[Distributional DID and CIC regularity]\label{ass:cic-regular}
+The CIC counterfactual map \(F^{0,CIC}_{gt}\) is well defined from the relevant treated and comparison CDFs by the Athey--Imbens monotone transformation construction, and all component CDFs are continuously differentiable with positive densities at the quantiles used below.
+\end{assumption}
+
+\begin{assumption}[Callaway--Li copula regularity]\label{ass:cl-regular}
+The Callaway--Li-style group-time counterfactual map \(F^{0,CL}_{gt}\) is well defined by distributional DID and a named time-invariance or group-invariance copula restriction, with component CDFs continuously differentiable and positive densities at the relevant quantiles.
+\end{assumption}
+
+\begin{assumption}[Hadamard differentiability]\label{ass:hadamard}
+The maps \(P\mapsto F^{0,CIC}_{gt}\), \(P\mapsto F^{0,CL}_{gt}\), and \(F\mapsto F^{-1}(\tau)\) are Hadamard differentiable tangentially to the bounded cohort-time CDF score space at \(P\).
+\end{assumption}
+
+\begin{assumption}[Finite-support witness class]\label{ass:finite-witness}
+For the concrete witness, \(T=4\), active cohorts are \(G\in\{2,3,\infty\}\), outcomes have support \(\{0,1,2\}\), all cell probabilities are bounded below by \(\eta>0\), and the \(\tau\)-quantile lies at a strict interior support point with density mass gap at least \(m_\tau>0\).
+\end{assumption}
+
+\begin{assumption}[Timing-homogeneity]\label{ass:timing-homogeneity}
+For every target \((g,t)\), the untreated distributional evolution and the copula object entering the CL map are invariant across adoption cohorts in the relevant risk set, so \(w^{CIC}_{ab,\tau}(P;g,t)=w^{CL}_{ab,\tau}(P;g,t)\) for all cells \((a,b)\in\mathcal R(g,t)\).
+\end{assumption}
+
+\begin{assumption}[Empirical-process regularity]\label{ass:empirical}
+The empirical cohort-time CDF process satisfies a uniform root-\(n\) central limit theorem on the finite threshold set used to estimate \(\mathcal B_\tau(P;g,t)\), and the density/mass lower bounds in Assumption~\ref{ass:finite-witness} hold uniformly in a neighborhood of \(P\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: derivative weights are well-defined]\label{thm:derivative-well-defined}
+Under Assumptions~\ref{ass:staggered-support}--\ref{ass:hadamard}, the map \(\Psi_\tau(P;g,t)=M_\tau^{CIC}(P;g,t)-M_\tau^{CL}(P;g,t)\) has a Gateaux derivative \(\dot\Psi_{\tau,P}\) that can be written as a finite signed sum of cohort-time CDF score evaluations,
+\[
+\dot\Psi_{\tau,P}[h]=
+\sum_{(a,b)\in\mathcal R(g,t)}
+\left(w^{CIC}_{ab,\tau}(P;g,t)-w^{CL}_{ab,\tau}(P;g,t)\right) h_{ab}(q_{ab,\tau}),
+\]
+for quantile-indexed thresholds \(q_{ab,\tau}\) determined by the two counterfactual maps.  Consequently \(\mathcal B_\tau(P;g,t)\) is a well-defined scalar functional whenever the primitive signed shifts \(\sigma_{ab,\tau}(P)\) are defined.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This theorem is the routine calculus layer below the novelty claim: \citet{GoodmanBacon2021} gives exact linear weights for a mean TWFE coefficient, while \citet{CallawayLi2019} and \citet{LiLin2024} give nonlinear QTT identification formulas without a derivative-weight diagnostic.  The gap is the named operational object \(\mathcal B_\tau(P)\), which prepares a distributional analogue of linear decomposition weights.  (b) The concrete consumer is \citet{LiLin2024}: it gives staggered-QTT users the derivative object they must estimate before comparing CIC and CL-style signs.
+
+\begin{conjecture}[Conjecture 1 (NOT YET PROVED): nonlinear Bacon decomposition and opposite-sign class]\label{conj:if-bacon}
+Under Assumptions~\ref{ass:staggered-support}--\ref{ass:finite-witness}, there is a nonempty open subset \(\mathcal O_\tau\) of finite-support staggered laws for which the first-order wedge between CIC and Callaway--Li group-time QTT maps satisfies
+\[
+\dot\Psi_{\tau,P}[h^{timing}]
+=\mathcal B_\tau(P;g,t),
+\]
+where \(h^{timing}\) is the perturbation induced by changing only the timing-distribution moment
+\[
+\mu_1(P)=\pi_2-\pi_3
+\]
+holding the primitive within-cell untreated shifts positive.  On \(\mathcal O_\tau\), \(M_\tau^{CIC}\) and \(M_\tau^{CL}\) have opposite asymptotic sign along \(h^{timing}\) exactly when the independently defined signed sum \(\mathcal B_\tau(P;g,t)\) crosses zero with nonzero derivative in \(\mu_1\).  A concrete witness should exist with \(T=4\), cohorts \(\{2,3,\infty\}\), support \(\{0,1,2\}\), and \(\tau=1/2\), where all primitive group-time CDF shifts are positive but the quantile derivative of one map is positive and the other negative.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest published chain is \citet{GoodmanBacon2021}, Section 3, plus \citet{SunAbraham2021}, Sections 2--3, for linear signed contamination, and \citet{CallawayLi2019}, Theorems 1--2, plus \citet{LiLin2024}, Section 3, for QTT identification.  The epsilon gap is a generic-class promotion for nonlinear quantile estimators: the conjecture does not merely say CIC and CL can differ, but proposes the derivative-weight scalar \(\mathcal B_\tau(P)\) and an open finite-support sign-reversal class driven by the timing moment \(\mu_1(P)\).  (b) Resolving it would give the \citet{LiLin2024} staggered-QTT workflow a concrete warning: a positive group-time distributional shift need not preserve the sign of a CIC/CL robustness comparison once timing composition enters before quantile inversion.
+
+\begin{conjecture}[Conjecture 2 (NOT YET PROVED): plug-in diagnostic and root-\(n\) limit]\label{conj:estimator}
+Under Assumptions~\ref{ass:staggered-support}--\ref{ass:empirical}, the plug-in estimator \(\widehat{\mathcal B}_\tau(g,t)\), obtained by replacing cohort shares, CDF masses, density/mass gaps, derivative weights, and primitive shifts in \(\mathcal B_\tau(P;g,t)\) by their empirical analogues, obeys
+\[
+\sqrt n\{\widehat{\mathcal B}_\tau(g,t)-\mathcal B_\tau(P;g,t)\}
+\Rightarrow N(0,V_{\mathcal B,\tau}(P)),
+\]
+with a consistently estimable variance \(V_{\mathcal B,\tau}(P)\).  Moreover, the sign decision rule that flags nonlinear contamination when \(|\widehat{\mathcal B}_\tau|>z_{1-\alpha/2}\widehat V_{\mathcal B,\tau}^{1/2}/\sqrt n\) has asymptotic size \(\alpha\) for the derivative-null \(\mathcal B_\tau(P;g,t)=0\) and nontrivial power on local alternatives in \(\mathcal O_\tau\).
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{deChaisemartinDHaultfoeuille2020}, \citet{GoodmanBacon2021}, and \citet{SunAbraham2021} make mean staggered-DID diagnostics operational, while \citet{CallawayLi2019} and \citet{LiLin2024} focus on QTT identification.  The gap is estimator duality for a nonlinear distributional diagnostic: \(\mathcal B_\tau(P)\) is not useful to empirical researchers unless it has a root-\(n\) plug-in estimator and a reportable sign test.  (b) The concrete consumer is any applied distributional-DID study following \citet{LiLin2024} or \citet{Ciaccio2025}; it could report \(\widehat{\mathcal B}_\tau\) next to QTT estimates as the distributional analogue of a Bacon decomposition table.
+
+\begin{theorem}[Theorem 2: timing-homogeneous collapse]\label{thm:homogeneous-collapse}
+Under Assumptions~\ref{ass:staggered-support}--\ref{ass:hadamard} and Assumption~\ref{ass:timing-homogeneity}, \(\mathcal B_\tau(P;g,t)=0\) for every target \((g,t,\tau)\).  If, in addition, the CIC and CL counterfactual CDF maps agree at all continuity points under the same timing-homogeneity restriction, then \(M_\tau^{CIC}(P;g,t)=M_\tau^{CL}(P;g,t)\) and the QTT is jointly point-identified by the common counterfactual object.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This is the positive corner that prevents the proposal from overstating non-equivalence.  It recovers the intuition behind \citet{AtheyImbens2006} and \citet{CallawayLi2019}: when the relevant rank/copula and timing objects are homogeneous, the two distributional routes should agree rather than generate diagnostic conflict.  (b) The consumer is again \citet{LiLin2024}; the theorem states the homogeneity condition under which staggered QTT users can treat the CIC and CL counterfactuals as a single jointly identifying object.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Two-period reduction]\label{cor:twoperiod}
+Under Assumptions~\ref{ass:staggered-support}--\ref{ass:cl-regular}, if \(T=2\) and there is one treated cohort plus one never-treated comparison group, then \(\mathcal R(g,t)\) contains only the canonical treated/control pre/post cells.  The derivative expansion in Theorem~\ref{thm:derivative-well-defined} collapses to the ordinary two-period distributional-DID quantile derivative, and the timing moment \(\mu_1(P)\) in Conjecture~\ref{conj:if-bacon} is absent.
+\end{corollary}
+The reduction uses Assumption~\ref{ass:staggered-support}: with only one treated timing group, there is no staggered timing composition, so the signed timing component that drives \(\mathcal B_\tau(P)\) vanishes and the setup reduces to the two-period QTT formulas studied by \citet{CallawayLiOka2018} and \citet{CallawayLi2019}.
+
+\begin{corollary}[Concrete non-corner witness target]\label{cor:witness}
+Under Assumption~\ref{ass:finite-witness}, a valid proof of Conjecture~\ref{conj:if-bacon} must exhibit explicit cell probabilities for \(G\in\{2,3,\infty\}\), \(T=4\), support \(\{0,1,2\}\), and \(\tau=1/2\) with all masses at least \(\eta\), all relevant median gaps at least \(m_\tau\), positive primitive CDF shifts, and opposite signs for the CIC and CL directional quantile derivatives.
+\end{corollary}
+This is not the Gaussian or homogeneous corner: it is a finite-support staggered design with two treated cohorts and one comparison cohort, so the nonlinear timing composition has a place to enter before median inversion.
+
+\section{Proof-sketch route}
+The proof route is classical asymptotic and convex calculus.  First, write the CIC and CL counterfactual CDFs as compositions of empirical cohort-time CDFs, cohort-share weights, copula/rank maps, and quantile inversion; Hadamard differentiability plus the inverse-CDF derivative gives Theorem~\ref{thm:derivative-well-defined}.  Second, for Conjecture~\ref{conj:if-bacon}, enumerate the smallest nontrivial \(T=4\), three-cohort, three-point-support law and compute the derivative weights symbolically as functions of \((\pi_2,\pi_3,\pi_\infty)\); the key algebra is to show that varying \(\mu_1=\pi_2-\pi_3\) changes the sign of the weighted derivative sum while preserving positive primitive CDF shifts and quantile mass gaps.  Third, show openness by continuity of the derivative weights and strict mass-gap inequalities.  Fourth, Conjecture~\ref{conj:estimator} follows by the functional delta method for finite CDF processes and a plug-in variance calculation.  The timing-homogeneous collapse is checked by substituting the equality of CIC and CL derivative weights from Assumption~\ref{ass:timing-homogeneity}; the only boundary cases needing explicit algebra are ties at the quantile and vanishing cohort shares, both excluded by the stated lower bounds.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:derivative-well-defined} and Theorem~\ref{thm:homogeneous-collapse} are intended as routine mathematical consequences of differentiability and timing-homogeneity definitions, not as the novelty-bearing claims.  Conjecture~\ref{conj:if-bacon} is the flagship open kernel: the proposal has not yet proved the finite-support sign-reversal witness or the open-class promotion.  Conjecture~\ref{conj:estimator} is also open because the plug-in derivative weights may require trimming or rearrangement at quantile ties; the current scope excludes ties through Assumption~\ref{ass:finite-witness}.  The proposal deliberately pivots away from the exhausted level-equivalence and partial-bounds angles; it does not claim a new identifying assumption for QTT, only a first-order decomposition and diagnostic for existing identifying maps.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for angle 3, replacing the exhausted equality/bounds kernels with a Gateaux-linearized nonlinear Bacon decomposition for staggered CIC and Callaway--Li QTT maps; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Athey and Imbens(2006)]{AtheyImbens2006}
+Athey, S. and G. W. Imbens (2006).
+\newblock Identification and inference in nonlinear difference-in-differences models.
+\newblock \emph{Econometrica} 74(2), 431--497.
+
+\bibitem[Callaway and Li(2019)]{CallawayLi2019}
+Callaway, B. and T. Li (2019).
+\newblock Quantile treatment effects in difference in differences models with panel data.
+\newblock \emph{Quantitative Economics} 10(4), 1579--1618.
+
+\bibitem[Callaway, Li, and Oka(2018)]{CallawayLiOka2018}
+Callaway, B., T. Li, and T. Oka (2018).
+\newblock Quantile treatment effects in difference in differences models under dependence restrictions and with only two time periods.
+\newblock \emph{Journal of Econometrics} 206(2), 395--413.
+
+\bibitem[Callaway and Sant'Anna(2021)]{CallawaySantAnna2021}
+Callaway, B. and P. H. C. Sant'Anna (2021).
+\newblock Difference-in-differences with multiple time periods.
+\newblock \emph{Journal of Econometrics} 225(2), 200--230.
+
+\bibitem[Ciaccio(2025)]{Ciaccio2025}
+Ciaccio, G. (2025).
+\newblock Distributional difference-in-differences models with multiple time periods: a Monte Carlo analysis.
+\newblock Working paper.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{deChaisemartinDHaultfoeuille2020}
+de Chaisemartin, C. and X. D'Haultfoeuille (2020).
+\newblock Two-way fixed effects estimators with heterogeneous treatment effects.
+\newblock \emph{American Economic Review} 110(9), 2964--2996.
+
+\bibitem[Fan and Yu(2012)]{FanYu2012}
+Fan, Y. and Z. Yu (2012).
+\newblock Partial identification of distributional and quantile treatment effects in difference-in-differences models.
+\newblock \emph{Economics Letters} 115(3), 511--515.
+
+\bibitem[Goodman-Bacon(2021)]{GoodmanBacon2021}
+Goodman-Bacon, A. (2021).
+\newblock Difference-in-differences with variation in treatment timing.
+\newblock \emph{Journal of Econometrics} 225(2), 254--277.
+
+\bibitem[Li and Lin(2024)]{LiLin2024}
+Li, X. and L. Lin (2024).
+\newblock Identification of quantile treatment effects in difference-in-differences settings with staggered adoption.
+\newblock \emph{Economics Letters} 241, 111789.
+
+\bibitem[Roth and Sant'Anna(2023)]{RothSantAnna2023}
+Roth, J. and P. H. C. Sant'Anna (2023).
+\newblock When is parallel trends sensitive to functional form?
+\newblock \emph{Econometrica} 91(2), 737--747.
+
+\bibitem[Sun and Abraham(2021)]{SunAbraham2021}
+Sun, L. and S. Abraham (2021).
+\newblock Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\newblock \emph{Journal of Econometrics} 225(2), 175--199.
+\end{thebibliography}
+
+\end{document}

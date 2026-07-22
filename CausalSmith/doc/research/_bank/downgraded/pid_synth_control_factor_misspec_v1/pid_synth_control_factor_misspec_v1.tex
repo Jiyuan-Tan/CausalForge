@@ -1,0 +1,1183 @@
+% =====================================================================
+%  ThmSmith Stage 0 derivation skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_synth\_control\_factor\_misspec, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to a Q1..Q6
+%    pool-mode, fill it VERBATIM from the question-specific block of
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    For free-form panel / ExactID / PartialID anchors, reproduce the
+%    locked-parameter block from the Stage -1 proposal verbatim. Do not
+%    rephrase locked parameters; Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage 0 derivation: \texttt{pid\_synth\_control\_factor\_misspec} / \texttt{v1}%
+  \\ \large\textit{Sharp Chebyshev bounds for synthetic control under bounded factor misspecification}}
+\author{ThmSmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note studies partial identification of the one-period synthetic-control
+counterfactual \(\theta=Y_{0s}(0)\) when a fixed donor-weight vector leaves a
+signed pre-period gap \(g\) and the linear-factor approximation error is bounded
+in sup norm.  The estimand-defining functional is the Chebyshev support interval
+\[
+\theta_L(P)=y_s^w+\inf_{\|g-X\Delta\|_\infty\le\rho}b^\transpose\Delta-\rho,
+\qquad
+\theta_U(P)=y_s^w+\sup_{\|g-X\Delta\|_\infty\le\rho}b^\transpose\Delta+\rho,
+\]
+where \(\rho=(1+\|w\|_1)\eta\).  A support-function proposition proves that this
+interval is the sharp identified set for \(\theta\), with finite attained
+endpoints exactly when the post bridge \(b\) is visible in the row span of \(X\).
+The field-level result is a primitive active-basis scalar nonsharpness theorem:
+on any open LP cell where the active pre-period constraints form a nonsingular
+basis with strict complementarity, the sharp support endpoint is an affine
+function of the signed pre-gap vector.  If the resulting bridge weight is not
+collinear with the gradient of a scalar pre-fit report, exact same-scalar
+perturbations change the sharp endpoint to first order.  Thus RMSPE-level
+reporting workflows can remain useful diagnostics, but deterministic sharp
+factor-misspecification reporting must carry the signed vector information
+encoded by the centered support endpoint map \(H^c(P)\).
+\end{abstract}
+
+\section{Introduction}
+Synthetic control asks whether a donor-weighted untreated path can stand in for
+the missing untreated outcome of a treated unit.  Exact pre-treatment fit is the
+cleanest case, but applied work usually has a nonzero pre-period gap, and the
+causal question then becomes a partial-identification question: which untreated
+post-period values remain compatible with the signed pre-gap vector and a
+declared factor-model misspecification budget?
+
+The usual scalar summaries of imperfect fit, especially RMSPE and post/pre
+RMSPE ratios, are useful diagnostics for reporting and placebo-style inference.
+They do not, by themselves, record the direction in which the pre-gap points
+relative to the post-period factor bridge.  In a linear-factor model this
+direction matters, because only components of the latent imbalance that are
+visible through the pre-period dictionary can be transported to the post-period
+counterfactual.
+
+This note first proves the exact finite-dimensional partial-identification
+formula.  The feasible latent imbalances form a Chebyshev tube
+\[
+K(P)=\{\Delta\in\R^r:\|g-X\Delta\|_\infty\le\rho\},
+\]
+and the sharp counterfactual interval is obtained by minimizing and maximizing
+the bridge \(b^\transpose\Delta\) over that tube and then adding the remaining
+post-period error budget.  This projection formula is standard convex geometry;
+its role here is to define the deterministic object whose scalar compressions
+are being tested.
+
+The new contribution is the scalarization obstruction on primitive open LP
+cells.  Suppose a set \(A\) of \(r\) active pre-period bounds has nonsingular
+row matrix \(X_A\), active signs \(\sigma_A\in\{-1,1\}^A\), strict slack on the
+inactive bounds, and strict complementarity
+\(\sigma_i\beta_i>0\) for
+\(\beta_A=X_A^{-\transpose}b\).  Then throughout the same open cell,
+\[
+h_+(g)=\beta_A^\transpose(g_A+\rho\sigma_A),
+\]
+so the endpoint sensitivity is derived directly from the primitive active
+basis rather than assumed as an anisotropic derivative.  If the extended bridge
+weight \(\beta_0\) is not collinear with the gradient of an RMSPE-level
+statistic, there are exact same-scalar perturbations of the signed pre-gap
+vector that change the sharp endpoint to first order.  The result is useful for
+theory and formula design because it separates three objects that are often
+conflated: the causal target \(\theta=Y_{0s}(0)\), the observable post gap
+\(d\), and the deterministic support interval implied by the signed pre-gap
+vector.
+
+\paragraph{Motivating conjecture(s).}
+Conjecture 1: fixed scalar pre-fit reporting is generically nonsharp for deterministic factor misspecification (NOT YET PROVED)
+Fix \(q\in\mathcal Q\). Under Assumptions~\ref{ass:fixed-weights}, \ref{ass:bounded-factor}, \ref{ass:nonempty}, \ref{ass:bridge-visible}, \ref{ass:scalar-class}, and \ref{ass:anisotropic}, there is an \(\varepsilon_0>0\) such that for every sufficiently small \(0<\varepsilon<\varepsilon_0\) one can find two observable laws \(P_\varepsilon^+\) and \(P_\varepsilon^-\) in the same open design class with \(q(g_\varepsilon^+)=q(g_\varepsilon^-)\) but
+\[
+\left|\sup_{\Delta\in K(P_\varepsilon^+)}b^\transpose\Delta
+-\sup_{\Delta\in K(P_\varepsilon^-)}b^\transpose\Delta\right|
+\ge c\varepsilon
+\]
+for some \(c>0\) determined by the directional LP slopes. Hence no \(q\)-scalar pre-fit calibration \(I_{\psi,q}(P)\) is both valid and sharp on that open class; at least one of the two laws receives deterministic centered-endpoint excess of order \(\varepsilon\). The witness pair is constructible by moving along the \(q\)-level tangent direction \(v\) and solving the two endpoint LPs.
+
+Conjecture 2: support-function calibration is minimally sharp (NOT YET PROVED)
+Under Assumptions~\ref{ass:fixed-weights}, \ref{ass:bounded-factor}, \ref{ass:nonempty}, \ref{ass:bridge-visible}, and \ref{ass:endpoint-sufficient}, let \(\mathcal U\) be any open class on which the sharp centered interval for \(\theta-y_s^w\) is finite. If an interval rule depending on a statistic \(S(P)\) is valid and sharp for \(\theta-y_s^w\) for every \(P\in\mathcal U\), then \(S\) must be centered-endpoint-sufficient on \(\mathcal U\): for every \(P,P'\in\mathcal U\),
+\[
+S(P)=S(P')\quad\Longrightarrow\quad H^c(P)=H^c(P').
+\]
+Equivalently, the sharp centered endpoint map \(H^c\) factors through \(S\) on \(\mathcal U\). For uncentered intervals for \(\theta\), the necessary statistic is \((y_s^w,H^c(P))\) or any equivalent statistic that fixes the \(y_s^w\) shift as well. In particular, a scalar norm \(q(g)\) can be sharp only on classes where \(H^c(P)\) is constant along the \(q\)-level sets after fixing \(y_s^w\).
+
+\section{Related work and positioning}
+\cite{AbadieGardeazabal2003} introduced the synthetic-control case-study design
+and motivates the single treated-unit counterfactual target used here.
+\cite{AbadieDiamondHainmueller2010} gave the canonical linear-factor
+justification for synthetic control under exact or sufficiently good pre-fit;
+the support-form proposition below recovers its exact-fit point-identification
+corner but treats imperfect pre-fit as a deterministic partial-identification
+problem.
+\cite{Abadie2021} surveys feasibility conditions, placebo inference, and
+post/pre RMSPE reporting.  \cite{FirpoPossebom2018} develops RMSPE-based
+inference, sensitivity analysis, and confidence sets, including modified RMSPE
+weighting.  Those papers motivate the scalar \(q_{\mathrm{rms}}\) used in the
+comparison, but they are not treated as making a deterministic sharp
+partial-identification claim.  The negative result below targets the broader
+mathematical class of deterministic interval rules that retain the signed
+pre-gap \(g\) only through \(q(g)\); the published RMSPE workflows are examples
+of why that scalar is a natural diagnostic to examine, not the object being
+refuted.
+\cite{FermanPinto2021} studies how imperfect pre-treatment fit changes the
+properties of synthetic-control estimators, while this note characterizes the
+set of counterfactual values compatible with a fixed misspecification budget.
+
+\cite{CattaneoFengTitiunik2021} and \cite{ChernozhukovWuthrichZhu2021}
+construct prediction and conformal inference procedures for synthetic controls;
+those are sampling or prediction-coverage objects, whereas this note isolates
+the deterministic identified set before sampling uncertainty is layered on.
+\cite{BenMichaelFellerRothstein2021},
+\cite{ArkhangelskyAtheyHirshbergImbensWager2021}, and
+\cite{AtheyBayatiDoudchenkoImbensKhosravi2021} give augmented, regularized, and
+matrix-completion approaches to latent-factor panel prediction; those methods
+stabilize estimation but do not replace the support calculation for a declared
+misspecification class.
+
+\cite{NazaretShiBlei2024} analyzes misspecification of linear assumptions in
+synthetic controls and provides related bounds on misspecification error; the
+distinctive feature here is sharp compatibility with the observed signed
+pre-gap vector.  \cite{ZeitlerVlontzosGilliganLee2023} studies nonparametric
+identifiability and sensitivity analysis for synthetic-control models under
+invariant mechanisms; the present note instead fixes a finite-dimensional
+factor dictionary and computes the support of its Chebyshev compatibility tube.
+\cite{Manski1990} and \cite{BalkePearl1997} are the classical
+partial-identification comparators: both show that sharp bounds are projections
+of feasible latent structures, and the Chebyshev interval below is the analogous
+projection for bounded factor misspecification.  The novelty beyond that
+standard support calculation is the active-basis scalarization theorem.  It
+derives endpoint sensitivity from rank, strict-slack, strict-complementarity,
+and noncollinearity conditions on \((X,b,\rho,q,g_0)\), rather than assuming the
+endpoint derivative or the anisotropic conclusion.  The Stage -1 proposal for
+this qid supplies the locked tuple and the two conjectures above; this Stage 0
+note confirms Conjecture 1 on primitive active-basis open cells and confirms
+Conjecture 2 as a necessary-statistic proposition rather than as the
+field-level contribution.
+
+\section{Formal setup}
+There is one treated unit \(0\), donor units \(j=1,\ldots,J\), pre-periods
+\(t=1,\ldots,T_0\), and one post-period \(s\).  The donor weights
+\(w=(w_1,\ldots,w_J)\in\R^J\) are fixed before the bound is evaluated.  The
+observable map takes the treated and donor outcomes, the fixed weights, the
+factor dictionary, and the error budget to
+\[
+P=(g,d,y_s^w,w,X,b,\eta),
+\]
+where
+\[
+g_t=Y_{0t}^{\mathrm{obs}}-\sum_{j=1}^Jw_jY_{jt}^{\mathrm{obs}},
+\qquad
+y_s^w=\sum_{j=1}^Jw_jY_{js}^{\mathrm{obs}},
+\qquad
+d=Y_{0s}^{\mathrm{obs}}-y_s^w.
+\]
+The matrix \(X\in\R^{T_0\times r}\) has row \(X_t^\transpose\) at pre-period
+\(t\), \(b\in\R^r\) is the post-period factor bridge, and \(\eta\ge0\) is the
+unit-level sup-norm approximation-error budget.  The locked parameter
+\[
+\rho=(1+\|w\|_1)\eta
+\]
+is the induced treated-minus-synthetic gap budget, because a treated error and
+the weighted donor errors can accumulate by at most \((1+\|w\|_1)\eta\).
+
+The unobserved scalar parameter is the untreated post-period counterfactual
+\(\theta=Y_{0s}(0)\).  A candidate completion is a latent imbalance
+\(\Delta\in\R^r\), a pre-period error vector \(e_{\mathrm{pre}}\in\R^{T_0}\),
+and a post-period error \(e_s\in\R\) satisfying
+\[
+g=X\Delta+e_{\mathrm{pre}},\qquad
+\|e_{\mathrm{pre}}\|_\infty\le\rho,\qquad
+\theta-y_s^w=b^\transpose\Delta+e_s,\qquad
+|e_s|\le\rho.
+\]
+Thus the maintained restrictions carve out the identified set
+\[
+\Theta_I(P)=
+\{\theta\in\R:\exists \Delta\in\R^r,\ \|g-X\Delta\|_\infty\le\rho,\ 
+|\theta-y_s^w-b^\transpose\Delta|\le\rho\}.
+\]
+Write
+\[
+K(P)=\{\Delta\in\R^r:\|g-X\Delta\|_\infty\le\rho\}
+\]
+for the Chebyshev compatibility tube.  Boundary conventions are standard:
+when \(K(P)=\emptyset\), the maintained restrictions are inconsistent and
+\(\Theta_I(P)=\emptyset\); under the nonempty-tube assumption below, endpoints
+are understood in the extended real line unless bridge visibility is imposed.
+
+\paragraph{Locked parameters.}
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization})
+  =(\texttt{pid\_synth\_control\_factor\_misspec},\texttt{v1}),\\
+P=(g,d,y_s^w,w,X,b,\eta),\qquad
+\theta=Y_{0s}(0),\\
+\text{identifying restrictions: fixed synthetic-control weights }w,\;
+\rho=(1+\|w\|_1)\eta,\;\exists \Delta\in\R^r
+\text{ such that }\|g-X\Delta\|_\infty\le \rho,\\
+\text{and } |\theta-y_s^w-b^\transpose \Delta|\le \rho,\\
+\text{bounding functional: }
+\Theta_I(P)=y_s^w+
+\left[
+\inf_{\|g-X\Delta\|_\infty\le\rho}b^\transpose\Delta-\rho,\;
+\sup_{\|g-X\Delta\|_\infty\le\rho}b^\transpose\Delta+\rho
+\right].
+\end{gathered}
+\]
+
+\section{Assumptions}
+\begin{assumption}[Fixed weights and observed gap]\label{ass:fixed-weights}
+The weight vector \(w\in\R^J\), pre-gap vector \(g\in\R^{T_0}\), post synthetic
+outcome \(y_s^w\), observed post gap \(d\), dictionary
+\((X,b)\in\R^{T_0\times r}\times\R^r\), and error budget \(\eta\ge0\) are fixed
+components of the observable law \(P\).  All displayed vectors and matrices are
+finite-dimensional real objects.
+\end{assumption}
+
+\begin{assumption}[Bounded factor approximation]\label{ass:bounded-factor}
+There are latent factor loadings \(\mu_i\in\R^r\) and untreated approximation
+errors \(u_{it}\) with \(|u_{it}|\le\eta\) such that the treated-minus-synthetic
+untreated gaps satisfy \(g=X\Delta+e_{\mathrm{pre}}\) and
+\(\theta-y_s^w=b^\transpose\Delta+e_s\), where
+\(\Delta=\mu_0-\sum_jw_j\mu_j\), \(\|e_{\mathrm{pre}}\|_\infty\le\rho\),
+\(|e_s|\le\rho\), and \(\rho=(1+\|w\|_1)\eta\).
+\end{assumption}
+
+\begin{assumption}[Nonempty compatibility tube]\label{ass:nonempty}
+The Chebyshev tube \(K(P)=\{\Delta\in\R^r:\|g-X\Delta\|_\infty\le\rho\}\) is
+nonempty.
+\end{assumption}
+
+\begin{assumption}[Finite bridge visibility]\label{ass:bridge-visible}
+The post bridge \(b\) lies in the row span of \(X\).  Equivalently,
+\(b^\transpose v=0\) for every \(v\in\ker(X)\), so the linear functional
+\(\Delta\mapsto b^\transpose\Delta\) is bounded above and below on every
+nonempty tube \(K(P)\).
+\end{assumption}
+
+\begin{assumption}[Exact-fit ADH corner]\label{ass:exact-corner}
+The approximation budget is \(\eta=0\), the pre-fit is exact \(g=0\), and
+\(b\in\operatorname{rowspan}(X)\).
+\end{assumption}
+
+\begin{assumption}[Scalar-calibration class]\label{ass:scalar-class}
+Let
+\[
+ \mathcal Q=\{q_2,q_\infty,q_{\mathrm{rms}}\},\qquad
+ q_2(g)=\|g\|_2,\quad q_\infty(g)=\|g\|_\infty,\quad
+ q_{\mathrm{rms}}(g)=T_0^{-1/2}\|g\|_2 .
+\]
+For a fixed \(q\in\mathcal Q\), a \(q\)-scalar pre-fit calibration is any
+interval rule \(I_{\psi,q}(P)\) whose non-exact-fit component depends on \(g\)
+only through \(q(g)\), together with \((X,b,w,\eta)\), and is required to
+contain the sharp interval for every \(g\) in an open neighbourhood of the
+observable law under study.  The statistic \(q_{\mathrm{rms}}\) is the
+pre-period RMSPE component of the post/pre RMSPE statistic surveyed in
+\cite{Abadie2021} and of the modified RMSPE statistic in
+\cite{FirpoPossebom2018}.  These references name a widely used scalar
+diagnostic; the negative target is the mathematical class of deterministic
+\(q(g)\)-only interval rules, not the placebo or inference procedures in those
+papers and not a claim that those papers assert sharp deterministic
+factor-misspecification identification from that scalar.
+\end{assumption}
+
+\begin{assumption}[Primitive active-basis \(q\)-anisotropic bridge]\label{ass:anisotropic}
+For the fixed statistic \(q\in\mathcal Q\) in
+Assumption~\ref{ass:scalar-class}, there are a pre-gap vector
+\(g_0\in\R^{T_0}\), fixed primitives \((X,b,\rho)\) with \(\rho\ge0\), an index
+set \(A\subseteq\{1,\ldots,T_0\}\) of size \(r\), and signs
+\(\sigma_A\in\{-1,1\}^A\) satisfying the following conditions.  The active row
+matrix \(X_A\in\R^{r\times r}\) is nonsingular.  Define
+\[
+\Delta_0=X_A^{-1}(g_{0,A}+\rho\sigma_A),\qquad
+\beta_A=X_A^{-\transpose}b,
+\]
+where the coordinates of \(\beta_A\) are indexed by \(A\).  Extend
+\(\beta_A\) to \(\beta_0\in\R^{T_0}\) by setting
+\((\beta_0)_i=(\beta_A)_i\) for \(i\in A\) and \((\beta_0)_i=0\) for
+\(i\notin A\).  The inactive inequalities have strict slack,
+\[
+|g_{0,i}-X_i^\transpose\Delta_0|<\rho\qquad(i\notin A),
+\]
+and the active multipliers have strict complementary signs,
+\[
+\sigma_i(\beta_0)_i>0\qquad(i\in A).
+\]
+The scalar \(q\) is differentiable at \(g_0\): for \(q_2\) and
+\(q_{\mathrm{rms}}\) this means \(g_0\ne0\), while for \(q_\infty\) it means
+that a unique signed coordinate attains \(\|g_0\|_\infty\).  Finally, the
+primitive active-basis bridge weight is not collinear with the scalar gradient:
+\[
+\beta_0\notin\operatorname{span}\{\nabla q(g_0)\}.
+\]
+These are rank, strict-inequality, sign, and noncollinearity conditions on
+\((X,b,\rho,q,g_0)\).  They do not assume the endpoint derivative
+\(Dh_+(g_0)\), local-dual regularity, or scalar-level endpoint anisotropy; those
+facts are derived from the active basis in the proof.
+\end{assumption}
+
+\begin{assumption}[Nondegenerate two-dimensional anisotropic witness]\label{ass:two-dimensional-witness}
+Take \(T_0=r=2\), \(X=I_2\), \(b=(1,0)^\transpose\), any \(\rho>0\), and any
+\(a>0\).  Let \(g^{(1)}=(a,0)^\transpose\) and \(g^{(2)}=(0,a)^\transpose\).
+Then \(q_2(g^{(1)})=q_2(g^{(2)})=a\),
+\(q_\infty(g^{(1)})=q_\infty(g^{(2)})=a\), and
+\(q_{\mathrm{rms}}(g^{(1)})=q_{\mathrm{rms}}(g^{(2)})=a/\sqrt2\).  The tubes
+are \(K(g^{(k)})=g^{(k)}+[-\rho,\rho]^2\), so
+\[
+\sup_{\Delta\in K(g^{(1)})}b^\transpose\Delta=a+\rho,\qquad
+\sup_{\Delta\in K(g^{(2)})}b^\transpose\Delta=\rho,
+\]
+and likewise the lower endpoints are \(a-\rho\) and \(-\rho\).  Thus the same
+observable scalar pre-fit value gives different sharp support endpoints for
+each \(q\in\mathcal Q\), and the witness is nondegenerate because the strict
+endpoint gap \(a\) persists under small perturbations that preserve the
+displayed scalar equality within the corresponding level surface.
+\end{assumption}
+
+\begin{assumption}[Centered endpoint-sufficient statistic]\label{ass:endpoint-sufficient}
+For an open class \(\mathcal U\) of observable laws with fixed
+\((X,b,w,\eta)\), define the centered endpoint map for the interval of
+\(\theta-y_s^w\),
+\[
+H^c(P)=\left(
+\inf_{\Delta\in K(P)}b^\transpose\Delta-\rho,\;
+\sup_{\Delta\in K(P)}b^\transpose\Delta+\rho
+\right).
+\]
+Write these two components as \(H^c_-(P)\) and \(H^c_+(P)\).  A statistic
+\(S(P)\) is centered-endpoint-sufficient on \(\mathcal U\) if
+\(S(P)=S(P')\) implies \(H^c(P)=H^c(P')\) for all
+\(P,P'\in\mathcal U\).  For the uncentered \(\theta\)-interval, the
+corresponding endpoint statistic is \((y_s^w,H^c(P))\).
+\end{assumption}
+
+\section{Estimand-defining functional}
+The PartialID functional is the support interval of the bridge over the
+Chebyshev tube.  Define
+\[
+h_-(P)=\inf_{\Delta\in K(P)}b^\transpose\Delta,\qquad
+h_+(P)=\sup_{\Delta\in K(P)}b^\transpose\Delta,
+\]
+and
+\[
+\theta_L(P)=y_s^w+h_-(P)-\rho,\qquad
+\theta_U(P)=y_s^w+h_+(P)+\rho.
+\]
+Equivalently, the centered endpoint map is
+\[
+H^c(P)=(h_-(P)-\rho,\ h_+(P)+\rho).
+\]
+The proposition below proves the sharp statement
+\[
+\Theta_I(P)=[\theta_L(P),\theta_U(P)]
+\]
+under Assumptions~\ref{ass:fixed-weights}, \ref{ass:bounded-factor}, and
+\ref{ass:nonempty}, with endpoints interpreted as extended real values if
+bridge visibility is not imposed.  Under Assumption~\ref{ass:bridge-visible},
+the interval is finite and the endpoint optimizers are attained.  Thus the
+functional is not merely an outer bound; it is sharp for the declared
+factor-misspecification model.
+
+\section{Target causal estimand}
+The target causal estimand is the scalar untreated post-period counterfactual
+\[
+\theta=Y_{0s}(0).
+\]
+It is not defined to equal the synthetic outcome \(y_s^w\) and it is not
+identified by the observed post gap alone.  The observed treated-minus-synthetic
+post gap is
+\[
+d=Y_{0s}^{\mathrm{obs}}-y_s^w,
+\]
+so the post-period treatment effect for the treated unit is
+\[
+\tau_s=Y_{0s}^{\mathrm{obs}}-\theta
+      =d-(\theta-y_s^w).
+\]
+Therefore a sharp interval for \(\theta-y_s^w\) immediately yields the
+reversed and shifted treatment-effect interval, but the causal target remains
+\(\theta\) until the partial-identification result is applied.
+
+\section{Main theorems}
+\begin{proposition}[Support-form sharp Chebyshev interval]\label{thm:sharp-chebyshev}
+Under Assumptions~\ref{ass:fixed-weights}, \ref{ass:bounded-factor}, and
+\ref{ass:nonempty}, the identified set for \(\theta=Y_{0s}(0)\) is
+\[
+\Theta_I(P)=
+y_s^w+
+\left[
+\inf_{\Delta\in K(P)} b^\transpose\Delta-\rho,\;
+\sup_{\Delta\in K(P)} b^\transpose\Delta+\rho
+\right].
+\]
+If Assumption~\ref{ass:bridge-visible} also holds, both endpoints are finite
+and attained.  The corresponding treatment-effect interval is
+\[
+\tau_s\in
+\left[
+d-\sup_{\Delta\in K(P)} b^\transpose\Delta-\rho,\;
+d-\inf_{\Delta\in K(P)} b^\transpose\Delta+\rho
+\right].
+\]
+\end{proposition}
+This proposition is the required sharp partial-identification object.  It is
+not the field-level novelty by itself: mathematically it is the usual projection
+of a feasible latent set through a linear functional.  Its role is to fix the
+deterministic target that later scalar rules must equal if they claim sharpness.
+Compared with exact-factor synthetic-control identification in
+\cite{AbadieDiamondHainmueller2010}, the object is the support function of the
+signed pre-gap tube rather than a point equality.  Compared with
+Manski--Balke--Pearl bounds, the latent feasible set is not a response-type
+polytope but a Chebyshev tube over factor imbalances.
+
+\begin{proposition}[Scalar RMSPE-level lower-bound witness]\label{thm:scalar-lower-bound}
+Under Assumptions~\ref{ass:fixed-weights}, \ref{ass:bounded-factor},
+\ref{ass:nonempty}, \ref{ass:bridge-visible}, \ref{ass:scalar-class}, and
+\ref{ass:two-dimensional-witness}, fix any \(q\in\mathcal Q\) and consider the
+two observable laws \(P_1,P_2\) generated by \(g^{(1)}=(a,0)^\transpose\) and
+\(g^{(2)}=(0,a)^\transpose\) with the same \((X,b,w,\eta,y_s^w)\).  Any valid
+interval rule \(I_{\psi,q}\) whose endpoints are identical whenever \(q(g)\) is
+identical must be nonsharp for at least one of \(P_1,P_2\).  Quantitatively,
+because the sharp \(\theta-y_s^w\) intervals are
+\[
+[a-2\rho,a+2\rho]\quad\text{and}\quad[-2\rho,2\rho],
+\]
+validity for both displayed laws forces the common scalar interval to have
+upper endpoint excess at least \(a\) at \(P_2\) and lower endpoint excess at
+least \(a\) at \(P_1\).
+\end{proposition}
+This proposition gives a concrete lower-bound witness for information loss from
+scalarizing the signed pre-gap vector.  It is not the final novelty claim
+because it uses two displayed laws and does not target a published sharpness
+claim.  Its role is to show the finite mechanism that the open-cell theorem
+promotes: a \(q(g)\)-only deterministic rule must over-cover when the same
+scalar pre-fit value points in different bridge directions.
+
+\begin{theorem}[Primitive active-basis scalar nonsharpness]\label{thm:generic-scalar}
+Conjecture 1 is confirmed on primitive active-basis open cells.  Fix
+\(q\in\mathcal Q\).  Under
+Assumptions~\ref{ass:fixed-weights}, \ref{ass:bounded-factor},
+\ref{ass:nonempty}, \ref{ass:bridge-visible}, \ref{ass:scalar-class}, and
+\ref{ass:anisotropic}, there are \(\varepsilon_0>0\), \(c>0\), and, for every
+\(0<\varepsilon<\varepsilon_0\), two observable laws \(P_\varepsilon^+\) and
+\(P_\varepsilon^-\) in the same open design class with
+\(q(g_\varepsilon^+)=q(g_\varepsilon^-)\) but
+\[
+\left|h_+(P_\varepsilon^+)-h_+(P_\varepsilon^-)\right|\ge c\varepsilon .
+\]
+Consequently, no \(q\)-scalar pre-fit calibration can be both valid and sharp
+on that class; at least one of the two laws receives deterministic
+centered-endpoint excess of order \(\varepsilon\).
+\end{theorem}
+This is the theorem-level contribution.  Endpoint derivative and local-dual
+regularity conditions are not assumed; endpoint movement is derived from a
+nonsingular active constraint basis, strict slack, strict complementarity, and
+the primitive noncollinearity
+\(\beta_0\notin\operatorname{span}\{\nabla q(g_0)\}\).  Thus the result gives
+an open design-class obstruction to deterministic \(q(g)\)-only sharp
+calibration, while leaving published RMSPE placebo, prediction, and sensitivity
+uses intact.
+
+\begin{proposition}[Endpoint sufficiency is necessary for sharp calibration]\label{thm:endpoint-sufficiency}
+Conjecture 2 is confirmed.  Under Assumptions~\ref{ass:fixed-weights},
+\ref{ass:bounded-factor}, \ref{ass:nonempty}, \ref{ass:bridge-visible}, and
+\ref{ass:endpoint-sufficient}, let \(\mathcal U\) be any open class on which
+the sharp centered interval for \(\theta-y_s^w\) is finite.  If an interval
+rule depending on a statistic \(S(P)\) is valid and sharp for
+\(\theta-y_s^w\) for every \(P\in\mathcal U\), then \(S\) must be
+centered-endpoint-sufficient on \(\mathcal U\):
+\[
+S(P)=S(P')\quad\Longrightarrow\quad H^c(P)=H^c(P') .
+\]
+For uncentered intervals for \(\theta\), the statistic must also determine the
+shift \(y_s^w\), equivalently it must determine \((y_s^w,H^c(P))\).
+\end{proposition}
+This proposition records the minimality logic behind the support-function
+functional.  It is a necessary-statistic argument, not an independent
+field-level theorem.  Any coarser statistic can be sharp only on classes where
+the centered endpoint map is constant on its level sets.
+
+\section{Interpretation}
+Proposition~\ref{thm:sharp-chebyshev} says that bounded factor misspecification
+does not produce a single corrected synthetic-control counterfactual.  It
+produces all post-period bridge values \(b^\transpose\Delta\) that are
+compatible with the signed pre-gap \(g\), plus the remaining post-period error
+budget.  The restriction doing the tightening work is the joint condition
+\(\|g-X\Delta\|_\infty\le\rho\) together with bridge visibility
+\(b\in\operatorname{rowspan}(X)\).  The former uses the observed signed
+pre-gap to restrict latent imbalance; the latter rules out hidden post-period
+factor directions that never appear in the pre-period dictionary.
+
+The bound collapses to point identification when \(\rho=0\) and the bridge is
+zero on all compatible imbalances.  In particular, exact pre-fit \(g=0\) plus
+\(b\in\operatorname{rowspan}(X)\) gives \(\theta=y_s^w\).  The bound widens to
+the natural no-restriction bound when the factor-tube restriction is removed:
+under the locked real-valued setup with no external bounded outcome support,
+that natural bound is all of \(\R\); if an additional outcome support
+\([L,U]\) were externally supplied, the analogous vacuous Manski-style bound
+would be \([L,U]\).  If bridge visibility is dropped, the interval can again be
+unbounded even when the pre-gap tube is nonempty.
+
+The scalar nonsharpness results explain why two designs with the same RMSPE can
+have different deterministic identified sets.  In the active-basis theorem,
+the deciding object is the bridge-weight vector \(\beta_0\) obtained from the
+nonsingular active rows \(X_A\) through \(X_A^\transpose\beta_A=b\) and
+extended by zeros off \(A\).  Perturbations tangent to the scalar level but not
+orthogonal to this \(\beta_0\) change the support endpoint to first order.
+Thus RMSPE remains useful as a fit summary, but the deterministic partial-ID
+report must include the vector-sensitive support interval or an equivalent
+endpoint-sufficient statistic.
+
+\section{Step-by-step proof}
+\begin{lemma}[Bridge support over the tube]\label{lem:bridge-support}
+Under Assumptions~\ref{ass:fixed-weights}, \ref{ass:nonempty}, and
+\ref{ass:bridge-visible}, \(h_-(P)\) and \(h_+(P)\) are finite and attained.
+\end{lemma}
+
+\begin{proof}
+By Assumption~\ref{ass:nonempty}, \(K(P)\) is nonempty.  By
+Assumption~\ref{ass:bridge-visible}, there is a vector
+\(\lambda\in\R^{T_0}\) with \(b=X^\transpose\lambda\).  For every
+\(\Delta\in K(P)\),
+\[
+g-\rho\one\le X\Delta\le g+\rho\one
+\]
+componentwise, so \(z=X\Delta\) lies in the compact box
+\([g-\rho\one,g+\rho\one]\subset\R^{T_0}\).  Also
+\[
+b^\transpose\Delta=\lambda^\transpose X\Delta=\lambda^\transpose z.
+\]
+The feasible set for \(z\), namely
+\(\{X\Delta:\Delta\in K(P)\}\), is the intersection of the column space of
+\(X\) with that compact box, hence it is compact and nonempty.  The continuous
+linear map \(z\mapsto\lambda^\transpose z\) therefore attains its minimum and
+maximum, proving the claim.
+\end{proof}
+
+\begin{lemma}[Dual bridge representation]\label{lem:dual-bridge}
+Under Assumptions~\ref{ass:fixed-weights}, \ref{ass:nonempty}, and
+\ref{ass:bridge-visible}, define
+\(\mathcal B(X,b)=\{\beta\in\R^{T_0}:X^\transpose\beta=b\}\).  The upper
+endpoint has the dual form
+\[
+h_+(g)=\min_{\beta\in\mathcal B(X,b)}
+\{g^\transpose\beta+\rho\|\beta\|_1\}.
+\]
+\end{lemma}
+
+\begin{proof}
+Write the tube constraints as
+\[
+X\Delta\le g+\rho\one,\qquad -X\Delta\le -g+\rho\one .
+\]
+The primal problem defining \(h_+(g)\) is the feasible finite-valued linear
+program
+\[
+\sup_{\Delta\in\R^r}\ b^\transpose\Delta
+\quad\text{subject to}\quad
+X\Delta\le g+\rho\one,\quad -X\Delta\le -g+\rho\one .
+\]
+Feasibility is Assumption~\ref{ass:nonempty}; finite value follows from
+Assumption~\ref{ass:bridge-visible} and Lemma~\ref{lem:bridge-support}.  Its
+linear-program dual is
+\[
+\inf_{\lambda^+,\lambda^-\ge0}
+(g+\rho\one)^\transpose\lambda^+
+{}+
+(-g+\rho\one)^\transpose\lambda^-
+\quad\text{subject to}\quad
+X^\transpose(\lambda^+-\lambda^-)=b .
+\]
+Strong duality applies because this is a feasible finite-dimensional LP with
+finite value.  Set \(\beta=\lambda^+-\lambda^-\).  For a fixed feasible
+\(\beta\), the minimum of \(\one^\transpose(\lambda^++\lambda^-)\) over
+nonnegative decompositions \(\beta=\lambda^+-\lambda^-\) is
+\(\|\beta\|_1\), attained coordinatewise by the positive and negative parts of
+\(\beta\).  Substituting gives exactly
+\[
+\min_{\beta:X^\transpose\beta=b}
+g^\transpose\beta+\rho\|\beta\|_1 .
+\]
+\end{proof}
+
+\begin{lemma}[Active-basis regularity gives scalar-level endpoint movement]\label{lem:primitive-anisotropy}
+Under Assumption~\ref{ass:anisotropic}, there is a direction \(v\in\R^{T_0}\)
+and a constant \(c_0>0\) such that, for all sufficiently small
+\(\varepsilon>0\),
+\[
+q(g_0+\varepsilon v)=q(g_0-\varepsilon v)
+\]
+and
+\[
+\left|h_+(g_0+\varepsilon v)-h_+(g_0-\varepsilon v)\right|
+\ge c_0\varepsilon .
+\]
+\end{lemma}
+
+\begin{proof}
+First derive the endpoint formula from the primitive active basis.  For \(g\)
+near \(g_0\), set
+\[
+\Delta_A(g)=X_A^{-1}(g_A+\rho\sigma_A).
+\]
+The strict inactive slack in Assumption~\ref{ass:anisotropic} is open, so after
+shrinking the neighbourhood of \(g_0\),
+\[
+|g_i-X_i^\transpose\Delta_A(g)|<\rho\qquad(i\notin A).
+\]
+The active coordinates satisfy
+\[
+X_A\Delta_A(g)=g_A+\rho\sigma_A,
+\]
+so \(\Delta_A(g)\in K(g)\).  For any \(\Delta\in K(g)\), the active constraints
+give
+\[
+(\beta_0)_i X_i^\transpose\Delta
+\le
+(\beta_0)_i(g_i+\rho\sigma_i)\qquad(i\in A),
+\]
+because \(\sigma_i(\beta_0)_i>0\): upper-bound active constraints have positive
+multiplier and lower-bound active constraints have negative multiplier.
+Summing over \(A\) and using \(X_A^\transpose\beta_A=b\) yields
+\[
+b^\transpose\Delta
+\le
+\beta_A^\transpose(g_A+\rho\sigma_A)
+=b^\transpose\Delta_A(g).
+\]
+Thus \(\Delta_A(g)\) attains the upper support endpoint and
+\[
+h_+(g)=\beta_A^\transpose(g_A+\rho\sigma_A)
+       =\beta_0^\transpose g+\rho\|\beta_0\|_1
+\]
+throughout the active-basis cell.
+
+Because \(\beta_0\notin\operatorname{span}\{\nabla q(g_0)\}\), there is
+\(v\) in the tangent space of the scalar level at \(g_0\) with
+\[
+\nabla q(g_0)^\transpose v=0,\qquad \beta_0^\transpose v\ne0.
+\]
+For \(q_2\) and \(q_{\mathrm{rms}}\), this tangent condition is
+\(g_0^\transpose v=0\), and therefore
+\[
+\|g_0+\varepsilon v\|_2^2=\|g_0-\varepsilon v\|_2^2
+\]
+for every \(\varepsilon\).  Hence \(q_2\) and \(q_{\mathrm{rms}}\) agree exactly
+on the two symmetric perturbations.  For \(q_\infty\), differentiability means a
+unique signed coordinate \(k\) attains \(\|g_0\|_\infty\).  The tangent
+condition sets \(v_k=0\); after shrinking the neighbourhood, the same coordinate
+remains uniquely active, so the two sup norms are again exactly equal.
+
+The affine endpoint formula gives the exact difference
+\[
+h_+(g_0+\varepsilon v)-h_+(g_0-\varepsilon v)
+=2\varepsilon\,\beta_0^\transpose v
+\]
+whenever both perturbed gaps remain in the active-basis cell.  Since
+\(\beta_0^\transpose v\ne0\), choose
+\(c_0=|\beta_0^\transpose v|\) and shrink the neighbourhood so that the
+absolute difference is at least \(c_0\varepsilon\).
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{thm:sharp-chebyshev}]
+The proof is a finite-dimensional projection argument, the same support-set
+logic used in classical sharp partial-identification bounds.
+
+First prove containment.  If \(\theta\in\Theta_I(P)\), the definition of
+\(\Theta_I(P)\) and Assumption~\ref{ass:bounded-factor} give some
+\(\Delta\in\R^r\) and \(e_s\in[-\rho,\rho]\) with
+\[
+\|g-X\Delta\|_\infty\le\rho,\qquad
+\theta-y_s^w=b^\transpose\Delta+e_s .
+\]
+The first display says \(\Delta\in K(P)\).  Hence
+\[
+h_-(P)\le b^\transpose\Delta\le h_+(P)
+\]
+by the definitions of \(h_-\) and \(h_+\), and adding
+\(e_s\in[-\rho,\rho]\) yields
+\[
+y_s^w+h_-(P)-\rho
+\le \theta \le
+y_s^w+h_+(P)+\rho .
+\]
+Thus
+\[
+\Theta_I(P)\subseteq [\theta_L(P),\theta_U(P)].
+\]
+
+Now prove sharpness.  The tube \(K(P)\) is convex because it is the inverse
+image of a box under an affine map.  Therefore the image
+\(\{b^\transpose\Delta:\Delta\in K(P)\}\) is an interval in \(\R\), with
+endpoints \(h_-(P)\) and \(h_+(P)\) in the extended sense.  Under
+Assumption~\ref{ass:bridge-visible}, Lemma~\ref{lem:bridge-support} gives
+finite attained endpoints; without bridge visibility the same argument gives
+the corresponding extended interval.  For any
+\[
+u\in[h_-(P)-\rho,\ h_+(P)+\rho],
+\]
+choose \(m\in[h_-(P),h_+(P)]\) and \(e_s\in[-\rho,\rho]\) such that
+\(u=m+e_s\), which is possible because the Minkowski sum of intervals is an
+interval:
+\[
+[h_-(P),h_+(P)]+[-\rho,\rho]
+=[h_-(P)-\rho,h_+(P)+\rho].
+\]
+By convexity of \(K(P)\), there is \(\Delta\in K(P)\) with
+\(b^\transpose\Delta=m\).  Set \(\theta=y_s^w+u\).  Then
+\[
+|\theta-y_s^w-b^\transpose\Delta|=|e_s|\le\rho,
+\]
+so \(\theta\in\Theta_I(P)\).  This proves
+\[
+\Theta_I(P)=[\theta_L(P),\theta_U(P)].
+\]
+The finite-attainment statement is Lemma~\ref{lem:bridge-support}.
+
+Finally, for treatment effects use the identity from Section 8,
+\(\tau_s=d-(\theta-y_s^w)\).  Since
+\[
+\theta-y_s^w\in[h_-(P)-\rho,h_+(P)+\rho],
+\]
+subtracting reverses endpoints and gives
+\[
+\tau_s\in[d-h_+(P)-\rho,\ d-h_-(P)+\rho].
+\]
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{thm:scalar-lower-bound}]
+Under Assumption~\ref{ass:two-dimensional-witness}, \(X=I_2\), \(b=e_1\), and
+\[
+K(g^{(k)})=\{\Delta:\|g^{(k)}-\Delta\|_\infty\le\rho\}
+          =g^{(k)}+[-\rho,\rho]^2 .
+\]
+For \(g^{(1)}=(a,0)^\transpose\),
+\[
+h_-(P_1)=a-\rho,\qquad h_+(P_1)=a+\rho,
+\]
+so Proposition~\ref{thm:sharp-chebyshev} gives the centered sharp interval
+\[
+H^c(P_1)=[a-2\rho,\ a+2\rho].
+\]
+For \(g^{(2)}=(0,a)^\transpose\),
+\[
+h_-(P_2)=-\rho,\qquad h_+(P_2)=\rho,
+\]
+so
+\[
+H^c(P_2)=[-2\rho,\ 2\rho].
+\]
+The same assumption gives
+\[
+q(g^{(1)})=q(g^{(2)})
+\]
+for \(q_2\), \(q_\infty\), and \(q_{\mathrm{rms}}\).  A scalar rule whose
+endpoints are identical whenever \(q(g)\) is identical must therefore assign a
+common interval, say \([L,U]\), to both laws.  Validity for \(P_1\) and \(P_2\)
+requires
+\[
+L\le -2\rho,\qquad U\ge a+2\rho.
+\]
+At \(P_2\), the sharp upper endpoint is \(2\rho\), so the common interval has
+upper excess at least \((a+2\rho)-2\rho=a\).  At \(P_1\), the sharp lower
+endpoint is \(a-2\rho\), so the common interval has lower excess at least
+\((a-2\rho)-(-2\rho)=a\).  Hence the scalar rule cannot be sharp for both laws.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:generic-scalar}]
+Lemma~\ref{lem:primitive-anisotropy} supplies a direction \(v\), a constant
+\(c_0>0\), and an \(\varepsilon_0>0\) such that the symmetric perturbations
+\[
+g_\varepsilon^+=g_0+\varepsilon v,\qquad
+g_\varepsilon^-=g_0-\varepsilon v
+\]
+remain in the open design class, have identical scalar pre-fit values, and
+satisfy
+\[
+\left|h_+(g_\varepsilon^+)-h_+(g_\varepsilon^-)\right|
+\ge c_0\varepsilon
+\]
+for all \(0<\varepsilon<\varepsilon_0\).  Let \(P_\varepsilon^+\) and
+\(P_\varepsilon^-\) be the observable laws with these two pre-gap vectors and
+the same \((X,b,w,\eta,y_s^w,d)\).  Take \(c=c_0\).  Since
+\(q(g_\varepsilon^+)=q(g_\varepsilon^-)\), any \(q\)-scalar calibration assigns
+the same interval to both laws.  Proposition~\ref{thm:sharp-chebyshev} says the
+sharp centered upper endpoints differ by at least \(c\varepsilon\).  A common
+valid interval must contain the larger upper endpoint and therefore has
+centered-endpoint excess at least \(c\varepsilon\) for the law with the smaller
+upper endpoint.  Hence the scalar rule cannot be both valid and sharp on that
+open class.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{thm:endpoint-sufficiency}]
+Let the interval rule depending on \(S\) be denoted \(I_S\).  Suppose
+\(S(P)=S(P')\) for \(P,P'\in\mathcal U\).  Because the rule depends on the law
+only through \(S\), it assigns the same centered interval:
+\[
+I_S(P)=I_S(P').
+\]
+Sharpness for \(\theta-y_s^w\), using Proposition~\ref{thm:sharp-chebyshev}, means
+\[
+I_S(P)=H^c(P),\qquad I_S(P')=H^c(P').
+\]
+Combining the last two displays gives \(H^c(P)=H^c(P')\).  This is exactly
+centered-endpoint sufficiency on \(\mathcal U\).  For uncentered intervals for
+\(\theta\), the sharp interval is \(y_s^w+H^c(P)\), so equality of the rule for
+two laws also requires equality of the shift \(y_s^w\), or an equivalent
+statistic that determines it.
+\end{proof}
+
+\section{Sanity checks}
+\begin{corollary}[Zero-budget exact pre-fit]\label{cor:zero-budget}
+Under Assumption~\ref{ass:exact-corner}, Proposition~\ref{thm:sharp-chebyshev}
+reduces to the exact-factor point-identification corner:
+\[
+\Theta_I(P)=\{y_s^w\},\qquad \tau_s=d.
+\]
+\end{corollary}
+
+\begin{proof}
+If \(\eta=0\), then \(\rho=0\).  If \(g=0\), then
+\[
+K(P)=\{\Delta:X\Delta=0\}=\ker(X).
+\]
+Since \(b\in\operatorname{rowspan}(X)\), \(b^\transpose\Delta=0\) for every
+\(\Delta\in\ker(X)\).  Hence \(h_-(P)=h_+(P)=0\), and
+Proposition~\ref{thm:sharp-chebyshev} gives
+\(\Theta_I(P)=\{y_s^w\}\).  The treatment-effect identity gives
+\(\tau_s=d\).
+\end{proof}
+
+\paragraph{Vacuous no-restriction corner.}
+If the factor-tube restriction is removed from the locked real-valued setup,
+then \(\theta-y_s^w\) can be any real number, so the natural no-restriction
+Manski-style bound is \(\R\).  If an external bounded support
+\(\theta\in[L,U]\) were added, the corresponding vacuous bound would be
+\([L,U]\); no such bounded outcome support is part of the locked parameters.
+
+\paragraph{Finite but non-point interval.}
+If \(b\in\operatorname{rowspan}(X)\) and \(\rho>0\), the endpoints are finite,
+but the post-period error budget alone contributes width at least \(2\rho\).
+Thus bridge visibility makes the interval finite; it does not by itself give
+point identification.
+
+\paragraph{Scalar witness corner.}
+The two-dimensional construction in
+Assumption~\ref{ass:two-dimensional-witness} gives the simplest check that the
+formula depends on the signed vector \(g\), not only on \(\|g\|\).  With
+\(X=I_2\) and \(b=e_1\), moving a gap of size \(a\) from the first coordinate to
+the second changes the sharp centered interval from
+\([a-2\rho,a+2\rho]\) to \([-2\rho,2\rho]\) while preserving the listed scalar
+pre-fit values.
+
+\section{Counterexample or minimality check}
+Bridge visibility is the minimal condition for finite deterministic endpoints.
+Take \(T_0=1\), \(r=2\), \(X=(1\ 0)\), \(g=0\), \(\rho=0\), and
+\(b=(0,1)^\transpose\).  Then
+\[
+K(P)=\{(0,t)^\transpose:t\in\R\},
+\]
+but
+\[
+b^\transpose(0,t)^\transpose=t.
+\]
+Thus \(h_-(P)=-\infty\) and \(h_+(P)=+\infty\).  The pre-period fit is exact,
+yet the post bridge points entirely in a hidden factor direction, so the
+counterfactual is unbounded.  The nearest correct finite statement is exactly
+Proposition~\ref{thm:sharp-chebyshev} with Assumption~\ref{ass:bridge-visible}
+added for finite attained endpoints.
+
+The scalar-reporting lower bound is also minimal in the relevant sense.  The
+witness in Assumption~\ref{ass:two-dimensional-witness} keeps
+\((X,b,w,\eta,y_s^w)\) fixed and changes only the direction of \(g\) along a
+common scalar level.  Therefore no weakening that keeps only \(q(g)\) can
+recover sharpness on that two-law class.  The nearest correct replacement for a
+scalar RMSPE-level interval is the endpoint-sufficient statistic
+\((y_s^w,H^c(P))\), or any statistic through which that pair factors.
+
+The active-basis noncollinearity condition in
+Theorem~\ref{thm:generic-scalar} is also close to necessary for a local
+first-order scalar obstruction on a fixed LP cell.  If the active-basis bridge
+weight \(\beta_0\) is collinear with \(\nabla q(g_0)\), then every tangent
+direction to the scalar level has zero first-order endpoint slope on that cell,
+so the theorem cannot produce a same-scalar first-order separation at that
+point.  In such locally radial cases, scalar reporting may be
+endpoint-sufficient on a restricted class; the theorem deliberately targets the
+open complement where the post bridge has a component invisible to the scalar
+gradient.
+
+\section{Formalization checklist}
+\paragraph{Deterministic objects.}
+\begin{itemize}[leftmargin=*]
+\item Finite dimensions: \(J,T_0,r\in\mathbb N\), with vectors
+\(w\in\R^J\), \(g\in\R^{T_0}\), \(b\in\R^r\), matrix
+\(X\in\R^{T_0\times r}\), scalars \(d,y_s^w,\eta,\rho,\theta\in\R\), and
+\(\rho=(1+\|w\|_1)\eta\).
+\item Chebyshev tube:
+\[
+K(P)=\{\Delta\in\R^r:\|g-X\Delta\|_\infty\le\rho\}.
+\]
+Role: feasible latent imbalances.
+\item Bridge support endpoints:
+\[
+h_-(P)=\inf_{\Delta\in K(P)}b^\transpose\Delta,\qquad
+h_+(P)=\sup_{\Delta\in K(P)}b^\transpose\Delta.
+\]
+Role: deterministic projection of the feasible tube onto the post bridge.
+\item Dual bridge objects:
+\[
+\mathcal B(X,b)=\{\beta\in\R^{T_0}:X^\transpose\beta=b\},\qquad
+D_g(\beta)=g^\transpose\beta+\rho\|\beta\|_1.
+\]
+Role: primitive LP-dual representation of the upper support endpoint.
+\item Centered endpoint map:
+\[
+H^c(P)=(h_-(P)-\rho,\ h_+(P)+\rho).
+\]
+Role: sharp interval for \(\theta-y_s^w\).
+\item Uncentered counterfactual endpoints:
+\[
+\theta_L(P)=y_s^w+H^c_-(P),\qquad
+\theta_U(P)=y_s^w+H^c_+(P).
+\]
+Role: sharp interval for \(\theta\).
+\item Treatment-effect endpoint identity:
+\[
+\tau_s=d-(\theta-y_s^w).
+\]
+Role: reverses the centered counterfactual interval and shifts by \(d\).
+\end{itemize}
+
+\paragraph{Assumptions as mathematical predicates.}
+\begin{itemize}[leftmargin=*]
+\item Fixed-data predicate: all components of \(P\) are finite-dimensional real
+objects, and \(w\), \(X\), \(b\), \(\eta\) are held fixed for the support
+calculation.
+\item Bounded-factor predicate: existence of \(\Delta\), \(e_{\mathrm{pre}}\),
+and \(e_s\) satisfying \(g=X\Delta+e_{\mathrm{pre}}\),
+\(\|e_{\mathrm{pre}}\|_\infty\le\rho\), and
+\(\theta-y_s^w=b^\transpose\Delta+e_s\), \(|e_s|\le\rho\).
+\item Nonempty-tube predicate: \(K(P)\ne\emptyset\).
+\item Bridge-visibility predicate:
+\[
+b\in\operatorname{rowspan}(X)
+\quad\Longleftrightarrow\quad
+b^\transpose v=0\ \text{for all }v\in\ker(X).
+\]
+Role: finite attained support endpoints.
+\item Scalar-calibration predicate: an interval rule depends on \(g\) only
+through \(q(g)\) and fixed \((X,b,w,\eta)\).
+\item Primitive active-basis anisotropic predicate: there exist active indices
+\(A\), signs \(\sigma_A\), a nonsingular active row matrix \(X_A\), strict
+inactive slack, strict complementary signs
+\(\sigma_i(\beta_0)_i>0\), differentiability of \(q\) at \(g_0\), and
+\(\beta_0\notin\operatorname{span}\{\nabla q(g_0)\}\), where
+\(\beta_A=X_A^{-\transpose}b\) and \(\beta_0\) extends \(\beta_A\) by zeros.
+\item Endpoint-sufficiency predicate:
+\[
+S(P)=S(P')\Rightarrow H^c(P)=H^c(P')
+\]
+on the design class.
+\end{itemize}
+
+\paragraph{Deterministic identities and lemmas.}
+\begin{itemize}[leftmargin=*]
+\item Convexity identity: \(K(P)\) is a closed convex polyhedron because it is
+defined by finitely many affine inequalities
+\(-\rho\one\le g-X\Delta\le\rho\one\).
+\item Image identity: the image of a convex set under a linear functional is an
+interval.
+\item Minkowski interval identity:
+\[
+[h_-,h_+]+[-\rho,\rho]=[h_--\rho,h_++\rho].
+\]
+\item Row-span finite-support lemma: if \(b=X^\transpose\lambda\), then
+\(b^\transpose\Delta=\lambda^\transpose X\Delta\), and \(X\Delta\) is confined
+to the compact box \([g-\rho\one,g+\rho\one]\).
+\item LP-dual endpoint identity:
+\[
+h_+(g)=\min_{\beta:X^\transpose\beta=b}
+\{g^\transpose\beta+\rho\|\beta\|_1\}.
+\]
+Role: converts the Chebyshev support problem into a primitive bridge-weight
+calculation.
+\item Active-basis endpoint identity: if
+\(\Delta_A(g)=X_A^{-1}(g_A+\rho\sigma_A)\) remains feasible on the open cell
+and \(\sigma_i(\beta_0)_i>0\) on \(A\), then
+\[
+h_+(g)=\beta_A^\transpose(g_A+\rho\sigma_A)
+      =\beta_0^\transpose g+\rho\|\beta_0\|_1.
+\]
+Role: derives endpoint anisotropy from rank and sign conditions rather than
+assuming \(Dh_+\) variation.
+\item Two-dimensional witness calculation: for \(X=I_2\), \(b=e_1\), and
+\(g^{(1)}=(a,0)\), \(g^{(2)}=(0,a)\), compute the exact centered intervals
+\([a-2\rho,a+2\rho]\) and \([-2\rho,2\rho]\).
+\item Norm-level equalities: \(q_2(g^{(1)})=q_2(g^{(2)})\),
+\(q_\infty(g^{(1)})=q_\infty(g^{(2)})\), and
+\(q_{\mathrm{rms}}(g^{(1)})=q_{\mathrm{rms}}(g^{(2)})\).
+\item Local scalar-level construction: noncollinearity of \(\beta_0\) and
+\(\nabla q(g_0)\) gives a tangent direction \(v\) with
+\(\beta_0^\transpose v\ne0\); for \(q_2\) and \(q_{\mathrm{rms}}\),
+\(g_0^\transpose v=0\) implies equal norms for \(g_0\pm\varepsilon v\); for
+smooth \(q_\infty\), a unique active coordinate with zero perturbation keeps
+the sup norm fixed for small \(\varepsilon\).
+\item Sufficiency contradiction identity: if a sharp interval rule depends only
+on \(S\), then \(S(P)=S(P')\) forces equality of the sharp endpoint maps.
+\end{itemize}
+
+\paragraph{Probabilistic content.}
+There is no sampling-limit, positivity, or exchangeability argument in this
+note.  The only causal content is the interpretation of
+\(\theta=Y_{0s}(0)\) as the missing untreated counterfactual and the bounded
+factor approximation restriction that defines the feasible completions.
+
+\section{Conclusion and references}
+The support-form proposition gives the sharp deterministic identified set for
+synthetic control under bounded factor misspecification.  The tightening
+restriction is the Chebyshev compatibility condition
+\(\|g-X\Delta\|_\infty\le\rho\), and finite endpoints require the post bridge to
+be visible in the row span of the pre-period dictionary.  The interval is
+vacuous when the factor restriction or bridge visibility leaves the post bridge
+unrestricted, and it becomes point-identifying in the exact-fit zero-budget
+corner.  The theorem-level contribution is the primitive active-basis scalar
+nonsharpness result: when a nonsingular active constraint basis has strict slack
+and strict complementarity, and its bridge weight \(\beta_0\) is not collinear
+with the RMSPE-level scalar gradient, same-scalar perturbations change the
+sharp endpoint to first order.  Thus RMSPE-level reporting cannot replace the
+signed-vector support interval on those primitive bridge-nondegenerate classes;
+sharp deterministic reporting must carry \(H^c(P)\), together with the
+\(y_s^w\) shift for the uncentered counterfactual.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem{AbadieGardeazabal2003}
+Abadie, A. and Gardeazabal, J. (2003).
+The economic costs of conflict: A case study of the Basque Country.
+\emph{American Economic Review}, 93(1):113--132.
+
+\bibitem{AbadieDiamondHainmueller2010}
+Abadie, A., Diamond, A., and Hainmueller, J. (2010).
+Synthetic control methods for comparative case studies: Estimating the effect
+of California's tobacco control program.
+\emph{Journal of the American Statistical Association}, 105(490):493--505.
+
+\bibitem{Abadie2021}
+Abadie, A. (2021).
+Using synthetic controls: Feasibility, data requirements, and methodological
+aspects.
+\emph{Journal of Economic Literature}, 59(2):391--425.
+
+\bibitem{ArkhangelskyAtheyHirshbergImbensWager2021}
+Arkhangelsky, D., Athey, S., Hirshberg, D. A., Imbens, G. W., and Wager, S.
+(2021).
+Synthetic difference-in-differences.
+\emph{American Economic Review}, 111(12):4088--4118.
+
+\bibitem{AtheyBayatiDoudchenkoImbensKhosravi2021}
+Athey, S., Bayati, M., Doudchenko, N., Imbens, G. W., and Khosravi, K. (2021).
+Matrix completion methods for causal panel data models.
+\emph{Journal of the American Statistical Association}, 116(536):1716--1730.
+
+\bibitem{BalkePearl1997}
+Balke, A. and Pearl, J. (1997).
+Bounds on treatment effects from studies with imperfect compliance.
+\emph{Journal of the American Statistical Association}, 92(439):1171--1176.
+
+\bibitem{BenMichaelFellerRothstein2021}
+Ben-Michael, E., Feller, A., and Rothstein, J. (2021).
+The augmented synthetic control method.
+\emph{Journal of the American Statistical Association}, 116(536):1789--1803.
+
+\bibitem{CattaneoFengTitiunik2021}
+Cattaneo, M. D., Feng, Y., and Titiunik, R. (2021).
+Prediction intervals for synthetic control methods.
+\emph{Journal of the American Statistical Association}, 116(536):1865--1880.
+
+\bibitem{ChernozhukovWuthrichZhu2021}
+Chernozhukov, V., Wuthrich, K., and Zhu, Y. (2021).
+An exact and robust conformal inference method for counterfactual and synthetic
+controls.
+\emph{Journal of the American Statistical Association}, 116(536):1849--1864.
+
+\bibitem{FermanPinto2021}
+Ferman, B. and Pinto, C. (2021).
+Synthetic controls with imperfect pre-treatment fit.
+\emph{Quantitative Economics}, 12(4):1197--1221.
+
+\bibitem{FirpoPossebom2018}
+Firpo, S. and Possebom, V. (2018).
+Synthetic control method: Inference, sensitivity analysis and confidence sets.
+\emph{Journal of Causal Inference}, 6(2):20160026.
+
+\bibitem{Manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review}, 80(2):319--323.
+
+\bibitem{NazaretShiBlei2024}
+Nazaret, A. O. R., Shi, C., and Blei, D. M. (2024).
+On the misspecification of linear assumptions in synthetic controls.
+\emph{Proceedings of the 27th International Conference on Artificial
+Intelligence and Statistics}, PMLR 238:3790--3798.
+
+\bibitem{ZeitlerVlontzosGilliganLee2023}
+Zeitler, J., Vlontzos, A., and Gilligan-Lee, C. M. (2023).
+Non-parametric identifiability and sensitivity analysis of synthetic control
+models.
+\emph{Proceedings of the Second Conference on Causal Learning and Reasoning},
+PMLR 213:850--865.
+\url{https://proceedings.mlr.press/v213/zeitler23a.html}.
+\end{thebibliography}
+
+\end{document}

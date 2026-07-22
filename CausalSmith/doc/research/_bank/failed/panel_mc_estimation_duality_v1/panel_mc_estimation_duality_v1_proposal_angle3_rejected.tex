@@ -1,0 +1,328 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=panel\_mc\_estimation\_duality, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{panel\_mc\_estimation\_duality} / \texttt{v1}%
+  \\ \large\textit{Orthogonal low-rank balancing for staggered panels: double robustness and an efficiency frontier}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\texttt{(qid, specialization, p, assignment, target, regression)}
+\[
+\begin{array}{ll}
+\texttt{qid} & = \texttt{panel\_mc\_estimation\_duality},\\
+\texttt{specialization} & = \texttt{v1},\\
+p & = r,\ \text{a fixed untreated-outcome rank bound with }1\le r<\min(N,T),\\
+\texttt{assignment} & = \text{staggered adoption: }D_{it}=\one\{t\ge G_i\},\ G_i\in\{2,\ldots,T,\infty\},\\
+\texttt{target} & = \theta_{\mathcal{E}},\ \text{the average ATT over a fixed event-time set }\mathcal{E}
+   =\{(g,t):t\ge g,\ t-g\in\mathcal{L}\},\\
+\texttt{regression} & = \text{oracle/cross-fit orthogonal low-rank balancing score }\Psi_{\mathrm{OLB}}
+   \text{ with cohort-event weights and a rank-}r\text{ nuisance surface.}
+\end{array}
+\]
+The observed panel is \(\{(Y_{it},D_{it},G_i):1\le i\le N,1\le t\le T\}\).  The untreated mean surface is \(M^0_{it}=\E[Y_{it}(0)\mid G_i]\).  Treated potential outcomes satisfy no anticipation, so \(Y_{it}=Y_{it}(0)\) when \(t<G_i\) and \(Y_{it}=Y_{it}(1;G_i)\) when \(t\ge G_i\).
+
+\begin{abstract}
+This proposal asks whether staggered-treatment panels admit a single estimator that combines synthetic-DiD balancing and low-rank matrix-completion recovery without choosing one identification story ex ante.  The proposed kernel is the orthogonal low-rank balancing score \(\Psi_{\mathrm{OLB}}\), a cohort-event influence-function candidate that is consistent if either an SDiD-style balancing restriction is correct or the rank-\(r\) untreated surface is exactly recoverable on both target and observed untreated cells above an observed spectral-design threshold.  The flagship conjecture is that, when both restrictions hold and the observed eigen-gap/design constants clear the stated margin, the same score has the intersection-model efficient influence function for the staggered event-time ATT.  This is informed by existing SDiD, staggered SCM, matrix-completion, double-robust panel, and rollout-efficiency results, but the promised \(\S8\) claim is narrower: a compatibility frontier for one named score and one deterministic staggered-mask margin.  If resolved, the result would tell applied users when to report one estimator that is protected against either balancing failure or low-rank misspecification, and when the protection is mathematically unavailable.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Staggered-adoption studies increasingly use synthetic controls, synthetic DiD, and low-rank imputation to estimate dynamic treatment effects when untreated counterfactuals are unobserved after adoption.  These methods encode different reasons why counterfactuals should be learnable: balance in pre-treatment outcomes, latent-factor extrapolation, or design-style random rollout.  In empirical work the analyst rarely knows which reason is right, so an identification and inference theory that is valid under either balancing or low-rank recovery would change how robustness checks are interpreted.
+
+\paragraph{The main finding (proposed).}
+The proposed headline result is a double-robust and efficient-score conjecture for the orthogonal low-rank balancing score \(\Psi_{\mathrm{OLB}}\).  In oracle form, the score subtracts a rank-\(r\) untreated-surface nuisance and then adds cohort-event balancing residuals whose weights solve low-rank tangent equations.  The conjecture says that \(\Psi_{\mathrm{OLB}}\) identifies \(\theta_{\mathcal{E}}\) if either the balancing equations are correct for the chosen nuisance class or the rank-\(r\) completion equations recover \(M^0\) on \(\mathcal{O}_0\cup\mathcal{O}_1\); when both are correct and the observed spectral-design margin is positive, the cross-fit estimator is asymptotically linear with the efficient influence function in the intersection model.
+
+\paragraph{What is new.}
+The precise novelty kernel is not another claim that SDiD and matrix completion can agree on a counterfactual.  The new object is the orthogonal low-rank balancing score \(\Psi_{\mathrm{OLB}}\), together with the independently defined duality defect \(\Delta_{\mathrm{OLB}}\), which measures failure of the balancing weights to annihilate both cohort means and the rank-\(r\) tangent space.  The closest published comparators are \citet[Sections 2--3]{ArkhangelskyAtheyHirshbergImbensWager2021} for SDiD, \citet[Section 2.2 and Theorem 1]{BenMichaelFellerRothstein2022} for staggered synthetic controls, \citet[Sections 2--3]{AtheyBayatiDoudchenkoImbensKhosravi2021} for causal-panel matrix completion, \citet[Sections 3--4]{RothSantAnna2021} for efficient staggered rollout estimation, \citet[Sections 2--3]{ArkhangelskyImbens2022} for double-robust panel identification, and \citet[Sections 2--3]{QiuShiMiaoWangDobribanTchetgen2024} for doubly robust proximal synthetic controls.  None states a score that is simultaneously a low-rank imputation estimator, a balancing estimator, and an intersection-model efficient score under an observed eigen-gap/design margin.
+
+\paragraph{How it positions in the literature.}
+This is a panel / linear-projection proposal in the staggered-design and panel-spectral cluster.  It uses the low-rank counterfactual surface of causal-panel matrix completion, the balancing logic of synthetic DiD and staggered SCM, and the influence-function target of efficient staggered-rollout estimation.  The result is intentionally estimator-level: because the anchor cluster is Panel, a flagship statement must include a concrete estimator and a rate/equivalence conjecture rather than only an identification formula.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the staggered synthetic-control workflow of \citet{BenMichaelFellerRothstein2022}: resolving the conjecture would give that workflow an efficiency-calibrated alternative estimator and a diagnostic for whether pooled imbalance should be handled by balancing weights, low-rank recovery, or both.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report the duality defect \(\Delta_{\mathrm{OLB}}\) and use the orthogonal low-rank balancing estimator when either the low-rank recovery margin or the cohort-event balancing equations are credible, instead of treating agreement among SDiD, SCM, and matrix completion as informal reassurance.
+
+\section{Related work}
+\citet[Sections 2--3]{ArkhangelskyAtheyHirshbergImbensWager2021} introduces synthetic DiD and proves consistency and asymptotic normality under latent-factor structure; this proposal uses SDiD as the balancing comparator but asks for a score that remains valid when the low-rank route rather than exact balancing is correct.  \citet[Section 2.2 and Theorem 1]{BenMichaelFellerRothstein2022} extends synthetic controls to staggered adoption and decomposes average-effect error into individual and pooled treated-unit imbalance; this proposal targets exactly that pooled staggered setting and replaces imbalance bounds with an orthogonal score.  \citet[Sections 2--3]{AtheyBayatiDoudchenkoImbensKhosravi2021} develops nuclear-norm matrix completion for causal panels; this proposal uses its untreated-surface recovery route as one half of a double-robust estimator rather than as the sole identifying condition.  \citet{BaiNg2021} gives factor-imputation rates and normal theory for counterfactual panels under strong factors; the present proposal asks when factor recovery can be combined with balancing weights in one efficient score.  \citet[Sections 3--4]{RothSantAnna2021} derives efficient estimators for staggered rollout designs under random timing; this proposal seeks the analogous efficiency statement when staggered timing coexists with low-rank unit-time heterogeneity.  \citet[Sections 2--3]{ArkhangelskyImbens2022} proves double-robust identification for causal panel data models under outcome-model or assignment-model correctness; the OLB proposal differs by making low-rank matrix recovery one route and by attaching the score to staggered event-time ATT inference.  \citet[Sections 2--3]{QiuShiMiaoWangDobribanTchetgen2024} develops doubly robust proximal synthetic controls through bridge functions; the current proposal is not proximal and instead asks for a deterministic low-rank/balancing tangent compatibility condition.  \citet{CallawaySantAnna2021}, \citet{SunAbraham2021}, and \citet{DeChaisemartinDHaultfoeuille2020} clarify modern staggered-DID targets and heterogeneous-effect failures; they anchor the event-time ATT target \(\theta_{\mathcal{E}}\) but do not provide a low-rank balancing estimator.  \citet[Sections 2--3]{ChoiKwonLiao2024} and \citet[Sections 2--3]{YanWainwright2024} develop low-rank completion inference for missing panels, including staggered-adoption missingness; their inference results motivate the spectral margin used here, while the proposed score adds a balancing-based robustness route.  \citet[Theorem 1.2]{CandesTao2010} and \citet[Theorem 1.1]{KeshavanMontanariOhFew2010} give random-mask exact-recovery thresholds for matrix completion, while \citet{KeshavanMontanariOhNoisy2010} treats noisy-entry recovery; Conjecture~\ref{conj:margin-rate} is a deterministic staggered-mask analogue rather than a noisy-entry phase-transition claim.
+
+In the CausalSmith catalogue, the closest in-repo prior angle is \texttt{panel\_sdid\_mc\_id} with the headline spectral equality frontier, strict estimator span lattice, and penalty-stable equality frontier.  That angle asked when existing SCM/ASCM/SDiD/MC functionals agree.  The current proposal is different: it introduces an estimator-level influence-function object \(\Psi_{\mathrm{OLB}}\) and asks for double robustness and efficiency, not equality among already-defined population functionals.  The current \texttt{doc/API.md} panel catalogue is concentrated on Q1 minimal-basis, sign-flip, and spectral-threshold algebra for linear panel regressions; it does not contain a matrix-completion estimator, a staggered event-time ATT influence function, or an orthogonal score combining balancing and low-rank nuisances.
+
+\section{Formal setup}
+There are \(N\) units and \(T\) periods.  Adoption is staggered: \(D_{it}=\one\{t\ge G_i\}\), where \(G_i\in\{2,\ldots,T,\infty\}\).  Let \(\mathcal{O}_0=\{(i,t):t<G_i\}\) be untreated observed cells and \(\mathcal{O}_1=\{(i,t):t\ge G_i,\ (G_i,t)\in\mathcal{E}\}\) be target treated cells.  The target is
+\[
+\theta_{\mathcal{E}}=\frac{1}{|\mathcal{O}_1|}\sum_{(i,t)\in\mathcal{O}_1}\E\{Y_{it}(1;G_i)-Y_{it}(0)\mid G_i\}.
+\]
+The untreated mean surface is \(M^0\in\R^{N\times T}\), \(M^0_{it}=\E[Y_{it}(0)\mid G_i]\), and the rank-\(r\) model is \(M^0=A B^{\transpose}\) with \(A\in\R^{N\times r}\), \(B\in\R^{T\times r}\).  For any candidate surface \(M\), define the event-time imputation functional
+\[
+\Theta_{\mathrm{mc}}(M)=|\mathcal{O}_1|^{-1}\sum_{(i,t)\in\mathcal{O}_1}\{Y_{it}-M_{it}\}.
+\]
+For each target cell \((i,t)\in\mathcal{O}_1\), let \(w_{it,js}\) be weights on \((j,s)\in\mathcal{O}_0\).  The balancing residual vector \(B_{\mathrm{bal}}(w)\) stacks cohort-event mean imbalances in pre-treatment outcomes and calendar-time totals.  The low-rank tangent residual \(B_{\mathrm{lr}}(w;A,B)\) stacks the normal-equation residuals obtained by applying the weighted observation operator to every tangent direction \(a b_t^{\transpose}+a_i b^{\transpose}\) at \(M^0=AB^{\transpose}\).  The independently defined duality defect is
+\[
+\Delta_{\mathrm{OLB}}(P)=
+\inf_{w\in\mathcal{W}(D)}
+\left\{\|B_{\mathrm{bal}}(w)\|_2^2+
+\lambda_{\min}^{-1}(\widehat G_r)\|B_{\mathrm{lr}}(w;A,B)\|_2^2\right\}^{1/2},
+\]
+where \(\mathcal{W}(D)\) is the nonnegative cohort-event weight simplex determined by the staggered mask, and \(\widehat G_r\) is the observed pre-treatment rank-\(r\) Gram matrix of untreated cells.  The observed spectral-design margin is
+\[
+\Gamma_{\mathrm{OLB}}(P,D)=
+\sigma_r(\widehat M_{\mathcal{O}_0})-\sigma_{r+1}(\widehat M_{\mathcal{O}_0})-\kappa(D,r)\,\rho(D,r),
+\]
+where \(\rho(D,r)\) is the maximum row/column leverage of the untreated mask and \(\kappa(D,r)\) is the smallest cohort-overlap constant among event cells.
+Let \(w^\dagger\) denote any population minimizer in the definition of \(\Delta_{\mathrm{OLB}}(P)\), and let \(\mathbb P_N\) denote the empirical average over observed unit-time cells.  Define the balancing submodel \(\mathcal{M}_{\mathrm{bal}}\) as laws satisfying Assumption~\ref{ass:balance}, the low-rank submodel \(\mathcal{M}_{\mathrm{lr}}\) as laws satisfying Assumption~\ref{ass:lr-recovery}, and the intersection model \(\mathcal{M}_{\cap}=\mathcal{M}_{\mathrm{bal}}\cap\mathcal{M}_{\mathrm{lr}}\).  At \(P\in\mathcal{M}_{\cap}\), \(\varphi_{\mathrm{eff}}^{\cap}\) denotes the efficient influence function for \(\theta_{\mathcal{E}}\) in the closed linear span of the balancing and rank-\(r\) tangent spaces; consistency on \(\mathcal{M}_{\mathrm{bal}}\cup\mathcal{M}_{\mathrm{lr}}\) is the double-robust part, while efficiency is claimed only at the intersection.
+
+The orthogonal low-rank balancing score is
+\[
+\Psi_{\mathrm{OLB}}(Y,D;\theta,M,w)=
+|\mathcal{O}_1|^{-1}\sum_{(i,t)\in\mathcal{O}_1}(Y_{it}-M_{it}-\theta)
++|\mathcal{O}_1|^{-1}\sum_{(i,t)\in\mathcal{O}_1}\sum_{(j,s)\in\mathcal{O}_0}w_{it,js}(Y_{js}-M_{js}).
+\]
+The feasible estimator \(\widehat\theta_{\mathrm{OLB}}\) solves the sample equation
+\(\mathbb P_N\Psi_{\mathrm{OLB}}(Y,D;\theta,\widehat M,\widehat w)=0\), with \(\widehat M\) a cross-fit rank-\(r\) matrix-completion nuisance and \(\widehat w\) the minimum-defect balancing weights.
+
+\[
+\begin{array}{ll}
+\texttt{qid}=\texttt{panel\_mc\_estimation\_duality},&
+\texttt{specialization}=\texttt{v1},\\
+p=r,&
+\texttt{assignment}=\text{staggered adoption }D_{it}=\one\{t\ge G_i\},\\
+\texttt{target}=\theta_{\mathcal{E}},&
+\texttt{regression}=\Psi_{\mathrm{OLB}}\text{ with cross-fit rank-}r\text{ nuisance and cohort-event weights.}
+\end{array}
+\]
+
+\section{Assumptions}
+\begin{assumption}[Staggered panel and no anticipation]\label{ass:staggered}
+\(D_{it}=\one\{t\ge G_i\}\), \(G_i\in\{2,\ldots,T,\infty\}\), and \(Y_{it}=Y_{it}(0)\) for \(t<G_i\).  The event-time set \(\mathcal{E}\) is nonempty and every \((g,t)\in\mathcal{E}\) has at least one untreated cohort at time \(t\).
+\end{assumption}
+
+\begin{assumption}[Finite moments and overlap]\label{ass:moments-overlap}
+The shocks \(Y_{it}(0)-M^0_{it}\) have uniformly bounded fourth moments, and all cohort-event cells used in \(\theta_{\mathcal{E}}\) have limiting shares bounded away from zero.  The weight class \(\mathcal{W}(D)\) is nonempty and has uniformly bounded \(\ell_2\) radius.
+\end{assumption}
+
+\begin{assumption}[Rank-\(r\) untreated surface]\label{ass:rank}
+The untreated mean surface \(M^0\) has rank at most \(r\), admits a factorization \(M^0=AB^{\transpose}\), and the nonzero singular values of the observed untreated block have eigengap \(\sigma_r(\widehat M_{\mathcal{O}_0})-\sigma_{r+1}(\widehat M_{\mathcal{O}_0})>0\).
+\end{assumption}
+
+\begin{assumption}[Observed spectral-design margin]\label{ass:spectral-margin}
+The observed constants \(\rho(D,r)\), \(\kappa(D,r)\), and \(\widehat G_r\) are well defined, \(\lambda_{\min}(\widehat G_r)>0\), and \(\Gamma_{\mathrm{OLB}}(P,D)>0\).
+\end{assumption}
+
+\begin{assumption}[Balancing correctness]\label{ass:balance}
+There exists \(w^\star\in\mathcal{W}(D)\) such that \(B_{\mathrm{bal}}(w^\star)=0\) and, for the nuisance surface \(M\) used in the score, the target-cell untreated nuisance error is reproduced by the weighted observed untreated nuisance error:
+\[
+|\mathcal{O}_1|^{-1}\sum_{(i,t)\in\mathcal{O}_1}(M^0_{it}-M_{it})
+=
+|\mathcal{O}_1|^{-1}\sum_{(i,t)\in\mathcal{O}_1}\sum_{(j,s)\in\mathcal{O}_0}w^\star_{it,js}(M^0_{js}-M_{js}).
+\]
+\end{assumption}
+
+\begin{assumption}[Low-rank recovery correctness]\label{ass:lr-recovery}
+The rank-\(r\) completion equations on \(\mathcal{O}_0\) have a locally unique solution equal to \(M^0\) on \(\mathcal{O}_0\cup\mathcal{O}_1\), and \(B_{\mathrm{lr}}(w;A,B)=0\) for at least one \(w\in\mathcal{W}(D)\).
+\end{assumption}
+
+\begin{assumption}[Cross-fitting and nuisance rates]\label{ass:rates}
+The nuisance estimators satisfy \(\|\widehat w-w^\dagger\|_2=o_p(1)\) and the product of the estimated balancing residual norm and the estimated low-rank residual norm is \(o_p((NT)^{-1/2})\).  On the balancing route, the empirical version of Assumption~\ref{ass:balance} has residual \(o_p((NT)^{-1/2})\).  On the low-rank route, \(\|\widehat M-M^0\|_{\mathcal{O}_0\cup\mathcal{O}_1}=o_p(1)\); when Assumption~\ref{ass:spectral-margin} holds, the low-rank first stage has entrywise error \(O_p((NT)^{-1/2}\Gamma_{\mathrm{OLB}}^{-1})\) on \(\mathcal{O}_0\cup\mathcal{O}_1\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: oracle double-robust score algebra]\label{thm:oracle-dr}
+Under Assumptions~\ref{ass:staggered}--\ref{ass:moments-overlap}, the oracle moment satisfies
+\[
+\E\{\Psi_{\mathrm{OLB}}(Y,D;\theta_{\mathcal{E}},M,w)\}=0
+\]
+whenever either Assumption~\ref{ass:balance} holds with \(w=w^\star\), or Assumption~\ref{ass:lr-recovery} holds with \(M=M^0\) on \(\mathcal{O}_0\cup\mathcal{O}_1\).  If both hold, the Gateaux derivative of the moment with respect to \(M\) along every rank-\(r\) tangent direction and with respect to \(w\) along every feasible balancing direction is zero at \((M^0,w^\star)\).
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) This is routine score algebra relative to \citet[Sections 2--3]{ArkhangelskyAtheyHirshbergImbensWager2021}, \citet[Section 2.2 and Theorem 1]{BenMichaelFellerRothstein2022}, \citet[Sections 2--3]{AtheyBayatiDoudchenkoImbensKhosravi2021}, and \citet[Sections 2--3]{ArkhangelskyImbens2022}; the gap is that those papers provide separate balancing, low-rank, or panel double-robust formulas rather than the displayed Neyman-orthogonal score with a low-rank recovery route.  (b) The concrete consumer is the staggered-SCM error decomposition of \citet{BenMichaelFellerRothstein2022}, because the theorem turns its imbalance terms into moment conditions that can be combined with rank recovery.
+
+\begin{conjecture}[Conjecture 1: OLB efficiency frontier (NOT YET PROVED)]\label{conj:olb-efficiency}
+Under Assumptions~\ref{ass:staggered}--\ref{ass:rates}, if Assumption~\ref{ass:balance} or Assumption~\ref{ass:lr-recovery} holds, then \(\widehat\theta_{\mathrm{OLB}}\overset{p}\to\theta_{\mathcal{E}}\).  If both Assumptions~\ref{ass:balance} and~\ref{ass:lr-recovery} hold, then \(\Delta_{\mathrm{OLB}}(P)=0\) if and only if the Riesz representer of the staggered event-time ATT in the Roth--Sant'Anna rollout tangent space, the SDiD/staggered-SCM balancing tangent space, and the rank-\(r\) matrix-completion tangent space is the same element.  In that case,
+\[
+\sqrt{NT}\{\widehat\theta_{\mathrm{OLB}}-\theta_{\mathcal{E}}\}
+=\frac{1}{\sqrt{NT}}\sum_{i,t}\varphi_{\mathrm{eff},it}^{\cap}(P)+o_p(1),
+\]
+where \(\varphi_{\mathrm{eff}}^{\cap}\) is the efficient influence function for the staggered event-time ATT in \(\mathcal{M}_{\cap}\).  If \(\Delta_{\mathrm{OLB}}(P)>0\), no regular estimator using only \((Y,D,G)\) can have the same first-order law as \(\Psi_{\mathrm{OLB}}\) simultaneously on both the balancing-only and rank-only submodels.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) The closest comparator chain is \citet[Sections 3--4]{RothSantAnna2021} for efficient staggered rollout estimation, \citet[Sections 2--3]{ArkhangelskyAtheyHirshbergImbensWager2021} for SDiD asymptotic normality, \citet[Section 2.2 and Theorem 1]{BenMichaelFellerRothstein2022} for staggered SCM imbalance, \citet[Sections 2--3]{AtheyBayatiDoudchenkoImbensKhosravi2021} for matrix-completion recovery, \citet[Sections 2--3]{ArkhangelskyImbens2022} for double-robust causal-panel identification, and \citet[Sections 2--3]{QiuShiMiaoWangDobribanTchetgen2024} for proximal double robustness.  The epsilon-gap is the intersection-model efficient influence-function claim with the named focal object \(\Delta_{\mathrm{OLB}}\): existing papers give efficiency, proximal double robustness, panel double-robust identification, or consistency inside one nuisance geometry, not a necessary first-order frontier for a score protected by either balancing or low-rank recovery.  (b) Resolving the conjecture would give empirical staggered-adoption studies using \citet{ArkhangelskyAtheyHirshbergImbensWager2021} or \citet{AtheyBayatiDoudchenkoImbensKhosravi2021} a concrete rule for when one estimator can replace a table of robustness checks.
+
+\begin{conjecture}[Conjecture 2: observed margin controls nuisance rates (NOT YET PROVED)]\label{conj:margin-rate}
+Under Assumptions~\ref{ass:staggered}--\ref{ass:spectral-margin}, the observed spectral-design margin \(\Gamma_{\mathrm{OLB}}(P,D)\) is sufficient for the cross-fit rank-\(r\) nuisance in \(\widehat\theta_{\mathrm{OLB}}\) to satisfy the rate condition in Assumption~\ref{ass:rates}.  Conversely, for every fixed \(r\ge1\) there is a nonempty open class of staggered masks and rank-\(r\) untreated surfaces with \(\Gamma_{\mathrm{OLB}}(P,D)\le0\) for which any OLB estimator with bounded weights has target-cell bias bounded away from zero by a constant proportional to \(|\Gamma_{\mathrm{OLB}}(P,D)|+\lambda_{\min}^{-1}(\widehat G_r)\|B_{\mathrm{lr}}\|_2\).
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet[Theorem 1.2]{CandesTao2010} and \citet[Theorem 1.1]{KeshavanMontanariOhFew2010} give recovery thresholds for random observation designs, while \citet[Sections 2--3]{ChoiKwonLiao2024} and \citet[Sections 2--3]{YanWainwright2024} give low-rank inference for missing panels; none gives a deterministic staggered-mask margin feeding directly into a double-robust causal-panel estimator.  The gap is the observed constant \(\Gamma_{\mathrm{OLB}}\), which is not defined as the first point at which recovery holds but as an independent eigengap minus leverage-overlap penalty.  \citet{KeshavanMontanariOhNoisy2010} is included only as a noisy-entry spectral comparator, not as the IEEE TIT few-entry phase-transition result.  (b) The concrete consumer is the causal-panel matrix-completion estimator in \citet{AtheyBayatiDoudchenkoImbensKhosravi2021}: the conjecture would explain when its first-stage recovery can enter an orthogonal staggered-ATT score without dominating inference.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Homogeneous DID reduction]\label{cor:homogeneous-did}
+If \(r=2\), \(M^0_{it}=\alpha_i+\lambda_t\), every cohort has the same post-treatment effect over \(\mathcal{E}\), and the balancing weights reduce to uniform not-yet-treated comparisons, then Theorem~\ref{thm:oracle-dr} collapses to the usual staggered-DID imputation moment for \(\theta_{\mathcal{E}}\).  Under Assumptions~\ref{ass:staggered}, \ref{ass:moments-overlap}, and \ref{ass:balance}, the rank tangent directions are absorbed by unit and time effects, so \(\Psi_{\mathrm{OLB}}\) becomes a residualized DID score.
+\end{corollary}
+
+\begin{corollary}[Exact-rank MC reduction]\label{cor:mc-reduction}
+If \(w=0\), Assumptions~\ref{ass:rank}, \ref{ass:spectral-margin}, and \ref{ass:lr-recovery} hold, and \(\widehat M=M^0\) on \(\mathcal{O}_0\cup\mathcal{O}_1\), then \(\widehat\theta_{\mathrm{OLB}}\) reduces to the matrix-completion plug-in ATT \(\Theta_{\mathrm{mc}}(\widehat M)\).  This recovers the causal-panel matrix-completion target under exact recovery and no balancing correction.
+\end{corollary}
+
+\begin{example}[Concrete non-corner witness]\label{ex:three-cohort-witness}
+Take \(T=4\), three cohorts \(G\in\{2,3,\infty\}\), rank \(r=1\), untreated surface \(M^0_{it}=a_i b_t\) with \(a=(1,2,3)\) by cohort and \(b=(1,3,2,4)\), and event set \(\mathcal{E}=\{(2,3),(3,4)\}\).  Perturb the cohort shares from \((1/3,1/3,1/3)\) to \((1/3+\eta,1/3-\eta,1/3)\).  For small nonzero \(\eta\), the rank-one tangent residual and calendar-time balancing residual move in different directions, so the witness is not the homogeneous DID corner and gives an explicit route for testing \(\Delta_{\mathrm{OLB}}>0\) versus \(\Delta_{\mathrm{OLB}}=0\).
+\end{example}
+
+\section{Proof-sketch route}
+The proof route is to write the staggered ATT as a pathwise differentiable functional on two submodels: a balancing submodel where weighted untreated residual means vanish, and a rank-\(r\) completion submodel where the observed untreated and target missing cells are locally identified by the observed untreated block.  Theorem~\ref{thm:oracle-dr} follows by expanding \(\E\Psi_{\mathrm{OLB}}\): the balancing route cancels the target nuisance error against the weighted untreated nuisance error, while the rank route sets both nuisance-error terms to zero on \(\mathcal{O}_0\cup\mathcal{O}_1\).  Conjecture~\ref{conj:olb-efficiency} should reduce to a tangent-space projection calculation: stack the balancing tangent equations and the rank-\(r\) tangent equations, compute the Riesz representer for \(\theta_{\mathcal{E}}\) in \(\mathcal{M}_{\cap}\), and show that \(\Delta_{\mathrm{OLB}}=0\) is exactly the compatibility condition for the same representer to serve the Roth--Sant'Anna rollout, SDiD/staggered-SCM balancing, and rank-completion tangent geometries.  Conjecture~\ref{conj:margin-rate} requires deterministic-mask perturbation algebra for the singular subspace: prove a Davis--Kahan/Wedin style bound with the overlap-leverage penalty \(\kappa(D,r)\rho(D,r)\), then enumerate the three-cohort rank-one witness in Example~\ref{ex:three-cohort-witness} to show that the margin cannot be dropped.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:oracle-dr} is labelled as a theorem because it is intended as population moment algebra once the score and residual maps are fixed.  Conjectures~\ref{conj:olb-efficiency} and~\ref{conj:margin-rate} are not yet proved; the difficult parts are the intersection-model efficiency calculation, the deterministic staggered-mask singular-subspace bound, and the open-class lower-bound witness below the observed margin.  The definition of \(\Gamma_{\mathrm{OLB}}\) is deliberately independent of the event ``recovery holds,'' but its exact constants may need adjustment in Stage 0.  This pivot withdraws the earlier equality-frontier and estimator-lattice angles and does not claim an iff equality theorem among SDiD, ASCM, SCM, and matrix completion.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) --- initial draft for angle 3, replacing the exhausted equality-frontier/lattice kernels with an orthogonal low-rank balancing estimator and efficiency conjecture; prior verdict: none.
+\item v2 (revise) --- repaired the oracle moment algebra, replaced undefined union-model efficiency with an intersection/tangent-space convention, added double-robust panel comparators and location anchors, and corrected the Keshavan--Montanari--Oh bibliography split; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Arkhangelsky et~al.(2021)]{ArkhangelskyAtheyHirshbergImbensWager2021}
+Arkhangelsky, D., Athey, S., Hirshberg, D.~A., Imbens, G.~W., and Wager, S. (2021).
+Synthetic difference-in-differences.
+\emph{American Economic Review}, 111(12), 4088--4118.
+
+\bibitem[Arkhangelsky and Imbens(2022)]{ArkhangelskyImbens2022}
+Arkhangelsky, D. and Imbens, G.~W. (2022).
+Doubly robust identification for causal panel data models.
+\emph{The Econometrics Journal}, 25(3), 649--674.
+
+\bibitem[Athey et~al.(2021)]{AtheyBayatiDoudchenkoImbensKhosravi2021}
+Athey, S., Bayati, M., Doudchenko, N., Imbens, G., and Khosravi, K. (2021).
+Matrix completion methods for causal panel data models.
+\emph{Journal of the American Statistical Association}, 116(536), 1716--1730.
+
+\bibitem[Bai and Ng(2021)]{BaiNg2021}
+Bai, J. and Ng, S. (2021).
+Matrix completion, counterfactuals, and factor analysis of missing data.
+\emph{Journal of the American Statistical Association}, 116(536), 1746--1763.
+
+\bibitem[Ben-Michael et~al.(2022)]{BenMichaelFellerRothstein2022}
+Ben-Michael, E., Feller, A., and Rothstein, J. (2022).
+Synthetic controls with staggered adoption.
+\emph{Journal of the Royal Statistical Society: Series B}, 84(2), 351--381.
+
+\bibitem[Callaway and Sant'Anna(2021)]{CallawaySantAnna2021}
+Callaway, B. and Sant'Anna, P.~H.~C. (2021).
+Difference-in-differences with multiple time periods.
+\emph{Journal of Econometrics}, 225(2), 200--230.
+
+\bibitem[Candes and Tao(2010)]{CandesTao2010}
+Candes, E.~J. and Tao, T. (2010).
+The power of convex relaxation: Near-optimal matrix completion.
+\emph{IEEE Transactions on Information Theory}, 56(5), 2053--2080.
+
+\bibitem[Choi et~al.(2024)]{ChoiKwonLiao2024}
+Choi, J.~E., Kwon, S., and Liao, Y. (2024).
+Inference for low-rank completion without sample splitting with application to treatment effect estimation.
+\emph{Journal of Econometrics}, 240(2), 105682.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{DeChaisemartinDHaultfoeuille2020}
+de Chaisemartin, C. and D'Haultfoeuille, X. (2020).
+Two-way fixed effects estimators with heterogeneous treatment effects.
+\emph{American Economic Review}, 110(9), 2964--2996.
+
+\bibitem[Keshavan et~al.(2010a)]{KeshavanMontanariOhFew2010}
+Keshavan, R.~H., Montanari, A., and Oh, S. (2010).
+Matrix completion from a few entries.
+\emph{IEEE Transactions on Information Theory}, 56(6), 2980--2998.
+
+\bibitem[Keshavan et~al.(2010b)]{KeshavanMontanariOhNoisy2010}
+Keshavan, R.~H., Montanari, A., and Oh, S. (2010).
+Matrix completion from noisy entries.
+\emph{Journal of Machine Learning Research}, 11, 2057--2078.
+
+\bibitem[Qiu et~al.(2024)]{QiuShiMiaoWangDobribanTchetgen2024}
+Qiu, H., Shi, X., Miao, W., Wang, L., Dobriban, E., and Tchetgen Tchetgen, E. (2024).
+Doubly robust proximal synthetic controls.
+\emph{Biometrics}, 80(2), ujae055.
+
+\bibitem[Roth and Sant'Anna(2021)]{RothSantAnna2021}
+Roth, J. and Sant'Anna, P.~H.~C. (2021).
+Efficient estimation for staggered rollout designs.
+\emph{arXiv:2102.01291}.
+
+\bibitem[Sun and Abraham(2021)]{SunAbraham2021}
+Sun, L. and Abraham, S. (2021).
+Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\emph{Journal of Econometrics}, 225(2), 175--199.
+
+\bibitem[Yan and Wainwright(2024)]{YanWainwright2024}
+Yan, Y. and Wainwright, M.~J. (2024).
+Inference for matrix completion under missing not at random with staggered adoption.
+\emph{arXiv:2401.13665}.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,310 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=flagship\_explore, specialization=f2
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to a Q1..Q6 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    If it is a free-form `(qid, specialization)`, define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{flagship\_explore} / \texttt{f2}%
+  \\ \large\textit{Instrument-memory bounds for dynamic treatment effects under imperfect compliance}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a partial-identification anchor, not a panel pool-mode.  The locked tuple is
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},
+  \text{bounding functional})\\
+=
+(\texttt{flagship\_explore},\texttt{f2},
+  P_{Y,D_1,D_2,Z_1,Z_2,X},\
+  \theta_{\mathrm{SC}},
+  \mathcal{R}_{\mathrm{seqIV+mem+mono1}},
+  [\underline\theta_{\mathrm{IM}}(P,e),\overline\theta_{\mathrm{IM}}(P,e)]) .
+\end{gathered}
+\]
+Here \(X\) has finite support; \(Z_1,D_1,Z_2,D_2,Y\in\{0,1\}\).  The assignment law is known:
+\[
+\Pr(Z_1=1\mid X=x)=e_1(x),\qquad
+\Pr(Z_2=1\mid X=x,Z_1=z_1,D_1=d_1)=e_2(x,z_1,d_1),
+\]
+with \(0<e_1,e_2<1\) on reachable cells.  The target is the sustained-treatment contrast among first-period compliers,
+\[
+\theta_{\mathrm{SC}}=\E[Y(1,1)-Y(0,0)\mid D_1(1)=1,D_1(0)=0].
+\]
+The restrictions \(\mathcal{R}_{\mathrm{seqIV+mem+mono1}}\) are consistency, exclusion of \(Z_1,Z_2\) from \(Y(d_1,d_2)\) except through received treatment, sequential randomization of each encouragement under the displayed assignment law, first-period monotonicity \(D_1(1)\ge D_1(0)\), unrestricted second-period imperfect compliance \(D_2(z_1,d_1,z_2)\in\{0,1\}\), and binary outcomes.  The bounding functional is the sharp finite-dimensional linear-program interval over joint latent first-period compliance types, second-period response maps, and outcome response vectors that reproduces \(P\) under the known non-Markov assignment law \(e=(e_1,e_2)\).
+
+\begin{abstract}
+This proposal asks whether non-Markov assignment can sharpen partial-identification bounds for dynamic treatment effects when compliance is imperfect.  The setting is a two-period randomized encouragement design in which the second encouragement may depend on the first encouragement even after conditioning on the first received treatment.  The kernel conjecture is that this ``instrument memory'' can strictly narrow sharp bounds for the sustained treatment effect among first-period compliers, because the histories \((Z_1,D_1)=(1,1)\) and \((0,1)\) mix compliers and always-takers differently while sharing the same received treatment history.  Static IV bounds, covariate-adaptive randomization bounds, and dynamic LATE point-identification results do not isolate this principal-stratum deconvolution mechanism.  If resolved, the result would give a publishable finite-horizon partial-ID theorem explaining when adaptive randomization probabilities themselves carry identifying content under imperfect compliance.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Dynamic treatment regimes are often implemented by encouragement or recommendation systems, and subjects may not comply with the recommended treatment.  In a two-period design, the second-stage assignment rule is usually allowed to depend on the accumulated observed history.  When that history includes past encouragement as well as past treatment, the design may contain more identifying information than a Markov summary based only on received treatment.  The scientific question is whether this extra information can be converted into sharp bounds on a sustained dynamic effect rather than treated as a nuisance feature of the assignment mechanism.
+
+\paragraph{The main finding (proposed).}
+Theorem~\ref{thm:finite-lp} records the routine sharp finite response-type LP for the locked two-period model.  Theorem~\ref{thm:constraint-containment} states the basic monotonicity of information: retaining the full instrument-memory constraints can only shrink the identified interval relative to the Markovized problem that conditions on \(X,D_1\) but drops \(Z_1\).  The flagship claim is Conjecture~\ref{conj:strict-memory}: on an open set of binary observed laws and assignment probabilities, the shrinkage is strict for \(\theta_{\mathrm{SC}}\).  Conjecture~\ref{conj:minimal-boundary} proposes the corresponding boundary: strict instrument-memory gain disappears when \(e_2(x,1,d)=e_2(x,0,d)\) or when the first-period always-taker and complier components are not both present in a treatment cell.
+
+\paragraph{What is new.}
+The closest published result is \citet{SojitraSyrgkanis2024}, which identifies dynamic LATEs under one-sided noncompliance and extra cross-period conditions such as staggered compliance.  This proposal does not add another point-identification condition; it asks for sharp partial identification when first-period noncompliance creates a principal-stratum mixture and the non-Markov assignment law splits that mixture through \(Z_1\)-dependent second-stage encouragement.  The epsilon-gap to \citet{BugniGaoObradovicVelez2024} is dynamic: their covariate-adaptive randomization bounds use assignment probabilities under imperfect compliance in a static treatment problem, whereas here the previous instrument is a post-baseline design variable that changes later assignment probabilities and deconvolves latent compliance strata.  The epsilon-gap to \citet{DuarteFinkelsteinKnoxMummoloShpitser2024} is analytic: their automated bounds can encode discrete causal problems, but they do not provide a theorem-level criterion for when instrument memory strictly tightens a dynamic IV bound.
+
+\paragraph{How it positions in the literature.}
+The proposal lives in the partial-identification cluster for IV bounds and dynamic treatment effects.  It uses the latent response-type logic of Balke--Pearl bounds, the bounded-outcome sharpness philosophy of Manski-style partial identification, and the dynamic regime motivation of recent DTR-with-IV papers.  It is not a panel or linear-projection proposal: the object is a sharp identified set \(\Theta_I(P)\) for a dynamic potential-outcome contrast under imperfect compliance.
+
+\section{Related work}
+\citet{BalkePearl1997} derive sharp bounds for static binary IV models with imperfect compliance; this proposal asks for a dynamic two-period analogue in which the assignment law remembers the first instrument.  \citet{Manski1990} gives the bounded-outcome completion logic behind finite response-type partial identification, which is the sharpness route used here.  \citet{ManskiPepper2000} show how credible monotone restrictions can sharpen treatment-response bounds; the current proposal instead studies sharpening from assignment-history information rather than from a response monotonicity assumption.  \citet{SwansonHernanMillerRobinsRichardson2018} review partial identification for binary IV treatment effects, clarifying that static IV bounds do not settle sustained dynamic-regime effects.  \citet{MichaelCuiLorchTchetgen2024} identify marginal structural mean model parameters using time-varying IVs under a no-unobserved-confounder-predicts-compliance-type condition; the present proposal keeps a nonparametric latent response-type model and accepts intervals.  \citet{ChenZhang2023} formulate IV-optimal dynamic treatment regimes under partial identification; the current kernel is not Bellman optimality, but a two-period theorem about information in non-Markov assignment probabilities.  \citet{Han2023} characterizes optimal dynamic regimes through sharp partial welfare orderings with IVs; this proposal targets one sustained causal contrast and asks for an analytic strictness criterion.  \citet{SojitraSyrgkanis2024} establish dynamic LATE identification under one-sided noncompliance and additional cross-period conditions; this proposal studies partial identification when the second period remains imperfectly compliant and the first instrument is carried forward in the assignment rule.  \citet{ArtmanBhattacharyaErtefaieLynchMcKayJohnson2024} model partial compliance in SMARTs, motivating the applied need for compliance-aware dynamic regime estimands.  \citet{BugniGaoObradovicVelez2024} characterize ATE and ATT identified sets under covariate-adaptive randomization with imperfect compliance; their use of assignment probabilities is the closest static assignment-design comparison.  \citet{DuarteFinkelsteinKnoxMummoloShpitser2024} provide automated sharp bounds for discrete causal problems; the proposed contribution is a hand-checkable structural phenomenon inside that general class.
+
+In-catalogue prior art is thin for this exact anchor.  The ThmSmith API says the generated PartialID catalogue is empty at seed time, while it records panel proposals such as \texttt{q1\_minimal\_basis}: four-candidate comparison for switch-on panel regression and \texttt{q1\_partial\_did\_unobserved\_trends}: partial DID under unobserved trends; those are panel kernels, not IV bounds.  The closest banked ThmSmith proposal is \texttt{pid\_late\_bounded\_defiers}: a one-period bounded-defier complier-LATE envelope, which lacks dynamic assignment memory.  The burned \texttt{flagship\_explore}/\texttt{f1}: full-history IV bounds for dynamic treatment effects is also close, but it pursued Bellman/stagewise nonsharpness; the present proposal narrows to the post-baseline principal-stratum deconvolution created by retaining \(Z_1\) inside \(e_2\).
+
+\section{Formal setup}
+Let the observed data be
+\[
+O=(X,Z_1,D_1,Z_2,D_2,Y),
+\]
+where \(X\) has finite support and \(Z_1,D_1,Z_2,D_2,Y\in\{0,1\}\).  The assignment law is known and history-adaptive:
+\[
+\Pr(Z_1=1\mid X=x)=e_1(x),\qquad
+\Pr(Z_2=1\mid X=x,Z_1=z_1,D_1=d_1)=e_2(x,z_1,d_1).
+\]
+The non-Markov feature is the possible strict dependence of \(e_2\) on \(z_1\) after conditioning on \(x,d_1\).
+
+A latent response type \(\ell\) consists of a baseline value \(X_\ell\), first-period treatment responses \(D_{1,\ell}(0),D_{1,\ell}(1)\), second-period treatment responses
+\[
+D_{2,\ell}(z_1,d_1,z_2)\quad\text{for }(z_1,d_1,z_2)\in\{0,1\}^3,
+\]
+and outcome responses \(Y_\ell(d_1,d_2)\) for \((d_1,d_2)\in\{0,1\}^2\).  Let \(\pi_\ell\ge0\) be the mass on type \(\ell\), with \(\sum_\ell\pi_\ell=1\).  Given \(\ell\), the realized treatment path under \((z_1,z_2)\) is
+\[
+d_1=D_{1,\ell}(z_1),\qquad d_2=D_{2,\ell}(z_1,d_1,z_2),
+\]
+and the realized outcome is \(Y_\ell(d_1,d_2)\).  The induced observed-cell probability is
+\[
+\sum_\ell \pi_\ell \one\{X_\ell=x,\ D_{1,\ell}(z_1)=d_1,\ D_{2,\ell}(z_1,d_1,z_2)=d_2,\ Y_\ell(d_1,d_2)=y\}
+e_1(x)^{z_1}(1-e_1(x))^{1-z_1}
+e_2(x,z_1,d_1)^{z_2}(1-e_2(x,z_1,d_1))^{1-z_2}.
+\]
+First-period principal strata are named as follows:
+\[
+C_1=\{D_1(1)=1,D_1(0)=0\},\quad
+A_1=\{D_1(1)=1,D_1(0)=1\},\quad
+N_1=\{D_1(1)=0,D_1(0)=0\}.
+\]
+Under first-period monotonicity these are the only first-period strata; \(C_1\) is the complier stratum appearing in \(\theta_{\mathrm{SC}}\), \(A_1\) is the always-taker stratum, and \(N_1\) is the never-taker stratum.
+The identified set \(\Theta_I(P)\) is the range of \(\theta_{\mathrm{SC}}\) over all such \(\pi\) satisfying the restrictions in Section~\ref{sec:assumptions} and reproducing the observable law \(P\).  The full-history interval \([\underline\theta_{\mathrm{IM}}(P,e),\overline\theta_{\mathrm{IM}}(P,e)]\) is the minimum and maximum of the linear-fractional target over this feasible set; after conditioning on a positive complier mass, it is equivalent to two linear programs by the Charnes--Cooper transform.  The Markovized interval \([\underline\theta_{\mathrm{MK}}(P,e),\overline\theta_{\mathrm{MK}}(P,e)]\) is defined by replacing the full observed law with the coarsened law of \((X,D_1,Z_2,D_2,Y)\) and replacing \(e_2(x,z_1,d_1)\) by the induced coarsened assignment probabilities conditional on \((X,D_1)\).
+
+\begin{verbatim}
+qid = flagship_explore
+specialization = f2
+observable distribution P = law of (Y,D1,D2,Z1,Z2,X), finite X, binary variables
+parameter theta = E[Y(1,1)-Y(0,0) | D1(1)=1,D1(0)=0]
+identifying restrictions = sequential IV validity/exclusion, consistency,
+  known history-adaptive assignment, first-period monotonicity, unrestricted
+  second-period compliance, binary outcomes, positive assignment cells
+bounding functional = sharp finite response-type interval retaining Z1 in the
+  second-stage assignment constraints, compared with the Markovized interval
+\end{verbatim}
+
+\section{Assumptions}
+\label{sec:assumptions}
+\begin{assumption}[Finite binary support]\label{ass:finite}
+\(X\) has finite support and \(Z_1,D_1,Z_2,D_2,Y\in\{0,1\}\).  The potential outcomes \(Y(d_1,d_2)\) are binary for all \((d_1,d_2)\in\{0,1\}^2\).
+\end{assumption}
+
+\begin{assumption}[Known positive non-Markov assignment]\label{ass:assignment}
+The assignment probabilities \(e_1(x)\) and \(e_2(x,z_1,d_1)\) are known and lie strictly between zero and one for every reachable cell.  Instrument memory at cell \((x,d)\) means \(e_2(x,1,d)\ne e_2(x,0,d)\).
+\end{assumption}
+
+\begin{assumption}[Sequential IV validity and exclusion]\label{ass:seqiv}
+Conditional on \(X\), \(Z_1\) is independent of the full latent response type.  Conditional on \(X,Z_1,D_1\), \(Z_2\) is randomized according to \(e_2\) and is independent of the latent outcome responses and second-period treatment response maps.  The encouragements affect \(Y\) only through the realized treatment path \((D_1,D_2)\).
+\end{assumption}
+
+\begin{assumption}[Consistency]\label{ass:consistency}
+Observed treatments and outcomes equal their potential responses at the observed encouragement path: \(D_1=D_1(Z_1)\), \(D_2=D_2(Z_1,D_1,Z_2)\), and \(Y=Y(D_1,D_2)\).
+\end{assumption}
+
+\begin{assumption}[First-period monotonicity with imperfect compliance]\label{ass:mono1}
+For every unit, \(D_1(1)\ge D_1(0)\).  The first-period always-taker, complier, and never-taker strata are all allowed, and second-period compliance is otherwise unrestricted.
+\end{assumption}
+
+\begin{assumption}[Positive first-period complier mass]\label{ass:poscomp}
+\(\Pr(D_1(1)=1,D_1(0)=0)>0\), so \(\theta_{\mathrm{SC}}\) is well-defined.
+\end{assumption}
+
+\begin{assumption}[Markov coarsening for comparison only]\label{ass:markovcoarse}
+The Markovized comparison problem keeps the same target, latent response-type space, and restrictions as Assumptions~\ref{ass:finite}--\ref{ass:poscomp}, but replaces the full observed constraints by constraints on the coarsened law of \((X,D_1,Z_2,D_2,Y)\) and uses assignment probabilities conditional only on \((X,D_1)\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Finite response-type sharp interval]\label{thm:finite-lp}
+Under Assumptions~\ref{ass:finite}--\ref{ass:poscomp}, the full-history identified set for \(\theta_{\mathrm{SC}}\) is the interval
+\[
+\Theta_{\mathrm{IM}}(P,e)=[\underline\theta_{\mathrm{IM}}(P,e),\overline\theta_{\mathrm{IM}}(P,e)]
+\]
+obtained by minimizing and maximizing \(\theta_{\mathrm{SC}}\) over the finite latent response-type simplex subject to the observed-cell equations in Section~\ref{sec:assumptions}.  The endpoints are attained whenever the feasible set is nonempty.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+The theorem is routine finite partial-identification algebra in the spirit of \citet{BalkePearl1997} and \citet{DuarteFinkelsteinKnoxMummoloShpitser2024}; it is included to pin the mathematical object before stating the novel strictness claim.  Its value is that it makes the dynamic imperfect-compliance target auditable as a finite sharp identified set rather than as an informal appeal to dynamic IV intuition.
+
+\begin{theorem}[Full-history constraints weakly tighten Markovized bounds]\label{thm:constraint-containment}
+Under Assumptions~\ref{ass:finite}--\ref{ass:markovcoarse}, if the full-history feasible set is nonempty, then
+\[
+\Theta_{\mathrm{IM}}(P,e)\subseteq \Theta_{\mathrm{MK}}(P,e).
+\]
+Equivalently, retaining \(Z_1\) in the second-stage assignment constraints cannot widen the sharp identified interval relative to the coarsened problem that conditions only on \(X,D_1\).
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+This is a constraint-dropping theorem, not the flagship novelty, but it states exactly what the comparison is.  The closest literature, \citet{BugniGaoObradovicVelez2024}, shows assignment probabilities matter for static imperfect-compliance bounds; this result formulates the dynamic analogue where assignment history is an observable design variable.
+
+\begin{conjecture}[Strict instrument-memory gain]\label{conj:strict-memory}
+(NOT YET PROVED.)  There exists a nonempty open set of observed laws \(P\) and known assignment laws \(e\) satisfying Assumptions~\ref{ass:finite}--\ref{ass:poscomp} such that for some \((x,d)\), \(e_2(x,1,d)\ne e_2(x,0,d)\), the first-period always-taker and complier strata both have positive mass in the received-treatment cell \(D_1=d\), and
+\[
+\Theta_{\mathrm{IM}}(P,e)\subsetneq \Theta_{\mathrm{MK}}(P,e).
+\]
+Moreover, strictness can be witnessed at \(T=2\) with binary \(X\) and binary \(Y\).
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+The closest dynamic point-identification paper is \citet{SojitraSyrgkanis2024}; it explains when dynamic LATEs are identified, but it does not ask whether a non-Markov assignment probability can partially deconvolve first-period principal strata under residual imperfect compliance.  Resolving this conjecture would show that adaptive randomization logs are not merely implementation details: retaining past encouragement can strictly improve bounds for a scientifically meaningful sustained effect.
+
+\begin{conjecture}[Minimal boundary for memory gain]\label{conj:minimal-boundary}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:finite}--\ref{ass:markovcoarse}, strict containment in Conjecture~\ref{conj:strict-memory} is impossible in either of the following boundary regimes: (i) \(e_2(x,1,d)=e_2(x,0,d)\) for every reachable \((x,d)\); or (ii) within every received-treatment cell where instrument memory is present, the first-period latent mixture contains at most one of the always-taker and complier strata.  In these regimes \(\Theta_{\mathrm{IM}}(P,e)=\Theta_{\mathrm{MK}}(P,e)\).
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+This boundary is not a generic extension from \(T=1\) to \(T=2\); it identifies the exact mechanism that must exist for non-Markov assignment to matter.  If proved, it would separate the present proposal from generic automated bounds by giving a design diagnostic: instrument memory helps only when it splits a genuine principal-stratum mixture.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Static IV corner]\label{cor:static}
+Under Assumptions~\ref{ass:finite}--\ref{ass:poscomp}, if \(D_2\) and \(Y\) do not depend on \(Z_2\) or on the second treatment component and \(Y(d_1,d_2)=Y(d_1,0)\), then Theorem~\ref{thm:finite-lp} collapses to a static binary-IV partial-identification problem for \(Y(1,0)-Y(0,0)\) among first-period compliers.  The instrument-memory comparison is vacuous because \(e_2\) drops out of all observed-cell equations.
+\end{corollary}
+
+\begin{corollary}[No-memory assignment corner]\label{cor:no-memory}
+Under Assumptions~\ref{ass:finite}--\ref{ass:markovcoarse}, if \(e_2(x,1,d)=e_2(x,0,d)\) for every reachable \((x,d)\), then the full-history and Markovized assignment factors coincide after conditioning on \((X,D_1)\).  Conjecture~\ref{conj:minimal-boundary} therefore predicts \(\Theta_{\mathrm{IM}}(P,e)=\Theta_{\mathrm{MK}}(P,e)\), reducing the proposal to the usual dynamic response-type LP with no instrument-memory gain.
+\end{corollary}
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:finite-lp} reduces to the classical finite response-function representation: enumerate the first-period principal strata, enumerate all second-period binary response maps, enumerate the four binary outcome responses, and impose one linear observed-cell equation for each \((x,z_1,d_1,z_2,d_2,y)\).  Because the target is a ratio over the positive complier stratum, endpoint computation reduces to two linear programs after a standard linear-fractional change of variables.  Theorem~\ref{thm:constraint-containment} follows by showing that the Markovized feasible set is the image of the full-history feasible set after summing over \(Z_1\) within \((X,D_1)\) cells.  For Conjectures~\ref{conj:strict-memory} and~\ref{conj:minimal-boundary}, the intended route is a small-support enumeration with \(X\in\{0,1\}\): construct two latent distributions that agree after Markov coarsening but disagree on the \(Z_1\)-split second-stage outcome/treatment cells, then verify that their \(\theta_{\mathrm{SC}}\) endpoints separate; the boundary cases should follow by algebraically eliminating \(Z_1\) from the assignment factor or by observing that a singleton latent mixture leaves no deconvolution problem.
+
+\section{Honest scope flags}
+The finite LP representation and weak-containment claim are labelled as theorems because they are routine consequences of finite response-type partial identification and constraint dropping.  The strict instrument-memory gain and minimal-boundary claims are conjectures; the proposal needs an explicit \(T=2\) witness or an algebraic proof that no such witness exists.  The binary-outcome restriction is intentional in this version to keep the sharpness witness finite and auditable.  The proposal does not claim Bellman nonsharpness, dynamic optimal-regime identification, or any result for continuous outcomes.  The strongest assumption that may need revision is first-period monotonicity: it keeps the target interpretable as a first-period complier effect, but the same memory mechanism may survive with bounded defiers rather than monotonicity.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) --- initial draft proposing instrument-memory strictness for two-period dynamic IV bounds; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Artman et~al.(2024)]{ArtmanBhattacharyaErtefaieLynchMcKayJohnson2024}
+Artman, W.~J., I. Bhattacharya, A. Ertefaie, K.~G. Lynch, J.~R. McKay, and B.~A. Johnson (2024).
+\newblock A marginal structural model for partial compliance in SMARTs.
+\newblock \emph{Annals of Applied Statistics} 18(2), 905--921.
+
+\bibitem[Balke and Pearl(1997)]{BalkePearl1997}
+Balke, A. and J. Pearl (1997).
+\newblock Bounds on treatment effects from studies with imperfect compliance.
+\newblock \emph{Journal of the American Statistical Association} 92(439), 1171--1176.
+
+\bibitem[Bugni et~al.(2024)]{BugniGaoObradovicVelez2024}
+Bugni, F.~A., M. Gao, F. Obradovic, and A. Velez (2024).
+\newblock Identification and inference on treatment effects under covariate-adaptive randomization and imperfect compliance.
+\newblock arXiv:2406.08419.
+
+\bibitem[Chen and Zhang(2023)]{ChenZhang2023}
+Chen, S. and B. Zhang (2023).
+\newblock Estimating and improving dynamic treatment regimes with a time-varying instrumental variable.
+\newblock \emph{Journal of the Royal Statistical Society: Series B} 85(5), 1481--1506.
+
+\bibitem[Duarte et~al.(2024)]{DuarteFinkelsteinKnoxMummoloShpitser2024}
+Duarte, G., N. Finkelstein, D. Knox, J. Mummolo, and I. Shpitser (2024).
+\newblock An automated approach to causal inference in discrete settings.
+\newblock \emph{Journal of the American Statistical Association} 119(547), 1778--1793.
+
+\bibitem[Han(2023)]{Han2023}
+Han, S. (2023).
+\newblock Optimal dynamic treatment regimes and partial welfare ordering.
+\newblock \emph{Journal of the American Statistical Association}, published online.
+
+\bibitem[Manski(1990)]{Manski1990}
+Manski, C.~F. (1990).
+\newblock Nonparametric bounds on treatment effects.
+\newblock \emph{American Economic Review} 80(2), 319--323.
+
+\bibitem[Manski and Pepper(2000)]{ManskiPepper2000}
+Manski, C.~F. and J.~V. Pepper (2000).
+\newblock Monotone instrumental variables: With an application to the returns to schooling.
+\newblock \emph{Econometrica} 68(4), 997--1010.
+
+\bibitem[Michael et~al.(2024)]{MichaelCuiLorchTchetgen2024}
+Michael, H., Y. Cui, S. Lorch, and E.~J. Tchetgen Tchetgen (2024).
+\newblock Instrumental variable estimation of marginal structural mean models for time-varying treatment.
+\newblock \emph{Journal of the American Statistical Association} 119(546), 1240--1251.
+
+\bibitem[Sojitra and Syrgkanis(2024)]{SojitraSyrgkanis2024}
+Sojitra, R.~B. and V. Syrgkanis (2024).
+\newblock Dynamic local average treatment effects.
+\newblock arXiv:2405.01463.
+
+\bibitem[Swanson et~al.(2018)]{SwansonHernanMillerRobinsRichardson2018}
+Swanson, S.~A., M.~A. Hernan, M. Miller, J.~M. Robins, and T.~S. Richardson (2018).
+\newblock Partial identification of the average treatment effect using instrumental variables: Review of methods for binary instruments, treatments, and outcomes.
+\newblock \emph{Journal of the American Statistical Association} 113(522), 933--947.
+\end{thebibliography}
+
+\end{document}

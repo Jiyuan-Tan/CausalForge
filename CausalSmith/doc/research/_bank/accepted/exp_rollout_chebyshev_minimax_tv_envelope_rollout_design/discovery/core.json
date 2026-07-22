@@ -1,0 +1,780 @@
+{
+  "qid": "exp_rollout_chebyshev_minimax",
+  "specialization": "tv_envelope_rollout_design",
+  "cluster": "experimentation",
+  "symbols": [
+    {
+      "name": "beta",
+      "type": "interaction_order",
+      "space": "N",
+      "def": "Maximum interaction order in the rollout polynomial model.",
+      "role": "complexity_index"
+    },
+    {
+      "name": "c",
+      "type": "oversampling_ratio",
+      "space": "(1,infinity)",
+      "def": "Measurement ratio that determines the number of rollout observations k = ceil(c beta).",
+      "role": "design_parameter",
+      "refs": [
+        "beta"
+      ]
+    },
+    {
+      "name": "k",
+      "type": "number_of_rollout_measurements",
+      "space": "N",
+      "def": "Number of nonbaseline rollout measurements, k = ceil(c beta).",
+      "role": "design_size",
+      "refs": [
+        "c",
+        "beta"
+      ]
+    },
+    {
+      "name": "q",
+      "type": "maximum_treated_fraction",
+      "space": "(0,1]",
+      "def": "Largest feasible treated fraction in the rollout budget; q = 1 is the no-extrapolation boundary.",
+      "role": "budget_parameter"
+    },
+    {
+      "name": "q_max",
+      "type": "low_budget_cap",
+      "space": "(0,1)",
+      "def": "Exogenous budget cap restricting the low-budget theorem statements to q in (0,q_max].",
+      "role": "regime_parameter"
+    },
+    {
+      "name": "n",
+      "type": "population_size",
+      "space": "N",
+      "def": "Number of units in the finite population.",
+      "role": "design_size"
+    },
+    {
+      "name": "P",
+      "type": "finite_population_rollout_law",
+      "space": "laws of fixed potential outcomes together with rollout randomization",
+      "def": "Finite-population data-generating law under the static beta-order rollout model.",
+      "role": "model"
+    },
+    {
+      "name": "p",
+      "type": "rollout_schedule",
+      "space": "[0,1]^(k+1)",
+      "def": "Rollout schedule p = (p_0, ..., p_k) with p_j = Pr(Z_ji = 1).",
+      "role": "design_object",
+      "refs": [
+        "k"
+      ]
+    },
+    {
+      "name": "pi",
+      "type": "rollout_randomization_law",
+      "space": "laws on (Z_0, ..., Z_k)",
+      "def": "Known monotone Bernoulli rollout assignment law for the scheduled treatment fractions.",
+      "role": "design_law",
+      "refs": [
+        "p",
+        "k",
+        "n"
+      ]
+    },
+    {
+      "name": "U_n",
+      "type": "finite_population",
+      "space": "subsets of N",
+      "def": "Unit index set U_n = {1, ..., n}.",
+      "role": "population_index",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "Z_j",
+      "type": "rollout_assignment_vector",
+      "space": "{0,1}^n",
+      "def": "Assignment vector at rollout measurement j with marginal treatment fraction p_j.",
+      "role": "randomization",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "Y_i(z)",
+      "type": "potential_outcome",
+      "space": "R",
+      "def": "Potential outcome for unit i under assignment vector z.",
+      "role": "causal_primitive",
+      "refs": [
+        "U_n"
+      ]
+    },
+    {
+      "name": "bar_Y_j",
+      "type": "observed_round_mean",
+      "space": "R",
+      "def": "Observed population-average outcome at rollout measurement j, bar_Y_j = n^(-1) sum_{i in U_n} Y_i(Z_j).",
+      "role": "observed_outcome",
+      "refs": [
+        "U_n",
+        "Y_i(z)",
+        "Z_j",
+        "n"
+      ]
+    },
+    {
+      "name": "m_P",
+      "type": "rollout_mean_curve",
+      "sig": "[0,1] -> R",
+      "def": "m_P(u) = E_pi(bar_Y_j | p_j = u), the design expectation of the rollout population mean at treatment fraction u.",
+      "role": "identified_curve",
+      "refs": [
+        "bar_Y_j",
+        "p"
+      ]
+    },
+    {
+      "name": "a_{P,0}, ..., a_{P,beta}",
+      "type": "rollout_polynomial_coefficients",
+      "space": "R^(beta+1)",
+      "def": "Coefficients of the rollout mean polynomial m_P(u) = sum_{ell=0}^beta a_{P,ell} u^ell.",
+      "role": "structural_coefficients",
+      "refs": [
+        "m_P",
+        "beta"
+      ]
+    },
+    {
+      "name": "tau_P",
+      "type": "total_treatment_effect",
+      "space": "R",
+      "def": "Total treatment effect tau_P = m_P(1) - m_P(0).",
+      "role": "target_estimand",
+      "refs": [
+        "m_P"
+      ]
+    },
+    {
+      "name": "sigma_0^2",
+      "type": "round_mean_variance_constant",
+      "space": "R_+",
+      "def": "Envelope constant for rollout round-mean design variances under the total-variation criterion.",
+      "role": "regularity_constant"
+    },
+    {
+      "name": "C_eq(q_max)",
+      "type": "equal_spacing_benchmark_constant",
+      "space": "R_+",
+      "def": "Positive constant in the low-budget equal-spacing upper bound, depending only on q_max.",
+      "role": "benchmark_constant",
+      "refs": [
+        "q_max"
+      ]
+    },
+    {
+      "name": "w",
+      "type": "linear_estimator_weights",
+      "space": "R^(k+1)",
+      "def": "Weight vector w = (w_0, ..., w_k) used to combine rollout round means.",
+      "role": "estimator_parameter",
+      "refs": [
+        "k"
+      ]
+    },
+    {
+      "name": "hat_tau_{w,p}",
+      "type": "linear_rollout_estimator",
+      "space": "R",
+      "def": "Linear rollout estimator hat_tau_{w,p} = sum_{j=0}^k w_j bar_Y_j.",
+      "role": "design_based_estimator",
+      "refs": [
+        "w",
+        "bar_Y_j"
+      ]
+    },
+    {
+      "name": "A_beta(p)",
+      "type": "variance_amplification_factor",
+      "space": "R_+",
+      "def": "Minimum total-variation amplification A_beta(p) = inf_{w in W_beta(p)} (sum_{j=0}^k |w_j|)^2.",
+      "role": "design_criterion",
+      "refs": [
+        "beta",
+        "p"
+      ]
+    },
+    {
+      "name": "S_{k,q}",
+      "type": "schedule_class",
+      "space": "subsets of [0,1]^(k+1)",
+      "def": "Class of budgeted rollout schedules with p_0 = 0, 0 < p_1 < ... < p_k = q.",
+      "role": "design_class",
+      "refs": [
+        "k",
+        "q"
+      ]
+    },
+    {
+      "name": "W_beta(p)",
+      "type": "unbiased_weight_class",
+      "space": "subsets of R^(k+1)",
+      "def": "Set of weight vectors satisfying sum_{j=0}^k w_j p_j^0 = 0 and sum_{j=0}^k w_j p_j^ell = 1 for ell = 1, ..., beta.",
+      "role": "estimator_class",
+      "refs": [
+        "w",
+        "p",
+        "beta",
+        "k"
+      ]
+    },
+    {
+      "name": "M_{beta,k,q}",
+      "type": "minimax_schedule_risk",
+      "space": "R_+",
+      "def": "Minimax amplification M_{beta,k,q} = inf_{p in S_{k,q}} A_beta(p).",
+      "role": "optimal_design_value",
+      "refs": [
+        "beta",
+        "k",
+        "q",
+        "A_beta(p)"
+      ]
+    },
+    {
+      "name": "p^Ch(k,q)",
+      "type": "chebyshev_rollout_schedule",
+      "space": "[0,1]^(k+1)",
+      "def": "Shifted Chebyshev-Lobatto rollout schedule with coordinates p_j^Ch(k,q) = q { 1 - cos(pi j / k) } / 2.",
+      "role": "candidate_optimal_design",
+      "refs": [
+        "k",
+        "q"
+      ]
+    },
+    {
+      "name": "p^eq(beta,q)",
+      "type": "equally_spaced_rollout_schedule",
+      "space": "[0,1]^(beta+1)",
+      "def": "Equal-spacing benchmark schedule p^eq(beta,q) = (0, q / beta, 2 q / beta, ..., q).",
+      "role": "benchmark_design",
+      "refs": [
+        "beta",
+        "q"
+      ]
+    },
+    {
+      "name": "rho_Ch(c,q_max)",
+      "type": "chebyshev_growth_base",
+      "space": "[1,infinity)",
+      "def": "Minimal low-budget exponential base rho_Ch(c,q_max) = inf { rho >= 1 : sup_{beta >= 1} sup_{q in (0,q_max]} q^beta A_beta(p^Ch(ceil(c beta),q))^(1/2) rho^(-beta) < infinity }.",
+      "role": "named_minimax_base",
+      "refs": [
+        "c",
+        "q",
+        "q_max",
+        "beta",
+        "A_beta(p)",
+        "p^Ch(k,q)"
+      ]
+    },
+    {
+      "name": "P_beta",
+      "type": "law_class_notation",
+      "space": "sets of laws",
+      "def": "Notation for the static beta-order rollout TV-envelope law class in def:rollout-law-class.",
+      "role": "model_class",
+      "refs": [
+        "beta"
+      ]
+    },
+    {
+      "name": "Gamma_P(p)",
+      "type": "exact_rollout_covariance_matrix",
+      "space": "R^((k+1) x (k+1))",
+      "def": "Exact design covariance matrix of (bar_Y_0, ..., bar_Y_k) under the monotone Bernoulli rollout with schedule p.",
+      "role": "exact_variance_object",
+      "refs": [
+        "bar_Y_j",
+        "p"
+      ]
+    },
+    {
+      "name": "R_exact(beta,k,q)",
+      "type": "exact_minimax_design_risk",
+      "space": "R_+",
+      "def": "Exact finite-population nested-rollout minimax risk R_exact(beta,k,q) = inf_{p in S_{k,q}} inf_{w in W_beta(p)} sup_{P in P_beta} w' Gamma_P(p) w.",
+      "role": "open_exact_design_object",
+      "refs": [
+        "beta",
+        "k",
+        "q",
+        "S_{k,q}",
+        "W_beta(p)",
+        "P_beta",
+        "Gamma_P(p)"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:static-rollout-consistency",
+      "kind": "causal",
+      "condition": "At each rollout measurement j, the observed round mean equals bar_Y_j = n^(-1) sum_{i in U_n} Y_i(Z_j), and the potential outcomes depend on the contemporaneous assignment vector Z_j but not on earlier rollout steps.",
+      "free_symbols": [
+        "bar_Y_j",
+        "U_n",
+        "Y_i(z)",
+        "Z_j",
+        "n"
+      ],
+      "standard": {
+        "name": "Static rollout potential outcomes with no carryover",
+        "cite": "CortezRodriguezEichhornYu2024"
+      },
+      "used_by": [
+        "prop:rollout-polynomial-identity",
+        "thm:tv-envelope-design",
+        "oeq:exact-nested-minimax"
+      ]
+    },
+    {
+      "id": "ass:beta-order-polynomial",
+      "kind": "causal",
+      "condition": "For every law P, the rollout mean curve satisfies m_P(u) = sum_{ell=0}^beta a_{P,ell} u^ell for all u in [0,1].",
+      "free_symbols": [
+        "P",
+        "m_P",
+        "beta",
+        "a_{P,0}, ..., a_{P,beta}"
+      ],
+      "standard": {
+        "name": "beta-order rollout polynomial identity",
+        "cite": "CortezEichhornYu2022"
+      },
+      "used_by": [
+        "prop:rollout-polynomial-identity",
+        "thm:tv-envelope-design",
+        "prop:equal-spacing-benchmark",
+        "thm:chebyshev-minimax"
+      ]
+    },
+    {
+      "id": "ass:round-mean-variance-envelope",
+      "kind": "design",
+      "condition": "For every law P, every admissible schedule p, and every rollout measurement j, Var_pi(bar_Y_j) <= sigma_0^2 / n.",
+      "free_symbols": [
+        "P",
+        "p",
+        "bar_Y_j",
+        "sigma_0^2",
+        "n"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "This envelope is realistic in rollout settings where each bar_Y_j averages bounded outcomes with only local dependence across units, so design variance stays of order n^(-1) after absorbing the dependency factor into sigma_0^2. Bounded-degree network interference with bounded potential outcomes under Bernoulli or complete-randomization rollout designs is the intended class."
+      },
+      "used_by": [
+        "thm:tv-envelope-design",
+        "prop:equal-spacing-benchmark",
+        "thm:chebyshev-minimax"
+      ]
+    },
+    {
+      "id": "ass:low-budget-cap",
+      "kind": "design",
+      "condition": "q <= q_max < 1.",
+      "free_symbols": [
+        "q",
+        "q_max"
+      ],
+      "novel": {
+        "flag": true,
+        "justification": "Rollout experiments are commonly run under a hard product or policy budget that keeps the treated share materially below one, both to limit operational risk and because the design value of intermediate measurements disappears once the treated endpoint is essentially observed. The low-budget regime isolates the empirically relevant region where interpolation instability is the live design problem."
+      },
+      "used_by": [
+        "prop:equal-spacing-benchmark",
+        "thm:chebyshev-minimax",
+        "oeq:exact-nested-minimax"
+      ]
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:budgeted-schedule-class",
+      "name": "Budgeted rollout schedules",
+      "construction": "S_{k,q} = { p in [0,1]^(k+1) : p_0 = 0 and 0 < p_1 < ... < p_k = q }",
+      "inputs": [
+        "k",
+        "q"
+      ]
+    },
+    {
+      "id": "def:rollout-law-class",
+      "name": "Static beta-order rollout TV-envelope laws",
+      "construction": "P_beta = { P : ass:static-rollout-consistency and ass:beta-order-polynomial and ass:round-mean-variance-envelope }",
+      "by_member_properties": [
+        "ass:static-rollout-consistency",
+        "ass:beta-order-polynomial",
+        "ass:round-mean-variance-envelope"
+      ]
+    },
+    {
+      "id": "def:unbiased-weight-set",
+      "name": "Linear-unbiased rollout weights for a schedule",
+      "construction": "W_beta(p) = { w in R^(k+1) : sum_{j=0}^k w_j p_j^0 = 0 and sum_{j=0}^k w_j p_j^ell = 1 for ell = 1, ..., beta }",
+      "inputs": [
+        "beta",
+        "p",
+        "k"
+      ]
+    },
+    {
+      "id": "def:chebyshev-schedule",
+      "name": "Shifted Chebyshev-Lobatto rollout grid",
+      "construction": "p_j^Ch(k,q) = q { 1 - cos(pi j / k) } / 2 for j = 0, ..., k, and p^Ch(k,q) = (p_0^Ch(k,q), ..., p_k^Ch(k,q)).",
+      "inputs": [
+        "k",
+        "q"
+      ]
+    },
+    {
+      "id": "def:amplification-criterion",
+      "name": "Total-variation amplification criterion",
+      "construction": "A_beta(p) = inf_{w in W_beta(p)} (sum_{j=0}^k |w_j|)^2 and M_{beta,k,q} = inf_{p in S_{k,q}} A_beta(p).",
+      "inputs": [
+        "beta",
+        "p",
+        "k",
+        "q"
+      ]
+    },
+    {
+      "id": "def:exact-nested-risk",
+      "name": "Exact nested-rollout minimax risk handle",
+      "construction": "R_exact(beta,k,q) = inf_{p in S_{k,q}} inf_{w in W_beta(p)} sup_{P in P_beta} w' Gamma_P(p) w.",
+      "inputs": [
+        "beta",
+        "k",
+        "q",
+        "w",
+        "p",
+        "Gamma_P(p)"
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": "prop:rollout-polynomial-identity",
+      "kind": "proposition",
+      "statement": "Under ass:static-rollout-consistency and ass:beta-order-polynomial, tau_P = m_P(1) - m_P(0) = sum_{ell=1}^beta a_{P,ell}.",
+      "depends_on": [
+        "ass:static-rollout-consistency",
+        "ass:beta-order-polynomial"
+      ],
+      "proof_tex": "Proof. Fix a law P satisfying the static rollout consistency and beta-order polynomial assumptions. The causal estimand is tau_P = m_P(1) - m_P(0). By ass:beta-order-polynomial, for every u in [0,1], m_P(u) = sum_{ell=0}^beta a_{P,ell} u^ell. Evaluating at u=1 gives m_P(1) = sum_{ell=0}^beta a_{P,ell}. Evaluating at u=0 gives m_P(0) = a_{P,0}, since 0^ell = 0 for ell >= 1 and the constant term is a_{P,0}. Therefore tau_P = m_P(1)-m_P(0) = (sum_{ell=0}^beta a_{P,ell}) - a_{P,0} = sum_{ell=1}^beta a_{P,ell}. Static rollout consistency supplies the causal interpretation of bar_Y_j and m_P as the design expectation of the observed rollout mean under the contemporaneous assignment; the algebraic endpoint identity itself is the polynomial evaluation just displayed.",
+      "status": "proved",
+      "justification": "Recalled inherited setup: the design problem is stated after the TTE target is written as an endpoint functional of the rollout mean curve (CortezEichhornYu2022).",
+      "gap": "INHERITED SETUP (not a contribution): this polynomial endpoint identity is due to CortezEichhornYu2022; it is recalled here only to reduce TTE to a degree-beta endpoint functional before the design theory. No novelty is claimed for it.",
+      "consumer": "This proposition converts rollout measurement choice into a finite-dimensional endpoint-extrapolation problem for tau_P."
+    },
+    {
+      "id": "thm:tv-envelope-design",
+      "kind": "theorem",
+      "statement": "Assume beta>=1 and k>=beta. For every schedule p in S_{k,q} and every weight vector w in W_beta(p), the estimator hat_tau_{w,p} is design-unbiased for tau_P over P in P_beta, and Var_pi(hat_tau_{w,p}) <= sigma_0^2 n^(-1) (sum_{j=0}^k |w_j|)^2. Consequently, since W_beta(p) is nonempty for every p in S_{k,q}, over the sharp total-variation variance envelope the best achievable design variance for a fixed schedule p is sigma_0^2 n^(-1) A_beta(p); the dimensionless minimax amplification value over budgeted schedules is M_{beta,k,q}=inf_{p in S_{k,q}} A_beta(p); the corresponding minimax design variance over budgeted schedules is sigma_0^2 n^(-1) M_{beta,k,q}; and an optimal schedule for the variance envelope is any minimizer p^* in S_{k,q} attaining A_beta(p^*)=M_{beta,k,q}.",
+      "depends_on": [
+        "prop:rollout-polynomial-identity",
+        "ass:round-mean-variance-envelope",
+        "def:unbiased-weight-set",
+        "def:amplification-criterion",
+        "def:budgeted-schedule-class",
+        "def:rollout-law-class",
+        "ass:static-rollout-consistency",
+        "ass:beta-order-polynomial",
+        "lem:variance-envelope-sharpness",
+        "lem:unbiased-weight-set-nonempty"
+      ],
+      "proof_tex": "Proof. Assume beta>=1 and k>=beta. Fix p in S_{k,q}, w in W_beta(p), and P in P_beta. By def:rollout-law-class, P satisfies ass:static-rollout-consistency, ass:beta-order-polynomial, and ass:round-mean-variance-envelope. Since the schedule p is fixed by design, the definition of the rollout mean curve gives E_pi[bar_Y_j]=m_P(p_j) for each measurement j. Therefore E_pi[hat_tau_{w,p}]=sum_{j=0}^k w_j m_P(p_j). By ass:beta-order-polynomial, m_P(u)=sum_{ell=0}^beta a_{P,ell} u^ell on [0,1]. Substituting this polynomial expansion and interchanging finite sums gives E_pi[hat_tau_{w,p}]=sum_{ell=0}^beta a_{P,ell} sum_{j=0}^k w_j p_j^ell. By def:unbiased-weight-set, sum_j w_j p_j^0=0 and sum_j w_j p_j^ell=1 for ell=1,...,beta. Hence E_pi[hat_tau_{w,p}]=sum_{ell=1}^beta a_{P,ell}. By prop:rollout-polynomial-identity, sum_{ell=1}^beta a_{P,ell}=tau_P. Thus hat_tau_{w,p} is design-unbiased for tau_P over P_beta.\n\nFor the variance bound, apply lem:variance-envelope-sharpness with X_j=bar_Y_j. The variance premise Var_pi(bar_Y_j) <= sigma_0^2/n is exactly ass:round-mean-variance-envelope for P in P_beta and the admissible schedule p. Hence Var_pi(hat_tau_{w,p})=Var_pi(sum_j w_j bar_Y_j) <= sigma_0^2 n^{-1} (sum_{j=0}^k |w_j|)^2.\n\nIt remains to justify the optimization consequences. By lem:unbiased-weight-set-nonempty, W_beta(p) is nonempty for every p in S_{k,q}. For a fixed schedule p, the sharp total-variation variance envelope from lem:variance-envelope-sharpness assigns the weight vector w the worst-case design variance (sigma_0^2/n)(sum_j |w_j|)^2. Minimizing over the feasible linear-unbiased weights therefore gives the fixed-schedule envelope value (sigma_0^2/n) inf_{w in W_beta(p)} (sum_j |w_j|)^2. By def:amplification-criterion this is (sigma_0^2/n) A_beta(p). Taking the infimum over p in S_{k,q} gives, again by def:amplification-criterion, the dimensionless minimax amplification M_{beta,k,q}=inf_{p in S_{k,q}} A_beta(p), and multiplying by sigma_0^2/n gives the corresponding minimax design variance (sigma_0^2/n) M_{beta,k,q}. Finally, if a schedule p^* in S_{k,q} attains A_beta(p^*)=M_{beta,k,q}, then p^* is by definition an optimal schedule for the total-variation variance envelope.",
+      "status": "proved",
+      "justification": "This theorem characterizes the full linear-unbiased estimator class and produces an explicit design objective over schedules.",
+      "gap": "The rollout papers analyze specific interpolation estimators on fixed nodes, and EichhornKhanUganderYu2024 studies general-design low-order estimators, but neither paper optimizes over all rollout-unbiased weights and schedules under the total-variation envelope criterion.",
+      "consumer": "A platform choosing a rollout grid can evaluate node placements through one scalar amplification criterion before running the experiment."
+    },
+    {
+      "id": "prop:equal-spacing-benchmark",
+      "kind": "proposition",
+      "statement": "Let p^eq(beta,q) = (0, q / beta, 2 q / beta, ..., q). There exists a universal positive constant C_eq (one may take C_eq = 9) such that A_beta(p^eq(beta,q)) <= C_eq (beta / q)^(2 beta) for every integer beta >= 1 and every q in (0,1].",
+      "depends_on": [
+        "def:amplification-criterion",
+        "def:unbiased-weight-set"
+      ],
+      "proof_tex": "Let beta >= 1 and q in (0,1]. Write the equal grid as p_j = q j / beta for j=0,...,beta. First suppose 0 < q < 1 and put x = 1/q > 1. Let L_j be the Lagrange basis polynomial on the normalized grid t_j = j/beta, j=0,...,beta: L_j(t) = product_{m != j} (t - m/beta)/(j/beta - m/beta). For any real polynomial r of degree at most beta, set R(t)=r(qt). Lagrange interpolation gives R(x)=sum_{j=0}^beta L_j(x) R(j/beta), and R(0)=r(0). Hence r(1)-r(0)=sum_{j=0}^beta (L_j(1/q)-1_{j=0}) r(qj/beta). Define w_j=L_j(1/q)-1_{j=0}. Testing the last identity on r(u)=u^ell shows sum_j w_j p_j^0=0 and sum_j w_j p_j^ell=1 for ell=1,...,beta, so w belongs to W_beta(p^eq(beta,q)) by def:unbiased-weight-set. Put y=beta/q. Since q<1, y>beta. For each j, |L_j(1/q)| = product_{m != j} |y-m|/|j-m| <= y^beta/(j!(beta-j)!). Therefore sum_j |L_j(1/q)| <= y^beta sum_j 1/(j!(beta-j)!) = y^beta 2^beta/beta! <= 2 y^beta for beta>=1. Since y^beta >= 1, sum_j |w_j| <= sum_j |L_j(1/q)| + 1 <= 3 (beta/q)^beta. By def:amplification-criterion, A_beta(p^eq(beta,q)) <= (sum_j |w_j|)^2 <= 9 (beta/q)^(2 beta). At q=1, take endpoint weights w_0=-1, w_beta=1, and w_j=0 for 1<=j<=beta-1. The constant moment is -1+1=0, and for every ell=1,...,beta the moment is -0^ell+1^ell=1; hence w belongs to W_beta(p^eq(beta,1)). Thus A_beta(p^eq(beta,1)) <= (|w_0|+|w_beta|)^2 = 4 <= 9 beta^(2 beta) = 9 (beta/1)^(2 beta). Combining the cases proves the proposition with C_eq=9.",
+      "status": "proved",
+      "justification": "The existing variance blow-up must be restated as a design benchmark before it can be improved.",
+      "gap": "CortezRodriguezEichhornYu2024 controls fixed-grid interpolation variance in the low-budget regime, but does not phrase that control as the A_beta benchmark for a schedule optimization problem and does not claim a matching lower bound.",
+      "consumer": "This proposition turns the published interpolation penalty into the comparator baseline for any optimal-grid theorem."
+    },
+    {
+      "id": "prop:no-extrapolation-boundary",
+      "kind": "proposition",
+      "statement": "At the full-budget boundary q = 1, the equal-spacing schedule p^eq(beta,1) admits the endpoint rule w_0 = -1, w_beta = 1, and w_j = 0 for j = 1, ..., beta - 1; hence w belongs to W_beta(p^eq(beta,1)) and A_beta(p^eq(beta,1)) <= 4.",
+      "depends_on": [
+        "def:unbiased-weight-set",
+        "def:amplification-criterion"
+      ],
+      "proof_tex": "Proof. Work at the full-budget boundary q=1 and take the equal-spacing schedule p^{eq}(\\beta,1)=(0,1/\\beta,2/\\beta,\\ldots,1). Thus p^{eq}_0=0 and p^{eq}_\\beta=1. Define w\\in\\mathbb R^{\\beta+1} by w_0=-1, w_\\beta=1, and w_j=0 for 1\\le j\\le \\beta-1; if \\beta=1 the interior index set is empty.\n\nWe verify the defining moment equations of W_\\beta(p^{eq}(\\beta,1)). For the constant monomial, p_j^0=1 for every j in the notation of def:unbiased-weight-set, so\n\\[\n\\sum_{j=0}^{\\beta} w_j (p^{eq}_j)^0\n=\\sum_{j=0}^{\\beta} w_j\n=-1+1=0.\n\\]\nFor any integer \\ell with 1\\le \\ell\\le \\beta, all interior weights vanish, while (p^{eq}_0)^\\ell=0^\\ell=0 and (p^{eq}_\\beta)^\\ell=1^\\ell=1. Hence\n\\[\n\\sum_{j=0}^{\\beta} w_j (p^{eq}_j)^\\ell\n= - (p^{eq}_0)^\\ell + (p^{eq}_\\beta)^\\ell\n= -0+1=1.\n\\]\nThese are exactly the equations in def:unbiased-weight-set, so w\\in W_\\beta(p^{eq}(\\beta,1)).\n\nBy def:amplification-criterion,\n\\[\nA_\\beta(p^{eq}(\\beta,1))\n= \\inf_{v\\in W_\\beta(p^{eq}(\\beta,1))}\\Bigl(\\sum_{j=0}^{\\beta}|v_j|\\Bigr)^2.\n\\]\nSince the displayed endpoint vector w is feasible, the infimum is at most its value. Its total variation norm is\n\\[\n\\sum_{j=0}^{\\beta}|w_j|=|-1|+|1|=2,\n\\]\nso\n\\[\nA_\\beta(p^{eq}(\\beta,1))\\le 2^2=4.\n\\]\nThis proves both the membership claim and the stated no-extrapolation boundary bound.",
+      "status": "proved",
+      "justification": "The low-budget theorem needs an explicit no-extrapolation boundary so it cannot be misread as a q-uniform impossibility claim.",
+      "gap": "The rollout papers emphasize low-budget interpolation instability and do not record the algebraic full-budget boundary that prevents a beta-uniform lower bound from extending to q = 1.",
+      "consumer": "This proposition marks the limit where node optimization becomes trivial and clarifies the scope of the low-budget minimax theorem."
+    },
+    {
+      "id": "thm:chebyshev-minimax",
+      "kind": "theorem",
+      "statement": "Fix c > 1 and q_max in (0,1), and define the pointwise Chebyshev base rho(q)=(1+sqrt(1-q))^2. There exist positive constants C_-(q_max) and C_+(c,q_max) such that, for every beta>=1, every integer k >= c beta, and every q in (0,q_max], every schedule p in S_{k,q} satisfies A_beta(p) >= C_-(q_max) (rho(q)/q)^(2 beta), while the shifted Chebyshev-Lobatto schedule satisfies A_beta(p^Ch(k,q)) <= C_+(c,q_max) (rho(q)/q)^(2 beta). Hence M_{beta,k,q} has pointwise low-budget exponential base rho(q)/q; as q downarrow 0 this is 4/q, the intrinsic exponent is 2 beta, and the equal-spacing beta/q factor is not minimax in beta once the rollout uses more than beta+1 nodes.",
+      "depends_on": [
+        "ass:low-budget-cap",
+        "prop:equal-spacing-benchmark",
+        "def:chebyshev-schedule",
+        "def:amplification-criterion",
+        "def:budgeted-schedule-class",
+        "def:unbiased-weight-set",
+        "lem:unbiased-weight-set-nonempty",
+        "lem:amplification-dual-norm",
+        "lem:continuous-chebyshev-endpoint-bound",
+        "lem:chebyshev-schedule-admissible",
+        "lem:oversampled-chebyshev-lobatto-norming",
+        "thm:tv-envelope-design"
+      ],
+      "proof_tex": "Fix c>1, q_max in (0,1), beta>=1, an integer k>=c beta, and q in (0,q_max]. Since k>beta and k is an integer, k>=beta+1. For any p in S_{k,q}, the nodes p_0,...,p_k are distinct and k>=beta, so lem:unbiased-weight-set-nonempty gives W_beta(p) nonempty and lem:amplification-dual-norm applies. Define x_q=2/q-1 and lambda(q)=x_q+sqrt(x_q^2-1). A direct calculation gives q lambda(q)=2-q+2 sqrt(1-q)=(1+sqrt(1-q))^2=rho(q), hence lambda(q)=rho(q)/q. For the lower bound, fix any p in S_{k,q}. Let T_beta be the Chebyshev polynomial and set r_q(u)=T_beta(2u/q-1). This polynomial has degree beta and satisfies |r_q(u)|<=1 on [0,q], so max_j |r_q(p_j)|<=1. By lem:amplification-dual-norm, A_beta(p)^(1/2) >= |r_q(1)-r_q(0)| = |T_beta(x_q)-T_beta(-1)|. The lower part of lem:continuous-chebyshev-endpoint-bound yields |T_beta(x_q)-T_beta(-1)| >= T_beta(x_q)-1 >= c_0(q_max) lambda(q)^beta uniformly for q in (0,q_max]. Therefore A_beta(p) >= c_0(q_max)^2 lambda(q)^(2 beta) = C_-(q_max) (rho(q)/q)^(2 beta), with C_-(q_max)=c_0(q_max)^2. This holds for every schedule p in S_{k,q}. For the upper bound, lem:chebyshev-schedule-admissible gives p^Ch(k,q) in S_{k,q}. Let r be any real polynomial of degree at most beta such that max_{0<=j<=k} |r(p_j^Ch(k,q))| <= 1. Set R(x)=r(q(1+x)/2). Then R has degree at most beta, and because 2 p_j^Ch(k,q)/q - 1 = -cos(pi j/k), max_{0<=j<=k} |R(-cos(pi j/k))| <= 1. By lem:oversampled-chebyshev-lobatto-norming, sup_{x in [-1,1]} |R(x)| <= K(c). Applying lem:continuous-chebyshev-endpoint-bound to R/K(c) gives |r(1)-r(0)| = |R(x_q)-R(-1)| <= K(c) C_0(q_max) lambda(q)^beta. Taking the supremum over all such r and using lem:amplification-dual-norm again gives A_beta(p^Ch(k,q))^(1/2) <= K(c) C_0(q_max) lambda(q)^beta. Hence A_beta(p^Ch(k,q)) <= C_+(c,q_max) (rho(q)/q)^(2 beta) with C_+(c,q_max)=K(c)^2 C_0(q_max)^2. Since the lower bound holds for every p in S_{k,q} and p^Ch(k,q) is admissible, M_{beta,k,q}=inf_{p in S_{k,q}} A_beta(p) is trapped between positive constant multiples of (rho(q)/q)^(2 beta). Constants independent of beta do not affect the pointwise exponential base, so the base is rho(q)/q. As q downarrow 0, rho(q)=(1+sqrt(1-q))^2 tends to 4, so rho(q)/q is asymptotic to 4/q. The equal-spacing benchmark prop:equal-spacing-benchmark exhibits the beta-dependent factor beta/q, whereas the matched upper and lower bounds here identify the beta-independent pointwise minimax base rho(q)/q whenever k>=c beta with c>1. Thus the intrinsic exponent is 2 beta, while the equal-spacing beta/q factor is not the minimax base once the rollout uses more than beta+1 measurement nodes. This theorem is an approximation-theoretic minimax statement about A_beta and M_{beta,k,q}; thm:tv-envelope-design is used separately to translate this amplification minimax into the rollout TV-envelope variance statement. The closest mathematical comparators are fixed-information results: Rivlin1974 supplies the Chebyshev exterior-point extremal inequality, EhlichZeller1964 supplies the Chebyshev-Lobatto mesh norming inequality, and MicchelliRivlin1977 studies optimal recovery from prescribed information. They do not optimize the treated-fraction sampling set p in S_{k,q}, do not impose W_beta(p)-unbiasedness for the causal total treatment effect, and do not target the stochastic total-variation design-variance criterion.",
+      "status": "proved",
+      "justification": "This is the kernel: the treated-fraction grid itself becomes the experimental design object, and the theorem says exactly what extra measurements can buy in the sharp envelope problem.",
+      "gap": "Closest theorem-level comparators, precisely: (i) the Chebyshev extremal inequality (Rivlin1974, Thm on |P(x)|<=T_n(x) for |x|>1) bounds a FIXED endpoint functional on the FULL interval [-1,1] as the sampling set; (ii) the Ehlich-Zeller mesh inequality (EhlichZeller1964) norms polynomials from a GIVEN Chebyshev-Lobatto grid; (iii) the Micchelli-Rivlin optimal-recovery program (MicchelliRivlin1977) recovers a linear functional from EXACT function values on a fixed information set. NONE of these optimizes the SAMPLING SET (design) subject to a budget, nor targets a CAUSAL estimand: they take the node set as given and the data as exact evaluations. The non-subsumed object here is the finite-population rollout DESIGN minimax inf_{p in S_{k,q}} A_beta(p) over BUDGETED schedules, where A_beta is the worst-case l1 amplification of a W_beta(p)-unbiased estimator of the causal TTE under a total-variation DESIGN-VARIANCE envelope (not exact evaluations), delivering the beta-independent optimal-schedule base rho(q)/q vs the equal-grid beta/q. The design-selection layer, the budget constraint S_{k,q}, the TTE-unbiased finite-population weight class W_beta(p), and the stochastic TV variance criterion are all absent from (i)-(iii).",
+      "consumer": "The result gives a concrete low-budget rollout schedule for estimating the total treatment effect without network knowledge."
+    },
+    {
+      "id": "oeq:exact-nested-minimax",
+      "kind": "openendedquestion",
+      "statement": "Under ass:low-budget-cap, with beta>=1, k=ceil(c beta), q in (0,q_max], and the admissible Chebyshev schedule p^Ch(k,q) in S_{k,q} (lem:chebyshev-schedule-admissible), does the shifted Chebyshev-Lobatto schedule also solve the exact finite-population nested-rollout minimax problem R_exact(beta,k,q), where Gamma_P(p) is the true covariance matrix of the monotone Bernoulli rollout rather than the total-variation variance envelope? The Chebyshev schedule is rate-feasible for R_exact by thm:chebyshev-minimax (the Chebyshev-schedule amplification upper bound) together with lem:exact-risk-envelope-upper (the envelope-to-exact-risk bridge); exact optimality is open.",
+      "depends_on": [
+        "ass:low-budget-cap",
+        "def:exact-nested-risk",
+        "lem:chebyshev-schedule-admissible",
+        "lem:exact-risk-envelope-upper",
+        "thm:chebyshev-minimax",
+        "lem:exact-chebyshev-rate-feasible"
+      ],
+      "proof_tex": "lem:exact-chebyshev-rate-feasible proves that for beta>=1, k=ceil(c beta), q in (0,q_max], and rho(q)=(1+sqrt(1-q))^2, inf_{w in W_beta(p^Ch(k,q))} sup_{P in P_beta} w' Gamma_P(p^Ch(k,q)) w <= (sigma_0^2/n) C_+(c,q_max) (rho(q)/q)^(2 beta), and hence R_exact(beta,k,q) <= (sigma_0^2/n) C_+(c,q_max) (rho(q)/q)^(2 beta). Thus Chebyshev-Lobatto is exact-risk rate-feasible at the TV-envelope minimax exponent and pointwise base; exact optimizer status remains open.",
+      "status": "to-prove",
+      "justification": "The design theorem is strongest if the same schedule is optimal for the realized rollout covariance, not only for the envelope that makes the geometry transparent.",
+      "gap": "CortezEichhornYu2022 and CortezRodriguezEichhornYu2024 analyze fixed rollout schedules and clustering, while Smith1918 and later c-optimal design papers do not contain a causal covariance object at all.",
+      "consumer": "A positive answer would turn the surrogate optimality rule into an exact deployment recommendation for finite-population rollout experiments."
+    },
+    {
+      "id": "lem:amplification-dual-norm",
+      "kind": "lemma",
+      "statement": "For a schedule p with distinct nodes and with W_beta(p) nonempty, inf_{w in W_beta(p)} sum_j |w_j| equals sup{|r(1)-r(0)| : r is a real polynomial of degree at most beta and max_j |r(p_j)|<=1}. Consequently A_beta(p) is the square of this dual norm.",
+      "depends_on": [
+        "def:unbiased-weight-set",
+        "def:amplification-criterion",
+        "def:budgeted-schedule-class"
+      ],
+      "proof_tex": "Proof. Identify a degree-beta polynomial r(u)=sum_{ell=0}^beta b_ell u^ell with its coefficient vector b. The linear map E sends b to the node values (r(p_0),...,r(p_k)); the endpoint contrast is L(b)=r(1)-r(0)=sum_{ell=1}^beta b_ell. A weight vector w represents L on all degree-beta polynomials exactly when E^T w is the coefficient vector of L, namely the moment equations defining W_beta(p). Thus inf_{w in W_beta(p)} sum_j |w_j| is the minimum l1 norm of a representing vector for L through E. The dual norm identity for finite-dimensional l1/l_infty duality gives this minimum as sup{L(b): ||Eb||_infty<=1}; replacing r by -r if needed gives the absolute-value form. Squaring the identity is exactly def:amplification-criterion.",
+      "status": "proved"
+    },
+    {
+      "id": "lem:chebyshev-exterior-extremal",
+      "kind": "lemma",
+      "statement": "Assume beta>=1. For every real polynomial P of degree at most beta with sup_{x in [-1,1]} |P(x)|<=1 and every x_0>1, one has |P(x_0)| <= T_beta(x_0).",
+      "depends_on": [],
+      "proof_tex": "Proof. This is the classical exterior-point Chebyshev extremal inequality; for completeness we record the standard alternation proof (see also Rivlin1974, Ch. 1). Suppose for contradiction that |P(x_0)|>T_beta(x_0). Choose s in {-1,1} so that s P(x_0)>T_beta(x_0), set lambda=s P(x_0)/T_beta(x_0)>1, and define H(x)=s P(x)-lambda T_beta(x). Let t_j=cos(j pi/beta) for j=0,...,beta. Since T_beta(t_j)=(-1)^j and |P(t_j)|<=1, one has H(t_j)<=1-lambda<0 when j is even and H(t_j)>=-1+lambda>0 when j is odd. Therefore H changes sign across each interval (t_{j+1},t_j), so the intermediate value theorem gives beta distinct zeros of H in (-1,1). Because H(x_0)=0 as well, H has at least beta+1 distinct zeros although deg(H)<=beta, which is impossible unless H is the zero polynomial. This contradiction proves |P(x_0)|<=T_beta(x_0).",
+      "status": "proved"
+    },
+    {
+      "id": "lem:ehlich-zeller-chebyshev-lobatto-mesh",
+      "kind": "lemma",
+      "statement": "If R is a real polynomial of degree at most beta and 0 <= beta < k, then sup_{x in [-1,1]} |R(x)| <= sec(pi beta/(2k)) max_{0<=j<=k} |R(-cos(pi j/k))|.",
+      "depends_on": [],
+      "proof_tex": "Proof. This is the Chebyshev-Lobatto/extrema-grid form of the mesh inequality of Ehlich and Zeller (1964, Schwankung von Polynomen zwischen Gitterpunkten, Math. Z. 86, 41-44).",
+      "status": "proved"
+    },
+    {
+      "id": "lem:oversampled-chebyshev-lobatto-norming",
+      "kind": "lemma",
+      "statement": "For each c>1 there is a finite constant K(c) such that, for every beta>=1, every integer k>=c beta, and every real polynomial R of degree at most beta, sup_{x in [-1,1]} |R(x)| <= K(c) max_{0<=j<=k} |R(-cos(pi j/k))|.",
+      "depends_on": [
+        "lem:ehlich-zeller-chebyshev-lobatto-mesh"
+      ],
+      "proof_tex": "Proof. Fix c>1, beta>=1, an integer k>=c beta, and a real polynomial R of degree at most beta. Since c>1 and beta>=1, we have beta<k and may apply lem:ehlich-zeller-chebyshev-lobatto-mesh to obtain\n\\[\n\\sup_{x\\in[-1,1]} |R(x)| \\le \\sec\\!\\left(\\frac{\\pi\\beta}{2k}\\right) \\max_{0\\le j\\le k} |R(-\\cos(\\pi j/k))|.\n\\]\nBecause k>=c beta, one has beta/k<=1/c, hence\n\\[\n\\sec\\!\\left(\\frac{\\pi\\beta}{2k}\\right) \\le \\sec\\!\\left(\\frac{\\pi}{2c}\\right).\n\\]\nTherefore the lemma holds with the finite constant K(c)=sec(pi/(2c)).",
+      "status": "proved"
+    },
+    {
+      "id": "lem:continuous-chebyshev-endpoint-bound",
+      "kind": "lemma",
+      "statement": "Let q in (0,1), x_q=2/q-1, lambda(q)=x_q+sqrt(x_q^2-1), and rho(q)=q lambda(q)=(1+sqrt(1-q))^2. For every degree-beta polynomial R with sup_{x in [-1,1]}|R(x)|<=1, |R(x_q)-R(-1)| <= C(q_max) lambda(q)^beta uniformly over q in (0,q_max]; and the Chebyshev polynomial T_beta gives the matching lower order T_beta(x_q)-1 >= c(q_max) lambda(q)^beta.",
+      "depends_on": [
+        "lem:chebyshev-exterior-extremal"
+      ],
+      "proof_tex": "Proof. Fix q in (0,q_max] and write x_q=2/q-1>1. By lem:chebyshev-exterior-extremal, every degree-beta polynomial R with sup_{x in [-1,1]}|R(x)|<=1 satisfies |R(x_q)|<=T_beta(x_q). Therefore\n\\[\n|R(x_q)-R(-1)| \\le |R(x_q)|+|R(-1)| \\le T_\\beta(x_q)+1.\n\\]\nWrite x_q=\\cosh a with a>0. Then lambda(q)=e^a and\n\\[\nT_\\beta(x_q)=\\cosh(\\beta a)=\\frac{\\lambda(q)^\\beta+\\lambda(q)^{-\\beta}}{2}.\n\\]\nSince q<=q_max<1, one has lambda(q)>=lambda(q_max)>1, so\n\\[\nT_\\beta(x_q)+1 \\le \\frac{1+\\lambda(q_max)^{-1}}{2}\\,\\lambda(q)^\\beta + \\lambda(q)^\\beta\n\\]\nfor every beta>=1. Thus the upper bound holds with any constant C(q_max) at least (3+lambda(q_max)^{-1})/2.\n\nFor the matching lower order, take R=T_beta itself. Then |T_beta(x)|<=1 on [-1,1], so\n\\[\n|T_\\beta(x_q)-T_\\beta(-1)| \\ge T_\\beta(x_q)-1.\n\\]\nUsing the same expression for T_beta(x_q),\n\\[\nT_\\beta(x_q)-1 = \\frac{\\lambda(q)^\\beta+\\lambda(q)^{-\\beta}}{2}-1 = \\frac{1}{2}\\lambda(q)^\\beta\\bigl(1-\\lambda(q)^{-\\beta}\\bigr)^2.\n\\]\nBecause lambda(q)>=lambda(q_max)>1 and beta>=1, this implies\n\\[\nT_\\beta(x_q)-1 \\ge \\frac{1}{2}\\bigl(1-\\lambda(q_max)^{-1}\\bigr)^2 \\lambda(q)^\\beta.\n\\]\nHence the lower bound holds with c(q_max)=(1/2)(1-lambda(q_max)^(-1))^2.",
+      "status": "proved"
+    },
+    {
+      "id": "lem:chebyshev-schedule-admissible",
+      "kind": "lemma",
+      "statement": "For every integer k>=1 and q in (0,1], the shifted Chebyshev-Lobatto schedule p^Ch(k,q) belongs to S_{k,q}.",
+      "depends_on": [
+        "def:chebyshev-schedule",
+        "def:budgeted-schedule-class"
+      ],
+      "proof_tex": "Proof. By def:chebyshev-schedule, p_j^Ch(k,q)=q(1-cos(pi j/k))/2. At j=0 this is q(1-1)/2=0, and at j=k this is q(1-(-1))/2=q. For 0<=j<l<=k, pi j/k<pi l/k and cosine is strictly decreasing on [0,pi], hence 1-cos(pi j/k)<1-cos(pi l/k). Multiplication by q/2>0 preserves the strict inequality. Therefore 0=p_0^Ch<p_1^Ch<...<p_k^Ch=q, which is exactly membership in S_{k,q}.",
+      "status": "proved"
+    },
+    {
+      "id": "lem:unbiased-weight-set-nonempty",
+      "kind": "lemma",
+      "statement": "Assume beta>=1 and k>=beta. For every schedule p in S_{k,q}, the unbiased linear weight set W_beta(p) is nonempty.",
+      "depends_on": [
+        "def:unbiased-weight-set",
+        "def:budgeted-schedule-class"
+      ],
+      "proof_tex": "Proof. Fix beta >= 1, k >= beta, and p in S_{k,q}. By def:budgeted-schedule-class, p_0=0 and 0<p_1<...<p_k=q, so the k+1 nodes p_0,...,p_k are distinct. Let B be the (beta+1) by (k+1) moment matrix B_{ell j}=p_j^ell for ell=0,...,beta and j=0,...,k, with the convention p_j^0=1. We show that B has full row rank. If alpha=(alpha_0,...,alpha_beta) satisfies alpha^T B=0, then the polynomial h(u)=sum_{ell=0}^beta alpha_ell u^ell obeys h(p_j)=0 for all j=0,...,k. Since k+1 >= beta+1 and the p_j are distinct, h has at least beta+1 distinct zeros. A nonzero real polynomial of degree at most beta cannot have beta+1 distinct zeros, hence h is the zero polynomial and alpha=0. Thus the rows of B are linearly independent, so B has row rank beta+1 and the linear map w -> Bw from R^{k+1} onto R^{beta+1} is surjective. Taking the target moment vector b=(0,1,1,...,1) in R^{beta+1}, there exists w with Bw=b. By def:unbiased-weight-set this w belongs to W_beta(p). Therefore W_beta(p) is nonempty for every p in S_{k,q}.",
+      "status": "proved"
+    },
+    {
+      "id": "lem:variance-envelope-sharpness",
+      "kind": "lemma",
+      "statement": "If X_0,...,X_k are square-integrable rollout-round statistics with Var_pi(X_j)<=sigma_0^2/n for every j, then Var_pi(sum_j w_j X_j) <= sigma_0^2 n^(-1) (sum_j |w_j|)^2 for every real w. Moreover this bound is sharp over covariance matrices whose diagonal entries are bounded by sigma_0^2/n.",
+      "depends_on": [
+        "ass:round-mean-variance-envelope"
+      ],
+      "proof_tex": "Proof. Let X_0,...,X_k be square-integrable under the rollout randomization pi and suppose Var_pi(X_j) <= sigma_0^2/n for every j. For any real weights w, write X_j^c=X_j-E_pi X_j. The L2(pi) triangle inequality gives ||sum_{j=0}^k w_j X_j^c||_2 <= sum_{j=0}^k |w_j| ||X_j^c||_2. Squaring and using ||X_j^c||_2^2=Var_pi(X_j) <= sigma_0^2/n yields Var_pi(sum_{j=0}^k w_j X_j) <= (sigma_0^2/n)(sum_{j=0}^k |w_j|)^2. For sharpness of the covariance envelope, consider the class of positive semidefinite covariance matrices Gamma with Gamma_{jj} <= sigma_0^2/n. The same argument gives w' Gamma w <= (sigma_0^2/n)(sum_j |w_j|)^2. Conversely, with s_j=sign(w_j), taking Gamma=(sigma_0^2/n) ss' gives a positive semidefinite rank-one covariance matrix with diagonal sigma_0^2/n and w' Gamma w=(sigma_0^2/n)(sum_j |w_j|)^2. Thus the total-variation round-variance envelope assigns exactly this worst-case variance to the weight vector w.",
+      "status": "proved"
+    },
+    {
+      "id": "lem:exact-risk-envelope-upper",
+      "kind": "lemma",
+      "statement": "Assume beta>=1 and k>=beta. For every q in (0,1] and every p in S_{k,q}, inf_{w in W_beta(p)} sup_{P in P_beta} w' Gamma_P(p) w <= (sigma_0^2/n) A_beta(p). Consequently R_exact(beta,k,q) <= (sigma_0^2/n) M_{beta,k,q}.",
+      "depends_on": [
+        "ass:round-mean-variance-envelope",
+        "def:rollout-law-class",
+        "def:exact-nested-risk",
+        "def:amplification-criterion",
+        "def:budgeted-schedule-class",
+        "def:unbiased-weight-set",
+        "lem:unbiased-weight-set-nonempty"
+      ],
+      "proof_tex": "Fix beta>=1, k>=beta, q in (0,1], and p in S_{k,q}. By lem:unbiased-weight-set-nonempty, W_beta(p) is nonempty. Fix w in W_beta(p) and P in P_beta. By def:rollout-law-class, P satisfies ass:round-mean-variance-envelope. Let X_j=bar_Y_j-E_pi bar_Y_j. Since Gamma_P(p) is the exact covariance matrix of (bar_Y_0,...,bar_Y_k), w' Gamma_P(p) w = Var_pi(sum_{j=0}^k w_j bar_Y_j) = ||sum_{j=0}^k w_j X_j||_2^2. The triangle inequality in L_2(pi) gives ||sum_j w_j X_j||_2 <= sum_j |w_j| ||X_j||_2 = sum_j |w_j| Var_pi(bar_Y_j)^(1/2). By ass:round-mean-variance-envelope, each Var_pi(bar_Y_j) <= sigma_0^2/n, hence w' Gamma_P(p) w <= (sigma_0^2/n)(sum_j |w_j|)^2. This bound is uniform in P in P_beta. Taking the supremum over P in P_beta, then the infimum over w in W_beta(p), gives inf_{w in W_beta(p)} sup_{P in P_beta} w' Gamma_P(p) w <= (sigma_0^2/n) inf_{w in W_beta(p)}(sum_j |w_j|)^2 = (sigma_0^2/n) A_beta(p). Taking the infimum over p in S_{k,q} and using def:exact-nested-risk and def:amplification-criterion gives R_exact(beta,k,q) <= (sigma_0^2/n) M_{beta,k,q}.",
+      "status": "proved"
+    },
+    {
+      "id": "lem:exact-chebyshev-rate-feasible",
+      "kind": "lemma",
+      "statement": "Fix c>1, beta>=1, k=ceil(c beta), q in (0,q_max], and rho(q)=(1+sqrt(1-q))^2. The admissible shifted Chebyshev-Lobatto schedule satisfies inf_{w in W_beta(p^Ch(k,q))} sup_{P in P_beta} w' Gamma_P(p^Ch(k,q)) w <= (sigma_0^2/n) C_+(c,q_max) (rho(q)/q)^(2 beta). Consequently R_exact(beta,k,q) <= (sigma_0^2/n) C_+(c,q_max) (rho(q)/q)^(2 beta).",
+      "depends_on": [
+        "ass:low-budget-cap",
+        "def:exact-nested-risk",
+        "lem:chebyshev-schedule-admissible",
+        "lem:exact-risk-envelope-upper",
+        "thm:chebyshev-minimax"
+      ],
+      "proof_tex": "Fix c>1, beta>=1, k=ceil(c beta), and q in (0,q_max]. Since c>1, k>=beta+1 and hence k>=beta. Since q<=q_max<1, q in (0,1]. By lem:chebyshev-schedule-admissible, p^Ch(k,q) belongs to S_{k,q}. Applying lem:exact-risk-envelope-upper to this schedule gives inf_{w in W_beta(p^Ch(k,q))} sup_{P in P_beta} w' Gamma_P(p^Ch(k,q)) w <= (sigma_0^2/n) A_beta(p^Ch(k,q)). The upper half of thm:chebyshev-minimax gives A_beta(p^Ch(k,q)) <= C_+(c,q_max) (rho(q)/q)^(2 beta). Combining the displays proves the fixed-Chebyshev exact-risk upper bound. Finally, by def:exact-nested-risk, R_exact(beta,k,q) is the infimum of the same criterion over all p in S_{k,q}; since p^Ch(k,q) is admissible, R_exact(beta,k,q) is at most the displayed Chebyshev value.",
+      "status": "proved"
+    }
+  ],
+  "sampling_model": {
+    "design": "Monotone Bernoulli rollout with treated-fraction schedule p = (p_0, ..., p_k), p_0 = 0, p_k = q, one contemporaneous population-mean measurement after each rollout step, and a low-budget cap q <= q_max < 1 for the benchmark and minimax theorem.",
+    "units": "Finite population U_n = {1, ..., n} with fixed potential outcomes Y_i(z).",
+    "treatment": "At measurement j the assignment vector Z_j has marginal treatment fraction p_j and remains in the static no-carryover beta-order rollout model.",
+    "overlap": "The design space is the schedule class S_{k,q} with k = ceil(c beta); the main design theorem studies q in (0,q_max].",
+    "nuisance_estimation": "None. Identification is design-based and the optimization object is the rollout node set."
+  },
+  "estimand_functional": "tau_P = m_P(1) - m_P(0). The linear representation tau_P = sum_{j=0}^k w_j m_P(p_j) for w in W_beta(p) is derived later from prop:rollout-polynomial-identity and thm:tv-envelope-design; it is not asserted at the estimand-defining layer.",
+  "target_estimand": "tau_P = m_P(1) - m_P(0)",
+  "bibliography": [
+    {
+      "key": "CortezEichhornYu2022",
+      "citation": "Cortez, Mayleen, Matthew Eichhorn, and Christina Lee Yu (2022). Staggered Rollout Designs Enable Causal Inference Under Interference Without Network Knowledge. NeurIPS 2022. arXiv:2205.14552."
+    },
+    {
+      "key": "CortezRodriguezEichhornYu2024",
+      "citation": "Cortez-Rodriguez, Mayleen, Matthew Eichhorn, and Christina Lee Yu (2025). Analysis of Two-Stage Rollout Designs with Clustering for Causal Inference under Network Interference. AISTATS 2025. arXiv:2405.05119."
+    },
+    {
+      "key": "EichhornKhanUganderYu2024",
+      "citation": "Eichhorn, Matthew, Samir Khan, Johan Ugander, and Christina Lee Yu (2024). Low-order Outcomes and Clustered Designs: Combining Design and Analysis for Causal Inference under Network Interference. arXiv:2405.07979."
+    },
+    {
+      "key": "Smith1918",
+      "citation": "Smith, Kirstine (1918). On the Standard Deviations of Adjusted and Interpolated Values of an Observed Polynomial Function and Its Constants and the Guidance They Give Towards a Proper Choice of the Distribution of Observations. Biometrika 12(1-2), 1-85."
+    },
+    {
+      "key": "Elfving1952",
+      "citation": "Elfving, Gustav (1952). Optimum Allocation in Linear Regression Theory. Annals of Mathematical Statistics 23(2), 255-262."
+    },
+    {
+      "key": "KieferWolfowitz1959",
+      "citation": "Kiefer, Jack, and Jacob Wolfowitz (1959). Optimum Designs in Regression Problems. Annals of Mathematical Statistics 30(2), 271-294."
+    },
+    {
+      "key": "Studden1968",
+      "citation": "Studden, William J. (1968). Optimal Designs on Tchebycheff Systems. Annals of Mathematical Statistics."
+    },
+    {
+      "key": "CaiPougetAbadieAiroldi2022",
+      "citation": "Cai, Chencheng, Jean Pouget-Abadie, and Edoardo M. Airoldi (2022). Optimizing Randomized and Deterministic Saturation Designs under Interference. arXiv:2203.09682."
+    },
+    {
+      "key": "Leung2022ANI",
+      "citation": "Leung, Michael P. (2022). Causal Inference Under Approximate Neighborhood Interference. Review of Economics and Statistics 104(2), 267-287. arXiv:1911.07085."
+    },
+    {
+      "key": "BelloniFangVolfovsky2022",
+      "citation": "Belloni, Alexandre, Fei Fang, and Alexander Volfovsky (2022). Neighborhood Adaptive Estimators for Causal Inference under Network Interference. arXiv:2212.03683."
+    },
+    {
+      "key": "BoyarskyNamkoongPougetAbadie2023",
+      "citation": "Boyarsky, Ariel, Hongseok Namkoong, and Jean Pouget-Abadie (2023). Modeling Interference Using Experiment Roll-out. EC 2023 / arXiv:2305.10728."
+    },
+    {
+      "key": "BojinovShephard2019",
+      "citation": "Bojinov, Iavor, and Neil Shephard (2019). Time Series Experiments and Causal Estimands: Exact Randomization Tests and Trading. Journal of the American Statistical Association 114(528), 1665-1682."
+    },
+    {
+      "key": "BhadraSchweinberger2025",
+      "citation": "Bhadra, Subhankar, and Michael Schweinberger (2025). Causal Inference Under Network Interference. arXiv:2508.06808."
+    },
+    {
+      "key": "UganderKarrerBackstromKleinberg2013",
+      "citation": "Ugander, Johan, Brian Karrer, Lars Backstrom, and Jon Kleinberg (2013). Graph Cluster Randomization: Network Exposure to Multiple Universes. KDD 2013."
+    },
+    {
+      "key": "EcklesKarrerUgander2017",
+      "citation": "Eckles, Dean, Brian Karrer, and Johan Ugander (2017). Design and Analysis of Experiments in Networks: Reducing Bias from Interference. Journal of Causal Inference 5(1)."
+    },
+    {
+      "key": "Rivlin1974",
+      "citation": "Rivlin, Theodore J. (1974). The Chebyshev Polynomials. Wiley-Interscience, New York."
+    },
+    {
+      "key": "MicchelliRivlin1977",
+      "citation": "Micchelli, Charles A., and Theodore J. Rivlin (1977). A survey of optimal recovery. In Optimal Estimation in Approximation Theory, eds. C. A. Micchelli and T. J. Rivlin, 1-54. Plenum Press, New York."
+    },
+    {
+      "key": "SchoenbergWhitney1953",
+      "citation": "Schoenberg, I. J., and A. Whitney (1953). On Polya frequency functions. III. The positivity of translation determinants with an application to the interpolation problem by spline curves. Transactions of the AMS 74, 246-259."
+    },
+    {
+      "key": "EhlichZeller1964",
+      "citation": "Ehlich, H., and Zeller, K. (1964). Schwankung von Polynomen zwischen Gitterpunkten. Mathematische Zeitschrift 86, 41-44."
+    }
+  ],
+  "tldr": "Under the beta-order rollout model of Cortez, Eichhorn, and Yu, the expected population outcome m_P(p) is a degree-beta polynomial in the treatment fraction p, so estimating the total treatment effect tau_P = m_P(1) - m_P(0) from a rollout with budget cap q <= q_max < 1 is an extrapolation problem. The paper makes the treated-fraction grid itself the design variable. It characterizes the full class of linear-unbiased rollout estimators, proves the sharp total-variation variance bridge Var_pi(hat_tau_{w,p}) <= (sigma_0^2/n)(sum_j |w_j|)^2 and the fixed-schedule optimum (sigma_0^2/n)A_beta(p), proves that the usual equally spaced beta+1 grid obeys the low-budget upper bound of order (beta/q)^(2 beta), records the no-extrapolation boundary at q = 1, and proves a matched minimax theorem over S_{k,q}: with k = ceil(c beta), the shifted Chebyshev-Lobatto schedule attains the pointwise low-budget base rho(q)/q, where rho(q) = (1 + sqrt(1-q))^2, matching the lower bound for M_{beta,k,q} up to constants. The honest open residual is whether the same Chebyshev grid is exactly minimax for the true nested-rollout covariance, not only for the sharp total-variation variance envelope that makes the design problem analytically tractable.",
+  "project_justification": {
+    "gap": "The rollout literature identifies TTE through a beta-degree treatment-fraction polynomial but treats the measurement nodes as fixed. The main published variance pathology is therefore tied to a particular equally spaced grid in the low-budget regime rather than to the optimal design problem over feasible grids.",
+    "niche": "The missing niche is an experimentation theorem in which the rollout fractions themselves are the experimental design object, the estimator class is all linear-unbiased rollout estimators, and the consumer is a platform that already uses rollout designs but does not know where to measure.",
+    "fill": "The project fills that gap with a sharp total-variation envelope criterion for rollout-node placement, a characterization of all linear-unbiased weights W_beta(p), the variance bridge (sigma_0^2/n)A_beta(p), an equal-spacing low-budget upper benchmark, a no-extrapolation boundary proposition at q = 1, a proved Chebyshev-Lobatto matched-minimax theorem over S_{k,q} with pointwise base rho(q)/q = (1 + sqrt(1-q))^2/q, and an explicit open exact-covariance problem for the realized monotone rollout."
+  },
+  "related_work": "CortezEichhornYu2022 is the identification anchor: it proves that under beta-order interactions the rollout mean curve is polynomial and that TTE is estimable without observing the network, but its rollout nodes are fixed by construction. CortezRodriguezEichhornYu2024 is the closest rollout-design comparator: it keeps the beta+1 interpolation grid fixed, studies how clustering changes the effective budget q, and documents a low-budget interpolation penalty and the tension between cut-edge and balance objectives, while leaving node placement itself untouched. EichhornKhanUganderYu2024 is the nearest low-order general-design paper: it develops a pseudoinverse estimator and bias-variance bounds for low-order outcomes under arbitrary experimental designs, including clustered Bernoulli and complete randomization, but does not optimize a continuous rollout grid.\nSmith1918, Elfving1952, KieferWolfowitz1959, and Studden1968 are the classical c-optimal and Chebyshev-system ancestors. They explain why support-point geometry governs polynomial extrapolation, and they motivate Chebyshev nodes and optimal-design duality, but their objects are regression-function designs and information criteria rather than a finite-population rollout-unbiased estimator class for tau_P under the total-variation envelope A_beta(p). The non-subsumption is substantive: A_beta is an l1 noise-robust optimal-recovery criterion under an adversarial round-variance envelope, not the usual l2 Fisher-information c-optimality target.\nCaiPougetAbadieAiroldi2022 is relevant because it treats treatment fractions as design variables under interference, but its target is saturation-law optimization for difference-in-means rather than rollout extrapolation for TTE. Leung2022ANI and BelloniFangVolfovsky2022 matter because they show exact interference order is often unknown, clarifying that adaptivity is a natural next step once the non-adaptive rollout-node benchmark is solved. BoyarskyNamkoongPougetAbadie2023 uses rollout timing to learn interference models, which reinforces that rollout schedules carry information beyond logistics but does not study minimax node placement. \n\nClosest theorem-level mathematical comparator: the paper's extrapolation-stability engine is CLASSICAL optimal recovery — the Chebyshev/Remez endpoint-growth extremal inequality (Rivlin1974) and the Ehlich-Zeller Chebyshev-Lobatto norming inequality (EhlichZeller1964), with the Micchelli-Rivlin optimal-recovery program (MicchelliRivlin1977) the nearest theorem-level line. This paper claims NO new polynomial extremal theorem. The non-subsumed contribution is the causal finite-population rollout DESIGN object: choosing treated-fraction measurement nodes p in S_{k,q} so every beta-order rollout law admits a W_beta(p)-unbiased TTE estimator of minimum worst-case TV-envelope design variance (sigma_0^2/n)A_beta(p), and the matched minimax over S_{k,q} showing shifted Chebyshev-Lobatto rollout schedules attain the beta-INDEPENDENT base rho(q)/q whereas the published equal grid carries the beta/q benchmark. Classical optimal recovery supplies the endpoint geometry; the paper contributes the causal rollout reduction, the full linear-unbiased estimator class W_beta(p), the sharp l1 amplification criterion A_beta(p), and the design minimax.",
+  "honest_scope": "The DELIVERED contribution is the TV-envelope rollout node-placement DESIGN theorem over the beta-order rollout class P_beta in the low-budget regime q<=q_max<1: the linear-unbiased estimator class W_beta(p), the sharp l1 amplification criterion A_beta(p) with its TV variance bridge (sigma_0^2/n)A_beta(p), the equal-spacing benchmark, the q=1 no-extrapolation boundary, and the matched Chebyshev-Lobatto minimax with pointwise base rho(q)/q. The extrapolation-stability mathematics is classical optimal recovery (Chebyshev extremal + Ehlich-Zeller norming); the paper's novelty is the causal experimental-design object, not new approximation theory. The rollout polynomial identity (prop:rollout-polynomial-identity) is inherited setup from CortezEichhornYu2022, recalled only to reduce TTE to a polynomial endpoint functional. The delivered result is entirely over the TV-envelope class P_beta; there is NO Sobolev specialization. The open exact-covariance question (oeq:exact-nested-minimax) concerns the exact finite-population monotone-Bernoulli covariance Gamma_P over the SAME class P_beta (not a Sobolev subclass), where the Chebyshev schedule is proved rate-feasible but exact optimality is left open. When beta=1,k=1 the problem collapses to the two-point rollout with no interpolation explosion."
+}

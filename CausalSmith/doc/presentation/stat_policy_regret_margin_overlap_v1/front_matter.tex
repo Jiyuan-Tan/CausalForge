@@ -1,0 +1,56 @@
+\begin{abstract}
+This paper studies offline policy learning for deterministic treatment rules when overlap can deteriorate near either propensity boundary in the same region where the treatment contrast is small.  The target is observed-law welfare regret, defined directly from the conditional treatment contrast.  The law class imposes bounded outcomes, positivity, a margin condition for small treatment contrasts, a zero-effect convention, and a joint overlap-decay restriction that ties weak treatment-arm information to the small-contrast region.  Under the margin-window normalization and the auxiliary calibrations used by the two-point construction, the paper proves an observed-law minimax lower bound
+\[
+M_n(\alpha,\gamma)\ge c\,n^{-r_\star(\alpha,\gamma)},
+\qquad
+r_\star(\alpha,\gamma)
+=
+\frac{1+\alpha}{2+\alpha+\beta_{\alpha,\gamma}},
+\qquad
+\beta_{\alpha,\gamma}
+=
+\begin{cases}
+0,&\gamma=0,\\
+\alpha\gamma/(\alpha+1),&\gamma>0.
+\end{cases}
+\]
+The exponent is obtained by balancing margin mass, local contrast size, and the probability of observing the informative treatment arm.  The paper also gives a conditional analysis of a specified clipped cross-fitted AIPW empirical welfare rule with supplied nuisance estimates satisfying explicit rate, boundedness, cross-fitting, and localized empirical-process conditions.  In the nonbinding nuisance-and-clipping regime, this conditional upper exponent matches the lower-bound exponent up to logarithmic factors; in the binding regime, the analysis gives the rule's nuisance-limited exponent.
+\end{abstract}
+
+\section{Introduction}
+
+Policy learning in observational and logged data asks how well a data-dependent rule can approximate the treatment assignment that maximizes welfare.  The classical treatment-choice literature formulates this as a statistical decision problem under sampling uncertainty \citep{Manski2004,Manski2009,Stoye2009}, and empirical welfare maximization makes the connection to classification over structured policy classes explicit \citep{Kitagawa2018}.  Modern causal policy-learning procedures often use inverse-propensity and doubly robust scores, combined with sample splitting and flexible first-stage estimation, to estimate welfare criteria under overlap and nuisance-regularity conditions \citep{Athey2021,Chernozhukov2018,Chernozhukov2022}.
+
+This paper focuses on how the regret lower-bound calibration changes when overlap deteriorates in the same region where the treatment contrast is small.  The experiment is an offline observed-law policy-learning problem.  One observation is \(O=(X,A,Y)\), with propensity score \(e_P(x)=P(A=1\mid X=x)\), treatment-arm regressions \(\mu_a(x)=E_P[Y\mid A=a,X=x]\), and contrast \(\tau_P(x)=\mu_1(x)-\mu_0(x)\).  A deterministic policy \(\pi\) is evaluated by the contrast-weighted welfare and regret in \cref{obj:def:welfare-regret}.  At the observed-law level this defines the welfare problem directly; the usual potential-outcome identification conditions additionally supply its causal interpretation.
+
+The distinctive feature of the law class is a joint margin-overlap decay condition.  Let \(p_P(x)=\min\{e_P(x),1-e_P(x)\}\).  The class \(\mathcal P_{\alpha,\gamma}\) in \cref{obj:def:law-class} combines bounded outcomes, positivity, a margin condition for small nonzero contrasts, a zero-effect convention, the overlap-decay restriction, and the strict-overlap endpoint when \(\gamma=0\).  The condition permits weak overlap broadly while controlling the probability that proximity to either propensity boundary and small welfare-relevant contrasts occur together.  This is the region that matters for regret, because \cref{obj:thm:welfare-identity} writes regret as a weighted classification error with weight \(|\tau_P(X)|\).
+
+The main lower-bound result is an observed-law minimax lower bound over \(\mathcal P_{\alpha,\gamma}\).  Under the margin-window normalization and the witness-law calibration used in the construction, \cref{obj:thm:minimax-lower} shows that
+\[
+M_n(\alpha,\gamma)\ge c\,n^{-r_\star(\alpha,\gamma)},
+\qquad
+r_\star(\alpha,\gamma)
+=
+\frac{1+\alpha}{2+\alpha+\beta_{\alpha,\gamma}} .
+\]
+Here \(\beta_{\alpha,\gamma}=0\) under strict overlap and \(\beta_{\alpha,\gamma}=\alpha\gamma/(\alpha+1)\) when \(\gamma>0\).  The denominator has three components: \(2\) from testing local Bernoulli means separated by the contrast scale, \(\alpha\) from the mass of the margin block, and \(\beta_{\alpha,\gamma}\) from the probability of observing the informative treatment arm under overlap decay.
+
+The lower-bound proof uses a two-point Le Cam construction.  The two laws agree outside a small active block and differ only in the sign of the local treatment contrast on that block.  The active block has mass of order \(h^\alpha\), the contrast has size \(h\), and the informative arm is sampled with probability of order \(h^{\beta_{\alpha,\gamma}}\).  The overlap-envelope calculation in \cref{obj:prop:overlap-envelope} identifies \(\beta_{\alpha,\gamma}\) as the largest weak-arm exponent compatible with the overlap-decay restriction.  The divergence is then of order \(h^{2+\alpha+\beta_{\alpha,\gamma}}\), while the regret separation is of order \(h^{1+\alpha}\).  Taking \(h=n^{-1/(2+\alpha+\beta_{\alpha,\gamma})}\) gives the displayed exponent.
+
+The paper separates the converse calculation from feasible achievability.  The lower bound ranges over all measurable policy estimators taking values in the policy class and characterizes the observed-law converse.  A complementary analysis studies a computable clipped AIPW rule under explicit side conditions, because weak overlap affects both testing difficulty and the stability of inverse-propensity and doubly robust scores.
+
+The specified procedure is a clipped cross-fitted AIPW empirical welfare maximizer with supplied nuisance estimates.  The score is defined in \cref{obj:def:clipped-aipw-score}, the measurable empirical rule in \cref{obj:def:feasible-erm}, and the conditional risk domain in \cref{obj:def:upper-risk}.  \Cref{obj:oeq:feasible-upper} gives a uniform upper bound for this particular rule over the stated side-condition domain: laws in \(\mathcal P_{\alpha,\gamma}\) with the oracle policy in class, supplied cross-fitted nuisances satisfying the displayed rate and boundedness conditions, fixed balanced folds, and primitive localized empirical-process and offset-envelope conditions.  These inputs define the theorem's conditional domain and isolate uniform nuisance construction as a separate research question.
+
+For \(\gamma>0\), the feasible exponent is obtained by balancing four terms: the clipped empirical-process envelope, the clipped product nuisance remainder, the localized weak-overlap drift, and the outcome-regression error outside the localization window.  In the notation of \cref{obj:def:feasible-rate}, this gives
+\[
+r_{\mathrm{up}}
+=
+\min\{r_\star(\alpha,\gamma),g_{\mathrm{joint}}(\alpha,\gamma,a,c)\}.
+\]
+When \(g_{\mathrm{joint}}\ge r_\star(\alpha,\gamma)\), the conditional upper bound matches the observed-law lower-bound exponent up to logarithmic factors.  When \(g_{\mathrm{joint}}<r_\star(\alpha,\gamma)\), the clipped-AIPW analysis yields the rule's slower nuisance-limited exponent.
+
+\Cref{obj:oeq:feasible-tight} delineates the strict-gap branch and records the two relevant routes for a sharp feasible minimax characterization: a stronger feasible construction under comparable side conditions or a lower bound that incorporates nuisance learning into the experiment.
+
+The analysis is related to four literatures.  First, it uses the treatment-choice and empirical-welfare framework developed by \citet{Manski2004,Manski2009,Stoye2009} and \citet{Kitagawa2018}.  Second, the feasible rule follows the semiparametric and doubly robust tradition of \citet{Robins1994,Hahn1998,Hirano2003,Newey1994,Bickel1993,VanDerLaan2011} and the cross-fitting approach of \citet{Chernozhukov2018,Chernozhukov2022}.  Third, the exponent calculation parallels margin and low-noise excess-risk theory \citep{Audibert2007,Massart2006,Tsybakov2009} and the policy-regret margin analysis of \citet{Luedtke2017}.  Fourth, the motivation is close to work on limited and weak overlap, trimming, weighting instability, and clipping-based procedures \citep{Li2016,DAmour2017,BenMichael2022,Hill2024,Susmann2025,Zhao2023,Liu2026}.  The point of departure is the coupling between weak overlap and the small-contrast region that drives welfare regret.
+
+The formal layer for the paper is implemented in Lean 4; the verification appendix records its precise scope.  The rest of the paper proceeds as follows.  Section 2 defines the observed-law policy problem, the regret target, and the law class.  Section 3 gives the minimax lower bound.  Section 4 analyzes the clipped cross-fitted AIPW rule under the stated side conditions.  Section 5 discusses the strict-gap branch and the feasible-tightness question.

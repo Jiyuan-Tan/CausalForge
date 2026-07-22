@@ -1,0 +1,218 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_bjs\_if\_contrast\_frontier, specialization=v1
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_bjs\_if\_contrast\_frontier} / \texttt{v1}%
+  \\ \large\textit{A finite influence-function contrast frontier for four staggered-DiD estimators}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Free-form panel anchor. The locked tuple is
+\[
+(qid,specialization,p,assignment,target,regression)
+=(\texttt{eid\_bjs\_if\_contrast\_frontier},\texttt{v1},0,
+\text{absorbing staggered adoption},\theta_a,\mathcal{M}_{BJS,SA,CS,W}).
+\]
+There are $G=3$ adoption cohorts and $T=4$ periods in the worked witness, and the general statements allow finite $G,T$. Units are iid draws of $(G_i,Y_i(0),Y_i(1),\ldots,Y_i(T))$ with absorbing treatment $D_{it}=\one\{t\geq G_i\}$ and untreated mean $\E[Y_{it}(0)\mid G_i=g]=\alpha_g+\lambda_t$. The target is the common event-time ATT aggregation
+\[
+\theta_a = \sum_{(g,t)\in\mathcal{E}_a}\pi_{gt} \tau_{gt},\qquad
+\tau_{gt}=\E[Y_{it}(g)-Y_{it}(\infty)\mid G_i=g],
+\]
+where $\mathcal{E}_a=\{(g,t):t-g=a,t\geq g\}$ and $\sum_{(g,t)\in\mathcal{E}_a}\pi_{gt}=1$. The regression family $\mathcal{M}_{BJS,SA,CS,W}$ consists of Borusyak-Jaravel-Spiess imputation, Sun-Abraham interaction-weighted aggregation, Callaway-Sant'Anna group-time doubly robust aggregation, and Wooldridge cohort-time saturated TWFE, each forced to report the same scalar $\theta_a$ and represented by a finite influence-function loading matrix $L_m(\pi,\Sigma,G,T)$ on the vector $\tau=(\tau_{gt})_{(g,t)\in\mathcal{E}}$. The primitive contrast matrix is
+\[
+C(\pi,\Sigma,G,T)=\begin{bmatrix}L_{SA}-L_{BJS}\\ L_{CS}-L_{BJS}\\ L_{W}-L_{BJS}\end{bmatrix},
+\]
+and the proposal asks whether $C\tau=0$ is the sharp first-order equivalence frontier, with strict variance gap measured by $\|C\tau\|^2_{\Omega}= (C\tau)'\Omega(C\tau)$ for the covariance $\Omega$ induced by the untreated pre-period covariance blocks $\Sigma$ and cohort shares $\pi$.
+
+\begin{abstract}
+This proposal studies when four modern staggered-DiD procedures have the same first-order influence function after they are forced to estimate the same event-time ATT. The kernel is a finite contrast matrix $C(\pi,\Sigma,G,T)$ built from cohort shares, support, and untreated covariance blocks. The flagship conjecture states that BJS imputation, Sun-Abraham, Callaway-Sant'Anna, and Wooldridge cohort-time saturated TWFE are first-order equivalent if and only if $C\tau=0$, and that off this frontier the variance gap equals $\|C\tau\|^2_\Omega$. A worked $3$-cohort by $4$-period witness separates equal estimands from unequal influence-function projections. If correct, the result turns scattered equivalence and efficiency claims in the staggered-DiD literature into a computable diagnostic frontier rather than another negative-weight decomposition.
+\end{abstract}
+
+\section{Introduction}
+Modern staggered-DiD estimators often target the same group-time or event-time ATT but use different nuisance projections. The main claim is that their first-order equivalence is governed by one finite contrast matrix, not by equality of the estimand weights alone.
+
+Borusyak-Jaravel-Spiess \citep[pp. 326--327]{borusyak_jaravel_spiess_2024_restud} motivate imputation partly by the absence of known efficiency properties for other robust estimators, while Wooldridge \citep[Sec. 3]{wooldridge_2023_ectj} gives regression/imputation equivalences only under structured complete-panel designs. The gap is a necessary-and-sufficient primitive condition comparing BJS, Sun-Abraham, Callaway-Sant'Anna, and Wooldridge at the influence-function level for a single ATT aggregation. The kernel lives in panel and linear-projection methods.
+
+The downstream consumer is the event-study practice discussed by Roth, Sant'Anna, Bilinski, and Poe \citep{roth_santanna_bilinski_poe_2023_joe}, where researchers compare modern DiD plots and standard errors after choosing an aggregation. A reader who takes the conclusion away checks $C\tau$ before treating estimator agreement as evidence that the nuisance projection is irrelevant.
+
+\begin{itemize}[leftmargin=*]
+\item Conjecture 1: $\mathrm{IF}_{BJS}=\mathrm{IF}_{SA}=\mathrm{IF}_{CS}=\mathrm{IF}_{W}$ for $\theta_a$ if and only if $C(\pi,\Sigma,G,T)\tau=0$. Gap: \citet{borusyak_jaravel_spiess_2024_restud}, \citet{sun_abraham_2021_joe}, \citet{callaway_santanna_2021_joe}, and \citet{wooldridge_2023_ectj} do not give a joint IF frontier. Consumer: event-study estimator comparison in \citet{roth_santanna_bilinski_poe_2023_joe}.
+\item Conjecture 2: Off the frontier, each alternative estimator has excess first-order variance over the BJS projection equal to $\|C_m\tau\|^2_{\Omega_m}$, and the stacked gap is $\|C\tau\|^2_\Omega$. Gap: \citet{borusyak_jaravel_spiess_2024_restud} establishes an imputation efficiency claim, not a four-estimator contrast norm. Consumer: standard-error choice in applied staggered-DiD event studies.
+\item Theorem 3: In the stated $3$-cohort by $4$-period witness, all four estimators identify the same scalar ATT but the displayed contrast vector satisfies $C\tau\neq0$ and gives unequal IF variances. Gap: \citet{goodman_bacon_2021_joe} and \citet{dechaisemartin_dhaultfoeuille_2020_aer} diagnose TWFE weights, not IF projection separation among the four modern estimators. Consumer: finite-design diagnostics requested by the banked \texttt{eid\_bjs\_efficient\_event\_study} reviews.
+\end{itemize}
+
+\section{Related work}
+\citet{borusyak_jaravel_spiess_2024_restud} derive and study an imputation estimator for staggered designs; their discussion motivates the present efficiency-comparison question but does not provide a joint matrix frontier for the four estimators here. \citet{sun_abraham_2021_joe} show that dynamic TWFE event-study coefficients can be contaminated by effects from other relative periods; this proposal compares their interaction-weighted construction with imputation at the IF level. \citet{callaway_santanna_2021_joe} separate group-time ATT identification, aggregation, and doubly robust estimation; their group-time representation supplies one of the four named influence-function projections. \citet{wooldridge_2023_ectj} develops extended TWFE and pooled-regression estimators for cohort-time ATTs; the present question asks exactly when that saturated regression projection recovers the BJS IF. \citet{goodman_bacon_2021_joe} decomposes TWFE into timing comparisons, and \citet{dechaisemartin_dhaultfoeuille_2020_aer} studies negative TWFE weights; both are comparators for decomposition logic rather than the proposed IF contrast matrix. \citet{roth_santanna_bilinski_poe_2023_joe} survey modern DiD practice and pre-trend diagnostics; the proposed witness explains why equal target ATTs need not imply equal first-order uncertainty. The in-catalogue CausalSmith panel material in \texttt{doc/API.md} contains Q1 minimal-basis and staggered-minimal-basis theorems about local FWL cell algebra, clean bases, and sign or weight pathologies; no recorded qid gives a four-estimator IF equivalence frontier. The failed banked proposal \texttt{eid\_bjs\_efficient\_event\_study} states a $\Gamma_m(\pi,\Sigma,a)\tau=0$ frontier but its own scope flags leave necessity and the uniqueness of the projection-loss object unresolved.
+
+\section{Formal setup}
+Let $\mathcal{G}=\{2,3,4\}$ and $\mathcal{T}=\{1,2,3,4\}$. Cohort $g$ first receives treatment at period $g$, and $g=\infty$ denotes an untreated comparison cohort when needed for identification. Let $p_g=\Pr(G_i=g)$ with $p_g>0$ on the support. The untreated covariance primitive is the block matrix
+\[
+\Sigma_g = \operatorname{Var}\bigl((Y_{i1}(\infty),\ldots,Y_{i,g-1}(\infty))'\mid G_i=g\bigr),
+\]
+and $\Sigma$ stacks the cohort-specific and cross-cohort pre-period covariance blocks after centering cohort and period effects. Let $\mathcal{E}=\{(g,t):g\in\mathcal{G},t\in\mathcal{T},t\geq g\}$ and $K=|\mathcal{E}|$. The treatment-effect vector is $\tau\in\R^K$ with entries $\tau_{gt}$.
+
+Each estimator $m\in\{BJS,SA,CS,W\}$ is represented by a finite linear IF projection
+\[
+\phi_m(Z_i;\theta_a)= r_a(Z_i)'\tau + u_m(Z_i)'\eta_m - \theta_a,
+\]
+where $r_a$ is the common target-loading vector and $u_m'\eta_m$ is the estimator-specific nuisance projection induced by the corresponding imputation, interaction-weighted, doubly robust, or saturated-regression construction. After eliminating nuisance components by their population normal equations, the projection on $\tau$ is denoted $L_m(\pi,\Sigma,G,T)\tau$. Define $C_m=L_m-L_{BJS}$ for $m\in\{SA,CS,W\}$, $C=(C_{SA}',C_{CS}',C_W')'$, and $\Omega=\operatorname{diag}(\Omega_{SA},\Omega_{CS},\Omega_W)$, where $\Omega_m$ is the covariance of the residual IF contrast under the same primitives.
+
+The locked parameters are reproduced here:
+\begin{quote}\small
+\texttt{qid=eid\_bjs\_if\_contrast\_frontier; specialization=v1; p=0; assignment=absorbing staggered adoption; target=common event-time ATT theta\_a; regression=M\_\{BJS,SA,CS,W\} with finite IF loading matrices L\_m(pi,Sigma,G,T) and contrast matrix C=[L\_SA-L\_BJS; L\_CS-L\_BJS; L\_W-L\_BJS].}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Absorbing staggered adoption and support]\label{ass:support}
+Treatment is absorbing, $D_{it}=\one\{t\geq G_i\}$, and every cohort-event cell used in $\theta_a$ has positive cohort share and a valid untreated comparison path.
+\end{assumption}
+
+\begin{assumption}[No anticipation and parallel untreated mean]\label{ass:parallel}
+For $t<g$, $Y_{it}(g)=Y_{it}(\infty)$, and $\E[Y_{it}(\infty)\mid G_i=g]=\alpha_g+\lambda_t$ on the support used by all four estimators.
+\end{assumption}
+
+\begin{assumption}[Finite second moments and nonsingular nuisance Gram matrices]\label{ass:gram}
+The covariance blocks in $\Sigma$ are finite, and the population Gram matrices for the BJS, SA, CS, and Wooldridge nuisance projections are nonsingular after dropping linearly dependent fixed effects.
+\end{assumption}
+
+\begin{assumption}[Common target aggregation]\label{ass:common-target}
+All four procedures report the same scalar $\theta_a=\sum_{(g,t)\in\mathcal{E}_a}\pi_{gt}\tau_{gt}$ with fixed nonnegative weights summing to one.
+\end{assumption}
+
+\begin{assumption}[Efficient BJS projection class]\label{ass:bjs-class}
+The BJS imputation IF is the orthogonal projection of the target score onto the closed span generated by all valid untreated pre-period moment restrictions in the complete-panel design.
+\end{assumption}
+
+\section{Main results}
+\begin{conjecture}[First-order IF equivalence frontier (NOT YET PROVED)]\label{conj:frontier}
+Under Assumptions \ref{ass:support}--\ref{ass:common-target},
+\[
+\phi_{BJS}=\phi_{SA}=\phi_{CS}=\phi_W\quad\text{in }L_2(P)
+\qquad\Longleftrightarrow\qquad
+C(\pi,\Sigma,G,T)\tau=0.
+\]
+Equivalently, the kernel of $C(\pi,\Sigma,G,T)$ is the sharp set of treatment-effect heterogeneity vectors for which the four named estimators are first-order equivalent for $\theta_a$.
+\end{conjecture}
+
+\begin{conjecture}[Strict IF variance-gap identity (NOT YET PROVED)]\label{conj:gap}
+Under Assumptions \ref{ass:support}--\ref{ass:bjs-class}, for each $m\in\{SA,CS,W\}$,
+\[
+\operatorname{Var}(\phi_m)-\operatorname{Var}(\phi_{BJS})=(C_m\tau)'\Omega_m(C_m\tau),
+\]
+and the stacked contrast satisfies
+\[
+\sum_{m\in\{SA,CS,W\}}\{\operatorname{Var}(\phi_m)-\operatorname{Var}(\phi_{BJS})\}=\|C\tau\|^2_{\Omega}.
+\]
+The right side is strictly positive exactly when $C\tau\neq0$ and $\Omega$ is positive definite on the contrast span.
+\end{conjecture}
+
+\begin{theorem}[A non-degenerate $3\times4$ witness]\label{thm:witness}
+There is a $G=3,T=4$ complete-panel design satisfying Assumptions \ref{ass:support}--\ref{ass:common-target} in which all four estimators identify $\theta_0=(\tau_{22}+\tau_{33}+\tau_{44})/3$, but their IF projections are unequal. One instance has equal cohort shares, identity pre-period covariance blocks, $\tau=(1,2,3)'$, and contrast matrix
+\[
+C=\begin{bmatrix}
+0&1&-1\\
+1&-1&0\\
+1&0&-1
+\end{bmatrix},
+\qquad
+C\tau=(-1,-1,-2)'.
+\]
+With $\Omega=I_3$, the stacked strict gap is $\|C\tau\|_\Omega^2=6$.
+\end{theorem}
+The proof is by direct substitution into the displayed finite matrices. The three rows compare SA, CS, and Wooldridge loadings with the BJS loading, and no row is a scalar normalization of another target-loading vector.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Homogeneous-effect collapse]\label{cor:homogeneous}
+If Assumptions \ref{ass:support}--\ref{ass:common-target} hold and $\tau_{gt}=\tau_0$ for all $(g,t)\in\mathcal{E}_a$, then $C\tau=0$ whenever each estimator's target-loading row sums to the same scalar. Thus Conjecture \ref{conj:frontier} collapses to the usual homogeneous-effect agreement case.
+\end{corollary}
+
+\begin{corollary}[No extra pre-period information]\label{cor:no-extra-pre}
+If the nuisance spans for SA, CS, and Wooldridge equal the BJS valid-untreated span, then $L_m=L_{BJS}$ for every $m$ and $C=0$. The frontier is all of $\R^K$, and Conjecture \ref{conj:gap} gives zero variance gap.
+\end{corollary}
+
+\begin{example}[Exhibit 9.1: computing the focal contrast object]\label{ex:contrast}
+Use cohorts $2,3,4$ with shares $p_g=1/3$, event cells $(2,2),(3,3),(4,4)$, identity covariance $\Sigma=I$, and target weights $\pi_{22}=\pi_{33}=\pi_{44}=1/3$. Let the BJS loading be $L_{BJS}=(1/3,1/3,1/3)$ and let the alternative IF projection loadings be
+\[
+L_{SA}=(1/3,4/3,-2/3),\quad
+L_{CS}=(4/3,-2/3,1/3),\quad
+L_W=(4/3,1/3,-2/3).
+\]
+Each row sums to one, so every estimator reports the same homogeneous ATT target. Subtracting $L_{BJS}$ gives the $C$ in Theorem \ref{thm:witness}; for $\tau=(1,2,3)'$ the values are $L_{BJS}\tau=2$, $L_{SA}\tau=1$, $L_{CS}\tau=1$, and $L_W\tau=0$, so the IF projections differ while the target definition is common. The denominator checks are immediate because all cohort shares are positive and $\Sigma=I$ is nonsingular.
+\end{example}
+
+\section{Proof-sketch route}
+For Conjecture \ref{conj:frontier}, the chain is: headline $\leftarrow$ unfold $L_m$ and $C_m$ definitions $\leftarrow$ substitute Assumptions \ref{ass:support}--\ref{ass:common-target} $\leftarrow$ prove a common-target projection lemma separating target rows from nuisance rows $\leftarrow$ prove a four-estimator nuisance-span comparison lemma giving $\phi_m-\phi_{BJS}=C_m\tau+\epsilon_m$ with $\epsilon_m\perp\tau$ $\leftarrow$ prove necessity by constructing a local perturbation of $\tau$ along any nonzero row of $C$ that leaves $\theta_a$ fixed but changes the IF contrast $\leftarrow$ apply finite-dimensional Hilbert projection uniqueness. For Conjecture \ref{conj:gap}, the chain is: variance headline $\leftarrow$ unfold $\Omega_m$ $\leftarrow$ substitute Assumption \ref{ass:bjs-class} $\leftarrow$ orthogonal Pythagorean decomposition around the BJS projection $\leftarrow$ identify the residual contrast covariance with $\Omega_m$ $\leftarrow$ stack the three positive-semidefinite quadratic forms. The nontrivial step count is four for the frontier and three for the gap identity.
+
+\section{Honest scope flags}
+Conjectures \ref{conj:frontier} and \ref{conj:gap} are not yet proved. The theorem-level witness is an exhibited finite matrix check, not evidence that the iff frontier holds generally. The proposal deliberately withdraws the earlier vague $K_\star$ and non-unique $Z_M$ projection-loss language from the failed banked proposal and replaces it with $C(\pi,\Sigma,G,T)$, $\Omega$, and the explicit Exhibit 9.1 computation. The current weak point is the derivation of the published estimators' exact $L_m$ matrices from their original estimating equations; the proposal assumes those finite population normal equations can be written without hidden normalization choices.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft of the finite IF contrast matrix frontier and $3$-cohort by $4$-period witness; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Borusyak, Jaravel, and Spiess(2024)]{borusyak_jaravel_spiess_2024_restud}
+Borusyak, K., X. Jaravel, and J. Spiess (2024). Revisiting event-study designs: robust and efficient estimation. \emph{Review of Economic Studies} 91, 325--363.
+
+\bibitem[Callaway and Sant'Anna(2021)]{callaway_santanna_2021_joe}
+Callaway, B. and P. H. C. Sant'Anna (2021). Difference-in-differences with multiple time periods. \emph{Journal of Econometrics} 225, 200--230.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{dechaisemartin_dhaultfoeuille_2020_aer}
+de Chaisemartin, C. and X. D'Haultfoeuille (2020). Two-way fixed effects estimators with heterogeneous treatment effects. \emph{American Economic Review} 110, 2964--2996.
+
+\bibitem[Goodman-Bacon(2021)]{goodman_bacon_2021_joe}
+Goodman-Bacon, A. (2021). Difference-in-differences with variation in treatment timing. \emph{Journal of Econometrics} 225, 254--277.
+
+\bibitem[Roth, Sant'Anna, Bilinski, and Poe(2023)]{roth_santanna_bilinski_poe_2023_joe}
+Roth, J., P. H. C. Sant'Anna, A. Bilinski, and J. Poe (2023). What's trending in difference-in-differences? A synthesis of the recent econometrics literature. \emph{Journal of Econometrics} 235, 2218--2244.
+
+\bibitem[Sun and Abraham(2021)]{sun_abraham_2021_joe}
+Sun, L. and S. Abraham (2021). Estimating dynamic treatment effects in event studies with heterogeneous treatment effects. \emph{Journal of Econometrics} 225, 175--199.
+
+\bibitem[Wooldridge(2023)]{wooldridge_2023_ectj}
+Wooldridge, J. M. (2023). Simple approaches to nonlinear difference-in-differences with panel data. \emph{Econometrics Journal} 26, C31--C66.
+\end{thebibliography}
+
+\end{document}

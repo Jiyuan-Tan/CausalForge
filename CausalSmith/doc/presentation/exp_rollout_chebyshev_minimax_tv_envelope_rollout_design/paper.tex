@@ -1,0 +1,1417 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1.1in]{geometry}
+
+\usepackage{amssymb,mathtools,natbib}
+
+\input{paper_macros.tex}
+
+\title{Chebyshev Rollout Schedules for Polynomial Extrapolation under Low-Order Interference}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This paper studies how to place measurement rounds in a finite-population rollout experiment when the target is the full-adoption contrast but the rollout budget stops at a treated fraction \(q<1\). Under static rollout consistency, a degree-\(\beta\) polynomial restriction on the rollout mean curve, and a common round-mean variance envelope---restrictions that low-order interference motivates but that we impose rather than derive from a microfounded interference model---unbiased linear estimation reduces to a polynomial extrapolation problem from \([0,q]\) to \(1\). For a fixed schedule, the worst-case variance over the positive-semidefinite covariance class meeting this diagonal envelope equals the variance scale times the squared \(\ell^1\) (total-variation) norm of the polynomial-exact weights. The resulting diagonal-envelope amplification criterion, defined over linear unbiased estimators, attains its minimax value up to multiplicative constants at shifted Chebyshev-Lobatto measurement fractions when \(q\le q_{\max}<1\) and the number of rollout intervals satisfies \(k\ge c\beta\) for some \(c>1\). The minimax amplification is of order
+\[
+\left(\frac{(1+\sqrt{1-q})^2}{q}\right)^{2\beta},
+\]
+up to constants depending only on \(q_{\max}\) and the oversampling ratio. For the exact nested rollout covariance problem, the same Chebyshev schedule is rate-feasible through the envelope upper bound, and exact optimality under the true rollout covariance structure is posed as a separate covariance-specific design question.
+\end{abstract}
+
+\section{Introduction}
+Rollout experiments often measure outcomes before full adoption. A platform may expose a small treated fraction before scaling a feature, a policy maker may expand access in stages, or a researcher may observe several rollout fractions strictly below the endpoint at which everyone is treated. Under interference, the treated-fraction mean response follows a rollout curve that can extend beyond the convex-combination structure of two no-interference potential outcomes. The full-adoption contrast must then be inferred from the response curve traced out by the rollout.
+
+This paper studies the design problem of where to place the rollout measurement fractions. The estimand is the endpoint contrast \(m_P(1)-m_P(0)\), while the experiment observes round means on the truncated interval \([0,q]\), with \(q\le q_{\max}<1\). The design variable is the ordered schedule of treated fractions between the untreated baseline and the budget endpoint. The analysis is finite-population and design-based. \Cref{obj:ass:static-rollout-consistency} gives a static rollout potential-outcome interpretation indexed by contemporaneous assignments; \cref{obj:ass:beta-order-polynomial} restricts the rollout mean curve to be a polynomial of degree at most \(\beta\); and \cref{obj:ass:round-mean-variance-envelope} bounds each round mean variance by a common scale \(\sigma_0^2/n\).
+
+Under these conditions, the statistical problem becomes a polynomial extrapolation problem. \Cref{obj:prop:rollout-polynomial-identity} identifies the endpoint contrast with the sum of the nonconstant coefficients of the rollout mean curve. \Cref{obj:def:unbiased-weight-set} then characterizes linear weights that are unbiased for every degree-\(\beta\) rollout mean curve by exactness on the monomials \(1,u,\ldots,u^\beta\). \Cref{obj:thm:tv-envelope-design} shows that, when cross-round covariances are left unrestricted except for positive semidefiniteness and the diagonal variance envelope, the worst-case variance bound for a linear unbiased estimator, sharp over the positive-semidefinite covariance class meeting the diagonal envelope, is
+\[
+\frac{\sigma_0^2}{n}\left(\sum_{j=0}^k |w_j|\right)^2.
+\]
+Thus the schedule affects the envelope risk only through the smallest squared \(\ell^1\) (total-variation, TV) norm of polynomial-exact weights, the amplification criterion \(A_\beta(p)\) in \cref{obj:def:amplification-criterion}.
+
+The main design result is \cref{obj:thm:chebyshev-minimax}. For any fixed low-budget cap \(q_{\max}\in(0,1)\), any oversampling ratio \(c>1\), and any \(k\ge c\beta\), every admissible schedule has amplification at least a constant times
+\[
+\left(\frac{(1+\sqrt{1-q})^2}{q}\right)^{2\beta},
+\]
+uniformly over \(0<q\le q_{\max}\). The shifted Chebyshev-Lobatto schedule in \cref{obj:def:chebyshev-schedule} attains the same rate up to a constant depending only on \(c\) and \(q_{\max}\). The result is therefore a rate-minimax statement for the envelope criterion: low-budget extrapolation carries an exponential cost in the polynomial order, and endpoint-clustered Chebyshev-Lobatto placement controls the exponent that is unavoidable under the stated envelope.
+
+The full-budget boundary clarifies what drives this cost. \Cref{obj:prop:no-extrapolation-boundary} shows that when \(q=1\), \(k=\beta\), and the equal-spacing schedule \(p^{\mathrm{eq}}(\beta,1)\) is used, the endpoint contrast can be estimated by the difference between the final and baseline round means with amplification at most \(4\), independent of \(\beta\). The exponential factor in \cref{obj:thm:chebyshev-minimax} is therefore specifically the price of estimating an endpoint outside the observed rollout interval.
+
+The exact nested covariance problem is kept separate. \Cref{obj:def:exact-nested-risk} leaves inside the minimax problem the covariance matrix that a fully specified rollout law would generate, and \cref{obj:oeq:exact-nested-minimax} poses exact optimality for that narrower problem. The proved one-sided comparison in \cref{obj:lem:exact-risk-envelope-upper} bounds the exact finite-population risk by the envelope amplification criterion at every admissible schedule. Consequently, \cref{obj:lem:exact-chebyshev-rate-feasible} establishes the displayed low-budget exponential upper bound for the exact rollout risk attained by the Chebyshev-Lobatto schedule.
+
+The paper contributes to the design-based interference literature by making the treated-fraction schedule itself the object of minimax analysis. Classical potential-outcome formulations treat no-interference experiments as the baseline case \citep{rubin1974,imbens2015}, while social-interaction and interference settings make spillovers part of the estimand and the dependence structure \citep{manski1993,manski2013}. Modern work has developed exposure mappings, randomization-based estimators, graph cluster designs, and randomization tests under interference \citep{aronow2017,savje2017,eckles2017,ugander2013,athey2018,basse2019,puelz2019}. The closest line of work is the low-order network-interference and rollout literature, where polynomial structure permits identification of global treatment effects from partial exposure or staged adoption \citep{cortez2022,cortezrodriguez2022,cortezrodriguez2024,eichhorn2024}. The present analysis keeps that polynomial-extrapolation structure and answers a new design question: conditional on a rollout budget, where should measurement fractions be placed to minimize the worst-case diagonal-envelope variance amplification among polynomial-exact linear estimators? Low-order interference motivates the imposed degree-\(\beta\) polynomial mean restriction, while the contribution translates that restriction and the variance envelope into a sharp rollout-schedule design result.
+
+The answer uses classical ideas from optimal design and approximation theory. Polynomial-regression design and equivalence theory provide the language for optimizing measurement locations \citep{smith1918,kiefer1959,kiefer1974,pukelsheim1993}, and Chebyshev systems explain why endpoint-spread nodes control polynomial extrapolation \citep{karlin1966}. Here those approximation facts enter through the dual representation in \cref{obj:lem:amplification-dual-norm}: minimizing the \(\ell^1\) norm of unbiased weights is equivalent to controlling the largest endpoint contrast among degree-\(\beta\) polynomials bounded at the schedule nodes. The paper translates the classical Chebyshev endpoint-extrapolation phenomenon and minimum-\(\ell^1\) optimal-recovery duality into a finite-population rollout measurement-schedule criterion under the round-mean variance envelope. To our knowledge, the resulting amplification criterion and Chebyshev-Lobatto rollout schedule are new design objects in that literature. The formal statements and proofs are machine-checked in Lean 4 to the extent recorded in the verification note in the appendix.
+
+\section{Setup and Assumptions}
+
+We work with a \leanref{S-1}{finite-population rollout design}. The population consists of a finite unit set \leanref{sym:U_n}{\ensuremath{U_n}} with \(n\) units. The experimenter chooses a sequence of rollout measurement rounds indexed by \(j=0,\ldots,k\), and the contemporaneous assignment vector at round \(j\) is \leanref{sym:Z_j}{\ensuremath{Z_j}}. Let \(\Omega\) denote the finite assignment space generated by the rollout randomization, and let \(\pi\) be the probability mass function on \(\Omega\). For any design-measurable random variable \(X\), \(\mathbb E_\pi X\), \(\operatorname{Var}_\pi(X)\), and \(\operatorname{Cov}_\pi(X_1,X_2)\) denote the corresponding finite-sum expectation, variance, and covariance under \(\pi\). The specific assignment law---how treatment is nested across rounds and how each target fraction is implemented---is not further specified here, because every result uses only the round-mean variance envelope of \cref{obj:ass:round-mean-variance-envelope}. The exact cross-round covariance a fully specified rollout law would induce is not part of the verified formal layer; it enters only through the symbolic benchmark \(R_{\mathrm{exact}}\) of the discussion, which we treat as a placeholder for future covariance-restricted design problems rather than as a fully specified finite-population object. Throughout, the schedule entries \(p_j\) are target treated fractions and the formal results treat them as real design points in \([0,1]\); in a finite population these targets may require rounding to feasible treatment counts. The formal results treat the realized measurement fractions as the schedule nodes, so unbiasedness holds exactly at those realized fractions; any gap between a target fraction and the realized fraction is a finite-sample perturbation of the moment conditions in \cref{obj:def:unbiased-weight-set}, outside the formal scope.
+
+The potential-outcome notation is finite-population notation: \(Y_i(Z_j)\) is unit \(i\)'s outcome under the assignment vector realized at measurement \(j\), and \leanref{sym:bar_Y_j}{\ensuremath{\bar Y_j}} is the observed finite-population round mean. The static rollout condition fixes the interpretation of these objects.
+
+\begin{assumptionv}{ass:static-rollout-consistency}[Static Rollout Consistency]
+At each rollout measurement \(j\), the observed round mean is
+\[
+\bar Y_j
+=
+n^{-1}\sum_{i\in U_n} Y_i(Z_j).
+\]
+The potential outcomes \(Y_i(Z_j)\) depend on the contemporaneous assignment vector \(Z_j\), but not on earlier rollout steps.
+\end{assumptionv}
+
+\cref{obj:ass:static-rollout-consistency} is the static rollout potential-outcomes condition with no carryover. It permits arbitrary contemporaneous interference through the assignment vector while ruling out lagged treatment histories as separate arguments of the potential outcome, as in static rollout formulations for interference designs \citep{cortezrodriguez2024}.
+
+A schedule is an ordered vector \leanref{sym:p}{\ensuremath{p}} of treated fractions. The rollout budget \leanref{sym:q}{\ensuremath{q}} is the final treated fraction, so the design observes the response curve only on \([0,q]\), even though the target contrast compares \(u=0\) with \(u=1\).
+
+\begin{definitionv}{def:budgeted-schedule-class}[Budgeted schedule class \(S_{k,q}\)]
+The budgeted schedule class is
+\[
+S_{k,q}
+=
+\left\{
+p\in[0,1]^{k+1}:
+p_0=0
+\ \text{and}\
+0<p_1<\cdots<p_k=q
+\right\}.
+\]
+\end{definitionv}
+
+\cref{obj:def:budgeted-schedule-class} makes the design variable explicit. The econometrician controls the placement of the rollout measurement fractions between the untreated baseline and the budget \(q\); the strict inequalities guarantee distinct interior interpolation nodes for the polynomial problem below.
+
+The mean response curve under a law \(P\) is \leanref{sym:m_P}{\ensuremath{m_P(u)}}. The low-order interference restriction used here is that the design mean along the rollout path is a polynomial of degree at most \(\beta\).
+
+\begin{assumptionv}{ass:beta-order-polynomial}[Polynomial Rollout Mean]
+For every law \(P\), the rollout mean curve satisfies
+\[
+m_P(u)=\sum_{\ell=0}^{\beta} a_{P,\ell}u^\ell
+\]
+for all \(u\in[0,1]\).
+\end{assumptionv}
+
+\cref{obj:ass:beta-order-polynomial} is the beta-order rollout polynomial identity condition. It summarizes low-order interference along the treated-fraction path by requiring the average response to be exhausted by powers \(u^0,\ldots,u^\beta\), a restriction used in polynomial exposure and rollout representations of interference \citep{cortez2022}. This form arises, for instance, when each unit's outcome depends on the assignment vector only through interactions of order at most \(\beta\) among units, and the rollout assigns treatment so that, at target fraction \(u\), the probability that any fixed set of \(\ell\le\beta\) units is jointly treated is a polynomial in \(u\) of degree \(\ell\) (as under independent Bernoulli assignment at rate \(u\); fixed-count or rounded rollout schemes satisfy this only approximately, since their joint-treatment probabilities are not exactly \(u^\ell\)); averaging the bounded-order response over that assignment then yields a degree-\(\beta\) polynomial mean curve, with \(\beta\) the maximum interaction order. Absent such bounded-order structure the result should be read as an optimal-extrapolation theorem for an imposed degree-\(\beta\) mean curve rather than a generic interference-design guarantee; because the target \(u=1\) lies outside the observed interval, misspecifying \(\beta\) biases the extrapolated endpoint contrast, and this bias is amplified precisely in the low-budget regime. The endpoint contrast studied below is \(\tau_P=m_P(1)-m_P(0)\).
+
+The next restriction is a sharp variance envelope that isolates the effect of treated-fraction placement from additional covariance structure.
+
+\begin{assumptionv}{ass:round-mean-variance-envelope}[Round-Mean Variance Envelope]
+For every law \(P\), every admissible schedule \(p\), and every rollout measurement \(j\),
+\[
+\operatorname{Var}_\pi(\bar Y_j)\le \frac{\sigma_0^2}{n}.
+\]
+\end{assumptionv}
+
+\cref{obj:ass:round-mean-variance-envelope} is specific to this analysis. It bounds each round mean by the common scale \leanref{sym:sigma_0^2}{\ensuremath{\sigma_0^2}}/\(n\) while leaving the cross-round covariance signs and magnitudes otherwise unrestricted subject to positive semidefiniteness. This is the envelope under which the worst-case variance reduces to an amplification problem for the estimator weights. The scale \(\sigma_0^2\) absorbs both the outcome magnitudes and the design's cross-unit dependence. Boundedness of outcomes alone does not control it: under common or strongly dependent randomization a finite-population round mean can have variance of order \(1\) rather than \(1/n\). The envelope holds with \(\sigma_0^2\) a fixed constant when outcomes are bounded \emph{and} the design induces only weak (for example, bounded-neighborhood) cross-unit dependence, as under independent or locally dependent Bernoulli assignment; under stronger dependence the round-mean variance decays more slowly in \(n\), and the results then apply with \(\sigma_0^2\) read as the relevant (possibly \(n\)-dependent) envelope scale, with the amplification bounds interpreted at that scaling.
+
+For the low-budget results, the budget remains uniformly below full rollout.
+
+\begin{assumptionv}{ass:low-budget-cap}[Low-Budget Cap]
+The rollout budget and its cap satisfy
+\[
+0<q_{\max}\quad\text{and}\quad q\le q_{\max}<1.
+\]
+\end{assumptionv}
+
+\cref{obj:ass:low-budget-cap} is also specific to this analysis. The cap \leanref{sym:q_max}{\ensuremath{q_{\max}}} keeps the problem in the extrapolation regime: the target endpoint \(u=1\) lies outside the observed interval \([0,q]\). The boundary case \(q=1\) is therefore separated from the low-budget rate calculations. Every result invoking this assumption also imposes \(q>0\); when \(q=0\) the budgeted schedule class \(S_{k,q}\) is empty, so the operative low-budget regime is \(0<q\le q_{\max}<1\).
+
+The admissible law class collects the preceding restrictions and pins the design expectation of each round mean to the polynomial curve at the corresponding schedule point.
+
+\begin{definitionv}{def:rollout-law-class}[Rollout law class \(\mathcal P_\beta\)]
+The rollout law class is
+\[
+\mathcal P_\beta
+=
+\left\{
+P:
+\begin{array}{l}
+P \text{ satisfies \cref{obj:ass:static-rollout-consistency}, \cref{obj:ass:beta-order-polynomial}, and \cref{obj:ass:round-mean-variance-envelope}},\\
+\text{and } \mathbb E_\pi[\bar Y_j]=m_P(p_j) \text{ for every } j=0,\ldots,k
+\end{array}
+\right\}.
+\]
+\end{definitionv}
+
+Thus \leanref{sym:P_beta}{\ensuremath{\mathcal P_\beta}} is a finite-population law class indexed by the common polynomial order and variance scale, with the schedule entering through the evaluation points \(p_j\). The condition \(\mathbb E_\pi[\bar Y_j]=m_P(p_j)\) is the bridge between the randomization distribution and the deterministic polynomial approximation problem.
+
+We estimate the endpoint contrast with a linear rollout estimator
+\[
+\hat\tau_{w,p}=\sum_{j=0}^k w_j\bar Y_j,
+\]
+where \leanref{sym:w}{\ensuremath{w}} is a vector of weights applied to the observed round means. Unbiasedness over all degree-\(\beta\) rollout mean curves is equivalent to exactness on the monomial basis.
+
+\begin{definitionv}{def:unbiased-weight-set}[Unbiased weight set $W_\beta(p)$]
+For a schedule \(p=(p_0,\ldots,p_k)\), the set of unbiased weights of order \(\beta\) is
+\[
+W_\beta(p)
+=
+\left\{
+w\in\mathbb R^{k+1}:
+\sum_{j=0}^k w_j p_j^0=0
+\ \text{and}\
+\sum_{j=0}^k w_j p_j^\ell=1
+\ \text{for every } \ell=1,\ldots,\beta
+\right\}.
+\]
+\end{definitionv}
+
+Here \(p_j^0\) denotes the constant monomial \(1\) for every \(j\), including \(p_0=0\). The first equation in \cref{obj:def:unbiased-weight-set} removes the intercept \(m_P(0)\). The remaining equations reproduce the contribution of each nonconstant monomial to \(m_P(1)-m_P(0)\), so any \(w\in W_\beta(p)\) gives a design-unbiased linear estimator for every law in \cref{obj:def:rollout-law-class}, whenever the set is nonempty.
+
+The schedules compared in the main theorem are shifted Chebyshev-Lobatto schedules. They place more measurements near the endpoints of the observed interval, the usual geometry for controlling polynomial extrapolation.
+
+\begin{definitionv}{def:chebyshev-schedule}[Chebyshev schedule \(p^{\mathrm{Ch}}(k,q)\)]
+For \(j=0,\ldots,k\), the shifted Chebyshev-Lobatto node on \([0,q]\) is
+\[
+p^{\mathrm{Ch}}_j(k,q)
+=
+\frac{q}{2}\left\{1-\cos\left(\frac{\pi j}{k}\right)\right\}.
+\]
+The shifted Chebyshev-Lobatto schedule is
+\[
+p^{\mathrm{Ch}}(k,q)
+=
+\left(p^{\mathrm{Ch}}_0(k,q),\ldots,p^{\mathrm{Ch}}_k(k,q)\right).
+\]
+\end{definitionv}
+
+We write \(p^{\mathrm{Ch}}\) for this schedule when \(k\) and \(q\) are clear. For comparison with a more elementary design, the equally spaced \(\beta+1\)-node schedule is \(p^{\mathrm{eq}}(\beta,q)\), with entries \(p^{\mathrm{eq}}_j(\beta,q)=qj/\beta\) for \(j=0,\ldots,\beta\).
+
+The variance envelope makes the relevant design criterion the smallest possible \(\ell^1\) amplification among unbiased weights.
+
+\begin{definitionv}{def:amplification-criterion}[Amplification criterion \(A_\beta(p)\)]
+For a schedule \(p\), the amplification criterion is
+\[
+A_\beta(p)
+=
+\inf_{w\in W_\beta(p)}
+\left(\sum_{j=0}^k |w_j|\right)^2.
+\]
+The minimax amplification over budgeted schedules is
+\[
+M_{\beta,k,q}
+=
+\inf_{p\in S_{k,q}} A_\beta(p).
+\]
+\end{definitionv}
+
+The quantity \(A_\beta(p)\) records the best worst-case variance multiplier available at a fixed schedule under the total-variation variance envelope. The minimax quantity \(M_{\beta,k,q}\) then optimizes that multiplier over the admissible treated-fraction placements in \cref{obj:def:budgeted-schedule-class}.
+
+Finally, it is useful to distinguish the envelope criterion from the exact finite-population covariance problem. For a law \(P\) and schedule \(p\), let \(\Gamma_P(p)\) be the design covariance matrix of the vector \((\bar Y_0,\ldots,\bar Y_k)\).
+
+\begin{definitionv}{def:exact-nested-risk}[Exact nested risk \(R_{\mathrm{exact}}(\beta,k,q)\)]
+The exact nested risk is
+\[
+R_{\mathrm{exact}}(\beta,k,q)
+=
+\inf_{p\in S_{k,q}}
+\inf_{w\in W_\beta(p)}
+\sup_{P\in\mathcal P_\beta}
+w^\prime \Gamma_P(p) w,
+\]
+where \(\Gamma_P(p)\) is the design covariance matrix of the rollout round means under law \(P\) and schedule \(p\).
+\end{definitionv}
+
+\cref{obj:def:exact-nested-risk} leaves the true nested-rollout covariance matrix inside the minimax problem. The exact risk \(R_{\mathrm{exact}}\) is therefore the finite-population benchmark, while \cref{obj:def:amplification-criterion} is the sharp envelope problem solved in the main results.
+
+\section{Main Results}
+
+The setup in \cref{obj:def:rollout-law-class} reduces the identification problem to a polynomial endpoint problem. The first result records the corresponding identity for the target contrast: under the static rollout interpretation and the degree-\(\beta\) rollout mean restriction, the estimand is the sum of the nonconstant coefficients of the rollout mean curve.
+
+\begin{lemmav}{prop:rollout-polynomial-identity}[Rollout Polynomial Identity]
+For any finite assignment space $\Omega$, population size $n$, number of rollout intervals $k$, polynomial order $\beta$, contemporaneous assignment vectors $Z_j$, potential outcomes $Y_i(Z_j)$, round means $\bar Y_j$, rollout mean curve $m_P$, and polynomial coefficients $(a_{P,\ell})_{\ell\ge 0}$, suppose \cref{obj:ass:static-rollout-consistency} and \cref{obj:ass:beta-order-polynomial} hold. Then
+\[
+m_P(1)-m_P(0)=\sum_{\ell=1}^{\beta} a_{P,\ell}.
+\]
+Thus the endpoint treatment contrast satisfies
+\[
+\tau_P=m_P(1)-m_P(0)=\sum_{\ell=1}^{\beta} a_{P,\ell}.
+\]
+\end{lemmav}
+
+The proof is deferred to \cref{sec:deferred-proofs}.
+
+\Cref{obj:prop:rollout-polynomial-identity} identifies the polynomial target: any design-unbiased estimator of the nonconstant polynomial coefficients is also unbiased for the endpoint contrast. The subsequent results add sampling variability and optimize the placement of rollout measurements.
+
+The next theorem turns this identity into a design criterion under the variance envelope in \cref{obj:ass:round-mean-variance-envelope}. The point is that, once cross-round covariances are left unrestricted except for positive semidefiniteness and the diagonal envelope, the worst-case variance of a linear unbiased estimator is governed by the squared \(\ell^1\) norm of its weights.
+
+\begin{theoremv}{thm:tv-envelope-design}[TV Envelope Design Bound]
+Let \(n,k,\beta\) be integers, let \(q\in\mathbb R\), and let \(\sigma_0^2\in\mathbb R\). Fix a finite assignment space \(\Omega\), a finite design \(\pi\) on \(\Omega\), rollout assignment vectors \(Z_0,\ldots,Z_k\), round means \(\bar Y_0,\ldots,\bar Y_k\), a rollout mean curve \(m_P\), polynomial coefficients \(a_{P,\ell}\), and a schedule \(p=(p_0,\ldots,p_k)\). Suppose that
+\begin{itemize}
+\item \textbf{(Order.)} \(1\le \beta\le k\).
+\item \textbf{(Envelope scale.)} \(\sigma_0^2\ge 0\).
+\item \textbf{(Schedule.)} \(p\in S_{k,q}\), in the sense of \cref{obj:def:budgeted-schedule-class}.
+\item \textbf{(Law class.)} The design, rollout variables, round means, mean curve, coefficients, envelope scale, and schedule satisfy the rollout law-class restrictions \(\mathcal P_\beta\) in \cref{obj:def:rollout-law-class}.
+\end{itemize}
+Then \(W_\beta(p)\), as defined in \cref{obj:def:unbiased-weight-set}, is nonempty. Moreover, for every \(w\in W_\beta(p)\),
+\[
+\mathbb E_\pi\!\left[\sum_{j=0}^k w_j\bar Y_j\right]=m_P(1)-m_P(0)
+\]
+and
+\[
+\operatorname{Var}_\pi\!\left(\sum_{j=0}^k w_j\bar Y_j\right)
+\le
+\frac{\sigma_0^2}{n}\left(\sum_{j=0}^k |w_j|\right)^2 .
+\]
+For every such \(w\), there also exists a positive semidefinite \((k+1)\times(k+1)\) matrix \(\Gamma\) such that
+\[
+\Gamma_{jj}\le \frac{\sigma_0^2}{n}\quad\text{for every }j=0,\ldots,k,
+\]
+and
+\[
+\sum_{i=0}^k\sum_{j=0}^k w_i\Gamma_{ij}w_j
+=
+\frac{\sigma_0^2}{n}\left(\sum_{j=0}^k |w_j|\right)^2 .
+\]
+Consequently, with \(A_\beta(\cdot)\) and \(M_{\beta,k,q}\) as in \cref{obj:def:amplification-criterion},
+\[
+\inf\left\{
+v:\ \exists w\in W_\beta(p)\text{ with }
+v=\frac{\sigma_0^2}{n}\left(\sum_{j=0}^k |w_j|\right)^2
+\right\}
+=
+\frac{\sigma_0^2}{n}A_\beta(p),
+\]
+and
+\[
+\inf\left\{
+v:\ \exists p'\in S_{k,q}\text{ with }
+v=\frac{\sigma_0^2}{n}A_\beta(p')
+\right\}
+=
+\frac{\sigma_0^2}{n}M_{\beta,k,q}.
+\]
+Finally, if \(p^\star\in S_{k,q}\) satisfies
+\[
+A_\beta(p^\star)=M_{\beta,k,q},
+\]
+then for every \(p'\in S_{k,q}\),
+\[
+\frac{\sigma_0^2}{n}A_\beta(p^\star)
+\le
+\frac{\sigma_0^2}{n}A_\beta(p').
+\]
+\end{theoremv}
+
+\cref{obj:thm:tv-envelope-design} separates three roles that are otherwise easy to conflate. The law class determines which linear combinations are unbiased; the envelope scale contributes the common factor \(\sigma_0^2/n\); and the schedule affects risk only through the feasible set of polynomial-exact weights. Thus the schedule problem is the minimization of \(A_\beta(p)\) over \(S_{k,q}\), a finite-dimensional optimal-design problem in the tradition of polynomial extrapolation and minimax design \citep{smith1918,kiefer1959,kiefer1974,pukelsheim1993,karlin1966}.
+
+A simple benchmark is obtained by using exactly \(\beta+1\) equally spaced measurements on \([0,q]\). This benchmark is useful because it shows that unbiased extrapolation is feasible without oversampling. It also gives a (possibly large) universal upper bound on the amplification of naive spacing when \(q\) is small; because \cref{obj:prop:equal-spacing-benchmark} is only an upper bound, it does not by itself certify that equal spacing is unstable or suboptimal in a matching lower-bound sense.
+
+\begin{lemmav}{prop:equal-spacing-benchmark}[Equal-Spacing Amplification Bound]
+For every integer $\beta\ge 1$ and every $q\in(0,1]$, let
+\[
+p^{\mathrm{eq}}(\beta,q)_j=\frac{qj}{\beta},
+\qquad j=0,\ldots,\beta .
+\]
+Then $p^{\mathrm{eq}}(\beta,q)_j\in[0,1]$ for every $j=0,\ldots,\beta$, and, with $A_\beta$ as in \cref{obj:def:amplification-criterion},
+\[
+A_\beta\!\left(p^{\mathrm{eq}}(\beta,q)\right)
+\le
+9\left(\frac{\beta}{q}\right)^{2\beta}.
+\]
+\end{lemmav}
+
+The proof is deferred to \cref{sec:deferred-proofs}.
+
+\Cref{obj:prop:equal-spacing-benchmark} is not a minimax statement. It provides a scale against which the Chebyshev result below should be read: equal spacing gives a universal upper bound, but the base of this upper bound grows with \(\beta/q\), consistent with the difficulty of extrapolating from \([0,q]\) to \(1\) using evenly spaced nodes (the lemma bounds equal-spacing amplification from above and does not by itself establish a matching instability).
+
+The full-budget boundary is qualitatively different. When \(q=1\), the target endpoint is observed, so no extrapolation is needed.
+
+\begin{lemmav}{prop:no-extrapolation-boundary}[Full-Budget Endpoint Rule]
+For every polynomial order \(\beta\ge 1\), take \(k=\beta\) and use the equal-spacing schedule \(p^{\mathrm{eq}}(\beta,1)\). Define the weight vector \(w=(w_0,\ldots,w_\beta)\) by
+\[
+w_0=-1,\qquad w_\beta=1,\qquad w_j=0 \quad\text{for } 1\le j\le \beta-1 .
+\]
+Then \(w\in W_\beta(p^{\mathrm{eq}}(\beta,1))\), where \(W_\beta(\cdot)\) is the unbiased weight set in \cref{obj:def:unbiased-weight-set}. Consequently, for the amplification criterion in \cref{obj:def:amplification-criterion},
+\[
+A_\beta\!\left(p^{\mathrm{eq}}(\beta,1)\right)\le 4 .
+\]
+\end{lemmav}
+
+The proof is deferred to \cref{sec:deferred-proofs}.
+
+\Cref{obj:prop:no-extrapolation-boundary} explains why the low-budget assumption is imposed separately in \cref{obj:ass:low-budget-cap}. At full rollout, the endpoint contrast can be estimated by the difference between the final and baseline round means, with amplification bounded independently of \(\beta\). The exponential behavior in the next theorem is therefore specific to endpoint extrapolation.
+
+Chebyshev-Lobatto placement is the schedule that controls this extrapolation cost. The theorem below compares every admissible schedule to the shifted Chebyshev-Lobatto schedule from \cref{obj:def:chebyshev-schedule}, uniformly over budgets bounded away from one. The oversampling ratio \leanref{sym:c}{\ensuremath{c}} permits more than the minimum \(\beta+1\) measurements, which is the regime in which the discrete Lobatto grid norms the relevant continuous polynomial problem.
+
+\begin{theoremv}{thm:chebyshev-minimax}[Chebyshev Minimax Amplification]
+Fix a budget cap \(q_{\max}\in(0,1)\). There exists a constant
+\(C_-(q_{\max})>0\) such that, for every oversampling ratio \(c>1\), there
+exists a constant \(C_+(c,q_{\max})>0\) with the following property.
+
+For every pair of integers \(\beta,k\), every rollout budget \(q\), and every
+schedule \(p\), suppose that
+\begin{itemize}
+\item \textbf{(Order and oversampling.)} \(\beta\ge 1\) and \(k\ge c\beta\).
+\item \textbf{(Low-budget regime.)} \(q>0\) and the low-budget cap condition of
+\cref{obj:ass:low-budget-cap} holds for \((q,q_{\max})\).
+\item \textbf{(Admissible schedule.)} When \(p\) is used below, \(p\in S_{k,q}\)
+as in \cref{obj:def:budgeted-schedule-class}.
+\end{itemize}
+Then, with \(A_\beta(\cdot)\) and \(M_{\beta,k,q}\) as in
+\cref{obj:def:amplification-criterion} and
+\(p^{\mathrm{Ch}}(k,q)\) as in \cref{obj:def:chebyshev-schedule},
+\[
+A_\beta(p)
+\ge
+C_-(q_{\max})
+\left(\frac{(1+\sqrt{1-q})^2}{q}\right)^{2\beta},
+\]
+and
+\[
+A_\beta\!\left(p^{\mathrm{Ch}}(k,q)\right)
+\le
+C_+(c,q_{\max})
+\left(\frac{(1+\sqrt{1-q})^2}{q}\right)^{2\beta}.
+\]
+Moreover, the minimax amplification satisfies the matching two-sided bound
+\[
+C_-(q_{\max})
+\left(\frac{(1+\sqrt{1-q})^2}{q}\right)^{2\beta}
+\le
+M_{\beta,k,q}
+\le
+C_+(c,q_{\max})
+\left(\frac{(1+\sqrt{1-q})^2}{q}\right)^{2\beta}.
+\]
+\end{theoremv}
+
+\cref{obj:thm:chebyshev-minimax} gives the main schedule result. For fixed \(q\le q_{\max}<1\) and \(k\ge c\beta\), no admissible schedule can improve the amplification exponent beyond the displayed Chebyshev base, while the shifted Chebyshev-Lobatto schedule attains the same rate up to constants depending only on \(q_{\max}\) and \(c\). Under the envelope criterion, the rate-optimal schedule clusters measurements near \(0\) and \(q\), as in Chebyshev-Lobatto extrapolation; heuristically the experimenter concentrates measurements near the interval endpoints, where controlling the polynomial extrapolation to \(u=1\) is most demanding. The low-budget cost remains exponential in the polynomial order, but Chebyshev-Lobatto placement controls the exponent that the total-variation variance envelope makes unavoidable.
+
+To make the exponential base concrete, \cref{tab:rate-base} reports the low-budget Chebyshev base \((1+\sqrt{1-q})^2/q\) alongside the equal-spacing \emph{upper-bound} base \(\beta/q\) implied by \cref{obj:prop:equal-spacing-benchmark}, for several budgets \(q\). The Chebyshev base is at most \(4/q\) and is independent of \(\beta\), whereas the equal-spacing upper-bound base grows linearly in \(\beta\) (\cref{obj:prop:equal-spacing-benchmark} bounds equal-spacing amplification from above only, so this column is an upper-bound base, not a certified rate); the amplification is the corresponding base raised to the power \(2\beta\), and the constants \(C_-(q_{\max}),C_+(c,q_{\max})\) of \cref{obj:thm:chebyshev-minimax} depend only on \(q_{\max}\) and \(c\).
+
+\begin{table}[h]
+\centering
+\begin{tabular}{cccc}
+\hline
+\(q\) & Chebyshev base \((1+\sqrt{1-q})^2/q\) & bound \(4/q\) & equal-spacing upper-bound base \(\beta/q\) \\
+\hline
+\(0.05\) & \(78.0\) & \(80.0\) & \(20\beta\) \\
+\(0.1\) & \(38.0\) & \(40.0\) & \(10\beta\) \\
+\(0.2\) & \(17.9\) & \(20.0\) & \(5\beta\) \\
+\(0.5\) & \(5.83\) & \(8.0\) & \(2\beta\) \\
+\hline
+\end{tabular}
+\caption{Low-budget amplification bases (the amplification is the base raised to the power \(2\beta\)). The Chebyshev base is \(\beta\)-independent and at most \(4/q\); the equal-spacing base scales with \(\beta/q\).}
+\label{tab:rate-base}
+\end{table}
+
+\section{Discussion and Extensions}
+
+The envelope result in \cref{obj:thm:tv-envelope-design} is deliberately conservative about the covariance structure of a nested rollout. It permits any positive semidefinite covariance matrix whose diagonal entries satisfy the round-mean variance envelope, and it therefore turns the schedule problem into a polynomial amplification problem. The exact finite-population problem in \cref{obj:def:exact-nested-risk} is narrower: the covariance matrix is the true design covariance matrix \(\Gamma_P(p)\) induced by the rollout law that generates the observed round means. The specific covariance restrictions this law imposes beyond the diagonal variance envelope are not encoded in the verified formal layer; accordingly \(R_{\mathrm{exact}}\) is treated here as a symbolic benchmark, and the only verified comparison between the exact and envelope problems is the one-sided variance-envelope inequality of \cref{obj:lem:exact-risk-envelope-upper}. That extra structure may matter for finite-sample optimality, even though the envelope criterion already gives an interpretable design rule that is sharp over the positive-semidefinite diagonal-envelope covariance class.
+
+\subsection{Exact-covariance scope and limitations}
+
+The distinction is important for the status of Chebyshev-Lobatto placement. \Cref{obj:thm:chebyshev-minimax} proves rate-minimax optimality up to constants for the total-variation envelope criterion \(A_\beta(p)\) and \(M_{\beta,k,q}\). Exact optimality with \(\Gamma_P(p)\) left inside the minimax risk is the stronger covariance-specific question recorded separately below.
+
+\begin{remarkv}{oeq:exact-nested-minimax}[Exact nested optimality]
+Fix a finite assignment space \(\Omega\) with rollout randomization \(\pi\), population size \(n\), and variance-envelope scale \(\sigma_0^2\). Fix a budget cap \(q_{\max}\) with \(0<q_{\max}<1\), let \(c>1\), let \(\beta\ge 1\), set \(k=\lceil c\beta\rceil\), and take \(q\) with \(0<q\le q_{\max}\). Under these hypotheses the shifted Chebyshev-Lobatto schedule \(p^{\mathrm{Ch}}(k,q)\) is admissible, so that
+\[
+p^{\mathrm{Ch}}(k,q)\in S_{k,q}.
+\]
+For the exact finite-population nested-rollout minimax problem
+\[
+R_{\mathrm{exact}}(\beta,k,q)
+=
+\inf_{p\in S_{k,q}}
+\inf_{w\in W_\beta(p)}
+\sup_{P\in\mathcal P_\beta}
+w^\prime \Gamma_P(p) w,
+\]
+where \(\Gamma_P(p)\) is the true design covariance matrix of the monotone Bernoulli rollout and \(\mathcal P_\beta\) includes the static-rollout, \(\beta\)-polynomial, variance-envelope, and mean-curve-pinning restrictions, the open question is whether the fixed Chebyshev-Lobatto exact risk attains the nested infimum:
+\[
+\inf_{w\in W_\beta(p^{\mathrm{Ch}}(k,q))}
+\sup_{P\in\mathcal P_\beta}
+w^\prime \Gamma_P(p^{\mathrm{Ch}}(k,q)) w
+=
+R_{\mathrm{exact}}(\beta,k,q).
+\]
+This statement is only the exact-optimality question for \(p^{\mathrm{Ch}}(k,q)\); it does not assert the separate rate-feasibility bound.
+\end{remarkv}
+
+\cref{obj:oeq:exact-nested-minimax} keeps exact optimality separate from rate feasibility. The equality displayed there characterizes the optimizer of the true nested covariance problem and is stronger than achieving the same exponential order as the envelope benchmark. Establishing such an equality calls for the covariance restrictions implied by monotone Bernoulli rollout designs in addition to the diagonal variance envelope. Related finite-population interference designs suggest that these restrictions can be substantive, especially when exposure mappings, clustered assignments, or dependency neighborhoods impose additional structure on covariances \citep{cortezrodriguez2024,eichhorn2024,jiang2023,cai2023}.
+
+The results below state the rate implication delivered by the one-sided envelope comparison. The exact nested risk is bounded above by the envelope amplification criterion at every admissible schedule. Therefore any schedule that is good for the envelope problem is automatically feasible for the exact finite-population risk.
+
+\begin{lemmav}{lem:exact-risk-envelope-upper}[Exact Risk Envelope Bound]
+Let $\Omega$ be a finite assignment space equipped with rollout randomization $\pi$. For any population size $n$, any integers $k$ and $\beta$, any real numbers $q$ and $\sigma_0^2$, and any schedule $p=(p_0,\ldots,p_k)$, suppose that
+\begin{itemize}
+\item \textbf{(Order.)} $\beta\ge 1$.
+\item \textbf{(Number of rollout intervals.)} $k\ge \beta$.
+\item \textbf{(Budget.)} $0<q\le 1$.
+\item \textbf{(Variance scale.)} $\sigma_0^2\ge 0$.
+\item \textbf{(Budgeted schedule.)} $p\in S_{k,q}$, as in \cref{obj:def:budgeted-schedule-class}.
+\end{itemize}
+Then
+\[
+\inf_{w\in W_\beta(p)}
+\sup_{P\in\mathcal P_\beta}
+w^\prime \Gamma_P(p) w
+\le
+\frac{\sigma_0^2}{n}\,A_\beta(p),
+\]
+with $W_\beta(p)$ as in \cref{obj:def:unbiased-weight-set}, $\mathcal P_\beta$ as in \cref{obj:def:rollout-law-class}, and $A_\beta(p)$ as in \cref{obj:def:amplification-criterion}. Consequently,
+\[
+R_{\mathrm{exact}}(\beta,k,q)
+\le
+\frac{\sigma_0^2}{n}\,M_{\beta,k,q},
+\]
+where $R_{\mathrm{exact}}(\beta,k,q)$ is as in \cref{obj:def:exact-nested-risk} and $M_{\beta,k,q}$ is as in \cref{obj:def:amplification-criterion}.
+\end{lemmav}
+
+The proof is deferred to \cref{sec:deferred-proofs}.
+
+\Cref{obj:lem:exact-risk-envelope-upper} is a one-sided comparison. It places the exact covariance minimax risk below the envelope risk because the envelope allows a larger class of covariance matrices than those generated by the rollout law. A matching lower bound and characterization of the exact-risk minimizing schedule constitute the remaining exact-covariance problem.
+
+Combining this comparison with the Chebyshev upper bound gives the finite-population feasibility statement relevant for low-budget rollout design. With \(k=\lceil c\beta\rceil\), the shifted Chebyshev-Lobatto schedule attains the same exponential rate for the exact risk upper bound as it does for the envelope criterion.
+
+\begin{lemmav}{lem:exact-chebyshev-rate-feasible}[Feasible Chebyshev Rate]
+Fix an oversampling constant \(c\) and a budget cap \(q_{\max}\) such that \(c>1\) and \(0<q_{\max}<1\). Then there exists a constant \(C_+(c,q_{\max})>0\) such that, for every population size \(n\), polynomial order \(\beta\), number of rollout intervals \(k\), finite assignment space \(\Omega\), finite design \(\pi\) on \(\Omega\), rollout budget \(q\), and variance-envelope scale \(\sigma_0^2\), the following conditions imply the stated bound:
+\begin{itemize}
+\item \textbf{(Order.)} \(\beta\ge 1\).
+\item \textbf{(Budget.)} \(q>0\) and \(q\) satisfies the low-budget cap with \(q_{\max}\) in \cref{obj:ass:low-budget-cap}.
+\item \textbf{(Variance scale.)} \(\sigma_0^2\ge 0\).
+\item \textbf{(Chebyshev size.)} \(k=\lceil c\beta\rceil\).
+\item \textbf{(Schedule.)} \(p=p^{\mathrm{Ch}}(k,q)\) is the shifted Chebyshev-Lobatto schedule of \cref{obj:def:chebyshev-schedule}.
+\end{itemize}
+Under these conditions,
+\[
+\inf_{w\in W_\beta(p^{\mathrm{Ch}}(k,q))}
+\sup_{P\in\mathcal P_\beta}
+\operatorname{Var}_\pi\!\left(\sum_{j=0}^k w_j\bar Y_j\right)
+\le
+\frac{\sigma_0^2}{n}\,
+C_+(c,q_{\max})
+\left(\frac{(1+\sqrt{1-q})^2}{q}\right)^{2\beta},
+\]
+where \(W_\beta(p^{\mathrm{Ch}}(k,q))\) is the unbiased weight set of \cref{obj:def:unbiased-weight-set}, and the supremum ranges over rollout laws \(P\in\mathcal P_\beta\) satisfying \cref{obj:def:rollout-law-class} at the schedule \(p^{\mathrm{Ch}}(k,q)\) with variance-envelope scale \(\sigma_0^2\).
+\end{lemmav}
+
+The proof is deferred to \cref{sec:deferred-proofs}.
+
+\Cref{obj:lem:exact-chebyshev-rate-feasible} gives a practical interpretation of the main theorem for the original rollout experiment. Independently of exact nested optimality, the Chebyshev-Lobatto schedule has infimum worst-case exact variance over unbiased linear estimators bounded by the displayed low-budget exponential rate. Thus the envelope solution supplies a feasible exact-risk design with controlled finite-population risk.
+
+\subsection{Future work}
+
+Several extensions are natural. Clustered rollouts would replace unit-level monotone Bernoulli assignment with group-level assignment and would require tracking how cluster size and within-cluster exposure affect the round-mean covariance matrix. Mixed designs that combine rollout fractions with saturation, encouragement, or exposure-based randomization would add further design variables beyond the treated-fraction schedule, connecting the present extrapolation problem to recent work on clustered and network experiments \citep{chen2025,fan2025,bhadra2025,schroder2026}. Adjacent staggered-rollout efficiency work outside network interference is also relevant for positioning the rollout-design question \citep{roth2021}. The Chebyshev argument suggests that endpoint placement should remain central whenever the estimand extrapolates beyond the observed rollout range, with a design-specific minimax object for each extension.
+
+\appendix
+
+\section*{Appendices}
+
+\section{Proofs and Verification}
+
+This appendix collects the auxiliary statements that support the envelope design result and the low-budget Chebyshev rate. The first part translates the rollout-weight problem into a real-polynomial optimal-recovery problem; the second part records the Chebyshev approximation inequalities; the final part returns these inequalities to the admissible rollout schedules and to the variance envelope. The appendix states the mathematical ingredients under the modeling assumptions introduced in the main text.
+
+The bridge from rollout weights to approximation is the duality between minimum \(\ell^1\) norm weights and bounded polynomial extrapolation. In the notation of \cref{obj:def:unbiased-weight-set}, the moment equations make each admissible weight vector a linear functional on degree-\(\beta\) polynomials. The dual norm of this functional is exactly the largest endpoint contrast among polynomials bounded at the chosen schedule nodes.
+
+\begin{lemmav}{lem:amplification-dual-norm}[Dual Norm Amplification]
+Let \(\beta,k\in\mathbb N\) and let \(p=(p_0,\ldots,p_k)\) be a real-valued schedule whose nodes are distinct. Suppose that the unbiased weight set \(W_\beta(p)\) in \cref{obj:def:unbiased-weight-set} is nonempty. Then
+\[
+\inf_{w\in W_\beta(p)} \sum_{j=0}^k |w_j|
+=
+\sup\left\{
+|r(1)-r(0)|:
+r\in\mathbb R[x],\ \deg(r)\le \beta,\ \max_{0\le j\le k}|r(p_j)|\le 1
+\right\}.
+\]
+Consequently, for the amplification criterion \(A_\beta(p)\) in \cref{obj:def:amplification-criterion},
+\[
+A_\beta(p)
+=
+\left(
+\sup\left\{
+|r(1)-r(0)|:
+r\in\mathbb R[x],\ \deg(r)\le \beta,\ \max_{0\le j\le k}|r(p_j)|\le 1
+\right\}
+\right)^2 .
+\]
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:amplification-dual-norm}]
+Rewrite the unbiasedness equations in the single moment form
+\[
+\sum_{j=0}^k w_jp_j^\ell=
+\begin{cases}
+0,&\ell=0,\\
+1,&1\le \ell\le\beta,
+\end{cases}
+\qquad 0\le\ell\le\beta .
+\]
+This is equivalent to \(w\in W_\beta(p)\): the case \(\ell=0\) is the zeroth-moment equation in \cref{obj:def:unbiased-weight-set}, while each positive \(\ell\le\beta\) is one of its remaining moment equations. % lean: key
+Consequently the set of attainable \(\ell^1\) norms
+\[
+\left\{\sum_{j=0}^k |w_j|:w\in W_\beta(p)\right\}
+\]
+is exactly the primal norm set for this moment system, and the assumed nonemptiness of \(W_\beta(p)\) gives primal feasibility. % lean: hprimal_set
+
+Finite-dimensional \(\ell^1/\ell^\infty\) duality for the endpoint functional \(r\mapsto r(1)-r(0)\), restricted to polynomials of degree at most \(\beta\), therefore gives
+\[
+\inf_{w\in W_\beta(p)}\sum_{j=0}^k |w_j|
+=
+\sup\left\{
+|r(1)-r(0)|:
+\deg(r)\le\beta,\ \max_{0\le j\le k}|r(p_j)|\le1
+\right\}.
+\] % lean: l1_repr_eq_sup_dual_of_momentSol_nonempty
+
+For the squared identity, let
+\[
+D=
+\sup\left\{
+|r(1)-r(0)|:
+\deg(r)\le\beta,\ \max_{0\le j\le k}|r(p_j)|\le1
+\right\}.
+\]
+The zero polynomial is feasible on the dual side, so \(D\ge0\). % lean: dual_nonneg_of_momentSol_nonempty
+Let
+\[
+\mathcal A=\left\{\left(\sum_{j=0}^k |w_j|\right)^2:w\in W_\beta(p)\right\}.
+\]
+This set is nonempty and bounded below by \(0\). For every feasible \(w\), the first duality equality gives \(D\le \sum_j |w_j|\), hence \(D^2\le(\sum_j |w_j|)^2\); taking the infimum over \(\mathcal A\) gives \(D^2\le\inf\mathcal A\). % lean: hAmp_lower
+Conversely, strong duality supplies a feasible \(w\in W_\beta(p)\) with \(\sum_j |w_j|\le D\), and therefore
+\[
+\inf\mathcal A\le \left(\sum_j|w_j|\right)^2\le D^2.
+\] % lean: exists_moment_le_dual_of_momentSol_nonempty
+Thus \(\inf\mathcal A=D^2\). Since \cref{obj:def:amplification-criterion} defines \(A_\beta(p)\) as precisely this infimum, the claimed squared formula follows. % lean: amplification_dual_norm
+\end{proof}
+
+\cref{obj:lem:amplification-dual-norm} is the point at which the econometric design problem becomes the \leanref{S-2}{real polynomial optimal-recovery problem}. The schedule affects the right-hand side only through the locations at which the polynomial is constrained. Hence minimax placement of rollout fractions is equivalent, under the envelope criterion, to choosing nodes that make bounded interpolation on \([0,q]\) as stable as possible for the endpoint contrast \(r(1)-r(0)\).
+
+The approximation bounds used for that comparison are standard Chebyshev facts adapted to the extrapolation geometry. The first is the exterior extremal property: among degree-\(\beta\) polynomials bounded by one on \([-1,1]\), the Chebyshev polynomial controls growth outside the interval \citep{karlin1966,pukelsheim1993}.
+
+\begin{lemmav}{lem:chebyshev-exterior-extremal}[Exterior Chebyshev Extremal Bound]
+Let $\beta$ be a positive integer. For every real polynomial $P$ and every exterior point $x_0$, suppose that
+\begin{itemize}
+\item \textbf{(Degree bound.)} $\deg(P)\le \beta$.
+\item \textbf{(Unit interval bound.)} For every $x\in[-1,1]$, $|P(x)|\le 1$.
+\item \textbf{(Exterior point.)} $x_0>1$.
+\end{itemize}
+Then
+\[
+|P(x_0)|\le T_\beta(x_0),
+\]
+where $T_\beta$ is the Chebyshev polynomial of the first kind of degree $\beta$.
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:chebyshev-exterior-extremal}]
+Let \(v_i\), \(i=0,\ldots,\beta\), be the Chebyshev extremal nodes, so that \(v_i\in[-1,1]\) and \(T_\beta(v_i)=(-1)^i\). These nodes are distinct, and \(T_\beta\) has degree \(\beta\), so both \(T_\beta\) and any polynomial \(Q\) of degree at most \(\beta\) are recovered from their values at the nodes by Lagrange interpolation. % lean: hvs
+
+First prove the one-sided claim: if \(\deg(Q)\le\beta\) and \(|Q(x)|\le1\) on \([-1,1]\), then
+\[
+Q(x_0)\le T_\beta(x_0).
+\]
+Interpolating \(Q\) and \(T_\beta\) at the nodes and evaluating at \(x_0\) gives
+\[
+Q(x_0)=\sum_{i=0}^{\beta}Q(v_i)L_i(x_0),
+\qquad
+T_\beta(x_0)=\sum_{i=0}^{\beta}T_\beta(v_i)L_i(x_0),
+\]
+where \(L_i\) is the \(i\)th Lagrange basis polynomial. % lean: hQeval
+For \(x_0>1\), the signed exterior coefficients satisfy
+\[
+(-1)^iL_i(x_0)\ge0.
+\]
+Indeed, all numerator factors \(x_0-v_j\) are positive, and the sign of the denominator is obtained by splitting the indices below and above \(i\), using the monotone ordering of the Chebyshev nodes. % lean: chebyshev_exterior_lagrange_coeff_nonneg
+Since \(v_i\in[-1,1]\), the bound on \(Q\) gives \(|Q(v_i)|\le1\), hence
+\[
+(-1)^iQ(v_i)\le1.
+\] % lean: neg_one_pow_mul_le_of_abs_le_one
+Multiplying by the nonnegative coefficient \((-1)^iL_i(x_0)\) yields
+\[
+Q(v_i)L_i(x_0)
+\le
+(-1)^iL_i(x_0)
+=
+T_\beta(v_i)L_i(x_0).
+\]
+Summing over \(i\) proves the one-sided claim. % lean: upper
+
+Apply this claim first to \(Q=P\), obtaining \(P(x_0)\le T_\beta(x_0)\). Apply it again to \(Q=-P\); the degree bound and interval bound are unchanged, so \(-P(x_0)\le T_\beta(x_0)\). % lean: hneg_upper
+The two inequalities are exactly
+\[
+-T_\beta(x_0)\le P(x_0)\le T_\beta(x_0),
+\]
+and hence
+\[
+|P(x_0)|\le T_\beta(x_0).
+\] % lean: chebyshev_exterior_extremal
+\end{proof}
+
+For the rollout application, the polynomial is controlled at the finite set of measurement nodes. Oversampled Chebyshev-Lobatto grids pass from this nodewise control to uniform control on the interval. The next statement records the required discrete norming step, conditional on the Ehlich--Zeller mesh inequality.
+
+\begin{lemmav}{lem:oversampled-chebyshev-lobatto-norming}[Oversampled Lobatto Norming]
+Suppose the Ehlich--Zeller Chebyshev--Lobatto mesh inequality holds: for every pair of nonnegative integers $\beta,k$ and every real polynomial $R$ with $\deg(R)\le \beta$ and $\beta<k$,
+\[
+ |R(x)|
+ \le
+ \frac{1}{\cos(\pi\beta/(2k))}
+ \max_{0\le j\le k}\left|R\!\left(-\cos\!\left(\frac{\pi j}{k}\right)\right)\right|
+\]
+for every $x\in[-1,1]$.  Then, for every real oversampling ratio $c$ with $c>1$, there exists a real constant $K(c)>0$ such that the following holds.  For every pair of nonnegative integers $\beta,k$ and every real polynomial $R$ satisfying
+\begin{itemize}
+\item \textbf{(Positive order.)} $\beta\ge 1$,
+\item \textbf{(Oversampling.)} $k\ge c\beta$,
+\item \textbf{(Degree bound.)} $\deg(R)\le \beta$,
+\end{itemize}
+one has, for every $x\in[-1,1]$,
+\[
+ |R(x)|
+ \le
+ K(c)
+ \max_{0\le j\le k}\left|R\!\left(-\cos\!\left(\frac{\pi j}{k}\right)\right)\right|.
+\]
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:oversampled-chebyshev-lobatto-norming}]
+Fix \(c>1\), and set
+\[
+K(c)=\frac{1}{\cos(\pi/(2c))}.
+\]
+Since \(c>1\), the angle \(\pi/(2c)\) lies strictly between \(0\) and \(\pi/2\), so \(K(c)>0\). % lean: oversampled_chebyshev_lobatto_norming
+Now let \(\beta\ge1\), \(k\ge c\beta\), and \(\deg(R)\le\beta\). Since \(c>1\) and \(\beta>0\), we have \(\beta<c\beta\le k\), hence \(\beta<k\). The assumed Ehlich--Zeller mesh inequality therefore gives, for every \(x\in[-1,1]\),
+\[
+|R(x)|
+\le
+\frac{1}{\cos(\pi\beta/(2k))}
+\max_{0\le j\le k}
+\left|R\!\left(-\cos\!\left(\frac{\pi j}{k}\right)\right)\right|.
+\] % lean: EhlichZellerMesh
+It remains only to bound the secant factor uniformly. From \(k\ge c\beta\) and \(k>0\),
+\[
+\frac{\beta}{k}\le \frac1c,
+\qquad\text{hence}\qquad
+0\le \frac{\pi\beta}{2k}\le \frac{\pi}{2c}.
+\]
+Also \(\pi/(2c)<\pi/2\). Since cosine is decreasing on \([0,\pi]\), this implies
+\[
+\cos(\pi/(2c))\le \cos(\pi\beta/(2k)),
+\]
+and positivity of \(\cos(\pi/(2c))\) gives
+\[
+\frac{1}{\cos(\pi\beta/(2k))}
+\le
+\frac{1}{\cos(\pi/(2c))}=K(c).
+\] % lean: oversampled_chebyshev_lobatto_norming
+The displayed maximum is nonnegative, being a maximum of absolute values, so multiplying the last inequality by it and combining with the Ehlich--Zeller bound proves the claim. % lean: oversampled_chebyshev_lobatto_norming
+\end{proof}
+
+\cref{obj:lem:oversampled-chebyshev-lobatto-norming} explains why the main theorem imposes \(k\ge c\beta\) with \(c>1\). Oversampling prevents a degree-\(\beta\) polynomial from taking large values between adjacent Lobatto nodes while remaining small at the nodes. The constant \(K(c)\) is allowed to depend on the oversampling ratio, but not on \(\beta\), \(k\), or the rollout budget.
+
+The affine map from \([0,q]\) to \([-1,1]\) sends the target endpoint \(u=1\) to the exterior point \(x_q=2/q-1\). The corresponding Chebyshev multiplier \(\lambda(q)=x_q+\sqrt{x_q^2-1}\) gives the low-budget exponential base. Uniformity over \(q\le q_{\max}<1\) is recorded next.
+
+\begin{lemmav}{lem:continuous-chebyshev-endpoint-bound}[Continuous Chebyshev Endpoint Bound]
+Fix \(q_{\max}\) with \(0<q_{\max}<1\). Then there exist constants \(C(q_{\max})>0\) and \(c(q_{\max})>0\) such that, for every \(\beta\in\mathbb N\) and every \(q\in\mathbb R\), if
+\begin{itemize}
+\item \textbf{(Degree.)} \(1\le \beta\),
+\item \textbf{(Budget.)} \(0<q\le q_{\max}\),
+\item \textbf{(Exterior notation.)} \(x_q=2/q-1\) and \(\lambda(q)=x_q+\sqrt{x_q^2-1}\),
+\end{itemize}
+then both of the following hold:
+\[
+\text{for every real polynomial }R\text{ with }\deg(R)\le \beta
+\text{ and }\sup_{x\in[-1,1]}|R(x)|\le 1,\qquad
+|R(x_q)-R(-1)|\le C(q_{\max})\,\lambda(q)^\beta,
+\]
+and
+\[
+T_\beta(x_q)-1\ge c(q_{\max})\,\lambda(q)^\beta .
+\]
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:continuous-chebyshev-endpoint-bound}]
+Put
+\[
+x_0=\frac{2}{q_{\max}}-1,
+\qquad
+\lambda_0=x_0+\sqrt{x_0^2-1}.
+\]
+Since \(0<q_{\max}<1\), one has \(x_0>1\), and hence \(\lambda_0>1\). Choose
+\[
+C(q_{\max})=2,
+\qquad
+c(q_{\max})=\frac12(1-\lambda_0^{-1})^2 .
+\]
+These constants are positive, because \(\lambda_0>1\). % lean: continuous_chebyshev_endpoint_bound
+Now let \(\beta\ge1\) and \(0<q\le q_{\max}\), and write
+\[
+x_q=\frac2q-1,
+\qquad
+\lambda(q)=x_q+\sqrt{x_q^2-1}.
+\]
+Then \(q<1\), so \(x_q>1\) and \(\lambda(q)>1\). Moreover the map \(q\mapsto x_q+\sqrt{x_q^2-1}\) is decreasing on this range, so \(q\le q_{\max}\) gives
+\[
+\lambda_0\le \lambda(q).
+\] % lean: endpoint_lambda_mono
+Let \(R\) be a real polynomial with \(\deg(R)\le\beta\) and \(|R(x)|\le1\) for \(x\in[-1,1]\). By \cref{obj:lem:chebyshev-exterior-extremal}, applied at the exterior point \(x_q>1\),
+\[
+|R(x_q)|\le T_\beta(x_q).
+\] % lean: chebyshev_exterior_extremal
+Also \(|R(-1)|\le1\), and therefore
+\[
+|R(x_q)-R(-1)|
+\le |R(x_q)|+|R(-1)|
+\le T_\beta(x_q)+1.
+\] % lean: continuous_chebyshev_endpoint_bound
+For \(x_q\ge1\), the Chebyshev evaluation formula gives
+\[
+T_\beta(x_q)
+=
+\frac{\lambda(q)^\beta+\lambda(q)^{-\beta}}2.
+\] % lean: chebyshev_eval_eq_lambda_average
+Since \(\lambda(q)\ge1\) and \(\beta\ge1\),
+\[
+\frac{\lambda(q)^\beta+\lambda(q)^{-\beta}}2+1
+\le 2\lambda(q)^\beta.
+\] % lean: chebyshev_lambda_average_add_one_le
+Combining these inequalities proves
+\[
+|R(x_q)-R(-1)|\le 2\lambda(q)^\beta
+= C(q_{\max})\lambda(q)^\beta.
+\]
+For the lower bound, the same evaluation formula and the inequalities \(\lambda_0>1\), \(\lambda_0\le\lambda(q)\), and \(\beta\ge1\) give
+\[
+T_\beta(x_q)-1
+=
+\frac{\lambda(q)^\beta+\lambda(q)^{-\beta}}2-1
+\ge
+\frac12(1-\lambda_0^{-1})^2\lambda(q)^\beta
+=
+c(q_{\max})\lambda(q)^\beta.
+\] % lean: chebyshev_lambda_average_sub_one_ge
+This proves both assertions. % lean: continuous_chebyshev_endpoint_bound
+\end{proof}
+
+\cref{obj:lem:continuous-chebyshev-endpoint-bound} supplies the continuous upper and lower endpoint calculations behind \cref{obj:thm:chebyshev-minimax}. The first inequality controls the extrapolation contrast for every bounded polynomial; the second shows that the Chebyshev polynomial itself has the corresponding order of growth. After rescaling from \([-1,1]\) back to \([0,q]\), this is the source of the factor \(((1+\sqrt{1-q})^2/q)^{2\beta}\) in the amplification criterion.
+
+The remaining deterministic ingredients connect the approximation statements to the rollout schedule class. First, the shifted Chebyshev-Lobatto nodes used in \cref{obj:def:chebyshev-schedule} are admissible budgeted schedules.
+
+\begin{lemmav}{lem:chebyshev-schedule-admissible}[Chebyshev Schedule Admissibility]
+For every integer $k \ge 1$ and every $q \in (0,1]$, the shifted Chebyshev--Lobatto schedule $p^{\mathrm{Ch}}(k,q)$ of \cref{obj:def:chebyshev-schedule} is an element of the budgeted schedule class $S_{k,q}$ of \cref{obj:def:budgeted-schedule-class}. Equivalently, its coordinates all lie in $[0,1]$, it starts at $0$, is strictly increasing across the rollout measurement indices, and ends at $q$.
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:chebyshev-schedule-admissible}]
+Let \(k\ge1\) and \(0<q\le1\). For
+\[
+p^{\mathrm{Ch}}_j(k,q)=\frac q2\left(1-\cos\frac{\pi j}{k}\right),
+\]
+the inequalities \(-1\le \cos(\pi j/k)\le1\) imply \(0\le 1-\cos(\pi j/k)\le2\). Since \(0<q\le1\), it follows that \(p^{\mathrm{Ch}}_j(k,q)\in[0,1]\) for every \(j\). % lean: chebyshev_schedule_admissible
+At \(j=0\), \(\cos 0=1\), so \(p^{\mathrm{Ch}}_0(k,q)=0\). At \(j=k\), \(\cos\pi=-1\), so \(p^{\mathrm{Ch}}_k(k,q)=q\). % lean: chebyshev_schedule_admissible
+It remains to check strict increase. If \(0\le a<b\le k\), then
+\[
+0\le \frac{\pi a}{k}<\frac{\pi b}{k}\le \pi.
+\]
+Cosine is strictly decreasing on \([0,\pi]\), hence
+\[
+\cos\frac{\pi b}{k}<\cos\frac{\pi a}{k}.
+\]
+Thus
+\[
+1-\cos\frac{\pi a}{k}
+<
+1-\cos\frac{\pi b}{k},
+\]
+and multiplication by the positive number \(q/2\) gives
+\[
+p^{\mathrm{Ch}}_a(k,q)<p^{\mathrm{Ch}}_b(k,q).
+\] % lean: chebyshev_schedule_admissible
+The coordinates are therefore in \([0,1]\), start at \(0\), are strictly increasing, and end at \(q\), so \(p^{\mathrm{Ch}}(k,q)\in S_{k,q}\). % lean: chebyshev_schedule_admissible
+\end{proof}
+
+The admissibility statement matters because \cref{obj:thm:chebyshev-minimax} compares the Chebyshev schedule to all elements of \(S_{k,q}\). It verifies that endpoint clustering at \(0\) and \(q\) is compatible with the strict monotonicity imposed by \cref{obj:def:budgeted-schedule-class}.
+
+A separate feasibility issue is the existence of polynomially unbiased weights. Distinct budgeted nodes provide enough interpolation information once the number of rollout intervals is at least the polynomial order.
+
+\begin{lemmav}{lem:unbiased-weight-set-nonempty}[Nonempty Unbiased Weights]
+Let \(q\in\mathbb R\), let \(\beta\) and \(k\) be integers, and let \(p=(p_0,\ldots,p_k)\) be a rollout schedule. Suppose that
+\begin{itemize}
+\item \textbf{(Order.)} \(\beta\ge 1\).
+\item \textbf{(Enough nodes.)} \(k\ge \beta\).
+\item \textbf{(Budgeted schedule.)} \(p\in S_{k,q}\), with \(S_{k,q}\) as in \cref{obj:def:budgeted-schedule-class}.
+\end{itemize}
+Then the unbiased weight set \(W_\beta(p)\) of \cref{obj:def:unbiased-weight-set} is nonempty. Equivalently, there exists a weight vector \(w=(w_0,\ldots,w_k)\) such that \(w\in W_\beta(p)\).
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:unbiased-weight-set-nonempty}]
+Because \(p\in S_{k,q}\), its nodes are distinct. Let \(L_j\) be the Lagrange basis polynomial associated with the node \(p_j\) among the full collection \(p_0,\ldots,p_k\), and define
+\[
+w_j=L_j(1)-L_j(0),
+\qquad j=0,\ldots,k.
+\] % lean: lagrange_endpoint_weights_unbiased
+For each \(0\le \ell\le\beta\), the monomial \(P(t)=t^\ell\) has degree at most \(\beta\le k\). Hence Lagrange interpolation on the \(k+1\) distinct nodes gives
+\[
+P(t)=\sum_{j=0}^k P(p_j)L_j(t).
+\]
+Evaluating at \(t=1\) and \(t=0\), and subtracting, yields
+\[
+\sum_{j=0}^k w_j p_j^\ell
+=
+1^\ell-0^\ell.
+\] % lean: lagrange_endpoint_weights_unbiased
+For \(\ell=0\) this is \(1-1=0\), while for every \(1\le\ell\le\beta\) it is \(1-0=1\). These are exactly the moment equations defining \(W_\beta(p)\). Thus the vector \(w\) belongs to \(W_\beta(p)\), and the set is nonempty. % lean: unbiased_weight_set_nonempty
+\end{proof}
+
+\cref{obj:lem:unbiased-weight-set-nonempty} justifies the infima over \(W_\beta(p)\) in \cref{obj:def:amplification-criterion} for the schedules used in the main results. Econometrically, \(k\ge\beta\) gives at least \(\beta+1\) distinct measurements, which is the finite-dimensional requirement for exactness on the monomial basis \(1,u,\ldots,u^\beta\).
+
+The last auxiliary statement is the variance-envelope calculation. It establishes the squared \(\ell^1\) norm as the sharp worst-case envelope over positive semidefinite covariance matrices with the stated diagonal bound.
+
+\begin{lemmav}{lem:variance-envelope-sharpness}[Sharp Variance Envelope]
+For any population size $n$, final rollout index $k$, finite assignment space $\Omega$ with rollout randomization $\pi$, rollout-round statistics $X_0,\ldots,X_k$, variance scale $\sigma_0^2$, and weight vector $w=(w_0,\ldots,w_k)$, suppose that
+\begin{itemize}
+\item \textbf{(Nonnegative scale.)} $\sigma_0^2\ge 0$.
+\item \textbf{(Round variance envelope.)} \cref{obj:ass:round-mean-variance-envelope} holds for $X_0,\ldots,X_k$ with scale $\sigma_0^2/n$.
+\end{itemize}
+Then
+\[
+\operatorname{Var}_\pi\!\left(\sum_{j=0}^k w_j X_j\right)
+\le
+\frac{\sigma_0^2}{n}\left(\sum_{j=0}^k |w_j|\right)^2 .
+\]
+Moreover, there exists a positive semidefinite matrix
+$\Gamma\in\mathbb R^{(k+1)\times(k+1)}$ such that
+\[
+\Gamma_{jj}\le \frac{\sigma_0^2}{n}\quad\text{for every }j=0,\ldots,k,
+\]
+and
+\[
+\sum_{i=0}^k\sum_{j=0}^k w_i\,\Gamma_{ij}\,w_j
+=
+\frac{\sigma_0^2}{n}\left(\sum_{j=0}^k |w_j|\right)^2 .
+\]
+\end{lemmav}
+
+\begin{proof}[Proof of \cref{obj:lem:variance-envelope-sharpness}]
+Write
+\[
+s=\frac{\sigma_0^2}{n}.
+\]
+The assumption \(\sigma_0^2\ge0\) gives \(s\ge0\). For any two rollout-round statistics \(Y,Z\), Cauchy--Schwarz for the finite design inner product gives
+\[
+|\operatorname{Cov}_\pi(Y,Z)|
+\le
+\sqrt{\operatorname{Var}_\pi(Y)}
+\sqrt{\operatorname{Var}_\pi(Z)}.
+\] % lean: variance_envelope_sharpness
+Applying the round variance envelope to \(X_i\) and \(X_j\), we obtain
+\[
+|\operatorname{Cov}_\pi(X_i,X_j)|\le s
+\qquad\text{for all }i,j.
+\] % lean: variance_envelope_sharpness
+Therefore
+\[
+\operatorname{Var}_\pi\!\left(\sum_{j=0}^k w_jX_j\right)
+=
+\sum_{i=0}^k\sum_{j=0}^k
+w_iw_j\,\operatorname{Cov}_\pi(X_i,X_j)
+\le
+\sum_{i=0}^k\sum_{j=0}^k |w_i|\,|w_j|\,s
+=
+s\left(\sum_{j=0}^k |w_j|\right)^2.
+\] % lean: variance_envelope_sharpness
+This is the stated variance bound.
+
+For sharpness, define signs
+\[
+\varepsilon_j=
+\begin{cases}
+1,& w_j\ge0,\\
+-1,& w_j<0,
+\end{cases}
+\]
+and set
+\[
+\Gamma_{ij}=s\,\varepsilon_i\varepsilon_j.
+\]
+This is the nonnegative scalar \(s\) times the rank-one matrix \(\varepsilon\varepsilon^\prime\), hence it is positive semidefinite. Moreover
+\[
+\Gamma_{jj}=s\,\varepsilon_j^2=s\le s
+\]
+for every \(j\). Finally, since \(w_j\varepsilon_j=|w_j|\),
+\[
+\sum_{i=0}^k\sum_{j=0}^k w_i\Gamma_{ij}w_j
+=
+s\left(\sum_{j=0}^k w_j\varepsilon_j\right)^2
+=
+s\left(\sum_{j=0}^k |w_j|\right)^2.
+\] % lean: variance_envelope_sharpness
+Substituting \(s=\sigma_0^2/n\) gives the desired matrix and equality. % lean: variance_envelope_sharpness
+\end{proof}
+
+\cref{obj:lem:variance-envelope-sharpness} completes the connection between approximation and variance. The upper bound follows from the diagonal variance envelope and positive semidefiniteness; the sharpness clause establishes \(A_\beta(p)\) as the smallest uniform envelope criterion when cross-round covariances are otherwise unrestricted. \Cref{obj:thm:tv-envelope-design} therefore optimizes this sharp criterion directly.
+
+\paragraph{Verification note.}
+The theorem statements and proofs for the formal results displayed in this paper are machine-checked in Lean 4. The checked development covers the finite-design variance algebra over a finite assignment space, the \(\ell^1/\ell^\infty\) dual amplification calculation, the positive-semidefinite variance-envelope sharpness argument, and the real-polynomial approximation objects used in the Chebyshev and Lobatto bounds. The potential-outcome consistency restriction in \cref{obj:ass:static-rollout-consistency}, the polynomial rollout restriction in \cref{obj:ass:beta-order-polynomial}, the law-class pinning in \cref{obj:def:rollout-law-class}, and the round-mean variance envelope in \cref{obj:ass:round-mean-variance-envelope} enter as hypotheses. For modularity, \cref{obj:lem:oversampled-chebyshev-lobatto-norming} is displayed conditionally on the Ehlich--Zeller Chebyshev--Lobatto mesh inequality (Ehlich and Zeller, \emph{Schwankung von Polynomen zwischen Gitterpunkten}, Math.\ Z.\ 86 (1964), 41--44), which appears as an explicit hypothesis of that lemma. The accompanying Lean development additionally proves the Ehlich--Zeller inequality through a Bernstein--Szeg\H{o} differential-inequality argument, thereby discharging this classical approximation-theory input. A machine-readable crosswalk from each displayed statement to its checked Lean declaration accompanies the paper, together with the Lean and mathlib versions and the build instructions needed to reproduce the verification.
+
+\section{Proofs of the main results}\label{sec:deferred-proofs}
+
+\begin{proof}[Proof of \cref{obj:prop:rollout-polynomial-identity}]
+The static consistency hypothesis is part of the rollout environment, but the endpoint calculation uses only the polynomial mean assumption. Since both endpoints belong to \([0,1]\), evaluating the degree-\(\beta\) expansion at \(u=1\) gives
+\[
+m_P(1)=\sum_{\ell=0}^{\beta}a_{P,\ell},
+\]
+because \(1^\ell=1\) for every \(\ell\). Evaluating the same expansion at \(u=0\) gives
+\[
+m_P(0)=a_{P,0},
+\]
+since every nonzero-degree term contains \(0^\ell\), while the \(\ell=0\) term is \(a_{P,0}\). Finally, the finite sum over \(\{0,\ldots,\beta\}\) splits into its constant term and the positive-degree terms:
+\[
+\sum_{\ell=0}^{\beta}a_{P,\ell}
+=
+a_{P,0}+\sum_{\ell=1}^{\beta}a_{P,\ell}.
+\]
+This finite-sum identity is obtained by induction on \(\beta\), adjoining the top endpoint at each step. Substituting the two endpoint evaluations into this split and cancelling the constant term yields
+\[
+m_P(1)-m_P(0)=\sum_{\ell=1}^{\beta}a_{P,\ell}.
+\]
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:thm:tv-envelope-design}]
+Let
+\[
+c:=\frac{\sigma_0^2}{n}.
+\]
+The envelope-scale assumption gives \(c\ge 0\). We use this nonnegativity twice below, when pulling the scalar \(c\) through an infimum. % lean: div_nonneg
+
+\begin{enumerate}
+\item
+First, \(W_\beta(p)\) is nonempty. Indeed, the order hypothesis gives \(\beta\ge 1\), the theorem assumes \(k\ge \beta\), and \(p\in S_{k,q}\). Hence \cref{obj:lem:unbiased-weight-set-nonempty} applies and gives a weight vector \(w\in W_\beta(p)\). % lean: unbiased_weight_set_nonempty
+
+\item
+Fix now any \(w\in W_\beta(p)\). By linearity of design expectation and by the defining mean-curve restriction in \(\mathcal P_\beta\),
+\[
+\mathbb E_\pi\!\left[\sum_{j=0}^k w_j\bar Y_j\right]
+=
+\sum_{j=0}^k w_j\,m_P(p_j).
+\]
+Since \(p\in S_{k,q}\), every node \(p_j\) lies in \([0,1]\), so the degree-\(\beta\) polynomial condition in \(\mathcal P_\beta\) gives
+\[
+m_P(p_j)=\sum_{\ell=0}^{\beta} a_{P,\ell}p_j^\ell .
+\]
+Substituting and interchanging the two finite sums,
+\[
+\sum_{j=0}^k w_jm_P(p_j)
+=
+\sum_{\ell=0}^{\beta}
+a_{P,\ell}\sum_{j=0}^k w_jp_j^\ell .
+\]
+The moment equations defining \(W_\beta(p)\) give
+\[
+\sum_{j=0}^k w_jp_j^0=0,
+\qquad
+\sum_{j=0}^k w_jp_j^\ell=1
+\quad(1\le \ell\le \beta).
+\]
+Thus the last display equals \(\sum_{\ell=1}^{\beta}a_{P,\ell}\). By \cref{obj:prop:rollout-polynomial-identity}, this is \(m_P(1)-m_P(0)\), proving the unbiasedness identity. % lean: rollout_polynomial_identity
+
+\item
+For the variance statement, apply \cref{obj:lem:variance-envelope-sharpness} with \(X_j=\bar Y_j\). Its hypotheses are exactly the nonnegative-scale assumption and the round-mean variance-envelope component of \(\mathcal P_\beta\). Therefore
+\[
+\operatorname{Var}_\pi\!\left(\sum_{j=0}^k w_j\bar Y_j\right)
+\le
+\frac{\sigma_0^2}{n}\left(\sum_{j=0}^k |w_j|\right)^2,
+\]
+and the same lemma supplies a positive semidefinite matrix \(\Gamma\) with
+\[
+\Gamma_{jj}\le \frac{\sigma_0^2}{n}
+\quad\text{for all }j,
+\qquad
+\sum_{i=0}^k\sum_{j=0}^k w_i\Gamma_{ij}w_j
+=
+\frac{\sigma_0^2}{n}\left(\sum_{j=0}^k |w_j|\right)^2 .
+\] % lean: variance_envelope_sharpness
+
+\item
+For the fixed schedule \(p\), the defining set on the left-hand side of the first envelope identity is
+\[
+\left\{c\,u:\ 
+u=\left(\sum_{j=0}^k |w_j|\right)^2
+\text{ for some }w\in W_\beta(p)
+\right\}.
+\]
+Since \(c\ge0\), the infimum of this scalar multiple is \(c\) times the infimum of the unscaled set. By the definition of \(A_\beta(p)\) in \cref{obj:def:amplification-criterion}, this gives
+\[
+\inf\left\{
+v:\ \exists w\in W_\beta(p),\
+v=\frac{\sigma_0^2}{n}\left(\sum_{j=0}^k |w_j|\right)^2
+\right\}
+=
+\frac{\sigma_0^2}{n}A_\beta(p).
+\] % lean: Real.sInf_smul_of_nonneg
+
+\item
+The same scalar-infimum argument applies after also varying the schedule. Namely,
+\[
+\left\{
+v:\ \exists p'\in S_{k,q},\
+v=c\,A_\beta(p')
+\right\}
+=
+c\left\{
+u:\ \exists p'\in S_{k,q},\
+u=A_\beta(p')
+\right\}.
+\]
+Using \(c\ge0\) and the definition of \(M_{\beta,k,q}\) in \cref{obj:def:amplification-criterion}, we obtain
+\[
+\inf\left\{
+v:\ \exists p'\in S_{k,q},\
+v=\frac{\sigma_0^2}{n}A_\beta(p')
+\right\}
+=
+\frac{\sigma_0^2}{n}M_{\beta,k,q}.
+\] % lean: Real.sInf_smul_of_nonneg
+
+\item
+Finally, suppose \(p^\star\in S_{k,q}\) and
+\[
+A_\beta(p^\star)=M_{\beta,k,q}.
+\]
+For any \(p'\in S_{k,q}\), the definition of \(M_{\beta,k,q}\) as the infimum over budgeted schedules gives
+\[
+M_{\beta,k,q}\le A_\beta(p').
+\]
+Hence \(A_\beta(p^\star)\le A_\beta(p')\). Multiplying by the nonnegative scalar \(c=\sigma_0^2/n\) yields
+\[
+\frac{\sigma_0^2}{n}A_\beta(p^\star)
+\le
+\frac{\sigma_0^2}{n}A_\beta(p'),
+\]
+as required. % lean: minimaxAmplification_le_of_budgeted
+\end{enumerate}
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:prop:equal-spacing-benchmark}]
+Let \(p_j=qj/\beta\). Since \(\beta\ge1\), \(q>0\), and \(q\le1\), each coordinate is nonnegative, and \(j\le\beta\) gives
+\[
+p_j=\frac{qj}{\beta}\le q\le1.
+\]
+Thus \(p_j\in[0,1]\) for every \(j=0,\ldots,\beta\). % lean: hrange
+
+For the amplification bound, use the Lagrange endpoint weights on the equal grid,
+\[
+w_j=L_j(1)-L_j(0),
+\]
+where \(L_j\) is the \(j\)th Lagrange basis polynomial for the nodes \(p_0,\ldots,p_\beta\). The equal grid is injective because \(q>0\) and \(\beta>0\). % lean: equalSchedule_injective
+By Lagrange interpolation, these weights reproduce \(r(1)-r(0)\) for every polynomial \(r\) of degree at most \(\beta\); applied to the monomials \(1,u,\ldots,u^\beta\), this is exactly \(w\in W_\beta(p)\) as in \cref{obj:def:unbiased-weight-set}. % lean: lagrange_endpoint_weights_unbiased
+Therefore \cref{obj:def:amplification-criterion} gives
+\[
+A_\beta(p)\le \left(\sum_{j=0}^{\beta}|w_j|\right)^2.
+\] % lean: hA_le
+
+Set \(y=\beta/q\). Since \(q\le1\le\beta\), \(y\ge1\). % lean: hy_ge_one
+For the value at \(1\), the product formula for \(L_j(1)\) gives
+\[
+|L_j(1)|
+\le
+\frac{y^\beta}{j!(\beta-j)!}.
+\]
+The denominator identity comes from splitting the product of distances from \(j\) to the other equal-grid indices into the indices below and above \(j\). % lean: equalSchedule_lagrange_basis_eval_one_le
+Summing over \(j\) and using
+\[
+\sum_{j=0}^{\beta}\frac{1}{j!(\beta-j)!}\le2
+\]
+gives
+\[
+\sum_{j=0}^{\beta}|L_j(1)|\le 2y^\beta .
+\] % lean: factorial_reciprocal_sum_le_two
+
+At \(0\), the node \(p_0\) is exactly \(0\), so the Lagrange basis evaluates to \(L_0(0)=1\) and \(L_j(0)=0\) for \(j\ne0\). Hence
+\[
+\sum_{j=0}^{\beta}|L_j(0)|=1.
+\] % lean: hsum_eval0
+By the triangle inequality,
+\[
+\sum_{j=0}^{\beta}|w_j|
+\le
+\sum_{j=0}^{\beta}|L_j(1)|+\sum_{j=0}^{\beta}|L_j(0)|
+\le
+2y^\beta+1
+\le
+3y^\beta,
+\]
+where the last inequality uses \(y^\beta\ge1\). % lean: hsumw
+Squaring and substituting \(y=\beta/q\) yields
+\[
+A_\beta\!\left(p^{\mathrm{eq}}(\beta,q)\right)
+\le
+(3y^\beta)^2
+=
+9\left(\frac{\beta}{q}\right)^{2\beta}.
+\] % lean: equal_spacing_benchmark
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:prop:no-extrapolation-boundary}]
+Let
+\[
+w_0=-1,\qquad w_\beta=1,\qquad w_j=0\quad(1\le j\le\beta-1).
+\]
+Because \(\beta\ge1\), the first and last grid indices are distinct, and \(\beta\ne0\). % lean: hne
+For the zeroth moment,
+\[
+\sum_{j=0}^{\beta}w_j p_j^0
+=
+(-1)+1
+=
+0.
+\] % lean: hw
+Now fix \(1\le\ell\le\beta\). The equal-spacing schedule with \(q=1\) has \(p_0=0\) and \(p_\beta=1\). Hence
+\[
+\sum_{j=0}^{\beta}w_j p_j^\ell
+=
+-0^\ell+1^\ell
+=
+1,
+\]
+with all interior terms vanishing because their weights are zero. Thus \(w\in W_\beta(p^{\mathrm{eq}}(\beta,1))\). % lean: no_extrapolation_boundary
+
+It remains to bound the amplification. By \cref{obj:def:amplification-criterion}, using this feasible \(w\) gives
+\[
+A_\beta\!\left(p^{\mathrm{eq}}(\beta,1)\right)
+\le
+\left(\sum_{j=0}^{\beta}|w_j|\right)^2.
+\] % lean: csInf_le
+The absolute values contribute only at \(j=0\) and \(j=\beta\), so
+\[
+\sum_{j=0}^{\beta}|w_j|=1+1=2.
+\] % lean: hsum_abs
+Therefore
+\[
+A_\beta\!\left(p^{\mathrm{eq}}(\beta,1)\right)\le 2^2=4.
+\] % lean: no_extrapolation_boundary
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:thm:chebyshev-minimax}]
+\begin{enumerate}
+\item By \cref{obj:lem:continuous-chebyshev-endpoint-bound}, choose constants
+\(C_{\mathrm{ep}}(q_{\max})>0\) and \(c_{\mathrm{ep}}(q_{\max})>0\) such that, for
+\(x_q=2/q-1\) and
+\[
+\lambda(q)=x_q+\sqrt{x_q^2-1},
+\]
+both the continuous endpoint upper bound and the Chebyshev endpoint lower bound hold uniformly
+for \(0<q\le q_{\max}\). Set
+\[
+C_-(q_{\max})=c_{\mathrm{ep}}(q_{\max})^2 .
+\]
+Now fix \(c>1\). By \cref{obj:lem:oversampled-chebyshev-lobatto-norming}, choose
+\(K(c)>0\), and set
+\[
+C_+(c,q_{\max})=\bigl(K(c)C_{\mathrm{ep}}(q_{\max})\bigr)^2 .
+\]
+% lean: chebyshev_minimax
+
+\item Fix \(\beta,k,q\) satisfying the hypotheses. The low-budget cap gives
+\(q\le q_{\max}<1\), hence \(q\le 1\). Since \(k\ge c\beta\), \(c>1\), and
+\(\beta\ge1\), we have \(\beta\le k\), and in particular \(k\ge1\). Therefore
+\cref{obj:lem:chebyshev-schedule-admissible} gives
+\[
+p^{\mathrm{Ch}}(k,q)\in S_{k,q}.
+\]
+Also,
+\[
+\lambda(q)=\frac{(1+\sqrt{1-q})^2}{q},
+\]
+by the elementary algebraic identity for the exterior Chebyshev parameter.
+% lean: chebyshev_lambda_eq_rho_div_q
+
+\item We first prove the lower bound for an arbitrary \(p\in S_{k,q}\). Since
+\(\beta\le k\), \(\beta\ge1\), and \(p\in S_{k,q}\), \cref{obj:lem:unbiased-weight-set-nonempty}
+makes \(W_\beta(p)\) nonempty; the strict ordering in \(S_{k,q}\) gives distinct nodes.
+Thus \cref{obj:lem:amplification-dual-norm} applies.
+
+Consider
+\[
+r(u)=T_\beta\!\left(\frac{2u}{q}-1\right).
+\]
+This polynomial has degree at most \(\beta\). For every rollout node \(p_j\), admissibility gives
+\(0\le p_j\le q\), hence \(2p_j/q-1\in[-1,1]\), so \(|r(p_j)|\le1\). Therefore \(r\) is an
+admissible dual test polynomial. The endpoint lower bound from
+\cref{obj:lem:continuous-chebyshev-endpoint-bound} gives
+\[
+T_\beta(x_q)-1\ge c_{\mathrm{ep}}(q_{\max})\lambda(q)^\beta .
+\]
+Since \(x_q>1\), \(T_\beta(x_q)\ge0\), and \(|T_\beta(-1)|\le1\), the reverse triangle
+inequality yields
+\[
+T_\beta(x_q)-1
+\le |T_\beta(x_q)-T_\beta(-1)|
+=|r(1)-r(0)|.
+\]
+Hence the dual supremum is at least \(c_{\mathrm{ep}}(q_{\max})\lambda(q)^\beta\), and after
+squaring,
+\[
+A_\beta(p)\ge c_{\mathrm{ep}}(q_{\max})^2\lambda(q)^{2\beta}
+=
+C_-(q_{\max})
+\left(\frac{(1+\sqrt{1-q})^2}{q}\right)^{2\beta}.
+\]
+% lean: chebyshev_amplification_lower
+
+\item For the Chebyshev--Lobatto schedule, apply the same dual characterization. Let \(r\) be
+any degree-at-most-\(\beta\) dual polynomial with
+\(\max_j |r(p^{\mathrm{Ch}}_j(k,q))|\le1\), and put
+\[
+R(x)=r\!\left(\frac q2(x+1)\right).
+\]
+Then \(\deg(R)\le\beta\), and the Lobatto nodes
+\(-\cos(\pi j/k)\) are mapped exactly to \(p^{\mathrm{Ch}}_j(k,q)\). Hence the discrete
+Lobatto maximum of \(|R|\) is at most \(1\). The oversampled norming inequality gives
+\[
+|R(x)|\le K(c)\qquad (x\in[-1,1]).
+\]
+Thus \(K(c)^{-1}R\) is bounded by \(1\) on \([-1,1]\). Applying the endpoint upper bound from
+\cref{obj:lem:continuous-chebyshev-endpoint-bound} gives
+\[
+K(c)^{-1}|r(1)-r(0)|
+\le C_{\mathrm{ep}}(q_{\max})\lambda(q)^\beta,
+\]
+because \(x_q\) maps to \(1\) and \(-1\) maps to \(0\). Taking the supremum over all such \(r\)
+and squaring,
+\[
+A_\beta\!\left(p^{\mathrm{Ch}}(k,q)\right)
+\le
+\bigl(K(c)C_{\mathrm{ep}}(q_{\max})\bigr)^2\lambda(q)^{2\beta}
+=
+C_+(c,q_{\max})
+\left(\frac{(1+\sqrt{1-q})^2}{q}\right)^{2\beta}.
+\]
+% lean: chebyshev_amplification_upper
+
+\item The first two displayed inequalities are exactly the bounds just proved. For the minimax
+lower bound, the lower estimate holds for every \(p\in S_{k,q}\), and the schedule class is
+nonempty because \(p^{\mathrm{Ch}}(k,q)\in S_{k,q}\). Taking the infimum over \(S_{k,q}\) gives
+\[
+M_{\beta,k,q}
+\ge
+C_-(q_{\max})
+\left(\frac{(1+\sqrt{1-q})^2}{q}\right)^{2\beta}.
+\]
+For the minimax upper bound, use the admissible schedule \(p^{\mathrm{Ch}}(k,q)\) in the
+infimum and then apply the Chebyshev upper bound:
+\[
+M_{\beta,k,q}
+\le
+A_\beta\!\left(p^{\mathrm{Ch}}(k,q)\right)
+\le
+C_+(c,q_{\max})
+\left(\frac{(1+\sqrt{1-q})^2}{q}\right)^{2\beta}.
+\]
+This proves the claimed two-sided minimax estimate.
+% lean: minimaxAmplification_lower_of_forall
+\end{enumerate}
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:lem:exact-risk-envelope-upper}]
+Fix an admissible schedule \(p\in S_{k,q}\), and write \(s=\sigma_0^2/n\). Since \(\sigma_0^2\ge0\), \(s\ge0\). For any admissible schedule \(p'\in S_{k,q}\), \cref{obj:lem:unbiased-weight-set-nonempty} gives at least one \(w\in W_\beta(p')\). % lean: unbiased_weight_set_nonempty
+For such a fixed \(p'\), consider the set of exact risks obtained by choosing \(w\in W_\beta(p')\), namely
+\[
+\left\{
+\sup_{P\in\mathcal P_\beta}
+\operatorname{Var}_\pi\!\left(\sum_{j=0}^k w_j\bar Y_j\right):
+w\in W_\beta(p')
+\right\},
+\]
+and the corresponding set
+\[
+\left\{
+\left(\sum_{j=0}^k |w_j|\right)^2:
+w\in W_\beta(p')
+\right\}.
+\]
+The first set is nonempty and bounded below by \(0\), because variances are nonnegative; the second set is nonempty by the preceding paragraph. % lean: fixedRisk_nonneg
+For every element of the second set, represented by some \(w\in W_\beta(p')\), \cref{obj:lem:variance-envelope-sharpness} applied to every law in \(\mathcal P_\beta\) gives
+\[
+\operatorname{Var}_\pi\!\left(\sum_{j=0}^k w_j\bar Y_j\right)
+\le
+s\left(\sum_{j=0}^k |w_j|\right)^2 .
+\]
+Taking the supremum over \(P\in\mathcal P_\beta\) preserves this bound. % lean: variance_envelope_sharpness
+Therefore the infimum over admissible weights satisfies
+\[
+\inf_{w\in W_\beta(p')}
+\sup_{P\in\mathcal P_\beta}
+\operatorname{Var}_\pi\!\left(\sum_{j=0}^k w_j\bar Y_j\right)
+\le
+s\,
+\inf_{w\in W_\beta(p')}
+\left(\sum_{j=0}^k |w_j|\right)^2
+=
+\frac{\sigma_0^2}{n}A_\beta(p').
+\]
+This is the order-theoretic comparison of the two nonempty infima under the pointwise envelope bound. % lean: sInf_le_mul_sInf_of_forall_exists_le
+Applying this fixed-schedule conclusion to the given \(p\) proves
+\[
+\inf_{w\in W_\beta(p)}
+\sup_{P\in\mathcal P_\beta}
+w^\prime\Gamma_P(p)w
+\le
+\frac{\sigma_0^2}{n}A_\beta(p).
+\]
+% lean: exact_risk_envelope_upper
+
+It remains only to pass from a fixed schedule to the nested risk. The set of admissible schedules is nonempty because it contains the given \(p\). For every \(p'\in S_{k,q}\), the fixed-schedule bound just proved gives
+\[
+\inf_{w\in W_\beta(p')}
+\sup_{P\in\mathcal P_\beta}
+w^\prime\Gamma_P(p')w
+\le
+\frac{\sigma_0^2}{n}A_\beta(p').
+\]
+Taking the infimum over \(p'\in S_{k,q}\), again using \(s=\sigma_0^2/n\ge0\), yields
+\[
+R_{\mathrm{exact}}(\beta,k,q)
+\le
+\frac{\sigma_0^2}{n}
+\inf_{p'\in S_{k,q}} A_\beta(p')
+=
+\frac{\sigma_0^2}{n}M_{\beta,k,q}.
+\]
+% lean: sInf_le_mul_sInf_of_forall_exists_le
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:lem:exact-chebyshev-rate-feasible}]
+By \cref{obj:thm:chebyshev-minimax}, applied with the fixed cap \(q_{\max}\) and the oversampling constant \(c>1\), there is a constant \(C_+(c,q_{\max})>0\) such that, whenever \(\beta\ge1\), \(k\ge c\beta\), and the low-budget cap holds,
+\[
+A_\beta\!\left(p^{\mathrm{Ch}}(k,q)\right)
+\le
+C_+(c,q_{\max})
+\left(\frac{(1+\sqrt{1-q})^2}{q}\right)^{2\beta}.
+\]
+% lean: chebyshev_minimax
+Now fix \(n,\beta,k,\Omega,\pi,q,\sigma_0^2\) satisfying the hypotheses of the lemma. Since \(k=\lceil c\beta\rceil\), one has \(c\beta\le k\). Because \(c>1\) and \(\beta\ge1\), this implies \(\beta\le k\). % lean: Nat.le_ceil
+The low-budget cap gives \(q\le q_{\max}<1\), hence \(0<q\le1\). % lean: LowBudgetCap
+Thus \(k\ge1\), and \cref{obj:lem:chebyshev-schedule-admissible} gives
+\[
+p^{\mathrm{Ch}}(k,q)\in S_{k,q}.
+\]
+% lean: chebyshev_schedule_admissible
+
+Apply \cref{obj:lem:exact-risk-envelope-upper} to this Chebyshev-Lobatto schedule. Its fixed-schedule part gives
+\[
+\inf_{w\in W_\beta(p^{\mathrm{Ch}}(k,q))}
+\sup_{P\in\mathcal P_\beta}
+\operatorname{Var}_\pi\!\left(\sum_{j=0}^k w_j\bar Y_j\right)
+\le
+\frac{\sigma_0^2}{n}
+A_\beta\!\left(p^{\mathrm{Ch}}(k,q)\right).
+\]
+% lean: exact_risk_envelope_upper
+Since \(\sigma_0^2/n\ge0\), multiplying the Chebyshev upper bound for \(A_\beta(p^{\mathrm{Ch}}(k,q))\) by \(\sigma_0^2/n\) preserves the inequality. Therefore
+\[
+\inf_{w\in W_\beta(p^{\mathrm{Ch}}(k,q))}
+\sup_{P\in\mathcal P_\beta}
+\operatorname{Var}_\pi\!\left(\sum_{j=0}^k w_j\bar Y_j\right)
+\le
+\frac{\sigma_0^2}{n}\,
+C_+(c,q_{\max})
+\left(\frac{(1+\sqrt{1-q})^2}{q}\right)^{2\beta}.
+\]
+% lean: mul_le_mul_of_nonneg_left
+\end{proof}
+
+\bibliographystyle{plainnat}
+
+\bibliography{references}
+
+\end{document}

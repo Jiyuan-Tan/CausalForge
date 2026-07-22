@@ -1,0 +1,444 @@
+{
+  "qid": "stat_ate_overlap_decay",
+  "specialization": "v1",
+  "cluster": "stat",
+  "target_estimand": "ATE = E[Y(1) - Y(0)]",
+  "estimand_functional": "Ψ_{λ,n}(O_1,…,O_n; η̂_λ) = τ̂_λ (clipped AIPW), with target rate ρ_n and matching minimax converse",
+  "symbols": [
+    {
+      "name": "X",
+      "type": "covariate vector",
+      "space": "𝒳"
+    },
+    {
+      "name": "A",
+      "type": "treatment",
+      "space": "{0,1}"
+    },
+    {
+      "name": "Y",
+      "type": "outcome",
+      "space": "[0,1]"
+    },
+    {
+      "name": "Y0",
+      "type": "potential outcome under control",
+      "space": "[0,1]"
+    },
+    {
+      "name": "Y1",
+      "type": "potential outcome under treatment",
+      "space": "[0,1]"
+    },
+    {
+      "name": "e",
+      "type": "propensity score",
+      "sig": "𝒳 → (0,1)",
+      "def": "e(x) = P(A=1 | X=x)"
+    },
+    {
+      "name": "U",
+      "type": "propensity coordinate",
+      "space": "(0,1)",
+      "def": "U := e(X)",
+      "refs": [
+        "e",
+        "X"
+      ]
+    },
+    {
+      "name": "mu0",
+      "type": "control regression",
+      "sig": "𝒳 → [0,1]",
+      "def": "mu0(x) = E[Y(0) | X=x]"
+    },
+    {
+      "name": "mu1",
+      "type": "treated regression",
+      "sig": "𝒳 → [0,1]",
+      "def": "mu1(x) = E[Y(1) | X=x]"
+    },
+    {
+      "name": "eta",
+      "type": "upper-overlap floor",
+      "space": "(0,1)",
+      "role": "fixed constant"
+    },
+    {
+      "name": "kappa",
+      "type": "overlap-tail exponent",
+      "space": "(0,∞)",
+      "role": "structural rate exponent"
+    },
+    {
+      "name": "t0",
+      "type": "tail window",
+      "space": "(0,1)"
+    },
+    {
+      "name": "beta",
+      "type": "Hölder smoothness",
+      "space": "(0,∞)"
+    },
+    {
+      "name": "g1",
+      "type": "lower-tail link function",
+      "sig": "[0,t0] → [0,1]"
+    },
+    {
+      "name": "Cbeta",
+      "type": "boundary-extrapolation constant",
+      "space": "(0,∞)"
+    },
+    {
+      "name": "b_lambda",
+      "type": "boundary extrapolator",
+      "sig": "𝒳 → ℝ"
+    },
+    {
+      "name": "mu1bd_lambda",
+      "type": "clipped boundary-completed treated regression",
+      "sig": "𝒳 → [0,1]"
+    },
+    {
+      "name": "phi_lambda",
+      "type": "clipped oracle influence function",
+      "sig": "observation → ℝ"
+    },
+    {
+      "name": "I_lambda",
+      "type": "information scale",
+      "def": "I_lambda = E[U / (U ∨ λ)^2]"
+    },
+    {
+      "name": "B_lambda",
+      "type": "integrated clipped-tail bias",
+      "space": "ℝ"
+    },
+    {
+      "name": "rho_n",
+      "type": "tail-localized minimax rate",
+      "def": "rho_n = inf over λ of [ clipped-tail bias(λ) + standard-deviation(λ) ]"
+    },
+    {
+      "name": "tau_hat",
+      "type": "clipped AIPW estimator",
+      "sig": "sample → ℝ"
+    },
+    {
+      "name": "H_n",
+      "type": "witness law for U",
+      "space": "laws on [0, 1-eta]"
+    },
+    {
+      "name": "lambda",
+      "type": "clipping threshold",
+      "space": "(0, t0]"
+    },
+    {
+      "name": "n",
+      "type": "sample size",
+      "space": "ℕ"
+    },
+    {
+      "name": "P_kappa_beta",
+      "type": "law class",
+      "ref": "def:law-class"
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:consistency",
+      "kind": "causal-structural",
+      "condition": "Y = A·Y1 + (1−A)·Y0",
+      "free_symbols": [
+        "Y",
+        "A",
+        "Y0",
+        "Y1"
+      ],
+      "standard": {
+        "name": "SUTVA / consistency",
+        "cite": "ImbensRubin2015"
+      }
+    },
+    {
+      "id": "ass:exchangeability",
+      "kind": "causal-structural",
+      "condition": "(Y0, Y1) ⊥ A | X",
+      "free_symbols": [
+        "Y0",
+        "Y1",
+        "A",
+        "X"
+      ],
+      "standard": {
+        "name": "conditional unconfoundedness",
+        "cite": "RosenbaumRubin1983"
+      }
+    },
+    {
+      "id": "ass:bounded-outcome",
+      "kind": "support",
+      "condition": "0 ≤ Y ≤ 1 almost surely",
+      "free_symbols": [
+        "Y"
+      ],
+      "standard": {
+        "name": "bounded outcomes",
+        "cite": "Kennedy2024"
+      }
+    },
+    {
+      "id": "ass:upper-overlap",
+      "kind": "support",
+      "condition": "1 − e(X) ≥ η almost surely, for fixed η > 0",
+      "free_symbols": [
+        "e",
+        "X",
+        "eta"
+      ],
+      "standard": {
+        "name": "one-sided overlap",
+        "cite": "DAmour2021"
+      }
+    },
+    {
+      "id": "ass:tail",
+      "kind": "tail-rate",
+      "condition": "c₋·tᵏ ≤ P(e(X) ≤ t) ≤ c₊·tᵏ for all 0 < t ≤ t0",
+      "free_symbols": [
+        "e",
+        "X",
+        "kappa",
+        "t0"
+      ],
+      "constants": [
+        "0 < c₋ < c₊ < ∞"
+      ],
+      "standard": {
+        "name": "polynomial overlap decay / Audibert–Tsybakov margin",
+        "cite": "AudibertTsybakov2007"
+      }
+    },
+    {
+      "id": "ass:lower-tail-factorization",
+      "kind": "smoothness",
+      "condition": "mu1(x) = g1(e(x)) on {x : e(x) ≤ t0}, with g1 ∈ Hᵝ(L_β)",
+      "free_symbols": [
+        "mu1",
+        "e",
+        "t0",
+        "g1",
+        "beta"
+      ],
+      "standard": {
+        "name": "Hölder regression through the propensity",
+        "cite": "Tsybakov2009"
+      }
+    },
+    {
+      "id": "ass:smoothness",
+      "kind": "smoothness",
+      "condition": "|b_lambda(x) − mu1(x)| ≤ C_β·λᵝ for a.e. x with e(x) ≤ λ, all λ ∈ (0, t0]",
+      "free_symbols": [
+        "b_lambda",
+        "mu1",
+        "Cbeta",
+        "beta",
+        "t0",
+        "e"
+      ],
+      "standard": {
+        "name": "boundary extrapolation bias (Hölder)",
+        "cite": "Tsybakov2009"
+      },
+      "used_by": [
+        "thm:upper"
+      ]
+    },
+    {
+      "id": "ass:nuisance",
+      "kind": "regularity",
+      "condition": "Cross-fit nuisance estimates trained on independent folds satisfy E[ product-drift integrand | 𝒯 ] ≤ Δ_n(λ)",
+      "free_symbols": [
+        "tau_hat",
+        "lambda"
+      ],
+      "standard": {
+        "name": "cross-fitting / Neyman-orthogonal drift",
+        "cite": "ChernozhukovEtAl2018"
+      }
+    },
+    {
+      "id": "ass:lindeberg-oracle",
+      "kind": "empirical-process",
+      "condition": "E[ phi_lambda² · 1{|phi_lambda| ≥ ε·√(n·I_lambda)} | 𝒯 ] ≤ C·I_lambda for all ε > 0",
+      "free_symbols": [
+        "phi_lambda",
+        "I_lambda",
+        "n"
+      ],
+      "standard": {
+        "name": "Lindeberg tail condition",
+        "cite": "vanderVaart1998"
+      }
+    },
+    {
+      "id": "ass:lindeberg-plugin",
+      "kind": "empirical-process",
+      "condition": "E[ (phi_hat_lambda − phi_lambda)² · 1{|phi_hat_lambda − phi_lambda| ≥ ε·√(n·I_lambda)} | 𝒯 ] ≤ C·I_lambda for all ε > 0",
+      "free_symbols": [
+        "phi_lambda",
+        "I_lambda",
+        "n"
+      ],
+      "standard": {
+        "name": "Lindeberg tail condition",
+        "cite": "vanderVaart1998"
+      }
+    },
+    {
+      "id": "ass:regularity",
+      "kind": "regularity",
+      "condition": "the score, bias, and drift integrands are measurable; the two score integrands are square-integrable",
+      "free_symbols": [
+        "phi_lambda"
+      ],
+      "standard": {
+        "name": "measurability and integrability",
+        "cite": "vanderVaart1998"
+      }
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:law-class",
+      "name": "P_{κ,β}",
+      "construction": "{Q : IsProbabilityMeasure(Q) ∧ tail(Q;κ) ∧ bounded-outcome(Q) ∧ lower-tail-factorization(Q;β) ∧ ∀x, μ0(x),μ1(x) ∈ [0,1]}",
+      "by_member_properties": [
+        "ass:tail",
+        "ass:bounded-outcome",
+        "ass:lower-tail-factorization",
+        "mu0(x), mu1(x) ∈ [0,1] for all x"
+      ]
+    },
+    {
+      "id": "def:witness",
+      "name": "P_n",
+      "inputs": [
+        "H_n: a probability law for U on [0, 1−η] with c₋·tᵏ ≤ H_n([0,t]) ≤ c₊·tᵏ for 0 < t ≤ t0",
+        "g1 ∈ Hᵝ(L_β) valued in [1/4, 3/4]",
+        "mu0 ≡ 1/2"
+      ],
+      "construction": "U ~ H_n; A | U=u ~ Bernoulli(u); Y(a) | U ~ Bernoulli(mu_a(U)) with mu1 = g1"
+    },
+    {
+      "id": "def:estimator",
+      "name": "tau_hat_lambda",
+      "inputs": [
+        "clipped cross-fit nuisances (mu1bd_lambda, mu0, e), threshold λ"
+      ],
+      "construction": "tau_hat_lambda = (1/n) Σ_i phi_lambda(O_i; mu1bd_lambda, mu0, e) — clipped AIPW score average"
+    }
+  ],
+  "statements": [
+    {
+      "id": "thm:upper",
+      "kind": "conjecture",
+      "statement": "the clipped AIPW estimator at the optimal threshold attains E|tau_hat_lambda − ATE| ≲ rho_n",
+      "depends_on": [
+        "ass:consistency",
+        "ass:exchangeability",
+        "ass:bounded-outcome",
+        "ass:upper-overlap",
+        "ass:tail",
+        "ass:smoothness",
+        "ass:nuisance",
+        "ass:lindeberg-oracle",
+        "ass:lindeberg-plugin",
+        "ass:regularity",
+        "def:estimator"
+      ],
+      "status": "to-prove",
+      "justification": "A clipped-AIPW estimator with a tuned clipping level balances bias and variance to reach the stated rate.",
+      "gap": "Chernozhukov et al. (2018) give only the strict-overlap root-n rate; the decaying-overlap rate is new.",
+      "consumer": "Practitioners running AIPW on observational data with limited overlap get an honest rate + tuning."
+    },
+    {
+      "id": "thm:lower",
+      "kind": "conjecture",
+      "statement": "tail-localized minimax converse: inf over estimators T̂ of sup over P ∈ P_{κ,β} of E_P|T̂ − ATE(P)| ≳ rho_n",
+      "depends_on": [
+        "def:law-class",
+        "def:witness",
+        "thm:witness-in-class"
+      ],
+      "status": "to-prove",
+      "justification": "A least-favorable pair of laws in the class are statistically indistinguishable at the claimed rate, so no estimator beats it.",
+      "gap": "No matching converse exists in the literature for the overlap-decay regime.",
+      "consumer": "Establishes the rate is unimprovable, anchoring future estimator design on this class."
+    },
+    {
+      "id": "thm:witness-in-class",
+      "kind": "proposition",
+      "statement": "P_n ∈ P_{κ,β}",
+      "depends_on": [
+        "def:witness",
+        "def:law-class",
+        "ass:tail"
+      ],
+      "status": "to-prove",
+      "justification": "The two-point construction satisfies every defining property of the law class, so it is an admissible alternative for the converse.",
+      "gap": "Prior lower-bound sketches assume rather than verify class membership of the witness.",
+      "consumer": "Makes the lower bound rigorous, not contingent on an unverified construction."
+    }
+  ],
+  "sampling_model": {
+    "draw": "iid (O_1, …, O_n) with O_i = (X_i, A_i, Y_i)",
+    "cross_fitting": "K folds; nuisances trained off-fold; ê_λ(X) ≥ λ and 1 − ê(X) ≥ η̄ on the evaluation fold",
+    "fold_sizes": "proportional to n"
+  },
+  "comparator_promise_table": [],
+  "bibliography": [
+    {
+      "key": "ImbensRubin2015",
+      "citation": "Imbens & Rubin (2015), Causal Inference for Statistics, Social, and Biomedical Sciences."
+    },
+    {
+      "key": "RosenbaumRubin1983",
+      "citation": "Rosenbaum & Rubin (1983), The central role of the propensity score, Biometrika."
+    },
+    {
+      "key": "Kennedy2024",
+      "citation": "Kennedy (2024), Semiparametric doubly robust targeted minimum loss estimation."
+    },
+    {
+      "key": "DAmour2021",
+      "citation": "D'Amour, Ding, Feller, Lei & Sekhon (2021), Overlap in observational studies with high-dimensional covariates, J. Econometrics."
+    },
+    {
+      "key": "AudibertTsybakov2007",
+      "citation": "Audibert & Tsybakov (2007), Fast learning rates for plug-in classifiers, Ann. Statist."
+    },
+    {
+      "key": "Tsybakov2009",
+      "citation": "Tsybakov (2009), Introduction to Nonparametric Estimation, Springer."
+    },
+    {
+      "key": "ChernozhukovEtAl2018",
+      "citation": "Chernozhukov et al. (2018), Double/debiased machine learning, Econometrics Journal."
+    },
+    {
+      "key": "vanderVaart1998",
+      "citation": "van der Vaart (1998), Asymptotic Statistics, Cambridge University Press."
+    }
+  ],
+  "tldr": "We pin down the minimax rate for estimating the ATE when propensity overlap decays in the tails, and exhibit a clipped-AIPW estimator that attains it together with a matching Le Cam lower bound.",
+  "project_justification": {
+    "gap": "Standard double/debiased ML rates for the ATE assume strict overlap; under tail overlap decay the existing root-n theory breaks and no sharp rate is known.",
+    "niche": "A minimax characterization indexed by the overlap-decay exponent, with a single estimator that adapts across the strict-overlap and decaying-overlap regimes.",
+    "fill": "We derive the achievable rate for clipped AIPW and a matching converse via a least-favorable two-point construction, closing the rate question on this class."
+  },
+  "related_work": "Chernozhukov et al. (2018) give root-n AIPW under strict overlap; D Amour et al. (2021) document overlap failure in high dimensions; Khan-Tamer (2010) study irregular identification under thin overlap. We sharpen the rate side these works leave open."
+}

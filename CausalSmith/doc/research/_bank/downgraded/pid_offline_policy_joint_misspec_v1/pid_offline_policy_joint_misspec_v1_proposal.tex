@@ -1,0 +1,450 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_offline\_policy\_joint\_misspec, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to a Q1..Q6 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    If it is a free-form `(qid, specialization)`, define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_offline\_policy\_joint\_misspec} / \texttt{v1}%
+  \\ \large\textit{Sharp policy-value intervals under joint propensity and outcome misspecification}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{quote}\small
+\begin{verbatim}
+(qid, specialization) =
+  (pid_offline_policy_joint_misspec, v1)
+anchor cluster = PartialID
+observable distribution P =
+  law of (X,A,Y) with finite action set Acal, bounded outcome Y in [lo,hi],
+  nominal logging propensity e0(a|x), nominal outcome regression m0(a,x),
+  and target policy pi(a|x)
+parameter theta =
+  V(pi) = E_X sum_a pi(a|X) E[Y(a)|X]
+identifying restrictions =
+  consistency Y=Y(A); bounded potential outcomes lo <= Y(a) <= hi;
+  overlap e0(a|x)>0 on pi(a|x)>0; f-divergence support convention
+  e_star(.|x,y_vec) << e0(.|x), with zero e0 cells carrying zero latent
+  logging mass and with f(t)>=0 uniquely minimized at t=1; under any
+  compatible full-data law Q, the latent logging kernel
+  e_star^Q(a|x,y_vec)=Q(A=a|X=x,Y_vec=y_vec) satisfies
+  D_f(e_star(.|x,y_vec) || e0(.|x)) <= rho pointwise; and
+  |E[Y(a)|X=x]-m0(a,x)| <= eta for every action a
+bounding functional =
+  lower/upper sharp values obtained by optimizing V(pi) over all full-data
+  laws of (X,(Y(a))_a,A) satisfying the observable law P and the restrictions
+  above; rho=0, eta=0 is the doubly robust point-ID corner, and vacuous
+  rho/eta gives Manski fill-in bounds for unobserved action outcomes
+\end{verbatim}
+\end{quote}
+
+\begin{abstract}
+Offline contextual-bandit evaluation usually treats the logging propensity and the outcome regression as nuisance estimates whose errors are controlled statistically, while partial-identification sensitivity analysis usually relaxes one causal assumption at a time. This proposal asks for the sharp identified interval for a target policy value when the nominal logging propensity may be wrong within a bounded pointwise $f$-divergence ball and the nominal outcome regression may be wrong within a bounded sup-norm ball. The proposed finite-grid kernel is that the sharp interval is a full-observed-law variational object: every factual reward cell probability in $P(A,Y\mid X)$ must be matched while the propensity tilt and the outcome-regression perturbation are allocated to the same latent response table. The endpoints should collapse to the standard doubly robust point estimand on the calibrated $(\rho,\eta)=(0,0)$ face and to Manski-style fill-in bounds when both model restrictions become vacuous. If resolved, the result would give offline policy evaluators a calibrated sensitivity curve that reports exactly how much policy value remains identified under joint nuisance misspecification rather than relying on a point estimate plus ad hoc robustness checks.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Offline policy evaluation is used precisely when deploying the target policy is costly, risky, or impossible. The usual contextual-bandit estimands are point-identified when the logging process is known and ignorable, and doubly robust estimators are attractive because either the logging propensity or the reward model may be estimated well. In clinical, education, advertising, and public-sector logs, however, the recorded or reconstructed logging scores and fitted reward model can both be wrong, and the data may also reflect unmeasured assignment factors. A point estimate then hides the policy-relevant question: what interval of policy values is still compatible with the observed log and with explicit, bounded misspecification budgets?
+
+\paragraph{The main finding (proposed).}
+The flagship conjecture is a sharp partial-identification theorem for the policy value
+$V(\pi)=\E_X\sum_a \pi(a\mid X)\E[Y(a)\mid X]$ under two simultaneous restrictions: a pointwise $f$-divergence bound between the latent assignment kernel and the nominal logging propensity, and a sup-norm bound between the true arm mean and the nominal outcome regression. The proposed theorem states that, for a finite reward grid, the endpoints are obtained by a conditional finite-dimensional perspective-convex program that matches the full conditional factual law $P(A,Y\mid X=x)$ cell by cell and can then be integrated over $X$. A second, diagnostic conjecture asserts a genuine joint-misspecification geometry: for an open set of non-degenerate observable laws, the sharp interval is strictly narrower and kinked differently from the rectangular outer envelope defined by optimizing the propensity-sensitivity relaxation and then adding an independent outcome-regression error budget.
+
+\paragraph{What is new.}
+The novelty kernel is the shared latent-response compatibility constraint together with full factual-law matching. \citet{DudikLangfordLi2011} and \citet{WangAgarwalDudik2017} analyze DR contextual-bandit evaluation under point-identifying logging assumptions; \citet{KallusZhou2018}, \citet{KallusZhou2020}, and \citet{KallusZhou2021} study confounding-robust policy improvement or fixed-policy evaluation under nominal propensity/sensitivity restrictions; \citet{DornGuo2023}, \citet{DornGuoKallus2025}, and \citet{HessFrauenMelnychukFeuerriegel2026} give sharp or doubly sharp sensitivity intervals under marginal-sensitivity restrictions; \citet{ZhangXuTan2025} adds an outcome-distribution sensitivity restriction to the marginal sensitivity model; \citet{IshikawaHe2023} gives sharp lower-bound machinery for confounded contextual bandits using conditional moment constraints and $f$-divergence ideas; and \citet{KallusMaoWangZhou2022} gives doubly robust distributionally robust OPE for environment distribution shifts. None of these papers pins down the sharp identified set when the same unobserved response table must match every factual reward cell in $P(A,Y\mid X)$ while satisfying both a bounded propensity distortion and a sup-norm tube around a nominal arm-mean regression. The proposed phase-transition result is a generic geometry theorem about that same joint program and its explicitly defined rectangular diagnostic relaxation, not an allegation that a named estimator makes that relaxation.
+
+\paragraph{How it positions in the literature.}
+This is a partial-identification and sensitivity-analysis proposal, not a panel or graphical-identification proposal. It connects Manski fill-in bounds \citep{Manski1990}, monotone/shape-restriction logic \citep{ManskiPepper2000}, sharp sensitivity analysis for hidden confounding \citep{DornGuo2023,DornGuoKallus2025,HessFrauenMelnychukFeuerriegel2026,ZhangXuTan2025}, confounding-robust policy improvement and evaluation \citep{KallusZhou2018,KallusZhou2020,KallusZhou2021}, and offline contextual-bandit OPE \citep{DudikLangfordLi2011,WangAgarwalDudik2017,SiZhangZhouBlanchet2020,KallusMaoWangZhou2022}. The proposed object is an identified interval, not an estimator or asymptotic confidence band; estimation can be layered on later once the population bounds are known.
+
+\paragraph{Implications for the community.}
+The direct downstream consumer is confounding-robust policy learning under the marginal sensitivity model, especially the robust welfare criteria of \citet{JinXuZhengZhou2025}: a sharp joint-misspecification interval would tell policy learners when a learned rule is robust to both hidden logging bias and reward-model drift rather than to only one nuisance source. It would also give practitioners using DR OPE in healthcare and public-sector logs a sensitivity curve whose endpoints have a population identification interpretation.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report the joint $(\rho,\eta)$ identified interval for a policy value before treating a DR point estimate as actionable when both logged propensities and reward regressions are reconstructed.
+
+\section{Related work}
+\citet{DudikLangfordLi2011} introduced doubly robust policy evaluation and learning for contextual bandits, establishing the point-identifying DR target that this proposal must recover at the zero-misspecification corner. \citet{WangAgarwalDudik2017} studied minimax and adaptive OPE in agnostic contextual bandits and motivates why reward-model misspecification matters even when one is not doing causal sensitivity analysis. \citet{SiZhangZhouBlanchet2020} developed distributionally robust policy evaluation and learning for offline contextual bandits under deployment-environment ambiguity; their ambiguity is over environment distributions rather than over the latent logging and potential-outcome law compatible with a fixed observational log. \citet{KallusMaoWangZhou2022} gave doubly robust DROPE for KL and general $f$-divergence uncertainty sets, but their robustness addresses distribution shift and efficient estimation, not sharp partial identification under hidden assignment and outcome-regression misspecification.
+
+\citet{Tan2006} introduced marginal sensitivity modelling for unmeasured confounding through bounded odds-ratio deviations, providing the sensitivity-analysis ancestor of the propensity-distortion budget used here. \citet{KallusZhou2018} proposed confounding-robust policy improvement by optimizing worst-case regret against a baseline over uncertainty sets around nominal propensity weights, \citet{KallusZhou2020} developed sharp bounds for fixed-policy evaluation in infinite-horizon reinforcement learning under stationary unobserved confounding, and \citet{KallusZhou2021} developed minimax-optimal policy learning under unobserved confounding with uniform regret guarantees; these are closer policy-learning comparators than generic DRO because they explicitly use nominal propensity or sensitivity uncertainty, but they do not impose a simultaneous sup-norm reward-regression tube or characterize the sharp contextual-bandit fixed-policy value interval generated by the paired latent-response compatibility constraints. \citet{DornGuo2023} derived sharp IPW sensitivity bounds via quantile balancing and showed that earlier relaxations can be asymptotically too wide; this proposal asks for the analogous sharpness question when an outcome-regression error budget is active at the same time. \citet{DornGuoKallus2025} established doubly valid and doubly sharp ATE sensitivity estimators, making it a close published robustness target; the gap is that their estimand is an ATE under an odds-ratio sensitivity model, whereas here the target is a contextual-bandit policy value under joint propensity and outcome misspecification. \citet{HessFrauenMelnychukFeuerriegel2026} derived a semi-parametrically efficient estimator for a sharp off-policy value bound under unobserved confounding and is a close off-policy value-bound comparator; it still treats the sensitivity model as the source of partial identification rather than imposing a simultaneous sup-norm tube around a nominal reward regression. \citet{ZhangXuTan2025} proposed the distributionally enhanced marginal sensitivity model, which adds a potential-outcome distribution-shift constraint to a treatment-probability shift constraint; it is the closest simultaneous-constraint comparator, but its second restriction is a distributional sensitivity bound for treatment effects, not an analyst-supplied sup-norm tube around the contextual-bandit outcome regression $m_0(a,x)$. \citet{IshikawaHe2023} studied offline contextual-bandit policy evaluation with unobserved confounders using kernel conditional moment constraints and an $f$-divergence extension, but it does not identify the finite sharp interval induced by a paired sup-norm reward-model discrepancy.
+
+\citet{MastenPoirierZhang2024} estimates bound functions under relaxations of unconfoundedness and is relevant because this proposal also treats the sensitivity parameter as a reported curve, not a binary assumption. \citet{JinXuZhengZhou2025} studies policy learning under unobserved confounding with robust welfare criteria under the marginal sensitivity model; their learning objective is a natural consumer of a sharp joint-misspecification evaluation interval. \citet{Manski1990} supplies the bounded-outcome fill-in logic recovered when both model restrictions are vacuous, while \citet{ManskiPepper2000} is the reference point for shape-restricted/truncated partial-identification refinements. \citet{BalkePearl1997} is relevant as the canonical finite latent-response LP sharpness template, although its binary-IV estimand is different from the contextual-bandit policy value here.
+
+In-repo prior art is mostly substrate rather than a duplicate proposal. \texttt{ThmSmith/doc/API.md} says the ThmSmith ExactID and PartialID catalogues are empty at seed time for new \texttt{pid\_*} qids, so no existing ThmSmith proposal coincides with this kernel. The relevant promoted AutoID family is \texttt{AutoID} \texttt{doc/API.md} \S9j, which documents Manski-family ATE bounds under a discrete IV; those results provide bounded-outcome sandwich logic but not contextual-bandit policy-value intervals under joint nuisance misspecification. \texttt{AutoID} \texttt{doc/API.md} \S9j2 records abstract partial-identification infrastructure, and \S9j3 records Balke--Pearl sharp binary-IV LP bounds; both are closer in theorem style than in substantive estimand.
+
+\section{Formal setup}
+Let $\mathcal{A}$ be a finite action set. The observed law $P$ is the law of $(X,A,Y)$, where $A\in\mathcal{A}$ and $Y\in[\ell,u]$. The analyst supplies a target policy $\pi(a\mid x)$, a nominal logging propensity $e_0(a\mid x)$, a nominal outcome regression $m_0(a,x)$, a convex lower-semicontinuous divergence generator $f$ with $f(1)=0$ and $f(t)>0$ for $t\ne1$, a propensity budget $\rho\ge 0$, and an outcome budget $\eta\ge 0$. Write
+\[
+  p_a(x)=P(A=a\mid X=x), \qquad
+  r_a(x)=\E[Y\one\{A=a\}\mid X=x]
+\]
+for every action $a$. When $p_a(x)>0$, write $\bar y_a(x)=r_a(x)/p_a(x)=\E[Y\mid X=x,A=a]$; when $p_a(x)=0$, $\bar y_a(x)$ is left undefined and all formulas use $r_a(x)$ instead.
+For the finite-grid statements, let $\mathcal G=\{g_1,\ldots,g_M\}\subset[\ell,u]$ be the reward grid and write
+\[
+  q_a(c\mid x)=P(A=a,Y=c\mid X=x), \qquad c\in\mathcal G .
+\]
+Thus $p_a(x)=\sum_{c\in\mathcal G}q_a(c\mid x)$ and
+$r_a(x)=\sum_{c\in\mathcal G}c\,q_a(c\mid x)$. Matching the observable law $P$ in the finite-grid program means matching every cell probability $q_a(c\mid x)$, not merely the two summaries $p_a(x)$ and $r_a(x)$.
+Let $S_0(x)=\{a:e_0(a\mid x)>0\}$. All latent logging kernels in the admissible class are required to be absolutely continuous with respect to $e_0(\cdot\mid x)$ on the finite action set: if $e_0(a\mid x)=0$, then $e_Q^\star(a\mid x,y_{\mathcal A})=0$ for almost every response vector. Thus observed cells with $p_a(x)>0$ and $e_0(a\mid x)=0$ make $\mathcal Q(P;\rho,\eta)$ empty, while target-policy mass is only permitted on $S_0(x)$ by Assumption \ref{ass:overlap}.
+
+A full-data law $Q$ augments the observed law by potential outcomes $Y(a)$ for every $a\in\mathcal{A}$ and by a latent logging kernel
+\[
+  e_Q^\star(a\mid x,y_{\mathcal A})=Q(A=a\mid X=x,(Y(b))_{b\in\mathcal A}=y_{\mathcal A}).
+\]
+For any such law, write $H_x$ for the conditional distribution of the response vector
+$Y_{\mathcal A}=(Y(a))_{a\in\mathcal A}$ given $X=x$; in the endpoint program, $H_x$ is the decision variable over response-vector distributions.
+The law $Q$ is observationally compatible with $P$ when its marginal law of $(X,A,Y(A))$ is $P$. Its policy value is
+\[
+  V_Q(\pi)=\E_Q\left[\sum_{a\in\mathcal A}\pi(a\mid X)Y(a)\right]
+          =\E_X\sum_{a\in\mathcal A}\pi(a\mid X)\mu_a^Q(X),
+  \quad \mu_a^Q(x)=\E_Q[Y(a)\mid X=x].
+\]
+Let $\mathcal Q(P;\rho,\eta)$ denote the set of compatible full-data laws satisfying the displayed restrictions, and define the identified set by
+\[
+  \Theta_I(P;\rho,\eta)=\{V_Q(\pi): Q\in\mathcal Q(P;\rho,\eta),\ Q \text{ is observationally compatible with } P
+       \text{ and satisfies Assumptions \ref{ass:bounded}--\ref{ass:outcome-gap}}\}.
+\]
+When $\mathcal Q(P;\rho,\eta)$ is empty, $\Theta_I(P;\rho,\eta)=\varnothing$; endpoint claims below are stated only on nonempty faces. Otherwise the bounding functional is $L(P;\rho,\eta)=\inf\Theta_I(P;\rho,\eta)$ and
+$U(P;\rho,\eta)=\sup\Theta_I(P;\rho,\eta)$. Let $U_{\mathrm{prop}}(P;\rho)$ be the corresponding upper endpoint with Assumption \ref{ass:outcome-gap} removed, and define the rectangular diagnostic upper envelope
+\[
+  U_{\mathrm{rect}}(P;\rho,\eta)
+  =\min\left\{
+      U_{\mathrm{prop}}(P;\rho)+\eta\,\E_X\sum_a\pi(a\mid X),\
+      \E_X\sum_a\pi(a\mid X)u
+    \right\}.
+\]
+This envelope is an explicitly defined outer relaxation: it applies the sharp propensity-sensitivity relaxation first and then adds an independent sup-norm reward-regression error allowance, without requiring both allowances to be attained by the same latent response table.
+
+On the finite reward grid, the conditional endpoint program may be written with response-vector masses
+$\lambda_x(y_{\mathcal A})=H_x(Y_{\mathcal A}=y_{\mathcal A})$ and joint logging/response masses
+$z_x(a,y_{\mathcal A})=\lambda_x(y_{\mathcal A})e^\star(a\mid x,y_{\mathcal A})$. The observable-law constraints are
+\[
+  \sum_{y_{\mathcal A}:y_a=c} z_x(a,y_{\mathcal A}) = q_a(c\mid x),
+  \qquad a\in\mathcal A,\ c\in\mathcal G,
+\]
+together with $\sum_{y_{\mathcal A}}\lambda_x(y_{\mathcal A})=1$ and
+$\sum_a z_x(a,y_{\mathcal A})=\lambda_x(y_{\mathcal A})$. The divergence constraint is imposed response-type by response-type through
+$e^\star(a\mid x,y_{\mathcal A})=z_x(a,y_{\mathcal A})/\lambda_x(y_{\mathcal A})$ when $\lambda_x(y_{\mathcal A})>0$, with zero-mass response types ignored. This display is the program interface intended for Stage 0; the earlier moment-only relaxation is not the locked target.
+
+\begin{quote}\small
+\begin{verbatim}
+(qid, specialization) =
+  (pid_offline_policy_joint_misspec, v1)
+anchor cluster = PartialID
+observable distribution P =
+  law of (X,A,Y) with finite action set Acal, bounded outcome Y in [lo,hi],
+  nominal logging propensity e0(a|x), nominal outcome regression m0(a,x),
+  and target policy pi(a|x)
+parameter theta =
+  V(pi) = E_X sum_a pi(a|X) E[Y(a)|X]
+identifying restrictions =
+  consistency Y=Y(A); bounded potential outcomes lo <= Y(a) <= hi;
+  overlap e0(a|x)>0 on pi(a|x)>0; f-divergence support convention
+  e_star(.|x,y_vec) << e0(.|x), with zero e0 cells carrying zero latent
+  logging mass and with f(t)>=0 uniquely minimized at t=1; under any
+  compatible full-data law Q, the latent logging kernel
+  e_star^Q(a|x,y_vec)=Q(A=a|X=x,Y_vec=y_vec) satisfies
+  D_f(e_star(.|x,y_vec) || e0(.|x)) <= rho pointwise; and
+  |E[Y(a)|X=x]-m0(a,x)| <= eta for every action a
+bounding functional =
+  lower/upper sharp values obtained by optimizing V(pi) over all full-data
+  laws of (X,(Y(a))_a,A) satisfying the observable law P and the restrictions
+  above; rho=0, eta=0 is the doubly robust point-ID corner, and vacuous
+  rho/eta gives Manski fill-in bounds for unobserved action outcomes
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite actions and bounded outcomes]\label{ass:bounded}
+The action set $\mathcal{A}$ is finite and there are known constants $\ell<u$ such that $\ell\le Y(a)\le u$ almost surely for every $a\in\mathcal{A}$ under every compatible full-data law.
+\end{assumption}
+
+\begin{assumption}[Consistency and observational compatibility]\label{ass:compat}
+The observed outcome is $Y=Y(A)$, and every admissible full-data law $Q$ has the same marginal law $P$ for $(X,A,Y(A))$.
+\end{assumption}
+
+\begin{assumption}[Nominal overlap]\label{ass:overlap}
+For $P_X$-almost every $x$, $e_0(a\mid x)\ge0$, $e_0(a\mid x)>0$ whenever $\pi(a\mid x)>0$, and $\sum_a e_0(a\mid x)=\sum_a\pi(a\mid x)=1$.
+\end{assumption}
+
+\begin{assumption}[Pointwise $f$-divergence logging budget]\label{ass:f-budget}
+The generator $f:[0,\infty)\to[0,\infty]$ is convex and lower semicontinuous, satisfies $f(1)=0$, and has unique zero at $1$. For every compatible full-data law $Q$ and almost every $(x,y_{\mathcal A})$, the latent logging kernel is absolutely continuous with respect to the nominal kernel on the finite action set:
+$e_Q^\star(a\mid x,y_{\mathcal A})=0$ whenever $e_0(a\mid x)=0$. With the convention that zero-$e_0$ cells contribute $0$ when $e_Q^\star=0$ and $+\infty$ otherwise,
+the finite-action divergence is
+\[
+  D_f(e_Q^\star(\cdot\mid x,y_{\mathcal A})\Vert e_0(\cdot\mid x))
+  :=\sum_{a:e_0(a\mid x)>0}e_0(a\mid x)
+      f\!\left(\frac{e_Q^\star(a\mid x,y_{\mathcal A})}{e_0(a\mid x)}\right).
+\]
+For every compatible full-data law $Q$ and almost every $(x,y_{\mathcal A})$,
+\[
+  D_f(e_Q^\star(\cdot\mid x,y_{\mathcal A})\Vert e_0(\cdot\mid x))\le \rho .
+\]
+The corner $\rho=0$ means $e_Q^\star(\cdot\mid x,y_{\mathcal A})=e_0(\cdot\mid x)$ almost surely, because $D_f=0$ if and only if the two finite kernels agree on every action.
+\end{assumption}
+
+\begin{assumption}[Sup-norm outcome-regression budget]\label{ass:outcome-gap}
+For every compatible full-data law $Q$ and every action $a$,
+\[
+  |\mu_a^Q(x)-m_0(a,x)|\le \eta
+\]
+for $P_X$-almost every $x$.
+\end{assumption}
+
+\begin{assumption}[Finite observed reward grid]\label{ass:finite-support}
+There is a fixed finite grid $\mathcal G=\{g_1,\ldots,g_M\}\subset[\ell,u]$ such that $P(Y\in\mathcal G\mid X,A)=1$, and every admissible full-data law has $Y(a)\in\mathcal G$ almost surely for every action $a$. No monotone limiting claim for general bounded outcomes is part of the v6 proposal.
+\end{assumption}
+
+\begin{assumption}[Binary non-degenerate phase-transition specialization]\label{ass:binary-nondegenerate}
+For Conjecture \ref{conj:nonrect}, the action set is $\mathcal A=\{0,1\}$, the target policy places positive weight on the action whose upper endpoint is being stressed, and the conditional observed reward law is not concentrated at a single endpoint of $[\ell,u]$ on the relevant action cell.
+\end{assumption}
+
+\begin{assumption}[Vacuous-budget threshold]\label{ass:vacuous}
+The phrase ``vacuous $\rho$ and $\eta$'' means that Assumption \ref{ass:f-budget} allows every stochastic logging kernel supported on $\mathcal A$ and Assumption \ref{ass:outcome-gap} allows every arm mean in $[\ell,u]$.
+\end{assumption}
+
+\begin{assumption}[Calibrated zero-budget face]\label{ass:zero-calibrated}
+For $P_X$-almost every $x$ and every action $a$, $p_a(x)=e_0(a\mid x)$ and $r_a(x)=e_0(a\mid x)m_0(a,x)$. Moreover, the zero-budget admissible set $\mathcal Q(P;0,0)$ is nonempty.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: calibrated zero-budget DR corner]\label{thm:dr-corner}
+Under Assumptions \ref{ass:bounded}--\ref{ass:outcome-gap} and \ref{ass:zero-calibrated}, if $\rho=0$ and $\eta=0$, then $\Theta_I(P;0,0)$ is nonempty and is the singleton
+\[
+  \left\{\E_X\sum_{a\in\mathcal A}\pi(a\mid X)m_0(a,X)\right\}.
+\]
+Equivalently, the same value is obtained from the population doubly robust score
+\[
+  \E_P\left[\sum_a \pi(a\mid X)m_0(a,X)
+        +\frac{\pi(A\mid X)}{e_0(A\mid X)}(Y-m_0(A,X))\right],
+\]
+because $\rho=0$ forces the logging kernel to be $e_0$ independently of the latent response vector, $\eta=0$ fixes the arm means at $m_0$, and Assumption \ref{ass:zero-calibrated} makes the observed law compatible with those two equalities.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This is not the novel kernel; it is the required calibration to \citet{DudikLangfordLi2011} and \citet{WangAgarwalDudik2017}. Its role is to rule out a proposal that gains novelty only by breaking the standard DR corner. (b) The concrete consumer is any DR OPE workflow using \citet{DudikLangfordLi2011}; the theorem says the proposed interval reports the same point value when the analyst is willing to set both misspecification budgets to zero.
+
+\begin{conjecture}[Conjecture 1: sharp joint-misspecification variational interval (NOT YET PROVED)]\label{conj:sharp-interval}
+Under Assumptions \ref{ass:bounded}--\ref{ass:finite-support}, whenever $\mathcal Q(P;\rho,\eta)$ is nonempty, the endpoints $L(P;\rho,\eta)$ and $U(P;\rho,\eta)$ equal the integral over $X$ of the conditional optimum of a finite-dimensional convex program. At each $x$, the program ranges over a conditional distribution on response vectors $y_{\mathcal A}\in\mathcal G^{|\mathcal A|}$ and a stochastic logging kernel $e^\star(\cdot\mid x,y_{\mathcal A})$; it imposes every observed factual reward-cell probability,
+\[
+  \sum_{y_{\mathcal A}:y_a=c}
+    H_x(y_{\mathcal A})e^\star(a\mid x,y_{\mathcal A})
+  =q_a(c\mid x),
+  \qquad a\in\mathcal A,\ c\in\mathcal G,
+\]
+which are equivalent to matching the full finite conditional law of $(A,Y)$ given $X=x$. It also imposes the pointwise divergence budget in Assumption \ref{ass:f-budget} and the arm-mean band
+$|\int y_a\,dH_x(y_{\mathcal A})-m_0(a,x)|\le\eta$. The conditional objective is
+$\sum_a\pi(a\mid x)\int y_a\,dH_x(y_{\mathcal A})$ for the upper endpoint and its negative for the lower endpoint.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{KallusZhou2018}, \citet{KallusZhou2020}, and \citet{KallusZhou2021} give the closest policy-learning and fixed-policy evaluation precedents under nominal propensity/sensitivity uncertainty, \citet{DornGuo2023} and \citet{DornGuoKallus2025} give sharp sensitivity bounds for treatment-effect settings, \citet{HessFrauenMelnychukFeuerriegel2026} gives a sharp and efficient off-policy learning bound under unobserved confounding, \citet{ZhangXuTan2025} gives the closest simultaneous treatment-probability/outcome-distribution sensitivity comparator, and \citet{IshikawaHe2023} gives sharp lower-bound machinery for confounded offline contextual bandits. None states this paired propensity-divergence plus outcome-regression-band identified set for a contextual-bandit policy value: Kallus--Zhou optimize robust policy improvement or RL evaluation under sensitivity restrictions, Zhang--Xu--Tan constrain outcome distributions in treatment-effect sensitivity analysis, and Ishikawa--He impose conditional moment and $f$-divergence machinery without an analyst-supplied arm-mean tube that must coexist with full factual reward-cell matching. The epsilon-gap is that the outcome-regression budget constrains the same marginal means that the propensity tilt tries to rearrange after every $q_a(c\mid x)$ cell of the observed law has been fixed, so the endpoint is a coupled compatibility program rather than a pure minimax-regret, quantile-balancing, pure sharp-OPL, deMSM, conditional-moment, or pure DRO endpoint. (b) The concrete consumer is \citet{JinXuZhengZhou2025}: their robust welfare and policy-improvement criteria could replace conservative one-source sensitivity values with these sharp joint values.
+
+\begin{conjecture}[Conjecture 2: non-rectangular phase transition (NOT YET PROVED)]\label{conj:nonrect}
+Assume \ref{ass:bounded}--\ref{ass:finite-support} and \ref{ass:binary-nondegenerate}. There is an open set of observable conditional laws $P(\cdot\mid X=x)$ on a two-action, three-reward grid $\mathcal A=\{0,1\}$ and $\mathcal G=\{g_L,g_M,g_H\}$ with $\ell\le g_L<g_M<g_H\le u$, and budgets $(\rho,\eta)$ with $\rho>0$, $0<\eta<u-\ell$, and $\mathcal Q(P;\rho,\eta)\ne\varnothing$, such that the sharp upper endpoint in Conjecture \ref{conj:sharp-interval} is strictly below the rectangular diagnostic envelope:
+\[
+  U(P;\rho,\eta) < U_{\mathrm{rect}}(P;\rho,\eta).
+\]
+The witness template has positive observed mass in at least two reward cells for each action, target mass on action $1$, and an $m_0(1,x)+\eta$ cap lying strictly between the pure propensity-sensitivity optimum and the rectangular envelope. The strict gap occurs when the propensity tilt that increases the pure sensitivity endpoint would require response-vector mass assignments that violate either the full factual reward-cell constraints or the $\eta$-tube around $m_0$, so the two worst-case mechanisms compete for the same response types. This is an internal geometry claim about the joint identified set and its generic rectangular relaxation, not a refutation of a named published estimator.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{KallusZhou2018}, \citet{KallusZhou2020}, and \citet{KallusZhou2021} study robust policy improvement or fixed-policy evaluation over nominal propensity/sensitivity uncertainty, \citet{KallusMaoWangZhou2022} studies DR estimation for DRO objectives, \citet{DornGuoKallus2025} studies double sharpness under nuisance misspecification, \citet{HessFrauenMelnychukFeuerriegel2026} gives a sharp off-policy bound under unobserved confounding, and \citet{ZhangXuTan2025} couples treatment-probability and outcome-distribution sensitivity constraints, but none identifies this open-set incompatibility between a full-observed-law joint latent-response program and the explicitly defined rectangular diagnostic envelope $U_{\mathrm{rect}}$. The claim is promoted as a generic geometry theorem for this causal sensitivity class, not as a negative result about a paper that studied a different ambiguity set. The Kallus--Zhou and Hess--Frauen--Melnychuk--Feuerriegel gap is direct: their sensitivity sets vary hidden-confounding mechanisms without a nominal outcome-regression tube, whereas Conjecture \ref{conj:nonrect} predicts that adding such a tube changes the value-set geometry because the weight tilt and reward-mean perturbation cannot be chosen independently after the factual reward cells have been fixed. This differs from merely weakening assumptions because it predicts a signable geometric phenomenon: a strict non-rectangularity gap and a kink in the support function when both budgets bind. (b) The concrete consumer is sensitivity reporting for Hess--Frauen--Melnychuk--Feuerriegel-style confounding-robust off-policy learning: the result says that adding a certified reward-model error budget to a sharp confounding bound requires solving the joint program rather than post-processing the one-source sharp value.
+
+\begin{theorem}[Theorem 2: vacuous-budget Manski fill-in corner]\label{thm:manski-corner}
+Under Assumptions \ref{ass:bounded}, \ref{ass:compat}, and \ref{ass:vacuous}, the identified interval is the Manski fill-in interval
+\[
+  \left[
+  \E_X\sum_a\pi(a\mid X)\{r_a(X)+(1-p_a(X))\ell\},
+  \E_X\sum_a\pi(a\mid X)\{r_a(X)+(1-p_a(X))u\}
+  \right],
+\]
+where $r_a(X)=\E[Y\one\{A=a\}\mid X]$ is zero on cells with $p_a(X)=0$.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This theorem is a calibration to \citet{Manski1990} and \citet{ManskiPepper2000}, not the flagship novelty. It verifies that the proposed identified set has the right no-unconfoundedness limit for policy values rather than reverting to a point-identified bandit estimand. (b) The concrete consumer is the AutoID Manski-family catalogue documented in \texttt{AutoID} \texttt{doc/API.md} \S9j: the result would supply the contextual-bandit policy-value analogue of the bounded-outcome sandwich.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Known randomized log reduction]
+Under Assumptions \ref{ass:bounded}--\ref{ass:finite-support} and \ref{ass:zero-calibrated}, if $\rho=0$ and $\eta=0$, then Conjecture \ref{conj:sharp-interval} reduces to Theorem \ref{thm:dr-corner}. The conditional program has only compatible arm means $\mu_a(x)=m_0(a,x)$, and the observed residual term in the DR score integrates to zero because $e^\star=e_0$ and $r_a=e_0m_0$.
+\end{corollary}
+
+\begin{corollary}[No-model reduction]
+Under Assumptions \ref{ass:bounded}, \ref{ass:compat}, \ref{ass:finite-support}, and \ref{ass:vacuous}, Conjecture \ref{conj:sharp-interval} reduces to Theorem \ref{thm:manski-corner}. The conditional program still fixes the full observed reward-cell law $q_a(c\mid x)$, but the policy-value objective depends on factual observed cells only through $r_a(x)=\sum_c c\,q_a(c\mid x)$ and fills the off-arm mass $1-p_a(x)$ with $\ell$ or $u$.
+\end{corollary}
+
+\begin{corollary}[Single-action policy reduction]
+Under Assumptions \ref{ass:bounded}--\ref{ass:finite-support}, if $\pi(a_0\mid x)=1$ for one action $a_0$, Conjecture \ref{conj:sharp-interval} reduces to the partial-identification interval for the mean potential outcome $\E[Y(a_0)]$ under the same joint sensitivity budgets because the conditional objective is just $\int y_{a_0}\,dH_x(y_{\mathcal A})$. Under Assumption \ref{ass:vacuous}, this becomes the usual one-arm bounded-outcome fill-in interval.
+\end{corollary}
+
+\section{Proof-sketch route}
+The proof route is a population partial-identification argument. First disintegrate the compatible full-data law by $X=x$ so that sharpness can be checked conditionally and integrated by the law of total expectation. On a finite outcome grid, compatibility with the full law $P(A,Y\mid X=x)$ is a system of linear equalities matching every factual reward-cell probability $q_a(c\mid x)$ in the response-vector masses and logging-kernel probabilities; the outcome-regression budget is linear in the response masses, while the $f$-divergence budget is a response-type-wise perspective-convex constraint. Existence of endpoint optimizers follows from compactness, and sharpness follows by pasting conditional optimizers across $x$ because the pasted law reproduces the full conditional factual distribution, not only its first moments. The calibrated zero-budget and vacuous-budget theorems are boundary calculations: at zero budget the kernel is forced to the nominal randomized log, the observed factual moments satisfy $r_a=e_0m_0$, and the outcome means are fixed, while at vacuous budget the full factual reward law remains fixed but the policy-value objective depends on it only through $r_a$ and fills the unobserved action outcomes at $\ell$ or $u$. The non-rectangularity conjecture should be proved by a two-action, three-outcome-grid construction where the rectangular envelope and the joint program require incompatible masses, then promoted to an open set by strict inequalities and continuity of convex-program value functions.
+
+\section{Honest scope flags}
+\begin{itemize}[leftmargin=*]
+\item Theorems \ref{thm:dr-corner} and \ref{thm:manski-corner} are labelled as routine calibration theorems; they are not the contribution.
+\item Conjecture \ref{conj:sharp-interval} is the field-level research kernel and is not yet proved; Conjecture \ref{conj:nonrect} is a diagnostic geometry claim about the same identified set and its generic rectangular relaxation, not an allegation that an existing paper uses the rectangular envelope.
+\item The v6 proposal is finite-grid only. The earlier monotone finite-support approximation language has been withdrawn; a later version may replace the finite grid with compactness and measurable-selection hypotheses, but no such extension is claimed here.
+\item The divergence family is now restricted to convex lower-semicontinuous generators with unique zero at $1$ and explicit absolute-continuity conventions on zero-$e_0$ cells; if Stage 0 needs a concrete specialization, KL divergence is the most natural first target because it aligns with \citet{KallusMaoWangZhou2022}.
+\item No claims are made about estimation, confidence intervals, or regret bounds in this proposal.
+\end{itemize}
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) --- initial draft of the joint propensity-divergence and outcome-regression misspecification interval; prior verdict: none.
+\item v2 (revise) --- added the Hess--Frauen--Melnychuk--Feuerriegel sharp OPL comparator, calibrated the zero-budget face, replaced zero-cell arm means by factual moments, and formalized the rectangular diagnostic envelope; prior verdict: REVISE.
+\item v3 (revise) --- added the Kallus--Zhou confounding-robust policy-improvement comparison to related work and to the Conjecture 1/2 novelty blocks; prior verdict: REVISE.
+\item v4 (revise) --- patched the N-thin-survey flag by adding Kallus--Zhou fixed-policy RL bounds and Zhang--Xu--Tan deMSM as closest comparators, and patched the C-wellposed flag by adding absolute-continuity and unique-zero conventions for the $f$-divergence budget; prior verdict: REVISE.
+\item v5 (revise) --- patched the C-wellposed locked-parameter mismatch by defining the latent logging kernel under compatible full-data laws $Q$ rather than the observed law $P$; prior verdict: REVISE.
+\item v6 (revise) --- patched the Stage 0.5 rewind by replacing the moment-only conditional program with full factual reward-cell constraints, withdrawing the monotone limiting convention, and reframing non-rectangularity as a generic geometry conjecture rather than a negative-result claim about a published estimator; prior verdict: REJECT.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Balke and Pearl(1997)]{BalkePearl1997}
+Balke, A. and Pearl, J. (1997).
+Bounds on treatment effects from studies with imperfect compliance.
+\emph{Journal of the American Statistical Association}, 92(439):1171--1176.
+
+\bibitem[Dorn and Guo(2023)]{DornGuo2023}
+Dorn, J. and Guo, K. (2023).
+Sharp sensitivity analysis for inverse propensity weighting via quantile balancing.
+\emph{Journal of the American Statistical Association}, 118(544):2645--2657.
+
+\bibitem[Dorn, Guo, and Kallus(2025)]{DornGuoKallus2025}
+Dorn, J., Guo, K., and Kallus, N. (2025).
+Doubly-valid/doubly-sharp sensitivity analysis for causal inference with unmeasured confounding.
+\emph{Journal of the American Statistical Association}, 120(549):331--342.
+
+\bibitem[Dudik, Langford, and Li(2011)]{DudikLangfordLi2011}
+Dudik, M., Langford, J., and Li, L. (2011).
+Doubly robust policy evaluation and learning.
+\emph{Proceedings of the 28th International Conference on Machine Learning}.
+
+\bibitem[Hess, Frauen, Melnychuk, and Feuerriegel(2026)]{HessFrauenMelnychukFeuerriegel2026}
+Hess, K., Frauen, D., Melnychuk, V., and Feuerriegel, S. (2026).
+Efficient and sharp off-policy learning under unobserved confounding.
+\emph{International Conference on Learning Representations}.
+
+\bibitem[Ishikawa and He(2023)]{IshikawaHe2023}
+Ishikawa, K. and He, N. (2023).
+Kernel conditional moment constraints for confounding robust inference.
+\emph{Proceedings of The 26th International Conference on Artificial Intelligence and Statistics}, PMLR 206:650--674.
+
+\bibitem[Jin, Xu, Zheng, and Zhou(2025)]{JinXuZhengZhou2025}
+Jin, Z., Xu, G., Zheng, X., and Zhou, Y. (2025).
+Policy learning under unobserved confounding: A robust and efficient approach.
+\emph{arXiv:2507.20550}.
+
+\bibitem[Kallus and Zhou(2018)]{KallusZhou2018}
+Kallus, N. and Zhou, A. (2018).
+Confounding-robust policy improvement.
+\emph{Advances in Neural Information Processing Systems 31}, 9289--9299.
+
+\bibitem[Kallus and Zhou(2020)]{KallusZhou2020}
+Kallus, N. and Zhou, A. (2020).
+Confounding-robust policy evaluation in infinite-horizon reinforcement learning.
+\emph{Advances in Neural Information Processing Systems 33}.
+
+\bibitem[Kallus and Zhou(2021)]{KallusZhou2021}
+Kallus, N. and Zhou, A. (2021).
+Minimax-optimal policy learning under unobserved confounding.
+\emph{Management Science}, 67(5):2870--2890.
+
+\bibitem[Kallus, Mao, Wang, and Zhou(2022)]{KallusMaoWangZhou2022}
+Kallus, N., Mao, X., Wang, K., and Zhou, Z. (2022).
+Doubly robust distributionally robust off-policy evaluation and learning.
+\emph{Proceedings of the 39th International Conference on Machine Learning}, PMLR 162:10598--10632.
+
+\bibitem[Manski(1990)]{Manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review}, 80(2):319--323.
+
+\bibitem[Manski and Pepper(2000)]{ManskiPepper2000}
+Manski, C. F. and Pepper, J. V. (2000).
+Monotone instrumental variables: With an application to the returns to schooling.
+\emph{Econometrica}, 68(4):997--1010.
+
+\bibitem[Masten, Poirier, and Zhang(2024)]{MastenPoirierZhang2024}
+Masten, M. A., Poirier, A., and Zhang, L. (2024).
+Assessing sensitivity to unconfoundedness: Estimation and inference.
+\emph{Journal of Business and Economic Statistics}, 42(1):1--13.
+
+\bibitem[Si, Zhang, Zhou, and Blanchet(2020)]{SiZhangZhouBlanchet2020}
+Si, N., Zhang, F., Zhou, Z., and Blanchet, J. (2020).
+Distributionally robust policy evaluation and learning in offline contextual bandits.
+\emph{Proceedings of the 37th International Conference on Machine Learning}, PMLR 119:8884--8894.
+
+\bibitem[Tan(2006)]{Tan2006}
+Tan, Z. (2006).
+A distributional approach for causal inference using propensity scores.
+\emph{Journal of the American Statistical Association}, 101(476):1619--1637.
+
+\bibitem[Wang, Agarwal, and Dudik(2017)]{WangAgarwalDudik2017}
+Wang, Y.-X., Agarwal, A., and Dudik, M. (2017).
+Optimal and adaptive off-policy evaluation in contextual bandits.
+\emph{Proceedings of the 34th International Conference on Machine Learning}, PMLR 70:3589--3597.
+
+\bibitem[Zhang, Xu, and Tan(2025)]{ZhangXuTan2025}
+Zhang, Y., Xu, R., and Tan, Z. (2025).
+Distributionally enhanced marginal sensitivity model: Simultaneous sensitivity constraints on treatment probability and outcome distribution.
+\emph{arXiv preprint}.
+\end{thebibliography}
+
+\end{document}

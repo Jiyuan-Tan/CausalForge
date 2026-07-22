@@ -1,0 +1,444 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_reversible\_dynamic\_spillover, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_reversible\_dynamic\_spillover} / \texttt{v1}%
+  \\ \large\textit{Strict finite-radius reversible-spell bounds with endpoint sharpness witnesses}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+cluster=partial identification
+qid=pid_reversible_dynamic_spillover
+specialization=v1
+observable distribution P=law of (Y_t,D_t,X_t)_{t=1}^T on a finite support,
+  with D_t in {0,1}, reversible treatment paths allowed, bounded outcomes
+  Y_t in [0,1], and observed finite-memory history H_t=(D_{t-m+1},...,D_t)
+  when t>=m (short initial histories are padded by a fixed baseline value)
+parameter theta_T=sum_{t=m}^T w_{t,T}{mu_t(1_m)-mu_t(0_m)}, where
+  mu_t(h) is the mean potential outcome at time t under last-m treatment
+  history h, 1_m is sustained treatment, 0_m is sustained no treatment,
+  and w_{t,T}=1/(T-m+1) for t=m,...,T; the long-run parameter theta_LR is
+  the Cesaro limit of these uniform finite-horizon averages when the
+  finite-horizon identified intervals converge
+identifying restrictions=consistency on observed histories; finite-memory
+  potential outcomes; observed anchor means a_t(h)=E[Y_t | H_t=h] for histories
+  h in the observed support S_t(P); observed-anchor rho-feasibility requiring
+  |a_t(s)-a_t(s')|<=rho*d_sp(s,s') for all same-current-treatment observed
+  anchors s,s' in S_t(P); bounded spillover/carryover requiring
+  |mu_t(h)-mu_t(h')|<=rho*d_sp(h,h') only for histories with the same current
+  treatment status, where d_sp is the within-arm spell-boundary metric;
+  histories with different current treatment status are not Lipschitz-coupled;
+  bounded outcomes in [0,1]; pathwise response-type compatibility requiring
+  cell-vertex weights to preserve the full observed trajectory law and
+  satisfy the carryover inequalities almost surely; no stationarity, no
+  absorbing treatment, and no parallel-trends restriction unless explicitly
+  added in a corollary
+bounding functional=the lower and upper support values of theta_T over all
+  observed-law-compatible response-type laws satisfying the rho-Lipschitz
+  spell-boundary restriction, with candidate envelope endpoints computed by
+  McShane-Whitney lower/upper envelopes, a two-terminal Lipschitz coupling, and
+  the normalized cell-vertex Farkas/Hall compatibility margin kappa_T(P;rho)
+\end{verbatim}
+
+\begin{abstract}
+Reversible treatments create dynamic histories that cannot be compressed to an absorbing adoption date, yet unrestricted dynamic partial-identification bounds are often too wide to guide empirical practice.  This proposal asks whether a scalar bound on adjacent-spell carryover turns the sharp finite-horizon ATE problem into a finite metric-extension problem.  The routine component is a two-terminal McShane-Whitney formula for the sharp contrast between any two treatment-history means when only observed history anchors and a spell-boundary Lipschitz radius are imposed; this is treated as inherited Lipschitz-extension algebra, not as the flagship novelty.  The flagship conjecture is that, for reversible finite-memory panels, those marginal metric-extension faces lift through a normalized cell-vertex Farkas/Hall certificate that preserves the full observed trajectory law, so endpoint pasting is not period-by-period free.  If true, this would move smoothness-based partial identification beyond static treatment-response restrictions by giving reversible-spell endpoint laws, finite-radius width reductions, and sharpness witnesses for dynamic panels without stationarity or parallel trends.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Many panel treatments turn on and off: unemployment insurance eligibility, medication use, sanctions, training participation, and exposure to local policies all have repeated spells.  Absorbing-treatment event-study methods deliberately avoid this state space by indexing units by first adoption, while longitudinal g-formula methods point identify only under full sequential exchangeability.  The scientific question here is sharper: when reversals are allowed and the only extra information is that adjacent treatment spells have bounded carryover, can one write down the exact partial-identification interval and prove that its faces are attainable?
+
+\paragraph{The main finding (proposed).}
+The proposed kernel has one routine theorem and two flagship conjectures.  Theorem~\ref{thm:two-terminal} states the exact two-history contrast interval implied by observed history means, bounded outcomes, and a scalar spell-boundary Lipschitz radius; it is included only to pin the formula and is not counted as novelty.  Conjecture~\ref{conj:metric-sharpness} is the first nontrivial research claim: for finite-memory reversible panels, the finite-horizon long-run ATE interval equals the weighted sum of two-terminal metric-extension faces if and only if the two McShane--Whitney endpoint arrays pass a normalized serial Farkas/Hall compatibility test against the full observed trajectory law, and in that case the lower and upper endpoints are attained by two extremal cell-vertex transports.  Conjecture~\ref{conj:strict-tightening} is the flagship strict-extension claim: on an open set of observed reversible-spell anchor arrays satisfying that compatibility test, the finite-\(\rho\) interval is narrower than the \(\rho=\infty\) Diemer--Manski endpoint by an explicit positive width gap.
+
+\paragraph{What is new.}
+The closest smoothness-based partial-identification paper is \citet{KimKwonKwonLee2018}, and a finite treatment history can indeed be viewed as their treatment domain for a single-period smooth-response bound.  The epsilon-gap is therefore deliberately narrower: this proposal asks whether the McShane--Whitney endpoint arrays survive the additional dynamic requirement that one pathwise response-type distribution jointly explain the full observed outcome law along reversible histories, repeated entries and exits, and the sustained-regime endpoint.  The closest panel partial-identification papers, \citet{ChernozhukovFernandezValHahnNewey2013} and \citet{JunLeeShin2016}, prove sharp bounds using time-homogeneity, stationarity, or dynamic decision restrictions.  The closest generic finite-discrete sharp-bounds engine is \citet{DuarteFinkelsteinKnoxMummoloShpitser2024}, which can in principle encode the same admissible-DGP projection as a finite program; here the proposed advance is a normalized cell-vertex Farkas/Hall margin that collapses to symbolic thresholds in reversible-spell boundary cases, plus endpoint laws and a computable strict-nesting gap rather than only a black-box numerical range.
+
+\paragraph{How it positions in the literature.}
+This is a partial-identification proposal for dynamic panel treatments.  It uses the g-formula literature, especially \citet{Robins1986}, only as the zero-carryover point-identification pole, and it uses reversible-panel DID work such as \citet{DeChaisemartinDHaultfoeuille2024} only to motivate why nonabsorbing lags matter empirically.  The mathematical object is an identified set for a finite-memory potential-outcome response surface under bounded spillovers, not a regression coefficient, a parallel-trends estimand, or an SCM calculus rule.
+
+\paragraph{Implications for the community.}
+The concrete consumer is empirical reversible-spell analysis in the style of \citet{DeChaisemartinDHaultfoeuille2024}: instead of imposing parallel trends to estimate lagged treatment effects, an analyst could report the sharp ATE interval implied by observed spell histories and a transparent carryover radius.  The same result would also provide the missing sharpness witness requested by the internal \texttt{pid\_dynamic\_iv\_compliance} and \texttt{pid\_long\_term\_surrogate} proposal reviews, where endpoint formulas were blocked by absent extremal completions.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should stop treating reversible-spell carryover as either point identified or unrestricted; they should report the metric-extension interval and check which observed histories anchor the two sustained-regime endpoints.
+
+\section{Related work}
+\citet{Robins1986} introduces the g-formula for longitudinal treatments under sequential exchangeability; it is the zero-carryover endpoint that this proposal must recover when the observed anchors identify the target histories.  \citet{DiemerShiSwanson2024} gives assumption-free partial-identification bounds for sustained static and dynamic interventions; it supplies the unrestricted-potential-outcome pole that the proposed finite radius should tighten.  \citet{ManskiPepper2018} develops bounded-variation sensitivity analysis for ambiguity problems; it is a direct bounded-variation comparator, but it does not address reversible finite-memory treatment histories or dynamic endpoint laws.  \citet{KimKwonKwonLee2018} obtains partial-identification results for average counterfactual outcomes and treatment effects under smoothness of treatment response functions; because finite histories can be used as a treatment space in their framework, the present proposal treats the static envelope as inherited and isolates the extra response-type projection imposed by one observed reversible panel law.  \citet{ChernozhukovFernandezValHahnNewey2013} derives sharp average and quantile effect bounds in nonseparable panel models and dynamic state-dependence settings; it is the closest flagship panel-bounds result, but its sharpness comes from time-homogeneity restrictions rather than a spell-history Lipschitz radius.  \citet{JunLeeShin2016} gives sharp panel bounds for potential-outcome distributions under stationarity and dynamic treatment decisions; it is close because it allows dynamic decisions, but the present proposal deliberately avoids stationarity.  \citet{DuarteFinkelsteinKnoxMummoloShpitser2024} develops an automated finite-discrete partial-identification engine that searches over admissible data-generating processes and gives sharp or epsilon-sharp numerical ranges; it is the necessary generic-bounds comparator, while this proposal seeks an interpretable Farkas/Hall certificate for the finite response-type projection and explicit reversible-spell extremal laws.  \citet{Han2021} studies nonparametric identification of finite dynamic treatment effects and highlights timing, state dependence, and nonstationarity; it motivates the finite-history target but does not give bounded-carryover sharp partial-ID formulas.  \citet{DeChaisemartinDHaultfoeuille2024} studies nonbinary, nonabsorbing panel treatments with treatment lags under parallel trends; it is the main reversible-panel design comparator, while this proposal replaces parallel trends with a partial-ID carryover radius.  \citet{McShane1934} and \citet{Whitney1934} provide the classical Lipschitz extension envelopes underlying the routine two-terminal formula.  \citet{Manski1990} is the unrestricted bounded-outcome benchmark for the infinite-radius sanity check.
+
+The in-repo catalogue, summarized in \texttt{doc/API.md} Section 3, has seed-level ExactID and PartialID catalogues and a Manski bounded-outcome study artifact, but no recorded reversible-spell bounded-carryover proposal.  The closest banked CausalSmith artifacts are \texttt{pid\_dynamic\_iv\_compliance} (memory-retaining dynamic IV bounds with reviewer demands for endpoint-face witnesses), \texttt{pid\_long\_term\_surrogate} (bounded-transition long-run bounds with missing sharp coupling witnesses), and \texttt{pid\_did\_anticipation\_bounded} (support-function DID intervals with a reviewer-requested compatibility lemma).  The present proposal differs from all three by making the endpoint witness itself the flagship object and by rooting it in a reversible spell-history metric rather than an IV type simplex, a surrogate transition, or a staggered-DID anticipation box.
+
+\section{Formal setup}\label{sec:setup}
+The observed law \(P\) is the distribution of a finite panel \((Y_t,D_t,X_t)_{t=1}^T\), where \(D_t\in\{0,1\}\), \(Y_t\in[0,1]\), and the support is finite.  Fix a memory length \(m\ge 1\).  For \(t\ge m\), let \(H_t=(D_{t-m+1},\ldots,D_t)\in\calH_m=\{0,1\}^m\); for \(t<m\), histories are padded by a fixed baseline value so all histories live in \(\calH_m\).  Let \(S_t(P)\subseteq\calH_m\) be the set of histories with positive probability at time \(t\), and let
+\[
+  a_t(h)=\E_P[Y_t\mid H_t=h],\qquad h\in S_t(P),
+\]
+be the observed anchor mean.
+
+For a history \(h=(h_1,\ldots,h_m)\), define its spell code
+\[
+  B(h)=(h_1, |h_2-h_1|,\ldots,|h_m-h_{m-1}|)\in\{0,1\}^m
+\]
+and the within-arm spell-boundary distance
+\[
+  d_{\mathrm{sp}}(h,h')=
+  \begin{cases}
+    \sum_{j=1}^m |B_j(h)-B_j(h')|, & h_m=h'_m,\\
+    \infty, & h_m\ne h'_m.
+  \end{cases}
+\]
+Thus the carryover radius controls how prior spell boundaries perturb outcomes within a fixed current-treatment arm; it does not bound the contemporaneous treatment effect itself.  The convention for \(\rho d_{\mathrm{sp}}\) is \(0\cdot\infty=\infty\) for cross-arm pairs and \(\infty\cdot 0=0\) for identical histories.  A latent mean response map at time \(t\) is a function \(\mu_t:\calH_m\to[0,1]\), interpreted as the mean potential outcome under last-\(m\) treatment history \(h\).  A pathwise response type is a vector
+\[
+  R=(R_t(h):t=m,\ldots,T,\ h\in\calH_m)\in[0,1]^{(T-m+1)|\calH_m|}
+\]
+whose coordinates are the unit-level potential outcomes for all relevant periods and histories.  Let \(\mathcal P_\rho\) be the finite-dimensional compact polytope of such vectors satisfying \(0\le R_t(h)\le 1\) and \(|R_t(h)-R_t(h')|\le\rho d_{\mathrm{sp}}(h,h')\) for every \(t,h,h'\).
+
+Let \(\mathcal C(P)\) be the finite support of the full observed trajectory \(C=(Y_1,\ldots,Y_T,D_1,\ldots,D_T,X_1,\ldots,X_T)\), let \(p_c=P(C=c)\), let \(H_t(c)\) be the realized history in cell \(c\), and let \(y_t(c)\) be its observed outcome.  For each cell, let
+\[
+  \mathcal P_\rho(c)=\{r\in\mathcal P_\rho:r_t(H_t(c))=y_t(c)\ \text{for every }t=m,\ldots,T\}
+\]
+and let \(V_\rho(c)\) be the finite vertex set of this cell-specific polytope slice.  A response-type law is represented by weights \(q_{cv}\ge0\) on pairs \(c\in\mathcal C(P)\), \(v\in V_\rho(c)\), with \(\sum_{v\in V_\rho(c)}q_{cv}=p_c\) for every cell \(c\).  This preserves the full observed trajectory law, not merely the anchor means.  It induces \(\mu_t(h)=\sum_{c,v}q_{cv}v_t(h)\), and \(\calR(P,\rho,T)\) is the set of all mean arrays induced by such cell-vertex weights.  The target finite-horizon long-run contrast is
+\[
+  \theta_T=\sum_{t=m}^T w_{t,T}\{\mu_t(\mathbf{1}_m)-\mu_t(\mathbf{0}_m)\},
+\]
+where \(w_{t,T}=1/(T-m+1)\), \(\mathbf{1}_m=(1,\ldots,1)\), and \(\mathbf{0}_m=(0,\ldots,0)\).  The identified set \(\Theta_I(P;\rho,T)\) is the set of all \(\theta_T\) values generated by mean arrays in \(\calR(P,\rho,T)\).  The scalar metric-extension interval obtained by ignoring the serial response-type projection is denoted \(\Theta_{\mathrm{env}}(P;\rho,T)\).  When the lower and upper endpoints converge along \(T\), the long-run set \(\Theta_I^{\mathrm{LR}}(P;\rho)\) is the corresponding uniform Cesaro-limit interval.
+
+For any \(h\in\calH_m\), define the McShane-Whitney envelopes
+\[
+  L_t^\rho(h)=\max\left\{0,\max_{s\in S_t(P)}\{a_t(s)-\rho d_{\mathrm{sp}}(h,s)\}\right\},
+  \qquad
+  U_t^\rho(h)=\min\left\{1,\min_{s\in S_t(P)}\{a_t(s)+\rho d_{\mathrm{sp}}(h,s)\}\right\}.
+\]
+For two histories \(h^1,h^0\), define
+\[
+\begin{aligned}
+  \underline\Delta_t^\rho(h^1,h^0)
+    &=\max\{L_t^\rho(h^1)-U_t^\rho(h^0),-\rho d_{\mathrm{sp}}(h^1,h^0)\},\\
+  \overline\Delta_t^\rho(h^1,h^0)
+    &=\min\{U_t^\rho(h^1)-L_t^\rho(h^0),\rho d_{\mathrm{sp}}(h^1,h^0)\}.
+\end{aligned}
+\]
+These are candidate lower and upper support values for the period-\(t\) contrast.
+Let
+\[
+  W_t^\rho(h)=U_t^\rho(h)-L_t^\rho(h)
+\]
+be the envelope width for a target history, and define the finite-radius tightening functional
+\[
+  \Gamma_T(P;\rho)=
+  \sum_{t=m}^T w_{t,T}
+  \left(
+    W_t^\infty(\mathbf{1}_m)+W_t^\infty(\mathbf{0}_m)
+    -W_t^\rho(\mathbf{1}_m)-W_t^\rho(\mathbf{0}_m)
+  \right).
+\]
+When Conjecture~\ref{conj:metric-sharpness} holds, \(\Gamma_T(P;\rho)\) is the exact reduction in ATE interval width relative to the unrestricted \(\rho=\infty\) endpoint.
+For \(e\in\{-,+\}\), let \(M^e(P,\rho,T)\) denote a fixed lexicographic McShane--Whitney endpoint mean array attaining the lower or upper endpoint of \(\Theta_{\mathrm{env}}(P;\rho,T)\).  Define the support function of the full observed-law-compatible mean-array set by
+\[
+  \sigma_{P,\rho}(\lambda)
+  =
+  \max_{\{q_{cv}\ge0:v\in V_\rho(c)\}}
+  \left\{
+    \sum_{t,h}\lambda_{t,h}\sum_{c,v}q_{cv}v_t(h):
+    \sum_{v\in V_\rho(c)}q_{cv}=p_c\ \text{for all }c\in\mathcal C(P)
+  \right\}.
+\]
+The normalized serial compatibility certificate is the Farkas margin
+\[
+  \kappa_T(P;\rho)
+  =
+  \min_{e\in\{-,+\}}\ 
+  \inf_{\|\lambda\|_{1,\mathrm{rel}}=1}
+  \left\{\sigma_{P,\rho}(\lambda)-\sum_{t,h}\lambda_{t,h}M^e_{t,h}(P,\rho,T)\right\}.
+\]
+Here \(\|\lambda\|_{1,\mathrm{rel}}\) is the \(\ell_1\) norm after quotienting out directions that are constant on the affine hull of \(\calR(P,\rho,T)\), so the zero functional is not admissible.  The sign convention is fixed: \(\kappa_T(P;\rho)\ge0\) if and only if both McShane--Whitney endpoint arrays belong to \(\calR(P,\rho,T)\), while \(\kappa_T(P;\rho)<0\) is the absolute normalized separating-hyperplane violation.  In one-target boundary cases, the same condition becomes the Hall-type interval test
+\[
+  \sum_c p_c \ell_c^\rho(h)\le \bar M_h\le \sum_c p_c u_c^\rho(h),
+  \qquad
+  \ell_c^\rho(h)=\max\left(\{0\}\cup\{y_t(c)-\rho d_{\mathrm{sp}}(h,H_t(c)):H_t(c)\sim h\}\right),
+  \quad
+  u_c^\rho(h)=\min\left(\{1\}\cup\{y_t(c)+\rho d_{\mathrm{sp}}(h,H_t(c)):H_t(c)\sim h\}\right),
+\]
+where \(H_t(c)\sim h\) means same current treatment and \(\bar M_h\) is the endpoint mean demanded for the target coordinate.  This displayed boundary formula is the proposed non-generic diagnostic that separates the draft from a Duarte-style black-box admissible-DGP range.
+
+\begin{verbatim}
+cluster=partial identification
+qid=pid_reversible_dynamic_spillover
+specialization=v1
+observable distribution P=law of (Y_t,D_t,X_t)_{t=1}^T on a finite support,
+  with D_t in {0,1}, reversible treatment paths allowed, bounded outcomes
+  Y_t in [0,1], and observed finite-memory history H_t=(D_{t-m+1},...,D_t)
+  when t>=m (short initial histories are padded by a fixed baseline value)
+parameter theta_T=sum_{t=m}^T w_{t,T}{mu_t(1_m)-mu_t(0_m)}, where
+  mu_t(h) is the mean potential outcome at time t under last-m treatment
+  history h, 1_m is sustained treatment, 0_m is sustained no treatment,
+  and w_{t,T}=1/(T-m+1) for t=m,...,T; the long-run parameter theta_LR is
+  the Cesaro limit of these uniform finite-horizon averages when the
+  finite-horizon identified intervals converge
+identifying restrictions=consistency on observed histories; finite-memory
+  potential outcomes; observed anchor means a_t(h)=E[Y_t | H_t=h] for histories
+  h in the observed support S_t(P); observed-anchor rho-feasibility requiring
+  |a_t(s)-a_t(s')|<=rho*d_sp(s,s') for all same-current-treatment observed
+  anchors s,s' in S_t(P); bounded spillover/carryover requiring
+  |mu_t(h)-mu_t(h')|<=rho*d_sp(h,h') only for histories with the same current
+  treatment status, where d_sp is the within-arm spell-boundary metric;
+  histories with different current treatment status are not Lipschitz-coupled;
+  bounded outcomes in [0,1]; pathwise response-type compatibility requiring
+  cell-vertex weights to preserve the full observed trajectory law and
+  satisfy the carryover inequalities almost surely; no stationarity, no
+  absorbing treatment, and no parallel-trends restriction unless explicitly
+  added in a corollary
+bounding functional=the lower and upper support values of theta_T over all
+  observed-law-compatible response-type laws satisfying the rho-Lipschitz
+  spell-boundary restriction, with candidate envelope endpoints computed by
+  McShane-Whitney lower/upper envelopes, a two-terminal Lipschitz coupling, and
+  the normalized cell-vertex Farkas/Hall compatibility margin kappa_T(P;rho)
+\end{verbatim}
+
+\section{Assumptions}\label{sec:assumptions}
+\begin{assumption}[Finite reversible panel]\label{ass:finite-panel}
+The observed law \(P\) has finite support, \(D_t\in\{0,1\}\), \(Y_t\in[0,1]\), treatment paths may switch in either direction, and all histories are represented in the finite set \(\calH_m=\{0,1\}^m\) after the padding convention in Section~\ref{sec:setup}.
+\end{assumption}
+
+\begin{assumption}[Observed anchor consistency]\label{ass:anchor-consistency}
+For every \(t\) and every observed history \(h\in S_t(P)\), the latent mean response map satisfies \(\mu_t(h)=a_t(h)=\E_P[Y_t\mid H_t=h]\).  Thus the observed conditional mean is the anchor value for that history.
+\end{assumption}
+
+\begin{assumption}[Observed-anchor \(\rho\)-feasibility]\label{ass:anchor-feasibility}
+For every \(t\) and every pair \(s,s'\in S_t(P)\) with \(s_m=s'_m\),
+\[
+  |a_t(s)-a_t(s')|\le \rho d_{\mathrm{sp}}(s,s').
+\]
+If this condition fails for any same-current-treatment observed anchor pair, the scalar-map feasible set for that \(t\) is empty and \(\Theta_I(P;\rho,T)=\emptyset\).  For full observed-law compatibility, each cell-specific polytope \(V_\rho(c)\) defined in Section~\ref{sec:setup} is also assumed nonempty whenever \(p_c>0\); if some \(V_\rho(c)\) is empty, the pathwise response-type feasible set is empty.
+\end{assumption}
+
+\begin{assumption}[Bounded spell carryover]\label{ass:rho-lipschitz}
+For a known scalar \(\rho\in[0,\infty]\), each time-\(t\) mean response map \(\mu_t:\calH_m\to[0,1]\) satisfies
+\[
+  |\mu_t(h)-\mu_t(h')|\le \rho d_{\mathrm{sp}}(h,h')\qquad\text{for all }h,h'\in\calH_m.
+\]
+Because \(d_{\mathrm{sp}}(h,h')=\infty\) when \(h_m\ne h'_m\), this restriction does not constrain the contemporaneous treatment contrast across current-treatment arms.  When \(\rho=\infty\), the inequality is interpreted as imposing no within-arm cross-history restriction beyond bounded outcomes and anchor consistency.
+\end{assumption}
+
+\begin{assumption}[Target support]\label{ass:target-support}
+For every \(t\in\{m,\ldots,T\}\), the observed support \(S_t(P)\) is nonempty and the two target histories \(\mathbf{1}_m\) and \(\mathbf{0}_m\) belong to \(\calH_m\).  The finite-horizon weights are the uniform Cesaro weights \(w_{t,T}=1/(T-m+1)\).
+\end{assumption}
+
+\begin{assumption}[Pathwise response-type compatibility]\label{ass:mean-law-compat}
+The sharp identified set is evaluated over cell-vertex weights \(q_{cv}\) as defined in Section~\ref{sec:setup}, not over independently pasted period-specific mean maps.  Such weights must preserve the full observed trajectory law \(P(C=c)=p_c\), assign positive mass only to vertices \(v\in V_\rho(c)\) satisfying \(v_t(H_t(c))=y_t(c)\) on every realized history in cell \(c\), and satisfy \(|v_t(h)-v_t(h')|\le \rho d_{\mathrm{sp}}(h,h')\) for all \(t,h,h'\).  Whether the McShane--Whitney endpoint mean arrays satisfy this assumption is the compatibility question in Conjecture~\ref{conj:metric-sharpness}, not an assumption for Theorem~\ref{thm:two-terminal}.
+\end{assumption}
+
+\begin{assumption}[Cesaro endpoint stability]\label{ass:cesaro-stability}
+Along the sequence of horizons \(T\), the lower and upper endpoints of \(\Theta_I(P;\rho,T)\) formed with the uniform weights \(w_{t,T}=1/(T-m+1)\) converge.  Equivalently, the ordinary Cesaro averages of the period-specific support values have limits.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: two-terminal metric-extension bound]\label{thm:two-terminal}
+Under Assumptions~\ref{ass:finite-panel}, \ref{ass:anchor-consistency}, \ref{ass:rho-lipschitz}, and \ref{ass:target-support}, fix a period \(t\) and two histories \(h^1,h^0\in\calH_m\).  If Assumption~\ref{ass:anchor-feasibility} fails at \(t\), the scalar-map feasible set is empty.  If Assumption~\ref{ass:anchor-feasibility} holds at \(t\), then among all scalar maps \(\mu_t:\calH_m\to[0,1]\) satisfying anchor consistency and the \(\rho\)-Lipschitz spell-carryover restriction, the sharp identified interval for the contrast \(\mu_t(h^1)-\mu_t(h^0)\) is
+\[
+  [\underline\Delta_t^\rho(h^1,h^0),\overline\Delta_t^\rho(h^1,h^0)].
+\]
+The endpoint values are attained by finite Lipschitz extensions built from the McShane-Whitney envelopes on the two current-treatment components of \((\calH_m,d_{\mathrm{sp}})\).
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This theorem is routine metric-extension algebra, not the flagship novelty.  The closest mathematical ancestors are \citet{McShane1934} and \citet{Whitney1934}, and the closest econometric smoothness comparator is \citet{KimKwonKwonLee2018}; the theorem's role is only to translate those envelopes into the spell-history notation needed by the dynamic conjectures.  Relative to \citet{DuarteFinkelsteinKnoxMummoloShpitser2024}, the gap is analytic rather than computational: the theorem displays the face formula and the anchor-feasibility condition in closed form.  (b) The concrete consumer is Conjecture~\ref{conj:metric-sharpness}: it supplies the face formula that the reversible-spell sharpness witness must lift from marginal means to observed-law-compatible dynamic potential outcomes.
+
+\begin{conjecture}[Conjecture 1: reversible-spell Farkas/Hall sharpness (NOT YET PROVED)]\label{conj:metric-sharpness}
+Under Assumptions~\ref{ass:finite-panel}, \ref{ass:anchor-consistency}, \ref{ass:anchor-feasibility}, \ref{ass:rho-lipschitz}, \ref{ass:target-support}, and \ref{ass:mean-law-compat}, the scalar envelope interval \(\Theta_{\mathrm{env}}(P;\rho,T)\) equals the sharp identified set \(\Theta_I(P;\rho,T)\) if and only if the normalized serial compatibility certificate satisfies \(\kappa_T(P;\rho)\ge 0\).  In that compatible case,
+\[
+  \Theta_I(P;\rho,T)
+  =
+  \left[
+    \sum_{t=m}^T w_{t,T}\underline\Delta_t^\rho(\mathbf{1}_m,\mathbf{0}_m),
+    \sum_{t=m}^T w_{t,T}\overline\Delta_t^\rho(\mathbf{1}_m,\mathbf{0}_m)
+  \right].
+\]
+Moreover, the lower and upper faces are saturated by two explicit extremal cell-vertex transports \(q^-_{cv}\) and \(q^+_{cv}\) whose period-\(t\) means are McShane and Whitney envelope completions, whose cell marginals equal the full observed law \(P(C=c)\), and whose type-level coordinates satisfy the pathwise spell-carryover inequalities.  In one-target reversible-spell boundary cases, the Farkas margin reduces to the displayed Hall interval in Section~\ref{sec:setup}, yielding a symbolic threshold
+\[
+  \rho^\dagger(P,h,\bar M_h)
+  =
+  \inf\{\rho:\sum_c p_c \ell_c^\rho(h)\le \bar M_h\le \sum_c p_c u_c^\rho(h)\}
+\]
+that decides whether the envelope face is sharp.  If \(\kappa_T(P;\rho)<0\), then at least one displayed envelope face is nonsharp and the sharp endpoint is obtained by imposing the corresponding separating Farkas inequality.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest smoothness paper, \citet{KimKwonKwonLee2018}, can cover the static envelope by treating finite histories as a treatment domain, so the envelope alone is not the novelty.  The gap is the serial response-type projection: their smooth-response bounds do not characterize when two endpoint arrays across repeated on-off spells are induced by one observed-law-compatible dynamic potential-outcome law matching the full trajectory distribution.  The closest published sharp panel bounds are \citet{ChernozhukovFernandezValHahnNewey2013} and \citet{JunLeeShin2016}; both obtain sharpness from stationarity or time-homogeneity restrictions, whereas this conjecture asks for an explicit compatibility certificate under a reversible spell-boundary metric with no stationarity.  \citet{DuarteFinkelsteinKnoxMummoloShpitser2024} is closer on generic discreteness because it can search over finite counterfactual response types, but it does not isolate the reversible-spell Lipschitz face, normalize the separating Farkas margin \(\kappa_T(P;\rho)\), derive the Hall threshold \(\rho^\dagger\) in the one-target boundary, or give the two extremal transports in closed form.  The epsilon-gap to \citet{DiemerShiSwanson2024} is also precise: assumption-free dynamic bounds are the \(\rho=\infty\) endpoint, while the conjecture gives every finite-\(\rho\) compatible face and a witness or obstruction.  (b) Resolving the conjecture would give reversible-panel analysts using \citet{DeChaisemartinDHaultfoeuille2024}-style lagged-treatment designs a non-parallel-trends sensitivity target: a sharp ATE interval indexed by a carryover radius and certified by explicit extremal laws.
+
+\begin{conjecture}[Conjecture 2: open-set strict compatible tightening (NOT YET PROVED)]\label{conj:strict-tightening}
+Assume Conjecture~\ref{conj:metric-sharpness} and \(\kappa_T(P;\rho)\ge 0\).  If \(\Gamma_T(P;\rho)>0\), then the finite-radius identified interval \(\Theta_I(P;\rho,T)\) is strictly nested inside the unrestricted interval \(\Theta_I(P;\infty,T)\), with width reduction exactly \(\Gamma_T(P;\rho)\).  Moreover, for any period set \(A\subseteq\{m,\ldots,T\}\) with \(\sum_{t\in A}w_{t,T}>0\), if for each \(t\in A\) at least one sustained target history \(h\in\{\mathbf{1}_m,\mathbf{0}_m\}\) is unobserved but has a same-current-treatment observed anchor \(s_t(h)\in S_t(P)\) satisfying \(\rho d_{\mathrm{sp}}(h,s_t(h))<1/2\) and \(a_t(s_t(h))\in(\rho d_{\mathrm{sp}}(h,s_t(h)),1-\rho d_{\mathrm{sp}}(h,s_t(h)))\), and if the endpoint array has strictly positive Farkas margin in the relative affine hull of \(\calR(P,\rho,T)\), then \(\Gamma_T(P;\rho)>0\) on an open neighborhood of the observed anchor array that also keeps \(\kappa_T(P;\rho)\ge 0\).  In the one-target boundary submodel of Section~\ref{sec:setup}, this neighborhood is described by the symbolic inequality \(\rho\ge \rho^\dagger(P,h,\bar M_h)\), while the unrestricted Duarte-style finite program would only return the endpoint numerically.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{ManskiPepper2018} and \citet{KimKwonKwonLee2018} show that bounded-variation or smoothness restrictions can tighten partial-ID bounds, so a static finite-radius tightening would be incremental.  The gap here is the open reversible/nonstationary regime highlighted by \citet{Han2021} and \citet{DeChaisemartinDHaultfoeuille2024}: strict tightening must survive the serial response-type compatibility projection for repeated treatment exits and reentries, and the boundary of that survival region is summarized by \(\rho^\dagger\) or its finite-horizon Farkas analogue.  \citet{DiemerShiSwanson2024} supplies the unrestricted dynamic endpoint, but not the scalar-indexed strict-nesting formula or the \(\kappa_T(P;\rho)\) condition under which the envelope reduction is sharp.  The epsilon-gap is the computable width loss \(\Gamma_T(P;\rho)\) on the compatible reversible-spell open set, not merely a smoothness bound on a relabelled static treatment space.  (b) The concrete consumer is sensitivity reporting for nonabsorbing lagged-treatment designs such as \citet{DeChaisemartinDHaultfoeuille2024}: analysts can report both how much identifying power a chosen carryover radius buys relative to the unrestricted Diemer--Manski interval and whether the reported face is certified by \(\kappa_T(P;\rho)\ge0\).
+
+\begin{conjecture}[Conjecture 3: long-run Cesaro limit (NOT YET PROVED)]\label{conj:long-run}
+If Assumption~\ref{ass:cesaro-stability} holds and Conjecture~\ref{conj:metric-sharpness} holds for every finite horizon, then the long-run identified set is the interval
+\[
+  \Theta_I^{\mathrm{LR}}(P;\rho)
+  =
+  \left[
+    \lim_{T\to\infty}\sum_{t=m}^T w_{t,T}\underline\Delta_t^\rho(\mathbf{1}_m,\mathbf{0}_m),
+    \lim_{T\to\infty}\sum_{t=m}^T w_{t,T}\overline\Delta_t^\rho(\mathbf{1}_m,\mathbf{0}_m)
+  \right].
+\]
+When the anchor process is eventually periodic or stationary in the sense that the arrays \(\{S_t(P),a_t(\cdot)\}\) have convergent Cesaro averages, these limits exist.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{Han2021} studies finite dynamic treatment sequences and flags dynamic timing and nonstationarity as central complications, but it does not characterize the long-run limit of sharp reversible-spell partial-ID intervals.  The epsilon-gap is the limit interchange for support values of the metric-extension faces, not a routine \(T=2\) to general-\(T\) extension.  (b) The concrete consumer is long-run policy evaluation with repeated on-off exposure, such as medication adherence or training participation panels, where a finite-horizon bound is less useful than the steady average effect of sustained treatment.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Zero-radius anchor collapse]\label{cor:zero-radius}
+Under Assumptions~\ref{ass:finite-panel}, \ref{ass:anchor-consistency}, \ref{ass:rho-lipschitz}, \ref{ass:target-support}, and \ref{ass:anchor-feasibility}, if \(\rho=0\), then \(L_t^0(h)=U_t^0(h)\) for every history in the same current-treatment component as an observed anchor.  In particular, when \(\mathbf{1}_m\) and \(\mathbf{0}_m\) are anchored by the sequentially identified treatment and no-treatment regime means, Theorem~\ref{thm:two-terminal} collapses to the corresponding Robins g-formula contrast from \citet{Robins1986}, not to a zero treatment effect.
+\end{corollary}
+
+\begin{corollary}[Infinite-radius Manski endpoint]\label{cor:infinite-radius}
+Under Assumptions~\ref{ass:finite-panel}, \ref{ass:anchor-consistency}, and \ref{ass:target-support}, when \(\rho=\infty\), the Lipschitz restriction drops out.  For target histories not in \(S_t(P)\), \(L_t^\infty(h)=0\) and \(U_t^\infty(h)=1\), so the period contrast reduces to the bounded-outcome Manski interval \([-1,1]\) unless one or both target histories are observed anchors.
+\end{corollary}
+
+\begin{corollary}[Positive tightening diagnostic]\label{cor:positive-tightening}
+Under Assumptions~\ref{ass:finite-panel}, \ref{ass:anchor-consistency}, \ref{ass:rho-lipschitz}, \ref{ass:target-support}, and \ref{ass:anchor-feasibility}, fix an unobserved sustained target history \(h\in\{\mathbf{1}_m,\mathbf{0}_m\}\) with a same-arm anchor \(s\in S_t(P)\), spell distance \(r=d_{\mathrm{sp}}(h,s)\), and anchor mean \(a=a_t(s)\in(\rho r,1-\rho r)\) satisfying \(\rho r<1/2\).  Then \(W_t^\rho(h)\le 2\rho r<1=W_t^\infty(h)\), so this target-period pair contributes at least \(1-2\rho r\) times its horizon weight to \(\Gamma_T(P;\rho)\) relative to an unrestricted unobserved target mean.
+\end{corollary}
+
+\section{Proof-sketch route}
+The proof of Theorem~\ref{thm:two-terminal} reduces to the classical finite Lipschitz extension criterion applied separately on the two current-treatment components: values assigned on \(S_t(P)\cup\{h^1,h^0\}\) extend to \(\calH_m\) if and only if all finite pairwise Lipschitz inequalities hold, and the McShane and Whitney formulas provide the minimal and maximal feasible values at a new point.  The only algebraic boundary case is the two-terminal coupling, where the pairwise constraint \(|\mu_t(h^1)-\mu_t(h^0)|\le\rho d_{\mathrm{sp}}(h^1,h^0)\) is imposed only when the two histories have the same current treatment and otherwise drops out.  Conjecture~\ref{conj:metric-sharpness} then requires a finite-dimensional projection argument: enumerate the relevant vertices of the pathwise response polytope \(\mathcal P_\rho\), form the cell-vertex transport weights \(q_{cv}\), impose the full observed trajectory marginals \(\sum_v q_{cv}=p_c\), and derive the normalized Farkas dual \(\kappa_T(P;\rho)\).  The key algebraic test is the one-target boundary case, where the dual must collapse to the Hall interval \(\sum_c p_c\ell_c^\rho(h)\le \bar M_h\le\sum_c p_cu_c^\rho(h)\); this is the proposed symbolic threshold that a generic finite-discrete solver would not display.  Conjecture~\ref{conj:strict-tightening} combines that projection certificate with endpoint algebra: compare \(W_t^\rho\) to \(W_t^\infty\), check clipping cases, and verify that the strict inequalities defining the open set preserve both \(\Gamma_T(P;\rho)>0\) and \(\kappa_T(P;\rho)\ge0\) under small perturbations of the anchor means.  Conjecture~\ref{conj:long-run} requires bounding the difference between finite-horizon support averages and their Cesaro limits, with eventually periodic and stationary anchor arrays as explicit test cases.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:two-terminal} is labelled as a theorem because it is finite metric-extension algebra already foreshadowed by \citet{McShane1934}, \citet{Whitney1934}, and smooth-response partial-ID work such as \citet{KimKwonKwonLee2018}; it is not claimed as the novelty.  Conjecture~\ref{conj:metric-sharpness} is the main open claim: the nontrivial part is not the envelope formula but the normalized response-type projection that decides whether endpoint mean completions can be embedded in one full-observed-law-compatible dynamic potential-outcome law for reversible panels.  Conjecture~\ref{conj:strict-tightening} is the flagship strict-extension claim because it asks for a positive, computable, open-set width gap relative to the unrestricted dynamic endpoint after that serial compatibility projection is imposed.  Conjecture~\ref{conj:long-run} is also open because finite-horizon sharpness does not by itself justify convergence or interchange of limits and extrema.  This pivot intentionally withdraws the stronger cold-start angle that promised a full closed-form nested g-formula bridge for every \(\rho\); the present angle isolates the sharpness-witness and strict-tightening mechanisms needed before that bridge can be credible.  The previous v1 allowed arbitrary triangular weights in the locked target while calling the long-run result Cesaro; v2 withdrew that general-weight variant and pinned the target to uniform Cesaro weights.  Version v3 further downgrades Theorem~\ref{thm:two-terminal} to a routine comparator result and adds the direct smoothness and bounded-variation comparators.  Version v4 concedes that finite histories can be treated as a static treatment domain in \citet{KimKwonKwonLee2018} and moves the flagship gap to the \(\kappa_T(P;\rho)\) response-type compatibility certificate.  Version v5 clarifies that compatibility matches the full observed trajectory law, fixes the sign and normalization of \(\kappa_T(P;\rho)\), and adds the Hall-threshold boundary submodel as the non-generic flagship separation from Duarte-style admissible-DGP computation.  If observed anchors violate Assumption~\ref{ass:anchor-feasibility}, the identified set is empty rather than an interval with McShane-Whitney endpoints.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for angle 1, replacing the exhausted nested-g-formula bridge with a metric-extension sharpness-witness kernel; prior verdict: none.
+\item v2 (revise) -- added observed-anchor \(\rho\)-feasibility, pinned long-run weights to uniform Cesaro averages, corrected Jun--Lee--Shin bibliography, and added the Duarte--Finkelstein--Knox--Mummolo--Shpitser generic-bounds comparator; prior verdict: REVISE.
+\item v3 (revise) -- added Kim--Kwon--Kwon--Lee and Manski--Pepper comparators, fixed the anchor-feasibility hypothesis branch in Theorem~\ref{thm:two-terminal}, and sharpened the flagship kernel with an open-set strict finite-\(\rho\) tightening conjecture; prior verdict: REVISE.
+\item v4 (revise) -- fixed Diemer--Shi--Swanson bibliography metadata, conceded the static-history reading of Kim--Kwon--Kwon--Lee, and added the \(\kappa_T(P;\rho)\) serial response-type compatibility obstruction that separates the flagship conjecture from routine Lipschitz tightening; prior verdict: REVISE.
+\item v5 (revise) -- replaced the undefined minimum-slack certificate with a normalized cell-vertex Farkas/Hall margin, clarified full observed-outcome-law compatibility, and added a symbolic Hall-threshold boundary example to separate the flagship kernel from generic finite-discrete bounds; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Robins(1986)]{Robins1986}
+Robins, J. M. (1986).
+\newblock A new approach to causal inference in mortality studies with a sustained exposure period--application to control of the healthy worker survivor effect.
+\newblock \emph{Mathematical Modelling} 7(9--12), 1393--1512.
+
+\bibitem[Diemer, Shi, and Swanson(2024)]{DiemerShiSwanson2024}
+Diemer, E. W., Shi, J., and Swanson, S. A. (2024).
+\newblock Partial identification of the effects of sustained treatment strategies.
+\newblock \emph{Epidemiology} 35(3), 308--312.
+\newblock doi:10.1097/EDE.0000000000001721.
+
+\bibitem[Manski and Pepper(2018)]{ManskiPepper2018}
+Manski, C. F. and Pepper, J. V. (2018).
+\newblock How do right-to-carry laws affect crime rates? Coping with ambiguity using bounded-variation assumptions.
+\newblock \emph{Review of Economics and Statistics} 100(2), 232--244.
+
+\bibitem[Kim, Kwon, Kwon, and Lee(2018)]{KimKwonKwonLee2018}
+Kim, W., Kwon, K., Kwon, S., and Lee, S. (2018).
+\newblock The identification power of smoothness assumptions in models with counterfactual outcomes.
+\newblock \emph{Quantitative Economics} 9(2), 617--642.
+
+\bibitem[Chernozhukov, Fernandez-Val, Hahn, and Newey(2013)]{ChernozhukovFernandezValHahnNewey2013}
+Chernozhukov, V., Fernandez-Val, I., Hahn, J., and Newey, W. (2013).
+\newblock Average and quantile effects in nonseparable panel models.
+\newblock \emph{Econometrica} 81(2), 535--580.
+
+\bibitem[Jun, Lee, and Shin(2016)]{JunLeeShin2016}
+Jun, S. J., Lee, Y., and Shin, Y. (2016).
+\newblock Treatment effects with unobserved heterogeneity: A set identification approach.
+\newblock \emph{Journal of Business \& Economic Statistics} 34(2), 302--311.
+
+\bibitem[Duarte et~al.(2024)]{DuarteFinkelsteinKnoxMummoloShpitser2024}
+Duarte, G., Finkelstein, N., Knox, D., Mummolo, J., and Shpitser, I. (2024).
+\newblock An automated approach to causal inference in discrete settings.
+\newblock \emph{Journal of the American Statistical Association} 119(547), 1778--1793.
+
+\bibitem[Han(2021)]{Han2021}
+Han, S. (2021).
+\newblock Identification in nonparametric models for dynamic treatment effects.
+\newblock \emph{Journal of Econometrics} 225(2), 132--147.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2024)]{DeChaisemartinDHaultfoeuille2024}
+de Chaisemartin, C. and D'Haultfoeuille, X. (2024).
+\newblock Difference-in-differences estimators of intertemporal treatment effects.
+\newblock \emph{Review of Economics and Statistics}, 1--45.
+
+\bibitem[McShane(1934)]{McShane1934}
+McShane, E. J. (1934).
+\newblock Extension of range of functions.
+\newblock \emph{Bulletin of the American Mathematical Society} 40(12), 837--842.
+
+\bibitem[Whitney(1934)]{Whitney1934}
+Whitney, H. (1934).
+\newblock Analytic extensions of differentiable functions defined in closed sets.
+\newblock \emph{Transactions of the American Mathematical Society} 36(1), 63--89.
+
+\bibitem[Manski(1990)]{Manski1990}
+Manski, C. F. (1990).
+\newblock Nonparametric bounds on treatment effects.
+\newblock \emph{The American Economic Review} 80(2), 319--323.
+\end{thebibliography}
+
+\end{document}

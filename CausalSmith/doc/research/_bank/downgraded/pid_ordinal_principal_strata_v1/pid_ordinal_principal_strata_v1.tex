@@ -1,0 +1,1304 @@
+% =====================================================================
+%  ThmSmith Stage 0 derivation skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_ordinal\_principal\_strata, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to a Q1..Q6
+%    pool-mode, fill it VERBATIM from the question-specific block of
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    For free-form panel / ExactID / PartialID anchors, reproduce the
+%    locked-parameter block from the Stage -1 proposal verbatim. Do not
+%    rephrase locked parameters; Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage 0 derivation: \texttt{pid\_ordinal\_principal\_strata} / \texttt{v1}%
+  \\ \large\textit{Sharp adjacent-chain bounds for ordinal principal-stratum effects}}
+\author{ThmSmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note studies a finite-support partial-identification problem for principal
+stratum effects when the post-treatment intermediate is ordinal.  The causal
+target is
+\[
+  \theta_g=\mu_{1g}-\mu_{0g},\qquad
+  \mu_{zg}=\E\{Y(z)\mid G=g\},
+\]
+for a fixed principal stratum \(g=(S(0),S(1))\).  The estimand-defining
+functional is the calibrated adjacent-chain linear program
+\[
+  L_g(P,\pi,\Gamma)
+  =
+  \min_{q\in\mathcal Q(P,\pi,\Gamma)}
+  \{\mu_{1g}(q)-\mu_{0g}(q)\},\qquad
+  U_g(P,\pi,\Gamma)
+  =
+  \max_{q\in\mathcal Q(P,\pi,\Gamma)}
+  \{\mu_{1g}(q)-\mu_{0g}(q)\},
+\]
+where \(q\) is a latent principal-stratum posterior satisfying simplex,
+principal-score calibration, and adjacent odds-ratio divergence constraints.
+The main conclusion is sharpness:
+\[
+  \Theta_I(P,\pi,\Gamma;g)
+  =
+  [L_g(P,\pi,\Gamma),U_g(P,\pi,\Gamma)].
+\]
+The note confirms the Stage -1 chain-polytope conjecture in its finite-support
+form: \(\Gamma=1\) collapses to the usual principal-score formula, \(K=2\)
+reduces to the one-pair binary sensitivity problem, and for \(K\ge3\) the
+shared middle ordinal stratum creates nonrectangular compatibility constraints
+that can make an edgewise binary relaxation strictly too wide.
+\end{abstract}
+
+\section{Introduction}
+Principal stratification defines causal effects inside subpopulations indexed
+by the joint potential values of an intermediate variable.  In applications
+such as intercurrent-event analysis, adherence, disease severity, and
+post-treatment educational attainment, that intermediate is often ordinal
+rather than binary.  A principal-stratum estimand is therefore scientifically
+natural, but the stratum \(G=(S(0),S(1))\) is latent and the usual
+principal-ignorability formula can be too strong.
+
+The known principal-score approach identifies \(\theta_g\) when, conditional
+on covariates and the observed intermediate cell, the latent principal stratum
+is unrelated to the observed outcome.  Sensitivity analyses relax that
+condition by allowing the posterior stratum weights to tilt with \(Y\).  The
+question here is whether an ordinal relaxation can keep the ordered structure
+of \(S\) rather than replacing it by unrelated adjacent binary problems.
+
+This note proves that the appropriate finite-support object is a calibrated
+adjacent-chain linear program.  The variables are posterior weights
+\[
+  q_{z,h}(x,y)
+  =
+  \Pr\{G=h\mid Z=z,S=h_z,X=x,Y=y\},
+\]
+and the restrictions say that these weights average back to the supplied
+principal-score vector and that adjacent strata in the unobserved ordinal
+coordinate have posterior odds ratios bounded by \(\Gamma\).  The resulting
+interval is not merely an outer bound: it is the sharp identified set for the
+principal-stratum effect under the maintained restrictions.
+
+The result is useful because it separates three objects that are often
+conflated.  The causal target is \(\theta_g\).  The identifying information is
+the observable law \(P\), the supplied principal scores \(\pi\), and the
+sensitivity parameter \(\Gamma\).  The computable object is the value interval
+of a finite linear program.  That separation makes clear when the analysis
+collapses to principal ignorability, when it is only a binary sensitivity
+problem, and when a genuinely ordinal compatibility constraint is doing work.
+
+\paragraph{Motivating conjecture(s).}
+\paragraph{Conjecture 1: sharp ordinal chain polytope with nonrectangular compatibility (NOT YET PROVED).}
+Under Assumptions~\ref{ass:randomization}--\ref{ass:nondegenerate-chain}, the following hold.
+
+First, the sharp identified set for \(\theta_g\) is exactly the interval
+\[
+  [L_g(P,\pi,\Gamma),U_g(P,\pi,\Gamma)]
+  =
+  \left[
+  \min_{q\in\mathcal Q(P,\pi,\Gamma)}\{\mu_{1g}(q)-\mu_{0g}(q)\},
+  \max_{q\in\mathcal Q(P,\pi,\Gamma)}\{\mu_{1g}(q)-\mu_{0g}(q)\}
+  \right].
+\]
+Second, for at least one three-vertex chain \(a\sim_z b\sim_z c\) in an observed cell, the projection of \(\mathcal Q(P,\pi,\Gamma)\) onto the two incident edge coordinates is generically nonrectangular: it is a proper subset of the product of the two separately feasible full-cell-scale edge projections because the same posterior coordinate \(q_{z,b}(x,y)\) must satisfy both adjacent inequalities and one calibration equation.  Equivalently, the shared middle stratum creates compatibility facets that are absent from any product of adjacent two-stratum sensitivity problems.
+
+Third, as a scale-comparable diagnostic rather than a refutation of a named ordinal estimator, there exists an open set of observable laws \(P\) and principal-score vectors \(\pi\) for which the full-cell-scale edgewise binary-collapse interval strictly contains the ordinal sharp interval:
+\[
+  [L_g(P,\pi,\Gamma),U_g(P,\pi,\Gamma)]
+  \subsetneq
+  \mathcal B_{\mathrm{bin}}(P,\pi,\Gamma;g).
+\]
+The strictness mechanism is that separate edge problems choose incompatible full-cell-scale posterior tilts for the shared middle ordinal stratum, whereas \(\mathcal Q(P,\pi,\Gamma)\) requires one posterior vector to satisfy all adjacent inequalities at once.
+
+\section{Related work and positioning}
+Principal stratification was introduced by \cite{FrangakisRubin2002} to define
+effects inside subpopulations indexed by joint potential values of
+post-treatment variables; this note keeps that causal target and changes the
+identifying restriction.  \cite{VanderWeele2011} reviews the use and limits of
+principal stratification and emphasizes the practical pressure to dichotomize
+non-binary intermediates; the present theorem shows what is lost when an
+ordinal chain is replaced by edgewise binary relaxations.
+
+\cite{DingLu2017} and \cite{JiangYangDing2022} develop principal-score
+identification and estimation under principal ignorability.  In this note, the
+\(\Gamma=1\) boundary of the LP reproduces that point-identification formula,
+while \(\Gamma>1\) gives a sensitivity interval.  \cite{ForastiereMatteiDing2018}
+connect principal ignorability to mediation analysis; their relevance here is
+that the same principal-score logic is used, but it is embedded in a
+partial-identification model rather than taken as an exact identifying
+assumption.
+
+\cite{NguyenStuartScharfsteinOgburn2024} study sensitivity to principal
+ignorability violations in a one-sided noncompliance setting, and
+\cite{WangZhangMealliBornkamp2023} give a binary clinical-trial workflow for
+principal-ignorability sensitivity analysis.  Those papers motivate the
+posterior-tilting viewpoint, but their binary or low-dimensional latent
+geometry does not contain the three-vertex chain compatibility issue addressed
+here.  \cite{WuAntonelli2024} show that violations of principal ignorability
+lead to partial identification even when principal-strata distributions are
+known; the present result gives a sharp finite-support LP for one specific
+ordinal divergence restriction.  \cite{TongKahanHarhayLi2025} use an
+odds-ratio sensitivity parameter in semiparametric principal stratification;
+the difference is that this note focuses on the nonparametric finite ordinal
+posterior polytope and its edge-compatibility facets.
+
+Nonbinary principal-stratification work is also close, but it does not already
+isolate the object studied here.  \cite{MatteiMealli2011} use augmented
+designs to sharpen principal-strata direct effects; the additional design
+information differs from the known-\(\pi\), bounded-posterior-divergence
+restriction used below.  \cite{LeeDanielsSargent2010} analyze quality-of-life
+outcomes with death/progression principal strata and sensitivity parameters,
+showing the applied need for richer principal-strata models without deriving
+the adjacent ordinal posterior polytope.  \cite{LuJiangDing2024} study
+continuous post-treatment variables under principal-score style conditions;
+their nonbinary intermediate is handled through continuous-stratum
+identification and estimation, whereas this note uses the finite ordinal graph
+to obtain a nonparametric sharp sensitivity LP.  Thus the claim here is not
+that ordinal principal stratification is new; it is that the adjacent
+principal-score posterior-divergence chain yields a sharp finite
+partial-identification interval and a strict compatibility gap relative to
+edgewise binary relaxations.
+
+The proof method is in the partial-identification tradition of worst-case
+completion and finite-dimensional optimization.  \cite{Manski1990} provides the
+canonical bounded-outcome partial-identification viewpoint, while
+\cite{BalkePearl1997} illustrates how causal restrictions with latent response
+types can be converted into sharp linear programs.  Modern sharp sensitivity
+analyses such as \cite{DornGuoKallus2022} and
+\cite{FrauenMelnychukFeuerriegel2023} are close in optimization spirit, but
+their sensitivity models concern unmeasured treatment confounding rather than
+latent ordinal principal-stratum posteriors.
+
+The closest in-repository analogue is the ordinal late partial-defier proposal,
+which also observes that a shared ordinal middle object can make adjacent
+binary bounds too wide.  The object is different here: the current theorem
+couples posterior principal-stratum weights inside observed
+\((Z,S,X,Y)\) cells, not instrumental-variable response paths.  Thus the
+shared compatibility mechanism is similar, but the estimand, feasible set, and
+sharp LP are specific to ordinal principal stratification.
+
+\section{Formal setup}
+\begin{definition}[Observed law and potential variables]\label{def:observed-law}
+The observable law \(P\) is the law of \((Z,S,Y,X)\) on the finite support
+\[
+  \{0,1\}\times\{0,\ldots,K-1\}\times\mathcal Y\times\mathcal X,
+  \qquad \mathcal Y\subset[0,1].
+\]
+Treatment \(Z\) is binary, \(S\) is an ordinal post-treatment intermediate,
+\(Y\) is the bounded outcome, and \(X\) is a finite-support covariate.  Write
+\[
+  e_z=\Pr_P(Z=z),\qquad
+  p_X(x)=\Pr_P(X=x),
+\]
+and let \(P_{zky\mid x}\) denote
+\(\Pr_P(S=k,Y=y\mid Z=z,X=x)\).
+\end{definition}
+
+Potential intermediate values are \(S(0)\) and \(S(1)\).  The principal stratum
+is
+\[
+  G=(S(0),S(1))\in\mathcal G_K:=\{0,\ldots,K-1\}^2.
+\]
+For \(g=(g_0,g_1)\), write \(g_z\) for the \(z\)-arm component.  The supplied
+principal-score vector is
+\[
+  \pi_g(x)=\Pr(G=g\mid X=x),\qquad g\in\mathcal G_K.
+\]
+The population share of stratum \(g\) is
+\[
+  p_g=\sum_{x\in\mathcal X}p_X(x)\pi_g(x).
+\]
+
+\begin{definition}[Compatible strata and baseline cell weights]\label{def:cell-weights}
+For an observed arm-level cell \((z,k,x)\), the compatible principal strata are
+\[
+  A_z(k)=\{h\in\mathcal G_K:h_z=k\}.
+\]
+Whenever \(\sum_{h\in A_z(k)}\pi_h(x)>0\), define the principal-score cell
+weights
+\[
+  w^z_h(x)=
+  \frac{\pi_h(x)}{\sum_{\ell\in A_z(k)}\pi_\ell(x)},
+  \qquad h\in A_z(k).
+\]
+If the denominator is zero, the observed cell has zero probability under the
+compatibility assumption below and no posterior weight is used there.
+\end{definition}
+
+\begin{definition}[Posterior-weight system]\label{def:posterior-system}
+A posterior-weight system is a finite array
+\[
+  q=\{q_{z,h}(x,y): z\in\{0,1\},\ x\in\mathcal X,\ y\in\mathcal Y,\ h\in A_z(h_z)\}.
+\]
+The intended interpretation is
+\[
+  q_{z,h}(x,y)
+  =
+  \Pr(G=h\mid Z=z,S=h_z,X=x,Y=y).
+\]
+The maintained restrictions in Section~\ref{sec:assumptions} define the
+feasible set \(\mathcal Q(P,\pi,\Gamma)\).
+\end{definition}
+
+\begin{definition}[Identified set]\label{def:identified-set}
+For a fixed target stratum \(g\), the partial-identification object is
+\[
+  \Theta_I(P,\pi,\Gamma;g)
+  =
+  \{\theta_g(\mathbb M): \mathbb M
+    \text{ is a latent law consistent with }P,\pi,\Gamma\},
+\]
+where \(\theta_g(\mathbb M)=\E_{\mathbb M}\{Y(1)\mid G=g\}
+-\E_{\mathbb M}\{Y(0)\mid G=g\}\).  Consistency with \(P,\pi,\Gamma\) means
+that the latent law has observable margin \(P\), has
+\(\Pr(G=h\mid X=x)=\pi_h(x)\), satisfies randomization and consistency, and
+satisfies the adjacent divergence restriction stated below.
+\end{definition}
+
+\paragraph{Locked parameters.}
+\begin{itemize}
+  \item qid: \texttt{pid\_ordinal\_principal\_strata}
+  \item specialization: \texttt{v1}
+  \item anchor\_cluster: Partial identification
+  \item observable\_distribution\_P: law of \((Z,S,Y,X)\), where \(Z\) in
+  \(\{0,1\}\) is randomized, \(S\) in \(\{0,\ldots,K-1\}\) is the observed
+  ordinal post-treatment intermediate, \(Y\) in finite support Ygrid subset
+  \([0,1]\), \(X\) in finite support Xgrid, \(K\ge3\) unless a theorem
+  explicitly specializes to \(K=2\)
+  \item parameter\_theta: \(\theta_g = \mu_{1g} - \mu_{0g}\) for a fixed
+  principal stratum \(g=(s0,s1)\), with
+  \(\mu_{zg}=\E[Y(z)\mid G=g]\) and \(G=(S(0),S(1))\)
+  \item identifying\_restrictions: randomization, consistency, positivity,
+  known covariate-conditional ordinal principal scores
+  \(\pi_g(x)=\Pr(G=g\mid X=x)\), and Gamma-adjacent covariate-conditional
+  principal-score divergence for latent posterior stratum weights inside each
+  observed \((Z=z,S=k,X=x,Y=y)\) cell
+  \item bounding\_functional: \(L_g(P,\pi,\Gamma)\), \(U_g(P,\pi,\Gamma)\), the
+  sharp lower and upper values of \(\theta_g\) obtained by optimizing
+  \(\mu_{1g}(q)-\mu_{0g}(q)\) over posterior weights \(q_{z,g}(x,y)\) satisfying
+  principal-score calibration to the supplied pi, simplex constraints, and all
+  adjacent odds-ratio divergence inequalities
+\end{itemize}
+
+\section{Assumptions}
+\label{sec:assumptions}
+\begin{assumption}[Randomization and consistency]\label{ass:randomization}
+The potential variables satisfy
+\[
+  (Y(0),Y(1),S(0),S(1),X)\perp Z,
+\]
+and the observed variables obey
+\[
+  S=S(Z),\qquad Y=Y(Z).
+\]
+\end{assumption}
+
+\begin{assumption}[Finite support, bounded outcome, and positivity]\label{ass:positivity}
+The sets \(\mathcal X\), \(\mathcal Y\), and \(\mathcal G_K\) are finite,
+\(\mathcal Y\subset[0,1]\), and \(0<e_z<1\) for \(z=0,1\).  If the target
+stratum is \(g\), then
+\[
+  p_g=\sum_x p_X(x)\pi_g(x)>0.
+\]
+Every conditional probability and ratio used below is evaluated only on
+observed cells \((z,k,x,y)\) with positive \(P\)-probability.  If an observed
+cell has zero probability, its posterior weights are irrelevant to all
+functionals.
+\end{assumption}
+
+\begin{assumption}[Known ordinal principal scores]\label{ass:principal-scores}
+For every \(x\in\mathcal X\), the vector
+\(\pi(x)=\{\pi_h(x):h\in\mathcal G_K\}\) is known or supplied by external
+design information, satisfies
+\[
+  \pi_h(x)\ge0,\qquad \sum_{h\in\mathcal G_K}\pi_h(x)=1,
+\]
+and is compatible with the observed ordinal margins:
+\[
+  \Pr_P(S=k\mid Z=z,X=x)
+  =
+  \sum_{h\in A_z(k)}\pi_h(x)
+\]
+whenever \(\Pr_P(Z=z,X=x)>0\).
+\end{assumption}
+
+\begin{assumption}[Ordinal adjacency graph]\label{ass:adjacency}
+Within an observed arm-level cell \(A_z(k)\), two strata \(h,\ell\in A_z(k)\)
+are adjacent, written \(h\sim_z \ell\), when they agree in the observed
+coordinate and differ by one ordinal step in the unobserved coordinate:
+\[
+  h_z=\ell_z=k,\qquad |h_{1-z}-\ell_{1-z}|=1.
+\]
+\end{assumption}
+
+\begin{assumption}[Cellwise connected positive principal-score support]\label{ass:connected-support}
+For every \(z,k,x\) with \(\Pr_P(Z=z,S=k,X=x)>0\), the subgraph of \(A_z(k)\)
+induced by the vertices with \(w^z_h(x)>0\) is connected under
+Assumption~\ref{ass:adjacency}.  If \(w^z_h(x)=0\), feasible posterior systems
+set \(q_{z,h}(x,y)=0\) for every \(y\) in the support of
+\((Y\mid Z=z,S=k,X=x)\).
+\end{assumption}
+
+\begin{assumption}[\(\Gamma\)-adjacent principal-score divergence]\label{ass:divergence}
+Fix \(\Gamma\in[1,\infty]\).  A posterior-weight system belongs to
+\(\mathcal Q(P,\pi,\Gamma)\) when, for every positive-probability observed cell
+\((z,k,x,y)\), the following conditions hold.
+
+First, the posterior weights are a simplex over the compatible strata:
+\[
+  q_{z,h}(x,y)\ge0,\qquad
+  \sum_{h\in A_z(k)}q_{z,h}(x,y)=1.
+\]
+Second, they calibrate to the supplied principal-score cell weights:
+\[
+  \sum_{y\in\mathcal Y}
+  q_{z,h}(x,y)
+  \Pr_P(Y=y\mid Z=z,S=k,X=x)
+  =
+  w^z_h(x),
+  \qquad h\in A_z(k).
+\]
+Third, for every adjacent pair \(h\sim_z\ell\) with positive
+\(w^z_h(x)\) and \(w^z_\ell(x)\),
+\[
+  \Gamma^{-1} q_{z,\ell}(x,y)w^z_h(x)
+  \le
+  q_{z,h}(x,y)w^z_\ell(x)
+  \le
+  \Gamma q_{z,\ell}(x,y)w^z_h(x).
+\]
+When \(\Gamma=\infty\), the adjacent ratio inequalities are omitted while the
+simplex and calibration constraints remain.
+\end{assumption}
+
+\begin{assumption}[Nondegenerate ordinal chain for the flagship comparison]\label{ass:nondegenerate-chain}
+For statements about a strict ordinal-versus-binary gap, \(K\ge3\),
+\(1<\Gamma<\infty\), and the target stratum \(g\) has at least one observed
+arm cell containing three adjacent ordinal strata with positive principal
+scores.
+\end{assumption}
+
+\section{Estimand-defining functional}
+For \(q\in\mathcal Q(P,\pi,\Gamma)\), define the induced arm-specific
+principal-stratum mean by
+\[
+  \mu_{zg}(q)
+  =
+  \frac{
+    \E_P\!\left[
+      \one\{Z=z,S=g_z\}q_{z,g}(X,Y)Y/e_z
+    \right]
+  }{p_g}.
+\]
+Equivalently, expanding over the finite support,
+\[
+  \mu_{zg}(q)
+  =
+  \frac{1}{p_g}
+  \sum_{x\in\mathcal X} p_X(x)
+  \Pr_P(S=g_z\mid Z=z,X=x)
+  \sum_{y\in\mathcal Y}
+  q_{z,g}(x,y)y
+  \Pr_P(Y=y\mid Z=z,S=g_z,X=x).
+\]
+
+The bounding functional is
+\[
+  L_g(P,\pi,\Gamma)
+  =
+  \min_{q\in\mathcal Q(P,\pi,\Gamma)}
+  \{\mu_{1g}(q)-\mu_{0g}(q)\},
+\]
+\[
+  U_g(P,\pi,\Gamma)
+  =
+  \max_{q\in\mathcal Q(P,\pi,\Gamma)}
+  \{\mu_{1g}(q)-\mu_{0g}(q)\}.
+\]
+The feasible set is nonempty because the constant posterior
+\[
+  q_{z,h}(x,y)=w^z_h(x)
+\]
+satisfies simplex, calibration, and the adjacent inequalities for every
+\(\Gamma\ge1\).  Since all constraints are linear after multiplying by the
+fixed positive principal-score weights, the bounds are finite-dimensional
+linear-program values.  Theorem~\ref{thm:sharp-chain} proves that this
+functional is sharp, not merely an outer bound.
+
+\begin{definition}[Edgewise binary relaxation]\label{def:binary-relaxation}
+For a diagnostic comparison, replace the single cell-level vector
+\(\{q_{z,h}(x,y):h\in A_z(k)\}\) by separate full-cell-scale pair weights
+\[
+  r^e_{z,h}(x,y),\qquad e=\{a,b\},\quad a\sim_z b.
+\]
+For each edge \(e=\{a,b\}\), the pair weights satisfy nonnegativity,
+\[
+  r^e_{z,a}(x,y)+r^e_{z,b}(x,y)\le1,
+\]
+the same calibration equations for \(a\) and \(b\), and the same adjacent
+odds-ratio inequalities on that edge.  Copies of a shared middle stratum across
+two incident edges are not required to agree.  Let
+\(\mathcal Q^e_{\mathrm{bin}}(P,\pi,\Gamma)\) be this edgewise feasible set.
+For an edge \(e\) incident to \(g\), write
+\[
+  \mu^e_{zg}(r^e)
+  =
+  \frac{
+    \E_P[
+      \one\{Z=z,S=g_z\}r^e_{z,g}(X,Y)Y/e_z
+    ]
+  }{p_g}.
+\]
+The edgewise arm envelopes are
+\[
+  \ell^{\mathrm{bin}}_{zg}
+  =
+  \min_{e\in E_z(g)}
+  \inf_{r^e\in\mathcal Q^e_{\mathrm{bin}}(P,\pi,\Gamma)}
+  \mu^e_{zg}(r^e),
+  \qquad
+  u^{\mathrm{bin}}_{zg}
+  =
+  \max_{e\in E_z(g)}
+  \sup_{r^e\in\mathcal Q^e_{\mathrm{bin}}(P,\pi,\Gamma)}
+  \mu^e_{zg}(r^e),
+\]
+where \(E_z(g)\) is the set of adjacent edges in \(A_z(g_z)\) incident to
+\(g\).  The binary-collapse diagnostic interval is
+\[
+  \mathcal B_{\mathrm{bin}}(P,\pi,\Gamma;g)
+  =
+  [\ell^{\mathrm{bin}}_{1g}-u^{\mathrm{bin}}_{0g},
+   u^{\mathrm{bin}}_{1g}-\ell^{\mathrm{bin}}_{0g}].
+\]
+\end{definition}
+
+\section{Target causal estimand}
+The causal target is the scalar principal-stratum average causal effect
+\[
+  \theta_g=\mu_{1g}-\mu_{0g},
+  \qquad
+  \mu_{zg}=\E\{Y(z)\mid G=g\}.
+\]
+The conditioning event \(G=g\) refers to the joint potential intermediate
+values, not to the observed intermediate \(S\).  Thus the target is not
+identified by conditioning on observed \(S=g_z\); the observed cell generally
+contains all strata in \(A_z(g_z)\).  The role of the posterior weights
+\(q_{z,g}(x,y)\) is to complete the latent composition of each observed
+\((Z=z,S=g_z,X=x,Y=y)\) cell subject to the maintained restrictions.  The
+result below is therefore a containment and sharpness statement for
+\(\theta_g\), not a definition of \(\theta_g\) as the LP value.
+
+\section{Main theorems}
+\begin{theorem}[Sharp calibrated adjacent-chain bounds]\label{thm:sharp-chain}
+Under Assumptions~\ref{ass:randomization}--\ref{ass:divergence}, for every
+target stratum \(g\) with \(p_g>0\),
+\[
+  \Theta_I(P,\pi,\Gamma;g)
+  =
+  [L_g(P,\pi,\Gamma),U_g(P,\pi,\Gamma)].
+\]
+Equivalently, every latent law satisfying the maintained restrictions yields a
+value of \(\theta_g\) inside the LP interval, and every value in the LP interval
+is attained by at least one latent law satisfying those restrictions.
+\end{theorem}
+
+This theorem confirms the first clause of Conjecture 1.
+The new content relative to principal-score identification is that the
+posterior-tilting sensitivity model remains sharp for \(K\ge3\) when all
+adjacent ordinal restrictions are imposed simultaneously.  Compared with the
+Balke--Pearl style LP tradition, the response type here is not a treatment or
+instrument response; it is the posterior principal-stratum composition inside
+an observed ordinal cell.
+
+\begin{proposition}[Principal-ignorability collapse]\label{prop:pi-collapse}
+Under Assumptions~\ref{ass:randomization}--\ref{ass:divergence} with
+\(\Gamma=1\), including the connected-support condition in
+Assumption~\ref{ass:connected-support}, the feasible set contains exactly the
+principal-score posterior
+\[
+  q_{z,h}(x,y)=w^z_h(x)
+\]
+on every positive-support observed cell.  Hence the sharp interval is the
+singleton
+\[
+  L_g(P,\pi,1)=U_g(P,\pi,1)
+  =
+  \frac{\E_P[\one\{Z=1,S=g_1\}w^1_g(X)Y/e_1]}{p_g}
+  -
+  \frac{\E_P[\one\{Z=0,S=g_0\}w^0_g(X)Y/e_0]}{p_g}.
+\]
+\end{proposition}
+
+\begin{proposition}[Binary one-pair reduction]\label{prop:binary-reduction}
+Under Assumptions~\ref{ass:randomization}--\ref{ass:divergence} with \(K=2\),
+every nontrivial observed cell \(A_z(k)\) has at most one adjacent latent pair.
+Consequently \(\mathcal Q(P,\pi,\Gamma)\) factors across observed cells into
+calibrated binary odds-ratio sensitivity sets, and the sharp interval is the
+one obtained by optimizing the two binary arm-specific posterior-tilting
+problems and differencing their endpoints.
+\end{proposition}
+
+Propositions~\ref{prop:pi-collapse} and \ref{prop:binary-reduction} confirm the
+principal-ignorability and binary sanity checks in the Stage -1 proposal.  They
+are calibration results rather than the main novelty: they show that the LP
+has the right boundaries before one uses it for ordinal sensitivity analysis.
+
+\begin{theorem}[Nonrectangular ordinal compatibility and strict edgewise gap]\label{thm:nonrectangular}
+Under Assumptions~\ref{ass:randomization}--\ref{ass:nondegenerate-chain}, the
+projection of the full ordinal feasible set onto two incident adjacent-edge
+coordinates is a subset of the product of the separately feasible edge
+projections.  Whenever the two edge projections assign different
+full-cell-scale posterior functions to their shared middle stratum, that
+containment is proper.  For every \(P,\pi,\Gamma\), the sharp ordinal interval
+is contained in the full-cell-scale edgewise binary interval,
+\[
+  [L_g(P,\pi,\Gamma),U_g(P,\pi,\Gamma)]
+  \subseteq
+  \mathcal B_{\mathrm{bin}}(P,\pi,\Gamma;g).
+\]
+Moreover, for every finite \(\Gamma>1\) there is a nonempty relative-open set
+of finite-support laws \(P\) and compatible principal-score vectors \(\pi\),
+within the margin-compatible simplex with \(p_g>0\) and a positive three-chain
+target-arm cell, for which
+\[
+  [L_g(P,\pi,\Gamma),U_g(P,\pi,\Gamma)]
+  \subsetneq
+  \mathcal B_{\mathrm{bin}}(P,\pi,\Gamma;g).
+\]
+\end{theorem}
+
+This theorem confirms the remaining clauses of Conjecture 1, with the word
+``generically'' made precise as strictness on a nonempty relative-open set of
+problem instances satisfying the stated compatibility and positivity
+hypotheses.  The
+result is important because it says that solving adjacent two-stratum
+sensitivity problems independently can be conservative in a way that is not
+forced by the causal target.  The difference from binary principal-stratum
+sensitivity analyses is exactly the shared middle ordinal coordinate.
+
+\section{Interpretation}
+Theorem~\ref{thm:sharp-chain} says that the LP is the identified set, not a
+computational approximation.  The analyst may therefore report
+\([L_g,U_g]\) as the exact set of principal-stratum effects compatible with the
+observed law, the supplied principal scores, and the adjacent divergence
+restriction.  The causal estimand remains \(\theta_g\); the LP is the
+observable-and-sensitivity functional that brackets it.
+
+When \(\Gamma=1\), adjacent posterior odds must equal adjacent principal-score
+odds at every outcome value.  Connected positive support then propagates this
+equality through the ordinal chain, so the posterior composition is
+outcome-invariant and the bound collapses to the usual principal-score formula.
+This is the point-identification boundary corresponding to principal
+ignorability.
+
+As \(\Gamma\) grows, the adjacent restrictions allow more outcome-dependent
+posterior tilting.  At \(\Gamma=\infty\), the odds-ratio constraints disappear;
+the remaining information is only the simplex constraint, principal-score
+calibration, and the bounded finite support of \(Y\).  This is a calibrated
+Manski-style completion problem.  If the principal-score calibration were also
+removed, the natural bounded-outcome effect range would be the vacuous interval
+\([-1,1]\).
+
+For \(K=2\), there is no middle stratum shared by two adjacent edges.  The
+ordinal LP therefore reduces to a binary posterior-tilting problem in each
+relevant observed cell.  For \(K\ge3\), an observed cell contains chains such as
+\[
+  a\sim_z b\sim_z c.
+\]
+The same posterior coordinate \(q_{z,b}(x,y)\) must satisfy both the
+\((a,b)\) and \((b,c)\) inequalities and a single calibration equation.  The
+tightening work is done by this shared-coordinate compatibility condition.
+An edgewise binary analysis drops exactly that condition by allowing one copy
+of the middle stratum on the left edge and another copy on the right edge.
+
+\section{Step-by-step proof}
+\begin{lemma}[Bayes disintegration of feasible posteriors]\label{lem:disintegration}
+Under Assumptions~\ref{ass:randomization}--\ref{ass:divergence}, feasible
+posterior systems \(q\in\mathcal Q(P,\pi,\Gamma)\) are in one-to-one
+correspondence, up to irrelevant couplings of \((Y(0),Y(1))\), with latent laws
+that reproduce \(P\), have principal scores \(\pi\), and satisfy the adjacent
+divergence restriction.
+\end{lemma}
+
+\begin{proof}
+First take a latent law satisfying the maintained restrictions.  On every
+positive observed cell define
+\[
+  q_{z,h}(x,y)
+  =
+  \Pr(G=h\mid Z=z,S=k,X=x,Y=y),
+  \qquad h\in A_z(k).
+\]
+The simplex constraints follow from the definition of a conditional
+probability.  By randomization and consistency,
+\[
+  \Pr(G=h\mid Z=z,S=k,X=x)
+  =
+  \Pr(G=h\mid S(z)=k,X=x)
+  =
+  w^z_h(x),
+\]
+where the last equality is Assumption~\ref{ass:principal-scores} and Bayes'
+rule on the finite set \(A_z(k)\).  Taking conditional expectation of
+\(q_{z,h}(x,Y)\) given \((Z=z,S=k,X=x)\) gives the calibration equation in
+Assumption~\ref{ass:divergence}.  The adjacent odds-ratio inequalities are
+exactly the maintained sensitivity restriction.  Thus every admissible latent
+law yields a feasible \(q\).
+
+Conversely, fix \(q\in\mathcal Q(P,\pi,\Gamma)\).  Construct a latent law as
+follows.  Draw \(X\) from its \(P\)-margin, draw \(G\) conditional on \(X=x\)
+with probabilities \(\pi_h(x)\), set \(S(0)=G_0\) and \(S(1)=G_1\), and draw
+\(Z\) independently of all potential variables with \(\Pr(Z=z)=e_z\).  For
+each arm \(z\), stratum \(h\), and covariate \(x\) with \(w^z_h(x)>0\), define
+the conditional marginal law of \(Y(z)\) by
+\[
+  m_{z,h,x}(y)
+  =
+  \frac{
+    q_{z,h}(x,y)\Pr_P(Y=y\mid Z=z,S=h_z,X=x)
+  }{w^z_h(x)}.
+\]
+The calibration equation implies
+\[
+  \sum_y m_{z,h,x}(y)=1.
+\]
+If \(w^z_h(x)=0\), Assumption~\ref{ass:connected-support} sets the corresponding
+posterior weights to zero and the conditional law can be chosen arbitrarily
+because the event \(\{G=h,X=x\}\) has zero probability.  Couple \(Y(0)\) and
+\(Y(1)\) arbitrarily conditional on \((G,X)\) with these two marginals, for
+example independently.
+
+It remains to check that the observable margin is \(P\).  For \(h\in A_z(k)\),
+\[
+  \pi_h(x)m_{z,h,x}(y)
+  =
+  \pi_h(x)
+  \frac{q_{z,h}(x,y)\Pr_P(Y=y\mid Z=z,S=k,X=x)}{w^z_h(x)}.
+\]
+Since
+\[
+  w^z_h(x)=\frac{\pi_h(x)}{\sum_{\ell\in A_z(k)}\pi_\ell(x)},
+\]
+the sum over \(h\in A_z(k)\) equals
+\[
+  \left\{\sum_{\ell\in A_z(k)}\pi_\ell(x)\right\}
+  \Pr_P(Y=y\mid Z=z,S=k,X=x)
+  \sum_{h\in A_z(k)}q_{z,h}(x,y).
+\]
+By the simplex constraint, the last sum is one.  By
+Assumption~\ref{ass:principal-scores}, the prefactor is
+\(\Pr_P(S=k\mid Z=z,X=x)\).  Thus the constructed law gives
+\[
+  \Pr(Y=y,S=k\mid Z=z,X=x)
+  =
+  \Pr_P(S=k\mid Z=z,X=x)
+  \Pr_P(Y=y\mid Z=z,S=k,X=x),
+\]
+which is the \(P\)-conditional law.  Multiplying by the \(P\)-margins of
+\((Z,X)\) gives the full observable law \(P\).  The constructed posterior of
+\(G\) given \((Z=z,S=k,X=x,Y=y)\) is \(q\) by the same Bayes calculation, so the
+adjacent divergence inequalities hold.  This proves the correspondence.
+\end{proof}
+
+\begin{lemma}[LP interval image]\label{lem:lp-interval}
+The set \(\mathcal Q(P,\pi,\Gamma)\) is a nonempty compact convex polytope, and
+the map \(q\mapsto\mu_{1g}(q)-\mu_{0g}(q)\) is linear.  Its image is therefore a
+closed interval whose endpoints are attained by extreme points of
+\(\mathcal Q(P,\pi,\Gamma)\).
+\end{lemma}
+
+\begin{proof}
+Nonemptiness follows from the constant posterior \(q_{z,h}(x,y)=w^z_h(x)\).
+The simplex and calibration restrictions are linear equalities and
+inequalities.  The adjacent odds-ratio restrictions are linear inequalities
+after multiplying by the fixed nonnegative weights \(w^z_h(x)\) and
+\(w^z_\ell(x)\), with zero-weight vertices handled by
+Assumption~\ref{ass:connected-support}.  Boundedness follows from
+\(0\le q_{z,h}(x,y)\le1\).  Hence \(\mathcal Q(P,\pi,\Gamma)\) is compact and
+convex.  The denominator \(p_g\) is positive by Assumption~\ref{ass:positivity},
+so \(\mu_{zg}(q)\) is a fixed linear combination of the coordinates of \(q\).
+The continuous image of a compact convex set under a linear map into
+\(\mathbb R\) is a compact interval, and linear programming attains its extrema
+at extreme points.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:sharp-chain}]
+Let \(\mathbb M\) be any latent law consistent with
+Assumptions~\ref{ass:randomization}--\ref{ass:divergence}.  By
+Lemma~\ref{lem:disintegration}, it induces a feasible
+\(q\in\mathcal Q(P,\pi,\Gamma)\).  Consistency gives
+\[
+  \E_{\mathbb M}\{Y(z)\mid G=g\}
+  =
+  \frac{
+    \E_{\mathbb M}[\one\{G=g\}Y(z)]
+  }{p_g}.
+\]
+By randomization and consistency,
+\[
+  \E_{\mathbb M}[\one\{G=g\}Y(z)]
+  =
+  \E_{\mathbb M}[\one\{Z=z,S=g_z,G=g\}Y/e_z].
+\]
+Conditioning on \((Z=z,S=g_z,X,Y)\) and using the definition of \(q\),
+\[
+  \E_{\mathbb M}[\one\{Z=z,S=g_z,G=g\}Y/e_z]
+  =
+  \E_P[\one\{Z=z,S=g_z\}q_{z,g}(X,Y)Y/e_z].
+\]
+Therefore \(\theta_g(\mathbb M)=\mu_{1g}(q)-\mu_{0g}(q)\), so every admissible
+latent value lies in \([L_g,U_g]\).
+
+For the reverse inclusion, take any \(q\in\mathcal Q(P,\pi,\Gamma)\).
+Lemma~\ref{lem:disintegration} constructs a latent law consistent with all
+maintained restrictions whose induced arm means are exactly
+\(\mu_{zg}(q)\).  Hence every value of the linear image of
+\(\mathcal Q(P,\pi,\Gamma)\) is attainable.  Lemma~\ref{lem:lp-interval} says
+that this image is precisely the closed interval between its minimum and
+maximum.  Thus
+\[
+  \Theta_I(P,\pi,\Gamma;g)
+  =
+  [L_g(P,\pi,\Gamma),U_g(P,\pi,\Gamma)].
+\]
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:pi-collapse}]
+Set \(\Gamma=1\).  For every adjacent positive-weight pair \(h\sim_z\ell\), the
+divergence inequality becomes the equality
+\[
+  q_{z,\ell}(x,y)w^z_h(x)=q_{z,h}(x,y)w^z_\ell(x).
+\]
+Thus
+\[
+  \frac{q_{z,h}(x,y)}{w^z_h(x)}
+  =
+  \frac{q_{z,\ell}(x,y)}{w^z_\ell(x)}
+\]
+on every adjacent edge with positive weights.  By the connected-positive-support
+condition, this ratio is a common constant \(c_{z,k,x,y}\) across the whole
+positive-support component of \(A_z(k)\).  Summing over \(h\in A_z(k)\) gives
+\[
+  1=\sum_h q_{z,h}(x,y)
+  =
+  c_{z,k,x,y}\sum_h w^z_h(x)
+  =
+  c_{z,k,x,y}.
+\]
+Zero-weight vertices carry zero posterior mass by
+Assumption~\ref{ass:connected-support}.  Hence \(q_{z,h}(x,y)=w^z_h(x)\) for
+all relevant coordinates.  Substituting this unique feasible posterior into
+the definition of \(\mu_{zg}(q)\) gives the displayed singleton formula.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:binary-reduction}]
+If \(K=2\), then within any observed cell \(A_z(k)\) the unobserved coordinate
+can take only the two values \(0\) and \(1\).  Therefore the ordinal adjacency
+graph has either no positive edge or exactly one positive edge.  There is no
+third vertex and no shared middle coordinate.  The constraints defining
+\(\mathcal Q(P,\pi,\Gamma)\) in that cell are exactly the two-stratum simplex,
+the two calibration equations, and one odds-ratio bound.  The objective is a
+sum of the arm-specific cell objectives, so optimizing \(\mu_{1g}-\mu_{0g}\)
+amounts to optimizing the \(Z=1,S=g_1\) binary problem and the
+\(Z=0,S=g_0\) binary problem in opposite directions and differencing the
+endpoints.  This is the one-pair posterior-tilting bound.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:nonrectangular}]
+Let \(a\sim_z b\sim_z c\) be a three-vertex chain in a positive observed cell.
+Any ordinal feasible vector \(q\) induces edge coordinates
+\((q_{z,a},q_{z,b})\) on edge \(\{a,b\}\) and \((q_{z,b},q_{z,c})\) on edge
+\(\{b,c\}\).  Each edge coordinate satisfies the corresponding full-cell-scale
+binary constraints, so the projection of \(\mathcal Q(P,\pi,\Gamma)\) is a
+subset of the product of the two separately feasible edge projections.
+
+The inclusion is proper whenever the product contains two edge solutions with
+different middle coordinates.  Indeed, an element of the product may have
+middle copies \(r^{ab}_{z,b}(x,y)\) and \(r^{bc}_{z,b}(x,y)\).  If these
+functions differ for some \((x,y)\), no single ordinal posterior coordinate
+\(q_{z,b}(x,y)\) can project to both edges.  Hence the product point has no
+preimage in \(\mathcal Q(P,\pi,\Gamma)\), proving nonrectangularity.
+
+The same projection gives the general outer containment.  For any
+\(q\in\mathcal Q(P,\pi,\Gamma)\) and any edge \(e\in E_z(g)\), set
+\[
+  r^e_{z,h}(x,y)=q_{z,h}(x,y),\qquad h\in e.
+\]
+The simplex constraint for the whole ordinal cell implies the pair inequality
+\(r^e_{z,a}+r^e_{z,b}\le1\); calibration and the adjacent ratio inequality are
+inherited coordinatewise.  Thus \(r^e\in\mathcal Q^e_{\mathrm{bin}}\), and
+\[
+  \mu_{zg}(q)=\mu^e_{zg}(r^e)
+\]
+for each incident edge.  Consequently
+\[
+  \ell^{\mathrm{bin}}_{zg}\le \mu_{zg}(q)\le u^{\mathrm{bin}}_{zg},
+  \qquad z=0,1.
+\]
+Every ordinal feasible effect therefore lies in
+\[
+  [\ell^{\mathrm{bin}}_{1g}-u^{\mathrm{bin}}_{0g},
+   u^{\mathrm{bin}}_{1g}-\ell^{\mathrm{bin}}_{0g}],
+\]
+which proves
+\([L_g,U_g]\subseteq\mathcal B_{\mathrm{bin}}(P,\pi,\Gamma;g)\).
+
+It remains to show that the containment can be strict for a complete
+finite-support problem.  Fix \(K=3\), \(\mathcal X=\{x_0\}\),
+\(\mathcal Y=\{0,1\}\), \(e_0=e_1=1/2\), and target
+\[
+  g=b=(1,1).
+\]
+In the treated target cell \(Z=1,S=1\), let
+\[
+  a=(0,1),\qquad b=(1,1),\qquad c=(2,1).
+\]
+Choose \(0<\varepsilon<1/6\) and set
+\[
+  \pi_a(x_0)=\pi_b(x_0)=\pi_c(x_0)=\frac{1-6\varepsilon}{3},
+  \qquad
+  \pi_h(x_0)=\varepsilon
+  \quad
+  \text{for }h\in\mathcal G_3\setminus\{a,b,c\}.
+\]
+Define the observable intermediate margins by the required compatibility
+equations
+\[
+  \Pr_P(S=k\mid Z=z,X=x_0)=\sum_{h\in A_z(k)}\pi_h(x_0).
+\]
+Set
+\[
+  \Pr_P(Y=1\mid Z=1,S=1,X=x_0)=\frac12,
+  \qquad
+  \Pr_P(Y=1\mid Z=0,S=1,X=x_0)=0,
+\]
+and assign any fixed probabilities in \((0,1)\), for instance \(1/2\), to the
+remaining observed cells.  This specifies a full finite-support law \(P\)
+compatible with the displayed \(\pi\), with \(p_b=(1-6\varepsilon)/3>0\).
+Inside the treated target cell,
+\[
+  w_a=w_b=w_c=\frac13,\qquad
+  \Pr(Y=1\mid Z=1,S=1,X=x_0)=\frac12.
+\]
+Write \(t=q_{1,b}(x_0,1)\).  In the coherent ordinal problem, calibration gives
+\(q_h^0+q_h^1=2/3\) for each \(h\), and the \(Y=0\) simplex equation plus the
+two inequalities \(q_a^0\le\Gamma q_b^0\) and
+\(q_c^0\le\Gamma q_b^0\) imply
+\[
+  1=q_a^0+q_b^0+q_c^0
+  \le
+  (2\Gamma+1)q_b^0
+  =
+  (2\Gamma+1)\left(\frac23-t\right).
+\]
+Hence
+\[
+  t\le
+  \frac{4\Gamma-1}{3(2\Gamma+1)}.
+\]
+The bound is attained by
+\[
+  q_b^0=\frac{1}{2\Gamma+1},\quad
+  q_a^0=q_c^0=\frac{\Gamma}{2\Gamma+1},\quad
+  q_b^1=\frac{4\Gamma-1}{3(2\Gamma+1)},\quad
+  q_a^1=q_c^1=\frac{\Gamma+2}{3(2\Gamma+1)}.
+\]
+On the single edge \(\{a,b\}\), the full-cell-scale binary relaxation has only
+one companion for \(b\).  Pair calibration, the \(Y=1\) pair simplex
+\(r_a^1+r_b^1\le1\), and the \(Y=0\) ratio inequality
+\(r_a^0\le\Gamma r_b^0\) give
+\[
+  r_b^1-\frac13\le \Gamma\left(\frac23-r_b^1\right),
+\]
+so
+\[
+  r_b^1\le
+  \frac{2\Gamma+1}{3(\Gamma+1)}.
+\]
+This is attained by
+\[
+  r_b^1=\frac{2\Gamma+1}{3(\Gamma+1)},\quad
+  r_a^1=\frac{\Gamma+2}{3(\Gamma+1)},\quad
+  r_b^0=\frac{1}{3(\Gamma+1)},\quad
+  r_a^0=\frac{\Gamma}{3(\Gamma+1)}.
+\]
+The binary upper value exceeds the ordinal upper value by
+\[
+  \frac{2\Gamma+1}{3(\Gamma+1)}
+  -
+  \frac{4\Gamma-1}{3(2\Gamma+1)}
+  =
+  \frac{\Gamma+2}{3(\Gamma+1)(2\Gamma+1)}
+  >0.
+\]
+Because
+\[
+  \frac{\Pr_P(S=1\mid Z=1,X=x_0)}{p_b}=\frac{1-6\varepsilon}{(1-6\varepsilon)/3}
+  =3,
+\]
+the treated arm mean multiplies these posterior coordinates by \(1/2\cdot3\).
+Thus the binary upper treated-arm envelope exceeds the ordinal treated-arm
+upper value by
+\[
+  \frac{\Gamma+2}{2(\Gamma+1)(2\Gamma+1)}.
+\]
+In the opposite target arm \(Z=0,S=1\), \(Y=0\) almost surely, so both the
+ordinal and edgewise programs have lower and upper arm mean equal to zero.
+Therefore the upper endpoint of
+\(\mathcal B_{\mathrm{bin}}(P,\pi,\Gamma;g)\) is strictly larger than
+\(U_g(P,\pi,\Gamma)\), while the outer containment already proved gives
+strict interval containment.
+
+Finally, the strict gap is not an isolated equality artifact.  The feasible
+sets are compact finite-dimensional polyhedra, the objectives and calibration
+right-hand sides vary continuously with \((P,\pi)\) whenever margin
+compatibility, positive denominators, and \(p_b>0\) are preserved, and the
+constant posterior remains feasible.  Hence the relevant LP value functions
+are continuous on a neighborhood in the margin-compatible parameter space.
+Replacing the zero probability in the opposite arm by a sufficiently small
+\(\rho>0\), and then allowing sufficiently small compatible perturbations of
+both \(P\) and \(\pi\), preserves the active positive gap above.  The strict
+containment therefore holds on a nonempty relative-open set with positive
+three-chain margins and \(p_g>0\).
+\end{proof}
+
+\section{Sanity checks}
+\paragraph{Principal ignorability.}
+When \(\Gamma=1\), Proposition~\ref{prop:pi-collapse} gives
+\[
+  L_g(P,\pi,1)=U_g(P,\pi,1),
+\]
+and the common value is the standard principal-score reweighting formula.  This
+is the zero-width, point-identification check.
+
+\paragraph{No adjacent divergence restriction.}
+When \(\Gamma=\infty\), the ratio inequalities are absent.  The arm-specific
+problem becomes a calibrated finite-support worst-case completion: the target
+stratum's posterior mass must average to \(w^z_g(x)\), but it may be assigned
+to high or low outcome values subject only to the simplex constraints.  This is
+the relevant Manski-style bound when principal scores remain known.  If one
+also removed the principal-score calibration, boundedness of \(Y\in[0,1]\)
+would leave only the natural effect range \([-1,1]\).
+
+\paragraph{Binary ordinal scale.}
+For \(K=2\), Proposition~\ref{prop:binary-reduction} removes the ordinal
+compatibility issue.  Each observed cell contains at most one adjacent pair, so
+the sharp set is exactly the binary posterior-odds sensitivity interval.
+
+\paragraph{Degenerate outcome cell.}
+If \(Y\) is constant within every relevant observed cell, then posterior tilting
+cannot change the conditional mean in that cell.  The LP still has latent
+posterior uncertainty, but the target mean contribution is fixed because every
+feasible posterior is multiplied by the same outcome value.
+
+\paragraph{No maintained MTR restriction.}
+There is no monotone-treatment-response restriction in the locked parameter
+block.  An MTR specialization would be an additional shape restriction on
+\((Y(0),Y(1))\), not a consequence of the adjacent principal-score divergence
+model studied here.
+
+\section{Counterexample or minimality check}
+\label{sec:counterexample-minimality}
+The positive result does not survive replacing the ordinal feasible set by the
+product of its adjacent binary edge relaxations.  The smallest useful example
+embeds the local three-stratum calculation in a complete finite-support law.
+Let \(K=3\), \(\mathcal X=\{x_0\}\), \(\mathcal Y=\{0,1\}\), \(e_0=e_1=1/2\),
+and target \(g=b=(1,1)\).  In the treated target cell \(Z=1,S=1\), define
+\[
+  a=(0,1),\qquad b=(1,1),\qquad c=(2,1),
+\]
+so \(a\sim_1 b\sim_1 c\).  Choose any \(0<\varepsilon<1/6\), set
+\(\pi_a=\pi_b=\pi_c=(1-6\varepsilon)/3\) and set every other principal score
+equal to \(\varepsilon\).  Let \(P\) have the compatible intermediate margins
+\[
+  \Pr_P(S=k\mid Z=z,X=x_0)=\sum_{h\in A_z(k)}\pi_h,
+\]
+put
+\[
+  \Pr_P(Y=1\mid Z=1,S=1,X=x_0)=\frac12,
+  \qquad
+  \Pr_P(Y=1\mid Z=0,S=1,X=x_0)=0,
+\]
+and assign any fixed probabilities to the remaining observed cells.  Then the
+treated target cell has equal principal-score cell weights
+\[
+  w_a=w_b=w_c=\frac13,
+\]
+and
+\[
+  \Pr(Y=1\mid Z=1,S=1,X=x_0)
+  =
+  \Pr(Y=0\mid Z=1,S=1,X=x_0)
+  =
+  \frac12.
+\]
+Set \(\Gamma=2\).  Write
+\[
+  q_h^1=q_{1,h}(x_0,1),\qquad q_h^0=q_{1,h}(x_0,0).
+\]
+Calibration gives
+\[
+  q_h^0+q_h^1=\frac23,\qquad h=a,b,c,
+\]
+and the two simplex equations give
+\[
+  q_a^1+q_b^1+q_c^1=1,\qquad
+  q_a^0+q_b^0+q_c^0=1.
+\]
+Maximizing the middle posterior \(q_b^1\) subject to both adjacent odds-ratio
+constraints has solution
+\[
+  (q_a^0,q_b^0,q_c^0,q_a^1,q_b^1,q_c^1)
+  =
+  \left(\frac25,\frac15,\frac25,\frac4{15},\frac7{15},\frac4{15}\right).
+\]
+Thus the coherent ordinal cell has \(\sup q_b^1=7/15\).
+
+For the full-cell-scale binary relaxation on the edge \(\{a,b\}\), the
+corresponding optimization ignores the \(b\sim_z c\) constraint and has feasible
+solution
+\[
+  (r_a^0,r_b^0,r_a^1,r_b^1)
+  =
+  \left(\frac29,\frac19,\frac49,\frac59\right),
+\]
+which satisfies pair calibration, the pair simplex inequalities, and the
+\(\Gamma=2\) odds-ratio bounds.  Hence the edgewise relaxation allows
+\(r_b^1=5/9>7/15\).  Since \(Y=0\) in the opposite target arm, both programs
+give the same zero value for \(\mu_{0b}\).  Therefore, for the shared middle
+target stratum \(b=(1,1)\), the upper endpoint of
+\(\mathcal B_{\mathrm{bin}}\) is strictly larger than the sharp ordinal upper
+endpoint.
+
+This example is also the minimality check for the shared-coordinate condition.
+If the requirement that the same \(q_{z,b}(x,y)\) serve both incident edges is
+dropped, the two adjacent binary problems can choose incompatible middle
+posterior tilts.  The nearest correct replacement is not an equality with the
+binary relaxation; it is the sharp ordinal LP of Theorem~\ref{thm:sharp-chain},
+with the binary interval retained only as an outer diagnostic.
+
+\section{Formalization checklist}
+\paragraph{Finite probabilistic objects.}
+\begin{itemize}
+  \item Observable law:
+  \(P\) on
+  \(\{0,1\}\times\{0,\ldots,K-1\}\times\mathcal Y\times\mathcal X\),
+  with \(\mathcal X\) and \(\mathcal Y\) finite and \(\mathcal Y\subset[0,1]\).
+  \item Principal strata:
+  \(\mathcal G_K=\{0,\ldots,K-1\}^2\), with coordinate projection
+  \(g\mapsto g_z\).
+  \item Principal scores:
+  \(\pi:\mathcal X\to\Delta(\mathcal G_K)\), satisfying the observed-margin
+  compatibility equations.
+  \item Compatible-cell set:
+  \(A_z(k)=\{h:h_z=k\}\).
+  \item Cell weights:
+  \(w^z_h(x)=\pi_h(x)/\sum_{\ell\in A_z(k)}\pi_\ell(x)\) on positive
+  denominator cells.
+  \item Posterior system:
+  \(q_{z,h}(x,y)\) indexed by arm, compatible stratum, covariate, and outcome.
+\end{itemize}
+
+\paragraph{Probabilistic assumptions.}
+\begin{itemize}
+  \item Randomization:
+  \((Y(0),Y(1),S(0),S(1),X)\perp Z\).
+  \item Consistency:
+  \(S=S(Z)\) and \(Y=Y(Z)\).
+  \item Positivity:
+  \(0<e_z<1\), \(p_g>0\), and all conditioning events used in ratios have
+  positive probability.
+  \item Known principal-score compatibility:
+  \(\Pr(S=k\mid Z=z,X=x)=\sum_{h\in A_z(k)}\pi_h(x)\).
+  \item Adjacent divergence:
+  linearized odds-ratio inequalities for every adjacent pair in the ordinal
+  graph.
+\end{itemize}
+
+\paragraph{Deterministic identities and lemmas.}
+\begin{itemize}
+  \item Bayes cell identity:
+  \(\Pr(G=h\mid S(z)=k,X=x)=w^z_h(x)\) for \(h\in A_z(k)\).
+  \item Calibration identity:
+  \(\sum_y q_{z,h}(x,y)\Pr(Y=y\mid Z=z,S=k,X=x)=w^z_h(x)\).
+  \item Latent-law construction:
+  \(m_{z,h,x}(y)=q_{z,h}(x,y)\Pr(Y=y\mid Z=z,S=h_z,X=x)/w^z_h(x)\).
+  \item Observable-margin reconstruction:
+  \(\sum_{h\in A_z(k)}\pi_h(x)m_{z,h,x}(y)
+  =
+  \Pr(S=k\mid Z=z,X=x)\Pr(Y=y\mid Z=z,S=k,X=x)\).
+  \item LP structure:
+  simplex, calibration, and adjacent divergence constraints define a compact
+  convex polytope; the target map is linear.
+  \item Connected-chain propagation:
+  at \(\Gamma=1\), equality of adjacent posterior-to-prior ratios on a
+  connected graph implies \(q=w\).
+  \item Binary reduction:
+  when \(K=2\), each observed cell has at most one edge and no shared middle
+  coordinate.
+  \item Nonrectangularity:
+  product edge projections may assign two different functions to the shared
+  middle coordinate; a coherent ordinal posterior cannot.
+  \item Edgewise outer-containment map:
+  from any ordinal feasible \(q\), restrict coordinates to each incident edge
+  to obtain a full-cell-scale binary feasible \(r^e\), giving
+  \(\ell^{\mathrm{bin}}_{zg}\le\mu_{zg}(q)\le u^{\mathrm{bin}}_{zg}\).
+  \item Strict-gap witness:
+  the \(K=3\), \(\mathcal Y=\{0,1\}\), equal-treated-cell-weight construction
+  with target \(g=(1,1)\), and the continuity argument on the
+  margin-compatible parameter space with \(p_g>0\).
+\end{itemize}
+
+\section{Conclusion and references}
+The theorem-level contribution is a sharp partial-identification result for
+ordinal principal-stratum effects under known principal scores and
+\(\Gamma\)-adjacent posterior odds-ratio divergence.  The bound is tightened by
+the requirement that one posterior vector satisfy all adjacent ordinal
+constraints and principal-score calibration simultaneously.  It becomes
+point-identifying at \(\Gamma=1\), reduces to the usual binary sensitivity
+problem when \(K=2\), and widens to a calibrated Manski-style completion when
+\(\Gamma=\infty\).  For \(K\ge3\), the shared middle stratum creates
+nonrectangular compatibility facets, so an edgewise binary relaxation is only
+an outer diagnostic and can be strictly too wide.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem{BalkePearl1997}
+Balke, A. and Pearl, J. (1997).
+Bounds on treatment effects from studies with imperfect compliance.
+\emph{Journal of the American Statistical Association} 92, 1171--1176.
+
+\bibitem{DingLu2017}
+Ding, P. and Lu, J. (2017).
+Principal stratification analysis using principal scores.
+\emph{Journal of the Royal Statistical Society: Series B} 79, 757--777.
+
+\bibitem{DornGuoKallus2022}
+Dorn, J., Guo, K., and Kallus, N. (2022).
+Doubly-valid/doubly-sharp sensitivity analysis for causal inference with
+unmeasured confounding.
+\emph{arXiv:2112.11449}.
+
+\bibitem{ForastiereMatteiDing2018}
+Forastiere, L., Mattei, A., and Ding, P. (2018).
+Principal ignorability in mediation analysis: through and beyond sequential
+ignorability.
+\emph{Biometrika} 105, 979--986.
+
+\bibitem{FrangakisRubin2002}
+Frangakis, C. E. and Rubin, D. B. (2002).
+Principal stratification in causal inference.
+\emph{Biometrics} 58, 21--29.
+
+\bibitem{FrauenMelnychukFeuerriegel2023}
+Frauen, D., Melnychuk, V., and Feuerriegel, S. (2023).
+Sharp bounds for generalized causal sensitivity analysis.
+\emph{Advances in Neural Information Processing Systems} 36.
+
+\bibitem{JiangYangDing2022}
+Jiang, Z., Yang, S., and Ding, P. (2022).
+Multiply robust estimation of causal effects under principal ignorability.
+\emph{Journal of the Royal Statistical Society: Series B} 84, 1423--1445.
+
+\bibitem{LeeDanielsSargent2010}
+Lee, K., Daniels, M. J., and Sargent, D. J. (2010).
+Causal effects of treatments for informative missing data due to
+progression/death.
+\emph{Journal of the American Statistical Association} 105, 912--929.
+
+\bibitem{LuJiangDing2024}
+Lu, S., Jiang, Z., and Ding, P. (2024).
+Principal stratification with continuous post-treatment variables:
+nonparametric identification and semiparametric estimation.
+\emph{arXiv:2309.12425}.
+
+\bibitem{Manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{The American Economic Review} 80, 319--323.
+
+\bibitem{MatteiMealli2011}
+Mattei, A. and Mealli, F. (2011).
+Augmented designs to assess principal strata direct effects.
+\emph{Journal of the Royal Statistical Society: Series B} 73, 729--752.
+
+\bibitem{NguyenStuartScharfsteinOgburn2024}
+Nguyen, T. Q., Stuart, E. A., Scharfstein, D. O., and Ogburn, E. L. (2024).
+Sensitivity analysis for principal ignorability violation in estimating
+complier and noncomplier average causal effects.
+\emph{arXiv:2303.05032}.
+
+\bibitem{TongKahanHarhayLi2025}
+Tong, J., Kahan, B., Harhay, M. O., and Li, F. (2025).
+Semiparametric principal stratification analysis beyond monotonicity.
+\emph{arXiv:2501.17514}.
+
+\bibitem{VanderWeele2011}
+VanderWeele, T. J. (2011).
+Principal stratification--uses and limitations.
+\emph{International Journal of Biostatistics} 7, Article 28.
+
+\bibitem{WangZhangMealliBornkamp2023}
+Wang, C., Zhang, Y., Mealli, F., and Bornkamp, B. (2023).
+Sensitivity analyses for the principal ignorability assumption using multiple
+imputation.
+\emph{Pharmaceutical Statistics} 22, 64--78.
+
+\bibitem{WuAntonelli2024}
+Wu, M. and Antonelli, J. (2024).
+Partial identification of principal causal effects under violations of
+principal ignorability.
+\emph{arXiv:2412.06628}.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,328 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_ida\_selective\_pivot, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_ida\_selective\_pivot} / \texttt{v1}%
+  \\ \large\textit{A polyhedral selective pivot for extremal IDA possible effects}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Free-form ExactID convention:
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization})=(\texttt{eid\_ida\_selective\_pivot},\texttt{v1}),\\
+\text{graph/MPDAG }{\cal G}\text{ is a selected CPDAG or MPDAG on nodes }(X,Y,Z_1,\ldots,Z_{p-2}),\\
+\text{treatment }X,\quad \text{outcome }Y,\quad
+\text{target estimand }\theta_m=\partial_x \E_m\{Y\mid do(X=x)\},\\
+\text{identifying assumptions: linear Gaussian SEM, causal sufficiency, Markov and faithfulness for the selected equivalence class,}\\
+\text{and back-door adjustment by the parent set }P_m=\operatorname{pa}_m(X)\text{ in DAG completion }m.
+\end{gathered}
+\]
+For each minimally enumerated branch \(m\in{\cal M}({\cal G},X,Y)\), \(\hat\theta_m\) is the OLS coefficient on \(X\) in the regression of \(Y\) on \(X\cup P_m\), embedded in one common Gaussian score vector \(\hat\gamma\). The reported extremal branch is \(m^\star=\arg\max_m |\hat\theta_m|\), with a deterministic lexicographic tie-break. The selective target is the selected functional \(\theta_{m^\star}\), not the unique true causal effect unless the equivalence class point-identifies it.
+
+\begin{abstract}
+IDA and its MPDAG extensions report possible total causal effects when a DAG is not identified, but the reported extremal effect is normally treated as if its branch had been fixed in advance. This proposal isolates the selection event that a particular minimally enumerated branch is the extremal possible effect. The finite-branch result is a polyhedral certificate in a common Gaussian regression-score vector. Under an exact affine graph-learning screen, the selected IDA effect has the Lee--Sun--Sun--Taylor truncated-Gaussian pivot. The open part is the asymptotic replacement of that affine screen by a concrete discovery certificate for CPDAG or MPDAG learning. If correct, IDA lower-bound reports can carry selective intervals for the selected possible-effect functional rather than uncorrected fixed-branch intervals.
+\end{abstract}
+
+\section{Introduction}
+IDA turns graph uncertainty into a multiset of possible total effects. The inferential question is what law governs the branch that is reported because it is extremal in the same data. The main claim is that the extremal IDA branch-selection event has an explicit affine certificate once the minimally enumerated branches are embedded in a common Gaussian regression-score vector.
+
+\citet[Abstract, p.~3134]{MaathuisKalischBuhlmann2009IDA} show that IDA yields ``a collection of estimated causal effects'' and use the minimum absolute value as a lower-bound importance score. \citet[Abstract, p.~2395]{GuoPerkovic2021MinimalEnumeration} remove duplicate possible-effect functionals, while \citet[Theorem 5.2, p.~915]{LeeSunSunTaylor2016Polyhedral} give exact inference only after the selected contrast and event are already represented as \(Ay\le b\). The kernel lives in exact identification with selective-inference geometry: it is not a new MPDAG orientation criterion, but a certificate for the selected possible-effect functional.
+
+The immediate consumer is high-dimensional IDA screening in the gene-expression setting of \citet{MaathuisKalischBuhlmann2009IDA}. A researcher who reports the largest or minimum-absolute possible effect would also report a selective interval for the selected branch, rather than a Wald interval computed after choosing that branch.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: For a fixed MPDAG and a fixed minimal branch list, the event \(m^\star=m\) is an affine polyhedron in the common score vector \(\hat\gamma\). Gap: \citet{GuoPerkovic2021MinimalEnumeration} enumerate distinct functionals but do not characterize the extremal report event. Consumer: IDA lower-bound screening in \citet{MaathuisKalischBuhlmann2009IDA}.
+\item Theorem 2: Conditional on an exact affine graph screen and \(m^\star=m\), the selected IDA effect admits the exact truncated-Gaussian pivot. Gap: \citet{LeeSunSunTaylor2016Polyhedral} require the polyhedron as input, while \citet{GuoPerkovic2021MinimalEnumeration} give the causal branch list but no selected-branch polyhedron. Consumer: post-discovery inference for possible-effect reports.
+\item Conjecture 1: PC-stable with Fisher-\(z\) partial-correlation tests, fixed variable order, fixed maximum conditioning size \(q\), and fixed background-knowledge orientation rules admits a signed-chamber affine certificate for the learned CPDAG/MPDAG event, and the resulting IDA pivot has uniform error \(o(1)+\rho_n\) away from discovery and branch-tie boundaries. Gap: \citet[\S2.2]{GraduZrnicWangJordan2025ValidInference} use randomized graph selection for valid causal-discovery inference, and \citet[\S2.1--\S2.2]{ChangGuoMalinsky2026PostSelectionCausalDiscovery} target the true causal effect after discovery rather than the learned IDA extremal functional. Consumer: selective calibration for IDA and joint-IDA software reports.
+\item Theorem 3: In a two-completion witness, applying a fixed-branch Wald interval after extremal reporting has nonuniform conditional coverage when the competing branch means are local. Gap: \citet{MaathuisKalischBuhlmann2009IDA} report possible-effect summaries and \citet{NandyMaathuisRichardson2017JointIDA} give fixed-branch asymptotic variances, not selective coverage after extremal reporting. Consumer: IDA lower-bound screening.
+\end{itemize}
+
+\section{Related work}
+\citet{MaathuisKalischBuhlmann2009IDA} introduce IDA and motivate summaries of possible-effect multisets when a DAG is not identifiable. \citet{NandyMaathuisRichardson2017JointIDA} extend the same possible-effect idea to simultaneous interventions and establish large-sample theory for joint effects. \citet{PerkovicKalischMaathuis2017MPDAG} adapt IDA and joint-IDA to MPDAGs that encode background knowledge. \citet{GuoPerkovic2021MinimalEnumeration} give a minimal enumeration of distinct possible-effect functionals, which is the branch list used here before extremal selection is applied. \citet{GuoPerkovic2022EfficientLS} give efficient recursive least-squares estimation when the MPDAG identifies the relevant total effect, and therefore form the closest estimation-side comparator.
+
+\citet{LeeSunSunTaylor2016Polyhedral} prove the polyhedral selective-inference pivot for Gaussian linear contrasts after an affine selection event. \citet{TibshiraniTaylorLockhartTibshirani2016Sequential} show that sequential regression procedures can also yield tractable polyhedral selection events. \citet[\S2.2]{GraduZrnicWangJordan2025ValidInference} develop valid inference after causal discovery by randomizing the graph-selection rule and explicitly allow CPDAG outputs. \citet[\S2.1--\S2.2]{ChangGuoMalinsky2026PostSelectionCausalDiscovery} use PC-stable with temporal background knowledge and target the true causal effect rather than the learned IDA extremal functional. The present proposal studies the learned IDA functional itself: the selected object is the reported extremal possible effect.
+
+The local CausalSmith catalogue in \texttt{doc/API.md} records an open ExactID staging area and no direct IDA, MPDAG, CPDAG, possible-effect, or selective-pivot proposal. The nearest banked analogues are \texttt{eid\_proximal\_phase}, which studies a regularizer-selected artifact, \texttt{eid\_dml\_orthogonality\_frontier}, which leaves report-class inference frontiers open, and \texttt{pid\_dose\_response\_iv}, which leaves an extremal sign certificate open. None gives a possible-effect selection certificate for IDA.
+
+\section{Formal setup}
+Let \(W=(X,Y,Z^\transpose)^\transpose\in\R^p\) be generated by a linear Gaussian SEM \(W=B^\transpose W+\varepsilon\), where the directed graph of \(B\) is a DAG \(D\), the errors are jointly independent Gaussian variables, and the observational covariance is \(\Sigma\). A selected CPDAG or MPDAG \({\cal G}\) represents a set \([{\cal G}]\) of DAG completions. For a completion \(m\in[{\cal G}]\), let \(P_m=\operatorname{pa}_m(X)\) and define the possible total effect \(\theta_m\) as the coefficient on \(X\) in the population regression of \(Y\) on \(X\cup P_m\).
+
+The named discovery rule for the asymptotic certificate is PC-stable-Fisher-\(z(q,\alpha_n,\prec,{\cal B})\). It runs the order-independent PC-stable adjacency search using Fisher-\(z\) partial-correlation tests for conditioning sets of size at most \(q\), a fixed deterministic variable order \(\prec\), deterministic tie-breaking over conditioning sets, and a fixed background-knowledge orientation list \({\cal B}\). Let \(\hat\zeta_{ij\mid S}=\sqrt{n-|S|-3}\operatorname{arctanh}(\hat\rho_{ij\mid S})\), let \(c_{\alpha_n}=\Phi^{-1}(1-\alpha_n/2)\), and let \(\hat\xi_n\) collect the finitely many signed test coordinates \(\sigma_{ijS}\hat\zeta_{ij\mid S}\) used along one sign chamber of the rule. A retained edge test contributes \(-\sigma_{ijS}\hat\zeta_{ij\mid S}\le -c_{\alpha_n}\), a deleted edge test contributes both \(\hat\zeta_{ij\mid S}\le c_{\alpha_n}\) and \(-\hat\zeta_{ij\mid S}\le c_{\alpha_n}\), and the deterministic orientation pass contributes no stochastic row after the skeleton and separating sets are fixed.
+
+Minimal enumeration replaces \([{\cal G}]\) by a finite branch list \({\cal M}({\cal G},X,Y)=\{1,\ldots,K\}\) whose members are distinct population functionals. Let \(\hat\gamma\in\R^d\) collect all sample covariance entries or all OLS coefficient coordinates needed to compute \((\hat\theta_1,\ldots,\hat\theta_K)\). In the finite-sample Gaussian branch experiment, \(\hat\gamma\sim N(\gamma,V)\) and \(\hat\theta_m=a_m^\transpose\hat\gamma\) for known branch vectors \(a_m\). The reported extremal branch is
+\[
+m^\star=\min\arg\max_{1\le k\le K} s\,a_k^\transpose\hat\gamma,\qquad s\in\{+1,-1\},
+\]
+with \(s=+1\) for the largest positive report and the doubled signed list \(\{(k,+),(k,-)\}\) for maximum absolute value reports.
+
+\begin{quote}
+Free-form ExactID convention:
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization})=(\texttt{eid\_ida\_selective\_pivot},\texttt{v1}),\\
+\text{graph/MPDAG }{\cal G}\text{ is a selected CPDAG or MPDAG on nodes }(X,Y,Z_1,\ldots,Z_{p-2}),\\
+\text{treatment }X,\quad \text{outcome }Y,\quad
+\text{target estimand }\theta_m=\partial_x \E_m\{Y\mid do(X=x)\},\\
+\text{identifying assumptions: linear Gaussian SEM, causal sufficiency, Markov and faithfulness for the selected equivalence class,}\\
+\text{and back-door adjustment by the parent set }P_m=\operatorname{pa}_m(X)\text{ in DAG completion }m.
+\end{gathered}
+\]
+For each minimally enumerated branch \(m\in{\cal M}({\cal G},X,Y)\), \(\hat\theta_m\) is the OLS coefficient on \(X\) in the regression of \(Y\) on \(X\cup P_m\), embedded in one common Gaussian score vector \(\hat\gamma\). The reported extremal branch is \(m^\star=\arg\max_m |\hat\theta_m|\), with a deterministic lexicographic tie-break. The selective target is the selected functional \(\theta_{m^\star}\), not the unique true causal effect unless the equivalence class point-identifies it.
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Linear Gaussian SEM]\label{ass:linear-gaussian}
+The observational law of \(W\) is generated by a causally sufficient linear Gaussian SEM whose DAG is Markov and faithful to the population distribution.
+\end{assumption}
+
+\begin{assumption}[Branch adjustment]\label{ass:branch-adjustment}
+For every minimally enumerated branch \(m\), adjustment for \(P_m=\operatorname{pa}_m(X)\) identifies the branch total effect \(\theta_m\), and the sample estimator is the OLS coefficient \(\hat\theta_m=a_m^\transpose\hat\gamma\).
+\end{assumption}
+
+\begin{assumption}[Common Gaussian score]\label{ass:gaussian-score}
+Conditional on the selected MPDAG representation and branch list, the common score vector satisfies \(\hat\gamma\sim N(\gamma,V)\) with known or consistently estimable positive-definite \(V\).
+\end{assumption}
+
+\begin{assumption}[Polyhedral graph screen]\label{ass:poly-screen}
+The graph-learning and background-knowledge screen retained for finite-sample selective inference is represented exactly as \(A_0\hat\gamma\le b_0\).
+\end{assumption}
+
+\begin{assumption}[PC-stable Fisher-\(z\) certificate]\label{ass:asym-poly-screen}
+The discovery rule is PC-stable-Fisher-\(z(q,\alpha_n,\prec,{\cal B})\) as defined in \S6. On each fixed sign chamber for retained partial correlations, the learned CPDAG or MPDAG event differs from \(A_{0,n}\hat\xi_n\le b_{0,n}\) with probability at most \(\rho_n=o(1)\), uniformly over local SEMs whose extremal branch gap is at least \(c_n\), whose tested nonzero partial correlations satisfy \(\sqrt n|\rho_{ij\mid S}|\ge \kappa_n+c_{\alpha_n}\), and whose zero partial correlations satisfy \(|\sqrt n\rho_{ij\mid S}|\le c_{\alpha_n}-\kappa_n\), where \(c_n,\kappa_n\gg n^{-1/2}\).
+\end{assumption}
+
+\begin{assumption}[Joint Gaussian discovery-regression limit]\label{ass:joint-limit}
+The stacked vector \((\hat\xi_n^\transpose,\hat\gamma_n^\transpose)^\transpose\), after centering at its population mean and scaling by its covariance, has a Gaussian approximation error \(o(1)\) over the same local SEM class. The covariance estimator used in the pivot is consistent at a rate \(o(1)\) on this class.
+\end{assumption}
+
+\begin{assumption}[No boundary ties]\label{ass:no-ties}
+The target branch \(m\) is selected with strict inequalities except on \(V\)-null hyperplanes, and lexicographic tie-breaking is used on the null set.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: extremal branch certificate]\label{thm:branch-polyhedron}
+Under Assumptions~\ref{ass:branch-adjustment}, \ref{ass:gaussian-score}, and \ref{ass:no-ties}, fix a signed branch \((m,s)\) from the doubled list. The event that \((m,s)\) is the reported extremal IDA branch is
+\[
+{\cal S}_{m,s}=\{\hat\gamma: s a_m^\transpose\hat\gamma\ge t a_k^\transpose\hat\gamma
+\text{ for every }(k,t)\ne(m,s)\},
+\]
+equivalently \(A_{m,s}\hat\gamma\le 0\), where the rows of \(A_{m,s}\) are \(t a_k^\transpose-s a_m^\transpose\). With lexicographic tie-breaking, weak inequalities are replaced by the corresponding closed halfspaces for lower-priority branches and open null-boundary choices do not change the conditional Gaussian law.
+\end{theorem}
+The proof is the direct comparison of the selected signed linear report against every competing signed report; the null tie set is a finite union of Gaussian hyperplanes.
+
+\begin{theorem}[Theorem 2: exact selective IDA pivot]\label{thm:selected-pivot}
+Under Assumptions~\ref{ass:linear-gaussian}, \ref{ass:branch-adjustment}, \ref{ass:gaussian-score}, \ref{ass:poly-screen}, and \ref{ass:no-ties}, condition on the event \(A_0\hat\gamma\le b_0\) and on \({\cal S}_{m,s}\). Let \(\eta=a_m\), \(c=V\eta/(\eta^\transpose V\eta)\), and \(r=(I-c\eta^\transpose)\hat\gamma\). Then
+\[
+\eta^\transpose\hat\gamma\mid \{A_0\hat\gamma\le b_0,\ A_{m,s}\hat\gamma\le 0,\ r\}
+\sim \operatorname{TN}\{\eta^\transpose\gamma,\eta^\transpose V\eta,L(r),U(r)\},
+\]
+where \(L(r)\) and \(U(r)\) are the Lee truncation limits computed from the stacked inequalities \(\tilde A=(A_0,A_{m,s})\), \(\tilde b=(b_0,0)\). Consequently,
+\[
+F^{[L(r),U(r)]}_{\eta^\transpose\gamma,\eta^\transpose V\eta}(\eta^\transpose\hat\gamma)
+\]
+is conditionally uniform at the selected branch target \(\theta_m=\eta^\transpose\gamma\).
+\end{theorem}
+The proof applies the polyhedral Gaussian pivot of \citet{LeeSunSunTaylor2016Polyhedral} after Theorem~\ref{thm:branch-polyhedron} supplies the extremal IDA rows and Assumption~\ref{ass:poly-screen} supplies the graph-screen rows.
+
+\begin{conjecture}[Conjecture 1: PC-stable discovery certificate and asymptotic pivot (NOT YET PROVED)]\label{conj:asym-discovery}
+Under Assumptions~\ref{ass:linear-gaussian}, \ref{ass:branch-adjustment}, \ref{ass:no-ties}, \ref{ass:asym-poly-screen}, and \ref{ass:joint-limit}, fix one PC-stable-Fisher-\(z(q,\alpha_n,\prec,{\cal B})\) sign chamber and one minimally enumerated branch list. Stack the discovery rows \(A_{0,n}\hat\xi_n\le b_{0,n}\) with the branch rows \(A_{m,s}\hat\gamma_n\le0\) after embedding \((\hat\xi_n,\hat\gamma_n)\) in their joint Gaussian limit. The resulting truncated-Gaussian pivot for the selected extremal IDA target \(\theta_m=a_m^\transpose\gamma_n\) has Kolmogorov error at most \(o(1)+\rho_n\), uniformly over the local SEM class with discovery margin \(\kappa_n\) and extremal branch gap \(c_n\).
+\end{conjecture}
+
+\begin{theorem}[Theorem 3: two-completion fixed-branch Wald failure]\label{thm:wald-failure}
+Under Assumptions~\ref{ass:branch-adjustment} and \ref{ass:gaussian-score}, suppose \(K=2\), \(V=I_2\), \(a_1=e_1\), \(a_2=e_2\), and \(\gamma_1-\gamma_2=\Delta/\sqrt n\). Conditional on \(m^\star=1\), the centered statistic \((\hat\theta_1-\theta_1)\) is distributed as the first coordinate of a bivariate normal truncated to \(\hat\theta_1\ge\hat\theta_2\). For every finite \(\Delta\), its equal-tail Wald interval has coverage different from its nominal unconditional Gaussian coverage.
+\end{theorem}
+This follows by rotating to \(U=(\hat\theta_1-\hat\theta_2)/\sqrt2\) and \(V_+=(\hat\theta_1+\hat\theta_2)/\sqrt2\); conditioning imposes the one-sided truncation \(U\ge0\) while the reported coordinate depends on both \(U\) and \(V_+\).
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Singleton branch reduction]\label{cor:singleton}
+If \(K=1\), then \(A_{m,s}\) has no rows, \(L(r)=-\infty\), \(U(r)=+\infty\), and Theorem~\ref{thm:selected-pivot} reduces to the ordinary Gaussian regression pivot for the unique adjusted total effect.
+\end{corollary}
+
+\begin{corollary}[Known graph reduction]\label{cor:known-graph}
+If \(A_0\) is empty and the branch is fixed ex ante, the selection event is empty and the pivot is the untruncated OLS pivot under Assumptions~\ref{ass:linear-gaussian}--\ref{ass:gaussian-score}.
+\end{corollary}
+
+\paragraph{Exhibit 9.1: computed certificate on a two-completion IDA instance.}
+Let the selected CPDAG have \(Z-X-Y\) with \(Z\) adjacent to \(X\) undirected and \(X\to Y\) compelled. The two DAG completions differ only in \(Z\to X\) versus \(X\to Z\), yielding parent sets \(P_1=\{Z\}\) and \(P_2=\varnothing\). Let \(\hat\gamma=(\hat\beta_{YX\cdot Z},\hat\beta_{YX})^\transpose\), \(a_1=(1,0)^\transpose\), \(a_2=(0,1)^\transpose\), and use the largest-positive report. The event \(m^\star=1\) is
+\[
+(a_2-a_1)^\transpose\hat\gamma\le0,\qquad
+A_{1,+}=(-1,1).
+\]
+For maximum absolute value, the doubled signed list adds \(-a_1\) and \(-a_2\), so \(m^\star=(1,+)\) is computed from
+\[
+\begin{pmatrix}
+-1&1\\
+-2&0\\
+-1&-1
+\end{pmatrix}\hat\gamma\le0.
+\]
+Take \(V=I_2\), \(\eta=a_1=e_1\), \(c=e_1\), and \(r=(0,\hat\gamma_2)^\transpose\). Add one exact affine graph screen row \(A_0=(0,1)\), \(b_0=2\), so the retained CPDAG screen is \(\hat\gamma_2\le2\). For the largest-positive report, the stacked system is
+\[
+\tilde A=\begin{pmatrix}0&1\\-1&1\end{pmatrix},\qquad
+\tilde b=\begin{pmatrix}2\\0\end{pmatrix}.
+\]
+Writing \(z=\eta^\transpose\hat\gamma=\hat\gamma_1\), the inequalities become \(\hat\gamma_2\le2\) and \(-z+\hat\gamma_2\le0\). Conditional on \(r=(0,r_2)^\transpose\), the graph-screen row has \(\tilde A_1c=0\) and contributes only the feasibility check \(r_2\le2\); the branch row has \(\tilde A_2c=-1\) and yields \(z\ge r_2\). Thus \(L(r)=r_2\), \(U(r)=+\infty\), and the pivot is
+\[
+F^{[r_2,\infty)}_{\gamma_1,1}(\hat\gamma_1)
+=
+\frac{\Phi(\hat\gamma_1-\gamma_1)-\Phi(r_2-\gamma_1)}
+{1-\Phi(r_2-\gamma_1)}.
+\]
+For example, with \(r_2=0.30\), \(\hat\gamma_1=0.80\), and null target \(\gamma_1=0\), the realized pivot is \(\{\Phi(0.80)-\Phi(0.30)\}/\{1-\Phi(0.30)\}\). The dimensions are \(K=2\), \(d=2\), no denominator is zero in the active branch row, and the graph-screen row is a pure feasibility row rather than a hidden truncation constraint.
+
+\paragraph{Exhibit 9.2: PC-stable Fisher-\(z\) discovery rows on the same graph.}
+Use variables \(Z,X,Y\), \(q=1\), order \(Z\prec X\prec Y\), and background knowledge \(X\prec_{\cal B}Y\), so any retained \(X-Y\) adjacency is oriented \(X\to Y\). Consider the PC-stable sign chamber in which \(Z-X\) and \(X-Y\) are retained with positive Fisher-\(z\) statistics and \(Z-Y\) is removed by the separating set \(\{X\}\). Let
+\[
+\hat\xi_n=(\hat\zeta_{ZX},\hat\zeta_{XY},\hat\zeta_{ZY\mid X})^\transpose,\qquad c=c_{\alpha_n}.
+\]
+The discovery event that produces the CPDAG \(Z-X\to Y\) with separating set \(S_{ZY}=\{X\}\) is represented on this chamber by
+\[
+\hat\zeta_{ZX}\ge c,\qquad \hat\zeta_{XY}\ge c,\qquad
+-c\le \hat\zeta_{ZY\mid X}\le c,
+\]
+or equivalently
+\[
+A_{0,n}\hat\xi_n\le b_{0,n},\qquad
+A_{0,n}=
+\begin{pmatrix}
+-1&0&0\\
+0&-1&0\\
+0&0&1\\
+0&0&-1
+\end{pmatrix},\qquad
+b_{0,n}=
+\begin{pmatrix}
+-c\\
+-c\\
+c\\
+c
+\end{pmatrix}.
+\]
+The deterministic background-knowledge pass orients \(X-Y\) and leaves \(Z-X\) undirected, so the two IDA completions again have \(P_1=\{Z\}\) and \(P_2=\varnothing\). Stacking these four discovery rows with \(A_{1,+}=(-1,1)\) from Exhibit 9.1 gives a five-row certificate in \((\hat\xi_n,\hat\gamma_n)\). The row dimensions are \(4\times3\) and \(1\times2\), the thresholds are finite for \(\alpha_n\in(0,1)\), and the separating-set row is not assumed: it is the Fisher-\(z\) acceptance event for \(Z\perp Y\mid X\) used by PC-stable.
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:selected-pivot} follows the chain: exact selected IDA pivot \(\leftarrow\) unfold the branch map in \S6 \(\leftarrow\) substitute Assumptions~\ref{ass:branch-adjustment}--\ref{ass:poly-screen} \(\leftarrow\) prove the fixed minimal branch list has one common Gaussian linear embedding \(\hat\gamma\) \(\leftarrow\) stack the exact graph-screen inequalities and the extremal branch inequalities without changing the selected contrast \(\eta\) \(\leftarrow\) verify the selected target is \(\eta^\transpose\gamma\), not an unselected causal effect \(\leftarrow\) apply the polyhedral truncation theorem of \citet{LeeSunSunTaylor2016Polyhedral}\). Conjecture~\ref{conj:asym-discovery} follows the explicit route: PC-stable event \(\leftarrow\) unfold the \(\S6\) Fisher-\(z\) tests and fixed ordering \(\leftarrow\) substitute Assumptions~\ref{ass:asym-poly-screen} and \ref{ass:joint-limit} \(\leftarrow\) enumerate the finite tested triples \((i,j,S)\) and their signs on one chamber \(\leftarrow\) convert retained-edge, deleted-edge, and separating-set decisions into the rows displayed in Exhibit 9.2 \(\leftarrow\) prove the deterministic orientation pass preserves the skeleton/separating-set certificate \(\leftarrow\) stack the discovery rows with the IDA extremal rows \(\leftarrow\) bound the Gaussian approximation and graph-event mismatch by \(o(1)+\rho_n\) \(\leftarrow\) control Lee truncation-limit perturbations under margins \(c_n,\kappa_n\). The flagship open route has \(k=6\): test-triple enumeration, sign-chamber row construction, deterministic orientation preservation, discovery-branch stacking, Gaussian approximation transfer, and truncation-stability control. Theorem~\ref{thm:wald-failure} uses a two-dimensional orthogonal rotation and an explicit one-sided Gaussian truncation calculation.
+
+\section{Honest scope flags}
+The fixed-branch polyhedral certificate and the exact pivot under an exact affine graph screen are algebraic theorems. The asymptotic discovery-certificate statement is left as a conjecture because PC-stable Fisher-\(z\) decisions are only affine after fixing the tested triples, separating-set choices, and retained-edge sign chamber. The proposal treats the selected branch target as the estimand. No claim is made that the selected branch equals the true total effect when the selected equivalence class is wrong. The asymptotic version must still check covariance estimation, event approximation, and uniformity near ties.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft centered on a finite IDA extremal-selection certificate and a conjectured Lee-style selective pivot; prior verdict: none.
+\item v2 (revise) -- corrected the Chang comparison, split the exact affine-screen pivot from the asymptotic discovery-certificate conjecture, computed the Lee truncation limits in Exhibit 9.1, and reframed the Wald warning as fixed-branch post-extremal inference; prior verdict: REVISE.
+\item v3 (revise) -- named PC-stable-Fisher-\(z(q,\alpha_n,\prec,{\cal B})\) as the discovery rule, added the explicit Fisher-\(z\) certificate in Exhibit 9.2, and anchored the post-discovery comparisons by section; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Chang, Guo, and Malinsky(2026)]{ChangGuoMalinsky2026PostSelectionCausalDiscovery}
+Chang, T.-H., Guo, Z., and Malinsky, D. (2026).
+Post-selection inference for causal effects after causal discovery.
+\emph{Biometrika}, 113(1), asaf073.
+
+\bibitem[Gradu, Zrnic, Wang, and Jordan(2025)]{GraduZrnicWangJordan2025ValidInference}
+Gradu, P., Zrnic, T., Wang, Y., and Jordan, M. I. (2025).
+Valid inference after causal discovery.
+\emph{Journal of the American Statistical Association}.
+
+\bibitem[Guo and Perkovic(2021)]{GuoPerkovic2021MinimalEnumeration}
+Guo, R. and Perkovic, E. (2021).
+Minimal enumeration of all possible total effects in a Markov equivalence class.
+\emph{Proceedings of AISTATS}, PMLR 130:2395--2403.
+
+\bibitem[Guo and Perkovic(2022)]{GuoPerkovic2022EfficientLS}
+Guo, R. and Perkovic, E. (2022).
+Efficient least squares for estimating total effects under linearity and causal sufficiency.
+\emph{Journal of Machine Learning Research}, 23:1--41.
+
+\bibitem[Lee, Sun, Sun, and Taylor(2016)]{LeeSunSunTaylor2016Polyhedral}
+Lee, J. D., Sun, D. L., Sun, Y., and Taylor, J. E. (2016).
+Exact post-selection inference, with application to the lasso.
+\emph{Annals of Statistics}, 44(3):907--927.
+
+\bibitem[Maathuis, Kalisch, and Buhlmann(2009)]{MaathuisKalischBuhlmann2009IDA}
+Maathuis, M. H., Kalisch, M., and Buhlmann, P. (2009).
+Estimating high-dimensional intervention effects from observational data.
+\emph{Annals of Statistics}, 37(6A):3133--3164.
+
+\bibitem[Nandy, Maathuis, and Richardson(2017)]{NandyMaathuisRichardson2017JointIDA}
+Nandy, P., Maathuis, M. H., and Richardson, T. S. (2017).
+Estimating the effect of joint interventions from observational data in sparse high-dimensional settings.
+\emph{Annals of Statistics}, 45(2):647--674.
+
+\bibitem[Perkovic, Kalisch, and Maathuis(2017)]{PerkovicKalischMaathuis2017MPDAG}
+Perkovic, E., Kalisch, M., and Maathuis, M. H. (2017).
+Interpreting and using CPDAGs with background knowledge.
+\emph{Proceedings of UAI}.
+
+\bibitem[Tibshirani, Taylor, Lockhart, and Tibshirani(2016)]{TibshiraniTaylorLockhartTibshirani2016Sequential}
+Tibshirani, R. J., Taylor, J., Lockhart, R., and Tibshirani, R. (2016).
+Exact post-selection inference for sequential regression procedures.
+\emph{Journal of the American Statistical Association}, 111(514):600--620.
+\end{thebibliography}
+
+\end{document}

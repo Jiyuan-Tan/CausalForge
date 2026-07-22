@@ -1,0 +1,362 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb,amsthm}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{openendedquestion}{Open-ended Question}
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\coreref}[1]{\ref{#1}}
+
+\begin{document}
+
+\section*{pid_alwaystaker_adrf_sharp_conditional (frechet_fractional_program)}
+
+\paragraph{TL;DR.} The unresolved sufficient-set case in Lee and Liu's continuous-treatment Lee bounds is a law-level aggregation problem, not a pointwise trimming problem. For a fixed dose d, the always-takers average dose-response function is interval identified because the sufficient-set restriction implies an observable Frechet band [underline_pi_d(X), overline_pi_d(X)] for the conditional always-taker mass, while the endpoint averages are ratios with the common denominator E[pi(X)]. The proposal characterizes each sharp endpoint as the value of a global support-function problem over measurable selector functions pi in Pi_d(P), makes explicit the measurable-selection and completion-kernel regularity that the sharpness proof uses, reduces the resulting linear-fractional program to a scalar Dinkelbach root, and isolates a common-threshold condition under which the naive pointwise Frechet plug-in is exactly sharp. The current positive statistical result stops at oracle endpoint-root consistency from a kernel-localized transform under a uniform LLN, an explicit drift-domination premise, and separated root geometry; distributional inference, feasible nuisance estimation, and boundary/tie coverage remain explicit open problems.
+
+\section{Project justification}
+
+\paragraph{Gap.} LeeLiu2025ContinuousLee identifies the continuous-treatment always-takers ADRF under sufficient values, but in the sufficient-set covariate case the conditional always-taker share is only constrained by an observable Frechet band and the paper leaves the covariate-aggregated sharp identified set unresolved.
+
+\paragraph{Niche.} The missing object is a globally compatible selector process, not another conditional trimming formula. JonzonGabrielSjolanderSachs2025CovariatesBounds makes clear that pointwise sharp conditional bounds need not aggregate to a uniformly sharp marginal bound, and BenMichael2025ConditionalLP does not cover the denominator-coupled ratio structure here.
+
+\paragraph{Fill.} The project fills that gap with a measurable-selector support-function characterization, a scalar Dinkelbach threshold representation, a primitive collapse criterion for exact pointwise plug-in sharpness, and an oracle root-consistency benchmark showing that the support-function endpoints are statistically targetable before the unresolved distributional theory is supplied.
+
+\section{Related work}
+
+LeeLiu2025ContinuousLee is the direct anchor: it extends Lee bounds to continuous or multivalued treatments and leaves the sufficient-set covariate case with only conditional Frechet information on the always-taker share. Lee2009SharpBounds is the binary-treatment benchmark showing how sharp trimming follows once the always-taker share is identified. Semenova2024GeneralizedLee provides the closest support-function and orthogonal-moment template for Lee-type bounds with covariates, but there the relevant always-taker covariate law is identified rather than chosen from a denominator-coupled band. JonzonGabrielSjolanderSachs2025CovariatesBounds formalizes the pointwise-versus-uniform sharpness distinction that drives the present obstruction. BenMichael2025ConditionalLP gives de-biased inference for bounds that are expectations of conditional linear-program optima, but the present target is a global linear-fractional program over measurable selectors with one shared denominator, and the present note stops at oracle endpoint consistency rather than inference. ColangeloLee2025ContinuousDML supplies the local-dose kernel localization and oracle-score template before the nonsmooth support-function step. FangSantos2019DirectionalInference is the natural template once tie and boundary laws make the Dinkelbach root map only directionally differentiable.
+
+\section{Setup}
+
+Target estimand: mu_AT(d) = E[Y(d) | AT=1].
+Estimand-defining functional: Theta_d(P) = [ inf_{pi in Pi_d(P)} E[Psi_d^L(X,pi(X))] / E[pi(X)], sup_{pi in Pi_d(P)} E[Psi_d^U(X,pi(X))] / E[pi(X)] ].
+\begin{itemize}
+  \item $y_min$ --- outcome_lower_endpoint; R; support_constant $:= Known finite lower endpoint of the outcome support.$
+  \item $y_max$ --- outcome_upper_endpoint; R; support_constant $:= Known finite upper endpoint of the outcome support.$
+  \item $X_space$ --- covariate_space; measurable_space; primitive_space $:= Support of the pretreatment covariate vector X.$
+  \item $O$ --- observed_unit; {(Y,S,D,X): Y in [y_min,y_max], S in {0,1}, D in supp(D), X in X_space}; data_unit $:= Observed unit O = (Y,S,D,X).$
+  \item $O_i$ --- sample_observation; {(Y,S,D,X): Y in [y_min,y_max], S in {0,1}, D in supp(D), X in X_space}; sample_observation $:= One observed replicate of O in the sample.$
+  \item $Y$ --- observed_outcome; [y_min,y_max]; data_component $:= Observed outcome component of O.$
+  \item $S$ --- observed_selection; {0,1}; data_component $:= Observed selection indicator component of O.$
+  \item $D$ --- observed_treatment; supp(D); data_component $:= Observed continuous or multivalued treatment component of O.$
+  \item $X$ --- covariate; X_space; data_component $:= Observed pretreatment covariate vector.$
+  \item $P$ --- observed_law; laws of O; model $:= Observed-data law of O under the Lee-Liu sufficient-set sample-selection model.$
+  \item $P_X$ --- covariate_marginal; laws on X_space; primitive_measure $:= Marginal law of X induced by P.$
+  \item $d$ --- treatment_value; int(supp(D)); index $:= Fixed interior treatment value at which the always-takers ADRF is evaluated.$
+  \item $a$ --- generic_treatment_value; supp(D); index $:= Generic treatment value used to state local smoothness in the treatment coordinate around d.$
+  \item $Y(d)$ --- potential_outcome; [y_min,y_max]; causal_primitive $:= Potential outcome under treatment value d.$
+  \item $S(d)$ --- potential_selection; {0,1}; causal_primitive $:= Potential selection indicator under treatment value d.$
+  \item $AT$ --- principal_stratum_indicator; {0,1}; latent_target_stratum $:= Always-taker indicator for the Lee-Liu sufficient-set principal stratum anchored at dose d.$
+  \item $n$ --- sample_size; N; index $:= Observed sample size.$
+  \item $h_n$ --- bandwidth_sequence; (0,infinity); tuning_parameter $:= Kernel localization bandwidth at sample size n for target dose d.$
+  \item $r_n$ --- nuisance_rate_sequence; (0,infinity); rate_object $:= Common nuisance-rate sequence used in the regular-regime expansion.$
+  \item $K$ --- kernel_function; smoothing_primitive $:= Kernel used to localize observations around the target dose d.$
+  \item $s_a$ --- selected_mass_function_family; identified_primitive $:= Selected mass family s_a(x) = P(S=1 | D=a, X=x).$
+  \item $f_a$ --- local_treatment_density_family; identified_primitive $:= Conditional density family f_a(x) = f_{D|X}(a|x).$
+  \item $Q_a$ --- selected_outcome_quantile_family; identified_primitive $:= Conditional quantile family of Y given S=1, D=a, X=x.$
+  \item $s_d$ --- selected_mass_function; identified_primitive $:= Selected mass at dose d, s_d(x) = s_a(x) evaluated at a = d.$
+  \item $f_d$ --- local_treatment_density; identified_primitive $:= Conditional density of D at the target dose, f_d(x) = f_a(x) evaluated at a = d.$
+  \item $Q_d$ --- selected_outcome_quantile; identified_primitive $:= Conditional quantile function of Y given S=1, D=d, X=x, equal to Q_a(u,x) evaluated at a = d.$
+  \item $underline_pi_d$ --- frechet_lower_band; identified_primitive $:= Lee-Liu lower Frechet bound for the conditional always-taker mass at dose d.$
+  \item $overline_pi_d$ --- frechet_upper_band; identified_primitive $:= Lee-Liu upper Frechet bound for the conditional always-taker mass at dose d.$
+  \item $pi$ --- selector_function; optimization_variable $:= Candidate conditional always-taker mass selector.$
+  \item $Psi_d^L$ --- trimmed_lower_numerator; identified_object $:= Lower-tail trimmed numerator contribution at dose d.$
+  \item $Psi_d^U$ --- trimmed_upper_numerator; identified_object $:= Upper-tail trimmed numerator contribution at dose d.$
+  \item $Pi_d(P)$ --- feasible_selector_class; {measurable pi : X_space -> [0,1]}; identified_set_component $:= Feasible class of measurable selector functions compatible with the Frechet band at dose d.$
+  \item $sigma$ --- support_direction; {-1,+1}; index $:= Support-function direction indexing lower and upper endpoint problems.$
+  \item $N_sigma$ --- directional_numerator_map; objective_component $:= Directional numerator map with N_{+1}(x,t) = Psi_d^U(x,t) and N_{-1}(x,t) = -Psi_d^L(x,t).$
+  \item $mu_AT(d)$ --- target_parameter; R; target_estimand $:= Always-takers mean potential outcome at dose d, E[Y(d) | AT=1].$
+  \item $Theta_d(P)$ --- identified_set; closed intervals in R; target_set $:= Sharp identified set for mu_AT(d) under the sufficient-set model.$
+  \item $H_sigma(d;P)$ --- support_function_value; R; headline_object $:= Support-function value of Theta_d(P) in direction sigma.$
+  \item $lambda$ --- scalar_threshold_argument; R; optimization_parameter $:= Scalar argument of the Dinkelbach transform.$
+  \item $Phi_sigma(lambda;P)$ --- dinkelbach_transform; headline_object $:= Dinkelbach transform for the sigma-direction endpoint problem at dose d.$
+  \item $pi_{sigma,lambda}$ --- transformed_argmax_selector; estimation_object $:= Measurable selector attaining the pointwise transformed optimum argmax_{t in [underline_pi_d(X), overline_pi_d(X)]} {N_sigma(X,t) - lambda t}.$
+  \item $m_{sigma,lambda}$ --- transformed_conditional_value; estimation_object $:= Conditional transformed value m_{sigma,lambda}(x) = sup_{t in [underline_pi_d(x), overline_pi_d(x)]} {N_sigma(x,t) - lambda t}.$
+  \item $Z_{sigma,n}(O,t;P)$ --- localized_trimmed_signal; estimation_object $:= Finite-bandwidth kernel-localized doubly robust signal at sample size n for the sigma-direction trimmed numerator contribution.$
+  \item $psi_{sigma,lambda,n}(O;P)$ --- finite_bandwidth_transform_score; R; estimation_object $:= Finite-bandwidth orthogonal score for Phi_sigma(lambda;P) obtained by evaluating the localized trimmed signal at the transformed argmax selector and subtracting the population transformed numerator.$
+  \item $B_{sigma,lambda,n}(P)$ --- finite_bandwidth_bias; R; bias_object $:= Finite-bandwidth bias B_{sigma,lambda,n}(P) = E[psi_{sigma,lambda,n}(O;P)] - Phi_sigma(lambda;P).$
+  \item $lambda_sigma^*$ --- optimal_threshold; R; headline_object $:= Unique root of Phi_sigma(lambda;P) = 0 in direction sigma.$
+  \item $dot_Phi_sigma(P)$ --- root_derivative; R; headline_object $:= Population derivative partial_lambda Phi_sigma(lambda;P) evaluated at lambda = lambda_sigma^*.$
+  \item $pi_sigma^*$ --- optimal_selector; headline_object $:= Measurable selector attaining the sigma-direction transformed pointwise optimum at lambda_sigma^*.$
+  \item $pi_sigma^PF$ --- pointwise_plugin_selector; comparator_object $:= Pointwise Frechet selector solving the local ratio problem t -> N_sigma(X,t) / t on the Lee-Liu band.$
+  \item $C_sigma(d;P)$ --- common_threshold_condition; {true,false}; collapse_certificate $:= Indicator that the pointwise ratio optimizer also solves a common-threshold transformed problem with one scalar lambda across X.$
+  \item $hat_Phi_{sigma,n}$ --- sample_transform; estimation_object $:= Cross-fitted sample analog hat_Phi_{sigma,n}(lambda) obtained by averaging the plug-in version of psi_{sigma,lambda,n}(O;P) over i = 1,...,n.$
+  \item $hat_lambda_{sigma,n}$ --- endpoint_estimator; R; estimator $:= Approximate root of hat_Phi_{sigma,n}(lambda) = 0.$
+  \item $varphi_{sigma,n}(O;P)$ --- centered_triangular_array_score; R; estimation_object $:= Centered finite-bandwidth score varphi_{sigma,n}(O;P) = psi_{sigma,lambda_sigma^*,n}(O;P) - E[psi_{sigma,lambda_sigma^*,n}(O;P)].$
+  \item $V_sigma(P)$ --- asymptotic_variance_constant; [0,infinity); headline_object $:= Asymptotic variance constant V_sigma(P) = lim_{n -> infinity} h_n Var[varphi_{sigma,n}(O;P)] when the limit exists.$
+\end{itemize}
+
+\section{Assumptions}
+
+\begin{assumption}[ass:bounded-outcome]\label{ass:bounded-outcome}
+y_min < y_max and P(y_min <= Y <= y_max) = 1.
+\par\smallskip\noindent\emph{Standard} (bounded outcome support, \cite{LeeLiu2025ContinuousLee}).
+\end{assumption}
+
+\begin{assumption}[ass:frechet-band-compatibility]\label{ass:frechet-band-compatibility}
+underline_pi_d(X) <= P(AT=1 | X) <= overline_pi_d(X) for P_X-almost every X.
+\par\smallskip\noindent\emph{Standard} (Lee-Liu sufficient-set Frechet-band implication, \cite{LeeLiu2025ContinuousLee}).
+\end{assumption}
+
+\begin{assumption}[ass:selected-mass-overlap]\label{ass:selected-mass-overlap}
+0 < underline_pi_d(X) <= overline_pi_d(X) < s_d(X) for P_X-almost every X.
+\par\smallskip\noindent\emph{Standard} (strict selected-mass overlap, \cite{LeeLiu2025ContinuousLee}).
+\end{assumption}
+
+\begin{assumption}[ass:local-dose-density]\label{ass:local-dose-density}
+There exist constants 0 < c_f < C_f < infinity such that c_f <= f_d(X) <= C_f for P_X-almost every X.
+\par\smallskip\noindent\emph{Standard} (positive local treatment density at the target dose, \cite{ColangeloLee2025ContinuousDML}).
+\end{assumption}
+
+\begin{assumption}[ass:local-dose-smoothness]\label{ass:local-dose-smoothness}
+There exists delta_d > 0 such that, for P_X-almost every X and every u in [underline_pi_d(X) / s_d(X), 1 - overline_pi_d(X) / s_d(X)], the maps a -> s_a(X), a -> f_a(X), and a -> Q_a(u,X) are twice continuously differentiable on [d - delta_d, d + delta_d] intersect supp(D), with second derivatives uniformly bounded in absolute value by a finite constant.
+\par\smallskip\noindent\emph{Standard} (second-order local smoothness in the treatment coordinate, \cite{ColangeloLee2025ContinuousDML}).
+\end{assumption}
+
+\begin{assumption}[ass:quantile-regularity]\label{ass:quantile-regularity}
+For P_X-almost every x, the conditional law of Y given S=1, D=d, X=x has a density on [y_min,y_max] that is continuous and bounded away from 0 on neighborhoods of Q_d(underline_pi_d(x) / s_d(x), x) and Q_d(1 - overline_pi_d(x) / s_d(x), x).
+\par\smallskip\noindent\emph{Standard} (trimmed-quantile regularity for Lee-type bounds, \cite{LeeLiu2025ContinuousLee}).
+\end{assumption}
+
+\begin{assumption}[ass:selected-quantile-kernel-measurability]\label{ass:selected-quantile-kernel-measurability}
+s_d is P_X-measurable and the selected-outcome quantile map (u,x) -> Q_d(u,x) is jointly measurable on [0,1] x X_space.
+\par\smallskip\noindent\emph{Novel.} faithful alignment: measurable kernel constructions for the completion and pasting arguments require measurable selected mass and jointly measurable selected-outcome quantiles
+\end{assumption}
+
+\begin{assumption}[ass:measurable-maximum-regularity]\label{ass:measurable-maximum-regularity}
+underline_pi_d and overline_pi_d are P_X-measurable, and for each sigma the map (x,t) -> N_sigma(x,t) is jointly measurable and continuous in t on [underline_pi_d(x),overline_pi_d(x)]; for every lambda, the argmax correspondences of t -> N_sigma(x,t)-lambda t and t -> N_sigma(x,t)/t over that interval admit P_X-measurable selections.
+\par\smallskip\noindent\emph{Novel.} standard: measurable maximum/selection regularity for compact-valued correspondences
+\end{assumption}
+
+\begin{assumption}[ass:iid-sampling]\label{ass:iid-sampling}
+The observations O_1,...,O_n are independent and identically distributed with common observed-data law P.
+\par\smallskip\noindent\emph{Novel.} standard: iid sampling for triangular-array central limit theory
+\end{assumption}
+
+\begin{assumption}[ass:kernel-regularity]\label{ass:kernel-regularity}
+K is bounded, symmetric, compactly supported, integral K(u)du=1, integral u K(u)du=0, and integral u^2 |K(u)|du<infinity.
+\par\smallskip\noindent\emph{Novel.} standard: second-order compactly supported kernel regularity for local constant continuous-treatment smoothing
+\end{assumption}
+
+\begin{assumption}[ass:kernel-bandwidth-consistency]\label{ass:kernel-bandwidth-consistency}
+h_n -> 0 and n h_n / log(1/h_n) -> infinity.
+\par\smallskip\noindent\emph{Novel.} standard: uniform consistency bandwidth condition for compact-index kernel averages
+\end{assumption}
+
+\begin{assumption}[ass:oracle-transform-lambda-regularity]\label{ass:oracle-transform-lambda-regularity}
+For each sigma and compact Lambda_sigma, the oracle localized score class {psi_{sigma,lambda,n}(.;P): lambda in Lambda_sigma} has measurable lambda-continuous versions, a scalar Lipschitz modulus in lambda, envelope |psi_{sigma,lambda,n}(O;P)| <= C{1+|K((D-d)/h_n)|/h_n}, variance sup_{lambda in Lambda_sigma} Var_P(psi_{sigma,lambda,n}(O;P)) <= C/h_n, and a residual conditional mean that is continuous at D=d uniformly in lambda and dominated on some neighborhood of d by an integrable envelope.
+\par\smallskip\noindent\emph{Novel.} standard: compact-parametric kernel empirical-process regularity together with the domination needed for the approximate-identity drift control
+\end{assumption}
+
+\section{Definitions}
+
+\begin{definition}[def:tail-integrals]\label{def:tail-integrals}
+$Trimmed numerator contributions := Psi_d^L(x,t) = s_d(x) * integral_0^{t / s_d(x)} Q_d(u,x) du and Psi_d^U(x,t) = s_d(x) * integral_{1 - t / s_d(x)}^1 Q_d(u,x) du for x in X_space and t in [underline_pi_d(x), overline_pi_d(x)].$ \quad (\text{inputs: } d, s_d, Q_d, underline_pi_d, overline_pi_d, X_space)
+\end{definition}
+
+\begin{definition}[def:feasible-selector-class]\label{def:feasible-selector-class}
+$Feasible selector class := Pi_d(P) = {pi : X_space -> [0,1] : pi is measurable and underline_pi_d(x) <= pi(x) <= overline_pi_d(x) for P_X-almost every x}.$ --- the class of all objects satisfying: ass:frechet-band-compatibility; ass:selected-mass-overlap.
+\end{definition}
+
+\begin{definition}[def:support-function]\label{def:support-function}
+$Global support function := H_sigma(d;P) = sup_{pi in Pi_d(P)} E[N_sigma(X, pi(X))] / E[pi(X)].$ \quad (\text{inputs: } sigma, d, P, Pi_d(P), N_sigma)
+\end{definition}
+
+\begin{definition}[def:dinkelbach-transform]\label{def:dinkelbach-transform}
+$Dinkelbach transform := Phi_sigma(lambda;P) = E[sup_{t in [underline_pi_d(X), overline_pi_d(X)]} {N_sigma(X,t) - lambda t}].$ \quad (\text{inputs: } sigma, lambda, P, underline_pi_d, overline_pi_d, N_sigma)
+\end{definition}
+
+\begin{definition}[def:pointwise-plugin]\label{def:pointwise-plugin}
+$Pointwise Frechet plug-in selector := For P_X-almost every x, pi_sigma^PF(x) is any measurable selection from argmax_{t in [underline_pi_d(x), overline_pi_d(x)]} N_sigma(x,t) / t.$ \quad (\text{inputs: } sigma, underline_pi_d, overline_pi_d, N_sigma)
+\end{definition}
+
+\begin{definition}[def:common-threshold-condition]\label{def:common-threshold-condition}
+$Common-threshold condition := C_sigma(d;P) holds iff there exists lambda in R such that Phi_sigma(lambda;P) = 0 and, for P_X-almost every x, every t in argmax_{u in [underline_pi_d(x), overline_pi_d(x)]} N_sigma(x,u) / u also belongs to argmax_{u in [underline_pi_d(x), overline_pi_d(x)]} {N_sigma(x,u) - lambda u}.$ \quad (\text{inputs: } sigma, d, P, Phi_sigma(lambda;P), underline_pi_d, overline_pi_d, N_sigma)
+\end{definition}
+
+\begin{definition}[def:regular-root-objects]\label{def:regular-root-objects}
+$Regular root derivative, finite-bandwidth bias, and variance objects := Define the unlocalized trimmed bracket G_sigma(O,t;P) so that E[G_sigma(O,t;P)|D=d,X=x]=N_sigma(x,t). Set the localized residual signal to Z^{res}_{sigma,n}(O,t;P)=N_sigma(X,t)+K((D-d)/h_n){G_sigma(O,t;P)-N_sigma(X,t)}/(h_n f_d(X)), and define psi_{sigma,lambda,n}(O;P)=m_{sigma,lambda}(X)+Z^{res}_{sigma,n}(O,pi_{sigma,lambda}(X);P)-N_sigma(X,pi_{sigma,lambda}(X)). Equivalently, psi=m_{sigma,lambda}(X)+K((D-d)/h_n){G_sigma(O,pi_{sigma,lambda}(X);P)-N_sigma(X,pi_{sigma,lambda}(X))}/(h_n f_d(X)). Keep B, dot_Phi, varphi, and V defined from this corrected psi.$ \quad (\text{inputs: } sigma, P, K, h_n, D, d, S, Y, f_d, Q_d, s_d, pi_{sigma,lambda}, m_{sigma,lambda}, Z_{sigma,n}(O,t;P), psi_{sigma,lambda,n}(O;P), B_{sigma,lambda,n}(P), N_sigma, underline_pi_d, overline_pi_d, Phi_sigma(lambda;P), lambda_sigma^*, dot_Phi_sigma(P), varphi_{sigma,n}(O;P), V_sigma(P))
+\end{definition}
+
+\begin{definition}[def:dr-endpoint-handle]\label{def:dr-endpoint-handle}
+$Kernel-localized doubly robust endpoint handle := For the proved regular endpoint module, use the oracle known-nuisance transform hat_Phi^or_{sigma,n}(lambda)=P_n psi_{sigma,lambda,n}(O;P), where psi is the population-nuisance score from def:regular-root-objects and all population nuisance functions and Frechet-band endpoints are held fixed. Let a_n=(n h_n)^(1/2), let B_{sigma,lambda,n}(P)=E_P psi_{sigma,lambda,n}(O;P)-Phi_sigma(lambda;P), and choose an oracle approximate root hat_lambda^or_{sigma,n} in Lambda_sigma satisfying a_n |hat_Phi^or_{sigma,n}(hat_lambda^or_{sigma,n})|=o_P(1). Feasible estimated-nuisance transforms, active-set slope estimators, multiplier critical values, and boundary-uniform confidence sets are not part of this positive definition and are deferred to oeq:boundary-uniform-inference.$ \quad (\text{inputs: } sigma, n, K, h_n, s_d, f_d, Q_d, Psi_d^L, Psi_d^U, underline_pi_d, overline_pi_d, psi_{sigma,lambda,n}(O;P), hat_Phi_{sigma,n}, hat_lambda_{sigma,n})
+\end{definition}
+
+\section{Main results}
+
+\begin{theorem}[thm:global-support-function]\label{thm:global-support-function}
+Under ass:bounded-outcome, ass:frechet-band-compatibility, ass:selected-mass-overlap, ass:selected-quantile-kernel-measurability, and ass:measurable-maximum-regularity, the sharp identified set Theta_d(P) for mu_AT(d) is the interval [ -H_{-1}(d;P), H_{+1}(d;P) ]. For each sigma in {-1,+1}, H_sigma(d;P) equals the unique scalar lambda_sigma^* satisfying Phi_sigma(lambda_sigma^*;P) = 0, and there exists a measurable selector pi_sigma^* in Pi_d(P) such that pi_sigma^*(X) belongs to argmax_{t in [underline_pi_d(X), overline_pi_d(X)]} {N_sigma(X,t) - lambda_sigma^* t} for P_X-almost every X.
+\end{theorem}
+Let l(X)=underline_pi_d(X) and u(X)=overline_pi_d(X). By ass:selected-mass-overlap, 0<l(X)<=u(X)<s_d(X)<=1 P_X-a.e.; hence every pi in Pi_d(P) has E pi(X)>=E l(X)>0 and the trimming fractions pi(X)/s_d(X) are in [0,1]. Ass:selected-quantile-kernel-measurability supplies the measurability of s_d and of the selected-outcome quantile kernel needed by the completion-and-pasting lemmas, while ass:measurable-maximum-regularity supplies the measurable transformed selectors used in the Dinkelbach step. Lemma lem:conditional-trimming-fiber-attainment gives the exact conditional feasible numerator fiber: conditional on X=x and on a feasible always-taker mass t in [l(x),u(x)], the conditional numerator q(x)=E[Y(d)1{AT=1}|X=x] ranges exactly over [Psi_d^L(x,t),Psi_d^U(x,t)]. Lemma lem:latent-completion-pasting pastes those conditional kernels measurably over x without changing the observed law P. Therefore lem:identified-set-ratio-envelope applies and gives the sharp identified set as the interval with lower endpoint inf_{pi in Pi_d(P)} E[Psi_d^L(X,pi(X))]/E[pi(X)] and upper endpoint sup_{pi in Pi_d(P)} E[Psi_d^U(X,pi(X))]/E[pi(X)]. Since N_{+1}=Psi_d^U and N_{-1}=-Psi_d^L, def:support-function identifies the upper endpoint as H_{+1}(d;P) and the lower endpoint as -H_{-1}(d;P). Thus Theta_d(P)=[-H_{-1}(d;P),H_{+1}(d;P)]. It remains to prove the scalar threshold certificate. Fix sigma. Lemma lem:selector-envelope-interchange gives Phi_sigma(lambda;P)=sup_{pi in Pi_d(P)} E[N_sigma(X,pi(X))-lambda pi(X)] and gives a measurable pointwise maximizer. Lemma lem:dinkelbach-root-certificate applies to the fractional program because the denominator is bounded below by E l(X)>0: H_sigma(d;P) is finite and is the unique scalar lambda satisfying Phi_sigma(lambda;P)=0. Taking lambda_sigma^*=H_sigma(d;P), the measurable maximizer supplied by lem:selector-envelope-interchange at lambda_sigma^* is a selector pi_sigma^* in Pi_d(P) and satisfies pi_sigma^*(X) in argmax_{t in [l(X),u(X)]}{N_sigma(X,t)-lambda_sigma^* t} P_X-a.e. This proves both the sharp identified interval and the global Dinkelbach representation.
+\par\smallskip\noindent \textit{Justification.} This is the theorem-level kernel that converts the deferred sufficient-set sharpness problem into a measurable-selection support function with a scalar threshold certificate. \textit{Gap.} LeeLiu2025ContinuousLee leaves the sufficient-set covariate case with conditional Frechet bands, and no cited paper gives the law-level global representation needed to aggregate those bands sharply when the denominator E[pi(X)] is unknown. \textit{Consumer.} It gives an exact endpoint formula that a later solver can compute or estimate without pretending that pointwise selector choices paste automatically into a globally sharp law.
+
+\begin{theorem}[thm:pointwise-plugin-sharpness]\label{thm:pointwise-plugin-sharpness}
+Fix sigma in {-1,+1}. Under thm:global-support-function and ass:measurable-maximum-regularity, if C_sigma(d;P) holds, then the pointwise Frechet plug-in is globally sharp in direction sigma: H_sigma(d;P) = E[N_sigma(X, pi_sigma^PF(X))] / E[pi_sigma^PF(X)]. Conversely, if pi_sigma^PF is globally sharp and the argmax set in def:pointwise-plugin is P_X-almost surely singleton, then C_sigma(d;P) holds.
+\end{theorem}
+Fix sigma in {-1,+1}. Write l(x)=underline_pi_d(x), u(x)=overline_pi_d(x), and m_lambda(x)=sup_{t in [l(x),u(x)]}{N_sigma(x,t)-lambda t}. Ass:measurable-maximum-regularity supplies the measurable ratio selector used in def:pointwise-plugin and the measurable transformed selectors used in the envelope step. By ass:selected-mass-overlap, 0<l(X)<=u(X) P_X-a.e., so every feasible selector, and in particular pi_sigma^PF from def:pointwise-plugin, satisfies E[pi(X)]>=E[l(X)]>0. Lemma lem:selector-envelope-interchange identifies Phi_sigma(lambda;P)=E[m_lambda(X)], and lem:dinkelbach-root-certificate says that H_sigma(d;P) is the unique zero of Phi_sigma.
+
+Forward direction. Suppose C_sigma(d;P) holds. By def:common-threshold-condition, there is a scalar lambda with Phi_sigma(lambda;P)=0 such that every pointwise ratio maximizer also maximizes t -> N_sigma(X,t)-lambda t over [l(X),u(X)] for P_X-a.e. X. The selector pi_sigma^PF is a measurable pointwise ratio maximizer by def:pointwise-plugin, hence N_sigma(X,pi_sigma^PF(X))-lambda pi_sigma^PF(X)=m_lambda(X) a.e. Taking expectations and using Phi_sigma(lambda;P)=E[m_lambda(X)] gives E[N_sigma(X,pi_sigma^PF(X))]-lambda E[pi_sigma^PF(X)]=0. Because E[pi_sigma^PF(X)]>0, division yields E[N_sigma(X,pi_sigma^PF(X))]/E[pi_sigma^PF(X)]=lambda. Lemma lem:dinkelbach-root-certificate identifies the unique zero lambda with H_sigma(d;P), proving global sharpness of the pointwise plug-in.
+
+Converse. Suppose pi_sigma^PF is globally sharp and the pointwise argmax set in def:pointwise-plugin is P_X-a.s. singleton. Set lambda=H_sigma(d;P). By lem:dinkelbach-root-certificate, Phi_sigma(lambda;P)=0. By lem:selector-envelope-interchange, for every feasible pi,
+
+E[N_sigma(X,pi(X))-lambda pi(X)] <= Phi_sigma(lambda;P)=0.
+
+Global sharpness of pi_sigma^PF gives E[N_sigma(X,pi_sigma^PF(X))]/E[pi_sigma^PF(X)]=lambda, hence E[N_sigma(X,pi_sigma^PF(X))-lambda pi_sigma^PF(X)]=0 because E[pi_sigma^PF(X)]>0. Pointwise, N_sigma(X,pi_sigma^PF(X))-lambda pi_sigma^PF(X)<=m_lambda(X). Integrating and using E[m_lambda(X)]=Phi_sigma(lambda;P)=0 shows that the nonnegative gap m_lambda(X)-{N_sigma(X,pi_sigma^PF(X))-lambda pi_sigma^PF(X)} has expectation zero, so it vanishes P_X-a.e. Thus pi_sigma^PF(X) belongs to argmax_{t in [l(X),u(X)]}{N_sigma(X,t)-lambda t} for P_X-a.e. X. Since the ratio argmax set is singleton a.e. and pi_sigma^PF is its measurable selection, every t in argmax_{u in [l(X),u(X)]} N_sigma(X,u)/u equals pi_sigma^PF(X) a.e.; therefore every such t also belongs to the transformed argmax at the same lambda. Together with Phi_sigma(lambda;P)=0, this is exactly C_sigma(d;P) by def:common-threshold-condition.
+\par\smallskip\noindent \textit{Justification.} The practical question is when the easy pointwise rule is already law-level sharp; this theorem names the exact primitive certificate. \textit{Gap.} JonzonGabrielSjolanderSachs2025CovariatesBounds distinguishes pointwise and uniform sharpness abstractly, but it does not provide a model-specific if-and-only-if threshold criterion for a continuous-treatment Lee problem. \textit{Consumer.} It tells an empirical analyst when global optimization is unnecessary and when the gap between pointwise and global sharpness is a real identification issue.
+
+\begin{proposition}[prop:sufficient-value-reduction]\label{prop:sufficient-value-reduction}
+If underline_pi_d(X) = overline_pi_d(X) for P_X-almost every X, then C_sigma(d;P) holds for sigma = -1 and sigma = +1, and Theta_d(P) collapses to the Lee-Liu sufficient-value functional obtained by plugging the identified always-taker mass into the trimmed selected-outcome formulas.
+\end{proposition}
+Assume underline_pi_d(X)=overline_pi_d(X) for P_X-a.e. X and put pi_0(X)=underline_pi_d(X)=overline_pi_d(X). Then, modulo P_X-null sets, Pi_d(P) contains only the selector pi_0. Consequently, for each sigma in {-1,+1}, both the local ratio problem t -> N_sigma(X,t)/t and the transformed local problem t -> N_sigma(X,t)-lambda t over [underline_pi_d(X),overline_pi_d(X)] have the same singleton feasible set {pi_0(X)} for every lambda. By thm:global-support-function, taking lambda=H_sigma(d;P) gives Phi_sigma(lambda;P)=0; the singleton feasible-set observation therefore verifies C_sigma(d;P) for sigma=-1 and sigma=+1.
+
+Applying thm:pointwise-plugin-sharpness in the two directions gives H_{+1}(d;P)=E[Psi_d^U(X,pi_0(X))]/E[pi_0(X)] and H_{-1}(d;P)=E[-Psi_d^L(X,pi_0(X))]/E[pi_0(X)], because N_{+1}=Psi_d^U and N_{-1}=-Psi_d^L. The global support-function theorem identifies Theta_d(P)=[-H_{-1}(d;P),H_{+1}(d;P)]. Substituting the two displayed formulae yields Theta_d(P)=[E[Psi_d^L(X,pi_0(X))]/E[pi_0(X)], E[Psi_d^U(X,pi_0(X))]/E[pi_0(X)]]. This is exactly the Lee-Liu sufficient-value functional obtained by plugging the identified always-taker mass pi_0 into the lower- and upper-tail trimmed selected-outcome formulas.
+\par\smallskip\noindent \textit{Justification.} A correct proposal must reduce to the known sufficient-value case rather than quietly changing the target problem. \textit{Gap.} This is the required sanity reduction to LeeLiu2025ContinuousLee rather than a novelty claim. \textit{Consumer.} It gives the solver and the reviewer a clean benchmark special case where the new representation must agree with the published formula.
+
+\begin{proposition}[prop:regular-dr-endpoint]\label{prop:regular-dr-endpoint}
+Fix sigma in {-1,+1}. Let Lambda_sigma be a compact scalar search set containing lambda_sigma^*(P) in its interior. Work with the known-population-nuisance Dinkelbach sample transform hat_Phi^or_{sigma,n}(lambda)=P_n psi_{sigma,lambda,n}(O;P) from def:regular-root-objects and def:dr-endpoint-handle, and let hat_lambda^or_{sigma,n} in Lambda_sigma be any measurable approximate zero satisfying |hat_Phi^or_{sigma,n}(hat_lambda^or_{sigma,n})|=o_P(1) (equivalently, an o_P(1)-minimizer of lambda -> |hat_Phi^or_{sigma,n}(lambda)| over Lambda_sigma). Under thm:global-support-function, ass:bounded-outcome, ass:selected-mass-overlap, ass:local-dose-density, ass:local-dose-smoothness, ass:kernel-regularity, ass:iid-sampling, ass:measurable-maximum-regularity, ass:kernel-bandwidth-consistency, ass:oracle-transform-lambda-regularity, def:regular-root-objects, def:dr-endpoint-handle, lem:regular-envelope-derivative, and lem:uniform-transform-ulln, hat_lambda^or_{sigma,n} ->p lambda_sigma^*(P). Consequently, applying the result for sigma=-1 and sigma=+1, the estimated endpoint pair (-hat_lambda^or_{-1,n}, hat_lambda^or_{+1,n}) converges in probability in R^2 to (-lambda_{-1}^*(P), lambda_{+1}^*(P)); equivalently, -hat_lambda^or_{-1,n} and hat_lambda^or_{+1,n} converge to the lower and upper endpoints of Theta_d(P)=[-lambda_{-1}^*(P), lambda_{+1}^*(P)], respectively. No (n h_n)^(1/2) limit law, finite-bandwidth bias expansion, variance estimation, derivative estimation, studentization, Wald coverage, feasible estimated-nuisance linearization, boundary law, tie-law, or uniform coverage conclusion is claimed.
+\end{proposition}
+Fix sigma and write lambda^*=lambda_sigma^*(P), Lambda=Lambda_sigma, Phi(lambda)=Phi_sigma(lambda;P), and hatPhi_n(lambda)=hat_Phi^or_{sigma,n}(lambda). By thm:global-support-function, lambda^* is the unique scalar root of Phi(lambda)=0 and Theta_d(P)=[-lambda_{-1}^*(P),lambda_{+1}^*(P)]. By lem:regular-envelope-derivative, Phi is continuous on Lambda and its root derivative at lambda^* is strictly negative; in particular the unique zero is locally non-flat. Continuity and uniqueness on the compact set Lambda imply global separation on Lambda: for each epsilon>0, A_epsilon={lambda in Lambda: |lambda-lambda^*|>=epsilon} is compact and contains no zero of Phi, hence eta_epsilon:=inf_{lambda in A_epsilon}|Phi(lambda)| is strictly positive. Indeed, if eta_epsilon=0, a compactness subsequence lambda_k -> lambda_bar in A_epsilon with |Phi(lambda_k)| -> 0 would give Phi(lambda_bar)=0, contradicting uniqueness of lambda^*.
+
+By lem:uniform-transform-ulln, sup_{lambda in Lambda}|hatPhi_n(lambda)-Phi(lambda)| ->p 0 for the known-population-nuisance transform from def:regular-root-objects and def:dr-endpoint-handle. The approximate-zero condition gives |hatPhi_n(hat_lambda^or_{sigma,n})|=o_P(1). On the event sup_{lambda in Lambda}|hatPhi_n(lambda)-Phi(lambda)| < eta_epsilon/3 and |hatPhi_n(hat_lambda^or_{sigma,n})| < eta_epsilon/3, if |hat_lambda^or_{sigma,n}-lambda^*|>=epsilon then hat_lambda^or_{sigma,n} belongs to A_epsilon and therefore eta_epsilon <= |Phi(hat_lambda^or_{sigma,n})| <= |Phi(hat_lambda^or_{sigma,n})-hatPhi_n(hat_lambda^or_{sigma,n})|+|hatPhi_n(hat_lambda^or_{sigma,n})| < 2 eta_epsilon/3, a contradiction. Hence P(|hat_lambda^or_{sigma,n}-lambda^*|>=epsilon) tends to zero for every epsilon>0, so hat_lambda^or_{sigma,n} ->p lambda_sigma^*(P).
+
+Applying the same argument separately for sigma=-1 and sigma=+1 and using a union bound gives convergence in probability in R^2 of (-hat_lambda^or_{-1,n},hat_lambda^or_{+1,n}) to (-lambda_{-1}^*(P),lambda_{+1}^*(P)). By thm:global-support-function these two limits are exactly the lower and upper endpoints of the sharp interval Theta_d(P)=[-lambda_{-1}^*(P),lambda_{+1}^*(P)]. The proof uses only uniform transform consistency and deterministic root separation imported through lem:uniform-transform-ulln and lem:regular-envelope-derivative; it does not assert any Gaussian expansion, bias formula, variance or derivative estimation, studentization, feasible nuisance linearization, boundary/tie law, or uniform coverage conclusion.
+\par\smallskip\noindent \textit{Justification.} The identification formula becomes operational once the oracle Dinkelbach transform admits approximate roots that consistently recover the sharp endpoints. \textit{Gap.} The cited continuous-treatment ADRF and conditional-program papers do not isolate even this oracle root-consistency benchmark for a denominator-coupled measurable-selector support function. \textit{Consumer.} It gives the later inference stage the minimal statistical benchmark: the oracle endpoint roots target the correct sharp endpoints before any distributional theory or feasible nuisance corrections are attempted.
+
+\begin{openendedquestion}[oeq:boundary-uniform-inference]\label{oeq:boundary-uniform-inference}
+Open problem (oracle and feasible distributional inference beyond plug-in consistency). The positive results establish the sharp support-function/Dinkelbach identification formula and plug-in consistency of the Dinkelbach endpoint roots only. It remains open to derive the (n h_n)^(1/2) limit law for kernel-localized Dinkelbach endpoint roots, both in the oracle known-nuisance experiment and with feasible estimated nuisances; to keep the finite-bandwidth bias term explicit and prove when it is negligible; to justify feasible cross-fitted or debiased linearization of hat_Phi^feas_{sigma,n}, including the plug-in transform drift term rather than dropping it; to estimate the variance and the ordinary or directional root derivative; to prove the associated oracle score process and multiplier process converge jointly; to estimate active-set denominator slopes uniformly; and to construct Wald or multiplier confidence sets with pointwise, boundary, tie-law, and uniform coverage for Theta_d(P). None of the Gaussian expansion, feasible Wald inference, variance estimation, derivative estimation, studentization, boundary-directional inference, or uniform coverage theory is established by the positive results.
+\end{openendedquestion}
+For each sigma in {-1,+1}, prop:regular-dr-endpoint proves hat_lambda^or_{sigma,n}->p lambda_sigma^*(P). Consequently (-hat_lambda^or_{-1,n},hat_lambda^or_{+1,n}) is endpoint-consistent for the ordered sharp-endpoint pair (-lambda_{-1}^*(P),lambda_{+1}^*(P)) of Theta_d(P).
+\par\smallskip\noindent \textit{Justification.} The hard statistical content is honest coverage when the selector hits a Frechet boundary or a tie law makes the root map only directionally differentiable. \textit{Gap.} FangSantos2019DirectionalInference gives the generic directional-delta template, but no current paper derives it for a kernel-localized Lee-type endpoint whose identified set comes from a denominator-coupled measurable-selector program. \textit{Consumer.} A positive answer upgrades regular Wald inference to honest identified-set inference that remains valid at threshold ties and boundary laws.
+
+\begin{lemma}[lem:primitive-measurable-maximum-interchange]\label{lem:primitive-measurable-maximum-interchange}
+Under ass:bounded-outcome, ass:selected-mass-overlap, ass:measurable-maximum-regularity, def:tail-integrals, def:feasible-selector-class, and def:dinkelbach-transform, for each sigma in {-1,+1} and lambda in R, sup_{pi in Pi_d(P)} E[N_sigma(X,pi(X))-lambda pi(X)] equals Phi_sigma(lambda;P), and there is a measurable selector pi_{sigma,lambda} in Pi_d(P) attaining the pointwise supremum P_X-a.e.
+\end{lemma}
+Fix sigma and lambda, and write I(x)=[underline_pi_d(x),overline_pi_d(x)] and f_lambda(x,t)=N_sigma(x,t)-lambda t. By ass:selected-mass-overlap, I(x) is a nonempty compact interval for P_X-a.e. x. By def:tail-integrals and ass:bounded-outcome, t -> Psi_d^L(x,t) and t -> Psi_d^U(x,t) are continuous on I(x), so t -> f_lambda(x,t) is continuous there for sigma=+1 and sigma=-1. Ass:measurable-maximum-regularity supplies the remaining load-bearing measurability facts: underline_pi_d and overline_pi_d are P_X-measurable, (x,t) -> N_sigma(x,t) is jointly measurable, and the argmax correspondence of t -> f_lambda(x,t) over I(x) admits a P_X-measurable selector. Therefore the pointwise envelope
+
+m_lambda(x)=sup_{t in I(x)} f_lambda(x,t)
+
+is measurable and there exists a measurable selector pi_{sigma,lambda}(x) in argmax_{t in I(x)} f_lambda(x,t) P_X-a.e. By def:feasible-selector-class, this selector belongs to Pi_d(P). For any pi in Pi_d(P), f_lambda(X,pi(X)) <= m_lambda(X) a.e., hence
+
+sup_{pi in Pi_d(P)} E[f_lambda(X,pi(X))] <= E[m_lambda(X)].
+
+Equality holds for pi_{sigma,lambda}. By def:dinkelbach-transform, E[m_lambda(X)]=Phi_sigma(lambda;P). This proves both the interchange identity and the existence of a feasible measurable pointwise maximizer.
+
+\begin{lemma}[lem:selector-envelope-interchange]\label{lem:selector-envelope-interchange}
+For each sigma in {-1,+1} and lambda in R, the transformed selector envelope F_sigma(lambda)=sup_{pi in Pi_d(P)} E[N_sigma(X,pi(X))-lambda pi(X)] equals Phi_sigma(lambda;P), and the supremum is attained by a measurable pointwise maximizer in Pi_d(P).
+\end{lemma}
+This is the notation-only consequence of lem:primitive-measurable-maximum-interchange. That lemma applies to f_lambda(x,t)=N_sigma(x,t)-lambda t on the compact feasible interval [underline_pi_d(x),overline_pi_d(x)], gives a feasible measurable maximizer pi_{sigma,lambda}, and shows that the supremum over measurable feasible selectors equals the expectation of the pointwise envelope. Def:dinkelbach-transform names that expectation Phi_sigma(lambda;P).
+
+\begin{lemma}[lem:bounded-bernstein-grid-bound]\label{lem:bounded-bernstein-grid-bound}
+Let {W_{n,i,j}:1<=i<=n,1<=j<=M_n} be row-wise independent centered real random variables. Suppose |W_{n,i,j}|<=b_n and Var(W_{n,i,j})<=v_n for all i,j. If, for every fixed epsilon>0, log M_n=o(n epsilon^2/(v_n+b_n epsilon)), then max_{1<=j<=M_n}|n^{-1} sum_{i=1}^n W_{n,i,j}| ->p 0.
+\end{lemma}
+Proof. Fix epsilon>0 and j. For |s|<3/b_n, the elementary bound e^u <= 1+u+u^2/(2(1-|u|/3)) for |u|<=s b_n, together with E W_{n,i,j}=0 and E W_{n,i,j}^2<=v_n, gives E exp(s W_{n,i,j}) <= exp{s^2 v_n/(2(1-s b_n/3))}. Independence over i yields the same bound with n v_n for the sum. Chernoff's inequality with the usual optimizing value s=epsilon/(v_n+b_n epsilon/3) gives P(n^{-1} sum_i W_{n,i,j}>epsilon) <= exp{-n epsilon^2/(2(v_n+b_n epsilon/3))}. The same argument applied to -W_{n,i,j} gives the lower tail. A union bound over j=1,...,M_n gives
+
+P(max_j |n^{-1} sum_i W_{n,i,j}|>epsilon) <= 2 M_n exp{-n epsilon^2/(2(v_n+b_n epsilon/3))}.
+
+The assumed logarithmic condition sends the right-hand side to zero. Since epsilon was arbitrary, the grid maximum is o_P(1).
+
+\begin{lemma}[lem:dinkelbach-root-certificate]\label{lem:dinkelbach-root-certificate}
+Under ass:bounded-outcome, ass:selected-mass-overlap, def:tail-integrals, def:feasible-selector-class, def:support-function, and lem:selector-envelope-interchange, for each sigma in {-1,+1}, H_sigma(d;P) is finite and is the unique scalar lambda satisfying Phi_sigma(lambda;P)=0; at this lambda any measurable transformed maximizer with zero transformed value attains the ratio H_sigma(d;P).
+\end{lemma}
+Let c_pi(P)=E underline_pi_d(X). Ass:selected-mass-overlap gives underline_pi_d(X)>0 P_X-a.e., hence c_pi(P)>0, and every pi in Pi_d(P) satisfies E[pi(X)]>=c_pi(P). To bound the numerator, note from def:tail-integrals and ass:bounded-outcome that if M=max(|y_min|,|y_max|), then |Psi_d^L(X,pi(X))|<=M pi(X) and |Psi_d^U(X,pi(X))|<=M pi(X) P_X-a.e., because each trimmed integral has length pi(X)/s_d(X) and the quantile integrand stays in [y_min,y_max]. Therefore |N_sigma(X,pi(X))|<=M pi(X) for sigma=+1 and sigma=-1, so every ratio in def:support-function is finite. Write R(pi)=E[N_sigma(X,pi(X))]/E[pi(X)] and H=sup_{pi in Pi_d(P)} R(pi). By lem:selector-envelope-interchange,
+
+Phi_sigma(lambda;P)=sup_{pi in Pi_d(P)} E[pi(X)]{R(pi)-lambda}.
+
+If lambda<H, choose pi with R(pi)>lambda; then Phi_sigma(lambda;P)>0. If lambda=H, every term inside the supremum is <=0, while a sequence pi_k with R(pi_k) up to H gives E[pi_k(X)]{R(pi_k)-H} approaching 0 from below because E[pi_k(X)]<=1; hence Phi_sigma(H;P)=0. If lambda>H, then R(pi)-lambda<=H-lambda for every pi, so E[pi(X)]{R(pi)-lambda}<=(H-lambda)c_pi(P)<0 and Phi_sigma(lambda;P)<0. Thus H is the unique zero. If pi^* is a transformed maximizer at lambda=H and E[N_sigma(X,pi^*(X))-H pi^*(X)]=Phi_sigma(H;P)=0, then E[pi^*(X)]>0 and division gives R(pi^*)=H.
+
+\begin{lemma}[lem:uniform-transform-ulln]\label{lem:uniform-transform-ulln}
+Under ass:bounded-outcome, ass:selected-mass-overlap, ass:local-dose-density, ass:local-dose-smoothness, ass:kernel-regularity, ass:iid-sampling, ass:kernel-bandwidth-consistency, ass:oracle-transform-lambda-regularity, def:dinkelbach-transform, def:regular-root-objects, def:dr-endpoint-handle, and lem:bounded-bernstein-grid-bound, for each sigma in {-1,+1} and each compact Lambda_sigma, sup_{lambda in Lambda_sigma}|hat_Phi^or_{sigma,n}(lambda)-Phi_sigma(lambda;P)| ->p 0 in the oracle known-nuisance experiment.
+\end{lemma}
+Fix sigma and a compact Lambda_sigma. Write psi_{lambda,n}(O)=psi_{sigma,lambda,n}(O;P), Phi(lambda)=Phi_sigma(lambda;P), and hat Phi_n(lambda)=hat_Phi^or_{sigma,n}(lambda)=P_n psi_{lambda,n}. Then
+
+sup_{lambda in Lambda_sigma}|hat Phi_n(lambda)-Phi(lambda)| <= sup_{lambda in Lambda_sigma}|(P_n-P)psi_{lambda,n}| + sup_{lambda in Lambda_sigma}|E_P psi_{lambda,n}-Phi(lambda)|.
+
+First control the expectation term. By def:regular-root-objects,
+
+psi_{lambda,n}(O)=m_{sigma,lambda}(X)+K((D-d)/h_n){G_sigma(O,pi_{sigma,lambda}(X);P)-N_sigma(X,pi_{sigma,lambda}(X))}/(h_n f_d(X)).
+
+Def:dinkelbach-transform gives Phi(lambda)=E[m_{sigma,lambda}(X)]. Let
+
+R_lambda(a,x)=E[G_sigma(O,pi_{sigma,lambda}(x);P)-N_sigma(x,pi_{sigma,lambda}(x)) | D=a,X=x].
+
+The residualized construction gives R_lambda(d,x)=0. Taking conditional expectation and changing variables a=d+h_n u gives
+
+E_P psi_{lambda,n}-Phi(lambda)=E_X int K(u) R_lambda(d+h_n u,X) f_{d+h_n u}(X)/f_d(X) du,
+
+with the integral over the compact support of K. Ass:local-dose-density gives f_d(X)>=c_f>0 P_X-a.e., so the inverse-density factor is bounded by c_f^{-1}; ass:local-dose-smoothness and the compact support of K keep f_{d+h_n u}(X)/f_d(X) uniformly bounded for all small h_n and imply the local density ratio is continuous at d. The strengthened ass:oracle-transform-lambda-regularity now supplies both the continuity of R_lambda(a,x) at a=d uniformly over lambda in Lambda_sigma and an integrable envelope dominating that residual term on a neighborhood of d. Together with ass:bounded-outcome, ass:selected-mass-overlap, and ass:kernel-regularity, dominated convergence yields
+
+sup_{lambda in Lambda_sigma}|E_P psi_{lambda,n}-Phi(lambda)| -> 0.
+
+It remains to show the centered empirical term is o_P(1). Ass:oracle-transform-lambda-regularity supplies measurable lambda-continuous versions, a scalar Lipschitz modulus in lambda, the envelope |psi_{lambda,n}(O)|<=C{1+|K((D-d)/h_n)|/h_n}, and the variance bound sup_lambda Var_P(psi_{lambda,n})<=C/h_n. Since K is bounded and compactly supported, the centered variables W_{n,i,lambda}=psi_{lambda,n}(O_i)-E_P psi_{lambda,n}(O) satisfy |W_{n,i,lambda}|<=C'/h_n and Var(W_{n,i,lambda})<=C'/h_n uniformly in lambda. The observations are row-wise independent by ass:iid-sampling.
+
+Cover Lambda_sigma by a grid Lambda_{n,0} of cardinality M_n=O(1/h_n), with mesh small enough that the lambda-Lipschitz modulus makes the empirical supremum over Lambda_sigma differ from the grid maximum by o_P(1). For the grid variables, apply lem:bounded-bernstein-grid-bound with b_n=C'/h_n and v_n=C'/h_n. Because ass:kernel-bandwidth-consistency states h_n->0 and n h_n/log(1/h_n)->infinity, and log M_n=O(log(1/h_n)), for each fixed epsilon>0,
+
+log M_n=o(n epsilon^2/(v_n+b_n epsilon)).
+
+Hence max_{lambda in Lambda_{n,0}} |(P_n-P)psi_{lambda,n}| ->p 0. The Lipschitz fill-in gives sup_{lambda in Lambda_sigma}|(P_n-P)psi_{lambda,n}| ->p 0. Combining this centered empirical bound with the uniform expectation drift proves the claimed uniform transform law of large numbers.
+
+\begin{lemma}[lem:measurable-completion-kernel]\label{lem:measurable-completion-kernel}
+For every feasible selector pi in Pi_d(P), there are explicit P_X-measurable observed-law-preserving Markov kernels that, conditional on X=x, place always-taker mass pi(x) inside the selected-at-dose-d cell and attain the lower tail numerator Psi_d^L(x,pi(x)), the upper tail numerator Psi_d^U(x,pi(x)), and every convex combination between them.
+\end{lemma}
+Fix pi in Pi_d(P) and write alpha(x)=pi(x)/s_d(x). By ass:selected-mass-overlap and def:feasible-selector-class, 0<=alpha(x)<=1 P_X-a.e. Since pi is measurable by membership in Pi_d(P) and ass:selected-quantile-kernel-measurability states that s_d is P_X-measurable, alpha is measurable. For each x, let U and V be independent Uniform[0,1] variables and set Y_x=Q_d(U,x) on the selected-at-dose-d cell. This preserves the observed conditional selected-outcome law because ass:selected-quantile-kernel-measurability gives joint measurability of (u,x) -> Q_d(u,x), and Q_d(.,x) is the selected-outcome quantile function. Define the lower and upper membership rules a_L(x,U)=1{U<=alpha(x)} and a_U(x,U)=1{U>=1-alpha(x)}. If the selected cell has probability s_d(x) and AT is set to zero outside that cell, then P(AT=1|X=x)=s_d(x) alpha(x)=pi(x). Moreover E[Y(d)1{AT=1}|X=x] under a_L is s_d(x) integral_0^{alpha(x)} Q_d(u,x)du=Psi_d^L(x,pi(x)), and under a_U is s_d(x) integral_{1-alpha(x)}^1 Q_d(u,x)du=Psi_d^U(x,pi(x)). For any rho(x) in [0,1], define a_rho(x,U,V)=a_L(x,U) if V>rho(x) and a_U(x,U) if V<=rho(x). Then the numerator is (1-rho(x))Psi_d^L(x,pi(x))+rho(x)Psi_d^U(x,pi(x)). The maps (x,u,v)->Q_d(u,x), a_L(x,u), a_U(x,u), and a_rho(x,u,v) are jointly measurable because alpha and rho are measurable, the threshold maps are Borel, and Q_d is jointly measurable. Therefore, for each Borel event in the latent variables, its kernel probability is an integral of a jointly measurable bounded indicator over (u,v), hence is measurable in x. Integrating these conditional kernels against P_X defines a countably additive joint law; its observed margin is P because the construction only augments the observed law with latent variables and leaves the conditional selected-outcome margin generated by Q_d unchanged. Thus the endpoint and mixed completions are valid measurable data-consistent Markov kernels.
+
+\begin{lemma}[lem:conditional-trimming-fiber-attainment]\label{lem:conditional-trimming-fiber-attainment}
+Under the bounded outcome and selected-mass overlap primitives, for P_X-a.e. x and every t in [underline_pi_d(x), overline_pi_d(x)], the conditional numerator q(x)=E[Y(d)1{AT=1}|X=x] consistent with the observed selected-outcome law and conditional always-taker mass t is exactly the closed interval [Psi_d^L(x,t), Psi_d^U(x,t)].
+\end{lemma}
+Fix x outside a P_X-null set and let t in [underline_pi_d(x),overline_pi_d(x)]. Put alpha=t/s_d(x). Ass:selected-mass-overlap gives alpha in [0,1]. Any admissible latent completion inside the selected-at-dose-d cell can be represented by a randomized membership weight w(u) in [0,1] as a function of the selected-outcome rank u, with integral_0^1 w(u)du=alpha. Its conditional numerator equals s_d(x) integral_0^1 Q_d(u,x)w(u)du. Since u->Q_d(u,x) is nondecreasing, the elementary rearrangement inequality for a bounded nondecreasing function and a [0,1]-valued weight of mass alpha gives integral_0^1 Q_d(u,x)w(u)du >= integral_0^alpha Q_d(u,x)du and <= integral_{1-alpha}^1 Q_d(u,x)du. One way to see the lower bound is to move any mass of w above alpha into any missing mass below alpha; every such transfer weakly lowers the integral because Q_d is nondecreasing, and iteration gives w=1{u<=alpha}. The upper bound is the symmetric transfer to the top alpha tail, giving w=1{u>=1-alpha}. Multiplying by s_d(x) gives the outer interval [Psi_d^L(x,t),Psi_d^U(x,t)] by def:tail-integrals. These two threshold weights, together with their deterministic mixtures, attain the two endpoints and every convex combination between them at this fixed x. Boundary cases alpha=0 or alpha=1 are covered by the same threshold rules, or equivalently by limits. Hence the conditional fiber is exactly the displayed closed interval.
+
+\begin{lemma}[lem:latent-completion-pasting]\label{lem:latent-completion-pasting}
+For any pi in Pi_d(P) and any measurable q with Psi_d^L(X,pi(X))<=q(X)<=Psi_d^U(X,pi(X)) P_X-a.e., there is a data-consistent measurable latent completion preserving the observed law P such that P(AT=1|X)=pi(X) and E[Y(d)1{AT=1}|X]=q(X) P_X-a.e.
+\end{lemma}
+Fix pi and q. Let L(X)=Psi_d^L(X,pi(X)) and U(X)=Psi_d^U(X,pi(X)). Define rho(X)=(q(X)-L(X))/(U(X)-L(X)) on {U>L} and rho(X)=0 on {U=L}. By ass:selected-quantile-kernel-measurability, s_d and Q_d are measurable enough that def:tail-integrals maps measurable pi into measurable endpoint functions L and U; hence rho is measurable and lies in [0,1]. Lemma lem:measurable-completion-kernel gives a measurable Markov kernel that, at covariate value x, uses the lower threshold completion with probability 1-rho(x) and the upper threshold completion with probability rho(x). Its conditional always-taker mass is pi(x), and its conditional numerator is (1-rho(x))L(x)+rho(x)U(x)=q(x), with equality also on {U=L}. The kernel is observed-law preserving: conditional on X=x, it draws the selected-at-dose-d outcome from the observed quantile law Q_d(.,x), assigns only latent always-taker membership by a measurable threshold or mixture rule, and leaves the observed variables distributed as under P. Pasting the kernels over x by the integral formula P_tilde(A)=integral kappa_x(A_x)dP_X(x) gives a valid joint latent law with observed marginal P. Thus every measurable conditional numerator selection inside the pointwise trimming fiber is globally attainable.
+
+\begin{lemma}[lem:identified-set-ratio-envelope]\label{lem:identified-set-ratio-envelope}
+Under ass:bounded-outcome, ass:frechet-band-compatibility, ass:selected-mass-overlap, def:tail-integrals, def:feasible-selector-class, def:support-function, lem:selector-envelope-interchange, lem:dinkelbach-root-certificate, lem:conditional-trimming-fiber-attainment, and lem:latent-completion-pasting, the sharp identified set for mu_AT(d) is [inf_{pi in Pi_d(P)} E[Psi_d^L(X,pi(X))]/E[pi(X)], sup_{pi in Pi_d(P)} E[Psi_d^U(X,pi(X))]/E[pi(X)]].
+\end{lemma}
+First prove the outer inclusion. Take any latent law compatible with P and the maintained restrictions. Set pi(x)=P(AT=1|X=x) and q(x)=E[Y(d)1{AT=1}|X=x]. By ass:frechet-band-compatibility and def:feasible-selector-class, pi belongs to Pi_d(P). By ass:selected-mass-overlap, E pi(X)>=E underline_pi_d(X)>0. Lemma lem:conditional-trimming-fiber-attainment gives Psi_d^L(x,pi(x))<=q(x)<=Psi_d^U(x,pi(x)) for P_X-a.e. x. Integrating and dividing by E pi(X) yields E[Psi_d^L(X,pi(X))]/E[pi(X)] <= E q(X)/E pi(X) = mu_AT(d) <= E[Psi_d^U(X,pi(X))]/E[pi(X)]. Taking the infimum of the left ratios and supremum of the right ratios over Pi_d(P) gives the outer interval. For sharpness, fix any feasible pi. Lemma lem:latent-completion-pasting attains the lower conditional numerator q_L(X)=Psi_d^L(X,pi(X)), the upper numerator q_U(X)=Psi_d^U(X,pi(X)), and every measurable mixture between them while preserving the observed law P and the conditional mass pi. Thus the two ratios associated with any fixed pi, and every ratio between them for that denominator, are data-consistent. The global lower and upper endpoints are also attainable. Indeed, applying lem:dinkelbach-root-certificate to sigma=-1 and sigma=+1 with the support-function program in def:support-function gives transformed maximizing selectors at the two roots; for sigma=-1 this attains inf_{pi} E[Psi_d^L(X,pi(X))]/E[pi(X)], and for sigma=+1 it attains sup_{pi} E[Psi_d^U(X,pi(X))]/E[pi(X)]. Lemma lem:latent-completion-pasting turns these optimizing selectors into observed-law-preserving latent laws. Finally, mixtures of two latent laws with the same observed marginal P again have observed marginal P. If the lower endpoint law has numerator A_L and denominator B_L>0 and the upper endpoint law has numerator A_U and denominator B_U>0, the mixture weight r in [0,1] gives ratio {r A_L+(1-r)A_U}/{r B_L+(1-r)B_U}, a continuous function of r whose values at r=1 and r=0 are the lower and upper endpoints. Hence every point between the endpoints is attained by a data-consistent measurable completion. The identified set is exactly the displayed closed interval.
+
+\begin{lemma}[lem:regular-envelope-derivative]\label{lem:regular-envelope-derivative}
+Under thm:global-support-function, ass:selected-mass-overlap, ass:measurable-maximum-regularity, def:feasible-selector-class, def:dinkelbach-transform, and def:regular-root-objects, Phi_sigma(lambda;P) is Lipschitz and continuous in lambda; at lambda_sigma^*(P), every directional envelope slope is the negative expected mass of an active transformed selector, so any ordinary derivative dot_Phi_sigma(P) equals -E[tilde pi_sigma(X)] for some active transformed maximizer and is strictly negative; consequently the zero lambda_sigma^*(P) is well separated on every compact Lambda_sigma containing it as the unique zero.
+\end{lemma}
+Fix sigma. For x and feasible t in [underline_pi_d(x),overline_pi_d(x)], the map lambda -> N_sigma(x,t)-lambda t is affine with slope -t. Since def:feasible-selector-class restricts t to [0,1], the pointwise envelope
+
+ m_{sigma,lambda}(x)=sup_{t in [underline_pi_d(x),overline_pi_d(x)]}{N_sigma(x,t)-lambda t}
+
+satisfies |m_{sigma,lambda}(x)-m_{sigma,lambda'}(x)| <= |lambda-lambda'| for every lambda,lambda'. Integrating and using def:dinkelbach-transform gives |Phi_sigma(lambda;P)-Phi_sigma(lambda';P)| <= |lambda-lambda'|. Hence Phi_sigma is Lipschitz and continuous.
+
+Now fix lambda and let A_lambda(x) be the active transformed argmax correspondence. Ass:measurable-maximum-regularity gives measurable active selectors. For h>0 and any active selectors t_0(x) in A_lambda(x) and t_h(x) in A_{lambda+h}(x), the envelope inequalities give
+
+ -h t_0(x) <= m_{sigma,lambda+h}(x)-m_{sigma,lambda}(x) <= -h t_h(x).
+
+The analogous inequalities for h<0 reverse the roles of the two active sets. Since all selectors are bounded by 1, dominated convergence applies to any convergent active-selector branch. Thus every one-sided directional envelope slope at lambda is the negative expectation of a measurable active transformed selector, and if the ordinary derivative dot_Phi_sigma(P) exists at lambda_sigma^*(P), it equals -E[tilde pi_sigma(X)] for some active transformed maximizer tilde pi_sigma.
+
+By ass:selected-mass-overlap, every feasible active selector obeys tilde pi_sigma(X)>=underline_pi_d(X)>0 P_X-a.e. Because tilde pi_sigma is bounded and nonnegative, E[tilde pi_sigma(X)]>0; hence dot_Phi_sigma(P)=-E[tilde pi_sigma(X)]<0. Finally, thm:global-support-function gives lambda_sigma^*(P) as the unique zero of Phi_sigma. A continuous function with a unique zero on a compact set is bounded away from zero outside every neighborhood of that zero: for every epsilon>0, the compact set {lambda in Lambda_sigma: |lambda-lambda_sigma^*(P)|>=epsilon} contains no zero, so the infimum of |Phi_sigma(lambda;P)| over it is strictly positive. This is the claimed well-separated-root property.
+
+\section{Honest scope}
+
+The identification kernel is the global support-function and common-threshold collapse characterization, with the measurable-selection and completion-kernel premises surfaced explicitly rather than left implicit in the proofs. The only positive statistical result is oracle known-nuisance plug-in consistency of the Dinkelbach endpoint roots, proved from a uniform transform law of large numbers plus separated-root geometry. No Gaussian expansion, bias formula, variance or derivative estimation, feasible nuisance linearization, studentization, or coverage result is established. Honest coverage when the selector ties or hits a Frechet boundary remains the explicit open question. The sufficient-value reduction is included as a non-novel sanity check.
+
+\begin{thebibliography}{99}
+
+  \bibitem{Lee2009SharpBounds} Lee, D. S. (2009). Training, Wages, and Sample Selection: Estimating Sharp Bounds on Treatment Effects. Review of Economic Studies 76(3): 1071-1102.
+
+  \bibitem{LeeLiu2025ContinuousLee} Lee, Y.-Y., and C.-A. Liu (2025). Lee Bounds with a Continuous Treatment in Sample Selection. arXiv:2411.04312.
+
+  \bibitem{Semenova2024GeneralizedLee} Semenova, V. (2024). Generalized Lee Bounds. Journal of Econometrics, forthcoming; arXiv:2008.12720.
+
+  \bibitem{JonzonGabrielSjolanderSachs2025CovariatesBounds} Jonzon, G., E. E. Gabriel, A. Sjolander, and M. C. Sachs (2025). Adding covariates to bounds: What is the question? arXiv:2502.03156.
+
+  \bibitem{Dinkelbach1967FractionalProgramming} Dinkelbach, W. (1967). On Nonlinear Fractional Programming. Management Science 13(7): 492-498.
+
+  \bibitem{BenMichael2025ConditionalLP} Ben-Michael, E. (2025). Partial identification via conditional linear programs: estimation and policy learning. arXiv:2506.12215.
+
+  \bibitem{ColangeloLee2025ContinuousDML} Colangelo, K., and Y.-Y. Lee (2025). Double Debiased Machine Learning Nonparametric Inference with Continuous Treatments. arXiv:2004.03036.
+
+  \bibitem{FangSantos2019DirectionalInference} Fang, Z., and A. Santos (2019). Inference on Directionally Differentiable Functions. Review of Economic Studies 86(1): 377-412; arXiv:1404.3763.
+
+  \bibitem{vanDerVaart1998AsymptoticStatistics} vanDerVaart1998AsymptoticStatistics
+
+\end{thebibliography}
+
+\end{document}

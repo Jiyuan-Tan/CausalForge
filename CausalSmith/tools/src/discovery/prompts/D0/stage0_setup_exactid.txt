@@ -1,0 +1,38 @@
+=== GLOBAL SETUP — Exact identification anchor ===
+
+Causal model:
+- Work with the substrate the proposal anchors in (DAG, SWIG, or counterfactual / NPSEM model). State the variables (outcome Y, treatment(s) A, mediators M, instruments Z, covariates X, latent confounders U) and the graph / model the proposal uses.
+- Use potential-outcome notation Y(a) (or Y(a, m) for mediation, Y(a, z) for IV-with-instrument, etc.) consistent with the proposal's substrate.
+- For a structure-identification proposal there need be no designated treatment / outcome: instead give the system of endogenous variables (X_1, …, X_p), their structural equations, and the object to be recovered (the DAG / edge set, or the structural coefficient / mixing matrix), together with any latent-variable structure.
+
+Target — an effect estimand OR a structural / mechanism parameter:
+- **Effect-identification mode.** Define the causal target precisely (e.g. ATE = E[Y(1) − Y(0)], ATT = E[Y(1) − Y(0) | A=1], LATE = E[Y(1) − Y(0) | complier], CDE / NDE / NIE for mediation, dynamic-regime value V(d)).
+- **Structure-identification mode.** The target is a feature of the causal mechanism itself — the edge set / DAG, or the structural coefficients — recovered as a functional of the observed distribution. State the indeterminacy the field accepts as identification: exactly, up to sign-and-permutation (linear non-Gaussian / LiNGAM), or up to the Markov equivalence class (constraint-based).
+- Distinguish the causal target from any observable functional. The point of the derivation is to prove their equality (effect mode) or the structural target's uniqueness given P (structure mode) under named assumptions, not to define them as equal.
+
+Identifying assumptions:
+- State each assumption used by the identifying expression as its own labeled hypothesis: consistency, positivity / overlap (for the strata actually used), conditional ignorability / exchangeability, exclusion (for IV), monotonicity (for LATE), sequential ignorability (for DTR), no-unmeasured-mediator (for mediation). For structure identification, state the restrictions that make the mechanism recoverable: non-Gaussian / non-degenerate errors (LiNGAM), additive or independent noise (additive-noise / post-nonlinear models), acyclicity, and the Markov condition with causal faithfulness (constraint-based). Do NOT bury an assumption in a proof step.
+
+Identifying functional / recovery map:
+- In effect mode the "identifying functional" is the observable expression the proof shows equals the target — e.g. the back-door adjustment Σ_x E[Y | A=a, X=x] P(X=x), the front-door formula, the Wald ratio, the g-formula.
+- In structure mode the analogue is the recovery map: the functional of P (e.g. an independent-component / cumulant decomposition, a conditional-independence pattern) that returns the structural target, together with the indeterminacy under which it is unique.
+- Define this functional / map explicitly before stating the identification theorem.
+
+Proof technique:
+- **Use any derivation that fits the model.** No technique is required or preferred — including methods not listed below. The catalogue is a suggestion menu, freely ignorable:
+    * SWIG counterfactual independence and graphoid reasoning (Richardson–Robins);
+    * g-formula / sequential adjustment / iterated expectations (Robins; Bang–Robins);
+    * NPSEM structural-equation algebra (Pearl; Hernán–Robins);
+    * mediation calculus — front-door, natural / interventional direct/indirect, cross-world (VanderWeele);
+    * IV / Wald / LATE algebra and MTE / PRTE (Imbens–Angrist; Heckman–Vytlacil);
+    * proximal / negative-control / bridge-function identification (Miao–Geng–Tchetgen-Tchetgen; Cui et al.);
+    * transportability and external-validity calculus (Bareinboim–Pearl);
+    * completeness / Tikhonov / integral-equation identification for nonparametric IV (Newey–Powell);
+    * structure identification from distributional asymmetry — independent-component / cumulant / kurtosis arguments (LiNGAM; Shimizu et al.), additive-noise / post-nonlinear identifiability (Hoyer et al.; Zhang–Hyvärinen), and Markov-equivalence / covered-edge reasoning for constraint-based recovery (Verma–Pearl; Spirtes–Glymour–Scheines);
+    * direct measure-theoretic / conditional-density factorization.
+- The only hard requirement is that each step is traceable: state which rule / lemma / construction justifies it (whether or not it appears on the suggestion menu) and cite a published source when one exists.
+
+In-repo substrate (informational only — do NOT cite Lean files in the .tex):
+- Downstream Stage 1 / Stage 2 will formalize SCM graphical ID against `Causalean/SCM/ID/` (`Backdoor.lean`, `Adjustment.lean`, `Identifiable.lean`, `Overlap.lean`, `GraphicalThms/`) and PO exact ID against `Causalean/PO/ID/Exact/` (`Frontdoor.lean`, `ATE.lean`, `DID.lean`, `DTR.lean`, `LATE.lean`), with theorem-local assumption bundles, potential-outcome calculus in `Causalean/PO/`, do-calculus rules in `Causalean/SCM/Do/`, and SWIG graphs in `Causalean/Graph/SWIG.lean`.
+- Structure-identification proposals will formalize against `Causalean/Discovery/` (`LinearDisentanglement.lean`, `LiNGAM/`), `Causalean/Graph/MarkovEquiv.lean`, and `Causalean/Mathlib/Probability/DarmoisSkitovich.lean`. This substrate is thinner than the effect-ID substrate above — a proposal may legitimately need new infrastructure, which downstream stages surface as substrate gates.
+- Knowing what substrate exists may help you choose a proposal whose Lean realization will not require excessive new infrastructure.

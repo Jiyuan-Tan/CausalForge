@@ -1,0 +1,83 @@
+{
+  "qid": "q1_spectral_phase_transition",
+  "specialization": "p1_markov",
+  "cluster": "panel",
+  "locked_parameters": {
+    "qid": "q1_spectral_phase_transition",
+    "specialization": "p1_markov",
+    "p": "1",
+    "assignment": "stationary two-state first-order Markov treatment path with transition probabilities a_T = Pr(D_t=1 | D_{t-1}=0) and b_T = Pr(D_t=0 | D_{t-1}=1). The spectral gap is gamma_T = a_T+b_T, the second eigenvalue is rho_T = 1-gamma_T, and the stationary switch-on flow is phi_T = a_T*b_T/(a_T+b_T). D_{i0}=0 is a synthetic lag used only to classify the first history.",
+    "untreated_baseline": "\\E[Y_{it}(00)\\mid D_i]=\\alpha_i+\\lambda_t",
+    "target": "causal switch-on event profile theta_k, k in K_ATT={0,...,K_+}, where a valid event origin s lies in {1+K_-,...,T-K_+} and satisfies H_is=(0,1), theta_0 is the switch-on ATT m_s(01)-m_s(00), and theta_k for k>0 is the survivor-window contrast m_{s+k}(11)-m_{s+k}(00) conditional on no off-switch between s and s+k. Negative relative-time rows k<0 are diagnostic pre-period rows in the regression, not causal target coordinates.",
+    "regression": "TWFE/FWL event-window regression with unit and calendar-time fixed effects, switch-on-origin relative-time columns E_k, k in K (one omitted pre-period), and the Q1 clean history nuisance columns 1{H=(1,0)} and 1{H=(1,1)}. Regimes with singular values below the deterministic threshold kappa_T are interpreted through the regular row-space and bounded-response affine-fiber convention in Assumption 5."
+  },
+  "named_assumptions": [
+    {
+      "label": "ass:finite-memory",
+      "statement": "For every unit and period, the observed outcome is \\(Y_{it}=Y_{it}(H_{it})\\), where \\(H_{it}=(D_{i,t-1},D_{it})\\), and future treatments do not enter \\(Y_{it}(H_{it})\\)."
+    },
+    {
+      "label": "ass:untreated-twfe",
+      "statement": "For the untreated history, \\(\\E[Y_{it}(00)\\mid D_i]=\\alpha_i+\\lambda_t\\) for some unit and calendar-time functions \\(\\alpha_i\\) and \\(\\lambda_t\\)."
+    },
+    {
+      "label": "ass:stationary-markov",
+      "statement": "For each \\(T\\), \\(D_{i1},\\ldots,D_{iT}\\) are drawn independently across units from the stationary two-state Markov law with \\(0<a_T<1\\) and \\(0<b_T<1\\)."
+    },
+    {
+      "label": "ass:clean-window",
+      "statement": "The event-window columns \\(E_k\\) are generated only from origins satisfying \\(W_{is}^K=1\\), with one pre-period omitted and with \\(K_-,K_+\\) fixed or growing deterministically with \\(T\\). The valid-origin set is \\(\\mathcal S_T(K)\\), so negative relative-time rows are only diagnostic rows and the causal target coordinates are restricted to \\(K_{\\mathrm{ATT}}=\\{0,\\ldots,K_+\\}\\)."
+    },
+    {
+      "label": "ass:regular-row",
+      "statement": "A deterministic threshold \\(\\kappa_T>0\\) is fixed before observing outcomes. Linear functionals in \\(\\mathcal V_T^{\\mathrm{reg}}(K)\\) are called regularly identified; coordinates outside that row space are interpreted through the retained affine fiber \\(\\mathcal F_T^{\\mathrm{reg}}(z_T^{\\mathrm{reg}};L,U)\\) when finite constants \\(L<U\\) are imposed."
+    },
+    {
+      "label": "ass:boundary-limits",
+      "statement": "In boundary statements with \\(\\Lambda_T(K)/\\kappa_T\\to\\lambda\\in(0,\\infty)\\), each clean-window singular direction has a normalized limit \\(s_j(K)=\\lim_T \\sigma_j(G_T(K))/\\Lambda_T(K)\\) along the sequence under consideration, and the retained limiting index set is \\(J^{\\mathrm{bdry}}(K,\\lambda)=\\{j:s_j(K)\\lambda\\ge1\\}\\)."
+    },
+    {
+      "label": "ass:minimal-class",
+      "statement": "For Conjecture 2, the admissible basis class \\(\\mathfrak B(K)\\) consists of subcollections and finite linear recombinations of the two Q1 nuisance columns \\(\\{C_{10},C_{11}\\}\\) and the non-omitted relative-time columns \\(E_k\\), with no external shape restriction on \\(m_K\\)."
+    },
+    {
+      "label": "ass:bounded-response",
+      "statement": "For partial-identification statements, every local response coordinate in \\(m_K\\) lies in the known interval \\([L,U]\\), where \\(L<U\\)."
+    },
+    {
+      "label": "ass:nondegenerate-target",
+      "statement": "The target row \\(\\ell_K\\) is nonzero and has support only on the causal switch-on and survivor-window contrasts indexed by \\(K_{\\mathrm{ATT}}\\)."
+    }
+  ],
+  "estimand_functional": "\\beta_T(K)=(B_T(K)^\\transpose M_F B_T(K))^+B_T(K)^\\transpose M_FY; z_T^{\\mathrm{reg}}=A_T^{\\mathrm{reg}}(K)m_K; [\\theta_L(P),\\theta_U(P)] from the finite box-constrained affine fiber \\mathcal F_T^{\\mathrm{reg}}(z_T^{\\mathrm{reg}};L,U)",
+  "target_estimand": "\\theta_{\\ell,K}=\\ell_K^\\transpose m_K, with \\ell_K supported on K_{\\mathrm{ATT}}=\\{0,\\ldots,K_+\\}",
+  "conjectures": [
+    {
+      "index": 1,
+      "label": "markov-event-rank",
+      "statement": "Under Assumptions~\\ref{ass:finite-memory}--\\ref{ass:clean-window}, \\ref{ass:regular-row}, \\ref{ass:boundary-limits}, \\ref{ass:bounded-response}, and \\ref{ass:nondegenerate-target}, suppose \\(K=K_T\\) is deterministic and \\(p_T(K)>0\\).\nThere are constants \\(0<c_K<C_K<\\infty\\), depending only on the event-window template and the omitted pre-period convention, such that the nonzero singular values of the event-window FWL Gram block generated by \\(E_k,C_{10},C_{11}\\) satisfy\n\\[\nc_K\\Lambda_T(K)\\le \\sigma_j(G_T(K))\\le C_K\\Lambda_T(K)\n\\]\nfor every event-window direction whose clean switch-on row is represented, while every direction orthogonal to \\(R_T(K)\\) has singular value \\(o(\\Lambda_T(K))\\).\nConsequently, if \\(\\Lambda_T(K)/\\kappa_T\\to\\infty\\), then \\(\\ell_K\\in\\mathcal V_T^{\\mathrm{reg}}(K)\\) for every causal switch-on ATT loading \\(\\ell_K\\) supported on \\(K_{\\mathrm{ATT}}\\); if \\(\\Lambda_T(K)/\\kappa_T\\to\\lambda\\in(0,\\infty)\\), then the retained limiting row space is exactly the span of the clean-window directions indexed by \\(J^{\\mathrm{bdry}}(K,\\lambda)=\\{j:s_j(K)\\lambda\\ge1\\}\\), so partial identification occurs precisely when this set is a nonempty proper subset of the clean-window directions; and if \\(\\Lambda_T(K)/\\kappa_T\\to0\\), no nonzero causal switch-on event-window loading is regularly identified."
+    },
+    {
+      "index": 2,
+      "label": "minimal-basis-change",
+      "statement": "Under Assumptions~\\ref{ass:finite-memory}--\\ref{ass:clean-window}, \\ref{ass:regular-row}, \\ref{ass:boundary-limits}, \\ref{ass:minimal-class}, \\ref{ass:bounded-response}, and \\ref{ass:nondegenerate-target}, the Q1 nuisance basis \\(\\{C_{10},C_{11}\\}\\) is minimal in \\(\\mathfrak B(K)\\) for regular point identification of all causal finite-window switch-on event contrasts when \\(\\Lambda_T(K)/\\kappa_T\\to\\infty\\).\nOn the boundary \\(\\Lambda_T(K)/\\kappa_T\\to\\lambda\\in(0,\\infty)\\), the minimal regular nuisance basis is any basis of the active subspace \\(N_T^{\\mathrm{act}}(K,\\lambda)\\); nuisance contrasts in \\(\\operatorname{span}\\{C_{10},C_{11}\\}\\cap N_T^{\\mathrm{act}}(K,\\lambda)^\\perp\\) are nonregular and are omitted from the regular comparison.\nBelow the boundary, no finite augmentation by relative-time columns alone restores regular identification of the full causal event-window profile unless it adds an external shape restriction on \\(m_K\\)."
+    }
+  ],
+  "supporting_theorems": [
+    {
+      "kind": "theorem",
+      "index": 1,
+      "label": "regular-row-trichotomy",
+      "statement": "Assume Assumptions~\\ref{ass:finite-memory}, \\ref{ass:untreated-twfe}, \\ref{ass:regular-row}, \\ref{ass:bounded-response}, and \\ref{ass:nondegenerate-target}.\nFix \\(T\\), \\(K\\), retained observed moments \\(z_T^{\\mathrm{reg}}=A_T^{\\mathrm{reg}}(K)m_K\\), and target row \\(\\ell_K\\).\nIf \\(\\ell_K\\in\\mathcal V_T^{\\mathrm{reg}}(K)\\), then \\(\\theta_{\\ell,K}=\\ell_K^\\transpose m_K\\) is regularly point identified from \\(z_T^{\\mathrm{reg}}\\).\nIf \\(0\\ne\\Pi_T^{\\mathrm{reg}}(K)\\ell_K\\ne\\ell_K\\), then the projected target \\((\\Pi_T^{\\mathrm{reg}}(K)\\ell_K)^\\transpose m_K\\) is regularly point identified and the full target has the sharp bounded identified interval\n\\[\n\\left[\n\\inf_{m'\\in\\mathcal F_T^{\\mathrm{reg}}(z_T^{\\mathrm{reg}};L,U)} \\ell_K^\\transpose m',\n\\sup_{m'\\in\\mathcal F_T^{\\mathrm{reg}}(z_T^{\\mathrm{reg}};L,U)} \\ell_K^\\transpose m'\n\\right].\n\\]\nIf \\(\\Pi_T^{\\mathrm{reg}}(K)\\ell_K=0\\), then no nonzero component of \\(\\theta_{\\ell,K}\\) is regularly identified; without Assumption~\\ref{ass:bounded-response}, the target is not point identified whenever the retained affine fiber contains a direction \\(v\\) with \\(A_T^{\\mathrm{reg}}(K)v=0\\) and \\(\\ell_K^\\transpose v\\ne0\\).",
+      "proof_tex": "\\begin{theorem}[Theorem 1: regular row-space trichotomy]\\label{thm:regular-row-trichotomy}\nAssume Assumptions~\\ref{ass:finite-memory}, \\ref{ass:untreated-twfe}, \\ref{ass:regular-row}, \\ref{ass:bounded-response}, and \\ref{ass:nondegenerate-target}.\nFix \\(T\\), \\(K\\), retained observed moments \\(z_T^{\\mathrm{reg}}=A_T^{\\mathrm{reg}}(K)m_K\\), and target row \\(\\ell_K\\).\nIf \\(\\ell_K\\in\\mathcal V_T^{\\mathrm{reg}}(K)\\), then \\(\\theta_{\\ell,K}=\\ell_K^\\transpose m_K\\) is regularly point identified from \\(z_T^{\\mathrm{reg}}\\).\nIf \\(0\\ne\\Pi_T^{\\mathrm{reg}}(K)\\ell_K\\ne\\ell_K\\), then the projected target \\((\\Pi_T^{\\mathrm{reg}}(K)\\ell_K)^\\transpose m_K\\) is regularly point identified and the full target has the sharp bounded identified interval\n\\[\n\\left[\n\\inf_{m'\\in\\mathcal F_T^{\\mathrm{reg}}(z_T^{\\mathrm{reg}};L,U)} \\ell_K^\\transpose m',\n\\sup_{m'\\in\\mathcal F_T^{\\mathrm{reg}}(z_T^{\\mathrm{reg}};L,U)} \\ell_K^\\transpose m'\n\\right].\n\\]\nIf \\(\\Pi_T^{\\mathrm{reg}}(K)\\ell_K=0\\), then no nonzero component of \\(\\theta_{\\ell,K}\\) is regularly identified; without Assumption~\\ref{ass:bounded-response}, the target is not point identified whenever the retained affine fiber contains a direction \\(v\\) with \\(A_T^{\\mathrm{reg}}(K)v=0\\) and \\(\\ell_K^\\transpose v\\ne0\\).\n\\end{theorem}\n\\begin{proof}\nBy Assumptions~\\ref{ass:finite-memory} and \\ref{ass:untreated-twfe}, the retained FWL moment \\(z_T^{\\mathrm{reg}}\\) is a deterministic linear function of the local response vector \\(m_K\\), namely \\(z_T^{\\mathrm{reg}}=A_T^{\\mathrm{reg}}(K)m_K\\). Assumption~\\ref{ass:regular-row} defines \\(\\mathcal V_T^{\\mathrm{reg}}(K)\\) as the row space of \\(A_T^{\\mathrm{reg}}(K)\\). If \\(\\ell_K\\in\\mathcal V_T^{\\mathrm{reg}}(K)\\), there exists a finite row vector \\(c\\) such that \\(\\ell_K^\\transpose=c^\\transpose A_T^{\\mathrm{reg}}(K)\\). Hence\n\\[\n\\theta_{\\ell,K}=\\ell_K^\\transpose m_K=c^\\transpose A_T^{\\mathrm{reg}}(K)m_K=c^\\transpose z_T^{\\mathrm{reg}},\n\\]\nwhich is a computable function of the retained moments and is therefore regularly point identified.\n\nFor the second claim, \\(\\Pi_T^{\\mathrm{reg}}(K)\\ell_K\\) belongs to \\(\\mathcal V_T^{\\mathrm{reg}}(K)\\) by the definition of an orthogonal projection. Applying the first paragraph with \\(\\Pi_T^{\\mathrm{reg}}(K)\\ell_K\\) in place of \\(\\ell_K\\) gives regular point identification of \\((\\Pi_T^{\\mathrm{reg}}(K)\\ell_K)^\\transpose m_K\\). The maintained information about the full response vector is exactly the equality \\(A_T^{\\mathrm{reg}}(K)m'=z_T^{\\mathrm{reg}}\\) plus the coordinate bounds \\(L\\le m'_j\\le U\\) from Assumption~\\ref{ass:bounded-response}. Thus every feasible \\(m'\\in\\mathcal F_T^{\\mathrm{reg}}(z_T^{\\mathrm{reg}};L,U)\\) is observationally equivalent at the retained regular moments, and the true \\(m_K\\) is one such feasible point. The sharp lower and upper values of \\(\\ell_K^\\transpose m'\\) over this finite-dimensional box-intersected affine set are therefore exactly the stated endpoints. The feasible set is closed and bounded, so the extrema exist; computationally they are obtained by two finite linear programs with the coordinates of \\(m'\\) as decision variables.\n\nFor the third claim, if \\(\\Pi_T^{\\mathrm{reg}}(K)\\ell_K=0\\), then \\(\\ell_K\\) is orthogonal to \\(\\mathcal V_T^{\\mathrm{reg}}(K)\\). Any nonzero regular component of \\(\\ell_K\\) would have to lie both in \\(\\operatorname{span}\\{\\ell_K\\}\\) and in \\(\\mathcal V_T^{\\mathrm{reg}}(K)\\), which would give a nonzero projection of \\(\\ell_K\\), a contradiction. Finally, without bounded responses, suppose there is a direction \\(v\\) satisfying \\(A_T^{\\mathrm{reg}}(K)v=0\\) and \\(\\ell_K^\\transpose v\\ne0\\). For every scalar \\(r\\), the vector \\(m_K+rv\\) has the same retained moment because\n\\[\nA_T^{\\mathrm{reg}}(K)(m_K+rv)=z_T^{\\mathrm{reg}}+rA_T^{\\mathrm{reg}}(K)v=z_T^{\\mathrm{reg}},\n\\]\nbut its target value is \\(\\ell_K^\\transpose m_K+r\\ell_K^\\transpose v\\), which changes with \\(r\\). Hence the full target cannot be point identified from the retained moments alone.\n\\end{proof}"
+    }
+  ],
+  "substrate_survey": {
+    "method": "local declaration-name search only; no source files opened and no substrate references included in the TeX artifact",
+    "results": [
+      "Cells had matching project declarations but at a different formalization abstraction from this Stage 0.0 math setup.",
+      "thetaHat, RankCondition, and CleanHistoryTWFE did not return direct local matches under the project-root search."
+    ],
+    "bypass_justified": "Stage 0.0 is a mathematical setup note; downstream substrate mapping is deferred, and the TeX artifact deliberately avoids formal-code references."
+  }
+}

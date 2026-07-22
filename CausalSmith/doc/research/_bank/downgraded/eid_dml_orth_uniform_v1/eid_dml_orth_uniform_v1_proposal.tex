@@ -1,0 +1,432 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_dml\_orth\_uniform, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{eid\_dml\_orth\_uniform} / \texttt{v1}%
+  \\ \large\textit{Weak-overlap studentization is the first DML--LRO--ADML non-equivalence frontier}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{quote}\small
+\begin{verbatim}
+(qid, specialization) = (eid_dml_orth_uniform, v1)
+anchor cluster = ExactID
+graph / SWIG =
+  binary treatment D with potential outcomes (Y(1),Y(0)), observed outcome
+  Y = D Y(1) + (1-D) Y(0), and covariates X satisfying conditional
+  exchangeability (Y(1),Y(0)) independent of D conditional on X
+treatment = binary D in {0,1}
+target estimand =
+  theta_n = E_Pn[Y(1)-Y(0)] = E_Pn[g_{1,n}(X)-g_{0,n}(X)]
+  along a triangular array of laws P_n
+identifying assumptions =
+  consistency, conditional exchangeability, positivity with local weak
+  overlap kappa_n <= e_n(X) <= 1-kappa_n, square-integrable outcomes,
+  and cross-fitted nuisance learners for outcome regression g_d, propensity
+  e, and the ATE Riesz representer alpha_n(W)=D/e_n(X)-(1-D)/(1-e_n(X))
+estimator comparison =
+  the original cross-fit DML ATE score of Chernozhukov et al. (2018),
+  the ATE-specialized locally robust semiparametric GMM score of
+  Chernozhukov, Escanciano, Ichimura, Newey, and Robins (2022), and the
+  automatic debiased ML Riesz-score estimator of Chernozhukov, Newey, and
+  Singh (2022)
+frontier object =
+  point-estimator equivalence is measured after normalization by the
+  exploding efficient standard deviation V_n^{1/2}; studentization
+  equivalence is measured by the ratio-consistency of each named variance
+  estimator relative to V_n
+\end{verbatim}
+\end{quote}
+
+\begin{abstract}
+This proposal asks whether three leading orthogonal/debiased ATE estimators remain inferentially interchangeable when overlap degenerates with the sample size.  The fixed-overlap literature says the original cross-fit DML estimator, locally robust semiparametric moments, and automatic Riesz debiasing share the same efficient influence function when nuisance remainders are small.  The proposed kernel is sharper: in local-to-weak-overlap triangular arrays, the point estimates can remain equivalent after the natural exploding-standard-deviation normalization while their studentized statistics and Wald intervals separate.  The flagship conjecture gives an if-and-only-if boundary in terms of an observable covariance-kernel projection of the weak-overlap Riesz residual onto the variance-estimation rule used by each named estimator.  If resolved, the result would tell empirical users when DML, LRO, and ADML point estimates may be compared as the same object but their reported standard errors must not be treated as interchangeable.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+ATE estimation under unconfoundedness is routinely reported through a point estimate and a Wald interval.  Orthogonal-score methods made this workflow attractive with machine-learned nuisance functions, but overlap is the place where the identifying score and the reported standard error become most fragile.  A practitioner can therefore face a misleading situation: DML, LRO, and ADML deliver nearly identical point estimates, yet the inverse-propensity/Riesz part of the variance calculation reacts differently to the same weak-overlap observations.
+
+\paragraph{The main finding (proposed).}
+The proposed flagship result is Conjecture~\ref{conj:student-frontier}.  It predicts a studentization-first frontier: under local weak overlap, all three estimators can be point-equivalent after scaling by the efficient standard deviation \(V_n^{1/2}\), but pairwise studentized statistics are equivalent exactly when their covariance-kernel projection indices have the same limit.  Ratio-consistency relative to the efficient variance is the sharper special case in which the relevant \(\Delta_{m,n}\) vanishes.  When the indices have distinct positive limits, Wald intervals based on the three named variance estimators have different first-order lengths and can have different local coverage, even though the centered point estimates have the same first-order law.
+
+\paragraph{What is new.}
+The novelty kernel is not another product-rate DML theorem and not a claim that weak overlap makes ATE estimation hard.  \citet{ChernozhukovEtAl2018DML} gives DML validity under overlap and product-rate conditions, \citet{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO} gives locally robust moment construction, and \citet{ChernozhukovNeweySingh2022ADML} gives automatic Riesz debiasing and robust standard errors.  The epsilon-gap is the boundary between point-estimator equivalence and variance-estimator equivalence along the same local-to-weak-overlap sequence, expressed by the same ATE EIF normalization for all three estimators.
+
+\paragraph{How it positions in the literature.}
+This is an exact-identification / semiparametric ATE proposal.  It uses the standard unconfoundedness identification formula as fixed and asks about the first-order experiment induced by three published orthogonal estimators.  It is adjacent to the weak-overlap literature, especially \citet{CrumpHotzImbensMitnik2009} and \citet{HongLeungLi2020}, and to Riesz-representer work, especially \citet{ChernozhukovNeweySingh2022RR}.  The proposal deliberately compares named estimator-specific variance reports rather than changing the estimand to an overlap-trimmed ATE.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the adaptive-inference program of \citet{ChernozhukovNeweySingh2022RR}: the proposed frontier would specify when weak Riesz eigenvalues require ADML-style robust studentization even if a conventional DML point estimate remains first-order correct.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report an overlap/Riesz studentization diagnostic, not just the DML product-rate condition, before treating DML, LRO, and ADML Wald intervals as interchangeable.
+
+\section{Related work}
+\citet{ChernozhukovEtAl2018DML} is the baseline DML ATE paper: it establishes cross-fitted Neyman-orthogonal treatment-effect inference under nuisance-rate and overlap conditions, but it does not classify weak-overlap studentization across DML, LRO, and ADML.  \citet{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO} is the named LRO comparator because it constructs locally robust semiparametric GMM moments and sandwich variance formulas, but it does not specialize those formulas into a triple ATE variance-equivalence frontier.  \citet{ChernozhukovNeweySingh2022ADML} is the named ADML comparator because it debiases regression functionals automatically and supplies misspecification-robust standard errors; the proposed gap is to compare those standard errors with DML/LRO under the same weak-overlap ATE law.  \citet{ChernozhukovNeweySingh2022RR} is the closest Riesz-thread paper: it explicitly notes that global parameters such as ATE can become nonregular when propensity scores accumulate near zero or one, but it does not provide a DML--LRO--ADML studentization boundary.
+
+\citet{CrumpHotzImbensMitnik2009} motivates the overlap problem by showing how limited overlap affects ATE estimation and by recommending overlap diagnostics and trimming; this proposal keeps the full-population ATE and studies the inferential consequence instead.  \citet{Rothe2017LimitedOverlapCI} is a closer weak-overlap inference comparator because it shows conventional ATE confidence intervals can have distorted coverage when local overlap sample sizes are small; it does not compare orthogonal ML variance rules.  \citet{HongLeungLi2020} gives local limited-overlap asymptotics in which convergence slows as propensities degenerate, making it the closest formal weak-overlap asymptotic comparator.  \citet{HeilerKazak2021ExtremePS} develops inference for irregular treatment-effect identification with many extreme propensity scores and stable limits; its object is valid IPW/DR inference, not a triple DML--LRO--ADML studentization frontier.  \citet{ArmstrongKolesar2021FiniteSampleATE} provides finite-sample optimal confidence intervals for ATEs under unconfoundedness when root-\(n\) inference may fail, but it studies minimax/finite-sample inference rather than named orthogonal-score variance reports.  \citet{SasakiUra2022MomentsRatios} gives debiased trimmed inference for moments of ratios and therefore covers a neighboring small-denominator problem; its trimming-bias correction does not classify untrimmed DML/LRO/ADML Wald intervals.  \citet{MaSantAnnaSasakiUra2026WeakOverlapDR} is the closest weak-overlap DR comparator because it restores double robustness after propensity trimming by bias-correcting the trimmed target back to the original causal estimand; this proposal instead holds the untrimmed DML/LRO/ADML point-estimator target fixed and asks when their published variance rules remain interchangeable.  \citet{Dorn2025WeakOverlapDR} is directly adjacent on weak-overlap doubly robust \(t\)-statistics and thresholding; because it analyzes thresholded doubly robust estimators rather than the three published DML/LRO/ADML variance rules, it is a comparator rather than a subsuming result.  \citet{NeweyRobins2018} supplies cross-fitting and remainder-rate machinery used to justify the fixed-overlap equivalence sanity case.  \citet{DukesVansteelandtWhitney2024DRDML} is adjacent because it studies doubly robust DML inference and warns that nonregularity can appear when only one nuisance is consistently estimated; here the nonregularity is driven by weak overlap and variance estimation, not by a partially linear regression target.
+
+The in-repository catalogue has no active ExactID DML entry: \texttt{doc/API.md} records \texttt{ThmSmith/ExactID/} as the future home for exact-ID qids and currently emphasizes that the ExactID catalogue is seed-time empty.  The closest banked ThmSmith analogue is \texttt{eid\_bjs\_efficient\_event\_study}, whose rejected reviewer feedback asked for a common efficient-influence-function baseline and explicit estimator-gap matrices; this proposal imports that discipline but changes the object from staggered-DiD point-estimator IF gaps to ATE weak-overlap studentization gaps.  The downgraded \texttt{eid\_lp\_svar\_nonequiv} proposal is relevant only as a warning: strict separation must be derived from primitive finite-support or covariance-kernel conditions rather than assumed as a positive margin.
+
+\section{Formal setup}
+Let \(W=(Y,D,X)\), where \(D\in\{0,1\}\).  Along a triangular array \(P_n\), let
+\[
+  e_n(x)=\Pr_n(D=1\mid X=x),\qquad
+  g_{d,n}(x)=\E_n[Y\mid D=d,X=x],\qquad d\in\{0,1\}.
+\]
+Consistency and conditional exchangeability identify
+\[
+  \theta_n=\E_n[Y(1)-Y(0)]
+  =\E_n[g_{1,n}(X)-g_{0,n}(X)].
+\]
+The ATE Riesz representer and efficient score are
+\[
+  \alpha_n(W)=\frac{D}{e_n(X)}-\frac{1-D}{1-e_n(X)},\qquad
+  \psi_n(W)=g_{1,n}(X)-g_{0,n}(X)+\alpha_n(W)\{Y-g_{D,n}(X)\}-\theta_n.
+\]
+Write \(V_n=\E_n[\psi_n(W)^2]\) and
+\[
+  L_n^2=\E_n\!\left[\alpha_n(W)^2\{Y-g_{D,n}(X)\}^2\right],
+\]
+the weak-overlap Riesz energy.  For \(m\in\mathcal M=\{\mathrm{DML},\mathrm{LRO},\mathrm{ADML}\}\), let \(\hat\theta_{m,n}\) be the cross-fitted estimator and \(\hat V_{m,n}\) its named variance estimator: empirical AIPW-score variance for DML, locally robust GMM sandwich variance for LRO, and automatic Riesz robust variance for ADML.  The centered and studentized statistics are
+\[
+  Z_{m,n}=\frac{\sqrt n(\hat\theta_{m,n}-\theta_n)}{V_n^{1/2}},
+  \qquad
+  T_{m,n}=\frac{\sqrt n(\hat\theta_{m,n}-\theta_n)}{\hat V_{m,n}^{1/2}}.
+\]
+
+Let \(\calH_n\) be the closed linear span in \(L_2(P_n)\) of square-integrable perturbations of the ATE Riesz representer \(\alpha_n\).  Let \(K_n\) be the observable covariance kernel
+\[
+  K_n(h,h')=
+  \E_n\!\left[h(W)h'(W)\{Y-g_{D,n}(X)\}^2\right],
+\]
+with seminorm \(\|h\|_{K_n}^2=K_n(h,h)\).  For each variance rule \(m\), define \(S_{m,n}\) as the Gateaux derivative, at the truth and with folds held fixed, of the named variance functional \(\hat V_{m,n}\) with respect to a perturbation \(h\in\calH_n\) of \(\alpha_n\).  Its adjoint \(S_{m,n}^*\) is taken under the \(K_n\) inner product, and
+\[
+  \mathcal{A}_{m,n}=\overline{\operatorname{Range}(S_{m,n}^*)}^{\|\cdot\|_{K_n}}
+\]
+is the concrete subspace of Riesz directions whose first-order variance contribution is absorbed by rule \(m\).  Let \(\Pi_{m,n}\) be the \(K_n\)-orthogonal projection from \(\calH_n\) onto \(\mathcal{A}_{m,n}\).  On a finite support \(x_1,\ldots,x_J\), this is the ordinary weighted least-squares projection onto the column space of the matrix \(B_{m,n}\) representing \(S_{m,n}^*\) in the cell basis, with weight matrix \(\operatorname{diag}\{\Pr_n(X=x_j)\operatorname{Var}_n(Y\mid D,X=x_j)\}\).  The proposed frontier index is
+\[
+  \Delta_{m,n}
+  =
+  \frac{\|(I-\Pi_{m,n})\alpha_n\|_{K_n}^2}{V_n},
+  \qquad m\in\mathcal M.
+\]
+It is zero when the variance rule captures the weak-overlap Riesz direction and positive when that direction remains in the studentization residual.
+
+\paragraph{Locked parameters reproduced.}
+\begin{quote}\small
+\begin{verbatim}
+(qid, specialization) = (eid_dml_orth_uniform, v1)
+anchor cluster = ExactID
+graph / SWIG =
+  binary treatment D with potential outcomes (Y(1),Y(0)), observed outcome
+  Y = D Y(1) + (1-D) Y(0), and covariates X satisfying conditional
+  exchangeability (Y(1),Y(0)) independent of D conditional on X
+treatment = binary D in {0,1}
+target estimand =
+  theta_n = E_Pn[Y(1)-Y(0)] = E_Pn[g_{1,n}(X)-g_{0,n}(X)]
+  along a triangular array of laws P_n
+identifying assumptions =
+  consistency, conditional exchangeability, positivity with local weak
+  overlap kappa_n <= e_n(X) <= 1-kappa_n, square-integrable outcomes,
+  and cross-fitted nuisance learners for outcome regression g_d, propensity
+  e, and the ATE Riesz representer alpha_n(W)=D/e_n(X)-(1-D)/(1-e_n(X))
+estimator comparison =
+  the original cross-fit DML ATE score of Chernozhukov et al. (2018),
+  the ATE-specialized locally robust semiparametric GMM score of
+  Chernozhukov, Escanciano, Ichimura, Newey, and Robins (2022), and the
+  automatic debiased ML Riesz-score estimator of Chernozhukov, Newey, and
+  Singh (2022)
+frontier object =
+  point-estimator equivalence is measured after normalization by the
+  exploding efficient standard deviation V_n^{1/2}; studentization
+  equivalence is measured by the ratio-consistency of each named variance
+  estimator relative to V_n
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Exact-ID ATE model]\label{ass:exact-ate}
+For each \(n\), consistency holds, \((Y(1),Y(0))\perp D\mid X\), and \(\E_n[Y^2]<\infty\).  The target is \(\theta_n=\E_n[Y(1)-Y(0)]\).
+\end{assumption}
+
+\begin{assumption}[Local weak overlap]\label{ass:local-overlap}
+There is a deterministic \(\kappa_n\downarrow0\) such that \(\kappa_n\le e_n(X)\le1-\kappa_n\) almost surely.  The efficient variance satisfies \(V_n\asymp L_n^2\), \(L_n\to\infty\), and \(L_n^2=o(n)\).
+\end{assumption}
+
+\begin{assumption}[Cross-fitted common EIF expansion]\label{ass:common-eif}
+For each \(m\in\mathcal M\),
+\[
+  \sqrt n(\hat\theta_{m,n}-\theta_n)
+  =
+  n^{-1/2}\sum_{i=1}^n \psi_n(W_i)+R_{m,n},
+  \qquad
+  \max_{m\in\mathcal M}|R_{m,n}|/V_n^{1/2}=o_p(1).
+\]
+The expansion uses the same \(\psi_n\) for DML, LRO, and ADML.
+\end{assumption}
+
+\begin{assumption}[Standardized EIF central limit]\label{ass:eif-clt}
+The triangular array satisfies the Lindeberg condition for \(\psi_n\), so
+\[
+  V_n^{-1/2}n^{-1/2}\sum_{i=1}^n\psi_n(W_i)\Rightarrow N(0,1).
+\]
+\end{assumption}
+
+\begin{assumption}[Variance-rule linearization]\label{ass:variance-linear}
+For each \(m\in\mathcal M\),
+\[
+  \frac{\hat V_{m,n}}{V_n}
+  =
+  1+\Delta_{m,n}+\xi_{m,n}+o_p(1),
+\]
+where \(\max_{m\in\mathcal M}|\xi_{m,n}|\to_p0\), and \(\Delta_{m,n}\) is the covariance-kernel projection index defined in the Formal setup section.  Thus the first-order variance-ratio limit is determined by the observable projection index rather than by an uncontrolled residual term.
+\end{assumption}
+
+\begin{assumption}[Kernel observability and nondegeneracy]\label{ass:kernel-observable}
+The kernel \(K_n\), the projections \(\Pi_{m,n}\), and \(V_n\) are identified from the observable law of \((Y,D,X)\) and the named variance rule \(m\).  If \(\liminf_n\Delta_{m,n}>0\), then the variance-estimator ratio \(\hat V_{m,n}/V_n\) has a nondegenerate limit strictly larger than one for that \(m\).
+\end{assumption}
+
+\begin{assumption}[Fixed-overlap corner]\label{ass:fixed-overlap}
+There is an \(\varepsilon>0\) such that \(\varepsilon\le e_n(X)\le1-\varepsilon\) for all \(n\).  In addition, \(\sup_n\E_n[Y^2]<\infty\), the usual DML product-rate remainder is \(o_p(1)\) after \(\sqrt n\) scaling, and each named variance estimator is ratio-consistent for \(V_n\).
+\end{assumption}
+
+\begin{assumption}[Known-propensity common-score corner]\label{ass:known-propensity}
+The propensity score \(e_n\) is known and DML, LRO, and ADML use the same empirical efficient score for variance estimation.  Equivalently, the variance-rule adjoint range \(\mathcal{A}_{m,n}\) contains \(\alpha_n\) for every \(m\in\mathcal M\).
+\end{assumption}
+
+\begin{assumption}[Two-cell weak-overlap witness]\label{ass:two-cell}
+The covariate support contains two cells \(x_A,x_B\) with positive probabilities, \(e_n(x_A)=\kappa_n\), \(e_n(x_B)=1/2\), bounded residual variances \(\sigma_A^2,\sigma_B^2\in[c,C]\) for constants \(0<c<C<\infty\), and outcome regressions chosen so that \(V_n\asymp \kappa_n^{-1}\).  Let \(q_A,q_B\) be the \(K_n\)-orthonormal cell indicators, with signs chosen so the displayed coefficients are eventually positive, and write \(\alpha_n=a_{A,n}q_A+a_{B,n}q_B\) with \(a_{A,n}^2/V_n\to\eta_A>0\), \(a_{B,n}^2=O(1)\), and \(a_{B,n}^2/V_n\to0\).  In the \((q_A,q_B)\) basis, the first-order variance-rule adjoint matrices are
+\[
+  B_{\mathrm{DML},n}=\begin{pmatrix}0\\1\end{pmatrix},\qquad
+  B_{\mathrm{LRO},n}=\begin{pmatrix}\lambda\\1\end{pmatrix},\qquad
+  B_{\mathrm{ADML},n}=\begin{pmatrix}1&0\\0&1\end{pmatrix},
+\]
+for a fixed observable \(\lambda\in(0,\infty)\).  Thus \(\Pi_{m,n}\) is the \(K_n\)-projection onto the column space of the displayed matrix for rule \(m\), rather than an assumed omit/include relation.  The strong \(x_A\) contribution and \(a_{B,n}^2/V_n\to0\) imply \(a_{B,n}/a_{A,n}\to0\), so the LRO projection captures a strict but incomplete fraction of the weak-overlap direction.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: fixed-overlap equivalence sanity theorem]\label{thm:fixed-overlap}
+Under Assumptions~\ref{ass:exact-ate}, \ref{ass:common-eif}, \ref{ass:eif-clt}, and \ref{ass:fixed-overlap},
+\[
+  Z_{\mathrm{DML},n}-Z_{\mathrm{LRO},n}\to_p0,\qquad
+  Z_{\mathrm{DML},n}-Z_{\mathrm{ADML},n}\to_p0,
+\]
+and
+\[
+  T_{\mathrm{DML},n}-T_{\mathrm{LRO},n}\to_p0,\qquad
+  T_{\mathrm{DML},n}-T_{\mathrm{ADML},n}\to_p0.
+\]
+Thus, in the fixed-overlap product-rate corner, the three named estimators give the same first-order Wald inference for \(\theta_n\).
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This is a calibration theorem, not the novelty claim.  The closest published result is \citet{ChernozhukovEtAl2018DML}, with LRO and ADML supplied by \citet{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO} and \citet{ChernozhukovNeweySingh2022ADML}; the epsilon-gap is only the common-normalization bookkeeping needed before a non-equivalence theorem can compare the three named procedures.  (b) The concrete consumer is applied DML practice following \citet{ChernozhukovEtAl2018DML}: this theorem says the proposed weak-overlap warning does not disturb the textbook fixed-overlap case.
+
+\begin{conjecture}[Conjecture 1: studentization-first weak-overlap frontier (NOT YET PROVED)]\label{conj:student-frontier}
+Under Assumptions~\ref{ass:exact-ate}--\ref{ass:kernel-observable}, including the standardized EIF central limit condition in Assumption~\ref{ass:eif-clt}, the centered point estimators are uniformly equivalent:
+\[
+  \max_{m,m'\in\mathcal M}|Z_{m,n}-Z_{m',n}|\to_p0.
+\]
+For any \(m,m'\in\mathcal M\), their studentized statistics are asymptotically equivalent,
+\[
+  T_{m,n}-T_{m',n}\to_p0,
+\]
+if and only if
+\[
+  \Delta_{m,n}-\Delta_{m',n}\to0.
+\]
+If \(\Delta_{m,n}\to\delta_m\) and \(\Delta_{m',n}\to\delta_{m'}\) with \(\delta_m\ne\delta_{m'}\), then the studentized statistics have different scale limits:
+\[
+  T_{m,n}\Rightarrow N(0,(1+\delta_m)^{-1}),\qquad
+  T_{m',n}\Rightarrow N(0,(1+\delta_{m'})^{-1}),
+\]
+even though their centered point estimates share the same \(N(0,1)\) limit after normalization by \(V_n^{1/2}\).  In the canonical ordering where ADML absorbs the full weak-overlap Riesz direction and DML/LRO leave progressively larger residual projections, \(\delta_{\mathrm{ADML}}=0<\delta_{\mathrm{LRO}}<\delta_{\mathrm{DML}}\), so Wald intervals separate first through studentization, not through the point estimate.  Moreover, a single estimator \(m\) has ratio-consistent studentization relative to the efficient variance \(V_n\) if and only if \(\Delta_{m,n}\to0\).
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest published papers are \citet{ChernozhukovNeweySingh2022RR}, which notes nonregularity for global parameters under weak propensity behavior and develops regularized Riesz inference, \citet{HongLeungLi2020}, which studies limited-overlap asymptotics for treatment-effect estimators, \citet{MaSantAnnaSasakiUra2026WeakOverlapDR}, which gives bias-corrected trimmed DR estimation preserving original causal targets under weak overlap, and \citet{ChernozhukovNeweySingh2022ADML}, which supplies robust ADML standard errors.  None states an if-and-only-if DML--LRO--ADML boundary where point estimates remain equivalent but variance estimators separate through a covariance-kernel projection.  The epsilon-gap is the studentization-first frontier for three named published variance rules under one untrimmed ATE model, not another sufficient condition for validity of a single estimator or a trimmed-target repair.  (b) The concrete consumer is \citet{ChernozhukovNeweySingh2022RR}: resolving the conjecture would turn the qualitative warning about hard Riesz representers into a named diagnostic for when ADML-style robust variance reporting is required.
+
+\begin{conjecture}[Conjecture 2: primitive two-cell witness for strict separation (NOT YET PROVED)]\label{conj:two-cell-witness}
+Under Assumptions~\ref{ass:exact-ate}--\ref{ass:kernel-observable} and \ref{ass:two-cell}, there is a nonempty open set of finite-support triangular arrays for which
+\[
+  \Delta_{\mathrm{ADML},n}=0,\qquad
+  0<\liminf_n\Delta_{\mathrm{LRO},n}
+  \le \limsup_n\Delta_{\mathrm{LRO},n}
+  < \liminf_n\Delta_{\mathrm{DML},n}.
+\]
+On this open set,
+\[
+  \max_{m,m'\in\mathcal M}|Z_{m,n}-Z_{m',n}|\to_p0
+\]
+but the three Wald half-lengths based on \(\hat V_{m,n}^{1/2}/\sqrt n\) have strict limiting ratios.  The witness is nondegenerate on the observable law: both treatment states occur with positive probability in each \(n\), residual variances are bounded away from zero on the weak-overlap cell, and the strict gaps persist under sufficiently small perturbations of the two cell probabilities and residual variances.  For the displayed two-cell matrices, the indices are computed directly as
+\[
+  \Delta_{\mathrm{ADML},n}=0,\qquad
+  \Delta_{\mathrm{DML},n}=a_{A,n}^2/V_n,\qquad
+  \Delta_{\mathrm{LRO},n}
+  =
+  \frac{(a_{A,n}-\lambda a_{B,n})^2}{(1+\lambda^2)V_n},
+\]
+so strict separation follows whenever \(0< (a_{A,n}-\lambda a_{B,n})^2/(1+\lambda^2)<a_{A,n}^2\) eventually.
+Because \(a_{B,n}/a_{A,n}\to0\), the displayed LRO index converges to \(\eta_A/(1+\lambda^2)\) while the DML index converges to \(\eta_A\), giving strict separation for every fixed \(\lambda>0\).
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest prior-art obstruction is not a paper theorem but the reviewer failure mode recorded for the banked \texttt{eid\_lp\_svar\_nonequiv} and \texttt{eid\_bjs\_efficient\_event\_study} proposals: strict non-equivalence cannot be placed into an abstract positive-margin assumption.  Among published papers, \citet{CrumpHotzImbensMitnik2009}, \citet{HongLeungLi2020}, and \citet{ChernozhukovNeweySingh2022RR} motivate weak-overlap instability, but none gives a primitive finite-support DML--LRO--ADML separation witness.  The epsilon-gap is the open-set finite-support certificate for strict studentization ordering.  (b) The concrete consumer is the overlap-diagnostic workflow of \citet{CrumpHotzImbensMitnik2009}: the witness would show when trimming or changing estimands is not the only response, because estimator-specific variance reporting itself is the first object that fails to agree.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Fixed-overlap collapse]\label{cor:fixed-collapse}
+Under Assumptions~\ref{ass:fixed-overlap} and \ref{ass:variance-linear}, the uniform second-moment and overlap bounds imply \(L_n=O(1)\) and \(V_n=O(1)\).  Since each named variance estimator is ratio-consistent for \(V_n\) and \(\max_m|\xi_{m,n}|\to_p0\), Assumption~\ref{ass:variance-linear} forces \(\Delta_{m,n}\to0\) for every \(m\in\mathcal M\).  Conjecture~\ref{conj:student-frontier} therefore collapses to Theorem~\ref{thm:fixed-overlap}.
+\end{corollary}
+
+\begin{corollary}[Known-propensity collapse]\label{cor:known-propensity}
+Under Assumption~\ref{ass:known-propensity}, \(\Pi_{m,n}\alpha_n=\alpha_n\) for every \(m\in\mathcal M\), hence \(\Delta_{m,n}=0\) and no studentization separation is predicted.
+\end{corollary}
+
+\section{Proof-sketch route}
+The mathematical route is to work in a triangular-array LAN experiment whose score variance \(V_n\) may diverge because \(e_n(X)\) approaches zero or one.  First, write all three estimators against the single ATE efficient score and use cross-fitting to push product remainders below \(V_n^{1/2}\).  Second, expand each named variance estimator as a quadratic functional of the same Riesz residual and identify the \(K_n\)-orthogonal projection \(\Pi_{m,n}\) induced by that estimator's variance rule.  Third, prove the iff statement by comparing the limiting ratios \(\hat V_{m,n}/V_n\), using Slutsky only after the possibly exploding efficient variance has been normalized.  The finite-support witness should reduce to a two-cell calculation: compute \(e_n(x_A)=\kappa_n\), the residual variances, the three projection matrices, and the resulting \(\Delta_{m,n}\) explicitly, then verify strict inequalities persist under small perturbations.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:fixed-overlap} is intended as a routine calibration from existing DML/LRO/ADML asymptotic linearity under fixed overlap.  Conjectures~\ref{conj:student-frontier} and \ref{conj:two-cell-witness} are the novel kernel and are not yet proved.  The largest open risk is whether the strengthened variance-rule linearization in Assumption~\ref{ass:variance-linear} can be proved for the published LRO sandwich and ADML robust standard error without smuggling the conclusion into notation.  The second risk is whether the strict ordering \(\delta_{\mathrm{ADML}}=0<\delta_{\mathrm{LRO}}<\delta_{\mathrm{DML}}\) is generic or only available for a narrower finite-support witness; the proposal labels that ordering as part of the conjectural frontier, not as an established theorem.  The v1 reviewer verdict was REVISE, with no structural flags and with novelty concentrated on the weak-overlap frontier.  The v2 revision narrows the soundness risk by defining \(\Pi_{m,n}\) as a projection onto \(\overline{\operatorname{Range}(S_{m,n}^*)}\) and by replacing the two-cell omit/include phrase with explicit matrices.  The v3 revision strengthens the variance residual to \(\max_m|\xi_{m,n}|\to_p0\), repairs the two-cell normalization by making the strong-overlap cell negligible at the \(V_n\) scale, and adds the Ma--Sant'Anna--Sasaki--Ura weak-overlap DR comparator.  What remains open is whether those matrices are exactly the first-order matrices obtained from the published variance rules, rather than a nearby stylized witness.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for angle 2: shifted from exhausted point-variance spectral and LRO-normalization angles to weak-overlap studentization-first non-equivalence; prior verdict: none.
+\item v2 (revise) -- added weak-overlap inference comparators, made projection spaces and two-cell matrices auditable, and patched the fixed-overlap corollary; prior verdict: REVISE.
+\item v3 (revise) -- added Ma--Sant'Anna--Sasaki--Ura as the closest trimmed weak-overlap DR comparator, strengthened variance-linearization, and repaired the two-cell witness normalization; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Chernozhukov et~al.(2018)]{ChernozhukovEtAl2018DML}
+Chernozhukov, V., D.~Chetverikov, M.~Demirer, E.~Duflo, C.~Hansen, W.~Newey, and J.~Robins (2018).
+\newblock Double/debiased machine learning for treatment and structural parameters.
+\newblock \emph{The Econometrics Journal} 21(1), C1--C68.
+
+\bibitem[Chernozhukov et~al.(2022a)]{ChernozhukovEscancianoIchimuraNeweyRobins2022LRO}
+Chernozhukov, V., J.~C. Escanciano, H.~Ichimura, W.~K. Newey, and J.~M. Robins (2022).
+\newblock Locally robust semiparametric estimation.
+\newblock \emph{Econometrica} 90(4), 1501--1535.
+
+\bibitem[Chernozhukov et~al.(2022b)]{ChernozhukovNeweySingh2022ADML}
+Chernozhukov, V., W.~K. Newey, and R.~Singh (2022).
+\newblock Automatic debiased machine learning of causal and structural effects.
+\newblock \emph{Econometrica} 90(3), 967--1027.
+
+\bibitem[Chernozhukov et~al.(2022c)]{ChernozhukovNeweySingh2022RR}
+Chernozhukov, V., W.~K. Newey, and R.~Singh (2022).
+\newblock Debiased machine learning of global and local parameters using regularized Riesz representers.
+\newblock \emph{The Econometrics Journal} 25(3), 576--601.
+
+\bibitem[Crump et~al.(2009)]{CrumpHotzImbensMitnik2009}
+Crump, R.~K., V.~J. Hotz, G.~W. Imbens, and O.~A. Mitnik (2009).
+\newblock Dealing with limited overlap in estimation of average treatment effects.
+\newblock \emph{Biometrika} 96(1), 187--199.
+
+\bibitem[Rothe(2017)]{Rothe2017LimitedOverlapCI}
+Rothe, C. (2017).
+\newblock Robust confidence intervals for average treatment effects under limited overlap.
+\newblock \emph{Econometrica} 85(2), 645--660.
+
+\bibitem[Hong et~al.(2020)]{HongLeungLi2020}
+Hong, G., M.~P. Leung, and J.~Li (2020).
+\newblock Inference on finite-population treatment effects under limited overlap.
+\newblock \emph{The Econometrics Journal} 23(1), 32--47.
+
+\bibitem[Heiler and Kazak(2021)]{HeilerKazak2021ExtremePS}
+Heiler, P. and E.~Kazak (2021).
+\newblock Valid inference for treatment effect parameters under irregular identification and many extreme propensity scores.
+\newblock \emph{Journal of Econometrics} 222(2), 1083--1108.
+
+\bibitem[Armstrong and Koles{\'a}r(2021)]{ArmstrongKolesar2021FiniteSampleATE}
+Armstrong, T.~B. and M.~Koles{\'a}r (2021).
+\newblock Finite-sample optimal estimation and inference on average treatment effects under unconfoundedness.
+\newblock \emph{Econometrica} 89(3), 1141--1177.
+
+\bibitem[Sasaki and Ura(2022)]{SasakiUra2022MomentsRatios}
+Sasaki, Y. and T.~Ura (2022).
+\newblock Estimation and inference for moments of ratios with robustness against large trimming bias.
+\newblock \emph{Econometric Theory} 38(1), 66--112.
+
+\bibitem[Ma et~al.(2026)]{MaSantAnnaSasakiUra2026WeakOverlapDR}
+Ma, Y., P.~H.~C. Sant'Anna, Y.~Sasaki, and T.~Ura (2026).
+\newblock Doubly robust estimators with weak overlap.
+\newblock arXiv:2304.08974, revised April 2026.
+
+\bibitem[Dorn(2025)]{Dorn2025WeakOverlapDR}
+Dorn, J. (2025).
+\newblock How much weak overlap can doubly robust \(t\)-statistics handle?
+\newblock arXiv:2504.13273.
+
+\bibitem[Newey and Robins(2018)]{NeweyRobins2018}
+Newey, W.~K. and J.~R. Robins (2018).
+\newblock Cross-fitting and fast remainder rates for semiparametric estimation.
+\newblock arXiv:1801.09138.
+
+\bibitem[Dukes et~al.(2024)]{DukesVansteelandtWhitney2024DRDML}
+Dukes, O., S.~Vansteelandt, and D.~Whitney (2024).
+\newblock On doubly robust inference for double machine learning in semiparametric regression.
+\newblock \emph{Journal of Machine Learning Research} 25(279), 1--46.
+\end{thebibliography}
+
+\end{document}

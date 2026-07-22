@@ -1,0 +1,90 @@
+{
+  "proofs": [
+    {
+      "id": "oeq:feasible-upper",
+      "proof_tex": "We prove the feasible upper bound against the corrected feasible-rate definition proposed below. Fix P in the law class and condition on the cross-fitting training folds, so the nuisance estimates are fixed when the empirical policy value is evaluated. Write ehat_q for the q-clipped estimated propensity, and write b_q(x)=E_P[Gamma_q(O;etahat)|X=x]-tau_P(x). By lem:clip-bias, b_q(x)=(ehat_q(x)-e_P(x)) {Delta_1(x)/ehat_q(x)+Delta_0(x)/(1-ehat_q(x))}. Since ehat_q is in [q,1-q], Cauchy-Schwarz gives, for every deterministic pi, |P[(pi-pi_star)b_q]| <= P_X(D_pi)^{1/2} ||ehat_q-e_P||_2 (||Delta_1||_2+||Delta_0||_2)/q. By ass:nuisance-rate and lem:true-clipped-propensity-envelope, for gamma>0 this is bounded by C P_X(D_pi)^{1/2} {r_mu,n r_e,n/q + r_mu,n q^{1/(2 gamma)}}. Under the strict-overlap endpoint proposed for gamma=0, choose q below the overlap floor; the second term is absent and the bound is C P_X(D_pi)^{1/2} r_mu,n r_e,n/q.\n\nThe ERM inequality gives the basic comparison. Since pihat_n maximizes the cross-fitted empirical value, P_n[(pi_star-pihat_n) Gamma_q(etahat)] <= 0. Therefore R_P(pihat_n)=P[(pi_star-pihat_n)tau_P] <= (P-P_n)[(pi_star-pihat_n) Gamma_q(etahat)] + |P[(pi_star-pihat_n)b_q]|. The conditional localized VC envelope in ass:vc-localized-envelope, together with the score second-moment envelope E[Gamma_q^2 1_D | etahat] <= C q^{-1} P_X(D), yields an expected localized empirical term bounded by C n^{-1/2} q^{-1/2} P_X(D_pihat_n)^{1/2} polylog(n). Applying thm:margin-localization to D_pihat_n gives P_X(D_pihat_n)^{1/2} <= C R_P(pihat_n)^{alpha/(2+2 alpha)}. Hence, with kappa=2(1+alpha)/(2+alpha),\n\nR_P(pihat_n) <= C [n^{-1/2} q^{-1/2} polylog(n) + r_mu,n r_e,n/q + 1_{gamma>0} r_mu,n q^{1/(2 gamma)}] R_P(pihat_n)^{alpha/(2+2 alpha)}.\n\nIf R_P(pihat_n)=0 there is nothing to prove. Otherwise divide by R_P(pihat_n)^{alpha/(2+2 alpha)} and raise both sides to the power kappa. This gives the nonasymptotic feasible oracle-free bound\n\nE_P R_P(pihat_n) <= C [n^{-1/2} q^{-1/2} polylog(n) + r_mu,n r_e,n/q + 1_{gamma>0} r_mu,n q^{1/(2 gamma)}]^kappa.\n\nNow suppose gamma>0 and the nuisance rates certify r_mu,n=O(n^{-a}) and r_mu,n r_e,n=O(n^{-c}), where c>=1/2 by ass:nuisance-rate. Put q_n=n^{-lambda} capped at 1/4. The three terms inside the bracket have polynomial exponents 1/2-lambda/2, c-lambda, and a+lambda/(2 gamma). Optimizing over lambda>=0 gives zeta(a,c,gamma)=sup_{lambda>=0} min{1/2-lambda/2,c-lambda,a+lambda/(2 gamma)}. Lem:clip-balance-exponent gives the closed form and the optimizing lambda. Therefore the plug-in exponent is r_plug=kappa zeta(a,c,gamma), and the displayed bound is E_P R_P(pihat_n) <= C n^{-r_plug}(log n)^p. The corrected reported feasible exponent is r_feas=min{r_star,r_plug}; since r_feas<=r_plug, the same upper bound implies E_P R_P(pihat_n) <= C n^{-r_feas}(log n)^p, and r_feas<=r_star by construction.\n\nAt gamma=0, under the proposed strict-overlap endpoint, take q below the overlap floor. The clipping displacement of the true propensity is zero, the feasible drift is the ordinary doubly robust product r_mu,n r_e,n/q=O(n^{-1/2}), and the empirical term is O(n^{-1/2} polylog(n)). Thus zeta=1/2, r_plug=kappa/2=(1+alpha)/(2+alpha). Since beta_{alpha,0}=0, r_star=(1+alpha)/(2+alpha), so r_feas=r_star. This is the strict-overlap reduction."
+    }
+  ],
+  "added_lemmas": [
+    {
+      "id": "lem:true-clipped-propensity-envelope",
+      "kind": "lemma",
+      "statement": "Let e_q^P(x)=min{1-q,max{q,e_P(x)}} and ehat_q(x)=min{1-q,max{q,ehat(x)}}. If gamma>0 and ass:marginal-overlap holds, then ||ehat_q-e_P||_2 <= ||ehat-e_P||_2 + C q^{1+1/(2 gamma)}. If gamma=0 and the strict-overlap endpoint p_P(x)>=underline p holds, then for q<=underline p, ||ehat_q-e_P||_2 <= ||ehat-e_P||_2.",
+      "depends_on": [
+        "ass:marginal-overlap",
+        "ass:positivity"
+      ],
+      "status": "proved",
+      "proof_tex": "The map z -> min{1-q,max{q,z}} is the Euclidean projection onto [q,1-q], hence is 1-Lipschitz. Therefore ||ehat_q-e_q^P||_2 <= ||ehat-e_P||_2. It remains to bound ||e_q^P-e_P||_2. The difference e_q^P-e_P is zero on {p_P>q}; on {p_P<=q} its absolute value is at most q. Hence ||e_q^P-e_P||_2 <= q P{p_P(X)<=q}^{1/2}. For gamma>0, ass:marginal-overlap gives P{p_P(X)<=q} <= C_om q^{1/gamma} for q<=c_o, so ||e_q^P-e_P||_2 <= C q^{1+1/(2 gamma)}. Combining the two displays proves the first claim. If gamma=0 and p_P>=underline p almost surely, then for q<=underline p the true propensity is never clipped, e_q^P=e_P, and the second claim follows from the 1-Lipschitz projection bound."
+    },
+    {
+      "id": "lem:feasible-master-bound",
+      "kind": "lemma",
+      "statement": "For the cross-fitted clipped-AIPW ERM and any q in (0,1/2], E_P R_P(pi_hat_n) <= C [n^{-1/2} q^{-1/2} polylog(n) + r_mu,n r_e,n/q + 1_{gamma>0} r_mu,n q^{1/(2 gamma)}]^kappa, where kappa=2(1+alpha)/(2+alpha); at gamma=0 the last term is absent under a strict-overlap floor and q below that floor.",
+      "depends_on": [
+        "def:feasible-erm",
+        "def:clipped-aipw-score",
+        "lem:clip-bias",
+        "lem:true-clipped-propensity-envelope",
+        "ass:nuisance-rate",
+        "ass:vc-localized-envelope",
+        "thm:margin-localization"
+      ],
+      "status": "proved",
+      "proof_tex": "Condition on the nuisance-training folds. Let b_q(x)=E_P[Gamma_q(O;etahat)|X=x]-tau_P(x). The ERM property gives P_n[(pi_star-pi_hat_n)Gamma_q(etahat)]<=0, hence R_P(pi_hat_n)<= (P-P_n)[(pi_star-pi_hat_n)Gamma_q(etahat)] + |P[(pi_star-pi_hat_n)b_q]|. The first term is controlled by ass:vc-localized-envelope. Because the q-clipped AIPW score has conditional second moment bounded by C/q on each disagreement set, the localized empirical term is at most C n^{-1/2}q^{-1/2}P_X(D_pi_hat_n)^{1/2}polylog(n). For the second term, lem:clip-bias and Cauchy-Schwarz imply |P[(pi-pi_star)b_q]| <= C q^{-1} r_mu,n ||ehat_q-e_P||_2 P_X(D_pi)^{1/2}. Lem:true-clipped-propensity-envelope gives q^{-1}r_mu,n||ehat_q-e_P||_2 <= C{r_mu,n r_e,n/q + 1_{gamma>0}r_mu,n q^{1/(2gamma)}}. Applying this with pi=pi_hat_n and using thm:margin-localization, P_X(D_pi_hat_n)^{1/2}<=C R_P(pi_hat_n)^{alpha/(2+2alpha)}. Thus R_P(pi_hat_n)<=C H_n(q) R_P(pi_hat_n)^{alpha/(2+2alpha)}, with H_n(q)=n^{-1/2}q^{-1/2}polylog(n)+r_mu,n r_e,n/q+1_{gamma>0}r_mu,n q^{1/(2gamma)}. Solving this self-bounding inequality gives R_P(pi_hat_n)<=C H_n(q)^{2(1+alpha)/(2+alpha)}. Integrating over the cross-fitting folds proves the lemma."
+    },
+    {
+      "id": "lem:clip-balance-exponent",
+      "kind": "lemma",
+      "statement": "For gamma>0, if r_mu,n=O(n^{-a}) and r_mu,n r_e,n=O(n^{-c}) with c>=1/2, then the optimal polynomial clip q_n=n^{-lambda_*} for the master bound has exponent zeta(a,c,gamma)=sup_{lambda>=0} min{1/2-lambda/2,c-lambda,a+lambda/(2gamma)}. If a>=1/2, lambda_*=0 and zeta=1/2. If a<1/2 and c>=[1+2 gamma(1-a)]/[2(1+gamma)], lambda_*=gamma(1-2a)/(1+gamma) and zeta=[1+2a gamma]/[2(1+gamma)]. If a<1/2 and c<=[1+2 gamma(1-a)]/[2(1+gamma)], lambda_*=2 gamma(c-a)/(2 gamma+1) and zeta=(2 gamma a+c)/(2 gamma+1).",
+      "depends_on": [
+        "lem:feasible-master-bound"
+      ],
+      "status": "proved",
+      "proof_tex": "For q_n=n^{-lambda}, the variance term, doubly robust product term, and true-clipping displacement term in lem:feasible-master-bound have exponents b_1(lambda)=1/2-lambda/2, b_2(lambda)=c-lambda, and b_3(lambda)=a+lambda/(2gamma). Thus the bracket has exponent min{b_1,b_2,b_3}, and maximizing this minimum gives zeta. The lower envelope of b_1 and b_2 switches where b_1=b_2, namely at lambda_0=2c-1. Since c>=1/2, lambda_0>=0. If a>=1/2, then at lambda=0 all three exponents are at least 1/2 and b_1(0)=1/2; any positive lambda decreases min{b_1,b_2}, so lambda_*=0 and zeta=1/2. Now suppose a<1/2. Balancing b_3 with b_1 gives lambda_1=gamma(1-2a)/(1+gamma) and value [1+2a gamma]/[2(1+gamma)]. This balance occurs before the switch, lambda_1<=lambda_0, exactly when c>=[1+2gamma(1-a)]/[2(1+gamma)]. In that case the optimum is lambda_1. If this condition fails, the lower envelope is b_2 when b_3 reaches it. Balancing b_3 with b_2 gives lambda_2=2gamma(c-a)/(2gamma+1) and value a+(c-a)/(2gamma+1)=(2gamma a+c)/(2gamma+1). The complementary condition c<=[1+2gamma(1-a)]/[2(1+gamma)] is exactly lambda_2>=lambda_0, so the optimum is lambda_2. The two formulae agree on the boundary."
+    }
+  ],
+  "proposed_statement_changes": [
+    {
+      "id": "oeq:feasible-upper",
+      "current": "CONSTRUCT-AND-DETERMINE. Assume gamma<=alpha+1, ass:marginal-overlap, ass:nuisance-rate, ass:vc-localized-envelope. For the plain cross-fit clipped-AIPW ERM of def:feasible-erm with clip q chosen by the analysis, DERIVE (do NOT pre-specify) the best worst-case welfare-regret exponent r_feas with sup_{P in P_class(alpha,gamma)} E_P R_P(pi_hat_n) <= C n^{-r_feas} (log n)^p, by balancing the localized variance against the estimated-nuisance CLIP BIAS over q. State the clip q and the resulting r_feas in closed form, confirm r_feas<=r_star, and reduce at gamma=0.",
+      "proposed": "CONSTRUCT-AND-DETERMINE. Assume 0<gamma<=alpha+1, ass:marginal-overlap, ass:nuisance-rate, and ass:vc-localized-envelope. For the plain cross-fit clipped-AIPW ERM of def:feasible-erm, choose q_n=n^{-lambda_*} with lambda_* given by lem:clip-balance-exponent. Then sup_P E_P R_P(pi_hat_n) <= C n^{-r_plug}(log n)^p, where r_plug=2(1+alpha)/(2+alpha) zeta(a,c,gamma), a and c are certified polynomial exponents for r_mu,n and r_mu,n r_e,n, and zeta is the closed form in lem:clip-balance-exponent. For the minimax-rate bracket report r_feas=min{r_star,r_plug}. At gamma=0 the same conclusion reduces to r_feas=r_star only under a genuine strict-overlap endpoint p_P>=underline p>0 and a fixed clip q<=underline p.",
+      "reason": "The derivation does close for gamma>0 using the exact drift identity, but the original statement's gamma=0 endpoint is not implied by the frozen marginal-overlap convention. When gamma=0, ass:marginal-overlap gives no vanishing tail for P{p_P<=q}; a strict-overlap floor is the standard condition that removes true-propensity clipping and recovers the ordinary DML product drift. The statement also needs the corrected distinction between the plug-in upper exponent r_plug and the bracket exponent r_feas capped by the converse exponent.",
+      "direction": "narrow"
+    },
+    {
+      "id": "thm:rate-characterization",
+      "current": "Under ass:margin-window, ass:marginal-overlap, ass:nuisance-rate, Pi rich (witness-optimal policies in Pi), gamma<=alpha+1: c n^{-r_star(alpha,gamma)} <= M_n(alpha,gamma) <= C n^{-r_feas(alpha,gamma)} (log n)^p, with r_star=(1+alpha)/(2+alpha+beta_{alpha,gamma}) (sharp converse, thm:minimax-lower, all gamma) and r_feas the DERIVED plain-clipped-AIPW exponent (oeq:feasible-upper), r_feas<=r_star with equality at gamma=0. FIRST welfare-regret rate under weak (one-sided polynomial) overlap, extending strict-overlap policy learning. The r_star-r_feas gap (positive for gamma>0) is the weak-overlap nuisance-estimation cost; tightness is open (oeq:feasible-tight).",
+      "proposed": "Under ass:margin-window, ass:marginal-overlap, ass:nuisance-rate, ass:vc-localized-envelope, and Pi rich, with 0<gamma<=alpha+1, the full-class converse gives c n^{-r_star(alpha,gamma)} <= M_n(alpha,gamma), and the feasible clipped-AIPW ERM satisfies sup_P E_P R_P(pi_hat_n) <= C n^{-r_feas(alpha,gamma,a,c)}(log n)^p with r_feas=min{r_star,r_plug} and r_plug from lem:clip-balance-exponent. At gamma=0 the equality r_feas=r_star is recovered under a strict-overlap floor. For gamma>0 the gap r_star-r_feas is not asserted to be strictly positive for every nuisance-rate regime; feasible attainability of r_star remains the residual open problem.",
+      "reason": "The positive-gap clause is stronger than what the feasible calculation proves. If the nuisance rates are strong enough, the plug-in exponent can exceed r_star; the reported bracket exponent must then be capped at r_star, and no positive gap is implied. Conversely, slower nuisance rates yield a loose upper exponent. The corrected statement keeps the proved converse and the proved feasible upper bound without asserting an unproved universal phase gap.",
+      "direction": "narrow"
+    }
+  ],
+  "proposed_definition_changes": [
+    {
+      "id": "def:feasible-rate",
+      "current": "Oracle design scalars: hbar_n=n^{-1/(2+alpha+beta_ag)} and qbar_n=(1/4 if beta_ag=0 else hbar_n^{beta_ag}) name the oracle clipping schedule used by the converse/oracle construction. The feasible exponent r_feas is DERIVED by oeq:feasible-upper from the bias-variance balance over the analysis clip q (the localized empirical-process scale n^{-1/2} q^{-1/2} against the estimated-nuisance clip drift of lem:clip-bias, r_mu r_e/q + r_mu q^{1/(2gamma)}), and may depend on the declared nuisance rates r_mu_n, r_e_n.",
+      "proposed": "Let kappa=2(1+alpha)/(2+alpha). For gamma>0 and certified polynomial nuisance exponents a,c satisfying r_mu,n=O(n^{-a}) and r_mu,n r_e,n=O(n^{-c}), c>=1/2, define zeta(a,c,gamma)=sup_{lambda>=0} min{1/2-lambda/2,c-lambda,a+lambda/(2gamma)} with the closed-form optimizer in lem:clip-balance-exponent. Define r_plug=kappa zeta(a,c,gamma), q_n=n^{-lambda_*} capped at 1/4, and r_feas=min{r_star(alpha,gamma),r_plug}. For gamma=0 under a strict-overlap floor, set q_n to a fixed value below the floor and r_feas=r_star=(1+alpha)/(2+alpha).",
+      "reason": "The old definition did not actually define the feasible exponent. The proof shows that the estimable rate is controlled by three terms: localized variance n^{-1/2}q^{-1/2}, doubly robust product r_mu,n r_e,n/q, and true-clipping displacement r_mu,n q^{1/(2gamma)}. Optimizing these terms gives the zeta functional; capping by r_star is needed for the minimax-rate bracket and for the requested r_feas<=r_star comparison.",
+      "direction": "correct"
+    }
+  ],
+  "proposed_assumptions": [
+    {
+      "id": "ass:strict-overlap-endpoint",
+      "condition": "When gamma=0, there exists underline p>0 such that p_P(X)>=underline p P_X-almost surely for every law in the class considered for the feasible upper bound.",
+      "reason": "The frozen gamma=0 marginal-overlap convention does not imply that true propensities are never clipped. A uniform overlap floor is exactly what makes the gamma=0 endpoint reduce to the standard strict-overlap DML/policy-learning bound.",
+      "standard_or_novel": "standard: strict overlap / uniform positivity, Imbens and Rubin (2015), Athey and Wager (2021)",
+      "not_crux": "It is not the weak-overlap rate claim; it only identifies the classical gamma=0 endpoint where the true-clipping displacement term is absent."
+    }
+  ],
+  "open_obligations": [
+    {
+      "node_id": "oeq:feasible-tight",
+      "what_is_open": "Determine whether a genuinely feasible estimator can attain the converse exponent r_star(alpha,gamma) throughout the weak-overlap regime, or whether the product-form clipped-score drift forces a strictly slower feasible frontier in some nuisance-rate regimes.",
+      "obstruction": "The solved upper calculation gives a valid plug-in exponent r_plug from the explicit variance/product/true-clipping balance. It does not prove that r_plug is minimax tight for feasible estimators, nor does it prove that the cap r_star is attainable when r_plug>=r_star. A tight feasible lower bound would need a construction that couples weak-arm outcome-regression learning difficulty to policy regret, beyond the two-point converse that only proves the oracle information exponent.",
+      "attempted": "The exact drift identity was used to close the feasible upper bound. The lower-bound witness thm:minimax-lower proves only M_n>=c n^{-r_star}; it does not separate oracle from feasible nuisance learning. A direct Le Cam reuse cannot prove a slower feasible frontier because the existing pair differs only in the rare treated outcome mean and already gives the r_star calibration.",
+      "partial_result": "The current solve proves the non-oracle master bound E R <= C inf_q [n^{-1/2}q^{-1/2}polylog(n)+r_mu,n r_e,n/q+r_mu,n q^{1/(2gamma)}]^{2(1+alpha)/(2+alpha)} for gamma>0, and its closed polynomial exponent r_plug. Together with thm:minimax-lower this yields the honest bracket c n^{-r_star} <= M_n and feasible risk <= C n^{-min(r_star,r_plug)}(log n)^p after the corrected feasible-rate definition. Tightness of this bracket is the remaining problem."
+    }
+  ]
+}

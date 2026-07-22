@@ -1,0 +1,281 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_multivariate\_interval\_regression, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_multivariate\_interval\_regression} / \texttt{v1}%
+  \\ \large\textit{Antichain certificates for sharp multivariate interval-regression envelopes}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+qid=pid_multivariate_interval_regression
+specialization=v1
+anchor_cluster=Partial identification
+observable_distribution_P=law of (Y,A,B,X), where Y is real-valued, X is a
+  fixed precisely measured covariate cell, A=(A1,...,Ad) and B=(B1,...,Bd)
+  are observed lower and upper endpoint vectors with A<=B coordinatewise, and
+  d>=2 unless a theorem explicitly specializes to d=1
+parameter_theta=m(v)=E[Y | X=x, V=v] at a fixed target v in R^d, where the
+  latent regressor V satisfies A<=V<=B coordinatewise
+identifying_restrictions=interval validity A<=V<=B, coordinatewise weak
+  monotonicity of m, endpoint-cell mean independence
+  E[Y | X=x,V,A,B]=m(V), finite endpoint support, and overlap for cells used by
+  the envelope
+bounding_functional=L_ac(P,v), U_ac(P,v), the sharp lower and upper envelopes
+  computed from the minimal lower and upper antichain certificates around v;
+  selected-coordinate variants replace the product order by the order on S and
+  condition on unrestricted endpoint fibers
+\end{verbatim}
+
+\begin{abstract}
+Manski and Tamer's interval regression bounds are ordered by one scalar endpoint, but several interval-measured regressors create incomparable endpoint cells.  This proposal asks for sharp lower and upper envelopes for \(m(v)=\E[Y\mid X=x,V=v]\) when \(V\in\R^d\) is observed only through a product interval and \(m\) is coordinatewise monotone.  The kernel conjecture is that the sharp envelopes are attained by minimal antichain certificates: the lower side uses maximal cells whose upper endpoint lies below \(v\), and the upper side uses minimal cells whose lower endpoint lies above \(v\), with a measurable-completion theorem giving sharpness.  A second conjecture gives a two-regressor finite witness in which the identified region is nonrectangular and strictly smaller than the intersection of one-dimensional Manski--Tamer relaxations.  Resolving these claims would turn a scalar interval-regression device into a finite product-order calculus for multivariate interval data without reducing the problem to generic linear programming.
+\end{abstract}
+
+\section{Introduction}
+Interval regressors are often multivariate: income, wealth, schooling, exposure, and latent ability may all be reported in bins.  The main claim is that scalar endpoint ordering does not survive this setting; sharp monotone regression envelopes are governed by the frontier of a product order, not by coordinatewise endpoint substitution.
+
+The closest published comparator is \citet[Sec. 2, p. 330, abstract: ``interval data are available on one variable'']{ManskiTamer2002IntervalRegression}, which gives scalar interval-regression bounds.  \citet[Sec. 3, p. 1249, abstract: ``best linear predictions with interval outcome and covariate data'']{BeresteanuMolchanovMolinari2011ConvexMomentPredictions} supplies a random-set and support-function framework, but it does not isolate the finite antichain certificate for a monotone regression function at a target point.  The proposal is a partial-identification theorem about sharp bounds for a conditional mean function under shape restrictions.
+
+The immediate consumer is intersection-bound inference for interval-regression envelopes in the sense of \citet[Sec. 1, p. 667, abstract: ``Intersection bounds are determined by the extrema of a collection of bounding functions'']{ChernozhukovLeeRosen2013IntersectionBounds}.  A reader would replace separate one-dimensional interval-regression screens by a product-order frontier calculation before applying inference to the resulting endpoint functionals.
+
+\begin{itemize}[leftmargin=2em]
+\item Theorem 1: In dimension one, the antichain certificate collapses to the Manski--Tamer scalar lower and upper endpoint classes. Gap: \citet{ManskiTamer2002IntervalRegression} does not define product-order frontiers. Consumer: scalar interval-regression implementations using \citet{ManskiTamer2002IntervalRegression}.
+\item Conjecture 1: For finite support and full coordinatewise monotonicity, \(L_{\mathrm{ac}}(P,v)\) and \(U_{\mathrm{ac}}(P,v)\) are sharp and are attained by minimal antichain certificates. Gap: \citet{ManskiTamer2002IntervalRegression} is one-dimensional, and \citet{BeresteanuMolchanovMolinari2011ConvexMomentPredictions} works through random-set support functions rather than a monotone frontier basis. Consumer: intersection-bound inference in \citet{ChernozhukovLeeRosen2013IntersectionBounds}.
+\item Conjecture 2: With selected-coordinate monotonicity, the sharp certificate is the antichain frontier on the selected coordinates after conditioning on unrestricted endpoint fibers. Gap: \citet{ManskiPepper2000MIV} and \citet{MagnacMaurin2008MonotoneBinaryInterval} use scalar monotone restrictions and do not solve mixed ordered-unordered product intervals. Consumer: empirical interval-regressor designs with some ordered and some nuisance interval coordinates.
+\item Conjecture 3: A finite two-regressor law has a nonrectangular identified region that is strictly smaller than the intersection of the two scalar Manski--Tamer relaxations. Gap: \citet{ManskiTamer2002IntervalRegression} has no shared-product-order obstruction, and \citet{ChernozhukovLeeRosen2013IntersectionBounds} treats intersection bounds after the bounding functions are specified. Consumer: applied partial-identification analyses that would otherwise report a rectangular outer set.
+\end{itemize}
+
+\section{Related work}
+\citet{ManskiTamer2002IntervalRegression} is the scalar interval-regression anchor: its nonparametric regression bound uses endpoint cells satisfying \(B\le v\) or \(A\ge v\) when only one interval-measured regressor is latent.  \citet{ManskiPepper2000MIV} shows how monotone instrumental-variable restrictions sharpen partial-identification bounds, and it is the closest scalar monotonicity precedent for selected-coordinate restrictions.  \citet{MagnacMaurin2008MonotoneBinaryInterval} studies interval-measured latent regressors in a monotone binary-choice setting, showing that information about within-interval distributions can change the identified set.  \citet{BeresteanuMolinari2008SVRVInference} develops set-valued random-variable methods and Aumann expectations for partially identified models with interval data.  \citet{BeresteanuMolchanovMolinari2011ConvexMomentPredictions} gives support-function and convex-programming tools for interval outcome and covariate data, but its object is not the finite monotone antichain envelope.  \citet{BeresteanuMolchanovMolinari2012RandomSetTheory} emphasizes that the observationally equivalent random set must be tailored to the econometric framework, which is exactly the issue for latent completions under product-order monotonicity.  \citet{ChernozhukovHongTamer2007ParameterSets} supplies general inference for moment-inequality and equality parameter sets after the identified set is defined.  \citet{ChernozhukovLeeRosen2013IntersectionBounds} explains why extrema over families of bounding functions require specialized inference and why naive analog intersection estimators can be biased.
+
+The in-repo closest prior is the failed literature-bank artifact \texttt{manski\_tamer\_interval\_regression\_v1}, whose Theorem t1 states scalar endpoint bounds for a latent scalar regressor.  The accepted \texttt{manski\_nonparametric\_bounds\_v1} catalogue entry records level-set intersection and containment restrictions for bounded outcomes, but it is not a multivariate interval-regression frontier theorem.  The candidate \texttt{pid\_ordinal\_principal\_strata\_v1} is relevant only as an adjacent PartialID example of nonrectangular identified sets from shared latent structure.  The \texttt{doc/API.md} PartialID catalogue section records no existing \texttt{pid\_multivariate\_interval\_regression} theorem.
+
+\section{Formal setup}
+Fix a covariate cell \(X=x\).  The observed law \(P\) is the conditional law of \((Y,A,B)\) given \(X=x\), where \(A,B\in\R^d\), \(A\le B\) coordinatewise, and \(Y\in\R\) is integrable.  The latent regressor \(V\in\R^d\) is unobserved and satisfies \(A\le V\le B\).  The target is \(m(v)=\E[Y\mid X=x,V=v]\) at a fixed \(v\in\R^d\).  For an endpoint cell \(c=(a,b)\), write
+\[
+g(c)=\E[Y\mid X=x,A=a,B=b].
+\]
+Let \(c\preceq_L v\) mean \(b\le v\) coordinatewise, and let \(v\preceq_U c\) mean \(v\le a\) coordinatewise.  The lower feasible cell set is \(\mathcal C_L(v)=\{c:g(c)\text{ is defined and }c\preceq_L v\}\), and the upper feasible cell set is \(\mathcal C_U(v)=\{c:g(c)\text{ is defined and }v\preceq_U c\}\).  A lower antichain certificate \(F_L(v)\subseteq\mathcal C_L(v)\) is the set of maximal cells in \(\mathcal C_L(v)\) under the order \(c\le c'\) iff \(b\le b'\) coordinatewise.  An upper antichain certificate \(F_U(v)\subseteq\mathcal C_U(v)\) is the set of minimal cells in \(\mathcal C_U(v)\) under the order \(c\le c'\) iff \(a\le a'\) coordinatewise.  Define
+\[
+L_{\mathrm{ac}}(P,v)=\sup_{c\in F_L(v)} g(c),\qquad
+U_{\mathrm{ac}}(P,v)=\inf_{c\in F_U(v)} g(c),
+\]
+with the convention that empty certificates give the vacuous extended endpoint.
+
+For selected-coordinate monotonicity, fix \(S\subseteq\{1,\ldots,d\}\).  The order \(u\le_S w\) applies only to coordinates in \(S\).  For an unrestricted endpoint fiber \(r=(a_{-S},b_{-S})\), define \(F_{L,S}(v;r)\), \(F_{U,S}(v;r)\), \(L_{\mathrm{ac},S}(P,v)\), and \(U_{\mathrm{ac},S}(P,v)\) by applying the same maximal and minimal frontier construction within the fiber and then optimizing over fibers that are feasible under \(P\).
+
+\begin{verbatim}
+qid=pid_multivariate_interval_regression
+specialization=v1
+anchor_cluster=Partial identification
+observable_distribution_P=law of (Y,A,B,X), where Y is real-valued, X is a
+  fixed precisely measured covariate cell, A=(A1,...,Ad) and B=(B1,...,Bd)
+  are observed lower and upper endpoint vectors with A<=B coordinatewise, and
+  d>=2 unless a theorem explicitly specializes to d=1
+parameter_theta=m(v)=E[Y | X=x, V=v] at a fixed target v in R^d, where the
+  latent regressor V satisfies A<=V<=B coordinatewise
+identifying_restrictions=interval validity A<=V<=B, coordinatewise weak
+  monotonicity of m, endpoint-cell mean independence
+  E[Y | X=x,V,A,B]=m(V), finite endpoint support, and overlap for cells used by
+  the envelope
+bounding_functional=L_ac(P,v), U_ac(P,v), the sharp lower and upper envelopes
+  computed from the minimal lower and upper antichain certificates around v;
+  selected-coordinate variants replace the product order by the order on S and
+  condition on unrestricted endpoint fibers
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite endpoint support]\label{ass:finite-support}
+Conditional on \(X=x\), the support of \((A,B)\) is finite, \(A\le B\) coordinatewise almost surely, and each endpoint cell used by \(F_L(v)\), \(F_U(v)\), \(F_{L,S}(v;r)\), or \(F_{U,S}(v;r)\) has positive conditional probability.
+\end{assumption}
+
+\begin{assumption}[Latent interval validity]\label{ass:interval}
+There exists a latent \(V\in\R^d\) such that \(A\le V\le B\) coordinatewise almost surely conditional on \(X=x\).
+\end{assumption}
+
+\begin{assumption}[Endpoint-cell mean independence]\label{ass:mean-independence}
+For all \(u\) in the relevant latent support, \(\E[Y\mid X=x,V=u,A,B]=m(u)\), where \(m(u)=\E[Y\mid X=x,V=u]\).
+\end{assumption}
+
+\begin{assumption}[Coordinatewise monotonicity]\label{ass:coordinate-monotone}
+The function \(m:\R^d\to\R\) is weakly increasing in the product order: if \(u\le w\) coordinatewise, then \(m(u)\le m(w)\).
+\end{assumption}
+
+\begin{assumption}[Selected-coordinate monotonicity]\label{ass:selected-monotone}
+For a fixed nonempty \(S\subseteq\{1,\ldots,d\}\), if \(u_j\le w_j\) for all \(j\in S\) and \(u_{-S}=w_{-S}\), then \(m(u)\le m(w)\).  No monotonicity is imposed across unrestricted coordinates.
+\end{assumption}
+
+\begin{assumption}[Outcome richness]\label{ass:richness}
+Conditional outcome laws can be chosen on a common real interval containing all displayed endpoint-cell means and target values.  This assumption rules out artificial support failures, but it does not assert that any point in the antichain envelope is attainable.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: scalar collapse]\label{thm:scalar-collapse}
+Suppose \(d=1\) and Assumptions \ref{ass:finite-support}--\ref{ass:coordinate-monotone} hold.  Then \(F_L(v)\) consists of the largest observed upper endpoints satisfying \(B\le v\), \(F_U(v)\) consists of the smallest observed lower endpoints satisfying \(v\le A\), and
+\[
+\sup_{c:B(c)\le v} g(c)\le m(v)\le \inf_{c:A(c)\ge v}g(c).
+\]
+\end{theorem}
+The proof is the scalar Manski--Tamer argument: if \(B\le v\), then \(V\le v\) and monotonicity gives \(g(c)\le m(v)\); if \(v\le A\), then \(m(v)\le g(c)\).  Maximal and minimal cells generate the same extrema because the support is finite and dominated scalar cells cannot change the supremum or infimum.
+
+\begin{conjecture}[Conjecture 1: antichain envelope sharpness]\label{conj:antichain-sharp}
+(NOT YET PROVED.)  Suppose \(d\ge2\) and Assumptions \ref{ass:finite-support}--\ref{ass:coordinate-monotone} and \ref{ass:richness} hold with full coordinatewise monotonicity.  Then the sharp identified set for \(m(v)\) is
+\[
+\Theta_I(P,v)=[L_{\mathrm{ac}}(P,v),U_{\mathrm{ac}}(P,v)].
+\]
+Moreover, \(F_L(v)\cup F_U(v)\) is a minimal certificate: deleting any cell that uniquely attains the displayed supremum or infimum changes the corresponding sharp endpoint for some observationally equivalent law.
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: selected-coordinate frontier]\label{conj:selected}
+(NOT YET PROVED.)  Under Assumptions \ref{ass:finite-support}--\ref{ass:mean-independence}, \ref{ass:selected-monotone}, and \ref{ass:richness}, the sharp identified set for \(m(v)\) under monotonicity only on \(S\) is
+\[
+\Theta_{I,S}(P,v)=[L_{\mathrm{ac},S}(P,v),U_{\mathrm{ac},S}(P,v)].
+\]
+The frontier basis is necessary and sufficient within unrestricted endpoint fibers: removing the fiber condition yields only an outer bound in general.
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 3: two-regressor nonrectangular witness]\label{conj:nonrectangular}
+(NOT YET PROVED.)  There exists a finite-support law \(P^\star\) with \(d=2\), target \(v=(0,0)\), four endpoint cells, and two target values \(m(v^1),m(v^2)\) such that the joint identified region
+\[
+\Theta_I(P^\star;v^1,v^2)\subsetneq
+\Theta_{1\mathrm{d}}(P^\star;v^1)\times \Theta_{1\mathrm{d}}(P^\star;v^2),
+\]
+where \(\Theta_{1\mathrm{d}}\) denotes the product of scalar Manski--Tamer relaxations applied coordinate by coordinate.  The strict containment is witnessed by two support directions whose optima require incompatible placements of the same latent endpoint cell.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[One-dimensional reduction]\label{cor:oned}
+Under Assumptions \ref{ass:finite-support}--\ref{ass:coordinate-monotone} with \(d=1\), Conjecture \ref{conj:antichain-sharp} reduces to Theorem \ref{thm:scalar-collapse} because the product order is total on endpoint cells after sorting by the scalar upper or lower endpoint.
+\end{corollary}
+
+\begin{example}[Exhibit 9.1: antichain certificate]\label{ex:certificate}
+Let \(d=2\), \(v=(0,0)\), and suppose the endpoint support contains cells
+\[
+c_1: A=(-2,-1), B=(-1,0),\quad c_2: A=(-1,-2), B=(0,-1),\quad
+c_3: A=(1,0), B=(2,1),\quad c_4: A=(0,1), B=(1,2).
+\]
+Then \(F_L(v)=\{c_1,c_2\}\) because \(B(c_1)=(-1,0)\le v\) and \(B(c_2)=(0,-1)\le v\), while neither upper endpoint vector dominates the other inside \(\mathcal C_L(v)\).  Similarly, \(F_U(v)=\{c_3,c_4\}\).  If \(g(c_1)=1\), \(g(c_2)=3\), \(g(c_3)=7\), and \(g(c_4)=5\), then \(L_{\mathrm{ac}}(P,v)=3\) and \(U_{\mathrm{ac}}(P,v)=5\).  The computation uses only observed endpoint cells and conditional means; the two lower frontier cells are incomparable, so no scalar endpoint ordering selects a unique lower-side extremum.
+\end{example}
+
+\begin{example}[Exhibit 9.2: nonrectangular witness skeleton]\label{ex:nonrectangular}
+Use the cells in Exhibit \ref{ex:certificate} and add two targets \(v^1=(0,0)\) and \(v^2=(1,1)\).  Assign one crossing endpoint cell \(c_5:A=(-1,-1),B=(1,1)\) positive probability and let its latent completion determine both \(m(v^1)\) and \(m(v^2)\) through the same monotone function \(m\).  The scalar relaxations permit independently choosing \(V\) near the lower edge for \(v^1\) and near the upper edge for \(v^2\), but the joint product-order completion uses one conditional law for \(V\mid c_5\).  The internal consistency check is finite: five endpoint cells, two targets, no zero-probability frontier cell, and one shared crossing cell; Conjecture \ref{conj:nonrectangular} asks Stage 0 to fill numeric cell means that make the two support-direction optima incompatible.
+\end{example}
+
+\section{Proof-sketch route}
+For Conjecture \ref{conj:antichain-sharp}, the route is: headline \(\leftarrow\) unfold \(\Theta_I(P,v)\), \(F_L(v)\), \(F_U(v)\) \(\leftarrow\) substitute Assumptions \ref{ass:interval}--\ref{ass:coordinate-monotone} \(\leftarrow\) prove the lower and upper inequalities by order preservation of conditional expectations on dominated endpoint cells \(\leftarrow\) prove dominated endpoint cells are redundant by finite-poset pruning to maximal and minimal antichains \(\leftarrow\) construct a monotone extension on the finite product poset using isotone extension between frontier values \(\leftarrow\) paste endpoint-cell conditional distributions through a measurable finite selection that preserves \(g(c)\) \(\leftarrow\) apply finite-support mixture algebra.  This gives \(k=4\) substantive steps after definitions and assumptions: inequality, antichain pruning, isotone extension, and shared completion.  For Conjecture \ref{conj:selected}, repeat the same chain after disintegrating by unrestricted endpoint fibers; the nontrivial step is showing that optimizing before conditioning on fibers is not sharp.  For Conjecture \ref{conj:nonrectangular}, enumerate a five-cell finite law, compute two support functions of the joint region, compute the scalar rectangular relaxations, and show that the two scalar optima assign incompatible latent masses to the shared crossing cell.
+
+\section{Honest scope flags}
+The scalar collapse is a theorem because it is the Manski--Tamer endpoint argument with finite antichain notation.  The full multivariate sharpness result is a conjecture because the measurable-completion step must paste one joint latent law across incomparable endpoint cells.  The selected-coordinate result is also a conjecture because unrestricted endpoint fibers may require a sharper attainability condition than stated here.  The nonrectangular witness is intentionally left as a conjecture with a finite skeleton; Stage 0 must supply explicit numerical means and support-direction inequalities or refute the witness.  No reviewer iteration has withdrawn a claim in this v1 draft.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=2em]
+\item v1 (cold-start) -- initial draft centered on an antichain certificate and a finite nonrectangular two-regressor witness; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Beresteanu and Molinari(2008)]{BeresteanuMolinari2008SVRVInference}
+Beresteanu, A. and F. Molinari (2008).
+Asymptotic properties for a class of partially identified models.
+\emph{Econometrica} 76(4), 763--814.
+
+\bibitem[Beresteanu, Molchanov, and Molinari(2011)]{BeresteanuMolchanovMolinari2011ConvexMomentPredictions}
+Beresteanu, A., I. Molchanov, and F. Molinari (2011).
+Sharp identification regions in models with convex moment predictions.
+\emph{Econometrica} 79(6), 1785--1821.
+
+\bibitem[Beresteanu, Molchanov, and Molinari(2012)]{BeresteanuMolchanovMolinari2012RandomSetTheory}
+Beresteanu, A., I. Molchanov, and F. Molinari (2012).
+Partial identification using random set theory.
+\emph{Journal of Econometrics} 166(1), 17--32.
+
+\bibitem[Chernozhukov, Hong, and Tamer(2007)]{ChernozhukovHongTamer2007ParameterSets}
+Chernozhukov, V., H. Hong, and E. Tamer (2007).
+Estimation and confidence regions for parameter sets in econometric models.
+\emph{Econometrica} 75(5), 1243--1284.
+
+\bibitem[Chernozhukov, Lee, and Rosen(2013)]{ChernozhukovLeeRosen2013IntersectionBounds}
+Chernozhukov, V., S. Lee, and A. M. Rosen (2013).
+Intersection bounds: estimation and inference.
+\emph{Econometrica} 81(2), 667--737.
+
+\bibitem[Magnac and Maurin(2008)]{MagnacMaurin2008MonotoneBinaryInterval}
+Magnac, T. and E. Maurin (2008).
+Partial identification in monotone binary models: discrete regressors and interval data.
+\emph{Review of Economic Studies} 75(3), 835--864.
+
+\bibitem[Manski and Pepper(2000)]{ManskiPepper2000MIV}
+Manski, C. F. and J. V. Pepper (2000).
+Monotone instrumental variables: with an application to the returns to schooling.
+\emph{Econometrica} 68(4), 997--1010.
+
+\bibitem[Manski and Tamer(2002)]{ManskiTamer2002IntervalRegression}
+Manski, C. F. and E. Tamer (2002).
+Inference on regressions with interval data on a regressor or outcome.
+\emph{Econometrica} 70(2), 519--546.
+\end{thebibliography}
+
+\end{document}

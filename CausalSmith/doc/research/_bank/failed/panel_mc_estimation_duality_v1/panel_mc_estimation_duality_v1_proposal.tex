@@ -1,0 +1,388 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=panel\_mc\_estimation\_duality, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{panel\_mc\_estimation\_duality} / \texttt{v1}%
+  \\ \large\textit{Separability certificates for low-rank untreated and treatment-effect surfaces in staggered panels}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\[
+\begin{array}{ll}
+\texttt{qid} & = \texttt{panel\_mc\_estimation\_duality},\\
+\texttt{specialization} & = \texttt{v1},\\
+\texttt{p} & = (r_0,r_1,\mathcal E),\quad r_0,r_1\ge 1,\\
+\texttt{assignment} & = \text{absorbing staggered adoption }D_{it}=\one\{t\ge G_i\},\quad G_i\in\{2,\ldots,T,\infty\},\\
+\texttt{target} & = \theta_{\mathcal E}=|\mathcal E|^{-1}\sum_{(i,t)\in\mathcal E}\tau_{it},\quad \mathcal E\subseteq\{(i,t):D_{it}=1\},\\
+\texttt{regression} & = \text{separable low-rank completion of }Y=M^0+D\circ\tau
+\text{ with oracle certificate }\sigma_{\mathrm{sep}}(M^0,\tau,D)
+\text{ and observable reference certificate }\sigma_{\mathrm{obs}}(P,D).
+\end{array}
+\]
+Here \(M^0\in\R^{N\times T}\) is the untreated mean surface with rank at most \(r_0\), \(\tau\in\R^{N\times T}\) is a treatment-effect surface with rank at most \(r_1\), \(D\circ\tau\) denotes entrywise masking by treatment exposure, \(\sigma_{\mathrm{sep}}(M^0,\tau,D)\) is the oracle smallest singular value of the finite-dimensional tangent-design map, and \(\sigma_{\mathrm{obs}}(P,D)\) is the same singular value computed from the reference singular subspaces identified by Assumption~\ref{ass:reference-subspaces}.
+
+\begin{abstract}
+This proposal asks when a staggered-treatment panel can distinguish low-rank untreated heterogeneity from a low-rank treatment-effect surface rather than absorbing the effect surface into the matrix-completion counterfactual.  The kernel is the target-nullspace defect \(a_{\mathcal E}(P,D)\), with the separability singular value \(\sigma_{\mathrm{obs}}(P,D)\) as the stronger surface-recovery certificate.  The flagship conjecture is a scalar local-identification frontier: \(\theta_{\mathcal E}\) is identified exactly when every tangent null direction has zero event-time average and the named curvature remainder is dominated on the local ball; positive \(\sigma_{\mathrm{obs}}\) then gives asymptotically linear separable completion.  The strict gap relative to causal matrix-completion estimators is that the estimand is not merely a missing untreated surface, but a two-surface decomposition \(Y=M^0+D\circ\tau\) whose event-time effect can be unidentified even when a low-rank completion of the observed matrix is unique.  If resolved, the result would tell staggered-adoption researchers when low-rank imputation is safe for heterogeneous dynamic effects and when it can mechanically erase the treatment surface it is meant to estimate.
+\end{abstract}
+
+\section{Introduction}
+Low-rank matrix completion is now a standard way to impute untreated potential outcomes in panel causal studies, while modern staggered-DID work warns that heterogeneous dynamic effects can be mixed across cohorts and event times.  The main claim is that the target-nullspace defect \(a_{\mathcal E}(P,D)\) is the local point-identification frontier for the event-time average \(\theta_{\mathcal E}\): under the stated rank, observability, and curvature conditions, \(a_{\mathcal E}(P,D)=0\) identifies the target, while a positive target-null direction yields observationally equivalent decompositions with separated event-time effects.
+
+The closest published comparators are \citet[Sections 2--3]{FariasLiPeng2021}, which formulate treatment-effect learning in panels with general intervention patterns, and \citet[Sections 2--3]{AgarwalDahlehShahShen2023}, which frames matrix completion as causal estimation under latent low-rank structure.  Their estimands require learning missing potential-outcome entries or treated-entry averages; neither gives an iff certificate for separating a low-rank untreated surface from a low-rank treatment-effect surface under the deterministic staggered mask.  This is a panel proposal with a partial-identification edge, located between causal-panel matrix completion, staggered DID, and low-rank heterogeneous-effect learning.
+
+The concrete downstream consumer is the treatment-effect learning problem of \citet{FariasLiPeng2021}: the result would say when its treated-entry average is distinguishable from the untreated low-rank surface under staggered adoption and when only a partial-identification interval is defensible.  Researchers should report a separability diagnostic before interpreting low-rank imputation estimates as heterogeneous dynamic treatment effects.
+
+Results at a glance:
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: \(\sigma_{\mathrm{obs}}(P,D)\) is the observable smallest singular value of the two-surface tangent design and is positive exactly when the linearized decomposition is injective.  Gap: \citet{AtheyBayatiDoudchenkoImbensKhosravi2021} and \citet{AgarwalDahlehShahShen2023} complete low-rank potential-outcome matrices, but do not stack untreated and treatment-effect rank tangents.  Consumer: \citet{FariasLiPeng2021}.
+\item Conjecture 1: \(a_{\mathcal E}(P,D)=0\) plus the named curvature bound is the iff frontier for local point identification of \(\theta_{\mathcal E}\), and positive target-null directions give separated observationally equivalent event-time effects.  Gap: \citet{FariasLiPeng2021} and \citet{AgarwalDahlehShahShen2023} do not give a scalar target-nullspace frontier for two low-rank causal surfaces.  Consumer: \citet{FariasLiPeng2021}.
+\item Conjecture 2: positive \(\sigma_{\mathrm{obs}}(P,D)\) yields a constrained separable-completion estimator with Riesz weights \(\pi_{\mathrm{sep}}\) and a first-order law.  Gap: \citet{ChoiKwonLiao2024}, \citet{ChoiYuan2024}, \citet{YanWainwright2024}, \citet{ChernozhukovHansenLiaoZhu2019}, and \citet{ZhuLiaoHansenChernozhukov2026} give low-rank completion or heterogeneous low-rank effect inference without the two-surface separability Riesz map induced by a staggered mask.  Consumer: \citet{BenMichaelFellerRothstein2022}.
+\end{itemize}
+
+\section{Related work}
+\citet[Sections 2--3]{AtheyBayatiDoudchenkoImbensKhosravi2021} develop nuclear-norm matrix completion for causal panels; this proposal keeps their low-rank untreated surface but asks whether a second low-rank treatment-effect surface is separately identified.  \citet[Sections 2--3]{AgarwalDahlehShahShen2023} cast matrix completion as causal estimation under latent low-rank structure and confounded or nonrandom missingness; the present frontier is stricter because treated cells contain \(M^0+D\circ\tau\), so completing a potential-outcome matrix does not by itself identify the low-rank effect surface.  \citet{Bai2009} and \citet{BaiNg2021} provide interactive fixed-effect and factor-imputation theory for counterfactual panels; they motivate rank-\(r_0\) untreated heterogeneity but do not analyze a low-rank treatment-effect matrix.  \citet[Sections 2--3]{FariasLiPeng2021} study treatment-effect learning in panels with general intervention patterns; this is the closest direct treatment-effect comparator because the target is an average over treated entries, but their guarantees do not give an iff separability frontier for \(M^0\) versus \(\tau\).  \citet[Sections 1--2]{ChernozhukovHansenLiaoZhu2019} and its published version \citet[Sections 1--2]{ZhuLiaoHansenChernozhukov2026} estimate low-rank factor-slope heterogeneous effects and prove asymptotic normality for unit-time and average slope effects; this proposal differs by making the staggered-treatment mask itself part of the identification problem and by asking whether an effect slope surface is separable from the untreated low-rank surface.  \citet[Sections 3--4]{SunAbraham2021} and \citet{DeChaisemartinDHaultfoeuille2020} show how heterogeneous treatment effects contaminate standard staggered-DID estimators; this proposal asks for the corresponding low-rank matrix-completion contamination frontier.  \citet[Section 2.2 and Theorem 1]{BenMichaelFellerRothstein2022} extend synthetic controls to staggered adoption and emphasize individual and pooled imbalance; their error decomposition is a consumer for a separability diagnostic.  \citet[Sections 2--3 and Theorem 3.1]{ChoiKwonLiao2024}, \citet[Sections 2--3]{ChoiYuan2024}, and \citet[Section 3 and Theorems 1--2]{YanWainwright2024} develop inference after low-rank completion, including staggered or MNAR missingness; their inference constants motivate using singular gaps and design constants in the proposed estimator, but they do not include a two-surface treatment-effect Riesz map.  \citet[Theorem 1.2]{CandesTao2010} and \citet[Theorem 1.1]{KeshavanMontanariOhFew2010} give matrix-completion recovery thresholds under random observation designs; this proposal instead targets a deterministic staggered mask and two low-rank summands.
+
+In the CausalSmith catalogue, the closest in-repo prior angle is \texttt{panel\_sdid\_mc\_id}, whose rejected kernels asked for spectral equality frontiers, penalty-stable equality, and a strict SCM/ASCM/SDiD/matrix-completion lattice.  This proposal is different: it does not compare existing estimators' ATT functionals, but introduces \(\sigma_{\mathrm{sep}}(M^0,\tau,D)\) and \(\sigma_{\mathrm{obs}}(P,D)\) for identifying a second low-rank causal surface.  The current \texttt{doc/API.md} panel catalogue is concentrated on Q1 minimal-basis, sign-flip, staggered-basis, and Markov spectral-threshold algebra for linear panel regressions; it contains no joint low-rank untreated/effect decomposition and no separability estimator.
+
+\section{Formal setup}\label{sec:setup}
+There are \(N\) units and \(T\) periods.  The observable law \(P\) is the joint law of \((Y^{\mathrm{obs}},D,G)\) conditional on the realized staggered design.  Adoption is absorbing: \(D_{it}=\one\{t\ge G_i\}\), with \(G_i\in\{2,\ldots,T,\infty\}\).  Let \(\mathcal O_0=\{(i,t):D_{it}=0\}\), \(\mathcal O_1=\{(i,t):D_{it}=1\}\), and let \(\mathcal E\subseteq\mathcal O_1\) be the target event-time set.  The observed mean matrix is
+\[
+Y=M^0+D\circ\tau,\qquad \operatorname{rank}(M^0)\le r_0,\qquad \operatorname{rank}(\tau)\le r_1,
+\]
+where \(M^0_{it}=\E[Y_{it}(0)\mid D]\), \(\tau_{it}=\E[Y_{it}(1)-Y_{it}(0)\mid D]\), and \(\theta_{\mathcal E}=|\mathcal E|^{-1}\sum_{(i,t)\in\mathcal E}\tau_{it}\).
+
+Write \(M^0=U_0S_0V_0^\transpose\) and \(\tau=U_1S_1V_1^\transpose\) with ranks \(r_0\) and \(r_1\) on the local stratum.  The rank-\(r\) tangent space at \(A=USV^\transpose\) is
+\[
+\mathcal T(A,r)=\{UB^\transpose+CV^\transpose:B\in\R^{T\times r},\ C\in\R^{N\times r}\}.
+\]
+Define the tangent-design operator
+\[
+\mathcal L_D(H,K)=H+D\circ K,\qquad H\in\mathcal T(M^0,r_0),\quad K\in\mathcal T(\tau,r_1),
+\]
+viewed after stacking all \(NT\) entries.  After choosing any orthonormal coordinate bases for \(\mathcal T(M^0,r_0)\) and \(\mathcal T(\tau,r_1)\), let \(A_{\mathrm{sep}}(M^0,\tau,D)\) be the finite \(NT\)-row matrix whose columns are the stacked arrays \(H+D\circ K\) generated by those bases.  The oracle separability singular value is
+\[
+\sigma_{\mathrm{sep}}(M^0,\tau,D)=
+\inf_{\|H\|_F^2+\|K\|_F^2=1}
+\|\mathcal L_D(H,K)\|_F,
+\]
+where the infimum is over \(H\in\mathcal T(M^0,r_0)\), \(K\in\mathcal T(\tau,r_1)\), and the tangent bases are chosen from the rank-\(r_0\) and rank-\(r_1\) singular subspaces of the population matrices.  A reference-subspace rule \(R(P,D)=(\mathcal U_0,\mathcal V_0,\mathcal U_1,\mathcal V_1)\) maps the observable law to candidate rank-\((r_0,r_1)\) singular subspaces; \(A_{\mathrm{obs}}(P,D)\) is the stacked matrix built from those reference tangent bases, and
+\[
+\sigma_{\mathrm{obs}}(P,D)=s_{\min}(A_{\mathrm{obs}}(P,D)).
+\]
+Under Assumption~\ref{ass:reference-subspaces}, \(A_{\mathrm{obs}}(P,D)=A_{\mathrm{sep}}(M^0,\tau,D)\) up to right multiplication by orthogonal coordinate changes, so \(\sigma_{\mathrm{obs}}(P,D)=\sigma_{\mathrm{sep}}(M^0,\tau,D)\).  The curvature constant is
+\[
+\kappa_{\mathrm{curv}}(M^0,\tau)=\min\{\sigma_{r_0}(M^0),\sigma_{r_1}(\tau)\}/4,
+\]
+and \(\ell_{\mathcal E}\) is the coordinate vector for the linear functional \((H,K)\mapsto |\mathcal E|^{-1}\sum_{(i,t)\in\mathcal E}K_{it}\) in the reference tangent coordinates.  The target-null leverage constant is
+\[
+\lambda_{\mathcal E}(P,D)=
+\sup\{|\ell_{\mathcal E}^{\transpose}z|:
+z\in\ker A_{\mathrm{obs}}(P,D),\ \|z\|_2=1\},
+\]
+with \(\lambda_{\mathcal E}(P,D)=0\) when \(A_{\mathrm{obs}}\) is injective.
+The constant \(c_{\min}>0\) denotes a fixed researcher-declared lower bound for \(\sigma_{\mathrm{obs}}(P,D)\) in the uniform-rate statement.  The all-cell Riesz weight vector is
+\[
+\pi_{\mathrm{sep}}(P,D)=A_{\mathrm{obs}}(P,D)\{A_{\mathrm{obs}}(P,D)^\transpose A_{\mathrm{obs}}(P,D)\}^{\dagger}\ell_{\mathcal E}\in\R^{NT},
+\]
+and \(\pi_{\mathrm{sep},it}(P,D)\) denotes its \((i,t)\) entry.
+The target-nullspace defect is the observable scalar
+\[
+a_{\mathcal E}(P,D)=
+\sup\{|\ell_{\mathcal E}^{\transpose}z|: A_{\mathrm{obs}}(P,D)z=0,\ \|z\|_2=1\},
+\]
+with \(a_{\mathcal E}(P,D)=0\) when \(A_{\mathrm{obs}}\) has no nullspace.  Let \(\gamma_{\mathcal E}(P,D)\) be the smallest nonzero singular value of \(A_{\mathrm{obs}}(P,D)\) on the orthogonal complement of \(\ker A_{\mathrm{obs}}(P,D)\), with \(\gamma_{\mathcal E}(P,D)=\sigma_{\mathrm{obs}}(P,D)\) when \(A_{\mathrm{obs}}\) is injective.  For \(\delta>0\), the curvature remainder is
+\[
+R_{\mathrm{curv}}(\delta;M^0,\tau)=
+\sup_{\|(H,K)\|_F\le\delta}
+\inf_{(\bar H,\bar K)\in\mathcal T(M^0,r_0)\times\mathcal T(\tau,r_1)}
+\frac{\|(M^0+H,\tau+K)-(M^0+\bar H,\tau+\bar K)\|_F}{\delta},
+\]
+where the supremum is over rank-\((r_0,r_1)\) perturbations inside the local ball; Assumption~\ref{ass:rank-stability} bounds it by \(2\delta/\kappa_{\mathrm{curv}}(M^0,\tau)\).
+The estimator \((\widehat M,\widehat\Delta)\) is the constrained separable completion estimator
+\[
+(\widehat M,\widehat\Delta)\in\arg\min_{\operatorname{rank}(M)\le r_0,\ \operatorname{rank}(\Delta)\le r_1}
+\|Y-M-D\circ \Delta\|_F^2+\rho_0\|M\|_*+\rho_1\|\Delta\|_*,
+\qquad
+\widehat\theta_{\mathcal E}=|\mathcal E|^{-1}\sum_{(i,t)\in\mathcal E}\widehat\Delta_{it},
+\]
+with \(\rho_0,\rho_1\le \kappa_{\mathrm{curv}}(M^0,\tau)\sigma_{\mathrm{obs}}(P,D)/8\) in the positive-margin oracle statement.  The map from the optimizer to the target is the linear averaging map \((M,\Delta)\mapsto |\mathcal E|^{-1}\sum_{(i,t)\in\mathcal E}\Delta_{it}\).
+
+\[
+\begin{array}{ll}
+\texttt{qid} & = \texttt{panel\_mc\_estimation\_duality},\\
+\texttt{specialization} & = \texttt{v1},\\
+\texttt{p} & = (r_0,r_1,\mathcal E),\\
+\texttt{assignment} & = \text{absorbing staggered adoption }D_{it}=\one\{t\ge G_i\},\\
+\texttt{target} & = \theta_{\mathcal E}=|\mathcal E|^{-1}\sum_{(i,t)\in\mathcal E}\tau_{it},\\
+\texttt{regression} & = \text{separable low-rank completion with oracle certificate }\sigma_{\mathrm{sep}}(M^0,\tau,D)
+\text{ and observable certificate }\sigma_{\mathrm{obs}}(P,D).
+\end{array}
+\]
+
+\section{Assumptions}
+\begin{assumption}[Staggered panel and no anticipation]\label{ass:staggered}
+The adoption process is absorbing, \(D_{it}=\one\{t\ge G_i\}\), and \(Y_{it}=Y_{it}(0)\) for \(t<G_i\).  The target set \(\mathcal E\) is a nonempty subset of treated cells.
+\end{assumption}
+
+\begin{assumption}[Two low-rank surfaces]\label{ass:two-rank}
+The population untreated surface \(M^0\) has rank exactly \(r_0\), and the population treatment-effect surface \(\tau\) has rank exactly \(r_1\).  Their singular values satisfy \(\sigma_{r_0}(M^0)>0\) and \(\sigma_{r_1}(\tau)>0\).
+\end{assumption}
+
+\begin{assumption}[Incoherence and bounded entries]\label{ass:incoherence}
+The singular vectors of \(M^0\) and \(\tau\) have standard matrix-completion incoherence bounded by \(\mu\), and \(\|M^0\|_{\max}+\|\tau\|_{\max}\le B\).
+\end{assumption}
+
+\begin{assumption}[Reference-subspace observability]\label{ass:reference-subspaces}
+The observable law and staggered mask identify a reference decomposition whose singular subspaces equal the local singular subspaces of \((M^0,\tau)\) up to rotations; equivalently, the finite matrix \(A_{\mathrm{obs}}(P,D)\) computed from \(R(P,D)\) has the same column space and singular values as \(A_{\mathrm{sep}}(M^0,\tau,D)\).
+\end{assumption}
+
+\begin{assumption}[Positive separability margin]\label{ass:sep-margin}
+The observable separability singular value satisfies
+\[
+\sigma_{\mathrm{obs}}(P,D)>0,\qquad
+\rho_0,\rho_1\le \kappa_{\mathrm{curv}}(M^0,\tau)\sigma_{\mathrm{obs}}(P,D)/8.
+\]
+\end{assumption}
+
+\begin{assumption}[Zero-certificate branch]\label{ass:zero-certificate}
+The oracle certificate satisfies \(\sigma_{\mathrm{sep}}(M^0,\tau,D)=0\), and there is a nonzero null direction \((H_0,K_0)\in\mathcal T(M^0,r_0)\times\mathcal T(\tau,r_1)\) with \(H_0+D\circ K_0=0\) and \(|\mathcal E|^{-1}\sum_{(i,t)\in\mathcal E}K_{0,it}\ne 0\).
+\end{assumption}
+
+\begin{assumption}[Sampling and shocks]\label{ass:sampling}
+Observed outcomes are \(Y^{\mathrm{obs}}_{it}=M^0_{it}+D_{it}\tau_{it}+\varepsilon_{it}\), with mean-zero shocks conditionally independent across units, uniformly bounded fourth moments, and variance matrix bounded above and away from zero on \(\mathcal E\).
+\end{assumption}
+
+\begin{assumption}[Local rank stability]\label{ass:rank-stability}
+In a Frobenius ball of radius \(\kappa_{\mathrm{curv}}(M^0,\tau)\) around \((M^0,\tau)\), the rank-\(r_0\) and rank-\(r_1\) manifolds are locally represented by their tangent spaces plus the named remainder \(R_{\mathrm{curv}}(\delta;M^0,\tau)\), with \(R_{\mathrm{curv}}(\delta;M^0,\tau)\le 2\delta/\kappa_{\mathrm{curv}}(M^0,\tau)\) for every \(0<\delta\le\kappa_{\mathrm{curv}}(M^0,\tau)\).
+\end{assumption}
+
+\begin{assumption}[Triangular-array estimator sequence]\label{ass:asymptotic}
+Along a sequence \(N,T,|\mathcal E|\to\infty\), the ranks \(r_0,r_1\), incoherence bound \(\mu\), entry bound \(B\), and lower margins \(c_{\min}\le\sigma_{\mathrm{obs}}(P,D)\) and \(\kappa_{\min}\le\kappa_{\mathrm{curv}}(M^0,\tau)\) are fixed, \(|\mathcal E|/(NT)\) is bounded away from zero and one, and \(\|\pi_{\mathrm{sep}}(P,D)\|_{\infty}=o(|\mathcal E|^{-1/2})\).
+\end{assumption}
+
+\begin{assumption}[Penalty path and no-effect uniqueness]\label{ass:penalty-path}
+For the vanishing-amplitude sanity branch, \(\rho_1/\eta\to0\) and \(\rho_0\) converges to the ordinary matrix-completion penalty.  The ordinary rank-\(r_0\) completion of \(M^0\) under the untreated/control observation mask is unique.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: observable tangent certificate]\label{thm:certificate}
+Under Assumptions~\ref{ass:staggered}--\ref{ass:reference-subspaces}, \(\sigma_{\mathrm{obs}}(P,D)\) is the smallest singular value of a finite observable matrix \(A_{\mathrm{obs}}(P,D)\) whose columns are the stacked arrays \(H+D\circ K\) generated by the reference bases for \(\mathcal T(M^0,r_0)\) and \(\mathcal T(\tau,r_1)\).  It equals the oracle value \(\sigma_{\mathrm{sep}}(M^0,\tau,D)\), and \(\sigma_{\mathrm{obs}}(P,D)>0\) if and only if the linearized decomposition map \((H,K)\mapsto H+D\circ K\) is injective on \(\mathcal T(M^0,r_0)\times\mathcal T(\tau,r_1)\).
+\end{theorem}
+
+\begin{conjecture}[Conjecture 1: separability phase transition (NOT YET PROVED)]\label{conj:sep-frontier}
+Under Assumptions~\ref{ass:staggered}, \ref{ass:two-rank}, \ref{ass:incoherence}, \ref{ass:reference-subspaces}, and \ref{ass:rank-stability}, the following are equivalent in a neighborhood of \((M^0,\tau)\):
+\begin{enumerate}[label=(\roman*)]
+\item \(\theta_{\mathcal E}\) is locally point identified from \(P\) and \(D\) over rank-\((r_0,r_1)\) decompositions of \(Y=M^0+D\circ\tau\);
+\item \(a_{\mathcal E}(P,D)=0\), and for
+\[
+\delta_{\mathcal E}=\kappa_{\mathrm{curv}}(M^0,\tau)\gamma_{\mathcal E}(P,D)/(16\{1+\lambda_{\mathcal E}(P,D)\})
+\]
+the named remainder satisfies \(R_{\mathrm{curv}}(\delta_{\mathcal E};M^0,\tau)\le \gamma_{\mathcal E}(P,D)/8\).
+\end{enumerate}
+Separately, under Assumptions~\ref{ass:staggered}, \ref{ass:two-rank}, \ref{ass:incoherence}, \ref{ass:zero-certificate}, and \ref{ass:rank-stability}, for a nonempty open set of staggered masks and rank-\((r_0,r_1)\) surfaces there are two decompositions \((M^0,\tau)\ne(\widetilde M^0,\widetilde\tau)\) with the same observed \(Y\) and
+\[
+|\theta_{\mathcal E}(\tau)-\theta_{\mathcal E}(\widetilde\tau)|
+\ge
+\lambda_{\mathcal E}(P,D)\kappa_{\mathrm{curv}}(M^0,\tau)/8.
+\]
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: separable-completion estimator and first-order law (NOT YET PROVED)]\label{conj:estimator}
+Under Assumptions~\ref{ass:staggered}, \ref{ass:two-rank}, \ref{ass:incoherence}, \ref{ass:reference-subspaces}, \ref{ass:sep-margin}, \ref{ass:sampling}, \ref{ass:rank-stability}, \ref{ass:asymptotic}, and \ref{ass:penalty-path}, the constrained estimator \(\widehat\theta_{\mathcal E}\) is consistent and
+\[
+\sqrt{|\mathcal E|}\{\widehat\theta_{\mathcal E}-\theta_{\mathcal E}\}
+=\sqrt{|\mathcal E|}\sum_{i=1}^N\sum_{t=1}^T\pi_{\mathrm{sep},it}(P,D)\varepsilon_{it}+o_p(1),
+\]
+where \(\pi_{\mathrm{sep}}(P,D)\in\R^{NT}\) is the all-cell Riesz weight vector defined in Section~\ref{sec:setup}.  Under the zero-certificate branch in Assumption~\ref{ass:zero-certificate}, no regular estimator depending only on \(Y\) and \(D\) has a first-order law for \(\theta_{\mathcal E}\) uniformly over the open nonidentified class in Conjecture~\ref{conj:sep-frontier}.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Vanishing effect-amplitude limit recovers ordinary matrix completion]\label{cor:no-effect-rank}
+Under Assumptions~\ref{ass:staggered}, \ref{ass:two-rank}, \ref{ass:rank-stability}, and \ref{ass:penalty-path}, fix \(r_1\ge1\) and a rank-\(r_1\) matrix \(\tau^\star\), and set \(\tau^{(\eta)}=\eta\tau^\star\) for \(\eta>0\).  Along any sequence with \(\eta\downarrow0\) after \(N,T\) are fixed, the separable target contribution \(D\circ\tau^{(\eta)}\) vanishes, the first-order target \(\theta_{\mathcal E}(\tau^{(\eta)})\) converges to zero, and uniqueness plus \(\rho_1/\eta\to0\) force the untreated component of the estimator to converge to the ordinary causal-panel matrix-completion plug-in target of \citet{AtheyBayatiDoudchenkoImbensKhosravi2021}.
+\end{corollary}
+
+\begin{example}[Three-cohort non-corner witness]\label{ex:three-cohort}
+Let \(N=3\), \(T=4\), adoption times \(G=(2,3,3)\), \(r_0=r_1=1\), \(M^0_{it}=a_i b_t\) with \(a=(1,1.25,1.39)\), \(b=(0.54,0.72,0.83,2.14)\), and \(\tau_{it}=c_i d_t\) with \(c=(1.25,1.39,1.30)\), \(d=(0.52,0.29,-1.19,-1.70)\).  In the coordinate order \((\dot a_1,\dot a_2,\dot a_3,\dot b_1,\ldots,\dot b_4,\dot c_1,\dot c_2,\dot c_3,\dot d_1,\ldots,\dot d_4)\), the stacked tangent-design matrix is
+\[
+\scriptsize
+\begin{pmatrix}
+0.54&0&0&1&0&0&0&0&0&0&0&0&0&0\\
+0.72&0&0&0&1&0&0&0.29&0&0&0&1.25&0&0\\
+0.83&0&0&0&0&1&0&-1.19&0&0&0&0&1.25&0\\
+2.14&0&0&0&0&0&1&-1.70&0&0&0&0&0&1.25\\
+0&0.54&0&1.25&0&0&0&0&0&0&0&0&0&0\\
+0&0.72&0&0&1.25&0&0&0&0&0&0&0&0&0\\
+0&0.83&0&0&0&1.25&0&0&-1.19&0&0&0&1.39&0\\
+0&2.14&0&0&0&0&1.25&0&-1.70&0&0&0&0&1.39\\
+0&0&0.54&1.39&0&0&0&0&0&0&0&0&0&0\\
+0&0&0.72&0&1.39&0&0&0&0&0&0&0&0&0\\
+0&0&0.83&0&0&1.39&0&0&0&-1.19&0&0&1.30&0\\
+0&0&2.14&0&0&0&1.39&0&0&-1.70&0&0&0&1.30
+\end{pmatrix}.
+\]
+Its singular values are approximately \(4.3997,3.1494,3.1332,3.1298,2.3293,2.1432,1.2403,0.6977,0.4443,0.1358,0,0\).  A normalized null direction is
+\[
+z=(-0.2095,-0.2618,-0.2912,0.1131,0.1508,-0.3959,-0.3657,-0.1749,-0.2606,-0.3495,0,0.0406,0.2893,0.4133),
+\]
+for which \(\|A_{\mathrm{sep}}z\|_2<1.5\cdot10^{-15}\) and the treated-cell average derivative is \(\ell_{\mathcal E}^{\transpose}z\approx0.7195\).  The vectors \(a,b,c,d\) are nonconstant and all treated and untreated blocks contain variation, so the witness is not a constant-outcome or collapsed-arm corner.
+\end{example}
+
+Under Assumptions~\ref{ass:staggered}, \ref{ass:two-rank}, \ref{ass:rank-stability}, and \ref{ass:penalty-path}, Corollary~\ref{cor:no-effect-rank} reduces cleanly as a limit that preserves exact rank for every \(\eta>0\): the observed mean tends to \(M^0\), the effect penalty is asymptotically negligible relative to the effect amplitude, the no-effect completion is unique, and the untreated block is the ordinary matrix-completion object.  Example~\ref{ex:three-cohort} supplies a displayed \(A_{\mathrm{sep}}\), singular-value calculation, null direction, and nonzero target derivative for Stage 0 to check before claiming a generic open-class result.
+
+\section{Proof-sketch route}
+The proof route is finite-dimensional differential geometry plus perturbation algebra.  Theorem~\ref{thm:certificate} follows by applying Assumption~\ref{ass:reference-subspaces}, choosing orthonormal bases for the reference tangent spaces, stacking \(H+D\circ K\) into \(A_{\mathrm{obs}}(P,D)\), and applying the singular-value characterization of injectivity.  Conjecture~\ref{conj:sep-frontier} should reduce scalar local identification to the annihilator condition \(a_{\mathcal E}=0\), use \(R_{\mathrm{curv}}\) to control nonlinear rank-manifold departures from tangent null directions, and construct the lower-bound family by moving along a null direction with nonzero \(\ell_{\mathcal E}\) average.  Conjecture~\ref{conj:estimator} should follow by local quadratic expansion of the constrained least-squares/nuclear-norm objective, projection of the target linear functional through \(A_{\mathrm{obs}}\), triangular-array Lindeberg arguments for the all-cell Riesz weights \(\pi_{\mathrm{sep}}\), and explicit enumeration of the three-cohort rank-one witness in Example~\ref{ex:three-cohort} to verify that the lower-bound class is nondegenerate.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:certificate} is labelled as a theorem because it is a linear-algebra restatement once the reference subspaces are identified; Assumption~\ref{ass:reference-subspaces} is the explicit observability condition and should not be hidden in the notation.  Conjectures~\ref{conj:sep-frontier} and~\ref{conj:estimator} are not yet proved; the difficult steps are the nonlinear scalar-annihilator iff direction, the open-class nonidentification construction, and the first-order expansion of the constrained estimator near the rank boundary.  The constants \(1/16\) and \(1/8\) in Conjecture~\ref{conj:sep-frontier} are placeholders for explicit Stage 0 algebra but are tied to \(\kappa_{\mathrm{curv}}\), \(\lambda_{\mathcal E}(P,D)\), \(\gamma_{\mathcal E}\), and \(R_{\mathrm{curv}}\), not free epsilons.  This pivot withdraws the previous equality-frontier, penalty-stability, estimator-lattice, and double-robust-score angles; v2 also withdraws the invalid \(r_1=0\) sanity corner and replaces it with a positive-rank vanishing-amplitude limit.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) --- initial draft for angle 4, replacing exhausted estimator-equivalence and double-robust kernels with the low-rank untreated/effect separability certificate \(\sigma_{\mathrm{sep}}\); prior verdict: none.
+\item v2 (revise) --- separated oracle and observable certificates, split positive-margin and zero-certificate branches, specified the estimator asymptotic sequence and Riesz weights, added low-rank heterogeneous-slope comparators, and replaced the invalid \(r_1=0\) sanity check; prior verdict: REVISE.
+\item v3 (revise) --- replaced the scalar target iff with the target-nullspace defect \(a_{\mathcal E}\), named \(R_{\mathrm{curv}}\), added the Choi--Yuan MNAR matrix-completion comparator, and downgraded Ben-Michael--Feller--Rothstein to a consumer rather than an equivalence comparator; prior verdict: REVISE.
+\item v4 (revise) --- added the Agarwal--Dahleh--Shah--Shen causal matrix-completion comparator, tightened Conjecture~\ref{conj:sep-frontier} around the Farias/Agarwal two-surface separability gap, replaced the degenerate \(\lambda_{\mathcal E}\) constant with a target-null leverage, and rewrote the introduction as a four-paragraph results-at-a-glance block; prior verdict: REVISE.
+\item v5 (revise) --- renamed the estimator effect-surface variable, added the low-rank heterogeneous-effect inference comparators for Conjecture~\ref{conj:estimator}, strengthened the vanishing-amplitude sanity condition, and displayed the three-cohort witness matrix, null vector, and target derivative; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Agarwal et~al.(2023)]{AgarwalDahlehShahShen2023}
+Agarwal, A., Dahleh, M., Shah, D., and Shen, D. (2023).
+Causal matrix completion.
+\emph{Proceedings of Machine Learning Research}.
+
+\bibitem[Athey et~al.(2021)]{AtheyBayatiDoudchenkoImbensKhosravi2021}
+Athey, S., Bayati, M., Doudchenko, N., Imbens, G., and Khosravi, K. (2021).
+Matrix completion methods for causal panel data models.
+\emph{Journal of the American Statistical Association}, 116(536), 1716--1730.
+
+\bibitem[Bai(2009)]{Bai2009}
+Bai, J. (2009).
+Panel data models with interactive fixed effects.
+\emph{Econometrica}, 77(4), 1229--1279.
+
+\bibitem[Bai and Ng(2021)]{BaiNg2021}
+Bai, J. and Ng, S. (2021).
+Matrix completion, counterfactuals, and factor analysis of missing data.
+\emph{Journal of the American Statistical Association}.
+
+\bibitem[Ben-Michael et~al.(2022)]{BenMichaelFellerRothstein2022}
+Ben-Michael, E., Feller, A., and Rothstein, J. (2022).
+Synthetic controls with staggered adoption.
+\emph{Journal of the Royal Statistical Society: Series B}, 84(2), 351--381.
+
+\bibitem[Candes and Tao(2010)]{CandesTao2010}
+Candes, E. and Tao, T. (2010).
+The power of convex relaxation: Near-optimal matrix completion.
+\emph{IEEE Transactions on Information Theory}, 56(5), 2053--2080.
+
+\bibitem[Choi et~al.(2024)]{ChoiKwonLiao2024}
+Choi, J., Kwon, S., and Liao, Z. (2024).
+Inference for low-rank completion without sample splitting with application to treatment effect estimation.
+\emph{Journal of Econometrics}, 240(2), 105682.
+
+\bibitem[Choi and Yuan(2024)]{ChoiYuan2024}
+Choi, J. and Yuan, M. (2024).
+Matrix completion when missing is not at random and its applications in causal panel data models.
+\emph{Journal of the American Statistical Association}.
+
+\bibitem[Chernozhukov et~al.(2019)]{ChernozhukovHansenLiaoZhu2019}
+Chernozhukov, V., Hansen, C., Liao, Y., and Zhu, Y. (2019).
+Inference for heterogeneous effects using low-rank estimations.
+\emph{cemmap Working Paper CWP31/19}.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{DeChaisemartinDHaultfoeuille2020}
+de Chaisemartin, C. and D'Haultfoeuille, X. (2020).
+Two-way fixed effects estimators with heterogeneous treatment effects.
+\emph{American Economic Review}, 110(9), 2964--2996.
+
+\bibitem[Farias et~al.(2021)]{FariasLiPeng2021}
+Farias, V., Li, A., and Peng, T. (2021).
+Learning treatment effects in panels with general intervention patterns.
+\emph{Advances in Neural Information Processing Systems}, 34.
+
+\bibitem[Keshavan et~al.(2010)]{KeshavanMontanariOhFew2010}
+Keshavan, R., Montanari, A., and Oh, S. (2010).
+Matrix completion from a few entries.
+\emph{IEEE Transactions on Information Theory}, 56(6), 2980--2998.
+
+\bibitem[Sun and Abraham(2021)]{SunAbraham2021}
+Sun, L. and Abraham, S. (2021).
+Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\emph{Journal of Econometrics}, 225(2), 175--199.
+
+\bibitem[Yan and Wainwright(2024)]{YanWainwright2024}
+Yan, Y. and Wainwright, M. (2024).
+Entrywise inference for low-rank matrix completion under staggered adoption.
+\emph{arXiv:2401.13665}.
+
+\bibitem[Zhu et~al.(2026)]{ZhuLiaoHansenChernozhukov2026}
+Zhu, Y., Liao, Y., Hansen, C., and Chernozhukov, V. (2026).
+Inference for heterogeneous effects using low-rank estimation of factor slopes.
+\emph{Review of Economics and Statistics}, forthcoming.
+\end{thebibliography}
+
+\end{document}

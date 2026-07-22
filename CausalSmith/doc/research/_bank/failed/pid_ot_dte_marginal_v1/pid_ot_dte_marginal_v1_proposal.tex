@@ -1,0 +1,296 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_ot\_dte\_marginal, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` -- the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_ot\_dte\_marginal} / \texttt{v1}%
+  \\ \large\textit{A covariate-aggregation frontier for overlap-restricted OT DTE envelopes}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a partial-identification proposal with tuple
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\mathcal R,\mathsf B)
+=
+(\texttt{pid\_ot\_dte\_marginal},\texttt{v1},P,F_\Delta|_{\mathcal D},
+\mathcal R_{\mathrm{cov}},\mathsf B_{\mathrm{agg}}).
+\]
+Here \(P\) is the observed law of \((Y,D,X)\), where \(D\in\{0,1\}\), \(X\in\mathcal X\) is a finite covariate cell with weights \(p_x=P(X=x)>0\), and \(Y=DY(1)+(1-D)Y(0)\).  The parameter is the finite-grid treatment-effect CDF vector \(F_\Delta|_{\mathcal D}=(\Pr\{Y(1)-Y(0)\le d_j\})_{j=1}^J\) for a fixed ordered grid \(\mathcal D=\{d_1<\cdots<d_J\}\).  The restrictions \(\mathcal R_{\mathrm{cov}}\) are covariate-specific marginal-overlap envelopes \(\mathcal M_{a,x}(P)\) for the counterfactual laws of \(Y(a)\mid X=x\), overlap weights \(p_x\), and no cross-cell restriction on the latent copula beyond the requirement that one conditional coupling be chosen in every \(x\)-cell.  The bounding functional \(\mathsf B_{\mathrm{agg}}\) maps \(P\) to three objects: the conditional sharp set \(\mathsf S_{\mathrm{cond}}(P,\mathcal D)\), the pooled-marginal OT set \(\mathsf S_{\mathrm{pool}}(P,\mathcal D)\), and the aggregation-defect scalar \(A_{\mathcal D}(P)\) defined in the formal setup.
+
+\begin{abstract}
+Covariates are known to tighten bounds on treatment-effect distributions, but the literature is less explicit about when averaging covariate-specific OT envelopes is already uniformly sharp for the entire DTE CDF path.  This proposal isolates that question as a partial-identification frontier: compare the Minkowski average of conditional sharp DTE path sets with the path set obtained after first pooling the marginal counterfactual distributions.  The flagship conjecture states that equality holds if and only if a named focal object, the \(\mathcal D\)-aggregation defect \(A_{\mathcal D}(P)\), vanishes; if the defect is positive, pooled reporting loses at least a computable \(\varepsilon_{\mathcal D}(P)\)-margin in support-function distance.  The conjecture is open because necessity requires a simultaneous multi-threshold coupling argument, not just pointwise Makarov algebra.  Resolving it would turn the common advice "condition on covariates when possible" into a sharp diagnostic for DTE reporting.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Distributional treatment-effect bounds are often computed after conditioning on covariates and then averaging the resulting bounds, but empirical papers also report bounds from pooled marginal counterfactual curves when covariate cells are sparse.  The two workflows answer different mathematical questions.  A DTE CDF path is a vector of tail probabilities generated by one coupling in each covariate cell; optimizing every pooled marginal or every threshold separately can report a curve that no collection of conditional full-data laws can realize.
+
+\paragraph{The main finding (proposed).}
+The proposed kernel is Conjecture~\ref{conj:aggregation-frontier}: for a finite threshold grid \(\mathcal D\), the conditional DTE path set equals the pooled-marginal OT path set if and only if the aggregation defect \(A_{\mathcal D}(P)\) is zero.  When \(A_{\mathcal D}(P)>0\), the conjecture predicts a strict support-function gap of at least \(\varepsilon_{\mathcal D}(P)=\omega_{\min}(P)A_{\mathcal D}(P)\), where \(\omega_{\min}(P)\) is a cell-weight and slack constant defined independently of the equality being tested.  Theorem~\ref{thm:conditional-minkowski} gives the routine constructive side: the conditional sharp set is the weighted Minkowski sum of cellwise OT path polytopes.
+
+\paragraph{What is new.}
+The closest published comparators are \citet{FanGuerreZhu2017}, who characterize when covariates can shrink identified sets for joint-potential-outcome functionals; \citet{FirpoRidder2019}, who show that pointwise Makarov sharpness is not enough for finite vectors or functionals of the DTE CDF; and \citet{FanPark2010}, who give sharp DTE bounds from marginal potential-outcome distributions with covariate refinements.  This proposal does not only say that covariates may tighten bounds.  It names the exact object that detects when covariate aggregation is harmless for the whole DTE path: \(A_{\mathcal D}(P)\), the maximum support-function loss between conditional Minkowski aggregation and pooled OT aggregation over a fixed finite direction class.  The epsilon-gap is the conjectured lower bound \(\varepsilon_{\mathcal D}(P)\), which would be absent if the contribution were just another sufficient covariate-adjusted bound.
+
+\paragraph{How it positions in the literature.}
+The anchor cluster is partial identification.  The proposal lives in the DTE bounds tradition of \citet{FanPark2010}, the functional and covariate-tightening line of \citet{FanGuerreZhu2017} and \citet{FirpoRidder2019}, and the computational OT line represented by \citet{Russell2021} and \citet{OberReynolds2023}.  Its object is a sharp identified set and a support-function diagnostic for treatment-effect CDF paths, not an estimator or a generic OT algorithm.
+
+\paragraph{Implications for the community.}
+The immediate consumer is the covariate-refined DTE reporting workflow in \citet{FanPark2010} and \citet{FanGuerreZhu2017}: if the conjecture is true, analysts can report \(A_{\mathcal D}(P)\) to certify when pooled marginal DTE bounds are identical to conditional aggregation and when conditional cells must be retained.
+
+\paragraph{How research benefits from the conclusion.}
+If a reader takes only the conclusion away, their practice changes as follows: report pooled DTE envelopes only after checking \(A_{\mathcal D}(P)=0\); otherwise report the conditional Minkowski envelope and the positive aggregation-loss margin.
+
+\section{Related work}
+\citet{Makarov1981} and \citet{Rueschendorf1982} provide the extremal-coupling probability results behind pointwise DTE bounds with fixed marginals; they do not address covariate aggregation of CDF paths.  \citet{HeckmanSmithClements1997} motivate the DTE object in program evaluation by showing why mean impacts miss individual-level heterogeneity.  \citet[Section 2]{FanPark2010} give sharp bounds on the DTE from identified potential-outcome marginals and discuss covariate refinements; this is the classical single-cell and covariate-adjusted benchmark for Theorem~\ref{thm:conditional-minkowski}.  \citet[abstract and Sections 2--3]{FanGuerreZhu2017} study functionals of the joint distribution of potential outcomes and explain when covariates shrink identified sets; Conjecture~\ref{conj:aggregation-frontier} asks for a necessary-and-sufficient frontier for DTE CDF-path aggregation rather than a general covariate-improvement principle.  \citet[Section 2]{FirpoRidder2019} show that pointwise Makarov bounds need not be uniformly sharp for finite DTE CDF vectors or functionals; this proposal uses their warning as the reason to work with a path set and support functions.  \citet{Russell2021} develops computational sharp bounds for continuous functionals of the joint potential-outcome distribution and is relevant to the finite LP formulation of the cellwise path polytopes.  \citet{OberReynolds2023} states OT endpoint formulas for moments of the joint potential-outcome distribution; the present proposal instead compares conditional and pooled OT support functions for a DTE CDF vector.  \citet{FrandsenLefgren2021} show that dependence restrictions such as mutual stochastic increasingness can tighten DTE bounds and have testable implications, but this proposal maintains unrestricted within-cell copulas and studies the separate aggregation frontier.  In-repo prior art is inherited from the Stage -1.1 prior-proposal map: the failed \texttt{eid\_dist\_synth\_control} angle was told to replace marginal DTE reports by an LP/Frechet-Makarov envelope, while the active \texttt{pid\_ot\_dte\_marginal} exhausted angles 0--3 pursued path envelopes, finite diagnostics, dependence taxonomies, and lifted-OT pasting; none states a covariate-aggregation iff frontier for \(\mathsf S_{\mathrm{cond}}(P,\mathcal D)\) versus \(\mathsf S_{\mathrm{pool}}(P,\mathcal D)\).
+
+\section{Formal setup}
+Let \(X\in\mathcal X\) be finite, \(p_x=P(X=x)>0\), \(D\in\{0,1\}\), and \(Y=DY(1)+(1-D)Y(0)\).  The outcome support \(\mathcal Y\) is finite.  For \(a\in\{0,1\}\) and \(x\in\mathcal X\), let \(\mathcal M_{a,x}(P)\) be the identified marginal-overlap envelope for the law of \(Y(a)\mid X=x\).  For a pair \(m_x=(\mu_{1,x},\mu_{0,x})\in\mathcal M_{1,x}(P)\times\mathcal M_{0,x}(P)\), write \(\Pi(m_x)\) for all couplings of \(\mu_{1,x}\) and \(\mu_{0,x}\).
+
+For \(\pi_x\in\Pi(m_x)\), define the cellwise DTE path vector
+\[
+T_{\mathcal D}(\pi_x)=
+\bigl(\pi_x\{y_1-y_0\le d_j\}\bigr)_{j=1}^J\in[0,1]^J.
+\]
+The cellwise path polytope is
+\[
+\mathsf S_x(P,\mathcal D)=
+\{T_{\mathcal D}(\pi_x):m_x\in\mathcal M_{1,x}(P)\times\mathcal M_{0,x}(P),\ \pi_x\in\Pi(m_x)\}.
+\]
+The conditional sharp set is the weighted Minkowski sum
+\[
+\mathsf S_{\mathrm{cond}}(P,\mathcal D)=
+\sum_{x\in\mathcal X} p_x \mathsf S_x(P,\mathcal D).
+\]
+The pooled marginal envelopes are
+\[
+\mathcal M_{a,\mathrm{pool}}(P)=
+\left\{\sum_x p_x\mu_{a,x}:\mu_{a,x}\in\mathcal M_{a,x}(P)\right\},
+\]
+and \(\mathsf S_{\mathrm{pool}}(P,\mathcal D)\) is the DTE path set obtained by coupling one pooled \(Y(1)\) marginal from \(\mathcal M_{1,\mathrm{pool}}(P)\) with one pooled \(Y(0)\) marginal from \(\mathcal M_{0,\mathrm{pool}}(P)\).
+
+For a finite direction class \(\mathcal U_{\mathcal D}\subset\R^J\) containing all coordinate vectors, all adjacent-difference vectors, and their negatives, let \(h_C(u)=\sup_{s\in C}u^\transpose s\) be the support function of a compact convex set \(C\).  The focal object is the \(\mathcal D\)-aggregation defect
+\[
+A_{\mathcal D}(P)=
+\max_{u\in\mathcal U_{\mathcal D}}
+\bigl|h_{\mathsf S_{\mathrm{pool}}(P,\mathcal D)}(u)-
+h_{\mathsf S_{\mathrm{cond}}(P,\mathcal D)}(u)\bigr|.
+\]
+The stability constant is
+\[
+\omega_{\min}(P)=
+\frac{\min_x p_x\,s_{\min}(P)}{2|\mathcal U_{\mathcal D}|\max\{1,J\}},
+\]
+where \(s_{\min}(P)>0\) is the smallest inactive slack in the finite cellwise OT and marginal-envelope LPs.
+
+\begin{quote}
+Locked parameters: \((\texttt{qid},\texttt{specialization},P,\theta,\mathcal R,\mathsf B)
+=
+(\texttt{pid\_ot\_dte\_marginal},\texttt{v1},P,F_\Delta|_{\mathcal D},
+\mathcal R_{\mathrm{cov}},\mathsf B_{\mathrm{agg}})\), with \(P\) the observed law of \((Y,D,X)\), \(\theta=F_\Delta|_{\mathcal D}\), \(\mathcal R_{\mathrm{cov}}\) the finite covariate-specific marginal-overlap envelopes \(\{\mathcal M_{a,x}(P)\}\), and \(\mathsf B_{\mathrm{agg}}\) the triple \((\mathsf S_{\mathrm{cond}},\mathsf S_{\mathrm{pool}},A_{\mathcal D})\).
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite support and positivity]\label{ass:finite}
+\(\mathcal X\), \(\mathcal Y\), and \(\mathcal D\) are finite, \(p_x=P(X=x)>0\) for every \(x\in\mathcal X\), and every admissible potential-outcome marginal assigns mass only to \(\mathcal Y\).
+\end{assumption}
+
+\begin{assumption}[Marginal-overlap envelopes]\label{ass:envelopes}
+For each \(a\in\{0,1\}\) and \(x\in\mathcal X\), \(\mathcal M_{a,x}(P)\) is a nonempty closed convex polytope of probability vectors on \(\mathcal Y\).  It contains exactly the conditional counterfactual marginals compatible with the maintained overlap restrictions and the observed law \(P\).
+\end{assumption}
+
+\begin{assumption}[No cross-cell latent-copula restrictions]\label{ass:no-cross-copula}
+Conditional on \(X=x\), any coupling in \(\Pi(\mu_{1,x},\mu_{0,x})\) is admissible.  The model imposes no equality, monotonicity, rank-invariance, or copula-stability restriction linking the latent ranks across distinct covariate cells.
+\end{assumption}
+
+\begin{assumption}[Support-function stability]\label{ass:stability}
+For every \(x\in\mathcal X\), \(u\in\mathcal U_{\mathcal D}\), and endpoint LP defining \(h_{\mathsf S_x}(u)\), the active constraint face is locally constant and every inactive inequality has slack at least \(s_{\min}(P)>0\).  The tuning margin in Conjecture~\ref{conj:aggregation-frontier} is fixed as \(\varepsilon_{\mathcal D}(P)=\omega_{\min}(P)A_{\mathcal D}(P)\), where \(\omega_{\min}(P)\) is defined in the formal setup.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: conditional DTE paths are a Minkowski OT aggregate]\label{thm:conditional-minkowski}
+Under Assumptions~\ref{ass:finite}--\ref{ass:no-cross-copula}, the sharp identified set for \(F_\Delta|_{\mathcal D}\) under the covariate-specific marginal-overlap model is
+\[
+\mathsf S_{\mathrm{cond}}(P,\mathcal D)=
+\sum_{x\in\mathcal X}p_x\mathsf S_x(P,\mathcal D).
+\]
+Equivalently, each sharp endpoint in any direction \(u\in\R^J\) is
+\[
+h_{\mathsf S_{\mathrm{cond}}(P,\mathcal D)}(u)
+=\sum_x p_x h_{\mathsf S_x(P,\mathcal D)}(u).
+\]
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This is the constructive, routine part behind the proposed frontier: \citet[Section 2]{FanPark2010} gives the single-cell DTE bound, while \citet[abstract and Sections 2--3]{FanGuerreZhu2017} explains covariate tightening for broader functionals; the theorem states the exact finite-grid DTE path object to be compared with pooled reporting.  (b) The concrete consumer is the prior \texttt{eid\_dist\_synth\_control} reviewer request for an LP/Frechet-Makarov envelope: Theorem~\ref{thm:conditional-minkowski} supplies the covariate-cell version of that corrected reporting map.
+
+\begin{conjecture}[Conjecture 1: aggregation-defect iff frontier (NOT YET PROVED)]\label{conj:aggregation-frontier}
+Under Assumptions~\ref{ass:finite}--\ref{ass:stability}, the conditional and pooled DTE path sets coincide,
+\[
+\mathsf S_{\mathrm{cond}}(P,\mathcal D)=\mathsf S_{\mathrm{pool}}(P,\mathcal D),
+\]
+if and only if \(A_{\mathcal D}(P)=0\).  If \(A_{\mathcal D}(P)>0\), then there exists a direction \(u\in\mathcal U_{\mathcal D}\) such that the pooled report differs from the conditional sharp support value by at least
+\[
+\varepsilon_{\mathcal D}(P)=\omega_{\min}(P)A_{\mathcal D}(P).
+\]
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet[Section 2]{FirpoRidder2019} is the closest finite-vector comparator because it shows that pointwise DTE CDF bounds do not automatically deliver sharp bounds for vectors or functionals.  \citet[abstract and Sections 2--3]{FanGuerreZhu2017} is the closest covariate comparator because it studies when covariates shrink identified sets.  Neither provides an iff condition, expressed as a support-function defect, for when pooled marginal OT produces exactly the same DTE path set as conditional covariate aggregation.  The epsilon-gap is \(\varepsilon_{\mathcal D}(P)\): a positive, independently normalized support-function separation rather than a qualitative statement that covariates can matter.  (b) Resolving the conjecture would give users of \citet{FanPark2010} covariate-adjusted DTE bounds a named diagnostic deciding whether pooled reporting is legitimate.
+
+\begin{conjecture}[Conjecture 2: non-corner aggregation-loss witness (NOT YET PROVED)]\label{conj:witness}
+There exists an open set of laws with two covariate cells, three outcome support points \(\mathcal Y=\{0,1,2\}\), and grid \(\mathcal D=\{-1,0,1\}\) such that all marginal-envelope polytopes have nonempty relative interiors, \(A_{\mathcal D}(P)>0\), and both cells have weights in \((0.35,0.65)\).  One center of the open set has \(p_a=p_b=1/2\) and point marginal envelopes fixed at
+\[
+\begin{array}{c|cc}
+x & \mu_{1,x} & \mu_{0,x}\\ \hline
+a & (.50,.30,.20) & (.30,.45,.25)\\
+b & (.25,.45,.30) & (.45,.25,.30).
+\end{array}
+\]
+For the adjacent-difference direction \(u=(1,-1,0)\in\mathcal U_{\mathcal D}\), the conditional support value is strictly below the pooled support value by at least \(0.03\), so \(A_{\mathcal D}(P)\ge0.03\) in a neighborhood preserving the active OT faces.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) This witness is designed to meet the concern raised by \citet{Mullahy2023} and \citet{LuDingDasgupta2018} that discrete outcomes are not harmless continuous approximations: mass points and covariate mixing can change the transport geometry.  It differs from the exhausted lifted-pasting angle because it uses only covariate aggregation, not IV/dose pasting or rank-copula tubes.  (b) A verified witness would give applied DTE studies with discrete or coarsened outcomes a concrete warning that pooled marginal reporting can be anti-sharp even when every cellwise Makarov problem is nondegenerate.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Single-cell reduction]\label{cor:single-cell}
+Under Assumptions~\ref{ass:finite}--\ref{ass:no-cross-copula}, if \(|\mathcal X|=1\), then \(\mathsf S_{\mathrm{cond}}(P,\mathcal D)=\mathsf S_{\mathrm{pool}}(P,\mathcal D)=\mathsf S_x(P,\mathcal D)\) and \(A_{\mathcal D}(P)=0\).  The statement reduces to \citet[Section 2]{FanPark2010} because there is only one pair of potential-outcome marginals to couple.
+\end{corollary}
+
+\begin{corollary}[Homogeneous conditional marginals]\label{cor:homogeneous}
+Under Assumptions~\ref{ass:finite}--\ref{ass:stability}, if \(\mathcal M_{a,x}(P)=\mathcal M_{a,x'}(P)\) for all \(x,x'\) and both treatment states, then the conditional and pooled path sets coincide and \(A_{\mathcal D}(P)=0\).  The reduction is direct: every pooled marginal is the same admissible marginal as in every cell, so averaging identical support functions leaves the Fan--Park single-cell problem unchanged.
+\end{corollary}
+
+\begin{example}[Concrete witness route]\label{ex:witness-route}
+For the center in Conjecture~\ref{conj:witness}, all masses lie between \(0.20\) and \(0.50\) and both covariate weights equal \(1/2\), so the witness is not a collapsed-cell or deterministic-outcome corner.  Under Assumptions~\ref{ass:finite}--\ref{ass:stability}, the verification route is to solve four \(3\times3\) transportation LPs for the direction \(u=(1,-1,0)\), compare the average of the two cellwise support values with the support value after pooling \(\mu_{1,a},\mu_{1,b}\) and \(\mu_{0,a},\mu_{0,b}\), and check that the active faces persist under perturbations smaller than the inactive slack.
+\end{example}
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:conditional-minkowski} follows from disintegration over \(X\): any admissible full-data law yields one cellwise coupling in every covariate cell, and any collection of cellwise couplings can be pasted by mixing them with weights \(p_x\) because Assumption~\ref{ass:no-cross-copula} imposes no cross-cell latent-rank restrictions.  The support-function identity is the standard support function of a weighted Minkowski sum.  For Conjecture~\ref{conj:aggregation-frontier}, the sufficiency direction should use finite-dimensional convex duality: \(A_{\mathcal D}=0\) equalizes the support functions on the direction class that generates the normal fan of the relevant DTE path polytopes, and Assumption~\ref{ass:stability} keeps this normal fan locally fixed.  The necessity and margin direction should expose a separating direction \(u\in\mathcal U_{\mathcal D}\), convert the support-function separation into an endpoint loss, and lower-bound the loss by \(\omega_{\min}(P)A_{\mathcal D}(P)\) using the inactive-slack constant.  The witness is checked by direct finite LP enumeration on the displayed \(2\times3\) marginal table, with an explicit active-face certificate for \(u=(1,-1,0)\).
+
+\section{Honest scope flags}
+The Minkowski aggregation theorem is expected to be routine.  The iff frontier, the \(\varepsilon_{\mathcal D}(P)\) lower bound, and the numerical witness are conjectures.  The finite direction class \(\mathcal U_{\mathcal D}\) may need to be enlarged to the full normal fan of the conditional and pooled path polytopes; if so, the proposal should keep \(A_{\mathcal D}\) as the focal object but revise its direction set.  No claim is made here about continuous outcomes, estimated nuisance functions, inference, or additional dependence restrictions such as mutual stochastic increasingness.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for angle 4, pivoting from lifted-OT pasting to a covariate-aggregation iff frontier for overlap-restricted DTE path sets; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Makarov(1981)]{Makarov1981}
+Makarov, G. D. (1981).
+Estimates for the distribution function of a sum of two random variables when the marginal distributions are fixed.
+\emph{Theory of Probability and its Applications}.
+
+\bibitem[Rueschendorf(1982)]{Rueschendorf1982}
+Rueschendorf, L. (1982).
+Random variables with maximum sums.
+\emph{Advances in Applied Probability}.
+
+\bibitem[Heckman, Smith, and Clements(1997)]{HeckmanSmithClements1997}
+Heckman, J. J., Smith, J., and Clements, N. (1997).
+Making the most out of programme evaluations and social experiments: Accounting for heterogeneity in programme impacts.
+\emph{Review of Economic Studies}.
+
+\bibitem[Fan and Park(2010)]{FanPark2010}
+Fan, Y. and Park, S. S. (2010).
+Sharp bounds on the distribution of treatment effects and their statistical inference.
+\emph{Econometric Theory}.
+
+\bibitem[Fan, Guerre, and Zhu(2017)]{FanGuerreZhu2017}
+Fan, Y., Guerre, E., and Zhu, D. (2017).
+Partial identification of functionals of the joint distribution of potential outcomes.
+\emph{Journal of Econometrics}.
+
+\bibitem[Firpo and Ridder(2019)]{FirpoRidder2019}
+Firpo, S. and Ridder, G. (2019).
+Partial identification of the treatment effect distribution and its functionals.
+\emph{Journal of Econometrics}.
+
+\bibitem[Russell(2021)]{Russell2021}
+Russell, T. M. (2021).
+Sharp bounds on functionals of the joint distribution in the analysis of treatment effects.
+\emph{Journal of Business \& Economic Statistics}.
+
+\bibitem[Ober-Reynolds(2023)]{OberReynolds2023}
+Ober-Reynolds, D. (2023).
+Optimal transport and partial identification of joint potential outcome functionals.
+\emph{arXiv:2311.09435}.
+
+\bibitem[Frandsen and Lefgren(2021)]{FrandsenLefgren2021}
+Frandsen, B. R. and Lefgren, L. J. (2021).
+Partial identification of the distribution of treatment effects with an application to the Knowledge Is Power Program.
+\emph{Quantitative Economics}.
+
+\bibitem[Mullahy(2023)]{Mullahy2023}
+Mullahy, J. (2023).
+Distributional treatment effects for count-valued outcomes.
+\emph{NBER Working Paper No. 31005}.
+
+\bibitem[Lu, Ding, and Dasgupta(2018)]{LuDingDasgupta2018}
+Lu, J., Ding, P., and Dasgupta, T. (2018).
+Treatment effects on ordinal outcomes: Causal estimands and sharp bounds.
+\emph{Biometrics}.
+\end{thebibliography}
+
+\end{document}

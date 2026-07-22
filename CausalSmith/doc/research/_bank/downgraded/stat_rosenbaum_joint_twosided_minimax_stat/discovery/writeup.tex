@@ -1,0 +1,704 @@
+\documentclass{article}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{mathrsfs,bm,bbm}
+\usepackage{graphicx,booktabs,array,multirow,tabularx,longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{algorithm,algpseudocode}
+\usepackage{subcaption,tikz}
+\usepackage{siunitx,cancel,accents}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{cleveref}
+\setlength{\emergencystretch}{2em}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{openendedquestion}{Open-ended Question}
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\coreref}[1]{\ref{#1}}
+
+\begin{document}
+
+\sloppy
+
+\section*{stat\_\allowbreak{}rosenbaum\_\allowbreak{}joint\_\allowbreak{}twosided\_\allowbreak{}minimax}
+
+\noindent\textit{Specialization:} stat\par
+
+\paragraph{TL;DR.} The field-level contribution is an exact, implementable joint two-sided Rosenbaum calibration for heterogeneous matched sets plus a sharp capability-separation theorem. For every \(\gamma>1\), the four-score witness has a unique nonmonotone joint optimizer, \(p_J=3\gamma/(3\gamma+1)\), which exceeds the best one-sided score-monotone candidate by exactly \((\gamma-1)/[(3\gamma+1)(2\gamma+2)]\); at \(\gamma=2\), the values are \(6/7\), \(5/6\), and \(1/42\). Equal assignment moments do not determine the exact union tail, and exact evaluation is \(\#\mathrm P\)-hard even for unbiased reversal-symmetric pairs. The complementary score-state primal--dual procedure nevertheless terminates on every finite rational input, returns an attaining shared law and an exact-rational certificate, and determines gain, equality, loss, and selected-support-switch cells. Strict reporting improvement occurs exactly when \(p_J\le\alpha<p_B\); reversal symmetry gives equality at \(\Gamma=1\), while the independent heterogeneous \(\Gamma=2\) regression design has gain \(19/120\approx0.158\).
+
+\section{Project justification}
+
+\paragraph{Gap.} Published workflows solve adjacent but different optimization problems. Rosenbaum's matched-set sensitivity analysis and the Rosenbaum--Krieger ordered one-sided search exploit score-monotone high sets, whereas Fogarty--Small enforce a shared confounder through a mean--variance QCQP. Neither restricted representation evaluates the exact finite probability of an opposite-tail union under one shared Rosenbaum law: the all-\(\gamma>1\) witness requires a nonmonotone high set, and the equal-moment witness assigns different exact joint-tail probabilities to identical first two assignment moments.
+
+\paragraph{Niche.} The target is the fixed-record shared-law functional \(p_J(t;r,\Gamma)=\sup_{P\in\mathcal P_\Gamma}P\{\lvert S(Z;r)\rvert\ge t\}\), contrasted with \(p_B\), which separately optimizes the two one-sided tails before doubling the smaller optimum. The operational problem is to compute and certify this exact union probability for heterogeneous matched sets without an oracle for the unknown assignment law, while exposing precisely when the shared-law report improves, agrees with, or loses to the conventional comparator.
+
+\paragraph{Fill.} The parametric support theorem proves a closed-form strict separation from every one-sided prefix or suffix for all \(\gamma>1\); the equal-moment theorem rules out moment-only exact evaluation; and the metric reduction supplies the honest \(\#\mathrm P\)-hardness ceiling. Against that ceiling, the exact score-state primal--dual construction gives a verified, possibly exponential, attaining-law algorithm. Three certified event runs yield \(p_J\), \(p_+\), and \(p_-\), the exact level-qualified region \(p_J\le\alpha<p_B\), the gain/equality/loss partition, and the fixed-lexicographic adjacent-cell support-switch certificate.
+
+\section{Related work}
+
+Rosenbaum introduced the bounded-odds conditional sensitivity model for matched permutation inference \cite{Rosenbaum1987SensitivityPermutation}; the exact matched-set sign-score development in Rosenbaum (1988, doi:10.1093/biomet/75.3.577) and the Rosenbaum--Krieger ordered one-sided calculation (1990, doi:10.1080/01621459.1990.10476226), restated in Pimentel--Huang (2024, Theorem~3), concern one-sided score-monotone candidate searches. The all-\(\gamma>1\) theorem does not dispute those results: it proves that their upper-suffix or lower-prefix capability omits the unique optimizer of an opposite-tail union. Fogarty--Small enforce common assignment probabilities across outcomes through a mean--variance quadratically constrained program \cite{FogartySmall2016MultipleComparisons}; the equal-moment witness proves that those summaries cannot determine exact finite \(p_J\). The paper's advance is the exact shared-law union evaluator, its verified possibly exponential certificate, and its strictness and support-switch reporting theory. Finite vertex reduction, ordinary mixed-integer branching, the witnesses, and the counting reduction are supporting mathematics rather than standalone novelty claims.
+
+\section{Setup}
+
+Target (estimand / structural parameter): \(\tau_{ij}=Y_{ij}(1)-Y_{ij}(0)=0\ \text{for all }i,j\).
+Identifying functional / recovery map: \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle p_J(t_{\mathrm{obs}};r,\Gamma)=\sup_{P\in\mathcal P_\Gamma}P\{\lvert S(Z;r)\rvert\ge t_{\mathrm{obs}}\}\)}}\par\noindent.
+\begin{itemize}
+  \item \(\pi_{ij}\) --- \texttt{real number}; \([0,1]\); \texttt{unit-\allowbreak{}level assignment probability}
+  \par\smallskip\noindent\emph{Definition.} the \(j\)-th coordinate of \(\pi_i\)
+  \item \(p\) --- \texttt{rational number}; \texttt{algorithm output}
+  \par\smallskip\noindent\emph{Definition.} calibration value returned by \(\mathsf{JPC}\)
+  \item \(\tau_{ij}\) --- \texttt{real number}; \texttt{unit-\allowbreak{}level causal effect}
+  \par\smallskip\noindent\emph{Definition.} \(Y_{ij}(1)-Y_{ij}(0)\)
+  \item \(n\) --- \texttt{positive integer}; \texttt{design size}
+  \par\smallskip\noindent\emph{Definition.} \texttt{number of matched sets}
+  \item \(i\) --- \texttt{index}; \(\{1,\ldots,n\}\); \texttt{index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{matched-\allowbreak{}set index}
+  \item \(m_i\) --- \texttt{integer}; \(\{2,3,\ldots\}\); \texttt{set size}
+  \par\smallskip\noindent\emph{Definition.} number of units in matched set \(i\)
+  \item \(j\) --- \texttt{index}; \(\{1,\ldots,m_i\}\); \texttt{index}
+  \par\smallskip\noindent\emph{Definition.} unit index within matched set \(i\)
+  \item \(\Omega_n\) --- \texttt{finite set}; \texttt{one-\allowbreak{}treated-\allowbreak{}per-\allowbreak{}set assignment space}
+  \par\smallskip\noindent\emph{Definition.} \(\prod_{i=1}^n\{1,\ldots,m_i\}\)
+  \item \(Z\) --- \texttt{random vector}; \(\Omega_n\); \texttt{randomization variable}
+  \par\smallskip\noindent\emph{Definition.} \texttt{conditional treated-\allowbreak{}unit assignment}
+  \item \(z_{\mathrm{obs}}\) --- \texttt{vector}; \(\Omega_n\); \texttt{observed assignment}
+  \par\smallskip\noindent\emph{Definition.} \texttt{realized assignment}
+  \item \(Y_{ij}(a)\) --- \texttt{real number}; \(a\in\{0,1\}\); \texttt{causal primitive}
+  \par\smallskip\noindent\emph{Definition.} potential outcome of unit \(ij\) under treatment \(a\)
+  \item \(\mathcal F\) --- \texttt{sigma-\allowbreak{}field}; \texttt{conditioning information}
+  \par\smallskip\noindent\emph{Definition.} \texttt{fixed potential outcomes and matched-\allowbreak{}set membership conditioned on by the sensitivity analysis}
+  \item \(r\) --- \texttt{finite record}; \texttt{input to the randomization statistic}
+  \par\smallskip\noindent\emph{Definition.} \texttt{observed outcome record under the Fisher sharp null}
+  \item \(\Gamma\) --- \texttt{real number}; \([1,\infty)\); \texttt{sensitivity level}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Rosenbaum hidden-\allowbreak{}bias parameter}
+  \item \(\alpha\) --- \texttt{real number}; \((0,1)\); \texttt{rejection threshold}
+  \par\smallskip\noindent\emph{Definition.} \texttt{test level}
+  \item \(t\) --- \texttt{nonnegative real number}; \texttt{tail-\allowbreak{}event index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{two-\allowbreak{}sided statistic threshold}
+  \item \(P\) --- \texttt{probability law}; \(\mathcal P_\Gamma\); \texttt{adversarial law}
+  \par\smallskip\noindent\emph{Definition.} \texttt{candidate conditional assignment law}
+  \item \(\Delta_m\) --- \texttt{simplex}; \texttt{probability-\allowbreak{}vector space}
+  \par\smallskip\noindent\emph{Definition.} \(\{q\in[0,1]^m:\sum_{j=1}^m q_j=1\}\)
+  \item \(\pi_i\) --- \texttt{probability vector}; \(\Delta_{m_i}\); \texttt{assignment nuisance}
+  \par\smallskip\noindent\emph{Definition.} conditional assignment probabilities in set \(i\)
+  \item \(\mathcal P_\Gamma\) --- \texttt{class of probability laws}; \texttt{composite null law class}
+  \par\smallskip\noindent\emph{Definition.} \texttt{conditional product assignment laws satisfying the Rosenbaum odds restriction}
+  \item \(s_{ij}(r)\) --- \texttt{real number}; \texttt{observed score}
+  \par\smallskip\noindent\emph{Definition.} fixed contribution of assigning treatment to unit \(j\) in set \(i\), computed from \(r\)
+  \item \(S(z;r)\) --- \texttt{real number}; \texttt{signed matched-\allowbreak{}set statistic}
+  \par\smallskip\noindent\emph{Definition.} \(\sum_{i=1}^n s_{i,z_i}(r)\)
+  \item \(T(z;r)\) --- \texttt{nonnegative real number}; \texttt{two-\allowbreak{}sided ordering statistic}
+  \par\smallskip\noindent\emph{Definition.} \(\lvert S(z;r)\rvert\)
+  \item \(t_{\mathrm{obs}}\) --- \texttt{nonnegative real number}; \texttt{observed extremeness}
+  \par\smallskip\noindent\emph{Definition.} \(T(z_{\mathrm{obs}};r)\)
+  \item \(A_+(t;r)\) --- \texttt{subset}; \(\Omega_n\); \texttt{upper-\allowbreak{}tail event}
+  \par\smallskip\noindent\emph{Definition.} \(\{z:S(z;r)\ge t\}\)
+  \item \(A_-(t;r)\) --- \texttt{subset}; \(\Omega_n\); \texttt{lower-\allowbreak{}tail event}
+  \par\smallskip\noindent\emph{Definition.} \(\{z:S(z;r)\le-t\}\)
+  \item \(A_J(t;r)\) --- \texttt{subset}; \(\Omega_n\); \texttt{joint two-\allowbreak{}tail event}
+  \par\smallskip\noindent\emph{Definition.} \(A_+(t;r)\cup A_-(t;r)\)
+  \item \(p_+(t;r,\Gamma)\) --- \texttt{real number}; \([0,1]\); \texttt{one-\allowbreak{}sided sensitivity p-\allowbreak{}value}
+  \par\smallskip\noindent\emph{Definition.} worst-case upper-tail probability over \(\mathcal P_\Gamma\)
+  \item \(p_-(t;r,\Gamma)\) --- \texttt{real number}; \([0,1]\); \texttt{one-\allowbreak{}sided sensitivity p-\allowbreak{}value}
+  \par\smallskip\noindent\emph{Definition.} worst-case lower-tail probability over \(\mathcal P_\Gamma\)
+  \item \(p_J(t;r,\Gamma)\) --- \texttt{real number}; \([0,1]\); \texttt{joint sensitivity p-\allowbreak{}value}
+  \par\smallskip\noindent\emph{Definition.} \texttt{worst-\allowbreak{}case probability of the union of the two tails under one shared assignment law}
+  \item \(p_B(t;r,\Gamma)\) --- \texttt{real number}; \([0,1]\); \texttt{workflow comparator}
+  \par\smallskip\noindent\emph{Definition.} \texttt{conventional doubled-\allowbreak{}smaller-\allowbreak{}tail sensitivity p-\allowbreak{}value}
+  \item \(G(t;r,\Gamma)\) --- \texttt{real number}; \texttt{joint-\allowbreak{}calibration gain}
+  \par\smallskip\noindent\emph{Definition.} \(p_B(t;r,\Gamma)-p_J(t;r,\Gamma)\)
+  \item \(\mathfrak R_{\mathrm{strict}}\) --- \texttt{set}; \texttt{strict-\allowbreak{}improvement frontier}
+  \par\smallskip\noindent\emph{Definition.} level, sensitivity, design, and record configurations at which \(G>0\)
+  \item \(\iota\) --- \texttt{bijection}; \(\Omega_n\to\Omega_n\); \texttt{symmetry map}
+  \par\smallskip\noindent\emph{Definition.} \texttt{assignment reversal map}
+  \item \(U_n\) --- \texttt{probability law}; \texttt{unbiased assignment law}
+  \par\smallskip\noindent\emph{Definition.} uniform distribution on \(\Omega_n\)
+  \item \(d^\dagger\) --- \texttt{finite design-\allowbreak{}record pair}; \texttt{strict-\allowbreak{}gap regression instance}
+  \par\smallskip\noindent\emph{Definition.} explicit two-set score instance specified in \(\texttt{def:gamma-two-witness}\)
+  \item \(\mathcal V_i^\Gamma\) --- \texttt{finite set}; \texttt{local adversary support}
+  \par\smallskip\noindent\emph{Definition.} local extreme Rosenbaum assignment vectors for matched set \(i\)
+  \item \(\mathcal I_{\mathbb Q}\) --- \texttt{set}; \texttt{computational input domain}
+  \par\smallskip\noindent\emph{Definition.} \texttt{finitely encoded rational score,\allowbreak{} level,\allowbreak{} and sensitivity inputs}
+  \item \(\mathcal C\) --- \texttt{finite bit string}; \texttt{independently verifiable exact calibration certificate}
+  \par\smallskip\noindent\emph{Definition.} the exact-rational attaining-law, convolution, primal--dual, and finite branch transcript returned by \(\mathsf{JPC}\)
+  \item \(\mathsf{JPC}\) --- \texttt{algorithm}; \texttt{implementable exact joint-\allowbreak{}tail calibration}
+  \par\smallskip\noindent\emph{Definition.} the deterministic terminating score-state primal--dual algorithm returning \(p_J(t;r,\Gamma)\) and an exact-rational verification transcript
+\end{itemize}
+
+\section{Assumptions}
+
+\begin{assumption}[ass:fisher-sharp-null]\label{ass:fisher-sharp-null}
+\(Y_{ij}(1)=Y_{ij}(0)\) for every \(i\in\{1,\ldots,n\}\) and every \(j\in\{1,\ldots,m_i\}\).
+\par\smallskip\noindent\emph{Standard} (Fisher sharp null, \cite{Rosenbaum1987SensitivityPermutation}).
+\end{assumption}
+
+\begin{assumption}[ass:conditional-product-assignment]\label{ass:conditional-product-assignment}
+\(\Pr(Z=z\mid\mathcal F)=\prod_{i=1}^n\pi_{i,z_i}\) for every \(z\in\Omega_n\).
+\par\smallskip\noindent\emph{Standard} (conditional independent matched-set assignment, \cite{Rosenbaum2018Stratified}).
+\end{assumption}
+
+\begin{assumption}[ass:rosenbaum-odds]\label{ass:rosenbaum-odds}
+\(\pi_{ij}\le\Gamma\pi_{ik}\) for every \(i\in\{1,\ldots,n\}\) and every \(j,k\in\{1,\ldots,m_i\}\).
+\par\smallskip\noindent\emph{Standard} (Rosenbaum bounded-odds sensitivity model, \cite{Rosenbaum1987SensitivityPermutation}).
+\end{assumption}
+
+\begin{assumption}[ass:prespecified-score]\label{ass:prespecified-score}
+\(s_{ij}(r)\) is fixed conditional on \(\mathcal F\) for every \(i\in\{1,\ldots,n\}\) and every \(j\in\{1,\ldots,m_i\}\).
+\par\smallskip\noindent\emph{Standard} (conditional randomization-inference statistic, \cite{Rosenbaum2007M}).
+\end{assumption}
+
+\begin{assumption}[ass:assignment-reversal-symmetry]\label{ass:assignment-reversal-symmetry}
+There is a bijection \(\iota:\Omega_n\to\Omega_n\) such that \(S(\iota(z);r)=-S(z;r)\) for every \(z\in\Omega_n\).
+\par\smallskip\noindent\emph{Novel.} This is satisfied by paired signed-score analyses when relabelling treatment positions reverses every pair contribution, and by balanced matched-set constructions with a prespecified global assignment reversal. It isolates the conventional no-hidden-bias reduction without restricting the general computational question.
+\end{assumption}
+
+\begin{assumption}[ass:rational-computational-input]\label{ass:rational-computational-input}
+\(\Gamma\), \(\alpha\), and every \(s_{ij}(r)\) are rational numbers supplied in finite binary encoding.
+\par\smallskip\noindent\emph{Novel.} Matched-study sensitivity software commonly receives integer or rational rank and \(M\)-scores, while sensitivity levels and reported \(\Gamma\) values are finite decimals. This input restriction gives exact arithmetic and a checkable finite certificate a concrete operational meaning.
+\end{assumption}
+
+\section{Definitions}
+
+\begin{definition}[def:rosenbaum-laws]\label{def:rosenbaum-laws}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Rosenbaum product-\allowbreak{}law class}
+\par\smallskip\noindent\emph{Construction.} \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal P_\Gamma=\{P: P\text{ satisfies }\texttt{ass:conditional-product-assignment}\text{ and }\texttt{ass:rosenbaum-odds}\text{ for every }i\in\{1,\ldots,n\}\}\)}}\par\noindent.
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}conditional-\allowbreak{}product-\allowbreak{}assignment}; \texttt{ass:\allowbreak{}rosenbaum-\allowbreak{}odds}.
+\end{definition}
+
+\begin{definition}[def:two-tail-events]\label{def:two-tail-events}
+\par\smallskip\noindent\emph{Defined object.} \texttt{two-\allowbreak{}tail randomization events}
+\par\smallskip\noindent\emph{Construction.} \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle S(z;r)=\sum_{i=1}^n s_{i,z_i}(r),\quad T(z;r)=\lvert S(z;r)\rvert,\quad A_+(t;r)=\{z\in\Omega_n:S(z;r)\ge t\},\quad A_-(t;r)=\{z\in\Omega_n:S(z;r)\le-t\},\quad A_J(t;r)=A_+(t;r)\cup A_-(t;r)\)}}\par\noindent.
+\par\smallskip\noindent\emph{Inputs.} \(s_{ij}(r)\); \(\Omega_n\); \(n\); \(t\).
+\end{definition}
+
+\begin{definition}[def:robust-two-tail-calibration]\label{def:robust-two-tail-calibration}
+\par\smallskip\noindent\emph{Defined object.} \texttt{shared-\allowbreak{}law and doubled-\allowbreak{}tail calibrations}
+\par\smallskip\noindent\emph{Construction.} \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle p_+(t;r,\Gamma)=\sup_{P\in\mathcal P_\Gamma}P\{A_+(t;r)\},\quad p_-(t;r,\Gamma)=\sup_{P\in\mathcal P_\Gamma}P\{A_-(t;r)\},\quad p_J(t;r,\Gamma)=\sup_{P\in\mathcal P_\Gamma}P\{A_J(t;r)\},\quad p_B(t;r,\Gamma)=\min\{1,2\min[p_+(t;r,\Gamma),p_-(t;r,\Gamma)]\},\quad G(t;r,\Gamma)=p_B(t;r,\Gamma)-p_J(t;r,\Gamma)\)}}\par\noindent.
+\par\smallskip\noindent\emph{Inputs.} \texttt{def:\allowbreak{}rosenbaum-\allowbreak{}laws}; \texttt{def:\allowbreak{}two-\allowbreak{}tail-\allowbreak{}events}.
+\end{definition}
+
+\begin{definition}[def:strict-improvement-region]\label{def:strict-improvement-region}
+\par\smallskip\noindent\emph{Defined object.} \texttt{strict joint-\allowbreak{}improvement region}
+\par\smallskip\noindent\emph{Construction.} \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathfrak R_{\mathrm{strict}}=\{(\alpha,\Gamma,(m_i)_{i=1}^n,r,z_{\mathrm{obs}}):0<\alpha<1,\ t_{\mathrm{obs}}=T(z_{\mathrm{obs}};r),\ p_J(t_{\mathrm{obs}};r,\Gamma)\le\alpha<p_B(t_{\mathrm{obs}};r,\Gamma)\}\)}}\par\noindent.
+\par\smallskip\noindent\emph{Inputs.} \texttt{def:\allowbreak{}two-\allowbreak{}tail-\allowbreak{}events}; \texttt{def:\allowbreak{}robust-\allowbreak{}two-\allowbreak{}tail-\allowbreak{}calibration}.
+\end{definition}
+
+\begin{definition}[def:local-rosenbaum-vertices]\label{def:local-rosenbaum-vertices}
+\par\smallskip\noindent\emph{Defined object.} \texttt{local Rosenbaum vertices}
+\par\smallskip\noindent\emph{Construction.} \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal V_i^\Gamma=\{\pi_i^H:\varnothing\ne H\subseteq\{1,\ldots,m_i\},\ \pi_{ij}^H=\Gamma/(|H|\Gamma+m_i-|H|)\text{ if }j\in H,\ \pi_{ij}^H=1/(|H|\Gamma+m_i-|H|)\text{ if }j\notin H\}\)}}\par\noindent.
+\par\smallskip\noindent\emph{Inputs.} \(\Gamma\); \(m_i\).
+\end{definition}
+
+\begin{definition}[def:rational-input-domain]\label{def:rational-input-domain}
+\par\smallskip\noindent\emph{Defined object.} \texttt{rational computational input domain}
+\par\smallskip\noindent\emph{Construction.} \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal I_{\mathbb Q}=\{((m_i)_{i=1}^n,(s_{ij}(r))_{1\le i\le n,1\le j\le m_i},t,\alpha,\Gamma):\texttt{ass:rational-computational-input}\text{ holds and }t\in\mathbb Q_{\ge0}\}\)}}\par\noindent.
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}rational-\allowbreak{}computational-\allowbreak{}input}.
+\end{definition}
+
+\begin{definition}[def:joint-primal-dual-handle]\label{def:joint-primal-dual-handle}
+\par\smallskip\noindent\emph{Defined object.} \texttt{joint primal-\allowbreak{}dual calibration handle}
+\par\smallskip\noindent\emph{Construction.} For an input in \(\mathcal I_{\mathbb Q}\), construct a branch-and-price transcript that uses the local vertices \(\mathcal V_i^\Gamma\), a master relaxation for the union event \(A_J(t;r)\), exact rational primal and dual bounds, and a finite pricing or separation record. The output target is \(\mathsf{JPC}(t,r,\Gamma)=(p,\mathcal C)\), where \(\mathcal C\) records every generated column, branch, bound, and exact arithmetic check needed by an independent verifier.
+\par\smallskip\noindent\emph{Inputs.} \texttt{def:\allowbreak{}local-\allowbreak{}rosenbaum-\allowbreak{}vertices}; \texttt{def:\allowbreak{}rational-\allowbreak{}input-\allowbreak{}domain}; \texttt{def:\allowbreak{}rosenbaum-\allowbreak{}laws}; \texttt{def:\allowbreak{}two-\allowbreak{}tail-\allowbreak{}events}; \texttt{def:\allowbreak{}robust-\allowbreak{}two-\allowbreak{}tail-\allowbreak{}calibration}.
+\end{definition}
+
+\begin{definition}[def:gamma-two-witness]\label{def:gamma-two-witness}
+\par\smallskip\noindent\emph{Defined object.} inherited \(\Gamma=2\) strict-gap regression instance
+\par\smallskip\noindent\emph{Construction.} \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle d^\dagger=(n,(m_1,m_2),\Gamma,(s_{1j})_{j=1}^{m_1},(s_{2j})_{j=1}^{m_2},t)=(2,(5,3),2,(-4,-4,-1,-1,1),(6,5,-2),6)\)}}\par\noindent, with \(S(z;d^\dagger)=s_{1,z_1}+s_{2,z_2}\).
+\par\smallskip\noindent\emph{Inputs.} \(n\); \(m_i\); \(\Gamma\); \(s_{ij}(r)\); \(t\).
+\end{definition}
+
+\section{Main results}
+
+\begin{theorem}[thm:gamma-one-equality]\label{thm:gamma-one-equality}
+If \texttt{ass:assignment-reversal-symmetry} holds and \(t_{\mathrm{obs}}>0\), then at \(\Gamma=1\), \[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle p_+(t_{\mathrm{obs}};r,1)=p_-(t_{\mathrm{obs}};r,1),\qquad p_J(t_{\mathrm{obs}};r,1)=p_B(t_{\mathrm{obs}};r,1).\)}}\par\noindent}}
+\]
+\end{theorem}
+\begin{proof}
+Fix \(t=t_{\mathrm{obs}}>0\). We first identify the assignment-law class at \(\Gamma=1\). For any \(P\in\mathcal P_1\), the Rosenbaum inequalities give \(\pi_{ij}\le\pi_{ik}\) for every ordered pair \((j,k)\). Interchanging \(j\) and \(k\) gives the reverse inequality, so \(\pi_{ij}=\pi_{ik}\) for all \(j,k\). Since \(\pi_i\in\Delta_{m_i}\), it follows that
+\[
+\pi_{ij}=\frac{1}{m_i},\qquad j=1,\ldots,m_i.
+\]
+The conditional product-assignment requirement in \(\mathcal P_1\) therefore implies
+\[
+P\{Z=z\mid\mathcal F\}=\prod_{i=1}^n\frac{1}{m_i}=\frac{1}{|\Omega_n|},\qquad z\in\Omega_n.
+\]
+Thus \(\mathcal P_1\) contains only the uniform law \(U_n\), and every supremum in the definitions of \(p_+\), \(p_-\), and \(p_J\) at \(\Gamma=1\) is evaluation under \(U_n\).
+
+By assignment-reversal symmetry, if \(z\in A_+(t;r)\), then
+\[
+S(\iota(z);r)=-S(z;r)\le -t,
+\]
+so \(\iota(z)\in A_-(t;r)\). Similarly, \(z\in A_-(t;r)\) implies \(\iota(z)\in A_+(t;r)\). Because \(\iota\) is a bijection of the finite set \(\Omega_n\), these two inclusions imply
+\[
+|A_+(t;r)|=|A_-(t;r)|.
+\]
+Uniformity consequently gives, with \(q:=U_n\{A_+(t;r)\}\),
+\[
+p_+(t;r,1)=q=U_n\{A_-(t;r)\}=p_-(t;r,1).
+\]
+
+Finally, \(t>0\) makes the two events disjoint: membership in their intersection would require simultaneously \(S(z;r)\ge t\) and \(S(z;r)\le -t\), which is impossible. Hence
+\[
+p_J(t;r,1)=U_n\{A_+(t;r)\cup A_-(t;r)\}=2q.
+\]
+In particular \(2q\le1\). Substitution into the doubled-tail definition yields
+\[
+p_B(t;r,1)=\min\{1,2\min[p_+(t;r,1),p_-(t;r,1)]\}=\min\{1,2q\}=2q=p_J(t;r,1).
+\]
+Taking \(t=t_{\mathrm{obs}}\) proves both asserted equalities.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} Reversal symmetry supplies the exact no-hidden-bias equality benchmark. \textit{Gap.} The equality is symmetry-specific and does not extend to \(\Gamma>1\) without further structure. \textit{Consumer.} Exact implementations use it as a baseline calibration check.
+
+\begin{proposition}[prop:gamma-two-gap-witness]\label{prop:gamma-two-gap-witness}
+For \(d^\dagger\) in \texttt{def:gamma-two-witness}, \[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle p_+(6;d^\dagger,2)=\frac{4}{15},\qquad p_-(6;d^\dagger,2)=\frac{2}{7},\qquad p_J(6;d^\dagger,2)=\frac{3}{8},\qquad G(6;d^\dagger,2)=\frac{19}{120}\approx0.158.\)}}\par\noindent}}
+\]
+\end{proposition}
+\begin{proof}
+Put \(q_j=\pi_{1j}\) for \(1\le j\le5\) and \(v_k=\pi_{2k}\) for \(1\le k\le3\). Under \(\Gamma=2\), these vectors lie in their respective simplices and satisfy \(q_j\le2q_\ell\) and \(v_k\le2v_\ell\) for every pair of coordinates. The product-law assumption in \(\mathcal P_2\) makes the probability of cell \((j,k)\) equal to \(q_jv_k\). The score sums are
+\[\begin{array}{c|ccc} &6&5&-2\\ \hline -4&2&1&-6\\ -4&2&1&-6\\ -1&5&4&-3\\ -1&5&4&-3\\ 1&7&6&-1 \end{array}\]
+where the row and column labels are the first- and second-set scores. Consequently,
+\[A_+(6;d^\dagger)=\{(5,1),(5,2)\},\qquad A_-(6;d^\dagger)=\{(1,3),(2,3)\}.\]
+For the upper tail, every admissible law therefore has probability \(q_5(v_1+v_2)\). Since \(q_j\ge q_5/2\) for \(j\ne5\),
+\[1=\sum_{j=1}^5q_j\ge q_5+4\frac{q_5}{2}=3q_5,\qquad q_5\le\frac13.\]
+Writing \(u=v_1+v_2\), the inequalities \(v_1,v_2\le2v_3\) give \(u\le4v_3=4(1-u)\), and hence \(u\le4/5\). Thus \(P\{A_+(6;d^\dagger)\}\le4/15\). Equality is attained by
+\[q^+=\left(\frac16,\frac16,\frac16,\frac16,\frac13\right),\qquad v^+=\left(\frac25,\frac25,\frac15\right),\]
+whose coordinate ratios are at most two. It follows that \(p_+(6;d^\dagger,2)=4/15\).
+
+For the lower tail, put \(y=q_1+q_2\) and \(M=\max(q_1,q_2)\). The odds inequalities imply \(q_3+q_4+q_5\ge3M/2\), while \(M\ge y/2\). Therefore
+\[1=y+(q_3+q_4+q_5)\ge y+\frac{3y}{4}=\frac{7y}{4},\qquad y\le\frac47.\]
+Also \(v_1,v_2\ge v_3/2\), so \(1=v_1+v_2+v_3\ge2v_3\) and \(v_3\le1/2\). Hence \(P\{A_-(6;d^\dagger)\}=yv_3\le2/7\). Equality is attained by
+\[q^-=\left(\frac27,\frac27,\frac17,\frac17,\frac17\right),\qquad v^-=\left(\frac14,\frac14,\frac12\right),\]
+so \(p_-(6;d^\dagger,2)=2/7\).
+
+It remains to optimize the two tails under one shared law. Set \(x=q_5\) and again let \(y=q_1+q_2\) and \(u=v_1+v_2\). The displayed cell characterization gives
+\[P\{A_J(6;d^\dagger)\}=xu+yv_3=y+(x-y)u.\]
+Because \(q_1,q_2\ge x/2\), one has \(y\ge x\). Because \(v_1,v_2\ge v_3/2\), one has \(u\ge v_3=1-u\), hence \(u\ge1/2\). Since \(x-y\le0\),
+\[y+(x-y)u\le y+\frac{x-y}{2}=\frac{x+y}{2}.\]
+Now let \(M_J=\max(q_1,q_2,q_5)\). The odds inequalities give \(q_3+q_4\ge M_J\), and \(M_J\ge(x+y)/3\). Consequently,
+\[1=(x+y)+(q_3+q_4)\ge\frac43(x+y),\qquad x+y\le\frac34.\]
+Thus every shared law has joint-tail probability at most \(3/8\). The admissible vectors
+\[q^J=\left(\frac14,\frac14,\frac18,\frac18,\frac14\right),\qquad v^J=\left(\frac14,\frac14,\frac12\right)\]
+attain equality: here \(x=1/4\), \(y=1/2\), and \(u=1/2\). Hence \(p_J(6;d^\dagger,2)=3/8\). Finally, \(4/15<2/7\) and \(8/15<1\), so the definition of the doubled-tail calibration yields
+\[p_B(6;d^\dagger,2)=2\min\left\{\frac4{15},\frac27\right\}=\frac8{15}.\]
+Therefore
+\[G(6;d^\dagger,2)=\frac8{15}-\frac38=\frac{19}{120}=0.158\overline{3}\approx0.158,\]
+as claimed.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The proposition supplies the independent reporting-scale gain \(19/120\approx0.158\). \textit{Gap.} It is one heterogeneous design-record point rather than a universal dominance statement. \textit{Consumer.} Two-sided sensitivity reports can use it as an interpretable exact regression example.
+
+\begin{theorem}[thm:opposite-tail-capability-separation-and-hardness]\label{thm:opposite-tail-capability-separation-and-hardness}
+The exact joint-tail calibration has the following three capability-separation properties under the Rosenbaum product-law and rational-input scope. First, for \(n=1\), \(m_1=4\), \(t=1\), scores \((-2,0,1,2)\), and every \(\gamma>1\) with \(\Gamma=\gamma\), let \(E=A_J(1;r)=\{1,3,4\}\), and let \(\mathcal M\) be the nonempty upper-score suffixes and lower-score prefixes. For a local high set \(H\), set \(a=\lvert H\cap E\rvert\) and \(b=\lvert H\cap E^c\rvert\). Then \[ P_H(E)=\frac{3+(\gamma-1)a}{4+(\gamma-1)(a+b)}, \] the unique maximizing high set is the nonmonotone event set \(H=E\), \[ p_J(1;r,\gamma)=\frac{3\gamma}{3\gamma+1},\qquad \max_{H\in\mathcal M}P_H(E)=\frac{2\gamma+1}{2\gamma+2}, \] and their exact gap is \( (\gamma-1)/[(3\gamma+1)(2\gamma+2)]>0\). At \(\gamma=2\), these values are \(6/7\), \(5/6\), and \(1/42\). Thus the exact Rosenbaum--Krieger one-sided score-monotone candidate capability does not extend to the opposite-tail union. Second, the mean--variance moment summary used by a Fogarty--Small-type QCQP cannot determine \(p_J\): at \(n=1\), \(m_1=4\), \(\Gamma=1\), and \(t=1\), the score vectors \((-1,-1,1,1)\) and \((1,-5/3,1/3,1/3)\) both have uniform assignment mean \(0\) and variance \(1\), but their joint-tail probabilities are \(1\) and \(1/2\). Third, exact value computation of \(p_J\) is \(\#\mathrm P\)-hard under polynomial-time metric reductions, even for reversal-symmetric matched pairs at \(\Gamma=1\) with integer scores. Specifically, for positive integers \(a_1,\ldots,a_n\), give pair \(i\) scores \((-a_i,a_i)\), set \(t=1\), and let \(N_0=\lvert\{\varepsilon\in\{-1,1\}^n:\sum_i\varepsilon_i a_i=0\}\rvert\). Then \[ p_J=1-\frac{N_0}{2^n}. \] This is exact-value hardness only and does not assert an unconditional exponential lower bound on certificate length.
+\end{theorem}
+\begin{proof}
+The first capability separation follows from the two finite-support lemmas in the declared proof spine. By \(\texttt{lem:parametric-one-sided-monotone-separation}\), the threshold-one event for the ordered scores \((-2,0,1,2)\) is \(E=\{1,3,4\}\), and a vertex with high set \(H\) assigns it probability
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle P_H(E)=\frac{3+(\gamma-1)a}{4+(\gamma-1)(a+b)},
+\qquad
+ a=\lvert H\cap E\rvert,
+\quad
+ b=\lvert H\cap E^c\rvert.\)}}
+\]
+That lemma proves that \(H=E\) is the unique global maximizer and that
+\[
+p_J(1;r,\gamma)=\frac{3\gamma}{3\gamma+1}.
+\]
+By \(\texttt{lem:one-sided-score-monotone-candidate-reduction}\), the nonempty upper-score suffixes and lower-score prefixes form exactly the displayed class \(\mathcal M\), the event set \(E\) is absent from that class, and its best member is \(H=\{3,4\}\), with value
+\[
+\max_{H\in\mathcal M}P_H(E)=\frac{2\gamma+1}{2\gamma+2}.
+\]
+Consequently,
+\[
+\frac{3\gamma}{3\gamma+1}-\frac{2\gamma+1}{2\gamma+2}
+ =\frac{\gamma-1}{(3\gamma+1)(2\gamma+2)}>0
+\]
+for every \(\gamma>1\). Substitution of \(\gamma=2\) gives \(6/7\), \(5/6\), and \(1/42\), respectively. Thus the score-monotone high-set class that suffices for the stated one-sided capability misses the unique optimizer for this opposite-tail union.
+
+The second capability separation is \(\texttt{lem:fogarty-small-moment-qcqp}\). At \(\Gamma=1\), the admissible assignment law is uniform. The two displayed rational score vectors both have assignment mean zero and variance one, whereas their threshold-one event indicators select, respectively, four positions and two positions. Their exact joint-tail probabilities are therefore one and one half. Any map whose input consists only of those two moments must agree on the two vectors, so it cannot equal \(p_J\) on both.
+
+For the third assertion, we first reduce counting subset sum to counting zero signed sums. Let positive integers \(w_1,\ldots,w_N\) and a target \(T\) be given, and put \(W=\sum_{i=1}^N w_i\). Targets outside \([0,W]\) have count zero and can be handled directly. If \(2T=W\), set \(a_i=w_i\). Under the bijection that sets \(\varepsilon_i=1\) exactly when \(i\in B\),
+\[
+\sum_{i=1}^N\varepsilon_iw_i
+ =2\sum_{i\in B}w_i-W,
+\]
+so the zero-signed-sum count is exactly \(N_T\). If \(2T\ne W\), append the positive integer \(d=\lvert2T-W\rvert\) to \((w_1,\ldots,w_N)\). A zero signed sum in the enlarged instance requires the signed sum of the original coordinates to be \(d\) or \(-d\), with the appended sign uniquely determined. These two cases correspond to original subsets summing to \(T\) and to \(W-T\). Complementation is a bijection between those two families, so the enlarged zero-signed-sum count is \(N_0=2N_T\). Thus one zero-signed-sum count recovers \(N_T\) by a polynomial-time output map. By \(\texttt{lem:counting-subset-sum-hardness}\), exact computation of \(N_0\) is \(\#\mathrm P\)-hard under polynomial-time metric reductions.
+
+Now form one matched pair for each positive integer \(a_i\), with scores \((-a_i,a_i)\), set \(\Gamma=1\), and take \(t=1\). The two directed odds inequalities imply equality of the two assignment probabilities, and normalization therefore makes each equal to \(1/2\). The product-law definition makes all \(2^n\) sign vectors equiprobable. For the sign vector \(\varepsilon\), the statistic is the integer
+\[
+S=\sum_{i=1}^n\varepsilon_i a_i.
+\]
+Hence \(\lvert S\rvert<1\) if and only if \(S=0\), and \(\texttt{def:robust-two-tail-calibration}\) yields
+\[
+p_J=\Pr\{\lvert S\rvert\ge1\}
+ =1-\frac{N_0}{2^n}.
+\]
+An exact value of \(p_J\) therefore recovers \(N_0=2^n(1-p_J)\). The transformation of the instance and of the exact rational output has polynomial bit complexity. All scores are integers, while \(t\) and \(\Gamma\) are rational; if the computational record includes a level, fix any rational value such as \(\alpha=1/2\). Thus the constructed instances satisfy the rational-input scope. Finally, swapping the two coordinates in every pair is a bijection of assignments and sends \(S\) to \(-S\), proving reversal symmetry. This establishes exact-value \(\#\mathrm P\)-hardness. The reduction uses an exact value oracle only; it supplies no lower bound on the length of a separately provided certificate.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This is the durable root: it combines the all-sensitivity representational separation, the equal-moment obstruction, and exact-value hardness. \textit{Gap.} It distinguishes the exact finite union problem from the Rosenbaum--Krieger one-sided ordered search and the Fogarty--Small mean--variance QCQP without overstating either comparator. \textit{Consumer.} Exact two-sided sensitivity implementations use it to justify score-state evaluation and to set honest worst-case computational expectations.
+
+\begin{lemma}[lem:local-rosenbaum-vertex-envelope]\label{lem:local-rosenbaum-vertex-envelope}
+For \(\gamma\ge1\), define \(K_i(\gamma)=\{q\in\Delta_{m_i}:q_j\le\gamma q_k\text{ for all }j,k\}\). If \(\gamma>1\), the extreme points of \(K_i(\gamma)\) are exactly the vectors \(\pi_i^H\) in \(\mathcal V_i^\gamma\) with \(\varnothing\ne H\subsetneq\{1,\ldots,m_i\}\); the additional vector indexed by the full set is the redundant uniform vector. If \(\gamma=1\), \(K_i(1)\) is the uniform singleton. Consequently, for every event \(E\subseteq\Omega_n\), \[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \sup_{\pi_i\in K_i(\gamma)}\sum_{z\in E}\prod_{i=1}^n\pi_{i,z_i} =\max_{(v_1,\ldots,v_n)\in\prod_{i=1}^n\mathcal V_i^\gamma}\sum_{z\in E}\prod_{i=1}^n v_{i,z_i}.\)}}\par\noindent}}
+\]
+\end{lemma}
+\begin{proof}
+Fix a matched set \(i\), write \(m=m_i\), and abbreviate \(K=K_i(\gamma)\). Every coordinate of every \(q\in K\) is positive. Indeed, if \(q_k=0\), then \(q_j\le\gamma q_k=0\) for every \(j\), contradicting \(\sum_jq_j=1\). If \(\gamma=1\), applying the inequalities in both directions gives \(q_j=q_k\) for every \(j,k\), so \(K\) is the uniform singleton \(q_j=1/m\).
+
+Suppose henceforth that \(\gamma>1\). For \(q\in K\), put
+\[
+a=\min_j q_j,
+\qquad
+b=\max_j q_j,
+\]
+and let \(L\), \(H\), and \(M\) be the sets of coordinates on which \(q_j=a\), \(q_j=b\), and \(a<q_j<b\), respectively. If \(b<\gamma a\), every defining odds inequality has positive slack. Since \(m\ge2\), choose a nonzero vector \(d\in\mathbb R^m\) with \(\sum_jd_j=0\). Positivity and the finitely many strict inequalities imply that, for all sufficiently small \(\varepsilon>0\), both \(q+\varepsilon d\) and \(q-\varepsilon d\) belong to \(K\). Hence \(q\) is not extreme.
+
+It remains to consider \(b=\gamma a\). If \(M\ne\varnothing\), choose numbers \(c\) and \((d_u)_{u\in M}\), not all zero, satisfying the single homogeneous equation
+\[
+c\bigl(\lvert L\rvert+\gamma\lvert H\rvert\bigr)+\sum_{u\in M}d_u=0.
+\]
+Such a nonzero solution exists because there are \(1+\lvert M\rvert\ge2\) unknowns. Define \(d_l=c\) for \(l\in L\) and \(d_h=\gamma c\) for \(h\in H\). Then \(\sum_jd_j=0\), and the perturbation preserves every active equality \(q_h=\gamma q_l\) with \(h\in H\) and \(l\in L\). Every other odds inequality has positive slack, because an intermediate coordinate is strictly above \(a\) and strictly below \(b\). Thus, for sufficiently small \(\varepsilon>0\), positivity and every odds inequality hold for both \(q+\varepsilon d\) and \(q-\varepsilon d\). Therefore \(q\) is not extreme.
+
+An extreme point must consequently have \(M=\varnothing\) and \(b=\gamma a>a\), so both \(H\) and its complement are nonempty. Normalization yields
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle q_j=\frac{\gamma}{\lvert H\rvert\gamma+m-\lvert H\rvert}
+\quad (j\in H),
+\qquad
+q_j=\frac{1}{\lvert H\rvert\gamma+m-\lvert H\rvert}
+\quad (j\notin H),\)}}
+\]
+which is exactly \(\pi_i^H\).
+
+Conversely, let \(H\) be nonempty and proper, and suppose \(\pi_i^H=(x+y)/2\) for \(x,y\in K\). For every \(h\in H\) and \(l\notin H\), equality in
+\[
+\pi_{ih}^H=\gamma\pi_{il}^H
+\]
+together with \(x_h\le\gamma x_l\) and \(y_h\le\gamma y_l\) forces equality in both latter inequalities. Hence, within each of \(x\) and \(y\), all high coordinates coincide, all low coordinates coincide, and each high coordinate is \(\gamma\) times each low coordinate. Normalization uniquely determines these two values, so \(x=y=\pi_i^H\). Thus every listed vector with a nonempty proper high set is extreme. The vector indexed by the full set is uniform; when \(\gamma>1\), it satisfies \(b<\gamma a\), so the preceding perturbation argument shows that it is redundant and nonextreme.
+
+It remains to prove the product assertion. Each \(K_i(\gamma)\) is a nonempty compact polytope, their finite product is compact, and
+\[
+f((\pi_i)_{i=1}^n)=\sum_{z\in E}\prod_{i=1}^n\pi_{i,z_i}
+\]
+is continuous. Hence a global maximizer exists. Holding every factor except \(\pi_i\) fixed makes \(f\) linear in \(\pi_i\). Its maximizing set is a nonempty face of \(K_i(\gamma)\) and contains an extreme point. Start from a global maximizer and replace its first factor by an extreme maximizer of the corresponding linear slice. The value cannot decrease and cannot exceed the original global maximum, so it is unchanged. Repeat for \(i=2,\ldots,n\). After the last replacement every factor is extreme and the global maximum is preserved. The characterization above places every factor in \(\mathcal V_i^\gamma\); when \(\gamma=1\), every vector listed in that set is the same uniform point. This proves that the supremum over the product polytopes is no larger than the displayed vertex maximum. Since every listed vertex satisfies normalization and the odds inequalities, the reverse inequality is immediate.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The lemma supplies the finite local extreme-point envelope used by every exact support calculation. \textit{Gap.} The resulting Cartesian product may be exponential and is a proof device rather than the operational headline. \textit{Consumer.} The parametric separation and score-state optimizer use the envelope to replace a continuous adversary by finite local supports.
+
+\begin{lemma}[lem:parametric-one-sided-monotone-separation]\label{lem:parametric-one-sided-monotone-separation}
+Set \(n=1\), \(m_1=4\), \(t=1\), and let the ordered scores be \((-2,0,1,2)\). For every \(\gamma>1\), set the sensitivity parameter to \(\Gamma=\gamma\) and write \(E=A_J(1;r)=\{1,3,4\}\). Under the local Rosenbaum vertex whose nonempty high set is \(H\), put \(a=\lvert H\cap E\rvert\) and \(b=\lvert H\cap E^c\rvert\). Then \[ P_H(E)=\frac{3+(\gamma-1)a}{4+(\gamma-1)(a+b)}. \] The unique maximizing high set is \(H=E\), and hence \[ p_J(1;r,\gamma)=\frac{3\gamma}{3\gamma+1}. \] The exact maximum of \(P_H(E)\) over all nonempty upper-score suffixes and lower-score prefixes \(H\) is \( (2\gamma+1)/(2\gamma+2)\). Consequently, \[ p_J(1;r,\gamma)-\max_{H\,\mathrm{monotone}}P_H(E)=\frac{\gamma-1}{(3\gamma+1)(2\gamma+2)}>0. \] At \(\gamma=2\), the three displayed quantities are \(6/7\), \(5/6\), and \(1/42\), respectively.
+\end{lemma}
+\begin{proof}
+The score threshold gives
+\[
+\lvert-2\rvert\ge1,
+\qquad
+\lvert0\rvert<1,
+\qquad
+\lvert1\rvert\ge1,
+\qquad
+\lvert2\rvert\ge1,
+\]
+so \(E=A_J(1;r)=\{1,3,4\}\) and \(E^c=\{2\}\). Fix a nonempty high set \(H\), and put \(a=\lvert H\cap E\rvert\) and \(b=\lvert H\cap E^c\rvert\). By \(\texttt{def:local-rosenbaum-vertices}\), the unnormalized weight is \(\gamma\) on \(H\) and one on \(H^c\). The event therefore receives total unnormalized weight \(a\gamma+(3-a)=3+(\gamma-1)a\), whereas all four positions receive weight
+\[
+(a+b)\gamma+4-a-b=4+(\gamma-1)(a+b).
+\]
+This proves
+\[
+P_H(E)=\frac{3+(\gamma-1)a}{4+(\gamma-1)(a+b)}.
+\]
+
+We now optimize this expression. If \(b=0\), then \(1\le a\le3\) and
+\[
+P_H(E)=1-\frac{1}{4+(\gamma-1)a},
+\]
+which is strictly increasing in \(a\) because \(\gamma>1\). Its unique maximum in this case occurs at \(a=3\), namely at \(H=E\), and equals \(3\gamma/(3\gamma+1)\). If \(b=1\), then \(0\le a\le3\) and
+\[
+P_H(E)=1-\frac{\gamma}{4+(\gamma-1)(a+1)}.
+\]
+For every such \(a\),
+\[
+\frac{\gamma}{4+(\gamma-1)(a+1)}
+ \ge\frac{\gamma}{4\gamma}
+ =\frac14
+ >\frac{1}{3\gamma+1},
+\]
+where the last inequality is strict because \(\gamma>1\). Thus every high set containing the sole nonevent position gives a value strictly below \(P_E(E)\). The finite vertex envelope in \(\texttt{lem:local-rosenbaum-vertex-envelope}\) now gives the unique maximizing high set \(H=E\) and
+\[
+p_J(1;r,\gamma)=P_E(E)=\frac{3\gamma}{3\gamma+1}.
+\]
+
+It remains to optimize over the score-monotone high sets. In increasing score order \(1,2,3,4\), the proper nonempty upper suffixes have \((a,b)=(1,0),(2,0),(2,1)\), and the proper nonempty lower prefixes have \((a,b)=(1,0),(1,1),(2,1)\). The full set has \((a,b)=(3,1)\) and produces the uniform value \(3/4\). Among the cases with \(b=0\), strict increase in \(a\) makes \((2,0)\) best, with value
+\[
+P_{(2,0)}(E)=\frac{2\gamma+1}{2\gamma+2}.
+\]
+For \((a,b)=(1,1)\), the failure probability is \(\gamma/(2\gamma+2)>1/(2\gamma+2)\). For \((a,b)=(2,1)\), comparison with the failure probability of the \((2,0)\) case gives
+\[
+\frac{\gamma}{3\gamma+1}-\frac{1}{2\gamma+2}
+ =\frac{(2\gamma+1)(\gamma-1)}{(3\gamma+1)(2\gamma+2)}>0.
+\]
+Finally,
+\[
+\frac{2\gamma+1}{2\gamma+2}-\frac34
+ =\frac{\gamma-1}{4\gamma+4}>0.
+\]
+Hence the exact monotone-candidate maximum is \((2\gamma+1)/(2\gamma+2)\). Direct subtraction yields
+\[
+\frac{3\gamma}{3\gamma+1}-\frac{2\gamma+1}{2\gamma+2}
+ =\frac{\gamma-1}{(3\gamma+1)(2\gamma+2)}>0.
+\]
+Substituting \(\gamma=2\) gives \(6/7\), \(5/6\), and \(1/42\), as claimed.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The lemma supplies the closed-form all-\(\gamma>1\) structural gap and its \(\gamma=2\) regression values. \textit{Gap.} It is a finite support calculation, not a general power comparison. \textit{Consumer.} Software tests can verify the event law, unique support, and exact rational gap at arbitrary rational \(\gamma>1\).
+
+\begin{lemma}[lem:one-sided-score-monotone-candidate-reduction]\label{lem:one-sided-score-monotone-candidate-reduction}
+For the ordered score vector \((-2,0,1,2)\), the nonempty upper-score suffixes and lower-score prefixes are precisely \[ \{4\},\{3,4\},\{2,3,4\},\{1,2,3,4\},\{1\},\{1,2\},\{1,2,3\}. \] At threshold \(t=1\), the opposite-tail event is \(E=\{1,3,4\}\), which is neither an upper suffix nor a lower prefix. For every \(\gamma>1\), the best local Rosenbaum vertex whose high set belongs to this one-sided score-monotone candidate class has event probability \( (2\gamma+1)/(2\gamma+2)\), attained exactly by \(H=\{3,4\}\) within the displayed candidate class.
+\end{lemma}
+\begin{proof}
+Because the scores are already in increasing order, an upper-score suffix is obtained by choosing a cutoff immediately before positions \(1\), \(2\), \(3\), or \(4\), and a lower-score prefix is obtained by choosing a cutoff immediately after one of those positions. Removing the duplicate full set gives exactly
+\[
+\{4\},\{3,4\},\{2,3,4\},\{1,2,3,4\},\{1\},\{1,2\},\{1,2,3\}.
+\]
+By \(\texttt{def:two-tail-events}\), the threshold-one union selects positions with absolute score at least one, so
+\[
+E=\{1,3,4\}.
+\]
+Its indicator is \((1,0,1,1)\) in score order and is therefore neither a suffix nor a prefix.
+
+For a local high set \(H\), let \(a=\lvert H\cap E\rvert\) and \(b=\lvert H\cap E^c\rvert\). Directly from \(\texttt{def:local-rosenbaum-vertices}\),
+\[
+P_H(E)=\frac{3+(\gamma-1)a}{4+(\gamma-1)(a+b)}.
+\]
+The seven displayed candidates have, respectively, the parameter pairs
+\[
+(1,0),(2,0),(2,1),(3,1),(1,0),(1,1),(2,1).
+\]
+If \(b=0\), the expression is strictly increasing in \(a\), so \((2,0)\) beats \((1,0)\). Relative to \((2,0)\), each case with \(b=1\) assigns the nonevent position high weight. The corresponding failure probabilities satisfy
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \frac{\gamma}{3\gamma+1}>\frac{1}{2\gamma+2},
+\qquad
+\frac{\gamma}{2\gamma+2}>\frac{1}{2\gamma+2},
+\qquad
+\frac14>\frac{1}{2\gamma+2}\)}}
+\]
+for \(\gamma>1\); these compare, respectively, \((2,1)\), \((1,1)\), and \((3,1)\) with \((2,0)\). Thus \((2,0)\), corresponding only to \(H=\{3,4\}\) in the candidate list, is the unique candidate maximum. Its probability is
+\[
+\frac{3+2(\gamma-1)}{4+2(\gamma-1)}
+ =\frac{2\gamma+1}{2\gamma+2}.
+\]
+This proves every assertion.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The lemma enumerates the comparator's candidate geometry on the separating score design. \textit{Gap.} It preserves the correctness of one-sided ordered searches for their own events and proves only their insufficiency for this union event. \textit{Consumer.} Reviewers and implementers can audit exactly which prefix and suffix supports were compared.
+
+\begin{lemma}[lem:fogarty-small-moment-qcqp]\label{lem:fogarty-small-moment-qcqp}
+At \(n=1\), \(m_1=4\), \(\Gamma=1\), and \(t=1\), the rational score vectors \(x=(-1,-1,1,1)\) and \(y=(1,-5/3,1/3,1/3)\) have the same uniform assignment mean \(0\) and variance \(1\), but their exact joint-tail probabilities are \(p_J(x)=1\) and \(p_J(y)=1/2\). Therefore the exact finite joint-tail probability is not a function of the assignment mean and variance, and no mean--variance-only moment QCQP can determine \(p_J\) on this class.
+\end{lemma}
+\begin{proof}
+At \(\Gamma=1\), \(\texttt{ass:rosenbaum-odds}\) gives \(\pi_{1j}\le\pi_{1k}\) and \(\pi_{1k}\le\pi_{1j}\) for all \(j,k\). Hence all four probabilities are equal, and normalization makes the unique law in \(\mathcal P_1\) uniform. For \(x=(-1,-1,1,1)\),
+\[
+\frac14\sum_{j=1}^4x_j=0,
+\qquad
+\frac14\sum_{j=1}^4x_j^2=1.
+\]
+For \(y=(1,-5/3,1/3,1/3)\),
+\[
+\frac14\sum_{j=1}^4y_j
+ =\frac14\left(1-\frac53+\frac13+\frac13\right)=0
+\]
+and
+\[
+\frac14\sum_{j=1}^4y_j^2
+ =\frac14\left(1+\frac{25}{9}+\frac19+\frac19\right)=1.
+\]
+Because both means vanish, these second moments are also their uniform assignment variances.
+
+Every coordinate of \(x\) has absolute value one, so \(\texttt{def:two-tail-events}\) gives \(A_J(1;x)=\{1,2,3,4\}\), and therefore \(p_J(1;x,1)=1\). For \(y\), exactly coordinates \(1\) and \(2\) have absolute value at least one; the other two have absolute value \(1/3\). Thus \(A_J(1;y)=\{1,2\}\), and uniformity gives \(p_J(1;y,1)=2/4=1/2\). If a functional depended on the score vector only through its uniform assignment mean and variance, it would take the same value at \(x\) and \(y\). Since \(p_J\) does not, no mean--variance-only moment optimization can determine the exact finite joint-tail probability throughout this class.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The lemma gives a rational equal-moment witness with exact tail probabilities \(1\) and \(1/2\). \textit{Gap.} It rules out exact determination from two moments, not asymptotic usefulness of moment methods. \textit{Consumer.} An exact implementation must retain the full score-state event information.
+
+\begin{lemma}[lem:counting-subset-sum-hardness]\label{lem:counting-subset-sum-hardness}
+The counting subset-sum problem that maps positive binary-encoded integers \(w_1,\ldots,w_N\) and a binary-encoded target \(T\) to \(N_T=\lvert\{B\subseteq\{1,\ldots,N\}:\sum_{i\in B}w_i=T\}\rvert\) is \(\#\mathrm P\)-complete, and in particular \(\#\mathrm P\)-hard under polynomial-time parsimonious reductions.
+\end{lemma}
+\begin{proof}
+Membership in \(\#\mathrm P\) is immediate: a nondeterministic polynomial-time machine guesses the indicator vector of \(B\), adds the selected binary integers, and accepts exactly when their sum is \(T\).
+
+For hardness, let \(f\in\#\mathrm P\). By the definition of \(\#\mathrm P\), after padding the nondeterminism if necessary, there are a polynomial \(q\) and a polynomial-time predicate \(R\) such that \(f(x)\) is the number of strings \(u\in\{0,1\}^{q(\lvert x\rvert)}\) satisfying \(R(x,u)=1\). For fixed \(x\), unroll the polynomial-time computation of \(R(x,\cdot)\) into a Boolean circuit \(C_x\) whose free inputs are the bits of \(u\). Introduce a variable for each gate output and impose each gate equivalence by clauses. For example, \(z=\neg v\) is represented by
+\[
+(z\vee v)\wedge(\neg z\vee\neg v),
+\]
+and \(z=v\wedge w\) is represented by
+\[
+(\neg z\vee v)\wedge(\neg z\vee w)
+ \wedge(z\vee\neg v\vee\neg w).
+\]
+Express any other gate through negation and conjunction, and add the unit clause forcing the circuit output to one. Every resulting clause has at most three literal occurrences. For every input string \(u\), all gate variables have exactly one extension satisfying the gate-equivalence clauses, namely the circuit evaluation, and that extension satisfies the output clause exactly when \(R(x,u)=1\). Thus this is a parsimonious polynomial-time reduction from the accepting strings counted by \(f(x)\) to satisfying assignments of a conjunctive normal form with clauses of length at most three.
+
+We next give a parsimonious reduction from such a formula to subset sum. Suppose its variables are \(v_1,\ldots,v_q\) and its clauses are \(C_1,\ldots,C_c\). Work in base ten with \(q+c\) digit positions, the first \(q\) for variables and the last \(c\) for clauses. For each variable \(v_i\), construct two positive integers \(u_i^+\) and \(u_i^-\). Both have digit one in variable position \(i\) and zero in the other variable positions. In clause position \(j\), the digit of \(u_i^+\) is the number of occurrences of literal \(v_i\) in \(C_j\), and the digit of \(u_i^-\) is the number of occurrences of literal \(\neg v_i\) in \(C_j\). For each clause \(C_j\), add two positive slack integers \(d_j^{(1)}\) and \(d_j^{(2)}\), having respectively digit one and digit two in clause position \(j\) and zero elsewhere. Let the target have digit one in every variable position and digit four in every clause position.
+
+No addition carries. A variable digit is at most two, and a clause digit is at most three from selected literal occurrences plus three from its two slack numbers, hence at most six. Any subset hitting the target must choose exactly one of \(u_i^+\) and \(u_i^-\) for every \(i\), so it specifies a truth assignment. If exactly \(k\in\{0,1,2,3\}\) literal occurrences satisfy clause \(C_j\), its clause digit before slack is \(k\). When \(k=1\), the unique slack choice reaching four selects both slack integers; when \(k=2\), it selects only \(d_j^{(2)}\); and when \(k=3\), it selects only \(d_j^{(1)}\). When \(k=0\), the available slack sum is at most three, so the target cannot be reached. Consequently, every satisfying assignment has exactly one target-sum extension by the slack items, and no unsatisfying assignment has one. The construction is parsimonious. Its integers have \(q+c\) decimal digits, so their binary encodings and the construction time are polynomial in the formula size.
+
+Composing the two parsimonious constructions shows that every function in \(\#\mathrm P\) parsimoniously reduces to counting subset sum. Together with membership in \(\#\mathrm P\), this proves \(\#\mathrm P\)-completeness and, in particular, the asserted \(\#\mathrm P\)-hardness.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The proof-bearing lemma supplies a parsimonious counting substrate for the metric reduction. \textit{Gap.} It is classical complexity infrastructure, not the causal-method contribution. \textit{Consumer.} The root theorem maps its target count to the complement of an unbiased joint-tail probability.
+
+\begin{lemma}[lem:score-state-pricing-formulation]\label{lem:score-state-pricing-formulation}
+For a rational input, multiply the scores and threshold by a common positive integer so that \(c_{ij}\in\mathbb Z\) and \(c_0\in\mathbb Z_{\ge0}\), and define \(D_0=\{0\}\) and \(D_i=\{\sum_{\ell=1}^i c_{\ell,j_\ell}:1\le j_\ell\le m_\ell\}\). For each event \(E\in\{A_J(t;r),A_+(t;r),A_-(t;r)\}\), its worst-case probability over \(\mathcal P_\Gamma\) is the optimum of a finite rational score-state mixed-integer linear program having \(O(\sum_{i=1}^n m_i^2|D_{i-1}|+\sum_{i=1}^n|D_i|)\) variables and constraints. No variable or constraint is indexed by \(\prod_i\mathcal V_i^\Gamma\).
+\end{lemma}
+\begin{proof}
+Write the rational sensitivity parameter in lowest terms as \(\Gamma=A/B\), where \(A\ge B>0\) are integers. For \(1\le k\le m_i\), put
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle d_{ik}=Bm_i+(A-B)k,\qquad L_i=\operatorname{lcm}_{1\le k\le m_i}d_{ik},\qquad Q_i=\prod_{\ell=1}^iL_\ell,\quad Q_0=1.\)}}\par\noindent}}
+\]
+Introduce binary variables \(\delta_{ik}\) and \(h_{ijk}\) subject to
+\[\sum_{k=1}^{m_i}\delta_{ik}=1,\qquad h_{ijk}\le\delta_{ik},\qquad \sum_{j=1}^{m_i}h_{ijk}=k\delta_{ik}.\]
+When \(\delta_{ik}=1\), the variables \(h_{ijk}\) select a high set of cardinality \(k\). Define the integer-valued linear expression
+\[w_{ij}=\sum_{k=1}^{m_i}\left(\frac{BL_i}{d_{ik}}\delta_{ik}+\frac{(A-B)L_i}{d_{ik}}h_{ijk}\right).\]
+For an integral selection, \(w_{ij}/L_i\) equals \(A/d_{ik}\) on the selected high set and \(B/d_{ik}\) off it. These are exactly the high and low probabilities in \(\mathcal V_i^\Gamma\), including the redundant uniform representation at \(k=m_i\).
+
+For \(u\in D_i\), introduce a state variable \(q_{iu}\), set \(q_{0,0}=1\), and impose \(0\le q_{iu}\le Q_i\). The intended recurrence is
+\[q_{iu}=\sum_{j=1}^{m_i}w_{ij}q_{i-1,u-c_{ij}},\]
+where a term with \(u-c_{ij}\notin D_{i-1}\) is zero. Expand \(w_{ij}\). For every product of \(q_{i-1,v}\in[0,Q_{i-1}]\) with a binary variable \(e\in\{\delta_{ik},h_{ijk}\}\), introduce \(x=e q_{i-1,v}\) and impose
+\[0\le x\le q_{i-1,v},\qquad x\le Q_{i-1}e,\qquad x\ge q_{i-1,v}-Q_{i-1}(1-e).\]
+If \(e=0\), these inequalities give \(x=0\); if \(e=1\), they give \(x=q_{i-1,v}\). Thus the replacement is exact at every integer-feasible solution and the recurrence becomes linear with integer coefficients.
+
+Induction on \(i\) now gives
+\[q_{iu}=Q_i\Pr\left\{\sum_{\ell=1}^i c_{\ell,Z_\ell}=u\right\}\]
+under the selected product law. The claim holds at \(i=0\), and multiplication by \(w_{ij}=L_i\pi_{ij}\) turns the recurrence into the law-of-total-probability convolution at step \(i\). Therefore maximizing, respectively,
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle Q_n^{-1}\sum_{u\in D_n:\,|u|\ge c_0}q_{nu},\qquad Q_n^{-1}\sum_{u\in D_n:\,u\ge c_0}q_{nu},\qquad Q_n^{-1}\sum_{u\in D_n:\,u\le-c_0}q_{nu}\)}}\par\noindent}}
+\]
+maximizes the probabilities of \(A_J\), \(A_+\), and \(A_-\) over all selected product vertices. Conversely, every tuple of local vertices has such a binary encoding. The vertex-envelope lemma identifies each mixed-integer optimum with the corresponding supremum over \(\mathcal P_\Gamma\). There are \(O(m_i^2)\) local binary variables and \(O(m_i^2|D_{i-1}|)\) transition and linearization variables at stage \(i\), plus \(O(|D_i|)\) state variables and constraints. The sets \(D_i\) can be constructed recursively from \(D_{i-1}\) and the \(m_i\) new scores, with duplicates merged. This proves the size bound and the absence of Cartesian-product indexing.
+\end{proof}
+
+\begin{lemma}[lem:exact-rational-linear-certificates]\label{lem:exact-rational-linear-certificates}
+Let \(A\), \(b\), and \(c\) have rational entries. If the polytope \(Q=\{x:Ax\le b\}\) is nonempty and bounded, then \(\max_{x\in Q}c^\top x\) has a rational optimizer \(x^*\) and a rational vector \(y^*\ge0\) such that \(A^\top y^*=c\) and \(c^\top x^*=b^\top y^*\). If \(Q\) is empty, there is a rational vector \(y\ge0\) such that \(A^\top y=0\) and \(b^\top y<0\). Every displayed certificate is checkable using only exact rational arithmetic in time polynomial in its encoded length.
+\end{lemma}
+\begin{proof}
+We first prove an elementary finite-dimensional cone fact. If \(C\) is generated by finitely many vectors and \(u\notin C\), choose \(v\in C\) minimizing \(\lVert u-v\rVert\). Such a minimizer exists: every cone representation can be reduced, by deleting linear dependences while preserving nonnegative coefficients, to one using linearly independent generators; there are finitely many such subsets, and the image of the nonnegative orthant under an injective linear map is closed. Put \(d=u-v\). Comparing \(v\) with \(v+\varepsilon(w-v)\) for \(w\in C\) and \(0\le\varepsilon\le1\) gives \(d^\top(w-v)\le0\). Comparing with positive multiples of \(v\) gives \(d^\top v=0\). Hence \(d^\top w\le0\) for every \(w\in C\), whereas \(d^\top u=\lVert d\rVert^2>0\).
+
+Assume first that \(Q\) is nonempty and bounded. Compactness gives an optimizer. Within the optimal face, move in two-sided feasible directions until no such nonzero direction remains. Each maximal move makes an additional inequality tight, so after finitely many moves one reaches an optimal vertex \(x^*\). A maximal independent collection of its tight constraints is a nonsingular rational system determining \(x^*\); hence Cramer's rule gives \(x^*\in\mathbb Q^d\).
+
+Let \(T\) index the constraints tight at \(x^*\), with row normals \(a_k^\top\). We claim that \(c\) is in the cone generated by \(\{a_k:k\in T\}\). Otherwise the cone fact supplies \(d\) with \(a_k^\top d\le0\) for every \(k\in T\) and \(c^\top d>0\). Every constraint outside \(T\) has positive slack, so \(x^*+\varepsilon d\in Q\) for all sufficiently small \(\varepsilon>0\), while its objective is larger, a contradiction. Thus \(c=A_T^\top y_T\) for some \(y_T\ge0\). Delete generators along linear dependences until the generators with positive coefficients are linearly independent. The remaining coefficients solve a full-column-rank rational system and are rational. Extend them by zero outside \(T\) to obtain \(y^*\ge0\) with \(A^\top y^*=c\). Tightness on its support yields
+\[b^\top y^*=(Ax^*)^\top y^*=c^\top x^*.\]
+For every feasible \(x\), \(c^\top x=(y^*)^\top Ax\le(y^*)^\top b\), so these equal values certify optimality.
+
+Now suppose \(Q\) is empty. Feasibility of \(Ax\le b\) is equivalent to membership of \(b\) in
+\[L=\{Ax+s:x\in\mathbb R^d,\ s\in\mathbb R_+^r\}.\]
+This is the finitely generated cone spanned by both signs of every column of \(A\) and by the standard coordinate vectors. Since \(b\notin L\), the cone fact gives \(v\) with \(v^\top b>0\) and \(v^\top\ell\le0\) for every \(\ell\in L\). Both signs of the columns imply \(A^\top v=0\), and the standard coordinate generators imply \(v\le0\). Thus \(y=-v\ge0\), \(A^\top y=0\), and \(b^\top y<0\). Scale so that \(b^\top y=-1\). Intersect this nonempty rational system with a sufficiently large rational bound on \(\sum_k y_k\); the resulting nonempty bounded rational polytope has a rational vertex by the vertex argument above. Hence a rational infeasibility certificate exists.
+
+A verifier multiplies and compares the finitely encoded rationals and checks the displayed primal, dual, or infeasibility relations. Binary integer addition, multiplication, greatest-common-divisor reduction, and comparison have bit complexity polynomial in the operand lengths, so verification is polynomial in the certificate encoding length.
+\end{proof}
+
+\begin{lemma}[lem:parametric-gain-support-cells]\label{lem:parametric-gain-support-cells}
+Fix a finite design. On every cell determined by the signs of \(S(z;r)-t\) and \(S(z;r)+t\), \(z\in\Omega_n\), each event \(E\in\{A_J,A_+,A_-\}\) is fixed and its robust probability is the maximum of finitely many rational functions \[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle F_{E,\mathbf H}(\gamma)=\frac{N_{E,\mathbf H}(\gamma)}{D_{\mathbf H}(\gamma)},\quad N_{E,\mathbf H}(\gamma)=\sum_{z\in E}\gamma^{\sum_{i=1}^n\mathbf 1\{z_i\in H_i\}},\quad D_{\mathbf H}(\gamma)=\prod_{i=1}^n(|H_i|\gamma+m_i-|H_i|),\)}}\par\noindent}}
+\] where \(\mathbf H=(H_1,\ldots,H_n)\) and \(\varnothing\ne H_i\subseteq\{1,\ldots,m_i\}\). Consequently, the ambient parameter space has a finite partition by rational-polynomial sign conditions on which \(p_J\), \(p_+\), \(p_-\), and \(p_B\) are explicit rational functions and the signs \(p_B-p_J>0\), \(p_B-p_J=0\), and \(p_B-p_J<0\) are necessary and sufficient. Fix a lexicographic order on support tuples and let \(\sigma_E(C)\) be the first maximizing support on an open comparison-sign cell \(C\). If \(\gamma_0\in(1,\infty)\) is an interior boundary with adjacent cells \(C_-\) and \(C_+\), then a named ordered pair \(\mathbf H\to\mathbf K\), with \(\mathbf H\ne\mathbf K\), is a genuine selected-support switch at \(\gamma_0\) if and only if \(F_{E,\mathbf H}(\gamma_0)=F_{E,\mathbf K}(\gamma_0)=\max_{\mathbf L}F_{E,\mathbf L}(\gamma_0)\), \(\sigma_E(C_-)=\mathbf H\), and \(\sigma_E(C_+)=\mathbf K\). Hence the pairwise cross-product polynomial vanishes at \(\gamma_0\), but vanishing and dominance alone are not sufficient; the two named supports must be the respective adjacent-cell selections. Reversing the orientation exchanges \(\mathbf H\) and \(\mathbf K\).
+\end{lemma}
+\begin{proof}
+There are finitely many assignments \(z\in\Omega_n\). The signs of the finitely many linear forms \(S(z;r)-t\) and \(S(z;r)+t\) determine membership in \(A_+\) and \(A_-\), and hence in \(A_J\). These sign conditions partition score-threshold space into finitely many cells on which all three events are fixed.
+
+Fix such a cell and an event \(E\). Under the product vertex indexed by \(\mathbf H=(H_1,\ldots,H_n)\), direct multiplication gives
+\[\Pr_{\mathbf H}(Z=z)=\prod_{i=1}^n\frac{\gamma^{\mathbf 1\{z_i\in H_i\}}}{|H_i|\gamma+m_i-|H_i|}.\]
+Summing over \(z\in E\) yields exactly \(F_{E,\mathbf H}=N_{E,\mathbf H}/D_{\mathbf H}\). The vertex-envelope lemma gives
+\[p_E(\gamma)=\max_{\mathbf H}F_{E,\mathbf H}(\gamma).\]
+Every denominator is strictly positive for \(\gamma\ge1\). Thus \(F_{E,\mathbf H}\ge F_{E,\mathbf K}\) is equivalent to the polynomial inequality
+\[N_{E,\mathbf H}(\gamma)D_{\mathbf K}(\gamma)-N_{E,\mathbf K}(\gamma)D_{\mathbf H}(\gamma)\ge0.\]
+Choose the fixed lexicographic support order. The cell on which \(\mathbf H\) is the first maximizer is specified by strict comparison with every earlier tuple and weak comparison with every later tuple. These cells are disjoint and exhaustive. Their common refinement for \(E=A_J,A_+,A_-\) makes all three robust probabilities explicit rational functions.
+
+On such a refined cell write \(j=p_J\), \(a=p_+\), and \(b=p_-\). Since \(p_B=\min\{1,2a,2b\}\), refine once more according to which of these three quantities is the first minimum. Gain, equality, and loss are then respectively a strict polynomial inequality, a polynomial equality together with weak inequalities, and the reverse strict inequality after multiplication by positive denominators. These conditions are finite, necessary, and sufficient. The strict-region level condition is similarly
+\[j\le\alpha<\min\{1,2a,2b\},\]
+which, because \(0<\alpha<1\), is equivalent to \(j\le\alpha\), \(\alpha<2a\), and \(\alpha<2b\). Hence level membership is also an exact rational-polynomial sign condition.
+
+Finally, let \(\gamma_0\in(1,\infty)\) have adjacent open comparison-sign cells \(C_-\) and \(C_+\). If the selected support changes from \(\mathbf H\) on \(C_-\) to \(\mathbf K\) on \(C_+\), continuity of the candidate rational functions gives equality and joint maximality at \(\gamma_0\), proving necessity. Conversely, the adjacent-selection identities \(\sigma_E(C_-)=\mathbf H\) and \(\sigma_E(C_+)=\mathbf K\) state exactly that the named selected support changes across the oriented boundary; the equality and dominance conditions certify the boundary tie. Equality of the two rational functions implies
+\[N_{E,\mathbf H}(\gamma_0)D_{\mathbf K}(\gamma_0)-N_{E,\mathbf K}(\gamma_0)D_{\mathbf H}(\gamma_0)=0.\]
+Vanishing and dominance alone are not sufficient, since a third support can be lexicographically selected throughout either adjacent cell. Thus the two named supports must be the respective adjacent selections. Reversing the orientation exchanges \(\mathbf H\) and \(\mathbf K\), and all conditions are finite rational-polynomial sign checks.
+\end{proof}
+
+\begin{lemma}[lem:negative-gain-cell-witness]\label{lem:negative-gain-cell-witness}
+There is an input in \(\mathcal I_{\mathbb Q}\) with negative joint-calibration gain. Specifically, take \(n=1\), \(m_1=4\), \(\Gamma=2\), \(t=1\), \(\alpha=1/2\), and scores \((-2,0,1,2)\). Then \[p_+(1;r,2)=\frac23,\qquad p_-(1;r,2)=\frac25,\qquad p_J(1;r,2)=\frac67,\qquad G(1;r,2)=-\frac{2}{35}<0.\]
+\end{lemma}
+\begin{proof}
+All displayed input values are rational and finitely encoded, so the configuration belongs to \(\mathcal I_{\mathbb Q}\). For a single set of size four and a subset \(B\) of \(k\) positions, the \(\Gamma=2\) odds restriction gives
+\[P(B)\le\frac{2k}{2k+4-k}=\frac{2k}{4+k}.\]
+Indeed, if \(x=P(B)\), summing \(\pi_j\le2\pi_\ell\) over \(j\in B\) and \(\ell\notin B\) gives \((4-k)x\le2k(1-x)\). Equality is attained by assigning weight proportional to two on \(B\) and one on its complement, which is a local Rosenbaum vertex.
+
+For scores \((-2,0,1,2)\) at threshold one, the upper event has the two positions with scores one and two, the lower event has the single position with score minus two, and their union has those three positions. Applying the preceding sharp formula with \(k=2,1,3\), respectively, yields
+\[p_+=\frac{4}{6}=\frac23,\qquad p_-=\frac25,\qquad p_J=\frac67.\]
+Therefore
+\[p_B=\min\left\{1,2\min\left(\frac23,\frac25\right)\right\}=\frac45,\qquad G=\frac45-\frac67=-\frac{2}{35}<0.\]
+This proves the stated loss-cell witness.
+\end{proof}
+
+\begin{theorem}[thm:operational-joint-certificate-and-gain-trichotomy]\label{thm:operational-joint-certificate-and-gain-trichotomy}
+For every input in \(\mathcal I_{\mathbb Q}\), there is a deterministic terminating implementation of \(\mathsf{JPC}\), based on the score-state formulation in \(\texttt{lem:score-state-pricing-formulation}\), that returns \(\mathsf{JPC}(t,r,\Gamma)=(p,\mathcal C)\) with \(p=p_J(t;r,\Gamma)\). The certificate \(\mathcal C\) contains an attaining product-vertex law, its exact score convolution, a one-column master-primal solution, the scalar master-dual value, and a finite exact-rational branch certificate proving that no omitted product-vertex law has larger \(A_J(t;r)\)-probability. A deterministic rational-arithmetic verifier accepts only if these data prove both attainment and the upper bound over every \(P\in\mathcal P_\Gamma\), and its running time is polynomial in the bit length of the submitted transcript. Neither the formulation nor the verifier requires an input table indexed by the Cartesian product \(\prod_{i=1}^n\mathcal V_i^\Gamma\), although the score-state formulation, running time, and certificate length can be exponential and the branch transcript can in the worst case visit all implicit binary support choices. For every fixed finite design, parametric versions of the three certificates for \(A_J(t;r)\), \(A_+(t;r)\), and \(A_-(t;r)\) yield a finite rational-polynomial sign partition of the ambient score, threshold, level, and sensitivity parameter space into gain, equality, and loss cells \(p_J<p_B\), \(p_J=p_B\), and \(p_J>p_B\). An accepted cell certificate consists of the event-membership signs, the selected support identities, and the cross-multiplied support, gain, and level inequalities. On these cells, \[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle (\alpha,\Gamma,(m_i)_{i=1}^n,r,z_{\mathrm{obs}})\in\mathfrak R_{\mathrm{strict}}\quad\Longleftrightarrow\quad p_J(t_{\mathrm{obs}};r,\Gamma)\le\alpha<p_B(t_{\mathrm{obs}};r,\Gamma).\)}}\par\noindent}}
+\] Consequently, \(\mathfrak R_{\mathrm{strict}}\) is exactly the union of the gain cells satisfying the displayed level inequalities and contains no equality or loss cell. Fix a lexicographic order on product supports and let \(\sigma_E(C)\) be the first maximizing support on an open comparison-sign cell \(C\). If \(\gamma_0\in(1,\infty)\) is an interior boundary with adjacent cells \(C_-\) and \(C_+\), then a named ordered pair \(\mathbf H\to\mathbf K\), with \(\mathbf H\ne\mathbf K\), is a genuine selected-support switch at \(\gamma_0\) if and only if \(F_{E,\mathbf H}(\gamma_0)=F_{E,\mathbf K}(\gamma_0)=\max_{\mathbf L}F_{E,\mathbf L}(\gamma_0)\), \(\sigma_E(C_-)=\mathbf H\), and \(\sigma_E(C_+)=\mathbf K\). Hence the pairwise cross-product polynomial vanishes at \(\gamma_0\), but vanishing and dominance alone are not sufficient; the two named supports must be the respective adjacent-cell selections. Reversing the orientation exchanges \(\mathbf H\) and \(\mathbf K\). The loss region is nonempty, so an exhaustive equality-versus-strict-gain dichotomy on the ambient parameter space is false.
+\end{theorem}
+\begin{proof}
+Fix an input in \(\mathcal I_{\mathbb Q}\) and first take \(E=A_J(t;r)\). By \(\texttt{lem:local-rosenbaum-vertex-envelope}\), the supremum defining \(p_J(t;r,\Gamma)\) is a maximum over product laws whose \(i\)-th factor is a local high--low vector. By \(\texttt{lem:score-state-pricing-formulation}\), this maximum is the optimum of a finite rational mixed-integer linear program \(\mathcal M_E\) whose binary variables select local high sets and whose state variables propagate the exact score distribution. In particular, \(\mathcal M_E\) contains no object indexed by a tuple in \(\prod_i\mathcal V_i^\Gamma\). The program is feasible because selecting the full high set in every matched set gives the uniform product law and its convolution, and it is bounded because all state and linearization variables have the explicit finite bounds in the score-state construction.
+
+We next construct the terminating exact algorithm and its certificate. At a node of a branch tree, relax every unfixed binary variable of \(\mathcal M_E\) to \([0,1]\). All variables in the resulting rational linear program have finite bounds. By \(\texttt{lem:exact-rational-linear-certificates}\), an infeasible node has a rational infeasibility multiplier, while a feasible node has rational primal and dual optima with equal objective values. Maintain the largest objective value of an integral feasible solution found so far. A node is closed if it is infeasible, if its certified relaxation bound does not exceed the incumbent, or if a relaxation optimizer is integral. In the last case its value updates the incumbent. Otherwise branch on the first fractional binary variable in a fixed ordering, creating the two children on which that variable is respectively zero and one. Every root-to-leaf path fixes a new binary variable at each nonterminal node, so its length is at most the finite number of binary variables. The tree therefore terminates after finitely many nodes. Feasibility ensures that at least one integral leaf is retained.
+
+Let \(p\) be the final incumbent and retain one attaining integral solution. At every closed node retain either its rational infeasibility multiplier or rational primal and dual solutions proving a relaxation upper bound no larger than the incumbent at the time the node was closed. That earlier incumbent is at most the final value \(p\). The branch disjunctions cover every integer-feasible point, and weak duality bounds the objective of every such point by \(p\). The retained integral solution gives the reverse inequality. Therefore
+\[p=\operatorname{OPT}(\mathcal M_E)=p_J(t;r,\Gamma).\]
+All entries are rational. A deterministic verifier checks the root formulation, every parent--child branch disjunction, every convolution recurrence, every primal-feasibility condition, every infeasibility multiplier, every dual-feasibility condition, every objective comparison, and the attaining integral solution using exact rational arithmetic. Acceptance therefore proves both \(p\le p_J\) by attainment and \(p_J\le p\) by the exhaustive branch upper bounds. The number of checks is linear in the number of transcript entries, and exact addition, multiplication, reduction, and comparison of binary-encoded rationals take time polynomial in the encoded operand lengths. Verification is consequently polynomial in the bit length of the submitted transcript.
+
+To match \(\texttt{def:joint-primal-dual-handle}\), let \(c_{\mathbf H}\) denote the \(E\)-probability under product support \(\mathbf H\). The conceptual finite-column master problem and its scalar dual are
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \max_{\lambda\ge0}\left\{\sum_{\mathbf H}c_{\mathbf H}\lambda_{\mathbf H}:\sum_{\mathbf H}\lambda_{\mathbf H}=1\right\},\qquad \min_{\eta}\left\{\eta:\eta\ge c_{\mathbf H}\text{ for every }\mathbf H\right\}.\)}}\par\noindent}}
+\]
+The attaining support from \(\mathcal M_E\), with mass one, is a one-column master-primal solution of value \(p\). The scalar \(\eta=p\) is dual feasible because the branch certificate proves \(c_{\mathbf H}\le p\) for every omitted support. Thus the generated column, the scalar dual value, the exact convolution, and the pricing tree form \(\mathcal C\). Neither the formulation nor the verifier needs a Cartesian-product column table. The score-state sets and branch tree may nevertheless be exponentially large, and the tree can visit every implicit binary support choice in a worst case. The conclusion is finite exact computation without a product-indexed master table, not a polynomial-time guarantee or a guarantee against worst-case implicit enumeration.
+
+Run the same construction for \(E=A_+(t;r)\) and \(E=A_-(t;r)\). The resulting exact values determine \(p_B=\min\{1,2p_+,2p_-\}\). The rational-function envelope and sign-cell construction in \(\texttt{lem:parametric-gain-support-cells}\) gives a finite necessary-and-sufficient rational-polynomial partition for every fixed finite design. For a cell certificate, append the signs fixing the three events, the three selected product supports, their cross-multiplied dominance inequalities or grouped branch certificates proving those inequalities for omitted supports, and the gain and level inequalities below. Every item is an integer- or rational-polynomial identity or sign condition, so the same exact verifier checks it without a law oracle. Conversely, the common refinement in the parametric lemma includes every event and support comparison, so the accepted cells cover the parameter space and no unlisted sign pattern is used. This parametric transcript may be exponential, consistently with the computational caveat above.
+
+On a certified cell write \(j=p_J\), \(a=p_+\), and \(b=p_-\). Then
+\[G>0\iff j<1,\ j<2a,\ j<2b,\]
+\[G=0\iff j=\min\{1,2a,2b\},\qquad G<0\iff j>\min\{1,2a,2b\}.\]
+Because \(0<\alpha<1\), the definition of \(\mathfrak R_{\mathrm{strict}}\) is equivalently
+\[j\le\alpha,\qquad \alpha<2a,\qquad \alpha<2b.\]
+These inequalities imply \(j<\min\{1,2a,2b\}=p_B\), so every member of \(\mathfrak R_{\mathrm{strict}}\) lies in a gain cell and no equality or loss cell lies in that set. Conversely, a gain cell satisfying the displayed level inequalities belongs to \(\mathfrak R_{\mathrm{strict}}\) by its definition.
+
+For the support-switch certificate, fix the lexicographic rule and the notation \(\sigma_E(C)\) of \(\texttt{lem:parametric-gain-support-cells}\). Let \(\gamma_0\in(1,\infty)\) have adjacent open comparison-sign cells \(C_-\) and \(C_+\). If the selected support changes from \(\mathbf H\) to \(\mathbf K\), continuity of every candidate rational function implies
+\[F_{E,\mathbf H}(\gamma_0)=F_{E,\mathbf K}(\gamma_0)=\max_{\mathbf L}F_{E,\mathbf L}(\gamma_0),\]
+and the adjacent selections are \(\sigma_E(C_-)=\mathbf H\) and \(\sigma_E(C_+)=\mathbf K\). Conversely, the two adjacent-selection equalities state exactly that the named selected support changes across the oriented boundary. Equality of the two named rational functions forces their cross-product polynomial to vanish. Vanishing and joint dominance alone do not suffice because a third support can remain the selected maximizer on either adjacent cell. Reversing the boundary orientation exchanges the names. All these conditions are finite rational-polynomial sign checks. Finally, \(\texttt{lem:negative-gain-cell-witness}\) gives an admissible configuration with \(p_J>p_B\). Thus gain and equality cells do not exhaust the ambient parameter space, although the strict-improvement region itself is exactly the stated union of level-qualified gain cells.
+\end{proof}
+
+\section{Interpretation}
+
+The quantity \(p_J\) forces one admissible assignment law to allocate mass to both tails simultaneously. The comparator \(p_B\) optimizes the two tails under potentially different laws and doubles the smaller optimum, so there is no universal ordering: gain, equality, and loss cells all occur. The four-score theorem identifies the new structural requirement exactly. Its joint event indicator \((1,0,1,1)\) is nonmonotone, and raising precisely those three coordinates is uniquely optimal for every hidden-bias level above one. A two-sided report improves exactly on level-qualified gain cells \(p_J\le\alpha<p_B\), agrees on equality cells, and must not claim improvement on loss cells. Reversal symmetry gives the no-hidden-bias equality check; the heterogeneous \(\Gamma=2\) example supplies the separate reporting-scale gain \(19/120\approx0.158\).
+
+\section*{Technical internal limitation (diagnostic only)}
+
+Exact value computation is \(\#\mathrm P\)-hard under polynomial-time metric reductions even for \(\Gamma=1\) reversal-symmetric matched pairs with integer scores. The score-state formulation, branch transcript, and exact certificate may therefore be exponential and may visit every implicit binary support choice. The results do not prove an unconditional exponential lower bound on certificate length, do not provide a polynomial-time exact algorithm, and do not claim ordinary mixed-integer optimization or omission of an explicit Cartesian-product table as novelty. The capability witnesses establish non-evaluability by the named restricted representations; they do not imply uniform power dominance over every one-sided or moment-based procedure.
+
+\section{Honest scope}
+
+The formal scope is one treated unit per finite matched set, conditional product assignment, the Rosenbaum bounded-odds class, fixed finitely encoded rational score records for the computational procedure, and the Fisher-sharp-null sensitivity-analysis context. The capability and algorithmic results concern exact calibration of the supplied score record; they do not justify outcome-adaptive scoring, estimate heterogeneous causal effects, allow cross-set assignment dependence, or guarantee polynomial complexity. Within this scope, the deliverable is an exact shared-law two-sided calibration with an attaining-law and verifier certificate, an all-\(\gamma>1\) capability separation, an exact gain/equality/loss and support-switch characterization usable by \(\texttt{sensitivitymv}\), \(\texttt{senfm}\), and explicit two-sided reporting, plus the \(\Gamma=1\) equality and \(\Gamma=2\) numerical regression checks.
+
+\begin{thebibliography}{99}
+
+  \bibitem{Rosenbaum1987SensitivityPermutation} Rosenbaum, P. R. (1987). Sensitivity analysis for certain permutation inferences in matched observational studies. \emph{Biometrika}, 74(1), 13--26.
+
+  \bibitem{Rosenbaum2007M} Rosenbaum, P. R. (2007). Sensitivity analysis for m-estimates, tests, and confidence intervals in matched observational studies. \emph{Biometrics}, 63(2), 456--464. doi:10.1111/j.1541-0420.2006.00717.x.
+
+  \bibitem{FogartySmall2016MultipleComparisons} Fogarty, C. B. and Small, D. S. (2016). Sensitivity analysis for multiple comparisons in matched observational studies through quadratically constrained linear programming. \emph{Journal of the American Statistical Association}, 111(516), 1820--1830. doi:10.1080/01621459.2015.1120675.
+
+  \bibitem{Rosenbaum2018Stratified} Rosenbaum, P. R. (2018). Sensitivity analysis for stratified comparisons in an observational study of the effect of smoking on homocysteine levels. \emph{Annals of Applied Statistics}, 12(4), 2312--2334. doi:10.1214/18-AOAS1153.
+
+  \bibitem{CohenOlsonFogarty2020AdversarialGame} Cohen, P. L., Olson, M. A., and Fogarty, C. B. (2020). Multivariate one-sided testing in matched observational studies as an adversarial game. \emph{Biometrika}, 107(4), 809--825. doi:10.1093/biomet/asaa024.
+
+  \bibitem{Zhao2019SensitivityValue} Zhao, Q. (2019). On sensitivity value of pair-matched observational studies. \emph{Journal of the American Statistical Association}, 114(526), 713--722. doi:10.1080/01621459.2018.1429277.
+
+  \bibitem{HowardPimentel2021Adaptive} Howard, S. R. and Pimentel, S. D. (2021). The uniform general signed rank test and its design sensitivity. \emph{Biometrika}, 108(2), 381--396.
+
+  \bibitem{FaussZoubirPoor2021Minimax} Fauß, M., Zoubir, A. M., and Poor, H. V. (2021). Minimax robust detection: classic results and recent advances. \emph{IEEE Transactions on Signal Processing}, 69, 2252--2283. doi:10.1109/TSP.2021.3061298.
+
+  \bibitem{Fogarty2023WeakNulls} Fogarty, C. B. (2023). Testing weak nulls in matched observational studies. \emph{Biometrics}, 79(3), 2196--2207. doi:10.1111/biom.13741.
+
+\end{thebibliography}
+
+\end{document}

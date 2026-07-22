@@ -1,0 +1,361 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_synth\_control\_factor\_misspec, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to a Q1..Q6 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    If it is a free-form `(qid, specialization)`, define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_synth\_control\_factor\_misspec} / \texttt{v1}%
+  \\ \large\textit{Sharp vector-sensitive partial identification for synthetic control under bounded factor misspecification}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+PartialID tuple:
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization})
+  =(\texttt{pid\_synth\_control\_factor\_misspec},\texttt{v1}),\\
+P=(g,d,y_s^w,w,X,b,\eta),\qquad
+\theta=Y_{0s}(0),\\
+\text{identifying restrictions: fixed synthetic-control weights }w,\;
+\rho=(1+\|w\|_1)\eta,\;\exists \Delta\in\R^r
+\text{ such that }\|g-X\Delta\|_\infty\le \rho,\\
+\text{and } |\theta-y_s^w-b^\transpose \Delta|\le \rho,\\
+\text{bounding functional: }
+\Theta_I(P)=y_s^w+
+\left[
+\inf_{\|g-X\Delta\|_\infty\le\rho}b^\transpose\Delta-\rho,\;
+\sup_{\|g-X\Delta\|_\infty\le\rho}b^\transpose\Delta+\rho
+\right].
+\end{gathered}
+\]
+Here \(g\in\R^{T_0}\) is the observed pre-period treated-minus-synthetic gap, \(d=Y_{0s}^{\mathrm{obs}}-y_s^w\) is the observed post-period treated-minus-synthetic gap, \(X\in\R^{T_0\times r}\) is the pre-period factor-loading dictionary, \(b\in\R^r\) is the post-period factor bridge, \(y_s^w=\sum_j w_jY_{js}\), and \(\eta\ge0\) is the sup-norm approximation-error budget.
+
+\begin{abstract}
+Synthetic-control practice often treats imperfect pre-treatment fit through a scalar diagnostic such as RMSPE, but the linear factor justification of \citet{AbadieDiamondHainmueller2010} is vectorial: the post-period counterfactual is identified only through the part of the latent imbalance visible in the pre-period loading geometry. This proposal asks for the sharp partial-identification interval for one post-period untreated counterfactual when the factor model is allowed a bounded sup-norm approximation error. The routine theorem is a Chebyshev-support-function interval over the latent factor imbalance compatible with the observed pre-gap vector. The novelty kernel is a separation result for named scalar and sensitivity reporting workflows: the post/pre RMSPE statistic surveyed in \citet{Abadie2021}, the modified RMSPE statistic of \citet{FirpoPossebom2018}, and the nonparametric synthetic-control sensitivity framework of \citet{ZeitlerVlontzosGilliganLee2023} do not give the Chebyshev factor-bridge support interval conditional on the signed pre-gap vector. The proposal does not attribute a deterministic partial-identification claim to those papers; instead it proves a quantitative lower-bound witness and conjectures a regular open-set bridge-anisotropy theorem with an empirical LP diagnostic.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Synthetic control is attractive because a transparent donor-weighted path can be inspected before treatment, but its most cited linear-factor justification is exact only when the treated unit's latent factor loadings are reproduced by the donors. In empirical work the pre-period gap is rarely zero, so researchers need to know whether an observed gap leaves a narrow counterfactual range or a wide one under a bounded approximation-error budget. A scalar RMSPE diagnostic cannot answer this if two equal-sized gaps point in different directions relative to the post-period factor bridge.
+
+\paragraph{The main finding (proposed).}
+The proposed main result is a sharp partial-identification theorem for the post-period treatment effect, a quantitative scalar-reporting lower bound, and a generic nonsharpness conjecture. Theorem~\ref{thm:sharp-chebyshev} states that the identified set is the support-function interval of the Chebyshev tube \(\{\Delta:\|g-X\Delta\|_\infty\le\rho\}\), shifted by the observed synthetic-control post outcome and the remaining approximation budget. Theorem~\ref{thm:scalar-lower-bound} gives a nondegenerate two-dimensional lower bound showing that a scalar RMSPE-level rule must over-cover at least one of two laws by a visible amount. Conjecture~\ref{conj:scalar-nonsharp} states that this witness promotes to every locally stable \(q\)-anisotropic bridge class.
+
+\paragraph{What is new.}
+The novelty kernel is not another consistency condition for synthetic control. It is the claim that sharp bounded-misspecification inference is controlled by the signed pre-gap vector through a factor-bridge support function, so scalar pre-fit diagnostics lose information even after row-span visibility has ruled out the familiar hidden-post-factor unboundedness. The closest prior papers either establish exact-factor point identification \citep{AbadieDiamondHainmueller2010}, analyze bias under imperfect fit \citep{FermanPinto2021,BenMichaelFellerRothstein2021}, use scalar RMSPE or MSPE-ratio reporting for placebo and sharp-null inference \citep{Abadie2021,FirpoPossebom2018}, build probabilistic prediction intervals \citep{CattaneoFengTitiunik2021,ChernozhukovWuthrichZhu2021}, or give nonparametric identifiability and sensitivity analysis under invariant-mechanism assumptions \citep{ZeitlerVlontzosGilliganLee2023}; none gives a sharp deterministic Chebyshev interval and then quantifies the information lost by compressing the signed pre-gap vector to a scalar RMSPE-level statistic.
+
+\paragraph{How it positions in the literature.}
+This is a PartialID proposal with a panel/synthetic-control data structure. It follows the support-function tradition behind partial-identification bounds such as \citet{Manski1990} and \citet{BalkePearl1997}, but the feasible set is generated by an interactive fixed-effect approximation error rather than by missing binary response types or compliance types. It is adjacent to the synthetic-control factor-model literature of \citet{AbadieDiamondHainmueller2010} and the imperfect-fit literature of \citet{FermanPinto2021}; it also speaks to robust and augmented synthetic-control methods that treat poor fit as an estimation or inference problem rather than a sharp identification problem.
+
+\paragraph{Implications for the community.}
+The immediate downstream consumer is the synthetic-control reporting workflow surrounding \citet{Abadie2021}'s post/pre RMSPE statistic and the \citet{CattaneoFengTitiunik2021} prediction-interval thread: if the conjecture is true, a probabilistic prediction interval or RMSPE table should be accompanied by the deterministic Chebyshev support interval using the observed pre-gap vector and the post bridge \(b\). The same conclusion gives applications following \citet{Abadie2021} a concrete diagnostic to report: not just whether pre-fit is small, but whether the signed pre-gap lies on a face of the factor tube that moves the post-period counterfactual.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report the sharp factor-misspecification interval and the active pre-gap face, rather than treating scalar pre-fit magnitude as the identifying sensitivity parameter.
+
+\section{Related work}
+\citet{AbadieGardeazabal2003} introduced the synthetic-control case-study design and motivates the single-treated-unit counterfactual target used here. \citet{AbadieDiamondHainmueller2010} gives the canonical comparative-case-study method and the linear-factor exact-fit argument that this proposal recovers at \(\eta=0\). \citet{Abadie2021} surveys feasibility, data requirements, and the post/pre RMSPE statistic used for placebo-style inference; here that scalar is treated as a named reporting workflow, not as a published deterministic sharpness claim. \citet{FermanPinto2021} studies synthetic controls with imperfect pre-treatment fit and shows that imperfect fit changes estimator properties; the present proposal turns that imperfection into a sharp identified set. \citet{FirpoPossebom2018} develops RMSPE-based sharp-null testing, placebo weighting, sensitivity analysis, and confidence sets for synthetic control; the conjecture here does not attribute factor-bridge sharpness claims to that paper, but asks whether any interval rule retaining only the RMSPE-level scalar can equal the deterministic sharp interval. \citet{ZeitlerVlontzosGilliganLee2023} proves nonparametric identifiability for synthetic-control models from invariant causal mechanisms and develops sensitivity analysis for violations of those assumptions; the gap here is that its sensitivity object is not the finite-dimensional Chebyshev factor-bridge projection \(H^c(P)\) nor a scalarization lower bound for the signed pre-gap vector. \citet{CattaneoFengTitiunik2021} constructs prediction intervals for synthetic control methods, giving the closest uncertainty-quantification comparator; its object is probabilistic prediction coverage, while this proposal targets deterministic support under a declared factor-misspecification budget. \citet{BenMichaelFellerRothstein2021} augments synthetic control to reduce bias due to imperfect pre-treatment fit, whereas this proposal separates bias correction from identification width. \citet{ArkhangelskyAtheyHirshbergImbensWager2021} regularizes a synthetic-DID estimator under latent factor structure; it is relevant because regularization can stabilize estimation without collapsing the feasible latent-imbalance set. \citet{AtheyBayatiDoudchenkoImbensKhosravi2021} connects matrix completion, interactive fixed effects, and synthetic control; the bounded-dictionary formulation here can be read as the partial-ID counterpart to a fixed low-rank prediction dictionary. \citet{NazaretShiBlei2024} studies misspecification of linear assumptions in synthetic controls and provides bounds for misspecification error; the gap here is sharp compatibility with the observed pre-gap vector, not a global worst-case error bound. \citet{ChernozhukovWuthrichZhu2021} gives robust conformal inference for counterfactual and synthetic controls; this proposal targets the deterministic identified set that should be used before sampling uncertainty is layered on. \citet{Manski1990} and \citet{BalkePearl1997} are the classical partial-identification comparators: they establish that sharp bounds are projections of feasible latent sets, while this proposal identifies the synthetic-control factor tube and its endpoint-sufficient statistic.
+
+In-catalogue prior work is thin for this cluster. The ThmSmith API records a populated Panel catalogue, including Q1 minimal-basis, sign-flip, staggered, and spectral-threshold proposals, but these are FWL-weight statements for treatment-history regressions rather than synthetic-control partial-identification intervals. The same API records that `ThmSmith/PartialID/` is empty at seed time for new `pid_*` outputs. Thus the closest in-repository comparison is the catalogue-level PartialID substrate family described in `doc/API.md` Section~3, not an existing proposal with this kernel.
+
+\section{Formal setup}
+There is one treated unit \(0\), donors \(j=1,\ldots,J\), pre-periods \(t=1,\ldots,T_0\), and a fixed post-period \(s\). For a fixed weight vector \(w\in\R^J\), let
+\[
+g_t=Y_{0t}-\sum_{j=1}^J w_jY_{jt},\qquad
+y_s^w=\sum_{j=1}^J w_jY_{js},\qquad
+d=Y_{0s}^{\mathrm{obs}}-y_s^w.
+\]
+The unobserved target is the post-period treatment effect \(\tau_s=Y_{0s}^{\mathrm{obs}}-\theta\), where \(\theta=Y_{0s}(0)\). A candidate factor dictionary consists of pre-period loading rows \(X_t^\transpose\in\R^r\) and a post-period bridge \(b\in\R^r\). Let \(\Delta=\mu_0-\sum_j w_j\mu_j\) denote the latent factor-loading imbalance induced by the treated unit and donors. The bounded approximation-error restriction says the treated-minus-synthetic untreated gap can differ from \(X\Delta\) in the pre-periods and from \(b^\transpose\Delta\) in the post-period by at most \(\rho=(1+\|w\|_1)\eta\) in sup norm. The identified set for \(\theta\) is
+\[
+\Theta_I(P)=
+\{\theta:\exists \Delta\in\R^r,\; \|g-X\Delta\|_\infty\le\rho,\;
+|\theta-y_s^w-b^\transpose\Delta|\le\rho\}.
+\]
+For later statements write \(K(P)=\{\Delta\in\R^r:\|g-X\Delta\|_\infty\le\rho\}\), \(h_-(P)=\inf_{\Delta\in K(P)}b^\transpose\Delta\), \(h_+(P)=\sup_{\Delta\in K(P)}b^\transpose\Delta\), and \(H^c(P)=(h_-(P)-\rho,h_+(P)+\rho)\) for the centered \(\theta-y_s^w\) interval endpoints. The treatment-effect interval is \(d-\{\theta-y_s^w:\theta\in\Theta_I(P)\}\), with endpoints reversed.
+
+\begin{quote}
+\begin{verbatim}
+PartialID tuple:
+(qid, specialization) =
+  (pid_synth_control_factor_misspec, v1)
+P = (g, d, y_s^w, w, X, b, eta)
+theta = Y_{0s}(0)
+identifying restrictions:
+  fixed SC weights w, rho = (1 + ||w||_1) eta,
+  exists Delta in R^r with ||g - X Delta||_infty <= rho,
+  and |theta - y_s^w - b^T Delta| <= rho
+bounding functional:
+  Theta_I(P) = y_s^w +
+    [ inf_{||g-X Delta||_infty <= rho} b^T Delta - rho,
+      sup_{||g-X Delta||_infty <= rho} b^T Delta + rho ]
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Fixed weights and observed gap]\label{ass:fixed-weights}
+The weight vector \(w\in\R^J\), the pre-gap vector \(g\in\R^{T_0}\), the post synthetic outcome \(y_s^w\), the post observed gap \(d\), and the dictionary \((X,b)\in\R^{T_0\times r}\times\R^r\) are treated as fixed components of the observable law \(P\).
+\end{assumption}
+
+\begin{assumption}[Bounded factor approximation]\label{ass:bounded-factor}
+There are latent factor loadings \(\mu_i\in\R^r\) and untreated approximation errors \(u_{it}\) with \(|u_{it}|\le\eta\) such that the treated-minus-synthetic untreated gaps satisfy \(g=X\Delta+e_{\mathrm{pre}}\) and \(\theta-y_s^w=b^\transpose\Delta+e_s\), where \(\Delta=\mu_0-\sum_jw_j\mu_j\), \(\|e_{\mathrm{pre}}\|_\infty\le\rho\), \(|e_s|\le\rho\), and \(\rho=(1+\|w\|_1)\eta\).
+\end{assumption}
+
+\begin{assumption}[Nonempty compatibility tube]\label{ass:nonempty}
+The Chebyshev tube \(K(P)=\{\Delta\in\R^r:\|g-X\Delta\|_\infty\le\rho\}\) is nonempty.
+\end{assumption}
+
+\begin{assumption}[Finite bridge visibility]\label{ass:bridge-visible}
+The post bridge \(b\) lies in the row span of \(X\). Equivalently, the linear functional \(\Delta\mapsto b^\transpose\Delta\) is bounded above and below on every nonempty set \(K(P)\).
+\end{assumption}
+
+\begin{assumption}[Exact-fit ADH corner]\label{ass:exact-corner}
+The approximation budget is \(\eta=0\), the pre-fit is exact \(g=0\), and \(b\in\operatorname{rowspan}(X)\).
+\end{assumption}
+
+\begin{assumption}[Scalar-calibration class]\label{ass:scalar-class}
+Let
+\[
+ \mathcal Q=\{q_2,q_\infty,q_{\mathrm{rms}}\},\qquad
+ q_2(g)=\|g\|_2,\quad q_\infty(g)=\|g\|_\infty,\quad
+ q_{\mathrm{rms}}(g)=T_0^{-1/2}\|g\|_2 .
+\]
+For a fixed \(q\in\mathcal Q\), a \(q\)-scalar pre-fit calibration is any interval rule \(I_{\psi,q}(P)\) whose non-exact-fit component depends on \(g\) only through \(q(g)\), together with \((X,b,w,\eta)\), and is required to contain the sharp interval for every \(g\) in an open neighbourhood of the observable law under study. The statistic \(q_{\mathrm{rms}}\) is the pre-period RMSPE component of the post/pre RMSPE statistic surveyed in \citet{Abadie2021} and of the modified RMSPE statistic in \citet{FirpoPossebom2018}. This assumption uses those papers to name a scalar reporting workflow; it is not a claim that they assert sharp deterministic factor-misspecification identification from that scalar.
+\end{assumption}
+
+\begin{assumption}[Regular \(q\)-anisotropic bridge]\label{ass:anisotropic}
+For the fixed statistic \(q\in\mathcal Q\) in Assumption~\ref{ass:scalar-class}, there is an open neighbourhood \(\mathcal U_g\subset\R^{T_0}\) of pre-gap vectors with fixed \((X,b,\rho)\) such that \(K(g')=\{\Delta\in\R^r:\|g'-X\Delta\|_\infty\le\rho\}\) is nonempty, \(b\in\operatorname{rowspan}(X)\), and the upper endpoint
+\[
+h_+(g')=\sup_{\Delta\in K(g')}b^\transpose\Delta
+\]
+has a locally stable optimal face on \(\mathcal U_g\). At some \(g_0\in\mathcal U_g\) with \(q\) differentiable on the relevant level surface, there exists a tangent direction \(v\in\R^{T_0}\) satisfying \(Dq(g_0)[v]=0\) but \(Dh_+(g_0)[v]\ne0\). Equivalently, the empirical diagnostic that solves the two directional LPs defining \(h_+(g_0+\varepsilon v)\) and \(h_+(g_0-\varepsilon v)\) returns unequal first-order slopes along a \(q\)-level direction.
+\end{assumption}
+
+\begin{assumption}[Nondegenerate two-dimensional anisotropic witness]\label{ass:two-dimensional-witness}
+Take \(T_0=r=2\), \(X=I_2\), \(b=(1,0)^\transpose\), any \(\rho>0\), and any \(a>0\). Let \(g^{(1)}=(a,0)^\transpose\) and \(g^{(2)}=(0,a)^\transpose\). Then \(q_2(g^{(1)})=q_2(g^{(2)})=a\), \(q_\infty(g^{(1)})=q_\infty(g^{(2)})=a\), and \(q_{\mathrm{rms}}(g^{(1)})=q_{\mathrm{rms}}(g^{(2)})=a/\sqrt2\). The tubes are \(K(g^{(k)})=g^{(k)}+[-\rho,\rho]^2\), so
+\[
+\sup_{\Delta\in K(g^{(1)})}b^\transpose\Delta=a+\rho,\qquad
+\sup_{\Delta\in K(g^{(2)})}b^\transpose\Delta=\rho,
+\]
+and likewise the lower endpoints are \(a-\rho\) and \(-\rho\). Thus the same observable scalar pre-fit value gives different sharp support endpoints for each \(q\in\mathcal Q\), and the witness is nondegenerate because the strict endpoint gap \(a\) persists under small perturbations that preserve the displayed scalar equality within the corresponding level surface.
+\end{assumption}
+
+\begin{assumption}[Centered endpoint-sufficient statistic]\label{ass:endpoint-sufficient}
+For an open class \(\mathcal U\) of observable laws with fixed \((X,b,w,\eta)\), define the centered endpoint map for the interval of \(\theta-y_s^w\),
+\[
+H^c(P)=\left(
+\inf_{\Delta\in K(P)}b^\transpose\Delta-\rho,\;
+\sup_{\Delta\in K(P)}b^\transpose\Delta+\rho
+\right).
+\]
+Write these two components as \(H^c_-(P)\) and \(H^c_+(P)\). A statistic \(S(P)\) is centered-endpoint-sufficient on \(\mathcal U\) if \(S(P)=S(P')\) implies \(H^c(P)=H^c(P')\) for all \(P,P'\in\mathcal U\). For the uncentered \(\theta\)-interval, the corresponding endpoint statistic is \((y_s^w,H^c(P))\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: sharp Chebyshev interval]\label{thm:sharp-chebyshev}
+Under Assumptions~\ref{ass:fixed-weights}, \ref{ass:bounded-factor}, and \ref{ass:nonempty}, the identified set for \(\theta=Y_{0s}(0)\) is the interval
+\[
+\Theta_I(P)=y_s^w+
+\left[
+\inf_{\Delta\in K(P)} b^\transpose\Delta-\rho,\;
+\sup_{\Delta\in K(P)} b^\transpose\Delta+\rho
+\right].
+\]
+If Assumption~\ref{ass:bridge-visible} also holds, both endpoints are finite and attained. The corresponding treatment-effect interval is
+\[
+\tau_s\in
+\left[
+d-\sup_{\Delta\in K(P)} b^\transpose\Delta-\rho,\;
+d-\inf_{\Delta\in K(P)} b^\transpose\Delta+\rho
+\right].
+\]
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{AbadieDiamondHainmueller2010} gives point identification under exact factor fit, \citet{FermanPinto2021} studies imperfect-fit estimator behavior, \citet{CattaneoFengTitiunik2021} gives prediction intervals, and \citet{NazaretShiBlei2024} gives misspecification-error bounds; none states the sharp deterministic projection interval conditional on the observed signed pre-gap vector. (b) This theorem gives the \citet{CattaneoFengTitiunik2021} prediction-interval workflow a concrete partial-ID target to report before probabilistic uncertainty is layered on.
+
+\begin{theorem}[Theorem 2: scalar RMSPE-level lower bound]\label{thm:scalar-lower-bound}
+Under Assumptions~\ref{ass:fixed-weights}, \ref{ass:bounded-factor}, \ref{ass:nonempty}, \ref{ass:bridge-visible}, \ref{ass:scalar-class}, and \ref{ass:two-dimensional-witness}, fix any \(q\in\mathcal Q\) and consider the two observable laws \(P_1,P_2\) generated by \(g^{(1)}=(a,0)^\transpose\) and \(g^{(2)}=(0,a)^\transpose\) with the same \((X,b,w,\eta,y_s^w)\). Any valid interval rule \(I_{\psi,q}\) whose endpoints are identical whenever \(q(g)\) is identical must be nonsharp for at least one of \(P_1,P_2\). Quantitatively, because the sharp \(\theta-y_s^w\) intervals are
+\[
+[a-2\rho,a+2\rho]\quad\text{and}\quad[-2\rho,2\rho],
+\]
+the common scalar interval must have upper over-coverage at least \(a\) at \(P_2\) or lower over-coverage at least \(a\) at \(P_1\), and in fact validity for both displayed laws forces both endpoint excesses.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{Abadie2021} describes the post/pre RMSPE statistic used in placebo-style reporting and \citet{FirpoPossebom2018} modifies RMSPE for sharp-null sensitivity analysis, but neither paper studies deterministic factor-misspecification support functions or the endpoint loss from scalarizing the signed pre-gap vector. This theorem is not a straw-man refutation of those papers; it is a lower bound showing why their scalar reporting object cannot be the whole deterministic partial-ID state. (b) The concrete consumer is the \citet{Abadie2021} RMSPE-ratio table: a practitioner who wants deterministic robustness to factor misspecification should add the vector-sensitive Chebyshev interval rather than only reporting the scalar RMSPE-level statistic.
+
+\begin{conjecture}[Conjecture 1: fixed scalar pre-fit reporting is generically nonsharp for deterministic factor misspecification (NOT YET PROVED)]\label{conj:scalar-nonsharp}
+Fix \(q\in\mathcal Q\). Under Assumptions~\ref{ass:fixed-weights}, \ref{ass:bounded-factor}, \ref{ass:nonempty}, \ref{ass:bridge-visible}, \ref{ass:scalar-class}, and \ref{ass:anisotropic}, there is an \(\varepsilon_0>0\) such that for every sufficiently small \(0<\varepsilon<\varepsilon_0\) one can find two observable laws \(P_\varepsilon^+\) and \(P_\varepsilon^-\) in the same open design class with \(q(g_\varepsilon^+)=q(g_\varepsilon^-)\) but
+\[
+\left|\sup_{\Delta\in K(P_\varepsilon^+)}b^\transpose\Delta
+-\sup_{\Delta\in K(P_\varepsilon^-)}b^\transpose\Delta\right|
+\ge c\varepsilon
+\]
+for some \(c>0\) determined by the directional LP slopes. Hence no \(q\)-scalar pre-fit calibration \(I_{\psi,q}(P)\) is both valid and sharp on that open class; at least one of the two laws receives deterministic centered-endpoint excess of order \(\varepsilon\). The witness pair is constructible by moving along the \(q\)-level tangent direction \(v\) and solving the two endpoint LPs.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) Theorem~\ref{thm:scalar-lower-bound} gives the explicit RMSPE-level witness; the conjectural gap is the field-level generic promotion, namely an open-set and algorithmically diagnosable scalarization failure that is not subsumed by the nonparametric sensitivity framework of \citet{ZeitlerVlontzosGilliganLee2023}. That paper varies assumptions behind synthetic-control identifiability, whereas this conjecture fixes the factor-misspecification budget and asks whether a scalar pre-fit report can preserve the Chebyshev support endpoint. (b) Resolving the conjecture would directly change the robustness table attached to the \citet{CattaneoFengTitiunik2021} prediction-interval workflow: a deterministic support interval indexed by the centered endpoint map \(H^c(P)\) should be reported alongside the probabilistic interval and RMSPE.
+
+\begin{conjecture}[Conjecture 2: support-function calibration is minimally sharp (NOT YET PROVED)]\label{conj:minimal-support}
+Under Assumptions~\ref{ass:fixed-weights}, \ref{ass:bounded-factor}, \ref{ass:nonempty}, \ref{ass:bridge-visible}, and \ref{ass:endpoint-sufficient}, let \(\mathcal U\) be any open class on which the sharp centered interval for \(\theta-y_s^w\) is finite. If an interval rule depending on a statistic \(S(P)\) is valid and sharp for \(\theta-y_s^w\) for every \(P\in\mathcal U\), then \(S\) must be centered-endpoint-sufficient on \(\mathcal U\): for every \(P,P'\in\mathcal U\),
+\[
+S(P)=S(P')\quad\Longrightarrow\quad H^c(P)=H^c(P').
+\]
+Equivalently, the sharp centered endpoint map \(H^c\) factors through \(S\) on \(\mathcal U\). For uncentered intervals for \(\theta\), the necessary statistic is \((y_s^w,H^c(P))\) or any equivalent statistic that fixes the \(y_s^w\) shift as well. In particular, a scalar norm \(q(g)\) can be sharp only on classes where \(H^c(P)\) is constant along the \(q\)-level sets after fixing \(y_s^w\).
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest mathematical template is the Manski--Balke--Pearl support-function view of sharp bounds, while \citet{CattaneoFengTitiunik2021}, \citet{NazaretShiBlei2024}, and \citet{ZeitlerVlontzosGilliganLee2023} are the closest synthetic-control comparators; none identifies the centered endpoint map \(H^c\), together with the \(y_s^w\) shift for the uncentered target, as the minimal sufficient diagnostic for deterministic factor misspecification. (b) A proof would give \citet{BenMichaelFellerRothstein2021} and \citet{ArkhangelskyAtheyHirshbergImbensWager2021} a clean separation between estimator stabilization and the information needed to shrink the identified set.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Zero-budget exact pre-fit]\label{cor:zero-budget}
+Under Assumption~\ref{ass:exact-corner}, Theorem~\ref{thm:sharp-chebyshev} reduces to the \citet{AbadieDiamondHainmueller2010} exact-factor point-identification corner: because \(K(P)=\{\Delta:X\Delta=0\}\) and \(b\in\operatorname{rowspan}(X)\), \(b^\transpose\Delta=0\) for every compatible \(\Delta\), so \(\Theta_I(P)=\{y_s^w\}\) and \(\tau_s=d=Y_{0s}^{\mathrm{obs}}-y_s^w\).
+\end{corollary}
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:sharp-chebyshev} is finite-dimensional convex projection: paste any feasible \(\Delta\) with admissible pre and post errors to obtain a compatible untreated path, and conversely project any compatible path to its latent imbalance and errors. Endpoint sharpness is the elementary support-function theorem for a closed polyhedron \(K(P)=\{\Delta:-\rho\one\le g-X\Delta\le\rho\one\}\), with row-span visibility exactly excluding recession directions that move \(b^\transpose\Delta\). The zero-budget sanity check is the row-span identity \(X\Delta=0\Rightarrow b^\transpose\Delta=0\). Theorem~\ref{thm:scalar-lower-bound} is a direct endpoint computation under Assumption~\ref{ass:two-dimensional-witness}: with \(X=I_2\), \(b=e_1\), \(g^{(1)}=(a,0)\), and \(g^{(2)}=(0,a)\), the statistics \(q_2\), \(q_\infty\), and \(q_{\mathrm{rms}}\) agree pairwise while the sharp intervals are shifted by \(a\). The generic scalar nonsharpness conjecture then needs a level-set argument for \(q\), plus continuity and first-order directional derivatives of polyhedral support functions on locally stable active-face regions; the proposed diagnostic computes the two endpoint LP slopes in a tangent direction with \(Dq(g_0)[v]=0\). The minimality conjecture is a centered sufficiency argument: if a statistic \(S\) is sharp for \(\theta-y_s^w\) but identifies two laws with different centered endpoint maps \(H^c\), the common interval determined by \(S\) cannot equal both sharp intervals; for \(\theta\) itself the same argument must also carry the \(y_s^w\) shift.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:sharp-chebyshev} is the routine finite-dimensional projection result; the exact-factor point-identification corner has been moved out of §8 and kept only as Corollary~\ref{cor:zero-budget}. Theorem~\ref{thm:scalar-lower-bound} is the quantitative witness that anchors the scalar-reporting novelty claim, while Conjectures~\ref{conj:scalar-nonsharp} and \ref{conj:minimal-support} are the open kernel: the proposal fixes \(q\) before applying the scalar nonsharpness claim, and Assumption~\ref{ass:two-dimensional-witness} records the concrete two-dimensional lower-bound setting that any genericity proof must promote beyond a single pair. The genericity claim is now restricted to regular active-face regions with a computable tangent-direction LP diagnostic; it is not asserted for nondifferentiable scalar levels or support-function kink points without additional case analysis. This pivot intentionally avoids the prior row-span phase-transition and hidden-post-direction kernels; row-span visibility is imposed as an assumption so the proposal focuses on scalar-diagnostic nonsharpness inside the finite-interval regime. The current version does not claim that \citet{FirpoPossebom2018}, \citet{CattaneoFengTitiunik2021}, or \citet{ZeitlerVlontzosGilliganLee2023} assert sharp deterministic factor-misspecification identification; it positions their RMSPE, placebo, sensitivity, prediction-interval, and nonparametric-sensitivity outputs as named workflows that would need an additional centered support-function column to be sharp for the deterministic partial-ID object.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) --- initial draft for angle 2, focusing on scalar pre-fit nonsharpness under a finite Chebyshev support interval; prior verdict: none.
+\item v2 (revise) --- pinned the scalar target to named RMSPE/reporting workflows, added \citet{CattaneoFengTitiunik2021} as closest prediction-interval comparator, and rewrote the minimality conjecture as endpoint-sufficiency; prior verdict: REVISE.
+\item v3 (revise) --- fixed the scalar-\(q\) quantifier in Conjecture~\ref{conj:scalar-nonsharp} and added an explicit two-dimensional anisotropic witness covering RMSPE, \(\ell_2\), and \(\ell_\infty\); prior verdict: REVISE.
+\item v4 (revise) --- moved the ADH exact-fit point-identification corner out of §8, tied the scalar target to the published post/pre RMSPE and modified-RMSPE reporting workflows, added a quantitative scalar lower-bound theorem, and compared the support-function interval to classical partial-identification bounds; prior verdict: REVISE.
+\item v5 (revise) --- added \citet{ZeitlerVlontzosGilliganLee2023} as the closest synthetic-control sensitivity comparator, strengthened scalar nonsharpness to a regular open-set LP-diagnostic conjecture, and rewrote minimality for the centered interval \(H^c(P)\) with the \(y_s^w\) shift handled separately; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Abadie and Gardeazabal(2003)]{AbadieGardeazabal2003}
+Abadie, A. and Gardeazabal, J. (2003).
+The economic costs of conflict: A case study of the Basque Country.
+\emph{American Economic Review}, 93(1):113--132.
+
+\bibitem[Abadie, Diamond, and Hainmueller(2010)]{AbadieDiamondHainmueller2010}
+Abadie, A., Diamond, A., and Hainmueller, J. (2010).
+Synthetic control methods for comparative case studies: Estimating the effect of California's tobacco control program.
+\emph{Journal of the American Statistical Association}, 105(490):493--505.
+
+\bibitem[Abadie(2021)]{Abadie2021}
+Abadie, A. (2021).
+Using synthetic controls: Feasibility, data requirements, and methodological aspects.
+\emph{Journal of Economic Literature}, 59(2):391--425.
+
+\bibitem[Arkhangelsky et~al.(2021)]{ArkhangelskyAtheyHirshbergImbensWager2021}
+Arkhangelsky, D., Athey, S., Hirshberg, D. A., Imbens, G. W., and Wager, S. (2021).
+Synthetic difference-in-differences.
+\emph{American Economic Review}, 111(12):4088--4118.
+
+\bibitem[Athey et~al.(2021)]{AtheyBayatiDoudchenkoImbensKhosravi2021}
+Athey, S., Bayati, M., Doudchenko, N., Imbens, G. W., and Khosravi, K. (2021).
+Matrix completion methods for causal panel data models.
+\emph{Journal of the American Statistical Association}, 116(536):1716--1730.
+
+\bibitem[Balke and Pearl(1997)]{BalkePearl1997}
+Balke, A. and Pearl, J. (1997).
+Bounds on treatment effects from studies with imperfect compliance.
+\emph{Journal of the American Statistical Association}, 92(439):1171--1176.
+
+\bibitem[Ben-Michael, Feller, and Rothstein(2021)]{BenMichaelFellerRothstein2021}
+Ben-Michael, E., Feller, A., and Rothstein, J. (2021).
+The augmented synthetic control method.
+\emph{Journal of the American Statistical Association}, 116(536):1789--1803.
+
+\bibitem[Cattaneo, Feng, and Titiunik(2021)]{CattaneoFengTitiunik2021}
+Cattaneo, M. D., Feng, Y., and Titiunik, R. (2021).
+Prediction intervals for synthetic control methods.
+\emph{Journal of the American Statistical Association}, 116(536):1865--1880.
+
+\bibitem[Chernozhukov, Wuthrich, and Zhu(2021)]{ChernozhukovWuthrichZhu2021}
+Chernozhukov, V., Wuthrich, K., and Zhu, Y. (2021).
+An exact and robust conformal inference method for counterfactual and synthetic controls.
+\emph{Journal of the American Statistical Association}, 116(536):1849--1864.
+
+\bibitem[Ferman and Pinto(2021)]{FermanPinto2021}
+Ferman, B. and Pinto, C. (2021).
+Synthetic controls with imperfect pre-treatment fit.
+\emph{Quantitative Economics}, 12(4):1197--1221.
+
+\bibitem[Firpo and Possebom(2018)]{FirpoPossebom2018}
+Firpo, S. and Possebom, V. (2018).
+Synthetic control method: Inference, sensitivity analysis and confidence sets.
+\emph{Journal of Causal Inference}, 6(2):20160026.
+
+\bibitem[Manski(1990)]{Manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review}, 80(2):319--323.
+
+\bibitem[Nazaret, Shi, and Blei(2024)]{NazaretShiBlei2024}
+Nazaret, A. O. R., Shi, C., and Blei, D. M. (2024).
+On the misspecification of linear assumptions in synthetic controls.
+\emph{Proceedings of the 27th International Conference on Artificial Intelligence and Statistics}, PMLR 238:3790--3798.
+
+\bibitem[Zeitler, Vlontzos, and Gilligan-Lee(2023)]{ZeitlerVlontzosGilliganLee2023}
+Zeitler, J., Vlontzos, A., and Gilligan-Lee, C. M. (2023).
+Non-parametric identifiability and sensitivity analysis of synthetic control models.
+\emph{Proceedings of the Second Conference on Causal Learning and Reasoning}, PMLR 213:850--865.
+Available at \url{https://proceedings.mlr.press/v213/zeitler23a.html}.
+\end{thebibliography}
+
+\end{document}

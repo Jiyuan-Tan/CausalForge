@@ -1,0 +1,369 @@
+\begin{proof}[Proof of \cref{obj:thm:welfare-identity}]
+1.  From the well-formedness of the observed law, extract the measurability of
+\(\tau_P\) and the identity \(\tau_P(x)=\mu_1(x)-\mu_0(x)\).  By
+\cref{obj:ass:bounded-outcome}, \(|\mu_0(x)|\le1\) and
+\(|\mu_1(x)|\le1\) for every \(x\).  Hence, for every \(x\),
+\[
+|\tau_P(x)|
+=
+|\mu_1(x)-\mu_0(x)|
+\le |\mu_1(x)|+|\mu_0(x)|
+\le 2 .
+\]
+% lean: regret_eq_disagreement_integral
+
+2.  The set \(\{x:0\le\tau_P(x)\}\) is measurable because \(\tau_P\) is
+measurable, and the set \(\{x:\pi(x)=1\}\) is measurable because \(\pi\) is
+measurable.  Therefore the two integrands
+\[
+x\mapsto
+\begin{cases}
+\tau_P(x),&0\le \tau_P(x),\\
+0,&\text{otherwise},
+\end{cases}
+\qquad
+x\mapsto
+\begin{cases}
+\tau_P(x),&\pi(x)=1,\\
+0,&\text{otherwise},
+\end{cases}
+\]
+are measurable and, by the preceding bound \(|\tau_P|\le2\), integrable with
+respect to \(P_X\).  This is the formal integrability bookkeeping needed to
+combine the two welfare integrals into one integral of a difference.
+% lean: regret_eq_disagreement_integral
+
+3.  Expanding the definitions of \(R_P\), \(V_P\), \(\pi_P^\star\), and the
+binary policy indicator gives
+\[
+R_P(\pi)
+=
+\int
+\left[
+\mathbf 1\{0\le\tau_P(x)\}\tau_P(x)
+-
+\mathbf 1\{\pi(x)=1\}\tau_P(x)
+\right]\,dP_X(x).
+\]
+The previous integrability justifies this as the integral of the pointwise
+difference.
+% lean: regret_eq_disagreement_integral
+
+4.  It remains only to identify the pointwise difference.  Fix \(x\).  If
+\(\tau_P(x)\ge0\), then \(\pi_P^\star(x)=1\).  When \(\pi(x)=1\), both sides are
+zero; when \(\pi(x)\ne1\), the difference is \(\tau_P(x)=|\tau_P(x)|\), exactly
+the disagreement contribution.  If \(\tau_P(x)<0\), then \(\pi_P^\star(x)=0\).
+When \(\pi(x)=1\), the difference is \(-\tau_P(x)=|\tau_P(x)|\); when
+\(\pi(x)\ne1\), both sides are zero.  Thus, for every \(x\),
+\[
+\mathbf 1\{0\le\tau_P(x)\}\tau_P(x)
+-
+\mathbf 1\{\pi(x)=1\}\tau_P(x)
+=
+|\tau_P(x)|\,\mathbf 1\{\pi(x)\ne\pi_P^\star(x)\}.
+\]
+% lean: regret_eq_disagreement_integral
+
+5.  Substituting this pointwise identity into the integral yields
+\[
+R_P(\pi)
+=
+\int_{\mathcal X}
+|\tau_P(x)|\,\mathbf 1\{\pi(x)\ne\pi^\star_P(x)\}\,dP_X(x),
+\]
+the disagreement-integral representation of the regret with respect to the
+covariate law \(P_X\).
+% lean: regret_eq_disagreement_integral
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:thm:margin-localization}]
+\begin{enumerate}
+\item Fix
+\[
+C:=|C_m|+2+u_0^{-\alpha}.
+\]
+The margin assumption gives \(0\le \alpha\), \(C_m>0\), and \(u_0>0\), so \(C>0\). Moreover \(C\ge C_m+1\) and \(C\ge u_0^{-\alpha}\). It remains to prove the displayed inequality for an arbitrary \(P\) and \(\pi\in\Pi\). % lean: margin_localization
+
+\item Let \(r=R_P(\pi)\) and \(D_\pi=\{x:\pi(x)\ne \pi^\star_P(x)\}\). By the regret identity \cref{obj:thm:welfare-identity},
+\[
+r=\int |\tau_P(x)|\,1_{D_\pi}(x)\,dP_X(x),
+\]
+so \(r\ge0\). Also \(P_X(D_\pi)\le1\), since \(P_X\) is a probability measure. % lean: regret_eq_disagreement_integral
+
+\item For every \(u\in(0,u_0]\),
+\[
+P_X(D_\pi)\le C_m u^\alpha+\frac{r}{u}.
+\]
+Indeed, write
+\[
+Z=\{x:\tau_P(x)=0,\ x\in D_\pi\},\qquad
+S_u=\{x:0<|\tau_P(x)|\le u\},
+\]
+and
+\[
+B_u=D_\pi\cap\{x:u<|\tau_P(x)|\}.
+\]
+The zero-effect assumption gives \(P_X(Z)=0\). The margin assumption gives
+\(P_X(S_u)\le C_m u^\alpha\). Finally, the regret identity gives
+\[
+uP_X(B_u)\le \int_{B_u}|\tau_P(x)|\,dP_X(x)\le r,
+\]
+hence \(P_X(B_u)\le r/u\). Since
+\[
+D_\pi\subset Z\cup S_u\cup B_u,
+\]
+the asserted decomposition follows. Measurability and finite-integral details are the standard bookkeeping supplied by the bounded-outcome and well-formed-law hypotheses. % lean: disagreement_measure_le_margin_plus_regret_over_u
+
+\item If \(\alpha=0\), then \(\alpha/(1+\alpha)=0\), and
+\[
+P_X(D_\pi)\le1\le C=C\,r^0.
+\]
+This proves the claim in the zero-margin-exponent case. % lean: margin_localization
+
+\item Assume now \(\alpha>0\). If \(r>0\), set
+\[
+u=r^{1/(1+\alpha)}.
+\]
+When \(u\le u_0\), the bound from Step 3 gives
+\[
+P_X(D_\pi)
+\le C_m u^\alpha+\frac r u
+=(C_m+1)r^{\alpha/(1+\alpha)}
+\le C r^{\alpha/(1+\alpha)}.
+\]
+% lean: margin_localization
+
+\item Still with \(\alpha>0\) and \(r>0\), suppose instead that \(u>u_0\). Then
+\[
+u_0^\alpha\le u^\alpha=r^{\alpha/(1+\alpha)}.
+\]
+Since \(C\ge u_0^{-\alpha}\),
+\[
+1=u_0^{-\alpha}u_0^\alpha
+\le C r^{\alpha/(1+\alpha)}.
+\]
+Combining this with \(P_X(D_\pi)\le1\) proves the desired bound in this subcase. % lean: margin_localization
+
+\item It remains to treat \(\alpha>0\) and \(r=0\). Let \(\varepsilon>0\), put
+\[
+a=\frac{\varepsilon}{C_m+1},
+\qquad
+u=\min\{u_0,a^{1/\alpha}\}.
+\]
+Then \(0<u\le u_0\), and Step 3 gives
+\[
+P_X(D_\pi)\le C_m u^\alpha+\frac r u
+=C_m u^\alpha
+\le C_m a
+\le \varepsilon.
+\]
+Since this holds for every \(\varepsilon>0\), \(P_X(D_\pi)=0\). Also
+\[
+r^{\alpha/(1+\alpha)}=0,
+\]
+because \(\alpha/(1+\alpha)>0\). Hence
+\[
+P_X(D_\pi)=0
+\le C r^{\alpha/(1+\alpha)}.
+\]
+% lean: margin_localization
+\end{enumerate}
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:thm:minimax-lower}]
+1. By \cref{obj:lem:regret-separation}, there are constants \(c_{\mathrm{sep}}>0\) and \(N_1\) such that, for all \(n\ge N_1\) and every \(\pi\in\Pi\),
+\[
+\max_{\sigma\in\{+,-\}} R_{P_{n,\sigma}}(\pi)
+\ge
+c_{\mathrm{sep}}\,h_n^{1+\alpha}.
+\]
+By \cref{obj:lem:two-point-divergence}, there are \(C_\chi>0\) and \(N_2\) such that, for all \(n\ge N_2\), the product laws \(P_{n,+}^{\otimes n}\) and \(P_{n,-}^{\otimes n}\) are in the chi-square comparison domain and
+\[
+\chi^2(P_{n,+}^{\otimes n}\,\|\,P_{n,-}^{\otimes n})\le C_\chi .
+\]
+Applying \cref{obj:lem:le-cam-two-point-chisq} to this fixed budget gives a constant
+\(c_{\mathrm{test}}=c_{\mathrm{test}}(C_\chi)>0\) such that every measurable event
+\(A\) in the \(n\)-sample space satisfies
+\[
+P_{n,+}^{\otimes n}(A^c)+P_{n,-}^{\otimes n}(A)\ge c_{\mathrm{test}} .
+\]
+Set \(c=c_{\mathrm{sep}}c_{\mathrm{test}}/2\). % lean: minimax_lower
+
+2. By \cref{obj:lem:witness-membership}, enlarging \(N_1,N_2\) if necessary, both
+witness laws \(P_{n,+}\) and \(P_{n,-}\) belong to
+\(\mathcal P_{\alpha,\gamma}\) for all \(n\) under consideration. The same
+eventual range also supplies the two witness-optimal policies used in
+\cref{obj:lem:regret-separation}. Finally, since
+\[
+h_n=n^{-1/(2+\alpha+\beta_{\alpha,\gamma})},
+\qquad
+r_\star(\alpha,\gamma)=\frac{1+\alpha}{2+\alpha+\beta_{\alpha,\gamma}},
+\]
+we have
+\[
+h_n^{1+\alpha}=n^{-r_\star(\alpha,\gamma)} .
+\]
+Pure measurability, nonemptiness, and bounded-regret bookkeeping ensure that the
+infimum and supremum in \cref{obj:def:minimax-regret} are taken over a nonempty
+well-defined collection and that all displayed expectations are finite. % lean: witness_membership
+
+3. Fix such an \(n\), and let \(\widehat\pi\) be any measurable \(\Pi\)-valued
+estimator. Write
+\[
+R_+
+=
+\mathbb E_{P_{n,+}^{\otimes n}} R_{P_{n,+}}(\widehat\pi),
+\qquad
+R_-
+=
+\mathbb E_{P_{n,-}^{\otimes n}} R_{P_{n,-}}(\widehat\pi),
+\]
+and put
+\[
+s_n=c_{\mathrm{sep}}h_n^{1+\alpha}.
+\]
+Let
+\[
+A=\{\,\text{samples}: s_n\le R_{P_{n,-}}(\widehat\pi)\,\}.
+\]
+The event \(A\) is measurable by the estimator measurability condition in
+\cref{obj:def:minimax-regret}. % lean: minimax_lower
+
+4. Since regret is nonnegative and bounded, the elementary integral lower bound
+over threshold events gives
+\[
+s_n\,P_{n,-}^{\otimes n}(A)\le R_- .
+\]
+Similarly,
+\[
+s_n\,P_{n,+}^{\otimes n}\{s_n\le R_{P_{n,+}}(\widehat\pi)\}\le R_+ .
+\]
+On \(A^c\), the minus-regret is \(<s_n\), so the separation bound from step 1
+forces the plus-regret to be at least \(s_n\). Hence
+\[
+A^c\subseteq \{s_n\le R_{P_{n,+}}(\widehat\pi)\},
+\]
+and therefore
+\[
+s_n\,P_{n,+}^{\otimes n}(A^c)\le R_+ .
+\]
+% lean: mul_meas_ge_le_integral_of_nonneg
+
+5. Adding the two threshold bounds and using the testing lower bound from step 1,
+\[
+s_n c_{\mathrm{test}}
+\le
+s_n\{P_{n,+}^{\otimes n}(A^c)+P_{n,-}^{\otimes n}(A)\}
+\le
+R_+ + R_- .
+\]
+Since \(R_++R_-\le 2\max\{R_+,R_-\}\), it follows that
+\[
+\max\{R_+,R_-\}
+\ge
+\frac{s_n c_{\mathrm{test}}}{2}
+=
+c\,h_n^{1+\alpha}
+=
+c\,n^{-r_\star(\alpha,\gamma)} .
+\]
+% lean: le_cam_two_point_chisq
+
+6. Because \(P_{n,+},P_{n,-}\in\mathcal P_{\alpha,\gamma}\), the preceding maximum
+is bounded above by the supremum over all laws in the class:
+\[
+\max\{R_+,R_-\}
+\le
+\sup_{P\in\mathcal P_{\alpha,\gamma}}
+\mathbb E_{P^{\otimes n}} R_P(\widehat\pi).
+\]
+Thus every admissible estimator satisfies
+\[
+\sup_{P\in\mathcal P_{\alpha,\gamma}}
+\mathbb E_{P^{\otimes n}} R_P(\widehat\pi)
+\ge
+c\,n^{-r_\star(\alpha,\gamma)} .
+\]
+Taking the infimum over all measurable \(\Pi\)-valued estimators in
+\cref{obj:def:minimax-regret} gives the claimed lower bound for all sufficiently
+large \(n\). % lean: minimax_lower
+\end{proof}
+
+\begin{proof}[Proof of \cref{obj:oeq:feasible-upper}]
+\begin{enumerate}
+\item The clipping and localization schedules are those of \cref{obj:def:feasible-rate}: for \(\gamma>0\),
+\[
+q_n=q_0n^{-s_{\mathrm{feas}}},\qquad
+u_n=\bar u\,n^{-t_{\mathrm{feas}}},
+\]
+while for \(\gamma=0\) the clipping schedule is fixed, \(q_n=q_0\).  The input restrictions in \cref{obj:def:feasible-rate} give \(q_0>0\); when \(\gamma>0\) they also give \(\bar u>0\), \(q_0\le 1/2\), and the eventual admissibility
+\[
+q_n\le c_o u_n^\gamma .
+\]
+Thus \(q_n>0\) for all sufficiently large \(n\). % lean: qSched
+
+\item We first dispose of the exceptional strict-overlap case in which \(\gamma=0\) and the law-class part of the domain is empty.  Then the set over which the conditional upper risk in \cref{obj:def:upper-risk} takes its supremum is empty, so \(U_n=0\).  Taking \(C=1\) and \(p=0\), the desired inequality holds for all sufficiently large \(n\), since the right-hand side is nonnegative. % lean: feasible_upper
+
+\item In the remaining cases the schedule is in the clipping range needed by the master bound.  If \(\gamma=0\), non-emptiness supplies a law in \(\mathcal P_{\alpha,\gamma}\); the strict-overlap endpoint condition in \cref{obj:def:law-class} gives \(\underline p\le 1/2\), and the input restriction gives
+\[
+q_n=q_0\le \underline p/2\le 1/2 .
+\]
+If \(\gamma>0\), feasibility of the selected maximizer gives \(s_{\mathrm{feas}}\ge0\), hence \(n^{-s_{\mathrm{feas}}}\le1\) for \(n\ge1\), and therefore
+\[
+q_n=q_0n^{-s_{\mathrm{feas}}}\le q_0\le 1/2 .
+\]
+For \(\gamma=0\) we also record that \(q_n\) is eventually equal to the fixed value \(q_0\). % lean: feasibleMaximizer_mem
+
+\item Apply \cref{obj:lem:crude-localized-master-bound} with these schedules.  It gives constants \(C_{\mathrm M}>0\) and \(p_{\mathrm M}\ge0\) such that, for all sufficiently large \(n\), every law \(P\) in the side-condition domain of \cref{obj:def:upper-risk} satisfies the corresponding master inequality.  Apply \cref{obj:lem:clip-balance-exponent} to the same schedules and nuisance-rate exponents.  It gives constants \(C_{\mathrm B}>0\) and \(p_{\mathrm B}\ge0\) such that the deterministic bracket in the master bound is at most
+\[
+C_{\mathrm B}n^{-r_{\mathrm{feas}}}(\log n)^{p_{\mathrm B}},
+\]
+with \(r_{\mathrm{feas}}=r_{\mathrm{up}}\) by \cref{obj:def:feasible-rate}. % lean: crude_localized_master_bound
+
+\item Suppose first that \(\gamma=0\).  For every \(P\) in the upper-risk domain and all sufficiently large \(n\), \cref{obj:lem:crude-localized-master-bound} gives
+\[
+\mathbb E_{P^{\otimes n}} R_P(\widehat\pi_n)
+\le
+C_{\mathrm M}\{n^{-A_\alpha}+r_{\mu,n}r_{e,n}\}(\log n)^{p_{\mathrm M}} .
+\]
+The \(\gamma=0\) branch of \cref{obj:lem:clip-balance-exponent} bounds the brace by
+\[
+C_{\mathrm B}n^{-r_{\mathrm{feas}}}(\log n)^{p_{\mathrm B}} .
+\]
+Since \(\log n>0\) for large \(n\), the logarithmic powers combine, and hence
+\[
+\mathbb E_{P^{\otimes n}} R_P(\widehat\pi_n)
+\le
+C_{\mathrm M}C_{\mathrm B}
+n^{-r_{\mathrm{feas}}}(\log n)^{p_{\mathrm M}+p_{\mathrm B}} .
+\]
+Taking the supremum over \(P\) in \cref{obj:def:upper-risk} preserves this bound. % lean: clip_balance_exponent
+
+\item Now suppose \(\gamma>0\).  For all sufficiently large \(n\), we have \(u_n>0\), \(u_n\le u_0\), and \(q_n\le c_o u_n^\gamma\); the bound \(u_n\le u_0\) follows from \(\bar u\le u_0\), \(t_{\mathrm{feas}}\ge0\), and \(n^{-t_{\mathrm{feas}}}\le1\).  Thus \cref{obj:lem:crude-localized-master-bound} yields, for each \(P\) in the upper-risk domain,
+\[
+\mathbb E_{P^{\otimes n}} R_P(\widehat\pi_n)
+\le
+C_{\mathrm M}
+\left\{
+n^{-r_\star}
++(nq_n^2)^{-A_\alpha}
++\frac{r_{\mu,n}r_{e,n}}{q_n}
++r_{\mu,n}u_n^{\alpha/2}q_n^{1/(2\gamma)}
++\frac{r_{\mu,n}^2}{u_n}
+\right\}
+(\log n)^{p_{\mathrm M}} .
+\]
+The positive-\(\gamma\) branch of \cref{obj:lem:clip-balance-exponent} bounds the brace by
+\[
+C_{\mathrm B}n^{-r_{\mathrm{feas}}}(\log n)^{p_{\mathrm B}} .
+\]
+Combining the two displays and then taking the supremum in \cref{obj:def:upper-risk} gives
+\[
+U_n(\alpha,\gamma,a,c;\widehat\eta)
+\le
+C_{\mathrm M}C_{\mathrm B}
+n^{-r_{\mathrm{feas}}}(\log n)^{p_{\mathrm M}+p_{\mathrm B}} .
+\]
+With \(C=C_{\mathrm M}C_{\mathrm B}\), \(p=p_{\mathrm M}+p_{\mathrm B}\), and \(r_{\mathrm{feas}}=r_{\mathrm{up}}\), this is the claimed bound. % lean: feasible_upper
+\end{enumerate}
+\end{proof}

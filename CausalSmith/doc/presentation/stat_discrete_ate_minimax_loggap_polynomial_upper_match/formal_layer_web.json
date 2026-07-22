@@ -1,0 +1,1564 @@
+{
+  "commit": "6e3ba5a09e998cb7c7b15f45d6a11634157a62aa",
+  "groups": [
+    {
+      "kind": "setup",
+      "items": [
+        {
+          "obj_id": "S1",
+          "kind": "setup",
+          "label": "Setup S-1",
+          "nl": "Finite-alphabet i.i.d. observational world, in TWO explicitly bridged views. (a) CANONICAL / statement view: one observed unit is O = (X, A, Y) : Fin d x Bool x Bool; the single-observation law P is a probability Measure (built from a PMF) on that finite type with ARBITRARY cell masses; the n-sample law is the finite i.i.d. product Measure.pi (fun _ : Fin n => P), and every statement, estimator (a measurable Fin n -> Obs -> R) and the minimax inf/sup live HERE. (b) AMBIENT view, used only to import IIDSample-typed Causalean declarations: the infinite i.i.d. product Omega_inf = (ℕ -> Obs) with mu_inf = MeasureTheory.Measure.infinitePi (fun _ : ℕ => P), whose coordinate process Z i omega = omega i is a genuine Causalean.Stat.IIDSample (ℕ -> Obs) Obs mu_inf P. BRIDGE (both directions available, in scope, for arbitrary P): Causalean.Stat.iidSample_finN_pushforward pushes mu_inf forward along the first-n-coordinates map onto Measure.pi (fun _ : Fin n => P), so any event/integral of the first n coordinates has equal mass in the two views. Primitives p_k = P(X=k), pi_k = P(A=1|X=k), mu_{ak} = E[Y|A=a,X=k], q_{aky} = P(X=k,A=a,Y=y) and the four-cell vector q_k are DERIVED real-valued readouts of the single-observation law P (finite sums over atoms), not independent fields. Scalars epsilon in (0,1/2], c in (0,inf) are plain reals. — HIGHEST-LEVERAGE REUSE DECISION, and the closest analogue in the library. Causalean.Estimation.MinimaxATE.Model realizes ALMOST exactly this world: Obs C = C x Bool x Bool over a Fintype C, binary treatment and binary outcome, obsReal/obsPMF/obsLaw the single-observation law, productLaw = Measure.pi over Fin n, nMSE the n-sample MSE, minimaxMiss the sup-over-class miss, plus the Chebyshev/Markov bridge nMiss_sq_le_nMSE. BLOCKING MISMATCH (verified by reading Causalean/Estimation/MinimaxATE/Model.lean lines 87-89 and 137-138): obsReal HARDCODES a UNIFORM covariate marginal (Fintype.card C)^{-1}, and `ate g` averages with the same uniform weights. This note's entire d^2/(n^2 log^2 n) rate is driven by ARBITRARY, in particular rare, cell masses p_k, so the uniform-P_X model is a strictly different (and for this result degenerate) world -> NOT a verbatim reuse; define-local a p_k-parameterized law in Basic.lean, keeping the Obs/productLaw/nMSE naming and construction pattern one-to-one so F3 can port MinimaxATE proof idioms. *** IIDSample BRIDGE (round-2 correction FLAG-IIDSample-world; see decisions.iid_world_is_finite_product_with_infinite_ambient_view). *** Causalean.Stat.IIDSample is the sampling primitive the concentration engines are typed over (Concentration.hoeffding_ge : (S : IIDSample Omega X mu P) -> ... -> mu.real {omega | eps <= S.sampleMean f n omega - integral f} <= exp(...), verified at Stat/Concentration/TailBounds/Hoeffding.lean:87-91), but it is a structure over an AMBIENT mu carrying an ℕ-INDEXED process Z : ℕ -> Omega -> X with iIndepFun Z mu (Stat/Sample.lean:42-48). The finite coordinate process of Measure.pi (fun _ : Fin n => P) is Fin n-indexed and therefore CANNOT itself be an IIDSample -- the prior plan's claim that this world 'exposes an IIDSample view of the product law' was wrong, and PiTransport does not repair it (iidSample_finN_pushforward CONSUMES an IIDSample to produce the finite product, it does not produce one). The world therefore carries view (b) EXPLICITLY: Basic.lean defines `iidOfInfinitePi (P) : IIDSample (ℕ -> Obs) Obs (Measure.infinitePi (fun _ : ℕ => P)) P` with Z := fun i omega => omega i, meas := measurable_pi_apply, indep := ProbabilityTheory.iIndepFun_infinitePi (fun _ => measurable_id), identDist/law := MeasureTheory.Measure.infinitePi_map_eval -- COMPILED 0-sorry against this repo's pinned Mathlib, so this is a verified ~10-line def, not a conjecture -- together with the transport corollary `finProductLaw_eq_map` : (Measure.infinitePi (fun _ : ℕ => P)).map (fun omega (k : Fin n) => omega k) = Measure.pi (fun _ : Fin n => P), which is Causalean.Stat.iidSample_finN_pushforward APPLIED to iidOfInfinitePi (its Z k omega = omega k reduces definitionally). F3's usage pattern for every IIDSample-typed engine: state the target event as a measurable set E in Set (Fin n -> Obs), apply the engine on Omega_inf, then move the bound across with Causalean.Stat.event_pullback_along_iidSample / Measure.map_apply. This holds for ARBITRARY P (infinitePi needs only IsProbabilityMeasure P, which the PMF construction supplies), so it adds NO hypothesis to any statement and imposes no restriction on the cell masses -- exactly the point of keeping the finite product as the canonical statement world. Search trace for the bridge: loogle 'MeasureTheory.Measure.infinitePi' and 'ProbabilityTheory.iIndepFun _ (MeasureTheory.Measure.infinitePi _)' -> Measure.infinitePi / infinitePi_map_eval / measurePreserving_eval_infinitePi (Mathlib.Probability.ProductMeasure) and iIndepFun_infinitePi (Mathlib.Probability.Independence.InfinitePi), all four #check-confirmed present in the pinned toolchain; globbed Causalean/**/Sample/**/*.lean -> PiTransport.lean is the ONLY Sample bridge file and carries only the IIDSample -> Measure.pi direction (read in full, 93 lines) -> the finite-to-infinite view is absent from Causalean and is built here. Search trace: read ../doc/API.md sections '## 13sa. Estimation/MinimaxATE/' and '## 12. Stat/' + '### 12a. Stat/Sample.lean'; grepped Causalean/Estimation/MinimaxATE/Model.lean for structure/def/theorem; grepped Causalean for 'alphabet' -> no large-alphabet / arbitrary-discrete-mass observational model found.",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "S2",
+          "kind": "setup",
+          "label": "Setup S-2",
+          "nl": "Potential-outcome overlay on S1: binary potential outcomes Y(0), Y(1) : Omega -> Bool on the same finite probability space as (X, A, Y), with consistency (Y = Y(A) a.s.) and conditional exchangeability ((Y(0),Y(1)) indep A | X). Used only by the witness cluster; the estimation/minimax cluster is stated on the observed-data law alone. — Causalean.PO (POSystem, PO.Assumptions.Consistency, PO.Assumptions.IndepCF) is the framework analogue but is regime/graph-indexed over general measurable outcome spaces -- far heavier than the two-point binary overlay needed here, where def:two-category-witness supplies its OWN explicit full-data coupling ((Y(0),Y(1)) = (0, 1{X=1}), then A | X=k ~ Bernoulli(pi_k)) and prop:two-category-confounding VERIFIES consistency/exchangeability on it directly. Define-local over Mathlib with naming aligned to Causalean.PO. Search trace: read ../doc/API.md '## 8h. PO/' index (PO/Core/Regime, PO/Core/System, PO/Assumptions/Consistency, PO/Assumptions/IndepCF, PO/ID/Exact/ATE); no finite-alphabet binary PO overlay to reuse verbatim -> not found.",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "S3",
+          "kind": "setup",
+          "label": "Setup S-3",
+          "nl": "Functional / experiment-class / risk layer over S1: the overlap-restricted four-cell cone C_eps as a Set of four-vectors, the homogeneous cell contribution phi, the ATE functional tau(P) = sum_k phi(q_k), the experiment class E_{n,d,eps} of overlap-satisfying product laws, and the minimax risk R_{n,d,eps} = inf over measurable estimators of the sup-over-class MSE. — The risk shape (inf over measurable estimators of sup over a class of the n-sample MSE) is exactly Causalean.Estimation.MinimaxATE.Model's minimaxMiss/nMSE pattern, but over the p_k-parameterized class of S1 rather than the uniform-P_X structure-agnostic class, and in MSE (not miss-probability) form -> define-local, importing nMiss_sq_le_nMSE's Markov-bridge idiom. Search trace: grepped ../doc/API.md for 'Minimax' -> Stat/Minimax/{TotalVariation,LeCam,Pinsker,Scheffe,ChiSquared,ChiSquaredFinite,MinimaxRisk,Fano,Assouad,Mixture} and Estimation/MinimaxATE; Stat/Minimax/MinimaxRisk.lean supplies the two-point REDUCTIONS (reused by lem:one-category-bernoulli-lower) but carries no packaged inf-sup minimax-risk DEFINITION over a law class -> the risk def is not found and is build-inline.",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "S4",
+          "kind": "setup",
+          "label": "Setup S-4",
+          "nl": "Estimator layer over S1: the balanced deterministic split I_0 = {1..floor(n/2)}, I_1 = the rest; split cell counts N^{(j)}_{aky}; four-cell exponent multi-indices r in N_0^4 with |r| = sum r_{ay}; the falling factorial z_r; the pilot-certified heavy/light partition (Hhat_n, Lhat_n); the light-cell factorial-moment polynomial contribution That_L; and the truncated hybrid tauhat_n^hyb. — z_r is Mathlib's Nat.descFactorial (z_r = z.descFactorial r, with z_0 = 1 definitional) -- REUSED, not redefined; Causalean.Stat.injectiveTupleCount_eq_descFactorial (Stat/UStatistic/OrderM/Basic.lean) is the exact combinatorial bridge 'ordered injective tuple count = falling factorial' that the note's eq (9) unbiasedness E[U_{k,r}] = q_k^r rests on, and is reused as the counting engine in Helpers/FactorialMoments.lean. Causalean.Stat.SampleSplit / OneShotSplit is the analogue for the two-fold split but is a RANDOM cross-fitting split over a growing index family; the note fixes a DETERMINISTIC balanced split I_0/I_1 of Fin n, so the split itself is a two-line Finset definition -> build-inline. Search trace: grepped ../doc/API.md for 'descFactorial|fallingFactorial' -> Stat/UStatistic/OrderM/Basic.lean only; grepped ../doc/API.md and Causalean/ for 'factorial moment' -> not found (no factorial-moment unbiased-lift estimator layer exists); grepped Causalean for 'Chebyshev' (case-insensitive) -> all 15 hits are Chebyshev's INEQUALITY (Experimentation/DesignBased/Chebyshev.lean, Stat/Concentration, Mathlib/InformationTheory/Fano), none is the Chebyshev POLYNOMIAL; Mathlib's Polynomial.Chebyshev.T (Mathlib.RingTheory.Polynomial.Chebyshev, confirmed via loogle with T_one/T_mul/T_natAbs) is the reused primitive for T_M.",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        }
+      ]
+    },
+    {
+      "kind": "definition",
+      "items": [
+        {
+          "obj_id": "def:experiment-class",
+          "kind": "definition",
+          "label": "Definition P-1",
+          "nl": "\\(\\mathcal E_{n,d,\\epsilon}:=\\{P^{\\otimes n}: P\\in\\mathsf{Prob}(\\{1,\\ldots,d\\}\\times\\{0,1\\}^2),\\ n,d\\in\\mathbb N,\\ 0<\\epsilon\\le1/2,\\text{ and }P\\text{ satisfies }\\mathrm{ass:overlap}\\}\\).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.ExperimentClass",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:overlap-cone",
+          "kind": "definition",
+          "label": "Definition P-2",
+          "nl": "\\(\\mathcal C_\\epsilon:=\\{u=(u_{00},u_{01},u_{10},u_{11})\\in\\mathbb R_+^4: \\epsilon(u_{00}+u_{01}+u_{10}+u_{11})\\le u_{10}+u_{11}\\le(1-\\epsilon)(u_{00}+u_{01}+u_{10}+u_{11})\\}\\).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.overlapCone",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:cell-functional",
+          "kind": "definition",
+          "label": "Definition P-3",
+          "nl": "For \\(u=(u_{00},u_{01},u_{10},u_{11})\\in\\mathcal C_\\epsilon\\), define \\(\\phi(u):=(u_{00}+u_{01}+u_{10}+u_{11})\\left[\\frac{u_{11}}{u_{10}+u_{11}}-\\frac{u_{01}}{u_{00}+u_{01}}\\right]\\) when \\(u\\neq0\\), and define \\(\\phi(0,0,0,0):=0\\).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.cellPhiOnCone",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:ate-functional",
+          "kind": "definition",
+          "label": "Definition P-4",
+          "nl": "\\(\\tau(P):=\\sum_{k=1}^{d}p_k(\\mu_{1k}-\\mu_{0k})=\\sum_{k=1}^{d}\\phi(q_k)\\).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.ateFunctional",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:hybrid-estimator-handle",
+          "kind": "definition",
+          "label": "Definition P-5",
+          "nl": "Set \\(I_0=\\{1,\\ldots,\\lfloor n/2\\rfloor\\}\\), \\(I_1=\\{\\lfloor n/2\\rfloor+1,\\ldots,n\\}\\), \\(m_j=|I_j|\\), and \\(L=\\log(en)\\). Set \\(A=6\\), and put \\(\\lambda_0=256\\), \\(b_0=4096\\), \\(D_A=8\\log(9A/8)=8\\log(27/4)\\), and\n\\[\n\\alpha_0=\\min\\left\\{1,\\frac1{32\\log A},\\frac1{256D_A}\\right\\}.\n\\]\nFor \\(n\\ge2\\), put \\(M(n)=\\max\\{2,\\lfloor\\alpha_0L\\rfloor\\}\\) and \\(B(n)=b_0L/m_1\\). Let \\(N_0\\) be the least numerical cutoff such that, for every \\(n\\ge N_0\\), \\(\\alpha_0L\\ge2\\), \\(4M(n)^2\\le m_1\\), and \\(4M(n)/m_1\\le3B(n)/4\\). For \\(n\\ge N_0\\), abbreviate \\(M=M(n)\\), \\(B=B(n)\\), and set\n\\[\n\\widehat{\\mathcal H}_n=\\left\\{k:\\sum_{a,y}N^{(0)}_{aky}>\\lambda_0L\\right\\},\\qquad \\widehat{\\mathcal L}_n=\\widehat{\\mathcal H}_n^c.\n\\]\nPut \\(N_k^{(1)}=\\sum_{a,y}N^{(1)}_{aky}\\), \\(N_{ak}^{(1)}=\\sum_yN^{(1)}_{aky}\\), and\n\\[\n\\widehat h_k=\\frac{N_k^{(1)}}{m_1}\\left\\{\\frac{N^{(1)}_{1k1}}{N^{(1)}_{1k}}\\mathbf1\\{N^{(1)}_{1k}>0\\}-\\frac{N^{(1)}_{0k1}}{N^{(1)}_{0k}}\\mathbf1\\{N^{(1)}_{0k}>0\\}\\right\\}.\n\\]\nDefine \\(H_M(x)=\\{1-T_M(1-2x)\\}/(2M^2)\\), \\(E_M(x)=H_M(x)/x\\), and \\(G_M(x)=\\{1-E_M(x)\\}/x\\), using polynomial continuation at zero, and\n\\[\nP_{M,B}(u)=\\frac{s(u)t_1(u)}B G_M\\!\\left(\\frac{s_1(u)}B\\right)-\\frac{s(u)t_0(u)}B G_M\\!\\left(\\frac{s_0(u)}B\\right).\n\\]\nHere \\(s_a(u)=u_{a0}+u_{a1}\\), \\(s(u)=s_0(u)+s_1(u)\\), \\(t_1(u)=u_{11}\\), and \\(t_0(u)=u_{01}\\). Expand \\(P_{M,B}(u)=\\sum_{|r|\\le M}c_ru^r\\), set\n\\[\n\\widehat P_k=\\sum_{|r|\\le M}c_r\\frac{\\prod_{a,y}(N^{(1)}_{aky})_{r_{ay}}}{(m_1)_{|r|}},\\quad \\widehat T_{\\mathcal H}=\\sum_{k\\in\\widehat{\\mathcal H}_n}\\widehat h_k,\\quad \\widehat T_{\\mathcal L}=\\sum_{k\\in\\widehat{\\mathcal L}_n}\\widehat P_k,\n\\]\nand define \\(\\widehat\\tau_n^{\\mathrm{hyb}}=\\max\\{-1,\\min(1,\\widehat T_{\\mathcal H}+\\widehat T_{\\mathcal L})\\}\\). For \\(n<N_0\\), set \\(\\widehat{\\mathcal L}_n=\\varnothing\\) and use the ratio branch on every category. The estimator uses no overlap constant and is computable in \\(O(dM^4)\\) arithmetic operations.",
+          "lean": {
+            "file": "Helpers/Estimator.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.hybridEstimator",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:minimax-risk",
+          "kind": "definition",
+          "label": "Definition P-6",
+          "nl": "\\(\\mathsf R_{n,d,\\epsilon}:=\\inf_{\\widehat\\tau}\\sup_{P^{\\otimes n}\\in\\mathcal E_{n,d,\\epsilon}}E_P[(\\widehat\\tau-\\tau(P))^2]\\), where the infimum is over measurable estimators based on \\(O_1,\\ldots,O_n\\).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.minimaxRisk",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "def:two-category-witness",
+          "kind": "definition",
+          "label": "Definition P-7",
+          "nl": "For \\(d=2\\), set \\(p_1=p_2=1/2\\), \\(\\pi_1=\\epsilon\\), \\(\\pi_2=1-\\epsilon\\), \\(\\mu_{01}=\\mu_{02}=0\\), \\(\\mu_{11}=1\\), and \\(\\mu_{12}=0\\). Define a full-data extension by drawing \\((Y(0),Y(1))=(0,\\mathbf 1\\{X=1\\})\\) and then drawing \\(A\\mid X=k\\sim\\mathsf{Bernoulli}(\\pi_k)\\).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.twoCategoryWitness",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "assumption",
+      "items": [
+        {
+          "obj_id": "ass:iid-sampling",
+          "kind": "assumption",
+          "label": "Assumption A-1",
+          "nl": "\\(O_1,\\ldots,O_n\\stackrel{\\mathrm{iid}}{\\sim}P\\).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.IidSampling",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "ass:overlap",
+          "kind": "assumption",
+          "label": "Assumption A-2",
+          "nl": "\\(\\epsilon\\le\\pi_k\\le1-\\epsilon\\) for every \\(k\\) with \\(p_k>0\\).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.Overlap",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "ass:consistency",
+          "kind": "assumption",
+          "label": "Assumption A-3",
+          "nl": "\\(Y=Y(A)\\) almost surely.",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.Consistency",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "ass:conditional-exchangeability",
+          "kind": "assumption",
+          "label": "Assumption A-4",
+          "nl": "\\((Y(0),Y(1))\\perp A\\mid X\\).",
+          "lean": {
+            "file": "Basic.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.ConditionalExchangeability",
+            "decl_kind": "structure",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "lemma",
+      "items": [
+        {
+          "obj_id": "lem:light-cell-polynomial",
+          "kind": "lemma",
+          "label": "Lemma L-1",
+          "nl": "There are constants \\(C_\\epsilon,c_\\epsilon>0\\) and a computable calibration of \\(def:hybrid-estimator-handle\\) such that, for every \\(d\\le c_\\epsilon n\\log n\\) and every \\(P^{\\otimes n}\\in\\mathcal E_{n,d,\\epsilon}\\), its light-cell contribution \\(\\widehat T_{\\mathcal L}\\) obeys \\[ E_P\\!\\left[\\left\\{\\widehat T_{\\mathcal L}-\\sum_{k\\in\\widehat{\\mathcal L}_n}\\phi(q_k)\\right\\}^2\\right]\\le C_\\epsilon\\left\\{\\frac{1}{n}+\\frac{d^2}{n^2\\log^2 n}\\right\\}. \\] The calibration uses a polynomial approximation of \\(\\phi\\) on the overlap-restricted four-cell cone and factorial-moment monomials from \\(I_1\\).",
+          "lean": {
+            "file": "Helpers/LightCell.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.light_cell_polynomial",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lem:pilot-sandwich",
+          "kind": "lemma",
+          "label": "Lemma L-2",
+          "nl": "Let \\(m_0\\asymp n\\), \\(L=\\log(en)\\), \\(\\widehat{\\mathcal H}=\\{k:N_k^{(0)}>tL\\}\\), \\(\\widehat{\\mathcal L}=\\widehat{\\mathcal H}^c\\), \\(B_-=tL/(2m_0)\\), and \\(B_+=2tL/m_0\\). For every \\(K>0\\), sufficiently large numerical \\(t\\) gives, uniformly over \\(d\\le cnL\\),\n\\[\nP\\left(\\widehat{\\mathcal H}\\not\\subseteq\\{k:p_k\\ge B_-\\}\\text{ or }\\widehat{\\mathcal L}\\not\\subseteq\\{k:p_k\\le B_+\\}\\right)\\le C_Kn^{-K}.\n\\]\nThe choice \\(t=256\\) is valid for \\(K=4\\).",
+          "lean": {
+            "file": "Helpers/PilotSandwich.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.pilot_sandwich",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lem:universal-heavy-cell-rate",
+          "kind": "lemma",
+          "label": "Lemma L-3",
+          "nl": "For the threshold \\(\\lambda_0=256\\), every fixed \\(0<\\epsilon<1/2\\) admits \\(C_\\epsilon,\\rho_\\epsilon>0\\) and \\(N_\\epsilon<\\infty\\) such that, for \\(n\\ge N_\\epsilon\\), \\(d\\le\\rho_\\epsilon n\\log n\\), and \\(P^{\\otimes n}\\in\\mathcal E_{n,d,\\epsilon}\\),\n\\[\nE_P\\left[\\left\\{\\widehat T_{\\mathcal H}-\\sum_{k\\in\\widehat{\\mathcal H}_n}\\phi(q_k)\\right\\}^2\\right]\\le C_\\epsilon\\left\\{\\frac1n+\\frac{d^2}{n^2\\log^2n}\\right\\}.\n\\]",
+          "lean": {
+            "file": "Helpers/HeavyCell.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.universal_heavy_cell_rate",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lem:ate-lower-bound-transfer",
+          "kind": "lemma",
+          "label": "Lemma L-4",
+          "nl": "For fixed \\(0<\\epsilon<1/2\\), there are \\(a_\\epsilon,b_\\epsilon>0\\) such that, for all sufficiently large \\(n\\) and \\(d\\le b_\\epsilon n\\log n\\),\n\\[\n\\mathsf R_{n,d,\\epsilon}\\ge a_\\epsilon\\left\\{\\frac1n+\\frac{d^2}{n^2\\log^2n}\\right\\}.\n\\]",
+          "lean": {
+            "file": "Helpers/LowerBound.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.ate_lower_bound_transfer",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lem:near-randomization-linear-upper",
+          "kind": "lemma",
+          "label": "Lemma L-5",
+          "nl": "Define the centered estimator\n\\[\n\\widehat\\tau_{\\mathrm{ctr}}=\\frac2n\\sum_{i=1}^n(2A_i-1)\\left(Y_i-\\frac12\\right).\n\\]\nFor every \\(n,d\\in\\mathbb N\\), every \\(0<\\epsilon\\le1/2\\), and every \\(P^{\\otimes n}\\in\\mathcal E_{n,d,\\epsilon}\\),\n\\[\nE_P[(\\widehat\\tau_{\\mathrm{ctr}}-\\tau(P))^2]\\le\\frac1n+4(1/2-\\epsilon)^2.\n\\]",
+          "lean": {
+            "file": "Helpers/Endpoint.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.near_randomization_linear_upper",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lem:one-category-bernoulli-lower",
+          "kind": "lemma",
+          "label": "Lemma L-6",
+          "nl": "For every \\(n,d\\in\\mathbb N\\), \\(\\mathsf R_{n,d,1/2}\\ge1/(100n)\\).",
+          "lean": {
+            "file": "Helpers/Endpoint.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.one_category_bernoulli_lower",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lem:randomized-endpoint-minimax",
+          "kind": "lemma",
+          "label": "Lemma L-7",
+          "nl": "For every \\(n,d\\in\\mathbb N\\),\n\\[\n\\frac{1}{100n}\\le\\mathsf R_{n,d,1/2}\\le\\frac1n.\n\\]",
+          "lean": {
+            "file": "Helpers/Endpoint.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.randomized_endpoint_minimax",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lem:combined-upper-envelope",
+          "kind": "lemma",
+          "label": "Lemma L-8",
+          "nl": "Fix \\(0<\\epsilon<1/2\\) and constants \\(C_\\epsilon,\\rho_\\epsilon,N_\\epsilon\\) for which the upper bound in Theorem~\\ref{thm:sharp-minimax-fixed-interior} holds. For \\(n\\ge N_\\epsilon\\) and \\(d\\le\\rho_\\epsilon n\\log n\\), choose the hybrid when\n\\[\nC_\\epsilon\\left\\{\\frac1n+\\frac{d^2}{n^2\\log^2n}\\right\\}\\le\\frac1n+4(1/2-\\epsilon)^2,\n\\]\nand otherwise choose \\(\\widehat\\tau_{\\mathrm{ctr}}\\). The selected estimator has worst-case risk at most\n\\[\nK_\\epsilon\\left[\\frac1n+\\min\\left\\{\\frac{d^2}{n^2\\log^2n},(1/2-\\epsilon)^2\\right\\}\\right],\\qquad K_\\epsilon=\\max\\{C_\\epsilon,4\\}.\n\\]",
+          "lean": {
+            "file": "Helpers/CombinedEnvelope.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.combined_upper_envelope",
+            "decl_kind": "lemma",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "theorem",
+      "items": [
+        {
+          "obj_id": "prop:two-category-confounding",
+          "kind": "theorem",
+          "label": "Theorem T-1",
+          "nl": "The full-data law in \\(def:two-category-witness\\) satisfies \\(ass:consistency\\), \\(ass:conditional-exchangeability\\), and \\(ass:overlap\\), has \\(\\tau(P)=1/2\\), and has naive observed contrast \\(E_P[Y\\mid A=1]-E_P[Y\\mid A=0]=\\epsilon\\).",
+          "lean": {
+            "file": "T_TwoCategoryConfounding.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.two_category_confounding",
+            "decl_kind": "theorem",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "thm:sharp-minimax-fixed-interior",
+          "kind": "theorem",
+          "label": "Theorem T-2",
+          "nl": "For every fixed \\(0<\\epsilon<1/2\\), there are constants \\(a_\\epsilon,\\rho_\\epsilon,C_\\epsilon>0\\) and \\(N_\\epsilon<\\infty\\) such that, for every \\(n\\ge N_\\epsilon\\) and uniformly over \\(d\\le\\rho_\\epsilon n\\log n\\), the balanced ratio-polynomial hybrid in \\(def:hybrid-estimator-handle\\) satisfies\n\\[\na_\\epsilon\\left\\{\\frac1n+\\frac{d^2}{n^2\\log^2n}\\right\\}\\le\\mathsf R_{n,d,\\epsilon}\\le\\sup_{P^{\\otimes n}\\in\\mathcal E_{n,d,\\epsilon}}E_P[(\\widehat\\tau_n^{\\mathrm{hyb}}-\\tau(P))^2]\\le C_\\epsilon\\left\\{\\frac1n+\\frac{d^2}{n^2\\log^2n}\\right\\}.\n\\]\nConsequently, the minimax MSE has parametric order \\(n^{-1}\\) whenever \\(d=O(\\sqrt n\\log n)\\), and, along sequences in the displayed range, it converges to zero if and only if \\(d=o(n\\log n)\\).",
+          "lean": {
+            "file": "T_SharpMinimaxFixedInterior.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.sharp_minimax_fixed_interior",
+            "decl_kind": "theorem",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "thm:overlap-adaptive-universal-hybrid",
+          "kind": "theorem",
+          "label": "Theorem T-3",
+          "nl": "The following conclusions hold.\n\n\\(\\mathrm{(i)}\\) The single computable hybrid \\(\\widehat\\tau_n^{\\mathrm{hyb}}\\), with \\(A=6\\), \\(\\lambda_0=256\\), \\(b_0=4096\\), and numerical \\(\\alpha_0\\), does not take \\(\\epsilon\\) as input. For every fixed \\(0<\\epsilon<1/2\\), there are \\(C_\\epsilon,\\rho_\\epsilon>0\\) and \\(N_\\epsilon<\\infty\\) such that, for every \\(n\\ge N_\\epsilon\\) and \\(d\\le\\rho_\\epsilon n\\log n\\),\n\\[\n\\sup_{P^{\\otimes n}\\in\\mathcal E_{n,d,\\epsilon}}E_P[(\\widehat\\tau_n^{\\mathrm{hyb}}-\\tau(P))^2]\\le C_\\epsilon\\left\\{\\frac1n+\\frac{d^2}{n^2\\log^2n}\\right\\}.\n\\]\nThus fixed-class overlap adaptation requires no selector.\n\n\\(\\mathrm{(ii)}\\) For every \\(n,d\\in\\mathbb N\\) and \\(0<\\epsilon\\le1/2\\), the centered estimator\n\\[\n\\widehat\\tau_{\\mathrm{ctr}}=\\frac2n\\sum_{i=1}^n(2A_i-1)\\left(Y_i-\\frac12\\right)\n\\]\nsatisfies\n\\[\n\\sup_{P^{\\otimes n}\\in\\mathcal E_{n,d,\\epsilon}}E_P[(\\widehat\\tau_{\\mathrm{ctr}}-\\tau(P))^2]\\le\\frac1n+4(1/2-\\epsilon)^2.\n\\]\n\n\\(\\mathrm{(iii)}\\) For every \\(n,d\\in\\mathbb N\\),\n\\[\n\\frac{1}{100n}\\le\\mathsf R_{n,d,1/2}\\le\\frac1n.\n\\]\n\n\\(\\mathrm{(iv)}\\) Fix \\(0<\\epsilon<1/2\\) and constants \\(C_\\epsilon,\\rho_\\epsilon,N_\\epsilon\\) from the fixed-interior upper theorem. For \\(n\\ge N_\\epsilon\\) and \\(d\\le\\rho_\\epsilon n\\log n\\), choose the hybrid when\n\\[\nC_\\epsilon\\left\\{\\frac1n+\\frac{d^2}{n^2\\log^2n}\\right\\}\\le\\frac1n+4(1/2-\\epsilon)^2,\n\\]\nand otherwise choose \\(\\widehat\\tau_{\\mathrm{ctr}}\\). This deterministic choice satisfies\n\\[\n\\mathsf R_{n,d,\\epsilon}\\le K_\\epsilon\\left[\\frac1n+\\min\\left\\{\\frac{d^2}{n^2\\log^2n},(1/2-\\epsilon)^2\\right\\}\\right],\\qquad K_\\epsilon=\\max\\{C_\\epsilon,4\\}.\n\\]\n\n\\(\\mathrm{(v)}\\) These fixed-class and endpoint conclusions do not assert a matching lower envelope for triangular arrays \\(\\epsilon=\\epsilon_n\\).",
+          "lean": {
+            "file": "T_OverlapAdaptiveUniversalHybrid.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.overlap_adaptive_universal_hybrid",
+            "decl_kind": "theorem",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "cited",
+      "items": [
+        {
+          "obj_id": "lem:zeng-one-arm-minimax-lower",
+          "kind": "cited",
+          "label": "Cited result lem:zeng-one-arm-minimax-lower",
+          "nl": "Fix \\(0<\\epsilon<1/2\\). Let \\(\\mathcal D_0^{(n,d)}(\\epsilon)\\) be the fixed-sample binary-outcome subclass of \\(\\mathcal E_{n,d,\\epsilon}\\) consisting of laws \\(P^{\\otimes n}\\) with arbitrary masses \\(p_k\\ge0\\), \\(\\sum_{k=1}^d p_k=1\\), propensities satisfying \\(\\epsilon\\le\\pi_k\\le1-\\epsilon\\) on every positive-mass category, arbitrary treated response means \\(\\mu_{1k}\\in[0,1]\\), and \\(\\mu_{0k}=0\\) for every \\(k\\). Define \\(\\psi_1(P)=\\sum_{k=1}^d p_k\\mu_{1k}\\). There are constants \\(a_\\epsilon,b_\\epsilon>0\\) and \\(N_\\epsilon<\\infty\\) such that, for all \\(n\\ge N_\\epsilon\\) and \\(d\\le b_\\epsilon n\\log n\\),\n\\[\n\\inf_{\\widehat\\psi}\\sup_{P^{\\otimes n}\\in\\mathcal D_0^{(n,d)}(\\epsilon)}E_P[(\\widehat\\psi-\\psi_1(P))^2]\\ge a_\\epsilon\\left\\{\\frac1n+\\frac{d^2}{n^2\\log^2n}\\right\\},\n\\]\nwhere the infimum is over measurable estimators based on the fixed sample of size \\(n\\).",
+          "lean": {
+            "file": "Helpers/LowerBound.lean",
+            "decl": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.ZengOneArmMinimaxLower",
+            "decl_kind": "def",
+            "line": 0
+          },
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "auxiliary",
+      "items": [
+        {
+          "obj_id": "aux_centeredEstimator",
+          "kind": "definition",
+          "label": "Definition centeredEstimator",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_ControlZeroClass",
+          "kind": "definition",
+          "label": "Definition ControlZeroClass",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_DiscreteLaw",
+          "kind": "definition",
+          "label": "Definition DiscreteLaw",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_minimaxRate",
+          "kind": "definition",
+          "label": "Definition minimaxRate",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_mse",
+          "kind": "definition",
+          "label": "Definition mse",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_Obs",
+          "kind": "definition",
+          "label": "Definition Obs",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_worstCaseMSE",
+          "kind": "definition",
+          "label": "Definition worstCaseMSE",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_selectedEstimator",
+          "kind": "definition",
+          "label": "Definition selectedEstimator",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "aux_HybridEstimatorComputable",
+          "kind": "definition",
+          "label": "Definition HybridEstimatorComputable",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": false
+        },
+        {
+          "obj_id": "centeredUnitScore",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "centeredUnitScore_sq",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore_sq",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "centeredEstimator_eq_scoreMean",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredEstimator_eq_scoreMean",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "centeredUnitScore_mean",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore_mean",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "centeredScore_category_identity",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredScore_category_identity",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "jointMass_eq_zero_of_cellMass_eq_zero",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.jointMass_eq_zero_of_cellMass_eq_zero",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "cellMass_sum",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.cellMass_sum",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "centeredUnitScore_bias_identity",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore_bias_identity",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "centeredUnitScore_bias_bound",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore_bias_bound",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "centeredEstimator_mean",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredEstimator_mean",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "centeredUnitScore_variance_le_one",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredUnitScore_variance_le_one",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "centeredEstimator_variance_le",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.centeredEstimator_variance_le",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "mse_eq_variance_add_sq_bias",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.mse_eq_variance_add_sq_bias",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "mse_le_estimator_abs_sum_bound",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.mse_le_estimator_abs_sum_bound",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "oneArmMinimaxRisk_le_minimaxRisk",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.oneArmMinimaxRisk_le_minimaxRisk",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "endpointParametricLaw",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricLaw",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "endpointParametricPertLaw",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricPertLaw",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "endpointParametricLaw_jointMass",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricLaw_jointMass",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "endpointParametricPertLaw_jointMass",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricPertLaw_jointMass",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "endpointParametricLaw_overlap",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricLaw_overlap",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "endpointParametricPertLaw_overlap",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricPertLaw_overlap",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "endpointParametricLaw_ate",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricLaw_ate",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "endpointParametricPertLaw_ate",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.endpointParametricPertLaw_ate",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "categoryIndicator",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Stat.DiscreteAteMinimaxLoggap.categoryIndicator",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "categoryIndicator_mean",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.categoryIndicator_mean",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "pilot_count_eq_bernoulliCount",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.pilot_count_eq_bernoulliCount",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "pilotCategory_upper_tail",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.pilotCategory_upper_tail",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "pilotCategory_lower_tail",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.pilotCategory_lower_tail",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "pilotBadEvent_subset_cellwise",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.pilotBadEvent_subset_cellwise",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "pilotBadEvent_probability",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.pilotBadEvent_probability",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "exp_neg_mul_logScale",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.exp_neg_mul_logScale",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "pilot_decay_bound",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.pilot_decay_bound",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "clamp_sq_error_le",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.clamp_sq_error_le",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "targetHeavy_add_targetLight",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.targetHeavy_add_targetLight",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "hybrid_mse_le_component_errors",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.hybrid_mse_le_component_errors",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "canonicalClassLaw",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Stat.DiscreteAteMinimaxLoggap.canonicalClassLaw",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "hybrid_upper_fixed_interior",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.hybrid_upper_fixed_interior",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "factorial_normalization",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorial_normalization",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "overlap_adaptive_universal_hybrid_statistical",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.overlap_adaptive_universal_hybrid_statistical",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lightCells_eq_pilotHeavyAt_compl_of_cutoff_le",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.lightCells_eq_pilotHeavyAt_compl_of_cutoff_le",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "selected_light_mass_le_bandwidth_quarter",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.selected_light_mass_le_bandwidth_quarter",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "selected_light_approximation_bias",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.selected_light_approximation_bias",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "integrable_factorialPolynomialContribution_trunc",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.integrable_factorialPolynomialContribution_trunc",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "integral_factorialPolynomialContribution_trunc",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialPolynomialContribution_trunc",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "iidSample_shift",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Stat.DiscreteAteMinimaxLoggap.iidSampleShift",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "iidSample_map",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Stat.DiscreteAteMinimaxLoggap.iidSampleMap",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "categoryCellLabel",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Stat.DiscreteAteMinimaxLoggap.categoryCellLabel",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "categoryCellLabel_measurable",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.categoryCellLabel_measurable",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "optionCellExponent",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Stat.DiscreteAteMinimaxLoggap.optionCellExponent",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "exponentDegree_optionCellExponent",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.exponentDegree_optionCellExponent",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "categoryCellLabel_atom_mass",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.categoryCellLabel_atom_mass",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "splitSize_zero_eq",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.splitSize_zero_eq",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "splitSize_one_eq",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.splitSize_one_eq",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "estimationTailIndex",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Stat.DiscreteAteMinimaxLoggap.estimationTailIndex",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "splitCellCount_eq_tail_count",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.splitCellCount_eq_tail_count",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "categoryCellLabel_fiber_card",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.categoryCellLabel_fiber_card",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "estimationLabelSample",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Stat.DiscreteAteMinimaxLoggap.estimationLabelSample",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "multinomialFactorialCount_estimationLabelSample",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.multinomialFactorialCount_estimationLabelSample",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "factorialMonomial_eq_normalized_multinomialCount",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorialMonomial_eq_normalized_multinomialCount",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "lightCellEstimationIID",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Stat.DiscreteAteMinimaxLoggap.lightCellEstimationIID",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "factorialMonomial_trunc_eq_iidCount",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorialMonomial_trunc_eq_iidCount",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "integrable_factorialMonomial_trunc",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.integrable_factorialMonomial_trunc",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "integral_factorialMonomial_trunc",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialMonomial_trunc",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "integral_factorialMonomial_mul_trunc_le",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialMonomial_mul_trunc_le",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "integrable_factorialMonomial_mul_trunc",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.integrable_factorialMonomial_mul_trunc",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "observationExponent",
+          "kind": "definition",
+          "label": "Definition CausalSmith.Stat.DiscreteAteMinimaxLoggap.observationExponent",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "exponentDegree_observationExponent",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.exponentDegree_observationExponent",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "estimationTail_fiber_card",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.estimationTail_fiber_card",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "observationExponent_fiber_count",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.observationExponent_fiber_count",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "multinomialFactorialCount_observationExponent",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.multinomialFactorialCount_observationExponent",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "factorialMonomial_eq_normalized_observationCount",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorialMonomial_eq_normalized_observationCount",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "factorialMonomial_trunc_eq_observationCount",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorialMonomial_trunc_eq_observationCount",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "obsLaw_real_cellAtom",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.obsLaw_real_cellAtom",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "observationExponent_mass_prod",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.observationExponent_mass_prod",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "integral_factorialMonomial_cross_trunc",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialMonomial_cross_trunc",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "vectorMass_cellVector",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.vectorMass_cellVector",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "vectorArmMass_cellVector",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.vectorArmMass_cellVector",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "obsLaw_real_singleton",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.obsLaw_real_singleton",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "obsLaw_real_atom",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.obsLaw_real_atom",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "cellVector_mem_overlapCone",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.cellVector_mem_overlapCone",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "abs_cellPhi_cellVector_le_mass",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.abs_cellPhi_cellVector_le_mass",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "multiDegree_factorialExpansionIndex",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.multiDegree_factorialExpansionIndex",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "factorialExpansionIndex_prod",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorialExpansionIndex_prod",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "factorialExpansionIndex_binomial_sum",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorialExpansionIndex_binomial_sum",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sparseArmEnvelope_eq",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.sparseArmEnvelope_eq",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sparseArmEnvelope_le",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.sparseArmEnvelope_le",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "multiMonomial_mono",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.multiMonomial_mono",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "integral_factorialMonomial_mul_shift_le",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_factorialMonomial_mul_shift_le",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "integral_sparse_terms_mul_shift_le",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.integral_sparse_terms_mul_shift_le",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "factorialMonomial_cross_covariance_le",
+          "kind": "lemma",
+          "label": "Lemma CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorialMonomial_cross_covariance_le",
+          "nl": "",
+          "lean": null,
+          "status": "unreviewed",
+          "sorry_free": true
+        }
+      ]
+    },
+    {
+      "kind": "symbol",
+      "items": [
+        {
+          "obj_id": "sym:P",
+          "kind": "symbol",
+          "label": "P",
+          "nl": "realized by DiscreteLaw",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:q_{aky}",
+          "kind": "symbol",
+          "label": "q_{aky}",
+          "nl": "realized by jointMass, jointMass_mem_unitInterval",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:q_k",
+          "kind": "symbol",
+          "label": "q_k",
+          "nl": "realized by cellVector, cellVector_mem_unitCube",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:p_k",
+          "kind": "symbol",
+          "label": "p_k",
+          "nl": "realized by cellMass, cellMass_mem_unitInterval, Overlap, twoCategoryWitness",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:pi_k",
+          "kind": "symbol",
+          "label": "pi_k",
+          "nl": "realized by propensity, propensity_mem_unitInterval, Overlap, twoCategoryWitness",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:mu_{ak}",
+          "kind": "symbol",
+          "label": "mu_{ak}",
+          "nl": "realized by outcomeMean, outcomeMean_mem_unitInterval, twoCategoryWitness",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:O_i",
+          "kind": "symbol",
+          "label": "O_i",
+          "nl": "realized by productLaw, ExperimentClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:n",
+          "kind": "symbol",
+          "label": "n",
+          "nl": "realized by variable@152",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:d",
+          "kind": "symbol",
+          "label": "d",
+          "nl": "realized by variable@152, one_category_bernoulli_lower, randomized_endpoint_minimax",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:epsilon",
+          "kind": "symbol",
+          "label": "epsilon",
+          "nl": "realized by variable@153, Overlap, ExperimentClass, variable@6",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:c",
+          "kind": "symbol",
+          "label": "c",
+          "nl": "realized by variable@153, pilot_sandwich",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:k",
+          "kind": "symbol",
+          "label": "k",
+          "nl": "realized by variable@156",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:X",
+          "kind": "symbol",
+          "label": "X",
+          "nl": "realized by variable@158, ConditionalExchangeability, twoCategoryWitness",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:A",
+          "kind": "symbol",
+          "label": "A",
+          "nl": "realized by variable@158, Consistency, ConditionalExchangeability, twoCategoryWitness",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Y",
+          "kind": "symbol",
+          "label": "Y",
+          "nl": "realized by variable@158, Consistency",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:Y(a)",
+          "kind": "symbol",
+          "label": "Y(a)",
+          "nl": "realized by PotentialLaw, Consistency, ConditionalExchangeability, twoCategoryWitness",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\mathcal E_{n,d,\\epsilon}",
+          "kind": "symbol",
+          "label": "\\mathcal E_{n,d,\\epsilon}",
+          "nl": "realized by ExperimentClass",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\mathcal C_\\epsilon",
+          "kind": "symbol",
+          "label": "\\mathcal C_\\epsilon",
+          "nl": "realized by overlapCone",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\phi",
+          "kind": "symbol",
+          "label": "\\phi",
+          "nl": "realized by cellPhiOnCone",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\tau(P)",
+          "kind": "symbol",
+          "label": "\\tau(P)",
+          "nl": "realized by ateFunctional, ateFunctional_mem_interval",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\(\\mathsf R_{n,d,\\epsilon}\\)",
+          "kind": "symbol",
+          "label": "\\(\\mathsf R_{n,d,\\epsilon}\\)",
+          "nl": "realized by mse, worstCaseMSE, minimaxRisk, minimaxRisk_mem_unitInterval",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:I_0",
+          "kind": "symbol",
+          "label": "I_0",
+          "nl": "realized by splitIndices",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:I_1",
+          "kind": "symbol",
+          "label": "I_1",
+          "nl": "realized by splitIndices",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:N^{(j)}_{aky}",
+          "kind": "symbol",
+          "label": "N^{(j)}_{aky}",
+          "nl": "realized by splitCellCount",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:r=(r_{ay})_{a,y\\in\\{0,1\\}}",
+          "kind": "symbol",
+          "label": "r=(r_{ay})_{a,y\\in\\{0,1\\}}",
+          "nl": "realized by MultiIndex",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:z_r",
+          "kind": "symbol",
+          "label": "z_r",
+          "nl": "realized by fallingFactorial",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\(\\widehat{\\mathcal H}_n,\\widehat{\\mathcal L}_n\\)",
+          "kind": "symbol",
+          "label": "\\(\\widehat{\\mathcal H}_n,\\widehat{\\mathcal L}_n\\)",
+          "nl": "realized by heavyCells, lightCells, heavyCells_eq_filter_of_cutoff_le, heavyCells_eq_univ_of_lt_cutoff, lightCells_eq_empty_of_lt_cutoff, lightCells_eq_compl",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\widehat T_{\\mathcal L}",
+          "kind": "symbol",
+          "label": "\\widehat T_{\\mathcal L}",
+          "nl": "realized by lightContribution",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:\\widehat\\tau_n^{\\mathrm{hyb}}",
+          "kind": "symbol",
+          "label": "\\widehat\\tau_n^{\\mathrm{hyb}}",
+          "nl": "realized by hybridEstimator",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        },
+        {
+          "obj_id": "sym:I_a",
+          "kind": "symbol",
+          "label": "I_a",
+          "nl": "realized by splitIndices",
+          "lean": null,
+          "status": "matched",
+          "sorry_free": true
+        }
+      ]
+    }
+  ]
+}

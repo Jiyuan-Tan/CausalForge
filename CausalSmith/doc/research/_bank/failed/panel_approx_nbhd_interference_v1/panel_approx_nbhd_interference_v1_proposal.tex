@@ -1,0 +1,967 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=panel\_approx\_nbhd\_interference, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{panel\_approx\_nbhd\_interference} / \texttt{v1}%
+  \\ \large\textit{A spectral frontier for ANI, network-cluster-robust, and randomization-test interference functionals}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+(qid, specialization, p, assignment, target, regression)
+= (panel_approx_nbhd_interference, v1,
+   p = (r, rho, epsilon_M, eta, b_n, design_orbits),
+   assignment = triangular-array randomized network experiment with
+      bounded expected degree law rho, known graph G_n, treatment vector
+      Z_n, and a design group Omega_n whose orbits describe the valid
+      randomization permutations,
+   target = finite-population direct-plus-spillover exposure contrast
+      tau_ds(r) between e_1=(own treated, radius-r exposure s_1) and
+      e_0=(own control, radius-r exposure s_0), where each exposure-label
+      potential outcome is averaged over the assignment law conditional on
+      that label,
+   regression = exposure-score projection on M_r(i,Z_n), with the ANI
+      point-score projection P_ANI(r), the design-orbit point-score
+      projection P_RT(Omega_n), and first-order covariance operators
+      V_HAC(r), V_NCR(b_n), and V_RT(Omega_n).)
+\end{verbatim}
+The proposal is a free-form panel/network-interference anchor, not a Q1
+pool-mode instance.  The symbols \(r\), \(\rho\), \(\epsilon_M\), \(\eta\),
+\(b_n\), and \(\Omega_n\) are fixed throughout the proposal.
+
+\begin{abstract}
+This proposal asks when three leading ways of working under SUTVA violations
+identify the same direct-plus-spillover object: Leung's approximate
+neighborhood interference exposure estimator, Leung's network-cluster-robust
+inference, and Basse--Ding--Feller--Toulis randomization tests for
+design-compatible peer effects.  The benchmark theorem records the oracle case
+where the point-score projection and covariance operators collapse to the same
+exposure contrast and first-order law.  The
+flagship conjecture is a sharp spectral frontier: uniform equality of the
+limiting functional and first-order variance over a declared misspecification
+class holds if and only if an observable finite-dimensional optimization
+\(\Delta_\eta(\rho,\epsilon_M,r,b,\Omega)\) is zero.  The unobserved
+omitted-tail score then enters only as a sensitivity analysis inside that
+observable cone, after vectorization into the common score space.  Above that
+boundary, the proposal predicts strict separation: ANI carries
+exposure-misspecification bias,
+network-cluster-robust inference remains a covariance procedure for the
+exposure-score estimator but has a contrast-specific scalar efficiency gap,
+and the randomization procedure targets the design-orbit efficient null.
+Resolving the conjecture would tell applied network experiments when exposure
+maps, graph-distance covariance estimates, and exact randomization
+restrictions are interchangeable rather than merely adjacent.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Network experiments now face three different prescriptions when treatment
+effects spill across units.  Exposure-mapping estimators define a causal
+contrast through local treatment summaries; network HAC and
+cluster-robust procedures protect inference against graph dependence; exact
+randomization tests protect finite-sample validity by respecting the design
+orbit.  These objects are often used as if they were alternative implementations
+of the same direct-plus-spillover estimand, but the literatures control
+different sigma-fields: radius-\(r\) exposure cells, low-conductance graph
+blocks, and design-compatible permutations.
+
+\paragraph{The main finding (proposed).}
+Theorem~\ref{thm:oracle-collapse} states the safe benchmark: when the exposure,
+cluster, and randomization-orbit projections coincide on the active score
+space, the ANI exposure-score estimator, the network-cluster-robust covariance
+operator, and the randomization-test covariance operator deliver the same
+direct-plus-spillover contrast and the same first-order variance.
+Conjecture~\ref{conj:spectral-frontier} is the flagship claim: away from that
+oracle cell, uniform equivalence over a declared ANI misspecification class is
+governed by the observable cone program
+\(\Delta_\eta(\rho,\epsilon_M,r,b,\Omega)\), with the cone-restricted singular
+value \(\mu_\star(\eta)\) turning nonzero compatibility violations into sharp
+lower bounds.  The unobserved true tail has its own sensitivity distance
+\(\mu_{\perp}\), but it no longer defines the flagship frontier.
+
+\paragraph{What is new.}
+The novelty kernel is not another exposure estimator and not a looser
+regularity condition.  The closest published results are
+\citet{Leung2022ANI}, \citet{Leung2023NCRI},
+\citet{BasseDingFellerToulis2024}, \citet{GaoDing2025Network},
+\citet{PuelzBasseFellerToulis2022}, and \citet{WeinsteinNevo2026};
+each gives validity for one mathematical object, but none characterizes the
+necessary-and-sufficient frontier at which exposure point-scores,
+network-robust covariance objects, and design-orbit randomization objects
+coincide.  The epsilon-gap is the design-observable cone program induced by
+the compatibility kernel
+\[
+  \mathcal A_{r,b,\Omega}
+  =
+  \begin{bmatrix}
+  P_{\mathrm{ANI}}(r)-P_{\mathrm{RT}}(\Omega)\\
+  V_{\mathrm{HAC}}(r)-V_{\mathrm{NCR}}(b)\\
+  V_{\mathrm{HAC}}(r)-V_{\mathrm{RT}}(\Omega)
+  \end{bmatrix} W_\rho^{1/2},
+\]
+plus the sensitivity-indexed omitted-tail distance to its common-null cone.
+Unlike \citet{GaoDing2025Network}, which studies regression-based point
+estimators and network-HAC covariance inside a single exposure-analysis
+workflow, this proposal asks when that exposure-analysis workflow is also
+equivalent to Leung-style cluster robustness and exact design-orbit
+randomization.  Unlike \citet{PuelzBasseFellerToulis2022}, which constructs
+valid graph-theoretic randomization tests from biclique conditioning, the
+frontier here asks whether the randomization null, exposure estimand, and
+network covariance law are the same limiting object.  Unlike
+\citet{WeinsteinNevo2026}, which quantifies bias from using a misspecified
+network, the proposed threshold also contains the randomization-orbit and
+cluster-bandwidth coordinates.
+
+\paragraph{How it positions in the literature.}
+This is a panel / linear-projection proposal in the network-interference
+frontier, with a partial-identification flavor only through exposure
+misspecification.  It uses the same residual-score and spectral language that
+appears in panel FWL and network covariance work, but the target is the
+interference direct-plus-spillover contrast rather than a two-way fixed effect
+coefficient.  The proposal deliberately treats SCM and graph semantics as
+infrastructure: the theorem-level question is about equality of estimator
+maps and their first-order covariance operators.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the design choice in
+\citet{BasseDingFellerToulis2024}: if Conjecture~\ref{conj:spectral-frontier}
+is true, a group-formation experimenter can report whether the exact
+randomization target is also the Leung ANI exposure target and whether the
+network-cluster-robust variance is paying only an efficiency cost rather than
+estimating a different first-order law.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report the observable compatibility program
+\(\Delta_\eta\) and the cone-restricted compatibility value \(\mu_\star\) before
+substituting exposure-IPW, network-cluster, and randomization-test analyses for
+one another.
+
+\section{Related work}
+\citet{Leung2022ANI} is the closest exposure-estimation anchor: it introduces
+approximate neighborhood interference, proves consistency and asymptotic
+normality for inverse-probability exposure estimators, and uses a network HAC
+variance estimator, but it does not compare that functional to
+cluster-robust or exact randomization targets.  \citet{Leung2023NCRI} is the
+closest cluster-robust anchor: it ties valid cluster-robust inference to
+low-conductance graph partitions and spectral clustering, but its validity
+condition is partition geometry rather than exposure-radius correctness.
+\citet{BasseDingFellerToulis2024} is the closest randomization anchor: it gives
+exact permutation tests for peer effects in group-formation experiments under
+design-compatible exposure restrictions, but it does not state a sharp
+ANI/HAC/randomization equivalence frontier.
+
+\citet{Savje2024MisspecifiedExposure} separates exposure definitions from
+assumptions on the full interference structure, which motivates treating
+\(\epsilon_M\) as a real estimand/structure gap rather than a nuisance label.
+\citet{AronowSamii2017Exposure} supplies the exposure-mapping framework and
+Horvitz--Thompson logic for arbitrary interference under a specified exposure
+map.  \citet{BasseFellerToulis2019} develops conditioning mechanisms for
+valid randomization tests under general interference, providing the
+design-orbit object used here.  \citet{HudgensHalloran2008} fixes the direct
+and indirect effect terminology under partial interference; its no-cross-group
+restriction is one corner case of the present compatibility problem.
+\citet{KojevnikovMarmerSong2021} is the network HAC comparator: it shows how
+HAC consistency depends on dependence decay and network denseness, matching
+the \(\rho\) axis in this proposal.  \citet{GaoDing2025Network} is the
+closest network-experiment regression/HAC paper: it recovers exposure
+estimators through weighted least squares, develops design-based properties,
+and studies network-robust covariance, but it does not compare the resulting
+point-score and covariance law to low-conductance network clustering or exact
+partial-interference randomization orbits.  \citet{Conley1999Spatial} is the older
+spatial-dependence ancestor for distance-based covariance estimation, useful
+because the proposed bandwidth \(b_n\) is a graph-distance analogue.
+\citet{PuelzBasseFellerToulis2022} is the closer randomization-test comparator
+missed in v3: it uses graph-theoretic biclique conditioning to construct valid
+randomization tests under general interference, but it does not compare the
+resulting test orbit to ANI exposure point scores or network-cluster covariance
+operators.  \citet{WeinsteinNevo2026} is the closer misspecification comparator
+missed in v3: it derives bias from misspecified network interference and
+constructs network-misspecification-robust estimators, but it does not give a
+three-procedure equivalence frontier involving design orbits and
+cluster-bandwidth scaling.  The 2026 misspecified-exposure
+partial-identification line is therefore orthogonal rather than duplicative:
+it bounds what can be learned under a wrong network or exposure model, while
+the present proposal asks when three named procedure maps collapse to the same
+limiting point/covariance object.
+
+In-catalogue prior art is adjacent but not duplicate.  \texttt{doc/API.md}
+Section~1 records Q1 panel theorems about residualized score geometry and
+minimal clean nuisance bases; these are algebraic analogues, not network
+interference estimator comparisons.  The banked \texttt{pid\_network\_exposure}
+proposal, ``Sharp ADE bounds from shared local-network completions under
+misspecified exposure maps,'' proves a sharp finite joint-completion projection
+and a strict cellwise-relaxation gap, but its own scope flags state that it does
+not claim statistical inference, asymptotic coverage, or an efficient
+estimator.  The failed \texttt{panel\_honest\_did\_phase} proposal supplies a
+warning rather than prior art: its reviewer asked for named estimator-map
+comparisons, exactly what the present proposal builds into the kernel.
+
+\paragraph{Named literature checklist for the flagship conjectures.}
+The reviewer-facing prior-art checklist is:
+\begin{center}
+\small
+\begin{tabular}{p{0.18\linewidth}p{0.10\linewidth}p{0.20\linewidth}p{0.30\linewidth}p{0.14\linewidth}}
+Author/year & Venue & Bibkey & Claim that threatens novelty & Most relevant result\\
+\hline
+Leung 2022 & Econometrica & \texttt{Leung2022ANI} &
+ANI IPW consistency and asymptotic normality with network HAC under approximate neighborhood interference. &
+Theorem 1; Conjecture 1\\
+Leung 2023 & Econometrica & \texttt{Leung2023NCRI} &
+Network cluster-robust validity is governed by low-conductance clusters and spectral partitions. &
+Theorem 1; Conjecture 1\\
+Basse--Ding--Feller--Toulis 2024 & Econometrica & \texttt{BasseDingFellerToulis2024} &
+Exact group-formation permutation tests are valid for design-compatible exposure restrictions. &
+Theorem 1; Conjectures 1--2\\
+Gao--Ding 2025 & Journal of Econometrics & \texttt{GaoDing2025Network} &
+Network-experiment WLS/Hajek analysis recovers exposure estimators and studies network-robust covariance. &
+Conjecture 1\\
+Puelz--Basse--Feller--Toulis 2022 & JRSSB & \texttt{PuelzBasseFellerToulis2022} &
+Biclique conditioning gives graph-theoretic randomization tests under general interference. &
+Conjectures 1--2\\
+Weinstein--Nevo 2026 & Biometrics & \texttt{WeinsteinNevo2026} &
+Misspecified network interference creates bias and motivates robust multi-network estimators. &
+Conjectures 1--2\\
+Savje 2024 & Biometrika & \texttt{Savje2024MisspecifiedExposure} &
+Misspecified exposure mappings can define estimable contrasts without validating the causal exposure model. &
+Conjecture 2
+\end{tabular}
+\end{center}
+The checklist gap is the same for every flagship entry: none of these papers
+gives a single if-and-only-if comparison of the ANI exposure point-score map,
+the Leung network-cluster covariance map, and the design-orbit randomization
+map indexed simultaneously by \((\rho,\epsilon_M,\eta,r,b_n,\Omega_n)\).
+
+\section{Formal setup}
+For each \(n\), let \(G_n=(V_n,E_n)\) be a known undirected network with
+\(|V_n|=n\), graph distance \(d_n(\cdot,\cdot)\), empirical degree law
+\(\rho_n\Rightarrow\rho\), and treatment assignment \(Z_n\in\{0,1\}^n\).
+The potential outcome for unit \(i\) is \(Y_{i,n}(z)\).  For a fixed radius
+\(r\), the analyst observes an exposure map \(M_{r,i}(z)=(z_i,S_{r,i}(z))\),
+where \(S_{r,i}(z)\) is a known additive summary of treatments within
+distance \(r\).  For an exposure label \(e\), define the exposure fiber
+\(\Gamma_{i,n}(e)=\{z:M_{r,i}(z)=e\}\) and the exposure-label potential outcome
+\[
+  \bar Y_{i,n}(e)=
+  \sum_{z\in\Gamma_{i,n}(e)}
+  Y_{i,n}(z)\Pr_n(Z_n=z\mid Z_n\in\Gamma_{i,n}(e)),
+\]
+with the analogous orbit-averaged version when the conditioning is restricted
+to a valid \(\Omega_n\)-orbit.  The target is the finite-population
+direct-plus-spillover contrast
+\[
+  \tau_{ds,n}(r)=
+  \frac1n \sum_{i\in V_n}
+  \{\bar Y_{i,n}(e_{1,i})-\bar Y_{i,n}(e_{0,i})\},
+\]
+where \(e_{1,i}\) and \(e_{0,i}\) are the two locked exposure labels
+\((1,s_1)\) and \((0,s_0)\).
+
+Let \(\hat\tau_{\mathrm{IPW},n}\) be the residualized exposure-IPW point
+estimator associated with the radius-\(r\) map, and let
+\(\hat\tau_{\mathrm{RT},n}\) be the design-orbit linear contrast tested by the
+randomization procedure.  Network cluster-robust inference does not introduce a
+new point estimator in this proposal: it supplies a covariance operator for the
+same exposure-score estimator.  Write \(P_{\mathrm{ANI},n}(r)\) for the
+radius-\(r\) point-score projection, \(P_{\mathrm{RT},n}(\Omega_n)\) for the
+design-orbit point-score projection, \(V_{\mathrm{HAC},n}(r)\) for the network
+HAC covariance operator attached to \(\hat\tau_{\mathrm{IPW},n}\),
+\(V_{\mathrm{NCR},n}(b_n)\) for Leung-style low-conductance
+network-cluster-robust covariance with bandwidth/partition scale \(b_n\), and
+\(V_{\mathrm{RT},n}(\Omega_n)\) for the design-orbit randomization covariance.
+Let \(\mathcal H_n\) be the finite-dimensional real Hilbert space of weighted
+residual score directions with inner product
+\(\langle u,v\rangle_{\rho,n}=u^{\transpose}W_{\rho,n}v\), where
+\(W_{\rho,n}\) is the diagonal degree-weight matrix induced by the empirical
+degree law.  Covariance-operator differences are evaluated as linear maps on
+\(\mathcal H_n\), and the stacked range of point-score and covariance
+differences is denoted \(\mathcal K_n\).  All norms and distances below are
+the induced Hilbert norms unless a display says otherwise.  Define the
+observable compatibility operator \(\mathcal A_n:\mathcal H_n\to\mathcal K_n\)
+by
+\[
+  \mathcal A_n =
+  \begin{bmatrix}
+  P_{\mathrm{ANI},n}(r)-P_{\mathrm{RT},n}(\Omega_n)\\
+  V_{\mathrm{HAC},n}(r)-V_{\mathrm{NCR},n}(b_n)\\
+  V_{\mathrm{HAC},n}(r)-V_{\mathrm{RT},n}(\Omega_n)
+  \end{bmatrix} W_{\rho,n}^{1/2}.
+\]
+Write its point-score row block and covariance row block as
+\[
+  \mathcal A^P_n
+  =
+  \{P_{\mathrm{ANI},n}(r)-P_{\mathrm{RT},n}(\Omega_n)\}W_{\rho,n}^{1/2},
+  \qquad
+  \mathcal A^V_n
+  =
+  \begin{bmatrix}
+  V_{\mathrm{HAC},n}(r)-V_{\mathrm{NCR},n}(b_n)\\
+  V_{\mathrm{HAC},n}(r)-V_{\mathrm{RT},n}(\Omega_n)
+  \end{bmatrix} W_{\rho,n}^{1/2}.
+\]
+The sensitivity object is finite-dimensional.  Let
+\(\mathcal B_n=\{h_{1,n},\ldots,h_{m_n,n}\}\) be the observed residual-score
+basis induced by the exposure labels, design orbits, and cluster/HAC score
+products; every \(u\in\mathcal H_n\) is identified with its coordinate vector
+in \(\R^{m_n}\).  Let \(\theta\in\R^{q_n}\) denote omitted-tail additive
+response coefficients on the analyst-declared outside-radius atoms.  The
+primitive data maps are
+\[
+  B^u_n\in\R^{m_n\times q_n},\quad
+  R^{\mathrm{add}}_n\in\R^{a_n\times q_n},\quad
+  R^{\Omega}_n\in\R^{o_n\times q_n},\quad
+  B^{M}_n\in\R^{s_n\times q_n},\quad
+  B^{\mathrm{tail}}_n\in\R^{t_n\times q_n}.
+\]
+Here \(B^u_n\) vectorizes omitted-tail coefficients into the common score
+space; \(R^{\mathrm{add}}_n\theta=0\) imposes additive ANI response structure;
+\(R^\Omega_n\theta=0\) imposes any analyst-declared design-orbit symmetry;
+\(B^M_n\theta\) extracts the score mass on exposure labels declared
+misspecified; and \(B^{\mathrm{tail}}_n\theta\) extracts the weighted
+outside-radius tail.  The entries of \(B^u_n\), \(R^\Omega_n\), \(B^M_n\),
+\(B^{\mathrm{tail}}_n\), \(W_{\rho,n}\), and \(\mathcal A_n\) are computed
+from the observed graph \(G_n\), exposure map \(M_r\), assignment
+probabilities, design-orbit incidence matrix, degree weights, and bandwidth
+\(b_n\).  The matrix \(R^{\mathrm{add}}_n\) is determined by the declared
+additive ANI response class.  The scalars \(\epsilon_M\) and \(\eta\) are
+analyst-declared sensitivity radii; \(\theta\) and the realized omitted tail
+are not observed.
+
+Define \(\mathcal C_n(\eta)\subseteq\mathcal H_n\) by the explicit second-order
+cone system
+\[
+\begin{aligned}
+\mathcal C_n(\eta)=\{u\in\R^{m_n}:&\ \exists \theta\in\R^{q_n}\text{ with }
+u=B^u_n\theta,\quad
+R^{\mathrm{add}}_n\theta=0,\quad R^\Omega_n\theta=0,\\
+&\ \|B^M_n\theta\|_{1,\rho,n}
+     \le \epsilon_M\|u\|_{\rho,n},\quad
+   \|B^{\mathrm{tail}}_n\theta\|_{2,\rho,n}
+     \le \eta\|u\|_{\rho,n}\}.
+\end{aligned}
+\]
+Thus \(\mathcal C_n(\eta)\) is design-observable after the analyst declares
+\((\epsilon_M,\eta)\), while the true omitted-tail score need not be observed;
+it is assumed to belong to one such finite cone.  Let
+\(\mathcal N_n(\eta)=\ker(\mathcal A_n)\cap\mathcal C_n(\eta)\).
+Also let
+\(\mathcal N^P_n(\eta)=\ker(\mathcal A^P_n)\cap\mathcal C_n(\eta)\) and
+\(\mathcal N^V_n(\eta)=\ker(\mathcal A^V_n)\cap\mathcal C_n(\eta)\).
+Let \(S_n(\eta)=\{u\in\mathcal C_n(\eta):\|u\|_{\rho,n}=1\}\), and define the
+observable finite-dimensional programs
+\[
+  \Delta_{\eta,n}=
+  \sup_{u\in S_n(\eta)} \|\mathcal A_n u\|,
+  \qquad
+  \Delta^P_{\eta,n}=
+  \sup_{u\in S_n(\eta)} \|\mathcal A^P_n u\|,
+  \qquad
+  \Delta^V_{\eta,n}=
+  \sup_{u\in S_n(\eta)} \|\mathcal A^V_n u\|,
+  \qquad
+  \mu_{\star,n}(\eta)=
+  \inf_{\substack{u\in S_n(\eta)\\
+  \operatorname{dist}(u,\mathcal N_n(\eta))>0}}
+  \frac{\|\mathcal A_n u\|}
+       {\operatorname{dist}(u,\mathcal N_n(\eta))}.
+\]
+The limits \(\Delta_\eta(\rho,\epsilon_M,r,b,\Omega)=\limsup_n
+\Delta_{\eta,n}\), \(\Delta^P_\eta=\limsup_n\Delta^P_{\eta,n}\),
+\(\Delta^V_\eta=\limsup_n\Delta^V_{\eta,n}\), and
+\(\mu_\star(\eta)=\liminf_n\mu_{\star,n}(\eta)\) are the observable
+compatibility thresholds and cone-restricted singular value; if
+the infimum set is empty because \(S_n(\eta)\subseteq\mathcal N_n(\eta)\), set
+\(\mu_{\star,n}(\eta)=+\infty\) and \(\Delta_{\eta,n}=0\).
+When the cones converge, write their limit as \(\mathcal C(\eta)\).  Define the
+observable diagnostic envelope
+\[
+  \underline d_{\eta,n}=
+  \inf_{u\in\mathcal C_n(\eta)}
+  \operatorname{dist}(u,\mathcal N_n(\eta)),
+  \qquad
+  \overline d_{\eta,n}=
+  \sup_{u\in\mathcal C_n(\eta)}
+  \operatorname{dist}(u,\mathcal N_n(\eta)),
+\]
+with limits \(\underline d_\eta\) and \(\overline d_\eta\) when they exist.
+Let
+\(R_{M,n}=(I-\Pi_{M_r})T_n\) be the omitted-tail operator for the true
+interference response \(T_n:z\mapsto (Y_{i,n}(z))_{i\le n}\), where
+\(\Pi_{M_r}\) is the weighted projection onto the sigma-field generated by the
+radius-\(r\) exposure map.  Let
+\(\operatorname{vec}_{\rho,n}(R_{M,n})\in\mathcal H_n\) be the Riesz
+representer of the linear score functional induced by this omitted-tail
+operator; this is the common score-space vectorization used to compare
+operators, cone elements, and covariance differences.  Set
+\(U_{M,n}=\operatorname{vec}_{\rho,n}(R_{M,n})\), and define the true-tail
+sensitivity distance
+\[
+  \mu_{\perp}(\rho,\epsilon_M,\eta,r,b,\Omega)
+  =
+  \limsup_n \operatorname{dist}(U_{M,n},\mathcal N_n(\eta)).
+\]
+This \(\mu_{\perp}\) is a sensitivity parameter for the realized omitted tail,
+not the flagship frontier; the observable statement is that any
+analyst-declared \(\eta\)-cone implies
+\(\underline d_\eta\le \mu_{\perp}\le \overline d_\eta\), while uniform
+equivalence over the whole declared class is governed by \(\Delta_\eta=0\).
+
+\begin{example}[Two-score design-orbit computation]\label{ex:two-score-orbit}
+Take a toy design with two residual score coordinates: \(u_1\) is the
+radius-\(r\) exposure score on a within-orbit edge, and \(u_2\) is the
+cross-orbit leakage score.  Set \(W_{\rho,n}=I_2\), let the declared cone be
+\(\mathcal C_n(\eta)=\R^2_+\) after the finite system above is evaluated, and
+suppose the observed point and covariance row blocks reduce to
+\[
+  \mathcal A^P_n=\begin{bmatrix}1&-1\end{bmatrix},
+  \qquad
+  \mathcal A^V_n=\begin{bmatrix}0&1\\1&0\end{bmatrix},
+  \qquad
+  \mathcal A_n u=(u_1-u_2,u_2,u_1).
+\]
+Then
+\(\mathcal N_n(\eta)=\ker(\mathcal A_n)\cap\R^2_+=\{0\}\),
+\(S_n(\eta)=\{u\ge0:u_1^2+u_2^2=1\}\),
+\[
+  \Delta_{\eta,n}=\sup_{u\in S_n(\eta)}
+     \{(u_1-u_2)^2+u_1^2+u_2^2\}^{1/2}=\sqrt2,
+\]
+while \(\Delta^P_{\eta,n}=1\) and \(\Delta^V_{\eta,n}=1\).  The example is
+not a proposed theorem; it records the intended audit trail for Stage~0:
+construct \(B^u_n\) and the cone, stack the point and covariance row blocks,
+compute \(\mathcal N_n(\eta)\), and check whether the violation is a
+point-score violation, a covariance-only violation, or both.
+\end{example}
+When \(b_n\) has an asymptotic scaling limit, write that limit as \(b\).  The design-orbit
+variance bound is the variance of the \(V_{\mathrm{RT}}(\Omega)\) projected
+score under the randomization law restricted to valid \(\Omega\)-orbits.  For
+the direct-plus-spillover target contrast \(a_{ds}\), define the scalar
+network-cluster efficiency gap
+\[
+  L_{\mathrm{NCR}\to\mathrm{RT}}(a_{ds};b,\Omega)
+  =
+  a_{ds}^{\transpose}\{V_{\mathrm{NCR}}(b)-V_{\mathrm{RT}}(\Omega)\}a_{ds}.
+\]
+When the design-orbit covariance is the efficient covariance in the active
+score class, this scalar is nonnegative; otherwise the proposal treats its
+positive part as the loss and its sign as evidence that the two procedures are
+ranking different score classes.
+
+\begin{verbatim}
+(qid, specialization, p, assignment, target, regression)
+= (panel_approx_nbhd_interference, v1,
+   p = (r, rho, epsilon_M, eta, b_n, design_orbits),
+   assignment = triangular-array randomized network experiment with
+      bounded expected degree law rho, known graph G_n, treatment vector
+      Z_n, and a design group Omega_n whose orbits describe the valid
+      randomization permutations,
+   target = finite-population direct-plus-spillover exposure contrast
+      tau_ds(r) between e_1=(own treated, radius-r exposure s_1) and
+      e_0=(own control, radius-r exposure s_0), where each exposure-label
+      potential outcome is averaged over the assignment law conditional on
+      that label,
+   regression = exposure-score projection on M_r(i,Z_n), with the ANI
+      point-score projection P_ANI(r), the design-orbit point-score
+      projection P_RT(Omega_n), and first-order covariance operators
+      V_HAC(r), V_NCR(b_n), and V_RT(Omega_n).)
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Bounded degree-law limit]\label{ass:degree-law}
+The graph sequence satisfies \(\rho_n\Rightarrow\rho\), uniformly bounded
+\((2+\xi)\)-moments of degrees for some \(\xi>0\), and no single unit carries
+positive asymptotic degree mass after \(W_{\rho,n}\) normalization.
+\end{assumption}
+
+\begin{assumption}[Additive ANI response]\label{ass:additive-ani}
+Potential outcomes admit an additive own-treatment plus spillover
+decomposition with a tail operator \(T_n\) whose contribution outside radius
+\(r\) is \(R_{M,n}=(I-\Pi_{M_r})T_n\).  The direct-plus-spillover contrast
+\(\tau_{ds,n}(r)\), using the exposure-fiber averaging convention in
+Section~6, is uniformly bounded.
+\end{assumption}
+
+\begin{assumption}[Exposure misspecification profile and sensitivity cone]\label{ass:misspec-profile}
+The radius-\(r\) exposure map misses an asymptotic fraction
+\(\epsilon_M\in[0,1)\) of interference-relevant assignments, and the weighted
+omitted-tail score \(U_{M,n}\) belongs to an admissible cone
+\(\mathcal C_n(\eta)\) for a declared sensitivity radius \(\eta\).  The
+cone \(\mathcal C_n(\eta)\) is exactly the finite constraint system in
+Section~6 with variables \((u,\theta)\), matrix blocks
+\((B^u_n,R^{\mathrm{add}}_n,R^\Omega_n,B^M_n,B^{\mathrm{tail}}_n)\),
+misspecification inequality \(\|B^M_n\theta\|_{1,\rho,n}\le
+\epsilon_M\|u\|_{\rho,n}\), and tail-radius inequality
+\(\|B^{\mathrm{tail}}_n\theta\|_{2,\rho,n}\le\eta\|u\|_{\rho,n}\).  Its
+unit slice \(S_n(\eta)\), compatibility program \(\Delta_{\eta,n}\), and
+common-null cell \(\mathcal N_n(\eta)\) are computed from the observed graph,
+exposure map, assignment law, design orbits, degree weights, bandwidth, and
+declared radii.  The null-distance limit
+\(\mu_{\perp}(\rho,\epsilon_M,\eta,r,b,\Omega)\) exists for the true
+unobserved tail, and the design-observable envelope
+\([\underline d_\eta,\overline d_\eta]\) brackets all such tails in
+\(\mathcal C_n(\eta)\).
+\end{assumption}
+
+\begin{assumption}[Randomization positivity and design orbits]\label{ass:design-orbits}
+The assignment law gives exposure propensities for \(e_0\) and \(e_1\) bounded
+away from zero on the active risk set, and the valid randomization permutations
+form a design group \(\Omega_n\) with point-score projection
+\(P_{\mathrm{RT},n}(\Omega_n)\) and covariance operator
+\(V_{\mathrm{RT},n}(\Omega_n)\).
+\end{assumption}
+
+\begin{assumption}[Design-based LLN and point-functional consistency]\label{ass:design-lln}
+The residualized exposure-IPW estimator \(\hat\tau_{\mathrm{IPW},n}\) and the
+design-orbit linear contrast \(\hat\tau_{\mathrm{RT},n}\) obey triangular-array
+laws of large numbers for their respective finite-population point
+functionals.  Under correct exposure and equality of the active point-score
+projections, these two limiting point functionals both equal
+\(\lim_n\tau_{ds,n}(r)\).  More generally, when
+\(\mathcal A^P_n U_{M,n}\) has a nonzero limit, the two probability limits
+differ by the limiting point-score functional applied to the vectorized
+omitted-tail score.
+\end{assumption}
+
+\begin{assumption}[Cluster bandwidth and conductance]\label{ass:cluster-bandwidth}
+The network-cluster procedure uses bandwidth \(b_n\) and a partition whose
+within-cluster conductance and between-cluster edge mass converge to limits
+that determine the covariance operator \(V_{\mathrm{NCR},n}(b_n)\) for the
+exposure-score estimator.
+\end{assumption}
+
+\begin{assumption}[Score and covariance convergence]\label{ass:kernel-convergence}
+The point-score projections \(P_{\mathrm{ANI},n}(r)\) and
+\(P_{\mathrm{RT},n}(\Omega_n)\), and the covariance operators
+\(V_{\mathrm{HAC},n}(r)\), \(V_{\mathrm{NCR},n}(b_n)\), and
+\(V_{\mathrm{RT},n}(\Omega_n)\), after degree weighting by \(W_{\rho,n}\),
+act on the common Hilbert score space \(\mathcal H_n\) and converge in
+operator norm on each active score cone \(\mathcal C_n(\eta)\).  The
+omitted-tail operator \(R_{M,n}\) is compared to cone elements only through the
+vector \(U_{M,n}=\operatorname{vec}_{\rho,n}(R_{M,n})\in\mathcal H_n\).  The
+limits define \(\mathcal A\), its row blocks \(\mathcal A^P\) and
+\(\mathcal A^V\), \(\mathcal N(\eta)\), \(\mathcal N^P(\eta)\),
+\(\mathcal N^V(\eta)\), \(\Delta_\eta\), \(\Delta^P_\eta\),
+\(\Delta^V_\eta\), \(\mu_\star(\eta)\), \(\underline d_\eta\),
+\(\overline d_\eta\), and the three limiting variance functionals.
+\end{assumption}
+
+\begin{assumption}[Nondegenerate active signal class]\label{ass:nondegenerate-signal}
+The omitted-tail directions considered in the strict-separation claim form an
+open subset of the active score cone \(\mathcal C_n(\eta)\), and whenever
+\(\Delta_\eta(\rho,\epsilon_M,r,b,\Omega)>0\) their compatibility violation is
+bounded away from zero on at least one row block of \(\mathcal A\).  For
+true-tail statements, the vectorized omitted-tail score \(U_{M,n}\) has
+positive limiting distance from \(\mathcal N_n(\eta)\) exactly when
+\(\mu_{\perp}(\rho,\epsilon_M,\eta,r,b,\Omega)>0\).
+\end{assumption}
+
+\begin{assumption}[Contrast-specific design efficiency]\label{ass:contrast-efficiency}
+For the target contrast vector \(a_{ds}\), \(V_{\mathrm{RT}}(\Omega)\) is the
+design-orbit efficient covariance on the active randomization score class, so
+\(L_{\mathrm{NCR}\to\mathrm{RT}}(a_{ds};b,\Omega)\ge0\) whenever
+\(V_{\mathrm{NCR}}(b)\) and \(V_{\mathrm{RT}}(\Omega)\) target the same
+point-score law.  If this ordering fails, the signed scalar
+\(a_{ds}^{\transpose}\{V_{\mathrm{NCR}}(b)-V_{\mathrm{RT}}(\Omega)\}a_{ds}\)
+is still the reported covariance separation for the \(a_{ds}\) contrast.
+\end{assumption}
+
+\begin{assumption}[Oracle exposure/design compatibility]\label{ass:oracle-compatibility}
+The exposure map is correct \((\epsilon_M=0)\), \(b_n\ge r\) eventually, and on
+the active score cone \(\mathcal C_n(\eta)\) the exposure, cluster, and orbit sigma-fields generate
+the same projection: \(P_{\mathrm{ANI},n}=P_{\mathrm{RT},n}\) and
+\(V_{\mathrm{HAC},n}=V_{\mathrm{NCR},n}=V_{\mathrm{RT},n}\) after degree
+weighting.
+\end{assumption}
+
+\begin{assumption}[Partial-interference design corner]\label{ass:partial-interference-corner}
+The graph is a disjoint union of design groups, radius \(r\) contains each
+group, there are no cross-group tail effects, and the design group
+\(\Omega_n\) is the direct product of the within-group design-compatible
+permutation groups.  Equivalently, the valid \(\Omega_n\)-orbits coincide with
+the within-group exposure fibers used by the partial-interference
+randomization test.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Oracle projection and covariance collapse]\label{thm:oracle-collapse}
+Under Assumptions~\ref{ass:degree-law}, \ref{ass:additive-ani},
+\ref{ass:misspec-profile}, \ref{ass:design-orbits}, \ref{ass:design-lln},
+\ref{ass:cluster-bandwidth}, \ref{ass:kernel-convergence}, and
+\ref{ass:oracle-compatibility},
+\[
+  \plim_n \hat\tau_{\mathrm{IPW},n}
+  =
+  \plim_n \hat\tau_{\mathrm{RT},n}
+  =
+  \lim_n \tau_{ds,n}(r),
+\]
+and the three first-order covariance operators
+\(V_{\mathrm{HAC}}\), \(V_{\mathrm{NCR}}\), and \(V_{\mathrm{RT}}\) are
+identical on the active score cone.
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+The closest paper is \citet{Leung2022ANI}, which proves ANI consistency and
+uses network HAC, but does not include the equality-of-projections and
+equality-of-covariance conditions needed to compare against
+\citet{Leung2023NCRI} and \citet{BasseDingFellerToulis2024}.  This theorem is
+mainly a sanity benchmark: it gives users of the Basse--Ding--Feller--Toulis
+group-formation tests the exact corner in which the Leung ANI exposure
+contrast and the network-cluster covariance law are the same objects, without
+misstating network cluster-robust inference as a separate point estimator.
+
+\begin{conjecture}[Spectral equivalence frontier (NOT YET PROVED)]\label{conj:spectral-frontier}
+Under Assumptions~\ref{ass:degree-law}--\ref{ass:nondegenerate-signal}, the
+ANI exposure-IPW point functional, the design-orbit randomization point
+functional, and the HAC/network-cluster/randomization first-order covariance
+operators are uniformly equivalent over the declared sensitivity class
+\(\mathcal C(\eta)\) if and only if the observable compatibility program
+\[
+  \Delta_\eta(\rho,\epsilon_M,r,b,\Omega)=0.
+\]
+Equivalently, every admissible omitted-tail score direction lies in the common
+null cell \(\mathcal N(\eta)\).  When \(\Delta_\eta>0\), the sharp detectable
+gap over the declared class is conjectured to satisfy
+\[
+  \mu_\star(\eta)
+  \sup_{u\in S(\eta)}\operatorname{dist}(u,\mathcal N(\eta))
+  \le
+  \Delta_\eta
+  \le
+  \|\mathcal A\|
+  \sup_{u\in S(\eta)}\operatorname{dist}(u,\mathcal N(\eta)).
+\]
+For the realized, unobserved omitted tail, true-tail equivalence is instead
+the sensitivity statement \(U_M\in\mathcal N(\eta)\), or equivalently
+\(\mu_{\perp}=0\).  If \(\mu_{\perp}>0\) and \(\mu_\star(\eta)>0\), the
+combined point-score/covariance procedure-object gap for that true tail is
+conjectured to be bounded below by \(\mu_\star(\eta)\mu_{\perp}\) up to a
+vanishing triangular-array error; point probability limits differ only when
+the point-score row block satisfies \(\mathcal A^P U_M\ne0\).
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+The closest published results are \citet{Leung2022ANI},
+\citet{Leung2023NCRI}, \citet{BasseDingFellerToulis2024}, and
+\citet{GaoDing2025Network}, with \citet{PuelzBasseFellerToulis2022} and
+\citet{WeinsteinNevo2026} as the closest randomization and misspecification
+comparators.  The precise epsilon-gap is that those papers give one-sided
+validity or bias statements for exposure IPW/regression/HAC, cluster-robust
+inference, graph-theoretic randomization tests, or misspecified-network
+estimation, but none defines the joint compatibility operator \(\mathcal A\),
+its sensitivity common-null cell \(\mathcal N(\eta)\), or the observable
+finite program \(\Delta_\eta\) whose zero/nonzero value is an if-and-only-if
+equivalence frontier indexed by
+\((\rho,\epsilon_M,\eta,r,b_n,\Omega_n)\).  Proving the conjecture would
+give the Leung 2023 spectral-clustering workflow and the Gao--Ding WLS/Hajek
+workflow a direct diagnostic for when a network-robust standard error is merely
+a variance implementation for the ANI estimand and when it is attached to a
+different first-order law.
+
+\begin{conjecture}[Strict separation above the frontier (NOT YET PROVED)]\label{conj:strict-separation}
+Under Assumptions~\ref{ass:degree-law}--\ref{ass:contrast-efficiency}, if
+\(\Delta_\eta(\rho,\epsilon_M,r,b,\Omega)>0\),
+\(\mu_{\perp}(\rho,\epsilon_M,\eta,r,b,\Omega)>0\), and
+\(\mu_\star(\eta)>0\), then there is an open set of graph/design/outcome
+triangular arrays with the same limit tuple
+\((\rho,\epsilon_M,\eta,r,b,\Omega)\)
+on which at least one named procedure object separates: either the ANI and
+randomization point functionals differ, or their first-order covariance
+operators differ, or both.
+
+More sharply, if the realized tail has a nonzero point-row violation,
+\[
+  \liminf_n \|\mathcal A^P_n U_{M,n}\|>0,
+\]
+then
+\[
+  \plim_n \hat\tau_{\mathrm{IPW},n}
+  \ne
+  \plim_n \hat\tau_{\mathrm{RT},n},
+\]
+and ANI differs from \(\tau_{ds}(r)\) by a linear functional of \(R_M\).  If
+instead \(\lim_n\|\mathcal A^P_n U_{M,n}\|=0\) but
+\(\liminf_n\|\mathcal A^V_n U_{M,n}\|>0\), then the conjectured separation is
+covariance-only: the two point limits may agree, while network-cluster-robust
+inference supplies a covariance law for the exposure-score estimator that
+differs from the HAC or design-orbit covariance law.  For the target contrast,
+the reported scalar separation is
+\(L_{\mathrm{NCR}\to\mathrm{RT}}(a_{ds};b,\Omega)\) when that quadratic form is
+nonzero; otherwise the nonzero covariance row identifies a different contrast
+or score direction whose first-order law separates.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+The closest negative comparator is the invalid-permutation phenomenon in
+\citet{BasseDingFellerToulis2024} and the biclique-conditioning construction
+in \citet{PuelzBasseFellerToulis2022}; the epsilon-gap is that their
+obstructions concern randomization validity for a chosen null, whereas this
+conjecture promotes incompatibility to an open class of graph sequences and
+compares three named procedure objects.  \citet{WeinsteinNevo2026} is the
+closest bias comparator, but its network-misspecification bias and robust
+multi-network estimator do not include the cluster-bandwidth or design-orbit
+frontier.  Resolving this conjecture would tell analysts using
+\citet{Savje2024MisspecifiedExposure} style misspecified exposure contrasts
+when estimability is not enough: the exposure estimand can be estimable while
+the design-based randomization null and cluster covariance target are
+different objects.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Correct-exposure ANI reduction]\label{cor:ani-reduction}
+Under Assumptions~\ref{ass:degree-law}--\ref{ass:kernel-convergence},
+\ref{ass:design-lln}, and \ref{ass:oracle-compatibility}, if
+\(P_{\mathrm{ANI}}(r)=P_{\mathrm{RT}}(\Omega)\) and
+\(V_{\mathrm{HAC}}(r)=V_{\mathrm{NCR}}(b)=V_{\mathrm{RT}}(\Omega)\) on
+\(\mathcal C(\eta)\), then
+Theorem~\ref{thm:oracle-collapse} reduces to the Leung ANI exposure contrast
+with network HAC variance.
+\end{corollary}
+
+\begin{corollary}[Partial-interference randomization reduction]\label{cor:partial-interference}
+Under Assumptions~\ref{ass:design-orbits} and \ref{ass:kernel-convergence}, if
+Assumption~\ref{ass:partial-interference-corner} also holds, then
+\(P_{\mathrm{RT}}(\Omega)\) equals the exposure-orbit projection and the
+randomization component reduces to the Hudgens--Halloran/Basse--Ding--Feller--
+Toulis partial-interference null because the valid permutations are exactly
+the within-group design-compatible orbit permutations.
+\end{corollary}
+
+\section{Proof-sketch route}
+The proof route is finite-dimensional score algebra followed by operator
+limits.  First write the exposure-IPW and randomization-test point contrasts as
+linear functionals of the same finite-population potential-outcome vector under
+the exposure-fiber averaging convention, and write HAC, network-cluster, and
+randomization inference as covariance operators for the corresponding
+residualized scores.  The oracle theorem follows by the strengthened hypothesis
+that the exposure, cluster, and orbit projections and covariance operators
+coincide on the active score cone.  The spectral frontier would then reduce to a
+finite-dimensional cone program for \(\mathcal A_n\):
+\(\Delta_{\eta,n}=0\) exactly when every admissible omitted-tail score
+direction is annihilated by the pairwise point-score and covariance
+differences, while a realized tail with positive sensitivity null-distance
+creates a nonzero pairwise procedure-object gap of order at least
+\(\mu_\star(\eta)\mu_{\perp}\).  The point-limit claim is checked only through
+the point row \(\mathcal A^P_n\); if that row vanishes while
+\(\mathcal A^V_n\) does not, the proof route yields covariance-only
+separation rather than unequal probability limits.  The covariance separation
+is checked through the scalar quadratic form
+\(L_{\mathrm{NCR}\to\mathrm{RT}}(a_{ds};b,\Omega)\), avoiding any claim that a
+raw covariance-operator difference is itself a scalar loss.  The boundary
+cases to compute explicitly are a
+three-block graph with one cross-block leakage edge, a star-like high-degree
+exposure misspecification sequence, and a group-formation design where one
+exposure permutation is infeasible; these small examples should identify the
+right cone \(\mathcal C(\eta)\) and the exact common-null certificate.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:oracle-collapse} is intended as a routine benchmark theorem,
+not the novelty-bearing contribution.  Conjectures~\ref{conj:spectral-frontier}
+and \ref{conj:strict-separation} are not yet proved; in particular, the exact
+form of \(\mu_\star(\eta)\) may need additional cone-regularity conditions if
+the active omitted-tail directions are not a full linear subspace.  Version 4
+separates the observable frontier \(\Delta_\eta\) from the true-tail
+sensitivity distance \(\mu_{\perp}\); the former is the flagship threshold and
+the latter is reported only after the analyst declares \(\eta\).  The proposal
+does not claim a new finite-sample
+randomization test, a new cluster algorithm, or a new exposure-IPW estimator.
+It treats network cluster-robust inference as a covariance operator for a named
+exposure-score estimator, not as a distinct point estimator.  It also does not
+claim that Basse--Ding--Feller--Toulis randomization tests estimate an average
+effect in every ANI model; the point is to characterize precisely when their
+design-orbit null coincides with the ANI contrast.  Version 2 withdraws the v1
+phrasing that treated network-cluster-robust inference as a separate point
+estimator and replaces the norm-only threshold with a common-null-distance
+frontier.  Version 3 recasts that frontier as sensitivity-indexed, adds the
+Gao--Ding network-regression/HAC comparison, and scalarizes the covariance
+separation through \(L_{\mathrm{NCR}\to\mathrm{RT}}\).  Version 4 adds the
+Puelz--Basse--Feller--Toulis and Weinstein--Nevo comparators, defines the
+common score Hilbert space, replaces ordinary estimator limits in the strict
+separation claim with probability limits, and strengthens the
+partial-interference corner by requiring design-compatible within-group
+orbits.  Version 5 adds an explicit design-based LLN and point-functional
+consistency assumption, splits the compatibility operator into point-score and
+covariance row blocks, and weakens Conjecture~\ref{conj:strict-separation} so
+covariance-only violations imply covariance separation rather than unequal
+point probability limits.  Version 2 of angle 1 replaces the informal
+sensitivity-cone description with an explicit finite-dimensional cone system
+and adds a two-score design-orbit computation of \(\mathcal A_n\),
+\(\mathcal N_n(\eta)\), \(\Delta_{\eta,n}\), \(\Delta^P_{\eta,n}\), and
+\(\Delta^V_{\eta,n}\).
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft proposing a spectral frontier for
+ANI, network-cluster-robust, and design-orbit randomization functionals; prior
+verdict: none.
+\item v2 (revise) -- defined exposure-fiber averaging, recast NCR as a
+covariance operator for the exposure-score estimator, strengthened oracle
+projection equality, and replaced the norm-only threshold with a common-null
+distance frontier; prior verdict: REVISE.
+\item v3 (revise) -- recast \(\mu_{\perp}\) as a sensitivity parameter with an
+observable cone envelope, added the Gao--Ding network-regression/HAC comparison,
+and defined strict covariance separation by the scalar
+\(L_{\mathrm{NCR}\to\mathrm{RT}}\); prior verdict: REVISE.
+\item v4 (revise) -- replaced the unobserved frontier by the observable
+\(\Delta_\eta\) cone program, added Puelz--Basse--Feller--Toulis 2022 and
+Weinstein--Nevo 2026, unified all tail/operator comparisons in
+\(\mathcal H_n\), used probability limits for random estimators, and tightened
+the partial-interference design-orbit reduction; prior verdict: REVISE.
+\item v5 (revise) -- added the design-based LLN/point-consistency assumption,
+defined the point and covariance row blocks \(\mathcal A^P\) and
+\(\mathcal A^V\), split strict separation into point-functional and
+covariance-only cases, and added the misspecified-exposure
+partial-identification comparator note; prior verdict: REVISE.
+\item v1 (revise, angle 1) -- added the named literature checklist mapping
+Leung 2022, Leung 2023, Basse--Ding--Feller--Toulis 2024, Gao--Ding 2025,
+Puelz--Basse--Feller--Toulis 2022, Weinstein--Nevo 2026, and Savje 2024 to the
+specific \S8 results they threaten; prior verdict: REVISE.
+\item v2 (revise, angle 1) -- defined \(\mathcal C_n(\eta)\) as a finite
+constraint system with variables, observed matrix blocks, and declared
+sensitivity radii, and added a two-score design-orbit calculation for
+\(\mathcal A_n\), \(\mathcal N_n(\eta)\), and the point/covariance row split;
+prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Aronow and Samii(2017)]{AronowSamii2017Exposure}
+Aronow, P. M. and C. Samii (2017).
+Estimating average causal effects under general interference, with application
+to a social network experiment.
+\emph{Annals of Applied Statistics} 11(4), 1912--1947.
+doi:10.1214/16-AOAS1005.
+
+\bibitem[Basse, Ding, Feller, and Toulis(2024)]{BasseDingFellerToulis2024}
+Basse, G., P. Ding, A. Feller, and P. Toulis (2024).
+Randomization tests for peer effects in group formation experiments.
+\emph{Econometrica} 92(2), 567--590.
+doi:10.3982/ECTA20134.
+
+\bibitem[Basse, Feller, and Toulis(2019)]{BasseFellerToulis2019}
+Basse, G. W., A. Feller, and P. Toulis (2019).
+Randomization tests of causal effects under interference.
+\emph{Biometrika} 106(2), 487--494.
+doi:10.1093/biomet/asy072.
+
+\bibitem[Conley(1999)]{Conley1999Spatial}
+Conley, T. G. (1999).
+GMM estimation with cross sectional dependence.
+\emph{Journal of Econometrics} 92(1), 1--45.
+doi:10.1016/S0304-4076(98)00084-0.
+
+\bibitem[Gao and Ding(2025)]{GaoDing2025Network}
+Gao, Mengsi and P. Ding (2025).
+Causal inference in network experiments: regression-based analysis and
+design-based properties.
+\emph{Journal of Econometrics} 252, 106119.
+doi:10.1016/j.jeconom.2025.106119.
+
+\bibitem[Hudgens and Halloran(2008)]{HudgensHalloran2008}
+Hudgens, M. G. and M. E. Halloran (2008).
+Toward causal inference with interference.
+\emph{Journal of the American Statistical Association} 103(482), 832--842.
+doi:10.1198/016214508000000292.
+
+\bibitem[Kojevnikov, Marmer, and Song(2021)]{KojevnikovMarmerSong2021}
+Kojevnikov, D., V. Marmer, and K. Song (2021).
+Limit theorems for network dependent random variables.
+\emph{Journal of Econometrics} 222(2), 882--908.
+doi:10.1016/j.jeconom.2020.05.019.
+
+\bibitem[Leung(2022)]{Leung2022ANI}
+Leung, M. P. (2022).
+Causal inference under approximate neighborhood interference.
+\emph{Econometrica} 90(1), 267--293.
+doi:10.3982/ECTA17841.
+
+\bibitem[Leung(2023)]{Leung2023NCRI}
+Leung, M. P. (2023).
+Network cluster-robust inference.
+\emph{Econometrica} 91(2), 641--667.
+doi:10.3982/ECTA19816.
+
+\bibitem[Puelz, Basse, Feller, and Toulis(2022)]{PuelzBasseFellerToulis2022}
+Puelz, D., G. Basse, A. Feller, and P. Toulis (2022).
+A graph-theoretic approach to randomization tests of causal effects under
+general interference.
+\emph{Journal of the Royal Statistical Society: Series B} 84(1), 174--204.
+doi:10.1111/rssb.12478.
+
+\bibitem[Savje(2024)]{Savje2024MisspecifiedExposure}
+Savje, F. (2024).
+Causal inference with misspecified exposure mappings: separating definitions
+and assumptions.
+\emph{Biometrika} 111(1), 1--15.
+doi:10.1093/biomet/asad019.
+
+\bibitem[Weinstein and Nevo(2026)]{WeinsteinNevo2026}
+Weinstein, B. and D. Nevo (2026).
+Causal inference with misspecified network interference structure.
+\emph{Biometrics} 82(1), ujag023.
+doi:10.1093/biomtc/ujag023.
+\end{thebibliography}
+
+\end{document}

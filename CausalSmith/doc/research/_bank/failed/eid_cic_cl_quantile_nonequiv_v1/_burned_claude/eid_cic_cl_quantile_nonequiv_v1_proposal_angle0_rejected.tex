@@ -1,0 +1,364 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_cic\_cl\_quantile\_nonequiv, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_cic\_cl\_quantile\_nonequiv} / \texttt{v1}%
+  \\ \large A sharp timing-heterogeneity contamination moment $\kappa(\mu_G;\tau)$ governing the equivalence frontier between Athey--Imbens changes-in-changes and Callaway--Li group-time QTT aggregates, with an iff joint point-identification corollary under timing homogeneity.}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a free-form exact-identification proposal (the topic is identification-flavored, not panel-spectral; the Q1 pool-mode does not apply). Convention is fixed as follows.
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=2pt]
+  \item \textbf{qid}: \texttt{eid\_cic\_cl\_quantile\_nonequiv}; \textbf{specialization}: \texttt{v1}.
+  \item \textbf{Graph / SWIG}: $K+1$ cohorts indexed by adoption date $G_i \in \mathcal{G} := \{g_1 < g_2 < \cdots < g_K\} \cup \{\infty\}$ (with $\infty$ the never-treated cohort); calendar period $t \in \mathcal{T} := \{1, 2, \ldots, T\}$ with $T \ge \max_k g_k$; binary absorbing treatment $D_{it} := \one\{G_i \le t\}$; continuous scalar outcome $Y_{it} \in \R$ with potential outcomes $Y_{it}(0), Y_{it}(g)$ defined for each adoption date $g$, related to observed $Y_{it}$ by SUTVA + absorbing consistency $Y_{it} = D_{it} Y_{it}(G_i) + (1 - D_{it}) Y_{it}(0)$. The timing distribution is $\mu_G := \Pr(G = \cdot)$ on $\mathcal{G}$. Marginals $F_{Y|G=g, T=t}$ are assumed absolutely continuous with density bounded above by $L$ and below by $\ell > 0$ on a fixed interval $\mathcal{Y}$ (Assumption~\ref{a:reg}).
+  \item \textbf{Treatment}: staggered absorbing $D_{it}$ as above; assignment process $G \perp\!\!\!\perp \{Y_{it}(0)\}_t \mid \emptyset$ (unconditional distributional parallel trends, Assumption~\ref{a:dpt}).
+  \item \textbf{Target estimand}: aggregate group-time QTT at quantile level $\tau \in (0,1)$,
+    \[
+      \theta_\tau \;:=\; \sum_{g \in \mathcal{G} \setminus \{\infty\}} \mu_G(g) \cdot \mathrm{QTT}_\tau(g, t^*) ,
+      \quad
+      \mathrm{QTT}_\tau(g, t) \;:=\; F^{-1}_{Y_t(g) | G = g}(\tau) - F^{-1}_{Y_t(0) | G = g}(\tau),
+    \]
+    evaluated at a fixed post-adoption period $t^* > \max_k g_k$.
+  \item \textbf{Identifying restrictions} (two non-nested estimands):
+    \begin{itemize}[leftmargin=*,itemsep=1pt,topsep=1pt]
+      \item \emph{CIC (Athey--Imbens 2006)}: rank invariance + strict monotonicity, $Y_{it}(0) = h(U_i, t)$ with $h(\cdot, t)$ strictly increasing and $U_i \perp T \mid G$. Cohort-time CIC functional $\theta^{\mathrm{CIC}}_\tau(g,t) := Q_\tau\!\left(F_{Y|G,t} \circ F^{-1}_{Y|G,g-1}\right)\!(\cdot) - Q_\tau(F_{Y|G,t})$ on a never-treated comparison.
+      \item \emph{CL (Callaway--Li 2019)}: distributional parallel trends + time-invariance copula $C_{\Delta Y(0), Y_{g-1}(0)}$ constant across $t \ge g$. Cohort-time CL functional $\theta^{\mathrm{CL}}_\tau(g,t)$ defined via copula-recovered counterfactual CDF.
+    \end{itemize}
+    Aggregate CIC and CL estimands are $\theta^{\mathrm{CIC}}_\tau := \sum_g \mu_G(g)\, \theta^{\mathrm{CIC}}_\tau(g, t^*)$ and analogously $\theta^{\mathrm{CL}}_\tau$.
+\end{itemize}
+
+\begin{abstract}
+Athey and Imbens (2006) changes-in-changes (CIC) and Callaway and Li (2019) group-time quantile treatment-on-the-treated (QTT) estimators both target the same QTT estimand under non-nested identifying restrictions: CIC imposes rank invariance and strict monotonicity, CL imposes distributional parallel trends and a time-invariance copula. Under two-period non-staggered designs the two routes are operationally complementary, but under staggered adoption with heterogeneous timing distribution $\mu_G$ the aggregate estimands $\theta^{\mathrm{CIC}}_\tau, \theta^{\mathrm{CL}}_\tau$ disagree by a cohort-mixture term whose structure has not been mapped in the literature (Li and Lin (2024) explicitly flag the copula extension as delicate). We propose a sharp non-equivalence frontier indexed by a single named scalar -- the \emph{timing-heterogeneity contamination moment} $\kappa(\mu_G; \tau) := \mathrm{Cov}_{\mu_G}\!\big(g, \delta(g, t^*; \tau)\big)$ where $\delta(g,t;\tau) := \theta^{\mathrm{CIC}}_\tau(g,t) - \theta^{\mathrm{CL}}_\tau(g,t)$ -- and a computable threshold $\kappa^\star(\tau; F)$ expressed in observed cohort-period marginals. The kernel asserts (Conjecture~\ref{conj:signflip}) that on an open set of DGPs in the weak-$*$ topology, $|\kappa(\mu_G;\tau)| > \kappa^\star(\tau;F)$ forces $\mathrm{sign}(\theta^{\mathrm{CIC}}_\tau) \ne \mathrm{sign}(\theta^{\mathrm{CL}}_\tau)$, and (Conjecture~\ref{conj:iff}) timing homogeneity ($\mu_G$ degenerate) is precisely the iff frontier for joint point identification of the QTT by the CIC--CL pair. A decomposition-then-correction theorem (Conjecture~\ref{conj:decomp}) recasts CL as CIC plus a signed cohort weighting and exhibits a corrected aggregate $\theta^{\star}_\tau$ that removes the sign flip. Resolving the kernel would settle a frontier question Li--Lin left open and produce a usable practitioner test ($\kappa$ vs.\ $\kappa^\star$) for whether a staggered-QTT analysis can rely on CL or CIC interchangeably.
+\end{abstract}
+
+\section{Introduction}
+
+\paragraph{Why the problem matters.} The Athey--Imbens \cite{AtheyImbens2006} CIC estimator and the Callaway--Li \cite{CallawayLi2019} group-time QTT estimator are the two canonical routes to distribution-level treatment-effect identification under DID-style designs. Applied work routinely picks one or the other on convenience, citing them as ``equivalent in spirit'' (a phrasing that survives in the staggered-design literature; see e.g.\ \cite{LiLin2024} for explicit acknowledgement that the relationship is unsettled once cohorts vary). The two routes are non-nested: CIC requires rank invariance + strict monotonicity of the untreated potential outcome in a scalar latent index, while CL requires distributional parallel trends + time-invariance of the copula linking $\Delta Y(0)$ to $Y_{g-1}(0)$. The question of when the two routes agree on the QTT estimand under staggered adoption has never been mapped to a closed-form frontier, and Li and Lin \cite{LiLin2024} explicitly flag the time-invariance copula extension to staggered designs as ``delicate''.
+
+\paragraph{Headline (proposed).} We propose that the gap between the aggregate CIC and CL estimands under staggered adoption is governed by a single closed-form scalar, the timing-heterogeneity contamination moment $\kappa(\mu_G; \tau) := \mathrm{Cov}_{\mu_G}\!(g, \delta(g, t^*; \tau))$, where $\delta(g,t;\tau)$ is the cohort-level CIC--CL gap fully recoverable from the observed cohort-period marginals. The headline (Conjecture~\ref{conj:signflip}) is that $|\kappa| > \kappa^\star$ for an explicit observable threshold $\kappa^\star(\tau; F)$ \emph{forces} the aggregate CIC and CL estimands to take opposite signs on an open set of DGPs; conversely (Theorem~\ref{thm:hom}) under timing homogeneity $\mu_G = \delta_{g^*}$ the two coincide identically. Conjecture~\ref{conj:iff} sharpens this to an iff frontier: timing homogeneity is exactly the boundary at which the CIC--CL pair jointly point-identifies the QTT.
+
+\paragraph{What is new.} The closest prior art is \cite{CallawayLi2019} (which identifies the two-period QTT under copula time-invariance) and \cite{LiLin2024} (which extends to staggered adoption under \emph{group}-invariance copula and explicitly leaves the time-invariance route open). Neither paper has a non-equivalence frontier or a sign-flip threshold. Two-period work \cite{FanYu2012} on partial identification of QTE is set up under a single calendar contrast and does not see the cohort-mixture term. The decompositions of \cite{GoodmanBacon2021,SunAbraham2021,deChaisemartinDHaultfoeuille2020} cover staggered \emph{mean} TWFE estimators -- our Conjecture~\ref{conj:decomp} is the corresponding quantile-DID statement, with the named operational quantity $\kappa$ playing the role Goodman-Bacon's cohort-pair weights play for TWFE. The novelty kernel is the pairing (i) closed-form scalar $\kappa$ + threshold $\kappa^\star$ in observables, (ii) sign-flip on an open set of DGPs, (iii) iff joint-identification frontier at timing homogeneity, none of which is in \cite{AtheyImbens2006, CallawayLi2019, LiLin2024, FanYu2012} or in the staggered-mean decomposition cluster.
+
+\paragraph{Position in the literature.} Exact identification cluster, distributional / quantile DID subfamily. The proposal sits between the two-period quantile-DID anchors (\cite{AtheyImbens2006,CallawayLi2019,FanYu2012}), the staggered-mean decomposition cluster (\cite{GoodmanBacon2021,SunAbraham2021,deChaisemartinDHaultfoeuille2020}), and the very recent staggered-QTT extensions (\cite{LiLin2024,Ciaccio2025}). It deploys flagship motifs M2 (equivalence frontier with computable threshold), M1 (decompose-then-correct of a widely-cited estimator), and M7 (necessary-and-sufficient iff), targeting the gap that Li--Lin's ``delicate'' caveat indexes.
+
+\paragraph{Implications for the community.} If Conjecture~\ref{conj:signflip} holds, applied users running staggered-QTT analyses can compute $\hat\kappa$ from cohort-period sample CDFs and compare to $\hat\kappa^\star$; this is the first diagnostic that would unambiguously warn against interpreting CL- and CIC-based QTT decisively under staggered designs (the specific consumer is \cite{LiLin2024} and the broader DRDID-style staggered-QTT estimator pipeline of \cite{CallawayLi2019} now widely used in labor and health-economics applications such as minimum-wage cohort analyses). Conjecture~\ref{conj:iff} would give Li and Lin's open question a sharp answer: their time-invariance copula route to staggered QTT is identification-equivalent to CIC iff timing is homogeneous; otherwise both must be combined with the contamination correction of Conjecture~\ref{conj:decomp}.
+
+\paragraph{How research changes.} A reader who takes only the conclusion away would (i) report $\hat\kappa$ alongside any staggered CIC- or CL-QTT point estimate, (ii) switch to the corrected aggregate $\hat\theta^{\star}_\tau$ when $|\hat\kappa|$ exceeds $\hat\kappa^\star$, and (iii) interpret the gap between CL- and CIC-QTT not as ``noise from different smoothing'' but as a structural cohort-mixture term.
+
+\section{Related work}
+
+\paragraph{Distributional and quantile DID anchors.}
+\textbf{Athey and Imbens (2006, \emph{Econometrica}) \cite{AtheyImbens2006}}: introduces CIC, identifying the counterfactual untreated CDF via $F_{Y|G,t} \circ F^{-1}_{Y|G,g-1}$ under rank invariance + strict monotonicity; their proof is two-period, no cohort mixture. This is the CIC half of our equivalence frontier.
+\textbf{Callaway and Li (2019, \emph{Quantitative Economics}) \cite{CallawayLi2019}}: identifies panel-data QTT via distributional parallel trends + time-invariance copula in a two-period setting; their setup is the CL half of our frontier. Their \S4 raises but does not resolve the staggered extension.
+\textbf{Callaway, Li, and Oka (2018, \emph{J.\ Econometrics}) \cite{CallawayLiOka2018}}: extends CL to conditional CQTT using a group-invariance copula in two periods; relevant because the group/time-invariance choice is what our iff frontier (Conjecture~\ref{conj:iff}) is about.
+\textbf{Li and Lin (2024, \emph{Econ.\ Letters}) \cite{LiLin2024}}: extends CL to staggered designs but only under group-invariance, explicitly flagging time-invariance copula as ``delicate'' in their concluding remarks. This is the named open problem our Conjecture~\ref{conj:iff} closes.
+\textbf{Fan and Yu (2012, \emph{Econ.\ Letters}) \cite{FanYu2012}}: two-period sharp bounds for QTE under distributional DID; complementary partial-ID anchor, not staggered.
+\textbf{Chernozhukov, Fern\'andez-Val, and Luo (2024, arXiv) \cite{ChernozhukovFernandezValLuo2024}}: distribution-regression DID linking distributional DID to CIC-style recovery; complementary route, no non-equivalence frontier.
+\textbf{Ciaccio (2025, arXiv) \cite{Ciaccio2025}}: distributional DID with multiple periods and staggered adoption, recovers full counterfactual distributions but does not characterize CIC--CL non-equivalence.
+
+\paragraph{Staggered-mean DID decomposition anchors.}
+\textbf{Goodman-Bacon (2021, \emph{J.\ Econometrics}) \cite{GoodmanBacon2021}}: TWFE staggered decomposition into weighted $2 \times 2$ DIDs with potentially negative weights. Our Conjecture~\ref{conj:decomp} is the quantile-DID analogue and the structural reason a sign flip can arise.
+\textbf{Sun and Abraham (2021, \emph{J.\ Econometrics}) \cite{SunAbraham2021}}: event-study contamination from other-period effects; same shape, mean target. Our $\kappa$ plays a role analogous to their contamination weights.
+\textbf{de Chaisemartin and D'Haultfoeuille (2020, \emph{AER}) \cite{deChaisemartinDHaultfoeuille2020}}: heterogeneity-robust DID with $\mathrm{DID}_M$; another shape we mirror in quantile space.
+\textbf{Callaway and Sant'Anna (2021, \emph{J.\ Econometrics}) \cite{CallawaySantAnna2021}}: group-time ATT architecture our $\mathrm{QTT}(g,t)$ borrows from.
+\textbf{Roth and Sant'Anna (2023, \emph{Econometrica}) \cite{RothSantAnna2023}}: functional-form sensitivity of mean DID; bears on whether CIC's rank-invariance assumption is preserved by monotone outcome transforms (we use this to flag scope).
+
+\paragraph{In-repo prior art (CausalSmith catalogue).} \texttt{eid\_dist\_synth\_control\_v1} (rejected, banked): proposes a distributional synthetic-control identification with a Conjecture~2 that touches CIC + CL but only as a quantile-difference taxonomy; reviewer angle2\_v2 flagged that the proposal cited CIC and CL without a computable equality / separation test -- this is the precise gap our $\kappa$/$\kappa^\star$ pair fills. \texttt{q\_did\_drdid\_ipwdid\_frontier\_v1} (catalogue, accepted): the named-estimator non-equivalence frontier with bad controls for DRDID vs.\ IPW-DID; shape template for non-equivalence frontiers in CausalSmith. \texttt{panel\_sdid\_mc\_id\_v1}: synthetic-DID vs.\ matrix-completion non-equivalence frontier; adjacent shape, different estimator pair. \texttt{pid\_qte\_marginal\_sensitivity\_v1} (banked): quantile partial-ID sensitivity; complementary, not a substitute. None of these proposes a CIC--CL equivalence-frontier theorem under staggered adoption. See \texttt{doc/API.md} \S\emph{Exact-ID -- distributional DID} and \S\emph{Staggered designs} for the catalogue index.
+
+\section{Formal setup}
+
+\paragraph{Data-generating environment.} A panel of $N$ units indexed by $i$, with cohort indicator $G_i \in \mathcal{G} = \{g_1 < \cdots < g_K\} \cup \{\infty\}$ drawn iid from $\mu_G$, and outcome $Y_{it}$ observed at calendar periods $t \in \mathcal{T} = \{1, \ldots, T\}$. Potential outcomes $Y_{it}(g)$ for each adoption date $g$ and $Y_{it}(0)$ for the never-treated path. Under SUTVA + absorbing-treatment consistency, observed $Y_{it} = D_{it} Y_{it}(G_i) + (1 - D_{it}) Y_{it}(0)$ with $D_{it} = \one\{G_i \le t\}$.
+
+\paragraph{Marginals and functionals.} Let $F_{Y|G=g, T=t}(y) := \Pr(Y_t \le y \mid G = g)$ and $Q_{Y|G=g,T=t}(\tau) := F^{-1}_{Y|G,t}(\tau)$. Denote the cohort-period density (assumed to exist) by $f_{Y|G,t}$. The post-treatment period of interest is fixed at $t^* > \max_k g_k$, but identification claims hold for every $t > g$ within a cohort.
+
+\paragraph{Cohort-time CIC functional.} For cohort $g$, the CIC counterfactual CDF at $t^*$ is
+\[
+  \widehat{F}^{\mathrm{CIC}}_{Y_{t^*}(0) \mid G = g}(y) \;:=\; F_{Y|G=\infty, t^*}\!\Big(F^{-1}_{Y|G=\infty, g-1}\!\big(F_{Y|G=g, g-1}(y)\big)\Big),
+\]
+and the cohort-time CIC QTT is $\theta^{\mathrm{CIC}}_\tau(g, t^*) := Q_{Y|G=g, t^*}(\tau) - \big(\widehat{F}^{\mathrm{CIC}}_{Y_{t^*}(0)|G=g}\big)^{-1}(\tau)$.
+
+\paragraph{Cohort-time CL functional.} The CL counterfactual CDF uses the copula recovery
+\[
+  \widehat{F}^{\mathrm{CL}}_{Y_{t^*}(0)|G=g}(y) \;:=\; \int C^{-1}_{\Delta Y(0), Y(0)}\!\big(F_{\Delta Y(0)|G=\infty, t^*}(\cdot), \, F_{Y|G=g, g-1}(y)\big)\,d\cdot,
+\]
+where $C_{\Delta Y(0), Y(0)}$ is identified on the never-treated cohort across periods $\{g-1, t^*\}$ under Assumption~\ref{a:tcop}. The cohort-time CL QTT is $\theta^{\mathrm{CL}}_\tau(g, t^*) := Q_{Y|G=g, t^*}(\tau) - \big(\widehat{F}^{\mathrm{CL}}_{Y_{t^*}(0)|G=g}\big)^{-1}(\tau)$.
+
+\paragraph{Cohort gap and aggregate.} Let $\delta(g, t^*; \tau) := \theta^{\mathrm{CIC}}_\tau(g, t^*) - \theta^{\mathrm{CL}}_\tau(g, t^*)$. This is the central object: it is fully recoverable from the observed cohort-period marginals (no unobservable enters its construction). The aggregate estimands are $\theta^{\mathrm{CIC}}_\tau := \sum_g \mu_G(g)\, \theta^{\mathrm{CIC}}_\tau(g, t^*)$, $\theta^{\mathrm{CL}}_\tau := \sum_g \mu_G(g)\, \theta^{\mathrm{CL}}_\tau(g, t^*)$.
+
+\paragraph{Timing-heterogeneity contamination moment.}
+\begin{equation}\label{eq:kappa}
+  \kappa(\mu_G; \tau) \;:=\; \mathrm{Cov}_{\mu_G}\!\big(g, \delta(g, t^*; \tau)\big) \;=\; \sum_g \mu_G(g)\, \big(g - \bar g\big)\,\delta(g, t^*; \tau), \quad \bar g := \sum_g \mu_G(g)\, g.
+\end{equation}
+
+\paragraph{Observable threshold.} Set $L_\tau := \sup_{g, t} \big|\partial_y F_{Y|G,t}(Q_{Y|G,t}(\tau))\big|$ and $\ell_\tau := \inf_{g, t} \big|\partial_y F_{Y|G,t}(Q_{Y|G,t}(\tau))\big|$ (sup/inf taken over $g \in \mathcal{G}$ and $t \in \{g_1 - 1, \ldots, t^*\}$). Define the copula-curvature constant
+\(
+  M_\tau := \sup_{u, v \in [0,1]} \big|\partial_u \partial_v C_{\Delta Y(0), Y(0)}(u, v)\big|,
+\)
+and the threshold
+\begin{equation}\label{eq:kappastar}
+  \kappa^\star(\tau; F) \;:=\; \frac{L_\tau}{\ell_\tau} \cdot M_\tau \cdot \mathrm{Var}_{\mu_G}(g)^{1/2} \cdot \min_g |\theta^{\mathrm{CIC}}_\tau(g, t^*)|.
+\end{equation}
+By Assumption~\ref{a:reg}, $L_\tau / \ell_\tau \le L/\ell < \infty$ and $M_\tau$ is finite, so $\kappa^\star$ is a finite functional of observables.
+
+\paragraph{Locked parameters (reproduced verbatim from the metadata block).} See the Locked parameters block immediately following the title block above. Stage 0 should quote that block; no rephrasing is permitted here.
+
+\section{Assumptions}
+
+\begin{assumption}[Regularity of cohort-period marginals]\label{a:reg}
+For every $g \in \mathcal{G}$ and $t \in \mathcal{T}$, $F_{Y|G=g,T=t}$ is absolutely continuous on a compact interval $\mathcal{Y} \subset \R$ with Lebesgue density $f_{Y|G=g,T=t}$ satisfying $\ell \le f_{Y|G=g,T=t}(y) \le L$ for all $y \in \mathcal{Y}$, with $0 < \ell \le L < \infty$ fixed constants. The level $\tau \in (0,1)$ is fixed away from $0$ and $1$.
+\end{assumption}
+
+\begin{assumption}[Cohort sampling]\label{a:cohort}
+$G_i$ are iid draws from $\mu_G$ on $\mathcal{G}$ with $\mu_G(g) > 0$ for every $g \in \mathcal{G}$ (full support, including the never-treated cohort $g = \infty$). The number of cohorts $K + 1 \ge 2$.
+\end{assumption}
+
+\begin{assumption}[Distributional parallel trends]\label{a:dpt}
+For every $g \in \mathcal{G} \setminus \{\infty\}$ and every $t \ge g$, the change in untreated potential outcome distribution from $g-1$ to $t$ on cohort $g$ equals the corresponding change on the never-treated cohort: $F_{Y_t(0) - Y_{g-1}(0) \mid G = g} = F_{Y_t(0) - Y_{g-1}(0) \mid G = \infty}$.
+\end{assumption}
+
+\begin{assumption}[CIC rank invariance + strict monotonicity]\label{a:cic}
+There exists a scalar latent index $U_i \in [0,1]$ with $U_i \perp T \mid G$, and a measurable map $h: [0,1] \times \mathcal{T} \to \R$ with $h(\cdot, t)$ strictly increasing for each $t$, such that $Y_{it}(0) = h(U_i, t)$.
+\end{assumption}
+
+\begin{assumption}[Time-invariance copula]\label{a:tcop}
+The copula $C_{\Delta Y(0), Y(0)}^{(t)}(u, v) := \Pr\!\big(F_{\Delta Y(0)}(\Delta Y_t(0)) \le u,\; F_{Y(0)}(Y_{t-1}(0)) \le v \mid G = \infty\big)$ does not depend on $t$: $C^{(t)}_{\Delta Y(0), Y(0)} = C_{\Delta Y(0), Y(0)}$ for every $t \in \mathcal{T}$, $t \ge 2$.
+\end{assumption}
+
+\begin{assumption}[Bounded copula curvature]\label{a:curv}
+The copula $C_{\Delta Y(0), Y(0)}$ from Assumption~\ref{a:tcop} is twice continuously differentiable on $[0,1]^2$, with $M := \sup_{u, v \in [0,1]} |\partial_u \partial_v C(u,v)| < \infty$. This is the structural constant that bounds the tuning parameter $\kappa^\star$ above (SC8 bound: $\kappa^\star \le (L/\ell) \cdot M \cdot \mathrm{Var}_{\mu_G}(g)^{1/2} \cdot \max_g |\theta^{\mathrm{CIC}}_\tau(g,t^*)|$).
+\end{assumption}
+
+\begin{assumption}[Identifiability of $\delta(g, t^*; \tau)$]\label{a:idg}
+The cohort-time gap $\delta(g, t^*; \tau)$ defined in \S6 is well-defined (the relevant inverse CDFs exist and are unique at $\tau$) and continuously differentiable in $\tau$ on a neighborhood of the fixed level. Under Assumption~\ref{a:reg}, this holds automatically; we list it separately because the iff frontier (Conjecture~\ref{conj:iff}) hinges on $\delta(g, t^*; \tau)$ being non-degenerate as a functional of $g$.
+\end{assumption}
+
+\begin{assumption}[Cohort gap non-degeneracy]\label{a:nondeg}
+There exist at least two cohorts $g, g' \in \mathcal{G} \setminus \{\infty\}$ with $\delta(g, t^*; \tau) \ne \delta(g', t^*; \tau)$. Under timing homogeneity ($\mu_G$ degenerate) this assumption is vacuous; under heterogeneity it rules out the measure-zero case where all cohort gaps coincide.
+\end{assumption}
+
+\section{Main results}
+
+\begin{theorem}[Equivalence under timing homogeneity]\label{thm:hom}
+Suppose Assumptions~\ref{a:reg}, \ref{a:cohort}, \ref{a:dpt}, \ref{a:cic}, \ref{a:tcop}, \ref{a:curv}, \ref{a:idg} hold and $\mu_G$ is degenerate at a single treated cohort $g^* \in \mathcal{G} \setminus \{\infty\}$ (with the never-treated cohort retained as comparison). Then $\delta(g^*, t^*; \tau) = 0$ for every continuity point $\tau$, and consequently
+\[
+  \theta^{\mathrm{CIC}}_\tau \;=\; \theta^{\mathrm{CL}}_\tau \;=\; \mathrm{QTT}_\tau(g^*, t^*).
+\]
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) Prior art: \cite{AtheyImbens2006} two-period, no aggregation; \cite{CallawayLi2019} two-period CL, also no aggregation. The non-staggered ``two-period'' equivalence of CIC and CL under their respective assumptions is folk-known but, to our knowledge, not stated as a single theorem in the literature -- it is the baseline our staggered non-equivalence frontier sits against. Theorem~\ref{thm:hom} formalizes this baseline and pins down the convention under which the two estimands coincide.
+(b) Resolving it makes the iff direction of Conjecture~\ref{conj:iff} clean to state, and provides the corner case that Conjecture~\ref{conj:signflip} must reduce to.
+
+\begin{conjecture}[Sign-flip sharpness via $\kappa$/$\kappa^\star$]\label{conj:signflip}
+(\textbf{NOT YET PROVED.}) Under Assumptions~\ref{a:reg}--\ref{a:nondeg}, there is an open subset $\mathcal{O}$ of the space of cohort-period marginal distributions (under the weak-$*$ topology induced by Skorokhod's metric on cohort-conditional CDFs) such that for every DGP in $\mathcal{O}$,
+\[
+  \big|\kappa(\mu_G; \tau)\big| \;>\; \kappa^\star(\tau; F)
+  \quad \Longrightarrow \quad
+  \mathrm{sign}\!\big(\theta^{\mathrm{CIC}}_\tau\big) \;=\; -\,\mathrm{sign}\!\big(\theta^{\mathrm{CL}}_\tau\big),
+\]
+where $\kappa$ is defined in \eqref{eq:kappa} and $\kappa^\star$ in \eqref{eq:kappastar}. Moreover the threshold $\kappa^\star$ is independent of the sign-flip event itself: it is constructed from $L_\tau, \ell_\tau, M_\tau, \mathrm{Var}_{\mu_G}(g)$ and the cohort-level CIC functionals, none of which involves the LHS event $\mathrm{sign}(\theta^{\mathrm{CIC}}_\tau) \ne \mathrm{sign}(\theta^{\mathrm{CL}}_\tau)$.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) Closest prior art: \cite{LiLin2024} extends CL to staggered designs but only under group-invariance copula, and explicitly flags time-invariance copula as ``delicate''; no closed-form threshold or sign-flip is given. \cite{CallawayLi2019} provides the two-period CL identification but does not aggregate across cohorts. The staggered-mean decompositions \cite{GoodmanBacon2021, SunAbraham2021, deChaisemartinDHaultfoeuille2020} address sign-flips for TWFE on means, not on quantile DID. Our $\kappa$ is the precise quantile-DID analogue of Goodman-Bacon's cohort weights, but its sign-flip threshold $\kappa^\star$ is expressed in observable marginals -- a closed form none of the above papers provides.
+(b) Resolving it gives applied users of \cite{CallawayLi2019, LiLin2024} pipelines a one-line diagnostic ($\hat\kappa$ vs.\ $\hat\kappa^\star$) for whether their staggered-QTT inference can claim distributional identification. The corrected estimator from Conjecture~\ref{conj:decomp} becomes a corollary of the same construction.
+
+\begin{conjecture}[Iff frontier for joint point identification]\label{conj:iff}
+(\textbf{NOT YET PROVED.}) Under Assumptions~\ref{a:reg}--\ref{a:tcop}, \ref{a:curv}, \ref{a:idg}, the QTT aggregate $\theta_\tau$ is \emph{jointly point-identified} by the pair $(\theta^{\mathrm{CIC}}_\tau, \theta^{\mathrm{CL}}_\tau)$ -- meaning $\theta^{\mathrm{CIC}}_\tau = \theta^{\mathrm{CL}}_\tau = \theta_\tau$ holds as a population equality -- if and only if $\mu_G$ is degenerate (timing homogeneity). The converse direction is the substantive content: under timing heterogeneity (Assumption~\ref{a:nondeg}), there exists a DGP satisfying Assumptions~\ref{a:reg}--\ref{a:tcop}, \ref{a:curv}, \ref{a:idg} for which $\theta^{\mathrm{CIC}}_\tau \ne \theta^{\mathrm{CL}}_\tau$, so neither identification route alone delivers the joint identification on the full class.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) The iff direction is the open question Li and Lin \cite[concluding remarks]{LiLin2024} flagged: they identify staggered QTT under group-invariance copula but leave open whether time-invariance copula identifies the same QTT under staggered adoption. We answer no, except at timing homogeneity. The if direction is Theorem~\ref{thm:hom}; the only-if direction is the novel content (which is why it is a Conjecture, not a Theorem -- the construction of the witness DGP is the main mathematical work). The threshold $\kappa^\star$ in Conjecture~\ref{conj:signflip} is an \emph{independent} characterization built from observable marginals (densities $L_\tau, \ell_\tau$, copula curvature $M_\tau$, cohort variance, CIC functional bounds) -- it is NOT a definitional unfold of the sign-flip event (cf.\ SC7).
+(b) Resolving it gives \cite{LiLin2024} a clean answer and tells the staggered-QTT community that copula-route results cannot be silently substituted for CIC-route results unless timing is homogeneous (the specific consumer is the DRDID-style staggered-QTT estimator pipeline in widespread applied use; see also Kim--Wooldridge 2025 JBES and Miller--Galvao 2026 SSRN for recent staggered DRDID-QTT estimators that would inherit this caveat).
+
+\begin{conjecture}[Decompose-then-correct]\label{conj:decomp}
+(\textbf{NOT YET PROVED.}) Under Assumptions~\ref{a:reg}--\ref{a:nondeg}, the aggregate CL estimand decomposes as
+\[
+  \theta^{\mathrm{CL}}_\tau \;=\; \theta^{\mathrm{CIC}}_\tau \;+\; \sum_{g \in \mathcal{G} \setminus \{\infty\}} w_g(\mu_G;\tau) \cdot \delta(g, t^*; \tau),
+  \quad w_g(\mu_G;\tau) := \mu_G(g) - \mu_G(g)\cdot \pi_g(\mu_G;\tau),
+\]
+with $\pi_g(\mu_G;\tau)$ a normalized cohort weight derived from the copula-recovery integral. For any $\mu_G$ with $\kappa(\mu_G;\tau) > 0$, at least one $w_g < 0$. The \emph{corrected aggregate}
+\[
+  \theta^{\star}_\tau \;:=\; \theta^{\mathrm{CIC}}_\tau \;+\; \sum_g \tilde w_g \cdot \delta(g, t^*; \tau), \quad \tilde w_g := \frac{|w_g|}{\sum_{g'} |w_{g'}|},
+\]
+satisfies $\mathrm{sign}(\theta^{\star}_\tau) = \mathrm{sign}(\theta^{\mathrm{CIC}}_\tau)$ on the open set $\mathcal{O}$ of Conjecture~\ref{conj:signflip}, and $\theta^{\star}_\tau$ recovers a convex combination of cohort QTTs under any $\mu_G$.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) This is the quantile-DID analogue of the Goodman-Bacon \cite{GoodmanBacon2021} TWFE decomposition (mean target) and the Sun-Abraham \cite{SunAbraham2021} event-study contamination decomposition; the named operational quantity $\kappa$ plays the role of their negative-weight indicator. The closest published work that handles quantile-DID weight structure under staggered adoption is \cite{LiLin2024}, but they do not derive negative-weight algebra or a corrected estimator. The corrected aggregate $\theta^\star_\tau$ is a new estimator class.
+(b) Resolving it gives applied users an explicit pipeline-level fix: replace $\hat\theta^{\mathrm{CL}}_\tau$ with $\hat\theta^{\star}_\tau$ when $|\hat\kappa| > \hat\kappa^\star$, exactly mirroring the Callaway--Sant'Anna \cite{CallawaySantAnna2021} mean-target fix for TWFE-DID.
+
+\section{Sanity-check corollaries}
+
+\begin{corollary}[Two-period non-staggered reduction]\label{cor:T2}
+If $K = 1$ (single treated cohort $g^* = 2$ plus never-treated), $T = 2$, and timing is trivially homogeneous, then $\kappa(\mu_G; \tau) \equiv 0$, $\mathrm{Var}_{\mu_G}(g) = 0$, $\kappa^\star(\tau; F) = 0$, and Theorem~\ref{thm:hom} reduces the kernel to the standard two-period CIC \cite{AtheyImbens2006} and CL \cite{CallawayLi2019} identification of the QTT (which coincide under Assumptions~\ref{a:cic} + \ref{a:tcop}).
+\end{corollary}
+
+\begin{corollary}[Concrete sign-flip witness — two-cohort Gaussian-shift family]\label{cor:wit}
+Consider the parametric family: $K = 2$ treated cohorts $g \in \{2, 4\}$ + never-treated $g = \infty$, $T = 5$, evaluation at $t^* = 5$, $\tau = 0.5$. Untreated potential outcomes $Y_{it}(0) = h(U_i, t) := \mu(t) + \sigma(t) \Phi^{-1}(U_i)$ with $\mu(t) = \alpha t$, $\sigma(t) = 1 + \beta t$, $U_i \sim \mathrm{Unif}[0,1]$ iid. Treatment-effect law: $Y_{it}(g) - Y_{it}(0) = \gamma_g \cdot (t - g + 1)_+$ with $\gamma_2 = 0.1$, $\gamma_4 = -0.3$. Cohort distribution $\mu_G$ with $\mu_G(2) = p$, $\mu_G(4) = q$, $\mu_G(\infty) = 1 - p - q$.
+
+Then for $(\alpha, \beta) = (0.2, 0.1)$ and $(p, q) = (0.7, 0.1)$:
+(i) the cohort gaps $\delta(2, 5; 0.5), \delta(4, 5; 0.5)$ are non-zero and have opposite signs (driven by $\sigma(t)$ varying with $t$, which CL's copula tracks but CIC's rank invariance does not);
+(ii) $\kappa(\mu_G; 0.5)$ is computable in closed form from the Gaussian CDFs;
+(iii) the threshold $\kappa^\star(0.5; F)$ from \eqref{eq:kappastar} is computable from the Gaussian density bounds and copula curvature;
+(iv) the parameters above satisfy $|\kappa| > \kappa^\star$ and $\theta^{\mathrm{CIC}}_{0.5} > 0 > \theta^{\mathrm{CL}}_{0.5}$ (a sign flip), exhibiting Conjecture~\ref{conj:signflip} at a non-corner instance.
+\end{corollary}
+
+\begin{corollary}[Mean reduction at $\tau = 0.5$ under symmetry]
+If the untreated outcome distribution is symmetric around its median (e.g.\ Gaussian) and the treatment effect is location-shift, then $\theta^{\mathrm{CIC}}_{0.5} = \theta^{\mathrm{CL}}_{0.5} = \mathrm{ATT}$, and both reduce to the staggered-mean ATT of Callaway--Sant'Anna \cite{CallawaySantAnna2021}. This rules out the kernel being a re-labelling of the staggered mean DID -- it is genuinely a distributional statement.
+\end{corollary}
+
+\section{Proof-sketch route}
+
+\paragraph{Theorem~\ref{thm:hom} (equivalence under homogeneity).} Reduces to a direct algebraic identity: when $\mu_G$ is degenerate at $g^*$, the CIC counterfactual $\widehat{F}^{\mathrm{CIC}}_{Y_{t^*}(0)|G=g^*}$ and the CL counterfactual $\widehat{F}^{\mathrm{CL}}_{Y_{t^*}(0)|G=g^*}$ both equal the never-treated CDF transported via Assumption~\ref{a:dpt}; under Assumption~\ref{a:cic} the rank-invariance representation $Y(0) = h(U,t)$ collapses the copula $C_{\Delta Y(0), Y(0)}$ to the comonotone copula $C(u,v) = \min(u,v)$, so CL's copula recovery integral reduces to the CIC quantile composition. Standard change-of-variables (Skorokhod construction).
+
+\paragraph{Conjecture~\ref{conj:signflip} (sign-flip via $\kappa$).} Three steps: (i) write $\theta^{\mathrm{CL}}_\tau - \theta^{\mathrm{CIC}}_\tau = \sum_g \mu_G(g) \delta(g, t^*; \tau)$ and decompose into mean term and covariance term using $\delta(g,t^*;\tau) = \bar\delta + (g - \bar g) \cdot \partial_g \bar\delta + O((g - \bar g)^2)$ around the cohort mean $\bar g$; the leading covariance term is exactly $\kappa(\mu_G;\tau)$. (ii) Bound the remainder using Assumption~\ref{a:reg} (density bounds give $L_\tau/\ell_\tau$ control on inverse-CDF differences) and Assumption~\ref{a:curv} (copula curvature controls the deviation between CIC's comonotone copula and CL's identified copula). (iii) Show that the cone $\{|\kappa| > \kappa^\star\}$ intersects the interior of the parameter space (openness from continuity of $\kappa$ and $\kappa^\star$ in $\mu_G$ and $F$ under weak-$*$ convergence; non-emptiness from Corollary~\ref{cor:wit}). The remainder-bounding step is the main piece of new algebra; boundary cases at $\tau \to 0, 1$ are excluded by Assumption~\ref{a:reg}.
+
+\paragraph{Conjecture~\ref{conj:iff} (iff joint identification).} If direction: Theorem~\ref{thm:hom}. Only-if direction: construct a parametric counterexample (precisely the Gaussian-shift family of Corollary~\ref{cor:wit}, with cohorts varying) on which $\delta(g, t^*; \tau) \ne 0$ for at least one $g$, hence $\theta^{\mathrm{CIC}}_\tau \ne \theta^{\mathrm{CL}}_\tau$, hence joint identification fails. The construction needs explicit algebra: compute $\widehat{F}^{\mathrm{CIC}}$ and $\widehat{F}^{\mathrm{CL}}$ closed-form on the Gaussian family, verify Assumptions~\ref{a:dpt}, \ref{a:cic}, \ref{a:tcop} hold, and check the inequality at $\tau = 0.5$.
+
+\paragraph{Conjecture~\ref{conj:decomp} (decompose-then-correct).} The decomposition identity follows from the algebraic step (i) of Conjecture~\ref{conj:signflip}: $\theta^{\mathrm{CL}}_\tau = \theta^{\mathrm{CIC}}_\tau + \sum_g w_g \delta(g, t^*; \tau)$ where $w_g$ extracts the integral coefficient from the copula recovery. The negative-weight claim follows because $\sum_g w_g = 0$ (the two aggregates target the same quantity in expectation under timing homogeneity, by Theorem~\ref{thm:hom}) so at least one $w_g$ is non-positive whenever any $\delta(g, t^*; \tau) \ne 0$ and the contamination moment $\kappa > 0$. The sign-preservation property of $\theta^\star_\tau$ uses $\tilde w_g \ge 0$ by construction.
+
+\paragraph{Boundary algebra to verify explicitly.} (a) The $K = 1$, $T = 2$ reduction (Corollary~\ref{cor:T2}) requires no new algebra; check it as a sanity test. (b) The $K = 2$, $T = 5$ Gaussian-shift family of Corollary~\ref{cor:wit} requires explicit Gaussian-CDF / copula computations -- a tractable closed-form exercise. (c) The remainder bound in step (ii) of Conjecture~\ref{conj:signflip} uses Taylor expansion of the inverse-CDF map at $\tau$ with explicit density-bound control; this is the only place where the constant $L_\tau / \ell_\tau$ enters $\kappa^\star$ -- if a tighter bound is desired one can refine to a local L\'evy modulus rather than the uniform sup/inf. (d) The openness of $\mathcal{O}$ uses continuity of empirical-CDF inversion under weak-$*$ convergence of cohort-period marginals; a standard Hadamard-differentiability argument.
+
+\section{Honest scope flags}
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=2pt]
+  \item \textbf{Open vs proved.} Theorem~\ref{thm:hom} is provable by direct algebra (the comonotone-copula collapse of CL under rank invariance is a textbook calculation). Conjectures~\ref{conj:signflip}, \ref{conj:iff}, \ref{conj:decomp} are open: the algebraic decomposition step is routine, but the witness construction (Conjecture~\ref{conj:iff} only-if direction) and the openness-of-$\mathcal{O}$ step (Conjecture~\ref{conj:signflip}) require non-trivial computation. The closed-form Gaussian-shift family of Corollary~\ref{cor:wit} provides a single concrete witness; promoting it to ``open set'' is the substantive remaining work.
+  \item \textbf{Withdrawn.} v1 originally considered framing the result as ``CIC dominates CL under heterogeneity'' (a directional claim); this was withdrawn because the sign-flip can go either way depending on the cohort-time pattern of $\delta$. The current framing -- non-equivalence with a sign-flip threshold -- is symmetric and correct.
+  \item \textbf{Assumptions the proposer is unsure about.} (i) Assumption~\ref{a:curv} (bounded copula curvature) is a non-trivial regularity restriction; weakening to L1 derivatives may be feasible but is not attempted here. (ii) The combination of Assumption~\ref{a:cic} (CIC rank invariance) and Assumption~\ref{a:tcop} (CL time-invariance copula) simultaneously imposed on the same DGP is non-vacuous: any DGP in $\mathcal{O}$ for Conjecture~\ref{conj:signflip} must satisfy both. The Gaussian-shift family of Corollary~\ref{cor:wit} satisfies both because the Gaussian copula with constant correlation is time-invariant under location-scale shifts; we are unsure whether a broader family also satisfies both simultaneously, and the openness claim hinges on this. If the only DGPs satisfying both assumptions form a measure-zero slice, the open-set claim fails and Conjecture~\ref{conj:signflip} would need to be restated as ``on the locus of DGPs satisfying \ref{a:cic} + \ref{a:tcop}'' -- still publishable but weaker.
+  \item \textbf{Scope.} Continuous outcomes only (Assumption~\ref{a:reg}); the discrete-outcome case requires interpolated CIC \cite{AtheyImbens2006} and is left open. The current proposal assumes never-treated cohort exists; the not-yet-treated comparison is left to a follow-up.
+\end{itemize}
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=2pt]
+  \item v1 (cold-start) -- initial draft anchored to Stage -1.1 gap \#1 (Athey--Imbens CIC vs.\ Callaway--Li QTT non-equivalence under staggered adoption, cross-linked source). Kernel: timing-heterogeneity contamination moment $\kappa(\mu_G;\tau)$ + observable threshold $\kappa^\star(\tau;F)$, sign-flip on an open set, iff joint identification at timing homogeneity, decompose-then-correct. Flagship motifs: M2 + M7 + M1. Prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+
+\bibitem{AtheyImbens2006}
+Athey, S.\ and Imbens, G.\ W. (2006).
+Identification and inference in nonlinear difference-in-differences models.
+\emph{Econometrica}, 74(2):431--497.
+
+\bibitem{CallawayLi2019}
+Callaway, B.\ and Li, T. (2019).
+Quantile treatment effects in difference in differences models with panel data.
+\emph{Quantitative Economics}, 10(4):1579--1618.
+
+\bibitem{CallawayLiOka2018}
+Callaway, B., Li, T., and Oka, T. (2018).
+Quantile treatment effects in difference in differences models under dependence restrictions and with only two time periods.
+\emph{Journal of Econometrics}, 206(2):395--413.
+
+\bibitem{LiLin2024}
+Li, T.\ and Lin, X. (2024).
+Quantile treatment effects in staggered adoption difference-in-differences designs.
+\emph{Economics Letters}, 234:111792.
+
+\bibitem{FanYu2012}
+Fan, Y.\ and Yu, Z. (2012).
+Partial identification of distributional and quantile treatment effects in difference-in-differences models.
+\emph{Economics Letters}, 115(3):511--515.
+
+\bibitem{ChernozhukovFernandezValLuo2024}
+Chernozhukov, V., Fern\'andez-Val, I., and Luo, S. (2024).
+Distributional difference-in-differences and changes-in-changes via distribution regression.
+arXiv:2409.02311.
+
+\bibitem{Ciaccio2025}
+Ciaccio, L. (2025).
+Distributional difference-in-differences with multiple periods and staggered adoption.
+arXiv working paper.
+
+\bibitem{GoodmanBacon2021}
+Goodman-Bacon, A. (2021).
+Difference-in-differences with variation in treatment timing.
+\emph{Journal of Econometrics}, 225(2):254--277.
+
+\bibitem{SunAbraham2021}
+Sun, L.\ and Abraham, S. (2021).
+Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\emph{Journal of Econometrics}, 225(2):175--199.
+
+\bibitem{deChaisemartinDHaultfoeuille2020}
+de Chaisemartin, C.\ and D'Haultfoeuille, X. (2020).
+Two-way fixed effects estimators with heterogeneous treatment effects.
+\emph{American Economic Review}, 110(9):2964--2996.
+
+\bibitem{CallawaySantAnna2021}
+Callaway, B.\ and Sant'Anna, P.\ H.\ C. (2021).
+Difference-in-differences with multiple time periods.
+\emph{Journal of Econometrics}, 225(2):200--230.
+
+\bibitem{RothSantAnna2023}
+Roth, J.\ and Sant'Anna, P.\ H.\ C. (2023).
+When is parallel trends sensitive to functional form?
+\emph{Econometrica}, 91(2):737--747.
+
+\end{thebibliography}
+
+\end{document}

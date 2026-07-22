@@ -1,0 +1,68 @@
+=== D0.5 CORE-REVIEW ADAPTER — review the typed core, emit a node-addressable verdict ===
+
+The review discipline you must apply is supplied ABOVE this block (your referee role —
+math "REPRODUCE don't check" or decision rubric). This adapter RETARGETS that
+discipline and defines the output format: you are reviewing the typed CORE (the
+machine-checkable skeleton) and emitting the concise node-addressable verdict below.
+The structural gate has already verified well-formedness (symbols defined,
+assumptions pure, no membership-as-assumption, DAG acyclic and discharged), so do
+NOT re-litigate those — focus on the MATH.
+
+Map every "§N" / "`\label`" reference to the corresponding CORE NODE, and emit
+ONLY the node-addressable verdict defined below. Tiering still informs your
+pass/revise/fail and your finding text, but it is not a separate output field
+here.
+
+Review NODE BY NODE on the DAG:
+- For each statement, REPRODUCE its `proof_tex` from its declared `depends_on` ONLY.
+  An error of omission (a missing term in a decomposition / bias / remainder / variance)
+  or a step that silently uses a node NOT in `depends_on` is a finding.
+- "Proved" = the discharged DAG; "claimed" = the headline. A rate with no converse node,
+  a one-directional iff, or a load-bearing `novel`-tagged assumption is worth only what
+  the core actually discharges.
+- An open/construct-question node (`kind:"openendedquestion"`, id `oeq:<slug>`; or a legacy
+  `kind:"conjecture"`) MAY be discharged CONDITIONALLY — its `proof_tex` may rest
+  on an explicitly-open hypothesis (named in `honest_scope`). That is legitimate when the
+  conditionality is VISIBLE: the node is an OEQ/conjecture (not a theorem), the open hypothesis
+  is stated, and NO `theorem` node silently depends on it as if closed. The laundering
+  signature is the reverse — a `theorem` (or a headline read as unconditional) that rests
+  on an open OEQ/conjecture, or an open step buried as a "proved" sub-claim. Do NOT re-flag a
+  conditional scope the proposal already declared (it was accepted at D-0.5); flag only a
+  NEW derivation-level defect, or a conditionality that is hidden rather than declared. A
+  RESOLVED OEQ — its derived construction proved — is a proved main result (tier parity with
+  a proved theorem), not a perpetually-open node.
+- The solver REUSES the frozen assumptions and cannot silently add one; a too-strong claim
+  or a mis-specified constructed-object formula was surfaced as a proposed statement /
+  definition change and APPLIED before this discharge. So review the core AS DISCHARGED:
+  judge each assumption on `needed` (a real proof step consumes it) and `natural`/achievable
+  (a setup property in standard form, not the conclusion/obligation in disguise).
+
+=== VERDICT OUTPUT ===
+
+Write a JSON verdict to the path named below, then emit the usual wrapper JSON on stdout.
+
+  { "referee": "math|decision",
+    "verdict": "pass|revise|fail",
+    "findings": [ { "node_id": "<core node id>", "code": "<short tag>", "one_line": "<diagnosis>" }, ... ],
+    "cited_checks": [
+      { "node_id": "<status:cited core node id>",
+        "check_status": "cited-verified|cited-verified-attested|cited-mismatch|cited-underspecified|cited-source-unverifiable",
+        "note": "<exact source-match or retrieval diagnosis>" }
+    ] }
+
+`cited_checks` ownership is strict: the MATH referee emits exactly one row per
+`status:"cited"` node using the injected source-of-record block. The DECISION
+referee emits `cited_checks:[]`; it judges only whether treating the fact as
+external cited substrate is legitimate. `cited-source-unverifiable` means the
+source could not be lawfully/technically retrieved: it is an escalation checkpoint,
+not a mathematical `revise`/`fail`, and must never be upgraded from agent memory.
+
+The cold general review is a separate stage with its own JSON shape; do not emit
+`referee:"general"` in this panel.
+
+Every `node_id` MUST be a real core node id (a finding against a nonexistent node is
+rejected mechanically). Use `revise` for fixable defects (route them to specific nodes),
+`fail` only if the math CLAIM itself is wrong, `pass` if the core is sound at your role's
+standard.
+
+  {"status":"completed","message":"<one-line>","artifacts":["<absolute verdict path>"]}

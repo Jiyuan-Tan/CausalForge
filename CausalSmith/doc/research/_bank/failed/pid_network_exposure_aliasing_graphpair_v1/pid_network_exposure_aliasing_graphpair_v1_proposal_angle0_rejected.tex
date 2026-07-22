@@ -1,0 +1,340 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_network\_exposure\_aliasing\_graphpair, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_network\_exposure\_aliasing\_graphpair} / \texttt{v1}%
+  \\ \large\textit{A finite graph-pair certificate for one-hop exposure aliasing}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+qid = pid_network_exposure_aliasing_graphpair.
+specialization = v1.
+anchor cluster = ExactID / network interference.
+graph / SWIG = finite undirected simple graph G on six labeled units,
+  with iid Bernoulli(p) treatment Z_i assigned independently of all
+  potential outcomes; the two focal graphs are C6 and 2K3.
+treatment = binary unit treatment Z_i in {0,1}, with p in (0,1).
+target estimand = the graph-indexed average local spillover mean
+  mu_G(p) = (1/6) sum_i E[Y_i^G(Z)] under the local quadratic law
+  Y_i^G(z) = alpha + beta z_i + gamma S_i^G(z) + eta C_i^G(z),
+  where S_i^G(z)=sum_{j:A^G_ij=1} z_j and
+  C_i^G(z)=sum_{j<k} A^G_ij A^G_ik A^G_jk z_j z_k.
+identifying assumptions = known assignment law p, consistency for the
+  graph-indexed potential-outcome law, iid Bernoulli assignment, and the
+  local quadratic closure response surface above. No panel convention is used.
+bounding functional = not applicable; the proposal is an exact finite
+  identification / non-equivalence certificate. The named frontier is
+  tau_cl(G)=|V(G)|^{-1} sum_i sum_{j<k} A_ij A_ik A_jk.
+\end{verbatim}
+
+\begin{abstract}
+Scalar exposure mappings often summarize a unit's interference state by the number of treated neighbors. The question is whether that marginal one-hop count can certify a finite network exposure model when two graphs have the same degree and assignment law. The focal certificate compares the six-cycle \(C_6\) with two disjoint triangles \(2K_3\): every unit has treated-neighbor count \(S_i \sim \mathrm{Binomial}(2,p)\), but the neighbor-closure exposure \(C_i\) is identically zero on \(C_6\) and has mean \(p^2\) on \(2K_3\). The main conjecture is a two-regular alias-class frontier: scalar count exposures alias every two-regular graph under iid Bernoulli assignment, while the closure frontier \(\tau_{\mathrm{cl}}(G)\) is the minimal rooted radius-two additive invariant that separates all local quadratic spillover means in this class. A proof would give exposure-map misspecification work a hand-checkable finite witness rather than another broad impossibility or support-coverage statement.
+\end{abstract}
+
+\section{Introduction}
+When a network experiment uses a scalar count exposure, a unit on a cycle and a unit in a triangle can look identical under iid Bernoulli assignment. The claim here is that this equality is only marginal: \(C_6\) and \(2K_3\) have the same unitwise one-hop treated-neighbor count law for all \(p\), but a local closure term separates their spillover means by \(\eta p^2\).
+
+\citet[\S2, exposure mappings]{aronow_samii_2017_general_interference} make the exposure map the bridge from assignment to estimand, and \citet[\S2--\S3]{savje_2024_misspecified_exposure} separates exposure effects from structural exposure assumptions. \citet[abstract and \S2, rooted configurations]{auerbach_guo_tabordmeehan_2026_local_approach} pool agents by nearby network configurations; the gap is the finite frontier identifying which radius-two primitive first breaks a count-exposure alias. The kernel lives in network interference and exact identification, with the graph treated as a finite primitive of the counterfactual response surface.
+
+The immediate consumer is the restricted-alternative question behind \citet{hoshino_yanagi_2023_specification_test} and \citet{gao_harshaw_savje_wang_2026_impossibility_testing}. A reader should not treat equality of marginal count-exposure histograms as evidence that two candidate network exposure models define the same spillover target.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: \(C_6\) and \(2K_3\) are one-hop count aliases under iid Bernoulli assignment, yet their closure means differ by \(p^2\). Gap: \citet{aronow_samii_2017_general_interference} and \citet{savje_2024_misspecified_exposure} do not give a finite aliasing pair with an evaluated separator. Consumer: finite restricted alternatives for \citet{hoshino_yanagi_2023_specification_test}.
+\item Conjecture 1: On the two-regular count-alias class, \(\tau_{\mathrm{cl}}(G)\) is the minimal rooted radius-two additive frontier for local quadratic spillover means. Gap: \citet[abstract and \S2]{auerbach_guo_tabordmeehan_2026_local_approach} use rooted local configurations, and \citet{gao_harshaw_savje_wang_2026_impossibility_testing} show unrestricted exposure-map tests are impossible, but neither source gives a finite necessary-and-sufficient closure frontier. Consumer: restricted graph-alternative tests and policy-usefulness diagnostics.
+\end{itemize}
+
+\section{Related work}
+\citet{hudgens_halloran_2008_jasa} define direct and indirect effects under interference and fix the estimand vocabulary used here. \citet{aronow_samii_2017_general_interference} give the design-plus-exposure-mapping framework; the present certificate asks when a scalar exposure map aliases two finite graphs. \citet{savje_aronow_hudgens_2021_unknown_interference} study average effects under limited unknown interference, which motivates a finite example where the relevant graph feature is not the one-hop count. \citet{leung_2022_approximate_neighborhood_interference} allows effects beyond exact neighborhood truncation; the closure term here is a finite two-hop/triangle-closure analogue. \citet{savje_2024_misspecified_exposure} distinguishes exposure effects as definitions from exposure mappings as assumptions, making the graph-pair aliasing question substantive rather than semantic. \citet[abstract and \S2]{auerbach_guo_tabordmeehan_2026_local_approach} use rooted local network configurations measured by path distance; this proposal isolates a necessary-and-sufficient closure primitive inside the two-regular count-alias class. \citet{auerbach_auerbach_tabordmeehan_2024_policy_usefulness} caution that misspecified exposure effects need not be policy-useful, which is exactly the failure mode exposed by the closure contrast. \citet{hoshino_yanagi_2023_specification_test} construct randomization tests for hierarchical exposure specifications; the finite pair here supplies a restricted alternative their framework could target. \citet{gao_harshaw_savje_wang_2026_impossibility_testing} prove unrestricted exposure-model testing is impossible in a worst-case sense, so the present certificate deliberately narrows the alternative class to a graph-indexed frontier. \citet{weinstein_nevo_2026_misspecified_network} study misspecified network interference through induced exposure probabilities and multiple candidate networks; this proposal shows why identical marginal count laws do not settle graph equivalence.
+
+The closest in-repository prior art is \texttt{pid\_network\_exposure\_v1}, whose reviewers requested a concrete finite witness and whose Section 11 left the exact minimal number of units for strict containment open. The failed \texttt{pid\_network\_iv\_exposure\_v3} line is relevant only as a warning: its reviewers demanded complete finite experiments with assignment support and outcome tables, which is why the present draft exhibits the \(C_6\) versus \(2K_3\) table directly.
+
+\section{Formal setup}
+Let \(V=\{1,\ldots,6\}\). Let \(G_C=C_6\) have edges \((1,2),(2,3),(3,4),(4,5),(5,6),(6,1)\), and let \(G_T=2K_3\) have edges \((1,2),(2,3),(1,3),(4,5),(5,6),(4,6)\). Write \(A^G\) for the adjacency matrix of \(G\). Treatments \(Z_i\) are iid Bernoulli\((p)\), \(p\in(0,1)\). For each graph \(G\), define the one-hop treated-neighbor count
+\[
+S_i^G(z)=\sum_{j=1}^6 A^G_{ij}z_j,
+\]
+and the neighbor-closure exposure
+\[
+C_i^G(z)=\sum_{1\le j<k\le 6} A^G_{ij}A^G_{ik}A^G_{jk}z_jz_k.
+\]
+The local quadratic response surface is
+\[
+Y_i^G(z)=\alpha+\beta z_i+\gamma S_i^G(z)+\eta C_i^G(z),
+\]
+where \((\alpha,\beta,\gamma,\eta)\in\mathbb{R}^4\). The graph-indexed target is
+\[
+\mu_G(p)=\frac{1}{6}\sum_{i=1}^6 \E\{Y_i^G(Z)\}.
+\]
+The focal closure separator is
+\[
+\Delta_{\mathrm{cl}}(p;G_T,G_C)=\frac{1}{6}\sum_{i=1}^6 \E\{C_i^{G_T}(Z)-C_i^{G_C}(Z)\}.
+\]
+For any finite two-regular graph \(G\), define the closure frontier
+\[
+\tau_{\mathrm{cl}}(G)=\frac{1}{|V(G)|}\sum_{i\in V(G)}\sum_{j<k} A^G_{ij}A^G_{ik}A^G_{jk}.
+\]
+Two graphs are count-equivalent, written \(G\equiv_S H\), if \(S_i^G(Z)\) and \(S_{h(i)}^H(Z)\) have the same law for every unit \(i\), some relabeling \(h\), and every \(p\in(0,1)\). A graph-indexed summary \(T\) separates \(G\) and \(H\) for the local quadratic class if equality of \(T(G)\) and \(T(H)\) implies \(\mu_G(p)=\mu_H(p)\) for all \((p,\alpha,\beta,\gamma,\eta)\), and inequality of \(T(G)\) and \(T(H)\) gives a nonzero contrast for some \(\eta\ne0\).
+
+\begin{verbatim}
+qid = pid_network_exposure_aliasing_graphpair.
+specialization = v1.
+anchor cluster = ExactID / network interference.
+graph / SWIG = finite undirected simple graph G on six labeled units,
+  with iid Bernoulli(p) treatment Z_i assigned independently of all
+  potential outcomes; the two focal graphs are C6 and 2K3.
+treatment = binary unit treatment Z_i in {0,1}, with p in (0,1).
+target estimand = the graph-indexed average local spillover mean
+  mu_G(p) = (1/6) sum_i E[Y_i^G(Z)] under the local quadratic law
+  Y_i^G(z) = alpha + beta z_i + gamma S_i^G(z) + eta C_i^G(z),
+  where S_i^G(z)=sum_{j:A^G_ij=1} z_j and
+  C_i^G(z)=sum_{j<k} A^G_ij A^G_ik A^G_jk z_j z_k.
+identifying assumptions = known assignment law p, consistency for the
+  graph-indexed potential-outcome law, iid Bernoulli assignment, and the
+  local quadratic closure response surface above. No panel convention is used.
+bounding functional = not applicable; the proposal is an exact finite
+  identification / non-equivalence certificate. The named frontier is
+  tau_cl(G)=|V(G)|^{-1} sum_i sum_{j<k} A_ij A_ik A_jk.
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Known finite graph pair]\label{ass:graphs}
+The candidate graphs are exactly \(G_C=C_6\) and \(G_T=2K_3\) on the labeled vertex set \(V=\{1,\ldots,6\}\), with adjacency matrices defined in Section 6.
+\end{assumption}
+
+\begin{assumption}[Bernoulli assignment]\label{ass:bernoulli}
+The treatment vector \(Z=(Z_1,\ldots,Z_6)\) has independent coordinates with \(\Pr(Z_i=1)=p\) for a known \(p\in(0,1)\).
+\end{assumption}
+
+\begin{assumption}[Graph-indexed consistency]\label{ass:consistency}
+For each graph \(G\in\{G_C,G_T\}\), the observed outcome under assignment \(Z=z\) equals the graph-indexed potential outcome \(Y_i^G(z)\).
+\end{assumption}
+
+\begin{assumption}[Local quadratic closure response]\label{ass:quadratic}
+For each \(G\in\{G_C,G_T\}\), \(Y_i^G(z)=\alpha+\beta z_i+\gamma S_i^G(z)+\eta C_i^G(z)\) with common coefficients \((\alpha,\beta,\gamma,\eta)\) across units and graphs.
+\end{assumption}
+
+\begin{assumption}[Nonzero closure slope for separation]\label{ass:eta}
+The closure coefficient satisfies \(\eta\ne 0\) when a strict spillover-mean separation is claimed.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[One-hop aliasing with closure separation]\label{thm:alias-separation}
+Under Assumptions \ref{ass:graphs}--\ref{ass:quadratic}, for every unit \(i\) and every \(p\in(0,1)\),
+\[
+S_i^{G_C}(Z)\stackrel{d}{=}S_i^{G_T}(Z)\stackrel{d}{=}\mathrm{Binomial}(2,p).
+\]
+Moreover,
+\[
+\Delta_{\mathrm{cl}}(p;G_T,G_C)=p^2,\qquad
+\mu_{G_T}(p)-\mu_{G_C}(p)=\eta p^2 .
+\]
+\end{theorem}
+Each vertex has degree two in both graphs, so the count distribution is the sum of two independent Bernoulli\((p)\) variables. In \(C_6\) no two neighbors of a vertex are adjacent, while in \(2K_3\) the two neighbors of every vertex are adjacent; hence \(C_i^{G_C}(Z)=0\) and \(C_i^{G_T}(Z)=Z_jZ_k\) with expectation \(p^2\).
+
+\begin{conjecture}[Two-regular closure frontier (NOT YET PROVED)]\label{conj:minimal-certificate}
+Under Assumptions \ref{ass:graphs}--\ref{ass:eta}, among rooted local exposure summaries that are invariant to vertex relabeling and are measurable from radius at most two, the pair
+\[
+\mathcal{K}_i^G(Z)=\bigl(S_i^G(Z),\,C_i^G(Z)\bigr)
+\]
+is necessary and sufficient to separate local quadratic closure response surfaces over the two-regular count-equivalence class. More precisely, every two-regular graph is count-equivalent under \(S_i^G\), while
+\[
+\mu_G(p)=\alpha+\beta p+2\gamma p+\eta p^2\tau_{\mathrm{cl}}(G).
+\]
+Thus the quotient induced by \(\tau_{\mathrm{cl}}\) is the coarsest relabeling-invariant radius-two additive quotient that preserves all graph-indexed means in the local quadratic class. Count-only summaries cannot separate \(G_C\) from \(G_T\) because \(G_C\equiv_S G_T\), whereas \(\tau_{\mathrm{cl}}(G_C)=0\), \(\tau_{\mathrm{cl}}(G_T)=1\), and \(\mu_{G_T}(p)-\mu_{G_C}(p)=\eta p^2\).
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No closure effect]\label{cor:no-closure}
+Under Assumptions \ref{ass:graphs}--\ref{ass:quadratic}, if \(\eta=0\), then \(\mu_{G_T}(p)=\mu_{G_C}(p)\) for all \(p\in(0,1)\).
+\end{corollary}
+This collapses to the standard scalar count-exposure case because both graphs have \(E[Z_i]=p\) and \(E[S_i^G(Z)]=2p\).
+
+\begin{example}[Exhibit 9.1: finite closure certificate]\label{ex:closure-certificate}
+For \(p=1/2\), \(G_C=C_6\), and \(G_T=2K_3\), the focal object is
+\(\tau_{\mathrm{cl}}(G_T)-\tau_{\mathrm{cl}}(G_C)=1\) and
+\(\Delta_{\mathrm{cl}}(1/2;G_T,G_C)=1/4\). The resulting spillover-mean separation is
+\(\mu_{G_T}(1/2)-\mu_{G_C}(1/2)=\eta/4\).
+\end{example}
+\begin{verbatim}
+Focal object: tau_cl(G) and Delta_cl(p;G_T,G_C), the closure frontier and separator.
+Defining equation (copy verbatim from Section 6):
+tau_cl(G) = |V(G)|^{-1} sum_i sum_{j<k} A_ij A_ik A_jk.
+Delta_cl(p;G_T,G_C) = (1/6) sum_i E{C_i^{G_T}(Z)-C_i^{G_C}(Z)}.
+RHS symbol provenance:
+  - p = 1/2     source: Section 6 primitive assignment probability.
+  - G_C = C6 edges (12,23,34,45,56,61)
+      source: Section 6 primitive graph.
+  - G_T = 2K3 edges (12,23,13,45,56,46)
+      source: Section 6 primitive graph.
+  - C_i^G(z) = sum_{j<k} A_ij^G A_ik^G A_jk^G z_j z_k
+      source: Section 6 primitive exposure definition.
+  - For every i in C6, neighbor-neighbor edge count = 0
+      source: derived from the Section 6 edge list.
+  - For every i in 2K3, neighbor-neighbor edge count = 1
+      source: derived from the Section 6 edge list.
+  - E[Z_j Z_k] = p^2 = 1/4 for j != k
+      source: derived from Section 6 iid Bernoulli assignment.
+Substituted equation:
+  tau_cl(G_T)-tau_cl(G_C) = (1/6) * sum_{i=1}^6 (1 - 0)
+  Delta_cl(1/2;G_T,G_C) = p^2 * {tau_cl(G_T)-tau_cl(G_C)}
+    = (1/4) * 1
+Computed value:
+  tau_cl(G_T)-tau_cl(G_C) = 1.
+  Delta_cl(1/2;G_T,G_C) = 1/4.
+Invariant check 1: both graphs have six vertices.
+  LHS = |V(C6)| = 6; RHS = |V(2K3)| = 6; result = OK.
+Invariant check 2: every vertex has degree two.
+  LHS = degree sequence(C6) = (2,2,2,2,2,2);
+  RHS = degree sequence(2K3) = (2,2,2,2,2,2); result = OK.
+Invariant check 3: one-hop count law agrees.
+  LHS = Binomial(2,1/2); RHS = Binomial(2,1/2); result = OK.
+Invariant check 4: closure separator denominator is nonzero.
+  LHS = 6; RHS = 6; result = OK.
+Assumption-substitution screen:
+  No RHS symbol above is sourced from Section 7 assumptions.
+  load-bearing for flagship novelty? NO assumed symbol is load-bearing.
+SC10 verdict: PASS.
+\end{verbatim}
+
+\section{Proof-sketch route}
+Theorem \ref{thm:alias-separation} reduces to enumeration of the two adjacency matrices and the independence identity \(E[Z_jZ_k]=p^2\). Conjecture \ref{conj:minimal-certificate} would be verified by the following route:
+\begin{enumerate}[leftmargin=*]
+\item Headline: \(\tau_{\mathrm{cl}}(G)\) is the minimal rooted radius-two additive frontier for the two-regular local quadratic count-alias class.
+\item Step 0a -- unfold Section 6 definitions: expand \(S_i^G\), \(C_i^G\), \(\tau_{\mathrm{cl}}(G)\), \(\mu_G(p)\), and \(\Delta_{\mathrm{cl}}\); this is not counted in \(k\).
+\item Step 0b -- apply Section 7 assumptions: use the fixed graph pair, iid Bernoulli assignment, and local quadratic closure response; this is not counted in \(k\).
+\item Step 1 (substantive): classify the two-regular count-equivalence class and show the law of \(S_i^G\) is always \(\mathrm{Binomial}(2,p)\), independent of cycle decomposition.
+\item Step 2 (substantive): derive the orthogonal decomposition \(\mu_G(p)=\alpha+\beta p+2\gamma p+\eta p^2\tau_{\mathrm{cl}}(G)\), so all graph dependence in the local quadratic class enters through \(\tau_{\mathrm{cl}}\).
+\item Step 3 (substantive): prove a minimality lemma for additive rooted radius-two invariants: any invariant preserving all local quadratic means must be constant on the level sets of \(\tau_{\mathrm{cl}}\).
+\item Step 4 (substantive): show radius-one count summaries cannot recover \(\tau_{\mathrm{cl}}\), while the radius-two rooted edge indicator \(A_{ij}A_{ik}A_{jk}\) recovers it for every graph in the two-regular class.
+\item Step 5 (substantive): verify the non-corner witness \(C_6\) versus \(2K_3\) and rule out normalization artifacts by evaluating both \(\tau_{\mathrm{cl}}\) and \(\Delta_{\mathrm{cl}}\).
+\item Classical result: the finite rooted-neighborhood isomorphism criterion for radius-two graph features closes the sufficiency direction.
+\item \(k=5\); PASS iff \(k\ge3\).
+\end{enumerate}
+
+\section{Honest scope flags}
+The equality of the one-hop count laws and the \(C_6\) versus \(2K_3\) closure contrast are elementary finite claims. The two-regular frontier and minimal additive quotient in Conjecture \ref{conj:minimal-certificate} are not yet proved. The response surface intentionally includes a closure term; without \(\eta\ne0\), the graph-pair distinction remains geometric but not target-relevant. This v2 does not claim a general impossibility theorem for exposure-map testing or a sharp partial-identification bound.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft with \(C_6\) versus \(2K_3\) one-hop aliasing, closure separator, and minimal rooted-certificate conjecture; prior verdict: none.
+\item v2 (revise) -- formalized count-equivalence and separation, added the location-level rooted-configuration anchor, and strengthened Conjecture 1 to a two-regular closure-frontier statement; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Aronow and Samii(2017)]{aronow_samii_2017_general_interference}
+Aronow, P. M. and C. Samii (2017).
+Estimating average causal effects under general interference, with application to a social network experiment.
+\textit{Annals of Applied Statistics} 11(4), 1912--1947.
+
+\bibitem[Auerbach, Auerbach, and Tabord-Meehan(2024)]{auerbach_auerbach_tabordmeehan_2024_policy_usefulness}
+Auerbach, E., J. Auerbach, and M. Tabord-Meehan (2024).
+Discussion of ``Causal inference with misspecified exposure mappings''.
+\textit{Biometrika} 111(1), 1--6.
+
+\bibitem[Auerbach, Guo, and Tabord-Meehan(2026)]{auerbach_guo_tabordmeehan_2026_local_approach}
+Auerbach, E., H. Guo, and M. Tabord-Meehan (2026).
+The local approach to causal inference under network interference.
+\textit{Quantitative Economics}, forthcoming.
+
+\bibitem[Gao, Harshaw, Savje, and Wang(2026)]{gao_harshaw_savje_wang_2026_impossibility_testing}
+Gao, C., C. Harshaw, F. Savje, and Y. Wang (2026).
+Testing exposure mappings.
+\textit{arXiv:2605.09726}.
+
+\bibitem[Hoshino and Yanagi(2023)]{hoshino_yanagi_2023_specification_test}
+Hoshino, T. and T. Yanagi (2023).
+Randomization tests for spillover specification.
+\textit{arXiv:2301.05580}.
+
+\bibitem[Hudgens and Halloran(2008)]{hudgens_halloran_2008_jasa}
+Hudgens, M. G. and M. E. Halloran (2008).
+Toward causal inference with interference.
+\textit{Journal of the American Statistical Association} 103(482), 832--842.
+
+\bibitem[Leung(2022)]{leung_2022_approximate_neighborhood_interference}
+Leung, M. P. (2022).
+Causal inference under approximate neighborhood interference.
+\textit{Econometrica} 90(1), 267--293.
+
+\bibitem[Savje(2024)]{savje_2024_misspecified_exposure}
+Savje, F. (2024).
+Causal inference with misspecified exposure mappings.
+\textit{Biometrika} 111(1), 1--15.
+
+\bibitem[Savje, Aronow, and Hudgens(2021)]{savje_aronow_hudgens_2021_unknown_interference}
+Savje, F., P. M. Aronow, and M. G. Hudgens (2021).
+Average treatment effects in the presence of unknown interference.
+\textit{Annals of Statistics} 49(2), 673--701.
+
+\bibitem[Weinstein and Nevo(2026)]{weinstein_nevo_2026_misspecified_network}
+Weinstein, B. and D. Nevo (2026).
+Causal inference under misspecification of network interference structures.
+\textit{Biometrics}, forthcoming.
+\end{thebibliography}
+
+\end{document}

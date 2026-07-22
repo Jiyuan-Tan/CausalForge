@@ -1,0 +1,532 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_tv\_pretrend\_atet, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_tv\_pretrend\_atet} / \texttt{v1}%
+  \\ \large\textit{Joint anchored-TV support bodies for families of staggered-adoption ATT aggregates}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+(qid, specialization) =
+  (pid_tv_pretrend_atet, v1)
+observable distribution P =
+  law of a finite staggered-adoption panel summarized by:
+  (i) a realized pre-treatment discrepancy path
+      g = (g_{-T0},...,g_{-1}) in R^{T0},
+  (ii) a finite family of post-treatment ATT aggregates
+      Lambda = {ell^(1),...,ell^(K)} with ell^(k) in R^H,
+  (iii) the corresponding exact-parallel-trends benchmark estimates
+      hat theta_Lambda = (hat theta_1,...,hat theta_K) in R^K,
+  (iv) a common latent post-treatment untreated-trend discrepancy path
+      u = (u_1,...,u_H) in R^H shared by all aggregates.
+parameter theta =
+  theta_Lambda = (theta_1,...,theta_K), where
+  theta_k = hat theta_k - (ell^(k))' u
+identifying restrictions =
+  consistency; absorbing staggered adoption; no exact parallel-trends
+  requirement; the latent discrepancy path is anchored at the last pre-period,
+    u_0 = 0,
+  and obeys the total-variation budget
+    TV(u) := sum_{h=1}^H |u_h-u_{h-1}| <= kappa * V_pre(g),
+  where V_pre(g) := sum_{j=-T0+1}^{-1} |g_j-g_{j-1}|.
+bounding functional =
+  Theta_I^Lambda(P; kappa)
+    = { hat theta_Lambda - W_Lambda u :
+        u_0 = 0, TV(u) <= kappa * V_pre(g) },
+  where W_Lambda is the K x H matrix with kth row (ell^(k))'.
+  The proposal studies:
+    (a) the joint support body B_{Lambda,TV}(P;kappa) induced by the common
+        TV class,
+    (b) the scalar sign-loss frontier for each weighted ATT as a projection
+        of that same body,
+    (c) when B_{Lambda,TV}(P;kappa) is a strict subset of the coordinatewise
+        Rambachan-Roth relative-magnitude rectangle built from the same scale.
+\end{verbatim}
+
+\begin{abstract}
+Staggered-adoption sensitivity analyses usually report one ATT aggregate at a time, even though the same latent post-treatment trend discrepancy path perturbs every weighted aggregate simultaneously. This proposal asks for the sharp identified set of a finite family of weighted post-treatment ATT functionals when that common discrepancy path is restricted by an anchored total-variation budget calibrated to the observed pre-treatment path. The routine claim is a joint support-body theorem: the family identified set is the image of one anchored-TV ball, and its support in any direction \(a\in\R^K\) is a closed form \( \kappa V_{\mathrm{pre}}(g)\Gamma_{\mathrm{TV}}(W_\Lambda^\transpose a)\). A scalar ATET interval and its sign-loss frontier are then projections of the same body rather than separate sensitivity calculations. The flagship conjecture is that, outside a thin coordinate-separable locus of weight families, this joint TV body is generically a strict subset of the coordinatewise Rambachan--Roth relative-magnitude rectangle and has a different exposed-face geometry. If resolved, the result would make sensitivity reporting for staggered designs a multi-target identified-set object rather than a list of unrelated one-dimensional robustness numbers.
+\end{abstract}
+
+\section{Introduction}
+Sensitivity analysis in staggered adoption is usually reported for one ATT aggregate at a time. The question here is whether a single anchored-TV restriction on the latent untreated trend path identifies a sharper joint object: the whole vector of weighted post-treatment ATT aggregates generated by that common path. The headline claim is that the family identified set is governed by one support body with a closed-form dual norm, and that each scalar breakdown value is only a projection of that body.
+
+The closest published comparator is \citet{RambachanRoth2023CrediblePT}, who write that their framework ``bounds the maximal post-treatment violation'' by a multiple of the maximal pre-treatment violation (\S1.1, p.~2558). The second comparator is \citet{CallawaySantAnna2021MultiplePeriods}, whose abstract states that staggered-adoption designs identify ``a family of causal effect parameters,'' but without a joint sensitivity geometry for that family. The gap is therefore twofold: a TV-based joint support body in place of coordinatewise relative-magnitude boxes, and a theorem-level comparison between the joint TV body and the rectangle obtained by treating each ATT aggregate separately. The kernel is a partial-identification theorem with a staggered-panel application structure.
+
+The direct consumer is the sensitivity-reporting workflow recommended by \citet{RothSantAnnaBilinskiPoe2023TrendingDiD} when exact parallel trends is doubtful and analysts report several post-treatment aggregands from the same staggered design. If the proposal is correct, a user of group-time or imputation-based event studies \citep{CallawaySantAnna2021MultiplePeriods,BorusyakJaravelSpiess2024EventStudies} would replace a column of unrelated scalar robustness intervals by one joint identified set and then read each scalar frontier as a projection. The practical change is that robustness reporting would become a common-path geometry problem rather than a sequence of separate one-dimensional calculations.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: the family identified set is \(\hat\theta_\Lambda-\mathcal B_{\Lambda,\mathrm{TV}}(P;\kappa)\), where the support of \(\mathcal B_{\Lambda,\mathrm{TV}}(P;\kappa)\) in direction \(a\) is \( \kappa V_{\mathrm{pre}}(g)\Gamma_{\mathrm{TV}}(W_\Lambda^\transpose a)\). Gap: \citet{RambachanRoth2023CrediblePT} allow analyst-chosen classes but do not isolate a joint TV support body for a family of staggered ATT aggregates. Consumer: \citet{RothSantAnnaBilinskiPoe2023TrendingDiD}.
+\item Theorem 2: each scalar sign-loss frontier is a coordinate projection of that same body, and the body is contained in the coordinatewise Rambachan--Roth rectangle with strict inclusion whenever the TV dual norm is strictly subadditive on some direction. Gap: \citet{ManskiPepper2018BoundedVariation} motivate variation restrictions, but do not compare a joint TV body to the product rectangle generated by separate scalar bounds. Consumer: \citet{CallawaySantAnna2021MultiplePeriods}.
+\item Conjecture 3: outside a closed coordinate-separable locus of staggered weight families, the joint TV body is generically a strict subset of the relative-magnitude rectangle and has non-rectangular exposed faces generated by one-hinge paths. Gap: \citet{KahnLangLang2020PromisePitfalls} and \citet{BorusyakJaravelSpiess2024EventStudies} motivate scale-aware and design-aware sensitivity choices, but do not characterize the generic geometry of the multi-target identified set. Consumer: multi-endpoint staggered event-study practice.
+\end{itemize}
+
+\section{Related work}
+\citet{RambachanRoth2023CrediblePT} are the main published anchor because they cast violations of parallel trends as a partially identified event-study problem under analyst-chosen restriction classes. The present proposal keeps that sensitivity-analysis stance but replaces coordinatewise relative-magnitude reporting by one joint TV support body for several weighted ATT targets.
+
+\citet{ManskiPepper2018BoundedVariation} are the bounded-variation precedent. Their paper shows how variation restrictions can replace exact identifying assumptions, but it does not study staggered-adoption ATT families or the geometry of a common-path support body.
+
+\citet{CallawaySantAnna2021MultiplePeriods} identify group-time treatment effects and define aggregation schemes in staggered adoption. They are the natural estimand comparator because the weight family \(\Lambda\) in this proposal is built from their family of post-treatment aggregates, even though their results remain point identifying under conditional parallel trends.
+
+\citet{SunAbraham2021DynamicEffects} show that lead and lag coefficients in staggered event-study regressions can be contaminated by treatment-effect heterogeneity. That paper matters here because it warns that aggregation changes causal meaning before any sensitivity restriction is imposed.
+
+\citet{BorusyakJaravelSpiess2024EventStudies} provide robust and efficient imputation estimators for staggered event studies. Their relevance is that they clarify the target aggregation map, not that they derive a joint partial-identification region under trend violations.
+
+\citet{RothSantAnnaBilinskiPoe2023TrendingDiD} synthesize recent DiD advances and argue that sensitivity analysis should state what violations must be ruled out for a conclusion to survive. The proposal treats that recommendation as a multi-target object rather than a sequence of scalar reports.
+
+\citet{KahnLangLang2020PromisePitfalls} argue that pretrends are informative but not dispositive about the identifying assumption. The current proposal turns that insight into a geometry statement: the full signed pretrend path calibrates one TV radius that moves several post-treatment aggregates jointly.
+
+\citet{Roth2022PretestCaution} show that diagnostic decisions based on pretrend tests can be misleading when power is low. That paper is relevant because it motivates reporting the whole identified set implied by the realized pretrend path, not only a pass-fail diagnostic.
+
+In-repo prior work is close enough to matter but not duplicative. `doc/API.md` Section 3 records that `CausalSmith/PartialID/` is empty at seed time, so there is no live in-catalogue `pid_*` theorem with this kernel. The legacy bank entry `q1_partial_did_unobserved_trends / p1_baseline_v2` names sharp partial identification for staggered DiD under partially unobserved pretrends, but it does not isolate a TV-calibrated joint support object. The failed `panel_honest_did_phase / v1` proposal is the nearest in-repo warning that aggregate sensitivity may fail to match the cohort-level support-function image, yet it worked with cohort-versus-aggregate phase language rather than a finite family of ATT aggregates under one anchored-TV class. The downgraded `pid_synth_control_factor_misspec / v1` and `pid_offline_policy_joint_misspec / v1` proposals matter only as methodological comparators showing that signed-path information and joint support functions can be strictly tighter than rectangular envelopes.
+
+\section{Formal setup}
+Let \(g=(g_{-T_0},\ldots,g_{-1})\in\R^{T_0}\) be the realized pre-treatment discrepancy path produced by a fixed staggered-adoption design and a fixed event-study or group-time aggregation rule. Define the observable pretrend scale
+\[
+V_{\mathrm{pre}}(g)=\sum_{j=-T_0+1}^{-1}\lvert g_j-g_{j-1}\rvert .
+\]
+Let \(u=(u_1,\ldots,u_H)\in\R^H\) be the post-treatment untreated-trend discrepancy path, anchored at \(u_0=0\). For a fixed finite family \(\Lambda=\{\ell^{(1)},\ldots,\ell^{(K)}\}\subset\R^H\), write \(W_\Lambda\in\R^{K\times H}\) for the matrix with \(k\)th row \((\ell^{(k)})^\transpose\). The exact-parallel-trends benchmark supplies the vector of point estimates
+\[
+\hat\theta_\Lambda=(\hat\theta_1,\ldots,\hat\theta_K)^\transpose\in\R^K,
+\]
+and the latent target vector is
+\[
+\theta_\Lambda=\hat\theta_\Lambda-W_\Lambda u.
+\]
+
+For \(\kappa\ge 0\), define the anchored-TV class
+\[
+\mathcal U_{\mathrm{TV}}(g,\kappa)
+=
+\left\{
+u\in\R^H:
+u_0=0,\;
+\operatorname{TV}(u):=\sum_{h=1}^H \lvert u_h-u_{h-1}\rvert
+\le \kappa V_{\mathrm{pre}}(g)
+\right\}.
+\]
+The joint identified set is
+\[
+\Theta_I^\Lambda(P;\kappa)
+=
+\left\{
+\hat\theta_\Lambda-W_\Lambda u:
+u\in\mathcal U_{\mathrm{TV}}(g,\kappa)
+\right\}\subset\R^K.
+\]
+Its bias body is
+\[
+\mathcal B_{\Lambda,\mathrm{TV}}(P;\kappa)
+=
+\left\{
+W_\Lambda u:
+u\in\mathcal U_{\mathrm{TV}}(g,\kappa)
+\right\},
+\qquad
+\Theta_I^\Lambda(P;\kappa)=\hat\theta_\Lambda-\mathcal B_{\Lambda,\mathrm{TV}}(P;\kappa).
+\]
+
+For \(v\in\R^H\), define the TV dual norm candidate
+\[
+\Gamma_{\mathrm{TV}}(v)
+=
+\max_{1\le m\le H}\left|
+\sum_{h=m}^H v_h
+\right|.
+\]
+For \(a\in\R^K\), the support of the joint bias body in direction \(a\) is
+\[
+h_{\Lambda,\mathrm{TV}}(a;P,\kappa)
+=
+\sup\{a^\transpose b: b\in\mathcal B_{\Lambda,\mathrm{TV}}(P;\kappa)\}.
+\]
+For \(k\in\{1,\ldots,K\}\), let \(e_k\in\R^K\) denote the \(k\)th standard basis vector. A one-hinge path is any \(u\in\R^H\) whose increment vector \(\Delta_h=u_h-u_{h-1}\) has at most one nonzero coordinate.
+The coordinatewise relative-magnitude comparator uses the same scale \( \kappa V_{\mathrm{pre}}(g)\) but treats each aggregate separately:
+\[
+\mathcal R_{\Lambda,\mathrm{RM}}(P;\kappa)
+=
+\prod_{k=1}^K
+\left[
+-\kappa V_{\mathrm{pre}}(g)\|\ell^{(k)}\|_1,\,
+\kappa V_{\mathrm{pre}}(g)\|\ell^{(k)}\|_1
+\right].
+\]
+This rectangle is the product of the scalar sup-norm envelopes one would obtain by bounding \(\|u\|_\infty\) coordinatewise at the same observable scale.
+
+\begin{quote}
+\begin{verbatim}
+(qid, specialization) =
+  (pid_tv_pretrend_atet, v1)
+observable distribution P =
+  law of a finite staggered-adoption panel summarized by:
+  (i) a realized pre-treatment discrepancy path
+      g = (g_{-T0},...,g_{-1}) in R^{T0},
+  (ii) a finite family of post-treatment ATT aggregates
+      Lambda = {ell^(1),...,ell^(K)} with ell^(k) in R^H,
+  (iii) the corresponding exact-parallel-trends benchmark estimates
+      hat theta_Lambda = (hat theta_1,...,hat theta_K) in R^K,
+  (iv) a common latent post-treatment untreated-trend discrepancy path
+      u = (u_1,...,u_H) in R^H shared by all aggregates.
+parameter theta =
+  theta_Lambda = (theta_1,...,theta_K), where
+  theta_k = hat theta_k - (ell^(k))' u
+identifying restrictions =
+  consistency; absorbing staggered adoption; no exact parallel-trends
+  requirement; the latent discrepancy path is anchored at the last pre-period,
+    u_0 = 0,
+  and obeys the total-variation budget
+    TV(u) := sum_{h=1}^H |u_h-u_{h-1}| <= kappa * V_pre(g),
+  where V_pre(g) := sum_{j=-T0+1}^{-1} |g_j-g_{j-1}|.
+bounding functional =
+  Theta_I^Lambda(P; kappa)
+    = { hat theta_Lambda - W_Lambda u :
+        u_0 = 0, TV(u) <= kappa * V_pre(g) },
+  where W_Lambda is the K x H matrix with kth row (ell^(k))'.
+  The proposal studies:
+    (a) the joint support body B_{Lambda,TV}(P;kappa) induced by the common
+        TV class,
+    (b) the scalar sign-loss frontier for each weighted ATT as a projection
+        of that same body,
+    (c) when B_{Lambda,TV}(P;kappa) is a strict subset of the coordinatewise
+        Rambachan-Roth relative-magnitude rectangle built from the same scale.
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite horizon and finite family]\label{ass:finite}
+The number of post-treatment event times \(H\), the number of observed pre-treatment periods \(T_0\), and the family size \(K\) are finite.
+\end{assumption}
+
+\begin{assumption}[Known staggered weights]\label{ass:weights}
+The family \(\Lambda=\{\ell^{(1)},\ldots,\ell^{(K)}\}\subset\R^H\) and the benchmark vector \(\hat\theta_\Lambda\in\R^K\) are fixed components of the observable law \(P\).
+\end{assumption}
+
+\begin{assumption}[Anchored common-path sensitivity]\label{ass:tv}
+All weighted ATT aggregates in the family are perturbed by the same latent post-treatment discrepancy path \(u\), anchored at \(u_0=0\), with \(\operatorname{TV}(u)\le \kappa V_{\mathrm{pre}}(g)\).
+\end{assumption}
+
+\begin{assumption}[Positive calibration scale]\label{ass:scale}
+The observed pretrend scale satisfies \(V_{\mathrm{pre}}(g)>0\).
+\end{assumption}
+
+\begin{assumption}[Coordinate-separable locus]\label{ass:separable}
+The family \(\Lambda\) is coordinate-separable if there exists a partition of \(\{1,\ldots,H\}\) into singletons supporting all exposed tail-cumulative maximizers of \(W_\Lambda^\transpose a\) for every \(a\in\R^K\). Equivalently, every exposed direction of the joint TV body is supported on one coordinate face of the product rectangle.
+\end{assumption}
+
+\begin{assumption}[Generic non-separable family]\label{ass:generic}
+The family \(\Lambda\) is generically non-separable if there exists \(a_0\in\R^K\) such that \(W_\Lambda^\transpose a_0\) has a unique tail-cumulative maximizer \(m^\star\), at least two coordinates of \(a_0\) are nonzero, and
+\[
+\Gamma_{\mathrm{TV}}(W_\Lambda^\transpose a_0)
+<
+\sum_{k=1}^K |a_{0k}|\|\ell^{(k)}\|_1.
+\]
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: joint TV support body]\label{thm:joint-body}
+Under Assumptions~\ref{ass:finite}--\ref{ass:tv}, the identified set satisfies
+\[
+\Theta_I^\Lambda(P;\kappa)=\hat\theta_\Lambda-\mathcal B_{\Lambda,\mathrm{TV}}(P;\kappa),
+\]
+where \(\mathcal B_{\Lambda,\mathrm{TV}}(P;\kappa)\) is a compact, convex, centrally symmetric subset of \(\R^K\). Its support function is
+\[
+h_{\Lambda,\mathrm{TV}}(a;P,\kappa)
+=
+\kappa V_{\mathrm{pre}}(g)\Gamma_{\mathrm{TV}}(W_\Lambda^\transpose a),
+\qquad a\in\R^K.
+\]
+Equivalently,
+\[
+\mathcal B_{\Lambda,\mathrm{TV}}(P;\kappa)
+=
+\left\{
+b\in\R^K:
+a^\transpose b
+\le
+\kappa V_{\mathrm{pre}}(g)\Gamma_{\mathrm{TV}}(W_\Lambda^\transpose a)
+\text{ for all }a\in\R^K
+\right\}.
+\]
+\end{theorem}
+
+Write \(\Delta_h=u_h-u_{h-1}\). Then \(u_h=\sum_{j\le h}\Delta_j\) and
+\[
+a^\transpose W_\Lambda u
+=
+\sum_{j=1}^H
+\left(
+\sum_{h=j}^H (W_\Lambda^\transpose a)_h
+\right)\Delta_j.
+\]
+The constraint \(\sum_{j=1}^H |\Delta_j|\le \kappa V_{\mathrm{pre}}(g)\) reduces the support problem to \(\ell_1\)-duality, which yields the displayed formula.
+
+\begin{theorem}[Theorem 2: scalar projections and rectangle comparison]\label{thm:projection-rectangle}
+Under Assumptions~\ref{ass:finite}--\ref{ass:scale}, the \(k\)th coordinate projection of \(\Theta_I^\Lambda(P;\kappa)\) is
+\[
+\Theta_{I,k}(P;\kappa)
+=
+\left[
+\hat\theta_k-\kappa V_{\mathrm{pre}}(g)\Gamma_{\mathrm{TV}}(\ell^{(k)}),\;
+\hat\theta_k+\kappa V_{\mathrm{pre}}(g)\Gamma_{\mathrm{TV}}(\ell^{(k)})
+\right].
+\]
+If \(\Gamma_{\mathrm{TV}}(\ell^{(k)})>0\), the sign-loss frontier for the \(k\)th aggregate is
+\[
+\kappa^{\mathrm{sign}}_k
+=
+\frac{|\hat\theta_k|}{V_{\mathrm{pre}}(g)\Gamma_{\mathrm{TV}}(\ell^{(k)})},
+\]
+with the convention \(\kappa^{\mathrm{sign}}_k=+\infty\) when \(\Gamma_{\mathrm{TV}}(\ell^{(k)})=0\).
+
+Moreover,
+\[
+\mathcal B_{\Lambda,\mathrm{TV}}(P;\kappa)\subseteq \mathcal R_{\Lambda,\mathrm{RM}}(P;\kappa).
+\]
+If there exists \(a\in\R^K\) such that
+\[
+\Gamma_{\mathrm{TV}}(W_\Lambda^\transpose a)
+<
+\sum_{k=1}^K |a_k|\|\ell^{(k)}\|_1,
+\]
+then the inclusion is strict.
+\end{theorem}
+
+The projection formula is Theorem~\ref{thm:joint-body} with \(a=e_k\). The rectangle comparison follows from
+\[
+\Gamma_{\mathrm{TV}}(W_\Lambda^\transpose a)
+\le
+\|W_\Lambda^\transpose a\|_1
+\le
+\sum_{k=1}^K |a_k|\|\ell^{(k)}\|_1,
+\]
+and strictness holds whenever one of the displayed inequalities is strict in an exposed direction.
+
+\begin{conjecture}[Conjecture 3: generic non-rectangularity of the joint TV body {\normalfont (NOT YET PROVED)}]\label{conj:generic-strict}
+Under Assumptions~\ref{ass:finite}--\ref{ass:generic}, there exists an open neighborhood \(\mathcal N\) of \(W_\Lambda\) in \(\R^{K\times H}\) such that for every \(\widetilde W\in\mathcal N\),
+\[
+\mathcal B_{\widetilde\Lambda,\mathrm{TV}}(P;\kappa)
+\subsetneq
+\mathcal R_{\widetilde\Lambda,\mathrm{RM}}(P;\kappa),
+\]
+and the normal fan of \(\mathcal B_{\widetilde\Lambda,\mathrm{TV}}(P;\kappa)\) is not the normal fan of any axis-aligned rectangle. On the complement of this open set, equality with the rectangle can occur only on the closed coordinate-separable locus of Assumption~\ref{ass:separable}. Equivalently, outside that locus the joint TV body is generated by exposed one-hinge discrepancy paths that cannot be recovered from coordinatewise scalar envelopes alone.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Single-target reduction]\label{cor:single}
+Under Assumptions~\ref{ass:finite}--\ref{ass:scale}, if \(K=1\) then
+\[
+h_{\Lambda,\mathrm{TV}}(a;P,\kappa)
+=
+|a_1|\kappa V_{\mathrm{pre}}(g)\Gamma_{\mathrm{TV}}(\ell^{(1)}),
+\]
+so \(\Theta_I^\Lambda(P;\kappa)\) collapses to the scalar TV interval for one weighted ATT aggregate.
+\end{corollary}
+
+Under \(K=1\), \(W_\Lambda^\transpose a=a_1\ell^{(1)}\), so the joint support formula becomes the one-dimensional support formula. This is the intended reduction to the scalar anchored-TV object.
+
+\begin{corollary}[Coordinate-axis corner]\label{cor:axis}
+Under Assumptions~\ref{ass:finite}--\ref{ass:tv}, if every \(\ell^{(k)}\) has support on a single post-treatment coordinate, then
+\[
+\mathcal B_{\Lambda,\mathrm{TV}}(P;\kappa)=\mathcal R_{\Lambda,\mathrm{RM}}(P;\kappa).
+\]
+\end{corollary}
+
+When each weighted ATT uses only one post-treatment coordinate, \(\Gamma_{\mathrm{TV}}(W_\Lambda^\transpose a)=\sum_k |a_k|\|\ell^{(k)}\|_1\), so the support functions of the TV body and the rectangle coincide. This is the intended sanity check for the coordinate-separable corner.
+
+\paragraph{Exhibit 9.1. Two post periods and two aggregates.}
+Take \(H=2\), \(K=2\), \(V_{\mathrm{pre}}(g)=1\), and \(\kappa=1\). Let
+\[
+\ell^{(1)}=(1,0)^\transpose,\qquad
+\ell^{(2)}=(0,1)^\transpose,
+\qquad
+W_\Lambda=
+\begin{pmatrix}
+1 & 0\\
+0 & 1
+\end{pmatrix}.
+\]
+Then \(u=(u_1,u_2)\) satisfies \(|u_1|+|u_2-u_1|\le 1\), and the joint bias vector is
+\[
+b=W_\Lambda u=(u_1,u_2).
+\]
+Hence
+\[
+\mathcal B_{\Lambda,\mathrm{TV}}(P;1)
+=
+\{(b_1,b_2)\in\R^2: |b_1|+|b_2-b_1|\le 1\}.
+\]
+For any \(a=(a_1,a_2)\),
+\[
+h_{\Lambda,\mathrm{TV}}(a;P,1)
+=
+\Gamma_{\mathrm{TV}}(W_\Lambda^\transpose a)
+=
+\max\{|a_1+a_2|,\ |a_2|\}.
+\]
+The coordinatewise relative-magnitude rectangle is
+\[
+\mathcal R_{\Lambda,\mathrm{RM}}(P;1)=[-1,1]^2
+\]
+with support \(h_{\mathrm{RM}}(a)=|a_1|+|a_2|\). At \(a=(1,-1)\),
+\[
+h_{\Lambda,\mathrm{TV}}(a;P,1)=1,\qquad
+h_{\mathrm{RM}}(a)=2.
+\]
+Thus the TV body is strictly smaller than the rectangle, and the difference is not a normalization artifact because both bodies are computed from the same primitives \((g,\kappa,\Lambda)\) and the same scale \(V_{\mathrm{pre}}(g)=1\). The internal checks are immediate: there are exactly two post-treatment coordinates, the support formulas use no zero denominator, and the defining inequality \(|b_1|+|b_2-b_1|\le 1\) describes a nonempty compact convex set.
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:joint-body} reduces by the chain
+\[
+\text{joint support body}
+\leftarrow
+[\text{unfold \S6 definitions}]
+\leftarrow
+[\Delta_h=u_h-u_{h-1}]
+\leftarrow
+[\text{Abel summation to tail cumulants}]
+\leftarrow
+[\ell_1\text{-duality on the increment budget}]
+\leftarrow
+[\text{support-function reconstruction of a convex body}],
+\]
+which has \(k=3\) substantive non-definitional steps after the setup: increment reparameterization, Abel summation, and dual reconstruction. Theorem~\ref{thm:projection-rectangle} then adds one nontrivial step, namely the comparison of \(\Gamma_{\mathrm{TV}}\) to the product-rectangle support via strict subadditivity in exposed directions. Conjecture~\ref{conj:generic-strict} should be attacked by the chain
+\[
+\text{generic strict inclusion}
+\leftarrow
+[\text{unfold \S6 and Assumption \ref{ass:generic}}]
+\leftarrow
+[\text{show unique exposed direction selects a one-hinge path}]
+\leftarrow
+[\text{prove strict support gap persists under small perturbations}]
+\leftarrow
+[\text{identify the coordinate-separable locus as closed}]
+\leftarrow
+[\text{compare normal fans of the TV body and the rectangle}],
+\]
+so \(k=4\) substantive steps remain after the setup. The boundary algebra is concentrated in small \(H\) examples, the zero-scale corner \(V_{\mathrm{pre}}(g)=0\), and ties in the maximizer defining \(\Gamma_{\mathrm{TV}}\).
+
+\section{Honest scope flags}
+Theorems~\ref{thm:joint-body} and \ref{thm:projection-rectangle} are intended as routine finite-dimensional statements. Conjecture~\ref{conj:generic-strict} is the novelty-bearing kernel and remains open, especially the claim that strict support gaps persist on an open neighborhood and that the coordinate-separable locus is the only equality locus. No statement was withdrawn inside this angle because this is the first version of the joint-family pivot. The main modeling choice that may deserve reviewer pressure is the calibration scalar \(V_{\mathrm{pre}}(g)\): the geometry theorem is conditional on that observable scale, but a reviewer may prefer a range-based calibration closer to the original relative-magnitude convention.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) --- replaced the exhausted scalar-width, projection, frontier, and post-rejection angles with a joint-family support-body kernel; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem{BorusyakJaravelSpiess2024EventStudies}
+Kirill Borusyak, Xavier Jaravel, and Jann Spiess.
+\newblock Revisiting event-study designs: Robust and efficient estimation.
+\newblock \emph{Review of Economic Studies}, 91(6):3253--3285, 2024.
+
+\bibitem{CallawaySantAnna2021MultiplePeriods}
+Brantly Callaway and Pedro H.~C. Sant'Anna.
+\newblock Difference-in-differences with multiple time periods.
+\newblock \emph{Journal of Econometrics}, 225(2):200--230, 2021.
+
+\bibitem{GoodmanBacon2021Timing}
+Andrew Goodman-Bacon.
+\newblock Difference-in-differences with variation in treatment timing.
+\newblock \emph{Journal of Econometrics}, 225(2):254--277, 2021.
+
+\bibitem{KahnLangLang2020PromisePitfalls}
+Suzanne Kahn-Lang and Kevin Lang.
+\newblock The promise and pitfalls of differences-in-differences: Reflections on 16 and pregnant and other applications.
+\newblock \emph{Journal of Business \& Economic Statistics}, 38(3):613--620, 2020.
+
+\bibitem{ManskiPepper2018BoundedVariation}
+Charles F. Manski and John V. Pepper.
+\newblock How do right-to-carry laws affect crime rates? Coping with ambiguity using bounded-variation assumptions.
+\newblock \emph{Review of Economics and Statistics}, 100(2):232--244, 2018.
+
+\bibitem{RambachanRoth2023CrediblePT}
+Ashesh Rambachan and Jonathan Roth.
+\newblock A more credible approach to parallel trends.
+\newblock \emph{Review of Economic Studies}, 90(5):2555--2591, 2023.
+
+\bibitem{Roth2022PretestCaution}
+Jonathan Roth.
+\newblock Pretest with caution: Event-study estimates after testing for parallel trends.
+\newblock \emph{American Economic Review: Insights}, 4(3):305--322, 2022.
+
+\bibitem{RothSantAnnaBilinskiPoe2023TrendingDiD}
+Jonathan Roth, Pedro H.~C. Sant'Anna, Alyssa Bilinski, and John Poe.
+\newblock What's trending in difference-in-differences? A synthesis of the recent econometrics literature.
+\newblock \emph{Journal of Econometrics}, 235(2):2218--2244, 2023.
+
+\bibitem{SunAbraham2021DynamicEffects}
+Liyang Sun and Sarah Abraham.
+\newblock Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\newblock \emph{Journal of Econometrics}, 225(2):175--199, 2021.
+
+\bibitem{deChaisemartinDHaultfoeuille2020TwoWay}
+Cl\'ement de Chaisemartin and Xavier D'Haultf{\oe}uille.
+\newblock Two-way fixed effects estimators with heterogeneous treatment effects.
+\newblock \emph{American Economic Review}, 110(9):2964--2996, 2020.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,215 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{panel\_calendar\_snf\_alias} / \texttt{v1}%
+  \\ \large\textit{Residue-frontier certificates for calendar aliasing in finite event-study panels}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Free-form panel anchor. The locked tuple is
+\[
+(qid, specialization, p, assignment, target, regression)
+=(\texttt{panel\_calendar\_snf\_alias},\texttt{v1},0,\mathsf{ResidueCalendar}(m,W,\mathcal G),\theta_{\rm alt},\mathsf{ESFE}(W,\mathcal B)).
+\]
+Here \(m\ge 2\) is the calendar-residue modulus, \(W\subset \mathbb Z\) is a finite event window, \(\mathcal G\subset \{0,\ldots,m-1\}\) is the set of adoption residues observed in the panel, and \(p=0\) means no treatment carry-over beyond the event-time index. Unit \(i\) belongs to adoption residue \(R_i=G_i \bmod m\). The event-study regression \(\mathsf{ESFE}(W,\mathcal B)\) contains unit fixed effects, calendar-time fixed effects, and event-time indicators \(\one\{t-G_i=k\}\) for \(k\in W\setminus \mathcal B\), where \(\mathcal B\subset W\) is the omitted-bin set. The target is the integer alternating contrast \(\theta_{\rm alt}(\tau)=\sum_{k\in W} a_k\tau_k\), with \(a_k=(-1)^k\) on the even-cardinality windows used below and with \(a\) centered after deleting \(\mathcal B\). The residue incidence table is \(H_{r,k}=\one\{r\in\mathcal G,k\in W\}\). A calendar-alias certificate is a primitive integer vector in the Smith-normal-form kernel of the row-column incidence map \(\partial_{m,W,\mathcal G}:\mathbb Z^{\mathcal G\times W}\to \mathbb Z^{\mathcal G}\oplus\mathbb Z^W\), together with its finite Fourier character labels.
+
+\begin{abstract}
+Event-study designs can confound calendar periodicity with event-time dynamics when adoption dates occupy a small residue structure. The central conjecture gives a finite Smith-normal-form and Fourier-character frontier for when this alias is an invariant obstruction across residue moduli, event windows, omitted bins, and adoption-support patterns. The four-residue table \(H_{r,k}=(-1)^{r+k}\), \(r=0,1,2,3\), \(k=-1,0,1,2\), is treated as the smallest non-degenerate certificate, not as the whole result. The result differs from contamination and negative-weight decompositions because it acts before treatment effects are estimated and depends only on the integer incidence table. If correct, the certificate would tell empirical researchers when an alternating event-time contrast is not a stable object under calendar-residue normalization.
+\end{abstract}
+
+\section{Introduction}
+Calendar periodicity can enter a staggered event-study design through the identity \(t=G_i+k\), where \(G_i\) is the adoption date and \(k\) is event time. The main claim is that some alternating event-time contrasts are aliases of primitive calendar-residue directions, and that the obstruction is classified by an integer invariant of the finite event-study incidence map.
+
+The closest published comparators are \citet[p. 180, Sec. 3]{SunAbraham2021EventStudies}, who show that a lead-lag coefficient can mix effects from other relative periods, and \citet[p. 1791, Sec. 3]{BorusyakJaravelSpiess2024Revisiting}, who separate event-study identification from imputation after absorbing fixed effects. The gap is that neither paper gives a residue-modulus invariant factor or Fourier character deciding when a calendar component and an event-time contrast represent the same integer direction after the panel incidence map. The kernel is a panel linear-projection theorem about finite event-study design matrices.
+
+The immediate consumer is the applied event-study workflow surveyed by \citet{RothSantAnnaBilinskiPoe2023WhatsTrending}. A researcher who sees the certificate fail treats the reported alternating contrast as a normalization artifact rather than as a dynamic treatment-effect summary.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: the four-residue, four-bin hand table has primitive alias certificate \(h_{r,k}=(-1)^{r+k}\) with invariant factor one in the row-column incidence kernel. Gap: \citet{GoodmanBacon2021Timing} and \citet{SunAbraham2021EventStudies} diagnose weights and contamination, not integer residue characters. Consumer: event-study diagnostics in \citet{RothSantAnnaBilinskiPoe2023WhatsTrending}.
+\item Conjecture 1: for balanced residue panels, an alternating event-time contrast is residue-aliased if and only if the period-two Fourier character survives in the primitive Smith kernel of \(\partial_{m,W,\mathcal G}\). Gap: \citet{SchmidheinySiegloch2023EventStudies} gives event-study/distributed-lag equivalences, not a residue-family invariant frontier. Consumer: binned distributed-lag specifications in \citet{SchmidheinySiegloch2023EventStudies}.
+\item Conjecture 2: the alias module is invariant to the omitted event bin exactly when the deleted-bin projection preserves the primitive Fourier character. Gap: \citet{CallawaySantAnna2021MultiplePeriods} and \citet{BorusyakJaravelSpiess2024Revisiting} define aggregation and imputation targets, not omitted-bin-invariant alias diagnostics. Consumer: robust imputation event studies in \citet{BorusyakJaravelSpiess2024Revisiting}.
+\end{itemize}
+
+\section{Related work}
+\citet{GoodmanBacon2021Timing} decomposes staggered TWFE DiD estimates into weighted two-by-two comparisons; this proposal is orthogonal because the alias certificate can be computed from the design incidence table before any comparison weight is formed. \citet{DeChaisemartinDHaultfoeuille2020TWFE} shows that TWFE regressions may recover nonconvex weighted averages under heterogeneous effects; the present question concerns whether a contrast is an invariant estimand under calendar-residue normalization. \citet{SunAbraham2021EventStudies} shows that event-study lead and lag coefficients may be contaminated by effects from other relative periods; the residue certificate asks whether a calendar Fourier character and an event-time contrast occupy the same integer design direction. \citet{BorusyakJaravelSpiess2024Revisiting} develops robust imputation estimators for event studies and separates identification from estimation; the certificate is a pre-estimation obstruction in the incidence map. \citet{CallawaySantAnna2021MultiplePeriods} identifies group-time ATT parameters and their aggregations; residue aliasing is a condition under which a named event-time aggregation is unstable under calendar normalization. \citet{SchmidheinySiegloch2023EventStudies} proves equivalences between event-study and distributed-lag specifications; the conjectured frontier asks when those equivalence classes preserve or destroy period-two residue characters. \citet{RothSantAnnaBilinskiPoe2023WhatsTrending} surveys modern DiD and event-study practice; the proposed diagnostic would add a finite design audit to that workflow. In the CausalSmith catalogue, \texttt{q1\_spectral\_phase\_transition}/\texttt{p1\_markov} studies Markov row-space visibility thresholds and \texttt{panel\_jackknife\_signflip\_phase}/\texttt{v1} studies deletion sign flips; neither records a primitive integer/Fourier alias frontier for calendar residues. The \texttt{doc/API.md} panel sections list Q1 minimal-basis, sign-flip, and spectral-threshold stacks as the nearby in-repo panel prior art.
+
+\section{Formal setup}
+Let units \(i=1,\ldots,n\) be observed at integer times \(t\in\mathcal T\). Unit \(i\) first receives treatment at \(G_i\), has adoption residue \(R_i=G_i\bmod m\), and contributes event-time cells \((R_i,k)\) for \(k=t-G_i\in W\). The untreated mean has additive unit and calendar components, \(\E[Y_{it}(0)\mid i,t]=\alpha_i+\lambda_t\), and the event-study design contains event indicators for \(k\in W\setminus\mathcal B\). Let \(C_{m,W,\mathcal G}=\mathbb Z^{\mathcal G\times W}\) be the free abelian group of residue-event cells. Define
+\[
+\partial_{m,W,\mathcal G} x=\left(\left(\sum_{k\in W}x_{r,k}\right)_{r\in\mathcal G},\left(\sum_{r\in\mathcal G}x_{r,k}\right)_{k\in W}\right),
+\]
+so \(\ker_{\mathbb Z}\partial_{m,W,\mathcal G}\) is the integer row-column alias module left after residue and event normalizations. Let \(\chi_2(r,k)=(-1)^{r+k}\) when \(m\) is even. The primitive Smith kernel \(K_{m,W,\mathcal G}\) is any integer basis for \(\ker_{\mathbb Z}\partial_{m,W,\mathcal G}\) produced by the Smith normal form of a matrix for \(\partial_{m,W,\mathcal G}\); the finite Fourier support of a kernel vector is its expansion in residue and event characters.
+
+\begin{center}
+\fbox{\begin{minipage}{0.94\linewidth}
+Locked parameters. Free-form panel anchor. The locked tuple is
+\[(qid, specialization, p, assignment, target, regression)=(\texttt{panel\_calendar\_snf\_alias},\texttt{v1},0,\mathsf{ResidueCalendar}(m,W,\mathcal G),\theta_{\rm alt},\mathsf{ESFE}(W,\mathcal B)).\]
+Here \(m\ge 2\), \(W\subset\mathbb Z\), \(\mathcal G\subset\{0,\ldots,m-1\}\), \(p=0\), \(R_i=G_i\bmod m\), \(\mathsf{ESFE}\) contains unit fixed effects, calendar-time fixed effects, and event-time indicators outside \(\mathcal B\), \(\theta_{\rm alt}(\tau)=\sum_{k\in W}a_k\tau_k\), and the certificate is a primitive integer vector in the Smith-normal-form kernel of \(\partial_{m,W,\mathcal G}\) with finite Fourier labels.
+\end{minipage}}
+\end{center}
+
+\section{Assumptions}
+\begin{assumption}[Balanced residue support]\label{ass:balanced}
+The design observes every residue in \(\mathcal G\) and every event bin in \(W\) with positive cell count. For Theorem 1, \(\mathcal G=\{0,1,2,3\}\) and \(W=\{-1,0,1,2\}\).
+\end{assumption}
+
+\begin{assumption}[Additive fixed-effect normalization]\label{ass:additive}
+The event-study design quotients cell arrays by residue and event additive margins through \(\partial_{m,W,\mathcal G}\). Two integer arrays are observationally equivalent for the certificate if their difference lies in \(\ker_{\mathbb Z}\partial_{m,W,\mathcal G}\).
+\end{assumption}
+
+\begin{assumption}[Period-two character]\label{ass:periodtwo}
+When \(m\) is even and \(|W|\) is even, the focal calendar-residue character is \(\chi_2(r,k)=(-1)^{r+k}\), and the event contrast uses \(a_k=(-1)^k\) centered after omitted-bin normalization.
+\end{assumption}
+
+\begin{assumption}[Omitted-bin projection]\label{ass:omit}
+For \(\mathcal B\subset W\), the deleted-bin map \(P_{\mathcal B}:\mathbb Z^W\to\mathbb Z^{W\setminus\mathcal B}\) is followed by recentering against the included event indicators. The alias module after deletion is computed by replacing \(W\) with \(W\setminus\mathcal B\) in \(\partial\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[The four-residue primitive certificate]\label{thm:four}
+Under Assumptions \ref{ass:balanced}--\ref{ass:periodtwo}, let \(h\in\mathbb Z^{\mathcal G\times W}\) be given by \(h_{r,k}=(-1)^{r+k}\) for \(r=0,1,2,3\) and \(k=-1,0,1,2\). Then \(h\in\ker_{\mathbb Z}\partial_{4,W,\mathcal G}\), \(h\) is primitive, and the Smith normal form of \(\partial_{4,W,\mathcal G}\) has a kernel basis containing a vector with the same period-two residue and alternating-event Fourier support as \(h\).
+\end{theorem}
+Each row and column sum of \(h\) is zero, so \(h\in\ker\partial\). Primitivity follows because the greatest common divisor of its entries is one.
+
+\begin{conjecture}[Residue-modulus frontier (NOT YET PROVED)]\label{conj:frontier}
+Under Assumptions \ref{ass:balanced}--\ref{ass:periodtwo}, an alternating event-time contrast is calendar-residue aliased for the balanced family \((m,W,\mathcal G)\) if and only if the primitive Smith kernel \(K_{m,W,\mathcal G}\) contains a vector whose finite Fourier support includes the tensor character \(\chi_2(r,k)=(-1)^{r+k}\). Equivalently, the obstruction persists beyond the four-by-four witness exactly for even \(m\), even \(|W|\), and residue support containing both parity classes in a way that leaves the period-two tensor character in \(\ker_{\mathbb Z}\partial_{m,W,\mathcal G}\).
+\end{conjecture}
+
+\begin{conjecture}[Omitted-bin invariance (NOT YET PROVED)]\label{conj:omit}
+Under Assumptions \ref{ass:balanced}--\ref{ass:omit}, the alias status of \(\theta_{\rm alt}\) is invariant to the omitted-bin set \(\mathcal B\) if and only if \(P_{\mathcal B}\chi_2\), after integer recentering, remains primitive and nonzero in \(K_{m,W\setminus\mathcal B,\mathcal G}\). If the projection kills the period-two character or makes it divisible in the Smith kernel, then the reported alternating event-time contrast depends on normalization.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No alias without two parities]\label{cor:no-parity}
+Under Assumptions \ref{ass:balanced} and \ref{ass:periodtwo}, if \(\mathcal G\) contains only one parity class or \(|W|=1\), the period-two tensor character cannot supply a nonzero primitive row-column kernel certificate.
+\end{corollary}
+The reduction is immediate: one parity collapses \((-1)^r\) to a constant, and a one-bin event window has no centered alternating direction.
+
+\paragraph{Exhibit 9.1: hand-table certificate.}
+Let \(\mathcal G=\{0,1,2,3\}\), \(W=\{-1,0,1,2\}\), and order columns as \((-1,0,1,2)\). The table
+\[
+H=\begin{pmatrix}
+-1&1&-1&1\\
+1&-1&1&-1\\
+-1&1&-1&1\\
+1&-1&1&-1
+\end{pmatrix}
+\]
+has all row sums and all column sums equal to zero. Its entries have gcd one, so it is primitive. It is the tensor product \((1,-1,1,-1)^\transpose(-1,1,-1,1)\) up to sign, hence carries the period-two residue character and the alternating event character.
+
+\begin{verbatim}
+Focal object: primitive SNF/Fourier alias certificate h
+Defining equation (copy verbatim from Section 6 / 7): partial_{m,W,G} h = ((sum_k h_{r,k})_r,(sum_r h_{r,k})_k), h_{r,k}=(-1)^(r+k)
+RHS symbol provenance:
+  - m = 4     source: Section 6 primitive
+  - G = {0,1,2,3}     source: Section 6 primitive
+  - W = {-1,0,1,2}     source: Section 6 primitive
+  - h_{r,k} = (-1)^(r+k)     source: derived from Section 6 residues and event bins via the period-two character
+  - partial = row-column incidence map     source: Section 6 primitive map
+Substituted equation: row sums = [0,0,0,0]; column sums = [0,0,0,0]
+Computed value: partial_{4,W,G} h = 0 and gcd(entries of h)=1
+Invariant check 1: row-margin kernel condition
+  LHS = [0,0,0,0]; RHS = [0,0,0,0]; result = OK
+Invariant check 2: column-margin kernel condition
+  LHS = [0,0,0,0]; RHS = [0,0,0,0]; result = OK
+Invariant check 3: primitive integer vector
+  LHS = gcd(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1); RHS = 1; result = OK
+Invariant check 4: Fourier tensor support
+  LHS = H; RHS = (1,-1,1,-1)^T*(-1,1,-1,1); result = OK
+Assumption-substitution screen: no RHS symbol above is sourced from Section 7 assumptions. load-bearing for the flagship novelty? NO.
+SC10 verdict: PASS
+\end{verbatim}
+
+\section{Proof-sketch route}
+For Theorem \ref{thm:four}, the verification route is direct integer algebra: unfold \(\partial\), compute the eight margins, check gcd one, and use the Smith normal form kernel theorem for integer matrices to choose a primitive kernel basis. For Conjecture \ref{conj:frontier}, the route is to decompose \(\mathbb Z^{\mathcal G\times W}\) into residue-event character submodules, compute how \(\partial\) acts on each character block, use the invariant-factor divisibility criterion to decide primitivity, and then prove that no non-period-two block can represent the alternating contrast after centering. For Conjecture \ref{conj:omit}, the route is to factor deleted-bin normalization as an integer projection followed by a centering quotient, compute the induced map on the period-two character submodule, and compare invariant factors before and after deletion.
+
+\begin{enumerate}[leftmargin=*]
+\item Headline: Conjecture 1, residue-modulus frontier.
+\item Step 0a -- unfold Section 6 definitions: expand \(C_{m,W,\mathcal G}\), \(\partial\), \(K_{m,W,\mathcal G}\), and \(\chi_2\); not counted in \(k\).
+\item Step 0b -- apply Section 7 assumptions: balanced support and period-two character; not counted in \(k\).
+\item Step 1 (substantive): decompose the integer cell module into parity-character and parity-orthogonal submodules and prove the row-column map is block triangular over that splitting.
+\item Step 2 (substantive): compute the invariant factors of the parity-character block for general even \(m\) and even \(|W|\), including the divisibility change when residue support omits a parity class.
+\item Step 3 (substantive): show that centered alternating event contrasts pair nontrivially only with the parity-character kernel block, so the SNF criterion is necessary as well as sufficient.
+\item Classical result: Smith normal form classification of finitely generated abelian-group quotients.
+\item \(k=3\); PASS iff \(k\ge 3\).
+\end{enumerate}
+
+\begin{enumerate}[leftmargin=*]
+\item Headline: Conjecture 2, omitted-bin invariance.
+\item Step 0a -- unfold Section 6 definitions: expand \(P_{\mathcal B}\), deleted-window incidence, and primitive kernel; not counted in \(k\).
+\item Step 0b -- apply Section 7 assumptions: omitted-bin projection and balanced support; not counted in \(k\).
+\item Step 1 (substantive): express deleted-bin recentering as an integer quotient map and identify when it preserves primitivity of the parity-character vector.
+\item Step 2 (substantive): compare invariant factors of \(\partial_{m,W,\mathcal G}\) and \(\partial_{m,W\setminus\mathcal B,\mathcal G}\) through the induced quotient map.
+\item Step 3 (substantive): prove normalization dependence by constructing two omitted-bin normalizations whose contrast representatives differ by a nonprimitive or zero parity-character image.
+\item Classical result: functoriality of Smith normal form under integer quotient maps plus centered-contrast projection algebra.
+\item \(k=3\); PASS iff \(k\ge 3\).
+\end{enumerate}
+
+\section{Honest scope flags}
+Theorem \ref{thm:four} is a finite-table algebraic check. Conjectures \ref{conj:frontier} and \ref{conj:omit} are not yet proved; the open part is the necessity direction over general residue supports and omitted-bin sets. The draft deliberately withdraws the exhausted angle-0 claim that a single SNF certificate for the four-by-four table is already the flagship result. The main uncertainty is whether the proposed parity-support frontier needs an additional connectedness condition on the adoption-calendar support.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for angle 1, replacing the exhausted pure four-table certificate by a residue-modulus/event-window frontier; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Goodman-Bacon(2021)]{GoodmanBacon2021Timing}
+Goodman-Bacon, A. (2021). Difference-in-differences with variation in treatment timing. \emph{Journal of Econometrics}, 225(2), 254--277.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{DeChaisemartinDHaultfoeuille2020TWFE}
+de Chaisemartin, C., and D'Haultfoeuille, X. (2020). Two-way fixed effects estimators with heterogeneous treatment effects. \emph{American Economic Review}, 110(9), 2964--2996.
+
+\bibitem[Sun and Abraham(2021)]{SunAbraham2021EventStudies}
+Sun, L., and Abraham, S. (2021). Estimating dynamic treatment effects in event studies with heterogeneous treatment effects. \emph{Journal of Econometrics}, 225(2), 175--199.
+
+\bibitem[Borusyak, Jaravel, and Spiess(2024)]{BorusyakJaravelSpiess2024Revisiting}
+Borusyak, K., Jaravel, X., and Spiess, J. (2024). Revisiting event-study designs: robust and efficient estimation. \emph{Review of Economic Studies}, 91(6), 3253--3285.
+
+\bibitem[Callaway and Sant'Anna(2021)]{CallawaySantAnna2021MultiplePeriods}
+Callaway, B., and Sant'Anna, P. H. C. (2021). Difference-in-differences with multiple time periods. \emph{Journal of Econometrics}, 225(2), 200--230.
+
+\bibitem[Schmidheiny and Siegloch(2023)]{SchmidheinySiegloch2023EventStudies}
+Schmidheiny, K., and Siegloch, S. (2023). On event studies and distributed-lags in two-way fixed effects models: identification, equivalence, and generalization. \emph{Journal of Applied Econometrics}, 38(5), 695--713.
+
+\bibitem[Roth et al.(2023)]{RothSantAnnaBilinskiPoe2023WhatsTrending}
+Roth, J., Sant'Anna, P. H. C., Bilinski, A., and Poe, J. (2023). What's trending in difference-in-differences? A synthesis of the recent econometrics literature. \emph{Journal of Econometrics}, 235(2), 2218--2244.
+\end{thebibliography}
+
+\end{document}

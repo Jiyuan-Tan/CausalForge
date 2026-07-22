@@ -1,0 +1,1927 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage 0 derivation: \texttt{pid\_cvar\_welfare\_msm\_v1} / \texttt{robust\_cvar\_policy}%
+  \\ \large\textit{MSM-CVaR bounds for confounding-robust policy welfare}}
+\author{thmsmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note studies partial identification of the fixed-policy tail-risk target
+\(\theta(Q)=\operatorname{CVaR}_{\tau}\{Y_Q(\pi)\}\) under a marginal
+sensitivity model with sensitivity parameter \(\Gamma\).  The locked
+restrictions impose consistency, overlap, and an odds-ratio bound on the latent
+treatment rule, but they do not impose support restrictions on nonfactual
+potential outcomes and do not impose conditional exchangeability of treatment
+with the potential-outcome vector.  Consequently the locked full class has no
+finite upper endpoint when nonfactual potential outcomes are allowed to be
+arbitrarily large: \(\sup\Theta_I(P)=+\infty\).  If an explicit
+all-potential-outcome support restriction \(Y(a)\in[y_L,y_U]\) is added, the
+sharp endpoint is the Manski-style support completion that keeps factual
+outcomes fixed and places nonfactual policy-relevant outcomes at the relevant
+support endpoint.  The joint-compatible kernel program is the sharp endpoint for
+the conditionally exchangeable marginal-sensitivity subclass.  The nested
+actionwise functional
+\[
+\inf_{\eta\in[y_L,y_U]}
+\left\{
+\eta+\tau^{-1}\E_P\left[
+\sum_{a\in\mathcal A}\pi(a\mid X)
+\mathfrak T_{\Gamma}^{+}\{(Y-\eta)_+\mid a,X\}
+\right]\right\}
+\]
+is a computable conservative upper bound for that conditionally exchangeable
+subclass, but it is not a valid finite upper endpoint for the locked full class
+and is not proved sharp for general multi-action policies because actionwise
+least-favorable tilts must be jointly realizable by one latent treatment rule.
+A pointwise-band comparator is conservative relative to this separated bound
+once its thresholdwise envelopes are defined term-by-term.  For inference on the
+separated bound, the valid one-step score requires a canonical differentiable
+dual threshold for the bounded-weight linear program, the derivative of the MSM
+operator with respect to the nominal propensity score, and global localization
+of the data-selected CVaR threshold.
+\end{abstract}
+
+\section{Introduction}
+Policy learning from observational data matters in settings where randomized
+experimentation is infeasible or unethical, including clinical treatment
+assignment, education, and public policy.  The difficulty is that a policy
+learned under unconfoundedness can look attractive only because treatment choice
+reacted to unrecorded risk.  A useful robust policy criterion therefore must
+account for hidden confounding, and it must do so for the welfare object the
+decision maker actually cares about.  In this note that welfare object is not
+the mean policy value but the conditional value-at-risk of the policy-induced
+outcome, which isolates the worst \(\tau\)-tail of the distribution.
+
+Recent work has clarified the mean-value analogue.  Hess, Frauen, Melnychuk, and
+Feuerriegel (2025) derive a sharp closed-form marginal-sensitivity bound for a
+fixed policy's mean value and a semiparametrically efficient estimator.  Jin,
+Xu, Zheng, and Zhou (2025) likewise study robust and efficient policy learning
+under hidden confounding for mean or worst-case mean welfare.  On the
+distributional side, Rockafellar and Uryasev (2000) give the variational formula
+for \(\operatorname{CVaR}\), while Dorn and Guo (2021), Frauen, Melnychuk, and
+Feuerriegel (2023), and Masten, Poirier, and Ren (2025) show how
+marginal-sensitivity restrictions generate sharp pointwise mean, quantile, and
+distributional envelopes.
+
+The first mathematical point is that the locked marginal-sensitivity restriction
+does not, by itself, connect treatment assignment to the potential-outcome vector
+through the latent variable.  For any full-data law,
+\[
+\E_Q[\one\{A=a\}b\{Y(a)\}\mid X=x]
+=
+\E_Q[p_a(X,U)b\{Y(a)\}\mid X=x]
++
+\E_Q[(\one\{A=a\}-p_a(X,U))b\{Y(a)\}\mid X=x],
+\]
+where \(p_a(X,U)=Q(A=a\mid X,U)\).  The final residual term is zero only under a
+conditional-exchangeability restriction.  Without that restriction, even
+\(\Gamma=1\) leaves nonfactual potential outcomes partially unidentified.
+Moreover, the observed support condition \(Y\in[y_L,y_U]\) controls only the
+factual outcome \(Y=Y(A)\).  It does not bound \(Y(a)\) on units with \(A\ne a\).
+Thus a finite support-completion endpoint is a theorem about a support-restricted
+subclass, not about the locked full class.
+
+The second mathematical point is that, after conditional exchangeability is
+imposed, a multi-action policy tail functional is still not generally sharp
+merely because every actionwise generated-loss mean is sharp.  For one covariate
+value \(x\), the full-data law must contain a single latent treatment-probability
+vector \(p(\cdot\mid x,U)\) satisfying \(\sum_a p_a(x,U)=1\).  Equivalently, the
+selected actionwise density ratios \(r_a\) cannot be chosen independently; at
+the latent-unit level they must obey
+\[
+\sum_{a\in\mathcal A}\frac{e_a(x)}{r_a}=1.
+\]
+
+\paragraph{Motivating conjecture(s).}
+\textbf{Conjecture 1: Sharp nested MSM-CVaR endpoint.} (NOT YET PROVED.)  Under
+Assumptions~\ref{ass:iid-overlap}--\ref{ass:tail}, for every fixed policy
+\(\pi\),
+\[
+\sup_{Q\in\mathcal M_\Gamma(P)}
+\operatorname{CVaR}_\tau\{Y_Q(\pi)\}
+=
+\inf_{\eta\in\mathcal I}
+\left\{\eta+\tau^{-1}\E_P\left[
+\sum_{a\in\mathcal A}\pi(a\mid X)
+\mathfrak T_{\Gamma}^{+}\{(Y-\eta)_+\mid a,X\}
+\right]\right\}.
+\]
+The equality is sharp: every value above the right-hand side is valid, and no
+smaller endpoint is valid over \(\mathcal M_\Gamma(P)\).
+
+\textbf{Conjecture 2: Non-commutation gap.} (NOT YET PROVED.)  Under
+Assumptions~\ref{ass:iid-overlap}--\ref{ass:tail},
+\[
+\Delta_{\mathrm{nc}}(\pi;P)=
+W_{\tau,\Gamma}^{\mathrm{band}}(\pi;P)
+-\underline W_{\tau,\Gamma}(\pi;P)\geq 0.
+\]
+Moreover, there is a two-action, three-outcome, one-covariate-cell class
+satisfying strict overlap and \(1<\Gamma<\infty\) on which
+\(\Delta_{\mathrm{nc}}(\pi;P)>0\).  Equality holds when the same monotone
+least-favorable MSM tilt is simultaneously optimal for all \(\eta\) in the
+active subgradient set of \(\mathcal C_\eta(P,\pi)\).
+
+\textbf{Conjecture 3: One-step limit law.} (NOT YET PROVED.)  Under
+Assumptions~\ref{ass:iid-overlap}--\ref{ass:nuisance}, the estimator in
+Definition~\ref{def:onestep} is asymptotically linear:
+\[
+\sqrt n\{\hat W_{\tau,\Gamma}(\pi)-\underline W_{\tau,\Gamma}(\pi;P)\}
+=
+\frac{1}{\sqrt n}\sum_{i=1}^n
+\varphi_{\tau,\Gamma,\pi}(O_i)+o_p(1),
+\qquad
+\E[\varphi_{\tau,\Gamma,\pi}(O)]=0.
+\]
+The variance of \(\varphi_{\tau,\Gamma,\pi}\) is consistently estimated by the
+fold-stacked empirical variance of
+\(\hat\eta+\tau^{-1}\hat\phi_{\hat\eta,\pi}-\hat W_{\tau,\Gamma}(\pi)\).
+
+\section{Related work and positioning}
+The closest published comparator is Hess, Frauen, Melnychuk, and Feuerriegel
+(2025), which derives sharp and efficient marginal-sensitivity bounds for the
+mean value of a fixed policy; this note keeps the same observational-policy
+learning arc but replaces the linear welfare functional by the nonlinear tail
+functional \(\operatorname{CVaR}_{\tau}\).  Jin, Xu, Zheng, and Zhou (2025) is
+another close comparator because it studies robust and efficient policy learning
+under hidden confounding, but its welfare targets remain mean or worst-case mean
+objects rather than a partially identified fixed-policy CVaR.  Kallus and Zhou
+(2018, 2021) motivate confounding-robust policy learning through worst-case mean
+regret and propensity-weight uncertainty; that line does not provide the joint
+CVaR endpoint targeted here.
+
+On the partial-identification side, Rockafellar and Uryasev (2000) supply the
+one-dimensional variational representation of \(\operatorname{CVaR}\), which is
+the outer layer of the present functional.  Manski (1990) is the source for the
+support-completion logic used by the explicitly support-restricted endpoint.
+Dorn and Guo (2021) show that direct quantile-balancing sensitivity analysis can
+be sharp while indirect band-based procedures can be conservative; this logic is
+the published comparator for the pointwise-band calculation.  Frauen,
+Melnychuk, and Feuerriegel (2023) generalize sharp causal sensitivity analysis
+beyond simple binary-treatment settings and therefore justify using actionwise
+sharp MSM operators.  Masten, Poirier, and Ren (2025) derive sharp
+distributional and quantile bounds under relaxations that include
+marginal-sensitivity restrictions, but they do not address the joint
+compatibility required by a multi-action rank-dependent policy functional.
+
+For estimation and inference, Dorn, Guo, and Kallus (2021) provide the closest
+orthogonal-score template because they construct doubly-sharp scores for sharp
+MSM endpoints.  The present score differs in two necessary ways: the
+least-favorable generated-loss transform must be the canonical dual
+pseudo-outcome of the bounded-weight linear program, and the score must include
+the derivative of that program with respect to the nominal propensity score.
+Imbens and Manski (2004) give the interval-identified scalar confidence-interval
+template that can consume endpoint limit laws once those laws are established.
+
+\section{Formal setup}
+\begin{definition}[Observed law, latent law, and identified sets]
+Let \(O=(Y,A,X)\sim P\), where the observed factual outcome
+\(Y\in[y_L,y_U]\subset\R\), the action \(A\in\mathcal A\) is finite, and
+\(X\in\mathcal X\) is an observed covariate vector.  A fixed stochastic
+evaluation policy is a measurable map
+\(\pi:\mathcal A\times\mathcal X\to[0,1]\) satisfying
+\(\sum_{a\in\mathcal A}\pi(a\mid x)=1\) for each \(x\).  Potential outcomes are
+\(Y_{\mathcal A}=\{Y(a):a\in\mathcal A\}\).  Unless explicitly restricted,
+nonfactual potential outcomes are real-valued and are not assumed to lie in the
+observed factual support.  The policy draw \(A^\pi\sim\pi(\cdot\mid X)\) is
+drawn conditionally on \(X\) independently of \((A,U,Y_{\mathcal A})\), and
+\(Y(\pi)=Y(A^\pi)\).
+
+Fix a sensitivity parameter \(\Gamma\geq 1\) and a tail level \(\tau\in(0,1)\).
+Let \(\mathcal M_\Gamma(P)\) denote the locked full class of full-data laws
+\(Q\) on \((Y_{\mathcal A},A,X,U)\) such that:
+\begin{enumerate}[label=(\roman*),leftmargin=2em]
+\item the observed margin of \((Y,A,X)\), with \(Y=Y(A)\), equals \(P\);
+\item consistency \(Y=Y(A)\) holds \(Q\)-almost surely;
+\item the treatment assignment under \(Q\) satisfies the marginal sensitivity
+  restriction in Assumption~\ref{ass:msm}; and
+\item \(\operatorname{CVaR}_\tau\{Y_Q(\pi)\}\) is finite for the law under
+  consideration.
+\end{enumerate}
+This class does not impose conditional exchangeability and does not impose
+\(Y(a)\in[y_L,y_U]\) for \(a\ne A\).  For each \(Q\in\mathcal M_\Gamma(P)\),
+define
+\[
+\theta(Q)=\operatorname{CVaR}_{\tau}\{Y_Q(\pi)\}.
+\]
+The locked identified set is
+\[
+\Theta_I(P)=\{\theta(Q):Q\in\mathcal M_\Gamma(P)\}.
+\]
+
+Let \(\mathcal M_\Gamma^{\mathrm{bd}}(P)\subseteq\mathcal M_\Gamma(P)\) denote
+the support-restricted subclass satisfying
+\[
+Q\{Y(a)\in[y_L,y_U]\text{ for every }a\in\mathcal A\}=1.
+\]
+Its identified set is
+\[
+\Theta_I^{\mathrm{bd}}(P)
+=
+\{\theta(Q):Q\in\mathcal M_\Gamma^{\mathrm{bd}}(P)\}.
+\]
+
+Let \(\mathcal M_\Gamma^{\mathrm{ce}}(P)\subseteq\mathcal M_\Gamma(P)\) denote
+the conditionally exchangeable subclass satisfying
+\[
+Q(A=a\mid X,U,Y_{\mathcal A})=Q(A=a\mid X,U)
+\quad\text{for every }a\in\mathcal A.
+\]
+Its identified set is
+\[
+\Theta_I^{\mathrm{ce}}(P)
+=
+\{\theta(Q):Q\in\mathcal M_\Gamma^{\mathrm{ce}}(P)\}.
+\]
+\end{definition}
+
+The note follows the convention that lower values of \(Y\) are better.  Under
+that convention a robust planner evaluates a fixed policy \(\pi\) through the
+upper endpoint of the tail-risk target because large values correspond to poor
+upper-tail outcomes.
+
+\paragraph{Locked parameters.}
+\begin{itemize}
+  \item qid: \texttt{pid\_cvar\_welfare\_msm\_v1}
+  \item specialization: \texttt{robust\_cvar\_policy}
+  \item observable distribution: \(P\) over \((Y,A,X)\), with
+    \(A\in\mathcal A\) finite and factual \(Y\in[y_L,y_U]\)
+  \item parameter \(\theta\): the scalar causal target
+    \(\theta(Q)=\operatorname{CVaR}_{\tau}\{Y_Q(\pi)\}\), equivalently the
+    MSM-CVaR lower welfare endpoint under the lower-is-better convention
+  \item identifying restrictions in the locked full class:
+    consistency, overlap on the support of \(\pi\), and the odds-ratio marginal
+    sensitivity bound indexed by \(\Gamma\); no nonfactual support restriction
+    and no conditional exchangeability restriction are included in this locked
+    list
+  \item support-restricted comparison class:
+    \(\mathcal M_\Gamma^{\mathrm{bd}}(P)\), obtained by adding the explicit
+    all-potential-outcome support restriction
+    \(Y(a)\in[y_L,y_U]\) for every \(a\)
+  \item conditionally exchangeable comparison class:
+    \(\mathcal M_\Gamma^{\mathrm{ce}}(P)\), obtained by adding
+    \(A\perp Y_{\mathcal A}\mid (X,U)\)
+  \item inference-only regularity:
+    canonical differentiability of the bounded-weight LP threshold, global
+    threshold localization, local quadratic expansion, and second-order
+    nuisance rates, stated in Assumptions~\ref{ass:lp-diff}--\ref{ass:nuisance}
+  \item bounding functionals:
+    the locked full-class upper endpoint is infinite under unbounded
+    nonfactual support; the support-restricted finite endpoints
+    \((\theta_L^{\mathrm{bd}}(P),\theta_U^{\mathrm{bd}}(P))\) are defined in
+    Definition~\ref{def:bd-endpoints}; the conditionally exchangeable
+    joint-compatible endpoints
+    \((\theta_L^{\mathrm{jnt}}(P),\theta_U^{\mathrm{jnt}}(P))\) are defined in
+    Definition~\ref{def:joint-kernels}; and the computable separated subclass
+    outer endpoints
+    \((\overline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P),
+      \underline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P))\) are defined in
+    Section~\ref{sec:functional}
+\end{itemize}
+Policy \(\pi\), sensitivity \(\Gamma\), and tail fraction \(\tau\) are fixed
+throughout.
+
+\section{Assumptions}
+\begin{assumption}[Observed sampling and population overlap]\label{ass:iid-overlap}
+The nominal propensity score
+\(e_a(X)=P(A=a\mid X)\) satisfies
+\(0<\epsilon\leq e_a(X)\leq 1-\epsilon\) almost surely for every
+\(a\in\mathcal A\), and \(\pi(a\mid X)>0\) implies \(e_a(X)>0\) almost surely.
+For estimation statements, the observations \(O_1,\ldots,O_n\) are iid from
+\(P\).  Identification statements use only the population-overlap part of this
+assumption.
+\end{assumption}
+
+\begin{assumption}[Consistency and policy support]\label{ass:consistency}
+For every action \(a\in\mathcal A\), the factual outcome satisfies \(Y=Y(A)\)
+almost surely, and the policy draw \(A^\pi\) used to define \(Y(\pi)\) is drawn
+from \(\pi(\cdot\mid X)\) independently of the factual treatment assignment and
+potential outcomes conditional on \(X\).
+\end{assumption}
+
+\begin{assumption}[Marginal sensitivity model]\label{ass:msm}
+There exists a latent variable \(U\) such that, for every \(a\in\mathcal A\) and
+every \((x,u)\) in the support of \((X,U)\),
+\[
+\Gamma^{-1}\leq
+\frac{P(A=a\mid X=x)/(1-P(A=a\mid X=x))}
+{P(A=a\mid X=x,U=u)/(1-P(A=a\mid X=x,U=u))}
+\leq \Gamma.
+\]
+\end{assumption}
+
+\begin{assumption}[Observed tail support]\label{ass:tail}
+The observed conditional law of \(Y\mid A=a,X=x\) is supported on the common
+compact interval \([y_L,y_U]\) for every \((a,x)\).  For each
+\(\eta\in[y_L,y_U]\), the generated factual loss \((Y-\eta)_+\) has finite
+conditional mean in every \((a,x)\) cell.  This assumption is only about the
+observed factual outcome; it does not impose \(Y(a)\in[y_L,y_U]\) for
+nonfactual potential outcomes in the locked full class.
+\end{assumption}
+
+\begin{assumption}[Canonical differentiability of the cellwise LP]\label{ass:lp-diff}
+For every action \(a\), for \(P_X\)-almost every \(x\), and uniformly for
+\(\eta\) in a neighborhood of the separated minimizer \(\eta_*\) in
+Assumption~\ref{ass:unique-eta}, the upper bounded-weight program for
+\(g_\eta(Y)=(Y-\eta)_+\) has a unique canonical dual threshold
+\(\lambda_{\eta,a}(x)\).  When \(\Gamma>1\), this means the equation
+\[
+\Pr\{g_\eta(Y)>\lambda_{\eta,a}(x)\mid A=a,X=x\}
+=
+\frac{1-\ell_a(x)}{u_a(x)-\ell_a(x)}
+\]
+has a unique solution with no threshold interval in a support gap and with no
+atom at \(g_\eta(Y)=\lambda_{\eta,a}(x)\).  The map from the conditional law of
+\(Y\mid A=a,X=x\) and the propensity \(e_a(x)\) to
+\((\lambda_{\eta,a},h_{\eta,a},T_{\eta,a},\dot T_{\eta,a,e})\) in
+Lemma~\ref{lem:lp-envelope} is locally Hadamard differentiable along the
+first-stage paths used by the estimator.  When \(\Gamma=1\), the program is
+degenerate with \(r^*\equiv1\), \(h_{\eta,a}=g_\eta\), and
+\(\dot T_{\eta,a,e}=0\).
+\end{assumption}
+
+\begin{assumption}[Differentiable interior robust optimizer]\label{ass:unique-eta}
+The separated criterion
+\(\eta\mapsto \mathcal C_\eta^{+,\mathrm{sep}}(P,\pi)\) defined in
+Section~\ref{sec:functional} has a unique minimizer
+\(\eta_*=\eta_{\tau,\Gamma}(P,\pi)\) in the interior of
+\([y_L,y_U]\).  In a neighborhood of \(\eta_*\), the criterion is twice
+continuously differentiable, satisfies
+\[
+\partial_\eta \mathcal C_{\eta_*}^{+,\mathrm{sep}}(P,\pi)=0,
+\qquad
+\partial_{\eta\eta}^2 \mathcal C_{\eta_*}^{+,\mathrm{sep}}(P,\pi)>0,
+\]
+and the classes of canonical pseudo-outcomes and propensity-derivative terms in
+Definition~\ref{def:onestep} are uniformly Lipschitz in \(\eta\) in
+\(L_2(P)\).
+\end{assumption}
+
+\begin{assumption}[Global localization of the selected threshold]\label{ass:global-eta}
+The population criterion \(\eta\mapsto
+\mathcal C_\eta^{+,\mathrm{sep}}(P,\pi)\) is continuous on
+\(\mathcal I=[y_L,y_U]\) and is globally separated at its unique minimizer:
+for every \(\delta>0\),
+\[
+\kappa_\delta
+:=
+\inf_{\eta\in\mathcal I:\ |\eta-\eta_*|\ge\delta}
+\left\{
+\mathcal C_\eta^{+,\mathrm{sep}}(P,\pi)
+-
+\mathcal C_{\eta_*}^{+,\mathrm{sep}}(P,\pi)
+\right\}
+>0.
+\]
+For the cross-fitted criterion in Definition~\ref{def:onestep},
+\[
+\sup_{\eta\in\mathcal I}
+\left|
+\widehat{\mathcal C}_\eta^{\mathrm{sep}}
+-
+\mathcal C_\eta^{+,\mathrm{sep}}(P,\pi)
+\right|
+=o_p(1).
+\]
+Moreover, on some fixed neighborhood of \(\eta_*\), the local criterion obeys
+the quadratic expansion
+\[
+\widehat{\mathcal C}_\eta^{\mathrm{sep}}
+-
+\widehat{\mathcal C}_{\eta_*}^{\mathrm{sep}}
+=
+\frac12
+\partial_{\eta\eta}^2
+\mathcal C_{\eta_*}^{+,\mathrm{sep}}(P,\pi)(\eta-\eta_*)^2
++
+(\eta-\eta_*)Z_n
++
+R_n(\eta),
+\]
+where \(Z_n=O_p(n^{-1/2})\) and
+\[
+\sup_{|\eta-\eta_*|\le\rho}
+\frac{|R_n(\eta)|}{(\eta-\eta_*)^2+n^{-1}}
+=o_p(1)
+\]
+for a radius \(\rho>0\).
+\end{assumption}
+
+\begin{assumption}[Nuisance-rate regime for the corrected one-step score]\label{ass:nuisance}
+The first-stage estimators used in Definition~\ref{def:onestep} are trained on
+auxiliary folds.  Uniformly for \(\eta\) in a neighborhood of \(\eta_*\), they
+estimate \(e_a\), the active dual thresholds \(\lambda_{\eta,a}\), the canonical
+pseudo-outcomes \(h_{\eta,a}\), the cell functionals \(T_{\eta,a}\), and the
+propensity derivatives \(\dot T_{\eta,a,e}\).  The estimators are \(L_2(P)\)
+consistent, bounded with probability tending to one, and satisfy the second
+order expansion
+\[
+P\{\widehat\chi_{\eta_*,\pi}-\chi_{\eta_*,\pi}\}
+=
+O_p\!\left(
+\sum_{a\in\mathcal A}
+\|\widehat e_a-e_a\|_2\|\widehat h_{\eta_*,a}-h_{\eta_*,a}\|_2
++\|\widehat e_a-e_a\|_2^2
++\|\widehat F_{\eta_*,a}-F_{\eta_*,a}\|_2^2
+\right)
+=o_p(n^{-1/2}),
+\]
+where \(\chi_{\eta,\pi}\) is the corrected score in Definition~\ref{def:onestep}
+and \(\widehat F_{\eta,a}\) denotes the fitted conditional distribution object
+from which \(\widehat\lambda_{\eta,a}\), \(\widehat h_{\eta,a}\), and
+\(\widehat T_{\eta,a}\) are computed.
+\end{assumption}
+
+\section{Estimand-defining functional}
+\label{sec:functional}
+For \(e\in(0,1)\), define
+\[
+\ell(e)=e+\frac{1-e}{\Gamma},
+\qquad
+u(e)=e+\Gamma(1-e).
+\]
+For a cell \((a,x)\), write
+\[
+\ell_a(x)=\ell(e_a(x)),
+\qquad
+u_a(x)=u(e_a(x)).
+\]
+For \(\eta\in\mathcal I=[y_L,y_U]\), put
+\[
+m_{\eta,a}(x)=\E_P[(Y-\eta)_+\mid A=a,X=x].
+\]
+
+\begin{definition}[Support-restricted Manski completion endpoints]\label{def:bd-endpoints}
+The support-restricted upper and lower CVaR criteria are
+\[
+\mathcal C_\eta^{+,\mathrm{bd}}(P,\pi)
+=
+\eta+\tau^{-1}
+\E_P\left[
+\sum_{a\in\mathcal A}\pi(a\mid X)
+\left\{
+e_a(X)m_{\eta,a}(X)
++
+(1-e_a(X))(y_U-\eta)_+
+\right\}
+\right],
+\]
+and
+\[
+\mathcal C_\eta^{-,\mathrm{bd}}(P,\pi)
+=
+\eta+\tau^{-1}
+\E_P\left[
+\sum_{a\in\mathcal A}\pi(a\mid X)
+\left\{
+e_a(X)m_{\eta,a}(X)
++
+(1-e_a(X))(y_L-\eta)_+
+\right\}
+\right].
+\]
+Because the infimum over \(\eta\) is restricted to
+\(\mathcal I=[y_L,y_U]\), the final term in
+\(\mathcal C_\eta^{-,\mathrm{bd}}\) is identically zero, but it is kept to
+display the symmetric support-endpoint completion.  Define
+\[
+\theta_U^{\mathrm{bd}}(P)
+=
+\inf_{\eta\in\mathcal I}
+\mathcal C_\eta^{+,\mathrm{bd}}(P,\pi),
+\qquad
+\theta_L^{\mathrm{bd}}(P)
+=
+\inf_{\eta\in\mathcal I}
+\mathcal C_\eta^{-,\mathrm{bd}}(P,\pi).
+\]
+These are finite functionals of the observed law \(P\) and the explicit
+additional support restriction \(Y(a)\in[y_L,y_U]\) for every action.
+\end{definition}
+
+\begin{definition}[Actionwise bounded-weight operators]
+For a nonnegative measurable loss \(Z=Z(Y)\), define
+\[
+\mathfrak T_{\Gamma}^{+}(Z\mid a,x)
+=
+\sup_{\ell_a(x)\le r\le u_a(x),\ \E_P[r(Y)\mid A=a,X=x]=1}
+\E_P[r(Y)Z(Y)\mid A=a,X=x],
+\]
+and
+\[
+\mathfrak T_{\Gamma}^{-}(Z\mid a,x)
+=
+\inf_{\ell_a(x)\le r\le u_a(x),\ \E_P[r(Y)\mid A=a,X=x]=1}
+\E_P[r(Y)Z(Y)\mid A=a,X=x].
+\]
+The upper optimizer places weight \(u_a(x)\) on the largest values of \(Z\),
+weight \(\ell_a(x)\) on the smallest values of \(Z\), and splits only at the
+canonical threshold needed to enforce \(\E r=1\).  This is the
+Hardy--Littlewood rearrangement form of the sharp marginal-sensitivity
+bounded-weight calculation used by Tan (2006), Dorn and Guo (2021), and Frauen,
+Melnychuk, and Feuerriegel (2023).
+\end{definition}
+
+For \(\eta\in\mathcal I=[y_L,y_U]\), define
+\[
+\Psi_\eta^{+,\mathrm{sep}}(P,\pi)=
+\E_P\left[
+\sum_{a\in\mathcal A}\pi(a\mid X)\,
+\mathfrak T_{\Gamma}^{+}\{(Y-\eta)_+\mid a,X\}
+\right],
+\]
+\[
+\Psi_\eta^{-,\mathrm{sep}}(P,\pi)=
+\E_P\left[
+\sum_{a\in\mathcal A}\pi(a\mid X)\,
+\mathfrak T_{\Gamma}^{-}\{(Y-\eta)_+\mid a,X\}
+\right].
+\]
+The corresponding Rockafellar--Uryasev criteria are
+\[
+\mathcal C_\eta^{+,\mathrm{sep}}(P,\pi)
+=
+\eta+\tau^{-1}\Psi_\eta^{+,\mathrm{sep}}(P,\pi),
+\qquad
+\mathcal C_\eta^{-,\mathrm{sep}}(P,\pi)
+=
+\eta+\tau^{-1}\Psi_\eta^{-,\mathrm{sep}}(P,\pi).
+\]
+The separated outer endpoints are
+\[
+\underline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P)
+:=
+\inf_{\eta\in\mathcal I}\mathcal C_\eta^{+,\mathrm{sep}}(P,\pi),
+\qquad
+\overline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P)
+:=
+\inf_{\eta\in\mathcal I}\mathcal C_\eta^{-,\mathrm{sep}}(P,\pi).
+\]
+The upper endpoint is conservative for the lower-is-better welfare convention.
+
+\begin{definition}[Conditional-exchangeable joint-compatible endpoint program]\label{def:joint-kernels}
+For each \(x\), let \(\Delta_{\mathcal A}\) be the probability simplex on
+\(\mathcal A\).  Let \(\calH_\Gamma(P)\) be the class of regular conditional
+kernels
+\[
+H_x(dy_{\mathcal A},dp)
+\quad\text{on}\quad
+[y_L,y_U]^{|\mathcal A|}\times \Delta_{\mathcal A},
+\]
+where \(y_{\mathcal A}=(y_a:a\in\mathcal A)\) and
+\(p=(p_a:a\in\mathcal A)\), satisfying the following constraints for
+\(P_X\)-almost every \(x\):
+\begin{enumerate}[label=(\roman*),leftmargin=2em]
+\item \(p_a\in(0,1)\) and \(\sum_a p_a=1\), \(H_x\)-almost surely;
+\item for every \(a\),
+\[
+\Gamma^{-1}\leq
+\frac{e_a(x)/(1-e_a(x))}{p_a/(1-p_a)}
+\leq \Gamma,
+\qquad H_x\text{-almost surely};
+\]
+\item for every \(a\),
+\[
+\int p_a\,dH_x=e_a(x);
+\]
+\item for every bounded measurable \(b:[y_L,y_U]\to\R\) and every \(a\),
+\[
+\int p_a\,b(y_a)\,dH_x
+=
+e_a(x)\,\E_P[b(Y)\mid A=a,X=x].
+\]
+\end{enumerate}
+For \(H\in\calH_\Gamma(P)\), define the conditionally exchangeable induced
+policy law by
+\[
+\E_H[b\{Y(\pi)\}]
+=
+\E_{P_X}\int
+\sum_{a\in\mathcal A}\pi(a\mid X)b(y_a)\,dH_X(y_{\mathcal A},p)
+\]
+for bounded measurable \(b\).  The sharp conditionally exchangeable
+joint-compatible upper and lower endpoints are
+\[
+\theta_U^{\mathrm{jnt}}(P)
+=
+\sup_{H\in\calH_\Gamma(P)}
+\inf_{\eta\in[y_L,y_U]}
+\left\{
+\eta+\tau^{-1}
+\E_{P_X}\int
+\sum_{a\in\mathcal A}\pi(a\mid X)(y_a-\eta)_+\,dH_X
+\right\},
+\]
+\[
+\theta_L^{\mathrm{jnt}}(P)
+=
+\inf_{H\in\calH_\Gamma(P)}
+\inf_{\eta\in[y_L,y_U]}
+\left\{
+\eta+\tau^{-1}
+\E_{P_X}\int
+\sum_{a\in\mathcal A}\pi(a\mid X)(y_a-\eta)_+\,dH_X
+\right\}.
+\]
+\end{definition}
+
+The joint program is explicit for the conditionally exchangeable subclass: its
+decision variable is the conditional kernel \(H_x\); its constraints are the
+simplex, odds-ratio, observed propensity, and observed selected-outcome moment
+equations above.  On finite outcome and covariate support it becomes a finite
+nonlinear program with variables equal to the masses assigned to
+\((y_{\mathcal A},p)\); if the admissible \(p\)-support is discretized or known
+to attain finitely many odds-ratio faces, it becomes a finite-dimensional
+constrained program over those support points.
+
+\begin{definition}[Pointwise CDF envelopes and band comparator]\label{def:band}
+For \(y\in[y_L,y_U]\), define the actionwise lower and upper CDF envelopes
+\[
+\mathfrak F_{\Gamma}^{-}(y\mid a,x)
+=
+\inf_{\ell_a(x)\le r\le u_a(x),\ \E_P[r(Y)\mid A=a,X=x]=1}
+\E_P[r(Y)\one\{Y\le y\}\mid A=a,X=x],
+\]
+\[
+\mathfrak F_{\Gamma}^{+}(y\mid a,x)
+=
+\sup_{\ell_a(x)\le r\le u_a(x),\ \E_P[r(Y)\mid A=a,X=x]=1}
+\E_P[r(Y)\one\{Y\le y\}\mid A=a,X=x].
+\]
+The policy-level pointwise envelopes are
+\[
+\underline F_{\Gamma}(y\mid P,\pi)
+=
+\E_P\left[
+\sum_{a\in\mathcal A}\pi(a\mid X)
+\mathfrak F_{\Gamma}^{-}(y\mid a,X)
+\right],
+\]
+and
+\[
+\overline F_{\Gamma}(y\mid P,\pi)
+=
+\E_P\left[
+\sum_{a\in\mathcal A}\pi(a\mid X)
+\mathfrak F_{\Gamma}^{+}(y\mid a,X)
+\right].
+\]
+Let \(\calF_{\Gamma}^{\mathrm{pt}}(P,\pi)\) be the set of distribution
+functions \(F\) on \([y_L,y_U]\) that are cadlag, nondecreasing, satisfy
+\(F(y_L-)=0\), \(F(y_U)=1\), and obey
+\[
+\underline F_{\Gamma}(y\mid P,\pi)\le F(y)\le
+\overline F_{\Gamma}(y\mid P,\pi)
+\quad\text{for every }y\in[y_L,y_U].
+\]
+Define
+\[
+W_{\tau,\Gamma}^{\mathrm{band}}(\pi;P)
+:=
+\inf_{\eta\in\mathcal I}
+\left\{
+\eta+\tau^{-1}\sup_{F\in\calF_{\Gamma}^{\mathrm{pt}}(P,\pi)}
+\int_{[y_L,y_U]} (y-\eta)_+\,dF(y)
+\right\}.
+\]
+The separated non-commutation gap is
+\[
+\Delta_{\mathrm{nc}}^{\mathrm{sep}}(\pi;P)
+=
+W_{\tau,\Gamma}^{\mathrm{band}}(\pi;P)
+-
+\underline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P).
+\]
+\end{definition}
+
+\section{Target causal estimand}
+\begin{definition}[Policy CVaR target]
+For each latent law \(Q\in\mathcal M_\Gamma(P)\) with integrable positive part,
+the target causal estimand is
+\[
+\theta(Q)=\operatorname{CVaR}_{\tau}\{Y_Q(\pi)\}
+=
+\inf_{\eta\in\R}
+\left\{
+\eta+\tau^{-1}\E_Q[(Y_Q(\pi)-\eta)_+]
+\right\}.
+\]
+For \(Q\in\mathcal M_\Gamma^{\mathrm{bd}}(P)\) or
+\(Q\in\mathcal M_\Gamma^{\mathrm{ce}}(P)\), the policy outcome is supported on
+\([y_L,y_U]\), so the infimum may be restricted to \([y_L,y_U]\).  For the
+locked full class \(\mathcal M_\Gamma(P)\), no such restriction is available
+unless a nonfactual support condition is added.
+\end{definition}
+
+\section{Main theorems}
+\begin{theorem}[Locked full class, support completion, joint subclass, and separated bound]\label{thm:joint-sharp-and-sep-bound}
+Assume the population-overlap component of Assumption~\ref{ass:iid-overlap} and
+Assumptions~\ref{ass:consistency}--\ref{ass:tail}.  Let
+\[
+q_\pi(P)
+=
+\E_P\left[
+\sum_{a\in\mathcal A}\pi(a\mid X)\{1-e_a(X)\}
+\right].
+\]
+Under Assumption~\ref{ass:iid-overlap}, \(q_\pi(P)\ge\epsilon>0\).  If the
+locked full class \(\mathcal M_\Gamma(P)\) imposes no finite upper support
+restriction on nonfactual potential outcomes, then
+\[
+\sup\Theta_I(P)=+\infty.
+\]
+More explicitly, for every \(M>y_U\) there exists
+\(Q_M\in\mathcal M_\Gamma(P)\) such that \(Y_{Q_M}(\pi)=M\) with probability
+\(q_\pi(P)\), and
+\[
+\operatorname{CVaR}_{\tau}\{Y_{Q_M}(\pi)\}\to+\infty
+\qquad\text{as }M\to\infty.
+\]
+Thus the locked full class has no finite sharp upper endpoint.
+
+For the support-restricted subclass,
+\[
+\Theta_I^{\mathrm{bd}}(P)
+=
+\left[\theta_L^{\mathrm{bd}}(P),\theta_U^{\mathrm{bd}}(P)\right],
+\qquad
+\sup\Theta_I^{\mathrm{bd}}(P)=\theta_U^{\mathrm{bd}}(P),
+\qquad
+\inf\Theta_I^{\mathrm{bd}}(P)=\theta_L^{\mathrm{bd}}(P),
+\]
+with \(\theta_U^{\mathrm{bd}}\) and \(\theta_L^{\mathrm{bd}}\) defined in
+Definition~\ref{def:bd-endpoints}.
+
+For the conditionally exchangeable subclass,
+\[
+\sup\Theta_I^{\mathrm{ce}}(P)=\theta_U^{\mathrm{jnt}}(P),
+\qquad
+\inf\Theta_I^{\mathrm{ce}}(P)=\theta_L^{\mathrm{jnt}}(P),
+\]
+with \(\theta_U^{\mathrm{jnt}}\) and \(\theta_L^{\mathrm{jnt}}\) defined in
+Definition~\ref{def:joint-kernels}.  Moreover,
+\[
+\theta_U^{\mathrm{jnt}}(P)
+\le
+\underline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P),
+\qquad
+\theta_L^{\mathrm{jnt}}(P)
+\ge
+\overline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P).
+\]
+Thus
+\[
+\Theta_I^{\mathrm{ce}}(P)\subseteq
+\left[
+\overline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P),
+\underline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P)
+\right].
+\]
+The separated upper functional in Conjecture~1 is therefore not a valid finite
+full-class endpoint under the locked restrictions.  It is a valid computable
+outer endpoint for the conditionally exchangeable subclass, and it is sharp for
+that subclass whenever a maximizing joint kernel can realize the actionwise
+least-favorable tilts at an active minimizer \(\eta_*\).  This joint
+realizability condition holds in the conditionally exchangeable
+\(\Gamma=1\) corner and in degenerate single-action policies, but is not implied
+by the multi-action MSM restrictions alone.
+\end{theorem}
+
+\begin{theorem}[Pointwise-band comparison]\label{thm:band}
+Under the population-overlap component of Assumption~\ref{ass:iid-overlap} and
+the observed-support component of Assumption~\ref{ass:tail},
+\[
+W_{\tau,\Gamma}^{\mathrm{band}}(\pi;P)
+\ge
+\underline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P).
+\]
+If, in addition, the conditionally exchangeable joint program
+\(\calH_\Gamma(P)\) represents a nonempty subclass as in
+Theorem~\ref{thm:joint-sharp-and-sep-bound}, then
+\[
+W_{\tau,\Gamma}^{\mathrm{band}}(\pi;P)
+\ge
+\underline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P)
+\ge
+\theta_U^{\mathrm{jnt}}(P).
+\]
+The comparison is a statement about the conditionally exchangeable
+actionwise-bounding workflow; it need not bound the larger locked full class,
+whose upper endpoint is infinite when nonfactual potential outcomes are
+unbounded above.
+
+In the two-action, three-outcome, one-covariate-cell strict-overlap class with
+\(1<\Gamma<\infty\), the same monotone upper-tail bounded-weight vertex is
+optimal for every generated loss \((Y-\eta)_+\).  Consequently
+\[
+W_{\tau,\Gamma}^{\mathrm{band}}(\pi;P)
+=
+\underline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P),
+\qquad
+\Delta_{\mathrm{nc}}^{\mathrm{sep}}(\pi;P)=0
+\]
+throughout that class.
+\end{theorem}
+
+\begin{lemma}[Envelope derivative of the cellwise MSM operator]\label{lem:lp-envelope}
+Fix \((\eta,a,x)\), put \(g_\eta(y)=(y-\eta)_+\), and suppose the cell satisfies
+the canonical differentiability condition in Assumption~\ref{ass:lp-diff}.  If
+\(\Gamma=1\), set \(r_{\eta,a}^*\equiv1\),
+\(h_{\eta,a}(y,x)=g_\eta(y)\), \(T_{\eta,a}(x)=\E_P[g_\eta(Y)\mid A=a,X=x]\),
+and \(\dot T_{\eta,a,e}(x)=0\).  If \(\Gamma>1\), let
+\[
+r_{\eta,a}^*(y,x)
+=
+u_a(x)\one\{g_\eta(y)>\lambda_{\eta,a}(x)\}
++
+\ell_a(x)\one\{g_\eta(y)<\lambda_{\eta,a}(x)\},
+\]
+where \(\lambda_{\eta,a}(x)\) is the unique canonical threshold satisfying
+\[
+\E_P[r_{\eta,a}^*(Y,x)\mid A=a,X=x]=1.
+\]
+Define the canonical dual pseudo-outcome
+\[
+h_{\eta,a}(y,x)
+=
+\lambda_{\eta,a}(x)
++
+r_{\eta,a}^*(y,x)\{g_\eta(y)-\lambda_{\eta,a}(x)\},
+\]
+and
+\[
+T_{\eta,a}(x)
+=
+\mathfrak T_{\Gamma}^{+}\{g_\eta(Y)\mid a,x\}
+=
+\E_P[h_{\eta,a}(Y,x)\mid A=a,X=x].
+\]
+Then the pathwise derivative of \(T_{\eta,a}(x)\) with respect to the
+conditional law of \(Y\mid A=a,X=x\) is represented by
+\(h_{\eta,a}(Y,x)-T_{\eta,a}(x)\).  For \(\Gamma>1\), the derivative with
+respect to the nominal propensity \(e_a(x)\), holding the conditional law fixed,
+is
+\[
+\dot T_{\eta,a,e}(x)
+=
+u_a'(x)\,
+\E_P[(g_\eta(Y)-\lambda_{\eta,a}(x))_+\mid A=a,X=x]
+-
+\ell_a'(x)\,
+\E_P[(g_\eta(Y)-\lambda_{\eta,a}(x))_-\mid A=a,X=x],
+\]
+where
+\[
+u_a'(x)=1-\Gamma,
+\qquad
+\ell_a'(x)=1-\Gamma^{-1},
+\qquad
+t_-=\max\{-t,0\}.
+\]
+\end{lemma}
+
+\begin{theorem}[Corrected one-step limit law for the separated endpoint]\label{thm:onestep-limit}\label{prop:onestep-limit}\label{conj:onestep-limit}
+Let \(\widehat W_{\tau,\Gamma}^{\mathrm{sep}}(\pi)\) be the estimator in
+Definition~\ref{def:onestep}.  As a statistical statement about the observed-law
+functional \(\underline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P)\), assume
+Assumptions~\ref{ass:iid-overlap}, \ref{ass:tail}, and
+\ref{ass:lp-diff}--\ref{ass:nuisance}.  Then
+\[
+\sqrt n\{
+\widehat W_{\tau,\Gamma}^{\mathrm{sep}}(\pi)
+-
+\underline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P)
+\}
+=
+\frac{1}{\sqrt n}\sum_{i=1}^n
+\varphi_{\tau,\Gamma,\pi}^{\mathrm{sep}}(O_i)+o_p(1),
+\]
+where
+\[
+\varphi_{\tau,\Gamma,\pi}^{\mathrm{sep}}(O)
+=
+\tau^{-1}
+\left\{
+\chi_{\eta_*,\pi}(O)
+-
+\Psi_{\eta_*}^{+,\mathrm{sep}}(P,\pi)
+\right\},
+\qquad
+\E[\varphi_{\tau,\Gamma,\pi}^{\mathrm{sep}}(O)]=0.
+\]
+The fold-stacked sample variance in Definition~\ref{def:onestep} converges in
+probability to
+\[
+\operatorname{Var}\{\varphi_{\tau,\Gamma,\pi}^{\mathrm{sep}}(O)\}.
+\]
+This limit law is for the separated outer endpoint.  It does not require
+consistency or the causal MSM restriction except for interpreting the separated
+functional as a causal sensitivity bound.  A limit law for the exact
+joint-compatible endpoint \(\theta_U^{\mathrm{jnt}}(P)\) requires
+differentiability of the joint program in Definition~\ref{def:joint-kernels}.
+\end{theorem}
+
+\paragraph{Verdicts for the motivating conjectures.}
+Conjecture~1 is refuted for the locked full class
+\(\mathcal M_\Gamma(P)\): without a nonfactual upper-support restriction,
+\(\sup\Theta_I(P)=+\infty\).  The support-completion endpoint is sharp only for
+the explicitly support-restricted subclass
+\(\mathcal M_\Gamma^{\mathrm{bd}}(P)\), while the nested actionwise MSM-CVaR
+functional is only a conditionally exchangeable subclass outer bound.
+Conjecture~2 is confirmed only as the weak comparison
+\(W_{\tau,\Gamma}^{\mathrm{band}}\ge
+\underline W_{\tau,\Gamma}^{\mathrm{sep}}\ge\theta_U^{\mathrm{jnt}}\), and the
+proposed finite class gives equality rather than a strict gap.  Conjecture~3 is
+confirmed for the separated endpoint under the corrected score and the explicit
+LP differentiability, global localization, local smoothness, and nuisance-rate
+conditions stated above; it is open for the exact joint-compatible endpoint.
+
+\section{Interpretation}
+Theorem~\ref{thm:joint-sharp-and-sep-bound} separates four objects that are
+often conflated.  The locked full class has no finite upper endpoint if
+nonfactual potential outcomes are allowed to be arbitrarily large.  The
+support-completion bound is exact only after adding the all-potential-outcome
+support restriction \(Y(a)\in[y_L,y_U]\).  The joint-compatible kernel program
+is exact for the conditionally exchangeable subclass; in that subclass,
+conditional exchangeability and the finite odds-ratio bounds force the
+unselected potential-outcome margins to be absolutely continuous with respect to
+the observed selected margins.  The separated nested functional is simpler and
+computable from the observed conditional laws, but it optimizes each action's
+density ratio as if the actionwise ratios could be selected independently.  In a
+multi-action conditionally exchangeable MSM that independence is not automatic
+because the ratios must come from one latent treatment-probability vector.
+
+Theorem~\ref{thm:band} compares two conservative workflows inside the
+conditionally exchangeable actionwise-bounding analysis.  The pointwise-band
+workflow builds explicit thresholdwise CDF envelopes and then applies the CVaR
+formula.  The separated nested workflow applies the sharp bounded-weight mean
+operator to the generated loss \((Y-\eta)_+\) and then minimizes over \(\eta\).
+The band is no smaller than the separated nested bound.  In the finite
+response-type class specified in the theorem, there is a common upper-tail
+vertex, so the two workflows agree and the separated non-commutation gap is
+zero.
+
+Theorem~\ref{thm:onestep-limit} identifies the score needed to estimate the
+separated endpoint.  A transformed loss with the correct conditional mean is not
+enough.  The first-order derivative of the bounded-weight operator is represented
+by the dual pseudo-outcome \(h_{\eta,a}\), and the dependence of the MSM bounds
+\(\ell_a,u_a\) on \(e_a\) contributes the additional term
+\(\dot T_{\eta,a,e}(X)\{\one(A=a)-e_a(X)\}\).  This derivative is justified only
+under a canonical differentiable threshold condition for the cellwise linear
+program.  The minimization over \(\eta\) is first-order silent only after the
+global localization and local quadratic conditions in
+Assumptions~\ref{ass:unique-eta} and~\ref{ass:global-eta} force the
+data-selected minimizer into the differentiable neighborhood.
+
+\section{Step-by-step proof}
+\begin{proof}[Proof of Theorem~\ref{thm:joint-sharp-and-sep-bound}]
+First prove that the locked full class has no finite upper endpoint.  For
+\(M>y_U\), construct a full-data law \(Q_M\) as follows.  Draw
+\((X,A,Y)\sim P\), set \(Y(A)=Y\), set \(Y(a)=M\) for every \(a\ne A\), and take
+\(U\) to be constant.  Then the observed margin is exactly \(P\), consistency
+holds, and
+\[
+Q_M(A=a\mid X,U)=P(A=a\mid X)=e_a(X),
+\]
+so the odds-ratio in Assumption~\ref{ass:msm} equals one and is feasible for
+every \(\Gamma\ge1\).  The construction therefore belongs to the locked class
+\(\mathcal M_\Gamma(P)\).
+
+Let \(B=\one\{A^\pi\ne A\}\), where the policy action is drawn conditionally on
+\(X\).  Then
+\[
+\Pr_{Q_M}(B=1)
+=
+\E_P\left[\sum_{a\in\mathcal A}\pi(a\mid X)\{1-e_a(X)\}\right]
+=
+q_\pi(P).
+\]
+By Assumption~\ref{ass:iid-overlap}, \(e_a(X)\le1-\epsilon\) for every action,
+so \(q_\pi(P)\ge\epsilon\sum_a\pi(a\mid X)=\epsilon\) after averaging.  On the
+event \(B=1\), \(Y_{Q_M}(\pi)=M\); on \(B=0\), the policy outcome is factual and
+lies in \([y_L,y_U]\).  Hence \(Y_{Q_M}(\pi)\) stochastically dominates
+\(V_M=M B+y_L(1-B)\).  By monotonicity of upper-tail CVaR,
+\[
+\operatorname{CVaR}_\tau\{Y_{Q_M}(\pi)\}
+\ge
+\operatorname{CVaR}_\tau(V_M).
+\]
+If \(q_\pi(P)\ge\tau\), the right side equals \(M\).  If
+\(q_\pi(P)<\tau\), the Rockafellar--Uryasev formula gives
+\[
+\operatorname{CVaR}_\tau(V_M)
+=
+\frac{q_\pi(P)M+\{\tau-q_\pi(P)\}y_L}{\tau}.
+\]
+In either case the lower bound diverges to \(+\infty\) as \(M\to\infty\).
+Thus \(\sup\Theta_I(P)=+\infty\).
+
+Next prove the finite support-restricted endpoint.  Fix
+\(Q\in\mathcal M_\Gamma^{\mathrm{bd}}(P)\) and
+\(\eta\in[y_L,y_U]\).  With \(g_\eta(y)=(y-\eta)_+\), consistency and the
+observed margin give, for \(P_X\)-almost every \(x\),
+\[
+\E_Q[g_\eta\{Y(a)\}\mid X=x]
+=
+e_a(x)\E_P[g_\eta(Y)\mid A=a,X=x]
++
+(1-e_a(x))\E_Q[g_\eta\{Y(a)\}\mid A\ne a,X=x].
+\]
+The support restriction \(Y(a)\in[y_L,y_U]\) implies
+\[
+(y_L-\eta)_+\le
+\E_Q[g_\eta\{Y(a)\}\mid A\ne a,X=x]
+\le
+(y_U-\eta)_+.
+\]
+Multiplying by \(\pi(a\mid x)\), summing over \(a\), and integrating over
+\(P_X\) yields
+\[
+\eta+\tau^{-1}\E_Q[(Y_Q(\pi)-\eta)_+]
+\le
+\mathcal C_\eta^{+,\mathrm{bd}}(P,\pi)
+\]
+and
+\[
+\eta+\tau^{-1}\E_Q[(Y_Q(\pi)-\eta)_+]
+\ge
+\mathcal C_\eta^{-,\mathrm{bd}}(P,\pi)
+\]
+for every \(\eta\).  Taking the Rockafellar--Uryasev infimum over \(\eta\)
+gives \(\theta(Q)\le\theta_U^{\mathrm{bd}}(P)\) and
+\(\theta(Q)\ge\theta_L^{\mathrm{bd}}(P)\).
+
+The two support-restricted bounds are sharp.  For the upper endpoint, draw
+\((X,A,Y)\sim P\), set \(Y(A)=Y\), set \(Y(a)=y_U\) for every \(a\ne A\), and
+take \(U\) to be constant.  This law belongs to
+\(\mathcal M_\Gamma^{\mathrm{bd}}(P)\) and turns the upper display into an
+equality for every \(\eta\).  Hence it attains
+\(\theta_U^{\mathrm{bd}}(P)\).  The lower endpoint is attained by the same
+construction with \(Y(a)=y_L\) for every \(a\ne A\).  To see that the whole
+interval is sharp, mix the lower and upper completion laws with an independent
+Bernoulli selector \(B_t\sim\operatorname{Bernoulli}(t)\), leaving the observed
+\((Y,A,X)\) margin unchanged and using the upper completion when \(B_t=1\).  The
+resulting law belongs to \(\mathcal M_\Gamma^{\mathrm{bd}}(P)\) for every
+\(t\in[0,1]\).  Because all policy outcome laws in this subclass are supported
+on the common compact interval \([y_L,y_U]\), the map
+\[
+t\mapsto \operatorname{CVaR}_\tau\{Y_{Q_t}(\pi)\}
+\]
+is continuous under this mixture.  At \(t=0\) it equals
+\(\theta_L^{\mathrm{bd}}(P)\), and at \(t=1\) it equals
+\(\theta_U^{\mathrm{bd}}(P)\).  Therefore every value between the two endpoints
+is attainable.
+
+Now prove the conditionally exchangeable joint-kernel representation.  Given
+any \(Q\in\mathcal M_\Gamma^{\mathrm{ce}}(P)\), take \(H_x\) to be the
+conditional law under \(Q\) of
+\[
+\bigl((Y(a):a\in\mathcal A),(Q(A=a\mid X=x,U):a\in\mathcal A)\bigr)
+\]
+given \(X=x\).  The simplex constraint is immediate.  The odds-ratio constraint
+is Assumption~\ref{ass:msm}.  The identity
+\(\int p_a\,dH_x=e_a(x)\) follows from iterated expectation.  Because the
+odds-ratio bound and population overlap imply \(p_a>0\) almost surely, observed
+support also implies support of each \(Y(a)\) inside \([y_L,y_U]\) in the
+conditionally exchangeable subclass: for any Borel set
+\(B\subseteq\R\setminus[y_L,y_U]\),
+\[
+0
+=
+\E_Q[\one\{A=a\}\one\{Y(a)\in B\}\mid X=x]
+=
+\E_Q[p_a(X,U)\one\{Y(a)\in B\}\mid X=x],
+\]
+and the positivity of \(p_a\) forces
+\(\Pr_Q\{Y(a)\in B\mid X=x\}=0\).
+
+For every bounded \(b:[y_L,y_U]\to\R\),
+\[
+\int p_a b(y_a)\,dH_x
+=
+\E_Q[p_a(X,U)b\{Y(a)\}\mid X=x]
+=
+\E_Q[\one(A=a)b\{Y(a)\}\mid X=x],
+\]
+where the second equality is exactly conditional exchangeability.  Consistency
+and the observed margin then give
+\[
+\E_Q[\one(A=a)b\{Y(a)\}\mid X=x]
+=
+e_a(x)\E_P[b(Y)\mid A=a,X=x].
+\]
+Hence \(H\in\calH_\Gamma(P)\).
+
+Conversely, given \(H\in\calH_\Gamma(P)\), construct a law by drawing
+\(X\sim P_X\), drawing \((Y_{\mathcal A},p)\sim H_X\), drawing
+\(A\) from the categorical distribution \(p\) conditionally on
+\((X,Y_{\mathcal A},p)\), and setting \(Y=Y_A\).  With \(U=p\), the constructed
+law satisfies conditional exchangeability because
+\(Q(A=a\mid X,U,Y_{\mathcal A})=p_a=Q(A=a\mid X,U)\).  The moment constraints in
+Definition~\ref{def:joint-kernels} imply
+\[
+\Pr(A=a\mid X=x)=e_a(x)
+\]
+and
+\[
+\Pr(Y\in B\mid A=a,X=x)=P(Y\in B\mid A=a,X=x)
+\]
+for every measurable \(B\subseteq[y_L,y_U]\).  Thus the observed margin is
+\(P\), consistency holds by construction, and the odds-ratio constraint gives
+\(Q\in\mathcal M_\Gamma^{\mathrm{ce}}(P)\).  The two constructions preserve the
+law of \(Y(\pi)\).  Therefore optimizing
+\(\operatorname{CVaR}_{\tau}\{Y(\pi)\}\) over
+\(\mathcal M_\Gamma^{\mathrm{ce}}(P)\) is equivalent to optimizing the displayed
+Rockafellar--Uryasev criterion over \(\calH_\Gamma(P)\), proving the sharp
+subclass endpoint equalities.
+
+It remains to prove the separated outer inequalities for the conditionally
+exchangeable subclass.  Fix \(H\in\calH_\Gamma(P)\), \(a\), and \(x\).  The
+marginal law of \(Y_a\) under \(H_x\) is absolutely continuous with respect to
+the observed selected law \(P(Y\in\cdot\mid A=a,X=x)\).  Its Radon--Nikodym
+derivative can be written as
+\[
+r_{H,a,x}(y)
+=
+\frac{e_a(x)}
+{\E_H[p_a\mid Y_a=y,X=x]}.
+\]
+The odds-ratio bound on \(p_a\) implies
+\[
+\ell_a(x)\le r_{H,a,x}(y)\le u_a(x),
+\qquad
+\E_P[r_{H,a,x}(Y)\mid A=a,X=x]=1.
+\]
+For \(Z_\eta(y)=(y-\eta)_+\),
+\[
+\int Z_\eta(y_a)\,dH_x
+=
+\E_P[r_{H,a,x}(Y)Z_\eta(Y)\mid A=a,X=x]
+\le
+\mathfrak T_\Gamma^+(Z_\eta\mid a,x).
+\]
+Multiplying by \(\pi(a\mid x)\), summing over \(a\), and integrating over
+\(P_X\) gives
+\[
+\E_H[(Y(\pi)-\eta)_+]
+\le
+\Psi_\eta^{+,\mathrm{sep}}(P,\pi)
+\quad\text{for every }\eta.
+\]
+By the Rockafellar--Uryasev identity,
+\[
+\operatorname{CVaR}_{\tau}\{Y_H(\pi)\}
+=
+\inf_{\eta\in[y_L,y_U]}
+\{\eta+\tau^{-1}\E_H[(Y(\pi)-\eta)_+]\}
+\le
+\underline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P).
+\]
+Taking the supremum over \(H\) proves
+\(\theta_U^{\mathrm{jnt}}(P)\le
+\underline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P)\).
+
+The lower inequality is analogous.  The same induced density ratio is feasible
+for the lower bounded-weight program, so
+\[
+\E_H[(Y(\pi)-\eta)_+]\ge
+\Psi_\eta^{-,\mathrm{sep}}(P,\pi)
+\quad\text{for every }\eta.
+\]
+Taking the Rockafellar--Uryasev infimum over \(\eta\) and then the infimum over
+\(H\) gives
+\[
+\theta_L^{\mathrm{jnt}}(P)
+\ge
+\overline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P).
+\]
+
+The subclass equality condition follows from the preceding proof.  Equality in
+the separated upper bound requires a joint kernel \(H\) whose induced ratios
+\(r_{H,a,x}\) attain the actionwise upper linear programs at an active minimizer
+\(\eta_*\).  Equivalently the ratios must obey the latent compatibility equation
+\[
+\sum_{a\in\mathcal A}\frac{e_a(x)}{r_{H,a,x}(y_{\mathcal A})}=1
+\]
+for \(H_x\)-almost every latent unit while also matching the observed selected
+laws.  This compatibility is automatic in the conditionally exchangeable
+\(\Gamma=1\) corner, since all ratios equal one, and for degenerate
+single-action policies, since only one actionwise ratio enters the policy value.
+It is not a consequence of the separate box and normalization constraints
+defining \(\mathfrak T_\Gamma^+\) when multiple actions receive positive policy
+weight.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:band}]
+The band comparison is an observed-law calculation.  Fix \(a,x\).  Among all
+weights \(r\) satisfying
+\(\ell_a(x)\le r\le u_a(x)\) and
+\(\E[r(Y)\mid A=a,X=x]=1\), the monotone upper-tail rearrangement places
+weight \(u_a(x)\) on the largest outcomes, \(\ell_a(x)\) on the smallest
+outcomes, and splits at the normalization threshold if necessary.  This single
+upper-tail rearrangement minimizes
+\(\E[r(Y)\one\{Y\le y\}\mid A=a,X=x]\) for every threshold \(y\), and it
+maximizes \(\E[r(Y)(Y-\eta)_+\mid A=a,X=x]\) for every
+\(\eta\in[y_L,y_U]\).  This is the Hardy--Littlewood exchange argument:
+if a feasible vector puts extra weight on a smaller outcome while a larger
+outcome is not at its cap, shifting that weight upward preserves normalization
+and box constraints, weakly decreases every lower CDF value, and weakly
+increases every increasing objective.
+
+Let \(F_\eta^\uparrow\) be the policy mixture distribution induced by these
+actionwise upper-tail rearrangements.  Because the rearrangement attains the
+term-by-term lower CDF envelope in Definition~\ref{def:band},
+\(F_\eta^\uparrow\in\calF_\Gamma^{\mathrm{pt}}(P,\pi)\), and for every
+\(\eta\),
+\[
+\int (y-\eta)_+\,dF_\eta^\uparrow(y)
+=
+\Psi_\eta^{+,\mathrm{sep}}(P,\pi).
+\]
+Therefore
+\[
+\sup_{F\in\calF_\Gamma^{\mathrm{pt}}(P,\pi)}
+\int (y-\eta)_+\,dF(y)
+\ge
+\Psi_\eta^{+,\mathrm{sep}}(P,\pi).
+\]
+Adding \(\eta\), multiplying by \(\tau^{-1}\), and taking the infimum over
+\(\eta\) gives
+\[
+W_{\tau,\Gamma}^{\mathrm{band}}(\pi;P)
+\ge
+\underline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P).
+\]
+The comparison with \(\theta_U^{\mathrm{jnt}}(P)\) is the separated outer
+inequality in Theorem~\ref{thm:joint-sharp-and-sep-bound}.
+
+For the finite-class statement, take \(X=x_0\) almost surely,
+\(\mathcal A=\{0,1\}\), and \(Y\in\{0,1,2\}\).  Write
+\[
+p_{aj}=P(Y=j\mid A=a,X=x_0),
+\qquad
+q_{aj}=p_{aj}r_{aj}.
+\]
+The actionwise bounded-weight constraints are
+\[
+\ell_a\le r_{aj}\le u_a,
+\qquad
+\sum_{j=0}^2 p_{aj}r_{aj}=1.
+\]
+Starting from the lower face \(q_{aj}=\ell_a p_{aj}\), allocate the remaining
+mass to the largest outcomes first, respecting the caps
+\((u_a-\ell_a)p_{aj}\).  The upper-tail vertex is
+\[
+q^\star_{a2}=\min\{u_ap_{a2},\,1-\ell_a(p_{a0}+p_{a1})\},
+\]
+\[
+q^\star_{a1}=\min\{u_ap_{a1},\,1-q^\star_{a2}-\ell_ap_{a0}\},
+\qquad
+q^\star_{a0}=1-q^\star_{a1}-q^\star_{a2}.
+\]
+The exchange argument above shows that \(q_a^\star\) simultaneously minimizes
+all lower CDF thresholds and maximizes
+\(\sum_{j=0}^2 q_{aj}(j-\eta)_+\) for every \(\eta\in[0,2]\).
+
+Mix the vertices using the policy:
+\[
+q^{\pi,\star}_j=\sum_{a\in\{0,1\}}\pi_a q^\star_{aj}.
+\]
+For every \(\eta\),
+\[
+\sup_{F\in\calF_\Gamma^{\mathrm{pt}}(P,\pi)}
+\int (y-\eta)_+\,dF(y)
+=
+\sum_{j=0}^2 q^{\pi,\star}_j(j-\eta)_+
+=
+\Psi_\eta^{+,\mathrm{sep}}(P,\pi).
+\]
+The band and separated criteria are equal pointwise in \(\eta\), and their
+infima are equal.
+\end{proof}
+
+\begin{proof}[Proof of Lemma~\ref{lem:lp-envelope}]
+The case \(\Gamma=1\) is immediate because the only feasible weight is
+\(r\equiv1\).  Consider \(\Gamma>1\).  Conditional on \((A=a,X=x)\), suppress
+\((a,x)\) from the notation and write \(\ell=\ell_a(x)\), \(u=u_a(x)\), and
+\(g=g_\eta\).  The upper operator is
+\[
+T=\sup_{\ell\le r\le u,\ \E r=1}\E[rg].
+\]
+Introduce a Lagrange multiplier \(\lambda\) for the normalization.  For fixed
+\(\lambda\), the pointwise maximizer of
+\(\E[r\{g-\lambda\}]+\lambda\) sets \(r=u\) when \(g>\lambda\) and \(r=\ell\)
+when \(g<\lambda\).  Assumption~\ref{ass:lp-diff} supplies a unique canonical
+threshold and rules out a first-order contribution from an atom or a
+selection-dependent threshold interval.  The multiplier is chosen so that the
+resulting \(r^*\) satisfies \(\E r^*=1\).  Hence
+\[
+T
+=
+\lambda+\E[r^*(g-\lambda)]
+=
+\E[\lambda+r^*(g-\lambda)]
+=
+\E[h].
+\]
+
+For a regular perturbation of the conditional law, the envelope theorem for a
+linear program with a unique canonical active threshold gives the derivative
+obtained by holding the optimizer fixed.  The mean-zero derivative is therefore
+\(h(Y)-T\).  For a perturbation of \(e\), the conditional law is held fixed and
+only the bounds move.  Since
+\[
+T
+=
+\lambda+
+\E\{u(e)(g-\lambda)_+-\ell(e)(g-\lambda)_-\},
+\]
+the derivative with respect to \(e\) is
+\[
+u'(e)\E[(g-\lambda)_+]-\ell'(e)\E[(g-\lambda)_-].
+\]
+The identities \(u'(e)=1-\Gamma\) and \(\ell'(e)=1-\Gamma^{-1}\) follow by
+differentiating \(u(e)=e+\Gamma(1-e)\) and
+\(\ell(e)=e+(1-e)/\Gamma\).
+\end{proof}
+
+\begin{definition}[Corrected cross-fitted one-step endpoint estimator]\label{def:onestep}
+Let \(g_\eta(y)=(y-\eta)_+\).  For each \((\eta,a,x)\), let
+\(\lambda_{\eta,a}(x)\), \(h_{\eta,a}(y,x)\), \(T_{\eta,a}(x)\), and
+\(\dot T_{\eta,a,e}(x)\) be the objects in Lemma~\ref{lem:lp-envelope}.  Define
+\[
+\chi_{\eta,\pi}(O)
+=
+\sum_{a\in\mathcal A}\pi(a\mid X)
+\left[
+T_{\eta,a}(X)
++
+\frac{\one\{A=a\}}{e_a(X)}
+\{h_{\eta,a}(Y,X)-T_{\eta,a}(X)\}
++
+\dot T_{\eta,a,e}(X)\{\one\{A=a\}-e_a(X)\}
+\right].
+\]
+Split the sample into fixed folds \(F_1,\ldots,F_K\).  On the training sample
+outside fold \(F_k\), estimate
+\[
+\widehat\nu_\eta^{(-k)}
+=
+(\widehat e_a^{(-k)},\widehat\lambda_{\eta,a}^{(-k)},
+ \widehat h_{\eta,a}^{(-k)},\widehat T_{\eta,a}^{(-k)},
+ \widehat{\dot T}_{\eta,a,e}^{(-k)})_{a\in\mathcal A}
+\]
+and form \(\widehat\chi_{\eta,\pi}^{(-k)}\) by replacing each nuisance in
+\(\chi_{\eta,\pi}\) by its fold-specific estimate.  Put
+\[
+\widehat{\mathcal C}_\eta^{\mathrm{sep}}
+=
+\eta+\tau^{-1}\frac1n
+\sum_{k=1}^K\sum_{i\in F_k}
+\widehat\chi_{\eta,\pi}^{(-k)}(O_i),
+\]
+\[
+\widehat\eta
+\in
+\operatorname*{arg\,min}_{\eta\in[y_L,y_U]}
+\widehat{\mathcal C}_\eta^{\mathrm{sep}},
+\qquad
+\widehat W_{\tau,\Gamma}^{\mathrm{sep}}(\pi)
+=
+\widehat{\mathcal C}_{\widehat\eta}^{\mathrm{sep}}.
+\]
+The fold-stacked variance estimator is
+\[
+\widehat\sigma_{\tau,\Gamma,\pi}^{2,\mathrm{sep}}
+=
+\frac1{n-1}\sum_{k=1}^K\sum_{i\in F_k}
+\left\{
+\widehat\eta+
+\tau^{-1}\widehat\chi_{\widehat\eta,\pi}^{(-k)}(O_i)
+-
+\widehat W_{\tau,\Gamma}^{\mathrm{sep}}(\pi)
+\right\}^2 .
+\]
+\end{definition}
+
+\begin{proof}[Proof of Theorem~\ref{thm:onestep-limit}]
+Let \(\eta_*=\eta_{\tau,\Gamma}(P,\pi)\) and
+\(\Psi_*=\Psi_{\eta_*}^{+,\mathrm{sep}}(P,\pi)\).  First,
+Lemma~\ref{lem:lp-envelope} and iterated expectation give
+\[
+\E[\chi_{\eta,\pi}(O)]
+=
+\E_P\left[
+\sum_{a\in\mathcal A}\pi(a\mid X)T_{\eta,a}(X)
+\right]
+=
+\Psi_\eta^{+,\mathrm{sep}}(P,\pi).
+\]
+The inverse-propensity term has conditional mean zero given \(X\), and the
+propensity-derivative term has conditional mean zero because
+\(\E[\one\{A=a\}-e_a(X)\mid X]=0\).
+
+For fixed \(\eta_*\), cross-fitting makes the validation observations
+independent of the nuisance estimates.  Assumption~\ref{ass:nuisance}, together
+with the derivative representation in Lemma~\ref{lem:lp-envelope}, gives
+\[
+\frac1n\sum_{k=1}^K\sum_{i\in F_k}
+\widehat\chi_{\eta_*,\pi}^{(-k)}(O_i)
+=
+\frac1n\sum_{i=1}^n
+\chi_{\eta_*,\pi}(O_i)
++
+o_p(n^{-1/2}).
+\]
+The key point is the cancellation of first-order drift.  The derivative with
+respect to the conditional outcome law is represented by \(h_{\eta,a}\), and the
+derivative with respect to \(e_a\) is represented by
+\(\dot T_{\eta,a,e}\{\one(A=a)-e_a(X)\}\).  After these two linear terms are
+included, the conditional mean remainder is bounded by the second-order
+quantity stated in Assumption~\ref{ass:nuisance}; the conditional empirical
+process remainder is \(o_p(n^{-1/2})\) by \(L_2(P)\) consistency, boundedness,
+and the fixed number of folds.
+
+Next consider the data-selected threshold.  The minimization in
+Definition~\ref{def:onestep} is over all of \(\mathcal I\), so a local
+expansion alone is not enough.  Assumption~\ref{ass:global-eta} supplies the
+global step.  Fix \(\delta>0\).  On the event
+\[
+\sup_{\eta\in\mathcal I}
+\left|
+\widehat{\mathcal C}_{\eta}^{\mathrm{sep}}
+-
+\mathcal C_{\eta}^{+,\mathrm{sep}}(P,\pi)
+\right|
+<
+\kappa_\delta/2,
+\]
+every \(\eta\) with \(|\eta-\eta_*|\ge\delta\) has
+\[
+\widehat{\mathcal C}_{\eta}^{\mathrm{sep}}
+\ge
+\mathcal C_{\eta_*}^{+,\mathrm{sep}}(P,\pi)+\kappa_\delta/2
+>
+\widehat{\mathcal C}_{\eta_*}^{\mathrm{sep}}.
+\]
+Thus any global minimizer satisfies
+\(\widehat\eta\to_p\eta_*\).
+
+Once \(\widehat\eta\) is in the local neighborhood, the quadratic expansion in
+Assumption~\ref{ass:global-eta} applies.  Write
+\(d_n=\widehat\eta-\eta_*\) and
+\(\ddot C_*=\partial_{\eta\eta}^2
+\mathcal C_{\eta_*}^{+,\mathrm{sep}}(P,\pi)>0\).  Since
+\(\widehat\eta\) minimizes the sample criterion,
+\[
+0
+\ge
+\widehat{\mathcal C}_{\widehat\eta}^{\mathrm{sep}}
+-
+\widehat{\mathcal C}_{\eta_*}^{\mathrm{sep}}
+=
+\frac12\ddot C_* d_n^2+d_nZ_n+R_n(\widehat\eta).
+\]
+The bound on \(R_n\) and \(Z_n=O_p(n^{-1/2})\) imply
+\(d_n=O_p(n^{-1/2})\).  Consequently,
+\[
+\mathcal C_{\widehat\eta}^{+,\mathrm{sep}}(P,\pi)
+-
+\mathcal C_{\eta_*}^{+,\mathrm{sep}}(P,\pi)
+=O_p(n^{-1})=o_p(n^{-1/2}),
+\]
+and the sample-process difference
+\[
+\left[
+\widehat{\mathcal C}_{\widehat\eta}^{\mathrm{sep}}
+-\mathcal C_{\widehat\eta}^{+,\mathrm{sep}}(P,\pi)
+\right]
+-
+\left[
+\widehat{\mathcal C}_{\eta_*}^{\mathrm{sep}}
+-\mathcal C_{\eta_*}^{+,\mathrm{sep}}(P,\pi)
+\right]
+\]
+equals \(d_nZ_n+R_n(\widehat\eta)=O_p(n^{-1})+o_p(n^{-1})\).  Therefore
+threshold selection contributes no first-order term.
+
+Combining the fixed-\(\eta_*\) expansion with the threshold step,
+\[
+\widehat W_{\tau,\Gamma}^{\mathrm{sep}}(\pi)
+-
+\underline W_{\tau,\Gamma}^{\mathrm{sep}}(\pi;P)
+=
+\tau^{-1}
+\left[
+\frac1n\sum_{i=1}^n
+\chi_{\eta_*,\pi}(O_i)
+-
+\Psi_*
+\right]
++
+o_p(n^{-1/2}).
+\]
+Multiplication by \(\sqrt n\) gives the displayed asymptotic linear expansion.
+
+For the variance estimator, define the ideal summand
+\[
+S_i=\eta_*+\tau^{-1}\chi_{\eta_*,\pi}(O_i).
+\]
+The preceding \(L_2(P)\) convergence and threshold consistency imply
+\[
+\frac1n\sum_{k=1}^K\sum_{i\in F_k}
+\left[
+\widehat\eta+
+\tau^{-1}\widehat\chi_{\widehat\eta,\pi}^{(-k)}(O_i)
+-
+S_i
+\right]^2
+=o_p(1).
+\]
+The variables \(S_i\) are iid and bounded under
+Assumptions~\ref{ass:iid-overlap}, \ref{ass:tail}, and \ref{ass:lp-diff}.  The
+sample variance of \(S_i\) therefore converges to
+\(\operatorname{Var}\{\varphi_{\tau,\Gamma,\pi}^{\mathrm{sep}}(O)\}\), and
+replacing \(S_i\) by the fold-stacked estimated summands changes the variance by
+\(o_p(1)\).
+\end{proof}
+
+\section{Sanity checks}
+\subsubsection*{No finite locked full-class upper endpoint at \(\Gamma=1\)}
+When \(\Gamma=1\), the latent odds-ratio restriction forces
+\(Q(A=a\mid X,U)=e_a(X)\), but it still does not force
+\(A\perp Y_{\mathcal A}\mid X\).  The construction in
+Theorem~\ref{thm:joint-sharp-and-sep-bound} has constant \(U\), satisfies
+\(\Gamma=1\), and sets all nonfactual policy-relevant outcomes to \(M\).  Hence
+the locked full-class upper endpoint remains infinite whenever nonfactual
+potential outcomes have no finite upper support restriction.
+
+Inside the conditionally exchangeable subclass, by contrast,
+\(\ell_a(x)=u_a(x)=1\) for every action and covariate value.  The only feasible
+density ratio is \(r\equiv1\), and the joint-compatible subclass endpoint, the
+separated endpoint, and the pointwise-band endpoint all collapse to
+\[
+\inf_{\eta\in[y_L,y_U]}
+\left\{
+\eta+\tau^{-1}
+\E_P\left[
+\sum_{a\in\mathcal A}\pi(a\mid X)
+\E_P[(Y-\eta)_+\mid A=a,X]
+\right]\right\}.
+\]
+Thus \(\Gamma=1\) point-identifies the policy CVaR only after imposing the
+conditional-exchangeability link.
+
+\subsubsection*{Potential-outcome support is not an observed-support consequence}
+Observed support says \(Y(A)\in[y_L,y_U]\).  In the locked full class it places
+no restriction on \(Y(a)\) when \(A\ne a\).  Therefore the support-completion
+criterion in Definition~\ref{def:bd-endpoints} is not a full-class endpoint; it
+is the sharp endpoint after adding
+\(Y(a)\in[y_L,y_U]\) for all actions.  In the conditionally exchangeable
+subclass, finite odds-ratio overlap and the moment equation
+\[
+\E[p_a\one\{Y(a)\in B\}\mid X]
+=
+\E[\one\{A=a\}\one\{Y\in B\}\mid X]
+\]
+do imply support of \(Y(a)\) from support of the observed selected outcome,
+because \(p_a>0\) almost surely.
+
+\subsubsection*{Joint-compatibility check}
+For two or more actions, a collection of actionwise ratios
+\((r_a:a\in\mathcal A)\) can be feasible for the separated programs while
+failing to come from one latent treatment rule.  The latent rule would require
+\(p_a=e_a/r_a\) and hence
+\[
+\sum_{a\in\mathcal A}\frac{e_a}{r_a}=1.
+\]
+The separated program imposes only the actionwise box constraints and
+normalizations.  This check explains why
+Theorem~\ref{thm:joint-sharp-and-sep-bound} states the separated functional as a
+conditionally exchangeable subclass outer bound unless joint realizability is
+verified.
+
+\subsubsection*{Finite band class}
+Take \(X=x_0\) almost surely, \(e_0=e_1=1/2\), \(\Gamma=2\),
+\(\pi_0=\pi_1=1/2\), and
+\[
+P(Y=0\mid A=a)=P(Y=1\mid A=a)=P(Y=2\mid A=a)=1/3,\qquad a=0,1.
+\]
+Then \(\ell_a=3/4\), \(u_a=3/2\), and the common upper-tail vertex is
+\[
+q_a^\star=(1/4,1/4,1/2),\qquad a=0,1.
+\]
+At \(\tau=1/2\), both the band comparator and the separated endpoint equal
+\[
+\inf_{\eta\in[0,2]}
+\left\{\eta+2\sum_{j=0}^2q^{\pi,\star}_j(j-\eta)_+\right\}
+=2,
+\]
+so \(\Delta_{\mathrm{nc}}^{\mathrm{sep}}(\pi;P)=0\).
+
+\subsubsection*{Score check}
+When \(\Gamma=1\), the dual threshold term is inactive, \(r^*\equiv1\), and
+\(\dot T_{\eta,a,e}\equiv0\).  The canonical pseudo-outcome becomes
+\(h_{\eta,a}(Y,X)=g_\eta(Y)\), so the corrected score reduces to the standard
+policy AIPW generated-loss score
+\[
+\sum_{a\in\mathcal A}\pi(a\mid X)
+\left[
+m_{\eta,a}(X)
++
+\frac{\one\{A=a\}}{e_a(X)}
+\{g_\eta(Y)-m_{\eta,a}(X)\}
+\right],
+\]
+where \(m_{\eta,a}(X)=\E[g_\eta(Y)\mid A=a,X]\).
+
+\section{Counterexample or minimality check}
+\subsubsection*{Finite full-class upper bounds require nonfactual support}
+Fix any observed law satisfying the population-overlap condition.  For each
+\(M>y_U\), the law \(Q_M\) constructed in
+Theorem~\ref{thm:joint-sharp-and-sep-bound} has the same observed margin,
+satisfies consistency, and satisfies the marginal sensitivity model with
+constant \(U\).  It also gives positive policy probability to nonfactual
+outcomes equal to \(M\).  Therefore any claimed finite upper bound written only
+as a functional of the observed law \(P\), consistency, overlap, and the
+odds-ratio MSM restriction is violated by taking \(M\) large enough.
+
+\subsubsection*{Sensitivity is necessary for nonvacuous subclass actionwise bounds}
+If Assumption~\ref{ass:msm} is dropped, the weight interval becomes unbounded
+apart from nonnegativity and normalization in the conditionally exchangeable
+actionwise analysis.  In a one-cell binary example with \(Y\in\{0,1\}\),
+\(P(Y=1\mid A=a)=p>0\), and \(\pi(a)=1\), the largest compatible bad-outcome
+mass under no sensitivity restriction is one: place all reweighting mass on
+\(Y=1\).  The corresponding subclass robust CVaR endpoint is then
+\[
+\operatorname{CVaR}_{\tau}\{\mathrm{Bernoulli}(1)\}=1.
+\]
+Under finite \(\Gamma\), the corresponding bad-outcome mass is bounded by
+\[
+q_U=\min\{p\,u_a,\ 1-(1-p)\ell_a\},
+\]
+and the endpoint is \(\min\{1,q_U/\tau\}\), which is strictly below one whenever
+\(q_U<\tau\).  Thus the odds-ratio marginal sensitivity bound is the condition
+that prevents the no-restriction subclass upper endpoint from being vacuous.
+For the larger locked full class, the no-finite-upper-endpoint result is
+operative unless nonfactual support or conditional exchangeability is added.
+
+\subsubsection*{Strict separated non-commutation is not witnessed by the finite class}
+The two-action, three-outcome, one-covariate-cell class with monotone
+upper-tail vertices does not witness a strict separated non-commutation gap.
+The common vertex \(q_a^\star\) maximizes every generated loss
+\((Y-\eta)_+\) and attains the pointwise lower CDF envelope at every threshold.
+Therefore the band and separated nested criteria agree for every \(\eta\).
+A strict gap, if present in a richer regime lacking a common least-favorable
+tilt, requires a different witness.
+
+\subsubsection*{Canonical LP differentiability is necessary for the one-step law}
+The no-atom condition alone cannot replace Assumption~\ref{ass:lp-diff}.  If the
+conditional support of \(g_\eta(Y)\) has a gap containing all thresholds that
+solve the normalization equation, then the optimizing density ratio is the same
+for every threshold in the gap but the dual pseudo-outcome
+\(\lambda+r^*(g_\eta-\lambda)\) changes with the selected \(\lambda\).  The
+cell functional remains directionally differentiable, but the displayed
+influence function becomes selection-dependent.  The one-step theorem therefore
+requires a canonical differentiable threshold selection rather than only the
+absence of an atom at one selected threshold.
+
+\subsubsection*{Local smoothness is necessary for the threshold-selected one-step law}
+The differentiable interior optimizer and global localization clauses cannot be
+dropped.  Take the point-identified special case \(\Gamma=1\), one action, no
+covariates, \(Y\in\{0,1\}\), and \(\Pr(Y=1)=\tau=1/2\).  Then, for every
+\(\eta\in[0,1]\),
+\[
+\eta+\tau^{-1}\E[(Y-\eta)_+]
+=
+\eta+2\cdot \frac12(1-\eta)=1.
+\]
+The whole interval \([0,1]\) minimizes the criterion.  The sample endpoint has a
+kinked form,
+\[
+\widehat W=
+\begin{cases}
+2\bar Y_n, & \bar Y_n<1/2,\\
+1, & \bar Y_n\ge 1/2,
+\end{cases}
+\]
+up to tie conventions, so
+\[
+\sqrt n(\widehat W-1)
+=
+\min\{2\sqrt n(\bar Y_n-1/2),0\}+o_p(1).
+\]
+The limit is not a mean-zero Gaussian linear expansion with a fixed influence
+function.
+
+\section{Formalization checklist}
+\subsection*{Probabilistic objects and assumptions}
+\begin{description}[leftmargin=4.1cm,style=sameline]
+\item[\(P\)] Observable law on \(O=(Y,A,X)\).  Role: source of all evaluable
+population functionals.
+\item[\(\mathcal M_\Gamma(P)\)] Locked full-data law class on
+\((\{Y(a)\},A,X,U)\) without conditional exchangeability and without
+nonfactual support.  Role: defines the target identified set; its upper endpoint
+is infinite under unbounded nonfactual support.
+\item[\(\mathcal M_\Gamma^{\mathrm{bd}}(P)\)] Support-restricted full-data law
+class with \(Y(a)\in[y_L,y_U]\) for every action.  Role: class for the sharp
+Manski support-completion endpoint.
+\item[\(\mathcal M_\Gamma^{\mathrm{ce}}(P)\)] Conditionally exchangeable
+subclass of \(\mathcal M_\Gamma(P)\).  Role: class represented by the joint
+kernel program.
+\item[\(\calH_\Gamma(P)\)] Conditional-kernel representation of
+\(\mathcal M_\Gamma^{\mathrm{ce}}(P)\).  Role: exact sharp subclass endpoint
+program with joint treatment-probability compatibility.
+\item[\(e_a(x)\)] Propensity score.  Role: overlap, odds-ratio bounds, and
+propensity derivative in the score.
+\item[\(\ell_a(x),u_a(x)\)] Bounded-weight limits
+\(e_a(x)+(1-e_a(x))/\Gamma\) and \(e_a(x)+\Gamma(1-e_a(x))\).  Role: cellwise
+MSM optimization.
+\item[\(q_\pi(P)\)] Policy probability of selecting a nonfactual action,
+\(\E\sum_a\pi(a\mid X)\{1-e_a(X)\}\).  Role: witness mass for the locked
+full-class unboundedness construction.
+\item[\(\Theta_I(P)\)] Set
+\(\{\operatorname{CVaR}_{\tau}(Y_Q(\pi)):Q\in\mathcal M_\Gamma(P)\}\).  Role:
+locked partial-identification target.
+\item[\(\Theta_I^{\mathrm{bd}}(P)\)] Set
+\(\{\operatorname{CVaR}_{\tau}(Y_Q(\pi)):Q\in
+\mathcal M_\Gamma^{\mathrm{bd}}(P)\}\).  Role: support-restricted target.
+\item[\(\Theta_I^{\mathrm{ce}}(P)\)] Set
+\(\{\operatorname{CVaR}_{\tau}(Y_Q(\pi)):Q\in
+\mathcal M_\Gamma^{\mathrm{ce}}(P)\}\).  Role: subclass target for the joint
+kernel and separated-bounding results.
+\end{description}
+
+\subsection*{Deterministic functionals}
+\begin{description}[leftmargin=4.1cm,style=sameline]
+\item[\(\mathfrak T_\Gamma^{+}\)] Actionwise upper bounded-weight operator.
+Role: computable cellwise upper mean for generated losses.
+\item[\(\mathfrak T_\Gamma^{-}\)] Actionwise lower bounded-weight operator.
+Role: computable cellwise lower mean for generated losses.
+\item[\(\theta_U^{\mathrm{bd}}\)] Sharp support-restricted upper endpoint.
+Role: worst-case policy CVaR only after all potential outcomes are restricted
+to \([y_L,y_U]\).
+\item[\(\theta_L^{\mathrm{bd}}\)] Sharp support-restricted lower endpoint.
+Role: best-case policy CVaR under the same explicit support restriction.
+\item[\(\Psi_\eta^{+,\mathrm{sep}}\)] Separated worst-case expected excess loss
+at threshold \(\eta\).  Role: outer upper CVaR criterion.
+\item[\(\underline W_{\tau,\Gamma}^{\mathrm{sep}}\)] Separated nested upper
+bound.  Role: conservative endpoint and inference target in
+Theorem~\ref{thm:onestep-limit}.
+\item[\(\theta_U^{\mathrm{jnt}}\)] Exact joint-compatible upper endpoint.  Role:
+sharp upper endpoint of \(\Theta_I^{\mathrm{ce}}(P)\).
+\item[\(\mathfrak F_\Gamma^{-},\mathfrak F_\Gamma^{+}\)] Actionwise CDF
+envelopes.  Role: term-by-term definition of the pointwise band.
+\item[\(W_{\tau,\Gamma}^{\mathrm{band}}\)] Pointwise-CDF-band CVaR comparator.
+Role: benchmark in Theorem~\ref{thm:band}.
+\end{description}
+
+\subsection*{Estimator and derivative objects}
+\begin{description}[leftmargin=4.1cm,style=sameline]
+\item[\(\lambda_{\eta,a}(x)\)] Canonical dual threshold of the cellwise
+bounded-weight linear program.  Role: determines the active least-favorable
+tilt; uniqueness and differentiable selection are inference assumptions.
+\item[\(r_{\eta,a}^*(y,x)\)] Least-favorable density ratio.  Role: optimizer of
+\(\mathfrak T_\Gamma^+\) for \(g_\eta\).
+\item[\(h_{\eta,a}(y,x)\)] Canonical dual pseudo-outcome
+\(\lambda+r^*(g_\eta-\lambda)\).  Role: derivative with respect to the
+conditional outcome law.
+\item[\(\dot T_{\eta,a,e}(x)\)] Derivative of the MSM operator with respect to
+\(e_a(x)\).  Role: propensity contribution in the corrected score.
+\item[\(\chi_{\eta,\pi}(O)\)] Corrected observed-data score for
+\(\Psi_\eta^{+,\mathrm{sep}}\).  Role: first-order summand in the one-step
+expansion.
+\item[\(\widehat W_{\tau,\Gamma}^{\mathrm{sep}}(\pi)\)] Cross-fitted one-step
+endpoint estimator.  Role: estimator map from the observed sample.
+\item[\(\varphi_{\tau,\Gamma,\pi}^{\mathrm{sep}}\)] Mean-zero influence
+function.  Role: limit law and variance target.
+\end{description}
+
+\section{Conclusion and references}
+Under the locked restrictions, the full-class MSM-CVaR upper endpoint is not the
+nested actionwise MSM functional and is not the finite support-completion
+functional.  Without a support restriction on nonfactual potential outcomes, the
+locked full-class upper endpoint is infinite.  If the explicit support
+restriction \(Y(a)\in[y_L,y_U]\) is added, the sharp finite endpoint is the
+Manski support-completion functional \(\theta_U^{\mathrm{bd}}(P)\).  The
+joint-compatible program \(\theta_U^{\mathrm{jnt}}(P)\) is sharp for the
+conditionally exchangeable subclass, and the separated nested MSM-CVaR
+functional is a valid and evaluable outer bound for that subclass.  Its
+universal sharpness still requires a joint-realizability condition not supplied
+by the actionwise bounded-weight constraints.  The pointwise-band comparator is
+conservative relative to the separated bound once its CDF envelopes are defined
+term-by-term, and it equals the separated bound in the finite monotone-tilt
+class.  The corrected one-step estimator for the separated bound uses the
+canonical LP pseudo-outcome, includes the propensity derivative of the MSM
+operator, and has the stated asymptotic linear expansion under explicit
+canonical LP differentiability, global localization, local smoothness, and
+second-order nuisance rates.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+
+\bibitem[Dorn and Guo(2021)]{DornGuo2021QuantileBalancing}
+Dorn, J. and Guo, K. (2021).
+\newblock Sharp sensitivity analysis for inverse propensity weighting via
+quantile balancing.
+\newblock \emph{Journal of the American Statistical Association},
+arXiv:2102.04543.
+
+\bibitem[Dorn, Guo, and Kallus(2021)]{DornGuoKallus2021DoublySharp}
+Dorn, J., Guo, K., and Kallus, N. (2021).
+\newblock Doubly-valid/doubly-sharp sensitivity analysis for causal inference
+with unmeasured confounding.
+\newblock arXiv:2112.11449.
+
+\bibitem[Fan, Qi, and Xu(2025)]{FanQiXu2025AlphaExpectedWelfare}
+Fan, Y., Qi, Y., and Xu, G. (2025).
+\newblock Policy learning with alpha-expected welfare.
+\newblock arXiv:2505.00256.
+
+\bibitem[Frauen, Melnychuk, and Feuerriegel(2023)]{FrauenMelnychukFeuerriegel2023SharpCSA}
+Frauen, D., Melnychuk, V., and Feuerriegel, S. (2023).
+\newblock Sharp bounds for generalized causal sensitivity analysis.
+\newblock arXiv:2305.16988.
+
+\bibitem[Hess et al.(2025)]{HessFrauenMelnychukFeuerriegel2025SharpOPE}
+Hess, K., Frauen, D., Melnychuk, V., and Feuerriegel, S. (2025).
+\newblock Efficient and sharp off-policy learning under unobserved confounding.
+\newblock arXiv:2502.13022.
+
+\bibitem[Imbens and Manski(2004)]{ImbensManski2004PartialIDCI}
+Imbens, G. W. and Manski, C. F. (2004).
+\newblock Confidence intervals for partially identified parameters.
+\newblock \emph{Econometrica}, 72(6):1845--1857.
+
+\bibitem[Jin et al.(2025)]{JinXuZhengZhou2025RobustEfficientPolicy}
+Jin, Z., Xu, G., Zheng, X., and Zhou, Y. (2025).
+\newblock Robust and efficient policy learning under the marginal sensitivity
+model.
+\newblock arXiv:2507.20550.
+
+\bibitem[Kallus and Zhou(2018)]{KallusZhou2018ConfoundingRobustPolicy}
+Kallus, N. and Zhou, A. (2018).
+\newblock Confounding-robust policy improvement.
+\newblock \emph{NeurIPS}, arXiv:1805.08593.
+
+\bibitem[Kallus and Zhou(2021)]{KallusZhou2021}
+Kallus, N. and Zhou, A. (2021).
+\newblock Minimax-optimal policy learning under unobserved confounding.
+\newblock \emph{Management Science}, 67(5):2870--2890.
+
+\bibitem[Manski(1990)]{Manski1990NonparametricBounds}
+Manski, C. F. (1990).
+\newblock Nonparametric bounds on treatment effects.
+\newblock \emph{American Economic Review}, 80(2):319--323.
+
+\bibitem[Masten, Poirier, and Ren(2025)]{MastenPoirierRen2025RelaxingUnconfoundedness}
+Masten, M. A., Poirier, A., and Ren, M. (2025).
+\newblock A general approach to relaxing unconfoundedness.
+\newblock arXiv:2501.15400.
+
+\bibitem[Rockafellar and Uryasev(2000)]{RockafellarUryasev2000CVaR}
+Rockafellar, R. T. and Uryasev, S. (2000).
+\newblock Optimization of conditional value-at-risk.
+\newblock \emph{Journal of Risk}, 2(3):21--41.
+
+\bibitem[Tan(2006)]{Tan2006MSM}
+Tan, Z. (2006).
+\newblock A distributional approach for causal inference using propensity
+scores.
+\newblock \emph{Journal of the American Statistical Association},
+101(476):1619--1637.
+
+\end{thebibliography}
+
+\end{document}

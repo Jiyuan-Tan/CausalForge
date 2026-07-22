@@ -1,0 +1,377 @@
+=== stdout ===
+<empty>
+
+=== stderr ===
+warning: `--full-auto` is deprecated; use `--sandbox workspace-write` instead.
+Reading prompt from stdin...
+2026-05-24T19:00:34.843461Z  WARN codex_core_plugins::manager: failed to warm featured plugin ids cache error=failed to send remote plugin sync request to https://chatgpt.com/backend-api/plugins/featured: error sending request for url (https://chatgpt.com/backend-api/plugins/featured?platform=codex)
+2026-05-24T19:00:36.804864Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-05-24T19:00:37.015119Z  WARN codex_core_plugins::startup_sync: git sync failed for curated plugin sync; falling back to GitHub HTTP error=git ls-remote curated plugins repo failed with status exit code: 128: fatal: unable to access 'https://github.com/openai/plugins.git/': Failed to connect to github.com port 443 after 157 ms: Couldn't connect to server git_binary="git"
+2026-05-24T19:00:37.087211Z  WARN codex_core_plugins::startup_sync: GitHub HTTP sync failed for curated plugin sync; falling back to export archive error=failed to get curated plugins repository from https://api.github.com/repos/openai/plugins: error sending request for url (https://api.github.com/repos/openai/plugins) backup_archive_api_url="https://chatgpt.com/backend-api/plugins/export/curated"
+2026-05-24T19:00:37.155159Z  WARN codex_core_plugins::manager: failed to sync curated plugins repo: git sync failed for curated plugin sync: git ls-remote curated plugins repo failed with status exit code: 128: fatal: unable to access 'https://github.com/openai/plugins.git/': Failed to connect to github.com port 443 after 157 ms: Couldn't connect to server; GitHub HTTP sync failed for curated plugin sync: failed to get curated plugins repository from https://api.github.com/repos/openai/plugins: error sending request for url (https://api.github.com/repos/openai/plugins); export archive sync failed for curated plugin sync: failed to get curated plugins export archive metadata from https://chatgpt.com/backend-api/plugins/export/curated: error sending request for url (https://chatgpt.com/backend-api/plugins/export/curated)
+OpenAI Codex v0.133.0
+--------
+workdir: D:\Stat\Causality\Lean Project\AutoID\CausalSmith
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 019e5b5c-4715-7491-9cc7-110670da45bb
+--------
+user
+You are Stage -1.1 of CausalSmith: the LITERATURE & OPEN-PROBLEM SCOUT. Your output is a structured `gaps.json` payload of ≥3 named open problems, each anchored to specific evidence (published papers, prior thmsmith proposals, or both). You do NOT propose theorems, score seeds, or write LaTeX — that is Stage -1.2's job. Your job is to hand the proposer a substrate of *real* open questions so its seeds are anchored to live literature gaps rather than synthetic transformation families.
+
+This stage was extracted from the original Stage -1 Step 0a (web literature scan) and Step 1a (in-repo catalogue duplicate check). It generalizes both: open problems can come from web search, from prior thmsmith proposals/reviewers, or from both — all routed through one schema.
+
+This prompt is self-contained. You are invoked through Codex; do not assume Claude Code skills or agent files are loaded.
+
+=== EXECUTION MODEL (subagent-per-track, assemble in main thread) ===
+
+You MUST dispatch the two tracks as parallel helper subagents inside Codex (one per track) and assemble in the main thread. The tracks have zero shared state until the cross-track linking step, so parallel dispatch is strictly more efficient than a serial walk.
+
+- **Subagent A — Track A (prior-proposal mining).** Reads only `CausalSmith/doc/research/**` per the Track A spec below. No web access needed. Emits a partial `open_problems[]` array containing only `source: "prior_proposal"` entries, each matching the same schema specified in the OUTPUT ARTIFACT section, plus its `prior_proposal_map` summary line. No filtering, no linking, no JSON envelope — the main thread owns those.
+- **Subagent B — Track B (web literature scan).** Uses `web.run` / web search / context7 per the Track B spec below. No filesystem access needed. Emits a partial `open_problems[]` array containing only `source: "web"` entries, plus its `literature_map` summary.
+
+**Main thread responsibilities (NEVER delegate any of these to a subagent):**
+1. Dispatch both subagents in parallel and collect their partial arrays.
+2. **Cross-track linking:** for every (A-entry, B-entry) pair where they refer to the same open problem (same `what_a_resolution_would_look_like` content, or a paper named in B is the same paper a reviewer JSON cited in A), merge them into one entry with `source: "both"` carrying both refs in `source_refs[]`. The merged `why_unsolved` should combine both perspectives.
+3. **G1–G6 quality filtering** on the merged list. Drop entries that fail any gate. The hard quality bar is applied to the merged ledger, not to each subagent's output independently.
+4. **Ordering** per the ORDERING section.
+5. **`needs-pivot` decision:** if fewer than 3 entries survive G1–G6, emit `status: "needs-pivot"`.
+6. **Write `gaps.json`** and emit the stdout JSON envelope. Subagents never write the artifact and never emit the stdout JSON.
+
+Subagent inputs you pass through: `Topic`, `qid`, `specialization`, and any `UPGRADE CONTEXT` block (parent_qid / parent_spec / parent_tier route to Subagent A as highest-priority source).
+
+If Codex's subagent dispatch is unavailable in the runtime you've been invoked in, fall back to serial execution of the two tracks in the main thread — but still preserve the "tracks emit partials, main thread assembles" separation in your reasoning so the cross-track linking step happens explicitly rather than getting elided into the Track-B scan.
+
+=== INPUTS ===
+
+The orchestrator passes:
+- `Topic` line plus this repository as anchor.
+- `qid` and `specialization` (so prior-proposal mining can prefer adjacent qids).
+- Optional `upgrade_from = {parent_qid, parent_spec, parent_tier}` — if set, the parent's banked artifacts are the highest-priority Track-A source.
+
+You receive no prior `gaps.json` to revise. Stage -1.1 runs ONCE per pipeline run. If the proposer later pivots angles, it reuses your `gaps.json` (the literature substrate is angle-agnostic).
+
+=== TWO MINING TRACKS (run both; emit a unified schema) ===
+
+**Track A — Prior-proposal mining (read-only, no web).**
+
+Walk the following sources under `CausalSmith/doc/research/`:
+
+1. **Active and archived proposals:** every `<qid>/<qid>_*_proposal.tex` and every `<qid>/<qid>_*_proposal_angle*_rejected.tex`. Extract from:
+   - §11 "Honest scope flags" — what the previous run admitted was open / withdrawn / unverified.
+   - §8 Conjectures explicitly marked `(NOT YET PROVED)` that were not promoted.
+   - §12 Iteration trail entries mentioning angles dropped as "out of scope" or "interesting but not the kernel."
+   - The full text of `*_angle*_rejected.tex` files — these are entire angles whose kernel was abandoned; many of them are genuine open problems mis-framed as the current run's kernel.
+
+2. **Reviewer JSONs:** every `<qid>/<qid>_*_reviews/*.json`. The highest-yield fields:
+   - `strengthening_paths[].suggestion` — reviewer-written suggestions of what would make a borderline kernel publishable. These are *prescriptive open problems*.
+   - `per_theorem_calls[].published_prior_art` where `verdict ∈ {"already-known", "incremental"}` — the `cite` field names the paper that subsumed the kernel; the gap between the proposal and that paper is often a real open question.
+   - `novelty_flags[]` with codes like `N-pub`, `N-thin-survey` — the `one_line` often phrases the gap explicitly ("X is the ε=0 corner — open whether ε>0 generalization holds").
+
+3. **Bank READMEs:** `_bank/{accepted,candidates,downgraded,failed,legacy}/<entry>/README.md`. Look for entries flagged as partial, single-regime, or inviting extension. The README's `one_line` for `literature_map` / `witness` / `counterexample` artifacts often names what was *not* covered.
+
+4. **Pipeline JSONLs (optional):** `<qid>/<qid>_*_pipeline.jsonl` reviewer-summary lines. Use sparingly — they are summaries of the JSONs above and rarely add new signal.
+
+For each candidate open problem extracted from Track A, you MUST quote a short excerpt (≤120 chars) from the source and record its path so Stage -1.2 can re-verify.
+
+**Track B — Web literature scan.**
+
+Use `web.run` / web search / context7 (whatever Codex has authorized) on the topic anchor. The substrate is the same as current Stage -1 Step 0a — pick the anchor cluster the topic actually lives in:
+
+- **Exact identification**: backdoor / frontdoor / IV / LATE / DID / DTR / shift-share / RDD (sharp / fuzzy / kink) / interference and network treatment effects (Hudgens–Halloran exposure mappings; Aronow–Samii; Manski reflection-problem identification; partial-interference panels; peer-effect ID).
+- **Partial identification**: Manski / Balke–Pearl / IV bounds / monotone-IV (MIV) / monotone-treatment-response (MTR) / MTE-extrapolation (PRTE) / DiD pre-trends sensitivity / Rosenbaum sensitivity / marginal sensitivity model / bunching nonparametric ID / shape restrictions / missing-data / selection / partial ID under interference / spillover bounds.
+- **Panel / linear projections**: DID / staggered / event-study / FWL / panel-spectral / heterogeneous / negative-weights / dynamic-panel / synthetic-DiD / matrix-completion / LP–VAR equivalence / panel under spillovers.
+- **Causal machine learning and double / debiased ML**: DML and Neyman-orthogonal moments (Chernozhukov–Chetverikov–Demirer–Duflo–Hansen–Newey–Robins); debiased lasso for treatment effects (Belloni–Chernozhukov–Hansen); causal forests / heterogeneous-effect ML (Athey–Imbens–Wager; Wager–Athey); semiparametric efficiency under ML nuisance (Newey–Robins; Chernozhukov–Newey–Singh auto-DML); deep / neural-network IV (Hartford–Lewis–Leyton-Brown–Taddy); ML-based MTE and policy learning (Athey–Wager; Kitagawa–Tetenov). In scope when the contribution is an identification / inference / efficiency / orthogonality theorem, not a pure-algorithm benchmark.
+- **Network / interference causal inference**: Hudgens–Halloran direct + spillover effects; Aronow–Samii exposure-mapping ID and inference; Manski (1993) reflection problem and modern extensions; Goldsmith-Pinkham–Imbens network experiments; Leung network-cluster CLT; Sävje network experimentation; Forastiere–Mealli–Airoldi joint-treatment-spillover ID; Bramoullé–Djebbari–Fortin peer-effect identification.
+
+Anchor on econometric methodology. Primary venues: top-5 econ (AER / Econometrica / JPE / QJE / ReStud) plus Journal of Econometrics / Quantitative Economics / Review of Economics and Statistics. Methodological-stats / causal-ML / network-ID venues are also in scope when the work is *methodologically econometric* (identification / inference / efficiency / orthogonality results — not pure-algorithm benchmarks): JASA, Annals of Statistics, Biometrika, JRSSB, Annals of Applied Statistics, JMLR, and NeurIPS / ICML / ICLR papers whose contribution is an identification / inference / efficiency theorem rather than an empirical benchmark. **Do NOT** scan: structural / SCM / do-calculus axiomatics literature (graphical-model theory, semi-graphoid axioms, ID-algorithm completeness, transportability calculus, cross-world mediation ID — that is AutoID infrastructure / Pearl-school, out of scope for CausalSmith proposals); causal-discovery / structure-learning literature (PC, FCI, GES, NOTEARS, score-based discovery — out of scope; the kernel sits in structure learning, not effect identification).
+
+Token budget ~10–15 min of search. Aim for 10–20 named recent papers (last ~5–10 years; 2–3 older anchors when foundational) spanning whichever clusters intersect the topic.
+
+For each candidate open problem extracted from Track B, you MUST cite the paper by `(author, year, venue, bibkey)` and a one-line claim quoting / paraphrasing the paper's own framing of the gap.
+
+**Cross-track linking.** When the same open problem shows up in both tracks — a paper names a gap AND a prior CausalSmith proposal/reviewer flagged the same gap — emit ONE entry with `source: "both"` carrying both refs in `source_refs[]`. Cross-linked entries are higher signal and should be flagged first in the output ordering.
+
+=== REJECT CRITERIA (apply BEFORE G1–G5 and the ≥3 quantity check) ===
+
+If any criterion fires, emit `status: "rejected"` with the `rejection` block. Reject takes precedence over `needs-pivot`; Stage -1.2 is NOT invoked. (R1–R4 are about the topic as a whole. G6 — and G1–G5 — apply per-entry and only trigger `needs-pivot`, never `rejected`.)
+
+(R1) **Already solved.** A named published theorem resolves the topic itself (not a neighbor). Cite it in `evidence_refs[]`. When in doubt, prefer `completed` — let Stage -1.2 surface incrementality.
+
+(R2) **Out of scope.** Topic sits in an excluded cluster from Track B: do-calculus axiomatics / graphical-model theory; causal discovery / structure learning; pure-algorithm benchmarks with no identification / inference / efficiency / orthogonality theorem at the kernel. Name the cluster.
+
+(R3) **Mathematically broken.** Covers two subcases the proposer cannot fix by anchoring harder:
+  - *Ill-posed:* no recoverable estimand, no well-defined identification target, no statistically meaningful quantity to bound.
+  - *False premise:* estimand is well-defined but the topic asserts something provably false (e.g. "prove point identification of θ under assumptions A" where A is known to yield only set identification; "prove DiD identifies ATT under arbitrary pre-trend violations" where a counterexample is published).
+  Vagueness alone is NOT R3 — that's `needs-pivot`. For false-premise cases, `suggested_directions` should pivot to the inverse question (bounds instead of point ID, counterexample construction, sufficient-condition theorem).
+
+(R4) **Upgrade conflict (--upgrade only).** Declared `upgrade_axis` is incompatible with the parent's banked state — e.g. `axis=generalization` but parent already covers the maximal regime; `axis=mechanism` but parent has no mechanism component. `suggested_directions` propose alternative axes, not alternative topics.
+
+Populate `rejection.{code, reason, evidence_refs, suggested_directions}` (1–3 directions, one sentence each, anchored to evidence you actually collected). You may still write a partial `gaps.json` (`n_open_problems` may be 0–2).
+
+=== HARD QUALITY BAR (every emitted open problem must satisfy ALL) ===
+
+(G1) **Specific, not generic.** The `open_problem` field names a concrete unresolved question, not a meta-question. "What are the bounds on θ under restriction R?" passes; "How do we extend ATE to heterogeneous settings?" fails — replace or drop.
+
+(G2) **At least one source_ref with grounding.** Every entry has ≥1 entry in `source_refs[]`. Each `source_refs[i]` must contain enough information for Stage -1.2 to find and read the source independently — for `kind: "paper"`, the bibkey + claim; for `kind: "prior_proposal"`, the file path + section + ≤120-char excerpt.
+
+(G3) **Why it is unsolved is anchored.** The `why_unsolved` field must point to a concrete obstacle: a missing assumption class, a regime the literature has not entered, a phenomenon observed but not pinned to a theorem, two papers in tension whose reconciliation requires new work. "It's hard" / "more research needed" do NOT count and the entry is dropped.
+
+(G4) **Resolution is statement-level.** `what_a_resolution_would_look_like` names the kind of mathematical object a resolution would be: an identification formula, a sharp bound, a counterexample with regime statement, a sufficient-condition theorem. "Some result on X" fails.
+
+(G5) **Cluster hint is set.** `cluster_hint ∈ {panel, exact_id, partial_id}`. This routes Stage -1.2's anchor-cluster choice. If the open problem genuinely straddles clusters, pick the dominant one and record the secondary in `why_unsolved`.
+
+(G6) **Why nontrivial is anchored.** The `why_nontrivial` field must be one sentence with the forced shape *"The natural attempt X fails because Y"* — naming the obvious one-line approach (a direct standardization formula, a pooling identity, an off-the-shelf bound, an existing theorem applied verbatim) and the specific reason it does not settle the question. G6 is distinct from G3: G3 explains why the literature has not done it; G6 explains why a reader who tries it for two lines does not finish it. The obstacle must be one the literature names (a paper / reviewer / prior proposal points to the failure mode), NOT one you invent — if no source hints at the failure mode of the natural attempt, leave the field empty and drop the entry. "It is hard" / "no closed form is known" do NOT count.
+
+If after both tracks complete you cannot assemble ≥3 open problems satisfying G1–G6, emit `status: "needs-pivot"` with a one-line note that the topic anchor is too generic. The orchestrator will then either pivot the topic or abort the run; you do NOT continue.
+
+=== ORDERING ===
+
+Emit `open_problems[]` in this priority order (most useful to the proposer first):
+
+1. `source: "both"` entries (cross-linked: paper + prior proposal both surface the gap).
+2. `source: "prior_proposal"` entries where the source includes a reviewer JSON `strengthening_paths` suggestion (reviewer-prescribed gaps are the highest-leverage Track-A signal).
+3. `source: "prior_proposal"` entries from `*_angle*_rejected.tex` or §11 Honest scope flags.
+4. `source: "web"` entries from named tensions / explicit "future work" callouts in published papers.
+5. `source: "web"` entries from disputed terminology / phenomenon-not-formalized observations.
+
+=== OUTPUT ARTIFACT ===
+
+Write the payload to `CausalSmith/doc/research/<qid>/<qid>_<specialization>_gaps.json`. The orchestrator passes this path. Use UTF-8, no BOM, pretty-printed with 2-space indentation. The file must be a single JSON object with the schema below.
+
+=== STDOUT (last non-empty line, exactly one JSON object) ===
+
+After writing `gaps.json`, emit:
+
+{
+  "status": "completed | needs-pivot | rejected",
+  "gaps_path": "CausalSmith/doc/research/<qid>/<qid>_<specialization>_gaps.json",
+  "topic": "<echoed topic anchor>",
+  "n_open_problems": <int — total emitted; must be ≥3 when status=completed; may be 0–2 when status=rejected>,
+  "by_source": {"web": <int>, "prior_proposal": <int>, "both": <int>},
+  "rejection": {  // present iff status="rejected"; OMIT entirely otherwise
+    "code": "already-solved | out-of-scope | ill-posed | upgrade-conflict",
+    "reason": "<one paragraph — which criterion fired, and the specific defect>",
+    "evidence_refs": [
+      // ≥1 entry; same shape as a `source_refs[]` entry
+      // (kind=paper for R1/R2 web evidence; kind=prior_proposal for R4 parent-README evidence)
+    ],
+    "suggested_directions": [
+      "<one-sentence alternative topic the user could re-run with; for upgrade-conflict, an alternative --upgrade-axis>"
+    ]
+  },
+  "open_problems": [
+    {
+      "open_problem": "<one sentence; G1>",
+      "source": "web | prior_proposal | both",
+      "source_refs": [
+        // Track-B paper:
+        {"kind": "paper", "bibkey": "...", "claim": "<one-line, paraphrase OK>",
+         "author": "...", "year": <int>, "venue": "...", "url_or_doi": "..."},
+        // Track-A prior proposal / reviewer JSON / bank README:
+        {"kind": "prior_proposal",
+         "path": "CausalSmith/doc/research/<source-qid>/<source-qid>_<source-spec>_proposal.tex"
+                  | ".../_reviews/<angleX_vY>.json"
+                  | ".../_proposal_angleK_rejected.tex"
+                  | "_bank/<tier>/<entry>/README.md",
+         "qid": "<source qid>",
+         "spec": "<source spec>",
+         "where": "§11 | §12 | strengthening_paths[i] | per_theorem_calls[i].published_prior_art | novelty_flags[i] | angleK_rejected | bank_readme",
+         "excerpt": "<≤120-char verbatim or near-verbatim quote>"}
+      ],
+      "why_unsolved": "<one paragraph; G3 — anchored to a concrete obstacle>",
+      "why_nontrivial": "<one sentence; G6 — forced shape: 'The natural attempt X fails because Y'; obstacle must be named by a source>",
+      "what_a_resolution_would_look_like": "<one sentence; G4 — names the math object>",
+      "cluster_hint": "panel | exact_id | partial_id"
+    }
+  ],
+  "literature_map": "<10–15 line summary of the Track-B scan: named papers, tensions, phenomena, disputes. Same content as the legacy Stage -1 Step 0a output, kept for compatibility>",
+  "prior_proposal_map": "<5–10 line summary of the Track-A scan: which prior qids were mined, which reviewer JSONs yielded strengthening_paths, which angle-rejected .tex files were inspected. Empty string if no prior proposals exist yet>",
+  "artifacts": ["<absolute path to gaps.json>"]
+}
+
+Use `status: "needs-pivot"` (instead of `"completed"`) when fewer than 3 open problems satisfy G1–G5 after both tracks complete AND no reject criterion fired. In that case `n_open_problems < 3` and the orchestrator will pivot the topic without invoking Stage -1.2.
+
+Use `status: "rejected"` (instead of `"completed"` or `"needs-pivot"`) when any of R1–R4 fires. The `rejection` block is mandatory in that case; `open_problems[]` may be empty or partial. The orchestrator halts and surfaces `rejection.code`, `rejection.reason`, and `rejection.suggested_directions` to the user; Stage -1.2 is NOT invoked.
+
+Do not include any prose outside this JSON object on stdout. The `gaps.json` file is the load-bearing artifact; the stdout JSON is the orchestrator handshake.
+
+=== INTERFACE TO STAGE -1.2 ===
+
+Stage -1.2 (the proposer) reads `gaps.json` and uses it as its ideation substrate. Specifically:
+
+- Stage -1.2 replaces its legacy Step 0a (web literature map) by inheriting your `literature_map` field.
+- Stage -1.2 replaces its legacy Step 1a (catalogue duplicate-check) — partially — by inheriting your `prior_proposal_map` field and the `prior_proposal` entries in each `source_refs[]`. (Stage -1.2 may still load `doc/API.md` for kernel-coincidence checks.)
+- Stage -1.2's seed-format requirement F1 ("named-claim anchor") is amended to allow either (a) a paper from `source_refs[]` with `kind: "paper"` or (b) a prior proposal from `source_refs[]` with `kind: "prior_proposal"` as the anchor. Both are equally valid anchors; the seed's F2 phenomenon-form must engage with the open problem's `what_a_resolution_would_look_like` claim.
+
+You do NOT need to compose seeds yourself — that is Stage -1.2's job. Your contract is: produce ≥3 well-grounded open problems, each independently traceable to a source. The proposer turns them into kernels.
+
+=== STUDY-PIPELINE GAPS (Stage 6) ===
+
+When the orchestrator appends a `=== STUDY PIPELINE GAPS ===` section to your
+inputs, those gaps come from the ideasmith study pipeline (unclosed
+OpenQuestions, aggregated substrate_requests, and high-value
+NextStudyRecommendations). Treat them as additional gap candidates alongside
+your Track-A/B scan.
+
+Each study-pipeline gap surfaces a `verification_status` for the originating
+Insight (one of `unverified`, `partially_verified`, `all_verified`,
+`all_failed`). When a gap is sourced from an `unverified` Insight, treat the
+framing as a hypothesis to validate, not a fact to extend; the resulting
+open_problem should explicitly call this out in `what_a_resolution_would_look_like`.
+Verified-Insight gaps may be treated as ground truth for theorem proposal.
+
+When the run is invoked with `--from-study-gaps`, the study-pipeline gaps
+REPLACE your Track-A/B cached scan as the gap source; produce open_problems
+exclusively from the study gap bundle. Otherwise the study gaps AUGMENT your
+existing scan and you decide how to weight them.
+
+
+=== ORCHESTRATOR-PROVIDED INPUTS ===
+Topic: New topic: sharp partial identification for staggered-adoption DiD when adoption time is interval-censored rather than observed exactly. Pre-anchor check: closest published anchors are Sun-Abraham and Callaway-Sant'Anna group-time ATT identification with known adoption cohorts, plus Honest-DiD sensitivity work; our theorem is not that because the latent adoption-date refinement is unobserved, so the target is the geometry of all event-time ATT paths compatible with coarsened cohort bins. Require a concrete nonroutine object: an endpoint certificate over latent timing refinements and a two-cohort witness where two refinements induce identical observed coarsened panels but opposite event-time contrast signs. Avoid merely reusing LP duality or pretrend sensitivity; if the contribution is only a missing-cell Manski bound, pivot.
+qid: pid_interval_censored_adoption
+specialization: v1
+gaps artifact path: D:\Stat\Causality\Lean Project\AutoID\CausalSmith\doc\formalization\research\pid_interval_censored_adoption\pid_interval_censored_adoption_v1_gaps.json
+
+When a gap is sourced from an `unverified` Insight, treat the framing
+as a hypothesis to validate, not a fact to extend. Gaps sourced from
+Insights whose verification_status is `all_verified` or
+`partially_verified` may be treated as ground truth for theorem
+proposal.
+=== STUDY PIPELINE GAPS ===
+## Unclosed OpenQuestions
+- `oq_covariates` "How does the LATE estimand change under covariate-conditional instrument exogeneity and monotonicity?"
+  body: Motivation cites: imbens_angrist_late, imbens_angrist_late_t1
+- `oq_defiers` "What partial-identification bounds remain when monotonicity is relaxed to allow a limited share of defiers?"
+  body: Motivation cites: imbens_angrist_late_t1, imbens_angrist_late_t2
+- `oq_ext_imbens_angrist_late_comparing_late_targets_across_instrument` "Comparing LATE targets across instruments" — from insight `imbens_angrist_late` (verification_status: all_failed)
+  body: Different instruments generally shift different subpopulations. A follow-up can characterize when two instruments identify the same local effect, nested complier groups, or distinct weighted averages.
+- `oq_ext_imbens_angrist_late_late_with_covariates_and_conditional_mon` "LATE with covariates and conditional monotonicity" — from insight `imbens_angrist_late` (verification_status: all_failed)
+  body: A natural follow-up is to allow the instrument assumptions to hold after conditioning on observed covariates. The resulting estimand would average covariate-specific complier effects with weights determined by the first-stage strength within covariate strata.
+- `oq_ext_imbens_angrist_late_partial_identification_when_monotonicity` "Partial identification when monotonicity may fail" — from insight `imbens_angrist_late` (verification_status: all_failed)
+  body: If some defiers may exist, the Wald contrast mixes effects for compliers and defiers. One can ask how bounds on the fraction or outcome distribution of defiers translate into bounds on the complier average treatment effect.
+- `oq_ext_manski_nonparametric_bounds_combining_weak_selection_and_level_set_r` "Combining weak selection and level-set restrictions" — from insight `manski_nonparametric_bounds` (verification_status: partially_verified)
+  body: The better-treatment selection rule and the level-set restrictions are presented separately. A natural extension is to characterize the bound obtained when both are imposed simultaneously, and to determine when their combination can identify the sign of the treatment effect.
+- `oq_ext_manski_nonparametric_bounds_data_dependent_covariate_coarsening_for_` "Data-dependent covariate coarsening for bounds" — from insight `manski_nonparametric_bounds` (verification_status: partially_verified)
+  body: Level-set restrictions become useful when covariates can be partitioned into groups over which outcome regressions or effects are constant. A follow-up could study how to choose such coarsenings from data while preserving valid partial-identification statements.
+- `oq_ext_manski_nonparametric_bounds_inference_for_nonparametric_bound_inters` "Inference for nonparametric bound intersections" — from insight `manski_nonparametric_bounds` (verification_status: partially_verified)
+  body: The paper notes that when covariates are continuous, estimating an intersection over an infinite level set is subtle. A natural follow-up is to develop inference for estimated finite approximations to dense level sets, extending the later interval-inference literature to these nonparametric intersection bounds.
+- `oq_ext_manski_tamer_interval_regression_inference_theory_for_set_valued_interval` "Inference theory for set-valued interval-regression estimators" — from insight `manski_tamer_interval_regression` (verification_status: all_failed)
+  body: The paper proves almost sure convergence of MMS and MMD set estimates but does not develop limiting distributions. A natural follow-up is to construct confidence regions for endpoint functionals or for asymmetric distances between estimated and population identified sets.
+- `oq_ext_manski_tamer_interval_regression_several_interval_measured_regressors` "Several interval-measured regressors" — from insight `manski_tamer_interval_regression` (verification_status: all_failed)
+  body: The paper treats one interval-measured scalar v. A natural extension is to derive sharp identified regions and tractable estimators when several regressors are interval-measured and monotonicity holds coordinatewise or only on selected coordinates.
+- `oq_ext_manski_tamer_interval_regression_weakening_mean_independence_for_endogeno` "Weakening mean independence for endogenous interval reporting" — from insight `manski_tamer_interval_regression` (verification_status: all_failed)
+  body: Mean independence can fail when the width or placement of the reported interval carries information about the outcome beyond the latent v. A follow-up could replace it with sensitivity parameters that bound the dependence between interval reporting and the regression disturbance.
+- `oq_generated_g` "How should the asymptotic variance change when the instrument transformation g is estimated rather than fixed?"
+  body: Motivation cites: candidate_specializations, imbens_angrist_late_t3
+- `oq_inference_intersections` "How should inference be conducted for estimated intersections over rich or continuous covariate level sets?"
+  body: Motivation cites: manski_nonparametric_bounds, manski_nonparametric_bounds_t3
+- `oq_interval_inference` "How should confidence regions be built for MMS and MMD interval-regression identified sets?"
+  body: Motivation cites: manski_tamer_interval_regression_t2, manski_tamer_interval_regression_t3
+- `oq_joint_restrictions` "How much do selected-cell mean dominance and level-set restrictions tighten the bound when imposed jointly?"
+  body: Motivation cites: manski_nonparametric_bounds_t2, manski_nonparametric_bounds_t3
+- `oq_mean_independence_sensitivity` "Can the interval-regression bounds be relaxed under bounded failures of Mean Independence?"
+  body: Motivation cites: manski_tamer_interval_regression, manski_tamer_interval_regression_t1
+- `oq_multiple_interval_regressors` "What sharp identified regions arise with several interval-measured regressors under coordinatewise monotonicity?"
+  body: Motivation cites: manski_tamer_interval_regression_t1
+
+## Substrate requests (high blocking count first)
+- "difference of two bounded real intervals has lower endpoint lower-second minus upper-first and upper endpoint upper-second minus lower-first" (blocks 3, tier=mathlib_adjacent) — locations: Phase 4
+  blocked theorems' verification statuses: formalization_verified
+- "no AutoID/Mathlib substrate for: measurable selection (used in sharpness completion), set-valued estimator consistency (max-score / MMD), uniform convergence of empirical processes over interval-class indices" (blocks 3, tier=genuinely_new) — locations: (thmsmith Stage 1 architectural gate) | (thmsmith Stage 1 architectural gate) | (thmsmith Stage 1 architectural gate)
+  blocked theorems' verification statuses: substrate_blocked
+- "conditional expectation order preservation under almost-sure inequalities" (blocks 2, tier=mathlib_adjacent) — locations: Phase 1 and Phase 5
+  blocked theorems' verification statuses: substrate_blocked
+- "(classifier-synthesized) The failure note explicitly reports `missing_architecture` and lists absent prer" (blocks 2, tier=genuinely_new) — locations: (stderr; classifier-synthesized) | (stderr; classifier-synthesized)
+  blocked theorems' verification statuses: substrate_blocked
+- "uniform-convergence zero-set consistency for tolerated set estimators" (blocks 2, tier=genuinely_new) — locations: Phase 4
+  blocked theorems' verification statuses: substrate_blocked
+- "approximate argmin set convergence under uniform convergence and population separation" (blocks 1, tier=mathlib_adjacent) — locations: Phases 4 and 5
+  blocked theorems' verification statuses: substrate_blocked
+- "asymptotic linearization of sample covariance under sample centering" (blocks 1, tier=mathlib_adjacent) — locations: Phase 1
+  blocked theorems' verification statuses: substrate_blocked
+- "conditional homoskedastic variance simplification" (blocks 1, tier=mathlib_adjacent) — locations: Phase 4
+  blocked theorems' verification statuses: substrate_blocked
+- "convexity of almost-sure intersections of affine halfspace restrictions" (blocks 1, tier=mathlib_adjacent) — locations: Phase 3
+  blocked theorems' verification statuses: substrate_blocked
+- "convexity of an intersection of almost-sure linear halfspace restrictions" (blocks 1, tier=mathlib_adjacent) — locations: Phase 2
+  blocked theorems' verification statuses: substrate_blocked
+- "finite summation by parts for centered support weights" (blocks 1, tier=mathlib_adjacent) — locations: Phase 2
+  blocked theorems' verification statuses: substrate_blocked
+- "intersection of a family of real intervals as supremum of lower endpoints and infimum of upper endpoints" (blocks 1, tier=mathlib_adjacent) — locations: Phase 2
+  blocked theorems' verification statuses: formalization_verified
+- "monotonicity of interval subtraction under tightening of component intervals" (blocks 1, tier=mathlib_adjacent) — locations: Phase 5
+  blocked theorems' verification statuses: formalization_verified
+- "sign of centered upper-tail sums for a monotone finite sequence" (blocks 1, tier=mathlib_adjacent) — locations: Phase 4
+  blocked theorems' verification statuses: substrate_blocked
+- "uniform convergence preserves suprema and infima over fixed or convergent index classes" (blocks 1, tier=mathlib_adjacent) — locations: Phase 4
+  blocked theorems' verification statuses: substrate_blocked
+- "(classifier-synthesized) The failure note explicitly reports `missing_architecture` with absent prerequis" (blocks 1, tier=genuinely_new) — locations: (stderr; classifier-synthesized)
+  blocked theorems' verification statuses: substrate_blocked
+- "delta method for a differentiable ratio map" (blocks 1, tier=genuinely_new) — locations: Phase 3
+  blocked theorems' verification statuses: substrate_blocked
+- "identified interval under equality constraints across an index set" (blocks 1, tier=genuinely_new) — locations: Phases 2 and 3
+  blocked theorems' verification statuses: formalization_verified
+- "latent-completion equivalence for interval conditional means" (blocks 1, tier=genuinely_new) — locations: Phase 2 and Phase 5
+  blocked theorems' verification statuses: substrate_blocked
+- "level-set restriction for conditional mean functions" (blocks 1, tier=genuinely_new) — locations: Phases 2, 3, and 5
+  blocked theorems' verification statuses: formalization_verified
+- "multivariate central limit theorem for independent sample averages" (blocks 1, tier=genuinely_new) — locations: Phase 2
+  blocked theorems' verification statuses: substrate_blocked
+- "SBR interval sign-separation observational-equivalence lemma" (blocks 1, tier=genuinely_new) — locations: Phase 1
+  blocked theorems' verification statuses: substrate_blocked
+- "selected-cell monotone mean dominance as an explicit statistical assumption" (blocks 1, tier=genuinely_new) — locations: Phase 2
+  blocked theorems' verification statuses: formalization_verified
+- "sharp completion of interval data under monotone mean independence" (blocks 1, tier=genuinely_new) — locations: Phase 3
+  blocked theorems' verification statuses: substrate_blocked
+
+## NextStudyRecommendations (expected_value=high; not yet consumed)
+- `next_imbens_angrist_late_1` (Angrist, Imbens, and Rubin, Identification of Causal Effects Using Instrumental Variables) — from insight `imbens_angrist_late` (verification_status: all_failed)
+  rationale: This follow-up develops the compliance-type interpretation and exclusion assumptions in a way that complements the local average treatment effect result.
+- `next_imbens_angrist_late_2` (Heckman and Vytlacil, Structural Equations, Treatment Effects, and Econometric Policy Evaluation) — from insight `imbens_angrist_late` (verification_status: all_failed)
+  rationale: It connects local instrumental-variable estimands to marginal treatment effects and clarifies how different instruments weight heterogeneous treatment effects.
+- `next_manski_nonparametric_bounds_1` (Imbens and Manski, Confidence Intervals for Partially Identified Parameters) — from insight `manski_nonparametric_bounds` (verification_status: partially_verified)
+  rationale: This is the natural inferential follow-up once the estimand is an interval rather than a point, especially for intersections of estimated bounds.
+- `next_manski_nonparametric_bounds_2` (Manski and Pepper, Monotone Instrumental Variables) — from insight `manski_nonparametric_bounds` (verification_status: partially_verified)
+  rationale: Monotone restrictions are a closely related way to shrink nonparametric bounds without imposing full selection-on-observables or parametric selection models.
+- `next_manski_tamer_interval_regression_1` (Chernozhukov, Hong, and Tamer, Estimation and Confidence Regions for Parameter Sets in Econometric Models) — from insight `manski_tamer_interval_regression` (verification_status: all_failed)
+  rationale: This is a natural follow-up for turning the paper's almost-sure set convergence into inference for partially identified parametric regions.
+- `next_manski_tamer_interval_regression_2` (Imbens and Manski, Confidence Intervals for Partially Identified Parameters) — from insight `manski_tamer_interval_regression` (verification_status: all_failed)
+  rationale: The interval-regression identified sets raise exactly the issue of confidence statements that must cover both sampling uncertainty and identification uncertainty.
+
+Emit exactly one JSON object to stdout matching the schema in the prompt.
+2026-05-24T19:00:37.261992Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013), url: wss://api.openai.com/v1/responses
+2026-05-24T19:00:39.958084Z  WARN codex_core::session_startup_prewarm: startup websocket prewarm setup failed: stream disconnected before completion: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013)
+2026-05-24T19:00:40.057490Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013), url: wss://api.openai.com/v1/responses
+2026-05-24T19:00:40.057840Z  WARN codex_core::session::turn: stream disconnected - retrying sampling request (1/5 in 197ms)...
+2026-05-24T19:00:40.312363Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013), url: wss://api.openai.com/v1/responses
+2026-05-24T19:00:40.312650Z  WARN codex_core::session::turn: stream disconnected - retrying sampling request (2/5 in 409ms)...
+ERROR: Reconnecting... 2/5
+2026-05-24T19:00:40.748823Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013), url: wss://api.openai.com/v1/responses
+2026-05-24T19:00:40.749070Z  WARN codex_core::session::turn: stream disconnected - retrying sampling request (3/5 in 843ms)...
+ERROR: Reconnecting... 3/5
+2026-05-24T19:00:41.619162Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013), url: wss://api.openai.com/v1/responses
+2026-05-24T19:00:41.619413Z  WARN codex_core::session::turn: stream disconnected - retrying sampling request (4/5 in 1.483s)...
+ERROR: Reconnecting... 4/5
+2026-05-24T19:00:43.177908Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013), url: wss://api.openai.com/v1/responses
+2026-05-24T19:00:43.178678Z  WARN codex_core::session::turn: stream disconnected - retrying sampling request (5/5 in 3.266s)...
+ERROR: Reconnecting... 5/5
+2026-05-24T19:00:44.681624Z  WARN codex_core_plugins::startup_remote_sync: skipping startup remote plugin sync because curated marketplace is not ready codex_home=C:\Users\CodexSandboxOffline\.codex
+2026-05-24T19:00:46.471968Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013), url: wss://api.openai.com/v1/responses
+2026-05-24T19:00:46.472243Z  WARN codex_core::client: falling back to HTTP
+2026-05-24T19:00:49.800001Z  WARN codex_core::session::turn: stream disconnected - retrying sampling request (1/5 in 219ms)...
+ERROR: Reconnecting... 1/5
+2026-05-24T19:00:53.034075Z  WARN codex_core::session::turn: stream disconnected - retrying sampling request (2/5 in 372ms)...
+ERROR: Reconnecting... 2/5
+2026-05-24T19:00:56.559451Z  WARN codex_core::session::turn: stream disconnected - retrying sampling request (3/5 in 848ms)...
+ERROR: Reconnecting... 3/5
+2026-05-24T19:01:00.667304Z  WARN codex_core::session::turn: stream disconnected - retrying sampling request (4/5 in 1.723s)...
+ERROR: Reconnecting... 4/5
+2026-05-24T19:01:05.573063Z  WARN codex_core::session::turn: stream disconnected - retrying sampling request (5/5 in 2.997s)...
+ERROR: Reconnecting... 5/5
+ERROR: stream disconnected before completion: error sending request for url (https://api.openai.com/v1/responses)
+ERROR: stream disconnected before completion: error sending request for url (https://api.openai.com/v1/responses)

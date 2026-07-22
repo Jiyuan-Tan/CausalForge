@@ -1,0 +1,500 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_lp\_svar\_nonequiv, specialization=upgrade2
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_lp\_svar\_nonequiv} / \texttt{upgrade2}%
+  \\ \large\textit{A critical-leakage frontier for LP/sign versus higher-cumulant SVAR impulse responses}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+qid = eid_lp_svar_nonequiv
+specialization = upgrade2
+anchor_cluster = ExactID / structural impulse-response identification with
+  partial sign-zero restrictions and higher-cumulant contact restrictions
+  defining the admissible shock-label set
+observable distribution P = the population law of a covariance-stationary
+  finite-order VAR(p) process Y_t, summarized by reduced-form response rows
+  Gamma_h = E[Y_{t+h} u_t'] Sigma_u^{-1} for h=0,...,H, innovation
+  covariance Sigma_u, and fourth cumulant tensor K_u = cum4(u_t)
+parameter theta = the set-valued structural impulse-response parameter
+  Theta_eta(P)={psi_j(Q)=(e_y' Gamma_h b_j(Q))_{h=0}^H : Q in Q_eta(P)}
+  and its scalar support reports h_eta(w;P)
+identifying restrictions = finite-order LP/VAR population rows; unit-variance
+  shocks; partial sign-zero restrictions A psi_j(Q) >= 0 and Z psi_j(Q)=0;
+  a fourth-cumulant structural representation whose off-diagonal co-kurtosis
+  leakage is bounded by eta >= 0; target cumulant separation delta_4 > 0;
+  and the common-contact requirement that the same rotation generating an LP
+  response lies inside the eta-leakage cumulant contact set
+upgrade axis = generalization of the parent v1 independent-shock cumulant
+  diagonalization premise from eta=0 to eta-bounded dependent/non-diagonal
+  fourth-cumulant leakage, with v1 recovered as the eta=0 corner
+operational quantity = eta_w^dagger(P), the primitive off-diagonal
+  co-kurtosis residual at the uniquely exposed LP/sign maximizer subject to
+  pure-diagonal cumulant contact; strict non-equivalence is governed by
+  eta < eta_w^dagger(P)
+bounding functional = support functions h_LP(w;P) and h_eta(w;P) over,
+  respectively, the LP/sign relaxation and the eta-leakage higher-cumulant
+  contact set; the non-equivalence gap is Delta_w^eta(P)=h_LP(w;P)-h_eta(w;P)
+\end{verbatim}
+
+\begin{abstract}
+This proposal upgrades the banked \texttt{eid\_lp\_svar\_nonequiv}/\texttt{v1} kernel by replacing exact independent-component fourth-cumulant diagonalization with an \(\eta\)-bounded co-kurtosis leakage class.  The parent asked whether LP/sign and non-Gaussian SVAR/sign impulse-response sets differ when the SVAR shock label is supplied by independent non-Gaussian shocks; the upgrade asks for observable rank and transversality conditions under which a locally certified quartic residual is the first leakage radius at which the LP support face becomes compatible with the same higher-cumulant shock law.  The flagship conjecture no longer assumes uniqueness, positivity, or residual separation: it derives them from a finite active-set certificate \(\mathfrak C_w(P)\) and proves that the resulting residual \(\eta_w^\dagger(P)\) equals the global first-contact radius \(\eta_w^*(P)\).  The parent theorem is recovered as the \(\eta=0\) corner, and the Plagborg-Moller--Wolf common-restriction equivalence is recovered when the LP side is required to impose the same contact restriction.  If resolved, the result would give users of non-Gaussian and independence-refined SVARs a scalar diagnostic for when an LP sign-restricted robustness report is still about the same structural shock under weakly dependent, non-Gaussian innovations.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+\citet{PlagborgMollerWolf2021} make LPs and VARs interchangeable at the population level when both impose the same identifying restrictions.  Non-Gaussian SVAR identification, however, labels shocks through the joint distribution of reduced-form innovations rather than through response rows alone.  The parent proposal isolated this mismatch under independent shocks, but the active frontier now includes weak non-Gaussianity, independence-refined sign restrictions, and potentially dependent non-Gaussian shocks.  The scientific question is therefore not only whether LP/sign can be an outer relaxation of SVAR/sign, but how much fourth-cumulant leakage can be tolerated before the two reports again become the same structural object.
+
+\paragraph{The main finding (proposed).}
+The proposed upgrade is Conjecture~\ref{conj:critical-leakage-frontier}: a primitive leakage-frontier theorem for \(\eta_w^\dagger(P)\), the smallest certified off-diagonal fourth-cumulant residual among active-set contact candidates, and for the nondefinitional equality \(\eta_w^\dagger(P)=\eta_w^*(P)\).  Theorem~\ref{thm:parent-corner} records the routine nesting and parent-corner reduction.  Conjecture~\ref{conj:two-shock-formula} asks for the closed-form two-shock formula, including reflection components, in which \(\eta_w^\dagger(P)\) becomes an explicit quartic residual with a nonzero interval \(0\le\eta<\eta_w^\dagger(P)\) of strict LP/SVAR support separation.
+
+\paragraph{What is new.}
+Relative to the parent \texttt{eid\_lp\_svar\_nonequiv}/\texttt{v1}, the upgrade delta is the generalization from exact independent-component cumulant diagonalization to an \(\eta\)-bounded co-kurtosis leakage class, together with a primitive quartic residual frontier that reduces to the parent at \(\eta=0\).  Relative to published work, the epsilon-gap is different: \citet{PlagborgMollerWolf2021} cover common identifying restrictions, \citet{GourierouxMonfortRenne2017} and \citet{LanneMeitzSaikkonen2017} use independent non-Gaussian shocks, and \citet{LanneLiuLuoto2026} show identification can survive some dependence under zero relevant co-skewness/co-kurtosis restrictions.  This proposal strictly contains that zero co-kurtosis corner by allowing a bounded nonzero off-diagonal tensor \(L\), and asks for the observable boundary \(\eta_w^\dagger(P)\) separating the zero-leakage parent region, the bounded-leakage strict-gap region \(0\le\eta<\eta_w^\dagger(P)\), and restored LP/SVAR support equality for \(\eta\ge\eta_w^\dagger(P)\).
+
+\paragraph{How it positions in the literature.}
+The anchor cluster is exact identification for structural impulse responses in linear time series, with support functions used only to compare the LP/sign relaxation to the higher-cumulant contact restriction.  The structural shock label is supplied by higher-cumulant contact restrictions, while partial sign-zero restrictions make the equality boundary easiest to state through support reports.  The proposal sits between LP/VAR equivalence, sign/zero SVAR rotation geometry, and non-Gaussian higher-moment shock labeling.  Its novelty is a boundary theorem for equality of a response relaxation and a higher-cumulant shock-label set under a generalized shock-law class, not a panel estimator result and not an SCM/do-calculus claim.
+
+\paragraph{Implications for the community.}
+The direct downstream consumer is \citet{HoeschLeeMesters2024}: locally robust non-Gaussian SVAR inference needs a population null for whether an LP/sign IRF and a higher-cumulant SVAR IRF are the same functional near weak or local-to-Gaussian non-Gaussianity.  The primitive leakage residual \(\eta_w^\dagger(P)\) would turn that null into a reportable algebraic diagnostic instead of an informal robustness comparison.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should report the primitive leakage residual \(\eta_w^\dagger(P)\) before treating sign-restricted LP responses as robustness evidence for a higher-cumulant SVAR shock.
+
+\section{Related work}
+\citet{Jorda2005} introduced local projections as direct regressions for impulse responses, which is why the proposal treats the response rows \(\Gamma_h\) as observable population objects.  \citet{PlagborgMollerWolf2021} [reused from parent] prove that LPs and VARs estimate the same population impulse responses and that VAR identification schemes, including sign restrictions, can be transported to LPs when the restrictions are common.  \citet{MontielOleaPlagborgMoller2021} [reused from parent] and \citet{MontielOleaPlagborgMollerQianWolf2024} [reused from parent] motivate LP rows as robust empirical summaries, including under persistence, long horizons, and local VAR lag misspecification; they do not compare LP rows with higher-cumulant shock-label restrictions.
+
+\citet{RubioRamirezWaggonerZha2010} and \citet{AriasRubioRamirezWaggoner2018} [reused from parent] provide the rotation geometry for sign and zero restrictions in SVARs.  \citet{BaumeisterHamilton2015} [reused from parent] show why underidentified sign-restricted SVAR conclusions depend on what remains inside the identified set, motivating a support-function boundary.  \citet{DrautzburgWright2023} [reused from parent] refine sign-restricted VAR sets through independence and emphasize that the resulting confidence sets may be non-convex; this is the closest set-comparison paper, but it does not define a leakage radius comparing LP/sign and higher-cumulant SVAR supports.
+
+\citet{GourierouxMonfortRenne2017} [reused from parent] and \citet{LanneMeitzSaikkonen2017} [reused from parent] show that independent non-Gaussian shocks can identify structural impulse responses, making exact cumulant diagonalization the parent corner \(\eta=0\).  \citet{Guay2021} [reused from parent] gives higher-moment local identification rank conditions, which are adjacent to the contact-rank condition in Conjecture~\ref{conj:critical-leakage-frontier}.  \citet{LanneLuoto2021} [reused from parent] develops GMM estimation of non-Gaussian SVARs, relevant as an estimation comparator rather than the population equality frontier.
+
+\citet{HoeschLeeMesters2024} is the new frontier anchor added for this upgrade: it develops locally robust inference for non-Gaussian SVARs and shows that standard non-Gaussian inference can fail near local-to-Gaussian densities.  \citet{MontielOleaPlagborgMollerQian2022} similarly warn that higher-moment SVAR identification is demanding and weak identification deserves priority for applied users.  \citet{LanneLiuLuoto2026} is the direct generalization anchor: it relaxes mutual independence and shows that, under absence of relevant co-skewness or co-kurtosis, non-Gaussian shocks can still be identified.  The present proposal does not replicate those identification results; it asks for the sharp LP/SVAR equality frontier once such co-moment leakage is bounded but not forced to zero.
+
+The in-catalogue prior work is thin in this cluster.  The relevant catalogue slice is the ExactID family: \texttt{doc/API.md} records \texttt{CausalSmith/ExactID/} as empty at seed time and contains no existing LP/SVAR or non-Gaussian SVAR theorem; the populated neighbouring PartialID entries concern bounded-outcome Manski-style treatment-effect bounds rather than structural time-series shock labels.  The banked parent \texttt{eid\_lp\_svar\_nonequiv}/\texttt{v1} is the relevant in-repo anchor; it proposed a cumulant-matching support-function gap under independent shocks but its derivation collapsed to a conditional margin theorem rather than proving the primitive frontier.  This upgrade changes the premise class and target quantity: \(\eta_w^\dagger(P)\) is a primitive residual for bounded co-kurtosis leakage at an exposed LP support face, not the parent's assumed positive margin \(\chi_w(P)\).
+
+\section{Formal setup}
+Let \(Y_t\in\R^n\) be covariance stationary with reduced-form innovation \(u_t\), covariance \(\Sigma_u\succ0\), and population LP/VAR response rows
+\[
+\Gamma_h=\E[Y_{t+h}u_t^\transpose]\Sigma_u^{-1},\qquad h=0,\ldots,H.
+\]
+Fix the symmetric square root \(\Sigma_u^{1/2}\).  Every unit-variance structural completion can be written \(u_t=B(Q)\varepsilon_t\), \(B(Q)=\Sigma_u^{1/2}Q\), with \(Q\in O(n)\).  For a labelled shock \(j\), let \(b_j(Q)=B(Q)e_j\) and
+\[
+\psi_j(Q)=\left(e_y^\transpose\Gamma_h b_j(Q)\right)_{h=0}^H\in\R^{H+1},
+\qquad
+\theta_w(Q)=w^\transpose\psi_j(Q).
+\]
+Known sign and zero restrictions are \(A\psi_j(Q)\ge0\) and \(Z\psi_j(Q)=0\).
+
+The observed fourth cumulant tensor is \(K_u=\operatorname{cum}_4(u_t)\).  Given a rotation \(Q\), define the diagonal independent-component cumulant model
+\[
+D(Q,\kappa)=\sum_{k=1}^n\kappa_k b_k(Q)^{\otimes4},
+\]
+where the target cumulant vector \(\kappa\) belongs to
+\[
+\mathcal K_{\delta_4}(j)=
+\{\kappa\in\R^n:\ |\kappa_j|\ge\delta_4,\ 
+|\kappa_\ell-\kappa_j|\ge\delta_4\text{ for all }\ell\ne j\}.
+\]
+For explicit coordinates, let \(c_a(Q)\) be the \(a\)-th column of \(B(Q)^{-\transpose}\), so
+\[
+K^Q_{abcd}=\langle K_u,c_a(Q)\otimes c_b(Q)\otimes c_c(Q)\otimes c_d(Q)\rangle
+\]
+is the fourth-cumulant tensor expressed in the structural basis.  Let
+\(q_a^s(\varphi)\), \(c_a^s(\varphi)\), and \(K^s_{abcd}(\varphi)\) denote the corresponding two-shock rotation/reflection basis vectors, dual impact columns, and structural-basis tensor coordinates in the \(n=2\) specialization of Assumption~\ref{ass:two-shock}.
+Let
+\(\mathcal I_{\mathrm{off}}=\{(a,b,c,d):\text{not all of }a,b,c,d\text{ are equal}\}\), and define
+\[
+r_4(Q,\kappa;P)=\left(K^Q_{abcd}-\one_{\{a=b=c=d\}}\kappa_a\right)_{(a,b,c,d)\in\mathcal I_{\mathrm{off}}},
+\qquad
+\|r_4(Q,\kappa;P)\|_{\mathrm{off}}=
+\left(\sum_{\mathcal I_{\mathrm{off}}}|r_{4,abcd}(Q,\kappa;P)|^2\right)^{1/2}.
+\]
+Define the pure-diagonal contact residual
+\[
+d_4(Q,\kappa;P)=\left(K^Q_{aaaa}-\kappa_a\right)_{a=1}^n.
+\]
+The upgrade widens the parent by allowing bounded off-diagonal co-kurtosis leakage.  Let \(\mathcal L_\eta(Q)\) be the set of symmetric fourth-order tensors \(L\) whose \(B(Q)\)-basis coordinates have zero pure diagonal entries and off-diagonal coefficient norm at most \(\eta\).  Define the leakage-adjusted mismatch
+\[
+m_\eta(Q;P)=
+\inf_{\kappa\in\mathcal K_{\delta_4}(j),\,L\in\mathcal L_\eta(Q)}
+\|K_u-D(Q,\kappa)-L\|_F.
+\]
+Equivalently, \(m_\eta(Q;P)=0\) if and only if there exists
+\(\kappa\in\mathcal K_{\delta_4}(j)\) with \(d_4(Q,\kappa;P)=0\) and
+\(\|r_4(Q,\kappa;P)\|_{\mathrm{off}}\le\eta\).  Thus off-diagonal leakage
+alone is not contact: the pure diagonal cumulants must also equal an
+admissible separated \(\kappa\).
+The LP/sign rotation set is
+\[
+\mathcal Q_{\mathrm{LP}}(P)=
+\{Q\in O(n):A\psi_j(Q)\ge0,\ Z\psi_j(Q)=0\}.
+\]
+The \(\eta\)-SVAR/sign contact set is
+\[
+\mathcal Q_{\eta}(P)=
+\{Q\in\mathcal Q_{\mathrm{LP}}(P):m_\eta(Q;P)=0\}.
+\]
+For a report direction \(w\), define support functions
+\[
+h_{\mathrm{LP}}(w;P)=\sup_{Q\in\mathcal Q_{\mathrm{LP}}(P)}\theta_w(Q),
+\qquad
+h_\eta(w;P)=\sup_{Q\in\mathcal Q_\eta(P)}\theta_w(Q),
+\]
+with \(\sup\emptyset=-\infty\).  Let the exposed LP maximizer set be
+\[
+\mathcal M_w(P)=\arg\max_{Q\in\mathcal Q_{\mathrm{LP}}(P)}\theta_w(Q),
+\]
+and define the definitional contact radius
+\[
+\eta_w^*(P)=
+\inf\{\eta\ge0:\mathcal M_w(P)\cap\mathcal Q_\eta(P)\ne\emptyset\}.
+\]
+Equivalently, \(\eta_w^*(P)\) is the support-face leakage residual: the least off-diagonal residual among exposed LP maximizers that also satisfy pure-diagonal cumulant contact, with value \(+\infty\) if no exposed LP maximizer has such contact.  The primitive object used below is deliberately different: it is computed from active-set algebra before one knows that the candidate is the global LP support face.  Let \(\mathfrak C_w(P)\) be the finite set of triples \((S,Q,\kappa)\), where \(S\) is an active sign row set and \((Q,\kappa)\) solves
+\[
+Q^\transpose Q=I_n,\quad Z\psi_j(Q)=0,\quad A_S\psi_j(Q)=0,\quad A_{S^c}\psi_j(Q)>0,
+\quad d_4(Q,\kappa;P)=0,
+\]
+together with the first-order Lagrange equations for maximizing \(\theta_w(Q)\) on the active sign-zero manifold.  These equations contain only observable polynomials and strict inequalities in \((\Gamma_0,\ldots,\Gamma_H,\Sigma_u,K_u,A,Z,w)\); they do not include the global constraint \(\theta_w(Q)=h_{\mathrm{LP}}(w;P)\).  Define the certified leakage residual
+\[
+\eta_w^\dagger(P)=
+\inf_{\substack{(S,Q,\kappa)\in\mathfrak C_w(P)\\ \kappa\in\mathcal K_{\delta_4}(j)}}
+\|r_4(Q,\kappa;P)\|_{\mathrm{off}},
+\]
+with \(\eta_w^\dagger(P)=+\infty\) if \(\mathfrak C_w(P)\) is empty.  Equivalently, the same quantity is the value of the finite-dimensional semialgebraic program
+\[
+\begin{aligned}
+\eta_w^\dagger(P)=\min_{Q,\kappa,t}\quad & t\\
+\text{subject to}\quad
+& Q^\transpose Q=I_n,\quad A\psi_j(Q)\ge0,\quad Z\psi_j(Q)=0,\\
+& \text{the active-set first-order equations for some }S,\quad \kappa\in\mathcal K_{\delta_4}(j),\\
+& d_4(Q,\kappa;P)=0,\\
+& \|r_4(Q,\kappa;P)\|_{\mathrm{off}}^2\le t^2,\quad t\ge0 .
+\end{aligned}
+\]
+If the displayed constraints are infeasible, set \(\eta_w^\dagger(P)=+\infty\); otherwise the global value is obtained by taking the minimum over all active sets and connected components of \(O(n)\).  The gap between \(\eta_w^\dagger(P)\) and \(\eta_w^*(P)\) is the flagship issue: Conjecture~\ref{conj:critical-leakage-frontier} asserts primitive observable inequalities under which the active-set residual is attained at the unique global support face, so the two radii coincide.  The parent v1 specialization is the corner \(\eta=0\), where \(L=0\) and \(m_0(Q;P)\) is exact independent-component fourth-cumulant diagonalization.
+
+\begin{verbatim}
+qid = eid_lp_svar_nonequiv
+specialization = upgrade2
+anchor_cluster = ExactID / structural impulse-response identification with
+  partial sign-zero restrictions and higher-cumulant contact restrictions
+  defining the admissible shock-label set
+observable distribution P = the population law of a covariance-stationary
+  finite-order VAR(p) process Y_t, summarized by reduced-form response rows
+  Gamma_h = E[Y_{t+h} u_t'] Sigma_u^{-1} for h=0,...,H, innovation
+  covariance Sigma_u, and fourth cumulant tensor K_u = cum4(u_t)
+parameter theta = the set-valued structural impulse-response parameter
+  Theta_eta(P)={psi_j(Q)=(e_y' Gamma_h b_j(Q))_{h=0}^H : Q in Q_eta(P)}
+  and its scalar support reports h_eta(w;P)
+identifying restrictions = finite-order LP/VAR population rows; unit-variance
+  shocks; partial sign-zero restrictions A psi_j(Q) >= 0 and Z psi_j(Q)=0;
+  a fourth-cumulant structural representation whose off-diagonal co-kurtosis
+  leakage is bounded by eta >= 0; target cumulant separation delta_4 > 0;
+  and the common-contact requirement that the same rotation generating an LP
+  response lies inside the eta-leakage cumulant contact set
+upgrade axis = generalization of the parent v1 independent-shock cumulant
+  diagonalization premise from eta=0 to eta-bounded dependent/non-diagonal
+  fourth-cumulant leakage, with v1 recovered as the eta=0 corner
+operational quantity = eta_w^dagger(P), the primitive off-diagonal
+  co-kurtosis residual at the uniquely exposed LP/sign maximizer subject to
+  pure-diagonal cumulant contact; strict non-equivalence is governed by
+  eta < eta_w^dagger(P)
+bounding functional = support functions h_LP(w;P) and h_eta(w;P) over,
+  respectively, the LP/sign relaxation and the eta-leakage higher-cumulant
+  contact set; the non-equivalence gap is Delta_w^eta(P)=h_LP(w;P)-h_eta(w;P)
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite-order LP/VAR population environment]\label{ass:finite-var}
+The population law \(P\) is generated by a covariance-stationary finite-order VAR(p) with innovation \(u_t\), \(\Sigma_u\succ0\), finite fourth moments, and response rows \(\Gamma_h\) equal to the unrestricted population VAR response rows for \(h=0,\ldots,H\).
+\end{assumption}
+
+\begin{assumption}[Rotation normalization and labelled shock]\label{ass:normalization}
+Structural shocks have identity covariance and each impact matrix is \(B(Q)=\Sigma_u^{1/2}Q\) for \(Q\in O(n)\).  The shock label \(j\) is fixed after the usual sign and permutation normalization.
+\end{assumption}
+
+\begin{assumption}[Partial sign-zero restrictions]\label{ass:sign-zero}
+The matrices \(A\in\R^{m_A\times(H+1)}\) and \(Z\in\R^{m_Z\times(H+1)}\) are known, and \(\mathcal Q_{\mathrm{LP}}(P)=\{Q:A\psi_j(Q)\ge0,\ Z\psi_j(Q)=0\}\) is nonempty and compact as a closed subset of \(O(n)\).
+\end{assumption}
+
+\begin{assumption}[Observed fourth cumulants]\label{ass:cumulants}
+The fourth cumulant tensor \(K_u=\operatorname{cum}_4(u_t)\) is observed at the population level.  For each \(Q\), \(D(Q,\kappa)=\sum_k\kappa_kb_k(Q)^{\otimes4}\) is the pure diagonal fourth-cumulant component in the \(B(Q)\) basis.
+\end{assumption}
+
+\begin{assumption}[Separated target cumulant]\label{ass:separated-target}
+The admissible pure diagonal cumulants satisfy \(\kappa\in\mathcal K_{\delta_4}(j)\) for a fixed \(\delta_4>0\).  Gaussian and equal-target-kurtosis boundaries are excluded from strict-gap statements unless explicitly handled as limiting cases.
+\end{assumption}
+
+\begin{assumption}[Bounded co-kurtosis leakage class]\label{ass:leakage-class}
+For every \(Q\), \(\mathcal L_\eta(Q)\) is the closed convex set of symmetric fourth-order tensors whose coordinates in the \(B(Q)\) structural basis have zero pure diagonal terms and Euclidean off-diagonal coefficient norm at most \(\eta\), using the coordinate convention \(r_4(Q,\kappa;P)\) from Section 6.  The sets are nested in \(\eta\), contain only \(0\) when \(\eta=0\), and vary continuously with \(Q\).
+\end{assumption}
+
+\begin{assumption}[Nonempty contact at the evaluated leakage radius]\label{ass:contact-nonempty}
+For every leakage radius \(\eta\) appearing in a finite support comparison, \(\mathcal Q_\eta(P)\) is nonempty.  Empty-contact cases are interpreted as failed higher-cumulant SVAR feasibility rather than finite LP/SVAR disagreement.
+\end{assumption}
+
+\begin{assumption}[Generic exposed report]\label{ass:generic-exposed}
+The report direction \(w\in\R^{H+1}\) exposes a nonempty compact LP maximizer set \(\mathcal M_w(P)\), and \(\theta_w(Q)\) is not constant on any positive-dimensional feasible component that changes the leakage-adjusted mismatch \(m_\eta(Q;P)\).
+\end{assumption}
+
+\begin{assumption}[Primitive active-set certificate]\label{ass:primitive-rank}
+There is at least one active-set candidate \((S,Q^\circ,\kappa^\circ)\in\mathfrak C_w(P)\) with \(\kappa^\circ\in\mathcal K_{\delta_4}(j)\).  At every minimizing candidate for the program defining \(\eta_w^\dagger(P)\), the active sign-zero Jacobian and the pure-diagonal contact Jacobian have full row rank, and the restricted second-order form of \(-\theta_w\) on the active sign-zero tangent space is nonsingular.  The assumption does not assert that \(Q^\circ\) is a global LP maximizer, does not assert that the support face is unique, and does not assert that \(\eta_w^\dagger(P)\) is positive; those are the consequences sought in Conjecture~\ref{conj:critical-leakage-frontier}.
+\end{assumption}
+
+\begin{assumption}[Two-shock planar specialization]\label{ass:two-shock}
+For the closed-form witness, \(n=2\), \(p=1\), \(H\ge1\), both rotation and reflection components of \(O(2)\) are included, the sign-zero restrictions leave a nondegenerate angular interval on at least one component, and the target and non-target pure cumulants are separated by \(\delta_4\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: nesting and parent-corner reduction]\label{thm:parent-corner}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:leakage-class}, the contact sets are nested:
+\[
+\eta_1\le\eta_2\quad\Longrightarrow\quad
+\mathcal Q_{\eta_1}(P)\subseteq \mathcal Q_{\eta_2}(P)\subseteq\mathcal Q_{\mathrm{LP}}(P),
+\]
+and therefore \(h_{\eta_1}(w;P)\le h_{\eta_2}(w;P)\le h_{\mathrm{LP}}(w;P)\) for every \(w\).  When \(\eta=0\), \(\mathcal L_0(Q)=\{0\}\) and \(\mathcal Q_0(P)\) is exactly the parent v1 independent-shock cumulant-diagonalizing SVAR/sign set.  If the LP side is restricted to the same \(\eta\)-contact set, the LP and \(\eta\)-SVAR support functions are equal for every \(w\).
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) The closest result is the parent \texttt{eid\_lp\_svar\_nonequiv}/\texttt{v1}, which handled only \(\eta=0\); this theorem verifies that the proposed generalization is a strict premise-class widening rather than a different kernel.  The published comparator is \citet{PlagborgMollerWolf2021}: their common-restriction equivalence is recovered when the LP report imposes the same \(\eta\)-contact condition.  (b) The concrete consumer is \citet{DrautzburgWright2023}, whose independence-refined sign-restricted sets can use this nesting to distinguish a valid common-restriction LP comparison from an outer relaxation.
+
+\begin{conjecture}[Conjecture 1: primitive positive finite leakage frontier (NOT YET PROVED)]\label{conj:critical-leakage-frontier}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:primitive-rank}, fix a population law \(P\), report direction \(w\), and leakage radius \(\eta\) with \(\mathcal Q_\eta(P)\ne\emptyset\).  There is a nonempty open semi-algebraic class \(\mathcal O_{\mathrm{leak}}\), described by strict active-set inequalities, bordered-Hessian signs, pure-diagonal contact rank, and a finite list of cross-component dominance inequalities, such that for every \((P,w)\in\mathcal O_{\mathrm{leak}}\) the following conclusions hold.  First, the active-set certificate \(\mathfrak C_w(P)\) contains a unique residual-minimizing candidate \((S_w,Q_w,\kappa_w)\), this candidate is the unique global LP/sign support maximizer across all rotation and reflection components, and hence \(\mathcal M_w(P)=\{Q_w\}\).  Second, the primitive residual
+\[
+\eta_w^\dagger(P)=\|r_4(Q_w,\kappa_w;P)\|_{\mathrm{off}}
+\]
+is strictly positive and finite.  Third, and nondefinitionally, the certified active-set residual coincides with the global first-contact radius:
+\[
+\eta_w^\dagger(P)=\eta_w^*(P).
+\]
+Consequently the support-function equality frontier is sharp:
+\[
+h_{\mathrm{LP}}(w;P)=h_\eta(w;P)
+\quad\Longleftrightarrow\quad
+\eta\ge \eta_w^\dagger(P).
+\]
+For every \((P,w)\in\mathcal O_{\mathrm{leak}}\) and every \(\eta<\eta_w^\dagger(P)\),
+\[
+\Delta_w^\eta(P)=h_{\mathrm{LP}}(w;P)-h_\eta(w;P)>0,
+\]
+while for every \(\eta\ge\eta_w^\dagger(P)\) the unique global exposed LP support value is attainable by a rotation whose fourth cumulants match \(K_u\) up to allowed co-kurtosis leakage.  The flagship claim is the primitive promotion from local active-set equations and rank/transversality inequalities to global support uniqueness, positive residual separation, and the iff frontier; bounded dependence creates a genuine phase transition between parent-style non-equivalence and restored LP/SVAR equivalence, rather than merely restating the definition of a nested support threshold.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest published papers are \citet[pp.~956--957 and Section~3]{PlagborgMollerWolf2021}, \citet[abstract and Section~2]{GourierouxMonfortRenne2017}, \citet[abstract and Section~3]{LanneMeitzSaikkonen2017}, and \citet[Section~3, Assumption~3.1 and Proposition~3.2]{LanneLiuLuoto2026}.  The epsilon-gap is the primitive positive finite scalar frontier \(\eta_w^\dagger(P)\): PMW give common-restriction equivalence and explicitly include sign restrictions in their portability discussion, GMR/LMS give independent non-Gaussian shock labeling, and Lanne--Liu--Luoto treat the zero relevant co-moment corner, whereas this conjecture allows bounded nonzero co-kurtosis leakage and asks for the observable boundary where that strictly larger class first restores LP/SVAR support equality.  (b) Resolving the conjecture gives \citet{HoeschLeeMesters2024} a population null for weak-identification robust inference on \(h_{\mathrm{LP}}-h_\eta\) near local-to-Gaussian or weakly non-Gaussian shock distributions.
+
+\begin{conjecture}[Conjecture 2: closed-form two-shock leakage formula (NOT YET PROVED)]\label{conj:two-shock-formula}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:generic-exposed} and \ref{ass:two-shock}, parameterize the two components of \(O(2)\) by rotation/reflection angles \(\varphi\).  Let the LP/sign feasible set on a component be \(I_{\mathrm{LP}}\), and write the report objective as
+\[
+\theta_w(\varphi)=a_w\cos\varphi+b_w\sin\varphi=\rho_w\cos(\varphi-\varphi_w).
+\]
+For component sign \(s\in\{+1,-1\}\), write the orthogonal basis as
+\[
+q_1^s(\varphi)=(\cos\varphi,\sin\varphi)^\transpose,\qquad
+q_2^s(\varphi)=s(-\sin\varphi,\cos\varphi)^\transpose,
+\]
+with the corresponding dual impact columns \(c_1^s(\varphi),c_2^s(\varphi)\), and set
+\[
+K^s_{abcd}(\varphi)=
+\langle K_u,c_a^s(\varphi)\otimes c_b^s(\varphi)\otimes c_c^s(\varphi)\otimes c_d^s(\varphi)\rangle .
+\]
+Pure-diagonal contact at \((s,\varphi)\) pins the two diagonal cumulants to
+\[
+\kappa_1=K^s_{1111}(\varphi),\qquad \kappa_2=K^s_{2222}(\varphi),
+\qquad
+|\kappa_1|\ge\delta_4,\quad |\kappa_2-\kappa_1|\ge\delta_4.
+\]
+The off-diagonal leakage residual is the quartic trigonometric polynomial norm
+\[
+\eta_s^2(\varphi;P)
+=4\{K^s_{1112}(\varphi)\}^2
++6\{K^s_{1122}(\varphi)\}^2
++4\{K^s_{1222}(\varphi)\}^2,
+\]
+where the coefficients \(4,6,4\) count the symmetric tensor multiplicities of the \((1112),(1122),(1222)\) coordinates.  If no support angle satisfies the separated pure-diagonal contact inequalities on a component, set that component value to \(+\infty\).  Otherwise the support-face leakage residual on that component is
+\[
+\eta_w^*(P)=
+\min_{\substack{\varphi\in\arg\max_{\phi\in I_{\mathrm{LP}}}\theta_w(\phi)\\
+s\in\{+1,-1\}\\
+(K^s_{1111}(\varphi),K^s_{2222}(\varphi))\in\mathcal K_{\delta_4}(j)}}
+\eta_s(\varphi;P),
+\]
+with the global \(O(2)\) value obtained by taking the minimum over rotation and reflection components.  On the named open set \(\mathcal U_2\) where \(\rho_w>0\), the LP optimizer angle is interior and unique on every active interval, at least one support angle satisfies separated pure-diagonal contact, every support-angle quartic residual above is strictly positive, and every non-support active-set candidate in \(\mathfrak C_w(P)\) has off-diagonal residual weakly larger than this support-face value, the active-set residual and support-face residual coincide:
+\[
+\eta_w^\dagger(P)=\eta_w^*(P).
+\]
+Under these dominance inequalities, the interval \(0\le\eta<\eta_w^\dagger(P)=\eta_w^*(P)\) is nonempty and has strict LP/sign versus \(\eta\)-SVAR support separation.  In the parent corner \(\eta=0\), this reduces to the parent two-shock witness: equality holds only when an LP support angle has zero off-diagonal quartic residual; otherwise the support gap is at least \(\rho_w(1-\cos d_w)\) for the distance \(d_w\) to the nearest exact contact angle.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet[Section~3]{Guay2021} gives a rank condition for local identification from third and fourth unconditional moments, and \citet[Section~2 and Algorithms~1--2]{AriasRubioRamirezWaggoner2018} give sign/zero rotation algorithms, but neither computes the leakage radius at the LP support angle, and the parent v1 left reflected \(O(2)\) components and boundary cases unresolved.  The epsilon-gap is the closed-form residual formula for \(\eta_w^\dagger(P)\) plus a nonzero open interval of strict separation, not another existence witness.  (b) The concrete consumer is \citet{MontielOleaPlagborgMollerQian2022}: a two-shock leakage formula gives applied users an auditable weak-higher-moment diagnostic before relying on higher-moment SVAR labels.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Reduction to the parent independent-shock proposal]\label{cor:parent-reduction}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:leakage-class}, imposing \(\eta=0\) gives \(\mathcal L_0(Q)=\{0\}\) and \(m_0(Q;P)=\inf_{\kappa\in\mathcal K_{\delta_4}(j)}\|K_u-D(Q,\kappa)\|_F\).  Thus Conjecture~\ref{conj:critical-leakage-frontier} reduces to the parent v1 strict non-equivalence question with \(\eta_w^\dagger(P)>0\) replacing the parent's assumed margin \(\chi_w(P)\).
+\end{corollary}
+
+\begin{corollary}[Common-restriction LP recovers Plagborg-Moller--Wolf]\label{cor:common-restriction}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:contact-nonempty}, if the LP report imposes the same \(\eta\)-contact restriction as the SVAR report, then both support functions optimize over \(\mathcal Q_\eta(P)\).  The LP and SVAR reports therefore agree, matching the common-identifying-restriction logic of \citet{PlagborgMollerWolf2021}.
+\end{corollary}
+
+\begin{corollary}[Gaussian and equal-kurtosis boundary]\label{cor:gaussian-boundary}
+If the target cumulant separation in Assumption~\ref{ass:separated-target} fails, then the strict-frontier statements do not claim a positive \(\eta_w^\dagger(P)\).  The proposed phase transition concerns non-Gaussian labels with separated target cumulants and bounded leakage, not the Gaussian or equal-kurtosis boundary.
+\end{corollary}
+
+\begin{corollary}[Diagonal-contact failure is distinct from leakage failure]\label{cor:diagonal-contact}
+Under Assumptions~\ref{ass:finite-var}--\ref{ass:leakage-class}, suppose every exposed LP maximizer \(Q\in\mathcal M_w(P)\) has no \(\kappa\in\mathcal K_{\delta_4}(j)\) satisfying \(d_4(Q,\kappa;P)=0\).  Then the support-face radius \(\eta_w^*(P)=+\infty\), so increasing the off-diagonal leakage radius cannot restore LP/SVAR support equality at the exposed LP face.  This conclusion does not imply \(\eta_w^\dagger(P)=+\infty\): non-exposed active-set candidates in \(\mathfrak C_w(P)\) may still have pure-diagonal contact and finite residual.  If some exposed maximizer has \(d_4(Q,\kappa;P)=0\), then equality is governed by its off-diagonal support-face residual, and Conjecture~\ref{conj:critical-leakage-frontier} supplies additional dominance conditions under which that residual also equals the primitive active-set residual \(\eta_w^\dagger(P)\).  Thus the Gaussian/equal-kurtosis boundary, exposed diagonal contact, and non-exposed active-set leakage are auditable separately.
+\end{corollary}
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:parent-corner} is nested-set algebra on compact feasible rotation sets.  Conjecture~\ref{conj:critical-leakage-frontier} should reduce to semi-algebraic optimization on \(O(n)\): enumerate active sign sets, solve the local first-order and pure-diagonal contact equations defining \(\mathfrak C_w(P)\), use bordered-Hessian signs and Jacobian rank to certify isolated local support candidates, and then use cross-component dominance inequalities to promote the selected candidate to the unique global LP support maximizer.  Only after that promotion should one identify the certified residual \(\eta_w^\dagger(P)=\|r_4(Q_w,\kappa_w;P)\|_{\mathrm{off}}\) with the global first-contact radius \(\eta_w^*(P)\); this is the nondefinitional step that the previous version lacked.  The boundary cases needing explicit algebra are empty \(\eta\)-contact, diagonal-contact infeasibility, multiple LP support maximizers, response-flat faces, equal-kurtosis collapse, and reflection components of \(O(2)\).  Conjecture~\ref{conj:two-shock-formula} should be checked by parameterizing both components of \(O(2)\), expanding \(K_u\) against the dual impact basis \(c_a^s(\varphi)\), verifying the quartic formula \(4K_{1112}^2+6K_{1122}^2+4K_{1222}^2\), and proving that the open conditions defining \(\mathcal U_2\) are nonempty and stable.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:parent-corner} is routine and is included to prove that the proposal is a genuine generalization of the parent rather than a pivot.  Conjectures~\ref{conj:critical-leakage-frontier} and \ref{conj:two-shock-formula} are not yet proved; they are the flagship kernel.  The proposal does not claim that LP regressions estimate fourth cumulants, and it does not claim that any published workflow incorrectly drops higher-cumulant restrictions.  The uncertain mathematical point is whether local active-set rank, bordered-Hessian, and cross-component dominance inequalities can be made broad enough for applied examples while still proving global support uniqueness and \(\eta_w^\dagger(P)=\eta_w^*(P)\).  The \(\eta\)-leakage class is intentionally population-level and does not yet include an estimator or finite-sample inference theorem.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial upgrade draft for angle 3 along the locked generalization axis, replacing parent independent-shock cumulant diagonalization by an eta-bounded co-kurtosis leakage frontier anchored to potentially dependent non-Gaussian shocks; prior verdict: none.
+\item v2 (revise) -- moved uniqueness, positivity, and residual separation out of Assumption~\ref{ass:primitive-rank} into Conjecture~\ref{conj:critical-leakage-frontier}, added the strict-containment comparison to the Lanne--Liu--Luoto zero co-kurtosis corner, and made the two-shock quartic residual formula explicit; prior verdict: REVISE.
+\item v3 (revise) -- separated the active-set residual \(\eta_w^\dagger(P)\) from the exposed support-face radius \(\eta_w^*(P)\), added non-support dominance inequalities to Conjecture~\ref{conj:two-shock-formula}, and patched the diagonal-contact corollary to avoid claiming \(\eta_w^\dagger(P)=+\infty\) from exposed-face failure alone; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Arias, Rubio-Ramirez, and Waggoner(2018)]{AriasRubioRamirezWaggoner2018}
+Arias, J.~E., J.~F. Rubio-Ramirez, and D.~F. Waggoner (2018).
+Inference based on structural vector autoregressions identified with sign and zero restrictions: Theory and applications.
+\emph{Econometrica} 86(2), 685--720.
+
+\bibitem[Baumeister and Hamilton(2015)]{BaumeisterHamilton2015}
+Baumeister, C. and J.~D. Hamilton (2015).
+Sign restrictions, structural vector autoregressions, and useful prior information.
+\emph{Econometrica} 83(5), 1963--1999.
+
+\bibitem[Drautzburg and Wright(2023)]{DrautzburgWright2023}
+Drautzburg, T. and J.~H. Wright (2023).
+Refining set-identification in VARs through independence.
+\emph{Journal of Econometrics} 235(2), 1827--1847.
+
+\bibitem[Gourieroux, Monfort, and Renne(2017)]{GourierouxMonfortRenne2017}
+Gourieroux, C., A. Monfort, and J.-P. Renne (2017).
+Statistical inference for independent component analysis: Application to structural VAR models.
+\emph{Journal of Econometrics} 196(1), 111--126.
+
+\bibitem[Guay(2021)]{Guay2021}
+Guay, A. (2021).
+Identification of structural vector autoregressions through higher unconditional moments.
+\emph{Journal of Econometrics} 225(1), 27--46.
+
+\bibitem[Hoesch, Lee, and Mesters(2024)]{HoeschLeeMesters2024}
+Hoesch, L., A. Lee, and G. Mesters (2024).
+Locally robust inference for non-Gaussian SVAR models.
+\emph{Quantitative Economics} 15(2), 523--570.
+
+\bibitem[Jorda(2005)]{Jorda2005}
+Jorda, O. (2005).
+Estimation and inference of impulse responses by local projections.
+\emph{American Economic Review} 95(1), 161--182.
+
+\bibitem[Lanne, Liu, and Luoto(2026)]{LanneLiuLuoto2026}
+Lanne, M., K. Liu, and J. Luoto (2026).
+Identifying structural vector autoregressions via non-Gaussianity of potentially dependent shocks.
+\emph{The Econometrics Journal}, advance article utag002.
+
+\bibitem[Lanne and Luoto(2021)]{LanneLuoto2021}
+Lanne, M. and J. Luoto (2021).
+GMM estimation of non-Gaussian structural vector autoregression.
+\emph{Journal of Business \& Economic Statistics} 39(1), 69--81.
+
+\bibitem[Lanne, Meitz, and Saikkonen(2017)]{LanneMeitzSaikkonen2017}
+Lanne, M., M. Meitz, and P. Saikkonen (2017).
+Identification and estimation of non-Gaussian structural vector autoregressions.
+\emph{Journal of Econometrics} 196(2), 288--304.
+
+\bibitem[Montiel Olea and Plagborg-Moller(2021)]{MontielOleaPlagborgMoller2021}
+Montiel Olea, J.~L. and M. Plagborg-Moller (2021).
+Local projection inference is simpler and more robust than you think.
+\emph{Econometrica} 89(4), 1789--1823.
+
+\bibitem[Montiel Olea, Plagborg-Moller, and Qian(2022)]{MontielOleaPlagborgMollerQian2022}
+Montiel Olea, J.~L., M. Plagborg-Moller, and E. Qian (2022).
+SVAR identification from higher moments: Has the simultaneous causality problem been solved?
+\emph{AEA Papers and Proceedings} 112, 481--485.
+
+\bibitem[Montiel Olea, Plagborg-Moller, Qian, and Wolf(2024)]{MontielOleaPlagborgMollerQianWolf2024}
+Montiel Olea, J.~L., M. Plagborg-Moller, E. Qian, and C.~K. Wolf (2024).
+Double robustness of local projections and some unpleasant VARithmetic.
+NBER Working Paper 32495; \emph{Econometrica}, forthcoming.
+
+\bibitem[Plagborg-Moller and Wolf(2021)]{PlagborgMollerWolf2021}
+Plagborg-Moller, M. and C.~K. Wolf (2021).
+Local projections and VARs estimate the same impulse responses.
+\emph{Econometrica} 89(2), 955--980.
+
+\bibitem[Rubio-Ramirez, Waggoner, and Zha(2010)]{RubioRamirezWaggonerZha2010}
+Rubio-Ramirez, J.~F., D.~F. Waggoner, and T. Zha (2010).
+Structural vector autoregressions: Theory of identification and algorithms for inference.
+\emph{Review of Economic Studies} 77(2), 665--696.
+\end{thebibliography}
+
+\end{document}

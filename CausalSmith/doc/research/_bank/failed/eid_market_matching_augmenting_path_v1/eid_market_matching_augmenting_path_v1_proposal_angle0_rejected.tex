@@ -1,0 +1,278 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_market\_matching\_augmenting\_path, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` -- the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_market\_matching\_augmenting\_path} / \texttt{v1}%
+  \\ \large\textit{Augmenting-path certificates for exact-ID failure of marketplace exposure summaries}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Exact-identification anchor:
+$(qid,specialization,\text{graph/SWIG},\text{treatment},\text{target estimand},\text{identifying assumptions})$ equals
+$(\texttt{eid\_market\_matching\_augmenting\_path},\texttt{v1},(B,S,E;T;\varphi),T,\mu_b,\mathcal A_{\mathrm{match}})$.
+Here $B$ is a finite buyer set, $S$ is a finite seller set, $E\subseteq B\times S$ is the feasible bipartite market graph, $T$ is a policy or treatment that may add or remove feasible edges, and $\varphi(E)$ is the uniform distribution on maximum matchings of $(B,S,E)$.
+For a focal buyer $b$, the target is the exact matching-policy estimand
+\[
+  \mu_b(E)=\Pr_{\varphi(E)}\{b\text{ is matched}\},
+\]
+or the policy contrast $\tau_b(E^1,E^0)=\mu_b(E^1)-\mu_b(E^0)$.
+The observed one-hop buyer summary is $\sigma_b(E,T)=(T_b,N_E(b))$, where $N_E(b)=\{s:(b,s)\in E\}$.
+The augmenting-path indicator is
+\[
+  A_{b,s,b',s'}(E)=\one\{(b,s),(b',s),(b',s')\in E,\ s'\notin N_E(b)\}.
+\]
+The identifying assumptions $\mathcal A_{\mathrm{match}}$ are finite support, known policy-specific feasible-edge sets, consistency of observed match status with $\varphi(E^T)$, the uniform maximum-matching tie rule, and exact observability only of the analyst-specified summary $\sigma_b$ unless an augmented summary is named.
+
+\begin{abstract}
+Two-sided marketplace experiments often compress interference into buyer-level exposure summaries. Such summaries can miss a matching constraint: another buyer's outside option can change the focal buyer's match probability even when the focal buyer's own observed seller set is unchanged. The finite theorem in this proposal computes the minimal certificate on the path $b_1-s_1-b_2-s_2$: two markets have the same focal one-hop summary but focal match probabilities $1$ and $1/2$. The flagship conjecture states that exact buyer-level identification requires summaries to contain every matching-relevant alternating path, and that omitted paths generate finite alias pairs with nonzero separation in the focal matching-policy estimand. Resolving the conjecture would give marketplace experimenters a computable audit for exposure summaries before using them as exact causal objects.
+\end{abstract}
+
+\section{Introduction}
+Marketplace treatment can change who is feasible to match, not only the outcome attached to a fixed exposure cell. The main claim is that a one-hop buyer exposure summary is not exact-ID sufficient for focal matching-policy effects unless it records the alternating paths through which competitors acquire outside options.
+
+The closest published marketplace comparators are \citet[abstract]{JohariLiLiskovichWeintraub2022}, who study how marketplace interference affects design bias, and \citet[Section 2]{MasoeroVijaykumarRichardsonMcQueenRosenBurdickBajariImbens2026}, who define multiple randomization designs for interacting marketplace populations. They do not give a finite non-equivalence certificate showing that two markets with the same focal exposure summary have different exact matching-policy estimands. The result lives in exact identification for network and marketplace interference; it uses matching geometry as the identifying obstruction, not a do-calculus or exposure-count alias.
+
+The consumer is the platform-experiment design problem in \citet{JohariLiLiskovichWeintraub2022} and the exposure-definition problem separated from assumptions by \citet{Savje2024}. A reader who accepts the conclusion cannot treat $\sigma_b=(T_b,N_E(b))$ as a causal exposure without first auditing omitted alternating paths.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: The markets $M_{\mathrm{full}}$ and $M_{\mathrm{cut}}$ have identical focal one-hop summaries for $b_1$ but $\mu_{b_1}=1$ and $\mu_{b_1}=1/2$. Gap: \citet{JohariLiLiskovichWeintraub2022} and \citet{AronowSamii2017} motivate marketplace interference and exposure mappings but do not exhibit a matching-geometry alias pair. Consumer: two-sided platform experiment audits.
+\item Conjecture 1: A buyer summary is matching-sufficient on a finite market class only if it contains the alternating-path sigma-field relevant to focal maximum matching. Gap: \citet{Savje2024} and \citet{AronowSamii2017} discuss misspecified exposure maps, but not the necessary matching-path content of a sufficient market exposure. Consumer: marketplace exposure-definition practice.
+\item Conjecture 2: If a summary omits a matching-relevant alternating path, a polynomial-time augmenting-path audit returns an alias pair and a nonzero separation certificate. Gap: \citet{Chen2019} assumes the matching mechanism is simulable, while this conjecture asks when a compressed summary is insufficient before simulation. Consumer: exact-identification screening for matching-market policy evaluation.
+\end{itemize}
+
+\section{Related work}
+\citet{JohariLiLiskovichWeintraub2022} is the closest marketplace design anchor because it models interference in two-sided platforms and studies how bias depends on market balance. \citet{MasoeroVijaykumarRichardsonMcQueenRosenBurdickBajariImbens2026} develops multiple randomization designs for interacting populations and local interference, but its estimands are design-cell effects rather than exact match probabilities under changed feasible matchings. \citet{LiuShaikhToulis2025} studies randomization inference for two-sided market experiments, showing that buyer-seller structure affects valid testing rather than solving exposure-summary sufficiency. \citet{Chen2019} is the closest matching-market causal-inference comparator because exact Horvitz--Thompson estimation is available when the assignment and matching mechanism can be simulated; the present question is whether a low-dimensional exposure summary preserves the relevant matching mechanism.
+
+\citet{AronowSamii2017} supplies the general exposure-mapping framework in which assignments are compressed into unit exposures. \citet{Savje2024} argues that exposure mappings should separate definitions from structural assumptions, which is the conceptual reason to ask whether $\sigma_b$ is sufficient for $\mu_b$. \citet{SchroderOprescuFeuerriegelKallus2026} gives sharp bounds under misspecified network exposure mappings, but the bounds do not enforce bipartite maximum-matching feasibility. \citet{ZiglerPapadogeorgou2018} develops bipartite causal inference when treatments and outcomes live on different unit types, but not centralized matching-policy exact identification.
+
+The in-catalogue prior art does not contain this kernel. The `ExactID / PartialID catalogues' section of \texttt{doc/API.md} records ExactID and PartialID as seed areas rather than an existing marketplace matching theorem. The closest banked proposal, \texttt{pid\_network\_exposure\_v1}, studies sharp partial-ID bounds under shared graph completions and explicitly asks for $K_i=1$ matching or cover certificates. The failed \texttt{pid\_network\_exposure\_aliasing\_graphpair\_v1} warns that exposure aliasing needs a formal equivalence relation and a generic certificate rather than a lone finite graph count witness. This proposal differs by making the matching-policy estimand exact, the alias relation buyer-summary based, and the separator an augmenting-path object in a bipartite market.
+
+\section{Formal setup}
+Let $B$ and $S$ be finite sets of buyers and sellers. A market is $M=(B,S,E)$ with $E\subseteq B\times S$. A matching $m\subseteq E$ contains no two edges incident to the same buyer or seller. Let $\mathcal M^\star(E)$ be the nonempty set of maximum-cardinality matchings and let $\varphi(E)$ be the uniform distribution on $\mathcal M^\star(E)$. The focal match probability is
+\[
+  \mu_b(E)=|\{m\in\mathcal M^\star(E):\exists s\ (b,s)\in m\}|/|\mathcal M^\star(E)|.
+\]
+The analyst observes the focal summary $\sigma_b(E,T)=(T_b,N_E(b))$ unless an augmented summary is specified. Two markets are $\sigma_b$-aliased if they have the same $T_b$ and $N_E(b)$ for the focal buyer.
+
+For distinct buyers $b,b'$ and sellers $s,s'$, define the length-three alternating-path indicator
+\[
+  A_{b,s,b',s'}(E)=\one\{(b,s)\in E,\ (b',s)\in E,\ (b',s')\in E,\ s'\notin N_E(b)\}.
+\]
+It records that competitor $b'$ competes with $b$ at seller $s$ and has an outside seller $s'$ invisible to the focal one-hop set. For a finite market class $\mathfrak M$ and summary $\rho_b$, define the focal alias diameter
+\[
+  D_b(\rho_b;\mathfrak M)=
+  \sup\{|\mu_b(E)-\mu_b(E')|: E,E'\in\mathfrak M,\ \rho_b(E)=\rho_b(E')\}.
+\]
+The summary $\rho_b$ is matching-sufficient for $\mu_b$ on $\mathfrak M$ when $D_b(\rho_b;\mathfrak M)=0$.
+
+\begin{verbatim}
+(qid,specialization,graph/SWIG,treatment,target estimand,identifying assumptions)
+= (eid_market_matching_augmenting_path,v1,(B,S,E;T;phi),T,mu_b,A_match).
+B,S finite; E subset B x S; phi(E) uniform on maximum matchings.
+target mu_b(E)=Pr_phi(E){b matched}; contrast tau_b(E1,E0)=mu_b(E1)-mu_b(E0).
+observed summary sigma_b(E,T)=(T_b,N_E(b)).
+A_{b,s,b',s'}(E)=1{(b,s),(b',s),(b',s') in E and s' notin N_E(b)}.
+A_match: finite support, known feasible edge sets, consistency with phi(E^T),
+uniform maximum-matching tie rule, and observability only through the named summary.
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite bipartite market]\label{ass:finite-market}
+$B$ and $S$ are finite nonempty sets and $E\subseteq B\times S$.
+\end{assumption}
+
+\begin{assumption}[Uniform maximum-matching policy]\label{ass:uniform-policy}
+For every feasible edge set $E$, the matching mechanism draws uniformly from $\mathcal M^\star(E)$.
+\end{assumption}
+
+\begin{assumption}[Focal summary observability]\label{ass:focal-summary}
+For focal buyer $b$, the analyst observes only $\sigma_b(E,T)=(T_b,N_E(b))$ unless an augmented summary $\rho_b$ is explicitly named.
+\end{assumption}
+
+\begin{assumption}[Consistency]\label{ass:consistency}
+The observed match status for buyer $b$ under policy edge set $E^T$ is generated by $\varphi(E^T)$, so its mean equals $\mu_b(E^T)$.
+\end{assumption}
+
+\begin{assumption}[Finite market class for sufficiency]\label{ass:finite-class}
+The comparison class $\mathfrak M$ is a finite set of feasible edge sets on the same buyer and seller labels and with the same focal buyer $b$.
+\end{assumption}
+
+\begin{assumption}[Omitted alternating path]\label{ass:omitted-path}
+For some $E,E'\in\mathfrak M$, a length-three indicator $A_{b,s,b',s'}$ differs while the candidate summary $\rho_b$ agrees.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: four-node augmenting-path alias]\label{thm:four-node-alias}
+Under Assumptions~\ref{ass:finite-market}--\ref{ass:consistency}, let $B=\{b_1,b_2\}$, $S=\{s_1,s_2\}$, $E_{\mathrm{full}}=\{(b_1,s_1),(b_2,s_1),(b_2,s_2)\}$, and $E_{\mathrm{cut}}=\{(b_1,s_1),(b_2,s_1)\}$. Then $N_{E_{\mathrm{full}}}(b_1)=N_{E_{\mathrm{cut}}}(b_1)=\{s_1\}$, but
+\[
+  \mu_{b_1}(E_{\mathrm{full}})=1,\qquad
+  \mu_{b_1}(E_{\mathrm{cut}})=1/2,\qquad
+  |\mu_{b_1}(E_{\mathrm{full}})-\mu_{b_1}(E_{\mathrm{cut}})|=1/2.
+\]
+\end{theorem}
+
+Proof sketch. In $E_{\mathrm{full}}$, the unique maximum matching of size two is $\{(b_1,s_1),(b_2,s_2)\}$. In $E_{\mathrm{cut}}$, the maximum matchings are $\{(b_1,s_1)\}$ and $\{(b_2,s_1)\}$, so the uniform tie rule matches $b_1$ in one of two maximum matchings.
+
+\begin{conjecture}[Conjecture 1: alternating-path sufficiency frontier]\label{conj:path-frontier}
+(NOT YET PROVED.) Under Assumptions~\ref{ass:finite-market}--\ref{ass:finite-class}, let $\mathcal A_b(\mathfrak M)$ be the sigma-field generated by $\sigma_b$ and all alternating-path indicators $A_{b,s,b',s'}$ whose value can change $\mu_b$ inside $\mathfrak M$. A buyer summary $\rho_b$ is matching-sufficient for $\mu_b$ on $\mathfrak M$ only if $\mathcal A_b(\mathfrak M)\subseteq\sigma(\rho_b)$. Equivalently, if $\rho_b$ omits a matching-relevant alternating-path indicator, then $D_b(\rho_b;\mathfrak M)>0$.
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: computable augmenting-path audit]\label{conj:audit}
+(NOT YET PROVED.) Under Assumptions~\ref{ass:finite-market}--\ref{ass:omitted-path}, there is a finite audit that enumerates competitor outside-option paths, contracts summaries into alias classes, and returns either $D_b(\rho_b;\mathfrak M)=0$ or a pair $(E,E')$ with $\rho_b(E)=\rho_b(E')$ and $\mu_b(E)\ne\mu_b(E')$. On classes represented by explicit edge lists, the audit can be implemented by maximum-matching enumeration or by two maximum-flow calls per candidate path and runs in polynomial time in $|B|+|S|+|E|$ times the number of candidate paths.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Known complete matching graph]\label{cor:known-graph}
+Under Assumptions~\ref{ass:finite-market}--\ref{ass:uniform-policy}, if the observed summary is the full edge set $E$, then it is matching-sufficient for $\mu_b$.
+\end{corollary}
+The reduction is direct: $\rho_b(E)=E$ makes each alias class a singleton, so $D_b(\rho_b;\mathfrak M)=0$.
+
+\begin{corollary}[No competitor outside option]\label{cor:no-outside}
+Under Assumptions~\ref{ass:finite-market}--\ref{ass:focal-summary}, if no buyer $b'\ne b$ has an edge $(b',s')$ with $s'\notin N_E(b)$ in any market in $\mathfrak M$, then every length-three $A_{b,s,b',s'}$ equals zero.
+\end{corollary}
+This collapses the proposed obstruction to the ordinary one-hop exposure case because the path indicator has no feasible outside seller.
+
+\paragraph{Exhibit 9.1: four-node focal object transcript.}
+Focal object: $\Delta_{\mathrm{AP}}(b_1)=|\mu_{b_1}(E_{\mathrm{full}})-\mu_{b_1}(E_{\mathrm{cut}})|$.\\
+Defining equation (copy from Section 6): $\mu_b(E)=|\{m\in\mathcal M^\star(E):\exists s\ (b,s)\in m\}|/|\mathcal M^\star(E)|$.\\
+RHS symbol provenance:
+\begin{itemize}[leftmargin=*]
+\item $B=\{b_1,b_2\}$ and $S=\{s_1,s_2\}$; source: Section 6 primitive.
+\item $E_{\mathrm{full}}=\{(b_1,s_1),(b_2,s_1),(b_2,s_2)\}$; source: Section 6 primitive.
+\item $E_{\mathrm{cut}}=\{(b_1,s_1),(b_2,s_1)\}$; source: Section 6 primitive.
+\item $\mathcal M^\star(E_{\mathrm{full}})=\{\{(b_1,s_1),(b_2,s_2)\}\}$; source: derived by maximum-cardinality enumeration.
+\item $\mathcal M^\star(E_{\mathrm{cut}})=\{\{(b_1,s_1)\},\{(b_2,s_1)\}\}$; source: derived by maximum-cardinality enumeration.
+\end{itemize}
+Substituted equation: $\Delta_{\mathrm{AP}}(b_1)=|1/1-1/2|$.\\
+Computed value: $\Delta_{\mathrm{AP}}(b_1)=1/2$.\\
+Invariant check 1: focal one-hop summaries agree. LHS $N_{E_{\mathrm{full}}}(b_1)=\{s_1\}$; RHS $N_{E_{\mathrm{cut}}}(b_1)=\{s_1\}$; result = OK.\\
+Invariant check 2: maximum-matching counts are nonzero. LHS $|\mathcal M^\star(E_{\mathrm{full}})|=1$; RHS $|\mathcal M^\star(E_{\mathrm{cut}})|=2$; result = OK.\\
+Invariant check 3: alternating path differs. LHS $A_{b_1,s_1,b_2,s_2}(E_{\mathrm{full}})=1$; RHS $A_{b_1,s_1,b_2,s_2}(E_{\mathrm{cut}})=0$; result = OK.\\
+Assumption-substitution screen: no RHS symbol above is sourced from Section 7 assumed quantities. load-bearing for flagship novelty? NO. The focal object is derived from Section 6 primitives.\\
+SC10 verdict: PASS.
+
+\section{Proof-sketch route}
+Headline: Conjecture 1 says omitted matching-relevant alternating paths imply $D_b(\rho_b;\mathfrak M)>0$.
+Step 0a -- unfold Section 6 definitions: expand $\mu_b$, $D_b$, $\rho_b$-aliasing, and $A_{b,s,b',s'}$; not counted in $k$.
+Step 0b -- apply Section 7 assumptions: finite markets, uniform maximum-matching policy, and finite class; not counted in $k$.
+Step 1 (substantive): prove a local exchange lemma showing that adding a competitor outside-option edge on an alternating path can increase the set of maximum matchings in which the focal buyer is matched.
+Step 2 (substantive): show that summary aliasing lets the two exchange-related markets remain in the same $\rho_b$ class when the path indicator is omitted.
+Step 3 (substantive): derive a positive lower bound on $D_b$ from the change in the ratio of focal-matched maximum matchings, with Theorem~\ref{thm:four-node-alias} as the base case.
+Step 4 (substantive): extend the base exchange to finite classes by decomposing matching changes into alternating paths and cycles.
+Classical result: Berge's augmenting-path theorem and finite maximum-matching enumeration close the combinatorial direction. Thus $k=4$ for the flagship headline, before any Lean or formalization question enters.
+
+\section{Honest scope flags}
+The finite alias theorem is labelled as a theorem because it is a complete enumeration under the locked tie rule. The sufficiency frontier and audit are conjectures. The conjectures may need their market class restricted to edge-addition classes with fixed buyer and seller labels; otherwise a pathological summary could encode $\mu_b$ directly and bypass the path sigma-field. No statistical inference, asymptotic variance, welfare estimator, or equilibrium behavior is claimed.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial ExactID draft centered on the four-node augmenting-path alias and the alternating-path sufficiency frontier; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Aronow and Samii(2017)]{AronowSamii2017}
+Aronow, P. M. and C. Samii (2017).
+Estimating average causal effects under general interference, with application to a social network experiment.
+\emph{Annals of Applied Statistics} 11(4), 1912--1947.
+
+\bibitem[Chen(2019)]{Chen2019}
+Chen, Y. (2019).
+Causal inference in matching markets.
+SSRN working paper 3510903.
+
+\bibitem[Johari et~al.(2022)]{JohariLiLiskovichWeintraub2022}
+Johari, R., H. Li, I. Liskovich, and G. Y. Weintraub (2022).
+Experimental design in two-sided platforms: An analysis of bias.
+\emph{Management Science} 68(10), 7069--7089.
+
+\bibitem[Liu et~al.(2025)]{LiuShaikhToulis2025}
+Liu, L., A. M. Shaikh, and P. Toulis (2025).
+Randomization inference in two-sided market experiments.
+arXiv:2504.06215.
+
+\bibitem[Masoero et~al.(2026)]{MasoeroVijaykumarRichardsonMcQueenRosenBurdickBajariImbens2026}
+Masoero, L., S. Vijaykumar, T. S. Richardson, J. McQueen, I. Rosen, B. Burdick, P. Bajari, and G. Imbens (2026).
+Multiple randomization designs: Estimation and inference with interference.
+\emph{Journal of the Royal Statistical Society: Series B}, forthcoming.
+
+\bibitem[Savje(2024)]{Savje2024}
+Savje, F. (2024).
+Causal inference with misspecified exposure mappings: Separating definitions and assumptions.
+\emph{Biometrika} 111(1), 1--15.
+
+\bibitem[Schroder et~al.(2026)]{SchroderOprescuFeuerriegelKallus2026}
+Schroder, M., M. Oprescu, S. Feuerriegel, and N. Kallus (2026).
+Causal inference with misspecified exposure mappings.
+arXiv:2602.03459.
+
+\bibitem[Zigler and Papadogeorgou(2018)]{ZiglerPapadogeorgou2018}
+Zigler, C. M. and G. Papadogeorgou (2018).
+Bipartite causal inference with interference.
+\emph{Statistical Science} 33(2), 214--231.
+\end{thebibliography}
+
+\end{document}

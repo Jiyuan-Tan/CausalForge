@@ -1,0 +1,446 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_tv\_pretrend\_atet, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_tv\_pretrend\_atet} / \texttt{v1}%
+  \\ \large\textit{Selection-free TV-calibrated ATET intervals after pretrend-test rejection in staggered adoption}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+(qid, specialization) =
+  (pid_tv_pretrend_atet, v1)
+observable distribution P =
+  law of a finite staggered-adoption panel summarized by:
+  (i) a scalar ATET point estimate hat theta for a fixed treated-on-the-treated
+      aggregate,
+  (ii) the observed pre-treatment discrepancy path
+       g = (g_{-L},...,g_{-1}) in R^L,
+  (iii) a deterministic pretrend-diagnostic rule
+       varphi_alpha(g,Sigma_pre) in {0,1}, where 1 means reject,
+  (iv) a known post-treatment bias-weight vector
+       omega = (omega_1,...,omega_H) in R^H,
+  (v) a maintained ATET support radius B > 0,
+  (vi) an unconditional confidence region C_{1-alpha} for
+       (hat theta, g, Sigma_pre)
+parameter theta =
+  scalar staggered-adoption ATET on the treated, theta
+identifying restrictions =
+  consistency; absorbing staggered adoption; no exact parallel-trends
+  requirement; the post-treatment untreated-trend discrepancy path
+  u = (u_1,...,u_H) in R^H is anchored at the last observed pre-period gap,
+    u_0 = g_{-1},
+  and satisfies the anchored total-variation restriction
+    TV(u) := sum_{h=1}^H |u_h-u_{h-1}| <= kappa * D_pre(g),
+  where D_pre(g) = sum_{j=-L+1}^{-1} |g_j-g_{j-1}|.
+  The ATET bias is the linear functional omega' u.  The diagnostic
+  varphi_alpha is observed but never conditioned on in the target
+  identified set or in the confidence projection.
+bounding functional =
+  Theta_I(P; kappa)
+    = { hat theta - omega' u :
+        u_0 = g_{-1},
+        TV(u) <= kappa D_pre(g),
+        |omega' u| <= B }.
+  The proposal studies:
+    (a) the sharp deterministic interval Theta_I(P; kappa),
+    (b) the selection-free confidence projection
+        I_SF(kappa; C_{1-alpha})
+        = union_{(tilde theta, tilde g, tilde Sigma_pre) in C_{1-alpha}}
+          Theta_I(tilde P; kappa),
+    (c) whether I_SF dominates pass/fail-gated reporting rules that
+        condition on varphi_alpha(g,Sigma_pre)=0 before reporting a
+        sensitivity interval.
+\end{verbatim}
+
+\begin{abstract}
+This proposal asks how to report staggered-adoption ATET sensitivity to trend violations when the usual pretrend diagnostic rejects or has little power. The deterministic object is a total-variation calibrated identified set that uses the observed pre-treatment discrepancy path directly, rather than conditioning on whether a pretest passed. The routine result is a sharp support-interval representation for the anchored TV class and a confidence-projection construction that is valid whenever the confidence set for the observable inputs is unconditional. The novelty-bearing claim is a selection-free dominance conjecture: in low-power local alternatives, pass/fail-gated procedures either under-cover or weakly exceed the length of the unconditional TV projection on an open class of designs. If resolved, the result would connect the pretest-caution literature to Honest-DiD style sensitivity analysis by replacing diagnostic gating with a population identified set and an unconditional breakdown band.
+\end{abstract}
+
+\section{Introduction}
+The question is whether a staggered-adoption sensitivity analysis should disappear after a pretrend test rejects, or whether the same data can still deliver a sharp ATET identified set under an explicit trend-violation class. The headline claim is that the anchored TV identified set is well-defined from the realized pretrend path itself, and that valid uncertainty can be layered on by unconditional confidence projection rather than by conditioning on test passage.
+
+The closest comparators are \citet{Roth2022PretestCaution}, who show that conditioning on passing a pretrend test can distort estimation and inference, and \citet{BilinskiHatfield2026NonInferiority}, who replace null testing by non-inferiority or equivalence diagnostics for meaningful pretrend violations. The gap is that these papers study diagnostic behavior, not the sharp population identified set for a staggered-adoption ATET under a TV restriction calibrated from the observed discrepancy path; \citet{RambachanRoth2023CrediblePT} provide the abstract sensitivity framework but not the selection-free confidence projection studied here. The kernel lives in partial identification with a staggered-panel bias map.
+
+The direct consumer is the practitioner workflow described in \citet{RothSantAnnaBilinskiPoe2023TrendingDiD}, where analysts are told to report what trend violations must be ruled out for a conclusion to survive. If the proposal is correct, a user of group-time ATT or imputation-based event studies \citep{CallawaySantAnna2021MultiplePeriods,BorusyakJaravelSpiess2024EventStudies} would report the unconditional TV interval and its confidence projection even after a failed diagnostic, rather than dropping sensitivity analysis or conditioning on the pass set.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: the anchored-TV ATET identified set is the sharp support interval generated by the realized pretrend path and the post-treatment bias weights. Gap: \citet{RambachanRoth2023CrediblePT} allow analyst-chosen restriction classes but do not isolate this staggered-ATET TV interval as the post-rejection object. Consumer: \citet{RothSantAnnaBilinskiPoe2023TrendingDiD}.
+\item Theorem 2: projecting any unconditional confidence set for the observable inputs through the TV identified-set map yields a valid selection-free confidence band, regardless of the realized diagnostic decision. Gap: \citet{Roth2022PretestCaution} and \citet{BilinskiHatfield2026NonInferiority} analyze diagnostics and screening, not the identified-set projection that remains valid after rejection. Consumer: applied staggered-DiD sensitivity reporting.
+\item Conjecture 1: in low-power local alternatives, every pass/fail-gated reporting rule weakly exceeds the selection-free projection's worst-case excess length or under-covers on an open class of designs. Gap: \citet{Roth2022PretestCaution} document distortion after conditioning, but do not compare it to a sharp TV-calibrated partial-ID band. Consumer: methodological guidance on whether to gate robustness reports on diagnostics.
+\end{itemize}
+
+\section{Related work}
+\citet{RambachanRoth2023CrediblePT} are the main sensitivity-analysis comparator because they cast violations of parallel trends as a partial-identification problem under analyst-chosen restriction sets. The present proposal keeps that framework but studies what remains valid when the analyst refuses to condition on pretest passage and calibrates a TV class from the realized pretrend path.
+
+\citet{Roth2022PretestCaution} are the main diagnostic comparator because they show that pretrend tests can have low power and that conditioning on passing them can distort estimates and intervals. The current proposal takes their warning as motivation for a selection-free identified set rather than as a theorem about test behavior.
+
+\citet{BilinskiHatfield2026NonInferiority} are relevant because they reformulate pretrend assessment as a non-inferiority or equivalence problem on the treatment-effect scale. Their object is still a diagnostic or screening rule; the proposal here instead treats the observed pretrend path as input to a sharp TV-calibrated ATET interval.
+
+\citet{RothSantAnnaBilinskiPoe2023TrendingDiD} synthesize modern DiD practice and recommend sensitivity analysis when exact parallel trends is doubtful. The selection-free TV band is designed as a concrete population object for that recommendation.
+
+\citet{CallawaySantAnna2021MultiplePeriods} identify group-time ATT objects and aggregation schemes for staggered adoption. They matter here because the ATET target and the bias-weight vector \(\omega\) are defined on that estimand family, even though their results are point-identifying under conditional parallel trends.
+
+\citet{BorusyakJaravelSpiess2024EventStudies} provide robust and efficient imputation estimators for staggered event studies. Their contribution clarifies the aggregate target map and therefore the post-treatment bias weights entering the TV interval, but not the post-rejection identified set.
+
+\citet{KahnLangLang2020PromisePitfalls} argue that pretrends are informative but not dispositive about identifying assumptions. The current proposal turns that insight into a partial-identification object that uses the full signed pretrend path instead of a pass/fail diagnostic.
+
+In the repository, `doc/API.md` records a substantial panel catalogue and a sparse PartialID catalogue, but no existing qid with this kernel. The legacy `q1_partial_did_unobserved_trends / p1_baseline_v2` entry is the closest pretrend-oriented partial-DiD object, yet it studies partially unobserved pretrends rather than a TV-calibrated post-rejection interval. The failed `panel_honest_did_phase / v1` proposal is the nearest in-repo Honest-DiD warning on support-function geometry, but it targets cohort-versus-aggregate projection rather than diagnostic gating.
+
+\section{Formal setup}
+This is a partial-identification problem with a staggered-panel data structure. Let \(\hat\theta\in\R\) denote a fixed scalar staggered-adoption ATET estimate for treated units, obtained from a pre-specified aggregation scheme. Let \(g=(g_{-L},\ldots,g_{-1})\in\R^L\) be the realized pre-treatment discrepancy path under the same aggregation. Define the pretrend scale
+\[
+D_{\mathrm{pre}}(g)=\sum_{j=-L+1}^{-1}\lvert g_j-g_{j-1}\rvert .
+\]
+Let \(u=(u_1,\ldots,u_H)\in\R^H\) denote the latent post-treatment untreated-trend discrepancy path, anchored at \(u_0=g_{-1}\). The ATET bias is the known linear functional
+\[
+b_\omega(u)=\omega^\transpose u=\sum_{h=1}^H \omega_h u_h,
+\]
+where the weight vector \(\omega\in\R^H\) is determined by the locked staggered-adoption target.
+
+For \(\kappa\ge 0\), define the anchored TV class
+\[
+\mathcal U_{\mathrm{TV}}(g,\kappa)
+=
+\left\{
+u\in\R^H:
+u_0=g_{-1},\;
+\operatorname{TV}(u):=\sum_{h=1}^H \lvert u_h-u_{h-1}\rvert
+\le \kappa D_{\mathrm{pre}}(g)
+\right\}.
+\]
+Let \(B>0\) be a maintained outcome-support radius. The deterministic identified set for the scalar ATET \(\theta\) is
+\[
+\Theta_I(P;\kappa)
+=
+\left\{
+\hat\theta-\omega^\transpose u:
+u\in\mathcal U_{\mathrm{TV}}(g,\kappa),\;
+\lvert \omega^\transpose u\rvert\le B
+\right\}.
+\]
+For \(\sigma\in\{+1,-1\}\), write
+\[
+h_\sigma(g,\omega,\kappa,B)
+=
+\sup\left\{
+\sigma\,\omega^\transpose u:
+u\in\mathcal U_{\mathrm{TV}}(g,\kappa),\;
+\lvert \omega^\transpose u\rvert\le B
+\right\}.
+\]
+Then
+\[
+\Theta_I(P;\kappa)
+=
+[\hat\theta-h_{+}(g,\omega,\kappa,B),\ \hat\theta+h_{-}(g,\omega,\kappa,B)].
+\]
+
+Let \(\Sigma_{\mathrm{pre}}\) denote the covariance or long-run variance estimate used by the chosen pretrend diagnostic, and let
+\[
+\varphi_\alpha(g,\Sigma_{\mathrm{pre}})\in\{0,1\}
+\]
+be a deterministic diagnostic rule, with \(\varphi_\alpha=1\) meaning reject. The proposal does not condition on the event \(\{\varphi_\alpha=0\}\). Instead, if \(C_{1-\alpha}\) is any unconditional confidence region for \((\hat\theta,g,\Sigma_{\mathrm{pre}})\), define the selection-free confidence projection
+\[
+\mathcal I_{\mathrm{SF}}(\kappa;C_{1-\alpha})
+=
+\bigcup_{(\tilde\theta,\tilde g,\tilde\Sigma_{\mathrm{pre}})\in C_{1-\alpha}}
+\Theta_I(\tilde P;\kappa),
+\]
+where \(\tilde P\) denotes the observable law with inputs
+\((\tilde\theta,\tilde g,\omega,B,\tilde\Sigma_{\mathrm{pre}})\) and the same locked aggregation weights \(\omega\).
+For later comparison, let \(\mathfrak J\) denote the class of measurable maps
+\[
+\mathcal J:\R\times\R^L\times\R^{L\times L}\times\R_+\to 2^{\R}
+\]
+that return a reported sensitivity interval from \((\hat\theta,g,\Sigma_{\mathrm{pre}},\kappa)\); a pass/fail-gated rule is any map in \(\mathfrak J\) multiplied by \(\one\{\varphi_\alpha(g,\Sigma_{\mathrm{pre}})=0\}\).
+
+\begin{verbatim}
+(qid, specialization) =
+  (pid_tv_pretrend_atet, v1)
+observable distribution P =
+  law of a finite staggered-adoption panel summarized by:
+  (i) a scalar ATET point estimate hat theta for a fixed treated-on-the-treated
+      aggregate,
+  (ii) the observed pre-treatment discrepancy path
+       g = (g_{-L},...,g_{-1}) in R^L,
+  (iii) a deterministic pretrend-diagnostic rule
+       varphi_alpha(g,Sigma_pre) in {0,1}, where 1 means reject,
+  (iv) a known post-treatment bias-weight vector
+       omega = (omega_1,...,omega_H) in R^H,
+  (v) a maintained ATET support radius B > 0,
+  (vi) an unconditional confidence region C_{1-alpha} for
+       (hat theta, g, Sigma_pre)
+parameter theta =
+  scalar staggered-adoption ATET on the treated, theta
+identifying restrictions =
+  consistency; absorbing staggered adoption; no exact parallel-trends
+  requirement; the post-treatment untreated-trend discrepancy path
+  u = (u_1,...,u_H) in R^H is anchored at the last observed pre-period gap,
+    u_0 = g_{-1},
+  and satisfies the anchored total-variation restriction
+    TV(u) := sum_{h=1}^H |u_h-u_{h-1}| <= kappa * D_pre(g),
+  where D_pre(g) = sum_{j=-L+1}^{-1} |g_j-g_{j-1}|.
+  The ATET bias is the linear functional omega' u.  The diagnostic
+  varphi_alpha is observed but never conditioned on in the target
+  identified set or in the confidence projection.
+bounding functional =
+  Theta_I(P; kappa)
+    = { hat theta - omega' u :
+        u_0 = g_{-1},
+        TV(u) <= kappa D_pre(g),
+        |omega' u| <= B }.
+  The proposal studies:
+    (a) the sharp deterministic interval Theta_I(P; kappa),
+    (b) the selection-free confidence projection
+        I_SF(kappa; C_{1-alpha})
+        = union_{(tilde theta, tilde g, tilde Sigma_pre) in C_{1-alpha}}
+          Theta_I(tilde P; kappa),
+    (c) whether I_SF dominates pass/fail-gated reporting rules that
+        condition on varphi_alpha(g,Sigma_pre)=0 before reporting a
+        sensitivity interval.
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite staggered target]\label{ass:finite}
+The dimensions \(L\) and \(H\) are finite, and the tuple \((\hat\theta,g,\omega,B,\Sigma_{\mathrm{pre}})\) is observable from \(P\) for the locked staggered-adoption aggregation rule.
+\end{assumption}
+
+\begin{assumption}[Linear bias representation]\label{ass:linear}
+There exists a latent post-treatment discrepancy path \(u\in\R^H\) such that
+\(\theta=\hat\theta-\omega^\transpose u\).
+\end{assumption}
+
+\begin{assumption}[Anchored TV restriction]\label{ass:tv}
+For a fixed \(\kappa\ge 0\), the admissible post-treatment discrepancy paths are exactly \(\mathcal U_{\mathrm{TV}}(g,\kappa)\).
+\end{assumption}
+
+\begin{assumption}[Outcome-range cap]\label{ass:range}
+The scalar ATET obeys \(\theta\in[-B,B]\) with \(B>0\).
+\end{assumption}
+
+\begin{assumption}[Diagnostic observability]\label{ass:test}
+The pretrend diagnostic rule \(\varphi_\alpha(g,\Sigma_{\mathrm{pre}})\) is a measurable deterministic function of the observable inputs \((g,\Sigma_{\mathrm{pre}})\).
+\end{assumption}
+
+\begin{assumption}[Unconditional confidence region]\label{ass:conf}
+The random set \(C_{1-\alpha}\) satisfies
+\[
+\Pr\bigl((\hat\theta,g,\Sigma_{\mathrm{pre}})\in C_{1-\alpha}\bigr)\ge 1-\alpha .
+\]
+\end{assumption}
+
+\begin{assumption}[Low-power local alternatives]\label{ass:local}
+There is a local asymptotic sequence of staggered-adoption laws under which the pretrend diagnostic has nondegenerate rejection probability strictly between zero and one, while the TV-identified-set map is Hadamard directionally differentiable in the observable inputs.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: sharp anchored-TV interval]\label{thm:sharp}
+Under Assumptions~\ref{ass:finite}--\ref{ass:range}, the identified set
+\(\Theta_I(P;\kappa)\) is the compact interval
+\[
+\Theta_I(P;\kappa)
+=
+[\hat\theta-h_{+}(g,\omega,\kappa,B),\ \hat\theta+h_{-}(g,\omega,\kappa,B)].
+\]
+Equivalently, its lower and upper endpoints are obtained by the pair of linear programs
+\[
+\underline\theta(\kappa)
+=
+\inf_{u_0=g_{-1},\ \operatorname{TV}(u)\le \kappa D_{\mathrm{pre}}(g),\ \lvert \omega^\transpose u\rvert\le B}
+(\hat\theta-\omega^\transpose u),
+\]
+\[
+\overline\theta(\kappa)
+=
+\sup_{u_0=g_{-1},\ \operatorname{TV}(u)\le \kappa D_{\mathrm{pre}}(g),\ \lvert \omega^\transpose u\rvert\le B}
+(\hat\theta-\omega^\transpose u).
+\]
+\end{theorem}
+
+The proof is routine support-function algebra on a finite-dimensional TV ball intersected with a slab. Sharpness follows because the feasible class is already defined directly in the observable and latent primitives.
+
+\begin{theorem}[Theorem 2: selection-free confidence projection]\label{thm:projection}
+Under Assumptions~\ref{ass:finite}--\ref{ass:conf}, for every \(\kappa\ge 0\),
+\[
+\Pr\bigl(\theta\in \mathcal I_{\mathrm{SF}}(\kappa;C_{1-\alpha})\bigr)\ge 1-\alpha .
+\]
+The same statement holds on every realized dataset, regardless of whether
+\(\varphi_\alpha(g,\Sigma_{\mathrm{pre}})=0\) or \(1\).
+\end{theorem}
+
+The proof is a standard confidence-set projection argument. If the observable inputs are inside \(C_{1-\alpha}\), then the true identified set is one of the sets in the union defining \(\mathcal I_{\mathrm{SF}}\).
+
+\begin{conjecture}[Conjecture 1: low-power dominance of selection-free reporting {\normalfont(NOT YET PROVED)}}\label{conj:dominance}
+Under Assumptions~\ref{ass:finite}--\ref{ass:local}, there exists an open class of staggered-adoption laws such that any reporting rule of the form
+\[
+\mathcal I_{\mathrm{gate}}(\kappa)
+=
+\one\{\varphi_\alpha(g,\Sigma_{\mathrm{pre}})=0\}\,
+\mathcal J(\hat\theta,g,\Sigma_{\mathrm{pre}},\kappa)
+\]
+either
+\[
+\liminf_n \inf_{P_n}
+\Pr_{P_n}\bigl(\theta_n\in\mathcal I_{\mathrm{gate}}(\kappa)\bigr)<1-\alpha
+\]
+or else has weakly larger worst-case expected length than
+\(\mathcal I_{\mathrm{SF}}(\kappa;C_{1-\alpha})\), with strict inequality on a nonempty open subclass of low-power local alternatives.
+\]
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Zero-radius corner]\label{cor:kappa0}
+Under Assumptions~\ref{ass:finite}--\ref{ass:range}, if \(\kappa=0\) then
+\(\mathcal U_{\mathrm{TV}}(g,0)=\{u:u_h=g_{-1}\ \forall h\}\), so
+\[
+\Theta_I(P;0)=\{\hat\theta-g_{-1}\textstyle\sum_{h=1}^H \omega_h\}\cap[-B,B].
+\]
+\end{corollary}
+
+This is the required reduction to the no-post-break corner. Under Assumption~\ref{ass:tv}, zero TV forces a flat post-treatment discrepancy path anchored at the last pre-period gap.
+
+\begin{corollary}[Exact-parallel-trends corner]\label{cor:parallel}
+Under Assumptions~\ref{ass:finite}--\ref{ass:range}, if \(g_{-1}=0\) and \(\kappa=0\), then
+\[
+\Theta_I(P;0)=\{\hat\theta\}\cap[-B,B].
+\]
+\end{corollary}
+
+This recovers the exact parallel-trends point-identified corner. The algebra is immediate from Corollary~\ref{cor:kappa0}.
+
+\begin{example}[Exhibit 9.1: rejected diagnostic but nonempty TV interval]\label{ex:reject}
+Take \(L=2\), \(H=2\), \(g=(-2,1)\), \(\omega=(1,-1)\), \(B=10\), and \(\hat\theta=3\). Then
+\[
+D_{\mathrm{pre}}(g)=|1-(-2)|=3.
+\]
+Suppose the chosen diagnostic rejects, so \(\varphi_\alpha(g,\Sigma_{\mathrm{pre}})=1\). For \(\kappa=1\), the path
+\[
+u=(1,-2)
+\]
+satisfies \(u_0=g_{-1}=1\) and
+\[
+\operatorname{TV}(u)=|1-1|+|-2-1|=3\le D_{\mathrm{pre}}(g).
+\]
+Hence \(u\in\mathcal U_{\mathrm{TV}}(g,1)\) and
+\[
+\omega^\transpose u=1-(-2)=3,
+\qquad
+\theta=\hat\theta-\omega^\transpose u=0.
+\]
+The interval therefore contains zero even though the diagnostic rejects. The internal-consistency check is explicit: the anchor matches \(g_{-1}\), the TV budget binds exactly, and \(|\omega^\transpose u|=3<B\).
+\end{example}
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:sharp} reduces to a finite-dimensional support-function problem on an anchored \(\ell_1\)-variation ball. The route is: headline interval \(\leftarrow\) unfold the identified-set definition \(\leftarrow\) reparameterize by first differences \(d_h=u_h-u_{h-1}\) \(\leftarrow\) express the bias \(\omega^\transpose u\) as a cumulative-sum functional of \(d_h\) \(\leftarrow\) solve the resulting linear program and cap by \(|\omega^\transpose u|\le B\). Theorem~\ref{thm:projection} reduces to confidence-set projection and the measurability of \(\Theta_I(\cdot;\kappa)\). Conjecture~\ref{conj:dominance} would require a local asymptotic comparison between the directional derivative of the identified-set map and the selection event generated by \(\varphi_\alpha\); the nontrivial step is to show that diagnostic gating discards or truncates exactly the realizations that drive low-power excess risk.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:sharp} and Theorem~\ref{thm:projection} are routine and should be provable from finite-dimensional convexity and confidence-set projection. Conjecture~\ref{conj:dominance} is the novel kernel and is not yet proved. The draft deliberately avoids a flagship claim about a closed-form TV dual norm or a cohort-to-aggregate exactness certificate, because those angles have already been rejected for this qid. The weakest modeling point is Assumption~\ref{ass:local}: the intended local asymptotic regime needs a careful differentiability statement for the map from \((\hat\theta,g)\) to \(\Theta_I(P;\kappa)\).
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) --- new angle built around selection-free TV-calibrated intervals after diagnostic rejection; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem{BilinskiHatfield2026NonInferiority}
+Alyssa Bilinski and Laura A. Hatfield.
+\newblock Nothing to see here? A non-inferiority approach to parallel trends.
+\newblock {\em Statistics in Medicine}, 45(3--5):e70296, 2026.
+
+\bibitem{BorusyakJaravelSpiess2024EventStudies}
+Kirill Borusyak, Xavier Jaravel, and Jann Spiess.
+\newblock Revisiting event-study designs: Robust and efficient estimation.
+\newblock {\em Review of Economic Studies}, 91(6):3253--3285, 2024.
+
+\bibitem{CallawaySantAnna2021MultiplePeriods}
+Brantly Callaway and Pedro H. C. Sant'Anna.
+\newblock Difference-in-differences with multiple time periods.
+\newblock {\em Journal of Econometrics}, 225(2):200--230, 2021.
+
+\bibitem{KahnLangLang2020PromisePitfalls}
+Melissa Kahn-Lang and Kevin Lang.
+\newblock The promise and pitfalls of differences-in-differences: Reflections on 16 and pregnant and other applications.
+\newblock {\em Journal of Business \& Economic Statistics}, 38(3):613--620, 2020.
+
+\bibitem{RambachanRoth2023CrediblePT}
+Ashesh Rambachan and Jonathan Roth.
+\newblock A more credible approach to parallel trends.
+\newblock {\em Review of Economic Studies}, 90(5):2555--2591, 2023.
+
+\bibitem{Roth2022PretestCaution}
+Jonathan Roth.
+\newblock Pretest with caution: Event-study estimates after testing for parallel trends.
+\newblock {\em American Economic Review: Insights}, 4(3):305--322, 2022.
+
+\bibitem{RothSantAnnaBilinskiPoe2023TrendingDiD}
+Jonathan Roth, Pedro H. C. Sant'Anna, Alyssa Bilinski, and John Poe.
+\newblock What's trending in difference-in-differences? A synthesis of the recent econometrics literature.
+\newblock {\em Journal of Econometrics}, 235(2):2218--2244, 2023.
+\end{thebibliography}
+
+\end{document}

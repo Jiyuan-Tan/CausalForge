@@ -1,0 +1,319 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_mte\_multi\_iv, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_mte\_multi\_iv} / \texttt{v1}%
+  \\ \large\textit{Observed-face quotient support and the LATE--PRTE frontier with multiple binary instruments}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a free-form PartialID proposal. The locked tuple is
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},\text{bounding functional})
+\]
+with the following meanings:
+\begin{itemize}[leftmargin=*]
+\item \(\texttt{qid}=\texttt{pid\_mte\_multi\_iv}\) and \(\texttt{specialization}=\texttt{v1}\).
+\item \(P\) is the observable law of \((Y,D,Z)\), where \(D\in\{0,1\}\), \(Z=(Z_1,\ldots,Z_m)\in\{0,1\}^m\) with \(m\geq 2\), and \(Y\) is scalar with known finite support interval \([\underline y,\overline y]\). Covariates are suppressed; all statements are conditional-on-\(X=x\) statements integrated over \(X\) when covariates are present.
+\item The latent-index selection convention is \(D_z=\one\{V\leq p_z\}\), \(V\sim {\rm Unif}[0,1]\), \(V\perp Z\), \(p_z=\Pr(D=1\mid Z=z)\in(0,1)\), and \(Y=dY_1+(1-d)Y_0\). The MTE curve is \(m(u)=\E[Y_1-Y_0\mid V=u]\).
+\item The target parameter is the policy-relevant treatment effect \(\theta_\star=\int_0^1 g_\star(u)m(u)\,du\), where \(g_\star\) is a known PRTE weight. Its degree-\(K\) Bernstein projection is \(a_\star=(\int_0^1 g_\star(u)B_{0,K}(u)du,\ldots,\int_0^1 g_\star(u)B_{K,K}(u)du)\).
+\item The identifying restrictions are multi-IV validity, the common scalar-index threshold-crossing convention \(D_z=\one\{V\le p_z\}\), positivity of every observed instrument cell used in a chord, and membership of \(m(u)=\sum_{k=0}^K\beta_kB_{k,K}(u)\) in a compact Bernstein-polynomial shape polytope \(\mathcal B_K\). This is the stronger full-threshold/IAM regime; \citet{MogstadTorgovitskyWalters2024} is used as the closest multiple-IV frontier, not as an assumption imported wholesale.
+\item The bounding functional is the sharp identified interval
+\[
+\Theta_I(P;g_\star)=
+\left[
+\min_{\beta\in\mathcal B_K}\ a_\star^\transpose\beta,\ 
+\max_{\beta\in\mathcal B_K}\ a_\star^\transpose\beta
+\right]
+\quad\text{subject to}\quad A(P)\beta=b(P),
+\]
+where each row of \(A(P)\) is the Bernstein projection of an admissible binary-IV propensity chord \(w_c(u)\) and \(b(P)\) is the corresponding observed IV-like estimand.
+\end{itemize}
+
+\begin{abstract}
+This proposal asks when several binary instruments with overlapping but non-nested propensity-score supports identify the same Bernstein-projected policy weight as the target PRTE, rather than only a collection of instrument-specific LATE or local MTE averages. The proposed kernel separates two notions that existing LP formulations leave implicit: zero width on the observed Bernstein feasible face, and genuine policy-mixture support by observable binary-IV margins. The flagship conjecture is a frontier result: vector-monotone LATE-type parameters can be point identified in the sense of \citet{Goff2024} while the target PRTE weight still has positive quotient-face residual width in the Bernstein MTE class. If true, the result would tell empirical researchers when adding binary instruments is genuinely policy-relevant rather than merely adding identified local IV evidence. It would also turn the qualitative extrapolation warning in the MTE literature into a computable quotient-rank, mixture-cone, and feasible-face-width diagnostic.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+MTE and PRTE methods are designed for policy questions, but binary instruments typically move only local margins of the treatment-choice distribution. With several binary instruments, recent work shows that multiple local margins can be combined under partial monotonicity, yet it remains unclear when the combined local evidence spans the policy margin a researcher actually wants. This matters because a tighter bound for the wrong weight is not a policy-relevance theorem.
+
+\paragraph{The main finding (proposed).}
+The first conjecture states that, for the observed feasible face generated by a degree-\(K\) Bernstein MTE class, exact PRTE identification is equivalent to zero projection of \(a_\star\) on the feasible-face difference space. A separate mixture clause characterizes when the same target is not only fixed on the observed face but also representable as a convex mixture of observed binary-IV local margins, after quotienting by directions that the Bernstein face already makes flat. The flagship conjecture uses this distinction to state a frontier: vector-monotone LATE-type point identification can coexist with positive PRTE feasible-face width on an open set of non-nested multi-IV laws.
+
+\paragraph{What is new.}
+The closest published papers either formulate the MTE policy-evaluation problem for a single instrument \citep{MogstadSantosTorgovitsky2018}, aggregate several instruments under partial monotonicity \citep{MogstadTorgovitskyWalters2024}, point-identify LATE-type parameters under vector monotonicity \citep{Goff2024}, or compute sharp binary-IV PRTE bounds \citep{HanYang2024}. The proposed novelty is not another finite LP. It is an iff frontier between three objects that those papers do not compare in one theorem: observed-face exact PRTE width, convex policy-mixture support by local binary-IV margins, and vector-monotone LATE point identification. The \(\varepsilon\)-gap is the residual width \(W_{\mathcal F(P)}(\rho_\star(P))\), which is zero for face identification but strictly positive in the conjectured open-set separation from Goff-style LATE identification.
+
+\paragraph{How it positions in the literature.}
+This is a partial-identification proposal in the MTE, IV-bounds, and shape-restriction cluster. It uses the Heckman--Vytlacil latent-index/MTE framework, the MST Bernstein-basis LP device, and the recent multiple-IV frontier as comparison points, but its maintained identifying convention is the stronger common scalar-index regime. Its object is a support-equivalence condition for policy weights rather than a generic identified-set computation.
+
+\paragraph{Implications for the community.}
+The direct consumer is the empirical multiple-instrument workflow in \citet{MogstadTorgovitskyWalters2024}: before interpreting several binary instruments as policy-relevant evidence, the researcher would report whether the target PRTE weight is fixed on the observed Bernstein face, whether it is a convex mixture of observed local margins, and whether the Goff-style LATE objects leave positive PRTE residual width.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers should stop treating ``more binary instruments'' or point-identified responsive-group LATEs as automatically policy-relevant and instead report the finite quotient-face residual for the specific PRTE weight they use.
+
+\section{Related work}
+\citet{Vytlacil2002} gives the equivalence between monotonicity and a latent threshold-crossing model, which is the selection foundation for MTE weights. \citet{HeckmanVytlacil2005} use the MTE to organize policy-relevant treatment effects and alternative IV estimands; this proposal keeps that policy-weight target but asks a finite support-comparison question. \citet{MogstadSantosTorgovitsky2018} express IV-like estimands and policy parameters as weighted averages of MTE/MTR functions and compute bounds with Bernstein-polynomial restrictions; the proposed result uses their single-instrument Bernstein benchmark as the limiting case but does not claim that their Section 6 states a multi-IV theorem. \citet{MogstadTorgovitsky2018Review} emphasizes that PRTE analysis usually requires extrapolating from instrument-affected people to policy-affected people; the residual feasible-face width proposed here is a finite diagnostic for exactly that extrapolation. \citet{MogstadTorgovitskyWalters2021} shows why full multiple-IV monotonicity is too restrictive, motivating partial monotonicity as the broader multiple-IV frontier. \citet{MogstadTorgovitskyWalters2024} develops MTE policy evaluation with multiple instruments under partial monotonicity and mutual consistency; this proposal works in the stronger common scalar-index regime and asks a different support question: when the combined information spans a specified PRTE weight modulo shape restrictions. \citet{Goff2024} characterizes LATE-type parameters point identified by vector monotonicity for multiple binary instruments; the proposed separation says those LATE targets need not imply PRTE support equivalence. \citet{HanYang2024} provides sharp LP bounds for policy-relevant weighted averages of the MTE with binary instruments; this proposal isolates the quotient-face and convex-mixture conditions that explain when such bounds correspond to the target policy weight rather than to residual extrapolation. \citet{Marx2024} gives analytic sharp bounds for MTE functionals using the full content of latent-index marginal distributions; it is adjacent because it highlights support content beyond mean IV moments, but it does not give a multi-binary-IV Bernstein quotient-face frontier.
+
+In-catalogue prior art is sparse for this exact kernel. \texttt{doc/API.md} Section 3 records ExactID and PartialID catalogues as seed-time placeholders for future \texttt{eid\_*} and \texttt{pid\_*} qids, with no promoted entry for multi-binary-IV MTE support equivalence. The banked \texttt{pid\_dose\_response\_iv/v1} proposal concerns a continuous-IV dose-response derivative under quantile-copula restrictions, not a Bernstein PRTE support cone. The accepted \texttt{pid\_ordinal\_late\_partial\_defiers/v1} proposal concerns ordinal-instrument LATE bounds under bounded defiers, not MTE policy-weight support. The downgraded \texttt{pid\_iv\_bounded\_defier\_envelope/v1} and \texttt{pid\_dynamic\_iv\_compliance/v1} artefacts warn that generic finite LP duality is insufficient; the present proposal therefore makes the named observed-face/convex-mixture distinction and Goff LATE--PRTE frontier, not LP existence, the novelty kernel.
+
+\section{Formal setup}
+Let \(Z=(Z_1,\ldots,Z_m)\in\{0,1\}^m\), \(m\geq2\), and let \(\mathcal Z_+\subseteq\{0,1\}^m\) be the set of instrument cells with positive probability. For \(z\in\mathcal Z_+\), write \(p_z=\Pr(D=1\mid Z=z)\). Let \(B_{k,K}(u)=\binom Kk u^k(1-u)^{K-k}\) and \(B_K(u)=(B_{0,K}(u),\ldots,B_{K,K}(u))^\transpose\). An admissible chord is an ordered pair \(c=(z,z')\) with \(p_{z'}\neq p_z\). Its local weight is
+\[
+w_c(u)=\frac{\one\{u\in[\min(p_z,p_{z'}),\max(p_z,p_{z'}))\}}{|p_{z'}-p_z|},
+\]
+and its degree-\(K\) Bernstein projection is \(a_c=(\int_0^1 w_c(u)B_{0,K}(u)du,\ldots,\int_0^1 w_c(u)B_{K,K}(u)du)\in\mathbb R^{K+1}\). Let \(\mathcal C(P)\) be the finite set of retained admissible chords. Let \(A(P)\) be the matrix with rows \(a_c^\transpose\) for all \(c\in\mathcal C(P)\) and let \(b(P)\) collect the corresponding observed IV-like estimands.
+
+The MTE curve is restricted to the Bernstein shape class \(m_\beta(u)=B_K(u)^\transpose\beta\), where \(\beta\in\mathcal B_K=\{\beta\in\mathbb R^{K+1}:\ell\leq\beta\leq r,\ R\beta\leq s\}\). The target PRTE is \(\theta_\star=a_\star^\transpose\beta\), where \(a_\star=\int_0^1g_\star(u)B_K(u)du\). The identified set is
+\[
+\Theta_I(P;g_\star)=\{a_\star^\transpose\beta:\beta\in\mathcal B_K,\ A(P)\beta=b(P)\}.
+\]
+Define the signed support span \(S(P)=\operatorname{span}\{a_c:c\in\mathcal C(P)\}\), the policy cone \(\mathsf K(P)=\overline{\operatorname{cone}}\{a_c:c\in\mathcal C(P)\}\), the feasible face \(\mathcal F(P)=\{\beta\in\mathcal B_K:A(P)\beta=b(P)\}\), its difference space \(L_{\mathcal F}(P)=\operatorname{span}\{\beta-\beta':\beta,\beta'\in\mathcal F(P)\}\), its flat normal space \(N_{\mathcal F}(P)=L_{\mathcal F}(P)^\perp\), and the shape-adjusted residual \(\rho_\star(P)=\Pi_{L_{\mathcal F}(P)}a_\star\). For a compact set \(C\), write \(h_C(q)=\sup_{x\in C}q^\transpose x\). The feasible-face width in direction \(q\) is \(W_{\mathcal F(P)}(q)=h_{\mathcal F(P)}(q)+h_{\mathcal F(P)}(-q)\).
+The signed quotient support condition is \(a_\star\in S(P)+N_{\mathcal F}(P)\). The convex policy-mixture condition is \(a_\star\in\operatorname{conv}\{a_c:c\in\mathcal C(P)\}+N_{\mathcal F}(P)\), where the convex hull rather than the signed span is used because a policy mixture must average observable local margins with nonnegative weights summing to one.
+
+\begin{quote}
+\begin{verbatim}
+Locked tuple:
+(qid, specialization, P, theta, identifying restrictions, bounding functional)
+qid = pid_mte_multi_iv
+specialization = v1
+P = observable law of (Y,D,Z), D binary, Z in {0,1}^m, m >= 2
+theta = PRTE theta_* = int_0^1 g_*(u) m(u) du
+identifying restrictions = multi-IV validity, common scalar-index
+  threshold crossing, positive observed instrument cells, compact
+  Bernstein shape polytope B_K
+bounding functional = min/max a_*' beta subject to beta in B_K and
+  A(P) beta = b(P), with A(P) built from projected binary-IV chords
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Latent-index MTE validity]\label{ass:latent-index}
+For every \(z\in\mathcal Z_+\), \(D_z=\one\{V\leq p_z\}\), \(V\sim{\rm Unif}[0,1]\), \(V\perp Z\), consistency holds for \(D\) and \(Y\), and \(m(u)=\E[Y_1-Y_0\mid V=u]\) is well-defined and integrable on \([0,1]\).
+\end{assumption}
+
+\begin{assumption}[Common-index chord coherence]\label{ass:partial-monotone}
+The admissible chord set \(\mathcal C(P)\) contains all observed instrument-cell comparisons with distinct propensities under the single common scalar-index equation \(D_z=\one\{V\le p_z\}\). The chord moment \(b_c(P)\) is interpreted as the normalized mean-outcome contrast induced by the interval between \(p_z\) and \(p_{z'}\); no separate instrument-specific threshold equation or MTW partial-monotonicity structure is imposed.
+\end{assumption}
+
+\begin{assumption}[Positive non-nested binary support]\label{ass:support}
+Every \(z\in\mathcal Z_+\) has \(\Pr(Z=z)>0\), and all retained chord denominators satisfy \(|p_{z'}-p_z|>0\). The flagship multi-IV separation statements additionally require at least two admissible chords whose Bernstein projections are non-collinear.
+\end{assumption}
+
+\begin{assumption}[Vector-monotone comparison property]\label{ass:vector-monotone}
+For Conjecture \ref{conj:late-separation}, the observable laws considered also satisfy the vector-monotonicity ordering conditions used by \citet{Goff2024} to point-identify the relevant responsive-group LATE-type parameters. This comparison property is not used to generate the chord moment equations in \(A(P)\beta=b(P)\).
+\end{assumption}
+
+\begin{assumption}[Bernstein shape polytope]\label{ass:bernstein}
+For a fixed degree \(K\geq1\), \(m(u)=B_K(u)^\transpose\beta\) with \(\beta\in\mathcal B_K=\{\beta:\ell\leq\beta\leq r,\ R\beta\leq s\}\), where \(\mathcal B_K\) is compact, convex, nonempty, and has nonempty relative interior.
+\end{assumption}
+
+\begin{assumption}[Observed chord moments]\label{ass:moments}
+For every \(c\in\mathcal C(P)\), the observed IV-like estimand \(b_c(P)\) equals \(a_c^\transpose\beta\) under Assumptions \ref{ass:latent-index}--\ref{ass:partial-monotone}. The matrix \(A(P)\) is formed by stacking the row vectors \(a_c^\transpose\) after dropping duplicate rows.
+\end{assumption}
+
+\begin{assumption}[Target PRTE weight]\label{ass:target}
+The target weight \(g_\star\in L^1[0,1]\) is known, \(\int_0^1g_\star(u)du=1\), and its Bernstein projection \(a_\star=\int_0^1g_\star(u)B_K(u)du\) is the target vector for \(\theta_\star=a_\star^\transpose\beta\).
+\end{assumption}
+
+\begin{assumption}[Nondegenerate feasible face]\label{ass:nondegenerate}
+The feasible set \(\mathcal F(P)=\{\beta\in\mathcal B_K:A(P)\beta=b(P)\}\) is nonempty and has relative interior within \(\mathcal B_K\cap\{\beta:A(P)\beta=b(P)\}\). For the separation statement, the class of observable laws considered allows small perturbations of \(b(P)\) preserving Assumptions \ref{ass:latent-index}--\ref{ass:moments}.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Finite Bernstein LP and dual support form]\label{thm:lp-dual}
+Under Assumptions \ref{ass:latent-index}--\ref{ass:nondegenerate}, the sharp Bernstein-class identified interval for \(\theta_\star\) is the primal LP
+\[
+L_\star(P)=\min_{\beta\in\mathcal B_K}\ a_\star^\transpose\beta\quad\text{and}\quad
+U_\star(P)=\max_{\beta\in\mathcal B_K}\ a_\star^\transpose\beta
+\quad\text{subject to}\quad A(P)\beta=b(P).
+\]
+Equivalently, \(U_\star(P)\) is the support function of the feasible polytope \(\mathcal F(P)\) evaluated at \(a_\star\), and \(L_\star(P)=-h_{\mathcal F(P)}(-a_\star)\). If \(a_\star=A(P)^\transpose\lambda\), then \(\theta_\star=\lambda^\transpose b(P)\) for every feasible \(\beta\), so the PRTE projection is exactly identified inside the Bernstein class.
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) This is a baseline theorem, not the flagship novelty claim: finite Bernstein LP and support-function duality are already present in \citet{MogstadSantosTorgovitsky2018} and in the binary-IV LP machinery of \citet{HanYang2024}. The only role of this theorem is to fix the multi-chord notation and the feasible face used by the conjectures below. (b) The concrete consumer is the computational framework in \citet{HanYang2024}: it would gain a transparent diagnostic target before solving a large nonparametric LP, but the publishable claim is the observed-face/mixture distinction in Conjecture \ref{conj:cone-equivalence} and the Goff frontier in Conjecture \ref{conj:late-separation}.
+
+\begin{conjecture}[Observed-face quotient support and policy-mixture equivalence (NOT YET PROVED)]\label{conj:cone-equivalence}
+Under Assumptions \ref{ass:latent-index}--\ref{ass:nondegenerate}, fix an observable law \(P\) and its observed feasible face \(\mathcal F(P)\). The following are equivalent:
+\begin{enumerate}[label=(\roman*),leftmargin=*]
+\item The target PRTE projection has zero width on the observed Bernstein feasible face: \(a_\star^\transpose\beta=a_\star^\transpose\beta'\) for all \(\beta,\beta'\in\mathcal F(P)\).
+\item \(\rho_\star(P)=0\), equivalently \(a_\star\in N_{\mathcal F}(P)\), where \(N_{\mathcal F}(P)=L_{\mathcal F}(P)^\perp\) is the normal space to the affine hull of the observed feasible face.
+\end{enumerate}
+In addition, the target is a policy-mixture average of observable local margins if and only if there are weights \(\omega_c\ge0\) with \(\sum_c\omega_c=1\) such that
+\[
+a_\star-\sum_{c\in\mathcal C(P)}\omega_ca_c\in N_{\mathcal F}(P).
+\]
+This convex-mixture condition is stronger than observed-face zero width: zero width only requires \(a_\star\in N_{\mathcal F}(P)\), while mixture support requires \(a_\star\in\operatorname{conv}\{a_c:c\in\mathcal C(P)\}+N_{\mathcal F}(P)\). If \(\rho_\star(P)\neq0\), then the remaining extrapolation width is the feasible-face support width in the shape-adjusted residual direction:
+\[
+U_\star(P)-L_\star(P)
+=W_{\mathcal F(P)}(\rho_\star(P))
+=h_{\mathcal F(P)}(\rho_\star(P))+h_{\mathcal F(P)}(-\rho_\star(P)).
+\]
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{MogstadTorgovitskyWalters2024} show that multiple instruments can be aggregated under partial monotonicity, and \citet{HanYang2024} compute sharp binary-IV bounds, but neither separates observed-face exactness from convex policy-mixture support after quotienting by the normal space of the Bernstein feasible face. The \(\varepsilon\)-gap is \(W_{\mathcal F(P)}(\rho_\star(P))\) together with the stricter mixture residual \(a_\star-\operatorname{conv}\{a_c\}-N_{\mathcal F}(P)\): an LP bound can have zero observed-face width without proving that the policy weight is a convex average of observed local margins. (b) Resolving it would give users of the \citet{MogstadSantosTorgovitsky2018} Bernstein benchmark and the \citet{HanYang2024} binary-IV computation a checkable condition for when several binary instruments recover the target policy weight rather than only narrowing extrapolation under shape restrictions.
+
+\begin{conjecture}[Strict LATE--PRTE support frontier (NOT YET PROVED)]\label{conj:late-separation}
+Under Assumptions \ref{ass:latent-index}--\ref{ass:nondegenerate}, there exists an open set of observable laws with two or more non-nested binary instruments satisfying Assumption \ref{ass:vector-monotone} such that the vector-monotone LATE-type parameters described by \citet{Goff2024} are point identified for all instrument-responsive groups, while a prespecified PRTE weight fails both quotient support tests:
+\[
+\rho_\star(P)\neq0
+\quad\text{and}\quad
+a_\star\notin \operatorname{conv}\{a_c:c\in\mathcal C(P)\}+N_{\mathcal F}(P).
+\]
+On this open set, point identification of the LATE-type responsive-group averages coexists with a nonzero PRTE feasible-face width \(W_{\mathcal F(P)}(\rho_\star(P))>0\), and the sign of this width is stable under small perturbations of \(b(P)\), the propensities \(p_z\), and the active Bernstein face.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) The closest paper is \citet{Goff2024}, which gives constructive point identification for a class of causal parameters under vector monotonicity with binary instruments. The proposed \(\varepsilon\)-gap is a shape-adjusted policy-weight residual and mixture-cone failure: LATE point identification can hold while \(W_{\mathcal F(P)}(\rho_\star(P))>0\) and \(a_\star\notin\operatorname{conv}\{a_c\}+N_{\mathcal F}(P)\) for the PRTE target. This is a frontier between named estimands, not a restatement of the Han--Yang or MST LP. (b) The concrete consumer is applied multi-IV work on returns to education and similar settings using several binary eligibility or encouragement instruments; the result would warn that identified responsive-group effects need not answer the policy-margin question.
+
+\begin{example}[Diagnostic small-support calculation]\label{ex:small-support}
+For \(m=2\), take four positive instrument cells with non-nested propensities \(p_{00}<p_{10}<p_{01}<p_{11}\) and \(K=2\). If \(p_{00}=1/5\), \(p_{10}=2/5\), \(p_{01}=3/5\), and \(p_{11}=4/5\), the adjacent-chord Bernstein rows are
+\[
+\left(\frac{37}{75},\frac{31}{75},\frac{7}{75}\right),\quad
+\left(\frac{19}{75},\frac{37}{75},\frac{19}{75}\right),\quad
+\left(\frac{7}{75},\frac{31}{75},\frac{37}{75}\right).
+\]
+These rows give a concrete \(A(P)\) for checking \(L_{\mathcal F}(P)\), \(N_{\mathcal F}(P)\), \(\rho_\star(P)\), and \(W_{\mathcal F(P)}(\rho_\star(P))\). The conjectured separation is expected at the first degree/support configuration where the active Bernstein face leaves a nonzero direction outside the convex hull of observed chord rows; this example is the proposed algebraic testbed rather than a completed proof.
+\end{example}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Single-instrument MST limit]\label{cor:mst-limit}
+If \(\mathcal C(P)\) contains only one binary-IV chord and the Bernstein shape inequalities add no extra flat directions beyond the chord equation, then Conjecture \ref{conj:cone-equivalence} reduces to the MST single-instrument condition that the Bernstein projection of the target PRTE weight be proportional to the projection of the instrument's IV weight modulo the feasible-face normal space. Under Assumptions \ref{ass:latent-index}--\ref{ass:nondegenerate}, after replacing the multi-IV non-collinearity clause by the single retained chord, the LP in Theorem \ref{thm:lp-dual} is exactly the single-instrument Bernstein LP benchmark of \citet{MogstadSantosTorgovitsky2018}.
+\end{corollary}
+
+\begin{corollary}[Homogeneous MTE check]\label{cor:homogeneous}
+If \(\mathcal B_K\) is restricted to constant MTE curves \(m(u)=\beta_0\), then every normalized weight has the same evaluation on the one-dimensional constant subspace. Thus \(W_{\mathcal F(P)}(a_\star-a_c)=0\) for any retained normalized chord \(c\), even though the Euclidean row-span residual of \(a_\star\) in \(\mathbb R^{K+1}\) need not vanish. LATE, MTE averages, and PRTE collapse to the common treatment effect, matching the standard homogeneous-effects sanity check.
+\end{corollary}
+
+\begin{corollary}[Convex-mixture policy check]\label{cor:mixture}
+If \(a_\star-\sum_{c\in\mathcal C(P)}\omega_c a_c\in N_{\mathcal F}(P)\) with \(\omega_c\geq0\) and \(\sum_c\omega_c=1\), then under Assumption \ref{ass:moments} the target PRTE equals \(\sum_c\omega_c b_c(P)\) plus a feasible-face constant for every feasible \(\beta\). When the normal-space term is zero, this is the exact case in which a reported PRTE is a genuine mixture of observed local binary-IV margins.
+\end{corollary}
+
+\section{Proof-sketch route}
+The proof route is finite-dimensional convex analysis. First derive the chord moment identity \(b_c=a_c^\transpose\beta\) from the latent-index selection equation by integrating the MTE over the propensity interval for each admissible binary-IV chord. Second stack these moments into \(A\beta=b\) and apply LP strong duality for compact polytopes to obtain Theorem \ref{thm:lp-dual}. Third prove the fixed-face support claim by decomposing \(a_\star\) into its projection on \(L_{\mathcal F}(P)\) and \(N_{\mathcal F}(P)\), then use the support-function identity \(W_{\mathcal F}(a)=W_{\mathcal F}(\Pi_{L_{\mathcal F}}a)\) to show that observed-face zero width is equivalent to \(\rho_\star=0\). Fourth separate this from policy-mixture support by replacing the signed span with the convex hull of chord rows and checking whether the quotient class of \(a_\star\) lies in \(\operatorname{conv}\{a_c\}+N_{\mathcal F}\). The boundary cases needing explicit algebra are \(m=2\), \(K=1,2\) for zero-width and mixture support, followed by the first \(K\) or active-face configuration with a nonzero residual for the Goff separation; the calculation in Example \ref{ex:small-support} is the starting testbed.
+
+\section{Honest scope flags}
+Theorem \ref{thm:lp-dual} is labelled as a theorem because it is routine finite LP and support-function algebra once the chord moment identities are accepted; it is not claimed as the flagship contribution. Conjecture \ref{conj:cone-equivalence} is not yet proved as a CausalSmith theorem because the quotient support and convex-mixture clauses still need to be integrated with the sharp Bernstein feasible-face construction. Conjecture \ref{conj:late-separation} is the flagship open claim: it requires an open-set construction showing that Goff-style vector-monotone LATE point identification and PRTE quotient support are distinct. The proposal deliberately withdraws the burned angle-0 claim that the improvement over the best single-IV MST interval equals a projected moment-cone width, and it withdraws the v1 row-span criterion \(r_\star=0\) because it ignored Bernstein shape-polytope flat faces. The maintained regime is the stronger common scalar-index/IAM convention, not the full MTW partial-monotonicity model; extending the support-frontier result to MTW's weaker regime remains outside this version.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for angle 1, replacing the burned joint-width-improvement kernel with a Bernstein-cone support-equivalence kernel; prior verdict: none.
+\item v2 (revise) -- repaired the novelty and soundness flags by demoting the LP result to baseline status, replacing the row-span residual with the shape-adjusted feasible-face residual \(\rho_\star\), withdrawing the MST Section 6 future-work claim, and making the common scalar-index regime explicit; prior verdict: REVISE.
+\item v3 (revise) -- split Conjecture 1 into fixed observed-face zero-width and convex policy-mixture clauses, removed the uniform-in-\(b\) quantifier, and made the Goff LATE--PRTE separation the flagship novelty claim; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Vytlacil(2002)]{Vytlacil2002}
+Vytlacil, Edward. 2002.
+``Independence, Monotonicity, and Latent Index Models: An Equivalence Result.''
+\emph{Econometrica} 70(1): 331--341.
+
+\bibitem[Heckman and Vytlacil(2005)]{HeckmanVytlacil2005}
+Heckman, James J., and Edward Vytlacil. 2005.
+``Structural Equations, Treatment Effects, and Econometric Policy Evaluation.''
+\emph{Econometrica} 73(3): 669--738.
+
+\bibitem[Mogstad, Santos, and Torgovitsky(2018)]{MogstadSantosTorgovitsky2018}
+Mogstad, Magne, Andres Santos, and Alexander Torgovitsky. 2018.
+``Using Instrumental Variables for Inference About Policy Relevant Treatment Parameters.''
+\emph{Econometrica} 86(5): 1589--1619.
+
+\bibitem[Mogstad and Torgovitsky(2018)]{MogstadTorgovitsky2018Review}
+Mogstad, Magne, and Alexander Torgovitsky. 2018.
+``Identification and Extrapolation of Causal Effects with Instrumental Variables.''
+\emph{Annual Review of Economics} 10: 577--613.
+
+\bibitem[Mogstad, Torgovitsky, and Walters(2021)]{MogstadTorgovitskyWalters2021}
+Mogstad, Magne, Alexander Torgovitsky, and Christopher R. Walters. 2021.
+``The Causal Interpretation of Two-Stage Least Squares with Multiple Instrumental Variables.''
+\emph{American Economic Review} 111(11): 3663--3698.
+
+\bibitem[Mogstad, Torgovitsky, and Walters(2024)]{MogstadTorgovitskyWalters2024}
+Mogstad, Magne, Alexander Torgovitsky, and Christopher R. Walters. 2024.
+``Policy Evaluation with Multiple Instrumental Variables.''
+\emph{Journal of Econometrics} 243(1--2): 105718.
+
+\bibitem[Goff(2024)]{Goff2024}
+Goff, Leonard. 2024.
+``A Vector Monotonicity Assumption for Multiple Instruments.''
+\emph{Journal of Econometrics} 241(1): 105735.
+
+\bibitem[Han and Yang(2024)]{HanYang2024}
+Han, Sukjin, and Shenshen Yang. 2024.
+``A Computational Approach to Identification of Treatment Effects for Policy Evaluation.''
+\emph{Journal of Econometrics} 240(1): 105680.
+
+\bibitem[Marx(2024)]{Marx2024}
+Marx, Philip. 2024.
+``Sharp Bounds in the Latent Index Selection Model.''
+\emph{Journal of Econometrics} 238(2): 105561.
+\end{thebibliography}
+
+\end{document}

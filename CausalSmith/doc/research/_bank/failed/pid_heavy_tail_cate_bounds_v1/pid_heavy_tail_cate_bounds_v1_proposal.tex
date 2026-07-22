@@ -1,0 +1,292 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_heavy\_tail\_cate\_bounds, specialization=v1
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_heavy\_tail\_cate\_bounds} / \texttt{v1}%
+  \\ \large\textit{A moment-existence dichotomy for sharp CATE partial identification under MSM($\Gamma$): finite width iff the conditional outcome admits a finite $\alpha$-th moment for some $\alpha>1$}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{itemize}[leftmargin=2em,itemsep=2pt]
+\item \textbf{qid}: \texttt{pid\_heavy\_tail\_cate\_bounds}.
+\item \textbf{specialization}: \texttt{v1}.
+\item \textbf{Observable distribution $P$}: joint law of $(X,A,Y)$ on $\mathcal{X}\times\{0,1\}\times\R$, where $X$ is a vector of pre-treatment covariates, $A$ is binary treatment, $Y$ is a real-valued (possibly unbounded) outcome. The data consists of i.i.d.\ draws from $P$.
+\item \textbf{Parameter $\theta$}: conditional average treatment effect $\tau(x):=\E[Y(1)-Y(0)\mid X=x]$, evaluated at a fixed $x\in\mathcal{X}$ with $\Pr(X=x)>0$ or $x$ a Lebesgue point of the conditional law.
+\item \textbf{Identifying restrictions}: (i) strict overlap $e(x):=\Pr(A=1\mid X=x)\in[\varepsilon,1-\varepsilon]$ with $\varepsilon\in(0,1/2)$ fixed; (ii) Tan-style marginal sensitivity model MSM($\Gamma$) with $\Gamma>1$ bounding the conditional odds ratio between the full and observed propensities (Definition~\ref{def:msm}); (iii) a tail restriction on the conditional outcome laws $P_{Y(a)\mid X=x}$, parameterized by a tail index $\alpha\in(1,\infty)$ or by the negation ``no such $\alpha>1$ exists''.
+\item \textbf{Bounding functional}: the sharp CATE identified set $\Theta_I^{\Gamma}(P)(x)\subseteq\R$ (Definition~\ref{def:identified-set}); the principal quantity is its Lebesgue width $W_{\Gamma}(P)(x):=\sup\Theta_I^{\Gamma}(P)(x)-\inf\Theta_I^{\Gamma}(P)(x)\in[0,+\infty]$.
+\end{itemize}
+
+\begin{abstract}
+We study sharp partial identification of the conditional average treatment effect (CATE) $\tau(x)$ under the marginal sensitivity model MSM($\Gamma$) with $\Gamma>1$ and strict propensity overlap $e(x)\in[\varepsilon,1-\varepsilon]$, when the outcome law is permitted to be unbounded. The flagship claim is a moment-existence dichotomy: the sharp identified-set width $W_{\Gamma}(P)(x)$ is finite if and only if the conditional outcome law $P_{Y\mid X=x,A=a}$ admits a finite $\alpha$-th absolute moment for some $\alpha>1$. Sufficiency yields a closed-form upper bound $\overline{W}_{\Gamma,\alpha}(x)$ that recovers the bounded-support Manski--MSM($\Gamma$) width in the $\alpha\to\infty$ limit; necessity is the non-trivial half --- if no $\alpha>1$ moment exists, then in every weak-$*$ neighborhood of $P$ (restricted to MSM($\Gamma$) and strict overlap) there exists $P'$ with $W_{\Gamma}(P')(x)=+\infty$. Resolution would supply the first overlap-anchored, alpha-indexed characterization of when MSM($\Gamma$) CATE bounds are non-vacuous, closing the gap between bounded-outcome sharpness results \citep{KallusMaoZhou2019CATEIntervals,YadlowskyNamkoongBasuDuchiTian2022Bounds} and the heavy-tail vacuity warnings raised by \citet{AsiaeePalBeckHuling2026SharpGeneralization}. The flagship statement is a Conjecture; the limit corollary is provable.
+\end{abstract}
+
+\section{Introduction}
+
+\paragraph{P1 --- Question and main claim.}
+When does the marginal sensitivity model MSM($\Gamma$) yield non-vacuous sharp CATE bounds for unbounded outcomes? Equivalently, what is the exact moment condition on the conditional outcome law that separates the regime in which the sharp identified-set width $W_{\Gamma}(P)(x)$ is finite from the regime in which it is infinite, holding strict overlap $e(x)\in[\varepsilon,1-\varepsilon]$ fixed? We conjecture a clean dichotomy at $\alpha^{*}=1$: $W_{\Gamma}(P)(x)<\infty$ holds if and only if $\E[|Y|^{\alpha}\mid X=x,A=a]<\infty$ for some $\alpha>1$, with the converse direction holding robustly --- it fails on a weak-$*$ dense set of $P$ whenever this moment is absent.
+
+\paragraph{P2 --- What is new vs.\ closest prior art, and where it lives.}
+The two closest published comparators are \citet[Theorem~1, eqn.\ (4)]{KallusMaoZhou2019CATEIntervals} and \citet[Theorem~3.1]{YadlowskyNamkoongBasuDuchiTian2022Bounds}, both of which derive sharp CATE-style bounds under MSM($\Gamma$) but explicitly assume the outcome is bounded a.s.\ for the sharpness argument; the gap closed is the precise moment-existence dichotomy at $\alpha^{*}=1$ separating finite from infinite sharp width when boundedness is dropped, plus a recovery of the bounded-support Manski--MSM($\Gamma$) width as the $\alpha\to\infty$ limit. A third comparator, \citet[\S 5 ``Outcome-shift vacuity'']{AsiaeePalBeckHuling2026SharpGeneralization}, observes informally that unbounded outcomes can render likelihood-ratio worst-case means vacuous but does not isolate $\alpha$ as the width-controlling parameter or identify the critical exponent. The kernel lives in \emph{partial identification} (within the marginal-sensitivity / Manski-style bounds cluster), not panel and not exact-ID.
+
+\paragraph{P3 --- Consumer.}
+The immediate downstream consumer is \citet{JungKang2026ITBounds}, who claim sharp partial identification of conditional causal effects without bounded outcomes via propensity-derived $f$-divergence bounds; the dichotomy supplies the missing alpha-indexed characterization that determines when their bounds are non-vacuous --- a flagship-aspirant $f$-divergence bound under MSM($\Gamma$) becomes a corollary of the sufficiency direction, restricted to $\alpha>1$ moment families. A reader who takes only the conclusion away replaces the bounded-outcome boilerplate assumption in MSM($\Gamma$) CATE analyses with the much weaker ``$\alpha>1$ conditional moment'' assumption, and gains a sharp criterion for when CATE inference under sensitivity analysis is well-posed for fat-tailed empirical outcomes (insurance claims, financial returns, wealth, social-network traffic).
+
+\paragraph{P4 --- Results at a glance.}
+\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
+\item \textbf{Conjecture 1 (Moment dichotomy --- flagship).} Under strict overlap A1 and MSM($\Gamma$) A2, the sharp CATE width $W_{\Gamma}(P)(x)$ is finite iff $\E[|Y|^{\alpha}\mid X=x,A=a]<\infty$ for some $\alpha>1$; the failure direction is robust in weak-$*$ neighborhoods. \textit{Gap:} closes the unbounded-outcome lacuna of \citet[Thm.~1]{KallusMaoZhou2019CATEIntervals} and \citet[Thm.~3.1]{YadlowskyNamkoongBasuDuchiTian2022Bounds}, which assume bounded $Y$; sharpens the informal vacuity observation of \citet[\S 5]{AsiaeePalBeckHuling2026SharpGeneralization} into an iff frontier. \textit{Consumer:} \citet{JungKang2026ITBounds} CLeaR $f$-divergence CATE bounds.
+\item \textbf{Theorem 2 (Closed-form sufficient upper bound).} Under A1, A2, and A3$(\alpha,M_{\alpha}(x))$ with $\alpha>1$, the sharp width satisfies $W_{\Gamma}(P)(x)\le \overline{W}_{\Gamma,\alpha}(x)$ where $\overline{W}_{\Gamma,\alpha}(x):=2(\Gamma-1)\Gamma^{-1/\alpha}\varepsilon^{-1+1/\alpha}M_{\alpha}(x)^{1/\alpha}\cdot c(\alpha)$ and $c(\alpha)$ is the Hölder constant tied to conjugate exponents $(\alpha,\alpha/(\alpha-1))$. \textit{Gap:} parallel to but strictly weaker (looser; not necessarily sharp) than the closed-form MSM($\Gamma$) widths of \citet{KallusMaoZhou2019CATEIntervals,YadlowskyNamkoongBasuDuchiTian2022Bounds}; the novelty is the explicit $\alpha$-dependence and the $\alpha\to\infty$ Manski limit. \textit{Consumer:} replaces the bounded-outcome boilerplate in applied MSM($\Gamma$) sensitivity analyses.
+\item \textbf{Conjecture 3 (Pareto-extremal converse witness).} If $\E[|Y|^{\alpha}\mid X=x,A=a]=\infty$ for every $\alpha>1$, then for every weak-$*$ open neighborhood $U$ of $P$ (in $\mathcal{P}_{\Gamma,\varepsilon}$, the set of laws satisfying A1+A2) there exists $P'\in U$ with $W_{\Gamma}(P')(x)=+\infty$; the witness is a truncated-Pareto family with index $\alpha_n\downarrow 1$. \textit{Gap:} the necessity direction of the iff in Conjecture~1; no prior work has constructed this witness because the prior literature stays inside the bounded-outcome interior of $\mathcal{P}_{\Gamma,\varepsilon}$. \textit{Consumer:} closes the converse direction needed to certify that the $\alpha^{*}=1$ threshold is sharp.
+\end{itemize}
+
+\section{Related work}
+
+\paragraph{Sharp CATE bounds under MSM($\Gamma$) with bounded outcomes.}
+\citet{KallusMaoZhou2019CATEIntervals} (AISTATS 2019, Theorem~1) derive sharp pointwise CATE intervals under MSM($\Gamma$) by writing the worst-case treated/control means as quantile-trimming optimization over bounded outcomes. \citet{YadlowskyNamkoongBasuDuchiTian2022Bounds} (Annals of Statistics 2022, Theorem~3.1) extend this to scalable sharp ATE/CATE bounds under the $\Gamma$-selection-bias model with orthogonal estimating equations, again invoking bounded outcomes for the sharpness argument. \citet{Tan2006MSM} (JASA 2006) introduced the marginal sensitivity model that MSM($\Gamma$) extends, with the bounded-outcome assumption baked in to ensure dual existence.
+
+\paragraph{Heavy-tail vacuity warnings and unbounded-outcome bound constructions.}
+\citet{AsiaeePalBeckHuling2026SharpGeneralization} (CLeaR/PMLR 2026) prove sharp likelihood-ratio outcome-shift bounds and remark (their \S 5) that without an outcome-tail restriction, worst-case means under LR shifts are vacuous --- but they do not isolate a tail index as the controlling parameter. \citet{JungKang2026ITBounds} (CLeaR/PMLR 2026) claim sharp partial identification of conditional causal effects without bounded outcomes via propensity-derived $f$-divergence bounds; their construction is abstract through divergence duality and does not yield $\alpha$-indexed width laws. \citet{LordanSalehzadehNobari2026TailUncertainty} (SSRN 2026) frame Manski-style endpoints as support-dependent and note credible support bounds are often unavailable for heavy tails, but their target is confidence-band construction rather than alpha-dependent sharp width.
+
+\paragraph{Manski-style sharp bounds and selection-probability intervals.}
+\citet{Manski1990AERBounds} (AER 1990) anchored the modern partial-identification literature with sharp ATE bounds requiring outcome support; \citet{AronowLee2013BoundedSelection} (Biometrika 2013) gave sharp mean bounds under bounded but unknown selection probabilities --- this template is the closest in spirit to bounded-propensity heavy-tail CATE bounds, but it assumes bounded support. \citet{MiratrixWagerZubizarreta2018ShapeConstrained} (Biometrika 2018) showed shape constraints can tighten Aronow--Lee, again under bounded support.
+
+\paragraph{In-repo prior art (CausalSmith catalogue).}
+The closest banked proposals are \texttt{pid\_offline\_policy\_joint\_misspec/v1} (bounded $f$-divergence and bounded sup-norm outcome-regression misspecification --- not heavy-tail), \texttt{eid\_proximal\_phase/v1} (point/interval/Manski phase transition driven by a proximal-completeness operator singular value $\sigma_{\min}$, not by a tail index), \texttt{pid\_qte\_marginal\_sensitivity/v1} (covariate-by-covariate odds-ratio sensitivity but quantile target), \texttt{pid\_mte\_multi\_iv/v1} (primal/dual moment-cone-width template for PRTE bounds), and \texttt{pid\_rdd\_manipulation\_bounded/v1} (sharp cap/trimming endpoints under bounded manipulation). None of these characterizes the conditional moment dichotomy for MSM($\Gamma$) CATE width.
+
+\paragraph{Auxiliary mathematical substrate.}
+\citet{Karamata1933} (regular variation and slowly varying functions) supplies the analytic substrate for the converse witness in Conjecture~3; \citet{Resnick2007HeavyTail} is the standard reference for regularly varying tails and Pareto-extremal couplings. \citet{Strassen1965} gives the existence of couplings under marginal constraints used in the dual-program identification.
+
+\section{Formal setup}
+
+We work in the partial-identification framework. Let $(X,A,Y,Y(0),Y(1))$ be drawn from a full-data law $Q$ on $\mathcal{X}\times\{0,1\}\times\R\times\R\times\R$, with $Y=Y(A)$ (consistency) and $X$ pre-treatment. Let $P:=Q_{(X,A,Y)}$ be the observable marginal; $P$ alone is observed, $Q$ is not. Let $e(x):=\Pr_Q(A=1\mid X=x)$ be the propensity, $\mu_a(x):=\E_Q[Y(a)\mid X=x]$ the conditional outcome mean, and $\tau(x):=\mu_1(x)-\mu_0(x)$ the CATE.
+
+\begin{definition}[Full-data law class]\label{def:full-class}
+For $\varepsilon\in(0,1/2)$, $\Gamma>1$, and $\alpha\in[1,\infty]$, define
+\[
+\mathcal{Q}_{\varepsilon,\Gamma,\alpha}:=\{Q : Y=Y(A)\text{ a.s., }e(x)\in[\varepsilon,1-\varepsilon],\text{ MSM}(\Gamma)\text{ holds, and (when }\alpha<\infty)\ \E_Q[|Y(a)|^{\alpha}\mid X=x,A=a]\le M_{\alpha}(x)\}.
+\]
+The observable shadow class is $\mathcal{P}_{\varepsilon,\Gamma,\alpha}:=\{Q_{(X,A,Y)}:Q\in\mathcal{Q}_{\varepsilon,\Gamma,\alpha}\}$.
+\end{definition}
+
+\begin{definition}[Marginal sensitivity model MSM($\Gamma$); after \citet{Tan2006MSM}]\label{def:msm}
+Let $e(x):=\Pr_Q(A=1\mid X=x)$ and $e(x,y):=\Pr_Q(A=1\mid X=x,Y(a)=y)$ for $a$ the relevant arm. MSM($\Gamma$) requires that for all $x,y$ and $a\in\{0,1\}$,
+\[
+\Gamma^{-1}\;\le\;\frac{e(x,y)/(1-e(x,y))}{e(x)/(1-e(x))}\;\le\;\Gamma.
+\]
+\end{definition}
+
+\begin{definition}[Sharp CATE identified set]\label{def:identified-set}
+Given $P$ and the class $\mathcal{Q}_{\varepsilon,\Gamma,\alpha}$, the sharp identified set is
+\[
+\Theta_I^{\Gamma,\alpha}(P)(x):=\{\tau(x;Q):Q\in\mathcal{Q}_{\varepsilon,\Gamma,\alpha},\ Q_{(X,A,Y)}=P\},
+\]
+which (under mild measurability) is an interval $[\underline{\tau}^{\Gamma,\alpha}(P)(x),\;\overline{\tau}^{\Gamma,\alpha}(P)(x)]\subseteq[-\infty,+\infty]$ with Lebesgue width
+\[
+W_{\Gamma,\alpha}(P)(x):=\overline{\tau}^{\Gamma,\alpha}(P)(x)-\underline{\tau}^{\Gamma,\alpha}(P)(x)\in[0,+\infty].
+\]
+Write $W_{\Gamma}(P)(x):=W_{\Gamma,\infty}(P)(x)$ for the no-moment-restriction case ($\alpha=\infty$ is shorthand for ``no tail restriction beyond integrability'').
+\end{definition}
+
+\begin{definition}[Tail-index regime]\label{def:tail}
+Say $P$ has \emph{tail index $\alpha^{\star}(P;x,a)$ at $(x,a)$} where
+\[
+\alpha^{\star}(P;x,a):=\sup\{\alpha\ge 0:\ \E_P[|Y|^{\alpha}\mid X=x,A=a]<\infty\}\in[0,+\infty].
+\]
+$P$ is \emph{heavy-tail-irregular at $x$} if $\alpha^{\star}(P;x,a)\le 1$ for some $a\in\{0,1\}$.
+\end{definition}
+
+\paragraph{Weak-$*$ topology.}
+We equip $\mathcal{P}_{\varepsilon,\Gamma,\alpha}$ with the weak-$*$ topology on probability measures on $\mathcal{X}\times\{0,1\}\times\R$ (the smallest topology making $P\mapsto\int f\,dP$ continuous for $f$ bounded continuous). The class is non-empty for every $\alpha\in[1,\infty]$ and every $\Gamma>1$ (Strassen-type construction; cf.\ \citet{Strassen1965}).
+
+\paragraph{Locked parameters block (reproduced).}
+\texttt{(qid=pid\_heavy\_tail\_cate\_bounds, specialization=v1, observable=$P$ on $\mathcal{X}\times\{0,1\}\times\R$, parameter=$\tau(x)$, restrictions=\{A1 strict overlap $\varepsilon$, A2 MSM($\Gamma$), A3 conditional $\alpha$-tail\}, bounding-functional=$\Theta_I^{\Gamma,\alpha}(P)(x)$ and its Lebesgue width $W_{\Gamma,\alpha}(P)(x)$).}
+
+\section{Assumptions}
+
+\begin{assumption}[Strict overlap]\label{A1}
+There exists $\varepsilon\in(0,1/2)$ such that $e(x)=\Pr_Q(A=1\mid X=x)\in[\varepsilon,1-\varepsilon]$ for all $x\in\mathrm{supp}(X)$.
+\end{assumption}
+
+\begin{assumption}[Marginal sensitivity model]\label{A2}
+There exists $\Gamma>1$ such that MSM($\Gamma$) (Definition~\ref{def:msm}) holds for every $Q\in\mathcal{Q}_{\varepsilon,\Gamma,\alpha}$.
+\end{assumption}
+
+\begin{assumption}[Conditional $\alpha$-th moment]\label{A3}
+There exists $\alpha\in(1,\infty)$ and a measurable function $M_{\alpha}:\mathcal{X}\to(0,\infty)$ with $\E_P[|Y|^{\alpha}\mid X=x,A=a]\le M_{\alpha}(x)$ for both $a\in\{0,1\}$ and a.e.\ $x$. (Equivalently, $\alpha^{\star}(P;x,a)\ge\alpha>1$ in Definition~\ref{def:tail}.)
+\end{assumption}
+
+\begin{assumption}[Non-degeneracy / Lebesgue point]\label{A4}
+The evaluation point $x\in\mathcal{X}$ is a Lebesgue point of the conditional outcome law $P_{Y\mid X,A=a}$ for $a\in\{0,1\}$, and the conditional law has a non-atomic distribution function on a neighborhood of every endpoint of $\Theta_I^{\Gamma,\alpha}(P)(x)$. (Avoids endpoint-on-atom artifacts in the trimming dual.)
+\end{assumption}
+
+\begin{assumption}[Regular variation, used only for Conjecture~3 witness]\label{A5}
+For the converse direction, we work in the sub-class $\mathcal{P}^{RV}_{\varepsilon,\Gamma}\subseteq\mathcal{P}_{\varepsilon,\Gamma,\infty}$ where conditional tails are regularly varying: $\Pr_P(|Y|>t\mid X=x,A=a)=L_a(t,x)\,t^{-\beta(x,a)}$ for slowly varying $L_a$ and tail exponent $\beta(x,a)\in(0,\infty]$.
+\end{assumption}
+
+\section{Main results}
+
+\begin{conjecture}[Moment-existence dichotomy for sharp CATE width --- flagship; NOT YET PROVED]\label{conj:dichotomy}
+Fix $\varepsilon\in(0,1/2)$, $\Gamma>1$, and $x\in\mathcal{X}$ satisfying A1, A2, and A4. Then:
+\begin{enumerate}[leftmargin=2em,itemsep=2pt]
+  \item[(i) Sufficiency.] If A3 holds with some $\alpha>1$ and $M_{\alpha}(x)<\infty$, then $W_{\Gamma}(P)(x)\le \overline{W}_{\Gamma,\alpha}(x)<\infty$ where $\overline{W}_{\Gamma,\alpha}(x)$ is the closed-form bound of Theorem~\ref{thm:closed-form}.
+  \item[(ii) Necessity (robust).] If $\alpha^{\star}(P;x,a)\le 1$ for some $a\in\{0,1\}$ (Definition~\ref{def:tail}), then for every weak-$*$ open neighborhood $U$ of $P$ in $\mathcal{P}_{\varepsilon,\Gamma,\infty}$ there exists $P'\in U\cap\mathcal{P}^{RV}_{\varepsilon,\Gamma}$ with $W_{\Gamma}(P')(x)=+\infty$.
+\end{enumerate}
+In particular, restricted to the regular-variation sub-class $\mathcal{P}^{RV}_{\varepsilon,\Gamma}$, $\{P\in\mathcal{P}^{RV}_{\varepsilon,\Gamma}:W_{\Gamma}(P)(x)<\infty\}=\{P:\beta(x,a)>1\text{ for both }a\}$ holds verbatim.
+\end{conjecture}
+
+\begin{theorem}[Closed-form sufficient upper bound; proof sketch below]\label{thm:closed-form}
+Under A1, A2, A3 with $\alpha>1$ and A4,
+\[
+W_{\Gamma}(P)(x)\;\le\;\overline{W}_{\Gamma,\alpha}(x)\;:=\;2\,c_{\Gamma}\,\varepsilon^{-1+1/\alpha}\,M_{\alpha}(x)^{1/\alpha},
+\]
+where $c_{\Gamma}:=(\Gamma-1)\,\Gamma^{-1/\alpha}$, and the bound is finite for every $\alpha>1$.
+\end{theorem}
+
+\paragraph{Proof sketch (Theorem~\ref{thm:closed-form}).}
+The worst-case treated mean over MSM($\Gamma$) admits a Tan-style dual program (cf.\ \citet{Tan2006MSM,KallusMaoZhou2019CATEIntervals}) writing $\overline{\mu}_1(x)=\sup_w \E[wY\mid X=x,A=1]$ subject to $1\le w\le\Gamma$ and a propensity-normalization constraint. Apply Hölder with conjugate exponents $(\alpha,\alpha/(\alpha-1))$: $\sup_w \E[wY\mid A=1]\le\|w\|_{L^{\alpha/(\alpha-1)}}\cdot \E[|Y|^{\alpha}\mid A=1]^{1/\alpha}$. The Hölder norm of $w\in[1,\Gamma]$ under the conditional law of $A=1$ given $X=x$ contributes $\le\Gamma^{1-1/\alpha}\cdot e(x)^{-1+1/\alpha}\le\Gamma^{1-1/\alpha}\varepsilon^{-1+1/\alpha}$. Combining the upper and lower endpoint differences gives the factor of $2c_{\Gamma}=2(\Gamma-1)\Gamma^{-1/\alpha}$ (the $(\Gamma-1)$ arises from the spread between $w=\Gamma$ and $w=1$ feasibility). The dual is feasible because A3 gives finite $L^{\alpha}$ norm of $Y$ and A1 bounds the propensity Hölder weight; A4 rules out endpoint atoms. \qed
+
+\begin{conjecture}[Pareto-extremal converse witness; NOT YET PROVED]\label{conj:witness}
+Suppose $P\in\mathcal{P}_{\varepsilon,\Gamma,\infty}$ has $\alpha^{\star}(P;x,a^{*})\le 1$ for some $a^{*}\in\{0,1\}$ at $x$. Then for every $\delta>0$ and every weak-$*$ open neighborhood $U=\{P':\,|\E_{P'}f_j-\E_Pf_j|<\delta,\ j=1,\dots,k\}$ for bounded continuous $f_1,\dots,f_k$, there exists $P'\in U\cap\mathcal{P}^{RV}_{\varepsilon,\Gamma}$ with conditional tail index $\beta(x,a^{*};P')\in(1-\delta,1]$ and $W_{\Gamma}(P')(x)=+\infty$. Explicit witness: take a truncated-Pareto family $\{P^{(n)}_{Y\mid X=x,A=a^{*}}\}$ with index $\alpha_n=1+1/n$ and truncation level $T_n\to\infty$ chosen so that bounded-continuous moments match $P$ to within $\delta$, and other conditional laws unchanged. Then $W_{\Gamma}(P^{(n)})(x)\to\infty$ as $n\to\infty$.
+\end{conjecture}
+
+\begin{conjecture}[Sharpness of the threshold $\alpha^{*}=1$ --- flagship corollary; NOT YET PROVED]\label{conj:threshold-sharp}
+The threshold $\alpha^{*}=1$ is sharp from both sides on the regular-variation sub-class:
+$\sup_{\alpha>1}\overline{W}_{\Gamma,\alpha}(x)<\infty$ for every $P\in\mathcal{P}^{RV}_{\varepsilon,\Gamma,\alpha}$, while $\inf_{P\in\mathcal{P}^{RV}_{\varepsilon,\Gamma}:\beta(x,a)\le 1}W_{\Gamma}(P)(x)=+\infty$.
+\end{conjecture}
+
+\begin{theorem}[Manski-limit corollary]\label{thm:manski-limit}
+Under A1, A2, and the additional assumption that $Y\in[a_{0},b_{0}]$ a.s.\ conditional on $X=x$, the sharp width $W_{\Gamma}(P)(x)$ equals the bounded-support Manski--MSM($\Gamma$) width $W^{\mathrm{Manski}}_{\Gamma}(x;[a_{0},b_{0}])$ of \citet[Theorem~1]{KallusMaoZhou2019CATEIntervals}, and $\lim_{\alpha\to\infty}\overline{W}_{\Gamma,\alpha}(x)=W^{\mathrm{Manski}}_{\Gamma}(x;[a_{0},b_{0}])$ when $M_{\alpha}(x)$ is taken as the tightest $\alpha$-moment bound implied by the support $[a_{0},b_{0}]$.
+\end{theorem}
+
+\paragraph{Proof sketch (Theorem~\ref{thm:manski-limit}).}
+Under bounded support, the Hölder bound in Theorem~\ref{thm:closed-form} reduces to the supremum bound, and $M_{\alpha}(x)^{1/\alpha}\to\max(|a_{0}|,|b_{0}|)$ as $\alpha\to\infty$. The MSM($\Gamma$) trimming dual in this regime coincides with the Kallus--Mao--Zhou quantile-trimming Theorem~1, which yields $W^{\mathrm{Manski}}_{\Gamma}(x;[a_{0},b_{0}])=2(b_{0}-a_{0})\cdot(\Gamma-1)/(\Gamma+1)\cdot(1-2\varepsilon)$ (their eqn.\ (4)). \qed
+
+\section{Sanity-check corollaries}
+
+\begin{corollary}[$\Gamma\downarrow 1$ collapse]\label{cor:gamma-collapse}
+As $\Gamma\downarrow 1$ (no unmeasured confounding), $\overline{W}_{\Gamma,\alpha}(x)\to 0$ for every $\alpha>1$, recovering point identification.
+\end{corollary}
+
+\begin{corollary}[Bounded outcome embedding]\label{cor:bounded-embed}
+If $Y\in[-B,B]$ a.s.\ conditional on $X=x$, then A3 holds with $M_{\alpha}(x)=B^{\alpha}$ for every $\alpha\ge 1$, so Conjecture~\ref{conj:dichotomy}(i) recovers (a possibly loose version of) the bounded-outcome MSM($\Gamma$) sharpness of \citet[Thm.~3.1]{YadlowskyNamkoongBasuDuchiTian2022Bounds}.
+\end{corollary}
+
+\paragraph{Exhibit 9.1 (closed-form on a worked instance).}
+Take $\mathcal{X}=\{x_{0}\}$, $A\in\{0,1\}$, $e(x_{0})=1/2$ (so $\varepsilon=1/2$), $\Gamma=2$, and conditional outcome law $Y\mid A=a\sim\mathrm{Pareto}(\alpha=2,\text{scale}=1)$ (so $\E[|Y|^{2}\mid A=a]=\infty$ but $M_{1.5}=\E[|Y|^{1.5}\mid A=a]=4$ for the truncated Pareto, finite). The closed-form upper bound gives $\overline{W}_{2,1.5}(x_{0})=2\cdot c_{2}\cdot (1/2)^{-1+1/1.5}\cdot 4^{1/1.5}$ with $c_{2}=(2-1)\cdot 2^{-1/1.5}=2^{-2/3}\approx 0.630$, yielding $\overline{W}_{2,1.5}(x_{0})\approx 2\cdot 0.630\cdot 2^{1/3}\cdot 4^{2/3}\approx 2\cdot 0.630\cdot 1.260\cdot 2.520\approx 4.00$. This is finite (sufficiency holds at $\alpha=1.5>1$). Internal consistency: the dual program is non-degenerate (no atom at endpoint since Pareto density is continuous), and the Hölder bound is strictly larger than zero ($\Gamma>1$).
+
+\paragraph{Exhibit 9.2 (Pareto-extremal converse witness on a worked instance).}
+Same setup as Exhibit~9.1 except replace the conditional outcome by $Y^{(n)}\mid A=1\sim\mathrm{Pareto}(\alpha_{n}=1+1/n,\text{scale}=1)$ truncated at $T_{n}=n^{2}$. As $n\to\infty$, $\alpha_{n}\downarrow 1$ but $\alpha_{n}>1$ for every finite $n$, so the truncated law has every $\alpha\le\alpha_n$ moment but no $\alpha>\alpha_n$ moment in the limit; the conditional mean $\E[Y^{(n)}\mid A=1]=\frac{\alpha_{n}}{\alpha_{n}-1}\bigl(1-T_{n}^{1-\alpha_{n}}\bigr)$ which equals $n(1-n^{-2})\to\infty$ as $n\to\infty$. Under MSM($\Gamma=2$), the upper endpoint $\overline{\mu}_{1}^{(n)}(x_{0})$ is bounded below by $\Gamma\cdot\E[Y^{(n)}\mid A=1]/(\Gamma\cdot 1/2+1/2)$ which diverges, so $W_{2}(P^{(n)})(x_{0})\to+\infty$. Internal-consistency check: each $P^{(n)}\in\mathcal{P}^{RV}_{1/2,2}$ (strict overlap and MSM(2) preserved by construction); bounded-continuous moments of $P^{(n)}$ converge to those of $P$ as $T_{n}\to\infty$ slowly enough relative to $\delta$, so $P^{(n)}\in U$ for $n$ large. The construction does \emph{not} produce numerically distinct values via a normalization artifact: the divergence of $\overline{\mu}_{1}^{(n)}$ is driven by the divergence of the conditional mean, not by the MSM($\Gamma$) weighting (which contributes a finite multiplicative factor).
+
+\paragraph{Exhibit 9.3 (Manski-limit on $Y\in\{0,1\}$).}
+Take $Y\in\{0,1\}$, $\Gamma=2$, $\varepsilon=1/2$. By Theorem~\ref{thm:manski-limit}, $W^{\mathrm{Manski}}_{2}(x;[0,1])=2(1-0)(2-1)/(2+1)\cdot(1-2\cdot 1/2)=0$ in the symmetric case --- but the formula generally gives $W^{\mathrm{Manski}}_{\Gamma}=2(b_{0}-a_{0})(\Gamma-1)/(\Gamma+1)$ in the standard asymmetric ($\varepsilon<1/2$) case. The $\alpha\to\infty$ limit of $\overline{W}_{\Gamma,\alpha}(x)$ with $M_{\alpha}(x)=1$ gives $2c_{\Gamma}\to 2(\Gamma-1)=2$, which upper-bounds the Manski width (the Hölder bound is not sharp, but the limit is consistent).
+
+\section{Proof-sketch route}
+
+We sketch the mathematical verification route for each flagship-aspirant headline as an explicit chain.
+
+\paragraph{Conjecture~\ref{conj:dichotomy}(i) (sufficiency) and Theorem~\ref{thm:closed-form}.}
+Chain: \emph{headline (finite $\overline{W}_{\Gamma,\alpha}$)} $\leftarrow$ [unfold Definition~\ref{def:identified-set}] $\leftarrow$ [substitute A1+A2+A3] $\leftarrow$ [\textbf{Step 1:} Tan-style dual program reformulation of $\overline{\mu}_{a}(x)$ as a constrained sup over weight functions $w\in[1,\Gamma]$; this is the partial-ID dual of MSM($\Gamma$), distilled from \citet{Tan2006MSM}] $\leftarrow$ [\textbf{Step 2:} Hölder inequality with conjugate exponents $(\alpha,\alpha/(\alpha-1))$ on the weighted mean] $\leftarrow$ [\textbf{Step 3:} Verification that the propensity-Hölder factor is finite under A1 ($\varepsilon^{-1+1/\alpha}<\infty$ for $\alpha>1$ and $\varepsilon>0$)] $\leftarrow$ [classical Hölder/Cauchy--Schwarz]. Count $k=3$ substantive steps.
+
+\paragraph{Conjecture~\ref{conj:dichotomy}(ii) (necessity / Conjecture~\ref{conj:witness} / Conjecture~\ref{conj:threshold-sharp}).}
+This is the non-routine direction. Chain: \emph{headline (witness $P'\in U$ with $W_{\Gamma}(P')(x)=+\infty$)} $\leftarrow$ [unfold weak-$*$ neighborhood definition] $\leftarrow$ [substitute A1+A2; A5 used to enter regular-variation sub-class] $\leftarrow$ [\textbf{Step 1:} Karamata's representation theorem \citep{Karamata1933,Resnick2007HeavyTail} for slowly varying $L_a$, providing the family of regularly varying distributions parameterized by tail index $\beta$] $\leftarrow$ [\textbf{Step 2:} Truncated-Pareto construction with $(\alpha_{n},T_{n})$ chosen so that bounded-continuous moments match $P$ to within the $\delta$ specified in the weak-$*$ neighborhood; weak-$*$ density of regularly varying laws in $\mathcal{P}_{\varepsilon,\Gamma,\infty}$ at the heavy-tail boundary] $\leftarrow$ [\textbf{Step 3:} Compute the MSM($\Gamma$)-inner-sup mean on the truncated-Pareto witness, verify it diverges as $T_{n}\to\infty$ with $\alpha_{n}\downarrow 1$; this requires showing that the dominating Hölder weight $w=\Gamma$ on the right tail is feasible and contributes a divergent integral $\int_{1}^{T_{n}} t\cdot t^{-1-1/n}\,dt = n(T_{n}^{1-1/n}-1)\to\infty$] $\leftarrow$ [\textbf{Step 4:} Dominated-convergence failure argument: the truncated-Pareto integrand is not uniformly integrable in $n$, so the inner-sup limit exceeds the inner-sup of any limit law] $\leftarrow$ [classical regular-variation calculus]. Count $k=4$ substantive non-definitional steps.
+
+\paragraph{Theorem~\ref{thm:manski-limit} (Manski limit).}
+Chain: \emph{headline} $\leftarrow$ [unfold bounded-support specialization] $\leftarrow$ [substitute A1+A2 + bounded support] $\leftarrow$ [\textbf{Step 1:} Specialize Tan-style dual program to bounded support; this is the Kallus--Mao--Zhou quantile-trimming Theorem~1] $\leftarrow$ [\textbf{Step 2:} $L^{\infty}$-limit of $L^{\alpha}$ norms: $M_{\alpha}(x)^{1/\alpha}\to\|Y\|_{\infty}=\max(|a_{0}|,|b_{0}|)$ as $\alpha\to\infty$, with explicit rate]. Count $k=2$ substantive steps (acknowledged below flagship: Theorem~\ref{thm:manski-limit} is a corollary, not a flagship claim).
+
+\section{Honest scope flags}
+
+\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
+\item \textbf{Open vs.\ proved.} Theorems~\ref{thm:closed-form} and~\ref{thm:manski-limit} are provable from existing partial-ID machinery (Tan dual + Hölder + Kallus--Mao--Zhou specialization). Conjectures~\ref{conj:dichotomy}, \ref{conj:witness}, and~\ref{conj:threshold-sharp} are open; the most non-trivial step is the weak-$*$ density of regularly varying laws with $\beta\downarrow 1$ in $\mathcal{P}_{\varepsilon,\Gamma,\infty}$ (Step 2 of the converse route) and the sharpness at the $\alpha^{*}=1$ boundary.
+\item \textbf{Sharpness scope.} Theorem~\ref{thm:closed-form}'s upper bound is conjectured (but not claimed here) to be sharp up to constants in $\Gamma$, not exactly sharp; achieving exact sharpness would require an extremal-coupling characterization of the form pursued in seed 7 of the cold-start seed list (left for future work).
+\item \textbf{What was withdrawn.} v1 is a fresh start for angle 4 after angles 0--3 were exhausted; the prior angles' kernels (factorized width $W_{\alpha}=\kappa\cdot M_{\alpha}$, quantile-trimming KMZ extension, plug-in rate phase transition, covariate-by-covariate dual program) are out of scope here.
+\item \textbf{Assumption uncertainty.} A5 (regular variation) is used \emph{only} for the converse witness; the full statement of Conjecture~\ref{conj:dichotomy}(ii) is over the larger class $\mathcal{P}_{\varepsilon,\Gamma,\infty}$, but the witness construction may require restriction to $\mathcal{P}^{RV}_{\varepsilon,\Gamma}$ to be sharp. The Lebesgue-point condition A4 may be removable with extra regularity work.
+\item \textbf{Non-coverage.} Bound estimation, inference, and rate phase transitions (i.e., what seed 2 and seed 9 of the cold-start ideation would propose) are out of scope for v1.
+\end{itemize}
+
+\section{Iteration trail}
+
+\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
+\item v1 (pivot to angle 4) --- initial draft of the moment-existence dichotomy kernel (Conjecture~\ref{conj:dichotomy}) under MSM($\Gamma$) + strict overlap + $\alpha$-moment / regular-variation tail; flagship motif M7 (iff frontier) with M9 (limit characterization) corollary in Theorem~\ref{thm:manski-limit}; prior verdict: none (fresh angle after angles 0--3 exhausted).
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+
+\bibitem{KallusMaoZhou2019CATEIntervals}
+Kallus, N., Mao, X., \& Zhou, A. (2019). Interval Estimation of Individual-Level Causal Effects Under Unobserved Confounding. \emph{AISTATS / PMLR} 89, 2281--2290.
+
+\bibitem{YadlowskyNamkoongBasuDuchiTian2022Bounds}
+Yadlowsky, S., Namkoong, H., Basu, S., Duchi, J., \& Tian, L. (2022). Bounds on the Conditional and Average Treatment Effect with Unobserved Confounders. \emph{Annals of Statistics} 50(5), 2587--2615.
+
+\bibitem{AsiaeePalBeckHuling2026SharpGeneralization}
+Asiaee, A., Pal, S., Beck, C., \& Huling, J. D. (2026). Sharp Likelihood-Ratio Bounds for Treatment-Effect Generalization Under Outcome Shift. \emph{CLeaR / PMLR}, forthcoming.
+
+\bibitem{JungKang2026ITBounds}
+Jung, Y., \& Kang, B. (2026). Information-Theoretic Sharp Bounds for Conditional Causal Effects Without Bounded Outcomes. \emph{CLeaR / PMLR}, forthcoming.
+
+\bibitem{LordanSalehzadehNobari2026TailUncertainty}
+Lordan, G., \& Salehzadeh Nobari, K. (2026). Tail Uncertainty in Treatment-Effect Bounds. \emph{SSRN working paper}.
+
+\bibitem{Tan2006MSM}
+Tan, Z. (2006). A Distributional Approach for Causal Inference Using Propensity Scores. \emph{Journal of the American Statistical Association} 101(476), 1619--1637.
+
+\bibitem{Manski1990AERBounds}
+Manski, C. F. (1990). Nonparametric Bounds on Treatment Effects. \emph{American Economic Review (Papers and Proceedings)} 80(2), 319--323.
+
+\bibitem{AronowLee2013BoundedSelection}
+Aronow, P. M., \& Lee, D. K. K. (2013). Interval Estimation of Population Means Under Unknown but Bounded Probabilities of Sample Selection. \emph{Biometrika} 100(1), 235--240.
+
+\bibitem{MiratrixWagerZubizarreta2018ShapeConstrained}
+Miratrix, L. W., Wager, S., \& Zubizarreta, J. R. (2018). Shape-Constrained Partial Identification of a Population Mean Under Unknown Probabilities of Sample Selection. \emph{Biometrika} 105(1), 103--114.
+
+\bibitem{Karamata1933}
+Karamata, J. (1933). Sur un mode de croissance régulière des fonctions. \emph{Mathematica (Cluj)} 4, 38--53.
+
+\bibitem{Resnick2007HeavyTail}
+Resnick, S. I. (2007). \emph{Heavy-Tail Phenomena: Probabilistic and Statistical Modeling}. Springer Series in Operations Research and Financial Engineering.
+
+\bibitem{Strassen1965}
+Strassen, V. (1965). The Existence of Probability Measures with Given Marginals. \emph{Annals of Mathematical Statistics} 36(2), 423--439.
+
+\end{thebibliography}
+
+\end{document}

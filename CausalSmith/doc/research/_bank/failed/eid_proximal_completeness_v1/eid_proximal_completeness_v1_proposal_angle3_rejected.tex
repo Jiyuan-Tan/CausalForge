@@ -1,0 +1,507 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_proximal\_completeness, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_proximal\_completeness} / \texttt{v1}%
+  \\ \large\textit{Finite bridge-envelope realization and nonrealization for proximal ATE}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a free-form PartialID / proximal-identification proposal with locked tuple
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\text{identifying restrictions},\text{bounding functional}).
+\]
+Here \(\texttt{qid}=\texttt{eid\_proximal\_completeness}\) and
+\(\texttt{specialization}=\texttt{v1}\).  The observable distribution \(P\) is
+a finite-support law of \((Y,A,W,Z,X)\), where \(A\in\{0,1\}\), \(Y\in[0,1]\),
+and \(W,Z,X\) are finite.  The causal parameter is the long-run proximal ATE
+\(\theta=\E[Y(1)-Y(0)]\).  The identifying restrictions are finite latent
+negative-control models with consistency, positivity, \(W,Z\) unaffected by
+treatment, no direct effect of \(Z\) on \(Y(a)\) after the latent state
+\(U\) and \(X\), and an outcome-bridge equation
+\(\E\{Y\mid Z,A=a,X\}=\E\{h_a(W,X)\mid Z,A=a,X\}\).  The bounding functional is
+the pair of support functions of (i) the observable bounded bridge envelope
+\(\Theta_{\mathrm{br}}(P)\) and (ii) the causally realizable latent envelope
+\(\Theta_{\mathrm{lat}}(P)\), with the bridge-realization defect
+\(\Delta_{\mathrm{BR}}(P)\) defined as their two-sided support-function gap.
+
+\begin{abstract}
+Proximal identification papers often use completeness to move from an
+outcome-bridge equation to a point-identified ATE, while partial-identification
+papers use the same bridge equation to construct observable bounds when
+completeness fails.  This proposal asks whether every bounded observable bridge
+endpoint is actually induced by a finite latent negative-control causal model.
+The kernel claim is a finite realization frontier: a computable
+bridge-realization defect \(\Delta_{\mathrm{BR}}(P)\) is zero exactly when the
+observable bridge envelope and the latent negative-control ATE envelope agree,
+and is generically positive on a nondegenerate binary-proxy boundary class.  The
+main nonrealization conjecture is intentionally labelled open; it would turn a
+reviewer warning from prior CausalSmith proximal runs into a sharp theorem.
+If resolved, proximal analysts would know when bridge-envelope endpoints are
+causal bounds and when they are only algebraic artifacts of a weak bridge
+operator.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Completeness is the load-bearing condition that turns negative-control proxies
+into a proximal adjustment formula.  Near completeness failure, however, the
+observable bridge equation may have many bounded solutions.  A researcher can
+then compute a bridge-envelope interval for the ATE, but it is not automatic
+that each algebraic bridge endpoint corresponds to any latent negative-control
+causal law.  This matters for long-term ATE work because short-term proxies are
+often noisy measurements of persistent unobserved confounding: the empirical
+question is not just whether a bridge equation has solutions, but whether its
+extreme solutions are causally attainable.
+
+\paragraph{The main finding (proposed).}
+The proposed main result is Conjecture~\ref{conj:generic-nonrealization}.  It
+states that on an open class of finite binary-proxy laws with a nonunique
+bounded outcome-bridge fiber, the observable bridge envelope strictly contains
+the latent negative-control envelope.  The named focal object is the
+bridge-realization defect \(\Delta_{\mathrm{BR}}(P)\), a support-function gap
+computed by a finite bridge LP and a finite response-type feasibility LP.
+Theorem~\ref{thm:farkas-frontier} supplies the routine algebraic frontier:
+\(\Delta_{\mathrm{BR}}(P)=0\) if and only if every bridge-envelope extreme point
+passes the finite Farkas realization inequalities.
+
+\paragraph{What is new.}
+The novelty kernel is not another sufficient completeness assumption and not a
+generic LP restatement of partial identification.  \citet[Sections 2--3]{MiaoGengTchetgen2018}
+and \citet[Section 3]{CuiPuShiMiaoTchetgen2024} work with bridge equations and
+completeness or semiparametric regularity; \citet[abstract and Sections
+3--4]{GhassamiShpitserTchetgen2023} moves to partial identification when
+completeness fails; \citet[abstract and Sections 2--3]{ZhangLiMiaoTchetgen2023}
+separates bridge uniqueness from target-functional identification.  None of
+these papers asks the finite sharpness question isolated here: whether a
+bounded observable bridge endpoint is realizable by an actual latent
+negative-control causal model.  The prior CausalSmith
+\texttt{eid\_proximal\_phase} angle explicitly conjectured universal finite
+realization and flagged it as the main sharpness risk; this proposal reverses
+that direction and asks for a generic nonrealization theorem.
+
+\paragraph{How it positions in the literature.}
+The proposal is in the PartialID cluster, with proximal exact identification as
+the source of the bridge equations.  It uses the Balke--Pearl finite
+response-type style as a causal-realization benchmark, the proximal bridge
+literature as the observable-equation substrate, and the no-completeness
+proximal bounds literature as the closest partial-identification neighbor.  The
+contribution is a non-LP sharpness diagnostic layered on top of the bridge
+envelope: the bridge envelope is easy to compute, while the latent envelope is
+the causal object whose equality to that bridge envelope is open.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the proxy partial-identification program of
+\citet{GhassamiShpitserTchetgen2023}: if Conjecture~\ref{conj:generic-nonrealization}
+is true, bridge-envelope bounds need a realization check before they can be
+reported as sharp causal bounds.  The conclusion changes research practice by
+making analysts report \(\Delta_{\mathrm{BR}}(P)\), not just a bridge residual
+or a bridge-envelope width, when completeness is weak or fails.
+
+\section{Related work}
+\citet[Sections 2--3]{MiaoGengTchetgen2018} give a Biometrika negative-control
+identification framework using proxy rank and completeness conditions; this
+proposal studies the finite boundary where those conditions no longer deliver a
+unique bridge.  \citet[Section 3 and equation (9)]{CuiPuShiMiaoTchetgen2024}
+develop proximal double robustness and semiparametric efficiency; their bridge
+regularity assumptions motivate why a weak bridge operator needs a separate
+sharpness diagnostic.  \citet[abstract and Sections 2--3]{ZhangLiMiaoTchetgen2023}
+show that counterfactual means can remain identified without unique bridge
+functions, which is the target-functional distinction sharpened here into a
+realization question for bridge endpoints.  \citet[abstract and Sections
+3--4]{GhassamiShpitserTchetgen2023} develop proximal partial-identification
+bounds when completeness fails; their bounds are the closest published
+consumer, but they do not characterize when an observable bridge endpoint is
+latent-realizable.  \citet[Theorem 1 and Section 4]{CanaySantosShaikh2013}
+show that completeness-type assumptions can be strongly untestable, motivating
+observable sensitivity and sharpness diagnostics rather than completeness
+pretesting.  \citet{BalkePearl1997} use finite response-type linear programming
+to obtain sharp causal bounds with imperfect compliance; this proposal imports
+that realization discipline into proximal negative-control bridge arrays.
+\citet{Manski1990} is the bounded-outcome partial-identification baseline:
+when proxies carry no target-relevant information, any proximal bridge envelope
+should reduce to a Manski-style interval rather than overclaim point
+identification.  \citet[Sections 2--3]{AtheyChettyImbensKang2019} and
+\citet[Sections 2--4]{ImbensKallusMaoWang2025} motivate the long-term ATE
+setting in which short-term outcomes or proxies stand in for persistent
+unobserved confounding; they do not provide a bridge-realization frontier.
+
+In-catalogue CausalSmith prior art is thin for this exact question.  The
+\texttt{doc/API.md} ExactID / PartialID catalogue records only seed-time empty
+ExactID and PartialID trees plus a Manski bounded-outcome study entry, whose
+headline is selected-cell mean-dominance tightening rather than proximal bridge
+realization.  The banked \texttt{eid\_proximal\_phase} proposal conjectured
+that every rational bounded bridge endpoint is realized by a finite latent
+proximal model and recorded realization as the main sharpness risk; the
+present proposal is a structurally different nonrealization and frontier
+proposal.  The failed \texttt{pid\_mediation\_proxy} reviewer warned that
+``sharp bridge realisability'' had been assumed rather than proved, which is
+exactly the hidden step isolated here.
+
+\section{Formal setup}
+All spaces are finite.  Let \(P\) denote the observable law of
+\((Y,A,W,Z,X)\), with \(A\in\{0,1\}\), \(Y\in[0,1]\), and finite supports
+\(\mathcal W,\mathcal Z,\mathcal X\).  For each treatment arm \(a\), define the
+conditional bridge operator
+\[
+  (T_{a,x}h)(z)=\sum_{w\in\mathcal W}h(w,x)\,P(W=w\mid Z=z,A=a,X=x)
+\]
+and the observed outcome regression
+\[
+  m_{a,x}(z)=\E_P[Y\mid Z=z,A=a,X=x].
+\]
+The bounded observable bridge fiber is
+\[
+  \mathcal H_a(P)=\{h_a:\mathcal W\times\mathcal X\to[0,1]:
+    T_{a,x}h_a(\cdot,x)=m_{a,x}\ \text{for all }x\}.
+\]
+Let \(\lambda_x(w)=P(W=w\mid X=x)\) and define the native bridge loading
+\[
+  L_a(h_a)=\sum_{x,w}P(X=x)\lambda_x(w)h_a(w,x),\qquad
+  L(h_1,h_0)=L_1(h_1)-L_0(h_0).
+\]
+The observable bridge envelope is
+\[
+  \Theta_{\mathrm{br}}(P)=\{L(h_1,h_0):h_a\in\mathcal H_a(P),\ a=0,1\}.
+\]
+
+A finite latent negative-control model consists, conditional on \(X=x\), of a
+finite latent state \(U\), potential outcomes \(Y(0),Y(1)\in[0,1]\), proxies
+\((W,Z)\) unaffected by \(A\), consistency \(Y=Y(A)\), and the exclusion that
+\(Z\) has no direct effect on \(Y(a)\) after \((U,X)\).  For a candidate bridge
+pair \(h=(h_1,h_0)\), realization means that there is a nonnegative finite
+latent table \(\pi\) matching the observed \(P\) and satisfying, for every
+\((u,a,x)\),
+\[
+  \E_\pi[Y(a)\mid U=u,X=x]
+  =
+  \sum_{w} h_a(w,x)\Pr_\pi(W=w\mid U=u,X=x).
+\]
+The latent envelope is
+\[
+  \Theta_{\mathrm{lat}}(P)=\{\E_\pi[Y(1)-Y(0)]:\pi\ \text{is a finite latent
+  negative-control model matching }P\}.
+\]
+For \(s\in\{-1,1\}\), let
+\(\sigma_{\mathrm{br}}(s;P)=\sup_{\theta\in\Theta_{\mathrm{br}}(P)}s\theta\)
+and \(\sigma_{\mathrm{lat}}(s;P)=\sup_{\theta\in\Theta_{\mathrm{lat}}(P)}s\theta\).
+The bridge-realization defect is the named focal object
+\[
+  \Delta_{\mathrm{BR}}(P)=
+  \max_{s\in\{-1,1\}}\{\sigma_{\mathrm{br}}(s;P)-\sigma_{\mathrm{lat}}(s;P)\}.
+\]
+
+\begin{verbatim}
+Locked parameters:
+qid = eid_proximal_completeness
+specialization = v1
+P = finite observable law of (Y,A,W,Z,X), A binary, Y in [0,1]
+theta = E[Y(1)-Y(0)]
+identifying restrictions = finite latent negative-control model plus
+  consistency, positivity, W/Z unaffected by A, no direct Z->Y(a) effect
+  after (U,X), and the outcome-bridge equation
+bounding functional = support-function pair of Theta_br(P) and
+  Theta_lat(P), summarized by Delta_BR(P)
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite positive observable law]\label{ass:finite-positive}
+The supports of \(Y,A,W,Z,X\) are finite, \(A\in\{0,1\}\), \(Y\in[0,1]\), and
+all conditional probabilities used in \(T_{a,x}\), \(m_{a,x}\), and
+\(\lambda_x\) are well-defined on the support under study.
+\end{assumption}
+
+\begin{assumption}[Nonempty bounded bridge fiber]\label{ass:bridge-nonempty}
+For each \(a\in\{0,1\}\), the set \(\mathcal H_a(P)\) is nonempty and compact
+in the finite-dimensional cube \([0,1]^{|\mathcal W||\mathcal X|}\).
+\end{assumption}
+
+\begin{assumption}[Finite latent negative-control class]\label{ass:latent-class}
+The admissible causal laws are finite latent tables satisfying consistency,
+\(W,Z\) unaffected by treatment, no direct \(Z\to Y(a)\) effect after
+\((U,X)\), and the bridge-realization equations displayed in Section~6.
+The latent support size is bounded by the Caratheodory bound associated with
+the linear constraints, so feasibility is finite-dimensional.
+\end{assumption}
+
+\begin{assumption}[Constant-rank binary-proxy boundary]\label{ass:binary-boundary}
+For the generic-class conjecture, \(X\) is degenerate,
+\(\mathcal W=\mathcal Z=\{0,1\}\), each \(T_a\) has rank one, and the observed
+law lies in a constant-rank neighborhood with nonempty bridge fiber and
+strictly positive treatment, proxy, and outcome cell probabilities.
+\end{assumption}
+
+\begin{assumption}[Noncorner witness margin]\label{ass:witness-margin}
+The witness law in Section~9 has a bridge-realization support gap at least
+\(\eta_{\mathrm{BR}}>0\), where \(\eta_{\mathrm{BR}}\) is bounded above by the
+minimum of the positive cell-probability margin and the constant-rank
+singular-gap margin from Assumption~\ref{ass:binary-boundary}.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: finite Farkas bridge-realization frontier]\label{thm:farkas-frontier}
+Under Assumptions~\ref{ass:finite-positive}, \ref{ass:bridge-nonempty}, and
+\ref{ass:latent-class}, the following are equivalent.
+\begin{enumerate}[label=(\roman*)]
+\item \(\Theta_{\mathrm{br}}(P)=\Theta_{\mathrm{lat}}(P)\).
+\item \(\Delta_{\mathrm{BR}}(P)=0\).
+\item Every extreme point \(h\) of the bounded bridge polytope
+\(\mathcal H_1(P)\times\mathcal H_0(P)\) satisfies the finite Farkas dual
+inequalities for the latent negative-control feasibility system
+\(A_{\mathrm{NC}}(h)\pi=b(P,h)\), \(\pi\ge 0\).
+\end{enumerate}
+Here \(A_{\mathrm{NC}}(h)\) is the response-type constraint matrix implied by
+Assumption~\ref{ass:latent-class}.  This theorem is a proposed routine
+finite-dimensional algebra statement, not the flagship novelty claim.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) The closest published comparator is \citet{BalkePearl1997}, which uses
+finite response-type LPs for imperfect compliance, and
+\citet[abstract and Sections 3--4]{GhassamiShpitserTchetgen2023}, which studies
+proximal bounds after completeness failure.  The epsilon-gap is the bridge
+realization layer: neither paper states the Farkas test for whether bounded
+proximal bridge endpoints themselves are latent negative-control causal laws.
+(b) This theorem gives the reviewer-checkable decision procedure needed by
+\citet{GhassamiShpitserTchetgen2023}: a bridge endpoint is reportable as a
+sharp causal bound only after passing the finite realization inequalities.
+
+\begin{conjecture}[Conjecture 1: generic bridge-envelope nonrealization (NOT YET PROVED)]\label{conj:generic-nonrealization}
+Under Assumptions~\ref{ass:finite-positive}, \ref{ass:bridge-nonempty},
+\ref{ass:latent-class}, \ref{ass:binary-boundary}, and
+\ref{ass:witness-margin}, there exists an open set \(\mathcal O_{\mathrm{BR}}\)
+of binary-proxy observable laws such that
+\[
+  \Delta_{\mathrm{BR}}(P)\ge \eta_{\mathrm{BR}}>0
+  \quad\text{for every }P\in\mathcal O_{\mathrm{BR}}.
+\]
+Equivalently, on this open class, at least one extreme bounded solution of the
+observable proximal outcome-bridge equations is not induced by any finite
+latent negative-control causal model, and
+\(\Theta_{\mathrm{lat}}(P)\subsetneq\Theta_{\mathrm{br}}(P)\).
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest prior CausalSmith comparator is
+\texttt{eid\_proximal\_phase}, Section 8 Conjecture 1, which conjectured that
+every rational \(h\in\mathcal H(P)\) is realized by a finite latent proximal
+model and then marked realization as the main sharpness risk.  The closest
+published comparators are \citet[abstract and Sections 2--3]{ZhangLiMiaoTchetgen2023},
+which shows target means can be identified despite nonunique bridges, and
+\citet[abstract and Sections 3--4]{GhassamiShpitserTchetgen2023}, which gives
+partial-identification bounds after completeness failure.  The precise
+flagship gap is the open-set nonrepresentability claim: neither published line
+proves that observable bridge endpoints can be algebraically feasible yet
+causally unattainable over a nondegenerate class of laws.  (b) Resolving this
+would directly change the proximal partial-ID workflow of
+\citet{GhassamiShpitserTchetgen2023} by requiring a realization defect report
+before interpreting bridge-envelope bounds as sharp causal bounds.
+
+\begin{conjecture}[Conjecture 2: binary witness generates a stable support gap (NOT YET PROVED)]\label{conj:binary-witness}
+In the concrete binary law of Example~\ref{ex:binary-witness}, the upper
+bridge-envelope endpoint violates a Farkas realization inequality by the margin
+\(\eta_{\mathrm{BR}}\).  Moreover, every sufficiently small perturbation that
+preserves Assumptions~\ref{ass:finite-positive}, \ref{ass:bridge-nonempty},
+\ref{ass:latent-class}, \ref{ass:binary-boundary}, and
+\ref{ass:witness-margin} keeps
+\(\sigma_{\mathrm{br}}(1;P)-\sigma_{\mathrm{lat}}(1;P)>0\).
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) This is the concrete-witness counterpart to Conjecture~\ref{conj:generic-nonrealization}.
+\citet{MiaoGengTchetgen2018} and \citet{CuiPuShiMiaoTchetgen2024} use
+completeness or bridge regularity to avoid this boundary; \citet{BalkePearl1997}
+supplies response-type sharpness logic in another causal design but not a
+proximal bridge witness.  The epsilon-gap is a named finite law with a stable
+support-function separation, not a hand-tuned degenerate bridge example.
+(b) The consumer is the prior \texttt{pid\_mediation\_proxy} reviewer warning:
+the witness gives a template for replacing assumed bridge realisability with a
+primitive finite feasibility check.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Completeness singleton reduction]\label{cor:singleton}
+If, in addition to Assumptions~\ref{ass:finite-positive} and
+\ref{ass:bridge-nonempty}, each \(T_{a,x}\) is injective on bounded bridge
+arrays, then \(\mathcal H_a(P)\) is a singleton for each arm.  In that case
+\(\Theta_{\mathrm{br}}(P)\) is a singleton and Theorem~\ref{thm:farkas-frontier}
+reduces to the usual proximal point-identification check: if the unique bridge
+is realized by a finite negative-control model, then
+\(\Delta_{\mathrm{BR}}(P)=0\) and
+\(\Theta_{\mathrm{lat}}(P)=\Theta_{\mathrm{br}}(P)=\{\theta\}\).
+\end{corollary}
+
+\begin{corollary}[Manski no-proxy corner]\label{cor:manski}
+If \(W\) and \(Z\) are independent of \(Y,A\) conditional on \(X\), the bridge
+equations impose no target-relevant proxy restriction beyond \(Y\in[0,1]\).
+Under Assumption~\ref{ass:latent-class}, the latent envelope then collapses to
+the bounded-outcome Manski interval of \citet{Manski1990}, while any wider
+bridge envelope has \(\Delta_{\mathrm{BR}}(P)>0\).  Thus the proposed frontier
+does not create identification from irrelevant proxies.
+\end{corollary}
+
+\begin{example}[Concrete noncorner binary witness route]\label{ex:binary-witness}
+Take \(X\) degenerate, \(P(A=1)=1/2\), and \(P(Z=z,W=w\mid A=a)=1/4\) for all
+\((z,w,a)\), so \(T_a\) has rank one.  Let
+\(m_1(0)=m_1(1)=1/2\), \(m_0(0)=m_0(1)=1/4\), and let the bridge-envelope upper
+endpoint use \(h_1(1)=1,h_1(0)=0\) and \(h_0(1)=h_0(0)=1/4\).  The bridge
+equations hold because only the proxy averages are observed.  The conjectured
+Farkas certificate says that, after imposing the latent negative-control
+bridge-realization equations, this \(h_1\) endpoint forces incompatible
+conditional means for a shared latent proxy distribution, leaving a positive
+support gap.  This is the explicit finite-support instance to be checked in
+Stage 0 before promoting the generic open-class claim.
+\end{example}
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:farkas-frontier} reduces to finite-dimensional convex duality:
+the bridge envelope is the image of a bounded polytope under \(L\), the latent
+negative-control envelope is the image of a finite response-type polytope, and
+Farkas' lemma characterizes when a bridge extreme point has a nonnegative
+latent completion.  Conjecture~\ref{conj:binary-witness} requires an explicit
+small-support enumeration for the binary witness in Example~\ref{ex:binary-witness},
+including the dual certificate that separates the upper bridge endpoint from
+the latent response-type polytope.  Conjecture~\ref{conj:generic-nonrealization}
+then follows, if the witness certificate is strict, by continuity of support
+functions and constant-rank perturbation of the bridge and response-type
+constraint matrices.  The boundary cases that need explicit algebra are
+rank changes in \(T_a\), zero proxy cells, and endpoints where the bounded
+bridge polytope changes its active face.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:farkas-frontier} is proposed as routine finite-dimensional
+algebra once the latent feasibility matrix \(A_{\mathrm{NC}}(h)\) is written
+out.  Conjectures~\ref{conj:generic-nonrealization} and
+\ref{conj:binary-witness} are not proved; the main risk is that the binary
+witness can be completed by a richer latent table, collapsing the support gap.
+The proposal deliberately avoids claiming universal bridge realization, because
+that was the hidden sharpness assumption flagged in prior reviews.  It also
+does not claim a closed-form formula for \(\Delta_{\mathrm{BR}}(P)\) beyond the
+finite support-function and Farkas-dual characterization.  The long-term ATE
+language is represented here through persistent finite proxies and the terminal
+outcome \(Y\); a fully longitudinal multi-wave theorem would be a later
+extension, not part of this v1 kernel.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for angle 3, replacing the exhausted
+target-active-null, common-kernel, and selector-equivalence angles with a
+finite bridge-envelope realization / nonrealization kernel; prior verdict:
+none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Athey et~al.(2019)]{AtheyChettyImbensKang2019}
+Athey, S., Chetty, R., Imbens, G., and Kang, H. (2019).
+\newblock The surrogate index: Combining short-term proxies to estimate
+long-term treatment effects more rapidly and precisely.
+\newblock \emph{NBER Working Paper} No. 26463.
+
+\bibitem[Balke and Pearl(1997)]{BalkePearl1997}
+Balke, A. and Pearl, J. (1997).
+\newblock Bounds on treatment effects from studies with imperfect compliance.
+\newblock \emph{Journal of the American Statistical Association} 92(439),
+1171--1176.
+
+\bibitem[Canay et~al.(2013)]{CanaySantosShaikh2013}
+Canay, I. A., Santos, A., and Shaikh, A. M. (2013).
+\newblock On the testability of identification in some nonparametric models
+with endogeneity.
+\newblock \emph{Econometrica} 81(6), 2535--2559.
+
+\bibitem[Cui et~al.(2024)]{CuiPuShiMiaoTchetgen2024}
+Cui, Y., Pu, H., Shi, X., Miao, W., and Tchetgen Tchetgen, E. J. (2024).
+\newblock Semiparametric proximal causal inference.
+\newblock \emph{Journal of the American Statistical Association} 119(546),
+1348--1359.
+
+\bibitem[Ghassami et~al.(2023)]{GhassamiShpitserTchetgen2023}
+Ghassami, A., Shpitser, I., and Tchetgen Tchetgen, E. J. (2023).
+\newblock Partial identification with proxy variables.
+\newblock \emph{arXiv preprint} arXiv:2304.04374.
+
+\bibitem[Imbens et~al.(2025)]{ImbensKallusMaoWang2025}
+Imbens, G., Kallus, N., Mao, X., and Wang, Y. (2025).
+\newblock Long-term causal inference under persistent confounding via data
+combination.
+\newblock \emph{Journal of the Royal Statistical Society: Series B}.
+
+\bibitem[Manski(1990)]{Manski1990}
+Manski, C. F. (1990).
+\newblock Nonparametric bounds on treatment effects.
+\newblock \emph{American Economic Review Papers and Proceedings} 80(2),
+319--323.
+
+\bibitem[Miao et~al.(2018)]{MiaoGengTchetgen2018}
+Miao, W., Geng, Z., and Tchetgen Tchetgen, E. J. (2018).
+\newblock Identifying causal effects with proxy variables of an unmeasured
+confounder.
+\newblock \emph{Biometrika} 105(4), 987--993.
+
+\bibitem[Zhang et~al.(2024)]{ZhangLiMiaoTchetgen2023}
+Zhang, J., Li, W., Miao, W., and Tchetgen Tchetgen, E. J. (2024).
+\newblock Proximal causal inference without uniqueness of bridge functions.
+\newblock \emph{Statistics and Probability Letters} 204, 110055.
+\end{thebibliography}
+
+\end{document}

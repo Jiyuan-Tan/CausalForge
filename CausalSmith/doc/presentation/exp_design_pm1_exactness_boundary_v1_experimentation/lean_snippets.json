@@ -1,0 +1,1577 @@
+{
+  "commit": "6e3ba5a09e998cb7c7b15f45d6a11634157a62aa",
+  "snippets": {
+    "ass:two-block-homophily": {
+      "decl": "TwoBlockHomophily",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:two-block-graph": {
+      "decl": "twoBlockGraph",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- The weighted two-block homophily adjacency `W`: `a/m` within a block, `b/m`\nacross blocks, `0` on the diagonal.\n@realizes G_m(a,b)(within-block a/m, across-block b/m, diag 0)\n@realizes a(within-block edge weight a/m; range 0<b<a pinned by TwoBlockHomophily)\n@realizes b(cross-block edge weight b/m; range 0<b pinned by TwoBlockHomophily)\n@realizes A_m, B_m(two communities via block membership i.val < m, |A_m|=|B_m|=m) -/\nnoncomputable def twoBlockGraph (m : ℕ) (a b : ℝ) : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ :=\n  Matrix.of fun i j =>\n    if i = j then 0\n    else if (decide (i.val < m) = decide (j.val < m)) then a / (m : ℝ) else b / (m : ℝ)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:balanced-sign-design": {
+      "decl": "BalancedSignDesign",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Balanced sign-symmetric design: `P(Z = z) = P(Z = −z)` for all `z` (global\nsign symmetry, implying zero one-point margins).\n@realizes P(design-law argument `D : FiniteDesign (Fin (2*m) → Bool)`, the probability\nlaw on {-1,1}^n this predicate constrains) -/\ndef BalancedSignDesign (m : ℕ) (D : FiniteDesign (Fin (2 * m) → Bool)) : Prop :=\n  ∀ z, D.p z = D.p (fun i => ! z i)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:balanced-design-class": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "BalancedDesignClass",
+          "statement": "/-- The balanced design class `P_m^bal`, bundling the single sign-symmetry atom.\n@realizes P_m^bal(designs with global sign symmetry)\n@realizes P(cluster member: the bundled law `D : FiniteDesign (Fin (2*m) → Bool)`, a\nprobability law on {-1,1}^n via the carrier's `p_nonneg`/`p_sum` fields) -/\nstructure BalancedDesignClass (m : ℕ) (D : FiniteDesign (Fin (2 * m) → Bool)) : Prop where\n  /-- Member atom: global sign symmetry. -/\n  balanced : BalancedSignDesign m D"
+        },
+        {
+          "label": "BalancedSignDesign",
+          "statement": "/-- Balanced sign-symmetric design: `P(Z = z) = P(Z = −z)` for all `z` (global\nsign symmetry, implying zero one-point margins).\n@realizes P(design-law argument `D : FiniteDesign (Fin (2*m) → Bool)`, the probability\nlaw on {-1,1}^n this predicate constrains) -/\ndef BalancedSignDesign (m : ℕ) (D : FiniteDesign (Fin (2 * m) → Bool)) : Prop :=\n  ∀ z, D.p z = D.p (fun i => ! z i)"
+        }
+      ]
+    },
+    "def:block-exchangeable-design-class": {
+      "decl": "blockExchangeableDesignClass",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- The block-exchangeable design class `P_m^sym`: laws in `P_m^bal` invariant\nunder permutations within `A_m`, within `B_m`, and under the community swap (the\nfull two-block automorphism group). (D0.R provisional revision carried as revised.)\n@realizes P_m^sym(balanced designs invariant under the two-block automorphism group)\n@realizes P(cluster member: this `Set (FiniteDesign (Fin (2*m) → Bool))` is the class of\nprobability laws `P` consumed downstream by `implementableCovarianceClass`/\n`implementabilityGap`; each element is a probability law via the carrier's PMF fields) -/\ndef blockExchangeableDesignClass (m : ℕ) : Set (FiniteDesign (Fin (2 * m) → Bool)) :=\n  { D | BalancedDesignClass m D ∧\n      ∀ σ : Equiv.Perm (Fin (2 * m)), IsBlockAuto m σ →\n        ∀ z, D.p (fun i => z (σ i)) = D.p z }",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:block-elliptope": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "BlockElliptopeMem",
+          "statement": "/-- Membership witness for the block-symmetric elliptope slice `E_m^blk`, over the\ntwo-block homophily regime. Its member atom is `ass:two-block-homophily`; the three\ninequalities are exactly the PSD constraints of the spectral coordinates\n`x = 1−u`, `y = 1+(m−1)u−mv`, `z = 1+(m−1)u+mv`. -/\nstructure BlockElliptopeMem (m : ℕ) (a b u v : ℝ) : Prop where\n  /-- Member atom: the two-block homophily regime. -/\n  homophily : TwoBlockHomophily m a b\n  /-- `x = 1 − u ≥ 0`. -/\n  psd_x : 0 ≤ 1 - u\n  /-- `y = 1 + (m−1)u − m v ≥ 0`. -/\n  psd_y : 0 ≤ 1 + ((m : ℝ) - 1) * u - (m : ℝ) * v\n  /-- `z = 1 + (m−1)u + m v ≥ 0`. -/\n  psd_z : 0 ≤ 1 + ((m : ℝ) - 1) * u + (m : ℝ) * v"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        }
+      ]
+    },
+    "def:implementable-covariance-class": {
+      "decl": "implementableCovarianceClass",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- The implementable covariance class `C_m^pm = { X(P) : P ∈ P_m^sym }`.\n@realizes C_m^pm(second moments of block-exchangeable designs)\n@realizes P(cluster member: the bound design law `D ∈ blockExchangeableDesignClass m`\nranges over the probability laws `P` whose second moment `X(P)` defines this class) -/\ndef implementableCovarianceClass (m : ℕ) : Set (Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) :=\n  { X | ∃ D ∈ blockExchangeableDesignClass m, X = assignmentSecondMoment m D }",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:design-objective": {
+      "decl": "designObjective",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- The normalized design objective\n`F_{r,κ}(X) = Tr(L_m X) + r Tr(L_m^† X) + κ ‖X‖_{S_2} + Tr(J_n X)`.\n@realizes F_{r,kappa}(X)(Tr(L_m X) + r Tr(L_m^† X) + κ‖X‖ + Tr(J_n X))\n@realizes r(carrier ℝ; homophily tradeoff weight on the `r * Tr(L^† X)` term)\n@realizes kappa(carrier ℝ; robustness weight on the Schatten-2 penalty `κ‖X‖_{S_2}`; range\n[0,∞) pinned by the `0 ≤ kappa` premises threaded through the consuming theorems/lemmas) -/\nnoncomputable def designObjective (m : ℕ) (a b r kappa : ℝ)\n    (X : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) : ℝ :=\n  Matrix.trace (twoBlockLaplacian m a b * X)\n    + r * Matrix.trace (twoBlockLaplacianPinv m a b * X)\n    + kappa * frobeniusNorm X\n    + Matrix.trace (allOnesMatrix m * X)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:implementability-gap": {
+      "decl": "implementabilityGap",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- The implementability gap `Δ_m^±(r,κ) = inf_{P ∈ P_m^sym} F(X(P)) − inf_{X ∈ E_m^blk} F(X)`,\nas an `sInf` difference over the objective images.\n@realizes Delta_m^pm(r,kappa)(implementable inf − relaxed inf; CARRIER of the gap. The bare\n`sInf − sInf` real difference is a plain `ℝ`; its core-declared range `[0,∞)` is NOT carried\nby this `def` alone but by the CONJUNCTION of this carrier with the companion range lemma\n`implementabilityGap_nonneg` in `Helpers/GapReduction.lean`, which pins `0 ≤ Δ_m^±` via\nthe reduced constrained-minus-unconstrained identity.)\n@realizes P(cluster member — AUTHORITATIVE link into the `sharp_rho_star` target block:\nthe implementable `sInf` is taken over `designObjective … '' implementableCovarianceClass m`,\ni.e. over the second moments `X(P)` of the probability laws `P ∈ P_m^sym`; this is the\ndecl through which the P realization cluster enters `thm:sharp-rho-star`)\n@realizes kappa(carrier ℝ; robustness argument of the gap; range [0,∞) pinned by the\n`0 ≤ kappa` premises of the consuming theorems `sharp_rho_star`/`rounding_gap_reduction`) -/\nnoncomputable def implementabilityGap (m : ℕ) (a b r kappa : ℝ) : ℝ :=\n  sInf (designObjective m a b r kappa '' implementableCovarianceClass m)\n    - sInf (designObjective m a b r kappa '' blockElliptope m a b)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "def:block-sum-handle": {
+      "decl": "blockSumHandle",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- The block-sum law handle `B(P)`: the joint pmf of the two community sums\n`(S_A, S_B)` under `P` (the OEQ parity handle).\n@realizes B(P)(joint law of the two community sums) -/\nnoncomputable def blockSumHandle (m : ℕ) (D : FiniteDesign (Fin (2 * m) → Bool))\n    (kl : ℤ × ℤ) : ℝ :=\n  D.E (fun z => if blockSumA m z = kl.1 ∧ blockSumB m z = kl.2 then 1 else 0)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:low-scale-two-block": {
+      "decl": "LowScaleTwoBlock",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Low-scale two-block normalization `a + 3b < 2m` (ensures `D = 2m − a − 3b > 0`). -/\ndef LowScaleTwoBlock (m : ℕ) (a b : ℝ) : Prop := a + 3 * b < 2 * (m : ℝ)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "ass:odd-community-size": {
+      "decl": "OddCommunitySize",
+      "file": "Basic.lean",
+      "line": 0,
+      "statement": "/-- Odd community size (parity feasibility: forces `S_A, S_B` odd, so `y + z ≥ 2/m`). -/\ndef OddCommunitySize (m : ℕ) : Prop := Odd m",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "prop:symmetry-reduction": {
+      "decl": "symmetry_reduction",
+      "file": "Helpers/SymmetryReduction.lean",
+      "line": 0,
+      "statement": "/-- Symmetry reduction. The orbit-average over the full two-block automorphism group\n(permutations within `A_m`, within `B_m`, and the community swap) is the *explicit,\nnamed* no-worse witness — not merely some existing block-symmetric point (the note's\nload-bearing clauses):\n\n* every PSD unit-diagonal matrix `X` is mapped by orbit averaging to the block-symmetric\n  elliptope point `blockSymMatrix m (uOf m X) (vOf m X) ∈ E_m^blk`, whose block entries\n  `uOf m X`, `vOf m X` are the averaged within- and across-community entries of `X`, with\n  weakly smaller objective, and\n* every balanced law `D ∈ P_m^bal` is mapped by the same orbit averaging to the\n  block-exchangeable law `orbitAvgDesign m D ∈ P_m^sym`, with the same zero one-point\n  margins and weakly smaller objective.\n\nThe two `sInf` equalities (relaxed = block-symmetric slice, implementable = symmetry\nreduced) are the consequences. (`0 ≤ r` and `0 ≤ κ` are the definitional-domain\nregularity premises, reflected in the assumption table.) -/\nlemma symmetry_reduction (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hr0 : 0 ≤ r) (hk : 0 ≤ kappa) :\n    (∀ X : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ, X.PosSemidef → (∀ i, X i i = 1) →\n      BlockElliptopeMem m a b (uOf m X) (vOf m X) ∧\n        designObjective m a b r kappa (blockSymMatrix m (uOf m X) (vOf m X))\n          ≤ designObjective m a b r kappa X) ∧\n    (∀ D : FiniteDesign (Fin (2 * m) → Bool), BalancedDesignClass m D →\n        orbitAvgDesign m D ∈ blockExchangeableDesignClass m ∧\n        (∀ i, (orbitAvgDesign m D).E (fun z => signOf m z i) = 0) ∧\n        designObjective m a b r kappa (assignmentSecondMoment m (orbitAvgDesign m D))\n          ≤ designObjective m a b r kappa (assignmentSecondMoment m D)) ∧\n    sInf (designObjective m a b r kappa ''\n        { X : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ | X.PosSemidef ∧ ∀ i, X i i = 1 })\n      = sInf (designObjective m a b r kappa '' blockElliptope m a b) ∧\n    sInf ((fun D => designObjective m a b r kappa (assignmentSecondMoment m D)) ''\n        { D | BalancedDesignClass m D })\n      = sInf ((fun D => designObjective m a b r kappa (assignmentSecondMoment m D)) ''\n        blockExchangeableDesignClass m)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "thm:cut-corner-exactness": {
+      "decl": "cut_corner_exactness",
+      "file": "Tcut.lean",
+      "line": 0,
+      "statement": "/-- **Cut-corner exactness.** Under two-block homophily, for `0 ≤ r < r_cut(m,a,b,κ)`\nthe cut covariance `X_cut` is the unique minimizer of `F_{r,κ}` over `E_m^blk`; the\nimplementability gap is zero; `X_cut` is the unique minimizer over `C_m^pm`; and the\ncut design `P_cut ∈ P_m^sym` realizes it with `X(P_cut) = X_cut`.\n(The `ass:balanced-sign-design` atom is realized through membership in the\nblock-exchangeable class `C_m^pm`/`P_m^sym`, which bundles `BalancedDesignClass`.) -/\ntheorem cut_corner_exactness (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b)\n    (hr0 : 0 ≤ r) -- @realizes r(range 0 ≤ r pins r ∈ [0,∞))\n    (hk0 : 0 ≤ kappa) -- @realizes kappa(range 0 ≤ κ pins κ ∈ [0,∞), its definitional domain)\n    (hr : r < rCut m a b kappa) : -- @realizes r_cut(m,a,b,kappa)(cut region r < r_cut)\n    (cutCovariance m ∈ blockElliptope m a b ∧\n      ∀ X ∈ blockElliptope m a b, X ≠ cutCovariance m →\n        designObjective m a b r kappa (cutCovariance m) < designObjective m a b r kappa X) ∧\n    implementabilityGap m a b r kappa = 0 ∧\n    (cutCovariance m ∈ implementableCovarianceClass m ∧\n      ∀ X ∈ implementableCovarianceClass m, X ≠ cutCovariance m →\n        designObjective m a b r kappa (cutCovariance m) < designObjective m a b r kappa X) ∧\n    cutDesign m ∈ blockExchangeableDesignClass m ∧\n    assignmentSecondMoment m (cutDesign m) = cutCovariance m",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "thm:robust-corner-exactness": {
+      "decl": "robust_corner_exactness",
+      "file": "Trobust.lean",
+      "line": 0,
+      "statement": "/-- **Robust-corner exactness.** Under two-block homophily: `I_n` is a minimizer of\n`F_{r,κ}` over `E_m^blk` for some finite `κ` iff `a+3b=2m` and `r=2b(a+b)`; on this\nlocus, for every `κ > 0`, `I_n` is the unique relaxed minimizer and `P_iid ∈ P_m^sym`\nattains it with `X(P_iid)=I_n`; off the locus `I_n` is never a finite-`κ` minimizer,\nthough relaxed minimizers converge (entrywise) to `I_n` as `κ → ∞`.\n\nThe iid-exactness frontier `kappa_iid(m,a,b,r)` — the smallest robustness weight from\nwhich `I_n = X(P_iid)` is optimal — has no closed-form decl (bound only as a symbol,\nlike `r_star`). Its [0,∞) space with `kappa_iid ≥ kappa_cut` is now pinned by the\ndedicated carrier predicate `IsIidExactnessFrontier` in `Basic.lean` (the `0 ≤ κ_iid`\nand `κ_cut ≤ κ_iid` conjuncts fix the space and ordering, the optimality clause its\nfrontier role). This theorem supplies the frontier's EXACT finiteness criterion, not its\nvalue: the two tagged clauses below give a finite such weight EXISTS iff the\naffine-balanced locus `a+3b=2m ∧ r=2b(a+b)` holds (off-locus `kappa_iid = +∞`), and on\nthe locus every `κ > 0` is admissible. -/\ntheorem robust_corner_exactness (m : ℕ) (a b r : ℝ) (hHom : TwoBlockHomophily m a b)\n    (hr0 : 0 ≤ r) : -- @realizes r(range 0 ≤ r pins r ∈ [0,∞))\n    ((∃ kappa : ℝ, 0 ≤ kappa ∧\n        (1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) ∈ blockElliptope m a b ∧\n        ∀ X ∈ blockElliptope m a b,\n          designObjective m a b r kappa 1 ≤ designObjective m a b r kappa X)\n      -- @realizes kappa_iid(m,a,b,r)(finiteness criterion: a finite iid-exactness\n      -- weight EXISTS iff the affine-balanced locus a+3b=2m ∧ r=2b(a+b); off-locus =+∞)\n      ↔ (a + 3 * b = 2 * (m : ℝ) ∧ r = 2 * b * (a + b))) ∧\n    ((a + 3 * b = 2 * (m : ℝ) ∧ r = 2 * b * (a + b)) →\n      -- @realizes kappa_iid(m,a,b,r)(on-locus value: every κ>0 makes I_n the unique\n      -- relaxed minimizer, so the infimal admissible weight kappa_iid = 0 (≥ kappa_cut))\n      ∀ kappa : ℝ, 0 < kappa →\n        ((1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) ∈ blockElliptope m a b ∧\n          ∀ X ∈ blockElliptope m a b, X ≠ 1 →\n            designObjective m a b r kappa 1 < designObjective m a b r kappa X)) ∧\n    (iidDesign m ∈ blockExchangeableDesignClass m ∧\n      assignmentSecondMoment m (iidDesign m) = 1) ∧\n    (¬ (a + 3 * b = 2 * (m : ℝ) ∧ r = 2 * b * (a + b)) →\n      (∀ kappa : ℝ, 0 < kappa →\n        ¬ (∀ X ∈ blockElliptope m a b,\n            designObjective m a b r kappa 1 ≤ designObjective m a b r kappa X)) ∧\n      (∀ (Xseq : ℝ → Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ),\n        (∀ kappa : ℝ, 0 < kappa → Xseq kappa ∈ blockElliptope m a b ∧\n          ∀ X ∈ blockElliptope m a b,\n            designObjective m a b r kappa (Xseq kappa) ≤ designObjective m a b r kappa X) →\n        ∀ i j, Tendsto (fun kappa => Xseq kappa i j) atTop\n          (𝓝 ((1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) i j))))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "thm:gap-window": {
+      "decl": "gap_window",
+      "file": "Tgap.lean",
+      "line": 0,
+      "statement": "/-- **Positive-gap window.** Under two-block homophily and low-scale: *if* `m` is odd,\nthen for every `0 ≤ κ < κ_gap` the frontiers are strictly ordered\n`r_cut_gap < r_gap^- < r_gap^+`, and for `r ∈ (r_gap^-, r_gap^+)` the spread vertex\nis the unique relaxed minimizer of `F` over `E_m^blk` but is not ±1 implementable, so\n`Δ_m^±(r,κ) > 0`. The oddness is necessary as a *separate* even-`m` case (NOT nested\nunder the odd hypothesis, so it does not fire vacuously): for even `m` the whole block\nelliptope slice is implementable, hence the claimed positive gap is false. -/\ntheorem gap_window (m : ℕ) (a b : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hLow : LowScaleTwoBlock m a b) :\n    (OddCommunitySize m → ∀ kappa : ℝ, 0 ≤ kappa → kappa < kappaGap m a b →\n      rCutGap a b kappa < rGapMinus m a b kappa ∧ -- @realizes r_cut(m,a,b,kappa)\n      rGapMinus m a b kappa < rGapPlus m a b kappa ∧\n      -- @realizes r(bound within the gap window rGapMinus < r < rGapPlus ⊂ [0,∞))\n      ∀ r : ℝ, rGapMinus m a b kappa < r → r < rGapPlus m a b kappa →\n        (spreadCovariance m ∈ blockElliptope m a b ∧\n          ∀ X ∈ blockElliptope m a b, X ≠ spreadCovariance m →\n            designObjective m a b r kappa (spreadCovariance m)\n              < designObjective m a b r kappa X) ∧\n        spreadCovariance m ∉ implementableCovarianceClass m ∧\n        0 < implementabilityGap m a b r kappa) ∧\n    (Even m → blockElliptope m a b ⊆ implementableCovarianceClass m)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "thm:sharp-rho-star": {
+      "decl": "sharp_rho_star",
+      "file": "Tsharp.lean",
+      "line": 0,
+      "statement": "theorem sharp_rho_star (m : ℕ) (a b r kappa : ℝ) (hHom : TwoBlockHomophily m a b)\n    (hr0 : 0 ≤ r) -- @realizes r(range 0 ≤ r pins r ∈ [0,∞))\n    (hk : 0 ≤ kappa) : -- @realizes kappa(range 0 ≤ κ pins κ ∈ [0,∞), its definitional domain)\n    roundingLossCertificate m a b r kappa = implementabilityGap m a b r kappa ∧\n    -- @realizes rho_star(m,a,b,r,kappa)(standing range clause 0 ≤ ρ_⋆ pinning space [0,∞);\n    -- discharged by the companion range lemma `roundingLossCertificate_nonneg` in Basic)\n    0 ≤ roundingLossCertificate m a b r kappa ∧\n    -- @realizes Delta_m^pm(r,kappa)(standing range clause 0 ≤ Δ_m^± pinning space [0,∞);\n    -- discharged by the companion range lemma `implementabilityGap_nonneg` in Basic)\n    0 ≤ implementabilityGap m a b r kappa ∧\n    (roundingLossCertificate m a b r kappa = 0 ↔\n      ∃ x y z, InReducedTriangle m x y z ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        parityThreshold m ≤ y + z) ∧\n    (0 < kappa →\n      (∃! t : ℝ × ℝ × ℝ, InReducedTriangle m t.1 t.2.1 t.2.2 ∧\n        ∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa t.1 t.2.1 t.2.2\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n      (roundingLossCertificate m a b r kappa = 0 ↔\n        ∀ x y z, InReducedTriangle m x y z →\n          (∀ x' y' z', InReducedTriangle m x' y' z' →\n            reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n              ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') →\n          parityThreshold m ≤ y + z)) ∧\n    (kappa = 0 →\n      ∀ x y z, InReducedTriangle m x y z →\n        ((∀ x' y' z', InReducedTriangle m x' y' z' →\n            reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n              ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z')\n          ↔ (x ≠ 0 → cX m a b r / qParam m ≤ cY b r ∧ cX m a b r / qParam m ≤ cZ m) ∧\n            (y ≠ 0 → cY b r ≤ cX m a b r / qParam m ∧ cY b r ≤ cZ m) ∧\n            (z ≠ 0 → cZ m ≤ cX m a b r / qParam m ∧ cZ m ≤ cY b r))) ∧\n    -- Active-set computation of the relaxed minimizer (lem:weighted-simplex-active-set):\n    -- for κ > 0 the unique relaxed argmin over `T_m` is the active-set point of an\n    -- admissible support/multiplier `(S, λ)` under the change of variables `t = (q x, y, z)`\n    -- (`α = sharpAlpha`, `β = sharpBeta`), with relaxed value `M · λ` (`M = 2m`).\n    (0 < kappa →\n      ∃ S : Finset (Fin 3), ∃ lam : ℝ,\n        IsAdmissibleSupport (sharpAlpha m a b r) (sharpBeta m) kappa S lam ∧\n        InReducedTriangle m\n          (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 0 / qParam m)\n          (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 1)\n          (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 2) ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa\n              (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 0 / qParam m)\n              (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 1)\n              (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 2)\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        relaxedReducedValue m a b r kappa = 2 * (m : ℝ) * lam) ∧\n    -- Truncation correction (lem:weighted-simplex-truncation): when the relaxed argmin\n    -- set is disjoint from the implementable slice `{y+z ≥ d_m}`, the implementable value\n    -- is attained on the truncation segment `{y+z = d_m}` at the endpoint/interior selector\n    -- `truncSelector`, so `Δ_m^±` is computed by this boundary-segment formula.\n    ((¬ ∃ x y z, InReducedTriangle m x y z ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        parityThreshold m ≤ y + z) →\n      implementableReducedValue m a b r kappa =\n        wsObj (sharpAlpha m a b r) (sharpBeta m) kappa\n          (truncSegPoint (2 * (m : ℝ)) (parityThreshold m)\n            (truncSelector (2 * (m : ℝ)) (parityThreshold m)\n              (sharpAlpha m a b r) (sharpBeta m) kappa))) ∧\n    (Even m → roundingLossCertificate m a b r kappa = 0)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:block-spectral-coordinates": {
+      "decl": "block_spectral_coordinates",
+      "file": "Helpers/SpectralCoordinates.lean",
+      "line": 0,
+      "statement": "/-- `X(u,v)` lies in `E_m^blk` iff its spectral coordinates lie in the reduced\ntriangle `T_m`, and the design objective equals the reduced form `φ` with\n`c_x = q((a+b)+r/(a+b))`, `c_y = 2b + r/(2b)`, `c_z = 2m` and `q = 2(m−1)`.\nThe last two conjuncts record the corner coordinate readings the note states:\n`X_cut = X(1,−1)` has spectral coordinates `(0, 2m, 0)` and `I_n = X(0,0)` has\nspectral coordinates `(1, 1, 1)`. -/\nlemma block_spectral_coordinates (m : ℕ) (a b r kappa u v : ℝ)\n    (hHom : TwoBlockHomophily m a b) :\n    (blockSymMatrix m u v ∈ blockElliptope m a b ↔\n      InReducedTriangle m (1 - u) (1 + ((m : ℝ) - 1) * u - (m : ℝ) * v)\n        (1 + ((m : ℝ) - 1) * u + (m : ℝ) * v)) ∧\n    designObjective m a b r kappa (blockSymMatrix m u v)\n      = reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa\n          (1 - u) (1 + ((m : ℝ) - 1) * u - (m : ℝ) * v)\n          (1 + ((m : ℝ) - 1) * u + (m : ℝ) * v) ∧\n    (cutCovariance m = blockSymMatrix m 1 (-1) ∧\n      ((1 : ℝ) - 1, 1 + ((m : ℝ) - 1) * 1 - (m : ℝ) * (-1),\n          1 + ((m : ℝ) - 1) * 1 + (m : ℝ) * (-1))\n        = ((0 : ℝ), 2 * (m : ℝ), (0 : ℝ))) ∧\n    ((1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) = blockSymMatrix m 0 0 ∧\n      ((1 : ℝ) - 0, 1 + ((m : ℝ) - 1) * 0 - (m : ℝ) * 0,\n          1 + ((m : ℝ) - 1) * 0 + (m : ℝ) * 0)\n        = ((1 : ℝ), (1 : ℝ), (1 : ℝ)))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:cut-vertex-certificate": {
+      "decl": "cut_vertex_certificate",
+      "file": "Helpers/VertexCertificates.lean",
+      "line": 0,
+      "statement": "/-- Cut-vertex certificate: on `T_m`, if `κ ≥ 0`, `c_x/q > c_y + κ` and `c_z > c_y + κ`\nthen `(0, 2m, 0)` is the unique minimizer of `φ`. -/\nlemma cut_vertex_certificate (m : ℕ) (cx cy cz kappa : ℝ)\n    (hq : 0 < qParam m) (hk : 0 ≤ kappa)\n    (h1 : cx / qParam m > cy + kappa) (h2 : cz > cy + kappa) :\n    InReducedTriangle m 0 (2 * (m : ℝ)) 0 ∧\n    ∀ x y z, InReducedTriangle m x y z → (x, y, z) ≠ (0, 2 * (m : ℝ), 0) →\n      reducedObjective (qParam m) cx cy cz kappa 0 (2 * (m : ℝ)) 0\n        < reducedObjective (qParam m) cx cy cz kappa x y z",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:spread-vertex-certificate": {
+      "decl": "spread_vertex_certificate",
+      "file": "Helpers/VertexCertificates.lean",
+      "line": 0,
+      "statement": "/-- Spread-vertex certificate: on `T_m`, if `κ ≥ 0`, `c_y > c_x/q + κ/√q` and\n`c_z > c_x/q + κ/√q` then `(2m/q, 0, 0)` is the unique minimizer of `φ`. -/\nlemma spread_vertex_certificate (m : ℕ) (cx cy cz kappa : ℝ)\n    (hq : 0 < qParam m) (hk : 0 ≤ kappa)\n    (h1 : cy > cx / qParam m + kappa / Real.sqrt (qParam m))\n    (h2 : cz > cx / qParam m + kappa / Real.sqrt (qParam m)) :\n    InReducedTriangle m (2 * (m : ℝ) / qParam m) 0 0 ∧\n    ∀ x y z, InReducedTriangle m x y z → (x, y, z) ≠ (2 * (m : ℝ) / qParam m, 0, 0) →\n      reducedObjective (qParam m) cx cy cz kappa (2 * (m : ℝ) / qParam m) 0 0\n        < reducedObjective (qParam m) cx cy cz kappa x y z",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:frobenius-center-certificate": {
+      "decl": "frobenius_center_certificate",
+      "file": "Helpers/FrobeniusCenter.lean",
+      "line": 0,
+      "statement": "/-- Frobenius-center certificate: `(1,1,1)` uniquely minimizes the weighted\nFrobenius term on `T_m`; it minimizes the full objective for finite `κ` only if\n`c_x/q = c_y = c_z`, and under that equality with `κ > 0` it is the unique\nminimizer. -/\nlemma frobenius_center_certificate (m : ℕ) (cx cy cz kappa : ℝ) (hq : 0 < qParam m) :\n    (InReducedTriangle m 1 1 1 ∧\n      ∀ x y z, InReducedTriangle m x y z → (x, y, z) ≠ (1, 1, 1) →\n        Real.sqrt (qParam m * 1 ^ 2 + 1 ^ 2 + 1 ^ 2)\n          < Real.sqrt (qParam m * x ^ 2 + y ^ 2 + z ^ 2)) ∧\n    ((∀ x y z, InReducedTriangle m x y z →\n        reducedObjective (qParam m) cx cy cz kappa 1 1 1\n          ≤ reducedObjective (qParam m) cx cy cz kappa x y z) →\n      cx / qParam m = cy ∧ cy = cz) ∧\n    (0 < kappa → cx / qParam m = cy → cy = cz →\n      ∀ x y z, InReducedTriangle m x y z → (x, y, z) ≠ (1, 1, 1) →\n        reducedObjective (qParam m) cx cy cz kappa 1 1 1\n          < reducedObjective (qParam m) cx cy cz kappa x y z)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:pm-reduced-slice-characterization": {
+      "decl": "pm_reduced_slice_characterization",
+      "file": "Helpers/ParitySlice.lean",
+      "line": 0,
+      "statement": "/-- The ±1 covariance image of the block-exchangeable class in spectral\ncoordinates is exactly the reduced triangle truncated by the parity threshold\n`d_m` (`0` for even `m`, `2/m` for odd `m`). In particular, for odd `m` the spread\nvertex `(m/(m−1), 0, 0)` is not implementable, while for even `m` the whole slice is.\n\nRequires `2 ≤ m`: for `m ∈ {0,1}` the within-block parameter `u` does not appear in\n`X(u,v)` (blocks have no within-block off-diagonal pair), so `X(u,v)` is independent\nof `u` while the reduced coordinates are not, and the characterization fails. -/\nlemma pm_reduced_slice_characterization (m : ℕ) (hm : 2 ≤ m) (u v : ℝ) :\n    blockSymMatrix m u v ∈ implementableCovarianceClass m ↔\n      (InReducedTriangle m (1 - u) (1 + ((m : ℝ) - 1) * u - (m : ℝ) * v)\n          (1 + ((m : ℝ) - 1) * u + (m : ℝ) * v) ∧\n        parityThreshold m ≤ (1 + ((m : ℝ) - 1) * u - (m : ℝ) * v)\n          + (1 + ((m : ℝ) - 1) * u + (m : ℝ) * v))",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "lem:rounding-gap-reduction": {
+      "decl": "rounding_gap_reduction",
+      "file": "Helpers/GapReduction.lean",
+      "line": 0,
+      "statement": "/-- The implementability gap equals the reduced-coordinate implementable-minus-relaxed\nvalue: `Δ_m^±(r,κ) = implementableReducedValue − relaxedReducedValue`. -/\nlemma rounding_gap_reduction (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hk : 0 ≤ kappa) :\n    implementabilityGap m a b r kappa\n      = implementableReducedValue m a b r kappa - relaxedReducedValue m a b r kappa",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "sym:X(u,v)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 50,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "InReducedTriangle — reduced coordinates x,y,z on T_m",
+          "statement": "/-- The reduced triangle `T_m = {x,y,z ≥ 0 : q x + y + z = 2m}`.\n@realizes X(u,v)(reduced coordinates x,y,z on T_m) -/\ndef InReducedTriangle (m : ℕ) (x y z : ℝ) : Prop :=\n  0 ≤ x ∧ 0 ≤ y ∧ 0 ≤ z ∧ qParam m * x + y + z = 2 * (m : ℝ)"
+        },
+        {
+          "label": "blockSymMatrix — diag 1, within-block u, across-block v",
+          "statement": "/-- The block-symmetric matrix `X(u,v)`: diagonal `1`, common within-block\noff-diagonal entry `u`, common across-block entry `v`.\n@realizes X(u,v)(diag 1, within-block u, across-block v) -/\ndef blockSymMatrix (m : ℕ) (u v : ℝ) : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ :=\n  Matrix.of fun i j =>\n    if i = j then 1 else if (decide (i.val < m) = decide (j.val < m)) then u else v"
+        }
+      ]
+    },
+    "sym:F_{r,kappa}(X)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 55,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "reducedObjective — reduced form c_x x + c_y y + c_z z + κ‖·‖",
+          "statement": "/-- The reduced objective `φ(x,y,z) = c_x x + c_y y + c_z z + κ √(q x² + y² + z²)`.\n@realizes F_{r,kappa}(X)(reduced form c_x x + c_y y + c_z z + κ‖·‖)\n@realizes kappa(carrier ℝ; robustness weight on the Frobenius term κ√(q x²+y²+z²); range\n[0,∞) pinned by the `0 ≤ kappa` premises threaded through the consuming theorems/lemmas) -/\nnoncomputable def reducedObjective (q cx cy cz kappa x y z : ℝ) : ℝ :=\n  cx * x + cy * y + cz * z + kappa * Real.sqrt (q * x ^ 2 + y ^ 2 + z ^ 2)"
+        },
+        {
+          "label": "cX — c_x = q((a+b)+r/(a+b))",
+          "statement": "/-- Reduced linear coefficient on `x`: `c_x = q((a+b) + r/(a+b))`.\n@realizes F_{r,kappa}(X)(c_x = q((a+b)+r/(a+b)))\n@realizes r(carrier ℝ; tradeoff ratio entering c_x via the r/(a+b) term)\n@realizes a(within-block weight in a+b and r/(a+b))\n@realizes b(cross-block weight in a+b and r/(a+b)) -/\nnoncomputable def cX (m : ℕ) (a b r : ℝ) : ℝ := qParam m * ((a + b) + r / (a + b))"
+        },
+        {
+          "label": "cY — c_y = 2b + r/(2b)",
+          "statement": "/-- Reduced linear coefficient on `y`: `c_y = 2b + r/(2b)`.\n@realizes F_{r,kappa}(X)(c_y = 2b + r/(2b))\n@realizes r(carrier ℝ; tradeoff ratio entering c_y via the r/(2b) term)\n@realizes b(cross-block weight in 2b and r/(2b)) -/\nnoncomputable def cY (b r : ℝ) : ℝ := 2 * b + r / (2 * b)"
+        },
+        {
+          "label": "cZ — c_z = 2m",
+          "statement": "/-- Reduced linear coefficient on `z`: `c_z = 2m`.\n@realizes F_{r,kappa}(X)(c_z = 2m) -/\ndef cZ (m : ℕ) : ℝ := 2 * (m : ℝ)"
+        },
+        {
+          "label": "frobeniusNorm — κ‖X‖_{S_2}, Frobenius norm",
+          "statement": "/-- Frobenius (Schatten-2) norm `‖X‖_{S_2} = √(∑ᵢⱼ Xᵢⱼ²)`.\n@realizes F_{r,kappa}(X)(κ‖X‖_{S_2}, Frobenius norm) -/\nnoncomputable def frobeniusNorm {ι : Type*} [Fintype ι] (X : Matrix ι ι ℝ) : ℝ :=\n  Real.sqrt (∑ i, ∑ j, (X i j) ^ 2)"
+        },
+        {
+          "label": "designObjective — Tr(L_m X) + r Tr(L_m^† X) + κ‖X‖ + Tr(J_n X)",
+          "statement": "/-- The normalized design objective\n`F_{r,κ}(X) = Tr(L_m X) + r Tr(L_m^† X) + κ ‖X‖_{S_2} + Tr(J_n X)`.\n@realizes F_{r,kappa}(X)(Tr(L_m X) + r Tr(L_m^† X) + κ‖X‖ + Tr(J_n X))\n@realizes r(carrier ℝ; homophily tradeoff weight on the `r * Tr(L^† X)` term)\n@realizes kappa(carrier ℝ; robustness weight on the Schatten-2 penalty `κ‖X‖_{S_2}`; range\n[0,∞) pinned by the `0 ≤ kappa` premises threaded through the consuming theorems/lemmas) -/\nnoncomputable def designObjective (m : ℕ) (a b r kappa : ℝ)\n    (X : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) : ℝ :=\n  Matrix.trace (twoBlockLaplacian m a b * X)\n    + r * Matrix.trace (twoBlockLaplacianPinv m a b * X)\n    + kappa * frobeniusNorm X\n    + Matrix.trace (allOnesMatrix m * X)"
+        }
+      ]
+    },
+    "sym:kappa(carrier ℝ; robustness weight on the Frobenius term κ√(q x²+y²+z²); range": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 56,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "reducedObjective",
+          "statement": "/-- The reduced objective `φ(x,y,z) = c_x x + c_y y + c_z z + κ √(q x² + y² + z²)`.\n@realizes F_{r,kappa}(X)(reduced form c_x x + c_y y + c_z z + κ‖·‖)\n@realizes kappa(carrier ℝ; robustness weight on the Frobenius term κ√(q x²+y²+z²); range\n[0,∞) pinned by the `0 ≤ kappa` premises threaded through the consuming theorems/lemmas) -/\nnoncomputable def reducedObjective (q cx cy cz kappa x y z : ℝ) : ℝ :=\n  cx * x + cy * y + cz * z + kappa * Real.sqrt (q * x ^ 2 + y ^ 2 + z ^ 2)"
+        }
+      ]
+    },
+    "sym:r": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 63,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "cX — carrier ℝ; tradeoff ratio entering c_x via the r/(a+b) term",
+          "statement": "/-- Reduced linear coefficient on `x`: `c_x = q((a+b) + r/(a+b))`.\n@realizes F_{r,kappa}(X)(c_x = q((a+b)+r/(a+b)))\n@realizes r(carrier ℝ; tradeoff ratio entering c_x via the r/(a+b) term)\n@realizes a(within-block weight in a+b and r/(a+b))\n@realizes b(cross-block weight in a+b and r/(a+b)) -/\nnoncomputable def cX (m : ℕ) (a b r : ℝ) : ℝ := qParam m * ((a + b) + r / (a + b))"
+        },
+        {
+          "label": "cY — carrier ℝ; tradeoff ratio entering c_y via the r/(2b) term",
+          "statement": "/-- Reduced linear coefficient on `y`: `c_y = 2b + r/(2b)`.\n@realizes F_{r,kappa}(X)(c_y = 2b + r/(2b))\n@realizes r(carrier ℝ; tradeoff ratio entering c_y via the r/(2b) term)\n@realizes b(cross-block weight in 2b and r/(2b)) -/\nnoncomputable def cY (b r : ℝ) : ℝ := 2 * b + r / (2 * b)"
+        },
+        {
+          "label": "designObjective — carrier ℝ; homophily tradeoff weight on the `r * Tr(L^† X)` term",
+          "statement": "/-- The normalized design objective\n`F_{r,κ}(X) = Tr(L_m X) + r Tr(L_m^† X) + κ ‖X‖_{S_2} + Tr(J_n X)`.\n@realizes F_{r,kappa}(X)(Tr(L_m X) + r Tr(L_m^† X) + κ‖X‖ + Tr(J_n X))\n@realizes r(carrier ℝ; homophily tradeoff weight on the `r * Tr(L^† X)` term)\n@realizes kappa(carrier ℝ; robustness weight on the Schatten-2 penalty `κ‖X‖_{S_2}`; range\n[0,∞) pinned by the `0 ≤ kappa` premises threaded through the consuming theorems/lemmas) -/\nnoncomputable def designObjective (m : ℕ) (a b r kappa : ℝ)\n    (X : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) : ℝ :=\n  Matrix.trace (twoBlockLaplacian m a b * X)\n    + r * Matrix.trace (twoBlockLaplacianPinv m a b * X)\n    + kappa * frobeniusNorm X\n    + Matrix.trace (allOnesMatrix m * X)"
+        }
+      ]
+    },
+    "sym:a": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 64,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "cX — within-block weight in a+b and r/(a+b)",
+          "statement": "/-- Reduced linear coefficient on `x`: `c_x = q((a+b) + r/(a+b))`.\n@realizes F_{r,kappa}(X)(c_x = q((a+b)+r/(a+b)))\n@realizes r(carrier ℝ; tradeoff ratio entering c_x via the r/(a+b) term)\n@realizes a(within-block weight in a+b and r/(a+b))\n@realizes b(cross-block weight in a+b and r/(a+b)) -/\nnoncomputable def cX (m : ℕ) (a b r : ℝ) : ℝ := qParam m * ((a + b) + r / (a + b))"
+        },
+        {
+          "label": "twoBlockGraph — within-block edge weight a/m; range 0<b<a pinned by TwoBlockHomophily",
+          "statement": "/-- The weighted two-block homophily adjacency `W`: `a/m` within a block, `b/m`\nacross blocks, `0` on the diagonal.\n@realizes G_m(a,b)(within-block a/m, across-block b/m, diag 0)\n@realizes a(within-block edge weight a/m; range 0<b<a pinned by TwoBlockHomophily)\n@realizes b(cross-block edge weight b/m; range 0<b pinned by TwoBlockHomophily)\n@realizes A_m, B_m(two communities via block membership i.val < m, |A_m|=|B_m|=m) -/\nnoncomputable def twoBlockGraph (m : ℕ) (a b : ℝ) : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ :=\n  Matrix.of fun i j =>\n    if i = j then 0\n    else if (decide (i.val < m) = decide (j.val < m)) then a / (m : ℝ) else b / (m : ℝ)"
+        },
+        {
+          "label": "TwoBlockHomophily — range: 0 < b < a pins a ∈ (0,∞)",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        }
+      ]
+    },
+    "sym:b": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 65,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "cX — cross-block weight in a+b and r/(a+b)",
+          "statement": "/-- Reduced linear coefficient on `x`: `c_x = q((a+b) + r/(a+b))`.\n@realizes F_{r,kappa}(X)(c_x = q((a+b)+r/(a+b)))\n@realizes r(carrier ℝ; tradeoff ratio entering c_x via the r/(a+b) term)\n@realizes a(within-block weight in a+b and r/(a+b))\n@realizes b(cross-block weight in a+b and r/(a+b)) -/\nnoncomputable def cX (m : ℕ) (a b r : ℝ) : ℝ := qParam m * ((a + b) + r / (a + b))"
+        },
+        {
+          "label": "cY — cross-block weight in 2b and r/(2b)",
+          "statement": "/-- Reduced linear coefficient on `y`: `c_y = 2b + r/(2b)`.\n@realizes F_{r,kappa}(X)(c_y = 2b + r/(2b))\n@realizes r(carrier ℝ; tradeoff ratio entering c_y via the r/(2b) term)\n@realizes b(cross-block weight in 2b and r/(2b)) -/\nnoncomputable def cY (b r : ℝ) : ℝ := 2 * b + r / (2 * b)"
+        },
+        {
+          "label": "twoBlockGraph — cross-block edge weight b/m; range 0<b pinned by TwoBlockHomophily",
+          "statement": "/-- The weighted two-block homophily adjacency `W`: `a/m` within a block, `b/m`\nacross blocks, `0` on the diagonal.\n@realizes G_m(a,b)(within-block a/m, across-block b/m, diag 0)\n@realizes a(within-block edge weight a/m; range 0<b<a pinned by TwoBlockHomophily)\n@realizes b(cross-block edge weight b/m; range 0<b pinned by TwoBlockHomophily)\n@realizes A_m, B_m(two communities via block membership i.val < m, |A_m|=|B_m|=m) -/\nnoncomputable def twoBlockGraph (m : ℕ) (a b : ℝ) : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ :=\n  Matrix.of fun i j =>\n    if i = j then 0\n    else if (decide (i.val < m) = decide (j.val < m)) then a / (m : ℝ) else b / (m : ℝ)"
+        },
+        {
+          "label": "TwoBlockHomophily — range: 0 < b pins b ∈ (0,∞)",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        }
+      ]
+    },
+    "sym:J_n": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 89,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "allOnesMatrix — all-ones matrix",
+          "statement": "/-- The all-ones matrix `J_n = 1_n 1_nᵀ`.\n@realizes J_n(all-ones matrix) -/\ndef allOnesMatrix (m : ℕ) : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ := Matrix.of fun _ _ => 1"
+        }
+      ]
+    },
+    "sym:s_m": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 93,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "signVec — sign vector +1 on A_m, −1 on B_m",
+          "statement": "/-- The community sign vector `s_m` (`+1` on block `A_m = {i : i < m}`, `−1` on `B_m`).\n@realizes s_m(sign vector +1 on A_m, −1 on B_m) -/\ndef signVec (m : ℕ) : Fin (2 * m) → ℝ := fun i => if i.val < m then 1 else -1"
+        }
+      ]
+    },
+    "sym:G_m(a,b)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 114,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "twoBlockGraph — within-block a/m, across-block b/m, diag 0",
+          "statement": "/-- The weighted two-block homophily adjacency `W`: `a/m` within a block, `b/m`\nacross blocks, `0` on the diagonal.\n@realizes G_m(a,b)(within-block a/m, across-block b/m, diag 0)\n@realizes a(within-block edge weight a/m; range 0<b<a pinned by TwoBlockHomophily)\n@realizes b(cross-block edge weight b/m; range 0<b pinned by TwoBlockHomophily)\n@realizes A_m, B_m(two communities via block membership i.val < m, |A_m|=|B_m|=m) -/\nnoncomputable def twoBlockGraph (m : ℕ) (a b : ℝ) : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ :=\n  Matrix.of fun i j =>\n    if i = j then 0\n    else if (decide (i.val < m) = decide (j.val < m)) then a / (m : ℝ) else b / (m : ℝ)"
+        }
+      ]
+    },
+    "sym:A_m": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 117,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "twoBlockGraph",
+          "statement": "/-- The weighted two-block homophily adjacency `W`: `a/m` within a block, `b/m`\nacross blocks, `0` on the diagonal.\n@realizes G_m(a,b)(within-block a/m, across-block b/m, diag 0)\n@realizes a(within-block edge weight a/m; range 0<b<a pinned by TwoBlockHomophily)\n@realizes b(cross-block edge weight b/m; range 0<b pinned by TwoBlockHomophily)\n@realizes A_m, B_m(two communities via block membership i.val < m, |A_m|=|B_m|=m) -/\nnoncomputable def twoBlockGraph (m : ℕ) (a b : ℝ) : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ :=\n  Matrix.of fun i j =>\n    if i = j then 0\n    else if (decide (i.val < m) = decide (j.val < m)) then a / (m : ℝ) else b / (m : ℝ)"
+        },
+        {
+          "label": "blockSumA",
+          "statement": "/-- Community sum `S_A = ∑_{i ∈ A_m} Z_i` (integer-valued).\n@realizes A_m, B_m(community A_m = {i : i.val < m}, cardinality m) -/\ndef blockSumA (m : ℕ) (z : Fin (2 * m) → Bool) : ℤ :=\n  ∑ i ∈ Finset.univ.filter (fun i : Fin (2 * m) => i.val < m), (if z i then (1 : ℤ) else -1)"
+        },
+        {
+          "label": "blockSumB",
+          "statement": "/-- Community sum `S_B = ∑_{i ∈ B_m} Z_i` (integer-valued).\n@realizes A_m, B_m(community B_m = {i : ¬ i.val < m}, cardinality m) -/\ndef blockSumB (m : ℕ) (z : Fin (2 * m) → Bool) : ℤ :=\n  ∑ i ∈ Finset.univ.filter (fun i : Fin (2 * m) => ¬ i.val < m), (if z i then (1 : ℤ) else -1)"
+        }
+      ]
+    },
+    "sym:B_m": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 117,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "twoBlockGraph — two communities via block membership i.val < m, |A_m|=|B_m|=m",
+          "statement": "/-- The weighted two-block homophily adjacency `W`: `a/m` within a block, `b/m`\nacross blocks, `0` on the diagonal.\n@realizes G_m(a,b)(within-block a/m, across-block b/m, diag 0)\n@realizes a(within-block edge weight a/m; range 0<b<a pinned by TwoBlockHomophily)\n@realizes b(cross-block edge weight b/m; range 0<b pinned by TwoBlockHomophily)\n@realizes A_m, B_m(two communities via block membership i.val < m, |A_m|=|B_m|=m) -/\nnoncomputable def twoBlockGraph (m : ℕ) (a b : ℝ) : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ :=\n  Matrix.of fun i j =>\n    if i = j then 0\n    else if (decide (i.val < m) = decide (j.val < m)) then a / (m : ℝ) else b / (m : ℝ)"
+        },
+        {
+          "label": "blockSumA — community A_m = {i : i.val < m}, cardinality m",
+          "statement": "/-- Community sum `S_A = ∑_{i ∈ A_m} Z_i` (integer-valued).\n@realizes A_m, B_m(community A_m = {i : i.val < m}, cardinality m) -/\ndef blockSumA (m : ℕ) (z : Fin (2 * m) → Bool) : ℤ :=\n  ∑ i ∈ Finset.univ.filter (fun i : Fin (2 * m) => i.val < m), (if z i then (1 : ℤ) else -1)"
+        },
+        {
+          "label": "blockSumB — community B_m = {i : ¬ i.val < m}, cardinality m",
+          "statement": "/-- Community sum `S_B = ∑_{i ∈ B_m} Z_i` (integer-valued).\n@realizes A_m, B_m(community B_m = {i : ¬ i.val < m}, cardinality m) -/\ndef blockSumB (m : ℕ) (z : Fin (2 * m) → Bool) : ℤ :=\n  ∑ i ∈ Finset.univ.filter (fun i : Fin (2 * m) => ¬ i.val < m), (if z i then (1 : ℤ) else -1)"
+        }
+      ]
+    },
+    "sym:L_m": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 124,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "twoBlockLaplacian — graph Laplacian of G_m(a,b)",
+          "statement": "/-- The graph Laplacian `L_m = D − W` of the two-block graph (`D` the degree diagonal).\n@realizes L_m(graph Laplacian of G_m(a,b)) -/\nnoncomputable def twoBlockLaplacian (m : ℕ) (a b : ℝ) : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ :=\n  Matrix.of fun i j =>\n    if i = j then (∑ k, twoBlockGraph m a b i k) else - twoBlockGraph m a b i j"
+        }
+      ]
+    },
+    "sym:L_m^dagger": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 132,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "twoBlockLaplacianPinv — pseudoinverse via spectral action 1/(a+b), 1/(2b), 0",
+          "statement": "/-- The Moore–Penrose pseudoinverse `L_m^†`, realized by its spectral action:\neigenvalues `1/(a+b)` on the block-contrast subspace, `1/(2b)` on `span s_m`, `0`\non `span 1_n` (the only way it is consumed downstream).\n@realizes L_m^dagger(pseudoinverse via spectral action 1/(a+b), 1/(2b), 0) -/\nnoncomputable def twoBlockLaplacianPinv (m : ℕ) (a b : ℝ) :\n    Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ :=\n  (1 / (a + b)) • ((1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) - onesProj m - signProj m)\n    + (1 / (2 * b)) • signProj m"
+        }
+      ]
+    },
+    "sym:X_cut": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 139,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "cutCovariance — s_m s_mᵀ",
+          "statement": "/-- The cut covariance `X_cut = s_m s_mᵀ`.\n@realizes X_cut(s_m s_mᵀ) -/\ndef cutCovariance (m : ℕ) : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ :=\n  Matrix.of fun i j => signVec m i * signVec m j"
+        }
+      ]
+    },
+    "sym:kappa(carrier ℝ; robustness weight on the Schatten-2 penalty `κ‖X‖_{S_2}`; range": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 153,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "designObjective",
+          "statement": "/-- The normalized design objective\n`F_{r,κ}(X) = Tr(L_m X) + r Tr(L_m^† X) + κ ‖X‖_{S_2} + Tr(J_n X)`.\n@realizes F_{r,kappa}(X)(Tr(L_m X) + r Tr(L_m^† X) + κ‖X‖ + Tr(J_n X))\n@realizes r(carrier ℝ; homophily tradeoff weight on the `r * Tr(L^† X)` term)\n@realizes kappa(carrier ℝ; robustness weight on the Schatten-2 penalty `κ‖X‖_{S_2}`; range\n[0,∞) pinned by the `0 ≤ kappa` premises threaded through the consuming theorems/lemmas) -/\nnoncomputable def designObjective (m : ℕ) (a b r kappa : ℝ)\n    (X : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) : ℝ :=\n  Matrix.trace (twoBlockLaplacian m a b * X)\n    + r * Matrix.trace (twoBlockLaplacianPinv m a b * X)\n    + kappa * frobeniusNorm X\n    + Matrix.trace (allOnesMatrix m * X)"
+        }
+      ]
+    },
+    "sym:E_m^blk": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 198,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "blockElliptope — set of PSD block-symmetric correlation matrices X(u,v)",
+          "statement": "/-- The block-symmetric elliptope slice `E_m^blk` as a set of matrices.\n@realizes E_m^blk(set of PSD block-symmetric correlation matrices X(u,v)) -/\ndef blockElliptope (m : ℕ) (a b : ℝ) : Set (Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) :=\n  { X | ∃ u v : ℝ, X = blockSymMatrix m u v ∧ BlockElliptopeMem m a b u v }"
+        }
+      ]
+    },
+    "sym:P(AUTHORITATIVE CARRIER: `FiniteDesign (Fin (2*m) → Bool)`; the space": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 206,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "blockElliptope",
+          "statement": "/-- The block-symmetric elliptope slice `E_m^blk` as a set of matrices.\n@realizes E_m^blk(set of PSD block-symmetric correlation matrices X(u,v)) -/\ndef blockElliptope (m : ℕ) (a b : ℝ) : Set (Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) :=\n  { X | ∃ u v : ℝ, X = blockSymMatrix m u v ∧ BlockElliptopeMem m a b u v }"
+        }
+      ]
+    },
+    "sym:P` tags pinning the same law argument.)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 213,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "blockElliptope",
+          "statement": "/-- The block-symmetric elliptope slice `E_m^blk` as a set of matrices.\n@realizes E_m^blk(set of PSD block-symmetric correlation matrices X(u,v)) -/\ndef blockElliptope (m : ℕ) (a b : ℝ) : Set (Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) :=\n  { X | ∃ u v : ℝ, X = blockSymMatrix m u v ∧ BlockElliptopeMem m a b u v }"
+        }
+      ]
+    },
+    "sym:Z": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 217,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "signOf — ±1 assignment sign vector",
+          "statement": "/-- The `±1` sign vector of an assignment `z` (`true ↦ +1`, `false ↦ −1`).\n@realizes Z(±1 assignment sign vector) -/\ndef signOf (m : ℕ) (z : Fin (2 * m) → Bool) : Fin (2 * m) → ℝ :=\n  fun i => if z i then 1 else -1"
+        }
+      ]
+    },
+    "sym:X(P)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 228,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "assignmentSecondMoment — second-moment matrix E_P[Z Zᵀ]",
+          "statement": "/-- The assignment second-moment matrix `X(P) = E_P[Z Zᵀ]`.\n@realizes X(P)(second-moment matrix E_P[Z Zᵀ])\n@realizes P(design-law argument `D : FiniteDesign (Fin (2*m) → Bool)`, the law over which\nthe second moment is taken) -/\nnoncomputable def assignmentSecondMoment (m : ℕ) (D : FiniteDesign (Fin (2 * m) → Bool)) :\n    Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ :=\n  Matrix.of fun i j => D.E (fun z => signOf m z i * signOf m z j)"
+        }
+      ]
+    },
+    "sym:P(design-law argument `D : FiniteDesign (Fin (2*m) → Bool)`, the law over which": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 229,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "assignmentSecondMoment",
+          "statement": "/-- The assignment second-moment matrix `X(P) = E_P[Z Zᵀ]`.\n@realizes X(P)(second-moment matrix E_P[Z Zᵀ])\n@realizes P(design-law argument `D : FiniteDesign (Fin (2*m) → Bool)`, the law over which\nthe second moment is taken) -/\nnoncomputable def assignmentSecondMoment (m : ℕ) (D : FiniteDesign (Fin (2 * m) → Bool)) :\n    Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ :=\n  Matrix.of fun i j => D.E (fun z => signOf m z i * signOf m z j)"
+        }
+      ]
+    },
+    "sym:P_cut": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 236,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "cutDesign — ½ δ_{s_m} + ½ δ_{−s_m}",
+          "statement": "/-- The cut design `P_cut`: mass `1/2` on `s_m` and `1/2` on `−s_m`.\n@realizes P_cut(½ δ_{s_m} + ½ δ_{−s_m})\n@realizes P(cluster member — CONCRETE CARRIER+CONSTRAINTS instance: a `FiniteDesign\n(Fin (2*m) → Bool)`, i.e. a probability law on {-1,1}^n, whose `p_nonneg`/`p_sum` fields\nbelow discharge the PMF constraints that pin the symbol's space) -/\nnoncomputable def cutDesign (m : ℕ) : FiniteDesign (Fin (2 * m) → Bool) where\n  p := fun z => (if z = cutPlus m then (1 : ℝ) / 2 else 0)\n    + (if z = cutMinus m then (1 : ℝ) / 2 else 0)\n  p_nonneg := fun z => by -- @realizes P(constraint 0 ≤ p z: nonnegativity of the law)\n    have h : ∀ w : Fin (2 * m) → Bool, (0 : ℝ) ≤ if z = w then (1 : ℝ) / 2 else 0 := by\n      intro w; split_ifs <;> norm_num\n    exact add_nonneg (h _) (h _)\n  p_sum := by -- @realizes P(constraint ∑ p = 1: total unit mass of the law)\n    rw [Finset.sum_add_distrib,\n      Finset.sum_ite_eq' Finset.univ (cutPlus m) (fun _ => (1 : ℝ) / 2),\n      Finset.sum_ite_eq' Finset.univ (cutMinus m) (fun _ => (1 : ℝ) / 2)]\n    simp only [Finset.mem_univ, if_true]; norm_num"
+        }
+      ]
+    },
+    "sym:P(cluster member — CONCRETE CARRIER+CONSTRAINTS instance: a `FiniteDesign": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 237,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "cutDesign",
+          "statement": "/-- The cut design `P_cut`: mass `1/2` on `s_m` and `1/2` on `−s_m`.\n@realizes P_cut(½ δ_{s_m} + ½ δ_{−s_m})\n@realizes P(cluster member — CONCRETE CARRIER+CONSTRAINTS instance: a `FiniteDesign\n(Fin (2*m) → Bool)`, i.e. a probability law on {-1,1}^n, whose `p_nonneg`/`p_sum` fields\nbelow discharge the PMF constraints that pin the symbol's space) -/\nnoncomputable def cutDesign (m : ℕ) : FiniteDesign (Fin (2 * m) → Bool) where\n  p := fun z => (if z = cutPlus m then (1 : ℝ) / 2 else 0)\n    + (if z = cutMinus m then (1 : ℝ) / 2 else 0)\n  p_nonneg := fun z => by -- @realizes P(constraint 0 ≤ p z: nonnegativity of the law)\n    have h : ∀ w : Fin (2 * m) → Bool, (0 : ℝ) ≤ if z = w then (1 : ℝ) / 2 else 0 := by\n      intro w; split_ifs <;> norm_num\n    exact add_nonneg (h _) (h _)\n  p_sum := by -- @realizes P(constraint ∑ p = 1: total unit mass of the law)\n    rw [Finset.sum_add_distrib,\n      Finset.sum_ite_eq' Finset.univ (cutPlus m) (fun _ => (1 : ℝ) / 2),\n      Finset.sum_ite_eq' Finset.univ (cutMinus m) (fun _ => (1 : ℝ) / 2)]\n    simp only [Finset.mem_univ, if_true]; norm_num"
+        },
+        {
+          "label": "iidDesign",
+          "statement": "/-- The iid Rademacher design `P_iid`: uniform on `{-1,1}^n`.\n@realizes P_iid(uniform Rademacher design)\n@realizes P(cluster member — CONCRETE CARRIER+CONSTRAINTS instance: a `FiniteDesign\n(Fin (2*m) → Bool)`, i.e. a probability law on {-1,1}^n, whose `p_nonneg`/`p_sum` fields\nbelow discharge the PMF constraints that pin the symbol's space) -/\nnoncomputable def iidDesign (m : ℕ) : FiniteDesign (Fin (2 * m) → Bool) where\n  p := fun _ => (Fintype.card (Fin (2 * m) → Bool) : ℝ)⁻¹\n  p_nonneg := fun _ => by positivity -- @realizes P(constraint 0 ≤ p z: nonnegativity of the law)\n  p_sum := by -- @realizes P(constraint ∑ p = 1: total unit mass of the law)\n    rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]\n    exact mul_inv_cancel₀ (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)"
+        }
+      ]
+    },
+    "sym:P": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 243,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "cutDesign — constraint 0 ≤ p z: nonnegativity of the law; constraint ∑ p = 1: total unit mass of the law",
+          "statement": "/-- The cut design `P_cut`: mass `1/2` on `s_m` and `1/2` on `−s_m`.\n@realizes P_cut(½ δ_{s_m} + ½ δ_{−s_m})\n@realizes P(cluster member — CONCRETE CARRIER+CONSTRAINTS instance: a `FiniteDesign\n(Fin (2*m) → Bool)`, i.e. a probability law on {-1,1}^n, whose `p_nonneg`/`p_sum` fields\nbelow discharge the PMF constraints that pin the symbol's space) -/\nnoncomputable def cutDesign (m : ℕ) : FiniteDesign (Fin (2 * m) → Bool) where\n  p := fun z => (if z = cutPlus m then (1 : ℝ) / 2 else 0)\n    + (if z = cutMinus m then (1 : ℝ) / 2 else 0)\n  p_nonneg := fun z => by -- @realizes P(constraint 0 ≤ p z: nonnegativity of the law)\n    have h : ∀ w : Fin (2 * m) → Bool, (0 : ℝ) ≤ if z = w then (1 : ℝ) / 2 else 0 := by\n      intro w; split_ifs <;> norm_num\n    exact add_nonneg (h _) (h _)\n  p_sum := by -- @realizes P(constraint ∑ p = 1: total unit mass of the law)\n    rw [Finset.sum_add_distrib,\n      Finset.sum_ite_eq' Finset.univ (cutPlus m) (fun _ => (1 : ℝ) / 2),\n      Finset.sum_ite_eq' Finset.univ (cutMinus m) (fun _ => (1 : ℝ) / 2)]\n    simp only [Finset.mem_univ, if_true]; norm_num"
+        },
+        {
+          "label": "iidDesign — constraint 0 ≤ p z: nonnegativity of the law; constraint ∑ p = 1: total unit mass of the law",
+          "statement": "/-- The iid Rademacher design `P_iid`: uniform on `{-1,1}^n`.\n@realizes P_iid(uniform Rademacher design)\n@realizes P(cluster member — CONCRETE CARRIER+CONSTRAINTS instance: a `FiniteDesign\n(Fin (2*m) → Bool)`, i.e. a probability law on {-1,1}^n, whose `p_nonneg`/`p_sum` fields\nbelow discharge the PMF constraints that pin the symbol's space) -/\nnoncomputable def iidDesign (m : ℕ) : FiniteDesign (Fin (2 * m) → Bool) where\n  p := fun _ => (Fintype.card (Fin (2 * m) → Bool) : ℝ)⁻¹\n  p_nonneg := fun _ => by positivity -- @realizes P(constraint 0 ≤ p z: nonnegativity of the law)\n  p_sum := by -- @realizes P(constraint ∑ p = 1: total unit mass of the law)\n    rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]\n    exact mul_inv_cancel₀ (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)"
+        }
+      ]
+    },
+    "sym:P_iid": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 254,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "iidDesign — uniform Rademacher design",
+          "statement": "/-- The iid Rademacher design `P_iid`: uniform on `{-1,1}^n`.\n@realizes P_iid(uniform Rademacher design)\n@realizes P(cluster member — CONCRETE CARRIER+CONSTRAINTS instance: a `FiniteDesign\n(Fin (2*m) → Bool)`, i.e. a probability law on {-1,1}^n, whose `p_nonneg`/`p_sum` fields\nbelow discharge the PMF constraints that pin the symbol's space) -/\nnoncomputable def iidDesign (m : ℕ) : FiniteDesign (Fin (2 * m) → Bool) where\n  p := fun _ => (Fintype.card (Fin (2 * m) → Bool) : ℝ)⁻¹\n  p_nonneg := fun _ => by positivity -- @realizes P(constraint 0 ≤ p z: nonnegativity of the law)\n  p_sum := by -- @realizes P(constraint ∑ p = 1: total unit mass of the law)\n    rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]\n    exact mul_inv_cancel₀ (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)"
+        }
+      ]
+    },
+    "sym:P(design-law argument `D : FiniteDesign (Fin (2*m) → Bool)`, the probability": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 268,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "BalancedSignDesign",
+          "statement": "/-- Balanced sign-symmetric design: `P(Z = z) = P(Z = −z)` for all `z` (global\nsign symmetry, implying zero one-point margins).\n@realizes P(design-law argument `D : FiniteDesign (Fin (2*m) → Bool)`, the probability\nlaw on {-1,1}^n this predicate constrains) -/\ndef BalancedSignDesign (m : ℕ) (D : FiniteDesign (Fin (2 * m) → Bool)) : Prop :=\n  ∀ z, D.p z = D.p (fun i => ! z i)"
+        }
+      ]
+    },
+    "sym:P_m^bal": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 275,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "BalancedDesignClass — designs with global sign symmetry",
+          "statement": "/-- The balanced design class `P_m^bal`, bundling the single sign-symmetry atom.\n@realizes P_m^bal(designs with global sign symmetry)\n@realizes P(cluster member: the bundled law `D : FiniteDesign (Fin (2*m) → Bool)`, a\nprobability law on {-1,1}^n via the carrier's `p_nonneg`/`p_sum` fields) -/\nstructure BalancedDesignClass (m : ℕ) (D : FiniteDesign (Fin (2 * m) → Bool)) : Prop where\n  /-- Member atom: global sign symmetry. -/\n  balanced : BalancedSignDesign m D"
+        }
+      ]
+    },
+    "sym:P(cluster member: the bundled law `D : FiniteDesign (Fin (2*m) → Bool)`, a": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 276,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "BalancedDesignClass",
+          "statement": "/-- The balanced design class `P_m^bal`, bundling the single sign-symmetry atom.\n@realizes P_m^bal(designs with global sign symmetry)\n@realizes P(cluster member: the bundled law `D : FiniteDesign (Fin (2*m) → Bool)`, a\nprobability law on {-1,1}^n via the carrier's `p_nonneg`/`p_sum` fields) -/\nstructure BalancedDesignClass (m : ℕ) (D : FiniteDesign (Fin (2 * m) → Bool)) : Prop where\n  /-- Member atom: global sign symmetry. -/\n  balanced : BalancedSignDesign m D"
+        }
+      ]
+    },
+    "sym:P_m^sym": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 291,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "blockExchangeableDesignClass — balanced designs invariant under the two-block automorphism group",
+          "statement": "/-- The block-exchangeable design class `P_m^sym`: laws in `P_m^bal` invariant\nunder permutations within `A_m`, within `B_m`, and under the community swap (the\nfull two-block automorphism group). (D0.R provisional revision carried as revised.)\n@realizes P_m^sym(balanced designs invariant under the two-block automorphism group)\n@realizes P(cluster member: this `Set (FiniteDesign (Fin (2*m) → Bool))` is the class of\nprobability laws `P` consumed downstream by `implementableCovarianceClass`/\n`implementabilityGap`; each element is a probability law via the carrier's PMF fields) -/\ndef blockExchangeableDesignClass (m : ℕ) : Set (FiniteDesign (Fin (2 * m) → Bool)) :=\n  { D | BalancedDesignClass m D ∧\n      ∀ σ : Equiv.Perm (Fin (2 * m)), IsBlockAuto m σ →\n        ∀ z, D.p (fun i => z (σ i)) = D.p z }"
+        }
+      ]
+    },
+    "sym:P(cluster member: this `Set (FiniteDesign (Fin (2*m) → Bool))` is the class of": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 292,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "blockExchangeableDesignClass",
+          "statement": "/-- The block-exchangeable design class `P_m^sym`: laws in `P_m^bal` invariant\nunder permutations within `A_m`, within `B_m`, and under the community swap (the\nfull two-block automorphism group). (D0.R provisional revision carried as revised.)\n@realizes P_m^sym(balanced designs invariant under the two-block automorphism group)\n@realizes P(cluster member: this `Set (FiniteDesign (Fin (2*m) → Bool))` is the class of\nprobability laws `P` consumed downstream by `implementableCovarianceClass`/\n`implementabilityGap`; each element is a probability law via the carrier's PMF fields) -/\ndef blockExchangeableDesignClass (m : ℕ) : Set (FiniteDesign (Fin (2 * m) → Bool)) :=\n  { D | BalancedDesignClass m D ∧\n      ∀ σ : Equiv.Perm (Fin (2 * m)), IsBlockAuto m σ →\n        ∀ z, D.p (fun i => z (σ i)) = D.p z }"
+        }
+      ]
+    },
+    "sym:C_m^pm": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 302,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "implementableCovarianceClass — second moments of block-exchangeable designs",
+          "statement": "/-- The implementable covariance class `C_m^pm = { X(P) : P ∈ P_m^sym }`.\n@realizes C_m^pm(second moments of block-exchangeable designs)\n@realizes P(cluster member: the bound design law `D ∈ blockExchangeableDesignClass m`\nranges over the probability laws `P` whose second moment `X(P)` defines this class) -/\ndef implementableCovarianceClass (m : ℕ) : Set (Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) :=\n  { X | ∃ D ∈ blockExchangeableDesignClass m, X = assignmentSecondMoment m D }"
+        }
+      ]
+    },
+    "sym:P(cluster member: the bound design law `D ∈ blockExchangeableDesignClass m`": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 303,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "implementableCovarianceClass",
+          "statement": "/-- The implementable covariance class `C_m^pm = { X(P) : P ∈ P_m^sym }`.\n@realizes C_m^pm(second moments of block-exchangeable designs)\n@realizes P(cluster member: the bound design law `D ∈ blockExchangeableDesignClass m`\nranges over the probability laws `P` whose second moment `X(P)` defines this class) -/\ndef implementableCovarianceClass (m : ℕ) : Set (Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) :=\n  { X | ∃ D ∈ blockExchangeableDesignClass m, X = assignmentSecondMoment m D }"
+        }
+      ]
+    },
+    "sym:B(P)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 321,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "blockSumHandle — joint law of the two community sums",
+          "statement": "/-- The block-sum law handle `B(P)`: the joint pmf of the two community sums\n`(S_A, S_B)` under `P` (the OEQ parity handle).\n@realizes B(P)(joint law of the two community sums) -/\nnoncomputable def blockSumHandle (m : ℕ) (D : FiniteDesign (Fin (2 * m) → Bool))\n    (kl : ℤ × ℤ) : ℝ :=\n  D.E (fun z => if blockSumA m z = kl.1 ∧ blockSumB m z = kl.2 then 1 else 0)"
+        }
+      ]
+    },
+    "sym:Delta_m^pm(r,kappa)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 331,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "implementabilityGap",
+          "statement": "/-- The implementability gap `Δ_m^±(r,κ) = inf_{P ∈ P_m^sym} F(X(P)) − inf_{X ∈ E_m^blk} F(X)`,\nas an `sInf` difference over the objective images.\n@realizes Delta_m^pm(r,kappa)(implementable inf − relaxed inf; CARRIER of the gap. The bare\n`sInf − sInf` real difference is a plain `ℝ`; its core-declared range `[0,∞)` is NOT carried\nby this `def` alone but by the CONJUNCTION of this carrier with the companion range lemma\n`implementabilityGap_nonneg` in `Helpers/GapReduction.lean`, which pins `0 ≤ Δ_m^±` via\nthe reduced constrained-minus-unconstrained identity.)\n@realizes P(cluster member — AUTHORITATIVE link into the `sharp_rho_star` target block:\nthe implementable `sInf` is taken over `designObjective … '' implementableCovarianceClass m`,\ni.e. over the second moments `X(P)` of the probability laws `P ∈ P_m^sym`; this is the\ndecl through which the P realization cluster enters `thm:sharp-rho-star`)\n@realizes kappa(carrier ℝ; robustness argument of the gap; range [0,∞) pinned by the\n`0 ≤ kappa` premises of the consuming theorems `sharp_rho_star`/`rounding_gap_reduction`) -/\nnoncomputable def implementabilityGap (m : ℕ) (a b r kappa : ℝ) : ℝ :=\n  sInf (designObjective m a b r kappa '' implementableCovarianceClass m)\n    - sInf (designObjective m a b r kappa '' blockElliptope m a b)"
+        },
+        {
+          "label": "implementabilityGap_nonneg",
+          "statement": "/-- **Range lemma for `Δ_m^±`.** The implementability gap lands in its core-declared\nspace `[0,∞)`: `0 ≤ Δ_m^±(r,κ)`. The reduction lemma identifies it with the reduced\nconstrained-minus-unconstrained value, whose nonnegativity is proved by\n`roundingLossCertificate_nonneg`.\n@realizes Delta_m^pm(r,kappa)(range [0,∞) pinned via the reduced\nconstrained-minus-unconstrained identity) -/\nlemma implementabilityGap_nonneg (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hr0 : 0 ≤ r) (hk : 0 ≤ kappa) :\n    0 ≤ implementabilityGap m a b r kappa"
+        },
+        {
+          "label": "sharp_rho_star — standing range clause 0 ≤ Δ_m^± pinning space [0,∞",
+          "statement": "theorem sharp_rho_star (m : ℕ) (a b r kappa : ℝ) (hHom : TwoBlockHomophily m a b)\n    (hr0 : 0 ≤ r) -- @realizes r(range 0 ≤ r pins r ∈ [0,∞))\n    (hk : 0 ≤ kappa) : -- @realizes kappa(range 0 ≤ κ pins κ ∈ [0,∞), its definitional domain)\n    roundingLossCertificate m a b r kappa = implementabilityGap m a b r kappa ∧\n    -- @realizes rho_star(m,a,b,r,kappa)(standing range clause 0 ≤ ρ_⋆ pinning space [0,∞);\n    -- discharged by the companion range lemma `roundingLossCertificate_nonneg` in Basic)\n    0 ≤ roundingLossCertificate m a b r kappa ∧\n    -- @realizes Delta_m^pm(r,kappa)(standing range clause 0 ≤ Δ_m^± pinning space [0,∞);\n    -- discharged by the companion range lemma `implementabilityGap_nonneg` in Basic)\n    0 ≤ implementabilityGap m a b r kappa ∧\n    (roundingLossCertificate m a b r kappa = 0 ↔\n      ∃ x y z, InReducedTriangle m x y z ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        parityThreshold m ≤ y + z) ∧\n    (0 < kappa →\n      (∃! t : ℝ × ℝ × ℝ, InReducedTriangle m t.1 t.2.1 t.2.2 ∧\n        ∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa t.1 t.2.1 t.2.2\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n      (roundingLossCertificate m a b r kappa = 0 ↔\n        ∀ x y z, InReducedTriangle m x y z →\n          (∀ x' y' z', InReducedTriangle m x' y' z' →\n            reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n              ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') →\n          parityThreshold m ≤ y + z)) ∧\n    (kappa = 0 →\n      ∀ x y z, InReducedTriangle m x y z →\n        ((∀ x' y' z', InReducedTriangle m x' y' z' →\n            reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n              ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z')\n          ↔ (x ≠ 0 → cX m a b r / qParam m ≤ cY b r ∧ cX m a b r / qParam m ≤ cZ m) ∧\n            (y ≠ 0 → cY b r ≤ cX m a b r / qParam m ∧ cY b r ≤ cZ m) ∧\n            (z ≠ 0 → cZ m ≤ cX m a b r / qParam m ∧ cZ m ≤ cY b r))) ∧\n    -- Active-set computation of the relaxed minimizer (lem:weighted-simplex-active-set):\n    -- for κ > 0 the unique relaxed argmin over `T_m` is the active-set point of an\n    -- admissible support/multiplier `(S, λ)` under the change of variables `t = (q x, y, z)`\n    -- (`α = sharpAlpha`, `β = sharpBeta`), with relaxed value `M · λ` (`M = 2m`).\n    (0 < kappa →\n      ∃ S : Finset (Fin 3), ∃ lam : ℝ,\n        IsAdmissibleSupport (sharpAlpha m a b r) (sharpBeta m) kappa S lam ∧\n        InReducedTriangle m\n          (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 0 / qParam m)\n          (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 1)\n          (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 2) ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa\n              (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 0 / qParam m)\n              (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 1)\n              (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 2)\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        relaxedReducedValue m a b r kappa = 2 * (m : ℝ) * lam) ∧\n    -- Truncation correction (lem:weighted-simplex-truncation): when the relaxed argmin\n    -- set is disjoint from the implementable slice `{y+z ≥ d_m}`, the implementable value\n    -- is attained on the truncation segment `{y+z = d_m}` at the endpoint/interior selector\n    -- `truncSelector`, so `Δ_m^±` is computed by this boundary-segment formula.\n    ((¬ ∃ x y z, InReducedTriangle m x y z ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        parityThreshold m ≤ y + z) →\n      implementableReducedValue m a b r kappa =\n        wsObj (sharpAlpha m a b r) (sharpBeta m) kappa\n          (truncSegPoint (2 * (m : ℝ)) (parityThreshold m)\n            (truncSelector (2 * (m : ℝ)) (parityThreshold m)\n              (sharpAlpha m a b r) (sharpBeta m) kappa))) ∧\n    (Even m → roundingLossCertificate m a b r kappa = 0)"
+        }
+      ]
+    },
+    "sym:P(cluster member — AUTHORITATIVE link into the `sharp_rho_star` target block:": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 336,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "implementabilityGap",
+          "statement": "/-- The implementability gap `Δ_m^±(r,κ) = inf_{P ∈ P_m^sym} F(X(P)) − inf_{X ∈ E_m^blk} F(X)`,\nas an `sInf` difference over the objective images.\n@realizes Delta_m^pm(r,kappa)(implementable inf − relaxed inf; CARRIER of the gap. The bare\n`sInf − sInf` real difference is a plain `ℝ`; its core-declared range `[0,∞)` is NOT carried\nby this `def` alone but by the CONJUNCTION of this carrier with the companion range lemma\n`implementabilityGap_nonneg` in `Helpers/GapReduction.lean`, which pins `0 ≤ Δ_m^±` via\nthe reduced constrained-minus-unconstrained identity.)\n@realizes P(cluster member — AUTHORITATIVE link into the `sharp_rho_star` target block:\nthe implementable `sInf` is taken over `designObjective … '' implementableCovarianceClass m`,\ni.e. over the second moments `X(P)` of the probability laws `P ∈ P_m^sym`; this is the\ndecl through which the P realization cluster enters `thm:sharp-rho-star`)\n@realizes kappa(carrier ℝ; robustness argument of the gap; range [0,∞) pinned by the\n`0 ≤ kappa` premises of the consuming theorems `sharp_rho_star`/`rounding_gap_reduction`) -/\nnoncomputable def implementabilityGap (m : ℕ) (a b r kappa : ℝ) : ℝ :=\n  sInf (designObjective m a b r kappa '' implementableCovarianceClass m)\n    - sInf (designObjective m a b r kappa '' blockElliptope m a b)"
+        }
+      ]
+    },
+    "sym:kappa(carrier ℝ; robustness argument of the gap; range [0,∞) pinned by the": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 340,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "implementabilityGap",
+          "statement": "/-- The implementability gap `Δ_m^±(r,κ) = inf_{P ∈ P_m^sym} F(X(P)) − inf_{X ∈ E_m^blk} F(X)`,\nas an `sInf` difference over the objective images.\n@realizes Delta_m^pm(r,kappa)(implementable inf − relaxed inf; CARRIER of the gap. The bare\n`sInf − sInf` real difference is a plain `ℝ`; its core-declared range `[0,∞)` is NOT carried\nby this `def` alone but by the CONJUNCTION of this carrier with the companion range lemma\n`implementabilityGap_nonneg` in `Helpers/GapReduction.lean`, which pins `0 ≤ Δ_m^±` via\nthe reduced constrained-minus-unconstrained identity.)\n@realizes P(cluster member — AUTHORITATIVE link into the `sharp_rho_star` target block:\nthe implementable `sInf` is taken over `designObjective … '' implementableCovarianceClass m`,\ni.e. over the second moments `X(P)` of the probability laws `P ∈ P_m^sym`; this is the\ndecl through which the P realization cluster enters `thm:sharp-rho-star`)\n@realizes kappa(carrier ℝ; robustness argument of the gap; range [0,∞) pinned by the\n`0 ≤ kappa` premises of the consuming theorems `sharp_rho_star`/`rounding_gap_reduction`) -/\nnoncomputable def implementabilityGap (m : ℕ) (a b r kappa : ℝ) : ℝ :=\n  sInf (designObjective m a b r kappa '' implementableCovarianceClass m)\n    - sInf (designObjective m a b r kappa '' blockElliptope m a b)"
+        }
+      ]
+    },
+    "sym:rho_star(m,a,b,r,kappa)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 363,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "roundingLossCertificate",
+          "statement": "/-- The tight rounding-loss certificate `ρ_⋆`, realized as the reduced-coordinate\nimplementable-minus-relaxed value (proved equal to `Δ_m^±` by `rounding_gap_reduction`).\nThe bare `implementableReducedValue − relaxedReducedValue` real difference is a plain `ℝ`;\nits core-declared range `[0,∞)` is NOT carried by this `def` alone but by the CONJUNCTION of\nthis carrier with the companion range lemma `roundingLossCertificate_nonneg` below, which\npins `0 ≤ ρ_⋆` (the constrained reduced value dominating the unconstrained one, exactly as\n`Δ_m^±` is pinned nonnegative by `implementabilityGap_nonneg`).\n@realizes rho_star(m,a,b,r,kappa)(reduced constrained-minus-unconstrained value; CARRIER of\nthe certificate, range [0,∞) pinned via the companion lemma below) -/\nnoncomputable def roundingLossCertificate (m : ℕ) (a b r kappa : ℝ) : ℝ :=\n  implementableReducedValue m a b r kappa - relaxedReducedValue m a b r kappa"
+        },
+        {
+          "label": "roundingLossCertificate_nonneg",
+          "statement": "lemma roundingLossCertificate_nonneg (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hr0 : 0 ≤ r) (hk : 0 ≤ kappa) :\n    0 ≤ roundingLossCertificate m a b r kappa"
+        },
+        {
+          "label": "sharp_rho_star — standing range clause 0 ≤ ρ_⋆ pinning space [0,∞",
+          "statement": "theorem sharp_rho_star (m : ℕ) (a b r kappa : ℝ) (hHom : TwoBlockHomophily m a b)\n    (hr0 : 0 ≤ r) -- @realizes r(range 0 ≤ r pins r ∈ [0,∞))\n    (hk : 0 ≤ kappa) : -- @realizes kappa(range 0 ≤ κ pins κ ∈ [0,∞), its definitional domain)\n    roundingLossCertificate m a b r kappa = implementabilityGap m a b r kappa ∧\n    -- @realizes rho_star(m,a,b,r,kappa)(standing range clause 0 ≤ ρ_⋆ pinning space [0,∞);\n    -- discharged by the companion range lemma `roundingLossCertificate_nonneg` in Basic)\n    0 ≤ roundingLossCertificate m a b r kappa ∧\n    -- @realizes Delta_m^pm(r,kappa)(standing range clause 0 ≤ Δ_m^± pinning space [0,∞);\n    -- discharged by the companion range lemma `implementabilityGap_nonneg` in Basic)\n    0 ≤ implementabilityGap m a b r kappa ∧\n    (roundingLossCertificate m a b r kappa = 0 ↔\n      ∃ x y z, InReducedTriangle m x y z ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        parityThreshold m ≤ y + z) ∧\n    (0 < kappa →\n      (∃! t : ℝ × ℝ × ℝ, InReducedTriangle m t.1 t.2.1 t.2.2 ∧\n        ∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa t.1 t.2.1 t.2.2\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n      (roundingLossCertificate m a b r kappa = 0 ↔\n        ∀ x y z, InReducedTriangle m x y z →\n          (∀ x' y' z', InReducedTriangle m x' y' z' →\n            reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n              ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') →\n          parityThreshold m ≤ y + z)) ∧\n    (kappa = 0 →\n      ∀ x y z, InReducedTriangle m x y z →\n        ((∀ x' y' z', InReducedTriangle m x' y' z' →\n            reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n              ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z')\n          ↔ (x ≠ 0 → cX m a b r / qParam m ≤ cY b r ∧ cX m a b r / qParam m ≤ cZ m) ∧\n            (y ≠ 0 → cY b r ≤ cX m a b r / qParam m ∧ cY b r ≤ cZ m) ∧\n            (z ≠ 0 → cZ m ≤ cX m a b r / qParam m ∧ cZ m ≤ cY b r))) ∧\n    -- Active-set computation of the relaxed minimizer (lem:weighted-simplex-active-set):\n    -- for κ > 0 the unique relaxed argmin over `T_m` is the active-set point of an\n    -- admissible support/multiplier `(S, λ)` under the change of variables `t = (q x, y, z)`\n    -- (`α = sharpAlpha`, `β = sharpBeta`), with relaxed value `M · λ` (`M = 2m`).\n    (0 < kappa →\n      ∃ S : Finset (Fin 3), ∃ lam : ℝ,\n        IsAdmissibleSupport (sharpAlpha m a b r) (sharpBeta m) kappa S lam ∧\n        InReducedTriangle m\n          (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 0 / qParam m)\n          (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 1)\n          (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 2) ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa\n              (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 0 / qParam m)\n              (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 1)\n              (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 2)\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        relaxedReducedValue m a b r kappa = 2 * (m : ℝ) * lam) ∧\n    -- Truncation correction (lem:weighted-simplex-truncation): when the relaxed argmin\n    -- set is disjoint from the implementable slice `{y+z ≥ d_m}`, the implementable value\n    -- is attained on the truncation segment `{y+z = d_m}` at the endpoint/interior selector\n    -- `truncSelector`, so `Δ_m^±` is computed by this boundary-segment formula.\n    ((¬ ∃ x y z, InReducedTriangle m x y z ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        parityThreshold m ≤ y + z) →\n      implementableReducedValue m a b r kappa =\n        wsObj (sharpAlpha m a b r) (sharpBeta m) kappa\n          (truncSegPoint (2 * (m : ℝ)) (parityThreshold m)\n            (truncSelector (2 * (m : ℝ)) (parityThreshold m)\n              (sharpAlpha m a b r) (sharpBeta m) kappa))) ∧\n    (Even m → roundingLossCertificate m a b r kappa = 0)"
+        }
+      ]
+    },
+    "sym:r_star(m,a,b,kappa)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 441,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "IsSharpExactnessBoundary",
+          "statement": "/-- **Sharp cut-break exactness boundary `r_⋆(m,a,b,κ)`** — the HONEST-OPEN frontier\nsymbol (`open_phase_boundary` role; it has NO statement node and NO closed form by design;\nits clean/set-valued shape is deliberately left open, see honest scope). This predicate\nis the dedicated carrier that realizes the symbol's `[0,∞)` SPACE together with its\ndefining boundary role: `rStar` is a *nonnegative* ratio (its `[0,∞)` space) below which\nthe rounding loss vanishes — i.e. it lower-bounds a zero-loss `r`-region `[0, rStar)`,\nthe \"cut-break ratio separating zero implementability loss from positive loss\". No\nexistence, uniqueness, or exact value of such an `rStar` is asserted anywhere (honest\nopen scope); only the space and the separating role are pinned here.\n@realizes r_star(m,a,b,kappa)(carrier/predicate for the open boundary object; its `[0,∞)`\nspace is pinned by the `0 ≤ rStar` conjunct, its separating role by the zero-loss clause) -/\ndef IsSharpExactnessBoundary (m : ℕ) (a b kappa rStar : ℝ) : Prop :=\n  0 ≤ rStar ∧   -- @realizes r_star(range 0 ≤ r_⋆ pins the boundary object into its [0,∞) space)\n  ∀ r, 0 ≤ r → r < rStar →\n    roundingLossCertificate m a b r kappa = 0"
+        }
+      ]
+    },
+    "sym:r_star(range 0 ≤ r_⋆ pins the boundary object into its [0,∞) space)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 444,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "IsSharpExactnessBoundary",
+          "statement": "/-- **Sharp cut-break exactness boundary `r_⋆(m,a,b,κ)`** — the HONEST-OPEN frontier\nsymbol (`open_phase_boundary` role; it has NO statement node and NO closed form by design;\nits clean/set-valued shape is deliberately left open, see honest scope). This predicate\nis the dedicated carrier that realizes the symbol's `[0,∞)` SPACE together with its\ndefining boundary role: `rStar` is a *nonnegative* ratio (its `[0,∞)` space) below which\nthe rounding loss vanishes — i.e. it lower-bounds a zero-loss `r`-region `[0, rStar)`,\nthe \"cut-break ratio separating zero implementability loss from positive loss\". No\nexistence, uniqueness, or exact value of such an `rStar` is asserted anywhere (honest\nopen scope); only the space and the separating role are pinned here.\n@realizes r_star(m,a,b,kappa)(carrier/predicate for the open boundary object; its `[0,∞)`\nspace is pinned by the `0 ≤ rStar` conjunct, its separating role by the zero-loss clause) -/\ndef IsSharpExactnessBoundary (m : ℕ) (a b kappa rStar : ℝ) : Prop :=\n  0 ≤ rStar ∧   -- @realizes r_star(range 0 ≤ r_⋆ pins the boundary object into its [0,∞) space)\n  ∀ r, 0 ≤ r → r < rStar →\n    roundingLossCertificate m a b r kappa = 0"
+        }
+      ]
+    },
+    "sym:r_star": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 447,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "IsSharpExactnessBoundary — separating role: below the cut-break ratio the rounding loss is zero",
+          "statement": "/-- **Sharp cut-break exactness boundary `r_⋆(m,a,b,κ)`** — the HONEST-OPEN frontier\nsymbol (`open_phase_boundary` role; it has NO statement node and NO closed form by design;\nits clean/set-valued shape is deliberately left open, see honest scope). This predicate\nis the dedicated carrier that realizes the symbol's `[0,∞)` SPACE together with its\ndefining boundary role: `rStar` is a *nonnegative* ratio (its `[0,∞)` space) below which\nthe rounding loss vanishes — i.e. it lower-bounds a zero-loss `r`-region `[0, rStar)`,\nthe \"cut-break ratio separating zero implementability loss from positive loss\". No\nexistence, uniqueness, or exact value of such an `rStar` is asserted anywhere (honest\nopen scope); only the space and the separating role are pinned here.\n@realizes r_star(m,a,b,kappa)(carrier/predicate for the open boundary object; its `[0,∞)`\nspace is pinned by the `0 ≤ rStar` conjunct, its separating role by the zero-loss clause) -/\ndef IsSharpExactnessBoundary (m : ℕ) (a b kappa rStar : ℝ) : Prop :=\n  0 ≤ rStar ∧   -- @realizes r_star(range 0 ≤ r_⋆ pins the boundary object into its [0,∞) space)\n  ∀ r, 0 ≤ r → r < rStar →\n    roundingLossCertificate m a b r kappa = 0"
+        }
+      ]
+    },
+    "sym:kappa_iid(m,a,b,r)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 463,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "IsIidExactnessFrontier",
+          "statement": "/-- **iid-exactness frontier `κ_iid(m,a,b,r)`** — the dedicated carrier that realizes the\nsymbol's `[0,∞)` SPACE together with its defining frontier role (`iid_exactness_frontier`,\nrole `derived_phase_boundary`). `κ_iid` is the smallest *nonnegative* robustness weight\nfrom which the iid covariance `I_n = X(P_iid)` remains optimal over the block-symmetric\nelliptope slice `E_m^blk`, and it dominates the cut frontier\n`κ_cut(m,a,b) = max 0 (min (a−b) (2(m−b)))` (the core relation `κ_iid ≥ κ_cut`). This\npredicate is that carrier: the `0 ≤ κ_iid` conjunct pins the `[0,∞)` space, the\n`κ_cut ≤ κ_iid` conjunct records the core ordering, and the trailing clause pins the\nfrontier role — above the frontier weight, `I_n` minimizes `F_{r,κ}` on `E_m^blk`. No\nexistence, uniqueness, or closed form of such a `κ_iid` is asserted here (the iid frontier,\nlike `r_⋆`, is bound only as a symbol; `robust_corner_exactness` supplies the finiteness\ncriterion for its EXISTENCE — a finite frontier exists iff the affine-balanced locus holds\n— not its value). Mirrors the `IsSharpExactnessBoundary` carrier for `r_⋆`.\n@realizes kappa_iid(m,a,b,r)(carrier/predicate for the iid-exactness frontier; its `[0,∞)`\nspace is pinned by the `0 ≤ κ_iid` conjunct, the `κ_iid ≥ κ_cut` ordering by the second\nconjunct, and its frontier role by the optimality clause) -/\ndef IsIidExactnessFrontier (m : ℕ) (a b r kappaIid : ℝ) : Prop :=\n  0 ≤ kappaIid ∧   -- @realizes kappa_iid(range 0 ≤ κ_iid pins the frontier into its [0,∞) space)\n  max 0 (min (a - b) (2 * ((m : ℝ) - b))) ≤ kappaIid ∧\n    -- @realizes kappa_iid(ordering κ_iid ≥ κ_cut(m,a,b), core-def closed form of κ_cut)\n  ∀ kappa : ℝ, kappaIid < kappa →\n    (1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) ∈ blockElliptope m a b ∧\n      ∀ X ∈ blockElliptope m a b,\n        designObjective m a b r kappa 1 ≤ designObjective m a b r kappa X"
+        },
+        {
+          "label": "robust_corner_exactness",
+          "statement": "/-- **Robust-corner exactness.** Under two-block homophily: `I_n` is a minimizer of\n`F_{r,κ}` over `E_m^blk` for some finite `κ` iff `a+3b=2m` and `r=2b(a+b)`; on this\nlocus, for every `κ > 0`, `I_n` is the unique relaxed minimizer and `P_iid ∈ P_m^sym`\nattains it with `X(P_iid)=I_n`; off the locus `I_n` is never a finite-`κ` minimizer,\nthough relaxed minimizers converge (entrywise) to `I_n` as `κ → ∞`.\n\nThe iid-exactness frontier `kappa_iid(m,a,b,r)` — the smallest robustness weight from\nwhich `I_n = X(P_iid)` is optimal — has no closed-form decl (bound only as a symbol,\nlike `r_star`). Its [0,∞) space with `kappa_iid ≥ kappa_cut` is now pinned by the\ndedicated carrier predicate `IsIidExactnessFrontier` in `Basic.lean` (the `0 ≤ κ_iid`\nand `κ_cut ≤ κ_iid` conjuncts fix the space and ordering, the optimality clause its\nfrontier role). This theorem supplies the frontier's EXACT finiteness criterion, not its\nvalue: the two tagged clauses below give a finite such weight EXISTS iff the\naffine-balanced locus `a+3b=2m ∧ r=2b(a+b)` holds (off-locus `kappa_iid = +∞`), and on\nthe locus every `κ > 0` is admissible. -/\ntheorem robust_corner_exactness (m : ℕ) (a b r : ℝ) (hHom : TwoBlockHomophily m a b)\n    (hr0 : 0 ≤ r) : -- @realizes r(range 0 ≤ r pins r ∈ [0,∞))\n    ((∃ kappa : ℝ, 0 ≤ kappa ∧\n        (1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) ∈ blockElliptope m a b ∧\n        ∀ X ∈ blockElliptope m a b,\n          designObjective m a b r kappa 1 ≤ designObjective m a b r kappa X)\n      -- @realizes kappa_iid(m,a,b,r)(finiteness criterion: a finite iid-exactness\n      -- weight EXISTS iff the affine-balanced locus a+3b=2m ∧ r=2b(a+b); off-locus =+∞)\n      ↔ (a + 3 * b = 2 * (m : ℝ) ∧ r = 2 * b * (a + b))) ∧\n    ((a + 3 * b = 2 * (m : ℝ) ∧ r = 2 * b * (a + b)) →\n      -- @realizes kappa_iid(m,a,b,r)(on-locus value: every κ>0 makes I_n the unique\n      -- relaxed minimizer, so the infimal admissible weight kappa_iid = 0 (≥ kappa_cut))\n      ∀ kappa : ℝ, 0 < kappa →\n        ((1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) ∈ blockElliptope m a b ∧\n          ∀ X ∈ blockElliptope m a b, X ≠ 1 →\n            designObjective m a b r kappa 1 < designObjective m a b r kappa X)) ∧\n    (iidDesign m ∈ blockExchangeableDesignClass m ∧\n      assignmentSecondMoment m (iidDesign m) = 1) ∧\n    (¬ (a + 3 * b = 2 * (m : ℝ) ∧ r = 2 * b * (a + b)) →\n      (∀ kappa : ℝ, 0 < kappa →\n        ¬ (∀ X ∈ blockElliptope m a b,\n            designObjective m a b r kappa 1 ≤ designObjective m a b r kappa X)) ∧\n      (∀ (Xseq : ℝ → Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ),\n        (∀ kappa : ℝ, 0 < kappa → Xseq kappa ∈ blockElliptope m a b ∧\n          ∀ X ∈ blockElliptope m a b,\n            designObjective m a b r kappa (Xseq kappa) ≤ designObjective m a b r kappa X) →\n        ∀ i j, Tendsto (fun kappa => Xseq kappa i j) atTop\n          (𝓝 ((1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) i j))))"
+        }
+      ]
+    },
+    "sym:kappa_iid(range 0 ≤ κ_iid pins the frontier into its [0,∞) space)": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 467,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "IsIidExactnessFrontier",
+          "statement": "/-- **iid-exactness frontier `κ_iid(m,a,b,r)`** — the dedicated carrier that realizes the\nsymbol's `[0,∞)` SPACE together with its defining frontier role (`iid_exactness_frontier`,\nrole `derived_phase_boundary`). `κ_iid` is the smallest *nonnegative* robustness weight\nfrom which the iid covariance `I_n = X(P_iid)` remains optimal over the block-symmetric\nelliptope slice `E_m^blk`, and it dominates the cut frontier\n`κ_cut(m,a,b) = max 0 (min (a−b) (2(m−b)))` (the core relation `κ_iid ≥ κ_cut`). This\npredicate is that carrier: the `0 ≤ κ_iid` conjunct pins the `[0,∞)` space, the\n`κ_cut ≤ κ_iid` conjunct records the core ordering, and the trailing clause pins the\nfrontier role — above the frontier weight, `I_n` minimizes `F_{r,κ}` on `E_m^blk`. No\nexistence, uniqueness, or closed form of such a `κ_iid` is asserted here (the iid frontier,\nlike `r_⋆`, is bound only as a symbol; `robust_corner_exactness` supplies the finiteness\ncriterion for its EXISTENCE — a finite frontier exists iff the affine-balanced locus holds\n— not its value). Mirrors the `IsSharpExactnessBoundary` carrier for `r_⋆`.\n@realizes kappa_iid(m,a,b,r)(carrier/predicate for the iid-exactness frontier; its `[0,∞)`\nspace is pinned by the `0 ≤ κ_iid` conjunct, the `κ_iid ≥ κ_cut` ordering by the second\nconjunct, and its frontier role by the optimality clause) -/\ndef IsIidExactnessFrontier (m : ℕ) (a b r kappaIid : ℝ) : Prop :=\n  0 ≤ kappaIid ∧   -- @realizes kappa_iid(range 0 ≤ κ_iid pins the frontier into its [0,∞) space)\n  max 0 (min (a - b) (2 * ((m : ℝ) - b))) ≤ kappaIid ∧\n    -- @realizes kappa_iid(ordering κ_iid ≥ κ_cut(m,a,b), core-def closed form of κ_cut)\n  ∀ kappa : ℝ, kappaIid < kappa →\n    (1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) ∈ blockElliptope m a b ∧\n      ∀ X ∈ blockElliptope m a b,\n        designObjective m a b r kappa 1 ≤ designObjective m a b r kappa X"
+        }
+      ]
+    },
+    "sym:kappa_iid": {
+      "decl": "(symbol)",
+      "file": "Basic.lean",
+      "line": 469,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "IsIidExactnessFrontier — ordering κ_iid ≥ κ_cut(m,a,b), core-def closed form of κ_cut; frontier role: above the frontier weight I_n stays F-optimal on E_m^blk",
+          "statement": "/-- **iid-exactness frontier `κ_iid(m,a,b,r)`** — the dedicated carrier that realizes the\nsymbol's `[0,∞)` SPACE together with its defining frontier role (`iid_exactness_frontier`,\nrole `derived_phase_boundary`). `κ_iid` is the smallest *nonnegative* robustness weight\nfrom which the iid covariance `I_n = X(P_iid)` remains optimal over the block-symmetric\nelliptope slice `E_m^blk`, and it dominates the cut frontier\n`κ_cut(m,a,b) = max 0 (min (a−b) (2(m−b)))` (the core relation `κ_iid ≥ κ_cut`). This\npredicate is that carrier: the `0 ≤ κ_iid` conjunct pins the `[0,∞)` space, the\n`κ_cut ≤ κ_iid` conjunct records the core ordering, and the trailing clause pins the\nfrontier role — above the frontier weight, `I_n` minimizes `F_{r,κ}` on `E_m^blk`. No\nexistence, uniqueness, or closed form of such a `κ_iid` is asserted here (the iid frontier,\nlike `r_⋆`, is bound only as a symbol; `robust_corner_exactness` supplies the finiteness\ncriterion for its EXISTENCE — a finite frontier exists iff the affine-balanced locus holds\n— not its value). Mirrors the `IsSharpExactnessBoundary` carrier for `r_⋆`.\n@realizes kappa_iid(m,a,b,r)(carrier/predicate for the iid-exactness frontier; its `[0,∞)`\nspace is pinned by the `0 ≤ κ_iid` conjunct, the `κ_iid ≥ κ_cut` ordering by the second\nconjunct, and its frontier role by the optimality clause) -/\ndef IsIidExactnessFrontier (m : ℕ) (a b r kappaIid : ℝ) : Prop :=\n  0 ≤ kappaIid ∧   -- @realizes kappa_iid(range 0 ≤ κ_iid pins the frontier into its [0,∞) space)\n  max 0 (min (a - b) (2 * ((m : ℝ) - b))) ≤ kappaIid ∧\n    -- @realizes kappa_iid(ordering κ_iid ≥ κ_cut(m,a,b), core-def closed form of κ_cut)\n  ∀ kappa : ℝ, kappaIid < kappa →\n    (1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) ∈ blockElliptope m a b ∧\n      ∀ X ∈ blockElliptope m a b,\n        designObjective m a b r kappa 1 ≤ designObjective m a b r kappa X"
+        }
+      ]
+    },
+    "sym:r_cut(m,a,b,kappa)": {
+      "decl": "(symbol)",
+      "file": "Tcut.lean",
+      "line": 52,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "rCut",
+          "statement": "/-- The cut-exactness frontier\n`r_cut(m,a,b,κ) = max 0 (min{2b(a+b)(1 − κ/(a−b)), 2b(2m−2b−κ)})`: the largest ratio up to\nwhich `X_cut` stays optimal on the block-symmetric slice, taken as a nonnegative frontier\n(`= 0` on the vacuous cells where the cut region is empty).\n@realizes r_cut(m,a,b,kappa)(closed form min{2b(a+b)(1−κ/(a−b)), 2b(2m−2b−κ)}; the declared\n[0,∞) space is PINNED BY CONSTRUCTION via the outer `max 0` clamp, so `r_cut ∈ [0,∞)` holds\nunconditionally — not merely under the homophily regime. Given `0 ≤ r`, the consuming cut\nregion `r < r_cut` is equivalent to `r < min{…}`, so the clamp leaves `cut_corner_exactness`\nunchanged in strength.)\n@realizes kappa(carrier ℝ argument `kappa`; robustness weight entering both branches of the\ncut frontier; range [0,∞) pinned by `0 ≤ kappa` on the consuming theorem `cut_corner_exactness`) -/\nnoncomputable def rCut (m : ℕ) (a b kappa : ℝ) : ℝ :=\n  max 0 (min (2 * b * (a + b) * (1 - kappa / (a - b))) (2 * b * (2 * (m : ℝ) - 2 * b - kappa)))"
+        },
+        {
+          "label": "cut_corner_exactness — cut region r < r_cut",
+          "statement": "/-- **Cut-corner exactness.** Under two-block homophily, for `0 ≤ r < r_cut(m,a,b,κ)`\nthe cut covariance `X_cut` is the unique minimizer of `F_{r,κ}` over `E_m^blk`; the\nimplementability gap is zero; `X_cut` is the unique minimizer over `C_m^pm`; and the\ncut design `P_cut ∈ P_m^sym` realizes it with `X(P_cut) = X_cut`.\n(The `ass:balanced-sign-design` atom is realized through membership in the\nblock-exchangeable class `C_m^pm`/`P_m^sym`, which bundles `BalancedDesignClass`.) -/\ntheorem cut_corner_exactness (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b)\n    (hr0 : 0 ≤ r) -- @realizes r(range 0 ≤ r pins r ∈ [0,∞))\n    (hk0 : 0 ≤ kappa) -- @realizes kappa(range 0 ≤ κ pins κ ∈ [0,∞), its definitional domain)\n    (hr : r < rCut m a b kappa) : -- @realizes r_cut(m,a,b,kappa)(cut region r < r_cut)\n    (cutCovariance m ∈ blockElliptope m a b ∧\n      ∀ X ∈ blockElliptope m a b, X ≠ cutCovariance m →\n        designObjective m a b r kappa (cutCovariance m) < designObjective m a b r kappa X) ∧\n    implementabilityGap m a b r kappa = 0 ∧\n    (cutCovariance m ∈ implementableCovarianceClass m ∧\n      ∀ X ∈ implementableCovarianceClass m, X ≠ cutCovariance m →\n        designObjective m a b r kappa (cutCovariance m) < designObjective m a b r kappa X) ∧\n    cutDesign m ∈ blockExchangeableDesignClass m ∧\n    assignmentSecondMoment m (cutDesign m) = cutCovariance m"
+        },
+        {
+          "label": "rCutGap",
+          "statement": "/-- The cut-frontier value at the gap scale\n`r_cut_gap(m,a,b,κ) = max 0 (2b(a+b)(1 − κ/(a−b)))` (the closed form is independent of `m`);\nthis is the first (`(a−b)`) branch of the cut-exactness frontier `r_cut(m,a,b,κ)`, active in\nthe low-scale gap regime, taken as a nonnegative frontier.\n@realizes r_cut(m,a,b,kappa)(gap-scale branch 2b(a+b)(1−κ/(a−b)); the declared [0,∞) space is\nPINNED BY CONSTRUCTION via the outer `max 0` clamp, so `r_cut_gap ∈ [0,∞)` holds\nunconditionally, consistent with the `r_cut` cluster in `Tcut.lean`.) -/\nnoncomputable def rCutGap (a b kappa : ℝ) : ℝ :=\n  max 0 (2 * b * (a + b) * (1 - kappa / (a - b)))"
+        },
+        {
+          "label": "gap_window",
+          "statement": "/-- **Positive-gap window.** Under two-block homophily and low-scale: *if* `m` is odd,\nthen for every `0 ≤ κ < κ_gap` the frontiers are strictly ordered\n`r_cut_gap < r_gap^- < r_gap^+`, and for `r ∈ (r_gap^-, r_gap^+)` the spread vertex\nis the unique relaxed minimizer of `F` over `E_m^blk` but is not ±1 implementable, so\n`Δ_m^±(r,κ) > 0`. The oddness is necessary as a *separate* even-`m` case (NOT nested\nunder the odd hypothesis, so it does not fire vacuously): for even `m` the whole block\nelliptope slice is implementable, hence the claimed positive gap is false. -/\ntheorem gap_window (m : ℕ) (a b : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hLow : LowScaleTwoBlock m a b) :\n    (OddCommunitySize m → ∀ kappa : ℝ, 0 ≤ kappa → kappa < kappaGap m a b →\n      rCutGap a b kappa < rGapMinus m a b kappa ∧ -- @realizes r_cut(m,a,b,kappa)\n      rGapMinus m a b kappa < rGapPlus m a b kappa ∧\n      -- @realizes r(bound within the gap window rGapMinus < r < rGapPlus ⊂ [0,∞))\n      ∀ r : ℝ, rGapMinus m a b kappa < r → r < rGapPlus m a b kappa →\n        (spreadCovariance m ∈ blockElliptope m a b ∧\n          ∀ X ∈ blockElliptope m a b, X ≠ spreadCovariance m →\n            designObjective m a b r kappa (spreadCovariance m)\n              < designObjective m a b r kappa X) ∧\n        spreadCovariance m ∉ implementableCovarianceClass m ∧\n        0 < implementabilityGap m a b r kappa) ∧\n    (Even m → blockElliptope m a b ⊆ implementableCovarianceClass m)"
+        }
+      ]
+    },
+    "sym:kappa(carrier ℝ argument `kappa`; robustness weight entering both branches of the": {
+      "decl": "(symbol)",
+      "file": "Tcut.lean",
+      "line": 57,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "rCut",
+          "statement": "/-- The cut-exactness frontier\n`r_cut(m,a,b,κ) = max 0 (min{2b(a+b)(1 − κ/(a−b)), 2b(2m−2b−κ)})`: the largest ratio up to\nwhich `X_cut` stays optimal on the block-symmetric slice, taken as a nonnegative frontier\n(`= 0` on the vacuous cells where the cut region is empty).\n@realizes r_cut(m,a,b,kappa)(closed form min{2b(a+b)(1−κ/(a−b)), 2b(2m−2b−κ)}; the declared\n[0,∞) space is PINNED BY CONSTRUCTION via the outer `max 0` clamp, so `r_cut ∈ [0,∞)` holds\nunconditionally — not merely under the homophily regime. Given `0 ≤ r`, the consuming cut\nregion `r < r_cut` is equivalent to `r < min{…}`, so the clamp leaves `cut_corner_exactness`\nunchanged in strength.)\n@realizes kappa(carrier ℝ argument `kappa`; robustness weight entering both branches of the\ncut frontier; range [0,∞) pinned by `0 ≤ kappa` on the consuming theorem `cut_corner_exactness`) -/\nnoncomputable def rCut (m : ℕ) (a b kappa : ℝ) : ℝ :=\n  max 0 (min (2 * b * (a + b) * (1 - kappa / (a - b))) (2 * b * (2 * (m : ℝ) - 2 * b - kappa)))"
+        }
+      ]
+    },
+    "sym:kappa_cut(m,a,b)": {
+      "decl": "(symbol)",
+      "file": "Tcut.lean",
+      "line": 65,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "kappaCut",
+          "statement": "/-- The low-robustness cut frontier `κ_cut(m,a,b) = max 0 (min{a−b, 2(m−b)})`: the largest\nrobustness weight below which the cut-exactness region `[0, r_cut(m,a,b,κ))` stays\nnonempty, taken as a nonnegative frontier.\n@realizes kappa_cut(m,a,b)(AUTHORITATIVE closed form min{a−b, 2(m−b)} clamped by an outer\n`max 0`; the derived-phase [0,∞) space is PINNED BY CONSTRUCTION via that clamp, so\n`κ_cut ∈ [0,∞)` holds unconditionally — `= 0` exactly on the vacuous cells where no\ncut-exactness region persists (`a ≤ b` or `b ≥ m`), and `= min{a−b, 2(m−b)} > 0` under the\nhomophily regime with `b < m`. The range no longer depends on the regime holding.) -/\nnoncomputable def kappaCut (m : ℕ) (a b : ℝ) : ℝ := max 0 (min (a - b) (2 * ((m : ℝ) - b)))"
+        }
+      ]
+    },
+    "sym:r(range 0 ≤ r pins r ∈ [0,∞))": {
+      "decl": "(symbol)",
+      "file": "Tcut.lean",
+      "line": 81,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "cut_corner_exactness",
+          "statement": "/-- **Cut-corner exactness.** Under two-block homophily, for `0 ≤ r < r_cut(m,a,b,κ)`\nthe cut covariance `X_cut` is the unique minimizer of `F_{r,κ}` over `E_m^blk`; the\nimplementability gap is zero; `X_cut` is the unique minimizer over `C_m^pm`; and the\ncut design `P_cut ∈ P_m^sym` realizes it with `X(P_cut) = X_cut`.\n(The `ass:balanced-sign-design` atom is realized through membership in the\nblock-exchangeable class `C_m^pm`/`P_m^sym`, which bundles `BalancedDesignClass`.) -/\ntheorem cut_corner_exactness (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b)\n    (hr0 : 0 ≤ r) -- @realizes r(range 0 ≤ r pins r ∈ [0,∞))\n    (hk0 : 0 ≤ kappa) -- @realizes kappa(range 0 ≤ κ pins κ ∈ [0,∞), its definitional domain)\n    (hr : r < rCut m a b kappa) : -- @realizes r_cut(m,a,b,kappa)(cut region r < r_cut)\n    (cutCovariance m ∈ blockElliptope m a b ∧\n      ∀ X ∈ blockElliptope m a b, X ≠ cutCovariance m →\n        designObjective m a b r kappa (cutCovariance m) < designObjective m a b r kappa X) ∧\n    implementabilityGap m a b r kappa = 0 ∧\n    (cutCovariance m ∈ implementableCovarianceClass m ∧\n      ∀ X ∈ implementableCovarianceClass m, X ≠ cutCovariance m →\n        designObjective m a b r kappa (cutCovariance m) < designObjective m a b r kappa X) ∧\n    cutDesign m ∈ blockExchangeableDesignClass m ∧\n    assignmentSecondMoment m (cutDesign m) = cutCovariance m"
+        },
+        {
+          "label": "robust_corner_exactness",
+          "statement": "/-- **Robust-corner exactness.** Under two-block homophily: `I_n` is a minimizer of\n`F_{r,κ}` over `E_m^blk` for some finite `κ` iff `a+3b=2m` and `r=2b(a+b)`; on this\nlocus, for every `κ > 0`, `I_n` is the unique relaxed minimizer and `P_iid ∈ P_m^sym`\nattains it with `X(P_iid)=I_n`; off the locus `I_n` is never a finite-`κ` minimizer,\nthough relaxed minimizers converge (entrywise) to `I_n` as `κ → ∞`.\n\nThe iid-exactness frontier `kappa_iid(m,a,b,r)` — the smallest robustness weight from\nwhich `I_n = X(P_iid)` is optimal — has no closed-form decl (bound only as a symbol,\nlike `r_star`). Its [0,∞) space with `kappa_iid ≥ kappa_cut` is now pinned by the\ndedicated carrier predicate `IsIidExactnessFrontier` in `Basic.lean` (the `0 ≤ κ_iid`\nand `κ_cut ≤ κ_iid` conjuncts fix the space and ordering, the optimality clause its\nfrontier role). This theorem supplies the frontier's EXACT finiteness criterion, not its\nvalue: the two tagged clauses below give a finite such weight EXISTS iff the\naffine-balanced locus `a+3b=2m ∧ r=2b(a+b)` holds (off-locus `kappa_iid = +∞`), and on\nthe locus every `κ > 0` is admissible. -/\ntheorem robust_corner_exactness (m : ℕ) (a b r : ℝ) (hHom : TwoBlockHomophily m a b)\n    (hr0 : 0 ≤ r) : -- @realizes r(range 0 ≤ r pins r ∈ [0,∞))\n    ((∃ kappa : ℝ, 0 ≤ kappa ∧\n        (1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) ∈ blockElliptope m a b ∧\n        ∀ X ∈ blockElliptope m a b,\n          designObjective m a b r kappa 1 ≤ designObjective m a b r kappa X)\n      -- @realizes kappa_iid(m,a,b,r)(finiteness criterion: a finite iid-exactness\n      -- weight EXISTS iff the affine-balanced locus a+3b=2m ∧ r=2b(a+b); off-locus =+∞)\n      ↔ (a + 3 * b = 2 * (m : ℝ) ∧ r = 2 * b * (a + b))) ∧\n    ((a + 3 * b = 2 * (m : ℝ) ∧ r = 2 * b * (a + b)) →\n      -- @realizes kappa_iid(m,a,b,r)(on-locus value: every κ>0 makes I_n the unique\n      -- relaxed minimizer, so the infimal admissible weight kappa_iid = 0 (≥ kappa_cut))\n      ∀ kappa : ℝ, 0 < kappa →\n        ((1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) ∈ blockElliptope m a b ∧\n          ∀ X ∈ blockElliptope m a b, X ≠ 1 →\n            designObjective m a b r kappa 1 < designObjective m a b r kappa X)) ∧\n    (iidDesign m ∈ blockExchangeableDesignClass m ∧\n      assignmentSecondMoment m (iidDesign m) = 1) ∧\n    (¬ (a + 3 * b = 2 * (m : ℝ) ∧ r = 2 * b * (a + b)) →\n      (∀ kappa : ℝ, 0 < kappa →\n        ¬ (∀ X ∈ blockElliptope m a b,\n            designObjective m a b r kappa 1 ≤ designObjective m a b r kappa X)) ∧\n      (∀ (Xseq : ℝ → Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ),\n        (∀ kappa : ℝ, 0 < kappa → Xseq kappa ∈ blockElliptope m a b ∧\n          ∀ X ∈ blockElliptope m a b,\n            designObjective m a b r kappa (Xseq kappa) ≤ designObjective m a b r kappa X) →\n        ∀ i j, Tendsto (fun kappa => Xseq kappa i j) atTop\n          (𝓝 ((1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) i j))))"
+        },
+        {
+          "label": "sharp_rho_star",
+          "statement": "theorem sharp_rho_star (m : ℕ) (a b r kappa : ℝ) (hHom : TwoBlockHomophily m a b)\n    (hr0 : 0 ≤ r) -- @realizes r(range 0 ≤ r pins r ∈ [0,∞))\n    (hk : 0 ≤ kappa) : -- @realizes kappa(range 0 ≤ κ pins κ ∈ [0,∞), its definitional domain)\n    roundingLossCertificate m a b r kappa = implementabilityGap m a b r kappa ∧\n    -- @realizes rho_star(m,a,b,r,kappa)(standing range clause 0 ≤ ρ_⋆ pinning space [0,∞);\n    -- discharged by the companion range lemma `roundingLossCertificate_nonneg` in Basic)\n    0 ≤ roundingLossCertificate m a b r kappa ∧\n    -- @realizes Delta_m^pm(r,kappa)(standing range clause 0 ≤ Δ_m^± pinning space [0,∞);\n    -- discharged by the companion range lemma `implementabilityGap_nonneg` in Basic)\n    0 ≤ implementabilityGap m a b r kappa ∧\n    (roundingLossCertificate m a b r kappa = 0 ↔\n      ∃ x y z, InReducedTriangle m x y z ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        parityThreshold m ≤ y + z) ∧\n    (0 < kappa →\n      (∃! t : ℝ × ℝ × ℝ, InReducedTriangle m t.1 t.2.1 t.2.2 ∧\n        ∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa t.1 t.2.1 t.2.2\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n      (roundingLossCertificate m a b r kappa = 0 ↔\n        ∀ x y z, InReducedTriangle m x y z →\n          (∀ x' y' z', InReducedTriangle m x' y' z' →\n            reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n              ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') →\n          parityThreshold m ≤ y + z)) ∧\n    (kappa = 0 →\n      ∀ x y z, InReducedTriangle m x y z →\n        ((∀ x' y' z', InReducedTriangle m x' y' z' →\n            reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n              ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z')\n          ↔ (x ≠ 0 → cX m a b r / qParam m ≤ cY b r ∧ cX m a b r / qParam m ≤ cZ m) ∧\n            (y ≠ 0 → cY b r ≤ cX m a b r / qParam m ∧ cY b r ≤ cZ m) ∧\n            (z ≠ 0 → cZ m ≤ cX m a b r / qParam m ∧ cZ m ≤ cY b r))) ∧\n    -- Active-set computation of the relaxed minimizer (lem:weighted-simplex-active-set):\n    -- for κ > 0 the unique relaxed argmin over `T_m` is the active-set point of an\n    -- admissible support/multiplier `(S, λ)` under the change of variables `t = (q x, y, z)`\n    -- (`α = sharpAlpha`, `β = sharpBeta`), with relaxed value `M · λ` (`M = 2m`).\n    (0 < kappa →\n      ∃ S : Finset (Fin 3), ∃ lam : ℝ,\n        IsAdmissibleSupport (sharpAlpha m a b r) (sharpBeta m) kappa S lam ∧\n        InReducedTriangle m\n          (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 0 / qParam m)\n          (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 1)\n          (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 2) ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa\n              (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 0 / qParam m)\n              (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 1)\n              (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 2)\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        relaxedReducedValue m a b r kappa = 2 * (m : ℝ) * lam) ∧\n    -- Truncation correction (lem:weighted-simplex-truncation): when the relaxed argmin\n    -- set is disjoint from the implementable slice `{y+z ≥ d_m}`, the implementable value\n    -- is attained on the truncation segment `{y+z = d_m}` at the endpoint/interior selector\n    -- `truncSelector`, so `Δ_m^±` is computed by this boundary-segment formula.\n    ((¬ ∃ x y z, InReducedTriangle m x y z ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        parityThreshold m ≤ y + z) →\n      implementableReducedValue m a b r kappa =\n        wsObj (sharpAlpha m a b r) (sharpBeta m) kappa\n          (truncSegPoint (2 * (m : ℝ)) (parityThreshold m)\n            (truncSelector (2 * (m : ℝ)) (parityThreshold m)\n              (sharpAlpha m a b r) (sharpBeta m) kappa))) ∧\n    (Even m → roundingLossCertificate m a b r kappa = 0)"
+        }
+      ]
+    },
+    "sym:kappa(range 0 ≤ κ pins κ ∈ [0,∞), its definitional domain)": {
+      "decl": "(symbol)",
+      "file": "Tcut.lean",
+      "line": 82,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "cut_corner_exactness",
+          "statement": "/-- **Cut-corner exactness.** Under two-block homophily, for `0 ≤ r < r_cut(m,a,b,κ)`\nthe cut covariance `X_cut` is the unique minimizer of `F_{r,κ}` over `E_m^blk`; the\nimplementability gap is zero; `X_cut` is the unique minimizer over `C_m^pm`; and the\ncut design `P_cut ∈ P_m^sym` realizes it with `X(P_cut) = X_cut`.\n(The `ass:balanced-sign-design` atom is realized through membership in the\nblock-exchangeable class `C_m^pm`/`P_m^sym`, which bundles `BalancedDesignClass`.) -/\ntheorem cut_corner_exactness (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b)\n    (hr0 : 0 ≤ r) -- @realizes r(range 0 ≤ r pins r ∈ [0,∞))\n    (hk0 : 0 ≤ kappa) -- @realizes kappa(range 0 ≤ κ pins κ ∈ [0,∞), its definitional domain)\n    (hr : r < rCut m a b kappa) : -- @realizes r_cut(m,a,b,kappa)(cut region r < r_cut)\n    (cutCovariance m ∈ blockElliptope m a b ∧\n      ∀ X ∈ blockElliptope m a b, X ≠ cutCovariance m →\n        designObjective m a b r kappa (cutCovariance m) < designObjective m a b r kappa X) ∧\n    implementabilityGap m a b r kappa = 0 ∧\n    (cutCovariance m ∈ implementableCovarianceClass m ∧\n      ∀ X ∈ implementableCovarianceClass m, X ≠ cutCovariance m →\n        designObjective m a b r kappa (cutCovariance m) < designObjective m a b r kappa X) ∧\n    cutDesign m ∈ blockExchangeableDesignClass m ∧\n    assignmentSecondMoment m (cutDesign m) = cutCovariance m"
+        },
+        {
+          "label": "sharp_rho_star",
+          "statement": "theorem sharp_rho_star (m : ℕ) (a b r kappa : ℝ) (hHom : TwoBlockHomophily m a b)\n    (hr0 : 0 ≤ r) -- @realizes r(range 0 ≤ r pins r ∈ [0,∞))\n    (hk : 0 ≤ kappa) : -- @realizes kappa(range 0 ≤ κ pins κ ∈ [0,∞), its definitional domain)\n    roundingLossCertificate m a b r kappa = implementabilityGap m a b r kappa ∧\n    -- @realizes rho_star(m,a,b,r,kappa)(standing range clause 0 ≤ ρ_⋆ pinning space [0,∞);\n    -- discharged by the companion range lemma `roundingLossCertificate_nonneg` in Basic)\n    0 ≤ roundingLossCertificate m a b r kappa ∧\n    -- @realizes Delta_m^pm(r,kappa)(standing range clause 0 ≤ Δ_m^± pinning space [0,∞);\n    -- discharged by the companion range lemma `implementabilityGap_nonneg` in Basic)\n    0 ≤ implementabilityGap m a b r kappa ∧\n    (roundingLossCertificate m a b r kappa = 0 ↔\n      ∃ x y z, InReducedTriangle m x y z ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        parityThreshold m ≤ y + z) ∧\n    (0 < kappa →\n      (∃! t : ℝ × ℝ × ℝ, InReducedTriangle m t.1 t.2.1 t.2.2 ∧\n        ∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa t.1 t.2.1 t.2.2\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n      (roundingLossCertificate m a b r kappa = 0 ↔\n        ∀ x y z, InReducedTriangle m x y z →\n          (∀ x' y' z', InReducedTriangle m x' y' z' →\n            reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n              ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') →\n          parityThreshold m ≤ y + z)) ∧\n    (kappa = 0 →\n      ∀ x y z, InReducedTriangle m x y z →\n        ((∀ x' y' z', InReducedTriangle m x' y' z' →\n            reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n              ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z')\n          ↔ (x ≠ 0 → cX m a b r / qParam m ≤ cY b r ∧ cX m a b r / qParam m ≤ cZ m) ∧\n            (y ≠ 0 → cY b r ≤ cX m a b r / qParam m ∧ cY b r ≤ cZ m) ∧\n            (z ≠ 0 → cZ m ≤ cX m a b r / qParam m ∧ cZ m ≤ cY b r))) ∧\n    -- Active-set computation of the relaxed minimizer (lem:weighted-simplex-active-set):\n    -- for κ > 0 the unique relaxed argmin over `T_m` is the active-set point of an\n    -- admissible support/multiplier `(S, λ)` under the change of variables `t = (q x, y, z)`\n    -- (`α = sharpAlpha`, `β = sharpBeta`), with relaxed value `M · λ` (`M = 2m`).\n    (0 < kappa →\n      ∃ S : Finset (Fin 3), ∃ lam : ℝ,\n        IsAdmissibleSupport (sharpAlpha m a b r) (sharpBeta m) kappa S lam ∧\n        InReducedTriangle m\n          (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 0 / qParam m)\n          (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 1)\n          (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 2) ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa\n              (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 0 / qParam m)\n              (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 1)\n              (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 2)\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        relaxedReducedValue m a b r kappa = 2 * (m : ℝ) * lam) ∧\n    -- Truncation correction (lem:weighted-simplex-truncation): when the relaxed argmin\n    -- set is disjoint from the implementable slice `{y+z ≥ d_m}`, the implementable value\n    -- is attained on the truncation segment `{y+z = d_m}` at the endpoint/interior selector\n    -- `truncSelector`, so `Δ_m^±` is computed by this boundary-segment formula.\n    ((¬ ∃ x y z, InReducedTriangle m x y z ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        parityThreshold m ≤ y + z) →\n      implementableReducedValue m a b r kappa =\n        wsObj (sharpAlpha m a b r) (sharpBeta m) kappa\n          (truncSegPoint (2 * (m : ℝ)) (parityThreshold m)\n            (truncSelector (2 * (m : ℝ)) (parityThreshold m)\n              (sharpAlpha m a b r) (sharpBeta m) kappa))) ∧\n    (Even m → roundingLossCertificate m a b r kappa = 0)"
+        }
+      ]
+    },
+    "sym:r_gap^-(m,a,b,kappa)": {
+      "decl": "(symbol)",
+      "file": "Tgap.lean",
+      "line": 42,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "rGapMinus",
+          "statement": "/-- Lower gap-window frontier `r_gap^-(m,a,b,κ) = (R_x^- + R_x^+)/2`.\n@realizes r_gap^-(m,a,b,kappa), r_gap^+(m,a,b,kappa)(AUTHORITATIVE carrier of the FIRST\ncomponent `r_gap^-` of the pair symbol whose declared space is `[0,∞)^2`; closed form\n`(R_x^- + R_x^+)/2` with `R_x^- = 2b(a+b)(1+κ/((a−b)√q))` and `R_x^+ = (a+b)(2m−a−b−κ/√q)`.\nThe bare closed form is a plain `ℝ`, NOT nonnegative by construction; the FIRST factor of the\n`[0,∞)^2` range is carried by the CONJUNCTION of this carrier with the companion range lemma\n`rGapFrontiers_nonneg` below — which pins `0 ≤ r_gap^-` on the consuming window\n`0 ≤ κ < κ_gap` via `r_cut_gap = max 0 (…) ≥ 0 < r_gap^-` — exactly as\n`implementabilityGap`/`roundingLossCertificate` pair with their `*_nonneg` lemmas in\n`Basic.lean`.) -/\nnoncomputable def rGapMinus (m : ℕ) (a b kappa : ℝ) : ℝ :=\n  (RxMinus m a b kappa + RxPlus m a b kappa) / 2"
+        },
+        {
+          "label": "rGapPlus",
+          "statement": "/-- Upper gap-window frontier `r_gap^+(m,a,b,κ) = R_x^+`.\n@realizes r_gap^-(m,a,b,kappa), r_gap^+(m,a,b,kappa)(AUTHORITATIVE carrier of the SECOND\ncomponent `r_gap^+` of the pair symbol whose declared space is `[0,∞)^2`; closed form\n`R_x^+ = (a+b)(2m−a−b−κ/√q)`. The bare closed form is a plain `ℝ`, NOT nonnegative by\nconstruction; the SECOND factor of the `[0,∞)^2` range is carried by the CONJUNCTION of this\ncarrier with the companion range lemma `rGapFrontiers_nonneg` below, which pins `0 ≤ r_gap^+`\non the consuming window `0 ≤ κ < κ_gap` via `r_gap^- < r_gap^+` (placing the open gap interval\n`(r_gap^-, r_gap^+) ⊂ [0,∞)`).) -/\nnoncomputable def rGapPlus (m : ℕ) (a b kappa : ℝ) : ℝ := RxPlus m a b kappa"
+        },
+        {
+          "label": "rGapFrontiers_nonneg",
+          "statement": "/-- **Range lemma for the gap-window frontier pair `(r_gap^-, r_gap^+)`.** On the consuming\nwindow `0 ≤ κ < κ_gap`, under two-block homophily and the low-scale normalization, the\nfrontier pair lands in its core-declared space `[0,∞)^2`: `0 ≤ r_gap^-` and `0 ≤ r_gap^+`.\nThis holds because `r_cut_gap = max 0 (…) ≥ 0` and the window strictly orders the frontiers\n`r_cut_gap < r_gap^- < r_gap^+` (the ordering proved by `gap_window`), so both frontiers are\npositive. Together with the `rGapMinus`/`rGapPlus` carrier `def`s above, this lemma IS the\nrealization of the pair's standing `[0,∞)^2` range condition (the bare `(R_x^- + R_x^+)/2` and\n`R_x^+` closed forms are plain `ℝ`, not nonnegative by construction), exactly mirroring how\n`implementabilityGap_nonneg` / `roundingLossCertificate_nonneg` pin the `Δ_m^±` / `ρ_⋆` ranges\nin `Basic.lean`.\n@realizes r_gap^-(m,a,b,kappa), r_gap^+(m,a,b,kappa)(AUTHORITATIVE range clause for the pair\nsymbol's declared space `[0,∞)^2`: the conjunction `0 ≤ r_gap^- ∧ 0 ≤ r_gap^+` pins BOTH\nfactors on the consuming window `0 ≤ κ < κ_gap`, via `r_cut_gap = max 0 (…) ≥ 0 < r_gap^- <\nr_gap^+`. This lemma, together with the `rGapMinus`/`rGapPlus` carrier `def`s above, IS the\nrealizing cluster of the pair's standing `[0,∞)^2` range condition.) -/\nlemma rGapFrontiers_nonneg (m : ℕ) (a b kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hLow : LowScaleTwoBlock m a b)\n    (hk0 : 0 ≤ kappa) (hkGap : kappa < kappaGap m a b) :\n    0 ≤ rGapMinus m a b kappa ∧ 0 ≤ rGapPlus m a b kappa"
+        }
+      ]
+    },
+    "sym:r_gap^+(m,a,b,kappa)": {
+      "decl": "(symbol)",
+      "file": "Tgap.lean",
+      "line": 42,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "rGapMinus — AUTHORITATIVE carrier of the FIRST",
+          "statement": "/-- Lower gap-window frontier `r_gap^-(m,a,b,κ) = (R_x^- + R_x^+)/2`.\n@realizes r_gap^-(m,a,b,kappa), r_gap^+(m,a,b,kappa)(AUTHORITATIVE carrier of the FIRST\ncomponent `r_gap^-` of the pair symbol whose declared space is `[0,∞)^2`; closed form\n`(R_x^- + R_x^+)/2` with `R_x^- = 2b(a+b)(1+κ/((a−b)√q))` and `R_x^+ = (a+b)(2m−a−b−κ/√q)`.\nThe bare closed form is a plain `ℝ`, NOT nonnegative by construction; the FIRST factor of the\n`[0,∞)^2` range is carried by the CONJUNCTION of this carrier with the companion range lemma\n`rGapFrontiers_nonneg` below — which pins `0 ≤ r_gap^-` on the consuming window\n`0 ≤ κ < κ_gap` via `r_cut_gap = max 0 (…) ≥ 0 < r_gap^-` — exactly as\n`implementabilityGap`/`roundingLossCertificate` pair with their `*_nonneg` lemmas in\n`Basic.lean`.) -/\nnoncomputable def rGapMinus (m : ℕ) (a b kappa : ℝ) : ℝ :=\n  (RxMinus m a b kappa + RxPlus m a b kappa) / 2"
+        },
+        {
+          "label": "rGapPlus — AUTHORITATIVE carrier of the SECOND",
+          "statement": "/-- Upper gap-window frontier `r_gap^+(m,a,b,κ) = R_x^+`.\n@realizes r_gap^-(m,a,b,kappa), r_gap^+(m,a,b,kappa)(AUTHORITATIVE carrier of the SECOND\ncomponent `r_gap^+` of the pair symbol whose declared space is `[0,∞)^2`; closed form\n`R_x^+ = (a+b)(2m−a−b−κ/√q)`. The bare closed form is a plain `ℝ`, NOT nonnegative by\nconstruction; the SECOND factor of the `[0,∞)^2` range is carried by the CONJUNCTION of this\ncarrier with the companion range lemma `rGapFrontiers_nonneg` below, which pins `0 ≤ r_gap^+`\non the consuming window `0 ≤ κ < κ_gap` via `r_gap^- < r_gap^+` (placing the open gap interval\n`(r_gap^-, r_gap^+) ⊂ [0,∞)`).) -/\nnoncomputable def rGapPlus (m : ℕ) (a b kappa : ℝ) : ℝ := RxPlus m a b kappa"
+        },
+        {
+          "label": "rGapFrontiers_nonneg — AUTHORITATIVE range clause for the pair",
+          "statement": "/-- **Range lemma for the gap-window frontier pair `(r_gap^-, r_gap^+)`.** On the consuming\nwindow `0 ≤ κ < κ_gap`, under two-block homophily and the low-scale normalization, the\nfrontier pair lands in its core-declared space `[0,∞)^2`: `0 ≤ r_gap^-` and `0 ≤ r_gap^+`.\nThis holds because `r_cut_gap = max 0 (…) ≥ 0` and the window strictly orders the frontiers\n`r_cut_gap < r_gap^- < r_gap^+` (the ordering proved by `gap_window`), so both frontiers are\npositive. Together with the `rGapMinus`/`rGapPlus` carrier `def`s above, this lemma IS the\nrealization of the pair's standing `[0,∞)^2` range condition (the bare `(R_x^- + R_x^+)/2` and\n`R_x^+` closed forms are plain `ℝ`, not nonnegative by construction), exactly mirroring how\n`implementabilityGap_nonneg` / `roundingLossCertificate_nonneg` pin the `Δ_m^±` / `ρ_⋆` ranges\nin `Basic.lean`.\n@realizes r_gap^-(m,a,b,kappa), r_gap^+(m,a,b,kappa)(AUTHORITATIVE range clause for the pair\nsymbol's declared space `[0,∞)^2`: the conjunction `0 ≤ r_gap^- ∧ 0 ≤ r_gap^+` pins BOTH\nfactors on the consuming window `0 ≤ κ < κ_gap`, via `r_cut_gap = max 0 (…) ≥ 0 < r_gap^- <\nr_gap^+`. This lemma, together with the `rGapMinus`/`rGapPlus` carrier `def`s above, IS the\nrealizing cluster of the pair's standing `[0,∞)^2` range condition.) -/\nlemma rGapFrontiers_nonneg (m : ℕ) (a b kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hLow : LowScaleTwoBlock m a b)\n    (hk0 : 0 ≤ kappa) (hkGap : kappa < kappaGap m a b) :\n    0 ≤ rGapMinus m a b kappa ∧ 0 ≤ rGapPlus m a b kappa"
+        }
+      ]
+    },
+    "sym:r(bound within the gap window rGapMinus < r < rGapPlus ⊂ [0,∞))": {
+      "decl": "(symbol)",
+      "file": "Tgap.lean",
+      "line": 140,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "gap_window",
+          "statement": "/-- **Positive-gap window.** Under two-block homophily and low-scale: *if* `m` is odd,\nthen for every `0 ≤ κ < κ_gap` the frontiers are strictly ordered\n`r_cut_gap < r_gap^- < r_gap^+`, and for `r ∈ (r_gap^-, r_gap^+)` the spread vertex\nis the unique relaxed minimizer of `F` over `E_m^blk` but is not ±1 implementable, so\n`Δ_m^±(r,κ) > 0`. The oddness is necessary as a *separate* even-`m` case (NOT nested\nunder the odd hypothesis, so it does not fire vacuously): for even `m` the whole block\nelliptope slice is implementable, hence the claimed positive gap is false. -/\ntheorem gap_window (m : ℕ) (a b : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hLow : LowScaleTwoBlock m a b) :\n    (OddCommunitySize m → ∀ kappa : ℝ, 0 ≤ kappa → kappa < kappaGap m a b →\n      rCutGap a b kappa < rGapMinus m a b kappa ∧ -- @realizes r_cut(m,a,b,kappa)\n      rGapMinus m a b kappa < rGapPlus m a b kappa ∧\n      -- @realizes r(bound within the gap window rGapMinus < r < rGapPlus ⊂ [0,∞))\n      ∀ r : ℝ, rGapMinus m a b kappa < r → r < rGapPlus m a b kappa →\n        (spreadCovariance m ∈ blockElliptope m a b ∧\n          ∀ X ∈ blockElliptope m a b, X ≠ spreadCovariance m →\n            designObjective m a b r kappa (spreadCovariance m)\n              < designObjective m a b r kappa X) ∧\n        spreadCovariance m ∉ implementableCovarianceClass m ∧\n        0 < implementabilityGap m a b r kappa) ∧\n    (Even m → blockElliptope m a b ⊆ implementableCovarianceClass m)"
+        }
+      ]
+    },
+    "sym:P`-tagged).": {
+      "decl": "(symbol)",
+      "file": "Tsharp.lean",
+      "line": 67,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "sharp_rho_star",
+          "statement": "theorem sharp_rho_star (m : ℕ) (a b r kappa : ℝ) (hHom : TwoBlockHomophily m a b)\n    (hr0 : 0 ≤ r) -- @realizes r(range 0 ≤ r pins r ∈ [0,∞))\n    (hk : 0 ≤ kappa) : -- @realizes kappa(range 0 ≤ κ pins κ ∈ [0,∞), its definitional domain)\n    roundingLossCertificate m a b r kappa = implementabilityGap m a b r kappa ∧\n    -- @realizes rho_star(m,a,b,r,kappa)(standing range clause 0 ≤ ρ_⋆ pinning space [0,∞);\n    -- discharged by the companion range lemma `roundingLossCertificate_nonneg` in Basic)\n    0 ≤ roundingLossCertificate m a b r kappa ∧\n    -- @realizes Delta_m^pm(r,kappa)(standing range clause 0 ≤ Δ_m^± pinning space [0,∞);\n    -- discharged by the companion range lemma `implementabilityGap_nonneg` in Basic)\n    0 ≤ implementabilityGap m a b r kappa ∧\n    (roundingLossCertificate m a b r kappa = 0 ↔\n      ∃ x y z, InReducedTriangle m x y z ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        parityThreshold m ≤ y + z) ∧\n    (0 < kappa →\n      (∃! t : ℝ × ℝ × ℝ, InReducedTriangle m t.1 t.2.1 t.2.2 ∧\n        ∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa t.1 t.2.1 t.2.2\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n      (roundingLossCertificate m a b r kappa = 0 ↔\n        ∀ x y z, InReducedTriangle m x y z →\n          (∀ x' y' z', InReducedTriangle m x' y' z' →\n            reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n              ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') →\n          parityThreshold m ≤ y + z)) ∧\n    (kappa = 0 →\n      ∀ x y z, InReducedTriangle m x y z →\n        ((∀ x' y' z', InReducedTriangle m x' y' z' →\n            reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n              ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z')\n          ↔ (x ≠ 0 → cX m a b r / qParam m ≤ cY b r ∧ cX m a b r / qParam m ≤ cZ m) ∧\n            (y ≠ 0 → cY b r ≤ cX m a b r / qParam m ∧ cY b r ≤ cZ m) ∧\n            (z ≠ 0 → cZ m ≤ cX m a b r / qParam m ∧ cZ m ≤ cY b r))) ∧\n    -- Active-set computation of the relaxed minimizer (lem:weighted-simplex-active-set):\n    -- for κ > 0 the unique relaxed argmin over `T_m` is the active-set point of an\n    -- admissible support/multiplier `(S, λ)` under the change of variables `t = (q x, y, z)`\n    -- (`α = sharpAlpha`, `β = sharpBeta`), with relaxed value `M · λ` (`M = 2m`).\n    (0 < kappa →\n      ∃ S : Finset (Fin 3), ∃ lam : ℝ,\n        IsAdmissibleSupport (sharpAlpha m a b r) (sharpBeta m) kappa S lam ∧\n        InReducedTriangle m\n          (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 0 / qParam m)\n          (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 1)\n          (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 2) ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa\n              (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 0 / qParam m)\n              (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 1)\n              (activeSetPoint (2 * (m : ℝ)) (sharpAlpha m a b r) (sharpBeta m) S lam 2)\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        relaxedReducedValue m a b r kappa = 2 * (m : ℝ) * lam) ∧\n    -- Truncation correction (lem:weighted-simplex-truncation): when the relaxed argmin\n    -- set is disjoint from the implementable slice `{y+z ≥ d_m}`, the implementable value\n    -- is attained on the truncation segment `{y+z = d_m}` at the endpoint/interior selector\n    -- `truncSelector`, so `Δ_m^±` is computed by this boundary-segment formula.\n    ((¬ ∃ x y z, InReducedTriangle m x y z ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        parityThreshold m ≤ y + z) →\n      implementableReducedValue m a b r kappa =\n        wsObj (sharpAlpha m a b r) (sharpBeta m) kappa\n          (truncSegPoint (2 * (m : ℝ)) (parityThreshold m)\n            (truncSelector (2 * (m : ℝ)) (parityThreshold m)\n              (sharpAlpha m a b r) (sharpBeta m) kappa))) ∧\n    (Even m → roundingLossCertificate m a b r kappa = 0)"
+        }
+      ]
+    },
+    "a_cut_vertex_kappa_nonneg": {
+      "decl": "cut_vertex_certificate",
+      "file": "Helpers/VertexCertificates.lean",
+      "line": 0,
+      "statement": "/-- Cut-vertex certificate: on `T_m`, if `κ ≥ 0`, `c_x/q > c_y + κ` and `c_z > c_y + κ`\nthen `(0, 2m, 0)` is the unique minimizer of `φ`. -/\nlemma cut_vertex_certificate (m : ℕ) (cx cy cz kappa : ℝ)\n    (hq : 0 < qParam m) (hk : 0 ≤ kappa)\n    (h1 : cx / qParam m > cy + kappa) (h2 : cz > cy + kappa) :\n    InReducedTriangle m 0 (2 * (m : ℝ)) 0 ∧\n    ∀ x y z, InReducedTriangle m x y z → (x, y, z) ≠ (0, 2 * (m : ℝ), 0) →\n      reducedObjective (qParam m) cx cy cz kappa 0 (2 * (m : ℝ)) 0\n        < reducedObjective (qParam m) cx cy cz kappa x y z",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "a_spread_vertex_kappa_nonneg": {
+      "decl": "spread_vertex_certificate",
+      "file": "Helpers/VertexCertificates.lean",
+      "line": 0,
+      "statement": "/-- Spread-vertex certificate: on `T_m`, if `κ ≥ 0`, `c_y > c_x/q + κ/√q` and\n`c_z > c_x/q + κ/√q` then `(2m/q, 0, 0)` is the unique minimizer of `φ`. -/\nlemma spread_vertex_certificate (m : ℕ) (cx cy cz kappa : ℝ)\n    (hq : 0 < qParam m) (hk : 0 ≤ kappa)\n    (h1 : cy > cx / qParam m + kappa / Real.sqrt (qParam m))\n    (h2 : cz > cx / qParam m + kappa / Real.sqrt (qParam m)) :\n    InReducedTriangle m (2 * (m : ℝ) / qParam m) 0 0 ∧\n    ∀ x y z, InReducedTriangle m x y z → (x, y, z) ≠ (2 * (m : ℝ) / qParam m, 0, 0) →\n      reducedObjective (qParam m) cx cy cz kappa (2 * (m : ℝ) / qParam m) 0 0\n        < reducedObjective (qParam m) cx cy cz kappa x y z",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "spreadObjectiveDiff_mul_sqrt": {
+      "decl": "spreadObjectiveDiff_mul_sqrt",
+      "file": "Helpers/VertexCertificates.lean",
+      "line": 98,
+      "statement": "/-- Algebraic difference identity used by the spread-vertex certificate after\nmultiplying through by `sqrt q`. -/\nlemma spreadObjectiveDiff_mul_sqrt (cx cy cz kappa x y z M q s : ℝ)\n    (hs : s ≠ 0) (hsq : s * s = q) (hM : M = q * x + y + z) :\n    ((cx * x + cy * y + cz * z + kappa * (s * x)) -\n          (cx * (M / q) + kappa * (s * (M / q)))) * s =\n        ((cy - cx / q) * s - kappa) * y + ((cz - cx / q) * s - kappa) * z",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "frobeniusCenterTangentXY_deriv": {
+      "decl": "frobeniusCenterTangentXY_deriv",
+      "file": "Helpers/FrobeniusCenter.lean",
+      "line": 19,
+      "statement": "/-- Along the tangent `(x,y,z) = (1+t, 1-q t, 1)`, the Frobenius term has zero\nfirst derivative at the center, so the objective derivative is `c_x - q c_y`. -/\nlemma frobeniusCenterTangentXY_deriv (q cx cy cz kappa : ℝ) (hq : 0 < q) :\n    HasDerivAt\n      (fun t : ℝ => reducedObjective q cx cy cz kappa (1 + t) (1 - q * t) 1)\n      (cx - q * cy) 0",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "frobeniusCenterTangentYZ_deriv": {
+      "decl": "frobeniusCenterTangentYZ_deriv",
+      "file": "Helpers/FrobeniusCenter.lean",
+      "line": 74,
+      "statement": "/-- Along the tangent `(x,y,z) = (1, 1+t, 1-t)`, the Frobenius term has zero\nfirst derivative at the center, so the objective derivative is `c_y - c_z`. -/\nlemma frobeniusCenterTangentYZ_deriv (q cx cy cz kappa : ℝ) (hq : 0 < q) :\n    HasDerivAt\n      (fun t : ℝ => reducedObjective q cx cy cz kappa 1 (1 + t) (1 - t))\n      (cy - cz) 0",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "cutDesign_eq_cutVDesign": {
+      "decl": "cutDesign_eq_cutVDesign",
+      "file": "Tcut.lean",
+      "line": 22,
+      "statement": "/-- The core `cutDesign` is the same two-point law as the vertex-design helper. -/\nlemma cutDesign_eq_cutVDesign (m : ℕ) : cutDesign m = cutVDesign m",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "sInf_image_eq_of_minimizer": {
+      "decl": "sInf_image_eq_of_minimizer",
+      "file": "Tcut.lean",
+      "line": 38,
+      "statement": "/-- If `x0` is a minimizer of `f` on `S`, then the infimum of the objective image is\n`f x0`. -/\nlemma sInf_image_eq_of_minimizer {α : Type*} (f : α → ℝ) (S : Set α) (x0 : α)\n    (hx0 : x0 ∈ S) (hmin : ∀ x ∈ S, f x0 ≤ f x) :\n    sInf (f '' S) = f x0",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "sum_if_eq_else_self_real": {
+      "decl": "sum_if_eq_else_self_real",
+      "file": "Helpers/BlockPairSums.lean",
+      "line": 21,
+      "statement": "/-- Sum a two-valued function over a finite set when one distinguished point takes\nthe diagonal value. -/\nlemma sum_if_eq_else_self_real {α : Type*} [DecidableEq α] (s : Finset α) (a b : ℝ)\n    {i : α} (hi : i ∈ s) :\n    (∑ j ∈ s, (if i = j then a else b)) = a + ((s.card - 1 : ℕ) : ℝ) * b",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "block_pair_sum": {
+      "decl": "block_pair_sum",
+      "file": "Helpers/BlockPairSums.lean",
+      "line": 41,
+      "statement": "/-- Pair count over the two equal blocks: diagonal pairs contribute `d`,\nsame-community off-diagonal pairs contribute `s`, and cross-community pairs\ncontribute `c`. -/\nlemma block_pair_sum (m : ℕ) (d s c : ℝ) :\n    (∑ i : Fin (2 * m), ∑ j : Fin (2 * m),\n      if i = j then d else if (i.val < m ↔ j.val < m) then s else c)\n      = 2 * (m : ℝ) * d + 2 * (m : ℝ) * ((m : ℝ) - 1) * s +\n        2 * (m : ℝ) * (m : ℝ) * c",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "block_signed_pair_sum": {
+      "decl": "block_signed_pair_sum",
+      "file": "Helpers/BlockPairSums.lean",
+      "line": 177,
+      "statement": "/-- The same pair count with a community-sign multiplier. Same-community pairs\nhave sign product `+1`, and cross-community pairs have sign product `-1`. -/\nlemma block_signed_pair_sum (m : ℕ) (d s c : ℝ) :\n    (∑ i : Fin (2 * m), ∑ j : Fin (2 * m),\n      signVec m i * signVec m j *\n        (if i = j then d else if (i.val < m ↔ j.val < m) then s else c))\n      = 2 * (m : ℝ) * d + 2 * (m : ℝ) * ((m : ℝ) - 1) * s -\n        2 * (m : ℝ) * (m : ℝ) * c",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "blockSymMatrix_mem_blockElliptope_iff_reducedTriangle": {
+      "decl": "(composite)",
+      "file": "Helpers/SpectralMembership.lean",
+      "line": 18,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "blockSymMatrix_mem_blockElliptope_iff_reducedTriangle",
+          "statement": "/-- For `m ≥ 2`, membership of the concrete block-symmetric matrix `X(u,v)` in\n`E_m^blk` is equivalent to the three reduced-coordinate PSD inequalities plus\nthe trace identity `q x + y + z = 2m`. -/\nlemma blockSymMatrix_mem_blockElliptope_iff_reducedTriangle\n    (m : ℕ) (a b u v : ℝ) (hHom : TwoBlockHomophily m a b) :\n    blockSymMatrix m u v ∈ blockElliptope m a b ↔\n      InReducedTriangle m (1 - u)\n        (1 + ((m : ℝ) - 1) * u - (m : ℝ) * v)\n        (1 + ((m : ℝ) - 1) * u + (m : ℝ) * v)"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        }
+      ]
+    },
+    "roundingLossCertificate_nonneg": {
+      "decl": "(composite)",
+      "file": "Basic.lean",
+      "line": 378,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "roundingLossCertificate_nonneg",
+          "statement": "lemma roundingLossCertificate_nonneg (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hr0 : 0 ≤ r) (hk : 0 ≤ kappa) :\n    0 ≤ roundingLossCertificate m a b r kappa"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        }
+      ]
+    },
+    "implementabilityGap_nonneg": {
+      "decl": "(composite)",
+      "file": "Helpers/GapReduction.lean",
+      "line": 125,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "implementabilityGap_nonneg",
+          "statement": "/-- **Range lemma for `Δ_m^±`.** The implementability gap lands in its core-declared\nspace `[0,∞)`: `0 ≤ Δ_m^±(r,κ)`. The reduction lemma identifies it with the reduced\nconstrained-minus-unconstrained value, whose nonnegativity is proved by\n`roundingLossCertificate_nonneg`.\n@realizes Delta_m^pm(r,kappa)(range [0,∞) pinned via the reduced\nconstrained-minus-unconstrained identity) -/\nlemma implementabilityGap_nonneg (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hr0 : 0 ≤ r) (hk : 0 ≤ kappa) :\n    0 ≤ implementabilityGap m a b r kappa"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        },
+        {
+          "label": "implementabilityGap",
+          "statement": "/-- The implementability gap `Δ_m^±(r,κ) = inf_{P ∈ P_m^sym} F(X(P)) − inf_{X ∈ E_m^blk} F(X)`,\nas an `sInf` difference over the objective images.\n@realizes Delta_m^pm(r,kappa)(implementable inf − relaxed inf; CARRIER of the gap. The bare\n`sInf − sInf` real difference is a plain `ℝ`; its core-declared range `[0,∞)` is NOT carried\nby this `def` alone but by the CONJUNCTION of this carrier with the companion range lemma\n`implementabilityGap_nonneg` in `Helpers/GapReduction.lean`, which pins `0 ≤ Δ_m^±` via\nthe reduced constrained-minus-unconstrained identity.)\n@realizes P(cluster member — AUTHORITATIVE link into the `sharp_rho_star` target block:\nthe implementable `sInf` is taken over `designObjective … '' implementableCovarianceClass m`,\ni.e. over the second moments `X(P)` of the probability laws `P ∈ P_m^sym`; this is the\ndecl through which the P realization cluster enters `thm:sharp-rho-star`)\n@realizes kappa(carrier ℝ; robustness argument of the gap; range [0,∞) pinned by the\n`0 ≤ kappa` premises of the consuming theorems `sharp_rho_star`/`rounding_gap_reduction`) -/\nnoncomputable def implementabilityGap (m : ℕ) (a b r kappa : ℝ) : ℝ :=\n  sInf (designObjective m a b r kappa '' implementableCovarianceClass m)\n    - sInf (designObjective m a b r kappa '' blockElliptope m a b)"
+        }
+      ]
+    },
+    "reducedTriangle_to_simplex": {
+      "decl": "reducedTriangle_to_simplex",
+      "file": "Helpers/ReducedSimplexBridge.lean",
+      "line": 17,
+      "statement": "/-- The change of variables `t = (q x, y, z)` sends the reduced triangle to `Δ_{2m}`. -/\nlemma reducedTriangle_to_simplex (m : ℕ) (x y z : ℝ)\n    (hq0 : 0 ≤ qParam m) (hT : InReducedTriangle m x y z) :\n    InSimplex (2 * (m : ℝ)) ![qParam m * x, y, z]",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "simplex_to_reducedTriangle": {
+      "decl": "simplex_to_reducedTriangle",
+      "file": "Helpers/ReducedSimplexBridge.lean",
+      "line": 31,
+      "statement": "/-- The inverse change of variables `x = t_x/q`, `y = t_y`, `z = t_z`. -/\nlemma simplex_to_reducedTriangle (m : ℕ) (t : Fin 3 → ℝ)\n    (hq : 0 < qParam m) (hS : InSimplex (2 * (m : ℝ)) t) :\n    InReducedTriangle m (t 0 / qParam m) (t 1) (t 2)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "reducedObjective_eq_wsObj": {
+      "decl": "reducedObjective_eq_wsObj",
+      "file": "Helpers/ReducedSimplexBridge.lean",
+      "line": 48,
+      "statement": "/-- Under `t = (q x, y, z)`, the reduced objective is the weighted-simplex objective\nwith `α = (c_x/q, c_y, c_z)` and `β = (1/q, 1, 1)`. -/\nlemma reducedObjective_eq_wsObj (q cx cy cz kappa x y z : ℝ) (hq : q ≠ 0) :\n    reducedObjective q cx cy cz kappa x y z =\n      wsObj ![cx / q, cy, cz] ![1 / q, 1, 1] kappa ![q * x, y, z]",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "wsObj_eq_reducedObjective": {
+      "decl": "wsObj_eq_reducedObjective",
+      "file": "Helpers/ReducedSimplexBridge.lean",
+      "line": 57,
+      "statement": "/-- The inverse form of `reducedObjective_eq_wsObj`, for a simplex point `t`. -/\nlemma wsObj_eq_reducedObjective (q cx cy cz kappa : ℝ) (t : Fin 3 → ℝ) (hq : q ≠ 0) :\n    wsObj ![cx / q, cy, cz] ![1 / q, 1, 1] kappa t =\n      reducedObjective q cx cy cz kappa (t 0 / q) (t 1) (t 2)",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "spread_certificate_relaxed_minimizer_and_gap": {
+      "decl": "(composite)",
+      "file": "Helpers/SpreadGap.lean",
+      "line": 22,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "spread_certificate_relaxed_minimizer_and_gap",
+          "statement": "lemma spread_certificate_relaxed_minimizer_and_gap (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hk : 0 ≤ kappa) (hOdd : OddCommunitySize m)\n    (hcert :\n      InReducedTriangle m (2 * (m : ℝ) / qParam m) 0 0 ∧\n        ∀ x y z, InReducedTriangle m x y z →\n          ((x, y, z) : ℝ × ℝ × ℝ) ≠ (2 * (m : ℝ) / qParam m, 0, 0) →\n            reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa\n                (2 * (m : ℝ) / qParam m) 0 0\n              < reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z) :\n    (spreadCovariance m ∈ blockElliptope m a b ∧\n        ∀ X ∈ blockElliptope m a b, X ≠ spreadCovariance m →\n          designObjective m a b r kappa (spreadCovariance m)\n            < designObjective m a b r kappa X) ∧\n      spreadCovariance m ∉ implementableCovarianceClass m ∧\n      0 < implementabilityGap m a b r kappa"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        },
+        {
+          "label": "OddCommunitySize",
+          "statement": "/-- Odd community size (parity feasibility: forces `S_A, S_B` odd, so `y + z ≥ 2/m`). -/\ndef OddCommunitySize (m : ℕ) : Prop := Odd m"
+        },
+        {
+          "label": "designObjective",
+          "statement": "/-- The normalized design objective\n`F_{r,κ}(X) = Tr(L_m X) + r Tr(L_m^† X) + κ ‖X‖_{S_2} + Tr(J_n X)`.\n@realizes F_{r,kappa}(X)(Tr(L_m X) + r Tr(L_m^† X) + κ‖X‖ + Tr(J_n X))\n@realizes r(carrier ℝ; homophily tradeoff weight on the `r * Tr(L^† X)` term)\n@realizes kappa(carrier ℝ; robustness weight on the Schatten-2 penalty `κ‖X‖_{S_2}`; range\n[0,∞) pinned by the `0 ≤ kappa` premises threaded through the consuming theorems/lemmas) -/\nnoncomputable def designObjective (m : ℕ) (a b r kappa : ℝ)\n    (X : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) : ℝ :=\n  Matrix.trace (twoBlockLaplacian m a b * X)\n    + r * Matrix.trace (twoBlockLaplacianPinv m a b * X)\n    + kappa * frobeniusNorm X\n    + Matrix.trace (allOnesMatrix m * X)"
+        },
+        {
+          "label": "implementableCovarianceClass",
+          "statement": "/-- The implementable covariance class `C_m^pm = { X(P) : P ∈ P_m^sym }`.\n@realizes C_m^pm(second moments of block-exchangeable designs)\n@realizes P(cluster member: the bound design law `D ∈ blockExchangeableDesignClass m`\nranges over the probability laws `P` whose second moment `X(P)` defines this class) -/\ndef implementableCovarianceClass (m : ℕ) : Set (Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) :=\n  { X | ∃ D ∈ blockExchangeableDesignClass m, X = assignmentSecondMoment m D }"
+        },
+        {
+          "label": "implementabilityGap",
+          "statement": "/-- The implementability gap `Δ_m^±(r,κ) = inf_{P ∈ P_m^sym} F(X(P)) − inf_{X ∈ E_m^blk} F(X)`,\nas an `sInf` difference over the objective images.\n@realizes Delta_m^pm(r,kappa)(implementable inf − relaxed inf; CARRIER of the gap. The bare\n`sInf − sInf` real difference is a plain `ℝ`; its core-declared range `[0,∞)` is NOT carried\nby this `def` alone but by the CONJUNCTION of this carrier with the companion range lemma\n`implementabilityGap_nonneg` in `Helpers/GapReduction.lean`, which pins `0 ≤ Δ_m^±` via\nthe reduced constrained-minus-unconstrained identity.)\n@realizes P(cluster member — AUTHORITATIVE link into the `sharp_rho_star` target block:\nthe implementable `sInf` is taken over `designObjective … '' implementableCovarianceClass m`,\ni.e. over the second moments `X(P)` of the probability laws `P ∈ P_m^sym`; this is the\ndecl through which the P realization cluster enters `thm:sharp-rho-star`)\n@realizes kappa(carrier ℝ; robustness argument of the gap; range [0,∞) pinned by the\n`0 ≤ kappa` premises of the consuming theorems `sharp_rho_star`/`rounding_gap_reduction`) -/\nnoncomputable def implementabilityGap (m : ℕ) (a b r kappa : ℝ) : ℝ :=\n  sInf (designObjective m a b r kappa '' implementableCovarianceClass m)\n    - sInf (designObjective m a b r kappa '' blockElliptope m a b)"
+        }
+      ]
+    },
+    "sharp_reduced_active_set_and_unique": {
+      "decl": "(composite)",
+      "file": "Helpers/SharpActive.lean",
+      "line": 19,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "sharp_reduced_active_set_and_unique",
+          "statement": "/-- For `κ > 0`, the active-set SOCP certificate gives the unique relaxed minimizer in\nreduced coordinates and the relaxed value formula. -/\nlemma sharp_reduced_active_set_and_unique (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hk : 0 ≤ kappa) (hkpos : 0 < kappa) :\n    (∃! t : ℝ × ℝ × ℝ, InReducedTriangle m t.1 t.2.1 t.2.2 ∧\n      ∀ x' y' z', InReducedTriangle m x' y' z' →\n        reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa t.1 t.2.1 t.2.2\n          ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n    (∃ S : Finset (Fin 3), ∃ lam : ℝ,\n      IsAdmissibleSupport ![cX m a b r / qParam m, cY b r, cZ m]\n        ![1 / qParam m, 1, 1] kappa S lam ∧\n      InReducedTriangle m\n        (activeSetPoint (2 * (m : ℝ)) ![cX m a b r / qParam m, cY b r, cZ m]\n          ![1 / qParam m, 1, 1] S lam 0 / qParam m)\n        (activeSetPoint (2 * (m : ℝ)) ![cX m a b r / qParam m, cY b r, cZ m]\n          ![1 / qParam m, 1, 1] S lam 1)\n        (activeSetPoint (2 * (m : ℝ)) ![cX m a b r / qParam m, cY b r, cZ m]\n          ![1 / qParam m, 1, 1] S lam 2) ∧\n      (∀ x' y' z', InReducedTriangle m x' y' z' →\n        reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa\n            (activeSetPoint (2 * (m : ℝ)) ![cX m a b r / qParam m, cY b r, cZ m]\n              ![1 / qParam m, 1, 1] S lam 0 / qParam m)\n            (activeSetPoint (2 * (m : ℝ)) ![cX m a b r / qParam m, cY b r, cZ m]\n              ![1 / qParam m, 1, 1] S lam 1)\n            (activeSetPoint (2 * (m : ℝ)) ![cX m a b r / qParam m, cY b r, cZ m]\n              ![1 / qParam m, 1, 1] S lam 2)\n          ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n      relaxedReducedValue m a b r kappa = 2 * (m : ℝ) * lam)"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        }
+      ]
+    },
+    "sharp_truncation_value_of_no_reduced_argmin_in_slice": {
+      "decl": "(composite)",
+      "file": "Helpers/SharpTrunc.lean",
+      "line": 19,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "sharp_truncation_value_of_no_reduced_argmin_in_slice",
+          "statement": "/-- If no relaxed minimizer meets the parity slice, the implementable reduced value is\nthe weighted-simplex truncation value at the selector. -/\nlemma sharp_truncation_value_of_no_reduced_argmin_in_slice (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hk : 0 ≤ kappa)\n    (hNoMeet : ¬ ∃ x y z, InReducedTriangle m x y z ∧\n      (∀ x' y' z', InReducedTriangle m x' y' z' →\n        reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n          ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n      parityThreshold m ≤ y + z) :\n    implementableReducedValue m a b r kappa =\n      wsObj ![cX m a b r / qParam m, cY b r, cZ m] ![1 / qParam m, 1, 1] kappa\n        (truncSegPoint (2 * (m : ℝ)) (parityThreshold m)\n          (truncSelector (2 * (m : ℝ)) (parityThreshold m)\n            ![cX m a b r / qParam m, cY b r, cZ m] ![1 / qParam m, 1, 1] kappa))"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        }
+      ]
+    },
+    "sharp_roundingLoss_zero_of_even": {
+      "decl": "(composite)",
+      "file": "Helpers/SharpTrunc.lean",
+      "line": 151,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "sharp_roundingLoss_zero_of_even",
+          "statement": "/-- For even community size, the parity threshold is zero, so every relaxed minimizer\nalready lies in the implementable reduced slice. -/\nlemma sharp_roundingLoss_zero_of_even (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hk : 0 ≤ kappa) (hEven : Even m) :\n    roundingLossCertificate m a b r kappa = 0"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        }
+      ]
+    },
+    "sharp_roundingLoss_zero_iff_argmin_meets_slice": {
+      "decl": "(composite)",
+      "file": "Helpers/SharpZero.lean",
+      "line": 19,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "sharp_roundingLoss_zero_iff_argmin_meets_slice",
+          "statement": "/-- The rounding-loss carrier has zero value exactly when a relaxed reduced minimizer\nmeets the parity slice. -/\nlemma sharp_roundingLoss_zero_iff_argmin_meets_slice (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hk : 0 ≤ kappa) :\n    roundingLossCertificate m a b r kappa = 0 ↔\n      ∃ x y z, InReducedTriangle m x y z ∧\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') ∧\n        parityThreshold m ≤ y + z"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        }
+      ]
+    },
+    "sharp_roundingLoss_zero_iff_unique_argmin_subset_slice": {
+      "decl": "(composite)",
+      "file": "Helpers/SharpZero.lean",
+      "line": 33,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "sharp_roundingLoss_zero_iff_unique_argmin_subset_slice",
+          "statement": "/-- In the unique-relaxed-minimizer case, zero rounding loss is equivalent to every\nrelaxed minimizer lying in the parity slice. -/\nlemma sharp_roundingLoss_zero_iff_unique_argmin_subset_slice (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hk : 0 ≤ kappa) (hkpos : 0 < kappa)\n    (hRelUnique : ∃! t : ℝ × ℝ × ℝ,\n      InReducedTriangle m t.1 t.2.1 t.2.2 ∧\n        ∀ x y z, InReducedTriangle m x y z →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa\n              t.1 t.2.1 t.2.2\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z) :\n    roundingLossCertificate m a b r kappa = 0 ↔\n      ∀ x y z, InReducedTriangle m x y z →\n        (∀ x' y' z', InReducedTriangle m x' y' z' →\n          reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n            ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z') →\n        parityThreshold m ≤ y + z"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        }
+      ]
+    },
+    "sharp_kappa_zero_reduced_min_iff": {
+      "decl": "(composite)",
+      "file": "Helpers/SharpZero.lean",
+      "line": 53,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "sharp_kappa_zero_reduced_min_iff",
+          "statement": "/-- At `κ = 0`, reduced minimizers are exactly the exposed face of the minimum\ncoordinates of `α = (c_x/q, c_y, c_z)`. -/\nlemma sharp_kappa_zero_reduced_min_iff (m : ℕ) (a b r kappa x y z : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hk0 : kappa = 0)\n    (hT : InReducedTriangle m x y z) :\n    ((∀ x' y' z', InReducedTriangle m x' y' z' →\n        reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x y z\n          ≤ reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa x' y' z')\n      ↔ (x ≠ 0 → cX m a b r / qParam m ≤ cY b r ∧ cX m a b r / qParam m ≤ cZ m) ∧\n        (y ≠ 0 → cY b r ≤ cX m a b r / qParam m ∧ cY b r ≤ cZ m) ∧\n        (z ≠ 0 → cZ m ≤ cX m a b r / qParam m ∧ cZ m ≤ cY b r))"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        }
+      ]
+    },
+    "reduced_norm_sq_block_coords": {
+      "decl": "reduced_norm_sq_block_coords",
+      "file": "Helpers/RobustConvergence.lean",
+      "line": 20,
+      "statement": "/-- The reduced Frobenius square at `X(u,v)` is the identity square plus the two\noff-diagonal block contributions. -/\nlemma reduced_norm_sq_block_coords (m : ℕ) (u v : ℝ) :\n    qParam m * (1 - u) ^ 2\n        + (1 + ((m : ℝ) - 1) * u - (m : ℝ) * v) ^ 2\n        + (1 + ((m : ℝ) - 1) * u + (m : ℝ) * v) ^ 2\n      =\n    (qParam m * 1 ^ 2 + 1 ^ 2 + 1 ^ 2)\n        + NsameR m * u ^ 2 + NcrossR m * v ^ 2",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "robust_minimizers_tendsto_identity_entries": {
+      "decl": "(composite)",
+      "file": "Helpers/RobustConvergence.lean",
+      "line": 32,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "robust_minimizers_tendsto_identity_entries",
+          "statement": "/-- Any choice of relaxed minimizers converges entrywise to the identity as `κ → ∞`. -/\nlemma robust_minimizers_tendsto_identity_entries (m : ℕ) (a b r : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hr0 : 0 ≤ r)\n    (Xseq : ℝ → Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ)\n    (hXseq : ∀ kappa : ℝ, 0 < kappa →\n      Xseq kappa ∈ blockElliptope m a b ∧\n        ∀ X ∈ blockElliptope m a b,\n          designObjective m a b r kappa (Xseq kappa) ≤ designObjective m a b r kappa X) :\n    ∀ i j, Tendsto (fun kappa => Xseq kappa i j) atTop\n      (𝓝 ((1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) i j))"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        },
+        {
+          "label": "designObjective",
+          "statement": "/-- The normalized design objective\n`F_{r,κ}(X) = Tr(L_m X) + r Tr(L_m^† X) + κ ‖X‖_{S_2} + Tr(J_n X)`.\n@realizes F_{r,kappa}(X)(Tr(L_m X) + r Tr(L_m^† X) + κ‖X‖ + Tr(J_n X))\n@realizes r(carrier ℝ; homophily tradeoff weight on the `r * Tr(L^† X)` term)\n@realizes kappa(carrier ℝ; robustness weight on the Schatten-2 penalty `κ‖X‖_{S_2}`; range\n[0,∞) pinned by the `0 ≤ kappa` premises threaded through the consuming theorems/lemmas) -/\nnoncomputable def designObjective (m : ℕ) (a b r kappa : ℝ)\n    (X : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) : ℝ :=\n  Matrix.trace (twoBlockLaplacian m a b * X)\n    + r * Matrix.trace (twoBlockLaplacianPinv m a b * X)\n    + kappa * frobeniusNorm X\n    + Matrix.trace (allOnesMatrix m * X)"
+        }
+      ]
+    },
+    "iidDesign_sign_pair_sum_zero": {
+      "decl": "iidDesign_sign_pair_sum_zero",
+      "file": "Helpers/RobustCorner.lean",
+      "line": 19,
+      "statement": "/-- Under the uniform iid sign law, the raw sum of two distinct coordinate signs is zero. -/\nlemma iidDesign_sign_pair_sum_zero (m : ℕ) (i j : Fin (2 * m)) (hij : i ≠ j) :\n    (∑ z : Fin (2 * m) → Bool, signOf m z i * signOf m z j) = 0",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "iidDesign_secondMoment": {
+      "decl": "iidDesign_secondMoment",
+      "file": "Helpers/RobustCorner.lean",
+      "line": 57,
+      "statement": "/-- The iid Rademacher design has identity second-moment matrix. -/\nlemma iidDesign_secondMoment (m : ℕ) :\n    assignmentSecondMoment m (iidDesign m) = 1",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "identity_mem_blockElliptope": {
+      "decl": "(composite)",
+      "file": "Helpers/RobustCorner.lean",
+      "line": 76,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "identity_mem_blockElliptope",
+          "statement": "/-- The identity covariance is the block-symmetric center `(u,v)=(0,0)`, hence lies in\n`E_m^blk` under two-block homophily. -/\nlemma identity_mem_blockElliptope (m : ℕ) (a b : ℝ) (hHom : TwoBlockHomophily m a b) :\n    (1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) ∈ blockElliptope m a b"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        }
+      ]
+    },
+    "robust_coeff_r_eq_of_center": {
+      "decl": "(composite)",
+      "file": "Helpers/RobustCorner.lean",
+      "line": 94,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "robust_coeff_r_eq_of_center",
+          "statement": "/-- The center first-order equality `c_x/q = c_y` forces `r = 2b(a+b)`. -/\nlemma robust_coeff_r_eq_of_center (m : ℕ) (a b r : ℝ)\n    (hHom : TwoBlockHomophily m a b)\n    (hxy : cX m a b r / qParam m = cY b r) :\n    r = 2 * b * (a + b)"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        }
+      ]
+    },
+    "robust_locus_of_center_coeffs": {
+      "decl": "(composite)",
+      "file": "Helpers/RobustCorner.lean",
+      "line": 126,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "robust_locus_of_center_coeffs",
+          "statement": "/-- The two center coefficient equalities are equivalent to the affine-balanced locus. -/\nlemma robust_locus_of_center_coeffs (m : ℕ) (a b r : ℝ)\n    (hHom : TwoBlockHomophily m a b)\n    (hxy : cX m a b r / qParam m = cY b r) (hyz : cY b r = cZ m) :\n    a + 3 * b = 2 * (m : ℝ) ∧ r = 2 * b * (a + b)"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        }
+      ]
+    },
+    "robust_center_coeffs_of_locus": {
+      "decl": "(composite)",
+      "file": "Helpers/RobustCorner.lean",
+      "line": 143,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "robust_center_coeffs_of_locus",
+          "statement": "/-- On the affine-balanced locus, the reduced linear coefficients are all equal. -/\nlemma robust_center_coeffs_of_locus (m : ℕ) (a b r : ℝ)\n    (hHom : TwoBlockHomophily m a b)\n    (hloc : a + 3 * b = 2 * (m : ℝ) ∧ r = 2 * b * (a + b)) :\n    cX m a b r / qParam m = cY b r ∧ cY b r = cZ m"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        }
+      ]
+    },
+    "reduced_coord_inverse": {
+      "decl": "reduced_coord_inverse",
+      "file": "Helpers/RobustCorner.lean",
+      "line": 166,
+      "statement": "/-- Inverse map from reduced coordinates to block-symmetric `(u,v)` coordinates. -/\nlemma reduced_coord_inverse (m : ℕ) (x y z : ℝ) (hm : 2 ≤ m)\n    (htri : InReducedTriangle m x y z) :\n    let u",
+      "sorry_free": true,
+      "axioms": null
+    },
+    "identity_objective_eq_reduced_center": {
+      "decl": "(composite)",
+      "file": "Helpers/RobustCorner.lean",
+      "line": 193,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "identity_objective_eq_reduced_center",
+          "statement": "/-- The matrix objective at `I_n` is the reduced objective at `(1,1,1)`. -/\nlemma identity_objective_eq_reduced_center (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b) :\n    designObjective m a b r kappa (1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ)\n      = reducedObjective (qParam m) (cX m a b r) (cY b r) (cZ m) kappa 1 1 1"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        },
+        {
+          "label": "designObjective",
+          "statement": "/-- The normalized design objective\n`F_{r,κ}(X) = Tr(L_m X) + r Tr(L_m^† X) + κ ‖X‖_{S_2} + Tr(J_n X)`.\n@realizes F_{r,kappa}(X)(Tr(L_m X) + r Tr(L_m^† X) + κ‖X‖ + Tr(J_n X))\n@realizes r(carrier ℝ; homophily tradeoff weight on the `r * Tr(L^† X)` term)\n@realizes kappa(carrier ℝ; robustness weight on the Schatten-2 penalty `κ‖X‖_{S_2}`; range\n[0,∞) pinned by the `0 ≤ kappa` premises threaded through the consuming theorems/lemmas) -/\nnoncomputable def designObjective (m : ℕ) (a b r kappa : ℝ)\n    (X : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) : ℝ :=\n  Matrix.trace (twoBlockLaplacian m a b * X)\n    + r * Matrix.trace (twoBlockLaplacianPinv m a b * X)\n    + kappa * frobeniusNorm X\n    + Matrix.trace (allOnesMatrix m * X)"
+        }
+      ]
+    },
+    "center_coeffs_of_identity_relaxed_min": {
+      "decl": "(composite)",
+      "file": "Helpers/RobustCorner.lean",
+      "line": 205,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "center_coeffs_of_identity_relaxed_min",
+          "statement": "/-- If `I_n` minimizes the matrix objective on the block elliptope, the reduced center\nfirst-order coefficient equalities hold. -/\nlemma center_coeffs_of_identity_relaxed_min (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b)\n    (hmin : ∀ X ∈ blockElliptope m a b,\n      designObjective m a b r kappa (1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ)\n        ≤ designObjective m a b r kappa X) :\n    cX m a b r / qParam m = cY b r ∧ cY b r = cZ m"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        },
+        {
+          "label": "designObjective",
+          "statement": "/-- The normalized design objective\n`F_{r,κ}(X) = Tr(L_m X) + r Tr(L_m^† X) + κ ‖X‖_{S_2} + Tr(J_n X)`.\n@realizes F_{r,kappa}(X)(Tr(L_m X) + r Tr(L_m^† X) + κ‖X‖ + Tr(J_n X))\n@realizes r(carrier ℝ; homophily tradeoff weight on the `r * Tr(L^† X)` term)\n@realizes kappa(carrier ℝ; robustness weight on the Schatten-2 penalty `κ‖X‖_{S_2}`; range\n[0,∞) pinned by the `0 ≤ kappa` premises threaded through the consuming theorems/lemmas) -/\nnoncomputable def designObjective (m : ℕ) (a b r kappa : ℝ)\n    (X : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) : ℝ :=\n  Matrix.trace (twoBlockLaplacian m a b * X)\n    + r * Matrix.trace (twoBlockLaplacianPinv m a b * X)\n    + kappa * frobeniusNorm X\n    + Matrix.trace (allOnesMatrix m * X)"
+        }
+      ]
+    },
+    "identity_strict_relaxed_min_of_locus": {
+      "decl": "(composite)",
+      "file": "Helpers/RobustCorner.lean",
+      "line": 241,
+      "statement": "",
+      "sorry_free": true,
+      "axioms": null,
+      "components": [
+        {
+          "label": "identity_strict_relaxed_min_of_locus",
+          "statement": "/-- On the affine-balanced locus and for `κ>0`, `I_n` is the strict relaxed minimizer\nover the block elliptope. -/\nlemma identity_strict_relaxed_min_of_locus (m : ℕ) (a b r kappa : ℝ)\n    (hHom : TwoBlockHomophily m a b) (hk : 0 < kappa)\n    (hloc : a + 3 * b = 2 * (m : ℝ) ∧ r = 2 * b * (a + b)) :\n    (1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) ∈ blockElliptope m a b ∧\n      ∀ X ∈ blockElliptope m a b, X ≠ 1 →\n        designObjective m a b r kappa (1 : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ)\n          < designObjective m a b r kappa X"
+        },
+        {
+          "label": "TwoBlockHomophily",
+          "statement": "/-- Two-block homophily: `m ≥ 2` and `a > b > 0` (within-block weight strictly\ndominates the positive cross-block weight). -/\ndef TwoBlockHomophily (m : ℕ) (a b : ℝ) : Prop :=\n  2 ≤ m ∧\n  b < a ∧            -- @realizes a(range: 0 < b < a pins a ∈ (0,∞))\n  0 < b              -- @realizes b(range: 0 < b pins b ∈ (0,∞))"
+        },
+        {
+          "label": "designObjective",
+          "statement": "/-- The normalized design objective\n`F_{r,κ}(X) = Tr(L_m X) + r Tr(L_m^† X) + κ ‖X‖_{S_2} + Tr(J_n X)`.\n@realizes F_{r,kappa}(X)(Tr(L_m X) + r Tr(L_m^† X) + κ‖X‖ + Tr(J_n X))\n@realizes r(carrier ℝ; homophily tradeoff weight on the `r * Tr(L^† X)` term)\n@realizes kappa(carrier ℝ; robustness weight on the Schatten-2 penalty `κ‖X‖_{S_2}`; range\n[0,∞) pinned by the `0 ≤ kappa` premises threaded through the consuming theorems/lemmas) -/\nnoncomputable def designObjective (m : ℕ) (a b r kappa : ℝ)\n    (X : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ) : ℝ :=\n  Matrix.trace (twoBlockLaplacian m a b * X)\n    + r * Matrix.trace (twoBlockLaplacianPinv m a b * X)\n    + kappa * frobeniusNorm X\n    + Matrix.trace (allOnesMatrix m * X)"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,535 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_cic\_cl\_quantile\_nonequiv, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_cic\_cl\_quantile\_nonequiv} / \texttt{v1}%
+  \\ \large\textit{Curvature-timing sign reversal for staggered CIC and Callaway--Li QTT}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a free-form ExactID / staggered distributional DID proposal with tuple
+\[
+\begin{array}{ll}
+\text{qid} & = \texttt{eid\_cic\_cl\_quantile\_nonequiv},\\
+\text{specialization} & = \texttt{v1},\\
+\text{graph / SWIG} & = \text{finite-cohort staggered adoption SWIG with cohorts }G\in\mathcal G,\\
+\text{treatment} & = D_{it}=\one\{t\ge G_i\}\text{ and absorbing adoption time }G_i,\\
+\text{target estimand} & =
+  \Delta_h(\tau)=\sum_{g,t:g\le t}\omega_{gt}
+  \left[Q_{h(Y_{it}(g)),g,t}(\tau)-Q^{0,\mathrm{CL}}_{h,g,t}(\tau)\right],\\
+\text{identifying assumptions} & =
+  \text{consistency, no anticipation, overlap, distributional DID,}\\
+& \text{and the restrictions stated in Assumptions 1--7.}
+\end{array}
+\]
+The comparator \(\Delta^{\mathrm{CIC}}_h(\tau)\) is the same aggregate except that
+the untreated counterfactual quantile is built by the Athey--Imbens changes-in-changes
+transport map before cohort aggregation.  The focal operational quantities are the
+signed affine-invariant curvature-timing derivative \(S_h(P;\tau)\) and its
+magnitude \(K_h(P;\tau)=|S_h(P;\tau)|\) in
+Definition~\ref{def:curvature-timing}, both observable Gateaux derivative
+functionals of the cohort-time marginal distributions and timing weights.
+
+\begin{abstract}
+This proposal asks when monotone transformations preserve the sign of staggered
+quantile treatment effects on the treated computed by changes-in-changes and by
+Callaway--Li-style group-time QTT formulas.  The kernel conjecture is that, even
+when each cohort-time primitive satisfies the usual distributional DID and copula
+conditions, staggered timing aggregation creates a signed affine-invariant
+curvature-timing derivative \(S_h(P;\tau)\) whose opposition to the level-scale
+margin can reverse the asymptotic sign of the transformed aggregate QTT.  This is a different pivot from an
+equality frontier between CIC and Callaway--Li maps: it targets the transformation
+class under which the sign and ordering of the resulting QTT reports are invariant.
+The proposal also records a calibration theorem: under timing homogeneity, the
+signed index vanishes and both routes recover the same joint point-identified group-time
+QTT family after every increasing transformation.  Resolving the conjecture would
+give applied staggered-QTT studies a concrete diagnostic for when reporting only
+one outcome scale is misleading.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Distributional DID and QTT methods are used precisely when mean DID hides
+heterogeneous distributional movements.  In that setting, the outcome scale is not
+a cosmetic choice: an increasing transformation preserves ranks, but it need not
+preserve differences between transformed quantiles after cohort-time aggregation.
+The scientific question is therefore whether a staggered-QTT sign is a property of
+the causal distribution or an artifact of combining timing weights, nonlinear
+counterfactual recovery, and the chosen outcome scale.
+
+\paragraph{The main finding (proposed).}
+Conjecture~\ref{conj:curvature-frontier} proposes a sharp local transformation
+frontier: on an open finite-support class, the transformed aggregate QTT keeps
+the level-scale sign exactly when the independently computed signed derivative
+\(S_r(P;\tau)\) does not oppose the level-scale margin strongly enough to cross
+zero.  Conjecture~\ref{conj:witness} specializes this to a three-cohort,
+three-period witness in which \(-\eta S_{y^2}(P;1/2)\) exceeds the margin and the
+CIC and Callaway--Li aggregate reports have opposite asymptotic signs.
+
+\paragraph{What is new.}
+\citet[pp.~738--741 and Proposition~1]{RothSantAnna2023} characterize
+functional-form sensitivity for mean DID parallel trends, while
+\citet{AtheyImbens2006} motivate changes-in-changes by
+scale-invariant nonlinear DID structure.  The proposed epsilon-gap is the
+staggered-QTT signed curvature-timing derivative \(S_h(P;\tau)\): it is neither the
+Athey--Imbens rank transport map nor the Roth--Sant'Anna mean-DID density
+diagnostic, and it is visible only after cohort timing weights enter before
+quantile subtraction.  \citet[Section~2 and the discussion of time-invariance
+copula challenges]{LiLin2024} and \citet[Assumption~3 and Theorem~1]{CallawayLi2019}
+supply the copula-based QTT route, but they do not classify which transformations
+preserve or reverse staggered aggregate QTT signs.
+
+\paragraph{How it positions in the literature.}
+The proposal is an ExactID / distributional-DID proposal, not a linear panel
+projection theorem.  It consumes the staggered group-time architecture of
+\citet{CallawaySantAnna2021}, the nonlinear distributional recovery of
+\citet{AtheyImbens2006}, and the QTT copula route of \citet{CallawayLi2019} and
+\citet[Section~2]{LiLin2024}.  Its closest sensitivity comparator is
+\citet[Proposition~1]{RothSantAnna2023}, but the target here is a quantile functional after
+staggered timing aggregation rather than a mean parallel-trends condition.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the staggered-adoption QTT workflow of
+\citet{LiLin2024}: a resolved curvature-timing theorem would tell users when their
+group-invariance-copula QTT sign is stable to outcome transformations and when a
+second scale must be reported.
+
+\paragraph{How research benefits from the conclusion.}
+Research practice changes as follows: staggered distributional-DID papers should
+report \(S_h(P;\tau)\), \(K_h(P;\tau)\), or a certified zero-index condition
+before interpreting the sign of an aggregate QTT as scale-robust.
+
+\section{Related work}
+\citet{AtheyImbens2006} is the CIC anchor: it identifies full counterfactual
+distributions in a nonlinear DID model and emphasizes invariance of its assumptions
+to outcome scaling.  \citet{CallawayLi2019} is the panel-QTT anchor: it combines
+distributional DID with a time-invariance copula restriction for quantile treatment
+effects.  \citet{CallawayLiOka2018} gives the two-period CQTT predecessor and
+shows why a copula condition, not marginal distributional DID alone, is doing
+identifying work for quantiles.  \citet[Section~2]{LiLin2024} is the closest staggered-QTT
+paper: it generalizes QTT identification to staggered adoption under distributional
+DID and group-invariance copulas and explicitly notes difficulties for the
+Callaway--Li time-invariance copula route.  \citet{CallawaySantAnna2021} supplies
+the group-time staggered-DID notation and aggregation logic that this proposal
+uses for distributional objects.  \citet[pp.~738--741 and Proposition~1]{RothSantAnna2023} is the nearest
+functional-form comparator because it proves that mean-DID parallel-trends
+conclusions can depend on the outcome transformation; it does not study CIC/QTT
+signs after quantile inversion and timing aggregation.  \citet{FernandezValMeierVanVuurenVella2024}
+is adjacent distributional DID work connecting distributional effects with
+doubly robust DID-style estimation; it is not a staggered CIC/Callaway--Li
+non-equivalence theorem.  \citet{FanYu2012} gives a partial-ID
+fallback for distributional and quantile DID when stronger restrictions fail,
+which matters because a sign-reversal theorem should not be confused with a
+failure of point identification.
+
+In the project catalogue, \texttt{doc/API.md} reports no active ExactID or
+PartialID entry duplicating a staggered-QTT transformation frontier.  The closest
+banked in-repo prior attempt is \texttt{eid\_dist\_synth\_control\_v1}, whose
+reviewer flagged that an Athey--Imbens / Callaway--Li comparison was only a
+taxonomy and lacked a computable equality or separation test.  The current
+proposal differs by making \(S_h(P;\tau)\), a transformation-specific operational
+quantity, the focal separation object.  The banked
+\texttt{pid\_qte\_marginal\_sensitivity\_v1} proposal is adjacent on quantile
+partial identification, but its kernel is finite-tail CQTE certification under
+marginal sensitivity rather than exact identification and transformation
+invariance under staggered adoption.
+
+\section{Formal setup}
+There are finite adoption cohorts \(G\in\mathcal G\subset\{2,\ldots,T\}\), an
+optional never-treated cohort \(G=\infty\), and absorbing treatment
+\(D_{it}=\one\{t\ge G_i\}\).  For each cohort \(g\) and calendar time \(t\), let
+\(Y_{it}(g)\) denote the potential outcome under adoption at \(g\), and
+\(Y_{it}(\infty)\) the untreated potential outcome.  The observed law is \(P\)
+over \((Y_{i1},\ldots,Y_{iT},G_i)\), with known cohort shares
+\(\pi_g=\Pr(G=g)\) and aggregation weights \(\omega_{gt}\ge0\) summing to one
+over treated cohort-time cells \(g\le t\).
+
+For a strictly increasing twice continuously differentiable transformation \(h\),
+write \(F^0_{h,g,t}\) for the counterfactual CDF of \(h(Y_{it}(\infty))\) for
+cohort \(g\) at time \(t\), \(Q^0_{h,g,t}(\tau)=\inf\{y:F^0_{h,g,t}(y)\ge\tau\}\),
+and \(Q_{h(Y),g,t}(\tau)=\inf\{y:\Pr(h(Y_{it})\le y\mid G=g)\ge\tau\}\).
+The Callaway--Li route \(F^{0,\mathrm{CL}}_{h,g,t}\) uses distributional DID plus
+the cohort-copula restriction in Assumption~\ref{ass:copula}; the CIC route
+\(F^{0,\mathrm{CIC}}_{h,g,t}\) uses the Athey--Imbens monotone transport from
+baseline to follow-up untreated distributions.  The aggregate QTT reports are
+\[
+\Delta^{m}_h(\tau)=\sum_{g,t:g\le t}\omega_{gt}
+\{Q_{h(Y_{it}),g,t}(\tau)-Q^{0,m}_{h,g,t}(\tau)\},
+\qquad m\in\{\mathrm{CL},\mathrm{CIC}\}.
+\]
+Let \(q_{gt}(\tau)=Q^0_{\mathrm{id},g,t}(\tau)\), let
+\(Q_{Y,g,t}(\tau)=Q_{\mathrm{id}(Y),g,t}(\tau)\), let
+\(s_{gt}(\tau)=Q_{Y,g,t}(\tau)-Q^0_{\mathrm{id},g,t}(\tau)\), and define the
+group-time QTT \(QTT_{h,g,t}(\tau)=Q_{h(Y),g,t}(\tau)-Q^0_{h,g,t}(\tau)\) and the
+signed level-scale margin
+\[
+M(P;\tau)=\left|\sum_{g,t}\omega_{gt}s_{gt}(\tau)\right|.
+\]
+
+\begin{definition}[Signed affine-invariant curvature-timing derivative]\label{def:curvature-timing}
+For a local transformation path \(h_\eta(y)=y+\eta r(y)\) with \(r'\!>-1/\eta\),
+let \(r^\perp\) be the residual after subtracting the unique affine function that
+agrees with \(r\) at the two endpoints of the convex hull of
+\(\{q_{gt}(\tau),Q_{Y,g,t}(\tau):\omega_{gt}>0\}\).  Define
+\[
+S_r(P;\tau)=
+\sum_{g,t}\omega_{gt}
+\left\{r^\perp(Q_{Y,g,t}(\tau))-r^\perp(q_{gt}(\tau))\right\}
+-\sum_t\bar\omega_t
+\left\{r^\perp(Q_{Y,\bar G,t}(\tau))-r^\perp(q_{\bar Gt}(\tau))\right\},
+\qquad
+K_r(P;\tau)=|S_r(P;\tau)|,
+\]
+where \(\bar\omega_t=\sum_g\omega_{gt}\), and \(Q_{Y,\bar G,t}(\tau)\) and
+\(q_{\bar Gt}(\tau)\) are the observed and untreated counterfactual quantiles in
+the timing-homogeneous mixture obtained by replacing
+\(\Pr(G=g\mid t,g\le t)\) with the baseline cohort share \(\pi_g\).  For a fixed
+\(h\), \(S_h(P;\tau)\) and \(K_h(P;\tau)\) denote the same expressions with
+\(r=h-\mathrm{id}\).  Thus every affine transformation has \(S_h=K_h=0\) by
+construction.
+\end{definition}
+
+\begin{verbatim}
+qid = eid_cic_cl_quantile_nonequiv
+specialization = v1
+graph / SWIG = finite-cohort staggered adoption SWIG with absorbing D_it=1{t>=G_i}
+treatment = adoption time G_i and group-time treated cells (g,t), g<=t
+target estimand = Delta_h(tau), the omega-weighted staggered QTT aggregate
+identifying assumptions = consistency, no anticipation, overlap,
+  distributional DID, cohort-copula stability, and timing homogeneity when invoked
+bounding functional = none; this is exact identification, with signed S_h(P;tau)
+  and magnitude K_h(P;tau) as operational diagnostics
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite staggered support]\label{ass:finite}
+\(\mathcal G\) and \(T\) are finite, \(\Pr(G=g)>0\) for each cohort used in the
+aggregate, and every treated cell \((g,t)\) with \(\omega_{gt}>0\) has an
+available comparison risk set with positive probability.
+\end{assumption}
+
+\begin{assumption}[Consistency and no anticipation]\label{ass:consistency}
+The observed outcome equals the potential outcome generated by the realized
+adoption time, and for \(t<g\), \(Y_{it}(g)=Y_{it}(\infty)\).
+\end{assumption}
+
+\begin{assumption}[Distributional DID]\label{ass:ddid}
+For each \((g,t)\) entering the aggregate, the untreated counterfactual marginal
+distribution for cohort \(g\) at \(t\) is identified by the distributional DID
+restriction relative to the comparison risk set specified in the locked design.
+\end{assumption}
+
+\begin{assumption}[Cohort-copula stability]\label{ass:copula}
+The copula linking baseline untreated ranks and follow-up untreated ranks is
+stable across the comparison risk set used to identify \(F^{0,\mathrm{CL}}_{h,g,t}\).
+\end{assumption}
+
+\begin{assumption}[Regular quantiles and transformations]\label{ass:regular}
+All CDFs used in the proposal are continuous and strictly increasing in a
+neighborhood of the \(\tau\)-quantiles, with densities bounded away from zero
+there.  The transformation \(h\) is strictly increasing and twice continuously
+differentiable on the convex hull of the relevant quantile support.
+\end{assumption}
+
+\begin{assumption}[Timing homogeneity]\label{ass:timing-homogeneity}
+For every calendar time \(t\), the distribution of untreated rank evolution and
+the transformed treated-minus-counterfactual quantile increment do not depend on
+the adoption cohort \(g\) among cohorts at risk at \(t\).  In primitive terms,
+the baseline-to-\(t\) untreated rank-transition law and the treated quantile
+increment \(s_{gt}(\tau)\) are functions of \(t\) and \(\tau\) only, not of \(g\).
+\end{assumption}
+
+\begin{assumption}[Margin-normalized local path]\label{ass:margin}
+For the flagship local-transformation statement, the path \(h_\eta(y)=y+\eta r(y)\)
+satisfies \(0<\eta\le \eta_{\max}(r,P)\), where \(\eta_{\max}(r,P)\) is the
+largest value preserving strict monotonicity on the support of \(P\).  The
+level-scale margin satisfies \(M(P;\tau)>0\), and the active path is restricted
+to \(\eta K_r(P;\tau)\le 2M(P;\tau)\).  The sign-frontier claim additionally
+requires the opposition condition
+\[
+\operatorname{sign}\!\left(\sum_{g,t}\omega_{gt}s_{gt}(\tau)\right)S_r(P;\tau)<0,
+\]
+so magnitude \(K_r\) is never used without the signed derivative \(S_r\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: timing-homogeneous joint QTT recovery]\label{thm:timing-homogeneous}
+Under Assumptions~\ref{ass:finite}--\ref{ass:regular} and
+Assumption~\ref{ass:timing-homogeneity}, for every strictly increasing \(h\) and
+every regular \(\tau\), \(F^{0,\mathrm{CL}}_{h,g,t}=F^{0,\mathrm{CIC}}_{h,g,t}\)
+for all treated cells \((g,t)\), \(S_h(P;\tau)=K_h(P;\tau)=0\), and the joint family
+\(\{QTT_{h,g,t}(\tau):g\le t\}\) is point identified by either route.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{AtheyImbens2006} and \citet{CallawayLi2019} identify counterfactual
+distributions under different nonlinear restrictions, and \citet{LiLin2024}
+studies staggered QTT under group-invariance copulas; none states the
+timing-homogeneous corner as a joint equality of the CIC and Callaway--Li
+group-time QTT families after arbitrary increasing transformations.  The gap is
+the explicit zero-index calibration needed before the sign-reversal conjecture is
+well posed.  (b) The consumer is \citet{LiLin2024}: this theorem would provide the
+clean diagnostic case in which their staggered QTT reports are scale-stable rather
+than merely point identified.
+
+\begin{conjecture}[Conjecture 1: curvature-timing sign frontier (NOT YET PROVED)]\label{conj:curvature-frontier}
+Under Assumptions~\ref{ass:finite}--\ref{ass:margin}, there is an open
+finite-support class \(\mathcal P_{\mathrm{ct}}\) such that, for each
+\(P\in\mathcal P_{\mathrm{ct}}\), each local path \(h_\eta(y)=y+\eta r(y)\), and
+each fixed \(0<\eta\le\eta_{\max}(r,P)\),
+\[
+\operatorname{sign}\Delta^{\mathrm{CL}}_{h_\eta}(\tau)
+=\operatorname{sign}\Delta^{\mathrm{CL}}_{\mathrm{id}}(\tau)
+\]
+if and only if
+\[
+\left|\sum_{g,t}\omega_{gt}s_{gt}(\tau)+\eta S_r(P;\tau)\right|>0
+\quad\text{and this sum has the original level-scale sign.}
+\]
+Equivalently, under the opposition condition in Assumption~\ref{ass:margin},
+sign reversal occurs exactly when \(\eta K_r(P;\tau)>M(P;\tau)\).  Every
+group-time counterfactual CDF remains point identified on both sides of the
+frontier.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest paper is \citet{RothSantAnna2023}, which gives a functional-form
+sensitivity diagnostic for mean DID parallel trends.  The epsilon-gap is that
+Conjecture~\ref{conj:curvature-frontier} concerns the sign of an identified
+staggered quantile aggregate and names the independent operational quantity
+\(S_r(P;\tau)\), whose magnitude \(K_r(P;\tau)\) combines transformation
+curvature with timing weights before quantile subtraction.  \citet{AtheyImbens2006} supplies scale-invariant CIC
+motivation, but not a staggered aggregation sign frontier.  (b) The consumer is
+the \texttt{didFF} / Roth--Sant'Anna functional-form workflow: resolving the
+conjecture would give the analogous diagnostic target for staggered QTT studies,
+with \(S_r(P;\tau)\) and \(K_r(P;\tau)\) replacing a mean-trend density check.
+
+\begin{conjecture}[Conjecture 2: three-cohort CIC/CL opposite-sign witness (NOT YET PROVED)]\label{conj:witness}
+There exists a concrete three-period, three-cohort finite-support law satisfying
+Assumptions~\ref{ass:finite}--\ref{ass:regular} but not
+Assumption~\ref{ass:timing-homogeneity}, with support points
+\(\{0,1,3,4,8\}\), treated-cell weights
+\(\omega_{22}=\omega_{33}=1/4\) and \(\omega_{23}=1/2\), and transformation
+\(h_\eta(y)=y+\eta y^2\) at \(\eta=1/10\), such that
+\[
+\Delta^{\mathrm{CIC}}_{h_\eta}(\tau)>0
+\quad\text{and}\quad
+\Delta^{\mathrm{CL}}_{h_\eta}(\tau)<0
+\]
+at \(\tau=1/2\).  The inequalities persist under all sufficiently small
+perturbations of the displayed atom probabilities that preserve the cohort-time
+rank ordering and the sign condition \(\eta K_{y^2}(P;1/2)>M(P;1/2)\) with
+\(\operatorname{sign}(\sum\omega s)S_{y^2}(P;1/2)<0\).
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet[Section~2, final paragraph]{LiLin2024} flags the staggered
+Callaway--Li copula route as delicate,
+and the banked \texttt{eid\_dist\_synth\_control\_v1} review noted that prior
+CausalSmith text only asserted an Athey--Imbens / Callaway--Li comparison without
+a computable separation test.  The epsilon-gap here is a non-degenerate
+finite-support witness with named moments \(S_{y^2}(P;1/2)\) and
+\(K_{y^2}(P;1/2)\) that produce
+opposite signs, rather than another taxonomy of assumptions.  (b) The consumer is
+\citet[abstract and identification section]{MillerGalvao2026}: a doubly robust staggered-QTT estimator needs to know
+whether its target sign is invariant to outcome scale or can flip across two
+published identification maps.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Two-period no-staggering reduction]\label{cor:two-period}
+When \(|\mathcal G|=1\), \(T=2\), and Assumption~\ref{ass:timing-homogeneity}
+holds, \(S_h(P;\tau)=K_h(P;\tau)=0\) and the proposal reduces to the standard
+Athey--Imbens / Callaway--Li two-period counterfactual quantile equality whenever
+their respective rank and copula restrictions coincide.
+\end{corollary}
+
+\begin{corollary}[Affine transformations]\label{cor:affine}
+If \(h(y)=a+by\) with \(b>0\), then \(S_h(P;\tau)=K_h(P;\tau)=0\) and the sign of every
+aggregate QTT report is preserved: \(\operatorname{sign}\Delta^m_h(\tau)=
+\operatorname{sign}\Delta^m_{\mathrm{id}}(\tau)\) for
+\(m\in\{\mathrm{CL},\mathrm{CIC}\}\).
+\end{corollary}
+
+\begin{example}[Concrete non-corner witness target]\label{ex:three-cohort-witness}
+The finite-support witness in Conjecture~\ref{conj:witness} should be checked on
+the following explicit median cells.  Conditional on each treated cell, the
+untreated counterfactual law \(P^0_{gt}\) and observed treated law \(P^Y_{gt}\)
+on support \((0,1,3,4,8)\) are
+\[
+\begin{array}{c|cc|cc}
+(g,t) & P^0_{gt}(0,1,3,4,8) & P^Y_{gt}(0,1,3,4,8) & q_{gt}(1/2) & Q_{Y,g,t}(1/2)\\
+\hline
+(2,2) & (.10,.46,.34,.06,.04) & (.10,.20,.40,.20,.10) & 1 & 3\\
+(2,3) & (.08,.18,.22,.01,.51) & (.10,.45,.25,.10,.10) & 8 & 1\\
+(3,3) & (.12,.44,.32,.08,.04) & (.10,.20,.42,.18,.10) & 1 & 3
+\end{array}
+\]
+with the timing-homogeneous barred medians fixed at
+\((q_{\bar G2},Q_{Y,\bar G,2})=(1,3)\) and
+\((q_{\bar G3},Q_{Y,\bar G,3})=(3,4)\).  These displayed probabilities are not
+a proof of attainability by the full latent rank process; they are the concrete
+non-corner target for the witness construction.  Direct median arithmetic gives
+\[
+\Delta^{\mathrm{CL}}_{\mathrm{id}}(1/2)=1/4,\qquad
+S_{y^2}(P;1/2)=-7,\qquad
+K_{y^2}(P;1/2)=7,
+\]
+so at \(\eta=1/10\), \(\eta K_{y^2}=.7>M=.25\) and the signed derivative points
+against the level-scale margin.  The CIC side of the witness is required to
+produce \(\Delta^{\mathrm{CIC}}_{h_\eta}(1/2)>0\) from the same observed law by
+the Athey--Imbens transport map, giving the promised CIC/CL opposite-sign
+separation.
+\end{example}
+
+\section{Proof-sketch route}
+The mathematical route is to write both counterfactual CDF constructions as
+monotone transport maps and then apply the ordinary quantile transformation rule
+\(Q_{h(Y)}(\tau)=h(Q_Y(\tau))\) cell by cell.  Theorem~\ref{thm:timing-homogeneous}
+should follow by showing that timing homogeneity makes the cohort-time transport
+maps identical before aggregation, so the barred and unbarred terms in
+Definition~\ref{def:curvature-timing} cancel.  For
+Conjecture~\ref{conj:curvature-frontier}, expand
+\(\Delta^{\mathrm{CL}}_{h_\eta}(\tau)\) around \(\eta=0\); the derivative is the
+signed curvature-timing functional \(S_r(P;\tau)\), while \(K_r(P;\tau)\) records
+only its magnitude.  Under the opposition condition, the boundary is the first
+point at which \(\eta K_r(P;\tau)\) dominates the independently defined
+level-scale margin \(M(P;\tau)\).  For Conjecture~\ref{conj:witness}, enumerate
+the three-cohort finite support in Example~\ref{ex:three-cohort-witness}, compute
+the CIC and Callaway--Li counterfactual median maps explicitly, and verify the
+strict inequalities; openness then follows from continuity of regular quantiles
+and strict inequalities under small probability perturbations.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:timing-homogeneous} is intended as routine algebra once the
+published CIC and Callaway--Li restrictions are specialized to timing
+homogeneity.  Conjectures~\ref{conj:curvature-frontier} and \ref{conj:witness}
+are not yet proved and are the novel kernel.  The largest risk is that
+\(S_r(P;\tau)\) as defined above captures only the first-order local
+transformation path, so the full ``for all \(0<\eta\le\eta_{\max}\)'' frontier
+may need to be narrowed to sufficiently small \(\eta\).  A second risk is whether
+the proposed three-cohort support \(\{0,1,3,4,8\}\) is the cleanest concrete
+witness; the proposal only commits to a non-degenerate finite-support witness
+with open perturbations, not to this atom set being minimal.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial draft for the structurally different
+functional-form / curvature-timing angle; prior verdict: none.
+\item v2 (revise) -- replaced unsigned \(K_r\) with signed affine-invariant
+\(S_r\), added location anchors and a concrete finite-support witness target,
+fixed the affine sanity check and citation metadata; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Athey and Imbens(2006)]{AtheyImbens2006}
+Athey, S. and G. W. Imbens (2006).
+Identification and inference in nonlinear difference-in-differences models.
+\emph{Econometrica} 74(2), 431--497.
+
+\bibitem[Callaway and Li(2019)]{CallawayLi2019}
+Callaway, B. and T. Li (2019).
+Quantile treatment effects in difference in differences models with panel data.
+\emph{Quantitative Economics} 10(4), 1579--1618.
+
+\bibitem[Callaway, Li, and Oka(2018)]{CallawayLiOka2018}
+Callaway, B., T. Li, and T. Oka (2018).
+Quantile treatment effects in difference in differences models under dependence
+restrictions and with only two time periods.
+\emph{Journal of Econometrics} 206(2), 395--413.
+
+\bibitem[Callaway and Sant'Anna(2021)]{CallawaySantAnna2021}
+Callaway, B. and P. H. C. Sant'Anna (2021).
+Difference-in-differences with multiple time periods.
+\emph{Journal of Econometrics} 225(2), 200--230.
+
+\bibitem[Fernandez-Val, Meier, van Vuuren, and Vella(2024)]{FernandezValMeierVanVuurenVella2024}
+Fernandez-Val, I., A. Meier, A. van Vuuren, and F. Vella (2024).
+Doubly robust difference-in-differences estimators for distributional treatment
+effects.
+Working paper.
+
+\bibitem[Fan and Yu(2012)]{FanYu2012}
+Fan, Y. and Z. Yu (2012).
+Partial identification of distributional and quantile treatment effects in
+difference-in-differences models.
+\emph{Economics Letters} 115(3), 511--515.
+
+\bibitem[Li and Lin(2024)]{LiLin2024}
+Li, X. and L. Lin (2024).
+Identification of quantile treatment effects in difference-in-differences
+settings with staggered adoption.
+\emph{Economics Letters} 241, 111792.
+
+\bibitem[Miller and Galvao(2026)]{MillerGalvao2026}
+Miller, B. and A. F. Galvao (2026).
+Doubly-robust quantile treatment effects with staggered interventions.
+SSRN working paper.
+
+\bibitem[Roth and Sant'Anna(2023)]{RothSantAnna2023}
+Roth, J. and P. H. C. Sant'Anna (2023).
+When is parallel trends sensitive to functional form?
+\emph{Econometrica} 91(2), 737--747.
+\end{thebibliography}
+
+\end{document}

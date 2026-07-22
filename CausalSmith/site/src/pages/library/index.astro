@@ -1,0 +1,533 @@
+---
+import {
+  loadLibrary,
+  libraryRoot,
+  declArea,
+  isTier1,
+  reviewStatus,
+} from "../../lib/library.js";
+import { SERIES_NAME, SERIES_TAGLINE } from "../../lib/config.js";
+import LibSearch from "../../components/LibSearch.astro";
+import "../../styles/library.css";
+
+const lib = loadLibrary(libraryRoot());
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const areas = [...new Set(lib.entries.map(declArea))].sort();
+const stats = areas.map((area) => {
+  const ds = lib.entries.filter((e) => declArea(e) === area);
+  const t1 = ds.filter((d) => isTier1(d, lib.sidecars));
+  return {
+    area,
+    intro: lib.sidecars[area]?.intro ?? "",
+    decls: ds.length,
+    tier1: t1.length,
+    reviewed: t1.filter((d) => reviewStatus(d, lib.sidecars) === "reviewed").length,
+    sorried: ds.filter((d) => d.usesSorry).length,
+  };
+});
+
+// Whole-library figures for the hero line, and the largest area for scaling the
+// per-row size bars (linear; tiny areas floored to 6% so they stay visible).
+const totalDecls = stats.reduce((n, s) => n + s.decls, 0);
+const totalTier1 = stats.reduce((n, s) => n + s.tier1, 0);
+const totalReviewed = stats.reduce((n, s) => n + s.reviewed, 0);
+const totalSorried = stats.reduce((n, s) => n + s.sorried, 0);
+const reviewedPct = totalTier1 ? Math.round((100 * totalReviewed) / totalTier1) : 0;
+const revPct = (rev: number, t1: number) => (t1 ? Math.round((100 * rev) / t1) : 0);
+const fmt = (n: number) => n.toLocaleString("en-US");
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Causalean Library · {SERIES_NAME}</title>
+  </head>
+  <body>
+    <article class="library">
+      <nav class="site-nav">
+        <span class="site-nav-kicker">{SERIES_NAME} · {SERIES_TAGLINE}</span>
+        <a href={`${base}/`}>CausalSmith Working Papers</a>
+        <span class="site-nav-current">Causalean Library</span>
+        <a href={`${base}/how-it-works/`}>How it works</a>
+        <span class="site-nav-commit">commit <code>{lib.commit.slice(0, 7)}</code></span>
+      </nav>
+      <h1>Causalean Library</h1>
+      <dl class="lib-hero-stats" aria-label="Library at a glance">
+        <div>
+          <dt>Declarations</dt>
+          <dd>{fmt(totalDecls)}</dd>
+        </div>
+        <div title="Core declarations — the library's definitions and headline results, whose natural-language translations receive human review.">
+          <dt>Core declarations reviewed</dt>
+          <dd>{reviewedPct}<span class="unit">%</span></dd>
+        </div>
+        <div>
+          <dt>Sorry-tainted</dt>
+          <dd class={totalSorried === 0 ? "clean" : "warn"}>{fmt(totalSorried)}</dd>
+        </div>
+      </dl>
+      <p class="lib-intro">
+        The foundational Lean 4 library for causal inference that every paper on this site
+        builds on. Each declaration carries a natural-language translation — the first
+        paragraph of its docstring. A translation is marked <em>reviewed</em> once a human
+        has confirmed that it faithfully renders the formal statement at the listed commit,
+        and <em>stale</em> if that formal statement has since changed.
+      </p>
+
+      <LibSearch base={base} />
+
+      <h2>Dependency graph</h2>
+      <p class="lib-intro">
+        An edge X → Y means Y’s formal statement mentions X: arrows run from building blocks
+        to the results that use them. Explore by module, then declaration; read arrows backward
+        to trace a result’s prerequisites. Drag a node to pin it, and double-click to release it.
+      </p>
+      <div id="graph">
+        <p id="graph-placeholder" class="graph-placeholder">Loading dependency graph…</p>
+        <div id="graph-content" hidden>
+          <div class="graph-toolbar">
+            <button id="graph-back" hidden>← module overview</button>
+            <button id="graph-reset">Reset view</button>
+            <span id="graph-title">Module overview</span>
+            <span class="graph-legend" id="graph-legend" hidden>
+              <span class="lg-group" title="node fill = declaration kind">
+                <span class="lg lg-def">def</span>
+                <span class="lg lg-structure">structure</span>
+                <span class="lg lg-theorem">theorem</span>
+              </span>
+              <span class="lg-group" title="red ring flags sorry-tainted declarations">
+                <span class="lg-ring lg-sorry">sorry-tainted</span>
+              </span>
+            </span>
+          </div>
+          <svg id="graph-canvas" width="100%" height="640"></svg>
+        </div>
+      </div>
+
+      <table class="area-table">
+        <thead>
+          <tr>
+            <th>Module</th><th>What it provides</th><th class="num">Declarations</th><th class="num">Reviewed</th><th class="num">Sorried</th>
+          </tr>
+        </thead>
+        <tbody>
+          {stats.map((s) => (
+            <tr>
+              <td><a href={`${base}/library/${s.area}`}>{s.area}</a></td>
+              <td class="intro-cell" title={s.intro}><span class="intro-clamp">{s.intro}</span></td>
+              <td class="num size-cell">{fmt(s.decls)}</td>
+              <td class="num review-cell">
+                <span class="stat-n">{s.reviewed}<span class="stat-of">/{s.tier1}</span></span>
+                <span class="bar" role="img" aria-label={`${s.reviewed} of ${s.tier1} core declarations reviewed`}>
+                  <span class="bar-fill bar-review" style={`width:${revPct(s.reviewed, s.tier1)}%`}></span>
+                </span>
+              </td>
+              <td class="num">
+                {s.sorried === 0 ? (
+                  <span class="glyph-clean" title="no sorries">—</span>
+                ) : (
+                  <span class="badge badge-sorried" title={`${s.sorried} sorry-tainted declarations`}>{s.sorried}</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p class="lib-footnote">
+        Machine-readable index: <a href={`${base}/library/search.json`}>search.json</a> ·
+        full index at <code>doc/library_index.json</code> in the repository.
+      </p>
+    </article>
+
+    <script>
+      // "What it provides" is clamped to 3 lines; add a more/less toggle ONLY to
+      // rows whose description actually overflows, so short intros stay clean.
+      for (const el of document.querySelectorAll<HTMLElement>(".intro-clamp")) {
+        if (el.scrollHeight - el.clientHeight < 4) continue;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "intro-toggle";
+        btn.textContent = "more";
+        btn.addEventListener("click", () => {
+          const open = el.classList.toggle("expanded");
+          btn.textContent = open ? "less" : "more";
+        });
+        el.insertAdjacentElement("afterend", btn);
+      }
+    </script>
+
+    <script>
+      let d3: any;
+      const backBtn = document.getElementById("graph-back")!;
+      const resetBtn = document.getElementById("graph-reset")!;
+      const titleEl = document.getElementById("graph-title")!;
+      const legendEl = document.getElementById("graph-legend")!;
+      const placeholderEl = document.getElementById("graph-placeholder")!;
+      const contentEl = document.getElementById("graph-content")!;
+      const sectionEl = document.getElementById("graph")!;
+      let svg: any = null;
+      // Re-frames the CURRENT view; each draw*() sets it to a closure over that
+      // view's nodes so the "reset view" button works in both overview and area.
+      let currentFit: (() => void) | null = null;
+      const baseHref = (document.querySelector("nav.site-nav a") as HTMLAnchorElement)
+        .getAttribute("href")!.replace(/\/$/, "");
+
+      // Palette drawn from the site design tokens (tokens.css): theorem uses the
+      // interactive-Lean blue, structures the decorative ink-ghost, def/axiom the
+      // cardinal ramp — so the graph belongs to the house style.
+      const KIND_COLOR: Record<string, string> = {
+        def: "#B1040E", // --accent-bright
+        structure: "#9A938C", // --ink-ghost
+        class: "#9A938C",
+        inductive: "#9A938C",
+        axiom: "#A0151D",
+        theorem: "#35507A", // --lean
+      };
+      const C_PAPER = "#FDFCFA"; // --paper (label halo)
+      const C_INK_SOFT = "#5C5853"; // --ink-soft (labels)
+      const C_WARN = "#C99806"; // --warning (amber-gold sorry-flag ring)
+      const C_RULE = "#E0DAD0"; // --rule (default neutral ring)
+
+      // Trim each link's TARGET endpoint back to the node's rim (+gap) so the
+      // fixed-size arrowhead lands just OUTSIDE the target node instead of being
+      // painted over by it — the reason overview arrows looked directionless
+      // (node radii scale with declaration count, far exceeding a fixed refX).
+      // For reciprocal links (A→B and B→A both present) also shift the line to
+      // the LEFT of its own travel direction: each twin shifts left of where it
+      // points, which are opposite physical sides, so the two arrows sit side by
+      // side instead of overlapping into one directionless-looking segment.
+      const RECIP_OFFSET = 4;
+      function linkGeom(d: any, targetR: number, gap = 3) {
+        const dx = d.target.x - d.source.x, dy = d.target.y - d.source.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len, uy = dy / len;
+        const ox = d.recip ? -uy * RECIP_OFFSET : 0;
+        const oy = d.recip ? ux * RECIP_OFFSET : 0;
+        return {
+          x1: d.source.x + ox,
+          y1: d.source.y + oy,
+          x2: d.target.x - ux * (targetR + gap) + ox,
+          y2: d.target.y - uy * (targetR + gap) + oy,
+        };
+      }
+
+      let data: any = null;
+      let sim: any = null;
+      let clickTimer: any = null;
+      const CLICK_DELAY = 250;
+
+      // D3 and graph.json are ~1.3MB combined — loaded only once the graph
+      // section is about to be visible (see IntersectionObserver below), or
+      // immediately if the page was opened with ?area= (explicit intent).
+      let d3Promise: Promise<any> | null = null;
+      function loadD3(): Promise<any> {
+        if ((window as any).d3) return Promise.resolve((window as any).d3);
+        if (d3Promise) return d3Promise;
+        d3Promise = new Promise((resolve, reject) => {
+          const s = document.createElement("script");
+          s.src = "https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js";
+          s.onload = () => resolve((window as any).d3);
+          s.onerror = () => reject(new Error("failed to load d3"));
+          document.head.appendChild(s);
+        });
+        return d3Promise;
+      }
+
+      async function loadGraph() {
+        placeholderEl.hidden = true;
+        contentEl.hidden = false;
+        d3 = await loadD3();
+        svg = d3.select("#graph-canvas");
+        const res = await fetch(`${baseHref}/library/graph.json`);
+        data = await res.json();
+        const params = new URLSearchParams(location.search);
+        const area = params.get("area");
+        if (area && data.areas.includes(area)) drawArea(area);
+        else drawOverview();
+      }
+
+      function clear() {
+        if (sim) sim.stop();
+        svg.selectAll("*").remove();
+      }
+
+      function size() {
+        const el = document.getElementById("graph-canvas")!;
+        return { w: el.clientWidth || 900, h: 640 };
+      }
+
+      function drawOverview() {
+        clear();
+        backBtn.hidden = true;
+        legendEl.hidden = true;
+        titleEl.textContent = "Module overview";
+        history.replaceState(null, "", location.pathname);
+        const { w, h } = size();
+        const counts = new Map<string, number>();
+        for (const n of data.nodes) counts.set(n.a, (counts.get(n.a) ?? 0) + 1);
+        const nodes = data.areas.map((a: string) => ({ id: a, count: counts.get(a) ?? 0 }));
+        const wmap = new Map<string, number>(
+          data.areaEdges.map(([f, t, c]: [string, string, number]) => [`${f}|${t}`, c]));
+        const isAnc = (a: string, b: string) => b.startsWith(a + "/"); // a is ancestor of b
+        // Collapse a reciprocal pair between an ancestor folder and its own descendant
+        // to a SINGLE ancestor→descendant arrow (combined weight): a parent folder and
+        // its subfolder cross-referencing is structurally expected, not a two-way
+        // dependency worth drawing both ways. Genuine non-nested reciprocals (siblings
+        // or unrelated branches) keep both arrows, offset side by side.
+        const links: any[] = [];
+        const done = new Set<string>();
+        for (const [f, t, c] of data.areaEdges) {
+          const key = `${f}|${t}`, rkey = `${t}|${f}`;
+          if (done.has(key)) continue;
+          const recip = wmap.has(rkey);
+          if (recip && (isAnc(f, t) || isAnc(t, f))) {
+            const anc = isAnc(f, t) ? f : t;
+            const desc = anc === f ? t : f;
+            links.push({ source: anc, target: desc, weight: c + (wmap.get(rkey) ?? 0), recip: false });
+            done.add(key);
+            done.add(rkey);
+          } else {
+            links.push({ source: f, target: t, weight: c, recip });
+          }
+        }
+        const root = svg.append("g");
+        const link = root.append("g").selectAll("line").data(links).join("line")
+          .attr("stroke", "#C58A8A").attr("stroke-opacity", 0.6)
+          .attr("stroke-width", (d: any) => Math.min(1 + Math.log2(1 + d.weight), 6))
+          .attr("marker-end", "url(#arrow)");
+        defineArrow();
+        const node = root.append("g").selectAll("g").data(nodes).join("g")
+          .style("cursor", "pointer")
+          .on("click", nodeClick((d: any) => drawArea(d.id)));
+        node.append("circle")
+          .attr("r", (d: any) => 14 + Math.sqrt(d.count) * 2.2)
+          .attr("fill", "#FDFCFA").attr("stroke", "#B1040E").attr("stroke-width", 2);
+        node.append("text").text((d: any) => d.id)
+          .attr("text-anchor", "middle").attr("dy", "0.32em")
+          .style("font-size", "0.72rem").style("font-family", "Charter, Georgia, serif")
+          .style("fill", C_INK_SOFT)
+          .attr("paint-order", "stroke").attr("stroke", C_PAPER).attr("stroke-width", 3);
+        node.append("title").text((d: any) => `${d.id} — ${d.count} core declarations`);
+        enableDrag(node, root);
+        currentFit = () => fitToView(root, nodes, w, h);
+        sim = d3.forceSimulation(nodes)
+          .force("link", d3.forceLink(links).id((d: any) => d.id).distance(170))
+          .force("charge", d3.forceManyBody().strength(-900))
+          .force("center", d3.forceCenter(w / 2, h / 2))
+          // Mild radial pull toward center: negligible on the linked cluster
+          // (links + charge dominate there) but the only inward force on
+          // isolated nodes, so they no longer drift to the far periphery.
+          .force("x", d3.forceX(w / 2).strength(0.07))
+          .force("y", d3.forceY(h / 2).strength(0.07))
+          .force("collide", d3.forceCollide().radius((d: any) => 26 + Math.sqrt(d.count) * 2.2))
+          .on("tick", () => {
+            link.attr("x1", (d: any) => (d._g = linkGeom(d, 14 + Math.sqrt(d.target.count || 0) * 2.2)).x1)
+              .attr("y1", (d: any) => d._g.y1)
+              .attr("x2", (d: any) => d._g.x2).attr("y2", (d: any) => d._g.y2);
+            node.attr("transform", (d: any) => `translate(${d.x},${d.y})`);
+          })
+          .on("end", () => fitToView(root, nodes, w, h));
+        enableZoom(root);
+      }
+
+      function drawArea(area: string) {
+        clear();
+        backBtn.hidden = false;
+        legendEl.hidden = false;
+        titleEl.textContent = `${area} — statement dependencies`;
+        history.replaceState(null, "", `?area=${area}`);
+        const { w, h } = size();
+        const ids = new Map<number, number>();
+        const nodes: any[] = [];
+        data.nodes.forEach((n: any, i: number) => {
+          if (n.a === area) {
+            const li = nodes.length;
+            ids.set(i, li);
+            nodes.push({ ...n, idx: i, li });
+          }
+        });
+        const inArea = data.edges
+          .filter(([f, t]: [number, number]) => ids.has(f) && ids.has(t));
+        const declPresent = new Set(inArea.map(([f, t]: [number, number]) => `${f}|${t}`));
+        const links = inArea.map(([f, t]: [number, number]) => ({
+          source: ids.get(f), target: ids.get(t), recip: declPresent.has(`${t}|${f}`),
+        }));
+        // Degree per node (from the raw index edges, before d3 mutates source/target);
+        // only the ~25 highest-degree nodes get labels at rest — the rest reveal past
+        // zoom 1.4. Fewer labels is the right fix for collision, not smarter placement.
+        const degree = new Array(nodes.length).fill(0);
+        for (const l of links) { degree[l.source as number]++; degree[l.target as number]++; }
+        const labelThresh = [...degree].sort((a, b) => b - a)[Math.min(24, degree.length - 1)] ?? 0;
+        const root = svg.append("g");
+        defineArrow();
+        const link = root.append("g").selectAll("line").data(links).join("line")
+          .attr("stroke", "#C58A8A").attr("stroke-opacity", 0.55).attr("stroke-width", 1)
+          .attr("marker-end", "url(#arrow)");
+        const node = root.append("g").selectAll("g").data(nodes).join("g")
+          .style("cursor", "pointer")
+          .on("click", nodeClick((d: any) => {
+            location.href = `${baseHref}/library/${d.a}#${d.n}`;
+          }));
+        node.append("circle")
+          .attr("r", 6)
+          .attr("fill", (d: any) => KIND_COLOR[d.k] ?? C_INK_SOFT)
+          // Ring is a warning-only channel: sorry-tainted nodes get a bold amber
+          // ring so they pop; everything else keeps a faint neutral outline so a
+          // second saturated color never fights the kind-fill. Amber (not red)
+          // avoids red-on-red where the fill is the cardinal `def` color.
+          .attr("stroke", (d: any) => (d.x ? C_WARN : C_RULE))
+          .attr("stroke-width", (d: any) => (d.x ? 2.4 : 1));
+        const labels = node.append("text").text((d: any) => d.s)
+          .attr("dx", 8).attr("dy", "0.32em")
+          .style("font-size", "0.6rem")
+          .style("font-family", "ui-monospace, Menlo, monospace")
+          .style("fill", C_INK_SOFT)
+          .attr("paint-order", "stroke").attr("stroke", C_PAPER).attr("stroke-width", 2.5)
+          .style("display", (d: any) => (degree[d.li] >= labelThresh ? null : "none"));
+        node.append("title").text((d: any) => `${d.k} ${d.n}\n${d.d}`);
+        enableDrag(node, root);
+        currentFit = () => fitToView(root, nodes, w, h);
+        sim = d3.forceSimulation(nodes)
+          // Longer links + stronger charge spread the linked cluster so its
+          // labels and arrowheads stop overlapping into a hairball. Link
+          // distance is the main lever: it only spreads LINKED nodes, so the
+          // isolated ones stay where the radial force parked them.
+          .force("link", d3.forceLink(links).distance(105))
+          .force("charge", d3.forceManyBody().strength(-240))
+          .force("center", d3.forceCenter(w / 2, h / 2))
+          // Mild radial pull toward center reels in isolated declarations that
+          // no link holds, without collapsing the linked cluster's spacing.
+          .force("x", d3.forceX(w / 2).strength(0.09))
+          .force("y", d3.forceY(h / 2).strength(0.09))
+          .force("collide", d3.forceCollide().radius(18))
+          .on("tick", () => {
+            link.attr("x1", (d: any) => (d._g = linkGeom(d, 6)).x1)
+              .attr("y1", (d: any) => d._g.y1)
+              .attr("x2", (d: any) => d._g.x2).attr("y2", (d: any) => d._g.y2);
+            node.attr("transform", (d: any) => `translate(${d.x},${d.y})`);
+          })
+          .on("end", () => fitToView(root, nodes, w, h));
+        // Reveal all labels once the reader zooms in past 1.4×.
+        enableZoom(root, (scale: number) => {
+          labels.style("display", (d: any) =>
+            scale >= 1.4 || degree[d.li] >= labelThresh ? null : "none");
+        });
+      }
+
+      function defineArrow() {
+        if (!svg.select("#arrow").empty()) return;
+        // markerUnits=userSpaceOnUse → a constant 7px arrowhead regardless of the
+        // (variable) edge stroke width; refX≈tip so the head lands at the line's
+        // end vertex, which linkGeom has already trimmed to the target node's rim.
+        svg.append("defs").append("marker")
+          .attr("id", "arrow").attr("viewBox", "0 -5 10 10")
+          .attr("refX", 10).attr("refY", 0)
+          .attr("markerWidth", 15).attr("markerHeight", 15)
+          .attr("markerUnits", "userSpaceOnUse")
+          .attr("orient", "auto")
+          // Solid, deeper rose than the translucent pale-rose edges so the
+          // direction reads at a glance.
+          .append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "#9E3B3B");
+      }
+
+      let zoomBehavior: any = null;
+      function enableZoom(root: any, onZoom?: (scale: number) => void) {
+        // Floor kept low (0.05) so the reader can zoom far enough out to catch
+        // isolated nodes the force layout flings well past the main cluster;
+        // 0.25 clipped them off-screen with no way to shrink further.
+        zoomBehavior = d3.zoom().scaleExtent([0.05, 4]).on("zoom", (ev: any) => {
+          root.attr("transform", ev.transform);
+          onZoom?.(ev.transform.k);
+        });
+        svg.call(zoomBehavior);
+      }
+
+      // Navigation on click, deferred ONLY for pinned nodes so a following
+      // dblclick (the un-pin gesture) can cancel it. Un-pinned nodes — the vast
+      // majority — navigate instantly, so the delay is paid only on nodes the
+      // reader deliberately pinned, never in the common case.
+      function nodeClick(navigate: (d: any) => void) {
+        return (_ev: any, d: any) => {
+          if (d.fx == null && d.fy == null) { navigate(d); return; }
+          if (clickTimer) clearTimeout(clickTimer);
+          clickTimer = setTimeout(() => { clickTimer = null; navigate(d); }, CLICK_DELAY);
+        };
+      }
+
+      // Drag-to-pin: dragging a node repositions it and PINS it where dropped
+      // (fx/fy retained); the simulation reheats and relaxes the rest of the
+      // graph around it. Double-clicking a pinned node releases it back to the
+      // simulation. Shared by both the overview and per-area views.
+      function enableDrag(nodeSel: any, root: any) {
+        const drag = d3.drag()
+          // Resolve pointer coords in the zoomable group's LOCAL space so a node
+          // pinned while the canvas is zoomed/panned tracks the cursor exactly
+          // instead of jumping by the zoom transform.
+          .container(() => root.node())
+          // Movement ≥4px is a drag, not a click: d3 then suppresses the trailing
+          // click so a reposition never fires click-navigation.
+          .clickDistance(4)
+          .on("start", (event: any, d: any) => {
+            if (!event.active) sim.alphaTarget(0.3).restart();
+            d.fx = d.x; d.fy = d.y;
+            // Keep the gesture from ALSO reaching the svg's pan/zoom behavior.
+            event.sourceEvent.stopPropagation();
+          })
+          .on("drag", (event: any, d: any) => { d.fx = event.x; d.fy = event.y; })
+          .on("end", (event: any) => { if (!event.active) sim.alphaTarget(0); });
+        nodeSel.call(drag);
+        // Double-click un-pins. stopPropagation keeps d3-zoom's own
+        // dblclick-to-zoom (bound on the svg) from also firing.
+        nodeSel.on("dblclick", (event: any, d: any) => {
+          event.stopPropagation();
+          if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
+          d.fx = null; d.fy = null;
+          sim.alpha(0.3).restart();
+        });
+      }
+
+      // Frame the settled layout: compute the node bounding box and apply the
+      // centering zoom transform, so the reader never lands on a half-off-screen
+      // hairball. A little padding keeps labels off the edges.
+      function fitToView(root: any, nodes: any[], w: number, h: number) {
+        if (!zoomBehavior || !nodes.length) return;
+        const xs = nodes.map((n) => n.x).filter((v) => v != null);
+        const ys = nodes.map((n) => n.y).filter((v) => v != null);
+        if (!xs.length) return;
+        const pad = 48;
+        const minX = Math.min(...xs), maxX = Math.max(...xs);
+        const minY = Math.min(...ys), maxY = Math.max(...ys);
+        const bw = Math.max(maxX - minX, 1), bh = Math.max(maxY - minY, 1);
+        const scale = Math.min(2, (w - 2 * pad) / bw, (h - 2 * pad) / bh);
+        const tx = w / 2 - scale * (minX + maxX) / 2;
+        const ty = h / 2 - scale * (minY + maxY) / 2;
+        svg.transition().duration(400).call(
+          zoomBehavior.transform,
+          d3.zoomIdentity.translate(tx, ty).scale(scale),
+        );
+      }
+
+      backBtn.addEventListener("click", drawOverview);
+      // Re-frame the current view: undoes manual zoom/pan and recenters on the
+      // (possibly hand-dragged) node positions without rerunning the layout.
+      resetBtn.addEventListener("click", () => currentFit?.());
+
+      // Load immediately if the URL already asks for a specific area (explicit
+      // intent, e.g. a deep link from an area page); otherwise wait until the
+      // section is about to scroll into view.
+      const initialParams = new URLSearchParams(location.search);
+      if (initialParams.get("area")) {
+        loadGraph();
+      } else {
+        const io = new IntersectionObserver((entries) => {
+          if (entries.some((e) => e.isIntersecting)) {
+            io.disconnect();
+            loadGraph();
+          }
+        }, { rootMargin: "200px" });
+        io.observe(sectionEl);
+      }
+    </script>
+  </body>
+</html>

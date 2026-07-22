@@ -1,0 +1,52 @@
+=== STAGE 0.M STITCH (per-conjecture split, layer 4/5) ===
+
+You are running the Stage 0.M stitch sub-stage of the causalsmith pipeline. All Stage 0.k sub-stages have completed; their per-conjecture fragments and verdict JSONs are listed in "PER-CONJECTURE INPUTS" below. Your job is to ASSEMBLE the final stage0 .tex by writing §9–§15 ONLY, using the fragments and verdicts.
+
+**You are not allowed to mint a new headline claim.** §9 Main theorems is compiled MECHANICALLY from each verdict's `headline_statement`. The post-stitch validator runs a substring match after you finish; if §9 of the assembled .tex does not contain each verdict's `headline_statement` VERBATIM (whitespace-insensitive), the run is rejected with `stage0_stitch_invariant_violated` and routed to intervention. Do not paraphrase. Do not "improve" the wording. Do not infer additional results from the union of confirmed conjectures and write them as §9 theorems.
+
+=== SECTION CONTRACTS ===
+
+**§9 Main theorems.** For each conjecture in order (1, 2, ..., N):
+
+  - If verdict is `confirmed` or `partial`: emit a `\theorem` (confirmed) or `\proposition` (partial), titled `[Theorem N: <short title>]` resp. `[Proposition N: <short title>]` — NOT "Conjecture N" (a confirmed/partial target is a proved result, not an open conjecture). The statement body MUST be the verbatim `headline_statement` from that verdict. Immediately after, one paragraph explaining what is new and the comparison with the closest prior result (re-use the per-conjecture fragment's interpretation text — DO NOT introduce new positioning claims).
+
+  - If verdict is `refuted-with-counterexample`: emit a `\paragraph{Refutation note (Conjecture N).}` block — NOT a `\theorem`. The body MUST quote the verdict's `headline_statement` (the one-line refutation summary) verbatim and then cite §13 where the counterexample lives.
+
+  - Special case: if ALL conjectures are `refuted-with-counterexample`, §9 has zero `\theorem` environments, only refutation paragraphs. The pipeline accepts this — an honest "all conjectures refuted" outcome is a real result, not a failure.
+
+**§10 Interpretation.** Concatenate the per-conjecture fragments' §10 sections in conjecture order. Add a one-paragraph synthesis at the end that connects the individual interpretations back to §3 Motivating conjectures — but only by re-using prose from the fragments, not by introducing new claims.
+
+**§11 Step-by-step proof.** Two sub-parts, in this order:
+
+  (a) **Supporting lemmas prelude.** If the "SUPPORTING LEMMAS" block appears below, open §11 with a `\subsection*{Supporting lemmas}` followed by, for EACH entry in order: a `\begin{<kind>}[<kind capitalized> N: <one-line title>]\label{<prefix>:<slug>}` block reproducing the `statement` VERBATIM, immediately followed by `\begin{proof}` containing `proof_tex` VERBATIM, then `\end{proof}`. The labels MUST match the prefixes `thm:` / `prop:` / `lem:` exactly — conjecture fragments cite by these labels and the validator checks each label appears in the .tex. If no supporting lemmas were provided, omit this subsection entirely.
+
+  (b) **Per-conjecture proofs.** Concatenate the per-conjecture fragments' §11 sections in conjecture order. Each conjecture's proof block stays under its own `\subsubsection*{Proof of Theorem N}` (confirmed) or `\subsubsection*{Proof of Proposition N}` (partial) — matching the §9 environment — or `\subsubsection*{Refutation of Conjecture N}` for refuted entries. If a fragment did not emit §11 (because the conjecture was refuted at §13), include only the refutation pointer ("See §13 Counterexample for the refutation").
+
+**§12 Sanity checks.** Concatenate the per-conjecture fragments' §12 sections in conjecture order. If a fragment did not emit §12 (refuted entry), skip it.
+
+**§13 Counterexample or minimality check.** Concatenate the per-conjecture fragments' §13 sections in conjecture order. This is the authoritative location for refutation constructions.
+
+**§14 Formalization checklist.** Build the UNION of math objects referenced across all fragments. Each entry: object name, typed signature, role in the proof, dependencies. Do NOT cite *.lean files or Mathlib lemmas — Stage 1 (NL formalization) owns the Lean-substrate mapping.
+
+**§15 Conclusion and references.**
+  - Conclude with ONE sentence per conjecture, sourced verbatim from the verdict's `headline_statement` plus the verdict status. Pattern: "<Theorem|Proposition|Conjecture> N (<label>) is <confirmed|partial|refuted>; <headline_statement>." — use "Theorem N" when confirmed, "Proposition N" when partial, "Conjecture N" only when refuted. Do not write a synthesis claim that goes beyond what the verdicts say.
+  - Include a References subsection or `\bibitem` list aggregating every cited published work from the per-conjecture fragments' §4 / §11 references.
+
+=== SKELETON INVARIANTS (DO NOT TOUCH) ===
+
+The target .tex already has §1–§8 filled in by Stage 0.0; DO NOT edit §1–§8 except to merge in §15's reference list if necessary. The `\section{...}` titles are fixed by skeleton invariant (Stage 0.5 / Stage 1 / Stage 4d grep for them).
+
+DO NOT compile or build the .tex file (do not run latexmk, pdflatex, or any LaTeX tool).
+
+=== HARD RULES ===
+
+  1. §9 statements MUST match the verdict's `headline_statement` substring (whitespace-insensitive). Validator will reject otherwise.
+  2. §9 must NOT contain any theorem or proposition that is not backed by a verdict. The set of §9 `\theorem`+`\proposition`+`\paragraph{Refutation note...}` blocks must be in bijection with the verdicts list.
+  3. §15 conclusion must NOT make a synthesis claim that is not present in some verdict's headline.
+  4. If you find yourself wanting to "tighten" or "merge" two adjacent conjectures' headlines because the union would read better — STOP. That is exactly the kernel-substitution behavior this pipeline is designed to catch. Each verdict stands on its own.
+
+=== Stdout JSON ===
+
+After writing the .tex file, emit exactly one JSON object as the last non-empty line on stdout:
+
+  {"status":"completed","message":"<one-line summary: M of N confirmed, K refuted, etc.>","artifacts":["<absolute tex path>"]}

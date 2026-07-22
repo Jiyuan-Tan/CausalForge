@@ -1,0 +1,331 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_surrogate\_paradox\_phase, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` -- the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_surrogate\_paradox\_phase} / \texttt{v1}%
+  \\ \large\textit{A common-responder compatibility facet for binary surrogate-paradox phase thresholds}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a free-form PartialID proposal. The locked tuple is
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\mathcal R,\Phi)
+=
+(\texttt{pid\_surrogate\_paradox\_phase},\texttt{v1},P_{\mathrm{obs}},
+\theta_R,\mathcal R_{\mathrm{bin}},\Phi_{\mathrm{cf}}).
+\]
+Here \(Z\in\{0,1\}\) is randomized treatment, \(S(z)\in\{0,1\}\) is the binary surrogate potential outcome, and \(Y(z)\in\{0,1\}\) is the binary primary-outcome potential outcome. The observable law is the pair of tables \(P_{\mathrm{obs}}=\{p_z(s,y):z,s,y\in\{0,1\}\}\), where \(p_z(s,y)=\Pr(S(z)=s,Y(z)=y)\). The target is the responder principal-stratum effect
+\[
+  \theta_R=\E[Y(1)-Y(0)\mid S(0)=0,S(1)=1],
+\]
+defined only when \(r=\Pr\{S(0)=0,S(1)=1\}>0\). The identifying restrictions \(\mathcal R_{\mathrm{bin}}\) are randomization/consistency, binary support, a nonempty monotone-responder stratum \(S(1)\ge S(0)\) almost surely, and interior observable cells. The bounding functional \(\Phi_{\mathrm{cf}}\) is the common-responder compatibility frontier
+\[
+  \Phi_{\mathrm{cf}}(P_{\mathrm{obs}})=
+  \sup_{r\in I_R(P_{\mathrm{obs}})}
+  \{\overline\mu_{0R}(r)-\underline\mu_{1R}(r)\},
+\]
+where \(I_R(P_{\mathrm{obs}})=[p_1-p_0,\min\{p_1,1-p_0\}]\), \(p_z=\Pr(S(z)=1)\), and the arm-specific endpoint functions are defined in Section 6.
+
+\begin{abstract}
+Binary surrogate endpoints can satisfy positive treatment-surrogate movement while hiding a harmful effect inside the principal stratum whose surrogate is moved by treatment. This proposal asks whether the hidden sign reversal is governed by a common-responder compatibility facet rather than by two separate Manski-style missing-cell bounds. The flagship conjecture states that a scalar frontier \(\Phi_{\mathrm{cf}}(P_{\mathrm{obs}})\), computed from the same responder mass in both observed arms, is necessary and sufficient for a finite binary witness with \(\theta_R<0\). The conjecture is positioned against surrogate-paradox exclusion criteria and principal-stratification sensitivity analyses that do not isolate this common-mass phase boundary. Resolving it would give applied surrogate studies a hand-checkable diagnostic: the sign question becomes a finite table calculation instead of an unconstrained latent-strata linear program.
+\end{abstract}
+
+\section{Introduction}
+Surrogate validation is often stated in terms of positive effects on the surrogate and favorable surrogate-outcome association. The question here is whether those observable signs can coexist with a negative treatment effect in the responder principal stratum, and whether the coexistence is decided by one explicit compatibility frontier.
+
+\citet[Sec.~2]{FrangakisRubin2002} make principal strata the causal units defined by post-treatment potential values, while \citet[Sec.~3]{ChenGengJia2007} and \citet[Sec.~2]{YinLiuGengLuo2019} formulate average surrogate-paradox criteria. The gap is that these criteria do not give an if-and-only-if threshold for a finite binary responder stratum when the same latent responder mass must explain both observed tables. The kernel is a PartialID theorem about binary principal strata and sharp finite-support witness laws.
+
+The immediate consumer is the surrogate-paradox exclusion program in \citet{YinLiuGengLuo2019}. A reader who accepts the conclusion would test constructive inclusion by computing \(\Phi_{\mathrm{cf}}\), rather than interpreting failure of an exclusion criterion as an unstructured latent-LP ambiguity.
+
+\begin{itemize}[leftmargin=*]
+  \item Theorem 1: the common responder mass lies in one closed interval and induces two arm-specific endpoint maps. Gap: \citet{FrangakisRubin2002} define the strata but do not compute this binary compatibility interval. Consumer: binary principal-stratification sensitivity analyses.
+  \item Conjecture 1: \(\Phi_{\mathrm{cf}}(P_{\mathrm{obs}})>0\) if and only if \(P_{\mathrm{obs}}\) admits a nondegenerate binary principal-surrogate witness with \(\theta_R<0\). Gap: \citet{YinLiuGengLuo2019} give optimal exclusion criteria for average surrogate paradoxes, while this is a constructive inclusion frontier for a named principal stratum. Consumer: surrogate-paradox risk diagnostics.
+  \item Conjecture 2: the common-responder frontier is strictly sharper than the pairwise armwise bound on an open set of binary tables. Gap: \citet{KurokiCai2013} and \citet{VanderWeele2013} motivate binary surrogate partial identification, but do not isolate the common-stratum compatibility facet. Consumer: studies using binary clinical surrogates under principal stratification.
+\end{itemize}
+
+\section{Related work}
+\citet{FrangakisRubin2002} introduce principal stratification, which legitimizes conditioning on the latent response type \(G=(S(0),S(1))\). \citet{ChenGengJia2007} define the surrogate paradox and causal necessity/sufficiency criteria at an average endpoint level. \citet{GilbertHudgens2008} study causal effect predictiveness for principal surrogate endpoints, but their surface is not a binary sign-reversal phase diagram. \citet{VanderWeele2013} gives sufficient conditions for consistent surrogates and emphasizes that positive surrogate relationships alone do not rule out harmful treatment effects on the outcome. \citet{KurokiCai2013} frames surrogate-endpoint use as a sharp-bound problem, which is the closest published partial-identification ancestor for this proposal. \citet{YinLiuGengLuo2019} give optimal observed-data criteria to exclude the surrogate paradox; the present question is the constructive complement inside one named principal stratum. \citet{MaYinLiuGeng2021} show that individual or stratum-level paradoxes can survive average surrogate criteria, motivating the responder-stratum target. \citet{DingLu2017} review identification and sensitivity analysis in principal stratification, including monotonicity and principal-score restrictions that calibrate the assumptions here.
+
+Within CausalSmith, `doc/API.md' records only a general ExactID/PartialID catalogue slot and a Manski nonparametric-bounds entry, so the current qid is not a duplicate of a registered surrogate theorem. The failed `pid_long_term_surrogate_v1' angle studied noisy long-term surrogate sign ambiguity and was rejected when its phase diagram collapsed to prevalence-interval algebra. The rejected angle0 file for this qid derived responder mixture intervals and then conjectured an average-versus-responder frontier. The accepted candidate `pid_ordinal_principal_strata_v1' is adjacent because it uses shared principal-stratum coordinates to create compatibility facets, but it is ordinal \(K\ge3\) and principal-score based rather than a binary surrogate-paradox frontier. The downgraded `pid_collider_bias_sharp_v1' shows how finite principal-strata endpoint tables can carry thresholds, but its target is collider/selection bias rather than surrogate validation.
+
+\section{Formal setup}
+Let \(Z\in\{0,1\}\) be randomized. Potential outcomes are \(S(0),S(1),Y(0),Y(1)\in\{0,1\}\), and the observed table in arm \(z\) is
+\[
+  p_z(s,y)=\Pr(S(z)=s,Y(z)=y).
+\]
+Write \(p_z=\Pr(S(z)=1)\), \(a=\Pr(S(0)=0,Y(0)=1)\), and \(b=\Pr(S(1)=1,Y(1)=1)\). Under monotonicity \(S(1)\ge S(0)\), the principal strata are \(N=(0,0)\), \(R=(0,1)\), and \(A=(1,1)\). Their masses satisfy
+\[
+  r=\Pr(G=R)\in I_R(P_{\mathrm{obs}}):=[p_1-p_0,\min\{p_1,1-p_0\}],
+  \quad n=1-p_0-r,\quad a_G=p_1-r .
+\]
+For a fixed admissible \(r>0\), the feasible responder means are
+\[
+  \mu_{0R}\in[\underline\mu_{0R}(r),\overline\mu_{0R}(r)]
+  =
+  \left[
+  \max\left\{0,\frac{a-n}{r}\right\},
+  \min\left\{1,\frac{a}{r}\right\}
+  \right],
+\]
+and
+\[
+  \mu_{1R}\in[\underline\mu_{1R}(r),\overline\mu_{1R}(r)]
+  =
+  \left[
+  \max\left\{0,\frac{b-a_G}{r}\right\},
+  \min\left\{1,\frac{b}{r}\right\}
+  \right].
+\]
+The identified set for the responder effect is
+\[
+  \Theta_R(P_{\mathrm{obs}})
+  =
+  \bigcup_{r\in I_R(P_{\mathrm{obs}})}
+  [\underline\mu_{1R}(r)-\overline\mu_{0R}(r),
+   \overline\mu_{1R}(r)-\underline\mu_{0R}(r)].
+\]
+The common-responder compatibility frontier is
+\[
+  \Phi_{\mathrm{cf}}(P_{\mathrm{obs}})
+  =
+  \sup_{r\in I_R(P_{\mathrm{obs}})}
+  \{\overline\mu_{0R}(r)-\underline\mu_{1R}(r)\}.
+\]
+The pairwise benchmark \(\Phi_{\mathrm{pair}}\) replaces the same \(r\) in the two endpoint maps by separately chosen \(r_0,r_1\in I_R(P_{\mathrm{obs}})\).
+
+\begin{verbatim}
+Locked parameters:
+(qid, specialization, P, theta, R, Phi)
+=(pid_surrogate_paradox_phase, v1, P_obs, theta_R, R_bin, Phi_cf).
+P_obs={p_z(s,y): z,s,y in {0,1}}.
+theta_R=E[Y(1)-Y(0) | S(0)=0,S(1)=1].
+R_bin=randomization/consistency, binary support, S(1)>=S(0), interior cells.
+Phi_cf(P_obs)=sup_{r in I_R(P_obs)} {overline_mu_0R(r)-underline_mu_1R(r)}.
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Randomization and consistency]\label{ass:rand-cons}
+The assignment \(Z\) is independent of \((S(0),S(1),Y(0),Y(1))\), and the observed variables satisfy \(S=S(Z)\) and \(Y=Y(Z)\).
+\end{assumption}
+
+\begin{assumption}[Binary support]\label{ass:binary}
+The variables \(Z,S(0),S(1),Y(0),Y(1)\) take values in \(\{0,1\}\).
+\end{assumption}
+
+\begin{assumption}[Monotone surrogate response]\label{ass:monotone}
+\(\Pr\{S(1)\ge S(0)\}=1\), and the responder mass \(r=\Pr\{S(0)=0,S(1)=1\}\) is positive.
+\end{assumption}
+
+\begin{assumption}[Interior observed cells]\label{ass:interior}
+The observable law has \(0<p_0<p_1<1\), \(0<a<1-p_0\), and \(0<b<p_1\). The interval \(I_R(P_{\mathrm{obs}})\) has positive length.
+\end{assumption}
+
+\begin{assumption}[Observable surrogate concordance]\label{ass:concordance}
+The observed surrogate contrast is positive, \(p_1-p_0>0\). When armwise surrogate-outcome concordance is invoked, it means \(\E[Y\mid Z=z,S=1]>\E[Y\mid Z=z,S=0]\) for \(z=0,1\).
+\end{assumption}
+
+\begin{assumption}[Open-cell strictness]\label{ass:open-cell}
+There is an \(r^\star\) in the relative interior of \(I_R(P_{\mathrm{obs}})\) such that all four mixture components used to attain \(\overline\mu_{0R}(r^\star)\) and \(\underline\mu_{1R}(r^\star)\) lie strictly between zero and their stratum masses.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: common responder compatibility interval]\label{thm:compat-interval}
+Under Assumptions~\ref{ass:rand-cons}--\ref{ass:monotone}, the responder mass \(r\) is feasible if and only if
+\[
+  r\in I_R(P_{\mathrm{obs}})=[p_1-p_0,\min\{p_1,1-p_0\}].
+\]
+For every such \(r\), the displayed intervals in Section 6 are the sharp feasible sets for \(\mu_{0R}\) and \(\mu_{1R}\), conditional on that same \(r\).
+\end{theorem}
+The proof solves the two binary mixture equations in the \(S(0)=0\) and \(S(1)=1\) observed cells. Sharpness follows by assigning the residual outcome-one mass to \(N\) and \(A\), respectively, and then coupling \(Y(0)\) and \(Y(1)\) within \(R\) arbitrarily.
+
+\begin{conjecture}[Conjecture 1: common-facet phase frontier (NOT YET PROVED)]\label{conj:phase-frontier}
+Under Assumptions~\ref{ass:rand-cons}--\ref{ass:interior}, the following are equivalent:
+\[
+  \Phi_{\mathrm{cf}}(P_{\mathrm{obs}})>0
+  \quad\Longleftrightarrow\quad
+  \exists\ \text{a finite binary principal-strata law inducing }P_{\mathrm{obs}}
+  \text{ with }\theta_R<0 .
+\]
+Moreover, if Assumption~\ref{ass:concordance} holds, the equivalence remains valid after restricting to laws with positive observed surrogate contrast and positive armwise surrogate-outcome concordance.
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: strict separation from pairwise bounds (NOT YET PROVED)]\label{conj:pairwise-strict}
+Under Assumptions~\ref{ass:rand-cons}--\ref{ass:open-cell}, there is a relatively open set of binary observable tables for which
+\[
+  \Phi_{\mathrm{cf}}(P_{\mathrm{obs}})<\Phi_{\mathrm{pair}}(P_{\mathrm{obs}}).
+\]
+On this set, the pairwise benchmark admits a negative-responder sign certificate that no single common responder mass \(r\) can paste into a joint principal-strata law.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No hidden paradox when the common frontier is nonpositive]\label{cor:no-paradox}
+Under Assumptions~\ref{ass:rand-cons}--\ref{ass:interior}, Conjecture~\ref{conj:phase-frontier} implies that \(\Phi_{\mathrm{cf}}(P_{\mathrm{obs}})\le0\) rules out \(\theta_R<0\) for every binary monotone principal-strata law inducing \(P_{\mathrm{obs}}\). This collapses to the finite-cell Frangakis--Rubin responder comparison because the union in \(\Theta_R(P_{\mathrm{obs}})\) contains no interval with a negative endpoint.
+\end{corollary}
+
+\begin{example}[Exhibit 9.1: computed common-facet witness]\label{ex:computed-witness}
+Let \(p_0=0.40\), \(p_1=0.70\), \(a=\Pr(S(0)=0,Y(0)=1)=0.30\), and \(b=\Pr(S(1)=1,Y(1)=1)=0.25\). Then
+\[
+  I_R=[0.30,0.60].
+\]
+At the common responder mass \(r=0.50\), the residual masses are \(n=0.10\) and \(a_G=0.20\). The endpoint maps give
+\[
+  \overline\mu_{0R}(0.50)=\min\{1,0.30/0.50\}=0.60,
+  \qquad
+  \underline\mu_{1R}(0.50)=\max\{0,(0.25-0.20)/0.50\}=0.10.
+\]
+Thus \(\Phi_{\mathrm{cf}}(P_{\mathrm{obs}})\ge0.50\), and the endpoint law has \(\theta_R=0.10-0.60=-0.50\). One valid set of observed tables is
+\[
+\begin{array}{c|cccc}
+z & p_z(0,0)&p_z(0,1)&p_z(1,0)&p_z(1,1)\\
+\hline
+0&0.30&0.30&0.20&0.20\\
+1&0.20&0.10&0.45&0.25
+\end{array}
+\]
+with \(\E[Y\mid Z=0,S=1]=0.50>\E[Y\mid Z=0,S=0]=0.50\) replaced by the nearby perturbation \(p_0(1,1)=0.21,p_0(1,0)=0.19,p_0(0,1)=0.29,p_0(0,0)=0.31\) to satisfy strict concordance without changing the sign of \(\Phi_{\mathrm{cf}}\). The construction uses three principal strata \(N,R,A\), positive masses \(0.10,0.50,0.20\) plus an unused \(S\)-defier mass zero under monotonicity, and no denominator is zero.
+\end{example}
+
+\begin{example}[Exhibit 9.2: pairwise overstatement target]\label{ex:pairwise}
+Keep \(p_0=0.40\) and \(p_1=0.70\), but choose \(a=0.18\) and \(b=0.38\). Pairwise calculations can use \(r_0=0.30\) to make \(\overline\mu_{0R}(r_0)=0.60\) and \(r_1=0.60\) to make \(\underline\mu_{1R}(r_1)=0\). The common calculation cannot use both values of \(r\) in one principal-strata law; Conjecture~\ref{conj:pairwise-strict} asks for the exact open-cell inequalities under which this mismatch is a strict compatibility facet rather than a normalization artifact.
+\end{example}
+
+\section{Proof-sketch route}
+For Theorem~\ref{thm:compat-interval}, the route is finite mixture algebra: \(P(S(0)=1)=p_0\) and \(P(S(1)=1)=p_1\) give \(r\in I_R\); the two observed outcome-one equations are split across \((N,R)\) and \((R,A)\); Frechet bounds give the endpoint formulas. For Conjecture~\ref{conj:phase-frontier}, the chain is
+\[
+\text{headline}
+\leftarrow \text{unfold Section 6 definitions}
+\leftarrow \text{substitute Assumptions 1--4}
+\leftarrow \text{Step 1: eliminate }(n,a_G)\text{ using the common }r
+\leftarrow \text{Step 2: prove endpoint attainability by a joint }(Y(0),Y(1))\text{ coupling in }R
+\leftarrow \text{Step 3: show strict positivity of }\Phi_{\mathrm{cf}}\text{ is equivalent to a negative endpoint of }\Theta_R
+\leftarrow \text{Step 4: verify concordance-preserving perturbations keep the active face}
+\leftarrow \text{finite-dimensional polytope projection}.
+\]
+For Conjecture~\ref{conj:pairwise-strict}, the chain is
+\[
+\text{headline}
+\leftarrow \text{unfold }\Phi_{\mathrm{pair}}\text{ and }\Phi_{\mathrm{cf}}
+\leftarrow \text{substitute Assumption 6}
+\leftarrow \text{Step 1: identify active pairwise endpoints with }r_0\ne r_1
+\leftarrow \text{Step 2: derive the common-}r\text{ facet from the shared stratum mass}
+\leftarrow \text{Step 3: prove the strict gap survives an open perturbation}
+\leftarrow \text{Step 4: construct endpoint-attaining binary tables}
+\leftarrow \text{polyhedral stability of exposed faces}.
+\]
+The substantive step count is \(k=4\) for each conjecture.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:compat-interval} is routine binary mixture algebra and is included only to lock the convention. Conjecture~\ref{conj:phase-frontier} is the main open statement; the proof must still verify the if-and-only-if direction with concordance-preserving perturbations. Conjecture~\ref{conj:pairwise-strict} is also open; Exhibit~\ref{ex:pairwise} gives the intended separation mechanism but not the final closed-form open-cell inequalities. The prior angle's average-exclusion frontier is withdrawn for this pivot and is not used as a comparator claim.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+  \item v1 (pivot) -- initial draft for a common-responder compatibility-facet angle; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Chen, Geng, and Jia(2007)]{ChenGengJia2007}
+Chen, H., Geng, Z., and Jia, J. (2007).
+Criteria for surrogate end points.
+\emph{Journal of the Royal Statistical Society: Series B}, 69, 919--932.
+
+\bibitem[Ding and Lu(2017)]{DingLu2017}
+Ding, P. and Lu, J. (2017).
+Principal stratification analysis using principal scores.
+\emph{Journal of the Royal Statistical Society: Series B}, 79, 757--777.
+
+\bibitem[Frangakis and Rubin(2002)]{FrangakisRubin2002}
+Frangakis, C. E. and Rubin, D. B. (2002).
+Principal stratification in causal inference.
+\emph{Biometrics}, 58, 21--29.
+
+\bibitem[Gilbert and Hudgens(2008)]{GilbertHudgens2008}
+Gilbert, P. B. and Hudgens, M. G. (2008).
+Evaluating candidate principal surrogate endpoints.
+\emph{Biometrics}, 64, 1146--1154.
+
+\bibitem[Kuroki and Cai(2013)]{KurokiCai2013}
+Kuroki, M. and Cai, Z. (2013).
+Sharp bounds on causal effects using a surrogate endpoint.
+\emph{Statistics in Medicine}, 32, 4338--4347.
+
+\bibitem[Ma et~al.(2021)]{MaYinLiuGeng2021}
+Ma, C., Yin, Y., Liu, L., and Geng, Z. (2021).
+On the individual surrogate paradox.
+\emph{Biostatistics}, 22, 97--114.
+
+\bibitem[VanderWeele(2013)]{VanderWeele2013}
+VanderWeele, T. J. (2013).
+Surrogate measures and consistent surrogates.
+\emph{Biometrics}, 69, 561--569.
+
+\bibitem[Yin et~al.(2019)]{YinLiuGengLuo2019}
+Yin, Y., Liu, L., Geng, Z., and Luo, P. (2019).
+Novel criteria to exclude the surrogate paradox and their optimalities.
+\emph{Scandinavian Journal of Statistics}, 46, 778--799.
+\end{thebibliography}
+
+\end{document}

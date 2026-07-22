@@ -1,0 +1,209 @@
+\section{Setup and assumptions}
+
+We work in a \leanref{S-1}{design-based finite-population assignment model}: the units are fixed, and treatment assignment is the random object. There are \(n=2m\) units partitioned into two equal communities. An assignment is represented by the sign vector \leanref{sym:Z}{$Z$}\(\in\{-1,1\}^n\), with a realized assignment denoted by \(z\), and an assignment law \leanref{sym:P}{$P$} is a probability mass function on this finite assignment space. This formulation follows the randomization-based tradition in which the assignment mechanism is the source of sampling variation \citep{horvitz1952,rubin1974}, while the network structure enters through the design criterion.
+
+The graph used by the criterion is a two-community weighted graph. The analysis rests first on the following homophily and scale conventions.
+
+\begin{assumptionv}{ass:two-block-homophily}[Two-Block Homophily]
+The block size and edge intensities satisfy
+\[
+m\ge 2
+\qquad\text{and}\qquad
+a>b>0.
+\]
+\end{assumptionv}
+
+The constants \leanref{sym:a}{$a$} and \leanref{sym:b}{$b$} encode stronger interaction intensity within a community than across communities. This homophily restriction is specific to this analysis: it gives the two-block model a nondegenerate within-versus-between contrast while keeping both edge intensities positive.
+
+\begin{definitionv}{def:two-block-graph}[Two-Block Graph Weights \(W_{ij}\)]
+The vertex set is the disjoint union \(A_m\cup B_m\), where
+\[
+|A_m|=|B_m|=m.
+\]
+The graph weights \(W_{ij}\) are given as follows: if \(i\ne j\) and \(i\) and \(j\) lie in the same block, then
+\[
+W_{ij}=\frac{a}{m};
+\]
+if \(i\) and \(j\) lie in opposite blocks, then
+\[
+W_{ij}=\frac{b}{m};
+\]
+and for every vertex \(i\),
+\[
+W_{ii}=0.
+\]
+\end{definitionv}
+
+Thus the communities \leanref{sym:A_m}{$A_m$} and \leanref{sym:B_m}{$B_m$} have equal size, and all heterogeneity in exposure strength is summarized by whether a pair lies within or across communities. Let \leanref{sym:L_m}{$L_m$} denote the graph Laplacian associated with these weights, with diagonal entries equal to weighted degrees and off-diagonal entries \(-W_{ij}\). We write \leanref{sym:L_m^dagger}{$L_m^\dagger$} for its Moore--Penrose pseudoinverse. Network-interference applications often use such weighted graphs to encode exposure or spillover structure \citep{hudgens2008,aronow2013,savje2017,leung2019,li2020}; here the two-block graph isolates the exact finite-sample geometry of a homophilous special case.
+
+The sign representation is invariant to a global relabeling of treatment and control. We impose that invariance directly on the assignment law.
+
+\begin{assumptionv}{ass:balanced-sign-design}[Balanced Sign Symmetry]
+The assignment law is sign-symmetric: for every \(z\in\{-1,1\}^n\),
+\[
+P(Z=z)=P(Z=-z).
+\]
+\end{assumptionv}
+
+This symmetry condition is specific to this analysis. It expresses balance between the two treatment labels at the law level, yields zero one-point margins, and permits many forms of dependence and varying treated counts across realizations.
+
+\begin{definitionv}{def:balanced-design-class}[Balanced sign class $\mathcal P_m^{\mathrm{bal}}$]
+Under \cref{obj:ass:balanced-sign-design}, the balanced sign class is
+\[
+\mathcal P_m^{\mathrm{bal}}
+=
+\left\{
+P \text{ on } \{-1,1\}^n :
+P(Z=z)=P(Z=-z)\ \text{for every } z\in\{-1,1\}^n
+\right\}.
+\]
+\end{definitionv}
+
+The class \leanref{sym:P_m^bal}{$\mathcal P_m^{\mathrm{bal}}$} contains all sign-symmetric laws. For the two-block graph, the relevant symmetric subclass also treats units within a block exchangeably and treats the two equal blocks symmetrically.
+
+\begin{definitionv}{def:block-exchangeable-design-class}[Block-exchangeable class $\mathcal P_m^{\mathrm{sym}}$]
+The block-exchangeable class is the set of all assignment laws
+\[
+P\in \mathcal P_m^{\mathrm{bal}}
+\]
+that are invariant under permutations within $A_m$, invariant under permutations within $B_m$, and invariant under swapping the two equal communities.
+\end{definitionv}
+
+The block-exchangeable class \leanref{sym:P_m^sym}{$\mathcal P_m^{\mathrm{sym}}$} is the symmetry-reduced representation of the final optimization problem: the reduction below shows that averaging over graph symmetries weakly decreases the objective. This class makes the implementability question finite-dimensional.
+
+For any assignment law, write $X(P)$ for the second-moment matrix,
+\[
+X(P)=\mathbb E_P[ZZ^\top].
+\]
+The covariance relaxation replaces such implementable second moments by block-symmetric correlation matrices. For scalars \(u\) and \(v\), \(X(u,v)\) denotes the matrix with diagonal entries equal to one, common off-diagonal covariance \(u\) within each block, and common covariance \(v\) across the two blocks.
+
+\begin{definitionv}{def:block-elliptope}[Block Elliptope \(\mathcal E_m^{\mathrm{blk}}\)]
+Under \cref{obj:ass:two-block-homophily}, the block elliptope is
+\[
+\mathcal E_m^{\mathrm{blk}}
+=
+\left\{
+X(u,v):
+1-u\ge 0,\ 
+1+(m-1)u-mv\ge 0,\ 
+1+(m-1)u+mv\ge 0
+\right\}.
+\]
+\end{definitionv}
+
+The relaxed covariance set \leanref{sym:E_m^blk}{$\mathcal E_m^{\mathrm{blk}}$} is the block-symmetric slice of the elliptope. The three displayed inequalities are the positive-semidefiniteness restrictions in the invariant directions induced by the two equal blocks. This convex relaxation is the object optimized before imposing that the covariance arise from an actual \(\{\pm1\}\) assignment law \citep{boyd2004,thiyageswaran2026}.
+
+\begin{definitionv}{def:implementable-covariance-class}[Implementable covariance class $\mathcal C_m^{\pm}$]
+The implementable covariance class is
+\[
+\mathcal C_m^{\pm}
+=
+\left\{
+X(P): P\in \mathcal P_m^{\mathrm{sym}}
+\right\}.
+\]
+\end{definitionv}
+
+The set \leanref{sym:C_m^pm}{$\mathcal C_m^{\pm}$} records the discrete feasibility constraint that remains after symmetry reduction: a relaxed covariance matrix is useful for exact randomized design only when it is generated by some block-exchangeable sign law.
+
+The objective combines graph smoothness, a pseudoinverse term, robustness, and a balance penalty. The scalar \leanref{sym:r}{$r$} weights the pseudoinverse term, $\kappa$ weights the Schatten--2 norm penalty, and \leanref{sym:J_n}{$J_n$} denotes the \(n\times n\) all-ones matrix.
+
+\begin{definitionv}{def:design-objective}[Design objective $F_{r,\kappa}$]
+For $r,\kappa\ge 0$, the design objective evaluated at a covariance matrix $X$ is
+\[
+F_{r,\kappa}(X)
+=
+\operatorname{tr}(L_m X)
++
+r\,\operatorname{tr}(L_m^\dagger X)
++
+\kappa \|X\|_{S_2}
++
+\operatorname{tr}(J_n X).
+\]
+\end{definitionv}
+
+The first term penalizes covariance aligned with high-weight graph edges, the second uses the Laplacian pseudoinverse to weight low-frequency graph directions, the third is a Frobenius-norm robustness penalty, and the final term penalizes imbalance in the aggregate sign vector. The paper compares the optimum of this objective over the relaxed block elliptope with the optimum over implementable sign designs.
+
+\begin{definitionv}{def:implementability-gap}[Implementability loss $\Delta_m^{\pm}(r,\kappa)$]
+The implementability loss is
+\[
+\Delta_m^{\pm}(r,\kappa)
+=
+\inf_{P\in \mathcal P_m^{\mathrm{sym}}}
+F_{r,\kappa}(X(P))
+-
+\inf_{X\in \mathcal E_m^{\mathrm{blk}}}
+F_{r,\kappa}(X).
+\]
+\end{definitionv}
+
+The quantity $\Delta_m^{\pm}(r,\kappa)$ is therefore the exact price of requiring a covariance matrix induced by a finite randomized assignment law, measured relative to the block elliptope benchmark.
+
+A useful handle on implementability is provided by the two block sums. For a given law \(P\), these sums retain the information relevant to the block-symmetric second moments.
+
+\begin{definitionv}{def:block-sum-handle}[Block-sum law $\mathcal L_P(S_A,S_B)$]
+For an assignment law $P$, the block-sum law is the law under $P$ of
+\[
+(S_A,S_B)
+=
+\left(
+\sum_{i\in A_m} Z_i,\,
+\sum_{i\in B_m} Z_i
+\right).
+\]
+\end{definitionv}
+
+The block-sum law $\mathcal L_P(S_A,S_B)$ will be used to express the discrete restrictions that separate \(\mathcal C_m^{\pm}\) from \(\mathcal E_m^{\mathrm{blk}}\).
+
+Two additional restrictions are stated here because later exact-loss results invoke them explicitly.
+
+\begin{assumptionv}{ass:low-scale-two-block}[Low-Scale Two-Block Regime]
+The two-block edge intensities satisfy
+\[
+a+3b<2m.
+\]
+\end{assumptionv}
+
+The low-scale regime is specific to this analysis. It is a finite-sample scale restriction comparing graph intensity with block size; for fixed \(a\) and \(b\), it is automatically satisfied once \(m\) is large enough.
+
+\begin{assumptionv}{ass:odd-community-size}[Odd Community Size]
+The block size \(m\) is odd.
+\end{assumptionv}
+
+The odd-block condition is also specific to this analysis. It isolates the parity case in which every realized block sum has absolute value at least one, which is exactly where the later implementability loss result has content.
+
+The following reduction justifies working with the block elliptope and the block-exchangeable assignment class while preserving the relevant optima.
+
+\begin{lemmav}{prop:symmetry-reduction}[Symmetry Reduction Principle]
+Assume \cref{obj:ass:two-block-homophily}. Let \(r,\kappa\in[0,\infty)\). Then:
+\begin{itemize}
+\item \textbf{(Relaxed matrices.)} For every positive semidefinite matrix \(X\in\mathbb R^{n\times n}\) with \(X_{ii}=1\) for every \(i\), let \(u\) and \(v\) be the averages of the off-diagonal within-community and across-community entries of \(X\), respectively. The block matrix \(X(u,v)\) of \cref{obj:def:block-elliptope} has feasible block-elliptope parameters, and
+\[
+F_{r,\kappa}\bigl(X(u,v)\bigr)\le F_{r,\kappa}(X),
+\]
+where \(F_{r,\kappa}\) is \cref{obj:def:design-objective}.
+\item \textbf{(Assignment laws.)} For every assignment law \(P\in\mathcal P_m^{\mathrm{bal}}\) in the sense of \cref{obj:def:balanced-design-class}, its orbit average over the full two-block automorphism group belongs to \(\mathcal P_m^{\mathrm{sym}}\) in the sense of \cref{obj:def:block-exchangeable-design-class}, has zero one-point margins,
+\[
+\mathbb E[Z_i]=0\qquad\text{for every }i,
+\]
+and satisfies
+\[
+F_{r,\kappa}\bigl(X(P^{\mathrm{orb}})\bigr)\le F_{r,\kappa}\bigl(X(P)\bigr).
+\]
+\item \textbf{(Relaxed infimum.)}
+\[
+\inf_{\substack{X\succeq0\\ X_{ii}=1\ \forall i}} F_{r,\kappa}(X)
+=
+\inf_{X\in\mathcal E_m^{\mathrm{blk}}} F_{r,\kappa}(X).
+\]
+\item \textbf{(Implementable infimum.)}
+\[
+\inf_{P\in\mathcal P_m^{\mathrm{bal}}} F_{r,\kappa}\bigl(X(P)\bigr)
+=
+\inf_{P\in\mathcal P_m^{\mathrm{sym}}} F_{r,\kappa}\bigl(X(P)\bigr).
+\]
+\end{itemize}
+\end{lemmav}
+
+\cref{obj:prop:symmetry-reduction} is the bridge between the original finite assignment problem and the two-parameter geometry used in the rest of the paper. It says that, for the objective in \cref{obj:def:design-objective}, symmetrizing either a relaxed covariance matrix or an assignment law is weakly improving. Consequently, the relaxed benchmark is exactly the infimum over \(\mathcal E_m^{\mathrm{blk}}\), and the implementable benchmark is exactly the infimum over \(\mathcal P_m^{\mathrm{sym}}\).

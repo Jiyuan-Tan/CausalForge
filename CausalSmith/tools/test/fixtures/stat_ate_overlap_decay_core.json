@@ -1,0 +1,494 @@
+{
+  "qid": "stat_ate_overlap_decay",
+  "specialization": "v1",
+  "cluster": "stat",
+  "target_estimand": "\\(\\mathrm{ATE} = \\mathbb{E}[Y(1) - Y(0)]\\)",
+  "estimand_functional": "\\(\\Psi_{\\lambda,n}(O_1,\\dots,O_n; \\hat{\\eta}_\\lambda) = \\hat{\\tau}_\\lambda\\) (clipped AIPW), with target rate \\(\\rho_n\\) and matching minimax converse",
+  "symbols": [
+    {
+      "name": "X",
+      "type": "covariate vector",
+      "space": "\\(\\mathcal{X}\\)"
+    },
+    {
+      "name": "A",
+      "type": "treatment",
+      "space": "\\(\\{0,1\\}\\)"
+    },
+    {
+      "name": "Y",
+      "type": "outcome",
+      "space": "\\([0,1]\\)"
+    },
+    {
+      "name": "Y0",
+      "type": "potential outcome under control",
+      "space": "\\([0,1]\\)"
+    },
+    {
+      "name": "Y1",
+      "type": "potential outcome under treatment",
+      "space": "\\([0,1]\\)"
+    },
+    {
+      "name": "e",
+      "type": "propensity score",
+      "sig": "\\(\\mathcal{X} \\to (0,1)\\)",
+      "def": "\\(e(x) = P(A=1 \\mid X=x)\\)"
+    },
+    {
+      "name": "U",
+      "type": "propensity coordinate",
+      "space": "\\((0,1)\\)",
+      "def": "\\(U := e(X)\\)",
+      "refs": [
+        "e",
+        "X"
+      ]
+    },
+    {
+      "name": "mu0",
+      "type": "control regression",
+      "sig": "\\(\\mathcal{X} \\to [0,1]\\)",
+      "def": "\\(\\mu_0(x) = \\mathbb{E}[Y(0) \\mid X=x]\\)"
+    },
+    {
+      "name": "mu1",
+      "type": "treated regression",
+      "sig": "\\(\\mathcal{X} \\to [0,1]\\)",
+      "def": "\\(\\mu_1(x) = \\mathbb{E}[Y(1) \\mid X=x]\\)"
+    },
+    {
+      "name": "eta",
+      "type": "upper-overlap floor",
+      "space": "\\((0,1)\\)",
+      "role": "fixed constant"
+    },
+    {
+      "name": "kappa",
+      "type": "overlap-tail exponent",
+      "space": "\\((0,\\infty)\\)",
+      "role": "structural rate exponent"
+    },
+    {
+      "name": "t0",
+      "type": "tail window",
+      "space": "\\((0,1)\\)"
+    },
+    {
+      "name": "beta",
+      "type": "Hölder smoothness",
+      "space": "\\((0,\\infty)\\)"
+    },
+    {
+      "name": "g1",
+      "type": "lower-tail link function",
+      "sig": "\\([0,t_0] \\to [0,1]\\)"
+    },
+    {
+      "name": "Cbeta",
+      "type": "boundary-extrapolation constant",
+      "space": "\\((0,\\infty)\\)"
+    },
+    {
+      "name": "b_lambda",
+      "type": "boundary extrapolator",
+      "sig": "\\(\\mathcal{X} \\to \\mathbb{R}\\)"
+    },
+    {
+      "name": "mu1bd_lambda",
+      "type": "clipped boundary-completed treated regression",
+      "sig": "\\(\\mathcal{X} \\to [0,1]\\)"
+    },
+    {
+      "name": "phi_lambda",
+      "type": "clipped oracle influence function",
+      "sig": "\\(\\text{observation} \\to \\mathbb{R}\\)"
+    },
+    {
+      "name": "I_lambda",
+      "type": "information scale",
+      "def": "\\(I_\\lambda = \\mathbb{E}[U / (U \\vee \\lambda)^2]\\)"
+    },
+    {
+      "name": "B_lambda",
+      "type": "integrated clipped-tail bias",
+      "space": "\\(\\mathbb{R}\\)"
+    },
+    {
+      "name": "rho_n",
+      "type": "tail-localized minimax rate",
+      "def": "\\(\\rho_n = \\inf_\\lambda \\big[\\, \\text{clipped-tail bias}(\\lambda) + \\text{standard deviation}(\\lambda) \\,\\big]\\)"
+    },
+    {
+      "name": "tau_hat",
+      "type": "clipped AIPW estimator",
+      "sig": "\\(\\text{sample} \\to \\mathbb{R}\\)"
+    },
+    {
+      "name": "H_n",
+      "type": "witness law for U",
+      "space": "laws on \\([0, 1-\\eta]\\)"
+    },
+    {
+      "name": "lambda",
+      "type": "clipping threshold",
+      "space": "\\((0, t_0]\\)"
+    },
+    {
+      "name": "n",
+      "type": "sample size",
+      "space": "\\(\\mathbb{N}\\)"
+    },
+    {
+      "name": "P_kappa_beta",
+      "type": "law class",
+      "ref": "def:law-class"
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:consistency",
+      "kind": "causal-structural",
+      "condition": "\\(Y = A \\cdot Y_1 + (1-A) \\cdot Y_0\\)",
+      "free_symbols": [
+        "Y",
+        "A",
+        "Y0",
+        "Y1"
+      ],
+      "standard": {
+        "name": "SUTVA / consistency",
+        "cite": "ImbensRubin2015"
+      }
+    },
+    {
+      "id": "ass:exchangeability",
+      "kind": "causal-structural",
+      "condition": "\\((Y_0, Y_1) \\perp\\!\\!\\!\\perp A \\mid X\\)",
+      "free_symbols": [
+        "Y0",
+        "Y1",
+        "A",
+        "X"
+      ],
+      "standard": {
+        "name": "conditional unconfoundedness",
+        "cite": "RosenbaumRubin1983"
+      }
+    },
+    {
+      "id": "ass:bounded-outcome",
+      "kind": "support",
+      "condition": "\\(0 \\le Y \\le 1\\) almost surely",
+      "free_symbols": [
+        "Y"
+      ],
+      "standard": {
+        "name": "bounded outcomes",
+        "cite": "Kennedy2024"
+      }
+    },
+    {
+      "id": "ass:upper-overlap",
+      "kind": "support",
+      "condition": "\\(1 - e(X) \\ge \\eta\\) almost surely, for fixed \\(\\eta > 0\\)",
+      "free_symbols": [
+        "e",
+        "X",
+        "eta"
+      ],
+      "standard": {
+        "name": "one-sided overlap",
+        "cite": "DAmour2021"
+      }
+    },
+    {
+      "id": "ass:tail",
+      "kind": "tail-rate",
+      "condition": "\\(c_- \\cdot t^{\\kappa} \\le P(e(X) \\le t) \\le c_+ \\cdot t^{\\kappa}\\) for all \\(0 < t \\le t_0\\)",
+      "free_symbols": [
+        "e",
+        "X",
+        "kappa",
+        "t0"
+      ],
+      "constants": [
+        "0 < c₋ < c₊ < ∞"
+      ],
+      "standard": {
+        "name": "polynomial overlap decay / Audibert--Tsybakov margin",
+        "cite": "AudibertTsybakov2007"
+      }
+    },
+    {
+      "id": "ass:lower-tail-factorization",
+      "kind": "smoothness",
+      "condition": "\\(\\mu_1(x) = g_1(e(x))\\) on \\(\\{x : e(x) \\le t_0\\}\\), with \\(g_1 \\in H^{\\beta}(L_\\beta)\\)",
+      "free_symbols": [
+        "mu1",
+        "e",
+        "t0",
+        "g1",
+        "beta"
+      ],
+      "standard": {
+        "name": "Hölder regression through the propensity",
+        "cite": "Tsybakov2009"
+      }
+    },
+    {
+      "id": "ass:smoothness",
+      "kind": "smoothness",
+      "condition": "\\(|b_\\lambda(x) - \\mu_1(x)| \\le C_\\beta \\cdot \\lambda^{\\beta}\\) for almost every \\(x\\) with \\(e(x) \\le \\lambda\\), all \\(\\lambda \\in (0, t_0]\\)",
+      "free_symbols": [
+        "b_lambda",
+        "mu1",
+        "Cbeta",
+        "beta",
+        "t0",
+        "e"
+      ],
+      "standard": {
+        "name": "boundary extrapolation bias (Hölder)",
+        "cite": "Tsybakov2009"
+      },
+      "used_by": [
+        "thm:upper"
+      ]
+    },
+    {
+      "id": "ass:nuisance",
+      "kind": "regularity",
+      "condition": "Cross-fit nuisance estimates trained on independent folds satisfy \\(\\mathbb{E}[\\, \\text{product-drift integrand} \\mid \\mathcal{T} \\,] \\le \\Delta_n(\\lambda)\\)",
+      "free_symbols": [
+        "tau_hat",
+        "lambda"
+      ],
+      "standard": {
+        "name": "cross-fitting / Neyman-orthogonal drift",
+        "cite": "ChernozhukovEtAl2018"
+      }
+    },
+    {
+      "id": "ass:lindeberg-oracle",
+      "kind": "empirical-process",
+      "condition": "\\(\\mathbb{E}[\\, \\varphi_\\lambda^2 \\cdot \\mathbf{1}\\{|\\varphi_\\lambda| \\ge \\varepsilon \\cdot \\sqrt{n \\cdot I_\\lambda}\\} \\mid \\mathcal{T} \\,] \\le C \\cdot I_\\lambda\\) for all \\(\\varepsilon > 0\\)",
+      "free_symbols": [
+        "phi_lambda",
+        "I_lambda",
+        "n"
+      ],
+      "standard": {
+        "name": "Lindeberg tail condition",
+        "cite": "vanderVaart1998"
+      }
+    },
+    {
+      "id": "ass:lindeberg-plugin",
+      "kind": "empirical-process",
+      "condition": "\\(\\mathbb{E}[\\, (\\hat{\\varphi}_\\lambda - \\varphi_\\lambda)^2 \\cdot \\mathbf{1}\\{|\\hat{\\varphi}_\\lambda - \\varphi_\\lambda| \\ge \\varepsilon \\cdot \\sqrt{n \\cdot I_\\lambda}\\} \\mid \\mathcal{T} \\,] \\le C \\cdot I_\\lambda\\) for all \\(\\varepsilon > 0\\)",
+      "free_symbols": [
+        "phi_lambda",
+        "I_lambda",
+        "n"
+      ],
+      "standard": {
+        "name": "Lindeberg tail condition",
+        "cite": "vanderVaart1998"
+      }
+    },
+    {
+      "id": "ass:regularity",
+      "kind": "regularity",
+      "condition": "the score, bias, and drift integrands are measurable; the two score integrands are square-integrable",
+      "free_symbols": [
+        "phi_lambda"
+      ],
+      "standard": {
+        "name": "measurability and integrability",
+        "cite": "vanderVaart1998"
+      }
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:law-class",
+      "name": "\\(\\mathcal{P}_{\\kappa,\\beta}\\)",
+      "construction": "\\(\\{Q : \\text{IsProbabilityMeasure}(Q) \\wedge \\text{tail}(Q;\\kappa) \\wedge \\text{bounded-outcome}(Q) \\wedge \\text{lower-tail-factorization}(Q;\\beta) \\wedge \\forall x,\\ \\mu_0(x),\\mu_1(x) \\in [0,1]\\}\\)",
+      "by_member_properties": [
+        "ass:tail",
+        "ass:bounded-outcome",
+        "ass:lower-tail-factorization",
+        "\\(\\mu_0(x), \\mu_1(x) \\in [0,1]\\) for all \\(x\\)"
+      ]
+    },
+    {
+      "id": "def:witness",
+      "name": "\\(P_n\\)",
+      "inputs": [
+        "\\(H_n\\): a probability law for \\(U\\) on \\([0, 1-\\eta]\\) with \\(c_- \\cdot t^{\\kappa} \\le H_n([0,t]) \\le c_+ \\cdot t^{\\kappa}\\) for \\(0 < t \\le t_0\\)",
+        "\\(g_1 \\in H^{\\beta}(L_\\beta)\\) valued in \\([1/4, 3/4]\\)",
+        "\\(\\mu_0 \\equiv 1/2\\)"
+      ],
+      "construction": "\\(U \\sim H_n\\); \\(A \\mid U=u \\sim \\mathrm{Bernoulli}(u)\\); \\(Y(a) \\mid U \\sim \\mathrm{Bernoulli}(\\mu_a(U))\\) with \\(\\mu_1 = g_1\\)"
+    },
+    {
+      "id": "def:estimator",
+      "name": "\\(\\hat{\\tau}_\\lambda\\)",
+      "inputs": [
+        "clipped cross-fit nuisances (\\(\\mu^{\\mathrm{bd}}_{1,\\lambda}\\), \\(\\mu_0\\), \\(e\\)), threshold \\(\\lambda\\)"
+      ],
+      "construction": "\\(\\hat{\\tau}_\\lambda = (1/n) \\sum_i \\varphi_\\lambda(O_i; \\mu^{\\mathrm{bd}}_{1,\\lambda}, \\mu_0, e)\\) --- clipped AIPW score average"
+    }
+  ],
+  "statements": [
+    {
+      "id": "lem:smoothness-l2",
+      "kind": "lemma",
+      "statement": "\\(\\|(\\mu^{\\mathrm{bd}}_{1,\\lambda} - \\mu_1) \\cdot \\mathbf{1}\\{U \\le \\lambda\\}\\|_2 \\lesssim \\lambda^{\\beta+\\kappa/2}\\)",
+      "depends_on": [
+        "ass:smoothness",
+        "ass:tail"
+      ],
+      "route": "multiply the pointwise boundary-bias bound (ass:smoothness) by the tail mass P(U ≤ λ) ≲ λᵏ (ass:tail)",
+      "proof_tex": "On \\(\\{U \\le \\lambda\\}\\) the integrand is bounded by \\(C_\\beta \\lambda^{\\beta}\\) (ass:smoothness); the tail mass is \\(\\le c_+ \\lambda^{\\kappa}\\) (ass:tail). Hence the squared \\(L_2\\) norm is \\(\\lesssim \\lambda^{2\\beta+\\kappa}\\), giving the stated rate.",
+      "status": "proved"
+    },
+    {
+      "id": "lem:clipped-bias",
+      "kind": "lemma",
+      "statement": "\\(|B_\\lambda| \\lesssim \\lambda^{\\kappa+\\beta}\\)",
+      "depends_on": [
+        "lem:smoothness-l2",
+        "ass:tail"
+      ],
+      "route": "integrate the clipped-tail bias using lem:smoothness-l2 and the tail mass",
+      "proof_tex": "\\(B_\\lambda\\) integrates the boundary bias against the clipped weight on \\(\\{U \\le \\lambda\\}\\); bounding by lem:smoothness-l2 and the \\(\\lambda^{\\kappa}\\) tail mass yields \\(\\lambda^{\\kappa+\\beta}\\).",
+      "status": "proved"
+    },
+    {
+      "id": "lem:decomp",
+      "kind": "lemma",
+      "statement": "\\(\\hat{\\tau}_\\lambda - \\mathrm{ATE} = G_{\\mathrm{or}}(\\lambda,n) + G_{\\mathrm{plug}}(\\lambda,n) + B_\\lambda + R_\\lambda\\), with \\(R_\\lambda\\) second-order",
+      "depends_on": [
+        "ass:consistency",
+        "ass:exchangeability",
+        "ass:nuisance",
+        "def:estimator"
+      ],
+      "route": "expand the clipped AIPW score, apply Neyman orthogonality to drop first-order nuisance error into the second-order remainder",
+      "proof_tex": "Writing the clipped AIPW score around the oracle and using consistency + exchangeability for the identification of each term, orthogonality (ass:nuisance) sends the first-order nuisance error into \\(R_\\lambda\\); the leading terms are the oracle and plug-in empirical processes plus the deterministic bias \\(B_\\lambda\\).",
+      "status": "proved"
+    },
+    {
+      "id": "lem:lecam-two-point",
+      "kind": "lemma",
+      "statement": "minimax \\(L_1\\) risk \\(\\gtrsim \\Delta \\cdot (1 - \\mathrm{TV}(P_0^n, P_1^n))\\) for any two laws separated by \\(\\Delta\\) in the estimand",
+      "depends_on": [],
+      "route": "two-point Le Cam reduction",
+      "proof_tex": "Standard Le Cam two-point bound (Le Cam 1973; Tsybakov 2009, Thm 2.2): the minimax risk is at least the estimand separation times one minus the total variation between the \\(n\\)-fold product laws.",
+      "status": "proved"
+    },
+    {
+      "id": "lem:bernoulli-kl",
+      "kind": "lemma",
+      "statement": "\\(\\mathrm{KL}(\\mathrm{Bernoulli}(p) \\,\\|\\, \\mathrm{Bernoulli}(q)) \\le 4 \\cdot (p - q)^2\\) for \\(p, q \\in [1/4, 3/4]\\)",
+      "depends_on": [],
+      "route": "second-order Taylor / boundedness of the KL Hessian on the quarter band",
+      "proof_tex": "On \\([1/4,3/4]\\) the second derivative of \\(q \\mapsto \\mathrm{KL}(\\mathrm{Bern}(p) \\,\\|\\, \\mathrm{Bern}(q))\\) is bounded by 8, so a second-order expansion around \\(q=p\\) gives the \\(4(p-q)^2\\) bound.",
+      "status": "proved"
+    },
+    {
+      "id": "thm:witness-in-class",
+      "kind": "theorem",
+      "statement": "\\(P_n \\in \\mathcal{P}_{\\kappa,\\beta}\\)",
+      "depends_on": [
+        "def:witness",
+        "def:law-class",
+        "ass:tail"
+      ],
+      "route": "verify each member-property of def:law-class for the construction def:witness",
+      "proof_tex": "Under \\(H_n\\), \\(P(U \\le t) = H_n([0,t])\\) satisfies the polynomial tail (so ass:tail holds); the Bernoulli outcome means \\(\\mu_0=1/2\\) and \\(\\mu_1=g_1\\in[1/4,3/4]\\) lie in \\([0,1]\\) (ass:bounded-outcome); and \\(\\mu_1=g_1\\circ e\\) with \\(g_1\\in H^{\\beta}(L_\\beta)\\) gives ass:lower-tail-factorization. Hence \\(P_n\\) satisfies every defining property of \\(\\mathcal{P}_{\\kappa,\\beta}\\).",
+      "status": "proved"
+    },
+    {
+      "id": "thm:upper",
+      "kind": "theorem",
+      "statement": "the clipped AIPW estimator at the optimal threshold attains \\(\\mathbb{E}|\\hat{\\tau}_\\lambda - \\mathrm{ATE}| \\lesssim \\rho_n\\)",
+      "depends_on": [
+        "ass:consistency",
+        "ass:exchangeability",
+        "ass:bounded-outcome",
+        "ass:upper-overlap",
+        "ass:tail",
+        "ass:smoothness",
+        "ass:nuisance",
+        "ass:lindeberg-oracle",
+        "ass:lindeberg-plugin",
+        "ass:regularity",
+        "def:estimator",
+        "lem:decomp",
+        "lem:smoothness-l2",
+        "lem:clipped-bias"
+      ],
+      "route": "decompose (lem:decomp); bound bias via lem:clipped-bias; control the oracle and plug-in empirical processes at scale I_lambda via the Lindeberg conditions; optimize λ to balance bias and standard deviation, giving rho_n",
+      "proof_tex": "By lem:decomp the error splits into two empirical processes, the bias \\(B_\\lambda\\), and a second-order remainder. lem:clipped-bias bounds \\(|B_\\lambda| \\lesssim \\lambda^{\\kappa+\\beta}\\); the Lindeberg conditions (ass:lindeberg-oracle, ass:lindeberg-plugin) give the empirical processes order \\(\\sqrt{I_\\lambda/n}\\); the drift (ass:nuisance) controls the remainder. Optimizing \\(\\lambda\\) balances \\(\\lambda^{\\kappa+\\beta}\\) against \\(\\sqrt{I_\\lambda/n}\\), yielding the rate \\(\\rho_n\\).",
+      "status": "proved"
+    },
+    {
+      "id": "thm:lower",
+      "kind": "theorem",
+      "statement": "tail-localized minimax converse: \\(\\inf_{\\hat{T}} \\sup_{P \\in \\mathcal{P}_{\\kappa,\\beta}} \\mathbb{E}_P|\\hat{T} - \\mathrm{ATE}(P)| \\gtrsim \\rho_n\\)",
+      "depends_on": [
+        "def:law-class",
+        "def:witness",
+        "thm:witness-in-class",
+        "lem:lecam-two-point",
+        "lem:bernoulli-kl"
+      ],
+      "route": "build a two-point family from def:witness with link functions g1 differing by ≍ λ^β on the tail; both members lie in the class by thm:witness-in-class; separate the ATE by Δ ≍ rho_n and bound the total variation through the Bernoulli KL (lem:bernoulli-kl) and iid tensorization, then apply lem:lecam-two-point",
+      "proof_tex": "Take \\(P_0, P_1\\) from def:witness with link functions \\(g_1^0, g_1^1 \\in [1/4,3/4]\\) differing by \\(\\asymp \\lambda^{\\beta}\\) on \\(\\{U \\le \\lambda\\}\\). Both lie in \\(\\mathcal{P}_{\\kappa,\\beta}\\) (thm:witness-in-class). Their ATE separation is \\(\\Delta \\asymp \\lambda^{\\kappa+\\beta} \\asymp \\rho_n\\) at the least-favorable \\(\\lambda\\). The per-observation KL is \\(\\le 4(g_1^0-g_1^1)^2\\) on the quarter band (lem:bernoulli-kl), weighted by the \\(\\lambda^{\\kappa}\\) tail mass; tensorizing over \\(n\\) and converting to total variation keeps \\(\\mathrm{TV}(P_0^n,P_1^n)\\) bounded away from 1 at the least-favorable \\(\\lambda\\). lem:lecam-two-point then gives the matching lower bound \\(\\rho_n\\).",
+      "status": "proved"
+    }
+  ],
+  "sampling_model": {
+    "draw": "iid (O_1, …, O_n) with O_i = (X_i, A_i, Y_i)",
+    "cross_fitting": "K folds; nuisances trained off-fold; ê_λ(X) ≥ λ and 1 − ê(X) ≥ η̄ on the evaluation fold",
+    "fold_sizes": "proportional to n"
+  },
+  "bibliography": [
+    {
+      "key": "ImbensRubin2015",
+      "citation": "Imbens & Rubin (2015), Causal Inference for Statistics, Social, and Biomedical Sciences."
+    },
+    {
+      "key": "RosenbaumRubin1983",
+      "citation": "Rosenbaum & Rubin (1983), The central role of the propensity score, Biometrika."
+    },
+    {
+      "key": "Kennedy2024",
+      "citation": "Kennedy (2024), Semiparametric doubly robust targeted minimum loss estimation."
+    },
+    {
+      "key": "DAmour2021",
+      "citation": "D'Amour, Ding, Feller, Lei & Sekhon (2021), Overlap in observational studies with high-dimensional covariates, J. Econometrics."
+    },
+    {
+      "key": "AudibertTsybakov2007",
+      "citation": "Audibert & Tsybakov (2007), Fast learning rates for plug-in classifiers, Ann. Statist."
+    },
+    {
+      "key": "Tsybakov2009",
+      "citation": "Tsybakov (2009), Introduction to Nonparametric Estimation, Springer."
+    },
+    {
+      "key": "ChernozhukovEtAl2018",
+      "citation": "Chernozhukov et al. (2018), Double/debiased machine learning, Econometrics Journal."
+    },
+    {
+      "key": "vanderVaart1998",
+      "citation": "van der Vaart (1998), Asymptotic Statistics, Cambridge University Press."
+    }
+  ]
+}

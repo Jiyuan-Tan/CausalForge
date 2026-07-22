@@ -1,0 +1,203 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_binary\_did\_scale\_frontier, specialization=v1
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_binary\_did\_scale\_frontier} / \texttt{v1}%
+  \\ \large\textit{Binary additive-versus-OREC DiD scale frontier with an observed contamination map}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\[
+(\texttt{qid},\texttt{specialization},\text{graph/SWIG},\text{treatment},\text{target estimand},\text{identifying assumptions}).
+\]
+Here \(\texttt{qid}=\texttt{eid\_binary\_did\_scale\_frontier}\) and \(\texttt{specialization}=\texttt{v1}\).  The observed law is a positive binary two-group two-period table \(P=\{p_{gt}:g,t\in\{0,1\}\}\), where \(p_{gt}=\Pr_P(Y=1\mid G=g,T=t)\), \(G=1\) denotes the treated group, \(T=1\) denotes the post period, and all four probabilities lie in \((0,1)\).  The SWIG has group \(G\), period \(T\), untreated potential outcome \(Y_t(0)\), treated potential outcome \(Y_1(1)\), and observed outcome \(Y=Y_T(D_T)\), with \(D_1=G\) and \(D_0=0\).  The target estimand is the binary post-period ATT \(\tau=\E[Y_1(1)-Y_1(0)\mid G=1]\).  The additive identifying restriction imputes \(q_A(P)=p_{10}+p_{01}-p_{00}\); the odds-ratio equi-confounding restriction imputes \(q_L(P)=\Lambda(\ell(p_{01})+\ell(p_{10})-\ell(p_{00}))\), where \(\ell(u)=\log\{u/(1-u)\}\) and \(\Lambda=\ell^{-1}\).  The corrected scale-transport estimand is \(\tau_C(P)=p_{11}-q_A(P)-\Delta_{OR-add}(P)\) with \(\Delta_{OR-add}(P)=q_L(P)-q_A(P)\).  The maintained identifying assumptions are positivity, consistency, no treatment before \(T=1\), and either additive parallel trends, odds-ratio equi-confounding, or the stated correction map; no covariates are included in this version.
+
+\begin{abstract}
+Binary difference-in-differences has two natural identifying scales: additive risk trends and odds-ratio equi-confounding.  The question is when these scales identify the same post-treatment ATT from the same observed \(2\times2\times2\) table.  The main claim is that the disagreement is governed by a closed-form contamination term \(\Delta_{OR-add}(P)\) whose zero set is a finite-table frontier.  The conjectural part is a non-nesting statement: away from this frontier, open-cell witness families give additive-zero but OREC-nonzero ATT, and OREC-zero but additive-nonzero ATT, under the same three untreated/pre-treatment margins.  Resolving the conjecture would turn Universal DiD for bounded outcomes into a diagnostic map that tells an applied reader when additive DiD is a scale artifact and when odds-ratio transport changes the target.
+\end{abstract}
+
+\section{Introduction}
+Binary outcomes make the usual additive parallel-trends restriction variation-dependent.  The main claim is that the additive DiD ATT and the odds-ratio equi-confounding ATT coincide exactly on a computable frontier of the observed \(2\times2\times2\) table, and that a corrected scale-transport ATT subtracts the unique observed contamination term off that frontier.
+
+The closest comparators are \citet[Abstract and Sec. 2]{ParkTchetgenTchetgen2022}, which states that OREC makes the generalized odds ratio between treatment and untreated potential outcome stable over time, \citet[Abstract and Sec. 2]{TchetgenTchetgenParkRichardson2024}, which replaces parallel trends for binary, count, and polytomous outcomes with OREC, \citet[Sec. 2]{Wooldridge2023}, which gives nonlinear DiD estimands under specified response links, and \citet[Theorem 1 and Sec. 3]{RothSantAnna2023}, which characterizes when parallel trends is insensitive to monotone transformations.  Those papers identify effects or diagnose functional-form sensitivity; they do not give an observed decision rule locating equality, strict separation, and link-specific coincidence among additive risk transport, OREC transport, and smooth nonlinear transport in the finite binary table.  The kernel is an exact-identification theorem for a binary DiD SWIG, with a partial-identification extension left as a nearby route.
+
+The immediate consumer is negative-control and epidemiologic DiD for bounded outcomes, especially the bias-equivalence reading in \citet{SoferRichardsonColicinoSchwartzTchetgen2016} and the scale warning in \citet{TchetgenTchetgen2014}.  A reader who reports a binary DiD risk difference can compute \(\Delta_{OR-add}(P)\) before deciding whether the additive contrast is a causal scale choice or an odds-ratio-confounding correction problem.
+
+\begin{itemize}[leftmargin=*]
+\item Theorem 1: \(\Delta_{OR-add}(P)=q_L(P)-q_A(P)\) has a closed form, vanishes iff \((p_{00}-p_{01})(p_{00}-p_{10})(p_{01}+p_{10}-1)=0\), and yields a delta-method frontier test statistic \(Z_{\Delta}\). Gap: \citet[Abstract and Sec. 2]{ParkTchetgenTchetgen2022}, \citet[Abstract and Sec. 2]{TchetgenTchetgenParkRichardson2024}, and \citet[Sec. 2]{Wooldridge2023} give named nonlinear DiD maps, not an observed equality-frontier test between the additive risk map and the OREC/logit map. Consumer: binary-outcome DiD diagnostics in epidemiology and policy evaluation.
+\item Conjecture 1: off the zero frontier, the sign of \(\Delta_{OR-add}(P)\) generates open-cell witness families with additive-zero and OREC-nonzero ATT, and conversely, from the same \((p_{00},p_{01},p_{10})\). Gap: \citet[p. 85, Abstract]{Puhani2012} states that the nonlinear treatment effect equals an incremental interaction effect, but does not produce a full finite-law non-nesting certificate for additive risk transport versus OREC. Consumer: reviewers of nonlinear DiD analyses using logit interactions.
+\item Conjecture 2: equality of additive transport and every link in a scale-rich smooth family occurs only on the no-time-drift or no-group-drift branches \(p_{00}=p_{01}\) or \(p_{00}=p_{10}\), with the logit-specific branch \(p_{01}+p_{10}=1\) excluded. Gap: \citet[Theorem 1 and Sec. 3]{RothSantAnna2023} characterizes transformation-invariance of parallel trends, \citet[Sec. 3]{AtheyImbens2006} gives scale-sensitive changes-in-changes, and \citet[Sec. 2]{Wooldridge2023} gives nonlinear DiD links; none isolates the finite binary branch where OREC agrees with additive DiD but fails scale-rich invariance. Consumer: choice of scale in bounded-outcome DiD.
+\end{itemize}
+
+\section{Related work}
+\citet[Sec. 3]{AtheyImbens2006} develop changes-in-changes and show that nonlinear DiD can target counterfactual distributions rather than additive mean trends.  \citet[p. 85, Abstract]{Puhani2012} states that in nonlinear DiD with a strictly monotone transformation, ``the treatment effect is the cross difference'' after subtracting the counterfactual non-treatment cross difference; this pins down the interaction-effect comparator but not an OREC-additive finite-law frontier.  \citet[Sec. 2]{Wooldridge2023} studies simple nonlinear DiD estimands and estimators for panel data under link-based response models.  \citet[Abstract and Sec. 2]{ParkTchetgenTchetgen2022} introduce Universal DiD and its OREC restriction for treatment effects on target scales.  \citet[Abstract and Sec. 2]{TchetgenTchetgenParkRichardson2024} present the epidemiologic version and emphasize binary, count, and polytomous outcomes as settings where additive parallel trends may be implausible.  \citet[Theorem 1 and Sec. 3]{RothSantAnna2023} show that functional-form invariance of parallel trends is itself testable and restrictive; the present binary frontier is stricter because it names the OREC branch that agrees with additive DiD but fails a richer link family.  \citet{SoferRichardsonColicinoSchwartzTchetgen2016} relate standard DiD to negative outcome controls through equal additive unmeasured-confounding bias.  \citet{TchetgenTchetgen2014} gives control-outcome calibration and notes that additive bias equivalence can be strained when outcome scales or bounds differ.  \citet{Mood2010} and \citet{PangKaufmanPlatt2016} explain why odds ratios can change under conditioning and marginalization even without a causal change.  \citet{GoodmanBacon2021}, \citet{DeChaisemartinDHaultfoeuille2020}, and \citet{SunAbraham2021} are additive DiD decomposition benchmarks; this proposal asks for the analogous finite-table decomposition across outcome scales rather than across timing cohorts.
+
+The closest in-catalogue prior is \texttt{eid\_proximal\_did\_bridge\_frontier\_v1}, whose headline juxtaposed ordinary DiD, proximal DiD, Universal DiD, and non-nesting regimes; its reviewer rejected the flagship object because the witness used moment rows rather than a full finite observed/latent law.  \texttt{q\_did\_drdid\_ipwdid\_frontier\_v1} supplies a frontier template for equality of DiD functionals, but its reviewer required a single precise equality object.  \texttt{pid\_collider\_bias\_sharp\_v1} contributes the reviewer lesson that a numerical odds-ratio witness should be promoted to a symbolic open-cell certificate.
+
+\section{Formal setup}
+Let \(G\in\{0,1\}\), \(T\in\{0,1\}\), and \(Y\in\{0,1\}\).  The observed table is summarized by \(p_{gt}=\Pr(Y=1\mid G=g,T=t)\) and \(r_{gt}=1-p_{gt}\).  Positivity means \(0<p_{gt}<1\) for every \((g,t)\), and the additive imputation is used only when \(0<q_A(P)<1\).  The post treated observed mean is \(p_{11}=\E[Y_1(1)\mid G=1]\).  The missing untreated mean for the treated in the post period is \(q=\E[Y_1(0)\mid G=1]\), so \(\tau=p_{11}-q\).  Define
+\[
+q_A(P)=p_{10}+p_{01}-p_{00},\qquad
+q_L(P)=\Lambda\{\ell(p_{01})+\ell(p_{10})-\ell(p_{00})\},
+\]
+where \(\ell(u)=\log(u/(1-u))\) and \(\Lambda(v)=1/(1+e^{-v})\).  The additive, OREC, and corrected ATTs are
+\[
+\tau_A(P)=p_{11}-q_A(P),\qquad
+\tau_L(P)=p_{11}-q_L(P),\qquad
+\tau_C(P)=\tau_A(P)-\Delta_{OR-add}(P),
+\]
+with \(\Delta_{OR-add}(P)=q_L(P)-q_A(P)\).  Equivalently,
+\[
+q_L(P)=\frac{p_{01}p_{10}(1-p_{00})}{p_{01}p_{10}(1-p_{00})+p_{00}(1-p_{01})(1-p_{10})}.
+\]
+The locked parameters are exactly those in the opening paragraph: \(\texttt{qid}=\texttt{eid\_binary\_did\_scale\_frontier}\), \(\texttt{specialization}=\texttt{v1}\), binary two-period SWIG, treatment \(D_1=G\), target \(\tau\), and identifying assumptions listed in Section 7.
+
+For the sampling diagnostic in Theorem \ref{thm:frontier}, let \(\widehat p_{gt}\) be the sample cell mean from \(n_{gt}\) independent observations in cell \((g,t)\), with \(n_{gt}/n\to\pi_{gt}\in(0,1)\).  Let \(d(P)=\nabla_{(p_{00},p_{01},p_{10})}\Delta_{OR-add}(P)\) and
+\[
+V_\Delta(P)=\sum_{g,t\in\{0,1\}:\,(g,t)\neq(1,1)}\frac{d_{gt}(P)^2p_{gt}(1-p_{gt})}{\pi_{gt}}.
+\]
+The statistic \(Z_\Delta=\sqrt n\,\Delta_{OR-add}(\widehat P)/\widehat V_\Delta^{1/2}\) is defined whenever \(\widehat V_\Delta>0\).
+
+\section{Assumptions}
+\begin{assumption}[Positive open-cell table]\label{ass:positive}
+For every \((g,t)\in\{0,1\}^2\), \(0<p_{gt}<1\), and \(0<q_A(P)<1\).
+\end{assumption}
+
+\begin{assumption}[Consistency and no pre-treatment exposure]\label{ass:consistency}
+Observed outcomes satisfy \(Y=Y_T(D_T)\), with \(D_0=0\) and \(D_1=G\).  Thus \(p_{10}=\E[Y_0(0)\mid G=1]\), \(p_{00}=\E[Y_0(0)\mid G=0]\), \(p_{01}=\E[Y_1(0)\mid G=0]\), and \(p_{11}=\E[Y_1(1)\mid G=1]\).
+\end{assumption}
+
+\begin{assumption}[Additive parallel trends]\label{ass:additive}
+The untreated mean trend is common across groups: \(\E[Y_1(0)-Y_0(0)\mid G=1]=\E[Y_1(0)-Y_0(0)\mid G=0]\).
+\end{assumption}
+
+\begin{assumption}[Odds-ratio equi-confounding]\label{ass:orec}
+The odds ratio relating group status to the untreated potential outcome is stable across periods:
+\[
+\frac{\operatorname{odds}\{\E[Y_1(0)\mid G=1]\}}{\operatorname{odds}(p_{01})}
+=
+\frac{\operatorname{odds}(p_{10})}{\operatorname{odds}(p_{00})}.
+\]
+\end{assumption}
+
+\begin{assumption}[Scale-rich smooth link family]\label{ass:links}
+A link \(h:(0,1)\to\mathbb R\) is strictly increasing, twice continuously differentiable, onto, and has a twice continuously differentiable inverse.  Its transported counterfactual is \(q_h(P)=h^{-1}\{h(p_{01})+h(p_{10})-h(p_{00})\}\).  The admissible class \(\mathcal H_\star\) contains the logit link \(\ell\), contains \(h_2(u)=\ell(u)+u^2\), and contains a sequence \(h_{\eta}(u)=\ell(u)+\eta u\) with \(\eta\downarrow0\).
+\end{assumption}
+
+\begin{assumption}[Independent cell sampling for the frontier diagnostic]\label{ass:sampling}
+For each \((g,t)\), the observations used to estimate \(p_{gt}\) are independent Bernoulli draws conditional on the cell, and \(n_{gt}/n\to\pi_{gt}\in(0,1)\).  The frontier point is regular when \(V_\Delta(P)>0\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: OR-additive contamination frontier]\label{thm:frontier}
+Under Assumptions \ref{ass:positive} and \ref{ass:consistency}, define the additive and OREC imputation maps \(q_A(P)\) and \(q_L(P)\) as alternative restrictions on the same positive observed table.  Then
+\[
+\Delta_{OR-add}(P)=
+\frac{p_{01}p_{10}(1-p_{00})}{p_{01}p_{10}(1-p_{00})+p_{00}(1-p_{01})(1-p_{10})}
+-(p_{10}+p_{01}-p_{00}).
+\]
+Moreover \(\tau_A(P)=\tau_L(P)=\tau_C(P)\) if and only if
+\[
+(p_{00}-p_{01})(p_{00}-p_{10})(p_{01}+p_{10}-1)=0.
+\]
+The proof is the algebraic solution of the OREC equation defining \(q_L\), followed by clearing denominators in \(q_L(P)=q_A(P)\).  The numerator factors as \((p_{00}-p_{01})(p_{00}-p_{10})(p_{01}+p_{10}-1)\) up to a positive denominator under Assumption \ref{ass:positive}.
+\end{theorem}
+
+\begin{conjecture}[Conjecture 1: open-cell non-nesting witness families (NOT YET PROVED)]\label{conj:witness}
+Under Assumptions \ref{ass:positive} and \ref{ass:consistency}, for any \((p_{00},p_{01},p_{10})\) outside the frontier in Theorem \ref{thm:frontier}, there exist two positive finite SWIG laws with that same triple.  In the first law, \(p_{11}=q_A(P)\), so \(\tau_A(P)=0\) and \(\tau_L(P)=-\Delta_{OR-add}(P)\neq0\).  In the second law, \(p_{11}=q_L(P)\), so \(\tau_L(P)=0\) and \(\tau_A(P)=\Delta_{OR-add}(P)\neq0\).  The conjectural content is that these laws can be chosen on an open neighborhood with nondegenerate latent untreated and treated potential-outcome distributions, not merely as four displayed conditional means.
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: scale-invariant binary DiD equivalence (NOT YET PROVED)]\label{conj:scale}
+Under Assumptions \ref{ass:positive}, \ref{ass:consistency}, and \ref{ass:links}, suppose \(q_h(P)=q_A(P)\) for every \(h\in\mathcal H_\star\).  Then \(p_{00}=p_{01}\) or \(p_{00}=p_{10}\).  Conversely, either equality implies \(q_h(P)=q_A(P)\) for every admissible link \(h\).  The logit-specific branch \(p_{01}+p_{10}=1\) in Theorem \ref{thm:frontier} is therefore a two-scale coincidence rather than a scale-invariant DiD equivalence.
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No time drift]
+Under Assumptions \ref{ass:positive} and \ref{ass:consistency}, if \(p_{00}=p_{01}\), then \(q_A(P)=q_L(P)=p_{10}\), so all three ATTs reduce to \(p_{11}-p_{10}\).
+\end{corollary}
+This is the zero-control-trend reduction: additive and OREC transport both leave the treated group's pre-period untreated risk unchanged.
+
+\begin{corollary}[No group imbalance]
+Under Assumptions \ref{ass:positive} and \ref{ass:consistency}, if \(p_{00}=p_{10}\), then \(q_A(P)=q_L(P)=p_{01}\), so all three ATTs reduce to \(p_{11}-p_{01}\).
+\end{corollary}
+This is the randomized-baseline reduction: both identifying scales use the post-period control risk as the untreated treated risk.
+
+\paragraph{Exhibit 9.1: hand-computed finite SWIG witness.}
+Take \((p_{00},p_{01},p_{10})=(1/5,3/10,2/5)\).  Then \(q_A=1/2\) and
+\[
+q_L=\frac{(3/10)(2/5)(4/5)}{(3/10)(2/5)(4/5)+(1/5)(7/10)(3/5)}=\frac{4}{7}.
+\]
+Thus \(\Delta_{OR-add}=1/14\), the additive-zero table has \(p_{11}=1/2\), \(\tau_A=0\), and \(\tau_L=-1/14\), while the OREC-zero table has \(p_{11}=4/7\), \(\tau_L=0\), and \(\tau_A=1/14\).  Let \(\Pr(G=1)=\Pr(G=0)=1/2\).  For \(G=0\), set the joint law of \((Y_0(0),Y_1(0))\) to \((1,1):1/10\), \((1,0):1/10\), \((0,1):1/5\), and \((0,0):3/5\).  For the additive-zero treated law, take \(Y_0(0)\sim\mathrm{Bernoulli}(2/5)\), \(Y_1(0)\sim\mathrm{Bernoulli}(1/2)\), and \(Y_1(1)\sim\mathrm{Bernoulli}(1/2)\) mutually independent conditional on \(G=1\).  For the OREC-zero treated law, take \(Y_0(0)\sim\mathrm{Bernoulli}(2/5)\), \(Y_1(0)\sim\mathrm{Bernoulli}(4/7)\), and \(Y_1(1)\sim\mathrm{Bernoulli}(4/7)\) mutually independent conditional on \(G=1\).  These product laws assign positive probability to all eight treated potential-outcome atoms, match the observed \(p_{00},p_{01},p_{10}\), and generate the stated \(p_{11}\) values without changing normalization or target scale.
+
+\paragraph{Exhibit 9.2: scale-specific equality branch.}
+Take \((p_{00},p_{01},p_{10})=(1/5,3/10,7/10)\).  Then \(p_{01}+p_{10}=1\), \(q_A=4/5\), and \(q_L=4/5\), so Theorem \ref{thm:frontier} declares additive-logit equality.  For the admissible non-logit link \(h_2(u)=\ell(u)+u^2\), the transported value solves \(h_2(q)=h_2(3/10)+h_2(7/10)-h_2(1/5)\), which gives \(q=0.7869985779\ldots\neq4/5\).  This separates the logit branch from genuine scale-invariance while keeping \(h_2'(u)=1/\{u(1-u)\}+2u>0\).
+
+\section{Proof-sketch route}
+Theorem \ref{thm:frontier}: headline \(\leftarrow\) unfold \(q_A,q_L,\Delta_{OR-add}\) \(\leftarrow\) solve the OREC odds-ratio equation for \(q_L\) as an alternative imputation map \(\leftarrow\) clear positive denominators in \(q_L=q_A\) \(\leftarrow\) factor the cubic numerator into the three frontier branches; here \(k=3\) substantive steps.  Conjecture \ref{conj:witness}: headline \(\leftarrow\) unfold the two ATT maps \(\leftarrow\) substitute Theorem \ref{thm:frontier}'s sign of \(\Delta_{OR-add}\) \(\leftarrow\) construct Bernoulli potential-outcome kernels matching the four means \(\leftarrow\) verify open-cell positivity and consistency by perturbation inequalities \(\leftarrow\) prove the two signs persist on a semialgebraic neighborhood; here \(k=3\).  Conjecture \ref{conj:scale}: headline \(\leftarrow\) unfold \(q_h\) over \(\mathcal H_\star\) \(\leftarrow\) compare logit and \(h_2\) transport on the logit branch \(\leftarrow\) use curvature derivatives of \(h_\eta\) as \(\eta\downarrow0\) to force \((p_{00}-p_{01})(p_{00}-p_{10})=0\) \(\leftarrow\) prove the two surviving branches by direct substitution; here \(k=4\).  Boundary cases needing explicit algebra are \(q_A\in\{0,1\}\), which this version excludes, and the logit-specific branch, which Exhibit 9.2 isolates.
+
+\section{Honest scope flags}
+Theorem \ref{thm:frontier} is intended as a proved algebraic result.  Conjecture \ref{conj:witness} is open because Exhibit 9.1 gives one full finite observed/latent SWIG law, while the conjecture requires an open-cell family around every off-frontier triple.  Conjecture \ref{conj:scale} is open because the link-family necessity direction needs a clean functional-equation argument.  This v2 deliberately withdraws any staggered-adoption or estimator-rate claim; the object is the exact finite binary table frontier.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft of the binary additive-versus-OREC DiD scale frontier; prior verdict: none.
+\item v2 (revise) -- rephrased the frontier as alternative imputation maps, added Wooldridge and page-level Puhani anchors, replaced the false probit exhibit with an explicit non-logit link calculation, and expanded Exhibit 9.1 to a full positive finite SWIG law; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Athey and Imbens(2006)]{AtheyImbens2006} Athey, S. and G. W. Imbens (2006). Identification and inference in nonlinear difference-in-differences models. \emph{Econometrica} 74(2), 431--497.
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{DeChaisemartinDHaultfoeuille2020} de Chaisemartin, C. and X. D'Haultfoeuille (2020). Two-way fixed effects estimators with heterogeneous treatment effects. \emph{American Economic Review} 110(9), 2964--2996.
+\bibitem[Goodman-Bacon(2021)]{GoodmanBacon2021} Goodman-Bacon, A. (2021). Difference-in-differences with variation in treatment timing. \emph{Journal of Econometrics} 225(2), 254--277.
+\bibitem[Mood(2010)]{Mood2010} Mood, C. (2010). Logistic regression: Why we cannot do what we think we can do, and what we can do about it. \emph{European Sociological Review} 26(1), 67--82.
+\bibitem[Pang, Kaufman, and Platt(2016)]{PangKaufmanPlatt2016} Pang, M., J. S. Kaufman, and R. W. Platt (2016). Studying noncollapsibility of the odds ratio with marginal structural and logistic regression models. \emph{Statistical Methods in Medical Research} 25(5), 1925--1937.
+\bibitem[Park and Tchetgen Tchetgen(2022)]{ParkTchetgenTchetgen2022} Park, C. and E. J. Tchetgen Tchetgen (2022). A universal difference-in-differences approach for causal inference. arXiv:2212.13641.
+\bibitem[Puhani(2012)]{Puhani2012} Puhani, P. A. (2012). The treatment effect, the cross difference, and the interaction term in nonlinear difference-in-differences models. \emph{Economics Letters} 115(1), 85--87.
+\bibitem[Sofer et al.(2016)]{SoferRichardsonColicinoSchwartzTchetgen2016} Sofer, T., D. B. Richardson, E. Colicino, J. Schwartz, and E. J. Tchetgen Tchetgen (2016). On negative outcome control of unobserved confounding as a generalization of difference-in-differences. \emph{Statistical Science} 31(3), 348--361.
+\bibitem[Sun and Abraham(2021)]{SunAbraham2021} Sun, L. and S. Abraham (2021). Estimating dynamic treatment effects in event studies with heterogeneous treatment effects. \emph{Journal of Econometrics} 225(2), 175--199.
+\bibitem[Tchetgen Tchetgen(2014)]{TchetgenTchetgen2014} Tchetgen Tchetgen, E. J. (2014). The control outcome calibration approach for causal inference with unobserved confounding. \emph{American Journal of Epidemiology} 179(5), 633--640.
+\bibitem[Tchetgen Tchetgen, Park, and Richardson(2024)]{TchetgenTchetgenParkRichardson2024} Tchetgen Tchetgen, E. J., C. Park, and D. B. Richardson (2024). Universal difference-in-differences for causal inference in epidemiology. \emph{Epidemiology} 35(1), 108--117.
+\bibitem[Wooldridge(2023)]{Wooldridge2023} Wooldridge, J. M. (2023). Simple approaches to nonlinear difference-in-differences with panel data. \emph{The Econometrics Journal} 26(3), C31--C66.
+\end{thebibliography}
+
+\end{document}

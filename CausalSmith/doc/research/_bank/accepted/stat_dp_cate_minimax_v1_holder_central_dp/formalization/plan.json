@@ -1,0 +1,457 @@
+{
+  "qid": "stat_dp_cate_minimax_v1",
+  "specialization": "holder_central_dp",
+  "cluster": "stat",
+  "target_subdir": "CausalSmith/Stat/STAT_DpCateMinimaxV1_Research",
+  "feasibility": "formalizable-now",
+  "search_survey": "Grepped ../doc/API.md (Causalean) + doc/API.md (CausalSmith) for {Hellinger, totalVariation, Minimax, LeCam, Holder, DifferentialPrivacy, Privacy, Laplace}. Confirmed reusable minimax substrate Causalean.Stat.Minimax.{TotalVariation(tvDist, one_sub_tvDist_le_test), ChiSquared(chiSqDiv, tvDist_le_half_sqrt_chiSqDiv)} and Causalean.Stat.Sample(IIDSample) (VERIFIED clean/non-sorry; grep of source dirs confirms files+decls exist). NOTE (round 3): Causalean.Stat.Minimax.MinimaxRisk.iid_two_point_lower_bound is NOT reused -- it is stated for a DETERMINISTIC measurable estimator, while this run's mechanism M_n is a RANDOMIZED kernel; the two-point risk lower bound is instead built directly on output laws via one_sub_tvDist_le_test (see lem:causal-oracle-private-lower-bound). NOTE (round 3): the sibling CausalSmith.Stat.DoseResponseMinimax.HolderBallND is NOT reused as the Holder-ball realizer -- its floor(order) convention gives a 0-exponent condition at integer smoothness, disagreeing with this core's standard ceil(s)-1 convention; a standard-convention `HolderBallStd` is DEFINE-LOCAL (see S3). Nearest ANALOGOUS module: CausalSmith.Stat.DoseResponseMinimax (STAT_DoseResponseMinimax_Research) — a Holder pointwise minimax converse with the SAME two-point/bump construction, DoseObs/DoseLaw PO world, minimaxRisk packaging, and Helpers/{Divergence,TwoPointConstruction,Witness/*,RateAlgebra} split; F2/F3 should adapt its SKELETON (but define the standard-convention Holder ball fresh and drive the two-point risk bound off output-law testing, not the deterministic-estimator lemma). NO differential-privacy primitive exists anywhere in Causalean or CausalSmith (grep 'DifferentialPrivacy|Privacy|Laplace|epsilon.*delta' -> not found), so the DP overlay, central-DP predicate, DP->TV contraction, and Laplace-mechanism release are build-inline crux, not reuse.",
+  "env": [
+    {
+      "id": "S1",
+      "world": "i.i.d. observational CATE law with potential-outcome overlay (single-observation Measure over O=(Y,A,X) on ([-1,1]x{0,1}x[0,1]^d), law-side nuisances pi_P, mu_{0,P}, mu_{1,P}, tau_P, covariate marginal P_X with density p_P, and the PO process Y(.))",
+      "binds_symbols": [
+        "n",
+        "d",
+        "a",
+        "O",
+        "Y",
+        "A",
+        "X",
+        "O_1,...,O_n",
+        "P",
+        "P_X",
+        "p_P",
+        "Y(a)",
+        "pi_P",
+        "mu_{0,P}",
+        "mu_{1,P}",
+        "tau_P"
+      ],
+      "binds_sampling_model": true,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Sample"
+      ],
+      "notes": "Define-local `CateObs d`/`CateLaw d` world DIRECTLY analogous to CausalSmith.Stat.DoseResponseMinimax.{DoseObs,DoseLaw} (adapt: binary A in {0,1} and two outcome-regression fields mu0,mu1 with tau=mu1-mu0, vs the continuous-dose single mu). The i.i.d. n-sample content of ass:iid reuses Causalean.Stat.IIDSample (Causalean.Stat.Sample) exactly as DoseResponseMinimax's IidSampling does; the n-fold product law is Measure.pi (fun _:Fin n => P.dataMeasure). Search trace: grepped ../doc/API.md for 'observed_data_unit / PO system / Measure DoseObs'; Causalean.PO.POSystem is a heavier graph/regime-indexed PO skeleton (bypass-justified, same call as DoseResponseMinimax) - consistency+exchangeability kept as threaded Props on the constructed law. No exact Causalean CATE-law world exists -> define-local."
+    },
+    {
+      "id": "S2",
+      "world": "central approximate-(epsilon_n,delta_n)-differential-privacy release overlay: a randomized mechanism M_n as a measurable/Markov map from samples in (([-1,1]x{0,1}x[0,1]^d))^n to Borel R, with neighboring datasets D,D' (differing in one record), output events B, and the deterministic privacy-budget sequences epsilon_n in [n^-1,1], delta_n in (0,n^-2]",
+      "binds_symbols": [
+        "M_n",
+        "D,D'",
+        "B",
+        "epsilon_n",
+        "delta_n"
+      ],
+      "binds_sampling_model": false,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "notes": "Search trace: grepped ../doc/API.md and doc/API.md for 'DifferentialPrivacy|Privacy|Laplace|epsilon.*delta|central DP' -> NOT FOUND (no DP substrate in Causalean/CausalSmith). Overlay is build-inline over Mathlib MeasureTheory: M_n modeled as a measurable kernel / randomized map (Fin n -> CateObs d) -> Measure R. The central-DP predicate ass:central-dp is one named Prop. Novel infrastructure for the stat cluster but elementary (a Prop over measures) - build-inline, not Defer."
+    },
+    {
+      "id": "S3",
+      "world": "regime constants + Holder regularity classes and derived rate/class objects (plain real/nat binders enforced by a standing RegimeConstants well-formedness predicate; Holder ball realized by a define-local standard-convention multivariate Holder-ball def `HolderBallStd`; the derived objects are realized by their own def nodes)",
+      "binds_symbols": [
+        "x_0",
+        "r_0",
+        "alpha",
+        "beta",
+        "gamma",
+        "L",
+        "H^s([0,1]^d,L)",
+        "e_0",
+        "f_0",
+        "f_1",
+        "kappa",
+        "R_n^DP",
+        "r_n^CATE",
+        "r_n^regDP",
+        "P_{alpha,beta,gamma}(L,e_0,f_0,f_1,r_0,x_0)"
+      ],
+      "binds_sampling_model": false,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "notes": "CONVENTION FIX (round 3): the Holder-ball symbol H^s([0,1]^d,L) is DEFINE-LOCAL, NOT a reuse of CausalSmith.Stat.DoseResponseMinimax.HolderBallND. Confronted HolderBallND (CausalSmith/Stat/STAT_DoseResponseMinimax_Research/Basic.lean:87): it bounds iteratedFDeriv up to k=floor(order) and makes the k-th derivative (order-floor(order))-Holder. At INTEGER order s (floor s = s) this collapses to a 0-exponent condition on the s-th derivative (i.e. C^{s,0}), whereas the core + proof_tex use the STANDARD nonparametric convention C^{ceil(s)-1, s-(ceil(s)-1)}: derivatives up to k=ceil(s)-1 bounded, and the k-th derivative (s-k)-Holder with exponent s-k in (0,1] (lem:holder-point-l1-interpolation proof_tex: 'For integer gamma, use the degree gamma-1 Taylor polynomial and the Lipschitz remainder in the integer-order Holder definition'). The two conventions DISAGREE at every integer smoothness order, so HolderBallND is NOT an exact reusable realization for the unrestricted positive alpha,beta,gamma here. Search trace: lean_local_search 'Holder'/'HolderBall' + grep ../doc/API.md,doc/API.md 'HolderBall|HolderClass|holderNorm' -> only HolderBallND (floor convention, wrong at integers) and Mathlib HolderWith/HolderOnWith (single-exponent (0,1]-Holder CONTINUITY, no higher-derivative ball) -> NO standard ceil(s)-1-convention multivariate Holder ball exists in Causalean/CausalSmith/Mathlib. DEFINE-LOCAL `HolderBallStd {d}(f:(Fin d->R)->R)(order M:R)(S:Set (Fin d->R)):Prop` in Basic.lean: iteratedFDeriv up to k:=Nat.ceil(order)-1 bounded by M on S, and the k-th derivative (order-k)-Holder with exponent (order-(k:R)) in (0,1] and constant M (C^{ceil s -1, s-ceil s +1}). HolderBallND's proof-level lemmas do NOT transfer (different convention); prove the small analogues (HolderBallStd_const for zero seminorm, monotone-radius) inline as needed. The remaining derived symbols kappa (inlined in def:nonprivate-cate-rate), R_n^DP (def:dp-minimax-risk), r_n^CATE (def:nonprivate-cate-rate), r_n^regDP (def:private-regression-calibration), and the class P_{alpha,beta,gamma} (def:holder-cate-class) are bound here with authoritative realizers in those def/structure nodes; the free constants x_0,r_0,alpha,beta,gamma,L,e_0,f_0,f_1 are pinned by a threaded RegimeConstants predicate (pattern from DoseResponseMinimax.RegimeConstants). Block is define-local: Holder primitive + derived/constant realizers all new."
+    }
+  ],
+  "nodes": {
+    "ass:iid": {
+      "lean_kind": "assumption",
+      "lean_name": "IidSampling",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Sample"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Modeling/sampling assumption -> ONE named Prop. Build-inline wrapper reusing Causalean.Stat.IIDSample for the mutual-independence + identical-law content (exactly as DoseResponseMinimax.IidSampling), plus IsProbabilityMeasure P.dataMeasure and the a.s. support clauses (Y in [-1,1], A in {0,1}, X in [0,1]^d). Search trace: confirmed Causalean.Stat.Sample.IIDSample exists (grep of Causalean/Stat) - reused inside the def, not discharged, since the assumption is the note's threaded sampling hypothesis."
+    },
+    "ass:consistency": {
+      "lean_kind": "assumption",
+      "lean_name": "Consistency",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Causal modeling assumption Y=Y(A) a.s. under P -> one Prop over the CateLaw PO overlay (analogue of DoseResponseMinimax.Consistency). Search trace: Causalean.PO consistency lemmas are graph-indexed; kept as threaded Prop on the constructed law (bypass-justified, same as DoseResponseMinimax). Modeling assumption, never discharged."
+    },
+    "ass:exchangeability": {
+      "lean_kind": "assumption",
+      "lean_name": "CondExchangeability",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Causal modeling assumption (Y(0),Y(1)) indep A | X -> one Prop in the tested conditional-independence form E[f(Y(a))|A,X]=E[f(Y(a))|X] for bounded measurable f (analogue of DoseResponseMinimax.NoUnmeasuredConfounding, binary A). Search trace: no exact Causalean CATE-exchangeability decl (PO.CondIndepCF is graph-indexed, bypass-justified). Modeling assumption, threaded."
+    },
+    "ass:overlap": {
+      "lean_kind": "assumption",
+      "lean_name": "StrongOverlap",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Overlap modeling assumption e_0 <= pi_P(x) <= 1-e_0 for all x in [0,1]^d -> one Prop. Search trace: no reusable named overlap Prop at this abstraction in Causalean.Stat (grep 'overlap' finds weak-overlap trimming lemmas in Estimation, a different object). Modeling assumption, member of HolderCateClass."
+    },
+    "ass:pi-holder": {
+      "lean_kind": "assumption",
+      "lean_name": "PiHolder",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Smoothness modeling assumption pi_P in H^alpha([0,1]^d,L) -> one named Prop def whose BODY applies the DEFINE-LOCAL standard-convention Holder ball `HolderBallStd (fun x => P.pi x) alpha L (cube d)` (see S3). CONVENTION FIX (round 3): does NOT reuse DoseResponseMinimax.HolderBallND (its floor(order) convention is a 0-exponent condition at integer alpha, disagreeing with the core's ceil(alpha)-1 standard convention). Modeling assumption, class member; node define-local, Holder primitive define-local in S3."
+    },
+    "ass:mu-holder": {
+      "lean_kind": "assumption",
+      "lean_name": "MuHolder",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Smoothness modeling assumption mu_{0,P},mu_{1,P} in H^beta([0,1]^d,L) -> one named Prop (both arms) whose body applies the DEFINE-LOCAL standard-convention Holder ball `HolderBallStd (fun x => P.mu0 x) beta L (cube d)` and likewise for mu1 (see S3). CONVENTION FIX (round 3): does NOT reuse DoseResponseMinimax.HolderBallND (floor(beta) convention gives a 0-exponent condition at integer beta, disagreeing with the core's ceil(beta)-1 standard convention used by the Taylor-remainder upper-bound proof). Modeling assumption, class member; also used inline (via the class) by lem:private-local-polynomial-upper-bound. Node define-local; Holder primitive define-local in S3."
+    },
+    "ass:tau-holder": {
+      "lean_kind": "assumption",
+      "lean_name": "TauHolder",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Smoothness modeling assumption tau_P in H^gamma([0,1]^d,L) -> one named Prop whose body applies the DEFINE-LOCAL standard-convention Holder ball `HolderBallStd (fun x => P.mu1 x - P.mu0 x) gamma L (cube d)` (see S3). CONVENTION FIX (round 3): does NOT reuse DoseResponseMinimax.HolderBallND (floor(gamma) convention gives a 0-exponent condition at integer gamma; the interpolation proof lem:holder-point-l1-interpolation EXPLICITLY uses the ceil(gamma)-1 standard convention -- 'degree gamma-1 Taylor polynomial and the Lipschitz remainder in the integer-order Holder definition'). Modeling assumption, class member; drives lem:holder-point-l1-interpolation and the TV lower bound in thm:causal-dp-two-point-barrier. Node define-local; Holder primitive define-local in S3."
+    },
+    "ass:smoothness-order": {
+      "lean_kind": "assumption",
+      "lean_name": "SmoothnessOrder",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Regime modeling assumption 0 < beta <= gamma -> one Prop. Elementary order predicate. Class member (also referenced by oeq:causal-dp-frontier as a stated regime)."
+    },
+    "ass:local-density": {
+      "lean_kind": "assumption",
+      "lean_name": "LocalDensity",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Design-regularity modeling assumption f_0 <= p_P(x) <= f_1 on the sup-norm r_0-neighborhood of x_0 -> one Prop (analogue of DoseResponseMinimax.PxHolder boundedness clauses, localized to the r_0 cube). Modeling assumption, class member."
+    },
+    "ass:central-dp": {
+      "lean_kind": "assumption",
+      "lean_name": "CentralDP",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Privacy modeling assumption: Pr{M_n(D) in B} <= exp(epsilon_n)*Pr{M_n(D') in B} + delta_n for all neighboring D,D' and Borel B -> one Prop over the S2 mechanism. Search trace: grep 'DifferentialPrivacy|central DP' in both API.md -> NOT FOUND; build-inline over Mathlib. This is a restriction on the RELEASE MECHANISM (a privacy/estimator-quality constraint), i.e. a modeling assumption, NOT a substrate proof-obligation - kept as a threaded hypothesis / baked into def:dp-minimax-risk's mechanism domain, never a gate."
+    },
+    "ass:model-nonempty": {
+      "lean_kind": "assumption",
+      "lean_name": "ModelNonempty",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Standard nonempty-minimax-model modeling assumption: exists P, HolderCateClass ... P -> one Prop. Supplies the retained covariate density p for the lower-bound two-point families (consumed by lem:causal-oracle-private-lower-bound). Modeling assumption, threaded. SYNC-BACK (F2, scaffold redirect attempt 4): ModelNonempty existential witness conjoined with IidSampling P (now `exists P, HolderCateClass ... P and IidSampling P`), so the nonempty-model witness is a GENUINE i.i.d. probability law, not a finite/non-probability dataMeasure. This strengthens the shared premise of lem:causal-oracle-private-lower-bound / lem:certified-private-cate-bracket / lem:equal-smoothness-sharp-private-rate (all take hne:ModelNonempty as a hypothesis; no lemma-signature edit needed, bodies still sorry). Basic.lean recompiled sorry-only."
+    },
+    "def:holder-cate-class": {
+      "lean_kind": "structure",
+      "lean_name": "HolderCateClass",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "members": [
+        "ass:consistency",
+        "ass:exchangeability",
+        "ass:overlap",
+        "ass:pi-holder",
+        "ass:mu-holder",
+        "ass:tau-holder",
+        "ass:smoothness-order",
+        "ass:local-density"
+      ],
+      "notes": "CLASS (by_member_properties present) -> structure with one field per member atom, each typed by that atom's Prop def. Directly analogous to CausalSmith.Stat.DoseResponseMinimax.HolderDoseClass; add the semantic ties (mu is the arm regression, p_P is the X-marginal density, pi_P is the conditional treatment probability) exactly as DoseResponseMinimax does, so def:dp-minimax-risk over it is the genuine causal risk. Search trace: no Causalean CATE-class structure at this abstraction; define-local from the sibling template."
+    },
+    "def:dp-minimax-risk": {
+      "lean_kind": "def",
+      "lean_name": "dpMinimaxRisk",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "CONSTRUCTION (inputs present) -> def. inf over central-DP RANDOMIZED mechanisms (ass:central-dp domain, M_n a Markov kernel (Fin n -> CateObs d) -> Measure R) of sup over P in HolderCateClass of E_P|M_n(O_1..O_n) - tau_P(x_0)| (ABSOLUTE error, integrated over both the sample law and the mechanism randomness). Analogous to DoseResponseMinimax.minimaxRisk in SHAPE (there MSE over truncated deterministic estimators; here absolute error over the DP-constrained RANDOMIZED-kernel domain, n-fold product law Measure.pi). Search trace: Causalean.Stat.Minimax.MinimaxRisk.iid_two_point_lower_bound is DETERMINISTIC-estimator-only and does NOT fit this randomized-kernel functional (see lem:causal-oracle-private-lower-bound RANDOMIZED-ESTIMATOR FIX); the lower endpoint is instead built directly on output laws via TotalVariation.one_sub_tvDist_le_test. The DP-constrained minimax functional itself is fully define-local (randomized DP domain is novel). reuse:null."
+    },
+    "def:nonprivate-cate-rate": {
+      "lean_kind": "def",
+      "lean_name": "nonprivateCateRate",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "CONSTRUCTION -> def: r_n^CATE = n^{-kappa}, kappa = min{1/(2+d/gamma), 1/(1+d/(2gamma)+d/(2(alpha+beta)))} (kappa inlined). Real rpow expression; analogue of DoseResponseMinimax.publishedHoifRate. Search trace: KBRW benchmark rate not in library -> define-local pure rate algebra."
+    },
+    "def:private-regression-calibration": {
+      "lean_kind": "def",
+      "lean_name": "privateRegressionCalibration",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "CONSTRUCTION -> def: r_n^regDP = inf_{0<h<=r_0}{h^gamma + (n h^d)^{-1/2} + 1/(n epsilon_n h^d)}. Real-valued infimum over bandwidth. Search trace: no library calibration object; define-local. Its order-equivalence is lem:private-regression-calibration-algebra."
+    },
+    "def:causal-private-frontier-handle": {
+      "lean_kind": "def",
+      "lean_name": "causalPrivateFrontierHandle",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "CONSTRUCTION -> def: the formal algebraic objective E_n^alg(h,k) and its optimized value rho_n^alg = r_n^CATE v (n eps)^{-gamma/(gamma+d)} v (n eps)^{-q/(q+d)} (q=alpha+beta), stated as a named def/Prop bundle of the algebraic handle. EXPLICITLY not asserted as a proved risk envelope/frontier (see construction text) - encoded as a formal definition object only, consumed as context by oeq:causal-dp-frontier. Search trace: bespoke algebraic handle, no analogue; define-local. SYNC-BACK (F2, redirect attempt 3): signature extended with class params (L,e0,f0,f1,x0) and the Prop bundle now also encodes the note's scope clauses — (d) privacy-power comparison (q- vs γ-power coincide at nε=1, strict only nε>1 & q<γ), (e) two-point/TV-contraction barrier limitation (Δ capped at γ-privacy order), (f) density/Gram-stable submodel qualification, (g) non-certification + private-HOIF stabilization requirement. Formal-context-only def; no theorem depends on it. SYNC-BACK (F2, redirect attempt 5): (d) rewritten to the note's NECESSARY condition (q<γ → (q-power > γ-power → 1<nε)) instead of the sufficient converse; (e) constant Ceta now quantified OUTSIDE a fresh sample-size binder m (∃Ceta, ∀m≥1, …) restoring the paper's uniform-in-n two-point rate constant (handle's own fixed n no longer enters Ceta); (g) recast as a REQUIREMENT on any attaining program M — a release M controlling worst-case class error ≤V must be an actual CentralDP privatized release AND globally stabilized (clipped to [-2,2] on every dataset), in addition to the four fold controls + retained third-order remainder — replacing the bare summand≤V numeric inequalities with actual privatization/global-stabilization requirements. Both files recompiled sorry-only. SYNC-BACK (F2, scaffold redirect attempt 3): clause (g) RESCOPED to the note's COMPONENT level (reviewer: prior (g) quantified over every risk-controlling M and INFERRED whole-release CentralDP + universal clipping + five scalar inequalities from risk control). (g) is now an EXISTENTIAL bundle of the four NAMED fold releases (Mnuis/Mgram/Mscore/Msecond) with, PER FOLD, the note's disjunctive alternative (CentralDP ∨ globally-stabilized-to-[-2,2]), plus the retained KBRW third-order remainder (k/(n ε h^d) kept strictly positive on the domain). No risk-control antecedent, no quantifier over every mechanism, no whole-release clipping of a single M, no fold-magnitude ≤V inequalities — privacy is one of the two per-fold alternatives, never derived from risk. Recompiled (Basic.lean defs-only, no errors). SYNC-BACK (F2, scaffold redirect attempt 4): clause (g) RESTATED from an existential over four program-unrelated kernels to a UNIVERSAL/CONDITIONAL necessity on an ACTUAL private-HOIF program (forall M Mnuis Mgram Mscore Msecond V vrem, [M is CentralDP with worst-case class error <= V, each of the four folds accounted within V via worstCaseClassError <= V, and the retained KBRW third-order remainder vrem = k/(n eps h^d) a summand of V with vrem <= V] -> each fold is SEPARATELY CentralDP-or-globally-stabilized). Added supporting def worstCaseClassError (the inner sup of dpMinimaxRisk) to state the per-fold/program bound. Remainder now REQUIRED to occur in the program's bound V (not bare positivity); folds tied to the program (not arbitrary), no existential asserting a program exists. Basic.lean recompiled sorry-only. SYNC-BACK (F2, scaffold redirect attempt 6): clause (g) rebuilt to tie each fold to BOTH M and V and to encode GENUINE global stabilization (reviewer: prior (g) never stated the folds were components assembled into M — arbitrary unrelated kernels with error ≤ V were forced CentralDP/output-supported — and output clipping is not global sensitivity stabilization). Added (i) an ASSEMBLY clause to the premise: ∃ measurable assemble, ∀ s, M s = (Mnuis s ⊗ Mgram s ⊗ Mscore s ⊗ Msecond s).map assemble (M is genuine post-processing of the joint fold release, tying each fold TO M as a component); (ii) replaced the per-fold output-clipping alternative `(Mfold s)([-2,2]ᶜ)=0` with a new supporting def `GloballyStabilized n Mfold` (∃ Δ≥0, neighboring output laws differ by ≤ a Δ-shift: (Mfold s).real B ≤ (Mfold s').real (Δ-thickening of B)) — genuine bounded global sensitivity, not support/clipping. Fold accounting (worstCaseClassError ≤ V) retained (ties each fold to V), remainder-in-V retained. No signature change to causalPrivateFrontierHandle; only CausalDpFrontierQuestion consumes it (same file). Basic.lean recompiled sorry-only. SYNC-BACK (F2, scaffold redirect attempt 7): (i) clause (e) rebuilt to a VERBATIM mirror of the headline theorem causal_dp_two_point_barrier part (ii) (reviewer: prior (e) fixed the handle's n before choosing Ceta so Ceta could depend on n, and restricted P,Q by extra IidSampling premises while the cited barrier ranges over arbitrary class members). Clause (e) now quantifies over its OWN admissible budget SEQUENCE (∀ eps del, PrivacyBudget eps del →) and a fresh sample-size binder m, with ∃Ceta BEFORE ∀m (Ceta uniform in m, encoding the paper's uniform γ-branch rate constant) and P,Q ranging over ARBITRARY class members (HolderCateClass only — the IidSampling P/Q premises DROPPED); the contraction now uses eps m, del m, m (not the handle's scalar epsN/delN/n). (ii) clause (g)'s remainder-in-bound tightened from `vrem ≤ V` to `∃ Vrest ≥ 0, V = Vrest + vrem` (reviewer: mere vrem ≤ V did not encode that the KBRW remainder is RETAINED AS A SUMMAND of the program bound) — vrem is now an explicit additive summand of V. No signature change; causalPrivateFrontierHandle has no code dependents (only CausalDpFrontierQuestion, which does not reference it). Basic.lean recompiled sorry-only (no errors, only pre-existing long-line style warnings). SYNC-BACK (F2, scaffold redirect attempt 5): clause (g) now requires `CentralDP n epsN delN M` in the antecedent of the private-HOIF condition; it no longer derives assembled-release privacy from `PrivateHOIFProgram`. The conclusion contains only the four componentwise privacy-or-global-stabilization requirements and the retained additive KBRW remainder. SYNC-BACK (F2, scaffold redirect attempt 6): replaced the free existential `StableSub` by the fixed `KBRWDensityGramStable` predicate, which requires a shared known density, global density bounds, and uniform localized quadratic-Gram bounds. Replaced the slack equation `V = Vrest + k/(n eps h^d)` by `PrivateHOIFErrorDecomposition`: the assembled release's actual worst-case class error is bounded by named HOIF components, its third-order component is definitionally `k/(n eps h^d)`, and `V` is the sum of those components. `PrivateHOIFProgram` now carries that decomposition directly; clause (g) only states the four componentwise privacy/global-stabilization requirements.",
+      "sync_back_attempt_9": "Clause (g)'s actual-program premise now requires UsesEveryHOIFFold: coordinate-essentiality is tested on the actual named fold laws by counterfactually replacing each one fold while holding the other three fixed and requiring the assembled output law to change. PrivateHOIFErrorDecomposition now takes all four named fold kernels and pins bias to h^gamma, nuisance/Gram/score/second to the corresponding canonical hoifFoldContribution, and third to k/(n eps h^d), so the nominal decomposition is not free. The anchored handle signature and clause-(g) conclusion are unchanged. Basic.lean recompiles without diagnostics."
+    },
+    "oeq:causal-dp-frontier": {
+      "lean_kind": "def",
+      "lean_name": "CausalDpFrontierQuestion",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "OPEN OEQ (kind openendedquestion, status to-prove; design decision d0_open_oeq_residuals leaves it as the acknowledged open problem for D0.5). -> lean_kind 'def': a named Prop that STATES the residual frontier question (two-sided sharp central-DP CATE rate + phase diagram over the full positive-density class). NOT a theorem, NOT a proof obligation, defer_tier:false, gate:false. EXCLUDED from the theorems manifest; NO theorem depends_on it. Mirrors CausalSmith.Stat.DoseResponseMinimax.fullBetaFrontierResidual / PolicyRegretMarginOverlap.FeasibleTightQuestion (Prop def, no proof). Its depends_on defs/lemmas are referenced inside the stated Prop, not proved from it."
+    },
+    "lem:dp-output-tv-contraction": {
+      "lean_kind": "lemma",
+      "lean_name": "dp_output_tv_contraction",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Minimax.TotalVariation",
+        "Causalean.Stat.Sample"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/DpContraction.lean",
+      "hyps": [
+        "ass:iid",
+        "ass:central-dp"
+      ],
+      "notes": "Crux (paper's own content, status proved). Hybrid/coupling argument: TV(L_{P^n}(M_n),L_{Q^n}(M_n)) <= n*TV(P,Q)*{exp(epsilon_n)-1+delta_n}. REUSE SCOPE OF Causalean.Stat.Minimax.TotalVariation IS ONLY `tvDist` (the TV functional as sup over measurable sets), plus abs_measureReal_sub_le_tvDist / one_sub_tvDist_le_test / tvDist_symm / tvDist_le_one - VERIFIED by grep of Causalean/Stat/Minimax/TotalVariation.lean; that module has NO post-processing / data-processing (DPI) / kernel-contraction theorem, so it is NOT cited for any DPI step. The DP->TV telescoping is build-inline NOVEL infrastructure: F3 proves, in THIS file, (a) an adjacent-dataset bound TV(K_D,K_{D'})<=b_n=exp(eps_n)-1+delta_n directly from ass:central-dp (both orientations of the DP inequality, over the tvDist sup), and (b) a LOCAL PROVED TV mixture/convexity+telescoping lemma `dp_tv_hybrid` (TV of a mixture over the n hybrid input-coupling is <= sum of per-record TVs, each <= TV(P,Q)*b_n via the coupling that agrees off a probability-TV(P,Q) event), assembled by the triangle inequality over the n hybrids. Both (a) and (b) are elementary tvDist manipulations, NOT reused from TotalVariation. i.i.d. product structure from Causalean.Stat.Sample. Search trace: grep 'contraction|hybrid|dataProcessing|post.?processing|DPI' in ../doc/API.md + Causalean/Stat/Minimax/TotalVariation.lean -> NOT FOUND; only tvDist/testing bounds present, so the composition lemma is define-local. hyps subset of depends_on (ass:iid, ass:central-dp)."
+    },
+    "lem:holder-point-l1-interpolation": {
+      "lean_kind": "assumption",
+      "lean_name": "holder_point_l1_interpolation",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "target_file": "Helpers/HolderInterpolation.lean",
+      "hyps": [
+        "def:holder-cate-class"
+      ],
+      "notes": "Crux (status proved). Kernel/Taylor moment-cancellation bump argument: int_{C_*}|g| >= c_H*|g(x_0)|^{1+d/gamma} for g=tau_P-tau_Q in the Holder ball. Build-inline; DIRECT analogue of CausalSmith.Stat.DoseResponseMinimax.Helpers.Witness.{BumpHolder,HolderAux} (same product-kernel-with-vanishing-moments construction) - adapt from that skeleton. hyps=[def:holder-cate-class] (bundles ass:tau-holder, the only assumption in depends_on). Search trace: bump-kernel interpolation exists only in the sibling DoseResponse module (not Causalean-promoted) -> define-local via analogue. SYNC-BACK (F2, scaffold redirect attempt 8): because this node is a registered gated substrate input, it is rendered as a Prop def rather than a sorry'd lemma; causal_dp_two_point_barrier takes the exact interpolation proposition as the explicit hypothesis holder_point_l1_interpolation_of_gate.",
+      "source": "classical analysis: multivariate local Hölder pointwise→L¹ interpolation via a moment-cancelling product kernel (Tsybakov-style); note lem:holder-point-l1-interpolation proof (writeup L190-194)"
+    },
+    "lem:private-regression-calibration-algebra": {
+      "lean_kind": "lemma",
+      "lean_name": "private_regression_calibration_algebra",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/RateAlgebra.lean",
+      "hyps": [],
+      "notes": "Crux (status proved). Pure real rate algebra: r_n^regDP asymp n^{-gamma/(2gamma+d)} v (n epsilon_n)^{-gamma/(gamma+d)} by bandwidth split at h_0,h_p. depends_on = {def:private-regression-calibration} only -> hyps=[]. Analogue: DoseResponseMinimax.Helpers.RateAlgebra + CausalSmith.Mathlib.RpowArith rpow identities (reusable at proof level). Search trace: rpow/sqrt helpers exist in CausalSmith.Mathlib.RpowArith; the calibration equivalence itself is define-local."
+    },
+    "lem:private-local-polynomial-upper-bound": {
+      "lean_kind": "lemma",
+      "lean_name": "private_local_polynomial_upper_bound",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Minimax.MinimaxRisk"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/PrivateUpperBound.lean",
+      "hyps": [
+        "def:holder-cate-class",
+        "ass:iid",
+        "ass:central-dp"
+      ],
+      "notes": "Crux (status proved) - HEAVIEST file (~300+ projected lines: armwise privatized local-polynomial estimator, Laplace-mechanism pure-DP release via l1-sensitivity Delta_h=C/(n h^d), Gram-matrix spectral projection, Holder-Taylor bias, variance + Laplace-noise decomposition, bandwidth optimization). Build-inline; the Laplace mechanism / sensitivity bound is novel (no DP substrate) but constructive. hyps: class bundles ass:overlap,ass:mu-holder,ass:local-density (all in depends_on); ass:iid, ass:central-dp direct; def:dp-minimax-risk is USED (the released mechanism instantiates the inf). Search trace: no local-polynomial/Laplace estimator in library; DoseResponse has no private upper bound -> fully define-local, sized to its own file. NOT Defer: complete proof_tex, standard construction. SYNC-BACK (F2, witness-identification directive): the existential witness M is IDENTIFIED (not anonymous) via a lightweight structural Prop `IsArmwisePrivatizedLocalPoly n beta r0 (eps n) M` (co-located in Helpers/PrivateUpperBound.lean, backed by a local `laplaceKernel` def) threaded as the first conjunct of the witness -- M is the clipped-to-[-2,2] difference of two armwise (a in {0,1}) local-poly intercept estimators theta0,theta1 (kernel-weighted degree m=ceil(beta)-1 moments) released by a Laplace mechanism with l1-sensitivity Delta_h=Cs/(n h^d) and noise scale Delta_h/eps_n, for some admissible bandwidth h in (0,r0]; construction params (h,Cs,m,theta0,theta1) existentially bound, non-degenerate. SYNC-BACK (F2, redirect attempt 3): (i) IsArmwisePrivatizedLocalPoly rebuilt to the paper construction — FULL degree-m multivariate monomial basis (expo multi-indices, completeness ∀r,∑r≤m→∃k), kernel lower bound Kmin on inner cube, and the JOINT Gram/moment Laplace release (laplaceVecKernel) + spectral projection (proj into Loewner set via PosSemidef) + solve + difference + clip (replacing ridge normal eq + scalar Laplace); (ii) rate constant C quantified OUTSIDE the budget sequences (∃ C, ∀ eps del, PrivacyBudget→∀ᶠn). Added imports Matrix.NonsingularInverse, Matrix.PosDef."
+    },
+    "lem:causal-oracle-private-lower-bound": {
+      "lean_kind": "lemma",
+      "lean_name": "causal_oracle_private_lower_bound",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Minimax.ChiSquared",
+        "Causalean.Stat.Minimax.TotalVariation"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/CausalLowerBound.lean",
+      "hyps": [
+        "def:holder-cate-class",
+        "ass:iid",
+        "ass:model-nonempty"
+      ],
+      "notes": "Crux (status proved) - HEAVY file (~300 projected lines: explicit causal two-point PO family with C-infty bump b_h, constant propensity e_0, mu_0=0 vs mu_1=b_h, membership verification in HolderCateClass, TV/Hellinger bounds, Hellinger tensorization H^2(P^n)<=n H^2(P), TV<=H, testing inequality; nonprivate branch h=cn^{-1/(2gamma+d)} and private branch via lem:dp-output-tv-contraction with h=c(n eps)^{-1/(gamma+d)}). RANDOMIZED-ESTIMATOR FIX (round 3): DROPPED the reuse of Causalean.Stat.Minimax.MinimaxRisk.iid_two_point_lower_bound. That lemma is stated for a DETERMINISTIC measurable estimator (Fin n -> S) -> R over event probabilities, whereas def:dp-minimax-risk binds M_n as a RANDOMIZED kernel (Markov map to Measure R); it cannot directly discharge the stated kernel/output-law expected-absolute-risk lower bound, and lifting it would need an unbuilt randomized-testing wrapper. Instead the two-point risk lower bound is built DIRECTLY on the OUTPUT LAWS via Causalean.Stat.Minimax.TotalVariation.one_sub_tvDist_le_test: for the release output laws L_{P_0^n}(M_n), L_{P_1^n}(M_n) on R and the test event T={M_n>=Delta_h/2}, one_sub_tvDist_le_test gives 1 - tvDist(L_{P_0^n}(M_n),L_{P_1^n}(M_n)) <= P_0(T) + P_1(T^c), so max_j E_{P_j}|M_n-tau_{P_j}(x_0)| >= (Delta_h/4){1 - tvDist(output laws)} -- no deterministic-estimator lemma needed. REUSE SCOPE OF Causalean.Stat.Minimax.TotalVariation IS ONLY `tvDist` + its testing bound `one_sub_tvDist_le_test` (VERIFIED clean/non-sorry; no DPI/post-processing theorem in that module). The 'post-processing cannot increase total variation' reduction (from the n-fold INPUT laws P_0^n,P_1^n to the output laws) is NOT taken from TotalVariation - F3 proves a LOCAL data-processing lemma `tvDist_map_le` (TV of pushforwards under a common measurable/Markov kernel <= TV of the inputs, from tvDist's sup-over-measurable-sets definition via preimage measurability) OR applies the testing bound after that reduction; either route is elementary and build-inline in this file, and both handle the RANDOMIZED M_n (the kernel bind commutes with the sup-over-sets TV). Other reuse: Causalean.Stat.Minimax.ChiSquared.tvDist_le_half_sqrt_chiSqDiv (VERIFIED clean); DIRECT analogue of DoseResponseMinimax.Helpers.{TwoPointConstruction,Witness/*}. hyps: class (bundles consistency,exchangeability,overlap,pi-holder,mu-holder,tau-holder,smoothness-order,local-density) + ass:iid + ass:model-nonempty (all in depends_on; the DP inf is baked into def:dp-minimax-risk, so ass:central-dp is not a hyp). Search trace: grep 'Hellinger|dataProcessing|post.?processing|tvDist_map|DPI|two_point' in ../doc/API.md + Causalean/Stat/Minimax/{TotalVariation,MinimaxRisk}.lean -> only tvDist/one_sub_tvDist_le_test/chiSqDiv testing bounds fit a RANDOMIZED kernel; iid_two_point_lower_bound is deterministic-estimator-only (does NOT fit) and the module has no Hellinger decl / DPI theorem; substitute chiSqDiv tensorization (CausalSmith.Mathlib.ProductChiSquared.one_add_chiSqDiv_pi_iid_general) and build the TV data-processing + Hellinger-tensorization helpers inline (F3 choice). NOT Defer: complete construction, sibling template. SYNC-BACK (F2, redirect attempt 3): two-point witnesses now carry IidSampling P0/P1np/P1priv, in-range estimand, and TV output-indistinguishability (non-private: product-law tvDist≤1/2; private: n{expε-1+δ}·tvDist≤1/2) connecting them to dpMinimaxRisk. SYNC-BACK (F2, redirect attempt 5): the FIXED construction data (c, bump scale cB, bump shape B, null law P0) is now quantified OUTSIDE the budget sequences and the eventual-n (∃ c cB B P0, [fixed-data conjuncts] ∧ ∀ eps del, PrivacyBudget → ∀ᶠ n, [∃ hnp hpriv P1np P1priv, …] ∧ risk-bound), so c/cB/B/P0 are chosen uniformly over the admissible privacy regime and cannot depend on the budget sequence or n; only the bandwidths hnp,hpriv and the alternatives P1np,P1priv remain n-dependent witnesses. Removed the eps/del/hbudget lemma params (now bound inside). Recompiled sorry-only."
+    },
+    "lem:certified-private-cate-bracket": {
+      "lean_kind": "lemma",
+      "lean_name": "certified_private_cate_bracket",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/Bracket.lean",
+      "hyps": [],
+      "notes": "Crux (status proved). Assembly: combines lem:causal-oracle-private-lower-bound (lower endpoint) and lem:private-local-polynomial-upper-bound (upper endpoint) into c{n^{-gamma/(2gamma+d)} v (n eps)^{-gamma/(gamma+d)}} <= R_n^DP <= C{n^{-beta/(2beta+d)} v (n eps)^{-beta/(beta+d)}}. depends_on = {def:dp-minimax-risk, lem:causal-oracle-private-lower-bound, lem:private-local-polynomial-upper-bound} - no assumption ids -> hyps=[] (class/iid/central-dp are internal to the constituent lemmas and to R_n^DP). Search trace: bespoke bracket, define-local. SYNC-BACK (F2, redirect attempt 3): constants quantified outside the budget sequences (∃ c C, ∀ eps del, PrivacyBudget→∀ᶠn) and literal c<C added."
+    },
+    "lem:equal-smoothness-sharp-private-rate": {
+      "lean_kind": "lemma",
+      "lean_name": "equal_smoothness_sharp_private_rate",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/Bracket.lean",
+      "hyps": [],
+      "notes": "Crux (status proved). Under the inline hypothesis beta=gamma: R_n^DP asymp n^{-gamma/(2gamma+d)} v (n eps)^{-gamma/(gamma+d)} asymp r_n^regDP, with kappa=gamma/(2gamma+d) and boundary epsilon_n asymp n^{-gamma/(2gamma+d)}. Combines lem:certified-private-cate-bracket (endpoints coincide at beta=gamma) + lem:private-regression-calibration-algebra + def:nonprivate-cate-rate kappa simplification. depends_on has no assumption ids -> hyps=[]; beta=gamma is an inline equality binder (not the ass:smoothness-order node). SYNC-BACK (F2): target_file moved from Helpers/RateAlgebra.lean to Helpers/Bracket.lean -- it depends on lem:certified-private-cate-bracket (in Bracket.lean), while Bracket's lem:equal-smoothness-regression-inheritance depends on THIS lemma; co-locating both in Bracket.lean avoids a RateAlgebra<->Bracket import cycle. RateAlgebra.lean now holds only lem:private-regression-calibration-algebra. Realized as `∃ c C > 0, ∀ᶠ n, (c*r_n^regDP ≤ R_n^DP ≤ C*r_n^regDP) ∧ nonprivateCateRate = n^{-gamma/(2gamma+d)}` (kappa simplification as an equality conjunct). SYNC-BACK (F2, redirect attempt 3): comparison constants quantified outside the budget sequences (∃ c C, ∀ eps del, PrivacyBudget→∀ᶠn); rate-identity + crossing clauses unchanged."
+    },
+    "thm:causal-dp-two-point-barrier": {
+      "lean_kind": "theorem",
+      "lean_name": "causal_dp_two_point_barrier",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Minimax.TotalVariation"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_CausalDpTwoPointBarrier.lean",
+      "hyps": [
+        "def:holder-cate-class",
+        "ass:iid",
+        "ass:central-dp"
+      ],
+      "notes": "Crux HEADLINE T-block (the run's only kind:'theorem'; the primary causal-privacy hardness result). Two parts: (i) arbitrary-pair TV lower bound TV(P,Q) >= c_TV*Delta^{1+d/gamma} via the arm-disintegration finite-measure inequality (needs ass:overlap+ass:local-density via class, ass:tau-holder via class, and lem:holder-point-l1-interpolation), then (ii) the DP two-point-method barrier via lem:dp-output-tv-contraction (needs ass:iid, ass:central-dp). hyps=[def:holder-cate-class, ass:iid, ass:central-dp] (class bundles overlap,tau-holder,local-density). Build-inline over Causalean.Stat.Minimax.TotalVariation.tvDist. Search trace: novel causal barrier, define-local; TV-testing scaffold reused. This is a proof-METHOD hardness theorem (fully provable), not an impossibility claim - genuine crux, not a gate. SYNC-BACK (F2, scaffold redirect attempt 8): both pairwise universal clauses now require IidSampling P and IidSampling Q, matching the standing observational-law/i.i.d. setup. The registered interpolation substrate gate is threaded explicitly as holder_point_l1_interpolation_of_gate."
+    },
+    "lem:equal-smoothness-regression-inheritance": {
+      "lean_kind": "lemma",
+      "lean_name": "equal_smoothness_regression_inheritance",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/Bracket.lean",
+      "hyps": [
+        "def:holder-cate-class"
+      ],
+      "notes": "Crux (status proved). Interpretive assembly at beta=gamma: the sharp full-class rate is regression-inherited (upper = clipped difference of two armwise private local-poly regressions; lower family fixes mu_0=0, constant propensity e_0, embeds a single pointwise-regression subproblem in mu_1; overlap/two-arm affect only constants). Combines lem:private-local-polynomial-upper-bound + lem:causal-oracle-private-lower-bound + lem:equal-smoothness-sharp-private-rate. hyps=[def:holder-cate-class] (bundles ass:overlap, the only assumption in depends_on). Search trace: bespoke comparison, define-local (co-located in Bracket.lean). SYNC-BACK (F2, redirect attempt 3): lower family now carries IidSampling P0/P1, in-range estimand, and the statistical-experiment reduction (n{expε-1+δ}·tvDist P0 P1≤1/2) linking the embedded one-server regression subproblem to dpMinimaxRisk; upper witness inherits the rebuilt monomial IsArmwisePrivatizedLocalPoly. SYNC-BACK (F2, scaffold redirect attempt 3): the lower witness was UPGRADED from a two-point CONSEQUENCE to the note's claimed STATISTICAL-EXPERIMENT EMBEDDING (reviewer: prior clauses gave no reduction/map from a one-server regression experiment, no replacement-adjacency preservation, no control-arm identification). Added to the lower ∃ block an explicit measurable REDUCTION MAP Φ:((Fin d→ℝ)×ℝ)→CateObs d and a one-server regression experiment (rho0,rho1) with a shared control law Lctrl, asserting: (i) Φ embeds a regression obs (x,y) as a TREATED obs (A=1,X=x,Y=y) and P0/P1.dataMeasure = e0·(rhoj.map Φ) + (1-e0)·Lctrl (only rho0↦rho1 differs — the embedded μ0=0 vs μ1=bump regression subproblem); (ii) CONTROL-ARM IDENTIFICATION: Lctrl is the SAME measure in both displays and supported on {A=0} (carries no distinguishing information); (iii) PRESERVATION OF REPLACEMENT ADJACENCY under the coordinatewise Φ. Bracket.lean recompiled sorry-only (3 sorry warnings). SYNC-BACK (F2, scaffold redirect attempt 4): the SINGLE lower witness (P0,P1) was SPLIT into a shared null P0 plus SEPARATE non-private / private alternatives P1np, P1priv (mirroring causal_oracle_private_lower_bound), because one pair cannot simultaneously carry the full regression-calibration separation AND the DP-TV budget (inconsistent at eps_n=1, where overlap/Holder interpolation forces product-TV growth). P1np: product-TV closeness tvDist(P0^n,P1np^n)<=1/2 with non-private separation c*n^{-gamma/(2gamma+d)}; P1priv: DP TV-contraction n{exp eps -1+del}*tvDist(P0,P1priv)<=1/2 with private separation c*(n eps)^{-gamma/(gamma+d)}. The statistical-experiment embedding (Phi reduction map, control-arm identification, replacement-adjacency preservation) now applies to the private pair (P0 -> P1priv). Bracket.lean recompiled sorry-only. SYNC-BACK (F2, scaffold redirect attempt 8): the private-pair witness statement now actually includes the previously documented experiment embedding: measurable treated-observation map Φ, probability regression laws ρ0/ρ1, a shared probability control law supported on A=0, the two e0-mixture identities for P0/P1priv, and coordinatewise preservation of replacement adjacency. The existing proof is preserved; only this genuinely new embedding obligation is sorry'd. ORCHESTRATOR FIX (F2.5 re-entry, embedding DISCHARGED): the embedding obligation is now PROVEN, not sorry'd. Root cause of the 8 failed scaffold redirects: the conjuncts were unprovable because causal_oracle_private_lower_bound's existential HIDES the construction (it exposes only field-level facts mu0=0/pi=e0/PX/px, which do not imply identical control-arm LAWS or any measurable reduction). New substrate: Helpers/RegressionEmbedding.lean (regToTreated + adjacency preservation; cateWitnessRegressionLaw with IsRegressionFn E[Z|X]=b; the b-FREE cateWitnessControlLaw supported on {A=0}; and cateWitnessLaw_dataMeasure_mixture) and causal_oracle_private_lower_bound_witness in Helpers/CausalLowerBound.lean (same lower bound, but Q/bnp/bp EXPOSED so the laws are literal cateWitnessLaw applications). equal_smoothness_regression_inheritance now obtains from the _witness form and discharges Phi/Lctrl/rho0/rho1 + both mixture identities. DO NOT re-sorry this block and DO NOT revert to the plain (non-witness) lower bound — those goals are unprovable from it."
+    },
+    "lem:arm-disintegration-tv-lower": {
+      "lean_kind": "assumption",
+      "lean_name": "lem:arm-disintegration-tv-lower",
+      "source": "classical measure theory: arm-disintegration finite-measure TV lower bound. TV(P,Q) >= (e0 f0/4) * L1 mass of the CATE contrast on the localization cube, via regular-conditional disintegration over (A,X) + signed-measure variation. Reusable Tsybakov/Assouad two-point primitive absent from Mathlib (no sup-events-TV <-> fiberwise-signed-variation bridge).",
+      "disposition": "define-local"
+    },
+    "lem:explicit-private-local-poly-witness": {
+      "lean_kind": "assumption",
+      "lean_name": "lem:explicit-private-local-poly-witness",
+      "disposition": "define-local"
+    }
+  },
+  "file_plan": [
+    {
+      "file": "Basic.lean",
+      "contains": "S1/S2/S3 worlds (CateObs/CateLaw + DP overlay + RegimeConstants; standard-convention Holder ball `HolderBallStd` DEFINE-LOCAL here, NOT reused from HolderBallND), all 11 assumption defs (the pi/mu/tau-holder atoms instantiate the define-local HolderBallStd), def:holder-cate-class structure, def:dp-minimax-risk, def:nonprivate-cate-rate, def:private-regression-calibration, def:causal-private-frontier-handle, oeq CausalDpFrontierQuestion Prop",
+      "bypass_survey": "Causalean.PO.* / Causalean.Estimation.MinimaxATE.Model bypass-justified (graph-indexed PO skeleton and finite-covariate PMF world heavier than the continuous [0,1]^d Measure world; keep consistency+exchangeability as threaded Props) - SAME justification as sibling DoseResponseMinimax; Causalean.Stat.Sample.IIDSample REUSED inside IidSampling. CONVENTION FIX (round 3): CausalSmith.Stat.DoseResponseMinimax.HolderBallND is NOT reused (floor(order) convention = 0-exponent condition at integer smoothness, disagrees with the core's standard ceil(s)-1 C^{s-1,1} convention); `HolderBallStd` is define-local (iteratedFDeriv up to ceil(order)-1, k-th derivative (order-k)-Holder with exponent in (0,1])."
+    },
+    {
+      "file": "Helpers/DpContraction.lean",
+      "contains": "lem:dp-output-tv-contraction",
+      "bypass_survey": "reuse ONLY Causalean.Stat.Minimax.TotalVariation.tvDist + testing bounds (that module has no DPI/post-processing theorem); the adjacent-dataset TV bound and the TV mixture/hybrid-telescoping composition are LOCAL proved lemmas build-inline (no DP substrate)."
+    },
+    {
+      "file": "Helpers/HolderInterpolation.lean",
+      "contains": "lem:holder-point-l1-interpolation",
+      "bypass_survey": "adapt DoseResponseMinimax.Helpers.Witness.{BumpHolder,HolderAux} bump-kernel construction (sibling, not Causalean-promoted)."
+    },
+    {
+      "file": "Helpers/RateAlgebra.lean",
+      "contains": "lem:private-regression-calibration-algebra (SYNC-BACK: lem:equal-smoothness-sharp-private-rate moved to Helpers/Bracket.lean to avoid an import cycle)",
+      "bypass_survey": "reuse CausalSmith.Mathlib.Analysis.RpowArith rpow identities; rate equivalences build-inline."
+    },
+    {
+      "file": "Helpers/PrivateUpperBound.lean",
+      "contains": "lem:private-local-polynomial-upper-bound",
+      "bypass_survey": "Laplace mechanism + local-polynomial fully build-inline over Mathlib (no library estimator); def:dp-minimax-risk instantiated. Heaviest file."
+    },
+    {
+      "file": "Helpers/CausalLowerBound.lean",
+      "contains": "lem:causal-oracle-private-lower-bound",
+      "bypass_survey": "reuse Causalean.Stat.Minimax.{ChiSquared.tvDist_le_half_sqrt_chiSqDiv, TotalVariation.tvDist + one_sub_tvDist_le_test} + CausalSmith.Mathlib.ProductChiSquared tensorization; adapt DoseResponseMinimax two-point/Witness skeleton. RANDOMIZED-ESTIMATOR FIX (round 3): MinimaxRisk.iid_two_point_lower_bound is NOT reused (deterministic-estimator-only; does not fit the randomized kernel M_n) -- the two-point risk lower bound is built directly on the output laws via one_sub_tvDist_le_test. TotalVariation contributes NO DPI theorem, so the TV data-processing (post-processing) step and Hellinger tensorization are LOCAL proved helpers build-inline (or the testing bound is applied to the input laws pre-map, then the kernel bind commutes with the sup-over-sets TV)."
+    },
+    {
+      "file": "Helpers/Bracket.lean",
+      "contains": "lem:certified-private-cate-bracket, lem:equal-smoothness-sharp-private-rate (SYNC-BACK moved here from RateAlgebra.lean), lem:equal-smoothness-regression-inheritance",
+      "bypass_survey": "pure assembly of the upper/lower helpers + RateAlgebra; no substrate."
+    },
+    {
+      "file": "T_CausalDpTwoPointBarrier.lean",
+      "contains": "thm:causal-dp-two-point-barrier (headline T-block)",
+      "bypass_survey": "reuse Causalean.Stat.Minimax.TotalVariation.tvDist + local helpers DpContraction/HolderInterpolation."
+    }
+  ]
+}

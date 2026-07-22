@@ -1,0 +1,461 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=q1\_spectral\_phase\_transition, specialization=p1\_markov
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `tools/thmsmith/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to a Q1..Q6 pool-mode,
+%    reproduce that block verbatim from
+%    `doc/ThmSmith/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    If it is a free-form `(qid, specialization)`, define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{q1\_spectral\_phase\_transition} / \texttt{p1\_markov}%
+  \\ \large\textit{Spectral-rank phase transitions for Markov history TWFE dynamic ATT identification}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Chosen convention:
+\begin{verbatim}
+qid = q1_spectral_phase_transition
+specialization = p1_markov
+p = 1
+assignment = stationary two-state first-order Markov treatment path with
+  transition probabilities a_T = Pr(D_t=1 | D_{t-1}=0) and
+  b_T = Pr(D_t=0 | D_{t-1}=1), spectral gap gamma_T = a_T+b_T,
+  stationary switch flow phi_T = a_T*b_T/(a_T+b_T).  The path law is
+  stationary for D_{i,1},...,D_{i,T}; D_{i,0}=0 is a synthetic lag used
+  only to classify H_{i,1}.
+target = dynamic switch-on ATT profile tau_on,t = m_t(01)-m_t(00),
+  plus its finite linear aggregates ell' tau_on over event/calendar times.
+regression = Q1 saturated-clean TWFE/FWL regression with unit and time
+  fixed effects, target regressor R=1{H=(0,1)}, and nuisance basis
+  B=(1{H=(1,0)}, 1{H=(1,1)}); singular regimes use the observed-moment
+  affine-fiber and bounded-response partial-identification convention
+  stated in the bounded-response assumption.
+\end{verbatim}
+
+\begin{abstract}
+This proposal asks whether dynamic switch-on ATT functionals in a Markov treatment-history panel have a sharp spectral frontier: above the regular-information threshold the FWL moment system point-identifies the target, on the frontier it identifies only a projection plus bounded slack, and below the frontier the target is not identified without shape restrictions.
+The proposed kernel is not the already-refuted claim that negative FWL weights are determined by the sign of the Markov eigenvalue.
+Instead, it is a rank/support claim: the spectral gap and the stationary switch flow jointly control the smallest singular direction of the residualized history-design Gram matrix.
+The flagship statement is therefore a Conjecture, with a routine algebraic Theorem giving the exact point/partial/non-identification trichotomy once the limiting Gram matrix is known.
+If resolved, the result would turn the existing Q1 minimal-basis and spectral-threshold algebra into a Lean-formalizable identification frontier for dynamic ATT formula design under persistent treatment paths.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Modern staggered and dynamic DiD methods have clarified that TWFE coefficients can be contaminated by heterogeneous and dynamic effects, but the literature usually treats support and rank as static design conditions.
+In Markov treatment panels, support is a moving object: a persistent chain can make switch-on histories statistically thin even when every transition has positive probability, and the FWL residualized design may approach a singular limit.
+The methodological question is whether this thinning has a theorem-level phase transition for dynamic ATT identification, rather than merely producing unstable estimates.
+
+\paragraph{The main finding (proposed).}
+The headline result is Conjecture~\ref{conj:spectral-frontier}: for the Q1 saturated-clean switch-on regression, the limiting regular identified content is determined by a thresholded singular subspace of the residualized history Gram matrix, whose smallest singular direction is controlled by the spectral gap \(\gamma_T=a_T+b_T\) together with the switch flow \(\phi_T=a_Tb_T/(a_T+b_T)\).
+The proposed phase diagram has three regimes: threshold-retained local row rank gives regular point identification of the dynamic ATT aggregate, thresholded rank loss with the target partly in the retained row space gives a lower-dimensional point-identified projection and bounded partial identification of the full target, and loss of the target row from the retained space gives non-identification without response bounds.
+
+\paragraph{What is new.}
+The closest in-repository thread, \texttt{Q1\_SpectralThreshold}, studies whether signs of FWL switch-on weights lock to the Markov eigenvalue and records counterexamples to that sign-threshold idea.
+This proposal deliberately changes the object from sign to identified row space.
+The novelty kernel is the claim that a spectral/mixing parameter changes the dimension of the threshold-retained estimable dynamic ATT basis, and therefore changes the minimal regular FWL basis itself, rather than merely changing the signs of weights inside a fixed estimand.
+
+\paragraph{How it positions in the literature.}
+The proposal sits between TWFE decomposition papers, robust staggered-DiD estimators, design-based staggered rollout work, and partial-identification sensitivity analysis.
+It borrows the FWL and negative-weight diagnostic viewpoint from \citet{dechaisemartin2020twfe}, \citet{goodmanbacon2021timing}, and \citet{sunabraham2021eventstudy}, but it asks a different question from their fixed-support decompositions.
+It is also adjacent to \citet{borusyak2024eventstudy} because imputation identification is a row-span condition, to \citet{han2021dynamic} because dynamic-treatment identification is the closest nonparametric comparison, and to \citet{rambachan2023parallel} because the weak-support regime is explicitly partial/weak identification rather than a failed point estimate.
+\citet{bojinov2021panel}, \citet{bojinov2023switchback}, and \citet{hu2022switchback} are direct serial-assignment comparisons: they study dynamic causal effects and switchback designs under persistence or carryover, while this proposal asks for the TWFE/FWL singular-value frontier that determines which dynamic ATT rows remain regularly visible.
+\citet{dechaisemartin2024intertemporal} is the closest nonabsorbing and lagged-treatment DiD comparison: it studies estimators for intertemporal treatment effects when treatment can switch, but it does not state a Markov spectral row-rank frontier for the TWFE/FWL history design.
+For the generic identified-set layer, the proposal relies on the older partial-identification tradition of \citet{manski2003partial} and \citet{tamer2010partial}; the novelty claim is not that affine-fiber bounds are new, but that the Markov spectral rank frontier tells us when those bounds are forced for dynamic ATT.
+
+\section{Related work}
+\citet{dechaisemartin2020twfe} show that TWFE regressions with group and period fixed effects estimate weighted sums of group-time effects and that weights can be negative; this proposal keeps the weighted-sum/FWL lens but studies rank loss rather than negative signs.
+\citet{dechaisemartin2024intertemporal} develop DiD estimators for intertemporal treatment effects in nonabsorbing designs with lagged treatments; the present proposal is adjacent but different because it asks when a Markov-modulated TWFE/FWL history moment map changes rank.
+\citet{goodmanbacon2021timing} decomposes staggered-timing DiD into two-by-two comparisons; the present proposal asks when Markov history support removes entire comparison directions.
+\citet{sunabraham2021eventstudy} show that event-study leads and lags can be contaminated by other relative-period effects under absorbing timing; this motivates a dynamic ATT target but does not give a spectral support frontier.
+\citet{callaway2021multiple} identify group-time ATT parameters under staggered adoption and parallel trends; the proposed frontier can be read as an algebraic support diagnostic for when analogous history-time ATT components are visible.
+\citet{borusyak2024eventstudy} derive a robust imputation estimator whose feasibility depends on predicting untreated potential outcomes from observed untreated cells; the row-span part of Theorem~\ref{thm:rank-trichotomy} is the FWL analogue of that imputation support condition.
+\citet{bojinov2021panel} analyze dynamic causal effects in panel experiments and note that conventional fixed-effect estimators need not recover causally interpretable estimands under serially correlated assignment; this proposal targets the serial-correlation boundary directly.
+\citet{bojinov2023switchback} derive optimal switchback designs under carryover assumptions; the present proposal differs by treating Markov persistence as an identification frontier for TWFE/FWL history rows rather than as a design-optimization problem.
+\citet{hu2022switchback} study switchback experiments in geometrically mixing Markovian systems and show that carryover can slow estimation rates; this is a close warning that mixing affects information, but it does not formulate a row-space phase transition for dynamic ATT.
+\citet{han2021dynamic} develops nonparametric identification results for dynamic treatment effects under period-by-period exclusion restrictions and a behavioral choice framework; the present proposal differs by fixing a Markov treatment-path law and asking when TWFE/FWL history moments lose regular identifying information through a spectral support frontier.
+\citet{athey2022design} take a design-based view of staggered adoption under random assignment of adoption dates; the proposed Markov law replaces random dates with a transition kernel whose spectral gap can collapse switch support.
+\citet{rambachan2023parallel} give partial-identification tools when exact parallel trends is relaxed; the proposed middle regime is likewise a deliberate partial-identification object, but the source of partiality is history support/rank rather than trend deviation.
+\citet{manski2003partial} develops the identified-set viewpoint used whenever the response surface is only constrained by observed implications and maintained bounds; this proposal uses that logic only after the Markov design loses row rank.
+\citet{tamer2010partial} surveys econometric partial identification and the role of sharp identified sets; Theorem~\ref{thm:rank-trichotomy} follows that generic logic while assigning the source of incompleteness to a concrete FWL/Markov rank defect.
+\citet{athey2021matrix} allow time-series dependence in missingness patterns for causal panel matrix completion; their missingness concern is closely related to the Markov visible-history problem, though their target is counterfactual outcome imputation rather than minimal TWFE history bases.
+In the repository, \texttt{AutoID/Panel/Theorems/Q1\_MinimalBasis.lean} proves the first-order clean basis substrate, \texttt{Q1\_StaggeredMinimalBasis.lean} proves a cohort-period analogue, and \texttt{Q1\_SpectralThreshold/*.lean} formalizes the Markov FWL sign-threshold refutation and long-\(T\) positive-weight limit.
+The API entries for \texttt{PO/Analysis/Residualization.lean}, \texttt{UniformTwoWayPanel.lean}, and \texttt{Identification/PartialID/Basic.lean} provide the FWL, finite-panel, and partial-identification infrastructure that this proposal would reuse.
+
+\section{Formal setup}
+There are units \(i=1,\ldots,N\) and periods \(t=1,\ldots,T\).
+Treatment is binary and the first-order history is \(H_{it}=(D_{i,t-1},D_{it})\), with \(D_{i0}=0\) used as a synthetic lag for the first observed period only.
+Let \(\mathcal H_1=\{00,01,10,11\}\), \(C_h=\one\{H=h\}\), and \(R=C_{01}\).
+Potential outcomes have finite memory \(p=1\), so \(Y_{it}=Y_{it}(H_{it})\), and \(m_t(h)=\E[Y_{it}(h)]\) denotes the population mean response.
+The untreated TWFE baseline is conditional on the realized treatment path, while the \(m_t(h)\) notation is unconditional; in particular \(m_t(00)=\E[\alpha_i]+\lambda_t\) under Assumption~\ref{ass:untreated-twfe}.
+The switch-on dynamic ATT component is \(\tau^{\mathrm{on}}_t=m_t(01)-m_t(00)\), and a target aggregate is \(\theta_\ell=\sum_t \ell_t\tau^{\mathrm{on}}_t\).
+Here \(\ell\in\mathbb R^T\) is only a calendar loading.
+The spectral-localization statements are made only for nonzero \(\ell\); if \(\ell=0\), then \(\theta_\ell=0\) is trivially point identified and the sets \(S(\ell)\), \(\mathcal I_K(\ell)\), and the projectors below are not invoked.
+The corresponding response-surface target row is \(\widetilde\ell\in\mathbb R^{4T}\), with entries \(\widetilde\ell_{t,01}=+\ell_t\), \(\widetilde\ell_{t,00}=-\ell_t\), and \(\widetilde\ell_{t,10}=\widetilde\ell_{t,11}=0\).
+For asymptotic spectral statements, \(\ell\) abbreviates a triangular loading array \((\ell_T)_{T\ge1}\), \(\ell_T\in\mathbb R^T\), with a fixed finite support template: there are \(T_0\), a nonempty finite set \(S_0\subset\mathbb N\), and fixed nonzero coordinates \((\ell_s)_{s\in S_0}\) such that \(S(\ell_T)=S_0\) and \((\ell_T)_s=\ell_s\) for all \(s\in S_0\) once \(T\ge T_0\), with all other coordinates zero.
+All local sets and rows in the asymptotic statements are formed from \(\ell_T\); the constants in Conjecture~\ref{conj:spectral-frontier} may depend on the fixed loading template as well as on \(K\), but not on \(T\).
+
+The assignment process is a two-state first-order Markov chain whose observed coordinates \(D_{i1},\ldots,D_{iT}\) have the stationary law with transition matrix
+\[
+M_T=\begin{pmatrix}1-a_T&a_T\\ b_T&1-b_T\end{pmatrix},
+\qquad
+\gamma_T=a_T+b_T,\qquad
+\rho_T=1-\gamma_T,\qquad
+\phi_T=\frac{a_Tb_T}{a_T+b_T}.
+\]
+The regression is the saturated-clean Q1 TWFE regression
+\[
+Y_{it}=\alpha_i+\lambda_t+\beta R_{it}+\eta_{10}C_{10,it}+\eta_{11}C_{11,it}+u_{it}.
+\]
+Let \(X_T\) be the residualized history design after projecting \((R,C_{10},C_{11})\) on unit and time fixed effects, \(G_T=\E[X_T^\transpose X_T]\), and \(A_T=\E[X_T^\transpose \Phi_T]\), where \(\Phi_T\) is the vector of history-time cell indicators for the response surface.
+Let \(m\in\mathbb R^{4T}\) be the response-surface vector, \(z_T=A_Tm\) the observed FWL moment vector, and \(\mathcal F_T(z)=\{m':A_Tm'=z,\ L\le m'_{t,h}\le U\}\) the bounded affine fiber used in partial-identification statements.
+The FWL estimable linear functionals are the row space generated by \(A_T\), with \(G_T\) determining which coefficient directions are regular.
+For a fixed nonzero calendar loading \(\ell\), let \(S(\ell)=\{s:\ell_s\ne0\}\).
+Throughout the spectral frontier statements, the horizon \(K\) is a positive integer, \(K\ge1\).
+Define the calendar-window index set
+\[
+\mathcal I_K(\ell)=\{(t,h): h\in\{00,01,10,11\},\ \min_{s\in S(\ell)} |t-s|\le K\}.
+\]
+This definition uses calendar distance only; it does not treat reversible Markov paths as having a unique absorbing event time.
+Let \(P_{K,\ell}\) be the coordinate projection from \(\mathbb R^{4T}\) onto \(\mathbb R^{\mathcal I_K(\ell)}\), let \(\bar\Phi_T\) be the full cell-indicator design residualized on unit and time fixed effects, and let \(\Gamma_T=\E[\bar\Phi_T^\transpose \bar\Phi_T]\).
+The local residualized cell Gram matrix is \(\widetilde \Gamma_{T,K,\ell}=P_{K,\ell}\Gamma_TP_{K,\ell}^\transpose\), its smallest positive singular value is \(\sigma_{\min}^+(\widetilde \Gamma_{T,K,\ell})\), and \(f_T(K)=T\phi_T(1-\rho_T^K)\).
+When \(f_T(K)>0\), the normalized local cell Gram matrix is \(\widehat \Gamma_{T,K,\ell}=\widetilde \Gamma_{T,K,\ell}/f_T(K)\).
+Define the local FWL moment map \(A_{T,K,\ell}=A_TP_{K,\ell}^{\transpose}\), viewed as a linear map from local response-surface coordinates \(\mathbb R^{\mathcal I_K(\ell)}\) to residualized moments, and define the exact finite-population row space
+\[
+\mathcal V_{T,K,\ell}=\operatorname{Row}(A_{T,K,\ell}),\qquad
+\Pi_{T,K,\ell}=\text{the orthogonal projector onto }\mathcal V_{T,K,\ell}.
+\]
+A regular-information threshold is a deterministic sequence \(\kappa_T(K)>0\) chosen along the asymptotic regime, and \(g_T(K)=f_T(K)/\kappa_T(K)\) is the effective information ratio.
+Let \(\mathcal V^{\mathrm{reg}}_{T,K,\ell}\) be the span of those local FWL singular directions whose corresponding singular values of \(\widetilde \Gamma_{T,K,\ell}\) exceed \(\kappa_T(K)\), and let \(\Pi^{\mathrm{reg}}_{T,K,\ell}\) be the orthogonal projector onto \(\mathcal V^{\mathrm{reg}}_{T,K,\ell}\).
+A limiting regular visible-history row space is a subspace \(\mathcal V^{\mathrm{reg}}_{\infty,K,\ell}\) whose orthogonal projector \(\Pi^{\mathrm{reg}}_{\infty,K,\ell}\) is the operator-norm limit of \(\Pi^{\mathrm{reg}}_{T,K,\ell}\) along the sequence under study.
+Exact row spaces \(\mathcal V_{T,K,\ell}\) are still used for finite-population point identification; the thresholded projector records which directions retain regular asymptotic information.
+The lifted local target row is \(\widetilde\ell_{K}=P_{K,\ell}\widetilde\ell\), with regular identified projection \(\Pi^{\mathrm{reg}}_{\infty,K,\ell}\widetilde\ell_K\) and residual row \((I-\Pi^{\mathrm{reg}}_{\infty,K,\ell})\widetilde\ell_K\).
+For Conjecture~\ref{conj:minimal-basis-change}, \(N_{K,\ell}\) denotes the local nuisance coordinate subspace generated by the \(10\) and \(11\) coordinates in \(\mathcal I_K(\ell)\), and \(\mathcal N^{\mathrm{reg}}_{\infty,K,\ell}=N_{K,\ell}\cap\ker(\Pi^{\mathrm{reg}}_{\infty,K,\ell})\) is the limiting regular nuisance null space.
+When \(\dim \mathcal N^{\mathrm{reg}}_{\infty,K,\ell}=1\), the collapsing nuisance contrast \(v_{K,\ell}\) is the unique unit vector spanning \(\mathcal N^{\mathrm{reg}}_{\infty,K,\ell}\) whose first nonzero coordinate in the lexicographic \((t,h)\) order is positive, and the quotient map is \(Q_{K,\ell}:N_{K,\ell}\to N_{K,\ell}/\operatorname{span}\{v_{K,\ell}\}\).
+
+Locked parameters for Stage 0:
+\begin{verbatim}
+qid = q1_spectral_phase_transition
+specialization = p1_markov
+p = 1
+assignment = stationary two-state first-order Markov treatment path with
+  transition probabilities a_T = Pr(D_t=1 | D_{t-1}=0) and
+  b_T = Pr(D_t=0 | D_{t-1}=1), spectral gap gamma_T = a_T+b_T,
+  stationary switch flow phi_T = a_T*b_T/(a_T+b_T).  The path law is
+  stationary for D_{i,1},...,D_{i,T}; D_{i,0}=0 is a synthetic lag used
+  only to classify H_{i,1}.
+target = dynamic switch-on ATT profile tau_on,t = m_t(01)-m_t(00),
+  plus its finite linear aggregates ell' tau_on over event/calendar times.
+regression = Q1 saturated-clean TWFE/FWL regression with unit and time
+  fixed effects, target regressor R=1{H=(0,1)}, and nuisance basis
+  B=(1{H=(1,0)}, 1{H=(1,1)}); singular regimes use the observed-moment
+  affine-fiber and bounded-response partial-identification convention
+  stated in the bounded-response assumption.
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Finite memory and no anticipation]\label{ass:finite-memory}
+For every \(i,t\), observed outcomes satisfy \(Y_{it}=Y_{it}(H_{it})\); no future treatment appears in \(H_{it}\).
+\end{assumption}
+
+\begin{assumption}[Untreated TWFE baseline]\label{ass:untreated-twfe}
+For the all-zero history, \(\E[Y_{it}(00)\mid D_i]=\alpha_i+\lambda_t\).
+\end{assumption}
+
+\begin{assumption}[Mean-random Markov assignment]\label{ass:markov-assignment}
+For each \(T\), treatment paths are iid across units, and the observed path \(D_{i1},\ldots,D_{iT}\) is stationary first-order Markov within unit with parameters \(a_T,b_T\in(0,1)\).
+The convention \(D_{i0}=0\) is not an initial draw from this law; it is a synthetic lag used only to define \(H_{i1}\).
+For every history \(h\ne00\), the history effect relative to the untreated baseline is mean-random with respect to the full treatment path:
+\[
+\E\!\left[Y_{it}(h)-Y_{it}(00)\mid D_i\right]=m_t(h)-m_t(00).
+\]
+For \(h=00\), the conditional mean is governed by Assumption~\ref{ass:untreated-twfe} rather than by this mean-random effect restriction.
+\end{assumption}
+
+\begin{assumption}[Residualized design objects]\label{ass:fwl-objects}
+The matrices \(X_T\), \(G_T\), and \(A_T\) are the population FWL objects defined in Section 6, using unit and time fixed effects plus the nuisance cells \(C_{10},C_{11}\).
+The observed moment vector is \(z_T=A_Tm\), where \(m\) is the response-surface vector.
+Population FWL coefficients satisfy the normal equations \(G_T\beta_T=z_T\); when \(G_T\) is nonsingular, the observed coefficient vector and known design Gram recover \(z_T=G_T\beta_T\).
+When \(G_T\) is singular, coefficient vectors are interpreted only through the moment components \(z_T\) that lie in \(\operatorname{Col}(G_T)\); \(\operatorname{Row}(A_T)\) denotes the finite-dimensional row space of identified response-surface functionals.
+\end{assumption}
+
+\begin{assumption}[Asymptotic spectral regime]\label{ass:spectral-regime}
+Along a sequence \(T\to\infty\), \(\gamma_T=a_T+b_T\), \(\rho_T=1-\gamma_T\), and \(\phi_T=a_Tb_T/(a_T+b_T)\) are such that \(f_T(K)=T\phi_T(1-\rho_T^K)\) is well-defined for each fixed positive horizon \(K\ge1\), and the normalized local cell Gram matrices \(\widehat \Gamma_{T,K,\ell}\) from Section 6 have finite limiting singular-value envelopes for every fixed nonzero calendar loading \(\ell\).
+Here ``fixed nonzero calendar loading'' means the finite-support triangular loading array convention from Section 6; constants in envelope bounds may depend on that fixed template.
+The threshold \(\kappa_T(K)\) is part of the regular-information convention; the three regimes in Conjecture~\ref{conj:spectral-frontier} are stated in terms of \(g_T(K)=f_T(K)/\kappa_T(K)\), not the exact finite-\(T\) row rank.
+\end{assumption}
+
+\begin{assumption}[Calendar-window localization]\label{ass:calendar-window}
+For each nonzero calendar loading \(\ell\) and fixed positive horizon \(K\ge1\), local spectral statements use the lifted response-surface row \(\widetilde\ell\), the local lifted row \(\widetilde\ell_K=P_{K,\ell}\widetilde\ell\), the calendar-window projection \(P_{K,\ell}\), local Gram matrix \(\widetilde \Gamma_{T,K,\ell}\), normalized matrix \(\widehat \Gamma_{T,K,\ell}\), local moment map \(A_{T,K,\ell}\), exact row space \(\mathcal V_{T,K,\ell}\), exact projector \(\Pi_{T,K,\ell}\), threshold \(\kappa_T(K)\), regular row space \(\mathcal V^{\mathrm{reg}}_{T,K,\ell}\), regular projectors \(\Pi^{\mathrm{reg}}_{T,K,\ell}\) and \(\Pi^{\mathrm{reg}}_{\infty,K,\ell}\), nuisance subspace \(N_{K,\ell}\), limiting regular nuisance null space \(\mathcal N^{\mathrm{reg}}_{\infty,K,\ell}\), collapsing contrast \(v_{K,\ell}\), and quotient map \(Q_{K,\ell}\) defined in Section 6.
+\end{assumption}
+
+\begin{assumption}[Gram-to-FWL row bridge]\label{ass:gram-fwl-bridge}
+For each fixed positive horizon \(K\ge1\) and nonzero calendar loading \(\ell\), the nonzero singular subspaces of \(\widetilde \Gamma_{T,K,\ell}\) corresponding to switch-flow coordinates are exactly the singular subspaces of the local FWL moment map \(A_{T,K,\ell}\) after the deterministic aggregation from local cell indicators to the saturated-clean regressors \((R,C_{10},C_{11})\).
+Equivalently, the lifted local target row \(\widetilde\ell_K\) belongs to \(\mathcal V_{T,K,\ell}\) if and only if it is orthogonal to the local null space detected by \(\widetilde \Gamma_{T,K,\ell}\), and rank drops of \(\widetilde \Gamma_{T,K,\ell}\) induce the same rank drops in \(A_{T,K,\ell}\) for switch-on and nuisance-history contrasts.
+The regular-information projectors \(\Pi^{\mathrm{reg}}_{T,K,\ell}\) are obtained from these shared singular directions by retaining only directions whose singular values exceed \(\kappa_T(K)\).
+\end{assumption}
+
+\begin{assumption}[Stationary share balance]\label{ass:share-balance}
+For the point-identification side of the frontier, the stationary treatment share \(\pi_T=a_T/(a_T+b_T)\) stays in \([\varepsilon,1-\varepsilon]\) for some \(\varepsilon>0\) independent of \(T\).
+\end{assumption}
+
+\begin{assumption}[Bounded response class]\label{ass:bounded-response}
+For partial-identification statements, there are known constants \(L<U\) such that \(L\le m_t(h)\le U\) for every \(t,h\).
+When this assumption is not imposed, any response-surface component outside the identified row space is unrestricted.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: FWL row-space identification trichotomy]\label{thm:rank-trichotomy}
+Under Assumptions~\ref{ass:finite-memory}--\ref{ass:fwl-objects}, fix a finite \(T\) or a limiting moment system with well-defined \(A\) and \(G\).
+Let \(m\in\mathbb R^d\) be the response-surface vector, \(z=Am\in\mathbb R^r\) the observed FWL moment vector, and \(\ell\in\mathbb R^d\) the vector representing \(\theta_\ell=\ell^\transpose m\).
+Let \(\beta\in\mathbb R^r\) denote a population FWL coefficient vector satisfying the normal equations when such a vector exists.
+If \(G\) is nonsingular and \(\ell\in\operatorname{Row}(A)\), then the FWL normal equations give \(G\beta=z\); hence the observed coefficient vector together with the known design Gram recovers \(z\), and any \(q\in\mathbb R^r\) with \(q^\transpose A=\ell^\transpose\) point-identifies \(\theta_\ell=q^\transpose z=q^\transpose G\beta\).
+If \(G\) is singular but the regular coefficient equations still identify the same moment vector \(z=Am\) on the column space of \(G\), then the identical row-space criterion applies: every \(\ell\in\operatorname{Row}(A)\) is point identified by \(q^\transpose z\), while coefficient coordinates outside this moment map are not causal functionals.
+If \(\ell\notin\operatorname{Row}(A)\), then under Assumption~\ref{ass:bounded-response} the sharp identified set is
+\[
+\left\{\ell^\transpose m' : A m'=z,\ L\le m'_{t,h}\le U\right\},
+\]
+equivalently the bounded affine-fiber interval over \(\mathcal F_T(z)\); without Assumption~\ref{ass:bounded-response}, \(\theta_\ell\) is not identified.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+The closest published analogues are the imputation row-span condition in \citet{borusyak2024eventstudy} and generic partial-identification logic in \citet{manski2003partial} and \citet{tamer2010partial}; none is stated for Markov history TWFE minimal bases.
+The theorem is routine finite linear algebra, but it supplies the exact dictionary needed to turn a spectral Gram calculation into point, partial, or non-identification language without pretending that the affine-fiber interval itself is novel.
+
+\begin{conjecture}[Conjecture 1: Spectral information frontier (NOT YET PROVED)]\label{conj:spectral-frontier}
+Under Assumptions~\ref{ass:markov-assignment}--\ref{ass:gram-fwl-bridge}, for each fixed finite-support triangular loading array \((\ell_T)\) from Section 6 and positive dynamic horizon \(K\ge1\) there are constants \(0<c_{K,\ell}<C_{K,\ell}<\infty\), depending on \(K\) and the loading template but not on \(T\), such that
+\[
+c_{K,\ell} f_T(K)\le \sigma_{\min}^+(\widetilde \Gamma_{T,K,\ell})\le C_{K,\ell} f_T(K),
+\qquad f_T(K)=T\phi_T(1-\rho_T^K),
+\]
+equivalently all nonzero singular values of the normalized local cell Gram matrix \(\widehat \Gamma_{T,K,\ell}\) that correspond to visible switch-flow directions stay between \(c_{K,\ell}\) and \(C_{K,\ell}\).
+Moreover, for any threshold sequence \(\kappa_T(K)\) specified in the local asymptotic regime, the regular-information projectors \(\Pi^{\mathrm{reg}}_{T,K,\ell}\) have an operator-norm limit \(\Pi^{\mathrm{reg}}_{\infty,K,\ell}\), and the rank of \(\Pi^{\mathrm{reg}}_{\infty,K,\ell}\) is the number of local FWL singular directions whose raw information remains above \(\kappa_T(K)\) by the bridge in Assumption~\ref{ass:gram-fwl-bridge}.
+The exact row projector \(\Pi_{T,K,\ell}\) is not used to encode asymptotic information loss; it records only finite-population row-space membership.
+Consequently:
+\begin{enumerate}[label=(\roman*)]
+\item if \(g_T(K)\to\infty\), Assumption~\ref{ass:share-balance} holds, and \(\widetilde\ell\in\operatorname{Row}(A_T)\) eventually, the dynamic switch-on ATT aggregate \(\theta_\ell\) is regularly point identified by the saturated-clean basis, with stable local information after the \(f_T(K)\) normalization;
+\item if \(g_T(K)\to\lambda\in(0,\infty)\), finite-\(T\) population point identification is not lost merely because the nonzero singular values are small, but regular asymptotic information is confined to the thresholded visible-history row space \(\mathcal V^{\mathrm{reg}}_{\infty,K,\ell}=\operatorname{Range}(\Pi^{\mathrm{reg}}_{\infty,K,\ell})\); the projected row \(\Pi^{\mathrm{reg}}_{\infty,K,\ell}\widetilde\ell_K\) is regularly identified through the retained directions of \(A_{T,K,\ell}\), while the residual row \((I-\Pi^{\mathrm{reg}}_{\infty,K,\ell})\widetilde\ell_K\) is treated through the bounded affine fiber under Assumption~\ref{ass:bounded-response};
+\item if \(g_T(K)\to0\), \(\operatorname{rank}(\Pi^{\mathrm{reg}}_{\infty,K,\ell})\) drops the switch-on coordinates in \(S(\ell)\) with vanishing switch flow; if \((I-\Pi^{\mathrm{reg}}_{\infty,K,\ell})\widetilde\ell_K\ne0\), then \(\theta_\ell\) has no stable population identification along the sequence without additional shape restrictions.
+\end{enumerate}
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+The closest in-repository result, \texttt{Q1\_SpectralThreshold.t5\_lattice\_corrected}, says the Markov eigenvalue does not sign-lock finite-\(T\) FWL weights; Conjecture~\ref{conj:spectral-frontier} instead predicts a spectral support/information frontier.
+\citet{han2021dynamic} is the closest dynamic-treatment identification comparison, but its period-by-period exclusion-restriction framework does not compute a Markov TWFE local Gram matrix or separate finite-population row-space identification from regular asymptotic information.
+\citet{bojinov2021panel} and the switchback-design papers \citet{bojinov2023switchback} and \citet{hu2022switchback} are now direct comparators because they make serial assignment and carryover central; their objects are finite-population dynamic causal estimands, optimal switchback schedules, and mixing-rate estimation error, not a thresholded TWFE/FWL regular-information projector.
+\citet{dechaisemartin2024intertemporal} is the closest nonabsorbing lagged-treatment DiD comparison, but it targets intertemporal-treatment estimators rather than a thresholded regular-information projector \(\Pi^{\mathrm{reg}}_{\infty,K,\ell}\) and a rank/null-space frontier for \(A_{T,K,\ell}\).
+If true, it would explain when the clean basis from Q1 is genuinely estimable under persistent treatment dynamics and when the correct output of a DiD design is an identified interval rather than a coefficient.
+
+\begin{conjecture}[Conjecture 2: Minimal-basis structural change across the frontier (NOT YET PROVED)]\label{conj:minimal-basis-change}
+Under the regimes in Conjecture~\ref{conj:spectral-frontier}, the minimal decontaminating basis changes as follows.
+Above the frontier, the Q1 saturated-clean basis \(B=(C_{10},C_{11})\) is rank-admissible and minimal for arbitrary first-order response surfaces.
+On the frontier, if \(\dim\mathcal N^{\mathrm{reg}}_{\infty,K,\ell}=1\), \(B\) is algebraically correct but not minimal as a regularly estimable basis: the canonical nuisance contrast \(v_{K,\ell}\) from Section 6 and Assumption~\ref{ass:calendar-window} collapses into the limiting regular null space, and the identified nuisance component must be written through the quotient map \(Q_{K,\ell}:N_{K,\ell}\to N_{K,\ell}/\operatorname{span}\{v_{K,\ell}\}\).
+If \(\dim\mathcal N^{\mathrm{reg}}_{\infty,K,\ell}>1\), the same statement holds with \(Q_{K,\ell}\) replaced by the quotient by the full limiting regular nuisance null space \(\mathcal N^{\mathrm{reg}}_{\infty,K,\ell}\).
+Below the frontier, no finite basis using only observed Markov histories can stably point-identify a switch-on aggregate that places positive weight on invisible switch-on cells.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+\citet{sunabraham2021eventstudy} and \citet{callaway2021multiple} propose alternative estimands/estimators for staggered timing, while the repository's Q1 minimal-basis results fix the support regime.
+This conjecture would add the missing structural-change statement: the same causal target calls for the full nuisance subspace \(N_{K,\ell}\) above the frontier, the quotient basis \(Q_{K,\ell}(N_{K,\ell})\) on the weak-information frontier, and no observed-history point-identifying basis below it.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[IID Bernoulli reduction]\label{cor:iid}
+When \(a_T+b_T=1\), \(\phi_T=\pi(1-\pi)\) with \(\pi=a_T\), \(K\ge1\), and \(\pi\) is bounded away from \(0\) and \(1\), Conjecture~\ref{conj:spectral-frontier} must reduce to the existing Q1 iid/minimal-basis regime: the clean \(C_{10},C_{11}\) basis identifies the switch-on contrast, and homogeneous response surfaces collapse to \(m(01)-m(00)\).
+\end{corollary}
+\paragraph{Reduction check.}
+Under Assumption~\ref{ass:markov-assignment} plus \(a_T+b_T=1\), the \(K\ge1\) convention, and any regular-information threshold with \(\kappa_T(K)=o(T)\), the Markov chain is iid Bernoulli and \(\rho_T=0\), so \(f_T(K)=T\pi(1-\pi)\) and \(g_T(K)\to\infty\); the residualized history probabilities match the Q1 iid substrate and the clean-basis statement collapses to \texttt{Q1\_MinimalBasis}.
+
+\begin{corollary}[No carry-over collapse]\label{cor:no-carryover}
+If \(m_t(10)=m_t(00)\) and \(m_t(11)=m_t(01)\) for every \(t\), then the nuisance-history directions in Theorem~\ref{thm:rank-trichotomy} do not change the target value.
+The proposal must therefore agree with the static TWFE/FWL coefficient whenever the switch-on effect is the only nonzero history contrast and the target row is visible.
+\end{corollary}
+\paragraph{Reduction check.}
+Under Assumptions~\ref{ass:finite-memory} and \ref{ass:untreated-twfe} plus the displayed no-carry-over equalities, the response surface has only the \(00\) baseline and \(01\) switch-on contrast, so nuisance-cell loadings multiply zero contrasts and the FWL functional reduces to the visible switch-on row.
+
+\section{Why feasible}
+Theorem~\ref{thm:rank-trichotomy} is finite-dimensional linear algebra over the existing residualization and partial-identification substrate: \texttt{PO/Analysis/Residualization.lean}, \texttt{UniformTwoWayPanel.lean}, and \texttt{Identification/PartialID/Basic.lean}.
+The repository currently has only the abstract \texttt{IdentifiedInterval} primitive for the sharp-set part, while \texttt{Panel/Regression/PartialID.lean} records \texttt{PartialRank}/\texttt{PartialBounds} as an interface with the Moore--Penrose and bound-producing theorems still blocked.
+Stage 0 should therefore add a concrete finite-dimensional lemma for affine fibers: if \(z=Am\), then \(\{\ell^\transpose m':Am'=z,\ L\le m'\le U\}\) is the sharp bounded identified set, and it collapses to \(\{q^\transpose z\}\) exactly when \(q^\transpose A=\ell^\transpose\).
+The spectral calculation can reuse \texttt{Q1\_SpectralThreshold.Basic.MarkovStationary}, the T=3 path enumeration files, and \texttt{Mathlib/MarkovErgodicity.lean}.
+The hard boundary work is to compute or bound the smallest singular value of the residualized \((R,C_{10},C_{11})\) Gram matrix under \(a_T,b_T\) sequences; T=3 and the existing long-\(T\) stationary formulas give the first two calibration cases.
+The quotient-basis statement in Conjecture~\ref{conj:minimal-basis-change} is then a row-space/minimality proof analogous to \texttt{Q1\_MinimalBasis} and \texttt{Q1\_StaggeredMinimalBasis}, with the extra step of constructing the limiting nuisance-null contrast \(v_{K,\ell}\) and proving that \(Q_{K,\ell}\) is the minimal observable quotient.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:rank-trichotomy} should be treated as provable routine algebra, not as the novel flagship.
+Conjectures~\ref{conj:spectral-frontier} and \ref{conj:minimal-basis-change} are not yet proved, and the exact normalization of the effective switch count may change after the first Lean-backed T=4 or symbolic-\(T\) calculation.
+The proposal explicitly withdraws any claim that the sign of FWL weights is determined by \(\rho_T\); the repository already points the other way.
+The most fragile assumption is that the frontier can be expressed using \(\phi_T\), \(1-\rho_T^K\), and the threshold ratio \(g_T(K)\) without an additional stationary-share balance parameter; Stage 0 should preserve the two-parameter statement until the algebra proves a scalar simplification.
+The finite-dimensional partial-identification theorem is now deliberately scoped as new infrastructure rather than claimed as already present in \texttt{Panel/Regression/PartialID.lean}.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) -- initial draft; prior verdict: none.
+\item v2 (revise) -- patched Markov boundary convention, row-space theorem, normalized spectral singular-value statement, partial-ID feasibility plan, and Manski/Tamer prior art; prior verdict: REVISE.
+\item v3 (revise) -- added Han dynamic-treatment comparison, rewrote \(G\beta=z\) identification, replaced event-distance \(P_K\) by calendar-window \(P_{K,\ell}\), separated finite-\(T\) population row space from regular information, and named the quotient-basis contrast \(v_{K,\ell}\); prior verdict: REVISE.
+\item v4 (revise) -- added the intertemporal-treatment DiD comparison, defined local row-space projectors and the limiting nuisance null space, and inserted a Gram-to-FWL bridge for the two spectral conjectures; prior verdict: REVISE.
+\item v5 (revise) -- separated the calendar loading \(\ell\) from the lifted response-surface row \(\widetilde\ell\), restricted the spectral horizon to \(K\ge1\), and repaired the iid Bernoulli reduction; prior verdict: REVISE.
+\item v6 (revise) -- added direct panel-experiment and switchback comparators for Conjecture~\ref{conj:spectral-frontier}, made the spectral-localization convention require \(\ell\ne0\), and replaced exact limiting row projectors with thresholded regular-information projectors; prior verdict: REVISE.
+\item v7 (revise) -- separated untreated-baseline conditional means from mean-random treatment effects and made Conjecture~\ref{conj:spectral-frontier} use a fixed finite-support triangular loading array with loading-dependent constants; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Arkhangelsky et~al.(2021)]{arkhangelsky2021sdid}
+Arkhangelsky, Dmitry, Susan Athey, David A. Hirshberg, Guido W. Imbens, and Stefan Wager.
+2021.
+``Synthetic Difference-in-Differences.''
+\emph{American Economic Review} 111(12): 4088--4118.
+
+\bibitem[Athey and Imbens(2022)]{athey2022design}
+Athey, Susan, and Guido W. Imbens.
+2022.
+``Design-based Analysis in Difference-In-Differences Settings with Staggered Adoption.''
+\emph{Journal of Econometrics} 226(1): 62--79.
+
+\bibitem[Athey et~al.(2021)]{athey2021matrix}
+Athey, Susan, Mohsen Bayati, Nikolay Doudchenko, Guido W. Imbens, and Khashayar Khosravi.
+2021.
+``Matrix Completion Methods for Causal Panel Data Models.''
+\emph{Journal of the American Statistical Association} 116(536): 1716--1730.
+
+\bibitem[Bojinov et~al.(2021)]{bojinov2021panel}
+Bojinov, Iavor, Ashesh Rambachan, and Neil Shephard.
+2021.
+``Panel Experiments and Dynamic Causal Effects: A Finite Population Perspective.''
+\emph{Quantitative Economics} 12(4): 1171--1196.
+
+\bibitem[Bojinov et~al.(2023)]{bojinov2023switchback}
+Bojinov, Iavor, David Simchi-Levi, and Jinglong Zhao.
+2023.
+``Design and Analysis of Switchback Experiments.''
+\emph{Management Science} 69(7): 3759--3777.
+
+\bibitem[Borusyak et~al.(2024)]{borusyak2024eventstudy}
+Borusyak, Kirill, Xavier Jaravel, and Jann Spiess.
+2024.
+``Revisiting Event-Study Designs: Robust and Efficient Estimation.''
+\emph{Review of Economic Studies} 91(6): 3253--3285.
+
+\bibitem[Callaway and Sant'Anna(2021)]{callaway2021multiple}
+Callaway, Brantly, and Pedro H. C. Sant'Anna.
+2021.
+``Difference-in-Differences with Multiple Time Periods.''
+\emph{Journal of Econometrics} 225(2): 200--230.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{dechaisemartin2020twfe}
+de Chaisemartin, Clement, and Xavier D'Haultfoeuille.
+2020.
+``Two-Way Fixed Effects Estimators with Heterogeneous Treatment Effects.''
+\emph{American Economic Review} 110(9): 2964--2996.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2024)]{dechaisemartin2024intertemporal}
+de Chaisemartin, Clement, and Xavier D'Haultfoeuille.
+2024.
+``Difference-in-Differences Estimators of Intertemporal Treatment Effects.''
+\emph{Review of Economics and Statistics}: 1--45.
+doi:10.1162/rest\_a\_01414.
+
+\bibitem[Goodman-Bacon(2021)]{goodmanbacon2021timing}
+Goodman-Bacon, Andrew.
+2021.
+``Difference-in-Differences with Variation in Treatment Timing.''
+\emph{Journal of Econometrics} 225(2): 254--277.
+
+\bibitem[Han(2021)]{han2021dynamic}
+Han, Sukjin.
+2021.
+``Identification in Nonparametric Models for Dynamic Treatment Effects.''
+\emph{Journal of Econometrics} 225(2): 132--147.
+
+\bibitem[Hu and Wager(2022)]{hu2022switchback}
+Hu, Yuchen, and Stefan Wager.
+2022.
+``Switchback Experiments under Geometric Mixing.''
+\emph{arXiv preprint} arXiv:2209.00197.
+
+\bibitem[Manski(2003)]{manski2003partial}
+Manski, Charles F.
+2003.
+\emph{Partial Identification of Probability Distributions}.
+New York: Springer.
+
+\bibitem[Rambachan and Roth(2023)]{rambachan2023parallel}
+Rambachan, Ashesh, and Jonathan Roth.
+2023.
+``A More Credible Approach to Parallel Trends.''
+\emph{Review of Economic Studies} 90(5): 2555--2591.
+
+\bibitem[Roth and Sant'Anna(2023)]{roth2023rollout}
+Roth, Jonathan, and Pedro H. C. Sant'Anna.
+2023.
+``Efficient Estimation for Staggered Rollout Designs.''
+\emph{Journal of Political Economy Microeconomics} 1(4): 669--709.
+
+\bibitem[Sun and Abraham(2021)]{sunabraham2021eventstudy}
+Sun, Liyang, and Sarah Abraham.
+2021.
+``Estimating Dynamic Treatment Effects in Event Studies with Heterogeneous Treatment Effects.''
+\emph{Journal of Econometrics} 225(2): 175--199.
+
+\bibitem[Tamer(2010)]{tamer2010partial}
+Tamer, Elie.
+2010.
+``Partial Identification in Econometrics.''
+\emph{Annual Review of Economics} 2: 167--195.
+\end{thebibliography}
+
+\end{document}

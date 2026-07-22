@@ -1,0 +1,184 @@
+\paragraph{\S9-fragment-statement.}
+\paragraph{Motivating conjecture, restated verbatim.}
+Under Assumptions~\ref{ass:causal}--\ref{ass:effective}, the estimator $\hat\theta_n^{\mathrm{locDR}}$ satisfies
+\[
+  \left|\hat\theta_n^{\mathrm{locDR}}-\tau_P(x_0)\right|
+  =O_P\!\left(b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}\right)
+\]
+uniformly over $\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}$.
+
+\begin{theorem}[Conjecture 1: upper bound for the localized DR learner]\label{thm:upper}
+Under Assumptions~\ref{ass:causal}--\ref{ass:effective}, with the approved clipped-score evaluation convention
+\[
+  \hat g^c_{a,-k}=\Pi_{[-M,M]}\hat g_{a,-k},\qquad
+  \hat e^c_{-k}=\Pi_{[\epsilon/2,\,1-\epsilon/2]}\hat e_{-k},
+\]
+where $\Pi_{[a,b]}(u)=\min\{b,\max\{a,u\}\}$ and the local nuisance-rate bounds in Assumption~\ref{ass:nuisance} are understood for these clipped score inputs, the explicit cross-fit estimator
+\[
+  \hat\theta_n^{\mathrm{locDR}}
+  =
+  \frac{1}{n}\sum_{k=1}^K\sum_{i\in I_k}
+  \psi_{h_n}\!\left(W_i;(\hat g^c_{0,-k},\hat g^c_{1,-k},\hat e^c_{-k})\right)
+\]
+satisfies $\left|\hat\theta_n^{\mathrm{locDR}}-\tau_P(x_0)\right|=O_P\!\left(b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}\right)$ uniformly over $\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}$.
+\end{theorem}
+
+\paragraph{\S13-refutation-attempt.}
+\paragraph{Primitive attempted.}
+The refutation search used the influence-function/variance primitive.  The searched witnesses were the smallest finite submodels that could break the stated rate: an oracle-nuisance submodel, a clipped estimated-nuisance submodel satisfying the local $L_2$ rate envelopes, and a boundary submodel in which unclipped estimated propensities approach zero on a shrinking local set.
+
+\paragraph{Oracle-nuisance witness.}
+Set $\hat\eta_{-k}=\eta_P$ for every fold.  Then Theorem~\ref{thm:localized-aipw} gives $E_P[\psi_{h_n}(W;\eta_P)]=\theta_{h_n}(P)$ and
+\[
+  \hat\theta_n^{\mathrm{locDR}}-\theta_{h_n}(P)
+  =
+  \frac1n\sum_{i=1}^n\{\psi_{h_n}(W_i;\eta_P)-E_P\psi_{h_n}(W;\eta_P)\}.
+\]
+Assumptions~\ref{ass:bounded} and~\ref{ass:effective} imply
+$\operatorname{Var}_P\{\psi_{h_n}(W;\eta_P)\}\lesssim p_n^{-1}$, so this witness only produces the allowed stochastic scale $(n p_n)^{-1/2}$.
+
+\paragraph{Clipped nuisance witness.}
+Now allow estimated nuisances satisfying Assumption~\ref{ass:nuisance}, but evaluate the score with the clipped inputs displayed in Theorem~\ref{thm:upper}.  The product-drift half of Theorem~\ref{thm:localized-aipw} bounds the foldwise conditional mean drift by
+\[
+  C_\epsilon R_{g,n,k}R_{m,n,k}
+  =
+  O_P\!\left(\sqrt{r_{g,n}r_{m,n}}\right).
+\]
+The clipped denominators and bounded outcomes keep the conditional second moment at order $p_n^{-1}$, so this candidate also matches, rather than violates, the conjectured rate.
+
+\paragraph{Boundary search.}
+The only boundary pattern that can exceed the rate is an untruncated estimated propensity that is nearly zero on a set of tiny local mass while its local $L_2$ distance from $e$ remains small.  That construction is excluded by the approved clipped-score evaluation convention, which is now part of the estimator convention for this correction round.  Hence no counterexample remains under the stated and approved regime, and the positive proof proceeds.
+
+\paragraph{\S10 Interpretation.}
+The theorem is the achievability half of the structure-agnostic pointwise CATE rate.  The estimator is an explicit cross-fitted localized AIPW average, so its error separates into three channels: localization bias $b_n$, oracle local empirical noise $(n p_n)^{-1/2}$, and the second-order nuisance product $\sqrt{r_{g,n}r_{m,n}}$.  This is the normalized point-local analogue of the doubly robust pseudo-outcome decomposition in \cite{Kennedy2023DRCATE}: cross-fitting removes own-observation bias, orthogonality eliminates first-order nuisance drift, and the localizer inflates variance by $p_n^{-1}$ because only $n p_n$ observations effectively contribute near $x_0$.
+
+\paragraph{\S11 Proof.}
+\begin{proof}[Proof of Theorem~\ref{thm:upper}]
+Write $\ell_n=\ell_{h_n}$, $\theta_n(P)=\theta_{h_n}(P)$, and
+\[
+  \hat\eta^c_{-k}=(\hat g^c_{0,-k},\hat g^c_{1,-k},\hat e^c_{-k}).
+\]
+The projection map onto a closed interval is nonexpansive.  Since Assumption~\ref{ass:causal} gives
+$e\in[\epsilon,1-\epsilon]$ and Assumption~\ref{ass:bounded} gives $g_a\in[-M,M]$, clipping cannot
+increase the local weighted nuisance errors:
+\[
+  E_P[\ell_n(X)(\hat e^c_{-k}(X)-e(X))^2]
+  \le E_P[\ell_n(X)(\hat e_{-k}(X)-e(X))^2],
+\]
+and the same inequality holds for $\hat g^c_{a,-k}-g_a$, $a\in\{0,1\}$.  Thus the clipped score inputs
+obey the same rate envelopes $r_{g,n}$ and $r_{m,n}$ as the local nuisance bounds in
+Assumption~\ref{ass:nuisance}.
+
+Decompose the estimator around the smoothed target:
+\[
+\begin{aligned}
+  \hat\theta_n^{\mathrm{locDR}}-\theta_n(P)
+  &=
+  \underbrace{
+  \frac{1}{n}\sum_{k=1}^K\sum_{i\in I_k}
+  \left\{\psi_{h_n}(W_i;\hat\eta^c_{-k})
+       -E_P[\psi_{h_n}(W;\hat\eta^c_{-k})\mid \hat\eta^c_{-k}]\right\}}_{A_n} \\
+  &\quad+
+  \underbrace{
+  \frac{1}{n}\sum_{k=1}^K |I_k|
+  \left\{E_P[\psi_{h_n}(W;\hat\eta^c_{-k})\mid \hat\eta^c_{-k}]-\theta_n(P)\right\}}_{B_n}.
+\end{aligned}
+\]
+Conditional on the training folds, the observations in $I_k$ are independent of
+$\hat\eta^c_{-k}$, so the summands in $A_n$ have conditional mean zero.  The clipped-score convention,
+Assumption~\ref{ass:bounded}, and $E_P[\ell_n(X)^2]\lesssim p_n^{-1}$ imply that, for a constant $C$
+depending only on $M$ and $\epsilon$,
+\[
+  E_P\!\left[\psi_{h_n}(W;\hat\eta^c_{-k})^2\mid \hat\eta^c_{-k}\right]
+  \le C E_P[\ell_n(X)^2]
+  \le C p_n^{-1}.
+\]
+Therefore
+\[
+  \operatorname{Var}_P(A_n\mid \hat\eta^c_{-1},\ldots,\hat\eta^c_{-K})
+  \le
+  \frac{1}{n^2}\sum_{k=1}^K |I_k|\,C p_n^{-1}
+  \le \frac{C}{n p_n}.
+\]
+Chebyshev's inequality yields $A_n=O_P((n p_n)^{-1/2})$ uniformly, because the constants are uniform
+over $\mathcal{P}_n^{\mathrm{SA\text{-}CATE}}$ and $n p_n\to\infty$ by
+Assumption~\ref{ass:effective}.
+
+For the drift term $B_n$, apply Theorem~\ref{thm:localized-aipw} fold by fold.  Since
+$\hat e^c_{-k}\in[\epsilon/2,1-\epsilon/2]$ by construction,
+\[
+  \left|
+  E_P[\psi_{h_n}(W;\hat\eta^c_{-k})\mid \hat\eta^c_{-k}]
+  -\theta_n(P)
+  \right|
+  \le
+  C_\epsilon R_{g,n,k}R_{m,n,k},
+\]
+where
+\[
+  R_{g,n,k}^2
+  =
+  E_P[\ell_n(X)\{(\hat g^c_{1,-k}-g_1)^2+(\hat g^c_{0,-k}-g_0)^2\}],
+  \qquad
+  R_{m,n,k}^2
+  =
+  E_P[\ell_n(X)(\hat e^c_{-k}-e)^2].
+\]
+Assumption~\ref{ass:nuisance} and the fixed number of folds imply
+$\max_k R_{g,n,k}=O_P(r_{g,n}^{1/2})$ and
+$\max_k R_{m,n,k}=O_P(r_{m,n}^{1/2})$.  Since $\sum_k |I_k|/n=1$,
+\[
+  |B_n|
+  \le C_\epsilon \max_{1\le k\le K} R_{g,n,k}R_{m,n,k}
+  =
+  O_P\!\left(\sqrt{r_{g,n}r_{m,n}}\right)
+\]
+uniformly over the model class.
+
+Finally, Assumption~\ref{ass:bias} gives
+\[
+  |\theta_n(P)-\tau_P(x_0)|\le b_n.
+\]
+Combining the empirical fluctuation, drift, and localization-bias bounds,
+\[
+  |\hat\theta_n^{\mathrm{locDR}}-\tau_P(x_0)|
+  \le |A_n|+|B_n|+|\theta_n(P)-\tau_P(x_0)|
+  =
+  O_P\!\left(b_n+(n p_n)^{-1/2}+\sqrt{r_{g,n}r_{m,n}}\right).
+\]
+This proves the theorem.  The argument is the DR-CATE pseudo-outcome decomposition of
+\cite{Kennedy2023DRCATE} with the normalized local weight $\ell_n=K_{h_n}/p_n$ making the effective
+sample size $n p_n$ explicit.
+\end{proof}
+
+\paragraph{\S12 Sanity check.}
+Take the global randomized corner case $K_{h_n}(X)\equiv1$, so $p_n=1$ and $\ell_n\equiv1$, and suppose
+$\tau_P(x)=\tau_0$ is constant so $b_n=0$.  If the nuisances are known, then
+$r_{g,n}=r_{m,n}=0$ and the estimator reduces to the usual AIPW average for the average treatment
+effect.  The theorem gives
+\[
+  |\hat\theta_n^{\mathrm{locDR}}-\tau_0|=O_P(n^{-1/2}),
+\]
+which is the classical root-$n$ AIPW scale under bounded outcomes and overlap.
+
+\paragraph{\S13 Counterexample or minimality check.}
+The clipped-score convention is the minimal variance-control condition for this upper bound.  To see
+what fails without it, let the true propensity be $e(X)=1/2$, let $g_0(X)=g_1(X)=0$, and let $Y$ be
+bounded with nonzero conditional variance among treated units.  Let $K_{h_n}$ be the indicator of a
+local set $A_n$ with $P(X\in A_n)=p_n$, and choose $B_n\subset A_n$ with $P(X\in B_n)=1/n$.  Define a
+raw fold-specific propensity estimate by $\hat e_{-k}(x)=\delta_n$ on $B_n$ and
+$\hat e_{-k}(x)=1/2$ elsewhere, with $\delta_n\downarrow0$ much faster than $(n p_n)^{-1}$.
+Then
+\[
+  E_P[\ell_n(X)(\hat e_{-k}(X)-e(X))^2]\lesssim \frac{1}{n p_n}\to0,
+\]
+so the local $L_2$ nuisance condition can still hold at a small rate.  However, on the event that one
+evaluation observation falls in $B_n$, is treated, and has a nonzero residual, the single treated
+residual term contributes order
+\[
+  \frac{1}{n}\frac{\ell_n(X)}{\delta_n}
+  =
+  \frac{1}{n p_n\delta_n},
+\]
+which can be made arbitrarily larger than $(n p_n)^{-1/2}$.  This boundary example is excluded by the
+approved clipping convention and explains why the score-denominator bound is not cosmetic.

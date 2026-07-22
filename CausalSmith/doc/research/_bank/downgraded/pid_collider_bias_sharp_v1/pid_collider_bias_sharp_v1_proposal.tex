@@ -1,0 +1,430 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_collider\_bias\_sharp, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_collider\_bias\_sharp} / \texttt{v1}%
+  \\ \large\textit{A Lee-style quadratic frontier for always-selected effects under finite collider dependence}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+qid = pid_collider_bias_sharp.
+specialization = v1_lee_gamma_selection.
+observable distribution P = the randomized binary-treatment law of
+    (D,S,SY), where D in {0,1}, S is the realized post-treatment
+    selection/collider indicator, and Y in {0,1} is observed only when S=1.
+parameter theta = E[Y(1)-Y(0) | S(1)=S(0)=1], the Lee always-selected
+    average treatment effect for the outcome scale on which Y is defined.
+identifying restrictions = random assignment and consistency; binary
+    principal selection strata A=(1,1), G=(0,1), H=(1,0), N=(0,0);
+    a finite reverse-selection budget kappa limiting the harmed stratum H;
+    and an arm-specific collider odds-ratio bound Gamma on the association,
+    inside each selected arm, between the always-selected stratum A and the
+    selected outcome Y(d).
+bounding functional = the alpha-profile quadratic selected-mixture
+    envelope B_{Gamma,kappa}(P), obtained by varying the always-selected
+    share alpha=P(A)>0 over its positive observable/reverse-budget interval
+    and solving
+    the two arm-specific odds-ratio saturation quadratics for the feasible
+    always-selected means.
+\end{verbatim}
+
+\begin{abstract}
+Lee's trimming bounds solve treatment-induced sample selection by imposing monotone selection, so the treatment creates selected units but never removes them.  This proposal asks for the sharp analogue when monotonicity is replaced by a finite collider-dependence bound and a finite reverse-selection budget, so both selection-helped and selection-harmed principal strata may coexist.  The proposed kernel is a closed-form quadratic profile for the always-selected ATE: for each feasible always-selected share, the selected-sample mixture equations reduce to two odds-ratio quadratics, and the global endpoints are conjectured to be attained by two explicit principal-strata laws.  The flagship separation is not that a log-odds beta/psi parameter cannot reproduce a single armwise odds ratio; it can, by setting beta equal to the displayed log odds ratio.  The proposed advance is the coupled sharp set created by one common always-selected share \(\alpha\), a reverse-selection budget \(\kappa\), and two armwise selected-mixture odds-ratio faces, a regime not covered by conditional-Lee, stochastic-monotonicity Lee, or margin-free principal-stratum sensitivity workflows.  If resolved, the result would give applied users of Lee bounds a sharp diagnostic for when monotone-selection trimming is too brittle but no exclusion restriction, covariate principal-score model, or parametric selection model is credible.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Treatment-induced sample selection is a standard obstacle in evaluating programs whose outcomes are only meaningful or observed after employment, survival, survey response, or institutional participation.  \citet{Lee2009SampleSelection} made this problem usable by showing that monotone selection converts the always-selected mean into a sharp trimming problem.  The scientific issue here is what replaces that one-tail geometry when treatment can both help and harm selection, but the analyst is willing to bound the collider dependence between selected outcomes and latent selection types.
+
+\paragraph{The main finding (proposed).}
+The flagship claim is Conjecture~\ref{conj:lee-gamma-frontier}: under randomized assignment, binary selected outcomes, a finite reverse-selection budget \(\kappa\), and a finite selected-mixture odds-ratio budget \(\Gamma\), the sharp identified set for the Lee always-selected effect is the interval produced by a one-dimensional profile over the always-selected share \(\alpha\).  Conditional on \(\alpha\), each arm's feasible always-selected mean is obtained by solving an odds-ratio saturation quadratic in the joint selected-cell mass \(t_d=P(A,Y(d)=1\mid S(d)=1)\).  The conjecture further asserts endpoint attainment by two explicit principal-strata laws, one saturating the lower envelope and one saturating the upper envelope.
+
+\paragraph{What is new.}
+The closest published benchmark is \citet{Lee2009SampleSelection}: Lee imposes monotone selection and uses tail trimming of the treated selected outcome distribution to bound the always-selected treatment effect.  The more dangerous comparators are \citet{ShepherdGilbertJemiaiRotnitzky2006}, \citet{JemiaiRotnitzkyShepherdGilbert2007}, \citet{ShepherdRedmanAnkerst2008}, \citet{ShepherdGilbertDupont2011}, and \citet{EglestonScharfsteinFreemanWest2007}, which already build principal-stratum sensitivity analyses for effects among units selected under both assignments, including settings that relax monotonicity through log-odds sensitivity parameters.  \citet{Imai2008TruncationDeath} and \citet{Chiba2012SACE} are closer truncation-by-death/principal-effect bounds and sensitivity comparators than generic principal-stratification citations, and \citet{Okamoto2025RobustifyLee} is now also a direct comparator because it relaxes deterministic Lee monotonicity to stochastic monotonicity and tightens the resulting bounds by a symmetry shape restriction, while \citet{HonoreHu2020Selection} shows how far selection bounds can be pushed without exclusion restrictions.  The flagship epsilon-gap is not ``another Lee relaxation'' and not an armwise odds-ratio reparametrization: Conjecture~\ref{conj:lee-gamma-frontier} asks whether a finite \((\Gamma,\kappa)\) collider budget yields a sharp coupled endpoint profile in which beta \(=\log OR_d\) reproduces each armwise selected table, but only the common \(\alpha\) and harmed-stratum budget decide whether the two armwise tables are jointly attainable.  Conjecture~\ref{conj:coupling-iff} is a diagnostic comparison rather than the primary flagship claim: the finite-binary beta/psi benchmark induced by the SGJR/JR assumptions and the Honore--Hu-style no-exclusion support benchmark agree with the \((\Gamma,\kappa)\) curve only when their exposed endpoint tables pass the corresponding observable common-\(\alpha\) thresholds \(\Delta_\ell^{\mathrm{SGJR}}\) and \(\Delta_\ell^{\mathrm{HH}}\).  These two benchmarks are reconstructed finite-binary support problems tied to named published modelling strategies, not claims that those papers publish the exact \(v_\ell^{\mathrm{SGJR}}\) or \(v_\ell^{\mathrm{HH}}\) functionals.  Thus the active constraint can be collider dependence inside selected mixtures plus cross-arm principal-share compatibility, rather than tail trimming, stochastic monotonicity, symmetry tightening, stochastic-dominance principal-strata bounding, fixed principal-score modelling, no-exclusion marginal bounding, or armwise missing-outcome sensitivity.  The proposal is also distinct from \citet{ScharfsteinManskiAnthony2004Bounds}, whose class-based missing-outcome bounds are armwise selection-sensitivity bounds, because the target here is the principal always-selected effect and the feasible set is tied across arms by the same principal share \(\alpha\).
+
+\paragraph{How it positions in the literature.}
+This is a partial-identification proposal at the boundary of missing-outcome bounds, sample-selection bounds, and collider-bias sensitivity analysis.  Manski-style bounded-outcome logic supplies the no-assumption fallback; Lee-style monotone selection supplies the sharp trimming comparator; Balke--Pearl-style finite response-type construction supplies the endpoint-attainment standard; and modern scalar sensitivity papers motivate reporting an indexed curve instead of a binary identifying assumption.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the empirical Lee-bounds workflow for Job Corps and related labor-program evaluations initiated by \citet{Lee2009SampleSelection} and recently stress-tested in multilayered selection settings by \citet{KroftMourifieVayalinkal2024MultilayeredLee}.  If Conjecture~\ref{conj:lee-gamma-frontier} holds, those analyses can report whether their conclusions are robust to finite treatment-harmed selection and bounded selected-outcome sorting, rather than treating monotonicity as all-or-nothing.
+
+\paragraph{How research benefits from the conclusion.}
+A reader should report the Lee trimming interval together with the \((\Gamma,\kappa)\)-profile interval, and should treat large discrepancies as evidence that monotone selection is doing substantive work rather than merely regularizing missing outcomes.
+
+\section{Related work}
+\citet{Lee2009SampleSelection} is the primary econometric comparator: it derives sharp trimming bounds for treatment effects with sample selection under monotone selection, and the present proposal replaces that monotonicity with finite reverse-selection and collider-dependence budgets.  \citet{ShepherdGilbertJemiaiRotnitzky2006} is the first load-bearing principal-stratum sensitivity comparator because it estimates effects on outcomes that exist only after a postrandomization event, conditional on covariates, using sensitivity parameters for the latent selected-under-both stratum.  \citet{JemiaiRotnitzkyShepherdGilbert2007} is relevant because it develops semiparametric efficient estimation for treatment effects in the always-event principal stratum under a parametric model for event occurrence conditional on outcomes and covariates; the present proposal targets sharp finite-table bounds rather than semiparametric estimation after imposing that model.  \citet{ShepherdRedmanAnkerst2008} is the closest JASA application of the Jemiai--Rotnitzky sensitivity logic to a principal-stratum severity effect, and its beta/psi-style parameters are the comparator family for the proposed \((\Gamma,\kappa)\) budget.  \citet{ShepherdGilbertDupont2011} extends principal-stratum sensitivity analysis to time-to-event outcomes and explicitly relaxes monotonicity; the present proposal differs by seeking a closed-form binary-outcome endpoint law with a selected-mixture odds-ratio face, not a survival-distribution sensitivity procedure.
+
+\citet{EglestonScharfsteinFreemanWest2007} is a close biostatistical principal-stratum comparator because it uses a sensitivity-analysis model for survivor average causal effects with nonignorable missing outcomes; the proposed frontier differs by making the selected-arm odds-ratio table observable-margin sharp and by testing joint attainability through one common \(\alpha\).  \citet{HuberMellace2015SharpSelection} is the direct principal-strata sample-selection comparator because it derives sharp bounds for always observed, compliers, and selected populations under monotonicity and stochastic dominance; the present proposal must strictly extend that geometry by allowing bidirectional \(G\) and \(H\) strata inside the same observed cell and replacing stochastic dominance with a finite selected-mixture odds-ratio face.  \citet{LaffersNedela2017Sensitivity} is the closest Lee sensitivity-analysis comparator because it reformulates Lee's problem as an optimization problem, replicates the analytical Lee results, and extends them to sensitivity analysis of identifying assumptions while preserving sharpness; the present proposal must beat that paper by giving a closed-form finite-\(\Gamma\) endpoint law for bidirectional principal selection, not merely by writing another finite program.  \citet{Semenova2025GeneralizedLee} is the closest modern conditional Lee generalization because it allows the sign of treatment's selection effect to be identified by pretreatment covariates and develops inference for the sharp generalized bound; the present proposal differs because no pretreatment partition is assumed to reveal the sign of selection response, and the restriction instead binds the latent \(A\)-versus-\(Y(d)\) association inside selected arms.  \citet{Okamoto2025RobustifyLee} is the direct stochastic-monotonicity comparator: it weakens Lee's deterministic monotonicity and uses a symmetry shape constraint to tighten bounds, whereas the present proposal allows treatment-helped and treatment-harmed selection in the same cell and controls selected-mixture collider dependence instead of imposing stochastic monotonicity or symmetry.  \citet{HonoreHu2020Selection} is the no-exclusion econometric comparator because it obtains informative sample-selection bounds without exclusion restrictions; the present proposal is sharper on a different margin, replacing marginal selection restrictions with a principal-strata selected-mixture odds-ratio frontier.  \citet{Manski1990NonparametricBounds} supplies the bounded-outcome no-assumption benchmark that is recovered when the selected-mixture restrictions become vacuous.  \citet{HorowitzManski1995Censoring} is relevant because Lee's proof reduces the selection problem to sharp bounds for a mean in a mixture with unknown component membership; here the selected mixture has two unknown principal components tied across treatment arms.  \citet{BalkePearl1997Bounds} proves that finite response-type causal systems can have sharp endpoint-attaining treatment-effect bounds; this proposal asks for the corresponding endpoint laws when principal selection strata and selected-outcome odds-ratio constraints jointly restrict the finite table.
+
+\citet{ScharfsteinManskiAnthony2004Bounds} constructs bounds for prospective studies with missing outcomes using class-based assumptions, including selection-bias sensitivity restrictions; it is an armwise missing-outcome benchmark rather than a Lee always-selected principal-stratum frontier.  \citet{HernanHernandezDiazRobins2004Selection} frames selection bias as conditioning on a common effect, which is the collider interpretation of the selection indicator \(S\).  \citet{SmithVanderWeele2019Selection} provides practical selection-bias bounding factors, but those factors are outer robustness tools and do not construct sharp principal-strata endpoint laws.  \citet{ZetterstromSjolanderWaernbaum2025Selection} investigates sharp and improved bounds for causal effects under selection bias using the Smith--VanderWeele sensitivity-parameter framework; it is close to Conjecture~\ref{conj:strict-tightening}, but it does not solve the Lee always-selected \(\alpha\)-coupled principal-strata frontier.  \citet{MastenPoirierZhang2024Sensitivity} gives scalar sensitivity bounds for relaxations of unconfoundedness; the present proposal is analogous in reporting a sensitivity-indexed partial-identification curve, but the restriction is selected-mixture collider dependence rather than treatment-confounding relaxation.
+
+\citet{KroftMourifieVayalinkal2024MultilayeredLee} shows that many top-journal applications implement Lee bounds and that multilayered selection can make the conventional Lee estimand mix direct and sorting effects; this proposal targets a different fragility, namely bidirectional principal selection and bounded outcome sorting inside the selected sample.  \citet{ZhangRubin2003TruncationDeath} and \citet{FrangakisRubin2002PrincipalStratification} motivate principal-stratum targets for post-treatment selection problems, while this proposal keeps Lee's always-selected estimand and derives sensitivity-indexed bounds.  \citet{Imai2008TruncationDeath} proves sharp bounds for randomized truncation-by-death effects under several assumptions and is a direct sharp-bounds comparator; the present proposal differs by replacing those truncation assumptions with a finite selected-mixture collider odds-ratio budget and a reverse-selection budget.  \citet{Chiba2012SACE} discusses estimation and sensitivity analysis for the survivor average causal effect under monotonicity; it is relevant because the proposal's \(\kappa\) budget explicitly moves away from monotonicity while preserving a principal-stratum target.  \citet{HuberSolovyeva2020SelectionMediation} treats direct and indirect effects with sample selection under stronger identifying assumptions and notes harder mediator/selection extensions; the proposed finite-\(\Gamma\) principal-strata frontier is a building block for those settings.
+
+The in-catalogue prior-art summary from \texttt{CausalSmith/doc/API.md} is that \texttt{ManskiNonparametricBounds\_Study} records algebraic bounded-outcome PartialID comparators, including selected-cell mean-dominance tightening at a fixed covariate point.  No direct accepted \texttt{pid\_collider\_bias\_sharp} entry exists.  The failed \texttt{pid\_mediation\_proxy\_v1} reviews warn that generic finite-LP sharpness is not enough without explicit endpoint-table construction.  The accepted \texttt{pid\_rdd\_manipulation\_bounded\_v1} bank entry supplies an adjacent budgeted-selection envelope template, but for RD manipulation rather than Lee principal strata.  The accepted \texttt{pid\_ordinal\_principal\_strata\_v1} bank entry supplies an adjacent nonrectangular principal-strata LP, but for ordinal intermediates rather than treatment-induced sample selection.  The downgraded \texttt{q\_did\_drdid\_ipwdid\_frontier\_v1} reviews are relevant only as a warning to derive primitive finite-support restrictions rather than assume a bridge law.
+
+\section{Formal setup}
+Let \(D\in\{0,1\}\) be randomly assigned, \(S(d)\in\{0,1\}\) be the potential post-treatment selection/collider state, and \(Y(d)\in\{0,1\}\) be the potential selected outcome on the scale of interest.  The observed law \(P\) contains \(D\), \(S=S(D)\), and \(Y=Y(D)\) only when \(S=1\).  Write
+\[
+  p_d=P(S=1\mid D=d),\qquad
+  m_d=P(Y=1\mid D=d,S=1),
+\]
+and assume \(p_d\in(0,1)\), \(m_d\in(0,1)\).  Principal selection strata are
+\[
+  A=(1,1),\quad G=(0,1),\quad H=(1,0),\quad N=(0,0),
+\]
+with masses \(\alpha,g,h,n\).  Thus \(p_1=\alpha+g\), \(p_0=\alpha+h\), and the unknown always-selected share \(\alpha\) must lie in an interval \(\mathcal A_\kappa(P)\) defined below.  Because the target \(\theta_A\) conditions on \(A\), the profile used in all main results is the positive principal-share region
+\[
+  \mathcal A_\kappa^+(P)=\mathcal A_\kappa(P)\cap(0,\min\{p_0,p_1\}],
+\]
+and laws with \(\alpha=0\) are boundary feasibility laws for the observed selection process, not laws on which \(\theta_A\) is defined.
+
+The target parameter is the Lee always-selected effect
+\[
+  \theta_A = E[Y(1)-Y(0)\mid A].
+\]
+For a candidate \(\alpha\), define selected-arm always shares
+\[
+  r_1(\alpha)=\alpha/p_1,\qquad r_0(\alpha)=\alpha/p_0.
+\]
+For each arm \(d\), let
+\[
+  t_d=P(A,Y(d)=1\mid S(d)=1)
+\]
+inside the selected arm.  Then the always-selected arm mean is \(a_d=t_d/r_d(\alpha)\).  The finite collider-dependence parameter \(\Gamma\in[1,\infty]\) bounds the odds ratio between \(A\) and \(Y(d)=1\) within the selected arm:
+\[
+  OR_d(t_d;r_d,m_d)
+  =
+  \frac{t_d(1-r_d-m_d+t_d)}{(r_d-t_d)(m_d-t_d)}
+  \in[\Gamma^{-1},\Gamma],
+\]
+with the usual limiting conventions at boundary cells.  The identified set is
+\[
+  \Theta_I(P;\Gamma,\kappa)
+  =
+  \{\theta_A:\text{there exists a principal-strata law satisfying the restrictions and inducing }P\}.
+\]
+For later equality-case statements define the selected-arm Fréchet bounds
+\[
+  L_d(\alpha)=\max\{0,r_d(\alpha)+m_d-1\},\qquad
+  U_d(\alpha)=\min\{r_d(\alpha),m_d\}.
+\]
+A selected cell is on a Fréchet equality face when \(t_d=L_d(\alpha)\) or \(t_d=U_d(\alpha)\); it is on an interior odds-ratio face when \(L_d(\alpha)<t_d<U_d(\alpha)\) and \(OR_d(t_d;r_d(\alpha),m_d)\in\{\Gamma^{-1},\Gamma\}\).
+Let \(T_d(\alpha;\Gamma)\) be the set of \(t_d\in[L_d(\alpha),U_d(\alpha)]\) satisfying the selected-arm odds-ratio bound.  The armwise quadratic endpoints used below are
+\[
+  \underline a_d(\alpha)=\inf_{t\in T_d(\alpha;\Gamma)} t/r_d(\alpha),
+  \qquad
+  \overline a_d(\alpha)=\sup_{t\in T_d(\alpha;\Gamma)} t/r_d(\alpha),
+\]
+for positive \(r_d(\alpha)\).
+
+For the literature-comparison statements, the Shepherd--Gilbert--Jemiai--Rotnitzky / Jemiai--Rotnitzky beta/psi family means a principal-stratum sensitivity model that indexes the distribution or mean of \(Y(d)\) among always-selected units by baseline covariates and log-odds-type sensitivity parameters linking principal selection status to observed outcomes.  In a finite binary selected arm, any interior endpoint table from Theorem~\ref{thm:arm-quadratic} has an armwise beta representation
+\[
+  \beta_d=\log OR_d(t_d;r_d(\alpha),m_d),
+\]
+so the proposal does not claim cell-level nonrepresentability by log-odds sensitivity.  The comparison is instead to a margin-free armwise beta/psi workflow, which can match selected-arm tables separately but does not by itself impose the cross-arm principal-share equations \(p_1 r_1=p_0 r_0=\alpha\) and the harmed-stratum budget \(p_0-\alpha\le \kappa p_0\).  A \((\Gamma,\kappa)\)-coupling certificate is an observable law and positive \(\alpha\) for which the endpoint table satisfies Assumptions~\ref{ass:reverse-budget}--\ref{ass:gamma-mixture}, has both one-sided principal strata \(G=p_1-\alpha\) and \(H=p_0-\alpha\) positive, is attained at an interior selected-arm odds-ratio face, and changes its global endpoint if the common-\(\alpha\) equality or the \(H\le \kappa p_0\) inequality is removed.  This isolates the exact extra restriction beyond beta \(=\log OR\): joint attainability of the two armwise beta tables by one principal-strata law.
+For each endpoint direction \(\ell\in\{-,+\}\), let \(v_\ell^{\mathrm{SGJR}}(P;\Gamma)\) be the endpoint value of the finite-binary armwise beta/psi benchmark induced by the \citet{ShepherdGilbertJemiaiRotnitzky2006} / \citet{JemiaiRotnitzkyShepherdGilbert2007} principal-stratum assumptions, obtained by optimizing
+\[
+  s_\ell(a_1-a_0),\qquad s_+=1,\quad s_-=-1,
+\]
+over armwise selected tables \((r_d,t_d)\), \(d\in\{0,1\}\), subject to \(r_d\in(0,1)\), \(t_d\in[\max\{0,r_d+m_d-1\},\min\{r_d,m_d\}]\), and \(|\log OR_d(t_d;r_d,m_d)|\le \log \Gamma\), with \(a_d=t_d/r_d\).  This comparator is intentionally armwise: it allows the sensitivity parameters \(\beta_d=\log OR_d(t_d;r_d,m_d)\) and the implied principal shares \(r_d\) to be chosen separately across treatment arms, as in a sensitivity analysis that has not imposed the Lee principal-share equations.  It is a proposal-defined finite-binary benchmark for the published SGJR/JR modelling strategy, not a claim that those papers publish this exact support functional.  Let \(\mathcal R_\ell^{\mathrm{SGJR}}(P;\Gamma)\) be the nonempty set of optimizer tables for this endpoint problem.
+
+Let \(v_\ell^{\mathrm{HH}}(P;\Gamma)\) be the endpoint value of a binary no-exclusion marginal-selection comparator in the style of \citet{HonoreHu2020Selection}, defined here as the support value of the same contrast \(s_\ell(a_1-a_0)\) over latent selected-outcome laws that match the observed selected margins \((p_d,m_d)\), satisfy the armwise selected-mixture odds-ratio cap \(\Gamma\), and are not required to admit a common Lee always-selected principal share \(\alpha\) or the harmed-stratum budget \(H\le \kappa p_0\).  Let \(\mathcal H_\ell(P;\Gamma)\) denote the set of exposed binary endpoint tables attaining \(v_\ell^{\mathrm{HH}}(P;\Gamma)\), with each \(h\in\mathcal H_\ell(P;\Gamma)\) carrying coordinates \((r_1(h),r_0(h),t_1(h),t_0(h))\).  The proposed comparison to \citet{HonoreHu2020Selection} is only to this mathematically defined no-exclusion support set, not to every estimator or inferential procedure in that paper.
+
+For each endpoint direction \(\ell\in\{-,+\}\), define the observable compatibility gaps
+\[
+  \Delta_\ell^{\mathrm{SGJR}}(P;\Gamma,\kappa)=
+  \inf_{(r_1,r_0,t_1,t_0)\in\mathcal R_\ell^{\mathrm{SGJR}}(P;\Gamma)}
+  \left\{|p_1r_1-p_0r_0|+
+  \operatorname{dist}\!\left(p_1r_1,\mathcal A_\kappa^+(P)\right)\right\}.
+\]
+Define
+\[
+  \Delta_\ell^{\mathrm{HH}}(P;\Gamma,\kappa)=
+  \inf_{h\in\mathcal H_\ell(P;\Gamma)}
+  \left\{|p_1r_1(h)-p_0r_0(h)|+
+  \operatorname{dist}\!\left(p_1r_1(h),\mathcal A_\kappa^+(P)\right)\right\},
+\]
+with the convention that the infimum over an empty exposed endpoint set is \(+\infty\), though Assumption~\ref{ass:exposed-endpoints} rules out emptiness for the comparison results.  Thus \(\Delta_\ell^{\mathrm{SGJR}}=0\) means that at least one SGJR/JR-induced beta/psi benchmark table is compatible with a single principal share \(\alpha=p_1r_1=p_0r_0\) satisfying the reverse-selection budget, and \(\Delta_\ell^{\mathrm{HH}}=0\) means that at least one no-exclusion endpoint table has \(p_1r_1(h)=p_0r_0(h)\in\mathcal A_\kappa^+(P)\).  Positive gaps are the proposed thresholds for strict non-equivalence.
+
+\begin{verbatim}
+qid = pid_collider_bias_sharp.
+specialization = v1_lee_gamma_selection.
+observable distribution P = the randomized binary-treatment law of
+    (D,S,SY), where D in {0,1}, S is the realized post-treatment
+    selection/collider indicator, and Y in {0,1} is observed only when S=1.
+parameter theta = E[Y(1)-Y(0) | S(1)=S(0)=1], the Lee always-selected
+    average treatment effect for the outcome scale on which Y is defined.
+identifying restrictions = random assignment and consistency; binary
+    principal selection strata A=(1,1), G=(0,1), H=(1,0), N=(0,0);
+    a finite reverse-selection budget kappa limiting the harmed stratum H;
+    and an arm-specific collider odds-ratio bound Gamma on the association,
+    inside each selected arm, between the always-selected stratum A and the
+    selected outcome Y(d).
+bounding functional = the alpha-profile quadratic selected-mixture
+    envelope B_{Gamma,kappa}(P), obtained by varying the always-selected
+    share alpha=P(A)>0 over its positive observable/reverse-budget interval
+    and solving
+    the two arm-specific odds-ratio saturation quadratics for the feasible
+    always-selected means.
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Random assignment and consistency]\label{ass:random-consistency}
+Treatment \(D\) is independent of \((S(0),S(1),Y(0),Y(1))\), both treatment arms have positive probability, and the observed variables satisfy \(S=S(D)\) and \(Y=Y(D)\) when \(S=1\).
+\end{assumption}
+
+\begin{assumption}[Binary selected-outcome support]\label{ass:binary-support}
+For each \(d\in\{0,1\}\), \(S(d)\in\{0,1\}\) and \(Y(d)\in\{0,1\}\).  The observed selected rates satisfy \(p_d\in(0,1)\) and selected means satisfy \(m_d\in(0,1)\).
+\end{assumption}
+
+\begin{assumption}[Finite reverse-selection budget]\label{ass:reverse-budget}
+For a fixed \(\kappa\in[0,\infty]\), the harmed principal stratum mass \(h=P(S(0)=1,S(1)=0)\) satisfies \(h\le \kappa p_0\).  Equivalently,
+\[
+  \mathcal A_\kappa(P)=
+  [\max\{0,p_0+p_1-1,p_0(1-\kappa)\},\ \min\{p_0,p_1\}]
+\]
+is the admissible interval for \(\alpha=P(A)\), and the target problem is feasible only when \(\mathcal A_\kappa^+(P)\) is nonempty.  If \(0\in\mathcal A_\kappa(P)\), the zero-always-selected law is excluded from the \(\theta_A\) profile because \(E[Y(1)-Y(0)\mid A]\) is undefined there.
+\end{assumption}
+
+\begin{assumption}[Finite selected-mixture collider dependence]\label{ass:gamma-mixture}
+For a fixed \(\Gamma\in[1,\infty]\), each arm \(d\) and each admissible positive \(\alpha\in\mathcal A_\kappa^+(P)\) must admit \(t_d\) with Fréchet bounds
+\[
+  \max\{0,r_d(\alpha)+m_d-1\}\le t_d\le \min\{r_d(\alpha),m_d\}
+\]
+and selected-arm odds ratio \(OR_d(t_d;r_d(\alpha),m_d)\in[\Gamma^{-1},\Gamma]\).
+\end{assumption}
+
+\begin{assumption}[Nondegenerate interior case]\label{ass:interior}
+The selected mixture is in the interior region \(\Gamma\in(1,\infty)\), \(\mathcal A_\kappa^+(P)\) has nonempty interior with a positive lower endpoint, and for each \(\alpha\in\mathcal A_\kappa^+(P)\) the two arm-specific Fréchet intervals contain at least one point satisfying Assumption~\ref{ass:gamma-mixture}.
+\end{assumption}
+
+\begin{assumption}[Exposed endpoint faces for comparison]\label{ass:exposed-endpoints}
+For each endpoint direction \(\ell\in\{-,+\}\) used in Conjectures~\ref{conj:lee-gamma-frontier}--\ref{conj:coupling-iff}, the relevant unrestricted \(\Gamma=\infty\) optimizer, the SGJR/JR-induced beta/psi comparator optimizer set \(\mathcal R_\ell^{\mathrm{SGJR}}(P;\Gamma)\), and the no-exclusion endpoint set \(\mathcal H_\ell(P;\Gamma)\) are nonempty.  The comparison regime has \(p_0\ne p_1\), nondegenerate selected mixtures \(r_d(\alpha)\in(0,1)\) for all \(\alpha\in\mathcal A_\kappa^+(P)\), and positive one-sided principal strata \(G=p_1-\alpha>0\) and \(H=p_0-\alpha>0\) at the \((\Gamma,\kappa)\) optimizer.  Whenever a strict-separation conclusion is claimed, the relevant endpoint is locally unique and is exposed by the stated Fréchet or interior odds-ratio face.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: armwise quadratic selected-mixture envelope]\label{thm:arm-quadratic}
+Under Assumptions~\ref{ass:random-consistency}, \ref{ass:binary-support}, and \ref{ass:gamma-mixture}, fix an arm \(d\) and an admissible \(\alpha\) with \(r=r_d(\alpha)\in(0,1)\) and \(m=m_d\in(0,1)\).  The feasible values of \(t=P(A,Y(d)=1\mid S(d)=1)\) form a closed interval obtained by intersecting the Fréchet interval with the two odds-ratio quadratic inequalities
+\[
+  t(1-r-m+t)\le \Gamma(r-t)(m-t),
+  \qquad
+  \Gamma t(1-r-m+t)\ge (r-t)(m-t).
+\]
+Equivalently, the two possible active endpoint equations are quadratic polynomials in \(t\).  The feasible always-selected mean in arm \(d\) is the corresponding interval \(a_d=t/r\).
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) This theorem is routine \(2\times2\) odds-ratio algebra, not the flagship novelty, and should be read as the building block for the conjectures rather than as a new published-prior-art claim.  It isolates the exact epsilon-gap to \citet{Lee2009SampleSelection}: Lee's trimming endpoints are quantile-tail endpoints under monotone selection and unrestricted selected-mixture sorting, whereas this result gives the finite-\(\Gamma\) selected-mixture cell equations that the coupled Lee-style sensitivity curve must solve.  It also differs from \citet{ScharfsteinManskiAnthony2004Bounds}, which bounds armwise missing outcomes rather than the always-selected component inside the selected mixture.  (b) The concrete consumer is Conjecture~\ref{conj:lee-gamma-frontier}: without the armwise quadratic cell equations, the proposed Lee-\(\Gamma\) frontier has no explicit endpoint construction.
+
+\begin{conjecture}[Conjecture 1: sharp Lee--Gamma principal-strata frontier (NOT YET PROVED)]\label{conj:lee-gamma-frontier}
+Under Assumptions~\ref{ass:random-consistency}--\ref{ass:interior}, the sharp identified set for the always-selected effect is
+\[
+  \Theta_I(P;\Gamma,\kappa)=
+  \left[
+    \inf_{\alpha\in\mathcal A_\kappa^+(P)}
+      \{\underline a_1(\alpha)-\overline a_0(\alpha)\},
+    \sup_{\alpha\in\mathcal A_\kappa^+(P)}
+      \{\overline a_1(\alpha)-\underline a_0(\alpha)\}
+  \right],
+\]
+where \(\underline a_d(\alpha)\) and \(\overline a_d(\alpha)\) are the armwise quadratic endpoints from Theorem~\ref{thm:arm-quadratic}.  Moreover, each global endpoint is attained by an explicit four-stratum law \((A,G,H,N)\) whose two selected-arm \(2\times2\) tables saturate the appropriate odds-ratio boundary, and the optimizing \(\alpha\) is either an endpoint of \(\mathcal A_\kappa^+(P)\) or a root of the derivative of a quadratic-radical profile induced by the active odds-ratio equations.
+For an open set of observable laws satisfying the comparison regime in Assumption~\ref{ass:exposed-endpoints}, this frontier is conjectured not to be representable as either the \citet{HuberMellace2015SharpSelection} monotonicity/stochastic-dominance sharp-bound geometry, a \citet{LaffersNedela2017Sensitivity} Lee sensitivity program with only monotonicity/exogeneity relaxation parameters, a \citet{Semenova2025GeneralizedLee} conditional-monotonicity Lee bound, the stochastic-monotonicity-plus-symmetry geometry of \citet{Okamoto2025RobustifyLee}, or a margin-free application of the \citet{ShepherdGilbertJemiaiRotnitzky2006}, \citet{JemiaiRotnitzkyShepherdGilbert2007}, \citet{ShepherdRedmanAnkerst2008}, and \citet{ShepherdGilbertDupont2011} beta/psi principal-stratum sensitivity family.  The statement explicitly concedes that beta \(=\log OR_d(t_d;r_d(\alpha),m_d)\) reproduces each armwise selected table; the conjectured non-equivalence is the sharper claim that without adding the same \(\alpha\)-coupling and \(H\le \kappa p_0\) restriction, those armwise beta tables do not define the same global sharp ATE endpoint.  The distinguishing certificate is an interior active odds-ratio equality \(OR_d(t_d;r_d(\alpha),m_d)\in\{\Gamma^{-1},\Gamma\}\) plus the cross-arm equalities \(p_1r_1(\alpha)=p_0r_0(\alpha)=\alpha\), with no tail-trimming quantile cutoff, stochastic-dominance ordering, stochastic monotonicity/symmetry condition, covariate sign partition, or right-censoring survival model that pins the same coupled selected-cell endpoint.  A concrete open-cell witness target is \(p_1=0.6\), \(p_0=0.5\), \(m_1=0.5\), \(m_0=0.4\), \(\Gamma=4\), \(\kappa=0.5\), and \(\alpha=0.3\): both \(G=0.3\) and \(H=0.2\) are positive.  At this witness the local upper ATE endpoint uses \(t_1=1/3\) and \(t_0=(-1+\sqrt{3.88})/6\), while the local lower ATE endpoint uses \(t_1=1/6\) and \(t_0=(4-\sqrt{4.48})/6\); the corresponding armwise beta values are \(\pm\log 4\), so the certificate is not the absence of a log-odds parametrization but the extra \((\alpha,\kappa)\) compatibility restriction:
+\[
+\begin{array}{c|cc|c|c}
+\text{arm/endpoint} & P(A,Y=1\mid S(d)=1) & P(A,Y=0\mid S(d)=1) &
+P(A^c,Y=1\mid S(d)=1) & P(A^c,Y=0\mid S(d)=1)\\
+\hline
+d=1,\ \text{upper} & 0.333 & 0.167 & 0.167 & 0.333\\
+d=1,\ \text{lower} & 0.167 & 0.333 & 0.333 & 0.167\\
+d=0,\ \text{upper for }a_0 & 0.314 & 0.286 & 0.086 & 0.314\\
+d=0,\ \text{lower for }a_0 & 0.162 & 0.438 & 0.238 & 0.162
+\end{array}
+\]
+Thus the displayed witness gives local ATE values approximately \([-0.190,0.397]\) at \(\alpha=0.3\), with all active cells interior rather than tail-trimming faces.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest papers are now the principal-stratum sensitivity papers \citet{ShepherdGilbertJemiaiRotnitzky2006}, \citet{JemiaiRotnitzkyShepherdGilbert2007}, \citet{ShepherdRedmanAnkerst2008}, and \citet{ShepherdGilbertDupont2011}, together with the truncation-by-death and Lee-specific sharp comparators \citet{Imai2008TruncationDeath}, \citet{Chiba2012SACE}, \citet{HuberMellace2015SharpSelection}, \citet{LaffersNedela2017Sensitivity}, and \citet{Okamoto2025RobustifyLee}.  Those papers already target always-selected or always-event effects and some relax monotonicity using log-odds sensitivity, stochastic monotonicity, or shape restrictions, so the epsilon-gap cannot be the estimand or the mere presence of an odds-ratio parameter.  The gap is the coupled sharp profile: Conjecture~\ref{conj:lee-gamma-frontier} asks for a closed-form endpoint law for a primitive finite collider-dependence budget whose active endpoint is an interior selected-mixture odds-ratio face tied across arms by \(\alpha\) and restricted by \(H\le\kappa p_0\), not a margin-free beta/psi armwise sensitivity table, a stochastic-monotonicity/symmetry Lee face, a monotonicity/stochastic-dominance principal-strata face, or a trimming/relaxed-monotonicity LP face.  It is also separated from \citet{Semenova2025GeneralizedLee}, because Semenova's sharp generalized bound relies on covariates identifying the sign of the selection effect, whereas this proposal permits bidirectional latent selection within the same observed covariate cell.  \citet{KroftMourifieVayalinkal2024MultilayeredLee} shows that Lee applications can hide selection structure, but it does not supply this finite-collider sensitivity frontier.  (b) Resolving the conjecture would give applied Lee-bounds users a sharp robustness curve for Job Corps-style wage analyses: they could state how large \(\Gamma\) or \(\kappa\) must be before the Lee conclusion disappears, even when conditional monotonicity, stochastic monotonicity, or a beta/psi principal-stratum model is not credible within a covariate cell.
+
+\begin{conjecture}[Conjecture 2: strict finite-\(\Gamma\) tightening and equality cases (NOT YET PROVED)]\label{conj:strict-tightening}
+Under Assumptions~\ref{ass:random-consistency}--\ref{ass:exposed-endpoints}, if \(\Gamma<\infty\) and every unrestricted \(\Gamma=\infty\) optimizer for the lower or upper ATE endpoint uses at least one selected-arm cell on a nondegenerate Fréchet equality face \(t_d=L_d(\alpha)\) or \(t_d=U_d(\alpha)\) with \(0<L_d(\alpha)<U_d(\alpha)<1\), then the interval in Conjecture~\ref{conj:lee-gamma-frontier} is a strict subset of the unrestricted bidirectional-principal-strata interval obtained by setting \(\Gamma=\infty\).  Within the interior assumptions, equality is possible only through profile-level compensation: a different positive \(\alpha\) must reproduce the unrestricted ATE endpoint while all active arm cells satisfy the finite-\(\Gamma\) odds-ratio inequalities.  Outside the interior assumptions, equality can also occur when an optimizing \(\alpha\) forces a degenerate principal mixture \(r_d(\alpha)\in\{0,1\}\), an observed selected outcome margin has \(m_d\in\{0,1\}\), or the reverse-selection budget collapses to Lee monotonicity and the unrestricted endpoint is already compatible with the finite-\(\Gamma\) odds-ratio face.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{Manski1990NonparametricBounds} and \citet{HorowitzManski1995Censoring} provide unrestricted missing-outcome or mixture benchmarks, while \citet{SmithVanderWeele2019Selection} gives practical finite-factor outer bounds; none characterizes when finite selected-mixture collider dependence strictly removes the Lee/Manski endpoint laws.  The epsilon-gap is the equality-case classification for principal-strata selection, not the existence of a narrower interval in a generic sensitivity model.  (b) The concrete consumer is the top-journal Lee-bounds audit in \citet{KroftMourifieVayalinkal2024MultilayeredLee}: strict-tightening certificates identify applications where conventional Lee sensitivity is dominated by finite-collider reporting.
+
+\begin{conjecture}[Conjecture 3: if-and-only-if coupling threshold versus SGJR/JR-induced beta/psi and no-exclusion support benchmarks (NOT YET PROVED)]\label{conj:coupling-iff}
+Under Assumptions~\ref{ass:random-consistency}--\ref{ass:exposed-endpoints}, fix an endpoint direction \(\ell\in\{-,+\}\).  Let \(b_\ell(P;\Gamma,\kappa)\) be the corresponding support value of the \((\Gamma,\kappa)\) frontier in Conjecture~\ref{conj:lee-gamma-frontier}.  Then \(b_\ell(P;\Gamma,\kappa)=v_\ell^{\mathrm{SGJR}}(P;\Gamma)\) for the finite-binary \citet{ShepherdGilbertJemiaiRotnitzky2006} / \citet{JemiaiRotnitzkyShepherdGilbert2007}-induced beta/psi endpoint problem if and only if \(\Delta_\ell^{\mathrm{SGJR}}(P;\Gamma,\kappa)=0\).  If \(\Delta_\ell^{\mathrm{SGJR}}(P;\Gamma,\kappa)>0\), then \(b_\ell(P;\Gamma,\kappa)\) is strictly inside that SGJR/JR-induced armwise beta/psi benchmark.  Separately, \(b_\ell(P;\Gamma,\kappa)=v_\ell^{\mathrm{HH}}(P;\Gamma)\) for the proposal-defined binary no-exclusion support benchmark inspired by \citet{HonoreHu2020Selection} only if \(\Delta_\ell^{\mathrm{HH}}(P;\Gamma,\kappa)=0\); under local uniqueness and strict exposure, \(\Delta_\ell^{\mathrm{HH}}(P;\Gamma,\kappa)>0\) implies strict separation from the no-exclusion endpoint.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest papers are \citet{ShepherdGilbertJemiaiRotnitzky2006}, \citet{JemiaiRotnitzkyShepherdGilbert2007}, \citet{ShepherdRedmanAnkerst2008}, \citet{ShepherdGilbertDupont2011}, \citet{EglestonScharfsteinFreemanWest2007}, and \citet{HonoreHu2020Selection}.  They provide principal-stratum sensitivity or no-exclusion selection workflows, but they do not give an observable if-and-only-if threshold for when the finite-binary endpoint tables induced by those workflows are jointly attainable by a single Lee always-selected principal share under a finite collider-dependence budget.  The epsilon-gap is the pair of support-function thresholds \(\Delta_\ell^{\mathrm{SGJR}}(P;\Gamma,\kappa)\) and \(\Delta_\ell^{\mathrm{HH}}(P;\Gamma,\kappa)\): zero predicts exact agreement with the named-workflow benchmark, while positive exposed gaps predict strict non-equivalence.  (b) The concrete consumer is an applied Lee analysis such as \citet{Lee2009SampleSelection}: the analyst can report not just a wider sensitivity interval, but whether a beta/psi principal-stratum or no-exclusion workflow is looser for a diagnosed reason, namely failure of common-\(\alpha\) compatibility.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Lee monotonicity corner]\label{cor:lee-corner}
+Under Assumptions~\ref{ass:random-consistency}--\ref{ass:gamma-mixture}, if \(p_1\ge p_0\), \(\kappa=0\), and \(\Gamma=\infty\), then \(\mathcal A_\kappa(P)=\{p_0\}\), the control-arm always-selected mean is \(m_0\), and the treated-arm always-selected mean ranges over the unrestricted mixture interval with selected mixture share \(p_0/p_1\).  For binary \(Y\), this is the binary-outcome version of the Lee trimming interval.
+\end{corollary}
+
+\begin{corollary}[No-dependence selected-mixture corner]\label{cor:gamma-one}
+Under Assumptions~\ref{ass:random-consistency}, \ref{ass:binary-support}, \ref{ass:reverse-budget}, and \ref{ass:gamma-mixture}, if \(\Gamma=1\) and \(\mathcal A_\kappa^+(P)\) is nonempty, then for each admissible positive \(\alpha\) and arm \(d\), the selected mixture constraint forces \(t_d=r_d(\alpha)m_d\) and hence \(a_d=m_d\).  Therefore \(\theta_A\) is the singleton \(m_1-m_0\); the admissible positive principal-share interval \(\mathcal A_\kappa^+(P)\) affects only the feasibility of principal-strata masses, not the value of the always-selected mean contrast.
+\end{corollary}
+
+These reductions are meant as hard checks on the proposal.  Corollary~\ref{cor:lee-corner} collapses to Lee because Assumption~\ref{ass:reverse-budget} with \(\kappa=0\) sets \(h=0\), so \(\alpha=p_0\), and \(\Gamma=\infty\) removes the odds-ratio restriction.  Corollary~\ref{cor:gamma-one} follows because odds ratio one is independence between principal stratum \(A\) and \(Y(d)\) within the selected arm, so the joint selected-cell mass must equal the product of margins; dividing by \(r_d(\alpha)\) cancels all dependence on \(\alpha\), giving \(\theta_A=m_1-m_0\).
+
+\section{Proof-sketch route}
+The mathematical route is finite-dimensional.  First, write the selected arm as a two-component mixture of always-selected and one-sided-selected principal strata; fixed positive \(\alpha\) makes the component share \(r_d(\alpha)\) observed.  Second, express the odds-ratio restriction with fixed margins \((r_d,m_d)\), yielding the two quadratic inequalities in Theorem~\ref{thm:arm-quadratic}.  Third, prove endpoint attainability by constructing the four principal-strata masses \((\alpha,p_1-\alpha,p_0-\alpha,1-p_0-p_1+\alpha)\) and assigning binary outcome probabilities in each selected stratum to match the active \(t_d\) cells.  Fourth, make the beta/psi comparison algebraic rather than qualitative: map each active endpoint table to the armwise log-odds parameter \(\beta_d=\log OR_d(t_d;r_d,m_d)\), verify that the displayed witness has \(\beta_d=\pm\log 4\), and then prove that the remaining difference from the finite-binary SGJR/JR-induced beta/psi endpoint problem is exactly the compatibility system \(p_1r_1=p_0r_0=\alpha\), \(G=p_1-\alpha>0\), \(H=p_0-\alpha>0\), and \(H\le\kappa p_0\).  For Conjecture~\ref{conj:coupling-iff}, compute \(\mathcal R_\ell^{\mathrm{SGJR}}\) and \(\mathcal H_\ell\), show that \(\Delta_\ell^{\mathrm{SGJR}}=0\) and \(\Delta_\ell^{\mathrm{HH}}=0\) are the necessary compatibility equations for their endpoint tables to be realized by a Lee principal-strata law, and use strict exposure plus compactness to turn positive gaps into strict support-function gaps.  The proposed non-equivalence certificate is therefore an open cell in which removing that compatibility system changes the support function of the ATE set, while Lee trimming, Huber--Mellace monotonicity/stochastic-dominance bounds, Okamoto stochastic monotonicity/symmetry bounds, conditional-monotonicity Lee bounds, no-exclusion marginal bounds, and margin-free beta/psi armwise models either impose a sign/order/shape model or fail to couple the two selected arms by one principal-share law.  The only nonroutine step is the global profile over \(\alpha\): one must show that no cross-arm compatibility constraint remains beyond the shared \(\alpha\), and then classify whether the supremum and infimum occur at endpoints of \(\mathcal A_\kappa^+(P)\) or at active-profile stationary points.  Boundary cases needing explicit algebra are \(\alpha=0\) exclusion, \(p_1=p_0\), \(\kappa=0\), \(\Gamma=1\), \(\Gamma=\infty\), and observed selected means near \(0\) or \(1\).
+
+\section{Honest scope flags}
+Theorem~\ref{thm:arm-quadratic} is labelled as a theorem because it is a direct finite-table algebra statement and is not the flagship novelty.  Conjectures~\ref{conj:lee-gamma-frontier}, \ref{conj:strict-tightening}, and \ref{conj:coupling-iff} are not yet proved; the open issue is global sharpness of the \(\alpha\)-profile, strict non-subsumption relative to Lee, stochastic-monotonicity Lee, no-exclusion selection bounds, and margin-free beta/psi principal-stratum sensitivity analyses, and the equality-case / if-and-only-if threshold classification, not the armwise quadratic calculation.  This pivot deliberately withdraws the rejected angle's common-error rank-copula compatibility frontier and replaces it with a Lee principal-strata selected-mixture frontier.  The most delicate modelling choice is Assumption~\ref{ass:reverse-budget}: \(\kappa\) is a transparent finite harmed-stratum budget, but a reviewer may prefer a symmetric budget on both \(G\) and \(H\) or an odds-ratio budget on principal type itself.  The proposal should survive that preference only if the quadratic selected-mixture kernel remains the flagship statement.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) --- initial draft for angle 1; replaces the rejected common-error collider frontier with a Lee-style principal-strata quadratic frontier under finite \((\Gamma,\kappa)\) budgets; prior verdict: none.
+\item v2 (revise) --- added load-bearing comparisons to \citet{LaffersNedela2017Sensitivity} and \citet{Semenova2025GeneralizedLee}, strengthened Conjecture~\ref{conj:lee-gamma-frontier} with an open-regime non-subsumption clause, and corrected the \(\Gamma=1\) sanity check to the singleton \(m_1-m_0\); prior verdict: REVISE.
+\item v3 (revise) --- added \citet{HuberMellace2015SharpSelection} as the direct principal-strata sharp-bounds comparator, restricted the profiled domain to positive always-selected mass, and replaced the ambiguous Conjecture~\ref{conj:strict-tightening} equality-face language with explicit \(L_d,U_d\) conditions; prior verdict: REVISE.
+\item v4 (revise) --- added the Shepherd--Gilbert--Jemiai--Rotnitzky, Jemiai--Rotnitzky, Shepherd--Redman--Ankerst, and Shepherd--Gilbert--Dupont principal-stratum sensitivity comparators; recast Conjecture~\ref{conj:lee-gamma-frontier} as an orthogonality/non-equivalence claim relative to their beta/psi family; and added an auditable endpoint table for the numerical witness; prior verdict: REVISE.
+\item v5 (revise) --- added \citet{Okamoto2025RobustifyLee} as the direct stochastic-monotonicity Lee comparator, replaced the incorrect linear-geometry language by quadratic-inequality language, and converted the beta/psi comparison into an explicit beta \(=\log OR\) armwise map plus an \((\alpha,\kappa)\)-coupling certificate; prior verdict: REVISE.
+\item v1 (revise) --- patched the flagship-novelty response by adding \citet{EglestonScharfsteinFreemanWest2007} and \citet{HonoreHu2020Selection}, adding Conjecture~\ref{conj:coupling-iff} as the requested if-and-only-if compatibility threshold, and preparing the mapped literature checklist for reviewer handoff; prior verdict: REVISE.
+\item v2 (revise) --- instantiated Conjecture~\ref{conj:coupling-iff} against named SGJR/JR beta/psi and Honore--Hu-style no-exclusion support functionals, replacing the generic \(\Delta_\ell\) comparator with \(\Delta_\ell^{\mathrm{SGJR}}\) and \(\Delta_\ell^{\mathrm{HH}}\); prior verdict: REVISE.
+\item v3 (revise) --- corrected Conjecture~\ref{conj:coupling-iff} so \(v_\ell^{\mathrm{SGJR}}\) and \(v_\ell^{\mathrm{HH}}\) are proposal-defined benchmarks induced by named published strategies rather than published endpoint functionals, redefined \(\Delta_\ell^{\mathrm{HH}}\) directly on exposed no-exclusion table coordinates with an empty-set convention, added \citet{Imai2008TruncationDeath} and \citet{Chiba2012SACE}, and corrected the \citet{HonoreHu2020Selection} DOI; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Balke and Pearl(1997)]{BalkePearl1997Bounds}
+Balke, Alexander, and Judea Pearl. 1997. ``Bounds on Treatment Effects from Studies with Imperfect Compliance.'' \emph{Journal of the American Statistical Association} 92(439):1171--1176. \url{https://doi.org/10.1080/01621459.1997.10474074}.
+
+\bibitem[Frangakis and Rubin(2002)]{FrangakisRubin2002PrincipalStratification}
+Frangakis, Constantine E., and Donald B. Rubin. 2002. ``Principal Stratification in Causal Inference.'' \emph{Biometrics} 58(1):21--29. \url{https://doi.org/10.1111/j.0006-341X.2002.00021.x}.
+
+\bibitem[Chiba(2012)]{Chiba2012SACE}
+Chiba, Yasutaka. 2012. ``Estimation and Sensitivity Analysis of the Survivor Average Causal Effect under the Monotonicity Assumption.'' \emph{Journal of Biometrics \& Biostatistics} 3(7):e116. \url{https://doi.org/10.4172/2155-6180.1000e116}.
+
+\bibitem[Hernan, Hernandez-Diaz, and Robins(2004)]{HernanHernandezDiazRobins2004Selection}
+Hernan, Miguel A., Sonia Hernandez-Diaz, and James M. Robins. 2004. ``A Structural Approach to Selection Bias.'' \emph{Epidemiology} 15(5):615--625. \url{https://doi.org/10.1097/01.ede.0000135174.63482.43}.
+
+\bibitem[Egleston et al.(2007)]{EglestonScharfsteinFreemanWest2007}
+Egleston, Brian L., Daniel O. Scharfstein, Jeremy L. Freeman, and Sheila K. West. 2007. ``Causal Inference for Non-Mortality Outcomes in the Presence of Death.'' \emph{Biostatistics} 8(3):526--545. \url{https://doi.org/10.1093/biostatistics/kxl027}.
+
+\bibitem[Honore and Hu(2020)]{HonoreHu2020Selection}
+Honore, Bo E., and Luojia Hu. 2020. ``Selection Without Exclusion.'' \emph{Econometrica} 88(3):1007--1029. \url{https://doi.org/10.3982/ECTA16481}.
+
+\bibitem[Horowitz and Manski(1995)]{HorowitzManski1995Censoring}
+Horowitz, Joel L., and Charles F. Manski. 1995. ``Identification and Robustness with Contaminated and Corrupted Data.'' \emph{Econometrica} 63(2):281--302. \url{https://doi.org/10.2307/2951627}.
+
+\bibitem[Huber and Solovyeva(2020)]{HuberSolovyeva2020SelectionMediation}
+Huber, Martin, and Anna Solovyeva. 2020. ``Direct and Indirect Effects under Sample Selection and Outcome Attrition.'' \emph{Econometrics} 8(4):44. \url{https://doi.org/10.3390/econometrics8040044}.
+
+\bibitem[Huber and Mellace(2015)]{HuberMellace2015SharpSelection}
+Huber, Martin, and Giovanni Mellace. 2015. ``Sharp Bounds on Causal Effects under Sample Selection.'' \emph{Oxford Bulletin of Economics and Statistics} 77(1):129--151. \url{https://doi.org/10.1111/obes.12056}.
+
+\bibitem[Imai(2008)]{Imai2008TruncationDeath}
+Imai, Kosuke. 2008. ``Sharp Bounds on the Causal Effects in Randomized Experiments with `Truncation-by-Death'.'' \emph{Statistics \& Probability Letters} 78(2):144--149. \url{https://doi.org/10.1016/j.spl.2007.05.015}.
+
+\bibitem[Jemiai, Rotnitzky, Shepherd, and Gilbert(2007)]{JemiaiRotnitzkyShepherdGilbert2007}
+Jemiai, Yannis, Andrea Rotnitzky, Bryan E. Shepherd, and Peter B. Gilbert. 2007. ``Semiparametric Estimation of Treatment Effects Given Base-Line Covariates on an Outcome Measured After a Post-Randomization Event Occurs.'' \emph{Journal of the Royal Statistical Society: Series B} 69(5):879--901. \url{https://doi.org/10.1111/j.1467-9868.2007.00615.x}.
+
+\bibitem[Kroft, Mourifie, and Vayalinkal(2024)]{KroftMourifieVayalinkal2024MultilayeredLee}
+Kroft, Kory, Ismael Mourifie, and Atom Vayalinkal. 2024. ``Lee Bounds with Multilayered Sample Selection.'' NBER Working Paper No. 32952. \url{https://www.nber.org/papers/w32952}.
+
+\bibitem[Lee(2009)]{Lee2009SampleSelection}
+Lee, David S. 2009. ``Training, Wages, and Sample Selection: Estimating Sharp Bounds on Treatment Effects.'' \emph{Review of Economic Studies} 76(3):1071--1102. \url{https://doi.org/10.1111/j.1467-937X.2009.00536.x}.
+
+\bibitem[Laffers and Nedela(2017)]{LaffersNedela2017Sensitivity}
+Laffers, Lukas, and Roman Nedela. 2017. ``Sensitivity of the Bounds on the ATE in the Presence of Sample Selection.'' \emph{Economics Letters} 158:84--87. \url{https://doi.org/10.1016/j.econlet.2017.06.039}.
+
+\bibitem[Manski(1990)]{Manski1990NonparametricBounds}
+Manski, Charles F. 1990. ``Nonparametric Bounds on Treatment Effects.'' \emph{American Economic Review Papers and Proceedings} 80(2):319--323.
+
+\bibitem[Masten, Poirier, and Zhang(2024)]{MastenPoirierZhang2024Sensitivity}
+Masten, Matthew A., Alexandre Poirier, and Linqi Zhang. 2024. ``Assessing Sensitivity to Unconfoundedness: Estimation and Inference.'' \emph{Journal of Business \& Economic Statistics} 42(1):1--17. \url{https://doi.org/10.1080/07350015.2023.2183212}.
+
+\bibitem[Okamoto(2025)]{Okamoto2025RobustifyLee}
+Okamoto, Yuta. 2025. ``Robustify and Tighten the Lee Bounds: A Sample Selection Model under Stochastic Monotonicity and Symmetry Assumptions.'' \emph{The Econometrics Journal} 28(3):482--501. \url{https://doi.org/10.1093/ectj/utaf001}.
+
+\bibitem[Scharfstein, Manski, and Anthony(2004)]{ScharfsteinManskiAnthony2004Bounds}
+Scharfstein, Daniel O., Charles F. Manski, and James C. Anthony. 2004. ``On the Construction of Bounds in Prospective Studies with Missing Ordinal Outcomes: Application to the Good Behavior Game Trial.'' \emph{Biometrics} 60(1):154--164. \url{https://doi.org/10.1111/j.0006-341X.2004.00158.x}.
+
+\bibitem[Shepherd, Gilbert, Jemiai, and Rotnitzky(2006)]{ShepherdGilbertJemiaiRotnitzky2006}
+Shepherd, Bryan E., Peter B. Gilbert, Yannis Jemiai, and Andrea Rotnitzky. 2006. ``Sensitivity Analyses Comparing Outcomes Only Existing in a Subset Selected Post-Randomization, Conditional on Covariates, with Application to HIV Vaccine Trials.'' \emph{Biometrics} 62(2):332--342. \url{https://doi.org/10.1111/j.1541-0420.2005.00495.x}.
+
+\bibitem[Shepherd, Gilbert, and Dupont(2011)]{ShepherdGilbertDupont2011}
+Shepherd, Bryan E., Peter B. Gilbert, and Charles T. Dupont. 2011. ``Sensitivity Analyses Comparing Time-to-Event Outcomes Only Existing in a Subset Selected Postrandomization and Relaxing Monotonicity.'' \emph{Biometrics} 67(3):1100--1110. \url{https://doi.org/10.1111/j.1541-0420.2010.01508.x}.
+
+\bibitem[Shepherd, Redman, and Ankerst(2008)]{ShepherdRedmanAnkerst2008}
+Shepherd, Bryan E., Mary W. Redman, and Donna P. Ankerst. 2008. ``Does Finasteride Affect the Severity of Prostate Cancer? A Causal Sensitivity Analysis.'' \emph{Journal of the American Statistical Association} 103(484):1392--1404. \url{https://doi.org/10.1198/016214508000000706}.
+
+\bibitem[Semenova(2025)]{Semenova2025GeneralizedLee}
+Semenova, Vira. 2025. ``Generalized Lee Bounds.'' \emph{Journal of Econometrics} 251:106055. \url{https://doi.org/10.1016/j.jeconom.2025.106055}.
+
+\bibitem[Smith and VanderWeele(2019)]{SmithVanderWeele2019Selection}
+Smith, Louisa H., and Tyler J. VanderWeele. 2019. ``Bounding Bias Due to Selection.'' \emph{Epidemiology} 30(4):509--516. \url{https://doi.org/10.1097/EDE.0000000000001032}.
+
+\bibitem[Zhang and Rubin(2003)]{ZhangRubin2003TruncationDeath}
+Zhang, Junni L., and Donald B. Rubin. 2003. ``Estimation of Causal Effects via Principal Stratification When Some Outcomes Are Truncated by Death.'' \emph{Journal of Educational and Behavioral Statistics} 28(4):353--368. \url{https://doi.org/10.3102/10769986028004353}.
+
+\bibitem[Zetterstrom, Sjolander, and Waernbaum(2025)]{ZetterstromSjolanderWaernbaum2025Selection}
+Zetterstrom, Stina, Arvid Sjolander, and Ingeborg Waernbaum. 2025. ``Investigations of Sharp Bounds for Causal Effects under Selection Bias.'' \emph{Statistical Methods in Medical Research} 34(12):2270--2283. \url{https://doi.org/10.1177/09622802251374168}.
+\end{thebibliography}
+
+\end{document}

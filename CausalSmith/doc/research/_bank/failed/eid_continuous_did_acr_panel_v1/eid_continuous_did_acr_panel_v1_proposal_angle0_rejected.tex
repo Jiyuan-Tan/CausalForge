@@ -1,0 +1,440 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_continuous\_did\_acr\_panel, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{eid\_continuous\_did\_acr\_panel} / \texttt{v1}%
+  \\ \large\textit{A spectral rank-zero frontier for continuous-dose ACR DiD estimators}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+(qid, specialization, p, assignment, target, regression)
+qid = eid_continuous_did_acr_panel.
+specialization = v1.
+p = 1, an adjacent-period local dose-change comparison embedded in a finite
+    panel with cohorts g in G and periods t in T; dynamic carry-over is
+    excluded in the headline frontier but listed as an extension target.
+assignment = continuous scalar dose D_it in a compact interval D with
+    interior D^o; cohort-period law P_{g,t}; generalized parallel trends for
+    untreated potential outcomes; monotone differentiable dose response; and
+    common support for the local dose windows used below.
+target = population Average Causal Response curve
+    ACR_omega(d) = sum_{g,t} omega_{g,t} d/dd
+      E[Y_it(d)-Y_it(0) | G_i=g] for d in D^o, where omega is a fixed
+      observable cohort-period weighting scheme over the adjacent-period
+      comparisons t-1 -> t and sum_{g,t} omega_{g,t}=1.
+regression = compare three population identifying functionals for ACR_omega(d):
+    (i) DHS quantile-matching continuous-treatment DiD, (ii) dCDH
+    switcher/stayer local-linear ACR, and (iii) the continuous-dose TWFE
+    projection coefficient after cohort and period residualization.
+The proposed frontier is expressed through observable active dose-cohort residuals:
+Abar_obs,h,omega(d)=Pobs_h,omega(d) Abar_h,omega(d) is the only realized
+argument to which the Riesz rows are applied;
+Delta_func,h,omega(d)=K_func,h,omega(d) Abar_h,omega(d)
+=K_raw,h,omega(d) Abar_obs,h,omega(d), for realized-law population-functional
+equality; K_func,h,omega(d), for uniform local-law rank-zero equality over
+active perturbations; and K_score,h,omega(d), for common-submodel score equality
+together with the no-orthogonal-score condition.
+These are defined from local dose covariance Sigma_dose,h,omega(d), the
+cohort-period treatment-share operator Pi_cohort, and the parallel-trend
+bandwidth h on the common local semiparametric model M_{h,omega}.
+\end{verbatim}
+
+\begin{abstract}
+Continuous-treatment difference-in-differences now has several plausible ACR estimators, but their identifying functionals are built from different primitives: quantile matching, switcher-stayer local slopes, and residualized linear projection. This proposal asks for the sharp frontier at which the DHS, dCDH, and TWFE population functionals coincide for the same cohort-period weighted ACR curve \(\mathrm{ACR}_\omega(d)\), and where they separate. The flagship kernel is a conjectural two-level spectral theorem: realized-law functional equality at an interior dose is governed by the active realized residual vector \(K^{func}_{h,\omega}(d)\bar A_{h,\omega}(d)=K^{raw}_{h,\omega}(d)\bar A^{obs}_{h,\omega}(d)\), while uniform equality over all admissible local perturbations is governed by the stronger operator condition \(\kappa^{func}_{h,\omega}(d)=0\). A separate common-submodel variance conjecture uses \(K^{score}_{h,\omega}(d)\) plus explicit baseline residual formulas to ask when the three scores also share the same efficiency bound. If resolved, the result would give applied researchers a diagnostic object to report before treating these continuous-dose DiD estimators as robustness checks for the same estimand.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Continuous treatments such as prices, taxes, temperatures, and exposure intensities are increasingly analyzed with DiD designs. The current frontier offers several nonparametric or semiparametric estimators, but robustness tables often place DHS-style quantile matching, dCDH-style switcher slopes, and continuous-dose TWFE next to one another as if they targeted the same ACR curve. That practice is scientifically fragile: if the methods agree only on a lower-dimensional frontier, then empirical disagreements are not noise but evidence about which identifying primitive is driving the answer.
+
+\paragraph{The main finding (proposed).}
+The proposed headline is Conjecture 1, a spectral realized-gap and rank-zero equivalence frontier. It asserts that the three population functionals agree for the fixed \(\mathrm{ACR}_\omega(d)\) target at the realized law exactly when the active-domain residual \(K^{func}_{h,\omega}(d)\bar A_{h,\omega}(d)=K^{raw}_{h,\omega}(d)\bar A^{obs}_{h,\omega}(d)=0\) for all \(d \in \mathcal D^\circ\), and that they agree uniformly over all admissible active perturbations exactly when the stronger rank-zero condition \(\kappa^{func}_{h,\omega}(d)=0\) holds. The equality-to-target clause is anchored by the DHS compatibility assumption, which states that the DHS functional identifies \(\mathrm{ACR}_\omega(d)\) on the common local model. Conjecture 2 then adds the estimator-level variance statement through the separate score kernel \(K^{score}_{h,\omega}(d)\) only on a named common local semiparametric submodel with no unmeasured orthogonal score component. When the realized residual vector \(K^{func}_{h,\omega}(d)\bar A_{h,\omega}(d)\) is nonzero on a dose set of positive measure, strict separation appears as a DHS-vs-dCDH functional gap, a dCDH bandwidth-score gap, or a TWFE cohort-dose projection bias term.
+
+\paragraph{What is new.}
+The novelty kernel is not another warning that TWFE can be contaminated. The closest published results isolate one side at a time: \citet{DHaultfoeuilleHoderleinSasaki2023} identify continuous-treatment effects by quantile matching in repeated cross sections, \citet{deChaisemartinDHaultfoeuillePasquierSowVazquezBare2025} identify switcher slopes using stayers with equal baseline dose, \citet{CallawayGoodmanBaconSantAnna2024} show that continuous-treatment TWFE parameters are hard to interpret even with two periods, \citet{CallawayGoodmanBaconSantAnna2024EventStudies} define staggered continuous-treatment event-study ACR aggregation choices, and \citet{deChaisemartinDHaultfoeuille2023SeveralTreatments} give a several-treatment TWFE contamination formula. The proposed epsilon gap is a necessary-and-sufficient three-method equality certificate, with the residual rows tied directly to the weighted ACR derivative rather than to generic span inclusion, ACR aggregation alone, or a multi-treatment coefficient decomposition.
+
+\paragraph{How it positions in the literature.}
+This is a panel / linear-projection methods proposal with an exact-identification flavor: the object is an equality frontier among population identifying functionals for a named ACR target. It draws on the DiD estimator-comparison tradition of \citet{deChaisemartinDHaultfoeuille2020}, \citet{GoodmanBacon2021}, \citet{SunAbraham2021}, and \citet{BorusyakJaravelSpiess2024}, but the dose-local derivative and DHS quantile-score component place it outside binary staggered-adoption decompositions. It also touches the honest-trends literature because the bandwidth \(h\) determines which local trend violations enter the active kernel.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the continuous-treatment DiD and event-study workflow in \citet{CallawayGoodmanBaconSantAnna2024} and \citet{CallawayGoodmanBaconSantAnna2024EventStudies}: their decomposition, aggregation, and alternative-estimator program would gain an observable pre-analysis diagnostic saying when DHS, dCDH, and TWFE are estimating the same \(\mathrm{ACR}_\omega(d)\) and when a disagreement is structurally expected.
+
+\paragraph{How research benefits from the conclusion.}
+If the conjecture resolves favorably, empirical papers with continuous treatments should report the functional spectral residual certificate \(K^{func}_{h,\omega}(d)\), the score certificate \(K^{score}_{h,\omega}(d)\), and the weighting scheme \(\omega\) before interpreting agreement among DHS, dCDH, and TWFE as robustness for one ACR curve.
+
+\section{Related work}
+\citet{AtheyImbens2006} give the nonlinear changes-in-changes foundation, replacing additive outcome trends by distributional counterfactuals; this is the older anchor for DHS quantile matching.
+\citet{DHaultfoeuilleHoderleinSasaki2023} identify continuous-treatment causal effects in repeated cross sections using data-defined controls, stationarity of unobservables, and rank invariance; they do not compare their functional with switcher-slope or TWFE limits.
+\citet{deChaisemartinDHaultfoeuillePasquierSowVazquezBare2025} identify switchers' potential-outcome slopes by comparing switchers and stayers at the same baseline dose; their local-slope target is the closest dCDH component of this proposal.
+\citet{deChaisemartinDHaultfoeuilleVazquezBare2024} emphasize that empirical researchers often use TWFE for continuous treatments even though it is not generally robust to heterogeneous effects or nonlinear dose response; this motivates the TWFE branch of the frontier.
+\citet{CallawayGoodmanBaconSantAnna2024} identify treated-type continuous-treatment DiD parameters under generalized parallel trends and show that TWFE parameters can be difficult to interpret; this is the closest published continuous-dose TWFE prior art.
+\citet{CallawayGoodmanBaconSantAnna2024EventStudies} define event-study ACR parameters \(\mathrm{ACR}(g,t,d)\) and aggregation choices for staggered continuous treatments; they are the closest published comparator for the \(\omega\)-weighted ACR target, but they do not compare DHS quantile matching, dCDH switcher slopes, and TWFE projection limits through an equality frontier.
+\citet{deChaisemartinDHaultfoeuille2020} and \citet{GoodmanBacon2021} provide the binary/staggered TWFE negative-weight and decomposition template; the proposed theorem asks for the continuous-dose derivative analogue with the residual rows tied to \(\mathrm{ACR}_\omega(d)\).
+\citet{deChaisemartinDHaultfoeuille2023SeveralTreatments} is the closest TWFE contamination paper because it shows that a coefficient with several treatments can mix its own treatment effects with effects of other treatments; the present proposal differs by treating a continuum dose derivative and comparing TWFE to DHS and dCDH functionals, not only to a robust multi-treatment DiD alternative.
+\citet{SunAbraham2021} show dynamic event-study coefficients can be contaminated by treatment effects from other periods; this supports the proposal's insistence that projection limits must be compared at the functional level.
+\citet{BorusyakJaravelSpiess2024} derive robust and efficient imputation estimators for event-study designs; their efficiency benchmark is relevant to the proposed variance-equality part but does not cover DHS/dCDH continuous-dose matching.
+\citet{RambachanRoth2023} develop robust inference under structured deviations from parallel trends; their sensitivity geometry motivates making the bandwidth \(h\) an explicit argument of \(K^{func}_{h,\omega}(d)\) and \(K^{score}_{h,\omega}(d)\).
+\citet{FreyaldenhovenHansenShapiro2019} use pre-event observables to discipline counterfactual trends, which is adjacent to the question of whether local pre-period restrictions are score-changing or diagnostic for \(\mathrm{ACR}_\omega(d)\).
+
+In-catalogue prior art is adjacent but not duplicative. \texttt{ThmSmith/doc/API.md} \S1 records Q1 panel theorems on minimal decontaminating bases for binary switch-on targets and staggered analogues; those results compare nuisance bases inside one regression target, not three published continuous-dose ACR functionals. The mined prior proposal \texttt{eid\_bjs\_efficient\_event\_study\_v1} conjectured a rank-zero equality certificate for event-study influence functions, while \texttt{panel\_sdid\_mc\_id\_v1} asked for estimator-level iff frontiers but was rejected for missing the residual row tying the method coefficient to the target estimand. This proposal keeps the useful rank-zero idea but makes the residual rows explicit: DHS minus dCDH, dCDH minus TWFE, and the corresponding \(\mathrm{ACR}_\omega(d)\) score-variance row.
+
+\section{Formal setup}
+Units \(i=1,\ldots,n\) are observed in periods \(t \in \mathcal T\) and belong to cohorts \(g \in \mathcal G\). The treatment is a scalar continuous dose \(D_{it} \in \mathcal D \subset \mathbb R\), where \(\mathcal D\) is compact and \(d\) denotes an interior point. Potential outcomes are \(Y_{it}(x)\) for dose \(x\), with no carry-over in the headline problem. Let \(\Omega\subseteq \mathcal G\times\mathcal T\) be the observable set of adjacent-period comparisons \((g,t-1,t)\), and let \(\omega_{g,t}\ge 0\) be fixed design weights with \(\sum_{(g,t)\in\Omega}\omega_{g,t}=1\). The target curve is
+\[
+  \mathrm{ACR}_\omega(d) =
+  \sum_{(g,t)\in\Omega}\omega_{g,t}
+  \frac{\partial}{\partial d}\E[Y_{it}(d)-Y_{it}(0)\mid G_i=g].
+\]
+Let \(\Psi^{DHS}_{h,\omega}(d)\), \(\Psi^{dCDH}_{h,\omega}(d)\), and \(\Psi^{TWFE}_{h,\omega}(d)\) denote the three population identifying functionals for this same weighted target after smoothing over a symmetric local dose window of bandwidth \(h\). The DHS functional is the \(\omega\)-weighted derivative of the quantile-matched counterfactual mean; the dCDH functional is the \(\omega\)-weighted local-linear switcher/stayer slope holding baseline dose fixed; the TWFE functional is the coefficient on the residualized local dose score after cohort and period fixed effects are partialled out and mapped to the same \(\omega\)-weighted derivative scale.
+
+Let \(\mathcal C=\Omega\), \(m=|\mathcal C|\), and \(q=m^2\). Define \(\Sigma_{\mathrm{dose},h,\omega}(d)\in\mathbb R^{m\times m}\) as the observable \(\omega\)-weighted local covariance matrix of the dose score across cohort-period cells, \(\Pi_{\mathrm{cohort}}\in\mathbb R^{m\times m}\) as the cohort-period treatment-share projection, and \(B_h(d)\in\mathbb R^{m\times m}\) as the local parallel-trend bandwidth operator. Set
+\[
+  A_{h,\omega}(d)=\Sigma_{\mathrm{dose},h,\omega}(d)^{1/2}\Pi_{\mathrm{cohort}}B_h(d),
+\]
+let \(\bar A_{h,\omega}(d)=\mathrm{vec}(A_{h,\omega}(d))\in\mathbb R^q\), and let \(\mathcal T^{obs}_{h,\omega}(d)\subseteq\mathbb R^q\) be the observable active residual subspace generated by admissible vectorized perturbations of \(A_{h,\omega}(d)\). Let \(P^{obs}_{h,\omega}(d)\in\mathbb R^{q\times q}\) be the Euclidean orthogonal projection onto \(\mathcal T^{obs}_{h,\omega}(d)\), and define the active realized kernel
+\[
+  \bar A^{obs}_{h,\omega}(d)=P^{obs}_{h,\omega}(d)\bar A_{h,\omega}(d)\in\mathcal T^{obs}_{h,\omega}(d).
+\]
+All realized functional and score residuals below apply Riesz rows only to \(\bar A^{obs}_{h,\omega}(d)\); equivalently, the displayed \(K\)-matrices may be applied to the unprojected \(\bar A_{h,\omega}(d)\) because they already include \(P^{obs}_{h,\omega}(d)\). The common local semiparametric model \(\mathcal M_{h,\omega}\) is the intersection model in which all three functionals are regular maps of the same law; its tangent space is denoted \(\mathcal T_{h,\omega}\), and \(\phi^{DHS}_{h,\omega}(d)\), \(\phi^{dCDH}_{h,\omega}(d)\), and \(\phi^{TWFE}_{h,\omega}(d)\) are the corresponding influence scores when they exist. Let \(P^{DHS}_{h,\omega}(d)\), \(P^{dCDH}_{h,\omega}(d)\), and \(P^{TWFE}_{h,\omega}(d)\) denote the orthogonal score projections onto the efficient score space of this same model.
+
+For \(a,b\in\{DHS,dCDH,TWFE\}\), let \(r_{a,b,\omega}(d)\in\mathbb R^{1\times q}\) be the unique Riesz row satisfying
+\[
+  \Psi^a_{h,\omega}(d;v)-\Psi^b_{h,\omega}(d;v)
+  = \langle r_{a,b,\omega}(d),v\rangle
+  \quad\text{for every }v\in\mathcal T^{obs}_{h,\omega}(d),
+\]
+where the row is set to zero on the orthogonal complement of \(\mathcal T^{obs}_{h,\omega}(d)\). Let \(r_{\mathrm{score},\omega}(d)\) be the analogous Riesz row for
+\((P^{DHS}_{h,\omega}(d)-P^{dCDH}_{h,\omega}(d), P^{dCDH}_{h,\omega}(d)-P^{TWFE}_{h,\omega}(d))\) after vectorizing the two score-projection differences in the same observable cell basis. The raw functional row matrix and the projected functional and score kernel matrices are
+\[
+  K^{raw}_{h,\omega}(d) =
+  \begin{bmatrix}
+    r_{DHS,dCDH,\omega}(d) \\
+    r_{dCDH,TWFE,\omega}(d)
+  \end{bmatrix},
+  \qquad
+  K^{func}_{h,\omega}(d) =
+  \begin{bmatrix}
+    r_{DHS,dCDH,\omega}(d) \\
+    r_{dCDH,TWFE,\omega}(d)
+  \end{bmatrix}
+  P^{obs}_{h,\omega}(d),
+  \qquad
+  K^{score}_{h,\omega}(d) =
+  r_{\mathrm{score},\omega}(d)P^{obs}_{h,\omega}(d).
+\]
+All inner products below are Euclidean inner products on the vectorized observable cohort-period cells, so the realized pairwise gaps are obtained by applying these row operators to \(\bar A^{obs}_{h,\omega}(d)\). Let
+\[
+  \Delta^{func}_{h,\omega}(d)=K^{func}_{h,\omega}(d)\bar A_{h,\omega}(d)
+  =K^{raw}_{h,\omega}(d)\bar A^{obs}_{h,\omega}(d)\in\mathbb R^2,
+  \qquad
+  \Delta^{score}_{h,\omega}(d)=K^{score}_{h,\omega}(d)\bar A_{h,\omega}(d)
+\]
+denote the realized functional and observable score residual vectors. Let \(\kappa^{func}_{h,\omega}(d)=\|K^{func}_{h,\omega}(d)\|_{\mathrm{op}}\), \(\kappa^{score}_{h,\omega}(d)=\|K^{score}_{h,\omega}(d)\|_{\mathrm{op}}\), and let \(s_{h,\omega}^\star(d)\) be the smallest nonzero singular value of the active column-space restriction of \(K^{func}_{h,\omega}(d)\). The realized-law functional equality frontier is \(\Delta^{func}_{h,\omega}(d)=0\) for all \(d\in\mathcal D^\circ\); the uniform local-perturbation frontier is \(\kappa^{func}_{h,\omega}(d)=0\) for all \(d\in\mathcal D^\circ\). The stronger estimator-level frontier also requires a zero score residual and the orthogonal-score condition in Assumption~\ref{ass:no-orthogonal-score}. The strictly separated realized regime is the open set where \(\Delta^{func}_{h,\omega}(d)\neq 0\) on a subset of \(\mathcal D^\circ\) with positive Lebesgue measure; \(s_{h,\omega}^\star(d)\) is the proposed local curvature constant controlling first-order separation for perturbations with nonzero active component. Let \(\delta_{h,\omega}(d)\) denote the component of \(B_h(d)\)'s local trend score omitted by the dCDH bandwidth, and let \(\mathcal I_{h,\omega}(d)\) denote the information operator on \(\mathcal T_{h,\omega}\). For each method \(a\), set
+\[
+  \psi^a_{h,\omega}(d)=P^a_{h,\omega}(d)\phi^a_{h,\omega}(d),
+  \qquad
+  V^a_{h,\omega}(d)=\langle\psi^a_{h,\omega}(d),
+    \mathcal I_{h,\omega}(d)^{-1}\psi^a_{h,\omega}(d)\rangle.
+\]
+The variance comparison in Conjecture~\ref{conj:strict-separation} uses DHS as the named baseline and writes \(\rho^a_{h,\omega}(d)=\psi^a_{h,\omega}(d)-\psi^{DHS}_{h,\omega}(d)\) for \(a\in\{dCDH,TWFE\}\).
+
+\begin{quote}
+\begin{verbatim}
+(qid, specialization, p, assignment, target, regression)
+qid = eid_continuous_did_acr_panel.
+specialization = v1.
+p = 1, an adjacent-period local dose-change comparison embedded in a finite
+    panel with cohorts g in G and periods t in T; dynamic carry-over is
+    excluded in the headline frontier but listed as an extension target.
+assignment = continuous scalar dose D_it in a compact interval D with
+    interior D^o; cohort-period law P_{g,t}; generalized parallel trends for
+    untreated potential outcomes; monotone differentiable dose response; and
+    common support for the local dose windows used below.
+target = population Average Causal Response curve
+    ACR_omega(d) = sum_{g,t} omega_{g,t} d/dd
+      E[Y_it(d)-Y_it(0) | G_i=g] for d in D^o, where omega is a fixed
+      observable cohort-period weighting scheme over the adjacent-period
+      comparisons t-1 -> t and sum_{g,t} omega_{g,t}=1.
+regression = compare three population identifying functionals for ACR_omega(d):
+    (i) DHS quantile-matching continuous-treatment DiD, (ii) dCDH
+    switcher/stayer local-linear ACR, and (iii) the continuous-dose TWFE
+    projection coefficient after cohort and period residualization.
+The proposed frontier is expressed through observable active dose-cohort residuals:
+Abar_obs,h,omega(d)=Pobs_h,omega(d) Abar_h,omega(d) is the only realized
+argument to which the Riesz rows are applied;
+Delta_func,h,omega(d)=K_func,h,omega(d) Abar_h,omega(d)
+=K_raw,h,omega(d) Abar_obs,h,omega(d), for realized-law population-functional
+equality; K_func,h,omega(d), for uniform local-law rank-zero equality over
+active perturbations; and K_score,h,omega(d), for common-submodel score equality
+together with the no-orthogonal-score condition.
+These are defined from local dose covariance Sigma_dose,h,omega(d), the
+cohort-period treatment-share operator Pi_cohort, and the parallel-trend
+bandwidth h on the common local semiparametric model M_{h,omega}.
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Panel sampling and interior support]\label{ass:panel-support}
+The cohort-period law has positive mass on every active cohort-period cell in \(\Omega\), \(D_{it}\) has a density bounded away from zero on the local windows \([d-h,d+h]\subset\mathcal D^\circ\), and all local second moments defining \(\Sigma_{\mathrm{dose},h,\omega}(d)\) are finite.
+\end{assumption}
+
+\begin{assumption}[Generalized parallel trends]\label{ass:gpt}
+For untreated potential outcomes, the conditional trend between adjacent periods is invariant across local dose-comparison groups after conditioning on cohort and baseline dose, up to the bandwidth class encoded by \(B_h(d)\).
+\end{assumption}
+
+\begin{assumption}[Smooth monotone dose response]\label{ass:smooth-monotone}
+For each active cohort-period cell, \(x\mapsto \E[Y_{it}(x)\mid g]\) is continuously differentiable on \(\mathcal D^\circ\), monotone, and has a locally square-integrable derivative.
+\end{assumption}
+
+\begin{assumption}[DHS rank-stationarity compatibility]\label{ass:dhs-rank}
+The DHS quantile-matching control group exists at dose \(d\), the required treatment CDFs cross in the local window, and the unobservable time trend satisfies the stationarity and rank-invariance restrictions used to define \(\Psi^{DHS}_{h,\omega}(d)\). On the common local model, these restrictions anchor the target by identifying \(\Psi^{DHS}_{h,\omega}(d)=\mathrm{ACR}_\omega(d)\) for every \(d\in\mathcal D^\circ\).
+\end{assumption}
+
+\begin{assumption}[dCDH local stayer support]\label{ass:dcdh-stayers}
+For each switcher cell contributing to \(\Psi^{dCDH}_{h,\omega}(d)\), there are stayers or near-stayers with the same baseline dose in the local window, and the local-linear design matrix is nonsingular.
+\end{assumption}
+
+\begin{assumption}[TWFE projection regularity]\label{ass:twfe-regular}
+The residualized local dose score after cohort and period fixed effects has positive population variance, and the population linear projection defining \(\Psi^{TWFE}_{h,\omega}(d)\) is unique.
+\end{assumption}
+
+\begin{assumption}[Observable active-kernel regularity]\label{ass:kernel-regular}
+The observable map \(A_{h,\omega}(d)=\Sigma_{\mathrm{dose},h,\omega}(d)^{1/2}\Pi_{\mathrm{cohort}}B_h(d)\), its vectorization \(\bar A_{h,\omega}(d)\), and the active projection \(P^{obs}_{h,\omega}(d)\) are measurable from the cohort-period law and have finite rank. The functional-gap maps \(\Psi^{DHS}_{h,\omega}(d)-\Psi^{dCDH}_{h,\omega}(d)\) and \(\Psi^{dCDH}_{h,\omega}(d)-\Psi^{TWFE}_{h,\omega}(d)\) are exactly linear, with no second-order remainder, on the active residual subspace \(\mathcal T^{obs}_{h,\omega}(d)\). Their Riesz rows \(r_{DHS,dCDH,\omega}(d)\) and \(r_{dCDH,TWFE,\omega}(d)\), the score row \(r_{\mathrm{score},\omega}(d)\) when Assumption~\ref{ass:common-submodel} is imposed, and the active restrictions of \(K^{func}_{h,\omega}(d)\) and \(K^{score}_{h,\omega}(d)\) have stable singular-value decompositions on \(\mathcal D^\circ\).
+\end{assumption}
+
+\begin{assumption}[Common local semiparametric submodel]\label{ass:common-submodel}
+The intersection model \(\mathcal M_{h,\omega}\) is nonempty, the three scores \(\phi^{DHS}_{h,\omega}(d)\), \(\phi^{dCDH}_{h,\omega}(d)\), and \(\phi^{TWFE}_{h,\omega}(d)\) are regular elements of the same tangent space \(\mathcal T_{h,\omega}\), the projections \(P^{DHS}_{h,\omega}(d)\), \(P^{dCDH}_{h,\omega}(d)\), and \(P^{TWFE}_{h,\omega}(d)\) are well-defined orthogonal projections inside that one model, and the information operator \(\mathcal I_{h,\omega}(d)\) is positive definite on the active score subspace.
+\end{assumption}
+
+\begin{assumption}[No orthogonal score component]\label{ass:no-orthogonal-score}
+For each pair \(a,b\in\{DHS,dCDH,TWFE\}\), decompose the projected score difference
+\[
+  P^a_{h,\omega}(d)\phi^a_{h,\omega}(d)-
+  P^b_{h,\omega}(d)\phi^b_{h,\omega}(d)
+\]
+into its observable-cell component in the vectorized basis used by \(K^{score}_{h,\omega}(d)\) and its orthogonal component in \(\mathcal T_{h,\omega}\ominus\mathcal T^{obs}_{h,\omega}(d)\). The orthogonal component is zero for the DHS--dCDH and dCDH--TWFE pairs on \(\mathcal M_{h,\omega}\).
+\end{assumption}
+
+\begin{assumption}[DHS variance baseline orthogonality]\label{ass:variance-baseline}
+For each \(a\in\{dCDH,TWFE\}\), the score residual \(\rho^a_{h,\omega}(d)=\psi^a_{h,\omega}(d)-\psi^{DHS}_{h,\omega}(d)\) is orthogonal to the DHS projected score in the information metric:
+\[
+  \langle\psi^{DHS}_{h,\omega}(d),
+    \mathcal I_{h,\omega}(d)^{-1}\rho^a_{h,\omega}(d)\rangle=0.
+\]
+\end{assumption}
+
+\begin{assumption}[Bandwidth residual representation]\label{ass:bandwidth-residual}
+In the dCDH bandwidth-misspecification submodel, the omitted local trend score \(\delta_{h,\omega}(d)\) equals the dCDH score residual \(\rho^{dCDH}_{h,\omega}(d)\) in the information norm.
+\end{assumption}
+
+\begin{assumption}[Homogeneous assignment corner]\label{ass:homogeneous-assignment}
+The local dose distribution is invariant across cohorts after period residualization, so \(\mathcal T^{obs}_{h,\omega}(d)=\{0\}\), \(P^{obs}_{h,\omega}(d)=0\), and \(\bar A_{h,\omega}(d)=\mathrm{vec}(\Sigma_{\mathrm{dose},h,\omega}(d)^{1/2}\Pi_{\mathrm{cohort}}B_h(d))=0\) for every \(d\in\mathcal D^\circ\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: TWFE residualized ACR decomposition]\label{thm:twfe-decomp}
+Under Assumptions~\ref{ass:panel-support}, \ref{ass:gpt}, \ref{ass:smooth-monotone}, \ref{ass:dcdh-stayers}, \ref{ass:twfe-regular}, and \ref{ass:kernel-regular}, the population TWFE local-dose functional admits the exact no-remainder decomposition
+\[
+  \Psi^{TWFE}_{h,\omega}(d)
+  =
+  \Psi^{dCDH}_{h,\omega}(d) +
+  \left\langle r_{dCDH,TWFE,\omega}(d),
+    \bar A^{obs}_{h,\omega}(d)\right\rangle,
+\]
+where \(r_{dCDH,TWFE,\omega}(d)\in\mathbb R^{1\times q}\) is the Riesz representer of the dCDH--TWFE functional gap on \(\mathcal T^{obs}_{h,\omega}(d)\), \(\bar A^{obs}_{h,\omega}(d)=P^{obs}_{h,\omega}(d)\bar A_{h,\omega}(d)\) is the active projection of the vectorized observable cohort-period kernel, and \(\langle\cdot,\cdot\rangle\) is the Euclidean pairing in that basis. The second term is zero under Assumption~\ref{ass:homogeneous-assignment}.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+(a) The closest papers are \citet{CallawayGoodmanBaconSantAnna2024}, \citet{CallawayGoodmanBaconSantAnna2024EventStudies}, and \citet{deChaisemartinDHaultfoeuille2023SeveralTreatments}. The first two define continuous-treatment ACR and event-study aggregation objects, and the third gives a several-treatment TWFE contamination formula, but none gives an exact no-remainder Riesz row equating the continuous-dose TWFE projection to the dCDH switcher-slope \(\mathrm{ACR}_\omega(d)\) functional. The epsilon gap is the explicit \(r_{dCDH,TWFE,\omega}(d)\) row that can enter a three-method equality certificate. (b) The concrete consumer is the no-stayers continuous-treatment workflow in \citet{deChaisemartinDHaultfoeuilleVazquezBare2024}: the theorem would tell applied users which cohort-dose residual term to report when comparing TWFE with robust continuous-treatment DiD estimators.
+
+\begin{conjecture}[Conjecture 1: Realized-gap and rank-zero equivalence frontier (NOT YET PROVED)]\label{conj:spectral-frontier}
+Under Assumptions~\ref{ass:panel-support}--\ref{ass:kernel-regular}, the following are equivalent:
+\begin{enumerate}[label=(\roman*)]
+  \item \(\Psi^{DHS}_{h,\omega}(d)=\Psi^{dCDH}_{h,\omega}(d)=\Psi^{TWFE}_{h,\omega}(d)=\mathrm{ACR}_\omega(d)\) at the realized law for every \(d\in\mathcal D^\circ\), where the equality with \(\mathrm{ACR}_\omega(d)\) is anchored by Assumption~\ref{ass:dhs-rank}'s DHS identification clause.
+  \item The realized functional residual vector satisfies \(\Delta^{func}_{h,\omega}(d)=K^{func}_{h,\omega}(d)\bar A_{h,\omega}(d)=K^{raw}_{h,\omega}(d)\bar A^{obs}_{h,\omega}(d)=0\) for every \(d\in\mathcal D^\circ\).
+\end{enumerate}
+The stronger uniform statement also holds: the three methods induce the same linear functional on every admissible active perturbation \(v\in\mathcal T^{obs}_{h,\omega}(d)\) for every interior dose if and only if the two functional-gap rows of \(K^{func}_{h,\omega}(d)\) are rank zero on \(\mathcal T^{obs}_{h,\omega}(d)\), equivalently \(\kappa^{func}_{h,\omega}(d)=0\). Realized equality does not imply rank-zero: it can occur when \(\bar A^{obs}_{h,\omega}(d)\) lies in the null space of a nonzero \(K^{raw}_{h,\omega}(d)\). Moreover, when the active restriction of \(K^{func}_{h,\omega}(d)\) has smallest nonzero singular value \(s_{h,\omega}^\star(d)>0\), \(s_{h,\omega}^\star(d)\) is the local sharp curvature constant for perturbations whose active component is not orthogonal to the nonzero singular direction.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) The closest papers are \citet{DHaultfoeuilleHoderleinSasaki2023}, \citet{deChaisemartinDHaultfoeuillePasquierSowVazquezBare2025}, \citet{CallawayGoodmanBaconSantAnna2024}, \citet{CallawayGoodmanBaconSantAnna2024EventStudies}, and \citet{deChaisemartinDHaultfoeuille2023SeveralTreatments}. Each identifies, aggregates, or decomposes a continuous-treatment or multi-treatment DiD object, but none gives a necessary-and-sufficient equality frontier among all three DHS/dCDH/TWFE functionals for the same \(\mathrm{ACR}_\omega(d)\) target or an observable singular-value certificate. The epsilon gap is exactly \(K^{func}_{h,\omega}(d)\): it compares published methods at the weighted ACR derivative level, not at the level of assumptions, aggregation choices, or informal robustness. (b) The concrete consumer is the open problem recorded in \texttt{eid\_continuous\_did\_acr\_panel\_v1\_gaps.json}: characterize the sharp equality frontier among DHS quantile-matching ACR, dCDH switcher/local-linear ACR, and continuous-dose TWFE projection limits.
+
+\begin{conjecture}[Conjecture 2: Common-submodel variance equality (NOT YET PROVED)]\label{conj:variance-equality}
+Under Assumptions~\ref{ass:panel-support}--\ref{ass:no-orthogonal-score}, if Conjecture~\ref{conj:spectral-frontier}'s functional rank-zero condition holds and \(K^{score}_{h,\omega}(d)=0\) as an operator on \(\mathcal T^{obs}_{h,\omega}(d)\), then \(P^{DHS}_{h,\omega}(d)\phi^{DHS}_{h,\omega}(d)\), \(P^{dCDH}_{h,\omega}(d)\phi^{dCDH}_{h,\omega}(d)\), and \(P^{TWFE}_{h,\omega}(d)\phi^{TWFE}_{h,\omega}(d)\) are equal in the full tangent space \(\mathcal T_{h,\omega}\). Writing their common projected score as \(\psi^\star_{h,\omega}(d)\), all three have the same asymptotic variance bound \(\langle \psi^\star_{h,\omega}(d),\mathcal I_{h,\omega}(d)^{-1}\psi^\star_{h,\omega}(d)\rangle\). Conversely, if \(K^{score}_{h,\omega}(d)\neq 0\) while \(K^{func}_{h,\omega}(d)=0\), or if Assumption~\ref{ass:no-orthogonal-score} fails with a nonzero orthogonal projected-score difference, the three functionals agree but at least one estimator has a distinct first-order variance on the common submodel.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{BorusyakJaravelSpiess2024} provide an efficiency benchmark for event-study imputation estimators, \citet{CallawayGoodmanBaconSantAnna2024EventStudies} define continuous-treatment event-study aggregations, and \citet{DHaultfoeuilleHoderleinSasaki2023} study the DHS identifying score, but none places DHS, dCDH, and continuous-dose TWFE in a shared local tangent space. The epsilon gap is the score kernel \(K^{score}_{h,\omega}(d)\) on \(\mathcal M_{h,\omega}\), which separates functional equality from variance equality. (b) The concrete consumer is \citet{CallawayGoodmanBaconSantAnna2024}'s continuous-treatment comparison program: it would say when equal ACR functionals can be interpreted as equal first-order precision rather than merely equal estimands.
+
+\begin{conjecture}[Conjecture 3: Open-set strict separation and variance ordering (NOT YET PROVED)]\label{conj:strict-separation}
+Under Assumptions~\ref{ass:panel-support}--\ref{ass:no-orthogonal-score}, if \(\Delta^{func}_{h,\omega}(d)=K^{func}_{h,\omega}(d)\bar A_{h,\omega}(d)=K^{raw}_{h,\omega}(d)\bar A^{obs}_{h,\omega}(d)\neq 0\) on a subset of \(\mathcal D^\circ\) with positive Lebesgue measure, then there exists an open neighborhood of observable laws with the same sign pattern of realized active residuals such that at least two of \(\Psi^{DHS}_{h,\omega}(d)\), \(\Psi^{dCDH}_{h,\omega}(d)\), and \(\Psi^{TWFE}_{h,\omega}(d)\) differ on that dose set. If instead \(\kappa^{func}_{h,\omega}(d)>0\) but \(\Delta^{func}_{h,\omega}(d)=0\), strict separation is only a local-perturbation claim: every admissible perturbation whose active component has nonzero projection on a nonzero singular direction of \(K^{func}_{h,\omega}(d)\) produces first-order functional separation. Inside the single common model \(\mathcal M_{h,\omega}\), take DHS as the baseline variance \(V^{DHS}_{h,\omega}(d)\). For each \(a\in\{dCDH,TWFE\}\),
+\[
+  V^a_{h,\omega}(d)-V^{DHS}_{h,\omega}(d)
+  =
+  2\langle\psi^{DHS}_{h,\omega}(d),
+    \mathcal I_{h,\omega}(d)^{-1}\rho^a_{h,\omega}(d)\rangle
+  +\|\rho^a_{h,\omega}(d)\|_{\mathcal I_{h,\omega}(d)^{-1}}^2.
+\]
+Consequently, when Assumption~\ref{ass:variance-baseline} is also imposed, \(V^a_{h,\omega}(d)\ge V^{DHS}_{h,\omega}(d)\), with equality if and only if \(\rho^a_{h,\omega}(d)=0\). When Assumption~\ref{ass:bandwidth-residual} is also imposed, the dCDH excess component is \(\|\delta_{h,\omega}(d)\|_{\mathcal I_{h,\omega}(d)^{-1}}^2\), and the TWFE functional has bias equal to the inner-product term in Theorem~\ref{thm:twfe-decomp}.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+(a) \citet{deChaisemartinDHaultfoeuille2020}, \citet{deChaisemartinDHaultfoeuille2023SeveralTreatments}, \citet{GoodmanBacon2021}, \citet{SunAbraham2021}, and \citet{CallawayGoodmanBaconSantAnna2024EventStudies} prove strict TWFE contamination or define continuous-treatment aggregation phenomena in adjacent settings; they do not cover the continuous-dose ACR derivative or compare against DHS and dCDH functionals through \(K^{func}_{h,\omega}(d)\) and \(K^{score}_{h,\omega}(d)\). The epsilon gap is open-set strict separation for three named continuous-treatment estimators, with nondegenerate observable laws rather than a hand-tuned counterexample. (b) The concrete consumer is \citet{CallawayGoodmanBaconSantAnna2024}'s continuous-treatment decomposition program: Conjecture~\ref{conj:strict-separation} would convert their warning about hard-to-interpret TWFE into a sharp diagnostic boundary and estimator-choice rule.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Homogeneous dose-cohort assignment collapse]\label{cor:homogeneous-collapse}
+Under Assumptions~\ref{ass:panel-support}--\ref{ass:kernel-regular} and Assumption~\ref{ass:homogeneous-assignment}, \(K^{func}_{h,\omega}(d)=0\) and, when Assumption~\ref{ass:common-submodel} is also imposed, \(K^{score}_{h,\omega}(d)=0\) for every \(d\in\mathcal D^\circ\). Therefore Conjecture~\ref{conj:spectral-frontier} reduces to the standard homogeneous-assignment case in which the three functionals collapse to the same \(\mathrm{ACR}_\omega(d)\) derivative.
+\end{corollary}
+
+\begin{corollary}[TWFE warning corner]\label{cor:twfe-warning}
+If Assumptions~\ref{ass:panel-support}, \ref{ass:gpt}, \ref{ass:smooth-monotone}, \ref{ass:dcdh-stayers}, \ref{ass:twfe-regular}, and \ref{ass:kernel-regular} hold but \(r_{dCDH,TWFE,\omega}(d)\bar A^{obs}_{h,\omega}(d)\neq 0\), then Theorem~\ref{thm:twfe-decomp} reproduces the continuous-dose analogue of the Goodman-Bacon/de Chaisemartin-D'Haultfoeuille several-treatments TWFE contamination warning.
+\end{corollary}
+
+\begin{corollary}[Operator nonzero but realized gap zero]\label{cor:null-vector}
+If Assumptions~\ref{ass:panel-support}--\ref{ass:kernel-regular} hold and \(K^{raw}_{h,\omega}(d)\neq 0\) but \(\bar A^{obs}_{h,\omega}(d)\in\ker K^{raw}_{h,\omega}(d)\), then Conjecture~\ref{conj:spectral-frontier}'s realized-law equality clause can hold at dose \(d\) even though the uniform local-perturbation frontier fails. Under any active perturbation \(u\in\mathcal T^{obs}_{h,\omega}(d)\) with \(K^{raw}_{h,\omega}(d)u\neq0\), the first-order perturbed residual is \(K^{raw}_{h,\omega}(d)(\bar A^{obs}_{h,\omega}(d)+\epsilon u)=\epsilon K^{raw}_{h,\omega}(d)u\).
+\end{corollary}
+
+\section{Proof-sketch route}
+The proof route is mathematical rather than formalization-driven. First derive all three population functionals as Gateaux derivatives of counterfactual mean maps in the common weighted local Hilbert space \(\mathcal T_{h,\omega}\): quantile transport for DHS, local-linear switcher/stayer slopes for dCDH, and an FWL residualized projection for TWFE. Second express pairwise method gaps as Riesz residual rows acting on the active vectorized observable local dose-cohort operator \(\bar A^{obs}_{h,\omega}(d)\), with the no-remainder condition in Assumption~\ref{ass:kernel-regular}; this proves Theorem~\ref{thm:twfe-decomp} by ordinary projection algebra and an inner-product calculation. Third prove Conjecture~\ref{conj:spectral-frontier} in two steps: Assumption~\ref{ass:dhs-rank} anchors \(\Psi^{DHS}_{h,\omega}(d)=\mathrm{ACR}_\omega(d)\), so realized equality with the target is equivalent to the pairwise vector equation \(K^{func}_{h,\omega}(d)\bar A_{h,\omega}(d)=K^{raw}_{h,\omega}(d)\bar A^{obs}_{h,\omega}(d)=0\), while uniform local-perturbation equality is vanishing of the two rows of \(K^{func}_{h,\omega}(d)\) on the active residual subspace; the distinction reduces to ordinary null-space algebra and singular-value decomposition. Fourth handle Conjecture~\ref{conj:variance-equality} separately by decomposing each projected score difference into its observable-cell and orthogonal tangent components, applying \(K^{score}_{h,\omega}(d)\) to the observable part, and using Assumption~\ref{ass:no-orthogonal-score} to rule out hidden score gaps. Fifth verify strictness on a smallest nontrivial design with three cohorts, three periods, and a two-point local dose perturbation around \(d\), then promote the witness to an open set by continuity of singular values and local projection coefficients; the variance comparison is the displayed identity for \(V^a_{h,\omega}(d)-V^{DHS}_{h,\omega}(d)\), with Assumption~\ref{ass:variance-baseline} giving the nonnegative ordering as a special case.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:twfe-decomp} is proposed as routine population projection algebra once the three functionals are placed in the common weighted local Hilbert space and Assumption~\ref{ass:kernel-regular}'s exact no-remainder condition is accepted. Conjectures~\ref{conj:spectral-frontier}, \ref{conj:variance-equality}, and \ref{conj:strict-separation} are the novel kernel and are not yet proved. The functional and score frontiers are deliberately separated: \(\Delta^{func}_{h,\omega}(d)\) governs equality at the realized law through the active projection \(\bar A^{obs}_{h,\omega}(d)\), \(K^{func}_{h,\omega}(d)\) governs uniform equality over local perturbations, and \(K^{score}_{h,\omega}(d)\) plus Assumption~\ref{ass:no-orthogonal-score} governs common-submodel variance equality. The efficiency ordering in Conjecture~\ref{conj:strict-separation} is now an explicit DHS-baseline identity plus the optional nonnegative-ordering assumption \(\ref{ass:variance-baseline}\); it should be downgraded to score-variance separation without ordering if that orthogonality fails. Dynamic lagged-dose effects are deliberately excluded from the headline \(p=1\) proposal.
+
+\section{Iteration trail}
+\begin{itemize}
+  \item v1 (cold-start) -- initial draft; prior verdict: none.
+  \item v2 (revise) -- pinned the \(\omega\)-weighted cohort-period ACR target, split functional equality from common-submodel variance equality, added the several-treatments TWFE prior-art comparison, and replaced the overclaimed AEA P\&P diagnostic language; prior verdict: REVISE.
+  \item v3 (revise) -- added the continuous-treatment event-study comparator, replaced informal Gateaux residual rows by Riesz rows with an explicit no-remainder condition, split \(K^{func}\) from \(K^{score}\), and restated the efficiency comparison inside one common semiparametric model; prior verdict: REVISE.
+  \item v4 (revise) -- separated realized-law equality from uniform rank-zero equality, added the no-orthogonal-score-component assumption for score equality, and strengthened strict separation to require a nonzero realized residual or an active perturbation direction; prior verdict: REVISE.
+  \item v5 (revise) -- made the active-domain convention explicit with \(\bar A^{obs}=P^{obs}\bar A\), anchored pairwise equality to the DHS target-identification clause, and replaced the variance-ordering prose by a DHS-baseline variance identity and inequality condition; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Athey and Imbens(2006)]{AtheyImbens2006}
+Athey, Susan, and Guido W. Imbens. 2006.
+Identification and inference in nonlinear difference-in-differences models.
+\emph{Econometrica} 74(2): 431--497.
+
+\bibitem[Borusyak, Jaravel, and Spiess(2024)]{BorusyakJaravelSpiess2024}
+Borusyak, Kirill, Xavier Jaravel, and Jann Spiess. 2024.
+Revisiting event-study designs: robust and efficient estimation.
+\emph{Review of Economic Studies} 91(6): 3253--3285.
+
+\bibitem[Callaway, Goodman-Bacon, and Sant'Anna(2024)]{CallawayGoodmanBaconSantAnna2024}
+Callaway, Brantly, Andrew Goodman-Bacon, and Pedro H. C. Sant'Anna. 2024.
+Difference-in-differences with a continuous treatment.
+NBER Working Paper 32117.
+
+\bibitem[Callaway, Goodman-Bacon, and Sant'Anna(2024)]{CallawayGoodmanBaconSantAnna2024EventStudies}
+Callaway, Brantly, Andrew Goodman-Bacon, and Pedro H. C. Sant'Anna. 2024.
+Event studies with a continuous treatment.
+\emph{AEA Papers and Proceedings} 114: 601--605.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2020)]{deChaisemartinDHaultfoeuille2020}
+de Chaisemartin, Clement, and Xavier D'Haultfoeuille. 2020.
+Two-way fixed effects estimators with heterogeneous treatment effects.
+\emph{American Economic Review} 110(9): 2964--2996.
+
+\bibitem[de Chaisemartin and D'Haultfoeuille(2023)]{deChaisemartinDHaultfoeuille2023SeveralTreatments}
+de Chaisemartin, Clement, and Xavier D'Haultfoeuille. 2023.
+Two-way fixed effects and differences-in-differences estimators with several treatments.
+\emph{Journal of Econometrics} 236(2): 105480.
+
+\bibitem[de Chaisemartin et al.(2025)]{deChaisemartinDHaultfoeuillePasquierSowVazquezBare2025}
+de Chaisemartin, Clement, Xavier D'Haultfoeuille, Felix Pasquier, Doulo Sow, and Gonzalo Vazquez-Bare. 2025.
+Difference-in-differences estimators for treatments continuously distributed at every period.
+arXiv:2201.06898, version 6.
+
+\bibitem[de Chaisemartin, D'Haultfoeuille, and Vazquez-Bare(2024)]{deChaisemartinDHaultfoeuilleVazquezBare2024}
+de Chaisemartin, Clement, Xavier D'Haultfoeuille, and Gonzalo Vazquez-Bare. 2024.
+Difference-in-difference estimators with continuous treatments and no stayers.
+\emph{AEA Papers and Proceedings} 114: 610--613.
+
+\bibitem[D'Haultfoeuille, Hoderlein, and Sasaki(2023)]{DHaultfoeuilleHoderleinSasaki2023}
+D'Haultfoeuille, Xavier, Stefan Hoderlein, and Yuya Sasaki. 2023.
+Nonparametric difference-in-differences in repeated cross-sections with continuous treatments.
+\emph{Journal of Econometrics} 234(2): 664--690.
+
+\bibitem[Freyaldenhoven, Hansen, and Shapiro(2019)]{FreyaldenhovenHansenShapiro2019}
+Freyaldenhoven, Simon, Christian Hansen, and Jesse M. Shapiro. 2019.
+Pre-event trends in the panel event-study design.
+\emph{American Economic Review} 109(9): 3307--3338.
+
+\bibitem[Goodman-Bacon(2021)]{GoodmanBacon2021}
+Goodman-Bacon, Andrew. 2021.
+Difference-in-differences with variation in treatment timing.
+\emph{Journal of Econometrics} 225(2): 254--277.
+
+\bibitem[Rambachan and Roth(2023)]{RambachanRoth2023}
+Rambachan, Ashesh, and Jonathan Roth. 2023.
+A more credible approach to parallel trends.
+\emph{Review of Economic Studies} 90(5): 2555--2591.
+
+\bibitem[Sun and Abraham(2021)]{SunAbraham2021}
+Sun, Liyang, and Sarah Abraham. 2021.
+Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\emph{Journal of Econometrics} 225(2): 175--199.
+\end{thebibliography}
+
+\end{document}

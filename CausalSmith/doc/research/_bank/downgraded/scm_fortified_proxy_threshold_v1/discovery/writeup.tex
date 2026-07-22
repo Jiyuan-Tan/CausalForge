@@ -1,0 +1,476 @@
+\documentclass{article}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{mathrsfs,bm,bbm}
+\usepackage{graphicx,booktabs,array,multirow,tabularx,longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{algorithm,algpseudocode}
+\usepackage{subcaption,tikz}
+\usepackage{siunitx,cancel,accents}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{cleveref}
+\setlength{\emergencystretch}{2em}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{openendedquestion}{Open-ended Question}
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\coreref}[1]{\ref{#1}}
+
+\begin{document}
+
+\sloppy
+
+\section*{scm\_\allowbreak{}fortified\_\allowbreak{}proxy\_\allowbreak{}threshold}
+
+\noindent\textit{Specialization:} v1\par
+
+\paragraph{TL;DR.} The supply-minus-demand slack \(\Delta_{K,m,u}(\gamma)\) is an exact arithmetic feasibility diagnostic for the fortified outcome-completeness pairing on every selected cardinality-\(\gamma\) component with full-cell support. For every \(\alpha\in\mathcal A_\gamma\), a compatible law with injective pairing exists if and only if \(\Delta_{K,m,u}(\gamma)\ge0\); throughout that feasible region, full row rank holds off a proper algebraic exceptional set. Negative slack forces noninjectivity at every full-cell law. The slack is strictly increasing, its endpoint is \(\Delta_{K,m,u}(K)=2(m^K-u)\), and therefore \(\gamma_{\mathrm{dim}}(K,m,u)<+\infty\) exactly when \(u\le m^K\); at \(u=m^K\), the threshold is \(K\). These are feasibility results for the Assumption-5 outcome-bridge route, not an identifying functional for \(\tau\), a proof of bridge existence, or an average-treatment-effect nonidentification theorem.
+
+\section{Project justification}
+
+\paragraph{Gap.} Yu, Shi, and Tchetgen Tchetgen \cite{YuShiTchetgen2025} use the fortified completeness premise in their outcome-bridge identification route but treat the defended valid-proxy count \(\gamma\) as a sensitivity index without deriving when the corresponding finite pairing can be injective. A supply-versus-demand count gives necessity, but constrained discrete latent models require a compatible nonvanishing-minor construction for sufficiency and an endpoint calculation to determine whether the arithmetic frontier exists at all.
+
+\paragraph{Niche.} The selected finite-support model admits a law-independent weighted-array decomposition of the fortified supply. Its low-order orthogonal complement has enough block symmetry to construct positive conditional-probability tables for every nonnegative-slack case, while the endpoint identity \(\Delta_{K,m,u}(K)=2(m^K-u)\) gives a complete existence test for the threshold.
+
+\paragraph{Fill.} The paper proves that compatible full-cell injectivity exists exactly when \(D_{K,m}(\gamma)\ge Q_{K,m,u}(\gamma)\), equivalently \(\Delta_{K,m,u}(\gamma)\ge0\), for every \(\gamma\) and every selected \(\alpha\). It also proves generic attainment in the feasible region, universal failure in the negative-slack region, strict monotonicity, and the endpoint characterization \(\gamma_{\mathrm{dim}}(K,m,u)<+\infty\) if and only if \(u\le m^K\), with \(\gamma_{\mathrm{dim}}(K,m,m^K)=K\).
+
+\section{Related work}
+
+Yu, Shi, and Tchetgen Tchetgen \cite{YuShiTchetgen2025} combine their Assumptions 3, 4, and 5 with Assumption 1 and consistency in an outcome-bridge formula for the average treatment effect. The present result isolates the finite-support feasibility of their Assumption-5 fortified pairing on a selected cardinality-\(\gamma\) component with full-cell support and supplies an exact arithmetic threshold, including the endpoint criterion \(u\le m^K\) for finiteness, that their sensitivity sweep does not provide. Miao, Geng, and Tchetgen Tchetgen \cite{MiaoGengTchetgen2018} give the categorical rank foundation for known valid proxies, while Zhang, Li, Miao, and Tchetgen Tchetgen \cite{ZhangLiMiaoTchetgen2023} distinguish bridge nonuniqueness from causal-functional nonidentification. Allman, Matias, and Rhodes \cite{AllmanMatiasRhodes2009} motivate the nonvanishing-minor route to generic identification, and Gu \cite{Gu2025BlessingDependence} shows why latent-model restrictions can invalidate naive dimension counting. Here a compatible positive-minor construction proves that the count is sufficient for every \(\gamma\). Duarte, Finkelstein, Knox, Mummolo, and Shpitser \cite{DuarteFinkelsteinKnoxMummoloShpitser2024} study sharp polynomial optimization in specified discrete structural causal models; this paper instead gives an analytic rank-feasibility theorem and makes no polynomial-program or identified-set claim for the average treatment effect.
+
+\section{Setup}
+
+Target (estimand / structural parameter): \(\tau=\mathbb E[Y(1)-Y(0)]\).
+Primary functional / estimator / diagnostic: \(\Delta_{K,m,u}(\gamma)=h_{K,m}(\gamma)+m^{K-\gamma}-2u m^{K-\gamma}\).
+\begin{itemize}
+  \item \(K\) --- \texttt{integer}; \(\{2,3,\ldots\}\)
+  \par\smallskip\noindent\emph{Definition.} \texttt{number of candidate treatment proxies}
+  \item \(m\) --- \texttt{integer}; \(\{2,3,\ldots\}\)
+  \par\smallskip\noindent\emph{Definition.} \texttt{common support cardinality of each candidate treatment proxy}
+  \item \(u\) --- \texttt{integer}; \(\{1,2,\ldots\}\)
+  \par\smallskip\noindent\emph{Definition.} \texttt{support cardinality of the latent confounder}
+  \item \(\gamma\) --- \texttt{integer}; \(\{1,\ldots,K\}\)
+  \par\smallskip\noindent\emph{Definition.} \texttt{cardinality of the selected valid treatment-\allowbreak{}proxy subset}
+  \item \([K]\) --- \texttt{finite set}
+  \par\smallskip\noindent\emph{Definition.} \([K]=\{1,\ldots,K\}\)
+  \item \(\mathcal Z_i\) --- \texttt{finite set}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal Z_i=\{1,\ldots,m\}\), the support of proxy coordinate \(i\)
+  \item \(\mathcal Z\) --- \texttt{finite set}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal Z=\prod_{i=1}^K\mathcal Z_i\)
+  \item \(\mathcal U\) --- \texttt{finite set}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal U=\{1,\ldots,u\}\)
+  \item \(A\) --- \texttt{random variable}; \(\{0,1\}\)
+  \par\smallskip\noindent\emph{Definition.} \texttt{binary treatment}
+  \item \(Z\) --- \texttt{random vector}; \(\mathcal Z\)
+  \par\smallskip\noindent\emph{Definition.} \texttt{candidate treatment-\allowbreak{}proxy vector}
+  \item \(U\) --- \texttt{latent random variable}; \(\mathcal U\)
+  \par\smallskip\noindent\emph{Definition.} \texttt{unmeasured confounder}
+  \item \(Y(0),Y(1)\) --- \texttt{potential-\allowbreak{}outcome pair}; \(\mathbb R^2\)
+  \par\smallskip\noindent\emph{Definition.} \texttt{potential outcomes under treatment levels zero and one}
+  \item \(Y\) --- \texttt{random variable}; \(\mathbb R\)
+  \par\smallskip\noindent\emph{Definition.} \texttt{observed outcome}
+  \item \(W\) --- \texttt{random variable}
+  \par\smallskip\noindent\emph{Definition.} \texttt{outcome confounding proxy}
+  \item \(P\) --- \texttt{full-\allowbreak{}data law}
+  \par\smallskip\noindent\emph{Definition.} law of \(Y(0),Y(1),W,U,A,Z\), with expectations and marginals denoted by \(P\)
+  \item \(\alpha\) --- \texttt{index subset}; \(2^{[K]}\)
+  \par\smallskip\noindent\emph{Definition.} \texttt{fixed selected valid-\allowbreak{}treatment-\allowbreak{}proxy index set}
+  \item \(\nu\) --- \texttt{index subset}; \(2^{[K]}\)
+  \par\smallskip\noindent\emph{Definition.} \texttt{index set in a fortified conditional-\allowbreak{}mean restriction}
+  \item \(C_\alpha\) --- \texttt{random subvector}; \(\prod_{i\notin\alpha}\mathcal Z_i\)
+  \par\smallskip\noindent\emph{Definition.} \(C_\alpha=Z_{-\alpha}\), the complement proxy vector
+  \item \(Z_\alpha\) --- \texttt{random subvector}; \(\prod_{i\in\alpha}\mathcal Z_i\)
+  \par\smallskip\noindent\emph{Definition.} subvector of \(Z\) indexed by \(\alpha\)
+  \item \(\mathcal A_\gamma\) --- \texttt{finite family}
+  \par\smallskip\noindent\emph{Definition.} family of subsets of \([K]\) having cardinality \(\gamma\)
+  \item \(\mathcal P_{\gamma,\alpha}\) --- \texttt{class of full-\allowbreak{}data laws}
+  \par\smallskip\noindent\emph{Definition.} selected cardinality-\(\gamma\) valid-subset component
+  \item \(d\) --- \texttt{square-\allowbreak{}integrable function}; \(L_P^2(A,Z)\)
+  \par\smallskip\noindent\emph{Definition.} \texttt{generic function of treatment and candidate proxies}
+  \item \(p_{AZ}\) --- \texttt{strictly positive mass function}
+  \par\smallskip\noindent\emph{Definition.} \(p_{AZ}(a,z)=P(A=a,Z=z)\)
+  \item \(q_d\) --- \texttt{real array}
+  \par\smallskip\noindent\emph{Definition.} \(P\)-weighted array associated with \(d\), indexed by \(a,z\)
+  \item \(\mathbf 1_A\) --- \texttt{vector}; \(\mathbb R^{\{0,1\}}\)
+  \par\smallskip\noindent\emph{Definition.} \texttt{all-\allowbreak{}ones treatment-\allowbreak{}coordinate vector}
+  \item \(\mathbf 1_i\) --- \texttt{vector}; \(\mathbb R^m\)
+  \par\smallskip\noindent\emph{Definition.} all-ones vector for proxy coordinate \(i\)
+  \item \(E_A^0\) --- \texttt{linear subspace}
+  \par\smallskip\noindent\emph{Definition.} \texttt{kernel of the treatment-\allowbreak{}coordinate sum map}
+  \item \(E_i^0\) --- \texttt{linear subspace}
+  \par\smallskip\noindent\emph{Definition.} kernel of the coordinate-\(i\) sum map on \(\mathbb R^m\)
+  \item \(\mathcal H_\gamma(P)\) --- \texttt{finite-\allowbreak{}dimensional Hilbert subspace}
+  \par\smallskip\noindent\emph{Definition.} \texttt{fortified conditional-\allowbreak{}mean-\allowbreak{}zero supply subspace}
+  \item \(\mathcal S_{\gamma,\alpha}(P)\) --- \texttt{finite-\allowbreak{}dimensional Hilbert subspace}
+  \par\smallskip\noindent\emph{Definition.} \texttt{fortified outcome-\allowbreak{}completeness supply space}
+  \item \(\mathcal G_\alpha(P)\) --- \texttt{finite-\allowbreak{}dimensional Hilbert space}
+  \par\smallskip\noindent\emph{Definition.} \texttt{fortified outcome-\allowbreak{}completeness demand space}
+  \item \(\mathsf T_{P,\alpha}\) --- \texttt{linear map}
+  \par\smallskip\noindent\emph{Definition.} \texttt{pairing map from demand functions to linear functionals on the supply space}
+  \item \(M_\gamma(P,\alpha)\) --- \texttt{real matrix}
+  \par\smallskip\noindent\emph{Definition.} matrix of \(\mathsf T_{P,\alpha}\) with demand basis elements as rows and supply basis elements as columns
+  \item \(h_{K,m}(\gamma)\) --- \texttt{integer-\allowbreak{}valued function}
+  \par\smallskip\noindent\emph{Definition.} \texttt{dimension of the fortified conditional-\allowbreak{}mean-\allowbreak{}zero space}
+  \item \(D_{K,m}(\gamma)\) --- \texttt{integer-\allowbreak{}valued function}
+  \par\smallskip\noindent\emph{Definition.} \texttt{dimension of the selected-\allowbreak{}component fortified supply space}
+  \item \(Q_{K,m,u}(\gamma)\) --- \texttt{integer-\allowbreak{}valued function}
+  \par\smallskip\noindent\emph{Definition.} \texttt{dimension of the selected-\allowbreak{}component fortified demand space}
+  \item \(\Delta_{K,m,u}(\gamma)\) --- \texttt{integer-\allowbreak{}valued function}
+  \par\smallskip\noindent\emph{Definition.} \texttt{supply-\allowbreak{}minus-\allowbreak{}demand dimensional slack}
+  \item \(\gamma_{\mathrm{dim}}(K,m,u)\) --- \texttt{extended integer}
+  \par\smallskip\noindent\emph{Definition.} \texttt{first selected-\allowbreak{}subset cardinality with nonnegative slack}
+  \item \(\tau\) --- \texttt{causal estimand}
+  \par\smallskip\noindent\emph{Definition.} \(\tau=\mathbb E[Y(1)-Y(0)]\)
+\end{itemize}
+
+\section{Assumptions}
+
+\begin{assumption}[ass:full-cell-support]\label{ass:full-cell-support}
+\(P(U=v,A=a,Z=z)>0\) for every \((v,a,z)\in\mathcal U\times\{0,1\}\times\mathcal Z\).
+\par\smallskip\noindent\emph{Novel.} This full-cell support condition holds in finite latent measurement models generated by strictly positive tables for \(U,A,Z\). It is a linear-algebra regularity condition: it fixes ambient cell dimensions and makes multiplication by \(p_{AZ}\) invertible.
+\end{assumption}
+
+\begin{assumption}[ass:consistency]\label{ass:consistency}
+\(Y=Y(A)\) almost surely.
+\par\smallskip\noindent\emph{Standard} (consistency, \cite{YuShiTchetgen2025}).
+\end{assumption}
+
+\begin{assumption}[ass:selected-latent-ignorability]\label{ass:selected-latent-ignorability}
+\(Y(a)\perp A\mid(U,C_\alpha)\) for every \(a\in\{0,1\}\).
+\par\smallskip\noindent\emph{Standard} (latent ignorability conditional on selected valid proxies' complement, \cite{YuShiTchetgen2025}).
+\end{assumption}
+
+\begin{assumption}[ass:selected-treatment-proxy-exclusion]\label{ass:selected-treatment-proxy-exclusion}
+\(Y\perp Z_\alpha\mid(A,U,C_\alpha)\).
+\par\smallskip\noindent\emph{Standard} (treatment-proxy exclusion for a selected valid subset, \cite{YuShiTchetgen2025}).
+\end{assumption}
+
+\begin{assumption}[ass:selected-outcome-proxy-exclusion]\label{ass:selected-outcome-proxy-exclusion}
+\(W\perp(A,Z_\alpha)\mid(U,C_\alpha)\).
+\par\smallskip\noindent\emph{Standard} (outcome-proxy exclusion for a selected valid subset, \cite{YuShiTchetgen2025}).
+\end{assumption}
+
+\section{Definitions}
+
+\begin{definition}[def:candidate-family]\label{def:candidate-family}
+\par\smallskip\noindent\emph{Defined object.} \(\mathcal A_\gamma\)
+\par\smallskip\noindent\emph{Construction.} \(\mathcal A_\gamma=\{\alpha\subseteq[K]:|\alpha|=\gamma\}\)
+\par\smallskip\noindent\emph{Inputs.} \([K]\); \(\gamma\).
+\end{definition}
+
+\begin{definition}[def:selected-component]\label{def:selected-component}
+\par\smallskip\noindent\emph{Defined object.} \(\mathcal P_{\gamma,\alpha}\)
+\par\smallskip\noindent\emph{Construction.} \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal P_{\gamma,\alpha}=\{P:P\text{ satisfies }\mathrm{ass:consistency},\mathrm{ass:selected-latent-ignorability},\mathrm{ass:selected-treatment-proxy-exclusion},\mathrm{ass:selected-outcome-proxy-exclusion}\}\)}}\par\noindent for fixed \(\alpha\in\mathcal A_\gamma\).
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}consistency}; \texttt{ass:\allowbreak{}selected-\allowbreak{}latent-\allowbreak{}ignorability}; \texttt{ass:\allowbreak{}selected-\allowbreak{}treatment-\allowbreak{}proxy-\allowbreak{}exclusion}; \texttt{ass:\allowbreak{}selected-\allowbreak{}outcome-\allowbreak{}proxy-\allowbreak{}exclusion}.
+\end{definition}
+
+\begin{definition}[def:weighted-array-map]\label{def:weighted-array-map}
+\par\smallskip\noindent\emph{Defined object.} \(q_d\)
+\par\smallskip\noindent\emph{Construction.} For \(d\in L_P^2(A,Z)\), set \(q_d(a,z)=p_{AZ}(a,z)d(a,z)\). Then \(d=q_d/p_{AZ}\) cellwise.
+\par\smallskip\noindent\emph{Inputs.} \(d\); \(p_{AZ}\); \(q_d\); \(A\); \(Z\).
+\end{definition}
+
+\begin{definition}[def:coordinate-kernels]\label{def:coordinate-kernels}
+\par\smallskip\noindent\emph{Defined object.} \(E_A^0,E_i^0\)
+\par\smallskip\noindent\emph{Construction.} \(\mathbb R^{\{0,1\}}=\langle\mathbf1_A\rangle\oplus E_A^0\), where \(E_A^0=\ker(x\mapsto\sum_{a=0}^1x_a)\), and \(\mathbb R^m=\langle\mathbf1_i\rangle\oplus E_i^0\), where \(E_i^0=\ker(x\mapsto\sum_{z_i=1}^m x_{z_i})\). Thus \(\dim E_A^0=1\) and \(\dim E_i^0=m-1\).
+\par\smallskip\noindent\emph{Inputs.} \(\mathbf 1_A\); \(\mathbf 1_i\); \(E_A^0\); \(E_i^0\); \(m\).
+\end{definition}
+
+\begin{definition}[def:fortified-space]\label{def:fortified-space}
+\par\smallskip\noindent\emph{Defined object.} \(\mathcal H_\gamma(P)\)
+\par\smallskip\noindent\emph{Construction.} \par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \mathcal H_\gamma(P)=\{d\in L_P^2(A,Z):\mathbb E_P[d(A,Z)\mid Z_{-\nu}]=0\text{ for every }\nu\subseteq[K]\text{ with }|\nu|=\gamma\}\)}}\par\noindent
+\par\smallskip\noindent\emph{Inputs.} \(P\); \(A\); \(Z\); \(\nu\); \([K]\); \(\gamma\).
+\end{definition}
+
+\begin{definition}[def:supply-demand-spaces]\label{def:supply-demand-spaces}
+\par\smallskip\noindent\emph{Defined object.} \(\mathcal S_{\gamma,\alpha}(P),\mathcal G_\alpha(P)\)
+\par\smallskip\noindent\emph{Construction.} \(\mathcal S_{\gamma,\alpha}(P)=\mathcal H_\gamma(P)+L_P^2(C_\alpha)\) and \(\mathcal G_\alpha(P)=L_P^2(U,A,C_\alpha)\).
+\par\smallskip\noindent\emph{Inputs.} \(\mathcal H_\gamma(P)\); \(C_\alpha\); \(U\); \(A\); \(P\).
+\end{definition}
+
+\begin{definition}[def:pairing-map]\label{def:pairing-map}
+\par\smallskip\noindent\emph{Defined object.} \(\mathsf T_{P,\alpha}\)
+\par\smallskip\noindent\emph{Construction.} \(\mathsf T_{P,\alpha}:\mathcal G_\alpha(P)\to\mathcal S_{\gamma,\alpha}(P)^\ast\), with \([\mathsf T_{P,\alpha}g](s)=\mathbb E_P[s(A,Z)g(U,A,C_\alpha)]\).
+\par\smallskip\noindent\emph{Inputs.} \(P\); \(\mathcal G_\alpha(P)\); \(\mathcal S_{\gamma,\alpha}(P)\); \(U\); \(A\); \(Z\); \(C_\alpha\).
+\end{definition}
+
+\begin{definition}[def:pairing-matrix]\label{def:pairing-matrix}
+\par\smallskip\noindent\emph{Defined object.} \(M_\gamma(P,\alpha)\)
+\par\smallskip\noindent\emph{Construction.} \(M_\gamma(P,\alpha)=[\mathbb E_P\{s_j(A,Z)g_i(U,A,C_\alpha)\}]_{i,j}\), where \((g_i)_i\) is a basis of \(\mathcal G_\alpha(P)\) and \((s_j)_j\) is a basis of \(\mathcal S_{\gamma,\alpha}(P)\).
+\par\smallskip\noindent\emph{Inputs.} \(P\); \(\mathcal G_\alpha(P)\); \(\mathcal S_{\gamma,\alpha}(P)\); \(U\); \(A\); \(Z\); \(C_\alpha\).
+\end{definition}
+
+\begin{definition}[def:dimension-functions]\label{def:dimension-functions}
+\par\smallskip\noindent\emph{Defined object.} \(h_{K,m}(\gamma),D_{K,m}(\gamma),Q_{K,m,u}(\gamma),\Delta_{K,m,u}(\gamma)\)
+\par\smallskip\noindent\emph{Construction.} \(h_{K,m}(\gamma)=m^K+\sum_{j=K-\gamma+1}^{K}\binom Kj(m-1)^j\), \(D_{K,m}(\gamma)=h_{K,m}(\gamma)+m^{K-\gamma}\), \(Q_{K,m,u}(\gamma)=2u m^{K-\gamma}\), and \(\Delta_{K,m,u}(\gamma)=D_{K,m}(\gamma)-Q_{K,m,u}(\gamma)\).
+\par\smallskip\noindent\emph{Inputs.} \(K\); \(m\); \(u\); \(\gamma\).
+\end{definition}
+
+\begin{definition}[def:dimension-frontier]\label{def:dimension-frontier}
+\par\smallskip\noindent\emph{Defined object.} \(\gamma_{\mathrm{dim}}(K,m,u)\)
+\par\smallskip\noindent\emph{Construction.} \(\gamma_{\mathrm{dim}}(K,m,u)=\min\{r\in\{1,\ldots,K\}:\Delta_{K,m,u}(r)\ge0\}\), with \(\min\varnothing=+\infty\).
+\par\smallskip\noindent\emph{Inputs.} \(\Delta_{K,m,u}(\gamma)\); \(K\); \(m\); \(u\).
+\end{definition}
+
+\begin{definition}[def:compatible-minor-handle]\label{def:compatible-minor-handle}
+\par\smallskip\noindent\emph{Defined object.} \texttt{compatible positive-\allowbreak{}minor handle}
+\par\smallskip\noindent\emph{Construction.} For fixed \(\alpha\in\mathcal A_\gamma\), parameterize strictly positive finite conditional tables for \(U,A,Z\), couple \(Y(0),Y(1),W\) conditionally on \(U,C_\alpha\), impose the member properties defining \(\mathcal P_{\gamma,\alpha}\), and seek a \(Q_{K,m,u}(\gamma)\)-minor of \(M_\gamma(P,\alpha)\) whose numerator polynomial is not identically zero on that compatible completion parameter space. When \(\gamma=K\), also record the two \(m^K\)-by-\(u\) conditional-probability matrices \(\Pi_a=[P(U=v\mid A=a,Z=z)]_{z,v}\), one for each \(a\in\{0,1\}\), as the endpoint block variables. For \(\gamma<K\), retain the maximal-minor search on the full fortified supply matrix.
+\par\smallskip\noindent\emph{Inputs.} \(\alpha\); \(\mathcal A_\gamma\); \(\mathcal P_{\gamma,\alpha}\); \(U\); \(A\); \(Z\); \(Y(0),Y(1)\); \(W\); \(C_\alpha\); \(M_\gamma(P,\alpha)\); \(Q_{K,m,u}(\gamma)\).
+\end{definition}
+
+\section{Main results}
+
+\begin{theorem}[thm:weighted-dimension]\label{thm:weighted-dimension}
+For every \(K\ge2\), \(m\ge2\), \(u\ge1\), \(\gamma\in[K]\), \(\alpha\in\mathcal A_\gamma\), and full-data law \(P\) satisfying Assumption \(\mathrm{ass:full-cell-support}\), the map \(d\mapsto q_d\) sends \(\mathcal H_\gamma(P)\) bijectively onto \[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \Bigl(E_A^0\otimes\bigotimes_{i=1}^K\mathbb R^m\Bigr)\oplus\Biggl[\langle\mathbf1_A\rangle\otimes\bigoplus_{\substack{S\subseteq[K]\\|S|>K-\gamma}}\left(\bigotimes_{i\in S}E_i^0\right)\otimes\left(\bigotimes_{i\notin S}\langle\mathbf1_i\rangle\right)\Biggr].\)}}\par\noindent}}
+\] Equivalently, \(\mathbb E_P[d\mid Z_{-\nu}]=0\) holds exactly when \(\sum_{a,z_\nu}q_d(a,z)=0\) for every \(\nu\subseteq[K]\) with \(|\nu|=\gamma\). Hence \(\dim\mathcal H_\gamma(P)=h_{K,m}(\gamma)\). Moreover, \(\mathcal H_\gamma(P)\cap L_P^2(C_\alpha)=\{0\}\), so \(\dim\mathcal S_{\gamma,\alpha}(P)=D_{K,m}(\gamma)\) and \(\dim\mathcal G_\alpha(P)=Q_{K,m,u}(\gamma)\).
+\end{theorem}
+\begin{proof}
+Fix \(K,m,u,\gamma,\alpha\), and \(P\) as in the statement. Full-cell support implies \(p_{AZ}(a,z)>0\) at every cell, so multiplication by \(p_{AZ}\) is an invertible linear map from \(L_P^2(A,Z)\) to the array space \(V_A\otimes\bigotimes_{i=1}^K V_i\), where \(V_A=\mathbb R^{\{0,1\}}\) and \(V_i=\mathbb R^m\). Its inverse is the cellwise map \(q\mapsto q/p_{AZ}\).
+
+For a set \(\nu\subseteq[K]\) of size \(\gamma\) and a fixed value \(z_{-\nu}\), finite conditional expectation gives
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \mathbb E_P\{d(A,Z)\mid Z_{-\nu}=z_{-\nu}\}=\frac{\sum_{a,z_\nu}p_{AZ}(a,z)d(a,z)}{P(Z_{-\nu}=z_{-\nu})}=\frac{\sum_{a,z_\nu}q_d(a,z)}{P(Z_{-\nu}=z_{-\nu})}.\)}}\par\noindent}}
+\]
+The denominator is positive by full-cell support. Hence the displayed conditional mean is zero at every \(z_{-\nu}\) if and only if \(\sum_{a,z_\nu}q_d(a,z)=0\) at every \(z_{-\nu}\).
+
+Let \(\ell_A:V_A\to\mathbb R\) and \(\ell_i:V_i\to\mathbb R\) be the coordinate-sum maps. The preceding cell sums form the contraction
+\[L_\nu=\ell_A\otimes\bigotimes_{i\in\nu}\ell_i\otimes\bigotimes_{i\notin\nu}\operatorname{id}_{V_i}.\]
+Use the direct-sum decompositions
+\[V_A=\langle\mathbf 1_A\rangle\oplus E_A^0,\qquad V_i=\langle\mathbf 1_i\rangle\oplus E_i^0.\]
+Every tensor component having its treatment factor in \(E_A^0\) is killed by every \(L_\nu\), because \(\ell_A(E_A^0)=0\). Consider instead a component with treatment factor \(\mathbf 1_A\), and let \(S\subseteq[K]\) be the set of proxy coordinates whose factors lie in \(E_i^0\). For a fixed \(\nu\), this component is killed by \(L_\nu\) exactly when \(S\cap\nu\ne\varnothing\). Indeed, an index in the intersection supplies a zero factor under its coordinate-sum map; if the intersection is empty, all contracted factors are nonzero constant factors and the remaining tensor component is nonzero. Components indexed by distinct \(S\subseteq[K]\setminus\nu\) lie in distinct direct-sum tensor components after contraction, so cancellation cannot alter this criterion.
+
+Thus a treatment-constant component belongs to \(\bigcap_{|\nu|=\gamma}\ker L_\nu\) exactly when \(S\) meets every cardinality-\(\gamma\) subset of \([K]\). This is equivalent to
+\[|[K]\setminus S|<\gamma,\qquad\text{or equivalently}\qquad |S|>K-\gamma.\]
+It follows that the image of \(\mathcal H_\gamma(P)\) under \(d\mapsto q_d\) is exactly
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \Bigl(E_A^0\otimes\bigotimes_{i=1}^K\mathbb R^m\Bigr)\oplus\Biggl[\langle\mathbf1_A\rangle\otimes\bigoplus_{\substack{S\subseteq[K]\\|S|>K-\gamma}}\left(\bigotimes_{i\in S}E_i^0\right)\otimes\left(\bigotimes_{i\notin S}\langle\mathbf1_i\rangle\right)\Biggr].\)}}\par\noindent}}
+\]
+The invertibility of multiplication by \(p_{AZ}\) makes this correspondence bijective. Since \(\dim E_A^0=1\) and \(\dim E_i^0=m-1\), direct-sum dimension counting yields
+\[\dim\mathcal H_\gamma(P)=m^K+\sum_{j=K-\gamma+1}^K\binom Kj(m-1)^j=h_{K,m}(\gamma).\]
+
+It remains to calculate the two selected-component spaces. If \(d\in\mathcal H_\gamma(P)\cap L_P^2(C_\alpha)\), then the restriction defining \(\mathcal H_\gamma(P)\) may be applied with \(\nu=\alpha\). Because \(C_\alpha=Z_{-\alpha}\) and \(d\) is \(C_\alpha\)-measurable,
+\[d=\mathbb E_P(d\mid C_\alpha)=0\quad P\text{-almost surely}.\]
+Therefore the sum defining \(\mathcal S_{\gamma,\alpha}(P)\) is direct. Full-cell support gives positive mass to every value of \(C_\alpha\), and hence \(\dim L_P^2(C_\alpha)=m^{K-\gamma}\). Consequently,
+\[\dim\mathcal S_{\gamma,\alpha}(P)=h_{K,m}(\gamma)+m^{K-\gamma}=D_{K,m}(\gamma).\]
+Finally, summing the positive full-cell masses over \(z_\alpha\) shows that every cell of \((U,A,C_\alpha)\) has positive mass. Thus
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \dim\mathcal G_\alpha(P)=|\mathcal U|\,|\{0,1\}|\,|\operatorname{supp}(C_\alpha)|=2u m^{K-\gamma}=Q_{K,m,u}(\gamma),\)}}\par\noindent}}
+\]
+as claimed.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The weighted-array decomposition gives the exact fortified supply dimension and the fixed tensor coordinates used in both directions of the rank characterization. \textit{Gap.} The anchor states simultaneous conditional-mean restrictions but does not derive their finite-support tensor decomposition under dependent proxy coordinates. \textit{Consumer.} The resulting dimensions compute \(\Delta_{K,m,u}(\gamma)\), and the orthogonal complement is the starting point for the compatible positive-minor construction.
+
+\begin{theorem}[thm:universal-rank-barrier]\label{thm:universal-rank-barrier}
+For every \(K\ge2\), \(m\ge2\), \(u\ge1\), \(\gamma\in[K]\), \(\alpha\in\mathcal A_\gamma\), and full-data law \(P\) satisfying Assumption \(\mathrm{ass:full-cell-support}\), if \(\Delta_{K,m,u}(\gamma)<0\), then \(\operatorname{rank}M_\gamma(P,\alpha)<Q_{K,m,u}(\gamma)\). Thus \(\ker\mathsf T_{P,\alpha}\ne\{0\}\), and the Assumption-5 fortified pairing is noninjective for every such \(P,\alpha\). In particular, no law \(P\in\mathcal P_{\gamma,\alpha}\) that also satisfies Assumption \(\mathrm{ass:full-cell-support}\) can satisfy that outcome-completeness premise.
+\end{theorem}
+\begin{proof}
+Fix the indices and a law \(P\) satisfying full-cell support. By the weighted-dimension theorem,
+\[\dim\mathcal S_{\gamma,\alpha}(P)=D_{K,m}(\gamma),\qquad \dim\mathcal G_\alpha(P)=Q_{K,m,u}(\gamma).\]
+The matrix \(M_\gamma(P,\alpha)\) therefore has \(Q_{K,m,u}(\gamma)\) rows and \(D_{K,m}(\gamma)\) columns. If \(\Delta_{K,m,u}(\gamma)<0\), then \(D_{K,m}(\gamma)<Q_{K,m,u}(\gamma)\), and elementary matrix rank gives
+\[\operatorname{rank}M_\gamma(P,\alpha)\le D_{K,m}(\gamma)<Q_{K,m,u}(\gamma).\]
+To relate this inequality to the pairing map, write an arbitrary demand element as \(g=\sum_i x_i g_i\) in the demand basis used to define the matrix. Its evaluations on the supply basis satisfy
+\[\bigl([\mathsf T_{P,\alpha}g](s_j)\bigr)_j=x^{\mathsf T}M_\gamma(P,\alpha).\]
+Because the row rank is strictly smaller than the number of rows, there is a nonzero vector \(x\) with \(x^{\mathsf T}M_\gamma(P,\alpha)=0\). The associated \(g\ne0\) lies in \(\ker\mathsf T_{P,\alpha}\). Thus the pairing map is noninjective at every full-cell law, independently of the selected-component restrictions. In particular, imposing in addition \(P\in\mathcal P_{\gamma,\alpha}\) cannot restore injectivity, so no such law satisfies the stated outcome-completeness premise.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} Negative supply-minus-demand slack is the necessity half of the exact characterization and rules out injectivity uniformly over full-cell laws. \textit{Gap.} The anchor assumes fortified completeness but does not identify cardinality regimes where its pairing premise fails at every law in a selected full-cell component. \textit{Consumer.} Together with Theorem \(\mathrm{thm:compatible-minor-attainment}\), it makes the sign of \(\Delta_{K,m,u}(\gamma)\) an exact feasibility decision.
+
+\begin{proposition}[prop:slack-frontier]\label{prop:slack-frontier}
+For fixed \(K,m,u\), \(\Delta_{K,m,u}(\gamma+1)>\Delta_{K,m,u}(\gamma)\) for every \(\gamma\in\{1,\ldots,K-1\}\). Hence \(\gamma_{\mathrm{dim}}(K,m,u)\), when finite, is the unique nonnegative-slack boundary, and every selected valid-subset component whose cardinality is strictly below \(\gamma_{\mathrm{dim}}(K,m,u)\) has the universal rank barrier in Theorem \(\mathrm{thm:universal-rank-barrier}\) at each of its laws satisfying Assumption \(\mathrm{ass:full-cell-support}\).
+\end{proposition}
+\begin{proof}
+Fix \(K,m,u\), and let \(\gamma\in\{1,\ldots,K-1\}\). Put \(r=K-\gamma\), so \(1\le r\le K-1\). By Definition \(\mathrm{def:dimension-functions}\), increasing \(\gamma\) to \(\gamma+1\) adds exactly the term with index \(j=r\) to \(h_{K,m}\). Hence
+\[h_{K,m}(\gamma+1)-h_{K,m}(\gamma)=\binom Kr(m-1)^r.\]
+The same definition gives
+\[\Delta_{K,m,u}(\gamma)=h_{K,m}(\gamma)-(2u-1)m^r\]
+and
+\[\Delta_{K,m,u}(\gamma+1)=h_{K,m}(\gamma+1)-(2u-1)m^{r-1}.\]
+Subtracting the first expression from the second and using the increment of \(h_{K,m}\), we obtain
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \begin{aligned}
+\Delta_{K,m,u}(\gamma+1)-\Delta_{K,m,u}(\gamma)
+&=\binom Kr(m-1)^r+(2u-1)(m^r-m^{r-1})\\
+&=\binom Kr(m-1)^r+(2u-1)(m-1)m^{r-1}.
+\end{aligned}\)}}
+\]
+Both summands are nonnegative and in fact positive: \(\binom Kr>0\), \(m-1>0\), \(m^{r-1}>0\), and \(2u-1>0\), because \(1\le r\le K-1\), \(m\ge2\), and \(u\ge1\). Therefore
+\[\Delta_{K,m,u}(\gamma+1)>\Delta_{K,m,u}(\gamma).\]
+Now suppose \(g=\gamma_{\mathrm{dim}}(K,m,u)\) is finite. By Definition \(\mathrm{def:dimension-frontier}\), \(\Delta_{K,m,u}(g)\ge0\), whereas minimality of \(g\) implies \(\Delta_{K,m,u}(s)<0\) for every \(s<g\). Strict monotonicity further implies \(\Delta_{K,m,u}(s)>\Delta_{K,m,u}(g)\ge0\) for every \(s>g\). Thus
+\[\{s\in\{1,\ldots,K\}:\Delta_{K,m,u}(s)\ge0\}=\{g,g+1,\ldots,K\},\]
+so \(g\) is the unique boundary between negative and nonnegative slack.
+
+Finally, fix \(s<g\), \(\alpha\in\mathcal A_s\), and \(P\in\mathcal P_{s,\alpha}\) satisfying Assumption \(\mathrm{ass:full-cell-support}\). The boundary characterization gives \(\Delta_{K,m,u}(s)<0\). Theorem \(\mathrm{thm:universal-rank-barrier}\), applied with selected-subset cardinality \(s\), therefore yields
+\[\operatorname{rank}M_s(P,\alpha)<Q_{K,m,u}(s).\]
+Hence the fortified pairing map is noninjective at every such law, which is the asserted universal rank barrier below \(g\).
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} Strict monotonicity converts the pointwise sign characterization into a single valid-proxy-count threshold. \textit{Gap.} The anchor varies \(\gamma\) without deriving an ordered arithmetic boundary for the fortified pairing premise. \textit{Consumer.} Together with Theorem \(\mathrm{thm:compatible-minor-attainment}\), the proposition shows that \(\gamma_{\mathrm{dim}}(K,m,u)\), when finite, is precisely the first cardinality with compatible generic row-rank attainment.
+
+\begin{proposition}[prop:two-proxy-check]\label{prop:two-proxy-check}
+For \(K=2\), \(m=3\), \(u=2\), and \(\gamma=1\), \(h_{2,3}(1)=13\), \(D_{2,3}(1)=16\), and \(Q_{2,3,2}(1)=12\). Therefore \(M_1(P,\alpha)\) has \(12\) demand rows and \(16\) supply columns, and outcome completeness requires row rank \(12\).
+\end{proposition}
+\begin{proof}
+Substitution into the dimension formulas gives
+\[h_{2,3}(1)=3^2+\sum_{j=2}^2\binom2j(3-1)^j=9+4=13.\]
+Therefore
+\[D_{2,3}(1)=13+3^{2-1}=16,\qquad Q_{2,3,2}(1)=2\cdot2\cdot3^{2-1}=12.\]
+By the weighted-dimension theorem, these are respectively the supply and demand dimensions at every full-cell law. The chosen demand and supply bases consequently make \(M_1(P,\alpha)\) a \(12\)-by-\(16\) matrix. Injectivity of the pairing map from the \(12\)-dimensional demand space is equivalent to trivial left nullspace, which is equivalent to row rank \(12\).
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The calculation audits the motivating nonbinary example and includes the complete complement-proxy supply dimension. \textit{Gap.} The \(12\)-by-\(15\) illustration in Yu, Shi, and Tchetgen Tchetgen \cite{YuShiTchetgen2025} omits one direction from the ternary complement space; the corrected pairing is \(12\)-by-\(16\). \textit{Consumer.} Because its slack is positive, Theorem \(\mathrm{thm:compatible-minor-attainment}\) certifies compatible generic row rank \(12\), not merely dimensional possibility.
+
+\begin{lemma}[lem:transitive-block-avoidance]\label{lem:transitive-block-avoidance}
+Let \(I\) be a finite set of cardinality \(c\), let \(V=\bigoplus_{x\in I}V_x\) with \(\dim V_x=d\), and let \(N\subseteq V\) be a linear subspace preserved by a group that acts transitively on the blocks through linear block isomorphisms. If \(0\le e\le d\) and \(\dim N\le c(d-e)\), then there are subspaces \(E_x\subseteq V_x\) with \(\dim E_x=e\) such that \(N\cap\bigoplus_{x\in I}E_x=\{0\}\). In fact, the tuples \((E_x)_{x\in I}\) for which this intersection is nonzero form a proper Zariski-closed subset of \(\prod_{x\in I}\operatorname{Gr}(e,V_x)\).
+\end{lemma}
+\begin{proof}
+For \(S\subseteq I\), let \(\pi_S\) be block projection and put \(\rho(S)=\dim\pi_S(N)\). The function \(\rho\) is a normalized, monotone, submodular rank function. The fractional-cover inequality for such a projection-rank function states that if a finite family \((S_\ell)_\ell\) covers every block exactly \(k\) times, then
+\[
+\sum_\ell\rho(S_\ell)\ge k\rho(I).
+\]
+For completeness, order the blocks and write each projection rank as a sum of successive dimension increments. Submodularity says that conditioning an increment on more preceding blocks can only decrease it. Assign each occurrence of a block in the cover its corresponding increment; because every block occurs \(k\) times, comparison with the increments along the full ordering gives the displayed inequality after summation.
+
+Apply this inequality to the orbit of a fixed \(S\) under the finite permutation group induced on \(I\). Transitivity implies that every block occurs in exactly \(|G||S|/c\) orbit members, counted with multiplicity, while invariance of \(N\) gives \(\rho(gS)=\rho(S)\). Hence
+\[
+\rho(S)\ge\frac{|S|}{c}\dim N.
+\]
+For \(J\subseteq I\), let \(N_J=N\cap\bigoplus_{x\in J}V_x\). Since \(N_J\) is the kernel of \(\pi_{I\setminus J}|_N\),
+\[
+\dim N_J=\dim N-\rho(I\setminus J)\le\frac{|J|}{c}\dim N\le |J|(d-e).
+\]
+
+Consider the product Grassmannian \(\mathfrak G=\prod_{x\in I}\operatorname{Gr}(e,V_x)\), of dimension \(ce(d-e)\). For each nonempty \(J\subseteq I\), stratify the projective vectors \([v]\in\mathbb P(N_J)\) by requiring their block support to be exactly \(J\). This stratum has dimension at most \(\dim N_J-1\). For a fixed such \([v]\), the requirement \(v_x\in E_x\) has codimension \(d-e\) in \(\operatorname{Gr}(e,V_x)\) for every \(x\in J\), because the subspaces containing a fixed line form \(\operatorname{Gr}(e-1,d-1)\). Thus the corresponding incidence stratum has dimension at most
+\[
+\dim\mathfrak G+\dim N_J-1-|J|(d-e)\le\dim\mathfrak G-1.
+\]
+There are only finitely many \(J\). The full incidence variety is projective over \(\mathfrak G\), so its image, the set of tuples having a nonzero intersection with \(N\), is Zariski closed. The preceding dimension bound makes that image proper. Any tuple in its complement has the asserted trivial intersection. The cases \(N=\{0\}\) or \(e=0\) are immediate and agree with the same conclusion.
+\end{proof}
+
+\begin{lemma}[lem:positive-stochastic-subspace-realization]\label{lem:positive-stochastic-subspace-realization}
+Let \(1\le u\le n\), and let \(L\subseteq\mathbb R^n\) be a \(u\)-dimensional subspace containing the all-ones vector \(\mathbf 1_n\). Then there exists a strictly positive row-stochastic \(n\)-by-\(u\) matrix \(\Pi\) with column rank \(u\) and \(\operatorname{col}(\Pi)=L\).
+\end{lemma}
+\begin{proof}
+If \(u=1\), take \(\Pi=\mathbf1_n\). Suppose \(u>1\). Choose an \(n\)-by-\((u-1)\) matrix \(V\) such that the columns of \([\mathbf1_n,V]\) form a basis of \(L\). Choose a \((u-1)\)-by-\(u\) matrix \(B\) of rank \(u-1\) satisfying \(B\mathbf1_u=0\), and for \(\varepsilon>0\) set
+\[
+\Pi_\varepsilon=\frac1u\mathbf1_n\mathbf1_u^{\mathsf T}+\varepsilon VB.
+\]
+Every row sums to one because \(B\mathbf1_u=0\). For sufficiently small \(\varepsilon>0\), every entry is strictly positive. Relative to the basis \([\mathbf1_n,V]\) of \(L\), the coefficient matrix of \(\Pi_\varepsilon\) is obtained by stacking \((1/u)\mathbf1_u^{\mathsf T}\) above \(\varepsilon B\). Its lower block has kernel \(\langle\mathbf1_u\rangle\), while its first row does not vanish on \(\mathbf1_u\); consequently the coefficient matrix has rank \(u\). Thus \(\Pi_\varepsilon\) has column rank \(u\), and its column space, already contained in \(L\), equals \(L\).
+\end{proof}
+
+\begin{proposition}[prop:endpoint-feasibility]\label{prop:endpoint-feasibility}
+For every \(K\ge2\), \(m\ge2\), and \(u\ge1\), \[\Delta_{K,m,u}(K)=2(m^K-u).\] Consequently, \(\gamma_{\mathrm{dim}}(K,m,u)<+\infty\) if and only if \(u\le m^K\). If \(u=m^K\), then \(\gamma_{\mathrm{dim}}(K,m,u)=K\).
+\end{proposition}
+\begin{proof}
+Set \(\gamma=K\). Definition \(\mathrm{def:dimension-functions}\) and the binomial theorem give
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \begin{aligned}
+h_{K,m}(K)
+&=m^K+\sum_{j=1}^{K}\binom Kj(m-1)^j\\
+&=m^K+\left(1+(m-1)\right)^K-1\\
+&=2m^K-1.
+\end{aligned}\)}}
+\]
+Since \(m^{K-K}=1\), the same definition yields
+\[D_{K,m}(K)=h_{K,m}(K)+1=2m^K\]
+and
+\[Q_{K,m,u}(K)=2u.\]
+Consequently,
+\[\Delta_{K,m,u}(K)=D_{K,m}(K)-Q_{K,m,u}(K)=2(m^K-u).\]
+
+Suppose first that \(u\le m^K\). Then the endpoint formula gives \(\Delta_{K,m,u}(K)\ge0\), so the set in Definition \(\mathrm{def:dimension-frontier}\) is nonempty. Hence \(\gamma_{\mathrm{dim}}(K,m,u)<+\infty\). Conversely, suppose that \(u>m^K\). The endpoint formula gives \(\Delta_{K,m,u}(K)<0\). Proposition \(\mathrm{prop:slack-frontier}\) shows that the slack is strictly increasing in its cardinality argument, so for every \(r\in\{1,\ldots,K-1\}\),
+\[\Delta_{K,m,u}(r)<\Delta_{K,m,u}(K)<0.\]
+Thus no cardinality has nonnegative slack, and the convention in Definition \(\mathrm{def:dimension-frontier}\) gives \(\gamma_{\mathrm{dim}}(K,m,u)=+\infty\). This proves the stated equivalence.
+
+Finally, if \(u=m^K\), then \(\Delta_{K,m,u}(K)=0\). Strict monotonicity from Proposition \(\mathrm{prop:slack-frontier}\) implies \(\Delta_{K,m,u}(r)<0\) for every \(r<K\). Therefore the first cardinality with nonnegative slack is exactly \(K\), and
+\[\gamma_{\mathrm{dim}}(K,m,u)=K.\]
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The endpoint calculation determines whether the arithmetic threshold exists and identifies the boundary case exactly. \textit{Gap.} Monotonicity alone does not decide whether any cardinality has nonnegative slack. \textit{Consumer.} It gives \(\gamma_{\mathrm{dim}}(K,m,u)<+\infty\) exactly when \(u\le m^K\), with threshold \(K\) when \(u=m^K\).
+
+\begin{theorem}[thm:compatible-minor-attainment]\label{thm:compatible-minor-attainment}
+For every \(K\ge2\), \(m\ge2\), \(u\ge1\), \(\gamma\in[K]\), and \(\alpha\in\mathcal A_\gamma\), there exists a law \(P\in\mathcal P_{\gamma,\alpha}\) satisfying Assumption \(\mathrm{ass:full-cell-support}\) and \[\operatorname{rank}M_\gamma(P,\alpha)=Q_{K,m,u}(\gamma)\] if and only if \(\Delta_{K,m,u}(\gamma)\ge0\). When \(\Delta_{K,m,u}(\gamma)\ge0\), after the positive conditional tables are parameterized as in Definition \(\mathrm{def:compatible-minor-handle}\) and positive denominators are cleared, the compatible parameters at which row rank fails form a proper real algebraic subset. Thus row-rank attainment holds on a nonempty relative Zariski-open, Euclidean-dense, full-Lebesgue-measure subset of the positive compatible factor-table parameter space. When \(\Delta_{K,m,u}(\gamma)<0\), the row-rank-attaining locus is empty.
+\end{theorem}
+\begin{proof}
+Fix \(K,m,u,\gamma,\alpha\) as in the statement. Put \(r=K-\gamma\), \(B=Z_\alpha\), \(C=C_\alpha\), \(n=m^\gamma\), and \(c=m^r\). Thus \(B\) has \(n\) cells, \(C\) has \(c\) cells, and \(nc=m^K\). The argument is invariant under relabeling the proxy coordinates and hence applies to every \(\alpha\in\mathcal A_\gamma\).
+
+First suppose that \(\Delta_{K,m,u}(\gamma)<0\). Theorem \(\mathrm{thm:universal-rank-barrier}\) gives \(\operatorname{rank}M_\gamma(P,\alpha)<Q_{K,m,u}(\gamma)\) for every law satisfying Assumption \(\mathrm{ass:full-cell-support}\), including every such law in \(\mathcal P_{\gamma,\alpha}\). Hence a compatible row-rank-attaining law can exist only if \(\Delta_{K,m,u}(\gamma)\ge0\). This also proves that the row-rank-attaining locus is empty when the slack is negative.
+
+For the converse, assume \(\Delta_{K,m,u}(\gamma)\ge0\). By Definition \(\mathrm{def:dimension-functions}\), this is equivalent to
+\[D_{K,m}(\gamma)\ge 2uc.\]
+We construct the law of \((U,A,Z)\). Give \((A,B,C)\) the uniform law
+\[P(A=a,B=b,C=x)=\frac{1}{2nc}.\]
+Let \(\mathcal H_0\) be the law-independent weighted-array image of \(\mathcal H_\gamma(P)\) in Theorem \(\mathrm{thm:weighted-dimension}\). Under the uniform law, the weighted-array image of \(L_P^2(C)\), after suppressing the common positive factor \((2nc)^{-1}\), is
+\[\mathcal R=\{q:q(a,b,x)=f(x)\text{ for some }f\}.\]
+The same theorem gives \(\mathcal H_0\cap\mathcal R=\{0\}\). In the Euclidean array space on \((A,B,C)\), define
+\[\mathcal N=(\mathcal H_0\oplus\mathcal R)^\perp.\]
+The ambient dimension is \(2nc\), and Theorem \(\mathrm{thm:weighted-dimension}\) therefore yields
+\[\dim\mathcal N=2nc-D_{K,m}(\gamma).\]
+Its tensor decomposition further yields
+\[
+\makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\par\noindent \makebox[\linewidth][c]{\resizebox{0.98\linewidth}{!}{\(\displaystyle \displaystyle \mathcal H_0^\perp=\langle\mathbf1_A\rangle\otimes\mathcal L_r,\qquad \mathcal L_r=\bigoplus_{\substack{S\subseteq[K]\\|S|\le r}}\left(\bigotimes_{i\in S}E_i^0\right)\otimes\left(\bigotimes_{i\notin S}\langle\mathbf1_i\rangle\right).\)}}\par\noindent}}
+\]
+Thus every \(q\in\mathcal N\) has the form \(q(a,b,x)=\rho(b,x)\), independently of \(a\). Orthogonality to \(\mathcal R\) says, for every \(x\),
+\[0=\sum_{a,b}q(a,b,x)=2\sum_b\rho(b,x).\]
+For each block \(y=(a,x)\in\{0,1\}\times\operatorname{supp}(C)\), let
+\[V_y=\left\{v\in\mathbb R^n:\sum_bv_b=0\right\}.\]
+Then \(\dim V_y=n-1\) and \(\mathcal N\subseteq\bigoplus_yV_y\). The group generated by interchanging the two treatment levels and independently permuting the \(m\) levels of each coordinate of \(C\) preserves both \(\mathcal H_0\) and \(\mathcal R\). It therefore preserves \(\mathcal N\) and acts transitively on the \(2c\) blocks through linear block isomorphisms.
+
+Because the supply is a subspace of the \(2nc\)-dimensional ambient array space, Theorem \(\mathrm{thm:weighted-dimension}\) gives \(D_{K,m}(\gamma)\le2nc\). Together with \(D_{K,m}(\gamma)\ge2uc\), this implies \(u\le n\). Set \(d=n-1\) and \(e=u-1\). Then \(0\le e\le d\), and
+\[\dim\mathcal N=2nc-D_{K,m}(\gamma)\le2c(n-u)=2c(d-e).\]
+Lemma \(\mathrm{lem:transitive-block-avoidance}\), applied to the \(2c\) blocks \((V_y)_y\), supplies subspaces \(F_y\subseteq V_y\), each of dimension \(u-1\), such that
+\[\mathcal N\cap\bigoplus_yF_y=\{0\}.\]
+For each \(y=(a,x)\), put
+\[L_y=\langle\mathbf1_B\rangle\oplus F_y.\]
+This is a \(u\)-dimensional subspace of \(\mathbb R^n\) containing the all-ones vector. Lemma \(\mathrm{lem:positive-stochastic-subspace-realization}\) gives a strictly positive row-stochastic \(n\)-by-\(u\) matrix \(\Pi_y\) of column rank \(u\) such that \(\operatorname{col}(\Pi_y)=L_y\). Define
+\[P(U=v\mid A=a,B=b,C=x)=\Pi_{(a,x)}(b,v).\]
+The positivity of the uniform marginal and of every \(\Pi_y\) implies \(P(U=v,A=a,Z=z)>0\) at every cell, so Assumption \(\mathrm{ass:full-cell-support}\) holds.
+
+We next verify injectivity. Let \(g\in\mathcal G_\alpha(P)\) satisfy \(\mathsf T_{P,\alpha}g=0\), and set
+\[R_g(a,b,x)=\mathbb E_P\{g(U,A,C)\mid A=a,B=b,C=x\}=\sum_v\Pi_{(a,x)}(b,v)g(v,a,x).\]
+For every \(s\in\mathcal S_{\gamma,\alpha}(P)\), the weighted-array identity gives
+\[0=\mathbb E_P\{s(A,Z)g(U,A,C)\}=\sum_{a,b,x}q_s(a,b,x)R_g(a,b,x).\]
+As \(s\) ranges over \(\mathcal H_\gamma(P)+L_P^2(C)\), its weighted arrays range over \(\mathcal H_0\oplus\mathcal R\). Hence \(R_g\in\mathcal N\). For every block \(y=(a,x)\), however,
+\[R_g(a,\cdot,x)=\Pi_y g(\cdot,a,x)\in L_y.\]
+Because membership in \(\mathcal N\) makes this slice have coordinate sum zero, while \(L_y=\langle\mathbf1_B\rangle\oplus F_y\) and \(F_y\subseteq V_y\), the slice lies in \(F_y\). Consequently,
+\[R_g\in\mathcal N\cap\bigoplus_yF_y=\{0\}.\]
+Every \(\Pi_y\) has column rank \(u\), so \(\Pi_y g(\cdot,a,x)=0\) implies \(g(\cdot,a,x)=0\) for every \(a,x\). Thus \(g=0\), and \(\mathsf T_{P,\alpha}\) is injective. Since Theorem \(\mathrm{thm:weighted-dimension}\) gives \(\dim\mathcal G_\alpha(P)=Q_{K,m,u}(\gamma)\),
+\[\operatorname{rank}M_\gamma(P,\alpha)=Q_{K,m,u}(\gamma).\]
+
+It remains to complete the full-data law and establish genericity. Take \(Y(0)\), \(Y(1)\), and \(W\) to be mutually independent nondegenerate Bernoulli variables, independent of \((U,A,Z)\), and define \(Y=Y(A)\). Assumption \(\mathrm{ass:consistency}\) holds by construction. Independence gives \(Y(a)\perp A\mid(U,C)\), \(Y\perp Z_\alpha\mid(A,U,C)\), and \(W\perp(A,Z_\alpha)\mid(U,C)\). Hence Assumptions \(\mathrm{ass:selected-latent-ignorability}\), \(\mathrm{ass:selected-treatment-proxy-exclusion}\), and \(\mathrm{ass:selected-outcome-proxy-exclusion}\) hold, and the completed law belongs to \(\mathcal P_{\gamma,\alpha}\).
+
+For genericity, use cell-indicator bases for \(\mathcal G_\alpha(P)\) and \(L_P^2(C)\), and fix a basis \((q_j)_j\) of the law-independent space \(\mathcal H_0\). At an arbitrary positive table, \(s_j=q_j/p_{AZ}\) is the associated basis of \(\mathcal H_\gamma(P)\). In the free positive factor-table coordinates of Definition \(\mathrm{def:compatible-minor-handle}\), the resulting pairing-matrix entries are rational functions whose denominators are products of positive cell probabilities. After clearing those denominators, every \(Q_{K,m,u}(\gamma)\)-minor has a polynomial numerator. At the compatible law just constructed, some maximal minor is nonzero. Its numerator is therefore not the zero polynomial, so the common zero set of all maximal-minor numerators is a proper real algebraic subset of the compatible parameter space. Its complement is nonempty and relative Zariski open.
+
+Finally, the zero set of a nonzero real polynomial has Lebesgue measure zero and empty Euclidean interior. Indeed, induction on the coordinate dimension, expansion in the last coordinate, finiteness of one-dimensional root fibers away from the common zero set of the coefficient polynomials, and Fubini's theorem prove the measure claim; the same fact applied on every open ball proves the empty-interior claim. Rank failure is contained in the zero set of the nonzero maximal-minor numerator just selected. Therefore the row-rank-attaining locus is Euclidean dense and has full Lebesgue measure in the positive compatible factor-table coordinates. This proves the equivalence and all asserted genericity properties.
+\end{proof}
+
+\section{Interpretation}
+
+The displayed quantity \(\Delta_{K,m,u}(\gamma)\) is a feasibility diagnostic, not an identifying functional or recovery map for \(\tau\). An analyst who defends \(\gamma\) valid treatment proxies can compute its sign directly. Negative slack is a law-uniform certificate that no full-cell law in the selected component can satisfy the fortified outcome-completeness pairing. Nonnegative slack means that the premise is compatible and holds generically in the positive factor-table parameterization, although exceptional algebraic laws can still fail it. Strict monotonicity makes \(\gamma_{\mathrm{dim}}(K,m,u)\) the exact transition when it is finite. The endpoint formula shows that no transition exists when \(u>m^K\), whereas \(u=m^K\) forces the transition to occur only at \(\gamma=K\).
+
+\section*{Technical internal limitation (diagnostic only)}
+
+The equivalence is stated for a selected cardinality-\(\gamma\) component and requires full support on every \((U,A,Z)\) cell. Genericity is relative to the positive compatible factor-table coordinates; the proper algebraic exceptional set can contain substantively important laws, so nonnegative slack does not assert injectivity at every law. The endpoint result only decides whether the arithmetic feasibility frontier is finite and where it lies when \(u=m^K\). The results concern only the Assumption-5 pairing in the outcome-bridge route of Yu, Shi, and Tchetgen Tchetgen \cite{YuShiTchetgen2025}; they do not establish the remaining premises of that route, prove existence of an outcome bridge, identify \(\tau\), prove average-treatment-effect nonidentification below the frontier, or exclude other proximal identification strategies.
+
+\section{Honest scope}
+
+For fixed \(\alpha\in\mathcal A_\gamma\), the coordinates in \(\alpha\) satisfy the selected proxy restrictions relative to \(C_\alpha\); coordinates outside \(\alpha\) are not thereby declared invalid. Within that selected component and under full-cell support, the pairing-rank question is settled for every \(\gamma\): existence and generic attainment hold if and only if \(\Delta_{K,m,u}(\gamma)\ge0\), and negative slack gives universal noninjectivity. The threshold is finite exactly for \(u\le m^K\), and equals \(K\) at the boundary \(u=m^K\). The scope remains route-level and algebraic: no claim is made that another completeness premise fails, that the average treatment effect is unidentified, that alternative proximal routes fail, or that a sharp identified set is represented by a finite polynomial program.
+
+\begin{thebibliography}{99}
+
+  \bibitem{YuShiTchetgen2025} M. Yu, X. Shi, and E. J. Tchetgen Tchetgen (2025), "Fortified Proximal Causal Inference with Many Invalid Proxies," arXiv:2506.13152.
+
+  \bibitem{MiaoGengTchetgen2018} W. Miao, Z. Geng, and E. J. Tchetgen Tchetgen (2018), "Identifying Causal Effects With Proxy Variables of an Unmeasured Confounder," Biometrika 105, 987--993.
+
+  \bibitem{ZhangLiMiaoTchetgen2023} J. Zhang, W. Li, W. Miao, and E. J. Tchetgen Tchetgen (2023), "Proximal Causal Inference without Uniqueness Assumptions," Statistics and Probability Letters 198, 109836.
+
+  \bibitem{AllmanMatiasRhodes2009} E. S. Allman, C. Matias, and J. A. Rhodes (2009), "Identifiability of Parameters in Latent Structure Models with Many Observed Variables," Annals of Statistics 37, 3099--3132.
+
+  \bibitem{Gu2025BlessingDependence} Y. Gu (2025), "Blessing of Dependence: Identifiability and Geometry of Discrete Latent Variable Models," Bernoulli 31(2), 948--972.
+
+  \bibitem{DuarteFinkelsteinKnoxMummoloShpitser2024} G. Duarte, N. Finkelstein, D. Knox, J. Mummolo, and I. Shpitser (2024), "An Automated Approach to Causal Inference in Discrete Settings," Journal of the American Statistical Association 119, 1778--1793.
+
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,301 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=eid\_switchback\_debruijn\_carryover, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` -- the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{eid\_switchback\_debruijn\_carryover} / \texttt{v1}%
+  \\ \large\textit{A finite schedule-audit certificate for switchback carryover identification}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Exact-identification anchor. The tuple is
+\[
+(\texttt{qid},\texttt{specialization},\text{schedule},\text{history length},\text{target estimand},\text{identifying assumptions})
+\]
+with \texttt{qid} \(=\texttt{eid\_switchback\_debruijn\_carryover}\), \texttt{specialization} \(=\texttt{v1}\), a binary cyclic switchback schedule \(w=(w_0,\ldots,w_{T-1})\in\{0,1\}^T\) read modulo \(T\), a fixed lag length \(L\geq 1\), primitive history means \(\mu_h=\E[Y_t(h)]\) for every \(h\in\calH_L=\{0,1\}^L\), and the target vector \(\mu=(\mu_h)_{h\in\calH_L}\) together with sustained-regime contrast \(\Delta_L=\mu_{1^L}-\mu_{0^L}\). Identification is from the cyclic observation map \(m(w,L)=A(w,L)\mu\), where \(A(w,L)\) is the schedule-history incidence matrix whose rows are observed cyclic histories and whose columns are indexed by \(\calH_L\). The identifying assumptions are finite \(L\)-memory, cyclic stationarity of history means, consistency, and positive observation of each row in the schedule period.
+
+\begin{abstract}
+Switchback experiments are used when a single system or a small number of systems must alternate between treatment and control over time. Existing design theory treats carryover order as an input to variance or robustness optimization, while recent carryover-detection work begins from a guessed influence period. This proposal isolates a finite schedule-audit certificate: for any schedule, lag bound, and policy contrast, the certificate either gives an identifying linear functional of the observed history means or returns a nullspace alias that changes the target. The flagship conjecture states that the same certificate yields a sharp unknown-\(L\) frontier for sustained-regime contrasts: beyond a computable schedule depth, no nonparametric estimator based on that schedule can be uniformly valid without additional smoothing or carryover restrictions. The \(L=2\) exhibit uses \(0011\) only as a de Bruijn sanity check and uses \(0101\) to display the alias direction. If correct, the result turns influence-period misspecification into a deterministic design audit before estimation.
+\end{abstract}
+
+\section{Introduction}
+Switchback designs alternate a whole system between treatment and control, but the estimand changes when outcomes depend on treatment history. The main claim is that influence-period validity can be audited by a finite certificate that returns either an identified contrast formula or a policy-relevant alias direction.
+
+\citet[p.~3759, abstract]{BojinovSimchiLeviZhao2023} derive optimal switchback designs under assumptions on the carryover order, and \citet{MissaultMasoero2025} emphasize that this order is often guessed before estimation. The gap is not the existence of de Bruijn counterbalance, which is classical and used by \citet[p.~1293, abstract]{AguirreMattarMagisWeinberg2011}; it is the comparator-facing audit that says when a chosen switchback schedule cannot identify a named long-run policy contrast under a longer nonparametric influence period. The kernel is an exact-identification theorem for finite-memory switchback potential outcomes.
+
+The downstream consumer is carryover-aware online experimentation in marketplace, pricing, and logistics systems, where \citet{MissaultMasoero2025} note that the influence period is often guessed before estimation. A reader who accepts the conclusion first checks a schedule-history incidence table before using a switchback estimator for long-run policy contrasts.
+
+\begin{itemize}[leftmargin=2em]
+\item Theorem 1: The schedule-audit map returns an identifying formula \(\lambda^\transpose m\) exactly when \(c^\transpose\mu\) is in the row span of \(A(w,L)\), and otherwise returns an alias \(\delta\) with \(A(w,L)\delta=0\) and \(c^\transpose\delta\neq0\). Gap: \citet{BojinovSimchiLeviZhao2023} optimize designs under a chosen carryover order, while \citet{MissaultMasoero2025} test for underestimated carryover; neither gives a deterministic target-specific validity certificate. Consumer: pre-analysis audits for switchback estimators that assume a finite influence period.
+\item Theorem 2: For \(L=2\), schedule \(0101\) admits alias vector \((1,0,-1,0)\), leaving observed alternating histories unchanged while changing \(\Delta_2\). Gap: classical switch-back residual balance in \citet{OmanSeiden1988} does not supply a sustained-regime alias certificate. Consumer: diagnosis of near-alternation collapse in online switchbacks.
+\item Conjecture 1: The audit induces a sharp unknown-\(L\) frontier \(L^\star(w,c)\) for sustained-regime contrasts: for \(L>L^\star(w,c)\), every estimator that is valid over the nonparametric \(L\)-history class must use information outside the schedule means or impose extra restrictions. Gap: \citet{AguirreMattarMagisWeinberg2011} supplies compact counterbalance and \citet{BojinovSimchiLeviZhao2023} supplies switchback design analysis, but neither states this target-specific influence-period validity frontier. Consumer: carryover-duration diagnostics in \citet{MissaultMasoero2025} and robust switchback design in \citet{MissaultMasoeroDelbeRichardsonImbens2025}.
+\end{itemize}
+
+\section{Related work}
+\citet{BojinovSimchiLeviZhao2023} are the closest switchback-design comparator: they derive optimal designs and inference under assumptions on the order of the carryover effect, but their object is minimax design and inference rather than exact identification of the entire \(L\)-history mean vector.
+\citet{MissaultMasoero2025} make the influence-period problem explicit by noting that existing estimators require a prespecified upper bound on carryover duration, often guessed from intuition; this motivates a deterministic schedule certificate.
+\citet{HuWager2022} study switchbacks under geometric mixing and show that temporal carryovers can slow standard switchback rates, which is adjacent to the present finite-memory exact-identification target.
+\citet{XiongChinTaylor2024} decompose switchback error into carryover, periodicity, serial correlation, and simultaneous-experiment components; their tradeoff analysis does not characterize full history-table identification.
+\citet{MissaultMasoeroDelbeRichardsonImbens2025} introduce regular balanced multi-unit switchback designs and show variance gains under carryover, but the balance conditions are not a full \(L\)-bit incidence frontier.
+\citet{ZengEtAl2026} propose sequential rerandomization for switchbacks with prognostic balance and first-order carryover blocks, which is a multi-unit design comparator for future extensions.
+\citet{AguirreMattarMagisWeinberg2011} introduce de Bruijn cycles as compact arbitrary-level counterbalanced stimulus sequences; this source is used here only for the compact full-coverage witness, not for the target-specific alias side of the switchback audit.
+\citet{Williams1949} and \citet{OmanSeiden1988} give classical residual-balance and switch-back design comparators; their balance criteria concern direct and residual treatment effects, not all binary ordered-history means in a single aggregate switchback.
+The in-catalogue prior art is the banked \texttt{q1\_spectral\_phase\_transition}/\texttt{p1\_markov} proposal on dynamic switch-on ATT row spaces and near-alternation collapse, the failed \texttt{eid\_policy\_commutator\_phase}/\texttt{v1} finite-binary-witness proposal, and \texttt{panel\_approx\_nbhd\_interference}/\texttt{v1} incidence-certificate language. None states the \(0011\) identity table, the \(0101\) alias vector, or the \(2^L\) de Bruijn minimum-period switchback frontier.
+
+\section{Formal setup}
+Time is cyclic with period \(T\). A schedule is \(w\in\{0,1\}^T\), with \(w_{t+T}=w_t\). For a lag length \(L\), the ordered history at time \(t\) is
+\[
+H_t(w,L)=(w_{t-L+1},\ldots,w_t)\in\calH_L=\{0,1\}^L .
+\]
+For each \(h\in\calH_L\), \(\mu_h\in\R\) is the primitive mean potential outcome under history \(h\). The observed cyclic history mean vector \(m(w,L)\in\R^T\) has entries \(m_t=\mu_{H_t(w,L)}\). Define the incidence matrix \(A(w,L)\in\{0,1\}^{T\times 2^L}\) by
+\[
+A(w,L)_{t,h}=\one\{H_t(w,L)=h\}.
+\]
+For any contrast vector \(c\in\R^{2^L}\), the policy target is \(\theta_c=c^\transpose\mu\). The identified set for the primitive vector is
+\[
+\Theta_I(w,L,m)=\{\nu\in\R^{2^L}:A(w,L)\nu=m(w,L)\}.
+\]
+The sustained-regime contrast is \(\Delta_L=e_{1^L}^{\transpose}\mu-e_{0^L}^{\transpose}\mu\), corresponding to \(c_\Delta=e_{1^L}-e_{0^L}\). A schedule is exact for \(L\) if \(\Theta_I(w,L,m)\) is a singleton for every \(\mu\in\R^{2^L}\). A schedule identifies \(\theta_c\) at lag \(L\) if \(c\) lies in the row span of \(A(w,L)\). The schedule-audit certificate is the pair \((\lambda,\delta)\) returned by finite row reduction: either \(A(w,L)^\transpose\lambda=c\), or \(A(w,L)\delta=0\) and \(c^\transpose\delta\neq0\). Define
+\[
+L^\star(w,c)=\sup\{L\geq1:c_L\in\operatorname{rowspan}A(w,L)\},
+\]
+where \(c_L\) is the \(L\)-history embedding of the same policy contrast.
+
+\begin{quote}
+\texttt{qid=eid\_switchback\_debruijn\_carryover;} \texttt{specialization=v1;} \texttt{schedule=binary cyclic switchback;} \texttt{history length=L;} \texttt{target=(mu\_h)\_{h in \{0,1\}\^L} and Delta\_L=mu\_{1\^L}-mu\_{0\^L};} \texttt{identifying assumptions=finite L-memory, cyclic stationarity, consistency, positive observation of schedule rows.}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite history response]\label{ass:finite-history}
+For the chosen \(L\), the mean potential outcome at time \(t\) depends on the treatment path only through \(H_t(w,L)\), so \(\E[Y_t(w)]=\mu_{H_t(w,L)}\).
+\end{assumption}
+
+\begin{assumption}[Cyclic stationarity]\label{ass:cyclic-stationarity}
+The primitive mean \(\mu_h\) is invariant across all cyclic times \(t\) at which \(H_t(w,L)=h\).
+\end{assumption}
+
+\begin{assumption}[Consistency]\label{ass:consistency}
+Under schedule \(w\), the observed mean at cyclic time \(t\) equals the primitive mean indexed by the realized history, \(m_t=\mu_{H_t(w,L)}\).
+\end{assumption}
+
+\begin{assumption}[Positive row observation]\label{ass:positive-row}
+Every cyclic row \(t=0,\ldots,T-1\) contributes an observed mean \(m_t\) for the realized history \(H_t(w,L)\). Repeated equal histories may have repeated rows in \(A(w,L)\).
+\end{assumption}
+
+\begin{assumption}[Nonparametric primitive class]\label{ass:nonparametric}
+The vector \(\mu\) ranges over all of \(\R^{2^L}\). No smoothness, additivity, monotonicity, or parametric carryover restriction links distinct histories.
+\end{assumption}
+
+\begin{assumption}[Schedule-means information set]\label{ass:schedule-means}
+An estimator or identification rule may use only \(w\), \(L\), the realized cyclic history labels, and the observed history mean vector \(m(w,L)\). It may not use outcomes under unobserved histories, parametric restrictions across histories, or an external experiment.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Finite schedule-audit certificate]\label{thm:audit-certificate}
+Under Assumptions \ref{ass:finite-history}--\ref{ass:schedule-means}, fix \(w\), \(L\), and \(c\in\R^{2^L}\). The contrast \(\theta_c=c^\transpose\mu\) is identified from \(m(w,L)\) if and only if there exists \(\lambda\in\R^T\) such that \(A(w,L)^\transpose\lambda=c\), in which case \(\theta_c=\lambda^\transpose m(w,L)\). If no such \(\lambda\) exists, finite row reduction returns \(\delta\in\R^{2^L}\) with \(A(w,L)\delta=0\) and \(c^\transpose\delta\neq0\), so two primitive histories with the same observed means disagree on \(\theta_c\).
+\end{theorem}
+Proof sketch. The first direction is substitution: \(c^\transpose\mu=\lambda^\transpose A(w,L)\mu\). The converse separates \(c\) from the row space of \(A(w,L)\), giving a null vector \(\delta\) whose target loading is nonzero.
+
+\begin{theorem}[The \(L=2\) alternating alias certificate]\label{thm:l2-alias}
+Under Assumptions \ref{ass:finite-history}--\ref{ass:nonparametric}, let \(L=2\), \(T=4\), and \(w=0101\) cyclically. With columns ordered by \(00,01,11,10\), the vector \(\delta=(1,0,-1,0)^{\transpose}\) satisfies \(A(0101,2)\delta=0\), but \((e_{11}-e_{00})^{\transpose}\delta=-2\). Hence \(0101\) does not identify the sustained-regime contrast \(\Delta_2\).
+\end{theorem}
+Proof sketch. The cyclic histories alternate between \(01\) and \(10\), so the \(00\) and \(11\) columns are zero. Adding \(\delta\) leaves all observed alternating-history means unchanged and changes \(\mu_{11}-\mu_{00}\).
+
+\begin{conjecture}[Unknown influence-period frontier]\label{conj:unknown-L-frontier}
+(NOT YET PROVED.) Under Assumptions \ref{ass:finite-history}--\ref{ass:schedule-means}, the schedule-audit certificate defines a sharp validity frontier \(L^\star(w,c_\Delta)\) for the sustained-regime contrast. If \(L\leq L^\star(w,c_\Delta)\), the audit returns a formula identifying \(\Delta_L\) from \(m(w,L)\). If \(L>L^\star(w,c_\Delta)\), every rule using only the schedule-means information set fails to identify \(\Delta_L\) uniformly over the nonparametric \(L\)-history class; equivalently, there is a nonzero alias direction that preserves all observed history means and changes \(\Delta_L\). Moreover, the de Bruijn schedule of order \(L\) is the shortest cyclic single-unit schedule for which \(L^\star(w,c)=L\) for every primitive history contrast \(c\).
+\end{conjecture}
+
+\begin{lemma}[The \(L=2\) de Bruijn sanity table]\label{lem:l2-debruijn}
+Under Assumptions \ref{ass:finite-history}--\ref{ass:nonparametric}, let \(L=2\), \(T=4\), and \(w=0011\) cyclically. Ordering rows by \(t=1,2,3,0\) and columns by \(00,01,11,10\),
+\[
+A(0011,2)=
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+0&0&1&0\\
+0&0&0&1
+\end{pmatrix},
+\]
+so \(\mu\) and \(\Delta_2\) are exactly identified.
+\end{lemma}
+Proof sketch. The cyclic histories are \(00,01,11,10\) in the displayed row order. The observation map is therefore the identity map on \(\R^4\).
+
+\section{Sanity-check corollaries}
+\begin{corollary}[No carryover corner]\label{cor:no-carryover}
+If \(\mu_h=\alpha+\tau h_L\) depends only on the contemporaneous treatment \(h_L\), then any schedule observing both treatment labels identifies \(\tau\), and the de Bruijn frontier reduces to the stricter nonparametric requirement that all \(L\)-histories be separated.
+\end{corollary}
+Under Assumptions \ref{ass:finite-history} and \ref{ass:cyclic-stationarity}, this collapses to the usual two-arm contrast because the columns with the same final bit share a common value.
+
+\begin{corollary}[Known influence-period audit]\label{cor:known-L-audit}
+Under Assumptions \ref{ass:finite-history}--\ref{ass:schedule-means}, the audit for a claimed influence period \(K\) is valid for a longer period \(L\) only when the embedded contrast \(c_L\) remains in the row span of \(A(w,L)\). For \(w=0101\), \(K=1\) identifies a contemporaneous contrast but \(L=2\) fails for \(\Delta_2\) because the alias in Theorem \ref{thm:l2-alias} has nonzero sustained-regime loading.
+\end{corollary}
+
+\begin{example}[Exhibit 9.1: focal object transcript for \(L=2\)]\label{ex:l2-transcript}
+Focal object: schedule-history incidence certificate \(A(w,2)\) and alias vector \(\delta\).
+
+Defining equation (from \S6): \(A(w,L)_{t,h}=\one\{H_t(w,L)=h\}\), \(H_t(w,L)=(w_{t-L+1},\ldots,w_t)\), and \(\Delta_L=(e_{1^L}-e_{0^L})^{\transpose}\mu\).
+
+RHS symbol provenance:
+\begin{itemize}[leftmargin=2em]
+\item \(L=2\); source: \S6 primitive fixed by locked parameters.
+\item \(w^{D}=0011\) with cyclic indices \(0,1,2,3\); source: \S6 primitive schedule.
+\item \(w^{A}=0101\) with cyclic indices \(0,1,2,3\); source: \S6 primitive schedule.
+\item \(\calH_2=(00,01,11,10)\); source: derived from \S6 primitive \(\calH_L=\{0,1\}^L\).
+\item \(\delta=(1,0,-1,0)^{\transpose}\); source: derived null vector candidate from the \S6 incidence matrix.
+\end{itemize}
+
+Substituted equation: for \(w^D=0011\), \((H_1,H_2,H_3,H_0)=(00,01,11,10)\), hence
+\[
+A(w^D,2)=I_4.
+\]
+For \(w^A=0101\), \((H_0,H_1,H_2,H_3)=(10,01,10,01)\), hence
+\[
+A(w^A,2)=
+\begin{pmatrix}
+0&0&0&1\\
+0&1&0&0\\
+0&0&0&1\\
+0&1&0&0
+\end{pmatrix}.
+\]
+
+Computed value: \(A(w^D,2)=I_4\), \(\operatorname{rank}A(w^D,2)=4\), \(A(w^A,2)\delta=0\), and \((e_{11}-e_{00})^{\transpose}\delta=-2\).
+
+Invariant check 1: each cyclic schedule has \(T=4\) rows. LHS \(=4\); RHS \(=4\); result \(=\) OK.
+
+Invariant check 2: every row has exactly one history label. For both displayed matrices, each row sum is \(1\); result \(=\) OK.
+
+Invariant check 3: the de Bruijn table covers four distinct histories. LHS \(=|\{00,01,11,10\}|=4\); RHS \(=2^2=4\); result \(=\) OK.
+
+Invariant check 4: the alias vector is observationally null but policy-relevant. LHS \(=A(w^A,2)\delta=(0,0,0,0)^{\transpose}\); RHS \(=0\); policy contrast shift \(=-2\ne0\); result \(=\) OK.
+
+Assumption-substitution screen: no RHS symbol above is sourced from \S7. The schedule, lag length, history set, and matrices are all computed from \S6 primitives. Load-bearing \S7 assumptions for flagship novelty: none. SC10 verdict: PASS.
+\end{example}
+
+\section{Proof-sketch route}
+\begin{enumerate}[leftmargin=2em]
+\item Theorem \ref{thm:audit-certificate}. Step 0a: unfold \S6 definitions of \(A(w,L)\), \(m(w,L)\), \(\theta_c\), and \(\Theta_I(w,L,m)\). Step 0b: apply Assumptions \ref{ass:finite-history}--\ref{ass:schedule-means}. Step 1: construct the primal identifying equation \(A^\transpose\lambda=c\), which converts a causal contrast into an observed schedule-mean contrast. Step 2: use finite-dimensional row-space separation to produce \(\delta\in\ker A\) with \(c^\transpose\delta\neq0\) when the primal equation is infeasible. Step 3: paste \(\mu\) and \(\mu+\epsilon\delta\) to form two nonparametric history tables with identical schedule means and distinct targets. Classical result: Fredholm alternative for finite matrices.
+\item Theorem \ref{thm:l2-alias}. Step 0a: unfold \S6 definitions of cyclic histories and \(A(w,L)\). Step 0b: apply Assumptions \ref{ass:finite-history}--\ref{ass:nonparametric}. Step 1: enumerate the two repeated histories of \(0101\). Step 2: compute the nullspace vector \(\delta=(1,0,-1,0)^\transpose\). Step 3: evaluate \((e_{11}-e_{00})^\transpose\delta=-2\), which links the nullspace direction to the sustained-regime target. Classical result: direct finite enumeration.
+\item Conjecture \ref{conj:unknown-L-frontier}. Step 0a: unfold the schedule-means information set and \(L^\star(w,c_\Delta)\). Step 0b: apply Assumptions \ref{ass:finite-history}--\ref{ass:schedule-means}. Step 1: prove a nesting lemma for embedded sustained-regime contrasts as \(L\) increases. Step 2: characterize the first loss of validity by a target-loading null vector, not by full-vector rank. Step 3: show uniform estimator invalidity by two-point alias experiments for each \(L>L^\star(w,c_\Delta)\). Step 4: use de Bruijn lower bounds only for the all-contrast universal case, separating compact counterbalance from target-specific switchback validity. Classical result: finite matrix separation plus de Bruijn word coverage.
+\end{enumerate}
+
+\section{Honest scope flags}
+The \(L=2\) de Bruijn identity table is retained only as a sanity lemma and exhibit because de Bruijn counterbalance is already published. The finite audit certificate and the \(L=2\) alternating alias statement are theorems by finite-dimensional separation and direct enumeration. The unknown-\(L\) frontier is labelled as a conjecture because the target-specific monotonicity and first-rank-loss characterization remain open. Multi-unit shortcuts below period \(2^L\) are not claimed here.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=2em]
+\item v1 (cold-start) -- initial draft with exact-ID locked parameters, \(L=2\) de Bruijn and alternating certificates, and a general de Bruijn incidence frontier conjecture; prior verdict: none.
+\item v2 (revise) -- demoted the already-known \(0011\) de Bruijn table to a sanity lemma, added the finite schedule-audit theorem, and replaced the definitional full-rank frontier with an unknown-\(L\) sustained-contrast conjecture; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Aguirre et al.(2011)]{AguirreMattarMagisWeinberg2011}
+Aguirre, G. K., M. G. Mattar, and L. Magis-Weinberg (2011).
+De Bruijn cycles for neural decoding.
+\textit{NeuroImage} 56(3), 1293--1300.
+
+\bibitem[Bojinov et al.(2023)]{BojinovSimchiLeviZhao2023}
+Bojinov, I., D. Simchi-Levi, and J. Zhao (2023).
+Design and analysis of switchback experiments.
+\textit{Management Science} 69(7), 3759--3777.
+
+\bibitem[Hu and Wager(2022)]{HuWager2022}
+Hu, Y. and S. Wager (2022).
+Switchback experiments under geometric mixing.
+arXiv:2209.00197.
+
+\bibitem[Missault and Masoero(2025)]{MissaultMasoero2025}
+Missault, P. and L. Masoero (2025).
+Carryover detection in switchback experimentation.
+NeurIPS 2025 Workshop on Uncovering Causality in Science.
+
+\bibitem[Missault et al.(2025)]{MissaultMasoeroDelbeRichardsonImbens2025}
+Missault, P., L. Masoero, C. Delbe, T. Richardson, and G. Imbens (2025).
+Robust and efficient multiple-unit switchback experimentation.
+arXiv:2506.12654.
+
+\bibitem[Oman and Seiden(1988)]{OmanSeiden1988}
+Oman, S. D. and E. Seiden (1988).
+Switch-back designs.
+\textit{Biometrika} 75(1), 81--89.
+
+\bibitem[Williams(1949)]{Williams1949}
+Williams, E. J. (1949).
+Experimental designs balanced for the estimation of residual effects of treatments.
+\textit{Australian Journal of Scientific Research Series A} 2, 149--168.
+
+\bibitem[Xiong et al.(2024)]{XiongChinTaylor2024}
+Xiong, R., A. Chin, and S. Taylor (2024).
+Data-driven switchback experiments: theoretical tradeoffs and empirical Bayes designs.
+arXiv:2406.06768.
+
+\bibitem[Zeng et al.(2026)]{ZengEtAl2026}
+Zeng, S., C. Adjaho, A. Bucarey, X. Qin, B. Zhang, P. Hoban, R. Johari, and S. Wager (2026).
+Sequentially-rerandomized switchback experiments.
+arXiv:2604.02489.
+\end{thebibliography}
+
+\end{document}

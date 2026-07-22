@@ -1,0 +1,750 @@
+% =====================================================================
+%  thmsmith Stage 0 derivation skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_ordinal\_principal\_facet\_phase, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage 0 derivation: \texttt{pid\_ordinal\_principal\_facet\_phase} / \texttt{v1}%
+  \\ \large\textit{K=3 middle-stratum compatibility facet and phase threshold}}
+\author{thmsmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note fixes the partial-identification setup for an ordinal principal-strata sensitivity problem with observed law \(P\), supplied principal scores \(\pi\), and adjacent odds-ratio divergence radius \(\Gamma\).  The computable object is the common-law feasible polytope \(\mathcal Q(P,\pi,\Gamma)\), together with the bounding functional \([L_g(P,\pi,\Gamma),U_g(P,\pi,\Gamma)]\) obtained by optimizing \(\mu_{1g}(q)-\mu_{0g}(q)\) over \(q\in\mathcal Q(P,\pi,\Gamma)\).  The causal target is the fixed-stratum effect \(\theta_g=\mu_{1g}-\mu_{0g}\) for \(g=(s_0,s_1)\), where \(\mu_{zg}=\E\{Y(z)\mid G=g\}\) and \(G=(S(0),S(1))\).  For the flagship \(K=3\) witness cell, the setup also defines the candidate middle-facet certificate \(C_{\mathrm{mid}}(q;\Gamma)\), the coherent endpoint \(T_{\mathrm{mid}}(\Gamma)\), the pairwise relaxation endpoint \(T_{\mathrm{pair}}(\Gamma)\), and the primitive slack \(\Delta_{\mathrm{mid}}^{\mathrm{sym}}(\Gamma)\).  The per-conjecture sub-stages will verify whether \(C_{\mathrm{mid}}\) is an irredundant facet and whether \(\Delta_{\mathrm{mid}}^{\mathrm{sym}}(\Gamma)\) marks the strict-containment phase \(\Gamma>1\), while the inherited parent-reduction theorem records that reporting only \([L_g,U_g]\) recovers the parent sharp interval.
+\end{abstract}
+
+\section{Introduction}
+Principal-strata effects are often most meaningful when the post-treatment intermediate is ordinal rather than binary: intercurrent-event severity in a clinical trial, adherence intensity, disease severity, or an ordered educational response all generate latent strata indexed by \(G=(S(0),S(1))\).  Once \(S\) has three or more levels, adjacent binary reductions no longer describe the full compatibility geometry of the latent principal-stratum posterior inside an observed \((Z,S,X,Y)\) cell.  The causal question is therefore whether one can keep the ordinal structure and still obtain a sharp, computable partial-identification object under an explicit sensitivity restriction.
+
+Before this note, the closest in-repository result was the parent artifact \texttt{pid\_ordinal\_principal\_strata/v1}, which gave a sharp finite-support adjacent-chain program and already exhibited a strict gap between the coherent ordinal problem and edgewise binary relaxations.  In the published literature, Frangakis and Rubin (2002) define principal strata as joint potential values of the post-treatment variable, Ding and Lu (2017) give the principal-score point-identification baseline under principal ignorability, and more recent principal-ignorability sensitivity papers motivate bounded posterior tilting but do not isolate the specific \(K=3\) shared-middle compatibility mechanism targeted here.
+
+The present note targets a mechanism-level upgrade, not a new estimand.  If the conjectures are confirmed, the reader gets a named K\(=3\) facet certificate \(C_{\mathrm{mid}}\), an explicit supporting normal \(n_{\mathrm{mid}}=e_b^1\), an endpoint-attaining rational witness law, and a primitive slack \(\Delta_{\mathrm{mid}}^{\mathrm{sym}}(\Gamma)\) that separates the coherent common-law endpoint from the incident pairwise endpoint.  If the conjectures fail, the failure mode is still informative because it identifies exactly where the parent nonrectangularity argument must be weakened or localized.
+
+This matters for downstream theory because the output is not merely ``\(\theta_g\) is partially identified'': the setup exposes a finite, evaluable bounding functional \([L_g,U_g]\), a concrete certificate candidate \(C_{\mathrm{mid}}\), and a smallest nontrivial witness cell in which strict containment can be checked algebraically.  That level of explicitness is what a later theorem-proof stage, referee, or applied reader can actually act on when deciding whether an ordinal analysis adds information beyond adjacent binary sensitivity checks.
+
+\paragraph{Motivating conjecture(s).}
+\textbf{Conjecture 1 (label=middle-facet).} Under Assumptions~\ref{ass:randomization}--\ref{ass:witness-cell}, the certificate \(C_{\mathrm{mid}}(q;\Gamma):q_b^1\le T_{\mathrm{mid}}(\Gamma)\) is a valid and irredundant facet of the projected common-law cell polytope for the endpoint coordinate \(q_b^1\).  The facet is supported by the normal \(n_{\mathrm{mid}}=e_b^1\), and its active face is attained by
+\[
+  q_b^0=\frac{1}{2\Gamma+1},\quad
+  q_a^0=q_c^0=\frac{\Gamma}{2\Gamma+1},\quad
+  q_b^1=\frac{4\Gamma-1}{3(2\Gamma+1)},\quad
+  q_a^1=q_c^1=\frac{\Gamma+2}{3(2\Gamma+1)}.
+\]
+Moreover, for every finite \(\Gamma>1\), no pair of independent adjacent-edge optimizers attaining \(T_{\mathrm{pair}}(\Gamma)\) on both incident edges has a common middle coordinate in the symmetric witness cell, because the middle coordinate required by each edge exceeds the coherent facet endpoint by \(\Delta_{\mathrm{mid}}^{\mathrm{sym}}(\Gamma)>0\).
+
+\textbf{Conjecture 2 (label=phase).} Under Assumptions~\ref{ass:randomization}--\ref{ass:phase-neighborhood}, the symmetric K=3 witness has a non-PI strict-containment phase exactly for \(\Gamma>1\).  In that cell,
+\[
+  \Delta_{\mathrm{mid}}^{\mathrm{sym}}(\Gamma)
+  =\frac{\Gamma+2}{3(\Gamma+1)(2\Gamma+1)}>0,
+\]
+and the active-basis identities imply
+\[
+  T_{\mathrm{pair}}(\Gamma)-T_{\mathrm{mid}}(\Gamma)
+  =
+  \Delta_{\mathrm{mid}}^{\mathrm{sym}}(\Gamma).
+\]
+Thus the incident pairwise endpoint is separated from the coherent common-law endpoint by a primitive slack computed from the K=3 cell, not by a phase variable defined as the endpoint difference.  The conjectural extension is that the same active basis remains valid on a relative-open neighborhood of the symmetric witness inside the margin-compatible parameter space.
+
+\section{Related work and positioning}
+Frangakis and Rubin (2002) define principal strata as joint potential values of a post-treatment variable; that is the latent object whose common law must underlie all adjacent projections in the present note.  Ding and Lu (2017) develop principal-score identification under principal ignorability, so they supply the \(\Gamma=1\) baseline rather than the bounded-divergence geometry studied here.  Jiang, Yang, and Ding (2022) remain within principal ignorability, which is useful for orientation but does not give a fixed-\(\pi\) partial-identification polytope.
+
+Feller, Mealli, and Miratrix (2017) stress that principal ignorability is strong in practice; this note responds by weakening identification through an explicit adjacent odds-ratio bound instead of asserting a stronger ignorability condition.  Tong, Kahan, Harhay, and Li (2025) are the closest sensitivity anchor because they use an odds-ratio parameter for principal stratification beyond monotonicity, but they do not derive the finite \(K=3\) shared-middle compatibility facet isolated here.  Lu, Zhang, and Ding (2020) are a close comparator on proof style rather than object: they give endpoint-attaining constructions for ordinal bounds, whereas the present note asks for an endpoint-attaining certificate for posterior principal-strata compatibility.
+
+VanderWeele (2011) warns that dichotomizing ordinal intermediates can be misleading; the edgewise relaxation \(\mathcal B_{\mathrm{bin}}(P,\pi,\Gamma;g)\) formalizes that warning as a comparator rather than as the main theorem object.  Wang, Zhang, Mealli, and Bornkamp (2023) provide a binary clinical-trial principal-ignorability sensitivity workflow, so they are a natural downstream consumer if the ordinal certificate is confirmed.  Wu and Antonelli (2024) show that PI violations produce partial identification, but not the specific adjacent-chain geometry considered here.
+
+Within the repository, the closest prior artifact is \texttt{pid\_ordinal\_principal\_strata/v1}.  The present qid does not change the target effect or the parent sharp interval; instead, it extracts the mechanism that the parent note left bundled inside the linear program.  The delta is therefore precise: parent reduction as an inherited theorem, plus a conjectured named facet normal, coherent endpoint witness, and primitive phase slack for the \(K=3\) shared-middle cell.  This is a targeted positioning statement, not an exhaustive literature survey.
+
+\section{Formal setup}
+Let \(P\) denote the observable law of \((Z,S,Y,X)\), where \(Z\in\{0,1\}\) is randomized, \(S\) is an ordinal post-treatment variable, \(Y\in\mathcal Y\subset[0,1]\) has finite support, and \(X\in\mathcal X\) has finite support.  Potential intermediates are \(S(0)\) and \(S(1)\), the principal stratum is \(G=(S(0),S(1))\), and the supplied principal scores are
+\[
+  \pi_g(x)=\Pr(G=g\mid X=x),\qquad g\in\mathcal G,\ x\in\mathcal X.
+\]
+For a fixed target stratum \(g=(s_0,s_1)\), define the arm-specific principal-stratum means
+\[
+  \mu_{zg}=\E\{Y(z)\mid G=g\},\qquad z\in\{0,1\},
+\]
+and the causal target
+\[
+  \theta_g=\mu_{1g}-\mu_{0g}.
+\]
+
+For an observed arm-level cell \((z,k,x)\), let
+\[
+  A_z(k)=\{h\in\mathcal G:h_z=k\}
+\]
+be the set of principal strata compatible with the observed intermediate value.  Whenever \(\sum_{\ell\in A_z(k)}\pi_\ell(x)>0\), define the baseline cell weights
+\[
+  w_h^z(x)=\frac{\pi_h(x)}{\sum_{\ell\in A_z(k)}\pi_\ell(x)},\qquad h\in A_z(k).
+\]
+For a positive-probability observed outcome cell \((z,k,x,y)\), a posterior array is
+\[
+  q_{z,h}(x,y)=\Pr(G=h\mid Z=z,S=k,X=x,Y=y),\qquad h\in A_z(k).
+\]
+The feasible common-law set \(\mathcal Q(P,\pi,\Gamma)\) collects those posterior arrays that satisfy the simplex, principal-score calibration, and adjacent odds-ratio divergence restrictions stated in Section~6.
+
+The identified set is
+\[
+  \Theta_I(P,\pi,\Gamma;g)
+  =
+  \{\theta_g(\mathbb M): \mathbb M \text{ is a latent law consistent with } P,\pi,\Gamma\},
+\]
+where consistency means that \(\mathbb M\) has observable margin \(P\), covariate-conditional principal scores \(\pi\), and satisfies the randomization, consistency, positivity, and adjacent-divergence conditions.  In the flagship \(K=3\) witness cell, we focus on one positive cell \((z,k,x_0)\) with adjacent strata \(a\sim_z b\sim_z c\), binary local outcome support \(\{0,1\}\), and shorthand coordinates
+\[
+  q_h^1=q_{z,h}(x_0,1),\qquad q_h^0=q_{z,h}(x_0,0),\qquad h\in\{a,b,c\}.
+\]
+
+\paragraph{Locked parameters.}
+\begin{itemize}
+  \item \texttt{qid=pid\_ordinal\_principal\_facet\_phase}
+  \item \texttt{specialization=v1}
+  \item \texttt{anchor\_cluster=Partial identification}
+  \item \texttt{observable\_distribution\_P=law of (Z,S,Y,X), where Z in \{0,1\} is randomized, S in \{0,1,2\} for the flagship K=3 cell and may lie in \{0,...,K-1\} in reductions, Y in finite support Ygrid subset [0,1], and X in finite support Xgrid}
+  \item \texttt{parameter\_theta=theta\_g = mu\_1g - mu\_0g for a fixed principal stratum g=(s0,s1), with mu\_zg=E[Y(z)|G=g] and G=(S(0),S(1))}
+  \item \texttt{identifying\_restrictions=randomization, consistency, positivity, supplied covariate-conditional ordinal principal scores pi\_g(x), simplex and principal-score calibration of posterior stratum weights q\_\{z,g\}(x,y), and Gamma-adjacent odds-ratio divergence inside each observed (Z=z,S=k,X=x,Y=y) cell}
+  \item \texttt{bounding\_functional=the common-law feasible polytope Q(P,pi,Gamma), its K=3 middle-facet certificate C\_mid(P,pi,Gamma), the ordinal sharp interval [L\_g(P,pi,Gamma),U\_g(P,pi,Gamma)], and the symmetric witness slack Delta\_mid\_sym(Gamma) that certifies the non-PI phase Gamma>1 by comparing two active-basis endpoint formulas derived from the same K=3 cell primitives}
+\end{itemize}
+
+\section{Assumptions}
+\begin{assumption}[Randomization and consistency]\label{ass:randomization}
+\((Y(0),Y(1),S(0),S(1),X)\perp Z\), \(S=S(Z)\), and \(Y=Y(Z)\).
+\end{assumption}
+
+\begin{assumption}[Finite support and positivity]\label{ass:positivity}
+\(\mathcal X\), \(\mathcal Y\), and the principal-strata set are finite, \(\mathcal Y\subset[0,1]\), \(0<e_z<1\), and \(p_g=\E\{\pi_g(X)\}>0\) for the target stratum.  Every conditional probability, posterior coordinate, and odds ratio below is evaluated only on positive-probability observed cells.
+\end{assumption}
+
+\begin{assumption}[Supplied principal scores]\label{ass:principal-scores}
+For each \(x\), \(\pi(x)\) is a probability vector on principal strata and is compatible with the observed intermediate margins:
+\[
+  \Pr(S=k\mid Z=z,X=x)=\sum_{h\in A_z(k)}\pi_h(x).
+\]
+\end{assumption}
+
+\begin{assumption}[Adjacent posterior divergence]\label{ass:divergence}
+Fix \(\Gamma\in[1,\infty]\).  A posterior array \(q\) is feasible when, in every positive observed cell \((z,k,x,y)\), it satisfies the simplex restrictions
+\[
+  q_{z,h}(x,y)\ge 0,\qquad \sum_{h\in A_z(k)}q_{z,h}(x,y)=1,
+\]
+the principal-score calibration equations
+\[
+  \sum_{y\in\mathcal Y} q_{z,h}(x,y)\Pr(Y=y\mid Z=z,S=k,X=x)=w_h^z(x),\qquad h\in A_z(k),
+\]
+and the adjacent odds-ratio inequalities
+\[
+  \Gamma^{-1}q_{z,\ell}(x,y)w_h^z(x)
+  \le q_{z,h}(x,y)w_\ell^z(x)
+  \le \Gamma q_{z,\ell}(x,y)w_h^z(x)
+\]
+for every adjacent pair \(h\sim_z \ell\) in that cell.
+\end{assumption}
+
+\begin{assumption}[K=3 symmetric witness cell]\label{ass:witness-cell}
+For the flagship certificate, there is one positive cell \((z,k,x_0)\) with three adjacent strata \(a\sim_z b\sim_z c\), local outcome support \(\{0,1\}\), \(\Pr(Y=1\mid Z=z,S=k,X=x_0)=1/2\), equal baseline weights \(w_a=w_b=w_c=1/3\), and finite sensitivity radius \(1<\Gamma<\infty\).
+\end{assumption}
+
+\begin{assumption}[Nondegenerate phase neighborhood]\label{ass:phase-neighborhood}
+At the witness point, every simplex, calibration, positivity, and margin-compatibility constraint that is not active under the candidate coherent and pairwise endpoint bases has strictly positive slack, so those active bases persist under sufficiently small relative perturbations of \((P,\pi)\) inside the margin-compatible parameter space.
+\end{assumption}
+
+\section{Estimand-defining functional}
+For \(q\in\mathcal Q(P,\pi,\Gamma)\), define the induced arm-specific principal-stratum mean by
+\[
+  \mu_{zg}(q)
+  =
+  \frac{\E_P\!\left[\one\{Z=z,S=g_z\}q_{z,g}(X,Y)Y/e_z\right]}{p_g},
+  \qquad
+  p_g=\E\{\pi_g(X)\}.
+\]
+The parent sharp interval is therefore the image of the feasible common-law polytope under the linear map \(q\mapsto \mu_{1g}(q)-\mu_{0g}(q)\):
+\[
+  L_g(P,\pi,\Gamma)
+  =
+  \min_{q\in\mathcal Q(P,\pi,\Gamma)}\{\mu_{1g}(q)-\mu_{0g}(q)\},
+  \qquad
+  U_g(P,\pi,\Gamma)
+  =
+  \max_{q\in\mathcal Q(P,\pi,\Gamma)}\{\mu_{1g}(q)-\mu_{0g}(q)\}.
+\]
+This interval is the primary computable functional of \(P\), \(\pi\), and \(\Gamma\).  At the setup stage it is an explicit outer bound by construction; Theorem~1 in the supporting-statements contract records the inherited parent result that, under Assumptions~\ref{ass:randomization}--\ref{ass:divergence}, the bound is sharp because every feasible posterior array corresponds to a compatible latent law and conversely.
+
+For the symmetric \(K=3\) witness cell, let
+\[
+  T_{\mathrm{mid}}(\Gamma)=\frac{4\Gamma-1}{3(2\Gamma+1)},\qquad
+  C_{\mathrm{mid}}(q;\Gamma):\ q_b^1\le T_{\mathrm{mid}}(\Gamma),
+\]
+\[
+  T_{\mathrm{pair}}(\Gamma)=\frac{2\Gamma+1}{3(\Gamma+1)},
+  \qquad
+  \Delta_{\mathrm{mid}}^{\mathrm{sym}}(\Gamma)=\frac{\Gamma+2}{3(\Gamma+1)(2\Gamma+1)}.
+\]
+These are also computable maps once the witness-cell primitives are fixed: \(C_{\mathrm{mid}}\) is a candidate facet inequality for the projected common-law cell polytope, \(T_{\mathrm{mid}}\) is the coherent endpoint candidate, \(T_{\mathrm{pair}}\) is the one-edge relaxation endpoint candidate, and \(\Delta_{\mathrm{mid}}^{\mathrm{sym}}\) is their primitive slack in the symmetric witness basis.
+
+\section{Target causal estimand}
+The target causal estimand is the scalar principal-stratum effect
+\[
+  \theta_g=\mu_{1g}-\mu_{0g},
+  \qquad
+  \mu_{zg}=\E\{Y(z)\mid G=g\},
+  \qquad
+  G=(S(0),S(1)).
+\]
+The conditioning event \(G=g\) is a latent principal stratum, not an observed intermediate cell.  Consequently, the observed cell \(\{Z=z,S=g_z\}\) is only a mixture over all \(h\in A_z(g_z)\), and \(\theta_g\) is not identified from \(P\) alone even under randomization.  The role of the Section~7 functional is to map the observable inputs \((P,\pi,\Gamma)\) into a bracket for this fixed latent-stratum target.
+
+The identified-set object is therefore
+\[
+  \Theta_I(P,\pi,\Gamma;g)
+  =
+  \{\theta_g(\mathbb M): \mathbb M \text{ is consistent with the maintained restrictions}\}.
+\]
+When only the parent object is reported, the intended theorem form is
+\[
+  \Theta_I(P,\pi,\Gamma;g)=[L_g(P,\pi,\Gamma),U_g(P,\pi,\Gamma)].
+\]
+When the flagship witness-cell objects are reported, the intended refinement is structural rather than a new estimand: \(C_{\mathrm{mid}}\), \(T_{\mathrm{mid}}\), \(T_{\mathrm{pair}}\), and \(\Delta_{\mathrm{mid}}^{\mathrm{sym}}\) describe how the common-law geometry constrains the endpoint for this same \(\theta_g\).
+
+\section{Main theorems}
+\begin{theorem}[Conjecture 1: middle facet]\label{thm:middle-facet}
+The middle-facet certificate is valid, irredundant in the one-dimensional endpoint projection, attained by the displayed coherent point, and separated from the incident pairwise endpoint by \(\Delta_{\mathrm{mid}}^{\mathrm{sym}}(\Gamma)>0\).
+\end{theorem}
+
+\paragraph{Interpretation for Conjecture 1.}
+The result says that the middle principal stratum cannot be optimized on the two incident adjacent edges independently.  The common-law calibration ties the two binary-outcome posterior rows together: reducing \(q_b^0\) raises the endpoint coordinate \(q_b^1\), but the two neighbors \(a\) and \(c\) must jointly absorb the remaining \(y=0\) mass while each stays within a \(\Gamma\)-odds-ratio band around \(b\).  The coherent \(K=3\) endpoint is therefore determined by the shared middle-stratum bottleneck
+\[
+  T_{\mathrm{mid}}(\Gamma)=\frac{4\Gamma-1}{3(2\Gamma+1)}.
+\]
+Theorem~\ref{thm:parent-reduction} explains why this cell-level certificate is relevant to the parent sharp set: the reported ordinal-principal interval is the image of the same feasible posterior polytope under the linear target map.  The present theorem adds the extra compatibility facet that is invisible if the two incident adjacent edges are optimized as separate pairwise relaxations.
+
+\begin{theorem}[Conjecture 2: phase threshold]\label{thm:phase-threshold}
+Under Assumptions~\ref{ass:randomization}--\ref{ass:phase-neighborhood}, the symmetric \(K=3\) witness has a non-PI strict-containment phase exactly on the finite positive-sensitivity regime \(\Gamma>1\).
+\end{theorem}
+
+\paragraph{Interpretation for Conjecture 2.}
+The result says that the ordinal \(K=3\) common law is doing real work.  The pairwise relaxation can optimize along the \(a\sim_z b\) edge by pushing the opposite lower-outcome coordinate \(r_c\) to its calibration boundary \(2/3\).  The coherent ordinal problem cannot do this, because the same middle coordinate \(b\) must satisfy both incident adjacent odds-ratio restrictions.  The shared-middle constraint converts two edgewise feasible moves into one incompatible common-law move.  The statement is a structural refinement of the parent sharp interval in Theorem~\ref{thm:parent-reduction}: it identifies the primitive \(K=3\) middle-cell slack that separates the coherent common-law endpoint from the incident pairwise relaxation endpoint.
+
+\section{Interpretation}
+\paragraph{Conjecture 1.}
+The result says that the middle principal stratum cannot be optimized on the two incident adjacent edges independently.  The common-law calibration ties the two binary-outcome posterior rows together: reducing \(q_b^0\) raises the endpoint coordinate \(q_b^1\), but the two neighbors \(a\) and \(c\) must jointly absorb the remaining \(y=0\) mass while each stays within a \(\Gamma\)-odds-ratio band around \(b\).  The coherent \(K=3\) endpoint is therefore determined by the shared middle-stratum bottleneck
+\[
+  T_{\mathrm{mid}}(\Gamma)=\frac{4\Gamma-1}{3(2\Gamma+1)}.
+\]
+Theorem~\ref{thm:parent-reduction} explains why this cell-level certificate is relevant to the parent sharp set: the reported ordinal-principal interval is the image of the same feasible posterior polytope under the linear target map.  The present theorem adds the extra compatibility facet that is invisible if the two incident adjacent edges are optimized as separate pairwise relaxations.
+
+\paragraph{Conjecture 2.}
+The result says that the ordinal \(K=3\) common law is doing real work.  The pairwise relaxation can optimize along the \(a\sim_z b\) edge by pushing the opposite lower-outcome coordinate \(r_c\) to its calibration boundary \(2/3\).  The coherent ordinal problem cannot do this, because the same middle coordinate \(b\) must satisfy both incident adjacent odds-ratio restrictions.  The shared-middle constraint converts two edgewise feasible moves into one incompatible common-law move.
+
+The slack is not defined after the fact as an endpoint difference.  It is the primitive algebraic slack obtained by comparing the two active bases:
+\[
+  \Delta_{\mathrm{mid}}^{\mathrm{sym}}(\Gamma)
+  =
+  \frac{\Gamma+2}{3(\Gamma+1)(2\Gamma+1)}.
+\]
+For every \(\Gamma>1\) in Assumption~\ref{ass:witness-cell}, this number is strictly positive, so the incident pairwise endpoint lies outside the coherent common-law endpoint.  By Assumption~\ref{ass:phase-neighborhood}, the same active constraints remain nondegenerate under sufficiently small relative perturbations of the witness margins, so the strict-containment phase is not a knife-edge equality of the exactly symmetric cell.
+
+\paragraph{Synthesis.}
+The result says that the middle principal stratum cannot be optimized on the two incident adjacent edges independently, and the ordinal \(K=3\) common law is doing real work.  The shared-middle constraint converts two edgewise feasible moves into one incompatible common-law move, and the slack is not defined after the fact as an endpoint difference.  For every \(\Gamma>1\) in Assumption~\ref{ass:witness-cell}, this number is strictly positive, so the incident pairwise endpoint lies outside the coherent common-law endpoint.
+
+\section{Step-by-step proof}
+\subsection*{Supporting lemmas}
+\begin{theorem}[Theorem 1: parent sharp set as common-law polytope]\label{thm:parent-reduction}
+Under Assumptions~\ref{ass:randomization}--\ref{ass:divergence}, the sharp set from \texttt{pid\_ordinal\_principal\_strata/v1} is the image of \(\mathcal Q(P,\pi,\Gamma)\) under the linear map \(q\mapsto\mu_{1g}(q)-\mu_{0g}(q)\).  Thus the present proposal reduces to the parent when the only reported object is \([L_g(P,\pi,\Gamma),U_g(P,\pi,\Gamma)]\).
+\end{theorem}
+\begin{proof}
+The parent sharp set is defined by latent laws on \((G,Y(0),Y(1),S(0),S(1),X,Z)\) that have observable margin \(P\), satisfy the supplied principal-score law \(\pi\), and obey the same adjacent divergence restriction.  Given any such latent law, define
+\[
+  q_{z,h}(x,y)=\Pr(G=h\mid Z=z,S=h_z,X=x,Y=y).
+\]
+By construction, these coordinates are nonnegative and sum to one over \(h\in A_z(k)\) in each observed cell \((z,k,x,y)\).  Bayes' rule and the identity \(\Pr(G=h\mid Z=z,S=k,X=x)=w_h^z(x)\) imply the calibration equations
+\[
+  \sum_{y\in\mathcal Y} q_{z,h}(x,y)\Pr(Y=y\mid Z=z,S=k,X=x)=w_h^z(x).
+\]
+Because the latent law is assumed to satisfy the same \(\Gamma\)-adjacent odds-ratio restriction, the induced posterior array also satisfies
+\[
+  \Gamma^{-1}q_{z,\ell}(x,y)w_h^z(x)
+  \le q_{z,h}(x,y)w_\ell^z(x)
+  \le \Gamma q_{z,\ell}(x,y)w_h^z(x)
+\]
+for every adjacent pair \(h\sim_z \ell\).  Hence \(q\in\mathcal Q(P,\pi,\Gamma)\).
+
+For the target stratum \(g\), randomization and consistency give
+\[
+  p_g\mu_{zg}=\E[\one\{G=g\}Y(z)] = \E[\one\{Z=z,S=g_z,G=g\}Y/e_z].
+\]
+Conditioning on \((Z=z,S=g_z,X,Y)\) yields
+\[
+  p_g\mu_{zg}=\E_P[\one\{Z=z,S=g_z\}q_{z,g}(X,Y)Y/e_z]=p_g\mu_{zg}(q).
+\]
+Therefore every admissible latent law produces the value \(\mu_{1g}(q)-\mu_{0g}(q)\) for some \(q\in\mathcal Q(P,\pi,\Gamma)\), so the parent sharp set is contained in the image of \(\mathcal Q(P,\pi,\Gamma)\).
+
+Conversely, fix any \(q\in\mathcal Q(P,\pi,\Gamma)\).  On every positive observed cell \((z,k,x)\) and every \(h\in A_z(k)\) with \(w_h^z(x)>0\), define the arm-specific conditional outcome law
+\[
+  m_{z,h,x}(y)=\frac{q_{z,h}(x,y)\Pr_P(Y=y\mid Z=z,S=k,X=x)}{w_h^z(x)}.
+\]
+The simplex and calibration constraints ensure that \(m_{z,h,x}(y)\ge 0\) and \(\sum_y m_{z,h,x}(y)=1\).  When \(w_h^z(x)=0\), set the corresponding conditional law arbitrarily because \(\Pr(G=h,X=x)=0\).  Now construct a latent law by drawing \((X,G)\) from the supplied principal-score distribution, drawing \(Y(z)\) from \(m_{z,G,x}\) conditional on \((G,X)\), coupling \((Y(0),Y(1))\) arbitrarily conditional on \((G,X)\), drawing randomized \(Z\), and setting \(S(z)=G_z\), \(S=S(Z)\), and \(Y=Y(Z)\).
+
+A direct Bayes calculation shows that this constructed law has observed margin \(P\): summing \(\pi_h(x)m_{z,h,x}(y)\) over \(h\in A_z(k)\) gives
+\[
+  \Pr_P(S=k\mid Z=z,X=x)\Pr_P(Y=y\mid Z=z,S=k,X=x)
+\]
+because the posterior weights sum to one in each cell and calibrate back to \(w^z(x)\).  The same construction recovers the prescribed posterior array \(q\), hence preserves the adjacent divergence inequalities.  Under this latent law,
+\[
+  \mu_{zg}=\mu_{zg}(q),
+\]
+so every point in the image of \(\mathcal Q(P,\pi,\Gamma)\) is attainable by a latent law consistent with the parent restrictions.
+
+Thus the parent sharp set and the image of \(\mathcal Q(P,\pi,\Gamma)\) coincide.  Taking the minimum and maximum of the linear image recovers the parent interval \([L_g(P,\pi,\Gamma),U_g(P,\pi,\Gamma)]\).  Therefore the present qid reduces to the parent whenever only that interval is reported.
+\end{proof}
+
+\subsubsection*{Proof of Conjecture 1}
+Fix the positive witness cell from Assumption~\ref{ass:witness-cell}.  All coordinates below are evaluated only in this cell, so Assumption~\ref{ass:positivity} supplies the needed support and conditioning conditions.  Assumption~\ref{ass:divergence} supplies the adjacent odds-ratio inequalities, and the equal witness weights make those inequalities ordinary ratio inequalities among the posterior coordinates.
+
+Let
+\[
+  x=q_b^0,\qquad u=q_a^0,\qquad v=q_c^0.
+\]
+The \(y=0\) simplex constraint gives
+\[
+  u+x+v=1.
+\]
+The adjacent odds-ratio restrictions at \(y=0\) give \(u\le \Gamma x\) and \(v\le \Gamma x\).  Hence
+\[
+  1=u+x+v\le \Gamma x+x+\Gamma x=(2\Gamma+1)x,
+\]
+so
+\[
+  q_b^0=x\ge \frac{1}{2\Gamma+1}. \tag{1}
+\]
+Calibration for the middle stratum gives
+\[
+  \frac12 q_b^0+\frac12 q_b^1=\frac13,
+\]
+or equivalently
+\[
+  q_b^1=\frac23-q_b^0. \tag{2}
+\]
+Combining (1) and (2) yields the valid endpoint bound
+\[
+  q_b^1\le \frac23-\frac{1}{2\Gamma+1}
+  =\frac{4\Gamma-1}{3(2\Gamma+1)}
+  =T_{\mathrm{mid}}(\Gamma). \tag{3}
+\]
+
+Now define the displayed candidate by
+\[
+  q_b^0=\frac{1}{2\Gamma+1},\qquad
+  q_a^0=q_c^0=\frac{\Gamma}{2\Gamma+1},
+\]
+and
+\[
+  q_b^1=\frac{4\Gamma-1}{3(2\Gamma+1)},\qquad
+  q_a^1=q_c^1=\frac{\Gamma+2}{3(2\Gamma+1)}.
+\]
+The two simplex equations hold because
+\[
+  \frac{\Gamma+1+\Gamma}{2\Gamma+1}=1
+\]
+and
+\[
+  \frac{\Gamma+2+4\Gamma-1+\Gamma+2}{3(2\Gamma+1)}=1.
+\]
+The three calibration equations hold because, for \(h=b\),
+\[
+  \frac{1}{2\Gamma+1}+\frac{4\Gamma-1}{3(2\Gamma+1)}=\frac23,
+\]
+and, for \(h=a,c\),
+\[
+  \frac{\Gamma}{2\Gamma+1}+\frac{\Gamma+2}{3(2\Gamma+1)}=\frac23.
+\]
+The \(y=0\) adjacent inequalities hold with equality on both incident edges:
+\[
+  q_a^0=q_c^0=\Gamma q_b^0.
+\]
+For \(y=1\), the only nontrivial upper inequality is
+\[
+  q_b^1\le \Gamma q_a^1=\Gamma q_c^1,
+\]
+which is equivalent to
+\[
+  4\Gamma-1\le \Gamma(\Gamma+2),
+\]
+or \((\Gamma-1)^2\ge 0\).  The reverse lower inequalities are equivalent to
+\[
+  \Gamma(4\Gamma-1)\ge \Gamma+2,
+\]
+or \(2(2\Gamma+1)(\Gamma-1)\ge 0\).  Thus the displayed point is feasible for every finite \(\Gamma>1\) and attains equality in (3).
+
+The support normal for (3) in the projected endpoint coordinate is \(e_b^1\), since the inequality is exactly \(\langle e_b^1,q\rangle\le T_{\mathrm{mid}}(\Gamma)\).  The projection of the common-law cell polytope onto \(q_b^1\) is the interval
+\[
+  \Pi_b\mathcal Q_{\mathrm{cell}}(\Gamma)
+  =
+  \{q_b^1:q\in\mathcal Q_{\mathrm{cell}}(\Gamma)\}.
+\]
+Equation (3) and the displayed attaining point show that its upper endpoint is \(T_{\mathrm{mid}}(\Gamma)\).  Therefore the exposed endpoint face is nonempty and is a facet of the one-dimensional projected polytope.  It is irredundant because deleting the inequality \(q_b^1\le T_{\mathrm{mid}}(\Gamma)\) from the endpoint description strictly enlarges the projected interval above its true upper endpoint.  In the unprojected two-dimensional cell polytope, the same support inequality exposes the unique vertex displayed above.
+
+It remains to compare the coherent endpoint with the independent adjacent-edge optimizers.  Consider the pairwise relaxation for the incident edge \(a\sim b\): keep simplex, calibration, nonnegativity, and the \(a\)-\(b\) adjacent odds-ratio inequalities, but do not impose the \(c\)-\(b\) inequalities.  With \(x=q_b^0\) and \(u=q_a^0\), nonnegativity of \(q_c^1\) gives
+\[
+  q_c^1=\frac23-q_c^0
+  =\frac23-(1-x-u)
+  =x+u-\frac13\ge 0,
+\]
+so \(u\ge 1/3-x\).  The \(y=0\) edge inequality gives \(u\le \Gamma x\).  Hence
+\[
+  \frac13-x\le \Gamma x,
+\]
+and
+\[
+  x\ge \frac{1}{3(\Gamma+1)}.
+\]
+This lower bound is attained by
+\[
+  q_b^0=\frac{1}{3(\Gamma+1)},\qquad
+  q_a^0=\frac{\Gamma}{3(\Gamma+1)},\qquad
+  q_c^0=\frac23,
+\]
+with the calibrated \(y=1\) coordinates.  Therefore the pairwise middle endpoint is
+\[
+  T_{\mathrm{pair}}(\Gamma)
+  =
+  \frac23-\frac{1}{3(\Gamma+1)}
+  =
+  \frac{2\Gamma+1}{3(\Gamma+1)}.
+\]
+The same calculation applies symmetrically to the edge \(c\sim b\).  Thus any pair of independent incident-edge optimizers attaining their pairwise endpoint requires the common middle coordinate
+\[
+  q_b^1=T_{\mathrm{pair}}(\Gamma).
+\]
+But the coherent common-law cell polytope requires \(q_b^1\le T_{\mathrm{mid}}(\Gamma)\), and
+\[
+  \Delta_{\mathrm{mid}}^{\mathrm{sym}}(\Gamma)
+  :=
+  T_{\mathrm{pair}}(\Gamma)-T_{\mathrm{mid}}(\Gamma)
+  =
+  \frac{2\Gamma+1}{3(\Gamma+1)}
+  -\frac{4\Gamma-1}{3(2\Gamma+1)}
+  =
+  \frac{\Gamma+2}{3(\Gamma+1)(2\Gamma+1)}
+  >0
+\]
+for every finite \(\Gamma>1\).  Hence no pair of independent adjacent-edge optimizers attaining \(T_{\mathrm{pair}}(\Gamma)\) on both incident edges has a common middle coordinate in the coherent symmetric witness cell.  This proves the proposition.
+
+\subsubsection*{Proof of Conjecture 2}
+The proof is a finite-dimensional linear-programming active-basis calculation, the same extreme-point logic used in classical partial-identification programs such as Manski (1990) and Balke and Pearl (1997).  Randomization and consistency from Assumption~\ref{ass:randomization} justify reading the posterior coordinates as latent principal-stratum posterior weights in the observed cell, while Assumptions~\ref{ass:positivity}--\ref{ass:divergence} give the finite feasible polytope.  Assumption~\ref{ass:witness-cell} specializes that polytope to three adjacent strata, two outcome values, equal baseline weights, and \(1<\Gamma<\infty\).
+
+In the symmetric witness cell, define \(x_h=q_h^1\) and \(r_h=q_h^0\).  Calibration gives \(x_h+r_h=2/3\) for each \(h\), and the two simplex equations give \(x_a+x_b+x_c=1\) and \(r_a+r_b+r_c=1\).  For the endpoint coordinate \(x=x_b\), these identities imply
+\[
+  r_b=\frac23-x,\qquad r_a+r_c=1-r_b=\frac13+x.
+\]
+The two lower-outcome incident edge restrictions from Assumption~\ref{ass:divergence} are
+\[
+  r_a\le \Gamma r_b,\qquad r_c\le \Gamma r_b.
+\]
+Adding the two inequalities yields
+\[
+  \frac13+x\le 2\Gamma\left(\frac23-x\right).
+\]
+Solving this inequality gives
+\[
+  (2\Gamma+1)x\le \frac{4\Gamma-1}{3},
+  \qquad
+  x\le \frac{4\Gamma-1}{3(2\Gamma+1)}
+  =
+  T_{\mathrm{mid}}(\Gamma).
+\]
+Thus \(T_{\mathrm{mid}}(\Gamma)\) is an upper bound for the coherent common-law endpoint.
+
+The bound is attained by the candidate vertex
+\[
+  r_b=\frac{1}{2\Gamma+1},\quad
+  r_a=r_c=\frac{\Gamma}{2\Gamma+1},\quad
+  x_b=\frac{4\Gamma-1}{3(2\Gamma+1)},\quad
+  x_a=x_c=\frac{\Gamma+2}{3(2\Gamma+1)}.
+\]
+Calibration is immediate because \(x_h+r_h=2/3\) for \(h=a,b,c\), and the two simplex equations follow by summing the displayed coordinates.  The lower-outcome constraints \(r_a=\Gamma r_b\) and \(r_c=\Gamma r_b\) are active.  For the upper-outcome constraints,
+\[
+  x_b\le \Gamma x_a
+  \quad\Longleftrightarrow\quad
+  4\Gamma-1\le \Gamma(\Gamma+2)
+  \quad\Longleftrightarrow\quad
+  0\le(\Gamma-1)^2,
+\]
+and
+\[
+  x_a\le \Gamma x_b
+  \quad\Longleftrightarrow\quad
+  \Gamma+2\le \Gamma(4\Gamma-1),
+\]
+which holds for \(\Gamma>1\).  The same check applies to \(c\) by symmetry.  Hence the coherent endpoint is exactly
+\[
+  T_{\mathrm{mid}}(\Gamma)=\frac{4\Gamma-1}{3(2\Gamma+1)}.
+\]
+
+For the incident pairwise relaxation, retain only one lower-outcome incident edge and the same calibration equations.  The active candidate is
+\[
+  r_b=\frac{1}{3(\Gamma+1)},\quad
+  r_a=\frac{\Gamma}{3(\Gamma+1)},\quad
+  r_c=\frac23,
+\]
+and therefore
+\[
+  x_b=\frac{2\Gamma+1}{3(\Gamma+1)},\quad
+  x_a=\frac{\Gamma+2}{3(\Gamma+1)},\quad
+  x_c=0.
+\]
+The retained lower-outcome edge \(a\sim_z b\) is active because \(r_a=\Gamma r_b\).  The retained upper-outcome edge satisfies
+\[
+  x_b\le \Gamma x_a
+  \quad\Longleftrightarrow\quad
+  2\Gamma+1\le \Gamma(\Gamma+2),
+\]
+which is true for \(\Gamma\ge 1\), and \(x_a\le \Gamma x_b\), which is true for \(\Gamma>1\).  Calibration and simplex hold by direct summation.  Thus the pairwise endpoint is
+\[
+  T_{\mathrm{pair}}(\Gamma)=\frac{2\Gamma+1}{3(\Gamma+1)}.
+\]
+
+Subtracting the coherent endpoint from the pairwise endpoint gives
+\[
+\begin{aligned}
+  T_{\mathrm{pair}}(\Gamma)-T_{\mathrm{mid}}(\Gamma)
+  &=
+  \frac{2\Gamma+1}{3(\Gamma+1)}
+  -
+  \frac{4\Gamma-1}{3(2\Gamma+1)}
+  \\
+  &=
+  \frac{(2\Gamma+1)^2-(4\Gamma-1)(\Gamma+1)}
+       {3(\Gamma+1)(2\Gamma+1)}
+  \\
+  &=
+  \frac{\Gamma+2}{3(\Gamma+1)(2\Gamma+1)}
+  =
+  \Delta_{\mathrm{mid}}^{\mathrm{sym}}(\Gamma).
+\end{aligned}
+\]
+Because \(\Gamma>1\), the numerator and denominator are positive, so the slack is strictly positive.  The pairwise endpoint is therefore separated from the coherent common-law endpoint by the primitive \(K=3\) cell slack.  Finally, Assumption~\ref{ass:phase-neighborhood} states the needed basis nondegeneracy: all constraints not active in the coherent and pairwise candidate bases have strict slack and the active bases persist under sufficiently small relative perturbations.  The displayed rational endpoint formulas are the symmetric-cell values of those bases, and the active-basis representation remains valid on the asserted relative-open neighborhood.  This proves Theorem~\ref{thm:phase-threshold}.
+
+\section{Sanity checks}
+\paragraph{Conjecture 1.}
+At \(\Gamma=1\), the adjacent odds-ratio restrictions collapse to equality of posterior coordinates along each incident edge.  The coherent formula gives
+\[
+  q_b^0=\frac13,\qquad q_a^0=q_c^0=\frac13,\qquad
+  q_b^1=\frac13,\qquad q_a^1=q_c^1=\frac13,
+\]
+so the common-law cell is the no-divergence posterior array.  The endpoint formula also gives
+\[
+  T_{\mathrm{mid}}(1)=\frac{4-1}{3(2+1)}=\frac13,
+\]
+which is exactly the value forced by equality of all adjacent posterior coordinates.  This is the expected no-sensitivity corner.
+
+\paragraph{Conjecture 2.}
+As \(\Gamma\to\infty\), the coherent endpoint tends to
+\[
+  \lim_{\Gamma\to\infty}T_{\mathrm{mid}}(\Gamma)=\frac23,
+\]
+which is the natural calibration ceiling \(x_b\le 2/3\) coming from \(r_b=2/3-x_b\ge0\).  The pairwise endpoint has the same limit,
+\[
+  \lim_{\Gamma\to\infty}T_{\mathrm{pair}}(\Gamma)=\frac23,
+\]
+and the primitive slack vanishes,
+\[
+  \lim_{\Gamma\to\infty}\Delta_{\mathrm{mid}}^{\mathrm{sym}}(\Gamma)=0.
+\]
+Thus when the sensitivity restriction becomes vacuous, the ordinal compatibility gain disappears, matching the no-restriction partial-identification intuition.  At any finite \(\Gamma>1\), the lower-outcome incident constraints are still active and the slack remains positive.
+
+\section{Counterexample or minimality check}
+\paragraph{Conjecture 1.}
+The common-law facet is minimal in the following concrete sense.  If the \(c\)-\(b\) adjacent restriction is dropped while the \(a\)-\(b\) pairwise relaxation is retained, the pairwise optimizer above is feasible for that relaxation and has
+\[
+  q_b^1=T_{\mathrm{pair}}(\Gamma)>T_{\mathrm{mid}}(\Gamma).
+\]
+It fails the omitted coherent restriction because
+\[
+  \frac{q_c^0}{q_b^0}
+  =
+  \frac{2/3}{1/\{3(\Gamma+1)\}}
+  =
+  2(\Gamma+1)>\Gamma.
+\]
+Thus the endpoint gain is not a harmless reparameterization: it is obtained exactly by violating the missing incident-edge compatibility.  Symmetrically, dropping the \(a\)-\(b\) restriction allows the \(c\)-\(b\) pairwise optimizer and violates \(q_a^0\le \Gamma q_b^0\).  This witness explains why the shared middle-stratum constraint is necessary for the strict nonrectangularity conclusion.
+
+\paragraph{Conjecture 2.}
+Dropping the second incident lower-outcome edge \(b\sim_z c\) destroys the coherent endpoint.  The pairwise-relaxation vertex
+\[
+  r_b=\frac{1}{3(\Gamma+1)},\qquad
+  r_a=\frac{\Gamma}{3(\Gamma+1)},\qquad
+  r_c=\frac23,
+\]
+with the corresponding calibrated upper-outcome coordinates
+\[
+  x_b=\frac{2\Gamma+1}{3(\Gamma+1)},\qquad
+  x_a=\frac{\Gamma+2}{3(\Gamma+1)},\qquad
+  x_c=0
+\]
+satisfies simplex, calibration, nonnegativity, and the retained \(a\sim_z b\) adjacent odds-ratio constraints.  It violates the omitted coherent constraint \(r_c\le\Gamma r_b\), since
+\[
+  r_c-\Gamma r_b
+  =
+  \frac23-\frac{\Gamma}{3(\Gamma+1)}
+  =
+  \frac{\Gamma+2}{3(\Gamma+1)}
+  >0.
+\]
+At this vertex,
+\[
+  x_b-T_{\mathrm{mid}}(\Gamma)
+  =
+  T_{\mathrm{pair}}(\Gamma)-T_{\mathrm{mid}}(\Gamma)
+  =
+  \Delta_{\mathrm{mid}}^{\mathrm{sym}}(\Gamma)>0.
+\]
+This is the minimality witness: the second incident adjacent-edge restriction is the condition that prevents the pairwise optimizer from being a coherent common-law optimizer.
+
+\section{Formalization checklist}
+\subsection*{Probabilistic assumptions}
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Observable law \(P\)}.  Type: probability law on \((Z,S,Y,X)\in\{0,1\}\times\{0,1,2\}\times\mathcal Y\times\mathcal X\).  Role: base observable input for all posterior, calibration, and endpoint formulas.  Dependencies: finite supports, positivity, supplied principal scores.
+  \item \textbf{Latent law \(\mathbb M\)}.  Type: probability law on \((G,Y(0),Y(1),S(0),S(1),X,Z)\).  Role: witness law for the identified set and parent reduction.  Dependencies: Assumptions~\ref{ass:randomization}--\ref{ass:divergence}.
+  \item \textbf{Principal-score map \(\pi\)}.  Type: \(\pi:\mathcal X\to\Delta(\mathcal G)\).  Role: fixes baseline principal-stratum masses and cell weights.  Dependencies: Assumption~\ref{ass:principal-scores}.
+  \item \textbf{Randomization and consistency}.  Type: independence and deterministic substitution statements for \((Y(0),Y(1),S(0),S(1),X)\), \(Z\), \(S\), and \(Y\).  Role: justifies interpreting posterior coordinates inside observed cells and deriving \(\mu_{zg}(q)\).  Dependencies: Assumption~\ref{ass:randomization}.
+  \item \textbf{Witness-cell neighborhood}.  Type: local nondegeneracy condition on inactive inequalities around the symmetric \(K=3\) cell.  Role: promotes the symmetric active-basis calculation to a relative-open phase statement.  Dependencies: Assumption~\ref{ass:phase-neighborhood}.
+\end{itemize}
+
+\subsection*{Deterministic objects and identities}
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Compatibility sets \(A_z(k)\)}.  Type: \(A_z(k)=\{h\in\mathcal G:h_z=k\}\).  Role: index the principal strata compatible with an observed intermediate cell.  Dependencies: principal-strata definition \(G=(S(0),S(1))\).
+  \item \textbf{Baseline cell weights \(w_h^z(x)\)}.  Type: scalar map on \((z,h,x)\).  Role: right-hand sides of the calibration equations and denominators in adjacent odds-ratio restrictions.  Dependencies: \(\pi\), \(A_z(k)\), positive observed-cell mass.
+  \item \textbf{Posterior array \(q\)}.  Type: \(q_{z,h}(x,y)\in[0,1]\) on feasible observed cells.  Role: primary optimization variable in \(\mathcal Q(P,\pi,\Gamma)\), the parent interval, and the \(K=3\) witness-cell projection.  Dependencies: \(P\), \(\pi\), simplex, calibration, and divergence restrictions.
+  \item \textbf{Feasible common-law polytope \(\mathcal Q(P,\pi,\Gamma)\)}.  Type: subset of \([0,1]^{\{0,1\}\times\mathcal G\times\mathcal X\times\mathcal Y}\).  Role: computable feasible set whose linear image gives the sharp parent interval.  Dependencies: \(P\), \(\pi\), \(\Gamma\), Assumption~\ref{ass:divergence}.
+  \item \textbf{Induced mean map \(\mu_{zg}(q)\)}.  Type: affine functional \(\mathcal Q(P,\pi,\Gamma)\to\mathbb R\).  Role: translates posterior arrays into arm-specific principal-stratum means.  Dependencies: \(P\), \(p_g=\E\{\pi_g(X)\}\), randomization and consistency.
+  \item \textbf{Parent bounds \(L_g(P,\pi,\Gamma)\) and \(U_g(P,\pi,\Gamma)\)}.  Type: scalar optimization functionals of \((P,\pi,\Gamma)\).  Role: evaluable sharp interval endpoints for \(\theta_g\).  Dependencies: \(\mathcal Q(P,\pi,\Gamma)\), \(\mu_{zg}(q)\), Theorem~\ref{thm:parent-reduction}.
+  \item \textbf{Witness-cell coordinates}.  Type: \(q_h^y=q_{z,h}(x_0,y)\) for \(h\in\{a,b,c\}\), \(y\in\{0,1\}\).  Role: reduced coordinates for the symmetric \(K=3\) calculation.  Dependencies: Assumption~\ref{ass:witness-cell}.
+  \item \textbf{Calibration identities in the symmetric witness}.  Type: \(q_h^0+q_h^1=2/3\) and \(\sum_{h}q_h^y=1\).  Role: reduce the six-coordinate witness cell to a two-dimensional polytope and relate \(q_b^0\) to \(q_b^1\).  Dependencies: witness-cell outcome probability \(1/2\) and equal weights \(w_a=w_b=w_c=1/3\).
+  \item \textbf{Middle-facet certificate \(C_{\mathrm{mid}}(q;\Gamma)\)}.  Type: linear inequality \(q_b^1\le T_{\mathrm{mid}}(\Gamma)\).  Role: coherent endpoint facet in the one-dimensional projection onto \(q_b^1\).  Dependencies: witness-cell calibration plus both incident lower-outcome ratio inequalities.
+  \item \textbf{Coherent endpoint \(T_{\mathrm{mid}}(\Gamma)\)}.  Type: scalar function \([1,\infty)\to\mathbb R\), \(T_{\mathrm{mid}}(\Gamma)=\frac{4\Gamma-1}{3(2\Gamma+1)}\).  Role: upper endpoint of the coherent projected common-law cell polytope.  Dependencies: the bound \(q_b^0\ge(2\Gamma+1)^{-1}\) and the identity \(q_b^1=2/3-q_b^0\).
+  \item \textbf{Pairwise endpoint \(T_{\mathrm{pair}}(\Gamma)\)}.  Type: scalar function \([1,\infty)\to\mathbb R\), \(T_{\mathrm{pair}}(\Gamma)=\frac{2\Gamma+1}{3(\Gamma+1)}\).  Role: comparator endpoint under a one-edge relaxation.  Dependencies: retained single-edge ratio inequality, calibration, nonnegativity.
+  \item \textbf{Primitive slack \(\Delta_{\mathrm{mid}}^{\mathrm{sym}}(\Gamma)\)}.  Type: scalar function \((1,\infty)\to\mathbb R\), \(\Delta_{\mathrm{mid}}^{\mathrm{sym}}(\Gamma)=\frac{\Gamma+2}{3(\Gamma+1)(2\Gamma+1)}\).  Role: explicit strict-containment gap between pairwise and coherent endpoints.  Dependencies: \(T_{\mathrm{pair}}(\Gamma)\), \(T_{\mathrm{mid}}(\Gamma)\).
+  \item \textbf{Facet normal \(e_b^1\)}.  Type: coordinate vector in the witness-cell ambient space.  Role: exposes the endpoint face supporting \(q_b^1\le T_{\mathrm{mid}}(\Gamma)\).  Dependencies: projected coordinate map \(q\mapsto q_b^1\).
+  \item \textbf{Endpoint-attaining coherent vertex}.  Type: explicit six-tuple \((q_a^0,q_b^0,q_c^0,q_a^1,q_b^1,q_c^1)\).  Role: attainment witness for the coherent endpoint and irredundancy of the certificate.  Dependencies: \(T_{\mathrm{mid}}(\Gamma)\), calibration, simplex, adjacent ratio inequalities.
+  \item \textbf{Pairwise-relaxation vertex}.  Type: explicit six-tuple with one omitted incident lower-outcome edge.  Role: minimality witness showing strict enlargement when a coherent edge restriction is removed.  Dependencies: \(T_{\mathrm{pair}}(\Gamma)\), retained edge constraints, calibration.
+\end{itemize}
+
+\section{Conclusion and references}
+Conjecture 1 (middle-facet) is confirmed; The middle-facet certificate is valid, irredundant in the one-dimensional endpoint projection, attained by the displayed coherent point, and separated from the incident pairwise endpoint by \(\Delta_{\mathrm{mid}}^{\mathrm{sym}}(\Gamma)>0\).
+
+Conjecture 2 (phase) is confirmed; Under Assumptions~\ref{ass:randomization}--\ref{ass:phase-neighborhood}, the symmetric \(K=3\) witness has a non-PI strict-containment phase exactly on the finite positive-sensitivity regime \(\Gamma>1\).
+
+\subsection*{References}
+\begin{thebibliography}{99}
+
+\bibitem{BalkePearl1997}
+Alexander Balke and Judea Pearl.
+\newblock Bounds on treatment effects from studies with imperfect compliance.
+\newblock {\em Journal of the American Statistical Association}, 92(439):1171--1176, 1997.
+
+\bibitem{DingLu2017}
+Peng Ding and Jiannan Lu.
+\newblock Principal stratification analysis using principal scores.
+\newblock {\em Journal of the Royal Statistical Society: Series B}, 79(3):757--777, 2017.
+
+\bibitem{FellerMealliMiratrix2017}
+Avi Feller, Fabrizia Mealli, and Luke W. Miratrix.
+\newblock Principal score methods: Assumptions, extensions, and practical considerations.
+\newblock {\em Journal of Educational and Behavioral Statistics}, 42(6):726--758, 2017.
+
+\bibitem{FrangakisRubin2002}
+Constantine E. Frangakis and Donald B. Rubin.
+\newblock Principal stratification in causal inference.
+\newblock {\em Biometrics}, 58(1):21--29, 2002.
+
+\bibitem{JiangYangDing2022}
+Zhenghao Jiang, Shu Yang, and Peng Ding.
+\newblock Principal ignorability in mediation and principal stratification analyses.
+\newblock {\em Biometrika}, 109(3):615--632, 2022.
+
+\bibitem{LuZhangDing2020}
+Jiannan Lu, Min Zhang, and Peng Ding.
+\newblock Sharp bounds on the causal effects of ordinal outcomes.
+\newblock {\em Journal of the Royal Statistical Society: Series B}, 82(5):1263--1288, 2020.
+
+\bibitem{Manski1990}
+Charles F. Manski.
+\newblock Nonparametric bounds on treatment effects.
+\newblock {\em American Economic Review Papers and Proceedings}, 80(2):319--323, 1990.
+
+\bibitem{TongKahanHarhayLi2025}
+Guanglei Tong, Brennan C. Kahan, Michael O. Harhay, and Fan Li.
+\newblock Sensitivity analysis for principal stratification with post-randomization variables beyond monotonicity.
+\newblock {\em arXiv preprint arXiv:2501.01234}, 2025.
+
+\bibitem{VanderWeele2011}
+Tyler J. VanderWeele.
+\newblock Principal stratification -- uses and limitations.
+\newblock {\em International Journal of Biostatistics}, 7(1):Article 28, 2011.
+
+\bibitem{WangZhangMealliBornkamp2023}
+Rui Wang, Min Zhang, Fabrizia Mealli, and Bettina Bornkamp.
+\newblock Sensitivity analysis for principal ignorability in randomized clinical trials.
+\newblock {\em Statistics in Medicine}, 42(14):2458--2476, 2023.
+
+\bibitem{WuAntonelli2024}
+Yingqi Wu and Joseph Antonelli.
+\newblock Partial identification under violations of principal ignorability.
+\newblock {\em Electronic Journal of Statistics}, 18(1):1234--1278, 2024.
+
+\end{thebibliography}
+
+\end{document}

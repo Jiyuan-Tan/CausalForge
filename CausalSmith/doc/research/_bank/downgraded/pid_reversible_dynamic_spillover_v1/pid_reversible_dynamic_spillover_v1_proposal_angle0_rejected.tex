@@ -1,0 +1,606 @@
+% =====================================================================
+%  thmsmith Stage -1 proposal skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_reversible\_dynamic\_spillover, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage_neg1_2_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to the Q1 pool-mode,
+%    reproduce that block verbatim from
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). Otherwise (free-form
+%    `(qid, specialization)` — the default), define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage -1 proposal: \texttt{pid\_reversible\_dynamic\_spillover} / \texttt{v1}%
+  \\ \large\textit{Scalar-indexed sharp bounds for reversible dynamic treatment with bounded adjacent-spell carryover}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Partial-identification anchor.  The locked tuple is
+\[
+(\texttt{qid},\texttt{specialization},P,\theta,\mathcal R_\rho,B_\rho)
+=
+(\texttt{pid\_reversible\_dynamic\_spillover},\texttt{v1},P,
+\theta^{LR},\mathcal R_\rho,[L_\rho(P),U_\rho(P)]).
+\]
+Here \(P_T\) is the observed law of a finite-support longitudinal panel
+\((L_{it},A_{it},Y_{it})_{t=1}^T\), with \(A_{it}\in\{0,1\}\) reversible and
+\(Y_{it}\in[0,1]\).  For finite-horizon statements write \(P=P_T\).  For the
+long-run statement, \(P_\infty\) is either a stationary infinite-panel law whose
+finite-dimensional marginals are \(P_T\), or a projectively compatible sequence
+\((P_T)_{T\ge1}\) satisfying Assumption~\ref{ass:stationary}.  The parameter
+\(\theta^{LR}\) is the Cesaro long-run average of the sustained-treatment contrast
+\[
+\theta_T = T^{-1}\sum_{t=1}^T
+\left\{\E[Y_t(\bar 1_t)]-\E[Y_t(\bar 0_t)]\right\},
+\qquad
+\theta^{LR}=\lim_{T\to\infty}\theta_T
+\]
+when the limit exists.  The identifying restrictions \(\mathcal R_\rho\) are
+consistency, Robins transition stability for covariates, finite-history
+positivity on the reversible support, and a scalar adjacent-spell carryover
+bound: latent conditional outcome means are \(\rho\)-Lipschitz in the
+spell-boundary distance \(d_{\rm sp}\) defined in Section~\ref{sec:setup}.
+The bounding functional \(B_\rho(P)=[L_\rho(P),U_\rho(P)]\) is the nested
+lower/upper g-formula obtained by replacing each Robins outcome regression by
+its McShane-Whitney lower or upper \(\rho\)-Lipschitz envelope over the
+observed reversible support.  The endpoint convention is
+\(\rho=0\) for the Robins g-formula point-identification regime and
+\(\rho=\infty\) for the unrestricted bounded-outcome Manski regime that retains
+factual consistency anchors at observed target-history nodes and otherwise lets
+unobserved sustained-history outcomes range over \([0,1]\).
+
+\begin{abstract}
+This proposal asks for sharp bounds on a long-run average treatment effect when
+the treatment process is reversible and adjacent treatment spells may contaminate
+each other by at most a scalar amount \(\rho\).  The proposed kernel is a
+closed-form sequence of lower and upper nested g-formulas: at each history node,
+the usual Robins outcome regression is replaced by the smallest and largest
+bounded \(\rho\)-Lipschitz extension compatible with the observed reversible
+panel law.  The flagship conjecture is that these formulas are not merely outer
+bounds, but the exact sharp identified interval, with extremal latent joint laws
+attaining every lower and upper face.  The construction is designed to collapse
+to the Robins \citep{Robins1986} g-formula when \(\rho=0\) and to the
+bounded-outcome Manski interval when \(\rho=\infty\).  If resolved, the result
+would give empirical researchers a sensitivity parameter for reversible
+dynamic treatments that sits between full sequential point identification and
+assumption-free dynamic bounds.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Many panel treatments are reversible: pollution exposure, medication use,
+employment status, incarceration, price regulation, and policy intensity can all
+turn on, turn off, and turn on again.  Standard longitudinal g-formula analyses
+point-identify dynamic regimes under sequential exchangeability, while
+assumption-free partial-identification analyses honestly report very wide
+bounds.  The open methodological question is whether a single interpretable
+carryover radius can interpolate between those two poles when the scientific
+concern is contamination from adjacent treatment spells rather than arbitrary
+latent confounding.
+
+\paragraph{The main finding (proposed).}
+Conjecture~\ref{conj:sharp-finite} states that, for each finite horizon \(T\)
+and spillover radius \(\rho\), the identified set for
+\(\theta_T\) is exactly the interval obtained from the lower and upper
+nested g-formulas \(L_T(\rho;P)\) and \(U_T(\rho;P)\).  The same conjecture
+includes the sharpness witness: two observed-law-compatible latent completions
+attain each exposed and unexposed endpoint, so the ATE faces
+\(L_T^1(\rho)-U_T^0(\rho)\) and \(U_T^1(\rho)-L_T^0(\rho)\) cannot be improved.
+Conjecture~\ref{conj:longrun} then asks for the Cesaro-limit version under
+stationary reversible dynamics.
+
+\paragraph{What is new.}
+The novelty kernel is the spell-boundary Lipschitz envelope, not a routine
+extension from absorbing to nonabsorbing treatment paths.  \citet{KimKwonKwonLee2018}
+show that smoothness restrictions can sharpen counterfactual-outcome bounds in
+static treatment-response models; the strict dynamic extension proposed here is
+that the Lipschitz metric is defined on reversible treatment-history boundary
+vectors and then propagated through a Robins transition recursion, so a single
+latent completion must satisfy all period and regime faces simultaneously.  Robins
+\citep{Robins1986} gives point identification under the full longitudinal
+assumptions; Diemer, Shi, and Swanson \citep{DiemerShiSwanson2024} give
+assumption-free dynamic sustained-intervention bounds; de Chaisemartin and
+d'Haultfoeuille \citep{DeChaisemartinDHaultfoeuille2024} handle nonabsorbing
+treatment lags under a DID design.  None of those papers gives a scalar
+closed-form, sharp partial-identification bridge in which repeated on-off
+spells are retained as the state variable and the two endpoint regimes are
+theorems of the same formula.
+
+\paragraph{How it positions in the literature.}
+This is a partial-identification proposal with a dynamic-panel interface.  It
+uses the g-formula as the zero-radius exact-identification endpoint, uses
+Manski-style bounded-outcome logic as the infinite-radius endpoint, and borrows
+the sharpness standard of panel partial-identification papers such as
+\citet{ChernozhukovFernandezValHahnNewey2013} and \citet{JunLeeShin2016}.  It does
+not propose a new event-study estimand or a new two-way fixed-effects
+regression; the panel feature is the reversible treatment-history support on
+which the partial-identification envelope is built.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the treatment-history matching workflow of
+\citet{ImaiKimWang2023}: their applied design already matches on finite
+treatment histories and estimates short- and long-run effects, but it needs a
+formal sensitivity target when exact no-carryover diagnostics fail.  A sharp
+\(\rho\)-indexed interval would tell users of that workflow how much their
+long-run conclusion can move as adjacent-spell contamination is relaxed.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers studying reversible policies should report a spillover-radius
+sensitivity curve \( \rho\mapsto [L_\rho(P),U_\rho(P)] \) rather than treating
+Robins point identification and unrestricted dynamic bounds as unrelated
+analyses.
+
+\section{Related work}
+\citet{Robins1986} introduces the g-formula for time-varying treatments under
+sequential exchangeability, consistency, and positivity; it is the
+\(\rho=0\) endpoint this proposal must recover.  \citet{Han2021} studies
+nonparametric identification of finite dynamic treatment sequences and
+emphasizes timing, state dependence, and endogenous dynamic choices; it is the
+closest econometric dynamic-treatment identification paper, but it is not a
+closed-form scalar partial-identification bridge for reversible spillovers.
+\citet{DiemerShiSwanson2024} extends assumption-free partial-identification
+bounds from time-fixed exposures to sustained static and dynamic interventions;
+it supplies the wide \(\rho=\infty\) pole but intentionally does not impose a
+bounded adjacent-spell structure.  \citet{KimKwonKwonLee2018} study sharp
+counterfactual-outcome bounds under Lipschitz smoothness assumptions; this is
+the closest smoothness partial-identification comparator, but their metric is a
+static treatment-response smoothness condition rather than a reversible
+treatment-history spell-boundary metric coupled through a dynamic g-recursion.
+\citet{ChernozhukovFernandezValHahnNewey2013}
+derive sharp bounds for average and quantile effects in nonseparable panel
+models, including dynamic state-dependence bounds under time-homogeneity
+conditions; their sharpness target motivates the extremal-law requirement here,
+but their restrictions are not scalar spell-boundary contamination bounds.
+\citet{JunLeeShin2016} give sharp identifiable bounds for potential-outcome
+distributions in panels with dynamic treatment decisions using stationarity
+restrictions; this proposal instead asks for a reversible-spell Lipschitz
+restriction that nests Robins and Manski endpoints.  \citet{DeChaisemartinDHaultfoeuille2024}
+allow nonbinary, nonabsorbing treatments and lags in a DID event-study design;
+their estimands are parallel-trends weighted effects, not sharp
+partial-identification intervals.  \citet{SunAbraham2021} and
+\citet{CallawaySantAnna2021} show why absorbing adoption timing is a powerful
+state compression in event-study and DID designs; reversible spells destroy
+that compression.  \citet{BojinovRambachanShephard2021} define finite-population
+dynamic causal effects for alternative treatment paths in panel experiments and
+show why carryover makes conventional panel estimators hard to interpret; their
+framework is design-based rather than a sharp observational partial-ID envelope.
+\citet{ImaiKimWang2023} propose treatment-history matching
+for time-series cross-sectional data and estimate long-run effects, making it a
+natural empirical consumer of a reversible-spell sensitivity curve.
+\citet{HanYang2024} represent a computational approach to policy-effect
+identification under unobserved heterogeneity; the contrast here is analytic
+closed-form envelopes indexed by one spillover radius.
+
+In-repo prior art is closest in three places.  The generated catalogue
+`doc/API.md' records only the generic PartialID/Manski seed section, so there
+is no existing CausalSmith entry for this qid beyond scaffolding.  The candidate
+proposal `pid\_dynamic\_iv\_compliance v2' develops memory-retaining dynamic IV
+bounds and notes that retaining history constraints can shrink intervals, but
+its object is compliance response types rather than reversible treatment-spell
+carryover.  The downgraded `pid\_dynamic\_iv\_compliance v3' and failed
+`pid\_long\_term\_surrogate v1' artifacts both expose the same missing
+ingredient: exact endpoint-face witnesses for latent dynamic completions.  The
+candidate `pid\_did\_anticipation\_bounded v1' studies bounded anticipation
+with shared coordinates in DID aggregation; it is relevant as support-function
+algebra, but its target is panel ATT aggregation, not a long-run dynamic ATE.
+
+\section{Formal setup}
+\label{sec:setup}
+For each finite horizon \(T\), there are exchangeable units \(i\), periods
+\(t=1,\ldots,T\), covariates
+\(L_t\in\mathcal L_t\), reversible binary treatment \(A_t\in\{0,1\}\), and
+bounded outcome \(Y_t\in[0,1]\).  Let
+\(H_t=(L_1,A_1,Y_1,\ldots,L_t)\) denote the pre-treatment history at period
+\(t\), and let \(P_T\) be the observed law of the full panel path.  Write
+\(X_t=(L_1,Y_1,\ldots,Y_{t-1},L_t)\) for the non-treatment history component
+used to index reversible-support strata, and write
+\(\bar A_t=(A_1,\ldots,A_t)\).  For a
+treatment path \(\bar a_t=(a_1,\ldots,a_t)\), \(Y_t(\bar a_t)\) denotes the
+period-\(t\) potential outcome, and \(L_{t+1}(\bar a_t)\) denotes the next
+covariate under the same path.
+
+The two sustained regimes are \(\bar 1_t=(1,\ldots,1)\) and
+\(\bar 0_t=(0,\ldots,0)\).  The finite-horizon target is
+\[
+\theta_T=T^{-1}\sum_{t=1}^T
+\{\E[Y_t(\bar 1_t)]-\E[Y_t(\bar 0_t)]\},
+\]
+and the long-run target \(\theta^{LR}\) is the Cesaro limit of \(\theta_T\)
+when it exists.  For a history-node \(v=(t,x_t,\bar a_t)\), define the
+spell-boundary vector
+\[
+s(\bar a_t)=(\one\{a_2\ne a_1\},\ldots,\one\{a_t\ne a_{t-1}\})
+\]
+and the adjacent-spell distance
+\[
+d_{\rm sp}(\bar a_t,\bar b_t)
+=\one\{a_t\ne b_t\}+\sum_{r=2}^t |s_r(\bar a_t)-s_r(\bar b_t)|.
+\]
+The first term separates current treatment effects; the summation measures
+carryover from starts and endings of consecutive spells.
+
+For any node \(v=(t,x_t,\bar a_t)\), let \(m_t(v)\) be the latent conditional
+mean \(\E[Y_t(\bar a_t)\mid X_t=x_t]\).  The observed reversible-support set at
+the non-treatment state \(x_t\) is
+\[
+\mathcal O_t(x_t)=
+\{\bar b_t\in\{0,1\}^t:\Pr_{P_T}(X_t=x_t,\bar A_t=\bar b_t)>0\}.
+\]
+For \(\bar b_t\in\mathcal O_t(x_t)\), define the factual regression
+\[
+\mu_t^P(x_t,\bar b_t)=\E_{P_T}[Y_t\mid X_t=x_t,\bar A_t=\bar b_t].
+\]
+If \(v=(t,x_t,\bar a_t)\) is factual, meaning
+\(\bar a_t\in\mathcal O_t(x_t)\), consistency anchors \(m_t(v)\) at
+\(\mu_t^P(x_t,\bar a_t)\).  Given \(\rho\), the
+candidate lower and upper outcome envelopes are
+\[
+\ell_t^\rho(v)=
+\max\left\{0,\sup_{\bar b_t\in\mathcal O_t(x_t)}
+[\mu_t^P(x_t,\bar b_t)-\rho d_{\rm sp}(\bar a_t,\bar b_t)]\right\},
+\qquad
+u_t^\rho(v)=
+\min\left\{1,\inf_{\bar b_t\in\mathcal O_t(x_t)}
+[\mu_t^P(x_t,\bar b_t)+\rho d_{\rm sp}(\bar a_t,\bar b_t)]\right\},
+\]
+with the convention that \(\rho=\infty\) drops the Lipschitz inequalities but
+retains the factual anchor \(m_t(t,x_t,\bar a_t)=\mu_t^P(x_t,\bar a_t)\) when
+\(\bar a_t\in\mathcal O_t(x_t)\); if \(\bar a_t\notin\mathcal O_t(x_t)\), the
+nodewise envelope is the unrestricted range \([0,1]\).
+The nested lower and upper g-formulas \(L_T^a(\rho;P)\) and \(U_T^a(\rho;P)\)
+are obtained by running the Robins backward recursion for regime
+\(\bar a\in\{\bar 0,\bar 1\}\), using the observed covariate transition kernel
+and replacing the terminal outcome regression at each period by
+\(\ell_t^\rho\) or \(u_t^\rho\).  The proposed ATE interval is
+\[
+B_T(\rho;P)=
+[L_T^1(\rho;P)-U_T^0(\rho;P),\,
+ U_T^1(\rho;P)-L_T^0(\rho;P)].
+\]
+
+\begin{quote}
+Locked parameters: \(q=\texttt{pid\_reversible\_dynamic\_spillover}\),
+specialization \(=\texttt{v1}\), observable distribution \(P\) is the
+finite-support law \(P_T\) of \((L_t,A_t,Y_t)_{t=1}^T\) for finite-horizon
+results and the stationary law \(P_\infty\) or compatible sequence
+\((P_T)_{T\ge1}\) for the long-run result, parameter
+\(\theta=\theta^{LR}\) is the Cesaro long-run sustained-regime ATE, identifying
+restrictions \(\mathcal R_\rho\) are consistency, Robins transition stability,
+reversible-support positivity, and \(\rho\)-bounded adjacent-spell Lipschitz
+carryover, and bounding functional \(B_\rho(P)\) is the nested lower/upper
+g-formula interval defined by the McShane-Whitney envelopes
+\(\ell_t^\rho,u_t^\rho\).
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite reversible panel law]\label{ass:finite}
+For each finite horizon \(T\), the observed panel law \(P\) has finite support,
+\(A_t\in\{0,1\}\), and \(Y_t\in[0,1]\).  All conditional means and transition
+kernels appearing in Section~\ref{sec:setup} are defined on positive-probability
+histories.
+\end{assumption}
+
+\begin{assumption}[Consistency]\label{ass:consistency}
+If the realized treatment prefix equals \(\bar a_t\), then the observed outcome
+satisfies \(Y_t=Y_t(\bar a_t)\), and the realized covariate history satisfies
+the corresponding potential-history consistency relation.
+\end{assumption}
+
+\begin{assumption}[Robins transition stability]\label{ass:transition}
+For the two sustained regimes \(\bar 0\) and \(\bar 1\), the conditional law of
+\(L_{t+1}(\bar a_t)\) given \(H_t=h_t\) is the observed conditional law
+\(P(L_{t+1}\mid H_t=h_t,A_t=a_t)\) whenever the conditioning event has positive
+probability.
+\end{assumption}
+
+\begin{assumption}[Reversible-support positivity]\label{ass:positivity}
+For every history node used by the sustained-regime g-recursion, the observed
+support contains a nonempty reversible-support set \(\mathcal O_t(x_t)\) and
+the covariate transition probabilities in Assumption~\ref{ass:transition} are
+strictly positive on their finite support.
+\end{assumption}
+
+\begin{assumption}[\(\rho\)-bounded adjacent-spell carryover]\label{ass:rho}
+For every period \(t\), non-treatment history \(x_t\), and two treatment prefixes
+\(\bar a_t,\bar b_t\) on the reversible support,
+\[
+|m_t(t,x_t,\bar a_t)-m_t(t,x_t,\bar b_t)|
+\le \rho\,d_{\rm sp}(\bar a_t,\bar b_t).
+\]
+The conventions are \(\rho=0\) for exact spell-boundary invariance and
+\(\rho=\infty\) for no restriction beyond \(Y_t\in[0,1]\), except that
+factual consistency anchors are retained when the target treatment prefix is in
+\(\mathcal O_t(x_t)\).
+\end{assumption}
+
+\begin{assumption}[Stationary finite-memory long-run law]\label{ass:stationary}
+For the long-run result, either \(P_\infty\) is a stationary infinite-panel law
+or \((P_T)_{T\ge1}\) is a projectively compatible finite-panel sequence whose
+finite-dimensional marginals agree with \(P_\infty\).  The induced process is
+stationary and geometrically ergodic on a finite \(M\)-memory state
+\(S_t=(L_{t-M:t},A_{t-M:t},Y_{t-M:t-1})\), and the two sustained-regime
+transition kernels induced by Assumption~\ref{ass:transition} have unique
+invariant laws.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: Endpoint nesting of the candidate interval]\label{thm:endpoints}
+Under Assumptions~\ref{ass:finite}--\ref{ass:rho}, the candidate interval
+\(B_T(\rho;P)\) is nested and monotone in \(\rho\): if
+\(0\le\rho\le\rho'\le\infty\), then
+\[
+B_T(\rho;P)\subseteq B_T(\rho';P).
+\]
+At \(\rho=0\), \(B_T(0;P)\) collapses to the Robins nested g-formula contrast
+for the two sustained regimes whenever exact spell-boundary invariance makes
+\(\ell_t^0=u_t^0=\mu_t^P\) at each node.  At \(\rho=\infty\),
+unobserved sustained-history nodes have \(\ell_t^\infty=0\) and
+\(u_t^\infty=1\), while factual sustained-history nodes retain their
+consistency anchors.  Thus \(B_T(\infty;P)\) is the data-tightened
+bounded-outcome Manski interval for the finite-horizon sustained-regime ATE,
+and it equals \([-1,1]\) in the fully off-support sustained-regime case.
+\end{theorem}
+\paragraph{Why this is new and worth studying.}
+The theorem itself is routine envelope algebra, but it is the necessary
+calibration check for the proposal's novelty kernel.  The closest published
+papers give one endpoint at a time: \citet{Robins1986} gives the
+point-identification endpoint and \citet{DiemerShiSwanson2024} gives wide
+assumption-free dynamic bounds.  The concrete consumer is
+\citet{ImaiKimWang2023}, whose treatment-history matching users need a
+reported sensitivity curve with interpretable endpoint diagnostics.
+
+\begin{conjecture}[Conjecture 1: Sharp finite-horizon reversible-spell bounds (NOT YET PROVED)]\label{conj:sharp-finite}
+Under Assumptions~\ref{ass:finite}--\ref{ass:rho}, the sharp identified set for
+\(\theta_T\) over all latent joint laws satisfying the observed law \(P\) and
+the \(\rho\)-bounded adjacent-spell carryover restriction is exactly
+\[
+\Theta_I^T(P,\rho)=B_T(\rho;P).
+\]
+Moreover, for every exposed-regime endpoint and unexposed-regime endpoint in
+the definition of \(B_T(\rho;P)\), there exists an observed-law-compatible
+latent completion satisfying Assumptions~\ref{ass:consistency}--\ref{ass:rho}
+that attains that endpoint.  The extremal completions can be chosen as
+McShane-type and Whitney-type spell-boundary extensions of the observed
+outcome regressions, pasted with the observed Robins transition kernel.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+The closest published sharpness results are
+\citet{KimKwonKwonLee2018}, \citet{ChernozhukovFernandezValHahnNewey2013}, and
+\citet{JunLeeShin2016}.  \citet{KimKwonKwonLee2018} prove sharp bounds under
+smoothness of treatment response functions, but not for a finite-state dynamic
+treatment-history metric whose same extremal completion must be compatible with
+Robins transition recursions across periods.  The panel sharpness papers give
+sharp bounds driven by time-homogeneity or stationarity restrictions rather
+than a scalar adjacent-spell Lipschitz radius on reversible treatment histories.
+The epsilon gap is the exact face-attainment claim for a nonabsorbing
+spell-boundary metric: no cited paper proves that the Lipschitz lower/upper
+extensions remain globally pasteable after the same latent completion must
+serve all periods and both sustained regimes.  Resolving this would give the
+assumption-free dynamic bounds of \citet{DiemerShiSwanson2024} a one-parameter
+frontier between Robins point identification and unrestricted bounds.
+
+\begin{conjecture}[Conjecture 2: Long-run Cesaro limit of the sharp intervals (NOT YET PROVED)]\label{conj:longrun}
+Under Assumptions~\ref{ass:finite}--\ref{ass:stationary} for the stationary law
+\(P_\infty\) or compatible sequence \((P_T)_{T\ge1}\), the finite-horizon
+sharp intervals \(B_T(\rho;P_T)\) converge in Hausdorff distance to a stationary
+interval \(B_\rho(P)=[L_\rho(P),U_\rho(P)]\).  The limiting endpoints are the
+solutions of the stationary lower and upper Bellman-g-formula equations on the
+finite \(M\)-memory reversible-spell state space, and the long-run identified
+set for \(\theta^{LR}\) is exactly \(B_\rho(P)\).
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+\citet{BojinovRambachanShephard2021} define dynamic causal effects for
+alternative treatment paths in panel experiments, explicitly making carryover a
+path-level object; \citet{Han2021} identifies finite dynamic treatment-sequence
+means under
+econometric dynamic-treatment assumptions, and \citet{HanYang2024} gives a
+computational approach to policy-effect identification under unobserved
+heterogeneity.  Neither states analytic conditions under which
+horizon-normalized sharp bounds for reversible bounded-carryover regimes
+converge to a closed-form stationary interval.  The concrete consumer is the
+long-run effect estimand in \citet{ImaiKimWang2023}: the conjecture would tell
+users when finite-history matching sensitivity intervals have a stable
+long-run target rather than a horizon-specific interpretation.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Zero carryover reduction]\label{cor:zero}
+Under Assumptions~\ref{ass:finite}--\ref{ass:rho} with \(\rho=0\), if every
+regime node has zero spell-boundary distance from the relevant observed
+Robins node, then \(B_T(0;P)\) is the singleton containing the standard Robins
+g-formula contrast.
+\end{corollary}
+
+\begin{corollary}[Unrestricted bounded-outcome reduction]\label{cor:infty}
+Under Assumptions~\ref{ass:finite}--\ref{ass:rho} with \(\rho=\infty\), the
+period-specific sustained-regime means range over \([0,1]\) at target nodes
+that are not factual under \(P_T\), while factual target nodes retain their
+observed consistency anchors.  Hence the finite-horizon ATE interval is the
+data-tightened Manski interval; in the fully off-support sustained-regime case,
+it reduces to \([-1,1]\) after taking the exposed-minus-unexposed contrast.
+\end{corollary}
+
+\begin{corollary}[Absorbing-path reduction]\label{cor:absorbing}
+If the observed support contains no \(1\to0\) reversals and only the first
+switch-on boundary can occur, then \(d_{\rm sp}\) collapses to the Hamming
+distance between absorbing switch-boundary vectors plus the current-treatment
+mismatch term \(\one\{a_t\ne b_t\}\), not to the calendar distance between
+adoption dates.  Under Assumptions~\ref{ass:finite}--\ref{ass:rho}, the
+proposed state space reduces to the absorbing event-history state used by
+\citet{SunAbraham2021} and \citet{CallawaySantAnna2021}, with no repeated-spell
+carryover coordinates.
+\end{corollary}
+
+\section{Proof-sketch route}
+The finite-horizon route is to view the latent conditional outcome means as a
+finite metric-extension problem on the treatment-history graph whose edge
+lengths are \(d_{\rm sp}\).  The candidate lower and upper node values are the
+McShane and Whitney Lipschitz extensions of the observed regressions, clipped to
+\([0,1]\); the Robins recursion then turns nodewise envelopes into lower and
+upper regime means by monotonicity of finite sums and conditional expectations.
+Sharpness requires the nontrivial step: prove that the nodewise extremal
+extensions can be pasted into a single latent joint law with the observed
+factual margins and transition kernel, or identify the additional coupling
+faces if pasteability fails.  The smallest boundary case to enumerate is
+\(T=3\) with paths \(010\) and \(101\), because this is the first horizon where
+two spell boundaries can interact with the same endpoint.  The long-run route
+then applies finite-state Markov reward arguments and support-function
+continuity to exchange Cesaro limits with the finite-horizon lower and upper
+recursions.
+
+\section{Honest scope flags}
+The endpoint nesting result is labelled as a theorem because it follows from
+the definitions of the lower and upper envelopes.  The sharpness and long-run
+claims are conjectures: the proposal has not proved global pasteability of the
+McShane/Whitney extremal completions, and the \(T=3\) two-boundary case may
+reveal additional coupling inequalities.  The phrase "Han-Yao-Hsu (2024)" in
+the topic was not verified as a stable bibliographic anchor by the Stage -1.1
+scout; this draft therefore cites the verified Han dynamic-treatment papers and
+does not rely on an unverified paper claim.  The proposal assumes treatment
+affects future covariates only through the Robins transition-stability
+restriction; relaxing that would turn the current interval into an outer bound
+unless transition laws are bounded as well.  No reviewer iterations have yet
+withdrawn any claim.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) --- initial draft of the reversible-spell Lipschitz
+  envelope proposal; prior verdict: none.
+\item v2 (revise) --- added the Lipschitz partial-ID and dynamic path-effect
+  comparators, repaired support/envelope typing, clarified the
+  \(\rho=\infty\) endpoint, corrected the absorbing-path metric reduction, and
+  typed the long-run law as \(P_\infty\) or a compatible sequence; prior
+  verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Callaway and Sant'Anna(2021)]{CallawaySantAnna2021}
+Callaway, B. and Sant'Anna, P. H. C. (2021).
+Difference-in-differences with multiple time periods.
+\emph{Journal of Econometrics}, 225(2), 200--230.
+doi:10.1016/j.jeconom.2020.12.001.
+
+\bibitem[Chernozhukov et~al.(2013)]{ChernozhukovFernandezValHahnNewey2013}
+Chernozhukov, V., Fernandez-Val, I., Hahn, J., and Newey, W. (2013).
+Average and quantile effects in nonseparable panel models.
+\emph{Econometrica}, 81(2), 535--580.
+doi:10.3982/ECTA8405.
+
+\bibitem[de Chaisemartin and d'Haultfoeuille(2024)]{DeChaisemartinDHaultfoeuille2024}
+de Chaisemartin, C. and d'Haultfoeuille, X. (2024).
+Difference-in-differences estimators of intertemporal treatment effects.
+\emph{Review of Economics and Statistics}, 1--45.
+doi:10.1162/rest\_a\_01414.
+
+\bibitem[Diemer et~al.(2024)]{DiemerShiSwanson2024}
+Diemer, E. W., Shi, J., and Swanson, S. A. (2024).
+Partial identification of the effects of sustained treatment strategies.
+\emph{Epidemiology}, 35(3).
+doi:10.1097/EDE.0000000000001721.
+
+\bibitem[Bojinov et~al.(2021)]{BojinovRambachanShephard2021}
+Bojinov, I., Rambachan, A., and Shephard, N. (2021).
+Panel experiments and dynamic causal effects: A finite population perspective.
+\emph{Quantitative Economics}, 12(4), 1171--1196.
+
+\bibitem[Han(2021)]{Han2021}
+Han, S. (2021).
+Identification in nonparametric models for dynamic treatment effects.
+\emph{Journal of Econometrics}, 225(1), 132--147.
+doi:10.1016/j.jeconom.2019.08.014.
+
+\bibitem[Han and Yang(2024)]{HanYang2024}
+Han, S. and Yang, S. (2024).
+A computational approach to identification of treatment effects for policy
+evaluation.
+\emph{Journal of Econometrics}, 240(1), 105680.
+doi:10.1016/j.jeconom.2024.105680.
+
+\bibitem[Imai et~al.(2023)]{ImaiKimWang2023}
+Imai, K., Kim, I. S., and Wang, E. (2023).
+Matching methods for causal inference with time-series cross-sectional data.
+\emph{American Journal of Political Science}, 67(3), 587--605.
+
+\bibitem[Jun et~al.(2016)]{JunLeeShin2016}
+Jun, S. J., Lee, Y., and Shin, Y. (2016).
+Treatment effects with unobserved heterogeneity: A set identification approach.
+\emph{Journal of Business \& Economic Statistics}, 34(2), 302--311.
+doi:10.1080/07350015.2015.1044008.
+
+\bibitem[Kim et~al.(2018)]{KimKwonKwonLee2018}
+Kim, W., Kwon, K., Kwon, S., and Lee, S. (2018).
+The identification power of smoothness assumptions in models with
+counterfactual outcomes.
+\emph{Quantitative Economics}, 9(2), 617--642.
+
+\bibitem[Robins(1986)]{Robins1986}
+Robins, J. M. (1986).
+A new approach to causal inference in mortality studies with a sustained
+exposure period: Application to control of the healthy worker survivor effect.
+\emph{Mathematical Modelling}, 7(9--12), 1393--1512.
+doi:10.1016/0270-0255(86)90088-6.
+
+\bibitem[Sun and Abraham(2021)]{SunAbraham2021}
+Sun, L. and Abraham, S. (2021).
+Estimating dynamic treatment effects in event studies with heterogeneous
+treatment effects.
+\emph{Journal of Econometrics}, 225(2), 175--199.
+doi:10.1016/j.jeconom.2020.09.006.
+\end{thebibliography}
+
+\end{document}

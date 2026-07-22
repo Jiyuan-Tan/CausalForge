@@ -1,0 +1,971 @@
+% =====================================================================
+%  ThmSmith Stage 0 derivation skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=eid\_proximal\_phase, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage 0 derivation: \texttt{eid\_proximal\_phase} / \texttt{v1}%
+  \\ \large\textit{Proximal bridge fibers, sharp ATE ranges, and quadratic selector artifacts}}
+\author{ThmSmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note studies the finite-support proximal average treatment effect
+\(\theta=\E\{Y(1)-Y(0)\}\) when the observable bridge equation
+\(T_Ph=m_P\) has multiple bounded solutions.  The estimand-defining
+functional is the sharp bridge-fiber range
+\(\Theta_I(P)=\{\ell_P(h):h\in\calH_P\}\), with
+\(\ell_P(h)=\E_P\{h(W,1,X)-h(W,0,X)\}\) and
+\(\calH_P=\{h\in[0,1]^d:T_Ph=m_P\}\).  Under finite bridge-fiber
+sharpness, \(\Theta_I(P)\) is exactly the identified set for the causal
+ATE, and it collapses to a point if and only if the ATE loading annihilates
+every feasible bridge-null direction.  For any symmetric positive-definite
+quadratic penalty \(Q\), the residual-penalized population bridge converges
+to the exact-fiber minimizer \(h_Q=\arg\min_{h\in\calH_P}h^\transpose Qh\),
+so \(\theta_Q(P)=\ell_P(h_Q)\) is a computable selector inside the sharp
+interval, not a new identifying formula.  The Stage -1 conjectures are
+resolved as follows: the SPD-exposed and one-dimensional nonradial selector
+claims are proved, the unqualified one-dimensional claim is refuted by a
+radial fiber counterexample, and the proposed two-by-two negative-control
+witness is constructed explicitly.
+\end{abstract}
+
+\section{Introduction}
+Negative-control proxies are used when measured covariates are not enough to
+justify ordinary exchangeability.  In the proximal ATE setup, the outcome
+bridge \(h(W,A,X)\) turns the proxy law into an identifying formula only when
+the bridge equation carries enough information about the causal loading.
+Finite samples and finite dictionaries often make the bridge equation
+ill-conditioned or nonunique, so applied analyses commonly stabilize the
+bridge by ridge or Tikhonov penalties.  The causal question is whether that
+regularized point is invariant over all data-compatible bridges, or whether
+it is a penalty-selected value inside a partially identified causal range.
+
+The standard point-identification theorem says that, under proximal
+negative-control assumptions and a completeness condition, an outcome bridge
+identifies \(\E\{Y(a)\}\) through \(\E\{h(W,a,X)\}\).  Later work shows that
+the bridge itself need not be unique if the target functional is still
+constant on the bridge fiber.  This note isolates the finite-dimensional
+linear-algebra boundary between those two cases.  Once the exact bounded
+bridge fiber \(\calH_P\) is fixed, the causal ATE is point identified exactly
+when the linear loading \(\ell_P\) is constant on \(\calH_P\); otherwise the
+sharp identified set is the interval obtained by optimizing the same loading
+over the fiber.
+
+The new content is the selector geometry.  A quadratic regularizer does not
+change the causal restrictions; it chooses the unique bridge point closest to
+the origin in the inner product induced by \(Q\).  The resulting selected
+ATEs are characterized by a normal-cone condition, and in a one-dimensional
+nonradial fiber their closure fills the sharp interval.  The note also gives
+a concrete binary-\(W\), binary-\(Z\), no-covariate observable law for which
+diagonal penalties move the selected proximal ATE over a positive-length
+subinterval while the observed law and maintained restrictions are held
+fixed.
+
+These formulas are useful because they turn the qualitative warning
+"regularization can matter" into computable diagnostics.  An analyst can
+evaluate the sharp bridge-fiber interval by a finite linear program, test the
+null-annihilator criterion by linear algebra, and evaluate a proposed
+quadratic selector by a finite strictly convex quadratic program.
+
+\paragraph{Motivating conjecture(s).}
+\begin{conjecture}[Conjecture 1: generic quadratic-selection range for proximal ATEs (NOT YET PROVED)]\label{conj:penalty-separation}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:active-nonunique}, there
+is a nonempty open class of finite negative-control laws \(P\) such that the
+quadratic-regularizer selection range
+\[
+\mathcal S_Q(P)=\{\theta_Q(P):Q=Q^\transpose\succ0\}
+\]
+has nonempty relative interior inside \(\Theta_I(P)\).  More sharply,
+\(\overline{\mathcal S_Q(P)}\) contains every ATE value \(\ell_P(h^\star)\)
+of an SPD-exposed bridge point \(h^\star\in\calH_P\); in
+the one-dimensional bridge-fiber case,
+\[
+\overline{\mathcal S_Q(P)}=\Theta_I(P).
+\]
+The range characterization is stable on a neighborhood \(\mathcal U\) of
+\(P\) with the same finite proxy stratum and active bridge-face pattern.
+Consequently a regularized proximal OR/IPW/DR or minimax bridge point value
+whose finite population bridge step has the residual-plus-SPD-quadratic form
+can be a genuine regularization artifact: it is a well-defined limit of a
+named bridge-solving workflow but not a point-identified causal estimand.
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: nondegenerate two-by-two negative-control witness (NOT YET PROVED)]\label{conj:binary-witness}
+There exists a binary-\(W\), binary-\(Z\), no-covariate finite proximal law
+satisfying Assumptions~\ref{ass:finite-bounded}--\ref{ass:generic-stratum}
+with \(\Pr_P(A=a,W=w,Z=z)>0\) for all \(a,w,z\),
+\(0<\E_P(Y\mid Z=z,A=a)<1\) for all \(z,a\), nonconstant conditional outcome
+means across proxy-treatment cells, \(\calH_P\) a one-dimensional line
+segment, and \(\ell_P\) nonconstant on that segment.  For this law, diagonal
+admissible regularizers
+\[
+Q_\lambda=\operatorname{diag}(\lambda,1,1,\ldots,1),\qquad \lambda>0,
+\]
+select a continuous nonconstant curve
+\(\lambda\mapsto\theta_{Q_\lambda}(P)\) whose image has positive length
+inside \(\Theta_I(P)\).
+\end{conjecture}
+
+\section{Related work and positioning}
+Miao, Geng, and Tchetgen Tchetgen \cite{MiaoGengTchetgen2018Biometrika}
+give the foundational proximal ATE identification theorem with proxy
+variables and completeness; this note keeps the same bridge equation but
+studies what remains when the bridge is not unique.  Cui, Pu, Shi, Miao, and
+Tchetgen Tchetgen \cite{CuiPuShiMiaoTchetgen2024JASA} develop proximal
+outcome-regression, inverse-probability, and doubly robust estimators; the
+population bridge selector analyzed here is the target those workflows can
+approach when their bridge step uses a quadratic residual penalty.  Zhang,
+Li, Miao, and Tchetgen Tchetgen \cite{ZhangLiMiaoTchetgen2023SPL} show that
+nonunique proximal bridges can still identify counterfactual means; the
+null-annihilator criterion below is the finite bridge-fiber version of that
+functional-invariance phenomenon.
+
+Bennett, Kallus, Mao, Newey, Syrgkanis, and Uehara
+\cite{BennettKallusMaoNeweySyrgkanisUehara2023COLT} study inference on
+strongly identified linear functionals of weakly identified nuisance
+functions; the present note gives the complementary finite diagnostic for
+when the proximal ATE loading is not strongly identified.  Kallus, Mao, and
+Uehara \cite{KallusMaoUehara2021MinimaxNC} motivate finite-class
+negative-control bridge learning without strong uniqueness assumptions; the
+quadratic-selector results apply only to the population special case where
+the bridge-solving objective reduces to an SPD quadratic selector on exact
+bridge coordinates.  Darolles, Fan, Florens, and Renault
+\cite{DarollesFanFlorensRenault2011Econometrica} and Horowitz
+\cite{Horowitz2014ARE} provide the inverse-problem background for Tikhonov
+regularization; here the penalty is interpreted as a causal selector only
+after taking the exact-fiber limit.
+
+Manski \cite{Manski1990AER} is the benchmark for bounded-outcome partial
+identification: if proxy restrictions are removed, the ATE falls back to the
+natural bounded range.  Ghassami, Shpitser, and Tchetgen Tchetgen
+\cite{GhassamiShpitserTchetgen2023ProxyPI} develop proxy-variable partial
+identification without completeness; this note is narrower because it
+conditions on the exact bridge fiber and asks how regularizers select points
+inside its sharp interval.  Canay, Santos, and Shaikh
+\cite{CanaySantosShaikh2013Econometrica} motivate reporting such diagnostics
+because completeness-type hypotheses are generally not testable in broad
+nonparametric classes.  The local project catalogue treats ExactID and
+PartialID theorem families as separate theorem substrates; this qid sits at
+their boundary by proving exact point identification only in the
+null-annihilator case and otherwise exposing a sharp partially identified
+bridge-fiber interval.
+
+\section{Formal setup}
+Let \(O=(Y,A,W,Z,X)\) have observed law \(P\).  The treatment is binary,
+\(\mathcal A=\{0,1\}\); \(Y\in[0,1]\); and \(W,Z,X\) have finite supports.
+The latent proximal model contains an unobserved confounder \(U\), potential
+outcomes \(Y(0),Y(1)\), consistency \(Y=Y(A)\), latent exchangeability
+\((Y(0),Y(1))\perp A\mid(U,X)\), and negative-control exclusions assigning
+\(Z\) the treatment-proxy role and \(W\) the outcome-proxy role.
+
+Index the bridge coordinates by \(j=(w,a,x)\) and write
+\[
+  d=|\mathcal W|\,|\mathcal A|\,|\mathcal X|,
+  \qquad
+  h=(h(w,a,x))_{(w,a,x)}\in\R^d .
+\]
+For each \((z,a,x)\) with positive \(P(z,a,x)\), define the observable bridge
+operator and moment vector by
+\[
+  (T_Ph)(z,a,x)=\sum_{w\in\mathcal W} h(w,a,x)P(w\mid z,a,x),
+  \qquad
+  m_P(z,a,x)=\E_P(Y\mid Z=z,A=a,X=x).
+\]
+The exact bounded bridge fiber is the compact polytope
+\[
+  \calH_P=\{h\in[0,1]^d:T_Ph=m_P\}.
+\]
+The ATE loading is the observable linear functional
+\[
+  \ell_P(h)
+  =
+  \sum_{w,x} h(w,1,x)P(w,x)
+  -
+  \sum_{w,x} h(w,0,x)P(w,x).
+\]
+Let \(c_P\in\R^d\) denote the coefficient vector for this linear functional,
+so that \(\ell_P(h)=c_P^\transpose h\).  The bridge-fiber identified set is
+\[
+  \Theta_I(P)=\{\ell_P(h):h\in\calH_P\}.
+\]
+For a symmetric positive-definite matrix \(Q\), define the exact-fiber
+quadratic selector
+\[
+  h_Q(P)=\operatorname*{arg\,min}_{h\in\calH_P}h^\transpose Qh,
+  \qquad
+  \theta_Q(P)=\ell_P(h_Q(P)),
+\]
+and the selector range
+\[
+  \mathcal S_Q(P)=\{\theta_Q(P):Q=Q^\transpose\succ0\}.
+\]
+
+\paragraph{Locked parameters.}
+This is a partial-identification / exact-functional-identification proposal
+with locked tuple
+\[
+(\texttt{qid},\texttt{specialization}, P, \theta, \text{identifying restrictions},
+\text{bounding and selection-range functionals}).
+\]
+Here \(\texttt{qid}=\texttt{eid\_proximal\_phase}\) and
+\(\texttt{specialization}=\texttt{v1}\).  The observable distribution \(P\)
+is the finite-support joint law of \(O=(Y,A,W,Z,X)\), with
+\(A\in\{0,1\}\), \(Y\in[0,1]\), finite proxy supports for \(W\) and \(Z\),
+and finite covariate support for \(X\).  The target parameter is the proximal
+average treatment effect \(\theta=\E\{Y(1)-Y(0)\}\).  The identifying
+restrictions are consistency, positivity for both treatment arms, latent
+proximal exchangeability, negative-control exclusions, existence of a bounded
+outcome bridge \(h(W,A,X)\), and the finite bridge-fiber sharpness condition
+stated in Assumption~\ref{ass:fiber-sharp}.  The bounding functional is
+\[
+\Theta_I(P)=\{\ell_P(h):h\in\calH_P\},\qquad
+\ell_P(h)=\E_P\{h(W,1,X)-h(W,0,X)\},
+\]
+where \(\calH_P=\{h\in[0,1]^d:T_Ph=m_P\}\),
+\((T_Ph)(z,a,x)=\E_P\{h(W,a,x)\mid Z=z,A=a,X=x\}\), and
+\(m_P(z,a,x)=\E_P(Y\mid Z=z,A=a,X=x)\).  The selection functional for an
+admissible quadratic regularizer \(Q\succ0\) is
+\[
+\theta_Q(P)=\ell_P(h_Q),\qquad
+h_Q=\operatorname*{arg\,min}_{h\in\calH_P} h^\transpose Qh.
+\]
+The selection-range functional is
+\[
+\mathcal S_Q(P)=\{\theta_Q(P):Q=Q^\transpose\succ0\}.
+\]
+The novelty question is whether \(\mathcal S_Q(P)\) collapses to a singleton
+because the ATE is identified, or instead forms a nontrivial subset of the
+sharp interval \(\Theta_I(P)\) selected only by the regularization workflow.
+
+\section{Assumptions}
+\begin{assumption}[Finite bounded observable law]\label{ass:finite-bounded}
+The supports of \(W,Z,X\) are finite, \(A\in\{0,1\}\), and \(Y\in[0,1]\).
+Every observable cell \((z,a,x)\) used in \(T_P\) has \(P(z,a,x)>0\), so
+\(P(w\mid z,a,x)\) and \(m_P(z,a,x)\) are well defined.  The marginal
+probabilities \(P(w,x)\) used in \(\ell_P\) are the observed marginals under
+the same law \(P\).
+\end{assumption}
+
+\begin{assumption}[Treatment-arm positivity]\label{ass:positivity}
+For each \(a\in\{0,1\}\), the proximal latent model has
+\(\Pr(A=a\mid U,X)>0\) almost surely on the strata relevant to
+\(\E\{Y(a)\}\).  Observable cells with \(P(z,a,x)>0\) are the only cells used
+in the finite bridge equations.
+\end{assumption}
+
+\begin{assumption}[Proximal negative-control validity]\label{ass:proximal-valid}
+There exists a latent variable \(U\) and potential outcomes \(Y(0),Y(1)\)
+such that consistency \(Y=Y(A)\), latent exchangeability
+\((Y(0),Y(1))\perp A\mid(U,X)\), the outcome-proxy exclusion
+\(Y\perp Z\mid(A,U,X)\), and the treatment-proxy exclusion
+\(W\perp(A,Z)\mid(U,X)\) hold.  These are the causal restrictions that make
+an outcome bridge interpretable as a proximal bridge rather than merely an
+observable regression equation.
+\end{assumption}
+
+\begin{assumption}[Bounded bridge existence]\label{ass:bridge-exists}
+The exact bounded bridge fiber
+\[
+  \calH_P=\{h\in[0,1]^d:T_Ph=m_P\}
+\]
+is nonempty.
+\end{assumption}
+
+\begin{assumption}[Finite bridge-fiber sharpness]\label{ass:fiber-sharp}
+Every \(h\in\calH_P\) is attained by at least one finite latent proximal
+model satisfying Assumptions~\ref{ass:finite-bounded}--\ref{ass:proximal-valid}
+and inducing the same observed law \(P\); conversely every compatible finite
+latent proximal model induces an ATE value \(\ell_P(h)\) for some
+\(h\in\calH_P\).
+\end{assumption}
+
+\begin{assumption}[Admissible quadratic regularizers]\label{ass:admissible-Q}
+The regularizer \(Q\) ranges over symmetric positive-definite \(d\times d\)
+matrices.  The choice of \(Q\) is part of the bridge-solving workflow and is
+not an additional causal identifying restriction.
+\end{assumption}
+
+\begin{assumption}[Generic finite proxy stratum]\label{ass:generic-stratum}
+In a neighborhood of the observed law under consideration, the matrix rank of
+\(T_P\), the active zero/one box constraints defining the face of
+\(\calH_P\), and the support pattern of the finite observable cells are
+constant.  The polytope \(\calH_P\) has nonempty relative interior in its
+affine hull.
+\end{assumption}
+
+\begin{assumption}[ATE-active bridge nonuniqueness]\label{ass:active-nonunique}
+There exist \(h_1,h_2\in\calH_P\) such that
+\(\ell_P(h_1)\neq\ell_P(h_2)\).  Equivalently, the bridge-fiber sharp
+interval \(\Theta_I(P)\) is not a singleton.
+\end{assumption}
+
+\section{Estimand-defining functional}
+The object evaluated from the observed law is the finite bridge-fiber
+bounding functional
+\[
+  \Theta_I(P)=[\theta_L(P),\theta_U(P)].
+\]
+Let \(B=[0,1]^d\), let \(T\) be the matrix representation of \(T_P\), let
+\(m\) be the vector representation of \(m_P\), and let \(c=c_P\) represent
+\(\ell_P(h)=c^\transpose h\).  The endpoints are computed by the two finite
+linear programs
+\[
+\begin{array}{ll}
+\theta_L(P)=\min_h & c^\transpose h\\
+\text{subject to} & T h=m,\quad 0\le h_j\le 1,\ j=1,\ldots,d,
+\end{array}
+\qquad
+\begin{array}{ll}
+\theta_U(P)=\max_h & c^\transpose h\\
+\text{subject to} & T h=m,\quad 0\le h_j\le 1,\ j=1,\ldots,d.
+\end{array}
+\]
+Equivalently, enumerate candidate vertices by choosing \(d\) linearly
+independent active constraints from the rows of \(T h=m\), the lower bounds
+\(h_j=0\), and the upper bounds \(h_j=1\); solve the resulting square linear
+systems; retain the feasible solutions; and take the minimum and maximum of
+\(c^\transpose h\).  This gives a finite algorithm whose naive enumeration
+cost is at most \(\binom{r+2d}{d}\) linear solves of dimension \(d\), where
+\(r=\operatorname{rank}(T)\).  Any standard linear-programming method is an
+equivalent evaluation procedure with the same decision variables and
+constraints.
+
+For a fixed admissible quadratic regularizer \(Q\), the selected point is
+computed by the strictly convex quadratic program
+\[
+\begin{array}{ll}
+h_Q(P)=\operatorname*{arg\,min}_h & h^\transpose Qh\\
+\text{subject to} & T h=m,\quad 0\le h_j\le 1,\ j=1,\ldots,d,
+\end{array}
+\qquad
+\theta_Q(P)=c^\transpose h_Q(P).
+\]
+The active-set form is explicit: for each proposed lower-bound set \(L\) and
+upper-bound set \(U\), solve the KKT system for the free coordinates
+\[
+  2Q_{FF}h_F+2Q_{F,L}0+2Q_{F,U}\mathbf 1 + T_F^\transpose\lambda=0,
+  \qquad
+  T_Fh_F+T_U\mathbf 1=m,
+\]
+check the free-coordinate inequalities and the complementary normal-cone
+inequalities at active bounds, and retain the unique feasible KKT solution.
+Strict convexity of \(Q\) makes the retained solution unique.
+
+\paragraph{Verdict on the motivating conjectures.}
+Conjecture~\ref{conj:penalty-separation} is confirmed for the
+null-annihilator boundary, the exact-fiber Tikhonov limit, the SPD-exposed
+point characterization, and the existence of a nonempty open nonradial
+one-dimensional class whose selector closure fills the sharp interval.  It
+is refuted as written for the unqualified phrase ``in the one-dimensional
+bridge-fiber case'': a one-dimensional radial fiber through the origin has a
+nontrivial sharp interval but every SPD quadratic selector chooses the same
+nearest-to-origin point.  Conjecture~\ref{conj:binary-witness} is confirmed
+by the explicit binary-\(W\), binary-\(Z\), no-covariate law in
+Proposition~\ref{prop:binary-witness}.
+
+\section{Target causal estimand}
+The causal target is the proximal average treatment effect
+\[
+  \theta=\E\{Y(1)-Y(0)\}.
+\]
+This is a counterfactual parameter of the latent proximal model, not a
+definition in terms of the observed bridge equation.  Under
+Assumption~\ref{ass:fiber-sharp}, every compatible latent proximal model with
+observed law \(P\) has \(\theta=\ell_P(h)\) for at least one
+\(h\in\calH_P\), and every \(h\in\calH_P\) is realized by some compatible
+latent proximal model.  Thus the theorem below is a containment and
+sharpness statement for \(\theta\): the causal target belongs to
+\(\Theta_I(P)\), and every value in that interval is attainable by a
+compatible model.  Point identification is the special case in which
+\(\Theta_I(P)\) has zero width.
+
+\section{Main theorems}
+\begin{proposition}[Sharp bridge-fiber interval and null-annihilator]\label{prop:sharp-null}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:fiber-sharp},
+\[
+  \Theta_I(P)=\{\ell_P(h):h\in\calH_P\}
+  =[\theta_L(P),\theta_U(P)]
+\]
+is the sharp identified set for \(\theta=\E\{Y(1)-Y(0)\}\), where
+\(\theta_L(P)\) and \(\theta_U(P)\) are the finite LP endpoints displayed in
+Section~7.  Moreover the following are equivalent:
+\[
+  \theta_L(P)=\theta_U(P),
+  \qquad
+  \ell_P(h')=\ell_P(h)\ \text{for all }h,h'\in\calH_P,
+  \qquad
+  \ell_P(r)=0\ \text{for every feasible difference }r=h'-h .
+\]
+If \(\ker(T_P)=\{0\}\), the condition holds automatically.  If
+\(\ker(T_P)\neq\{0\}\), it can still hold when the ATE loading annihilates
+all bridge-null directions that are feasible inside the box.
+\end{proposition}
+\paragraph{Contribution.}
+This proposition is the finite bridge-fiber version of proximal functional
+identification under bridge nonuniqueness.  It differs from the classical
+complete-bridge theorem by not requiring uniqueness of \(h\); it identifies
+the causal ATE exactly when the causal loading is invariant over the
+nonunique bridge fiber.
+
+\begin{proposition}[Quadratic selectors and exact-fiber Tikhonov limits]\label{prop:selector-kkt}
+Under Assumptions~\ref{ass:finite-bounded}, \ref{ass:bridge-exists}, and
+\ref{ass:admissible-Q}, each admissible \(Q\) has a unique selector
+\[
+  h_Q(P)=\arg\min_{h\in\calH_P}h^\transpose Qh.
+\]
+Let
+\[
+  h_{\alpha,Q}(P)=\operatorname*{arg\,min}_{h\in[0,1]^d}
+  \{\|T_Ph-m_P\|_2^2+\alpha h^\transpose Qh\}.
+\]
+Then \(h_{\alpha,Q}(P)\to h_Q(P)\) and
+\(\ell_P(h_{\alpha,Q}(P))\to\theta_Q(P)\) as \(\alpha\downarrow0\).  A point
+\(h^\star\in\calH_P\) is selected by \(Q\) if and only if
+\[
+  -2Qh^\star\in N_{\calH_P}(h^\star),
+  \qquad
+  N_{\calH_P}(h^\star)=\{n:n^\transpose(v-h^\star)\le0
+  \text{ for all }v\in\calH_P\}.
+\]
+Consequently every SPD-exposed bridge point belongs to the exact quadratic
+selector range, and its ATE value belongs to \(\mathcal S_Q(P)\).
+\end{proposition}
+\paragraph{Contribution.}
+This proposition identifies the population object selected by a
+residual-plus-quadratic bridge workflow.  The conclusion is not that
+\(\theta_Q(P)\) is causally identified; it is that the selected value is a
+computable point in the sharp bridge-fiber interval and is governed by a
+normal-cone certificate.
+
+\begin{proposition}[One-dimensional selector phase]\label{prop:onedim}
+Suppose \(\calH_P=\{h_0+tr:t\in[L,U]\}\) with \(L<U\), \(r\neq0\), and
+\(\ell_P(r)\neq0\).  For each admissible \(Q\), the selected coordinate is
+\[
+  t_Q
+  =
+  \Pi_{[L,U]}
+  \left(-\frac{r^\transpose Qh_0}{r^\transpose Qr}\right),
+\]
+where \(\Pi_{[L,U]}\) is Euclidean projection onto the interval.  If the
+affine line \(\{h_0+tr:t\in\R\}\) is not contained in \(\operatorname{span}(r)\),
+then every interior \(t\in(L,U)\) is selected by some SPD \(Q\), and
+\[
+  \overline{\mathcal S_Q(P)}=\Theta_I(P).
+\]
+If the affine line is contained in \(\operatorname{span}(r)\), the selected
+coordinate \(t_Q\) is independent of \(Q\), so the selector range can be a
+singleton even when \(\Theta_I(P)\) has positive length.
+\end{proposition}
+\paragraph{Contribution.}
+This is the nearest correct one-dimensional version of
+Conjecture~\ref{conj:penalty-separation}.  It proves the generic nonradial
+case and gives the precise radial obstruction, so the original unqualified
+one-dimensional statement is only partially correct.
+
+\begin{proposition}[Binary negative-control witness]\label{prop:binary-witness}
+There is a binary-\(W\), binary-\(Z\), no-covariate finite observable law
+satisfying the support and generic-stratum conditions of
+Conjecture~\ref{conj:binary-witness} such that, conditional on the maintained
+finite bridge-fiber sharpness restriction, the exact bridge fiber is
+\[
+  \calH_P=\{(t,1-t,1/5,4/5):0\le t\le1\},
+\]
+in coordinate order \((h(0,0),h(1,0),h(0,1),h(1,1))\).  Its sharp ATE
+interval is
+\[
+  \Theta_I(P)=\left[-\frac1{40},\,\frac1{10}\right].
+\]
+For diagonal penalties
+\[
+  Q_\lambda=\operatorname{diag}(\lambda,1,1,1),\qquad \lambda>0,
+\]
+the selected coordinate is \(t_\lambda=1/(1+\lambda)\) and
+\[
+  \theta_{Q_\lambda}(P)
+  =
+  -\frac1{40}+\frac{1}{8(1+\lambda)}.
+\]
+Thus \(\lambda\mapsto\theta_{Q_\lambda}(P)\) is continuous and nonconstant,
+with positive-length image inside \(\Theta_I(P)\), and Conjecture~\ref{conj:binary-witness}
+is confirmed.
+\end{proposition}
+\paragraph{Contribution.}
+The witness shows that penalty dependence is not an infinite-dimensional
+pathology.  It occurs in the smallest proxy table with binary treatment,
+binary treatment proxy, binary outcome proxy, and no covariates.
+
+\section{Interpretation}
+The bridge equation \(T_Ph=m_P\) is an observable restriction.  The causal
+interpretation of its solutions comes from the proximal validity assumptions
+and, for sharpness, from Assumption~\ref{ass:fiber-sharp}.  If those
+assumptions hold and the ATE loading is constant on \(\calH_P\), then every
+compatible latent model gives the same ATE, even when several bridges solve
+the equation.  This is exact identification of the target, not merely a
+choice of bridge norm.
+
+If the ATE loading is not constant on \(\calH_P\), the sharp interval
+\(\Theta_I(P)\) is the correct causal object.  A quadratic regularizer then
+selects one point in that interval by choosing a bridge closest to zero in a
+chosen inner product.  Changing \(Q\) can move the reported ATE without
+changing the observed law or the proximal restrictions.  In that case the
+selected value \(\theta_Q(P)\) is a well-defined population output of a
+workflow, but it is not a point-identified causal estimand.
+
+The key support conditions are the positivity of the treatment arms and the
+observable support needed to define \(P(w\mid z,a,x)\) and
+\(\E(Y\mid z,a,x)\).  If observable proxy cells are missing, the finite
+operator \(T_P\) is not defined on those rows, and any formula using them is
+a different estimand.  If proximal negative-control validity fails, the same
+linear algebra still describes bridge solutions, but it no longer carries
+the causal interpretation \(Y(a)\mapsto h(W,a,X)\).  If finite
+bridge-fiber sharpness fails, the LP interval remains an outer bridge range,
+but it need not be the sharp causal identified set.
+
+The bound collapses to point identification under completeness
+\(\ker(T_P)=\{0\}\) or, more generally, under the null-annihilator condition.
+It widens toward the natural Manski bounded-outcome range when the bridge
+equation supplies little information about the ATE loading.  The tightening
+work is done by the observable bridge equations and the box restriction
+\([0,1]^d\), while the selection of a point inside the tightened interval is
+done by \(Q\), not by an additional identifying assumption.
+
+\section{Step-by-step proof}
+\begin{lemma}[Bridge-fiber image is an interval]\label{lem:image-interval}
+Under Assumptions~\ref{ass:finite-bounded} and \ref{ass:bridge-exists},
+\(\calH_P\) is a nonempty compact convex polytope and
+\(\ell_P(\calH_P)\) is a compact interval.
+\end{lemma}
+\begin{proof}
+The set \([0,1]^d\) is compact and convex.  The equation \(T_Ph=m_P\) is a
+finite system of linear equalities, so its intersection with \([0,1]^d\) is
+a compact convex polytope; nonemptiness is Assumption~\ref{ass:bridge-exists}.
+The linear map \(\ell_P\) is continuous, so its image is compact.  The image
+of a convex set under a linear map into \(\R\) is convex, hence an interval.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:sharp-null}]
+By Assumption~\ref{ass:fiber-sharp}, every compatible latent proximal model
+with observed law \(P\) induces an ATE value \(\ell_P(h)\) for some
+\(h\in\calH_P\), and every \(h\in\calH_P\) is realized by such a model.  The
+set of all compatible causal ATE values is therefore exactly
+\(\{\ell_P(h):h\in\calH_P\}\).  By Lemma~\ref{lem:image-interval}, this set
+is the compact interval \([\theta_L(P),\theta_U(P)]\).  The endpoint formulas
+in Section~7 are precisely the finite LPs that minimize and maximize the
+linear functional \(\ell_P(h)=c^\transpose h\) over the same feasible set.
+
+The interval is a singleton if and only if \(\ell_P(h')=\ell_P(h)\) for all
+feasible \(h,h'\).  Since \(\ell_P\) is linear, this is equivalent to
+\(\ell_P(h'-h)=0\) for every feasible difference \(h'-h\).  If
+\(\ker(T_P)=\{0\}\), the affine equation \(T_Ph=m_P\) has at most one
+solution, so the condition holds automatically.  If the kernel is nontrivial,
+the same equivalence shows that point identification still holds exactly
+when the ATE loading vanishes on all kernel directions that are feasible
+inside the box.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:selector-kkt}]
+Fix \(Q\succ0\).  The map \(h\mapsto h^\transpose Qh\) is continuous and
+strictly convex.  Since \(\calH_P\) is nonempty and compact, a minimizer over
+\(\calH_P\) exists; strict convexity makes it unique.
+
+For the residual-penalized problem, the feasible set \([0,1]^d\) is compact,
+so \(h_{\alpha,Q}\) exists.  Let \(h_Q\) be the exact-fiber minimizer.  Since
+\(h_Q\in\calH_P\),
+\[
+  \|T_Ph_{\alpha,Q}-m_P\|_2^2+\alpha h_{\alpha,Q}^\transpose Qh_{\alpha,Q}
+  \le
+  \alpha h_Q^\transpose Qh_Q .
+\]
+Thus \(\|T_Ph_{\alpha,Q}-m_P\|_2^2\le\alpha h_Q^\transpose Qh_Q\to0\), and
+also \(h_{\alpha,Q}^\transpose Qh_{\alpha,Q}\le h_Q^\transpose Qh_Q\).  Any
+sequence \(\alpha_n\downarrow0\) has a convergent subsequence because
+\([0,1]^d\) is compact.  If the subsequential limit is \(h^\star\), the
+residual convergence gives \(T_Ph^\star=m_P\), so \(h^\star\in\calH_P\).  By
+continuity of the quadratic form,
+\[
+  (h^\star)^\transpose Qh^\star\le h_Q^\transpose Qh_Q.
+\]
+Uniqueness of the exact-fiber minimizer forces \(h^\star=h_Q\).  Every
+subsequence has the same limit, hence \(h_{\alpha,Q}\to h_Q\), and continuity
+of \(\ell_P\) gives convergence of selected ATEs.
+
+For the normal-cone statement, the differentiable convex first-order
+condition for minimizing \(h^\transpose Qh\) over the convex set \(\calH_P\)
+is
+\[
+  (2Qh^\star)^\transpose(v-h^\star)\ge0
+  \quad\text{for every }v\in\calH_P.
+\]
+This is exactly \(-2Qh^\star\in N_{\calH_P}(h^\star)\) under the displayed
+definition of the normal cone.  Strict convexity again gives uniqueness.  If
+an SPD-exposed point satisfies this condition for some \(Q\), it is therefore
+the selected point for that \(Q\), and its ATE value is in
+\(\mathcal S_Q(P)\).
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:onedim}]
+On the line \(h(t)=h_0+tr\),
+\[
+  h(t)^\transpose Qh(t)
+  =
+  h_0^\transpose Qh_0+2t\,r^\transpose Qh_0+t^2 r^\transpose Qr .
+\]
+Since \(Q\succ0\) and \(r\neq0\), \(r^\transpose Qr>0\).  The unconstrained
+minimizer is
+\[
+  t^\circ_Q=-\frac{r^\transpose Qh_0}{r^\transpose Qr},
+\]
+and the constrained minimizer over \([L,U]\) is its projection
+\(\Pi_{[L,U]}(t^\circ_Q)\).
+
+Fix an interior \(t\in(L,U)\) and write \(x=h_0+tr\).  This \(t\) is the
+unconstrained minimizer exactly when \(r^\transpose Qx=0\).  If the affine
+line is not contained in \(\operatorname{span}(r)\), then \(x\) and \(r\) are
+linearly independent for every \(t\).  Choose an inner product in which
+\(x\) is orthogonal to \(r\), and represent that inner product by an SPD
+matrix \(Q\); then \(r^\transpose Qx=0\), so the chosen interior \(t\) is
+selected.  Because every interior \(t\) is selected and endpoint values are
+limits of interior values, the closure of selected ATE values is the full
+interval \(\ell_P(\calH_P)=\Theta_I(P)\).
+
+If the affine line is contained in \(\operatorname{span}(r)\), then
+\(h_0=s_0r\) for some scalar \(s_0\).  The objective becomes
+\((s_0+t)^2 r^\transpose Qr\), so the constrained minimizer is the projection
+of \(-s_0\) onto \([L,U]\), independent of \(Q\).  When
+\(\ell_P(r)\neq0\) and \(L<U\), the sharp interval has positive length, but
+the selector range is a singleton.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:binary-witness}]
+Define the observable law as follows.  Let \(P(A=0)=P(A=1)=1/2\).  Given
+\(A=0\), let \(P(Z=0\mid A=0)=1/2\) and
+\[
+  P(W=0\mid Z=0,A=0)=P(W=0\mid Z=1,A=0)=1/2 .
+\]
+Given \(A=1\), let \(P(Z=0\mid A=1)=3/4\) and
+\[
+  P(W=0\mid Z=0,A=1)=1/4,\qquad
+  P(W=0\mid Z=1,A=1)=3/4 .
+\]
+Let \(Y\) be Bernoulli conditional on \((Z,A)\), with conditional means
+\[
+  m_P(z,0)=1/2,\qquad
+  m_P(0,1)=13/20,\qquad
+  m_P(1,1)=7/20 .
+\]
+All joint cells \((A,W,Z)\) have positive probability, all outcome means lie
+strictly between zero and one, and the conditional outcome means are
+nonconstant.
+
+In coordinate order \((h(0,0),h(1,0),h(0,1),h(1,1))\), the bridge equations
+are
+\[
+  \frac12 h(0,0)+\frac12 h(1,0)=\frac12,
+\]
+for both \(z\) in arm \(A=0\), and
+\[
+  \frac14 h(0,1)+\frac34 h(1,1)=\frac{13}{20},
+  \qquad
+  \frac34 h(0,1)+\frac14 h(1,1)=\frac{7}{20}.
+\]
+The arm \(A=1\) equations have the unique solution
+\((h(0,1),h(1,1))=(1/5,4/5)\), while the arm \(A=0\) equation gives
+\((h(0,0),h(1,0))=(t,1-t)\) with \(0\le t\le1\).  Hence
+\[
+  \calH_P=\{(t,1-t,1/5,4/5):0\le t\le1\}.
+\]
+The unconditional proxy marginal is
+\[
+  P(W=0)=\frac{7}{16},\qquad P(W=1)=\frac{9}{16}.
+\]
+Therefore
+\[
+  \ell_P(h(t))
+  =
+  \frac{7}{16}\frac15+\frac{9}{16}\frac45
+  -
+  \left\{\frac{7}{16}t+\frac{9}{16}(1-t)\right\}
+  =
+  -\frac1{40}+\frac{t}{8}.
+\]
+The sharp interval over \(t\in[0,1]\) is
+\([-1/40,1/10]\).
+
+For \(Q_\lambda=\operatorname{diag}(\lambda,1,1,1)\), only the first two
+coordinates vary along the fiber, and the objective is
+\[
+  \lambda t^2+(1-t)^2+\text{constant}.
+\]
+Its unique minimizer is \(t_\lambda=1/(1+\lambda)\).  Substitution gives
+\[
+  \theta_{Q_\lambda}(P)
+  =
+  -\frac1{40}+\frac{1}{8(1+\lambda)}.
+\]
+As \(\lambda\) ranges over \((0,\infty)\), \(t_\lambda\) ranges over
+\((0,1)\), so the selected ATEs form the positive-length open interval
+\((-1/40,1/10)\).  The maintained finite bridge-fiber sharpness assumption
+then gives the causal sharpness interpretation claimed in the proposition.
+\end{proof}
+
+\section{Sanity checks}
+\begin{itemize}[leftmargin=*]
+\item \textbf{Completeness corner.}  If \(T_P\) has full column rank on the
+bridge coordinates, then \(\calH_P\) is a singleton whenever it is nonempty.
+The sharp interval collapses and every quadratic selector returns the same
+ATE.  This is the finite-support reduction of the classical complete
+proximal bridge theorem.
+
+\item \textbf{Strong functional identification with nonunique bridges.}  If
+there exists a vector \(\varphi\) such that
+\(\ell_P(h)=\varphi^\transpose T_Ph\) on the affine hull of \(\calH_P\),
+then \(\ell_P\) is constant over all solutions to \(T_Ph=m_P\).  Thus the
+bridge may be nonunique while the ATE is point identified.
+
+\item \textbf{Random-treatment special case.}  If treatment is randomized
+relative to the latent confounder so that the ordinary arm means identify the
+counterfactual means, and the bridge fiber forces
+\(h(W,a,X)\) to have observed mean \(\E(Y\mid A=a)\), then the formula
+reduces to the usual ATE
+\(\E(Y\mid A=1)-\E(Y\mid A=0)\).  This is a corner case in which the proxy
+bridge is unnecessary.
+
+\item \textbf{Null-effect corner.}  If \(\ell_P(h)=0\) for every
+\(h\in\calH_P\), then the sharp interval is \(\{0\}\).  The causal null is
+identified even if the bridge itself is not unique.
+
+\item \textbf{No-restriction bounded-outcome fallback.}  If the bridge
+equation is removed and the only remaining information is \(0\le h\le1\),
+then \(\ell_P([0,1]^d)=[-1,1]\).  This matches the natural bounded-outcome
+Manski fallback for an ATE with both potential-outcome means in \([0,1]\).
+
+\item \textbf{Binary witness corner.}  The witness in
+Proposition~\ref{prop:binary-witness} has one-dimensional nonradial fiber,
+so Proposition~\ref{prop:onedim} predicts that the closure of SPD-selected
+ATEs fills the sharp interval.  The diagonal subfamily already fills the
+open interval.
+\end{itemize}
+
+\section{Counterexample or minimality check}
+The unqualified one-dimensional part of Conjecture~\ref{conj:penalty-separation}
+fails without the nonradial condition.  Consider the bridge fiber
+\[
+  C=\{tr:0\le t\le1\}\subset[0,1]^d
+\]
+for a nonzero vector \(r\ge0\), and take an ATE loading with
+\(\ell(r)\neq0\).  This is a one-dimensional bridge fiber with a
+positive-length sharp interval \(\ell(C)\).  For any \(Q\succ0\),
+\[
+  (tr)^\transpose Q(tr)=t^2 r^\transpose Qr
+\]
+is minimized at \(t=0\), independent of \(Q\).  Hence
+\(\mathcal S_Q(P)\) is a singleton although \(\Theta_I(P)\) is not.
+
+The nearest correct statement is Proposition~\ref{prop:onedim}: a
+one-dimensional fiber has full selector closure when its affine hull is not
+the radial line through the origin.  This condition is generic in the
+fixed-rank, fixed-face class because a small perturbation of a nonradial
+affine line remains nonradial, and the property \(\ell_P(r)\neq0\) is also
+open.  The binary witness in Proposition~\ref{prop:binary-witness} lies in
+that stable nonradial class.
+
+The other minimality conditions have distinct roles.  Without
+Assumption~\ref{ass:bridge-exists}, the bridge-fiber functional is empty.
+Without the support part of Assumption~\ref{ass:finite-bounded}, the
+conditional rows of \(T_P\) may be undefined.  Without
+Assumption~\ref{ass:proximal-valid}, the same LP remains a bridge-equation
+calculation but does not identify or bound a causal ATE.  Without
+Assumption~\ref{ass:fiber-sharp}, \(\Theta_I(P)\) is at most an outer bridge
+range; sharp causal attainability is no longer guaranteed.
+
+\section{Formalization checklist}
+\paragraph{Observable finite objects.}
+\begin{itemize}[leftmargin=*]
+\item Finite supports \(\mathcal W,\mathcal Z,\mathcal X\) and binary
+\(\mathcal A=\{0,1\}\).
+\item Observed law \(P\) on \((Y,A,W,Z,X)\), with \(Y\in[0,1]\).
+\item Conditional probability rows \(P(w\mid z,a,x)\) and conditional means
+\(m_P(z,a,x)=\E_P(Y\mid z,a,x)\) on positive observable cells.
+\item Matrix \(T_P:\R^d\to\R^r\), vector \(m_P\in\R^r\), box
+\([0,1]^d\), bridge polytope \(\calH_P=\{h:T_Ph=m_P,0\le h\le1\}\).
+\item Loading vector \(c_P\) for \(\ell_P(h)=c_P^\transpose h\), with
+coordinates \(+P(w,x)\) on arm \(a=1\) and \(-P(w,x)\) on arm \(a=0\).
+\end{itemize}
+
+\paragraph{Probabilistic and causal assumptions.}
+\begin{itemize}[leftmargin=*]
+\item Consistency \(Y=Y(A)\).
+\item Latent exchangeability \((Y(0),Y(1))\perp A\mid(U,X)\).
+\item Negative-control exclusions \(Y\perp Z\mid(A,U,X)\) and
+\(W\perp(A,Z)\mid(U,X)\).
+\item Treatment-arm positivity \(\Pr(A=a\mid U,X)>0\).
+\item Bounded bridge existence \(\calH_P\neq\emptyset\).
+\item Finite bridge-fiber sharpness: compatible causal ATE values are
+exactly \(\ell_P(h)\) for \(h\in\calH_P\).
+\end{itemize}
+
+\paragraph{Deterministic identities and lemmas.}
+\begin{itemize}[leftmargin=*]
+\item Compact-convex polytope lemma: intersection of a box with finitely
+many affine equalities is compact and convex.
+\item Linear-image lemma: the image of a compact convex set under a real
+linear functional is a compact interval.
+\item LP endpoint identity: minimizing and maximizing \(c^\transpose h\)
+over \(T h=m,0\le h\le1\) gives the sharp interval endpoints.
+\item Null-annihilator equivalence:
+\(\ell\) is constant on \(\calH\) if and only if
+\(\ell(h'-h)=0\) for all feasible pairs \(h,h'\in\calH\).
+\item Strict convexity: \(Q\succ0\) implies \(h^\transpose Qh\) has a unique
+minimizer over a nonempty compact convex set.
+\item Exact-fiber limit: minimizers of
+\(\|Th-m\|^2+\alpha h^\transpose Qh\) over the box converge to the
+minimum-\(Q\)-norm point in the exact fiber as \(\alpha\downarrow0\).
+\item Normal-cone KKT identity:
+\(h^\star\) minimizes \(h^\transpose Qh\) over \(\calH\) if and only if
+\(-2Qh^\star\in N_{\calH}(h^\star)\).
+\item One-dimensional quadratic identity:
+on \(h(t)=h_0+tr\), the selected coordinate is
+\(\Pi_{[L,U]}[-(r^\transpose Qh_0)/(r^\transpose Qr)]\).
+\item SPD orthogonalization fact: for linearly independent \(x,r\in\R^d\),
+there exists \(Q\succ0\) with \(r^\transpose Qx=0\).
+\end{itemize}
+
+\paragraph{Witness arithmetic.}
+\begin{itemize}[leftmargin=*]
+\item Binary witness bridge equations, solution fiber
+\(\{(t,1-t,1/5,4/5):0\le t\le1\}\), and marginal proxy weights
+\(P(W=0)=7/16\), \(P(W=1)=9/16\).
+\item Witness loading identity
+\(\ell_P(h(t))=-1/40+t/8\).
+\item Diagonal selector identity
+\(t_\lambda=1/(1+\lambda)\) for \(Q_\lambda=\operatorname{diag}(\lambda,1,1,1)\).
+\end{itemize}
+
+\section{Conclusion and references}
+The proximal ATE is point identified from a nonunique finite bridge equation
+exactly when the ATE loading annihilates all feasible bridge-null directions.
+When that condition fails, the sharp causal object under finite
+bridge-fiber sharpness is the computable LP interval
+\(\Theta_I(P)\), not the point selected by a bridge penalty.  Quadratic
+regularization selects the unique minimum-\(Q\)-norm bridge, and its value is
+governed by a normal-cone certificate.  The one-dimensional selector range
+fills the sharp interval in the stable nonradial case, but a radial fiber
+shows that the unqualified version of that claim is false.  The binary proxy
+witness demonstrates concretely that changing a diagonal bridge penalty can
+move the selected proximal ATE over a positive-length interval without
+changing the observed law.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem{BennettKallusMaoNeweySyrgkanisUehara2023COLT}
+Bennett, A., Kallus, N., Mao, X., Newey, W., Syrgkanis, V., and Uehara, M.
+(2023).
+Inference on strongly identified functionals of weakly identified functions.
+\emph{Proceedings of Machine Learning Research}, 195:2265--2265.
+
+\bibitem{CanaySantosShaikh2013Econometrica}
+Canay, I. A., Santos, A., and Shaikh, A. M. (2013).
+On the testability of identification in some nonparametric models with
+endogeneity.
+\emph{Econometrica}, 81(6):2535--2559.
+
+\bibitem{CuiPuShiMiaoTchetgen2024JASA}
+Cui, Y., Pu, H., Shi, X., Miao, W., and Tchetgen Tchetgen, E. J. (2024).
+Semiparametric proximal causal inference.
+\emph{Journal of the American Statistical Association}, 119(546):1348--1359.
+
+\bibitem{DarollesFanFlorensRenault2011Econometrica}
+Darolles, S., Fan, Y., Florens, J.-P., and Renault, E. (2011).
+Nonparametric instrumental regression.
+\emph{Econometrica}, 79(5):1541--1565.
+
+\bibitem{GhassamiShpitserTchetgen2023ProxyPI}
+Ghassami, A., Shpitser, I., and Tchetgen Tchetgen, E. J. (2023).
+Partial identification of causal effects using proxy variables.
+\emph{arXiv:2304.04374}.
+
+\bibitem{Horowitz2014ARE}
+Horowitz, J. L. (2014).
+Ill-posed inverse problems in economics.
+\emph{Annual Review of Economics}, 6:21--51.
+
+\bibitem{KallusMaoUehara2021MinimaxNC}
+Kallus, N., Mao, X., and Uehara, M. (2021).
+Causal inference under unmeasured confounding with negative controls: A
+minimax learning approach.
+\emph{arXiv:2103.14029}.
+
+\bibitem{Manski1990AER}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review}, 80(2):319--323.
+
+\bibitem{MiaoGengTchetgen2018Biometrika}
+Miao, W., Geng, Z., and Tchetgen Tchetgen, E. J. (2018).
+Identifying causal effects with proxy variables of an unmeasured confounder.
+\emph{Biometrika}, 105(4):987--993.
+
+\bibitem{ZhangLiMiaoTchetgen2023SPL}
+Zhang, J., Li, W., Miao, W., and Tchetgen Tchetgen, E. J. (2023).
+Proximal causal inference without uniqueness assumptions.
+\emph{Statistics \& Probability Letters}, 198:109836.
+\end{thebibliography}
+
+\end{document}

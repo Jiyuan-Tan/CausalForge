@@ -1,0 +1,636 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_rdd\_flow\_manipulation} / \texttt{v1}%
+  \\ \large\textit{Laminar flow certificates for manipulation-robust RD bounds across nested cutoff neighborhoods}}
+\author{thmsmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+This is a free-form PartialID proposal.  The locked tuple is
+\[
+  (\texttt{qid}, \texttt{specialization}, P, \theta, \text{identifying restrictions},
+    \text{bounding functional})
+\]
+with the following convention.  \(\texttt{qid}=\texttt{pid\_rdd\_flow\_manipulation}\) and
+\(\texttt{specialization}=\texttt{v1}\).  The observable distribution \(P\) consists of the
+left- and right-cutoff weak limits \(\{P_{j,-},P_{j,+}\}_{j=1}^J\) for a nested family of
+cutoff neighborhoods \(\calN_1\subset\cdots\subset\calN_J\), together with a finite finest
+partition of the right side into atoms \(b=1,\ldots,B\) that records each atom's
+neighborhood-incidence pattern, predetermined covariate cell \(W_b\in\{1,\ldots,K\}\),
+outcome value \(Y_b\in[\underline y,\overline y]\), treatment value \(D_b\in\{0,1\}\), and
+observed right-side mass \(p_b\).  The parameter is the vector
+\(\theta=(\theta_1,\ldots,\theta_J)\), where
+\[
+  \theta_j=
+  \frac{\sum_w \pi_{j,-}(w)\{\mu^Y_{j,+,0}(w)-\mu^Y_{j,-}(w)\}}
+       {\sum_w \pi_{j,-}(w)\{\mu^D_{j,+,0}(w)-\mu^D_{j,-}(w)\}}
+\]
+is the nonmanipulator local Wald effect in neighborhood \(j\).  The identifying restrictions
+are: one-sided upward manipulation, local continuity of the nonmanipulator law within each
+neighborhood and covariate cell, a shared atom-level nonmanipulator mass vector across the
+nested neighborhoods, neighborhood-specific global manipulation envelopes
+\(\bar\rho_j\in[0,1)\), neighborhood-by-cell caps \(\bar s_{j,w}\in[0,1)\), bounded outcomes,
+positive retained mass, and positive first-stage denominators.  The bounding functional is the
+joint identified set of neighborhood-wise Wald vectors compatible with these restrictions.
+For computation, the focal object is the orthant-membership map
+\[
+  \Phi(P,\bar\rho,\bar s;\lambda)
+  =\one\{\exists n\in\calN(P,\bar\rho,\bar s)\text{ with }\theta_j(n)\le \lambda_j
+  \text{ for all }j\},
+\]
+where \(n=(n_b)_{b=1}^B\) is the shared retained nonmanipulator mass on the finest partition,
+\(\calN(P,\bar\rho,\bar s)\) is the laminar feasible set defined in Section~6, and
+\(\theta(n)\) stacks the neighborhood-specific Wald ratios.  The upgrade claim is that
+fixed-\(\lambda\) evaluation admits an explicit lifted min-cost-flow / total-unimodularity
+certificate.
+
+\begin{abstract}
+The banked parent proposal \texttt{pid\_rdd\_manipulation\_bounded/v1} gives a sharp
+one-cutoff manipulation envelope for a local RD Wald effect.  This draft asks for the
+computational upgrade needed when the analyst reports bounds jointly across many nested cutoff
+neighborhoods rather than at one window in isolation.  The kernel claim is that a shared
+nonmanipulator mass vector across nested windows creates a laminar feasible set, and that the
+fixed-\(\lambda\) orthant-membership problem for the resulting vector identified set reduces to
+an explicit lifted linear program whose core is a laminar min-cost-flow network and whose full
+constraint matrix is total unimodular under finite support and rational scaling.  The one-window
+dual must collapse to the parent ratio-indexed interval as its \(J=1\) face.  If correct, the
+result would turn a banked one-cutoff sharpness statement into a computable many-window
+sensitivity frontier and make intersection-bound inference operational in manipulation-robust RD.
+\end{abstract}
+
+\section{Introduction}
+Manipulation-robust RD analysis is usually reported one neighborhood at a time.  The parent
+\texttt{pid\_rdd\_manipulation\_bounded/v1} already gives a sharp one-cutoff envelope.  The
+question here is whether the same bounded-manipulation model admits a computationally explicit
+joint bound when the analyst wants all nested cutoff neighborhoods to be valid at once.  The
+headline claim is Conjecture~\ref{conj:flow-certificate}: under a shared nonmanipulator mass
+vector across nested windows, the candidate vector \(\lambda\) belongs to the upper orthant of
+the identified set if and only if a lifted laminar program has zero optimal slack.
+
+The upgrade delta relative to the parent is computational, not conceptual.  The parent banked
+entry reduces one-cutoff endpoints to linear programs indexed by a candidate ratio; this draft
+replaces that scalar-family description with a shared many-window object whose fixed-\(\lambda\)
+evaluation should be a strongly polynomial lifted flow problem.  The closest published
+comparators are \citet[Abstract; pp.~216--217]{bertanha_2020_many_thresholds}, which studies
+many-threshold RD under point-identifying assumptions rather than manipulation bounds, and
+\citet[Abstract; p.~667]{chernozhukov_lee_rosen_2013_intersection_bounds}, which gives inference
+for bounds defined by rich inequality systems but does not supply the RD-specific evaluation
+map.  Relative to the parent \texttt{pid\_rdd\_manipulation\_bounded/v1}, the new object is the
+lifted laminar feasibility certificate itself.  The kernel lives in partial identification, with
+a computational bridge to the many-cutoff RD and intersection-bounds literatures.
+
+The immediate downstream consumer is RD practice that reports manipulation diagnostics over a
+grid of bandwidths or cutoff neighborhoods.  A verified flow certificate would let those
+applications replace disconnected one-window envelopes with a joint feasible region that
+respects the same latent nonmanipulator mass across windows, and it would give the
+Chernozhukov--Lee--Rosen inference machinery a concrete support-function oracle.  A reader would
+then compute a joint sensitivity frontier, not a list of unrelated interval endpoints.
+
+\begin{itemize}[leftmargin=*]
+  \item Theorem 1: The \(J=1\) laminar program reduces to the parent one-cutoff bounded-manipulation interval. Gap: parent \texttt{pid\_rdd\_manipulation\_bounded/v1} is single-window only; this pins the upgrade to the parent rather than a new model. Consumer: \citet{gerard_rokkanen_rothe_2020_rdbounds}.
+  \item Conjecture 1: A compatible many-window Wald vector exists if and only if one shared retained-mass vector satisfies the nested-window structural constraints. Gap: \citet[Abstract]{gerard_rokkanen_rothe_2020_rdbounds} and \citet[Abstract]{rosenman_rajkumar_gauriot_slonim_2019_discrete_manipulation} are one-window manipulated-RD objects. Consumer: multi-window RD sensitivity analysis.
+  \item Conjecture 2: For finite support and sharp RD, fixed-\(\lambda\) orthant membership is equivalent to an explicit lifted LP with laminar network core, slack objective, total-unimodular matrix, and strongly polynomial evaluation. Gap: \citet[Abstract; pp.~216--217]{bertanha_2020_many_thresholds} gives many-threshold identification and estimation, not a manipulation-driven laminar flow certificate. Consumer: bandwidth-grid software built on \citet{cattaneo_jansson_ma_2020_density}.
+  \item Conjecture 3: The dual potentials of the lifted LP recover the parent one-cutoff ratio certificate at \(J=1\) and, at \(\omega^\star=(1,1)\), certify a strict joint-vs-separate frontier gap on a two-neighborhood witness. Gap: \citet[Abstract; p.~667]{chernozhukov_lee_rosen_2013_intersection_bounds} provides generic inference for intersection bounds, not the RD dual object that certifies the bound. Consumer: uniform inference over joint RD sensitivity frontiers.
+\end{itemize}
+
+\section{Related work}
+\citet{hahn_todd_van_der_klaauw_2001} identify the standard sharp and fuzzy RD estimands under
+cutoff continuity.  Theorem~\ref{thm:parent-reduction} uses that benchmark only as the
+no-manipulation corner inherited from the parent model.
+
+\citet{lee_2008_local_randomization} [reused from parent] gives the local-randomization
+interpretation of RD and explains why predetermined covariates should be continuous at the
+cutoff.  The present draft keeps that covariate logic but treats failures as bounded
+manipulation inputs rather than as a binary design verdict.
+
+\citet{mccrary_2008_density_test} [reused from parent] turns density discontinuities into a
+manipulation diagnostic.  Here the same object enters only through the neighborhood-specific
+envelopes \(\bar\rho_j\).
+
+\citet{cattaneo_jansson_ma_2020_density} [reused from parent] provide the local-polynomial
+density estimators used in practice to construct McCrary-style diagnostics.  Conjecture~2 is
+meant to supply the missing evaluation map from those diagnostics to a joint sensitivity
+frontier.
+
+\citet[Abstract]{gerard_rokkanen_rothe_2020_rdbounds} [reused from parent] are the closest
+published anchor.  They derive sharp manipulated-RD bounds in the one-cutoff model and their
+covariate conditioning and fuzzy-share arguments show that the relevant endpoint object is
+already an optimization problem.  The gap here is narrower: the parent result and GRR are
+single-window objects, whereas this draft imposes one shared nonmanipulator mass vector across
+nested windows.
+
+\citet[Abstract, arXiv v4]{rosenman_rajkumar_gauriot_slonim_2019_discrete_manipulation} state
+only that they ``propose a procedure for obtaining partial identification bounds where
+manipulation is present.''  This makes the paper a computational comparator, but not a source
+for a nested-window laminar flow / total-unimodularity certificate.
+
+\citet[Abstract; pp.~216--217]{bertanha_2020_many_thresholds} study RD with many thresholds and
+show that pooling cutoffs raises a distinct identification problem even without manipulation.
+This is the main many-window comparator for Conjecture~2.
+
+\citet[Abstract; p.~667]{chernozhukov_lee_rosen_2013_intersection_bounds} provide valid
+inference for bounds defined by rich systems of inequalities.  Their methods are the natural
+consumer of a computable joint RD manipulation bound once the evaluation map is explicit.
+
+\citet{ishihara_sawada_2024_manipulation_robust} study low-level conditions for
+manipulation-robust RD identification.  Their paper locates the point-identified frontier; the
+current draft instead keeps bounded violations and asks for a joint partial-ID computation.
+
+In the repository, the only close prior art is the banked parent
+\texttt{pid\_rdd\_manipulation\_bounded/v1}, which proves a one-cutoff bounded-manipulation
+interval.  No catalogue entry proposes a shared many-neighborhood retained-mass object or a
+flow-based certificate for RD manipulation bounds.
+
+\section{Formal setup}
+Let \(\calN_1\subset\cdots\subset\calN_J\) be nested cutoff neighborhoods around a fixed RD
+cutoff \(c\).  For each neighborhood \(j\), let
+\[
+  P_{j,-},P_{j,+}
+\]
+denote the left- and right-limit laws of \((Y,D,W)\) conditional on the running variable lying
+in \(\calN_j\), where \(Y\in[\underline y,\overline y]\), \(D\in\{0,1\}\), and
+\(W\in\{1,\ldots,K\}\) is a finite predetermined-covariate cell.  Write
+\(\pi_{j,-}(w)=P_{j,-}(W=w)\), \(\mu_{j,-}^Y(w)=\E_{P_{j,-}}[Y\mid W=w]\), and
+\(\mu_{j,-}^D(w)=\E_{P_{j,-}}[D\mid W=w]\).
+
+The right side is partitioned into finitely many finest atoms \(b=1,\ldots,B\).  Each atom
+records its observed mass \(p_b>0\), outcome \(y_b\), treatment value \(d_b\), covariate cell
+\(w_b\), and incidence pattern \(I_j(b)\in\{0,1\}\), where \(I_j(b)=1\) if atom \(b\) lies in
+neighborhood \(\calN_j\).  Nestedness means \(I_j(b)\le I_{j+1}(b)\) for all \(j<J\).
+
+A candidate shared nonmanipulator law is represented by retained masses
+\[
+  n=(n_1,\ldots,n_B),\qquad 0\le n_b\le p_b.
+\]
+For neighborhood \(j\), define retained mass
+\[
+  M_j(n)=\sum_{b=1}^B I_j(b)n_b,
+\]
+cellwise retained mass
+\[
+  M_{j,w}(n)=\sum_{b:w_b=w} I_j(b)n_b,
+\]
+and observed right-side cell mass
+\[
+  P_{j,+}(W=w)=\sum_{b:w_b=w} I_j(b)p_b.
+\]
+The laminar feasible set \(\calN(P,\bar\rho,\bar s)\) is the set of \(n\) such that, for every
+neighborhood \(j\),
+\begin{align}
+  \sum_{b=1}^B I_j(b)(p_b-n_b) &\le \bar\rho_j \sum_{b=1}^B I_j(b)p_b, \label{eq:global-budget}\\
+  \sum_{b:w_b=w} I_j(b)(p_b-n_b) &\le \bar s_{j,w}\, P_{j,+}(W=w)
+  \quad\text{for each }w, \label{eq:cell-budget}\\
+  M_{j,w}(n) &= \pi_{j,-}(w)\, M_j(n) \quad\text{for each }w. \label{eq:matchW}
+\end{align}
+Equation~\eqref{eq:matchW} is the retained-covariate-law restriction.  Because the same \(n_b\)
+enters every neighborhood containing atom \(b\), the constraints across \(j\) are not a product
+of one-window feasible sets.
+
+For each neighborhood \(j\), define the retained right-side Wald components
+\[
+  N_j^Y(n)=\sum_{b=1}^B I_j(b)n_b y_b - M_j(n)\sum_w \pi_{j,-}(w)\mu_{j,-}^Y(w),
+\]
+\[
+  N_j^D(n)=\sum_{b=1}^B I_j(b)n_b d_b - M_j(n)\sum_w \pi_{j,-}(w)\mu_{j,-}^D(w),
+\]
+and the implied local Wald effect
+\[
+  \theta_j(n)=\frac{N_j^Y(n)}{N_j^D(n)}.
+\]
+The structural identified set is
+\[
+  \Theta_I(P,\bar\rho,\bar s)
+  =
+  \left\{
+    \vartheta\in\R^J:
+    \begin{array}{l}
+      \text{there exists a structural completion satisfying one-sided manipulation,}\\
+      \text{conditional continuity, the neighborhood budgets, the cell caps, and}\\
+      \text{positive first stages, whose neighborhood-wise nonmanipulator Wald vector is }\vartheta
+    \end{array}
+  \right\}.
+\]
+For each feasible retained-mass vector \(n\), write
+\[
+  \theta(n)=(\theta_1(n),\ldots,\theta_J(n)).
+\]
+For a candidate vector \(\lambda=(\lambda_1,\ldots,\lambda_J)\), define the fixed-\(\lambda\)
+orthant-feasibility system
+\[
+  \Psi(P,\bar\rho,\bar s;\lambda)=
+  \left\{n\in\calN(P,\bar\rho,\bar s):
+    N_j^Y(n)-\lambda_j N_j^D(n)\le 0\ \forall j
+  \right\}.
+\]
+Under positive first stages, \(\Psi(P,\bar\rho,\bar s;\lambda)\neq\varnothing\) is equivalent to
+\(\theta_j(n)\le\lambda_j\) for all \(j\).
+
+For computation under finite support, define the lifted slack LP
+\[
+  \mathsf{LP}_\lambda(P,\bar\rho,\bar s):
+  \qquad
+  \min_{n,m,u,z}\ \sum_{j=1}^J z_j
+\]
+subject to
+\begin{align}
+  0\le n_b &\le p_b && \text{for each atom }b, \label{eq:atom-capacity}\\
+  m_j &= \sum_{b=1}^B I_j(b)n_b && \text{for each }j, \label{eq:mj-def}\\
+  u_{j,w} &= \sum_{b:w_b=w} I_j(b)n_b && \text{for each }j,w, \label{eq:ujw-def}\\
+  u_{j,w} &= \pi_{j,-}(w)m_j && \text{for each }j,w, \label{eq:ujw-match}\\
+  m_j &\ge (1-\bar\rho_j)\sum_{b=1}^B I_j(b)p_b && \text{for each }j, \label{eq:mj-budget}\\
+  u_{j,w} &\ge (1-\bar s_{j,w})P_{j,+}(W=w) && \text{for each }j,w, \label{eq:ujw-budget}\\
+  \sum_{b=1}^B I_j(b)n_b(y_b-\lambda_j d_b)
+  &\le
+  m_j\sum_w \pi_{j,-}(w)\bigl(\mu_{j,-}^Y(w)-\lambda_j\mu_{j,-}^D(w)\bigr)+z_j
+  && \text{for each }j, \label{eq:score-slack}\\
+  z_j &\ge 0 && \text{for each }j. \label{eq:score-slack-nonneg}
+\end{align}
+Then \(\Phi(P,\bar\rho,\bar s;\lambda)=1\) if and only if the optimum value of
+\(\mathsf{LP}_\lambda(P,\bar\rho,\bar s)\) is zero.
+
+\begin{verbatim}
+Locked parameters.
+qid = pid_rdd_flow_manipulation
+specialization = v1
+observable distribution P = left/right cutoff limits {P_{j,-}, P_{j,+}} for nested
+  neighborhoods j=1,...,J plus a finite finest right-side partition b=1,...,B
+parameter theta = vector of nonmanipulator local Wald effects (theta_1,...,theta_J)
+identifying restrictions = one-sided upward manipulation; local continuity within each
+  neighborhood and covariate cell; a shared retained nonmanipulator mass vector across
+  nested neighborhoods; neighborhood-specific global envelopes rho_bar_j; neighborhood-
+  by-cell caps s_bar_{j,w}; bounded outcomes; positive retained mass; positive first stages
+bounding functional = joint identified set Theta_I(P,rho_bar,s_bar) and fixed-lambda
+  orthant-membership map Phi(P,rho_bar,s_bar; lambda)
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Nested finite-support neighborhoods]\label{ass:nested-support}
+The family \(\calN_1\subset\cdots\subset\calN_J\) is finite and nested.  The right-side law is
+represented on a finite finest partition \(b=1,\ldots,B\) with masses \(p_b>0\), and
+\(\pi_{j,-}(w)>0\) whenever neighborhood \(j\) uses covariate cell \(w\).
+\end{assumption}
+
+\begin{assumption}[One-sided manipulation with a shared latent law]\label{ass:shared-law}
+Manipulators can only add mass on the treatment side of the cutoff.  There exists one latent
+nonmanipulator mass vector \(n\) on the finest right-side partition whose restriction to each
+neighborhood \(j\) generates the neighborhood-\(j\) right-limit nonmanipulator law.
+\end{assumption}
+
+\begin{assumption}[Conditional continuity]\label{ass:conditional-continuity}
+For each neighborhood \(j\), the left-limit law \(P_{j,-}\) equals the covariate distribution
+of the neighborhood-\(j\) nonmanipulator law, and the retained right-side conditional means
+identify the right-limit nonmanipulator means within each covariate cell.
+\end{assumption}
+
+\begin{assumption}[Neighborhood budgets and cell caps]\label{ass:budgets}
+The shared retained-mass vector satisfies the neighborhood-specific global bounds
+\eqref{eq:global-budget} and cellwise bounds \eqref{eq:cell-budget}, and the feasible set
+\(\calN(P,\bar\rho,\bar s)\) is nonempty.
+\end{assumption}
+
+\begin{assumption}[Positive first stages]\label{ass:first-stage}
+There exists \(\kappa>0\) such that \(N_j^D(n)\ge \kappa\) for every
+\(n\in\calN(P,\bar\rho,\bar s)\) and every neighborhood \(j\).
+\end{assumption}
+
+\begin{assumption}[Sharp-RD computational face]\label{ass:sharp-rd}
+For results that explicitly invoke the computational flow certificate, \(D=Z\) almost surely in
+every neighborhood and hence \(d_b=1\) on the right-side atoms.  The left-side treatment mean
+is zero, so \(N_j^D(n)=M_j(n)\).
+\end{assumption}
+
+\begin{assumption}[Rational benchmark masses for the lifted network]\label{ass:rational}
+For results that explicitly invoke total unimodularity, the masses
+\(\pi_{j,-}(w)\), \(p_b\), the budget right-hand sides, and the candidate vector \(\lambda\)
+admit a common rational scaling.  After multiplying
+\eqref{eq:mj-def}--\eqref{eq:score-slack} by that common denominator, the lifted LP is an
+integer linear program.
+\end{assumption}
+
+\begin{assumption}[Parent reduction face]\label{ass:parent-face}
+For the parent reduction, \(J=1\), the single neighborhood is the parent cutoff window, and the
+budgets \((\bar\rho_1,\bar s_{1,w})\) coincide with the parent one-cutoff bounded-manipulation
+specification.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: one-window reduction to the parent]\label{thm:parent-reduction}
+Under Assumptions~\ref{ass:nested-support}--\ref{ass:parent-face}, the joint feasible set
+\(\calN(P,\bar\rho,\bar s)\) coincides with the parent one-window retention set after the
+identification \(n_b=p_b a_b\).  Consequently, \(\Theta_I(P,\bar\rho,\bar s)\) is exactly the
+parent one-cutoff bounded-manipulation interval, and the fixed-\(\lambda\)
+orthant-feasibility condition \(\Psi(P,\bar\rho,\bar s;\lambda_1)\neq\varnothing\) is exactly
+the parent ratio-indexed endpoint feasibility problem.
+\end{theorem}
+
+The proof is a relabeling argument.  With \(J=1\), every finest atom lies in the same
+neighborhood, so \(n_b=p_b a_b\) turns \eqref{eq:global-budget}--\eqref{eq:matchW} into the
+parent constraints and the Wald components into the parent numerator and denominator.
+
+\begin{conjecture}[Conjecture 1: shared-image characterization]\label{conj:shared-image}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:nested-support}--\ref{ass:first-stage}, the
+many-neighborhood identified set is exactly
+\[
+  \Theta_I(P,\bar\rho,\bar s)=\{\theta(n):n\in\calN(P,\bar\rho,\bar s)\}.
+\]
+Equivalently, a candidate vector \(\lambda\in\R^J\) lies in the upper orthant of the
+identified set if and only if \(\Psi(P,\bar\rho,\bar s;\lambda)\neq\varnothing\).
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 2: laminar flow certificate]\label{conj:flow-certificate}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:nested-support}--\ref{ass:rational}, and under
+the sharp-RD specialization of Assumption~\ref{ass:sharp-rd}, the fixed-\(\lambda\) feasibility
+problem \(\Psi(P,\bar\rho,\bar s;\lambda)\) is equivalent to the zero-optimum event for the
+lifted program \(\mathsf{LP}_\lambda(P,\bar\rho,\bar s)\).  After introducing shell variables
+for the differences between consecutive neighborhoods and split positive/negative score-flow
+arcs for the coefficients in \eqref{eq:score-slack}, the constraint matrix of
+\(\mathsf{LP}_\lambda\) becomes a block matrix
+\[
+  A_\lambda=
+  \begin{pmatrix}
+    A_{\mathrm{tree}} & 0 & 0 \\
+    A_{\mathrm{match}} & I & 0 \\
+    A_{\mathrm{score}}(\lambda) & 0 & I
+  \end{pmatrix},
+\]
+where \(A_{\mathrm{tree}}\) is the node-arc incidence matrix of a laminar tree, the columns of
+\(A_{\mathrm{match}}\) and \(A_{\mathrm{score}}(\lambda)\) have consecutive nonzero blocks after
+ordering rows by neighborhood depth, and the full matrix \(A_\lambda\) is total unimodular.
+Hence orthant membership can be decided in strongly polynomial time in the size of the lifted
+network.
+\end{conjecture}
+
+\begin{conjecture}[Conjecture 3: dual reduction and strict joint gap]\label{conj:dual-gap}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:nested-support}--\ref{ass:rational} and
+Assumption~\ref{ass:sharp-rd}, the dual of the lifted program in
+Conjecture~\ref{conj:flow-certificate} yields node potentials
+\((\alpha_j,\beta_{j,w},\gamma_j)\) that certify orthant membership.  When \(J=1\), those
+potentials collapse to the parent ratio-indexed dual certificate.  When \(J=2\) and the
+neighborhoods have distinct left-side covariate shares, there is a named positive weight vector
+\(\omega^\star=(1,1)\in\R_{++}^2\) and an open class of finite-support laws for which the joint
+support function
+\[
+  h_{\Theta_I}(\omega)=\sup_{\theta\in\Theta_I(P,\bar\rho,\bar s)} \omega^\top \theta
+\]
+is strictly below the sum of the separately computed one-window envelopes at
+\(\omega=\omega^\star\).
+\end{conjecture}
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Parent corner]\label{cor:parent-corner}
+Under Assumptions~\ref{ass:nested-support}--\ref{ass:parent-face},
+Theorem~\ref{thm:parent-reduction} reduces the upgrade to the banked parent result.  The
+reduction is exact because the shared retained-mass vector has only one neighborhood
+restriction, so the laminar system collapses to the parent one-cutoff retention program.
+\end{corollary}
+
+\begin{corollary}[No-manipulation corner]\label{cor:no-manipulation}
+Under Assumptions~\ref{ass:nested-support}--\ref{ass:first-stage}, if \(\bar\rho_j=0\) and
+\(\bar s_{j,w}=0\) for every \(j,w\), then \(n_b=p_b\) for all \(b\), so each
+\(\theta_j(n)\) equals the usual neighborhood-\(j\) RD Wald estimand.  This follows because
+\eqref{eq:global-budget} and \eqref{eq:cell-budget} force zero removal in every neighborhood.
+\end{corollary}
+
+\paragraph{Exhibit 9.1 (parent dual from primitives).}
+Take \(J=1\), one covariate cell, and sharp RD.  Let the right-side atoms be
+\((p_1,y_1)=(0.4,1)\) and \((p_2,y_2)=(0.6,0)\), let the left-side outcome mean be \(0\), and
+let \(\bar\rho_1=0.5\).  For candidate \(\lambda\), the fixed-\(\lambda\) feasibility problem is
+\[
+  n_1+n_2\ge 0.5,\qquad
+  n_1(1-\lambda)+n_2(0-\lambda)\le 0,\qquad
+  0\le n_1\le 0.4,\ 0\le n_2\le 0.6.
+\]
+At \(\lambda=0.8\), the choice \((n_1,n_2)=(0.4,0.1)\) satisfies the system with equality in
+both constraints, so the dual certificate is the parent ratio multiplier \(\lambda=0.8\) plus a
+single retained-mass shadow price.  This is the \(J=1\) face demanded by
+Conjecture~\ref{conj:dual-gap}.
+
+\paragraph{Exhibit 9.2 (explicit lifted LP and TU witness).}
+Take \(J=2\), one covariate cell, and sharp RD.  Let \(\calN_1\subset\calN_2\), with finest
+atoms \(a,b,c\) such that \(a,b\in\calN_1\) and \(c\in\calN_2\setminus\calN_1\).  Let
+\[
+  (p_a,p_b,p_c)=(1,1,1),\qquad (y_a,y_b,y_c)=(1,0,1),\qquad
+  (\bar\rho_1,\bar\rho_2)=\left(\frac12,\frac13\right).
+\]
+For \(\lambda_1=\lambda_2=\frac12\), write \(m_1=n_a+n_b\), \(m_2=m_1+n_c\), and let
+\(z_1,z_2\) be orthant slacks.  The lifted LP is
+\[
+  \min z_1+z_2
+\]
+subject to
+\[
+  m_1=n_a+n_b,\qquad m_2=m_1+n_c,\qquad m_1\ge 1,\qquad m_2\ge 2,
+\]
+\[
+  n_a-m_1/2\le z_1,\qquad n_a+n_c-m_2/2\le z_2,
+\]
+\[
+  0\le n_a,n_b,n_c\le 1,\qquad z_1,z_2\ge 0.
+\]
+After substituting out \(m_1,m_2\), multiplying by \(2\), and ordering rows as
+\((m_1,m_2,\mathrm{score}_1,\mathrm{score}_2)\), the coefficient matrix on
+\((n_a,n_b,n_c,z_1,z_2)\) is
+\[
+  \begin{pmatrix}
+    1 & 1 & 0 & 0 & 0\\
+    1 & 1 & 1 & 0 & 0\\
+    1 & -1 & 0 & -2 & 0\\
+    1 & 1 & 1 & 0 & -2
+  \end{pmatrix}.
+\]
+The shell-lifted version replaces the two score rows by arc balances into two slack sinks on a
+laminar tree with root \(\calN_2\), child \(\calN_1\), outer-shell leaf \(c\), and inner leaves
+\(a,b\).  The feasible point
+\[
+  (n_a,n_b,n_c,m_1,m_2,z_1,z_2)=(0.5,0.5,1,1,2,0,0)
+\]
+has zero objective, so \(\Phi(P,\bar\rho,\bar s;\lambda)=1\) on this witness.  This exhibit pins
+down the lifted variables, the objective, the slack construction, and the matrix block that
+Conjecture~\ref{conj:flow-certificate} asks to prove total unimodular in general.
+
+\paragraph{Exhibit 9.3 (dual potentials and strict joint-vs-separate gap).}
+Take sharp RD with two covariate cells \(A,B\), two nested neighborhoods, and left outcome mean
+zero everywhere.  Let the finest atoms be
+\[
+  a=(p=0.4,w=A,y=1)\in\calN_1,\qquad
+  b=(p=0.1,w=B,y=0)\in\calN_1,\qquad
+  c=(p=0.5,w=B,y=1)\in\calN_2\setminus\calN_1.
+\]
+Let the left covariate shares be
+\[
+  \pi_{1,-}(A)=\pi_{1,-}(B)=0.5,\qquad
+  \pi_{2,-}(A)=0.25,\ \pi_{2,-}(B)=0.75,
+\]
+and take loose budgets so only the matching equations bind.  Solving the two neighborhoods
+separately gives the sharp-RD upper means
+\[
+  \theta_1^{\mathrm{sep}}=0.5,\qquad \theta_2^{\mathrm{sep}}=0.875,
+\]
+attained by \((n_a,n_b)=(0.1,0.1)\) for \(\calN_1\) and
+\((n_a,n_b,n_c)=(0.2,0.1,0.5)\) for \(\calN_2\).  Those solutions are incompatible because the
+shared inner atom \(a\) cannot simultaneously retain mass \(0.1\) and \(0.2\).  Under the
+shared-mass restriction, the inner-window matching condition forces \(n_a=n_b\), and the outer
+matching condition then implies \(n_c=2n_a\).  The best joint choice is
+\[
+  (n_a,n_b,n_c)=(0.1,0.1,0.2),
+\]
+which yields
+\[
+  \theta_1^{\mathrm{joint}}=0.5,\qquad \theta_2^{\mathrm{joint}}=0.75,
+\]
+so the support-function value at weight vector \(\omega=(1,1)\) drops from
+\[
+  h_{\mathrm{sep}}(\omega)=0.5+0.875=1.375
+\]
+to
+\[
+  h_{\mathrm{joint}}(\omega)=0.5+0.75=1.25.
+\]
+For the candidate orthant threshold \(\lambda=(0.5,0.75)\), one compatible zero-slack retained
+vector is exactly the joint optimizer above.  A dual certificate is given by
+\[
+  \alpha_1=\alpha_2=1,\qquad
+  \beta_{1,A}=0,\ \beta_{1,B}=1/2,\qquad
+  \beta_{2,A}=0,\ \beta_{2,B}=1/4,\qquad
+  \gamma_1=\gamma_2=0,
+\]
+where \(\alpha_j\) prices the neighborhood mass constraint, \(\beta_{j,w}\) prices the
+retained-\(W\) equations, and \(\gamma_j\) prices the score slack.  These potentials make the
+inner \(A\)-atom and outer \(B\)-atom tight, leave the incompatible separate optimum with
+positive reduced cost, and normalize to the parent \(J=1\) multiplier in Exhibit~9.1.  This is
+the concrete strict-gap witness required by Conjecture~\ref{conj:dual-gap}.
+
+\section{Proof-sketch route}
+The verification route has five substantive steps.  First, prove a mixture-retention lemma for a
+shared atom-level nonmanipulator mass vector across nested windows, extending the parent's
+one-window decomposition.  Second, map structural completions to the algebraic feasible set
+\(\calN(P,\bar\rho,\bar s)\) and back, so that Conjecture~\ref{conj:shared-image} is not a
+definition unfold.  Third, show that the orthant inequalities
+\(N_j^Y(n)-\lambda_j N_j^D(n)\le 0\) characterize upper-orthant membership once
+Assumption~\ref{ass:first-stage} makes each denominator positive.  Fourth, on finite support,
+lift \(\mathsf{LP}_\lambda\) to shell variables and score-slack arcs on a laminar tree, then use
+the consecutive-ones structure of nested neighborhoods to prove total unimodularity of
+\(A_\lambda\).  Fifth, derive the dual node potentials and verify the boundary cases explicitly:
+the parent \(J=1\) face, the one-cell lifted witness in Exhibit~9.2, and the two-cell strict gap
+with \(\omega^\star=(1,1)\) in Exhibit~9.3.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:parent-reduction} is the only statement asserted as routine.  Conjecture~1 is
+the substantive identification claim: the parent sharpness argument must be extended from one
+window to a shared nested-window latent law.  Conjecture~2 is the computation delta, and its
+strongly polynomial claim is only for the lifted finite-support sharp-RD orthant problem with
+rational scaling, not for continuous covariates or unrestricted fuzzy RD.  Conjecture~3 adds the
+dual certificate and the strict joint-vs-separate phenomenon at the named positive weight vector
+\(\omega^\star=(1,1)\); Exhibit~9.3 verifies one worked witness but not yet an open-class
+theorem.  Relative to the prior draft, the separable neighborhood formulation has been
+withdrawn: the windows now share atom variables by construction, because otherwise laminarity
+does no mathematical work.  The Rosenman comparison has also been narrowed to the current arXiv
+v4 abstract claim and no longer attributes a specific algorithm absent a location anchor.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) --- initial draft of the many-neighborhood flow upgrade; prior verdict: none.
+\item v2 (revise) --- replaced separable window programs with a shared laminar retained-mass model, added Bertanha and Chernozhukov--Lee--Rosen location anchors, and computed Exhibits 9.1--9.3; prior verdict: REVISE.
+\item v3 (revise) --- redefined the identified set structurally, made the lifted LP / TU object explicit, computed named dual potentials, and stabilized the Rosenman citation to arXiv v4; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+
+\bibitem[Bertanha(2020)]{bertanha_2020_many_thresholds}
+Bertanha, Marinho.
+2020.
+Regression discontinuity design with many thresholds.
+\emph{Journal of Econometrics} 218(1): 216--241.
+
+\bibitem[Cattaneo, Jansson, and Ma(2020)]{cattaneo_jansson_ma_2020_density}
+Cattaneo, Matias D., Michael Jansson, and Xinwei Ma.
+2020.
+Simple local polynomial density estimators.
+\emph{Journal of the American Statistical Association} 115(531): 1449--1455.
+
+\bibitem[Chernozhukov, Lee, and Rosen(2013)]{chernozhukov_lee_rosen_2013_intersection_bounds}
+Chernozhukov, Victor, Sokbae Lee, and Adam M. Rosen.
+2013.
+Intersection bounds: Estimation and inference.
+\emph{Econometrica} 81(2): 667--737.
+
+\bibitem[Gerard, Rokkanen, and Rothe(2020)]{gerard_rokkanen_rothe_2020_rdbounds}
+Gerard, Francois, Miikka Rokkanen, and Christoph Rothe.
+2020.
+Bounds on treatment effects in regression discontinuity designs with a manipulated running variable.
+\emph{Quantitative Economics} 11(3): 839--870.
+
+\bibitem[Hahn, Todd, and van der Klaauw(2001)]{hahn_todd_van_der_klaauw_2001}
+Hahn, Jinyong, Petra Todd, and Wilbert van der Klaauw.
+2001.
+Identification and estimation of treatment effects with a regression-discontinuity design.
+\emph{Econometrica} 69(1): 201--209.
+
+\bibitem[Ishihara and Sawada(2024)]{ishihara_sawada_2024_manipulation_robust}
+Ishihara, Takuya, and Masayuki Sawada.
+2024.
+Manipulation-robust regression discontinuity designs.
+arXiv:2009.07551.
+
+\bibitem[Lee(2008)]{lee_2008_local_randomization}
+Lee, David S.
+2008.
+Randomized experiments from non-random selection in U.S. House elections.
+\emph{Journal of Econometrics} 142(2): 675--697.
+
+\bibitem[McCrary(2008)]{mccrary_2008_density_test}
+McCrary, Justin.
+2008.
+Manipulation of the running variable in the regression discontinuity design: A density test.
+\emph{Journal of Econometrics} 142(2): 698--714.
+
+\bibitem[Rosenman et~al.(2025)]{rosenman_rajkumar_gauriot_slonim_2019_discrete_manipulation}
+Rosenman, Evan, Karthik Rajkumar, Romain Gauriot, and Robert Slonim.
+2025.
+Donor's Deferral and Return Behavior: Partial Identification from a Regression Discontinuity Design with Manipulation.
+arXiv:1910.02170v4.
+
+\end{thebibliography}
+
+\end{document}

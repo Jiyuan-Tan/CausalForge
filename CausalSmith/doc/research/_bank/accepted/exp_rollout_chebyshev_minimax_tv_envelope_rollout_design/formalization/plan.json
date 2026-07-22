@@ -1,0 +1,351 @@
+{
+  "qid": "exp_rollout_chebyshev_minimax",
+  "specialization": "tv_envelope_rollout_design",
+  "cluster": "experimentation",
+  "lean_target_subdir": "CausalSmith/Experimentation/EXP_RolloutChebyshevMinimax_Research",
+  "status": "needs-new-infrastructure",
+  "env": [
+    {
+      "id": "S1",
+      "world": "Finite-population monotone-Bernoulli rollout DESIGN world: the only randomness is the experimenter's rollout randomization pi over a finite assignment space; round means bar_Y_j are real random variables of the realized assignment, and E_pi/Var_pi/Cov_pi are finite-sum design moments. This is exactly the abstraction of Causalean's FiniteDesign probability layer.",
+      "binds_symbols": ["n", "P", "pi", "U_n", "Z_j", "Y_i(z)", "bar_Y_j", "m_P", "a_{P,0}, ..., a_{P,beta}", "tau_P", "sigma_0^2", "hat_tau_{w,p}", "P_beta", "Gamma_P(p)", "R_exact(beta,k,q)"],
+      "binds_sampling_model": true,
+      "disposition": "reuse",
+      "reuse": "Causalean.Experimentation.DesignBased.FiniteDesign",
+      "modules": ["Causalean.Experimentation.DesignBased.Design"],
+      "notes": "FiniteDesign Ω = PMF over a finite assignment space with FiniteDesign.E/Var/Cov as finite sums (Design.lean:45-217). bar_Y_j : Ω → ℝ are round-mean random variables; Var_pi(bar_Y_j) is FiniteDesign.Var, Gamma_P(p) is the (k+1)x(k+1) FiniteDesign.Cov matrix, hat_tau_{w,p} = ∑ w_j bar_Y_j. FiniteDesign.Var_linear_comb / Var_const_mul / Cov_* supply the design-variance algebra reused by the variance-layer lemmas. The paper takes the potential-outcome / static-rollout consistency and the per-round variance ENVELOPE as threaded Prop assumptions (inherited setup + novel envelope), so Y_i(z), Z_j, U_n, m_P, a_{P,ell}, tau_P are exposed at the abstract FiniteDesign level rather than via a bespoke PO structure — the highest-leverage reuse decision, matching the paper's honest scope (novelty is the approximation-theoretic design object, not new PO machinery). Surveyed Causalean PO substrate (PotentialOutcome.lean, Exposure.lean, HT/*): those target Horvitz–Thompson measure/measurability estimation under exposure mappings and DERIVE design variance from network structure; this paper instead ASSUMES the round-variance envelope, so the HT variance derivations (var_htMean_le, EdgeVarianceBound, CompoundVariance) are a different abstraction and not a fit — recorded as bypass-justified."
+    },
+    {
+      "id": "S2",
+      "world": "Real / polynomial ℓ¹ optimal-recovery ambient: budgeted node schedules, linear-unbiased weight vectors, the ℓ¹ amplification criterion and its minimax value, and the Chebyshev / equal-spacing grids are pure real-analytic objects over ℝ, Fin (k+1) → ℝ, and Polynomial ℝ (Mathlib). No design/PMF object appears in these definitions or in the approximation-theoretic lemmas.",
+      "binds_symbols": ["beta", "c", "k", "q", "q_max", "p", "C_eq(q_max)", "w", "A_beta(p)", "S_{k,q}", "W_beta(p)", "M_{beta,k,q}", "p^Ch(k,q)", "p^eq(beta,q)", "rho_Ch(c,q_max)"],
+      "binds_sampling_model": false,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.RingTheory.Polynomial.Chebyshev", "Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Extremal", "Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema"],
+      "notes": "bypass-justified: the amplification criterion A_beta(p) = inf over W_beta(p) of (∑|w_j|)² is a pure ℓ¹/ℓ∞-dual optimal-recovery quantity over polynomial-unbiased weight vectors; the Causalean design world (FiniteDesign) is at a different abstraction (measure of a randomization) and does not fit these purely algebraic-analytic objects. Searched Causalean experimentation substrate for 'amplification / minimax schedule / Chebyshev node / budgeted design' (npm search concepts, lean_local_search FiniteDesign/Optimality/Minimax/Neyman): Optimality/Minimax.lean is Neyman-allocation design minimax, not node-placement ℓ¹ amplification — not found. Mathlib supplies Polynomial.Chebyshev.T ℝ n and the Extremal/RootsExtrema Chebyshev API used by the endpoint lemmas."
+    }
+  ],
+  "nodes": {
+    "ass:static-rollout-consistency": {
+      "lean_kind": "assumption",
+      "lean_name": "StaticRolloutConsistency",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Design"],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Modeling (causal) assumption: bar_Y_j = n⁻¹ ∑ Y_i(Z_j) with contemporaneous no-carryover. Inherited setup (CortezEichhornYu2022); kept as a threaded Prop, never discharged. Search trace: grepped Causalean PO/Exposure for 'rollout / no carryover / static potential outcome' — Causalean has exposure-mapping interference (ExposureMappingInterference) but no static-rollout consistency predicate; keep as assumption."
+    },
+    "ass:beta-order-polynomial": {
+      "lean_kind": "assumption",
+      "lean_name": "BetaOrderPolynomial",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.Analysis.SpecialFunctions.Polynomials"],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Modeling assumption: m_P(u) = ∑_{ell=0}^beta a_{P,ell} u^ell on [0,1]. Inherited setup (CortezEichhornYu2022); threaded Prop over m_P : ℝ → ℝ and coefficient vector a. Search trace: no Causalean 'rollout mean polynomial' predicate (lean_local_search 'rollout', 'mean curve') — not found; keep as assumption."
+    },
+    "ass:round-mean-variance-envelope": {
+      "lean_kind": "assumption",
+      "lean_name": "RoundMeanVarianceEnvelope",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Design"],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "NOVEL modeling assumption (design envelope): ∀ P p j, Var_pi(bar_Y_j) ≤ sigma_0²/n, stated via FiniteDesign.Var. This is the paper's declared TV envelope INPUT (not a proof obligation); kept as a threaded Prop and NOT discharged. Search trace: Causalean HT variance (var_htMean_le, EdgeVarianceBound, CompoundVariance) DERIVES per-unit design variance under exposure/edge structure — a different, stronger object that would over-formalize beyond the paper's envelope abstraction; partial fit only, so keep as the note's own assumption."
+    },
+    "ass:low-budget-cap": {
+      "lean_kind": "assumption",
+      "lean_name": "LowBudgetCap",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Modeling/regime assumption: q ≤ q_max < 1. Threaded Prop over reals; trivial, no reuse needed. F2 SCAFFOLD-REDIRECT (attempt 4): the sym:q_max realization cluster omitted the lower bound 0 < q_max required by the core space (0,1) — LowBudgetCap only gave q ≤ qmax ∧ qmax < 1. RE-ADDED as the leading conjunct 0 < qmax on LowBudgetCap (now 0 < qmax ∧ q ≤ qmax ∧ qmax < 1), so every consumer taking LowBudgetCap q qmax inherits q_max ∈ (0,1) by name. thm:chebyshev-minimax and lem:exact-chebyshev-rate-feasible additionally carry an explicit top-level hqmax : 0 < qmax ∧ qmax < 1, so their q_max space was already complete; no signature change needed there. The 0 < q_max is the note-stated symbol space for q_max, so it is a space realization, not a new modeling assumption."
+    },
+    "def:budgeted-schedule-class": {
+      "lean_kind": "def",
+      "lean_name": "BudgetedSchedule",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.Order.Monotone.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Construction: membership predicate S_{k,q} on p : Fin (k+1) → ℝ (or Fin (k+1) → [0,1]) with p 0 = 0, strictly increasing, p k = q. Pure real/order. Search trace: no Causalean 'budgeted schedule / ordered grid class' (lean_local_search 'schedule', 'grid') — bypass-justified over Mathlib order API. F2 SCAFFOLD-REDIRECT: the paper's ambient schedule range p ∈ [0,1]^(k+1) was omitted; RE-ADDED as the leading conjunct (∀ j, p j ∈ Set.Icc 0 1) on BudgetedSchedule, so every consumer (tv_envelope_design, chebyshev_minimax, chebyshev_schedule_admissible, exact_risk_envelope_upper) inherits the range by name — no consumer signature change needed."
+    },
+    "def:rollout-law-class": {
+      "lean_kind": "structure",
+      "lean_name": "RolloutLawClass",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Design"],
+      "defer_tier": false,
+      "gate": false,
+      "members": ["ass:static-rollout-consistency", "ass:beta-order-polynomial", "ass:round-mean-variance-envelope"],
+      "notes": "CLASS P_beta bundling the three member assumptions, one structure field per member (each typed by its Prop def). Consumed as a bundled hypothesis by thm:tv-envelope-design and lem:exact-risk-envelope-upper. Search trace: no Causalean law-class matching the static beta-order TV-envelope rollout family. F2 SYNC-BACK: (i) the structure takes the schedule p : Fin (k+1) -> R as a parameter (barY is the realized round mean under the chosen schedule); (ii) added a fourth field mean_curve : forall j, D.E (barY j) = m (p j) — the DISTRIBUTION-CLASS AUXILIARY PINNING of the law functional m_P to the design (m_P(u)=E_pi(bar_Y_j|p_j=u) is the core's DEFINITION of m_P, so this pins the auxiliary m rather than strengthening the class; without it m is a free auxiliary silently widening the class and the unbiasedness step E[hat_tau]=m(1)-m(0) is under-strength). Not a new modeling assumption; not added to the assumption table."
+    },
+    "def:unbiased-weight-set": {
+      "lean_kind": "def",
+      "lean_name": "UnbiasedWeights",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.Algebra.BigOperators.Ring.Finset"],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Construction: predicate W_beta(p) on w : Fin (k+1) → ℝ with ∑ w_j p_j^0 = 0 and ∑ w_j p_j^ell = 1 for ell = 1..beta. Pure finite-sum moment conditions. Search trace: no Causalean 'linear-unbiased weight class / moment conditions' decl — bypass-justified over Mathlib BigOperators."
+    },
+    "def:chebyshev-schedule": {
+      "lean_kind": "def",
+      "lean_name": "chebyshevSchedule",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Construction: p_j^Ch(k,q) = q(1 - cos(π j / k))/2, a vector Fin (k+1) → ℝ. Pure real cosine grid. Search trace: no Causalean Chebyshev-Lobatto grid — bypass-justified over Mathlib Real.cos. F2 SCAFFOLD-REDIRECT (attempt 8): the p^Ch realization previously tagged only the closed-form FORMULA, while the core symbol space is p^Ch(k,q) ∈ [0,1]^(k+1). No signature change to this carrier def is needed (the range clause already EXISTS): lem:chebyshev-schedule-admissible concludes BudgetedSchedule k q (chebyshevSchedule k q), whose first conjunct ∀ j, p^Ch(k,q) j ∈ Icc 0 1 IS the [0,1]^(k+1) range, holding under k≥1 (hk) and q∈(0,1] (hq). RE-TAGGED: chebyshevSchedule's @realizes p^Ch(k,q) now names both carrier AND range-via-admissibility; lem:chebyshev-schedule-admissible newly carries @realizes p^Ch(k,q)(range via BudgetedSchedule Icc conjunct) so the realization cluster covers the full symbol space."
+    },
+    "def:amplification-criterion": {
+      "lean_kind": "def",
+      "lean_name": "amplification",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.Order.CompleteLattice.Basic", "Mathlib.Topology.Algebra.InfiniteSum.Order"],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Construction covering BOTH A_beta(p) = ⨅_{w ∈ W_beta(p)} (∑|w_j|)² and M_{beta,k,q} = ⨅_{p ∈ S_{k,q}} A_beta(p) (companion def `minimaxAmplification`). Real infima (sInf over ℝ). Search trace: Causalean Optimality/Minimax.lean is Neyman-allocation minimax, not ℓ¹ node-amplification — not a fit; bypass-justified over Mathlib sInf."
+    },
+    "def:exact-nested-risk": {
+      "lean_kind": "def",
+      "lean_name": "exactNestedRisk",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Design"],
+      "defer_tier": false,
+      "gate": false,
+      "notes": "Construction R_exact(beta,k,q) = ⨅_{p ∈ S_{k,q}} ⨅_{w ∈ W_beta(p)} sup_{P ∈ P_beta} w' Gamma_P(p) w, where w' Gamma_P(p) w = Var_pi(∑ w_j bar_Y_j) via FiniteDesign.Var/Var_linear_comb. Nested inf/sup over reals + the design covariance form. Search trace: no Causalean exact nested-rollout risk object; build-inline over FiniteDesign covariance. F2 SYNC-BACK: emitted in Basic.lean (shared def; consumed by lem:exact-risk-envelope-upper, oeq, lem:exact-chebyshev-rate-feasible). The sup_{P in P_beta} is encoded as an sSup over the RolloutLawClass members on the FIXED common randomization D (the known monotone-Bernoulli law pi) — laws differ only in the potential-outcome data (Y,Z,barY,m,a), so w'Gamma_P(p)w = D.Var (fun z => sum w_j barY_j z); this keeps the converse well-posed (no varying-Omega sup)."
+    },
+    "prop:rollout-polynomial-identity": {
+      "lean_kind": "lemma",
+      "lean_name": "rollout_polynomial_identity",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.Algebra.BigOperators.Ring.Finset"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "hyps": ["ass:static-rollout-consistency", "ass:beta-order-polynomial"],
+      "notes": "Small inherited-setup lemma: tau_P = m_P(1) - m_P(0) = ∑_{ell=1}^beta a_{P,ell} by polynomial endpoint evaluation (0^ell = 0, ell ≥ 1). Pure finite-sum algebra. Search trace: no Causalean endpoint-polynomial identity — build-inline, trivial."
+    },
+    "thm:tv-envelope-design": {
+      "lean_kind": "theorem",
+      "lean_name": "tv_envelope_design",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Design"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_tv_envelope_design.lean",
+      "hyps": ["def:rollout-law-class"],
+      "notes": "Main deliverable 1 (design-unbiasedness + sharp TV variance bridge + fixed-schedule optimum A_beta(p) + minimax value M_{beta,k,q}). Assumption deps (static-rollout-consistency, beta-order-polynomial, round-mean-variance-envelope) all bundled in the class def:rollout-law-class listed in hyps; prop:rollout-polynomial-identity, lem:variance-envelope-sharpness, lem:unbiased-weight-set-nonempty and the defs are USED, not assumed. Unbiasedness via FiniteDesign.E linearity; variance bound via lem:variance-envelope-sharpness over FiniteDesign.Var. Build-inline. F2 SCAFFOLD-REDIRECT (sharpness half): the note calls this 'the sharp total-variation variance envelope'; the per-w variance bound is now ACCOMPANIED by the rank-one attainment conjunct ∃ Γ : Matrix, Γ.PosSemidef ∧ (∀ j, Γ j j ≤ sigma0sq/n) ∧ (∑ i ∑ j w i Γ i j w j) = sigma0sq/n * (∑|w j|)² (so 'best achievable = (σ₀²/n)A_β(p)' is honest, not just ≤). Added hyp hsig : 0 ≤ sigma0sq (σ₀² ∈ ℝ_+ range, note-stated; needed for the PSD witness). Import Mathlib.LinearAlgebra.Matrix.PosDef."
+    },
+    "prop:equal-spacing-benchmark": {
+      "lean_kind": "lemma",
+      "lean_name": "equal_spacing_benchmark",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.Analysis.SpecialFunctions.Polynomials", "Mathlib.Analysis.SpecialFunctions.Complex.Analytic"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/Schedule.lean",
+      "hyps": [],
+      "notes": "Benchmark: A_beta(p^eq(beta,q)) ≤ 9 (beta/q)^{2beta}. Constructs Lagrange-basis weights on the equal grid and bounds the ℓ¹ norm by y^beta 2^beta/beta! ≤ 2 y^beta; endpoint case at q=1. Both deps are defs (used). Medium algebraic proof over Mathlib Lagrange interpolation / factorial sums. Search trace: Mathlib has Lagrange.basis (Mathlib.LinearAlgebra.Lagrange) — candidate reuse for the basis polynomials; no Causalean analogue. Build-inline. F2 SYNC-BACK: the symbol p^eq(beta,q) had no dedicated core def node, so a small helper `equalSchedule (beta) (q) : Fin (beta+1) -> R := fun j => q*j/beta` (tagged @realizes p^eq) was emitted in Helpers/Schedule.lean to state this and prop:no-extrapolation-boundary; amplification is instantiated at k=beta (the beta+1-node grid). F2 SCAFFOLD-REDIRECT (attempt 8): the p^eq realization previously tagged only the closed-form FORMULA (equalSchedule) with no decl pinning the core symbol space p^eq(beta,q) ∈ [0,1]^(beta+1) (unlike p^Ch, p^eq had no admissibility lemma). RE-ADDED the range clause to this lemma's STATEMENT SIGNATURE: the conclusion is now the CONJUNCTION (∀ j, equalSchedule beta q j ∈ Icc 0 1) ∧ (A_beta ≤ 9(beta/q)^{2beta}) — the first conjunct realizes the [0,1]^(beta+1) space (holding under hbeta:1≤beta and hq:0<q∧q≤1), the second is the core amplification bound verbatim. equalSchedule and this lemma re-tagged @realizes p^eq(beta,q) accordingly. No consumer invokes equal_spacing_benchmark (scaffold bodies are sorry), so the added conjunct causes no ripple."
+    },
+    "prop:no-extrapolation-boundary": {
+      "lean_kind": "lemma",
+      "lean_name": "no_extrapolation_boundary",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.Algebra.BigOperators.Ring.Finset"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/Schedule.lean",
+      "hyps": [],
+      "notes": "Boundary: at q=1 the endpoint rule w_0=-1, w_beta=1 lies in W_beta(p^eq(beta,1)) so A_beta ≤ 4. Trivial moment check. Both deps are defs. Build-inline."
+    },
+    "thm:chebyshev-minimax": {
+      "lean_kind": "theorem",
+      "lean_name": "chebyshev_minimax",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.RingTheory.Polynomial.Chebyshev", "Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_chebyshev_minimax.lean",
+      "hyps": ["ass:low-budget-cap"],
+      "notes": "HEADLINE kernel: matched two-sided bound A_beta(p) ≥ C_-(rho/q)^{2beta} (lower, via lem:amplification-dual-norm + T_beta exterior growth in lem:continuous-chebyshev-endpoint-bound) and A_beta(p^Ch) ≤ C_+(rho/q)^{2beta} (upper, via lem:oversampled-chebyshev-lobatto-norming + lem:continuous-chebyshev-endpoint-bound), giving M_{beta,k,q} base rho(q)/q. Assumption dep ass:low-budget-cap in hyps; all lemmas/defs used. The gate lem:ehlich-zeller-chebyshev-lobatto-mesh enters only through the norming lemma (its direct consumer), so it is threaded there, not here (hyps ⊆ depends_on). Build-inline conditional on the norming lemma. F2 SCAFFOLD-REDIRECT (minimax attainment/sharpness half): the note concludes 'Hence M_{beta,k,q} has pointwise base rho(q)/q'; the two-sided minimax VALUE bounds were omitted (only the per-schedule A_β bounds were stated). RE-ADDED as conjuncts minimaxAmplification beta k q ≥ Cminus·(ρ/q)^{2β} (converse, from the ∀p lower bound) ∧ minimaxAmplification beta k q ≤ Cplus·(ρ/q)^{2β} (achievability, p^Ch admissible via chebyshev_schedule_admissible), so M itself is trapped."
+    },
+    "oeq:exact-nested-minimax": {
+      "lean_kind": "def",
+      "lean_name": "exactNestedMinimaxQuestion",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Design"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/ExactRisk.lean",
+      "notes": "OPEN question (status to-prove, D0 residual oeq:exact-nested-minimax): STATED as a named Prop asking whether p^Ch also minimizes R_exact(beta,k,q) for the true monotone-Bernoulli covariance. NOT a theorem, NOT a proof obligation: lean_kind def, defer_tier false, EXCLUDED from the theorems manifest, and no theorem depends_on it. Rate-feasibility (the provable half) is captured by lem:exact-chebyshev-rate-feasible. F2 SCAFFOLD-REDIRECT: the note's local domain clause q ∈ (0,q_max] had its 0 < q half omitted (LowBudgetCap only pins q ≤ qmax < 1); RE-ADDED as a leading `0 < q →` antecedent so the OEQ ranges over the stated domain. F2 SCAFFOLD-REDIRECT (attempt 3): the note asks exact optimality for the ADMISSIBLE Chebyshev schedule p^Ch(k,q) ∈ S_{k,q}, but the Prop omitted the oversampling admissibility c>1 (symbol c ∈ (1,∞)); RE-ADDED as a leading `1 < c →` antecedent. With 1 ≤ beta this forces k = ⌈c·beta⌉₊ ≥ 2 ≥ 1 and, with q ∈ (0,1] from LowBudgetCap+0<q, makes p^Ch admissible via lem:chebyshev-schedule-admissible — so the OEQ ranges over the admissible schedule the note states, not a possibly-inadmissible grid. Admissibility itself is DERIVED (not assumed as a BudgetedSchedule premise) to avoid gerrymandering; only the note-stated c>1 is added."
+    },
+    "lem:amplification-dual-norm": {
+      "lean_kind": "lemma",
+      "lean_name": "amplification_dual_norm",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.Analysis.Normed.Lp.PiLp", "Mathlib.LinearAlgebra.Dual.Defs"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/Amplification.lean",
+      "hyps": [],
+      "notes": "ℓ¹/ℓ∞ duality: inf_{w ∈ W_beta(p)} ∑|w_j| = sup{|r(1)-r(0)| : deg r ≤ beta, max_j |r(p_j)| ≤ 1}; A_beta is its square. Finite-dimensional ℓ¹-minimal-representation / dual-norm identity. Medium. Search trace: Mathlib PiLp ℓ¹ duality + finite LP duality; no Causalean amplification dual — build-inline over Mathlib. F2 SCAFFOLD-REDIRECT (attempt 10): the Lean statement had an EXTRA hypothesis hβ : beta ≤ k that the note (core lem:amplification-dual-norm) does NOT state — the note assumes ONLY distinct nodes and nonempty W_beta(p). REMOVED hβ from the amplification_dual_norm signature (now takes hp : Function.Injective p and hne : ∃ w, UnbiasedWeights beta k p w only), restoring faithfulness. The FiniteDimL1LinfDuality substrate lemmas (l1_repr_eq_sup_dual, dual_nonneg, exists_moment_le_dual) are currently phrased with β ≤ k, so the working proof is preserved verbatim behind a single new local obligation `have hβ : beta ≤ k := by sorry` (the genuinely-new gap the dropped premise introduces); the faithful Stage-3 route reproves finite-dim ℓ¹/ℓ∞ LP duality from primal feasibility (hne) rather than β ≤ k. No call-site ripple: the only other mention is a docstring reference in T_chebyshev_minimax.lean, not an invocation."
+    },
+    "lem:chebyshev-exterior-extremal": {
+      "lean_kind": "lemma",
+      "lean_name": "chebyshev_exterior_extremal",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Extremal", "Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema", "Mathlib.RingTheory.Polynomial.Chebyshev"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/ChebyshevExtremal.lean",
+      "hyps": [],
+      "notes": "Classical exterior-point Chebyshev extremal inequality |P(x_0)| ≤ T_beta(x_0) for |P| ≤ 1 on [-1,1], x_0 > 1 (Rivlin1974). FULL alternation proof given in proof_tex (IVT + beta+1-zero contradiction) — FEASIBLE, build-inline (not a gate). Search trace: Mathlib Chebyshev.Extremal has leadingCoeff_eq_iff_of_forall_abs_le_one and RootsExtrema has one_le_eval_T_real / one_lt_abs_eval_T_real but NOT the exterior-growth-dominance inequality itself; adapt from Mathlib's alternation machinery in Chebyshev.Extremal (analogous module carrying the same alternation pattern). Medium."
+    },
+    "lem:ehlich-zeller-chebyshev-lobatto-mesh": {
+      "lean_kind": "assumption",
+      "lean_name": "EhlichZellerMesh",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.RingTheory.Polynomial.Chebyshev"],
+      "defer_tier": true,
+      "gate": true,
+      "gate_class": "gated",
+      "target_file": "Helpers/EhlichZeller.lean",
+      "hyps": [],
+      "notes": "SUBSTRATE-GATE. The Ehlich–Zeller Chebyshev-Lobatto mesh/norming inequality sup_{[-1,1]}|R| ≤ sec(π beta/(2k)) max_j |R(-cos(π j/k))| for deg R ≤ beta < k (EhlichZeller1964). NOT original to this paper (paper claims no new polynomial extremal theorem — honest_scope), and its proof_tex is a bare citation with no in-note proof. It is a classical named external approximation-theory norming inequality that is genuinely HARD to formalize (a Marcinkiewicz–Zygmund-type polynomial norming result absent from Mathlib) → tagged substrate-gate, NOT crux; encoded as a named Prop threaded into its single direct consumer (lem:oversampled-chebyshev-lobatto-norming). gate_class 'gated' (D0 status 'proved' but with citation-only proof): visible substrate-debt to be built 0-sorry before banking (SUBSTRATE_DEBT candidate), assumed meanwhile to validate the rest. Not headline 'cited' laundering: it is an external classical fact, not the paper's novel content. Search trace: lean_leansearch 'Chebyshev-Lobatto mesh norming inequality polynomial grid', Mathlib Chebyshev.Extremal/RootsExtrema — only extremal/leadingCoeff and roots facts present; the Ehlich–Zeller norming constant inequality is NOT in Mathlib and NOT in Causalean (lean_local_search 'mesh', 'norming', 'EhlichZeller') — not found."
+    },
+    "lem:oversampled-chebyshev-lobatto-norming": {
+      "lean_kind": "lemma",
+      "lean_name": "oversampled_chebyshev_lobatto_norming",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/EhlichZeller.lean",
+      "hyps": ["lem:ehlich-zeller-chebyshev-lobatto-mesh"],
+      "notes": "Gate-CONSUMER: for k ≥ c beta, sup_{[-1,1]}|R| ≤ K(c) max_j |R(-cos(π j/k))| with K(c) = sec(π/(2c)). Its ONLY hard step is the gated Ehlich–Zeller mesh inequality (threaded into hyps); the rest is sec monotonicity from beta/k ≤ 1/c. Hence in-scope (defer_tier false), proved CONDITIONAL on the gate. Search trace: sec-monotonicity is elementary Mathlib Real trig; build-inline."
+    },
+    "lem:continuous-chebyshev-endpoint-bound": {
+      "lean_kind": "lemma",
+      "lean_name": "continuous_chebyshev_endpoint_bound",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema", "Mathlib.Analysis.SpecialFunctions.Hyperbolic.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/ChebyshevExtremal.lean",
+      "hyps": [],
+      "notes": "Endpoint growth: |R(x_q) - R(-1)| ≤ C(q_max) λ(q)^beta uniformly, and matching lower T_beta(x_q) - 1 ≥ c(q_max) λ(q)^beta, via x_q = cosh a, T_beta(x_q) = cosh(beta a), λ(q) = e^a. Uses lem:chebyshev-exterior-extremal (dep, used). Build-inline over Mathlib cosh/Chebyshev; medium."
+    },
+    "lem:chebyshev-schedule-admissible": {
+      "lean_kind": "lemma",
+      "lean_name": "chebyshev_schedule_admissible",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/Schedule.lean",
+      "hyps": [],
+      "notes": "p^Ch(k,q) ∈ S_{k,q}: endpoints 0 and q, strict monotonicity from strict decrease of cos on [0,π]. Both deps are defs. Small. Build-inline over Mathlib Real.cos_lt_cos / strictAntiOn. F2 SCAFFOLD-REDIRECT (attempt 8): this lemma is now the load-bearing realizer of the p^Ch(k,q) ∈ [0,1]^(k+1) core symbol space — its conclusion BudgetedSchedule's first conjunct ∀ j, p^Ch(k,q) j ∈ Icc 0 1 IS that range, under k≥1 (hk), q∈(0,1] (hq). Tagged @realizes p^Ch(k,q)(range via BudgetedSchedule Icc conjunct). No signature change (the range clause already existed in the conclusion); only the realization tag was added."
+    },
+    "lem:unbiased-weight-set-nonempty": {
+      "lean_kind": "lemma",
+      "lean_name": "unbiased_weight_set_nonempty",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Mathlib.LinearAlgebra.Vandermonde"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/Amplification.lean",
+      "hyps": [],
+      "notes": "W_beta(p) ≠ ∅ for k ≥ beta: the (beta+1)×(k+1) moment matrix has full row rank (distinct nodes ⇒ no nonzero degree-≤beta polynomial vanishes at k+1 ≥ beta+1 points), so w ↦ Bw is surjective. Uses Vandermonde/distinct-roots. Both deps are defs. Search trace: Mathlib.LinearAlgebra.Vandermonde + Polynomial.card_roots — build-inline; no Causalean fit."
+    },
+    "lem:variance-envelope-sharpness": {
+      "lean_kind": "lemma",
+      "lean_name": "variance_envelope_sharpness",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Design", "Mathlib.Data.Real.Sqrt"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/Variance.lean",
+      "hyps": ["ass:round-mean-variance-envelope"],
+      "notes": "If Var_pi(X_j) ≤ sigma_0²/n then Var_pi(∑ w_j X_j) ≤ (sigma_0²/n)(∑|w_j|)², with rank-one sharpness. Proof is the L²(pi) triangle inequality + Cauchy–Schwarz on FiniteDesign.Cov. The envelope premise is exactly ass:round-mean-variance-envelope (threaded hyp). Search trace: reuse FiniteDesign.Var/Cov/Var_linear_comb (Design.lean:203-217) + Mathlib Real.sum_mul_le_sqrt_mul_sqrt / abs_real_inner_le_norm for the Cauchy–Schwarz step; small bridge lemma (Cov ≤ √Var√Var) may need building over FiniteDesign — small. Build-inline. F2 SCAFFOLD-REDIRECT (sharpness half): the core statement's second sentence ('this bound is sharp over covariance matrices whose diagonal entries are bounded by sigma_0²/n') was omitted; RE-ADDED as a conjunct ∃ Γ : Matrix, Γ.PosSemidef ∧ (∀ j, Γ j j ≤ sigma0sq/n) ∧ (∑ i ∑ j w i * Γ i j * w j) = sigma0sq/n * (∑|w j|)² (the rank-one worst case Γ=(sigma0sq/n)·ssᵀ, s_j=sign w_j). Added hyp hsig : 0 ≤ sigma0sq (the σ₀² ∈ ℝ_+ range, note-stated; required for the PSD witness — the sharpness clause is FALSE for σ₀²<0). Import Mathlib.LinearAlgebra.Matrix.PosDef."
+    },
+    "lem:exact-risk-envelope-upper": {
+      "lean_kind": "lemma",
+      "lean_name": "exact_risk_envelope_upper",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Design"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/Variance.lean",
+      "hyps": ["def:rollout-law-class"],
+      "notes": "Envelope-to-exact bridge: inf_w sup_P w' Gamma_P(p) w ≤ (sigma_0²/n) A_beta(p), hence R_exact ≤ (sigma_0²/n) M. Same L² triangle argument as lem:variance-envelope-sharpness applied to the exact FiniteDesign covariance Gamma_P(p). Assumption dep ass:round-mean-variance-envelope covered via bundled class def:rollout-law-class in hyps; other deps are defs/lemmas used. Build-inline over FiniteDesign.Var."
+    },
+    "lem:exact-chebyshev-rate-feasible": {
+      "lean_kind": "lemma",
+      "lean_name": "exact_chebyshev_rate_feasible",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": ["Causalean.Experimentation.DesignBased.Design"],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/ExactRisk.lean",
+      "hyps": ["ass:low-budget-cap"],
+      "notes": "Rate-feasibility of p^Ch for R_exact: combine lem:exact-risk-envelope-upper (applied to p^Ch, admissible by lem:chebyshev-schedule-admissible) with the upper half of thm:chebyshev-minimax to get R_exact ≤ (sigma_0²/n) C_+ (rho/q)^{2beta}. Assumption dep ass:low-budget-cap in hyps; other deps used. Build-inline (pure composition)."
+    }
+  },
+  "infrastructure_needed": [
+    {
+      "id": "lem:ehlich-zeller-chebyshev-lobatto-mesh",
+      "kind": "mathlib-lemma",
+      "description": "Ehlich–Zeller Chebyshev-Lobatto mesh/norming inequality: sup_{[-1,1]}|R| ≤ sec(π·deg/(2k)) · max_j |R(-cos(π j/k))| for real R of degree ≤ beta < k. Classical (EhlichZeller1964), absent from Mathlib; a polynomial norming (Marcinkiewicz–Zygmund-type) result. Substrate-gate: assumed visibly to validate the rest, to be built 0-sorry before banking; threaded into lem:oversampled-chebyshev-lobatto-norming and thereby into thm:chebyshev-minimax's upper bound.",
+      "effort": "large"
+    }
+  ],
+  "theorems": [
+    {"theorem_local_id": "prop:rollout-polynomial-identity"},
+    {"theorem_local_id": "thm:tv-envelope-design"},
+    {"theorem_local_id": "prop:equal-spacing-benchmark"},
+    {"theorem_local_id": "prop:no-extrapolation-boundary"},
+    {"theorem_local_id": "thm:chebyshev-minimax"},
+    {"theorem_local_id": "lem:amplification-dual-norm"},
+    {"theorem_local_id": "lem:chebyshev-exterior-extremal"},
+    {"theorem_local_id": "lem:oversampled-chebyshev-lobatto-norming"},
+    {"theorem_local_id": "lem:continuous-chebyshev-endpoint-bound"},
+    {"theorem_local_id": "lem:chebyshev-schedule-admissible"},
+    {"theorem_local_id": "lem:unbiased-weight-set-nonempty"},
+    {"theorem_local_id": "lem:variance-envelope-sharpness"},
+    {"theorem_local_id": "lem:exact-risk-envelope-upper"},
+    {"theorem_local_id": "lem:exact-chebyshev-rate-feasible"}
+  ],
+  "feasibility_notes": "Confirmed reusable: Causalean.Experimentation.DesignBased.FiniteDesign (Design.lean) provides the finite-population rollout DESIGN world — E/Var/Cov as finite sums with Var_linear_comb/Var_const_mul/Cov_* — reused (S1) for the variance-layer nodes (variance-envelope-sharpness, exact-risk-envelope-upper, exact-nested-risk, tv-envelope-design). Mathlib supplies Polynomial.Chebyshev.T and the Chebyshev.Extremal/RootsExtrema API reused/adapted by the endpoint lemmas. The approximation-theoretic core (S2: schedules S_{k,q}, weights W_beta(p), amplification A_beta/M, Chebyshev/equal grids) is pure real/polynomial analysis over Mathlib — bypass-justified, as the Causalean design layer is a different abstraction. Build-inline (in scope): all four assumptions (modeling/envelope — threaded Props, never discharged), all six definitions/structure, and 13 statement nodes (rollout-polynomial-identity, tv-envelope-design, both equal-spacing props, chebyshev-minimax, amplification-dual-norm, chebyshev-exterior-extremal [full alternation proof given, feasible], continuous-chebyshev-endpoint-bound, oversampled-chebyshev-lobatto-norming [conditional on the gate], chebyshev-schedule-admissible, unbiased-weight-set-nonempty, variance-envelope-sharpness, exact-risk-envelope-upper, exact-chebyshev-rate-feasible). The open question oeq:exact-nested-minimax is STATED as a Prop def (not a proof obligation, excluded from the manifest). Exactly ONE Defer/substrate-gate: lem:ehlich-zeller-chebyshev-lobatto-mesh — the classical Ehlich–Zeller polynomial norming inequality, external to this paper (no novelty claimed), citation-only proof, absent from Mathlib and genuinely hard to formalize; tagged substrate-gate (gate_class gated), threaded into its single direct consumer, so the headline thm:chebyshev-minimax is planned CONDITIONAL on it and no statement is dropped. Derived verdict: needs-new-infrastructure (the one gate), with a fully formalizable plan otherwise.",
+  "message": "Planned all 30 symbols (S1 reuses Causalean FiniteDesign design world; S2 Mathlib real/polynomial ambient) and all 24 core nodes; sole substrate-gate is the classical Ehlich–Zeller mesh inequality, threaded so the headline Chebyshev minimax is proved conditional on it.",
+  "artifacts": ["/<repo-root>/CausalSmith/doc/formalization/research/exp_rollout_chebyshev_minimax/formalization/plan.json"]
+}

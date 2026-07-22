@@ -1,0 +1,590 @@
+% =====================================================================
+%  ThmSmith Stage 0 derivation skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_dose\_response\_shape, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to a Q1..Q6
+%    pool-mode, fill it VERBATIM from the question-specific block of
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    For free-form panel / ExactID / PartialID anchors, reproduce the
+%    locked-parameter block from the Stage -1 proposal verbatim. Do not
+%    rephrase locked parameters; Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage 0 derivation: \texttt{pid\_dose\_response\_shape} / \texttt{v1}%
+  \\ \large\textit{Law-invariance obstruction to sharp continuous-dose grid pasting}}
+\author{ThmSmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note is a partial-identification result rather than a regression-coefficient result: the fixed ``regression estimator'' section below defines the bounding functional
+\(B_{\Gamma,\mathrm{mc}}(P,k)\) as a coordinate projection of a finite linear-inequality set.  The observable law is \(P\) for \(O=(Y,A,X)\), with \(Y\in[0,1]\), \(A\in[0,1]\), and fixed design doses \(0=a_0<\cdots<a_K=1\).  The causal target is the finite-grid dose-response vector \(\theta=(\mu_0,\ldots,\mu_K)\), where \(\mu_j=\E\{Y(a_j)\}\).  The maintained sensitivity analysis supplies pointwise no-shape intervals \(I_j(P,\Gamma)=[L_j(P,\Gamma),U_j(P,\Gamma)]\), and the shape restriction requires \(\theta\) to be nondecreasing and discretely concave.  The main theorem is a law-invariance obstruction: finite-point density-ratio pasting at continuous treatment doses changes only density representatives, not the conditional treatment law, so the Stage -1 normalization-pasting sharpness conjecture is refuted for the locked law-level model.  The surviving positive conclusion is
+\(\Theta_I(P)\subseteq\Theta_{\Gamma,\mathrm{mc}}(P)\), so \(\mu_k\in B_{\Gamma,\mathrm{mc}}(P,k)\); the three-dose phase-transition formula is confirmed as a finite-polytope projection statement.
+\end{abstract}
+
+\section{Introduction}
+Continuous-dose causal questions arise when the intervention level itself is a decision variable: a regulator chooses an exposure threshold, a physician chooses a dosage, or a policy maker chooses a transfer amount.  Modern sensitivity analyses for continuous treatments give pointwise ranges for \(\E\{Y(a)\}\) when hidden confounding may perturb the generalized propensity score.  Substantive dose-response science often adds a separate shape belief: higher doses should not reduce the mean response, and the marginal gain should diminish as the dose grows.
+
+Pointwise sensitivity bands and shape restrictions answer different questions.  A pointwise band says how far hidden confounding can move one dose-specific mean.  A monotone-concave restriction says which collections of dose-specific means are jointly plausible.  The econometric question is whether these two restrictions can be combined sharply on a finite design grid, or whether independent pointwise adversaries create a conservative outer band.
+
+This note does not try to derive a new pointwise continuous-treatment sensitivity interval.  Those intervals are locked inputs.  Its theorem-level contribution is a negative compatibility result for continuous treatments: a normalization-pasting argument that enforces density-ratio values only at the finitely many design doses is not a law-level sharpness argument, because continuous conditional densities are determined only up to null-set changes in the dose coordinate.  This obstruction is absent from discrete-treatment LPs, where treatment-cell probabilities are law-level quantities.
+
+The exact positive formula that remains valid for the locked law-level model is the coordinate projection
+\[
+  B_{\Gamma,\mathrm{mc}}(P,k)
+  =
+  \left[
+  \inf_{\vartheta\in\Theta_{\Gamma,\mathrm{mc}}(P)}\vartheta_k,\,
+  \sup_{\vartheta\in\Theta_{\Gamma,\mathrm{mc}}(P)}\vartheta_k
+  \right],
+\]
+where \(\Theta_{\Gamma,\mathrm{mc}}(P)\) is the pointwise sensitivity interval box intersected with nondecreasing discrete concavity.  This identifies the exact LP that downstream formula design should solve, while also explaining why the LP is an outer envelope rather than a law-level sharp identified set unless the model is changed to use representative-level or neighborhood-level sensitivity restrictions.
+
+\section{Related work and positioning}
+\cite{Manski1990} provides the canonical bounded-outcome partial-identification logic: unobserved potential outcomes can be completed adversarially inside their support.  \cite{Manski1997} introduces monotone treatment response restrictions and shows how shape information can sharpen treatment-response bounds without point identification.  \cite{ManskiPepper2000} develops monotone instrumental-variable restrictions; it is relevant because it separates shape information from selection assumptions, although the present note uses no instrument.  \cite{OkumuraUsui2014} is the closest shape-restricted treatment-response comparator, combining concave-monotone response restrictions with monotone treatment selection rather than with a continuous-treatment sensitivity model.
+
+\cite{Imbens2000} and \cite{HiranoImbens2004} provide the generalized-propensity foundation for continuous-treatment dose-response identification under observed-confounder adjustment.  \cite{KennedyMaMcHughSmall2017} gives a doubly robust nonparametric estimation benchmark for continuous treatments under unconfoundedness, which is the point-identified limit of the present construction when \(\Gamma=1\).  \cite{WestlingGilbertCarone2020} studies causal isotonic regression for a monotone point-identified dose-response curve; here the object is instead a shape-restricted identified set.
+
+\cite{Tan2006} is a foundational marginal-sensitivity reference for hidden confounding.  \cite{YadlowskyNamkoongBasuDuchiTian2022} and \cite{DornGuo2023} give sharp sensitivity results driven by extremal weighting and quantile-balancing ideas in discrete-treatment or inverse-propensity settings.  \cite{BonviniKennedyVenturaWasserman2022} extends sensitivity analysis to marginal structural models, including continuous and time-varying treatments, but targets model parameters rather than finite-grid monotone-concave curve envelopes.
+
+\cite{JessonDouglasManshausenSolalMeinshausenStierGalShalit2022} is the sensitivity-model anchor: it formulates scalable sensitivity and uncertainty analysis for continuous-valued interventions.  \cite{MarmarelisHaddadJessonJahanshadGalstyanVerSteeg2023} develops partial identification of continuous dose responses with hidden confounding.  \cite{BaitairianSebastienJreichKatsahianGuilloux2025} is the closest pointwise sharpness comparator for continuous-valued treatments.  Those papers motivate the imported pointwise intervals, but they do not prove that independently sharp grid-dose adversaries can be normalized and pasted into one law after monotone-concave shape is imposed.
+
+The closest generic positive result class is ordinary Manski-style completion followed by shape-restricted linear programming.  In that class, coordinatewise feasible completions are intersected with monotone or concave inequalities and then projected.  The LP containment in this note belongs to that generic class and is recorded as the valid positive envelope.  The theorem-level difference is the law-invariance obstruction for the tempting reverse inclusion: in a continuous-treatment model, density values at a finite set of doses are representative choices, unlike treatment-cell probabilities in discrete Balke--Pearl or Manski LPs.  This distinction is exactly what the Stage -1 normalization-pasting conjecture missed.
+
+The in-repository comparison is also limited.  The Stage -1 proposal for this qid noted that the ThmSmith catalogue was a seed catalogue for ExactID and PartialID artifacts and compared this problem with partial-identification flavored entries such as aggregate-pretrend partial DID and dynamic-IV compliance bounds.  Those artifacts concern different substrates: panel missing-history restrictions or discrete IV response-compliance structure.  The promoted AutoID partial-ID notes documented in the project API cover Manski-family, Balke--Pearl, Lee, and proximal bounds; they provide the relevant completion and LP templates, but their discrete probability objects do not exhibit the finite-point density-representative pathology isolated here.
+
+\section{Formal setup}
+Let \(P\) denote the observable law of \(O=(Y,A,X)\).  The outcome satisfies \(Y\in[0,1]\), the dose satisfies \(A\in[0,1]\), and \(X\) takes values in a measurable covariate space \(\mathcal X\).  Fix design doses
+\[
+  0=a_0<a_1<\cdots<a_K=1,\qquad h_j=a_j-a_{j-1}\quad(1\le j\le K),
+\]
+with \(K\ge2\).  For each grid dose \(a_j\), let \(Y(a_j)\) be the potential outcome under intervention \(A=a_j\), and define
+\[
+  \mu_j=\E\{Y(a_j)\},\qquad
+  \theta=(\mu_0,\ldots,\mu_K)\in[0,1]^{K+1}.
+\]
+
+For the observed law, write \(e(a\mid x)=f_{A\mid X}(a\mid x)\) for a chosen generalized propensity density version.  For a full-data law \(Q\), write
+\[
+  e^\dagger_j(a_j\mid x,y)
+  =
+  f_Q(A=a_j\mid X=x,Y(a_j)=y)
+\]
+for the complete propensity density version at the same grid dose.  The locked ratio orientation is complete over nominal:
+\[
+  R_j(x,y)=\frac{e^\dagger_j(a_j\mid x,y)}{e(a_j\mid x)},
+  \qquad
+  \Gamma^{-1}\le R_j(x,y)\le \Gamma.
+\]
+The inverse observed tilt is \(w_j(y,x)=R_j(x,y)^{-1}\).  Let \(\mathcal W_{\Gamma,j}(P)\) be the set of measurable \(w_j(Y,X)\), defined under the regular conditional law of \((Y,X)\) given \(A=a_j\), such that
+\[
+  \Gamma^{-1}\le w_j\le\Gamma,\qquad
+  \E_P\{w_j(Y,X)\mid A=a_j,X=x\}=1
+\]
+for \(P_X\)-almost every \(x\).  The pointwise no-shape sensitivity endpoints are
+\[
+  L_j(P,\Gamma)=
+  \inf_{w_j\in\mathcal W_{\Gamma,j}(P)}
+  \int \E_P\{Yw_j(Y,X)\mid A=a_j,X=x\}\,dP_X(x),
+\]
+and \(U_j(P,\Gamma)\) is the corresponding supremum.
+
+The displayed densities are version-dependent auxiliary objects.  A conditional law for a continuous dose determines a density only up to equality almost everywhere in the dose argument, and values at finitely many grid points can be changed without changing the law of \(A\mid X,U\).  In this corrected note, \(\Theta_I(P)\) is a law-level identified set: density representatives at \(a_0,\ldots,a_K\) are not additional primitives unless the locked model is explicitly augmented.  Consequently, the finite-grid ratio notation is used to define the pointwise interval inputs, but it is not by itself a law-invariant reverse-pasting device.
+
+The actual identified set is
+\[
+  \Theta_I(P)
+  =
+  \left\{
+  \theta\in[0,1]^{K+1}:
+  \begin{array}{l}
+  \text{there exists a full-data law }Q\text{ with observable margin }P,\\
+  Q\text{ satisfies the locked sensitivity and shape restrictions, and}\\
+  \theta_j=\E_Q\{Y(a_j)\}\text{ for every }j
+  \end{array}
+  \right\}.
+\]
+The finite polytope generated by the pointwise intervals and shape restrictions is
+\[
+\Theta_{\Gamma,\mathrm{mc}}(P)=
+\left\{\vartheta\in\mathbb R^{K+1}:
+\begin{array}{l}
+L_j(P,\Gamma)\le \vartheta_j\le U_j(P,\Gamma)\quad\forall j,\\
+\vartheta_0\le\cdots\le\vartheta_K,\\
+(\vartheta_{j+1}-\vartheta_j)/(a_{j+1}-a_j)
+\le
+(\vartheta_j-\vartheta_{j-1})/(a_j-a_{j-1})\quad\forall 1\le j<K
+\end{array}
+\right\}.
+\]
+All conditioning statements are understood up to the displayed regular conditional versions.  Because the model is specialized to a finite grid, no smoothness or continuity of the ratio as a function of the whole continuum \(a\in[0,1]\) is part of the locked restrictions.  The absence of such a cross-dose primitive is exactly why the result below is an outer bound for laws, not a sharp law-level characterization.
+
+\paragraph{Locked parameters.}
+This is a partial-identification anchor.  The locked tuple is
+\[
+(\texttt{pid\_dose\_response\_shape},\texttt{v1},
+P,\theta,\mathcal R_{\Gamma,\mathrm{mc}},B_{\Gamma,\mathrm{mc}}).
+\]
+Here \(P\) is the observable law of \((Y,A,X)\), with \(Y\in[0,1]\), a continuous dose \(A\in[0,1]\), and observed covariates \(X\).  The parameter is the finite-grid dose-response vector
+\(\theta=(\mu_0,\ldots,\mu_K)\), where \(0=a_0<\cdots<a_K=1\) are fixed design doses and \(\mu_j=\E\{Y(a_j)\}\).  The identifying restrictions \(\mathcal R_{\Gamma,\mathrm{mc}}\) are consistency, positivity at the design doses, the continuous-treatment marginal sensitivity model of \cite{JessonDouglasManshausenSolalMeinshausenStierGalShalit2022} specialized to the grid, pointwise sharp no-shape intervals \(I_j(P,\Gamma)=[L_j(P,\Gamma),U_j(P,\Gamma)]\) for each \(\mu_j\), and the shape restriction that \(\theta\) is nondecreasing and discretely concave in the ordered doses.  The bounding functional is
+\[
+B_{\Gamma,\mathrm{mc}}(P,k)=
+\left[
+\inf_{\vartheta\in\Theta_{\Gamma,\mathrm{mc}}(P)}\vartheta_k,\,
+\sup_{\vartheta\in\Theta_{\Gamma,\mathrm{mc}}(P)}\vartheta_k
+\right],
+\]
+where
+\[
+\Theta_{\Gamma,\mathrm{mc}}(P)=
+\{\vartheta\in\mathbb R^{K+1}: L_j(P,\Gamma)\le \vartheta_j\le U_j(P,\Gamma)\ \forall j,\ 
+\vartheta_0\le\cdots\le\vartheta_K,\ 
+(\vartheta_{j+1}-\vartheta_j)/(a_{j+1}-a_j)\le
+(\vartheta_j-\vartheta_{j-1})/(a_j-a_{j-1})\ \forall 1\le j<K\}.
+\]
+\begin{itemize}[leftmargin=2em]
+\item qid: \texttt{pid\_dose\_response\_shape}.
+\item specialization: \texttt{v1}.
+\item observable distribution: \(P\), the law of \((Y,A,X)\), with \(Y\in[0,1]\), \(A\in[0,1]\), and observed covariates \(X\).
+\item parameter: \(\theta=(\mu_0,\ldots,\mu_K)\), where \(\mu_j=\E\{Y(a_j)\}\) at fixed doses \(0=a_0<\cdots<a_K=1\).
+\item identifying restrictions: \(\mathcal R_{\Gamma,\mathrm{mc}}\), namely consistency, grid positivity, the grid-specialized continuous-treatment marginal sensitivity model, pointwise sharp no-shape intervals \(I_j(P,\Gamma)\), and nondecreasing discrete concavity of \(\theta\).
+\item bounding functional: \(B_{\Gamma,\mathrm{mc}}(P,k)\), the lower and upper coordinate projections of \(\Theta_{\Gamma,\mathrm{mc}}(P)\) onto dose index \(k\).
+\end{itemize}
+
+\section{Assumptions}
+\begin{assumption}[Observable support and bounded outcomes]\label{ass:support}
+The observable law \(P\) is a probability law for \(O=(Y,A,X)\), with \(Y\in[0,1]\), \(A\in[0,1]\), and \(X\in\mathcal X\).  The grid \(0=a_0<\cdots<a_K=1\) is fixed, finite, and has \(K\ge2\).
+\end{assumption}
+
+\begin{assumption}[Consistency at design doses]\label{ass:consistency}
+For each grid dose \(a_j\), if \(A=a_j\) then the observed outcome equals the corresponding potential outcome: \(Y=Y(a_j)\).  This is imposed only at the design doses used in the target vector.
+\end{assumption}
+
+\begin{assumption}[Grid positivity]\label{ass:positivity}
+For each \(j\), the generalized propensity density version satisfies \(e(a_j\mid x)>0\) for \(P_X\)-almost every \(x\) on the relevant support.  The conditional laws of \(Y\) given \(A=a_j,X=x\) and the complete propensity density versions used in \(R_j\) exist for these \(x\).
+\end{assumption}
+
+\begin{assumption}[Grid-specialized continuous marginal sensitivity model]\label{ass:cmsm}
+For a fixed \(\Gamma\ge1\), a full-data law satisfies the sensitivity restriction when, at every grid dose \(a_j\), the complete-over-nominal ratio
+\[
+R_j(X,Y(a_j))
+=
+\frac{f_Q(A=a_j\mid X,Y(a_j))}{e(a_j\mid X)}
+\]
+lies in \([\Gamma^{-1},\Gamma]\) almost surely.  Equivalently, the inverse tilt \(w_j=R_j^{-1}\) belongs to \(\mathcal W_{\Gamma,j}(P)\) and is conditionally normalized among units with \(A=a_j\).  A joint full-data law uses one latent variable \(U\) and one conditional treatment-density version \(f_Q(a\mid X,U)\); the locked model constrains its grid-dose ratio values and imposes no additional cross-dose smoothness in \(a\).
+For the law-level theorem, this assumption is interpreted through the induced pointwise interval restrictions, not as permission to choose arbitrary representatives on \(A\)-null grid sets after the law has been fixed.
+\end{assumption}
+
+\begin{assumption}[Pointwise sharp no-shape envelope]\label{ass:pointwise}
+For each grid dose \(a_j\), before imposing shape across doses, the sensitivity model delivers the sharp interval
+\[
+  I_j(P,\Gamma)=[L_j(P,\Gamma),U_j(P,\Gamma)]
+\]
+for \(\mu_j\).  Moreover, every value \(v\in I_j(P,\Gamma)\) is attainable by some \(w_j\in\mathcal W_{\Gamma,j}(P)\) through
+\[
+  v=
+  \int \E_P\{Yw_j(Y,X)\mid A=a_j,X=x\}\,dP_X(x).
+\]
+This assumption is a primitive pointwise sharpness input from the sensitivity analysis; it does not assert that the dose-specific sharp laws can be coupled into one law satisfying all grid-dose restrictions at once.
+\end{assumption}
+
+\begin{assumption}[Mean monotone-concave dose response]\label{ass:mc}
+The target vector \(\theta=(\mu_0,\ldots,\mu_K)\) is nondecreasing and discretely concave:
+\[
+  \mu_{j-1}\le\mu_j\quad(1\le j\le K),
+  \qquad
+  \frac{\mu_j-\mu_{j-1}}{a_j-a_{j-1}}
+  \ge
+  \frac{\mu_{j+1}-\mu_j}{a_{j+1}-a_j}
+  \quad(1\le j<K).
+\]
+\end{assumption}
+
+\begin{assumption}[Nonempty shape-compatible envelope]\label{ass:nonempty}
+The polytope \(\Theta_{\Gamma,\mathrm{mc}}(P)\) is nonempty.
+\end{assumption}
+
+\section{Regression estimator}
+There is no regression estimator in this partial-identification anchor.  The estimand-defining functional is the coordinatewise bounding functional obtained by solving two finite linear programs.  For a target index \(k\in\{0,\ldots,K\}\), define
+\[
+  \underline\mu^{\mathrm{mc}}_k(P,\Gamma)
+  =
+  \min_{\vartheta\in\Theta_{\Gamma,\mathrm{mc}}(P)}\vartheta_k,
+  \qquad
+  \overline\mu^{\mathrm{mc}}_k(P,\Gamma)
+  =
+  \max_{\vartheta\in\Theta_{\Gamma,\mathrm{mc}}(P)}\vartheta_k,
+\]
+and
+\[
+  B_{\Gamma,\mathrm{mc}}(P,k)
+  =
+  [\underline\mu^{\mathrm{mc}}_k(P,\Gamma),
+    \overline\mu^{\mathrm{mc}}_k(P,\Gamma)].
+\]
+The constraints in \(\Theta_{\Gamma,\mathrm{mc}}(P)\) are all observable once the pointwise endpoints \(L_j(P,\Gamma)\) and \(U_j(P,\Gamma)\) have been computed from \(P\) and \(\Gamma\).  For the locked law-level model, this functional is an outer bound:
+\[
+  \Theta_I(P)\subseteq\Theta_{\Gamma,\mathrm{mc}}(P)
+  \quad\Longrightarrow\quad
+  \theta_k\in B_{\Gamma,\mathrm{mc}}(P,k).
+\]
+The main theorem proves this containment and, more importantly, explains why the Stage -1 density-normalization route cannot supply the missing reverse inclusion for laws.  A sharp equality
+\(\Theta_I(P)=\Theta_{\Gamma,\mathrm{mc}}(P)\) would require either a separate cross-dose compatibility theorem stated in law-invariant terms or an augmented model in which density versions at the design doses are part of the primitive admissible structure.
+
+\section{Target causal estimand}
+The causal target is the full finite-grid dose-response vector
+\[
+  \theta=(\mu_0,\ldots,\mu_K),\qquad
+  \mu_j=\E\{Y(a_j)\}.
+\]
+For a selected dose index \(k\), the scalar target is \(\mu_k\).  This target is not defined as the solution of the linear programs above.  Rather, \(\Theta_I(P)\) is the set of target vectors that can arise under full-data laws consistent with the observable distribution \(P\) and the maintained restrictions; \(B_{\Gamma,\mathrm{mc}}(P,k)\) is the observable interval that contains the possible values of the scalar target \(\mu_k\).  Sharpness is not claimed for the law-level model.
+
+\section{Main theorems}
+\begin{theorem}[Law-invariance obstruction and grid outer envelope]\label{thm:sharp-grid}
+Under Assumptions~\ref{ass:support}--\ref{ass:nonempty}, the following two statements hold.
+\begin{enumerate}[label=(\alph*),leftmargin=2em]
+\item Every law-level feasible vector satisfies
+\[
+  \Theta_I(P)\subseteq\Theta_{\Gamma,\mathrm{mc}}(P).
+\]
+Consequently, for every target index \(k\),
+\[
+  \{\theta_k:\theta\in\Theta_I(P)\}
+  \subseteq
+  B_{\Gamma,\mathrm{mc}}(P,k)
+  =
+  [\underline\mu^{\mathrm{mc}}_k(P,\Gamma),
+    \overline\mu^{\mathrm{mc}}_k(P,\Gamma)].
+\]
+The lower and upper endpoints of the bounding functional are attained by vertices of the finite polytope \(\Theta_{\Gamma,\mathrm{mc}}(P)\).  They need not be attained by law-level full-data laws.
+\item The Stage -1 normalization-pasting conjecture is refuted as a law-invariant sharpness claim.  If a continuous conditional treatment law \(A\mid X,U\) has density version \(f(a\mid X,U)\), then changing \(f\) at the finite set \(\{a_0,\ldots,a_K\}\) can make the grid ratios \(f(a_j\mid X,U)/e(a_j\mid X)\) take arbitrary prescribed finite positive representative values, while leaving the conditional law of \(A\mid X,U\), the observable law \(P\), and the target vector \(\theta\) unchanged.  Therefore a reverse-inclusion proof that normalizes or pastes only finite-point density values is a version-level argument, not a proof that
+\(\Theta_{\Gamma,\mathrm{mc}}(P)\subseteq\Theta_I(P)\) for the locked law-level identified set.
+\end{enumerate}
+\end{theorem}
+
+This is the theorem-level contribution of the note.  The LP containment in part (a) is the valid positive envelope once pointwise intervals are imported; part (b) identifies the continuous-treatment obstruction that prevents the Stage -1 finite-grid sharpness conjecture from being a law-level theorem.  In discrete-treatment partial-ID problems the analogues of \(f(a_j\mid X,U)\) are cell probabilities and hence properties of the law; here they are density representatives at null treatment points.  The nearest correct positive statement is the outer bound above, or a version-level sharpness statement after changing the locked model so that density representatives at the grid are primitive objects.
+
+\begin{proposition}[Three-dose concavity phase transition]\label{prop:three-dose}
+Suppose \(K=2\), \(a_0<a_1<a_2\), and Assumptions~\ref{ass:support}--\ref{ass:nonempty} hold.  Let
+\[
+  c(L_0,L_2)
+  =
+  \frac{a_2-a_1}{a_2-a_0}L_0(P,\Gamma)
+  +
+  \frac{a_1-a_0}{a_2-a_0}L_2(P,\Gamma).
+\]
+Set
+\[
+  m=\max\{L_1(P,\Gamma),c(L_0,L_2)\},
+  \qquad
+  z=\max\{L_2(P,\Gamma),m\}.
+\]
+If \(L_0(P,\Gamma)\le L_1(P,\Gamma)\), \(m\le U_1(P,\Gamma)\), and \(z\le U_2(P,\Gamma)\), then
+\[
+  \underline\mu^{\mathrm{mc}}_1(P,\Gamma)
+  =
+  m.
+\]
+In particular, if \(c(L_0,L_2)>L_1(P,\Gamma)\), concavity strictly raises the lower bound at the middle dose, whereas monotonicity alone leaves that lower bound equal to \(L_1(P,\Gamma)\).
+\end{proposition}
+
+This confirms Stage -1 Conjecture 2 only at the finite-polytope level, with the corrected feasibility witness \((L_0,m,z)\).  The third coordinate must be allowed to rise to \(m\) when \(L_1>L_2\); otherwise the displayed witness can violate monotonicity.  The proposition isolates the smallest shape effect: a high lower endpoint at the high dose propagates backward to the middle dose because diminishing returns require the middle mean to lie above the endpoint chord.
+
+\begin{proposition}[No-hidden-confounding collapse]\label{prop:gamma-one}
+Under Assumptions~\ref{ass:support}--\ref{ass:pointwise}, suppose \(\Gamma=1\) and the pointwise sensitivity intervals are singletons
+\[
+  L_j(P,1)=U_j(P,1)=\mu_j^0(P)\qquad(0\le j\le K).
+\]
+If \(\mu^0(P)=(\mu_0^0(P),\ldots,\mu_K^0(P))\) is nondecreasing and discretely concave, then
+\[
+  \Theta_{1,\mathrm{mc}}(P)=\{\mu^0(P)\},
+  \qquad
+  B_{1,\mathrm{mc}}(P,k)=\{\mu_k^0(P)\}.
+\]
+If \(\mu^0(P)\) violates the monotone-concave restriction, then \(\Theta_{1,\mathrm{mc}}(P)=\varnothing\).
+\end{proposition}
+
+This proposition records the point-identification benchmark.  The shape restriction is not a smoothing convention that changes an identified curve; it is a maintained restriction that either is satisfied by the point-identified curve or makes the restricted model empty.
+
+\section{Interpretation}
+Theorem~\ref{thm:sharp-grid} has two roles.  First, it gives the transparent law-level outer bound: compute the pointwise sensitivity intervals, intersect their product with the nondecreasing concave cone, and project the resulting polytope onto the coordinate of interest.  Second, it explains why this LP cannot be promoted to a sharp law-level curve set by a finite-point density-normalization argument.  At continuous doses, the values of a density version at \(a_0,\ldots,a_K\) are not law-level data.
+
+The bound collapses to point identification when the pointwise intervals are singletons and the singleton vector satisfies the shape inequalities, as in Proposition~\ref{prop:gamma-one}.  It widens to the natural bounded-outcome Manski range for a coordinate when the pointwise intervals are \([0,1]\) and no cross-coordinate shape restriction is used; with monotone-concavity retained, the same coordinate range \([0,1]\) remains possible because constant vectors are feasible for every value in \([0,1]\).  Between these extremes, the sensitivity intervals encode hidden-confounding uncertainty, and monotone-concavity removes vectors that would require increasing marginal returns or downward response movements.
+
+There is no clean-versus-contaminated regression coefficient in this partial-identification theorem.  The analogous distinction is point identification versus outer interval identification.  The target is pinned down only when hidden-confounding sensitivity and shape leave a zero-width coordinate projection and the restricted law-level identified set is nonempty.  Otherwise the interval width is the transparent price of the maintained sensitivity radius plus any conservatism from using independently sharp pointwise intervals rather than a jointly sharp curve set.
+
+\section{Step-by-step proof}
+\begin{lemma}[Pointwise interval containment]\label{lem:pointwise-realization}
+Under Assumptions~\ref{ass:cmsm} and \ref{ass:pointwise}, if a law-level feasible vector \(\theta\in\Theta_I(P)\), then for every \(j\),
+\[
+  L_j(P,\Gamma)\le \theta_j\le U_j(P,\Gamma).
+\]
+\end{lemma}
+
+\begin{proof}
+By definition of \(\Theta_I(P)\), a feasible vector is generated by a full-data law with observable margin \(P\) satisfying the grid-specialized sensitivity restriction.  Assumption~\ref{ass:pointwise} says that, before cross-dose shape is imposed, the possible value of the \(j\)-th mean under that pointwise restriction lies in \(I_j(P,\Gamma)\).  Hence \(\theta_j\in[L_j(P,\Gamma),U_j(P,\Gamma)]\).
+\end{proof}
+
+\begin{lemma}[Density-version pasting is not law-level pasting]\label{lem:pasting}
+Let \(A\mid X,U\) be a continuous conditional treatment law admitting a density version \(f(a\mid X,U)\).  Fix any finite collection of nonnegative measurable functions \(g_j(X,U)\), \(0\le j\le K\), and define \(\tilde f(a\mid X,U)=g_j(X,U)\) when \(a=a_j\) and \(\tilde f(a\mid X,U)=f(a\mid X,U)\) otherwise.  Then \(f\) and \(\tilde f\) induce the same conditional law of \(A\mid X,U\).  If \(e(a_j\mid X)>0\), the representative ratios \(\tilde f(a_j\mid X,U)/e(a_j\mid X)\) can therefore be assigned arbitrary finite nonnegative values without changing the law-level full-data distribution.
+\end{lemma}
+
+\begin{proof}
+For each fixed \(X=x,U=u\), a conditional law with density \(f(\cdot\mid x,u)\) assigns probabilities by integration over Borel subsets of \([0,1]\):
+\[
+  Q(A\in B\mid X=x,U=u)=\int_B f(a\mid x,u)\,da.
+\]
+The finite set \(\{a_0,\ldots,a_K\}\) has Lebesgue measure zero.  The modified function \(\tilde f\) is nonnegative and measurable whenever the \(g_j\)'s are, and it equals \(f\) away from that finite set.  Therefore
+\[
+  \int_B \tilde f(a\mid x,u)\,da=\int_B f(a\mid x,u)\,da
+\]
+for every Borel \(B\).  The integral over \([0,1]\) is still one, so \(\tilde f\) is another density version of the same conditional law.  Under grid positivity, choosing \(g_j(X,U)=r_j(X,U)e(a_j\mid X)\) gives any prescribed finite nonnegative representative ratio \(r_j\).  Ratios evaluated only at \(a_j\) are therefore not determined by the law.  They become mathematically substantive only if the admissible structure includes the density representative itself, or if the restriction is restated on neighborhoods, limits, or another law-invariant object.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:sharp-grid}]
+Let \(\theta\in\Theta_I(P)\).  By definition of \(\Theta_I(P)\), there is a full-data law \(Q\) with observable margin \(P\) satisfying Assumptions~\ref{ass:consistency}--\ref{ass:mc}.  Lemma~\ref{lem:pointwise-realization} gives
+\[
+  L_j(P,\Gamma)\le \theta_j\le U_j(P,\Gamma)
+  \qquad(0\le j\le K).
+\]
+Assumption~\ref{ass:mc} gives the monotonicity and discrete-concavity inequalities.  Hence \(\theta\in\Theta_{\Gamma,\mathrm{mc}}(P)\), so
+\[
+  \Theta_I(P)\subseteq\Theta_{\Gamma,\mathrm{mc}}(P).
+\]
+
+Assumption~\ref{ass:nonempty} and the closed bounded interval constraints make \(\Theta_{\Gamma,\mathrm{mc}}(P)\) a nonempty compact polytope.  The maps \(\vartheta\mapsto\vartheta_k\) are linear, so the lower and upper coordinate extrema are attained; by the elementary finite-dimensional linear-programming extreme-point theorem, they are attained at vertices.  The containment just proved makes \(B_{\Gamma,\mathrm{mc}}(P,k)\) a valid law-level outer bound.
+
+Lemma~\ref{lem:pasting} gives part (b).  Take any law-level full-data distribution and any density version for \(A\mid X,U\).  By choosing \(g_j(X,U)=r_j(X,U)e(a_j\mid X)\), where \(r_j\) is any finite positive representative ratio, one obtains another density version of the same law with the desired finite-grid point values.  The observable law, the conditional treatment law, and all potential-outcome means are unchanged.  Therefore a reverse inclusion based on assigning or normalizing only the values \(f_Q(a_j\mid X,U)\) would control density representatives rather than the law.  Such a construction is valid only for a changed, version-level model and cannot prove \(v\in\Theta_I(P)\) for the law-level identified set used here.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:three-dose}]
+For \(K=2\), discrete concavity is
+\[
+  \frac{\mu_1-\mu_0}{a_1-a_0}
+  \ge
+  \frac{\mu_2-\mu_1}{a_2-a_1}.
+\]
+Multiplying by the positive product \((a_1-a_0)(a_2-a_1)\) and collecting \(\mu_1\) terms gives
+\[
+  \mu_1
+  \ge
+  \frac{a_2-a_1}{a_2-a_0}\mu_0
+  +
+  \frac{a_1-a_0}{a_2-a_0}\mu_2.
+\]
+Since \(\mu_0\ge L_0(P,\Gamma)\) and \(\mu_2\ge L_2(P,\Gamma)\), every feasible vector satisfies
+\[
+  \mu_1\ge c(L_0,L_2).
+\]
+It also satisfies \(\mu_1\ge L_1(P,\Gamma)\).  Therefore
+\[
+  \underline\mu^{\mathrm{mc}}_1(P,\Gamma)
+  \ge
+  \max\{L_1(P,\Gamma),c(L_0,L_2)\}.
+\]
+Let \(m=\max\{L_1,c(L_0,L_2)\}\) and \(z=\max\{L_2,m\}\).  The vector
+\[
+  (L_0(P,\Gamma),m,z)
+\]
+respects lower endpoints by construction and respects upper endpoints by the assumptions \(m\le U_1\) and \(z\le U_2\).  It is monotone because \(L_0\le L_1\le m\le z\).  To check concavity, if \(z=L_2\) then \(m\ge c(L_0,L_2)=c(L_0,z)\).  If \(z=m\), then
+\[
+  c(L_0,z)
+  =
+  \frac{a_2-a_1}{a_2-a_0}L_0
+  +
+  \frac{a_1-a_0}{a_2-a_0}m
+  \le m,
+\]
+because \(L_0\le m\).  Thus \((L_0,m,z)\in\Theta_{\Gamma,\mathrm{mc}}(P)\), so the lower bound \(m\) is attained.
+
+For monotonicity alone, the same assumptions make \((L_0,L_1,\max\{L_2,L_1\})\) feasible.  Hence the monotone-only lower bound at \(a_1\) is \(L_1\).  When \(c(L_0,L_2)>L_1\), the monotone-concave lower bound is strictly larger.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:gamma-one}]
+If each pointwise interval is the singleton \(\{\mu_j^0(P)\}\), then every vector in \(\Theta_{1,\mathrm{mc}}(P)\) must equal \(\mu^0(P)\).  If \(\mu^0(P)\) satisfies the monotone-concave inequalities, it belongs to the polytope, so the polytope is exactly the singleton.  If it violates at least one shape inequality, no vector can satisfy both the singleton coordinate constraints and the shape constraints, so the polytope is empty.
+\end{proof}
+
+\section{Sanity checks}
+\begin{enumerate}[leftmargin=2em]
+\item \textbf{No-restriction Manski corner.}  If the pointwise sensitivity intervals are the natural bounded-outcome intervals \(I_j=[0,1]\) and no shape restriction is imposed, then the coordinate projection is \([0,1]\), matching the bounded-outcome no-information logic of \cite{Manski1990}.  If monotone-concavity is retained, the coordinate projection is still \([0,1]\) because the constant vector \((t,\ldots,t)\) is monotone-concave for every \(t\in[0,1]\).
+\item \textbf{Point-identification corner.}  If \(\Gamma=1\) and \(L_j(P,1)=U_j(P,1)=\mu_j^0(P)\), Proposition~\ref{prop:gamma-one} gives a zero-width bound whenever \(\mu^0(P)\) satisfies the shape restriction.  This recovers the generalized-propensity dose-response benchmark associated with \cite{Imbens2000} and \cite{HiranoImbens2004}.
+\item \textbf{Monotone-only specialization.}  If concavity is dropped but monotonicity is retained, the grid set becomes \(\prod_j[L_j,U_j]\cap\{\vartheta_0\le\cdots\le\vartheta_K\}\).  When this set is nonempty, the coordinate lower and upper bounds reduce to
+\[
+  \max_{0\le j\le k} L_j(P,\Gamma),
+  \qquad
+  \min_{k\le j\le K} U_j(P,\Gamma),
+\]
+which is the finite-grid monotone-treatment-response projection.
+\item \textbf{Three-dose shape tightening.}  With \(a_0=0\), \(a_1=1/2\), \(a_2=1\), lower endpoints \(L_0=0.20\), \(L_1=0.20\), \(L_2=0.80\), and upper endpoints \(U_0=0.40\), \(U_1=0.90\), \(U_2=0.95\), monotonicity alone permits \(\mu_1=0.20\).  Concavity forces \(2\mu_1\ge\mu_0+\mu_2\), hence \(\mu_1\ge0.50\), and the vector \((0.20,0.50,0.80)\) is feasible.  This is Proposition~\ref{prop:three-dose} in the equally spaced case.
+\end{enumerate}
+
+\section{Counterexample or minimality check}
+The useful minimality check is the three-dose example above.  It shows that the concavity restriction is doing real work: with the same pointwise intervals and monotonicity alone, the middle-dose lower bound is \(0.20\), while monotone concavity raises it to \(0.50\).  Thus replacing monotone-concavity by monotonicity would refute the phase-transition conclusion.
+
+Nonemptiness is also essential.  For example, take two adjacent doses with \(L_0=0.80\), \(U_0=0.90\), \(L_1=0.10\), and \(U_1=0.20\).  The coordinate intervals are individually valid, but no nondecreasing vector can satisfy both coordinates.  Without Assumption~\ref{ass:nonempty}, the projection formula would be an optimization over an empty feasible set rather than an identified interval.
+
+The density-version issue is the minimality check for the rejected sharpness claim.  Let \(f(a\mid X,U)\) be any conditional density version and define \(\tilde f\) by changing \(f(a_j\mid X,U)\) at one or more grid points while leaving it unchanged elsewhere.  The two versions integrate to the same conditional law of \(A\mid X,U\), so a ratio restriction stated only through those point values is not a law-invariant restriction.  Thus Stage -1 Conjecture 1 would become a meaningful sharpness theorem only after a locked-parameter change that makes density representatives, neighborhood limits, or another law-invariant substitute part of the model.
+
+The local algebra in Proposition~\ref{prop:three-dose} also needs the corrected witness.  If \(L_0=0.1\), \(L_1=0.6\), and \(L_2=0.2\), the vector \((L_0,\max\{L_1,c\},L_2)\) has middle coordinate at least \(0.6\) and third coordinate \(0.2\), so it violates monotonicity.  The repaired witness raises the third coordinate to \(z=\max\{L_2,m\}\), subject to \(z\le U_2\).
+
+Finally, pointwise sharpness is essential even for interpreting the LP envelope.  If a procedure reports conservative intervals \([L_j,U_j]\) that strictly contain the true pointwise sensitivity identified sets, then \(\Theta_{\Gamma,\mathrm{mc}}(P)\) remains a valid outer set but can be strictly larger than the corresponding shape closure based on exact pointwise inputs.  Theorem~\ref{thm:sharp-grid} therefore relies on Assumption~\ref{ass:pointwise} as a labelled pointwise primitive, not as a proved contribution of this note.
+
+\section{Formalization checklist}
+\begin{itemize}[leftmargin=2em]
+\item \textbf{Deterministic data.}  A natural number \(K\ge2\); a strictly increasing grid \(a_0,\ldots,a_K\in[0,1]\) with \(a_0=0\), \(a_K=1\); spacings \(h_j=a_j-a_{j-1}>0\); and a sensitivity radius \(\Gamma\ge1\).
+\item \textbf{Observable probability objects.}  A probability law \(P\) on \([0,1]\times[0,1]\times\mathcal X\); regular conditional laws \(P(dy\mid A=a_j,X=x)\); a generalized propensity density version \(e(a\mid x)\) positive at grid doses.
+\item \textbf{Potential-outcome objects.}  Grid potential outcomes \(Y(a_j)\in[0,1]\); target means \(\mu_j=\E\{Y(a_j)\}\); target vector \(\theta\in[0,1]^{K+1}\).
+\item \textbf{Sensitivity objects.}  Complete-over-nominal ratios \(R_j(x,y)\); inverse tilts \(w_j=R_j^{-1}\); admissible tilt sets \(\mathcal W_{\Gamma,j}(P)\); pointwise endpoint functionals \(L_j(P,\Gamma)\) and \(U_j(P,\Gamma)\).
+\item \textbf{Density-version object.}  Conditional density representatives for \(A\mid X,U\) are not determined by the conditional law at individual dose points.  Values at \(\{a_0,\ldots,a_K\}\) are version-level data; a law-level model must either avoid using them for reverse inclusion or add a primitive representative / neighborhood / limit restriction.  This is the probabilistic object responsible for refuting Stage -1 Conjecture 1 as stated.
+\item \textbf{Shape objects.}  The monotone cone constraints \(\vartheta_{j-1}\le\vartheta_j\); the discrete-concavity constraints
+\[
+(\vartheta_{j+1}-\vartheta_j)/(a_{j+1}-a_j)
+\le
+(\vartheta_j-\vartheta_{j-1})/(a_j-a_{j-1}).
+\]
+\item \textbf{Identified-set objects.}  The semantic identified set \(\Theta_I(P)\); the finite polytope \(\Theta_{\Gamma,\mathrm{mc}}(P)\); coordinate projection functionals \(\underline\mu^{\mathrm{mc}}_k(P,\Gamma)\), \(\overline\mu^{\mathrm{mc}}_k(P,\Gamma)\), and \(B_{\Gamma,\mathrm{mc}}(P,k)\).
+\item \textbf{Probabilistic lemmas.}  Pointwise interval containment for any law-level feasible vector; null-set invariance of continuous conditional densities under finite changes in the dose argument; arbitrary finite representative ratios at grid points without changing the conditional treatment law; no law-level reverse inclusion from density-version assignments alone.
+\item \textbf{Deterministic identities.}  Three-dose concavity is equivalent to the chord inequality
+\[
+\mu_1\ge
+\frac{a_2-a_1}{a_2-a_0}\mu_0+
+\frac{a_1-a_0}{a_2-a_0}\mu_2.
+\]
+The coordinate extrema of a nonempty compact polytope under a linear objective are attained at vertices.  The corrected three-dose witness is \((L_0,m,\max\{L_2,m\})\), not \((L_0,m,L_2)\).
+\item \textbf{Dependency map.}  The outer inclusion uses Assumptions~\ref{ass:cmsm}, \ref{ass:pointwise}, and \ref{ass:mc}.  The law-invariance obstruction and refutation of finite-point reverse pasting use Lemma~\ref{lem:pasting}.  Endpoint attainment for the bounding functional uses Assumption~\ref{ass:nonempty} and compactness from bounded closed interval constraints.
+\end{itemize}
+
+\section{Conclusion and references}
+The theorem-level contribution is the law-invariance obstruction for continuous-dose finite-grid density pasting: changing density values at the design doses changes representative ratios but not the conditional treatment law.  Therefore Stage -1 Conjecture 1 is refuted for the locked law-level model.  The surviving positive conclusion is the containment
+\[
+  \Theta_I(P)\subseteq\Theta_{\Gamma,\mathrm{mc}}(P),
+\]
+so a valid finite-grid outer bound for \(\mu_k\) is obtained by projecting the pointwise sensitivity interval box intersected with the monotone-concave cone.  There is no regression coefficient in this anchor; the clean analogue is zero-width point identification, which occurs when the sensitivity intervals are singletons and the singleton vector satisfies the shape restriction.  Otherwise, the width of \(B_{\Gamma,\mathrm{mc}}(P,k)\) combines hidden-confounding uncertainty, shape-compatible completions, and possible conservatism from the missing law-level pasting theorem.  Stage -1 Conjecture 2 is confirmed as a corrected finite-polytope statement.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+\bibitem{BaitairianSebastienJreichKatsahianGuilloux2025}
+Baitairian, J.-B., B. Sebastien, R. Jreich, S. Katsahian, and A. Guilloux (2025).
+\newblock Sharp bounds for continuous-valued treatment effects with unobserved confounders.
+\newblock \emph{Biometrical Journal} 67(5), e70084.
+
+\bibitem{BonviniKennedyVenturaWasserman2022}
+Bonvini, M., E. H. Kennedy, V. Ventura, and L. Wasserman (2022).
+\newblock Sensitivity analysis for marginal structural models.
+\newblock arXiv:2210.04681.
+
+\bibitem{DornGuo2023}
+Dorn, J. and K. Guo (2023).
+\newblock Sharp sensitivity analysis for inverse propensity weighting via quantile balancing.
+\newblock \emph{Journal of the American Statistical Association} 118(544), 2645--2657.
+
+\bibitem{HiranoImbens2004}
+Hirano, K. and G. W. Imbens (2004).
+\newblock The propensity score with continuous treatments.
+\newblock In A. Gelman and X.-L. Meng (eds.), \emph{Applied Bayesian Modeling and Causal Inference from Incomplete-Data Perspectives}, 73--84.
+
+\bibitem{Imbens2000}
+Imbens, G. W. (2000).
+\newblock The role of the propensity score in estimating dose-response functions.
+\newblock \emph{Biometrika} 87(3), 706--710.
+
+\bibitem{JessonDouglasManshausenSolalMeinshausenStierGalShalit2022}
+Jesson, A., A. R. Douglas, P. Manshausen, M. Solal, N. Meinshausen, P. Stier, Y. Gal, and U. Shalit (2022).
+\newblock Scalable sensitivity and uncertainty analyses for causal-effect estimates of continuous-valued interventions.
+\newblock \emph{Advances in Neural Information Processing Systems}.
+
+\bibitem{KennedyMaMcHughSmall2017}
+Kennedy, E. H., Z. Ma, M. D. McHugh, and D. S. Small (2017).
+\newblock Non-parametric methods for doubly robust estimation of continuous treatment effects.
+\newblock \emph{Journal of the Royal Statistical Society: Series B} 79(4), 1229--1245.
+
+\bibitem{Manski1990}
+Manski, C. F. (1990).
+\newblock Nonparametric bounds on treatment effects.
+\newblock \emph{American Economic Review} 80(2), 319--323.
+
+\bibitem{Manski1997}
+Manski, C. F. (1997).
+\newblock Monotone treatment response.
+\newblock \emph{Econometrica} 65(6), 1311--1334.
+
+\bibitem{ManskiPepper2000}
+Manski, C. F. and J. V. Pepper (2000).
+\newblock Monotone instrumental variables: With an application to the returns to schooling.
+\newblock \emph{Econometrica} 68(4), 997--1010.
+
+\bibitem{MarmarelisHaddadJessonJahanshadGalstyanVerSteeg2023}
+Marmarelis, M. G., E. Haddad, A. Jesson, N. Jahanshad, A. Galstyan, and G. Ver Steeg (2023).
+\newblock Partial identification of dose responses with hidden confounders.
+\newblock In \emph{Proceedings of the Thirty-Ninth Conference on Uncertainty in Artificial Intelligence}, PMLR 216, 1368--1379.
+
+\bibitem{OkumuraUsui2014}
+Okumura, T. and E. Usui (2014).
+\newblock Concave-monotone treatment response and monotone treatment selection: With an application to the returns to schooling.
+\newblock \emph{Quantitative Economics} 5(1), 175--194.
+
+\bibitem{Tan2006}
+Tan, Z. (2006).
+\newblock A distributional approach for causal inference using propensity scores.
+\newblock \emph{Journal of the American Statistical Association} 101(476), 1619--1637.
+
+\bibitem{WestlingGilbertCarone2020}
+Westling, T., P. Gilbert, and M. Carone (2020).
+\newblock Causal isotonic regression.
+\newblock \emph{Journal of the Royal Statistical Society: Series B} 82(3), 719--747.
+
+\bibitem{YadlowskyNamkoongBasuDuchiTian2022}
+Yadlowsky, S., H. Namkoong, S. Basu, J. Duchi, and L. Tian (2022).
+\newblock Bounds on the conditional and average treatment effect with unobserved confounding factors.
+\newblock \emph{Annals of Statistics} 50(5), 2587--2615.
+\end{thebibliography}
+
+\end{document}

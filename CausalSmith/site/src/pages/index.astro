@@ -1,0 +1,161 @@
+---
+import { loadBundles, verifiedBadge, type Bundle } from "../lib/bundles.js";
+import { bundleRoots, SERIES_NAME, SERIES_TAGLINE } from "../lib/config.js";
+import { renderTexLine } from "../lib/docmd.js";
+import "katex/dist/katex.min.css";
+import "../styles/series.css";
+
+const bundles = await loadBundles(bundleRoots());
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+// Flagship: the top-scored paper gets a featured panel above the sortable list —
+// one focal point that answers "where do I start?". Only when there's a score to
+// justify the pick and more than one paper to feature over.
+const flagship: Bundle | null =
+  bundles.length >= 2 && typeof bundles[0].meta.score === "number" ? bundles[0] : null;
+const listed = flagship ? bundles.slice(1) : bundles;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{SERIES_NAME} · {SERIES_TAGLINE}</title>
+  </head>
+  <body>
+    <div class="series-wrap">
+      <header class="masthead">
+        <div class="series-kicker">{SERIES_NAME} · {SERIES_TAGLINE}</div>
+        <nav class="masthead-nav">
+          <span class="masthead-nav-current">CausalSmith Working Papers</span>
+          <a href={`${base}/library/`}>Causalean Library</a>
+          <a href={`${base}/how-it-works/`}>How it works</a>
+        </nav>
+        <h1>CausalSmith Working Papers</h1>
+        <p class="lede">
+          Econometric theory papers in which every formal statement — every theorem,
+          assumption, and lemma — is machine-verified in Lean 4. Click any statement in a
+          paper to see the exact Lean code it stands for. The papers build on the
+          <a href={`${base}/library/`}>Causalean library</a>, which you can browse with
+          natural-language translations and review status.
+        </p>
+      </header>
+
+      {bundles.length === 0 && <p class="empty-series">No papers published yet.</p>}
+
+      {flagship && (
+        <section class="wp-flagship" data-area={flagship.meta.area}>
+          <div class="wp-featured-kicker">Featured</div>
+          <h2><a href={`${base}/papers/${flagship.id}/`} set:html={renderTexLine(flagship.meta.title)} /></h2>
+          <div class="wp-meta">
+            <span class="wp-id">{flagship.meta.wp_number ?? flagship.id} · {flagship.meta.area}</span>
+            <span class="badge badge-verified" title={verifiedBadge(flagship)}>✓ verified in Lean 4</span>
+            {typeof flagship.meta.score === "number" && (
+              <span class="badge score-badge" title={flagship.meta.score_rationale ?? undefined}>self-reported score {flagship.meta.score}/10</span>
+            )}
+          </div>
+          {flagship.meta.tldr && <p class="wp-tldr" set:html={renderTexLine(flagship.meta.tldr)} />}
+          <div class="wp-actions">
+            <a href={`${base}/papers/${flagship.id}/`}>Read online</a>
+            {flagship.hasPdf && <a href={`${base}/papers/${flagship.id}/paper.pdf`}>PDF</a>}
+            {flagship.paperLib && <a href={`${base}/papers/${flagship.id}/formalization`}>Lean code</a>}
+          </div>
+          <details class="wp-abstract-fold">
+            <summary>Abstract</summary>
+            <p class="wp-abstract" set:html={renderTexLine(flagship.meta.abstract)} />
+          </details>
+        </section>
+      )}
+
+      {listed.length > 1 && (
+        <div class="wp-controls" role="group" aria-label="Sort papers">
+          <span class="wp-controls-label">Sort:</span>
+          <button type="button" class="wp-sort-btn is-active" data-sort="score">Score</button>
+          <button type="button" class="wp-sort-btn" data-sort="cluster">Cluster</button>
+        </div>
+      )}
+      {listed.length > 0 && (
+        <p class="wp-score-note">
+          The self-reported score is a single automated referee's estimate — it can be inaccurate
+          and is intended only as a rough reference, not a peer-review verdict.
+        </p>
+      )}
+
+      <div id="wp-list">
+      {listed.map((b) => (
+        <section class="wp-entry" data-score={typeof b.meta.score === "number" ? b.meta.score : -1} data-area={b.meta.area}>
+          <h2><a href={`${base}/papers/${b.id}/`} set:html={renderTexLine(b.meta.title)} /></h2>
+          <div class="wp-meta">
+            <span class="wp-id">{b.meta.wp_number ?? b.id} · {b.meta.area}</span>
+            <span class="badge badge-verified" title={verifiedBadge(b)}>✓ verified in Lean 4</span>
+            {typeof b.meta.score === "number" && (
+              <span class="badge score-badge" title={b.meta.score_rationale ?? undefined}>self-reported score {b.meta.score}/10</span>
+            )}
+          </div>
+          {b.meta.tldr && <p class="wp-tldr" set:html={renderTexLine(b.meta.tldr)} />}
+          <div class="wp-actions">
+            <a href={`${base}/papers/${b.id}/`}>Read online</a>
+            {b.hasPdf && <a href={`${base}/papers/${b.id}/paper.pdf`}>PDF</a>}
+            {b.paperLib && <a href={`${base}/papers/${b.id}/formalization`}>Lean code</a>}
+          </div>
+          <details class="wp-abstract-fold">
+            <summary>Abstract</summary>
+            <p class="wp-abstract" set:html={renderTexLine(b.meta.abstract)} />
+          </details>
+        </section>
+      ))}
+      </div>
+
+      <footer class="site-footer">
+        Statements are rendered from the verified Lean artifact at a pinned commit; the
+        formal layer of each paper is hash-checked against it at build time.
+      </footer>
+    </div>
+
+    <script>
+      // Client-side reorder of the working-paper list. Server renders it score-desc
+      // (best first); "Cluster" regroups by area with a heading per cluster, score-desc
+      // within each. appendChild MOVES the existing nodes, so <details> open-state and
+      // any listeners survive the reorder.
+      const list = document.getElementById("wp-list");
+      if (list) {
+        const entries = Array.from(list.querySelectorAll(".wp-entry"));
+        const btns = Array.from(document.querySelectorAll(".wp-sort-btn"));
+        const score = (el) => Number(el.getAttribute("data-score"));
+        const area = (el) => el.getAttribute("data-area") || "";
+        const clearHeads = () => list.querySelectorAll(".cluster-head").forEach((h) => h.remove());
+        const byScore = () => {
+          clearHeads();
+          entries
+            .slice()
+            .sort((a, b) => score(b) - score(a))
+            .forEach((e) => list.appendChild(e));
+        };
+        const byCluster = () => {
+          clearHeads();
+          const sorted = entries
+            .slice()
+            .sort((a, b) => area(a).localeCompare(area(b)) || score(b) - score(a));
+          let cur = null;
+          for (const e of sorted) {
+            if (area(e) !== cur) {
+              cur = area(e);
+              const h = document.createElement("h3");
+              h.className = "cluster-head";
+              h.textContent = cur;
+              list.appendChild(h);
+            }
+            list.appendChild(e);
+          }
+        };
+        for (const btn of btns) {
+          btn.addEventListener("click", () => {
+            const mode = btn.getAttribute("data-sort");
+            btns.forEach((b) => b.classList.toggle("is-active", b === btn));
+            mode === "cluster" ? byCluster() : byScore();
+          });
+        }
+      }
+    </script>
+  </body>
+</html>

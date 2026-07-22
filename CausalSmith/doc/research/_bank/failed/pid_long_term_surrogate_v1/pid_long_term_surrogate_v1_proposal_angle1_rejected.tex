@@ -1,0 +1,407 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_long\_term\_surrogate, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to a Q1..Q6 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    If it is a free-form `(qid, specialization)`, define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_long\_term\_surrogate} / \texttt{v1}%
+  \\ \large\textit{Finite noisy surrogates can leave the long-term ATE sign unidentified under bounded post-surrogate drift}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+\begin{verbatim}
+cluster=partial identification
+qid=pid_long_term_surrogate
+specialization=v1
+observable distribution P=law of a randomized short experiment
+  (A,X,S_0,...,S_J) with A in {0,1}, J>=1, and K<infty binary
+  noisy surrogate coordinates at each observed date, plus a historical
+  bridge law P^B of (X,S_J,Y_H) in a no-new-treatment regime on the same
+  finite support
+parameter theta=E[Y_H(1)-Y_H(0)], the long-term ATE at horizon H>J
+identifying restrictions=randomization and consistency in the experiment;
+  finite latent binary terminal state U_J(d) in {0,1}; unknown monotone
+  overlapping measurement kernels for the K noisy surrogate coordinates;
+  a bridge response set B(P^B,q) consisting of historical latent endpoint
+  kernels r^B(dy | u,x), historical latent laws nu^B(du | x), and their
+  means m(u,x)=int y r^B(dy | u,x), jointly reproducing the full bridge
+  law P^B under measurement kernels q; bounded
+  post-surrogate drift residuals eps_d with
+  |eps_d|<=rho and E[eps_d | X,U_J(d),S_0,...,S_J,A=d]=0 not imposed;
+  bounded outcomes Y_H(d) in [0,1]; no Prentice surrogacy conditioning on
+  the observed surrogate vector
+bounding functional=lower and upper support values of theta over all finite
+  latent response-type distributions, measurement kernels, bridge response
+  functions, and drift residuals matching P and P^B and satisfying the
+  monotone-overlap, bridge, outcome, and drift restrictions
+\end{verbatim}
+
+\begin{abstract}
+Surrogate-index and many-proxy methods suggest that a rich short-run proxy panel can make long-run treatment effects practically estimable before the endpoint is observed.  This proposal asks for the sharp partial-identification boundary when that optimism fails because the observed proxies are noisy measurements of a latent terminal surrogate and the endpoint can drift after the last surrogate wave.  The field-tier kernel is a common-kernel finite-proxy margin conjecture: in the minimal \(K=2,J=1\) binary panel, the same measurement kernel that explains the experimental proxy law must also support an existential historical endpoint bridge law, and the resulting endpoint interval is a one-dimensional bridge-and-drift transport envelope.  A supporting negative conjecture records the sign ambiguity that motivates the boundary, but the proposal deliberately treats generic finite-LP sharpness and generic support-function tightening as prior-art machinery.  Resolving the margin statement would turn the surrogate-paradox warning into a design rule for how many proxy waves, validation restrictions, or drift-budget assumptions are needed before long-run sign decisions are defensible.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Short experiments in policy, health, and digital platforms increasingly report effects on many short-run outcomes while the long-run endpoint remains unobserved.  The scientific decision is often a sign decision: should a treatment be scaled because it appears to improve a surrogate index, or withheld because unobserved long-run drift could reverse the endpoint effect?  Point-identification methods answer this only under strong surrogacy, comparability, or latent measurement assumptions; a sharp partial-identification theorem would say what is learned when those assumptions are deliberately relaxed.
+
+\paragraph{The main finding proposed.}
+The headline conjecture is the minimal common-kernel boundary in Conjecture~\ref{conj:sharp-margin}.  In a \(K=2,J=1\) binary proxy panel, the two observed proxy means and within-arm proxy covariances force a Hui--Walter-style determinant equation for the latent treated-control terminal-state contrast; the proposed new step is that the endpoint bound is the sharp transport envelope over bridge endpoint kernels that reproduce the full historical law \(P^B\) under that same measurement kernel.  Conjecture~\ref{conj:finite-proxy-sign-ambiguity} is retained as a supporting negative example: finite noisy proxy panels can still leave the long-term ATE sign ambiguous when the common bridge-and-drift feasible set crosses zero.  This is an impossibility and boundary proposal, not an efficiency proposal.
+
+\paragraph{What is new.}
+The closest recent paper is \citet{LalImbensHull2026}, which shows that many noisy proxies can reduce bias when proxies measure a low-dimensional latent surrogate in informative directions.  The epsilon-gap here is finite-sample identification rather than asymptotic prediction: even with a short randomized panel and a positive surrogate-index contrast, the latent class labels and post-surrogate residual drift may be rearranged within the observed proxy law so that the endpoint sign flips.  The closest surrogate-paradox transport comparators are \citet{HsiaoTianParast2025} and \citet{HsiaoParast2026}, which study resilience using historical endpoint information and surrogate-only studies while allowing deviations from transportability; the gap here is a sharp finite noisy-measurement and drift compatibility boundary, not a resilience probability over a functional class.  The closest proxy partial-identification papers are \citet{GhassamiShpitserTchetgen2023}, \citet{Li2026}, and \citet{FinkelsteinAdamsSariaShpitser2021}: they show how proxy variables, optimal transport, or discrete measurement-error restrictions can bound latent causal targets.  The present proposal treats generic proxy-bound computation as known and asks for the special common-kernel endpoint bridge-and-drift boundary that remains after the same two-proxy Hui--Walter measurement kernel must also reproduce the full historical bridge law \(P^B\).  The proposal also differs from the previous ThmSmith angle on observed-increment strict tightening: it does not ask whether an extra preterminal wave shortens a generic LP interval, but whether the minimal binary noisy-panel model has an analytic joint compatibility boundary unavailable from separate bridge-margin and drift-radius arithmetic.
+
+\paragraph{How it positions in the literature.}
+The anchor cluster is partial identification.  The proposal consumes the surrogate-index literature as the point-ID corner, the surrogate-paradox literature as the sign-failure phenomenon, and Manski/Balke--Pearl style finite-support sharpness as the bounding language.  It also uses the proxy/measurement-error partial-ID thread as the closest methodological competitor: the novelty target is not that a finite LP or optimal-transport bound exists, but that the minimal two-proxy surrogate law may admit a symbolic common-kernel boundary useful enough to audit surrogate designs without a black-box optimizer.  It is not a panel linear-projection question and it is not an SCM/do-calculus axiomatics question; the short panel matters only because repeated noisy measurements restrict the latent surrogate distribution used in a partial-ID bound.
+
+\section{Related work}
+\citet{AtheyChettyImbensKang2019} introduce the surrogate-index approach and show that, under Prentice-style surrogacy, the ATE on the surrogate index equals the long-term ATE; this is the point-identification corner that the present proposal relaxes.  \citet{Prentice1989} gives the classical operational criterion requiring the surrogate history to capture the treatment-endpoint association, making clear why post-surrogate drift is a direct violation rather than a nuisance estimation issue.  \citet{LalImbensHull2026} analyze long-term causal inference with many noisy proxies for a low-dimensional latent surrogate; this proposal asks for the finite-proxy partial-ID sign boundary left open by their many-proxy bias-reduction regime.  \citet{HsiaoTianParast2025} propose resilience measures for the surrogate paradox using historical endpoint data and a new surrogate-only study while allowing controlled deviations from transportability; this is a close comparator for Conjecture~\ref{conj:finite-proxy-sign-ambiguity}, but it does not impose finite noisy-proxy latent-class measurement compatibility or give a sharp ATE interval.  \citet{HsiaoParast2026} extends the surrogate-resilience line and is the current closest surrogate-specific comparison for Conjecture~\ref{conj:sharp-margin}; the gap is again the common noisy-measurement kernel and exact historical bridge-law matching rather than a resilience summary.  \citet{GhassamiShpitserTchetgen2023} study partial identification with proxy variables and hidden mediators, making it a close proxy-bound comparator; the present proposal differs by using finite repeated noisy surrogates to identify a common measurement kernel that must also reproduce the bridge endpoint law.  \citet{Li2026} gives a sharp optimal-transport treatment of proxy partial identification; Conjecture~\ref{conj:sharp-margin} is not another generic transport program but a symbolic two-proxy surrogate boundary with the Hui--Walter measurement part fixed by the experimental proxy law.  \citet{FanManzanaresParkQi2026} develop a copula sensitivity analysis for surrogate-index ATEs and identified sets when the copula is unknown; the present angle replaces terminal copula variation by finite noisy measurement ambiguity plus bounded drift.  \citet{BibautKallusEjdemyrZhao2023} use many weak experiments, proxy moments, and cross-fold procedures to address imperfect surrogates and effect leakage; the present question asks what a single short experiment can or cannot sign-identify without many historical instruments.  \citet{ChenRitzwoller2023} study semiparametric estimation and efficiency for long-term treatment effects using experimental and observational samples; the current target is identification width and sign ambiguity before regular estimation is available.  \citet{Manski1990} gives the no-information bounded-outcome benchmark for treatment-effect partial identification; Corollary~\ref{cor:manski} uses it only as a sanity fallback, not as the novelty claim.  \citet{BalkePearl1997} derive sharp finite-support treatment-effect bounds by symbolic linear programming under imperfect compliance; this proposal follows that sharpness tradition but targets a different latent measurement/drift geometry.  \citet{HuiWalter1980} identify the two-test/two-population latent-class diagnostic model under invariant conditionally independent error rates; Conjecture~\ref{conj:sharp-margin} deliberately treats the corresponding two-proxy determinant as inherited measurement algebra and adds the endpoint bridge-and-drift coupling.  \citet{FinkelsteinAdamsSariaShpitser2021} show that discrete measurement-error assumptions can be composed as linear constraints to compute sharp partial-ID bounds; this is a close methodological prior art, and the proposed gap is a symbolic bridge-and-drift surrogate boundary rather than another generic LP encoding.  \citet{ChenGengJia2007} name the surrogate paradox, showing that positive surrogate evidence can coexist with negative endpoint effects; this proposal asks for the sharp finite-proxy/drift margin behind that sign failure.  \citet{YinLiuGengLuo2020} give optimal observed-data criteria to exclude the surrogate paradox and show that, when the criteria fail, an observationally equivalent paradox-generating law can exist; the present proposal differs by adding a randomized short panel, noisy finite proxies for a latent terminal surrogate, and bounded post-surrogate drift.  \citet{VanderWeele2013} gives conditions under which consistent surrogates avoid the surrogate paradox; our assumptions intentionally allow direct post-surrogate drift, so those sufficient conditions need not hold.  \citet{MaYinLiuGeng2021} develop sharp bounds and criteria for the individual surrogate paradox; this proposal differs by studying noisy multiple proxies and a long-term ATE rather than individual-level paradox exclusion.  \citet{DuarteFinkelsteinKnoxMummoloShpitser2024} give a general automated partial-identification method for discrete causal questions via polynomial programming and sharp bounds; the novelty target here is an analytic joint finite-proxy compatibility formula rather than a generic computational bounding template.
+
+The in-repository catalogue records mature panel proposals and helpers, while \texttt{doc/API.md} states that \texttt{ThmSmith/PartialID/} is empty at seed time and will be populated by \texttt{pid\_*} questions.  The closest local prior artifact is \texttt{pid\_long\_term\_surrogate} angle 0, whose headline conjecture was an observed-increment strict-tightening criterion for a generic drift LP; that angle was rejected after derivation because it collapsed to standard finite-LP/support-function content.  The present v1 is a fresh partial-ID angle focused on finite-proxy sign nonidentification and a margin boundary, not on generic endpoint-face tightening.
+
+\section{Formal setup}
+Let \(A\in\{0,1\}\) be randomized, \(X\) a finite baseline covariate, and \(S_j=(S_{j1},\ldots,S_{jK})\in\{0,1\}^K\) the observed noisy surrogate vector at dates \(j=0,\ldots,J\), with \(J\ge1\) and fixed finite \(K\).  For each treatment arm \(d\), let \(U_j(d)\in\{0,1\}\) denote a latent surrogate state and let \(Y_H(d)\in[0,1]\) be the long-run endpoint at horizon \(H>J\).  The observable experimental law is \(P=\mathcal{L}(A,X,S_0,\ldots,S_J)\); the auxiliary bridge law is \(P^B=\mathcal{L}(X,S_J,Y_H)\) in a historical regime that does not include the new treatment arm.
+
+The target is
+\[
+  \theta=\E[Y_H(1)-Y_H(0)].
+\]
+An admissible latent representation consists of a joint law for
+\[
+  (X,U_0(0),\ldots,U_J(0),U_0(1),\ldots,U_J(1),Y_H(0),Y_H(1)),
+\]
+unknown measurement kernels \(q_{jk}(s\mid u,x)\), bridge response functions \(m\in\mathcal{B}(P^B,q)\), and drift residuals
+\[
+  \varepsilon_d=Y_H(d)-m(U_J(d),X),\qquad |\varepsilon_d|\le\rho .
+\]
+The identified set is
+\[
+  \Theta_I(P,P^B;\rho)=
+  \{\E[Y_H(1)-Y_H(0)] : \text{some admissible representation matches }P\text{ and }P^B\}.
+\]
+Its endpoints are the lower and upper support values \(\underline\theta(P,P^B;\rho)\) and \(\overline\theta(P,P^B;\rho)\).
+
+For a fixed measurement kernel collection \(q\), the bridge set \(\mathcal{B}(P^B,q)\) is defined existentially from the full historical law, not only from conditional endpoint means.  A member is a triple \((\nu^B,r^B,m)\) where \(\nu^B(\cdot\mid x)\) is a latent terminal-state law on \(\{0,1\}\), \(r^B(dy\mid u,x)\) is an endpoint kernel supported on \([0,1]\), \(m(u,x)=\int y\,r^B(dy\mid u,x)\), and the mixture of \(q(s\mid u,x)\), \(\nu^B(u\mid x)\), and \(r^B(dy\mid u,x)\) exactly reproduces \(P^B(X,S_J,Y_H)\).  In displays that optimize over \(m\in\mathcal{B}(P^B,q)\), \(m\) denotes the mean component of such an existential bridge triple and the corresponding \((\nu^B,r^B)\) remain part of the feasibility witness.
+
+For the minimal binary calculation in Conjecture~\ref{conj:sharp-margin}, \(X\) is degenerate, \(J=1\), \(K=2\), \(\pi_d=\Pr(U_J(d)=1)\), \(\mu_{dk}=\Pr(S_{Jk}=1\mid A=d)\), \(\mu_{d12}=\Pr(S_{J1}=1,S_{J2}=1\mid A=d)\), \(C_d=\mu_{d12}-\mu_{d1}\mu_{d2}\), and \(\Delta_k=\mu_{1k}-\mu_{0k}\).  The common measurement gaps are \(\lambda_k=q_k(1)-q_k(0)\).  For any candidate bridge pair \(m=(m(0),m(1))\), the residual functions in that reduced model are \(\varepsilon_d(u)=Y_H(d)-m(u)\) on \(u\in\{0,1\}\), and the residual lower and upper envelopes are
+\[
+  L_m(u)=\max\{-\rho,-m(u)\},\qquad U_m(u)=\min\{\rho,1-m(u)\}.
+\]
+
+\begin{verbatim}
+cluster=partial identification
+qid=pid_long_term_surrogate
+specialization=v1
+observable distribution P=law of a randomized short experiment
+  (A,X,S_0,...,S_J) with A in {0,1}, J>=1, and K<infty binary
+  noisy surrogate coordinates at each observed date, plus a historical
+  bridge law P^B of (X,S_J,Y_H) in a no-new-treatment regime on the same
+  finite support
+parameter theta=E[Y_H(1)-Y_H(0)], the long-term ATE at horizon H>J
+identifying restrictions=randomization and consistency in the experiment;
+  finite latent binary terminal state U_J(d) in {0,1}; unknown monotone
+  overlapping measurement kernels for the K noisy surrogate coordinates;
+  a bridge response set B(P^B,q) consisting of historical latent endpoint
+  kernels r^B(dy | u,x), historical latent laws nu^B(du | x), and their
+  means m(u,x)=int y r^B(dy | u,x), jointly reproducing the full bridge
+  law P^B under measurement kernels q; bounded
+  post-surrogate drift residuals eps_d with
+  |eps_d|<=rho and E[eps_d | X,U_J(d),S_0,...,S_J,A=d]=0 not imposed;
+  bounded outcomes Y_H(d) in [0,1]; no Prentice surrogacy conditioning on
+  the observed surrogate vector
+bounding functional=lower and upper support values of theta over all finite
+  latent response-type distributions, measurement kernels, bridge response
+  functions, and drift residuals matching P and P^B and satisfying the
+  monotone-overlap, bridge, outcome, and drift restrictions
+\end{verbatim}
+
+\section{Assumptions}
+\begin{assumption}[Randomization and consistency]\label{ass:randomization}
+\(A\) is randomized with \(0<\Pr(A=d\mid X)<1\) for \(d\in\{0,1\}\), and the observed surrogate path under \(A=d\) equals \((S_0(d),\ldots,S_J(d))\).
+\end{assumption}
+
+\begin{assumption}[Finite binary latent surrogate]\label{ass:finite-latent}
+For each arm \(d\) and date \(j\), \(U_j(d)\in\{0,1\}\).  All variables \(X\), \(S_j\), and \(U_j(d)\) have finite support, and \(Y_H(d)\in[0,1]\).
+\end{assumption}
+
+\begin{assumption}[Unknown monotone overlapping measurement]\label{ass:measurement}
+For each \(j,k,x\), the conditional law of \(S_{jk}(d)\) given \(U_j(d)=u\) and \(X=x\) is Bernoulli with parameter \(q_{jkx}(u)\).  The kernels are unknown but satisfy \(0<\eta\le q_{jkx}(u)\le1-\eta\) and \(q_{jkx}(1)-q_{jkx}(0)\ge\delta\ge0\).  Conditional on \(X\) and the latent path, the \(K\) coordinates are independent within each date.
+\end{assumption}
+
+\begin{assumption}[Bridge-compatible response set]\label{ass:bridge}
+For any measurement kernel collection \(q\), \(\mathcal{B}(P^B,q)\) is the set of all triples \((\nu^B,r^B,m)\) such that \(\nu^B(\cdot\mid x)\) is a probability law on \(\{0,1\}\), \(r^B(dy\mid u,x)\) is a probability kernel on \([0,1]\), \(m(u,x)=\int y\,r^B(dy\mid u,x)\), and the mixture law generated by \(X\), \(U_J\sim\nu^B(\cdot\mid X)\), \(S_J\sim q(\cdot\mid U_J,X)\), and \(Y_H\sim r^B(\cdot\mid U_J,X)\) exactly equals \(P^B=\mathcal{L}(X,S_J,Y_H)\).  When only \(m\) is displayed, feasibility includes the existence of the associated \((\nu^B,r^B)\).
+\end{assumption}
+
+\begin{assumption}[Bounded post-surrogate drift]\label{ass:drift}
+For each treatment arm \(d\), \(Y_H(d)=m(U_J(d),X)+\varepsilon_d\) for some measurement kernel collection \(q\) and some \(m\in\mathcal{B}(P^B,q)\), with \(|\varepsilon_d|\le\rho\) almost surely.  No restriction sets \(\E[\varepsilon_d\mid X,U_J(d),S_0,\ldots,S_J,A=d]\) to zero.
+\end{assumption}
+
+\begin{assumption}[Strict observed proxy margin]\label{ass:positive-proxy-margin}
+The observed surrogate-index contrast \(\Delta_{\mathrm{obs}}(P)=\E[g(S_J,X)\mid A=1]-\E[g(S_J,X)\mid A=0]\) is strictly positive for the bridge predictor \(g(s,x)=\E[Y_H\mid S_J=s,X=x]\) computed under \(P^B\).
+\end{assumption}
+
+\begin{assumption}[Nonseparating finite proxies]\label{ass:nonseparating}
+The measurement class in Assumption~\ref{ass:measurement} admits at least two bridge-compatible latent labelings with different terminal latent mean contrasts
+\[
+  \Delta_U=\E[m(U_J(1),X)-m(U_J(0),X)]
+\]
+while matching the same observed law \(P\), bridge law \(P^B\), and positive \(\Delta_{\mathrm{obs}}(P)\).
+\end{assumption}
+
+\begin{assumption}[Joint finite-proxy compatibility]\label{ass:joint-compatibility}
+For any candidate value of the endpoint contrast, bridge term, and drift term, feasibility is assessed in one common latent representation: the same law of \((X,U_J(0),U_J(1))\), the same measurement kernels \(q\), the same bridge response \(m\), and the same residual pair \((\varepsilon_0,\varepsilon_1)\) must jointly match \(P\), \(P^B\), Assumptions~\ref{ass:measurement}--\ref{ass:drift}, and the outcome bounds.  Write
+\[
+  \Gamma_K^\rho(P,P^B)=
+  \{(b,r): b=\E[m(U_J(1),X)-m(U_J(0),X)],\;
+             r=\E[\varepsilon_1-\varepsilon_0]
+     \text{ in such a joint representation}\}.
+\]
+\end{assumption}
+
+\begin{assumption}[Minimal two-proxy determinant regime]\label{ass:determinant-regime}
+For Conjecture~\ref{conj:sharp-margin} only, \(X\) is degenerate, \(J=1\), \(K=2\), \(\Delta_1\Delta_2>0\), \(C_0>0\), \(C_1>0\), and the two arms share the same monotone measurement kernels \(q_k(u)\).  The bridge law supplies a nonempty set of bridge triples in \(\mathcal{B}(P^B,q)\); their mean components are candidate bridge pairs \(m=(m(0),m(1))\) compatible with those kernels.
+\end{assumption}
+
+\begin{assumption}[Exact terminal no-drift corner]\label{ass:exact-corner}
+For the sanity-collapse corner only, \(S_J=U_J\) is observed without error and Assumption~\ref{ass:drift} holds with \(\rho=0\), so \(Y_H(d)=m(U_J(d),X)\) almost surely.
+\end{assumption}
+
+\section{Main results}
+\begin{conjecture}[Conjecture 1: finite noisy-proxy sign ambiguity]\label{conj:finite-proxy-sign-ambiguity}
+(NOT YET PROVED.)  Fix any finite \(K\), any \(J\ge1\), any \(\eta>0\), any \(\delta\ge0\) small enough that Assumption~\ref{ass:nonseparating} is feasible, and any drift budget \(\rho>0\).  There exists an observed law \((P,P^B)\) satisfying Assumptions~\ref{ass:randomization}--\ref{ass:nonseparating} such that \(\Delta_{\mathrm{obs}}(P)>0\), but
+\[
+  \underline\theta(P,P^B;\rho)<0<\overline\theta(P,P^B;\rho).
+\]
+Moreover the two opposite-sign endpoint witnesses can be chosen to have the same law of \((X,S_0,\ldots,S_J)\) in each treatment arm and the same bridge law \(P^B\), while their measurement kernels are not asserted to be identical: each witness may use a different \(q\) in the same monotone-overlap \((\eta,\delta)\) class.  The sign flip is therefore a same-observed-law, same-bridge-law compatibility failure for the monotone-overlap class, not a claim that a fixed calibrated binary measurement kernel leaves the latent marginal contrast free.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+The closest sign-failure results are \citet{ChenGengJia2007} and \citet{YinLiuGengLuo2020}, which show when the surrogate paradox can survive the same observed data in classical surrogate-endpoint models.  \citet{HsiaoTianParast2025} and \citet{HsiaoParast2026} are closer to the transport setting because they use historical endpoint information and surrogate-only studies, but they quantify assumption tests or resilience over controlled functional deviations rather than giving a sharp finite noisy-measurement identified set.  The closest positive proxy result is \citet{LalImbensHull2026}, where adding many noisy proxies improves long-term proxy estimation in an informative latent-factor regime.  The conjectured epsilon-gap is the combination of these threads: under calibration-free monotone overlap and bounded post-surrogate drift, a finite randomized proxy panel may leave the ATE sign ambiguous even when the observed surrogate-index contrast is positive.  Resolving it would give experimenters a negative design theorem explaining when proxy richness is still insufficient for long-run decisions; it is supporting motivation for the sharper field-tier boundary in Conjecture~\ref{conj:sharp-margin}.
+
+\begin{conjecture}[Conjecture 2: joint sharp finite-proxy margin boundary]\label{conj:sharp-margin}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:randomization}--\ref{ass:joint-compatibility} and Assumption~\ref{ass:determinant-regime}, define
+\[
+  c_d=\frac{C_d}{\Delta_1\Delta_2},\qquad
+  s_\star=\operatorname{sign}(\Delta_1)\left((1+c_1-c_0)^2+4c_0\right)^{-1/2},
+\]
+\[
+  \pi_0^\star=\frac{1-s_\star(1+c_1-c_0)}{2},\qquad
+  \pi_1^\star=\pi_0^\star+s_\star,\qquad
+  \lambda_k^\star=\frac{\Delta_k}{s_\star}.
+\]
+The minimal two-proxy law is compatible with a monotone latent terminal surrogate if and only if
+\[
+  0\le \pi_0^\star,\pi_1^\star\le1,\qquad
+  \delta\le \lambda_k^\star\le 1-2\eta,\qquad
+  \eta\le \mu_{0k}-\pi_0^\star\lambda_k^\star\le1-\eta-\lambda_k^\star
+\]
+for \(k=1,2\), together with nonemptiness of \(\mathcal{B}(P^B,q^\star)\), where \(q_k^\star(0)=\mu_{0k}-\pi_0^\star\lambda_k^\star\) and \(q_k^\star(1)=q_k^\star(0)+\lambda_k^\star\).  Conditional on compatibility, the sharp endpoint interval is conjectured to be
+\[
+  \bigcup_{m\in\mathcal{B}(P^B,q^\star)}
+  \left[
+  s_\star(m(1)-m(0))+
+  \sum_{u\in\{0,1\}}\Pr(U_J(1)=u)L_m(u)-
+  \sum_{u\in\{0,1\}}\Pr(U_J(0)=u)U_m(u),
+  \right.
+\]
+\[
+\left.
+  s_\star(m(1)-m(0))+
+  \sum_{u\in\{0,1\}}\Pr(U_J(1)=u)U_m(u)-
+  \sum_{u\in\{0,1\}}\Pr(U_J(0)=u)L_m(u)
+  \right],
+\]
+with \(\Pr(U_J(d)=1)=\pi_d^\star\).  Thus sign identification is exactly exclusion of zero from this union.  The determinant formula is the Hui--Walter-style measurement-identification input; the nontrivial content claimed here is that the endpoint residual transport envelope is sharp only when evaluated at the same bridge-compatible measurement kernels, rather than as a generic LP support value or as a separately optimized bridge margin minus drift radius.
+\end{conjecture}
+\paragraph{Why this is new and worth studying.}
+\citet{HuiWalter1980} already contain the diagnostic-test measurement-identification algebra closest to the determinant part of the display, so the proposed novelty is not the existence of a two-test latent-class formula by itself.  \citet{GhassamiShpitserTchetgen2023} and \citet{Li2026} are now the closest proxy partial-identification comparators: Ghassami--Shpitser--Tchetgen obtain proxy-variable bounds without completeness, and Li gives sharp optimal-transport bounds for ML-generated proxies linked through validation data.  The epsilon-gap is that Conjecture~\ref{conj:sharp-margin} fixes a two-proxy surrogate measurement kernel from the randomized experimental law and then requires the same kernel to admit an existential endpoint bridge law \(P^B\); neither comparator supplies the closed-form common-kernel surrogate drift envelope.  \citet{FinkelsteinAdamsSariaShpitser2021} and \citet{DuarteFinkelsteinKnoxMummoloShpitser2024} can encode close discrete partial-ID problems as linear or polynomial programs, which is precisely why the field-level gap must be analytic rather than another generic optimization template.  If proved, it would turn a qualitative surrogate-paradox warning into a computable certificate for finite-proxy experiments and would supply a benchmark case for automated bounds.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Exact surrogate corner]\label{cor:exact-corner}
+Under Assumptions~\ref{ass:randomization}--\ref{ass:bridge} and Assumption~\ref{ass:exact-corner}, the bounding functional reduces to the known point-ID sign rule: \(\Theta_I(P,P^B;0)\) is the singleton \(\{\E[m(S_J(1),X)-m(S_J(0),X)]\}\).
+\end{corollary}
+
+\begin{corollary}[Manski fallback]\label{cor:manski}
+If Assumptions~\ref{ass:measurement} and \ref{ass:bridge} are dropped while only \(Y_H(d)\in[0,1]\) remains, the identified set reduces to the bounded-outcome interval \([-1,1]\), matching the Manski no-information bound for an unobserved binary-treatment endpoint.
+\end{corollary}
+
+\begin{corollary}[No-drift finite-noise reduction]\label{cor:no-drift-noisy}
+Under Assumptions~\ref{ass:randomization}--\ref{ass:joint-compatibility} with \(\rho=0\), the sign boundary in Conjecture~\ref{conj:sharp-margin} depends only on the joint bridge projection \(\{b:(b,0)\in\Gamma_K^0(P,P^B)\}\), because Assumption~\ref{ass:drift} forces \(\varepsilon_0=\varepsilon_1=0\).
+\end{corollary}
+
+\begin{corollary}[Hui--Walter measurement reduction]\label{cor:hui-walter}
+If \(P^B\) is ignored, \(Y_H(d)\) is removed from the model, and Assumption~\ref{ass:determinant-regime} is retained only for the two observed proxy tests across the two treatment arms, the compatibility inequalities in Conjecture~\ref{conj:sharp-margin} reduce to the classical Hui--Walter two-test/two-population latent-class identification equations for \((\pi_0,\pi_1,q_1,q_2)\).  The proposed new boundary begins only after these measurement parameters are coupled to \(\mathcal{B}(P^B,q^\star)\) and the residual envelopes \(L_m,U_m\).
+\end{corollary}
+
+\section{Proof-sketch route}
+The mathematical route is finite and constructive.  First, write the observed two-proxy laws as \(\mu_{dk}=q_k(0)+\pi_d\lambda_k\) and \(C_d=\pi_d(1-\pi_d)\lambda_1\lambda_2\); this recovers the Hui--Walter measurement equations, so the proof must not count that algebra as the field-level contribution.  Second, characterize the mean components of \(\mathcal{B}(P^B,q^\star)\) from the historical bridge law by explicitly quantifying over \(\nu^B\) and endpoint kernels \(r^B\) that reproduce \(P^B\) under the same \(q^\star\).  Third, evaluate the residual interval using the pointwise envelopes \(L_m,U_m\), which is a transport calculation over the two terminal latent states rather than a generic support-function proof.  Finally, prove sign ambiguity by giving two bridge-compatible \(m\) and residual envelopes on the same observed law whose endpoint intervals lie on opposite sides of zero, or prove the stated boundary by showing no separately optimized bridge-margin-minus-drift calculation can exceed the common-kernel envelope.  The boundary cases needing explicit algebra are the zero-drift face \(L_m=U_m=0\), exact measurement \(q_{jkx}(1)-q_{jkx}(0)=1\), and the determinant degeneracies \(C_d=0\) or \(\Delta_1\Delta_2=0\), which should be handled as separate lower-dimensional faces.
+
+\section{Honest scope flags}
+The exact no-drift surrogate-index collapse is no longer a main result; it is retained only as Corollary~\ref{cor:exact-corner} to prevent the known Prentice/Athey--Chetty--Imbens--Kang corner from being mistaken for novelty.  The finite-proxy sign ambiguity and the joint sharp margin boundary are labelled as conjectures and are not yet proved, with Conjecture~\ref{conj:sharp-margin} now explicitly carrying the field-tier kernel.  The Hui--Walter two-test measurement algebra, proxy-variable partial-ID bounds, optimal-transport proxy bounds, generic finite-LP sharpness, monotonicity of nested support functions, and tautological sign tests from already-defined endpoints are all treated as prior art rather than flagship content.  The main modelling uncertainty is the measurement class: if the reviewer requires known calibrated measurement kernels, Conjecture~\ref{conj:finite-proxy-sign-ambiguity} should be narrowed to unknown monotone-overlap kernels or replaced by a statement about insufficient validation samples.  The previous angle's generic finite-LP sharpness, endpoint-face tightening, and separately optimized bridge-minus-drift statements are deliberately withdrawn as flagship claims because the Stage 0.5 post-derivation review judged them below the field-tier novelty floor.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- initial fresh angle on finite noisy-proxy sign nonidentification and a sharp margin boundary; prior verdict: none.
+\item v2 (revise) -- moved the known no-drift point-ID corner to sanity checks, added Yin--Liu--Geng--Luo and Duarte--Finkelstein--Knox--Mummolo--Shpitser as closest prior art, and replaced the separable bridge-minus-drift condition by a joint finite-proxy compatibility conjecture; prior verdict: REVISE.
+\item v3 (revise) -- added Manski, Balke--Pearl, and Finkelstein--Adams--Saria--Shpitser prior art; removed the unsupported fixed-margin language from Conjecture 1; and sharpened Conjecture 2 into an explicit \(K=2\) determinant-plus-transport boundary rather than a generic LP image statement; prior verdict: REVISE.
+\item v4 (revise) -- added Hsiao--Tian--Parast and Hui--Walter as close comparators, clarified that Conjecture 1 shares a monotone-overlap measurement class rather than fixed kernels, and unified bridge notation as \(\mathcal{B}(P^B,q)\); prior verdict: REVISE.
+\item v5 (revise) -- added closer proxy partial-identification comparisons to Ghassami--Shpitser--Tchetgen, Li, and Hsiao--Parast; centered Conjecture 2 as the field-tier common-kernel boundary; and made \(\mathcal{B}(P^B,q)\) existential over historical endpoint kernels, not only bridge means; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Athey et~al.(2019)]{AtheyChettyImbensKang2019}
+Athey, S., Chetty, R., Imbens, G.~W., and Kang, H. (2019).
+\newblock The surrogate index: Combining short-term proxies to estimate long-term treatment effects more rapidly and precisely.
+\newblock NBER Working Paper No. 26463; revised 2024.
+
+\bibitem[Bibaut et~al.(2023)]{BibautKallusEjdemyrZhao2023}
+Bibaut, A., Kallus, N., Ejdemyr, S., and Zhao, M. (2023).
+\newblock Long-term causal inference with imperfect surrogates using many weak experiments, proxies, and cross-fold moments.
+\newblock arXiv:2311.04657.
+
+\bibitem[Chen et~al.(2007)]{ChenGengJia2007}
+Chen, H., Geng, Z., and Jia, J. (2007).
+\newblock Criteria for surrogate end points.
+\newblock \emph{Journal of the Royal Statistical Society: Series B}, 69(5):919--932.
+
+\bibitem[Chen and Ritzwoller(2023)]{ChenRitzwoller2023}
+Chen, J. and Ritzwoller, D.~M. (2023).
+\newblock Semiparametric estimation of long-term treatment effects.
+\newblock \emph{Journal of Econometrics}, 237(2):105545.
+
+\bibitem[Duarte et~al.(2024)]{DuarteFinkelsteinKnoxMummoloShpitser2024}
+Duarte, G., Finkelstein, N., Knox, D., Mummolo, J., and Shpitser, I. (2024).
+\newblock An automated approach to causal inference in discrete settings.
+\newblock \emph{Journal of the American Statistical Association}, 119(547):1778--1793.
+
+\bibitem[Balke and Pearl(1997)]{BalkePearl1997}
+Balke, A. and Pearl, J. (1997).
+\newblock Bounds on treatment effects from studies with imperfect compliance.
+\newblock \emph{Journal of the American Statistical Association}, 92(439):1171--1176.
+
+\bibitem[Fan et~al.(2026)]{FanManzanaresParkQi2026}
+Fan, Y., Manzanares, C.~A., Park, H., and Qi, Y. (2026).
+\newblock A sensitivity analysis of the surrogate index approach for estimating long-term treatment effects.
+\newblock arXiv:2603.00580.
+
+\bibitem[Finkelstein et~al.(2021)]{FinkelsteinAdamsSariaShpitser2021}
+Finkelstein, N., Adams, R., Saria, S., and Shpitser, I. (2021).
+\newblock Partial identifiability in discrete data with measurement error.
+\newblock In \emph{Proceedings of the Thirty-Seventh Conference on Uncertainty in Artificial Intelligence}, PMLR 161:1798--1808.
+
+\bibitem[Ghassami et~al.(2023)]{GhassamiShpitserTchetgen2023}
+Ghassami, A., Shpitser, I., and Tchetgen Tchetgen, E. (2023).
+\newblock Partial identification of causal effects using proxy variables.
+\newblock arXiv:2304.04374.
+
+\bibitem[Hsiao and Parast(2026)]{HsiaoParast2026}
+Hsiao, E. and Parast, L. (2026).
+\newblock A functional-class meta-analytic framework for quantifying surrogate resilience.
+\newblock arXiv:2604.21020.
+
+\bibitem[Hsiao et~al.(2025)]{HsiaoTianParast2025}
+Hsiao, E., Tian, L., and Parast, L. (2025).
+\newblock Resilience measures for the surrogate paradox.
+\newblock arXiv:2506.12194.
+
+\bibitem[Hui and Walter(1980)]{HuiWalter1980}
+Hui, S.~L. and Walter, S.~D. (1980).
+\newblock Estimating the error rates of diagnostic tests.
+\newblock \emph{Biometrics}, 36(1):167--171.
+
+\bibitem[Lal et~al.(2026)]{LalImbensHull2026}
+Lal, A., Imbens, G., and Hull, P. (2026).
+\newblock Long-term causal inference with many noisy proxies.
+\newblock arXiv:2601.06359.
+
+\bibitem[Li(2026)]{Li2026}
+Li, L. (2026).
+\newblock Econometric inference with machine-learned proxies: Partial identification via data combination.
+\newblock arXiv:2604.10770.
+
+\bibitem[Manski(1990)]{Manski1990}
+Manski, C.~F. (1990).
+\newblock Nonparametric bounds on treatment effects.
+\newblock \emph{American Economic Review}, 80(2):319--323.
+
+\bibitem[Ma et~al.(2021)]{MaYinLiuGeng2021}
+Ma, L., Yin, Y., Liu, L., and Geng, Z. (2021).
+\newblock On the individual surrogate paradox.
+\newblock \emph{Biostatistics}, 22(1):97--113.
+
+\bibitem[Prentice(1989)]{Prentice1989}
+Prentice, R.~L. (1989).
+\newblock Surrogate endpoints in clinical trials: Definition and operational criteria.
+\newblock \emph{Statistics in Medicine}, 8(4):431--440.
+
+\bibitem[VanderWeele(2013)]{VanderWeele2013}
+VanderWeele, T.~J. (2013).
+\newblock Surrogate measures and consistent surrogates.
+\newblock \emph{Biometrics}, 69(3):561--565.
+
+\bibitem[Yin et~al.(2020)]{YinLiuGengLuo2020}
+Yin, Y., Liu, L., Geng, Z., and Luo, P. (2020).
+\newblock Novel criteria to exclude the surrogate paradox and their optimalities.
+\newblock \emph{Scandinavian Journal of Statistics}, 47(1):84--103.
+\end{thebibliography}
+
+\end{document}

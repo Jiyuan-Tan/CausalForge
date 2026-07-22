@@ -1,0 +1,45 @@
+/-
+Copyright (c) 2026 Jiyuan Tan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Jiyuan Tan
+-/
+
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Basic
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Envelope
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.Denominator
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.DenominatorControl
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.DenominatorMoment
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.DenominatorRate
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.DenominatorRatioInProb
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.DependencyCLT
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.DispersionAsymptotics
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.DispersionConstruction
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.DispersionDesign
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.DispersionEnvelope
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.DispersionOptimization
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.EnvelopeCalculus
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.Kernel
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.LinScoreBounds
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.LinScoreCLT
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.Linearization
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.Moments
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.NumeratorMoment
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.RatioRemainder
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.Slutsky
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.Helpers.Surrogate
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.TConvexDesign
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.TDispersionCertificate
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.THeteroClt
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.THeteroEnvelope
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.THeterogeneitySeparation
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.THomogeneousReduction
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.TPostdesignWald
+import CausalSmith.Experimentation.EXP_BipartiteMinimaxDesign_Research.TSurrogateCertificate
+
+/-! # Run barrel (auto-generated)
+
+Aggregates every module of this causalsmith run so the whole run is ONE buildable target
+(`lake build <this module>`). Research modules are not reachable from the top-level
+`CausalSmith.lean` barrel, so the default lake target skips them and reports green on stale
+oleans. Rewritten from the run's module set on every F-stage entry — do not hand-edit. -/

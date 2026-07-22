@@ -1,0 +1,575 @@
+% =====================================================================
+%  thmsmith Stage 0 derivation skeleton.
+%  Written automatically by the thmsmith TS pipeline before Stage 0 runs.
+%  Locked parameters: qid=pid\_network\_random\_set, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; downstream stages (0.5 reviewer,
+%    Stage 1, Stage 4d) grep for these section titles and macros.
+%  - Each section contains exactly one `% TODO(stage0 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `CausalSmith/tools/src/discovery/prompts/stage0_outputFormat.txt`.
+%  - The `\paragraph{Locked parameters.}` block inside Formal setup must
+%    pin the convention precisely. For Panel anchors mapped to the Q1
+%    pool-mode, fill it VERBATIM from the Q1 block of
+%    `CausalSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`
+%    (Q2..Q6 templates have been retired). For free-form panel / ExactID /
+%    PartialID anchors (the default), reproduce the locked-parameter block
+%    from the Stage -1 proposal verbatim. Do not rephrase locked parameters;
+%    Stage 1 quotes them.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{thmsmith Stage 0 derivation: \texttt{pid\_network\_random\_set} / \texttt{v1}%
+  \\ \large\textit{Sparse network random-set envelopes for latent exposure direct and indirect effects}}
+\author{thmsmith Stage 0 solver}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\begin{abstract}
+This note sets up a partial-identification problem for finite network experiments in which the exposure map is latent, sparse-network compatible, and has image cardinality at most \(K\).  The target causal estimand is the totalized vector \(\theta_{\mathrm{DI}}\) stacking normalized average direct effects \(D_k\) and ordered indirect effects \(I_{k\ell}\).  The estimand-defining functional is the support envelope \(\mathsf C_K(P)=\{x:u^\transpose x\le h_K(u;P)\text{ for all }u\}\), where \(h_K(u;P)\) is a finite support program over one shared sparse graph, one shared \(K\)-support exposure system, and bounded response surfaces reproducing the observed law \(P\).  For comparison the setup also defines the cellwise relaxation \(h_{\mathrm{cell},K}\), the shared-map compatibility gap \(\Gamma_K\), and the componentwise rectangle gap \(\Delta_K\).  The per-conjecture stages will test whether these independently evaluable support functionals yield a strict cellwise frontier, a joint nonrectangular direct/indirect region, and finite endpoint-rejection certificates.
+\end{abstract}
+
+\section{Introduction}
+Direct and indirect causal effects under interference are meaningful only after one specifies how other units' assignments enter a unit's exposure.  In many network experiments the observed network is incomplete and the scientifically plausible exposure map is known only to be sparse and low-dimensional.  Treating that map as fixed can understate uncertainty, while optimizing each direct and indirect component in isolation can overstate what is jointly compatible with a single latent network and a single latent exposure system.
+
+The setup in this note asks for the sharp closed convex set of direct/indirect effect vectors compatible with the observed finite-population law, bounded responses, known assignment design, sparse hidden-edge constraints, and a \(K\)-support exposure-label restriction.  Known fixed-map analyses reduce such problems to finite linear programs once the graph and exposure map are specified.  Random-set partial-identification theory gives support-function tools for incomplete models, but the present object adds a discrete shared-map compatibility restriction: all exposure cells used to form the contrasts must be generated by one sparse graph and one collection of label maps.
+
+The targeted contribution is therefore not a new sampling result.  It is a finite-population, population-level bounding construction that separates three objects: the sparse support program \(h_K\), the cellwise relaxation \(h_{\mathrm{cell},K}\), and the componentwise rectangle support \(h_{\mathrm{rect},K}\).  If the conjectures below are confirmed, they show that the cellwise relaxation can be strictly too large, that separately sharp direct and indirect intervals can be jointly misleading, and that endpoint failures admit finite certificates separating random-set infeasibility from sparse-network incompatibility.
+
+\paragraph{Motivating conjecture(s).}
+\noindent\textbf{Conjecture 1 (label=strict-cellwise-frontier).}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:finite}--\ref{ass:nondegenerate} and Assumption~\ref{ass:cellwise}, there is a nonempty open set \(\mathcal O_{\Gamma,K}\) of nondegenerate finite observed laws and a finite direction family \(\mathcal V_K\subset\mathbb R^{K+K(K-1)}\) such that, for every \(P\in\mathcal O_{\Gamma,K}\), some \(u\in\mathcal V_K\) satisfies
+\[
+\Gamma_K(u;P)=h_{\mathrm{cell},K}(u;P)-h_K(u;P)>0.
+\]
+For the \(K=2,n=4\) witness law \(P^\star\) in Corollary~\ref{cor:witness}, the conjectured lower bound is
+\[
+\max_{u\in\mathcal V_2}\Gamma_2(u;P^\star)\ge \frac{1}{40}.
+\]
+The focal mathematical object is the shared-map compatibility gap \(\Gamma_K\), which compares two independently defined support programs: the sparse graph-compatible program \(h_K\) and the cellwise relaxation \(h_{\mathrm{cell},K}\).
+
+\noindent\textbf{Conjecture 2 (label=joint-nonrectangular).}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:finite}--\ref{ass:audit}, there is an open set \(\mathcal O_K\) of finite observed laws \(P\) satisfying Assumption~\ref{ass:nondegenerate} such that
+\[
+\Delta_K(P)>0.
+\]
+For every \(P\in\mathcal O_K\),
+\[
+\Theta_I(P)\subsetneq
+\prod_j [\inf_{\theta\in\Theta_I(P)}\theta_j,\ \sup_{\theta\in\Theta_I(P)}\theta_j],
+\]
+and there exists a direction \(u\in\mathcal U_K\) for which the componentwise rectangle overstates the sharp support value by exactly the direct-indirect coupling defect:
+\[
+h_{\mathrm{rect},K}(u;P)-h_K(u;P)=\Delta_K(P).
+\]
+For the concrete witness law \(P^\star\) in Corollary~\ref{cor:witness}, the conjectured certificate direction is \(u^\star=D_1-I_{01}\) and the conjectured margin is \(\Delta_2(P^\star)\ge1/40\).
+
+\noindent\textbf{Conjecture 3 (label=certificate).}
+(NOT YET PROVED.)  Under Assumptions~\ref{ass:finite}--\ref{ass:audit}, for every finite direction \(u\in\mathcal U_K\) and endpoint \(t>h_K(u;P)\), endpoint rejection admits a finite certificate of exactly one of the following two types.  If \(t\notin\mathcal E_{\mathrm{cell}}(u,P)\), then \(t\) is separated by a violated bounded-response, observed-law, or Aumann-support inequality for the cellwise random set of feasible contrast selections.  If \(t\in\mathcal E_{\mathrm{cell}}(u,P)\), then the rejection has a sparse-network incompatibility certificate for the \(K\)-label exposure assignments, expressed through hidden-edge incidence, degree-cap, and label-support constraints.  In the special case \(K=2\) with binary ``unexposed/exposed'' labels and cellwise-feasible demanded exposure events, the network part reduces to a capacitated set-cover / b-matching feasibility certificate.
+
+\section{Related work and positioning}
+\cite{HudgensHalloran2008} introduce direct, indirect, total, and overall effects under partial interference; their vocabulary motivates the components \(D_k\) and \(I_{k\ell}\) bounded here.  \cite{AronowSamii2017} give the design-based exposure-mapping framework under general interference; their fixed-map identification setting is the corner case in which the latent graph and exposure system are singleton.  \cite{Manski2013} develops partial identification for treatment response with social interactions; the present note has the same population-level partial-ID posture but replaces broad response restrictions with sparse \(K\)-support exposure compatibility.  \cite{SavjeAronowHudgens2021} show that average treatment effects can remain interpretable under unknown limited interference, whereas this note targets a joint direct/indirect vector under explicit latent exposure labels.
+
+\cite{HuLiWager2022} connect average direct and indirect effects to infinitesimal Bernoulli policy effects when the exposure structure is specified; the nonrectangularity conjecture asks whether separately sharp direct and indirect components can fail to be jointly attainable when the exposure structure is latent.  \cite{Savje2024} emphasizes the distinction between an exposure mapping as an estimand definition and assumptions that exposures capture interference; this setup turns that distinction into an identified set over maps.  \cite{SchroderOprescuFeuerriegelKallus2026} is the closest partial-ID comparator because it bounds direct and spillover effects under exposure-map misspecification in fixed canonical settings; the difference here is the shared sparse-network compatibility frontier against a cellwise relaxation.
+
+\cite{BeresteanuMolchanovMolinari2011} characterize sharp identified regions in incomplete models using Aumann expectations of random sets, and \cite{BeresteanuMolchanovMolinari2012} explain the corresponding capacity and support-function machinery.  Those results supply the mathematical language for \(h_K\) and \(\mathsf C_K(P)\), but not the network-specific requirement that all feasible exposure events arise from one graph and one \(K\)-label system.  \cite{MolchanovMolinari2014} surveys random-set applications in econometrics and motivates support-function reporting for partially identified sets.  \cite{EdmondsMatchingPolytope1965} and \cite{Wolsey1975} are the discrete-optimization comparators for the certificate conjecture, because hidden-edge incidence and degree-cap failures can be expressed through matching, cover, and related finite infeasibility certificates.
+
+The closest in-repository analogue is the banked network-exposure proposal with fixed candidate hidden-edge and exposure structures.  The present setup is deliberately different: the exposure labels themselves are latent, their image size is bounded by \(K\), and the object of interest is the support envelope over all sparse compatible maps rather than a fixed-map LP alone.
+
+\section{Formal setup}
+\label{sec:formal-setup}
+There are \(n<\infty\) units.  The observed law is
+\[
+P=P_{I,A,Y;\pi,\mathcal L,\mathcal C,\bar d,K},
+\]
+where \(I\sim\mathrm{Unif}\{1,\ldots,n\}\), \(A\in\{0,1\}^n\) is assigned by the known randomized design \(\pi\), \(Y_I\in[0,1]\) is the observed outcome, \(\mathcal L\) is the observed undirected network, \(\mathcal C\) is a finite set of candidate hidden edges, \(\bar d=(\bar d_1,\ldots,\bar d_n)\) are hidden-degree caps, and \(K\ge2\) is the exposure-support bound.  Let \(\mathfrak G(\mathcal L,\mathcal C,\bar d)\) be the finite class of graphs containing \(\mathcal L\), using only hidden edges from \(\mathcal C\), and satisfying the caps.
+
+A sparse \(K\)-support exposure system is a pair \((G,e)\) with \(G\in\mathfrak G(\mathcal L,\mathcal C,\bar d)\) and maps \(e_i:\{0,1\}^{n-1}\to\{0,\ldots,K-1\}\).  The map \(e_i(a_{-i})\) depends only on the assignments of \(i\)'s neighbors in \(G\), and \(|\operatorname{im}(e_i)|\le K\).  Labels are normalized deterministically by sorting the design exposure propensities
+\[
+\rho_{ik}(G,e)=\Pr_\pi\{e_i(A_{-i})=k\},
+\]
+with ties broken by the associated conditional mean vector and then lexicographically.  The normalized label is denoted \(\ell_i^{G,e}(A_{-i})\).
+
+Potential outcomes are \(Y_i(a,k)\in[0,1]\) for own treatment \(a\in\{0,1\}\) and normalized exposure label \(k\in\{0,\ldots,K-1\}\).  Consistency means \(Y_i=Y_i(A_i,\ell_i^{G,e}(A_{-i}))\).  A completion \((G,e,Y(\cdot))\) is feasible for \(P\) if it satisfies the sparse graph, label, boundedness, positivity, and consistency restrictions and reproduces the observed conditional law of \(Y_I\) given \((I,A)\) under \(\pi\).  The feasible class is denoted \(\mathcal F_K(P)\).
+
+For a feasible completion, define active counts
+\[
+N_k(G,e)=\#\{i:\rho_{ik}(G,e)>0\},\qquad
+N_{k\ell}(G,e)=\#\{i:\rho_{ik}(G,e)\rho_{i\ell}(G,e)>0\}.
+\]
+The totalized direct and indirect components are
+\[
+D_k(G,e,Y)=
+\begin{cases}
+\displaystyle \frac{1}{N_k(G,e)}\sum_{i:\rho_{ik}>0}\{Y_i(1,k)-Y_i(0,k)\}, & N_k(G,e)>0,\\
+0, & N_k(G,e)=0,
+\end{cases}
+\]
+and, for \(k\ne \ell\),
+\[
+I_{k\ell}(G,e,Y)=
+\begin{cases}
+\displaystyle \frac{1}{2N_{k\ell}(G,e)}\sum_{a\in\{0,1\}}\sum_{i:\rho_{ik}\rho_{i\ell}>0}\{Y_i(a,\ell)-Y_i(a,k)\}, & N_{k\ell}(G,e)>0,\\
+0, & N_{k\ell}(G,e)=0.
+\end{cases}
+\]
+The target vector \(\theta_{\mathrm{DI}}\in\mathbb R^{K+K(K-1)}\) stacks all \(D_k\) and \(I_{k\ell}\), with inactive coordinates filled by zero.  The raw identified set is
+\[
+\Theta_I^{\mathrm{raw}}(P)=\{\theta_{\mathrm{DI}}(G,e,Y):(G,e,Y)\in\mathcal F_K(P)\},
+\]
+and the reported linear-functional sharp set is its closed convex hull,
+\[
+\Theta_I(P)=\overline{\operatorname{co}}\Theta_I^{\mathrm{raw}}(P).
+\]
+This closed convex convention is the maintained partial-ID object for all support-function comparisons.
+
+\begin{corollary}[Concrete noncorner witness target]\label{cor:witness}
+Let \(P^\star\) be the following \(K=2,n=4\) law.  The design assigns \(A_1,\ldots,A_4\) independently with probability \(1/2\), so each assignment vector has probability \(1/16\).  The observed network is empty, the hidden-edge candidates are \(\mathcal C=\{\{1,2\},\{2,3\},\{3,4\}\}\), and \(\bar d=(1,2,2,1)\).  The witness exposure map for the concrete audit is \(e_i(A_{-i})=\one\{\text{at least one path-neighbor of }i\text{ is treated}\}\), giving label propensities \((\rho_{10},\rho_{11})=(1/2,1/2)\), \((\rho_{20},\rho_{21})=(1/4,3/4)\), \((\rho_{30},\rho_{31})=(1/4,3/4)\), and \((\rho_{40},\rho_{41})=(1/2,1/2)\).  Conditional mean outcomes are generated by
+\[
+\mu_i(a,z_L,z_R)=0.30+0.16a+0.11z_L+0.07z_R+0.05a\max\{z_L,z_R\}+\eta_i,
+\]
+where missing neighbors have \(z=0\), \((\eta_1,\eta_2,\eta_3,\eta_4)=(0.00,0.03,0.05,0.02)\), and \(Y_i\mid A\) is Bernoulli with mean \(\mu_i(A_i,A_{i-1},A_{i+1})\).  All assignment probabilities, active label propensities, and conditional means lie in \([1/4,3/4]\).  Conjectures 1 and 2 predict that \(u^\star=D_1-I_{01}\) satisfies \(\Gamma_2(u^\star;P^\star)\ge1/40\) and \(\Delta_2(P^\star)\ge1/40\).
+\end{corollary}
+
+\paragraph{Locked parameters.}
+\begin{itemize}
+  \item qid: \(\texttt{pid\_network\_random\_set}\)
+  \item specialization: \(\texttt{v1}\)
+  \item observable distribution: \(P=P_{I,A,Y;\pi,\mathcal L,\mathcal C,\bar d,K}\) with \(I\) uniformly sampled from a finite population of size \(n\), \(A\in\{0,1\}^n\) assigned by known randomized design \(\pi\), \(Y_I\in[0,1]\), observed network \(\mathcal L\), candidate hidden edges \(\mathcal C\), hidden-degree caps \(\bar d\), and exposure-support bound \(K\ge2\).
+  \item parameter \(\theta\): \(\theta_{\mathrm{DI}}\in\mathbb R^{K+K(K-1)}\), the totalized joint vector whose coordinates are label-normalized average direct contrasts \(D_k\) and ordered indirect contrasts \(I_{k\ell}\), with \(D_k=0\) when label \(k\) is design-inactive and \(I_{k\ell}=0\) when either ordered label is inactive.
+  \item identifying restrictions: \(\mathcal R_{\mathrm{sparse}\ K\mathrm{-support}}\), consisting of finite population, known randomized assignment, bounded outcomes, consistency, sparse-network compatibility, exposure sufficiency through \((A_i,e_i(A_{-i}))\), local positivity for active labels, deterministic label normalization, and the support-cardinality bound \(|\operatorname{im}(e_i)|\le K\).
+  \item bounding functional: \(\mathsf C_K(P)=\{x\in\mathbb R^{K+K(K-1)}:u^\transpose x\le h_K(u;P)\text{ for all }u\}\), where \(h_K\) is the support function over one shared sparse network, one shared \(K\)-support exposure system, and bounded response surfaces reproducing \(P\); sharpness verdict: sharp for the closed convex identified set \(\Theta_I(P)\) and an outer convex envelope for the raw nonconvex union \(\Theta_I^{\mathrm{raw}}(P)\).
+\end{itemize}
+
+\section{Assumptions}
+\begin{assumption}[Finite randomized network experiment]\label{ass:finite}
+The population size \(n\), design \(\pi\), observed network \(\mathcal L\), candidate hidden-edge set \(\mathcal C\), hidden-degree caps \(\bar d\), and support bound \(K\ge2\) are fixed and known.  The sampled unit \(I\) is uniform on \(\{1,\ldots,n\}\), the treatment vector satisfies \(A\in\{0,1\}^n\), and \(Y_I\in[0,1]\).
+\end{assumption}
+
+\begin{assumption}[Sparse graph compatibility]\label{ass:sparse}
+The true interference graph belongs to \(\mathfrak G(\mathcal L,\mathcal C,\bar d)\): it contains \(\mathcal L\), uses only hidden edges from \(\mathcal C\), and has at most \(\bar d_i\) hidden edges incident to each unit \(i\).
+\end{assumption}
+
+\begin{assumption}[\(K\)-support exposure sufficiency]\label{ass:k-support}
+For each unit \(i\), there exists an exposure map \(e_i:\{0,1\}^{n-1}\to\{0,\ldots,K-1\}\) that depends only on treatments of \(i\)'s neighbors in the true graph and has image size at most \(K\).  Potential outcomes depend on other units' assignments only through \(e_i(A_{-i})\).
+\end{assumption}
+
+\begin{assumption}[Label normalization]\label{ass:labels}
+Exposure labels are normalized by the deterministic rule from Section~\ref{sec:formal-setup}: sort labels first by \(\rho_{ik}(G,e)\), then by the conditional mean vector, and finally by lexicographic label name.  All direct and indirect effects use these normalized labels.
+\end{assumption}
+
+\begin{assumption}[Consistency and bounded response]\label{ass:consistency}
+For the true sparse exposure system \((G,e)\), \(Y_i=Y_i(A_i,\ell_i^{G,e}(A_{-i}))\) and \(0\le Y_i(a,k)\le1\) for every unit \(i\), own treatment \(a\in\{0,1\}\), and normalized label \(k\in\{0,\ldots,K-1\}\).
+\end{assumption}
+
+\begin{assumption}[Observed-law matching]\label{ass:matching}
+A feasible completion \((G,e,Y(\cdot))\) must reproduce the observed conditional law of \(Y_I\) given \((I,A)\) under the known assignment law \(\pi\).  Equivalently, every conditional mean and mass point of \(P_{I,A,Y}\) used by the finite support-function program is matched by the induced distribution from \((G,e,Y(\cdot))\).
+\end{assumption}
+
+\begin{assumption}[Local positivity for reported labels]\label{ass:positivity}
+For every active component of the mask \(M(G,e)\), the design \(\pi\) assigns positive probability to the relevant own-treatment and normalized-exposure events.  Inactive direct labels with \(N_k=0\) and inactive ordered labels with \(N_{k\ell}=0\) remain in the fixed vector \(\theta_{\mathrm{DI}}\) by the zero-fill convention.
+\end{assumption}
+
+\begin{assumption}[Cellwise relaxation comparator]\label{ass:cellwise}
+The relaxation \(\mathcal F_{\mathrm{cell},K}(P)\) is evaluated with the same observed law \(P\), bounded-outcome restrictions, totalized label coordinates, and local-positivity convention as \(\mathcal F_K(P)\), but its exposure-cell indicators need only satisfy per-unit design-propensity and support-size constraints.  They need not be jointly generated by one sparse graph or one exposure map.
+\end{assumption}
+
+\begin{assumption}[Nondegenerate witness class]\label{ass:nondegenerate}
+For generic-class claims, the observed law belongs to an open class in which all treatment probabilities used by \(\pi\), all reported label propensities, and all outcome cell means used by the support program are bounded away from \(0\) and \(1\).  The open-set radius is measured in the finite-dimensional Euclidean topology on these probabilities and means.
+\end{assumption}
+
+\begin{assumption}[Stable audit directions]\label{ass:audit}
+The finite direction class \(\mathcal U_K\) contains all coordinate directions, all direct-minus-indirect contrast directions, their negatives, and all normal directions needed for the finite witness family in Corollary~\ref{cor:witness}.  The rectangle support \(h_{\mathrm{rect},K}\) optimizes each component over the same feasible class \(\mathcal F_K(P)\) before taking the rectangular product.
+\end{assumption}
+
+\begin{assumption}[No indirect response heterogeneity]\label{ass:no-indirect}
+For the no-indirect sanity check only, every feasible response surface satisfies \(Y_i(a,k)=Y_i(a,\ell)\) for all units \(i\), own treatments \(a\), and normalized labels \(k,\ell\).
+\end{assumption}
+
+\section{Estimand-defining functional}
+\label{sec:functional}
+For a direction \(u\in\mathbb R^{K+K(K-1)}\), define the sparse support functional
+\[
+h_K(u;P)=\sup_{(G,e,Y)\in\mathcal F_K(P)}u^\transpose\theta_{\mathrm{DI}}(G,e,Y).
+\]
+This is an evaluable finite optimization.  For each \(G\in\mathfrak G(\mathcal L,\mathcal C,\bar d)\), enumerate the finite set of \(K\)-support maps \(e_i\) measurable with respect to \(G\)'s neighborhoods, normalize labels by the rule in Section~\ref{sec:formal-setup}, introduce variables \(y_{iak}\in[0,1]\) for the response surface values \(Y_i(a,k)\), impose the observed-law matching equalities induced by \(P\), and maximize the linear objective \(u^\transpose\theta_{\mathrm{DI}}\).  The value \(h_K(u;P)\) is the maximum over this finite list of linear programs.  Hence a downstream reader can evaluate \(h_K\) from the finite observed law by enumeration plus linear programming.
+
+The sharp closed convex support envelope is
+\[
+\mathsf C_K(P)=\{x\in\mathbb R^{K+K(K-1)}:u^\transpose x\le h_K(u;P)\text{ for every }u\in\mathbb R^{K+K(K-1)}\}.
+\]
+By support-function duality for compact convex sets, \(\mathsf C_K(P)=\Theta_I(P)\) when \(\Theta_I(P)\) is defined as the closed convex hull of the feasible direct/indirect vectors.  Relative to the raw union \(\Theta_I^{\mathrm{raw}}(P)\), \(\mathsf C_K(P)\) is the closed convex outer envelope and may contain convex mixtures that are not generated by one deterministic latent exposure system.
+
+The cellwise relaxation uses the same variables and observed-law matching equations for bounded responses but replaces shared graph/map feasibility with independent exposure-cell indicators \(Z_{iak}\in[0,1]\) satisfying the design-level label-propensity, support-size, and local positivity constraints separately by unit and assignment cell.  Its support function is
+\[
+h_{\mathrm{cell},K}(u;P)=
+\sup_{(Z,Y)\in\mathcal F_{\mathrm{cell},K}(P)}
+u^\transpose\theta_{\mathrm{DI}}(Z,Y).
+\]
+The shared-map compatibility gap is the computable difference
+\[
+\Gamma_K(u;P)=h_{\mathrm{cell},K}(u;P)-h_K(u;P)\ge0,
+\]
+where nonnegativity follows from \(\mathcal F_K(P)\subseteq\mathcal F_{\mathrm{cell},K}(P)\).
+
+For endpoint auditing, define
+\[
+\mathcal E_{\mathrm{cell}}(u,P)=
+\{t\in\mathbb R:\exists (Z,Y)\in\mathcal F_{\mathrm{cell},K}(P)
+\text{ with }u^\transpose\theta_{\mathrm{DI}}(Z,Y)=t\}.
+\]
+For a finite audit direction set \(\mathcal U_K\) containing coordinate directions, direct-minus-indirect directions, and their negatives, let \(h_{\mathrm{rect},K}\) be the support function of the componentwise rectangle
+\[
+\prod_j [\inf_{\theta\in\Theta_I(P)}\theta_j,\ \sup_{\theta\in\Theta_I(P)}\theta_j].
+\]
+Equivalently, for \(u=(u_j)_j\),
+\[
+h_{\mathrm{rect},K}(u;P)=
+\sum_{j:u_j\ge0}u_j\sup_{\theta\in\Theta_I(P)}\theta_j
++\sum_{j:u_j<0}u_j\inf_{\theta\in\Theta_I(P)}\theta_j,
+\]
+where each scalar endpoint is again a coordinate-direction instance of \(h_K\).  The direct-indirect coupling defect is
+\[
+\Delta_K(P)=
+\max_{u\in\mathcal U_K}
+\{h_{\mathrm{rect},K}(u;P)-h_K(u;P)\}.
+\]
+Thus \(\Gamma_K\), \(h_{\mathrm{rect},K}\), and \(\Delta_K\) are all computable maps from \(P\), the known design and support data, and finite optimization primitives.
+
+\section{Target causal estimand}
+The causal target is the totalized joint direct/indirect vector
+\[
+\theta_{\mathrm{DI}}=
+\bigl((D_k)_{k=0}^{K-1},(I_{k\ell})_{k,\ell\in\{0,\ldots,K-1\},\,k\ne\ell}\bigr)
+\in\mathbb R^{K+K(K-1)}.
+\]
+For any admissible latent completion \((G,e,Y(\cdot))\), the direct coordinate \(D_k\) is the average over active units of the own-treatment contrast at normalized exposure label \(k\), and the ordered indirect coordinate \(I_{k\ell}\) is the average over own-treatment arms and active units of the exposure-label contrast from \(k\) to \(\ell\).  If a label or ordered label pair is inactive under the known design and latent map, its coordinate is defined to be zero so that all completions live in the same Euclidean space.
+
+Because \((G,e,Y(\cdot))\) is not observed, the target is not point identified by definition.  The population-level claim to be proved in later sections is a containment or equality between the feasible values of \(\theta_{\mathrm{DI}}\) and the support-function envelope \(\mathsf C_K(P)\), together with comparisons against the cellwise and rectangular relaxations.  Sampling, plug-in estimation, and inference are outside the scope of this Stage 0.0 setup.
+
+\section{Main theorems}
+\paragraph{Refutation note (Conjecture 1).}
+Refuted-with-counterexample: the stated \(K=2,n=4\) witness law \(P^\star\) has \(\mathcal F_2(P^\star)=\varnothing\), so the advertised finite compatibility gap \(\Gamma_2(u;P^\star)\) is not a well-defined sparse-versus-cellwise support-program comparison.  The explicit witness audit is given in Section~\ref{sec:counterexample-minimality}.
+
+\paragraph{Refutation note (Conjecture 2).}
+Conjecture 2 is refuted because the advertised witness law \(P^\star\) has no \(K=2\) sparse exposure completion: unit 2's four neighbor-assignment means are all distinct, so no two-label exposure map can satisfy observed-law matching.  The explicit witness audit is given in Section~\ref{sec:counterexample-minimality}.
+
+\begin{theorem}[Finite endpoint certificates for sparse random-set rejection]\label{thm:certificate}
+Confirmed: every endpoint \(t>h_K(u;P)\) admits the stated finite cellwise-or-network certificate, with \(K=2\) reducing to capacitated set-cover / b-matching feasibility.
+\end{theorem}
+
+The theorem says that an endpoint failure for the sparse support program is auditable without guessing why the endpoint failed.  If the endpoint is not even attainable by the cellwise random-set relaxation, the obstruction is already a random-set or bounded-response obstruction; if the endpoint is attainable cellwise, then the remaining failure is a shared-map failure.  This is the promised operational distinction between the cellwise frontier and the sparse shared-network frontier.  Relative to the random-set separation results of \cite{BeresteanuMolchanovMolinari2011} and the finite matching and cover certificates of \cite{EdmondsMatchingPolytope1965} and \cite{Wolsey1975}, the new content is the endpoint split induced by one sparse hidden graph and one \(K\)-support exposure-label system.
+
+\section{Interpretation}
+\paragraph{Conjecture 3.}
+The theorem says that an endpoint failure for the sparse support program is auditable without guessing why the endpoint failed.  If the endpoint is not even attainable by the cellwise random-set relaxation, the obstruction is already a random-set or bounded-response obstruction: the demanded contrast is outside the Aumann expectation envelope generated by bounded potential outcomes and the observed law.  If the endpoint is attainable cellwise, then the remaining failure is not a response-bounds failure.  It is a shared-map failure: the demanded exposure cells cannot be generated by one hidden graph obeying the caps and one \(K\)-support exposure-label system.  This is the promised operational distinction between the cellwise frontier and the sparse shared-network frontier.
+
+\paragraph{Synthesis.}
+For Conjectures 1 and 2, the advertised \(1/40\) witness is outside the stated \(K=2\) sparse-exposure regime rather than an example with a verified finite slack.  For Conjecture 3, endpoints between \(h_K(u;P)\) and \(h_{\mathrm{cell},K}(u;P)\) can be diagnosed as sparse-network failures, preserving the Introduction's distinction between the cellwise frontier and the sparse shared-network frontier.
+
+\section{Step-by-step proof}
+\subsubsection*{Refutation of Conjecture 1}
+See Section~\ref{sec:counterexample-minimality} for the refutation: the proposed \(P^\star\) has \(\mathcal F_2(P^\star)=\varnothing\), so the advertised finite compatibility gap is not a well-defined sparse-versus-cellwise comparison for that witness.
+
+\subsubsection*{Refutation of Conjecture 2}
+See Section~\ref{sec:counterexample-minimality} for the refutation: the proposed \(P^\star\) has no \(K=2\) sparse exposure completion, so \(\Delta_2(P^\star)\) cannot satisfy the claimed finite margin.
+
+\subsubsection*{Proof of Conjecture 3}
+\begin{proof}
+Fix \(u\in\mathcal U_K\) and \(t>h_K(u;P)\).  By Assumption~\ref{ass:finite}, there are finitely many units, assignment cells, candidate hidden edges, and exposure labels.  By Assumptions~\ref{ass:consistency} and~\ref{ass:matching}, the response variables used by the support programs are bounded in \([0,1]\) and satisfy finitely many observed-law matching equalities.  Hence both the sparse and cellwise endpoint-audit problems are finite systems of algebraic constraints.
+
+Let \(\mathcal P_{\mathrm{cell}}(u,t;P)\) be the augmented cellwise feasibility system obtained from \(\mathcal F_{\mathrm{cell},K}(P)\) by adding the linear equality
+\[
+u^\transpose\theta_{\mathrm{DI}}=t.
+\]
+The variables are the cellwise feasible contrast selections and bounded response coordinates appearing in Section~\ref{sec:functional}.  The rows of this finite system are exactly the bounded-response inequalities, the observed-law matching equalities, the local positivity and support-size rows from Assumptions~\ref{ass:cellwise} and~\ref{ass:positivity}, and the displayed endpoint equality.
+
+First suppose \(t\notin\mathcal E_{\mathrm{cell}}(u,P)\).  By the definition of \(\mathcal E_{\mathrm{cell}}(u,P)\), the augmented system \(\mathcal P_{\mathrm{cell}}(u,t;P)\) is infeasible.  The finite-dimensional Farkas alternative therefore provides multipliers on the inequality and equality rows whose nonnegative linear combination yields a strict contradiction.  Written in the random-set language of \cite{BeresteanuMolchanovMolinari2011}, this is precisely a violated support inequality for the Aumann expectation of the cellwise feasible contrast random set; in coordinate form the same certificate is a finite list of violated bounded-response, observed-law, local-positivity, or support rows.  This proves the first certificate type.
+
+Now suppose \(t\in\mathcal E_{\mathrm{cell}}(u,P)\).  Choose a cellwise feasible selection \(w^\star\in\mathcal F_{\mathrm{cell},K}(P)\) with \(u^\transpose\theta_{\mathrm{DI}}(w^\star)=t\), and let \(z^\star\) denote its demanded table of exposure labels by unit and assignment cell.  Consider the finite sparse-network realization system \(\mathcal N(z^\star)\).  Its binary hidden-edge variables \(b_e\) satisfy the incidence restrictions from Assumption~\ref{ass:sparse}:
+\[
+b_e\in\{0,1\},\qquad
+\sum_{e\ni i,\ e\in\mathcal C} b_e\le \bar d_i
+\quad\text{for every unit }i.
+\]
+Its label variables \(r_{i\alpha k}\in\{0,1\}\), indexed by unit \(i\), assignment cell \(\alpha\in\{0,1\}^{n-1}\), and label \(k\in\{0,\ldots,K-1\}\), satisfy
+\[
+\sum_{k=0}^{K-1}r_{i\alpha k}=1,\qquad
+\#\{k:\exists\alpha\ r_{i\alpha k}=1\}\le K,
+\]
+and the neighborhood-measurability rows required by Assumption~\ref{ass:k-support}: if two assignment cells \(\alpha,\alpha'\) agree on all selected neighbors of \(i\), then \(r_{i\alpha k}=r_{i\alpha'k}\) for every \(k\).  Equivalently, after writing \(g_{ij}\) for the observed-or-hidden edge indicator, these equalities are enforced by the finite linear implications
+\[
+|r_{i\alpha k}-r_{i\alpha'k}|
+\le
+\sum_{j:\alpha_j\ne\alpha'_j} g_{ij}.
+\]
+Finally \(\mathcal N(z^\star)\) imposes the demanded-label rows \(r_{i\alpha k}=z^\star_{i\alpha k}\) on all design-positive cells represented in \(w^\star\), together with the deterministic normalization rows from Assumption~\ref{ass:labels}.
+
+If \(\mathcal N(z^\star)\) had a solution, then the solved hidden graph and exposure maps, combined with the bounded response selection already present in \(w^\star\), would satisfy Assumptions~\ref{ass:sparse}--\ref{ass:matching}.  Assumption~\ref{ass:positivity} supplies the active-label denominators used in the totalized direct and indirect coordinates, and Assumption~\ref{ass:audit} ensures that the finite direction \(u\) is one of the audited directions.  Therefore the same selection would be an element of \(\mathcal F_K(P)\) attaining \(u^\transpose\theta_{\mathrm{DI}}=t\), contradicting \(t>h_K(u;P)\).  Hence \(\mathcal N(z^\star)\) is infeasible.
+
+Because \(\mathcal N(z^\star)\) is a finite \(0\)-\(1\) incidence system, infeasibility has a finite certificate: enumerate all incidence vectors satisfying the hidden-edge and degree-cap rows, and for each surviving incidence vector enumerate the finitely many \(K\)-label maps.  Each leaf fails one of the displayed incidence, degree-cap, label-measurability, label-support, normalization, or demanded-label rows.  This finite failed-branch list is the sparse-network incompatibility certificate.  The two cases \(t\notin\mathcal E_{\mathrm{cell}}(u,P)\) and \(t\in\mathcal E_{\mathrm{cell}}(u,P)\) are mutually exclusive and exhaustive, so the audit rule assigns exactly one certificate type to every endpoint \(t>h_K(u;P)\).
+
+It remains to identify the \(K=2\) reduction.  With binary labels interpreted as unexposed/exposed and demanded exposure events fixed cellwise, introduce one edge-choice variable \(b_{ij}\) for each hidden candidate edge.  For a demanded exposed event of unit \(i\) under assignment \(\alpha\), the constraint is a covering row
+\[
+\sum_{j:\alpha_j=1,\ \{i,j\}\in\mathcal L}1
++
+\sum_{j:\alpha_j=1,\ \{i,j\}\in\mathcal C} b_{ij}\ge1.
+\]
+For a demanded unexposed event, every treated observed neighbor is forbidden and every treated candidate neighbor must have \(b_{ij}=0\).  Together with
+\[
+\sum_{j:\{i,j\}\in\mathcal C}b_{ij}\le\bar d_i,
+\]
+these rows are exactly a capacitated set-cover feasibility problem with b-matching-style degree capacities on the selected hidden-edge incidence vector; infeasibility of this finite system is the advertised network certificate.  This proves the theorem.
+\end{proof}
+
+\section{Sanity checks}
+\paragraph{Conjecture 3.}
+If the cellwise relaxation is replaced by the sparse feasible class itself, then \(\mathcal E_{\mathrm{cell}}(u,P)\) becomes the sparse attainable endpoint set.  For \(t>h_K(u;P)\), no sparse endpoint equality \(u^\transpose\theta_{\mathrm{DI}}=t\) is attainable, so the first branch gives the ordinary finite support-function separation of a compact feasible set.  In the no-hidden-edge corner \(\mathcal C=\emptyset\), the network branch has no hidden variables: every demanded exposed event must already be covered by an observed treated neighbor, every demanded unexposed event must have no observed treated neighbor, and the certificate collapses to direct inspection of the fixed observed network.  For \(K=2\), these rows are the displayed capacitated cover constraints with all capacities equal to zero, matching the known fixed-exposure audit.
+
+\section{Counterexample or minimality check}\label{sec:counterexample-minimality}
+\subsubsection*{Refutation of Conjecture 1}
+\paragraph{Refutation attempt and counterexample.}
+The required refutation primitive is the two-strata response-type enumeration for the smallest nontrivial support, with \(K=2\), binary treatment, and the eight hidden-edge subsets of
+\[
+\mathcal C=\{\{1,2\},\{2,3\},\{3,4\}\}.
+\]
+For a fixed graph \(G\), the primitive enumerates every binary exposure partition \(e_i\) measurable with respect to the treatments of unit \(i\)'s neighbors in \(G\).  Observed-law matching under Assumption~\ref{ass:matching} implies the following deterministic cell restriction: for each own-treatment value \(a\), all assignments \(A_{-i}\) assigned to the same label \(e_i(A_{-i})=k\) must have the same observed conditional mean, because Assumption~\ref{ass:consistency} represents every such cell by one bounded response value \(Y_i(a,k)\).
+
+Apply this enumeration to the proposed \(P^\star\) from Corollary~\ref{cor:witness}.  For unit \(2\), the observed mean is
+\[
+\mu_2(a,z_L,z_R)=0.33+0.16a+0.11z_L+0.07z_R+0.05a\max\{z_L,z_R\},
+\]
+where \(z_L=A_1\) and \(z_R=A_3\).  If the edge \(\{1,2\}\) is absent from \(G\), then \(e_2\) cannot depend on \(A_1\).  Holding \(A_3=0\) fixed gives
+\[
+\mu_2(a,1,0)-\mu_2(a,0,0)=0.11+0.05a>0,
+\]
+so two assignments with the same allowed exposure information would require different values of \(Y_2(a,k)\).  This violates Assumptions~\ref{ass:k-support}, \ref{ass:consistency}, and \ref{ass:matching}.  If instead the edge \(\{2,3\}\) is absent, holding \(A_1=0\) fixed gives
+\[
+\mu_2(a,0,1)-\mu_2(a,0,0)=0.07+0.05a>0,
+\]
+which gives the same contradiction.  Hence any feasible \(G\) would have to include both edges incident to unit \(2\).
+
+When both incident edges are present, \(e_2\) may depend on the full pair \((A_1,A_3)\), but \(K=2\) leaves only two labels for four neighbor patterns.  At \(a=0\), the four means are
+\[
+\mu_2(0,0,0)=0.33,\quad
+\mu_2(0,1,0)=0.44,\quad
+\mu_2(0,0,1)=0.40,\quad
+\mu_2(0,1,1)=0.51.
+\]
+They are all distinct.  By the pigeonhole principle, every binary partition of the four neighbor patterns puts two distinct means in one label cell, contradicting observed-law matching.  Thus unit \(2\) has no feasible binary exposure map for any candidate hidden-edge subset.
+
+The same calculation holds for unit \(3\).  Its mean function is
+\[
+\mu_3(a,z_L,z_R)=0.35+0.16a+0.11z_L+0.07z_R+0.05a\max\{z_L,z_R\},
+\]
+with \(z_L=A_2\) and \(z_R=A_4\).  Missing either incident edge creates a positive omitted-neighbor contrast, while including both incident edges leaves the four \(a=0\) means
+\[
+0.35,\quad 0.46,\quad 0.42,\quad 0.53,
+\]
+again all distinct and therefore impossible to represent with two labels.
+
+Consequently every one of the eight graph vertices in the sparse program fails feasibility for at least one of units \(2\) or \(3\).  The sparse feasible class is empty:
+\[
+\mathcal F_2(P^\star)=\varnothing.
+\]
+The advertised \(1/40\) witness is therefore not a finite shared-map compatibility calculation.  It is outside the stated \(K=2\) sparse-exposure regime rather than an example with
+\(\Gamma_2(u^\star;P^\star)=h_{\mathrm{cell},2}(u^\star;P^\star)-h_2(u^\star;P^\star)\) bounded below by a verified finite slack.  This refutes Conjecture 1 as stated.  A nearest repair would replace \(P^\star\) by a law whose conditional means are constant on some two-label sparse exposure partition, or raise the support bound for the stated law to at least four labels for the two interior units; either change is a new theorem statement, not a proof of the original witness clause.
+
+\subsubsection*{Refutation of Conjecture 2}
+\paragraph{Refutation attempt and counterexample.}
+The required refutation primitive is the two-strata response-type enumeration for the smallest nontrivial support.  I apply it directly to the advertised \(K=2,n=4\) witness law \(P^\star\) from Corollary~\ref{cor:witness}.  The search space for a unit with two possible path neighbors is the set of all binary maps
+\[
+q:\{0,1\}^2\to\{0,1\},
+\]
+which is the same as enumerating all two-label partitions of the four neighbor-assignment states.  This enumeration is stronger than a graph-subset search: if no such arbitrary binary partition works, then no map measurable with respect to any allowed neighbor subset can work.
+
+Consider unit \(2\), whose left and right path-neighbor treatment indicators are \(z_L=A_1\) and \(z_R=A_3\).  Under \(P^\star\), its conditional mean table is
+\[
+m_{2a}(z_L,z_R)
+=0.33+0.16a+0.11z_L+0.07z_R+0.05a\max\{z_L,z_R\}.
+\]
+Thus
+\[
+\begin{array}{c|cccc}
+& (0,0)&(1,0)&(0,1)&(1,1)\\ \hline
+a=0&0.33&0.44&0.40&0.51\\
+a=1&0.49&0.65&0.61&0.72
+\end{array}
+\]
+All four entries in the \(a=0\) row are distinct, and all four entries in the \(a=1\) row are distinct.  By Assumption~\ref{ass:k-support}, a \(K=2\) exposure map for unit \(2\) has at most two labels on these four neighbor states.  By the pigeonhole principle, any such map assigns the same label to at least two distinct states.  By Assumption~\ref{ass:consistency}, those two states must share the same potential-outcome value \(Y_2(a,k)\) for each own-treatment arm \(a\); by Assumption~\ref{ass:matching}, that common value must reproduce the observed conditional mean in both states.  The displayed table makes this impossible already in the \(a=0\) row.
+
+Equivalently, the finite vertex enumeration over the \(2^4\) binary label assignments produces no feasible partition for unit \(2\).  The same obstruction also appears for unit \(3\):
+\[
+\begin{array}{c|cccc}
+& (0,0)&(1,0)&(0,1)&(1,1)\\ \hline
+a=0&0.35&0.46&0.42&0.53\\
+a=1&0.51&0.67&0.63&0.74 .
+\end{array}
+\]
+Hence the concrete law \(P^\star\) has \(\mathcal F_2(P^\star)=\emptyset\) under Assumptions~\ref{ass:finite}--\ref{ass:audit}.  Consequently \(\Theta_I(P^\star)\), the coordinate endpoints in the componentwise rectangle, \(h_2(u^\star;P^\star)\), and \(\Delta_2(P^\star)\) are not evaluable as finite sharp-support objects for this witness law.  This contradicts the conjecture's concrete claim that \(u^\star=D_1-I_{01}\) certifies \(\Delta_2(P^\star)\ge1/40\).  The nearest repair is not a proof of Conjecture 2 as stated: one would need either a different noncorner witness law whose conditional means are compatible with some two-label sparse exposure system, or a revised regime with \(K\ge4\) for the two-neighbor units.
+
+\subsubsection*{Conjecture 3 minimality check}
+\paragraph{Refutation attempt before proof.}
+The cluster-level refutation primitive is vertex enumeration of the smallest non-trivial finite response-type problem.  Specialize to \(K=2\), binary outcomes, binary labels \(0=\) unexposed and \(1=\) exposed, and finitely many assignment cells.  A potential refuting witness would have to satisfy three properties simultaneously:
+\[
+t>h_K(u;P),\qquad t\in\mathcal E_{\mathrm{cell}}(u,P),\qquad
+\text{and no finite network certificate for the demanded labels.}
+\]
+The enumeration has two layers.  First enumerate the vertices of the cellwise bounded-response polytope after adding the equality \(u^\transpose\theta_{\mathrm{DI}}=t\).  If the augmented polytope is empty, the candidate is not a refutation: finite-dimensional Farkas separation gives a violated cellwise inequality.  If a cellwise vertex exists, record its demanded exposure table \(z^\star\).  Second enumerate all hidden-edge incidence vectors \(b\in\{0,1\}^{\mathcal C}\) satisfying \(b_e=1\) on observed edges, \(b_e=0\) off \(\mathcal L\cup\mathcal C\), and \(\sum_{e\ni i,\ e\in\mathcal C}b_e\le\bar d_i\), and all binary label maps that are measurable with respect to the selected neighbors and have image size at most two.
+
+The candidate branches considered by this enumeration are exhaustive.  A branch that generates \(z^\star\) together with the same bounded response selection would be an element of \(\mathcal F_K(P)\) by Assumptions~\ref{ass:sparse}--\ref{ass:matching}, so it would imply \(h_K(u;P)\ge t\), contradicting \(t>h_K(u;P)\).  Every remaining branch stops at a violated hidden-edge incidence row, degree-cap row, label-measurability row, support-size row, or demanded-label row.  Thus the searched space contains no counterexample to the dichotomy; the positive proof abstracts exactly this finite alternative.
+
+\paragraph{Minimality check.}
+The sparse-network branch genuinely needs the shared-map restriction in Assumptions~\ref{ass:sparse} and~\ref{ass:k-support}.  If the cellwise demanded labels are allowed to vary independently by unit and assignment cell, then any \(t\in\mathcal E_{\mathrm{cell}}(u,P)\) already has a feasible cellwise selection and there is no remaining hidden-edge incidence system to refute.  In that weakened regime the second certificate type is vacuous, and endpoints between \(h_K(u;P)\) and \(h_{\mathrm{cell},K}(u;P)\) cannot be diagnosed as sparse-network failures.  The minimality role is therefore played by the finite shared hidden-edge incidence vector and the requirement that one \(K\)-support exposure map generate all demanded label cells.
+
+\section{Formalization checklist}
+\paragraph{Substrate survey record.}
+\begin{itemize}[leftmargin=*]
+  \item \texttt{bypass-justified}: the local declaration-name survey for the listed partial-identification reuse targets did not expose a matching finite network random-set primitive at the abstraction used here.  The Stage 0 artifact therefore records only mathematical objects and finite programs, leaving implementation reuse choices to Stage 1 and later.
+\end{itemize}
+
+\paragraph{Deterministic finite objects.}
+\begin{itemize}[leftmargin=*]
+  \item \(\mathfrak G(\mathcal L,\mathcal C,\bar d)\): finite set of undirected graphs; inputs are observed edge set \(\mathcal L\), candidate hidden-edge set \(\mathcal C\), and degree caps \(\bar d\); used to enumerate sparse completions.
+  \item \(e_i:\{0,1\}^{n-1}\to\{0,\ldots,K-1\}\): unit-level exposure map measurable with respect to selected neighbors; depends on \(G\) and \(K\); used in feasibility, label support, and observed-law matching.
+  \item \(\ell_i^{G,e}\): deterministically normalized exposure label; depends on design propensities, conditional mean tie-breakers, and lexicographic ordering; used to align direct and indirect coordinates across completions.
+  \item \(Y_i(a,k)\in[0,1]\): bounded response-surface coordinate; depends on unit \(i\), own treatment \(a\), and normalized label \(k\); used in consistency, matching, and contrast objectives.
+  \item \(D_k(G,e,Y)\) and \(I_{k\ell}(G,e,Y)\): real-valued totalized direct and ordered indirect contrasts; depend on active-count denominators \(N_k,N_{k\ell}\); roles are the coordinates of \(\theta_{\mathrm{DI}}\).
+  \item \(\theta_{\mathrm{DI}}\in\mathbb R^{K+K(K-1)}\): stacked direct/indirect vector with inactive coordinates zero-filled; target object for support-function optimization.
+  \item \(\mathcal F_K(P)\): sparse feasible completion set; depends on Assumptions~\ref{ass:finite}--\ref{ass:positivity}; role is the raw feasible class for \(h_K\) and \(\Theta_I(P)\).
+  \item \(\mathcal F_{\mathrm{cell},K}(P)\): cellwise relaxation; depends on Assumption~\ref{ass:cellwise}; role is the comparator for \(\Gamma_K\) and the first branch of the certificate theorem.
+  \item \(h_K(u;P)\): support functional from a direction \(u\) and observed law \(P\) to \(\mathbb R\cup\{-\infty\}\) when infeasible; evaluated by finite graph/map enumeration plus linear programming; role is the endpoint being audited.
+  \item \(h_{\mathrm{cell},K}(u;P)\), \(\Gamma_K(u;P)\), \(h_{\mathrm{rect},K}(u;P)\), and \(\Delta_K(P)\): comparator support and gap functionals; roles are the refuted witness quantities for Conjectures 1 and 2.
+  \item \(\mathcal E_{\mathrm{cell}}(u,P)\): subset of real endpoints attainable by the cellwise augmented system; role is the case split in Theorem~\ref{thm:certificate}.
+  \item \(\mathcal P_{\mathrm{cell}}(u,t;P)\): finite linear feasibility system for cellwise endpoint \(t\); rows are boundedness, matching, local-positivity, support-size, and endpoint equality; role is the source of Farkas certificates.
+  \item \(\mathcal N(z^\star)\): finite \(0\)-\(1\) network realization system for demanded labels \(z^\star\); rows are incidence, degree-cap, label-measurability, support-size, normalization, and demanded-label constraints; role is the source of sparse-network incompatibility certificates.
+\end{itemize}
+
+\paragraph{Probabilistic assumptions and observed-law inputs.}
+\begin{itemize}[leftmargin=*]
+  \item \(P=P_{I,A,Y;\pi,\mathcal L,\mathcal C,\bar d,K}\): finite observed law with uniform sampled unit, known assignment design, observed outcome, and support data; supplies all conditional means and mass points in Assumption~\ref{ass:matching}.
+  \item \(\pi\): known randomized assignment law on \(\{0,1\}^n\); supplies design-positive cells, label propensities \(\rho_{ik}\), and active-count positivity.
+  \item \(P^\star\): concrete \(K=2,n=4\) witness law from Corollary~\ref{cor:witness}; used only as the counterexample law refuting the concrete witness clauses of Conjectures 1 and 2.
+\end{itemize}
+
+\paragraph{Proof primitives.}
+\begin{itemize}[leftmargin=*]
+  \item Finite pigeonhole argument: any two-label map from four neighbor states merges at least two states; with distinct observed conditional means, this contradicts consistency and observed-law matching.
+  \item Finite-dimensional Farkas alternative: infeasibility of \(\mathcal P_{\mathrm{cell}}(u,t;P)\) yields multipliers certifying a violated cellwise support or bounded-response inequality.
+  \item Exhaustive finite enumeration: infeasibility of \(\mathcal N(z^\star)\) is witnessed by a finite failed-branch list over hidden-edge incidence vectors and \(K\)-label maps.
+  \item \(K=2\) cover reduction: demanded exposed events produce covering rows, demanded unexposed events produce forbidden-edge rows, and degree caps produce b-matching-style capacity rows.
+\end{itemize}
+
+\section{Conclusion and references}
+Conjecture 1 (strict-cellwise-frontier) is refuted; Refuted-with-counterexample: the stated \(K=2,n=4\) witness law \(P^\star\) has \(\mathcal F_2(P^\star)=\varnothing\), so the advertised finite compatibility gap \(\Gamma_2(u;P^\star)\) is not a well-defined sparse-versus-cellwise support-program comparison.
+
+Conjecture 2 (joint-nonrectangular) is refuted; Conjecture 2 is refuted because the advertised witness law \(P^\star\) has no \(K=2\) sparse exposure completion: unit 2's four neighbor-assignment means are all distinct, so no two-label exposure map can satisfy observed-law matching.
+
+Conjecture 3 (certificate) is confirmed; Confirmed: every endpoint \(t>h_K(u;P)\) admits the stated finite cellwise-or-network certificate, with \(K=2\) reducing to capacitated set-cover / b-matching feasibility.
+
+\subsection*{References}
+\begin{thebibliography}{99}
+
+\bibitem{AronowSamii2017}
+Aronow, P. M. and Samii, C. (2017).
+Estimating average causal effects under general interference, with application to a social network experiment.
+\emph{Annals of Applied Statistics} 11(4), 1912--1947.
+
+\bibitem{BeresteanuMolchanovMolinari2011}
+Beresteanu, A., Molchanov, I., and Molinari, F. (2011).
+Sharp identification regions in models with convex moment predictions.
+\emph{Econometrica} 79(6), 1785--1821.
+
+\bibitem{BeresteanuMolchanovMolinari2012}
+Beresteanu, A., Molchanov, I., and Molinari, F. (2012).
+Partial identification using random set theory.
+\emph{Journal of Econometrics} 166(1), 17--32.
+
+\bibitem{EdmondsMatchingPolytope1965}
+Edmonds, J. (1965).
+Maximum matching and a polyhedron with \(0,1\)-vertices.
+\emph{Journal of Research of the National Bureau of Standards, Section B} 69B(1--2), 125--130.
+
+\bibitem{HuLiWager2022}
+Hu, Y., Li, S., and Wager, S. (2022).
+Average direct and indirect causal effects under interference.
+\emph{Biometrika}.
+
+\bibitem{HudgensHalloran2008}
+Hudgens, M. G. and Halloran, M. E. (2008).
+Toward causal inference with interference.
+\emph{Journal of the American Statistical Association} 103(482), 832--842.
+
+\bibitem{Manski2013}
+Manski, C. F. (2013).
+Identification of treatment response with social interactions.
+\emph{The Econometrics Journal} 16(1), S1--S23.
+
+\bibitem{MolchanovMolinari2014}
+Molchanov, I. and Molinari, F. (2014).
+Applications of random set theory in econometrics.
+\emph{Annual Review of Economics} 6, 229--251.
+
+\bibitem{Savje2024}
+Savje, F. (2024).
+Causal inference with misspecified exposure mappings.
+\emph{Biometrika}.
+
+\bibitem{SavjeAronowHudgens2021}
+Savje, F., Aronow, P. M., and Hudgens, M. G. (2021).
+Average treatment effects in the presence of unknown interference.
+\emph{Annals of Statistics} 49(2), 673--701.
+
+\bibitem{SchroderOprescuFeuerriegelKallus2026}
+Schroder, M., Oprescu, M., Feuerriegel, S., and Kallus, N. (2026).
+Causal inference on networks under misspecified exposure mappings: A partial identification framework.
+\emph{arXiv preprint}.
+
+\bibitem{Wolsey1975}
+Wolsey, L. A. (1975).
+Faces for a linear inequality in \(0\)-\(1\) variables.
+\emph{Mathematical Programming} 8, 165--178.
+
+\end{thebibliography}
+
+\end{document}

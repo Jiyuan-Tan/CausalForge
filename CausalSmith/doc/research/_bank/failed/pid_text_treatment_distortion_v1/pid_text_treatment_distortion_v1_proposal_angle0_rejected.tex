@@ -1,0 +1,328 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_text\_treatment\_distortion, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to a Q1..Q6 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    If it is a free-form `(qid, specialization)`, define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_text\_treatment\_distortion} / \texttt{v1}%
+  \\ \large\textit{Sharp distortion envelopes for text/image treatment ATEs from learned representations}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Free-form PartialID convention:
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization})=
+(\texttt{pid\_text\_treatment\_distortion},\texttt{v1}),\\
+\text{observable distribution }P=\mathcal L(R,Y),\quad
+R\in\mathcal R\subset[0,1]^d,\quad Y\in[0,1],\\
+\theta=M(z_1)-M(z_0)\text{ for two oracle treatment representations }
+z_1,z_0\in\mathcal Z\subset[0,1]^d,\\
+\text{identifying restrictions: }m_P(r)=\E_P[Y\mid R=r]\text{ is the causal mean for learned-representation interventions,}\\
+\text{and the unknown oracle-to-learned calibration kernel }\kappa_z\in\Delta(\mathcal R)
+\text{ is supported on }\{r:\|r-z\|_\infty\le\varepsilon\},\\
+\text{bounding functional } \Theta_I(P;\varepsilon,z_1,z_0)
+=\left\{\sum_r \kappa_{z_1}(r)m_P(r)-\sum_r \kappa_{z_0}(r)m_P(r):
+\kappa\text{ obeys the distortion restriction}\right\}.
+\end{gathered}
+\]
+The finite-support version is locked for Stage 0: \(\mathcal R\) and \(\mathcal Z\) are finite nonempty subsets of \([0,1]^d\), \(m_P\) is known on \(\mathcal R\), and every target ball
+\(\mathcal B_\varepsilon(z_a)=\{r\in\mathcal R:\|r-z_a\|_\infty\le\varepsilon\}\), \(a\in\{0,1\}\), is nonempty.
+
+\begin{abstract}
+Text and image treatments are increasingly analyzed through low-dimensional learned representations, but recent point-identification arguments usually treat the learned representation as if it were the oracle causal representation. This proposal asks what can be identified when the learned representation is only known to be within a sup-norm distortion budget \(\varepsilon\) of the oracle representation. The proposed kernel is a sharp finite-support identified set for an oracle-representation ATE, expressed only through the distortion budget and the observed learned-representation outcome regression \(m_P(r)=\E[Y\mid R=r]\). The envelope collapses to the usual regression contrast when \(\varepsilon=0\), but the flagship conjecture says that any nontrivial single-regression endpoint is uniformly valid only under a named causal-sufficiency/exact-representation assumption. Resolving this would turn representation quality from an informal diagnostic in text/image causal inference into a transparent partial-identification sensitivity parameter.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Empirical work now treats texts, images, videos, and other high-dimensional objects as interventions: a prompt changes wording, an advertisement changes visual style, or a generative model changes a latent semantic attribute. Since the object itself is too high-dimensional for classical overlap or regression arguments, recent methods estimate effects after mapping the object to a learned representation. The scientific question is whether an ATE for the oracle semantic representation is identified when the analyst only observes an approximately correct learned representation.
+
+\paragraph{The main finding (proposed).}
+The proposed headline result is a sharp distortion envelope. Under only bounded outcomes, a learned-representation causal regression \(m_P\), and an \(\ell_\infty\) distortion budget \(\varepsilon\), Theorem~1 states that the identified set for \(M(z_1)-M(z_0)\) is the interval obtained by taking the worst and best observed-regression values over the two distortion balls around \(z_1\) and \(z_0\). Theorem~2 verifies the exact-recovery corner: when \(\varepsilon=0\) and the oracle points are observed representation points, the interval collapses to \(m_P(z_1)-m_P(z_0)\). Conjecture~1 is the flagship impossibility claim: outside exact recovery or fiber-invariance, no estimator that reports one learned-representation regression endpoint can be uniformly interpreted as the oracle ATE over the nonparametric distortion class.
+
+\paragraph{What is new.}
+The novelty kernel is not another representation-learning estimator. It is a partial-identification characterization of the causal estimand that recent text/image treatment papers implicitly point-identify by assuming a correct or causally sufficient representation. The precise gap is the \(\varepsilon\)-distortion frontier: \citet{ImaiNakamura2025GPI} and \citet{ImaiNakamura2024TextTreatments} use GenAI representations to support point estimation, \citet{KaddourZhuLiuKusnerSilva2021} and \citet{CorcollAndreuVlontzosORiordanGilliganLee2026} learn structured-treatment representations, and \citet{EgamiFongGrimmerRobertsStewart2022} warns that discovered text measures can create identification problems. None gives the sharp identified set obtained when the analyst can certify only a sup-norm representation error.
+
+\paragraph{How it positions in the literature.}
+The anchor cluster is partial identification. The proposal combines the Manski program of reporting what follows from data plus weak credible restrictions \citep{Manski1990} with random-set identification logic \citep{BeresteanuMolchanovMolinari2012}, but the random set is now an \(\varepsilon\)-ball around each oracle representation. It also speaks directly to the text-as-treatment and structured-treatment literatures: \citet{FongGrimmer2023} show that randomizing high-dimensional texts is not enough for latent-treatment effects, while \citet{VeitchSridharBlei2020} and \citet{RobertsStewartNielsen2020} proceed by constructing low-dimensional text summaries used for causal adjustment. This proposal asks for the sharp causal content of those summaries when representation recovery is approximate rather than exact.
+
+\paragraph{Implications for the community.}
+The direct consumer is the GenAI-powered inference workflow of \citet{ImaiNakamura2025GPI}: instead of reporting a single effect from an embedding model, applied researchers studying persuasive text or facial-image treatments could report the \(\varepsilon\)-distortion ATE interval and state how small the certified representation error must be before conclusions change sign.
+
+\paragraph{How research benefits from the conclusion.}
+Researchers using learned representations for text or image treatments should report a distortion-sensitivity interval, and should reserve point estimates for settings where exact representation recovery or fiber-invariance is explicitly defended.
+
+\section{Related work}
+\citet{Manski1990} is the foundational partial-identification anchor: it argues for sharp bounds on treatment response under weak assumptions rather than point estimates supported by unverified restrictions. \citet{BeresteanuMolchanovMolinari2012} provides the random-set lens for partial identification; here the random set is the deterministic distortion ball \(\mathcal B_\varepsilon(z)\) around an oracle treatment representation. \citet{Ura2018} derives sharp bounds for treatment effects with mismeasured endogenous binary treatments, showing that measurement error in the treatment can still leave nontrivial causal content; the present proposal differs by treating the treatment as a high-dimensional learned representation with metric distortion rather than binary misclassification.
+
+\citet{VeitchSridharBlei2020} introduces causally sufficient text embeddings for causal adjustment, making explicit the point-identification role of the learned representation. \citet{RobertsStewartNielsen2020} conditions on low-dimensional summaries of text through matching, so it is a practical predecessor to learned-representation causal workflows. \citet{EgamiFongGrimmerRobertsStewart2022} emphasizes that discovered text representations can themselves create identification risks and motivates a split-sample workflow; the current proposal isolates a different risk, namely approximation error after the representation is fixed. \citet{FongGrimmer2023} studies latent treatments in high-dimensional texts and shows that randomizing texts alone need not identify the latent-treatment ATE; the distortion envelope can be read as a sensitivity analysis for one class of latent-treatment measurement error.
+
+\citet{KaddourZhuLiuKusnerSilva2021} studies CATE estimation for structured treatments such as graphs, images, and text using a generalized Robinson decomposition; the proposal here asks what remains identified when the structured-treatment representation is only certified up to \(\varepsilon\). \citet{HaradaKashima2021} and \citet{ThoratKollaPedanekar2024} are representative graph/image-treatment estimators that exploit treatment representations but do not characterize sharp nonparametric distortion bounds. \citet{CorcollAndreuVlontzosORiordanGilliganLee2026} proves unbiasedness for contrastive representations of structured treatments under representation assumptions; the proposed impossibility result identifies the structural assumption needed for such a single endpoint to be interpreted as an oracle-representation ATE.
+
+The in-repository catalogue in \texttt{ThmSmith/doc/API.md} records no populated \texttt{ThmSmith/PartialID/} proposal at seed time; it lists PartialID as the future location for Manski-family bounds, IV bounds, sensitivity analysis, shape restrictions, and missing-data bounds. Existing panel entries such as Q1 minimal-basis and staggered-adoption results are linear-projection theorems rather than partial-identification bounds for unstructured treatments. Thus the closest in-catalogue prior art is the empty PartialID catalogue specification itself, not a competing proposal.
+
+\section{Formal setup}
+Fix a positive integer \(d\), and write \(\Delta(A)\) for the probability simplex over a finite set \(A\). Let \(R\in\mathcal R\subset[0,1]^d\) be the learned representation of a text or image treatment object and let \(Y\in[0,1]\) be the outcome. The observable distribution is \(P=\mathcal L(R,Y)\), and the observed learned-representation outcome regression is
+\[
+m_P(r)=\E_P[Y\mid R=r],\qquad r\in\mathcal R.
+\]
+The oracle representation space is a finite set \(\mathcal Z\subset[0,1]^d\). For two target oracle representations \(z_1,z_0\in\mathcal Z\), the unobserved causal mean surface is \(M:\mathcal Z\to[0,1]\), and the target ATE is
+\[
+\theta=M(z_1)-M(z_0).
+\]
+The maintained partial-identification restriction is that there exists an unknown calibration kernel \(\kappa_z\in\Delta(\mathcal R)\) such that
+\[
+M(z)=\sum_{r\in\mathcal R}\kappa_z(r)m_P(r)
+\quad\text{and}\quad
+\kappa_z(r)=0\text{ whenever }\|r-z\|_\infty>\varepsilon
+\]
+for every oracle representation considered in the target. Equivalently, the analyst knows only that the learned representations compatible with oracle point \(z\) lie in
+\[
+\mathcal B_\varepsilon(z)=\{r\in\mathcal R:\|r-z\|_\infty\le\varepsilon\}.
+\]
+The identified set is therefore
+\[
+\Theta_I(P;\varepsilon,z_1,z_0)=
+\left\{\sum_{r\in\mathcal B_\varepsilon(z_1)}\kappa_{z_1}(r)m_P(r)
+-\sum_{r\in\mathcal B_\varepsilon(z_0)}\kappa_{z_0}(r)m_P(r):
+\kappa_{z_a}\in\Delta(\mathcal B_\varepsilon(z_a)),\ a\in\{0,1\}\right\}.
+\]
+
+\begin{quote}
+\begin{verbatim}
+Free-form PartialID convention:
+(qid, specialization) =
+(pid_text_treatment_distortion, v1);
+observable distribution P = Law(R,Y), R in finite R subset [0,1]^d, Y in [0,1];
+parameter theta = M(z1)-M(z0), z1,z0 in finite oracle space Z subset [0,1]^d;
+identifying restrictions: m_P(r)=E_P[Y|R=r] is the causal mean for learned-
+representation interventions, and the unknown oracle-to-learned calibration
+kernel kappa_z in Delta(R) is supported on {r: ||r-z||_infty <= epsilon};
+bounding functional:
+Theta_I(P;epsilon,z1,z0) =
+{sum_r kappa_z1(r)m_P(r) - sum_r kappa_z0(r)m_P(r): kappa obeys the
+distortion support restriction}.
+Stage 0 finite-support lock: R and Z are finite nonempty subsets of [0,1]^d,
+m_P is known on R, and B_epsilon(z_a) is nonempty for a=0,1.
+\end{verbatim}
+\end{quote}
+
+\section{Assumptions}
+\begin{assumption}[Finite bounded representation experiment]\label{ass:finite-bounded}
+\(\mathcal R\) and \(\mathcal Z\) are finite nonempty subsets of \([0,1]^d\), \(Y\in[0,1]\), and \(m_P(r)=\E_P[Y\mid R=r]\) is known for every \(r\in\mathcal R\).
+\end{assumption}
+
+\begin{assumption}[Learned-representation causal regression]\label{ass:learned-causal-regression}
+For each learned representation value \(r\in\mathcal R\), \(m_P(r)\) is the mean potential outcome under the learned-representation intervention \(R\leftarrow r\). This is the learned-representation analogue of the causal-sufficiency embedding condition used in text-adjustment and structured-treatment workflows.
+\end{assumption}
+
+\begin{assumption}[Sup-norm oracle distortion]\label{ass:supnorm-distortion}
+For every target oracle representation \(z\in\{z_0,z_1\}\), the admissible learned representations are exactly
+\(\mathcal B_\varepsilon(z)=\{r\in\mathcal R:\|r-z\|_\infty\le\varepsilon\}\), and these sets are nonempty.
+\end{assumption}
+
+\begin{assumption}[No hidden smoothness or parametric structure]\label{ass:no-extra-structure}
+Apart from Assumptions~\ref{ass:finite-bounded}--\ref{ass:supnorm-distortion}, the oracle-to-learned calibration kernel \(\kappa_z\) may be any probability distribution over \(\mathcal B_\varepsilon(z)\) at each target oracle point and the response values \(m_P(r)\) are unrestricted in \([0,1]\).
+\end{assumption}
+
+\begin{assumption}[Exact recovery corner]\label{ass:exact-recovery}
+\(\varepsilon=0\), \(z_0,z_1\in\mathcal R\), and hence \(\mathcal B_0(z_a)=\{z_a\}\) for \(a\in\{0,1\}\).
+\end{assumption}
+
+\begin{assumption}[Fiber-invariance / exact causal sufficiency]\label{ass:fiber-invariance}
+For each target \(z_a\), either \(\mathcal B_\varepsilon(z_a)\) is a singleton or \(m_P(r)\) is constant over all \(r\in\mathcal B_\varepsilon(z_a)\). This is the structural condition under which a learned-representation endpoint is invariant to admissible oracle-to-learned calibrations.
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: sharp finite-support distortion envelope]\label{thm:sharp-envelope}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:no-extra-structure}, the sharp identified set for \(\theta=M(z_1)-M(z_0)\) is the interval
+\[
+\Theta_I(P;\varepsilon,z_1,z_0)
+=\left[
+\min_{r_1\in\mathcal B_\varepsilon(z_1)}m_P(r_1)
+-\max_{r_0\in\mathcal B_\varepsilon(z_0)}m_P(r_0),\quad
+\max_{r_1\in\mathcal B_\varepsilon(z_1)}m_P(r_1)
+-\min_{r_0\in\mathcal B_\varepsilon(z_0)}m_P(r_0)
+\right].
+\]
+Sharpness means that every value in the displayed interval is generated by some admissible calibration kernel \(\kappa\) satisfying Assumption~\ref{ass:supnorm-distortion}.
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) The closest published ancestors are \citet{Manski1990} and \citet{BeresteanuMolchanovMolinari2012}, which give the general partial-ID and random-set logic, and \citet{Ura2018}, which treats mismeasured binary treatment; the \(\varepsilon\)-gap is that none characterizes the exact ATE envelope induced by bounded distortion of high-dimensional text/image representations against an oracle representation. (b) The concrete consumer is \citet{ImaiNakamura2025GPI}: their GenAI-powered text/image applications could report this interval as a representation-distortion sensitivity analysis rather than only a point estimate.
+
+\begin{theorem}[Theorem 2: exact-recovery point-identification corner]\label{thm:exact-corner}
+Under Assumptions~\ref{ass:finite-bounded}, \ref{ass:learned-causal-regression}, and \ref{ass:exact-recovery},
+\[
+\Theta_I(P;0,z_1,z_0)=\{m_P(z_1)-m_P(z_0)\}.
+\]
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{VeitchSridharBlei2020}, \citet{KaddourZhuLiuKusnerSilva2021}, and \citet{ImaiNakamura2024TextTreatments} use learned or internal representations to support point-identification or estimation claims; this theorem states the exact \(\varepsilon=0\) condition under which the distortion-envelope proposal reduces to their point-regression endpoint. (b) The concrete consumer is \citet{EgamiFongGrimmerRobertsStewart2022}: their split-sample text workflow gains a clean diagnostic saying that sample splitting controls overfitting but does not itself replace exact representation recovery.
+
+\begin{conjecture}[Conjecture 1: single-endpoint impossibility frontier (NOT YET PROVED)]\label{conj:endpoint-impossibility}
+Assume Assumptions~\ref{ass:finite-bounded}--\ref{ass:no-extra-structure} and \(\varepsilon>0\). Let \(s_a(\varepsilon,z_a,P)\in\mathcal B_\varepsilon(z_a)\) be any deterministic rule that selects one learned representation endpoint for each target, and define the single-endpoint contrast
+\[
+\Delta_s(P)=m_P(s_1(\varepsilon,z_1,P))-m_P(s_0(\varepsilon,z_0,P)).
+\]
+Then \(\Delta_s(P)=\theta\) for every observationally equivalent oracle calibration kernel in the distortion class if and only if Assumption~\ref{ass:fiber-invariance} holds for both target balls. Equivalently, whenever at least one target distortion ball contains two learned representations with different observed-regression values, the nonparametric identified set has positive width and every single-endpoint learned-representation contrast imposes a causal-sufficiency or exact-representation restriction not contained in the distortion model.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) The closest published claims are the causally sufficient embedding premise of \citet{VeitchSridharBlei2020}, the learned-measure warning of \citet{EgamiFongGrimmerRobertsStewart2022}, and the structured-treatment representation claims of \citet{KaddourZhuLiuKusnerSilva2021} and \citet{CorcollAndreuVlontzosORiordanGilliganLee2026}; the \(\varepsilon\)-gap is a flagship-level impossibility theorem tying point interpretation of any one regression endpoint to the named structural condition of fiber-invariance/exact causal sufficiency. (b) The concrete consumer is \citet{CorcollAndreuVlontzosORiordanGilliganLee2026}: contrastive learned representations would gain a sharp warning label specifying when their unbiased endpoint survives oracle-representation distortion.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Homogeneous local response]\label{cor:homogeneous}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:no-extra-structure}, if \(m_P(r)=c_a\) for all \(r\in\mathcal B_\varepsilon(z_a)\), \(a\in\{0,1\}\), then
+\[
+\Theta_I(P;\varepsilon,z_1,z_0)=\{c_1-c_0\}.
+\]
+This reduction follows because the lower and upper envelope in Theorem~\ref{thm:sharp-envelope} have the same endpoint values on each target ball.
+\end{corollary}
+
+\begin{corollary}[Manski worst-case fallback]\label{cor:manski}
+Under Assumptions~\ref{ass:finite-bounded}--\ref{ass:no-extra-structure}, if both distortion balls contain learned representations attaining the global outcome-regression range \(0\) and \(1\), then
+\(\Theta_I(P;\varepsilon,z_1,z_0)=[-1,1]\). This reduces to the bounded-outcome worst-case ATE range because the treated endpoint can be set to \(0\) or \(1\) independently of the control endpoint.
+\end{corollary}
+
+\section{Proof-sketch route}
+The finite-support envelope proof is a two-step sharpness argument. First, the distortion restriction implies \(M(z_a)\) lies in the convex hull of \(\{m_P(r):r\in\mathcal B_\varepsilon(z_a)\}\), so every admissible ATE lies between the displayed lower and upper extrema. Second, because Assumption~\ref{ass:no-extra-structure} imposes no coupling across target balls, any pair of endpoint values and every intermediate convex combination can be realized by calibration kernels over the two target balls. The exact-recovery corner is the singleton-ball specialization. The endpoint-impossibility conjecture should reduce to a two-point separation argument: if a target ball contains two observed-regression values, construct two admissible calibration kernels that agree on \(P\) but assign different oracle means to the same \(z_a\); the remaining boundary case is proving the converse that fiber-invariance is the only nonparametric way a single selector becomes calibration-invariant.
+
+\section{Honest scope flags}
+Theorem~\ref{thm:sharp-envelope} and Theorem~\ref{thm:exact-corner} are intended as routine finite-support partial-ID statements; the novel work is in positioning and extending them to the representation-distortion setting. Conjecture~\ref{conj:endpoint-impossibility} is not yet proved and is the flagship kernel: the forward counterexample direction is straightforward, but the claimed ``if and only if'' boundary should be checked carefully for selector rules that depend on \(P\). This v1 deliberately does not claim smooth-response, Lipschitz-response, or transport-capacity refinements; those could tighten the interval but would be different assumptions. The proposal also treats \(m_P(r)\) as a causal learned-representation regression; if that is false, the problem becomes confounding plus representation distortion rather than the narrower distortion-only partial-ID problem considered here.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (cold-start) --- initial draft of a finite-support PartialID distortion-envelope proposal; prior verdict: none.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Beresteanu, Molchanov, and Molinari(2012)]{BeresteanuMolchanovMolinari2012}
+Beresteanu, A., Molchanov, I., and Molinari, F. (2012).
+Partial identification using random set theory.
+\emph{Journal of Econometrics}, 166(1), 17--32.
+
+\bibitem[Corcoll Andreu et~al.(2026)]{CorcollAndreuVlontzosORiordanGilliganLee2026}
+Corcoll Andreu, O., Vlontzos, A., O'Riordan, M., and Gilligan-Lee, C. M. (2026).
+Contrastive representations of structured treatments.
+\emph{npj Artificial Intelligence}, 2, Article 49.
+
+\bibitem[Egami et~al.(2022)]{EgamiFongGrimmerRobertsStewart2022}
+Egami, N., Fong, C. J., Grimmer, J., Roberts, M. E., and Stewart, B. M. (2022).
+How to make causal inferences using texts.
+\emph{Science Advances}, 8(42), eabg2652.
+
+\bibitem[Fong and Grimmer(2023)]{FongGrimmer2023}
+Fong, C. and Grimmer, J. (2023).
+Causal inference with latent treatments.
+\emph{American Journal of Political Science}, 67(2), 374--389.
+
+\bibitem[Harada and Kashima(2021)]{HaradaKashima2021}
+Harada, S. and Kashima, H. (2021).
+GraphITE: Estimating individual effects of graph-structured treatments.
+In \emph{Proceedings of the 30th ACM International Conference on Information and Knowledge Management}, 659--668.
+
+\bibitem[Imai and Nakamura(2024)]{ImaiNakamura2024TextTreatments}
+Imai, K. and Nakamura, K. (2024).
+Causal representation learning with generative artificial intelligence: Application to texts as treatments.
+\emph{arXiv:2410.00903}.
+
+\bibitem[Imai and Nakamura(2025)]{ImaiNakamura2025GPI}
+Imai, K. and Nakamura, K. (2025).
+GenAI-powered inference.
+\emph{arXiv:2507.03897}.
+
+\bibitem[Kaddour et~al.(2021)]{KaddourZhuLiuKusnerSilva2021}
+Kaddour, J., Zhu, Y., Liu, Q., Kusner, M. J., and Silva, R. (2021).
+Causal effect inference for structured treatments.
+In \emph{Advances in Neural Information Processing Systems}, 34, 24841--24854.
+
+\bibitem[Manski(1990)]{Manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review}, 80(2), 319--323.
+
+\bibitem[Roberts, Stewart, and Nielsen(2020)]{RobertsStewartNielsen2020}
+Roberts, M. E., Stewart, B. M., and Nielsen, R. A. (2020).
+Adjusting for confounding with text matching.
+\emph{American Journal of Political Science}, 64(4), 887--903.
+
+\bibitem[Thorat, Kolla, and Pedanekar(2024)]{ThoratKollaPedanekar2024}
+Thorat, A., Kolla, R., and Pedanekar, N. (2024).
+I see, therefore I do: Estimating causal effects for image treatments.
+\emph{arXiv:2412.06810}.
+
+\bibitem[Ura(2018)]{Ura2018}
+Ura, T. (2018).
+Heterogeneous treatment effects with mismeasured endogenous treatment.
+\emph{Quantitative Economics}, 9(3), 1335--1370.
+
+\bibitem[Veitch, Sridhar, and Blei(2020)]{VeitchSridharBlei2020}
+Veitch, V., Sridhar, D., and Blei, D. M. (2020).
+Adapting text embeddings for causal inference.
+In \emph{Proceedings of the 36th Conference on Uncertainty in Artificial Intelligence}, PMLR 124, 919--928.
+\end{thebibliography}
+
+\end{document}

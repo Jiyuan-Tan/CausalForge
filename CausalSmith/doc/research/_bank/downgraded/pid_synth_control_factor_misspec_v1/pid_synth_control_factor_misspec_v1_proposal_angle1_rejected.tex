@@ -1,0 +1,385 @@
+% =====================================================================
+%  ThmSmith Stage -1 proposal skeleton.
+%  Written automatically by the ThmSmith TS pipeline before Stage -1 runs.
+%  Locked parameters: qid=pid\_synth\_control\_factor\_misspec, specialization=v1
+%
+%  HOW TO USE THIS FILE
+%  --------------------
+%  - The preamble (everything above the `% --- BEGIN CONTENT ---` marker)
+%    and the `\section{...}` headers below are fixed by the pipeline.
+%    Do NOT rewrite or rename them; the Step 3 reviewer subagent and the
+%    downstream Stage 0 / Stage 1 prompts grep for these section titles.
+%  - Each section contains exactly one `% TODO(stage-1 ...): ...`
+%    placeholder. Replace each TODO with the content described for that
+%    section in `ThmSmith/tools/src/prompts/stage_neg1_draft.txt`
+%    ("REQUIRED OUTPUT FORMAT (Stage -1 proposal .tex)").
+%  - The `\paragraph{Locked parameters.}` block in the metadata block
+%    must pin the chosen `(qid, specialization, p, assignment, target,
+%    regression)` precisely. If the proposal maps to a Q1..Q6 pool-mode,
+%    reproduce that block verbatim from
+%    `ThmSmith/doc/panel_formula_question_generator_note_with_common_prompts.tex`.
+%    If it is a free-form `(qid, specialization)`, define each parameter
+%    explicitly here (no implicit conventions). Stage 0 quotes this block;
+%    do not rephrase it after locking.
+%  - Removing a section header, renaming a macro, or rewriting the
+%    preamble is a regression: the file must still match this skeleton
+%    after you finish.
+% =====================================================================
+
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\transpose}{\mathsf{T}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\plim}{\operatorname*{plim}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ThmSmith Stage -1 proposal: \texttt{pid\_synth\_control\_factor\_misspec} / \texttt{v1}%
+  \\ \large\textit{Sharp misspecification intervals for extrapolating synthetic-control weights}}
+\author{ThmSmith Stage -1 proposer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% --- BEGIN CONTENT ---  (everything above is fixed by the pipeline)
+
+\paragraph{Locked parameters.}
+Free-form PartialID convention:
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization})=
+(\texttt{pid\_synth\_control\_factor\_misspec},\texttt{v1}),\\
+P=\text{the finite observed synthetic-control panel law with one treated unit, }J\text{ donor units,}\\
+\text{pre-periods }t=1,\ldots,T_0,\text{ one post-period }s,\text{ and fixed affine weights }w\in\mathcal{W},\\
+\theta_s=Y^{\mathrm{obs}}_{1s}-Y_{1s}(0),\\
+\text{identifying restrictions}=
+\text{an oracle post/pre factor bridge }a_s\in\R^{T_0}
+\text{ and unit-level sup-norm factor approximation error }|e_{it}|\le\eta,\\
+\text{bounding functional}=
+\Theta_I(P,w,\eta,a_s)=
+[Y^{\mathrm{obs}}_{1s}-S_s(w)-U_s(w),
+Y^{\mathrm{obs}}_{1s}-S_s(w)-L_s(w)].
+\end{gathered}
+\]
+Here \(S_t(w)=\sum_{j=1}^J w_jY_{j+1,t}\), \(g_t(w)=Y^{\mathrm{obs}}_{1t}-S_t(w)\),
+\(C_s(w)=S_s(w)+a_s^\transpose g(w)\) is the exact-factor untreated point prediction,
+\(\|w\|_1=\sum_{j=1}^J |w_j|\), \(\rho(w)=(1+\|w\|_1)\eta\), and the oracle
+post/pre bridge means that the unobserved untreated synthetic gap satisfies
+\[
+h_s(w):=Y_{1s}(0)-S_s(w)
+=a_s^\transpose(g(w)-u_0(w))+u_s(w),
+\quad
+\|u_0(w)\|_\infty\le\rho(w),\ |u_s(w)|\le\rho(w).
+\]
+The endpoints are \(L_s(w)=a_s^\transpose g(w)-\rho(w)(1+\|a_s\|_1)\) and
+\(U_s(w)=a_s^\transpose g(w)+\rho(w)(1+\|a_s\|_1)\). The weight class
+\(\mathcal{W}\) is affine, \(\sum_j w_j=1\), and may include signed
+extrapolating weights.
+
+\begin{abstract}
+Synthetic-control practice increasingly uses regression, ridge, and augmented weights that can extrapolate outside the donor convex hull. This proposal asks for the sharp treatment-effect interval implied by a bounded unit-level factor-approximation error when the weights are fixed but may be signed. The proposed kernel is that misspecification uncertainty is multiplied by the exact affine extrapolation factor \(1+\|w\|_1\), so two named synthetic-control workflows with the same pre-period fit can have different sharp partial-identification intervals. The routine theorems give the Chebyshev bridge interval and a \texttt{scpi}-compatible deterministic radius report, while the flagship conjecture states an open-set pre-fit-equivalence separation between convex and signed workflow outputs. If resolved, the result would turn extrapolation in synthetic control from an estimator-stability concern into a sharp identification diagnostic that must be reported alongside RMSPE and probabilistic prediction intervals.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Why the problem is important.}
+Modern synthetic-control estimators often relax the original convex-weight discipline in order to improve pre-treatment fit or reduce bias. That relaxation is useful for prediction, but under bounded factor misspecification it also lets donor approximation errors enter the treated-minus-synthetic gap with signs chosen by the extrapolating weights. The methodological question is whether pre-period fit alone is a sufficient robustness diagnostic once signed weights are allowed.
+
+\paragraph{The main finding (proposed).}
+The proposed flagship result is Conjecture~\ref{conj:prefit-equivalent-separation}: on an open class of donor panels, two named affine synthetic-control workflows can have the same observed pre-period gap and the same exact-factor untreated point prediction \(C_s(w)=S_s(w)+a_s^\transpose g(w)\), yet have sharp partial-identification radii separated by at least a fixed positive amount for every positive misspecification budget. The difference is not sampling variance or regularization bias; it is the deterministic factor \(1+\|w\|_1\) by which signed weights amplify bounded unit-level approximation errors.
+
+\paragraph{What is new.}
+Closest prior work by \citet{DoudchenkoImbens2016} organizes synthetic control, regression, and DID as choices of weights, \citet{KelloggMogstadPouliotTorgovitsky2021} frames synthetic control and matching as trading off interpolation and extrapolation biases, \citet{BenMichaelFellerRothstein2021} uses outcome-model augmentation to correct imperfect fit, and \citet{CattaneoFengPalombaTitiunik2025JSS} implements \texttt{scpi} reporting for OLS, lasso, ridge, L1-L2, and simplex-type synthetic-control weights. The novelty kernel here is a sharp identified-set statement: for a declared sup-norm factor-error budget, extrapolation changes the treatment-effect interval even when it leaves the pre-period fit statistic and exact-factor point prediction unchanged. This makes \(\|w\|_1\), not just RMSPE, matching distance, a ridge penalty, or a probabilistic prediction interval, part of the identification object.
+
+\paragraph{How it positions in the literature.}
+This is a partial-identification proposal in the synthetic-control and interactive-factor-model thread. It follows the Manski tradition of reporting the set of counterfactual values compatible with observables and restrictions \citep{Manski1990}, but the restrictions are the factor-model and approximation-error assumptions that motivate synthetic control \citep{AbadieDiamondHainmueller2010,Abadie2021}. It is adjacent to panel and linear-projection methods because the weights may come from regression, augmented synthetic control, or synthetic DID, but the statement below is not an estimator theorem; it is a sharp bounded-error identified set.
+
+\paragraph{Implications for the community.}
+The concrete downstream consumer is the \texttt{scpi} reporting workflow of \citet{CattaneoFengPalombaTitiunik2025JSS}: whenever OLS, lasso, ridge, L1-L2, or simplex-type synthetic-control weights are reported, the analyst can add the deterministic sharp-radius column \((1+\|w\|_1)(1+\|a_s\|_1)\eta\) alongside probabilistic prediction intervals.
+
+\paragraph{How research benefits from the conclusion.}
+A researcher should treat weight extrapolation as an identification-amplification diagnostic and should prefer, among pre-fit-equivalent specifications, the one with the smaller sharp misspecification interval.
+
+\section{Related work}
+\citet{AbadieGardeazabal2003} introduced the canonical comparative-case-study use of synthetic controls, motivating why single-unit counterfactual paths need transparent uncertainty statements. \citet{AbadieDiamondHainmueller2010} is the foundational anchor: it justifies point synthetic-control effects under exact pre-treatment fit and an exact factor-model balance argument. \citet{Abadie2021} surveys feasibility, data requirements, and failure modes for synthetic controls; the proposal below formalizes one such failure mode as a sharp interval radius. \citet{DoudchenkoImbens2016} is a close published comparator because it explicitly places synthetic control, regression, and DID in a common weight-based class and relaxes the original nonnegative-weight restrictions. \citet{KelloggMogstadPouliotTorgovitsky2021} is the closest extrapolation-bias comparator: it combines matching and synthetic control through MASC to trade off interpolation and extrapolation bias, while the proposal below asks for the sharp bounded-error interval induced by a fixed extrapolating weight vector. \citet{FermanPinto2021} studies imperfect pre-treatment fit under linear factor models; this proposal instead conditions on fixed weights and asks for the deterministic sharp identified set under a declared error budget. \citet{FirpoPossebom2018} develops sensitivity analysis and confidence sets for synthetic controls; the proposed interval is a different object, namely the sharp partial-ID set generated by bounded factor misspecification. \citet{BenMichaelFellerRothstein2021} develops augmented synthetic control to debias imperfect fit; the conjecture below says augmentation can leave a wider identification interval if it uses high-\(\ell_1\) extrapolating weights. \citet{ArkhangelskyAtheyHirshbergImbensWager2021} regularizes synthetic DID weights, making it relevant as another setting where fit and regularization do not by themselves report the sharp bounded-error interval. \citet{ChernozhukovWuthrichZhu2021} gives conformal inference for counterfactual and synthetic-control prediction; the current proposal separates deterministic partial identification from sampling inference. \citet{CattaneoFengTitiunik2021} is a close synthetic-control prediction-interval comparator: it constructs probabilistic intervals with finite-sample guarantees accounting for pre-period weight construction and post-period stochastic error, while the proposal below constructs deterministic sharp intervals over the bounded factor-misspecification set for a fixed weight vector. \citet{CattaneoFengPalombaTitiunik2025RESTAT} extends prediction-interval uncertainty quantification to multiple treated units and staggered adoption, making clear that the \texttt{scpi} thread targets non-asymptotic coverage for synthetic-control predictions rather than sharp deterministic support under a declared factor-error budget. \citet{CattaneoFengPalombaTitiunik2025JSS} is now the closest workflow comparator: its \texttt{scpi} software implements estimation and prediction intervals for least-squares, lasso, ridge, L1-L2, and simplex-type synthetic-control weights, but it does not report the fixed-oracle partial-ID radius \((1+\|w\|_1)(1+\|a_s\|_1)\eta\) or the dominance rule for pre-fit-equivalent specifications. \citet{NazaretShiBlei2024} studies misspecification of the linear synthetic-control assumption and gives theoretical bounds; the proposal below isolates the exact support-function interval that such misspecification bounds should cover.
+
+The in-repository ThmSmith catalogue in \texttt{doc/API.md} contains panel-regression entries such as Q1 minimal-basis and Q1 spectral-threshold results, but its ExactID and PartialID catalogue sections are seed-time empty. The archived angle \texttt{pid\_synth\_control\_factor\_misspec} proposal studied row-span visibility and latent-dictionary unions; the current pivot keeps the same broad synthetic-control misspecification topic but changes the kernel to signed-weight extrapolation and the \(\ell_1\) amplification of the sharp interval.
+
+\section{Formal setup}
+There is one treated unit \(i=1\), donor units \(i=2,\ldots,J+1\), pre-periods \(t=1,\ldots,T_0\), and a fixed post-period \(s>T_0\). For a fixed affine weight vector \(w\in\mathcal{W}\subseteq\{v\in\R^J:\sum_jv_j=1\}\), write \(S_t(w)=\sum_{j=1}^Jw_jY_{j+1,t}\), \(g_t(w)=Y^{\mathrm{obs}}_{1t}-S_t(w)\), and \(h_s(w)=Y_{1s}(0)-S_s(w)\). Let \(X_0\in\R^{T_0\times J}\) have rows \((Y_{2,t},\ldots,Y_{J+1,t})\), let \(y_s\in\R^J\) collect donor post-period outcomes, and define the exact-factor untreated point prediction
+\[
+C_s(w):=S_s(w)+a_s^\transpose g(w).
+\]
+The treatment-effect target is \(\theta_s=Y^{\mathrm{obs}}_{1s}-Y_{1s}(0)\), so identifying the untreated gap \(h_s(w)\) gives \(\Theta_I(P,w,\eta,a_s)=Y^{\mathrm{obs}}_{1s}-S_s(w)-H_I(P,w,\eta,a_s)\).
+
+The partial-identification restriction is an oracle factor bridge. The pre-period and post-period untreated synthetic gaps obey
+\[
+g(w)=m_0(w)+u_0(w),\qquad h_s(w)=a_s^\transpose m_0(w)+u_s(w),
+\]
+where \(m_0(w)\in\R^{T_0}\) is the factor-implied pre-gap, \(a_s\in\R^{T_0}\) is the known post/pre loading bridge, and the aggregate gap errors satisfy \(\|u_0(w)\|_\infty\le\rho(w)\) and \(|u_s(w)|\le\rho(w)\). The key weight-dependent budget is
+\[
+\rho(w)=(1+\|w\|_1)\eta,
+\]
+which is induced by unit-level errors \(|e_{it}|\le\eta\) through \(u_t(w)=e_{1t}-\sum_jw_je_{j+1,t}\).
+
+A named affine synthetic-control workflow is represented by an index \(A\in\mathcal{A}_{\mathrm{sc}}\). The class \(\mathcal{A}_{\mathrm{sc}}\) contains the simplex synthetic-control, OLS, lasso, ridge, L1-L2 or elastic-net, augmented synthetic-control, and synthetic-DID weight-construction routines after tuning choices have been fixed. Conditional on the observed pre-period panel, workflow \(A\) returns a finite affine vector \(w^A\in\mathcal{W}\); this proposal studies the deterministic identified set conditional on that output and does not claim stochastic coverage for the data-dependent selection rule.
+
+\begin{center}
+\fbox{\begin{minipage}{0.92\linewidth}
+Free-form PartialID convention:
+\[
+\begin{gathered}
+(\texttt{qid},\texttt{specialization})=
+(\texttt{pid\_synth\_control\_factor\_misspec},\texttt{v1}),\\
+P=\text{the finite observed synthetic-control panel law with one treated unit, }J\text{ donor units,}\\
+\text{pre-periods }t=1,\ldots,T_0,\text{ one post-period }s,\text{ and fixed affine weights }w\in\mathcal{W},\\
+\theta_s=Y^{\mathrm{obs}}_{1s}-Y_{1s}(0),\\
+\text{identifying restrictions}=
+\text{an oracle post/pre factor bridge }a_s\in\R^{T_0}
+\text{ and unit-level sup-norm factor approximation error }|e_{it}|\le\eta,\\
+\text{bounding functional}=
+\Theta_I(P,w,\eta,a_s)=
+[Y^{\mathrm{obs}}_{1s}-S_s(w)-U_s(w),
+Y^{\mathrm{obs}}_{1s}-S_s(w)-L_s(w)].
+\end{gathered}
+\]
+Here \(S_t(w)=\sum_{j=1}^J w_jY_{j+1,t}\), \(g_t(w)=Y^{\mathrm{obs}}_{1t}-S_t(w)\),
+\(C_s(w)=S_s(w)+a_s^\transpose g(w)\) is the exact-factor untreated point prediction,
+\(\|w\|_1=\sum_{j=1}^J |w_j|\), \(\rho(w)=(1+\|w\|_1)\eta\), and the oracle
+post/pre bridge means that the unobserved untreated synthetic gap satisfies
+\[
+h_s(w):=Y_{1s}(0)-S_s(w)
+=a_s^\transpose(g(w)-u_0(w))+u_s(w),
+\quad
+\|u_0(w)\|_\infty\le\rho(w),\ |u_s(w)|\le\rho(w).
+\]
+The endpoints are \(L_s(w)=a_s^\transpose g(w)-\rho(w)(1+\|a_s\|_1)\) and
+\(U_s(w)=a_s^\transpose g(w)+\rho(w)(1+\|a_s\|_1)\). The weight class
+\(\mathcal{W}\) is affine, \(\sum_j w_j=1\), and may include signed
+extrapolating weights.
+\end{minipage}}
+\end{center}
+
+\section{Assumptions}
+\begin{assumption}[Observed synthetic-control panel]\label{ass:panel}
+The observed law \(P\) fixes \(Y^{\mathrm{obs}}_{1t}\) for the treated unit in all \(t\le T_0\) and \(t=s\), and fixes donor outcomes \(Y_{j+1,t}\) for \(j=1,\ldots,J\) in all \(t\le T_0\) and \(t=s\). The post-period untreated value \(Y_{1s}(0)\), equivalently \(h_s(w)\), is unobserved.
+\end{assumption}
+
+\begin{assumption}[Affine weight class]\label{ass:affine-weights}
+The admissible weight class is \(\mathcal{W}\subseteq\{w\in\R^J:\sum_{j=1}^Jw_j=1,\ \|w\|_1<\infty\}\). Convex ADH weights are the special case \(w_j\ge0\), where \(\|w\|_1=1\).
+\end{assumption}
+
+\begin{assumption}[Oracle post/pre factor bridge]\label{ass:bridge}
+For the fixed post-period \(s\), a known vector \(a_s\in\R^{T_0}\) links the factor-implied post gap to the factor-implied pre-gap: \(h_s(w)=a_s^\transpose m_0(w)+u_s(w)\) and \(g(w)=m_0(w)+u_0(w)\) for some \(m_0(w)\in\R^{T_0}\), \(u_0(w)\in\R^{T_0}\), and \(u_s(w)\in\R\).
+\end{assumption}
+
+\begin{assumption}[Unit-level bounded approximation error]\label{ass:unit-budget}
+For a nonnegative misspecification budget \(\eta\), each unit-level factor approximation error satisfies \(|e_{it}|\le\eta\) in all observed pre-period equations and in the post untreated equation. For fixed weights \(w\), the induced aggregate gap errors are \(u_t(w)=e_{1t}-\sum_{j=1}^Jw_je_{j+1,t}\).
+\end{assumption}
+
+\begin{assumption}[Independent endpoint attainability]\label{ass:endpoint-attain}
+For the sharpness statements, the unit-level errors can attain any sign pattern in the hypercube \([-\eta,\eta]^{J+1}\) independently across the finitely many pre-period and post-period equations while preserving the observed panel law \(P\).
+\end{assumption}
+
+\begin{assumption}[Pre-fit-equivalent point-prediction pair]\label{ass:prefit-pair}
+There exist \(w^c,w^x\in\mathcal{W}\) such that \(w^c\) is convex, \(w^x\) has at least one negative component, \(g(w^c)=g(w^x)\), \(C_s(w^c)=C_s(w^x)\), \(\Delta_1:=\|w^x\|_1-\|w^c\|_1>0\), and \(1+\|a_s\|_1>0\). Equivalently, \(w^x-w^c\) lies in the affine nullspace of both the pre-period donor matrix \(X_0\) and the exact-factor point-prediction row \(y_s^\transpose-a_s^\transpose X_0\).
+\end{assumption}
+
+\begin{assumption}[Named fixed workflow output]\label{ass:named-workflow}
+For reporting-rule statements, each workflow \(A\in\mathcal{A}_{\mathrm{sc}}\) has been run using only the pre-period panel and fixed tuning choices, and returns a finite affine vector \(w^A\in\mathcal{W}\). The deterministic partial-identification interval is evaluated conditionally on \(w^A\) and \(a_s\); no assertion is made about probabilistic coverage after selecting \(A\) or tuning parameters.
+\end{assumption}
+
+\begin{assumption}[Prefit-only scalar sensitivity rule]\label{ass:scalar-rule}
+A scalar pre-fit sensitivity rule is a map \(\Phi\) that returns a closed interval for \(H_I(P,w,\eta,a_s)\) using only \((q,\eta,c)\), where \(q\) is one of \(\|g(w)\|_2\), \(T_0^{-1/2}\|g(w)\|_2\), or RMSPE, and \(c=a_s^\transpose g(w)\) is the bridge center. The rule is forbidden to depend on \(w\), \(\|w\|_1\), \(a_s\), \(\|a_s\|_1\), \(J\), \(T_0\), \(X_0\), or \(y_s\) except through the displayed inputs \((q,\eta,c)\).
+\end{assumption}
+
+\section{Main results}
+\begin{theorem}[Theorem 1: sharp affine-weight error budget]\label{thm:l1-budget}
+Under Assumptions~\ref{ass:affine-weights}, \ref{ass:unit-budget}, and \ref{ass:endpoint-attain}, for every fixed \(w\in\mathcal{W}\) and every period \(t\), the set of feasible aggregate gap errors \(u_t(w)=e_{1t}-\sum_{j=1}^Jw_je_{j+1,t}\) is exactly
+\[
+[-(1+\|w\|_1)\eta,\ (1+\|w\|_1)\eta].
+\]
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{DoudchenkoImbens2016} treats signed and intercept-augmented weights as estimator choices, while this theorem records the sharp deterministic misspecification budget those weights induce. \citet{BenMichaelFellerRothstein2021} and \citet{ArkhangelskyAtheyHirshbergImbensWager2021} penalize extrapolation, but do not state the exact \((1+\|w\|_1)\eta\) identified-set multiplier. (b) The concrete consumer is the weight-synthesis workflow of \citet{DoudchenkoImbens2016}: it tells users the exact identification cost of relaxing the convex-hull restriction.
+
+\begin{theorem}[Theorem 2: sharp oracle bridge interval]\label{thm:bridge-interval}
+Under Assumptions~\ref{ass:panel}--\ref{ass:endpoint-attain}, for every fixed \(w\in\mathcal{W}\), the sharp identified set for the untreated post-period gap is
+\[
+H_I(P,w,\eta,a_s)=
+[a_s^\transpose g(w)-\rho(w)(1+\|a_s\|_1),
+ a_s^\transpose g(w)+\rho(w)(1+\|a_s\|_1)],
+\]
+where \(\rho(w)=(1+\|w\|_1)\eta\). Therefore
+\[
+\Theta_I(P,w,\eta,a_s)=
+[Y^{\mathrm{obs}}_{1s}-S_s(w)-a_s^\transpose g(w)-\rho(w)(1+\|a_s\|_1),
+ Y^{\mathrm{obs}}_{1s}-S_s(w)-a_s^\transpose g(w)+\rho(w)(1+\|a_s\|_1)].
+\]
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{FermanPinto2021} analyzes bias from imperfect pre-treatment fit, \citet{NazaretShiBlei2024} bounds linear synthetic-control misspecification, \citet{CattaneoFengTitiunik2021} gives probabilistic prediction intervals for SC uncertainty quantification, and \citet{CattaneoFengPalombaTitiunik2025JSS} implements \texttt{scpi} for OLS, lasso, ridge, L1-L2, and simplex-type weights. Those papers do not give this sharp fixed-weight support-function interval with the weight-extrapolation multiplier separated from the post/pre bridge multiplier. (b) The concrete consumer is the \texttt{scpi} reporting workflow in \citet{CattaneoFengPalombaTitiunik2025JSS}: sensitivity reports can add this deterministic radius when the sensitivity parameter is interpreted as a sup-norm factor-error budget.
+
+\begin{theorem}[Theorem 3: scpi-compatible deterministic radius report]\label{thm:scpi-report}
+Under Assumptions~\ref{ass:panel}--\ref{ass:endpoint-attain} and \ref{ass:named-workflow}, each named workflow \(A\in\mathcal{A}_{\mathrm{sc}}\) has the sharp deterministic report
+\[
+\mathsf{Center}(A)=C_s(w^A),\qquad
+\mathsf{Radius}(A)=(1+\|w^A\|_1)(1+\|a_s\|_1)\eta,
+\]
+and the corresponding treatment-effect interval from Theorem~\ref{thm:bridge-interval}. If two workflows \(A,B\in\mathcal{A}_{\mathrm{sc}}\) have \(C_s(w^A)=C_s(w^B)\) and \(\|w^A\|_1\le\|w^B\|_1\), then the deterministic interval for \(A\) is contained in the deterministic interval for \(B\); the containment is strict whenever \(\eta>0\), \(1+\|a_s\|_1>0\), and \(\|w^A\|_1<\|w^B\|_1\).
+\end{theorem}
+
+\paragraph{Why this is new and worth studying.}
+(a) \citet{CattaneoFengPalombaTitiunik2025JSS} is the closest workflow comparator because \texttt{scpi} already reports prediction intervals for least-squares, lasso, ridge, L1-L2, and simplex-type synthetic controls. The gap is that \texttt{scpi}'s prediction intervals target probabilistic uncertainty, whereas Theorem~\ref{thm:scpi-report} is a deterministic sharp partial-ID radius conditional on a declared bounded factor-misspecification budget and a realized affine weight vector. (b) The concrete consumer is the \texttt{scpi} table itself: it gives a directly implementable column, \(\mathsf{Radius}(A)\), and a dominance rule over pre-fit-equivalent specifications.
+
+\begin{conjecture}[Conjecture 1: quantified pre-fit-equivalent extrapolation separation (NOT YET PROVED)]\label{conj:prefit-equivalent-separation}
+There is an open class of observed donor panels with \(J>T_0+2\), a constant \(\delta>0\), and two workflows \(A_c,A_x\in\mathcal{A}_{\mathrm{sc}}\) for which Assumptions~\ref{ass:prefit-pair} and \ref{ass:named-workflow} hold with \(w^c=w^{A_c}\), \(w^x=w^{A_x}\), and \(\Delta_1\ge\delta\). For every \(\eta>0\), the two workflow outputs have the same pre-period gap and the same exact-factor untreated point prediction \(C_s(w^c)=C_s(w^x)\), but their sharp intervals from Theorem~\ref{thm:bridge-interval} have radii
+\[
+R(w^k)= (1+\|w^k\|_1)(1+\|a_s\|_1)\eta,\qquad k\in\{c,x\},
+\]
+with an explicit radius gap
+\[
+R(w^x)-R(w^c)=\Delta_1(1+\|a_s\|_1)\eta\ge\delta(1+\|a_s\|_1)\eta.
+\]
+The open-class condition is governed by the affine nullspace of the matrix with rows \(\one^\transpose\), \(X_0\), and \(y_s^\transpose-a_s^\transpose X_0\): the conjecture asserts that this nullspace generically contains a direction that preserves exact-factor fit while moving a convex workflow output a positive distance toward an OLS, ridge, lasso, L1-L2, augmented-SC, or synthetic-DID output outside the simplex on a locally stable active-set or tuning region. Hence RMSPE-equivalent and exact-factor-point-equivalent synthetic-control workflows need not be identification-equivalent under bounded factor misspecification.
+\end{conjecture}
+
+\paragraph{Why this is new and worth studying.}
+(a) The closest published comparisons are \citet{KelloggMogstadPouliotTorgovitsky2021}, which treats extrapolation and interpolation as competing bias sources in MASC, and \citet{CattaneoFengPalombaTitiunik2025JSS}, which operationalizes prediction-interval reporting for named synthetic-control weight procedures. Neither states an open-class separation saying that two named workflows with equal pre-fit and equal exact-factor point prediction can have unequal sharp deterministic radii because their \(\ell_1\) leverage differs. The archived ThmSmith angle for this qid focused on row-span visibility; this conjecture instead fixes the bridge and varies the signed-weight geometry of named workflows. (b) The concrete consumer is \texttt{scpi} model-comparison reporting in \citet{CattaneoFengPalombaTitiunik2025JSS}: it would justify ranking pre-fit-equivalent OLS, lasso, ridge, L1-L2, and simplex specifications by deterministic sharp radius whenever a bounded factor-error budget is credible.
+
+\paragraph{Bookkeeping consequence, not a novelty claim.}
+The proposal no longer treats scalar pre-fit sensitivity as a flagship impossibility result. The only intended role of Assumption~\ref{ass:scalar-rule} is the sanity check in Corollary~\ref{cor:scalar-bookkeeping}: once Theorem~\ref{thm:bridge-interval} is accepted, any report that records only \((q,\eta,c)\) has discarded the weight and bridge leverage that determine the sharp radius. This is a corollary of the displayed interval, not a refutation of a named published estimator.
+
+\section{Sanity-check corollaries}
+\begin{corollary}[Convex-weight ADH reduction]\label{cor:convex}
+Under Assumptions~\ref{ass:panel}--\ref{ass:endpoint-attain}, if \(w\) is convex, then \(\|w\|_1=1\) and Theorem~\ref{thm:bridge-interval} reduces to the radius \(2\eta(1+\|a_s\|_1)\). If additionally \(\eta=0\), the interval collapses to the usual exact-factor point \(h_s(w)=a_s^\transpose g(w)\).
+\end{corollary}
+
+\begin{corollary}[One-pre-period bridge]\label{cor:one-pre}
+Under Assumptions~\ref{ass:panel}--\ref{ass:endpoint-attain} with \(T_0=1\) and \(a_s=(a)\), the untreated-gap interval is centered at \(a\,g_1(w)\) with radius \((1+|a|)(1+\|w\|_1)\eta\). This is exactly the interval obtained by choosing the pre-period and post-period aggregate errors at their signs maximizing \(a\,u_1(w)-u_s(w)\).
+\end{corollary}
+
+\begin{corollary}[Scalar pre-fit summaries lose sharp-radius information]\label{cor:scalar-bookkeeping}
+Under Assumptions~\ref{ass:panel}--\ref{ass:endpoint-attain} and \ref{ass:scalar-rule}, any two admissible designs with the same allowed scalar inputs \((q,\eta,c)\) but different leverage product \((1+\|w\|_1)(1+\|a_s\|_1)\) have different sharp radii. Thus a scalar pre-fit summary is not enough bookkeeping to reproduce the interval in Theorem~\ref{thm:bridge-interval}; a sharp report must also record the weight leverage \(\|w\|_1\) and bridge leverage \(\|a_s\|_1\).
+\end{corollary}
+
+\section{Proof-sketch route}
+Theorem~\ref{thm:l1-budget} is the support function of a box: maximize and minimize the affine functional \(e_1-\sum_jw_je_{j+1}\) over \([-\eta,\eta]^{J+1}\). Theorem~\ref{thm:bridge-interval} substitutes \(m_0(w)=g(w)-u_0(w)\) into \(h_s(w)=a_s^\transpose m_0(w)+u_s(w)\) and applies the dual norm identity \(\sup_{\|u_0\|_\infty\le\rho} |a_s^\transpose u_0|=\rho\|a_s\|_1\), adding the independent post-period error radius \(\rho\). Theorem~\ref{thm:scpi-report} is the same interval formula applied to each realized workflow output \(w^A\), plus interval containment when centers agree and radii are ordered. Conjecture~\ref{conj:prefit-equivalent-separation} should reduce to finite-dimensional linear algebra: study the nullspace of the matrix with rows \(\one^\transpose\), \(X_0\), and \(y_s^\transpose-a_s^\transpose X_0\), perturb an interior convex solution along a null direction until it leaves the simplex, and then show that named workflow maps realize such pairs on locally stable active-set or tuning regions. Corollary~\ref{cor:scalar-bookkeeping} then follows by comparing the interval radius formula for two designs with the same \((q,\eta,c)\) and different weight or bridge leverage.
+
+\section{Honest scope flags}
+The three theorem statements are routine finite-dimensional sharpness and reporting-rule claims; their role is to make the deterministic interval implementable, not to replace the novelty kernel. The open contribution is Conjecture~\ref{conj:prefit-equivalent-separation}, especially the quantified open-class and named-workflow separation clauses; if that open-set statement fails, a weaker finite-witness theorem would be less publishable. The former scalar-prefit impossibility has been withdrawn as a novelty claim and retained only as the bookkeeping reduction in Corollary~\ref{cor:scalar-bookkeeping}; this proposal does not assert that any named published estimator claims scalar-only deterministic sharpness. This v5 does not choose \(\eta\), estimate \(a_s\), justify any particular regularization rule, or provide sampling inference, and it separates deterministic partial identification from the probabilistic coverage guarantees of \texttt{scpi}.
+
+\section{Iteration trail}
+\begin{itemize}[leftmargin=*]
+\item v1 (pivot) -- fresh angle on signed-weight extrapolation and the \(\ell_1\) misspecification multiplier; prior verdict: none.
+\item v2 (revise) -- added Kellogg--Mogstad--Pouliot--Torgovitsky as the closest extrapolation-bias comparator, formalized exact-factor point prediction \(C_s(w)\), quantified the Conjecture~1 radius gap, and defined the scalar sensitivity rule in Conjecture~2; prior verdict: REVISE.
+\item v3 (revise) -- added Cattaneo--Feng--Titiunik as the closest synthetic-control prediction-interval comparator and separated probabilistic prediction intervals from deterministic sharp partial-ID intervals in Theorem~2 and Conjecture~2; prior verdict: REVISE.
+\item v4 (revise) -- withdrew scalar-prefit nonsharpness as a novelty-bearing Conjecture~2 and retained it only as a sanity-check bookkeeping corollary of Theorem~2; prior verdict: REVISE.
+\item v5 (revise) -- added Cattaneo--Feng--Palomba--Titiunik 2025 \texttt{scpi}/JSS as the load-bearing workflow comparator, added Theorem~3 as an implementable deterministic radius report, and strengthened Conjecture~1 to named workflow outputs; prior verdict: REVISE.
+\end{itemize}
+
+\section*{Bibliography}
+\begin{thebibliography}{99}
+\bibitem[Abadie and Gardeazabal(2003)]{AbadieGardeazabal2003}
+Abadie, A. and Gardeazabal, J. (2003).
+The economic costs of conflict: A case study of the Basque Country.
+\emph{American Economic Review} 93(1), 113--132.
+
+\bibitem[Abadie, Diamond, and Hainmueller(2010)]{AbadieDiamondHainmueller2010}
+Abadie, A., Diamond, A., and Hainmueller, J. (2010).
+Synthetic control methods for comparative case studies: Estimating the effect of California's tobacco control program.
+\emph{Journal of the American Statistical Association} 105(490), 493--505.
+
+\bibitem[Abadie(2021)]{Abadie2021}
+Abadie, A. (2021).
+Using synthetic controls: Feasibility, data requirements, and methodological aspects.
+\emph{Journal of Economic Literature} 59(2), 391--425.
+
+\bibitem[Arkhangelsky et~al.(2021)]{ArkhangelskyAtheyHirshbergImbensWager2021}
+Arkhangelsky, D., Athey, S., Hirshberg, D. A., Imbens, G. W., and Wager, S. (2021).
+Synthetic difference-in-differences.
+\emph{American Economic Review} 111(12), 4088--4118.
+
+\bibitem[Ben-Michael, Feller, and Rothstein(2021)]{BenMichaelFellerRothstein2021}
+Ben-Michael, E., Feller, A., and Rothstein, J. (2021).
+The augmented synthetic control method.
+\emph{Journal of the American Statistical Association} 116(536), 1789--1803.
+
+\bibitem[Chernozhukov, Wuthrich, and Zhu(2021)]{ChernozhukovWuthrichZhu2021}
+Chernozhukov, V., Wuthrich, K., and Zhu, Y. (2021).
+An exact and robust conformal inference method for counterfactual and synthetic controls.
+\emph{Journal of the American Statistical Association} 116(536), 1849--1864.
+
+\bibitem[Cattaneo, Feng, and Titiunik(2021)]{CattaneoFengTitiunik2021}
+Cattaneo, M. D., Feng, Y., and Titiunik, R. (2021).
+Prediction intervals for synthetic control methods.
+\emph{Journal of the American Statistical Association} 116(536), 1865--1880.
+
+\bibitem[Cattaneo, Feng, Palomba, and Titiunik(2025a)]{CattaneoFengPalombaTitiunik2025RESTAT}
+Cattaneo, M. D., Feng, Y., Palomba, F., and Titiunik, R. (2025).
+Uncertainty quantification in synthetic controls with staggered treatment adoption.
+\emph{Review of Economics and Statistics}, forthcoming.
+
+\bibitem[Cattaneo, Feng, Palomba, and Titiunik(2025b)]{CattaneoFengPalombaTitiunik2025JSS}
+Cattaneo, M. D., Feng, Y., Palomba, F., and Titiunik, R. (2025).
+\texttt{scpi}: Uncertainty quantification for synthetic control methods.
+\emph{Journal of Statistical Software} 113(1), 1--38.
+
+\bibitem[Doudchenko and Imbens(2016)]{DoudchenkoImbens2016}
+Doudchenko, N. and Imbens, G. W. (2016).
+Balancing, regression, difference-in-differences and synthetic control methods: A synthesis.
+NBER Working Paper No. 22791.
+
+\bibitem[Ferman and Pinto(2021)]{FermanPinto2021}
+Ferman, B. and Pinto, C. (2021).
+Synthetic controls with imperfect pre-treatment fit.
+\emph{Quantitative Economics} 12(4), 1197--1221.
+
+\bibitem[Firpo and Possebom(2018)]{FirpoPossebom2018}
+Firpo, S. and Possebom, V. (2018).
+Synthetic control method: Inference, sensitivity analysis and confidence sets.
+\emph{Journal of Causal Inference} 6(2), 20160026.
+
+\bibitem[Kellogg et~al.(2021)]{KelloggMogstadPouliotTorgovitsky2021}
+Kellogg, M., Mogstad, M., Pouliot, G. A., and Torgovitsky, A. (2021).
+Combining matching and synthetic control to tradeoff biases from extrapolation and interpolation.
+\emph{Journal of the American Statistical Association} 116(536), 1804--1816.
+
+\bibitem[Manski(1990)]{Manski1990}
+Manski, C. F. (1990).
+Nonparametric bounds on treatment effects.
+\emph{American Economic Review Papers and Proceedings} 80(2), 319--323.
+
+\bibitem[Nazaret, Shi, and Blei(2024)]{NazaretShiBlei2024}
+Nazaret, A. O. R., Shi, C., and Blei, D. M. (2024).
+On the misspecification of linear assumptions in synthetic controls.
+\emph{Proceedings of the 27th International Conference on Artificial Intelligence and Statistics}, PMLR 238, 3790--3798.
+\end{thebibliography}
+
+\end{document}
