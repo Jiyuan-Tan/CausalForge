@@ -49,7 +49,59 @@ Then, depending on what you came for:
 | Orient in an unfamiliar area | `npm run search -- --scope module "<area>"` |
 | Browse a module's API | [`doc/API.md`](doc/API.md), section `## <n>. <path>` |
 | Contribute a declaration | Write the docstring — see [Documentation](#documentation) |
-| Run the theorem-generation pipeline | [`CausalSmith/doc/SETUP.md`](CausalSmith/doc/SETUP.md) |
+| Run the theorem-generation pipeline | [Running the pipeline](#running-the-theorem-generation-pipeline) |
+
+## Running the theorem-generation pipeline
+
+The `CausalSmith research` pipeline — which proposes a new causal-inference
+theorem, formalizes it, and machine-verifies the proof against Causalean — is
+**agent-driven, not a command you type by hand.** You run it by asking an agent
+(e.g. Claude Code in this repo) to use the **`causalsmith` skill**, and the skill
+owns the whole discover → formalize → verify → bank workflow (spawning
+sub-agents, arming watchers, handling checkpoints) on your behalf.
+
+There are two ways to start a run:
+
+- **You provide the topic.** Ask the agent to run the causalsmith skill on a
+  topic you name, e.g. *"use the causalsmith skill to research weak-overlap
+  minimax rates"* or *"run `/causalsmith research` on proximal identification
+  under completeness failure."* The agent turns your topic into a proposal and
+  drives it through to a banked result.
+- **You let the skill choose the topic.** Ask the agent to *"use the causalsmith
+  skill and let it pick a promising topic"* — it invokes the topic-selection
+  sub-skill (`causalsmith-topics`) to search the literature, propose a niche, and
+  proceed automatically.
+
+Either way you interact with the agent in plain language; you do **not** need to
+know the qid/specialization arguments or the internal stage machinery — the skill
+handles them. The default novelty target is the `field` tier (novel relative to
+the literature); say *"aim for flagship"* or *"allow subfield"* to change it.
+
+**We recommend running in auto mode.** A full run is long and involves many
+discovery/formalization/verification rounds, so add *"run it in auto mode / don't
+ask me"* when you start. In auto mode the agent decides the routine math and
+proof questions itself and only pauses at the genuine hard stops — most
+importantly the final checkpoint where it asks you whether to bank/accept the
+verified result. Without it, the run halts for your input at every stage
+boundary.
+
+Once a run is accepted, two follow-on modes are available (again, just ask the
+agent):
+
+- **Present** — *"use the causalsmith skill to present `<result>`"* turns an
+  accepted, verified theorem into an arXiv-grade paper bundle plus interactive
+  web artifacts.
+- **Study** — *"use the causalsmith skill to study `<requirement>`"* builds a
+  reusable Causalean substrate module from a plain-English requirement, bypassing
+  the theorem pipeline.
+
+Run artifacts (proposals, proof state, review logs) land under
+`CausalSmith/doc/research/active/<run-id>/`; accepted results are banked under
+`CausalSmith/doc/research/_bank/` and promoted into the library.
+
+Setup prerequisites (Node, API access, environment) live in
+[`CausalSmith/doc/SETUP.md`](CausalSmith/doc/SETUP.md), and the full workflow
+reference is [`CausalSmith/doc/USER_MANUAL.md`](CausalSmith/doc/USER_MANUAL.md).
 
 ## Finding things in the library
 
