@@ -1,0 +1,59 @@
+Fix an orientation \(\sigma=(\sigma_0,\sigma_1)\) and write \(B_{ia}^{\sigma}=B_{ia}\) under \(L\) and \(B_{ia}^{\sigma}=1-B_{ia}\) under \(U\). This transformation permutes the four atoms of \(\pi\); denote the transformed law by \(\pi^\sigma\). For partial counts \(T_{ia}=\sum_{j=1}^iB_{ja}^{\sigma}\), initialize \(d_0(0,0)=1\) and, for \(0\le r<t_0\) and \(0\le s<t_1\), update
+\[
+d_{i+1}(r,s)=\sum_{x,y\in\{0,1\}}\pi^\sigma_{xy}d_i(r-x,s-y).
+\tag{1}
+\]
+Induction on \(i\) gives \(d_i(r,s)=\Pr\{T_{i0}=r,T_{i1}=s\}\). A state discarded above either threshold cannot return because both increments are nonnegative. At stage \(i+1\), at most
+\(\min\{t_0,i+1\}\min\{t_1,i+1\}\) states are retained. Summing this quantity for \(i=0,\ldots,M-1\) proves the rolling time bound, and two rolling rectangles give \(O(t_0t_1)\) memory.
+
+Under \(LL\), the retained event is exactly \(\{R<k_0,S<k_1\}\). Under \(LU\), the second transformed count is \(M-S\), and
+\[
+M-S<M-k_1+1\quad\Longleftrightarrow\quad S\ge k_1.
+\]
+Therefore
+\[
+\Pr\{R<k_0,S<k_1\}=\Pr\{R<k_0\}-J_{LU}.
+\tag{2}
+\]
+The \(UL\) identity is symmetric. Under \(UU\), \(J_{UU}=\Pr\{R\ge k_0,S\ge k_1\}\), and inclusion--exclusion gives the fourth identity. Choosing \(L\) when \(k_a\le h_a\) and \(U\) otherwise gives \(t_a=\bar k_a\). Each required marginal is binomial; \(\texttt{lem:exact-binomial-shorter-tail-evaluator}\) computes it in
+\[
+O\!\left(\log M+\min\{\bar k_a,M-\bar k_a+1\}\right)=O(\log M+\bar k_a)
+\]
+operations and constant memory. The rolling sum has \(M\) nonzero stage charges and absorbs these marginal charges, proving the oriented rolling certificate.
+
+The positive-base coefficient alternative follows from
+\(\texttt{lem:positive-corner-coefficient-recurrence}\). For every orientation with \(\pi^\sigma_{00}>0\), it evaluates the same \(J_\sigma\) exactly and then uses (2) and its three companion identities. Since the four cells sum to one, at least one atom is positive and can be moved to \(00\); hence the minimization over positive-base orientations is nonempty. This proves the zero-cell-safe comparison with the coefficient branch.
+
+It remains to prove the zero-corner face reduction. Let \(\pi\) have support three and let \(\sigma\in\Sigma_{\mathrm{face}}(\pi)\). The equality \(\pi^\sigma_{11}=0\) implies
+\[
+B_{i0}^{\sigma}+B_{i1}^{\sigma}\le1
+\quad\text{almost surely for every }i.
+\]
+Summing over \(i\) gives
+\[
+T_0^\sigma+T_1^\sigma\le M.
+\tag{3}
+\]
+If both failure events occurred, then (3) would imply
+\(M\ge T_0^\sigma+T_1^\sigma\ge t_0^\sigma+t_1^\sigma>M\), a contradiction. Thus they are disjoint, and complementation yields
+\[
+J_\sigma
+=1-\Pr\{T_0^\sigma\ge t_0^\sigma\}
+ -\Pr\{T_1^\sigma\ge t_1^\sigma\}.
+\tag{4}
+\]
+The two transformed marginals are binomial with success probabilities
+\[
+\vartheta_0^\sigma=\pi^\sigma_{10}+\pi^\sigma_{11},
+\qquad
+\vartheta_1^\sigma=\pi^\sigma_{01}+\pi^\sigma_{11}.
+\]
+For each \(a\), the tail in (4) is
+\(1-H_{M,t_a^\sigma}(\vartheta_a^\sigma)\).
+The exact shorter-tail lemma therefore gives the stated \(\ell_M(t_a^\sigma)\) charge and constant workspace, including the cases \(\vartheta_a^\sigma\in\{0,1\}\), where no division is used.
+
+No marginal is charged twice. Under \(LU\), for example, the reconstruction needs \(\Pr\{R<k_0\}\), while the first tail already computed in (4) is \(\Pr\{R\ge k_0\}\); one subtraction gives the former. Under \(UL\) the same argument applies to \(S\). Under \(UU\), the first transformed tail is
+\[
+\Pr\{M-R\ge M-k_0+1\}=\Pr\{R<k_0\},
+\]
+and similarly for \(S\), so the upper marginals in inclusion--exclusion are again obtained by complementation. The \(LL\) identity needs no marginal. Hence deterministic minimization over the finite set \(\Sigma_{\mathrm{face}}(\pi)\), followed by lexicographic tie-breaking, has charge \(O(\mathsf F_M(\pi))\) and \(O(1)\) auxiliary workspace, and reconstructs the original lower--lower probability exactly.

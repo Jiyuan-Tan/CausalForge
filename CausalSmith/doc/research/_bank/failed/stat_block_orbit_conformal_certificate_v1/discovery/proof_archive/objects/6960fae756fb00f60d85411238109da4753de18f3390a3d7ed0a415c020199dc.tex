@@ -1,0 +1,42 @@
+For \(i\in\{0,\ldots,M\}\), define the two partial counts
+\[
+R_i=\sum_{j=1}^i b_0(E_{j,0}),\qquad S_i=\sum_{j=1}^i b_1(E_{j,1}).
+\]
+We prove by induction that every retained entry satisfies
+\[
+d_i(r,s)=\Pr\{R_i=r,S_i=s\},\qquad 0\le r<k_0,\quad 0\le s<k_1.
+\tag{1}
+\]
+For \(i=0\), both counts are zero, so (1) is exactly the initialization. Suppose it holds at \(i\). Independence of the next pair from the first \(i\) pairs and the definition of \(\pi_{xy}\) give, for any retained \((r,s)\),
+\[
+\Pr\{R_{i+1}=r,S_{i+1}=s\}
+=\sum_{x=0}^1\sum_{y=0}^1\pi_{xy}\Pr\{R_i=r-x,S_i=s-y\}.
+\tag{2}
+\]
+If an index in (2) is negative, its probability is zero. Nor can a previously discarded state contribute: both counts have nonnegative increments, so a state with first coordinate at least \(k_0\) or second coordinate at least \(k_1\) can never return to the retained rectangle. Substitution of the induction hypothesis into (2) proves (1) at \(i+1\). Summing (1) at \(i=M\) over the retained rectangle proves the displayed probability identity.
+
+Computing the four values \(\pi_{xy}\) takes one scan through the \(|\mathscr E_0||\mathscr E_1|\) cells of \(R\). At each of \(M\) stages, every one of the at most \(k_0k_1\) retained states receives four constant-time contributions. Keeping only the current and next arrays proves the stated arithmetic and memory bounds. If, say, the first rank equals \(M+1\), its rank event is certain. Replace the four-cell law by the marginal \(\pi_{\cdot y}=\pi_{0y}+\pi_{1y}\) and repeat the same induction for \(S_i\), retaining only \(0\le s<k_1\). This gives the one-dimensional bounds. The other case is symmetric. If both ranks equal \(M+1\), both events are certain and their conjunction has probability one.
+\paragraph{Corner-oriented refinement.}
+The preceding lower-left recurrence proves the formal claim. The directive-level resource bound is sharper. Put
+\[
+h_a=M-k_a+1,\qquad \bar k_a=\min\{k_a,h_a\},\qquad
+C_{M,k_0,k_1}=\sum_{i=0}^{M-1}
+\min\{\bar k_0,i+1\}\min\{\bar k_1,i+1\}. \tag{3}
+\]
+By \(\texttt{lem:corner-oriented-four-cell-rank-evaluator}\), complementing coordinate \(a\) precisely when \(h_a<k_a\) permutes the same four cells and evaluates the smallest of the four corners. The desired lower--lower probability is recovered as
+\[
+J_{LL},\qquad
+\Pr\{R<k_0\}-J_{LU},\qquad
+\Pr\{S<k_1\}-J_{UL},
+\]
+or
+\[
+1-\Pr\{R\ge k_0\}-\Pr\{S\ge k_1\}+J_{UU},
+\]
+according to the selected orientation. The required marginals are exact binomial probabilities and are evaluated by \(\texttt{lem:exact-binomial-shorter-tail-evaluator}\). Hence the recurrence actually uses \(O(C_{M,k_0,k_1})\) operations and \(O(\bar k_0\bar k_1)\) workspace. Since
+\[
+C_{M,k_0,k_1}\le M\bar k_0\bar k_1\le Mk_0k_1,
+\]
+this strengthens the displayed resource bound. When both ranks approach \(M\), the product \(\bar k_0\bar k_1\) can equal one, and the two-count recurrence is then linear in \(M\).
+
+If exactly one rank is \(M+1\), the remaining probability is a binomial marginal. The stated one-dimensional recurrence is valid; complementing it reduces its retained width to \(\min\{k_c,M-k_c+1\}\), and the exact binomial evaluator further computes it in \(O(\log M+\min\{k_c,M-k_c+1\})\) operations and constant auxiliary memory. The multinomial formula in \(\texttt{lem:four-cell-multinomial-sum-alternative}\) evaluates the same four-cell law, so both exact branches agree, including when some cells vanish.

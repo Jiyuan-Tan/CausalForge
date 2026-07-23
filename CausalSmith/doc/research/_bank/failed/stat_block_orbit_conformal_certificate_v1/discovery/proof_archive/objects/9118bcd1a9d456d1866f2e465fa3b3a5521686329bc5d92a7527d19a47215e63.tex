@@ -1,0 +1,40 @@
+Put \(R_i=\sum_{j=1}^i b_0(E_{j,0})\) and \(S_i=\sum_{j=1}^i b_1(E_{j,1})\). We first prove the retained recurrence. At \(i=0\), \(d_0(0,0)=1=\Pr\{R_0=0,S_0=0\}\). If \(d_i(r,s)=\Pr\{R_i=r,S_i=s\}\) throughout the retained rectangle, independence of draw \(i+1\) and the definition of \(\pi\) give
+\[
+\Pr\{R_{i+1}=r,S_{i+1}=s\}=\sum_{x,y\in\{0,1\}}\pi_{xy}\Pr\{R_i=r-x,S_i=s-y\}.
+\tag{1}
+\]
+Both increments are nonnegative, so a state discarded because one coordinate has reached its strict threshold can never re-enter the retained rectangle. Thus (1) is exactly the asserted recurrence. Induction gives \(d_i(r,s)=\Pr\{R_i=r,S_i=s\}\) on that rectangle, and summing at \(i=M\) proves the probability identity. There are at most \(k_0k_1\) retained states at each of \(M\) stages, each update has four terms, and two rolling arrays suffice. Forming \(\pi\) scans the tabulated \(R\) once. This proves the stated \(O(|\mathscr E_0||\mathscr E_1|+Mk_0k_1)\) time and \(O(k_0k_1)\) memory bounds. If \(k_a=M+1\), its count is always at most \(M<k_a\), so its event is certain. Deleting that coordinate gives the one-dimensional \(O(|\mathscr E_0||\mathscr E_1|+Mk_c)\) time and \(O(k_c)\) memory bounds; deleting both gives probability one.
+
+Now let \(\pi\) have support size one, with unique atom \(u=(x,y)\). Every increment equals \(u\), whence
+\[
+(R_M,S_M)=(Mx,My)\quad\text{almost surely}.
+\tag{2}
+\]
+The displayed vertex formula and its constant exact cost follow.
+
+Next suppose that \(\pi\) has support \(\{u,v\}\) of size two. Both support masses are positive. For the deterministic orientation in \(\texttt{def:simplex-vertex-key-prepass}\), define \(I_i=\mathbf 1\{(B_{i0},B_{i1})=v\}\) and \(N=\sum_{i=1}^M I_i\). Then the \(I_i\) are iid Bernoulli variables with success probability \(p=\pi_v\), so \(N\sim\operatorname{Bin}(M,p)\). Since the \(i\)-th increment is \(u+(v-u)I_i\),
+\[
+R_M=Mu_0+(v_0-u_0)N=c_0+d_0N,\qquad S_M=Mu_1+(v_1-u_1)N=c_1+d_1N.
+\tag{3}
+\]
+For coordinate \(a\), if \(d_a=1\), the integer inequality \(c_a+N<k_a\) is \(N\le k_a-c_a-1\); if \(d_a=-1\), it is \(N\ge c_a-k_a+1\); and if \(d_a=0\), it is automatic when \(c_a<k_a\) and impossible when \(c_a\ge k_a\). Intersecting these restrictions with \(0\le N\le M\) gives exactly \([L_\pi,U_\pi]\), including the declared empty-interval convention. Therefore
+\[
+D_{M,k_0,k_1}(\pi)=\Pr\{L_\pi\le N\le U_\pi\}.
+\tag{4}
+\]
+If the interval is empty, (4) is zero in constant time. Otherwise, direct summation can initialize the mass at \(L_\pi\) by exponentiation by squaring and the shorter factorial product and then use the adjacent-binomial recurrence. Its charge, apart from \(O(\log M)\), is
+\[
+\min\{L_\pi,M-L_\pi\}+U_\pi-L_\pi+1.
+\tag{5}
+\]
+Summing the complementary left and right tails has additional charge \(L_\pi+M-U_\pi\). Finally, the identity
+\[
+\Pr\{L_\pi\le N\le U_\pi\}=\Pr\{N<U_\pi+1\}-\Pr\{N<L_\pi\}
+\tag{6}
+\]
+and \(\texttt{lem:exact-binomial-shorter-tail-evaluator}\) give additional charge
+\[
+\min\{U_\pi+1,M-U_\pi\}+\min\{L_\pi,M-L_\pi+1\}.
+\tag{7}
+\]
+The endpoint cases in (6) are evaluated directly. Taking the least of (5)--(7) is exactly the \(O(\mathsf E_M(\pi))\) charge specified in \(\texttt{def:simplex-vertex-key-prepass}\). Each alternative keeps only a current term and a running sum, hence uses \(O(1)\) auxiliary workspace. Reversing the support orientation replaces \(N\) by \(M-N\) and leaves (4) unchanged, so deterministic orientation, least-charge selection, and tie-breaking preserve exactness. Consequently all support-one and support-two keys are evaluated before dispatch, and only keys with support size at least three can require a generic bivariate evaluator.

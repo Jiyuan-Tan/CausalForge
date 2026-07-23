@@ -1,0 +1,120 @@
+For each arm aggregate the implemented member selector over an orbit:
+\[
+\kappa_{w,a}(O\mid z)=\sum_{v:(v,a)\in O}\kappa_{w,a}(v\mid z). \tag{1}
+\]
+By \(\texttt{ass:selector-auxiliary-randomization}\), the two auxiliary draws within a replicate are conditionally independent given the common assignment.  Integrating their conditional product under \(\texttt{ass:known-matched-randomization}\) yields
+\[
+R_w(O_0,O_1)=\sum_z\nu(z)\kappa_{w,0}(O_0\mid z)\kappa_{w,1}(O_1\mid z). \tag{2}
+\]
+The calibration orbit pairs are therefore independent and identically distributed across replicates with the full joint law (2).  In particular, (2) retains the cross-arm dependence induced by the shared assignment.
+
+The two target lifts arise from the same member \(T\).  By \(\texttt{ass:prespecified-target}\), their coherent joint law is
+\[
+P_T(O_0,O_1)=\sum_{v\in\mathcal V}q_{\mathrm{tar}}(v)
+\mathbf 1\{O_0(v)=O_0,\ O_1(v)=O_1\}. \tag{3}
+\]
+Its support is the image of \(\operatorname{supp}(q_{\mathrm{tar}})\) under \(v\mapsto(O_0(v),O_1(v))\), whence
+\[
+L\le\min\{|\mathcal V|,m_0m_1\}. \tag{4}
+\]
+A scan through \(\mathcal V\) forms (3) in \(O(|\mathcal V|)\) operations.  Target independence makes this pair independent of all calibration pairs.
+
+Fix a preorder pair \(C=(c_0,c_1)\), with ordered nonempty classes \(C_{a,1}\prec_a\cdots\prec_a C_{a,d_a}\), and aggregate (2) as
+\[
+W_{r,s}=\sum_{\substack{O_0:c_0(O_0)=r\\O_1:c_1(O_1)=s}}R_w(O_0,O_1). \tag{5}
+\]
+One scan of the \(m_0m_1\) cells forms \(W\).  Define the strict prefix table
+\[
+H(j,\ell)=\sum_{r<j}\sum_{s<\ell}W_{r,s}. \tag{6}
+\]
+Its standard two-dimensional recurrence takes \(O(d_0d_1)\le O(m_0m_1)\) operations.  Push (3) to class pairs:
+\[
+P_T^C(j,\ell)=
+\sum_{\substack{O_0,O_1\\c_0(O_0)=j,\ c_1(O_1)=\ell}}P_T(O_0,O_1). \tag{7}
+\]
+A scan of the \(L\) supported cells forms (7), and pushforward cannot increase support, so
+\[
+L_C\le\min\{L,d_0d_1\}. \tag{8}
+\]
+
+For a supported target class pair \((j,\ell)\), set
+\[
+b_0(O_0)=\mathbf 1\{c_0(O_0)<j\},\qquad
+b_1(O_1)=\mathbf 1\{c_1(O_1)<\ell\}.
+\]
+Four prefix lookups give the exact pushforward of the unchanged law \(R_w\):
+\[
+\begin{aligned}
+\pi_{11}^C(j,\ell)&=H(j,\ell),\\
+\pi_{10}^C(j,\ell)&=H(j,d_1+1)-H(j,\ell),\\
+\pi_{01}^C(j,\ell)&=H(d_0+1,\ell)-H(j,\ell),\\
+\pi_{00}^C(j,\ell)&=1-\pi_{01}^C(j,\ell)-\pi_{10}^C(j,\ell)-\pi_{11}^C(j,\ell).
+\end{aligned} \tag{9}
+\]
+Conditional on the target class pair, the two rank events are
+\[
+\sum_{i=1}^M b_0(O_{i,0})<k_0,\qquad
+\sum_{i=1}^M b_1(O_{i,1})<k_1. \tag{10}
+\]
+By \(\texttt{lem:four-cell-rank-event-dynamic-program}\), their probability is \(D_{M,k_0,k_1}(\pi)\), a function only of \(M,k_0,k_1\) and the vector (9).  Equivalently, \(\texttt{lem:four-cell-multinomial-sum-alternative}\) identifies it with \(Q_{M,k_0,k_1}(\pi)\).
+
+Group identical vectors by
+\[
+\Pi_C=\{\pi^C(j,\ell):(j,\ell)\in\operatorname{supp}(P_T^C)\},\qquad U_C\le L_C, \tag{11}
+\]
+and retain
+\[
+\omega_C(\pi)=\sum_{\substack{(j,\ell)\in\operatorname{supp}(P_T^C)\\
+\pi^C(j,\ell)=\pi}}P_T^C(j,\ell). \tag{12}
+\]
+Target--calibration independence gives the exact objective
+\[
+\Pr\{\text{both rank events under }C\}
+=\sum_{\pi\in\Pi_C}\omega_C(\pi)D_{M,k_0,k_1}(\pi). \tag{13}
+\]
+Every \(\pi\) in (13) comes from the full law (2), while every weight comes from the coherent target law (3).  Thus neither shared-assignment dependence nor common-target coherence has been factorized.
+
+A deterministic local balanced tree groups the \(L_C\) supported class pairs in \(O(L_C\log(1+L_C))\) comparisons and \(O(L_C)\) arithmetic.  Let
+\[
+\Pi_\star=\bigcup_{C\in\mathfrak C}\Pi_C,\qquad G=|\Pi_\star|. \tag{14}
+\]
+The exact value for a vector is keyed by
+\[
+(M,k_0,k_1,\pi_{00},\pi_{01},\pi_{10}),\qquad
+\pi_{11}=1-\pi_{00}-\pi_{01}-\pi_{10}. \tag{15}
+\]
+It is independent of \(C\) and of \(\omega_C(\pi)\).  A global balanced-tree memo consequently performs \(O((\sum_CU_C)\log(1+G))\) comparisons and computes only \(G\) values.  Choosing the rolling recurrence for every key costs \(GMk_0k_1\).  Adding the construction, grouping, objective, and lookup costs proves the displayed instance-adaptive bound.  Replacing each \(L_C,U_C\) by \(L_{\max},U_{\max}\) proves the uniform bound.  The orbit and prefix tables, target table, rolling arrays, current local table, and memo require respectively
+\[
+O(m_0m_1),\quad O(L),\quad O(k_0k_1),\quad O(U_{\max}),\quad O(G),
+\]
+which proves the stated working-memory certificate.
+
+For the required paired alternative, define the probability-independent term count
+\[
+\mathsf T=\mathsf T_{M,k_0,k_1}
+\]
+from \(\texttt{lem:four-cell-multinomial-sum-alternative}\), and partition the distinct key set as
+\(\Pi_\star=\Pi_{\mathrm{MS}}\sqcup\Pi_{\mathrm{DP}}\) according to the selected exact evaluator.  Write
+\[
+\begin{aligned}
+\mathsf B={}&|\mathcal V|+F_{m_0}F_{m_1}(m_0m_1+L)
++\sum_{C\in\mathfrak C}\{L_C\log(1+L_C)+L_C+U_C\}\\
+&+\left\{\sum_{C\in\mathfrak C}U_C\right\}\log(1+G).
+\end{aligned} \tag{16}
+\]
+Shared factorial preprocessing costs \(O(M)\) once.  Power tables are rebuilt from the current \(\pi\) and discarded for every multinomial key, while rolling arrays are reused for recurrence keys.  Therefore the honest selected-branch time is
+\[
+O\!\left(
+\mathsf B+M+\sum_{\pi\in\Pi_{\mathrm{MS}}}(M+\mathsf T)
++|\Pi_{\mathrm{DP}}|Mk_0k_1
+\right). \tag{17}
+\]
+Selecting solely by the smaller operation count gives the simpler consequence
+\[
+O\!\left(\mathsf B+M+G\min\{M+\mathsf T,Mk_0k_1\}\right). \tag{18}
+\]
+The multinomial branch has \(O(M)\) auxiliary workspace, and the rolling recurrence branch has \(O(k_0k_1)\).  Sequential key processing and \(O(G)\) memo storage give the unconditional hybrid bound
+\[
+O\!\left(m_0m_1+L+U_{\max}+G+\max\{M,k_0k_1\}\right), \tag{19}
+\]
+not a bound with the minimum of the two workspaces.  The original displayed time and memory in the lemma are recovered from (17)--(19) by assigning every key to the recurrence branch.  Equations (2), (3), (9), and (12) are unchanged under either evaluator, completing the required coherence and resource accounting.

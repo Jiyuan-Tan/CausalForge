@@ -1,0 +1,142 @@
+For \(a\in\{0,1\}\), aggregate the implemented selector over an orbit by
+\[
+\kappa_{w,a}(O\mid z)=\sum_{v:(v,a)\in O}\kappa_{w,a}(v\mid z).
+\tag{1}
+\]
+By \(\texttt{ass:selector-auxiliary-randomization}\), the arm-zero and arm-one auxiliary selector draws are conditionally independent given their common assignment \(z\). Integrating with the assignment law in \(\texttt{ass:known-matched-randomization}\) therefore gives the one-replicate joint calibration-orbit law
+\[
+R_w(O_0,O_1)=\sum_z\nu(z)\kappa_{w,0}(O_0\mid z)\kappa_{w,1}(O_1\mid z).
+\tag{2}
+\]
+The same assumptions and the product over replicates imply that the \(M\) calibration orbit pairs are independent and identically distributed according to \(R_w\). Formula (2) retains the dependence induced by the shared assignment; it does not replace \(R_w\) by a product of arm marginals.
+
+The two target lifts come from the one member \(T\). Hence \(\texttt{ass:prespecified-target}\) gives their coherent joint orbit law
+\[
+P_T(O_0,O_1)=\sum_{v\in\mathcal V}q_{\mathrm{tar}}(v)
+\mathbf 1\{O_0(v)=O_0,\ O_1(v)=O_1\}.
+\tag{3}
+\]
+Every \(v\) has exactly one orbit in each arm, so (3) is a probability mass function. A single scan through \(\mathcal V\) forms it in \(O(|\mathcal V|)\) arithmetic operations. Its support is the image of \(\operatorname{supp}(q_{\mathrm{tar}})\) under \(v\mapsto(O_0(v),O_1(v))\), and it is a subset of \(\mathcal O_0\times\mathcal O_1\). Therefore
+\[
+L=|\operatorname{supp}(P_T)|\le\min\{|\mathcal V|,m_0m_1\}.
+\tag{4}
+\]
+The independence clause in \(\texttt{ass:prespecified-target}\) makes this target pair independent of every calibration pair.
+
+Fix a pair of total preorders. Write their ordered nonempty tie classes as
+\[
+C_{a,1}\prec_a\cdots\prec_a C_{a,d_a},\qquad d_a\le m_a,
+\tag{5}
+\]
+and let \(c_a(O)\) be the class index of \(O\). Aggregate the full law (2) to the class-pair table
+\[
+W_{r,s}=
+\sum_{\substack{O_0:c_0(O_0)=r\\O_1:c_1(O_1)=s}}
+R_w(O_0,O_1),
+\qquad 1\le r\le d_0,\quad 1\le s\le d_1.
+\tag{6}
+\]
+One scan of the \(m_0m_1\) entries of \(R_w\) forms (6). Define its strict two-dimensional prefix sums by
+\[
+H(j,\ell)=\sum_{r<j}\sum_{s<\ell}W_{r,s},
+\qquad
+1\le j\le d_0+1,\quad 1\le\ell\le d_1+1.
+\tag{7}
+\]
+With a zero boundary row and column, the recurrence
+\[
+H(j,\ell)=H(j-1,\ell)+H(j,\ell-1)-H(j-1,\ell-1)+W_{j-1,\ell-1}
+\tag{8}
+\]
+for \(j,\ell\ge2\) forms the prefix table in \(O(d_0d_1)\subseteq O(m_0m_1)\) operations.
+
+Consider a coherent target-orbit pair \((O_0^t,O_1^t)\), and put
+\[
+j=c_0(O_0^t),\qquad \ell=c_1(O_1^t).
+\tag{9}
+\]
+For a calibration pair define
+\[
+b_0(O_0)=\mathbf 1\{c_0(O_0)<j\},\qquad
+b_1(O_1)=\mathbf 1\{c_1(O_1)<\ell\}.
+\tag{10}
+\]
+The four probabilities needed by the coupled count recurrence are
+\[
+\begin{aligned}
+\pi_{11}(j,\ell)&=H(j,\ell),\\
+\pi_{10}(j,\ell)&=H(j,d_1+1)-H(j,\ell),\\
+\pi_{01}(j,\ell)&=H(d_0+1,\ell)-H(j,\ell),\\
+\pi_{00}(j,\ell)&=1-\pi_{11}(j,\ell)-\pi_{10}(j,\ell)-\pi_{01}(j,\ell).
+\end{aligned}
+\tag{11}
+\]
+Thus they are obtained by constant-time prefix lookups. More importantly, (11) depends on the target pair only through the two class indices \((j,\ell)\).
+
+Push the coherent target law forward through the class maps:
+\[
+P_T^C(j,\ell)=
+\sum_{\substack{O_0,O_1\\c_0(O_0)=j,\ c_1(O_1)=\ell}}
+P_T(O_0,O_1).
+\tag{12}
+\]
+Since a pushforward cannot have more supported atoms than its source and is supported on \(\{1,\ldots,d_0\}\times\{1,\ldots,d_1\}\),
+\[
+L_C(c_0,c_1):=|\operatorname{supp}(P_T^C)|
+\le\min\{L,d_0d_1\}.
+\tag{13}
+\]
+Scanning the \(L\) nonzero entries of the sparse table (3) forms (12) in \(O(L)\) operations.
+
+Conditional on any target pair whose image is \((j,\ell)\), the order-statistic identity and \(k_0,k_1\le M\) turn the joint rank event into
+\[
+\sum_{i=1}^M b_0(O_{i,0})<k_0
+\quad\text{and}\quad
+\sum_{i=1}^M b_1(O_{i,1})<k_1.
+\tag{14}
+\]
+By \(\texttt{lem:four-cell-rank-event-dynamic-program}\), its exact probability is the final retained mass of the recurrence determined by the four numbers in (11). Denote that value by \(D_{j,\ell}\). Because both the recurrence and its initialization depend only on (11), every supported coherent target pair sharing \((j,\ell)\) has exactly the same value \(D_{j,\ell}\). Independence of the common target and calibration pairs now gives
+\[
+\begin{aligned}
+\Pr\{\text{both rank events}\}
+&=\sum_{O_0,O_1}P_T(O_0,O_1)
+D_{c_0(O_0),c_1(O_1)}\\
+&=\sum_{(j,\ell)\in\operatorname{supp}(P_T^C)}
+P_T^C(j,\ell)D_{j,\ell}.
+\end{aligned}
+\tag{15}
+\]
+Equation (15) proves the compression: the dynamic program is run once, not once per orbit pair, for each supported target class pair. It also makes clear that the two target arms remain one coherent draw through \(P_T^C\), while each \(D_{j,\ell}\) still uses the full coupled law \(R_w\).
+
+For one preorder pair, (6)--(8) cost \(O(m_0m_1)\), (12) and the final aggregation in (15) cost \(O(L+L_C(c_0,c_1))\), and the \(L_C(c_0,c_1)\) dynamic programs cost
+\[
+O\!\left(L_C(c_0,c_1)Mk_0k_1\right)
+\tag{16}
+\]
+by \(\texttt{lem:four-cell-rank-event-dynamic-program}\). Hence the per-pair cost is
+\[
+O\!\left(m_0m_1+L+
+L_C(c_0,c_1)\{1+Mk_0k_1\}\right).
+\tag{17}
+\]
+Summing (17) over the \(F_{m_0}F_{m_1}\) preorder pairs and adding the one-time construction of (3) proves the instance-adaptive bound
+\[
+O\!\left(
+|\mathcal V|+F_{m_0}F_{m_1}(m_0m_1+L)
++\{1+Mk_0k_1\}
+\sum_{(c_0,c_1)\in\mathfrak C}L_C(c_0,c_1)
+\right).
+\tag{18}
+\]
+If \(L_C\) denotes the maximum of \(L_C(c_0,c_1)\) over \(\mathfrak C\), then (18) is bounded by
+\[
+O\!\left(|\mathcal V|+F_{m_0}F_{m_1}
+\left[m_0m_1+L+L_C\{1+Mk_0k_1\}\right]\right).
+\tag{19}
+\]
+
+Finally, the sparse table \(P_T\) uses \(O(L)\) memory, the class and prefix tables use \(O(m_0m_1)\), and the rolling arrays in one dynamic-program run use \(O(k_0k_1)\). The sparse pushforward table has at most \(L_C(c_0,c_1)\le L\) entries, and all work arrays are reused across class pairs and preorder pairs. Thus the working-memory requirement is
+\[
+O(m_0m_1+L+k_0k_1),
+\]
+as claimed.

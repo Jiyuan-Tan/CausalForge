@@ -1,0 +1,94 @@
+Write \(\operatorname{supp}(\nu)=\{z:\nu(z)>0\}\). By \(\texttt{ass:known-matched-randomization}\), \(\nu(gz)=\nu(z)\), so this support is invariant under every \(g\in\mathcal G\). For \(z\in\operatorname{supp}(\nu)\), define the orbit-aggregated implemented kernel by
+\[
+\kappa_{w,a}(O\mid z)=\sum_{v:(v,a)\in O}\kappa_{w,a}(v\mid z).
+\tag{1}
+\]
+The corrected \(\texttt{ass:observable-selector-kernel}\) makes (1) a probability mass function on \(\mathcal O_a\). Conditional on \(Z_i=z\), \(\texttt{ass:selector-auxiliary-randomization}\) makes the two arm selectors independent with kernels (1). Integrating only over supported assignments gives
+\[
+R_w(O_0,O_1)=\sum_{z\in\operatorname{supp}(\nu)}\nu(z)
+\kappa_{w,0}(O_0\mid z)\kappa_{w,1}(O_1\mid z).
+\tag{2}
+\]
+This equals the displayed unrestricted sum because every omitted term has \(\nu(z)=0\). Hence arbitrary extensions of either kernel away from \(\operatorname{supp}(\nu)\) cannot affect \(R_w\). Independence across replicated arrays makes the calibration orbit pairs iid with law (2). The independent common target has joint orbit law
+\[
+P_T(O_0,O_1)=\sum_{v\in\mathcal V}q_{\mathrm{tar}}(v)
+\mathbf 1\{O_0(v)=O_0,\ O_1(v)=O_1\}.
+\tag{3}
+\]
+Its support is an image of \(\mathcal V\), so \(L\le\min\{|\mathcal V|,m_0m_1\}\).
+
+Fix a preorder pair \(C=(c_0,c_1)\) with \(d_a\) ordered nonempty classes, and push (3) through the two class maps. Pushforward cannot enlarge support and its range has size \(d_0d_1\), whence
+\[
+L_C\le\min\{L,d_0d_1\}.
+\tag{4}
+\]
+Condition on a supported target class pair \((j,\ell)\), and put
+\[
+B_{i0}=\mathbf 1\{c_0(O_{i,0})<j\},\qquad
+B_{i1}=\mathbf 1\{c_1(O_{i,1})<\ell\}.
+\tag{5}
+\]
+For each arm, the elementary order-statistic identity is
+\[
+s_a(O_{T,a})\le Q_{k_a}(s_a(O_{1,a}),\ldots,s_a(O_{M,a}))
+\Longleftrightarrow
+\sum_{i=1}^M\mathbf 1\{s_a(O_{i,a})<s_a(O_{T,a})\}<k_a.
+\tag{6}
+\]
+Thus ties are handled by strict prefixes. A two-dimensional prefix table of the unchanged law (2) gives the four-cell law \(\pi^C(j,\ell)\) of (5) in constant time. The pairs in (5) are iid, although their two coordinates generally remain dependent. Grouping target class pairs with the same four-cell vector yields
+\[
+\Pr\{\text{both rank events under }C\}
+=\sum_{\pi\in\Pi_C}\omega_C(\pi)D_{M,k_0,k_1}(\pi),
+\qquad U_C\le L_C.
+\tag{7}
+\]
+The value \(D_{M,k_0,k_1}(\pi)\) depends only on \(M,k_0,k_1\) and three independent cells of \(\pi\); \(\pi_{11}=1-\pi_{00}-\pi_{01}-\pi_{10}\). The local weights remain outside the key. This proves the memo specification while preserving \(R_w\), \(P_T^C\), the common selector, the common target, and within-replicate cross-arm dependence.
+
+The exact evaluators now apply to every key in (7). By \(\texttt{lem:four-cell-rank-event-dynamic-program}\), support-one and support-two keys have the stated vertex and affine-binomial formulas. By \(\texttt{lem:corner-oriented-four-cell-rank-evaluator}\), every eligible support-three face key has charge \(\mathsf F_M(\pi)\) and constant workspace. The determinant calculation in that lemma next evaluates every remaining support-four key satisfying \(\pi_{00}\pi_{11}=\pi_{01}\pi_{10}\) as a product of strict binomial distribution functions with charge \(\mathsf R_{M,k_0,k_1}\) and constant workspace. Every residual key is evaluated exactly by one of the rolling, zero-cell-safe multinomial, or positive-corner coefficient branches, by \(\texttt{lem:four-cell-multinomial-sum-alternative}\) and \(\texttt{lem:positive-corner-coefficient-recurrence}\). Deterministic least-charge selection and tie-breaking therefore give the displayed seven-way disjoint partition and exactly the sum \(\mathsf B\). Only \(\Pi_{\mathrm{MS}}\) uses the shared factorial table. Sequential evaluation uses the maximum live branch workspace, namely \(\mathsf W\); vertices, edges, faces, and rank-one keys require only constant auxiliary storage.
+
+It remains to verify the enumeration charges. Constructing (3) costs \(O(|\mathcal V|)\). For each preorder pair, class aggregation, the prefix table of (2), and target pushforward cost \(O(m_0m_1+L)\). A balanced tree groups its \(L_C\) local keys in \(O(L_C\log(1+L_C))\) comparisons and \(O(L_C)\) arithmetic operations, and forming (7) costs \(O(U_C)\). The global memo tree adds
+\[
+O\!\left(\left(\sum_CU_C\right)\log(1+G)\right).
+\]
+Adding \(\mathsf B\) proves the adaptive time bound. Replacing \(L_C,U_C\) by \(L_{\max},U_{\max}\) proves the uniform bound. The joint-orbit table, coherent-target table, largest local grouping table, \(G\) memoized scalars, and selected evaluator workspace give \(O(m_0m_1+L+U_{\max}+G+\mathsf W)\) memory.
+
+For the edge audit, take two pair blocks, the product group \(S_2^2\), and the four supported assignments obtained by independently assigning exactly one treated member in each block. The support is invariant under both pure swaps. On every supported assignment and in each arm, define a complete kernel by choosing either block with probability \(1/2\) and then selecting that block's unique observed arm-\(a\) member. These probabilities are nonnegative, sum to one, and have realized-arm support on every \(z\in\operatorname{supp}(\nu)\). Relabelling a supported assignment maps its unique observed member to the relabelled unique observed member, so the kernel satisfies the corrected support-domain equivariance identity. No off-support value is used. Put the common target in block \(2\); take block \(2\) lowest in arm \(0\), and block \(1\) below block \(2\) in arm \(1\). The induced key is \(\pi=(1/2,1/2,0,0)\), and therefore
+\[
+D_{M,n,M}(\pi)=1-2^{-M}.
+\]
+Exponentiation by squaring gives the \(O(\log M)\) edge evaluation and constant workspace. In the exact binary-multiplication model, producing the degree-\(M\) monomial from \(1/2\) requires at least \(\lceil\log_2M\rceil\) multiplications, whereas each former nonvertex branch has linear charge here. Thus the comparison is \(\Theta(\log M)\) versus \(\Theta(M)\). Direct calculation gives
+\[
+\left\lceil(2n+1)(1-\varepsilon_0)\right\rceil=n,
+\qquad
+\left\lceil(2n+1)(1-\varepsilon_1)\right\rceil=2n=M,
+\]
+and the displayed positive levels sum to \(\alpha<1\).
+
+For the face audit, take the trivial group on two pair blocks and let \(\nu\) be uniform on the three supported assignment vectors
+\[
+z^A=(1,0,1,0),\qquad z^B=(1,0,0,1),\qquad z^C=(0,1,1,0),
+\tag{8}
+\]
+in member order \((v_{1,0},v_{1,1},v_{2,0},v_{2,1})\). Define both selector kernels completely on this three-point support: on \(z^A\), select the unique member of the requested arm in block \(2\); on \(z^B\), select block \(2\) in arm \(0\) and block \(1\) in arm \(1\); on \(z^C\), select block \(1\) in arm \(0\) and block \(2\) in arm \(1\). Each lookup is a point-mass probability kernel on \(\operatorname{supp}(\nu)\) and selects an observed member of the requested arm. Equivariance is automatic for the trivial group; no off-support extension enters any integral. With target \(v_{2,0}\), put both block-\(1\) singleton orbits below the target orbit in each arm and tie both block-\(2\) singleton orbits with it. The strict-prefix pairs generated by (8) are \(00,01,10\), so
+\[
+\pi=(1/3,1/3,1/3,0).
+\tag{9}
+\]
+At \(k_0=k_1=M\), failure occurs only when every draw is \(10\) or every draw is \(01\). Those events are disjoint and each has probability \(3^{-M}\), proving
+\[
+D_{M,M,M}(\pi)=1-2\cdot3^{-M}.
+\tag{10}
+\]
+The face branch evaluates (10) in \(\Theta(\log M)\) exact arithmetic and constant workspace. Here the rolling and multinomial charges are \(\Theta(M)\). The allowed positive-base orientations have coefficient rectangles of dimensions \(M\) by \(M\), \(M\) by \(1\), or \(1\) by \(M\), while the remaining orientation has zero base and is unavailable; hence their least charge is also \(\Theta(M)\). Finally, \(\varepsilon_0=\varepsilon_1=1/(M+1)\) gives \(k_0=k_1=M\) and sums to the displayed \(\alpha\).
+
+For the rank-one audit, again use the trivial group on two pair blocks, now with the four supported assignments obtained from independent fair one-treated--one-control assignments. Define complete deterministic kernels on all four supported assignments: arm \(0\) selects block \(1\)'s unique observed control and arm \(1\) selects block \(2\)'s unique observed treated member. They are valid on \(\operatorname{supp}(\nu)\), equivariance is automatic, and off-support values are irrelevant. With common target \(v_{2,0}\), put one block-\(1\) control singleton orbit below the arm-\(0\) target orbit and put the block-\(2\) mate-treatment singleton orbit below the arm-\(1\) target orbit. The two prefix indicators are independent fair Bernoulli variables, so
+\[
+\pi=(1/4,1/4,1/4,1/4).
+\tag{11}
+\]
+Its determinant is zero, and the rank-one identity gives
+\[
+D_{2n,n,n+2}(\pi)=H_{2n,n}(1/2)H_{2n,n+2}(1/2).
+\tag{12}
+\]
+The displayed levels give ranks \(n\) and \(n+2\), sum to \(\alpha=2n/(2n+1)\), and are positive for \(n\ge3\). Here \(\bar k_0=n\) and \(\bar k_1=n-1\), so the product-binomial branch has \(\Theta(M)\) time and constant workspace. The rolling and multinomial alternatives have at least quadratic time, and every positive-corner rectangle has two widths of order \(n\), hence \(\Theta(M^2)\) time and \(\Theta(M)\) workspace. The least former branch is therefore \(\Theta(M^2)\) with \(\Theta(M)\) workspace. This proves all three strict admissible improvements and completes the lemma.

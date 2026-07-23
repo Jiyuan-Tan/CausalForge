@@ -1,0 +1,82 @@
+For each arm aggregate the implemented kernel over an orbit as
+\[
+\kappa_{w,a}(O\mid z)=\sum_{v:(v,a)\in O}\kappa_{w,a}(v\mid z).
+\tag{1}
+\]
+The selector auxiliary draws are conditionally independent given their shared assignment, so integrating their conditional product under the known randomization law gives
+\[
+R_w(O_0,O_1)=\sum_z\nu(z)\kappa_{w,0}(O_0\mid z)\kappa_{w,1}(O_1\mid z).
+\tag{2}
+\]
+Thus the calibration orbit pairs are iid across replicates with the full joint law (2). In particular, (2) retains, rather than factorizes, dependence induced by the shared assignment. The two target lifts arise from the one member \(T\), and target independence gives their coherent law
+\[
+P_T(O_0,O_1)=\sum_{v\in\mathcal V}q_{\mathrm{tar}}(v)\mathbf 1\{O_0(v)=O_0,\ O_1(v)=O_1\}.
+\tag{3}
+\]
+Its support is an image of \(\mathcal V\) into \(\mathcal O_0\times\mathcal O_1\), whence
+\[
+L\le\min\{|\mathcal V|,m_0m_1\}.
+\tag{4}
+\]
+A scan of \(\mathcal V\) forms (3), and the resulting target pair is independent of all calibration pairs.
+
+Fix a preorder pair \(C=(c_0,c_1)\). Aggregate (2) into its ordered class table
+\[
+W_{r,s}=\sum_{c_0(O_0)=r,\ c_1(O_1)=s}R_w(O_0,O_1).
+\tag{5}
+\]
+One scan of the \(m_0m_1\) cells forms \(W\), and a two-dimensional prefix recurrence forms all strict prefix masses
+\[
+H(j,\ell)=\sum_{r<j}\sum_{s<\ell}W_{r,s}
+\tag{6}
+\]
+in \(O(m_0m_1)\) operations. Pushing (3) to class pairs gives the stated \(P_T^C\); a scan of its \(L\) supported cells forms it, and therefore \(L_C\le\min\{L,d_0d_1\}\). For a supported target class pair \((j,\ell)\), put \(b_0(O_0)=\mathbf 1\{c_0(O_0)<j\}\) and \(b_1(O_1)=\mathbf 1\{c_1(O_1)<\ell\}\). Constantly many prefix lookups give
+\[
+\begin{aligned}
+\pi^C_{11}(j,\ell)&=H(j,\ell),\\
+\pi^C_{10}(j,\ell)&=H(j,d_1+1)-H(j,\ell),\\
+\pi^C_{01}(j,\ell)&=H(d_0+1,\ell)-H(j,\ell),\\
+\pi^C_{00}(j,\ell)&=1-\pi^C_{01}(j,\ell)-\pi^C_{10}(j,\ell)-\pi^C_{11}(j,\ell).
+\end{aligned}
+\tag{7}
+\]
+Conditional on the target class pair, the two rank events are exactly
+\[
+\sum_{i=1}^M b_0(O_{i,0})<k_0,\qquad \sum_{i=1}^M b_1(O_{i,1})<k_1.
+\tag{8}
+\]
+By the four-cell rank-event lemma, their joint probability is \(D_{M,k_0,k_1}(\pi^C(j,\ell))\). Grouping equal vectors and then averaging over the independent target proves
+\[
+\Pr\{\text{both rank events under }C\}=\sum_{\pi\in\Pi_C}\omega_C(\pi)D_{M,k_0,k_1}(\pi).
+\tag{9}
+\]
+This also proves \(U_C\le L_C\). Every vector in (9) comes from the unchanged full law (2), and every weight comes from the unchanged coherent law (3); consequently neither source of dependence is altered.
+
+A local balanced tree groups \(L_C\) exact vectors in \(O(L_C\log(1+L_C))\) comparisons and \(O(L_C)\) aggregation arithmetic. Across all preorder pairs let \(\Pi_\star=\bigcup_C\Pi_C\) and \(G=|\Pi_\star|\). The key
+\[
+(M,k_0,k_1,\pi_{00},\pi_{01},\pi_{10}),\qquad \pi_{11}=1-\pi_{00}-\pi_{01}-\pi_{10},
+\tag{10}
+\]
+determines the complete recurrence input. It contains no local weight. Hence only \(G\) recurrence values are computed, while the \(\sum_CU_C\) local occurrences incur balanced-tree lookup and objective-formation costs. Adding the scan, prefix, grouping, lookup, and recurrence charges yields the instance-adaptive bound in the statement; replacing \(L_C,U_C\) by \(L_{\max},U_{\max}\) gives its uniform bound. The orbit table, target table, rolling recurrence, current local tree, and global memo use respectively \(O(m_0m_1)\), \(O(L)\), \(O(k_0k_1)\), \(O(U_{\max})\), and \(O(G)\) memory, proving the displayed memory certificate.
+
+For the required sharper evaluator, define
+\[
+\bar k_a=\min\{k_a,M-k_a+1\},\qquad C_{M,k_0,k_1}=\sum_{i=0}^{M-1}\min\{\bar k_0,i+1\}\min\{\bar k_1,i+1\}.
+\tag{11}
+\]
+The corner-oriented recurrence evaluates each key (10) in \(O(C_{M,k_0,k_1})\) operations and \(O(\bar k_0\bar k_1)\) workspace. The corner-oriented multinomial construction evaluates its permuted corner at thresholds \((\bar k_0,\bar k_1)\), reconstructs the requested lower--lower probability with exact binomial marginals, and costs \(O(M+\mathsf T_{M,\bar k_0,\bar k_1})\) operations and \(O(M)\) workspace. Let \(\mathsf B\) denote all non-evaluator terms in the instance-adaptive bound and partition the \(G\) distinct keys as \(\Pi_\star=\Pi_{\mathrm{MS}}\sqcup\Pi_{\mathrm{DP}}\). Exact enumeration therefore has the stronger charge
+\[
+O\!\left(\mathsf B+M+\sum_{\pi\in\Pi_{\mathrm{MS}}}\{M+\mathsf T_{M,\bar k_0,\bar k_1}\}+|\Pi_{\mathrm{DP}}|C_{M,k_0,k_1}\right),
+\tag{12}
+\]
+or, under per-key time selection,
+\[
+O\!\left(\mathsf B+M+G\min\{M+\mathsf T_{M,\bar k_0,\bar k_1},C_{M,k_0,k_1}\}\right).
+\tag{13}
+\]
+Factorials are shared once, power tables are rebuilt per multinomial key, and keys are processed sequentially. The corresponding working memory is
+\[
+O\!\left(m_0m_1+L+U_{\max}+G+\max\{M,\bar k_0\bar k_1\}\right).
+\tag{14}
+\]
+Since \(C_{M,k_0,k_1}\le M\bar k_0\bar k_1\le Mk_0k_1\), (12)--(14) imply the coarser bounds in the formal statement. Equations (2), (3), (7), and (9) are untouched by evaluator choice, completing the coherence claim.

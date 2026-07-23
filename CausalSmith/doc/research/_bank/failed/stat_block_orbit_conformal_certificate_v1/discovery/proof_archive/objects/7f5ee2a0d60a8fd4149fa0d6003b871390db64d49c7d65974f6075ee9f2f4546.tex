@@ -1,0 +1,90 @@
+Write \(\mathcal O_a=\{O\in\mathcal O:O\subseteq\mathcal U_a\}\) and \(m_a=|\mathcal O_a|\). If \(k_a\le M\), the order-statistic identity gives
+\[
+s_a(O_{T,a})\le Q_{k_a}(s_a(O_{1,a}),\ldots,s_a(O_{M,a}))
+\quad\Longleftrightarrow\quad
+\sum_{i=1}^M\mathbf 1\{s_a(O_{i,a})<s_a(O_{T,a})\}<k_a.
+\tag{1}
+\]
+Thus ties are handled by strict comparison, and the event depends on \(s_a\) only through the total preorder that it induces on \(\mathcal O_a\). If \(k_a=M+1\), then \(Q_{k_a}=+\infty\) and the event is certain. Conversely, suppose a total preorder has ordered nonempty tie classes \(C_{a,1}\prec_a\cdots\prec_a C_{a,d_a}\). Assign score zero if \(d_a=1\); otherwise assign \((j-1)K/(d_a-1)\) to every orbit in \(C_{a,j}\). Because \(K>0\), this is a map into \([0,K]\) inducing the given preorder with \(d_a\le m_a\) levels. Hence the maximum in \(\texttt{def:coverage-frontier}\) is attained by finite enumeration of the relevant total-preorder tuples. This is exact only for the declared orbit-constant score class and does not identify a supremum over all \(P\in\mathcal P_{\mathcal G,K}\).
+
+Suppose first that \(k_0,k_1\le M\). The sharper coherent-pair construction in \(\texttt{lem:coherent-two-finite-rank-frontier-evaluator}\) first tabulates
+\[
+P_T(O_0,O_1)=\sum_{v\in\mathcal V}q_{\mathrm{tar}}(v)\mathbf 1\{O_0(v)=O_0,\ O_1(v)=O_1\}
+\tag{2}
+\]
+in \(O(|\mathcal V|)\) operations. Its support size \(L\) satisfies \(L\le\min\{|\mathcal V|,m_0m_1\}\). For every preorder pair, one two-dimensional prefix table of the full joint calibration-orbit law \(R_w\) recovers the four probabilities for each supported coherent target pair in constant time. Running \(\texttt{lem:four-cell-rank-event-dynamic-program}\) for those \(L\) pairs and averaging with (2) preserves both the single common target and all within-replicate cross-arm calibration dependence. Therefore the exact full enumeration costs
+\[
+O\!\left(|\mathcal V|+F_{m_0}F_{m_1}\left[m_0m_1+L\{1+Mk_0k_1\}\right]\right)
+\tag{3}
+\]
+unit-cost arithmetic operations and uses \(O(m_0m_1+L+k_0k_1)\) working memory, including the prefix table, sparse coherent-target table, and rolling dynamic-program arrays. In particular, since \(F_{m_0}F_{m_1}\ge1\), \(m_0m_1\ge1\), and \(L\le|\mathcal V|\), (3) is bounded by
+\[
+O\!\left(F_{m_0}F_{m_1}|\mathcal V|\{m_0m_1+Mk_0k_1\}\right),
+\tag{4}
+\]
+which proves the time bound displayed in the target statement. For its displayed \(O(k_0k_1)\) working-memory bound, one may use the equivalent scan-on-demand implementation: for each \(v\), scan the already tabulated \(m_0m_1\) cells of \(R_w\), form its four probabilities, run two rolling dynamic-program arrays, add the term weighted by \(q_{\mathrm{tar}}(v)\), and discard the arrays before proceeding. This gives exactly (4) with \(O(k_0k_1)\) auxiliary working memory beyond the tabulated input law and current preorder. Thus (3) is the sharper time certificate, while the scan-on-demand implementation establishes the original memory certificate.
+
+Now suppose exactly one rank \(k_b=M+1\), put \(c=1-b\), and note that \(k_c\le M\). By \(\texttt{lem:one-boundary-orbit-frontier-evaluator}\), the boundary-arm event is certain and the exact remaining event probability is
+\[
+\sum_{O_t\in\mathcal O_c}p_{c,O_t}\Pr\!\left\{\operatorname{Bin}\bigl(M,\theta(O_t)\bigr)<k_c\right\},\qquad
+\theta(O_t)=\sum_{O:s_c(O)<s_c(O_t)}q_{c,O}.
+\tag{5}
+\]
+If \(C_1\prec\cdots\prec C_d\) are the ordered tie classes, with \(q_j=q_c(C_j)\), \(p_j=p_c(C_j)\), and \(\theta_j=\sum_{\ell<j}q_\ell\), then (5) equals
+\[
+\sum_{j=1}^d p_j\Pr\{\operatorname{Bin}(M,\theta_j)<k_c\}.
+\tag{6}
+\]
+The class masses and cumulative probabilities require one \(O(m_c)\) scan. For \(0<\theta<1\), \(\texttt{lem:exact-binomial-shorter-tail-evaluator}\) uses
+\[
+t_0=(1-\theta)^M,\qquad t_{r+1}=t_r\frac{M-r}{r+1}\frac{\theta}{1-\theta},
+\tag{7}
+\]
+or the complementary upper-tail recurrence
+\[
+u_M=\theta^M,\qquad u_{r-1}=u_r\frac{r}{M-r+1}\frac{1-\theta}{\theta}.
+\tag{8}
+\]
+Exponentiation by squaring initializes (7) or (8) in \(O(\log M)\) operations, and summing the shorter tail uses \(O(\min\{k_c,M-k_c+1\})\) more. At \(\theta=0\) and \(\theta=1\), the exact probabilities are one and zero without division. Enumeration of the \(F_{m_c}\) preorders therefore has the stated complexity
+\[
+O\!\left(F_{m_c}m_c\left[1+\log M+\min\{k_c,M-k_c+1\}\right]\right)
+\tag{9}
+\]
+and constant auxiliary CDF memory after \(p_c\) and \(q_c\) are tabulated. If both ranks equal \(M+1\), both rank events are certain, so the frontier is \([(1-\alpha)-1]_+=0\).
+
+It remains to establish the binary obstruction. Take four pair blocks with \(\mathcal G=S_2^4\), independent fair within-pair assignments, and a singleton selector library. In either arm let the selector first choose a block with probabilities
+\[
+q=\left(\frac{13}{20},\frac1{20},\frac14,\frac1{20}\right)
+\tag{10}
+\]
+and then choose the unique observed member in that arm. This kernel is observable and pair-swap equivariant. Let the common target block have probabilities
+\[
+p=\left(\frac1{20},\frac1{10},\frac14,\frac35\right),\qquad q_{\mathrm{tar}}(v_{b,r})=p_b/2.
+\tag{11}
+\]
+For \(M=3\), \(\alpha=1/2\), and \(\varepsilon_0=\varepsilon_1=1/4\), \(\texttt{lem:armwise-finite-rank-staircase}\) gives \(k_0=k_1=3\). Put \(s_0\equiv0\) and order the arm-one blocks as \(1\prec 3\prec 2\prec 4\). Its failure probability is
+\[
+\frac14\left(\frac{13}{20}\right)^3+\frac1{10}\left(\frac{18}{20}\right)^3+\frac35\left(\frac{19}{20}\right)^3=\frac{104957}{160000},
+\tag{12}
+\]
+so its frontier objective is \(24957/160000\). For binary maps let \(H_a\) be the high-score block set and \(A_a=(1-q(H_a))^3\). Inclusion--exclusion conditional on the common target block gives
+\[
+F_{\mathrm{bin}}(H_0,H_1)=p(H_0)A_0+p(H_1)A_1-p(H_0\cap H_1)A_0A_1.
+\tag{13}
+\]
+Order the sixteen subsets as \(\varnothing,1,2,3,4,12,13,14,23,24,34,123,124,134,234,1234\). For each fixed \(H_0\), exact substitution of all sixteen choices of \(H_1\) in (13) gives the following row maxima, all with denominator \(320000000\):
+\[
+\begin{split}
+(&164616000,165302000,192052000,198366000,207906936,165912000,164712000,165787368,\\
+&203032000,208582976,208582976,164632000,165793875,164631423,202894331,164616000).
+\end{split}
+\tag{14}
+\]
+Thus all \(16^2\) pairs are exhausted, their maximum failure probability is \(208582976/320000000=3259109/5000000\), and their maximum frontier objective is \(759109/5000000\). The strict gap is
+\[
+\frac{24957}{160000}-\frac{759109}{5000000}=\frac{83189}{20000000}>0.
+\tag{15}
+\]
+Thus binary attainment is false.
+
+Finally, suppose target and calibration orbit supports are disjoint in arm \(a\) and \(k_a\le M\). Assign score \(K\) to target-supported arm-\(a\) orbits and zero to every other orbit and to the other arm. The target score is always \(K\), every calibration score in that arm is zero, and its rank event is impossible. Hence the joint event has probability zero and the frontier equals \(1-\alpha\), the largest value permitted by its positive-part definition. When one arm is at the boundary, (5)--(9) give the exact reduction to the other arm. On \(\varepsilon_0=\varepsilon_1=\alpha/2\), \(\texttt{lem:armwise-finite-rank-staircase}\) gives \(k_0=k_1=k\), and \(\texttt{def:coverage-frontier}\) identifies this frontier with \(\Gamma_{M,\alpha}(w)\), proving the symmetric specialization.

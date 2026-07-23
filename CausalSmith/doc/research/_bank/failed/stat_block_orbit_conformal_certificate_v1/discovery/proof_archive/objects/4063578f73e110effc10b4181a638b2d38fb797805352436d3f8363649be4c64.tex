@@ -1,0 +1,96 @@
+For \(a\in\{0,1\}\), aggregate the implemented selector over an orbit by
+\[
+\kappa_{w,a}(O\mid z)=\sum_{v:(v,a)\in O}\kappa_{w,a}(v\mid z).\tag{1}
+\]
+By \(\texttt{ass:selector-auxiliary-randomization}\), the two auxiliary selector draws in one replicate are conditionally independent given their common assignment \(z\). Integrating over \(z\) under \(\texttt{ass:known-matched-randomization}\) gives
+\[
+R_w(O_0,O_1)=\sum_z\nu(z)\kappa_{w,0}(O_0\mid z)\kappa_{w,1}(O_1\mid z).\tag{2}
+\]
+Across replicates the orbit pairs are independent and identically distributed according to \(R_w\). Equation (2) retains the dependence induced by the common assignment; it does not replace \(R_w\) by the product of its marginals.
+
+The two target lifts arise from the single member \(T\). By \(\texttt{ass:prespecified-target}\), their coherent joint law is
+\[
+P_T(O_0,O_1)=\sum_{v\in\mathcal V}q_{\mathrm{tar}}(v)\mathbf 1\{O_0(v)=O_0,\ O_1(v)=O_1\}.\tag{3}
+\]
+Every member has one orbit in each arm, so (3) is a probability mass function. Its support is the image of \(\operatorname{supp}(q_{\mathrm{tar}})\) under \(v\mapsto(O_0(v),O_1(v))\), whence
+\[
+L=|\operatorname{supp}(P_T)|\le\min\{|\mathcal V|,m_0m_1\}.\tag{4}
+\]
+A scan through \(\mathcal V\) forms (3) in \(O(|\mathcal V|)\) operations. The target pair is independent of all calibration pairs by the same assumption.
+
+Fix a preorder pair \(C=(c_0,c_1)\), with ordered nonempty tie classes
+\[
+C_{a,1}\prec_a\cdots\prec_a C_{a,d_a},\qquad d_a\le m_a.\tag{5}
+\]
+Aggregate (2) to
+\[
+W_{r,s}=\sum_{\substack{O_0:c_0(O_0)=r\\O_1:c_1(O_1)=s}}R_w(O_0,O_1),\qquad 1\le r\le d_0,\quad 1\le s\le d_1.\tag{6}
+\]
+One scan of the \(m_0m_1\) entries forms this table. Define strict prefix sums
+\[
+H(j,\ell)=\sum_{r<j}\sum_{s<\ell}W_{r,s},\qquad 1\le j\le d_0+1,\quad 1\le\ell\le d_1+1.\tag{7}
+\]
+With a zero boundary row and column,
+\[
+H(j,\ell)=H(j-1,\ell)+H(j,\ell-1)-H(j-1,\ell-1)+W_{j-1,\ell-1}\tag{8}
+\]
+forms all prefixes in \(O(d_0d_1)\subseteq O(m_0m_1)\) operations.
+
+Push (3) forward through the class maps:
+\[
+P_T^C(j,\ell)=\sum_{\substack{O_0,O_1\\c_0(O_0)=j,\ c_1(O_1)=\ell}}P_T(O_0,O_1).\tag{9}
+\]
+A scan of the \(L\) nonzero entries of (3) forms (9). Since pushforward cannot increase support and the range has size \(d_0d_1\),
+\[
+L_C=|\operatorname{supp}(P_T^C)|\le\min\{L,d_0d_1\}.\tag{10}
+\]
+For a supported target class pair \((j,\ell)\), define strict-below indicators \(b_0(O_0)=\mathbf 1\{c_0(O_0)<j\}\) and \(b_1(O_1)=\mathbf 1\{c_1(O_1)<\ell\}\). The four probabilities of \((b_0,b_1)\) are
+\[
+\begin{aligned}
+\pi_{11}^C(j,\ell)&=H(j,\ell),\\
+\pi_{10}^C(j,\ell)&=H(j,d_1+1)-H(j,\ell),\\
+\pi_{01}^C(j,\ell)&=H(d_0+1,\ell)-H(j,\ell),\\
+\pi_{00}^C(j,\ell)&=1-\pi_{11}^C(j,\ell)-\pi_{10}^C(j,\ell)-\pi_{01}^C(j,\ell).
+\end{aligned}\tag{11}
+\]
+Thus the exact vector \(\pi^C(j,\ell)=(\pi_{00}^C,\pi_{01}^C,\pi_{10}^C,\pi_{11}^C)\) is obtained by constant-time prefix lookups. Because its coordinates sum to one, the first three coordinates form an exact key.
+
+Conditional on this target class pair, the two rank events are
+\[
+\sum_{i=1}^M b_0(O_{i,0})<k_0,\qquad \sum_{i=1}^M b_1(O_{i,1})<k_1.\tag{12}
+\]
+The recurrence in \(\texttt{lem:four-cell-rank-event-dynamic-program}\) is initialized by \(d_0(0,0)=1\) and thereafter uses only \(\pi_{00},\pi_{01},\pi_{10},\pi_{11}\) and the fixed integers \(M,k_0,k_1\). Hence its terminal value is a deterministic function \(D_{M,k_0,k_1}(\pi)\) of the exact four-cell vector alone. In particular, class pairs with identical exact vectors have identical coupled recurrence values, even if their class indices differ.
+
+Let
+\[
+\Pi_C=\{\pi^C(j,\ell):(j,\ell)\in\operatorname{supp}(P_T^C)\},\qquad U_C=|\Pi_C|\le L_C,\tag{13}
+\]
+and aggregate coherent target mass by key:
+\[
+\omega_C(\pi)=\sum_{\substack{(j,\ell)\in\operatorname{supp}(P_T^C)\\\pi^C(j,\ell)=\pi}}P_T^C(j,\ell).\tag{14}
+\]
+Target--calibration independence and conditioning on the coherent target class pair now yield the exact identity
+\[
+\Pr\{\text{both rank events}\}=\sum_{\pi\in\Pi_C}\omega_C(\pi)D_{M,k_0,k_1}(\pi).\tag{15}
+\]
+Thus the common target remains coherent through \(P_T^C\) and \(\omega_C\), the full cross-arm calibration dependence remains in \(R_w\) and \(\pi\), and the dynamic program is run once per distinct exact vector rather than once per supported class pair.
+
+A deterministic implementation inserts the three-coordinate keys \((\pi_{00},\pi_{01},\pi_{10})\) into a lexicographically ordered balanced search tree. There are \(L_C\) insertions or lookups, each using \(O(\log(1+L_C))\) exact comparisons. Simultaneously adding the corresponding \(P_T^C(j,\ell)\) masses to the tree records costs \(O(L_C)\) exact arithmetic operations after the groups are located. If the design inputs are rational, these are exact rational keys and exact rational additions; otherwise they are exact keys in the stated unit-cost exact-arithmetic model. Once the groups are built, forming (15) uses \(O(U_C)\) further arithmetic operations. By \(\texttt{lem:four-cell-rank-event-dynamic-program}\), the recurrence runs cost \(O(U_CMk_0k_1)\). Therefore one preorder pair costs
+\[
+O\!\left(m_0m_1+L+L_C\log(1+L_C)+L_C+U_C\{1+Mk_0k_1\}\right).\tag{16}
+\]
+Summing (16) over \(\mathfrak C\) and adding the one-time construction of (3) gives
+\[
+O\!\left(
+|\mathcal V|+F_{m_0}F_{m_1}(m_0m_1+L)+\sum_{C\in\mathfrak C}\left[L_C\log(1+L_C)+L_C+U_C\{1+Mk_0k_1\}\right]
+\right).\tag{17}
+\]
+With \(L_{\max}=\max_C L_C\) and \(U_{\max}=\max_C U_C\), (17) is at most
+\[
+O\!\left(|\mathcal V|+F_{m_0}F_{m_1}\left[m_0m_1+L+L_{\max}\log(1+L_{\max})+L_{\max}+U_{\max}\{1+Mk_0k_1\}\right]\right).\tag{18}
+\]
+The class and prefix tables require \(O(m_0m_1)\) memory, the sparse coherent target table requires \(O(L)\), the rolling recurrence arrays require \(O(k_0k_1)\), and the current exact-key tree requires \(O(U_C)\le O(U_{\max})\). Reusing these arrays across preorder pairs proves the working-memory bound
+\[
+O(m_0m_1+L+k_0k_1+U_{\max}).\tag{19}
+\]
+This completes the cached exact evaluator and all asserted bounds.

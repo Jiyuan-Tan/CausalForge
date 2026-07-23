@@ -1,0 +1,60 @@
+Aggregate the implemented selector by
+\[
+\kappa_{w,a}(O\mid z)=\sum_{v:(v,a)\in O}\kappa_{w,a}(v\mid z).
+\tag{1}
+\]
+Conditional on \(Z_i=z\), selector auxiliary randomization makes the two armwise selections independent with kernels (1). Integrating over the known assignment law gives
+\[
+R_w(O_0,O_1)=\sum_z\nu(z)\kappa_{w,0}(O_0\mid z)\kappa_{w,1}(O_1\mid z),
+\tag{2}
+\]
+and these orbit pairs are iid across calibration replicates. The common prespecified target has joint orbit law
+\[
+P_T(O_0,O_1)=\sum_{v\in\mathcal V}q_{\mathrm{tar}}(v)
+\mathbf 1\{O_0(v)=O_0, O_1(v)=O_1\}.
+\tag{3}
+\]
+The support of (3) is the image of \(\mathcal V\), so \(L\le\min\{|\mathcal V|,m_0m_1\}\). Pushing (3) through a preorder pair \(C=(c_0,c_1)\) cannot increase its support and has range of size \(d_0d_1\), proving
+\[
+L_C\le\min\{L,d_0d_1\}.
+\tag{4}
+\]
+
+Aggregate (2) over ordered class pairs and form its two-dimensional strict-prefix table. For a target class pair \((j,\ell)\), four prefix combinations give the probabilities that neither, only arm zero, only arm one, or both calibration scores are strictly below the corresponding target scores. This is precisely \(\pi^C(j,\ell)\), and each vector is obtained in constant time. The strict prefix, rather than a weak prefix, handles ties. Conditional on \((j,\ell)\), the two order-statistic events hold exactly when their strict-below counts are below \(k_0\) and \(k_1\). Therefore
+\[
+\Pr\{\text{both rank events under }C\}
+=\sum_{\pi\in\Pi_C}\omega_C(\pi)D_{M,k_0,k_1}(\pi),
+\qquad U_C\le L_C.
+\tag{5}
+\]
+The value \(D_{M,k_0,k_1}(\pi)\) depends only on \((M,k_0,k_1,\pi_{00},\pi_{01},\pi_{10})\), since the fourth cell is determined by summing to one. Thus a global memo evaluates each of the \(G\) exact keys once, while the local weights in (5) remain attached to their own preorder. Equations (2)--(5) prove that neither the shared-assignment dependence nor the common target is factorized or replaced.
+
+We now establish the vertex prepass. If \(\pi\in\Pi_{\mathrm{vert}}\), its four nonnegative cells sum to one and one cell \((x,y)\) equals one. That cell is unique, every calibration indicator pair equals \((x,y)\), and
+\[
+D_{M,k_0,k_1}(\pi)=\mathbf 1\{Mx<k_0\ \text{and}\ My<k_1\}.
+\tag{6}
+\]
+Formula (6) costs \(O(1)\) exact operations and workspace. For every remaining key, the corner-oriented rolling lemma supplies charge \(\mathsf C_{M,k_0,k_1}\), the zero-cell-safe multinomial lemma supplies charge \(M+\mathsf T_{M,\bar k_0,\bar k_1}\), and the positive-corner coefficient lemma supplies charge \(\mathsf C_+(\pi)\). Each computes the same probability. Deterministic least-charge selection on \(\Pi_\star\setminus\Pi_{\mathrm{vert}}\) therefore yields
+\[
+\Pi_\star=\Pi_{\mathrm{vert}}\mathbin{\dot\cup}\Pi_{\mathrm{roll}}\mathbin{\dot\cup}\Pi_{\mathrm{MS}}\mathbin{\dot\cup}\Pi_+
+\tag{7}
+\]
+and exactly the proposed charge
+\[
+\begin{aligned}
+\mathsf B={}&|\Pi_{\mathrm{vert}}|+M\mathbf 1\{\Pi_{\mathrm{MS}}\ne\varnothing\}
++\sum_{\pi\in\Pi_{\mathrm{roll}}}\mathsf C_{M,k_0,k_1}\\
+&+\sum_{\pi\in\Pi_{\mathrm{MS}}}(M+\mathsf T_{M,\bar k_0,\bar k_1})
++\sum_{\pi\in\Pi_+}\mathsf C_+(\pi).
+\end{aligned}
+\tag{8}
+\]
+The factorial table in (8) is built once if and only if the nonvertex multinomial set is nonempty. Sequential processing uses the workspace of the selected nonvertex branch; the vertex branch contributes only constant space, absorbed by the constant term in \(\mathsf W\).
+
+The target scan costs \(O(|\mathcal V|)\). For every preorder pair, forming class tables, the strict-prefix table, and the target pushforward costs \(O(m_0m_1+L)\). A local balanced tree costs \(O(L_C\log(1+L_C))\) comparisons and \(O(L_C)\) aggregation arithmetic; forming (5) costs \(O(U_C)\), and the global memo costs \(O((\sum_CU_C)\log(1+G))\) comparisons. Adding (8) proves the instance-adaptive time display. Replacing \(L_C,U_C\) by \(L_{\max},U_{\max}\) proves the uniform bound. The orbit table, target table, local key table, \(G\) memoized answers, and live evaluator workspace prove
+\[
+O(m_0m_1+L+U_{\max}+G+\mathsf W)
+\]
+memory.
+
+Finally consider the strict witness. Take one matched pair, the group \(S_2\), fair one-treated--one-control assignment, and the selector that chooses the unique observed member in each arm. There is one orbit per arm, so both \(R_w\) and \(P_T\) are point masses and every strict-below indicator is zero; hence \(\pi_{00}=1\). For \(M\ge2\), \(\alpha=2/(M+1)\) and \(\varepsilon_0=\varepsilon_1=1/(M+1)\) give \(k_0=k_1=M\). Formula (6) gives \(D_{M,M,M}(\pi)=1\). The old rolling charge is \(\mathsf C_{M,M,M}=M\), and the multinomial charge is \(M+\mathsf T_{M,1,1}=M+1\). Only the lower--lower orientation has positive base mass, so \(\mathsf C_+(\pi)=\Theta(M^2)\). Hence the prior least-charge dispatcher is \(\Theta(M)\), while (6) is \(\Theta(1)\).

@@ -1,0 +1,62 @@
+For each assignment \(z\), aggregate the legal selector within orbits:
+\[
+\kappa_{w,a}(O\mid z)=\sum_{v:(v,a)\in O}\kappa_{w,a}(v\mid z).
+\tag{1}
+\]
+Conditional on \(Z_i=z\), \(\texttt{ass:selector-auxiliary-randomization}\) makes the two selected members independent with their armwise kernels. Integrating over \(\nu\) gives the full joint law \(R_w\). Across replicates these pairs are iid by the product auxiliary draws and known replicated design. The common target has joint orbit law \(P_T\) because one member \(T\) supplies both lifts. Its support is an image of \(\mathcal V\), hence
+\[
+L\le\min\{|\mathcal V|,m_0m_1\}.
+\tag{2}
+\]
+Pushing through preorder classes cannot increase support and has range \(d_0d_1\), so
+\[
+L_C\le\min\{L,d_0d_1\}.
+\tag{3}
+\]
+
+For a target class pair \((j,\ell)\), a two-dimensional strict-prefix table of \(R_w\) gives the four probabilities that neither, only arm zero, only arm one, or both calibration scores are strictly below their target scores. Call this vector \(\pi^C(j,\ell)\). The strict prefix is required because
+\[
+s_a(O_{T,a})\le Q_{k_a}(s_a(O_{1,a}),\ldots,s_a(O_{M,a}))
+\iff
+\sum_{i=1}^M\mathbf 1\{s_a(O_{i,a})<s_a(O_{T,a})\}<k_a.
+\tag{4}
+\]
+Conditioning on the target class and grouping equal four-cell vectors yields
+\[
+\Pr\{\text{both rank events under }C\}
+=\sum_{\pi\in\Pi_C}\omega_C(\pi)D_{M,k_0,k_1}(\pi),
+\qquad U_C\le L_C.
+\tag{5}
+\]
+The value \(D\) depends only on \(M,k_0,k_1\) and three cells of \(\pi\). Therefore the global memo key is exact, while keeping \(\omega_C\) local preserves \(P_T^C\). Equations (1) and (5) show that \(R_w\) is never factorized and the common target is never replaced by two targets.
+
+By \(\texttt{lem:four-cell-rank-event-dynamic-program}\), support-one keys cost constant time and support-two keys cost \(\mathsf E_M(\pi)\) time with constant workspace. By the three frozen exact evaluators, every remaining key has charges \(\mathsf C_{M,k_0,k_1}\), \(M+\mathsf T_{M,\bar k_0,\bar k_1}\), and \(\mathsf C_+(\pi)\). Deterministic least-charge selection therefore gives the five-way disjoint partition and exactly \(\mathsf B\). Only the multinomial branch uses factorials. Sequential key evaluation gives the maximum live workspace \(\mathsf W\); support-one and support-two keys are absorbed by its constant term.
+
+The target scan costs \(O(|\mathcal V|)\). Per preorder pair, class aggregation, the prefix table, and target pushforward cost \(O(m_0m_1+L)\). A local balanced tree costs \(O(L_C\log(1+L_C))\) comparisons and \(O(L_C)\) aggregation, forming (5) costs \(O(U_C)\), and the global memo costs
+\[
+O\!\left(\Bigl(\sum_CU_C\Bigr)\log(1+G)\right).
+\]
+Adding \(\mathsf B\) proves the adaptive time formula. Substitution of \(L_{\max}\) and \(U_{\max}\) proves the uniform formula. The live orbit table, target table, local grouping table, \(G\) scalar memo entries, and exact evaluator prove the memory formula.
+
+We finally audit the strict witness. Let \(M=2n\) with \(n\ge2\), \(k_0=n\), \(k_1=M\), and let the edge support be \(u=(0,0)\), \(v=(0,1)\), each with mass \(1/2\). If \(N\sim\operatorname{Bin}(M,1/2)\), then
+\[
+R_M=0,\qquad S_M=N.
+\tag{6}
+\]
+Thus
+\[
+D_{M,n,M}(\pi)=\Pr\{N<M\}=1-2^{-M}.
+\tag{7}
+\]
+The interval is \([0,M-1]\); its complement is the single endpoint \(M\). Exponentiation by squaring evaluates \(2^{-M}\) in \(\Theta(\log M)\) exact arithmetic and constant workspace. For the former dispatcher, the rolling charge is \(\Theta(M^2)\). The multinomial charge is \(M+\mathsf T_{M,n,1}=\Theta(M)\). In the positive-corner branch, the only positive-base orientations have either an \(n\times M\) coefficient rectangle or an \(n\times1\) rectangle plus an arm-zero marginal of width \(n\), so \(\mathsf C_+(\pi)=\Theta(M)\). Hence its least charge is \(\Theta(M)\), proving strict improvement.
+
+For admissibility, take two pair blocks and \(\mathcal G=S_2^2\), so each pure local swap is audited by \(\texttt{def:pair-action}\) and each \(O_{b,a}\) is a global orbit. In each block independently assign exactly one treated member with probability \(1/2\) to each member. This law is invariant under both swaps and satisfies \(\texttt{ass:known-matched-randomization}\). Let the selector library be a singleton. Its arm-\(1\) kernel first chooses block \(1\) or \(2\) with probability \(1/2\), independently of labels, then chooses the unique member observed in arm \(1\); define the arm-\(0\) kernel analogously. The kernels select observed-arm members, are equivariant under both swaps, and their auxiliary draws obey the declared product law. Put the target law on a fixed member of block \(2\), independently of calibration data. The two target lifts therefore lie in the block-\(2\) orbits. Order block \(2\) lowest in arm \(0\); then the strict-below arm-zero indicator is always zero. Order block \(1\) below block \(2\) in arm \(1\); then the arm-one indicator equals one exactly when the selector chooses block \(1\), with probability \(1/2\). Thus the induced key is exactly \((1/2,1/2,0,0)\). The construction uses only selector and target rules fixed before scores, so external training and score values do not affect the audit.
+
+Finally, with \(M+1=2n+1\),
+\[
+\left\lceil(2n+1)\left(1-\frac{n+1}{2n+1}\right)\right\rceil=n,
+\qquad
+\left\lceil(2n+1)\left(1-\frac1{2n+1}\right)\right\rceil=2n=M.
+\tag{8}
+\]
+The two levels are positive, their sum is \((n+2)/(2n+1)=\alpha\), and \(\alpha<1\) because \(n\ge2\). This verifies every rank and budget condition and completes the proof.

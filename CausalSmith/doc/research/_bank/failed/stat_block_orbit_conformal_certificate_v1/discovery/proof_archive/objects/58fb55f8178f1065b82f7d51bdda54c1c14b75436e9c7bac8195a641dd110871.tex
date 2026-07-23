@@ -1,0 +1,137 @@
+Write \(\mathcal O_a=\{O\in\mathcal O:O\subseteq\mathcal U_a\}\) and \(m_a=|\mathcal O_a|\). Values of \(s_a\) outside \(\mathcal O_a\) are irrelevant. If \(k_a\le M\), define \(O\preceq_a O'\) if and only if \(s_a(O)\le s_a(O')\). For every target orbit and every calibration-orbit vector, the order-statistic identity
+\[
+s_a(O_{T,a})\le Q_{k_a}(s_a(O_{1,a}),\ldots,s_a(O_{M,a}))
+\quad\Longleftrightarrow\quad
+\sum_{i=1}^M\mathbf 1\{s_a(O_{i,a})<s_a(O_{T,a})\}<k_a
+\tag{1}
+\]
+holds. Indeed, the left side fails exactly when at least \(k_a\) calibration scores are strictly smaller than the target score. Thus ties are handled by the strict comparison on the right of \((1)\), and the event depends on \(s_a\) only through its induced total preorder. If \(k_a=M+1\), then \(Q_{k_a}=+\infty\), so the armwise event is identically true.
+
+Conversely, let a total preorder on \(\mathcal O_a\) have ordered nonempty tie classes \(C_{a,1}\prec_a\cdots\prec_a C_{a,d_a}\). If \(d_a=1\), assign score zero to its sole class. If \(d_a>1\), assign score \((j-1)K/(d_a-1)\) to every orbit in \(C_{a,j}\). Since \(K>0\), this is a map into \([0,K]\), it induces the prescribed preorder, and it has \(d_a\le m_a\) levels. There are finitely many such preorders, namely \(F_{m_a}\). Consequently the objective in \(\texttt{def:coverage-frontier}\) is constant on each relevant preorder pair and every pair has an admissible representative. The maximum is therefore attained, and it is exactly the worst deficit over the declared bounded orbit-constant score class. This argument does not identify that maximum with a supremum over all laws in \(\mathcal P_{\mathcal G,K}\).
+
+Suppose first that \(k_0,k_1\le M\). Define the orbit-level selector kernels and the one-replicate joint calibration-orbit law by
+\[
+\kappa_{w,a}(O\mid z)=\sum_{v:(v,a)\in O}\kappa_{w,a}(v\mid z),
+\qquad
+R_w(O_0,O_1)=\sum_z\nu(z)\kappa_{w,0}(O_0\mid z)\kappa_{w,1}(O_1\mid z).
+\tag{2}
+\]
+By \(\texttt{ass:selector-auxiliary-randomization}\), the two arm selectors are conditionally independent given their shared assignment. By \(\texttt{ass:known-matched-randomization}\), assignments are independent across replicates with law \(\nu\). Hence the \(M\) calibration orbit pairs are independent and identically distributed with mass function \(R_w\); formula \((2)\) retains their within-replicate cross-arm dependence.
+
+Fix a target member \(v\) and a preorder pair. Let \(O_a(v)\) be the orbit containing \((v,a)\), and put
+\[
+b_a(O;v)=\mathbf 1\{s_a(O)<s_a(O_a(v))\}.
+\]
+Collapse \(R_w\) to the four-cell probabilities
+\[
+\pi_{xy}(v)=\sum_{O_0\in\mathcal O_0}\sum_{O_1\in\mathcal O_1}R_w(O_0,O_1)
+\mathbf 1\{b_0(O_0;v)=x,\ b_1(O_1;v)=y\},
+\qquad (x,y)\in\{0,1\}^2.
+\tag{3}
+\]
+Initialize \(d_0(0,0)=1\), set all other entries to zero, and update
+\[
+d_{i+1}(r,s)=\sum_{x=0}^1\sum_{y=0}^1\pi_{xy}(v)d_i(r-x,s-y),
+\qquad 0\le r<k_0,\quad 0\le s<k_1,
+\tag{4}
+\]
+with out-of-range entries interpreted as zero. By \(\texttt{lem:four-cell-rank-event-dynamic-program}\),
+\[
+\sum_{r=0}^{k_0-1}\sum_{s=0}^{k_1-1}d_M(r,s)
+=\Pr\!\left\{\sum_{i=1}^M b_0(O_{i,0};v)<k_0,\ \sum_{i=1}^M b_1(O_{i,1};v)<k_1\right\}.
+\tag{5}
+\]
+By \((1)\), this is the conditional joint rank-event probability for target member \(v\). Since the one common target obeys \(T\sim q_{\mathrm{tar}}\) by \(\texttt{ass:prespecified-target}\), the probability appearing in the frontier is
+\[
+\sum_{v\in\mathcal V}q_{\mathrm{tar}}(v)
+\sum_{r=0}^{k_0-1}\sum_{s=0}^{k_1-1}d_M^{(v)}(r,s).
+\tag{6}
+\]
+The single member sum preserves coherence of the two target lifts, and the four-cell law preserves calibration-arm coupling. For each target and preorder pair, constructing \((3)\) scans \(m_0m_1\) cells and recurrence \((4)\) takes \(O(Mk_0k_1)\) operations. Two rolling arrays use \(O(k_0k_1)\) memory. After \(R_w\) is tabulated, enumeration over all preorder pairs therefore takes
+\[
+O\!\left(F_{m_0}F_{m_1}|\mathcal V|\{m_0m_1+Mk_0k_1\}\right)
+\tag{7}
+\]
+arithmetic operations and \(O(k_0k_1)\) working memory.
+
+Now suppose exactly one rank equals \(M+1\). Write \(b\) for the boundary arm and \(c=1-b\) for the nonboundary arm, so \(k_c\le M\). By \(\texttt{lem:one-boundary-orbit-frontier-evaluator}\), the boundary-arm event is certain and its score map, preorder, target lift, and calibration coordinate are irrelevant. For every fixed nonboundary score map define
+\[
+\theta(O_t)=\sum_{O\in\mathcal O_c:s_c(O)<s_c(O_t)}q_{c,O}.
+\tag{8}
+\]
+The exact remaining rank-event probability is
+\[
+\sum_{O_t\in\mathcal O_c}p_{c,O_t}
+\Pr\!\left\{\operatorname{Bin}\bigl(M,\theta(O_t)\bigr)<k_c\right\}.
+\tag{9}
+\]
+Indeed, conditional on \(O_{T,c}=O_t\), the number of calibration scores strictly below the target is binomial with parameters \(M\) and \(\theta(O_t)\), and \((1)\) says that the rank event is the event that this count is below \(k_c\). Averaging over the target orbit gives \((9)\). The same lemma shows that, after the marginal \(q_c\) is tabulated, exact maximization enumerates only the \(F_{m_c}\) preorders of \(\mathcal O_c\) and takes
+\[
+O\!\left(F_{m_c}m_c\{m_c+Mk_c\}\right)
+\tag{10}
+\]
+operations and \(O(k_c)\) rolling memory. Thus the exact one-boundary evaluator has no factor \(F_{m_{1-c}}\), \(|\mathcal V|\), or per-case \(m_0m_1\) scan. If both ranks equal \(M+1\), both rank events are certain, their conjunction has probability one, and the frontier equals \([(1-\alpha)-1]_+=0\), computable in constant time.
+
+We next give the claimed obstruction to binary attainment. Take four pair blocks, let \(\mathcal G=S_2^4\), and use independent fair within-pair assignments having exactly one treated member in each pair. Let \(\mathcal H\) be a singleton and \(w=1\). Conditional on assignment, the selector in either arm first chooses a block with probabilities
+\[
+q=\left(\frac{13}{20},\frac1{20},\frac14,\frac1{20}\right)
+\tag{11}
+\]
+and then selects that block's unique observed member in the requested arm. This kernel is observable and equivariant under every pair swap. Set
+\[
+q_{\mathrm{tar}}(v_{b,r})=\frac{p_b}{2},
+\qquad
+p=\left(\frac1{20},\frac1{10},\frac14,\frac35\right),
+\qquad r\in\{0,1\}.
+\tag{12}
+\]
+The common target block consequently has law \(p\), whereas the two auxiliary block choices are independent and each has law \(q\). Take \(M=3\), \(\alpha=1/2\), and \(\varepsilon_0=\varepsilon_1=1/4\). By \(\texttt{lem:armwise-finite-rank-staircase}\), \(k_0=k_1=3\). Let \(s_0\equiv0\), and order the arm-one blocks as \(1\prec_1 3\prec_1 2\prec_1 4\), represented by \(0,K/3,2K/3,K\). Arm one fails exactly when all three calibration blocks are strictly below the target block. Its failure probability is
+\[
+F_{\mathrm{multi}}
+=\frac14\left(\frac{13}{20}\right)^3
++\frac1{10}\left(\frac{18}{20}\right)^3
++\frac35\left(\frac{19}{20}\right)^3
+=\frac{104957}{160000}.
+\tag{13}
+\]
+Arm zero never fails, so the four-level frontier objective is
+\[
+F_{\mathrm{multi}}-\alpha=\frac{24957}{160000}.
+\tag{14}
+\]
+
+For a binary map in arm \(a\), let \(H_a\subseteq\{1,2,3,4\}\) be its high-score blocks and set \(A_a=(1-q(H_a))^3\). Conditional on the common target block, inclusion--exclusion and independence of the auxiliary block choices give the exact probability of at least one arm failure:
+\[
+F_{\mathrm{bin}}(H_0,H_1)
+=p(H_0)A_0+p(H_1)A_1-p(H_0\cap H_1)A_0A_1.
+\tag{15}
+\]
+Order the sixteen possible choices of \(H_0\) as
+\[
+\varnothing,1,2,3,4,12,13,14,23,24,34,123,124,134,234,1234.
+\]
+Exact substitution of all sixteen choices of \(H_1\) in each row of \((15)\) gives the following row maxima, with common denominator \(320000000\):
+\[
+\begin{split}
+(&164616000,165302000,192052000,198366000,207906936,165912000,164712000,165787368,\\
+&203032000,208582976,208582976,164632000,165793875,164631423,202894331,164616000).
+\end{split}
+\tag{16}
+\]
+This finite table exhausts all \(16^2\) binary pairs. The largest failure probability is \(208582976/320000000=3259109/5000000\), so the largest binary frontier objective is
+\[
+\frac{3259109}{5000000}-\frac12=\frac{759109}{5000000}.
+\]
+Its gap below \((14)\) is
+\[
+\frac{24957}{160000}-\frac{759109}{5000000}
+=\frac{83189}{20000000}>0.
+\tag{17}
+\]
+Hence binary score pairs do not always attain the frontier.
+
+Finally, suppose target and calibration orbit supports are disjoint in an arm \(a\) with \(k_a\le M\). Give target-supported orbits in that arm score \(K\), give all remaining orbits in that arm score zero, and give every orbit in the other arm score zero. The target score in arm \(a\) is always \(K\), while every calibration score there is zero. Its rank event is therefore impossible, so the joint rank event has probability zero and the frontier objective equals \(1-\alpha\). Since a positive-part deficit of the form in \(\texttt{def:coverage-frontier}\) cannot exceed \(1-\alpha\), this proves
+\[
+\Gamma_{M,\alpha,\boldsymbol\varepsilon}(w)=1-\alpha.
+\]
+If \(k_a=M+1\), that arm's event is certain and the frontier is exactly the other arm's optimization described by \((8)\)--\((10)\). On the diagonal \(\varepsilon_0=\varepsilon_1=\alpha/2\), \(\texttt{lem:armwise-finite-rank-staircase}\) gives \(k_0=k_1=k\), and \(\texttt{def:coverage-frontier}\) identifies \(\Gamma_{M,\alpha,\boldsymbol\varepsilon}(w)\) with \(\Gamma_{M,\alpha}(w)\). Every conclusion then specializes to \(\texttt{thm:sharp-orbit-coverage-frontier}\).

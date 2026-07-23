@@ -1,0 +1,39 @@
+Because \(k_b=M+1\), the convention in \(\texttt{def:rank-inversion}\) gives \(Q_{k_b}=+\infty\). Every score is finite, so
+\[
+s_b(O_{T,b})\le Q_{k_b}(s_b(O_{1,b}),\ldots,s_b(O_{M,b}))=+\infty
+\tag{1}
+\]
+for every realization and every \(s_b\). Thus the boundary-arm event is the entire sample space. Removing this certain event from the conjunction in \(\texttt{def:coverage-frontier}\) shows at once that \(s_b\), its preorder, \(O_{T,b}\), and \((O_{i,b})_{i=1}^M\) have no effect on the objective.
+
+Fix the nonboundary score map \(s_c\) and condition on \(O_{T,c}=O_t\). The order-statistic identity gives
+\[
+s_c(O_t)\le Q_{k_c}(s_c(O_{1,c}),\ldots,s_c(O_{M,c}))
+\quad\Longleftrightarrow\quad
+N_t:=\sum_{i=1}^M\mathbf 1\{s_c(O_{i,c})<s_c(O_t)\}<k_c.
+\tag{2}
+\]
+Under \(\texttt{ass:known-matched-randomization}\), \(\texttt{ass:selector-auxiliary-randomization}\), and \(\texttt{def:observable-selector-mixture}\), the nonboundary calibration orbits are independent and identically distributed with marginal mass function \(q_c\). They are independent of the target by \(\texttt{ass:prespecified-target}\). Therefore, conditionally on \(O_{T,c}=O_t\), the summands in \(N_t\) are independent Bernoulli variables with common success probability
+\[
+\theta(O_t)=\sum_{O\in\mathcal O_c:s_c(O)<s_c(O_t)}q_{c,O}.
+\tag{3}
+\]
+Consequently \(N_t\sim\operatorname{Bin}(M,\theta(O_t))\). Since the target orbit has mass \(p_{c,O_t}\), averaging \((2)\) over \(O_t\) yields exactly
+\[
+\sum_{O_t\in\mathcal O_c}p_{c,O_t}
+\Pr\!\left\{\operatorname{Bin}\bigl(M,\theta(O_t)\bigr)<k_c\right\}.
+\tag{4}
+\]
+This proves the probability formula, including ties because \((3)\) uses strict inequality.
+
+As in the total-preorder reduction, the event in \((2)\) depends on \(s_c\) only through its total preorder, and every total preorder has a representative in \([0,K]\). Hence only \(F_{m_c}\) cases need be enumerated. For one preorder, compute all \(m_c\) values in \((3)\) by scanning at most \(m_c\) calibration orbits for each target orbit, which costs \(O(m_c^2)\) arithmetic operations. For a fixed \(O_t\), the binomial probability in \((4)\) can be evaluated by the one-dimensional recurrence
+\[
+d_0(0)=1,\qquad
+d_{i+1}(r)=(1-\theta(O_t))d_i(r)+\theta(O_t)d_i(r-1),
+\quad 0\le r<k_c,
+\tag{5}
+\]
+with out-of-range entries zero; its desired value is \(\sum_{r=0}^{k_c-1}d_M(r)\). Recurrence \((5)\) takes \(O(Mk_c)\) operations and \(O(k_c)\) rolling memory. Evaluating it for all \(m_c\) target orbits and then forming the weighted sum in \((4)\) costs
+\[
+O\!\left(m_c\{m_c+Mk_c\}\right)
+\]
+operations per preorder. Multiplication by \(F_{m_c}\) proves the stated total time, while the same rolling array is reused across target orbits and preorders, proving the \(O(k_c)\) memory bound. Formula \((4)\) averages directly over target orbits, so no member-level \(|\mathcal V|\) sum is present; \((1)\) removes the boundary preorder and coordinate; and \((3)\) uses the already-tabulated marginal, so no \(m_0m_1\) scan is performed.

@@ -1,0 +1,15 @@
+Fix an orientation \(\sigma=(\sigma_0,\sigma_1)\) and write \(B_{ia}^{\sigma}=B_{ia}\) under \(L\) and \(B_{ia}^{\sigma}=1-B_{ia}\) under \(U\). This transformation only permutes the four atoms of \(\pi\); denote the resulting mass function by \(\pi^\sigma\). For partial transformed counts \(T_{ia}=\sum_{j=1}^iB_{ja}^{\sigma}\), initialize \(d_0(0,0)=1\) and, on \(0\le r<t_0\), \(0\le s<t_1\), update
+\[
+d_{i+1}(r,s)=\sum_{x,y\in\{0,1\}}\pi^\sigma_{xy}d_i(r-x,s-y).
+\tag{1}
+\]
+Induction on \(i\) gives \(d_i(r,s)=\Pr\{T_{i0}=r,T_{i1}=s\}\). States discarded above either threshold cannot return because both increments are nonnegative. At stage \(i\), at most \(\min\{t_0,i+1\}\min\{t_1,i+1\}\) entries are active, so two rolling arrays prove the first time and memory bounds.
+
+Under \(LL\), the retained event is exactly \(\{R<k_0,S<k_1\}\). Under \(LU\), the second transformed count is \(M-S\), and \(M-S<h_1=M-k_1+1\) is equivalent to \(S\ge k_1\). Hence
+\[
+\Pr\{R<k_0,S<k_1\}=\Pr\{R<k_0\}-J_{LU}.
+\tag{2}
+\]
+The \(UL\) identity follows symmetrically. Under \(UU\), \(J_{UU}=\Pr\{R\ge k_0,S\ge k_1\}\), and inclusion--exclusion gives the fourth displayed identity. Choosing \(L\) when \(k_a\le h_a\) and \(U\) otherwise makes \(t_a=\bar k_a\). The needed marginals are binomial with success probabilities \(\pi_{10}+\pi_{11}\) and \(\pi_{01}+\pi_{11}\); \(\texttt{lem:exact-binomial-shorter-tail-evaluator}\) evaluates them exactly in \(O(\log M+\bar k_a)\) time and constant memory. The recurrence sum has \(M\) positive unit charges and therefore absorbs these marginal costs up to a constant factor, proving the final bounds.
+
+The directive's additional exact branch follows from \(\texttt{lem:positive-corner-coefficient-recurrence}\). For every orientation whose lower-left atom is positive, that lemma computes the same \(J_\sigma\) in \(O(\log M+t_0t_1)\) operations and \(O(\min\{t_0,t_1\})\) rolling memory. At least one such orientation exists because the four atoms sum to one. Minimizing over the positive-base orientations and then using (2) and its other three corner identities is therefore exact, including when the independently width-minimizing corner has zero mass. This coefficient branch can be compared per key with the rolling recurrence proved above and the zero-cell-safe multinomial branch; the workspace is always that of the branch actually selected.

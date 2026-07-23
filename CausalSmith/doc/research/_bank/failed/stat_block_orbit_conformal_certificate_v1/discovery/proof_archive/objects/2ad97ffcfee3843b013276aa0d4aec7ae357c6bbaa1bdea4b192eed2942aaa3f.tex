@@ -1,0 +1,73 @@
+Write \(\mathcal O_a=\{O\in\mathcal O:O\subseteq\mathcal U_a\}\), \(m_a=|\mathcal O_a|\), and, for an assignment \(z\), aggregate the implemented selector within an orbit by
+\[
+\kappa_{w,a}(O\mid z)=\sum_{v:(v,a)\in O}\kappa_{w,a}(v\mid z).
+\tag{1}
+\]
+Conditional on \(Z_i=z\), \(\texttt{ass:selector-auxiliary-randomization}\) makes the two armwise selector draws independent with kernels (1). Integrating over the known law \(\nu\) gives exactly
+\[
+R_w(O_0,O_1)=\sum_z\nu(z)\kappa_{w,0}(O_0\mid z)\kappa_{w,1}(O_1\mid z).
+\tag{2}
+\]
+The product design and auxiliary-draw assumptions make these orbit pairs iid across calibration replicates. For \(v\in\mathcal V\), let \(O_a(v)\) be the orbit containing \((v,a)\). The one common, independent target therefore has joint orbit law
+\[
+P_T(O_0,O_1)=\sum_{v\in\mathcal V}q_{\mathrm{tar}}(v)\mathbf 1\{O_0(v)=O_0,\ O_1(v)=O_1\}.
+\tag{3}
+\]
+Its support is the image of \(\mathcal V\) in \(\mathcal O_0\times\mathcal O_1\), so
+\[
+L\le\min\{|\mathcal V|,m_0m_1\}.
+\tag{4}
+\]
+
+Fix a preorder pair \(C=(c_0,c_1)\), with \(d_a\) nonempty ordered tie classes in arm \(a\), and push (3) through the class maps to obtain \(P_T^C\). Pushforward cannot increase support and its range has size \(d_0d_1\), hence
+\[
+L_C\le\min\{L,d_0d_1\}.
+\tag{5}
+\]
+Condition on a supported target class pair \((j,\ell)\). For calibration replicate \(i\), put
+\[
+B_{i0}=\mathbf 1\{c_0(O_{i,0})<j\},\qquad B_{i1}=\mathbf 1\{c_1(O_{i,1})<\ell\}.
+\tag{6}
+\]
+A two-dimensional strict-prefix table of the unchanged law \(R_w\) gives the four-cell law \(\pi^C(j,\ell)\) of (6) in constant time. The strict prefix is forced by the elementary order-statistic equivalence
+\[
+s_a(O_{T,a})\le Q_{k_a}(s_a(O_{1,a}),\ldots,s_a(O_{M,a}))
+\iff
+\sum_{i=1}^M\mathbf 1\{s_a(O_{i,a})<s_a(O_{T,a})\}<k_a.
+\tag{7}
+\]
+By (2), the pairs in (6) are iid without factorizing their two coordinates. Therefore, conditional on \((j,\ell)\), the probability of both rank events is \(D_{M,k_0,k_1}(\pi^C(j,\ell))\). Grouping supported target class pairs having the same four-cell vector and retaining their local masses gives
+\[
+\Pr\{\text{both rank events under }C\}=\sum_{\pi\in\Pi_C}\omega_C(\pi)D_{M,k_0,k_1}(\pi),\qquad U_C\le L_C.
+\tag{8}
+\]
+The value \(D\) depends only on \(M,k_0,k_1\) and the four cells, of which three determine the fourth. Thus the exact global memo key is \((M,k_0,k_1,\pi_{00},\pi_{01},\pi_{10})\). The weights \(\omega_C\) remain local to (8), so memoization changes neither the coherent common-target law \(P_T^C\) nor the full cross-arm calibration law \(R_w\). Equations (1)--(3) also preserve the single common selector mixture and the single common target.
+
+Let \(\Pi_\star=\bigcup_C\Pi_C\). By \(\texttt{lem:four-cell-rank-event-dynamic-program}\), support-one keys have the deterministic constant-time formula and support-two keys have the exact affine-binomial interval formula with charge \(\mathsf E_M(\pi)\) and constant workspace. For every remaining, support-at-least-three key, \(\texttt{lem:corner-oriented-four-cell-rank-evaluator}\), \(\texttt{lem:four-cell-multinomial-sum-alternative}\), and \(\texttt{lem:positive-corner-coefficient-recurrence}\) give the respective exact charges \(\mathsf C_{M,k_0,k_1}\), \(M+\mathsf T_{M,\bar k_0,\bar k_1}\), and \(\mathsf C_+(\pi)\). Deterministic least-charge selection with prespecified tie-breaking therefore gives the displayed five-way disjoint partition and exactly the displayed total charge \(\mathsf B\). Only the multinomial-sum branch uses the shared factorial table, so that table is built if and only if \(\Pi_{\mathrm{MS}}\ne\varnothing\). Sequential exact-key evaluation requires the maximum live branch workspace. The rolling, multinomial, and selected positive-corner workspaces are precisely the three nonzero terms in \(\mathsf W\); vertices and edges use constant workspace and are absorbed by the term \(0\) under big-O notation.
+
+It remains to account for the remaining operations. The target pushforward (3) costs \(O(|\mathcal V|)\). For each preorder pair, class aggregation, the two-dimensional prefix table, and target pushforward cost \(O(m_0m_1+L)\). A deterministic balanced tree groups the \(L_C\) local keys in \(O(L_C\log(1+L_C))\) exact comparisons and \(O(L_C)\) aggregation arithmetic; forming (8) costs \(O(U_C)\). A global balanced-tree memo contributes
+\[
+O\!\left(\left(\sum_CU_C\right)\log(1+G)\right).
+\tag{9}
+\]
+Adding (9) and \(\mathsf B\) proves the adaptive time bound. Replacing \(L_C\) and \(U_C\) by \(L_{\max}\) and \(U_{\max}\) proves the uniform bound. The joint orbit table, coherent target table, current local grouping table, \(G\) memoized scalars, and selected evaluator workspace give
+\[
+O(m_0m_1+L+U_{\max}+G+\mathsf W)
+\tag{10}
+\]
+working memory.
+
+Finally, we verify strictness and admissibility. Let \(M=2n\ge4\), \(k_0=n\), \(k_1=M\), and let \(\pi\) put mass \(1/2\) on each of \((0,0)\) and \((0,1)\). If \(N\sim\operatorname{Bin}(M,1/2)\), then
+\[
+R_M=0,\qquad S_M=N,\qquad D_{M,n,M}(\pi)=\Pr\{N<M\}=1-2^{-M}.
+\tag{11}
+\]
+The edge evaluator computes the one-point complementary tail by exponentiation by squaring in \(\Theta(\log M)\) exact arithmetic and constant workspace. For the former nonvertex dispatcher, the rolling charge is \(\Theta(M^2)\), the multinomial charge is \(M+\mathsf T_{M,n,1}=\Theta(M)\), and the only positive-base orientations give either an \(n\)-by-\(M\) coefficient rectangle or an \(n\)-by-one rectangle plus a width-\(n\) marginal, so \(\mathsf C_+(\pi)=\Theta(M)\). Its least charge is therefore \(\Theta(M)\).
+
+For a design realizing (11), take two pair blocks and let \(S_2^2\) act by the two independent within-block swaps. Because each local swap connects the two members of its block and every group element preserves blocks and arms, the four arm-specific pair cells are exactly the four group orbits. Independently within each block, assign exactly one treated member, choosing either member with probability \(1/2\); this assignment law is invariant under both swaps. Use a singleton selector library whose arm-\(a\) kernel chooses either block equiprobably and then selects that block's unique observed arm-\(a\) member. It is observable. Relabelling by either local swap carries the unique observed arm-\(a\) member to the correspondingly relabelled unique observed member, while leaving the block coin unchanged; hence the kernel is equivariant. The declared auxiliary product draws apply. Put the target on a member of block \(2\), independently of calibration data. Order block \(2\) lowest in arm \(0\), so the first strict-prefix indicator is always zero; order block \(1\) below block \(2\) in arm \(1\), so the second indicator is one exactly when the arm-\(1\) selector chooses block \(1\). The induced key is therefore \((1/2,1/2,0,0)\). All rules are fixed before scores are observed. Lastly, because \(M+1=2n+1\),
+\[
+\left\lceil(2n+1)\left(1-\frac{n+1}{2n+1}\right)\right\rceil=n,\qquad
+\left\lceil(2n+1)\left(1-\frac1{2n+1}\right)\right\rceil=2n=M.
+\tag{12}
+\]
+The two positive levels sum to \(\alpha=(n+2)/(2n+1)<1\), completing the rank, budget, legality, and strict-improvement audit.

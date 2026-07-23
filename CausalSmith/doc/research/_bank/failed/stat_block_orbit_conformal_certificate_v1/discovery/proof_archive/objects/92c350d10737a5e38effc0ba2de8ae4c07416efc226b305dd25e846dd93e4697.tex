@@ -1,0 +1,52 @@
+Let \((X_i,Y_i)\), \(1\le i\le M\), be the independent four-cell draws and let
+\[
+N_{xy}=\sum_{i=1}^M\mathbf 1\{(X_i,Y_i)=(x,y)\}.
+\]
+Put \(R=\sum_iX_i\) and \(S=\sum_iY_i\).  For fixed integers \(r\) and \(s\), write \(t=N_{11}\).  The identities \(R=N_{10}+N_{11}=r\), \(S=N_{01}+N_{11}=s\), and \(\sum_{x,y}N_{xy}=M\) force
+\[
+(N_{00},N_{01},N_{10},N_{11})
+=(M-r-s+t,\ s-t,\ r-t,\ t). \tag{1}
+\]
+Conversely, every integer \(t\) for which the four coordinates in (1) are nonnegative determines one and only one four-cell count vector with margins \((r,s)\).  Nonnegativity is equivalent to
+\[
+\max\{0,r+s-M\}\le t\le\min\{r,s\}. \tag{2}
+\]
+Thus (1)--(2) are a bijection between feasible multinomial count vectors with margins \((r,s)\) and the enumerated values of \(t\).
+
+The multinomial mass of the count vector in (1) is
+\[
+\frac{M!}{(M-r-s+t)!(s-t)!(r-t)!t!}
+\pi_{00}^{M-r-s+t}\pi_{01}^{s-t}\pi_{10}^{r-t}\pi_{11}^{t}. \tag{3}
+\]
+Summing (3) over (2), then over \(0\le r<k_0\) and \(0\le s<k_1\), gives exactly
+\[
+\Pr\{R<k_0,\ S<k_1\}=Q_{M,k_0,k_1}(\pi). \tag{4}
+\]
+If the range (2) is empty it represents no feasible count vector and contributes zero.  The conventions \(0^0=1\) and \(0^j=0\) for \(j>0\) make (3) valid on every boundary face of the probability simplex, so no positivity condition on a cell is needed.
+
+For a fixed pair \((r,s)\), the number of enumerated values is
+\[
+\left[\min\{r,s\}-\max\{0,r+s-M\}+1\right]_+.
+\]
+Because \(r+1\le k_0\), \(s+1\le k_1\), and the displayed number is at most \(\min\{r,s\}+1\), it is at most \(\min\{k_0,k_1\}\).  There are \(k_0k_1\) pairs \((r,s)\), proving
+\[
+\mathsf T_{M,k_0,k_1}\le k_0k_1\min\{k_0,k_1\}. \tag{5}
+\]
+
+Precompute \(j!\) for \(0\le j\le M\) by the recurrence \(j!=j(j-1)!\).  This costs \(O(M)\) arithmetic operations and \(O(M)\) stored scalars and is independent of \(\pi\).  For a given key, initialize \(\pi_{xy}^0=1\) and successively multiply by \(\pi_{xy}\) for \(j=1,\ldots,M\), for each of the four cells.  These four tables take \(O(M)\) operations and \(O(M)\) memory and implement the zero conventions automatically.  Factorial and power lookups make every summand in (3) a constant-operation expression.  Equations (4)--(5) therefore give \(O(M+\mathsf T_{M,k_0,k_1})\) time per key after the shared factorial preprocessing and \(O(M)\) auxiliary memory.
+
+For comparison, define \(d_i(r,s)=\Pr\{\sum_{j\le i}X_j=r,\sum_{j\le i}Y_j=s\}\) on the retained rectangle.  Conditioning on the next cell gives
+\[
+d_{i+1}(r,s)=\sum_{x,y\in\{0,1\}}\pi_{xy}d_i(r-x,s-y). \tag{6}
+\]
+All increments are nonnegative, so a state outside the upper boundary of the rectangle can never re-enter.  Two rolling \(k_0\)-by-\(k_1\) arrays compute (6) in \(O(Mk_0k_1)\) operations and \(O(k_0k_1)\) memory.  Selecting the smaller of the two operation counts proves the time bound.  Its workspace is \(O(M)\) if the multinomial branch is used and \(O(k_0k_1)\) if the recurrence branch is used; without knowing the selected branch, the valid uniform bound is
+\[
+O(\max\{M,k_0k_1\}), \tag{7}
+\]
+not a minimum.
+
+Finally process a finite key set sequentially.  The factorial table is built once.  For each multinomial key, rebuild and discard the four probability-specific power tables after storing the scalar answer; for each recurrence key, reuse and clear the rolling arrays.  Adding the actual branch costs gives
+\[
+O\!\left(M+\sum_{\pi\in\Pi_{\mathrm{MS}}}(M+\mathsf T_{M,k_0,k_1})+|\Pi_{\mathrm{DP}}|Mk_0k_1\right). \tag{8}
+\]
+The retained answers use \(O(|\Pi|)\) memory, and the largest branch workspace is (7).  This proves the aggregate time and memory claims.

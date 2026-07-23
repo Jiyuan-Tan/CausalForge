@@ -1,0 +1,68 @@
+Put
+\[
+R_i=\sum_{j=1}^i b_0(E_{j,0}),\qquad
+S_i=\sum_{j=1}^i b_1(E_{j,1}).
+\]
+We first prove the generic recurrence. At \(i=0\), \(d_0(0,0)=1=\Pr\{R_0=0,S_0=0\}\). If \(d_i(r,s)=\Pr\{R_i=r,S_i=s\}\) on the retained rectangle, independence of draw \(i+1\) gives
+\[
+\Pr\{R_{i+1}=r,S_{i+1}=s\}
+=\sum_{x,y\in\{0,1\}}\pi_{xy}
+\Pr\{R_i=r-x,S_i=s-y\}.
+\tag{1}
+\]
+Both increments are nonnegative, so a state discarded above either strict threshold cannot re-enter. Thus (1) is exactly the asserted retained recurrence. Induction proves \(d_i(r,s)=\Pr\{R_i=r,S_i=s\}\), and terminal summation proves the probability identity. There are at most \(k_0k_1\) retained states at each of \(M\) stages, and two rolling arrays suffice. Formation of the four cells scans the tabulated law once. This gives the generic time and memory bounds. If \(k_a=M+1\), then its count is always at most \(M<k_a\); deleting that coordinate gives the one-dimensional bound, and deleting both gives probability one.
+
+Now let \(\pi\) be a vertex. Its unique support point is \(u=(x,y)\), so every increment equals \(u\) and
+\[
+(R_M,S_M)=(Mx,My)\quad\text{almost surely}.
+\tag{2}
+\]
+The claimed constant-time formula follows.
+
+Let \(\pi\) instead have exactly two support points \(u\) and \(v\). Both masses are strictly positive. Under the deterministic orientation, define
+\[
+I_i=\mathbf 1\{(B_{i0},B_{i1})=v\},\qquad
+N=\sum_{i=1}^M I_i.
+\]
+Then \(I_i\) are iid Bernoulli variables with success probability \(p=\pi_v\), hence \(N\sim\operatorname{Bin}(M,p)\). Since each increment is \(u+(v-u)I_i\),
+\[
+R_M=Mu_0+(v_0-u_0)N=c_0+d_0N,\qquad
+S_M=Mu_1+(v_1-u_1)N=c_1+d_1N.
+\tag{3}
+\]
+For coordinate \(a\), if \(d_a=1\), the integer inequality \(c_a+N<k_a\) is \(N\le k_a-c_a-1\). If \(d_a=-1\), it is \(N\ge c_a-k_a+1\). If \(d_a=0\), it is either automatic when \(c_a<k_a\) or impossible when \(c_a\ge k_a\). Intersecting these restrictions with \(0\le N\le M\) yields exactly \([L_\pi,U_\pi]\), including the empty-interval convention. Therefore
+\[
+D_{M,k_0,k_1}(\pi)=\Pr\{L_\pi\le N\le U_\pi\}.
+\tag{4}
+\]
+
+Assume the interval is nonempty. A direct interval evaluator initializes
+\[
+t_{L_\pi}=\binom{M}{L_\pi}p^{L_\pi}(1-p)^{M-L_\pi}
+\]
+by exponentiation by squaring, forms \(\binom{M}{L_\pi}\) from the shorter of its \(L_\pi\)-factor and \((M-L_\pi)\)-factor product ratios, and uses
+\[
+t_{r+1}=t_r\frac{M-r}{r+1}\frac p{1-p}
+\tag{5}
+\]
+through \(U_\pi\). It costs
+\[
+O\!\left(\log M+\min\{L_\pi,M-L_\pi\}+U_\pi-L_\pi+1\right).
+\] The same recurrence from \(0\), together with its downward analogue from \(M\), evaluates the complement in
+\[
+O(\log M+L_\pi+M-U_\pi)
+\tag{6}
+\]
+operations. Finally,
+\[
+\Pr\{L_\pi\le N\le U_\pi\}
+=\Pr\{N<U_\pi+1\}-\Pr\{N<L_\pi\},
+\tag{7}
+\]
+and \(\texttt{lem:exact-binomial-shorter-tail-evaluator}\), with the endpoint values \(0\) and \(1\) handled directly, evaluates (7) in
+\[
+O\!\left(\log M+\min\{U_\pi+1,M-U_\pi\}
++\min\{L_\pi,M-L_\pi+1\}\right).
+\tag{8}
+\]
+Taking the least of (5)--(8) gives \(O(\mathsf E_M(\pi))\). Only the current term and running sum are stored. Swapping \(u\) and \(v\) replaces \(N\) by \(M-N\) and does not change the event, so deterministic least-charge orientation and tie-breaking preserve (4). Thus every support-two key is removed before a bivariate evaluator, proving the proposed statement.

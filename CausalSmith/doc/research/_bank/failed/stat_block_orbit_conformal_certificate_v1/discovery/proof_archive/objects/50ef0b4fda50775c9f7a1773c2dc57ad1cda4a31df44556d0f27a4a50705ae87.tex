@@ -1,0 +1,83 @@
+Because \(k_b=M+1\), the convention in \(\texttt{def:rank-inversion}\) gives \(Q_{k_b}=+\infty\). Hence, for every realization and every boundary-arm score map,
+\[
+s_b(O_{T,b})\le Q_{k_b}(s_b(O_{1,b}),\ldots,s_b(O_{M,b}))=+\infty.
+\tag{1}
+\]
+Thus the boundary-arm event is the entire sample space. Removing it from the conjunction in \(\texttt{def:coverage-frontier}\) proves that the boundary-arm score map, preorder, target lift, and calibration-orbit coordinate are irrelevant.
+
+Fix \(s_c\) and condition on \(O_{T,c}=O_t\). The elementary order-statistic identity gives
+\[
+s_c(O_t)\le Q_{k_c}(s_c(O_{1,c}),\ldots,s_c(O_{M,c}))
+\quad\Longleftrightarrow\quad
+N_t:=\sum_{i=1}^M\mathbf 1\{s_c(O_{i,c})<s_c(O_t)\}<k_c.
+\tag{2}
+\]
+Indeed, the \(k_c\)-th order statistic is strictly below the target score exactly when at least \(k_c\) calibration scores are strictly below it. By \(\texttt{ass:known-matched-randomization}\), \(\texttt{ass:selector-auxiliary-randomization}\), and \(\texttt{def:observable-selector-mixture}\), the nonboundary calibration orbits are iid with marginal mass function \(q_c\). They are independent of the target by \(\texttt{ass:prespecified-target}\). Therefore, conditional on \(O_{T,c}=O_t\), the summands in \(N_t\) are iid Bernoulli variables with success probability
+\[
+\theta(O_t)=\sum_{O\in\mathcal O_c:s_c(O)<s_c(O_t)}q_{c,O}.
+\tag{3}
+\]
+Consequently, \(N_t\sim\operatorname{Bin}(M,\theta(O_t))\). Averaging (2) over the target-orbit law proves
+\[
+\sum_{O_t\in\mathcal O_c}p_{c,O_t}
+\Pr\!\left\{\operatorname{Bin}\bigl(M,\theta(O_t)\bigr)<k_c\right\}.
+\tag{4}
+\]
+The strict inequality in (3) shows explicitly that (4) handles ties.
+
+Fix one total preorder and write its ordered nonempty tie classes as
+\[
+C_1\prec C_2\prec\cdots\prec C_d,\qquad d\le m_c.
+\]
+Set
+\[
+q_j=\sum_{O\in C_j}q_{c,O},\qquad
+p_j=\sum_{O\in C_j}p_{c,O},\qquad
+\theta_j=\sum_{\ell<j}q_\ell.
+\tag{5}
+\]
+Every target orbit in \(C_j\) has the same value \(\theta_j\), so (4) becomes
+\[
+\sum_{j=1}^d p_j\Pr\!\left\{\operatorname{Bin}(M,\theta_j)<k_c\right\}.
+\tag{6}
+\]
+Initialize \(\theta_1=0\). In class \(C_j\), scan its members once to form \(q_j\) and \(p_j\), evaluate the current binomial probability, and update \(\theta_{j+1}=\theta_j+q_j\). Each of the \(m_c\) orbits is visited exactly once, so the aggregation cost is \(O(m_c)\).
+
+For completeness, the exact evaluator in \(\texttt{lem:exact-binomial-shorter-tail-evaluator}\) has the following two recurrences. If \(0<\theta_j<1\), its lower-tail endpoint term is
+\[
+t_0=(1-\theta_j)^M,
+\]
+and successive terms satisfy
+\[
+t_{r+1}=t_r\frac{M-r}{r+1}\frac{\theta_j}{1-\theta_j},
+\qquad 0\le r<k_c-1.
+\tag{7}
+\]
+Thus the desired probability is \(\sum_{r=0}^{k_c-1}t_r\). Alternatively, the upper-tail endpoint term is
+\[
+u_M=\theta_j^M,
+\]
+with downward recurrence
+\[
+u_{r-1}=u_r\frac{r}{M-r+1}\frac{1-\theta_j}{\theta_j},
+\qquad k_c<r\le M,
+\tag{8}
+\]
+and the desired probability is \(1-\sum_{r=k_c}^M u_r\). The powers in (7) and (8) are initialized by exponentiation by squaring in \(O(\log M)\) multiplications. Choosing (7) when \(k_c\le M-k_c+1\) and (8) otherwise therefore costs
+\[
+O\!\left(\log M+\min\{k_c,M-k_c+1\}\right)
+\tag{9}
+\]
+unit-cost arithmetic operations and constant auxiliary memory. All denominators are nonzero because \(0<\theta_j<1\). If \(\theta_j=0\), the binomial variable is zero almost surely and \(k_c\ge1\), so the probability in (6) is \(1\). If \(\theta_j=1\), it equals \(M\) almost surely and \(k_c\le M\), so the probability is \(0\). Neither endpoint case uses division.
+
+Combining the one-pass aggregation with (9), one preorder costs
+\[
+O\!\left(m_c\left[1+\log M+\min\{k_c,M-k_c+1\}\right]\right)
+\tag{10}
+\]
+arithmetic operations and constant auxiliary CDF memory after \(q_c\), \(p_c\), and the current preorder representation are available. The rank event depends on \(s_c\) only through its total preorder. Conversely, any total preorder with \(d\) ordered classes has a representative in \([0,K]\): assign score \(0\) when \(d=1\), and otherwise assign \((j-1)K/(d-1)\) to class \(C_j\). Hence enumerating all \(F_{m_c}\) preorders gives
+\[
+O\!\left(F_{m_c}m_c\left[1+\log M+\min\{k_c,M-k_c+1\}\right]\right)
+\tag{11}
+\]
+operations and \(O(1)\) auxiliary CDF memory after both marginal vectors are tabulated. Formula (6) uses only the nonboundary marginals, so there is no factor \(F_{m_{1-c}}\), member-level sum \(|\mathcal V|\), or per-preorder \(m_0m_1\) scan.

@@ -1,0 +1,139 @@
+Write \(\mathcal O_a=\{O\in\mathcal O:O\subseteq\mathcal U_a\}\) and \(m_a=|\mathcal O_a|\). If \(k_a\le M\), the elementary order-statistic identity is
+\[
+s_a(O_{T,a})\le Q_{k_a}(s_a(O_{1,a}),\ldots,s_a(O_{M,a}))
+\quad\Longleftrightarrow\quad
+\sum_{i=1}^M\mathbf 1\{s_a(O_{i,a})<s_a(O_{T,a})\}<k_a. \tag{1}
+\]
+Indeed, the \(k_a\)-th order statistic is strictly below the target score exactly when at least \(k_a\) calibration scores are strictly below it. Thus ties are handled by strict comparison, and the event depends on \(s_a\) only through its total preorder. If \(k_a=M+1\), then \(Q_{k_a}=+\infty\) by \(\texttt{def:rank-inversion}\), and that arm's event is certain.
+
+Conversely, suppose a total preorder has ordered nonempty classes \(C_{a,1}\prec_a\cdots\prec_a C_{a,d_a}\). Assign score \(0\) if \(d_a=1\), and otherwise assign \((j-1)K/(d_a-1)\) to class \(C_{a,j}\). Because \(K>0\), this realizes the preorder in \([0,K]\) using \(d_a\le m_a\) levels. There are exactly \(F_{m_a}\) total preorders on the labelled set \(\mathcal O_a\), the objective in \(\texttt{def:coverage-frontier}\) is constant on each pair of such preorders, and every pair has the displayed bounded representative. Hence the maximum is attained by finite enumeration. Because the functional is defined as the maximum of the positive worst-coverage deficit over precisely these score maps, this proves exactness for the declared orbit-constant score class; it neither uses nor implies equality with a supremum over all laws in \(\mathcal P_{\mathcal G,K}\).
+
+Assume first that \(k_0,k_1\le M\). The coherent evaluator retains
+\[
+R_w(O_0,O_1)=\sum_z\nu(z)\kappa_{w,0}(O_0\mid z)\kappa_{w,1}(O_1\mid z) \tag{2}
+\]
+and
+\[
+P_T(O_0,O_1)=\sum_{v\in\mathcal V}q_{\mathrm{tar}}(v)
+\mathbf 1\{O_0(v)=O_0,\ O_1(v)=O_1\}. \tag{3}
+\]
+For each preorder pair \(C\), \(\texttt{lem:coherent-two-finite-rank-frontier-evaluator}\) forms every exact vector \(\pi^C(j,\ell)\) from a prefix table of the unchanged full calibration law in (2), pushes the unchanged coherent target law in (3) to \(P_T^C\), and aggregates only identical vectors, with
+\[
+\omega_C(\pi)=\sum_{(j,\ell):\,\pi^C(j,\ell)=\pi}P_T^C(j,\ell). \tag{4}
+\]
+That lemma proves
+\[
+U_C\le L_C\le\min\{L,d_0d_1\},\qquad
+\Pr\{\text{both rank events under }C\}
+=\sum_{\pi\in\Pi_C}\omega_C(\pi)D_{M,k_0,k_1}(\pi). \tag{5}
+\]
+Thus each \(\pi\) preserves the shared-assignment dependence, and each \(\omega_C\) preserves the one common target.
+
+Let \(\mathfrak C\) be the set of all \(F_{m_0}F_{m_1}\) preorder pairs, let \(\Pi_\star=\bigcup_{C\in\mathfrak C}\Pi_C\), and put \(G=|\Pi_\star|\). By \(\texttt{lem:four-cell-rank-event-dynamic-program}\), the key
+\[
+(M,k_0,k_1,\pi_{00},\pi_{01},\pi_{10}),\qquad
+\pi_{11}=1-\pi_{00}-\pi_{01}-\pi_{10}, \tag{6}
+\]
+determines the complete recurrence input and does not contain the local weight. Hence each recurrence value is computed once globally and the weights are applied only in (5). The local deterministic balanced-tree grouping costs \(O(L_C\log(1+L_C))\) comparisons and \(O(L_C)\) aggregation arithmetic, while the global memo lookup costs \(O((\sum_CU_C)\log(1+G))\) comparisons. The construction, grouping, lookup, and \(G\) recurrence costs certified by \(\texttt{lem:coherent-two-finite-rank-frontier-evaluator}\) therefore sum to
+\[
+O\!\left(
+|\mathcal V|+F_{m_0}F_{m_1}(m_0m_1+L)+\sum_{C\in\mathfrak C}\left[L_C\log(1+L_C)+L_C+U_C\right]+\left\{\sum_{C\in\mathfrak C}U_C\right\}\log(1+G)+GMk_0k_1
+\right). \tag{7}
+\]
+Replacing every \(L_C\) and \(U_C\) by \(L_{\max}\) and \(U_{\max}\), respectively, gives
+\[
+O\!\left(|\mathcal V|+F_{m_0}F_{m_1}\left[m_0m_1+L+L_{\max}\log(1+L_{\max})+L_{\max}+U_{\max}\{1+\log(1+G)\}\right]+GMk_0k_1\right). \tag{8}
+\]
+The same lemma gives working memory \(O(m_0m_1+L+k_0k_1+U_{\max}+G)\). Equations (2)--(6) also show directly that global memoization changes only computation: every prefix vector still comes from the full \(R_w\), and every local weight still comes from the coherent \(P_T^C\).
+
+For completeness, the same recurrence values admit the exact multinomial expression in \(\texttt{lem:four-cell-multinomial-sum-alternative}\). Let \(\mathsf T=\mathsf T_{M,k_0,k_1}\) and partition \(\Pi_\star=\Pi_{\mathrm{MS}}\sqcup\Pi_{\mathrm{DP}}\) according to the exact evaluator selected for each key. If \(\mathsf B\) denotes all non-evaluator terms in (7), the synchronized selected-branch cost is
+\[
+O\!\left(\mathsf B+M+\sum_{\pi\in\Pi_{\mathrm{MS}}}(M+\mathsf T)+|\Pi_{\mathrm{DP}}|Mk_0k_1\right), \tag{9}
+\]
+where the factorial preprocessing is shared once and the four probability-specific power tables are rebuilt for each multinomial key. Selecting the smaller operation count yields
+\[
+O\!\left(\mathsf B+M+G\min\{M+\mathsf T,Mk_0k_1\}\right). \tag{10}
+\]
+Sequential key processing uses \(O(M)\) evaluator workspace on the multinomial branch and \(O(k_0k_1)\) on the recurrence branch, so the unconditional hybrid memory is
+\[
+O\!\left(m_0m_1+L+U_{\max}+G+\max\{M,k_0k_1\}\right). \tag{11}
+\]
+Assigning every key to the recurrence branch recovers exactly (7), (8), and the theorem's stated memory bound. Neither computational branch changes (2)--(5).
+
+Suppose next that exactly one rank \(k_b=M+1\), and put \(c=1-b\). By \(\texttt{lem:one-boundary-orbit-frontier-evaluator}\), the boundary-arm event is certain and disappears. Conditional on \(O_{T,c}=O_t\), identity (1) counts iid calibration orbits strictly below the target, with success probability
+\[
+\theta(O_t)=\sum_{O\in\mathcal O_c:s_c(O)<s_c(O_t)}q_{c,O}.
+\]
+Averaging over the target gives the exact probability
+\[
+\sum_{O_t\in\mathcal O_c}p_{c,O_t}
+\Pr\!\left\{\operatorname{Bin}\bigl(M,\theta(O_t)\bigr)<k_c\right\}. \tag{12}
+\]
+For ordered nonempty tie classes \(C_1\prec\cdots\prec C_d\), put \(q_j=q_c(C_j)\), \(p_j=p_c(C_j)\), and \(\theta_j=\sum_{\ell<j}q_\ell\). Then (12) is
+\[
+\sum_{j=1}^d p_j\Pr\!\left\{\operatorname{Bin}(M,\theta_j)<k_c\right\}. \tag{13}
+\]
+A single cumulative ordered-class scan forms all these masses. For \(0<\theta<1\), the exact lower-tail terms satisfy
+\[
+t_0=(1-\theta)^M,\qquad
+t_{r+1}=t_r\frac{M-r}{r+1}\frac{\theta}{1-\theta},\qquad 0\le r<k_c-1, \tag{14}
+\]
+and the exact upper-tail terms satisfy
+\[
+u_M=\theta^M,\qquad\nu_{r-1}=u_r\frac{r}{M-r+1}\frac{1-\theta}{\theta},\qquad k_c<r\le M. \tag{15}
+\]
+By \(\texttt{lem:exact-binomial-shorter-tail-evaluator}\), exponentiation by squaring and the shorter tail cost \(O(\log M+\min\{k_c,M-k_c+1\})\) operations and constant auxiliary CDF memory. At \(\theta=0\) and \(\theta=1\), the probabilities are respectively one and zero without division. The rank event depends only on the nonboundary total preorder, and every such preorder has the bounded representative constructed above. Therefore enumerating only the \(F_{m_c}\) nonboundary preorders costs
+\[
+O\!\left(F_{m_c}m_c\left[1+\log M+\min\{k_c,M-k_c+1\}\right]\right) \tag{16}
+\]
+arithmetic operations and \(O(1)\) auxiliary CDF memory after \(q_c\) and \(p_c\) are tabulated. Formula (13) contains no boundary-arm preorder, member scan, or joint orbit table, proving the stated absence of factors \(F_{m_{1-c}}\), \(|\mathcal V|\), and \(m_0m_1\). If both ranks equal \(M+1\), both events are certain, and therefore
+\[
+\Gamma_{M,\alpha,\boldsymbol\varepsilon}(w)=[(1-\alpha)-1]_+=0. \tag{17}
+\]
+
+We next prove that binary attainment is false. Take four pair blocks, \(\mathcal G=S_2^4\), independent fair within-pair assignments, and a singleton selector library. In either arm choose a block with calibration probabilities
+\[
+q=\left(\frac{13}{20},\frac1{20},\frac14,\frac1{20}\right)
+\]
+and then select the unique member observed in that arm. This kernel obeys \(\texttt{ass:observable-selector-kernel}\), and swapping labels within any pair swaps the selected observed member, so it obeys \(\texttt{ass:selector-equivariance}\). Give the common target block probabilities
+\[
+p=\left(\frac1{20},\frac1{10},\frac14,\frac35\right),\qquad
+q_{\mathrm{tar}}(v_{b,r})=\frac{p_b}{2}. \tag{18}
+\]
+Thus the instance is admissible under the pair action, the invariant fair randomization, and the prespecified common-target rule. For \(M=3\), \(\alpha=1/2\), and \(\varepsilon_0=\varepsilon_1=1/4\), \(\texttt{lem:armwise-finite-rank-staircase}\) gives \(k_0=k_1=3\). Put \(s_0\equiv0\) and order the four arm-one block orbits as \(1\prec3\prec2\prec4\), using four distinct levels in \([0,K]\). Arm zero always succeeds, while arm one fails exactly when all three calibration blocks are strictly below the target block. Its failure probability is
+\[
+\frac14\left(\frac{13}{20}\right)^3+
+\frac1{10}\left(\frac{18}{20}\right)^3+
+\frac35\left(\frac{19}{20}\right)^3
+=\frac{104957}{160000}. \tag{19}
+\]
+Since \(1-\alpha=1/2\), the frontier objective is \(24957/160000\).
+
+For binary maps let \(H_a\) be the high-score block set and put \(A_a=(1-q(H_a))^3\). Conditional inclusion--exclusion over the one common target block gives the joint failure probability
+\[
+F_{\mathrm{bin}}(H_0,H_1)
+=p(H_0)A_0+p(H_1)A_1-p(H_0\cap H_1)A_0A_1. \tag{20}
+\]
+Order the sixteen subsets as
+\[
+\varnothing,1,2,3,4,12,13,14,23,24,34,123,124,134,234,1234.
+\]
+For each fixed \(H_0\), exact substitution of all sixteen choices of \(H_1\) into (20) gives the following row maxima, all with denominator \(320000000\):
+\[
+\begin{split}
+(&164616000,165302000,192052000,198366000,207906936,165912000,164712000,165787368,\\
+&203032000,208582976,208582976,164632000,165793875,164631423,202894331,164616000).
+\end{split} \tag{21}
+\]
+This finite table exhausts all \(16^2\) binary pairs. Its largest failure probability is \(3259109/5000000\), so its largest frontier objective is \(759109/5000000\). Consequently the four-level improvement is
+\[
+\frac{24957}{160000}-\frac{759109}{5000000}
+=\frac{83189}{20000000}>0. \tag{22}
+\]
+This establishes every numerical assertion and refutes universal binary attainment.
+
+Finally, suppose the target and calibration orbit supports are disjoint in an arm \(a\) and \(k_a\le M\). Assign score \(K\) to every target-supported orbit and zero to every other arm-\(a\) orbit; use the zero score in the other arm. The target score in arm \(a\) is always \(K\), every selected calibration score in that arm is zero, and (1) therefore fails with probability one. The joint rank-event probability is zero. Since the positive-part objective in \(\texttt{def:coverage-frontier}\) can never exceed \(1-\alpha\), this witness proves
+\[
+\Gamma_{M,\alpha,\boldsymbol\varepsilon}(w)=1-\alpha. \tag{23}
+\]
+If an arm is at the boundary, (12)--(16) give the exact reduction to the other arm's rank event. On the diagonal \(\varepsilon_0=\varepsilon_1=\alpha/2\), \(\texttt{lem:armwise-finite-rank-staircase}\) gives \(k_0=k_1=k\), so the two-finite-rank, one-boundary, two-boundary, nonbinary, and disjoint-support conclusions specialize exactly as asserted to \(\texttt{thm:sharp-orbit-coverage-frontier}\).

@@ -1,0 +1,60 @@
+Aggregate the implemented selector over each orbit by
+\[
+\kappa_{w,a}(O\mid z)=\sum_{v:(v,a)\in O}\kappa_{w,a}(v\mid z).
+\]
+Conditional independence of the two auxiliary selector draws given their common assignment, followed by integration under \(\nu\), gives the full joint calibration-orbit law
+\[
+R_w(O_0,O_1)=\sum_z\nu(z)\kappa_{w,0}(O_0\mid z)\kappa_{w,1}(O_1\mid z).
+\tag{1}
+\]
+Across replicates these pairs are iid by the randomization and auxiliary-draw assumptions. Equation (1) deliberately does not factorize the two arms. The two target orbits are lifts of the same \(T\), and target independence gives
+\[
+P_T(O_0,O_1)=\sum_{v\in\mathcal V}q_{\mathrm{tar}}(v)\mathbf 1\{O_0(v)=O_0,\ O_1(v)=O_1\}.
+\tag{2}
+\]
+Its support is the image of \(\mathcal V\) in \(\mathcal O_0\times\mathcal O_1\), so \(L\le\min\{|\mathcal V|,m_0m_1\}\). A single member scan forms (2).
+
+Fix a preorder pair \(C=(c_0,c_1)\). Aggregate (1) into the ordered-class table \(W_{r,s}\), and form its strict two-dimensional prefix table
+\[
+H(j,\ell)=\sum_{r<j}\sum_{s<\ell}W_{r,s}.
+\tag{3}
+\]
+A scan of the \(m_0m_1\) cells forms \(W\) and all values in (3). Push (2) to \(P_T^C\); its support satisfies \(L_C\le\min\{L,d_0d_1\}\). For supported target classes \((j,\ell)\), define the Bernoulli indicators of a calibration class lying strictly below the corresponding target class. Constantly many prefix lookups yield
+\[
+\begin{aligned}
+\pi^C_{11}&=H(j,\ell),\\
+\pi^C_{10}&=H(j,d_1+1)-H(j,\ell),\\
+\pi^C_{01}&=H(d_0+1,\ell)-H(j,\ell),\\
+\pi^C_{00}&=1-\pi^C_{01}-\pi^C_{10}-\pi^C_{11}.
+\end{aligned}
+\tag{4}
+\]
+Conditional on this target class pair, the two rank events are exactly the two Bernoulli-count inequalities with four-cell law (4). The dynamic-program lemma therefore gives \(D_{M,k_0,k_1}(\pi^C(j,\ell))\). Grouping identical exact vectors and averaging with the unchanged target pushforward proves
+\[
+\Pr\{\text{both rank events under }C\}=\sum_{\pi\in\Pi_C}\omega_C(\pi)D_{M,k_0,k_1}(\pi),
+\tag{5}
+\]
+as well as \(U_C\le L_C\). Thus every vector in (5) comes from the full law (1), and every weight comes from the coherent law (2).
+
+A deterministic balanced tree groups the \(L_C\) exact vectors in \(O(L_C\log(1+L_C))\) comparisons and \(O(L_C)\) aggregation operations. The exact key
+\[
+(M,k_0,k_1,\pi_{00},\pi_{01},\pi_{10}),\qquad \pi_{11}=1-\pi_{00}-\pi_{01}-\pi_{10},
+\tag{6}
+\]
+determines the complete count probability and contains no target weight. Hence a global tree computes only the \(G\) distinct key values, while local occurrences retain their own \(\omega_C\). Adding the member scan, the \(m_0m_1\) class-table scan, the \(L\) target pushforward scan, local grouping, global lookup, and \(G\) rolling recurrences gives the instance-adaptive display in the statement. Replacing \(L_C,U_C\) by their maxima gives the uniform display. The full orbit table, target table, rolling array, local tree, and global memo respectively require \(O(m_0m_1)\), \(O(L)\), \(O(k_0k_1)\), \(O(U_{\max})\), and \(O(G)\) memory.
+
+For the required sharper evaluator, put
+\[
+C_{M,k_0,k_1}=\sum_{i=0}^{M-1}\min\{\bar k_0,i+1\}\min\{\bar k_1,i+1\}.
+\]
+For each key (6), the corner-oriented multinomial branch costs \(M+\mathsf T_{M,\bar k_0,\bar k_1}\), the rolling corner costs \(C_{M,k_0,k_1}\), and the positive-corner coefficient branch costs \(\mathsf C_+(\pi)\), the minimum exact coefficient-and-required-marginal charge over orientations with \(\pi^\sigma_{00}>0\). Let \(\mathsf B\) denote all preceding non-evaluator costs and partition the distinct keys into \(\Pi_{\mathrm{MS}}\), \(\Pi_{\mathrm{DP}}\), and \(\Pi_+\) according to the selected branch. Sequential exact evaluation costs
+\[
+O\!\left(\mathsf B+M+|\Pi_{\mathrm{MS}}|\{M+\mathsf T_{M,\bar k_0,\bar k_1}\}+|\Pi_{\mathrm{DP}}|C_{M,k_0,k_1}+\sum_{\pi\in\Pi_+}\mathsf C_+(\pi)\right).
+\tag{7}
+\]
+The initial \(M\) term safely covers shared factorial preprocessing. If \(u_+(\pi)\) is the rolling coefficient width of the chosen positive orientation, the corresponding conditional workspace is
+\[
+O\!\left(m_0m_1+L+U_{\max}+G+\max\left\{\mathbf 1_{\Pi_{\mathrm{MS}}\ne\varnothing}M,\mathbf 1_{\Pi_{\mathrm{DP}}\ne\varnothing}\bar k_0\bar k_1,\max_{\pi\in\Pi_+}u_+(\pi)\right\}\right).
+\tag{8}
+\]
+Empty-branch terms in (8) are omitted. This is conditional on the same time-selected partition, not a separate workspace minimization. Since \(u_+(\pi)\le M\) and \(C_{M,k_0,k_1}\le Mk_0k_1\), (7)--(8) imply the coarser formal resource bounds. Neither evaluator selection nor memoization changes (1), (2), or (5).

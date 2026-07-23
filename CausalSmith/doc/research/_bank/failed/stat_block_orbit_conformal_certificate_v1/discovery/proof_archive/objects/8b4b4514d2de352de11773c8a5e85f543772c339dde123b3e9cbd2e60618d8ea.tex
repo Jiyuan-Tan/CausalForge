@@ -1,0 +1,25 @@
+Let \(N_{xy}\) count draws equal to \((x,y)\). If \(R=N_{10}+N_{11}=r\), \(S=N_{01}+N_{11}=s\), and \(t=N_{11}\), then necessarily
+\[
+(N_{00},N_{01},N_{10},N_{11})=(M-r-s+t,s-t,r-t,t).
+\tag{1}
+\]
+Conversely, (1) is a nonnegative integer vector of total \(M\) with margins \((r,s)\) exactly when \(\max\{0,r+s-M\}\le t\le\min\{r,s\}\). Its multinomial probability is
+\[
+\frac{M!}{(M-r-s+t)!(s-t)!(r-t)!t!}\pi_{00}^{M-r-s+t}\pi_{01}^{s-t}\pi_{10}^{r-t}\pi_{11}^{t}.
+\tag{2}
+\]
+Summing (2) over the feasible \(t\), then over \(0\le r<k_0\) and \(0\le s<k_1\), proves the displayed formula. The stated zero-power conventions make it valid on every face of the simplex. For a fixed \((r,s)\), the number of feasible values is at most \(\min\{r,s\}+1\le\min\{k_0,k_1\}\), which proves \(\mathsf T_{M,k_0,k_1}\le k_0k_1\min\{k_0,k_1\}\).
+
+Precompute the factorials through \(M!\) once. For one probability key, repeated multiplication rebuilds four power tables in \(O(M)\) operations and \(O(M)\) memory; thereafter each feasible term in (2) costs constant time. This proves the multinomial charge. Repeating the elementary two-count convolution on only the retained rectangle proves directly the rolling alternative in \(O(Mk_0k_1)\) time and \(O(k_0k_1)\) memory. Selecting by time gives the per-key hybrid. For sequential keys, factorials are shared, probability-specific powers are rebuilt, and only one branch workspace is live; retaining one answer per key adds \(O(|\Pi|)\) memory. This proves every resource display in the statement.
+
+We record the sharper synchronized form. Put \(h_a=M-k_a+1\), \(\bar k_a=\min\{k_a,h_a\}\), and let \(C_{M,k_0,k_1}\) be the active-state sum in the corner lemma. Complementing coordinate \(a\) when \(h_a<k_a\) merely permutes the four atoms. Applying (1)--(2) to that law at thresholds \((\bar k_0,\bar k_1)\), followed by the exact corner identity and binomial marginal tails, costs
+\[
+O\!\left(M+\mathsf T_{M,\bar k_0,\bar k_1}\right)
+\tag{3}
+\]
+with \(O(M)\) memory and remains valid when the permuted base atom is zero. The rolling corner costs \(O(C_{M,k_0,k_1})\) and \(O(\bar k_0\bar k_1)\) memory. The positive-corner coefficient recurrence supplied through \(\texttt{lem:corner-oriented-four-cell-rank-evaluator}\) supplies a third exact charge \(\mathsf C_+(\pi)\), obtained by minimizing over orientations with positive base atom. Thus the exact per-key time is bounded by
+\[
+O\!\left(\min\{M+\mathsf T_{M,\bar k_0,\bar k_1},C_{M,k_0,k_1},\mathsf C_+(\pi)\}\right).
+\tag{4}
+\]
+For a sequential partition of keys among the three branches, sum the corresponding charges, share factorial preprocessing only among multinomial keys, and take the maximum workspace of the branches actually selected. This conditional accounting, not an independent minimization of memory, proves the directive-level hybrid and implies the coarser two-branch formulas in the formal statement.

@@ -1,0 +1,31 @@
+Put \(h_a=M-k_a+1\), \(\bar k_a=\min\{k_a,h_a\}\), and
+\[\mathsf C_{M,k_0,k_1}=\sum_{i=0}^{M-1}\min\{\bar k_0,i+1\}\min\{\bar k_1,i+1\}.\tag{1}\]
+Aggregate the implemented selector by
+\[\kappa_{w,a}(O\mid z)=\sum_{v:(v,a)\in O}\kappa_{w,a}(v\mid z).\tag{2}\]
+Conditional on \(Z_i=z\), \(\texttt{ass:selector-auxiliary-randomization}\) makes the two selector draws independent with the kernels in (2). Integrating over \(z\) under \(\texttt{ass:known-matched-randomization}\) gives exactly
+\[R_w(O_0,O_1)=\sum_z\nu(z)\kappa_{w,0}(O_0\mid z)\kappa_{w,1}(O_1\mid z).\tag{3}\]
+The calibration orbit pairs are iid across replicates. Equation (3) deliberately does not factor across arms. By \(\texttt{ass:prespecified-target}\), both target orbits lift the same member and therefore have joint law
+\[P_T(O_0,O_1)=\sum_{v\in\mathcal V}q_{\mathrm{tar}}(v)\mathbf 1\{O_0(v)=O_0,\ O_1(v)=O_1\}.\tag{4}\]
+The support of (4) is the image of \(\mathcal V\) in \(\mathcal O_0\times\mathcal O_1\), so \(L\le\min\{|\mathcal V|,m_0m_1\}\).
+
+Fix a preorder pair \(C=(c_0,c_1)\). Pushing (4) forward to ordered class pairs cannot increase support and has range of size \(d_0d_1\); hence
+\[L_C\le\min\{L,d_0d_1\}.\tag{5}\]
+Aggregate (3) into the class table
+\[W_{r,s}=\sum_{c_0(O_0)=r,\ c_1(O_1)=s}R_w(O_0,O_1)\]
+and form the strict prefix table \(H(j,\ell)=\sum_{r<j,s<\ell}W_{r,s}\). For a supported target class pair \((j,\ell)\), let each Bernoulli coordinate indicate that the corresponding calibration score is strictly below the target score. Four constant-time prefix combinations give
+\[\begin{aligned}\pi^C_{11}(j,\ell)&=H(j,\ell),\\\pi^C_{10}(j,\ell)&=H(j,d_1+1)-H(j,\ell),\\\pi^C_{01}(j,\ell)&=H(d_0+1,\ell)-H(j,\ell),\\\pi^C_{00}(j,\ell)&=1-\pi^C_{01}(j,\ell)-\pi^C_{10}(j,\ell)-\pi^C_{11}(j,\ell).\end{aligned}\tag{6}\]
+The strict prefixes handle ties correctly. Conditional on the target class pair, the order-statistic identity in \(\texttt{def:rank-inversion}\) says that the two rank events hold exactly when the two strict-below counts are less than \(k_0\) and \(k_1\). Thus \(\texttt{lem:four-cell-rank-event-dynamic-program}\) gives conditional probability \(D_{M,k_0,k_1}(\pi^C(j,\ell))\). Grouping identical exact vectors while retaining their masses under the unchanged target pushforward yields
+\[\Pr\{\text{both rank events under }C\}=\sum_{\pi\in\Pi_C}\omega_C(\pi)D_{M,k_0,k_1}(\pi),\qquad U_C\le L_C.\tag{7}\]
+The value in (7) is determined by the key \((M,k_0,k_1,\pi_{00},\pi_{01},\pi_{10})\), because \(\pi_{11}=1-\pi_{00}-\pi_{01}-\pi_{10}\); it contains no target weight. A global memo therefore computes each of the \(G\) values once, whereas every preorder retains its own \(\omega_C\). This proves the coherence assertions.
+
+We now prove the sharpened resource certificate. For every \(\pi\in\Pi_\star\), the corner-oriented rolling algorithm has certified charge \(\mathsf C_{M,k_0,k_1}\) and workspace \(\bar k_0\bar k_1\) by \(\texttt{lem:corner-oriented-four-cell-rank-evaluator}\). Applied to the same width-minimizing permutation, \(\texttt{lem:four-cell-multinomial-sum-alternative}\) has per-key charge \(M+\mathsf T_{M,\bar k_0,\bar k_1}\), workspace \(M\), and shares one factorial table across all keys assigned to it. Finally, \(\texttt{lem:positive-corner-coefficient-recurrence}\) supplies charge \(\mathsf C_+(\pi)\) for any minimizing positive-base orientation \(\sigma(\pi)\), with workspace \(\min\{t_0^{\sigma(\pi)},t_1^{\sigma(\pi)}\}\). Each branch computes the same exact four-cell probability, including zero-cell boundary cases. Assign every exact key, using a deterministic tie rule, to a branch having the smallest of these three certified charges. This defines the disjoint union
+\[\Pi_\star=\Pi_{\mathrm{roll}}\mathbin{\dot\cup}\Pi_{\mathrm{MS}}\mathbin{\dot\cup}\Pi_+.\tag{8}\]
+With empty sums equal to zero, its total exact-key charge is
+\[\begin{aligned}\mathsf B={}&M\mathbf 1\{\Pi_{\mathrm{MS}}\ne\varnothing\}+\sum_{\pi\in\Pi_{\mathrm{roll}}}\mathsf C_{M,k_0,k_1}\\&+\sum_{\pi\in\Pi_{\mathrm{MS}}}\{M+\mathsf T_{M,\bar k_0,\bar k_1}\}+\sum_{\pi\in\Pi_+}\mathsf C_+(\pi).\end{aligned}\tag{9}\]
+The first term is exactly one shared factorial-preprocessing charge and is absent if the multinomial branch is empty. Define
+\[\mathsf W=\max\!\left(\{0\}\cup\{\bar k_0\bar k_1:\Pi_{\mathrm{roll}}\ne\varnothing\}\cup\{M:\Pi_{\mathrm{MS}}\ne\varnothing\}\cup\left\{\min\{t_0^{\sigma(\pi)},t_1^{\sigma(\pi)}\}:\pi\in\Pi_+\right\}\right).\tag{10}\]
+The inserted singleton makes (10) well-defined when any or all branch sets are empty. Sequential key processing uses exactly the maximum workspace of branches actually selected, not an independently minimized workspace.
+
+The target scan costs \(O(|\mathcal V|)\). For each of the \(F_{m_0}F_{m_1}\) preorder pairs, forming the class and prefix tables and the target pushforward costs \(O(m_0m_1+L)\). A deterministic local balanced tree costs \(O(L_C\log(1+L_C))\) comparisons and \(O(L_C)\) aggregation operations, forming the local objective costs \(O(U_C)\), and global lookup costs \(O((\sum_CU_C)\log(1+G))\). Adding (9) proves the proposed instance-adaptive time display. Replacing \(L_C\) and \(U_C\) by \(L_{\max}\) and \(U_{\max}\) proves its uniform version. The full orbit table, target table, local key table, memoized scalar answers, and selected evaluator workspace require
+\[O(m_0m_1+L+U_{\max}+G+\mathsf W),\]
+which proves the proposed memory display. In the strict witness \(k_0=k_1=M\), one has \(\bar k_0=\bar k_1=1\) and \(\mathsf C_{M,M,M}=M\); hence the rolling charge is \(\Theta(M)\) per key instead of the coarse \(\Theta(M^3)\), and a feasible positive-corner orientation can have an even smaller certified charge.

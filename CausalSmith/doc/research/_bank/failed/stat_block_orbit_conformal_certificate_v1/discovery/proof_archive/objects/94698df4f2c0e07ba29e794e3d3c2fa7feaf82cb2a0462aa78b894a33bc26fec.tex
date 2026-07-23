@@ -1,0 +1,103 @@
+Because a fixed \(w\in\Delta(\mathcal H)\) exists, the selector library is finite and nonempty. Aggregate the implemented selectors by
+\[
+\kappa_{w,a}(O\mid z)
+=
+\sum_{v:(v,a)\in O}\kappa_{w,a}(v\mid z).
+\tag{1}
+\]
+By \(\texttt{ass:selector-auxiliary-randomization}\), conditional on the common assignment \(Z_i=z\), the two armwise auxiliary selections are independent with their respective kernels. Integrating under \(\texttt{ass:known-matched-randomization}\) gives the within-replicate joint calibration-orbit law
+\[
+R_w(O_0,O_1)
+=
+\sum_z\nu(z)\kappa_{w,0}(O_0\mid z)\kappa_{w,1}(O_1\mid z).
+\tag{2}
+\]
+Across calibration replicates these orbit pairs are iid. Equation (2) makes no factorization claim across arms.
+
+Both target orbits lift the same target member. Thus \(\texttt{ass:prespecified-target}\) gives
+\[
+P_T(O_0,O_1)
+=
+\sum_{v\in\mathcal V}q_{\mathrm{tar}}(v)
+\mathbf 1\{O_0(v)=O_0,\ O_1(v)=O_1\}.
+\tag{3}
+\]
+The support of (3) is the image of \(\mathcal V\) in \(\mathcal O_0\times\mathcal O_1\), whence
+\[
+L\le\min\{|\mathcal V|,m_0m_1\}.
+\tag{4}
+\]
+
+Fix a preorder pair \(C=(c_0,c_1)\), with ordered nonempty tie classes indexed by \(1,\ldots,d_a\). Push (3) forward to obtain \(P_T^C\). A pushforward cannot increase support size, and its range has \(d_0d_1\) cells, so
+\[
+L_C\le\min\{L,d_0d_1\}.
+\tag{5}
+\]
+Aggregate (2) into the ordered-class table
+\[
+W_{r,s}
+=
+\sum_{\substack{O_0:c_0(O_0)=r\\O_1:c_1(O_1)=s}}
+R_w(O_0,O_1)
+\tag{6}
+\]
+and form its strict two-dimensional prefix table
+\[
+H(j,\ell)=\sum_{r<j}\sum_{s<\ell}W_{r,s}.
+\tag{7}
+\]
+For target class pair \((j,\ell)\), define each Bernoulli coordinate to indicate that the corresponding calibration score is strictly below the target score. Constantly many lookups in (7) yield its exact four-cell law:
+\[
+\begin{aligned}
+\pi^C_{11}(j,\ell)&=H(j,\ell),\\
+\pi^C_{10}(j,\ell)&=H(j,d_1+1)-H(j,\ell),\\
+\pi^C_{01}(j,\ell)&=H(d_0+1,\ell)-H(j,\ell),\\
+\pi^C_{00}(j,\ell)&=1-\pi^C_{01}(j,\ell)-\pi^C_{10}(j,\ell)-\pi^C_{11}(j,\ell).
+\end{aligned}
+\tag{8}
+\]
+The strict prefixes correctly retain score ties in the conformal event.
+
+Conditional on the target class pair, the order-statistic identity underlying \(\texttt{def:rank-inversion}\) says that the two rank events are exactly the inequalities that the two strict-below Bernoulli counts are smaller than \(k_0\) and \(k_1\). Therefore \(\texttt{lem:four-cell-rank-event-dynamic-program}\) evaluates their conditional probability as
+\[
+D_{M,k_0,k_1}\!\left(\pi^C(j,\ell)\right).
+\]
+Grouping identical exact vectors and averaging with the unchanged coherent target law gives
+\[
+\Pr\{\text{both rank events under }C\}
+=
+\sum_{\pi\in\Pi_C}
+\omega_C(\pi)D_{M,k_0,k_1}(\pi),
+\qquad
+U_C\le L_C.
+\tag{9}
+\]
+The recurrence value in (9) is determined by the exact key
+\[
+(M,k_0,k_1,\pi_{00},\pi_{01},\pi_{10}),
+\tag{10}
+\]
+because \(\pi_{11}=1-\pi_{00}-\pi_{01}-\pi_{10}\). It contains no target weight. Thus a global balanced tree computes each of the \(G\) distinct recurrence values once, while each preorder retains its own \(\omega_C\). This preserves the common target in (3) and the shared-assignment dependence in (2).
+
+We count operations in the unit-cost exact-arithmetic model. The initial target scan costs \(O(|\mathcal V|)\). For each of the \(F_{m_0}F_{m_1}\) preorder pairs, constructing (6)--(7) and the target pushforward costs \(O(m_0m_1+L)\). Local grouping costs \(O(L_C\log(1+L_C))\) exact comparisons and \(O(L_C)\) aggregation operations, while forming the local objective costs \(O(U_C)\). Global lookup of all local keys costs
+\[
+O\!\left(\left\{\sum_CU_C\right\}\log(1+G)\right).
+\tag{11}
+\]
+Finally, the rolling recurrence in \(\texttt{lem:four-cell-rank-event-dynamic-program}\) costs \(O(Mk_0k_1)\) for each of the \(G\) exact keys. Adding the charges proves
+\[
+O\!\left(
+|\mathcal V|
++F_{m_0}F_{m_1}(m_0m_1+L)
++\sum_C\{L_C\log(1+L_C)+L_C+U_C\}
++\left\{\sum_CU_C\right\}\log(1+G)
++GMk_0k_1
+\right).
+\tag{12}
+\]
+Replacing \(L_C\) and \(U_C\) by \(L_{\max}\) and \(U_{\max}\) in (12) gives the stated uniform bound. The orbit-class table, target support table, rolling recurrence, current local exact-key table, and global memo use respectively
+\[
+O(m_0m_1),\quad O(L),\quad O(k_0k_1),\quad O(U_{\max}),\quad O(G)
+\tag{13}
+\]
+space, proving the memory display. The exact multinomial evaluator in \(\texttt{lem:four-cell-multinomial-sum-alternative}\) and the corner-oriented evaluator in \(\texttt{lem:corner-oriented-four-cell-rank-evaluator}\) compute the same quantity and may be selected per key. The formal resource display is obtained by selecting the rolling branch for every key, so it remains valid independently of these optional exact improvements; workspace is charged to the branch actually used rather than minimized separately.

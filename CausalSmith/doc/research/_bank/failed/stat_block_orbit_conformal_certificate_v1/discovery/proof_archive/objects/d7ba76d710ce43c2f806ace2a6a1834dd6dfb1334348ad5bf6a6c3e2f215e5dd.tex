@@ -1,0 +1,151 @@
+For \(a\in\{0,1\}\), aggregate the implemented selector over an orbit by
+\[
+\kappa_{w,a}(O\mid z)=\sum_{v:(v,a)\in O}\kappa_{w,a}(v\mid z). \tag{1}
+\]
+By \(\texttt{ass:selector-auxiliary-randomization}\), the two auxiliary selector draws within a replicate are conditionally independent given their common assignment. Integrating that conditional product under \(\texttt{ass:known-matched-randomization}\) gives
+\[
+R_w(O_0,O_1)=\sum_z\nu(z)\kappa_{w,0}(O_0\mid z)\kappa_{w,1}(O_1\mid z). \tag{2}
+\]
+Thus the calibration orbit pairs are independent and identically distributed across replicates with the full joint law \(R_w\). In particular, (2) retains all dependence induced by the shared assignment; no product of armwise marginals is substituted.
+
+The two target lifts arise from the single member \(T\). By \(\texttt{ass:prespecified-target}\), their coherent joint law is
+\[
+P_T(O_0,O_1)=\sum_{v\in\mathcal V}q_{\mathrm{tar}}(v)\mathbf 1\{O_0(v)=O_0,\ O_1(v)=O_1\}. \tag{3}
+\]
+Its support is the image of \(\operatorname{supp}(q_{\mathrm{tar}})\) under \(v\mapsto(O_0(v),O_1(v))\). Hence
+\[
+L=|\operatorname{supp}(P_T)|\le \min\{|\mathcal V|,m_0m_1\}. \tag{4}
+\]
+A scan through \(\mathcal V\) forms (3) in \(O(|\mathcal V|)\) operations, and the target pair is independent of the calibration pairs.
+
+Fix a preorder pair \(C=(c_0,c_1)\), with ordered nonempty tie classes \(C_{a,1}\prec_a\cdots\prec_a C_{a,d_a}\). Aggregate (2) into
+\[
+W_{r,s}=\sum_{\substack{O_0:c_0(O_0)=r\\O_1:c_1(O_1)=s}}R_w(O_0,O_1),\qquad 1\le r\le d_0,\quad 1\le s\le d_1. \tag{5}
+\]
+One scan of the \(m_0m_1\) cells forms \(W\). Define strict prefix sums
+\[
+H(j,\ell)=\sum_{r<j}\sum_{s<\ell}W_{r,s}. \tag{6}
+\]
+The usual two-dimensional prefix recurrence forms all values of \(H\) in \(O(d_0d_1)\subseteq O(m_0m_1)\) operations. Push (3) forward to the same class indices:
+\[
+P_T^C(j,\ell)=\sum_{\substack{O_0,O_1\\c_0(O_0)=j,\ c_1(O_1)=\ell}}P_T(O_0,O_1). \tag{7}
+\]
+A scan of the \(L\) supported cells of \(P_T\) forms (7), and pushforward cannot increase support, so
+\[
+L_C=|\operatorname{supp}(P_T^C)|\le\min\{L,d_0d_1\}. \tag{8}
+\]
+
+For a supported class pair \((j,\ell)\), let \(b_0(O_0)=\mathbf 1\{c_0(O_0)<j\}\) and \(b_1(O_1)=\mathbf 1\{c_1(O_1)<\ell\}\). The exact law of \((b_0,b_1)\) under the unchanged full law \(R_w\) is
+\[
+\begin{aligned}
+\pi_{11}^C(j,\ell)&=H(j,\ell),\\
+\pi_{10}^C(j,\ell)&=H(j,d_1+1)-H(j,\ell),\\
+\pi_{01}^C(j,\ell)&=H(d_0+1,\ell)-H(j,\ell),\\
+\pi_{00}^C(j,\ell)&=1-\pi_{01}^C(j,\ell)-\pi_{10}^C(j,\ell)-\pi_{11}^C(j,\ell).
+\end{aligned} \tag{9}
+\]
+Thus a constant number of prefix lookups yields \(\pi^C(j,\ell)\). Conditional on this target class pair, the two rank events are
+\[
+\sum_{i=1}^M b_0(O_{i,0})<k_0,\qquad \sum_{i=1}^M b_1(O_{i,1})<k_1. \tag{10}
+\]
+By \(\texttt{lem:four-cell-rank-event-dynamic-program}\), their joint probability is a deterministic quantity \(D_{M,k_0,k_1}(\pi)\) depending only on \(M\), \(k_0\), \(k_1\), and the four-cell vector.
+
+For this preorder define
+\[
+\Pi_C=\{\pi^C(j,\ell):(j,\ell)\in\operatorname{supp}(P_T^C)\},\qquad U_C=|\Pi_C|\le L_C, \tag{11}
+\]
+and retain the local coherent weights
+\[
+\omega_C(\pi)=\sum_{\substack{(j,\ell)\in\operatorname{supp}(P_T^C)\\\pi^C(j,\ell)=\pi}}P_T^C(j,\ell). \tag{12}
+\]
+Target--calibration independence gives the exact preorder objective
+\[
+\Pr\{\text{both rank events under }C\}=\sum_{\pi\in\Pi_C}\omega_C(\pi)D_{M,k_0,k_1}(\pi). \tag{13}
+\]
+Equation (12) is derived only from the unchanged coherent target pushforward \(P_T^C\), whereas every \(\pi\) in (9) is derived only from the unchanged full calibration law \(R_w\). Therefore the aggregation in (13) preserves both the one common target and the full within-replicate calibration-arm dependence.
+
+A deterministic balanced tree keyed locally by \((\pi_{00},\pi_{01},\pi_{10})\) groups the \(L_C\) supported class pairs using \(O(L_C\log(1+L_C))\) exact comparisons and \(O(L_C)\) aggregation arithmetic. If each preorder uses its own recurrence cache, (13), the dynamic-program lemma, and the per-preorder construction above give the stated local-cache total
+\[
+O\!\left(|\mathcal V|+F_{m_0}F_{m_1}(m_0m_1+L)+\sum_{C\in\mathfrak C}\left[L_C\log(1+L_C)+L_C+U_C\{1+Mk_0k_1\}\right]\right). \tag{14}
+\]
+The uniform local-cache bound follows from \(L_C\le L_{\max}\) and \(U_C\le U_{\max}\), and its rolling recurrence arrays and current local tree use \(O(m_0m_1+L+k_0k_1+U_{\max})\) memory.
+
+We now sharpen (14) by sharing recurrence values across preorder pairs. Put
+\[
+\Pi_\star=\bigcup_{C\in\mathfrak C}\Pi_C,\qquad G=|\Pi_\star|. \tag{15}
+\]
+Use one global balanced-tree memo keyed exactly by
+\[
+(M,k_0,k_1,\pi_{00},\pi_{01},\pi_{10}), \tag{16}
+\]
+with \(\pi_{11}=1-\pi_{00}-\pi_{01}-\pi_{10}\). Hence (16) determines the full input to the recurrence. On the first occurrence of a key, compute \(D_{M,k_0,k_1}(\pi)\) in \(O(Mk_0k_1)\) operations and store it; later occurrences retrieve the same value. There are exactly \(G\) first occurrences and \(\sum_CU_C\) total local-key occurrences. A deterministic global balanced tree therefore costs
+\[
+O\!\left(\left\{\sum_{C\in\mathfrak C}U_C\right\}\log(1+G)+GMk_0k_1\right) \tag{17}
+\]
+comparisons and recurrence arithmetic, in addition to \(O(\sum_CU_C)\) multiplications and additions for (13). Crucially, \(\omega_C(\pi)\) is not part of (16): different preorders may attach different coherent target weights to the same \(\pi\), but those weights are multiplied only when their own objective (13) is formed. Thus no target weight enters or changes a recurrence value.
+
+Combining the local grouping and construction costs with (17) yields
+\[
+O\!\left(
+|\mathcal V|+F_{m_0}F_{m_1}(m_0m_1+L)
++\sum_{C\in\mathfrak C}\left[L_C\log(1+L_C)+L_C+U_C\right]
++\left\{\sum_{C\in\mathfrak C}U_C\right\}\log(1+G)+GMk_0k_1
+\right). \tag{18}
+\]
+Since \(|\mathfrak C|=F_{m_0}F_{m_1}\), a uniform form of (18) is
+\[
+O\!\left(
+|\mathcal V|+F_{m_0}F_{m_1}\left[m_0m_1+L+L_{\max}\log(1+L_{\max})+L_{\max}+U_{\max}\{1+\log(1+G)\}\right]+GMk_0k_1
+\right). \tag{19}
+\]
+The orbit and prefix tables use \(O(m_0m_1)\) space, the coherent target table uses \(O(L)\), rolling dynamic-program arrays use \(O(k_0k_1)\), the current local weight table uses \(O(U_{\max})\), and the global memo uses \(O(G)\). Reuse across preorders proves the global-cache memory bound
+\[
+O(m_0m_1+L+k_0k_1+U_{\max}+G). \tag{20}
+\]
+Equations (15)--(20) replace \(\sum_CU_CMk_0k_1\) by \(GMk_0k_1\) while leaving (2), (3), (9), and (12) unchanged, which proves every revised assertion.
+\paragraph{Corner-oriented and hybrid resource refinement.}
+The probability construction, exact prefix keys, coherent weights, and memoization argument above remain unchanged. Only the evaluator charge is sharpened. Put
+\[
+\bar k_a=\min\{k_a,M-k_a+1\},\qquad
+C_{M,k_0,k_1}=
+\sum_{i=0}^{M-1}
+\min\{\bar k_0,i+1\}\min\{\bar k_1,i+1\}. \tag{21}
+\]
+By \(\texttt{lem:corner-oriented-four-cell-rank-evaluator}\), every exact key in (16) is evaluated by a recurrence in \(O(C_{M,k_0,k_1})\) operations and \(O(\bar k_0\bar k_1)\) workspace. Accordingly, the terms \(GMk_0k_1\) in (17)--(19) are superseded by
+\[
+G C_{M,k_0,k_1}, \tag{22}
+\]
+and the recurrence component \(O(k_0k_1)\) in (20) is superseded by \(O(\bar k_0\bar k_1)\). These sharpenings imply the frozen displayed bounds because
+\[
+C_{M,k_0,k_1}\le M\bar k_0\bar k_1\le Mk_0k_1. \tag{23}
+\]
+
+For the paired exact evaluator, let \(\mathsf B\) denote all construction, local grouping, objective-formation, and global-lookup terms in (18), let
+\[
+\mathsf T=\mathsf T_{M,k_0,k_1},
+\]
+and partition the distinct key set as
+\(\Pi_\star=\Pi_{\mathrm{MS}}\sqcup\Pi_{\mathrm{DP}}\).
+The feasible multinomial-count formula and the corner recurrence give the selected-branch charge
+\[
+O\!\left(
+\mathsf B+M+
+\sum_{\pi\in\Pi_{\mathrm{MS}}}(M+\mathsf T)
++|\Pi_{\mathrm{DP}}|C_{M,k_0,k_1}
+\right). \tag{24}
+\]
+Thus time selection yields
+\[
+O\!\left(
+\mathsf B+M+
+G\min\{M+\mathsf T,C_{M,k_0,k_1}\}
+\right). \tag{25}
+\]
+The \(O(M)\) factorial table is shared once, four probability-specific power tables are rebuilt for each multinomial key, rolling arrays are reused for recurrence keys, and keys are processed sequentially. The resulting working-memory certificate is
+\[
+O\!\left(
+m_0m_1+L+U_{\max}+G+
+\max\{M,\bar k_0\bar k_1\}
+\right). \tag{26}
+\]
+Equations (2), (3), (9), and (12) are untouched by (21)--(26). Hence the refinement preserves the full shared-assignment law, the one-common-target pushforward, the local coherent weights, and the exact global key.
