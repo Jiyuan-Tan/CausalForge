@@ -15,10 +15,6 @@ and builds an **AI theorem pipeline** on top of it. It contains two
   LLM-driven pipeline that proposes and formally verifies new causal-inference
   theorems on top of Causalean. Causalean never imports CausalSmith.
 
-**→ Browse it online: [CausalForge · AI Causal Scientist](https://Jiyuan-Tan.github.io/CausalForge/)** —
-the working papers, each with every theorem, assumption, and lemma linked to its
-machine-checked Lean statement, plus a browsable view of the Causalean library.
-
 > This repository is a periodically synced snapshot of an internal development
 > repo: history arrives as squashed sync commits, and process/working material is
 > not included. Issues are welcome; for substantial contributions please open an
@@ -37,28 +33,13 @@ lake build
 # 3. Retrieval tooling — how you actually find things in a ~7000-declaration library
 cd CausalSmith/tools && npm install
 npm run search -- "backdoor adjustment"
-
-# 4. Recommended — the Lean MCP server, so an agent or MCP-capable editor can
-#    type-check proofs and inspect goals without a full rebuild
-pip install lean-lsp-mcp        # or: uvx lean-lsp-mcp
 ```
 
 Step 3 needs Node ≥ 20.20.2 and is worth doing before you read any Lean source:
 the library is large, and `npm run search` is the intended entry point for
-locating a definition, lemma, or module. Steps 1–3 work offline from a fresh
-clone — there are no API keys, no sibling checkouts, and no network dependencies
-beyond Mathlib's cache.
-
-**We recommend installing the Lean MCP server** ([`lean-lsp-mcp`](https://github.com/oOo0oOo/lean-lsp-mcp)),
-especially if you work through Claude Code or another MCP-capable editor. It is
-what lets an agent check its own proofs — incremental diagnostics, goal states,
-and single-file declaration search — instead of waiting on `lake build`, and the
-CausalSmith pipeline relies on it heavily. The repo ships a [`.mcp.json`](.mcp.json)
-that already wires up **two** servers, one per Lake package: `lean-lsp` (rooted at
-Causalean) and `lean-lsp-causalsmith` (rooted at `CausalSmith/`). Use the one
-matching the file you are editing — the Causalean-rooted server cannot resolve
-CausalSmith imports. Only the binary needs to be on your `PATH`; the wiring is
-already in the clone.
+locating a definition, lemma, or module. Everything above works offline from a
+fresh clone — there are no API keys, no sibling checkouts, and no network
+dependencies beyond Mathlib's cache.
 
 Then, depending on what you came for:
 
@@ -68,59 +49,7 @@ Then, depending on what you came for:
 | Orient in an unfamiliar area | `npm run search -- --scope module "<area>"` |
 | Browse a module's API | [`doc/API.md`](doc/API.md), section `## <n>. <path>` |
 | Contribute a declaration | Write the docstring — see [Documentation](#documentation) |
-| Run the theorem-generation pipeline | [Running the pipeline](#running-the-theorem-generation-pipeline) |
-
-## Running the theorem-generation pipeline
-
-The `CausalSmith research` pipeline — which proposes a new causal-inference
-theorem, formalizes it, and machine-verifies the proof against Causalean — is
-**agent-driven, not a command you type by hand.** You run it by asking an agent
-(e.g. Claude Code in this repo) to use the **`causalsmith` skill**, and the skill
-owns the whole discover → formalize → verify → bank workflow (spawning
-sub-agents, arming watchers, handling checkpoints) on your behalf.
-
-There are two ways to start a run:
-
-- **You provide the topic.** Ask the agent to run the causalsmith skill on a
-  topic you name, e.g. *"use the causalsmith skill to research weak-overlap
-  minimax rates"* or *"run `/causalsmith research` on proximal identification
-  under completeness failure."* The agent turns your topic into a proposal and
-  drives it through to a banked result.
-- **You let the skill choose the topic.** Ask the agent to *"use the causalsmith
-  skill and let it pick a promising topic"* — it invokes the topic-selection
-  sub-skill (`causalsmith-topics`) to search the literature, propose a niche, and
-  proceed automatically.
-
-Either way you interact with the agent in plain language; you do **not** need to
-know the qid/specialization arguments or the internal stage machinery — the skill
-handles them. The default novelty target is the `field` tier (novel relative to
-the literature); say *"aim for flagship"* or *"allow subfield"* to change it.
-
-**We recommend running in auto mode.** A full run is long and involves many
-discovery/formalization/verification rounds, so add *"run it in auto mode / don't
-ask me"* when you start. In auto mode the agent decides the routine math and
-proof questions itself and only pauses at the genuine hard stops — most
-importantly the final checkpoint where it asks you whether to bank/accept the
-verified result. Without it, the run halts for your input at every stage
-boundary.
-
-Once a run is accepted, two follow-on modes are available (again, just ask the
-agent):
-
-- **Present** — *"use the causalsmith skill to present `<result>`"* turns an
-  accepted, verified theorem into an arXiv-grade paper bundle plus interactive
-  web artifacts.
-- **Study** — *"use the causalsmith skill to study `<requirement>`"* builds a
-  reusable Causalean substrate module from a plain-English requirement, bypassing
-  the theorem pipeline.
-
-Run artifacts (proposals, proof state, review logs) land under
-`CausalSmith/doc/research/active/<run-id>/`; accepted results are banked under
-`CausalSmith/doc/research/_bank/` and promoted into the library.
-
-Setup prerequisites (Node, API access, environment) live in
-[`CausalSmith/doc/SETUP.md`](CausalSmith/doc/SETUP.md), and the full workflow
-reference is [`CausalSmith/doc/USER_MANUAL.md`](CausalSmith/doc/USER_MANUAL.md).
+| Run the theorem-generation pipeline | [`CausalSmith/doc/SETUP.md`](CausalSmith/doc/SETUP.md) |
 
 ## Finding things in the library
 
@@ -163,11 +92,9 @@ lake build && lake exe library_index      # from the repository root
 
 Two other retrieval surfaces:
 
-- **Library explorer web app** — published at
-  [Jiyuan-Tan.github.io/CausalForge](https://Jiyuan-Tan.github.io/CausalForge/),
-  where `/library` renders the same index as browsable natural-language cards for
-  headline theorems. To run it locally:
-  `cd CausalSmith/site && npm install && npm run dev`.
+- **Library explorer web app** — `CausalSmith/site/` (Astro) renders the same
+  index as a browsable `/library` section with natural-language cards for
+  headline theorems. `cd CausalSmith/site && npm install && npm run dev`.
 - **`lean-lsp-mcp`** — if you work through an MCP-capable editor or agent, it
   gives in-file goal inspection and single-file declaration search, complementing
   the project-wide ranked search above.

@@ -15,6 +15,7 @@ import type { SymbolCluster } from "../formalization/crosswalk.js";
 import { tryExtractDeclSnippet, extractHypothesisBinders, sorryFree } from "./lean_extract.js";
 import { graphComponentSpecs } from "./graph_components.js";
 import { auxiliaryNodes, isCitedNode } from "./graph_view.js";
+import { matchSynthDecl } from "./synth_lean_match.js";
 import { isUndeliveredNode } from "../graph/types.js";
 import type { FormalizationGraph, GraphNode } from "../graph/types.js";
 
@@ -83,12 +84,14 @@ export async function buildBundle(args: {
   /** obj_id → mapped Lean pieces (for composite/multi-part objects). */
   components?: Record<string, ComponentSpec[]>;
   /** decl short-name → source location, for resolving component pieces that are
-   *  not standalone crosswalk entries (the paper's full module index). */
-  moduleDecls?: Map<string, { file: string; line: number }>;
+   *  not standalone crosswalk entries (the paper's full module index). `kind`
+   *  (when present) restricts presentation-synthesized-definition matching to
+   *  def-like declarations. */
+  moduleDecls?: Map<string, { file: string; line: number; kind?: string }>;
   /** obj_id → causalsmith review status ("matched"/"derived"/"drift"/"unreviewed"), stamped onto
    *  each entry so the page reports the verified state honestly. Defaults to "unreviewed". */
   verdictByObj?: Map<string, { status: string }>;
-}): Promise<{ crosswalk: PresentationCrosswalk; snippets: LeanSnippets }> {
+}): Promise<{ crosswalk: PresentationCrosswalk; snippets: LeanSnippets; matchedSynthDecls: Set<string> }> {
   const byId = new Map(args.crosswalk.map((e) => [e.obj_id, e]));
   const blockById = new Map(args.blocks.map((b) => [b.obj_id, b]));
   const labels = paperLabels(args.envs);
@@ -103,11 +106,45 @@ export async function buildBundle(args: {
     if (c?.lean) return { file: c.lean.file, line: c.lean.line };
     return args.moduleDecls?.get(decl) ?? null;
   };
+  const matchedSynthDecls = new Set<string>();
   for (const e of args.envs) {
     const cw = byId.get(e.obj_id);
     if (!cw) {
       if (args.verdictByObj?.get(e.obj_id)?.status !== "presentation-synthesized") {
         throw new Error(`env ${e.obj_id} not in bank crosswalk`);
+      }
+      // A synthesized definition often already has a standalone Lean declaration in the run (the
+      // notation loop synthesized it only because that decl was not `@realizes`-tagged). When the
+      // definition's concept key matches a unique def-like decl EXACTLY, link and display it rather
+      // than claiming "no standalone Lean declaration" — otherwise the same object appears twice
+      // (unlinked printed definition + auxiliary Lean lemma).
+      const hit = args.moduleDecls ? matchSynthDecl(e.title, e.obj_id, args.moduleDecls) : null;
+      if (hit) {
+        const src = await readSrc(hit.file);
+        const snippet = tryExtractDeclSnippet(src, hit.decl, hit.line);
+        if (snippet !== null) {
+          matchedSynthDecls.add(hit.decl);
+          snippets[e.obj_id] = {
+            decl: hit.decl,
+            file: hit.file,
+            line: hit.line,
+            statement: snippet,
+            sorry_free: sorryFree(src),
+            axioms: null,
+          };
+          entries.push({
+            obj_id: e.obj_id,
+            env: e.env,
+            paper_label: labels.get(e.obj_id)!,
+            title: e.title,
+            lean: { file: hit.file, decl: hit.decl, decl_kind: hit.decl_kind, line: hit.line },
+            fallback: null,
+            uses: [],
+            status: "matched",
+            sorry_free: sorryFree(src),
+          });
+          continue;
+        }
       }
       entries.push({
         obj_id: e.obj_id,
@@ -218,6 +255,7 @@ export async function buildBundle(args: {
   return {
     crosswalk: { commit: args.commit, lean_subdir: args.leanSubdir, entries },
     snippets: { commit: args.commit, snippets },
+    matchedSynthDecls,
   };
 }
 
@@ -244,6 +282,10 @@ export function buildFormalLayer(
   commit: string,
   /** Current P1 statement-equivalence verdicts. These supersede stale graph review stamps. */
   equivalenceStatus?: Map<string, string>,
+  /** Lean decls now homed by a matched presentation-synthesized definition — dropped from the
+   *  auxiliary group so the object is not listed twice (once as the printed definition, once as an
+   *  auxiliary lemma). */
+  excludeAuxDecls?: ReadonlySet<string>,
 ): FormalLayer {
   const leanByObj = new Map(crosswalk.map((c) => [c.obj_id, c.lean]));
   const items = graph.nodes
@@ -304,7 +346,9 @@ export function buildFormalLayer(
 
   // Auxiliary group: agent-introduced proof helpers (web-only, Lean statement only — nl left
   // blank). Appended last and rendered collapsed; completes the interactive audit trail.
-  const auxItems = auxiliaryNodes(graph).map((n) => {
+  const auxItems = auxiliaryNodes(graph)
+    .filter((n) => !(n.lean.decl_name && excludeAuxDecls?.has(n.lean.decl_name)))
+    .map((n) => {
     const objId = n.id;
     return {
       obj_id: objId,

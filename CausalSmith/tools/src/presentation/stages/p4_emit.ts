@@ -408,7 +408,7 @@ export async function stageP4(io: StageIO): Promise<void> {
     leanSubdir: io.bank.leanSubdir,
     commit,
     components: componentsMap,
-    moduleDecls: new Map([...moduleDecls].map(([k, v]) => [k, { file: v.file, line: v.line }])),
+    moduleDecls: new Map([...moduleDecls].map(([k, v]) => [k, { file: v.file, line: v.line, kind: v.kind }])),
     verdictByObj,
   });
 
@@ -493,6 +493,7 @@ export async function stageP4(io: StageIO): Promise<void> {
   // Formal-layer panel's auxiliary group opens each helper's verified Lean statement. They carry
   // no body block — env "auxiliary" is exempt from the site's data-objid integrity check.
   const auxIds = auxiliaryNodes(io.bank.graph)
+    .filter((n) => !(n.lean.decl_name && bundle.matchedSynthDecls.has(n.lean.decl_name)))
     .map((n) => n.id)
     .filter((id) => !bundle.crosswalk.entries.some((e) => e.obj_id === id));
   if (auxIds.length > 0) {
@@ -529,7 +530,7 @@ export async function stageP4(io: StageIO): Promise<void> {
   const equivalenceStatus = new Map(
     Object.entries(equivalenceCache).flatMap(([id, v]) => v.verdict === "faithful" ? [[id, "matched"] as const] : []),
   );
-  const formalLayerWeb = buildFormalLayer(io.bank.graph, io.bank.crosswalk, commit, equivalenceStatus);
+  const formalLayerWeb = buildFormalLayer(io.bank.graph, io.bank.crosswalk, commit, equivalenceStatus, bundle.matchedSynthDecls);
   if (symbolItems.length > 0) formalLayerWeb.groups.push({ kind: "symbol", items: symbolItems });
   await writeFile(
     join(io.outDir, "formal_layer_web.json"),
