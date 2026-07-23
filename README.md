@@ -33,13 +33,28 @@ lake build
 # 3. Retrieval tooling — how you actually find things in a ~7000-declaration library
 cd CausalSmith/tools && npm install
 npm run search -- "backdoor adjustment"
+
+# 4. Recommended — the Lean MCP server, so an agent or MCP-capable editor can
+#    type-check proofs and inspect goals without a full rebuild
+pip install lean-lsp-mcp        # or: uvx lean-lsp-mcp
 ```
 
 Step 3 needs Node ≥ 20.20.2 and is worth doing before you read any Lean source:
 the library is large, and `npm run search` is the intended entry point for
-locating a definition, lemma, or module. Everything above works offline from a
-fresh clone — there are no API keys, no sibling checkouts, and no network
-dependencies beyond Mathlib's cache.
+locating a definition, lemma, or module. Steps 1–3 work offline from a fresh
+clone — there are no API keys, no sibling checkouts, and no network dependencies
+beyond Mathlib's cache.
+
+**We recommend installing the Lean MCP server** ([`lean-lsp-mcp`](https://github.com/oOo0oOo/lean-lsp-mcp)),
+especially if you work through Claude Code or another MCP-capable editor. It is
+what lets an agent check its own proofs — incremental diagnostics, goal states,
+and single-file declaration search — instead of waiting on `lake build`, and the
+CausalSmith pipeline relies on it heavily. The repo ships a [`.mcp.json`](.mcp.json)
+that already wires up **two** servers, one per Lake package: `lean-lsp` (rooted at
+Causalean) and `lean-lsp-causalsmith` (rooted at `CausalSmith/`). Use the one
+matching the file you are editing — the Causalean-rooted server cannot resolve
+CausalSmith imports. Only the binary needs to be on your `PATH`; the wiring is
+already in the clone.
 
 Then, depending on what you came for:
 
