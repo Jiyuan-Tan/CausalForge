@@ -95,6 +95,10 @@ export interface SolveUnitOutput {
 const ProseUpdatesSchema = z.object({
   tldr: z.string().min(1).optional(),
   project_justification: ProjectJustificationSchema.partial().optional(),
+  // Sampling-model entries are prose metadata too.  Keep this a partial map so a
+  // directive can correct one scoped description (most often `design`) without
+  // making the model reproduce, and potentially drift, every sibling entry.
+  sampling_model: z.record(z.string().min(1)).optional(),
   related_work: z.string().min(1).optional(),
   interpretation: z.string().min(1).optional(),
   technical_internal_limitation: z.string().min(1).optional(),

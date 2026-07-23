@@ -2845,7 +2845,13 @@ describe("incremental reuse across escalation rounds", () => {
 
   it("delivers a new standalone directive through one real dispatch, then resumes reuse", async () => {
     const ctx = makeCtx(repoRoot);
-    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(REUSE_PROTO), "utf8");
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify({
+      ...REUSE_PROTO,
+      sampling_model: {
+        design: "The old overbroad design description.",
+        units: "Independent replicated units; this sibling must survive a design-only update.",
+      },
+    }), "utf8");
 
     const first = countingDeps();
     await runStage0Solve({ ctx, state: makeState(), deps: first.deps });
@@ -2869,6 +2875,7 @@ describe("incremental reuse across escalation rounds", () => {
           prose_updates: {
             tldr: "The sharp operational threshold is now proved.",
             honest_scope: "The finite threshold is settled; only sampling inference remains outside scope.",
+            sampling_model: { design: "The corrected scoped design description." },
             statement_notes: [{ id: "thm:a", consumer: "Operational design screening." }],
           },
         }), "utf8");
@@ -2885,6 +2892,10 @@ describe("incremental reuse across escalation rounds", () => {
     for (const artifact of [directedCore, directedProto]) {
       expect(artifact.tldr).toBe("The sharp operational threshold is now proved.");
       expect(artifact.honest_scope).toContain("threshold is settled");
+      expect(artifact.sampling_model).toEqual({
+        design: "The corrected scoped design description.",
+        units: "Independent replicated units; this sibling must survive a design-only update.",
+      });
       expect(artifact.statements.find((s: any) => s.id === "thm:a").consumer).toBe("Operational design screening.");
     }
 

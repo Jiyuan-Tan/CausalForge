@@ -55,6 +55,11 @@ function applyProseUpdates(core: Core, proto: Core, updates: ProseUpdates): void
       target.project_justification = ProjectJustificationSchema.parse(merged);
     }
   }
+  if (updates.sampling_model) {
+    for (const target of targets) {
+      target.sampling_model = { ...(target.sampling_model ?? {}), ...updates.sampling_model };
+    }
+  }
   for (const note of updates.statement_notes) {
     const protoStmt = proto.statements.find((s) => s.id === note.id);
     const coreStmt = core.statements.find((s) => s.id === note.id);
@@ -1007,6 +1012,9 @@ export function mergeSolveOutputs(args: {
       }
       for (const [field, value] of Object.entries(updates.project_justification ?? {})) {
         if (value !== undefined) claims.push([`project_justification.${field}`, value]);
+      }
+      for (const [field, value] of Object.entries(updates.sampling_model ?? {})) {
+        if (value !== undefined) claims.push([`sampling_model.${field}`, value]);
       }
       for (const note of updates.statement_notes) {
         for (const field of ["justification", "gap", "consumer"] as const) {
