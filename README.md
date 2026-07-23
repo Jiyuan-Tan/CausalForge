@@ -15,6 +15,10 @@ and builds an **AI theorem pipeline** on top of it. It contains two
   LLM-driven pipeline that proposes and formally verifies new causal-inference
   theorems on top of Causalean. Causalean never imports CausalSmith.
 
+**→ Browse it online: [CausalForge · AI Causal Scientist](https://Jiyuan-Tan.github.io/CausalForge/)** —
+the working papers, each with every theorem, assumption, and lemma linked to its
+machine-checked Lean statement, plus a browsable view of the Causalean library.
+
 > This repository is a periodically synced snapshot of an internal development
 > repo: history arrives as squashed sync commits, and process/working material is
 > not included. Issues are welcome; for substantial contributions please open an
@@ -159,9 +163,11 @@ lake build && lake exe library_index      # from the repository root
 
 Two other retrieval surfaces:
 
-- **Library explorer web app** — `CausalSmith/site/` (Astro) renders the same
-  index as a browsable `/library` section with natural-language cards for
-  headline theorems. `cd CausalSmith/site && npm install && npm run dev`.
+- **Library explorer web app** — published at
+  [Jiyuan-Tan.github.io/CausalForge](https://Jiyuan-Tan.github.io/CausalForge/),
+  where `/library` renders the same index as browsable natural-language cards for
+  headline theorems. To run it locally:
+  `cd CausalSmith/site && npm install && npm run dev`.
 - **`lean-lsp-mcp`** — if you work through an MCP-capable editor or agent, it
   gives in-file goal inspection and single-file declaration search, complementing
   the project-wide ranked search above.
