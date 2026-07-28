@@ -13,7 +13,7 @@ import type { PipelineContext, StateJson } from "../../types.js";
 import { clusterFor, loadDiscoveryClusterSetupBlock } from "../cluster_setup.js";
 import { coreJsonPath } from "../stages/d0_core.js";
 import { protoCoreJsonPath } from "../stages/neg1_2_author.js";
-import { CoreSchema, type Core, type CoreStatement } from "../core/schema.js";
+import { CoreSchema, StatementSchema, type Core, type CoreStatement } from "../core/schema.js";
 import { recordProof } from "../working_writer.js";
 import { planCarry } from "../carry_plan.js";
 import { solvedStatus } from "../core/status.js";
@@ -24,6 +24,8 @@ import {
   readEscalationLog,
   formatEscalationContext,
   computeValidNodes,
+  changedSymbolNames,
+  symbolBasis,
 } from "../stages/d0_working.js";
 import type { RawCoreEdit } from "../stages/d0_apply.js";
 import { loadSemanticManifest, validateCoreManifest, type SemanticManifest } from "../semantic_manifest.js";
@@ -54,6 +56,26 @@ export function oeqSourceFingerprintMatches(s: CoreStatement, fingerprint: strin
     return JSON.stringify(deps(prior.depends_on)) === JSON.stringify(deps(s.depends_on));
   } catch {
     return false;
+  }
+}
+
+/** Recover the minimal mathematical source catalog from a canonical fingerprint.
+ * This is used only for an agent-authored OEQ whose durable answer theorem still
+ * declares that OEQ as owner. Frozen OEQs continue to come from proto_core. */
+export function agentOeqSourceFromFingerprint(sourceId: string, fingerprint: string): CoreStatement | null {
+  try {
+    const prior = JSON.parse(fingerprint) as { kind?: unknown; statement?: unknown; depends_on?: unknown };
+    if (prior.kind !== "openendedquestion" || typeof prior.statement !== "string") return null;
+    if (!Array.isArray(prior.depends_on) || !prior.depends_on.every((x) => typeof x === "string")) return null;
+    return StatementSchema.parse({
+      id: sourceId,
+      kind: "openendedquestion",
+      statement: prior.statement,
+      depends_on: prior.depends_on,
+      status: "to-prove",
+    });
+  } catch {
+    return null;
   }
 }
 
@@ -149,6 +171,25 @@ export async function assembleSolveContext(args: {
         `${currentProposalRevision ?? "unversioned"}); invalidating all carried D0 proofs.`,
     );
   }
+  // An APPLIED symbol re-definition changed the meaning of every statement quoting it
+  // while all statement text stayed byte-identical. `computeValidNodes` handles the
+  // invalidation, scoped to the nodes whose declared `free_symbols` closure contains a
+  // moved symbol (plus their `depends_on` dependents); this is the one loud line naming
+  // WHICH symbols moved, since the reopening is otherwise indistinguishable from an
+  // ordinary cold round.
+  {
+    const movedSymbols = changedSymbolNames(prev, proto);
+    if (movedSymbols.size > 0) {
+      const undeclared = proto.statements.filter((s) => s.free_symbols === undefined).length;
+      console.warn(
+        `[D0-SOLVE] symbol basis changed (${[...movedSymbols].join(", ")}); carried proofs whose declared ` +
+          `free_symbols closure contains one of these are invalidated — same text, different claim.` +
+          (undeclared > 0
+            ? ` ${undeclared} statement(s) declare no free_symbols and are invalidated conservatively (fail-safe).`
+            : ""),
+      );
+    }
+  }
   const escalationLog = await readEscalationLog(ctx);
   const consumedEscalations = Math.min(
     loadedPrev?.escalation_entries_consumed ?? 0,
@@ -180,6 +221,9 @@ export async function assembleSolveContext(args: {
   const next: WorkingState = {
     round,
     proposal_revision: currentProposalRevision,
+    // The GLOBAL basis this round's proofs are solved against; a later APPLIED symbol
+    // re-definition invalidates every carried proof (see d0_working.symbol_basis).
+    symbol_basis: symbolBasis(proto),
     escalation_entries_consumed: escalationLog.length,
     solved: {},
     resolved_oeqs: {},
@@ -209,6 +253,18 @@ export async function assembleSolveContext(args: {
       resolutionCandidates.set(sourceId, { theoremId: raw.theorem_id, sourceFingerprint: raw.source_fingerprint });
       resolutionTheoremIds.add(raw.theorem_id);
     }
+  }
+  // Agent-authored OEQs never enter proto_core and are intentionally removed from
+  // `solved` once resolved. Their canonical fingerprint is therefore the only durable
+  // source catalog. Rehydrate it narrowly when the mapped answer theorem still exists
+  // and explicitly names that source as owner. This lets a later directed round address
+  // the resolved owner without reopening the question or inventing a second answer.
+  for (const [sourceId, candidate] of resolutionCandidates) {
+    if (sourceById.has(sourceId)) continue;
+    const theorem = prev?.solved[candidate.theoremId];
+    if (theorem?.owner !== sourceId || theorem.node?.id !== candidate.theoremId) continue;
+    const recovered = agentOeqSourceFromFingerprint(sourceId, candidate.sourceFingerprint);
+    if (recovered) sourceById.set(sourceId, recovered);
   }
   // Compatibility handling for working states written before `resolved_oeqs`:
   // those records cannot establish that the frozen OEQ still matches the answer,

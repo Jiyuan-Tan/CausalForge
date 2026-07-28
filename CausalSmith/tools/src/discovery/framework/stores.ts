@@ -38,6 +38,8 @@ export const WorkingStateSchema = z
     round: z.number(),
     escalation_entries_consumed: z.number().optional(),
     proposal_revision: z.string().optional(),
+    /** Global symbol basis: name → semantic fingerprint (see d0_working.symbol_basis). */
+    symbol_basis: z.record(z.string()).optional(),
     solved: z.record(SolvedMemberSchema),
     proposals: z
       .object({

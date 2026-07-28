@@ -7,14 +7,15 @@
 import type { PipelineContext, Stage, StageResult, StateJson } from "../types.js";
 import { artifactPaths, type StageDeps } from "../pipeline_support.js";
 import { coreJsonPath } from "../discovery/stages/d0_core.js";
+import { readTypedCore } from "../discovery/core/core_io.js";
+import { appendEscalationLog, loadWorkingState } from "../discovery/stages/d0_working.js";
 import { runProofReviewLoop, writeRunBarrel, type LoopOutcome } from "./proof_review_loop.js";
 import { startSharedLeanLsp } from "../shared/lean_lsp_server.js";
 import { runStage1 } from "./stage1.js";
 import { runStage1_5 } from "./stage1_5.js";
 import { runStage2 } from "./stage2.js";
 import { runStage5 } from "./stage5.js";
-import { applyInterventionRoute, resetFormalizationLoopCounters } from "../shared/intervention_routing.js";
-import type { Intervention } from "../judgment.js";
+import { resetD0LoopCountersForRewind, resetFormalizationLoopCounters } from "../shared/intervention_routing.js";
 
 /** Per-node cap on F3→D0 rewinds: after this many witnessed bounces of the SAME node, stop
  *  auto-rewinding and checkpoint for orchestrator approval (a node that keeps coming back is not
@@ -109,6 +110,115 @@ export async function consumePendingScaffoldRedirect(
   return null; // runStage2 self-clears the flag on completion
 }
 
+/** The witness + blast-radius the proof-review loop proposes for an F3→D0 rewind. */
+export interface RedoMathProposal {
+  /** GRAPH node id of the refuted claim. On the redo-math path this is ALWAYS an
+   *  agent-introduced Lean decl id (e.g. `aux_BanditLaw`) — `from_core.ts` stamps
+   *  `provenance:"from-note"` on every node built from the core, and the loop takes this
+   *  path only when `provenance !== "from-note"` — so it is NEVER a `thm:`/`lem:` core id. */
+  obj_id: string;
+  witness: { type: string; detail: string };
+  /** Transitive graph dependents of `obj_id` (mixed id space: Lean aux ids AND core ids). */
+  dependents: string[];
+  touchesProven: boolean;
+}
+
+/**
+ * Adjudicate a witnessed F3 refutation: per-node durable cap mirrors stage1_rewinds; any
+ * already-PROVEN dependent makes this the expensive case → checkpoint for orchestrator
+ * approval rather than an auto-rewind.
+ *
+ * The auto-rewind is ONE incremental path for both propose and non-propose runs: append a
+ * TARGETED escalation-log directive (the same channel `bin/d0_directive.ts` uses) and park
+ * the cursor at "-0.5" so the next stage is the typed D0-SOLVE. Proto and the working
+ * cursor stay intact; only the refuted step's core consumers (and their dependents) are
+ * forced open — the promise `solve/dispatch.ts`'s witness block already makes to the solver.
+ *
+ * Two prior shapes of this branch are deliberately gone:
+ *  - propose mode used to route through `applyInterventionRoute("stage_0")`, which re-invoked
+ *    the D-1.2 PROPOSAL producer and bumped `current_version`; the next D0 assembly then saw
+ *    `proposalRevisionChanged`, set `prev = null`, and DISCARDED EVERY CARRIED PROOF to fix
+ *    one node — while the escalation watermark (read from the surviving cursor) made the
+ *    from-scratch re-solve run with an EMPTY directive context. A witnessed refutation is
+ *    not a proposal defect; no statement TEXT changed, so no content check can see it — it
+ *    needs the explicit target channel, not a proposal revision.
+ *  - non-propose mode moved the cursor WITHOUT appending any escalation entry, so
+ *    `hasPendingDirective` was false, the open frontier was empty, nobody was dispatched,
+ *    the round passed the discharge gate, and `solve/commit.ts` deleted the witness — the
+ *    same lemma was then refuted again, up to REDO_MATH_MAX.
+ *
+ * ID SPACES ARE DISJOINT AND LOAD-BEARING. `required_core_targets` must name CORE
+ * statement ids: `solve/merge.ts` hard-THROWS when a required target is emitted by no
+ * solver payload, and that throw precedes commitRound, so an unsatisfiable target (e.g. a
+ * Lean aux id like `rm.obj_id`) would wedge every subsequent `--resume` identically. The
+ * refuted node itself has no core identity; the core statements whose proofs rest on it are
+ * among its graph dependents, so the repair frontier is `[obj_id, ...dependents] ∩
+ * core-statement-ids`. When that intersection is empty the rewind cannot be localized, and
+ * an UNTARGETED directive would force every statement open (a whole-paper re-derivation) —
+ * so we checkpoint for the orchestrator instead of auto-rewinding.
+ */
+export async function adjudicateRedoMathRewind(args: {
+  ctx: PipelineContext;
+  state: StateJson;
+  rm: RedoMathProposal;
+  reason: string;
+}): Promise<StageResult> {
+  const { rm } = args;
+  const seen = args.state.flags.redo_math_rewinds ?? {};
+  const nth = (seen[rm.obj_id] ?? 0) + 1;
+  args.state.flags.redo_math_rewinds = { ...seen, [rm.obj_id]: nth };
+  const w = `witness[${rm.witness.type}]: ${rm.witness.detail}`;
+  if (rm.touchesProven || nth > REDO_MATH_MAX) {
+    return {
+      stage: "2.5", status: "checkpoint", completedStage: "2",
+      message: `PROOF-REVIEW LOOP → D0 REWIND NEEDS APPROVAL [${rm.obj_id}] `
+        + `(${rm.touchesProven ? "invalidates PROVEN dependents" : `cap ${REDO_MATH_MAX} hit`}; `
+        + `dependents: ${rm.dependents.join(", ") || "none"}; ${w}): ${args.reason}`,
+    };
+  }
+  // Localize: core statements reachable from the refuted step, in dependent order, deduped.
+  const core = await readTypedCore(coreJsonPath(args.ctx));
+  const coreStatementIds = new Set(core.statements.map((s) => s.id));
+  const coreTargets = [...new Set([rm.obj_id, ...rm.dependents])].filter((id) => coreStatementIds.has(id));
+  if (coreTargets.length === 0) {
+    return {
+      stage: "2.5", status: "checkpoint", completedStage: "2",
+      message: `PROOF-REVIEW LOOP → D0 REWIND NEEDS APPROVAL [${rm.obj_id}] `
+        + `(no core statement found among the refuted node's dependents [${rm.dependents.join(", ") || "none"}], `
+        + `so the rewind cannot be localized; an untargeted rewind would re-derive the whole paper; ${w}): ${args.reason}`,
+    };
+  }
+  // Auto-rewind: witnessed, no proven dependents, under cap, localizable.
+  const working = await loadWorkingState(args.ctx);
+  await appendEscalationLog(args.ctx, {
+    round: working?.round ?? 0,
+    changed: [],
+    directive: [
+      `F3 REFUTATION — incremental re-solve, NOT from scratch. The Lean formalization refuted`,
+      `\`${rm.obj_id}\`, an intermediate step of this core's formal proof, with a concrete ${w}.`,
+      `Re-derive ONLY the required target(s) below (the core statements whose proofs rest on the refuted`,
+      `step), treating the witness as a hard constraint; if a target cannot be salvaged as stated,`,
+      `correct/weaken it (proposed_statement_changes) so the witness no longer refutes it. Every other`,
+      `established proof in this core is intact and must be left untouched.`,
+    ].join("\n"),
+    required_core_targets: coreTargets,
+  });
+  args.state.stage_completed = "-0.5"; // nextStage("-0.5") = "0" → re-run typed D0-SOLVE
+  resetFormalizationLoopCounters(args.state);
+  // The re-solve is constrained by a witness D0 has never seen, so it is a new attempt and
+  // gets a new D-phase budget; the spend it carried in is reported, not discarded silently.
+  const budgetNote = resetD0LoopCountersForRewind(args.state);
+  args.state.pending_sorries = [];
+  args.state.flags.redo_math_witness = {           // D0-solve reads this to scope + constrain the re-solve
+    obj_id: rm.obj_id, type: rm.witness.type, detail: rm.witness.detail, dependents: rm.dependents,
+  };
+  return {
+    stage: "2.5", status: "rewound", advance: false,
+    message: `PROOF-REVIEW LOOP → AUTO D0 REWIND [${rm.obj_id}] (targets: ${coreTargets.join(", ")}; ${w})`
+      + `${budgetNote ? ` [${budgetNote}]` : ""}: ${args.reason}`,
+  };
+}
+
 /**
  * Run the graph-driven proof-review loop in the F2.5 slot. On convergence it completes through
  * stage "4" (so the pipeline advances directly to F5); on escalation it checkpoints with the route +
@@ -186,41 +296,14 @@ async function runProofReviewLoopStage(args: {
   });
   recordProofReviewOutcome(args.state, outcome);
   // F3→D0 rewind: a witnessed `statement-wrong`. Adjudicate here (state.flags is in scope) — the loop
-  // only proposed it. Per-node durable cap mirrors stage1_rewinds; any already-PROVEN dependent makes
-  // this the expensive case → checkpoint for orchestrator approval rather than an auto-rewind.
+  // only proposed it.
   if (outcome.status === "escalate" && outcome.route === "redo-math" && outcome.redoMath) {
-    const rm = outcome.redoMath;
-    const seen = args.state.flags.redo_math_rewinds ?? {};
-    const nth = (seen[rm.obj_id] ?? 0) + 1;
-    args.state.flags.redo_math_rewinds = { ...seen, [rm.obj_id]: nth };
-    const w = `witness[${rm.witness.type}]: ${rm.witness.detail}`;
-    if (rm.touchesProven || nth > REDO_MATH_MAX) {
-      return {
-        stage: "2.5", status: "checkpoint", completedStage: "2",
-        message: `PROOF-REVIEW LOOP → D0 REWIND NEEDS APPROVAL [${rm.obj_id}] `
-          + `(${rm.touchesProven ? "invalidates PROVEN dependents" : `cap ${REDO_MATH_MAX} hit`}; `
-          + `dependents: ${rm.dependents.join(", ") || "none"}; ${w}): ${outcome.reason}`,
-      };
-    }
-    // Auto-rewind: witnessed, no proven dependents, under cap. Re-enter D0-solve and let it CONSUME
-    // the witness (re-derive obj_id + dependents only — never from scratch). Reset the per-attempt
-    // laundering counters, exactly as the propose-mode stage_0 route does.
-    if (args.state.proposed_from) {
-      applyInterventionRoute(args.state, {
-        route: "stage_0", action_kind: "re_derive",
-        reason: `F3 witnessed ${rm.obj_id} ${w}`, proposed_action: rm.witness.detail,
-      } as Intervention);
-    } else {
-      args.state.stage_completed = "-0.5";           // nextStage("-0.5") = "0" → re-run typed D0-SOLVE
-      resetFormalizationLoopCounters(args.state);
-    }
-    args.state.flags.redo_math_witness = {           // D0-solve reads this to scope + constrain the re-solve
-      obj_id: rm.obj_id, type: rm.witness.type, detail: rm.witness.detail, dependents: rm.dependents,
-    };
-    return {
-      stage: "2.5", status: "rewound", advance: false,
-      message: `PROOF-REVIEW LOOP → AUTO D0 REWIND [${rm.obj_id}] (${w}): ${outcome.reason}`,
-    };
+    return adjudicateRedoMathRewind({
+      ctx: args.ctx,
+      state: args.state,
+      rm: outcome.redoMath,
+      reason: outcome.reason,
+    });
   }
   if (outcome.status === "completed") {
     return {

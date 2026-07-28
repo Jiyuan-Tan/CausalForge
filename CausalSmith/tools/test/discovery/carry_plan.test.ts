@@ -101,15 +101,12 @@ describe("planCarry — OEQ answer theorems", () => {
     expect(p.verdicts.get("thm:answer")).toMatchObject({ fate: "dropped" });
   });
 
-  it("DROPS the answer when the source->answer mapping did not persist", () => {
-    // This is the gap that made a finished theorem vanish without a trace: the node is
-    // governed only by its mapping, so it is excluded from BOTH the ordinary carry and
-    // the stale-recovery path, and previously fell through with no record at all.
+  it("DETACHES and carries a still-valid answer when the source->answer mapping did not persist", () => {
+    // The relation disappearing does not delete the theorem. It may no longer answer
+    // the whole OEQ, but `solved` is still its only statement catalog.
     const p = plan({ solved, resolutionTheoremIds, validIds: new Set(["thm:answer"]) });
     const v = p.verdicts.get("thm:answer")!;
-    expect(v.fate).toBe("dropped");
-    expect(p.explain("thm:answer")).toMatch(/DROPPED/);
-    expect(p.explain("thm:answer")).toMatch(/mapping did not persist/);
+    expect(v).toEqual({ fate: "carried", as: "agent-node" });
   });
 
   it("RE-DERIVES a mapped-but-stale answer under the same id instead of dropping it", () => {
@@ -127,11 +124,11 @@ describe("planCarry — OEQ answer theorems", () => {
     expect(p.explain("thm:answer")).toMatch(/re-prove under the same id/);
   });
 
-  it("still DROPS when the fingerprint moved, since the question itself changed", () => {
-    // The one case where the old answer genuinely may no longer answer the question.
+  it("still re-derives when the fingerprint moved without an explicit replacement", () => {
+    // A changed question invalidates answer status, not the standalone theorem.
     const p = plan({ solved, resolutionTheoremIds });
-    expect(p.verdicts.get("thm:answer")).toMatchObject({ fate: "dropped" });
-    expect(p.explain("thm:answer")).toMatch(/question itself moved/);
+    expect(p.verdicts.get("thm:answer")).toMatchObject({ fate: "re-derive", as: "agent-node" });
+    expect(p.explain("thm:answer")).toMatch(/same id/);
   });
 });
 
@@ -200,7 +197,8 @@ describe("planCarry — equivalence with the predicates it replaced", () => {
 
               const origCarryAgent = hasNode && valid && (!isResThm || mappingHeld);
               const newCarryAgent = hasNode && v.fate === "carried" && v.as !== "proto-member";
-              expect(newCarryAgent, `agent carry @ ${label}`).toBe(origCarryAgent);
+              const intendedDetachedCarry = hasNode && valid && isResThm && !mappingHeld;
+              expect(newCarryAgent, `agent carry @ ${label}`).toBe(origCarryAgent || intendedDetachedCarry);
 
               // `stage0_solve` now accepts BOTH `agent-node` and `oeq-answer` here, so the
               // test must model that or it silently stops describing the real code.
@@ -214,10 +212,13 @@ describe("planCarry — equivalence with the predicates it replaced", () => {
               // statement. (mappingHeld ALSO implies a node in reality — the mapping is only
               // built when `theorem?.node` exists — so the `!hasNode && mappingHeld` cells
               // below are unreachable combinations this exhaustive loop happens to enumerate.)
-              const intendedChange = hasNode && isResThm && mappingHeld && !valid;
+              const intendedChange = hasNode && isResThm &&
+                ((mappingHeld && !valid) || (!mappingHeld && !valid));
               if (intendedChange) {
                 expect(newStale, `intended recovery @ ${label}`).toBe(true);
                 expect(origStale, `original dropped it @ ${label}`).toBe(false);
+              } else if (hasNode && isResThm && !mappingHeld && valid) {
+                expect(v).toEqual({ fate: "carried", as: "agent-node" });
               } else {
                 expect(newStale, `stale recovery @ ${label}`).toBe(origStale);
               }

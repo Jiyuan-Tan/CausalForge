@@ -350,6 +350,12 @@ export function mergeSolveOutputs(args: {
   // frozen, partial and proofless records must still fail closed.
   const resolvedOeqReplacement = new Map(resolvedOeqEntries.map((r) => [r.source_id, r.theorem.id] as const));
   const reusableResolutionSources = new Set<string>();
+  // Sources admitted ONLY because the existing node is the open projection of a stale
+  // agent target (`status:"to-prove"`, proof cleared). These are NOT no-ops like an exact
+  // settled re-emission: the projection must be REPLACED by the proved answer, or the
+  // core keeps the unproved placeholder and the emitted proof is persisted nowhere.
+  const projectionResolutionSources = new Set<string>();
+  const staleAgentTargetIds = new Set(sctx.staleAgentTargets.map((statement) => statement.id));
   for (const r of resolvedOeqEntries) {
     const emitted = {
       ...r.theorem,
@@ -357,26 +363,59 @@ export function mergeSolveOutputs(args: {
     };
     const existing = core.statements.find((s) => s.id === emitted.id && !resolvedOeqSources.has(s.id));
     if (!existing) continue;
-    const carried = next.solved[emitted.id];
     const priorCarried = prev?.solved[emitted.id];
-    const durable = carried?.node
-      ? { ...carried.node, proof_tex: carried.proof_tex }
+    // `next` deliberately projects an invalidated agent theorem to a partial,
+    // `to-prove` target before dispatch. Comparing the fresh proved answer with
+    // that projection makes an exact re-derivation look non-identical. The durable
+    // identity being reverified is the settled PRIOR record; the open projection is
+    // only a dispatch vehicle and must never become the comparison authority.
+    const durable = priorCarried?.node
+      ? { ...priorCarried.node, proof_tex: priorCarried.proof_tex }
       : null;
+    // A solver may re-emit the same OEQ answer with a same-round, explicitly gated
+    // statement cleanup (for example removing serialization debris). Collision
+    // validation runs before proposal adjudication, so compare the re-emission to
+    // the durable theorem WITH ONLY that declared statement overlay. Marking the
+    // source reusable keeps the current durable theorem in the assembled core; it
+    // does not install the unaccepted overlay. The proposal checkpoint remains the
+    // sole path by which the new text can land.
+    const statementChanges = [...new Map(
+      outputs.flatMap((output) => output.proposed_statement_changes)
+        .filter((change) => change.id === emitted.id)
+        .map((change) => [JSON.stringify(change), change] as const),
+    ).values()];
+    const proposalBackedReemission = durable !== null &&
+      statementChanges.length === 1 &&
+      statementChanges[0].current === durable.statement &&
+      statementChanges[0].proposed === emitted.statement &&
+      reusableOeqAnswerMatches(
+        { ...durable, statement: statementChanges[0].proposed },
+        emitted,
+      );
     const reusableDurableRecord =
       priorCarried?.node !== undefined &&
       priorCarried.partial !== true &&
       priorCarried.proof_tex.trim().length > 0 &&
-      carried?.node !== undefined &&
-      carried.partial !== true &&
-      carried.proof_tex.trim().length > 0 &&
       durable !== null &&
-      reusableOeqAnswerMatches(durable, emitted);
-    if (!reusableOeqAnswerMatches(existing, emitted) || !reusableDurableRecord) {
+      (reusableOeqAnswerMatches(durable, emitted) || proposalBackedReemission);
+    const existingIsExact = reusableOeqAnswerMatches(existing, emitted);
+    const existingIsOpenProjection = staleAgentTargetIds.has(emitted.id);
+    if ((!existingIsExact && !existingIsOpenProjection) || !reusableDurableRecord) {
       throw new Error(
-        `Stage 0-SOLVE OEQ resolution theorem id collides with non-identical existing node ${emitted.id}`,
+        `Stage 0-SOLVE OEQ resolution theorem id collides with non-identical existing node ${emitted.id} ` +
+        `(existing_exact=${existingIsExact}, stale_projection=${existingIsOpenProjection}, ` +
+        `settled_prior=${priorCarried?.node !== undefined && priorCarried.partial !== true && priorCarried.proof_tex.trim().length > 0}, ` +
+        `statement_overlays=${statementChanges.length}, proposal_backed=${proposalBackedReemission})`,
       );
     }
     reusableResolutionSources.add(r.source_id);
+    // ONLY when the emitted theorem matches the DURABLE settled answer. A
+    // proposal-backed re-emission also lands here with an open projection, but it carries
+    // UNADJUDICATED overlay text — installing that would launder a proposal past review,
+    // which apply owns. Such a source keeps the old no-op behaviour.
+    if (!existingIsExact && existingIsOpenProjection && durable !== null && reusableOeqAnswerMatches(durable, emitted)) {
+      projectionResolutionSources.add(r.source_id);
+    }
   }
   const unnormalizedOeqProof = outputs
     .flatMap((o) => o.proofs)
@@ -963,6 +1002,23 @@ export function mergeSolveOutputs(args: {
           withheldProofBytes.push({ nodeId: theorem.id, proofTex: theorem.proof_tex ?? "", reason: "collision-withheld" });
           continue;
         }
+        // The id is present as the OPEN PROJECTION, not as a settled answer. Skipping here
+        // (the exact-re-emission no-op) would keep the `to-prove` placeholder in the core,
+        // leave the working record `partial`, and drop the emitted proof bytes into neither
+        // the archive nor `withheldProofBytes` — the round then reports the node still open
+        // even though the solver proved it, and re-running reproduces the same state.
+        if (projectionResolutionSources.has(r.source_id)) {
+          const at = core.statements.findIndex((st) => st.id === theorem.id);
+          core.statements[at] = theorem;
+          solved += 1;
+          recordProof(next, proto, {
+            id: theorem.id,
+            snapshotOf: theorem,
+            proofTex: theorem.proof_tex ?? "",
+            node: theorem,
+            owner: r.source_id,
+          });
+        }
       } else {
         core.statements.push(theorem);
         solved += 1;
@@ -992,6 +1048,20 @@ export function mergeSolveOutputs(args: {
     // has no valid comparison basis in `computeValidNodes`. skipPartial: a partial's
     // snapshot is the basis the agent argued — refreshing it retargets the obligation.
     refreshSnapshots(next, proto, core, { skipPartial: true });
+  }
+  // INVARIANT: an OEQ carrying a durable answer must not remain in the assembled core as
+  // an OPEN node. Dispatch force-reopens such a source so a directed repair can address it
+  // without reopening the answer, relying on the removal above to take it back out — but
+  // that removal only filters sources the solver re-resolved THIS round, and it sits
+  // inside `if (resolvedOeqEntries.length > 0)`. A round that instead discharged the
+  // forced target via `open_obligations` (explicitly credited for `oeq:` ids) therefore
+  // published the answered question as `to-prove`, directly contradicting
+  // `working.resolved_oeqs`, and sailed past a discharge gate that exempts `oeq:` ids.
+  const answeredOeqSources = new Set(Object.keys(next.resolved_oeqs ?? {}));
+  if (answeredOeqSources.size > 0) {
+    core.statements = core.statements.filter(
+      (s) => !(s.kind === "openendedquestion" && answeredOeqSources.has(s.id)),
+    );
   }
   // FINAL drain: the resolved-OEQ answer theorems are installed now, so any parked
   // proof still unresolved has a genuinely absent target and reports as unmatched.

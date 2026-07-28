@@ -15,7 +15,7 @@ import {
   reconcileProofStores,
 } from "../core/coherence.js";
 import { runGates, type GateViolation } from "../framework/gates.js";
-import { roundInvariantsGate, structuralGate, symbolPreflightGate } from "../framework/gate_registrations.js";
+import { roundInvariantsGate, structuralGate, symbolDriftGate, symbolPreflightGate } from "../framework/gate_registrations.js";
 import { refreshSnapshots } from "../working_writer.js";
 import { validateCoreManifest, validateWorkingManifest } from "../semantic_manifest.js";
 import { coreEditTarget } from "../stages/d0_apply.js";
@@ -119,6 +119,14 @@ export function checkpointClosure(sctx: SolveRoundContext, mr: SolveMergeResult)
  *  before discovering it (round 36). Runs the registered `symbol-preflight` gate. */
 export function checkpointPreflight(core: Core): GateViolation[] {
   return runGates([symbolPreflightGate], core).hard;
+}
+
+/** Advisory companion to `checkpointPreflight`: nodes whose text mentions a symbol they
+ *  do not declare. Warn-tier — `free_symbols` is what scopes symbol invalidation, so a
+ *  rotting declaration must be visible, but the check is a text scan and is wrong often
+ *  enough on correct cores that it may never block a round (see the gate registration). */
+export function checkpointSymbolDrift(core: Core): GateViolation[] {
+  return runGates([symbolDriftGate], core).warn;
 }
 
 /** Auto-heal the only NON-structural gate check before sanity-gating: a `standard.cite`

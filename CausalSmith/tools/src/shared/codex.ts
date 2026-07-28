@@ -17,6 +17,15 @@ export interface CodexRunInput {
   reasoningEffort?: "minimal" | "low" | "medium" | "high" | "xhigh";
   cwd: string;
   /**
+   * This call intentionally edits production files outside the paper-local
+   * scratch directory. Formalization stages F2.5--F4 normally run Codex from
+   * `<leanDir>/tmp` so disposable probes cannot pollute the package root; a
+   * source-producing nested call (F2 redirect or F3 filler) must opt back into
+   * its explicit `cwd`, otherwise Codex's workspace-write sandbox cannot edit
+   * the production Lean tree.
+   */
+  productionWrite?: boolean;
+  /**
    * Lean project's package root when the agent itself runs from a narrower
    * scratch directory. Defaults to the cwd for existing callers.
    */

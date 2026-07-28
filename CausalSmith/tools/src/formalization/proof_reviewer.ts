@@ -23,6 +23,7 @@ import { isUndeliveredNode, type FormalizationGraph } from "../graph/types.js";
 import type { CodexRunInput } from "../shared/codex.js";
 import type { ClaudeRunInput } from "../workers/claude.js";
 import { dispatchAgent, dispatchClaudeAgent } from "../framework/agent_dispatch.js";
+import { parseJsonWithEscapeRepair } from "../shared/codex_json.js";
 import {
   gradeReviewerOutput,
   mapLimit,
@@ -209,7 +210,7 @@ export async function runReviewer(args: {
   try {
     const pf = planPath(args.ctx.repoRoot, args.ctx.qid, args.ctx.specialization);
     if (existsSync(pf)) {
-      const parsed = PlanSchema.safeParse(JSON.parse(await readFile(pf, "utf8")));
+      const parsed = PlanSchema.safeParse(parseJsonWithEscapeRepair(await readFile(pf, "utf8")));
       if (parsed.success) {
         citedPlan = parsed.data;
         const citById = new Map(parsed.data.citations.map((c) => [c.id, c] as const));
@@ -572,7 +573,7 @@ export async function runReviewer(args: {
     try {
       if (!args.corePath) throw new Error("typed core path is missing");
       const core = CoreSchema.parse(JSON.parse(await readFile(args.corePath, "utf8")));
-      const plan = PlanSchema.parse(JSON.parse(await readFile(planPath(args.ctx.repoRoot, args.ctx.qid, args.ctx.specialization), "utf8")));
+      const plan = PlanSchema.parse(parseJsonWithEscapeRepair(await readFile(planPath(args.ctx.repoRoot, args.ctx.qid, args.ctx.specialization), "utf8")));
       for (const id of deliveryTargets) {
         deliveryHashByObjId.set(nodeIdToObjId(id), deliveryEvidenceHash(core, plan, args.graph, id));
       }

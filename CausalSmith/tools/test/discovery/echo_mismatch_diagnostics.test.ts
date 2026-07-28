@@ -10,6 +10,7 @@
 
 import { describe, it, expect } from "vitest";
 import { describeEchoMismatch } from "../../src/discovery/stages/d0_apply.js";
+import { snapshotMember } from "../../src/discovery/stages/d0_working.js";
 
 const node = (over: Record<string, unknown> = {}) => ({
   id: "thm:x", kind: "theorem", statement: "S", status: "proved", proof_tex: "P", ...over,
@@ -70,6 +71,55 @@ describe("describeEchoMismatch", () => {
 });
 
 describe("the proof-free contract reaches the real apply", () => {
+  it("accepts proved canonical status over a to-prove frozen node and preserves its durable proof", async () => {
+    const { applyProposedChanges } = await import("../../src/discovery/stages/d0_apply.js");
+    const { saveWorkingState } = await import("../../src/discovery/stages/d0_working.js");
+    const { createDStageHarness } = await import("./d_stage_harness.js");
+    const proto = {
+      qid: "stat_overlay", specialization: "v1", cluster: "stat",
+      symbols: [{ name: "tau", type: "causal_parameter", def: "E[Y(1)-Y(0)]" }],
+      assumptions: [{ id: "ass:overlap", condition: "c", free_symbols: [], standard: { name: "o", cite: "R1983" } }],
+      definitions: [{ id: "def:risk", name: "R", construction: "R = 0", inputs: [] }],
+      statements: [{
+        id: "thm:main", kind: "theorem", statement: "tau is identified",
+        depends_on: ["ass:overlap"], status: "to-prove",
+        justification: "j", gap: "g", consumer: "c",
+      }],
+      target_estimand: "tau", bibliography: [{ key: "R1983" }],
+    };
+    const h = await createDStageHarness({ qid: "stat_overlay", specialization: "v1", proto });
+    try {
+      const proof = "The constant learner has minimax risk zero.";
+      await saveWorkingState(h.ctx(), {
+        round: 2,
+        solved: {
+          "thm:main": { proof_tex: proof, snapshot: snapshotMember(proto as never, proto.statements[0] as never) },
+        },
+        proposals: {
+          statements: [], definitions: [], assumptions: [], proofs: [],
+          coreEdits: [{
+            kind: "statement-replace", id: "thm:main",
+            proposed: { ...proto.statements[0], status: "proved", depends_on: ["ass:overlap", "def:risk"] },
+            reason: "declare the dependency already used by the proof", direction: "correct",
+          }],
+        },
+      } as never);
+
+      await expect(applyProposedChanges({ ctx: h.ctx() })).resolves.toHaveLength(1);
+      const applied = await h.readProto();
+      expect(applied.statements[0]).toMatchObject({
+        status: "to-prove",
+        depends_on: ["ass:overlap", "def:risk"],
+      });
+      const working = await h.readWorking();
+      expect(working.solved["thm:main"]).toMatchObject({ proof_tex: proof });
+      expect(working.solved["thm:main"].partial).toBeUndefined();
+      expect(working.solved["thm:main"].snapshot.defs).toHaveProperty("def:risk");
+    } finally {
+      await h.dispose();
+    }
+  });
+
   it("ignores a legacy retranscribed proof and preserves the current proof", async () => {
     const { applyProposedChanges } = await import("../../src/discovery/stages/d0_apply.js");
     const { saveWorkingState } = await import("../../src/discovery/stages/d0_working.js");

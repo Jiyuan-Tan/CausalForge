@@ -198,7 +198,10 @@ export interface DiscoveryFlags {
    * via `buildStage0_5RejectionContext` and must restate the SAME focal object
    * in this form WITHOUT demoting to a conjecture or adding an assumption
    * (distinguishes a true over-precision fix from a regime-defining split).
-   * Cleared when runStage0 (D0) next starts.
+   * Cleared (or replaced) by the NEXT stage_0 / stage_neg1 rewind, so each rewind's
+   * rejection context reflects that rewind — a stale correction would otherwise
+   * displace every later critique (`buildStage0_5RejectionContext` returns its
+   * branch early, before the generic rejection block).
    */
   statement_correction_directive?: string | null;
   /**
@@ -344,6 +347,16 @@ export interface FormalizationFlags {
   f4_localpatch_rounds?: number;
   /** Verbatim F2.5 fix-locus critique when an `nl-plan` finding routes to stage_1 (F1); consumed by runStage1's revise mode then cleared. Carries the upstream reason across the cross-stage rewind (priorReview is absent on a rewind dispatch). */
   f1_revise_directive?: string | null;
+  /** Set by a stage_neg1 PIVOT: `plan.json` on disk describes the ABANDONED angle, so F1
+   *  must cold-start instead of patching it (`laterStageEverRan` is monotone and would keep
+   *  it in patch mode forever). Cleared by F1 once a schema-valid plan for the new angle is
+   *  on disk — later F1.5 revise rounds on the NEW plan then patch normally. */
+  f1_plan_retired?: boolean;
+  /** Set by a stage_neg1 PIVOT: the `.lean` tree on disk realizes the ABANDONED angle, so F2
+   *  must cold-scaffold instead of patching it in place ("preserve existing proof bodies"
+   *  would graft the new angle's mathematics onto dead work). Cleared by F2 on the first
+   *  completed scaffold after the pivot. */
+  f2_scaffold_retired?: boolean;
   /** F3→D0 rewind counter, keyed by the broken node's obj_id (cap `REDO_MATH_MAX`). Bumped each time
    * a witnessed `statement-wrong` bounces that node back to D0-solve; a node exceeding the cap (or one
    * whose re-solve would invalidate already-PROVEN dependents) checkpoints for orchestrator approval

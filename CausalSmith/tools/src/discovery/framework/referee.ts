@@ -153,7 +153,12 @@ export async function runReferee(args: {
     const verdict = typeof json.verdict === "string" ? json.verdict.toUpperCase() : null;
     return { raw: out.stdout, json, verdict, parseError: controlError ?? validationError, failure: null };
   }
-  const parsed = parseAgentJson(out.stdout);
+  // Stdout-mode referees can quote TeX in their JSON just as verdict-file
+  // referees do.  Preserve `out.stdout` as the raw receipt, but normalize a
+  // separate copy at the raw-byte boundary before JSON.parse.  In particular,
+  // model output such as `\(d/\epsilon\)` otherwise fails on the invalid `\(`
+  // escape before the post-parse LaTeX repair can run.
+  const parsed = parseAgentJson(normalizeRawModelJson(out.stdout));
   if (!parsed.json) {
     return { raw: out.stdout, json: {}, verdict: null, parseError: parsed.parseError, failure: null };
   }

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseJsonWithEscapeRepair } from "./shared/codex_json.js";
 
 /**
  * Per-theorem verdict entry inside a Stage 0.5 paper-scoped review.
@@ -534,6 +535,15 @@ export const stageOutputSchema = z
  *
  * Falls back to a first-`{` / last-`}` slice only if no balanced parse
  * succeeds, which preserves behavior for outputs with stray closing braces.
+ *
+ * Every candidate slice is parsed through `parseJsonWithEscapeRepair`, so an
+ * otherwise-complete payload is never lost to a raw LaTeX backslash — the class
+ * that killed a completed D0.5.G verdict at round 60 ("Bad escaped character in
+ * JSON at position 1273"). This funnel backs `parseAgentJson`, every D-stage stdout
+ * boundary and every F-stage review/intervention payload, so wiring the repair here
+ * rather than per call site is what stops the class from resurfacing at whichever
+ * boundary next quotes inline math. See that helper for why the repair can make a
+ * parse succeed but never succeed DIFFERENTLY.
  */
 export function extractJsonObject(text: string): unknown {
   let firstParseError: unknown = null;
@@ -578,7 +588,7 @@ export function extractJsonObject(text: string): unknown {
       }
       const slice = candidate.slice(start, balancedEnd + 1);
       try {
-        parsed.push(JSON.parse(slice));
+        parsed.push(parseJsonWithEscapeRepair(slice));
         // Skip PAST this object, not one character into it.
         //
         // `cursor = start + 1` was the load-bearing defect: on a top-level parse
@@ -615,7 +625,7 @@ export function extractJsonObject(text: string): unknown {
     const lastEnd = candidate.lastIndexOf("}");
     if (firstStart !== -1 && lastEnd > firstStart) {
       try {
-        return JSON.parse(candidate.slice(firstStart, lastEnd + 1));
+        return parseJsonWithEscapeRepair(candidate.slice(firstStart, lastEnd + 1));
       } catch (err) {
         if (firstParseError === null) firstParseError = err;
       }

@@ -130,6 +130,7 @@ function isCatalogCoreEdit(edit: RawCoreEdit): boolean {
   return edit.kind === "assumption-replace" || edit.kind === "assumption-delete" ||
     edit.kind === "definition-add" || edit.kind === "definition-replace" || edit.kind === "definition-delete" ||
     edit.kind === "bibliography-replace" ||
+    edit.kind === "comparator-promise-table-replace" ||
     edit.kind === "symbol-add" || edit.kind === "symbol-replace" || edit.kind === "symbol-delete" ||
     edit.kind === "rebuild-reverse-dependencies";
 }

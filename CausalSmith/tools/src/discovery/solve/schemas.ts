@@ -9,6 +9,7 @@ import { z } from "zod";
 import {
   AssumptionSchema,
   BibEntrySchema,
+  ComparatorPromiseSchema,
   DefinitionSchema,
   ProjectJustificationSchema,
   StatementSchema,
@@ -74,6 +75,10 @@ export interface ProposedAssumption {
   reason: string; // why the proof genuinely needs it
   standard_or_novel: string; // "standard: <name/cite>" or "novel: <justification>"
   not_crux: string; // why this is NOT the node's own hard claim restated as a hypothesis
+  /** Symbol-table names the `condition` uses. Optional so an older payload still parses,
+   *  but it is what carries a symbol into the invalidation scope of every statement that
+   *  reaches that symbol only through this assumption — `d0_apply` used to stub `[]`. */
+  free_symbols?: string[];
 }
 
 export interface SolveUnitOutput {
@@ -134,6 +139,7 @@ const ProposedAssumptionSchema = z.object({
   reason: z.string(),
   standard_or_novel: z.string(),
   not_crux: z.string(),
+  free_symbols: z.array(z.string()).optional(),
 });
 
 // A statement replacement carries dependency/metadata only. Reusing StatementSchema
@@ -142,11 +148,32 @@ const ProposedAssumptionSchema = z.object({
 // StatementSchema invariant against a synthetic carried proof, then remove that sentinel.
 // `z.never()` rejects an authored proof before it can become part of the typed payload.
 const StatementReplacementSchema = z
-  .object({ proof_tex: z.never().optional() })
+  .object({
+    proof_tex: z.never().optional(),
+    // An OEQ replacement may synchronize the strongest proved partial result with
+    // its revised scope.  This is adjudication context, not a proof and not part of
+    // CoreStatement; apply continues to carry the authoritative partial from the
+    // working record.  Preserve it across the schema boundary instead of letting
+    // StatementSchema's ordinary unknown-key stripping silently erase it.
+    partial_result: z.string().optional(),
+  })
   .passthrough()
-  .transform((statement) => ({ ...statement, proof_tex: "<carried by apply>" }))
-  .pipe(StatementSchema)
-  .transform(({ proof_tex: _carriedProof, ...statement }) => statement);
+  .transform((payload, ctx) => {
+    const { partial_result: partialResult, ...statementPayload } = payload;
+    const parsed = StatementSchema.safeParse({
+      ...statementPayload,
+      proof_tex: "<carried by apply>",
+    });
+    if (!parsed.success) {
+      for (const issue of parsed.error.issues) ctx.addIssue(issue);
+      return z.NEVER;
+    }
+    const { proof_tex: _carriedProof, ...statement } = parsed.data;
+    return {
+      ...statement,
+      ...(partialResult !== undefined ? { partial_result: partialResult } : {}),
+    };
+  });
 
 const ProposedCoreEditSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -180,6 +207,12 @@ const ProposedCoreEditSchema = z.discriminatedUnion("kind", [
   }),
   z.object({
     kind: z.literal("bibliography-replace"), key: z.string(), proposed: BibEntrySchema,
+    reason: z.string(), direction: z.literal("correct"),
+  }),
+  z.object({
+    kind: z.literal("comparator-promise-table-replace"),
+    id: z.literal("metadata:comparator-promise-table"),
+    proposed: z.array(ComparatorPromiseSchema),
     reason: z.string(), direction: z.literal("correct"),
   }),
   z.object({

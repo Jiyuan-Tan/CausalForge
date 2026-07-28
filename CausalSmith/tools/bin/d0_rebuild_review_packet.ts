@@ -7,7 +7,7 @@
  * a normalized `d0_working.json:proposals` (the sole proposal carrier). It does
  * NOT touch proto_core, core.json, solved proofs, or the escalation journal.
  *
- * Usage: npx tsx tools/bin/d0_rebuild_review_packet.ts <qid> <spec>
+ * Usage: npx tsx tools/bin/d0_rebuild_review_packet.ts <qid> <spec> [--solve-json <path>]
  */
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -27,12 +27,19 @@ import {
 } from "../src/discovery/discovery_paths.js";
 import { loadWorkingState, saveWorkingState } from "../src/discovery/stages/d0_working.js";
 import { findCausalSmithRoot } from "../src/shared/repo_root.js";
+import { SolveUnitOutputSchema } from "../src/discovery/solve/schemas.js";
+import { parseRepairedModelJson } from "../src/discovery/core/core_io.js";
+import { reusableOeqAnswerMatches } from "../src/discovery/solve/merge.js";
 
 
 
 async function main(): Promise<void> {
   const [qid, spec] = process.argv.slice(2);
-  if (!qid || !spec) throw new Error("Usage: d0_rebuild_review_packet.ts <qid> <spec>");
+  const solveArg = process.argv.indexOf("--solve-json");
+  const solveJsonPath = solveArg === -1 ? undefined : process.argv[solveArg + 1];
+  if (!qid || !spec || (solveArg !== -1 && !solveJsonPath)) {
+    throw new Error("Usage: d0_rebuild_review_packet.ts <qid> <spec> [--solve-json <path>]");
+  }
   const ctx: PipelineContext = {
     repoRoot: findCausalSmithRoot(process.cwd()), qid, specialization: spec, dryRun: false, resume: true,
   };
@@ -76,20 +83,174 @@ async function main(): Promise<void> {
   const currentStatementById = new Map(core.statements.map((statement) => [statement.id, statement] as const));
   // Sole carrier: the proposals payload on the working cursor (the per-kind
   // mirror files are retired 2026-07-20).
-  const roundProposals = await readRoundProposals(ctx, working);
-  const existingProofs = roundProposals.proofs as Array<{ id: string; proof_tex: string }>;
-  const proofById = new Map<string, string>();
-  const addProof = (id: string, proofTex: string, source: string): void => {
+  let roundProposals = await readRoundProposals(ctx, working);
+  let recoveredSolveSource: string | undefined;
+  if (solveJsonPath) {
+    const absoluteSolvePath = path.resolve(solveJsonPath);
+    // The agent's solve output is dense TeX (statements + proof_tex). Read it through
+    // the same defense as the live solve boundary in `solve/dispatch.ts`; a raw parse
+    // here would fail the recovery on the very escape class it exists to recover from.
+    const recoveredOutput = SolveUnitOutputSchema.parse(
+      parseRepairedModelJson(await readFile(absoluteSolvePath, "utf8"), absoluteSolvePath),
+    );
+    if (recoveredOutput.open_obligations.length > 0) {
+      throw new Error(
+        "--solve-json recovery supports proposal checkpoints only; open obligations require a normal merge",
+      );
+    }
+    for (const statement of recoveredOutput.added_lemmas) {
+      const durable = working.solved[statement.id];
+      const durableStatement = durable?.node
+        ? { ...durable.node, proof_tex: durable.proof_tex }
+        : null;
+      if (
+        durable?.partial === true ||
+        !durableStatement ||
+        !reusableOeqAnswerMatches(durableStatement, statement)
+      ) {
+        throw new Error(
+          `--solve-json added statement ${statement.id} is not an exact settled durable re-emission; ` +
+          "a normal merge is required",
+        );
+      }
+    }
+    // A failed merge may have received an exact re-emission of an already mapped
+    // OEQ answer alongside the proposal. Verify that reuse conservatively, then keep
+    // the existing durable mapping; recovery must not install a theorem transition.
+    for (const resolution of recoveredOutput.resolved_oeqs) {
+      const mapping = working.resolved_oeqs?.[resolution.source_id];
+      const theoremId = typeof mapping === "string" ? mapping : mapping?.theorem_id;
+      const durable = working.solved[resolution.theorem.id];
+      const overlay = recoveredOutput.proposed_statement_changes
+        .find((change) => change.id === resolution.theorem.id);
+      const durableTheorem = durable?.node
+        ? {
+            ...durable.node,
+            proof_tex: durable.proof_tex,
+            ...(overlay ? { statement: overlay.proposed } : {}),
+          }
+        : null;
+      if (
+        theoremId !== resolution.theorem.id ||
+        durable?.partial === true ||
+        !durableTheorem ||
+        !reusableOeqAnswerMatches(durableTheorem, resolution.theorem)
+      ) {
+        throw new Error(
+          `--solve-json OEQ resolution ${resolution.source_id}->${resolution.theorem.id} is not an exact ` +
+          "reuse of the settled durable answer after its declared statement overlay",
+        );
+      }
+    }
+    // Prose is not a proposal carrier. Permit only byte-identical no-op echoes in a
+    // mechanical recovery; any real prose delta must pass through the normal merge.
+    const updates = recoveredOutput.prose_updates;
+    if (updates) {
+      const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
+      for (const field of ["tldr", "related_work", "interpretation", "technical_internal_limitation", "honest_scope"] as const) {
+        if (updates[field] !== undefined && !same(core[field], updates[field])) {
+          throw new Error(`--solve-json contains a non-no-op prose update for ${field}`);
+        }
+      }
+      for (const [field, value] of Object.entries(updates.project_justification ?? {})) {
+        if (!same(core.project_justification?.[field as keyof typeof core.project_justification], value)) {
+          throw new Error(`--solve-json contains a non-no-op prose update for project_justification.${field}`);
+        }
+      }
+      for (const [field, value] of Object.entries(updates.sampling_model ?? {})) {
+        if (!same(core.sampling_model?.[field], value)) {
+          throw new Error(`--solve-json contains a non-no-op prose update for sampling_model.${field}`);
+        }
+      }
+      for (const note of updates.statement_notes ?? []) {
+        const statement = core.statements.find((candidate) => candidate.id === note.id);
+        if (!statement || ["justification", "gap", "consumer"].some((field) =>
+          note[field as keyof typeof note] !== undefined &&
+          !same(statement[field as keyof typeof statement], note[field as keyof typeof note]))) {
+          throw new Error(`--solve-json contains a non-no-op statement note for ${note.id}`);
+        }
+      }
+    }
+    // OWNERSHIP. Every guard above validates `added_lemmas` / `resolved_oeqs` /
+    // `prose_updates` against this run's durable cursor — but the payload actually
+    // INSTALLED below was validated against nothing, and `SolveUnitOutputSchema` carries
+    // no qid. A solve file recovered from a DIFFERENT run whose proposals happen to touch
+    // none of those three sections passes every check, replaces this run's live bundle
+    // wholesale, and its proposal proofs are archived as `proposal-cleared`. Require each
+    // proposed id to name an object this run actually has.
+    const knownIds = new Set<string>([
+      ...core.statements.map((s) => s.id),
+      ...core.definitions.map((d) => d.id),
+      ...core.assumptions.map((a) => a.id),
+      ...Object.keys(working.solved ?? {}),
+    ]);
+    const foreign = [
+      ...recoveredOutput.proposed_statement_changes.map((c) => c.id),
+      ...recoveredOutput.proposed_definition_changes.map((c) => c.id),
+      ...recoveredOutput.proposed_assumptions.map((c) => c.id),
+    ].filter((id) => !knownIds.has(id));
+    if (foreign.length > 0) {
+      throw new Error(
+        `--solve-json proposes changes to ids this run does not define (${[...new Set(foreign)].join(", ")}); ` +
+        "the file almost certainly belongs to a different qid — refusing to replace this run's proposal bundle",
+      );
+    }
+    // A live bundle is adjudicated state. Recovery is for a bundle that was LOST, so
+    // silently overwriting a present one destroys decisions that were already made.
+    const liveProposalCount =
+      (working.proposals?.statements?.length ?? 0) +
+      (working.proposals?.definitions?.length ?? 0) +
+      (working.proposals?.assumptions?.length ?? 0) +
+      (working.proposals?.coreEdits?.length ?? 0);
+    if (liveProposalCount > 0 && !process.argv.includes("--replace-live-proposals")) {
+      throw new Error(
+        `--solve-json would replace ${liveProposalCount} live proposal(s) already on the working cursor. ` +
+        "Recovery is for a LOST bundle; pass --replace-live-proposals to overwrite deliberately",
+      );
+    }
+    const changedStatementIds = new Set(
+      recoveredOutput.proposed_statement_changes.map((change) => change.id),
+    );
+    roundProposals = {
+      statements: recoveredOutput.proposed_statement_changes,
+      definitions: recoveredOutput.proposed_definition_changes,
+      assumptions: recoveredOutput.proposed_assumptions,
+      coreEdits: recoveredOutput.proposed_core_edits,
+      proofs: recoveredOutput.proofs.filter((proof) =>
+        proof.argues_proposed === true && changedStatementIds.has(proof.id)),
+    };
+    // The filter mirrors apply's `claimChangedIds`, which is correct — but every OTHER
+    // proof in the recovered file is real new mathematics the failed merge produced, and
+    // dropping it silently leaves the node open to be re-solved at full cost with no
+    // record that a proof existed. Name them.
+    const droppedProofIds = recoveredOutput.proofs
+      .filter((proof) => !(proof.argues_proposed === true && changedStatementIds.has(proof.id)))
+      .map((proof) => proof.id);
+    if (droppedProofIds.length > 0) {
+      console.warn(
+        `[causalsmith] --solve-json recovery kept only proposal-arguing proofs; ` +
+        `${droppedProofIds.length} other proof(s) in the file were NOT installed: ${droppedProofIds.join(", ")}. ` +
+        "Re-run a normal merge if those proofs are needed.",
+      );
+    }
+    recoveredSolveSource = absoluteSolvePath;
+  }
+  const existingProofs = roundProposals.proofs as Array<{ id: string; proof_tex: string; argues_proposed?: boolean }>;
+  const proofById = new Map<string, { proof_tex: string; argues_proposed?: boolean }>();
+  const addProof = (id: string, proofTex: string, source: string, arguesProposed = false): void => {
     if (!id || !proofTex.trim()) return;
     const prior = proofById.get(id);
-    if (prior !== undefined && prior !== proofTex) {
+    if (prior !== undefined && prior.proof_tex !== proofTex) {
       throw new Error(`Conflicting ${source} proof for ${id}; refusing to choose one payload`);
     }
-    proofById.set(id, proofTex);
+    proofById.set(id, {
+      proof_tex: proofTex,
+      ...((prior?.argues_proposed || arguesProposed) ? { argues_proposed: true } : {}),
+    });
   };
   for (const proof of existingProofs) {
     if (currentStatementById.get(proof.id)?.kind === "openendedquestion") continue;
-    addProof(proof.id, proof.proof_tex, "proposal-artifact");
+    addProof(proof.id, proof.proof_tex, "proposal-artifact", proof.argues_proposed === true);
   }
 
   const currentIds = new Set(currentStatementById.keys());
@@ -106,7 +267,7 @@ async function main(): Promise<void> {
     if (!proofById.has(id)) recovered.push(id);
     addProof(id, record.proof_tex, "durable-working-state");
   }
-  const provisionalProofs = [...proofById].map(([id, proof_tex]) => ({ id, proof_tex }));
+  const provisionalProofs = [...proofById].map(([id, proof]) => ({ id, ...proof }));
 
   const proposedStatementChanges = roundProposals.statements as unknown[];
   const proposedDefinitionChanges = roundProposals.definitions as unknown[];
@@ -130,7 +291,11 @@ async function main(): Promise<void> {
     if (!original) continue;
     const proposedProof = typeof edit.proposed.proof_tex === "string" ? edit.proposed.proof_tex : undefined;
     const durableProof = working.solved[edit.id]?.proof_tex;
-    const packetProof = proofById.get(edit.id);
+    const packetProof = proofById.get(edit.id)?.proof_tex;
+    // Absence is the canonical statement-replace contract: apply carries the
+    // authoritative proof independently. Only a redundantly authored proof needs
+    // normalization/verification below.
+    if (proposedProof === undefined) continue;
     if (proposedProof === original.proof_tex) {
       if (durableProof && durableProof !== (original.proof_tex ?? "")) {
         normalizedStatementReplaceProofIds.push(edit.id);
@@ -169,6 +334,7 @@ async function main(): Promise<void> {
       provisionalProofs,
       recovery: {
         mode: "mechanical-no-solver",
+        ...(recoveredSolveSource ? { recovered_solve_source: recoveredSolveSource } : {}),
         current_core_source: existsSync(publishedCorePath)
           ? "published-core"
           : "current-proto-plus-durable-provisional-proofs",

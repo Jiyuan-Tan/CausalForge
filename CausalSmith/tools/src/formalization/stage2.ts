@@ -2,7 +2,7 @@
 
 import path from "node:path";
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { MODEL_PLAN } from "../constants.js";
 import type { Intervention, ReviewResult } from "../judgment.js";
 import type { PipelineContext, StageResult, StateJson } from "../types.js";
@@ -49,6 +49,7 @@ import {
   type StatementSemanticDef,
 } from "./crosswalk.js";
 import { laterStageEverRan } from "../shared/resume_mode.js";
+import { parseJsonWithEscapeRepair } from "../shared/codex_json.js";
 import { buildRunModules } from "./proof_review_loop.js";
 
 /** Headline nodes whose statement meaning changed through an untagged inline
@@ -82,6 +83,23 @@ export function pendingSourceRewindDirtyNodeIds(state: StateJson): string[] {
   const rewind = state.flags.source_rewind;
   if (rewind?.status !== "applied") return [];
   return [...new Set(rewind.dirty_nodes)].sort();
+}
+
+/** Restore pre-existing Lean files that a revise producer deleted. F2 revise is
+ * patch-in-place: removing an entire prior module is never an acceptable implicit
+ * side effect. The caller fails closed after restoration so the deletion cannot
+ * be mistaken for a successful incremental scaffold. */
+export async function restoreDeletedReviseFiles(
+  snapshot: Map<string, string>,
+): Promise<string[]> {
+  const restored: string[] = [];
+  for (const [file, source] of snapshot) {
+    if (existsSync(file)) continue;
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(file, source, "utf8");
+    restored.push(file);
+  }
+  return restored.sort();
 }
 
 /** Parse `-- @node: <id>` and `-- @env: <id>` tag comments from every .lean file in
@@ -143,29 +161,54 @@ export async function findDuplicateLeanNodeAnchors(
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 
-function nonEmittedLocalIdsFromPlan(planText: string): Set<string> {
-  if (!planText.trim()) return new Set();
+/**
+ * Parse `plan.json` for a producer-prompt directive builder.
+ *
+ * A plan that EXISTS but will not parse is a FAULT, not an absence. Returning an empty
+ * directive here silently deletes a load-bearing block from the F2 prompt — the
+ * UNDELIVERED list, or the gated-hyps instruction — and the run then fails downstream
+ * looking exactly like a model that ignored its instructions, with nothing in the
+ * transcript saying the instruction was never sent. Escape repair is applied first so an
+ * agent-written plan carrying a raw `\(x\)` parses rather than tripping this.
+ */
+type PlanShape = ReturnType<typeof PlanSchema.parse>;
+
+function parsePlanForDirective(planText: string, directive: string): PlanShape | null {
+  if (!planText.trim()) return null;
+  let raw: unknown;
   try {
-    const parsed = PlanSchema.safeParse(JSON.parse(planText));
-    if (!parsed.success) return new Set();
-    return new Set(
-      Object.values(parsed.data.nodes)
-        .filter((n) => (n.gate || n.delivery_status === "undelivered") && n.local_id)
-        .map((n) => n.local_id!),
+    raw = parseJsonWithEscapeRepair(planText);
+  } catch (err) {
+    throw new Error(
+      `F2 ${directive}: plan.json is present but unparseable (${err instanceof Error ? err.message : String(err)}). ` +
+        "Refusing to build the producer prompt with this directive silently omitted — re-emit a well-formed plan.",
     );
-  } catch {
-    return new Set();
   }
+  const parsed = PlanSchema.safeParse(raw);
+  if (!parsed.success) {
+    console.warn(`[causalsmith] F2 ${directive}: plan.json is not schema-valid; directive omitted from the producer prompt.`);
+    return null;
+  }
+  return parsed.data;
+}
+
+function nonEmittedLocalIdsFromPlan(planText: string): Set<string> {
+  const plan = parsePlanForDirective(planText, "non-emitted local ids");
+  if (!plan) return new Set();
+  return new Set(
+    Object.values(plan.nodes)
+      .filter((n) => (n.gate || n.delivery_status === "undelivered") && n.local_id)
+      .map((n) => n.local_id!),
+  );
 }
 
 /** Durable F2 instruction for disclosed non-delivery. These nodes remain in the
  * core/plan/graph, but must have no Lean declaration or @node anchor. */
 export function undeliveredBlockFromPlan(planText: string): string {
-  if (!planText.trim()) return "";
-  try {
-    const parsed = PlanSchema.safeParse(JSON.parse(planText));
-    if (!parsed.success) return "";
-    const rows = Object.entries(parsed.data.nodes)
+  const plan = parsePlanForDirective(planText, "undelivered-objects block");
+  if (!plan) return "";
+  {
+    const rows = Object.entries(plan.nodes)
       .filter(([, n]) => n.delivery_status === "undelivered")
       .map(([id, n]) => `  • ${id} (${n.delivery_role ?? "cited"}): ${n.delivery_reason ?? "reason missing"}`);
     if (rows.length === 0) return "";
@@ -179,8 +222,6 @@ export function undeliveredBlockFromPlan(planText: string): string {
       "=== END UNDELIVERED OBJECTS ===",
       "",
     ].join("\n");
-  } catch {
-    return "";
   }
 }
 
@@ -192,15 +233,9 @@ export function undeliveredBlockFromPlan(planText: string): string {
  *  it from the plan (not a hand-set free-text directive) is what lets `bin/gate.ts` register a durable
  *  gate that survives every re-scaffold with no hand-editing. Empty when there are no gated nodes. */
 function gatedHypsBlockFromPlan(planText: string): string {
-  if (!planText.trim()) return "";
-  let plan: { nodes?: Record<string, { gate?: boolean; gate_class?: string; lean_name?: string; hyps?: string[] }> };
-  try {
-    const parsed = PlanSchema.safeParse(JSON.parse(planText));
-    if (!parsed.success) return "";
-    plan = parsed.data as typeof plan;
-  } catch {
-    return "";
-  }
+  const parsedPlan = parsePlanForDirective(planText, "gated-hypothesis directive");
+  if (!parsedPlan) return "";
+  const plan = parsedPlan as { nodes?: Record<string, { gate?: boolean; gate_class?: string; lean_name?: string; hyps?: string[] }> };
   const nodes = plan.nodes ?? {};
   const gated: { leanName: string; consumers: string[] }[] = [];
   for (const [id, n] of Object.entries(nodes)) {
@@ -327,10 +362,18 @@ export async function runStage2(args: {
   // (Not used on a true attempt 1, where there is no prior scaffold to patch.)
   let reviseBlock = "";
   const hasLaterStageHistory = await laterStageEverRan(args.ctx, args.state, "2");
+  // Post-pivot cold start: a stage_neg1 pivot retired the on-disk `.lean` tree (it
+  // realizes the ABANDONED angle). `hasLaterStageHistory` is monotone (append-only log),
+  // so without this marker F2 would patch the dead angle's files in place — "preserve
+  // existing proof bodies" grafts the new angle's mathematics onto dead work. Cleared on
+  // the first completed post-pivot scaffold below, so later revise/redirect rounds on
+  // the NEW scaffold patch normally.
+  const scaffoldRetired = args.state.flags.f2_scaffold_retired === true;
   const patchInPlace =
-    args.priorReview?.status === "revise" ||
-    !!args.state.flags.scaffold_redirect ||
-    hasLaterStageHistory;
+    !scaffoldRetired &&
+    (args.priorReview?.status === "revise" ||
+      !!args.state.flags.scaffold_redirect ||
+      hasLaterStageHistory);
   if (patchInPlace && existsSync(paths.leanDir)) {
     const existing = (await listLeanFiles(paths.leanDir)).sort();
     if (existing.length > 0) {
@@ -399,6 +442,12 @@ export async function runStage2(args: {
   // signature match (see injectCarryoverComments after the producer runs). Empty
   // on a first scaffold or a sorry-only prior (nothing to preserve).
   const priorProofs = await snapshotPriorProofs(paths.leanDir);
+  const priorReviseFiles = new Map<string, string>();
+  if (patchInPlace && existsSync(paths.leanDir)) {
+    for (const file of await listLeanFiles(paths.leanDir)) {
+      priorReviseFiles.set(file, await readFile(file, "utf8"));
+    }
+  }
   // Snapshot the typed-theorem → meaning-bearing inline-def closure before the
   // producer edits.  This is deliberately separate from proof carry-over: a
   // theorem can keep the same signature/proof while an output structure or
@@ -442,6 +491,10 @@ export async function runStage2(args: {
       reasoningEffort: (plan.effort ?? "high") as "minimal" | "low" | "medium" | "high" | "xhigh",
       inactivityTimeoutMs: 30 * 60 * 1000,
       leanLsp: true,
+      // A redirect is invoked from the combined F2.5 loop, whose default cwd is
+      // paper-local tmp/. F2 edits production Lean, so keep Codex rooted at the
+      // explicit package cwd instead of trapping it in the scratch sandbox.
+      productionWrite: true,
     });
     out = res.stdout;
   } else {
@@ -470,6 +523,13 @@ export async function runStage2(args: {
         ],
       },
     });
+  }
+  const restoredDeletedFiles = await restoreDeletedReviseFiles(priorReviseFiles);
+  if (restoredDeletedFiles.length > 0) {
+    throw new Error(
+      "F2 revise preservation gate restored file(s) deleted by the producer; refusing the non-incremental scaffold:\n  " +
+        restoredDeletedFiles.join("\n  "),
+    );
   }
   const parsed = parseStageOutput(out);
   if (parsed.status === "blocked-missing-architecture") {
@@ -607,6 +667,9 @@ export async function runStage2(args: {
   // accumulates over the run.
   if (parsed.status === "completed") {
     args.state.flags.scaffold_redirect = null;
+    // A fresh scaffold for the CURRENT angle now exists on disk; the post-pivot
+    // retirement marker is consumed (later F2 passes patch THIS scaffold).
+    if (args.state.flags.f2_scaffold_retired) delete args.state.flags.f2_scaffold_retired;
   }
   // Sync-back check. The worker may have updated plan.json on
   // deviation (a planned reuse that did not type-fit; an atom better as a named def);
@@ -627,7 +690,7 @@ export async function runStage2(args: {
       }
       if (gateInputsPresent) {
         const core = CoreSchema.parse(JSON.parse(await readFile(corePath, "utf8")));
-        const planObj = JSON.parse(await readFile(paths.plan, "utf8"));
+        const planObj = parseJsonWithEscapeRepair(await readFile(paths.plan, "utf8"));
         const leanTags = await parseLeanNodeTags(paths.leanDir);
         const leanDeclNames = new Set((await parseLeanDecls(paths.leanDir, { includeLemmas: true })).map((decl) => decl.name));
         let knownDecls: Set<string> | undefined;

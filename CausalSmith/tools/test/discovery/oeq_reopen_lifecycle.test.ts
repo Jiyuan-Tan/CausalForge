@@ -57,7 +57,7 @@ const proto = {
   bibliography: [{ key: "Rosenbaum1983" }],
 };
 
-function resolutionSolver(emittedAnswer: object): StageDeps {
+function resolutionSolver(emittedAnswer: object, proposedStatementChanges: object[] = []): StageDeps {
   let emittedResolution = false;
   return {
     runCodex: async ({ prompt }: { prompt: string }) => {
@@ -74,7 +74,9 @@ function resolutionSolver(emittedAnswer: object): StageDeps {
             proof_tex: target.id === answer.id ? answer.proof_tex : "QED.",
           })),
         resolved_oeqs: resolvesQuestion ? [{ source_id: question.id, theorem: emittedAnswer }] : [],
-        added_lemmas: [], proposed_statement_changes: [], proposed_definition_changes: [],
+        added_lemmas: [],
+        proposed_statement_changes: resolvesQuestion ? proposedStatementChanges : [],
+        proposed_definition_changes: [],
         proposed_assumptions: [], proposed_core_edits: [], open_obligations: [],
       }), "utf8");
       return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
@@ -273,6 +275,117 @@ describe("resolved OEQ reopen lifecycle", () => {
       expect(retriedCore.statements.filter((s) => s.id === answer.id)).toHaveLength(1);
       expect(retriedCore.statements.some((s) => s.id === question.id)).toBe(false);
       expect(retriedWorking.resolved_oeqs?.[question.id]).toMatchObject({ theorem_id: answer.id });
+    } finally {
+      await h.dispose();
+    }
+  });
+
+  it("accepts an identical OEQ answer re-derived over its stale open projection", async () => {
+    const h = await createDStageHarness({ qid: proto.qid, specialization: "v1", proto });
+    try {
+      await seedReopenedQuestion(h);
+      const changedProto = structuredClone(proto);
+      changedProto.assumptions[0].condition =
+        "the propensity is bounded away from zero and one by a revised constant";
+      await h.writeProto(changedProto as never);
+
+      await expect(runStage0Solve({
+        ctx: h.ctx(), state: h.state(), deps: resolutionSolver(answer),
+      })).resolves.toBeDefined();
+
+      const working = await h.readWorking();
+      expect(working.solved[answer.id]).toMatchObject({
+        proof_tex: answer.proof_tex,
+        node: { statement: answer.statement, status: "proved" },
+      });
+      expect(working.solved[answer.id].partial).toBeUndefined();
+      expect(working.resolved_oeqs?.[question.id]).toMatchObject({ theorem_id: answer.id });
+    } finally {
+      await h.dispose();
+    }
+  });
+
+  // REGRESSION. The solver may re-emit a resolution WITHOUT a duplicate `proofs[]` entry
+  // for the answer id — the schema and prompt both allow it (only a proof on the SOURCE id
+  // is forbidden). Every other test here happens to emit one, so the proof lands via the
+  // ordinary proof path and the resolution INSTALLER is never exercised. Without it, the
+  // installer saw the id already present (as the open projection), took the
+  // exact-re-emission no-op branch, and discarded the proved answer: the core kept the
+  // `to-prove` placeholder and the emitted proof bytes were persisted nowhere.
+  it("installs a re-derived answer over its open projection when no duplicate proof is emitted", async () => {
+    const resolutionOnlySolver = (): StageDeps => ({
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const segment = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(segment.slice(segment.indexOf("["), segment.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        await writeFile(outPath, JSON.stringify({
+          // Deliberately NO proofs[] entry for the answer id.
+          proofs: targets
+            .filter((target) => target.id !== question.id && target.id !== answer.id)
+            .map((target) => ({ id: target.id, proof_tex: "QED." })),
+          resolved_oeqs: targets.some((target) => target.id === question.id)
+            ? [{ source_id: question.id, theorem: answer }]
+            : [],
+          added_lemmas: [],
+          proposed_statement_changes: [], proposed_definition_changes: [],
+          proposed_assumptions: [], proposed_core_edits: [], open_obligations: [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    });
+
+    const h = await createDStageHarness({ qid: proto.qid, specialization: "v1", proto });
+    try {
+      await seedReopenedQuestion(h);
+      const changedProto = structuredClone(proto);
+      changedProto.assumptions[0].condition =
+        "the propensity is bounded away from zero and one by a revised constant";
+      await h.writeProto(changedProto as never);
+
+      await runStage0Solve({ ctx: h.ctx(), state: h.state(), deps: resolutionOnlySolver() });
+
+      // The proved answer must REPLACE the open projection in the durable core...
+      const core = await h.readCore();
+      const installed = core.statements.find((s) => s.id === answer.id);
+      expect(installed).toMatchObject({ statement: answer.statement, status: "proved" });
+      // ...and the working cursor must carry it as settled, not partial.
+      const working = await h.readWorking();
+      expect(working.solved[answer.id].partial).toBeUndefined();
+      expect(working.solved[answer.id].proof_tex).toBe(answer.proof_tex);
+      expect(working.resolved_oeqs?.[question.id]).toMatchObject({ theorem_id: answer.id });
+    } finally {
+      await h.dispose();
+    }
+  });
+
+  it("gates a proposal-backed OEQ answer cleanup before installing the new text", async () => {
+    const h = await createDStageHarness({ qid: proto.qid, specialization: "v1", proto });
+    try {
+      await seedReopenedQuestion(h);
+      const changedProto = structuredClone(proto);
+      changedProto.assumptions[0].condition =
+        "the propensity is bounded away from zero and one by a revised constant";
+      await h.writeProto(changedProto as never);
+      const cleaned = { ...answer, statement: "Uniform root-n local power fails on the tie subexperiment (clean rendering)." };
+      const change = {
+        id: answer.id,
+        current: answer.statement,
+        proposed: cleaned.statement,
+        reason: "remove serialization debris without changing the claim",
+        direction: "narrow",
+      };
+
+      await expect(runStage0Solve({
+        ctx: h.ctx(), state: h.state(), deps: resolutionSolver(cleaned, [change]),
+      })).resolves.toBeDefined();
+
+      const working = await h.readWorking();
+      expect(working.proposals?.statements).toEqual([change]);
+      // The unadjudicated overlay is not installed merely because the resolution
+      // theorem re-emitted it; apply owns that transition after review.
+      expect(working.solved[answer.id].node?.statement).toBe(answer.statement);
     } finally {
       await h.dispose();
     }

@@ -174,7 +174,11 @@ export interface RoundViolation {
     | "snapshot-basis"
     | "hollow-proof"
     | "silent-node-loss"
-    | "dependency-cycle";
+    | "dependency-cycle"
+    // Cross-store contradictions added after the 2026-07 rewind audit (warn-tier).
+    | "oeq-source-retired"
+    | "oeq-source-record-retired"
+    | "proved-not-partial";
   /** One line explaining what this means and why it matters. */
   detail: string;
   /** The offending node ids (or `source->answer` pairs), for a receipts-bearing log line. */
@@ -346,6 +350,92 @@ function checkDependencyCycle({ core }: RoundInvariantInput): RoundViolation | n
   };
 }
 
+// ---------------------------------------------------------------------------
+// Cross-store contradictions added after the 2026-07 cross-stage rewind audit.
+// All WARN-tier (registered in CHECKS below): the danger is silence, and a false
+// positive at the commit boundary must never abort a paid round. Each was
+// validated against every real (core.json, d0_working.json) pair under
+// doc/research/{active,_bank} before landing: zero hits on healthy states, one
+// GENUINE historical hit (`proved-not-partial` on the banked
+// exp_saturation_skew_threshold_v1 run — see that check).
+//
+// Deliberately NOT added, after the same audit killed them:
+//  - a before/after snapshot-basis-monotone check: carry is BY REFERENCE
+//    (`context.ts` does `next.solved[id] = rec` with `rec = prev.solved[id]`), and
+//    `refreshSnapshots` mutates `rec.snapshot` on that shared object, so any
+//    in-memory before/after comparison sees one object against itself — dead code.
+//    `checkSnapshotBasis` above remains tautological w.r.t. basis SHRINKAGE for the
+//    same structural reason (it compares against `snapshotMember`, the function
+//    that produced the shrunken value); detecting that fault class needs a
+//    deep-copied carry, a broader change than a warn check can justify.
+//  - an "OEQ answer must be settled" check: a resolved OEQ whose answer's basis
+//    moved is DELIBERATELY re-inserted as `to-prove` under the same id (see the
+//    stale-recovery comment in `solve/context.ts`) — the check fires on a state
+//    the codebase produces on purpose.
+//  - a core-vs-cursor proof-bytes-agree check: `repairCoreLatexSerialization`
+//    (merge) legitimately rewrites core proof_tex while the cursor keeps raw
+//    solver bytes, so byte divergence is not evidence of a different argument.
+// ---------------------------------------------------------------------------
+
+/** An ANSWERED question must not still be published as a live core node. Assembly
+ *  filters the source out and merge removes a freshly resolved (or temporarily
+ *  force-restored) source before commit, so at the commit boundary a live `oeq:`
+ *  source that `resolved_oeqs` says is answered means the two stores contradict —
+ *  and the discharge gate exempts `oeq:` ids, so the contradiction would pass as a
+ *  clean discharge. Keyed on the resolution map (id-based), not on `kind`, so a
+ *  mis-kinded node on an answered source id cannot slip past. */
+function checkOeqSourceRetired({ core, after }: RoundInvariantInput): RoundViolation | null {
+  const answered = new Set(Object.keys(after.resolved_oeqs ?? {}));
+  if (answered.size === 0) return null;
+  const ids = core.statements.filter((s) => answered.has(s.id)).map((s) => s.id);
+  return ids.length === 0 ? null : {
+    code: "oeq-source-retired",
+    detail:
+      "an answered open question is still a live node in the assembled core; the core and the " +
+      "working cursor contradict each other, and the discharge gate exempts `oeq:` ids so this " +
+      "would pass as a clean discharge",
+    ids,
+  };
+}
+
+/** The answered source's working RECORD must be retired too (merge deletes
+ *  `next.solved[sourceId]` when a resolution lands; the answer lives under the
+ *  theorem id). A surviving source record is an orphan `planCarry` classifies
+ *  `dropped` — and it can be re-injected as a stale solve target. */
+function checkOeqSourceRecordRetired({ after }: RoundInvariantInput): RoundViolation | null {
+  const ids = Object.keys(after.resolved_oeqs ?? {}).filter((src) => after.solved[src] !== undefined);
+  return ids.length === 0 ? null : {
+    code: "oeq-source-record-retired",
+    detail:
+      "an answered open question still has a working record under its source id; the answer " +
+      "lives under the theorem id, so this record is an orphan that can resurface as a stale target",
+    ids,
+  };
+}
+
+/** The two stores must agree on whether a node is FINISHED. A core node published
+ *  `status:"proved"` whose cursor record is `partial:true` is invisible to the
+ *  discharge gate (which counts only `to-prove`) while the cursor says the proof is
+ *  an open obligation — so the round can discharge "cleanly" without ever
+ *  re-deriving it, and the contradiction ships. Observed for real: the banked
+ *  exp_saturation_skew_threshold_v1 run ended with `oeq:full-branch-optimizer-map`
+ *  proved in core.json over DIFFERENT bytes than its partial cursor record.
+ *  Restricted to `proved` — `cited`-with-partial is the deliberate
+ *  awaiting-revalidation state (see the frozen-member carry in `solve/context.ts`). */
+function checkProvedNotPartial({ core, after }: RoundInvariantInput): RoundViolation | null {
+  const ids = core.statements
+    .filter((s) => s.status === "proved" && after.solved[s.id]?.partial === true)
+    .map((s) => s.id);
+  return ids.length === 0 ? null : {
+    code: "proved-not-partial",
+    detail:
+      "node(s) published `proved` in the core while the working cursor marks them partial " +
+      "(open obligation); the discharge gate cannot see them, so the round can complete " +
+      "without re-deriving them and the contradiction ships",
+    ids,
+  };
+}
+
 const CHECKS = [
   checkStoreCoherence,
   checkDanglingResolution,
@@ -354,6 +444,9 @@ const CHECKS = [
   checkHollowProofs,
   checkSilentNodeLoss,
   checkDependencyCycle,
+  checkOeqSourceRetired,
+  checkOeqSourceRecordRetired,
+  checkProvedNotPartial,
 ] as const;
 
 /** Run every round-level invariant. Empty result means the round left a coherent state. */

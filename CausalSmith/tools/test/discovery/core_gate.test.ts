@@ -90,7 +90,7 @@ describe("D0 structural gate — A6-class breakage is rejected", () => {
 
   it("G1: an undeclared free symbol is rejected", () => {
     const core = clone();
-    core.assumptions.find((x) => x.id === "ass:tail")!.free_symbols.push("undeclared_symbol");
+    core.assumptions.find((x) => x.id === "ass:tail")!.free_symbols!.push("undeclared_symbol");
     const res = runStructuralGate(core, { requireDischarged: true });
     expect(res.ok).toBe(false);
     expect(codes(res.violations)).toContain("G1");

@@ -255,6 +255,50 @@ export function repairInvalidStringEscapes(s: string): string | null {
   return changed ? out : null;
 }
 
+/**
+ * `JSON.parse` with ONE retry through `repairInvalidStringEscapes`. The canonical
+ * entry point for any model-authored JSON — agent stdout or a file an agent wrote
+ * itself (`plan.json`, solve round files) — whose fields can carry LaTeX.
+ *
+ * Use this instead of a bare `JSON.parse` at every model boundary. Because the
+ * repair fires only on byte sequences `JSON.parse` already rejects and cannot alter
+ * structure, this is a strict extension of `JSON.parse`: identical on every input
+ * that parsed before, and successful on the inline-math payloads that previously
+ * cost a whole stage. It deliberately does NOT apply the TeX-ambiguous repairs
+ * (`normalizeRawModelJson`), which require the payload to be known TeX.
+ *
+ * On unrepairable input the ORIGINAL parse error is thrown: the repair is a salvage
+ * attempt, and its own error would misdescribe output malformed for another reason.
+ */
+export function parseJsonWithEscapeRepair(text: string): unknown {
+  return parseJsonWithEscapeRepairStatus(text).value;
+}
+
+/**
+ * `parseJsonWithEscapeRepair`, additionally reporting whether the repair was needed.
+ *
+ * A caller holding a DURABLE store must persist the reparsed value when `repaired` is
+ * true. Repairing in memory only is worse than not repairing at all: the store stays
+ * unparseable on disk while the gate that used to reject it now passes, so the fault
+ * travels downstream to whichever reader does a bare `JSON.parse` — and if that reader
+ * is fail-open, the corruption becomes a silently missing prompt section rather than an
+ * error. That is exactly how a raw `\(x\)` in `plan.json` reached F2 with two directive
+ * blocks quietly deleted.
+ */
+export function parseJsonWithEscapeRepairStatus(text: string): { value: unknown; repaired: boolean } {
+  try {
+    return { value: JSON.parse(text), repaired: false };
+  } catch (err) {
+    const repaired = repairInvalidStringEscapes(text);
+    if (repaired === null) throw err;
+    try {
+      return { value: JSON.parse(repaired), repaired: true };
+    } catch {
+      throw err;
+    }
+  }
+}
+
 /** Count occurrences of a single-character bracket OUTSIDE of JSON strings. */
 function countUnquoted(s: string, ch: string): number {
   let n = 0;

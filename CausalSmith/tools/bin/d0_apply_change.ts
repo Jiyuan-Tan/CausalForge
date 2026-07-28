@@ -12,7 +12,7 @@
  * auditable path for applying the ids the orchestrator accepted.
  *
  * Usage:
- *   npx tsx tools/bin/d0_apply_change.ts <qid> <spec> [--ids id1,id2 | --id <id> ... | --all] [--note "..."] [--check]
+ *   npx tsx tools/bin/d0_apply_change.ts <qid> <spec> [--ids id1,id2 | --id <id> ... | --all | --discard-all] [--note "..."] [--check]
  *   (--id is repeatable and comma-safe; required for LaTeX symbol ids containing commas)
  *
  * SELECTORS may be kind-qualified. A bare id selects that node in every proposal
@@ -32,7 +32,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import { applyProposedChanges, parseProposalSelectors, validateProposalSelectors } from "../src/discovery/stages/d0_apply.js";
+import { applyProposedChanges, discardAllProposedChanges, parseProposalSelectors, validateProposalSelectors } from "../src/discovery/stages/d0_apply.js";
 import type { PipelineContext } from "../src/types.js";
 import { findCausalSmithRoot } from "../src/shared/repo_root.js";
 
@@ -85,6 +85,8 @@ export async function main(): Promise<void> {
   if (noteIdx !== -1) args.splice(noteIdx, 2);
   const all = args.indexOf("--all");
   if (all !== -1) args.splice(all, 1);
+  const discardAll = args.indexOf("--discard-all");
+  if (discardAll !== -1) args.splice(discardAll, 1);
   const checkOnly = args.indexOf("--check");
   if (checkOnly !== -1) args.splice(checkOnly, 1);
   // REFUSE UNKNOWN FLAGS. Every recognized flag is spliced out above, so anything
@@ -99,7 +101,7 @@ export async function main(): Promise<void> {
   if (unknown.length > 0) {
     console.error(
       `d0_apply_change: unrecognized flag(s) ${unknown.join(", ")} — nothing was mutated. ` +
-        "Valid flags: --ids id1,id2 | --id <id> (repeatable) | --all | --note \"...\" | --check " +
+        "Valid flags: --ids id1,id2 | --id <id> (repeatable) | --all | --discard-all | --note \"...\" | --check " +
         "(--check is the preview; there is no --dry-run).",
     );
     process.exitCode = 1;
@@ -115,10 +117,11 @@ export async function main(): Promise<void> {
   // applyProposedChanges treats as "apply everything" — i.e. omitting both flags was
   // silently --all. Applying an entire proposal bundle is never something to do by
   // accident; require the intent explicitly.
-  if (ids === null && all === -1) {
+  if (ids === null && all === -1 && discardAll === -1) {
     console.error(
       "d0_apply_change: refusing to apply. Pass --ids id1,id2 to apply specific proposals, or --all to apply " +
-        "the whole bundle. (Omitting both previously meant --all by accident.)",
+        "the whole bundle, or --discard-all to consume a fully review-rejected bundle. " +
+        "(Omitting all three previously meant --all by accident.)",
     );
     process.exitCode = 1;
     return;
@@ -128,8 +131,24 @@ export async function main(): Promise<void> {
     process.exitCode = 1;
     return;
   }
+  if (discardAll !== -1 && (ids !== null || all !== -1)) {
+    console.error("d0_apply_change: --discard-all is mutually exclusive with --ids/--id/--all.");
+    process.exitCode = 1;
+    return;
+  }
   const repoRoot = findCausalSmithRoot(process.cwd());
   const ctx: PipelineContext = { repoRoot, qid, specialization: spec, dryRun: false, resume: false };
+  if (discardAll !== -1) {
+    if (!note?.trim()) {
+      console.error("d0_apply_change: --discard-all requires --note with the review rejection rationale.");
+      process.exitCode = 1;
+      return;
+    }
+    const count = await discardAllProposedChanges({ ctx, note, checkOnly: checkOnly !== -1 });
+    console.log(`${checkOnly !== -1 ? "Validated discard of" : "Discarded"} ${count} fully rejected proposal variant(s)` +
+      `${checkOnly !== -1 ? " with no mutation" : " without mutating the proto; rejection logged"}.`);
+    return;
+  }
 
   // VALIDATE BEFORE MUTATING. Every rejection below used to be reported AFTER a real
   // apply had already rewound `stage_completed`, rewritten the proto, appended the

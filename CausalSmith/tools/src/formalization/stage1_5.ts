@@ -21,6 +21,7 @@ import { coreJsonPath } from "../discovery/stages/d0_core.js";
 import { CoreSchema } from "../discovery/core/schema.js";
 import { runPlanGate } from "../formalization/plan/plan_gate.js";
 import { createRetrieval } from "../formalization/reuse_retrieval.js";
+import { parseJsonWithEscapeRepair } from "../shared/codex_json.js";
 
 /** Run the deterministic plan gate over the just-written plan. Returns a synthetic
  *  `revise` verdict (routing F1 to fix the mechanical violations) when it fails, or
@@ -54,7 +55,7 @@ export async function planGatePrelint(
   }
   let planObj: unknown;
   try {
-    planObj = JSON.parse(await readFile(planPath, "utf8"));
+    planObj = parseJsonWithEscapeRepair(await readFile(planPath, "utf8"));
   } catch (err) {
     return {
       status: "revise",

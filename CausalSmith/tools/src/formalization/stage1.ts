@@ -8,7 +8,8 @@
 // implements that plan. See CausalSmith/doc/research/F1_F2_PLAN_REDESIGN.md.
 
 import { existsSync } from "node:fs";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { MODEL_PLAN } from "../constants.js";
 import type { Intervention, ReviewResult } from "../judgment.js";
 import type { PipelineContext, StageResult, StateJson } from "../types.js";
@@ -29,7 +30,8 @@ import { dispatchClaudeAgent } from "../framework/agent_dispatch.js";
 import { buildGraphFromMd } from "../graph/from_note.js";
 import { buildGraphFromCorePlan } from "../graph/from_core.js";
 import { renderBridgeNote } from "../graph/render_note.js";
-import { graphPath, saveGraph } from "../graph/store.js";
+import { graphPath, loadGraph, saveGraph } from "../graph/store.js";
+import { mergeStage1RevisionGraph } from "../graph/revise_merge.js";
 import {
   recordMissingArchitecture,
   missingArchitectureLedgerPath,
@@ -41,6 +43,7 @@ import { PlanSchema, deriveFeasibility } from "../formalization/plan/schema.js";
 import { createRetrieval } from "../formalization/reuse_retrieval.js";
 import { coreReuseCandidateBlock } from "../formalization/reuse_render.js";
 import { laterStageEverRan } from "../shared/resume_mode.js";
+import { parseJsonWithEscapeRepairStatus } from "../shared/codex_json.js";
 
 /** Copy D0.5's verified cited source-of-record into the F1 plan in place. */
 export function copyVerifiedCitedSourcesToPlan(planObj: unknown, core: Core): number {
@@ -129,11 +132,19 @@ export async function runStage1(args: {
   // closure change) — preserve the rest of the plan, exactly like an F1.5/F2.5 revise.
   const builtDecls = args.state.flags.substrate_built ?? [];
   const hasLaterStageHistory = await laterStageEverRan(args.ctx, args.state, "1");
+  // Post-pivot cold start: a stage_neg1 pivot retired the on-disk plan (it describes the
+  // ABANDONED angle). `hasLaterStageHistory` reads an append-only log — monotone for the
+  // run's lifetime — so without this marker F1 would stay in patch mode forever, editing
+  // the new angle's mathematics into the dead angle's node entries. The marker is cleared
+  // below once a schema-valid plan for the CURRENT angle is on disk, so F1.5 revise
+  // rounds on the new plan patch normally.
+  const planRetired = args.state.flags.f1_plan_retired === true;
   const isRevise =
-    args.priorReview?.status === "revise" ||
-    !!f1Directive ||
-    builtDecls.length > 0 ||
-    hasLaterStageHistory;
+    !planRetired &&
+    (args.priorReview?.status === "revise" ||
+      !!f1Directive ||
+      builtDecls.length > 0 ||
+      hasLaterStageHistory);
   let reviseBlock = "";
   if (isRevise && existsSync(paths.plan)) {
     reviseBlock = [
@@ -235,7 +246,17 @@ export async function runStage1(args: {
   let planObj: unknown = null;
   if (existsSync(paths.plan)) {
     try {
-      planObj = JSON.parse(await readFile(paths.plan, "utf8"));
+      const parsedPlanText = parseJsonWithEscapeRepairStatus(await readFile(paths.plan, "utf8"));
+      planObj = parsedPlanText.value;
+      // PERSIST the repair. Repairing only in memory leaves an unparseable durable store
+      // behind a gate that now passes, so every later reader must repeat the repair —
+      // and F2's plan-derived directive builders do a bare `JSON.parse` and fail OPEN,
+      // silently dropping the UNDELIVERED and gated-hyps blocks from the producer prompt.
+      // Canonicalizing here keeps `plan.json` parseable for readers that do not repair.
+      if (parsedPlanText.repaired) {
+        await writeFile(paths.plan, JSON.stringify(planObj, null, 2), "utf8");
+        console.warn(`[causalsmith] F1 repaired invalid string escapes in ${paths.plan} and rewrote it canonically.`);
+      }
     } catch (err) {
       console.warn(`[causalsmith] F1 wrote an unparseable plan at ${paths.plan}: ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -313,6 +334,13 @@ export async function runStage1(args: {
     parsed.status === "completed" &&
     !!parsedPlan?.success &&
     planGateOk;
+  // A schema-valid plan for the CURRENT angle is now on disk, so the post-pivot
+  // retirement marker is consumed: later F1 passes patch THIS plan. Deliberately NOT
+  // gated on `planGateOk` — a plan with gate violations is still the new angle's plan
+  // (the F1.5 boundary bounces it back as a revise of the new plan, not a cold start).
+  if (parsed.status === "completed" && parsedPlan?.success && args.state.flags.f1_plan_retired) {
+    delete args.state.flags.f1_plan_retired;
+  }
   if (planGateClean) {
     // why: keep retry directives until F1 completed with a parsed, gate-clean plan.
     if (f1Directive) args.state.flags.f1_revise_directive = null;
@@ -321,13 +349,29 @@ export async function runStage1(args: {
 
   // Emit the formalization graph from core + plan (the graph is the interchange the
   // F3/F4 proof loop refreshes off — without it the loop has no graph to refresh).
-  // Best-effort: never blocks the stage.
+  // On revise, merge the structural delta into the existing graph. Later F stages
+  // own its Lean links, proof state, review receipts, extracted edges, and auxiliary
+  // nodes; rebuilding from an empty graph here would silently destroy all of them.
+  // Best-effort: never blocks the stage. A failed revise merge leaves the existing
+  // artifacts untouched rather than falling back to a destructive fresh write.
+  let emittedGraphAndNote = false;
   try {
-    const g = buildGraphFromCorePlan(core, args.ctx.specialization, parsedPlan?.success ? parsedPlan.data : null);
-    await saveGraph(graphPath(paths.formalizationDir, args.ctx.qid, args.ctx.specialization), g);
+    // A malformed/partial revise must not replace valid downstream artifacts
+    // with the builder's plan=null fallback.
+    if (!parsedPlan?.success) throw new Error("plan is not schema-valid; preserving existing graph/note");
+    const gp = graphPath(paths.formalizationDir, args.ctx.qid, args.ctx.specialization);
+    const rebuilt = buildGraphFromCorePlan(core, args.ctx.specialization, parsedPlan.data);
+    const g = isRevise && existsSync(gp)
+      ? mergeStage1RevisionGraph(await loadGraph(gp), rebuilt)
+      : rebuilt;
+    await saveGraph(gp, g);
     // Bridge .md: the banked human record + causalsmith input + F5 premise-check
     // source, rendered deterministically from the graph (parseNoteBlocks-compatible).
-    await writeFile(paths.md, renderBridgeNote(g), "utf8");
+    // The bridge is a canonical core+plan projection. Auxiliary proof-engineering
+    // nodes belong in graph.json but must not leak into the paper-facing note.
+    await mkdir(path.dirname(paths.md), { recursive: true });
+    await writeFile(paths.md, renderBridgeNote(rebuilt), "utf8");
+    emittedGraphAndNote = true;
   } catch (err) {
     console.warn(`[graph] F1 core+plan emission skipped: ${err instanceof Error ? err.message : String(err)}`);
   }
@@ -479,7 +523,7 @@ export async function runStage1(args: {
       stage: "1",
       status: "checkpoint",
       message: `SUBSTRATE-BUILD CHECKPOINT: F1 flagged needs-new-infrastructure — dispatch background builders for the Defer-items, then clear the flag and resume to proceed gated (discharge at the next checkpoint). ${args.state.flags.substrate_build_required ?? ""}`.slice(0, 1200),
-      artifacts: parsed.artifacts ?? [paths.plan],
+      artifacts: [...new Set([...(parsed.artifacts ?? [paths.plan]), ...(emittedGraphAndNote ? [graphPath(paths.formalizationDir, args.ctx.qid, args.ctx.specialization), paths.md] : [])])],
     };
   }
   if (!parsedPlan?.success) {
@@ -487,13 +531,13 @@ export async function runStage1(args: {
       stage: "1",
       status: "checkpoint",
       message: parsed.message ?? "F1 produced no usable plan; inspect the artifact before resume.",
-      artifacts: parsed.artifacts ?? [paths.plan],
+      artifacts: [...new Set([...(parsed.artifacts ?? [paths.plan]), ...(emittedGraphAndNote ? [graphPath(paths.formalizationDir, args.ctx.qid, args.ctx.specialization), paths.md] : [])])],
     };
   }
   return {
     stage: "1",
     status: "completed",
     message: parsed.message ?? "F1 plan authored; advancing to F1.5 reuse-soundness review (consolidated CKPT 1).",
-    artifacts: parsed.artifacts ?? [paths.plan],
+    artifacts: [...new Set([...(parsed.artifacts ?? [paths.plan]), ...(emittedGraphAndNote ? [graphPath(paths.formalizationDir, args.ctx.qid, args.ctx.specialization), paths.md] : [])])],
   };
 }

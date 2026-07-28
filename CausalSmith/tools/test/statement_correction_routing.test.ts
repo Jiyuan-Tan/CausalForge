@@ -125,3 +125,86 @@ describe("buildStage0_5RejectionContext — correction directive", () => {
     expect(block).not.toContain("STATEMENT-CORRECTION DIRECTIVE");
   });
 });
+
+// ── Attempt-boundary hygiene (2026-07 cross-stage rewind audit) ──────────────────────
+//
+// A correction directive describes ONE specific rewind's fix. It is read by
+// `buildStage0_5RejectionContext`, whose correction branch RETURNS EARLY — before the
+// generic block that carries the CURRENT rewind's reason — so a stale round-A correction
+// left on the flags would permanently displace every later rewind's critique. Each new
+// stage_0 / stage_neg1 rewind must therefore clear (or replace) it.
+describe("applyInterventionRoute — stale correction directive is cleared at the next rewind", () => {
+  const STALE = "ROUND-A: restate thm:old in the closure form.";
+
+  it("a later NON-correction stage_0 rewind clears the stale directive (and the context block shows the NEW critique)", async () => {
+    const state = freshState();
+    state.flags.statement_correction_directive = STALE;
+    const rewound = applyInterventionRoute(state, {
+      route: "stage_0",
+      reason: "round B: the kernel novelty critique",
+      proposed_action: "re-derive with the corrected comparator",
+      action_kind: "re_derive",
+    } as Intervention);
+    expect(rewound).toBe(true);
+    expect(state.flags.statement_correction_directive ?? null).toBeNull();
+
+    // Observable consequence: the proposer context now carries round B's critique,
+    // not round A's correction block.
+    const ctx = { repoRoot: "/nonexistent", qid: "pid_x", specialization: "v1" } as unknown as PipelineContext;
+    const block = await buildStage0_5RejectionContext({ ctx, state });
+    expect(block).toContain("STAGE 0.5 REJECTION CONTEXT");
+    expect(block).toContain("round B: the kernel novelty critique");
+    expect(block).not.toContain("STATEMENT-CORRECTION DIRECTIVE");
+    expect(block).not.toContain(STALE);
+  });
+
+  it("a later CORRECTION rewind replaces (not appends to) the stale directive", () => {
+    const state = freshState();
+    state.flags.statement_correction_directive = STALE;
+    applyInterventionRoute(state, {
+      route: "stage_0",
+      reason: "round B over-precision",
+      action_kind: "statement_correction",
+      proposed_restatement: { statement: "ROUND-B corrected statement." },
+    } as Intervention);
+    expect(state.flags.statement_correction_directive).toContain("ROUND-B");
+    expect(state.flags.statement_correction_directive).not.toContain("ROUND-A");
+  });
+
+  it("a stage_neg1 pivot clears the stale directive (it described the abandoned angle)", () => {
+    const state = freshState();
+    state.flags.statement_correction_directive = STALE;
+    (state as unknown as { proposed_from: object }).proposed_from = {
+      topic: "t", novelty_target: "field", cluster: "stat", current_angle_index: 0, current_version: 1,
+    };
+    const rewound = applyInterventionRoute(state, {
+      route: "stage_neg1", reason: "angle blocked", action_kind: "redraft_proposal",
+    } as Intervention);
+    expect(rewound).toBe(true);
+    expect(state.flags.statement_correction_directive ?? null).toBeNull();
+  });
+});
+
+describe("applyInterventionRoute — stage_neg1 pivot retires the F-era artifacts", () => {
+  it("sets both retirement markers so F1/F2 cold-start instead of patching the dead angle", () => {
+    const state = freshState();
+    (state as unknown as { proposed_from: object }).proposed_from = {
+      topic: "t", novelty_target: "field", cluster: "stat", current_angle_index: 0, current_version: 1,
+    };
+    const rewound = applyInterventionRoute(state, {
+      route: "stage_neg1", reason: "angle blocked", action_kind: "redraft_proposal",
+    } as Intervention);
+    expect(rewound).toBe(true);
+    expect(state.flags.f1_plan_retired).toBe(true);
+    expect(state.flags.f2_scaffold_retired).toBe(true);
+  });
+
+  it("a same-angle stage_0 re-derive does NOT retire the F-era", () => {
+    const state = freshState();
+    applyInterventionRoute(state, {
+      route: "stage_0", reason: "re-derive", action_kind: "re_derive",
+    } as Intervention);
+    expect(state.flags.f1_plan_retired).toBeUndefined();
+    expect(state.flags.f2_scaffold_retired).toBeUndefined();
+  });
+});

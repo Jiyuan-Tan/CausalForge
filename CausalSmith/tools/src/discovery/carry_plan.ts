@@ -84,13 +84,28 @@ export function planCarry(input: CarryInputs): CarryPlan {
       // to T2. Require the theorem id itself to be the surviving map value.
       const mappingHeld = persistedAnswerIds.has(id);
       if (!mappingHeld) {
+        const sourceWasRemapped = rec.owner !== undefined &&
+          persistedOeqReplacements.has(rec.owner) &&
+          persistedOeqReplacements.get(rec.owner) !== id;
+        if (!sourceWasRemapped) {
+          // Losing the source->answer relation is not an instruction to delete
+          // the theorem. It may no longer discharge the whole OEQ, but it remains
+          // an agent-authored statement whose only durable catalog is this record.
+          return valid
+            ? { fate: "carried", as: "agent-node" }
+            : {
+              fate: "re-derive",
+              as: "agent-node",
+              reason:
+                "the source->answer mapping did not persist, so detach the theorem from the OEQ and " +
+                "re-prove it as an ordinary agent-authored result under the same id",
+            };
+        }
         return {
           fate: "dropped",
           reason:
-            "answers an OEQ whose source->answer mapping did not persist this round " +
-            "(no explicit mapping recorded, or the frozen OEQ's fingerprint changed, so the " +
-            "question itself moved); suppressed so a stale answer cannot collide with a " +
-            "freshly emitted one",
+            "answers an OEQ whose source was explicitly remapped to a different theorem; " +
+            "suppressed so the superseded answer cannot collide with the replacement",
         };
       }
       if (valid) return { fate: "carried", as: "oeq-answer" };

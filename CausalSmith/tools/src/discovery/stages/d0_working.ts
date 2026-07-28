@@ -18,13 +18,15 @@
 //
 // Invalidation tracks `depends_on` def/assumption references and follows structured
 // definition refs transitively where available; the post-solve gate remains the backstop.
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { readFile, writeFile, appendFile } from "node:fs/promises";
+import { readFile, writeFile, appendFile, rename, rm } from "node:fs/promises";
 import path from "node:path";
 import { artifactPath } from "../../paths.js";
 import { archiveProofs, type ProofToArchive } from "../proof_archive.js";
 import type { PipelineContext } from "../../types.js";
 import { nodeRefRegex, extractCitationRefs } from "../core/node_ids.js";
+import { normalizeSymbol } from "../core/preflight.js";
 import type { Core, CoreStatement } from "../core/schema.js";
 import { coreNodeIds } from "../core/schema.js";
 import { writeJsonAtomic } from "../../shared/json_atomic.js";
@@ -97,6 +99,26 @@ export interface WorkingState {
    * so removed source claims cannot survive as carried agent-added nodes.
    */
   proposal_revision?: string;
+  /**
+   * GLOBAL symbol basis these proofs were solved against: symbol name → hex
+   * fingerprint of the symbol's SEMANTIC fields (`type`/`space`/`sig`/`def`/`role`/`ref`;
+   * only `refs` is excluded — see `symbolBasis` for why each field is in or out).
+   * Symbols are not `depends_on` edges (`sym` is absent
+   * from `NODE_KINDS`) and appear in NO `MemberSnapshot` field, so an APPLIED symbol
+   * re-definition (e.g. narrowing a space from ℝ to [0,1]) changed what every
+   * statement quoting it CLAIMS while every statement's text stayed byte-identical —
+   * `computeValidNodes` saw nothing and published proofs of materially different
+   * claims as current. `merge.ts` already treats a PROPOSED symbol edit as globally
+   * proof-invalidating; this is the applied-case counterpart. Values are hex hashes
+   * so `repairLatexStringsDeep` (applied to the whole cursor on load) cannot mutate
+   * them out from under the comparison.
+   *
+   * The basis is global; the INVALIDATION it triggers is scoped per node by the
+   * declared `free_symbols` closure (`declaredSymbolScope`), so a symbol edit reopens
+   * the statements that declare it and their dependents rather than the whole paper.
+   * A node with no declaration still reopens on any change.
+   */
+  symbol_basis?: Record<string, string>;
   /** Every proved node (spec statements + agent-added lemmas), keyed by id. */
   solved: Record<string, SolvedMember>;
   /**
@@ -159,7 +181,7 @@ export async function loadWorkingState(ctx: PipelineContext): Promise<WorkingSta
     const working = JSON.parse(await readFile(p, "utf8")) as WorkingState;
     // Repair legacy decoded control-escape corruption carried in solved
     // proof_tex/snapshots from before the escape defense.
-    repairLatexStringsDeep(working);
+    repairLatexStringsDeep(working, new Set(["source_fingerprint"]));
     return working;
   } catch (err) {
     throw new Error(
@@ -278,7 +300,7 @@ export async function readEscalationLog(ctx: PipelineContext): Promise<Escalatio
     if (l.trim().length === 0) return;
     try {
       const entry = JSON.parse(l) as EscalationLogEntry;
-      repairLatexStringsDeep(entry);
+      repairLatexStringsDeep(entry, new Set(["source_fingerprint", "from", "to"]));
       entries.push(entry);
     } catch (err) {
       // This journal carries accepted edits and directives. Skipping a torn row
@@ -298,6 +320,186 @@ export async function readEscalationLog(ctx: PipelineContext): Promise<Escalatio
     }
   });
   return entries;
+}
+
+/**
+ * Guarded repair for an ownership-overlap defect in an UNCONSUMED directive.
+ *
+ * A target-scoped directive occasionally names both an OEQ and the theorem that is
+ * created when that OEQ is resolved. D0 then dispatches them as independent units,
+ * although the OEQ unit legitimately owns both writes, and the capability gate stops
+ * before merge. This operation narrows exactly one pending target list to a strict
+ * subset. It does not alter the directive prose, cursor, core, or any consumed journal
+ * entry. The journal replacement is atomic, so readers never observe a torn JSONL file.
+ */
+export async function narrowPendingDirectiveTargets(
+  ctx: PipelineContext,
+  args: { owner: string; dropTargets: string[] },
+): Promise<{ entryIndex: number; before: string[]; after: string[] }> {
+  if (!args.owner.trim()) throw new Error("pending-directive narrowing requires a nonempty owner target");
+  const drops = new Set(args.dropTargets.filter((id) => id.trim().length > 0));
+  if (drops.size === 0) throw new Error("pending-directive narrowing requires at least one drop target");
+  if (drops.has(args.owner)) throw new Error(`refusing to drop owner target ${args.owner}`);
+
+  const p = escalationLogPath(ctx);
+  const original = await readFile(p, "utf8");
+  const entries = await readEscalationLog(ctx);
+  const working = await loadWorkingState(ctx);
+  const consumed = Math.min(working?.escalation_entries_consumed ?? 0, entries.length);
+  const matches = entries
+    .map((entry, entryIndex) => ({ entry, entryIndex }))
+    .filter(({ entry, entryIndex }) =>
+      entryIndex >= consumed &&
+      entry.required_core_targets?.includes(args.owner) === true &&
+      [...drops].every((id) => entry.required_core_targets?.includes(id) === true),
+    );
+  if (matches.length !== 1) {
+    throw new Error(
+      `expected exactly one unconsumed directive containing owner ${args.owner} and drops ` +
+        `${[...drops].join(", ")}; found ${matches.length}`,
+    );
+  }
+
+  const { entry, entryIndex } = matches[0];
+  const before = [...(entry.required_core_targets ?? [])];
+  const after = before.filter((id) => !drops.has(id));
+  if (after.length === 0 || after.length >= before.length || !after.includes(args.owner)) {
+    throw new Error("replacement target list must be a nonempty strict subset retaining the owner");
+  }
+  entry.required_core_targets = after;
+
+  const lines = original.split("\n");
+  // Nonempty JSONL rows map one-to-one to readEscalationLog entries. Refuse exotic
+  // blank-line layouts instead of risking a write to the wrong physical row.
+  const nonemptyLineIndexes = lines
+    .map((line, i) => ({ line, i }))
+    .filter(({ line }) => line.trim().length > 0)
+    .map(({ i }) => i);
+  if (nonemptyLineIndexes.length !== entries.length) throw new Error("escalation journal row mapping changed during repair");
+  lines[nonemptyLineIndexes[entryIndex]] = JSON.stringify(entry);
+  const replacement = lines.join("\n");
+  const temp = `${p}.tmp-${process.pid}-${Date.now()}`;
+  try {
+    await writeFile(temp, replacement, "utf8");
+    // Parse the candidate before the atomic swap.
+    for (const line of replacement.split("\n").filter((value) => value.trim().length > 0)) JSON.parse(line);
+    await rename(temp, p);
+  } finally {
+    await rm(temp, { force: true });
+  }
+  return { entryIndex, before, after };
+}
+
+/** Fingerprint the proto's symbol table as the GLOBAL reuse basis for carried proofs:
+ *  name → hex hash of the SEMANTIC fields. Hashing keeps the values immune to the
+ *  LaTeX-escape repair applied to the loaded cursor, and the basis is order-independent
+ *  by construction (`topologicallyOrderSymbols` reorders the array on every apply).
+ *
+ *  `ref` IS semantic and is included. It names the node a symbol denotes (`def:…` on a
+ *  class symbol, occasionally `ass:…`), so re-pointing it swaps the symbol's referent
+ *  while `type`/`space`/`sig`/`def`/`role` can stay byte-identical — the prose in `def`
+ *  routinely describes the object generically ("Nonhomogeneous subclass of …") and does
+ *  not name which definition carves it. Excluding it meant a statement quoting that
+ *  symbol kept a proof about the OLD object. The two writers are `d0_apply`'s
+ *  statement-delete-with-replacement (re-point) and definition-delete (clear), and both
+ *  are cases where the referent genuinely vanished, so there is no spurious-rewire case
+ *  to protect against. Narrow blast radius either way: 13 of the 2095 symbols in the 42
+ *  real cores under doc/research carry `ref` at all.
+ *
+ *  `refs` stays EXCLUDED. It lists the other symbols this symbol's `def` mentions and
+ *  exists for G1's defined-before-use ordering check — it is derived from `def`, which is
+ *  already hashed, so it carries no meaning of its own and would only add invalidation on
+ *  a pure re-ordering. 1287 symbols carry it. */
+export function symbolBasis(proto: Core): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const sym of proto.symbols ?? []) {
+    out[sym.name] = createHash("sha256")
+      .update(
+        JSON.stringify({
+          type: sym.type, space: sym.space, sig: sym.sig, def: sym.def, role: sym.role, ref: sym.ref,
+        }),
+      )
+      .digest("hex")
+      .slice(0, 16);
+  }
+  return out;
+}
+
+/** Symbol names whose SEMANTIC definition changed (or that vanished) since the carried
+ *  proofs were solved. A newly ADDED symbol invalidates nothing: no existing proof was
+ *  solved against it. A legacy cursor with no recorded basis invalidates nothing (do
+ *  not mass-invalidate existing runs on upgrade). */
+export function changedSymbolNames(prev: WorkingState | null, proto: Core): Set<string> {
+  const before = prev?.symbol_basis;
+  if (!before) return new Set();
+  const after = symbolBasis(proto);
+  // Admitting `ref` to the fingerprint is not a corpus-wide re-baselining: `JSON.stringify`
+  // omits an `undefined` value, so a symbol without `ref` hashes exactly as it did before
+  // and a cursor checkpointed under the old scheme still matches. Only the 13 ref-bearing
+  // symbols in the 42 real cores re-fingerprint, and those reclassify ONCE, in the safe
+  // direction (their citing nodes re-derive). Excusing them by also comparing against the
+  // old hashing would do the opposite — a `ref` that genuinely moved across the upgrade
+  // boundary would go unnoticed, which is the exact failure this field was added to close.
+  const changed = new Set<string>();
+  for (const [name, fingerprint] of Object.entries(before)) {
+    if (after[name] !== fingerprint) changed.add(name);
+  }
+  return changed;
+}
+
+/** The symbols a carried node's claim rests on, as DECLARED — its own `free_symbols`
+ *  plus those of every definition/assumption in its snapshot closure — or `null` when
+ *  the scope is UNDECLARED and must be read as "may use ANY symbol".
+ *
+ *  THE FAIL-SAFE IS THE WHOLE POINT. `StatementSchema`/`DefinitionSchema` spell
+ *  `free_symbols` `.optional()` precisely so `undefined` survives parsing: every one of
+ *  the 1077 statements and 1269 definitions in the 112 real cores under
+ *  doc/research/{active,_bank} predates the field, and a `.default([])` would present
+ *  each of them as "declared, and uses no symbols" — scoping every symbol change to
+ *  nothing and publishing proofs of materially different claims as current. `[]` is a
+ *  real declaration (111 real assumptions carry it) and does scope; `undefined` never
+ *  does. Any undeclared member of the closure poisons the whole scope, because a symbol
+ *  can be used ONLY through a definition the statement cites.
+ *
+ *  The CURRENT declarations are read, not the ones stored at solve time: a declaration
+ *  that grew must widen the scope immediately (a snapshot copy would keep watching the
+ *  old, narrower list). Definitions/assumptions that vanished from the proto are skipped
+ *  — `snapshotBasisValid` already fails such a node outright. */
+export function declaredSymbolScope(
+  proto: Core,
+  member: CoreStatement,
+  snapshot: MemberSnapshot,
+): Set<string> | null {
+  if (member.free_symbols === undefined) return null;
+  const scope = new Set<string>(member.free_symbols.map(normalizeSymbol));
+  const defById = new Map(proto.definitions.map((d) => [d.id, d] as const));
+  const assById = new Map(proto.assumptions.map((a) => [a.id, a] as const));
+  for (const id of Object.keys(snapshot.defs)) {
+    const d = defById.get(id);
+    if (!d) continue;
+    if (d.free_symbols === undefined) return null;
+    for (const s of d.free_symbols) scope.add(normalizeSymbol(s));
+  }
+  for (const id of Object.keys(snapshot.assumptions)) {
+    const a = assById.get(id);
+    if (!a) continue;
+    // `AssumptionSchema.free_symbols` is `.optional()` like the other two, so an
+    // assumption that never declared survives parsing as `undefined` and poisons the
+    // scope here exactly as an undeclared definition does. (994 of the 996 real
+    // assumptions declare, 80 of them legitimately `[]`, so this bites almost nothing.)
+    if (a.free_symbols === undefined) return null;
+    for (const s of a.free_symbols) scope.add(normalizeSymbol(s));
+  }
+  return scope;
+}
+
+/** Does a symbol change reach this node? `null` scope (never declared) is reached by
+ *  ANY change — that is the fail-safe that keeps legacy cores sound. */
+function symbolScopeStale(changed: Set<string>, scope: Set<string> | null): boolean {
+  if (changed.size === 0) return false;
+  if (scope === null) return true;
+  for (const name of changed) if (scope.has(normalizeSymbol(name))) return true;
+  return false;
 }
 
 /** Snapshot the content closure of a member against the CURRENT proto. */
@@ -357,6 +559,12 @@ function snapshotBasisValid(snapshot: MemberSnapshot, proto: Core, member: CoreS
 export function memberValid(prev: WorkingState | null, proto: Core, member: CoreStatement): boolean {
   const rec = prev?.solved[member.id];
   if (!rec || rec.partial) return false; // a partial result is not a reusable proof
+  // Symbol basis, SCOPED by the node's declared symbol closure (see
+  // `declaredSymbolScope`): a node that never declared its symbols is invalidated by
+  // any symbol change, exactly as the earlier global rule did.
+  if (symbolScopeStale(changedSymbolNames(prev, proto), declaredSymbolScope(proto, member, rec.snapshot))) {
+    return false;
+  }
   return snapshotBasisValid(rec.snapshot, proto, member);
 }
 
@@ -368,6 +576,20 @@ export function memberValid(prev: WorkingState | null, proto: Core, member: Core
  *  agent-added lemmas come from the prior working state. */
 export function computeValidNodes(prev: WorkingState | null, proto: Core): Set<string> {
   if (!prev) return new Set();
+  // SYMBOL BASIS. A re-defined (or deleted) symbol changes what every statement quoting
+  // it claims while all statement/def/assumption TEXT stays byte-identical, so no
+  // content snapshot can see it. Symbols are not `depends_on` edges, so the reach of the
+  // change has to come from a DECLARED edge — `free_symbols` — never from scanning the
+  // prose for the symbol's name, which was measured unsound in both directions (bare
+  // single-letter names like `d`/`n` match every statement through ordinary English;
+  // `\(\pi_n\)`-wrapped names match nothing; use through a definition is invisible
+  // either way). A node with no declaration is therefore treated as using EVERY symbol
+  // and reopens on any change, which is exactly the old global rule and keeps every
+  // pre-existing core sound. Directly-hit nodes enter `stale` below and the ordinary
+  // `depends_on` fixpoint carries the change to their dependents — no second
+  // propagation. (`merge.ts` keeps its whole-round rule for a PROPOSED symbol edit:
+  // that is about the in-flight round, not about carried proofs.)
+  const changedSymbols = changedSymbolNames(prev, proto);
   const specById = new Map(proto.statements.map((s) => [s.id, s] as const));
   const lemmaById = new Map(
     Object.entries(prev.solved)
@@ -423,6 +645,12 @@ export function computeValidNodes(prev: WorkingState | null, proto: Core): Set<s
       (d) => /^(thm|lem|prop|oeq|conj):/.test(d) && !nodeById.has(d),
     );
     if (missingDep) {
+      stale.add(id);
+      continue;
+    }
+    // A symbol this node DECLARES (directly, or through a def/assumption in its
+    // snapshot closure) was re-defined — same text, different claim.
+    if (symbolScopeStale(changedSymbols, declaredSymbolScope(proto, node, prev.solved[id].snapshot))) {
       stale.add(id);
       continue;
     }

@@ -197,7 +197,11 @@ export async function runStageNeg1_2ProtoCore(args: {
     if (parsedOut.status === "needs-pivot") {
       let handoff: Record<string, unknown> = {};
       try {
-        handoff = extractJsonObject(out.stdout) as Record<string, unknown>;
+        // TeX-bearing model boundary: normalize raw bytes before the JSON funnel,
+        // exactly as the core read below does. Without it an under-escaped command
+        // in the diagnostic seed slate silently empties the handoff (this catch is
+        // best-effort by design), and every pivot then burns budget on no seeds.
+        handoff = extractJsonObject(normalizeRawModelJson(out.stdout)) as Record<string, unknown>;
       } catch {
         /* best-effort */
       }
@@ -299,7 +303,7 @@ export async function runStageNeg1_2ProtoCore(args: {
 
     let stdoutHandoff: Record<string, unknown> = {};
     try {
-      stdoutHandoff = extractJsonObject(out.stdout) as Record<string, unknown>;
+      stdoutHandoff = extractJsonObject(normalizeRawModelJson(out.stdout)) as Record<string, unknown>;
     } catch {
       /* gate already passed; harvest is best-effort */
     }

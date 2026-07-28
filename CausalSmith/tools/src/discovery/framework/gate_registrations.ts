@@ -7,7 +7,7 @@ import { registerGate, type GateViolation } from "./gates.js";
 import { runStructuralGate } from "../core/gate.js";
 import { runProposalGate } from "../core/proposal_gate.js";
 import { checkProposalClosure, type ClosureCoreView } from "../core/coherence.js";
-import { checkSymbolDeclarations } from "../core/preflight.js";
+import { checkSymbolDeclarations, checkSymbolDeclarationDrift } from "../core/preflight.js";
 import { checkRoundInvariants, formatRoundViolation, type RoundInvariantInput } from "../core/coherence.js";
 import { checkProseConsistency } from "../core/prose_consistency.js";
 import type { Core } from "../core/schema.js";
@@ -69,6 +69,25 @@ export const symbolPreflightGate = registerGate<Parameters<typeof checkSymbolDec
     "PIPELINE_NOTES 2026-07-18 round 36 (free symbols absent from proto_core.symbols found only after a complete solve round was paid for)",
   check: (core) =>
     checkSymbolDeclarations(core).map((v) => ({ gateId: "symbol-preflight", detail: `[${v.check}] ${v.detail}`, ids: v.ids })),
+});
+
+/** ADVISORY drift lint over the SAME declaration the invalidation path now trusts:
+ *  a symbol whose name occurs in a node's text but is absent from its `free_symbols`.
+ *  warn-tier by measurement, not by preference — a boundary-anchored text scan
+ *  contradicts the author's own declaration on 10.1% of the 1186 declaring assumptions
+ *  in the real corpus even after de-noising, so blocking on it would burn the D0 round
+ *  budget the scoping is meant to save. See `checkSymbolDeclarationDrift`. */
+export const symbolDriftGate = registerGate<Parameters<typeof checkSymbolDeclarationDrift>[0]>({
+  id: "symbol-declaration-drift",
+  tier: "warn",
+  stages: ["0"],
+  evidence:
+    "2026-07 symbol-invalidation scoping: `free_symbols` became the edge that scopes symbol invalidation " +
+    "(d0_working.declaredSymbolScope), so an under-declared node silently keeps a proof of a claim whose " +
+    "symbol moved; corpus measurement over doc/research/{active,_bank} set the tier to warn (10.1% " +
+    "disagreement with ground-truth declarations)",
+  check: (core) =>
+    checkSymbolDeclarationDrift(core).map((v) => ({ gateId: "symbol-declaration-drift", detail: `[${v.check}] ${v.detail}`, ids: v.ids })),
 });
 
 /** Cross-store round invariants (store-incoherent, dangling-resolution, hollow

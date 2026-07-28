@@ -456,9 +456,14 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
           stdout: JSON.stringify({
             tier: "subfield",
             salvageable: false,
+            // Empty per the prompt's emission contract: `improvement_directive` is
+            // written only when `salvageable`, `flagship_directive` only when
+            // `flagship_potential`. Both keys are still always present.
+            improvement_directive: "",
             flagged_conjecture_labels: [],
             critique: "valid mathematics, below the requested field floor",
             flagship_potential: false,
+            flagship_directive: "",
           }),
           stderr: "",
         };
@@ -566,9 +571,11 @@ describe("runStage0_5Typed provisional D0.R transaction", () => {
           stdout: JSON.stringify({
             tier: "field",
             salvageable: false,
+            improvement_directive: "",
             flagged_conjecture_labels: [],
             critique: "field-tier pass",
             flagship_potential: false,
+            flagship_directive: "",
           }),
           stderr: "",
         };

@@ -26,6 +26,7 @@ import {
   reconcileAndWarnRound,
   checkpointClosure,
   checkpointPreflight,
+  checkpointSymbolDrift,
   healMissingBibCites,
   runPostSolveGate,
 } from "./gates.js";
@@ -173,6 +174,13 @@ export async function surfaceProposalCheckpoint(args: {
     const preflight = checkpointPreflight(core);
     if (preflight.length > 0) {
       blocks.push(formatPreflightViolations(preflight));
+    }
+    // ADVISORY, deliberately a console warning and NOT a checkpoint block: an
+    // under-declared `free_symbols` narrows symbol invalidation, so it must be visible,
+    // but the check is a text scan that disagrees with correct cores often enough that
+    // routing it into the orchestrator's decision surface would manufacture work.
+    for (const drift of checkpointSymbolDrift(core)) {
+      console.warn(`[D0-SOLVE] ${drift.detail}`);
     }
     // Withheld cross-unit collisions. Surfaced here rather than thrown, so the round's
     // other work reaches the orchestrator and only the colliding ids need re-solving.
@@ -332,6 +340,10 @@ export async function finalizeRound(args: {
     // open_obligations.json keeps presenting the stale diagnostics as current —
     // the same class as the withheld_content.json sweep.
     await rm(openObligationsPath(ctx), { force: true });
+    // The state summary is the semantic twin of that file. Leaving it behind after
+    // the final OEQ is resolved makes D0.5/maximality report an open problem that no
+    // longer exists, even across arbitrarily many clean render cycles.
+    delete state.design_decisions["d0_open_oeq_residuals"];
   }
 
   // Incomplete-round checkpoint: some targets left to-prove (proved part of the group, ran

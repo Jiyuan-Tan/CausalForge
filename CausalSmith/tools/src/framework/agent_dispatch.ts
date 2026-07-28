@@ -30,6 +30,8 @@ export interface DispatchAgentArgs {
   /** Forwarded to runCodex. The F2.5/F4 reviewer fans out concurrently and must
    *  disable codex's native sub-agents (see CodexRunInput.multiAgent). */
   multiAgent?: boolean;
+  /** Source-producing nested F calls need the production workspace writable. */
+  productionWrite?: boolean;
 }
 
 export async function dispatchAgent(args: DispatchAgentArgs): Promise<{ stdout: string; stderr: string }> {
@@ -55,6 +57,7 @@ export async function dispatchAgent(args: DispatchAgentArgs): Promise<{ stdout: 
     inactivityTimeoutMs: args.inactivityTimeoutMs,
     ...(args.leanLsp !== undefined ? { leanLsp: args.leanLsp } : {}),
     ...(args.multiAgent !== undefined ? { multiAgent: args.multiAgent } : {}),
+    ...(args.productionWrite !== undefined ? { productionWrite: args.productionWrite } : {}),
   });
   await appendPipelineLog(args.ctx, {
     stage: args.stage,

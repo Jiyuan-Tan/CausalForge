@@ -101,18 +101,22 @@ export function normalizeRawModelJson(raw: string): string {
 /** Recursively apply `repairSerializedLatex` to every string in a parsed model
  * payload (arrays/objects mutated in place). Shared by every model boundary that
  * ingests TeX-bearing JSON without a typed Core shape. */
-export function repairLatexStringsDeep(value: unknown): void {
+export function repairLatexStringsDeep(value: unknown, opaqueKeys: ReadonlySet<string> = new Set()): void {
   if (Array.isArray(value)) {
     for (let i = 0; i < value.length; i++) {
       if (typeof value[i] === "string") value[i] = repairSerializedLatex(value[i]);
-      else repairLatexStringsDeep(value[i]);
+      else repairLatexStringsDeep(value[i], opaqueKeys);
     }
     return;
   }
   if (value === null || typeof value !== "object") return;
   for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+    // Some fields contain serialized JSON as an opaque string. Repairing their
+    // backslashes as if they were direct TeX decodes the inner JSON one layer early
+    // and corrupts canonical fingerprints / before-after journal snapshots.
+    if (opaqueKeys.has(key)) continue;
     if (typeof child === "string") (value as Record<string, unknown>)[key] = repairSerializedLatex(child);
-    else repairLatexStringsDeep(child);
+    else repairLatexStringsDeep(child, opaqueKeys);
   }
 }
 

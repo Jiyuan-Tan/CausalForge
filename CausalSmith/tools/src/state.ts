@@ -195,6 +195,11 @@ export const stateSchema = z
       scaffold_redirect: z.string().nullable().optional(),
       scaffold_redirect_count: z.number().int().nonnegative().optional(),
       scaffold_redirect_cap_hit: z.string().optional(),
+      // Post-pivot F-era retirement markers (see types.ts): set together by a stage_neg1
+      // pivot; F1 clears its own once a new-angle plan is on disk, F2 clears its own on
+      // the first completed post-pivot scaffold.
+      f1_plan_retired: z.boolean().optional(),
+      f2_scaffold_retired: z.boolean().optional(),
       // Proof-review loop iteration budgets — persisted so a `--resume` cannot silently
       // hand the loop a fresh budget (see types.ts).
       proof_loop_counters: z

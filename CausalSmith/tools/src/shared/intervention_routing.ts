@@ -208,6 +208,37 @@ export function resetFormalizationLoopCounters(state: StateJson): void {
   delete state.flags.assumption_review_cap_hit;
 }
 
+/**
+ * Grant the re-entered D phase a fresh loop budget when a LATER phase rewinds into it,
+ * returning the spend that was carried in (`null` when there was none) so the caller can
+ * report it rather than quietly discarding it.
+ *
+ * `d0_loop_counters` accumulate across resumes on purpose: within one solve attempt,
+ * re-resuming a non-deterministic solver is a re-roll, not a retry. A cross-phase rewind
+ * is the other thing. F3 refuting a step in Lean, or D0.5 rejecting the angle, is new
+ * information that did not exist when those rounds were spent, and the re-entered D0
+ * re-derives against a hard constraint it has never seen. Carrying the old count forward
+ * conflates two different attempts: a run that used a typical 6-9 of the 15 solve rounds
+ * would re-enter with under half a budget, and one that used 12+ would trip
+ * `d0_loop_cap_hit` a round or two in — whose only escape (`--clear-gate d0_loop_cap_hit`)
+ * resets everything anyway, so the leak buys no safety and costs the operator a manual
+ * round-trip. The F-side counters are already reset on exactly these transitions.
+ *
+ * This is not a cap evasion: the number of rewinds that can reach here is itself bounded
+ * (`REDO_MATH_MAX` per refuted node, `NEG1_PIVOT_BUDGET` for angle pivots), so total D
+ * work stays bounded. `d0_loop_cap_hit` is deliberately NOT cleared — a gate flag is
+ * MAIN's to clear, and a run that has one set cannot have resumed far enough to be here.
+ */
+export function resetD0LoopCountersForRewind(state: StateJson): string | null {
+  const prior = state.flags.d0_loop_counters;
+  state.flags.d0_loop_counters = { solve_rounds: 0, revise_rounds: 0, consistency_heals: 0 };
+  if (!prior || (prior.solve_rounds === 0 && prior.revise_rounds === 0 && prior.consistency_heals === 0)) {
+    return null;
+  }
+  return `D-phase budget reset for this rewind (carried in: ${prior.solve_rounds} solve, ` +
+    `${prior.revise_rounds} revise, ${prior.consistency_heals} consistency-heal round(s))`;
+}
+
 export function applyInterventionRoute(state: StateJson, intervention: Intervention): boolean {
   if (intervention.route === "stage_neg1") {
     // Abandon the current angle and pivot to a new one. Only meaningful in
@@ -239,6 +270,23 @@ export function applyInterventionRoute(state: StateJson, intervention: Intervent
     state.flags.rewound_from_stage0_5_pivot = intervention.reason;
     state.pending_sorries = [];
     resetFormalizationLoopCounters(state);
+    // The new angle re-enters D0 and must not inherit the abandoned angle's spend.
+    resetD0LoopCountersForRewind(state);
+    // A correction directive describes a fix to the ABANDONED angle's headline; carried
+    // into the new angle it would displace the pivot's own rejection context (its branch
+    // in `buildStage0_5RejectionContext` returns early, before the generic block).
+    state.flags.statement_correction_directive = null;
+    // Retire the abandoned angle's F-era artifacts. `laterStageEverRan` reads an
+    // append-only log and is therefore MONOTONE for the run's lifetime, so after any
+    // F-stage has ever run, F1 stays in patch mode pointed at the dead angle's
+    // `plan.json` and F2 keeps patching its `.lean` tree — grafting the new angle's
+    // mathematics onto an abandoned scaffold. Marking beats deleting (artifacts stay
+    // on disk for forensics); each flag is consumed by its OWN stage: F1 clears
+    // `f1_plan_retired` once a schema-valid plan for the new angle is on disk, and F2
+    // clears `f2_scaffold_retired` once a fresh scaffold completes — so later
+    // legitimate revise/patch rounds on the NEW angle's artifacts are unaffected.
+    state.flags.f1_plan_retired = true;
+    state.flags.f2_scaffold_retired = true;
     return true;
   }
   if (intervention.route === "stage_0") {
@@ -273,10 +321,19 @@ export function applyInterventionRoute(state: StateJson, intervention: Intervent
     state.flags.rewound_from_stage0 = intervention.reason;
     state.pending_sorries = [];
     resetFormalizationLoopCounters(state);
+    // Re-entering D-0.5/D0 with this rewind's reason as new input; see the helper.
+    resetD0LoopCountersForRewind(state);
     recordAutoBucketAAssumption(state, intervention);
     if (intervention.action_kind === "theorem_split") {
       state.flags.theorem_splits = (state.flags.theorem_splits ?? 0) + 1;
     }
+    // Each rewind's context must reflect THAT rewind. A correction directive left by an
+    // EARLIER stage_0 rewind is stale here: `buildStage0_5RejectionContext` returns the
+    // correction block EARLY (before the generic block that carries this rewind's
+    // reason), so a stale round-A correction would permanently displace every later
+    // critique. Clear it; the branch below re-sets a fresh one when THIS rewind is a
+    // statement correction.
+    state.flags.statement_correction_directive = null;
     if (intervention.action_kind === "statement_correction" && intervention.proposed_restatement) {
       const r = intervention.proposed_restatement;
       state.flags.statement_correction_directive = r.rationale

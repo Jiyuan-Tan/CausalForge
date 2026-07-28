@@ -8,6 +8,7 @@ import { MODEL_PLAN } from "../../constants.js";
 import type { PipelineContext, StageResult, StateJson } from "../../types.js";
 import { artifactPaths, readPrompt, type StageDeps } from "../../pipeline_support.js";
 import { dispatchAgent, parseAgentJson } from "../../framework/agent_dispatch.js";
+import { normalizeRawModelJson } from "../core/latex_serialization.js";
 import { stores } from "../framework/stores.js";
 
 /** Pure verdict over the scout's parsed stdout JSON.
@@ -147,7 +148,10 @@ export async function runStageNeg1_1(args: {
   });
 
   // ---- parseOutputs ---------------------------------------------------------
-  const parsed = parseAgentJson(out.stdout);
+  // The scout quotes estimands and rates from the literature, so its stdout is a
+  // TeX-bearing model boundary: normalize the raw bytes (where an under-escaped
+  // `\theta` is still distinguishable from tab + "heta") before the JSON funnel.
+  const parsed = parseAgentJson(normalizeRawModelJson(out.stdout));
   if (!parsed.json) {
     return {
       stage: "-1.1",

@@ -17,6 +17,7 @@ import {
   parseLeanNodeTags,
   undeliveredBlockFromPlan,
   blockingPostSyncPlanViolations,
+  restoreDeletedReviseFiles,
 } from "../../src/formalization/stage2.js";
 import { promptPath } from "../../src/paths.js";
 import type { PipelineContext, StateJson } from "../../src/types.js";
@@ -34,6 +35,20 @@ describe("F2 post-sync plan gate", () => {
       { code: "P6", where: "thm:main", message: "module lookup" },
     ] as const;
     expect(blockingPostSyncPlanViolations(violations as never).map((v) => v.code)).toEqual(["P2", "P4"]);
+  });
+});
+
+describe("F2 revise file preservation", () => {
+  it("restores a pre-existing module deleted by a revise producer", async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), "f2-revise-restore-"));
+    const file = path.join(dir, "Preserved.lean");
+    await writeFile(file, "theorem preserved : True := by trivial\n");
+    const snapshot = new Map([[file, await readFile(file, "utf8")]]);
+    await rm(file);
+
+    expect(await restoreDeletedReviseFiles(snapshot)).toEqual([file]);
+    expect(await readFile(file, "utf8")).toBe("theorem preserved : True := by trivial\n");
+    await rm(dir, { recursive: true, force: true });
   });
 });
 

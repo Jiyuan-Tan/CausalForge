@@ -139,6 +139,7 @@ export function runStructuralGate(coreInput: unknown, opts: GateOptions = {}): G
   const constructionDefs = core.definitions.filter((d) => d.by_member_properties === undefined);
   const classNames = classDefs.map((d) => d.name);
   const constructionNames = constructionDefs.map((d) => d.name);
+  const assumptionIds = new Set<string>(core.assumptions.map((a) => a.id));
   const nodeIds = new Set<string>([
     ...core.assumptions.map((a) => a.id),
     ...core.definitions.map((d) => d.id),
@@ -148,12 +149,29 @@ export function runStructuralGate(coreInput: unknown, opts: GateOptions = {}): G
 
   // G1: every declared free symbol is in the symbol table; symbol def-refs are
   // defined before use (array order is the definition order).
-  for (const a of core.assumptions) {
-    for (const fs of a.free_symbols) {
+  //
+  // Definitions and statements are checked alongside assumptions because they now
+  // declare `free_symbols` too, and the declaration is what SCOPES symbol invalidation
+  // (`d0_working.declaredSymbolScope`). An UNRESOLVABLE name there is worse than on an
+  // assumption: the scope reads the list as the complete set of symbols the claim rests
+  // on, so a name matching no symbol contributes nothing while the symbol it was meant to
+  // name goes unwatched — a re-definition of it would leave the proof standing. This gate
+  // is also what keeps the declarations exact rather than merely normalizable: under it,
+  // all 2832 assumption declarations in the 42 real cores resolve without normalization,
+  // and the same pressure now applies to the two node kinds that had none. Legacy cores
+  // are unaffected — no statement or definition on disk carries the key, and absent is
+  // read as "may use any symbol" (fail-safe), never as a violation.
+  const declaringNodes: Array<{ id: string; free_symbols?: string[] }> = [
+    ...core.assumptions,
+    ...core.definitions,
+    ...core.statements,
+  ];
+  for (const node of declaringNodes) {
+    for (const fs of node.free_symbols ?? []) {
       if (!symbolNames.has(fs)) {
         violations.push({
           code: "G1",
-          where: a.id,
+          where: node.id,
           message:
             `free symbol '${fs}' not in symbol table; each free_symbols element must name ` +
             `exactly one declared symbol (split comma-separated groups)`,
@@ -292,6 +310,26 @@ export function runStructuralGate(coreInput: unknown, opts: GateOptions = {}): G
         where: d.id,
         message: `class '${d.name}' must not carry construction inputs — its \`construction\` is the membership set-builder, not a parametrized construction`,
       });
+    }
+    // Every member property must be an ASSUMPTION id. The F1.5 plan gate (P2) demands
+    // both that a plan class mirror this list exactly AND that each entry be an
+    // assumption, so a def-valued entry here makes P2 unsatisfiable: mirroring trips
+    // "is not an assumption", flattening trips "omits core member". The producer cannot
+    // see the conflict and burns its cap, then the boundary router rewinds past D0 and
+    // discards proved discovery math to fix a metadata field. Enforce it where it is
+    // fixable — at production. A class built from other classes carves by the UNION of
+    // their member properties (its set-builder text still names the components).
+    for (const mp of d.by_member_properties ?? []) {
+      if (nodeIds.has(mp) && !assumptionIds.has(mp)) {
+        violations.push({
+          code: "G5",
+          where: d.id,
+          message:
+            `class '${d.name}' member property '${mp}' is not an assumption — \`by_member_properties\` ` +
+            `takes assumption ids only. If this class is carved from other classes, list the union of ` +
+            `THEIR member properties here (the set-builder text already names the component classes).`,
+        });
+      }
     }
     const witnessSites: Array<[string, string]> = [
       ...(d.by_member_properties ?? []).map((mp) => ["member-property", mp] as [string, string]),

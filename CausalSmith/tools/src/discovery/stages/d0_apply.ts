@@ -31,9 +31,11 @@ import {
   type CoreDefinition,
   type CoreStatement,
   type CoreSymbol,
+  type ComparatorPromise,
 } from "../core/schema.js";
 import { archiveProofs, proofBytesInRoundFile, type ProofToArchive } from "../proof_archive.js";
 import { proofContentClosureIntersects, rebuildAssumptionUsedBy } from "../core/dependencies.js";
+import { normalizeSymbol } from "../core/preflight.js";
 import {
   assertNoDecodedControlChars,
   normalizeRawModelJson,
@@ -41,6 +43,7 @@ import {
 } from "../core/latex_serialization.js";
 import { extractNodeRefs } from "../core/node_ids.js";
 import { findAuthoredNodeReferences, type AuthoredNodeReference } from "../core/text_references.js";
+import { topologicallyOrderSymbols } from "../core/symbol_order.js";
 
 export interface RawChange {
   id: string;
@@ -59,6 +62,10 @@ export interface RawAssumption {
   reason?: string;
   standard_or_novel?: string;
   not_crux?: string;
+  /** The solver's symbol declaration for this condition. Optional (a payload written
+   *  before the field existed carries none), and stored as `[]` when absent — see the
+   *  apply site for why it is carried rather than stubbed. */
+  free_symbols?: string[];
 }
 
 /** Typed frozen-core edits that cannot be expressed as a claim-only statement
@@ -67,12 +74,19 @@ export interface RawAssumption {
 export type RawCoreEdit =
   | { kind: "assumption-replace"; id: string; proposed: CoreAssumption; reason?: string; direction: "correct" }
   | { kind: "assumption-delete"; id: string; reason?: string; direction: "delete-obsolete" }
-  | { kind: "statement-replace"; id: string; proposed: Omit<CoreStatement, "proof_tex">; reason?: string; direction: "correct" }
+  | {
+      kind: "statement-replace";
+      id: string;
+      proposed: Omit<CoreStatement, "proof_tex"> & { partial_result?: string };
+      reason?: string;
+      direction: "correct";
+    }
   | { kind: "statement-delete"; id: string; replacement_id?: string; reason?: string; direction: "delete-obsolete" }
   | { kind: "definition-add"; id: string; proposed: CoreDefinition; reason?: string; direction: "correct" }
   | { kind: "definition-replace"; id: string; proposed: CoreDefinition; reason?: string; direction: "correct" }
   | { kind: "definition-delete"; id: string; reason?: string; direction: "delete-obsolete" }
   | { kind: "bibliography-replace"; key: string; proposed: { key: string; citation?: string }; reason?: string; direction: "correct" }
+  | { kind: "comparator-promise-table-replace"; id: "metadata:comparator-promise-table"; proposed: ComparatorPromise[]; reason?: string; direction: "correct" }
   | { kind: "symbol-add"; name: string; proposed: CoreSymbol; reason?: string; direction: "correct" }
   | { kind: "symbol-replace"; name: string; proposed: CoreSymbol; reason?: string; direction: "correct" }
   | { kind: "symbol-delete"; name: string; reason?: string; direction: "delete-obsolete" }
@@ -132,6 +146,30 @@ export function findUnsafeDeleteTextReferences(
  * against a `proved` node, then `status: "proved"` plus a new proof against a `to-prove`
  * one. Naming the offending field turns that into one line of output.
  */
+/**
+ * Did this edit SHRINK the node's declared symbol list?
+ *
+ * `free_symbols` is load-bearing for soundness: it scopes which symbol changes reopen the
+ * node. The metadata channel forces `statement` to echo byte-for-byte, but the declaration
+ * rides in from the model payload unchecked — so a payload could echo the claim exactly,
+ * drop `\eta` from the list, and in ONE step both escape detection and persist a node that
+ * no future `\eta` edit can ever reopen.
+ *
+ * Only a defined→defined shrink counts. `undefined → [...]` is the ordinary migration of a
+ * legacy node to a declaration: the node is only on this path because it is currently VALID,
+ * i.e. no symbol has changed since it was proved, so recording what it uses does not alter
+ * what it was proved against. `[...] → undefined` widens the scope back to "any symbol",
+ * which is strictly more conservative and needs no invalidation.
+ */
+export function declarationNarrowed(
+  prior: { free_symbols?: string[] } | undefined,
+  next: { free_symbols?: string[] } | undefined,
+): boolean {
+  if (prior?.free_symbols === undefined || next?.free_symbols === undefined) return false;
+  const after = new Set(next.free_symbols.map(normalizeSymbol));
+  return prior.free_symbols.some((name) => !after.has(normalizeSymbol(name)));
+}
+
 export function describeEchoMismatch(
   proposed: { id: string; kind?: string; statement?: string; status?: string },
   current: { id: string; kind?: string; statement?: string; status?: string },
@@ -161,6 +199,7 @@ const CORE_EDIT_KINDS = [
   "definition-replace",
   "definition-delete",
   "bibliography-replace",
+  "comparator-promise-table-replace",
   "symbol-add",
   "symbol-replace",
   "symbol-delete",
@@ -339,6 +378,46 @@ export async function clearRoundOutputs(ctx: PipelineContext): Promise<void> {
       await rm(path.join(dir, f), { force: true });
     }
   }
+}
+
+/** Consume a fully adjudicated, fully rejected proposal bundle without touching the
+ * frozen core. This is intentionally separate from `applyProposedChanges`: selecting
+ * zero ids there is ambiguous with a caller bug, while an all-rejected review needs an
+ * explicit, auditable disposal operation before a correction directive can proceed. */
+export async function discardAllProposedChanges(args: {
+  ctx: PipelineContext;
+  note: string;
+  checkOnly?: boolean;
+}): Promise<number> {
+  const { ctx, note, checkOnly = false } = args;
+  if (!note.trim()) throw new Error("discard-all requires a nonempty adjudication note");
+  const working = await loadWorkingState(ctx);
+  if (!working) throw new Error("discard-all requires a durable D0 working cursor");
+  const proposals = await readProposedChanges(ctx);
+  const count = proposals.statements.length + proposals.definitions.length +
+    proposals.assumptions.length + proposals.coreEdits.length;
+  if (count === 0) throw new Error("discard-all found no live D0 proposal variants");
+  if (checkOnly) return count;
+
+  const sp = statePath(ctx.repoRoot, ctx.qid, ctx.specialization ?? "v1");
+  if (existsSync(sp)) {
+    const state = await loadState(ctx.repoRoot, ctx.qid, ctx.specialization ?? "v1");
+    if (state.stage_completed !== "-0.5") {
+      state.stage_completed = "-0.5";
+      await saveState(ctx.repoRoot, ctx.qid, ctx.specialization ?? "v1", state);
+    }
+  }
+  // Journal the rejection before consuming its only hot carrier. `saveWorkingState`
+  // archives any provisional proof bytes displaced by the clear.
+  await appendEscalationLog(ctx, {
+    round: working.round,
+    changed: [],
+    note: `DISCARDED ALL ${count} REVIEW-REJECTED PROPOSAL VARIANT(S): ${note.trim()}`,
+  });
+  working.proposals = emptyProposals() as unknown as typeof working.proposals;
+  await saveWorkingState(ctx, working);
+  await clearRoundOutputs(ctx);
+  return count;
 }
 
 /** Apply the selected statement/definition changes to the proto, append the escalation
@@ -650,7 +729,8 @@ export async function applyProposedChanges(args: {
     // only the source->answer replacement now, while the adjudicated narrowing and the
     // durable theorem record are both in hand. On the next assembly the theorem follows
     // the ordinary agent-node carry path and the narrowed OEQ reopens. Out-of-band or
-    // legacy fingerprint mismatches remain conservative in `planCarry`.
+    // fingerprint mismatches follow the same detach-and-rederive rule in `planCarry`;
+    // only an explicit remap to a different answer supersedes the old theorem.
     if (s.kind === "openendedquestion" && c.direction === "narrow") detachResolvedOeq(c.id);
     // REOPEN a settled frozen node. Only the statement text was rewritten, so a node that
     // was `proved` kept its old proof_tex and status — the previous proof, of the PREVIOUS
@@ -720,8 +800,11 @@ export async function applyProposedChanges(args: {
     d.construction = c.proposed;
   }
   // NEW ASSUMPTIONS — add a solver-proposed assumption node to the proto (skip if it already
-  // exists). Built as a gate-valid node (free_symbols:[] + a parsed standard/novel tag); the
-  // escalation-log entry records it for approval-at-bank (the add-prove-approve-later trail).
+  // exists). Built as a gate-valid node (the solver's declared `free_symbols`, empty when it
+  // declared none, plus a parsed standard/novel tag); the escalation-log entry records it for
+  // approval-at-bank (the add-prove-approve-later trail). The declaration is carried rather
+  // than stubbed to `[]` because it scopes symbol invalidation for every statement that
+  // reaches a symbol only THROUGH this assumption.
   for (const a of assumptions) {
     if (sel && !sel.matchesAssumption(a.id)) continue;
     if (assIds.has(a.id)) {
@@ -730,7 +813,14 @@ export async function applyProposedChanges(args: {
       skipped.push({ id: a.id, kind: "assumption", why: "an assumption with this id is already present in the frozen proto (no-op re-proposal)" });
       continue;
     }
-    const node = { id: a.id, condition: a.condition, free_symbols: [], ...parseAssumptionTag(a.standard_or_novel, bibKeys) };
+    // Preserve ABSENT as absent: `?? []` here recorded a solver that omitted the field as
+    // "uses no symbols", the unsafe reading (see AssumptionSchema.free_symbols).
+    const node = {
+      id: a.id,
+      condition: a.condition,
+      ...(a.free_symbols === undefined ? {} : { free_symbols: a.free_symbols }),
+      ...parseAssumptionTag(a.standard_or_novel, bibKeys),
+    };
     proto.assumptions.push(node as (typeof proto.assumptions)[number]);
     assIds.add(a.id);
     changed.push({ id: a.id, kind: "assumption", from: "", to: a.condition, reason: a.reason ?? "" });
@@ -816,8 +906,9 @@ export async function applyProposedChanges(args: {
           skipped.push({ id: edit.id, kind: "statement-replace", why: mismatch });
           continue;
         }
+        const { partial_result: _reviewPartial, ...proposedNode } = edit.proposed;
         const composed = {
-          ...edit.proposed,
+          ...proposedNode,
           statement: carriedNode.statement,
           status: carriedNode.status,
           proof_tex: carriedNode.proof_tex,
@@ -864,6 +955,11 @@ export async function applyProposedChanges(args: {
           // debt solely because no redundant paired proof was emitted.
           composed.status === "proved" &&
           (carried.proof_tex ?? "").trim().length > 0 &&
+          // A SHRINKING declaration is a basis change, so the node owes a re-derivation
+          // rather than keeping its proof. Checked BEFORE `memberValid`, which would
+          // otherwise evaluate the node against the already-narrowed scope and conclude it
+          // is fine — the narrowing would escape detection and persist in the same step.
+          !declarationNarrowed(carried.node, composed) &&
           memberValid(working, proto, composed) &&
           dependencyClosureValid(composed)
         ) {
@@ -889,13 +985,27 @@ export async function applyProposedChanges(args: {
         skipped.push({ id: edit.id, kind: "statement-replace", why: "no frozen proto statement with this id" });
         continue;
       }
-      const protoMismatch = describeEchoMismatch(edit.proposed, original, edit.id);
+      const protoRecBefore = working?.solved[edit.id];
+      const hasSettledOverlay = protoRecBefore !== undefined &&
+        protoRecBefore.partial !== true &&
+        protoRecBefore.proof_tex.trim().length > 0 &&
+        original.status === "to-prove" &&
+        memberValid(working, proto, original);
+      // Frozen proto nodes remain `to-prove`; their proved status/proof live in the
+      // working overlay. The solver and canonical review packet see that assembled
+      // proved view, so statement-replace must echo IT, not the lower frozen storage
+      // layer. Apply still composes back onto the frozen node below.
+      const currentEchoView = hasSettledOverlay
+        ? { ...original, status: "proved" as const, proof_tex: protoRecBefore.proof_tex }
+        : original;
+      const protoMismatch = describeEchoMismatch(edit.proposed, currentEchoView, edit.id);
       if (protoMismatch) {
         skipped.push({ id: edit.id, kind: "statement-replace", why: protoMismatch });
         continue;
       }
+      const { partial_result: _reviewPartial, ...proposedNode } = edit.proposed;
       const composed = {
-        ...edit.proposed,
+        ...proposedNode,
         statement: prior.statement,
         status: prior.status,
         proof_tex: prior.proof_tex,
@@ -929,6 +1039,42 @@ export async function applyProposedChanges(args: {
         protoRec.snapshot = snapshotMember(proto, composed);
         delete protoRec.partial;
         workingChanged = true;
+      } else if (protoRec && hasSettledOverlay && dependencyClosureValid(composed)) {
+        // This is metadata repair, not new proof content. Dependency growth only
+        // declares additional settled support; it does not alter the statement or any
+        // definition/assumption content the existing proof was checked against. The
+        // accepted edit itself is the adjudicated assertion that the edge is direct —
+        // requiring a literal `def:x` token in prose would reject semantic uses written
+        // only in notation (the failure that motivated this branch). Re-snapshot the
+        // durable proof against the repaired graph while keeping proof/status ownership
+        // in working state.
+        //
+        // GUARDED: that justification holds only when the closure GREW. This proof was
+        // never re-derived, and `snapshotBasisValid` checks content through this very map
+        // — so if the accepted edit REMOVES a dependency, overwriting the snapshot
+        // silently narrows the proof's staleness basis. A later correction to the dropped
+        // definition would then leave `memberValid` true and carry a proof of the OLD
+        // object forward as a proof of the new one. Re-snapshot only on growth.
+        const repaired = snapshotMember(proto, composed);
+        const retainsAll = (prior: Record<string, string>, updated: Record<string, string>): boolean =>
+          Object.keys(prior).every((key) => updated[key] !== undefined);
+        const priorSnapshot = protoRec.snapshot;
+        if (
+          !priorSnapshot ||
+          (retainsAll(priorSnapshot.defs, repaired.defs) &&
+            retainsAll(priorSnapshot.assumptions, repaired.assumptions))
+        ) {
+          protoRec.snapshot = repaired;
+          delete protoRec.partial;
+          workingChanged = true;
+        } else {
+          skipped.push({
+            id: edit.id, kind: "proof-pairing",
+            why: "the accepted edit REMOVES content from this node's dependency closure, so " +
+              "re-snapshotting the un-re-derived proof would drop it from the staleness basis — " +
+              "the node keeps its original snapshot and re-derives if that content changes",
+          });
+        }
       }
     } else if (edit.kind === "statement-delete") {
       const priorFrozen = proto.statements.find((s) => s.id === edit.id);
@@ -1037,14 +1183,41 @@ export async function applyProposedChanges(args: {
         });
         continue;
       }
+      // A definition's `free_symbols` scopes symbol invalidation for EVERY node that
+      // cites it (`declaredSymbolScope` unions the closure's declarations), so shrinking
+      // it silently stops a whole subtree from reopening when one of the dropped symbols
+      // is re-defined.
+      //
+      // Only the construction-IDENTICAL case needs handling. When `construction` also
+      // changed, every dependent's snapshot already fails on the text and they re-derive
+      // against the new declaration — sound with no intervention. When it did not, the
+      // edit is pure bookkeeping: nothing any proof rests on moved, so reopening the
+      // dependents (the statement channel's answer to the same narrowing) would destroy N
+      // proofs to correct a list. Retain the union instead — the scope stays a superset of
+      // what each proof was checked against, which is the whole soundness requirement, and
+      // over-declaring only ever costs a re-derivation that a later symbol edit triggers.
+      const priorDef = proto.definitions[i];
+      const retained = priorDef.construction === edit.proposed.construction &&
+        declarationNarrowed(priorDef, edit.proposed)
+        ? (priorDef.free_symbols ?? []).filter(
+            (name) => !(edit.proposed.free_symbols ?? []).some((k) => normalizeSymbol(k) === normalizeSymbol(name)),
+          )
+        : [];
+      const appliedDef = retained.length === 0
+        ? edit.proposed
+        : { ...edit.proposed, free_symbols: [...(edit.proposed.free_symbols ?? []), ...retained] };
       changed.push({
         id: edit.id,
         kind: "definition",
-        from: JSON.stringify(proto.definitions[i]),
-        to: JSON.stringify(edit.proposed),
-        reason: edit.reason ?? "",
+        from: JSON.stringify(priorDef),
+        to: JSON.stringify(appliedDef),
+        reason: retained.length === 0
+          ? (edit.reason ?? "")
+          : `${edit.reason ?? ""} [free_symbols retained: ${retained.join(", ")} — dropped while ` +
+            `\`construction\` was unchanged, so the declaration is kept a superset of what the ` +
+            `citing proofs were checked against]`.trim(),
       });
-      proto.definitions[i] = edit.proposed;
+      proto.definitions[i] = appliedDef;
     } else if (edit.kind === "definition-delete") {
       const prior = proto.definitions.find((d) => d.id === edit.id);
       if (!prior) {
@@ -1079,6 +1252,18 @@ export async function applyProposedChanges(args: {
         changed.push({ id: target, kind: "bibliography", from: JSON.stringify(proto.bibliography[i]), to: JSON.stringify(edit.proposed), reason: edit.reason ?? "" });
         proto.bibliography[i] = edit.proposed;
       }
+    } else if (edit.kind === "comparator-promise-table-replace") {
+      changed.push({
+        id: edit.id,
+        kind: "metadata",
+        from: JSON.stringify(proto.comparator_promise_table ?? proto.comparator_promises ?? []),
+        to: JSON.stringify(edit.proposed),
+        reason: edit.reason ?? "",
+      });
+      proto.comparator_promise_table = edit.proposed;
+      // Canonicalize the legacy alias away so later consumers cannot observe two
+      // contradictory promise tables after a D0 repair.
+      delete proto.comparator_promises;
     } else if (edit.kind === "symbol-add") {
       if (proto.symbols.some((s) => s.name === edit.name) || edit.proposed.name !== edit.name) {
         skipped.push({
@@ -1156,7 +1341,7 @@ export async function applyProposedChanges(args: {
     coreEdits.filter((e) => e.kind !== "rebuild-reverse-dependencies").forEach((e) => bump(coreEditTarget(e)));
     const appliedCount = new Map<string, number>();
     for (const entry of changed) {
-      if (entry.kind === "metadata") continue; // rebuild edits are excluded from proposedCount too
+      if (entry.id === "metadata:reverse-dependencies") continue; // rebuild edits are excluded from proposedCount too
       appliedCount.set(entry.id, (appliedCount.get(entry.id) ?? 0) + 1);
     }
     const unappliedIds = new Set(
@@ -1205,19 +1390,40 @@ export async function applyProposedChanges(args: {
   // byte (for example under-escaped `\\forall`): a later rebuild must not
   // reintroduce the corruption after a clean render.
   repairCoreLatexSerialization(proto);
+  // Symbol-add appends by construction, so a newly introduced prerequisite can land
+  // after an older shorthand that references it. Canonicalize the declared-symbol DAG
+  // after every accepted bundle; this changes only array order, never payload bytes.
+  proto.symbols = topologicallyOrderSymbols(proto.symbols);
   // Fail loudly before persisting: a control character still present after both
   // repair layers means an escaping corruption neither could safely resolve.
   assertNoDecodedControlChars(proto, `proto core after apply (${protoPath})`);
   CoreSchema.parse(proto);
-  const declaredSymbols = new Set(proto.symbols.map((symbol) => symbol.name));
-  const undeclaredFreeSymbols = proto.assumptions.flatMap((assumption) =>
-    assumption.free_symbols
-      .filter((name) => !declaredSymbols.has(name))
-      .map((name) => `${assumption.id}:${name}`),
+  // NORMALIZED on both sides, matching `preflight.checkSymbolDeclarations` and
+  // `d0_working.declaredSymbolScope`. Raw equality here diverged from those two: a
+  // declaration spelled `\(\eta\)` against a table entry `\eta` passes the D0-SOLVE
+  // checkpoint under normalized equality and then hard-refuses the ENTIRE adjudication
+  // bundle at this line under raw equality — a lost round, reported against a symbol the
+  // operator can plainly see is declared. Both spellings are common: 1605 of 3958 real
+  // symbol names are `\(…\)`-wrapped.
+  const declaredSymbols = new Set(proto.symbols.map((symbol) => normalizeSymbol(symbol.name)));
+  // Statements and definitions are checked alongside assumptions because `free_symbols`
+  // is what scopes symbol invalidation: a `symbol-delete` (or rename) that orphans a
+  // declaration leaves a name that can never match a changed symbol again, so the node
+  // stops being reopened by the very edits it depends on — silent under-invalidation
+  // rather than a loud dangling reference. Nodes that declare nothing are skipped: they
+  // are the fail-safe case and are reopened by any symbol change regardless.
+  const undeclaredFreeSymbols = [
+    ...proto.assumptions.map((a) => [a.id, a.free_symbols] as const),
+    ...proto.definitions.map((d) => [d.id, d.free_symbols] as const),
+    ...proto.statements.map((s) => [s.id, s.free_symbols] as const),
+  ].flatMap(([id, freeSymbols]) =>
+    (freeSymbols ?? [])
+      .filter((name) => !declaredSymbols.has(normalizeSymbol(name)))
+      .map((name) => `${id}:${name}`),
   );
   if (undeclaredFreeSymbols.length > 0) {
     throw new Error(
-      `Refusing D0 apply: assumption free symbols remain undeclared after the selected bundle: ` +
+      `Refusing D0 apply: free symbols remain undeclared after the selected bundle: ` +
         undeclaredFreeSymbols.join(", "),
     );
   }

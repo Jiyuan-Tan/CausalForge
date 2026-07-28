@@ -160,7 +160,7 @@ async function solveUnit(args: {
       "=== DIRECTIVE-WIDE STRUCTURED-EMISSION OWNERSHIP ===",
       "You are the ONLY solve unit allowed to emit directive-wide shared payloads this round. Emit each",
       "cross-cutting comparator/cited `added_lemmas` node, new exact required node, proposed assumption,",
-      "definition correction, or non-local `proposed_core_edits` symbol/definition/bibliography/metadata edit",
+      "definition correction, or non-local `proposed_core_edits` symbol/definition/bibliography/comparator/metadata edit",
       "exactly once in YOUR output. Other units may cite or depend on those ids but are forbidden to emit them.",
       `Exact required target ids for this round: ${args.requiredCoreTargets.join(", ") || "(none listed)"}.`,
       `Statement target ids semantically owned by YOUR unit: ${args.ownedSemanticTargets.join(", ") || "(none)"}.`,
@@ -433,8 +433,19 @@ export async function dispatchSolveUnits(args: {
       : core.statements.map((statement) => statement.id);
     const statementById = new Map(core.statements.map((statement) => [statement.id, statement] as const));
     for (const id of forcedIds) {
-      const statement = statementById.get(id);
+      // A resolved agent-authored OEQ is absent from assembled `core` by design, but
+      // its canonical source may be rehydrated in sourceById so a directed repair can
+      // assign the answer theorem to the semantic OEQ owner without reopening it.
+      const statement = statementById.get(id) ?? sctx.sourceById.get(id);
       if (!statement) continue; // a genuinely new required node must be emitted as an addition.
+      if (!statementById.has(id) && persistedOeqReplacements.has(id)) {
+        // Merge validates and fingerprints a resolution against the assembled source,
+        // then removes it again. Temporarily restore only this explicitly forced,
+        // already-resolved source; it never survives the round as an open node.
+        const opened = openSolveTarget(statement);
+        core.statements.push(opened);
+        statementById.set(id, opened);
+      }
       openById.set(id, openSolveTarget(statement));
     }
   }
@@ -495,6 +506,20 @@ export async function dispatchSolveUnits(args: {
           ].join("\n\n")
         : "";
     dispatch.push({ targets: g.targets, label: g.label, priorContext });
+  }
+
+  // A directed repair can target only paper-wide structured metadata (for
+  // example the comparator promise table) after every mathematical statement is
+  // already valid. Such a round still needs one real worker to consume the
+  // directive and own the singleton edit; otherwise an empty dispatch reaches
+  // merge and fails the exact-target gate without ever giving an agent a chance
+  // to emit the requested payload.
+  if (hasPendingDirective && dispatch.length === 0) {
+    dispatch.push({
+      targets: [],
+      label: "directive:structured-metadata",
+      priorContext: escContext,
+    });
   }
 
   // Every directed round has one canonical writer for paper-wide prose AND

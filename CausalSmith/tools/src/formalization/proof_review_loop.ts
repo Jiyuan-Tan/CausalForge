@@ -279,6 +279,32 @@ const SCAFFOLD_MAX = PROOF_SCAFFOLD_MAX;
 const TAG_REROUTE_MAX = 2;
 
 /**
+ * Resolve the current F3 proof directive at the external-call boundary.
+ *
+ * The proof loop can live for hours while `f3_directive.ts --clear` updates the
+ * durable state between filler calls. Reading the flag only at process startup
+ * makes that clear invisible and lets pipeline.ts later overwrite disk with its
+ * stale shared object. Refresh both the call value and the shared object here.
+ */
+export async function resolveLiveFillerDirective(
+  ctx: { repoRoot: string; qid: string; specialization: string },
+  sharedState: StateJson | undefined,
+  fallback: string | null,
+  loader: typeof loadState = loadState,
+): Promise<string | null> {
+  let directive = sharedState?.flags.f3_filler_directive ?? fallback;
+  try {
+    const durable = await loader(ctx.repoRoot, ctx.qid, ctx.specialization);
+    directive = durable.flags.f3_filler_directive ?? null;
+    if (sharedState) sharedState.flags.f3_filler_directive = directive;
+  } catch {
+    // Standalone/unit-test callers may have no durable state. Preserve their
+    // explicitly supplied initial directive rather than failing the proof loop.
+  }
+  return directive?.trim() ? directive : null;
+}
+
+/**
  * The proof–review loop replaces the legacy split proof/review stages. The reviewer runs at the TOP of each
  * iteration — so iteration 0 reviews the raw scaffold (the old F2.5) before any proof effort —
  * then the filler advances, then we re-refresh and loop. Terminates when every frozen theorem's
@@ -298,10 +324,11 @@ export async function runProofReviewLoop(args: {
   texPath?: string;
   corePath?: string;
   noProgressK?: number;
-  /** Load-bearing orchestrator PROOF hint for phase B (lemma names / tactic strategy / Mathlib
-   *  API), read from `state.flags.f3_filler_directive` on `--resume` and injected verbatim into
-   *  every filler call for the whole loop run. Constant within a run (cleared/updated by the
-   *  orchestrator between resumes); a proof hint only, never a statement/hypothesis license. */
+  /** Initial load-bearing orchestrator PROOF hint for phase B (lemma names / tactic strategy /
+   *  Mathlib API). Production filler calls refresh this flag from durable state every iteration,
+   *  so an orchestrator clear/update at a natural sub-call boundary is observed by a long-lived
+   *  loop and synchronized back into the shared state object. A proof hint only, never a
+   *  statement/hypothesis license. */
   fillerDirective?: string | null;
   // injectable seams (default to the real impls)
   refresh?: () => Promise<RefreshState>;
@@ -418,15 +445,22 @@ export async function runProofReviewLoop(args: {
       return { graph: r.graph, skeleton: r.skeleton, dirty: r.dirty, hashes: r.hashes };
     });
   const fill: (g: FormalizationGraph, directive?: string) => Promise<FillerResult> =
-    args.fill ?? ((graph, directive) => runFiller({
-      ctx: args.ctx,
-      deps: args.deps,
-      graph,
-      leanDir,
-      texPath: args.texPath,
-      corePath: args.corePath,
-      directive: [args.fillerDirective, directive].filter((x): x is string => !!x?.trim()).join("\n\n") || null,
-    }));
+    args.fill ?? (async (graph, directive) => {
+      const liveDirective = await resolveLiveFillerDirective(
+        args.ctx,
+        args.state,
+        args.fillerDirective ?? null,
+      );
+      return runFiller({
+        ctx: args.ctx,
+        deps: args.deps,
+        graph,
+        leanDir,
+        texPath: args.texPath,
+        corePath: args.corePath,
+        directive: [liveDirective, directive].filter((x): x is string => !!x?.trim()).join("\n\n") || null,
+      });
+    });
   const review: (s: RefreshState, mode: "delta" | "convergence") => Promise<ReviewerResult> =
     args.review ??
     ((s, mode) => runReviewer({ ctx: args.ctx, deps: args.deps, graph: s.graph, skeleton: s.skeleton, dirty: s.dirty, hashes: s.hashes, mode, leanDir, texPath: args.texPath, corePath: args.corePath, debugLogDir: logDir || undefined }));

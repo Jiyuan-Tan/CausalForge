@@ -152,6 +152,18 @@ describe("parseProposalSelectors", () => {
     expect(sel.unmatched()).toEqual([]);
   });
 
+  it("recognizes comparator promise table replacement as a metadata core edit", () => {
+    const sel = parseProposalSelectors([
+      "comparator-promise-table-replace:metadata:comparator-promise-table",
+    ]);
+    expect(sel.matchesCoreEdit({
+      kind: "comparator-promise-table-replace",
+      id: "metadata:comparator-promise-table",
+      proposed: [],
+    } as never)).toBe(true);
+    expect(sel.unmatched()).toEqual([]);
+  });
+
   it("keeps colons inside the id half, including LaTeX symbol and bib targets", () => {
     const sel = parseProposalSelectors([
       "core-edit:sym:\\(\\bar{\\mathcal C}_{n,\\alpha}^d\\)",

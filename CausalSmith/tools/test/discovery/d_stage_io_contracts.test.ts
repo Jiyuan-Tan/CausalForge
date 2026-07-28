@@ -278,6 +278,33 @@ describe("deterministic structural contracts replace model-discovered rules", ()
     }
   });
 
+  it("preserves OEQ partial_result on a statement-replace for adjudication", () => {
+    const parsed = SolveUnitOutputSchema.parse({
+      proofs: [],
+      proposed_core_edits: [{
+        kind: "statement-replace",
+        id: "oeq:frontier",
+        proposed: {
+          id: "oeq:frontier",
+          kind: "openendedquestion",
+          statement: "What is the sharp frontier?",
+          depends_on: ["ass:x"],
+          status: "to-prove",
+          partial_result: "The fast branch is proved on the interior shell.",
+        },
+        reason: "synchronize the residual question and proved partial",
+        direction: "correct",
+      }],
+    });
+    const edit = parsed.proposed_core_edits[0];
+    expect(edit.kind).toBe("statement-replace");
+    if (edit.kind !== "statement-replace") throw new Error("wrong edit kind");
+    expect(edit.proposed.partial_result).toBe(
+      "The fast branch is proved on the interior shell.",
+    );
+    expect(edit.proposed).not.toHaveProperty("proof_tex");
+  });
+
   it("rejects proof_tex on statement-replace instead of silently retaining it", () => {
     const parsed = SolveUnitOutputSchema.safeParse(replacementOutput("a full proof"));
     expect(parsed.success).toBe(false);

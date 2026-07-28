@@ -14,6 +14,7 @@ import { runStage0Typed, partitionProposedChanges, findingKeys } from "../../src
 import { applyProposedChanges } from "../../src/discovery/stages/d0_apply.js";
 import { protoCoreJsonPath } from "../../src/discovery/stages/neg1_2_author.js";
 import { coreJsonPath } from "../../src/discovery/stages/d0_core.js";
+import { SolveUnitOutputSchema } from "../../src/discovery/solve/schemas.js";
 
 /** Seed proposal kinds onto the SOLE carrier (`d0_working.json:proposals`),
  *  merging with any working state a test already wrote. */
@@ -44,6 +45,7 @@ import {
   appendEscalationLog,
   escalationLogPath,
   saveWorkingState,
+  snapshotMember,
   workingPath,
   pruneOrphanLemmas,
 } from "../../src/discovery/stages/d0_working.js";
@@ -1425,6 +1427,60 @@ describe("incremental reuse across escalation rounds", () => {
     expect(result.message).toMatch(/STATEMENT change/i);
   });
 
+  it("dispatches a metadata-only directive after every mathematical node is valid", async () => {
+    const ctx = makeCtx(repoRoot);
+    await saveWorkingState(ctx, {
+      round: 3,
+      escalation_entries_consumed: 0,
+      solved: Object.fromEntries(PROTO.statements.map((statement) => [statement.id, {
+        proof_tex: `Proof of ${statement.id}.`,
+        snapshot: snapshotMember(PROTO as any, statement as any),
+      }])),
+    });
+    await appendEscalationLog(ctx, {
+      round: 4,
+      changed: [],
+      directive: "replace the stale comparator promise table",
+      require_core_changes: true,
+      required_core_targets: ["metadata:comparator-promise-table"],
+    });
+    let sawEmptyMetadataUnit = false;
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1));
+        sawEmptyMetadataUnit = Array.isArray(targets) && targets.length === 0 &&
+          prompt.includes("metadata:comparator-promise-table");
+        await writeFile(outPath, JSON.stringify({
+          proposed_core_edits: [{
+            kind: "comparator-promise-table-replace",
+            id: "metadata:comparator-promise-table",
+            proposed: [{
+              comparator_bibkey: "Rosenbaum1983",
+              comparator_claim: "background comparator only",
+              matched_by: "unmatched",
+              match_kind: "downgraded_to_informed_by",
+            }],
+            reason: "synchronize the structured comparator contract",
+            direction: "correct",
+          }],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps }) as any;
+    expect(sawEmptyMetadataUnit).toBe(true);
+    expect(result.status).toBe("checkpoint");
+    expect((await readSurfacedProposals(ctx)).coreEdits).toContainEqual(expect.objectContaining({
+      kind: "comparator-promise-table-replace",
+      id: "metadata:comparator-promise-table",
+    }));
+  });
+
   it("keeps the full agent-node frontier across auto-apply, core clearing, and restart", async () => {
     const ctx = makeCtx(repoRoot);
     const rate = {
@@ -2270,6 +2326,38 @@ describe("incremental reuse across escalation rounds", () => {
     });
   });
 
+  it("replaces the comparator promise table through a typed D0 core edit", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.comparator_promises = [{
+      comparator_bibkey: "Rosenbaum1983",
+      comparator_claim: "stale strict comparison",
+      matched_by: "Theorem 1",
+      match_kind: "strict_tightening",
+    }];
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    const edit = {
+      kind: "comparator-promise-table-replace",
+      id: "metadata:comparator-promise-table",
+      proposed: [{
+        comparator_bibkey: "Rosenbaum1983",
+        comparator_claim: "the source is background rather than a theorem-level target",
+        matched_by: "unmatched",
+        match_kind: "downgraded_to_informed_by",
+      }],
+      reason: "synchronize comparator positioning",
+      direction: "correct",
+    };
+    expect(SolveUnitOutputSchema.parse({ proposed_core_edits: [edit] }).proposed_core_edits).toHaveLength(1);
+    await seedWorkingProposals(ctx, { coreEdits: [edit] });
+
+    await applyProposedChanges({ ctx });
+
+    const updated = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(updated.comparator_promise_table).toEqual(edit.proposed);
+    expect(updated.comparator_promises).toBeUndefined();
+  });
+
   it("deletes an obsolete statement, remaps inbound edges, and prevents carried-state resurrection", async () => {
     const ctx = makeCtx(repoRoot);
     const proto = structuredClone(PROTO) as any;
@@ -2592,8 +2680,10 @@ describe("incremental reuse across escalation rounds", () => {
     const deps: StageDeps = {
       runCodex: async ({ prompt }: { prompt: string }) => {
         const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
-        const mine = !emittedResolution;
-        emittedResolution = true;
+        const targetBlock = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "")
+          .split("SOLVE_OUTPUT_PATH")[0];
+        const mine = targetBlock.includes('"id": "oeq:agent-added-open-question"') && !emittedResolution;
+        if (mine) emittedResolution = true;
         await writeFile(outPath, JSON.stringify({
           proofs: [],
           resolved_oeqs: mine ? [{
@@ -2635,6 +2725,25 @@ describe("incremental reuse across escalation rounds", () => {
     expect(working.resolved_oeqs["oeq:agent-added-open-question"].source_fingerprint).toContain(
       "openendedquestion",
     );
+
+    // A later directive may need the RESOLVED semantic owner again. The source no
+    // longer exists in proto or solved; recover it only from its canonical fingerprint
+    // and dispatch it under the same OEQ -> theorem capability.
+    await appendEscalationLog(ctx, {
+      round: working.round,
+      changed: [],
+      directive: "revalidate the resolved agent-authored answer without reopening it",
+      require_core_changes: true,
+      required_core_targets: ["oeq:agent-added-open-question"],
+    });
+    emittedResolution = false;
+    await runStage0Solve({ ctx, state: makeState(), deps });
+    const resumed = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(resumed.resolved_oeqs["oeq:agent-added-open-question"]).toMatchObject({
+      theorem_id: "thm:agent-added-answer",
+    });
+    expect(JSON.parse(resumed.resolved_oeqs["oeq:agent-added-open-question"].source_fingerprint))
+      .toMatchObject({ kind: "openendedquestion", statement: oeqStatement });
   });
 
   it("discharges a recovered agent-authored cited target emitted again through added_lemmas", async () => {
@@ -3705,16 +3814,23 @@ describe("add-prove-approve-later: assumptions, theorem narrowings, OEQ residual
       { id: "thm:main", kind: "theorem", statement: "main", depends_on: ["ass:overlap"], status: "to-prove", justification: "j", gap: "g", consumer: "c" },
       { id: "oeq:tight", kind: "openendedquestion", statement: "is it tight?", depends_on: ["thm:main"], status: "to-prove", justification: "j", gap: "g", consumer: "c" },
     ] }), "utf8");
+    let leaveOpen = true;
     const deps = depsReturning((targets) => ({
       proofs: targets.filter((t) => t.id !== "oeq:tight").map((t) => ({ id: t.id, proof_tex: "QED." })),
       added_lemmas: [], proposed_statement_changes: [], proposed_definition_changes: [],
-      open_obligations: targets.some((t) => t.id === "oeq:tight") ? [{ node_id: "oeq:tight", what_is_open: "tightness", obstruction: "open", attempted: "x" }] : [],
+      open_obligations: leaveOpen && targets.some((t) => t.id === "oeq:tight") ? [{ node_id: "oeq:tight", what_is_open: "tightness", obstruction: "open", attempted: "x" }] : [],
     }));
-    const res = (await runStage0Solve({ ctx, state: makeState(), deps })) as any;
+    const state = makeState();
+    const res = (await runStage0Solve({ ctx, state, deps })) as any;
     expect("status" in res).toBe(false); // Stage0SolveResult = clean discharge (OEQ residual did NOT halt)
+    expect(state.design_decisions.d0_open_oeq_residuals).toMatch(/oeq:tight/);
     const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
     expect(core.statements.find((s: any) => s.id === "thm:main").status).toBe("proved");
     expect(core.statements.find((s: any) => s.id === "oeq:tight").status).toBe("to-prove"); // legitimately left open
+
+    leaveOpen = false;
+    await runStage0Solve({ ctx, state, deps });
+    expect(state.design_decisions.d0_open_oeq_residuals).toBeUndefined();
   });
 
   it("fails cheaply instead of erasing a dangling depends_on edge", async () => {

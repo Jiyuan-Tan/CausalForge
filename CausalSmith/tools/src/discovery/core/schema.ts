@@ -82,7 +82,16 @@ export const AssumptionSchema = z
     id: z.string().regex(idRe("ass")),
     kind: z.string().optional(), // free-form tag (open set); see SUGGESTED_ASSUMPTION_KINDS
     condition: z.string(),
-    free_symbols: z.array(z.string()).default([]),
+    // `.optional()`, NOT `.default([])` — the same load-bearing distinction as on
+    // StatementSchema/DefinitionSchema below. `undefined` = NEVER DECLARED = "may use any
+    // symbol" (conservative); `[]` = "declared, genuinely uses none" (exempt from symbol
+    // invalidation). A default collapses them, which turns a solver that simply FORGOT the
+    // field into a credible "uses nothing" — and because a statement's invalidation scope is
+    // its own declaration UNION its closure's, one such assumption silently narrows every
+    // statement depending on it. 994 of 996 real assumptions already declare (80 of them
+    // legitimately `[]`), so this changes almost nothing on the existing corpus while making
+    // the omission case fail safe.
+    free_symbols: z.array(z.string()).optional(),
     constants: z.array(z.string()).optional(),
     standard: StandardTagSchema.optional(),
     novel: NovelTagSchema.optional(),
@@ -108,6 +117,17 @@ export const DefinitionSchema = z
     //     member-property assumptions, NEVER the image of a witness construction.
     //   • CONSTRUCTED OBJECT → the explicit formula / algorithm.
     construction: z.string().min(1),
+    // The symbol-table names this definition's `construction` uses. Same contract as
+    // `AssumptionSchema.free_symbols` (atomic `symbols[].name` keys, one per element)
+    // but `.optional()`, NOT `.default([])`, and the difference is load-bearing:
+    // `undefined` means NEVER DECLARED and is read as "may use ANY symbol", while `[]`
+    // means "declared, and genuinely uses none". Defaulting would collapse those two,
+    // and since ZERO of the 1269 definitions in the 112 real cores under
+    // doc/research/{active,_bank} carry the key, every legacy definition would parse as
+    // a credible "uses no symbols" and a symbol re-definition would invalidate nothing —
+    // silently unsound. Follows the `external_refs` precedent below for the same reason.
+    // Consumed by `d0_working.declaredSymbolScope` to SCOPE symbol invalidation.
+    free_symbols: z.array(z.string()).optional(),
     // Present ⟺ this definition is a CLASS, carved by these member-property ids.
     // This is the A6 firewall anchor: a class is carved ONLY by member-properties;
     // the gate (G5) additionally checks neither the member-property list NOR the
@@ -140,6 +160,15 @@ export const CitedSourceSchema = z.object({
   arxiv: z.string().min(1).optional(),
   doi: z.string().min(1).optional(),
   url: z.string().url().optional(),
+  // The PRIMARY source, when the located environment restates a result it credits to
+  // an earlier work (papers routinely reprove standard lemmas in their appendices).
+  // Absent = the statement was affirmed original to `cite`. A verbatim match does not
+  // establish provenance, so this is decided explicitly at attestation time.
+  upstream: z.object({
+    citation: z.string().min(1),
+    locator: z.string().min(1).optional(),
+    cite: z.string().min(1).optional(), // bibkey, when the primary is in `bibliography`
+  }).optional(),
   attestation: z.object({
     by: z.enum(["d0-agent", "main", "user"]),
     note: z.string().min(1),
@@ -155,6 +184,22 @@ export const StatementSchema = z
     id: z.string().regex(/^(thm|lem|prop|oeq|conj):[a-z0-9-]+$/),
     kind: z.enum(STATEMENT_KINDS),
     statement: z.string(),
+    // The symbol-table names this statement's `statement` text uses — the DECLARED
+    // edge from a claim to the symbols whose meaning it rests on. Symbols are not
+    // `depends_on` nodes, so without this a symbol re-definition (say `\bar d` narrowing
+    // from ℝ to [0,1]) changed what this node CLAIMS while its text stayed byte-identical
+    // and every carried proof survived.
+    //
+    // `.optional()`, NOT `.default([])` (unlike `AssumptionSchema.free_symbols`, whose
+    // default predates this field and whose key is populated on 1186/1188 real
+    // assumptions). `undefined` = NEVER DECLARED, read as "may use ANY symbol" ⇒
+    // invalidated by ANY symbol change; `[]` = declared, genuinely uses none. Zero of
+    // the 1077 statements in the 112 real cores under doc/research/{active,_bank} carry
+    // the key, so a `.default([])` would make every legacy statement look like a
+    // credible "uses no symbols" and scope the invalidation to nothing — strictly worse
+    // than the global invalidation it replaces. Same reasoning as `external_refs` below.
+    // Consumed by `d0_working.declaredSymbolScope`.
+    free_symbols: z.array(z.string()).optional(),
     depends_on: z.array(z.string()).default([]),
     route: z.string().optional(), // proof strategy — D0-CORE fills (statement + strategy)
     // JSON-producing agents commonly spell an inapplicable optional field as
@@ -268,6 +313,7 @@ export const ComparatorPromiseSchema = z.object({
     "dropped_from_abstract",
   ]),
 });
+export type ComparatorPromise = z.infer<typeof ComparatorPromiseSchema>;
 
 /** The project-level justification (replaces a free-prose intro): the literature
  * GAP, the NICHE that gap opens, and how this project FILLS it. */

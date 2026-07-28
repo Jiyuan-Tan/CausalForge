@@ -163,7 +163,12 @@ export function defaultDeps(ctx: PipelineContext, currentStage?: Stage, state?: 
         const out = await runCodex({
           ...input,
           prompt: input.prompt + scratchInstruction,
-          cwd: usePaperTmpAsCwd ? paperTmp! : input.cwd,
+          cwd: resolveCodexWorkingDirectory({
+            requestedCwd: input.cwd,
+            paperTmp,
+            usePaperTmpAsCwd,
+            productionWrite: input.productionWrite,
+          }),
           leanProjectPath: usePaperTmpAsCwd ? ctx.repoRoot : input.leanProjectPath,
         });
         await logAgentCall(ctx, stageId, "codex", input.prompt, input.model ?? "?", input.reasoningEffort ?? "?", Date.now() - t0, out.stdout);
@@ -194,6 +199,20 @@ export function defaultDeps(ctx: PipelineContext, currentStage?: Stage, state?: 
     },
     lean: createLeanLspClient({ repoRoot: ctx.repoRoot }),
   };
+}
+
+/** Resolve the Codex sandbox root for an F-stage call.
+ *
+ * Read-only reviewers stay in paper-local tmp/. Nested source producers retain
+ * their explicit production cwd so workspace-write can reach the Lean modules.
+ */
+export function resolveCodexWorkingDirectory(args: {
+  requestedCwd: string;
+  paperTmp?: string;
+  usePaperTmpAsCwd: boolean;
+  productionWrite?: boolean;
+}): string {
+  return args.usePaperTmpAsCwd && !args.productionWrite ? args.paperTmp! : args.requestedCwd;
 }
 
 export async function readPrompt(ctx: PipelineContext, name: string): Promise<string> {

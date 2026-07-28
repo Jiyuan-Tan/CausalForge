@@ -300,6 +300,17 @@ describe("Stage 1 paper-scoped NL formalization", () => {
     const existingPlan = planPath(repoRoot, ctx.qid, ctx.specialization);
     await mkdir(path.dirname(existingPlan), { recursive: true });
     await writeFile(existingPlan, '{"preserve":"this existing plan"}');
+    const existingGraph = path.join(
+      repoRoot,
+      "doc/research/active/pid_manski1990test/graph.json",
+    );
+    const existingNote = path.join(
+      repoRoot,
+      "doc/research/active/pid_manski1990test/formalization/formalization.md",
+    );
+    await mkdir(path.dirname(existingNote), { recursive: true });
+    await writeFile(existingGraph, '{"preserve":"reviewed graph"}\n');
+    await writeFile(existingNote, "preserve reviewed note\n");
 
     const log = pipelineLogPath(repoRoot, ctx.qid, ctx.specialization);
     await writeFile(log, JSON.stringify({ stage: "3", status: "completed" }) + "\n");
@@ -324,5 +335,7 @@ describe("Stage 1 paper-scoped NL formalization", () => {
     expect(prompt).toContain(`Prior plan to patch (Read, then Edit in place): ${existingPlan}`);
     expect(prompt).toContain("Patch the existing plan");
     expect(await readFile(existingPlan, "utf8")).toBe('{"preserve":"this existing plan"}');
+    expect(await readFile(existingGraph, "utf8")).toBe('{"preserve":"reviewed graph"}\n');
+    expect(await readFile(existingNote, "utf8")).toBe("preserve reviewed note\n");
   });
 });

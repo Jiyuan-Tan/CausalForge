@@ -18,6 +18,7 @@
 //                               checkpoint (pipeline halts for the user).
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { z } from "zod";
 import { MODEL_PLAN } from "../../constants.js";
 import { runReferee } from "../framework/referee.js";
 import type { ReviewResult } from "../../judgment.js";
@@ -103,6 +104,43 @@ export const TARGET_FLOOR_LABEL: Record<string, GeneralTier> = {
 
 const VALID_TIERS = new Set<GeneralTier>(["flagship", "field", "subfield", "incremental"]);
 
+/** Stdout contract for the D0.5.G cold referee.  Raw-byte LaTeX repair is performed by
+ * the shared referee harness first; every field that DETERMINES ROUTING (`tier`,
+ * `salvageable`, `critique`, `flagship_potential`, and the flagged labels) stays
+ * required and strictly typed, so escape recovery cannot turn a structurally malformed
+ * response into an accepted review.
+ *
+ * Two deviations are deliberately tolerated, because a validation failure here THROWS
+ * and discards a completed (paid) cold-referee call, and `normalizeGeneralReview` below
+ * already absorbs both while failing SAFE — an unusable tier becomes `incremental`,
+ * i.e. below any non-trivial floor, never an accept:
+ *   - unknown extra keys (a stray `"reasoning": "…"` is routine LLM output, not a
+ *     structural fault), and
+ *   - an absent `improvement_directive` / `flagship_directive`, which are already
+ *     OPTIONAL on `GeneralReviewResult` — requiring them here was a schema/interface
+ *     mismatch that failed a referee for correctly omitting a directive it had no
+ *     reason to emit.
+ * `tier` is lower-cased first for the same reason: the normalizer does it, so a
+ * capitalized `"Field"` should not cost the whole call. */
+export const generalReviewPayloadSchema = z.object({
+  tier: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() : v),
+    z.enum(["flagship", "field", "subfield", "incremental"]),
+  ),
+  salvageable: z.boolean(),
+  improvement_directive: z.string().optional(),
+  flagged_conjecture_labels: z.array(z.string()),
+  critique: z.string().min(1),
+  flagship_potential: z.boolean(),
+  flagship_directive: z.string().optional(),
+});
+
+export function generalReviewPayloadValidationError(obj: Record<string, unknown>): string | null {
+  const parsed = generalReviewPayloadSchema.safeParse(obj);
+  if (parsed.success) return null;
+  return `D0.5.G general-referee response failed strict schema validation: ${parsed.error.message}`;
+}
+
 /**
  * Run the cold general referee over the stitched note. No Lean (a discovery-note
  * referee does not touch the scaffold), so lean-lsp is disabled for speed.
@@ -161,6 +199,7 @@ export async function runGeneralReview(args: {
     model: plan.model,
     reasoningEffort: plan.effort,
     leanLsp: false,
+    validate: generalReviewPayloadValidationError,
   });
   if (result.parseError !== null) {
     throw new Error(result.parseError);

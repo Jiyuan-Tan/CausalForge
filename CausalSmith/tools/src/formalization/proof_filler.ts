@@ -209,6 +209,10 @@ export async function runFiller(args: {
     promptSources: [promptFile, ...(args.corePath ? [args.corePath] : []), args.leanDir],
     model: MODELS.codexKernel,
     reasoningEffort: "medium",
+    // F3 writes proof bodies in the production research modules; scratch probes
+    // still belong in tmp/, as stated in the prompt, but the workspace-write
+    // root itself must be the package so those edits are permitted.
+    productionWrite: true,
   });
   // Mirror the reviewer's parse boundary (runUnit → `unparsable-output`): a throw here would
   // unwind through the proof-review loop — which has no stage-level catch — and abort the whole
