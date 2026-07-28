@@ -1,4 +1,5 @@
 import { defineConfig } from "astro/config";
+import sitemap from "@astrojs/sitemap";
 import { readdir, access, cp } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -45,5 +46,11 @@ export default defineConfig({
   site: process.env.SITE_URL ?? "https://example.github.io",
   base: process.env.SITE_BASE ?? "/",
   output: "static",
-  integrations: [copyBundlePdfs()],
+  // The sitemap is how search engines discover the library and paper pages —
+  // nothing outside the site links to them. Data endpoints and the PDF routes
+  // are not pages, so they stay out of it.
+  integrations: [
+    copyBundlePdfs(),
+    sitemap({ filter: (page) => !/\.(json|pdf)$/.test(page) }),
+  ],
 });

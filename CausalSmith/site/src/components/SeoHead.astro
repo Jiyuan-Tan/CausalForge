@@ -1,0 +1,78 @@
+---
+/**
+ * The shared <head> block: charset, viewport, title, description, canonical URL,
+ * and Open Graph / Twitter card tags. Every page routes its head through here so
+ * the set stays uniform — a page with no description is invisible in search
+ * result snippets, and a missing canonical lets the base-path and trailing-slash
+ * variants of a URL compete with each other.
+ *
+ * The canonical is derived from `site` + the page's own path, so it is only
+ * emitted when `SITE_URL` is set (i.e. in the deploy workflow, not local dev).
+ */
+import { SERIES_NAME } from "../lib/config.js";
+
+interface Props {
+  title: string;
+  description: string;
+  /** "article" for papers; "website" for the hub and library pages. */
+  ogType?: string;
+}
+
+const { title, description, ogType = "website" } = Astro.props;
+
+/** TeX control words worth keeping as a glyph; anything else keeps its name. */
+const TEX_GLYPH: Record<string, string> = {
+  alpha: "α", beta: "β", gamma: "γ", delta: "δ", epsilon: "ε", varepsilon: "ε",
+  zeta: "ζ", eta: "η", theta: "θ", kappa: "κ", lambda: "λ", mu: "μ", nu: "ν",
+  xi: "ξ", rho: "ρ", sigma: "σ", tau: "τ", phi: "φ", varphi: "φ", chi: "χ",
+  psi: "ψ", omega: "ω", Gamma: "Γ", Delta: "Δ", Theta: "Θ", Lambda: "Λ",
+  Sigma: "Σ", Phi: "Φ", Psi: "Ψ", Omega: "Ω",
+  pm: "±", mp: "∓", times: "×", cdot: "·", leq: "≤", le: "≤", geq: "≥",
+  ge: "≥", neq: "≠", ll: "≪", gg: "≫", to: "→", infty: "∞", sqrt: "√",
+  quad: " ", qquad: " ",
+};
+
+/**
+ * Paper titles and module intros carry TeX and markdown, which would render as
+ * raw source inside a meta tag. Drop the delimiters and keep the words.
+ */
+function plain(text: string): string {
+  return text
+    .replace(/\\\(|\\\)|\\\[|\\\]/g, "")
+    .replace(/\\(?:text|mathrm|mathbf|mathcal|emph|texttt)\{([^{}]*)\}/g, "$1")
+    .replace(/\\([A-Za-z]+)/g, (_, name) => TEX_GLYPH[name] ?? name)
+    .replace(/---/g, "—")
+    .replace(/--/g, "–")
+    // `_` and `^` survive: bundle tldrs write ASCII math in backticks, where
+    // dropping them turns `rho_epsilon` and `d^2` into `rhoepsilon` and `d2`.
+    .replace(/[$`*{}~\\]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Search snippets are cut around 160 chars; trim at a word boundary first. */
+function clamp(text: string, max = 160): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[,;:—-]$/, "")}…`;
+}
+
+const desc = clamp(plain(description));
+const pageTitle = plain(title);
+const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : null;
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{pageTitle}</title>
+<meta name="description" content={desc} />
+{canonical && <link rel="canonical" href={canonical} />}
+<meta property="og:type" content={ogType} />
+<meta property="og:site_name" content={SERIES_NAME} />
+<meta property="og:title" content={pageTitle} />
+<meta property="og:description" content={desc} />
+{canonical && <meta property="og:url" content={canonical} />}
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content={pageTitle} />
+<meta name="twitter:description" content={desc} />
